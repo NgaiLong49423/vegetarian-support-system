@@ -10,6 +10,7 @@
 ## [Unreleased]
 
 ### Added
+- 2026-09-12: Thêm `docs/requirements/SRS-decision-questionnaire.md` v0.1.0 gồm 38 câu hỏi chốt phạm vi sản phẩm; mỗi câu có phương án khuyến nghị để xử lý các câu người dùng bỏ trống.
 - 2026-09-12: Chuyển bộ 5 tài liệu phân rã Đề tài 03 vào repository; SRS v0.19.0 ghi nhận quy tắc chống báo cáo trùng. Giữ SRS mẫu cũ tại `docs/requirements/SRS-template-before-topic03.md` để tham khảo, không dùng làm yêu cầu hiện hành.
 - Ghi nhận workflow nhóm mặc định: nhánh `develop`/`main`, release theo checklist, task 4–5 ngày, review PR và dùng Story Points để cân tải.
 - Thêm bản ghi quyết định workflow tại `docs/decisions/001-team-workflow.md`.
@@ -17,6 +18,31 @@
 - Thêm Definition of Ready cho bước chuyển từ `Planning` sang `In Progress`.
 
 ### Changed
+- 2026-09-12: SRS v0.43.0 đồng bộ xác nhận Q01–Q38, bổ sung FR-47–FR-51 và bảng truy vết; Free/Plus/Pro cùng chức năng, thanh toán thật, báo cáo/Like bình luận, email/in-app notification và bản đồ với khoảng cách đường bộ. Q31 chỉ ghi nguồn, nghiên cứu công thức khi triển khai; Q35 là phạm vi nhóm tự chọn, bỏ điều kiện chờ giảng viên xác nhận. Đồng bộ phiếu trả lời, actor, định hướng, gói AI và benchmark.
+- 2026-09-12: Thay `docs/decisions/SWP-Technology-Stack-v1.0.0.txt` bằng v2.0.0 để đồng bộ quyết định location: bỏ Browser Geolocation và danh mục restaurant/store trong SQL Server, chuyển sang địa chỉ do Member nhập cùng Google Geocoding/Places.
+- 2026-09-12: SRS v0.42.0 chốt bốn bán kính tìm nhà hàng chay cho Member: 500 m, 1 km, 5 km và 10 km; giá trị ngoài danh sách bị chặn trước khi gọi Google Maps Platform.
+- 2026-09-12: SRS v0.41.0 chốt chỉ Member đã đăng nhập được tìm nhà hàng chay quanh địa chỉ nhập; yêu cầu Guest bị chặn trước khi gọi Google Maps Platform để không tiêu thụ quota dịch vụ ngoài.
+- 2026-09-12: SRS v0.40.0 chốt bình luận hỗ trợ reply lồng nhiều cấp; Guest được đọc, Member quản lý bình luận của mình và trả lời bình luận/reply khác, Administrator quản lý nội dung vi phạm.
+- 2026-09-12: SRS v0.39.0 chốt “bình chọn” thành Like/Upvote: mỗi Member tối đa một Like trên mỗi bài và có thể bỏ Like; Guest chỉ xem tổng, MVP không triển khai đánh giá 1–5 sao.
+- 2026-09-12: SRS v0.38.0 chốt quyền tác giả theo mô hình mạng xã hội thu nhỏ ở mức chức năng: người có quyền đăng được tạo/xem/sửa/xóa bài công thức của mình, không duyệt từng bài/lần sửa; Admin vẫn hậu kiểm và tác giả không tự khôi phục bài bị ẩn.
+- 2026-09-12: SRS v0.37.0 chốt tác giả được sửa bài công thức đang công khai mà không cần duyệt lại; đồng thời giới hạn module địa điểm thành đề xuất nhà hàng chay độc lập theo địa chỉ/bán kính từ Google Maps, không liên kết món đã tìm và không quản lý hồ sơ nhà hàng.
+- 2026-09-12: SRS v0.36.0 chốt đơn xin quyền đăng bị từ chối phải có lý do và được sửa/gửi lại; mỗi Member chỉ có một đơn đang chờ, MVP không đặt thời gian chờ cố định và quyết định hạn chế do lạm dụng phải lưu lý do.
+- 2026-09-12: SRS v0.35.0 chốt đơn xin quyền đăng phải có xác nhận chính sách, lý do đóng góp, xác nhận trách nhiệm và hiểu chế tài; MVP không yêu cầu chứng chỉ hoặc kinh nghiệm chuyên môn.
+- 2026-09-12: SRS v0.34.0 thay duyệt từng công thức bằng duyệt đơn xin quyền đăng: Member được cấp quyền tự công khai bài hợp lệ; Admin hậu kiểm khi có báo cáo và có thể áp dụng chế tài có lý do. Đồng bộ tài liệu định hướng, actor, gói AI và benchmark sang nguồn gợi ý là bài đang công khai, không bị ẩn/xóa.
+- 2026-09-12: SRS v0.33.0 đưa tìm nhà hàng chay quanh địa chỉ Google Maps do người dùng nhập vào MVP, không dùng GPS hoặc Gemini; ghi nhận phụ thuộc Geocoding/Places, trạng thái lỗi và các quyết định UX/chi phí còn mở.
+- 2026-09-12: SRS v0.32.0 chốt thao tác quản lý danh mục dinh dưỡng của Administrator: xem/tìm, thêm, sửa, bật/ngừng hỗ trợ, xem công thức liên quan và lưu nguồn; MVP không xóa vĩnh viễn, nhập hàng loạt, gọi USDA hoặc dùng AI tự điền.
+- 2026-09-12: SRS v0.31.0 chốt Administrator có quyền quản lý danh mục nguyên liệu dinh dưỡng của ứng dụng; phạm vi thao tác và ảnh hưởng đến công thức cũ sẽ được phân rã tiếp.
+- 2026-09-12: SRS v0.30.0 chốt MVP dùng danh mục dinh dưỡng cố định trong database với USDA FoodData Central làm nguồn tham khảo chính; không gọi API/AI matching khi sử dụng, và nguyên liệu chưa hỗ trợ không chặn đăng bài nhưng làm kết quả dinh dưỡng chưa đầy đủ.
+- 2026-09-12: SRS v0.29.0 chốt dinh dưỡng công thức được tính từ nguyên liệu và định lượng; khẩu phần chỉ dùng để phân bổ tổng công thức và ghi nhận lượng dự định ăn, còn kiểm tra ngày cộng tất cả món trong ba bữa.
+- 2026-09-12: SRS v0.28.0 chốt chín chỉ tiêu dinh dưỡng MVP và cách trình bày theo khẩu phần; kiểm tra menu ngày dùng mức tham khảo cá nhân, không có điểm cân bằng tổng hợp hoặc Glycemic Index/Glycemic Load trong MVP.
+- 2026-09-12: SRS v0.27.0 giới hạn các chức năng nhu cầu/AI menu/kiểm tra dinh dưỡng cho Member đủ 18 tuổi, không mang thai/cho con bú và không cần chế độ ăn điều trị; các chức năng thông thường vẫn khả dụng.
+- 2026-09-12: SRS v0.26.0 chốt BMI chỉ là chỉ số tham khảo trong Hồ sơ nhu cầu dinh dưỡng; bổ sung AI menu theo dữ liệu dinh dưỡng và kiểm tra menu ngày với trạng thái/chênh lệch nhưng không chẩn đoán.
+- 2026-09-12: SRS v0.25.0 chốt AI gợi ý và lập menu chỉ từ bài công thức đã duyệt trong hệ thống, phải dẫn tới bài nguồn và không được tạo công thức mới.
+- 2026-09-12: SRS v0.24.0 cho phép nhiều công thức trong mỗi bữa, không đặt giới hạn cứng và ngăn cùng công thức bị thêm trùng vào cùng ngày/bữa của một Member.
+- 2026-09-12: SRS v0.23.0 chốt lịch ăn MVP chỉ có ba loại cố định: Bữa sáng, Bữa trưa và Bữa tối; không có Bữa phụ hoặc loại bữa tùy chỉnh.
+- 2026-09-12: SRS v0.22.0 tách Công thức đã lưu khỏi Lịch ăn, giới hạn dữ liệu cá nhân cho Member, loại Queue khỏi MVP và ghi nhận các thao tác lịch cấp cao.
+- 2026-09-12: SRS v0.21.0 bỏ Blog tổng quát, thống nhất một loại nội dung là bài công thức (`Recipe Post`) và chuyển hướng dẫn nấu từng bước thành trường tùy chọn.
+- 2026-09-12: SRS v0.20.0 chốt Onboarding được bỏ qua nhưng yêu cầu ba nhóm hồ sơ tối thiểu trước khi dùng AI gợi ý món hoặc tạo thực đơn cá nhân hóa.
 - Quy ước `Target Date` là hạn hoàn tất kỹ thuật và merge feature PR vào `develop`; thời gian Issue ở `Review` chờ release vào `main` không tính là trễ của owner.
 - Liên kết README và CONTRIBUTING với workflow đã chốt; board dùng năm trạng thái và `Review` giữ cả phần đang chờ release vào `main`.
 - Thống nhất đường dẫn agent, skill và output theo thư mục `.agents/` trong toàn bộ template.

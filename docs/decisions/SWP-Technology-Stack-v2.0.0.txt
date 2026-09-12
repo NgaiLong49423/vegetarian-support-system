@@ -1,7 +1,7 @@
 TECHNOLOGY STACK — DỰ ÁN SWP
-Version: v1.0.0
+Version: v2.0.0
 Ngày tạo: 2026-09-11
-Ngày cập nhật: 2026-09-11
+Ngày cập nhật: 2026-09-12
 Ngôn ngữ tài liệu: Tiếng Việt
 Trạng thái: Baseline công nghệ đã chốt trong cuộc trao đổi
 
@@ -58,10 +58,10 @@ Phân quyền                | Role-based authorization            | Đã chốt
 Lưu ảnh/video             | Azure Blob Storage                  | Đã chốt
 Upload hiện tại           | FE -> BE -> Azure                   | Đã chốt
 Upload video lớn          | Direct upload bằng SAS URL          | Future
-Dữ liệu location          | Restaurant/store trong SQL Server   | Phase 1
-Vị trí người dùng         | Browser Geolocation API             | Phase 1
-Tính khoảng cách          | Spring Boot                         | Phase 1
-Places API                | Chưa sử dụng                        | Phase 1
+Dữ liệu location          | Google Maps Platform                | Đã chốt
+Vị trí tìm kiếm           | Địa chỉ do Member nhập/chọn         | Đã chốt
+Bán kính                  | 500 m / 1 km / 5 km / 10 km         | Đã chốt
+Geocoding + Places API    | Google Maps Platform                | Đã chốt
 AI provider               | Google Gemini                       | Đã chốt
 Kiểm thử BE               | JUnit 5 + Mockito                   | Đã chốt
 Đo test coverage          | JaCoCo                              | Đã chốt
@@ -190,7 +190,8 @@ Các mục TBD được liệt kê riêng tại phần 10.
 
 5.1. Microsoft SQL Server — database quan hệ chính
 - Là gì / vai trò: Lưu dữ liệu nghiệp vụ có cấu trúc và quan hệ như tài
-  khoản, công thức, kế hoạch ăn uống, restaurant/store và metadata media.
+  khoản, công thức, kế hoạch ăn uống và metadata media. Hồ sơ nhà hàng
+  không thuộc dữ liệu do hệ thống quản lý.
 - Vì sao chọn: Nhóm đã học và sử dụng SQL Server, giúp giảm thời gian học
   hệ quản trị mới và tăng khả năng hỗ trợ nhau.
 - Lợi ích chính: Hỗ trợ quan hệ, ràng buộc, transaction và truy vấn SQL;
@@ -331,41 +332,32 @@ Các mục TBD được liệt kê riêng tại phần 10.
   và xử lý upload dang dở. Không coi SAS URL là dữ liệu công khai lâu dài.
   Đây là hướng nâng cấp, chưa chốt ngưỡng “video lớn” hoặc cách triển khai.
 
-7.4. Location phase 1 — nguồn restaurant/store trong SQL Server
-- Là gì / vai trò: Dùng danh sách địa điểm và tọa độ do hệ thống quản lý
-  làm nguồn cho chức năng tìm restaurant/store gần người dùng.
-- Vì sao chọn: Tận dụng database đã có, giới hạn phạm vi ban đầu và giảm
-  phụ thuộc dịch vụ địa điểm bên ngoài.
-- Lợi ích chính: Chủ động quản lý dữ liệu và demo chức năng trên tập địa
-  điểm của hệ thống.
-- Đánh đổi / lưu ý: Chất lượng kết quả phụ thuộc độ đầy đủ/chính xác của
-  dữ liệu nhóm nhập. Không đồng nghĩa tìm được mọi cửa hàng thực tế xung quanh.
+7.4. Google Maps Platform — tìm nhà hàng chay quanh địa chỉ nhập
+- Là gì / vai trò: Member nhập hoặc chọn một địa chỉ; backend dùng Geocoding
+  và Places/Nearby Search để lấy nhà hàng chay trong bán kính đã chọn.
+- Vì sao chọn: Tránh bắt Admin nhập và duy trì thủ công một danh sách địa
+  điểm vốn thay đổi ngoài đời; kết quả thực tế do nhà cung cấp địa điểm trả về.
+- Lợi ích chính: Phù hợp nghiệp vụ tìm quanh một địa chỉ cụ thể và không cần
+  xin quyền GPS/vị trí hiện tại của thiết bị.
+- Đánh đổi / lưu ý: Phụ thuộc quota, giá và chất lượng phân loại của Google.
+  Hệ thống không xác minh độc lập rằng mọi món tại địa điểm đều là món chay,
+  không quản lý hồ sơ nhà hàng và phải ghi rõ nguồn dữ liệu.
 
-7.5. Browser Geolocation API — lấy vị trí người dùng
-- Là gì / vai trò: API trình duyệt để xin quyền lấy latitude/longitude
-  (vĩ độ/kinh độ), sau đó FE gửi tọa độ cho BE.
-- Vì sao chọn: Đáp ứng nhu cầu lấy vị trí trên web mà không cần Places API.
-- Lợi ích chính: Tận dụng chức năng sẵn có của trình duyệt, dễ kết hợp với
-  dữ liệu địa điểm trong SQL Server.
-- Đánh đổi / lưu ý: Phụ thuộc quyền người dùng, thiết bị và độ chính xác
-  vị trí; cần ngữ cảnh bảo mật phù hợp của trình duyệt. Cần xử lý từ chối
-  quyền, không lấy được vị trí và timeout; không tự coi tọa độ là đáng tin tuyệt đối.
-
-7.6. Spring Boot tính khoảng cách — xử lý location phase 1
-- Là gì / vai trò: Nhận vị trí người dùng, lấy tọa độ địa điểm từ SQL Server,
-  tính khoảng cách và trả danh sách theo tiêu chí gần người dùng.
-- Vì sao chọn: Tận dụng backend hiện có, đủ đơn giản cho tập dữ liệu ban đầu.
-- Lợi ích chính: Logic tập trung tại BE, dễ kiểm thử với tọa độ đã biết.
-- Đánh đổi / lưu ý: Khoảng cách địa lý không phải khoảng cách lái xe hay
-  thời gian di chuyển. Cần kiểm tra tọa độ hợp lệ và hiệu năng khi dữ liệu
-  tăng; thuật toán, bán kính và cách tối ưu chưa được chốt ở tài liệu này.
+7.5. Địa chỉ và bán kính do Member lựa chọn
+- Chỉ Member đã đăng nhập được gọi chức năng; Guest bị chặn trước khi gọi
+  dịch vụ ngoài.
+- Tâm tìm kiếm đến từ địa chỉ/địa điểm người dùng chủ động nhập hoặc chọn,
+  không dùng Browser Geolocation API và không đọc GPS.
+- Bán kính MVP gồm 500 m, 1 km, 5 km và 10 km. Cách tính khoảng cách, trường
+  kết quả và cách hiển thị được chốt tiếp trong SRS, không suy diễn tại đây.
 
 Luồng location đã chốt:
-  Trình duyệt xin quyền -> React lấy tọa độ -> Spring Boot
-  -> lấy restaurant/store từ SQL Server -> tính khoảng cách -> trả kết quả.
+  Member nhập/chọn địa chỉ và bán kính -> Spring Boot xác thực
+  -> Google Geocoding/Places -> trả kết quả có ghi nguồn -> React hiển thị.
 
-Phase 1 CHƯA dùng Places API. Việc hiển thị bản đồ và chọn nhà cung cấp bản
-đồ không được suy ra từ quyết định lấy vị trí/tính khoảng cách này.
+Quyết định này thay thế location phase 1 trong v1.0.0 dùng Browser
+Geolocation API, restaurant/store trong SQL Server và Spring Boot tự tính
+khoảng cách.
 
 ======================================================================
 8. AI PROVIDER
@@ -531,7 +523,8 @@ không biến ví dụ giải thích thành yêu cầu triển khai mới.
 v1.0.0 — 2026-09-11
 - Tạo baseline Technology Stack theo các quyết định đã xác nhận.
 - Bổ sung vai trò, lý do chọn, lợi ích và đánh đổi của từng công nghệ.
-- Ghi rõ upload hiện tại, hướng SAS direct upload tương lai và location phase 1.
+- Ghi rõ upload hiện tại, hướng SAS direct upload tương lai và location dùng
+  địa chỉ nhập với Google Maps Platform.
 - Tách Gemini provider khỏi model/AI architecture còn TBD.
 - Tách các mục TBD và công cụ IDE cá nhân khỏi danh sách bắt buộc.
 

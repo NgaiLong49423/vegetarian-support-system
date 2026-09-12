@@ -47,7 +47,7 @@ Nguồn:
 - Tách rõ chức năng miễn phí và giá trị premium; premium cần khác biệt về capability, không chỉ đổi nhãn.
 - AI meal planning là một giá trị nâng cấp dễ hiểu hơn chatbot “hỏi gì cũng được”.
 - Content policy cần nêu nội dung phù hợp chủ đề ăn chay, spam/trùng lặp, nội dung nguy hiểm và chế tài.
-- Dự án của nhóm vẫn giữ quyết định riêng: chia sẻ công thức nằm trong Blog Post, không tạo luồng “Publish Recipe” độc lập như một số sản phẩm chuyên về recipe.
+- Dự án của nhóm chỉ có một loại bài là bài công thức (`Recipe Post`), không có Blog tổng quát tách riêng. Hướng dẫn từng bước thuộc bài nhưng là tùy chọn.
 
 ### Không nên đưa vào MVP 9 tuần
 
@@ -65,7 +65,9 @@ Nguồn:
 - For you mở lời mời trả lời câu hỏi. Bước tiếp theo yêu cầu đồng ý sử dụng dữ liệu sức khỏe; không cấp đồng ý nên chưa kiểm chứng câu hỏi phía sau hay chất lượng AI cá nhân hóa.
 - Khi khảo sát, Add to meal plan thêm món ngay vào Queue chưa gán ngày. Đã hoàn tác đúng món vừa thêm bằng Remove from plan và xác minh Queue trống. Không kiểm chứng luồng lưu lịch theo ngày hay thay món AI.
 
-**Quyết định người dùng đã chốt sau khảo sát:** lấy Samsung Food làm tham khảo chính cho khám phá → chi tiết món → thực đơn; giữ công thức trong Blog, bổ sung nguyên liệu, cách làm, khẩu phần, thời gian nấu và loại ăn chay. Xem SRS mục 3.3, FR-16 và FR-17. Không mặc định nhận toàn bộ feature set Samsung Food vào MVP.
+**Quyết định người dùng đã chốt sau khảo sát và cập nhật 12/09/2026:** lấy Samsung Food làm tham khảo chính cho khám phá → chi tiết món → thực đơn; hệ thống chỉ quản lý bài công thức, không có Blog tổng quát. Bài có nguyên liệu, khẩu phần, thời gian nấu và loại ăn chay; cách làm từng bước là tùy chọn. Tương tác bình chọn dùng Like/Upvote đơn giản, không sao chép đánh giá 1–5 sao. Xem SRS mục 3.3, FR-16, FR-17 và FR-45. Không mặc định nhận toàn bộ feature set Samsung Food vào MVP.
+
+**Quyết định phạm vi Saved/Planner ngày 12/09/2026:** dự án tách Công thức đã lưu khỏi Lịch ăn. Lưu công thức không gắn ngày/bữa và không thay đổi hồ sơ sở thích; mục lịch ăn phải tham chiếu ngày/bữa và có vòng đời riêng. Không sao chép Queue hay một module Previous riêng của Samsung Food vào MVP; tuần cũ được xem bằng điều hướng lịch, còn `For You` nếu có dùng luồng Gemini hiện tại.
 
 ## 4. HappyCow — tham khảo community và kiểm duyệt con người
 
@@ -84,10 +86,10 @@ Nguồn:
 
 ### Bài học cho dự án
 
-- Human moderation làm nội dung đáng tin hơn nhưng tạo hàng đợi và thời gian chờ; SRS cần trạng thái rõ như `Pending Review`, `Published`, `Rejected`.
-- Không nên dùng cùng một quy tắc cho mọi content type. Blog Post và Comment có thể cần mức kiểm duyệt khác nhau; phần này dự án chưa chốt.
+- Human moderation trước khi công khai làm nội dung đáng tin hơn nhưng tạo hàng đợi và thời gian chờ. Dự án đã chọn hướng khác: Admin duyệt đơn xin quyền đăng một lần, người được cấp quyền tự công khai bài và Admin hậu kiểm khi có báo cáo.
+- Bài công thức và Comment có thể cần mức hậu kiểm khác nhau. Dự án đã chốt bình luận hỗ trợ reply lồng nhiều cấp; giới hạn độ sâu/hiển thị và chế tài chi tiết sẽ được thiết kế sau. Dự án không cần thêm quy tắc cho một loại Blog tổng quát vì loại nội dung đó đã bị loại khỏi phạm vi.
 - Cần danh mục ăn chay rõ ràng và tiêu chí gắn nhãn, tránh chỉ dựa vào từ khóa.
-- Nếu sau này thêm địa điểm ăn chay, HappyCow là nguồn tham khảo tốt; nhưng location không nên kéo vào MVP hiện tại nếu chưa được yêu cầu bắt buộc.
+- Địa điểm ăn chay quanh địa chỉ người dùng nhập đã được đưa vào MVP; HappyCow tiếp tục là nguồn tham khảo nghiệp vụ, còn dữ liệu địa điểm của app lấy từ Google Maps Platform theo SRS. Dự án không quản lý hồ sơ nhà hàng và không gắn đề xuất địa điểm với món/bài công thức người dùng vừa tìm.
 
 ## 5. Forks Over Knives — tham khảo nội dung được tuyển chọn và meal plan
 
@@ -106,7 +108,7 @@ Nguồn:
 ### Bài học cho dự án
 
 - Nội dung được tuyển chọn có thể tạo niềm tin tốt hơn số lượng bài viết lớn nhưng thiếu kiểm chứng.
-- Với Blog Post dạng công thức, nên bắt buộc đủ thông tin tối thiểu trước khi Admin duyệt; trường cụ thể cần được chốt ở bước phân rã Blog.
+- Với bài công thức, nên bắt buộc đủ thông tin tối thiểu trước khi người có quyền đăng công khai; hướng dẫn từng bước có thể để trống theo quyết định dự án.
 - Weekly meal plan nên bắt đầu bằng thao tác thêm/thay/xóa món rõ ràng; AI personalization là lớp hỗ trợ sau, không thay thế dữ liệu công thức hợp lệ.
 - Không sao chép các tuyên bố sức khỏe hoặc điều trị nếu dự án không có nguồn và chuyên gia chịu trách nhiệm.
 
@@ -116,24 +118,20 @@ Nguồn:
 - Video private, age-restricted hoặc bị chủ sở hữu tắt embedding có thể không phát trong app: [YouTube Help](https://support.google.com/youtube/answer/97363).
 - Azure Blob Storage có thể nhận upload trực tiếp bằng SAS có phạm vi và thời hạn giới hạn; đây là hướng phù hợp nếu sau này mở upload video lớn: [Azure SAS overview](https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
 
-Quyết định hiện tại của dự án: Phase 1 lưu ảnh trên Azure Blob và nhúng link YouTube trong Blog Post; không upload file video trực tiếp.
+Quyết định hiện tại của dự án: Phase 1 lưu ảnh trên Azure Blob và nhúng link YouTube trong bài công thức; không upload file video trực tiếp.
 
 ## 7. Phạm vi học hỏi phù hợp với 9 tuần
 
 | Nghiệp vụ cần học | Sản phẩm tham khảo chính | Cách áp dụng nhỏ nhất cho dự án |
 | --- | --- | --- |
-| Community content | Samsung Food | Blog Post theo chủ đề; ảnh Azure; link YouTube tùy chọn |
-| Human moderation | HappyCow + Samsung Food guidelines | Một moderation queue với trạng thái rõ và Admin ra quyết định |
-| Recipe content | Forks Over Knives | Blog Post dạng công thức có dữ liệu tối thiểu để tìm/lọc |
-| Meal planning | Forks Over Knives + Samsung Food | Thêm/thay/xóa món trong kế hoạch tuần; chưa thêm shopping integration |
-| AI premium | Samsung Food+ | Free có giới hạn; gói nâng cao mở AI meal planning; bản đầu chưa payment thật |
+| Community content | Samsung Food | Bài công thức; ảnh Azure và link YouTube tùy chọn; bình luận là tương tác hỗ trợ |
+| Human moderation | HappyCow + Samsung Food guidelines | Admin duyệt đơn xin quyền đăng; người dùng báo cáo bài công khai và Admin hậu kiểm, không có hàng đợi duyệt từng bài |
+| Recipe content | Forks Over Knives | Bài công thức có dữ liệu tối thiểu để tìm/lọc; hướng dẫn từng bước tùy chọn |
+| Meal planning | Forks Over Knives + Samsung Food | Tách Đã lưu và Lịch ăn; thêm/chuyển/thay/xóa món theo ngày/bữa; chưa thêm Queue hay shopping integration |
+| AI premium | Samsung Food+ | Free/Plus/Pro cùng AI, khác hạn mức 5/15/50; thanh toán thật theo Q19/Q26, không sao chép cách khóa tính năng của đối thủ |
 
-## 8. Các câu hỏi nghiên cứu không được tự biến thành requirement
+## 8. Kết quả chốt phạm vi — 12/09/2026
 
-- Comment có public ngay hay cũng phải `Pending Review`?
-- Blog Post công thức đã chốt năm nhóm dữ liệu; cấu trúc và quy tắc bắt buộc của từng trường là gì?
-- Meal plan đã là phần lõi; cần chốt các bữa trong ngày và thao tác thêm/thay/xóa cụ thể.
-- Plus/Pro chỉ khác số lượt hay khác cả tính năng?
-- Nhóm có cần địa điểm ăn chay trong phạm vi chấm điểm không?
+Các câu hỏi sản phẩm đã được giải quyết trong [SRS mục 3.20](../requirements/SRS.md): reply nhiều cấp, báo cáo cả bình luận, lịch ba bữa, cùng chức năng AI cho Free/Plus/Pro; nhà hàng dùng ngưỡng đường bộ và danh sách + bản đồ. Bài công thức có bước nấu tùy chọn. Chỉ học các luồng phù hợp; nội dung khảo sát đối thủ không phải yêu cầu bắt buộc của nhóm.
 
-Mỗi câu hỏi trên phải được Product Owner chốt riêng trước khi cập nhật thành FR/BR trong SRS.
+Q31 ghi nguồn dinh dưỡng, công thức nghiên cứu khi triển khai. Q35 cho phép nhóm tự chọn phạm vi nhà hàng độc lập món đã tìm, không có điều kiện chờ xác nhận giảng viên. Validation và chi tiết tích hợp vẫn cần thiết kế; benchmark không chứng minh tính năng dự án đã chạy.

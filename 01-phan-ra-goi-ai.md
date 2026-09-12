@@ -1,8 +1,8 @@
 > **Document:** Topic 03 AI Plan Decomposition  
 > **File:** `01-phan-ra-goi-ai.md`  
-> **Version:** v0.1.0  
+> **Version:** v0.6.0  
 > **Created:** 2026-09-11  
-> **Last Updated:** 2026-09-11  
+> **Last Updated:** 2026-09-12  
 > **Status:** Under Review  
 
 # Phân rã gói AI — Đề tài 03
@@ -11,9 +11,9 @@
 
 - Ngày cập nhật: 11/09/2026.
 - Nhà cung cấp AI khởi đầu đã chốt: **Gemini API**.
-- Người chưa đăng nhập cũng dùng được gói Free; người có tài khoản dùng Free hoặc nâng cấp Plus/Pro/Max.
-- Đây là thiết kế sản phẩm và kỹ thuật. Chưa chốt giá, chu kỳ thanh toán, cổng thanh toán hay việc thu tiền thật.
-- AI hỗ trợ tìm kiếm, gợi ý và hỏi đáp. AI không tự xuất bản/ẩn/xóa nội dung và không thay thế tư vấn y tế/dinh dưỡng.
+- Người chưa đăng nhập cũng dùng được gói Free; người có tài khoản dùng Free hoặc nâng cấp Plus/Pro.
+- Đây là thiết kế sản phẩm và kỹ thuật. Đã chốt thanh toán thật; giá, chu kỳ, cổng, gia hạn và hoàn tiền chưa chốt.
+- AI hỗ trợ tìm kiếm, gợi ý và hỏi đáp. Khi gợi ý món hoặc lập menu, AI chỉ chọn từ bài công thức đang công khai, không bị ẩn/xóa trong hệ thống và không tạo công thức mới. Với menu theo dinh dưỡng, AI dùng mức tham khảo do hệ thống cung cấp và công thức có đủ dữ liệu dinh dưỡng; không tự đặt mục tiêu hoặc tự ước lượng dữ liệu thiếu. AI không tự xuất bản/ẩn/xóa nội dung và không thay thế tư vấn y tế/dinh dưỡng.
 
 ## 1. Kết luận: dùng lượt gọi theo ngày ở giao diện, vẫn đo token thật ở backend
 
@@ -38,33 +38,28 @@ Hệ quả cho sản phẩm:
 - Không cam kết “Max vô hạn” khi backend còn dùng Gemini Free Tier.
 - Gói người dùng trong app **khác** usage tier/billing tier của Google. Free/Plus/Pro/Max là quyền trong app; Google vẫn có quota riêng ở project.
 - Nếu Google trả lỗi quota/rate limit, app phải báo tạm thời không khả dụng, không hứa có câu trả lời ngay chỉ vì người dùng đang ở Pro/Max.
-- Nếu sau này app thu tiền thật từ người dùng, nhóm phải đánh giá chi phí Gemini Paid Tier và điều khoản trước. Không nên bán quyền “không giới hạn” dựa duy nhất vào quota miễn phí.
+- Với quyết định thu tiền thật từ người dùng, nhóm phải đánh giá chi phí Gemini Paid Tier và điều khoản trước. Không nên bán quyền “không giới hạn” dựa duy nhất vào quota miễn phí.
 
-## 3. Các hạng dùng AI đề xuất
+## 3. Gói AI đã chốt theo Q19–Q26
 
-Số lượt dưới đây là **đề xuất cho bản demo**, không phải cam kết thương mại. Giới hạn của app có thể thấp hơn quota Gemini để tránh một người dùng làm cạn quota chung.
+| Gói | Đăng nhập | Lượt AI/ngày | Quyền |
+| --- | --- | ---: | --- |
+| Guest Free | Không | 5 | Hỏi đáp cơ bản; không cá nhân hóa/lịch sử tài khoản |
+| Free | Có | 5 | Toàn bộ chức năng AI trong phạm vi |
+| Plus | Có | 15 | Cùng chức năng Free, nhiều lượt hơn |
+| Pro | Có | 50 | Cùng chức năng Free, nhiều lượt hơn |
 
-| Hạng | Đăng nhập | Lượt text AI/ngày | Mục đích | Giới hạn quan trọng |
-| --- | --- | ---: | --- | --- |
-| Guest Free | Không | 5 | Khách trải nghiệm hỏi đáp cơ bản | Không lưu lịch sử/cá nhân hóa; không tạo menu tuần; chống lạm dụng theo cookie/IP. |
-| Free | Có | 5 | Người dùng dùng AI cơ bản hằng ngày | Lịch sử theo tài khoản; không mở tính năng nâng cao. |
-| Plus | Có | 15 | Người dùng dùng thường xuyên hơn | Có thể dùng tạo gợi ý thực đơn mức cơ bản. |
-| Pro | Có | 50 | Dùng nhiều và thực đơn cá nhân hóa đầy đủ hơn | Vẫn chịu RPM và quota Gemini. |
-| Max (Fair Use) | Có | Không ghi “vô hạn” | Gói mở rộng sau này | Phải có daily cap cấu hình được, RPM, chống lạm dụng; chỉ mở khi có ngân sách/quota thật. |
+Không triển khai Max/unlimited. Quyền đăng bài và điều kiện hồ sơ/dinh dưỡng vẫn áp dụng, không được bỏ qua vì mua gói.
 
-Ở bản đầu, nhóm nên triển khai **Guest Free + Free + một gói Advanced mô phỏng**. Có thể gọi gói Advanced là Plus hoặc Pro, nhưng không cần làm đủ bốn gói khi chưa có giá trị tính năng khác nhau. `Max` chỉ nên là ý tưởng backlog.
+## 4. Chức năng và cách tính lượt
 
-## 4. Khác biệt của gói: không chỉ là nhiều lượt hơn
-
-| Chức năng | Guest Free | Free | Plus | Pro |
-| --- | --- | --- | --- | --- |
-| Hỏi đáp kiến thức ăn chay tổng quát | Có, tối đa 5 lượt/ngày | Có, tối đa 5 lượt/ngày | Có | Có |
-| Gợi ý rule-based theo loại ăn chay | Có, không gọi AI | Có | Có | Có |
-| Lưu lịch sử hội thoại | Không | Có giới hạn | Có | Có |
-| Tạo thực đơn tuần bằng AI | Không | Không | Bản cơ bản | Bản cá nhân hóa đầy đủ |
-| Điều chỉnh thực đơn theo phản hồi của người dùng | Không | Không | Giới hạn | Có |
-
-Mục tiêu của bảng này là để người dùng thấy lý do nâng cấp. Không được mở tính năng có tên trong bảng nếu chưa xây dựng/xác minh nó.
+- Mọi gói Member có hỏi đáp, gợi ý công thức hiện có, lập/thay menu tuần, giải thích dinh dưỡng, tùy chọn gợi ý bài liên quan và hỗ trợ tác giả soạn bài.
+- AI không tạo công thức mới; hỗ trợ viết giới thiệu/bước nấu dựa trên đầu vào tác giả, không tự thêm nguyên liệu hoặc tự công khai.
+- Mỗi yêu cầu AI thành công tính một lượt, kể cả đề xuất menu 7 ngày sáng/trưa/tối. Yêu cầu lỗi không trừ lượt; không tính theo số món hoặc token.
+- Member xem/xóa lịch sử AI riêng. Lịch sử hội thoại khác log usage tối thiểu dùng đối soát; thời hạn lưu và quy tắc xóa log phải xác định ở thiết kế.
+- Gợi ý bài liên quan thông thường không gọi Gemini/không tính lượt; AI chỉ được gọi khi người dùng yêu cầu.
+- Đăng ký Plus/Pro qua thanh toán thật, backend xác minh giao dịch trước khi kích hoạt. Chưa chốt giá, cổng, chu kỳ và chính sách; mô phỏng chỉ phục vụ kiểm thử, không thay yêu cầu tích hợp thật.
+- Hạn mức app không bảo đảm quota Gemini luôn đủ; lỗi dịch vụ phải được hiển thị rõ, không bịa kết quả.
 
 ## 5. Luồng nghiệp vụ
 
@@ -105,6 +100,9 @@ Mục tiêu của bảng này là để người dùng thấy lý do nâng cấp
 | AI-08 | `usageMetadata.totalTokenCount` của Gemini được lưu khi phản hồi có trường này, chỉ nhằm quan sát quota/chi phí; không dùng nó làm quyền hiển thị ở bản đầu. |
 | AI-09 | AI không tự đăng, duyệt, ẩn hay xóa nội dung. Nội dung gắn cờ chuyển Administrator quyết định. |
 | AI-10 | Câu trả lời AI phải hiển thị giới hạn: đây là gợi ý thông tin, không chẩn đoán/điều trị hay thay thế chuyên gia y tế. |
+| AI-11 | AI gợi ý/lập menu chỉ trả các bài công thức đang công khai, không bị ẩn/xóa và phải dẫn tới bài nguồn; nếu không có lựa chọn phù hợp thì thông báo rõ, không tạo công thức mới. |
+| AI-12 | AI không dùng BMI một mình để suy ra calorie/dưỡng chất và không gọi chênh lệch của một ngày là chẩn đoán thiếu chất; dữ liệu không đủ phải được nói rõ. |
+| AI-13 | AI menu dinh dưỡng và giải thích kiểm tra ngày trong MVP chỉ phục vụ Member đủ 18 tuổi, không mang thai/cho con bú và không cần chế độ ăn điều trị; người ngoài phạm vi vẫn dùng AI không-dinh-dưỡng theo quyền gói. |
 
 ## 7. Dữ liệu tối thiểu để đo bằng dữ liệu thật
 
@@ -132,10 +130,6 @@ Không ghi prompt đầy đủ hoặc dữ liệu sức khỏe nhạy cảm vào
 
 Các bước này chứng minh luồng đếm của app và metadata trả về trong môi trường thử. Chúng không chứng minh Gemini Free Tier đủ cho tải thật lâu dài.
 
-## 9. Quyết định tiếp theo cần chốt
+## 9. Việc tiếp theo
 
-Để không tạo gói chỉ khác số lần gọi, đề xuất bản demo chốt như sau:
-
-> `Guest Free`: 5 hỏi đáp AI/ngày. `Free`: 5 hỏi đáp/ngày. `Plus`: 15 hỏi đáp/ngày + tạo thực đơn tuần AI cơ bản. `Pro`: 50 hỏi đáp/ngày + tạo/chỉnh thực đơn cá nhân hóa. `Max`: chưa triển khai; ghi backlog với fair-use cap.
-
-Sau khi chốt bảng này, bước kế tiếp mới là phân rã user story/acceptance criteria cho **Guest Free và Free** trước; chưa phân rã thanh toán thật.
+Viết User Stories/Acceptance Criteria cho quyền gói 5/15/50, một yêu cầu thành công một lượt, lịch sử riêng và thanh toán thật. Giá/cổng/chu kỳ/gia hạn/hoàn tiền chưa chốt. Dinh dưỡng theo [SRS mục 3.18 và 3.20](docs/requirements/SRS.md): ghi nguồn trước, nghiên cứu công thức khi triển khai Q31.
