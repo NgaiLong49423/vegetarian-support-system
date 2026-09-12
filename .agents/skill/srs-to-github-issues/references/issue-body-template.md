@@ -7,40 +7,36 @@ Issue bodies should be Vietnamese by default unless the user asks for another la
 ```md
 # <Professional English Issue Title>
 
-## Tóm tắt
-Mô tả ngắn gọn issue này cần làm gì.
+## Mục tiêu
+Mô tả kết quả có thể kiểm tra sau khi Issue hoàn thành.
 
 ## Source Trace
 - PRD: ...
 - SRS/Spec: ...
 - FR/NFR/UC/Business Rule: ...
 
-## Mục tiêu
-Mô tả kết quả mong muốn sau khi issue hoàn thành.
-
 ## Phạm vi
+
+### Trong phạm vi
 - ...
 
-## Không nằm trong phạm vi
+### Ngoài phạm vi
 - ...
-
-## Quy tắc nghiệp vụ / Yêu cầu liên quan
-- ...
-
-## Implementation Notes
-Chỉ ghi nếu tài liệu nguồn có nêu rõ.
-
-Nếu tài liệu nguồn không nêu rõ, ghi:
-`Không có ghi chú triển khai cụ thể trong tài liệu nguồn.`
 
 ## Acceptance Criteria
 - [ ] ...
 - [ ] ...
 - [ ] ...
 
+## Dependencies
+- Parent: None
+- Blocked by: None
+- Blocking: None
+
 ## Project Metadata
 - Type: ...
-- Size: ...
+- Labels: ...
+- Owner/Assignee: TBD
 - Story Points: ...
 - Estimation Reason: ...
 - Priority: ...
@@ -48,20 +44,9 @@ Nếu tài liệu nguồn không nêu rõ, ghi:
 - Start Date: TBD
 - Target Date: TBD
 
-## Labels
-- ...
-
-## Relationships
-- Parent: None
-- Blocked by: None
-- Blocking: None
-- Security alert: None
-
 ## Suggested Branch
 `feature/example-branch-name`
 
-## Ghi chú cho người thực hiện
-- ...
 ```
 
 ## Required Rules
@@ -70,7 +55,13 @@ Nếu tài liệu nguồn không nêu rõ, ghi:
 - Body should be Vietnamese by default.
 - Source Trace is mandatory.
 - Acceptance Criteria must be testable.
-- Implementation Notes must not invent technology.
+- Do not invent technology, behavior, dates, dependencies, or relationships. Use `TBD` or `None` when appropriate.
 - Labels must come from `.github/labels.yml` when present.
-- Relationships must always be present even if values are `None`.
+- Type must be exactly one of: `🐛 Bug`, `✨ Feature`, `📋 Task`, `♻️ Refactor`, `📝 Docs`, or `🔍 Research`.
+- Labels must include the exact label matching the selected Type; secondary labels are optional.
+- Owner, Start Date, and Target Date may remain `TBD` while the draft or real Issue is in `Backlog` or `Planning`.
+- Target Date means the expected technical-completion and feature-PR merge date for `develop`, not the release date for `main`.
+- Before moving to `In Progress`, the Issue must satisfy the repository's Definition of Ready.
+- Dependencies must record Parent, Blocked by, and Blocking even when their values are `None`.
+- An implementation Issue must be no more than `5 SP` before assignment; `8 SP` means it must be split.
 - Suggested branch must be English kebab-case.

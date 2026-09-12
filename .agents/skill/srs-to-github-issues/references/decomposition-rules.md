@@ -15,7 +15,7 @@ Split a requirement when:
 - It has important dependencies.
 - It has high uncertainty/risk.
 - It has separate testable behavior slices.
-- It is estimated as `XL` or `13` story points.
+- It is estimated as `8` story points or cannot fit within 4–5 calendar days.
 
 ## Group Requirements When
 
@@ -57,8 +57,7 @@ Implement Booking Creation With Window Validation
 Create or propose an Epic when:
 
 - A module has 3 or more child issues.
-- A requirement is `XL`.
-- Story Points are `13` or higher.
+- A requirement must be split into several independently testable child issues.
 - The work is too broad for direct implementation.
 
 Do not create real Epic issues unless the user approves.

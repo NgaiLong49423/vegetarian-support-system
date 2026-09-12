@@ -1,5 +1,16 @@
 # Tài Liệu Dự Án - [Tên Dự Án]
 
+## Tài liệu Đề tài 03 đang phân rã
+
+- [SRS hiện hành — Draft](requirements/SRS.md): quyết định đã chốt và các điểm còn chờ xác nhận.
+- [Định hướng ban đầu](../00-de-tai-03-huong-di-dau-tien.md).
+- [Phân rã gói AI](../01-phan-ra-goi-ai.md).
+- [Actor và onboarding — đề xuất](requirements/actors-and-onboarding-draft.md).
+- [Benchmark sản phẩm](research/similar-products-benchmark.md).
+- [SRS mẫu lưu lại](requirements/SRS-template-before-topic03.md): chỉ là mẫu cũ, không phải yêu cầu dự án.
+
+Từ 12/09/2026, bộ tài liệu dự án được duy trì tại repository này. Bản ở thư mục Chuẩn Hóa workflow chỉ là bản lưu trước khi chuyển. Các README mẫu và ghi chú cũ không thay thế quyết định đã chốt trong SRS; tài liệu bổ trợ không tự nâng đề xuất thành yêu cầu.
+
 ## Mục Đích Thư Mục `docs/`
 
 Thư mục `docs/` (viết tắt của documents - tài liệu) là nơi lưu trữ toàn bộ tài liệu chính thức liên quan đến dự án.
@@ -24,6 +35,10 @@ docs/
 │   └── UseCase/
 │       └── README.md
 │
+├── decisions/
+│   ├── 001-team-workflow.md
+│   └── WORKFLOW-SOURCES.md
+│
 └── reports/
     └── README.md
 ```
@@ -35,6 +50,7 @@ docs/
   * **`Activity/`** (Sơ đồ hoạt động): Chứa sơ đồ luồng đi của các chức năng nghiệp vụ chi tiết.
   * **`ERD/`** (Sơ đồ quan hệ thực thể): Chứa thiết kế bảng và mối quan hệ giữa các bảng trong cơ sở dữ liệu.
   * **`UseCase/`** (Sơ đồ ca sử dụng): Chứa sơ đồ mô tả sự tương tác giữa người dùng (Actor) và các chức năng hệ thống.
+* **`decisions/`** (Quyết định): Lưu các quyết định đã chốt có ảnh hưởng đến cách nhóm làm việc hoặc dự án vận hành, kèm lý do và phần chưa quyết định. `WORKFLOW-SOURCES.md` phân biệt nguồn bên ngoài với quy ước do nhóm tự chọn. Không dùng thư mục này để lưu trao đổi nháp.
 * **`reports/`** (Report - báo cáo): Chứa các báo cáo tiến độ, nhật ký làm việc nhóm, biên bản họp hoặc tài liệu nộp môn học.
 
 ## Quy Tắc Viết Tài Liệu

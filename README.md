@@ -64,7 +64,7 @@ Giải thích ngắn cấu trúc thư mục chính của repo (repository - kho 
 ```text
 .
 ├── App/
-├── .agent/
+├── .agents/
 ├── docs/
 ├── database/
 ├── .github/
@@ -76,7 +76,7 @@ Giải thích ngắn cấu trúc thư mục chính của repo (repository - kho 
 
 Giải thích:
 * `App/`: nơi chứa source code (mã nguồn) chính của ứng dụng.
-* `.agent/`: nơi chứa các skill, orchestrator, rules và tài liệu liên quan để agent làm việc 
+* `.agents/`: nơi chứa các skill, orchestrator, rules và tài liệu liên quan để agent làm việc
 * `docs/`: nơi chứa tài liệu dự án.
 * `database/`: nơi chứa script (kịch bản mã lệnh) database.
 * `.github/`: nơi chứa cấu hình GitHub như issue template (mẫu báo lỗi/công việc), pull request template (mẫu yêu cầu gộp nhánh) và label template (mẫu nhãn phân loại).
@@ -124,11 +124,17 @@ Viết hướng dẫn chạy dự án sau này:
 ## 9. Quy Trình Làm Việc Với GitHub
 
 Ghi quy trình làm việc đề xuất:
-1. Tạo issue để mô tả công việc.
-2. Tạo branch mới từ issue.
-3. Code và commit theo quy tắc trong `CONTRIBUTING.md`.
-4. Tạo pull request để review.
-5. Merge vào branch chính sau khi kiểm tra.
+1. Tạo Issue có owner, tiêu chí hoàn thành, thời hạn và Story Points (SP).
+2. Tạo feature branch từ `develop`.
+3. Code, tự kiểm tra và mở PR vào `develop`.
+4. Một thành viên khác review trước khi merge vào `develop`; sau khi tích hợp, Issue vẫn ở `Review` để chờ đợt release vào `main`.
+5. Tạo release PR từ `develop` sang `main` khi đạt release checklist; Issue chỉ là `Done` và được đóng sau khi release vào `main`.
+
+Quy tắc chi tiết và các quyết định đã chốt nằm tại:
+
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [Quyết định workflow nhóm](docs/decisions/001-team-workflow.md)
+- [Nguồn và phân loại quyết định workflow](docs/decisions/WORKFLOW-SOURCES.md)
 
 `Issue` là ticket công việc hoặc lỗi cần xử lý.
 `Branch` là nhánh code dùng để phát triển riêng.
@@ -151,7 +157,7 @@ Ví dụ:
 * `docs: cập nhật README`
 * `refactor(user): đơn giản hóa logic xử lý user`
 
-Xem chi tiết quy ước tại file [CONTRIBUTING.md](file:///d:/Github-Projects/java-webapp-project-template/CONTRIBUTING.md).
+Xem chi tiết quy ước tại file [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 11. Issue Và Label
 
@@ -168,7 +174,7 @@ Lưu ý: GitHub không tự động tạo label từ file này. Cần dùng agen
 
 ## 12. Changelog
 
-Lịch sử thay đổi quan trọng của dự án được ghi trong [CHANGELOG.md](file:///d:/Github-Projects/java-webapp-project-template/CHANGELOG.md).
+Lịch sử thay đổi quan trọng của dự án được ghi trong [CHANGELOG.md](CHANGELOG.md).
 Hãy cập nhật file này khi thêm chức năng lớn, sửa lỗi quan trọng, thay đổi database hoặc thay đổi cấu trúc dự án.
 
 ## 13. License

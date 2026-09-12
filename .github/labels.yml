@@ -4,30 +4,14 @@
 # Có thể dùng agent hoặc GitHub CLI để tạo label dựa trên danh sách này.
 
 labels:
-  # Core work item types
-  - name: "🐞 Bug"
+  # Primary Project Type labels: each Issue must use exactly one
+  - name: "🐛 Bug"
     color: "d73a4a"
     description: "Lỗi trong hệ thống cần được sửa."
 
-  - name: "✨ Enhancement"
-    color: "a2eeef"
-    description: "Cải tiến hoặc nâng cấp chức năng hiện có mà không phải sửa lỗi."
-
-  - name: "🚀 Feature"
+  - name: "✨ Feature"
     color: "f9d0c4"
     description: "Chức năng mới hoặc nghiệp vụ mới cần được triển khai trong hệ thống."
-
-  - name: "🧾 User Story"
-    color: "c5def5"
-    description: "User Story mô tả nhu cầu hoặc mục tiêu của người dùng dưới góc nhìn nghiệp vụ."
-
-  - name: "📐 NFR"
-    color: "5319e7"
-    description: "Yêu cầu phi chức năng như hiệu năng, bảo mật, độ ổn định, khả năng mở rộng hoặc khả năng bảo trì."
-
-  - name: "🔍 Investigation"
-    color: "bfd4f2"
-    description: "Cần phân tích, nghiên cứu hoặc xác minh nguyên nhân trước khi triển khai."
 
   - name: "📋 Task"
     color: "cfd3d7"
@@ -36,6 +20,27 @@ labels:
   - name: "♻️ Refactor"
     color: "0e8a16"
     description: "Cải thiện cấu trúc mã nguồn mà không thay đổi chức năng của hệ thống."
+
+  - name: "📝 Docs"
+    color: "f9c74f"
+    description: "Tài liệu, hướng dẫn, đặc tả hoặc nội dung liên quan đến dự án."
+
+  - name: "🔍 Research"
+    color: "bfd4f2"
+    description: "Cần nghiên cứu, phân tích hoặc xác minh trước khi triển khai."
+
+  # Secondary work classifications
+  - name: "✨ Enhancement"
+    color: "a2eeef"
+    description: "Cải tiến hoặc nâng cấp chức năng hiện có mà không phải sửa lỗi."
+
+  - name: "🧾 User Story"
+    color: "c5def5"
+    description: "User Story mô tả nhu cầu hoặc mục tiêu của người dùng dưới góc nhìn nghiệp vụ."
+
+  - name: "📐 NFR"
+    color: "5319e7"
+    description: "Yêu cầu phi chức năng như hiệu năng, bảo mật, độ ổn định, khả năng mở rộng hoặc khả năng bảo trì."
 
   - name: "⚡ Performance"
     color: "5319e7"
@@ -61,10 +66,6 @@ labels:
   - name: "🗄️ Database"
     color: "5319e7"
     description: "Công việc liên quan đến thiết kế database, schema, query hoặc tối ưu dữ liệu."
-
-  - name: "📚 Documentation"
-    color: "f9c74f"
-    description: "Tài liệu, hướng dẫn, đặc tả hoặc nội dung liên quan đến dự án."
 
   # Work status
   - name: "⛔ Blocked"

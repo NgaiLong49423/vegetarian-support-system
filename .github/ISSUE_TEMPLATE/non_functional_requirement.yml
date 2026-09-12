@@ -1,7 +1,7 @@
 name: Non-Functional Requirement
 description: Ghi nhận yêu cầu phi chức năng của hệ thống (NFR - Non-Functional Requirement)
 title: "nfr: "
-labels: ["📐 NFR"]
+labels: ["📋 Task", "📐 NFR"]
 body:
   - type: input
     id: nfr_name

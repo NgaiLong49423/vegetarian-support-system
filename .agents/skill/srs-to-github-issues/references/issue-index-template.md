@@ -3,7 +3,7 @@
 Create this file at:
 
 ```text
-.agent/outputs/drafts/github-issues/ISSUE_INDEX.md
+.agents/outputs/drafts/github-issues/ISSUE_INDEX.md
 ```
 
 If the repo contract defines another path, use the repo contract path.
@@ -14,7 +14,7 @@ If the repo contract defines another path, use the repo contract path.
 ## Summary
 - Source documents:
   - ...
-- Draft output directory: `.agent/outputs/drafts/github-issues/`
+- Draft output directory: `.agents/outputs/drafts/github-issues/`
 - Mode: Draft only
 - Real GitHub issues created: No
 - GitHub Project synced: No
@@ -34,9 +34,9 @@ If the repo contract defines another path, use the repo contract path.
 
 ## Module: <Module Name>
 
-| No | Draft File | Title | Type | Size | Story Points | Priority | Source Trace | Dependencies | Relationships | Labels | Suggested Branch | Status | GitHub Issue |
+| No | Draft File | Title | Type | Owner | Story Points | Priority | Source Trace | Dependencies | Parent | Labels | Suggested Branch | Draft State | GitHub Issue |
 |---|---|---|---|---|---:|---|---|---|---|---|---|---|---|
-| 001 | 001-module-short-title.md | [Module][FR-xx] Title | Feature | M | 5 | High | FR-xx | None | Parent: None | label-a | feature/example | Draft | N/A |
+| 001 | 001-module-short-title.md | [Module][FR-xx] Title | ✨ Feature | TBD | 5 | High | FR-xx | None | None | ✨ Feature | feature/example | Draft | N/A |
 
 ## Grouping / Splitting Decisions
 
@@ -50,7 +50,7 @@ If the repo contract defines another path, use the repo contract path.
   - ...
 ```
 
-## Allowed Draft Statuses
+## Allowed Draft States
 
 ```text
 Draft
@@ -60,7 +60,9 @@ Created
 Synced
 ```
 
-Default status: `Draft`.
+Default Draft State: `Draft`.
+
+`Draft State` tracks the issue-generation lifecycle. It is not the GitHub Project `Status`. A created issue may be `Approved` or `Created` in this index while remaining in Project `Backlog` or `Planning`.
 
 ## Index Rules
 
@@ -68,3 +70,4 @@ Default status: `Draft`.
 - Every listed draft file must exist.
 - Every `.md` draft file in the final draft directory must be listed.
 - Do not create real GitHub Issues from files not listed in the index.
+- Owner may remain `TBD` during drafting and initial creation, but must be assigned before the Project item moves to `In Progress`.

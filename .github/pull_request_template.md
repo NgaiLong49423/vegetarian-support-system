@@ -32,10 +32,11 @@ Giải thích nguyên nhân hoặc mục đích của việc thực hiện nhữ
 
 ## 4. Branch Liên Quan
 
-Ghi tên nhánh đang được yêu cầu gộp (merge):
+Ghi rõ nhánh nguồn và nhánh đích:
 
 ```text
-Branch: 
+Source branch:
+Target branch: develop | main
 ```
 
 > **Giải thích thuật ngữ:**
@@ -44,17 +45,19 @@ Branch:
 
 ## 5. Issue Liên Quan
 
-Nếu Pull Request này giải quyết một issue (vấn đề) đã được tạo trên GitHub, hãy ghi mã issue tại đây để liên kết:
+Feature PR vào `develop` chỉ liên kết Issue, chưa đóng Issue:
 
 ```text
-Closes #
+Refs #<issue-number>
 ```
 
-*Nếu không có issue liên quan, ghi:*
+Release PR vào `main` liệt kê các Issue sẽ được đóng sau khi merge:
 
 ```text
-Không có
+Closes #<issue-number>
 ```
+
+Nếu không có Issue liên quan, phải ghi rõ lý do.
 
 > **Giải thích thuật ngữ:**
 > * **Issue:** Một thẻ ghi nhận đầu việc, lỗi, hoặc yêu cầu thảo luận tính năng được quản lý trên GitHub.
@@ -74,10 +77,12 @@ Liệt kê các tập tin hoặc thư mục chính trực tiếp chịu ảnh h�
 
 Mô tả các bước hoặc phương thức bạn đã kiểm tra (test) thay đổi này trước khi gửi PR:
 
-- [ ] Đã chạy project thành công
-- [ ] Đã kiểm tra chức năng liên quan
-- [ ] Đã kiểm tra database script nếu có thay đổi database
-- [ ] Đã kiểm tra tài liệu nếu có thay đổi documentation
+- Các lệnh automated test/build đã chạy:
+  - `...`
+- Kết quả:
+  - ...
+- Các bước manual test và kết quả, nếu chưa có automated test:
+  1. ...
 
 *Nếu chưa kiểm tra được, hãy ghi rõ lý do:*
 - 
@@ -102,11 +107,39 @@ Không có
 
 *Đảm bảo bạn đã tích chọn đầy đủ các mục này trước khi yêu cầu gộp nhánh:*
 
-- [ ] Code chạy thành công
-- [ ] Không commit file rác hoặc file không cần thiết
+- [ ] PR liên kết đúng Issue và không vượt ngoài scope đã thống nhất
+- [ ] Tất cả Acceptance Criteria đã được kiểm tra
+- [ ] Đã ghi lệnh/cách kiểm tra và kết quả thực tế
+- [ ] Project build và chạy được; không còn blocker hoặc lỗi nghiêm trọng đã biết
+- [ ] Không commit secret, `.env`, credential, file build hoặc file cá nhân
 - [ ] Commit message tuân theo Conventional Commits
 - [ ] Tên branch rõ ràng và đúng quy ước
-- [ ] Đã cập nhật tài liệu nếu cần
-- [ ] Đã cập nhật database script nếu cần
-- [ ] Không làm ảnh hưởng chức năng cũ
-- [ ] Pull Request có mô tả rõ ràng
+- [ ] Đã cập nhật tài liệu, API docs, database script/schema và ERD nếu liên quan
+- [ ] Phần chưa hoàn thành đã được tách thành Issue mới
+- [ ] Mọi yêu cầu sửa đổi và review conversation quan trọng đã được giải quyết
+- [ ] Có đủ số reviewer approval theo mức độ rủi ro
+
+## 11. Checklist Dành Cho Release PR Vào `main`
+
+*Bỏ qua phần này nếu target branch là `develop`.*
+
+- [ ] Source branch là `develop`, target branch là `main`
+- [ ] Đã liệt kê từng Issue được phát hành bằng `Closes #<issue-number>`
+- [ ] Tất cả Issue trong release đã qua cổng hoàn tất kỹ thuật và code nằm trong `develop`
+- [ ] Không có thay đổi chức năng được thêm trực tiếp trong release PR
+- [ ] Build và automated tests đạt trên commit mới nhất; hoặc đã ghi manual test và kết quả nếu chưa có automated tests
+- [ ] Đã kiểm tra các luồng demo chính và sự kết hợp giữa những tính năng vừa tích hợp
+- [ ] Không còn blocker hoặc lỗi nghiêm trọng; lỗi nhỏ được chấp nhận có Issue riêng và được ghi trong PR
+- [ ] Database migration/schema đã được thử trên database sạch hoặc môi trường kiểm tra tương đương nếu liên quan
+- [ ] README, tài liệu chạy, API docs và `CHANGELOG.md` đã cập nhật nếu liên quan
+- [ ] Mọi review conversation quan trọng đã được giải quyết và required checks đã đạt
+- [ ] Có ít nhất hai reviewer approval
+- [ ] Không bypass required checks hoặc branch protection
+
+### Xác Nhận Sau Khi Merge
+
+- [ ] Đã chạy smoke test trên commit của `main`
+- [ ] `main` build/chạy được và sẵn sàng demo
+- [ ] Các Issue đã được đóng và chuyển sang `Done`
+
+Nếu smoke test thất bại, mở lại Issue bị ảnh hưởng, chuyển về `Review`, tạo Bug Issue và dừng release tiếp theo cho đến khi nhóm quyết định `revert` hay `hotfix`.

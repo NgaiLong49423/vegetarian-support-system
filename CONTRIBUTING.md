@@ -14,6 +14,94 @@ Tài liệu này cung cấp các quy định và hướng dẫn chi tiết về 
 * **Cập nhật tài liệu đầy đủ:** Nếu thay đổi của bạn ảnh hưởng đến cách cài đặt, cấu hình hoặc sử dụng dự án, hãy cập nhật lại tài liệu hướng dẫn liên quan.
 * **Kiểm tra kỹ trước khi push code:** Hãy chắc chắn rằng mã nguồn được biên dịch thành công và chạy thử không gặp lỗi trước khi đẩy lên GitHub.
 
+## Workflow Làm Việc Nhóm
+
+Workflow này áp dụng cho dự án tạo từ template. Vai trò cụ thể của từng thành viên sẽ được nhóm chốt sau; các quy tắc dưới đây không mặc định giao vai trò quản lý cho một cá nhân.
+
+### Luồng nhánh và release
+
+```text
+Backlog -> Planning -> In Progress -> Review -> Done
+
+feature branch -> Pull Request vào develop -> review, tích hợp và chờ release -> release Pull Request vào main -> Done + đóng Issue
+```
+
+* `main` luôn là bản ổn định có thể dùng để demo.
+* `develop` là nơi tích hợp các task đã hoàn thành về mặt kỹ thuật trước khi phát hành bản demo.
+* Mỗi task bắt đầu từ một nhánh tách từ `develop` và chỉ được đưa vào `develop` qua Pull Request (PR).
+* Mặc định, nhóm tạo một release từ `develop` sang `main` mỗi tuần trước buổi demo. Không merge chỉ vì đến lịch: release phải đạt checklist bên dưới. Nhóm có thể tạo thêm release khi có mốc quan trọng.
+* `Planning` là lúc đã làm rõ yêu cầu và chuẩn bị để code; chưa bắt đầu lập trình.
+* `In Progress` là lúc đang code hoặc tự kiểm tra trên feature branch tạo từ `develop`.
+* `Review` bắt đầu khi đã mở Pull Request vào `develop`. Sau khi PR được merge vào `develop`, Issue vẫn ở `Review` để chờ đợt release vào `main`.
+* Chỉ sau khi release được merge vào `main`, Issue mới chuyển sang `Done` và được đóng.
+* Không tạo thêm cột Blocked. Khi bị vướng, gắn label `Blocked` vào Issue và ghi rõ trợ giúp cần thiết.
+
+### Definition of Ready: từ `Planning` sang `In Progress`
+
+Definition of Ready là checklist phối hợp của nhóm, không phải trạng thái mới trên board. Trước khi bắt đầu code, Issue phải có:
+
+- [ ] Mục tiêu và `Source Trace` rõ ràng.
+- [ ] Phạm vi đủ rõ và Acceptance Criteria có thể kiểm tra.
+- [ ] Đúng một owner; người thực hiện đã tham gia hoặc xác nhận ước lượng.
+- [ ] Type, Priority và Story Points; Issue triển khai không vượt quá `5 SP`.
+- [ ] Start Date và Target Date trong tối đa 4–5 ngày lịch.
+- [ ] Dependency và blocker được ghi rõ; không còn câu hỏi nghiệp vụ quan trọng cản trở việc bắt đầu.
+
+Không dùng checklist này để đòi tài liệu hoàn hảo hoặc trì hoãn trao đổi. Cơ sở của quy tắc và các phần chỉ là quy ước nhóm được ghi tại [`docs/decisions/WORKFLOW-SOURCES.md`](docs/decisions/WORKFLOW-SOURCES.md).
+
+`Target Date` là hạn để owner hoàn tất cổng kỹ thuật và merge feature PR vào `develop`, không phải hạn release vào `main`. Sau khi PR đã merge vào `develop`, Issue vẫn ở `Review` để chờ release nhưng owner không bị tính là trễ. Nếu PR còn mở hoặc còn yêu cầu sửa, hạn vẫn tiếp tục có hiệu lực.
+
+### Checklist release vào `main`
+
+- [ ] Source branch là `develop`, target branch là `main`.
+- [ ] Release PR liệt kê từng Issue được phát hành bằng `Closes #<issue-number>`.
+- [ ] Mỗi Issue trong release đã qua cổng hoàn tất kỹ thuật và code tương ứng đang nằm trong `develop`.
+- [ ] Không sửa chức năng trực tiếp trong release PR; mọi bản sửa đi qua PR khác vào `develop`.
+- [ ] Build và automated tests đạt trên commit mới nhất; nếu chưa có automated tests, release PR ghi manual test và kết quả.
+- [ ] Các luồng demo chính và sự kết hợp giữa những tính năng vừa tích hợp đã được kiểm tra.
+- [ ] Không còn blocker hoặc lỗi nghiêm trọng đã biết; lỗi nhỏ được chấp nhận có Issue riêng và được ghi trong release PR.
+- [ ] Database migration/schema đã được thử trên database sạch hoặc môi trường kiểm tra tương đương nếu có thay đổi database.
+- [ ] README, tài liệu chạy, API docs và `CHANGELOG.md` đã cập nhật khi liên quan.
+- [ ] Mọi review conversation quan trọng đã được giải quyết và required checks đã đạt.
+- [ ] Release PR có ít nhất hai approval.
+- [ ] Không bypass required checks hoặc branch protection để kịp lịch demo.
+
+Sau khi merge, nhóm chạy smoke test ngắn trên commit của `main`. Nếu đạt, xác nhận các Issue đã đóng và chuyển sang `Done`. Nếu thất bại, mở lại Issue bị ảnh hưởng, chuyển về `Review`, tạo Bug Issue và dừng release tiếp theo cho đến khi nhóm quyết định `revert` hay `hotfix`.
+
+### Task, tiến độ và Story Points
+
+* Một task có đúng một owner, đầu ra có thể kiểm tra, tiêu chí hoàn thành rõ ràng, và thời hạn tối đa 4–5 ngày lịch.
+* Đến ngày thứ 2 hoặc 3, owner cập nhật trên Issue: phần đã làm, phần còn lại và blocker (nếu có).
+* Nếu dự kiến trễ, owner báo trước hạn và nêu phần còn lại cùng ước lượng mới. Không tự kéo dài hạn trong im lặng.
+* Nếu task trễ vì scope quá lớn, chỉ merge phần đã hoàn thành; phần còn lại được tách thành Issue mới. Nếu bị blocker, gắn label `Blocked` và nêu rõ trợ giúp cần thiết. Khi không có tiến độ hoặc cập nhật, task được đưa lại vào backlog để nhóm phân công lại.
+* Dùng Story Points (SP) theo thang `1, 2, 3, 5, 8` để ước lượng độ lớn và cân tải khi lập kế hoạch. Task `8 SP` phải được bẻ nhỏ trước khi nhận.
+* SP không là điểm xếp hạng hay kỷ luật cá nhân. Chỉ tính SP đã hoàn thành khi Issue đạt Done; dùng SP cùng với lịch học, blocker và độ phù hợp để cân tải task mới.
+
+### Pull Request và review
+
+PR chỉ được merge vào `develop` khi toàn bộ checklist sau đạt:
+
+- [ ] PR dùng `Refs #<issue-number>` để liên kết đúng Issue và thay đổi không vượt ngoài scope đã thống nhất.
+- [ ] Tất cả Acceptance Criteria đã được kiểm tra.
+- [ ] PR ghi rõ cách kiểm tra và kết quả; chạy automated tests liên quan nếu dự án có test, hoặc cung cấp bằng chứng manual test nếu chưa có.
+- [ ] Dự án build và chạy được; không còn lỗi blocker hoặc lỗi nghiêm trọng đã biết.
+- [ ] Không chứa secret, `.env`, credential, file build hoặc file cá nhân.
+- [ ] Mọi yêu cầu sửa đổi và review conversation quan trọng đã được giải quyết.
+- [ ] Tài liệu, API docs, database migration/schema, script và ERD được cập nhật khi thay đổi có liên quan.
+- [ ] Phần chưa hoàn thành được tách thành Issue mới.
+
+* Mỗi PR vào `develop` cần ít nhất một reviewer khác tác giả.
+* PR liên quan database, authentication, cấu trúc dùng chung hoặc release vào `main` cần ít nhất hai người kiểm tra.
+* Khi PR được merge vào `develop`, Issue vẫn ở `Review` và được xem là hoàn tất kỹ thuật, đang chờ release.
+* Khi reviewer yêu cầu sửa, Issue vẫn ở `Review`. Chỉ đưa lại `In Progress` khi PR bị đóng hoặc cần làm lại đáng kể.
+* Review không phải là một cuộc đua lấy điểm.
+* Bằng chứng đóng góp gồm Issue, PR, review có nội dung, test, tài liệu và demo; không chỉ dựa vào số SP.
+
+### Đồng bộ GitHub Projects và Issue
+
+* Không bật workflow tổng quát `Pull request merged -> Done` nếu nó không lọc được nhánh đích `main`; merge feature vào `develop` sẽ làm Issue Done quá sớm.
+* Chỉ dùng automation đóng Issue khi trạng thái `Done` đã được thiết kế để xảy ra sau merge vào `main`.
+
 **Giải thích thuật ngữ:**
 * **Commit** (lần lưu): Hành động lưu lại trạng thái thay đổi của các file mã nguồn vào lịch sử Git tại máy cá nhân.
 * **Push** (đẩy code): Hành động gửi các commit từ máy tính cá nhân (local) lên kho lưu trữ trực tuyến trên GitHub.
@@ -205,7 +293,7 @@ chore: cập nhật .gitignore
 Để gửi một pull request thành công:
 1. **Đặt tiêu đề rõ ràng:** Tiêu đề PR nên tuân theo định dạng tương tự commit message (ví dụ: `feat(auth): thêm trang đăng nhập`).
 2. **Mô tả chi tiết nội dung:** Điền đầy đủ thông tin vào mẫu PR, mô tả rõ các thay đổi bạn đã thực hiện và lý do thay đổi.
-3. **Liên kết Issue:** Sử dụng các từ khóa như `Closes #123` để tự động đóng issue liên quan khi PR được gộp.
+3. **Liên kết Issue:** Feature PR vào `develop` dùng `Refs #123` để liên kết mà chưa đóng Issue. Release PR vào `main` dùng `Closes #123` cho các Issue sẽ hoàn tất khi release được merge.
 4. **Kiểm tra hoạt động:** Chắc chắn rằng dự án của bạn vẫn chạy được và không làm hỏng các tính năng cũ.
 5. **Dọn dẹp code:** Đảm bảo không có code thừa, comment nháp hay các file rác trước khi gửi PR.
 

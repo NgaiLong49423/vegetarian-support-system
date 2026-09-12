@@ -6,14 +6,14 @@
 - Changelog: `CHANGELOG.md`
 - Contribution rules: `CONTRIBUTING.md`
 - Database schema: `database/schema.sql`
-- Agent contract: `.agent/repo-contract.yml`
+- Agent contract: `.agents/repo-contract.yml`
 
 ## Project Layout
 - App source: `App/`
 - Database scripts: `database/`
 - Documentation: `docs/`
 - GitHub config: `.github/`
-- Agent skills and outputs: `.agent/`
+- Agent skills and outputs: `.agents/`
 
 ## Documentation Rules
 - Report contradictions before editing requirement documents.

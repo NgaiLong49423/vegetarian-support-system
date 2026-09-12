@@ -7,6 +7,29 @@
 
 ---
 
+## [Unreleased]
+
+### Added
+- 2026-09-12: Chuyển bộ 5 tài liệu phân rã Đề tài 03 vào repository; SRS v0.19.0 ghi nhận quy tắc chống báo cáo trùng. Giữ SRS mẫu cũ tại `docs/requirements/SRS-template-before-topic03.md` để tham khảo, không dùng làm yêu cầu hiện hành.
+- Ghi nhận workflow nhóm mặc định: nhánh `develop`/`main`, release theo checklist, task 4–5 ngày, review PR và dùng Story Points để cân tải.
+- Thêm bản ghi quyết định workflow tại `docs/decisions/001-team-workflow.md`.
+- Thêm sổ nguồn `docs/decisions/WORKFLOW-SOURCES.md` để phân biệt platform behavior, framework guidance, complementary practice và team convention.
+- Thêm Definition of Ready cho bước chuyển từ `Planning` sang `In Progress`.
+
+### Changed
+- Quy ước `Target Date` là hạn hoàn tất kỹ thuật và merge feature PR vào `develop`; thời gian Issue ở `Review` chờ release vào `main` không tính là trễ của owner.
+- Liên kết README và CONTRIBUTING với workflow đã chốt; board dùng năm trạng thái và `Review` giữ cả phần đang chờ release vào `main`.
+- Thống nhất đường dẫn agent, skill và output theo thư mục `.agents/` trong toàn bộ template.
+- Đồng bộ skill tạo Issue với thang Story Points `1, 2, 3, 5, 8`; bỏ trường Size và yêu cầu phân rã mọi Issue 8 SP trước khi giao.
+- Đồng bộ sáu Project Type với primary labels và các GitHub Issue Forms; NFR dùng `📋 Task` làm Type chính và `📐 NFR` làm nhãn phụ.
+- Rút gọn issue body thành bảy phần, tách `Draft State` khỏi Project `Status`, và cho phép owner/ngày để `TBD` cho đến trước khi bắt đầu thực hiện.
+- Chuẩn hóa cổng hoàn tất kỹ thuật trước khi merge PR vào `develop`, gồm traceability, Acceptance Criteria, bằng chứng kiểm tra, review approval và cập nhật tài liệu/database khi liên quan.
+- Phân biệt `Refs #...` cho feature PR vào `develop` với `Closes #...` cho release PR vào `main` trong Pull Request template.
+- Chuẩn hóa cổng release từ `develop` vào `main`: kiểm tra release scope, build/test, luồng demo tích hợp, database, tài liệu, hai approval và không bypass branch protection.
+- Bổ sung smoke test sau merge và quy tắc mở lại Issue, tạo Bug, dừng release khi bản trên `main` không đạt.
+
+---
+
 ## Cách Sử Dụng File Này
 
 * Mỗi khi dự án có các thay đổi đáng chú ý hoặc khi phát hành một phiên bản mới, hãy cập nhật thông tin tương ứng vào phần trên cùng của nhật ký thay đổi (theo thứ tự thời gian mới nhất ở trên).

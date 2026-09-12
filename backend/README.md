@@ -17,7 +17,7 @@ Bạn nên thêm source code vào thư mục này khi bắt đầu phát triển
 Ví dụ:
 
 ```text
-App/
+backend/
 ├── src/
 ├── web/
 ├── config/
@@ -27,7 +27,7 @@ App/
 Hoặc nếu dự án dùng Java Servlet/JSP:
 
 ```text
-App/
+backend/
 ├── src/
 ├── webapp/
 └── WEB-INF/
@@ -36,7 +36,7 @@ App/
 Hoặc nếu dự án dùng cấu trúc tự thiết kế:
 
 ```text
-App/
+backend/
 ├── controller/
 ├── service/
 ├── model/
@@ -99,5 +99,5 @@ Nếu môn học yêu cầu cấu trúc riêng, hãy tổ chức `App/` theo đ�
 
 ## Ghi Chú
 
-Thư mục `App/` trong template này chỉ là điểm bắt đầu.
-Khi tạo repository mới từ template, hãy chỉnh lại cấu trúc bên trong `App/` cho phù hợp với dự án thực tế.
+Thư mục `backend/` trong template này chỉ là điểm bắt đầu.
+Khi tạo repository mới từ template, hãy chỉnh lại cấu trúc bên trong `backend/` cho phù hợp với dự án thực tế.

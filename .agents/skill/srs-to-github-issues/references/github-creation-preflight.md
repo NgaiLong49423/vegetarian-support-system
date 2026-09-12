@@ -12,6 +12,7 @@ Use this checklist before any real GitHub action.
 - [ ] No local `file:///` paths exist in drafts or index.
 - [ ] Selected drafts are `Approved`, or the user explicitly selected `Draft` / `Needs Review` items.
 - [ ] Labels are valid.
+- [ ] Each draft has exactly one allowed primary Type and the matching primary label.
 - [ ] Missing labels are defined in `.github/labels.yml` before creation.
 - [ ] Issue bodies include Source Trace.
 - [ ] Issue titles are professional English.

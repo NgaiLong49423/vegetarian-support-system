@@ -1,16 +1,4 @@
-# Sizing, Story Points, Priority, and Date Rules
-
-## Size
-
-Size estimates scope.
-
-| Size | Meaning |
-|---|---|
-| XS | Very small change, narrow scope, minimal rules |
-| S | Small feature/task, few edge cases |
-| M | Medium feature, validation, persistence, or several business rules |
-| L | Large feature, multiple flows/modules/dependencies |
-| XL | Too large for direct implementation; should usually become Epic or be split |
+# Story Points, Priority, and Date Rules
 
 ## Story Points
 
@@ -18,19 +6,19 @@ Story Points estimate effort, uncertainty, and risk. They are not hours.
 
 | Points | Meaning |
 |---:|---|
-| 1 | Very easy |
-| 2 | Easy |
-| 3 | Medium |
-| 5 | Hard |
-| 8 | Very hard |
-| 13 | Too large/high risk; split or turn into Epic unless approved |
+| 1 | Very small, clear, and low-risk work |
+| 2 | Small work with limited rules or edge cases |
+| 3 | Medium work with several rules or integration points |
+| 5 | Complex work that still fits within 4–5 calendar days |
+| 8 | Too large or uncertain for assignment; must be split first |
+
+An implementation Issue ready for assignment must be at most `5 SP`. Use `8 SP` only during planning to signal mandatory decomposition.
 
 Each issue must include a short estimation reason.
 
 Example:
 
 ```text
-Size: M
 Story Points: 5
 Estimation Reason: Medium scope, but higher effort because it affects validation, persistence, and business rule consistency.
 ```
@@ -63,6 +51,8 @@ Target Date: TBD
 Do not invent dates.
 
 Only fill dates when the user provides a schedule.
+
+`Target Date` is the deadline for the owner to pass the technical-completion gate and merge the feature PR into `develop`. It is not the `main` release date. After that merge, an Issue may stay in `Review` awaiting release without being overdue; an open PR or unresolved change request remains subject to the Target Date.
 
 Examples:
 

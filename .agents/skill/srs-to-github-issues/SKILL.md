@@ -1,12 +1,12 @@
 ---
 name: srs-to-github-issues
-description: Convert PRD, SRS, product specs, requirement documents, or planning documents into professional GitHub Issue drafts, optionally create real GitHub Issues, and optionally sync GitHub Project metadata. Use this when the user asks to break down requirements into issues, create GitHub issue drafts, estimate size/story points, assign labels, or prepare project-ready work items.
+description: Convert PRD, SRS, product specs, requirement documents, or planning documents into professional GitHub Issue drafts, optionally create real GitHub Issues, and optionally sync GitHub Project metadata. Use this when the user asks to break down requirements into issues, create GitHub issue drafts, estimate story points, assign labels, or prepare project-ready work items.
 risk: critical
 source: self
 source_type: custom
-version: v1.1.0
+version: v1.5.0
 created_date: 2026-06-27
-last_updated_date: 2026-06-29
+last_updated_date: 2026-09-09
 ---
 
 # SRS to GitHub Issues
@@ -21,10 +21,10 @@ Use this skill when the user asks to:
 
 - Convert SRS, PRD, specs, requirements, user stories, or planning docs into GitHub Issues.
 - Split requirements into implementation-ready work items.
-- Create issue drafts with traceability, acceptance criteria, labels, priority, size, story points, and relationships.
+- Create issue drafts with traceability, acceptance criteria, labels, priority, story points, and relationships.
 - Create real GitHub Issues from approved drafts.
 - Sync issue metadata into a GitHub Project.
-- Estimate issue size/story points or generate an issue index.
+- Estimate issue story points or generate an issue index.
 
 Do not use for ordinary coding, bug fixing, PR review, or CI debugging unless the user specifically asks to create/manage GitHub Issues from requirements.
 
@@ -58,13 +58,15 @@ If an issue cannot be traced to a source document, do not create it as a require
 Before drafting, inspect relevant files:
 
 - `AGENTS.md`
-- `.agent/repo-contract.yml`
+- `.agents/repo-contract.yml`
 - `README.md`
 - `PRD.md`
 - `SRS.md`
 - `requirements.md`
 - `SPEC.md`
 - `docs/`
+- `docs/decisions/001-team-workflow.md`
+- `docs/decisions/WORKFLOW-SOURCES.md`
 - `.github/ISSUE_TEMPLATE/*.yml`
 - `.github/labels.yml`
 
@@ -72,8 +74,8 @@ If the repo uses the standard template, prefer:
 
 - `docs/requirements/SRS.md`
 - `docs/requirements/PRD.md`
-- `.agent/outputs/drafts/github-issues/`
-- `.agent/outputs/reports/`
+- `.agents/outputs/drafts/github-issues/`
+- `.agents/outputs/reports/`
 
 If the repo contract defines different paths, follow the repo contract.
 
@@ -85,7 +87,7 @@ Default mode. Create Markdown issue drafts only.
 
 Default output:
 
-- `.agent/outputs/drafts/github-issues/ISSUE_INDEX.md`
+- `.agents/outputs/drafts/github-issues/ISSUE_INDEX.md`
 - numbered issue draft files such as `001-module-short-title.md`
 
 Draft mode must not create real issues, update Projects, create labels, create branches, commit changes, or modify code unless explicitly asked.
@@ -105,10 +107,10 @@ Rules:
 
 - Create issues only from drafts listed in `ISSUE_INDEX.md`.
 - Do not scan every `.md` file in the draft directory.
-- Default: create only items with `Status = Approved`.
+- Default: create only items with `Draft State = Approved`.
 - If the user specifies IDs/ranges, create only those drafts.
 - If the user says create all drafts, create all listed drafts.
-- After creation, update `ISSUE_INDEX.md` with issue number, URL, status `Created`, and date if available.
+- After creation, update `ISSUE_INDEX.md` with issue number, URL, Draft State `Created`, and date if available.
 
 Run `references/github-creation-preflight.md` before creating.
 
@@ -125,7 +127,6 @@ Do not sync if required IDs cannot be determined confidently.
 Normal fields to sync when available:
 
 - Type
-- Size
 - Story Points
 - Priority
 - Start date
@@ -156,22 +157,39 @@ Detailed guidance: `references/decomposition-rules.md`.
 
 Use parent/epic issues only when useful.
 
-Create or propose an Epic when a module has 3+ child issues, a requirement is `XL`, Story Points are `13+`, or work is too broad for direct implementation.
+Create or propose an Epic when a module has 3+ child issues or the work is too broad for direct implementation.
 
 Every draft issue must include relationship fields:
 
 - Parent
 - Blocked by
 - Blocking
-- Security alert
 
 Relationship sync to GitHub Project is optional and best-effort only.
 
 Never guess relationship field IDs or target issue IDs.
 
-## Size, Priority, Dates
+## Definition of Ready
 
-Estimate `Size` and `Story Points` independently.
+`Draft State` in `ISSUE_INDEX.md` describes the issue-generation lifecycle. It is not the GitHub Project `Status`. An approved or created issue may remain in `Backlog` or `Planning`.
+
+Before an Issue moves from `Planning` to `In Progress`, verify:
+
+- The objective and Source Trace are clear.
+- Scope is sufficiently clear and Acceptance Criteria are testable.
+- Exactly one owner is assigned.
+- The person doing the work participated in or confirmed the estimate.
+- Type, Priority, and Story Points are set; implementation work is no more than `5 SP`.
+- Start Date and Target Date are set within a 4–5 calendar-day window.
+- Dependencies and blockers are identified, and no critical business ambiguity prevents starting.
+
+Owner and dates may remain `TBD` during drafting, creation, `Backlog`, or early `Planning`. This checklist is a lightweight team practice, not a requirement for perfect documentation; inspect and adapt it when it stops helping collaboration.
+
+## Story Points, Priority, Dates
+
+Use only Story Points from the scale `1, 2, 3, 5, 8`.
+
+An implementation Issue ready for assignment must be at most `5 SP` and fit within 4–5 calendar days. `8 SP` is a planning signal that the work must be split before assignment.
 
 Use rules from:
 
@@ -179,14 +197,18 @@ Use rules from:
 
 Dates default to `TBD`. Do not invent dates. Fill dates only when the user provides a schedule.
 
+Treat `Target Date` as the deadline for the owner to pass the repository's technical-completion gate and merge the feature PR into `develop`, not as the release date for `main`. Once that merge succeeds, the Issue may remain in `Review` awaiting release without being overdue. An open PR or unresolved change request remains subject to the Target Date.
+
 ## Labels and Templates
 
 Before assigning labels:
 
 1. Read `.github/labels.yml` if present.
 2. Use only labels defined there unless the user explicitly allows new labels.
-3. Each issue should include at least one primary type/work-item label.
-4. If creating real issues and a needed label is missing on GitHub but exists in `.github/labels.yml`, create it from `labels.yml`.
+3. Assign exactly one primary Type and its matching label: `🐛 Bug`, `✨ Feature`, `📋 Task`, `♻️ Refactor`, `📝 Docs`, or `🔍 Research`.
+4. Use secondary labels such as NFR, Security, Testing, Backend, Frontend, or Database only as additional classifications; they do not replace the primary Type.
+5. Map NFR implementation work to primary Type `📋 Task` and add `📐 NFR` as a secondary label.
+6. If creating real issues and a needed label is missing on GitHub but exists in `.github/labels.yml`, create it from `labels.yml`.
 
 Before drafting, inspect `.github/ISSUE_TEMPLATE/*.yml` when present.
 
@@ -214,13 +236,13 @@ Branch format:
 
 Common prefixes: `feature/`, `fix/`, `refactor/`, `docs/`, `test/`, `data/`, `backend/`, `chore/`.
 
-## Implementation Notes Rule
+## Technical Constraint Rule
 
-Implementation Notes are allowed only when source documents explicitly mention implementation constraints, technical choices, algorithms, storage mechanisms, architecture decisions, APIs, or data structures.
+Include implementation constraints, technical choices, algorithms, storage mechanisms, architecture decisions, APIs, or data structures only when source documents explicitly define them. Put relevant source-backed constraints inside Scope or Acceptance Criteria.
 
 Do not add new technical solutions as facts.
 
-If a useful technical suggestion is not in the source docs, place it under `Suggestion` and ask the user before finalizing.
+If a useful technical suggestion is not in the source docs, keep it out of the issue draft and ask the user before finalizing.
 
 ## Token-Saving Workflow
 
@@ -240,7 +262,7 @@ Do not print full issue bodies in chat unless the user asks.
 
 Draft mode:
 
-- `.agent/outputs/drafts/github-issues/ISSUE_INDEX.md`
+- `.agents/outputs/drafts/github-issues/ISSUE_INDEX.md`
 - numbered draft files
 
 Reference templates:

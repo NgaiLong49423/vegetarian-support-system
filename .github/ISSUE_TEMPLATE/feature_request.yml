@@ -1,7 +1,7 @@
 name: Feature Request
 description: Đề xuất hoặc ghi nhận yêu cầu chức năng mới (FR - Functional Requirement)
 title: "feat: "
-labels: ["🚀 Feature"]
+labels: ["✨ Feature"]
 body:
   - type: input
     id: feature_name
