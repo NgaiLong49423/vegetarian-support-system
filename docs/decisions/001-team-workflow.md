@@ -1,8 +1,8 @@
 > **Document:** Team Workflow Decision 001  
 > **File:** `docs/decisions/001-team-workflow.md`  
-> **Version:** v1.4.0  
+> **Version:** v1.5.0  
 > **Created:** 2026-09-07  
-> **Last Updated:** 2026-09-09  
+> **Last Updated:** 2026-09-12  
 > **Status:** Active  
 
 # Quyết Định 001: Workflow Làm Việc Nhóm
@@ -12,6 +12,8 @@
 Template cần một workflow dùng được cho nhóm sinh viên có lịch học khác nhau, trước khi biết chính xác ai sẽ giữ vai trò Team Lead, PM hay Tech Lead.
 
 Nguồn tham khảo và ranh giới giữa hướng dẫn bên ngoài với quy ước của nhóm được ghi tại [`WORKFLOW-SOURCES.md`](WORKFLOW-SOURCES.md).
+
+Trách nhiệm owner/reviewer, WIP, Release Coordinator luân phiên và cách ra quyết định dành cho nhóm 5 người được quy định bổ sung tại [`002-five-member-team-operating-agreement.md`](002-five-member-team-operating-agreement.md).
 
 ## Quyết định
 

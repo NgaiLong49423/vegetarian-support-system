@@ -1,112 +1,32 @@
-# Database
+> **Document:** Database Workspace Guide  
+> **File:** `database/README.md`  
+> **Version:** v0.1.0  
+> **Created:** 2026-06-14  
+> **Last Updated:** 2026-09-12  
+> **Status:** Under Review  
 
-## Mục Đích Thư Mục `database/`
+# Database Workspace
 
-Thư mục `database/` dùng để lưu các file liên quan đến cơ sở dữ liệu của dự án.
+Database chính đã chốt là Microsoft SQL Server. Repository hiện có ba file SQL rỗng (`schema.sql`, `sample-data.sql`, `queries.sql`); chúng chưa mô tả schema đã duyệt và không phải bằng chứng database có thể khởi tạo.
 
-`Database` là cơ sở dữ liệu, nơi lưu trữ dữ liệu của hệ thống như người dùng, đơn hàng, sản phẩm, lịch đặt, vai trò hoặc trạng thái xử lý.
+## Quyền sở hữu dữ liệu
 
-Thư mục này giúp quản lý database rõ ràng hơn, tránh việc script SQL bị để rải rác hoặc thất lạc.
+- Khi backend được scaffold, Flyway migration trong backend là lịch sử thay đổi schema có thẩm quyền và phải append-only sau khi đã chia sẻ.
+- `database/schema.sql` chỉ nên là snapshot/manual bootstrap được sinh hoặc đồng bộ có chủ đích; không được âm thầm đi trước hoặc mâu thuẫn với Flyway.
+- `database/sample-data.sql` chỉ chứa dữ liệu demo giả, không chứa tài khoản thật, credential hoặc dữ liệu cá nhân.
+- `database/queries.sql` dành cho truy vấn kiểm tra có giải thích; không thay thế automated integration tests.
 
-## Cấu Trúc File
+## Quy trình thay đổi schema
 
-```text
-database/
-├── schema.sql
-├── sample-data.sql
-├── queries.sql
-└── README.md
-```
+1. Truy vết thay đổi đến SRS/Issue và xác nhận không mở rộng scope ngoài quyết định đã duyệt.
+2. Thêm Flyway migration mới trong backend; không sửa migration đã được chia sẻ hoặc chạy ở môi trường chung.
+3. Cập nhật entity/DTO/repository và test liên quan.
+4. Kiểm tra migration trên database sạch và, khi phù hợp, đường nâng cấp từ baseline gần nhất.
+5. Đồng bộ ERD, `database/schema.sql`, OpenAPI/SRS và `CHANGELOG.md` khi bị ảnh hưởng.
+6. PR cần hai người kiểm tra theo ADR-002.
 
-## Ý Nghĩa Từng File
+## Trạng thái thiết kế
 
-### `schema.sql`
+ERD và danh sách migration chưa tồn tại. Không tự suy ra bảng chỉ từ danh sách dữ liệu gợi ý trong SRS; cần hoàn thiện data model và review trước khi coi schema là baseline.
 
-File này dùng để tạo cấu trúc database.
-
-Nội dung thường có:
-* Tạo database.
-* Tạo bảng.
-* Tạo khóa chính.
-* Tạo khóa ngoại.
-* Tạo ràng buộc dữ liệu.
-
-`Schema` là cấu trúc của database, bao gồm bảng, cột, kiểu dữ liệu và quan hệ giữa các bảng.
-`Primary Key`, viết tắt là `PK`, là khóa chính dùng để định danh một dòng dữ liệu.
-`Foreign Key`, viết tắt là `FK`, là khóa ngoại dùng để liên kết bảng này với bảng khác.
-
-Ví dụ:
-```sql
-CREATE TABLE Users (
-    user_id INT PRIMARY KEY,
-    username VARCHAR(100) NOT NULL
-);
-```
-
-### `sample-data.sql`
-
-File này dùng để thêm dữ liệu mẫu cho dự án.
-
-Dữ liệu mẫu giúp:
-* Test chức năng nhanh hơn.
-* Demo dự án dễ hơn.
-* Đảm bảo người khác clone repo về có dữ liệu để chạy thử.
-
-`Sample data` là dữ liệu mẫu dùng để kiểm tra hoặc trình bày hệ thống.
-
-Ví dụ:
-```sql
-INSERT INTO Users (user_id, username)
-VALUES (1, 'admin');
-```
-
-### `queries.sql`
-
-File này dùng để lưu các câu truy vấn SQL mẫu hoặc câu truy vấn thường dùng.
-
-`Query` là câu truy vấn dùng để lấy, thêm, sửa hoặc xóa dữ liệu trong database.
-
-Ví dụ:
-```sql
-SELECT * FROM Users;
-```
-
-## Quy Tắc Làm Việc Với Database
-
-* Mọi thay đổi cấu trúc bảng nên được cập nhật trong `schema.sql`.
-* Dữ liệu mẫu nên được cập nhật trong `sample-data.sql`.
-* Các truy vấn quan trọng hoặc truy vấn dùng để test nên được ghi trong `queries.sql`.
-* Không lưu mật khẩu thật, token thật hoặc thông tin nhạy cảm trong file SQL.
-* Nếu thay đổi database, hãy cập nhật ERD trong `docs/diagrams/ERD/`.
-* Nếu thay đổi lớn, hãy cập nhật `CHANGELOG.md`.
-
-`Token` là chuỗi dùng để xác thực hoặc cấp quyền truy cập.
-`Thông tin nhạy cảm` là dữ liệu không nên công khai, ví dụ mật khẩu thật, key API, thông tin cá nhân.
-
-## Thứ Tự Chạy File SQL Đề Xuất
-
-Khi setup database cho dự án mới, có thể chạy theo thứ tự:
-
-```text
-1. schema.sql
-2. sample-data.sql
-3. queries.sql
-```
-
-Giải thích:
-* Chạy `schema.sql` trước để tạo database và bảng.
-* Chạy `sample-data.sql` sau để thêm dữ liệu mẫu.
-* Dùng `queries.sql` để kiểm tra dữ liệu hoặc test truy vấn.
-
-## Liên Kết Với Tài Liệu Khác
-
-* ERD: `docs/diagrams/ERD/`
-* Yêu cầu dự án: `docs/requirements/`
-* Tài liệu tổng quan: `README.md`
-
-`ERD` là Entity Relationship Diagram, nghĩa là sơ đồ quan hệ thực thể trong database.
-
-## Ghi Chú
-
-Thư mục `database/` trong template này chỉ chứa các file mẫu ban đầu.
-Khi tạo repository mới từ template, hãy cập nhật lại tên database, tên bảng, kiểu dữ liệu và dữ liệu mẫu cho đúng với dự án thực tế.
+Xem [SRS](../docs/requirements/SRS.md), [ERD workspace](../docs/diagrams/ERD/README.md) và [Technology Stack](../docs/decisions/SWP-Technology-Stack-v2.0.0.txt).

@@ -4,6 +4,14 @@ title: "feat: "
 labels: ["✨ Feature"]
 body:
   - type: input
+    id: source_trace
+    attributes:
+      label: "0. Source Trace"
+      description: "Ghi mã FR/BR/UC hoặc link đến SRS, ADR hay Issue quyết định làm nguồn."
+      placeholder: "Ví dụ: FR-12, BR-25; docs/requirements/SRS.md"
+    validations:
+      required: true
+  - type: input
     id: feature_name
     attributes:
       label: "1. Tên chức năng"
@@ -26,10 +34,10 @@ body:
       description: "Chọn các đối tượng người dùng tương tác với chức năng này."
       options:
         - label: "Guest (Khách vãng lai)"
-        - label: "User (Thành viên thường)"
-        - label: "Admin (Quản trị viên)"
-        - label: "Staff (Nhân viên)"
-        - label: "Manager (Quản lý)"
+        - label: "Member (Thành viên đã đăng nhập)"
+        - label: "Member có quyền đăng bài"
+        - label: "Administrator (Quản trị viên)"
+        - label: "Dịch vụ hệ thống bên ngoài"
         - label: "Khác"
   - type: textarea
     id: rationale

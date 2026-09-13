@@ -1,10 +1,10 @@
 > **Document:** Software Requirements Specification  
 > **File:** `docs/requirements/SRS.md`  
-> **Version:** v0.43.0  
+> **Version:** v0.43.1  
 > **Created:** 2026-09-11  
 > **Last Updated:** 2026-09-12  
 > **Status:** Draft  
-> **Related Docs:** `00-de-tai-03-huong-di-dau-tien.md`, `01-phan-ra-goi-ai.md`, `docs/requirements/SRS-decision-questionnaire.md`  
+> **Related Docs:** `docs/requirements/product-direction.md`, `docs/requirements/ai-plan-decomposition.md`  
 
 # Software Requirements Specification
 

@@ -4,6 +4,14 @@ title: "nfr: "
 labels: ["📋 Task", "📐 NFR"]
 body:
   - type: input
+    id: source_trace
+    attributes:
+      label: "0. Source Trace"
+      description: "Ghi mã NFR/BR hoặc link đến SRS, ADR hay Issue quyết định làm nguồn."
+      placeholder: "Ví dụ: NFR-Security-01; docs/requirements/SRS.md"
+    validations:
+      required: true
+  - type: input
     id: nfr_name
     attributes:
       label: "1. Tên yêu cầu phi chức năng"

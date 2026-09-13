@@ -4,6 +4,14 @@ title: "task: "
 labels: ["📋 Task"]
 body:
   - type: input
+    id: source_trace
+    attributes:
+      label: "0. Source Trace"
+      description: "Ghi link đến requirement, ADR, Bug, PR hoặc Issue cha tạo ra công việc này."
+      placeholder: "Ví dụ: FR-12; ADR-002; #123"
+    validations:
+      required: true
+  - type: input
     id: task_name
     attributes:
       label: "1. Tên công việc"
@@ -63,7 +71,7 @@ body:
         - README.md
         - docs/
         - database/schema.sql
-        - App/
+        - app/
     validations:
       required: false
   - type: dropdown

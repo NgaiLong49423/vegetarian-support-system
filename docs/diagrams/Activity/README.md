@@ -1,3 +1,10 @@
+> **Document:** Activity Diagram Workspace Guide  
+> **File:** `docs/diagrams/Activity/README.md`  
+> **Version:** v1.0.0  
+> **Created:** 2026-06-14  
+> **Last Updated:** 2026-09-12  
+> **Status:** Active  
+
 # Activity Diagram - Sơ Đồ Hoạt Động
 
 ## Mục Đích
@@ -33,22 +40,19 @@ Ví dụ cụ thể:
 
 Dưới đây là mẫu ghi chú kèm theo cho mỗi sơ đồ hoạt động được đưa vào tài liệu:
 
-### ## [Tên Activity Diagram, ví dụ: Luồng Đăng Nhập Hệ Thống]
+### Activity: Member thêm công thức vào lịch ăn
 
-**Chức năng liên quan:**  
-[Mã chức năng, ví dụ: FR-01 - Đăng nhập]
+**Chức năng liên quan:** `FR-xx` trong SRS
 
-**Vai trò người dùng (Actor):**  
-[Guest / User / Admin / ...]
+**Vai trò người dùng (Actor):** Member
 
-**Luồng xử lý chính (Main Flow):**  
-1. Người dùng nhập thông tin đăng nhập và gửi request (yêu cầu) đi.
-2. Servlet kiểm tra dữ liệu đầu vào thông qua DAO kết nối database.
-3. Servlet xác thực đúng thông tin và chuyển hướng (redirect) người dùng về trang Dashboard.
+**Luồng xử lý chính (Main Flow):**
+1. Member chọn bài công thức công khai và ngày/bữa muốn thêm.
+2. Backend xác thực quyền, dữ liệu ngày/bữa và quy tắc chống trùng.
+3. Hệ thống lưu mục lịch ăn và trả kết quả để giao diện cập nhật.
 
-**Luồng thay thế (Alternative Flow):**  
-1. Nếu mật khẩu nhập sai, Servlet chuyển hướng quay lại trang đăng nhập kèm theo thông báo lỗi.
-2. Nếu tài khoản bị khóa, hệ thống hiển thị thông báo lỗi trạng thái tài khoản.
+**Luồng thay thế (Alternative Flow):**
+1. Nếu phiên hết hạn, hệ thống yêu cầu đăng nhập lại mà không tạo dữ liệu.
+2. Nếu cùng công thức đã có trong ngày/bữa đó, backend từ chối theo Business Rule tương ứng.
 
-**Ghi chú:**  
-*(Ghi thêm các lưu ý kỹ thuật hoặc quy tắc đặc biệt nếu có).*
+**Ghi chú:** Gắn link tới FR/BR, Issue và test khi sơ đồ thật được tạo.

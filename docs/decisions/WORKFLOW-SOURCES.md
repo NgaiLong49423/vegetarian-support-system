@@ -1,8 +1,8 @@
 > **Document:** Workflow Evidence Register  
 > **File:** `docs/decisions/WORKFLOW-SOURCES.md`  
-> **Version:** v1.3.0  
+> **Version:** v1.4.0  
 > **Created:** 2026-09-08  
-> **Last Updated:** 2026-09-09  
+> **Last Updated:** 2026-09-12  
 > **Status:** Active  
 
 # Workflow Sources and Evidence
@@ -46,6 +46,8 @@ This document records which parts of the team workflow come from external guidan
 | `Target Date` ends at technical completion and merge into `develop` | Team convention | Separates an owner's delivery deadline from the shared release schedule and prevents false overdue reminders while an integrated Issue waits in `Review`. |
 | Story Point scale `1, 2, 3, 5, 8`, with `8` requiring decomposition | Team convention informed by relative estimation practice | Used for planning and load balancing, never for individual performance scoring. |
 | One default reviewer and two for selected high-risk changes | Team convention informed by review guidance | Repository rules should be configured only after roles and permissions are confirmed. |
+| One owner, one reviewer/backup and one default `In Progress` Issue per member | Team convention | Chosen for a five-person student team to reduce hidden work and overloaded owners; not prescribed by Scrum or GitHub. |
+| Decisions that change requirements, API, schema, architecture, core dependencies or workflow need at least 3/5 agreement | Team convention | Creates a recorded majority rule while keeping course requirements and security constraints non-negotiable. |
 
 | Technical completion gate before merging to `develop` | Team convention informed by Scrum quality guidance and GitHub merge controls | Requires traceability, verification evidence, review approval, resolved blocking feedback, and applicable documentation or database updates. |
 

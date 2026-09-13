@@ -1,63 +1,80 @@
-# Tài Liệu Dự Án - [Tên Dự Án]
+> **Document:** Repository Layout and Document Register  
+> **File:** `docs/README.md`  
+> **Version:** v2.0.0  
+> **Created:** 2026-06-14  
+> **Last Updated:** 2026-09-12  
+> **Status:** Active  
 
-## Tài liệu Đề tài 03 đang phân rã
+# Repository Layout and Document Register
 
-- [SRS hiện hành — Draft](requirements/SRS.md): quyết định đã chốt và các điểm còn chờ xác nhận.
-- [Định hướng ban đầu](../00-de-tai-03-huong-di-dau-tien.md).
-- [Phân rã gói AI](../01-phan-ra-goi-ai.md).
-- [Actor và onboarding — đề xuất](requirements/actors-and-onboarding-draft.md).
-- [Benchmark sản phẩm](research/similar-products-benchmark.md).
-- [SRS mẫu lưu lại](requirements/SRS-template-before-topic03.md): chỉ là mẫu cũ, không phải yêu cầu dự án.
+This is the maintained placement policy for all five team members and every agent. Read AGENTS.md for task routing. GitHub Projects manages progress; this repository stores code, requirements, durable decisions and verification assets.
 
-Từ 12/09/2026, bộ tài liệu dự án được duy trì tại repository này. Bản ở thư mục Chuẩn Hóa workflow chỉ là bản lưu trước khi chuyển. Các README mẫu và ghi chú cũ không thay thế quyết định đã chốt trong SRS; tài liệu bổ trợ không tự nâng đề xuất thành yêu cầu.
+## Where a new file belongs
 
-## Mục Đích Thư Mục `docs/`
+| Location | Allowed purpose | Examples and boundaries |
+|---|---|---|
+| Repository root | Entry points and root-level tooling only | README.md, AGENTS.md, CONTRIBUTING.md, CHANGELOG.md, LICENSE, .gitignore; new build/tool configs require a real root-level consumer |
+| app/frontend/ | Frontend source, tests, assets and configuration | React component, feature test, package.json after scaffolding; place files by the app's established feature structure |
+| app/backend/ | Backend source, tests, configuration and migrations | Java classes/tests, pom.xml, Flyway migrations after scaffolding |
+| database/ | Database usage guide, deliberate SQL snapshot, demo seed and diagnostic queries | schema.sql remains empty until designed; Flyway owns executable migration history when implemented |
+| docs/requirements/ | Maintained product requirements and supporting decomposition | PRD, SRS, actor/onboarding and AI plan notes; no completed interview worksheets |
+| docs/decisions/ | Durable project/workflow/technology decisions | Numbered ADR with context, decision, consequences and unresolved points |
+| docs/diagrams/Activity/ | Maintained activity diagram source and exports | Name by feature; link to the relevant SRS identifiers |
+| docs/diagrams/UseCase/ | Maintained use-case diagram source and exports | Name by module; do not invent a second requirement source |
+| docs/diagrams/ERD/ | Data-model diagram source and exports | Sync with approved model/migrations |
+| docs/research/ | Reusable, source-backed findings | Record research date and applicability; research does not approve a requirement |
+| .github/ISSUE_TEMPLATE/ | Issue form configuration | Intake forms; not copies of live Issues |
+| .github/ | GitHub configuration and PR template | labels.yml, pull_request_template.md; workflows only when authorized |
+| .agents/skills/ | Reusable agent procedures and their own references/templates | Each skill lives in one folder with SKILL.md; no product requirements here |
+| .agents/repo-contract.yml | Machine-readable routing and maintenance contract | Keep aligned with this register and AGENTS.md |
+| .agents/outputs/<task>/ | Explicitly requested temporary deliverables only | Requested draft Issue bodies or audit export; never automatic, never authoritative |
+| OS temporary directory | Disposable verification artifacts and local backups | Keep these out of project documentation |
 
-Thư mục `docs/` (viết tắt của documents - tài liệu) là nơi lưu trữ toàn bộ tài liệu chính thức liên quan đến dự án.
-* Tài liệu giúp các thành viên trong nhóm, giảng viên hoặc người đánh giá dễ dàng hiểu được yêu cầu nghiệp vụ, kiến trúc thiết kế, sơ đồ hoạt động và báo cáo tiến độ của dự án.
-* Việc lưu trữ tập trung tại đây giúp đảm bảo tài liệu luôn đi kèm với mã nguồn, tránh tình trạng thất lạc hoặc mâu thuẫn giữa tài liệu và mã nguồn thực tế.
+Backend source subdirectories, migration location and frontend feature structure must follow the actual scaffold once it exists; this policy does not create a new application architecture.
 
-## Cấu Trúc Thư Mục
+Examples: a recipe form belongs in app/frontend/, its API service in app/backend/, an AI quota rule in SRS (with supporting detail in ai-plan-decomposition.md if needed), and a decision about a payment provider in docs/decisions/. Task status belongs on its GitHub Issue/Project item.
 
-Dưới đây là cấu trúc tổ chức các thư mục tài liệu trong dự án:
+## Maintained document register
 
-```text
-docs/
-├── requirements/
-│   ├── SRS.md
-│   └── project-requirements.md
-│
-├── diagrams/
-│   ├── Activity/
-│   │   └── README.md
-│   ├── ERD/
-│   │   └── README.md
-│   └── UseCase/
-│       └── README.md
-│
-├── decisions/
-│   ├── 001-team-workflow.md
-│   └── WORKFLOW-SOURCES.md
-│
-└── reports/
-    └── README.md
-```
+Only entries below are maintained documentation. Read entries by task, not as a mandatory reading list.
 
-## Ý Nghĩa Các Thư Mục
+| Path | Function and authority | Read when |
+|---|---|---|
+| ../AGENTS.md | Portable agent entry point, read scope and skill routing | Starting a new agent session |
+| ../README.md | Product overview and implementation state | General onboarding |
+| ../CONTRIBUTING.md | Operational Git/Issue/PR/release rules | Contributing or reviewing changes |
+| ../CHANGELOG.md | Historical changes, not current progress | Updating notable changes or investigating history |
+| README.md | File placement and document registry | Creating/moving files or routing documentation |
+| requirements/PRD.md | High-level product summary, Under Review | Product intent and scope |
+| requirements/SRS.md | Detailed requirements and confirmed decisions, Draft | Related business work; Q01-Q38 decisions remain in section 3.20 |
+| requirements/actors-and-onboarding-draft.md | Supporting actor/profile decomposition | Actor/onboarding changes |
+| requirements/product-direction.md | Supporting origin and product direction, Under Review | Need original topic context; SRS wins on current scope |
+| requirements/ai-plan-decomposition.md | Supporting AI plan/usage decomposition, Under Review | Quota, AI access, plans and integration details |
+| decisions/SWP-Technology-Stack-v2.0.0.txt | Selected technologies and explicit TBDs | Technical choices |
+| decisions/001-team-workflow.md | Branch/release decision and rationale | Workflow changes |
+| decisions/002-five-member-team-operating-agreement.md | Team responsibilities and coordination | Team process |
+| decisions/WORKFLOW-SOURCES.md | Evidence behind workflow conventions | Reconsidering a workflow decision |
+| research/similar-products-benchmark.md | Dated external research, non-authoritative | Relevant product comparison |
+| diagrams/Activity/README.md | Activity diagram conventions | Creating/updating activity diagrams |
+| diagrams/UseCase/README.md | Use-case diagram conventions | Creating/updating use-case diagrams |
+| diagrams/ERD/README.md | ERD documentation conventions | Creating/updating the data model |
+| ../app/frontend/README.md | Frontend setup/state and contribution guidance | Frontend work |
+| ../app/backend/README.md | Backend setup/state and contribution guidance | Backend work |
+| ../database/README.md | SQL/Flyway ownership and database state | Database work |
+| ../.github/pull_request_template.md | PR evidence and release checklist template | Opening or reviewing a PR |
 
-* **`requirements/`** (Requirement - yêu cầu): Lưu trữ các yêu cầu của dự án, bao gồm cả yêu cầu nghiệp vụ chi tiết và đặc tả kỹ thuật.
-* **`diagrams/`** (Diagram - sơ đồ): Chứa các sơ đồ mô tả kiến trúc, luồng hoạt động và thiết kế cơ sở dữ liệu của hệ thống.
-  * **`Activity/`** (Sơ đồ hoạt động): Chứa sơ đồ luồng đi của các chức năng nghiệp vụ chi tiết.
-  * **`ERD/`** (Sơ đồ quan hệ thực thể): Chứa thiết kế bảng và mối quan hệ giữa các bảng trong cơ sở dữ liệu.
-  * **`UseCase/`** (Sơ đồ ca sử dụng): Chứa sơ đồ mô tả sự tương tác giữa người dùng (Actor) và các chức năng hệ thống.
-* **`decisions/`** (Quyết định): Lưu các quyết định đã chốt có ảnh hưởng đến cách nhóm làm việc hoặc dự án vận hành, kèm lý do và phần chưa quyết định. `WORKFLOW-SOURCES.md` phân biệt nguồn bên ngoài với quy ước do nhóm tự chọn. Không dùng thư mục này để lưu trao đổi nháp.
-* **`reports/`** (Report - báo cáo): Chứa các báo cáo tiến độ, nhật ký làm việc nhóm, biên bản họp hoặc tài liệu nộp môn học.
+Paths above are relative to docs/. Skill procedures are registered separately in AGENTS.md and are not onboarding documents. Generated output, scratch files and unknown files are excluded.
 
-## Quy Tắc Viết Tài Liệu
+## Creating, moving and retiring documents
 
-Khi cập nhật tài liệu trong thư mục này, vui lòng tuân thủ các checklist (danh sách kiểm tra) sau:
-- [ ] Viết rõ ràng, ngắn gọn và dễ hiểu.
-- [ ] Cập nhật tài liệu kịp thời mỗi khi thay đổi chức năng.
-- [ ] Không để tài liệu mâu thuẫn với mã nguồn thực tế đang chạy.
-- [ ] Nếu thay đổi cấu trúc bảng cơ sở dữ liệu, phải cập nhật đồng thời file ERD và script tạo bảng tại `database/schema.sql`.
-- [ ] Nếu thay đổi luồng xử lý hoặc nghiệp vụ, phải cập nhật sơ đồ hoạt động (Activity Diagram) tương ứng.
+1. Check whether an existing registered document owns the information. Update that document instead of creating a duplicate.
+2. Choose an allowed folder. If none fits, propose the concrete location and purpose before adding a new maintained category; do not use root as a fallback.
+3. For a new durable document, add metadata and a register entry with purpose, authority and read trigger in the same change. Use a descriptive kebab-case filename; numbered prefixes are reserved for ordered ADRs.
+4. Update incoming relative links and the File metadata when moving a document. Preserve Created and increment its document version appropriately.
+5. When a worksheet/draft has fulfilled its purpose, retain confirmed decisions in the authoritative document, remove navigation/Related Docs references and delete only with user authorization. Historical changelog entries may mention retired paths without making them reading targets.
+6. An unregistered file is ignored for documentation discovery, not automatically deleted, rewritten, catalogued or metadata-standardized.
+7. Return audit results in chat. Do not recreate reports directories because an old skill example mentions them. Explicitly requested exports go under .agents/outputs/<task>/ and never enter this register.
+
+## Progress and evidence
+
+GitHub Issues/Projects own assignments, estimates, dates, status and blockers. Linked PRs own review and verification evidence. No per-member reports, weekly report files or parallel local progress tracker are required. Long-lived technical decisions extracted from discussion belong in ADRs; progress snapshots do not.

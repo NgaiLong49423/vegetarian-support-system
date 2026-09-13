@@ -1,103 +1,32 @@
-# App
+> **Document:** Backend Workspace Guide  
+> **File:** `app/backend/README.md`  
+> **Version:** v0.1.0  
+> **Created:** 2026-06-14  
+> **Last Updated:** 2026-09-12  
+> **Status:** Under Review  
 
-## Mục Đích Thư Mục `App/`
+# Backend Workspace
 
-Thư mục `App/` là nơi chứa phần mã nguồn chính của ứng dụng.
+Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và truy cập Microsoft SQL Server qua Spring Data JPA/Hibernate theo [Technology Stack](../../docs/decisions/SWP-Technology-Stack-v2.0.0.txt).
 
-`Source code` là mã nguồn do lập trình viên viết để xây dựng chức năng của hệ thống.
+## Trạng thái hiện tại
 
-Trong template này, thư mục `App/` được để đơn giản để không ép dự án phải theo một kiến trúc cố định. Khi tạo repository mới từ template, người phát triển có thể tự tổ chức thư mục bên trong `App/` theo công nghệ, môn học hoặc design pattern phù hợp.
+Backend chưa được scaffold: chưa có `pom.xml`, source code, migration hoặc test. Vì vậy chưa có lệnh Maven hay endpoint nào được xác minh trong repository.
 
-`Design Pattern` là mẫu thiết kế code giúp giải quyết một vấn đề lập trình thường gặp theo cách có cấu trúc và dễ bảo trì hơn.
+## Ranh giới kiến trúc hiện tại
 
-## Khi Nào Cần Thêm Nội Dung Vào `App/`
+- SRS là nguồn nghiệp vụ; Technology Stack là nguồn lựa chọn công nghệ. Monolith/module layout, package structure và AI architecture chưa được chốt.
+- SQL Server là source of truth cho dữ liệu nghiệp vụ. Flyway phải quản lý migration theo thứ tự, còn JPA/Hibernate không thay thế lịch sử migration.
+- Authentication, role/ownership, validation, quota và access tới dịch vụ ngoài phải được thực thi ở backend.
+- Gemini, Azure, Maps và payment credential chỉ đến từ cấu hình môi trường/secret store; không commit giá trị thật.
+- API được mô tả bằng OpenAPI và trả lỗi nhất quán; không để frontend suy đoán business rule.
 
-Bạn nên thêm source code vào thư mục này khi bắt đầu phát triển dự án thật.
+## Definition of Done cho thay đổi backend
 
-Ví dụ:
+- Business Rule và failure case liên quan có test phù hợp.
+- `mvn test` và build/package chạy thành công trên commit hiện tại sau khi Maven project tồn tại.
+- Không log password, token, SAS URL hoặc dữ liệu cá nhân nhạy cảm.
+- Thay đổi schema có Flyway migration append-only, kiểm tra trên database sạch và cập nhật ERD/tài liệu.
+- Thay đổi API có OpenAPI, validation, authorization và ví dụ lỗi tương ứng.
 
-```text
-backend/
-├── src/
-├── web/
-├── config/
-└── tests/
-```
-
-Hoặc nếu dự án dùng Java Servlet/JSP:
-
-```text
-backend/
-├── src/
-├── webapp/
-└── WEB-INF/
-```
-
-Hoặc nếu dự án dùng cấu trúc tự thiết kế:
-
-```text
-backend/
-├── controller/
-├── service/
-├── model/
-├── repository/
-└── util/
-```
-
-## Gợi Ý Tổ Chức Code
-
-Có thể tổ chức code theo một số hướng sau:
-
-### 1. Theo tầng xử lý
-
-```text
-controller/
-service/
-repository/
-model/
-util/
-```
-
-* `controller`: nơi nhận request từ người dùng hoặc trình duyệt.
-* `service`: nơi xử lý logic nghiệp vụ.
-* `repository`: nơi làm việc với dữ liệu hoặc database.
-* `model`: nơi chứa class mô tả dữ liệu chính.
-* `util`: nơi chứa các hàm hoặc class tiện ích.
-
-`Request` là yêu cầu gửi từ client lên server.
-`Logic nghiệp vụ` là quy tắc xử lý thật của hệ thống, ví dụ kiểm tra quyền, tính tiền, xác nhận trạng thái.
-
-### 2. Theo chức năng
-
-```text
-auth/
-booking/
-payment/
-user/
-admin/
-```
-
-Cách này phù hợp khi dự án có nhiều module chức năng.
-
-`Module` là một phần chức năng tương đối độc lập trong hệ thống.
-
-### 3. Theo yêu cầu môn học
-
-Nếu môn học yêu cầu cấu trúc riêng, hãy tổ chức `App/` theo đúng yêu cầu của giảng viên.
-
-## Quy Tắc Khi Thêm Code
-
-* Không hardcode dữ liệu quan trọng nếu dữ liệu đó nên lấy từ database hoặc file cấu hình.
-* Đặt tên file, class và thư mục rõ ràng.
-* Không để file build, file tạm hoặc file IDE không cần thiết trong repo.
-* Nếu thêm chức năng lớn, hãy cập nhật tài liệu trong `docs/`.
-* Nếu thay đổi database, hãy cập nhật thư mục `database/`.
-* Nếu thay đổi quan trọng, hãy cập nhật `CHANGELOG.md`.
-
-`Hardcode` là viết cố định dữ liệu trong code thay vì lấy từ database, file cấu hình hoặc input phù hợp.
-`Build` là quá trình biên dịch hoặc đóng gói dự án để chạy.
-
-## Ghi Chú
-
-Thư mục `backend/` trong template này chỉ là điểm bắt đầu.
-Khi tạo repository mới từ template, hãy chỉnh lại cấu trúc bên trong `backend/` cho phù hợp với dự án thực tế.
+Sau khi scaffold, bổ sung JDK/Maven yêu cầu, cấu hình local an toàn, profile test, lệnh chạy và các kiểm tra đã thực thi thật.

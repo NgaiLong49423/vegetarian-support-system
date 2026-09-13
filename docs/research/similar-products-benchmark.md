@@ -1,3 +1,10 @@
+> **Document:** Similar Products Benchmark for Topic 03  
+> **File:** `docs/research/similar-products-benchmark.md`  
+> **Version:** v0.1.0  
+> **Created:** 2026-09-12  
+> **Last Updated:** 2026-09-12  
+> **Status:** Under Review  
+
 # Benchmark sản phẩm tương tự — Đề tài 03
 
 ## Trạng thái và cách sử dụng

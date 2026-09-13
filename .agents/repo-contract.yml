@@ -1,32 +1,54 @@
-project_type: java-webapp
+project_type: swp391-fullstack-webapp
+agent_entrypoint: AGENTS.md
+document_register: docs/README.md
+precedence:
+  - user_request
+  - CONTRIBUTING.md # shared contribution workflow
+  - AGENTS.md # additional agent-specific instructions
+  - docs/README.md
+  - selected_skill
+reading_policy:
+  default: task_scoped_registered_documents
+  unknown_files: ignore_unless_user_requested_or_directly_relevant
+  source_and_tests: inspect_when_related_to_task
+  auto_inventory_all_contents: false
+  auto_register_unknown_files: false
+  auto_delete_unknown_files: false
+progress:
+  source: GitHub Issues and Projects
+  evidence: linked Pull Requests
+  local_reports: false
+agent_paths:
+  skills: .agents/skills/
+  requested_outputs: .agents/outputs/<task>/
+  automatic_reports: false
 canonical_docs:
-  requirements:
-    - docs/requirements/SRS.md
-    - docs/requirements/PRD.md
   project_overview: README.md
-  changelog: CHANGELOG.md
+  product_requirements: docs/requirements/PRD.md
+  software_requirements: docs/requirements/SRS.md
+  technology_stack: docs/decisions/SWP-Technology-Stack-v2.0.0.txt
   contribution_rules: CONTRIBUTING.md
-  database_schema: database/schema.sql
+  workflow: docs/decisions/001-team-workflow.md
+  team_operating_agreement: docs/decisions/002-five-member-team-operating-agreement.md
+  changelog: CHANGELOG.md
+  database_policy: database/README.md
   labels: .github/labels.yml
-
+supporting_docs:
+  product_direction: docs/requirements/product-direction.md
+  ai_plans: docs/requirements/ai-plan-decomposition.md
+  actors: docs/requirements/actors-and-onboarding-draft.md
+database_state:
+  schema_snapshot: database/schema.sql
+  status: empty_placeholder_not_approved_schema
+  migration_owner: backend_flyway_when_scaffolded
 doc_sync_rules:
-  - when: docs/requirements/PRD.md changes
-    check:
-      - docs/requirements/SRS.md
-      - README.md
-      - CHANGELOG.md
-      - .github/ISSUE_TEMPLATE/
-  - when: docs/requirements/SRS.md changes
-    check:
-      - README.md
-      - CHANGELOG.md
-      - .github/ISSUE_TEMPLATE/
-  - when: database/schema.sql changes
-    check:
-      - docs/diagrams/ERD/
-      - docs/requirements/SRS.md
-      - CHANGELOG.md
-  - when: .github/labels.yml changes
-    check:
-      - .github/ISSUE_TEMPLATE/
-      - .agents/skill/
+  - when: requirements_change
+    check: [docs/requirements/SRS.md, docs/requirements/PRD.md, README.md, CHANGELOG.md]
+  - when: layout_or_agent_policy_changes
+    check: [AGENTS.md, docs/README.md, .agents/repo-contract.yml, README.md, CONTRIBUTING.md]
+  - when: workflow_changes
+    check: [CONTRIBUTING.md, docs/decisions/001-team-workflow.md, docs/decisions/002-five-member-team-operating-agreement.md, .github/pull_request_template.md]
+  - when: database_changes
+    check: [database/README.md, database/schema.sql, app/backend/, docs/diagrams/ERD/]
+  - when: labels_change
+    check: [.github/labels.yml, .github/ISSUE_TEMPLATE/]

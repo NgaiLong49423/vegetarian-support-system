@@ -1,3 +1,10 @@
+> **Document:** Use Case Diagram Workspace Guide  
+> **File:** `docs/diagrams/UseCase/README.md`  
+> **Version:** v1.0.0  
+> **Created:** 2026-06-14  
+> **Last Updated:** 2026-09-12  
+> **Status:** Active  
+
 # Use Case Diagram - Sơ Đồ Ca Sử Dụng
 
 ## Mục Đích
@@ -26,7 +33,7 @@ usecase-[ten-module-viet-lien-khong-dau].png
 
 Ví dụ cụ thể:
 * `usecase-auth.drawio` (sơ đồ Use Case phân quyền & đăng nhập)
-* `usecase-booking.png` (sơ đồ Use Case chức năng đặt lịch)
+* `usecase-meal-planner.png` (sơ đồ Use Case chức năng lập lịch ăn)
 
 ---
 
@@ -34,21 +41,21 @@ Ví dụ cụ thể:
 
 Dưới đây là mẫu tài liệu hóa chi tiết cho từng ca sử dụng:
 
-### ## UC-01: [Tên Use Case, ví dụ: Đặt lịch hẹn dịch vụ]
+### UC-01: Thêm công thức vào lịch ăn
 
 | Mục | Nội dung |
 |---|---|
-| **Actor** | [Vai trò người dùng, ví dụ: User (Khách hàng)] |
-| **Mục tiêu** | [Mục tiêu của use case, ví dụ: Đặt thành công lịch hẹn sử dụng dịch vụ] |
-| **Tiền điều kiện** | [Điều kiện trước khi bắt đầu, ví dụ: Người dùng đã đăng nhập tài khoản thành công] |
-| **Hậu điều kiện** | [Kết quả sau khi hoàn thành, ví dụ: Thông tin đặt lịch được lưu vào database và trạng thái là PENDING] |
+| **Actor** | Member |
+| **Mục tiêu** | Thêm một bài công thức công khai vào ngày và bữa đã chọn |
+| **Tiền điều kiện** | Member đã đăng nhập; bài công thức còn công khai |
+| **Hậu điều kiện** | Mục lịch ăn được lưu đúng ngày/bữa và truy vết được tới Member/công thức |
 
-**Luồng xử lý chính (Main Flow):**  
-1. Người dùng chọn dịch vụ, ngày và giờ mong muốn trên giao diện.
-2. Người dùng nhấn nút "Xác nhận đặt lịch".
-3. Hệ thống kiểm tra tính hợp lệ và lưu thông tin đặt lịch vào database.
-4. Hệ thống hiển thị thông báo đặt lịch thành công.
+**Luồng xử lý chính (Main Flow):**
+1. Member chọn công thức, ngày và loại bữa.
+2. Member xác nhận thao tác.
+3. Hệ thống kiểm tra quyền, dữ liệu hợp lệ và quy tắc chống trùng.
+4. Hệ thống lưu mục lịch ăn và hiển thị kết quả.
 
-**Luồng thay thế (Alternative Flow):**  
-1. Nếu ngày/giờ người dùng chọn đã có người khác đặt trước đó, hệ thống sẽ báo lỗi và yêu cầu chọn lại.
-2. Nếu phiên làm việc hết hạn, hệ thống chuyển hướng người dùng đến trang đăng nhập.
+**Luồng thay thế (Alternative Flow):**
+1. Nếu công thức đã tồn tại trong cùng ngày/bữa, hệ thống từ chối và giữ dữ liệu cũ.
+2. Nếu phiên hết hạn hoặc bài đã bị ẩn, hệ thống báo đúng trạng thái và không tạo mục lịch.

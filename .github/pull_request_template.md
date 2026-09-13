@@ -1,3 +1,10 @@
+> **Document:** Pull Request Template  
+> **File:** `.github/pull_request_template.md`  
+> **Version:** v1.0.0  
+> **Created:** 2026-06-14  
+> **Last Updated:** 2026-09-12  
+> **Status:** Template  
+
 # Pull Request
 
 > **Pull Request (PR - Yêu cầu gộp code):** Là yêu cầu xem xét và gộp mã nguồn từ một nhánh phát triển riêng biệt vào nhánh chính của dự án. Hãy điền đầy đủ các thông tin dưới đây để người duyệt code (reviewer) dễ dàng kiểm tra và phê duyệt.
@@ -8,13 +15,13 @@
 
 Mô tả ngắn gọn những thay đổi chính mà Pull Request này mang lại:
 
-- 
+- _Mô tả thay đổi chính._
 
 ## 2. Lý Do Thay Đổi
 
 Giải thích nguyên nhân hoặc mục đích của việc thực hiện những thay đổi này:
 
-- 
+- _Giải thích lý do thay đổi._
 
 ## 3. Loại Thay Đổi
 
@@ -66,10 +73,10 @@ Nếu không có Issue liên quan, phải ghi rõ lý do.
 
 Liệt kê các tập tin hoặc thư mục chính trực tiếp chịu ảnh hưởng của thay đổi:
 
-- 
+- _Liệt kê file/thư mục bị ảnh hưởng._
 
 *Ví dụ minh họa:*
-* `- App/`
+* `- app/`
 * `- database/schema.sql`
 * `- README.md`
 
@@ -85,7 +92,7 @@ Mô tả các bước hoặc phương thức bạn đã kiểm tra (test) thay �
   1. ...
 
 *Nếu chưa kiểm tra được, hãy ghi rõ lý do:*
-- 
+- _Ghi lý do chưa kiểm tra được, hoặc xóa dòng này khi đã kiểm tra._
 
 ## 8. Ảnh Chụp Màn Hình Hoặc Demo
 
@@ -94,6 +101,8 @@ Nếu thay đổi của bạn có tác động đến giao diện người dùng
 ```text
 Không có
 ```
+
+Nếu có dùng AI, ghi phần AI hỗ trợ, phần người thực hiện đã kiểm tra và bằng chứng xác minh. Nếu không dùng, ghi `Không dùng AI`.
 
 ## 9. Ghi Chú Thêm
 
@@ -118,6 +127,7 @@ Không có
 - [ ] Phần chưa hoàn thành đã được tách thành Issue mới
 - [ ] Mọi yêu cầu sửa đổi và review conversation quan trọng đã được giải quyết
 - [ ] Có đủ số reviewer approval theo mức độ rủi ro
+- [ ] Đã khai báo việc dùng AI và cách kiểm tra output, nếu có
 
 ## 11. Checklist Dành Cho Release PR Vào `main`
 

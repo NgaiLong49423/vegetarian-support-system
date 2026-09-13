@@ -1,3 +1,11 @@
+> **Document:** Actor and Onboarding Decomposition  
+> **File:** `docs/requirements/actors-and-onboarding-draft.md`  
+> **Version:** v0.1.0  
+> **Created:** 2026-09-12  
+> **Last Updated:** 2026-09-12  
+> **Status:** Under Review  
+> **Related Docs:** `docs/requirements/SRS.md`  
+
 # Actor, quyền hạn và Onboarding Questionnaire
 
 Trạng thái: chức năng Q01–Q38 đã được người dùng xác nhận ngày 12/09/2026; thiết kế chi tiết còn tiếp tục. Xem [SRS mục 3.20](SRS.md).

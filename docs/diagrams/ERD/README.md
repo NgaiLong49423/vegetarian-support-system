@@ -1,3 +1,10 @@
+> **Document:** ERD Workspace Guide  
+> **File:** `docs/diagrams/ERD/README.md`  
+> **Version:** v1.0.0  
+> **Created:** 2026-06-14  
+> **Last Updated:** 2026-09-12  
+> **Status:** Active  
+
 # ERD - Entity Relationship Diagram
 
 ## Mục Đích
@@ -6,7 +13,7 @@
 * Thiết kế cấu trúc cơ sở dữ liệu (Database) một cách rõ ràng và khoa học.
 * Xác định chính xác cách thức các bảng liên kết với nhau (quan hệ 1-1, 1-N, N-N).
 * Hạn chế tối đa việc dư thừa dữ liệu hoặc bất thường khi truy vấn.
-* Làm tài liệu hướng dẫn trực tiếp để lập trình viên viết file kịch bản tạo bảng [database/schema.sql](file:///d:/Github-Projects/java-webapp-project-template/database/schema.sql).
+* Làm tài liệu hướng dẫn trực tiếp để lập trình viên thiết kế migration và đồng bộ [database/schema.sql](../../../database/schema.sql) khi có baseline được duyệt.
 
 ## Thành Phần Cơ Bản
 
@@ -33,19 +40,19 @@ Ví dụ cụ thể:
 
 Hãy mô tả chi tiết các bảng được thiết kế theo cấu trúc mẫu dưới đây:
 
-### ## [Tên bảng, ví dụ: Bảng `booking`]
+### Bảng `recipe_post`
 
-Mô tả vai trò của bảng: Lưu thông tin chi tiết lịch hẹn của khách hàng.
+Mô tả vai trò của bảng: lưu metadata cốt lõi của bài công thức; tên cột dưới đây chỉ là ví dụ tài liệu hóa, không phải schema đã duyệt.
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả chi tiết |
 |---|---|---|---|
-| id | INT | PK, AUTO_INCREMENT | Mã số tự tăng dùng định danh booking. |
-| customer_id | INT | FK | Mã liên kết với bảng `user` (đại diện cho khách hàng đặt lịch). |
-| booking_date | DATE | NOT NULL | Ngày đặt lịch hẹn của khách hàng. |
-| status | VARCHAR(50) | NOT NULL | Trạng thái của lịch hẹn (PENDING, APPROVED...). |
+| id | BIGINT | PK, IDENTITY | Định danh bài công thức. |
+| author_id | BIGINT | FK, NOT NULL | Tài khoản tác giả. |
+| title | NVARCHAR(200) | NOT NULL | Tiêu đề hiển thị. |
+| status | VARCHAR(30) | NOT NULL | Trạng thái nghiệp vụ cần được chốt trong data model. |
 
 ## Liên Kết Với Database
 
 > [!IMPORTANT]
-> * Mỗi khi thay đổi cấu trúc bảng hoặc thêm bảng mới trên sơ đồ ERD, bạn **bắt buộc** phải cập nhật lại file kịch bản SQL tương ứng tại [database/schema.sql](file:///d:/Github-Projects/java-webapp-project-template/database/schema.sql).
+> * Mỗi khi thay đổi cấu trúc bảng hoặc thêm bảng mới trên sơ đồ ERD, phải cập nhật Flyway migration tương ứng và đồng bộ [database/schema.sql](../../../database/schema.sql) khi snapshot này được duy trì.
 > * Hãy ghi chú rõ các thay đổi trong phần mô tả bảng của file này để nhóm phát triển dễ dàng theo dõi.

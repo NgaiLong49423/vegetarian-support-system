@@ -1,4 +1,13 @@
+> **Document:** Contribution Guide  
+> **File:** `CONTRIBUTING.md`  
+> **Version:** v2.0.0  
+> **Created:** 2026-06-14  
+> **Last Updated:** 2026-09-13  
+> **Status:** Active  
+
 # Hướng Dẫn Đóng Góp
+
+This document is the source of truth for the repository contribution workflow. It applies to human contributors and AI agents. AGENTS.md contains additional agent-specific instructions; ADRs record related decisions and rationale.
 
 Tài liệu này cung cấp các quy định và hướng dẫn chi tiết về cách đóng góp mã nguồn (code), cách viết thông điệp ghi nhận thay đổi (commit message), cách đặt tên nhánh (branch) và quy trình gửi yêu cầu gộp mã nguồn (pull request) cho dự án. Việc tuân thủ các quy tắc này giúp dự án luôn sạch sẽ, dễ bảo trì và làm việc nhóm hiệu quả hơn.
 
@@ -16,7 +25,7 @@ Tài liệu này cung cấp các quy định và hướng dẫn chi tiết về 
 
 ## Workflow Làm Việc Nhóm
 
-Workflow này áp dụng cho dự án tạo từ template. Vai trò cụ thể của từng thành viên sẽ được nhóm chốt sau; các quy tắc dưới đây không mặc định giao vai trò quản lý cho một cá nhân.
+Workflow này áp dụng cho Vegetarian Support System. Quy tắc owner, reviewer/backup, WIP, Release Coordinator luân phiên và cách ra quyết định cho nhóm 5 người nằm tại [`docs/decisions/002-five-member-team-operating-agreement.md`](docs/decisions/002-five-member-team-operating-agreement.md).
 
 ### Luồng nhánh và release
 
@@ -113,8 +122,8 @@ PR chỉ được merge vào `develop` khi toàn bộ checklist sau đạt:
 
 **Branch** (nhánh) là một nhánh mã nguồn độc lập được tách ra từ nhánh chính (như `main` hoặc `master`) để phát triển tính năng hoặc sửa lỗi mà không làm ảnh hưởng trực tiếp đến mã nguồn hiện tại của dự án.
 
-Khi làm việc, bạn cần tạo nhánh mới và đặt tên theo cấu trúc:
-`[loại-nhánh]/[tên-ngắn-gọn]`
+Khi làm việc, tạo nhánh từ `develop` và đặt tên theo cấu trúc:
+`[loại-nhánh]/[issue-number]-[tên-ngắn-gọn]`
 
 ### Các tiền tố nhánh thông dụng:
 * **`feature/`**: Sử dụng khi phát triển một tính năng mới.
@@ -125,11 +134,11 @@ Khi làm việc, bạn cần tạo nhánh mới và đặt tên theo cấu trúc
 
 ### Ví dụ cụ thể:
 ```text
-feature/login-page
-fix/database-connection
-docs/update-readme
-refactor/user-service
-chore/project-setup
+feature/123-login-page
+fix/124-database-connection
+docs/125-update-readme
+refactor/126-user-service
+chore/127-project-setup
 ```
 
 ---
@@ -308,3 +317,51 @@ Trước khi thực hiện lệnh `git push` để đẩy code lên GitHub, hãy
 - [ ] Tất cả các commit message đều tuân thủ đúng định dạng Conventional Commits.
 - [ ] Tài liệu hướng dẫn liên quan đã được cập nhật đầy đủ (nếu có thay đổi cách sử dụng).
 - [ ] Các tập tin script cơ sở dữ liệu đã được cập nhật đầy đủ (nếu có thay đổi schema database).
+
+## File Placement
+
+Before creating or moving a file, use [the repository layout and document register](docs/README.md). Keep product notes out of the repository root. Register a new maintained document with its purpose and read trigger; scratch files are not registered or automatically read.
+
+GitHub Issues/Projects manage progress, owners, dates and blockers; linked PRs hold review/test evidence. No individual or weekly report files are required. Audit findings stay in the conversation unless a saved export is explicitly requested.
+
+## Shared Editing Rules
+
+Preserve existing contributor changes and stay within the requested scope. Changes to architecture, database schema, public APIs or core dependencies require authorization. Write new governance documentation in professional English; preserve existing Vietnamese product documents unless translation is requested. Update affected links and metadata, and record meaningful changes in the changelog. Verify against the actual repository and state any failed or unavailable checks.
+
+## Changelog Format
+
+Write CHANGELOG.md in English, using dated topic entries in reverse chronological order. Each entry explains what changed on that date and why it matters. Keep these three sections in this order: Added, Changed, Fixed. Use "None." when a category has no changes; record removals explicitly under Changed. Do not use a single accumulating [Unreleased] section or copy tutorial/example history into the changelog.
+
+Each entry has:
+
+1. A heading: `## YYYY-MM-DD — Specific Topic`. Append a linked PR reference when its association is verified; omit it when no PR is known.
+2. `**Status:**` with Working tree (uncommitted changes) or Committed plus a verified commit hash. A commit alone does not prove a PR was merged or a release was deployed.
+3. `**Scope:**` describing the coherent change, followed by Added, Changed and Fixed.
+
+Several distinct topics may share a date. Update the same topic entry while the same work is in progress. When committed, update its status/reference in place instead of copying it into another entry. Keep committed work separate from later uncommitted changes.
+
+Use the evidenced change date (project timezone: Asia/Saigon), not the date on which old history is reformatted. If only a commit/checkpoint date is known, say so in the entry. Never invent dates, PR numbers, commit hashes or release status. Historical document versions may be retained to explain successive decisions; the metadata Version tracks the changelog document, not the application.
+
+Template (placeholders below are instructions, not real history):
+
+```markdown
+## YYYY-MM-DD — Specific Topic
+
+**Status:** Working tree — not committed.
+
+**Scope:** Explain the change and its purpose.
+
+### Added
+
+- Describe new capabilities or documents, or write None.
+
+### Changed
+
+- Describe updates or removals, or write None.
+
+### Fixed
+
+- Describe corrections, or write None.
+```
+
+When a real PR is verified, append `([PR #N](verified-PR-URL))` to the heading. A committed entry uses `**Status:** Committed — VERIFIED_HASH.` Keep links in the project repository and omit unknown references. Preparing the changelog does not itself commit, create a PR, merge or publish anything.
