@@ -1,14 +1,36 @@
-> **Document:** Changelog  
-> **File:** `CHANGELOG.md`  
-> **Version:** v2.0.0  
-> **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-13  
-> **Status:** Active  
+> **Document:** Changelog
+> **File:** `CHANGELOG.md`
+> **Version:** v2.1.0
+> **Created:** 2026-06-14
+> **Last Updated:** 2026-09-13
+> **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-09-13 — Recipe Publishing and AI Scope Simplification
+
+**Status:** Working tree — not committed.
+
+**Scope:** Align the requirements baseline with the team's confirmed simplification of Recipe Post publishing and deferred AI features.
+
+### Added
+
+- None.
+
+### Changed
+
+- Members publish valid Recipe Posts directly; the permission-application workflow is retired and Administrator moderation is report-driven.
+- Marked persistent Recipe Post drafts and per-account AI chat history as out of scope for the current MVP.
+- Marked AI content scanning/flagging as deferred rather than an MVP acceptance requirement.
+- Clarified FR-35's eligibility, input/output, and non-diagnostic boundary; separated FR-49 notifications from report-identity privacy in FR-29/BR-28.
+
+### Fixed
+
+- Removed conflicting summary references to pre-publication permission approval and persistent drafts in the directly affected requirement documents.
+
+**Related PR:** None.
 ## 2026-09-13 — Changelog Format and Contribution Authority
 
 **Status:** Working tree — not committed.

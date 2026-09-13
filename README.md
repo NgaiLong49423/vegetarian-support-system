@@ -1,9 +1,9 @@
-> **Document:** Vegetarian Support System Project Overview  
-> **File:** `README.md`  
-> **Version:** v0.2.0  
-> **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-12  
-> **Status:** Under Review  
+> **Document:** Vegetarian Support System Project Overview
+> **File:** `README.md`
+> **Version:** v0.4.0
+> **Created:** 2026-06-14
+> **Last Updated:** 2026-09-13
+> **Status:** Under Review
 
 # Vegetarian Support System
 
@@ -14,9 +14,9 @@
 ## Phạm vi MVP
 
 - Guest đọc/tìm bài công thức công khai, xem bình luận và dùng AI hỏi đáp cơ bản theo hạn mức.
-- Member quản lý hồ sơ, lưu công thức, lập lịch ăn ba bữa, tương tác Like/bình luận và tìm nhà hàng chay quanh địa chỉ nhập.
-- Thành viên được cấp quyền đăng có thể quản lý bài công thức của mình; Administrator duyệt quyền đăng và hậu kiểm nội dung.
-- Gemini hỗ trợ hỏi đáp, gợi ý công thức có sẵn, lập/thay thực đơn và hỗ trợ soạn nháp; AI không tự tạo dữ liệu dinh dưỡng chính thức hoặc tự quyết định kiểm duyệt.
+- Member quản lý hồ sơ, lưu công thức, lập lịch ăn ba bữa và tương tác Like/bình luận. Chức năng tìm/gợi ý nhà hàng chay đang chờ giảng viên xác nhận.
+- Member đã đăng nhập có thể tạo và công khai Recipe Post trực tiếp; Administrator hậu kiểm nội dung theo báo cáo của người dùng.
+- Gemini hỗ trợ hỏi đáp, gợi ý công thức có sẵn, lập/thay thực đơn và tạo nội dung có thể chỉnh sửa trong biểu mẫu; AI không tự tạo dữ liệu dinh dưỡng chính thức hoặc tự quyết định kiểm duyệt. Lưu nháp Recipe Post, lịch sử chat AI và AI quét/gắn cờ nội dung không thuộc MVP hiện tại.
 - Free, Plus và Pro có cùng nhóm chức năng AI, khác hạn mức lượt gọi. Chi tiết thanh toán vẫn chưa chốt.
 
 Chi tiết nghiệp vụ nằm trong [SRS](docs/requirements/SRS.md). Các đề xuất hoặc tài liệu nghiên cứu không tự trở thành yêu cầu nếu chưa được ghi nhận trong SRS.
@@ -29,7 +29,7 @@ Chi tiết nghiệp vụ nằm trong [SRS](docs/requirements/SRS.md). Các đề
 | Backend | Java 21, Spring Boot, Maven, REST API/JSON |
 | Data | Microsoft SQL Server, Spring Data JPA/Hibernate, Flyway |
 | Security | Spring Security, JWT, BCrypt, role-based authorization |
-| External services | Azure Blob Storage, Google Maps Platform, Google Gemini |
+| External services | Azure Blob Storage, Google Gemini; Google Maps Platform is a candidate pending lecturer confirmation of restaurant discovery. |
 | Quality | JUnit 5, Mockito, JaCoCo, OpenAPI/Swagger UI, Bean Validation |
 
 Model Gemini, AI architecture, frontend state management, CSS/UI library và deployment vẫn là `TBD`. Xem [Technology Stack v2.0.0](docs/decisions/SWP-Technology-Stack-v2.0.0.txt) trước khi thêm dependency hoặc thay đổi kiến trúc.

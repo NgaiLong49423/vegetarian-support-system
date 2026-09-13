@@ -1,10 +1,10 @@
-> **Document:** Product Requirements Document  
-> **File:** `docs/requirements/PRD.md`  
-> **Version:** v0.1.0  
-> **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-12  
-> **Status:** Under Review  
-> **Related Docs:** `docs/requirements/SRS.md`, `README.md`  
+> **Document:** Product Requirements Document
+> **File:** `docs/requirements/PRD.md`
+> **Version:** v0.3.0
+> **Created:** 2026-06-14
+> **Last Updated:** 2026-09-13
+> **Status:** Under Review
+> **Related Docs:** `docs/requirements/SRS.md`, `README.md`
 
 # Product Requirements Document
 
@@ -23,9 +23,9 @@ Người ăn chay thường phải tự tổng hợp công thức, sở thích, 
 | Actor | Mục tiêu chính | Ranh giới chính |
 |---|---|---|
 | Guest | Khám phá nội dung công khai và thử AI cơ bản | Không có dữ liệu cá nhân lưu theo tài khoản; không Like, bình luận, đăng bài hoặc tìm nhà hàng |
-| Member | Cá nhân hóa, lưu công thức, lập lịch ăn, tương tác và dùng AI theo gói | Chỉ quản lý dữ liệu và nội dung thuộc tài khoản của mình |
-| Member có quyền đăng | Tạo và công khai bài công thức hợp lệ | Phải được duyệt đơn xin quyền; không tự khôi phục bài bị Administrator ẩn |
-| Administrator | Quản lý tài khoản, danh mục, quyền đăng, báo cáo và nội dung vi phạm | Quyết định quản trị phải có lý do và khả năng truy vết |
+| Member | Cá nhân hóa, lưu công thức, lập lịch ăn, tương tác, tạo/công khai Recipe Post trực tiếp và dùng AI theo gói | Chỉ quản lý dữ liệu và nội dung thuộc tài khoản của mình |
+| Member có quyền đăng | — | RETIRED — không còn actor/phân quyền riêng sau khi bỏ workflow đơn xin quyền đăng ngày 2026-09-13 |
+| Administrator | Quản lý tài khoản, danh mục, báo cáo và nội dung vi phạm | Quyết định quản trị phải có lý do và khả năng truy vết; không duyệt quyền đăng hoặc từng bài trước khi công khai |
 | Dịch vụ ngoài | Gemini, Azure Blob Storage, Google Maps và dịch vụ thanh toán sẽ cung cấp năng lực tích hợp | Lỗi/quota của nhà cung cấp phải được xử lý minh bạch; không giả lập dữ liệu thành kết quả thật |
 
 Free, Plus và Pro là hạng gói của Member, không phải actor hoặc role phân quyền.
@@ -36,13 +36,13 @@ Free, Plus và Pro là hạng gói của Member, không phải actor hoặc role
 |---|---|
 | Khám phá công thức | Tìm/lọc/xem bài công thức công khai có dữ liệu món ăn có cấu trúc và media được hỗ trợ |
 | Cá nhân hóa | Thu thập sở thích/kiêng/dị ứng tối thiểu trước khi gọi AI cá nhân hóa; cho phép cập nhật sau |
-| AI | Hỏi đáp, gợi ý công thức đang công khai, lập/thay menu và hỗ trợ soạn nháp trong hạn mức gói |
+| AI | Hỏi đáp, gợi ý công thức đang công khai, lập/thay menu và hỗ trợ nội dung có thể chỉnh sửa trong biểu mẫu trong hạn mức gói |
 | Meal planning | Lưu công thức và quản lý lịch ăn theo ngày với ba loại bữa cố định; dữ liệu Saved và Planner độc lập |
 | Dinh dưỡng | Tính từ danh mục nội bộ có nguồn, thể hiện kết quả thiếu dữ liệu; không chẩn đoán hoặc tự bịa số liệu |
 | Cộng đồng | Like/Unlike, bình luận và reply nhiều cấp, báo cáo nội dung; không có đánh giá sao hoặc Blog tổng quát |
-| Đăng bài và moderation | Duyệt quyền đăng một lần, tác giả tự công khai bài hợp lệ, Administrator hậu kiểm theo báo cáo |
-| Địa điểm | Member tìm nhà hàng chay quanh địa chỉ nhập bằng Google Maps theo bốn ngưỡng đã chốt |
-| Gói AI | Guest/Free/Plus/Pro có hạn mức; Member có lịch sử AI riêng; nâng cấp gói yêu cầu xác minh thanh toán thật |
+| Đăng bài và moderation | Member đã đăng nhập công khai Recipe Post hợp lệ trực tiếp; Administrator hậu kiểm theo báo cáo |
+| Địa điểm | NEEDS CLARIFICATION — Chức năng tìm/gợi ý nhà hàng chay đang chờ giảng viên xác nhận; không chốt Google Maps, input hoặc ngưỡng. |
+| Gói AI | Guest/Free/Plus/Pro có hạn mức; nâng cấp gói yêu cầu xác minh thanh toán thật. Lịch sử hội thoại AI theo tài khoản không thuộc MVP hiện tại. |
 
 ## 5. Ngoài phạm vi MVP
 
@@ -57,7 +57,7 @@ Free, Plus và Pro là hạng gói của Member, không phải actor hoặc role
 - Backend thực thi authentication, authorization, validation, quota và ownership; frontend không phải lớp bảo vệ duy nhất.
 - Secret và credential của Gemini, Azure, Maps hoặc thanh toán không được đưa vào frontend, source code hay Git.
 - Kết quả AI và dịch vụ ngoài phải có trạng thái loading/error/quota rõ ràng, không trừ lượt oan khi request thất bại theo quy tắc SRS.
-- Dữ liệu cá nhân, prompt, log moderation và lịch sử AI cần chính sách lưu/xóa trước khi triển khai.
+- Dữ liệu cá nhân, prompt và log moderation cần chính sách lưu/xóa trước khi triển khai. Lịch sử hội thoại AI theo tài khoản không thuộc MVP hiện tại.
 - API phải được mô tả bằng OpenAPI; thay đổi hợp đồng, schema hoặc workflow cần được review và cập nhật tài liệu tương ứng.
 
 Các ngưỡng hiệu năng, timeout/retry, retention và coverage vẫn cần cụ thể hóa thành NFR đo được.

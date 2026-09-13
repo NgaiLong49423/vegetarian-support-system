@@ -1,9 +1,9 @@
-> **Document:** Topic 03 AI Plan Decomposition  
-> **File:** `docs/requirements/ai-plan-decomposition.md`  
-> **Version:** v0.6.1  
-> **Created:** 2026-09-11  
-> **Last Updated:** 2026-09-12  
-> **Status:** Under Review  
+> **Document:** Topic 03 AI Plan Decomposition
+> **File:** `docs/requirements/ai-plan-decomposition.md`
+> **Version:** v0.7.0
+> **Created:** 2026-09-11
+> **Last Updated:** 2026-09-13
+> **Status:** Under Review
 
 # Phân rã gói AI — Đề tài 03
 
@@ -13,7 +13,7 @@
 - Nhà cung cấp AI khởi đầu đã chốt: **Gemini API**.
 - Người chưa đăng nhập cũng dùng được gói Free; người có tài khoản dùng Free hoặc nâng cấp Plus/Pro.
 - Đây là thiết kế sản phẩm và kỹ thuật. Đã chốt thanh toán thật; giá, chu kỳ, cổng, gia hạn và hoàn tiền chưa chốt.
-- AI hỗ trợ tìm kiếm, gợi ý và hỏi đáp. Khi gợi ý món hoặc lập menu, AI chỉ chọn từ bài công thức đang công khai, không bị ẩn/xóa trong hệ thống và không tạo công thức mới. Với menu theo dinh dưỡng, AI dùng mức tham khảo do hệ thống cung cấp và công thức có đủ dữ liệu dinh dưỡng; không tự đặt mục tiêu hoặc tự ước lượng dữ liệu thiếu. AI không tự xuất bản/ẩn/xóa nội dung và không thay thế tư vấn y tế/dinh dưỡng.
+- AI hỗ trợ tìm kiếm, gợi ý và hỏi đáp. Khi gợi ý món hoặc lập menu, AI chỉ chọn từ Recipe Post đang công khai, không bị ẩn/xóa trong hệ thống và không tạo công thức mới. Với menu theo dinh dưỡng, AI dùng mức tham khảo do hệ thống cung cấp và công thức có đủ dữ liệu dinh dưỡng; không tự đặt mục tiêu hoặc tự ước lượng dữ liệu thiếu. AI có thể tạo nội dung có thể chỉnh sửa trong biểu mẫu Recipe Post, nhưng không tự xuất bản hoặc lưu nháp bền vững. AI quét/gắn cờ nội dung và lịch sử hội thoại theo tài khoản là DEFERRED; AI không tự ẩn/xóa nội dung và không thay thế tư vấn y tế/dinh dưỡng.
 
 ## 1. Kết luận: dùng lượt gọi theo ngày ở giao diện, vẫn đo token thật ở backend
 
@@ -49,14 +49,14 @@ Hệ quả cho sản phẩm:
 | Plus | Có | 15 | Cùng chức năng Free, nhiều lượt hơn |
 | Pro | Có | 50 | Cùng chức năng Free, nhiều lượt hơn |
 
-Không triển khai Max/unlimited. Quyền đăng bài và điều kiện hồ sơ/dinh dưỡng vẫn áp dụng, không được bỏ qua vì mua gói.
+Không triển khai Max/unlimited. Điều kiện đăng nhập và hồ sơ/dinh dưỡng vẫn áp dụng cho chức năng liên quan, không được bỏ qua vì mua gói.
 
 ## 4. Chức năng và cách tính lượt
 
 - Mọi gói Member có hỏi đáp, gợi ý công thức hiện có, lập/thay menu tuần, giải thích dinh dưỡng, tùy chọn gợi ý bài liên quan và hỗ trợ tác giả soạn bài.
 - AI không tạo công thức mới; hỗ trợ viết giới thiệu/bước nấu dựa trên đầu vào tác giả, không tự thêm nguyên liệu hoặc tự công khai.
 - Mỗi yêu cầu AI thành công tính một lượt, kể cả đề xuất menu 7 ngày sáng/trưa/tối. Yêu cầu lỗi không trừ lượt; không tính theo số món hoặc token.
-- Member xem/xóa lịch sử AI riêng. Lịch sử hội thoại khác log usage tối thiểu dùng đối soát; thời hạn lưu và quy tắc xóa log phải xác định ở thiết kế.
+- Lịch sử hội thoại AI theo tài khoản không thuộc MVP hiện tại. Log usage tối thiểu phục vụ đối soát vẫn cần thời hạn lưu và quy tắc xóa được xác định ở thiết kế.
 - Gợi ý bài liên quan thông thường không gọi Gemini/không tính lượt; AI chỉ được gọi khi người dùng yêu cầu.
 - Đăng ký Plus/Pro qua thanh toán thật, backend xác minh giao dịch trước khi kích hoạt. Chưa chốt giá, cổng, chu kỳ và chính sách; mô phỏng chỉ phục vụ kiểm thử, không thay yêu cầu tích hợp thật.
 - Hạn mức app không bảo đảm quota Gemini luôn đủ; lỗi dịch vụ phải được hiển thị rõ, không bịa kết quả.

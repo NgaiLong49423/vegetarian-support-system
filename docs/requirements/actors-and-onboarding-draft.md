@@ -1,10 +1,10 @@
-> **Document:** Actor and Onboarding Decomposition  
-> **File:** `docs/requirements/actors-and-onboarding-draft.md`  
-> **Version:** v0.1.0  
-> **Created:** 2026-09-12  
-> **Last Updated:** 2026-09-12  
-> **Status:** Under Review  
-> **Related Docs:** `docs/requirements/SRS.md`  
+> **Document:** Actor and Onboarding Decomposition
+> **File:** `docs/requirements/actors-and-onboarding-draft.md`
+> **Version:** v0.3.0
+> **Created:** 2026-09-12
+> **Last Updated:** 2026-09-13
+> **Status:** Under Review
+> **Related Docs:** `docs/requirements/SRS.md`
 
 # Actor, quyền hạn và Onboarding Questionnaire
 
@@ -15,8 +15,8 @@ Trạng thái: chức năng Q01–Q38 đã được người dùng xác nhận n
 | Actor | Chức năng | Quyết định của actor | Ranh giới |
 | --- | --- | --- | --- |
 | Guest | Khám phá/tìm và đọc bài công thức công khai; đọc bình luận và xem tổng Like; xem ảnh/video nhúng; hỏi AI Free 5 lượt/ngày; đăng ký/đăng nhập | Chọn nội dung xem, câu hỏi và có tạo tài khoản không | Chưa có hồ sơ/thực đơn lưu theo tài khoản; không đăng bài/bình luận/Like hoặc tìm nhà hàng chay |
-| Member (Authorized User) | Quyền xem như Guest; trả lời/sửa onboarding; tìm món; lưu/bỏ lưu công thức; thêm/chuyển/thay/xóa món trong lịch ăn; xem hồ sơ nhu cầu dinh dưỡng và kiểm tra menu ngày; nhận gợi ý theo quyền gói; gửi đơn xin quyền đăng; sau khi được cấp quyền thì tạo/xem/sửa/xóa bài của mình; Like/Unlike; tạo/sửa/xóa bình luận của mình và reply lồng nhiều cấp; tìm nhà hàng chay quanh địa chỉ nhập | Khai báo sở thích; chọn món/menu; đồng ý chính sách và có xin quyền đăng hay không; chịu trách nhiệm và quản lý bài/bình luận của mình; Like/Unlike; chọn địa chỉ và ngưỡng đường bộ 500 m/1 km/5 km/10 km; gửi báo cáo khi phát hiện vấn đề | Không quản lý bài/bình luận của tài khoản khác; không tự khôi phục nội dung bị Admin ẩn |
-| Administrator | Duyệt/từ chối/thu hồi quyền đăng; xử lý báo cáo bài và bình luận; quản lý tài khoản, bài công thức, bình luận, danh mục và dữ liệu dinh dưỡng; theo dõi lỗi/usage AI và quản lý gói AI và trạng thái đăng ký | Cấp quyền đăng cho tài khoản nào; báo cáo có vi phạm không; áp dụng ẩn/xóa bài, thu hồi quyền hoặc khóa tài khoản theo chính sách | Không duyệt từng bài/lần sửa trước khi công khai; không quản lý/xác minh nhà hàng Google Maps; không tự sửa sở thích/thực đơn riêng của Member; quyền truy cập dữ liệu riêng không mặc định được cấp |
+| Member (Authorized User) | Quyền xem như Guest; trả lời/sửa onboarding; tìm món; lưu/bỏ lưu công thức; thêm/chuyển/thay/xóa món trong lịch ăn; xem hồ sơ nhu cầu dinh dưỡng và kiểm tra menu ngày; nhận gợi ý theo quyền gói; tạo/xem/sửa/xóa và công khai Recipe Post trực tiếp; Like/Unlike; tạo/sửa/xóa bình luận của mình và reply lồng nhiều cấp; chức năng tìm/gợi ý nhà hàng chay đang chờ giảng viên xác nhận | Khai báo sở thích; chọn món/menu; chịu trách nhiệm và quản lý bài/bình luận của mình; Like/Unlike; gửi báo cáo khi phát hiện vấn đề | Không quản lý bài/bình luận của tài khoản khác; không tự khôi phục nội dung bị Admin ẩn |
+| Administrator | Xử lý báo cáo bài và bình luận; quản lý tài khoản, Recipe Post, bình luận, danh mục và dữ liệu dinh dưỡng; theo dõi lỗi/usage AI và quản lý gói AI và trạng thái đăng ký | Xem xét báo cáo có vi phạm không; áp dụng ẩn/xóa bài hoặc khóa tài khoản theo chính sách và ghi lý do | Không duyệt quyền đăng hoặc từng bài/lần sửa trước khi công khai; không quản lý/xác minh nhà hàng Google Maps; không tự sửa sở thích/thực đơn riêng của Member; quyền truy cập dữ liệu riêng không mặc định được cấp |
 
 Đã chốt ba actor con người. `Contributor` là quyền/trạng thái đăng bài được Admin cấp cho Member sau khi duyệt đơn, không phải actor đăng nhập độc lập. Đơn bắt buộc có xác nhận chính sách, lý do đóng góp, xác nhận trách nhiệm và hiểu chế tài; MVP không yêu cầu chứng chỉ/chuyên môn. Người có quyền này tự công khai bài hợp lệ; Admin hậu kiểm theo báo cáo, không duyệt từng bài. Nếu đơn bị từ chối, Admin phải ghi lý do và Member được sửa/gửi lại; mỗi tài khoản chỉ có một đơn đang chờ và MVP không có thời gian chờ cố định. Chưa cần Expert, Moderator hoặc Super Admin riêng. Bài công thức là loại bài duy nhất; hướng dẫn từng bước là tùy chọn. Guest là trạng thái chưa xác thực, còn Free/Plus/Pro là hạng gói chứ không phải role. Like/Upvote đã chốt thay cho đánh giá sao; bình luận phải hỗ trợ reply lồng nhiều cấp. Giới hạn nội dung đơn, tiêu chí chống lạm dụng, chi tiết hiển thị cây bình luận và chế tài còn cần xác nhận.
 
@@ -29,7 +29,7 @@ Trạng thái: chức năng Q01–Q38 đã được người dùng xác nhận n
 | Gemini API | Tạo phản hồi/gợi ý từ dữ liệu ứng dụng cung cấp; ứng dụng kiểm tra kết quả trước khi cho chọn |
 | Azure Blob Storage | Lưu và phục vụ ảnh theo quyền truy cập do ứng dụng quản lý |
 | YouTube | Phát video nhúng trong bài công thức |
-| Google Maps Platform | Chuyển địa chỉ người dùng nhập thành tọa độ và trả địa điểm nhà hàng chay trong bán kính |
+| Google Maps Platform | Candidate only — không là phụ thuộc đã chốt cho đến khi giảng viên xác nhận chức năng tìm/gợi ý nhà hàng chay. |
 
 Đây là supporting actors khi vẽ ranh giới hệ thống; không phải tài khoản đăng nhập. SQL Server, bộ đếm lượt và bộ lọc nghiệp vụ là thành phần nội bộ. Payment provider thuộc phạm vi thanh toán thật; nhà cung cấp chưa chốt. Google Login và dịch vụ email hỗ trợ xác thực/thông báo.
 
@@ -53,7 +53,7 @@ Luồng đã chốt ở mức cao: đăng ký thành công → giới thiệu l�
 
 - Member chọn nguyên liệu tránh/không thích từ danh mục hoặc nhập tự do; sửa hồ sơ thì yêu cầu AI tiếp theo dùng dữ liệu mới.
 - Free/Plus/Pro cùng chức năng AI, khác 5/15/50 lượt/ngày. Guest chỉ hỏi đáp cơ bản 5 lượt/ngày.
-- Member Like/Unlike và báo cáo cả bài, bình luận/reply; bình luận công khai ngay. Có lịch sử AI riêng được xem/xóa.
+- Member Like/Unlike và báo cáo cả bài, bình luận/reply; bình luận công khai ngay. Lịch sử hội thoại AI theo tài khoản không thuộc MVP hiện tại.
 - Thông báo trong app và email cho quyết định đơn, reply mới và xử lý nội dung. Admin được cảnh báo, ẩn/xóa, thu hồi quyền, khóa/mở khóa, phải ghi lý do.
 - Nhà hàng: danh sách + bản đồ, ngưỡng đường bộ, mặc định 10 lượt/Member/ngày, không lưu yêu thích.
 - Thanh toán AI thật; cổng/giá/chính sách chưa chốt. AI gắn cờ chỉ làm nếu core xong sớm.

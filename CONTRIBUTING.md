@@ -1,6 +1,6 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v2.0.0  
+> **Version:** v2.0.1  
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-13  
 > **Status:** Active  
@@ -43,7 +43,7 @@ feature branch -> Pull Request vào develop -> review, tích hợp và chờ rel
 * `In Progress` là lúc đang code hoặc tự kiểm tra trên feature branch tạo từ `develop`.
 * `Review` bắt đầu khi đã mở Pull Request vào `develop`. Sau khi PR được merge vào `develop`, Issue vẫn ở `Review` để chờ đợt release vào `main`.
 * Chỉ sau khi release được merge vào `main`, Issue mới chuyển sang `Done` và được đóng.
-* Không tạo thêm cột Blocked. Khi bị vướng, gắn label `Blocked` vào Issue và ghi rõ trợ giúp cần thiết.
+* Không tạo thêm cột Blocked. Khi bị vướng, gắn label `⛔ Blocked` vào Issue và ghi rõ trợ giúp cần thiết.
 
 ### Definition of Ready: từ `Planning` sang `In Progress`
 
@@ -82,7 +82,7 @@ Sau khi merge, nhóm chạy smoke test ngắn trên commit của `main`. Nếu �
 * Một task có đúng một owner, đầu ra có thể kiểm tra, tiêu chí hoàn thành rõ ràng, và thời hạn tối đa 4–5 ngày lịch.
 * Đến ngày thứ 2 hoặc 3, owner cập nhật trên Issue: phần đã làm, phần còn lại và blocker (nếu có).
 * Nếu dự kiến trễ, owner báo trước hạn và nêu phần còn lại cùng ước lượng mới. Không tự kéo dài hạn trong im lặng.
-* Nếu task trễ vì scope quá lớn, chỉ merge phần đã hoàn thành; phần còn lại được tách thành Issue mới. Nếu bị blocker, gắn label `Blocked` và nêu rõ trợ giúp cần thiết. Khi không có tiến độ hoặc cập nhật, task được đưa lại vào backlog để nhóm phân công lại.
+* Nếu task trễ vì scope quá lớn, chỉ merge phần đã hoàn thành; phần còn lại được tách thành Issue mới. Nếu bị blocker, gắn label `⛔ Blocked` và nêu rõ trợ giúp cần thiết. Khi không có tiến độ hoặc cập nhật, task được đưa lại vào backlog để nhóm phân công lại.
 * Dùng Story Points (SP) theo thang `1, 2, 3, 5, 8` để ước lượng độ lớn và cân tải khi lập kế hoạch. Task `8 SP` phải được bẻ nhỏ trước khi nhận.
 * SP không là điểm xếp hạng hay kỷ luật cá nhân. Chỉ tính SP đã hoàn thành khi Issue đạt Done; dùng SP cùng với lịch học, blocker và độ phù hợp để cân tải task mới.
 
