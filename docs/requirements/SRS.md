@@ -1,10 +1,10 @@
 > **Document:** Software Requirements Specification
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v0.44.0
+> **Version:** v0.45.0
 > **Created:** 2026-09-11
 > **Last Updated:** 2026-09-13
 > **Status:** Draft
-> **Related Docs:** `docs/requirements/product-direction.md`, `docs/requirements/ai-plan-decomposition.md`
+> **Related Docs:** `docs/requirements/PRD.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
 # Software Requirements Specification
 
@@ -22,7 +22,7 @@ Luồng lõi: khai báo sở thích → khám phá món → nhận gợi ý AI �
 
 Gợi ý món phải tham chiếu bài công thức đang công khai và không bị ẩn trong hệ thống. Hệ thống kiểm tra ràng buộc bắt buộc và kết quả AI; khi không đủ món phù hợp phải thông báo rõ. Người dùng quyết định lưu/thay món. Các trường dữ liệu để kiểm tra nguyên liệu và sở thích sẽ được phân rã riêng; việc bài được công khai không phải cam kết an toàn dị ứng hoặc xác nhận chuyên môn.
 
-Onboarding Questionnaire sau đăng ký thu thập sở thích ăn uống phục vụ chọn món. Người dùng được bỏ qua Onboarding, nhưng phải hoàn thành ba nhóm thông tin tối thiểu trước khi dùng AI cá nhân hóa theo mục 3.15. Chi tiết từng lựa chọn vẫn được phân rã tại [bản actor và onboarding](actors-and-onboarding-draft.md). BMI thuộc Hồ sơ nhu cầu dinh dưỡng tại mục 3.18 và chỉ là chỉ số tham khảo, không tự quyết định nhu cầu calorie/dưỡng chất hoặc món phù hợp.
+Onboarding Questionnaire sau đăng ký thu thập sở thích ăn uống phục vụ chọn món. Người dùng được bỏ qua Onboarding, nhưng phải hoàn thành ba nhóm thông tin tối thiểu trước khi dùng AI cá nhân hóa theo mục 3.15. Các actor, ranh giới quyền và chi tiết Onboarding được duy trì trực tiếp trong SRS này. BMI thuộc Hồ sơ nhu cầu dinh dưỡng tại mục 3.18 và chỉ là chỉ số tham khảo, không tự quyết định nhu cầu calorie/dưỡng chất hoặc món phù hợp.
 
 AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công thức theo mẫu và có thể hỗ trợ moderation. AI không phải chuyên gia dinh dưỡng, không tự quyết định duyệt/xóa nội dung và không đưa chẩn đoán hoặc điều trị sức khỏe.
 
@@ -362,13 +362,13 @@ Mục này ghi quyết định mới nhất của người dùng và thay thế 
 | Q31 | Chỉ ghi nguồn trong SRS; nghiên cứu/chốt công thức và khoảng đánh giá khi triển khai chức năng dinh dưỡng. Không yêu cầu nghiên cứu công thức ngay để tiếp tục tài liệu. |
 | Q32–Q34 | Ngưỡng khoảng cách đường bộ 500 m/1 km/5 km/10 km, không phải đường thẳng. Danh sách và bản đồ nhúng; không lưu nhà hàng yêu thích; hạn mức cấu hình mặc định 10 lượt tìm/Member/ngày, độc lập lượt AI. Phương tiện và tích hợp đường đi để thiết kế. |
 | Q35 | Chỉ đề xuất nhà hàng quanh địa chỉ nhập, không liên kết món đã tìm hoặc quản lý hồ sơ nhà hàng. Nhóm tự chọn phạm vi từ đề bài mang tính đề xuất; không có điều kiện chờ giảng viên xác nhận. |
-| Q36–Q38 | Giao diện tiếng Việt. AI gắn cờ là hạng mục DEFERRED, không phải nghiệm thu MVP. Ba actor người dùng: Guest, Member, Administrator; Contributor là quyền của Member. |
+| Q36–Q38 | Giao diện tiếng Việt. AI gắn cờ là hạng mục DEFERRED, không phải nghiệm thu MVP. Ba actor người dùng: Guest, Member, Administrator; không có actor hoặc quyền Contributor riêng. |
 
 **Nguồn ghi nhận cho Q31:** [USDA FoodData Central](https://fdc.nal.usda.gov/) cho thành phần nguyên liệu; [USDA DRI Calculator](https://www.nal.usda.gov/human-nutrition-and-food-safety/dri-calculator) và [NIH DRI](https://ods.od.nih.gov/HealthInformation/nutrientrecommendations/) cho tham khảo nhu cầu dinh dưỡng. Ghi nguồn không đồng nghĩa chốt công thức hay tích hợp API runtime. Trước khi đưa tính toán thật vào sử dụng, phải chọn công thức/hệ số có căn cứ, giới hạn đối tượng và kiểm thử; không dùng số đoán hoặc để Gemini tự đặt mục tiêu.
 
 ## 4. Actors và quyền cấp cao
 
-Bảng dưới là baseline cấp cao. Bản phân rã chi tiết và các quyền đã xác nhận nằm tại [Actors & Onboarding](actors-and-onboarding-draft.md); các gói Free/Plus/Pro là quyền sử dụng, không mặc định tạo role mới.
+Bảng dưới là baseline cấp cao; các gói Free/Plus/Pro là quyền sử dụng, không mặc định tạo role mới. Guest là trạng thái chưa xác thực, không phải tài khoản hoặc gói. Member vẫn giữ role Member dù bỏ qua Onboarding; chức năng AI cá nhân hóa kiểm tra dữ liệu tối thiểu thay vì tạo role mới.
 
 | Actor | Trạng thái | Mục tiêu chính | Không được làm |
 | --- | --- | --- | --- |
@@ -376,6 +376,16 @@ Bảng dưới là baseline cấp cao. Bản phân rã chi tiết và các quy�
 | Member (Authorized User) | Đã đăng nhập | Tương tác cộng đồng, tạo/công khai Recipe Post trực tiếp, báo cáo bài có vấn đề, lưu công thức, quản lý lịch ăn, dùng AI theo gói | Tự duyệt nội dung hoặc quản trị người khác. |
 | Administrator | Quản trị | Xử lý báo cáo bài; quản lý thành viên, bài công thức, bình luận, danh mục và danh mục nguyên liệu dinh dưỡng | Không duyệt quyền đăng hoặc từng bài trước khi công khai; không được để AI tự quyết định chế tài hoặc tự tạo số liệu dinh dưỡng. |
 | Gemini AI | Dịch vụ ngoài hệ thống | Tạo phản hồi AI khi backend cho phép | Không có quyền hệ thống, không truy cập database trực tiếp, không tự công khai nội dung. |
+
+Các external/supporting actor dưới đây không phải tài khoản đăng nhập và không thay thế quyền của Guest, Member hoặc Administrator:
+
+| Dịch vụ ngoài | Trách nhiệm được dùng trong phạm vi hiện tại | Ranh giới |
+| --- | --- | --- |
+| Azure Blob Storage | Lưu và phục vụ ảnh Recipe Post theo tham chiếu do ứng dụng quản lý | Không lưu video upload trong Phase 1; không tự quyết định quyền truy cập ứng dụng. |
+| YouTube | Phát video nhúng từ link/video ID hợp lệ | Ứng dụng không upload, sao chép hoặc bảo đảm mọi video luôn cho phép nhúng. |
+| Google Maps Platform | Cung cấp geocoding và kết quả địa điểm cho FR-42/FR-43 | Không phải dữ liệu nhà hàng do ứng dụng tự xác minh; không dùng GPS của thiết bị. |
+| Google authentication và dịch vụ email | Hỗ trợ Google Login, xác minh email, đặt lại mật khẩu và thông báo đã xác nhận | Nhà cung cấp và chi tiết luồng triển khai chưa được SRS này tự suy diễn. |
+| Payment provider | Xác minh thanh toán thật trước khi kích hoạt quyền Plus/Pro | Nhà cung cấp, giá, chu kỳ, gia hạn và hoàn tiền còn TBD. |
 
 ## 5. Phân rã dự án theo module
 
@@ -404,7 +414,19 @@ Không viết ERD trước use case. Thứ tự cần giữ:
 5. Từ story và BR, xác định entity/thuộc tính/quan hệ để lập ERD; không thêm bảng không phục vụ yêu cầu.
 6. Chuyển Acceptance Criteria thành test cases và liên kết traceability `FR → User Story → Test Case`.
 
-## 7. Danh mục Functional Requirements cấp cao
+## 7. Danh mục Functional Requirements cấp cao và lifecycle gate
+
+### 7.1 Quy tắc lifecycle trong baseline hiện tại
+
+Vocabulary duy nhất dùng cho requirement lifecycle là `DRAFT`, `ACTIVE`, `DEFERRED`, `OUT_OF_SCOPE` và `RETIRED`. Cột trạng thái hiện có chứa cả lifecycle hợp lệ và legacy decision wording. Các cụm như “Đã chốt”, “Đã chốt ở mức cao” hoặc “chức năng đã chốt; chi tiết TBD” là bằng chứng quyết định nội dung, **không tự động là lifecycle `ACTIVE`**.
+
+Lifecycle đã được ghi rõ và được giữ nguyên cho: `FR-04`, `FR-05`, `FR-06`, `FR-12`, `FR-21`, `FR-24`, `FR-25`, `FR-28`, `FR-35`, `FR-40`, `FR-44`, `FR-49`, `FR-50`.
+
+Các FR sau cần project decision-maker xác nhận lifecycle trước khi Issue synchronization hoặc trước khi đổi legacy wording: `FR-01`–`FR-03`, `FR-07`–`FR-11`, `FR-13`–`FR-20`, `FR-22`, `FR-23`, `FR-26`, `FR-27`, `FR-29`–`FR-34`, `FR-36`–`FR-39`, `FR-41`–`FR-43`, `FR-45`–`FR-48`, `FR-51`.
+
+Trong migration này, nội dung và ID được giữ nguyên; không requirement nào trong danh sách trên bị gán lifecycle bằng suy luận.
+
+### 7.2 Functional Requirements
 
 Các FR dưới đây là khung đánh số. Chỉ mục mang trạng thái **Đã chốt** mới được dùng làm nền để viết chi tiết ngay.
 
@@ -462,78 +484,84 @@ Các FR dưới đây là khung đánh số. Chỉ mục mang trạng thái **Đ
 | FR-50 | Member xem/xóa lịch sử hội thoại AI riêng; Guest không có lịch sử tài khoản. | M02, M06 | OUT_OF_SCOPE — Deferred out of the current scope 2026-09-13. |
 | FR-51 | Chatbot giải thích dinh dưỡng chay, BMI/calorie và thay thế nguyên liệu; không tự tạo/sửa công thức hoặc số liệu. | M06, M10 | Đã chốt |
 
-## 8. Business Rules đã chốt
+## 8. Business Rules và lifecycle gate
 
-| ID | Quy tắc |
-| --- | --- |
-| BR-01 | Guest và tài khoản Free có tối đa 5 lượt text AI mỗi ngày theo giới hạn của app. |
-| BR-02 | Plus có tối đa 15 lượt text AI/ngày; Pro có tối đa 50 lượt text AI/ngày. |
-| BR-03 | Lượt AI chỉ tăng sau khi backend nhận phản hồi Gemini hợp lệ và lưu kết quả thành công. |
-| BR-04 | Lỗi provider/timeout trước phản hồi hợp lệ không được trừ lượt, nhưng phải ghi event lỗi để đối soát. |
-| BR-05 | Guest không có lịch sử AI, hồ sơ hoặc thực đơn cá nhân hóa. |
-| BR-06 | Gemini API key chỉ lưu ở backend/biến môi trường; frontend không được biết API key. |
-| BR-07 | Member đã đăng nhập được tạo và công khai Recipe Post trực tiếp sau khi bài đạt validation; không có trạng thái quyền đăng riêng hoặc Admin duyệt trước từng bài. |
-| BR-08 | DEFERRED — Nếu AI gắn cờ được triển khai trong tương lai, AI chỉ hỗ trợ gắn cờ và không tự ẩn/xóa bài hoặc khóa tài khoản. |
-| BR-09 | Câu trả lời AI phải nêu giới hạn hỗ trợ và không được trình bày như chẩn đoán/điều trị. |
-| BR-10 | Phase 1 không nhận upload file video; bài công thức chỉ lưu link hoặc video ID của YouTube. |
-| BR-11 | Recipe Post hợp lệ có media do Member đã đăng nhập công khai trực tiếp; media vẫn thuộc chính sách nội dung và có thể bị báo cáo/xử lý sau đăng. |
-| BR-12 | Liên kết nguyên liệu chuẩn là tùy chọn. Tên mới trên công thức không tự trở thành mục chuẩn; việc thiếu liên kết không tự chặn hoàn thiện hoặc công khai bài theo workflow chung. |
-| BR-13 | Nguyên liệu chưa nhận diện không mặc định thỏa mãn ràng buộc ăn uống; hệ thống không khẳng định món phù hợp với ràng buộc loại trừ khi chưa kiểm tra được thành phần. |
-| BR-14 | Dòng nguyên liệu dùng “vừa đủ” không yêu cầu số lượng/đơn vị, không lưu số giả thay lượng chưa xác định và không tự quy đổi sang gram hoặc suy ra dinh dưỡng chính xác. |
-| BR-15 | Bài tự viết và bài có AI hỗ trợ đều tuân theo cùng format/chính sách; AI chỉ hỗ trợ nội dung có thể chỉnh sửa trong biểu mẫu, không tự công khai hoặc lưu nháp bền vững. |
-| BR-16 | AI lỗi hoặc hết lượt không được chặn Member đã đăng nhập tiếp tục tự viết/chỉnh sửa và công khai Recipe Post đáp ứng điều kiện. |
-| BR-17 | Tác giả được gắn với tài khoản đăng bài; người đăng không được chọn tài khoản khác đứng tên. Việc Admin cấp quyền đăng hoặc AI hỗ trợ không thay đổi tác giả. |
-| BR-18 | Hồ sơ tác giả công khai không tiết lộ email, thông tin đăng nhập hoặc hồ sơ ăn uống riêng tư; gắn tài khoản không được trình bày như xác minh danh tính thật hay chuyên môn. |
-| BR-19 | Recipe Post chỉ được công khai khi Member đã đăng nhập và bài đủ các mục bắt buộc tại 3.9. Bài thiếu dữ liệu không được công khai và không được lưu nháp bền vững trong phạm vi hiện tại. Hướng dẫn từng bước không phải trường bắt buộc. |
-| BR-20 | Giới thiệu, hướng dẫn từng bước và media không bắt buộc khi công khai bài công thức; thẻ món không có ảnh dùng ảnh mặc định. Thời gian nấu được bằng 0. |
+Lifecycle đã được ghi rõ và được giữ nguyên cho: `BR-08`, `BR-21`, `BR-22`, `BR-60`, `BR-61`.
+
+Các BR sau cần project decision-maker xác nhận lifecycle trước khi Issue synchronization hoặc trước khi thêm lifecycle vào bảng: `BR-01`–`BR-07`, `BR-09`–`BR-20`, `BR-23`–`BR-59`, `BR-62`–`BR-68`.
+
+Legacy wording và việc một quy tắc nằm trong bảng này không tự động xác lập `ACTIVE`.
+
+| ID | Quy tắc | Lifecycle |
+| --- | --- | --- |
+| BR-01 | Guest và tài khoản Free có tối đa 5 lượt text AI mỗi ngày theo giới hạn của app. | Chưa xác nhận |
+| BR-02 | Plus có tối đa 15 lượt text AI/ngày; Pro có tối đa 50 lượt text AI/ngày. | Chưa xác nhận |
+| BR-03 | Lượt AI chỉ tăng sau khi backend nhận phản hồi Gemini hợp lệ và lưu kết quả thành công. | Chưa xác nhận |
+| BR-04 | Lỗi provider/timeout trước phản hồi hợp lệ không được trừ lượt, nhưng phải ghi event lỗi để đối soát. | Chưa xác nhận |
+| BR-05 | Guest không có lịch sử AI, hồ sơ hoặc thực đơn cá nhân hóa. | Chưa xác nhận |
+| BR-06 | Gemini API key chỉ lưu ở backend/biến môi trường; frontend không được biết API key. | Chưa xác nhận |
+| BR-07 | Member đã đăng nhập được tạo và công khai Recipe Post trực tiếp sau khi bài đạt validation; không có trạng thái quyền đăng riêng hoặc Admin duyệt trước từng bài. | Chưa xác nhận |
+| BR-08 | Nếu AI gắn cờ được triển khai trong tương lai, AI chỉ hỗ trợ gắn cờ và không tự ẩn/xóa bài hoặc khóa tài khoản. | DEFERRED — Không thuộc MVP hiện tại. |
+| BR-09 | Câu trả lời AI phải nêu giới hạn hỗ trợ và không được trình bày như chẩn đoán/điều trị. | Chưa xác nhận |
+| BR-10 | Phase 1 không nhận upload file video; bài công thức chỉ lưu link hoặc video ID của YouTube. | Chưa xác nhận |
+| BR-11 | Recipe Post hợp lệ có media do Member đã đăng nhập công khai trực tiếp; media vẫn thuộc chính sách nội dung và có thể bị báo cáo/xử lý sau đăng. | Chưa xác nhận |
+| BR-12 | Liên kết nguyên liệu chuẩn là tùy chọn. Tên mới trên công thức không tự trở thành mục chuẩn; việc thiếu liên kết không tự chặn hoàn thiện hoặc công khai bài theo workflow chung. | Chưa xác nhận |
+| BR-13 | Nguyên liệu chưa nhận diện không mặc định thỏa mãn ràng buộc ăn uống; hệ thống không khẳng định món phù hợp với ràng buộc loại trừ khi chưa kiểm tra được thành phần. | Chưa xác nhận |
+| BR-14 | Dòng nguyên liệu dùng “vừa đủ” không yêu cầu số lượng/đơn vị, không lưu số giả thay lượng chưa xác định và không tự quy đổi sang gram hoặc suy ra dinh dưỡng chính xác. | Chưa xác nhận |
+| BR-15 | Bài tự viết và bài có AI hỗ trợ đều tuân theo cùng format/chính sách; AI chỉ hỗ trợ nội dung có thể chỉnh sửa trong biểu mẫu, không tự công khai hoặc lưu nháp bền vững. | Chưa xác nhận |
+| BR-16 | AI lỗi hoặc hết lượt không được chặn Member đã đăng nhập tiếp tục tự viết/chỉnh sửa và công khai Recipe Post đáp ứng điều kiện. | Chưa xác nhận |
+| BR-17 | Tác giả được gắn với tài khoản Member đăng bài; người đăng không được chọn tài khoản khác đứng tên. Việc AI hỗ trợ soạn nội dung không thay đổi tác giả. | Chưa xác nhận |
+| BR-18 | Hồ sơ tác giả công khai không tiết lộ email, thông tin đăng nhập hoặc hồ sơ ăn uống riêng tư; gắn tài khoản không được trình bày như xác minh danh tính thật hay chuyên môn. | Chưa xác nhận |
+| BR-19 | Recipe Post chỉ được công khai khi Member đã đăng nhập và bài đủ các mục bắt buộc tại 3.9. Bài thiếu dữ liệu không được công khai và không được lưu nháp bền vững trong phạm vi hiện tại. Hướng dẫn từng bước không phải trường bắt buộc. | Chưa xác nhận |
+| BR-20 | Giới thiệu, hướng dẫn từng bước và media không bắt buộc khi công khai bài công thức; thẻ món không có ảnh dùng ảnh mặc định. Thời gian nấu được bằng 0. | Chưa xác nhận |
 | BR-21 | Cơ chế trạng thái đơn xin quyền đăng và kiểm tra quyền đăng trước khi tạo/công khai Recipe Post. | RETIRED — Removed from active scope 2026-09-13; retained only for requirement history. |
 | BR-22 | Quy tắc Administrator phải nêu lý do khi từ chối đơn xin quyền đăng hoặc thu hồi quyền đăng. | RETIRED — Removed with the permission-application workflow 2026-09-13. |
-| BR-23 | Báo cáo của người dùng là tín hiệu để xem xét, không phải kết luận vi phạm; báo cáo cơ bản phải hoạt động khi AI chưa được triển khai hoặc bị lỗi. Nếu AI gắn cờ được triển khai sau này, AI không tự quyết định xử lý Recipe Post. |
-| BR-24 | Hệ thống chỉ tiếp nhận báo cáo bài công thức từ tài khoản đã đăng nhập; Guest phải đăng nhập trước. Kiểm tra xác thực được thực hiện ở backend. |
-| BR-25 | Mỗi báo cáo phải có một lý do hợp lệ trong sáu nhóm đã chốt. Nếu chọn “Khác”, mô tả không được rỗng hoặc chỉ chứa khoảng trắng; không tạo báo cáo khi chưa thỏa điều kiện. |
-| BR-26 | Chỉ Admin quyết định ẩn/xóa Recipe Post hoặc khóa tài khoản trong quy trình xử lý báo cáo; số lượng báo cáo không tự tạo chế tài. Quy tắc này không ngăn tác giả tự xóa bài của chính mình. Báo cáo đã giải quyết phải có kết luận và lý do. |
-| BR-27 | Bài công thức bị ẩn không tự được công khai lại khi tác giả sửa hoặc khi báo cáo đóng; chỉ Admin được khôi phục bài như một quyết định hậu kiểm. |
-| BR-28 | Báo cáo không công khai. Backend phải giới hạn quyền xem theo 3.13 và không cung cấp danh tính người báo cáo cho tác giả bài công thức bị báo cáo. |
-| BR-29 | Mỗi tài khoản chỉ có một báo cáo chưa giải quyết trên cùng bài công thức; thông tin mới được bổ sung vào báo cáo đang mở. Báo cáo lại sau khi giải quyết phải mô tả điểm mới. |
-| BR-30 | Bỏ qua Onboarding không khóa các chức năng không cá nhân hóa đã nêu tại 3.15; chỉ chặn yêu cầu AI cá nhân hóa khi thiếu dữ liệu tối thiểu. |
-| BR-31 | Khi chặn AI cá nhân hóa vì thiếu hồ sơ, backend không gọi Gemini và không trừ lượt AI. Giá trị để trống không được tự hiểu là người dùng xác nhận “Không có”. |
-| BR-32 | Chỉ Member đã đăng nhập có dữ liệu Công thức đã lưu và Lịch ăn; Guest phải đăng nhập trước khi hệ thống tạo các dữ liệu này. |
-| BR-33 | Lưu công thức không gọi Gemini, không trừ lượt AI và không tự cập nhật Onboarding hoặc hồ sơ sở thích. |
-| BR-34 | Mỗi Member chỉ có tối đa một bản ghi lưu cho cùng một bài công thức; yêu cầu lưu lặp không tạo dữ liệu trùng. |
-| BR-35 | Công thức đã lưu và mục lịch ăn có vòng đời độc lập: bỏ lưu không xóa mục lịch, xóa mục lịch không bỏ lưu. Cùng một công thức được phép xuất hiện ở nhiều ngày/bữa. |
-| BR-36 | Mỗi mục lịch ăn phải thuộc đúng một trong ba loại `Breakfast`, `Lunch` hoặc `Dinner`; MVP không có `Snack` hay loại bữa do người dùng tự tạo. |
-| BR-37 | Một bữa được có nhiều công thức và không có giới hạn cứng số món trong MVP. Với cùng Member, tổ hợp bài công thức–ngày–loại bữa phải duy nhất; yêu cầu thêm trùng không tạo mục lịch mới. |
-| BR-38 | AI không tạo công thức mới để phục vụ gợi ý hoặc menu. Nếu các công thức đang công khai, không bị ẩn/xóa không có lựa chọn phù hợp, hệ thống phải nói rõ thay vì tạo nội dung không tồn tại. |
-| BR-39 | BMI không được dùng một mình để suy ra nhu cầu calorie/dưỡng chất, đánh giá sức khỏe hoặc quyết định món phù hợp; BMI chỉ là chỉ số tham khảo trong hồ sơ rộng hơn. |
-| BR-40 | Menu theo dinh dưỡng và kiểm tra menu ngày chỉ dùng số liệu từ công thức có dữ liệu dinh dưỡng đủ và đáng tin cậy; thiếu dữ liệu phải được công khai và không được AI tự ước lượng như dữ kiện. |
-| BR-41 | “Thấp hơn mức tham khảo” trong một ngày không được trình bày là chẩn đoán thiếu chất; mọi kết quả calorie/dưỡng chất là ước tính hỗ trợ lập kế hoạch và không thay thế chuyên gia. |
-| BR-42 | MVP không cung cấp tính nhu cầu, AI menu dinh dưỡng hoặc kiểm tra menu ngày cho người dưới 18 tuổi, người mang thai/cho con bú hoặc người cần chế độ ăn điều trị; giới hạn này không được khóa chức năng thông thường của họ. |
-| BR-43 | Số liệu dinh dưỡng trên trang công thức phải gắn với một khẩu phần; tỷ lệ tham chiếu chung không được trình bày như mục tiêu cá nhân. Kiểm tra menu ngày phải sử dụng số khẩu phần đã ghi nhận và mức tham khảo cá nhân. |
-| BR-44 | Không áp dụng cùng một cách hiểu phần trăm cho mọi chỉ tiêu: natri được theo dõi theo giới hạn tối đa, còn trạng thái của năng lượng và chất đa lượng dựa trên khoảng tham khảo đã chốt. Không khuyến khích người dùng tăng natri chỉ để đạt 100%. |
-| BR-45 | MVP không tạo điểm cân bằng dinh dưỡng tổng hợp và không hiển thị Glycemic Index/Glycemic Load. Hệ thống phải trình bày từng chỉ tiêu và không được che giấu dữ liệu thiếu bằng một nhãn “Tốt/Xấu”. |
-| BR-46 | Dinh dưỡng công thức phải được suy ra từ danh mục nguyên liệu dinh dưỡng nội bộ và định lượng đã khai báo. Bảng tổng do tác giả tự nhập hoặc con số do AI sinh ra không được coi là dữ liệu dinh dưỡng đã xác minh. |
-| BR-47 | Tổng dinh dưỡng toàn công thức được phân bổ theo số khẩu phần của công thức. Khi thêm vào Lịch ăn, mặc định là một khẩu phần nhưng Member được thay đổi số khẩu phần dự định ăn; tổng ngày phải cộng mọi mục thuộc cả ba bữa theo lượng này. |
-| BR-48 | Nguyên liệu thiếu định lượng, dùng “vừa đủ”, không quy đổi được hoặc chưa có dữ liệu dinh dưỡng không được tự tính là 0. Hệ thống phải đánh dấu kết quả chưa đầy đủ và AI không được che giấu hoặc tự bù dữ liệu thiếu. |
-| BR-49 | MVP không gọi API dinh dưỡng hoặc dùng AI để tự đối chiếu/tạo số liệu khi người dùng thao tác. Dữ liệu nội bộ phải giữ nguồn tham khảo; USDA FoodData Central là nguồn tham khảo chính cho bộ dữ liệu ban đầu. |
-| BR-50 | Nguyên liệu ngoài danh mục dinh dưỡng không chặn công khai Recipe Post theo workflow chung. Bài có kết quả dinh dưỡng chưa đầy đủ không được sử dụng trong AI menu có mục tiêu dinh dưỡng. |
-| BR-51 | Chỉ Administrator được quản lý dữ liệu trong danh mục nguyên liệu dinh dưỡng. Tác giả công thức và AI không được trực tiếp tạo hoặc thay đổi các giá trị dinh dưỡng dùng làm dữ liệu tính toán chính thức. |
-| BR-52 | Mỗi nguyên liệu dinh dưỡng được thêm/sửa phải có đủ chín giá trị trên 100 g, tên nguồn, đường dẫn nguồn và ngày tham khảo hợp lệ trước khi được bật để tính toán chính thức. |
-| BR-53 | MVP không xóa vĩnh viễn nguyên liệu dinh dưỡng đã được tham chiếu. Administrator dùng trạng thái ngừng hỗ trợ; dữ liệu ngừng hỗ trợ không được chọn cho liên kết mới nhưng vẫn phải giữ khả năng truy vết công thức đã sử dụng. |
-| BR-54 | MVP không nhập hàng loạt, không tự gọi USDA và không cho AI tự điền dữ liệu vào danh mục dinh dưỡng. |
-| BR-55 | Tìm nhà hàng dùng địa chỉ/địa điểm do người dùng chủ động nhập hoặc chọn; MVP không xin quyền, đọc hoặc lưu GPS/vị trí hiện tại của thiết bị. |
-| BR-56 | Kết quả nhà hàng phải đến từ Google Maps Platform và không được Gemini tạo ra. Tìm nhà hàng không trừ lượt AI và app không được trình bày phân loại của Google như xác minh độc lập của hệ thống. |
-| BR-57 | Khi địa chỉ không xác định được, không có kết quả hoặc dịch vụ Google lỗi/hết hạn mức, hệ thống phải thông báo đúng trạng thái và không tạo địa điểm thay thế không có nguồn. |
-| BR-58 | Gửi báo cáo và xử lý báo cáo là hai nghiệp vụ độc lập. Một báo cáo không tự ẩn/xóa Recipe Post hoặc khóa tài khoản nếu Admin chưa quyết định. |
-| BR-59 | MVP không có hàng đợi duyệt từng Recipe Post. Bài hợp lệ của Member đã đăng nhập được công khai trực tiếp khi tác giả chủ động công khai. |
+| BR-23 | Báo cáo của người dùng là tín hiệu để xem xét, không phải kết luận vi phạm; báo cáo cơ bản phải hoạt động khi AI chưa được triển khai hoặc bị lỗi. Nếu AI gắn cờ được triển khai sau này, AI không tự quyết định xử lý Recipe Post. | Chưa xác nhận |
+| BR-24 | Hệ thống chỉ tiếp nhận báo cáo bài công thức từ tài khoản đã đăng nhập; Guest phải đăng nhập trước. Kiểm tra xác thực được thực hiện ở backend. | Chưa xác nhận |
+| BR-25 | Mỗi báo cáo phải có một lý do hợp lệ trong sáu nhóm đã chốt. Nếu chọn “Khác”, mô tả không được rỗng hoặc chỉ chứa khoảng trắng; không tạo báo cáo khi chưa thỏa điều kiện. | Chưa xác nhận |
+| BR-26 | Chỉ Admin quyết định ẩn/xóa Recipe Post hoặc khóa tài khoản trong quy trình xử lý báo cáo; số lượng báo cáo không tự tạo chế tài. Quy tắc này không ngăn tác giả tự xóa bài của chính mình. Báo cáo đã giải quyết phải có kết luận và lý do. | Chưa xác nhận |
+| BR-27 | Bài công thức bị ẩn không tự được công khai lại khi tác giả sửa hoặc khi báo cáo đóng; chỉ Admin được khôi phục bài như một quyết định hậu kiểm. | Chưa xác nhận |
+| BR-28 | Báo cáo không công khai. Backend phải giới hạn quyền xem theo 3.13 và không cung cấp danh tính người báo cáo cho tác giả bài công thức bị báo cáo. | Chưa xác nhận |
+| BR-29 | Mỗi tài khoản chỉ có một báo cáo chưa giải quyết trên cùng bài công thức; thông tin mới được bổ sung vào báo cáo đang mở. Báo cáo lại sau khi giải quyết phải mô tả điểm mới. | Chưa xác nhận |
+| BR-30 | Bỏ qua Onboarding không khóa các chức năng không cá nhân hóa đã nêu tại 3.15; chỉ chặn yêu cầu AI cá nhân hóa khi thiếu dữ liệu tối thiểu. | Chưa xác nhận |
+| BR-31 | Khi chặn AI cá nhân hóa vì thiếu hồ sơ, backend không gọi Gemini và không trừ lượt AI. Giá trị để trống không được tự hiểu là người dùng xác nhận “Không có”. | Chưa xác nhận |
+| BR-32 | Chỉ Member đã đăng nhập có dữ liệu Công thức đã lưu và Lịch ăn; Guest phải đăng nhập trước khi hệ thống tạo các dữ liệu này. | Chưa xác nhận |
+| BR-33 | Lưu công thức không gọi Gemini, không trừ lượt AI và không tự cập nhật Onboarding hoặc hồ sơ sở thích. | Chưa xác nhận |
+| BR-34 | Mỗi Member chỉ có tối đa một bản ghi lưu cho cùng một bài công thức; yêu cầu lưu lặp không tạo dữ liệu trùng. | Chưa xác nhận |
+| BR-35 | Công thức đã lưu và mục lịch ăn có vòng đời độc lập: bỏ lưu không xóa mục lịch, xóa mục lịch không bỏ lưu. Cùng một công thức được phép xuất hiện ở nhiều ngày/bữa. | Chưa xác nhận |
+| BR-36 | Mỗi mục lịch ăn phải thuộc đúng một trong ba loại `Breakfast`, `Lunch` hoặc `Dinner`; MVP không có `Snack` hay loại bữa do người dùng tự tạo. | Chưa xác nhận |
+| BR-37 | Một bữa được có nhiều công thức và không có giới hạn cứng số món trong MVP. Với cùng Member, tổ hợp bài công thức–ngày–loại bữa phải duy nhất; yêu cầu thêm trùng không tạo mục lịch mới. | Chưa xác nhận |
+| BR-38 | AI không tạo công thức mới để phục vụ gợi ý hoặc menu. Nếu các công thức đang công khai, không bị ẩn/xóa không có lựa chọn phù hợp, hệ thống phải nói rõ thay vì tạo nội dung không tồn tại. | Chưa xác nhận |
+| BR-39 | BMI không được dùng một mình để suy ra nhu cầu calorie/dưỡng chất, đánh giá sức khỏe hoặc quyết định món phù hợp; BMI chỉ là chỉ số tham khảo trong hồ sơ rộng hơn. | Chưa xác nhận |
+| BR-40 | Menu theo dinh dưỡng và kiểm tra menu ngày chỉ dùng số liệu từ công thức có dữ liệu dinh dưỡng đủ và đáng tin cậy; thiếu dữ liệu phải được công khai và không được AI tự ước lượng như dữ kiện. | Chưa xác nhận |
+| BR-41 | “Thấp hơn mức tham khảo” trong một ngày không được trình bày là chẩn đoán thiếu chất; mọi kết quả calorie/dưỡng chất là ước tính hỗ trợ lập kế hoạch và không thay thế chuyên gia. | Chưa xác nhận |
+| BR-42 | MVP không cung cấp tính nhu cầu, AI menu dinh dưỡng hoặc kiểm tra menu ngày cho người dưới 18 tuổi, người mang thai/cho con bú hoặc người cần chế độ ăn điều trị; giới hạn này không được khóa chức năng thông thường của họ. | Chưa xác nhận |
+| BR-43 | Số liệu dinh dưỡng trên trang công thức phải gắn với một khẩu phần; tỷ lệ tham chiếu chung không được trình bày như mục tiêu cá nhân. Kiểm tra menu ngày phải sử dụng số khẩu phần đã ghi nhận và mức tham khảo cá nhân. | Chưa xác nhận |
+| BR-44 | Không áp dụng cùng một cách hiểu phần trăm cho mọi chỉ tiêu: natri được theo dõi theo giới hạn tối đa, còn trạng thái của năng lượng và chất đa lượng dựa trên khoảng tham khảo đã chốt. Không khuyến khích người dùng tăng natri chỉ để đạt 100%. | Chưa xác nhận |
+| BR-45 | MVP không tạo điểm cân bằng dinh dưỡng tổng hợp và không hiển thị Glycemic Index/Glycemic Load. Hệ thống phải trình bày từng chỉ tiêu và không được che giấu dữ liệu thiếu bằng một nhãn “Tốt/Xấu”. | Chưa xác nhận |
+| BR-46 | Dinh dưỡng công thức phải được suy ra từ danh mục nguyên liệu dinh dưỡng nội bộ và định lượng đã khai báo. Bảng tổng do tác giả tự nhập hoặc con số do AI sinh ra không được coi là dữ liệu dinh dưỡng đã xác minh. | Chưa xác nhận |
+| BR-47 | Tổng dinh dưỡng toàn công thức được phân bổ theo số khẩu phần của công thức. Khi thêm vào Lịch ăn, mặc định là một khẩu phần nhưng Member được thay đổi số khẩu phần dự định ăn; tổng ngày phải cộng mọi mục thuộc cả ba bữa theo lượng này. | Chưa xác nhận |
+| BR-48 | Nguyên liệu thiếu định lượng, dùng “vừa đủ”, không quy đổi được hoặc chưa có dữ liệu dinh dưỡng không được tự tính là 0. Hệ thống phải đánh dấu kết quả chưa đầy đủ và AI không được che giấu hoặc tự bù dữ liệu thiếu. | Chưa xác nhận |
+| BR-49 | MVP không gọi API dinh dưỡng hoặc dùng AI để tự đối chiếu/tạo số liệu khi người dùng thao tác. Dữ liệu nội bộ phải giữ nguồn tham khảo; USDA FoodData Central là nguồn tham khảo chính cho bộ dữ liệu ban đầu. | Chưa xác nhận |
+| BR-50 | Nguyên liệu ngoài danh mục dinh dưỡng không chặn công khai Recipe Post theo workflow chung. Bài có kết quả dinh dưỡng chưa đầy đủ không được sử dụng trong AI menu có mục tiêu dinh dưỡng. | Chưa xác nhận |
+| BR-51 | Chỉ Administrator được quản lý dữ liệu trong danh mục nguyên liệu dinh dưỡng. Tác giả công thức và AI không được trực tiếp tạo hoặc thay đổi các giá trị dinh dưỡng dùng làm dữ liệu tính toán chính thức. | Chưa xác nhận |
+| BR-52 | Mỗi nguyên liệu dinh dưỡng được thêm/sửa phải có đủ chín giá trị trên 100 g, tên nguồn, đường dẫn nguồn và ngày tham khảo hợp lệ trước khi được bật để tính toán chính thức. | Chưa xác nhận |
+| BR-53 | MVP không xóa vĩnh viễn nguyên liệu dinh dưỡng đã được tham chiếu. Administrator dùng trạng thái ngừng hỗ trợ; dữ liệu ngừng hỗ trợ không được chọn cho liên kết mới nhưng vẫn phải giữ khả năng truy vết công thức đã sử dụng. | Chưa xác nhận |
+| BR-54 | MVP không nhập hàng loạt, không tự gọi USDA và không cho AI tự điền dữ liệu vào danh mục dinh dưỡng. | Chưa xác nhận |
+| BR-55 | Tìm nhà hàng dùng địa chỉ/địa điểm do người dùng chủ động nhập hoặc chọn; MVP không xin quyền, đọc hoặc lưu GPS/vị trí hiện tại của thiết bị. | Chưa xác nhận |
+| BR-56 | Kết quả nhà hàng phải đến từ Google Maps Platform và không được Gemini tạo ra. Tìm nhà hàng không trừ lượt AI và app không được trình bày phân loại của Google như xác minh độc lập của hệ thống. | Chưa xác nhận |
+| BR-57 | Khi địa chỉ không xác định được, không có kết quả hoặc dịch vụ Google lỗi/hết hạn mức, hệ thống phải thông báo đúng trạng thái và không tạo địa điểm thay thế không có nguồn. | Chưa xác nhận |
+| BR-58 | Gửi báo cáo và xử lý báo cáo là hai nghiệp vụ độc lập. Một báo cáo không tự ẩn/xóa Recipe Post hoặc khóa tài khoản nếu Admin chưa quyết định. | Chưa xác nhận |
+| BR-59 | MVP không có hàng đợi duyệt từng Recipe Post. Bài hợp lệ của Member đã đăng nhập được công khai trực tiếp khi tác giả chủ động công khai. | Chưa xác nhận |
 | BR-60 | Quy tắc xác nhận chính sách, trách nhiệm và lý do đóng góp trước khi gửi đơn xin quyền đăng. | RETIRED — Removed with the permission-application workflow 2026-09-13. |
 | BR-61 | Quy tắc mỗi Member có tối đa một đơn xin quyền đăng Chờ duyệt và được gửi lại sau khi bị từ chối. | RETIRED — Removed with the permission-application workflow 2026-09-13. |
-| BR-62 | Khi sửa Recipe Post đang công khai, backend phải kiểm tra tác giả và các trường bắt buộc. Bài bị Administrator ẩn không được tự công khai lại qua chức năng sửa. |
-| BR-63 | Đề xuất nhà hàng chỉ dựa trên địa chỉ/bán kính và dữ liệu Google Maps Platform, không dựa trên món đã tìm. Hệ thống không duy trì danh mục nhà hàng do Administrator quản lý và không được trình bày dữ liệu ngoài như dữ liệu đã được app xác minh. |
-| BR-64 | Member đã đăng nhập chỉ được sửa/xóa Recipe Post do chính tài khoản đó đứng tên. Bài do tác giả xóa không còn công khai hoặc được AI gợi ý; bài đang bị Admin ẩn không được tác giả tự khôi phục bằng thao tác quản lý bài cá nhân. |
-| BR-65 | Mỗi cặp Member–bài công thức chỉ có tối đa một Like đang hiệu lực. Thích lại không tạo lượt trùng; bỏ Like loại lượt của Member khỏi tổng. Like không tự lưu công thức, cập nhật sở thích, thêm món vào lịch hoặc trừ lượt AI. |
-| BR-66 | Mỗi reply phải thuộc cùng bài công thức với bình luận cha và có thể tiếp tục nhận reply ở cấp sâu hơn. Chỉ chủ sở hữu được sửa/xóa bình luận của mình; quyền quản trị nội dung vi phạm của Administrator vẫn được áp dụng. |
-| BR-67 | Backend chỉ gửi yêu cầu tìm nhà hàng tới Google Maps Platform sau khi xác thực Member. Yêu cầu của Guest bị chặn trước khi gọi dịch vụ ngoài và không tiêu thụ quota tìm kiếm của ứng dụng. |
-| BR-68 | Bán kính tìm nhà hàng trong MVP chỉ nhận một trong bốn giá trị 500 m, 1 km, 5 km hoặc 10 km; giá trị khác bị từ chối trước khi gọi Google Maps Platform. |
+| BR-62 | Khi sửa Recipe Post đang công khai, backend phải kiểm tra tác giả và các trường bắt buộc. Bài bị Administrator ẩn không được tự công khai lại qua chức năng sửa. | Chưa xác nhận |
+| BR-63 | Đề xuất nhà hàng chỉ dựa trên địa chỉ/bán kính và dữ liệu Google Maps Platform, không dựa trên món đã tìm. Hệ thống không duy trì danh mục nhà hàng do Administrator quản lý và không được trình bày dữ liệu ngoài như dữ liệu đã được app xác minh. | Chưa xác nhận |
+| BR-64 | Member đã đăng nhập chỉ được sửa/xóa Recipe Post do chính tài khoản đó đứng tên. Bài do tác giả xóa không còn công khai hoặc được AI gợi ý; bài đang bị Admin ẩn không được tác giả tự khôi phục bằng thao tác quản lý bài cá nhân. | Chưa xác nhận |
+| BR-65 | Mỗi cặp Member–bài công thức chỉ có tối đa một Like đang hiệu lực. Thích lại không tạo lượt trùng; bỏ Like loại lượt của Member khỏi tổng. Like không tự lưu công thức, cập nhật sở thích, thêm món vào lịch hoặc trừ lượt AI. | Chưa xác nhận |
+| BR-66 | Mỗi reply phải thuộc cùng bài công thức với bình luận cha và có thể tiếp tục nhận reply ở cấp sâu hơn. Chỉ chủ sở hữu được sửa/xóa bình luận của mình; quyền quản trị nội dung vi phạm của Administrator vẫn được áp dụng. | Chưa xác nhận |
+| BR-67 | Backend chỉ gửi yêu cầu tìm nhà hàng tới Google Maps Platform sau khi xác thực Member. Yêu cầu của Guest bị chặn trước khi gọi dịch vụ ngoài và không tiêu thụ quota tìm kiếm của ứng dụng. | Chưa xác nhận |
+| BR-68 | Bán kính tìm nhà hàng trong MVP chỉ nhận một trong bốn giá trị 500 m, 1 km, 5 km hoặc 10 km; giá trị khác bị từ chối trước khi gọi Google Maps Platform. | Chưa xác nhận |
 
 ## 9. Non-functional Requirements cần cụ thể hóa
 
@@ -548,7 +576,7 @@ Các FR dưới đây là khung đánh số. Chỉ mục mang trạng thái **Đ
 
 ## 10. Việc còn mở cho thiết kế/triển khai
 
-Phạm vi Q01–Q38 đã xác nhận tại 3.20. Còn giá/cổng/chu kỳ/chính sách thanh toán; phương tiện và tích hợp khoảng cách đường bộ; validation, quyền riêng tư/thời hạn lưu, quy tắc email và hiển thị cây bình luận. Công thức/hệ số/khoảng dinh dưỡng nghiên cứu khi triển khai Q31, không cần nghiên cứu ngay để tiếp tục SRS.
+Phạm vi Q01–Q38 đã xác nhận tại 3.20. Còn giá/cổng/chu kỳ/chính sách thanh toán; phương tiện và tích hợp khoảng cách đường bộ; validation, quyền riêng tư/thời hạn lưu, quy tắc email và hiển thị cây bình luận. Cần chốt timezone/mốc reset quota AI được công bố cho người dùng, thời hạn lưu usage/error telemetry và biện pháp nhận diện/chống lạm dụng Guest ở mức bảo vệ quyền riêng tư phù hợp. Công thức/hệ số/khoảng dinh dưỡng nghiên cứu khi triển khai Q31, không cần nghiên cứu ngay để tiếp tục SRS.
 
 ## 11. Bước tiếp theo
 
@@ -561,7 +589,7 @@ Viết User Stories, Use Cases và Acceptance Criteria theo phạm vi đã chố
 | Quản lý thành viên/bài/bình luận/danh mục | FR-04, FR-06, FR-18, FR-28 | Công khai trực tiếp, hậu kiểm nội dung theo báo cáo |
 | Bình luận/bình chọn/báo cáo/quản lý nội dung mình | FR-26–FR-30, FR-44–FR-46, FR-48 | Like không đánh giá sao, reply nhiều cấp |
 | Thực đơn tuần theo nguyên liệu và BMI | FR-09, FR-31, FR-33–FR-39 | Hồ sơ rộng hơn BMI, AI chọn công thức có sẵn |
-| Tìm/gợi ý nhà hàng chay | FR-42, FR-43 | Needs clarification — chờ giảng viên xác nhận phạm vi và tiêu chí nghiệm thu. |
+| Tìm/gợi ý nhà hàng chay | FR-42, FR-43 | Member nhập/chọn địa chỉ và ngưỡng 500 m/1 km/5 km/10 km; Google Maps trả danh sách/bản đồ, không dùng GPS hoặc liên kết món đã tìm. |
 | Bài liên quan công thức đã tìm | FR-47 | Thông thường hoặc tùy chọn AI |
 | Chatbot dinh dưỡng, thay nguyên liệu, BMI/calorie | FR-51 | Không tạo công thức/số liệu |
 | Giới hạn và đăng ký gói AI | FR-10, FR-11, FR-13 | 5/15/50, cùng chức năng; thanh toán thật |

@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v2.0.1  
+> **Version:** v2.0.2
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-13  
+> **Last Updated:** 2026-09-14
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -326,11 +326,11 @@ GitHub Issues/Projects manage progress, owners, dates and blockers; linked PRs h
 
 ## Shared Editing Rules
 
-Preserve existing contributor changes and stay within the requested scope. Changes to architecture, database schema, public APIs or core dependencies require authorization. Write new governance documentation in professional English; preserve existing Vietnamese product documents unless translation is requested. Update affected links and metadata, and record meaningful changes in the changelog. Verify against the actual repository and state any failed or unavailable checks.
+Preserve existing contributor changes and stay within the requested scope. Changes to architecture, database schema, public APIs or core dependencies require authorization. Follow the [Documentation Language Policy](docs/README.md#documentation-language-policy). Update affected links and metadata, and record meaningful changes in the changelog. Verify against the actual repository and state any failed or unavailable checks.
 
 ## Changelog Format
 
-Write CHANGELOG.md in English, using dated topic entries in reverse chronological order. Each entry explains what changed on that date and why it matters. Keep these three sections in this order: Added, Changed, Fixed. Use "None." when a category has no changes; record removals explicitly under Changed. Do not use a single accumulating [Unreleased] section or copy tutorial/example history into the changelog.
+Write CHANGELOG.md according to the [Documentation Language Policy](docs/README.md#documentation-language-policy), using dated topic entries in reverse chronological order. Each entry explains what changed on that date and why it matters. Keep these three sections in this order: Added, Changed, Fixed. Use "None." when a category has no changes; record removals explicitly under Changed. Do not use a single accumulating [Unreleased] section or copy tutorial/example history into the changelog.
 
 Each entry has:
 

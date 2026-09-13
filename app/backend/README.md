@@ -1,13 +1,13 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/backend/README.md`  
-> **Version:** v0.1.0  
+> **Version:** v0.1.1
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-12  
+> **Last Updated:** 2026-09-13
 > **Status:** Under Review  
 
 # Backend Workspace
 
-Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và truy cập Microsoft SQL Server qua Spring Data JPA/Hibernate theo [Technology Stack](../../docs/decisions/SWP-Technology-Stack-v2.0.0.txt).
+Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và truy cập Microsoft SQL Server qua Spring Data JPA/Hibernate theo [Technology Stack](../../docs/architecture/TECHNOLOGY-STACK.md).
 
 ## Trạng thái hiện tại
 

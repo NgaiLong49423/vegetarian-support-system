@@ -26,24 +26,26 @@ canonical_docs:
   project_overview: README.md
   product_requirements: docs/requirements/PRD.md
   software_requirements: docs/requirements/SRS.md
-  technology_stack: docs/decisions/SWP-Technology-Stack-v2.0.0.txt
+  architecture: docs/architecture/ARCHITECTURE.md
+  technology_stack: docs/architecture/TECHNOLOGY-STACK.md
+  test_strategy: docs/testing/TEST-STRATEGY.md
   contribution_rules: CONTRIBUTING.md
   workflow: docs/decisions/001-team-workflow.md
   team_operating_agreement: docs/decisions/002-five-member-team-operating-agreement.md
   changelog: CHANGELOG.md
   database_policy: database/README.md
   labels: .github/labels.yml
-supporting_docs:
-  product_direction: docs/requirements/product-direction.md
-  ai_plans: docs/requirements/ai-plan-decomposition.md
-  actors: docs/requirements/actors-and-onboarding-draft.md
 database_state:
   schema_snapshot: database/schema.sql
   status: empty_placeholder_not_approved_schema
   migration_owner: backend_flyway_when_scaffolded
 doc_sync_rules:
   - when: requirements_change
-    check: [docs/requirements/SRS.md, docs/requirements/PRD.md, README.md, CHANGELOG.md]
+    check: [docs/requirements/SRS.md, docs/requirements/PRD.md, docs/architecture/ARCHITECTURE.md, docs/testing/TEST-STRATEGY.md, README.md, CHANGELOG.md]
+  - when: architecture_or_technology_changes
+    check: [docs/architecture/ARCHITECTURE.md, docs/architecture/TECHNOLOGY-STACK.md, docs/requirements/SRS.md, docs/README.md, README.md]
+  - when: test_strategy_changes
+    check: [docs/testing/TEST-STRATEGY.md, docs/requirements/SRS.md, CONTRIBUTING.md]
   - when: layout_or_agent_policy_changes
     check: [AGENTS.md, docs/README.md, .agents/repo-contract.yml, README.md, CONTRIBUTING.md]
   - when: workflow_changes

@@ -1,8 +1,8 @@
 > **Document:** Similar Products Benchmark for Topic 03  
 > **File:** `docs/research/similar-products-benchmark.md`  
-> **Version:** v0.1.0  
+> **Version:** v0.2.0
 > **Created:** 2026-09-12  
-> **Last Updated:** 2026-09-12  
+> **Last Updated:** 2026-09-13
 > **Status:** Under Review  
 
 # Benchmark sản phẩm tương tự — Đề tài 03
@@ -51,8 +51,8 @@ Nguồn:
 
 ### Bài học cho dự án
 
-- Tách rõ chức năng miễn phí và giá trị premium; premium cần khác biệt về capability, không chỉ đổi nhãn.
-- AI meal planning là một giá trị nâng cấp dễ hiểu hơn chatbot “hỏi gì cũng được”.
+- Tách rõ chức năng miễn phí và giá trị premium là một hướng đối thủ đang dùng. Dự án hiện chọn Free/Plus/Pro cùng nhóm chức năng AI và khác hạn mức 5/15/50; benchmark này không thay đổi quyết định đó.
+- AI meal planning là một giá trị sản phẩm dễ giải thích, nhưng quyền theo gói của dự án vẫn do SRS quyết định.
 - Content policy cần nêu nội dung phù hợp chủ đề ăn chay, spam/trùng lặp, nội dung nguy hiểm và chế tài.
 - Dự án của nhóm chỉ có một loại bài là bài công thức (`Recipe Post`), không có Blog tổng quát tách riêng. Hướng dẫn từng bước thuộc bài nhưng là tùy chọn.
 
@@ -93,7 +93,7 @@ Nguồn:
 
 ### Bài học cho dự án
 
-- Human moderation trước khi công khai làm nội dung đáng tin hơn nhưng tạo hàng đợi và thời gian chờ. Dự án đã chọn hướng khác: Admin duyệt đơn xin quyền đăng một lần, người được cấp quyền tự công khai bài và Admin hậu kiểm khi có báo cáo.
+- Human moderation trước khi công khai làm nội dung đáng tin hơn nhưng tạo hàng đợi và thời gian chờ. Dự án đã chọn hướng khác: mọi Member đã đăng nhập công khai Recipe Post hợp lệ trực tiếp; Administrator hậu kiểm khi có báo cáo, không duyệt đơn xin quyền đăng hoặc từng bài.
 - Bài công thức và Comment có thể cần mức hậu kiểm khác nhau. Dự án đã chốt bình luận hỗ trợ reply lồng nhiều cấp; giới hạn độ sâu/hiển thị và chế tài chi tiết sẽ được thiết kế sau. Dự án không cần thêm quy tắc cho một loại Blog tổng quát vì loại nội dung đó đã bị loại khỏi phạm vi.
 - Cần danh mục ăn chay rõ ràng và tiêu chí gắn nhãn, tránh chỉ dựa vào từ khóa.
 - Địa điểm ăn chay quanh địa chỉ người dùng nhập đã được đưa vào MVP; HappyCow tiếp tục là nguồn tham khảo nghiệp vụ, còn dữ liệu địa điểm của app lấy từ Google Maps Platform theo SRS. Dự án không quản lý hồ sơ nhà hàng và không gắn đề xuất địa điểm với món/bài công thức người dùng vừa tìm.
@@ -132,7 +132,7 @@ Quyết định hiện tại của dự án: Phase 1 lưu ảnh trên Azure Blob
 | Nghiệp vụ cần học | Sản phẩm tham khảo chính | Cách áp dụng nhỏ nhất cho dự án |
 | --- | --- | --- |
 | Community content | Samsung Food | Bài công thức; ảnh Azure và link YouTube tùy chọn; bình luận là tương tác hỗ trợ |
-| Human moderation | HappyCow + Samsung Food guidelines | Admin duyệt đơn xin quyền đăng; người dùng báo cáo bài công khai và Admin hậu kiểm, không có hàng đợi duyệt từng bài |
+| Human moderation | HappyCow + Samsung Food guidelines | Member công khai Recipe Post hợp lệ trực tiếp; người dùng báo cáo nội dung và Admin hậu kiểm, không có đơn xin quyền đăng hoặc hàng đợi duyệt từng bài |
 | Recipe content | Forks Over Knives | Bài công thức có dữ liệu tối thiểu để tìm/lọc; hướng dẫn từng bước tùy chọn |
 | Meal planning | Forks Over Knives + Samsung Food | Tách Đã lưu và Lịch ăn; thêm/chuyển/thay/xóa món theo ngày/bữa; chưa thêm Queue hay shopping integration |
 | AI premium | Samsung Food+ | Free/Plus/Pro cùng AI, khác hạn mức 5/15/50; thanh toán thật theo Q19/Q26, không sao chép cách khóa tính năng của đối thủ |

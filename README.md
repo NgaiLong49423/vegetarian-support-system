@@ -1,6 +1,6 @@
 > **Document:** Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.4.0
+> **Version:** v0.5.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-13
 > **Status:** Under Review
@@ -14,7 +14,7 @@
 ## Phạm vi MVP
 
 - Guest đọc/tìm bài công thức công khai, xem bình luận và dùng AI hỏi đáp cơ bản theo hạn mức.
-- Member quản lý hồ sơ, lưu công thức, lập lịch ăn ba bữa và tương tác Like/bình luận. Chức năng tìm/gợi ý nhà hàng chay đang chờ giảng viên xác nhận.
+- Member quản lý hồ sơ, lưu công thức, lập lịch ăn ba bữa, tương tác Like/bình luận và tìm nhà hàng chay quanh địa chỉ chủ động nhập theo phạm vi Google Maps đã ghi trong SRS.
 - Member đã đăng nhập có thể tạo và công khai Recipe Post trực tiếp; Administrator hậu kiểm nội dung theo báo cáo của người dùng.
 - Gemini hỗ trợ hỏi đáp, gợi ý công thức có sẵn, lập/thay thực đơn và tạo nội dung có thể chỉnh sửa trong biểu mẫu; AI không tự tạo dữ liệu dinh dưỡng chính thức hoặc tự quyết định kiểm duyệt. Lưu nháp Recipe Post, lịch sử chat AI và AI quét/gắn cờ nội dung không thuộc MVP hiện tại.
 - Free, Plus và Pro có cùng nhóm chức năng AI, khác hạn mức lượt gọi. Chi tiết thanh toán vẫn chưa chốt.
@@ -29,10 +29,10 @@ Chi tiết nghiệp vụ nằm trong [SRS](docs/requirements/SRS.md). Các đề
 | Backend | Java 21, Spring Boot, Maven, REST API/JSON |
 | Data | Microsoft SQL Server, Spring Data JPA/Hibernate, Flyway |
 | Security | Spring Security, JWT, BCrypt, role-based authorization |
-| External services | Azure Blob Storage, Google Gemini; Google Maps Platform is a candidate pending lecturer confirmation of restaurant discovery. |
+| External services | Azure Blob Storage, Google Gemini, Google Maps Platform and YouTube embedding; payment/email provider details remain unresolved. |
 | Quality | JUnit 5, Mockito, JaCoCo, OpenAPI/Swagger UI, Bean Validation |
 
-Model Gemini, AI architecture, frontend state management, CSS/UI library và deployment vẫn là `TBD`. Xem [Technology Stack v2.0.0](docs/decisions/SWP-Technology-Stack-v2.0.0.txt) trước khi thêm dependency hoặc thay đổi kiến trúc.
+Model Gemini, AI architecture, frontend state management, CSS/UI library và deployment vẫn là `TBD`. Xem [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) trước khi thêm dependency và [System Architecture](docs/architecture/ARCHITECTURE.md) trước khi thay đổi ranh giới hệ thống.
 
 ## Cấu trúc repository
 
@@ -44,6 +44,8 @@ Model Gemini, AI architecture, frontend state management, CSS/UI library và dep
 ├── database/
 ├── docs/
 │   ├── requirements/
+│   ├── architecture/
+│   ├── testing/
 │   ├── decisions/
 │   ├── diagrams/
 │   └── research/
@@ -62,7 +64,9 @@ Model Gemini, AI architecture, frontend state management, CSS/UI library và dep
 |---|---|---|
 | Yêu cầu chi tiết | [SRS](docs/requirements/SRS.md) | Draft |
 | Yêu cầu sản phẩm cấp cao | [PRD](docs/requirements/PRD.md) | Under Review |
-| Công nghệ | [Technology Stack](docs/decisions/SWP-Technology-Stack-v2.0.0.txt) | Baseline hiện tại |
+| Kiến trúc cấp cao | [System Architecture](docs/architecture/ARCHITECTURE.md) | Active; chưa phải bằng chứng implementation |
+| Công nghệ | [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) | Active baseline |
+| Chiến lược kiểm thử | [Test Strategy](docs/testing/TEST-STRATEGY.md) | Active; chưa khẳng định test đã tồn tại |
 | Quy trình Git/PR/release | [CONTRIBUTING.md](CONTRIBUTING.md) | Active |
 | Quyết định workflow | [ADR-001](docs/decisions/001-team-workflow.md) | Active |
 | Luật vận hành nhóm 5 người | [ADR-002](docs/decisions/002-five-member-team-operating-agreement.md) | Active |
@@ -72,7 +76,7 @@ Quy tắc đặt file và danh mục tài liệu được duy trì nằm trong [
 
 ## Bắt đầu làm việc
 
-1. Đọc SRS, Technology Stack, `CONTRIBUTING.md` và ADR-002.
+1. Đọc SRS, Technology Stack, tài liệu liên quan trực tiếp tới task, `CONTRIBUTING.md` và ADR-002.
 2. Chọn Issue đã đạt Definition of Ready; mỗi Issue có đúng một owner.
 3. Tạo branch từ `develop` theo dạng `<type>/<issue-number>-<short-name>`.
 4. Thực hiện một phạm vi nhỏ, tự kiểm tra và cập nhật tài liệu liên quan.

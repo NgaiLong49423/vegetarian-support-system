@@ -1,8 +1,8 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.1.0  
+> **Version:** v0.1.1
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-12  
+> **Last Updated:** 2026-09-13
 > **Status:** Under Review  
 
 # Database Workspace
@@ -29,4 +29,4 @@ Database chính đã chốt là Microsoft SQL Server. Repository hiện có ba f
 
 ERD và danh sách migration chưa tồn tại. Không tự suy ra bảng chỉ từ danh sách dữ liệu gợi ý trong SRS; cần hoàn thiện data model và review trước khi coi schema là baseline.
 
-Xem [SRS](../docs/requirements/SRS.md), [ERD workspace](../docs/diagrams/ERD/README.md) và [Technology Stack](../docs/decisions/SWP-Technology-Stack-v2.0.0.txt).
+Xem [SRS](../docs/requirements/SRS.md), [ERD workspace](../docs/diagrams/ERD/README.md) và [Technology Stack](../docs/architecture/TECHNOLOGY-STACK.md).

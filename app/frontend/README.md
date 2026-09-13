@@ -1,13 +1,13 @@
 > **Document:** Frontend Workspace Guide  
 > **File:** `app/frontend/README.md`  
-> **Version:** v0.1.0  
+> **Version:** v0.1.1
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-12  
+> **Last Updated:** 2026-09-13
 > **Status:** Under Review  
 
 # Frontend Workspace
 
-Thư mục này dành cho ứng dụng web React + TypeScript dùng Vite, npm và Axios theo [Technology Stack](../../docs/decisions/SWP-Technology-Stack-v2.0.0.txt).
+Thư mục này dành cho ứng dụng web React + TypeScript dùng Vite, npm và Axios theo [Technology Stack](../../docs/architecture/TECHNOLOGY-STACK.md).
 
 ## Trạng thái hiện tại
 

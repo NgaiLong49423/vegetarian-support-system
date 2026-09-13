@@ -1,13 +1,54 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.1.0
+> **Version:** v2.3.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-13
+> **Last Updated:** 2026-09-14
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-14 — Documentation Language Policy
+
+**Status:** Working tree — not committed.
+
+**Scope:** Thiết lập tiếng Việt làm ngôn ngữ văn xuôi chính cho tài liệu phát triển nội bộ, đồng thời giữ các technical term tiếng Anh cần thiết và chỉ dùng hoàn toàn tiếng Anh cho tài liệu được phân loại rõ là academic submission.
+
+### Added
+
+- Chính sách ngôn ngữ tài liệu có thẩm quyền trong maintained document register.
+
+### Changed
+
+- Liên kết AGENTS.md và CONTRIBUTING.md tới policy có thẩm quyền mà không sao chép toàn bộ nội dung.
+- Chuẩn hóa Architecture, Technology Stack, Test Strategy và tài liệu bằng chứng workflow sang văn xuôi tiếng Việt, đồng thời giữ nguyên ý nghĩa kỹ thuật và các English term đã được xác lập.
+
+### Fixed
+
+- Loại bỏ cách hiểu trước đây rằng tài liệu kỹ thuật hoặc governance phải mặc định viết bằng tiếng Anh chỉ vì loại tài liệu có tên tiếng Anh.
+
+## 2026-09-13 — Controlled Documentation Baseline Migration
+
+**Status:** Working tree — not committed.
+
+**Scope:** Separate product requirements, software requirements, architecture, technology selection and verification strategy into maintained sources with explicit ownership, while preserving existing requirement meaning and holding unresolved lifecycle assignments for decision.
+
+### Added
+
+- Maintained System Architecture, Technology Stack and Test Strategy documents with explicit evidence limits and unresolved implementation choices.
+- Evidence-based creation triggers for future Development, Setup and API documents.
+
+### Changed
+
+- Migrated current product rationale, actor/onboarding context, AI boundaries and technology decisions into their authoritative destinations.
+- Updated repository navigation, agent routing and the machine-readable contract to use the new architecture, technology and testing paths.
+- Retired and deleted the four superseded migration sources after their unique current information and active references had been migrated and deletion was explicitly approved.
+
+### Fixed
+
+- Corrected stale summary and research statements that treated Google Maps restaurant discovery as unconfirmed or described the retired permission-application workflow as current.
+- Added an explicit lifecycle decision gate so legacy phrases such as “Đã chốt” are not silently converted to `ACTIVE`.
 
 ## 2026-09-13 — Recipe Publishing and AI Scope Simplification
 

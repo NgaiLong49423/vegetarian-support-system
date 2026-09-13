@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions  
 > **File:** `AGENTS.md`  
-> **Version:** v3.1.0  
+> **Version:** v3.2.1
 > **Created:** 2026-06-29  
-> **Last Updated:** 2026-09-13  
+> **Last Updated:** 2026-09-14
 > **Status:** Active  
 
 # Agent Entry Point
@@ -38,6 +38,9 @@ Do not recursively read the repository, all documentation, all skills, old logs 
 | Backend | app/backend/README.md; target code/tests | Relevant SRS, API contract, database guide |
 | Database | database/README.md; affected migrations/model | Relevant SRS and docs/diagrams/ERD/; empty SQL files are not an approved schema |
 | Technologies/integration | Technology-stack or technology-baseline document registered in docs/README.md | Relevant SRS; do not turn provider selection into an unapproved model/architecture |
+| Architecture or trust boundaries | docs/architecture/ARCHITECTURE.md | Relevant SRS and technology stack; do not invent packages, endpoints, tables, deployment topology or AI architecture |
+| Testing or verification strategy | docs/testing/TEST-STRATEGY.md; relevant SRS requirements | Target code/tests and CONTRIBUTING.md completion/release rules; do not invent tests, commands or coverage thresholds |
+| Development, setup or API guide | docs/README.md creation triggers; actual scaffold/contract evidence | Create a maintained guide only in an authorized documentation task after its trigger is satisfied |
 | Git, review, release or teamwork | CONTRIBUTING.md | ADR-001 for branch/release rationale; ADR-002 for team responsibilities |
 | Progress, owner, deadline or blocker | GitHub Issues and Projects, then linked PRs | CONTRIBUTING.md for status semantics; no local progress reports |
 | Documentation/file placement | docs/README.md; target document | Only the listed authority and affected links |
@@ -98,7 +101,7 @@ Metadata audits use the maintained register. `SKILL.md` retains YAML frontmatter
 
 ## Agent-specific execution and handoff
 
-- Communicate with the user in Vietnamese. Consult CONTRIBUTING.md for document language and shared editing/verification rules.
+- Communicate with the user in Vietnamese. Follow the [Documentation Language Policy](docs/README.md#documentation-language-policy); use CONTRIBUTING.md for shared editing and verification rules.
 - Repository access does not authorize an agent to commit, push, merge, tag, enable automation, mutate GitHub Issues/Projects or change GitHub settings. Perform external mutations only when the user authorizes them for the current task.
 - Do not infer runnable commands or completed features from plans, empty workspaces or a draft document.
 - Inspect the actual tool/test result before reporting success; explain unavailable verification without claiming it passed.
