@@ -1,79 +1,79 @@
 # ISSUE_INDEX.md Template
 
-Create this file at the repository-configured draft path.
+Create this generated working artifact at the repository-configured path.
 
-Fallback path when no stronger convention exists:
+Fallback:
 
 ```text
 .agents/outputs/drafts/github-issues/ISSUE_INDEX.md
 ```
 
 ```md
-# GitHub Issue Draft Index
+# SRS ↔ GitHub Issue Index
 
 ## Summary
-- Source documents:
-  - ...
+- Authoritative SRS: `...`
 - Draft output directory: `.agents/outputs/drafts/github-issues/`
-- Mode: Draft only
-- Real GitHub issues created: No
-- GitHub Project synced: No
+- Real GitHub mutations authorized: Yes / No
+- Last reconciliation source revision: <verified commit/hash or Unknown>
 
 ## Source Authority
-- Product direction source: ...
-- Detailed requirement source: ...
+- Detailed requirements source: ...
 - Repository governance: ...
+- Adopted repo contract: None / ...
 - Unresolved source conflicts: None / ...
 
-## Requirement Disposition / Traceability
+## Requirement ↔ Issue Registry
 
-| Source ID | Lifecycle | Readiness | Proposed Issue(s) | Disposition / Notes |
+| Source ID | Lifecycle | Hierarchy Role | Draft(s) | GitHub Issue | Issue Disposition | Sync State | Notes |
+|---|---|---|---|---|---|---|---|
+| FR-01 | ACTIVE | Standalone | 001 | #12 | Open / Current | In Sync | ... |
+| FR-02 | DEFERRED | Leaf | 002 | #13 | Open / Deferred | In Sync | ... |
+| FR-03 | DRAFT | Parent | 003 | N/A | Planning only | Draft | ... |
+| FR-04 | OUT_OF_SCOPE | Leaf | N/A | #14 | Closed / Not planned | In Sync | Historical link preserved |
+| FR-05 | RETIRED | Standalone | N/A | #15 | Closed / Not planned | In Sync | Historical link preserved |
+| FR-06 | <missing> | Leaf | N/A | N/A | Blocked | Lifecycle Required | Ask authorized decision-maker |
+
+## Split / Group / Supersession Mapping
+
+| Source ID | Related Issue(s) | Relationship | Reason |
+|---|---|---|---|
+| FR-10 | #20, #21 | Split | Two independently deliverable slices |
+| FR-03 | #30 -> #31, #32 | Parent to children | Parent capability coordinates child FRs |
+
+## Reconciliation Queue
+
+| Source ID | Detected Change | Existing Issue | Required Action | Authorization State |
 |---|---|---|---|---|
-| FR-01 | ACTIVE | Ready | 001 | Eligible leaf FR |
-| FR-02 | DEFERRED | N/A | None | Excluded from current implementation |
-| FR-03 | ACTIVE | Needs clarification | None | Blocking ambiguity; Needs Review |
-
-## Module: <Module Name>
-
-| No | Draft File | Title | Type | Owner | Story Points | Priority | Source Trace | Dependencies | Parent | Labels | Suggested Branch | Draft State | GitHub Issue |
-|---|---|---|---|---|---:|---|---|---|---|---|---|---|---|
-| 001 | 001-module-short-title.md | [Module][FR-xx] Title | Feature | TBD | TBD | TBD | FR-xx | None | None | ... | feature/example | Draft | N/A |
-
-## Grouping / Splitting Decisions
-
-| Source | Decision | Reason |
-|---|---|---|
-| FR-01 | Split into 001, 002 | Independent testable slices |
-| FR-03 | Parent only | Child FRs own implementation scope |
-
-## Review Notes
-
-- Items requiring clarification:
-  - ...
-- Requirements excluded by lifecycle:
-  - ...
+| FR-07 | ACTIVE -> DEFERRED | #17 | Mark deferred/backlog | Pending / Authorized |
+| FR-08 | Semantic change after completion | #18 | Preserve #18; create follow-up | Pending / Authorized |
 ```
 
-## Allowed Draft States
+## Sync State Values
+
+Use concise states such as:
 
 ```text
 Draft
-Needs Review
-Approved
+Lifecycle Required
+Ready to Create
 Created
-Synced
+In Sync
+Update Required
+State Change Required
+Follow-up Required
+Blocked
 ```
 
-Default Draft State: `Draft`.
-
-`Draft State` tracks the issue-generation lifecycle. It is not the GitHub Project `Status`.
+Repository conventions may replace these names.
 
 ## Index Rules
 
-- `ISSUE_INDEX.md` is the single source of truth for real Issue creation from this skill's generated drafts.
-- Every listed draft file must exist.
-- Every `.md` draft file in the final draft directory must be listed.
-- Do not create real GitHub Issues from files not listed in the index.
-- Record excluded or blocked source requirements in the disposition table when useful for auditability; do not create fake Issue files for them.
-- Parent capability FRs must not duplicate child implementation Issue scope.
-- Owner, estimates, priority, and dates follow repository/team policy and may remain `TBD` when not yet decided.
+- This index is the synchronization registry, not the SRS source of truth.
+- Every FR with explicit lifecycle must appear in the registry.
+- Missing lifecycle is recorded as a blocker; do not guess it.
+- Preserve old Issue numbers/URLs for historical traceability.
+- Do not erase a mapping merely because the requirement becomes `OUT_OF_SCOPE` or `RETIRED`.
+- Do not map both parent and child FRs to duplicate implementation scope; parent Issues are tracking/grouping work.
+- When an already-completed Issue no longer represents new semantic work, keep it historical and link a follow-up Issue.
+- Owner, estimates, priority, and dates may remain `TBD` when repository policy permits.

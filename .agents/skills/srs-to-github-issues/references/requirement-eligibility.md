@@ -1,47 +1,76 @@
-# Requirement Eligibility for Issue Generation
+# Requirement Lifecycle for Issue Management
 
-Use this reference when the source requirements define lifecycle or readiness states, or when issue generation depends on whether a requirement is ready for implementation.
+Use this reference to decide how an explicitly confirmed requirement lifecycle state affects GitHub work-item management.
 
-## Lifecycle Eligibility
+## Mandatory Rule: No Lifecycle Guessing
 
-| Requirement status | Default issue-generation behavior |
-|---|---|
-| `DRAFT` | Do not create an implementation-ready Issue by default. Keep as planning/Needs Review if useful. |
-| `ACTIVE` | Eligible, subject to readiness and scope checks. |
-| `DEFERRED` | Do not create current implementation work by default. |
-| `OUT_OF_SCOPE` | Exclude from current implementation work. |
-| `RETIRED` | Exclude from current implementation work. Never treat it as a new active requirement. |
+Every FR managed by this skill must have an explicit lifecycle state in the authoritative source or an explicit authorized decision.
 
-These status names are project conventions, not universal standards. If the repository uses different status names, map them by meaning rather than renaming them.
-
-## Readiness Eligibility
-
-| Readiness | Default behavior |
-|---|---|
-| `Ready` | Eligible for implementation decomposition. |
-| `Ready with open items` | Eligible only when the open items are explicitly non-blocking for the proposed Issue. Record relevant open items. |
-| `Needs clarification` | Do not mark implementation work as Approved. Keep the source in `Needs Review` until blocking ambiguity is resolved. |
-
-## Unknown Status or Readiness
-
-Do not invent a status.
-
-When the source does not define lifecycle/readiness metadata:
-
-1. Use explicit source wording and repository governance.
-2. Determine whether the requirement is clearly current and implementation-ready.
-3. If uncertainty would change whether an Issue should be created, record `Needs Review` and ask for clarification.
-
-## Traceability Without Work Creation
-
-Excluded requirements may still appear in the planning index so the decomposition is auditable.
-
-Example:
+Fallback vocabulary:
 
 ```text
-FR-19 | OUT_OF_SCOPE | No implementation Issue | Excluded from current scope
-FR-20 | ACTIVE / Ready | Issue 007 | Eligible
-FR-21 | ACTIVE / Needs clarification | No approved Issue | Blocking ambiguity
+DRAFT
+ACTIVE
+DEFERRED
+OUT_OF_SCOPE
+RETIRED
 ```
 
-Do not create fake implementation work just to make every source ID map to an Issue.
+If the project uses equivalent names, map by meaning.
+
+If status is missing or ambiguous:
+
+1. record the FR as `Lifecycle unresolved` in the local planning result;
+2. do not create, close, reopen, or materially update a real Issue for that FR;
+3. ask the authorized decision-maker to choose the lifecycle state;
+4. continue after the state is explicit.
+
+Do not infer lifecycle from implementation progress, position in the SRS, GitHub Issue state, version number, or model judgment.
+
+## Lifecycle-to-Issue Behavior
+
+| Requirement status | Index behavior | Default real-Issue behavior |
+|---|---|---|
+| `DRAFT` | Always tracked | Planning/tracking Issue only when the workflow intentionally tracks drafts; never present as implementation-ready by default |
+| `ACTIVE` | Always tracked | Open current implementation/tracking Issue |
+| `DEFERRED` | Always tracked | Keep/create backlog Issue marked deferred; do not place in active implementation automatically |
+| `OUT_OF_SCOPE` | Always tracked for history | Do not create new implementation work; close linked unfinished Issue as not planned when authorized |
+| `RETIRED` | Always tracked for history | Do not create new work; preserve historical mapping and close linked unfinished Issue as not planned when authorized |
+
+`OUT_OF_SCOPE` and `RETIRED` do not mean delete the Issue mapping.
+
+## SRS Means the FR Is Managed
+
+The agent must not independently exclude an FR from management because it seems trivial, difficult, low-priority, or inconvenient.
+
+Every FR with explicit lifecycle belongs in the index.
+
+Hierarchy controls **Issue role**, not whether the FR disappears:
+
+- parent/capability FR -> parent/tracking Issue where useful;
+- leaf/standalone FR -> implementation Issue when lifecycle permits current/future work.
+
+## Readiness
+
+If the project explicitly tracks readiness:
+
+| Readiness | Effect |
+|---|---|
+| `Ready` | May be presented as implementation-ready |
+| `Ready with open items` | May proceed when open items are non-blocking and recorded |
+| `Needs clarification` | Keep the Issue/FR tracked, but do not present it as ready for implementation until the blocking ambiguity is resolved |
+
+If the project does not track readiness, do not invent it.
+
+Readiness does not replace lifecycle and does not make an FR disappear from the index.
+
+## Examples
+
+```text
+FR-01 | ACTIVE      | current implementation Issue
+FR-02 | DEFERRED    | backlog/deferred Issue
+FR-03 | DRAFT       | tracked; planning Issue only if draft tracking is enabled
+FR-04 | OUT_OF_SCOPE| historical mapping; no new implementation Issue
+FR-05 | RETIRED     | historical mapping; no new work
+FR-06 | <missing>   | HARD BLOCKER: ask authorized decision-maker
+```

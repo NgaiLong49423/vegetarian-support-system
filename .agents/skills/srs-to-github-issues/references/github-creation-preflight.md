@@ -1,59 +1,77 @@
-# GitHub Creation and Project Sync Preflight
+# GitHub Creation and Reconciliation Preflight
 
-Use this checklist before any real GitHub action.
+Use this checklist before any real GitHub mutation.
 
-## Before Creating Real GitHub Issues
+## Hard Blockers
 
-- [ ] User explicitly requested real Issue creation.
-- [ ] `ISSUE_INDEX.md` exists.
-- [ ] Selected draft files are listed in `ISSUE_INDEX.md`.
+A hard blocker must be resolved before the affected mutation. A simple "continue anyway" does not override missing authority, missing source state, or an ambiguous target.
+
+- [ ] Real GitHub mutation is authorized by the current task or adopted repository workflow.
+- [ ] Repository owner/name is known for the target repository.
+- [ ] Every affected FR has an explicit lifecycle state from the SRS or authorized decision.
+- [ ] The target Issue mapping is known, or creation of a new Issue is clearly intended.
+- [ ] No conflicting authoritative requirement sources remain unresolved for the affected scope.
+- [ ] Parent/capability tracking scope does not duplicate child implementation scope.
+- [ ] No requirement ID is being reused for a different meaning.
+- [ ] A requirement removed from the active SRS is not being treated as retired/out-of-scope without explicit lifecycle/history evidence.
+
+If any hard blocker fails, stop the affected mutation and report exactly what must be resolved.
+
+## Creation Checks
+
+- [ ] `ISSUE_INDEX.md` or repository-equivalent mapping exists.
+- [ ] Selected draft files, when used, are listed in the index.
 - [ ] Every selected draft file exists.
-- [ ] No unreferenced draft files remain in the final draft directory.
-- [ ] No local `file:///` paths exist in drafts or index.
-- [ ] Selected drafts are `Approved`, or the authorized decision-maker explicitly selected another state.
-- [ ] Each selected source requirement is eligible for the requested Issue type.
-- [ ] No selected implementation Issue comes from `DEFERRED`, `OUT_OF_SCOPE`, or `RETIRED` requirements unless the requirement state has been explicitly changed or the user requested a non-implementation tracking Issue.
-- [ ] No blocking `Needs clarification` source is being created as an implementation-ready Issue.
-- [ ] Parent capability FRs do not duplicate child implementation Issue scope.
-- [ ] No duplicate real Issue already represents the same source scope when that can be determined confidently.
-- [ ] Labels/types conform to repository configuration.
-- [ ] Issue bodies include Source Trace.
+- [ ] No local `file:///` paths exist in content to be posted.
+- [ ] Source Trace is present.
+- [ ] Lifecycle-to-Issue behavior matches `references/requirement-eligibility.md`.
+- [ ] Existing linked Issue was checked to avoid duplicate creation.
+- [ ] Labels/types conform to repository configuration or are explicitly authorized.
 - [ ] Full Issue bodies will not be printed in chat unless requested.
 
-If any check fails, stop and report the failure.
+## Reconciliation Checks
 
-## Before Syncing GitHub Project Metadata
+- [ ] Existing Issue was resolved by stable source mapping, preferably FR ID + stored Issue link/number.
+- [ ] Current SRS content was compared with the Issue's managed requirement-derived content.
+- [ ] Human comments and unrelated manual notes will be preserved.
+- [ ] Closed-completed Issues will not be rewritten as if their historical completed scope had always been different.
+- [ ] Semantic changes to completed work will use a follow-up Issue unless repository policy explicitly prefers reopening.
+- [ ] `OUT_OF_SCOPE` / `RETIRED` transitions will not delete Issues or comments.
+- [ ] Re-activation will reuse/reopen an appropriate unfinished historical Issue rather than create a duplicate when possible.
 
-- [ ] User explicitly requested Project sync.
+## Overridable Workflow Warnings
+
+These may be accepted by an authorized user when repository policy permits:
+
+- optional Story Points are `TBD`;
+- optional Priority is `TBD`;
+- optional dates are `TBD`;
+- relationship metadata cannot be synchronized although the core Issue can be safely created/updated;
+- optional Project metadata is unavailable while core Issue synchronization can proceed.
+
+Record the accepted warning; do not silently pretend the missing metadata was synchronized.
+
+## GitHub Project Sync Checks
+
+Before Project-field mutation:
+
 - [ ] Project owner is known.
 - [ ] Project number or Project ID is known.
 - [ ] Field IDs are known.
 - [ ] Option IDs are known for single-select fields.
 - [ ] Issue item IDs are known.
-- [ ] No field is guessed.
-- [ ] Relationship sync is best-effort only.
-- [ ] Relationship target Issue IDs can be resolved if relationship sync is attempted.
+- [ ] No field or option is guessed.
 
-Do not sync if IDs cannot be determined confidently.
+Project-sync ID failures block only the Project mutation when the core Issue operation is otherwise valid.
 
-## Allowed Actions
+## Never Do Automatically
 
-Allowed only after explicit approval:
-
-- create GitHub Issues from selected eligible drafts;
-- create missing labels only when repository policy/user approval permits it;
-- update `ISSUE_INDEX.md` after successful creation;
-- sync verified GitHub Project fields.
-
-## Forbidden Actions
-
-Never do these as part of this skill unless separately and explicitly requested:
-
-- Close Issues
-- Delete Issues
-- Delete labels
-- Delete branches
-- Force-push
-- Modify source code
-- Create branches
-- Merge pull requests
+- delete Issues;
+- delete comments;
+- rewrite human discussion history;
+- force-push;
+- delete branches;
+- merge pull requests;
+- modify source code merely to satisfy an Issue;
+- create branches unless separately requested;
+- infer requirement lifecycle from GitHub state.

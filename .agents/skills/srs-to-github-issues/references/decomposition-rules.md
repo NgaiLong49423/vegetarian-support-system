@@ -1,14 +1,12 @@
 # Decomposition Rules
 
-## Default Strategy
+## Coverage Principle
 
-Prefer one implementation Issue per **implementation-ready leaf requirement**, not one Issue per every FR identifier.
-
-Every requirement-derived Issue must have Source Trace.
+Every FR with explicit lifecycle must appear in the Issue registry. Hierarchy determines the **kind of Issue**, not whether the FR silently disappears.
 
 ## Parent vs Leaf Functional Requirements
 
-When requirements use hierarchy:
+Example:
 
 ```text
 FR-03 — Recipe Management
@@ -17,52 +15,47 @@ FR-03 — Recipe Management
 └── FR-03.3 — Publish Recipe
 ```
 
-Treat `FR-03` primarily as a business capability / grouping context when its child FRs contain the independently testable implementation behavior.
+Default mapping:
 
-Normally:
+- `FR-03` -> parent/tracking Issue when real Issue tracking is enabled for the capability;
+- `FR-03.1` -> implementation Issue when lifecycle permits;
+- `FR-03.2` -> implementation Issue when lifecycle permits;
+- `FR-03.3` -> implementation Issue when lifecycle permits.
 
-- `FR-03` -> parent/epic context when useful;
-- `FR-03.1` -> implementation Issue;
-- `FR-03.2` -> implementation Issue;
-- `FR-03.3` -> implementation Issue.
+The parent Issue coordinates and links child work. It must not duplicate the children's detailed implementation acceptance criteria.
 
-Do not also create a duplicate implementation Issue for `FR-03` that repeats the scope of its child Issues.
-
-A standalone FR with no child hierarchy may map directly to an implementation Issue.
+A standalone FR maps directly to its own Issue role according to lifecycle.
 
 ## Split One Leaf Requirement When
 
-Split an implementable leaf requirement when:
+Split a leaf requirement into multiple delivery Issues only when necessary, for example when:
 
-- It is too large for one implementation Issue under repository/team planning rules.
-- It contains multiple independent workflows.
-- It has important dependencies that need separate delivery.
-- It has high uncertainty or risk that benefits from separate investigation/work.
-- It contains separate testable behavior slices.
+- it contains multiple independently deliverable/testable slices;
+- repository/team planning rules require smaller work units;
+- dependencies need separate delivery;
+- uncertainty/risk benefits from separate investigation;
+- one Issue would hide important traceability.
 
-If the repository uses the default sizing guidance, an `8 SP` estimate is a planning signal to split before assignment. Do not impose that rule when the repository uses another sizing model.
+All split Issues must retain the same FR Source Trace, and `ISSUE_INDEX.md` must record the split.
+
+Do not invent child FR IDs merely to support Issue splitting.
 
 ## Group Requirements When
 
-Group multiple leaf requirements only when:
+Group multiple FRs into one implementation Issue only when:
 
-- They are small.
-- They are strongly coupled.
-- They are implemented in the same workflow.
-- Splitting would create artificial work items.
-- Grouping does not hide independent acceptance behavior or traceability.
+- they are strongly coupled;
+- they are delivered in the same workflow;
+- grouping does not obscure independent acceptance behavior;
+- the registry still shows every source FR explicitly.
 
-Do not group many FRs into one Issue only for convenience.
+A grouped Issue must list all source FR IDs.
 
 ## Vertical Slice Rule
 
-Prefer vertical slices.
+Prefer meaningful, testable behavior over code-layer task fragmentation.
 
-A good Issue should represent meaningful, testable behavior.
-
-Avoid splitting only by code layer unless the source document or workflow requires it.
-
-Bad split:
+Avoid default splits such as:
 
 ```text
 Create DAO
@@ -71,20 +64,14 @@ Create Controller
 Create UI
 ```
 
-Better split:
+when the requirement can be represented as a vertical behavior slice.
 
-```text
-Implement Booking Creation With Window Validation
-```
+## Lifecycle and Decomposition
 
-## Epic / Parent Rules
+- `ACTIVE` -> current implementation/tracking work.
+- `DEFERRED` -> backlog/future work; decomposition may exist, but do not activate it automatically.
+- `DRAFT` -> planning representation only unless the project intentionally tracks draft work.
+- `OUT_OF_SCOPE` -> preserve registry/history; no new implementation decomposition.
+- `RETIRED` -> preserve registry/history; no new work.
 
-Create or propose an Epic/parent Issue when:
-
-- a meaningful capability coordinates multiple implementation work items;
-- a parent requirement has several child requirements whose work benefits from shared planning context;
-- a large requirement must be split into independently testable Issues and grouping helps navigation.
-
-Do not create an Epic solely because an arbitrary numeric child threshold is reached.
-
-Do not create real Epic/parent Issues unless the user approves when real GitHub creation is requested.
+Missing lifecycle is a hard blocker; never decompose by guessing.

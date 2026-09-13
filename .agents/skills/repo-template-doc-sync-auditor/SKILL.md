@@ -7,7 +7,7 @@ description: >
   before making documentation edits. Prefer repository-defined governance and authority by concern over generic defaults.
 risk: medium
 source: self
-version: v1.1.0
+version: v1.2.0
 created_date: 2026-06-29
 last_updated_date: 2026-09-13
 ---
@@ -266,7 +266,20 @@ database/**/*.md
 .agents/**/*.yaml
 ```
 
-Ignore generated/build directories by default.
+Default exclusions inside `.agents/`:
+
+```text
+.agents/skills/**
+.agents/outputs/**
+```
+
+`.agents/skills/**` contains agent-skill implementation, references, templates, and eval artifacts; it is not ordinary project documentation and must not be audited as such unless the user explicitly asks for a skill audit.
+
+`.agents/outputs/**` contains generated working artifacts such as issue drafts, indexes, and reports; exclude it from normal project-document consistency audits unless the user explicitly asks to audit generated outputs or a specialized workflow requires validating them.
+
+These exclusions do not hide adopted governance files such as `.agents/repo-contract.yml` when they are relevant to the task.
+
+Ignore other generated/build directories by default.
 Ignore archives unless historical comparison or baseline validation is requested.
 
 ### Step 4: Extract Facts With Provenance
@@ -369,7 +382,7 @@ When available:
 - `markdown-documentation` owns shared documentation semantics, lifecycle, traceability, and content boundaries.
 - `document-metadata-standardizer` owns document metadata/version mechanics.
 - `changelog-automatic` owns changelog entry/evidence mechanics.
-- `srs-to-github-issues` owns requirement-to-GitHub-Issue decomposition.
+- `srs-to-github-issues` owns requirement-to-GitHub-Issue mapping, synchronization, and work-item lifecycle mechanics.
 
 This auditor owns detection, classification, evidence, and scoped synchronization of cross-document inconsistencies.
 

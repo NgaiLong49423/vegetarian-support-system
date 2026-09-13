@@ -1,23 +1,26 @@
 # Issue Body Template
 
-Use this template for requirement-derived GitHub Issue drafts when the repository does not provide a stronger Issue template.
+Use the repository's Issue template when one exists. Use this fallback only when no stronger format applies.
 
-Issue bodies should be Vietnamese by default unless the user asks for another language.
+Issue bodies should be Vietnamese by default unless the user requests another language.
+
+When compatible with the repository template, place requirement-derived content inside a managed block so future SRS synchronization can update it without overwriting human notes.
 
 ```md
 # <Professional English Issue Title>
 
+<!-- srs-sync:start -->
 ## Mục tiêu
-Mô tả kết quả có thể kiểm tra sau khi Issue hoàn thành.
+<Mô tả kết quả theo requirement nguồn.>
 
 ## Source Trace
-- PRD/Product source: ...
-- SRS/Spec: ...
-- FR/NFR/UC/Business Rule: ...
-- Source Lifecycle: ...
-- Source Readiness: ...
+- SRS: ...
+- Requirement: FR-xx
+- Requirement Lifecycle: ACTIVE / DEFERRED / DRAFT / ...
+- Requirement Readiness: Ready / ... / Not used
+- Hierarchy Role: Parent / Leaf / Standalone
 
-## Phạm vi
+## Phạm vi Requirement
 
 ### Trong phạm vi
 - ...
@@ -27,44 +30,38 @@ Mô tả kết quả có thể kiểm tra sau khi Issue hoàn thành.
 
 ## Acceptance Criteria
 - [ ] ...
-- [ ] ...
-- [ ] ...
 
 ## Open Items
 - None / ...
 
 ## Dependencies
-- Parent: None
-- Blocked by: None
-- Blocking: None
+- Parent: None / ...
+- Blocked by: None / ...
+- Blocking: None / ...
 
-## Project Metadata
+## Planning Metadata
 - Type: ...
 - Labels: ...
 - Owner/Assignee: TBD
 - Story Points: TBD
-- Estimation Reason: TBD / ...
 - Priority: TBD
-- Priority Reason: TBD / ...
 - Start Date: TBD
 - Target Date: TBD
+<!-- srs-sync:end -->
 
-## Suggested Branch
-`feature/example-branch-name`
+## Human Notes
+<!-- Preserve manual notes outside the managed block. -->
 ```
 
 ## Required Rules
 
-- Follow repository Issue templates and type systems when present.
-- Fallback title should be clear professional English.
-- Body should be Vietnamese by default unless the user requests another language.
-- Source Trace is mandatory for requirement-derived Issues.
-- Acceptance Criteria must be testable and must not introduce new requirement semantics.
-- Do not invent technology, behavior, dates, dependencies, relationships, lifecycle, or readiness. Use `TBD`, `Unknown`, `None`, or `Needs Review` when appropriate.
-- If source lifecycle/readiness is available, include it so reviewers can verify Issue eligibility.
-- `Ready with open items` Issues must list the relevant non-blocking open items.
-- `Needs clarification` requirements must not be presented as implementation-ready Approved Issues.
-- Labels must come from repository configuration when present.
-- Owner, Story Points, Priority, Start Date, and Target Date may remain `TBD` unless repository policy requires them earlier.
-- Dependencies should record Parent, Blocked by, and Blocking when the repository workflow uses those relations.
-- Suggested branch names are recommendations only; this skill does not create branches.
+- Source Trace is mandatory.
+- Requirement Lifecycle must be explicit; never infer it.
+- Acceptance Criteria must come from the requirement meaning and must not add new semantics.
+- Parent/capability Issues must not repeat child implementation acceptance scope.
+- `DEFERRED` Issues must be clearly marked as deferred/backlog according to repository convention.
+- `DRAFT` tracking Issues must not be presented as implementation-ready.
+- `OUT_OF_SCOPE` / `RETIRED` do not create new implementation work.
+- Do not invent technology, dates, dependencies, labels, lifecycle, readiness, or relationships.
+- Preserve human notes/comments when synchronizing.
+- If the managed boundary is missing or ambiguous on an existing manually edited Issue, report the conflict before rewriting the body.

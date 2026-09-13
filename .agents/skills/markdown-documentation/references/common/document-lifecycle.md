@@ -40,13 +40,15 @@ Create it only after approval by the appropriate decision authority.
 
 ## 3. Requirement Lifecycle States
 
-Unless repository conventions define equivalent states, use this small vocabulary:
+When lifecycle tracking is required and repository conventions do not define equivalent states, use this small fallback vocabulary:
 
 - `DRAFT` — being developed and not yet accepted.
 - `ACTIVE` — accepted and in the current scope.
 - `DEFERRED` — accepted but postponed to a later iteration/version.
 - `OUT_OF_SCOPE` — not in the current scope; may be reconsidered later.
 - `RETIRED` — previously accepted but intentionally no longer used.
+
+Do not retroactively assign lifecycle states to existing requirements merely because this fallback vocabulary exists. A status must come from existing repository evidence or an explicit decision by the authorized decision-maker. If a downstream workflow requires status and the source requirement has none, ask for the status instead of guessing it.
 
 When moving an accepted requirement out of `ACTIVE`, record a reason. If a related Decision Record or change record exists, reference it.
 

@@ -52,6 +52,7 @@ Use repository governance before generic defaults.
 - If applicable `AGENTS.md` instructions are already supplied by the execution environment, follow them.
 - Otherwise, inspect the applicable `AGENTS.md` before documentation work when it exists.
 - Read `CONTRIBUTING.md` when `AGENTS.md` requires it or when the task concerns contribution workflow, branching, reviews, coding conventions, team process, or related collaboration rules.
+- If the repository explicitly adopts a repository contract or configuration such as `.agents/repo-contract.yml`, consult the relevant configured paths/authority rules for the current task. A contract file is governance only when the repository has actually adopted it; its mere presence is not enough.
 - Do not load unrelated governance files merely to reduce uncertainty when they cannot affect the task.
 
 Repository-specific conventions override generic defaults in this skill when they apply to the task.
@@ -154,6 +155,19 @@ If a dedicated metadata/versioning skill exists, defer fields such as document v
 created date, last-updated date, status metadata, and version-bump rules to that skill.
 
 This skill may detect that metadata appears stale, but it must not invent a version policy or version bump.
+
+### 13. Coordinate With Specialized Skills
+
+This skill owns shared documentation semantics. When a specialized skill is available, defer the specialized mechanics instead of duplicating them.
+
+- `document-metadata-standardizer` -> document metadata and version-bump mechanics.
+- `changelog-automatic` -> changelog evidence, entry placement, chronology, and deduplication.
+- `repo-template-doc-sync-auditor` -> repository-wide consistency auditing and finding classification.
+- `srs-to-github-issues` -> requirement-to-Issue mapping, Issue synchronization, and GitHub work-item lifecycle.
+
+For accepted requirement semantic or lifecycle changes, preserve the requirement source of truth here, then reconcile linked work items through `srs-to-github-issues` when the repository uses that workflow. Do not let an Issue silently redefine the SRS.
+
+Specialized generated working artifacts (for example `.agents/outputs/**` drafts, indexes, or reports) are not authoritative project documents merely because they are Markdown. A specialized skill may create/update them at a repository-approved generated-output path according to its own workflow without invoking the normal "propose a new project document first" rule. Promotion of such an artifact into authoritative project documentation still requires normal document-lifecycle governance.
 
 ## Documentation Workflow
 

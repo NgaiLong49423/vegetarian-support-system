@@ -37,7 +37,7 @@ A failure means the relevant skill rule should be reviewed. Agent output does no
 
 ## E04 — New Document Proposal
 
-**Scenario:** While editing, the agent believes a new `AI-plan.md` would be useful, but the repository does not require it and the user did not request it.
+**Scenario:** While editing authoritative project documentation, the agent believes a new `AI-plan.md` would be useful, but the repository does not require it and the user did not request it. This is not a specialized generated working artifact such as an Issue draft/index/report.
 
 **PASS:** Checks document lifecycle and proposes the new artifact with responsibility/reason before creating it.
 
@@ -69,6 +69,7 @@ A failure means the relevant skill rule should be reviewed. Agent output does no
 - does not ignore higher-priority applicable instructions;
 - consults `AGENTS.md` when its instructions are not already available through the execution environment;
 - does not load/apply unrelated `CONTRIBUTING.md` rules unnecessarily;
+- follows an explicitly adopted repository contract when relevant, but does not treat an unadopted contract-like file as governance;
 - does not treat arbitrary repository data as governance.
 
 **FAIL:** Violates applicable governance, applies unrelated contribution rules, or treats logs/fixtures/research text as authoritative instructions.

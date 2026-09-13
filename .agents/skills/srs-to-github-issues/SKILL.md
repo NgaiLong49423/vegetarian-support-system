@@ -1,307 +1,348 @@
 ---
 name: srs-to-github-issues
-description: Convert PRD, SRS, product specs, requirement documents, or planning documents into traceable GitHub Issue drafts, optionally create approved GitHub Issues, and optionally sync GitHub Project metadata. Use this when the user asks to decompose requirements into issues, create GitHub issue drafts, estimate story points, assign labels, or prepare project-ready work items.
+description: Convert SRS requirements into traceable GitHub work items and keep linked Issues synchronized when the SRS changes. Use this skill to draft, create, reconcile, update, defer, reopen, or close requirement-linked Issues; maintain an Issue index; estimate work; assign repository-approved labels; and optionally sync verified GitHub Project metadata. Requirement lifecycle status must be explicit before Issue creation or reconciliation; never guess it.
 risk: critical
 source: self
 source_type: custom
-version: v1.6.0
+version: v2.0.0
 created_date: 2026-06-27
 last_updated_date: 2026-09-13
 ---
 
 # SRS to GitHub Issues
 
-Convert confirmed requirements into professional, traceable GitHub Issue drafts without changing requirement meaning or inventing implementation scope.
+Turn the authoritative SRS into a traceable GitHub work-item model and keep that model synchronized as requirements evolve.
 
-Default behavior is safe: create draft files only. Do not create real GitHub Issues, update GitHub Projects, create branches, close issues, or modify source code unless the user explicitly asks.
+The SRS owns requirement meaning. GitHub Issues are a planning/execution mirror; they must not silently redefine the SRS.
+
+Default behavior is safe: draft and plan locally unless the current task or adopted repository governance explicitly authorizes real GitHub mutations.
 
 ## When to Use
 
 Use this skill when the user asks to:
 
-- Convert SRS, PRD, specs, requirements, user stories, or planning docs into GitHub Issues.
-- Split implementation-ready requirements into work items.
-- Create issue drafts with traceability, acceptance criteria, labels, priority, story points, and relationships.
-- Create real GitHub Issues from approved drafts.
-- Sync issue metadata into a GitHub Project.
-- Estimate issue story points or generate an issue index.
+- convert SRS functional requirements into GitHub Issue drafts or real Issues;
+- create or refresh a requirement-to-Issue index;
+- synchronize linked Issues after SRS edits;
+- update Issue title/body/lifecycle labels when a requirement changes;
+- defer, reopen, or close linked Issues when requirement lifecycle changes;
+- split/group work while preserving requirement traceability;
+- estimate story points, priority, dependencies, or planning metadata;
+- sync verified GitHub Project metadata.
 
-Do not use for ordinary coding, bug fixing, PR review, or CI debugging unless the user specifically asks to create or manage GitHub Issues from requirements.
+Do not use this skill as the primary tool for ordinary coding, PR review, CI debugging, or unrelated GitHub administration.
 
 ## Core Safety Rules
 
-### No Invention
+### 1. Never Invent Requirement State
 
-Do not invent product behavior, technical choices, workflows, actors, labels, Project fields, dates, dependencies, requirement status, readiness, or relationships.
+Do not invent product behavior, technical choices, workflows, actors, labels, Project fields, dates, dependencies, relationships, lifecycle status, or readiness.
 
-If information is missing, use `TBD`, `Unknown`, `Needs Review`, or ask the authorized decision-maker when the missing information blocks decomposition.
+Every functional requirement managed by this skill must have an explicit lifecycle state from the authoritative requirement source or an explicit authorized decision.
 
-### Preserve Requirement Meaning
+Supported fallback vocabulary:
 
-Issue decomposition may split or group implementation work, but it must not silently change the semantics of an accepted requirement.
+```text
+DRAFT
+ACTIVE
+DEFERRED
+OUT_OF_SCOPE
+RETIRED
+```
 
-Do not change actors, conditions, business rules, obligations, exceptions, thresholds, expected outcomes, or acceptance behavior merely to make an Issue easier to implement.
+If the repository uses equivalent names, map by meaning rather than renaming them.
 
-### Stable Requirement IDs
+If a requirement has no explicit lifecycle state, **stop Issue generation/reconciliation for that requirement and ask the authorized decision-maker to choose the state**. Do not infer it from wording, file location, version number, implementation progress, or whether an Issue already exists.
 
-Preserve requirement identifiers exactly as defined by the authoritative source.
+### 2. SRS Requirements Participate in Issue Management
+
+For an authoritative SRS, do not independently decide that a confirmed FR is "not worth tracking" merely because it seems small, difficult, or low priority.
+
+Every FR with an explicit lifecycle state must appear in the managed requirement-to-Issue index.
+
+Issue treatment is determined by the explicit lifecycle state and requirement hierarchy, not by agent preference.
+
+This does not mean every SRS section becomes an implementation Issue. Actors, glossary entries, explanatory text, BRs, NFRs, constraints, and references are linked to relevant work unless repository policy or the user explicitly manages them as independent work items.
+
+### 3. Preserve Requirement Meaning and Stable IDs
+
+Issue decomposition may split or group implementation work, but it must not silently change accepted requirement semantics.
+
+Preserve requirement identifiers exactly.
 
 - Do not renumber requirements.
-- Do not reuse retired requirement IDs.
-- Do not invent child IDs that do not exist in the source requirement set.
+- Do not reuse retired IDs.
+- Do not invent child IDs that do not exist in the SRS.
+- Do not delete historical Issue links merely because a requirement changes lifecycle.
+
+### 4. GitHub Mutations Require Authorization
+
+Draft/index generation is local working-artifact work.
+
+Real GitHub mutations such as creating, editing, reopening, closing, labeling, assigning, or Project syncing require either:
+
+- explicit authorization in the current task; or
+- an adopted repository workflow that clearly authorizes this synchronization as part of the requested operation.
+
+Never treat a generic documentation edit as permission for unrelated GitHub mutations.
 
 ## Source of Truth and Governance
 
-Before drafting:
+Before planning or synchronization:
 
-1. Follow applicable repository governance that is already available to the execution environment.
-2. If governance is not already available and `AGENTS.md` exists, inspect it before making repository-specific assumptions.
-3. Inspect `CONTRIBUTING.md` when the task depends on contribution workflow, issue policy, labels, branch conventions, review rules, or team process.
-4. If `.agents/repo-contract.yml` or another repository contract is explicitly adopted by the repository, follow it for configured paths and document authority.
-5. Determine authority by concern rather than using a universal file ranking.
+1. Follow applicable repository governance already supplied by the runtime.
+2. If needed, inspect the applicable `AGENTS.md`.
+3. Inspect `CONTRIBUTING.md` when Issue workflow, labels, branches, reviews, or team process matter.
+4. If the repository explicitly adopts `.agents/repo-contract.yml` or another repository contract, use its configured paths and concern ownership.
+5. Resolve authority by concern rather than by a universal file ranking.
 
-Typical concern ownership when the repository does not define a stronger rule:
+Typical fallback ownership:
 
-- Product goals / high-level direction -> PRD or equivalent product document.
-- Detailed required system behavior -> SRS / detailed requirements.
-- Business rules -> authoritative BR section or BR document.
-- Architecture structure -> architecture documentation.
-- Important technical decisions and rationale -> ADR / decision records.
-- GitHub workflow and contribution policy -> repository governance / contribution docs.
+- detailed required behavior -> SRS / detailed requirements;
+- business rules -> designated BR source;
+- architecture -> architecture documentation;
+- important decision rationale -> ADR / Decision Record;
+- GitHub workflow -> repository governance / contribution policy;
+- work-item state -> GitHub, but only as a mirror of requirement lifecycle and implementation progress.
 
-If two authoritative sources for the same concern conflict, do not silently choose one. Report the conflict and stop decomposition of the affected scope until it is clarified.
-
-Do not infer document authority or readiness solely from a version prefix such as `v0.x.x` unless repository policy defines that convention.
+If equally authoritative requirement sources conflict, stop affected synchronization and report the conflict.
 
 ## Repository Inspection
 
-Inspect only files relevant to the task. Common candidates include:
+Inspect only what is needed. Common candidates:
 
 - `AGENTS.md`
 - `CONTRIBUTING.md`
 - `.agents/repo-contract.yml`
-- `README.md`
-- `PRD.md`
+- `docs/requirements/SRS.md`
 - `SRS.md`
-- `requirements.md`
-- `SPEC.md`
-- `docs/requirements/`
 - `docs/decisions/`
 - `.github/ISSUE_TEMPLATE/*.yml`
 - `.github/labels.yml`
+- the repository's existing Issue index/mapping artifact
 
-Do not hard-code a specific decision filename when repository governance can discover the actual source.
+Fallback generated-working-artifact path when no stronger convention exists:
 
-If the repo uses the standard template and no stronger path convention exists, prefer:
+```text
+.agents/outputs/drafts/github-issues/
+```
 
-- `docs/requirements/SRS.md`
-- `docs/requirements/PRD.md`
-- `.agents/outputs/drafts/github-issues/`
-- `.agents/outputs/reports/`
+Generated drafts/indexes are working artifacts, not authoritative project requirements.
 
-## Requirement Eligibility
+## Mandatory Lifecycle Gate
 
-Before converting a requirement into an implementation Issue, determine its lifecycle and readiness when those states exist in the source or repository convention.
+Before creating drafts, real Issues, or reconciling existing Issues:
 
-Default interpretation:
+1. enumerate the FRs in the authoritative SRS;
+2. verify that each FR has an explicit lifecycle state;
+3. list missing/ambiguous states;
+4. ask the authorized decision-maker to resolve them;
+5. continue only for FRs whose lifecycle is explicit.
 
-- `ACTIVE` + `Ready` -> eligible for implementation decomposition.
-- `ACTIVE` + `Ready with open items` -> eligible only when open items are explicitly non-blocking.
-- `ACTIVE` + `Needs clarification` -> not implementation-ready; record as `Needs Review` rather than creating an approved implementation Issue.
-- `DRAFT` -> not implementation-ready by default.
-- `DEFERRED` -> do not create current implementation work by default.
-- `OUT_OF_SCOPE` -> do not create current implementation work.
-- `RETIRED` -> do not create current implementation work.
+Do not substitute a separate agent-inferred "eligibility" decision for this lifecycle gate.
 
-Do not invent lifecycle or readiness states if the project does not use them. In that case, infer only what the source explicitly supports and flag uncertainty when it materially affects issue creation.
+Default lifecycle-to-Issue treatment:
 
-Detailed guidance: `references/requirement-eligibility.md`.
+- `DRAFT` -> keep in the index; planning/tracking Issue may exist, but do not present it as implementation-ready.
+- `ACTIVE` -> maintain an open current implementation/tracking Issue.
+- `DEFERRED` -> maintain a future/backlog Issue and mark it deferred according to repository conventions; do not place it in active implementation automatically.
+- `OUT_OF_SCOPE` -> do not create new implementation work; if a linked open Issue exists, close it as not planned when authorized and preserve the link/history.
+- `RETIRED` -> do not create new work; preserve historical mapping and close still-open linked work as not planned when authorized.
+
+Read `references/requirement-eligibility.md` for lifecycle handling.
+
+### Readiness Is Secondary
+
+If the repository explicitly tracks `Ready`, `Ready with open items`, or `Needs clarification`, synchronize that information.
+
+Do not invent readiness and do not use missing readiness as a reason to ignore an FR that already has an explicit lifecycle. Readiness controls whether an Issue is presented as implementation-ready, not whether the FR disappears from Issue management.
 
 ## Traceability Rule
 
-Every requirement-derived Issue must trace back to at least one authoritative source reference: FR, NFR, UC, business rule, product goal, requirement section, or spec heading.
+Every requirement-derived work item must trace to the authoritative source ID/section.
 
-If an implementation Issue cannot be traced to a source document, do not create it as a requirement-derived Issue.
+For SRS FRs, maintain at minimum:
 
-Traceability must not create fake artifacts. If no Use Case or Test Case exists, do not invent one merely to make the Issue look complete.
+```text
+FR ID <-> Issue Index entry <-> GitHub Issue (when one exists)
+```
+
+Where UC/BR/NFR/Test artifacts exist, preserve real references. Do not fabricate artifacts to make traceability look complete.
+
+## Managed Issue Index
+
+`ISSUE_INDEX.md` is the local registry for requirement-to-Issue synchronization when the repository has not defined another registry.
+
+It must record, at minimum:
+
+- requirement ID;
+- lifecycle;
+- hierarchy role (`Parent/Capability`, `Leaf`, or `Standalone`);
+- linked draft(s);
+- linked GitHub Issue number/URL when available;
+- Issue state/disposition;
+- synchronization state;
+- notes for split/group/superseded relationships.
+
+Use `references/issue-index-template.md`.
 
 ## Operating Modes
 
-### Draft Mode
+### 1. Planning / Draft Mode
 
-Default mode. Create Markdown issue drafts only.
+Default mode.
 
-Default output:
+Create/update:
 
-- `.agents/outputs/drafts/github-issues/ISSUE_INDEX.md`
-- numbered issue draft files such as `001-module-short-title.md`
+- `ISSUE_INDEX.md`;
+- selected Issue draft files;
+- traceability and reconciliation notes.
 
-Draft mode must not create real issues, update Projects, create labels, create branches, commit changes, or modify code unless explicitly asked.
+Do not mutate GitHub in this mode.
 
-When regenerating drafts:
+When regenerating:
 
-- Clean or archive stale draft files according to repository convention.
-- Ensure every draft file listed in `ISSUE_INDEX.md` exists.
-- Ensure every `.md` draft file in the final draft directory is referenced by `ISSUE_INDEX.md`.
-- Do not leave stale, duplicate, or unreferenced drafts.
-- Do not create duplicate implementation drafts for both a parent capability FR and its implementable child FRs.
+- update existing drafts instead of duplicating them;
+- preserve stable mappings where possible;
+- remove or archive stale generated drafts according to repository convention;
+- never delete historical GitHub mappings from the index merely because the current requirement is no longer active.
 
-### GitHub Creation Mode
+### 2. GitHub Creation Mode
 
-Explicit approval required.
+Create real Issues only after authorization and preflight.
 
 Rules:
 
-- Create issues only from drafts listed in `ISSUE_INDEX.md`.
-- Do not scan every `.md` file in the draft directory.
-- Default: create only items with `Draft State = Approved`.
-- If the user specifies IDs/ranges, create only those drafts.
-- If the user says create all drafts, create all eligible listed drafts.
-- Do not create implementation Issues from `DEFERRED`, `OUT_OF_SCOPE`, `RETIRED`, unresolved `DRAFT`, or blocking `Needs clarification` sources unless the authorized decision-maker explicitly changes the requirement state or asks for a non-implementation tracking Issue.
-- After creation, update `ISSUE_INDEX.md` with issue number, URL, Draft State `Created`, and date if available.
+- create from the managed index/drafts, not by scanning arbitrary Markdown;
+- `ACTIVE` requirements create/open current work;
+- `DEFERRED` requirements may create/open backlog work, clearly marked deferred;
+- `DRAFT` requirements may create planning/tracking Issues only when the requested workflow wants draft tracking;
+- `OUT_OF_SCOPE` and `RETIRED` requirements do not cause creation of new implementation Issues;
+- parent/capability Issues must not duplicate child implementation scope;
+- update the index immediately after successful creation.
 
-Run `references/github-creation-preflight.md` before creating.
+Run `references/github-creation-preflight.md`.
 
-If a preflight check fails, stop and report it. Do not create partial issues unless the user explicitly approves continuing.
+### 3. Issue Reconciliation Mode
 
-### GitHub Project Sync Mode
+Use after SRS semantic, lifecycle, or hierarchy changes when linked Issues already exist or Issue sync is part of the requested workflow.
 
-Explicit approval required.
+Reconcile by stable requirement ID, not by title matching alone.
 
-Before syncing, verify repository owner/name, Project owner/number/ID, field IDs, option IDs, and issue item IDs.
+Typical actions:
 
-Do not sync if required IDs cannot be determined confidently.
+- title/wording changed -> update the managed Issue fields when meaning remains the same;
+- semantic requirement change + open unfinished Issue -> update managed scope/acceptance content;
+- semantic requirement change + already-completed Issue -> preserve the completed Issue as history and create/link a follow-up change Issue for new work unless repository policy explicitly prefers reopening;
+- `ACTIVE -> DEFERRED` -> keep linked Issue as backlog/deferred according to repository policy;
+- `DEFERRED -> ACTIVE` -> restore it to current work rather than creating a duplicate;
+- `ACTIVE/DEFERRED -> OUT_OF_SCOPE` -> close linked unfinished Issue as not planned when authorized;
+- `ACTIVE/DEFERRED -> RETIRED` -> close linked unfinished Issue as not planned when authorized;
+- `OUT_OF_SCOPE/RETIRED -> ACTIVE` -> reopen the historical linked Issue when appropriate and not already completed, otherwise create a new follow-up Issue and preserve the old link;
+- requirement split -> preserve original mapping as parent/superseded context and create child mappings;
+- requirement removed from the active SRS without an explicit lifecycle/history decision -> do not guess; stop and ask before closing anything.
 
-Normal fields to sync when available:
+Never delete Issues or comments as part of reconciliation.
 
-- Type
-- Story Points
-- Priority
-- Start date
-- Target date
+Read `references/issue-reconciliation.md`.
 
-Relationship sync is optional and best-effort only. Do not treat relationship sync failure as full workflow failure.
+### 4. GitHub Project Sync Mode
+
+Explicit authorization required.
+
+Verify repository owner/name, Project owner/number/ID, field IDs, option IDs, and Issue item IDs before mutation.
+
+Do not guess Project IDs or option values.
+
+Relationship sync is best-effort unless repository workflow makes it mandatory.
 
 ## Decomposition Strategy
 
-Prefer implementation-ready leaf requirements rather than blindly applying one Issue to every FR identifier.
+The Issue model must cover every managed FR without duplicating implementation scope.
 
-Default rule:
+Default hierarchy handling:
 
-- A top-level FR that represents a business capability normally groups work and provides traceability context.
-- An implementable child/leaf FR normally maps to one implementation Issue when its behavior is independently testable and ready.
-- Do not create a parent FR implementation Issue that duplicates the implementation scope already covered by child FR Issues.
+- parent/capability FR -> parent/tracking Issue when useful for complete FR-to-Issue mapping;
+- leaf FR -> implementation Issue;
+- standalone FR -> implementation Issue;
+- parent Issue does not repeat the child implementation acceptance criteria.
 
-Allowed exceptions:
+A leaf FR may be split into multiple Issues when necessary for delivery, but every split Issue must trace back to the same FR and the index must record the split.
 
-- Split one leaf FR if it is too large, risky, uncertain, or contains multiple independently testable implementation slices.
-- Group multiple small leaf FRs only when they are strongly coupled, implemented in the same workflow, and grouping does not hide meaningful traceability.
-- A standalone FR with no child hierarchy may map directly to one implementation Issue.
+Multiple small FRs may be grouped only when strongly coupled and traceability remains explicit.
 
-Prefer vertical slices: each implementation Issue should represent meaningful, testable behavior.
+Read `references/decomposition-rules.md`.
 
-Detailed guidance: `references/decomposition-rules.md`.
+## Issue Body Synchronization
 
-## Epic and Relationship Rules
+Follow repository Issue templates when present.
 
-Use parent/epic Issues only when grouping adds planning value.
+When no stronger repository format exists, use `references/issue-body-template.md`.
 
-A parent capability may become an Epic or parent Issue when it coordinates multiple implementation work items, but do not create an Epic merely because an arbitrary child-count threshold was reached.
+For Issues managed by this skill, use a clearly delimited managed block when compatible with the repository template:
 
-Every draft Issue must include relationship fields:
+```text
+<!-- srs-sync:start -->
+... requirement-derived managed content ...
+<!-- srs-sync:end -->
+```
 
-- Parent
-- Blocked by
-- Blocking
+Update only the managed requirement-derived content. Preserve human discussion, comments, and unrelated manual notes.
 
-Relationship sync to GitHub Project is optional and best-effort only.
+Do not overwrite a manually edited body blindly when the managed boundary is absent or ambiguous; report the conflict first.
 
-Never guess relationship field IDs or target issue IDs.
+## Labels, Priority, Estimates, Dates
 
-## Definition of Ready
+Use repository/team conventions.
 
-`Draft State` in `ISSUE_INDEX.md` describes the issue-generation lifecycle. It is not the GitHub Project `Status`.
-
-Before an Issue moves from planning into active implementation, verify the repository's Definition of Ready when one exists. At minimum, ensure:
-
-- The objective and Source Trace are clear.
-- The source requirement is eligible for implementation.
-- Scope is sufficiently clear and Acceptance Criteria are testable.
-- Blocking requirement ambiguity is resolved.
-- Dependencies and blockers are identified when known.
-
-Owner, estimates, priority, and dates follow repository/team policy. Do not invent them merely to satisfy a generic template.
-
-If this repository explicitly uses the sizing/timebox conventions in `references/sizing-priority-rules.md`, apply them. Otherwise treat those values as optional guidance rather than universal rules.
-
-## Story Points, Priority, Dates
-
-Use repository/team conventions when defined.
-
-If the repository uses the default sizing guidance in this skill, use:
-
-- `references/sizing-priority-rules.md`
-
-Dates default to `TBD`. Do not invent dates. Fill dates only when the user or repository schedule provides them.
-
-## Labels and Templates
-
-Before assigning labels:
-
-1. Read `.github/labels.yml` if present.
-2. Use only labels defined there unless the user explicitly allows new labels.
-3. Follow repository issue types when defined.
-4. If no repository-specific type system exists, the skill may use its default issue types from `references/issue-body-template.md`.
-5. Secondary labels must not replace the primary issue type when the repository requires one.
-
-Before drafting, inspect `.github/ISSUE_TEMPLATE/*.yml` when present.
-
-Required issue body sections are defined in:
-
-- `references/issue-body-template.md`
-
-## Title and Branch Rules
-
-Follow repository naming conventions when defined.
-
-Fallback recommendation:
-
-- Issue title: clear professional English.
-- Issue body: Vietnamese by default unless the user requests another language.
-- Suggested branch: `<prefix>/<short-kebab-case-title>`.
-
-Do not create branches. Only suggest branch names.
+- Labels must come from repository configuration unless new labels are explicitly authorized.
+- Do not invent Story Points, Priority, Start Date, or Target Date.
+- Use `TBD` when allowed by repository policy.
+- Use `references/sizing-priority-rules.md` only as fallback guidance when the project adopts it.
 
 ## Technical Constraint Rule
 
-Include implementation constraints, technical choices, algorithms, storage mechanisms, architecture decisions, APIs, or data structures only when authoritative source documents explicitly define them.
+Include technical constraints/choices only when the authoritative project sources already define them.
 
-Do not add new technical solutions as facts.
+Do not turn an implementation suggestion into a requirement-derived Issue fact.
 
-If a useful technical suggestion is not in the source documents, keep it out of the requirement-derived Issue draft and ask the user before finalizing.
+## GitHub Creation / Reconciliation Preflight
 
-## Token-Saving Workflow
+Use `references/github-creation-preflight.md` before real mutations.
 
-For large documents, do not perform planning, draft generation, real issue creation, and Project sync in one pass unless explicitly asked.
+Preflight outcomes are classified:
 
-Use phases:
+- **Hard blocker** -> do not continue merely because the user says "continue"; resolve the missing authority/source/mapping first.
+- **Overridable workflow warning** -> the authorized user may explicitly accept the risk and continue.
 
-1. Planning: create `ISSUE_INDEX.md`, traceability table, proposed issue list, estimates, exclusions, and dependencies.
-2. Draft Generation: create selected full Issue draft files after approval.
-3. GitHub Creation: create real Issues only from eligible drafts listed in `ISSUE_INDEX.md`.
-4. Project Sync: sync normal Project fields after Issues exist.
-5. Final Report: concise result table only.
-
-Do not print full Issue bodies in chat unless the user asks.
+Missing explicit requirement lifecycle is a hard blocker for the affected requirement.
 
 ## Coordination With Documentation Skills
 
-When a general documentation-governance skill is available, defer shared documentation semantics to it, including:
+When `markdown-documentation` is available, it owns shared requirement semantics, lifecycle definitions, stable IDs, source-of-truth rules, and documentation impact analysis.
 
-- requirement lifecycle meaning;
-- stable ID behavior;
-- source-of-truth resolution;
-- requirement readiness semantics;
-- impact analysis for requirement changes.
+This skill owns GitHub work-item representation and synchronization.
 
-This skill owns the mechanics of turning eligible source requirements into GitHub work items. It must not redefine project requirements merely to make Issue generation easier.
+When SRS content changes:
+
+```text
+markdown-documentation
+        -> determine/record authorized requirement change
+srs-to-github-issues
+        -> reconcile linked work items from that source change
+```
+
+Issues never override the SRS solely because an Issue body differs.
+
+## Token-Saving Workflow
+
+For large SRS files, work by phase:
+
+1. Inventory + lifecycle validation.
+2. Update `ISSUE_INDEX.md` and reconciliation plan.
+3. Generate/update selected drafts.
+4. Perform authorized GitHub mutations.
+5. Sync verified Project metadata if requested.
+6. Report concise results and unresolved blockers.
+
+Do not print full Issue bodies in chat unless requested.

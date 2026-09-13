@@ -95,7 +95,7 @@ Test Case
 
 ## 6. Lifecycle and Stable IDs
 
-Use repository lifecycle conventions; otherwise see `references/common/document-lifecycle.md`.
+Use repository lifecycle conventions; otherwise see `references/common/document-lifecycle.md`. Do not infer or bulk-assign lifecycle states without repository evidence or an explicit authorized decision.
 
 Accepted identifiers are persistent:
 
