@@ -1,6 +1,6 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.0.2
+> **Version:** v1.1.0
 > **Created:** 2026-09-13  
 > **Last Updated:** 2026-09-14
 > **Status:** Active  
@@ -38,14 +38,16 @@ Hành vi mong đợi chi tiết được xác định trong [SRS](../requirement
 Việc kiểm thử nên ưu tiên:
 
 - Ranh giới authorization giữa Guest/Member/Administrator và ownership của Member.
-- Validation Recipe Post, công khai trực tiếp, tác giả sửa/xóa bài và bảo vệ nội dung đã bị Administrator ẩn.
+- Profile validation Recipe Post: title 3–120, ingredients 1–50, serving 1–50, prep/cook 0–1.440 và tổng > 0, tối đa 30 steps, description 2.000, tối đa 5 ảnh JPEG/PNG/WebP 5 MB/ảnh và một YouTube link; công khai trực tiếp và quyền sửa/xóa.
 - Quyền riêng tư của report, quy tắc chống report đang mở bị trùng và moderation action chỉ dành cho Administrator.
-- Tính độc lập giữa Saved Recipe và Meal Planner, các meal type được phép và chống dữ liệu trùng.
-- Điều kiện được dùng AI, giới hạn 5/15/50 lượt mỗi ngày, chỉ tính lượt khi thành công, provider failure và ràng buộc source Recipe Post.
+- Tính độc lập giữa Saved Recipe/Meal Planner/Shopping history, giữ unavailable/tombstone khi bài nguồn không khả dụng, các meal type và chống dữ liệu trùng.
+- Điều kiện dùng AI, quota 5/15/50 reset 00:00 `Asia/Ho_Chi_Minh`, account/cookie+coarse-IP tracking, chỉ tính lượt thành công, telemetry không raw prompt và retention 90 ngày.
 - Điều kiện dùng chức năng dinh dưỡng, quy đổi khẩu phần, công khai dữ liệu thiếu và cấm bịa hoặc diễn giải theo hướng chẩn đoán.
 - Validation ảnh, tính nhất quán của reference, lỗi YouTube embed và xử lý error/quota của external provider.
-- Kiểm tra Member/input cho Google Maps, các giá trị khoảng cách được phép, attribution và hành vi trung thực khi không có kết quả/provider lỗi.
-- Xác minh payment trước khi thay đổi entitlement sau khi provider và contract được phê duyệt.
+- M11/Google Maps đã `DEFERRED`, không nằm trong MVP test scope hoặc release gate.
+- Xác minh payment trước khi kích hoạt entitlement, expiry cuối kỳ, FREE/PLUS/PRO ở 0/49,000/99,000 VND/tháng, no auto-renew/no partial refund và idempotency cho duplicate processing.
+- Authentication: rate limit account identifier + IP 10 phút sau 5 lần sai; access token ngắn hạn, rotating refresh, server-side revocation và logout thu hồi refresh session.
+- Notification: in-app theo business event; email async/best-effort không rollback hành động gốc, moderation email phải được attempt.
 
 Danh sách này dùng để ưu tiên. Test Case chi tiết phải được suy ra từ các requirement có lifecycle đã được phê duyệt và Acceptance Criteria tương ứng.
 
@@ -59,7 +61,7 @@ Sử dụng nhiều lớp bằng chứng cho Gemini, Azure Blob Storage, Google 
 
 Live call phải dùng test configuration riêng, quota có giới hạn và dữ liệu không nhạy cảm. Secret không được xuất hiện trong Source Control, log hoặc test fixture. Test dùng Mock không chứng minh khả năng kết nối thật; một live call thành công cũng không chứng minh reliability, mức chi phí phù hợp hoặc quota dài hạn.
 
-Riêng với AI, verification phải bao phủ: lọc nguồn hợp lệ, không bịa Recipe Post, không tự tạo dữ liệu dinh dưỡng chính thức, ranh giới hỗ trợ tác giả có thể chỉnh sửa, cách trình bày an toàn/không mang tính chẩn đoán và không trừ lượt khi provider lỗi. Tiêu chí chất lượng AI và Gemini model cụ thể vẫn là open item và phải được chốt trước khi tuyên bố output AI đạt yêu cầu.
+Riêng với AI, verification phải dùng curated evaluation set và đạt ít nhất 80% case thỏa các rule áp dụng về allowed Recipe Post sources, restrictions, non-fabrication và safety/business constraints. Không bắt buộc in-product satisfaction survey chỉ để đáp ứng NFR-25; exact Gemini model/version được chọn bằng technical evaluation. Test còn bao phủ không trừ lượt khi provider lỗi và nutrition không tự kê mục tiêu từ BMI/weight goal.
 
 ## 6. Test Data và environment
 
@@ -105,4 +107,4 @@ Release lên `main` còn phải tuân theo release checklist trong `CONTRIBUTING
 
 ## 11. Điều kiện áp dụng và open item
 
-Khi scaffold thật xuất hiện, nhóm phải xác minh và tài liệu hóa command thực tế, framework version, vị trí test và điều kiện tiên quyết của environment. Các open decision hiện gồm Frontend test tooling, API test runner, chiến lược tích hợp SQL Server, tần suất test với live provider, tiêu chí chất lượng AI, NFR target đo được và mọi Coverage gate.
+Khi scaffold thật xuất hiện, nhóm phải xác minh và tài liệu hóa command thực tế, framework version, vị trí test và điều kiện tiên quyết của environment. Các open technical items gồm Frontend test tooling, API test runner, chiến lược tích hợp SQL Server, tần suất live-provider test, curated AI dataset chi tiết, provider-specific timeout/retry và mọi Coverage gate. NFR-01–25 vẫn `ACTIVE` dù một số chi tiết kiểm chứng cần tiếp tục phân rã.

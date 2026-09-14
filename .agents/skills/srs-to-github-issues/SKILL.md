@@ -98,12 +98,19 @@ Before planning or synchronization:
 
 Typical fallback ownership:
 
-- detailed required behavior -> SRS / detailed requirements;
+- detailed required behavior -> SRS / detailed requirements (monolithic or registered modular requirement set);
 - business rules -> designated BR source;
 - architecture -> architecture documentation;
 - important decision rationale -> ADR / Decision Record;
 - GitHub workflow -> repository governance / contribution policy;
 - work-item state -> GitHub, but only as a mirror of requirement lifecycle and implementation progress.
+
+When a Modular SRS Requirement Set is used:
+- Root SRS is the Authoritative Registry for requirement existence, stable IDs, index-level module allocation, and authoritative lifecycle state.
+- Registered child documents are Authoritative Detailed Specifications for detailed requirement statements, actors/triggers, preconditions, exceptions, and acceptance criteria.
+- Requirement eligibility and lifecycle gate are resolved directly from the authoritative lifecycle registry in root SRS.
+- Detailed requirement content is then hydrated from the corresponding registered child document via stable anchors (`#fr-xx`).
+- If a lifecycle conflict occurs between root SRS and child document, root SRS wins; use the root SRS lifecycle and record a sync warning.
 
 If equally authoritative requirement sources conflict, stop affected synchronization and report the conflict.
 
@@ -114,8 +121,9 @@ Inspect only what is needed. Common candidates:
 - `AGENTS.md`
 - `CONTRIBUTING.md`
 - `.agents/repo-contract.yml`
-- `docs/requirements/SRS.md`
-- `SRS.md`
+- Document Register in `docs/README.md` (to resolve registered modular SRS requirement sets)
+- `docs/requirements/SRS.md` or root SRS
+- Registered child requirement specifications (e.g. `docs/requirements/srs/*.md`)
 - `docs/decisions/`
 - `.github/ISSUE_TEMPLATE/*.yml`
 - `.github/labels.yml`
@@ -133,11 +141,12 @@ Generated drafts/indexes are working artifacts, not authoritative project requir
 
 Before creating drafts, real Issues, or reconciling existing Issues:
 
-1. enumerate the FRs in the authoritative SRS;
-2. verify that each FR has an explicit lifecycle state;
+1. enumerate the requirements in the authoritative SRS registry (root SRS);
+2. verify that each requirement has an explicit lifecycle state in the registry;
 3. list missing/ambiguous states;
 4. ask the authorized decision-maker to resolve them;
-5. continue only for FRs whose lifecycle is explicit.
+5. continue only for requirements whose lifecycle is explicit;
+6. resolve detailed content (statements, acceptance criteria) from the registered child requirement documents.
 
 Do not substitute a separate agent-inferred "eligibility" decision for this lifecycle gate.
 
@@ -159,7 +168,7 @@ Do not invent readiness and do not use missing readiness as a reason to ignore a
 
 ## Traceability Rule
 
-Every requirement-derived work item must trace to the authoritative source ID/section.
+Every requirement-derived work item must trace to the authoritative source ID/section. In a modular SRS set, trace to both the root SRS registry and the detailed specification anchor.
 
 For SRS FRs, maintain at minimum:
 

@@ -14,9 +14,10 @@ When compatible with the repository template, place requirement-derived content 
 <Mô tả kết quả theo requirement nguồn.>
 
 ## Source Trace
-- SRS: ...
+- Root SRS Registry: docs/requirements/SRS.md (or monolithic SRS.md)
+- Detailed Specification: docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-xx (when modular)
 - Requirement: FR-xx
-- Requirement Lifecycle: ACTIVE / DEFERRED / DRAFT / ...
+- Requirement Lifecycle: ACTIVE / DEFERRED / DRAFT / ... (from authoritative SRS registry)
 - Requirement Readiness: Ready / ... / Not used
 - Hierarchy Role: Parent / Leaf / Standalone
 

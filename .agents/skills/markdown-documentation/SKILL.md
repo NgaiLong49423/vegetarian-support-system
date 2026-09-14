@@ -75,7 +75,7 @@ Determine which artifact is authoritative for the information being considered.
 
 Typical ownership:
 
-- Requirements and business behavior -> SRS / requirement / BR source of truth.
+- Requirements and business behavior -> SRS / requirement / BR source of truth (single-file SRS or Modular SRS Requirement Set: Root Registry + applicable detailed requirement artifacts).
 - High-level system structure -> architecture documentation.
 - Significant decision rationale -> Decision Record / ADR.
 - Detailed API contract -> OpenAPI/Swagger when adopted by the repository; otherwise the designated API contract artifact.
@@ -85,16 +85,22 @@ Typical ownership:
 - Release/change summary -> changelog.
 - Research evidence -> research notes, which are not accepted decisions by themselves.
 
+When a Modular SRS Requirement Set is used, resolve authority by concern and field:
+- Root SRS acts as the Authoritative Registry for requirement existence, stable IDs, index-level module allocation, and authoritative lifecycle state.
+- Registered child requirement documents act as Authoritative Detailed Specifications for detailed requirement statements, actors/triggers, preconditions, exceptions, acceptance criteria, and domain rules.
+- Lifecycle displayed inside child requirement documents is derived from root SRS; if lifecycle values conflict, root SRS wins.
+
 An explicit current decision from an authorized decision-maker may change previously accepted project information.
 If equally authoritative sources still conflict and the conflict affects the task, report it instead of silently choosing.
 
 ### 5. Protect Accepted Decisions and Baselined Requirements
 
 Review, cleanup, standardization, restructuring, or formatting work must not silently change the meaning of accepted requirements or decisions.
+Structural migration or modularization MUST NOT create new requirement semantics, invent metrics, or guess lifecycle states.
 
 A semantic change requires explicit authorization from the current task or an authorized decision-maker according to repository governance.
 
-### 6. Preserve Stable Identifiers
+### 6. Preserve Stable Identifiers and Reference Identity
 
 Preserve established identifiers such as `FR-01`, `FR-03.2`, `BR-01`, `UC-01`, `NFR-01`, `ADR-001`, and established test IDs.
 
@@ -102,6 +108,7 @@ Preserve established identifiers such as `FR-01`, `FR-03.2`, `BR-01`, `UC-01`, `
 - Do not renumber merely to make numbering contiguous.
 - Retired identifiers must not be reassigned to different requirements.
 - Repository-wide ID migration requires explicit approval and impact analysis.
+- **Stable Requirement Anchors**: Requirement reference identity must depend on stable IDs, not mutable requirement titles. In modular specifications, prefer explicit ID anchors (such as `<a id="fr-01"></a>`) so references do not break when titles change or are translated.
 
 ### 7. Make the Smallest Coherent Change
 
@@ -115,6 +122,7 @@ If the user explicitly requests a broad review-and-fix task, the permitted scope
 ### 8. Prefer One Source of Truth
 
 Do not duplicate large authoritative blocks across documents.
+In a modular requirements structure, root SRS references/indexes detailed requirements via stable anchors instead of duplicating their full normative definitions.
 Reference the owning artifact or stable identifier when possible.
 
 ### 9. Keep Information Types Separate

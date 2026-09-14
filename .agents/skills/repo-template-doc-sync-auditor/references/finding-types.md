@@ -79,6 +79,8 @@ README may simply be a summary.
 
 Similarly, PRD and SRS may differ in detail because they own different abstraction levels. Report only incompatible claims or violations of explicit repository expectations.
 
+In a Modular SRS Requirement Set, a concise summary row in the root `SRS.md` index and a detailed requirement block in a registered child document (`FUNCTIONAL-REQUIREMENTS.md`) are complementary views of the same requirement, NOT duplicate or conflicting requirements. Detailed child documents are authoritative for detailed behaviors, preconditions, and acceptance criteria.
+
 ## 6. Requirement Lifecycle / Feature Status Drift
 
 Report when current authoritative artifacts disagree about the status of the same feature or requirement.
@@ -89,6 +91,14 @@ Example:
 SRS: FR-19 is OUT_OF_SCOPE.
 Current release plan: FR-19 is mandatory for this milestone.
 ```
+
+### Lifecycle Synchronization Drift (Modular SRS)
+
+In a Modular SRS Requirement Set, `SRS.md` is the Authoritative Registry for requirement lifecycle state. If the derived status displayed in a detailed child document differs from `SRS.md`:
+- Report as `Lifecycle Synchronization Drift` (Major severity).
+- The lifecycle value in `SRS.md` wins.
+- The detailed child document must be synchronized to match `SRS.md`.
+- The agent must not invent or silently adopt the child document's status.
 
 Do not treat a historical baseline or archived issue as a current-status conflict.
 

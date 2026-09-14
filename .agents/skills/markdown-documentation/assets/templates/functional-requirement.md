@@ -1,6 +1,7 @@
+<a id="fr-xx"></a>
 ### FR-XX — Requirement Name
 
-**Status:** DRAFT
+**Status:** DRAFT <!-- Derived from root SRS registry when used in a modular specification -->
 
 **Statement:**  
 TBD.

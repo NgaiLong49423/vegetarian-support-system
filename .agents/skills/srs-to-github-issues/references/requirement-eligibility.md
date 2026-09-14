@@ -4,7 +4,7 @@ Use this reference to decide how an explicitly confirmed requirement lifecycle s
 
 ## Mandatory Rule: No Lifecycle Guessing
 
-Every FR managed by this skill must have an explicit lifecycle state in the authoritative source or an explicit authorized decision.
+Every FR managed by this skill must have an explicit lifecycle state in the authoritative requirement registry (e.g. root `SRS.md` in a modular SRS) or an explicit authorized decision. Status displayed in child detailed documents is derived; if conflict occurs, the authoritative registry in root SRS wins.
 
 Fallback vocabulary:
 

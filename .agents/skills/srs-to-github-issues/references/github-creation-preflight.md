@@ -8,7 +8,7 @@ A hard blocker must be resolved before the affected mutation. A simple "continue
 
 - [ ] Real GitHub mutation is authorized by the current task or adopted repository workflow.
 - [ ] Repository owner/name is known for the target repository.
-- [ ] Every affected FR has an explicit lifecycle state from the SRS or authorized decision.
+- [ ] Every affected FR has an explicit lifecycle state from the authoritative SRS registry or authorized decision, and no unresolved lifecycle conflict exists between root registry and detailed specification.
 - [ ] The target Issue mapping is known, or creation of a new Issue is clearly intended.
 - [ ] No conflicting authoritative requirement sources remain unresolved for the affected scope.
 - [ ] Parent/capability tracking scope does not duplicate child implementation scope.

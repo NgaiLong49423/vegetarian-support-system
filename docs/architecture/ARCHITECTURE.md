@@ -1,6 +1,6 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.0.2
+> **Version:** v1.2.0
 > **Created:** 2026-09-13  
 > **Last Updated:** 2026-09-14
 > **Status:** Active  
@@ -31,7 +31,7 @@ Guest / Member / Administrator
         |       |       |
         v       v       v
    SQL Server  Azure   External providers
-               Blob    Gemini / Google / YouTube / payment TBD
+               Blob    Gemini / YouTube / auth / email / payment
 ```
 
 Sơ đồ trên thể hiện trách nhiệm, không phải deployment topology. Hosting, network layout và cách tách environment cụ thể vẫn là open item.
@@ -41,10 +41,31 @@ Sơ đồ trên thể hiện trách nhiệm, không phải deployment topology. 
 | Thành phần | Trách nhiệm đã xác nhận | Ranh giới |
 |---|---|---|
 | Browser client | Hiển thị React UI responsive, nhận input của người dùng, thể hiện trạng thái loading/error/quota và phát YouTube embed được hỗ trợ | Không phải ranh giới tin cậy cho authorization, validation hoặc lưu secret |
-| Spring Boot Backend | Xác thực request, kiểm tra role và ownership, validate input, áp dụng quota AI/location, điều phối luồng nghiệp vụ, truy cập persistence và gọi provider cần đặc quyền | Quy tắc nghiệp vụ vẫn phải được thực thi ở server-side kể cả khi UI đã ẩn action không được phép |
+| Spring Boot Backend | Xác thực request, kiểm tra role và ownership, validate input, áp dụng quota AI, điều phối luồng nghiệp vụ, truy cập persistence và gọi provider cần đặc quyền | Quy tắc nghiệp vụ vẫn phải được thực thi ở server-side kể cả khi UI đã ẩn action không được phép |
 | SQL Server | Relational Source of Truth chính cho record, relationship, state của ứng dụng và reference đến external media | Blob object và dữ liệu của third-party provider không được thay thế bằng record do ứng dụng sao chép hoặc bịa ra |
 | Azure Blob Storage | Lưu ảnh Recipe Post; SQL Server giữ metadata/reference của ứng dụng | Phase 1 không upload file video; chọn Blob Storage không đồng nghĩa chọn Azure làm deployment provider cho ứng dụng |
-| External integration | Cung cấp phản hồi AI, kết quả location, hỗ trợ authentication/email, video nhúng và khả năng xác minh payment khi requirement quy định | Lỗi provider, quota và chi tiết triển khai chưa xác nhận phải được thể hiện rõ, không được trình bày như dữ liệu ứng dụng đã xử lý thành công |
+| External integration | Cung cấp phản hồi AI, hỗ trợ authentication/email, video nhúng và xác minh payment; Google Maps chỉ thuộc M11 đã deferred | Lỗi provider, quota và chi tiết triển khai chưa xác nhận phải được thể hiện rõ, không được trình bày như dữ liệu ứng dụng đã xử lý thành công |
+
+### 3.1 Kiến trúc Backend
+
+**Decision status:** `DEC-016 — A — APPROVED`.
+
+**Backend Architecture: Modular Monolith using MVC/layered structure within each business module.**
+
+Backend là một Spring Boot application duy nhất và được phát hành thành một deployable backend; dự án không tách các business capability thành microservice. Source code được tổ chức theo business capability, chẳng hạn `auth`, `recipe`, `mealplan`, `shopping`, `nutrition`, `subscription` và `admin`. Đây là các ví dụ định hướng cho ranh giới module, không phải danh sách package bắt buộc đã scaffold.
+
+Bên trong mỗi business module phải áp dụng MVC/layered structure và thể hiện rõ tối thiểu các trách nhiệm `controller`, `service`, `repository`, `model`/`entity`, cùng `dto` khi cần. Modular Monolith xác định ranh giới nghiệp vụ; MVC/layered structure xác định cách phân tầng trách nhiệm bên trong từng ranh giới đó. Hai nguyên tắc được áp dụng đồng thời.
+
+Luồng chuẩn:
+
+```text
+React View
+-> Spring MVC Controller
+-> Service
+-> Repository
+-> Model/Entity
+-> Database
+```
 
 ## 4. Các luồng giao tiếp chính
 
@@ -82,20 +103,20 @@ Browser request -> backend eligibility/quota checks -> Gemini
 
 Backend quản lý Gemini credential, điều kiện hợp lệ của request, quota cấp ứng dụng, validation phản hồi, thống kê thành công/thất bại và usage telemetry. Gemini không kết nối trực tiếp SQL Server, không tự publish nội dung, không tạo dữ liệu dinh dưỡng chính thức và không tự áp dụng moderation action. Gemini model cụ thể và kiến trúc AI chi tiết vẫn là `TBD`.
 
-### 4.5 Luồng Google Maps
+### 4.5 Luồng Google Maps (`DEFERRED`)
 
-Đối với phạm vi tìm nhà hàng được định nghĩa bởi FR-42/FR-43, Member đã được xác thực cung cấp address/place và một ngưỡng khoảng cách được phép. Backend kiểm tra tư cách Member và input trước khi dùng khả năng geocoding/place của Google; React client hiển thị kết quả dạng danh sách/bản đồ có attribution cùng trạng thái không có kết quả, hết quota hoặc lỗi provider rõ ràng. Ứng dụng không dùng GPS của browser, không duy trì danh mục nhà hàng nội bộ và không trình bày cách phân loại của Google như kết quả được dự án độc lập xác minh.
+FR-42/FR-43, M11 và tích hợp Google Maps là `DEFERRED`, không thuộc MVP hiện tại. Mô tả luồng cũ được giữ chỉ để bảo toàn lịch sử và không tạo implementation baseline hoặc MVP Issue.
 
 ### 4.6 Luồng payment
 
-Kích hoạt Plus/Pro yêu cầu payment thật được Backend xác minh trước khi entitlement thay đổi. Provider, giá, billing cycle, quy tắc gia hạn và hoàn tiền vẫn chưa được chốt; vì vậy tài liệu này không định nghĩa callback riêng của provider, data model hoặc protocol.
+MVP dùng VND và chu kỳ tháng: FREE 0, PLUS 49,000, PRO 99,000 VND/tháng. Kích hoạt Plus/Pro yêu cầu payment thành công được Backend xác minh; entitlement hết hạn cuối kỳ đã trả. Không auto-renew, không partial refund; duplicate payment event phải được xử lý idempotent. Provider, callback, data model và protocol cụ thể được chọn ở thiết kế tích hợp nhưng không được thay đổi các business rules này.
 
 ## 5. Ranh giới tin cậy và bảo mật
 
 - Browser là ranh giới không tin cậy. Việc ẩn control không đáp ứng authorization.
 - Xử lý password, kiểm tra role/ownership, quyết định quota và credential của provider thuộc Backend.
 - Secret của Gemini, Azure, Google Maps, Google authentication, email và payment phải nằm ở server-side và ngoài Source Control.
-- JWT là cách dùng authentication token đã chọn, nhưng lưu token, expiration, refresh, logout và revocation vẫn là vấn đề cần thiết kế.
+- Authentication baseline dùng short-lived JWT access token, rotating refresh token và refresh session/server-side revocation; logout thu hồi refresh session. Thời lượng cụ thể, storage mechanism và rotation/reuse-detection implementation là chi tiết thiết kế. Access-token-only chỉ là fallback nếu có quyết định giảm scope mới, không đồng thời là baseline.
 - Input từ browser hoặc provider phải được validate. Log không được làm lộ password, token, API key, SAS URL, toàn bộ prompt nhạy cảm hoặc dữ liệu nutrition profile riêng tư.
 - Kết quả AI và location từ bên ngoài là output của provider. Không được âm thầm biến chúng thành dữ liệu dinh dưỡng đã xác minh, tư vấn y tế, nhà hàng đã thẩm định hoặc quyết định moderation.
 
@@ -103,10 +124,7 @@ Kích hoạt Plus/Pro yêu cầu payment thật được Backend xác minh trư�
 
 - Giữ ranh giới giữa React client, Spring Boot Backend và SQL Server trừ khi có quyết định thay đổi đã được phê duyệt.
 - Giữ relational database làm Source of Truth cho ứng dụng; dùng Flyway để quản lý thay đổi schema có thể thực thi sau khi Backend scaffold tồn tại.
-- Giới hạn việc AI lựa chọn trong các Recipe Post công khai đủ điều kiện và giữ link tới bài nguồn.
-- Lưu ảnh Recipe Post trong Azure Blob Storage và dùng video YouTube dạng embed cho phạm vi ban đầu.
-- Áp dụng quota nghiệp vụ trước khi gọi provider có tính phí hoặc rate limit; request thất bại không được tính là lượt dùng thành công.
-- Không để Hibernate schema generation cạnh tranh với lịch sử Flyway migration mà dự án đã chọn khi persistence được triển khai.
+- Các module và table trong database phải bám sát User Stories và Business Rules đã duyệt.
 - Không suy diễn microservices, vector database, RAG, tool-calling, AI framework hoặc cloud deployment topology chỉ từ các provider đã chọn.
 
 ## 7. Các vấn đề kiến trúc còn mở
@@ -114,10 +132,12 @@ Kích hoạt Plus/Pro yêu cầu payment thật được Backend xác minh trư�
 | Vấn đề | Trạng thái hiện tại | Điều kiện ra quyết định |
 |---|---|---|
 | Gemini model và thiết kế AI | TBD | Chọn sau khi đánh giá chất lượng, latency, quota và chi phí dựa trên requirement |
-| Payment provider và lifecycle | TBD | Chốt cùng giá, billing, verification, renewal và requirement hoàn tiền |
-| JWT lifecycle | TBD | Định nghĩa trước khi áp dụng authentication contract |
+| Payment provider | TBD kỹ thuật | Chọn provider/callback phù hợp với giá VND, monthly billing, verified activation, expiry, no auto-renew/no partial refund và idempotency đã chốt |
+| Token implementation detail | TBD kỹ thuật | Chọn expiry cụ thể, storage và rotation/reuse handling trong baseline access + rotating refresh + server revocation |
 | Deployment topology | TBD | Chốt sau khi có scaffold FE/BE/database chạy được và nhu cầu environment thực tế |
-| Chính sách timeout, retry và retention | TBD | Chuyển các quality concern trong SRS thành NFR đo được và thiết kế có thể kiểm thử |
+| Chính sách timeout/retry theo provider | TBD kỹ thuật | Thiết kế có thể kiểm thử; email best-effort không rollback business action và AI failure không trừ quota |
+| Tích hợp Google Maps (quán chay) | Deferred | Không thiết kế/triển khai trong MVP trừ khi có quyết định scope mới |
+| Module Blog cộng đồng nhúng công thức | Out of MVP Scope | Được phân rã tại SRS 3.21; chỉ xem xét kiến trúc sau khi các module cốt lõi hoàn thành |
 | Upload trực tiếp lên Azure | Future option | Chỉ xem xét lại khi số liệu về kích thước file/tải cho thấy luồng upload qua Backend không phù hợp |
 
 Các lựa chọn dài hạn làm thay đổi đáng kể những ranh giới này nên được ghi lại theo quy trình Decision Record của repository. Quyết định về cách làm việc nhóm hiện nằm trong [ADR-001](../decisions/001-team-workflow.md) và [ADR-002](../decisions/002-five-member-team-operating-agreement.md); hai tài liệu này không định nghĩa kiến trúc runtime.

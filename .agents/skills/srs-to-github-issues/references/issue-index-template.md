@@ -12,12 +12,14 @@ Fallback:
 # SRS ↔ GitHub Issue Index
 
 ## Summary
-- Authoritative SRS: `...`
+- Authoritative SRS Registry: `...` (e.g. `docs/requirements/SRS.md`)
+- Detailed Requirements Specification: `...` (e.g. `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md` or monolithic SRS)
 - Draft output directory: `.agents/outputs/drafts/github-issues/`
 - Real GitHub mutations authorized: Yes / No
 - Last reconciliation source revision: <verified commit/hash or Unknown>
 
 ## Source Authority
+- Authoritative lifecycle registry: ... (e.g. `docs/requirements/SRS.md`)
 - Detailed requirements source: ...
 - Repository governance: ...
 - Adopted repo contract: None / ...

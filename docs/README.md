@@ -1,6 +1,6 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v3.1.0
+> **Version:** v3.2.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-14
 > **Status:** Active  
@@ -31,7 +31,7 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu của repository. C�
 | app/frontend/ | Frontend source, tests, assets and configuration | React component, feature test, package.json after scaffolding; place files by the app's established feature structure |
 | app/backend/ | Backend source, tests, configuration and migrations | Java classes/tests, pom.xml, Flyway migrations after scaffolding |
 | database/ | Database usage guide, deliberate SQL snapshot, demo seed and diagnostic queries | schema.sql remains empty until designed; Flyway owns executable migration history when implemented |
-| docs/requirements/ | Maintained product and software requirements | PRD owns high-level product intent; SRS owns detailed behavior, lifecycle, constraints and verification expectations |
+| docs/requirements/ | Maintained product and software requirements | PRD owns high-level product intent; root SRS owns scope, context, index, and lifecycle registry; docs/requirements/srs/ owns detailed FR, BR, and NFR specifications |
 | docs/architecture/ | Current high-level system structure and selected technology baseline | ARCHITECTURE owns runtime boundaries; TECHNOLOGY-STACK owns technology purpose, rationale, trade-offs and TBD choices |
 | docs/testing/ | Project-level verification strategy | Strategy and quality evidence policy, not a test-case catalog or claim that tests exist |
 | docs/decisions/ | Durable project/workflow decisions and rationale | Numbered ADR with context, decision, consequences and unresolved points |
@@ -62,7 +62,10 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | ../CHANGELOG.md | Historical changes, not current progress | Updating notable changes or investigating history |
 | README.md | File placement and document registry | Creating/moving files or routing documentation |
 | requirements/PRD.md | High-level product summary, Under Review | Product intent and scope |
-| requirements/SRS.md | Detailed business requirements, FR/BR/NFR, requirement lifecycle, constraints, verification expectations and open items, Draft | Any business behavior or requirement work; lifecycle decision gate is in sections 7 and 8 |
+| requirements/SRS.md | Root software requirements specification, scope, actors, system context, requirement indexes, cross-cutting information, and authoritative lifecycle registry, Draft | Scoping, routing, identifying requirements, verifying lifecycle state, or reading system context |
+| requirements/srs/FUNCTIONAL-REQUIREMENTS.md | Authoritative detailed FR definitions, triggers, preconditions, exceptions, and acceptance criteria (derived lifecycle), Draft | Implementing or verifying functional behavior and acceptance criteria |
+| requirements/srs/BUSINESS-RULES.md | Authoritative detailed BR definitions, rationale, constraints, and business logic (derived lifecycle), Draft | Implementing or verifying business rules and constraints |
+| requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md | Authoritative detailed NFR definitions, measurable targets, quality constraints, and verification criteria, Draft | Architecture, performance, security, reliability, or quality assurance work |
 | architecture/ARCHITECTURE.md | High-level runtime parts, boundaries, communication paths, trust boundaries and architectural constraints | Architecture or cross-component integration work |
 | architecture/TECHNOLOGY-STACK.md | Selected technologies, purpose, rationale, benefits, trade-offs and unresolved choices | Dependency or technology decisions |
 | testing/TEST-STRATEGY.md | Project-level test levels, evidence boundaries, traceability, coverage interpretation and completion relationship | Test planning, quality gates or verification design |

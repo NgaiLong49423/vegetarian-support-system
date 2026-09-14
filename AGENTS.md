@@ -1,6 +1,6 @@
 > **Document:** Agent Instructions  
 > **File:** `AGENTS.md`  
-> **Version:** v3.2.1
+> **Version:** v3.3.0
 > **Created:** 2026-06-29  
 > **Last Updated:** 2026-09-14
 > **Status:** Active  
@@ -33,7 +33,7 @@ Do not recursively read the repository, all documentation, all skills, old logs 
 | Task | Read first | Expand only when relevant |
 |---|---|---|
 | Understand the product | README.md; PRD sections in docs/requirements/PRD.md | SRS headings for the requested capability |
-| Implement/change business behavior | Relevant FR/BR/module in docs/requirements/SRS.md; target code/tests | Related SRS sections and supporting decomposition named by the document register |
+| Implement/change business behavior | Registered SRS root plus applicable authoritative FR/BR/NFR documents; target code/tests | Related SRS sections and supporting decomposition named by the document register |
 | Frontend | app/frontend/README.md; target feature | Relevant SRS and backend API contract; technology baseline for dependency decisions |
 | Backend | app/backend/README.md; target code/tests | Relevant SRS, API contract, database guide |
 | Database | database/README.md; affected migrations/model | Relevant SRS and docs/diagrams/ERD/; empty SQL files are not an approved schema |
@@ -93,8 +93,8 @@ Metadata audits use the maintained register. `SKILL.md` retains YAML frontmatter
 - Only documents registered in docs/README.md are maintained project documentation. A new file in a declared folder is not automatically authoritative.
 - Ignore unregistered documents, ZIPs, scratch, outputs, generated/build folders and unrelated untracked files by default. Reading is allowed if the user names them or a concrete task dependency requires them; explain their evidence role without promoting them into the register.
 - This reading rule is not a blanket .gitignore rule: relevant new source files, configs and tests remain reviewable. Never infer that an unregistered file is safe to delete.
-- Inspect target files and applicable configuration even when not individually listed in the document register. Do not skip security or behavior checks to save tokens.
-- SRS owns detailed business behavior and requirement lifecycle; PRD is the summary. Supporting notes and research cannot override SRS. Surface material contradictions before changing business meaning.
+- In the Modular SRS, root SRS (`docs/requirements/SRS.md`) is the authoritative registry for requirement existence, stable IDs, index-level module allocation, and authoritative lifecycle states. Registered child documents (`docs/requirements/srs/`) are authoritative for detailed technical definitions (statements, triggers, preconditions, exceptions, domain rules, acceptance criteria). Lifecycle displayed in child documents is derived; if conflict occurs, root SRS wins. PRD is the high-level summary. Supporting notes and research cannot override SRS. Surface material contradictions before changing business meaning.
+- Scoped reading procedure: when implementing or verifying a requirement, read root SRS to verify requirement existence and lifecycle state; then open only the specific detailed definitions in `docs/requirements/srs/` relevant to the task (via stable anchor `#fr-xx`) and related BR/NFR anchors rather than loading all child requirement documents.
 - GitHub Issues own implementation work tracking, progress and execution state. An Issue must not redefine the meaning of its source requirement.
 - When an SRS requirement changes semantically or changes lifecycle, reconcile its linked Issue through `srs-to-github-issues`.
 - Historical baselines and completed Issues are evidence of prior state. Do not rewrite them merely to match current requirements.

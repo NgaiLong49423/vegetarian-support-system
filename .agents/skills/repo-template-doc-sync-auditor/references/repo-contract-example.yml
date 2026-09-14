@@ -4,6 +4,10 @@ project_type: java-webapp-template
 canonical_docs:
   overview: README.md
   requirements: docs/requirements/SRS.md
+  # Optional modular SRS requirement set example:
+  # functional_requirements: docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md
+  # business_rules: docs/requirements/srs/BUSINESS-RULES.md
+  # non_functional_requirements: docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md
   product_direction: docs/requirements/PRD.md
   changelog: CHANGELOG.md
   contribution: CONTRIBUTING.md

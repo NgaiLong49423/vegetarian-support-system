@@ -1,6 +1,6 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.0.2
+> **Version:** v1.2.0
 > **Created:** 2026-09-13  
 > **Last Updated:** 2026-09-14
 > **Status:** Active  
@@ -41,6 +41,8 @@ Frontend state management và CSS/UI library vẫn là `TBD`.
 | Maven | Build Backend và quản lý dependency | Confirmed | Cung cấp cấu trúc dự án và dependency lifecycle có thể tái lập, quen thuộc với nhóm | Chưa có build command hoặc dependency version nào được xác minh trước khi `pom.xml` tồn tại |
 | REST API qua JSON | Contract ứng dụng giữa browser và Backend | Confirmed | Ranh giới client/server rõ ràng và định dạng payload có khả năng tương tác | Endpoint path, error envelope, pagination và versioning chưa được định nghĩa |
 
+**Backend Architecture: Modular Monolith using MVC/layered structure within each business module.** Baseline này dùng một Spring Boot application và một deployable backend, tổ chức module theo business capability; MVC/layered structure được áp dụng bên trong từng module và không bị thay thế bởi Modular Monolith. Cấu trúc trách nhiệm và luồng chuẩn được quy định tại [System Architecture](ARCHITECTURE.md#31-kiến-trúc-backend).
+
 ## 4. Persistence
 
 | Công nghệ | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
@@ -57,7 +59,7 @@ Các file SQL hiện tại chỉ là placeholder, chưa phải schema được p
 | Công nghệ | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
 |---|---|---|---|---|
 | Spring Security | Framework authentication và authorization của Backend | Confirmed | Điểm tích hợp trung tâm để bảo vệ luồng request Spring | Filter, access rule và cách xử lý failure vẫn cần được thiết kế và kiểm thử |
-| JWT | Mang authentication claim cho API request được bảo vệ | Confirmed | Phù hợp với ranh giới React-to-REST mà không phụ thuộc server-rendered UI | Cách lưu, expiry, refresh, logout và revocation là `TBD`; payload có chữ ký không tự động được mã hóa |
+| JWT access + rotating refresh token | Mang authentication claim và duy trì refresh session có thể thu hồi | Confirmed baseline | Short-lived access token cho REST; rotating refresh token với server-side session/revocation; logout thu hồi refresh session | Expiry cụ thể, storage và reuse-detection là chi tiết thiết kế; access-token-only chỉ là fallback sau một quyết định giảm scope mới |
 | BCrypt | Hash và xác minh password | Confirmed | Cơ chế hash password một chiều có salt tích hợp với Spring Security | Work factor và xử lý input phải được chọn; không được ghi password hoặc hash vào log |
 | Role-based authorization và ownership check | Thực thi quyền Guest/Member/Administrator và ownership của resource | Confirmed | Làm ranh giới role dễ giải thích và kiểm thử | Chỉ kiểm tra role là chưa đủ khi Member chỉ được thay đổi resource của chính mình |
 
@@ -68,13 +70,13 @@ Google Login là khả năng authentication đã được SRS xác nhận; Sprin
 | Công nghệ/dịch vụ | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
 |---|---|---|---|---|
 | Azure Blob Storage | Lưu ảnh Recipe Post trong khi SQL Server giữ reference | Confirmed | Shared cloud object storage giúp tránh lưu binary media trong relational database | Phụ thuộc network, access policy và chi phí; không đồng nghĩa chọn Azure để deploy toàn hệ thống |
-| Upload Blob qua Backend | Xác thực, validate và upload lưu lượng ảnh ban đầu | Confirmed initial path | Tập trung kiểm soát truy cập và validation cho triển khai ban đầu | Byte của file đi qua Backend; kích thước, loại file, timeout và consistency cleanup cần được thiết kế |
+| Upload Blob qua Backend | Xác thực, validate và upload tối đa 5 ảnh Recipe Post | Confirmed initial path | Tập trung kiểm soát truy cập và validation cho triển khai ban đầu | Chỉ JPEG/PNG/WebP, tối đa 5 MB/ảnh; timeout và consistency cleanup còn thiết kế |
 | Upload trực tiếp bằng scoped SAS URL | Khả năng upload từ client tới Blob khi xuất hiện nhu cầu scaling đã được đo | Future option | Có thể giảm tải truyền file qua Backend | Tăng độ phức tạp về CORS, expiry, upload chưa hoàn tất và verification; chưa có ngưỡng áp dụng |
 | YouTube embed | Phát video được liên kết trong Recipe Post mà không sao chép video | Confirmed | Dùng player của provider và tránh phải vận hành video pipeline | Khả năng embed phụ thuộc setting của video nguồn và hành vi của provider |
 | Google Gemini | AI provider cho các khả năng được SRS định nghĩa | Confirmed at provider level | Cho nhóm một ranh giới provider thống nhất để đánh giá và tích hợp | Model, kiến trúc chi tiết, chất lượng, latency, quota và chi phí vẫn cần kiểm thử/chốt |
-| Google Maps Platform | Geocode địa điểm do Member nhập và trả kết quả nhà hàng lân cận có attribution | Confirmed cho FR-42/FR-43 | Không cần duy trì danh mục nhà hàng nội bộ luôn thay đổi và không cần GPS của thiết bị | Quota, billing và chất lượng phân loại phụ thuộc external provider; cách tính khoảng cách đường bộ vẫn là `TBD` |
-| Payment provider | Xác minh payment thật cho Plus/Pro trước khi kích hoạt entitlement | TBD | Business Requirement cần provider thật | Provider, giá, chu kỳ, renewal, refund và thiết kế webhook/verification chưa chốt |
-| Email service | Verification, reset và gửi một số notification | TBD implementation | SRS đã xác nhận các khả năng liên quan email | Provider, deliverability, template và retention chưa chốt |
+| Google Maps Platform | Phụ thuộc dự kiến cho FR-42/FR-43 | Deferred | M11 không thuộc MVP hiện tại | Không chọn/tích hợp trong MVP nếu chưa có quyết định scope mới |
+| Payment provider | Xác minh payment thật cho Plus/Pro trước khi kích hoạt entitlement | TBD implementation | Business baseline đã chốt FREE 0, PLUS 49,000, PRO 99,000 VND/tháng | Chỉ provider/webhook còn chọn; phải hỗ trợ verified activation, expiry, no auto-renew/no partial refund và idempotency |
+| Email service | Verification, reset và notification bất đồng bộ/best-effort | TBD implementation | Email failure không rollback business action; moderation-result email phải được thử gửi | Provider, deliverability, template và retry detail chưa chốt |
 
 Credential của provider phải nằm ở Backend và ngoài Source Control.
 
@@ -99,9 +101,9 @@ Chiến lược verification cấp dự án nằm trong [Test Strategy](../testi
 - MapStruct hoặc cách mapping DTO khác.
 - Quy ước/thư viện Frontend state management.
 - CSS/UI library và design system.
-- Provider cho payment và email.
+- Provider cho payment và email; business behavior/price không còn TBD.
 - Dependency version và compatibility matrix.
 - Deployment provider/topology cho Frontend, Backend, SQL Server và hoạt động hỗ trợ.
-- JWT lifecycle, quy tắc timeout/retry của provider, retention cho logging/telemetry và mọi Coverage quality gate.
+- Access-token expiry/storage và refresh rotation/reuse implementation; timeout/retry theo provider; logging retention ngoài AI telemetry 90 ngày; mọi Coverage quality gate.
 
 Lựa chọn IDE cá nhân như IntelliJ IDEA Ultimate hoặc JPA tooling là developer tool tùy chọn, không phải công nghệ cốt lõi của dự án.

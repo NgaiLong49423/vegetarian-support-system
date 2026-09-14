@@ -26,6 +26,9 @@ canonical_docs:
   project_overview: README.md
   product_requirements: docs/requirements/PRD.md
   software_requirements: docs/requirements/SRS.md
+  functional_requirements: docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md
+  business_rules: docs/requirements/srs/BUSINESS-RULES.md
+  non_functional_requirements: docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md
   architecture: docs/architecture/ARCHITECTURE.md
   technology_stack: docs/architecture/TECHNOLOGY-STACK.md
   test_strategy: docs/testing/TEST-STRATEGY.md
@@ -41,7 +44,7 @@ database_state:
   migration_owner: backend_flyway_when_scaffolded
 doc_sync_rules:
   - when: requirements_change
-    check: [docs/requirements/SRS.md, docs/requirements/PRD.md, docs/architecture/ARCHITECTURE.md, docs/testing/TEST-STRATEGY.md, README.md, CHANGELOG.md]
+    check: [docs/requirements/SRS.md, docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md, docs/requirements/srs/BUSINESS-RULES.md, docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md, docs/requirements/PRD.md, docs/architecture/ARCHITECTURE.md, docs/testing/TEST-STRATEGY.md, README.md, CHANGELOG.md]
   - when: architecture_or_technology_changes
     check: [docs/architecture/ARCHITECTURE.md, docs/architecture/TECHNOLOGY-STACK.md, docs/requirements/SRS.md, docs/README.md, README.md]
   - when: test_strategy_changes

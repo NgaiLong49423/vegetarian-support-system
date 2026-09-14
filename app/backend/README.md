@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/backend/README.md`  
-> **Version:** v0.1.1
+> **Version:** v0.3.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-13
+> **Last Updated:** 2026-09-14
 > **Status:** Under Review  
 
 # Backend Workspace
@@ -15,10 +15,13 @@ Backend chưa được scaffold: chưa có `pom.xml`, source code, migration ho�
 
 ## Ranh giới kiến trúc hiện tại
 
-- SRS là nguồn nghiệp vụ; Technology Stack là nguồn lựa chọn công nghệ. Monolith/module layout, package structure và AI architecture chưa được chốt.
+- SRS là nguồn nghiệp vụ; Technology Stack là nguồn lựa chọn công nghệ; System Architecture là nguồn cho cấu trúc backend đã duyệt. **Backend Architecture: Modular Monolith using MVC/layered structure within each business module.**
+- Backend gồm một Spring Boot application và một deployable backend, không tách microservices. Source code được chia theo business capability như `auth`, `recipe`, `mealplan`, `shopping`, `nutrition`, `subscription` và `admin`; bên trong mỗi module phải phân tách tối thiểu `controller`, `service`, `repository`, `model`/`entity`, cùng `dto` khi cần.
+- Luồng chuẩn là `React View -> Spring MVC Controller -> Service -> Repository -> Model/Entity -> Database`. Chi tiết package cụ thể chỉ được xác lập khi scaffold và phải tuân theo ranh giới này. AI architecture chi tiết vẫn chưa được chốt.
 - SQL Server là source of truth cho dữ liệu nghiệp vụ. Flyway phải quản lý migration theo thứ tự, còn JPA/Hibernate không thay thế lịch sử migration.
-- Authentication, role/ownership, validation, quota và access tới dịch vụ ngoài phải được thực thi ở backend.
-- Gemini, Azure, Maps và payment credential chỉ đến từ cấu hình môi trường/secret store; không commit giá trị thật.
+- Authentication baseline dùng short-lived access token, rotating refresh token, refresh session/server-side revocation và logout revocation; role/ownership, validation và quota phải được thực thi ở backend.
+- Subscription baseline dùng FREE 0, PLUS 49,000 và PRO 99,000 VND/tháng; verified activation, end-of-period expiry, no auto-renew/no partial refund và idempotent duplicate payment processing. Provider cụ thể còn chọn khi tích hợp.
+- Gemini, Azure và payment credential chỉ đến từ cấu hình môi trường/secret store; không commit giá trị thật. Maps chỉ được cấu hình nếu M11 được kích hoạt lại bằng quyết định scope mới.
 - API được mô tả bằng OpenAPI và trả lỗi nhất quán; không để frontend suy đoán business rule.
 
 ## Definition of Done cho thay đổi backend

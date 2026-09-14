@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.3.0
+> **Version:** v2.9.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-14
 > **Status:** Active
@@ -8,6 +8,133 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-14 — Phase-1 Decision Baseline Synchronization
+
+**Status:** Working tree — not committed.
+
+**Scope:** Đồng bộ corrective baseline DEC-001–DEC-018 trên requirement set và tài liệu bị ảnh hưởng; giữ stable IDs/lịch sử, không tạo GitHub Issues hoặc bắt đầu Phase-2 decomposition.
+
+### Added
+
+- Ghi nhận baseline thương mại MVP: FREE 0, PLUS 49,000 và PRO 99,000 VND/tháng; monthly, no auto-renew, no partial refund, verified activation, end-of-period expiry và idempotent duplicate processing.
+- Ghi nhận baseline authentication dùng short-lived access token, rotating refresh token, refresh-session/server-side revocation và logout revocation.
+- Giữ `DEC-016 — A — APPROVED`: **Backend Architecture: Modular Monolith using MVC/layered structure within each business module.**
+
+### Changed
+
+- Chuẩn hóa lifecycle 56 FR, 68 BR và 27 NFR; chuyển M11 cùng FR/BR liên quan sang `DEFERRED`, giữ các mục `OUT_OF_SCOPE`/`RETIRED`.
+- Đồng bộ Recipe Post validation, Shopping List unit conversion, tombstone/reference preservation, manual moderation, comment depth, notification, AI quota/telemetry, nutrition, subscription, security, NFR performance và curated AI evaluation.
+- Đồng bộ SRS/FR/BR/NFR, PRD, README, Architecture, Technology Stack và Test Strategy; không thay đổi code, schema, API hoặc GitHub work item.
+
+### Fixed
+
+- Loại bỏ legacy/unknown lifecycle wording và các xung đột còn mô tả M11 là MVP/Pending Review, giá subscription/JWT lifecycle là chưa quyết định, hoặc NFR design goals là MVP release gates.
+
+## 2026-09-14 — NFR Decomposition & ISO/IEC 25010 Quality Categorization
+
+**Status:** Working tree — not committed.
+
+**Scope:** Chuẩn hóa và phân rã chi tiết 27 yêu cầu phi chức năng (NFR-01 đến NFR-27) vào 6 nhóm danh mục cốt lõi của dự án theo chuẩn ISO/IEC 25010; tích hợp tiêu chí đo lường định lượng và ranh giới kiến trúc đã xác nhận.
+
+### Added
+
+- Phân rã 27 yêu cầu phi chức năng chi tiết (`NFR-01` đến `NFR-27`) vào `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md` (v0.2.0) với đầy đủ Metric, Threshold và Verification Method, gắn thẻ stable anchor cố định `<a id="nfr-xx"></a>`.
+- Bổ sung ranh giới phân loại và loại trừ rõ ràng:
+  - Ghi nhận `NFR-05` với mục tiêu thiết kế 500 CCU và ngưỡng nghiệm thu thực tế đồ án 50–100 CCU.
+  - Ghi nhận khuyến nghị `NFR-08` không mã hóa cột Database AES-256 đối với chỉ số sức khỏe/BMI để tránh phức tạp hóa database.
+  - Đánh dấu trạng thái `OUT_OF_SCOPE` cho `NFR-26` (AI rà soát/gắn cờ nội dung) và `NFR-27` (Cá nhân hóa nội dung kiểu TikTok For You theo dõi lịch sử).
+  - Loại bỏ hoàn toàn đề xuất AI microservice và quota gọi chatbot khỏi bộ tiêu chuẩn NFR.
+
+### Changed
+
+- Nâng cấp `docs/requirements/SRS.md` lên `v0.49.0`: Cập nhật bảng tổng hợp Mục 9 liên kết trực tiếp tới 6 nhóm chất lượng và 27 mã NFR chi tiết.
+
+### Fixed
+
+- None.
+
+## 2026-09-14 — Modular SRS Architecture & Field-Specific Authority Model
+
+**Status:** Working tree — not committed.
+
+**Scope:** Tái cấu trúc tài liệu đặc tả yêu cầu phần mềm (SRS) sang mô hình Modular SRS đa tệp, phân tách `SRS.md` gốc thành sổ bộ chỉ mục có thẩm quyền (authoritative registry) và 3 tài liệu đặc tả chi tiết chuyên biệt (`FUNCTIONAL-REQUIREMENTS.md`, `BUSINESS-RULES.md`, `NON-FUNCTIONAL-REQUIREMENTS.md`).
+
+### Added
+
+- Thư mục `docs/requirements/srs/` chứa 3 tài liệu đặc tả chi tiết:
+  - `FUNCTIONAL-REQUIREMENTS.md`: Nắm giữ thẩm quyền định nghĩa chi tiết cho 56 Functional Requirements (`FR-01` đến `FR-56`), gắn thẻ stable HTML anchor `<a id="fr-xx"></a>`, giữ nguyên wording và lifecycle gate notes từ baseline.
+  - `BUSINESS-RULES.md`: Nắm giữ thẩm quyền định nghĩa chi tiết cho 68 Business Rules (`BR-01` đến `BR-68`), gắn thẻ stable HTML anchor `<a id="br-xx"></a>`.
+  - `NON-FUNCTIONAL-REQUIREMENTS.md`: Nắm giữ thẩm quyền định nghĩa chi tiết cho 6 nhóm NFR (Security, Privacy, Reliability, Performance, Usability, Auditability), gắn thẻ category anchor `<a id="nfr-category"></a>`, bảo lưu các trường chưa chốt dạng `TBD`/`OPEN` mà không tự phát minh mã số `NFR-xx`.
+- Bổ sung loại phát hiện `Lifecycle Synchronization Drift` vào kỹ năng `repo-template-doc-sync-auditor`.
+
+### Changed
+
+- Cập nhật `docs/requirements/SRS.md` lên `v0.48.0`: Chuyển đổi Mục 7 và 8 sang bảng chỉ mục 5 cột Option A (`ID | Short Name | Module | Lifecycle | Detail`) đóng vai trò Authoritative Registry cho sự tồn tại, mã định danh, phân bổ module và trạng thái lifecycle; Mục 9 chuyển thành bảng tổng hợp NFR liên kết chi tiết.
+- Cập nhật quy tắc quản trị tài liệu và agent trong `AGENTS.md` (v3.3.0), `docs/README.md` (v3.2.0) và `.agents/repo-contract.yml` ghi nhận cấu trúc Modular SRS, phân định ranh giới thẩm quyền theo trường dữ liệu (Field-Specific Authority Model) và quy trình đọc phạm vi hẹp (2-step scoped reading).
+- Đồng bộ các kỹ năng nội bộ (`markdown-documentation`, `srs-to-github-issues`, `repo-template-doc-sync-auditor`) để hỗ trợ Modular SRS, 2-phase issue resolution và kiểm toán tính nhất quán 2 chiều.
+
+### Fixed
+
+- None.
+
+## 2026-09-14 — Personal Pantry & Inventory-based Recommendation Scope
+
+**Status:** Working tree — not committed.
+
+**Scope:** Phân rã chi tiết chức năng Quản lý kho thực phẩm cá nhân (Pantry/Inventory), tìm kiếm công thức/bài viết từ kho và AI sáng tạo công thức mới từ nguyên liệu có sẵn; xác định trạng thái ngoài phạm vi MVP ban đầu (`OUT_OF_SCOPE`).
+
+### Added
+
+- Mục 3.22 trong SRS phân rã quản lý kho thực phẩm cá nhân của Member (`Personal Pantry`), tìm kiếm công thức theo mức độ khớp nguyên liệu (100% hoặc thiếu ít kèm gợi ý thêm vào Shopping List) và tính năng AI Gemini sáng tạo công thức món chay mới từ nguyên liệu kho.
+- Module M13 (`Personal Pantry & Inventory-based Recipe Recommendation`) và yêu cầu chức năng FR-56 với trạng thái `OUT_OF_SCOPE` cho MVP ban đầu.
+
+### Changed
+
+- Đồng bộ mục ngoài phạm vi trong PRD Mục 5 và SRS Mục 3.2 làm rõ phân rã M13/FR-56 cho tương lai.
+
+### Fixed
+
+- None.
+
+## 2026-09-14 — Basic Shopping List MVP Adoption
+
+**Status:** Working tree — not committed.
+
+**Scope:** Đưa chức năng Shopping List cơ bản từ ngoài phạm vi vào MVP chính thức, tích hợp dưới Module M05 với 3 yêu cầu nghiệp vụ (FR-53, FR-54, FR-55) và quy tắc gom nguyên liệu an toàn.
+
+### Added
+
+- Yêu cầu chức năng FR-53 (quản lý Shopping List, thêm item vặt, tick đã mua), FR-54 (gom nguyên liệu an toàn khi cùng ID và đơn vị, phân nhóm quầy hàng) và FR-55 (copy clipboard, xuất file .txt) vào SRS Mục 7.2 với trạng thái `ACTIVE`.
+
+### Changed
+
+- Tích hợp Shopping List vào Module M05 (đổi tên thành `Saved Recipes, Meal Planning & Shopping List`).
+- Bỏ shopping list khỏi danh sách ngoài phạm vi trong SRS Mục 3.2 và PRD Mục 5; làm rõ các tính năng nâng cao (kho pantry, chia sẻ nhiều người, đồng bộ realtime, AI tự quy đổi đơn vị, xuất PDF) nằm ngoài phạm vi MVP.
+
+### Fixed
+
+- None.
+
+## 2026-09-14 — Restaurant Discovery Review and True Blog Scope
+
+**Status:** Working tree — not committed.
+
+**Scope:** Chuyển chức năng tìm kiếm nhà hàng chay sang diện chờ giảng viên review lại; phân rã chi tiết mô hình Đăng Blog thật nhúng thẻ công thức theo Samsung Food và xác định ngoài phạm vi MVP ban đầu.
+
+### Added
+
+- Mục 3.21 trong SRS phân rã thực thể Blog Post, định dạng Rich Text văn xuôi, khối nhúng Embedded Recipe Card và tương tác lưu/xếp lịch món ăn từ bài blog.
+- Yêu cầu chức năng FR-52 và Module M12 ghi nhận năng lực Đăng Blog với trạng thái `OUT_OF_SCOPE` cho MVP ban đầu.
+
+### Changed
+
+- Chuyển Module M11, FR-42, FR-43 và tích hợp Google Maps Platform sang trạng thái `PENDING_REVIEW` (chờ giảng viên hướng dẫn review).
+- Cập nhật PRD, System Architecture và Technology Stack đồng bộ trạng thái chờ xem xét của Google Maps và xác định ranh giới Blog ngoài MVP.
+
+### Fixed
+
+- None.
 
 ## 2026-09-14 — Documentation Language Policy
 

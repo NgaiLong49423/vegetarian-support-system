@@ -81,7 +81,7 @@ Typical ownership:
 | Concern | Typical authoritative source |
 |---|---|
 | Project overview / navigation | `README.md` or designated overview |
-| Detailed functional/business behavior | SRS / requirement source |
+| Detailed functional/business behavior | SRS / requirement source (monolithic or registered modular requirement set) |
 | Product direction / high-level goals | PRD / product source |
 | Business rule | BR source |
 | High-level architecture | Architecture documentation |
@@ -94,6 +94,13 @@ Typical ownership:
 | Release/change summary | `CHANGELOG.md` or designated changelog |
 | Agent behavior | applicable `AGENTS.md` / host governance |
 | Repository contract | repository-adopted contract/config file |
+
+When a Modular SRS Requirement Set is used, apply Field-Specific Authority:
+- Root SRS owns: requirement existence, stable IDs, module allocation, and authoritative lifecycle state.
+- Registered child documents own: detailed statements, actors/triggers, preconditions, exceptions, domain rules, acceptance criteria, and NFR metrics.
+- If lifecycle values conflict: root SRS wins; report `Lifecycle Synchronization Drift`; detailed document must sync to root SRS.
+- If detailed technical behavior conflicts with a root summary: the detailed child document wins.
+- A summary row in root SRS and a detailed definition in a child document are complementary views of the same requirement, NOT duplicate definitions.
 
 Repository conventions may designate different owners.
 
@@ -302,10 +309,13 @@ At minimum, distinguish:
 
 - structure/path drift;
 - broken/local links;
+- broken or missing stable requirement anchors (<a id="..."></a>);
 - version/baseline mapping issues;
 - date/metadata inconsistencies;
 - requirement contradiction vs harmless omission;
 - lifecycle/status mismatch;
+- lifecycle synchronization drift (root SRS registry vs child detailed documents);
+- bidirectional requirement completeness gaps (root index vs child specifications);
 - implementation gap vs documentation contradiction;
 - GitHub config drift;
 - agent-governance/contract drift;
