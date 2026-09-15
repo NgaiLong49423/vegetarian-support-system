@@ -2,7 +2,7 @@
 > **File:** `docs/research/similar-products-benchmark.md`  
 > **Version:** v0.2.0
 > **Created:** 2026-09-12  
-> **Last Updated:** 2026-09-13
+> **Last Updated:** 2026-09-15
 > **Status:** Under Review  
 
 # Benchmark sản phẩm tương tự — Đề tài 03
@@ -54,7 +54,7 @@ Nguồn:
 - Tách rõ chức năng miễn phí và giá trị premium là một hướng đối thủ đang dùng. Dự án hiện chọn Free/Plus/Pro cùng nhóm chức năng AI và khác hạn mức 5/15/50; benchmark này không thay đổi quyết định đó.
 - AI meal planning là một giá trị sản phẩm dễ giải thích, nhưng quyền theo gói của dự án vẫn do SRS quyết định.
 - Content policy cần nêu nội dung phù hợp chủ đề ăn chay, spam/trùng lặp, nội dung nguy hiểm và chế tài.
-- Dự án của nhóm chỉ có một loại bài là bài công thức (`Recipe Post`), không có Blog tổng quát tách riêng. Hướng dẫn từng bước thuộc bài nhưng là tùy chọn.
+- Dự án của nhóm chỉ có một loại bài là bài công thức (`Recipe Post`), không có Blog tổng quát tách riêng. Hướng dẫn chuẩn bị/chế biến từng bước thuộc bài và bắt buộc có từ 1–30 bước (BR-19).
 
 ### Không nên đưa vào MVP 9 tuần
 
@@ -72,7 +72,7 @@ Nguồn:
 - For you mở lời mời trả lời câu hỏi. Bước tiếp theo yêu cầu đồng ý sử dụng dữ liệu sức khỏe; không cấp đồng ý nên chưa kiểm chứng câu hỏi phía sau hay chất lượng AI cá nhân hóa.
 - Khi khảo sát, Add to meal plan thêm món ngay vào Queue chưa gán ngày. Đã hoàn tác đúng món vừa thêm bằng Remove from plan và xác minh Queue trống. Không kiểm chứng luồng lưu lịch theo ngày hay thay món AI.
 
-**Quyết định người dùng đã chốt sau khảo sát và cập nhật 12/09/2026:** lấy Samsung Food làm tham khảo chính cho khám phá → chi tiết món → thực đơn; hệ thống chỉ quản lý bài công thức, không có Blog tổng quát. Bài có nguyên liệu, khẩu phần, thời gian nấu và loại ăn chay; cách làm từng bước là tùy chọn. Tương tác bình chọn dùng Like/Upvote đơn giản, không sao chép đánh giá 1–5 sao. Xem SRS mục 3.3, FR-16, FR-17 và FR-45. Không mặc định nhận toàn bộ feature set Samsung Food vào MVP.
+**Quyết định người dùng đã chốt sau khảo sát và cập nhật 12/09/2026:** lấy Samsung Food làm tham khảo chính cho khám phá → chi tiết món → thực đơn; hệ thống chỉ quản lý bài công thức, không có Blog tổng quát. Bài có nguyên liệu, khẩu phần, thời gian nấu, loại ăn chay và bắt buộc 1–30 bước hướng dẫn chuẩn bị/chế biến; mô tả giới thiệu và ảnh đại diện là tùy chọn. Tương tác bình chọn dùng Like/Upvote đơn giản, không sao chép đánh giá 1–5 sao. Xem SRS mục 3.3, FR-16, FR-17 và FR-45. Không mặc định nhận toàn bộ feature set Samsung Food vào MVP.
 
 **Quyết định phạm vi Saved/Planner ngày 12/09/2026:** dự án tách Công thức đã lưu khỏi Lịch ăn. Lưu công thức không gắn ngày/bữa và không thay đổi hồ sơ sở thích; mục lịch ăn phải tham chiếu ngày/bữa và có vòng đời riêng. Không sao chép Queue hay một module Previous riêng của Samsung Food vào MVP; tuần cũ được xem bằng điều hướng lịch, còn `For You` nếu có dùng luồng Gemini hiện tại.
 
@@ -133,12 +133,12 @@ Quyết định hiện tại của dự án: Phase 1 lưu ảnh trên Azure Blob
 | --- | --- | --- |
 | Community content | Samsung Food | Bài công thức; ảnh Azure và link YouTube tùy chọn; bình luận là tương tác hỗ trợ |
 | Human moderation | HappyCow + Samsung Food guidelines | Member công khai Recipe Post hợp lệ trực tiếp; người dùng báo cáo nội dung và Admin hậu kiểm, không có đơn xin quyền đăng hoặc hàng đợi duyệt từng bài |
-| Recipe content | Forks Over Knives | Bài công thức có dữ liệu tối thiểu để tìm/lọc; hướng dẫn từng bước tùy chọn |
+| Recipe content | Forks Over Knives | Bài công thức có dữ liệu tối thiểu để tìm/lọc; hướng dẫn chuẩn bị/chế biến từng bước (1–30 bước) |
 | Meal planning | Forks Over Knives + Samsung Food | Tách Đã lưu và Lịch ăn; thêm/chuyển/thay/xóa món theo ngày/bữa; chưa thêm Queue hay shopping integration |
 | AI premium | Samsung Food+ | Free/Plus/Pro cùng AI, khác hạn mức 5/15/50; thanh toán thật theo Q19/Q26, không sao chép cách khóa tính năng của đối thủ |
 
 ## 8. Kết quả chốt phạm vi — 12/09/2026
 
-Các câu hỏi sản phẩm đã được giải quyết trong [SRS mục 3.20](../requirements/SRS.md): reply nhiều cấp, báo cáo cả bình luận, lịch ba bữa, cùng chức năng AI cho Free/Plus/Pro; nhà hàng dùng ngưỡng đường bộ và danh sách + bản đồ. Bài công thức có bước nấu tùy chọn. Chỉ học các luồng phù hợp; nội dung khảo sát đối thủ không phải yêu cầu bắt buộc của nhóm.
+Các câu hỏi sản phẩm đã được giải quyết trong [SRS mục 3.20](../requirements/SRS.md): reply nhiều cấp, báo cáo cả bình luận, lịch ba bữa, cùng chức năng AI cho Free/Plus/Pro; nhà hàng dùng ngưỡng đường bộ và danh sách + bản đồ. Bài công thức bắt buộc có 1–30 bước hướng dẫn chuẩn bị/chế biến. Chỉ học các luồng phù hợp; nội dung khảo sát đối thủ không phải yêu cầu bắt buộc của nhóm.
 
 Q31 ghi nguồn dinh dưỡng, công thức nghiên cứu khi triển khai. Q35 cho phép nhóm tự chọn phạm vi nhà hàng độc lập món đã tìm, không có điều kiện chờ xác nhận giảng viên. Validation và chi tiết tích hợp vẫn cần thiết kế; benchmark không chứng minh tính năng dự án đã chạy.

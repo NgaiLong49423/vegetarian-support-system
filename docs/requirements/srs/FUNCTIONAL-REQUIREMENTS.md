@@ -131,88 +131,94 @@ Tạo phễu tiếp cận mở rộng nhằm giới thiệu kiến thức ẩm t
 ---
 
 <a id="fr-02"></a>
-### FR-02 — Hệ thống cho Guest dùng Gemini AI theo Guest Free
+### FR-02 — Quyền Guest trải nghiệm AI Chatbot chung theo Guest Free quota
 
 - **Mã yêu cầu:** FR-02
 - **Module:** M06 (AI Assistant & Personalization)
 - **Trạng thái (Derived):** ACTIVE
-- **Tóm tắt yêu cầu:** Hệ thống cho Guest dùng thử Gemini AI theo hạn mức Guest Free: tối đa 5 request AI thành công mỗi ngày, tự động đặt lại lúc 00:00 `Asia/Ho_Chi_Minh`; Guest được nhận diện bằng anonymous cookie kết hợp coarse IP rate limiting; các request lỗi mạng hoặc bị chặn không trừ lượt (BR-01, BR-02).
+- **Tóm tắt yêu cầu:** Hệ thống quản lý quyền và trải nghiệm của Guest khi tương tác với AI Chatbot chung của hệ thống ([FR-51](FUNCTIONAL-REQUIREMENTS.md#fr-51)) theo hạn mức Guest Free:
+  - **Hạn mức:** Tối đa 5 request AI thành công mỗi ngày, tự động đặt lại về 0 vào lúc 00:00 `Asia/Ho_Chi_Minh` (BR-01).
+  - **Nhận diện & Phòng ngừa lạm dụng:** Guest được nhận diện bằng anonymous cookie kết hợp coarse IP protection theo quy tắc của BR-01.
+  - **Quy tắc trừ hạn mức:** Chỉ request AI hoàn tất thành công mới tiêu thụ quota; request lỗi mạng, gián đoạn kết nối hoặc timeout từ phía AI provider tuyệt đối không trừ lượt (BR-03, BR-04).
+  - **Ngữ cảnh sử dụng:** Guest được trải nghiệm AI Chatbot FR-51 ở cả Ngữ cảnh chung (General Context) và Ngữ cảnh bài công thức (Recipe Context theo [FR-20](FUNCTIONAL-REQUIREMENTS.md#fr-20)) đối với các Recipe Post đang công khai, dùng chung hạn ngạch 5 lượt thành công/ngày.
+  - **Giới hạn trải nghiệm:** Guest không có lịch sử hội thoại lưu theo tài khoản và không có hồ sơ dinh dưỡng cá nhân (BR-05).
+  - **Toàn bộ năng lực và luồng tương tác:** Hành vi hội thoại, áp dụng chỉ dẫn an toàn và phản hồi câu hỏi do [FR-51](FUNCTIONAL-REQUIREMENTS.md#fr-51) sở hữu và điều phối; thời gian phản hồi của AI Chatbot phải đáp ứng [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03).
 
 #### 1. Mục đích
-Cung cấp trải nghiệm dùng thử tính năng trợ lý ảo ẩm thực chay cho người dùng vãng lai; chứng minh năng lực hỗ trợ thông minh của nền tảng nhằm thu hút người dùng đăng ký tài khoản thành viên chính thức; đồng thời kiểm soát chi phí vận hành API trí tuệ nhân tạo và ngăn ngừa hành vi lạm dụng tự động.
+Thiết lập chính sách phân quyền và hạn mức trải nghiệm cho người dùng vãng lai trên cùng một AI Chatbot duy nhất của hệ thống (FR-51); chứng minh năng lực hỗ trợ thông minh của nền tảng nhằm thu hút người dùng đăng ký tài khoản thành viên chính thức; đồng thời kiểm soát chi phí vận hành API trí tuệ nhân tạo và ngăn ngừa hành vi lạm dụng tự động.
 
 #### 2. Tác nhân (Actors)
 - **Primary Actor:**
-  - `Guest`: Người dùng chưa xác thực trải nghiệm tương tác với Chatbot AI.
+  - `Guest`: Người dùng chưa xác thực trải nghiệm tương tác với AI Chatbot chung (FR-51).
 - **Secondary Actor / External System:**
-  - `Google Gemini AI`: Dịch vụ trí tuệ nhân tạo xử lý và phản hồi câu hỏi.
+  - `Google Gemini AI`: Dịch vụ trí tuệ nhân tạo xử lý và phản hồi câu hỏi thông qua FR-51.
 
 #### 3. Danh mục Use Cases & User Stories
 - **Các Use Case con:**
-  - `UC-02.1`: Dùng thử Chatbot AI cho Guest (Try Gemini AI chatbot as guest).
+  - `UC-02.1`: Trải nghiệm dùng thử AI Chatbot chung cho Guest theo hạn mức Guest Free (Try unified AI chatbot as guest).
 - **User Stories:**
-  - `US-02.1`: Là một Guest đang tìm hiểu về ăn chay, tôi muốn hỏi thử AI vài câu về cách kết hợp thực phẩm để xem chất lượng câu trả lời trước khi quyết định đăng ký tài khoản.
+  - `US-02.1`: Là một Guest đang tìm hiểu về ăn chay hoặc xem một bài công thức công khai, tôi muốn hỏi thử AI vài câu (về nấu nướng chung hoặc về món ăn đang xem) để trải nghiệm chất lượng hỗ trợ trước khi quyết định đăng ký tài khoản.
 
 #### 4. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
-- **Preconditions:** Thiết bị của Guest có hỗ trợ cookie trình duyệt; số lượt AI thành công trong ngày của cookie/IP đó chưa vượt quá 5 lượt.
-- **Trigger:** Guest mở cửa sổ Chatbot AI và gửi câu hỏi.
+- **Preconditions:** Thiết bị của Guest có hỗ trợ cookie trình duyệt; số lượt AI thành công trong ngày của định danh Guest chưa vượt quá 5 lượt (BR-01).
+- **Trigger:** Guest mở cửa sổ AI Chatbot chung hoặc nhấn nút "Hỏi AI về công thức này" khi đang xem bài công thức công khai (FR-20) và gửi câu hỏi.
 
 #### 5. Luồng sự kiện (Flow of Events)
 
 ##### A. Luồng Dùng thử Chatbot AI cho Guest (UC-02.1)
 1. **Main Flow:**
-   - Bước 1: Guest mở hộp thoại Chatbot AI trên trang web.
-   - Bước 2: Hệ thống kiểm tra anonymous cookie của trình duyệt (nếu chưa có, máy chủ tạo cookie định danh ẩn danh mới và lưu tạm) kết hợp kiểm tra địa chỉ IP thô.
+   - Bước 1: Guest mở hộp thoại AI Chatbot FR-51 trên trang web (ở ngữ cảnh chung hoặc ngữ cảnh Recipe Post công khai đang xem).
+   - Bước 2: Hệ thống kiểm tra anonymous cookie của trình duyệt (nếu chưa có, máy chủ tạo cookie định danh ẩn danh mới) kết hợp kiểm tra địa chỉ IP thô theo BR-01.
    - Bước 3: Hệ thống xác nhận số lượt gọi AI thành công trong ngày của định danh này đang $< 5$ (ví dụ: đang ở lượt thứ 2/5).
-   - Bước 4: Guest nhập câu hỏi (tối đa 200 ký tự) và nhấn gửi.
-   - Bước 5: Hệ thống kiểm tra dữ liệu đầu vào, đóng gói câu hỏi kèm System Prompt định hướng ngữ cảnh ẩm thực chay và gửi tới Google Gemini API.
-   - Bước 6: Google Gemini phản hồi kết quả thành công trong vòng $\le 4$ giây (NFR-03).
-   - Bước 7: Hệ thống tăng bộ đếm lượt thành công trong ngày lên 1 (ví dụ lên 3/5), hiển thị câu trả lời và thông báo số lượt dùng thử còn lại ("Bạn còn 2/5 lượt dùng thử hôm nay").
+   - Bước 4: Guest gửi câu hỏi. Hệ thống kiểm soát tính hợp lệ của đầu vào và chuyển yêu cầu tới quy trình xử lý hội thoại của FR-51.
+   - Bước 5: Dịch vụ AI phản hồi kết quả hợp lệ đáp ứng thời gian quy định tại NFR-03.
+   - Bước 6: Hệ thống tăng bộ đếm lượt thành công trong ngày lên 1 (ví dụ lên 3/5 theo BR-03), hiển thị câu trả lời và thông báo số lượt dùng thử còn lại ("Bạn còn 2/5 lượt dùng thử hôm nay").
 2. **Alternative Flow (Hết lượt dùng thử 5/5):**
-   - Khi bộ đếm đã đạt 5/5 lượt thành công trong ngày: hệ thống khóa ô nhập câu hỏi, không gửi request tới Gemini, hiển thị thông báo: "Bạn đã sử dụng hết 5 lượt dùng thử AI hôm nay. Hãy đăng ký tài khoản thành viên để lưu lịch sử, quản lý lịch ăn và nâng cấp gói Plus (15 lượt/ngày) hoặc Pro (50 lượt/ngày)!" kèm nút Đăng ký tài khoản (BR-01, BR-02, BR-05). *(Ghi chú: Tài khoản Free sau khi đăng ký duy trì hạn mức 5 lượt/ngày; để có 15 lượt/ngày cần nâng cấp lên gói Plus theo FR-10 và FR-13).*
-3. **Exception Flow (Lỗi kết nối dịch vụ AI):**
-   - Nếu dịch vụ Google Gemini trả về lỗi hoặc timeout -> Hệ thống hiển thị thông báo: "Hệ thống AI đang bận, vui lòng thử lại sau" và **TUYỆT ĐỐI KHÔNG TRỪ LƯỢT DÙNG THỬ** của Guest (BR-01, BR-02).
+   - Khi bộ đếm đã đạt 5/5 lượt thành công trong ngày: hệ thống khóa ô nhập câu hỏi, không gửi yêu cầu tới dịch vụ AI, hiển thị thông báo: "Bạn đã sử dụng hết 5 lượt dùng thử AI hôm nay. Hãy đăng ký tài khoản thành viên để lưu lịch sử, quản lý lịch ăn và nâng cấp gói Plus hoặc Pro!" kèm nút Đăng ký tài khoản (BR-01, BR-05).
+3. **Exception Flow (Gián đoạn dịch vụ AI bên ngoài hoặc timeout):**
+   - Nếu dịch vụ AI gặp sự cố kỹ thuật hoặc quá thời gian phản hồi theo quy định -> Hệ thống hiển thị thông báo lỗi thân thiện và **TUYỆT ĐỐI KHÔNG TRỪ LƯỢT DÙNG THỬ** của Guest (BR-03, BR-04, NFR-18).
 
 #### 6. Hậu điều kiện (Postconditions)
-- Số lượt gọi AI thành công của định danh Guest được ghi nhận chính xác.
+- Số lượt gọi AI thành công của định danh Guest được ghi nhận chính xác theo BR-01 và BR-03.
 - Bộ đếm tự động đặt lại về 0 vào lúc 00:00 `Asia/Ho_Chi_Minh`.
 
 #### 7. Quy tắc phân quyền và bảo mật (Permissions & Security)
-- Nhận diện Guest qua anonymous cookie kết hợp giới hạn IP thô (coarse IP rate limiting) nhằm ngăn ngừa tấn công xóa cookie liên tục để gian lận lượt (NFR-07).
-- Giới hạn độ dài câu hỏi tối đa 200 ký tự đối với Guest để tối ưu chi phí token (BR-01).
+- Nhận diện Guest qua anonymous cookie kết hợp coarse IP protection theo BR-01 nhằm ngăn ngừa hành vi lạm dụng tự động.
+- Dữ liệu đầu vào của câu hỏi được kiểm soát và làm sạch theo tiêu chuẩn an toàn bảo mật (NFR-10).
 
 #### 8. Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
 - **Quy tắc nghiệp vụ liên quan:**
-  - [BR-01](BUSINESS-RULES.md#br-01): Hạn mức sử dụng Gemini AI theo nhóm người dùng.
-  - [BR-02](BUSINESS-RULES.md#br-02): Quy tắc trừ hạn mức và chu kỳ làm mới lượt AI.
+  - [BR-01](BUSINESS-RULES.md#br-01): Hạn mức text AI cho Guest và tài khoản Free (5 lượt/ngày, anonymous cookie và coarse IP).
+  - [BR-03](BUSINESS-RULES.md#br-03): Điều kiện trừ hạn mức AI (chỉ trừ khi thành công).
+  - [BR-04](BUSINESS-RULES.md#br-04): Xử lý lỗi provider và timeout AI (không trừ lượt).
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
 - **Yêu cầu phi chức năng liên quan:**
-  - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi xử lý Chatbot AI $\le 4$ giây (P95).
-  - [NFR-07](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-07): Kiểm soát tần suất và rate limiting.
-  - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Phòng chống lỗ hổng bảo mật và kiểm soát đầu vào.
+  - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi của AI Chatbot.
+  - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Phòng chống các lỗ hổng bảo mật phổ biến và kiểm soát đầu vào.
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt.
+  - [NFR-18](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18): Cơ chế dự phòng khi dịch vụ Gemini AI bị lỗi hoặc timeout.
 
 #### 9. Tiêu chí nghiệm thu chi tiết (Acceptance Criteria)
 
 - **AC-02.1 — Guest dùng thử AI thành công khi còn lượt:**
   - **Given:** Guest chưa sử dụng hết 5 lượt AI trong ngày.
-  - **When:** Guest gửi câu hỏi hợp lệ tới Chatbot AI.
-  - **Then:** Hệ thống gửi yêu cầu tới Gemini, trả về câu trả lời thành công trong $\le 4$ giây và tăng bộ đếm thêm 1 lượt.
+  - **When:** Guest gửi câu hỏi hợp lệ tới AI Chatbot FR-51 (ở ngữ cảnh chung hoặc ngữ cảnh Recipe Post đang xem).
+  - **Then:** Hệ thống xử lý qua FR-51, phản hồi câu trả lời thành công đáp ứng thời gian quy định tại NFR-03 và tăng bộ đếm thêm 1 lượt (BR-01, BR-03).
 
-- **AC-02.2 — Chặn gọi Gemini và không trừ lượt khi Guest đã đạt 5 lượt/ngày:**
+- **AC-02.2 — Chặn gọi AI và không trừ lượt khi Guest đã đạt 5 lượt/ngày:**
   - **Given:** Guest đã sử dụng đủ 5 lượt AI thành công trong ngày.
   - **When:** Guest gửi thêm câu hỏi thứ 6.
-  - **Then:** Hệ thống không gửi request tới Google Gemini, giữ nguyên số lượt và hiển thị thông báo hết hạn mức kèm liên kết Đăng ký tài khoản (BR-01, BR-02, BR-05).
+  - **Then:** Hệ thống không gửi yêu cầu tới dịch vụ AI, giữ nguyên số lượt và hiển thị thông báo hết hạn mức kèm liên kết Đăng ký tài khoản (BR-01, BR-05).
 
-- **AC-02.3 — Không trừ lượt dùng thử khi kết nối Gemini bị lỗi hoặc timeout:**
+- **AC-02.3 — Không trừ lượt dùng thử khi dịch vụ AI gặp sự cố hoặc timeout:**
   - **Given:** Guest đang có số dư lượt là 3/5.
-  - **When:** Guest gửi câu hỏi nhưng dịch vụ Gemini trả về lỗi 500 hoặc quá thời gian phản hồi.
-  - **Then:** Hệ thống thông báo lỗi kỹ thuật và số lượt sử dụng của Guest vẫn giữ nguyên là 3/5 (BR-02).
+  - **When:** Guest gửi câu hỏi nhưng dịch vụ AI gặp lỗi kết nối hoặc quá thời gian phản hồi quy định.
+  - **Then:** Hệ thống thông báo lỗi kỹ thuật và số lượt sử dụng của Guest vẫn giữ nguyên là 3/5 (BR-03, BR-04, NFR-18).
 
 - **AC-02.4 — Tự động đặt lại bộ đếm lúc 00:00 Asia/Ho_Chi_Minh:**
   - **Given:** Guest đã dùng hết 5/5 lượt trong ngày hôm nay.
   - **When:** Thời gian chuyển sang 00:00 ngày hôm sau theo giờ `Asia/Ho_Chi_Minh`.
-  - **Then:** Bộ đếm tự động đặt lại về 0/5, cho phép Guest tiếp tục dùng thử.
+  - **Then:** Bộ đếm tự động đặt lại về 0/5, cho phép Guest tiếp tục dùng thử (BR-01).
 
 ---
 
@@ -487,7 +493,7 @@ Trao quyền tự chủ sáng tạo nội dung cho thành viên cộng đồng; 
 ##### A. Luồng Tạo và công khai bài công thức trực tiếp (UC-04.1)
 1. **Main Flow:**
    - Bước 1: Member nhấn "Đăng công thức". Giao diện hiển thị biểu mẫu tạo bài viết.
-   - Bước 2: Member nhập thông tin bắt buộc (cấu trúc và validation theo FR-16, nguyên liệu theo FR-19, các bước nấu tùy chọn theo FR-22, tải ảnh lên Azure Blob Storage theo FR-14 và gắn link YouTube theo FR-15).
+   - Bước 2: Member nhập thông tin bắt buộc (cấu trúc và validation theo FR-16, nguyên liệu theo FR-19, các bước hướng dẫn chuẩn bị/chế biến theo FR-22, tải ảnh lên Azure Blob Storage theo FR-14 và gắn link YouTube theo FR-15).
    - Bước 3: Member nhấn "Công khai bài viết".
    - Bước 4: Hệ thống thực thi kiểm tra tính hợp lệ toàn bộ dữ liệu (validation rules theo BR-07 / SRS 3.9). Toàn bộ dữ liệu đạt chuẩn.
    - Bước 5: Hệ thống tự động gán mã định danh tác giả từ phiên đăng nhập (BR-17), lưu bài viết ở trạng thái công khai (`PUBLISHED`), và phản hồi thành công.
@@ -704,7 +710,7 @@ Xây dựng và duy trì kho công thức ẩm thực chay chuẩn mực, đa d�
    - Bước 4: Administrator nhấn "Công khai bài viết".
    - Bước 5: Hệ thống kiểm tra tính hợp lệ của toàn bộ thông tin bắt buộc, lưu bài viết vào cơ sở dữ liệu với nhãn công thức hệ thống, và phản hồi thành công.
 2. **Error Flows:**
-   - *Thiếu thông tin bắt buộc:* Nếu vi phạm bộ quy tắc Recipe Validation Profile chuẩn theo FR-16 (ví dụ: thiếu tiêu đề, thiếu nguyên liệu, chưa chọn loại ăn chay; lưu ý các bước nấu là tùy chọn theo FR-22), hệ thống từ chối lưu và hiển thị thông báo lỗi chi tiết cho từng trường.
+   - *Thiếu thông tin bắt buộc:* Nếu vi phạm bộ quy tắc Recipe Validation Profile chuẩn theo FR-16 (ví dụ: thiếu tiêu đề, thiếu nguyên liệu, thiếu bước hướng dẫn chuẩn bị/chế biến, chưa chọn loại ăn chay), hệ thống từ chối lưu và hiển thị thông báo lỗi chi tiết cho từng trường.
 
 ##### B. Luồng Cập nhật bài công thức chuẩn (UC-07.2)
 1. **Main Flow:**
@@ -987,7 +993,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
-  - Người dùng gửi yêu cầu sử dụng bất kỳ tính năng AI nào (Chatbot dinh dưỡng, gợi ý thực đơn, hỗ trợ soạn bài).
+  - Người dùng gửi yêu cầu sử dụng bất kỳ tính năng AI nào (AI Chatbot FR-51, gợi ý thực đơn, hỗ trợ soạn bài).
 - **Kích hoạt (Trigger):**
   - Hệ thống tiếp nhận yêu cầu gọi AI tại tầng Gateway/Controller trước khi chuyển tiếp tới dịch vụ Gemini.
 
@@ -1036,7 +1042,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
   - [BR-06](BUSINESS-RULES.md#br-06): Bảo mật Gemini API Key.
 - **Yêu cầu phi chức năng liên quan:**
-  - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi của trợ lý Chatbot AI $\le 4$ giây.
+  - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi của tính năng AI Chatbot.
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
   - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập chức năng theo vai trò (RBAC).
   - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Phòng chống lạm dụng và lỗ hổng bảo mật.
@@ -1061,7 +1067,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Then* bộ đếm số lượt đã dùng của tài khoản được đặt lại về 0 và tài khoản có thể tiếp tục sử dụng AI.
 - **AC-10.5 (Không trừ hạn mức khi Gemini gặp lỗi hoặc timeout):**
   - *Given* tài khoản Free còn 2 lượt sử dụng AI,
-  - *When* gửi yêu cầu gọi AI nhưng dịch vụ Gemini trả về mã lỗi 500 hoặc timeout quá 4 giây,
+  - *When* gửi yêu cầu gọi AI nhưng dịch vụ AI gặp sự cố kỹ thuật hoặc quá thời gian phản hồi quy định tại NFR-03,
   - *Then* hệ thống hiển thị thông báo lỗi kỹ thuật và số dư hạn mức của tài khoản vẫn giữ nguyên là 2 lượt.
 - **AC-10.6 (Chặn trước khi gọi provider khi hết quota):**
   - *Given* tài khoản đã hết hạn mức trong ngày,
@@ -1080,7 +1086,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### 1. Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Hệ thống thu thập và lưu trữ dữ liệu đo lường kỹ thuật (AI Usage Telemetry & Accounting) cho mọi lượt gọi Gemini AI thành công, bao gồm số lượt gọi và siêu dữ liệu lượng token tiêu thụ (prompt tokens, response tokens, total tokens) do nhà cung cấp Gemini trả về nhằm đo lường mức độ sử dụng tài nguyên thực tế và đối soát chi phí vận hành; hệ thống TUYỆT ĐỐI KHÔNG lưu trữ nội dung câu hỏi thô (raw prompt content) nhằm bảo vệ quyền riêng tư người dùng; thời hạn lưu trữ dữ liệu đo lường là 90 ngày; các lỗi từ nhà cung cấp không tiêu thụ quota và không được ghi nhận là lượt dùng thành công.
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Mọi request gọi Gemini AI thành công từ các tính năng: Chatbot giải thích dinh dưỡng (FR-51), AI gợi ý thực đơn (FR-34, FR-36), AI hỗ trợ tạo bài (FR-21), Gợi ý món biến tấu (FR-47).
+  - Áp dụng cho: Mọi request gọi Gemini AI thành công từ các tính năng: AI Chatbot theo ngữ cảnh (FR-51), AI gợi ý thực đơn (FR-34, FR-36), AI hỗ trợ tạo bài (FR-21), Gợi ý món biến tấu (FR-47).
   - Bảo mật dữ liệu: Tuyệt đối cấm lưu trữ nội dung văn bản câu hỏi của người dùng trong bảng dữ liệu đo lường (BR-04, NFR-08, NFR-20).
   - Vòng đời lưu trữ: Lưu trữ tối đa 90 ngày (BR-04); tự động dọn dẹp các bản ghi quá hạn.
 - **Phân loại Actor:**
@@ -1422,7 +1428,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
   - [BR-10](BUSINESS-RULES.md#br-10): Giới hạn định dạng video Phase 1 (chỉ YouTube, không upload file video).
   - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post (tối đa một link YouTube).
-  - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của media và bước nấu.
+  - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của mô tả giới thiệu và ảnh đại diện.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-02](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02): Thời gian tải trang hiển thị chi tiết bài viết $\le 2$ giây.
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
@@ -1454,14 +1460,14 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 ---
 
 <a id="fr-16"></a>
-### FR-16 — Cấu trúc dữ liệu bài công thức và tính tùy chọn của hướng dẫn nấu
+### FR-16 — Cấu trúc dữ liệu bài công thức và tính bắt buộc của bước hướng dẫn chuẩn bị/chế biến
 
 - **Mã yêu cầu:** FR-16
 - **Module:** M03, M04
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Thiết lập cấu trúc dữ liệu chuẩn mực và bộ quy tắc kiểm tra hợp lệ (Recipe Validation Profile) bắt buộc đối với mọi Recipe Post trước khi được công khai trong hệ thống theo SRS 3.9 và BR-19: tiêu đề từ 3 đến 120 ký tự; số lượng nguyên liệu từ 1 đến 50 dòng; số khẩu phần từ 1 đến 50; thời gian chuẩn bị và nấu mỗi giá trị từ 0 đến 1.440 phút với tổng thời gian lớn hơn 0 (thời gian nấu được phép bằng 0 theo BR-20); loại ăn chay bắt buộc; mô tả bài viết tối đa 2.000 ký tự; các bước nấu tối đa 30 bước và mang tính tùy chọn (BR-20); tối đa 5 hình ảnh JPEG/PNG/WebP dung lượng $\le 5$ MB/ảnh; tối đa một link YouTube (BR-10); tất cả bài công thức đều áp dụng thống nhất mô hình xuất bản trực tiếp và hậu kiểm (BR-07, BR-59).
+- **Tóm tắt yêu cầu:** Thiết lập cấu trúc dữ liệu chuẩn mực và bộ quy tắc kiểm tra hợp lệ (Recipe Validation Profile) bắt buộc đối với mọi Recipe Post trước khi được công khai trong hệ thống theo SRS 3.9 và BR-19: tiêu đề từ 3 đến 120 ký tự; số lượng nguyên liệu từ 1 đến 50 dòng; số khẩu phần từ 1 đến 50; thời gian chuẩn bị và nấu mỗi giá trị từ 0 đến 1.440 phút với tổng thời gian lớn hơn 0 (thời gian nấu được phép bằng 0 theo BR-20 khi thời gian chuẩn bị lớn hơn 0); loại ăn chay bắt buộc; mô tả bài viết tối đa 2.000 ký tự (tùy chọn theo BR-20); các bước hướng dẫn chuẩn bị/chế biến bắt buộc có từ 1 đến 30 bước (BR-19), mỗi bước có nội dung không rỗng sau khi cắt khoảng trắng đầu cuối (trim); tối đa 5 hình ảnh JPEG/PNG/WebP dung lượng $\le 5$ MB/ảnh (tùy chọn theo BR-20); tối đa một link YouTube (tùy chọn theo BR-10, BR-20); tất cả bài công thức đều áp dụng thống nhất mô hình xuất bản trực tiếp và hậu kiểm (BR-07, BR-59).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Mọi bài Recipe Post do Member (FR-04) hoặc Administrator (FR-07) tạo và chỉnh sửa (FR-44).
   - Validation Profile chính thức:
@@ -1471,11 +1477,11 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     | **Danh sách nguyên liệu** | **1 – 50 dòng nguyên liệu** | Bắt buộc |
     | **Khẩu phần (Serving size)** | **1 – 50 khẩu phần** | Bắt buộc |
     | **Thời gian chuẩn bị (Prep time)** | **0 – 1.440 phút** | Bắt buộc |
-    | **Thời gian nấu (Cook time)** | **0 – 1.440 phút** (được bằng 0) | Bắt buộc |
+    | **Thời gian nấu (Cook time)** | **0 – 1.440 phút** (được bằng 0 khi prep time > 0) | Bắt buộc |
     | **Tổng thời gian** | **Prep time + Cook time > 0** | Bắt buộc |
     | **Trường phái ăn chay** | Chọn 1 trong 4 loại chuẩn (Vegan, Lacto, Ovo, Lacto-ovo) | Bắt buộc |
     | **Mô tả món ăn (Description)** | **Tối đa 2.000 ký tự** | Tùy chọn (BR-20) |
-    | **Các bước nấu (Cooking steps)** | **0 – 30 bước nấu** (hướng dẫn là tùy chọn) | Tùy chọn (BR-20) |
+    | **Bước hướng dẫn chuẩn bị/chế biến** | **1 – 30 bước**, nội dung mỗi bước không rỗng sau khi trim | Bắt buộc (BR-19) |
     | **Hình ảnh minh họa** | **0 – 5 ảnh**, JPEG/PNG/WebP, $\le 5$ MB/ảnh | Tùy chọn (BR-20) |
     | **Video YouTube** | **0 – 1 link YouTube** hợp lệ | Tùy chọn (BR-10, BR-20) |
 - **Phân loại Actor:**
@@ -1484,10 +1490,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 
 #### 2. Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-16.1`: Soạn thảo và xác thực bài công thức tuân thủ đầy đủ cấu trúc dữ liệu chuẩn của hệ thống.
-  - `UC-16.2`: Công khai bài công thức đơn giản không có bước nấu hoặc không có ảnh (sử dụng ảnh mặc định).
+  - `UC-16.1`: Soạn thảo và xác thực bài công thức tuân thủ đầy đủ cấu trúc dữ liệu chuẩn của hệ thống (bao gồm 1–30 bước hướng dẫn chuẩn bị/chế biến bắt buộc).
+  - `UC-16.2`: Công khai bài công thức không có ảnh đại diện (sử dụng ảnh mặc định) hoặc không có mô tả giới thiệu.
 - **User Stories:**
-  - *Là một người nấu ăn*, tôi muốn hệ thống có quy định rõ ràng về các thông tin cần nhập để bài viết của tôi đầy đủ và chuẩn xác, đồng thời linh hoạt cho phép tôi chia sẻ các món ăn nguội (thời gian nấu = 0) hoặc món đơn giản không cần nhiều bước nấu phức tạp.
+  - *Là một người nấu ăn*, tôi muốn hệ thống có quy định rõ ràng về các thông tin cần nhập để bài viết của tôi đầy đủ và chuẩn xác, bảo đảm có ít nhất một bước hướng dẫn rõ ràng để người khác thực hiện được, đồng thời linh hoạt cho phép tôi chia sẻ các món không cần nấu nhiệt (thời gian nấu = 0) hoặc không bắt buộc phải tải ảnh lên.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
@@ -1505,7 +1511,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     - Thời gian: kiểm tra prep time $\ge 0$, cook time $\ge 0$, mỗi giá trị $\le 1.440$ phút và tổng thời gian $> 0$.
     - Phân loại ăn chay: kiểm tra thuộc danh mục hợp lệ.
     - Mô tả: kiểm tra độ dài không vượt quá 2.000 ký tự (nếu có nhập).
-    - Bước nấu: kiểm tra số lượng bước không vượt quá 30 bước (nếu có nhập).
+    - Bước hướng dẫn chuẩn bị/chế biến: kiểm tra số lượng bước từ 1 đến 30 bước, mỗi bước có nội dung không rỗng sau khi cắt khoảng trắng đầu cuối (trim) (FR-22, BR-19).
     - Ảnh: kiểm tra số lượng $\le 5$, định dạng JPEG/PNG/WebP, dung lượng mỗi ảnh $\le 5$ MB (FR-14).
     - Video: kiểm tra tối đa 1 link YouTube hợp lệ (FR-15).
   - Bước 3: Toàn bộ tiêu chí validation đều thỏa mãn.
@@ -1513,11 +1519,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - Bước 5: Hệ thống hiển thị thông báo thành công và điều hướng tác giả tới bài viết vừa đăng.
 - **Luồng thay thế (Alternative Flows):**
   - *AF-16.1 (Công thức có thời gian nấu bằng 0):* Với các món salad trộn hoặc nước chấm, tác giả nhập cook time = 0 và prep time = 15 phút. Hệ thống xác nhận tổng thời gian là 15 phút $> 0$ và chấp nhận hợp lệ theo BR-20.
-  - *AF-16.2 (Công thức không có các bước nấu):* Với các món ăn cực kỳ đơn giản, tác giả không nhập bước nấu nào (0 bước). Hệ thống chấp nhận hợp lệ theo BR-20 và hiển thị bài viết với danh sách nguyên liệu và mô tả.
-  - *AF-16.3 (Công thức không có ảnh):* Tác giả không upload ảnh nào (0 ảnh). Hệ thống tự động gán ảnh đại diện mặc định theo loại ăn chay của món ăn (BR-20).
+  - *AF-16.2 (Công thức không có ảnh tải lên):* Tác giả không upload ảnh nào (0 ảnh). Hệ thống tự động gán ảnh đại diện mặc định theo loại ăn chay của món ăn (BR-20).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-16.1 (Dữ liệu không thỏa mãn validation profile — Xử lý phía Frontend):* Khi người dùng nhấn nút đăng bài, nếu có bất kỳ trường nào vi phạm ngưỡng hợp lệ (ví dụ: tiêu đề $< 3$ hoặc $> 120$ ký tự, khẩu phần $> 50$, tổng thời gian $= 0$, vượt quá 50 nguyên liệu hoặc vượt quá 30 bước nấu), giao diện Frontend chặn gửi request không hợp lệ, giữ nguyên toàn bộ dữ liệu đã nhập trong biểu mẫu (in-memory Form State), tự động cuộn đến trường vi phạm đầu tiên và hiển thị thông báo lỗi chi tiết để tác giả chỉnh sửa ngay tại chỗ mà không bị mất nội dung đã nhập.
-  - *SF-16.1 (Thẩm định độc lập bắt buộc tại Backend & Không lưu rác DB):* Toàn bộ quy tắc kiểm tra hợp lệ bắt buộc phải được thực thi độc lập và toàn diện tại tầng Backend của máy chủ theo NFR-10, tuyệt đối không phụ thuộc vào việc kiểm tra của Frontend. Nếu nhận request có dữ liệu không đạt chuẩn, máy chủ lập tức từ chối với mã phản hồi `HTTP 400 Bad Request` kèm danh sách trường lỗi vi phạm; máy chủ TUYỆT ĐỐI KHÔNG ghi bất kỳ bản ghi bài viết hay tài nguyên dở dang nào vào cơ sở dữ liệu (Database), bảo đảm không phát sinh dữ liệu rác (phù hợp với FR-24 OUT_OF_SCOPE).
+  - *EF-16.1 (Dữ liệu không thỏa mãn validation profile — Xử lý phía Frontend):* Khi người dùng nhấn nút đăng bài, nếu có bất kỳ trường nào vi phạm ngưỡng hợp lệ (ví dụ: tiêu đề $< 3$ hoặc $> 120$ ký tự, khẩu phần $> 50$, tổng thời gian $= 0$, chưa có dòng nguyên liệu nào hoặc vượt quá 50 nguyên liệu, chưa có bước hướng dẫn nào hoặc vượt quá 30 bước, hoặc bước hướng dẫn có nội dung rỗng sau khi trim), giao diện người dùng chặn gửi yêu cầu không hợp lệ, giữ lại toàn bộ nội dung đã nhập trong biểu mẫu và hiển thị thông báo lỗi chi tiết để tác giả chỉnh sửa mà không bị mất dữ liệu đã nhập.
+  - *SF-16.1 (Thẩm định độc lập bắt buộc tại Backend & Không lưu rác DB):* Toàn bộ quy tắc kiểm tra hợp lệ bắt buộc phải được thực thi độc lập và toàn diện tại tầng Backend của máy chủ theo NFR-10, tuyệt đối không phụ thuộc vào việc kiểm tra của Frontend. Nếu nhận yêu cầu có dữ liệu không đạt chuẩn, máy chủ độc lập từ chối yêu cầu và thông báo chi tiết lỗi; máy chủ TUYỆT ĐỐI KHÔNG ghi bất kỳ bản ghi bài viết hay tài nguyên dở dang nào vào cơ sở dữ liệu (Database), bảo đảm không phát sinh dữ liệu rác (phù hợp với FR-24 OUT_OF_SCOPE).
 
 #### 5. Hậu điều kiện (Postconditions)
 - Bài công thức đạt chuẩn được lưu trữ an toàn và xuất bản công khai trực tiếp.
@@ -1525,14 +1530,14 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Áp dụng bình đẳng cho mọi bài viết do Member hoặc Administrator tạo.
-- **Ràng buộc nghiệp vụ:** Đúng bộ tham số Phase 1 đã phê duyệt; cấm áp đặt bắt buộc phải có bước nấu hoặc bắt buộc có ảnh (BR-19, BR-20).
+- **Ràng buộc nghiệp vụ:** Đúng bộ tham số đã phê duyệt; bắt buộc có 1–30 bước hướng dẫn chuẩn bị/chế biến với nội dung không rỗng sau khi trim (BR-19); mô tả và ảnh mang tính tùy chọn (BR-20).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
   - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
   - [BR-10](BUSINESS-RULES.md#br-10): Giới hạn định dạng video Phase 1.
   - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post.
-  - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của giới thiệu, bước nấu và ảnh đại diện.
+  - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của mô tả giới thiệu và ảnh đại diện.
   - [BR-59](BUSINESS-RULES.md#br-59): Không có hàng đợi duyệt bài trước khi công khai.
   - [BR-64](BUSINESS-RULES.md#br-64): Quyền sửa và xóa bài công thức của chính tác giả.
 - **Yêu cầu phi chức năng liên quan:**
@@ -1557,14 +1562,18 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* món salad có thời gian chuẩn bị 10 phút và thời gian nấu 0 phút,
   - *When* tác giả gửi yêu cầu đăng bài,
   - *Then* hệ thống chấp nhận hợp lệ và cho phép xuất bản bài viết.
-- **AC-16.5 (Cho phép công khai không có bước nấu và không có ảnh):**
-  - *Given* bài công thức không có bước nấu nào và không tải ảnh nào lên,
-  - *When* tất cả các thông tin bắt buộc khác đạt chuẩn,
-  - *Then* hệ thống công khai bài viết thành công, hiển thị danh sách nguyên liệu và gán ảnh mặc định cho món ăn.
-- **AC-16.6 (Giới hạn mô tả tối đa 2.000 ký tự và tối đa 30 bước nấu):**
-  - *Given* tác giả nhập mô tả dài hơn 2.000 ký tự hoặc tạo 31 bước nấu,
+- **AC-16.5 (Bắt buộc có từ 1 đến 30 bước hướng dẫn chuẩn bị/chế biến không rỗng):**
+  - *Given* bài công thức chưa có bước hướng dẫn nào (0 bước) hoặc có bước chỉ chứa khoảng trắng,
+  - *When* tác giả gửi yêu cầu đăng bài,
+  - *Then* hệ thống từ chối xuất bản và hiển thị thông báo lỗi yêu cầu phải có ít nhất 1 bước hướng dẫn chuẩn bị/chế biến với nội dung hợp lệ (tối đa 30 bước).
+- **AC-16.6 (Giới hạn mô tả tối đa 2.000 ký tự và tối đa 30 bước hướng dẫn):**
+  - *Given* tác giả nhập mô tả dài hơn 2.000 ký tự hoặc tạo 31 bước hướng dẫn,
   - *When* tác giả nhấn lưu,
-  - *Then* hệ thống chặn lưu và yêu cầu mô tả $\le 2.000$ ký tự và số bước nấu $\le 30$ bước.
+  - *Then* hệ thống chặn lưu và yêu cầu mô tả $\le 2.000$ ký tự và số bước hướng dẫn $\le 30$ bước.
+- **AC-16.7 (Cho phép công khai không có ảnh đại diện và không có mô tả):**
+  - *Given* bài công thức không có mô tả và không tải ảnh nào lên nhưng có đầy đủ nguyên liệu và bước hướng dẫn chuẩn bị/chế biến hợp lệ,
+  - *When* tác giả nhấn đăng bài,
+  - *Then* hệ thống công khai bài viết thành công, hiển thị danh sách nguyên liệu, các bước hướng dẫn và gán ảnh mặc định cho món ăn theo BR-20.
 
 ---
 
@@ -1854,6 +1863,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Mã yêu cầu:** FR-20
 - **Module:** M01, M04, M05
 - **Trạng thái (Derived):** ACTIVE
+- **Điểm tích hợp AI Chatbot:** Trang chi tiết công thức (Recipe Detail) có thể cung cấp Recipe Post hiện tại làm context cho AI Chatbot [FR-51](FUNCTIONAL-REQUIREMENTS.md#fr-51) khi người dùng chủ động chọn chức năng hỏi AI về công thức đang xem. Toàn bộ luồng tương tác hội thoại, phân quyền và trừ hạn ngạch thuộc phạm vi sở hữu của FR-51 (áp dụng cho cả Member và Guest theo [FR-02](FUNCTIONAL-REQUIREMENTS.md#fr-02)).
 
 #### 1. Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Áp dụng kiến trúc nguồn dữ liệu duy nhất (Single Source of Truth - SSOT) cho toàn bộ các bài công thức nấu ăn trong hệ thống: trang chi tiết bài công thức (Recipe Detail View) và thẻ món ăn (Recipe Card theo FR-17) được kết xuất trực tiếp từ cùng một bản thể Recipe Post duy nhất; các phân hệ Lịch ăn tuần (Meal Plan - FR-09, FR-33) và Danh sách mua sắm (Shopping List - FR-53) tham chiếu trực tiếp đến bản thể này bằng khóa ngoại; hệ thống TUYỆT ĐỐI KHÔNG sao chép (duplicate) dữ liệu bài viết hay tạo các bài nguồn/website riêng biệt; khi bài viết được chỉnh sửa, toàn bộ các điểm hiển thị đều được cập nhật nhất quán; khi bài viết bị xóa hoặc ẩn, các tham chiếu lịch sử được giữ an toàn dưới dạng bản ghi không khả dụng (Tombstone) (BR-35, BR-64).
@@ -1890,7 +1900,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     - Mô tả giới thiệu món ăn.
     - Danh sách 1–50 nguyên liệu kèm định lượng (FR-19).
     - Bảng ước tính 9 chỉ tiêu dinh dưỡng trên 1 khẩu phần (FR-39).
-    - Các bước hướng dẫn nấu tuần tự (FR-22).
+    - Các bước hướng dẫn chuẩn bị/chế biến tuần tự (FR-22).
     - Khu vực bình luận và thảo luận cộng đồng (FR-46).
   - Bước 4: Trang hiển thị hoàn tất trong thời gian $\le 2$ giây (NFR-02).
 - **Luồng thay thế (Alternative Flows):**
@@ -1915,7 +1925,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Business Rules liên quan:**
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
   - [BR-18](BUSINESS-RULES.md#br-18): Bảo vệ quyền riêng tư trong hồ sơ tác giả công khai.
-  - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của ảnh đại diện và bước nấu.
+  - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của mô tả giới thiệu và ảnh đại diện.
   - [BR-32](BUSINESS-RULES.md#br-32): Yêu cầu đăng nhập đối với Công thức đã lưu và Lịch ăn.
   - [BR-33](BUSINESS-RULES.md#br-33): Thao tác lưu công thức không tiêu thụ hạn mức AI.
   - [BR-35](BUSINESS-RULES.md#br-35): Độc lập vòng đời giữa Công thức đã lưu và Lịch ăn (Tombstone).
@@ -1930,7 +1940,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **AC-20.1 (Hiển thị trang chi tiết công thức từ nguồn dữ liệu duy nhất):**
   - *Given* bài công thức công khai tồn tại trong hệ thống,
   - *When* người dùng mở xem trang chi tiết,
-  - *Then* hệ thống kết xuất đầy đủ thông tin chuẩn (tiêu đề, nguyên liệu, khẩu phần, thời gian, dinh dưỡng, bước nấu, ảnh, video) từ bản thể dữ liệu duy nhất.
+  - *Then* hệ thống kết xuất đầy đủ thông tin chuẩn (tiêu đề, nguyên liệu, khẩu phần, thời gian, dinh dưỡng, bước hướng dẫn chuẩn bị/chế biến, ảnh, video) từ bản thể dữ liệu duy nhất.
 - **AC-20.2 (Đồng bộ tức thì khi tác giả chỉnh sửa bài viết):**
   - *Given* tác giả vừa cập nhật thành công tiêu đề và định lượng của bài công thức,
   - *When* một người dùng khác mở xem bài viết đó hoặc xem trong Lịch ăn tuần,
@@ -1940,27 +1950,27 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *When* tác giả Member A thực hiện xóa bài công thức đó,
   - *Then* ô tương ứng trong Lịch ăn của Member B hiển thị trạng thái "Công thức không còn khả dụng" và không gây lỗi sập trang.
 - **AC-20.4 (Thời gian tải trang chi tiết đáp ứng chuẩn NFR):**
-  - *Given* bài công thức có đầy đủ 5 ảnh và 30 bước nấu,
+  - *Given* bài công thức có đầy đủ 5 ảnh và 30 bước hướng dẫn,
   - *When* người dùng truy cập trang chi tiết,
   - *Then* toàn bộ nội dung được tải và hiển thị hoàn tất trong thời gian không vượt quá 2 giây.
 
 ---
 
 <a id="fr-21"></a>
-### FR-21 — AI hỗ trợ tạo giới thiệu hoặc bước nấu không lưu nháp server
+### FR-21 — AI hỗ trợ tạo giới thiệu hoặc bước hướng dẫn chuẩn bị/chế biến không lưu nháp server
 
 - **Mã yêu cầu:** FR-21
 - **Module:** M03, M06
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Member trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn hoặc đề xuất các bước hướng dẫn nấu ăn tuần tự dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập (BR-38); văn bản do AI sinh ra được đưa trực tiếp vào trình soạn thảo ở phía client để tác giả tự do xem xét, chỉnh sửa và quyết định trước khi công khai (BR-15); hệ thống TUYỆT ĐỐI KHÔNG tự động tạo hoặc lưu trữ bản nháp bền vững trên server (No Persistent Server Draft theo FR-24); gọi AI tiêu tốn 1 lượt hạn mức AI của Member (BR-03); nếu AI gặp sự cố hoặc tài khoản hết hạn mức, tác giả vẫn có toàn quyền tiếp tục tự viết và xuất bản bài viết bình thường (BR-16).
+- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Member trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn hoặc đề xuất các bước hướng dẫn chuẩn bị/chế biến tuần tự dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập; kết quả do AI sinh ra được đưa trực tiếp vào các ô nhập liệu của biểu mẫu ở phía client ở dạng có thể chỉnh sửa tự do và chỉ được công khai khi người dùng chủ động xem xét, xác nhận (BR-15); hệ thống TUYỆT ĐỐI KHÔNG tự động công khai, không tự động lưu trữ bản nháp bền vững trên server (No Persistent Server Draft theo FR-24); gọi AI tiêu tốn 1 lượt hạn mức AI của Member (BR-03); nếu AI gặp sự cố hoặc tài khoản hết hạn mức, tác giả vẫn có toàn quyền tiếp tục tự viết và xuất bản bài viết bình thường (BR-16).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Member đã đăng nhập và còn hạn mức AI trong ngày (FR-03, FR-10, BR-01, BR-02).
   - Khả năng hỗ trợ:
     1. Gợi ý đoạn giới thiệu món ăn (Description $\le 2.000$ ký tự).
-    2. Gợi ý các bước nấu ăn (Cooking Steps $\le 30$ bước, tuân thủ cấu trúc bước của FR-22).
-  - Không hỗ trợ: AI không tự thêm nguyên liệu (BR-38); không lưu server draft (FR-24).
+    2. Đề xuất các bước hướng dẫn chuẩn bị/chế biến (Cooking Steps $\le 30$ bước, tuân thủ cấu trúc bước của FR-22).
+  - Không hỗ trợ: AI không tự thêm nguyên liệu; không tự động công khai; không lưu server draft (FR-24).
 - **Phân loại Actor:**
   - Primary Actor: `Member` (tác giả bài viết).
   - Supporting Actor: `Google Gemini AI` (trợ lý sinh nội dung), `Hệ thống kiểm soát hạn mức và bảo mật`.
@@ -1968,9 +1978,9 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### 2. Use Cases & User Stories
 - **Danh sách Use Cases:**
   - `UC-21.1`: Yêu cầu AI gợi ý đoạn văn bản giới thiệu món ăn dựa trên nguyên liệu và tên món đã nhập.
-  - `UC-21.2`: Yêu cầu AI đề xuất các bước hướng dẫn nấu ăn tuần tự dựa trên danh sách nguyên liệu.
+  - `UC-21.2`: Yêu cầu AI đề xuất các bước hướng dẫn chuẩn bị/chế biến tuần tự dựa trên danh sách nguyên liệu.
 - **User Stories:**
-  - *Là một người thích nấu ăn nhưng ngại viết văn*, tôi muốn nhờ AI gợi ý giúp một đoạn mô tả món ăn hấp dẫn và các bước nấu cơ bản từ những nguyên liệu tôi đã chọn, để tôi có thể chỉnh sửa lại cho đúng bí quyết của mình và đăng bài nhanh chóng hơn.
+  - *Là một người thích nấu ăn nhưng ngại viết văn*, tôi muốn nhờ AI gợi ý giúp một đoạn mô tả món ăn hấp dẫn và các bước hướng dẫn chuẩn bị/chế biến cơ bản từ những nguyên liệu tôi đã chọn, để tôi có thể chỉnh sửa lại cho đúng bí quyết của mình và chủ động xác nhận đăng bài nhanh chóng hơn.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
@@ -1978,38 +1988,38 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - Tài khoản Member còn số dư hạn mức AI khả dụng trong ngày (FR-10, BR-01, BR-02).
   - Tác giả đã nhập ít nhất Tên món ăn và danh sách Nguyên liệu trong biểu mẫu (FR-16, FR-19).
 - **Kích hoạt (Trigger):**
-  - Tác giả nhấn nút "Nhờ AI gợi ý giới thiệu" hoặc "Nhờ AI gợi ý bước nấu" trong trình soạn thảo.
+  - Tác giả nhấn nút "Nhờ AI gợi ý giới thiệu" hoặc "Nhờ AI gợi ý bước hướng dẫn" trong trình soạn thảo.
 
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow):**
-  - Bước 1: Tác giả nhấn nút "Nhờ AI gợi ý bước nấu" (hoặc "gợi ý giới thiệu").
+  - Bước 1: Tác giả nhấn nút "Nhờ AI gợi ý bước hướng dẫn" (hoặc "gợi ý giới thiệu").
   - Bước 2: Hệ thống kiểm tra số dư hạn mức AI của Member (FR-10, BR-01, BR-02, BR-03).
   - Bước 3: Hệ thống trích xuất thông tin tác giả đã nhập: Tên món ăn, Loại ăn chay, Khẩu phần, và Danh sách tên các nguyên liệu kèm định lượng (FR-19).
-  - Bước 4: Hệ thống gửi prompt tới Google Gemini qua API bảo mật phía server (BR-06, NFR-03 $\le 4$ giây). Prompt bắt buộc yêu cầu:
+  - Bước 4: Hệ thống gửi prompt tới Google Gemini qua API bảo mật phía server (BR-06, đáp ứng NFR-03). Prompt bắt buộc yêu cầu:
     - Chỉ được sử dụng các nguyên liệu tác giả đã cung cấp.
-    - Tuyệt đối không tự ý bịa thêm nguyên liệu mới (BR-38).
+    - Tuyệt đối không tự ý thêm nguyên liệu mới ngoài danh sách.
     - Định dạng kết quả trả về dưới dạng danh sách các bước rõ ràng hoặc đoạn văn bản giới thiệu súc tích.
-  - Bước 5: Google Gemini phản hồi nội dung đề xuất thành công trong thời gian $\le 4$ giây.
+  - Bước 5: Google Gemini phản hồi nội dung đề xuất thành công trong thời gian quy định tại NFR-03.
   - Bước 6: Hệ thống trừ 1 lượt hạn mức AI của Member sau khi nhận phản hồi hợp lệ (BR-03).
-  - Bước 7: Hệ thống đưa nội dung AI sinh trực tiếp vào các ô nhập liệu tương ứng trên trình soạn thảo giao diện phía client.
-  - Bước 8: Tác giả tự do đọc lại, chỉnh sửa câu từ, thêm bớt bước nấu cho phù hợp với thực tế chế biến của mình.
-  - Bước 9: Khi tác giả nhấn "Đăng công thức", bài viết được kiểm tra validation và xuất bản trực tiếp (BR-07, BR-19, BR-25).
+  - Bước 7: Hệ thống đưa nội dung AI sinh trực tiếp vào các ô nhập liệu tương ứng trên trình soạn thảo giao diện phía client dưới dạng có thể chỉnh sửa hoàn toàn.
+  - Bước 8: Tác giả tự do đọc lại, chỉnh sửa câu từ, thêm bớt hoặc sắp xếp lại các bước hướng dẫn cho phù hợp với thực tế chế biến của mình. AI tuyệt đối không tự động công khai bài viết.
+  - Bước 9: Khi tác giả chủ động nhấn "Đăng công thức", bài viết được kiểm tra validation (bao gồm bắt buộc có 1–30 bước với nội dung không rỗng sau khi trim theo BR-19) và xuất bản trực tiếp (BR-07, BR-19, BR-25).
   - Bước 10: Toàn bộ quá trình TUYỆT ĐỐI KHÔNG ghi bất kỳ bản ghi lưu nháp tạm thời nào vào cơ sở dữ liệu server (FR-24).
 - **Luồng thay thế (Alternative Flows):**
   - *AF-21.1 (Tác giả không hài lòng với nội dung AI gợi ý):* Tác giả có thể nhấn nút "Xóa gợi ý" để quay về trạng thái trống hoặc tự gõ lại bằng tay. Hạn mức đã trừ không được hoàn lại vì dịch vụ AI đã xử lý thành công (BR-03).
   - *AF-21.2 (Tác giả hết hạn mức AI trong ngày):* Nếu tài khoản đã hết hạn mức AI, hệ thống hiển thị thông báo đã đạt giới hạn (FR-10) và gợi ý tác giả tự nhập nội dung bằng tay để tiếp tục đăng bài bình thường (BR-16).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-21.1 (Lỗi kết nối Gemini hoặc timeout quá 4 giây):* Nếu dịch vụ AI gặp sự cố hoặc timeout vượt quá 4 giây (NFR-03), hệ thống thông báo lỗi kỹ thuật thân thiện, không trừ hạn mức của Member và giữ nguyên toàn bộ dữ liệu tác giả đã nhập trên form (BR-04, BR-16).
-  - *SF-21.1 (Không lưu nháp server - Tuân thủ ranh giới FR-24):* Hệ thống không cung cấp bảng lưu nháp (draft table) trên server cho tính năng này; nếu tác giả tắt trình duyệt trước khi bấm công khai, dữ liệu tạm chỉ lưu trong local storage của trình duyệt hoặc bị mất, hoàn toàn không tốn tài nguyên lưu trữ server (FR-24).
+  - *EF-21.1 (Lỗi kết nối dịch vụ AI hoặc timeout):* Nếu dịch vụ AI gặp sự cố hoặc quá thời gian phản hồi quy định tại NFR-03, hệ thống thông báo lỗi kỹ thuật thân thiện, không trừ hạn mức của Member và giữ nguyên toàn bộ dữ liệu tác giả đã nhập trên form (BR-04, BR-16).
+  - *SF-21.1 (Không lưu nháp server - Tuân thủ ranh giới FR-24):* Hệ thống không cung cấp chức năng lưu nháp trên máy chủ cho tính năng này; nếu tác giả rời khỏi biểu mẫu trước khi bấm công khai, dữ liệu dở dang không được bảo đảm lưu trữ bền vững trên máy chủ (FR-24).
 
 #### 5. Hậu điều kiện (Postconditions)
-- Nội dung gợi ý của AI được điền vào trình soạn thảo client để tác giả kiểm soát.
+- Nội dung gợi ý của AI được điền vào trình soạn thảo client dưới dạng có thể chỉnh sửa để tác giả toàn quyền kiểm soát.
 - Hạn mức AI trong ngày của Member giảm đi 1 lượt khi hoàn tất thành công.
 - Cơ sở dữ liệu server không lưu trữ bất kỳ bản ghi nháp dở dang nào.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Chỉ Member đã đăng nhập và còn hạn mức AI mới được sử dụng.
-- **Ràng buộc an toàn:** AI không tự thêm nguyên liệu (BR-38); không lưu nháp server (FR-24); không chặn đăng bài khi AI lỗi (BR-16).
+- **Ràng buộc an toàn:** AI không tự thêm nguyên liệu; kết quả AI phải ở dạng chỉnh sửa được và AI không được tự ý công khai; không lưu nháp server (FR-24); không chặn đăng bài khi AI lỗi (BR-16).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
@@ -2017,11 +2027,12 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức text AI cho gói Plus và Pro.
   - [BR-03](BUSINESS-RULES.md#br-03): Điều kiện trừ hạn mức AI.
   - [BR-04](BUSINESS-RULES.md#br-04): Xử lý lỗi provider và timeout AI.
+  - [BR-06](BUSINESS-RULES.md#br-06): Bảo mật API Key của AI Provider.
   - [BR-15](BUSINESS-RULES.md#br-15): Đồng nhất chính sách bài viết tự soạn và bài có AI hỗ trợ.
   - [BR-16](BUSINESS-RULES.md#br-16): Không chặn công khai bài viết khi AI lỗi hoặc hết hạn mức.
-  - [BR-38](BUSINESS-RULES.md#br-38): AI không tự tạo công thức mới ngoài hệ thống (không tự thêm nguyên liệu).
+  - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post.
 - **Yêu cầu phi chức năng liên quan:**
-  - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi của trợ lý Chatbot AI $\le 4$ giây.
+  - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi của tính năng AI Chatbot.
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
   - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập chức năng theo vai trò (RBAC).
   - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Phòng chống các lỗ hổng bảo mật phổ biến.
@@ -2030,12 +2041,12 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### 8. Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
 - **AC-21.1 (AI sinh nội dung không tự ý thêm nguyên liệu mới):**
   - *Given* tác giả khai báo danh sách nguyên liệu chỉ gồm "Đậu phụ, Cà chua, Hành boa-rô",
-  - *When* AI sinh các bước hướng dẫn nấu ăn,
+  - *When* AI sinh các bước hướng dẫn chuẩn bị/chế biến,
   - *Then* toàn bộ các bước chỉ sử dụng các nguyên liệu đã khai báo và tuyệt đối không xuất hiện nguyên liệu mới (như nấm, ớt chuông...).
-- **AC-21.2 (Đưa nội dung AI sinh vào trình soạn thảo client):**
-  - *Given* AI phản hồi thành công đoạn giới thiệu hoặc các bước nấu,
+- **AC-21.2 (Đưa nội dung AI sinh vào trình soạn thảo client dưới dạng có thể chỉnh sửa):**
+  - *Given* AI phản hồi thành công đoạn giới thiệu hoặc các bước hướng dẫn,
   - *When* dữ liệu trả về client,
-  - *Then* nội dung được tự động điền vào các ô nhập liệu tương ứng trên form để tác giả có thể chỉnh sửa trực tiếp.
+  - *Then* nội dung được tự động điền vào các ô nhập liệu tương ứng trên form để tác giả có thể chỉnh sửa trực tiếp và chỉ được công khai khi tác giả chủ động bấm đăng.
 - **AC-21.3 (Tuyệt đối không lưu trữ bản nháp trên server):**
   - *Given* tác giả sử dụng AI hỗ trợ soạn bài nhưng chưa nhấn nút "Đăng công thức",
   - *When* kiểm tra cơ sở dữ liệu hệ thống trên máy chủ,
@@ -2046,34 +2057,34 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Then* hệ thống công khai bài viết thành công mà không có bất kỳ trở ngại nào.
 - **AC-21.5 (Trừ hạn mức chính xác 1 lượt khi thành công):**
   - *Given* Member có 5 lượt AI khả dụng,
-  - *When* yêu cầu hỗ trợ tạo bài hoàn tất thành công trong vòng 4 giây,
+  - *When* yêu cầu hỗ trợ tạo bài hoàn tất thành công đáp ứng thời gian quy định tại NFR-03,
   - *Then* số dư hạn mức AI của Member giảm đi chính xác 1 lượt (còn 4 lượt).
 
 ---
 
 <a id="fr-22"></a>
-### FR-22 — Thao tác chỉnh sửa và sắp xếp bước nấu tùy chọn
+### FR-22 — Thao tác chỉnh sửa và sắp xếp bước hướng dẫn chuẩn bị/chế biến
 
 - **Mã yêu cầu:** FR-22
 - **Module:** M01, M03, M06
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Trình soạn thảo bài công thức cung cấp chức năng cho phép tác giả thêm mới, chỉnh sửa nội dung, xóa bỏ và thay đổi thứ tự (sắp xếp lại vị trí) của tối đa 30 bước hướng dẫn nấu ăn; các bước nấu ăn là thành phần mang tính **tùy chọn** (BR-20) đối với các món ăn đơn giản; khi bài viết được công khai hoặc hiển thị chi tiết, hệ thống trình bày các bước nấu theo đúng thứ tự số học tuần tự đã lưu ($1, 2, 3...$); cấu trúc bước nấu này được dùng chung đồng bộ cho cả các bước do tác giả tự nhập lẫn các bước do AI hỗ trợ tạo ra (FR-21).
+- **Tóm tắt yêu cầu:** Trình soạn thảo bài công thức cung cấp chức năng cho phép tác giả thêm mới, chỉnh sửa nội dung, xóa bỏ và thay đổi thứ tự (sắp xếp lại vị trí) của các bước hướng dẫn chuẩn bị/chế biến; bài công thức bắt buộc phải có từ 1 đến 30 bước hướng dẫn trước khi được công khai (BR-19); mỗi bước phải có nội dung không rỗng sau khi cắt khoảng trắng đầu cuối (trim); khi bài viết được công khai hoặc hiển thị chi tiết, hệ thống trình bày các bước theo đúng thứ tự số học tuần tự đã lưu ($1, 2, 3...$); cấu trúc bước này được dùng chung đồng bộ cho cả các bước do tác giả tự nhập lẫn các bước do AI hỗ trợ đề xuất (FR-21).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Mọi bài Recipe Post do Member hoặc Administrator tạo/sửa (FR-04, FR-07, FR-16, FR-44).
-  - Giới hạn số bước: Từ 0 đến tối đa **30 bước nấu** (BR-19, BR-20).
-  - Không bắt buộc: Bài viết có 0 bước nấu vẫn hợp lệ để xuất bản (BR-20).
+  - Giới hạn số bước: Từ 1 đến tối đa **30 bước hướng dẫn** (BR-19).
+  - Tính bắt buộc: Bắt buộc có ít nhất 1 bước với nội dung không rỗng sau khi trim (BR-19).
 - **Phân loại Actor:**
   - Primary Actor: `Member`, `Administrator` (tác giả bài viết).
-  - Supporting Actor: `Hệ thống soạn thảo và sắp xếp bước nấu`.
+  - Supporting Actor: `Hệ thống soạn thảo và sắp xếp bước hướng dẫn`.
 
 #### 2. Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-22.1`: Thêm mới, chỉnh sửa nội dung hoặc xóa bỏ bước nấu trong bài công thức (tối đa 30 bước).
-  - `UC-22.2`: Thay đổi vị trí thứ tự thực hiện giữa các bước nấu trong bài công thức.
+  - `UC-22.1`: Thêm mới, chỉnh sửa nội dung hoặc xóa bỏ bước hướng dẫn chuẩn bị/chế biến trong bài công thức (1–30 bước).
+  - `UC-22.2`: Thay đổi vị trí thứ tự thực hiện giữa các bước hướng dẫn trong bài công thức.
 - **User Stories:**
-  - *Là một tác giả công thức*, tôi muốn dễ dàng thêm bớt và kéo thả đổi thứ tự các công đoạn nấu ăn để các bước hướng dẫn được logic và người đọc dễ theo dõi nhất.
+  - *Là một tác giả công thức*, tôi muốn dễ dàng thêm bớt, chỉnh sửa và đổi thứ tự các bước hướng dẫn chuẩn bị/chế biến để các công đoạn được logic và người đọc dễ thực hiện theo nhất.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
@@ -2083,58 +2094,56 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow):**
-  - Bước 1: Tác giả nhấn nút "Thêm bước nấu". Hệ thống tạo một ô nhập liệu bước nấu mới với số thứ tự kế tiếp (ví dụ Bước 1).
-  - Bước 2: Tác giả nhập mô tả chi tiết công đoạn thực hiện của bước đó.
-  - Bước 3: Tác giả có thể tải thêm ảnh minh họa riêng cho bước nấu đó từ Azure Blob Storage (FR-14).
-  - Bước 4: Tác giả tiếp tục thêm các bước tiếp theo (tối đa không quá 30 bước theo BR-19).
-  - Bước 5: Để điều chỉnh trình tự nấu, tác giả sử dụng nút mũi tên "Lên / Xuống" hoặc kéo thả (drag-and-drop) một bước tới vị trí mong muốn.
-  - Bước 6: Hệ thống tự động cập nhật lại số thứ tự tuần tự ($1, 2, 3...$) của toàn bộ các bước nấu trên giao diện.
-  - Bước 7: Khi tác giả nhấn lưu bài viết, hệ thống kiểm tra số bước $\le 30$ và lưu trữ danh sách các bước nấu kèm chỉ số thứ tự (`stepNumber`) vào cơ sở dữ liệu.
-  - Bước 8: Trang xem chi tiết công thức (FR-20) hiển thị các bước nấu theo đúng thứ tự đã lưu.
+  - Bước 1: Tác giả nhấn nút "Thêm bước". Hệ thống tạo một ô nhập liệu bước hướng dẫn mới với số thứ tự kế tiếp (ví dụ Bước 1).
+  - Bước 2: Tác giả nhập mô tả chi tiết công đoạn thực hiện của bước đó (nội dung không được rỗng sau khi trim).
+  - Bước 3: Tác giả tiếp tục thêm các bước tiếp theo (tối đa không quá 30 bước theo BR-19).
+  - Bước 4: Để điều chỉnh trình tự, tác giả sử dụng thao tác di chuyển vị trí giữa các bước (ví dụ: nút lên/xuống) tới vị trí mong muốn.
+  - Bước 5: Hệ thống tự động cập nhật lại số thứ tự tuần tự ($1, 2, 3...$) của toàn bộ các bước trên giao diện.
+  - Bước 6: Khi tác giả nhấn lưu bài viết, hệ thống kiểm tra số bước trong khoảng 1–30 và nội dung từng bước không rỗng sau khi trim, sau đó lưu trữ danh sách các bước kèm chỉ số thứ tự tuần tự vào cơ sở dữ liệu.
+  - Bước 7: Trang xem chi tiết công thức (FR-20) hiển thị các bước hướng dẫn theo đúng thứ tự đã lưu.
 - **Luồng thay thế (Alternative Flows):**
-  - *AF-22.1 (Xóa bớt một bước nấu):* Tác giả nhấn icon thùng rác tại một bước trung gian (ví dụ Bước 2 trong 4 bước). Hệ thống xóa bước đó và tự động đánh số lại các bước còn lại ($1, 2, 3$) một cách liền mạch.
-  - *AF-22.2 (Không nhập bước nấu nào):* Tác giả không tạo bước nấu nào (0 bước). Hệ thống chấp nhận hợp lệ theo BR-20 và công khai bài viết bình thường.
-  - *AF-22.3 (Nhận các bước do AI hỗ trợ sinh ra):* Khi tác giả sử dụng tính năng AI hỗ trợ tạo bước nấu từ FR-21, hệ thống chuyển các bước gợi ý vào chính cấu trúc danh sách bước này để tác giả tiếp tục chỉnh sửa và sắp xếp.
+  - *AF-22.1 (Xóa bớt một bước hướng dẫn):* Tác giả nhấn xóa tại một bước trung gian (ví dụ Bước 2 trong 4 bước). Hệ thống xóa bước đó và tự động đánh số lại các bước còn lại ($1, 2, 3$) một cách liền mạch.
+  - *AF-22.2 (Nhận các bước do AI hỗ trợ đề xuất):* Khi tác giả sử dụng tính năng AI hỗ trợ từ FR-21, hệ thống chuyển các bước đề xuất vào danh sách các ô nhập liệu bước này để tác giả tiếp tục chỉnh sửa, sắp xếp lại và chủ động xác nhận trước khi đăng.
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-22.1 (Vượt quá 30 bước nấu):* Khi danh sách đã đạt 30 bước, nút "Thêm bước nấu" bị vô hiệu hóa; nếu cố tình gửi request vượt quá 30 bước, hệ thống chặn lưu và thông báo lỗi số bước tối đa là 30 (BR-19).
-  - *SF-22.1 (Làm sạch nội dung mô tả bước nấu):* Nội dung văn bản của từng bước nấu bắt buộc được làm sạch mã độc (sanitize HTML) để phòng chống lỗ hổng tấn công XSS (NFR-10).
+  - *EF-22.1 (Số lượng bước không hợp lệ hoặc bước rỗng):* Khi danh sách chưa có bước nào (0 bước), vượt quá 30 bước, hoặc có bước chỉ chứa khoảng trắng khi nhấn lưu/công khai, hệ thống từ chối lưu và thông báo lỗi yêu cầu từ 1 đến 30 bước với nội dung hợp lệ (BR-19).
+  - *SF-22.1 (Làm sạch nội dung mô tả bước):* Nội dung văn bản của từng bước hướng dẫn bắt buộc được làm sạch mã độc (sanitize HTML) để phòng chống lỗ hổng tấn công XSS (NFR-10).
 
 #### 5. Hậu điều kiện (Postconditions)
-- Các bước nấu được lưu trữ bền vững kèm chỉ số thứ tự chuẩn xác.
+- Các bước hướng dẫn chuẩn bị/chế biến được lưu trữ bền vững kèm chỉ số thứ tự chuẩn xác.
 - Trang chi tiết hiển thị đúng hướng dẫn từng bước trực quan.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Chỉ chính tác giả sở hữu bài viết mới có quyền chỉnh sửa và sắp xếp các bước nấu của bài viết đó (BR-64, NFR-09). Administrator xử lý bài vi phạm theo quy trình kiểm duyệt độc lập (ẩn/gỡ bài), không trực tiếp chỉnh sửa nội dung bài của tác giả.
-- **Ràng buộc nghiệp vụ:** Tối đa 30 bước; mang tính tùy chọn (BR-19, BR-20).
+- **Quyền hạn:** Chỉ chính tác giả sở hữu bài viết mới có quyền chỉnh sửa và sắp xếp các bước của bài viết đó (BR-64, NFR-09). Administrator xử lý bài vi phạm theo quy trình kiểm duyệt độc lập (ẩn/gỡ bài), không trực tiếp chỉnh sửa nội dung bài của tác giả.
+- **Ràng buộc nghiệp vụ:** Bắt buộc có từ 1 đến 30 bước; mỗi bước có nội dung không rỗng sau khi trim (BR-19).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
   - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
-  - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post (tối đa 30 cooking steps).
-  - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của bước nấu và media.
+  - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post (1–30 bước hướng dẫn chuẩn bị/chế biến).
+  - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của mô tả giới thiệu và ảnh đại diện.
   - [BR-64](BUSINESS-RULES.md#br-64): Quyền sửa và xóa bài công thức của chính tác giả.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
-  - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Phòng chống các lỗ hổng bảo mật phổ biến (chống XSS trong nội dung bước nấu).
+  - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Phòng chống các lỗ hổng bảo mật phổ biến (chống XSS trong nội dung bước hướng dẫn).
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt trên đa kích thước màn hình.
 
 #### 8. Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
-- **AC-22.1 (Giới hạn tối đa 30 bước nấu tùy chọn):**
-  - *Given* tác giả đã tạo đủ 30 bước nấu trong bài công thức,
-  - *When* tác giả cố gắng thêm bước thứ 31,
-  - *Then* hệ thống ngăn chặn việc tạo thêm và thông báo số bước nấu tối đa là 30 bước.
-- **AC-22.2 (Sắp xếp lại thứ tự các bước nấu chính xác):**
-  - *Given* bài công thức có 3 bước nấu theo thứ tự A, B, C,
+- **AC-22.1 (Giới hạn số lượng từ 1 đến 30 bước hướng dẫn):**
+  - *Given* bài công thức chưa có bước hướng dẫn nào (0 bước) hoặc tác giả cố gắng tạo thêm bước thứ 31,
+  - *When* tác giả gửi yêu cầu đăng bài,
+  - *Then* hệ thống ngăn chặn và thông báo số bước hướng dẫn phải từ 1 đến 30 bước.
+- **AC-22.2 (Sắp xếp lại thứ tự các bước hướng dẫn chính xác):**
+  - *Given* bài công thức có 3 bước hướng dẫn theo thứ tự A, B, C,
   - *When* tác giả di chuyển bước C lên vị trí đầu tiên,
   - *Then* hệ thống cập nhật lại thứ tự thành C (Bước 1), A (Bước 2), B (Bước 3) và lưu lại chuẩn xác.
 - **AC-22.3 (Tự động đánh số lại khi xóa bước trung gian):**
-  - *Given* bài công thức đang có 3 bước nấu được đánh số 1, 2, 3,
+  - *Given* bài công thức đang có 3 bước hướng dẫn được đánh số 1, 2, 3,
   - *When* tác giả xóa bước số 2,
   - *Then* bước số 3 cũ tự động chuyển thành bước số 2 và danh sách còn đúng 2 bước tuần tự.
-- **AC-22.4 (Cho phép bài viết không có bước nấu nào xuất bản hợp lệ):**
-  - *Given* tác giả để trống phần bước nấu (0 bước),
-  - *When* các trường thông tin bắt buộc khác đều đạt chuẩn,
-  - *Then* hệ thống cho phép xuất bản bài viết thành công theo đúng quy định tùy chọn của BR-20.
+- **AC-22.4 (Bắt buộc nội dung bước không rỗng sau khi trim):**
+  - *Given* tác giả nhập một bước chỉ gồm các ký tự khoảng trắng hoặc để trống nội dung,
+  - *When* tác giả nhấn đăng công thức,
+  - *Then* hệ thống từ chối xuất bản và hiển thị thông báo lỗi yêu cầu nhập nội dung cụ thể cho từng bước hướng dẫn.
 
 ---
 
@@ -2314,8 +2323,8 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
 - **Module:** M03
 - **Trạng thái (Derived):** OUT_OF_SCOPE
 - **Mô tả:** Hệ thống không hỗ trợ lưu trữ trạng thái bản nháp (`Draft`) của Recipe Post trên máy chủ hay cơ sở dữ liệu:
-  - **Ranh giới Backend:** Máy chủ chỉ tiếp nhận và lưu trữ bài viết khi toàn bộ dữ liệu đạt chuẩn validation đầy đủ để công khai ngay (`PUBLISHED` theo FR-25). Bất kỳ yêu cầu nào chứa dữ liệu dở dang hoặc vi phạm BR-19 đều bị Backend từ chối với mã lỗi `HTTP 400 Bad Request`, không tạo bản ghi nháp rác và không lưu ảnh mồ côi trên cloud storage.
-  - **Xử lý phía Frontend:** Khi bài viết chưa đạt chuẩn hoặc người dùng đang soạn thảo dở dang, dữ liệu chỉ tồn tại tạm thời trong bộ nhớ biểu mẫu (in-memory Form State) của trình duyệt để người dùng tiếp tục hoàn thiện. Nếu người dùng chủ động đóng trang/thoát trình duyệt, dữ liệu dở dang đó không được bảo đảm lưu trữ bền vững trên máy chủ.
+  - **Ranh giới máy chủ:** Máy chủ chỉ tiếp nhận và lưu trữ bài viết khi toàn bộ dữ liệu đạt chuẩn validation đầy đủ để công khai ngay (`PUBLISHED` theo FR-25). Bất kỳ yêu cầu nào chứa dữ liệu dở dang hoặc vi phạm BR-19 đều bị máy chủ từ chối, không tạo bản ghi nháp rác và không lưu tệp media mồ côi trên dịch vụ lưu trữ.
+  - **Hành vi phía giao diện người dùng:** Khi bài viết chưa đạt chuẩn hoặc người dùng đang soạn thảo dở dang, nội dung chỉ tồn tại tạm thời trên biểu mẫu của giao diện để người dùng tiếp tục hoàn thiện. Nếu người dùng chủ động đóng trang hoặc thoát phiên làm việc mà chưa công khai thành công, nội dung chưa hoàn tất đó không được bảo đảm lưu trữ bền vững trên máy chủ.
 
 ---
 
@@ -2354,17 +2363,17 @@ Triển khai cơ chế xuất bản bài viết công khai trực tiếp (Direct
    - Bước 2: Hệ thống kích hoạt quy trình thẩm định tính hợp lệ toàn diện ở tầng máy chủ (Server-side Validation) đối chiếu trực tiếp với bộ quy tắc Recipe Validation Profile chuẩn được định nghĩa tại FR-16 và các Business Rules liên quan:
      - Thẩm định cấu trúc và độ dài trường theo FR-16: tiêu đề (3–120 ký tự), khẩu phần (1–50), thời gian chuẩn bị và nấu (mỗi giá trị 0–1.440 phút, tổng thời gian $> 0$), mô tả bài viết ($\le 2.000$ ký tự), chọn đúng 1 trong 4 loại ăn chay chuẩn (BR-07, BR-19).
      - Thẩm định nguyên liệu theo FR-19: danh sách từ 1 đến 50 dòng, có tên nguyên liệu và định lượng hợp lệ (số lượng + đơn vị đo chuẩn hoặc "vừa đủ").
-     - Thẩm định các bước nấu tùy chọn theo FR-22: tối đa 30 bước; bài viết có 0 bước nấu vẫn hoàn toàn hợp lệ để xuất bản (BR-20).
+     - Thẩm định các bước hướng dẫn chuẩn bị/chế biến theo FR-22: bắt buộc có từ 1 đến 30 bước, mỗi bước có nội dung không rỗng sau khi trim (BR-19).
      - Thẩm định tệp ảnh và video theo FR-14 và FR-15: tối đa 5 ảnh JPEG/PNG/WebP ($\le 5$ MB/ảnh) và tối đa 1 liên kết YouTube hợp lệ.
      - Xác thực quyền tác giả: Tác giả được trích xuất tự động và gắn cố định từ phiên đăng nhập hợp lệ của Member theo FR-23 và BR-17.
    - Bước 3: Toàn bộ các điều kiện đều thỏa mãn.
    - Bước 4: Hệ thống cập nhật trạng thái bài viết thành `PUBLISHED`, lưu thời điểm công khai (`publishedAt`), và phản hồi thành công.
    - Bước 5: Bài viết xuất hiện ngay lập tức trên trang chủ, trang khám phá, kết quả tìm kiếm và trang hồ sơ cá nhân của tác giả.
    - Bước 6: Giao diện chuyển hướng tác giả đến trang chi tiết bài viết vừa xuất bản kèm thông báo chúc mừng.
-2. **Exception Flow (Kiểm tra dữ liệu không đạt — Phối hợp FE & BE):**
-   - Bước 1: Khi phát hiện dữ liệu vi phạm bộ quy tắc Recipe Validation Profile (ví dụ: tiêu đề dưới 3 ký tự, chưa có dòng nguyên liệu nào, tổng thời gian bằng 0):
-   - Bước 2 (Xử lý Backend): Nếu request được gửi đến máy chủ, Backend thực thi thẩm định độc lập, lập tức từ chối yêu cầu với mã lỗi `HTTP 400 Bad Request` và dừng quy trình, hoàn toàn không tạo bản ghi nào trong cơ sở dữ liệu (Database) ở bất kỳ trạng thái nào (kể cả nháp hay công khai).
-   - Bước 3 (Xử lý Frontend): Giao diện máy khách giữ nguyên toàn bộ dữ liệu tác giả đã nhập trên biểu mẫu (Form State), không reset trang, tự động cuộn màn hình đến vị trí trường dữ liệu bị lỗi đầu tiên và hiển thị thông báo lỗi cụ thể để tác giả tiếp tục chỉnh sửa cho đúng chuẩn rồi bấm đăng lại.
+2. **Exception Flow (Kiểm tra dữ liệu không đạt):**
+   - Bước 1: Khi phát hiện dữ liệu vi phạm bộ quy tắc Recipe Validation Profile (ví dụ: tiêu đề dưới 3 ký tự, chưa có dòng nguyên liệu nào, chưa có bước hướng dẫn nào hoặc bước rỗng, tổng thời gian bằng 0):
+   - Bước 2 (Xử lý máy chủ): Máy chủ thực thi thẩm định độc lập, lập tức từ chối yêu cầu xuất bản không hợp lệ và dừng quy trình, hoàn toàn không tạo bản ghi nào trong cơ sở dữ liệu ở bất kỳ trạng thái nào (kể cả nháp hay công khai).
+   - Bước 3 (Xử lý giao diện): Giao diện giữ nguyên nội dung tác giả đã nhập, không làm mất dữ liệu biểu mẫu và hiển thị thông báo lỗi cụ thể tương ứng với trường không hợp lệ để tác giả tiếp tục hoàn thiện.
 
 #### 6. Hậu điều kiện (Postconditions)
 - Bài viết được chuyển sang trạng thái `PUBLISHED` và có thể tiếp cận công khai bởi toàn bộ người dùng (Guest, Member, Admin).
@@ -2378,6 +2387,8 @@ Triển khai cơ chế xuất bản bài viết công khai trực tiếp (Direct
 - **Quy tắc nghiệp vụ liên quan:**
   - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
   - [BR-17](BUSINESS-RULES.md#br-17): Gắn quyền tác giả với tài khoản đăng bài.
+  - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post.
+  - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của mô tả giới thiệu và ảnh đại diện.
   - [BR-64](BUSINESS-RULES.md#br-64): Quyền sửa và xóa bài công thức của chính tác giả.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu và toàn vẹn giao dịch.
@@ -3996,7 +4007,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Luồng chính (Main Flow):**
   - Bước 1: Tác giả hoàn thành soạn thảo công thức; trong danh sách nguyên liệu có một số nguyên liệu tự do không tìm thấy trong danh mục dinh dưỡng nội bộ.
   - Bước 2: Tác giả nhấn "Đăng công thức".
-  - Bước 3: Hệ thống thực hiện quy trình kiểm tra hợp lệ thông tin bài viết theo bộ quy tắc Recipe Validation Profile chuẩn của FR-16 (tiêu đề, khẩu phần, thời gian chuẩn bị và nấu, loại ăn chay; nguyên liệu theo FR-19; các bước nấu là tùy chọn theo FR-22; bài viết có 0 bước nấu vẫn không bị từ chối).
+  - Bước 3: Hệ thống thực hiện quy trình kiểm tra hợp lệ thông tin bài viết theo bộ quy tắc Recipe Validation Profile chuẩn của FR-16 (tiêu đề, khẩu phần, thời gian chuẩn bị và nấu, loại ăn chay; nguyên liệu theo FR-19; các bước hướng dẫn chuẩn bị/chế biến bắt buộc từ 1 đến 30 bước theo FR-22, BR-19).
   - Bước 4: Kiểm tra hợp lệ thành công; hệ thống xác định có nguyên liệu chưa ánh xạ được với bảng dinh dưỡng nội bộ.
   - Bước 5: Hệ thống cho phép công khai trực tiếp bài viết lên nền tảng ngay lập tức mà không chặn và không đưa vào hàng đợi duyệt trước (BR-07, BR-50, BR-59).
   - Bước 6: Hệ thống đánh dấu trạng thái dinh dưỡng của bài viết là `Chưa đầy đủ` (Incomplete Nutrition Data) và đánh dấu cờ `Loại trừ khỏi AI Menu Dinh dưỡng` (BR-40).
@@ -4179,7 +4190,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cho phép Member đã đăng nhập chỉnh sửa nội dung hoặc xóa bỏ bài công thức nấu ăn đã công khai do chính mình tạo ra; khi chỉnh sửa, các thay đổi phải vượt qua toàn bộ quy tắc kiểm tra hợp lệ Recipe Validation Profile chuẩn theo FR-16 (tiêu đề, khẩu phần, thời gian, loại ăn chay, danh mục, nguyên liệu theo FR-19; các bước nấu là tùy chọn theo FR-22) và được cập nhật công khai ngay lập tức mà không cần Administrator phê duyệt lại; trường hợp bài viết đang bị Administrator tạm ẩn do vi phạm (BR-27), Member không được tự ý sửa để mở lại công khai; khi xóa bài công thức, hệ thống chuyển trạng thái bài viết sang xóa mềm (Tombstone), bài viết không còn xuất hiện trên danh mục công khai hay tìm kiếm, nhưng các tham chiếu lịch sử trong Lịch ăn tuần (Meal Plan), Công thức đã lưu (Saved Recipe) và Danh sách mua sắm hiện có của người dùng khác được bảo toàn ở trạng thái hiển thị "Nội dung không còn khả dụng" để tránh phá vỡ tính toàn vẹn dữ liệu.
+- **Tóm tắt yêu cầu:** Cho phép Member đã đăng nhập chỉnh sửa nội dung hoặc xóa bỏ bài công thức nấu ăn đã công khai do chính mình tạo ra; khi chỉnh sửa, các thay đổi phải vượt qua toàn bộ quy tắc kiểm tra hợp lệ Recipe Validation Profile chuẩn theo FR-16 (tiêu đề, khẩu phần, thời gian, loại ăn chay, danh mục, nguyên liệu theo FR-19, các bước hướng dẫn chuẩn bị/chế biến theo FR-22, BR-19) và được cập nhật công khai ngay lập tức mà không cần Administrator phê duyệt lại; trường hợp bài viết đang bị Administrator tạm ẩn do vi phạm (BR-27), Member không được tự ý sửa để mở lại công khai; khi xóa bài công thức, hệ thống chuyển trạng thái bài viết sang xóa mềm (Tombstone), bài viết không còn xuất hiện trên danh mục công khai hay tìm kiếm, nhưng các tham chiếu lịch sử trong Lịch ăn tuần (Meal Plan), Công thức đã lưu (Saved Recipe) và Danh sách mua sắm hiện có của người dùng khác được bảo toàn ở trạng thái hiển thị "Nội dung không còn khả dụng" để tránh phá vỡ tính toàn vẹn dữ liệu.
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Member sở hữu bài công thức (`Author`).
   - Phân quyền: Nghiêm cấm sửa hoặc xóa bài của tác giả khác (RBAC, chống IDOR theo NFR-09, NFR-10).
@@ -4204,7 +4215,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow - Chỉnh sửa công thức):**
   - Bước 1: Tác giả nhấn "Chỉnh sửa công thức". Hệ thống kiểm tra quyền tác giả (BR-62, BR-64); nếu trùng khớp, hiển thị biểu mẫu chỉnh sửa với toàn bộ dữ liệu hiện tại của bài viết.
-  - Bước 2: Tác giả sửa đổi các thông tin (tiêu đề, thời gian nấu, khẩu phần, danh sách nguyên liệu, các bước nấu, ảnh).
+  - Bước 2: Tác giả sửa đổi các thông tin (tiêu đề, thời gian nấu, khẩu phần, danh sách nguyên liệu, các bước hướng dẫn chuẩn bị/chế biến, ảnh).
   - Bước 3: Tác giả nhấn "Lưu thay đổi".
   - Bước 4: Hệ thống thực hiện kiểm tra hợp lệ toàn bộ các tiêu chí validation bắt buộc theo FR-16 và BR-19.
   - Bước 5: Kiểm tra thành công, hệ thống cập nhật nội dung bài viết vào cơ sở dữ liệu, tự động tính toán lại bảng ước tính 9 chỉ tiêu dinh dưỡng (FR-39), và xuất bản trực tiếp các thay đổi lên trang công khai ngay lập tức mà không qua kiểm duyệt trước của Admin (BR-07, BR-59, BR-62).
@@ -4496,7 +4507,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
     - Bước 1: Member bấm nút "Nhờ AI gợi ý món ăn kèm / biến tấu".
     - Bước 2: Hệ thống kiểm tra số dư hạn mức AI của Member (BR-01, BR-02, BR-03).
     - Bước 3: Hệ thống trích xuất danh sách các Recipe Post công khai trong hệ thống có thuộc tính phù hợp làm món ăn kèm hoặc biến tấu.
-    - Bước 4: Hệ thống gửi prompt kèm metadata của bài hiện tại và danh sách ứng viên tới Google Gemini AI (thời gian phản hồi $\le 4$ giây theo NFR-03).
+    - Bước 4: Hệ thống gửi prompt kèm metadata của bài hiện tại và danh sách ứng viên tới Google Gemini AI (đáp ứng NFR-03).
     - Bước 5: Gemini phản hồi danh sách gợi ý kèm lời giải thích ngắn gọn lý do kết hợp hương vị.
     - Bước 6: Hệ thống trừ 1 lượt hạn mức AI của Member và hiển thị kết quả gợi ý AI trong một khung chuyên biệt nổi bật (BR-03).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
@@ -4522,7 +4533,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - [BR-38](BUSINESS-RULES.md#br-38): AI không tự tạo công thức mới ngoài hệ thống.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-02](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02): Thời gian tải trang hiển thị chi tiết bài viết $\le 2$ giây.
-  - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi của trợ lý Chatbot AI $\le 4$ giây.
+  - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi của tính năng AI Chatbot.
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
   - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập chức năng theo vai trò (RBAC).
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt trên đa kích thước màn hình.
@@ -4541,7 +4552,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *When* kết quả gợi ý được trả về từ AI,
   - *Then* tất cả các món ăn được đề xuất đều có liên kết hợp lệ tới các Recipe Post đang công khai trong hệ thống, không chứa công thức giả định không tồn tại.
 - **AC-47.4 (Bảo vệ hạn mức khi AI gặp sự cố):**
-  - *Given* Member nhấn nút gọi AI nhưng dịch vụ gặp lỗi kết nối hoặc phản hồi quá 4 giây,
+  - *Given* Member nhấn nút gọi AI nhưng dịch vụ gặp lỗi kết nối hoặc quá thời gian phản hồi quy định tại NFR-03,
   - *When* hệ thống thông báo lỗi kỹ thuật,
   - *Then* số dư hạn mức AI của Member được giữ nguyên không bị trừ.
 
@@ -4752,107 +4763,154 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 ---
 
 <a id="fr-51"></a>
-### FR-51 — Chatbot giải thích dinh dưỡng chay, BMI/calorie và thay nguyên liệu
+### FR-51 — AI Chatbot hỗ trợ hỏi đáp ẩm thực chay theo ngữ cảnh
 
 - **Mã yêu cầu:** FR-51
-- **Module:** M06, M10
+- **Module:** M06 (AI Assistant & Personalization), M10 (Nutrition & Dietetics)
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp giao diện tương tác Chatbot chuyên sâu tích hợp Google Gemini AI nhằm giải đáp các câu hỏi học thuật và thực tiễn về dinh dưỡng ăn chay, giải thích ý nghĩa tham khảo của chỉ số BMI và phân bổ calorie cá nhân (dựa trên hồ sơ dinh dưỡng người dùng đã khai báo), đồng thời đề xuất các giải pháp thay thế nguyên liệu thuần chay tương đương trong chế biến món ăn (như thay thế trứng, sữa, mật ong, chất làm đông từ gelatin); Chatbot hoạt động tuân thủ ranh giới an toàn y tế tuyệt đối, từ chối mọi câu hỏi mang tính chẩn đoán bệnh lý hoặc kê đơn chế độ ăn trị liệu y khoa (SRS 3.15, SRS 3.18, BR-09, BR-41); Chatbot tuyệt đối không tự ý tạo công thức mới ngoài cơ sở dữ liệu hệ thống (BR-38) và không tự chỉnh sửa số liệu trong danh mục dinh dưỡng nội bộ (BR-51); áp dụng hạn mức sử dụng AI tương ứng theo từng gói tài khoản (FR-10).
-- **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Member đã đăng nhập (Guest có giới hạn riêng tại FR-02).
-  - Giới hạn thời gian phản hồi: $\le 4$ giây (P95 theo NFR-03).
-  - Độ dài câu hỏi: Tối đa 500 ký tự trên mỗi lượt hỏi của Member (NFR-10).
+- **Tóm tắt yêu cầu:** Cung cấp **MỘT AI Chatbot duy nhất dành cho người dùng cuối** (Unified End-User AI Chatbot), tích hợp Google Gemini AI, hỗ trợ đa năng lực/hỏi đáp tùy theo câu hỏi và ngữ cảnh người dùng đang tương tác. Hệ thống không tạo nhiều chatbot riêng biệt (như Cooking Bot, Recipe Bot, Nutrition Bot, Ingredient Bot, BMI Bot); thay vào đó, cùng một AI Chatbot sẽ hỗ trợ linh hoạt dựa trên hai ngữ cảnh hoạt động chính:
+  1. *Ngữ cảnh chung (General Context):* Người dùng mở chatbot từ giao diện chung của hệ thống để hỏi đáp về lối sống ăn chay, kỹ thuật nấu ăn và chế biến món chay, gợi ý nguyên liệu thay thế phù hợp với trường phái ăn chay, giải thích kiến thức dinh dưỡng thực vật, và giải thích ý nghĩa tham khảo của chỉ số BMI cùng mức năng lượng calorie (dựa trên hồ sơ dinh dưỡng nếu Member đã khai báo tại FR-35).
+  2. *Ngữ cảnh bài công thức (Recipe Context):* Khi người dùng đang xem một bài công thức nấu ăn cụ thể (trang Recipe Detail theo FR-20) và chủ động chọn chức năng "Hỏi AI về công thức này", hệ thống chuyển dữ liệu bài công thức hiện tại làm ngữ cảnh trực tiếp cho Chatbot FR-51. Ngữ cảnh bao gồm các dữ liệu Recipe hợp lệ: tiêu đề, loại ăn chay, khẩu phần, thời gian chuẩn bị và nấu, danh sách nguyên liệu và định lượng (FR-19), 1–30 bước hướng dẫn chuẩn bị/chế biến (FR-22), và dữ liệu dinh dưỡng khả dụng (FR-39). Người dùng có thể đặt các câu hỏi gắn liền với món ăn đó, ví dụ: *"Bước 3 nghĩa là gì và xào khoảng bao lâu?"*, *"Không có dầu mè thì thay bằng gì trong món này?"*, *"Giải thích cách làm món này chi tiết hơn cho người mới nấu"*, *"Món này có bao nhiêu calorie theo dữ liệu hiện có?"*.
+- **Người dùng và Hạn ngạch (Quota):**
+  - Cả `Guest` và `Member` sử dụng **CÙNG MỘT AI Chatbot** này; không tạo bot riêng biệt theo phân quyền người dùng.
+  - Sự khác biệt duy nhất nằm ở cơ chế xác thực, hạn ngạch (quota) và mức độ cá nhân hóa:
+    - *Guest:* Tối đa 5 request AI thành công/ngày (theo FR-02, BR-01), định danh qua anonymous cookie kết hợp coarse IP rate limiting theo BR-01; được phép hỏi cả ngữ cảnh chung và ngữ cảnh bài công thức công khai; không có lịch sử hội thoại lưu theo tài khoản và không có hồ sơ dinh dưỡng cá nhân (BR-05).
+    - *Member Free:* Tối đa 5 request AI thành công/ngày (theo tài khoản, BR-01).
+    - *Member Plus:* Tối đa 15 request AI thành công/ngày (theo tài khoản, BR-02).
+    - *Member Pro:* Tối đa 50 request AI thành công/ngày (theo tài khoản, BR-02).
+    - Toàn bộ hạn ngạch tự động làm mới vào lúc 00:00 `Asia/Ho_Chi_Minh` hàng ngày (BR-01, BR-02).
+    - Chỉ request AI hoàn tất thành công mới tiêu thụ 1 lượt hạn ngạch; lỗi provider hoặc timeout tuyệt đối không trừ quota (BR-03, BR-04, NFR-18).
+  - Thời gian phản hồi: đáp ứng [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03).
+- **Ranh giới an toàn, nguồn dữ liệu và toàn vẹn hệ thống (Safety & Source Boundaries):**
+  - *Ranh giới y tế tuyệt đối:* Chatbot không phải chuyên gia y tế, không đưa ra chẩn đoán bệnh lý hay phác đồ ăn uống điều trị y khoa (SRS 3.15, BR-09, BR-41). Mọi thông tin chỉ mang tính tham khảo tổng quát.
+  - *Tính tham khảo của BMI & Calorie:* Chỉ số BMI và mức phân bổ calorie chỉ là thông tin ước tính hỗ trợ tham khảo trong hồ sơ dinh dưỡng rộng hơn (BR-39, BR-41), không phải chỉ định lâm sàng.
+  - *Tôn trọng trường phái ăn chay và giới hạn của người dùng:* AI Chatbot phải tuân thủ nghiêm ngặt trường phái ăn chay (`dietaryType`: Vegan, Lacto-Vegetarian, Ovo-Vegetarian, Lacto-Ovo Vegetarian) của bài công thức đang xem hoặc của người dùng yêu cầu/khai báo, cùng các giới hạn kiêng kỵ và dị ứng (`allergiesAndRestrictions`); tuyệt đối không gợi ý các nguyên liệu vi phạm `dietaryType` tương ứng.
+  - *Không bịa đặt dữ liệu (Non-fabrication):* Không tự ý bịa đặt số liệu dinh dưỡng hoặc khẳng định các dữ kiện không có căn cứ khoa học (NFR-25). Khi bài công thức không có thông tin cụ thể (ví dụ: tác giả không ghi số phút hay mức nhiệt của bước nấu), AI phải nêu rõ công thức gốc không đề cập thông tin này trước khi đưa ra ước tính mang tính gợi ý bổ trợ, và phân biệt rõ ước tính đó với dữ kiện gốc của tác giả.
+  - *Minh bạch nguồn phát ngôn:* Nội dung giải đáp của AI phải được gắn nhãn nhận diện AI rõ ràng, tách biệt hoàn toàn với nội dung gốc do tác giả bài viết biên soạn.
+  - *Toàn vẹn dữ liệu hệ thống:* AI Chatbot chỉ đóng vai trò hỏi đáp/tư vấn và không được tự thực hiện thao tác ghi hoặc thay đổi dữ liệu nghiệp vụ của người dùng (ví dụ: không tự sửa Recipe Post, không tự thêm/xóa món trong Meal Plan, không tự thay đổi hồ sơ người dùng). Riêng đối với dữ liệu dinh dưỡng chính thức, AI tuyệt đối không được trực tiếp tạo hoặc thay đổi giá trị trong danh mục nguyên liệu dinh dưỡng theo [BR-51](BUSINESS-RULES.md#br-51).
+  - *Ranh giới với các workflow AI khác:* Các chức năng AI có mục tiêu nghiệp vụ khác nhau được duy trì ở các FR độc lập tương ứng và KHÔNG bị gộp vào FR-51:
+    - AI hỗ trợ tác giả soạn bài công thức (gợi ý mô tả, gợi ý bước làm, kết quả editable, người dùng chủ động xác nhận, không tự publish) -> thuộc [FR-21](FUNCTIONAL-REQUIREMENTS.md#fr-21).
+    - AI gợi ý món và lập thực đơn tuần -> thuộc [FR-34](FUNCTIONAL-REQUIREMENTS.md#fr-34) và [FR-36](FUNCTIONAL-REQUIREMENTS.md#fr-36).
+    - AI rà soát và gắn cờ nội dung vi phạm -> thuộc [FR-12](FUNCTIONAL-REQUIREMENTS.md#fr-12) (DEFERRED).
+    - Gợi ý bài viết liên quan thông thường hoặc tùy chọn Gemini -> thuộc [FR-47](FUNCTIONAL-REQUIREMENTS.md#fr-47).
 - **Phân loại Actor:**
-  - Primary Actor: `Member` (người dùng tương tác trò chuyện).
-  - Supporting Actor: `Google Gemini AI` (trợ lý ngôn ngữ lớn được định hướng System Prompt an toàn), `Hệ thống kiểm soát hạn mức và bảo mật`.
+  - Primary Actor: `Guest` (người dùng chưa xác thực trải nghiệm theo FR-02), `Member` (người dùng đã đăng nhập theo FR-10).
+  - Supporting Actor: `Google Gemini AI` (mô hình ngôn ngữ lớn hỗ trợ xử lý ngôn ngữ tự nhiên), `Hệ thống kiểm soát hạn mức và bảo mật`.
 
 #### 2. Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-51.1`: Đặt câu hỏi cho Chatbot AI về giải thích dinh dưỡng chay, chỉ số BMI và phân bổ năng lượng tham khảo.
-  - `UC-51.2`: Hỏi gợi ý các nguyên liệu thực vật thay thế tương đương trong nấu ăn.
-  - `UC-51.3`: Xem thông điệp từ chối trách nhiệm y tế và hướng dẫn an toàn trong khung hội thoại Chatbot.
+  - `UC-51.1 — Hỏi đáp AI trong ngữ cảnh chung`: Người dùng đặt câu hỏi với AI Chatbot từ giao diện chung của hệ thống. Các năng lực (capabilities) được hỗ trợ bao gồm:
+    - Hỏi đáp về lối sống ăn chay, kiến thức ẩm thực và kỹ thuật chế biến món chay căn bản.
+    - Giải thích ý nghĩa tham khảo của chỉ số BMI và mức phân bổ calorie theo ranh giới an toàn (kết hợp hồ sơ dinh dưỡng nếu Member đã khai báo tại FR-35).
+    - Giải thích cách sử dụng, xử lý hoặc thay thế nguyên liệu mà người dùng chủ động hỏi trong phạm vi tư vấn ẩm thực; không tạo Recipe mới ngoài phạm vi đã chốt.
+  - `UC-51.2 — Hỏi đáp AI theo Recipe Post đang xem`: Người dùng đang xem một bài công thức cụ thể và chọn "Hỏi AI về công thức này". Các năng lực (capabilities) được hỗ trợ bao gồm:
+    - Giải thích chi tiết bước chuẩn bị/chế biến trong công thức đang xem (kỹ thuật nấu, lưu ý khi làm, ước tính tham khảo khi công thức chưa nêu rõ).
+    - Gợi ý thay thế nguyên liệu phù hợp với trường phái ăn chay của món ăn hoặc theo yêu cầu của người dùng (Vegan, Lacto, Ovo, Lacto-Ovo).
+    - Giải thích thành phần nguyên liệu, thuật ngữ nấu ăn và dữ liệu dinh dưỡng sẵn có trong bài viết.
 - **User Stories:**
-  - *Là một người mới bắt đầu ăn chay*, tôi muốn hỏi Chatbot để hiểu rõ hơn về chỉ số BMI của mình và cách thay thế trứng/sữa trong các món tráng miệng mà không sợ bị thiếu hụt vi chất, với câu trả lời an toàn và đáng tin cậy.
+  - `US-51.1` *(Hỏi đáp chung)*: Là một người tìm hiểu hoặc thực hành ăn chay, tôi muốn hỏi Chatbot về kỹ thuật nấu ăn và kiến thức dinh dưỡng thực vật căn bản để có chế độ ăn lành mạnh và tự tin vào bếp.
+  - `US-51.2` *(Ngữ cảnh công thức)*: Là người đang xem một bài công thức nấu ăn cụ thể, tôi muốn chọn "Hỏi AI về công thức này" để được AI giải đáp nhanh các thắc mắc về món ăn đó (giải thích bước làm, gợi ý thay thế nguyên liệu) dựa trên đúng nguyên liệu và dữ liệu của bài viết mà không phải tự gõ lại thông tin.
+  - `US-51.3` *(Dinh dưỡng & BMI an toàn)*: Là một người theo dõi sức khỏe, tôi muốn hỏi AI để hiểu rõ ý nghĩa tham khảo của chỉ số BMI cá nhân và cách phân bổ calorie của bữa ăn chay mà không tiếp nhận các chỉ định y khoa sai lệch.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
-  - Người dùng đã đăng nhập tài khoản Member hợp lệ (FR-03).
-  - Tài khoản Member còn số dư hạn mức sử dụng AI khả dụng trong ngày (FR-10, BR-01, BR-02).
-  - Người dùng đã hoàn thành bước xác nhận phạm vi hỗ trợ dinh dưỡng (FR-38, BR-41).
+  - Guest: Thiết bị hỗ trợ cookie; số lượt AI thành công trong ngày $< 5$ (FR-02, BR-01).
+  - Member: Đã đăng nhập tài khoản Member hợp lệ (FR-03); số lượt AI thành công trong ngày còn khả dụng theo gói tài khoản (Free 5, Plus 15, Pro 50 theo FR-10, BR-01, BR-02); đã xác nhận phạm vi hỗ trợ dinh dưỡng trước khi hỏi về chỉ số cá nhân (FR-38, BR-41).
+  - Đối với ngữ cảnh bài công thức: Bài công thức đang ở trạng thái công khai (`PUBLISHED`) mà người dùng có quyền xem (FR-20).
 - **Kích hoạt (Trigger):**
-  - Member mở cửa sổ Trợ lý Chatbot AI và gửi câu hỏi liên quan đến dinh dưỡng, BMI hoặc thay thế nguyên liệu.
+  - Người dùng mở khung Chatbot AI từ thanh công cụ/menu chính; HOẶC
+  - Người dùng nhấn nút "Hỏi AI về công thức này" trên trang chi tiết công thức (Recipe Detail View).
 
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow):**
-  - Bước 1: Member mở khung trò chuyện Chatbot Dinh dưỡng. Giao diện hiển thị rõ thông báo từ chối trách nhiệm y tế: *"Trợ lý AI cung cấp thông tin tham khảo tổng quát, không đưa ra chẩn đoán hay thay thế tư vấn y khoa"* (BR-39, BR-41).
-  - Bước 2: Member nhập câu hỏi (ví dụ: *"Chỉ số BMI 23 có ý nghĩa gì và tôi có thể thay thế sữa bò bằng loại sữa thực vật nào để làm bánh?"*) và nhấn "Gửi".
-  - Bước 3: Hệ thống kiểm tra độ dài câu hỏi ($\le 500$ ký tự) và kiểm tra số dư hạn mức AI của Member (BR-01, BR-02, BR-03).
-  - Bước 4: Hệ thống chuẩn bị ngữ cảnh gọi AI:
-    - Gắn System Prompt bắt buộc: Ranh giới thuần chay, từ chối chẩn đoán bệnh/kê đơn ăn bệnh lý (BR-09, BR-41), không tự bịa công thức mới (BR-38), luôn nhấn mạnh tính tham khảo của BMI (BR-39).
-    - Tích hợp thông tin tham khảo hồ sơ dinh dưỡng của Member (nếu Member đã khai báo tại FR-35).
-  - Bước 5: Hệ thống gửi yêu cầu tới Google Gemini AI thông qua API bảo mật phía server (BR-06, NFR-03 $\le 4$ giây).
-  - Bước 6: Google Gemini phản hồi câu trả lời phân tích khoa học, dễ hiểu, nêu rõ các nguyên liệu thay thế và ghi chú rõ ràng ranh giới tham khảo.
-  - Bước 7: Hệ thống trừ 1 lượt hạn mức AI của Member sau khi nhận được phản hồi hợp lệ (BR-03).
-  - Bước 8: Giao diện hiển thị câu trả lời dạng định dạng phong phú (markdown) cho Member kèm số dư hạn mức còn lại trong ngày.
+  - Bước 1: Người dùng kích hoạt AI Chatbot (từ giao diện chung hoặc từ nút "Hỏi AI về công thức này" tại Recipe Detail View). Giao diện hiển thị rõ thông báo từ chối trách nhiệm y tế chuẩn: *"Trợ lý AI cung cấp thông tin tham khảo tổng quát, không đưa ra chẩn đoán hay thay thế tư vấn y khoa"* (BR-09, BR-41). Nếu mở từ bài công thức, giao diện hiển thị huy hiệu gắn ngữ cảnh công thức kèm tiêu đề món.
+  - Bước 2: Người dùng nhập câu hỏi và nhấn gửi.
+  - Bước 3: Hệ thống kiểm tra tính hợp lệ của dữ liệu đầu vào và kiểm tra số dư hạn ngạch khả dụng (Guest theo FR-02/BR-01, Member theo FR-10/BR-01/BR-02).
+  - Bước 4: Hệ thống chuẩn bị dữ liệu ngữ cảnh an toàn cho cuộc gọi AI:
+    - Thiết lập các chỉ dẫn an toàn bắt buộc: tuân thủ đúng `dietaryType` của context/người dùng và các giới hạn `allergiesAndRestrictions`; không gợi ý nguyên liệu vi phạm; từ chối chẩn đoán/kê đơn y khoa (BR-09, BR-41); cấm tự bịa đặt số liệu dinh dưỡng (NFR-25); nhấn mạnh tính tham khảo của BMI/calorie (BR-39); yêu cầu phân biệt nội dung AI với dữ liệu gốc của tác giả; cấm tự ý sửa đổi dữ liệu hệ thống.
+    - Đóng gói dữ liệu ngữ cảnh:
+      - Nếu ở ngữ cảnh Recipe: truyền tiêu đề, loại ăn chay, khẩu phần, thời gian, danh sách nguyên liệu & định lượng (FR-19), 1–30 bước hướng dẫn (FR-22), và dữ liệu dinh dưỡng sẵn có của bài công thức hiện tại (FR-39).
+      - Nếu ở ngữ cảnh chung và Member đã đăng nhập: có thể tích hợp thông tin hồ sơ dinh dưỡng tham khảo của Member (FR-35) khi người dùng hỏi về chỉ số cá nhân.
+  - Bước 5: Hệ thống gửi yêu cầu tới dịch vụ AI qua Backend an toàn (BR-06; không để lộ thông tin bảo mật hay khóa truy cập ra client).
+  - Bước 6: Dịch vụ AI phản hồi kết quả hợp lệ đáp ứng thời gian quy định tại [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03).
+  - Bước 7: Hệ thống ghi nhận lượt gọi thành công, tăng bộ đếm số lượt đã dùng trong ngày thêm 1 (BR-03) và ghi nhận dữ liệu kỹ thuật không lưu trữ nội dung câu hỏi thô (FR-11, BR-04, NFR-22).
+  - Bước 8: Giao diện hiển thị câu trả lời dạng văn bản định dạng rõ ràng cho người dùng, phân biệt rõ lời AI với nội dung gốc của tác giả, hiển thị số lượt còn lại trong ngày (và tùy chọn đóng/chuyển đổi ngữ cảnh nếu đang ở ngữ cảnh Recipe).
 - **Luồng thay thế (Alternative Flows):**
-  - *AF-51.1 (Member chưa khai báo hồ sơ dinh dưỡng):* Nếu Member hỏi về BMI nhưng chưa khai báo hồ sơ nhân trắc học theo FR-35, Chatbot giải thích công thức tính BMI tổng quát và đưa ra liên kết dẫn tới trang Hồ sơ dinh dưỡng để Member tự tính toán tham khảo (BR-30, BR-31).
+  - *AF-51.1 (Đóng hoặc chuyển đổi ngữ cảnh công thức):* Khi đang ở ngữ cảnh Recipe Post, người dùng có thể đóng ngữ cảnh công thức để chuyển khung chat về ngữ cảnh chung, hoặc chuyển sang xem bài công thức khác để nhận ngữ cảnh công thức mới mà không cần mở lại cửa sổ chat.
+  - *AF-51.2 (Hết hạn mức AI trong ngày — Guest):* Khi Guest đạt 5/5 lượt thành công trong ngày, hệ thống khóa khung nhập câu hỏi, hiển thị thông báo hết hạn ngạch ngày và hiển thị nút Đăng ký tài khoản (FR-02, BR-01, BR-05).
+  - *AF-51.3 (Hết hạn mức AI trong ngày — Member):* Khi Member đạt giới hạn theo gói (Free 5, Plus 15, Pro 50), hệ thống hiển thị thông báo đã đạt giới hạn ngày kèm hướng dẫn nâng cấp gói hoặc thông báo thời điểm làm mới lúc 00:00 `Asia/Ho_Chi_Minh` (FR-10, BR-01, BR-02).
+  - *AF-51.4 (Member hỏi BMI cá nhân nhưng chưa khai báo hồ sơ dinh dưỡng):* Nếu Member hỏi về BMI cá nhân mà chưa hoàn thành khai báo tại FR-35, Chatbot giải thích công thức tính BMI chuẩn tham khảo và hiển thị liên kết dẫn tới trang Hồ sơ dinh dưỡng để Member tự tính toán.
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-51.1 (Yêu cầu chẩn đoán bệnh hoặc kê đơn điều trị):* Nếu câu hỏi chứa yêu cầu chẩn đoán bệnh (như *"Tôi bị tiểu đường type 2 thì ăn chay thế nào để chữa khỏi?"*), Chatbot tuân thủ System Prompt an toàn, lịch sự từ chối đưa ra phác đồ điều trị và khuyến nghị người dùng tham vấn trực tiếp ý kiến của bác sĩ chuyên khoa nội tiết/dinh dưỡng lâm sàng (SRS 3.15, BR-09, BR-41).
-  - *EF-51.2 (Hết hạn mức AI trong ngày):* Nếu tài khoản đã sử dụng hết hạn mức AI trong ngày, hệ thống chặn gửi tin nhắn, hiển thị thông báo đã đạt giới hạn và hướng dẫn nâng cấp gói (FR-10, BR-01, BR-02).
-  - *EF-51.3 (Lỗi provider hoặc phản hồi quá 4 giây):* Nếu dịch vụ AI gặp sự cố hoặc thời gian chờ vượt quá 4 giây (NFR-03), hệ thống hủy yêu cầu, hiển thị thông báo sự cố kỹ thuật và không trừ hạn mức AI của Member (BR-04).
-  - *SF-51.1 (Bảo vệ API Key và phòng chống Prompt Injection):* API Key của Google Gemini được lưu trữ an toàn tại biến môi trường phía server, tuyệt đối không lộ ra client (BR-06); hệ thống lọc các ký tự độc hại nhằm ngăn chặn tấn công vượt rào bảo vệ (Jailbreak / Prompt Injection) (NFR-10).
+  - *EF-51.1 (Yêu cầu chẩn đoán bệnh tật hoặc kê đơn điều trị y khoa):* Nếu câu hỏi chứa yêu cầu chẩn đoán triệu chứng hoặc chữa bệnh qua ăn chay, Chatbot tuân thủ ranh giới an toàn, lịch sự từ chối đưa ra kết luận bệnh lý hay phác đồ điều trị, và hướng dẫn người dùng tham vấn ý kiến bác sĩ chuyên khoa hoặc chuyên gia y tế (SRS 3.15, BR-09, BR-41).
+  - *EF-51.2 (Lỗi kết nối dịch vụ AI hoặc quá thời gian phản hồi):* Nếu dịch vụ AI gặp sự cố kết nối, lỗi kỹ thuật hoặc quá thời gian phản hồi quy định tại NFR-03 (NFR-18), hệ thống hiển thị thông báo sự cố kỹ thuật thân thiện và **TUYỆT ĐỐI KHÔNG TRỪ HẠN MỨC** của người dùng (BR-04).
+  - *EF-51.3 (Yêu cầu AI chỉnh sửa dữ liệu hệ thống hoặc dữ liệu dinh dưỡng):* Nếu người dùng yêu cầu Chatbot sửa đổi bài viết, thêm món vào Lịch ăn, sửa hồ sơ cá nhân hay thay đổi giá trị trong danh mục dinh dưỡng, Chatbot giải thích rõ rằng AI chỉ đóng vai trò tư vấn thông tin trong hội thoại, không có thẩm quyền sửa đổi dữ liệu người dùng và không được phép can thiệp vào danh mục dinh dưỡng chính thức (BR-51).
+  - *SF-51.1 (Bảo vệ thông tin xác thực backend và phòng chống lạm dụng prompt):* Khóa truy cập dịch vụ AI được lưu trữ và kiểm soát bảo mật tại backend (BR-06); hệ thống kiểm duyệt và làm sạch dữ liệu đầu vào nhằm ngăn chặn các hành vi tấn công vượt rào an toàn (Prompt Injection) (NFR-10).
 
 #### 5. Hậu điều kiện (Postconditions)
-- Câu trả lời giải thích dinh dưỡng và nguyên liệu thay thế được hiển thị hoàn chỉnh cho Member.
-- Hạn mức sử dụng AI trong ngày của Member giảm đi 1 lượt.
+- Người dùng nhận được câu trả lời an toàn, phù hợp ngữ cảnh và dễ hiểu.
+- Bộ đếm số lượt AI thành công trong ngày của Guest (theo cookie/IP theo BR-01) hoặc Member (theo tài khoản theo BR-01, BR-02) tăng thêm 1 lượt (BR-03).
+- Dữ liệu đo lường kỹ thuật (telemetry) được lưu trữ ẩn danh không chứa nội dung câu hỏi thô theo thời hạn 90 ngày (FR-11, BR-04, NFR-22).
+- Không có bất kỳ thay đổi nào xảy ra đối với cơ sở dữ liệu bài viết, thực đơn tuần hay hồ sơ của người dùng.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Member đã đăng nhập và còn hạn mức được sử dụng Chatbot AI chuyên sâu.
-- **Ràng buộc an toàn:** Tuyệt đối cấm AI đưa ra lời khuyên y khoa điều trị bệnh tật (BR-09, BR-41); không cho AI tự động tạo hay sửa đổi dữ liệu công thức và danh mục dinh dưỡng (BR-38, BR-51).
+- **Quyền hạn:** Cả Guest (theo FR-02) và Member (theo FR-10) đều có quyền sử dụng cùng một AI Chatbot này; mỗi nhóm tuân thủ hạn ngạch và ranh giới xác thực riêng.
+- **Ràng buộc an toàn & Toàn vẹn:** Ranh giới y tế tuyệt đối (BR-09, BR-41); cấm bịa đặt thông tin (NFR-25); AI chỉ tư vấn và không tự thực hiện thao tác ghi/sửa dữ liệu nghiệp vụ của người dùng; tuyệt đối không tạo hoặc thay đổi giá trị trong danh mục dinh dưỡng chính thức (BR-51); tuân thủ đúng `dietaryType` và `allergiesAndRestrictions`; tách biệt rõ nhãn AI với nội dung của tác giả.
 
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
-  - [BR-01](BUSINESS-RULES.md#br-01): Hạn mức text AI cho tài khoản Free.
-  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức text AI cho gói Plus và Pro.
-  - [BR-03](BUSINESS-RULES.md#br-03): Điều kiện trừ hạn mức AI.
-  - [BR-04](BUSINESS-RULES.md#br-04): Xử lý lỗi provider và timeout AI.
+  - [BR-01](BUSINESS-RULES.md#br-01): Hạn mức text AI cho Guest và tài khoản Free (5 lượt/ngày).
+  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức text AI cho gói Plus và Pro (15 và 50 lượt/ngày).
+  - [BR-03](BUSINESS-RULES.md#br-03): Điều kiện trừ hạn mức AI (chỉ trừ khi thành công).
+  - [BR-04](BUSINESS-RULES.md#br-04): Xử lý lỗi provider và timeout AI (không trừ lượt khi lỗi).
+  - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest (không lưu lịch sử theo tài khoản).
   - [BR-06](BUSINESS-RULES.md#br-06): Bảo mật Gemini API Key.
   - [BR-09](BUSINESS-RULES.md#br-09): Ranh giới y tế và sức khỏe của câu trả lời AI.
-  - [BR-38](BUSINESS-RULES.md#br-38): AI không tự tạo công thức mới ngoài hệ thống.
   - [BR-39](BUSINESS-RULES.md#br-39): Vai trò tham khảo của chỉ số BMI.
   - [BR-41](BUSINESS-RULES.md#br-41): Ranh giới thông tin dinh dưỡng và không thay thế chuyên gia.
-  - [BR-51](BUSINESS-RULES.md#br-51): Thẩm quyền quản lý danh mục nguyên liệu dinh dưỡng.
+  - [BR-51](BUSINESS-RULES.md#br-51): Thẩm quyền quản lý danh mục nguyên liệu dinh dưỡng (AI không được tạo/sửa giá trị dinh dưỡng chính thức).
 - **Yêu cầu phi chức năng liên quan:**
-  - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi của trợ lý Chatbot AI $\le 4$ giây.
+  - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi của tính năng AI Chatbot.
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
   - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập chức năng theo vai trò (RBAC).
   - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Phòng chống các lỗ hổng bảo mật phổ biến.
+  - [NFR-12](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-12): Giao diện Chatbot AI trực quan, dễ sử dụng.
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt trên đa kích thước màn hình.
+  - [NFR-18](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18): Cơ chế dự phòng khi dịch vụ AI bị lỗi hoặc timeout.
   - [NFR-20](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20): Cơ chế bảo vệ dữ liệu sức khỏe cá nhân và ranh giới thông tin.
+  - [NFR-22](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22): Giới hạn lưu trữ Prompt và Lịch sử trò chuyện AI.
+  - [NFR-25](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25): Đánh giá chất lượng và tuân thủ của nội dung AI.
 
 #### 8. Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
-- **AC-51.1 (Từ chối chẩn đoán và phác đồ điều trị y khoa):**
-  - *Given* Member đặt câu hỏi yêu cầu Chatbot chẩn đoán triệu chứng bệnh hoặc hướng dẫn chế độ ăn điều trị bệnh lý,
+- **AC-51.1 (Trả lời câu hỏi theo ngữ cảnh Recipe Post đang xem):**
+  - *Given* người dùng (Guest hoặc Member còn hạn ngạch) đang xem bài công thức công khai "Đậu hũ sốt cà chua" (khẩu phần 2 người, 4 bước làm, thời gian nấu 25 phút) và bấm "Hỏi AI về công thức này",
+  - *When* người dùng gửi câu hỏi "Món này nấu mất bao lâu và cần những gia vị gì?",
+  - *Then* Chatbot trả lời chính xác dựa trên dữ liệu ngữ cảnh của bài (25 phút, danh sách gia vị trong bài) và hiển thị nhãn AI phân biệt với nội dung của tác giả.
+- **AC-51.2 (Giải thích chi tiết bước chuẩn bị/chế biến và minh bạch thông tin không có trong bài):**
+  - *Given* người dùng đang ở ngữ cảnh bài công thức có bước "Chiên nấm đùi gà vàng đều" mà tác giả không ghi rõ mức lửa hoặc số phút cụ thể,
+  - *When* người dùng hỏi "Bước chiên nấm này nên để lửa mức nào và trong bao lâu?",
+  - *Then* Chatbot nêu rõ công thức gốc của tác giả không chỉ định thời gian hay mức lửa cụ thể, đồng thời cung cấp gợi ý ước tính mang tính tham khảo kỹ thuật (ví dụ: nên để lửa vừa, quan sát nấm xém vàng 2 mặt khoảng 3–5 phút) và phân biệt rõ đây là tư vấn bổ trợ của AI chứ không phải dữ kiện gốc của tác giả.
+- **AC-51.3 (Gợi ý nguyên liệu thay thế phù hợp với trường phái ăn chay):**
+  - *Given* người dùng hỏi giải pháp thay thế nguyên liệu trong một món ăn chay (ví dụ: thay thế sữa bò trong công thức Lacto-Vegetarian sang lựa chọn thuần chay Vegan, hoặc thay thế trứng trong bánh ngọt chay),
+  - *When* Chatbot phân tích và phản hồi,
+  - *Then* câu trả lời đề xuất các lựa chọn thực vật phù hợp với đúng trường phái ăn chay yêu cầu (ví dụ: sữa đậu nành, nước luộc đậu gà aquafaba thay thế trứng) kèm tỷ lệ quy đổi và lưu ý kỹ thuật, tuyệt đối không đề xuất nguyên liệu vi phạm dietaryType đã chỉ định hoặc danh mục nguyên liệu kiêng kỵ của người dùng.
+- **AC-51.4 (Từ chối chẩn đoán và phác đồ điều trị y khoa):**
+  - *Given* người dùng đặt câu hỏi yêu cầu Chatbot chẩn đoán triệu chứng bệnh hoặc hướng dẫn chế độ ăn điều trị dứt điểm bệnh lý,
   - *When* Chatbot phân tích câu hỏi,
-  - *Then* hệ thống từ chối đưa ra kết luận chẩn đoán/phác đồ điều trị và hiển thị khuyến nghị người dùng đến gặp bác sĩ hoặc chuyên gia dinh dưỡng y tế.
-- **AC-51.2 (Giải thích nguyên liệu thay thế thuần chay thực tế):**
-  - *Given* Member hỏi giải pháp thay thế lòng trắng trứng để làm bánh ngọt chay,
-  - *When* Chatbot phản hồi,
-  - *Then* câu trả lời đưa ra các phương án thay thế thuần chay khoa học (như nước luộc đậu gà aquafaba hoặc hạt chia xay ngâm nước) kèm tỷ lệ quy đổi ước tính và lưu ý khi chế biến.
-- **AC-51.3 (Thời gian phản hồi và trừ hạn mức chính xác):**
-  - *Given* Member còn 5 lượt sử dụng AI gửi câu hỏi hợp lệ,
-  - *When* câu hỏi được gửi,
-  - *Then* hệ thống phản hồi trong thời gian $\le 4$ giây và số dư hạn mức AI của Member giảm đi chính xác 1 lượt (còn 4 lượt).
-- **AC-51.4 (Bảo vệ hạn mức khi AI timeout):**
-  - *Given* Member gửi câu hỏi tới Chatbot nhưng dịch vụ AI phản hồi vượt quá 4 giây hoặc lỗi đường truyền,
-  - *When* hệ thống ngắt kết nối,
-  - *Then* thông báo lỗi kỹ thuật được hiển thị và số dư hạn mức AI của Member hoàn toàn không bị trừ.
-- **AC-51.5 (Cấm tự ý tạo công thức hoặc sửa dữ liệu dinh dưỡng):**
-  - *Given* Member yêu cầu Chatbot lưu công thức mới hoặc cập nhật chỉ số dinh dưỡng vào hệ thống,
+  - *Then* hệ thống từ chối đưa ra kết luận chẩn đoán hoặc phác đồ điều trị y khoa và hiển thị khuyến nghị người dùng tham vấn ý kiến bác sĩ chuyên khoa hoặc chuyên gia dinh dưỡng y tế (BR-09, BR-41).
+- **AC-51.5 (Nhất quán một AI Chatbot duy nhất cho cả Guest và Member):**
+  - *Given* Guest và Member cùng trải nghiệm đặt câu hỏi cho AI Chatbot,
+  - *When* hệ thống tiếp nhận và xử lý request,
+  - *Then* cả hai đều tương tác với cùng một mô hình AI Chatbot duy nhất (FR-51); Guest được kiểm soát 5 lượt/ngày qua cookie/IP (FR-02, BR-01) và Member được kiểm soát theo tài khoản (5/15/50 theo FR-10, BR-01, BR-02); chỉ request thành công mới trừ 1 lượt (BR-03).
+- **AC-51.6 (Chatbot không tự ý sửa đổi Recipe Post hay dữ liệu hệ thống):**
+  - *Given* người dùng trong phiên chat yêu cầu "Hãy sửa bước 3 của bài viết này ngắn lại" hoặc "Thêm món này vào lịch ăn của tôi",
   - *When* Chatbot xử lý,
-  - *Then* Chatbot từ chối thực hiện và giải thích rõ ràng rằng AI chỉ đóng vai trò hỗ trợ giải đáp thông tin, không có thẩm quyền tạo/sửa dữ liệu chính thức.
+  - *Then* Chatbot từ chối thao tác ghi dữ liệu, nêu rõ AI chỉ đóng vai trò tư vấn thông tin và hướng dẫn người dùng tự thao tác nếu họ là tác giả bài viết hoặc chủ sở hữu lịch ăn.
+- **AC-51.7 (Bảo vệ hạn mức khi dịch vụ AI gặp sự cố hoặc quá thời gian phản hồi):**
+  - *Given* người dùng gửi câu hỏi nhưng dịch vụ AI bên ngoài gặp lỗi kết nối hoặc quá thời gian phản hồi quy định tại NFR-03,
+  - *When* hệ thống xử lý ngoại lệ,
+  - *Then* hệ thống hiển thị thông báo lỗi kỹ thuật thân thiện và số dư hạn mức AI của người dùng hoàn toàn không bị trừ (BR-04, NFR-18).
 
 ---
 

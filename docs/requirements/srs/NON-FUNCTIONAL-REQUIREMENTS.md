@@ -2,7 +2,7 @@
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 > **Version:** v0.4.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-14
+> **Last Updated:** 2026-09-15
 > **Status:** Draft
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -73,7 +73,7 @@ Mỗi yêu cầu phi chức năng được gắn thẻ stable anchor HTML cố �
 - **Mã yêu cầu:** NFR-03
 - **Nhóm chất lượng:** Performance
 - **Mô tả yêu cầu:** Thời gian phản hồi của trợ lý ảo Gemini AI khi người dùng đặt câu hỏi tư vấn dinh dưỡng hoặc món chay.
-- **Nghiệp vụ liên quan:** `FR-02`, `FR-51` (Chatbot giải thích dinh dưỡng chay, BMI/calorie và thay nguyên liệu).
+- **Nghiệp vụ liên quan:** `FR-02`, `FR-51` (AI Chatbot hỗ trợ hỏi đáp ẩm thực chay theo ngữ cảnh).
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Metric:* Thời gian từ khi gửi câu hỏi đến khi nhận toàn bộ hoặc token đầu tiên của câu trả lời.
   - *Threshold:* $\le 5$ giây cho điều kiện mạng thông thường; phân vị 90% (P90) $\le 7$ giây khi tải mạng cao. Giao diện người dùng bắt buộc hiển thị trạng thái đang xử lý (loading indicator hoặc stream phản hồi) ngay lập tức.
@@ -216,7 +216,7 @@ Mỗi yêu cầu phi chức năng được gắn thẻ stable anchor HTML cố �
 - **Mã yêu cầu:** NFR-12
 - **Nhóm chất lượng:** Usability
 - **Mô tả yêu cầu:** Màn hình trò chuyện với AI được thiết kế thân thiện, dễ nắm bắt cách đặt câu hỏi mà không cần hướng dẫn sử dụng.
-- **Nghiệp vụ liên quan:** `FR-02`, `FR-51` (Chatbot dinh dưỡng và nguyên liệu).
+- **Nghiệp vụ liên quan:** `FR-02`, `FR-51` (AI Chatbot hỗ trợ hỏi đáp ẩm thực chay theo ngữ cảnh).
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* $\ge 90\%$ người dùng thử nghiệm hoàn thành 1 lượt hỏi-đáp thành công trong lần đầu tiên mà không cần trợ giúp hoặc tài liệu hướng dẫn.
 - **Phương pháp kiểm chứng (Verification Method):** Thử nghiệm chấp nhận người dùng (User Acceptance Testing) trên nhóm người dùng mẫu.
@@ -406,14 +406,14 @@ Mỗi yêu cầu phi chức năng được gắn thẻ stable anchor HTML cố �
 ---
 
 <a id="nfr-25"></a>
-#### NFR-25 — Đánh giá chất lượng nội dung gợi ý của AI
+#### NFR-25 — Đánh giá chất lượng và tuân thủ của nội dung AI
 
 - **Mã yêu cầu:** NFR-25
 - **Nhóm chất lượng:** Auditability & AI Quality
-- **Mô tả yêu cầu:** Đo mức tuân thủ của gợi ý công thức/thực đơn AI đối với nguồn Recipe Post được phép, restrictions, non-fabrication và safety/business constraints.
+- **Mô tả yêu cầu:** Đo mức tuân thủ của các phản hồi và gợi ý do AI tạo ra trong các nghiệp vụ liên quan đối với source boundaries, dietary/restriction constraints, non-fabrication và safety/business constraints.
 - **Nghiệp vụ liên quan:** `FR-09`, `FR-47`, `FR-51`.
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
-  - *Threshold:* Ít nhất 80% case trong curated evaluation set phải đồng thời thỏa các quy tắc được áp dụng cho case về nguồn Recipe Post được phép, restrictions, không bịa nội dung và safety/business constraints.
+  - *Threshold:* Ít nhất 80% case trong curated evaluation set phải đồng thời thỏa các quy tắc được áp dụng cho case về source boundaries, dietary/restriction constraints, không bịa nội dung (non-fabrication) và safety/business constraints.
 - **Phương pháp kiểm chứng (Verification Method):** Chạy curated evaluation set có expected constraints và chấm pass/fail theo evidence. Không yêu cầu in-product satisfaction survey chỉ để đáp ứng NFR này; exact Gemini model/version được chọn qua technical evaluation sau.
 - **Trạng thái:** `ACTIVE`
 

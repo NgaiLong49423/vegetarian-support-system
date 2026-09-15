@@ -191,19 +191,19 @@ Các trạng thái derived dưới đây đã được đồng bộ từ root re
 
 - **Mã quy tắc:** BR-19
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Recipe Post chỉ được công khai khi Member đã đăng nhập và đạt đúng profile: title 3–120 ký tự; 1–50 ingredients; serving 1–50; prep và cook time mỗi giá trị 0–1.440 phút, tổng > 0; tối đa 30 cooking steps; description tối đa 2.000 ký tự; tối đa 5 ảnh JPEG/PNG/WebP, 5 MB/ảnh; tối đa một YouTube link. Hướng dẫn từng bước không bắt buộc; bài không đạt không được công khai và không được lưu nháp bền vững trong phạm vi hiện tại.
+- **Nội dung:** Recipe Post chỉ được công khai khi Member đã đăng nhập và đạt đúng profile: title 3–120 ký tự; 1–50 nguyên liệu; serving 1–50; prep và cook time mỗi giá trị 0–1.440 phút, tổng > 0 (`cookTime = 0` hợp lệ nếu `prepTime > 0`); bắt buộc có từ 1 đến 30 bước hướng dẫn chuẩn bị/chế biến, mỗi bước có nội dung văn bản không rỗng sau khi cắt khoảng trắng đầu cuối (trim); description tối đa 2.000 ký tự; tối đa 5 ảnh JPEG/PNG/WebP, 5 MB/ảnh; tối đa một YouTube link. Bài không đạt validation không được công khai và không được lưu nháp bền vững trên máy chủ trong phạm vi hiện tại.
 - **Cơ chế thực thi và xử lý khi không đạt chuẩn (FE & BE):**
-  - **Tầng Máy chủ (Backend — bắt buộc & quyết định):** Toàn bộ quy tắc thẩm định bắt buộc phải được thực thi độc lập tại Backend API (NFR-10). Máy chủ tuyệt đối không tin cậy dữ liệu máy khách; nếu request gửi lên có bất kỳ trường nào không đạt chuẩn, máy chủ từ chối với mã lỗi `HTTP 400 Bad Request` kèm danh sách lỗi chi tiết và **tuyệt đối không tạo bất kỳ bản ghi dở dang nào vào cơ sở dữ liệu** (phù hợp với FR-24 là OUT_OF_SCOPE).
-  - **Tầng Giao diện (Frontend — tối ưu trải nghiệm người dùng):** Giao diện thực hiện kiểm tra trước (client-side form validation) để phản hồi tức thì; khi dữ liệu không đạt chuẩn, giao diện **giữ nguyên toàn bộ nội dung trong biểu mẫu (in-memory Form State)**, cuộn đến trường lỗi đầu tiên và hiển thị hướng dẫn cụ thể để người dùng chỉnh sửa ngay tại chỗ thay vì làm mất dữ liệu của người dùng. Cơ chế giữ form này thuần túy là quản lý trạng thái giao diện tạm thời phía máy khách, không phải là cơ chế lưu nháp ngầm trên máy chủ.
+  - **Tầng Máy chủ (Backend — bắt buộc & quyết định):** Toàn bộ quy tắc thẩm định bắt buộc phải được thực thi độc lập tại Backend API (NFR-10). Máy chủ tuyệt đối không tin cậy dữ liệu máy khách; nếu request gửi lên có bất kỳ trường nào không đạt chuẩn (ví dụ: không có bước hướng dẫn nào hoặc bước hướng dẫn rỗng), máy chủ từ chối yêu cầu công khai/cập nhật và **tuyệt đối không tạo bất kỳ bản ghi dở dang nào vào cơ sở dữ liệu** (phù hợp với FR-24 là OUT_OF_SCOPE).
+  - **Tầng Giao diện (Frontend — tối ưu trải nghiệm người dùng):** Giao diện thực hiện kiểm tra trước để phản hồi tức thì; khi dữ liệu không đạt chuẩn, giao diện giữ lại toàn bộ nội dung đã nhập trong biểu mẫu và hiển thị thông báo lỗi cụ thể để người dùng tiếp tục chỉnh sửa mà không bị mất dữ liệu. Việc giữ nội dung biểu mẫu là hành vi giao diện người dùng tạm thời, không tạo bất kỳ lưu nháp nào trên máy chủ.
 
 ---
 
 <a id="br-20"></a>
-### BR-20 — Tính tùy chọn của giới thiệu, bước nấu và ảnh đại diện
+### BR-20 — Tính tùy chọn của mô tả giới thiệu và ảnh đại diện
 
 - **Mã quy tắc:** BR-20
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Giới thiệu, hướng dẫn từng bước và media không bắt buộc khi công khai bài công thức; thẻ món không có ảnh dùng ảnh mặc định. Thời gian nấu được bằng 0.
+- **Nội dung:** Mô tả giới thiệu và media (ảnh, video YouTube) không bắt buộc khi công khai bài công thức; thẻ món không có ảnh dùng ảnh mặc định theo phân loại ăn chay. Thời gian nấu (`cookTime`) được phép bằng 0 đối với món không cần nấu nếu thời gian chuẩn bị (`prepTime`) lớn hơn 0 và tổng thời gian thỏa mãn quy định.
 
 ---
 

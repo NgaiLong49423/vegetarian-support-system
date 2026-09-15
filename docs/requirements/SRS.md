@@ -2,7 +2,7 @@
 > **File:** `docs/requirements/SRS.md`
 > **Version:** v0.51.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-09-14
+> **Last Updated:** 2026-09-15
 > **Status:** Draft
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -17,7 +17,7 @@ Tài liệu này là khung đặc tả gốc (Root Specification) và **Authorit
 - `docs/requirements/srs/BUSINESS-RULES.md` (BR chi tiết)
 - `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md` (NFR chi tiết)
 
-`Draft` nghĩa là requirement set vẫn cần Phase-2 decomposition trước khi tạo implementation Issues. DEC-001–DEC-018 và giá subscription là baseline nghiệp vụ hiện hành; các chi tiết kỹ thuật còn mở không được diễn giải thành quyết định sản phẩm mới.
+`Draft` nghĩa là requirement baseline chưa được Project Owner và team phê duyệt/freeze làm implementation baseline chính thức. Quá trình requirement decomposition chi tiết đã hoàn tất, nhưng các requirement vẫn có thể được hiệu chỉnh trong quá trình review trước khi freeze; tuyệt đối không được tạo implementation Issues trước khi quá trình review và freeze baseline hoàn tất theo workflow hiện hành. Document Status của tài liệu và Requirement Lifecycle của từng yêu cầu (DRAFT, ACTIVE, DEFERRED, OUT_OF_SCOPE, RETIRED) là hai khái niệm độc lập. DEC-001–DEC-018 và giá subscription là baseline nghiệp vụ hiện hành; các chi tiết kỹ thuật còn mở không được diễn giải thành quyết định sản phẩm mới.
 
 ## 2. Mô tả sản phẩm
 
@@ -36,7 +36,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 ### 3.1 Trong phạm vi đã chốt
 
 - Nội dung cộng đồng MVP: bài công thức (`Recipe Post`), bình luận và danh mục. Đây là loại bài cốt lõi duy nhất của MVP; mô hình Blog chia sẻ lối sống/kinh nghiệm độc lập có nhúng thẻ công thức (`Recipe Card`) theo Samsung Food đã được phân rã chi tiết tại mục 3.21 nhưng được chốt nằm ngoài phạm vi MVP ban đầu (`OUT_OF_SCOPE`).
-- Mỗi bài công thức có dữ liệu món ăn có cấu trúc. Hướng dẫn nấu theo từng bước là phần tùy chọn; thiếu phần này không ngăn Member đã đăng nhập công khai bài.
+- Mỗi bài công thức có dữ liệu món ăn có cấu trúc. Hướng dẫn chuẩn bị/chế biến bắt buộc phải có từ 1 đến 30 bước trước khi công khai theo mục 3.7 và 3.9; mỗi bước có nội dung văn bản không rỗng sau khi trim.
 - Media Phase 1: ảnh được upload lên Azure Blob Storage; bài công thức có thể chứa link YouTube và phát bằng embedded player trong app.
 - Đăng bài công thức: Member đã đăng nhập tạo và công khai Recipe Post trực tiếp sau khi hoàn thành các trường bắt buộc; không có đơn xin quyền đăng hoặc duyệt trước từng bài.
 - Kiểm duyệt sau đăng: người dùng báo cáo nội dung có vấn đề và Administrator xử lý báo cáo. AI quét/gắn cờ là hạng mục để sau (DEFERRED), không phải điều kiện nghiệm thu MVP.
@@ -68,15 +68,15 @@ Samsung Food là sản phẩm tham khảo chính cho cách nối khám phá món
 
 Bình luận phải hỗ trợ **reply lồng tối đa 5 cấp**, không giới hạn thành danh sách phản hồi phẳng. Guest được đọc bình luận trên bài công thức công khai. Member đã đăng nhập được tạo bình luận cấp đầu, trả lời một bình luận hoặc một reply khác trong giới hạn độ sâu, đồng thời sửa/xóa bình luận của chính mình. Administrator được quản lý và xử lý bình luận vi phạm. Khi bình luận cha bị xóa, hệ thống giữ một tombstone để bảo toàn ngữ cảnh và các reply hiện có; cách thu gọn/hiển thị cây là chi tiết thiết kế, không được làm mất reply.
 
-Bài công thức có năm nhóm dữ liệu riêng; trong đó bốn nhóm là bắt buộc trước khi công khai, còn hướng dẫn từng bước là tùy chọn:
+Bài công thức có năm nhóm dữ liệu cấu trúc bắt buộc trước khi công khai (mô tả giới thiệu và media là tùy chọn theo mục 3.9):
 
 | Nhóm dữ liệu | Mục đích |
 | --- | --- |
-| Nguyên liệu | Cho người đọc biết thành phần; làm đầu vào cho lọc và kiểm tra gợi ý AI. |
-| Cách làm từng bước | Tùy chọn; tác giả bổ sung khi muốn hướng dẫn chi tiết cách thực hiện món ăn. |
-| Khẩu phần | Cho biết công thức phục vụ bao nhiêu người/phần. |
-| Thời gian nấu | Hỗ trợ người dùng chọn món phù hợp thời gian. |
-| Loại ăn chay | Hỗ trợ phân loại và tìm món theo chế độ ăn. |
+| Nguyên liệu | Bắt buộc (1–50 dòng); cho người đọc biết thành phần; làm đầu vào cho lọc và kiểm tra gợi ý AI. |
+| Hướng dẫn chuẩn bị/chế biến | Bắt buộc (1–30 bước có nội dung không rỗng sau khi trim); hướng dẫn trình tự thực hiện món ăn. |
+| Khẩu phần | Bắt buộc (1–50); cho biết công thức phục vụ bao nhiêu người/phần. |
+| Thời gian (prep & cook) | Bắt buộc (tổng thời gian > 0; cookTime = 0 hợp lệ nếu prepTime > 0); hỗ trợ chọn món theo thời gian. |
+| Loại ăn chay | Bắt buộc (chọn 1 trong 4 loại chuẩn); hỗ trợ phân loại và tìm món theo chế độ ăn. |
 
 Trang Khám phá trình bày bài công thức đang công khai và không bị ẩn dưới dạng thẻ món; trang chi tiết nối tới luồng thêm món vào thực đơn. Thẻ món, trang chi tiết và mục tham chiếu trong thực đơn là các cách hiển thị của cùng một bài công thức, không phải các loại nội dung hoặc website riêng.
 
@@ -110,7 +110,7 @@ Quyết định này thay thế yêu cầu bắt buộc mọi nguyên liệu ph�
 
 - Tác giả tạo một bài công thức có cấu trúc. Thẻ món ở Khám phá, trang chi tiết và tham chiếu trong thực đơn đều sử dụng cùng bài này; không yêu cầu tạo hai bài, một Blog tổng quát hoặc một website thứ hai.
 - Nút “Xem công thức” mở trang chi tiết nội bộ với nội dung hướng dẫn đầy đủ. Không dùng liên kết website ngoài làm nơi bắt buộc đọc cách nấu; đề xuất đóng góp chỉ bằng dẫn nguồn ngoài chưa được chấp thuận.
-- Biểu mẫu có các mục tên món, giới thiệu, nguyên liệu, khẩu phần, thời gian, loại ăn chay, hướng dẫn nấu từng bước và media theo chính sách hiện tại. Format quy định cấu trúc; tác giả vẫn được viết theo văn phong riêng. Hướng dẫn từng bước là tùy chọn. Điều kiện đầy đủ và validation đã chốt tại mục 3.9.
+- Biểu mẫu có các mục tên món, giới thiệu, nguyên liệu, khẩu phần, thời gian, loại ăn chay, hướng dẫn chuẩn bị/chế biến từng bước và media theo chính sách hiện tại. Format quy định cấu trúc; tác giả vẫn được viết theo văn phong riêng. Hướng dẫn chuẩn bị/chế biến bắt buộc có từ 1 đến 30 bước; mô tả giới thiệu và media là tùy chọn. Điều kiện đầy đủ và validation đã chốt tại mục 3.9.
 - Tác giả có thể tự viết hoặc chủ động yêu cầu Gemini hỗ trợ tạo nội dung có thể chỉnh sửa trong biểu mẫu từ thông tin đã cung cấp. Không bắt buộc dùng AI để tạo hoặc gửi bài.
 - Tác giả xem, sửa và xác nhận nội dung AI trước khi công khai. AI không âm thầm thay nguyên liệu hoặc trình bày thông tin chưa biết như dữ kiện đã xác nhận.
 - Member đã đăng nhập quản lý Recipe Post của chính mình theo quyền sở hữu nội dung thông thường của một mạng xã hội thu nhỏ: tạo, xem, sửa và xóa bài. Bài mới hoặc thay đổi hợp lệ được công khai trực tiếp; hệ thống kiểm tra tài khoản sở hữu bài và các trường bắt buộc.
@@ -122,15 +122,14 @@ Luồng cấp cao: Member đã đăng nhập → tác giả nhập thông tin �
 
 **Đã chốt phạm vi AI hỗ trợ nội dung trong biểu mẫu, quyền gói và tính lượt tại 3.20. Lưu nháp Recipe Post không thuộc phạm vi hiện tại. Không phân rã thêm CRUD tác giả ở bước chốt chức năng.
 
-### 3.7 Hướng dẫn nấu theo bước tùy chọn — cập nhật 12/09/2026
+### 3.7 Hướng dẫn chuẩn bị và chế biến — cập nhật 15/09/2026
 
-- Bài công thức có thể không có hướng dẫn nấu. Nếu tác giả cung cấp hướng dẫn, phần này là danh sách các bước có thứ tự; mỗi bước chứa nội dung hướng dẫn bằng văn bản.
-- Tác giả có thể thêm, sửa, xóa và đổi vị trí các bước trong trình soạn bài. Trang chi tiết hiển thị theo thứ tự đã lưu.
-- Phần giới thiệu vẫn được viết tự do trong mục riêng, không tự được hiểu là danh sách hướng dẫn nấu.
-- Khi AI hỗ trợ tạo hướng dẫn, kết quả phải theo cùng cấu trúc các bước để tác giả rà soát và chỉnh sửa từng bước trước khi công khai.
-- Tác giả vẫn chịu trách nhiệm về các bước do AI hỗ trợ và phải tuân thủ chính sách nội dung. Khi sửa hướng dẫn trong bài đang công khai, thay đổi áp dụng theo cùng quy tắc chỉnh sửa bài tại mục 3.6.
-
-Không có bước hướng dẫn vẫn được công khai nếu các trường bắt buộc khác đã đầy đủ. Khi không có hướng dẫn, trang chi tiết hiển thị rõ “Tác giả chưa cung cấp hướng dẫn từng bước”, không tạo dữ liệu giả. AI chỉ hỗ trợ tác giả soạn các bước khi được yêu cầu; AI gợi ý món cho người đọc không được trình bày hướng dẫn chưa có như nội dung do tác giả xác nhận. Số bước nấu tối đa là 30. Giới hạn độ dài mỗi bước và media riêng cho từng bước là chi tiết thiết kế chưa quy định; không mặc định bổ sung ảnh/video cho mỗi bước.
+- Recipe Post bắt buộc phải có từ 1 đến 30 bước hướng dẫn chuẩn bị/chế biến trước khi được công khai. Mỗi bước phải có nội dung văn bản không rỗng sau khi cắt khoảng trắng đầu cuối (trim).
+- Phần hướng dẫn là danh sách các bước có thứ tự tuần tự; tác giả có thể thêm, sửa, xóa và thay đổi thứ tự các bước trong trình soạn bài. Trang chi tiết hiển thị các bước theo đúng thứ tự đã lưu.
+- Phần mô tả giới thiệu được viết tự do trong mục riêng và mang tính tùy chọn, không thay thế cho danh sách bước hướng dẫn chuẩn bị/chế biến.
+- `cookTime = 0` vẫn hợp lệ đối với các món không cần nấu (như salad trộn, nước sốt) nếu thời gian chuẩn bị lớn hơn 0 và các điều kiện thời gian hiện hành khác được đáp ứng.
+- Khi AI hỗ trợ tạo hướng dẫn, kết quả phải được trả về dưới dạng các bước có thể chỉnh sửa trong biểu mẫu để tác giả rà soát và chỉnh sửa trước khi công khai. AI tuyệt đối không tự động công khai bài viết.
+- Tác giả chịu trách nhiệm về toàn bộ nội dung các bước do mình tự soạn hoặc do AI hỗ trợ và phải tuân thủ chính sách nội dung. Khi sửa hướng dẫn trong bài đang công khai, thay đổi áp dụng theo cùng quy tắc chỉnh sửa bài tại mục 3.6.
 
 ### 3.8 Tác giả và hồ sơ công khai — đã chốt 12/09/2026
 
@@ -143,7 +142,7 @@ Không có bước hướng dẫn vẫn được công khai nếu các trường
 
 **Còn phân rã/thiết kế:** avatar mặc định, quy tắc đổi tên/avatar và cách hiển thị tác giả khi tài khoản bị khóa/xóa. Không tự thêm trường hồ sơ, follow, nhắn tin hoặc xác minh chuyên gia ngoài baseline đã chốt.
 
-### 3.9 Điều kiện tạo và công khai Recipe Post trực tiếp — cập nhật 13/09/2026
+### 3.9 Điều kiện tạo và công khai Recipe Post trực tiếp — cập nhật 15/09/2026
 
 | Trường | Bắt buộc khi công khai | Ghi chú |
 | --- | --- | --- |
@@ -151,12 +150,13 @@ Không có bước hướng dẫn vẫn được công khai nếu các trường
 | Nguyên liệu | Có | Từ 1 đến 50 dòng; có thể bao gồm nguyên liệu ngoài danh mục dinh dưỡng theo FR-40. |
 | Khẩu phần | Có | Số nguyên từ 1 đến 50. |
 | Loại ăn chay | Có | Chọn một trong bốn loại đã chốt tại 3.20. |
-| Thời gian chuẩn bị/nấu | Có | Mỗi giá trị từ 0 đến 1.440 phút; tổng thời gian chuẩn bị và nấu phải lớn hơn 0. |
+| Thời gian chuẩn bị/nấu | Có | Mỗi giá trị từ 0 đến 1.440 phút; tổng thời gian chuẩn bị và nấu phải lớn hơn 0 (`cookTime = 0` hợp lệ nếu `prepTime > 0`). |
+| Bước hướng dẫn chuẩn bị/chế biến | Có | Từ 1 đến 30 bước; mỗi bước có nội dung không rỗng sau khi trim; sắp xếp có thứ tự tuần tự. |
 | Tác giả | Có | Member đã đăng nhập tạo bài. |
-| Mô tả, các bước nấu, ảnh và link YouTube | Không | Mô tả tối đa 2.000 ký tự; tối đa 30 bước; tối đa 5 ảnh JPEG/PNG/WebP, mỗi ảnh tối đa 5 MB; tối đa một link YouTube. |
+| Mô tả, ảnh và link YouTube | Không | Mô tả tối đa 2.000 ký tự; tối đa 5 ảnh JPEG/PNG/WebP, mỗi ảnh tối đa 5 MB; tối đa một link YouTube. |
 
 - Member đã đăng nhập được tạo và công khai Recipe Post trực tiếp; không có đơn xin quyền đăng, trạng thái quyền đăng riêng, hoặc duyệt trước từng bài.
-- Khi Member bấm công khai, hệ thống kiểm tra các trường bắt buộc. Nếu thiếu, hệ thống chỉ rõ trường cần bổ sung và không công khai bài.
+- Khi Member bấm công khai, hệ thống kiểm tra các trường bắt buộc. Nếu thiếu hoặc không thỏa mãn validation, hệ thống từ chối công khai và thông báo cụ thể trường cần bổ sung/chỉnh sửa.
 - Recipe Post hợp lệ được công khai ngay. Sau đó, người dùng có thể báo cáo nội dung; Administrator xử lý báo cáo theo 3.11–3.14.
 - AI chỉ hỗ trợ tác giả tạo nội dung có thể chỉnh sửa trong biểu mẫu; AI không tự công khai bài. Việc lưu nháp bền vững trên server không thuộc phạm vi hiện tại.
 - Backend phải kiểm tra toàn bộ giới hạn trên trước khi công khai hoặc cập nhật bài; UI validation không thay thế server-side validation. Các quy tắc nội dung/moderation áp dụng độc lập với validation cấu trúc này.
@@ -360,10 +360,10 @@ Mục này ghi quyết định mới nhất của người dùng và thay thế 
 | --- | --- |
 | Q01–Q04 | Web responsive; email/password và Google Login; xác minh email bắt buộc, quên/đặt lại mật khẩu. Sau 5 lần đăng nhập sai, rate limit theo cả account identifier và IP trong 10 phút, không đổi thành trạng thái tài khoản `LOCKED` do Admin. Authentication baseline dùng access token ngắn hạn, rotating refresh token, refresh session/revocation phía server; logout thu hồi refresh session. Hồ sơ công khai có tên, avatar, giới thiệu ngắn, bài đăng, ngày tham gia và tổng Like; không công khai email/hồ sơ ăn uống. |
 | Q05–Q08 | Bốn loại ăn chay: Vegan, Lacto Vegetarian, Ovo Vegetarian, Lacto-Ovo Vegetarian. Nguyên liệu tránh/không thích chọn danh mục hoặc nhập tự do. Khẩu vị ẩm thực, độ khó và thời gian nấu tối đa tùy chọn. Được sửa hồ sơ, AI dùng dữ liệu mới ở yêu cầu tiếp theo; không tự sửa menu đã lưu. |
-| Q09–Q12 | Admin tạo/sửa/ngừng dùng danh mục, một công thức có nhiều danh mục. Đơn vị g, kg, ml, l, tsp, tbsp, cup, piece hoặc “vừa đủ”; dinh dưỡng chỉ tính khi quy đổi gram có căn cứ. Recipe Post áp dụng đúng profile validation tại 3.9: tên 3–120 ký tự, 1–50 nguyên liệu, khẩu phần 1–50, mỗi thời gian 0–1.440 phút và tổng > 0, tối đa 30 bước, mô tả 2.000 ký tự, 5 ảnh JPEG/PNG/WebP tối đa 5 MB/ảnh và một link YouTube. Lưu nháp không thuộc phạm vi hiện tại. |
+| Q09–Q12 | Admin tạo/sửa/ngừng dùng danh mục, một công thức có nhiều danh mục. Đơn vị g, kg, ml, l, tsp, tbsp, cup, piece hoặc “vừa đủ”; dinh dưỡng chỉ tính khi quy đổi gram có căn cứ. Recipe Post áp dụng đúng profile validation tại 3.9: tên 3–120 ký tự, 1–50 nguyên liệu, khẩu phần 1–50, mỗi thời gian 0–1.440 phút và tổng > 0 (`cookTime = 0` hợp lệ nếu `prepTime > 0`), từ 1 đến 30 bước hướng dẫn chuẩn bị/chế biến (nội dung không rỗng sau khi trim), mô tả tối đa 2.000 ký tự (tùy chọn), 5 ảnh JPEG/PNG/WebP tối đa 5 MB/ảnh (tùy chọn) và một link YouTube (tùy chọn). Lưu nháp không thuộc phạm vi hiện tại. |
 | Q13–Q14 | Gợi ý bài liên quan thông thường theo danh mục/nguyên liệu không dùng Gemini; tùy chọn người dùng chủ động yêu cầu AI có tính lượt. Không tự gọi AI có tính lượt khi mở bài. Tìm/lọc từ khóa, loại ăn chay, danh mục, nguyên liệu, thời gian; sắp xếp mới nhất/nhiều Like. |
 | Q15–Q18 | Bình luận/reply công khai ngay, tối đa 5 cấp; cha bị xóa trở thành tombstone và giữ replies. Một tài khoản tối đa một Like hiệu lực trên mỗi nội dung. Admin hậu kiểm thủ công, ghi lý do và audit/history; không có ma trận chế tài số tự động. In-app notification đi theo business event; email bất đồng bộ/best-effort, lỗi email không rollback hành động gốc; email kết quả moderation phải được thử gửi, email reply có thể theo preference. |
-| Q19–Q20 | Free/Plus/Pro dùng chung chức năng AI, khác hạn mức 5/15/50 lượt thành công/ngày. Guest hỏi đáp cơ bản 5 lượt/ngày. Reset lúc 00:00 `Asia/Ho_Chi_Minh`; Member theo account; Guest theo anonymous cookie kết hợp coarse IP rate limiting. Chỉ request thành công mới trừ lượt; telemetry không lưu raw prompt và giữ 90 ngày. |
+| Q19–Q20 | Free/Plus/Pro và Guest dùng chung AI Chatbot FR-51 (gồm General Context và Recipe Context đối với Recipe công khai), khác hạn mức 5/15/50 lượt thành công/ngày cho Member và tối đa 5 lượt/ngày cho Guest. Reset lúc 00:00 `Asia/Ho_Chi_Minh`; Member theo account; Guest theo anonymous cookie kết hợp coarse IP rate limiting; Guest không có lịch sử hội thoại theo tài khoản hoặc hồ sơ dinh dưỡng cá nhân. Chỉ request thành công mới trừ lượt; telemetry không lưu raw prompt và giữ 90 ngày. |
 | Q21–Q24 | AI đề xuất 7 ngày, sáng/trưa/tối, người dùng chọn/sửa/bỏ trước khi lưu. Nguyên liệu đang có nhập theo từng yêu cầu, không có kho nguyên liệu. Ưu tiên tận dụng, không bắt dùng hết, hiển thị phần thiếu. AI chỉ chọn công thức hiện có; chatbot giải thích thay thế nguyên liệu nhưng không tự sửa công thức/dinh dưỡng hoặc tạo công thức mới. |
 | Q25–Q26 | Lịch sử hội thoại AI theo tài khoản không thuộc phạm vi hiện tại. Subscription/payment `ACTIVE`: FREE 0 VND/tháng, PLUS 49,000 VND/tháng, PRO 99,000 VND/tháng; chỉ VND, chu kỳ tháng, không tự động gia hạn, không hoàn tiền một phần. Entitlement chỉ kích hoạt sau thanh toán được xác minh, hết hạn cuối kỳ đã trả; xử lý thanh toán trùng phải idempotent. Payment provider được chọn ở thiết kế tích hợp. |
 | Q27–Q30 | Baseline MVP dùng nguồn tham khảo USDA/NIH, tính từ gram nguyên liệu và khẩu phần, rồi hiển thị thông tin tham khảo cá nhân; không tự kê mục tiêu calorie/macro chỉ dựa vào BMI hoặc mục tiêu cân nặng. Hành vi goal-adjusted nâng cao chỉ là stretch nếu còn thời gian, không phải MVP acceptance. Khoảng 60 nguyên liệu có nguồn cho demo; thiếu dữ liệu không coi là 0; thay đổi dữ liệu phải được tính lại và ghi nguồn. |
@@ -474,7 +474,7 @@ Vocabulary duy nhất dùng cho requirement lifecycle là `DRAFT`, `ACTIVE`, `DE
 | ID | Short Name | Module | Lifecycle | Detail |
 | --- | --- | --- | --- | --- |
 | FR-01 | Guest xem và tìm kiếm nội dung công khai | M01 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-01) |
-| FR-02 | Guest dùng Gemini AI theo Guest Free | M06 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) |
+| FR-02 | Quyền Guest trải nghiệm AI Chatbot chung theo Guest Free quota | M06 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) |
 | FR-03 | Đăng ký, đăng nhập và quản lý tài khoản cơ bản | M02 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-03) |
 | FR-04 | Member tạo và công khai trực tiếp Recipe Post | M02, M03 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-04) |
 | FR-05 | Đơn xin quyền đăng và Administrator duyệt bài | M02, M03, M09 | RETIRED | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-05) |
@@ -488,13 +488,13 @@ Vocabulary duy nhất dùng cho requirement lifecycle là `DRAFT`, `ACTIVE`, `DE
 | FR-13 | Đăng ký gói AI qua thanh toán thật | M08 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) |
 | FR-14 | Lưu trữ ảnh bài công thức trên Azure Blob Storage | M03 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-14) |
 | FR-15 | Nhúng trình phát YouTube trong bài công thức | M01, M03 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-15) |
-| FR-16 | Cấu trúc dữ liệu bài công thức và bước nấu tùy chọn | M03, M04 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-16) |
+| FR-16 | Cấu trúc dữ liệu bài công thức và tính bắt buộc của bước hướng dẫn chuẩn bị/chế biến | M03, M04 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-16) |
 | FR-17 | Trình bày thẻ món trong Khám phá và liên kết lịch ăn | M04, M05 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-17) |
 | FR-18 | Admin quản lý danh mục nguyên liệu và món ăn | M04, M09 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) |
 | FR-19 | Nhập nguyên liệu linh hoạt và định lượng | M03, M04 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-19) |
 | FR-20 | Thống nhất nguồn hiển thị thẻ món, chi tiết và thực đơn | M01, M04, M05 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-20) |
-| FR-21 | AI hỗ trợ soạn bài không lưu nháp server | M03, M06 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-21) |
-| FR-22 | Thao tác chỉnh sửa và sắp xếp bước nấu tùy chọn | M01, M03, M06 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-22) |
+| FR-21 | AI hỗ trợ tạo giới thiệu hoặc bước hướng dẫn chuẩn bị/chế biến không lưu nháp server | M03, M06 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-21) |
+| FR-22 | Thao tác chỉnh sửa và sắp xếp bước hướng dẫn chuẩn bị/chế biến | M01, M03, M06 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-22) |
 | FR-23 | Hiển thị thông tin tác giả gắn liền với tài khoản | M01, M02, M03 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-23) |
 | FR-24 | Lưu nháp Recipe Post chưa đầy đủ trên server | M03 | OUT_OF_SCOPE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-24) |
 | FR-25 | Công khai Recipe Post ngay sau khi validation đạt | M02, M03 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-25) |
@@ -523,7 +523,7 @@ Vocabulary duy nhất dùng cho requirement lifecycle là `DRAFT`, `ACTIVE`, `DE
 | FR-48 | Báo cáo bình luận, reply và Administrator hậu kiểm | M03, M09 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-48) |
 | FR-49 | Gửi thông báo trong app và email cho reply mới và kết quả báo cáo | M02, M03, M09 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-49) |
 | FR-50 | Xem và xóa lịch sử hội thoại AI riêng theo tài khoản | M02, M06 | OUT_OF_SCOPE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-50) |
-| FR-51 | Chatbot giải thích dinh dưỡng chay, BMI/calorie và thay nguyên liệu | M06, M10 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) |
+| FR-51 | AI Chatbot hỗ trợ hỏi đáp ẩm thực chay theo ngữ cảnh | M06, M10 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) |
 | FR-52 | Tạo, sửa, xóa Blog văn xuôi và nhúng thẻ Recipe Post | M01, M03, M12 | OUT_OF_SCOPE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-52) |
 | FR-53 | Tạo và quản lý Shopping List checklist tương tác | M05 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) |
 | FR-54 | Tự động tổng hợp nguyên liệu trùng an toàn trong Shopping List | M05 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-54) |
@@ -561,7 +561,7 @@ Theo DEC-001–003, các BR hỗ trợ MVP thuộc M01–M06 và M09–M10 cùng
 | BR-17 | Gắn quyền tác giả với tài khoản đăng bài | M02, M03 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-17) |
 | BR-18 | Bảo vệ quyền riêng tư trong hồ sơ tác giả công khai | M01, M02 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-18) |
 | BR-19 | Điều kiện bắt buộc để công khai Recipe Post | M03 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-19) |
-| BR-20 | Tính tùy chọn của giới thiệu, bước nấu và ảnh đại diện | M03, M04 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-20) |
+| BR-20 | Tính tùy chọn của mô tả giới thiệu và ảnh đại diện | M03, M04 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-20) |
 | BR-21 | Quy tắc đơn xin quyền đăng bài công thức | M02, M09 | RETIRED | [Chi tiết](srs/BUSINESS-RULES.md#br-21) |
 | BR-22 | Lý do từ chối hoặc thu hồi quyền đăng bài | M09 | RETIRED | [Chi tiết](srs/BUSINESS-RULES.md#br-22) |
 | BR-23 | Bản chất của báo cáo vi phạm từ người dùng | M03, M09 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-23) |
@@ -641,8 +641,8 @@ Viết User Stories, Use Cases và Acceptance Criteria theo phạm vi đã chố
 | Thực đơn tuần theo nguyên liệu và BMI | FR-09, FR-31, FR-33–FR-39 | Hồ sơ rộng hơn BMI, AI chọn công thức có sẵn |
 | Tìm/gợi ý nhà hàng chay | FR-42, FR-43 | `DEFERRED`; giữ mô tả địa chỉ/bán kính/Google Maps để bảo toàn lịch sử, không thuộc MVP hiện tại. |
 | Bài liên quan công thức đã tìm | FR-47 | Thông thường hoặc tùy chọn AI |
-| Chatbot dinh dưỡng, thay nguyên liệu, BMI/calorie | FR-51 | Không tạo công thức/số liệu |
+| AI Chatbot hỏi đáp ẩm thực chay theo ngữ cảnh | FR-51 | Không tạo công thức/số liệu ngoài hệ thống; hỗ trợ ngữ cảnh chung và ngữ cảnh bài công thức |
 | Giới hạn và đăng ký gói AI | FR-10, FR-11, FR-13 | 5/15/50; FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; thanh toán thật và entitlement sau xác minh |
-| Guest tìm/xem video, Blog và thử AI | FR-01, FR-02, FR-15, FR-20 | Blog công thức, YouTube nhúng, AI cơ bản 5 lượt |
+| Guest tìm/xem video, Blog và thử AI | FR-01, FR-02, FR-15, FR-20 | Blog công thức, YouTube nhúng, dùng thử AI Chatbot chung FR-51 tối đa 5 lượt/ngày |
 
 Đây là truy vết yêu cầu, không phải chứng cứ tính năng đã triển khai.
