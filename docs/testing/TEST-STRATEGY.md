@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.1.0
+> **Version:** v1.1.1
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-14
+> **Last Updated:** 2026-09-15
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -53,7 +53,7 @@ Danh sách này dùng để ưu tiên. Test Case chi tiết phải được suy 
 
 ## 5. Chiến lược kiểm thử external service và AI
 
-Sử dụng nhiều lớp bằng chứng cho Gemini, Azure Blob Storage, Google Maps, Google authentication, email, YouTube và payment provider trong tương lai:
+Sử dụng nhiều lớp bằng chứng cho Gemini, Azure Blob Storage, Google Maps (nếu M11 được kích hoạt sau này), Google authentication, email, YouTube và payment provider trong tương lai:
 
 1. Unit Test có tính xác định kiểm tra quyết định của ứng dụng bằng phản hồi thành công/thất bại được kiểm soát.
 2. Adapter/Integration Test kiểm tra request/response mapping và phân loại lỗi mà không khiến mọi test phụ thuộc vào live provider.

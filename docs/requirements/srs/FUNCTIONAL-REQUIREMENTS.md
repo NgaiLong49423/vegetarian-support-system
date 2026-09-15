@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements Specification
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v0.4.0
+> **Version:** v0.5.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-14
+> **Last Updated:** 2026-09-15
 > **Status:** Draft
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -244,7 +244,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
   - `UC-03.5`: Đăng nhập 1-click bằng tài khoản Google (Login with Google OAuth2/OIDC).
   - `UC-03.6`: Yêu cầu gửi liên kết đặt lại mật khẩu qua email (Request password reset).
   - `UC-03.7`: Thiết lập mật khẩu mới từ liên kết hợp lệ (Reset password).
-  - `UC-03.8`: Làm mới phiên xác thực (Refresh authenticated session).
+  - `UC-03.8`: Làm mới phiên xác thực qua Secure HttpOnly Cookie (Refresh authenticated session via Secure HttpOnly Cookie).
   - `UC-03.9`: Đăng xuất và thu hồi phiên làm việc trên máy chủ (Logout and terminate session).
   *(Ghi chú: UC-03.10 trước đây về giới hạn tần suất đăng nhập sai không còn là Use Case độc lập vì không phải mục tiêu của Actor; hành vi này được chuẩn hóa thành Luồng rẽ nhánh / Luồng bảo mật thuộc UC-03.4).*
 - **User Stories:**
@@ -289,9 +289,9 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
    - Bước 4: Hệ thống so khớp mật khẩu qua thuật toán băm an toàn (BCrypt). Mật khẩu khớp chính xác.
    - Bước 5: Hệ thống kiểm tra trạng thái tài khoản: tài khoản đã xác minh email và không ở trạng thái bị khóa quản trị (`LOCKED`).
    - Bước 6: Hệ thống xóa bộ đếm thử sai liên quan đến tài khoản và IP nguồn về 0.
-   - Bước 7: Hệ thống tạo cặp token xác thực: Access Token ngắn hạn và Rotating Refresh Token.
+   - Bước 7: Hệ thống tạo Access Token ngắn hạn và Rotating Refresh Token; thiết lập Refresh Token vào Secure HttpOnly Cookie (ngăn chặn JavaScript phía máy khách truy cập trực tiếp).
    - Bước 8: Hệ thống ghi nhận và lưu trữ phiên làm việc được theo dõi phía máy chủ (server-side session tracking).
-   - Bước 9: Hệ thống phản hồi đăng nhập thành công kèm dữ liệu phiên làm việc an toàn; giao diện chuyển sang trạng thái đã đăng nhập.
+   - Bước 9: Hệ thống phản hồi đăng nhập thành công kèm Access Token cho ứng dụng; giao diện chuyển sang trạng thái đã đăng nhập.
 2. **Alternative & Security Flow (Phòng vệ Brute-force Rate Limiting theo cả Account Identifier và Source IP):**
    - *Đăng nhập sai từ lần 1 đến lần 4:* Mật khẩu không khớp -> Hệ thống tăng bộ đếm thất bại đối với định danh tài khoản và địa chỉ IP nguồn, từ chối xác thực kèm thông báo an toàn chung: "Email hoặc mật khẩu không chính xác".
    - *Đăng nhập sai liên tiếp lần thứ 5:* Khi ghi nhận 5 lần đăng nhập thất bại liên tiếp liên quan đến định danh tài khoản hoặc phát xuất từ địa chỉ IP nguồn, hệ thống tự động kích hoạt cơ chế bảo vệ tạm thời (Temporary Rate Limit) trong đúng 10 phút theo cả hai chiều độc lập:
@@ -312,7 +312,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
    - Bước 4: Máy chủ hệ thống xác thực tính hợp lệ của token với dịch vụ Google Identity.
    - Bước 5: Hệ thống trích xuất email, tên và ảnh đại diện từ dữ liệu xác thực Google.
    - Bước 6: Nếu email chưa tồn tại trong hệ thống, hệ thống tự động tạo tài khoản Member mới với email này ở trạng thái đã xác minh (`ACTIVE`) và thiết lập ảnh đại diện từ Google. Nếu email đã tồn tại, hệ thống liên kết định danh Google với tài khoản đó.
-   - Bước 7: Hệ thống tạo cặp Access Token và Rotating Refresh Token, lưu trữ phiên làm việc phía máy chủ và hoàn tất đăng nhập thành công.
+   - Bước 7: Hệ thống tạo Access Token ngắn hạn, thiết lập Rotating Refresh Token qua Secure HttpOnly Cookie, lưu trữ và theo dõi phiên làm việc phía máy chủ và hoàn tất đăng nhập thành công.
 
 ##### D. Luồng Quên & Đặt lại mật khẩu (UC-03.6, UC-03.7)
 1. **Main Flow:**
@@ -328,36 +328,36 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 
 ##### E. Luồng Làm mới phiên xác thực & Đăng xuất (UC-03.8, UC-03.9)
 1. **Main Flow Làm mới phiên (Token Rotation):**
-   - Bước 1: Khi Access Token hết hạn, ứng dụng gửi Refresh Token hợp lệ hiện tại tới máy chủ để yêu cầu làm mới phiên.
-   - Bước 2: Hệ thống kiểm tra tính hợp lệ của Refresh Token và đối chiếu với danh sách phiên đang hoạt động trên máy chủ.
+   - Bước 1: Khi Access Token hết hạn, ứng dụng gửi yêu cầu làm mới phiên tới máy chủ (Refresh Token được trình duyệt tự động gửi kèm qua Secure HttpOnly Cookie mà JavaScript không truy cập trực tiếp).
+   - Bước 2: Hệ thống kiểm tra tính hợp lệ của Refresh Token từ cookie và đối chiếu với danh sách phiên đang hoạt động trên máy chủ.
    - Bước 3: Nếu Refresh Token hợp lệ và khớp với phiên đang hoạt động:
      - Hệ thống tạo Access Token mới.
      - Hệ thống tạo Refresh Token mới (xoay vòng token).
      - Hệ thống cập nhật phiên làm việc máy chủ với Refresh Token mới, vô hiệu hóa Refresh Token cũ.
-     - Hệ thống trả về cặp token mới cho ứng dụng.
+     - Hệ thống thiết lập Secure HttpOnly Cookie mới chứa Refresh Token mới và trả về Access Token mới cho ứng dụng.
 2. **Luồng An ninh — Phát hiện tái sử dụng Token (Token Reuse Detection):**
    - Nếu hệ thống nhận được một Refresh Token đã từng bị thay thế trước đó (dấu hiệu token bị rò rỉ hoặc bị đánh cắp phiên):
      - Hệ thống lập tức thu hồi và hủy toàn bộ các phiên làm việc thuộc nhóm phiên liên quan (token family) của tài khoản trên máy chủ.
-     - Hệ thống từ chối yêu cầu xác thực, buộc người dùng phải đăng nhập lại từ đầu trên mọi thiết bị.
+     - Hệ thống gửi phản hồi xóa/hết hạn Secure HttpOnly Cookie của Refresh Token và từ chối yêu cầu xác thực, buộc người dùng phải đăng nhập lại từ đầu trên mọi thiết bị.
 3. **Main Flow Đăng xuất (UC-03.9):**
-   - Bước 1: Người dùng nhấn "Đăng xuất". Ứng dụng gửi yêu cầu đăng xuất kèm thông tin phiên xác thực tới máy chủ.
-   - Bước 2: Hệ thống xác thực yêu cầu, thu hồi và hủy vĩnh viễn phiên làm việc tương ứng trên máy chủ.
-   - Bước 3: Ứng dụng xóa bỏ token xác thực lưu trữ cục bộ.
+   - Bước 1: Người dùng nhấn "Đăng xuất". Ứng dụng gửi yêu cầu đăng xuất tới máy chủ.
+   - Bước 2: Hệ thống xác thực yêu cầu, lập tức thu hồi và hủy vĩnh viễn phiên làm việc tương ứng trên máy chủ (server-side session revocation).
+   - Bước 3: Hệ thống gửi phản hồi chỉ thị xóa/hết hạn Secure HttpOnly Cookie của Refresh Token về trình duyệt; ứng dụng xóa bỏ Access Token và trạng thái xác thực cục bộ phía máy khách.
    - Bước 4: Hệ thống xác nhận đăng xuất thành công; người dùng trở về trạng thái Guest.
 
 #### 6. Hậu điều kiện (Postconditions)
 - Sau khi đăng ký: Bản ghi tài khoản mới được tạo ở trạng thái chưa xác minh (`UNVERIFIED`); email xác minh được gửi đi.
 - Sau khi xác minh email: Trạng thái tài khoản chuyển thành hoạt động (`ACTIVE`); email được ghi nhận đã xác thực.
-- Sau khi đăng nhập: Cặp Access Token / Refresh Token hợp lệ được cấp phát; phiên làm việc được lưu trữ và theo dõi phía máy chủ; bộ đếm thử sai được đặt lại về 0.
+- Sau khi đăng nhập: Access Token ngắn hạn được cấp phát, Refresh Token được thiết lập qua Secure HttpOnly Cookie; phiên làm việc được lưu trữ và theo dõi phía máy chủ; bộ đếm thử sai được đặt lại về 0.
 - Sau khi bị rate limit: Cơ chế bảo vệ theo định danh tài khoản và IP nguồn tạm dừng tiếp nhận đăng nhập trong 10 phút; trạng thái tài khoản trong cơ sở dữ liệu tuyệt đối không bị chuyển sang `LOCKED`.
-- Sau khi đăng xuất: Phiên làm việc tương ứng bị thu hồi vĩnh viễn trên máy chủ; token cũ không thể sử dụng để làm mới phiên.
+- Sau khi đăng xuất: Phiên làm việc tương ứng bị thu hồi vĩnh viễn trên máy chủ; cookie Refresh Token bị xóa/hết hạn; trạng thái xác thực phía máy khách được xóa; token cũ không thể sử dụng để làm mới phiên.
 
 #### 7. Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Khách vãng lai (Guest) chỉ được tiếp cận các chức năng: đăng ký, đăng nhập, đăng nhập Google, xác minh email, gửi lại email xác minh, yêu cầu đặt lại mật khẩu, thiết lập mật khẩu mới.
 - Thành viên (Member) và Quản trị viên (Administrator) được tiếp cận chức năng làm mới phiên xác thực và đăng xuất.
 - Ràng buộc kỹ thuật được phê duyệt:
   - Mật khẩu người dùng phải được băm một chiều an toàn bằng thuật toán BCrypt với work factor tối thiểu 10 (NFR-06); tuyệt đối không lưu trữ mật khẩu dạng rõ (plaintext) hoặc mã hóa hai chiều.
-  - Cơ chế xác thực sử dụng JWT Access Token ngắn hạn kết hợp Rotating Refresh Token có cơ chế thu hồi phía máy chủ (server-side revocation) (NFR-09).
+  - Cơ chế xác thực sử dụng JWT Access Token ngắn hạn kết hợp Rotating Refresh Token truyền qua Secure HttpOnly Cookie (không để JavaScript truy cập trực tiếp Refresh Token) và cơ chế thu hồi phía máy chủ (server-side revocation) (NFR-09).
   - Cơ chế phòng vệ brute-force áp dụng quy tắc 5 lần đăng nhập thất bại liên tiếp thì rate limit trong 10 phút, độc lập hoàn toàn với trạng thái khóa tài khoản quản trị `LOCKED` (NFR-07).
   - Tích hợp đăng nhập bên thứ ba sử dụng chuẩn OAuth2/OIDC của Google Identity Services.
   - Không để lộ secret key, API key, thông tin lỗi nội bộ hoặc token trong log hệ thống.
@@ -372,7 +372,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
   - [NFR-01](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-01): Thời gian phản hồi xử lý Đăng nhập/Đăng xuất $\le 2$ giây (P95).
   - [NFR-06](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-06): Mã hóa mật khẩu 100% bằng BCrypt, 0% plaintext.
   - [NFR-07](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-07): Giới hạn 5 lần đăng nhập sai liên tiếp, rate limit tài khoản + IP trong 10 phút, không chuyển sang `LOCKED`.
-  - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC, chặn trái phép, JWT access ngắn hạn + rotating refresh token với server-side revocation, logout thu hồi phiên.
+  - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC, chặn trái phép, JWT access ngắn hạn + rotating refresh token qua Secure HttpOnly Cookie với server-side revocation, logout thu hồi phiên.
   - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Phòng chống lỗ hổng OWASP Top 10.
   - [NFR-11](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-11): Giao diện đăng ký $\le 3$ bước / $\le 3$ click; hỗ trợ Google Login 1-click.
 
@@ -406,7 +406,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 - **AC-03.6 — Đăng nhập thành công với thông tin chính xác:**
   - **Given:** Tài khoản đang ở trạng thái `ACTIVE` và đã xác minh email.
   - **When:** Người dùng nhập đúng email và mật khẩu tại trang Đăng nhập và nhấn "Đăng nhập".
-  - **Then:** Hệ thống phản hồi thành công trong vòng $\le 2$ giây (P95 theo NFR-01), cấp phát Access Token ngắn hạn và Refresh Token hợp lệ, ghi nhận phiên máy chủ, xóa bộ đếm đăng nhập sai về 0, và chuyển trạng thái sang đã đăng nhập.
+  - **Then:** Hệ thống phản hồi thành công trong vòng $\le 2$ giây (P95 theo NFR-01), cấp phát Access Token ngắn hạn, thiết lập Refresh Token qua Secure HttpOnly Cookie, ghi nhận phiên máy chủ, xóa bộ đếm đăng nhập sai về 0, và chuyển trạng thái sang đã đăng nhập.
 
 - **AC-03.7 — Đăng nhập thất bại do sai mật khẩu và ghi nhận số lần sai:**
   - **Given:** Người dùng nhập đúng email nhưng sai mật khẩu và số lần sai trước đó $< 4$.
@@ -426,22 +426,22 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 - **AC-03.10 — Đăng nhập 1-click bằng tài khoản Google:**
   - **Given:** Guest chọn đăng nhập với Google và hoàn tất xác thực trên Google OAuth2/OIDC.
   - **When:** Dữ liệu xác thực Google hợp lệ được gửi tới máy chủ hệ thống.
-  - **Then:** Hệ thống xác thực tính hợp lệ với Google; nếu tài khoản chưa có thì tự động tạo Member mới với trạng thái email đã xác minh, cấp phát token phiên làm việc và hoàn tất đăng nhập thành công.
+  - **Then:** Hệ thống xác thực tính hợp lệ với Google; nếu tài khoản chưa có thì tự động tạo Member mới với trạng thái email đã xác minh, thiết lập Refresh Token qua Secure HttpOnly Cookie, cấp phát Access Token phiên làm việc và hoàn tất đăng nhập thành công.
 
 - **AC-03.11 — Xoay vòng Refresh Token thành công khi làm mới phiên:**
-  - **Given:** Member sở hữu Access Token đã hết hạn và Refresh Token hợp lệ còn thời hạn được ghi nhận trên máy chủ.
-  - **When:** Ứng dụng gửi yêu cầu làm mới phiên kèm Refresh Token đó.
-  - **Then:** Hệ thống sinh ra một Access Token mới và một Refresh Token mới thay thế, cập nhật phiên máy chủ, vô hiệu hóa Refresh Token cũ, và trả về cặp token mới.
+  - **Given:** Member sở hữu Access Token đã hết hạn và Refresh Token hợp lệ còn thời hạn được ghi nhận trên máy chủ (được trình duyệt gửi qua Secure HttpOnly Cookie).
+  - **When:** Ứng dụng gửi yêu cầu làm mới phiên tới máy chủ.
+  - **Then:** Hệ thống sinh ra một Access Token mới và một Refresh Token mới thay thế, cập nhật phiên máy chủ, vô hiệu hóa Refresh Token cũ, thiết lập Refresh Token mới vào Secure HttpOnly Cookie và trả về Access Token mới cho ứng dụng mà không để lộ Refresh Token cho mã nguồn JavaScript phía máy khách.
 
 - **AC-03.12 — Thu hồi phiên khi phát hiện tái sử dụng Refresh Token cũ:**
   - **Given:** Một Refresh Token cũ đã từng bị xoay vòng thay thế.
   - **When:** Yêu cầu làm mới phiên gửi lại Refresh Token cũ đó tới hệ thống.
-  - **Then:** Hệ thống phát hiện hành vi tái sử dụng token, lập tức hủy toàn bộ phiên làm việc thuộc nhóm phiên liên quan của tài khoản trên máy chủ, từ chối xác thực, buộc tài khoản phải đăng nhập lại từ đầu.
+  - **Then:** Hệ thống phát hiện hành vi tái sử dụng token, lập tức hủy toàn bộ phiên làm việc thuộc nhóm phiên liên quan của tài khoản trên máy chủ, gửi chỉ thị xóa cookie Refresh Token, từ chối xác thực, buộc tài khoản phải đăng nhập lại từ đầu.
 
-- **AC-03.13 — Đăng xuất thu hồi phiên làm việc trên máy chủ:**
+- **AC-03.13 — Đăng xuất thu hồi phiên làm việc trên máy chủ và xóa cookie:**
   - **Given:** Member đang trong phiên đăng nhập hợp lệ trên hệ thống.
   - **When:** Member nhấn "Đăng xuất".
-  - **Then:** Hệ thống thu hồi và hủy bản ghi phiên làm việc tương ứng trên máy chủ, ứng dụng xóa bỏ token lưu cục bộ; token đã thu hồi không thể tái sử dụng để làm mới phiên.
+  - **Then:** Hệ thống thu hồi và hủy bản ghi phiên làm việc tương ứng trên máy chủ, gửi phản hồi chỉ thị xóa/hết hạn Secure HttpOnly Cookie của Refresh Token; ứng dụng xóa bỏ Access Token và trạng thái xác thực cục bộ; token đã thu hồi không thể tái sử dụng để làm mới phiên.
 
 - **AC-03.14 — Đặt lại mật khẩu thành công thu hồi các phiên đăng nhập cũ:**
   - **Given:** Người dùng có mã đặt lại mật khẩu hợp lệ còn thời hạn trong 15 phút.
@@ -487,7 +487,7 @@ Trao quyền tự chủ sáng tạo nội dung cho thành viên cộng đồng; 
 ##### A. Luồng Tạo và công khai bài công thức trực tiếp (UC-04.1)
 1. **Main Flow:**
    - Bước 1: Member nhấn "Đăng công thức". Giao diện hiển thị biểu mẫu tạo bài viết.
-   - Bước 2: Member nhập thông tin bắt buộc (cấu trúc và validation theo FR-16, nguyên liệu theo FR-19, các bước nấu tùy chọn theo FR-22, tải ảnh lên Azure Blob Storage theo FR-14 và gắn link YouTube theo FR-15.
+   - Bước 2: Member nhập thông tin bắt buộc (cấu trúc và validation theo FR-16, nguyên liệu theo FR-19, các bước nấu tùy chọn theo FR-22, tải ảnh lên Azure Blob Storage theo FR-14 và gắn link YouTube theo FR-15).
    - Bước 3: Member nhấn "Công khai bài viết".
    - Bước 4: Hệ thống thực thi kiểm tra tính hợp lệ toàn bộ dữ liệu (validation rules theo BR-07 / SRS 3.9). Toàn bộ dữ liệu đạt chuẩn.
    - Bước 5: Hệ thống tự động gán mã định danh tác giả từ phiên đăng nhập (BR-17), lưu bài viết ở trạng thái công khai (`PUBLISHED`), và phản hồi thành công.
@@ -1084,14 +1084,13 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - Bảo mật dữ liệu: Tuyệt đối cấm lưu trữ nội dung văn bản câu hỏi của người dùng trong bảng dữ liệu đo lường (BR-04, NFR-08, NFR-20).
   - Vòng đời lưu trữ: Lưu trữ tối đa 90 ngày (BR-04); tự động dọn dẹp các bản ghi quá hạn.
 - **Phân loại Actor:**
-  - Primary Actor: `Hệ thống đo lường và ghi vết AI (AI Telemetry Subsystem)`.
-  - Administrative Actor: `Administrator` (xem thống kê tổng hợp tiêu thụ token và tần suất gọi AI).
+  - Primary Actor: `Administrator` (người dùng quản trị xem báo cáo thống kê mức độ tiêu thụ token và chi phí AI).
+  - Supporting System / Mechanism: `Hệ thống đo lường và ghi vết AI (AI Telemetry Subsystem)` (tiến trình ghi nhận dữ liệu kỹ thuật và dọn dẹp ngầm).
 
 #### 2. Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-11.1`: Ghi nhận nhật ký đo lường token và siêu dữ liệu kỹ thuật sau mỗi request AI thành công.
-  - `UC-11.2`: Administrator xem bảng thống kê lượng tiêu thụ token và chi phí ước tính theo chu kỳ.
-  - `UC-11.3`: Tự động thanh lọc dữ liệu đo lường AI cũ hơn 90 ngày theo định kỳ.
+  - `UC-11.2`: Administrator xem bảng thống kê lượng tiêu thụ token và chi phí ước tính theo chu kỳ (View AI token consumption and cost statistics).
+  *(Ghi chú: UC-11.1 trước đây về ghi nhận telemetry sau lượt gọi AI và UC-11.3 về tự động thanh lọc dữ liệu sau 90 ngày không còn là các Use Case độc lập vì đây là các cơ chế kỹ thuật ngầm của hệ thống chứ không phải mục tiêu của Actor; hai hành vi này được chuẩn hóa tương ứng thành Cơ chế ghi nhận telemetry hệ thống sau lượt gọi AI và Luồng dọn dẹp dữ liệu ngầm theo chu kỳ).*
 - **User Stories:**
   - *Là một Administrator quản trị hệ thống*, tôi muốn theo dõi tổng số token tiêu thụ thực tế của từng tính năng AI mà không lưu trữ nội dung riêng tư của người dùng, để tôi có thể ước tính chi phí API hàng tháng và tối ưu hóa hệ thống.
 
@@ -1099,10 +1098,14 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Tiền điều kiện:**
   - Một request gọi Google Gemini API hoàn tất thành công và trả về mã trạng thái HTTP 200 kèm payload kết quả hợp lệ.
 - **Kích hoạt (Trigger):**
-  - Module AI client nhận được phản hồi thành công từ Google Gemini API.
+  - Module AI client nhận được phản hồi thành công từ Google Gemini API, hoặc Administrator truy cập trang thống kê tiêu thụ token.
 
 #### 4. Luồng xử lý chi tiết (Flows)
-- **Luồng chính (Main Flow):**
+- **Luồng nghiệp vụ Actor — Administrator xem thống kê tiêu thụ (UC-11.2):**
+  - Bước 1: Administrator truy cập trang Thống kê kỹ thuật trên giao diện quản trị (M06, M09).
+  - Bước 2: Hệ thống truy vấn dữ liệu telemetry tổng hợp, hiển thị biểu đồ và bảng dữ liệu tổng lượng token tiêu thụ theo ngày, tuần, tháng và phân bổ theo từng tính năng (Chatbot, Lập thực đơn, Gợi ý công thức).
+  - Bước 3: Administrator xem xét số liệu và chi phí ước tính phục vụ lập kế hoạch vận hành.
+- **Hành vi hệ thống — Ghi nhận siêu dữ liệu telemetry khi gọi AI thành công:**
   - Bước 1: Google Gemini API trả về phản hồi hợp lệ cho backend.
   - Bước 2: Hệ thống trích xuất siêu dữ liệu sử dụng token (`usageMetadata`) từ đối tượng phản hồi của Gemini, gồm: `promptTokenCount`, `candidatesTokenCount`, và `totalTokenCount`.
   - Bước 3: Hệ thống chuẩn bị bản ghi đo lường (Telemetry Record) gồm: Mã tài khoản người dùng (hoặc Anonymous Session ID đối với Guest), Loại tính năng được gọi (Menu, Chatbot, Authoring), Dấu thời gian (Timestamp UTC), và Số lượng token tiêu thụ.
@@ -1111,11 +1114,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - Bước 6: Trả kết quả nghiệp vụ về cho người dùng bình thường.
 - **Luồng thay thế (Alternative Flows):**
   - *AF-11.1 (Gemini không trả về trường usageMetadata):* Nếu phản hồi từ Gemini thành công nhưng thiếu khối thông tin token, hệ thống vẫn ghi nhận bản ghi với số token = 0 và đánh dấu cờ kiểm toán kỹ thuật để không làm gián đoạn trải nghiệm người dùng.
-  - *AF-11.2 (Administrator xem báo cáo tiêu thụ):* Administrator truy cập trang Thống kê kỹ thuật để xem biểu đồ tổng lượng token theo ngày, tuần, tháng và phân bổ theo từng tính năng (M06, M09).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
   - *EF-11.1 (Gọi AI thất bại hoặc timeout):* Nếu request tới Gemini bị lỗi mạng, timeout hoặc trả về mã lỗi 4xx/5xx, hệ thống không ghi nhận bản ghi đo lường thành công, không trừ quota, mà chỉ ghi nhật ký lỗi (Error Log) riêng biệt để phục vụ khắc phục sự cố (BR-03, BR-04).
   - *SF-11.1 (Bảo mật quyền riêng tư - Không lưu Prompt):* Các quy tắc kiểm tra tự động và mã nguồn bảo đảm trường nội dung prompt không bao giờ được đưa vào bảng telemetry, ngăn chặn rò rỉ dữ liệu cá nhân nhạy cảm (NFR-08, NFR-20).
-  - *SF-11.2 (Chính sách thanh lọc dữ liệu 90 ngày):* Một tiến trình ngầm (Background Job) chạy định kỳ hàng tuần tự động xóa các bản ghi telemetry có dấu thời gian cũ hơn 90 ngày (BR-04).
+  - *SF-11.2 (Chính sách thanh lọc dữ liệu định kỳ 90 ngày - Retention & Cleanup Behavior):* Một tiến trình ngầm (Background Job) chạy định kỳ hàng tuần tự động xóa các bản ghi telemetry có dấu thời gian cũ hơn 90 ngày (BR-04).
 
 #### 5. Hậu điều kiện (Postconditions)
 - Siêu dữ liệu đo lường token được lưu trữ an toàn, phục vụ đối soát.
@@ -1291,9 +1293,9 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 
 #### 2. Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-14.1`: Tải tệp tin ảnh đại diện hoặc ảnh bước nấu lên Azure Blob Storage và nhận liên kết truy cập an toàn.
-  - `UC-14.2`: Hiển thị hình ảnh từ Azure Blob Storage với tốc độ cao trên giao diện chi tiết công thức.
-  - `UC-14.3`: Tự động thu hồi hoặc đánh dấu xóa tài nguyên ảnh khi tác giả thay thế ảnh hoặc xóa công thức.
+  - `UC-14.1`: Tải tệp tin ảnh đại diện hoặc ảnh bước nấu lên Azure Blob Storage và nhận liên kết truy cập an toàn (Upload recipe images to Azure Blob Storage).
+  - `UC-14.2`: Hiển thị hình ảnh từ Azure Blob Storage với tốc độ cao trên giao diện chi tiết công thức (Display recipe images from Azure Blob Storage).
+  *(Ghi chú: UC-14.3 trước đây về tự động thu hồi/xóa tài nguyên ảnh không còn là Use Case độc lập vì đây là cơ chế quản lý vòng đời tài nguyên ngầm của hệ thống chứ không phải mục tiêu của Actor; hành vi này được chuẩn hóa thành Luồng quản lý vòng đời & giải phóng tài nguyên ảnh (Resource Lifecycle & Cleanup Flow) và Tiêu chí nghiệm thu tương ứng).*
 - **User Stories:**
   - *Là một người chia sẻ công thức nấu ăn*, tôi muốn tải lên những bức ảnh chụp món ăn sắc nét mà không lo trang bị chậm hay lỗi máy chủ, để bài nấu ăn của tôi trông sinh động và hấp dẫn người xem.
 
@@ -1313,9 +1315,9 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - Bước 5: Azure Blob Storage xác nhận tải lên thành công và trả về URL định danh duy nhất (Blob URL) của tệp tin.
   - Bước 6: Hệ thống lưu bản ghi siêu dữ liệu của ảnh (Blob URL, kích thước, định dạng, quan hệ tham chiếu với bài viết/bước nấu) vào cơ sở dữ liệu.
   - Bước 7: Giao diện hiển thị bản xem trước (preview) hình ảnh cho tác giả ngay lập tức.
-- **Luồng thay thế (Alternative Flows):**
-  - *AF-14.1 (Thay thế ảnh cũ bằng ảnh mới):* Khi tác giả chọn tải ảnh khác thay cho ảnh hiện tại, hệ thống tải ảnh mới lên Azure Blob Storage, cập nhật liên kết mới trong cơ sở dữ liệu và đánh dấu bản ghi ảnh cũ vào hàng đợi thu hồi tài nguyên (cleanup job).
-  - *AF-14.2 (Tác giả xóa công thức):* Khi bài công thức bị xóa hoặc bước nấu bị xóa, hệ thống cập nhật trạng thái tham chiếu và giải phóng các Blob tương ứng trên Azure theo chính sách dọn dẹp.
+- **Luồng quản lý vòng đời & Giải phóng tài nguyên (Resource Lifecycle & Cleanup Flow):**
+  - *Thu hồi ảnh khi thay thế ảnh mới:* Khi tác giả chọn tải ảnh khác thay cho ảnh hiện tại, hệ thống tải ảnh mới lên Azure Blob Storage, cập nhật liên kết mới trong cơ sở dữ liệu và đánh dấu bản ghi ảnh cũ vào hàng đợi thu hồi tài nguyên (cleanup job).
+  - *Giải phóng tài nguyên khi xóa công thức/bước nấu:* Khi bài công thức bị xóa hoặc bước nấu bị xóa, hệ thống cập nhật trạng thái tham chiếu và giải phóng các Blob tương ứng trên Azure theo chính sách dọn dẹp tài nguyên.
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
   - *EF-14.1 (Tệp tin vượt quá dung lượng cho phép):* Nếu tệp ảnh $> 5$ MB, hệ thống từ chối nhận tệp và hiển thị thông báo: *"Dung lượng ảnh không được vượt quá 5 MB"*.
   - *EF-14.2 (Định dạng tệp không hợp lệ hoặc chứa mã độc):* Nếu tệp tin không đúng định dạng ảnh hoặc có phần mở rộng bị cấm (như tệp thực thi), hệ thống từ chối tải lên và ghi log cảnh báo an ninh (NFR-10).
@@ -1514,8 +1516,8 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *AF-16.2 (Công thức không có các bước nấu):* Với các món ăn cực kỳ đơn giản, tác giả không nhập bước nấu nào (0 bước). Hệ thống chấp nhận hợp lệ theo BR-20 và hiển thị bài viết với danh sách nguyên liệu và mô tả.
   - *AF-16.3 (Công thức không có ảnh):* Tác giả không upload ảnh nào (0 ảnh). Hệ thống tự động gán ảnh đại diện mặc định theo loại ăn chay của món ăn (BR-20).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-16.1 (Dữ liệu không thỏa mãn validation profile):* Nếu có bất kỳ trường nào vi phạm ngưỡng hợp lệ (ví dụ: tiêu đề $< 3$ hoặc $> 120$ ký tự, khẩu phần $> 50$, tổng thời gian $= 0$, vượt quá 50 nguyên liệu hoặc vượt quá 30 bước nấu), hệ thống chặn xuất bản và đánh dấu đỏ kèm thông báo lỗi cụ thể tại từng trường vi phạm.
-  - *SF-16.1 (Kiểm tra validation độc lập tại server):* Toàn bộ quy tắc kiểm tra hợp lệ bắt buộc phải được thực thi tại tầng backend của server, ngăn chặn việc vượt rào qua việc sửa mã nguồn client (NFR-10).
+  - *EF-16.1 (Dữ liệu không thỏa mãn validation profile — Xử lý phía Frontend):* Khi người dùng nhấn nút đăng bài, nếu có bất kỳ trường nào vi phạm ngưỡng hợp lệ (ví dụ: tiêu đề $< 3$ hoặc $> 120$ ký tự, khẩu phần $> 50$, tổng thời gian $= 0$, vượt quá 50 nguyên liệu hoặc vượt quá 30 bước nấu), giao diện Frontend chặn gửi request không hợp lệ, giữ nguyên toàn bộ dữ liệu đã nhập trong biểu mẫu (in-memory Form State), tự động cuộn đến trường vi phạm đầu tiên và hiển thị thông báo lỗi chi tiết để tác giả chỉnh sửa ngay tại chỗ mà không bị mất nội dung đã nhập.
+  - *SF-16.1 (Thẩm định độc lập bắt buộc tại Backend & Không lưu rác DB):* Toàn bộ quy tắc kiểm tra hợp lệ bắt buộc phải được thực thi độc lập và toàn diện tại tầng Backend của máy chủ theo NFR-10, tuyệt đối không phụ thuộc vào việc kiểm tra của Frontend. Nếu nhận request có dữ liệu không đạt chuẩn, máy chủ lập tức từ chối với mã phản hồi `HTTP 400 Bad Request` kèm danh sách trường lỗi vi phạm; máy chủ TUYỆT ĐỐI KHÔNG ghi bất kỳ bản ghi bài viết hay tài nguyên dở dang nào vào cơ sở dữ liệu (Database), bảo đảm không phát sinh dữ liệu rác (phù hợp với FR-24 OUT_OF_SCOPE).
 
 #### 5. Hậu điều kiện (Postconditions)
 - Bài công thức đạt chuẩn được lưu trữ an toàn và xuất bản công khai trực tiếp.
@@ -2102,7 +2104,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - Trang chi tiết hiển thị đúng hướng dẫn từng bước trực quan.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Tác giả sở hữu bài viết hoặc Administrator mới có quyền chỉnh sửa/sắp xếp bước nấu của bài viết đó (BR-64).
+- **Quyền hạn:** Chỉ chính tác giả sở hữu bài viết mới có quyền chỉnh sửa và sắp xếp các bước nấu của bài viết đó (BR-64, NFR-09). Administrator xử lý bài vi phạm theo quy trình kiểm duyệt độc lập (ẩn/gỡ bài), không trực tiếp chỉnh sửa nội dung bài của tác giả.
 - **Ràng buộc nghiệp vụ:** Tối đa 30 bước; mang tính tùy chọn (BR-19, BR-20).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
@@ -2178,7 +2180,7 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
 | Nhóm dữ liệu | Phạm vi hiển thị | Danh mục trường dữ liệu | Ràng buộc bảo mật & hiển thị |
 |---|---|---|---|
 | **Hồ sơ công khai (Public Profile)** | Công khai cho toàn bộ người dùng (Guest, Member, Admin) | - Tên hiển thị (3–50 ký tự)<br>- Ảnh đại diện (avatar)<br>- Giới thiệu ngắn (bio, tối đa 500 ký tự)<br>- Thời điểm tham gia (định dạng Tháng/Năm)<br>- Danh sách Recipe Post đang công khai<br>- Tổng lượt Thích nhận được | - Nếu chưa có avatar: hiển thị ảnh mặc định hệ thống.<br>- Nếu bio trống: cho phép để trống/ẩn.<br>- Tuyệt đối KHÔNG gán nhãn "Chuyên gia", "Bác sĩ" hoặc "Đã xác minh danh tính ngoài đời" (BR-18).<br>- Không hiển thị bài viết đang bị ẩn do vi phạm. |
-| **Dữ liệu tài khoản & hồ sơ riêng tư (Private Account & Profile Data)** | Chỉ chính chủ tài khoản (`Resource Owner`) và Administrator (chỉ các trường thông tin quản trị được phép theo thẩm quyền) | - Địa chỉ email đăng ký<br>- Trạng thái xác minh email<br>- Trạng thái tài khoản (`ACTIVE`, `LOCKED`)<br>- Hồ sơ sở thích ăn chay (FR-31)<br>- Hồ sơ dinh dưỡng & chỉ số sức khỏe (FR-35, FR-38)<br>- Công thức đã lưu (FR-32)<br>- Lịch ăn tuần (FR-09, FR-33)<br>- Danh sách mua sắm (FR-53)<br>- Báo cáo vi phạm đã gửi (FR-26) | - Máy chủ bắt buộc kiểm tra quyền sở hữu (`Ownership Check`): người gọi phải là chính chủ tài khoản (`Resource Owner`).<br>- Administrator chỉ được tiếp cận các thông tin định danh và quản trị cần thiết (định danh, email quản lý, trạng thái tài khoản, lịch sử kiểm duyệt/báo cáo) để thực thi nhiệm vụ theo BR/NFR.<br>- Administrator KHÔNG truy cập hồ sơ dinh dưỡng, chỉ số sức khỏe cá nhân của Member.<br>- Tuyệt đối không trả các trường riêng tư trong giao diện hay dữ liệu public profile. |
+| **Dữ liệu tài khoản & hồ sơ riêng tư (Private Account & Profile Data)** | Mặc định độc quyền chủ sở hữu (`Owner-only by default`); Administrator chỉ được tiếp cận các thông tin định danh và quản trị tối thiểu được BR/NFR cho phép rõ ràng | - Địa chỉ email đăng ký<br>- Trạng thái xác minh email<br>- Trạng thái tài khoản (`ACTIVE`, `LOCKED`)<br>- Hồ sơ sở thích ăn chay (FR-31)<br>- Hồ sơ dinh dưỡng & chỉ số sức khỏe (FR-35, FR-38)<br>- Công thức đã lưu (FR-32)<br>- Lịch ăn tuần (FR-09, FR-33)<br>- Danh sách mua sắm (FR-53)<br>- Báo cáo vi phạm đã gửi (FR-26) | - Máy chủ bắt buộc kiểm tra quyền sở hữu (`Ownership Check`): Dữ liệu cá nhân hóa (hồ sơ dinh dưỡng, chỉ số sức khỏe/BMI, sở thích ăn uống, công thức đã lưu, lịch ăn, danh sách mua sắm) thuộc quyền ĐỘC QUYỀN của chính chủ tài khoản (`Resource Owner`).<br>- Administrator TUYỆT ĐỐI KHÔNG tự động có quyền truy cập dữ liệu cá nhân hóa (nghiêm cấm quy tắc generic `isOwner || isAdmin`).<br>- Quyền của Administrator là riêng biệt theo từng tài nguyên (resource-specific) và giới hạn ở mức tối thiểu cần thiết để thực thi nhiệm vụ quản trị (account ID, email quản trị, trạng thái tài khoản, lịch sử kiểm duyệt/báo cáo) theo BR/NFR.<br>- Tuyệt đối không trả các trường riêng tư trong giao diện hay dữ liệu public profile. |
 | **Dữ liệu an ninh / Thông tin định danh nhạy cảm nội bộ (Security / Credential Internals)** | Xử lý nội bộ độc quyền bởi các thành phần an ninh/xác thực tin cậy của hệ thống (System Security Components Only) | - Mật khẩu / Password hash<br>- Refresh tokens / Refresh session material<br>- Active session credentials / tokens<br>- Password reset token<br>- Email verification token<br>- Authentication secrets / API keys | - **Tuyệt đối KHÔNG BAO GIỜ** để lộ qua Public Profile.<br>- **Tuyệt đối KHÔNG BAO GIỜ** trả về qua Member UI/API thông thường.<br>- **Tuyệt đối KHÔNG BAO GIỜ** trả về qua Administrator UI/API thông thường.<br>- Administrator không được phép truy cập hoặc xem các bí mật xác thực này chỉ vì có vai trò Admin (tuân thủ nguyên tắc đặc quyền tối thiểu - Least Privilege).<br>- Chỉ được xử lý bởi các thành phần an ninh/xác thực tin cậy của hệ thống khi có yêu cầu kỹ thuật hợp lệ. |
 
 #### 6. Luồng sự kiện (Flow of Events)
@@ -2217,10 +2219,10 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
 
 ##### D. Luồng An ninh — Kiểm soát quyền sở hữu và bảo mật ranh giới riêng tư
 1. **Main Flow (Ngăn chặn truy cập trái phép dữ liệu cá nhân):**
-   - Bước 1: Người dùng A cố tình gửi yêu cầu truy xuất dữ liệu riêng tư của người dùng B (ví dụ: công thức đã lưu, lịch ăn, sở thích cá nhân, hồ sơ sức khỏe).
-   - Bước 2: Máy chủ trích xuất định danh người gọi từ phiên xác thực hợp lệ.
-   - Bước 3: Máy chủ so sánh định danh người gọi với định danh chủ tài nguyên. Phát hiện người gọi không phải chủ sở hữu tài nguyên và không có vai trò Quản trị viên.
-   - Bước 4: Máy chủ lập tức từ chối yêu cầu, không trả về bất kỳ dữ liệu riêng tư nào.
+   - Bước 1: Người dùng A (hoặc Quản trị viên) gửi yêu cầu truy xuất tài nguyên riêng tư của người dùng B (ví dụ: công thức đã lưu, lịch ăn tuần, danh sách mua sắm, sở thích ăn chay, hồ sơ dinh dưỡng và chỉ số sức khỏe).
+   - Bước 2: Máy chủ trích xuất định danh và vai trò người gọi từ phiên xác thực hợp lệ.
+   - Bước 3: Máy chủ kiểm tra quyền sở hữu tài nguyên theo nguyên tắc: Tài nguyên cá nhân riêng tư mặc định thuộc quyền ĐỘC QUYỀN của chính chủ sở hữu (`Owner-only by default`). Administrator KHÔNG tự động có quyền truy cập các dữ liệu cá nhân hóa này (không áp dụng quy tắc gộp `isOwner || isAdmin`). Quyền của Administrator chỉ áp dụng riêng cho các thông tin định danh và quản trị tối thiểu được BR/NFR cho phép rõ ràng (như trạng thái tài khoản, email phục vụ quản trị, báo cáo vi phạm).
+   - Bước 4: Phát hiện người gọi không phải là chính chủ sở hữu tài nguyên (Resource Owner), máy chủ lập tức từ chối yêu cầu và phản hồi mã lỗi HTTP 403 Forbidden, bảo đảm an toàn dữ liệu riêng tư tuyệt đối.
 2. **Main Flow (Gán quyền tác giả bất biến khi tạo bài công thức):**
    - Khi Member tạo hoặc công khai bài công thức (`FR-04`, `FR-25`), hệ thống tự động gán mã định danh của thành viên đang đăng nhập làm tác giả duy nhất của bài viết.
    - Người đăng TUYỆT ĐỐI KHÔNG được chọn tài khoản khác hoặc gửi tham số tác giả tùy ý từ máy khách (BR-17).
@@ -2233,9 +2235,10 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
 
 #### 8. Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Mọi người dùng (Guest, Member, Admin) đều có quyền xem thông tin công khai của tác giả và trang hồ sơ công khai của thành viên.
-- Chỉ chủ sở hữu tài khoản (`Resource Owner`) mới có quyền truy cập và chỉnh sửa dữ liệu cá nhân của mình.
+- Quy tắc phân quyền tài nguyên riêng tư: Mặc định là ĐỘC QUYỀN CHỦ SỞ HỮU (`Owner-only by default`). Chỉ chính chủ sở hữu tài khoản (`Resource Owner`) mới có quyền xem, truy xuất và chỉnh sửa dữ liệu cá nhân hóa của mình (hồ sơ dinh dưỡng, chỉ số BMI/sức khỏe, sở thích ăn uống, công thức đã lưu, lịch ăn tuần, danh sách mua sắm).
+- Administrator tuyệt đối KHÔNG tự động được cấp quyền truy cập vào các dữ liệu cá nhân hóa trên (nghiêm cấm sử dụng logic phân quyền generic `isOwner || isAdmin`).
+- Quyền của Administrator là quyền hạn riêng biệt theo từng tài nguyên (resource-specific) và phải được quy định rõ ràng trong các BR/NFR: Administrator chỉ được tiếp cận các thông tin quản trị tối thiểu phục vụ nhiệm vụ (account ID, email quản trị, trạng thái tài khoản, thông tin báo cáo/kiểm duyệt vi phạm).
 - Tách biệt rõ ràng ranh giới Security / Credential Internals (mật khẩu băm, token bí mật): các thông tin này tuyệt đối không trả về qua bất kỳ UI/API người dùng hay quản trị viên nào, tuân thủ nguyên tắc đặc quyền tối thiểu (Least Privilege).
-- Administrator chỉ có quyền truy cập thông tin định danh và quản trị cần thiết (account ID, email, account status, moderation audit), không có quyền nhận authentication secrets.
 - Máy chủ bắt buộc thực thi kiểm tra quyền sở hữu (Ownership Check) ở tầng nghiệp vụ máy chủ trước khi truy xuất hoặc thay đổi bất kỳ tài nguyên cá nhân nào; việc ẩn nút trên giao diện máy khách không thay thế được kiểm tra bảo mật phía máy chủ (NFR-08, NFR-09).
 - Không cấp nhãn chuyên gia, bác sĩ dinh dưỡng hoặc cam kết xác minh danh tính thật trên hồ sơ công khai (BR-18).
 - Ràng buộc kỹ thuật được phê duyệt: Lưu trữ ảnh đại diện trên dịch vụ Azure Blob Storage; bảo vệ kênh truyền qua HTTPS/TLS 1.2+ (NFR-08).
@@ -2287,10 +2290,10 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
   - **When:** Member chọn tệp không phải định dạng ảnh cho phép hoặc có dung lượng vượt quá 2 MB và nhấn lưu.
   - **Then:** Hệ thống từ chối tiếp nhận tệp, không cập nhật ảnh đại diện, và hiển thị thông báo lỗi tương ứng.
 
-- **AC-23.8 — Chặn truy cập trái phép vào dữ liệu riêng tư của người khác:**
-  - **Given:** Người dùng A đang đăng nhập với tài khoản của mình.
-  - **When:** Người dùng A cố tình gửi yêu cầu truy xuất dữ liệu riêng tư (công thức đã lưu, lịch ăn, sở thích cá nhân) thuộc về tài khoản người dùng B.
-  - **Then:** Máy chủ kiểm tra quyền sở hữu, từ chối yêu cầu và không tiết lộ bất kỳ thông tin riêng tư nào của người dùng B.
+- **AC-23.8 — Chặn truy cập trái phép vào dữ liệu cá nhân riêng tư (Nguyên tắc Owner-only mặc định):**
+  - **Given:** Người dùng A (bao gồm cả tài khoản có vai trò Quản trị viên - Administrator) không phải là chủ sở hữu của tài khoản B.
+  - **When:** Người dùng A gửi yêu cầu truy xuất dữ liệu cá nhân riêng tư của tài khoản B (chỉ số sức khỏe/BMI, hồ sơ dinh dưỡng, sở thích ăn chay, công thức đã lưu, lịch ăn tuần, danh sách mua sắm).
+  - **Then:** Máy chủ kiểm tra quyền sở hữu theo nguyên tắc Owner-only mặc định, từ chối yêu cầu với mã phản hồi HTTP 403 Forbidden và không tiết lộ bất kỳ dữ liệu riêng tư nào của tài khoản B (nghiêm cấm áp dụng logic gộp `isOwner || isAdmin`; quyền của Administrator là quyền hạn riêng biệt theo từng tài nguyên và chỉ áp dụng cho dữ liệu quản trị tối thiểu được BR/NFR cho phép rõ ràng).
 
 - **AC-23.9 — Gán quyền tác giả tự động và chống mạo danh khi tạo bài:**
   - **Given:** Member `UserX` đang đăng nhập với phiên xác thực hợp lệ.
@@ -2299,8 +2302,8 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
 
 - **AC-23.10 — Chặn sửa hoặc xóa bài công thức không thuộc quyền sở hữu:**
   - **Given:** Bài công thức thuộc quyền sở hữu của tác giả A.
-  - **When:** Thành viên B (không phải Quản trị viên) gửi yêu cầu chỉnh sửa hoặc xóa bài viết đó.
-  - **Then:** Hệ thống kiểm tra quyền tác giả (BR-64), từ chối thao tác, và giữ nguyên trạng thái bài viết.
+  - **When:** Người dùng B (không phải tác giả A) gửi yêu cầu chỉnh sửa hoặc xóa bài viết đó thông qua luồng quản lý bài cá nhân.
+  - **Then:** Hệ thống kiểm tra quyền tác giả (BR-64), từ chối thao tác với mã lỗi HTTP 403 Forbidden và giữ nguyên trạng thái bài viết; Administrator chỉ xử lý bài vi phạm qua quy trình kiểm duyệt độc lập (ẩn/gỡ vi phạm), không tự ý chỉnh sửa nội dung bài của tác giả.
 
 ---
 
@@ -2310,7 +2313,9 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
 - **Mã yêu cầu:** FR-24
 - **Module:** M03
 - **Trạng thái (Derived):** OUT_OF_SCOPE
-- **Mô tả:** Lưu nháp Recipe Post chưa đầy đủ trên server.
+- **Mô tả:** Hệ thống không hỗ trợ lưu trữ trạng thái bản nháp (`Draft`) của Recipe Post trên máy chủ hay cơ sở dữ liệu:
+  - **Ranh giới Backend:** Máy chủ chỉ tiếp nhận và lưu trữ bài viết khi toàn bộ dữ liệu đạt chuẩn validation đầy đủ để công khai ngay (`PUBLISHED` theo FR-25). Bất kỳ yêu cầu nào chứa dữ liệu dở dang hoặc vi phạm BR-19 đều bị Backend từ chối với mã lỗi `HTTP 400 Bad Request`, không tạo bản ghi nháp rác và không lưu ảnh mồ côi trên cloud storage.
+  - **Xử lý phía Frontend:** Khi bài viết chưa đạt chuẩn hoặc người dùng đang soạn thảo dở dang, dữ liệu chỉ tồn tại tạm thời trong bộ nhớ biểu mẫu (in-memory Form State) của trình duyệt để người dùng tiếp tục hoàn thiện. Nếu người dùng chủ động đóng trang/thoát trình duyệt, dữ liệu dở dang đó không được bảo đảm lưu trữ bền vững trên máy chủ.
 
 ---
 
@@ -2356,10 +2361,10 @@ Triển khai cơ chế xuất bản bài viết công khai trực tiếp (Direct
    - Bước 4: Hệ thống cập nhật trạng thái bài viết thành `PUBLISHED`, lưu thời điểm công khai (`publishedAt`), và phản hồi thành công.
    - Bước 5: Bài viết xuất hiện ngay lập tức trên trang chủ, trang khám phá, kết quả tìm kiếm và trang hồ sơ cá nhân của tác giả.
    - Bước 6: Giao diện chuyển hướng tác giả đến trang chi tiết bài viết vừa xuất bản kèm thông báo chúc mừng.
-2. **Exception Flow (Kiểm tra dữ liệu không đạt):**
-   - Bước 1: Nếu có bất kỳ trường nào vi phạm bộ quy tắc Recipe Validation Profile của FR-16 (ví dụ: tiêu đề dưới 3 ký tự, không có nguyên liệu nào, chưa chọn loại ăn chay):
-   - Bước 2: Hệ thống dừng quy trình xuất bản, không lưu bài viết vào cơ sở dữ liệu ở trạng thái `PUBLISHED`.
-   - Bước 3: Giao diện giữ nguyên toàn bộ dữ liệu tác giả đã nhập, cuộn màn hình đến vị trí trường dữ liệu bị lỗi đầu tiên và hiển thị thông báo lỗi cụ thể để tác giả chỉnh sửa.
+2. **Exception Flow (Kiểm tra dữ liệu không đạt — Phối hợp FE & BE):**
+   - Bước 1: Khi phát hiện dữ liệu vi phạm bộ quy tắc Recipe Validation Profile (ví dụ: tiêu đề dưới 3 ký tự, chưa có dòng nguyên liệu nào, tổng thời gian bằng 0):
+   - Bước 2 (Xử lý Backend): Nếu request được gửi đến máy chủ, Backend thực thi thẩm định độc lập, lập tức từ chối yêu cầu với mã lỗi `HTTP 400 Bad Request` và dừng quy trình, hoàn toàn không tạo bản ghi nào trong cơ sở dữ liệu (Database) ở bất kỳ trạng thái nào (kể cả nháp hay công khai).
+   - Bước 3 (Xử lý Frontend): Giao diện máy khách giữ nguyên toàn bộ dữ liệu tác giả đã nhập trên biểu mẫu (Form State), không reset trang, tự động cuộn màn hình đến vị trí trường dữ liệu bị lỗi đầu tiên và hiển thị thông báo lỗi cụ thể để tác giả tiếp tục chỉnh sửa cho đúng chuẩn rồi bấm đăng lại.
 
 #### 6. Hậu điều kiện (Postconditions)
 - Bài viết được chuyển sang trạng thái `PUBLISHED` và có thể tiếp cận công khai bởi toàn bộ người dùng (Guest, Member, Admin).
@@ -4979,8 +4984,8 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
        - "Vừa đủ" giữ nguyên chuỗi văn bản, không gán số 0, không cộng dồn.
     6. **Phân nhóm hiển thị:** Các dòng không tương thích được giữ thành các mục độc lập và hiển thị gom nhóm theo Danh mục thực phẩm (Rau củ, Nấm, Đậu & Chế phẩm, Ngũ cốc, Gia vị...).
 - **Phân loại Actor:**
-  - Primary Actor: `Hệ thống tính toán và tổng hợp Shopping List`.
-  - Supporting Actor: `Member` (người xem kết quả tổng hợp).
+  - Primary Actor: `Member` (người cần danh sách nguyên liệu tổng hợp chính xác để đi chợ).
+  - Supporting Mechanism / System: `Hệ thống tính toán và tổng hợp Shopping List` (cơ chế tính toán và gom gộp tự động).
 
 #### 2. Use Cases & User Stories
 - **Danh sách Use Cases:**

@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v0.2.0
+> **Version:** v0.2.1
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-14
+> **Last Updated:** 2026-09-15
 > **Status:** Draft
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -192,6 +192,9 @@ Các trạng thái derived dưới đây đã được đồng bộ từ root re
 - **Mã quy tắc:** BR-19
 - **Trạng thái (Derived):** ACTIVE
 - **Nội dung:** Recipe Post chỉ được công khai khi Member đã đăng nhập và đạt đúng profile: title 3–120 ký tự; 1–50 ingredients; serving 1–50; prep và cook time mỗi giá trị 0–1.440 phút, tổng > 0; tối đa 30 cooking steps; description tối đa 2.000 ký tự; tối đa 5 ảnh JPEG/PNG/WebP, 5 MB/ảnh; tối đa một YouTube link. Hướng dẫn từng bước không bắt buộc; bài không đạt không được công khai và không được lưu nháp bền vững trong phạm vi hiện tại.
+- **Cơ chế thực thi và xử lý khi không đạt chuẩn (FE & BE):**
+  - **Tầng Máy chủ (Backend — bắt buộc & quyết định):** Toàn bộ quy tắc thẩm định bắt buộc phải được thực thi độc lập tại Backend API (NFR-10). Máy chủ tuyệt đối không tin cậy dữ liệu máy khách; nếu request gửi lên có bất kỳ trường nào không đạt chuẩn, máy chủ từ chối với mã lỗi `HTTP 400 Bad Request` kèm danh sách lỗi chi tiết và **tuyệt đối không tạo bất kỳ bản ghi dở dang nào vào cơ sở dữ liệu** (phù hợp với FR-24 là OUT_OF_SCOPE).
+  - **Tầng Giao diện (Frontend — tối ưu trải nghiệm người dùng):** Giao diện thực hiện kiểm tra trước (client-side form validation) để phản hồi tức thì; khi dữ liệu không đạt chuẩn, giao diện **giữ nguyên toàn bộ nội dung trong biểu mẫu (in-memory Form State)**, cuộn đến trường lỗi đầu tiên và hiển thị hướng dẫn cụ thể để người dùng chỉnh sửa ngay tại chỗ thay vì làm mất dữ liệu của người dùng. Cơ chế giữ form này thuần túy là quản lý trạng thái giao diện tạm thời phía máy khách, không phải là cơ chế lưu nháp ngầm trên máy chủ.
 
 ---
 
