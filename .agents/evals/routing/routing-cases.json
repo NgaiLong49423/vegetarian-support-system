@@ -1,0 +1,249 @@
+{
+  "schema_version": "1.1",
+  "purpose": "Cross-skill/workflow routing definitions, including near-miss negatives. These are test definitions; recorded repeated-run evidence belongs under evals/runs/.",
+  "cases": [
+    {
+      "id": "ROUTE-001",
+      "prompt": "Cập nhật CHANGELOG từ các PR đã merge và chỉ ghi thông tin có bằng chứng.",
+      "expected_primary_skill": "changelog-automatic",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "markdown-documentation",
+        "document-metadata-standardizer",
+        "repo-template-doc-sync-auditor",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-002",
+      "prompt": "Chuẩn hóa Version, Created, Last Updated và Status ở đầu các file Markdown hiện có.",
+      "expected_primary_skill": "document-metadata-standardizer",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "markdown-documentation",
+        "changelog-automatic",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-003",
+      "prompt": "Audit tài liệu xem SRS, architecture, README và test strategy có mâu thuẫn hoặc stale path không; chưa sửa file.",
+      "expected_primary_skill": "repo-template-doc-sync-auditor",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "changelog-automatic",
+        "document-metadata-standardizer",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-004",
+      "prompt": "Từ các FR đã chốt trong SRS, tạo draft GitHub Issues và giữ mapping FR ID sang Issue.",
+      "expected_primary_skill": "srs-to-github-issues",
+      "allowed_secondary_skills": [
+        "markdown-documentation"
+      ],
+      "should_not_be_primary": [
+        "changelog-automatic",
+        "document-metadata-standardizer",
+        "repo-template-doc-sync-auditor"
+      ]
+    },
+    {
+      "id": "ROUTE-005",
+      "prompt": "Sửa nội dung FR-17 cho rõ actor, precondition và acceptance criteria nhưng không thay ID.",
+      "expected_primary_skill": "markdown-documentation",
+      "allowed_secondary_skills": [
+        "document-metadata-standardizer"
+      ],
+      "should_not_be_primary": [
+        "changelog-automatic",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-006",
+      "prompt": "FR-19 vừa chuyển ACTIVE sang OUT_OF_SCOPE. Hãy cập nhật requirement docs, kiểm tra tài liệu liên quan và reconcile Issue đã link.",
+      "expected_primary_skill": "workflow:requirement-change-reconciliation",
+      "allowed_secondary_skills": [
+        "markdown-documentation",
+        "document-metadata-standardizer",
+        "repo-template-doc-sync-auditor",
+        "srs-to-github-issues",
+        "changelog-automatic"
+      ],
+      "should_not_be_primary": []
+    },
+    {
+      "id": "ROUTE-007",
+      "prompt": "Tôi chỉ sửa một lỗi chính tả trong README; không cần release note hay audit toàn repo.",
+      "expected_primary_skill": "markdown-documentation",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "changelog-automatic",
+        "repo-template-doc-sync-auditor",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-008",
+      "prompt": "Kiểm tra requirement hiện tại còn FR/BR/NFR nào mơ hồ cần team xác nhận trước khi tạo Issues.",
+      "expected_primary_skill": "workflow:requirement-finalization",
+      "allowed_secondary_skills": [
+        "markdown-documentation",
+        "repo-template-doc-sync-auditor"
+      ],
+      "should_not_be_primary": [
+        "changelog-automatic"
+      ]
+    },
+    {
+      "id": "ROUTE-009",
+      "prompt": "Release v1.2.0 đã được xác nhận; hãy cập nhật changelog theo format hiện tại. Không đổi metadata của SRS.",
+      "expected_primary_skill": "changelog-automatic",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "document-metadata-standardizer",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-010",
+      "prompt": "SRS và README nói khác nhau về số branch được hỗ trợ. Hãy xác định đây là contradiction hay omission trước, chưa được tự sửa.",
+      "expected_primary_skill": "repo-template-doc-sync-auditor",
+      "allowed_secondary_skills": [
+        "markdown-documentation"
+      ],
+      "should_not_be_primary": [
+        "changelog-automatic",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-011",
+      "prompt": "Giải thích CHANGELOG.md là gì và dùng khi nào. Không chỉnh sửa repository.",
+      "expected_primary_skill": null,
+      "expected_behavior": "No specialized repository skill is required for a conceptual explanation.",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "changelog-automatic",
+        "markdown-documentation",
+        "document-metadata-standardizer",
+        "repo-template-doc-sync-auditor",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-012",
+      "prompt": "Viết Java service triển khai FR-12. Không sửa tài liệu.",
+      "expected_primary_skill": null,
+      "expected_behavior": "Coding task; documentation/GitHub synchronization skills should not become primary.",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "markdown-documentation",
+        "changelog-automatic",
+        "document-metadata-standardizer",
+        "repo-template-doc-sync-auditor",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-013",
+      "prompt": "Đánh giá câu chữ của GitHub Issue #25 có dễ hiểu không, nhưng không đồng bộ nó từ SRS và không sửa Issue.",
+      "expected_primary_skill": null,
+      "expected_behavior": "Ordinary wording review should not activate the SRS-to-GitHub synchronization skill.",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "srs-to-github-issues",
+        "repo-template-doc-sync-auditor"
+      ]
+    },
+    {
+      "id": "ROUTE-014",
+      "prompt": "README có đúng một broken link. Hãy sửa đúng link đó, không audit toàn repository.",
+      "expected_primary_skill": "markdown-documentation",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "repo-template-doc-sync-auditor",
+        "changelog-automatic",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-015",
+      "prompt": "SRS là gì? Giải thích khái niệm cho tôi, không đọc hay sửa project.",
+      "expected_primary_skill": null,
+      "expected_behavior": "Conceptual explanation only; no repository skill should activate.",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "markdown-documentation",
+        "srs-to-github-issues",
+        "repo-template-doc-sync-auditor"
+      ]
+    },
+    {
+      "id": "ROUTE-016",
+      "prompt": "Chỉ cập nhật trường Last Updated của các Markdown đã sửa hôm nay theo policy hiện có; không thay nội dung.",
+      "expected_primary_skill": "document-metadata-standardizer",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "markdown-documentation",
+        "changelog-automatic",
+        "repo-template-doc-sync-auditor",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-017",
+      "prompt": "Các FR ACTIVE đã chốt. Hãy chuẩn bị preview batch CREATE/UPDATE/CLOSE cho GitHub, dừng lại để tôi duyệt một lần trước khi chạy gh.",
+      "expected_primary_skill": "srs-to-github-issues",
+      "allowed_secondary_skills": [
+        "markdown-documentation"
+      ],
+      "should_not_be_primary": [
+        "changelog-automatic",
+        "document-metadata-standardizer"
+      ]
+    },
+    {
+      "id": "ROUTE-018",
+      "prompt": "Audit toàn repo để tìm stale path và contradiction; nếu finding nào auto-fixable thì sửa rồi audit lại, còn conflict nghiệp vụ thì dừng hỏi tôi.",
+      "expected_primary_skill": "workflow:documentation-audit-and-fix",
+      "allowed_secondary_skills": [
+        "repo-template-doc-sync-auditor",
+        "markdown-documentation",
+        "document-metadata-standardizer"
+      ],
+      "should_not_be_primary": [
+        "changelog-automatic",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-019",
+      "prompt": "Tạo Git tag v1.2.0 và push tag lên origin. Không yêu cầu sửa CHANGELOG.",
+      "expected_primary_skill": null,
+      "expected_behavior": "Release/Git operation is outside changelog skill authority.",
+      "allowed_secondary_skills": [],
+      "should_not_be_primary": [
+        "changelog-automatic",
+        "markdown-documentation",
+        "srs-to-github-issues"
+      ]
+    },
+    {
+      "id": "ROUTE-020",
+      "prompt": "FR-19 chuyển OUT_OF_SCOPE. Chỉ cập nhật requirement documents và kiểm tra traceability; chưa đồng bộ GitHub.",
+      "expected_primary_skill": "workflow:requirement-change-reconciliation",
+      "allowed_secondary_skills": [
+        "markdown-documentation",
+        "repo-template-doc-sync-auditor",
+        "document-metadata-standardizer"
+      ],
+      "should_not_be_primary": [
+        "srs-to-github-issues",
+        "changelog-automatic"
+      ]
+    }
+  ]
+}

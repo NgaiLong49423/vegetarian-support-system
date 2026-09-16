@@ -1,11 +1,12 @@
 ---
 name: document-metadata-standardizer
-description: Use this skill when the user asks to add, update, audit, or standardize metadata at the top of Markdown documentation files, including document version, created date, last updated date, status, and version bump decisions after document edits.
-risk: low
-source: self
-version: v1.2.0
-created_date: 2026-06-29
-last_updated_date: 2026-09-13
+description: 'Use this skill when the user asks to add, update, audit, or standardize metadata at the top of Markdown documentation files, including document version, created date, last updated date, status, and version bump decisions after document edits.'
+metadata:
+  swp391-risk: "low"
+  swp391-source: "self"
+  swp391-version: "v1.2.1"
+  swp391-created-date: "2026-06-29"
+  swp391-last-updated-date: "2026-09-16"
 ---
 
 # Document Metadata Standardizer
@@ -67,6 +68,16 @@ When another documentation skill or repository rule is available:
 - **Changelog tooling** owns changelog-entry mechanics when a dedicated changelog skill exists.
 
 If the content/lifecycle skill reports that a change is semantic, baseline-affecting, archived, or newly approved, use that information as evidence for metadata/version decisions. Do not independently reinterpret the underlying requirement or project decision.
+
+## Reference Router
+
+Read references only when the current metadata task needs them:
+
+- For concrete metadata block examples, read `references/metadata-block-examples.md`.
+- For deciding or reviewing a document-version bump, read `references/version-bump-rules.md`.
+- For producing a structured metadata audit report, read `references/metadata-audit-report-template.md`.
+
+Do not load all reference files for a simple metadata edit.
 
 ## Required Metadata
 

@@ -1,0 +1,33 @@
+{
+  "run_id": "YYYYMMDD-model-shortsha",
+  "commit_sha": "TBD",
+  "model_runtime": "TBD",
+  "executed_at": "TBD",
+  "source_cases": ".agents/evals/routing/routing-cases.json",
+  "runs_per_case": 3,
+  "results": [
+    {
+      "case_id": "ROUTE-001",
+      "expected_primary_skill": "changelog-automatic",
+      "runs": [
+        {
+          "run": 1,
+          "observed_primary_skill": "TBD",
+          "pass": null
+        },
+        {
+          "run": 2,
+          "observed_primary_skill": "TBD",
+          "pass": null
+        },
+        {
+          "run": 3,
+          "observed_primary_skill": "TBD",
+          "pass": null
+        }
+      ],
+      "correct_rate": "TBD",
+      "notes": ""
+    }
+  ]
+}

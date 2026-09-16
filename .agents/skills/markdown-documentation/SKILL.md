@@ -1,13 +1,18 @@
 ---
 name: markdown-documentation
 description: >
-  Create, update, review, restructure, and maintain Markdown documentation for software projects.
-  Use this skill for requirements and SRS documents, business rules, decision records,
-  architecture documentation, test strategy, research notes, API documentation, setup guides,
-  development guides, README/CONTRIBUTING, changelogs, and related project Markdown artifacts.
-  This skill governs documentation content, lifecycle, traceability, source-of-truth handling,
-  and cross-document consistency. Document metadata/versioning should follow repository policy
-  or a dedicated metadata skill when available.
+  Create, update, review, restructure, and maintain software-project Markdown when the task is
+  primarily about documentation content, requirements/SRS, business rules, decisions, architecture,
+  testing, research, setup/development guides, README/CONTRIBUTING, lifecycle, traceability, or
+  source-of-truth handling. When a task is specifically about changelog evidence/mechanics, document
+  metadata/versioning, repository-wide consistency auditing, or SRS-to-GitHub Issue synchronization,
+  prefer the corresponding specialized skill when available.
+metadata:
+  swp391-risk: "medium"
+  swp391-source: "self"
+  swp391-version: "v1.0.0"
+  swp391-created-date: "2026-09-13"
+  swp391-last-updated-date: "2026-09-16"
 ---
 
 # Markdown Documentation Skill

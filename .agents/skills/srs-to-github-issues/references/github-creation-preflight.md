@@ -6,7 +6,8 @@ Use this checklist before any real GitHub mutation.
 
 A hard blocker must be resolved before the affected mutation. A simple "continue anyway" does not override missing authority, missing source state, or an ambiguous target.
 
-- [ ] Real GitHub mutation is authorized by the current task or adopted repository workflow.
+- [ ] The complete remote mutation batch has been previewed and explicitly approved after this preflight.
+- [ ] The approved batch identifies exact planned action groups and affected targets; no material target/action changes occurred after approval.
 - [ ] Repository owner/name is known for the target repository.
 - [ ] Every affected FR has an explicit lifecycle state from the authoritative SRS registry or authorized decision, and no unresolved lifecycle conflict exists between root registry and detailed specification.
 - [ ] The target Issue mapping is known, or creation of a new Issue is clearly intended.
@@ -16,6 +17,37 @@ A hard blocker must be resolved before the affected mutation. A simple "continue
 - [ ] A requirement removed from the active SRS is not being treated as retired/out-of-scope without explicit lifecycle/history evidence.
 
 If any hard blocker fails, stop the affected mutation and report exactly what must be resolved.
+
+
+## Batch Approval Gate
+
+Before the first remote write, present one complete preview such as:
+
+```text
+CREATE:
+- FR-21 -> new Issue
+- FR-22 -> new Issue
+
+UPDATE:
+- FR-14 -> Issue #31 managed block
+
+CLOSE:
+- FR-08 -> Issue #12 as not planned
+
+PROJECT_FIELD_UPDATE:
+- Issue #31 -> verified field/value
+```
+
+One explicit approval may authorize the entire previewed batch. Separate approval per action group is not required for this SWP workflow.
+
+The approval is invalidated when:
+
+- a new target/action is added;
+- an approved target/action materially changes;
+- new evidence creates a hard blocker;
+- the execution would require a forbidden operation.
+
+After execution, verify each approved action and report successes/failures. Never silently replace a failed approved action with a different mutation.
 
 ## Creation Checks
 

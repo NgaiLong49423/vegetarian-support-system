@@ -1,0 +1,16 @@
+{
+  "run_id": "YYYYMMDD-model-shortsha",
+  "commit_sha": "TBD",
+  "model_runtime": "TBD",
+  "executed_at": "TBD",
+  "baseline_type": "without_skill | old_skill",
+  "skill_versions": {},
+  "cases_executed": [],
+  "summary": {
+    "passed": "TBD",
+    "failed": "TBD",
+    "pass_rate": "TBD"
+  },
+  "traces_inspected": false,
+  "known_failures": []
+}

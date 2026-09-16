@@ -93,7 +93,7 @@ To prevent anchor link breakage when requirement titles change or are translated
 ### FR-01 — Requirement Name
 ```
 
-Root SRS index tables link directly to these anchors: `[Detail](srs/FUNCTIONAL-REQUIREMENTS.md#fr-01)`.
+Root SRS index tables link directly to these anchors: ``docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-01``.
 
 ### Root Registry Schema
 

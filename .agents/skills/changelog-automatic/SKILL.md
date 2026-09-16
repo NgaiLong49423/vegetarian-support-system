@@ -1,11 +1,12 @@
 ---
 name: changelog-automatic
-description: Maintain a repository's changelog from verified project evidence and repository-specific changelog policy. Preserve chronology, avoid fabricated release or PR information, and record only meaningful release- or milestone-relevant changes.
-risk: medium
-source: customized
-version: v2.1.1
-created_date: 2026-06-29
-last_updated_date: 2026-09-13
+description: 'Maintain a repository''s changelog from verified project evidence and repository-specific changelog policy. Preserve chronology, avoid fabricated release or PR information, and record only meaningful release- or milestone-relevant changes.'
+metadata:
+  swp391-risk: "medium"
+  swp391-source: "customized"
+  swp391-version: "v2.1.2"
+  swp391-created-date: "2026-06-29"
+  swp391-last-updated-date: "2026-09-16"
 ---
 
 # Changelog Maintenance

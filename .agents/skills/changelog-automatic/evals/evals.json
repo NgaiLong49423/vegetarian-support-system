@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "skill": "changelog-automatic",
+  "evaluation_style": "behavioral",
+  "cases": [
+    {
+      "id": "CHG-E01",
+      "name": "No fabricated PR reference",
+      "prompt": "Add a changelog entry for the new meal planner. The repository evidence confirms the feature, but no PR number is available.",
+      "expected": [
+        "Records the meaningful change in the adopted changelog format",
+        "Does not invent a PR number or commit hash",
+        "Reports missing reference only if repository policy requires it"
+      ],
+      "forbidden": [
+        "Fabricated PR/commit/release identifiers"
+      ]
+    },
+    {
+      "id": "CHG-E02",
+      "name": "Formatting-only change excluded",
+      "prompt": "I only fixed Markdown spacing and a typo. Update CHANGELOG.",
+      "expected": [
+        "Does not add an entry unless repository policy explicitly requires formatting-only changes"
+      ],
+      "forbidden": [
+        "Presenting formatting-only work as a user-visible feature"
+      ]
+    },
+    {
+      "id": "CHG-E03",
+      "name": "Unknown historical date preserved as unknown",
+      "prompt": "Normalize an old changelog entry whose original date cannot be verified.",
+      "expected": [
+        "Preserves supported historical information",
+        "Does not replace the unknown historical date with today's date merely because the file is edited now"
+      ],
+      "forbidden": [
+        "Invented historical date"
+      ]
+    },
+    {
+      "id": "CHG-E04",
+      "name": "Requirement lifecycle not automatically changelog-worthy",
+      "prompt": "FR-19 changed from ACTIVE to OUT_OF_SCOPE. Update the changelog.",
+      "expected": [
+        "Evaluates repository changelog policy and release impact before adding an entry",
+        "Does not redefine the requirement lifecycle"
+      ],
+      "forbidden": [
+        "Assuming every lifecycle transition must be a changelog entry"
+      ]
+    },
+    {
+      "id": "CHG-E05",
+      "name": "No remote release action",
+      "prompt": "Prepare the changelog for v1.1.0.",
+      "expected": [
+        "Edits/reviews changelog content only unless separately authorized"
+      ],
+      "forbidden": [
+        "Creating tags, releases, merges, or deployments without authorization"
+      ]
+    }
+  ]
+}

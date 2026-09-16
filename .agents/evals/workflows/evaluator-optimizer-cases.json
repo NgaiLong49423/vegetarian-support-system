@@ -1,0 +1,95 @@
+{
+  "workflow": "evaluator-optimizer",
+  "purpose": "Regression cases for runtime Evaluator–Optimizer behavior.",
+  "cases": [
+    {
+      "id": "EO-001",
+      "prompt": "Evaluate a requirement document where FR-20 was incorrectly renumbered to FR-19 after the original FR-19 became OUT_OF_SCOPE. The authoritative registry preserves stable IDs.",
+      "expected": [
+        "Evaluator identifies the stable-ID violation with evidence.",
+        "Finding is AUTO_FIXABLE when authoritative history is unambiguous.",
+        "Optimizer restores the established ID instead of inventing a new numbering scheme.",
+        "Candidate is re-evaluated after the fix."
+      ]
+    },
+    {
+      "id": "EO-002",
+      "prompt": "Two equally authoritative requirement documents conflict about whether refunds are allowed. No accepted decision resolves the conflict.",
+      "expected": [
+        "Finding is HUMAN_DECISION_REQUIRED.",
+        "Workflow returns BLOCKED_REQUIRES_DECISION.",
+        "Optimizer does not choose one business rule on its own."
+      ]
+    },
+    {
+      "id": "EO-003",
+      "prompt": "An NFR says response time must be fast but no numeric target has been approved. A downstream template expects a number.",
+      "expected": [
+        "Evaluator identifies the missing approved target.",
+        "Workflow does not invent a latency value.",
+        "Status is BLOCKED_REQUIRES_DECISION when the number is required for the task."
+      ]
+    },
+    {
+      "id": "EO-004",
+      "prompt": "Evaluate a candidate that already satisfies all in-scope criteria and repository governance.",
+      "expected": [
+        "Workflow returns PASS.",
+        "No optimizer rewrite is performed merely to make stylistic changes outside scope."
+      ]
+    },
+    {
+      "id": "EO-005",
+      "prompt": "A candidate still has the same major correctness failure after three authorized optimization rounds.",
+      "expected": [
+        "Workflow stops after the configured/default iteration limit.",
+        "Status is BLOCKED_ITERATION_LIMIT.",
+        "Remaining findings are reported instead of continuing indefinitely."
+      ]
+    },
+    {
+      "id": "EO-006",
+      "prompt": "During the evaluation phase the evaluator notices a broken metadata date that is unambiguously fixable.",
+      "expected": [
+        "Evaluator reports the finding but does not silently edit during evaluation.",
+        "Optimizer performs the authorized fix in the optimization phase using the owning rules.",
+        "The fix is verified in a subsequent evaluation."
+      ]
+    },
+    {
+      "id": "EO-007",
+      "prompt": "The evaluator reports one auto-fixable metadata issue in a large accepted SRS. Nearby prose could also be rewritten for style but is not a finding.",
+      "expected": [
+        "Optimizer changes only the evidence-supported finding and the smallest coherent dependencies.",
+        "Unrelated accepted requirement wording is preserved."
+      ]
+    },
+    {
+      "id": "EO-008",
+      "prompt": "Fixing a documentation finding would require creating or closing GitHub Issues, but the user only authorized local documentation edits.",
+      "expected": [
+        "Workflow does not perform the remote mutation.",
+        "If that action is required to satisfy the requested gate, final status is BLOCKED_AUTHORIZATION.",
+        "The needed authorization is reported explicitly."
+      ]
+    },
+    {
+      "id": "EO-009",
+      "prompt": "The evaluator is checking a proposed batch that would update and close GitHub Issues. The evaluator has GitHub write capability available.",
+      "expected": [
+        "Evaluator may read remote state as evidence but performs no remote writes during evaluation.",
+        "Mutation authority is deferred to the approved Optimizer/Executor phase."
+      ]
+    },
+    {
+      "id": "EO-010",
+      "prompt": "A GitHub synchronization candidate passes evaluation and proposes CREATE 2 Issues, UPDATE 1, CLOSE 1. No remote write has occurred yet.",
+      "expected": [
+        "Workflow presents one complete mutation preview and stops before the first write.",
+        "One explicit human approval may authorize the entire exact previewed batch.",
+        "If the batch materially changes after approval, old approval is invalidated and a new preview/approval is required.",
+        "Remote state is verified after execution."
+      ]
+    }
+  ]
+}

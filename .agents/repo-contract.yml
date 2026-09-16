@@ -1,12 +1,59 @@
 project_type: swp391-fullstack-webapp
 agent_entrypoint: AGENTS.md
+policy_document: .agents/POLICY.md
 document_register: docs/README.md
-precedence:
-  - user_request
-  - CONTRIBUTING.md # shared contribution workflow
-  - AGENTS.md # additional agent-specific instructions
-  - docs/README.md
-  - selected_skill
+
+runtime_portability:
+  vendor_neutral: true
+  supported_clients: multiple_repository_capable_agents
+  client_specific_commands_are_authoritative: false
+  requirement: agent_can_read_repository_governance_and_selected_skills
+
+eval_isolation:
+  system_under_test: isolated_clean_local_repository
+  harness_outside_evaluated_workspace: true
+  hidden_artifacts_copied_to_sut: false
+  evaluator_only_content: [case_definitions, expected_assertions, grading, baselines, manifests, evidence]
+  tested_agent_visible_agent_paths: [AGENTS.md, .agents/POLICY.md, .agents/repo-contract.yml, .agents/skills/, .agents/workflows/]
+  tested_agent_excluded_paths: [.agents/evals/, .agents/scripts/, .agents/outputs/, .agents/skills/*/evals/]
+  evaluator_reads: [harness, system_under_test]
+  evaluator_mutation_mode: harness_only
+  leakage_result: {evidence_validity: INVALID, reason: evaluation_leakage}
+
+authority_model:
+  task_intent:
+    source: user_request
+    meaning: defines_requested_outcome_and_scope_not_blanket_safety_override
+  project_decisions:
+    order:
+      - explicit_authorized_decision_in_current_task
+      - CONTRIBUTING.md
+      - AGENTS.md
+      - docs/README.md
+      - concern_specific_authoritative_document
+      - selected_skill_defaults
+  safety_invariants:
+    source: .agents/POLICY.md
+    overridable_by_normal_user_request: false
+    when_conflict: stop_affected_action_and_report
+
+capability_policy:
+  read_task_relevant: allow
+  local_write_requested_scope: allow_when_owning_rules_permit
+  delete_rename_broad_restructure: plan_and_authority_required
+  remote_write: runtime_approval_required
+  destructive_remote_or_git: deny_by_default
+
+remote_mutation_policy:
+  approval_mode: one_approval_per_previewed_batch
+  approval_scope: exact_previewed_targets_and_actions
+  require_reapproval_if_batch_materially_changes: true
+  github_read: allow_without_approval
+  github_issue_mutations_requiring_approval: [create, update, close, reopen, label, assign]
+  github_project_mutations_requiring_approval: [field_update, item_update]
+  denied_for_ordinary_skills: [delete_issue, delete_comment, force_push, delete_branch, merge_pull_request]
+  verification_required_after_execution: true
+
 reading_policy:
   default: task_scoped_registered_documents
   unknown_files: ignore_unless_user_requested_or_directly_relevant
@@ -20,8 +67,24 @@ progress:
   local_reports: false
 agent_paths:
   skills: .agents/skills/
+  workflows: .agents/workflows/
+  evals: .agents/evals/
+  acceptance_evals: .agents/evals/acceptance/
+  incidents: .agents/evals/incidents/
+  eval_runs: .agents/evals/runs/
+  scripts: .agents/scripts/
   requested_outputs: .agents/outputs/<task>/
   automatic_reports: false
+quality_loops:
+  evaluator_optimizer_workflow: .agents/workflows/evaluator-optimizer.md
+  default_max_optimization_rounds: 3
+  human_decision_status: BLOCKED_REQUIRES_DECISION
+  iteration_limit_status: BLOCKED_ITERATION_LIMIT
+  authorization_status: BLOCKED_AUTHORIZATION
+  default_use: important_multi_artifact_or_high_impact_tasks
+  evaluator_remote_mutation_mode: read_only
+  remote_batch_approval: required_after_preview_before_first_write
+  trivial_edits: not_required_unless_explicitly_requested
 canonical_docs:
   project_overview: README.md
   product_requirements: docs/requirements/PRD.md

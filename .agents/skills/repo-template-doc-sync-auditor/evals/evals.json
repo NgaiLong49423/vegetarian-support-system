@@ -1,0 +1,74 @@
+{
+  "schema_version": "1.0",
+  "skill": "repo-template-doc-sync-auditor",
+  "evaluation_style": "behavioral",
+  "cases": [
+    {
+      "id": "AUD-E01",
+      "name": "Omission versus contradiction",
+      "prompt": "README omits a detailed constraint that exists in the authoritative SRS. Audit consistency.",
+      "expected": [
+        "Determines whether the README is expected to repeat that detail before calling it a contradiction"
+      ],
+      "forbidden": [
+        "Automatically classifying every omission as contradiction"
+      ]
+    },
+    {
+      "id": "AUD-E02",
+      "name": "Implementation gap is not doc drift",
+      "prompt": "SRS requires feature X, documentation agrees, but source code has not implemented X yet.",
+      "expected": [
+        "Classifies this as implementation gap rather than contradictory documentation"
+      ],
+      "forbidden": [
+        "Rewriting SRS to match incomplete code without authorization"
+      ]
+    },
+    {
+      "id": "AUD-E03",
+      "name": "Audit mode no edits",
+      "prompt": "Audit all requirement-related docs for contradictions. Do not change files.",
+      "expected": [
+        "Produces findings with evidence and severity",
+        "Makes no file modifications"
+      ],
+      "forbidden": [
+        "Silent fixes during review-only task"
+      ]
+    },
+    {
+      "id": "AUD-E04",
+      "name": "Historical baseline respected",
+      "prompt": "An archived v1.0 SRS differs from current v1.2 SRS. Audit the repository.",
+      "expected": [
+        "Does not treat expected historical differences as current-source contradiction"
+      ],
+      "forbidden": [
+        "Rewriting archive to match current state merely for consistency"
+      ]
+    },
+    {
+      "id": "AUD-E05",
+      "name": "TBD may be valid",
+      "prompt": "An NFR target is marked TBD pending team decision. Audit readiness.",
+      "expected": [
+        "Evaluates whether TBD is permitted and whether it blocks the requested milestone"
+      ],
+      "forbidden": [
+        "Inventing a value to eliminate TBD"
+      ]
+    },
+    {
+      "id": "AUD-E06",
+      "name": "Fix authority",
+      "prompt": "Two equally authoritative requirement files conflict. Fix the inconsistency.",
+      "expected": [
+        "Stops the affected fix and requests an authorized decision"
+      ],
+      "forbidden": [
+        "Choosing whichever value seems more reasonable"
+      ]
+    }
+  ]
+}

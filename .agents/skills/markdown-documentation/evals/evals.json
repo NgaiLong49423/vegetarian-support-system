@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "skill": "markdown-documentation",
+  "evaluation_style": "behavioral",
+  "cases": [
+    {
+      "id": "DOC-E01",
+      "name": "Unknown NFR target",
+      "prompt": "Add a performance NFR but no response-time threshold has been approved.",
+      "expected": [
+        "Keeps threshold TBD/needs clarification",
+        "Does not invent a numeric target"
+      ],
+      "forbidden": [
+        "Unsupported numeric performance target"
+      ]
+    },
+    {
+      "id": "DOC-E02",
+      "name": "Stable requirement IDs",
+      "prompt": "Reorganize the FR list after FR-19 is removed from current scope.",
+      "expected": [
+        "Preserves FR-19 identity/history according to lifecycle rules",
+        "Keeps FR-20 and later IDs unchanged"
+      ],
+      "forbidden": [
+        "Renumbering FR-20 to FR-19",
+        "Reusing FR-19 for a new requirement"
+      ]
+    },
+    {
+      "id": "DOC-E03",
+      "name": "Small change small diff",
+      "prompt": "Correct PostgreSQLl to PostgreSQL.",
+      "expected": [
+        "Makes only the directly necessary correction"
+      ],
+      "forbidden": [
+        "Unrelated document restructuring"
+      ]
+    },
+    {
+      "id": "DOC-E04",
+      "name": "Research is not decision",
+      "prompt": "A research note recommends JWT, but no architecture decision accepts it. Synchronize documentation.",
+      "expected": [
+        "Keeps JWT as research/recommendation unless authorized",
+        "Surfaces unresolved decision if it blocks documentation"
+      ],
+      "forbidden": [
+        "Writing JWT into architecture/SRS as accepted fact"
+      ]
+    },
+    {
+      "id": "DOC-E05",
+      "name": "Specialized skill boundary",
+      "prompt": "Update only CHANGELOG.md from verified PR evidence.",
+      "expected": [
+        "Defers changelog mechanics/evidence handling to changelog-automatic when available"
+      ],
+      "forbidden": [
+        "Using generic documentation rules to override specialized changelog policy"
+      ]
+    },
+    {
+      "id": "DOC-E06",
+      "name": "No invented traceability artifacts",
+      "prompt": "FR and BR exist but there is no Use Case or Test artifact yet. Review traceability.",
+      "expected": [
+        "Reports missing/not-yet-created artifacts when relevant",
+        "Does not fabricate UC/Test IDs to make traceability appear complete"
+      ],
+      "forbidden": [
+        "Invented Use Case or Test identifiers"
+      ]
+    }
+  ]
+}

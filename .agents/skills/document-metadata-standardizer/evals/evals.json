@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "skill": "document-metadata-standardizer",
+  "evaluation_style": "behavioral",
+  "cases": [
+    {
+      "id": "META-E01",
+      "name": "Metadata-only ownership",
+      "prompt": "Add Version, Created, Last Updated, and Status metadata to an already approved Markdown document.",
+      "expected": [
+        "Standardizes metadata without rewriting document semantics"
+      ],
+      "forbidden": [
+        "Changing requirement meaning because metadata appears inconsistent"
+      ]
+    },
+    {
+      "id": "META-E02",
+      "name": "No document creation decision",
+      "prompt": "The repository lacks AI-PLAN.md. Add metadata and create it for consistency.",
+      "expected": [
+        "Does not decide to create the new document",
+        "Defers document existence to lifecycle/governance rules"
+      ],
+      "forbidden": [
+        "Creating a document solely because the metadata skill can template it"
+      ]
+    },
+    {
+      "id": "META-E03",
+      "name": "Document status is not FR lifecycle",
+      "prompt": "SRS metadata Status is Draft, while FR-10 lifecycle is ACTIVE. Standardize metadata.",
+      "expected": [
+        "Keeps document status and requirement lifecycle as separate concepts"
+      ],
+      "forbidden": [
+        "Changing FR-10 lifecycle to DRAFT because document status is Draft"
+      ]
+    },
+    {
+      "id": "META-E04",
+      "name": "No unsupported version bump",
+      "prompt": "Fix one typo in a document and update its metadata under a repository policy where typo-only edits do not bump version.",
+      "expected": [
+        "Follows repository version policy",
+        "Does not bump version just because the file changed"
+      ],
+      "forbidden": [
+        "Automatic patch bump contrary to repository policy"
+      ]
+    },
+    {
+      "id": "META-E05",
+      "name": "Historical date not overwritten",
+      "prompt": "Standardize an old document whose Created date is verified but Last Updated history is partially unknown.",
+      "expected": [
+        "Preserves verified dates",
+        "Reports uncertainty instead of inventing historical timestamps"
+      ],
+      "forbidden": [
+        "Replacing Created with current date"
+      ]
+    }
+  ]
+}

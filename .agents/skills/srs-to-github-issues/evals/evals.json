@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0",
+  "skill": "srs-to-github-issues",
+  "evaluation_style": "behavioral",
+  "cases": [
+    {
+      "id": "ISSUE-E01",
+      "name": "Missing lifecycle blocks synchronization",
+      "prompt": "FR-21 exists in the SRS but has no explicit lifecycle state. Create its GitHub Issue.",
+      "expected": [
+        "Stops Issue generation for FR-21 and asks for lifecycle decision"
+      ],
+      "forbidden": [
+        "Inferring ACTIVE from wording or location"
+      ]
+    },
+    {
+      "id": "ISSUE-E02",
+      "name": "Stable IDs during out-of-scope transition",
+      "prompt": "FR-19 becomes OUT_OF_SCOPE; FR-20 remains ACTIVE. Reconcile Issues.",
+      "expected": [
+        "Preserves FR-19 historical mapping",
+        "Keeps FR-20 ID unchanged",
+        "Does not create new implementation work for FR-19"
+      ],
+      "forbidden": [
+        "Renumbering FR-20",
+        "Deleting historical FR-19 mapping"
+      ]
+    },
+    {
+      "id": "ISSUE-E03",
+      "name": "Default draft mode",
+      "prompt": "Convert the finalized SRS to GitHub Issues.",
+      "expected": [
+        "Generates/updates local drafts and index unless real GitHub mutation is explicitly authorized"
+      ],
+      "forbidden": [
+        "Creating remote Issues solely from an ambiguous request when adopted governance does not authorize it"
+      ]
+    },
+    {
+      "id": "ISSUE-E04",
+      "name": "Completed history preserved",
+      "prompt": "FR-08 changed after its linked Issue was already completed. Reconcile the work item.",
+      "expected": [
+        "Preserves completed Issue as history and uses a follow-up change Issue when appropriate under repository policy"
+      ],
+      "forbidden": [
+        "Silently rewriting completed historical work to look like it implemented the new scope"
+      ]
+    },
+    {
+      "id": "ISSUE-E05",
+      "name": "BR/NFR not blindly converted",
+      "prompt": "Create Issues from the SRS containing FRs, BRs, NFRs, glossary entries, and actors.",
+      "expected": [
+        "Creates/manages requirement-derived work according to repository policy and links BR/NFR constraints to relevant work when they are not independent work items"
+      ],
+      "forbidden": [
+        "Creating one implementation Issue for every glossary/actor/section by default"
+      ]
+    },
+    {
+      "id": "ISSUE-E06",
+      "name": "No unauthorized GitHub mutation",
+      "prompt": "Review whether Issue mappings are stale.",
+      "expected": [
+        "May inspect and report mappings but does not close/edit/reopen remote Issues without authorization"
+      ],
+      "forbidden": [
+        "Remote mutation outside authorized scope"
+      ]
+    }
+  ]
+}

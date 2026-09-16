@@ -1,12 +1,17 @@
 ---
 name: srs-to-github-issues
-description: Convert SRS requirements into traceable GitHub work items and keep linked Issues synchronized when the SRS changes. Use this skill to draft, create, reconcile, update, defer, reopen, or close requirement-linked Issues; maintain an Issue index; estimate work; assign repository-approved labels; and optionally sync verified GitHub Project metadata. Requirement lifecycle status must be explicit before Issue creation or reconciliation; never guess it.
-risk: critical
-source: self
-source_type: custom
-version: v2.0.0
-created_date: 2026-06-27
-last_updated_date: 2026-09-13
+description: 'Convert SRS requirements into traceable GitHub work items and keep linked Issues synchronized when the SRS changes. Use this skill to draft, create, reconcile, update, defer, reopen, or close requirement-linked Issues; maintain an Issue index; estimate work; assign repository-approved labels; and optionally sync verified GitHub Project metadata. Requirement lifecycle status must be explicit before Issue creation or reconciliation; never guess it.'
+compatibility: >
+  Draft and planning modes work without GitHub write access. Real GitHub synchronization requires an
+  authenticated runtime with repository-scoped GitHub read/write capability and a human approval gate
+  before the first remote write. No specific agent vendor or client is required.
+metadata:
+  swp391-risk: "critical"
+  swp391-source: "self"
+  swp391-source-type: "custom"
+  swp391-version: "v2.0.1"
+  swp391-created-date: "2026-06-27"
+  swp391-last-updated-date: "2026-09-16"
 ---
 
 # SRS to GitHub Issues
@@ -75,16 +80,21 @@ Preserve requirement identifiers exactly.
 - Do not invent child IDs that do not exist in the SRS.
 - Do not delete historical Issue links merely because a requirement changes lifecycle.
 
-### 4. GitHub Mutations Require Authorization
+### 4. GitHub Mutations Require Previewed Batch Approval
 
-Draft/index generation is local working-artifact work.
+Draft/index generation and GitHub reads are local/read-only preparation work.
 
-Real GitHub mutations such as creating, editing, reopening, closing, labeling, assigning, or Project syncing require either:
+Before any real GitHub write:
 
-- explicit authorization in the current task; or
-- an adopted repository workflow that clearly authorizes this synchronization as part of the requested operation.
+1. complete lifecycle, mapping, and repository preflight checks;
+2. build one complete mutation preview grouped by `CREATE`, `UPDATE`, `CLOSE`, `REOPEN`, and `PROJECT_FIELD_UPDATE` as applicable;
+3. show the affected requirement/Issue identifiers and the evidence/reason for every planned action;
+4. stop before the first remote write and request one human approval for the complete previewed batch;
+5. execute only the approved batch;
+6. require a new preview/approval if targets or actions materially change;
+7. verify remote state after execution and report partial failures.
 
-Never treat a generic documentation edit as permission for unrelated GitHub mutations.
+A generic instruction such as "sync the docs" is not remote-write approval. An earlier approval does not authorize a materially changed batch. Approval never permits actions forbidden by `.agents/POLICY.md`.
 
 ## Source of Truth and Governance
 
@@ -218,7 +228,7 @@ When regenerating:
 
 ### 2. GitHub Creation Mode
 
-Create real Issues only after authorization and preflight.
+Create real Issues only after preflight **and approval of the exact mutation batch preview**.
 
 Rules:
 
@@ -257,7 +267,7 @@ Read `references/issue-reconciliation.md`.
 
 ### 4. GitHub Project Sync Mode
 
-Explicit authorization required.
+Include Project-field mutations in the previewed batch. Explicit approval of that batch is required before mutation.
 
 Verify repository owner/name, Project owner/number/ID, field IDs, option IDs, and Issue item IDs before mutation.
 

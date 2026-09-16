@@ -5,11 +5,12 @@ description: >
   Use this skill to detect contradictions, stale paths, broken links, lifecycle/status mismatches,
   source-of-truth conflicts, requirement-to-implementation gaps, GitHub workflow drift, and agent-governance drift
   before making documentation edits. Prefer repository-defined governance and authority by concern over generic defaults.
-risk: medium
-source: self
-version: v1.2.0
-created_date: 2026-06-29
-last_updated_date: 2026-09-13
+metadata:
+  swp391-risk: "medium"
+  swp391-source: "self"
+  swp391-version: "v1.2.1"
+  swp391-created-date: "2026-06-29"
+  swp391-last-updated-date: "2026-09-16"
 ---
 
 # Repo Template Documentation Sync Auditor
