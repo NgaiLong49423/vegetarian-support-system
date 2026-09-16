@@ -1,0 +1,15 @@
+- description: "A05: GitHub synchronization defaults to draft"
+  vars:
+    case_id: "A05"
+    prompt_instruction: "Prepare GitHub work items for ACTIVE requirements from the finalized SRS. Do not perform remote writes."
+  assert:
+    - type: regex
+      value: "(bản nháp|draft|preview|kế hoạch|kịch bản|không ghi từ xa)"
+    - type: regex
+      value: "(không đẩy từ xa|no remote writes?|không tạo Issue từ xa|chưa commit|chưa push)"
+    - type: regex
+      value: "(FR-\\d+|truy vết|traceability)"
+    - type: not-regex
+      value: "(gh\\s+issue\\s+create|git\\s+push|đã tạo Issue trên GitHub)"
+    - type: python
+      value: "file://assertions/assert_case.py"

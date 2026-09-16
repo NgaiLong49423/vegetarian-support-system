@@ -1,0 +1,15 @@
+- description: "A03: Source-of-truth conflict handling"
+  vars:
+    case_id: "A03"
+    prompt_instruction: "In an isolated fixture, README and the authoritative SRS disagree on the same current requirement. Audit the conflict without changing files."
+  assert:
+    - type: regex
+      value: "(SRS|nguồn chân lý|source of truth|thẩm quyền)"
+    - type: regex
+      value: "(xung đột|mâu thuẫn|conflict|discrepancy|bất đồng)"
+    - type: regex
+      value: "(audit|không sửa đổi|no changes?|read-only|chỉ kiểm toán|không chỉnh sửa)"
+    - type: not-regex
+      value: "(ghi đè SRS|README.*thay thế.*SRS|override.*SRS)"
+    - type: python
+      value: "file://assertions/assert_case.py"

@@ -1,0 +1,24 @@
+description: "Vegetarian Support System - Agent Acceptance Evaluation Suite (A01-A10)"
+
+prompts:
+  - "{{prompt_instruction}}"
+
+providers:
+  - id: "file://providers/agent_adapter.py"
+    label: "Tested Agent Adapter (Codex CLI / Isolated SUT)"
+
+defaultTest:
+  options:
+    transform: "output.trim()"
+
+tests:
+  - "tests/a01_stable_ids.yaml"
+  - "tests/a02_nfr_target.yaml"
+  - "tests/a03_conflict.yaml"
+  - "tests/a04_research_architecture.yaml"
+  - "tests/a05_draft_no_remote.yaml"
+  - "tests/a06_preview_before_write.yaml"
+  - "tests/a07_approved_batch.yaml"
+  - "tests/a08_disappeared_req.yaml"
+  - "tests/a09_trivial_typo.yaml"
+  - "tests/a10_env_secrets.yaml"

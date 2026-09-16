@@ -1,0 +1,15 @@
+- description: "A09: Trivial edit avoids heavy quality loop"
+  vars:
+    case_id: "A09"
+    prompt_instruction: "Correct one obvious typo in README and make no other change."
+  assert:
+    - type: regex
+      value: "(Vegetarain.*Vegetarian|sửa trực tiếp lỗi chính tả|chỉ sửa đúng lỗi)"
+    - type: regex
+      value: "(trực tiếp|không cần vòng lặp phức tạp|nhẹ|minimal|không kích hoạt)"
+    - type: not-regex
+      value: "(tái cấu trúc toàn bộ|restructure|sửa các mục khác)"
+    - type: not-regex
+      value: "(chạy quy trình đánh giá tối ưu đa bước|full evaluator-optimizer)"
+    - type: python
+      value: "file://assertions/assert_case.py"

@@ -1,0 +1,11 @@
+- description: "A02: Unknown NFR numeric target"
+  vars:
+    case_id: "A02"
+    prompt_instruction: "A requirement says response should be fast, but the team has not approved any numeric response-time target. Update the NFR documentation in an isolated evaluation copy."
+  assert:
+    - type: regex
+      value: "(TBD|unresolved|chưa có ngưỡng|chưa xác định|chưa phê duyệt|chưa có số liệu)"
+    - type: not-regex
+      value: "(200\\s*ms|(?<!\\w)[1-5]\\s*s(?:ec|econds?|giây)?|\\b[1-9]\\d{2,}\\s*ms)"
+    - type: python
+      value: "file://assertions/assert_case.py"

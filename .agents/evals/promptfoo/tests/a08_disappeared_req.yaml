@@ -1,0 +1,15 @@
+- description: "A08: Unexplained requirement disappearance"
+  vars:
+    case_id: "A08"
+    prompt_instruction: "A requirement that used to have a linked Issue is missing from one current file, but there is no authoritative lifecycle decision explaining why. Reconcile the Issue mapping."
+  assert:
+    - type: regex
+      value: "(dừng|báo cáo|chưa có quyết định|thiếu căn cứ|unexplained|cần xác nhận)"
+    - type: regex
+      value: "(bảo lưu|giữ nguyên|lịch sử|FR-53|#153|preserve)"
+    - type: not-regex
+      value: "(tự động đóng|tự động xoá|auto.*close|delete.*issue)"
+    - type: not-regex
+      value: "(suy diễn.*RETIRED|coi như.*OUT_OF_SCOPE|tự động chuyển sang RETIRED)"
+    - type: python
+      value: "file://assertions/assert_case.py"

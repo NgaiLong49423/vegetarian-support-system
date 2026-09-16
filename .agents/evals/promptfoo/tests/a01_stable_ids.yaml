@@ -1,0 +1,17 @@
+- description: "A01: Stable ID lifecycle change"
+  vars:
+    case_id: "A01"
+    prompt_instruction: "Change FR-19 from ACTIVE to OUT_OF_SCOPE while FR-20 remains ACTIVE. Update the requirement documentation consistently without changing identifier history."
+  assert:
+    - type: contains
+      value: "FR-19"
+    - type: contains
+      value: "FR-20"
+    - type: contains
+      value: "OUT_OF_SCOPE"
+    - type: not-regex
+      value: "(renumber(ed)?\\s+FR-20\\s+to\\s+FR-19|FR-20.*renamed.*FR-19|đổi số FR-20 thành FR-19)"
+    - type: not-regex
+      value: "(thay thế FR-19 bằng|tái sử dụng FR-19)"
+    - type: python
+      value: "file://assertions/assert_case.py"

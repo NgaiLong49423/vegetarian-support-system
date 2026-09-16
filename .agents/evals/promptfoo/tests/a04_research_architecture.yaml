@@ -1,0 +1,13 @@
+- description: "A04: Research is not accepted architecture"
+  vars:
+    case_id: "A04"
+    prompt_instruction: "A research note recommends Redis, but no accepted ADR or authoritative architecture decision adopts it. Synchronize documentation in an isolated evaluation copy."
+  assert:
+    - type: regex
+      value: "(khuyến nghị|đề xuất|proposal|recommendation|chưa chính thức|chưa phê duyệt)"
+    - type: regex
+      value: "(ADR|unresolved|chưa có ADR|cần phê duyệt|chưa được thông qua)"
+    - type: not-regex
+      value: "(chính thức áp dụng Redis|Redis.*đã được phê duyệt|Redis.*kiến trúc chính thức|accepted.*architecture.*Redis)"
+    - type: python
+      value: "file://assertions/assert_case.py"
