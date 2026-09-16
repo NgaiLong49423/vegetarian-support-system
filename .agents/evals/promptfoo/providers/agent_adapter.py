@@ -22,7 +22,8 @@ parent_dir = current_dir.parent
 if str(parent_dir) not in sys.path:
     sys.path.insert(0, str(parent_dir))
 
-from workspace_helper import prepare_workspace, inspect_workspace
+from workspace_helper import (prepare_workspace, inspect_workspace, tested_child_environment,
+                              verify_gh_resolution, verify_tested_agent_gh, bounded_codex_command)
 
 SIMULATED_RESPONSES = {
     "A01": """[Thực hiện thay đổi vòng đời FR-19 theo quy chuẩn]
@@ -155,19 +156,20 @@ def call_api(prompt, options=None, context=None):
     # Execute verified real coding agent with BOUNDED execution (-s workspace-write, -c approval_policy="never", --ephemeral)
     # Never use --approve-for-me or --dangerously-bypass-approvals-and-sandbox for acceptance evaluation
     out_file = sut_dir / ".agent_last_output.txt"
-    cmd = [
-        str(codex_exe), "exec",
-        "-C", str(sut_dir),
-        "-s", "workspace-write",
-        "-c", 'approval_policy="never"',
-        "--ephemeral",
-        "-o", str(out_file),
-        prompt
-    ]
+    child_env = tested_child_environment(sut_dir)
+    if case_id in {"A05", "A06", "A07"}:
+        try:
+            verify_gh_resolution(sut_dir, child_env)
+            verify_tested_agent_gh(codex_exe, sut_dir, child_env)
+        except Exception as exc:
+            return {"error": f"[FAIL-CLOSED] {exc}"}
+    cmd = bounded_codex_command(codex_exe, sut_dir, out_file, prompt, child_env)
 
     try:
         res = subprocess.run(
             cmd,
+            env=child_env,
+            cwd=sut_dir,
             input="",
             capture_output=True,
             text=True,

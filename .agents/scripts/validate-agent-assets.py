@@ -18,10 +18,14 @@ NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 TOP_KEY_RE = re.compile(r"^([A-Za-z0-9_-]+):(?:\s|$)")
 REFERENCE_RE = re.compile(r"references/[A-Za-z0-9_.\-/]+\.(?:md|json|ya?ml)")
 DANGEROUS_UNICODE = {"\u202A", "\u202B", "\u202C", "\u202D", "\u202E", "\u2066", "\u2067", "\u2068", "\u2069", "\u200B", "\u200C", "\u200D", "\uFEFF"}
-SCRIPT_EXTENSIONS = {".py", ".sh", ".ps1", ".js", ".ts"}
+SCRIPT_EXTENSIONS = {".py", ".sh", ".ps1", ".js", ".ts", ".cmd", ".bat"}
 NON_PY_REVIEW_PATTERNS = {
     "network-or-upload": re.compile(r"\b(curl|wget|Invoke-WebRequest|requests\.|urllib|fetch\(|webhook|socket\.)", re.I),
     "process-execution": re.compile(r"\b(subprocess\.|os\.system\s*\(|bash\s+-c|sh\s+-c|powershell\b)", re.I),
+    "dynamic-execution": re.compile(r"\b(?:eval|exec)\s*\(", re.I),
+    "remote-write": re.compile(r"\bgit\s+push\b|\bgh\s+(?:issue|pr|project)\b", re.I),
+    "sensitive-path": re.compile(r"\.env\b|id_rsa|private_key", re.I),
+    "node-execution": re.compile(r"\b(?:npm|npx)(?:\.cmd)?\b", re.I),
     "package-install": re.compile(r"\b(pip|npm|yarn|pnpm|apt(?:-get)?|brew)\s+install\b", re.I),
 }
 NON_PY_HARD_FAIL_PATTERNS = {
@@ -151,15 +155,43 @@ def scan_python_script(path: Path):
                 target = node.args[0].value.lower().replace("\\", "/")
                 if target.endswith("/.env") or target == ".env" or "id_rsa" in target or "private_key" in target:
                     warnings.append(f"{path}: REVIEW REQUIRED sensitive-path access: {node.args[0].value}")
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            for rule, pattern in NON_PY_REVIEW_PATTERNS.items():
+                if pattern.search(node.value):
+                    warnings.append(f"{path}: REVIEW REQUIRED command/string: {rule}")
+        if isinstance(node, ast.Call) and dotted_name(node.func) in review_calls and node.args:
+            argument = node.args[0]
+            command = None
+            if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+                command = argument.value
+            elif isinstance(argument, (ast.List, ast.Tuple)):
+                command = " ".join(str(x.value) for x in argument.elts if isinstance(x, ast.Constant))
+            if command:
+                for rule, pattern in NON_PY_REVIEW_PATTERNS.items():
+                    if pattern.search(command):
+                        warnings.append(f"{path}: REVIEW REQUIRED executable command: {rule}")
+                for rule, pattern in NON_PY_HARD_FAIL_PATTERNS.items():
+                    if pattern.search(command):
+                        errors.append(f"{path}: unsafe executable-script pattern: {rule}")
     return errors, warnings
+
+
+def asset_files(agents: Path):
+    # Prune generated/dependency directories before traversal (including npm trees).
+    import os
+    excluded = {"node_modules", "__pycache__", ".git", ".venv", "outputs", "workspaces", ".promptfoo"}
+    for root, dirs, files in os.walk(agents):
+        dirs[:] = sorted(d for d in dirs if d not in excluded)
+        for name in sorted(files):
+            yield Path(root) / name
 
 
 def scan_executable_scripts(agents: Path):
     errors, warnings = [], []
-    scripts = agents / "scripts"
-    if not scripts.is_dir():
-        return errors, warnings
-    for path in sorted(p for p in scripts.rglob("*") if p.is_file() and p.suffix.lower() in SCRIPT_EXTENSIONS):
+    for path in asset_files(agents):
+        if path.suffix.lower() not in SCRIPT_EXTENSIONS:
+            continue
         if path.suffix.lower() == ".py":
             e, w = scan_python_script(path)
             errors += e
@@ -278,7 +310,7 @@ def main():
         print(f"FAIL: {agents} not found")
         return 2
 
-    for p in agents.rglob("*"):
+    for p in asset_files(agents):
         if not p.is_file():
             continue
         try:
@@ -297,7 +329,7 @@ def main():
             errors += e
             warnings += w
 
-    for p in agents.rglob("*.json"):
+    for p in (p for p in asset_files(agents) if p.suffix == ".json"):
         try:
             json.loads(p.read_text(encoding="utf-8"))
         except Exception as ex:

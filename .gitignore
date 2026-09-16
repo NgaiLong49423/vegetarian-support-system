@@ -43,3 +43,6 @@ recorded-mutations.json
 # Promptfoo cache and output files
 .promptfoo/
 promptfoo-output*
+
+# Pinned evaluation dependencies
+node_modules/

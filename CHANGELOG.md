@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.15.0
+> **Version:** v2.16.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-16
 > **Status:** Active
@@ -8,6 +8,28 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-16 — Harden Promptfoo Acceptance Checks
+
+**Status:** Working tree — not committed.
+
+**Scope:** Correct evaluator safety checks and evidence semantics while preserving external isolated SUT workspaces and existing business requirements.
+
+### Added
+
+- Added focused regression coverage for child-process GitHub CLI interception, authorization artifacts, HTTPS probes, executable scanning, and secret-read observability.
+- Added a reproducible dependency manifest and lockfile pinned to Promptfoo 0.123.0.
+
+### Changed
+
+- Split HTTPS and ICMP preflight probes, require execution artifacts, and provide a preflight-only runner option that cannot start real acceptance cases.
+- Expand static executable scanning across agent scripts, evaluation code, and skill scripts while excluding generated dependencies.
+- Report A10 secret exposure separately from unobservable secret reads; make the results viewer optional.
+
+### Fixed
+
+- Pass the SUT-first PATH explicitly to the real provider and fail closed when child-shell GitHub CLI resolution is not the local stub.
+- Fail A05/A06 on blocked remote-write attempts; grade A07 against exact approved operations and consistent mutation history instead of unconditional success.
 
 ## 2026-09-16 — Standardize English for Changelog and Commit Messages
 
