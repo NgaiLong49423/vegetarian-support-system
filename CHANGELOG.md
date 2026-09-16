@@ -1,13 +1,73 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.12.0
+> **Version:** v2.15.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-15
+> **Last Updated:** 2026-09-16
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-16 — Standardize English for Changelog and Commit Messages
+
+**Status:** Working tree — not committed.
+
+**Scope:** Establish English as the mandatory language for all new or edited `CHANGELOG.md` content and all Git commit messages while retaining Vietnamese as the default prose language for other internal development documentation.
+
+### Added
+
+- Added the canonical English-only exception for changelog entries and Git commit subjects, bodies, and contributor-authored footers to the Documentation Language Policy.
+- Added concise enforcement guidance and English Conventional Commit examples to `CONTRIBUTING.md` and agent instructions to `AGENTS.md`.
+
+### Changed
+
+- Converted the current working-tree changelog entries dated 2026-09-16 to English so they comply with the new policy.
+
+### Fixed
+
+- Removed Vietnamese commit-message examples that conflicted with the new repository rule.
+
+## 2026-09-16 — Finalize Requirements Baseline v1.0.0
+
+**Status:** Working tree — not committed.
+
+**Scope:** Standardize and promote the PRD and Modular SRS document set to the active Requirements Baseline v1.0.0, including synchronized metadata, document registration, and downstream design and verification guidance.
+
+### Added
+
+- Defined post-baseline change control: semantic changes require review, FR/BR/NFR impact analysis, and an appropriate document-version update.
+- Clarified how the approved baseline feeds ERD/API design and traceable Test Cases derived from Acceptance Criteria.
+
+### Changed
+
+- Promoted `PRD.md`, root `SRS.md`, `FUNCTIONAL-REQUIREMENTS.md`, `BUSINESS-RULES.md`, and `NON-FUNCTIONAL-REQUIREMENTS.md` to `v1.0.0` with document status `Active`.
+- Synchronized Requirements Baseline v1.0.0 status in the repository document register and project README.
+- Classified unresolved payment/email providers, token details, UI choices, nutrition reference data, and timeout/retry policies as non-blocking design or implementation work.
+
+### Fixed
+
+- Removed stale wording that claimed FR-level Acceptance Criteria remained incomplete even though every active FR already has Acceptance Criteria.
+- Standardized M12 to the single lifecycle state `OUT_OF_SCOPE`, removing ambiguous “`OUT_OF_SCOPE` or `DEFERRED`” wording.
+
+## 2026-09-16 — Remove Google Maps Restaurant Discovery from the Implementation Baseline
+
+**Status:** Working tree — not committed.
+
+**Scope:** Reclassify the entire M11 restaurant-discovery capability from `DEFERRED` to `OUT_OF_SCOPE` because it does not serve the core meal-planning flow and the application does not intend to manage or verify external restaurant data.
+
+### Added
+
+- Added a re-entry gate requiring a new scope decision and requirement decomposition before M11 can be reconsidered.
+
+### Changed
+
+- Reclassified `FR-42`, `FR-43`, `BR-55`–`BR-57`, `BR-63`, `BR-67`, and `BR-68` as `OUT_OF_SCOPE` while preserving stable IDs and historical descriptions.
+- Removed Google Maps from the current dependency, architecture, and test baselines across README, PRD, SRS, Architecture, Technology Stack, and Test Strategy.
+
+### Fixed
+
+- Replaced stale wording that implied a later M11 implementation commitment with an explicit no-implementation baseline boundary.
 
 ## 2026-09-15 — Unified AI Chatbot Model & Recipe Instruction Step Baseline Alignment
 
@@ -23,7 +83,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Re-scoped `FR-02` to strictly govern Guest trial quota (5 queries/day) and authentication boundary while delegating conversational behavior to `FR-51`.
 - Normalized AI Chatbot performance authority to `NFR-03` ($\le 5$s normal response, P90 $\le 7$s under high load/concurrency); eliminated stale $\le 4$s timeouts and decoupled database query performance (`NFR-07`) from AI response time.
-- Expanded `NFR-25` title to `Đánh giá chất lượng và tuân thủ của nội dung AI` and widened scope/threshold ($\ge 80\%$) to cover all AI-generated outputs (recommendations, related recipes, and Chatbot) for source boundaries, dietary/restriction constraints, non-fabrication, and safety rules.
+- Expanded `NFR-25` to cover AI content quality and compliance, and widened its scope/threshold ($\ge 80\%$) to cover all AI-generated outputs (recommendations, related recipes, and Chatbot) for source boundaries, dietary/restriction constraints, non-fabrication, and safety rules.
 - Enforced mandatory 1–30 instruction steps for Recipe Post across `SRS 3.1`, `3.3`, `3.6`, `BR-19`, `BR-20`, `FR-16`, `FR-21`, and `FR-22`; eliminated stale optional-step wording and removed unapproved per-step separate illustration images from `FR-22`.
 - Updated definition of `Status: Draft` in `docs/requirements/SRS.md` to reflect that Phase-2 decomposition is complete and the baseline is pending Project Owner/team review and freeze, explicitly decoupling Document Status from Requirement Lifecycle.
 
@@ -51,7 +111,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Reclassified automated internal background actions (`UC-11.1` AI token telemetry recording, `UC-11.3` 90-day retention purge, `UC-14.3` image resource lifecycle cleanup) from standalone Use Cases into System Behaviors and Cleanup Flows in `FR-11` and `FR-14`, preserving 100% of testable Acceptance Criteria (`AC-11.1`, `AC-11.4`, `AC-14.3`).
 - Standardized Primary Actor in `FR-54` as `Member` (shopper needing consolidated ingredients) with the aggregation engine designated as a supporting system mechanism.
 - Reclassified technical implementation specifics to non-blocking categories: domestic payment gateway to `TECHNICAL_DESIGN_TBD` and exact Gemini model variant to `TECHNICAL_SPIKE_REQUIRED`, with all Phase-1 business boundaries locked.
-- Clarified external Google Maps dependency in `TEST-STRATEGY.md` with deferred module condition `(nếu M11 được kích hoạt sau này)`.
+- Clarified the external Google Maps dependency in `TEST-STRATEGY.md` with the deferred-module condition that it applied only if M11 was activated later.
 
 ### Fixed
 
@@ -92,42 +152,42 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 **Status:** Committed — `ad9e004` (verified documentation checkpoint).
 
-**Scope:** Đồng bộ corrective baseline DEC-001–DEC-018 trên requirement set và tài liệu bị ảnh hưởng; giữ stable IDs/lịch sử, không tạo GitHub Issues hoặc bắt đầu Phase-2 decomposition.
+**Scope:** Synchronize the DEC-001–DEC-018 corrective baseline across the requirement set and affected documentation while preserving stable IDs and history, without creating GitHub Issues or starting Phase-2 decomposition.
 
 ### Added
 
-- Ghi nhận baseline thương mại MVP: FREE 0, PLUS 49,000 và PRO 99,000 VND/tháng; monthly, no auto-renew, no partial refund, verified activation, end-of-period expiry và idempotent duplicate processing.
-- Ghi nhận baseline authentication dùng short-lived access token, rotating refresh token, refresh-session/server-side revocation và logout revocation.
-- Giữ `DEC-016 — A — APPROVED`: **Backend Architecture: Modular Monolith using MVC/layered structure within each business module.**
+- Recorded the MVP commercial baseline: FREE 0, PLUS 49,000, and PRO 99,000 VND/month; monthly billing, no automatic renewal, no partial refund, verified activation, end-of-period expiry, and idempotent duplicate processing.
+- Recorded the authentication baseline using short-lived access tokens, rotating refresh tokens, refresh-session/server-side revocation, and logout revocation.
+- Preserved `DEC-016 — A — APPROVED`: **Backend Architecture: Modular Monolith using MVC/layered structure within each business module.**
 
 ### Changed
 
-- Chuẩn hóa lifecycle 56 FR, 68 BR và 27 NFR; chuyển M11 cùng FR/BR liên quan sang `DEFERRED`, giữ các mục `OUT_OF_SCOPE`/`RETIRED`.
-- Đồng bộ Recipe Post validation, Shopping List unit conversion, tombstone/reference preservation, manual moderation, comment depth, notification, AI quota/telemetry, nutrition, subscription, security, NFR performance và curated AI evaluation.
-- Đồng bộ SRS/FR/BR/NFR, PRD, README, Architecture, Technology Stack và Test Strategy; không thay đổi code, schema, API hoặc GitHub work item.
+- Standardized lifecycle states for 56 FRs, 68 BRs, and 27 NFRs; moved M11 and its related FRs/BRs to `DEFERRED` while preserving `OUT_OF_SCOPE` and `RETIRED` items.
+- Synchronized Recipe Post validation, Shopping List unit conversion, tombstone/reference preservation, manual moderation, comment depth, notifications, AI quota/telemetry, nutrition, subscriptions, security, NFR performance, and curated AI evaluation.
+- Synchronized SRS/FR/BR/NFR, PRD, README, Architecture, Technology Stack, and Test Strategy without changing code, schema, API, or GitHub work items.
 
 ### Fixed
 
-- Loại bỏ legacy/unknown lifecycle wording và các xung đột còn mô tả M11 là MVP/Pending Review, giá subscription/JWT lifecycle là chưa quyết định, hoặc NFR design goals là MVP release gates.
+- Removed legacy or unknown lifecycle wording and conflicts that still described M11 as MVP/Pending Review, subscription pricing or JWT lifecycle as undecided, or NFR design goals as MVP release gates.
 
 ## 2026-09-14 — NFR Decomposition & ISO/IEC 25010 Quality Categorization
 
 **Status:** Working tree — not committed.
 
-**Scope:** Chuẩn hóa và phân rã chi tiết 27 yêu cầu phi chức năng (NFR-01 đến NFR-27) vào 6 nhóm danh mục cốt lõi của dự án theo chuẩn ISO/IEC 25010; tích hợp tiêu chí đo lường định lượng và ranh giới kiến trúc đã xác nhận.
+**Scope:** Standardize and decompose 27 non-functional requirements (`NFR-01` through `NFR-27`) into six core project quality categories based on ISO/IEC 25010, including quantitative criteria and confirmed architecture boundaries.
 
 ### Added
 
-- Phân rã 27 yêu cầu phi chức năng chi tiết (`NFR-01` đến `NFR-27`) vào `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md` (v0.2.0) với đầy đủ Metric, Threshold và Verification Method, gắn thẻ stable anchor cố định `<a id="nfr-xx"></a>`.
-- Bổ sung ranh giới phân loại và loại trừ rõ ràng:
-  - Ghi nhận `NFR-05` với mục tiêu thiết kế 500 CCU và ngưỡng nghiệm thu thực tế đồ án 50–100 CCU.
-  - Ghi nhận khuyến nghị `NFR-08` không mã hóa cột Database AES-256 đối với chỉ số sức khỏe/BMI để tránh phức tạp hóa database.
-  - Đánh dấu trạng thái `OUT_OF_SCOPE` cho `NFR-26` (AI rà soát/gắn cờ nội dung) và `NFR-27` (Cá nhân hóa nội dung kiểu TikTok For You theo dõi lịch sử).
-  - Loại bỏ hoàn toàn đề xuất AI microservice và quota gọi chatbot khỏi bộ tiêu chuẩn NFR.
+- Decomposed all 27 non-functional requirements (`NFR-01` through `NFR-27`) in `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md` (v0.2.0), including Metric, Threshold, Verification Method, and stable `<a id="nfr-xx"></a>` anchors.
+- Added explicit classification and exclusion boundaries:
+  - Recorded `NFR-05` with a 500-CCU design goal and a practical project acceptance range of 50–100 CCU.
+  - Recorded the `NFR-08` recommendation not to apply AES-256 database-column encryption to health/BMI indicators to avoid unnecessary database complexity.
+  - Marked `NFR-26` (AI content review/flagging) and `NFR-27` (TikTok For You-style behavioral personalization) as `OUT_OF_SCOPE`.
+  - Removed the proposed AI microservice and chatbot-call quota from the NFR set.
 
 ### Changed
 
-- Nâng cấp `docs/requirements/SRS.md` lên `v0.49.0`: Cập nhật bảng tổng hợp Mục 9 liên kết trực tiếp tới 6 nhóm chất lượng và 27 mã NFR chi tiết.
+- Upgraded `docs/requirements/SRS.md` to `v0.49.0` and updated the Section 9 summary table to link directly to six quality groups and all 27 detailed NFR identifiers.
 
 ### Fixed
 
@@ -137,21 +197,21 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 **Status:** Working tree — not committed.
 
-**Scope:** Tái cấu trúc tài liệu đặc tả yêu cầu phần mềm (SRS) sang mô hình Modular SRS đa tệp, phân tách `SRS.md` gốc thành sổ bộ chỉ mục có thẩm quyền (authoritative registry) và 3 tài liệu đặc tả chi tiết chuyên biệt (`FUNCTIONAL-REQUIREMENTS.md`, `BUSINESS-RULES.md`, `NON-FUNCTIONAL-REQUIREMENTS.md`).
+**Scope:** Restructure the Software Requirements Specification into a multi-file Modular SRS, separating the root `SRS.md` authoritative registry from three specialized detailed specifications: `FUNCTIONAL-REQUIREMENTS.md`, `BUSINESS-RULES.md`, and `NON-FUNCTIONAL-REQUIREMENTS.md`.
 
 ### Added
 
-- Thư mục `docs/requirements/srs/` chứa 3 tài liệu đặc tả chi tiết:
-  - `FUNCTIONAL-REQUIREMENTS.md`: Nắm giữ thẩm quyền định nghĩa chi tiết cho 56 Functional Requirements (`FR-01` đến `FR-56`), gắn thẻ stable HTML anchor `<a id="fr-xx"></a>`, giữ nguyên wording và lifecycle gate notes từ baseline.
-  - `BUSINESS-RULES.md`: Nắm giữ thẩm quyền định nghĩa chi tiết cho 68 Business Rules (`BR-01` đến `BR-68`), gắn thẻ stable HTML anchor `<a id="br-xx"></a>`.
-  - `NON-FUNCTIONAL-REQUIREMENTS.md`: Nắm giữ thẩm quyền định nghĩa chi tiết cho 6 nhóm NFR (Security, Privacy, Reliability, Performance, Usability, Auditability), gắn thẻ category anchor `<a id="nfr-category"></a>`, bảo lưu các trường chưa chốt dạng `TBD`/`OPEN` mà không tự phát minh mã số `NFR-xx`.
-- Bổ sung loại phát hiện `Lifecycle Synchronization Drift` vào kỹ năng `repo-template-doc-sync-auditor`.
+- Added three detailed specifications under `docs/requirements/srs/`:
+  - `FUNCTIONAL-REQUIREMENTS.md`: authoritative detailed definitions for 56 Functional Requirements (`FR-01` through `FR-56`), stable `<a id="fr-xx"></a>` anchors, and preserved baseline wording and lifecycle-gate notes.
+  - `BUSINESS-RULES.md`: authoritative detailed definitions for 68 Business Rules (`BR-01` through `BR-68`) with stable `<a id="br-xx"></a>` anchors.
+  - `NON-FUNCTIONAL-REQUIREMENTS.md`: authoritative detailed definitions for six NFR categories (Security, Privacy, Reliability, Performance, Usability, Auditability), category anchors such as `<a id="nfr-category"></a>`, and preserved `TBD`/`OPEN` fields without inventing `NFR-xx` identifiers.
+- Added the `Lifecycle Synchronization Drift` finding type to the `repo-template-doc-sync-auditor` skill.
 
 ### Changed
 
-- Cập nhật `docs/requirements/SRS.md` lên `v0.48.0`: Chuyển đổi Mục 7 và 8 sang bảng chỉ mục 5 cột Option A (`ID | Short Name | Module | Lifecycle | Detail`) đóng vai trò Authoritative Registry cho sự tồn tại, mã định danh, phân bổ module và trạng thái lifecycle; Mục 9 chuyển thành bảng tổng hợp NFR liên kết chi tiết.
-- Cập nhật quy tắc quản trị tài liệu và agent trong `AGENTS.md` (v3.3.0), `docs/README.md` (v3.2.0) và `.agents/repo-contract.yml` ghi nhận cấu trúc Modular SRS, phân định ranh giới thẩm quyền theo trường dữ liệu (Field-Specific Authority Model) và quy trình đọc phạm vi hẹp (2-step scoped reading).
-- Đồng bộ các kỹ năng nội bộ (`markdown-documentation`, `srs-to-github-issues`, `repo-template-doc-sync-auditor`) để hỗ trợ Modular SRS, 2-phase issue resolution và kiểm toán tính nhất quán 2 chiều.
+- Upgraded `docs/requirements/SRS.md` to `v0.48.0`; converted Sections 7 and 8 to five-column Option A indexes (`ID | Short Name | Module | Lifecycle | Detail`) acting as the Authoritative Registry for existence, identifiers, module allocation, and lifecycle, and converted Section 9 into a linked NFR summary.
+- Updated documentation and agent governance in `AGENTS.md` (v3.3.0), `docs/README.md` (v3.2.0), and `.agents/repo-contract.yml` to recognize the Modular SRS, Field-Specific Authority Model, and two-step scoped-reading procedure.
+- Synchronized the internal `markdown-documentation`, `srs-to-github-issues`, and `repo-template-doc-sync-auditor` skills for Modular SRS support, two-phase issue resolution, and bidirectional consistency audits.
 
 ### Fixed
 
@@ -161,16 +221,16 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 **Status:** Working tree — not committed.
 
-**Scope:** Phân rã chi tiết chức năng Quản lý kho thực phẩm cá nhân (Pantry/Inventory), tìm kiếm công thức/bài viết từ kho và AI sáng tạo công thức mới từ nguyên liệu có sẵn; xác định trạng thái ngoài phạm vi MVP ban đầu (`OUT_OF_SCOPE`).
+**Scope:** Decompose Personal Pantry/Inventory management, pantry-based recipe or post discovery, and AI-assisted recipe creation from available ingredients; classify the capability as `OUT_OF_SCOPE` for the initial MVP.
 
 ### Added
 
-- Mục 3.22 trong SRS phân rã quản lý kho thực phẩm cá nhân của Member (`Personal Pantry`), tìm kiếm công thức theo mức độ khớp nguyên liệu (100% hoặc thiếu ít kèm gợi ý thêm vào Shopping List) và tính năng AI Gemini sáng tạo công thức món chay mới từ nguyên liệu kho.
-- Module M13 (`Personal Pantry & Inventory-based Recipe Recommendation`) và yêu cầu chức năng FR-56 với trạng thái `OUT_OF_SCOPE` cho MVP ban đầu.
+- Added SRS Section 3.22 decomposition for Member Personal Pantry management, ingredient-match recipe discovery (100% match or a small number of missing items with Shopping List suggestions), and Gemini-assisted vegetarian recipe creation from pantry ingredients.
+- Added Module M13 (`Personal Pantry & Inventory-based Recipe Recommendation`) and FR-56 with lifecycle `OUT_OF_SCOPE` for the initial MVP.
 
 ### Changed
 
-- Đồng bộ mục ngoài phạm vi trong PRD Mục 5 và SRS Mục 3.2 làm rõ phân rã M13/FR-56 cho tương lai.
+- Synchronized the out-of-scope sections in PRD Section 5 and SRS Section 3.2 to clarify the future M13/FR-56 decomposition.
 
 ### Fixed
 
@@ -180,16 +240,16 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 **Status:** Working tree — not committed.
 
-**Scope:** Đưa chức năng Shopping List cơ bản từ ngoài phạm vi vào MVP chính thức, tích hợp dưới Module M05 với 3 yêu cầu nghiệp vụ (FR-53, FR-54, FR-55) và quy tắc gom nguyên liệu an toàn.
+**Scope:** Move the basic Shopping List capability into the official MVP under Module M05 with three functional requirements (`FR-53`, `FR-54`, `FR-55`) and safe ingredient-aggregation rules.
 
 ### Added
 
-- Yêu cầu chức năng FR-53 (quản lý Shopping List, thêm item vặt, tick đã mua), FR-54 (gom nguyên liệu an toàn khi cùng ID và đơn vị, phân nhóm quầy hàng) và FR-55 (copy clipboard, xuất file .txt) vào SRS Mục 7.2 với trạng thái `ACTIVE`.
+- Added FR-53 (Shopping List management, ad-hoc items, purchased checkbox), FR-54 (safe aggregation for matching ingredient IDs and units, grouped by store section), and FR-55 (clipboard copy and `.txt` export) to SRS Section 7.2 with lifecycle `ACTIVE`.
 
 ### Changed
 
-- Tích hợp Shopping List vào Module M05 (đổi tên thành `Saved Recipes, Meal Planning & Shopping List`).
-- Bỏ shopping list khỏi danh sách ngoài phạm vi trong SRS Mục 3.2 và PRD Mục 5; làm rõ các tính năng nâng cao (kho pantry, chia sẻ nhiều người, đồng bộ realtime, AI tự quy đổi đơn vị, xuất PDF) nằm ngoài phạm vi MVP.
+- Integrated Shopping List into Module M05 and renamed the module to `Saved Recipes, Meal Planning & Shopping List`.
+- Removed Shopping List from the out-of-scope lists in SRS Section 3.2 and PRD Section 5; clarified that advanced pantry, multi-user sharing, real-time synchronization, AI unit conversion, and PDF export remain outside the MVP.
 
 ### Fixed
 
@@ -199,17 +259,17 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 **Status:** Working tree — not committed.
 
-**Scope:** Chuyển chức năng tìm kiếm nhà hàng chay sang diện chờ giảng viên review lại; phân rã chi tiết mô hình Đăng Blog thật nhúng thẻ công thức theo Samsung Food và xác định ngoài phạm vi MVP ban đầu.
+**Scope:** Move vegetarian restaurant discovery to lecturer review, decompose a Samsung Food-style long-form Blog with embedded Recipe Cards, and classify the Blog capability outside the initial MVP.
 
 ### Added
 
-- Mục 3.21 trong SRS phân rã thực thể Blog Post, định dạng Rich Text văn xuôi, khối nhúng Embedded Recipe Card và tương tác lưu/xếp lịch món ăn từ bài blog.
-- Yêu cầu chức năng FR-52 và Module M12 ghi nhận năng lực Đăng Blog với trạng thái `OUT_OF_SCOPE` cho MVP ban đầu.
+- Added SRS Section 3.21 decomposition for the Blog Post entity, long-form Rich Text content, Embedded Recipe Cards, and save/schedule interactions from a blog post.
+- Added FR-52 and Module M12 for the Blog capability with lifecycle `OUT_OF_SCOPE` for the initial MVP.
 
 ### Changed
 
-- Chuyển Module M11, FR-42, FR-43 và tích hợp Google Maps Platform sang trạng thái `PENDING_REVIEW` (chờ giảng viên hướng dẫn review).
-- Cập nhật PRD, System Architecture và Technology Stack đồng bộ trạng thái chờ xem xét của Google Maps và xác định ranh giới Blog ngoài MVP.
+- Moved Module M11, FR-42, FR-43, and Google Maps Platform integration to `PENDING_REVIEW` pending lecturer guidance.
+- Updated the PRD, System Architecture, and Technology Stack to synchronize the Google Maps review state and define the Blog boundary outside the MVP.
 
 ### Fixed
 
@@ -219,20 +279,20 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 **Status:** Working tree — not committed.
 
-**Scope:** Thiết lập tiếng Việt làm ngôn ngữ văn xuôi chính cho tài liệu phát triển nội bộ, đồng thời giữ các technical term tiếng Anh cần thiết và chỉ dùng hoàn toàn tiếng Anh cho tài liệu được phân loại rõ là academic submission.
+**Scope:** Establish Vietnamese as the primary prose language for internal development documentation, preserve necessary English technical terms, and require fully English content only for documents explicitly classified as academic submissions.
 
 ### Added
 
-- Chính sách ngôn ngữ tài liệu có thẩm quyền trong maintained document register.
+- Added the authoritative documentation-language policy to the maintained document register.
 
 ### Changed
 
-- Liên kết AGENTS.md và CONTRIBUTING.md tới policy có thẩm quyền mà không sao chép toàn bộ nội dung.
-- Chuẩn hóa Architecture, Technology Stack, Test Strategy và tài liệu bằng chứng workflow sang văn xuôi tiếng Việt, đồng thời giữ nguyên ý nghĩa kỹ thuật và các English term đã được xác lập.
+- Linked `AGENTS.md` and `CONTRIBUTING.md` to the authoritative policy without duplicating the full content.
+- Standardized Architecture, Technology Stack, Test Strategy, and workflow-evidence documentation to Vietnamese prose while preserving technical meaning and established English terms.
 
 ### Fixed
 
-- Loại bỏ cách hiểu trước đây rằng tài liệu kỹ thuật hoặc governance phải mặc định viết bằng tiếng Anh chỉ vì loại tài liệu có tên tiếng Anh.
+- Removed the previous assumption that technical or governance documents default to English solely because their document type has an English name.
 
 ## 2026-09-13 — Controlled Documentation Baseline Migration
 
@@ -254,7 +314,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Corrected stale summary and research statements that treated Google Maps restaurant discovery as unconfirmed or described the retired permission-application workflow as current.
-- Added an explicit lifecycle decision gate so legacy phrases such as “Đã chốt” are not silently converted to `ACTIVE`.
+- Added an explicit lifecycle decision gate so legacy phrases indicating a finalized decision are not silently converted to `ACTIVE`.
 
 ## 2026-09-13 — Recipe Publishing and AI Scope Simplification
 

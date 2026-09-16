@@ -1,8 +1,8 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.2.0
+> **Version:** v1.3.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-14
+> **Last Updated:** 2026-09-16
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`
 
@@ -44,7 +44,7 @@ Sơ đồ trên thể hiện trách nhiệm, không phải deployment topology. 
 | Spring Boot Backend | Xác thực request, kiểm tra role và ownership, validate input, áp dụng quota AI, điều phối luồng nghiệp vụ, truy cập persistence và gọi provider cần đặc quyền | Quy tắc nghiệp vụ vẫn phải được thực thi ở server-side kể cả khi UI đã ẩn action không được phép |
 | SQL Server | Relational Source of Truth chính cho record, relationship, state của ứng dụng và reference đến external media | Blob object và dữ liệu của third-party provider không được thay thế bằng record do ứng dụng sao chép hoặc bịa ra |
 | Azure Blob Storage | Lưu ảnh Recipe Post; SQL Server giữ metadata/reference của ứng dụng | Phase 1 không upload file video; chọn Blob Storage không đồng nghĩa chọn Azure làm deployment provider cho ứng dụng |
-| External integration | Cung cấp phản hồi AI, hỗ trợ authentication/email, video nhúng và xác minh payment; Google Maps chỉ thuộc M11 đã deferred | Lỗi provider, quota và chi tiết triển khai chưa xác nhận phải được thể hiện rõ, không được trình bày như dữ liệu ứng dụng đã xử lý thành công |
+| External integration | Cung cấp phản hồi AI, hỗ trợ authentication/email, video nhúng và xác minh payment | Lỗi provider, quota và chi tiết triển khai chưa xác nhận phải được thể hiện rõ, không được trình bày như dữ liệu ứng dụng đã xử lý thành công; Google Maps/M11 không thuộc baseline kiến trúc hiện tại |
 
 ### 3.1 Kiến trúc Backend
 
@@ -103,9 +103,9 @@ Browser request -> backend eligibility/quota checks -> Gemini
 
 Backend quản lý Gemini credential, điều kiện hợp lệ của request, quota cấp ứng dụng, validation phản hồi, thống kê thành công/thất bại và usage telemetry. Gemini không kết nối trực tiếp SQL Server, không tự publish nội dung, không tạo dữ liệu dinh dưỡng chính thức và không tự áp dụng moderation action. Gemini model cụ thể và kiến trúc AI chi tiết vẫn là `TBD`.
 
-### 4.5 Luồng Google Maps (`DEFERRED`)
+### 4.5 Capability Google Maps (`OUT_OF_SCOPE`)
 
-FR-42/FR-43, M11 và tích hợp Google Maps là `DEFERRED`, không thuộc MVP hiện tại. Mô tả luồng cũ được giữ chỉ để bảo toàn lịch sử và không tạo implementation baseline hoặc MVP Issue.
+FR-42/FR-43, M11 và tích hợp Google Maps là `OUT_OF_SCOPE`. Ứng dụng không quản lý hoặc xác minh dữ liệu nhà hàng bên ngoài; Google Maps không phải dependency của baseline kiến trúc hiện tại. Mô tả cũ chỉ được giữ trong SRS để bảo toàn lịch sử và không tạo implementation hoặc test scope.
 
 ### 4.6 Luồng payment
 
@@ -115,10 +115,10 @@ MVP dùng VND và chu kỳ tháng: FREE 0, PLUS 49,000, PRO 99,000 VND/tháng. K
 
 - Browser là ranh giới không tin cậy. Việc ẩn control không đáp ứng authorization.
 - Xử lý password, kiểm tra role/ownership, quyết định quota và credential của provider thuộc Backend.
-- Secret của Gemini, Azure, Google Maps, Google authentication, email và payment phải nằm ở server-side và ngoài Source Control.
+- Secret của Gemini, Azure, Google authentication, email và payment phải nằm ở server-side và ngoài Source Control.
 - Authentication baseline dùng short-lived JWT access token, rotating refresh token và refresh session/server-side revocation; logout thu hồi refresh session. Thời lượng cụ thể, storage mechanism và rotation/reuse-detection implementation là chi tiết thiết kế. Access-token-only chỉ là fallback nếu có quyết định giảm scope mới, không đồng thời là baseline.
 - Input từ browser hoặc provider phải được validate. Log không được làm lộ password, token, API key, SAS URL, toàn bộ prompt nhạy cảm hoặc dữ liệu nutrition profile riêng tư.
-- Kết quả AI và location từ bên ngoài là output của provider. Không được âm thầm biến chúng thành dữ liệu dinh dưỡng đã xác minh, tư vấn y tế, nhà hàng đã thẩm định hoặc quyết định moderation.
+- Kết quả AI từ bên ngoài là output của provider. Không được âm thầm biến chúng thành dữ liệu dinh dưỡng đã xác minh, tư vấn y tế hoặc quyết định moderation.
 
 ## 6. Ràng buộc kiến trúc
 
@@ -136,7 +136,7 @@ MVP dùng VND và chu kỳ tháng: FREE 0, PLUS 49,000, PRO 99,000 VND/tháng. K
 | Token implementation detail | TBD kỹ thuật | Chọn expiry cụ thể, storage và rotation/reuse handling trong baseline access + rotating refresh + server revocation |
 | Deployment topology | TBD | Chốt sau khi có scaffold FE/BE/database chạy được và nhu cầu environment thực tế |
 | Chính sách timeout/retry theo provider | TBD kỹ thuật | Thiết kế có thể kiểm thử; email best-effort không rollback business action và AI failure không trừ quota |
-| Tích hợp Google Maps (quán chay) | Deferred | Không thiết kế/triển khai trong MVP trừ khi có quyết định scope mới |
+| Tích hợp Google Maps (quán chay) | `OUT_OF_SCOPE` | Không thuộc baseline kiến trúc; chỉ xem xét lại sau quyết định scope và phân rã yêu cầu mới |
 | Module Blog cộng đồng nhúng công thức | Out of MVP Scope | Được phân rã tại SRS 3.21; chỉ xem xét kiến trúc sau khi các module cốt lõi hoàn thành |
 | Upload trực tiếp lên Azure | Future option | Chỉ xem xét lại khi số liệu về kích thước file/tải cho thấy luồng upload qua Backend không phù hợp |
 

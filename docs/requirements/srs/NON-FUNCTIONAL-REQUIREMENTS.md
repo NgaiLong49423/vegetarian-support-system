@@ -1,18 +1,18 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v0.4.0
+> **Version:** v1.0.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-15
-> **Status:** Draft
+> **Last Updated:** 2026-09-16
+> **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
 # Non-Functional Requirements Specification
 
 ## 1. Mục đích và thẩm quyền tài liệu
 
-Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho các yêu cầu phi chức năng (Non-Functional Requirements) và các ràng buộc chất lượng toàn hệ thống theo mô hình ISO/IEC 25010.
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho các yêu cầu phi chức năng (Non-Functional Requirements) và các ràng buộc chất lượng toàn hệ thống của Requirements Baseline v1.0.0 theo mô hình ISO/IEC 25010.
 
-Khung đặc tả gốc và tổng quan danh mục được duy trì tập trung tại `docs/requirements/SRS.md`.
+Khung đặc tả gốc, sự tồn tại của NFR và lifecycle chính thức được duy trì tập trung tại `docs/requirements/SRS.md`. Trạng thái trong tài liệu này là giá trị dẫn xuất; nếu có xung đột, root registry là nguồn chuẩn và tài liệu này phải được đồng bộ theo.
 
 Mỗi yêu cầu phi chức năng được gắn thẻ stable anchor HTML cố định (`<a id="nfr-xx"></a>`) cùng với các stable anchor danh mục cấp cao (`<a id="nfr-category"></a>`) đặt trước từng nhóm để bảo đảm tính toàn vẹn và bất biến của liên kết tham chiếu.
 

@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v2.0.2
+> **Version:** v2.1.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-14
+> **Last Updated:** 2026-09-16
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -147,6 +147,8 @@ chore/127-project-setup
 
 Dự án này sử dụng tiêu chuẩn **Conventional Commits** để quản lý lịch sử commit. Định dạng chuẩn của một commit message như sau:
 
+Toàn bộ commit message — subject/description, body và footer do contributor viết — **phải dùng tiếng Anh**, theo [Documentation Language Policy](docs/README.md#documentation-language-policy). Không dùng tiếng Việt trong commit message. Các token kỹ thuật như `type`, `scope`, `BREAKING CHANGE`, `Closes`, `Fixes` và `Refs` giữ đúng cú pháp quy định.
+
 ```text
 <type>(<optional scope>): <description>
 
@@ -192,9 +194,9 @@ Hãy chọn đúng loại `type` phù hợp với thay đổi của bạn:
 
 ### Ví dụ:
 ```text
-feat(auth): thêm form đăng nhập
-fix(database): xử lý lỗi mất kết nối database
-docs(readme): cập nhật hướng dẫn sử dụng
+feat(auth): add login form
+fix(database): handle database connection failure
+docs(readme): update usage guide
 ```
 
 ---
@@ -207,7 +209,7 @@ docs(readme): cập nhật hướng dẫn sử dụng
 * Viết ngắn gọn, rõ nghĩa và đi thẳng vào vấn đề.
 * Không viết hoa chữ cái đầu tiên của description.
 * Không sử dụng dấu chấm (`.`) ở cuối câu.
-* Nên viết theo dạng mệnh lệnh (ví dụ: dùng các từ như `thêm`, `sửa`, `xóa` thay vì `đã thêm`, `đã sửa`).
+* Dùng tiếng Anh ở dạng mệnh lệnh (ví dụ: `add`, `fix`, `remove`, `update`; không dùng dạng quá khứ như `added`, `fixed`).
 * Tránh viết các commit mô tả chung chung, vô nghĩa.
 
 ### Ví dụ SAI:
@@ -219,9 +221,9 @@ aaa
 
 ### Ví dụ ĐÚNG:
 ```text
-fix(auth): sửa lỗi đăng nhập khi password rỗng
-feat(cart): thêm chức năng lưu giỏ hàng
-docs: cập nhật hướng dẫn sử dụng README
+fix(auth): reject empty passwords during login
+feat(cart): add cart persistence
+docs: update README usage guide
 ```
 
 ---
@@ -234,10 +236,10 @@ docs: cập nhật hướng dẫn sử dụng README
 
 ### Ví dụ:
 ```text
-fix(auth): kiểm tra password trước khi đăng nhập
+fix(auth): validate password before login
 
-Trước đây hệ thống cho phép password rỗng đi qua bước kiểm tra.
-Thay đổi này bổ sung điều kiện bắt buộc nhập password trước khi xác thực.
+Previously, an empty password could pass the initial validation step.
+This change requires a non-empty password before authentication.
 ```
 
 ---
@@ -256,7 +258,7 @@ Thay đổi này bổ sung điều kiện bắt buộc nhập password trước 
 ```text
 Closes #123
 Fixes JIRA-456
-BREAKING CHANGE: xóa endpoint user profile cũ
+BREAKING CHANGE: remove the legacy user profile endpoint
 ```
 
 ---
@@ -269,9 +271,9 @@ Khi thay đổi của bạn làm ảnh hưởng trực tiếp đến khả năng
 
 ### Ví dụ:
 ```text
-feat(api)!: xóa endpoint user cũ
+feat(api)!: remove the legacy user endpoint
 
-BREAKING CHANGE: `/api/v1/users` đã bị xóa và được thay bằng `/api/v2/users`.
+BREAKING CHANGE: `/api/v1/users` has been removed and replaced by `/api/v2/users`.
 ```
 
 ---
@@ -282,15 +284,15 @@ Dưới đây là một số ví dụ thực tế chuẩn hóa theo Conventional
 
 ```text
 chore: init
-feat(auth): thêm trang đăng nhập
-fix(database): xử lý lỗi mất kết nối database
-docs: cập nhật mô tả dự án
-refactor(user): đơn giản hóa logic kiểm tra dữ liệu
-style: định dạng lại các file Java
-test(auth): thêm test kiểm tra đăng nhập
-build: cập nhật dependency của dự án
-perf: giảm số lần truy vấn database lặp lại
-chore: cập nhật .gitignore
+feat(auth): add login page
+fix(database): handle database connection failure
+docs: update project description
+refactor(user): simplify data validation logic
+style: format Java files
+test(auth): add login tests
+build: update project dependencies
+perf: reduce repeated database queries
+chore: update .gitignore
 ```
 
 ---
@@ -300,7 +302,7 @@ chore: cập nhật .gitignore
 **Pull Request** (yêu cầu gộp code / PR) là cách bạn yêu cầu những người quản lý dự án xem xét và gộp mã nguồn từ nhánh của bạn vào nhánh chính.
 
 Để gửi một pull request thành công:
-1. **Đặt tiêu đề rõ ràng:** Tiêu đề PR nên tuân theo định dạng tương tự commit message (ví dụ: `feat(auth): thêm trang đăng nhập`).
+1. **Đặt tiêu đề rõ ràng:** Tiêu đề PR nên tuân theo định dạng tương tự commit message và dùng tiếng Anh (ví dụ: `feat(auth): add login page`).
 2. **Mô tả chi tiết nội dung:** Điền đầy đủ thông tin vào mẫu PR, mô tả rõ các thay đổi bạn đã thực hiện và lý do thay đổi.
 3. **Liên kết Issue:** Feature PR vào `develop` dùng `Refs #123` để liên kết mà chưa đóng Issue. Release PR vào `main` dùng `Closes #123` cho các Issue sẽ hoàn tất khi release được merge.
 4. **Kiểm tra hoạt động:** Chắc chắn rằng dự án của bạn vẫn chạy được và không làm hỏng các tính năng cũ.
@@ -330,7 +332,7 @@ Preserve existing contributor changes and stay within the requested scope. Chang
 
 ## Changelog Format
 
-Write CHANGELOG.md according to the [Documentation Language Policy](docs/README.md#documentation-language-policy), using dated topic entries in reverse chronological order. Each entry explains what changed on that date and why it matters. Keep these three sections in this order: Added, Changed, Fixed. Use "None." when a category has no changes; record removals explicitly under Changed. Do not use a single accumulating [Unreleased] section or copy tutorial/example history into the changelog.
+Write all `CHANGELOG.md` headings and prose in English according to the [Documentation Language Policy](docs/README.md#documentation-language-policy), using dated topic entries in reverse chronological order. Do not add Vietnamese prose to a new or edited entry. Each entry explains what changed on that date and why it matters. Keep these three sections in this order: Added, Changed, Fixed. Use "None." when a category has no changes; record removals explicitly under Changed. Do not use a single accumulating [Unreleased] section or copy tutorial/example history into the changelog.
 
 Each entry has:
 

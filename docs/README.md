@@ -1,8 +1,8 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v3.2.0
+> **Version:** v3.4.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-14
+> **Last Updated:** 2026-09-16
 > **Status:** Active  
 
 # Repository Layout and Document Register
@@ -13,6 +13,13 @@ This is the maintained placement policy for all five team members and every agen
 
 Phần văn xuôi và nội dung giải thích trong **tài liệu phát triển nội bộ** phải được viết chủ yếu bằng tiếng Việt để cả nhóm có thể đọc, rà soát và duy trì thống nhất.
 
+Hai ngoại lệ bắt buộc phải dùng **tiếng Anh**:
+
+- Toàn bộ nội dung trong `CHANGELOG.md`, gồm heading, `Status`, `Scope`, `Added`, `Changed`, `Fixed` và mô tả từng mục.
+- Toàn bộ Git commit message, gồm subject/description, body và footer do người đóng góp tự viết. Conventional Commit `type`, `scope` và các token chuẩn như `BREAKING CHANGE`, `Closes` hoặc `Refs` giữ đúng cú pháp kỹ thuật.
+
+Không trộn câu tiếng Việt vào changelog entry hoặc commit message. Nếu phát hiện changelog entry lịch sử chưa phải tiếng Anh, phải chuẩn hóa entry đó bằng editorial translation, giữ nguyên ngày, trạng thái, ID, version, liên kết và ý nghĩa lịch sử.
+
 Giữ các technical term đã được sử dụng phổ biến bằng tiếng Anh khi dịch sang tiếng Việt làm giảm độ chính xác hoặc gây khó khăn khi đối chiếu với code, công cụ và official documentation. Các ví dụ gồm `Backend`, `Frontend`, `Pull Request`, `Issue`, `Acceptance Criteria`, `Definition of Done`, `Test Strategy`, `Integration Test`, `Coverage`, `Mock`, `REST API`, `OpenAPI`, `JWT`, `Source of Truth`, các giá trị lifecycle status và các thuật ngữ tương tự. Việc giữ thuật ngữ tiếng Anh không có nghĩa toàn bộ câu hoặc phần giải thích phải viết bằng tiếng Anh.
 
 Tài liệu nộp chính thức cho trường hoặc giảng viên chỉ được viết hoàn toàn bằng tiếng Anh khi tài liệu đó được project decision-maker **phân loại rõ là academic submission**. Việc phân loại phải được ghi trong metadata, document register hoặc một quyết định dự án có thẩm quyền; không được suy diễn chỉ từ tên file hoặc loại tài liệu.
@@ -21,7 +28,7 @@ Các tên loại tài liệu như SRS, Architecture, Test Strategy hoặc API Do
 
 Tên công nghệ, identifier, code, command, path, lifecycle status, tên nguồn/tài liệu bên ngoài và đoạn trích dẫn có thể giữ nguyên ngôn ngữ gốc khi cần bảo toàn khả năng truy vết hoặc đối chiếu. Khi chỉnh sửa, phải giữ nguyên ý nghĩa, decision status và thuật ngữ đã được project xác lập.
 
-Phần này là Source of Truth cho ngôn ngữ tài liệu của repository. Các file governance khác chỉ được dẫn tới đây, không lặp lại toàn bộ policy.
+Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và Git commit message của repository. Các file governance khác chỉ được dẫn tới đây và nêu ngắn gọn quy tắc thực thi, không lặp lại toàn bộ policy.
 
 ## Where a new file belongs
 
@@ -61,11 +68,11 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | ../CONTRIBUTING.md | Operational Git/Issue/PR/release rules | Contributing or reviewing changes |
 | ../CHANGELOG.md | Historical changes, not current progress | Updating notable changes or investigating history |
 | README.md | File placement and document registry | Creating/moving files or routing documentation |
-| requirements/PRD.md | High-level product summary, Under Review | Product intent and scope |
-| requirements/SRS.md | Root software requirements specification, scope, actors, system context, requirement indexes, cross-cutting information, and authoritative lifecycle registry, Draft | Scoping, routing, identifying requirements, verifying lifecycle state, or reading system context |
-| requirements/srs/FUNCTIONAL-REQUIREMENTS.md | Authoritative detailed FR definitions, triggers, preconditions, exceptions, and acceptance criteria (derived lifecycle), Draft | Implementing or verifying functional behavior and acceptance criteria |
-| requirements/srs/BUSINESS-RULES.md | Authoritative detailed BR definitions, rationale, constraints, and business logic (derived lifecycle), Draft | Implementing or verifying business rules and constraints |
-| requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md | Authoritative detailed NFR definitions, measurable targets, quality constraints, and verification criteria, Draft | Architecture, performance, security, reliability, or quality assurance work |
+| requirements/PRD.md | High-level product summary, Requirements Baseline v1.0.0, Active | Product intent and scope |
+| requirements/SRS.md | Root software requirements specification, scope, actors, system context, requirement indexes, cross-cutting information, and authoritative lifecycle registry, Requirements Baseline v1.0.0, Active | Scoping, routing, identifying requirements, verifying lifecycle state, or reading system context |
+| requirements/srs/FUNCTIONAL-REQUIREMENTS.md | Authoritative detailed FR definitions, triggers, preconditions, exceptions, and acceptance criteria (derived lifecycle), Requirements Baseline v1.0.0, Active | Implementing or verifying functional behavior and acceptance criteria |
+| requirements/srs/BUSINESS-RULES.md | Authoritative detailed BR definitions, rationale, constraints, and business logic (derived lifecycle), Requirements Baseline v1.0.0, Active | Implementing or verifying business rules and constraints |
+| requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md | Authoritative detailed NFR definitions, measurable targets, quality constraints, and verification criteria, Requirements Baseline v1.0.0, Active | Architecture, performance, security, reliability, or quality assurance work |
 | architecture/ARCHITECTURE.md | High-level runtime parts, boundaries, communication paths, trust boundaries and architectural constraints | Architecture or cross-component integration work |
 | architecture/TECHNOLOGY-STACK.md | Selected technologies, purpose, rationale, benefits, trade-offs and unresolved choices | Dependency or technology decisions |
 | testing/TEST-STRATEGY.md | Project-level test levels, evidence boundaries, traceability, coverage interpretation and completion relationship | Test planning, quality gates or verification design |

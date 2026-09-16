@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions  
 > **File:** `AGENTS.md`  
-> **Version:** v3.3.0
+> **Version:** v3.4.0
 > **Created:** 2026-06-29  
-> **Last Updated:** 2026-09-14
+> **Last Updated:** 2026-09-16
 > **Status:** Active  
 
 # Agent Entry Point
@@ -101,7 +101,7 @@ Metadata audits use the maintained register. `SKILL.md` retains YAML frontmatter
 
 ## Agent-specific execution and handoff
 
-- Communicate with the user in Vietnamese. Follow the [Documentation Language Policy](docs/README.md#documentation-language-policy); use CONTRIBUTING.md for shared editing and verification rules.
+- Communicate with the user in Vietnamese. Follow the [Documentation Language Policy](docs/README.md#documentation-language-policy); internal development documentation uses Vietnamese prose by default, while `CHANGELOG.md` and every Git commit message must use English. Use CONTRIBUTING.md for shared editing and verification rules.
 - Repository access does not authorize an agent to commit, push, merge, tag, enable automation, mutate GitHub Issues/Projects or change GitHub settings. Perform external mutations only when the user authorizes them for the current task.
 - Do not infer runnable commands or completed features from plans, empty workspaces or a draft document.
 - Inspect the actual tool/test result before reporting success; explain unavailable verification without claiming it passed.

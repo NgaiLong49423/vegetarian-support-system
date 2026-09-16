@@ -1,16 +1,16 @@
 > **Document:** Functional Requirements Specification
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v0.5.0
+> **Version:** v1.0.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-15
-> **Status:** Draft
+> **Last Updated:** 2026-09-16
+> **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
 # Functional Requirements Specification
 
 ## 1. Mục đích và thẩm quyền tài liệu
 
-Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho các Functional Requirements (`FR-01` đến `FR-56`) của hệ thống. Các yêu cầu ACTIVE được phân rã chi tiết dần qua từng đợt (progressively decomposed) trong giai đoạn xác định yêu cầu hiện tại.
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho các Functional Requirements (`FR-01` đến `FR-56`) của Requirements Baseline v1.0.0. Các yêu cầu `ACTIVE` có actor, luồng, ràng buộc và Acceptance Criteria làm nguồn cho thiết kế và kiểm thử; requirement không `ACTIVE` được giữ để bảo toàn lịch sử và stable ID.
 
 Khung đặc tả gốc và **Authoritative Registry** cho sự tồn tại của requirement, mã định danh ổn định (stable ID), phân bổ module cấp chỉ mục, và trạng thái vòng đời (lifecycle state) chính thức được duy trì tập trung tại `docs/requirements/SRS.md`.
 
@@ -20,9 +20,9 @@ Mỗi yêu cầu chức năng được gắn một thẻ stable anchor HTML cố
 
 ## 2. Quy tắc lifecycle trong baseline hiện tại
 
-Vocabulary duy nhất dùng cho requirement lifecycle là `DRAFT`, `ACTIVE`, `DEFERRED`, `OUT_OF_SCOPE` và `RETIRED`. Các trạng thái derived dưới đây đã được đồng bộ từ root registry theo DEC-001–DEC-003; lifecycle và mức độ decomposition là hai chiều độc lập.
+Vocabulary duy nhất dùng cho requirement lifecycle là `DRAFT`, `ACTIVE`, `DEFERRED`, `OUT_OF_SCOPE` và `RETIRED`. Các trạng thái derived dưới đây được đồng bộ từ root registry, bao gồm quyết định phạm vi M11 ngày 16/09/2026; lifecycle và mức độ decomposition là hai chiều độc lập.
 
-Không còn FR mang legacy/unknown lifecycle wording. Nội dung `DEFERRED`, `OUT_OF_SCOPE` và `RETIRED` được giữ để bảo toàn lịch sử nhưng không tạo MVP implementation scope.
+Không còn FR mang legacy/unknown lifecycle wording. Nội dung `DEFERRED`, `OUT_OF_SCOPE` và `RETIRED` được giữ để bảo toàn lịch sử nhưng không tạo implementation scope hiện tại.
 
 ## 3. Danh mục chi tiết Functional Requirements
 
@@ -4167,8 +4167,8 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 - **Mã yêu cầu:** FR-42
 - **Module:** M02, M11
-- **Trạng thái (Derived):** DEFERRED
-- **Mô tả:** Nội dung lịch sử của capability đã deferred: Member tìm nhà hàng theo địa chỉ nhập và ngưỡng đường bộ 500 m/1 km/5 km/10 km, không GPS hoặc liên kết món đã tìm; đề xuất cũ dùng 10 lượt/Member/ngày và không cho Guest gọi. Không triển khai hoặc tạo MVP Issue khi chưa có quyết định scope mới.
+- **Trạng thái (Derived):** OUT_OF_SCOPE
+- **Mô tả:** Nội dung lịch sử của capability đã bị loại khỏi baseline triển khai: Member tìm nhà hàng theo địa chỉ nhập và ngưỡng đường bộ 500 m/1 km/5 km/10 km, không GPS hoặc liên kết món đã tìm; đề xuất cũ dùng 10 lượt/Member/ngày và không cho Guest gọi. Ứng dụng không quản lý dữ liệu nhà hàng bên ngoài; không triển khai hoặc tạo Issue nếu chưa có quyết định scope và phân rã mới.
 
 ---
 
@@ -4177,8 +4177,8 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 - **Mã yêu cầu:** FR-43
 - **Module:** M11
-- **Trạng thái (Derived):** DEFERRED
-- **Mô tả:** Nội dung lịch sử của capability đã deferred: hiển thị danh sách/bản đồ nhúng từ Google, ghi nguồn và trạng thái lỗi; không quản lý hồ sơ hoặc lưu nhà hàng yêu thích. Không triển khai hoặc tạo MVP Issue khi chưa có quyết định scope mới.
+- **Trạng thái (Derived):** OUT_OF_SCOPE
+- **Mô tả:** Nội dung lịch sử của capability đã bị loại khỏi baseline triển khai: hiển thị danh sách/bản đồ nhúng từ Google, ghi nguồn và trạng thái lỗi; không quản lý hồ sơ hoặc lưu nhà hàng yêu thích. Google Maps không phải dependency của baseline hiện tại; không triển khai hoặc tạo Issue nếu chưa có quyết định scope và phân rã mới.
 
 ---
 

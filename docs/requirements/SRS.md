@@ -1,9 +1,9 @@
 > **Document:** Software Requirements Specification
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v0.51.0
+> **Version:** v1.0.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-09-15
-> **Status:** Draft
+> **Last Updated:** 2026-09-16
+> **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
 # Software Requirements Specification
@@ -17,7 +17,7 @@ Tài liệu này là khung đặc tả gốc (Root Specification) và **Authorit
 - `docs/requirements/srs/BUSINESS-RULES.md` (BR chi tiết)
 - `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md` (NFR chi tiết)
 
-`Draft` nghĩa là requirement baseline chưa được Project Owner và team phê duyệt/freeze làm implementation baseline chính thức. Quá trình requirement decomposition chi tiết đã hoàn tất, nhưng các requirement vẫn có thể được hiệu chỉnh trong quá trình review trước khi freeze; tuyệt đối không được tạo implementation Issues trước khi quá trình review và freeze baseline hoàn tất theo workflow hiện hành. Document Status của tài liệu và Requirement Lifecycle của từng yêu cầu (DRAFT, ACTIVE, DEFERRED, OUT_OF_SCOPE, RETIRED) là hai khái niệm độc lập. DEC-001–DEC-018 và giá subscription là baseline nghiệp vụ hiện hành; các chi tiết kỹ thuật còn mở không được diễn giải thành quyết định sản phẩm mới.
+`Active` nghĩa là Modular SRS thuộc Requirements Baseline v1.0.0 đã được chốt ngày 16/09/2026 và là nguồn chuẩn để lập kế hoạch triển khai. Document Status của tài liệu và Requirement Lifecycle của từng yêu cầu (`DRAFT`, `ACTIVE`, `DEFERRED`, `OUT_OF_SCOPE`, `RETIRED`) là hai khái niệm độc lập. Mọi thay đổi semantic sau baseline này phải được review, đánh giá ảnh hưởng tới FR/BR/NFR và tăng document version theo governance hiện hành. DEC-001–DEC-018, quyết định phạm vi M11 ngày 16/09/2026 và giá subscription là baseline nghiệp vụ hiện hành; các chi tiết kỹ thuật còn mở không được diễn giải thành quyết định sản phẩm mới.
 
 ## 2. Mô tả sản phẩm
 
@@ -53,7 +53,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - Tính nhu cầu dinh dưỡng, AI menu dinh dưỡng hoặc đánh giá menu cho người dưới 18 tuổi, người mang thai/cho con bú hay người cần chế độ ăn điều trị bệnh.
 - Mobile/native app riêng. MVP là web responsive tiếng Việt; thanh toán gói AI thật thuộc phạm vi theo Q26 với giá/chính sách đã chốt, còn lựa chọn payment provider là quyết định kỹ thuật khi tích hợp.
 - Chức năng Đăng Blog thật nhúng công thức (True Blog with Embedded Recipes): Được phân rã chi tiết tại mục 3.21 để định hướng mở rộng, nhưng nằm ngoài phạm vi MVP ban đầu (`OUT_OF_SCOPE`); chỉ phát triển khi toàn bộ các chức năng cốt lõi đã hoàn thành trọn vẹn.
-- Chức năng Tìm kiếm nhà hàng chay quanh địa chỉ nhập (Module M11, FR-42, FR-43): `DEFERRED` theo DEC-003 và không thuộc MVP hiện tại; không tích hợp Apple Health, Google Fit, wearable hoặc lấy vị trí hiện tại bằng GPS/trình duyệt.
+- Chức năng Tìm kiếm nhà hàng chay quanh địa chỉ nhập (Module M11, FR-42, FR-43): `OUT_OF_SCOPE` theo quyết định phạm vi ngày 16/09/2026 và không thuộc baseline triển khai hiện tại; không tích hợp Apple Health, Google Fit, wearable hoặc lấy vị trí hiện tại bằng GPS/trình duyệt.
 - Nhận diện ảnh nguyên liệu, tóm tắt video, dự báo mùa/giá nguyên liệu.
 - Upload/lưu file video trực tiếp trên Azure Blob Storage. Phase 1 chỉ lưu link hoặc YouTube video ID.
 - Gói Max “vô hạn”. Nếu có sau này phải là Fair Use và có quota thực tế.
@@ -336,7 +336,9 @@ Ranh giới này phù hợp với [WHO về BMI người trưởng thành](https
 
 **Đã chốt:** khoảng 60 nguyên liệu, quy đổi có nguồn, tính lại dữ liệu liên quan và quyền gói tại 3.20. Công thức, khoảng đánh giá và ảnh hưởng sơ chế/nấu để nghiên cứu khi triển khai Q31. API dinh dưỡng, AI matching, GI/GL và đối tượng ngoài phạm vi vẫn không thuộc MVP.
 
-### 3.19 Tìm nhà hàng chay quanh địa chỉ nhập — DEFERRED (cập nhật 14/09/2026)
+### 3.19 Tìm nhà hàng chay quanh địa chỉ nhập — OUT_OF_SCOPE (cập nhật 16/09/2026)
+
+Các mô tả dưới đây được giữ làm lịch sử của capability từng được đề xuất, không tạo nghĩa vụ thiết kế, dependency, implementation Issue hoặc test scope trong baseline hiện tại:
 
 - Chỉ Member đã đăng nhập được sử dụng chức năng tìm/đề xuất nhà hàng chay. Guest không được gửi yêu cầu tìm địa điểm; nếu chọn chức năng này thì được yêu cầu đăng nhập.
 - Người dùng nhập hoặc chọn một địa chỉ/địa điểm Google Maps làm tâm tìm kiếm, ví dụ `KTX Khu B`. MVP không yêu cầu hoặc đọc GPS/vị trí hiện tại của thiết bị.
@@ -348,9 +350,9 @@ Ranh giới này phù hợp với [WHO về BMI người trưởng thành](https
 - Khi địa chỉ không xác định được, không có kết quả, Google Maps Platform lỗi hoặc hết hạn mức, hệ thống phải thông báo đúng trạng thái thay vì tạo địa điểm giả.
 - Google Maps Platform là phụ thuộc bên ngoài có cơ chế tính phí/hạn mức. Nhóm phải kiểm soát quota và không giả định dịch vụ luôn miễn phí. Google mô tả Geocoding dùng để chuyển địa chỉ thành tọa độ, Nearby Search tìm địa điểm theo vùng/bán kính và hỗ trợ loại `vegetarian_restaurant`/`vegan_restaurant`: [Geocoding](https://developers.google.com/maps/documentation/geocoding/geocoding), [Nearby Search](https://developers.google.com/maps/documentation/places/web-service/nearby-search), [Place Types](https://developers.google.com/maps/documentation/places/web-service/place-types), [Pricing](https://developers.google.com/maps/billing-and-pricing/pricing).
 
-**Trạng thái:** `DEFERRED` theo DEC-003 — toàn bộ Module M11, gồm FR-42, FR-43 và các BR liên quan đến Google Maps, không thuộc MVP hiện tại và không được tạo MVP implementation Issue. FR-44 là quyền sửa/xóa Recipe Post thuộc M02/M03 và vẫn `ACTIVE`; không thuộc M11.
+**Trạng thái:** `OUT_OF_SCOPE` theo quyết định phạm vi ngày 16/09/2026 — toàn bộ Module M11, gồm FR-42, FR-43 và các BR liên quan đến Google Maps, không thuộc baseline triển khai hiện tại. Ứng dụng không có ý định quản lý hoặc xác minh dữ liệu nhà hàng bên ngoài; không chọn Google Maps làm dependency và không tạo implementation Issue cho capability này. FR-44 là quyền sửa/xóa Recipe Post thuộc M02/M03 và vẫn `ACTIVE`; không thuộc M11.
 
-**Lưu ý truy vết yêu cầu:** nguyên văn đề tài có ý “gợi ý cửa hàng thuần chay liên quan đến món ăn đã tìm kiếm”. Nhóm từng đề xuất thu hẹp thành đề xuất nhà hàng chay quanh địa chỉ nhập theo bán kính đường bộ; quyết định hiện hành là giữ mô tả để bảo toàn lịch sử nhưng defer toàn bộ chức năng khỏi MVP.
+**Lưu ý truy vết yêu cầu:** nguyên văn đề tài có ý “gợi ý cửa hàng thuần chay liên quan đến món ăn đã tìm kiếm”. Nhóm từng đề xuất thu hẹp thành đề xuất nhà hàng chay quanh địa chỉ nhập theo bán kính đường bộ; quyết định hiện hành là giữ mô tả để bảo toàn lịch sử nhưng loại toàn bộ capability khỏi baseline triển khai. Nếu xem xét lại sau này, nhóm phải có quyết định scope mới và phân rã lại yêu cầu trước khi thiết kế hoặc tạo Issue.
 
 ### 3.20 Phạm vi chức năng sau bảng Q01–Q38 — xác nhận 12/09/2026
 
@@ -368,8 +370,8 @@ Mục này ghi quyết định mới nhất của người dùng và thay thế 
 | Q25–Q26 | Lịch sử hội thoại AI theo tài khoản không thuộc phạm vi hiện tại. Subscription/payment `ACTIVE`: FREE 0 VND/tháng, PLUS 49,000 VND/tháng, PRO 99,000 VND/tháng; chỉ VND, chu kỳ tháng, không tự động gia hạn, không hoàn tiền một phần. Entitlement chỉ kích hoạt sau thanh toán được xác minh, hết hạn cuối kỳ đã trả; xử lý thanh toán trùng phải idempotent. Payment provider được chọn ở thiết kế tích hợp. |
 | Q27–Q30 | Baseline MVP dùng nguồn tham khảo USDA/NIH, tính từ gram nguyên liệu và khẩu phần, rồi hiển thị thông tin tham khảo cá nhân; không tự kê mục tiêu calorie/macro chỉ dựa vào BMI hoặc mục tiêu cân nặng. Hành vi goal-adjusted nâng cao chỉ là stretch nếu còn thời gian, không phải MVP acceptance. Khoảng 60 nguyên liệu có nguồn cho demo; thiếu dữ liệu không coi là 0; thay đổi dữ liệu phải được tính lại và ghi nguồn. |
 | Q31 | Chỉ ghi nguồn trong SRS; nghiên cứu/chốt công thức và khoảng đánh giá khi triển khai chức năng dinh dưỡng. Không yêu cầu nghiên cứu công thức ngay để tiếp tục tài liệu. |
-| Q32–Q34 | `DEFERRED` — M11 và tích hợp Google Maps không thuộc MVP hiện tại; giữ nội dung để bảo toàn lịch sử, không tạo MVP implementation Issue. |
-| Q35 | `DEFERRED` — chức năng nhà hàng chay không thuộc MVP hiện tại. |
+| Q32–Q34 | `OUT_OF_SCOPE` — M11 và tích hợp Google Maps không thuộc baseline triển khai hiện tại; giữ nội dung để bảo toàn lịch sử, không tạo implementation Issue. |
+| Q35 | `OUT_OF_SCOPE` — chức năng nhà hàng chay không thuộc baseline triển khai hiện tại. |
 | Q36–Q38 | Giao diện tiếng Việt. AI gắn cờ là hạng mục DEFERRED, không phải nghiệm thu MVP. Ba actor người dùng: Guest, Member, Administrator; không có actor hoặc quyền Contributor riêng. |
 
 ### 3.21 Phân rã chức năng Đăng Blog cộng đồng nhúng công thức (Mô hình Samsung Food — Ngoài phạm vi MVP)
@@ -388,7 +390,7 @@ Nhằm chuẩn bị mở rộng hệ thống thành mạng xã hội ẩm thực
   - Guest: Đọc bài blog công khai, xem các công thức được nhúng.
   - Member: Soạn thảo, đăng tải, chỉnh sửa, xóa bài blog của chính mình; tìm kiếm và nhúng công thức công khai vào bài blog; Like và bình luận trao đổi trong bài blog.
   - Administrator: Quản lý danh mục blog; tiếp nhận báo cáo vi phạm và xử lý (cảnh báo, ẩn bài, xóa bài blog vi phạm).
-- **Ranh giới thực hiện:** Chức năng này được gắn nhãn **`OUT_OF_SCOPE` đối với MVP ban đầu** (hoặc `DEFERRED`). Nhóm chỉ lập trình chức năng này sau khi toàn bộ các tính năng cốt lõi (Khám phá công thức, Quản lý lịch ăn, Dinh dưỡng, AI Gemini) đã được xây dựng và nghiệm thu hoàn tất.
+- **Ranh giới thực hiện:** Chức năng này là `OUT_OF_SCOPE` trong baseline hiện tại. Nội dung được giữ để bảo toàn định hướng lịch sử, không tạo implementation Issue; muốn đưa lại vào scope phải có quyết định phạm vi và phân rã mới.
 
 ### 3.22 Phân rã chức năng Quản lý kho thực phẩm cá nhân (Pantry/Inventory) và đề xuất từ kho — Ngoài phạm vi MVP (`OUT_OF_SCOPE`)
 
@@ -428,7 +430,7 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 | --- | --- | --- |
 | Azure Blob Storage | Lưu và phục vụ ảnh Recipe Post theo tham chiếu do ứng dụng quản lý | Không lưu video upload trong Phase 1; không tự quyết định quyền truy cập ứng dụng. |
 | YouTube | Phát video nhúng từ link/video ID hợp lệ | Ứng dụng không upload, sao chép hoặc bảo đảm mọi video luôn cho phép nhúng. |
-| Google Maps Platform | Phụ thuộc dự kiến của M11/FR-42/FR-43 đã `DEFERRED` | Không thuộc MVP hiện tại; không phải dữ liệu nhà hàng do ứng dụng tự xác minh; không dùng GPS của thiết bị. |
+| Google Maps Platform | Phụ thuộc lịch sử của M11/FR-42/FR-43 đã `OUT_OF_SCOPE` | Không được chọn làm dependency của baseline hiện tại; ứng dụng không quản lý hoặc xác minh dữ liệu nhà hàng bên ngoài. |
 | Google authentication và dịch vụ email | Hỗ trợ Google Login, xác minh email, đặt lại mật khẩu và thông báo đã xác nhận | Nhà cung cấp và chi tiết luồng triển khai chưa được SRS này tự suy diễn. |
 | Payment provider | Xác minh thanh toán thật trước khi kích hoạt quyền Plus/Pro | Provider cụ thể là quyết định kỹ thuật; giá VND, chu kỳ tháng, không tự động gia hạn, hết hạn entitlement, không hoàn tiền một phần và idempotency đã chốt tại 3.20. |
 
@@ -446,20 +448,20 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 | M08 | Subscription Administration | Hiển thị/đổi gói và quyền AI | M02, M06 | `ACTIVE`; FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; payment provider còn chọn ở thiết kế. |
 | M09 | Administration | Xử lý báo cáo, quản lý user/bài công thức/danh mục/bình luận và danh mục nguyên liệu dinh dưỡng | M02–M07, M10 | Không duyệt trước; quyết định thủ công có lý do, giữ audit/history; còn decomposition và thiết kế lưu trữ/UX. |
 | M10 | Nutrition Profile & Daily Menu Check | Với Member đủ điều kiện, tính chín chỉ tiêu từ danh mục nguyên liệu dinh dưỡng nội bộ, quy đổi theo khẩu phần và đối chiếu tổng ba bữa với hồ sơ | M02, M04, M05 | Đã chốt đối tượng, chỉ tiêu, nguồn dữ liệu cấp MVP và cách cộng menu; còn dữ liệu khởi tạo, quy đổi và khoảng tham khảo chi tiết khi triển khai. |
-| M11 | Nearby Vegetarian Restaurant Discovery | Member nhập địa chỉ và chọn 500 m/1 km/5 km/10 km để nhận đề xuất nhà hàng chay từ Google Maps; không dùng GPS, không liên kết với món đã tìm và không quản lý nhà hàng | M02, Google Maps Geocoding, Places/Nearby Search | `DEFERRED` — không thuộc MVP hiện tại; không tạo MVP implementation Issue. |
+| M11 | Nearby Vegetarian Restaurant Discovery | Capability lịch sử về tìm nhà hàng chay qua Google Maps; không thuộc baseline triển khai hiện tại | Không có dependency trong baseline hiện tại | `OUT_OF_SCOPE` — ứng dụng không quản lý dữ liệu nhà hàng bên ngoài; chỉ xem xét lại sau một quyết định scope và phân rã mới. |
 | M12 | Community Blog & Recipe Embedding | Trang Blog độc lập cho Member đăng bài văn xuôi chia sẻ kinh nghiệm và nhúng thẻ Recipe Post công khai | M01, M03 | OUT_OF_SCOPE — Ngoài phạm vi MVP ban đầu; chỉ phát triển sau khi các module cốt lõi hoàn thành. |
 | M13 | Personal Pantry & Inventory-based Recipe Recommendation | Quản lý kho thực phẩm cá nhân của Member, tìm kiếm công thức phù hợp từ nguyên liệu có sẵn và hỗ trợ AI sáng tạo món mới từ kho | M02, M03, M06 | OUT_OF_SCOPE — Ngoài phạm vi MVP ban đầu; ghi nhận định hướng sau khi hoàn thành các module cốt lõi. |
 
-## 6. Thứ tự phân rã để viết SRS
+## 6. Thứ tự sử dụng baseline cho thiết kế và kiểm thử
 
-Không viết ERD trước use case. Thứ tự cần giữ:
+Không thiết kế ERD hoặc API bằng giả định nằm ngoài requirement. Thứ tự cần giữ:
 
-1. Chốt **User Journey** của M01–M06: mỗi actor bắt đầu ở đâu, làm gì, thành công/thất bại ra sao.
-2. Viết **User Stories** theo journey; mỗi story chỉ mô tả một giá trị có thể demo.
-3. Viết **Acceptance Criteria** dạng Given/When/Then cho từng story, gồm cả lỗi và quyền bị từ chối.
-4. Chuyển các quy tắc lặp lại thành **Business Rules** có mã BR-xx.
-5. Từ story và BR, xác định entity/thuộc tính/quan hệ để lập ERD; không thêm bảng không phục vụ yêu cầu.
-6. Chuyển Acceptance Criteria thành test cases và liên kết traceability `FR → User Story → Test Case`.
+1. Dùng root registry để xác nhận requirement tồn tại, module và lifecycle chính thức.
+2. Dùng FR/BR/NFR chi tiết cùng Use Case và Acceptance Criteria hiện có để xác định hành vi, lỗi, quyền và ràng buộc.
+3. Bổ sung User Journey/User Story mapping khi cần cho lập kế hoạch Issue, nhưng không được thay đổi nghĩa của requirement nguồn.
+4. Từ requirement và Business Rules, xác định entity/thuộc tính/quan hệ để lập ERD; không thêm bảng không phục vụ yêu cầu.
+5. Thiết kế API contract từ các luồng đã chốt và giữ traceability tới FR/BR/NFR liên quan.
+6. Chuyển Acceptance Criteria thành test cases và duy trì traceability `FR → Use Case/User Story → Test Case`.
 
 ## 7. Danh mục Functional Requirements và Authoritative Lifecycle Registry
 
@@ -467,7 +469,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 
 ### 7.1 Quy tắc lifecycle trong baseline hiện tại
 
-Vocabulary duy nhất dùng cho requirement lifecycle là `DRAFT`, `ACTIVE`, `DEFERRED`, `OUT_OF_SCOPE` và `RETIRED`. Theo DEC-001–003, các FR thuộc M01–M06 và M09–M10 cùng M08 subscription/payment là `ACTIVE`, trừ requirement đã được xác nhận `DEFERRED`, `OUT_OF_SCOPE` hoặc `RETIRED`. M11 là `DEFERRED`. Registry dưới đây là baseline có thẩm quyền; lifecycle không biểu thị mức độ phân rã hay implementation readiness.
+Vocabulary duy nhất dùng cho requirement lifecycle là `DRAFT`, `ACTIVE`, `DEFERRED`, `OUT_OF_SCOPE` và `RETIRED`. Theo DEC-001–003, các FR thuộc M01–M06 và M09–M10 cùng M08 subscription/payment là `ACTIVE`, trừ requirement đã được xác nhận `DEFERRED`, `OUT_OF_SCOPE` hoặc `RETIRED`. M11 là `OUT_OF_SCOPE` theo quyết định phạm vi ngày 16/09/2026. Registry dưới đây là baseline có thẩm quyền; lifecycle không biểu thị mức độ phân rã hay implementation readiness.
 
 ### 7.2 Functional Requirements Registry
 
@@ -514,8 +516,8 @@ Vocabulary duy nhất dùng cho requirement lifecycle là `DRAFT`, `ACTIVE`, `DE
 | FR-39 | Tính toán ước tính 9 chỉ tiêu dinh dưỡng cho công thức | M03, M04, M10 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-39) |
 | FR-40 | Công khai Recipe Post chứa nguyên liệu ngoài danh mục dinh dưỡng | M03, M04, M06, M10 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-40) |
 | FR-41 | Administrator quản lý danh mục nguyên liệu dinh dưỡng | M09, M10 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-41) |
-| FR-42 | Member tìm nhà hàng chay theo địa chỉ và bán kính đường bộ | M02, M11 | DEFERRED | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-42) |
-| FR-43 | Hiển thị danh sách và bản đồ nhúng nhà hàng từ Google | M11 | DEFERRED | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-43) |
+| FR-42 | Member tìm nhà hàng chay theo địa chỉ và bán kính đường bộ | M02, M11 | OUT_OF_SCOPE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-42) |
+| FR-43 | Hiển thị danh sách và bản đồ nhúng nhà hàng từ Google | M11 | OUT_OF_SCOPE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-43) |
 | FR-44 | Member sửa hoặc xóa Recipe Post đã công khai của chính mình | M02, M03 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-44) |
 | FR-45 | Like và Unlike bài công thức, bình luận và phản hồi | M01, M02, M03 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-45) |
 | FR-46 | Hiển thị và quản lý bình luận, reply lồng nhiều cấp | M01, M02, M03, M09 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-46) |
@@ -536,7 +538,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại, mã ID và
 
 ### 8.1 Quy tắc lifecycle gate
 
-Theo DEC-001–003, các BR hỗ trợ MVP thuộc M01–M06 và M09–M10 cùng M08 là `ACTIVE`, trừ quy tắc đã được xác nhận `DEFERRED` hoặc `RETIRED`. Toàn bộ BR của M11 là `DEFERRED`. Registry dưới đây là baseline lifecycle có thẩm quyền; mức độ chi tiết của BR được đánh giá riêng trong Phase 2.
+Theo DEC-001–003, các BR hỗ trợ MVP thuộc M01–M06 và M09–M10 cùng M08 là `ACTIVE`, trừ quy tắc đã được xác nhận `DEFERRED`, `OUT_OF_SCOPE` hoặc `RETIRED`. Toàn bộ BR của M11 là `OUT_OF_SCOPE` theo quyết định phạm vi ngày 16/09/2026. Registry dưới đây là baseline lifecycle có thẩm quyền; mức độ chi tiết của BR được đánh giá riêng trong Phase 2.
 
 ### 8.2 Business Rules Registry
 
@@ -596,20 +598,20 @@ Theo DEC-001–003, các BR hỗ trợ MVP thuộc M01–M06 và M09–M10 cùng
 | BR-52 | Yêu cầu đầy đủ 9 chỉ tiêu và nguồn trước khi kích hoạt | M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-52) |
 | BR-53 | Cấm xóa vĩnh viễn nguyên liệu dinh dưỡng đã tham chiếu | M09, M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-53) |
 | BR-54 | Cấm nhập hàng loạt tự động vào danh mục dinh dưỡng | M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-54) |
-| BR-55 | Không sử dụng GPS thiết bị khi tìm nhà hàng | M11 | DEFERRED | [Chi tiết](srs/BUSINESS-RULES.md#br-55) |
-| BR-56 | Nguồn dữ liệu nhà hàng từ Google Maps Platform | M11 | DEFERRED | [Chi tiết](srs/BUSINESS-RULES.md#br-56) |
-| BR-57 | Xử lý lỗi không tìm thấy địa chỉ hoặc vượt hạn mức Google | M11 | DEFERRED | [Chi tiết](srs/BUSINESS-RULES.md#br-57) |
+| BR-55 | Không sử dụng GPS thiết bị khi tìm nhà hàng | M11 | OUT_OF_SCOPE | [Chi tiết](srs/BUSINESS-RULES.md#br-55) |
+| BR-56 | Nguồn dữ liệu nhà hàng từ Google Maps Platform | M11 | OUT_OF_SCOPE | [Chi tiết](srs/BUSINESS-RULES.md#br-56) |
+| BR-57 | Xử lý lỗi không tìm thấy địa chỉ hoặc vượt hạn mức Google | M11 | OUT_OF_SCOPE | [Chi tiết](srs/BUSINESS-RULES.md#br-57) |
 | BR-58 | Độc lập giữa thao tác gửi báo cáo và quyết định xử lý | M03, M09 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-58) |
 | BR-59 | Không có hàng đợi duyệt bài trước khi công khai | M02, M03 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-59) |
 | BR-60 | Xác nhận trách nhiệm trước khi xin quyền đăng bài | M02 | RETIRED | [Chi tiết](srs/BUSINESS-RULES.md#br-60) |
 | BR-61 | Giới hạn số đơn xin quyền đăng bài Chờ duyệt | M02, M09 | RETIRED | [Chi tiết](srs/BUSINESS-RULES.md#br-61) |
 | BR-62 | Kiểm tra quyền tác giả và validation khi sửa bài công thức | M02, M03 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-62) |
-| BR-63 | Đề xuất nhà hàng theo bán kính và không duy trì danh mục riêng | M11 | DEFERRED | [Chi tiết](srs/BUSINESS-RULES.md#br-63) |
+| BR-63 | Đề xuất nhà hàng theo bán kính và không duy trì danh mục riêng | M11 | OUT_OF_SCOPE | [Chi tiết](srs/BUSINESS-RULES.md#br-63) |
 | BR-64 | Quyền sửa và xóa bài công thức của chính tác giả | M02, M03 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-64) |
 | BR-65 | Quy tắc mỗi Member tối đa một Like hiệu lực | M01, M02 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-65) |
 | BR-66 | Quy tắc liên kết và phân quyền với reply bình luận | M01, M03 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-66) |
-| BR-67 | Xác thực Member trước khi gọi Google Maps Platform | M02, M11 | DEFERRED | [Chi tiết](srs/BUSINESS-RULES.md#br-67) |
-| BR-68 | 4 ngưỡng bán kính tìm nhà hàng cố định | M11 | DEFERRED | [Chi tiết](srs/BUSINESS-RULES.md#br-68) |
+| BR-67 | Xác thực Member trước khi gọi Google Maps Platform | M02, M11 | OUT_OF_SCOPE | [Chi tiết](srs/BUSINESS-RULES.md#br-67) |
+| BR-68 | 4 ngưỡng bán kính tìm nhà hàng cố định | M11 | OUT_OF_SCOPE | [Chi tiết](srs/BUSINESS-RULES.md#br-68) |
 
 ## 9. Non-functional Requirements Registry
 
@@ -626,11 +628,11 @@ Tài liệu này duy trì bảng chỉ mục tóm tắt các nhóm yêu cầu ph
 
 ## 10. Việc còn mở cho thiết kế/triển khai
 
-Phạm vi nghiệp vụ DEC-001–DEC-018 và giá subscription đã được xác nhận. Các việc còn lại là phân rã/thiết kế: chọn payment và email provider; chọn thời lượng access token, chính sách rotation chi tiết và storage mechanism trong baseline DEC-015-A; định dạng UI; công thức/hệ số/khoảng dinh dưỡng có nguồn; dữ liệu khởi tạo; timeout/retry kỹ thuật theo provider; và Acceptance Criteria. Các chi tiết này không phải quyết định phạm vi sản phẩm mới và không chặn bắt đầu Phase 2.
+Phạm vi nghiệp vụ, lifecycle và Acceptance Criteria cấp FR của Requirements Baseline v1.0.0 đã được chốt. Các việc còn lại thuộc thiết kế/triển khai: chọn payment và email provider; chọn thời lượng access token, chính sách rotation chi tiết và storage mechanism trong baseline DEC-015-A; định dạng UI; công thức/hệ số/khoảng dinh dưỡng có nguồn; dữ liệu khởi tạo; timeout/retry kỹ thuật theo provider; ERD, API contract và test-case traceability. Các chi tiết này không phải quyết định phạm vi sản phẩm mới và không làm thay đổi trạng thái `Active` của baseline.
 
 ## 11. Bước tiếp theo
 
-Viết User Stories, Use Cases và Acceptance Criteria theo phạm vi đã chốt, sau đó thiết kế ERD/API/Test Cases. Không tự thêm chức năng hoặc coi các công thức dinh dưỡng chưa nghiên cứu là đã xác nhận.
+Dùng Use Cases và Acceptance Criteria hiện có để lập ERD, API contract và Test Cases; bổ sung User Story mapping khi cần cho Issue planning. Không tự thêm chức năng, không để artifact downstream định nghĩa lại requirement và không coi các công thức dinh dưỡng chưa nghiên cứu là đã xác nhận.
 
 ## 12. Truy vết đề tài
 
@@ -639,7 +641,7 @@ Viết User Stories, Use Cases và Acceptance Criteria theo phạm vi đã chố
 | Quản lý thành viên/bài/bình luận/danh mục | FR-04, FR-06, FR-18, FR-28 | Công khai trực tiếp, hậu kiểm nội dung theo báo cáo |
 | Bình luận/bình chọn/báo cáo/quản lý nội dung mình | FR-26–FR-30, FR-44–FR-46, FR-48 | Like không đánh giá sao, reply nhiều cấp |
 | Thực đơn tuần theo nguyên liệu và BMI | FR-09, FR-31, FR-33–FR-39 | Hồ sơ rộng hơn BMI, AI chọn công thức có sẵn |
-| Tìm/gợi ý nhà hàng chay | FR-42, FR-43 | `DEFERRED`; giữ mô tả địa chỉ/bán kính/Google Maps để bảo toàn lịch sử, không thuộc MVP hiện tại. |
+| Tìm/gợi ý nhà hàng chay | FR-42, FR-43 | `OUT_OF_SCOPE`; giữ mô tả lịch sử nhưng không chọn Google Maps làm dependency hoặc tạo implementation scope trong baseline hiện tại. |
 | Bài liên quan công thức đã tìm | FR-47 | Thông thường hoặc tùy chọn AI |
 | AI Chatbot hỏi đáp ẩm thực chay theo ngữ cảnh | FR-51 | Không tạo công thức/số liệu ngoài hệ thống; hỗ trợ ngữ cảnh chung và ngữ cảnh bài công thức |
 | Giới hạn và đăng ký gói AI | FR-10, FR-11, FR-13 | 5/15/50; FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; thanh toán thật và entitlement sau xác minh |

@@ -1,16 +1,16 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v0.2.1
+> **Version:** v1.0.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-15
-> **Status:** Draft
+> **Last Updated:** 2026-09-16
+> **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
 # Business Rules Specification
 
 ## 1. Mục đích và thẩm quyền tài liệu
 
-Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Business Rules (`BR-01` đến `BR-68`) của hệ thống.
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Business Rules (`BR-01` đến `BR-68`) của Requirements Baseline v1.0.0.
 
 Khung đặc tả gốc và **Authoritative Registry** cho sự tồn tại của quy tắc, mã định danh ổn định (stable ID), và trạng thái vòng đời (lifecycle state) chính thức được duy trì tập trung tại `docs/requirements/SRS.md`.
 
@@ -20,7 +20,7 @@ Mỗi quy tắc nghiệp vụ được gắn một thẻ stable anchor HTML cố
 
 ## 2. Quy tắc lifecycle trong baseline hiện tại
 
-Các trạng thái derived dưới đây đã được đồng bộ từ root registry theo DEC-001–DEC-003. Không còn BR mang legacy/unknown lifecycle wording. Nội dung `DEFERRED`/`RETIRED` được giữ để bảo toàn lịch sử và không tạo MVP implementation scope.
+Các trạng thái derived dưới đây được đồng bộ từ root registry, bao gồm quyết định phạm vi M11 ngày 16/09/2026. Không còn BR mang legacy/unknown lifecycle wording. Nội dung `DEFERRED`, `OUT_OF_SCOPE` và `RETIRED` được giữ để bảo toàn lịch sử và không tạo implementation scope hiện tại.
 
 ## 3. Danh mục chi tiết Business Rules
 
@@ -517,8 +517,8 @@ Các trạng thái derived dưới đây đã được đồng bộ từ root re
 ### BR-55 — Không sử dụng GPS thiết bị khi tìm nhà hàng
 
 - **Mã quy tắc:** BR-55
-- **Trạng thái (Derived):** DEFERRED
-- **Nội dung:** Nếu M11 được kích hoạt bởi một quyết định scope mới, chức năng dùng địa chỉ/địa điểm người dùng chủ động nhập/chọn và không xin quyền, đọc hoặc lưu GPS/vị trí hiện tại của thiết bị.
+- **Trạng thái (Derived):** OUT_OF_SCOPE
+- **Nội dung:** Ràng buộc lịch sử: nếu M11 được đưa lại vào scope bằng một quyết định và phân rã mới, chức năng dùng địa chỉ/địa điểm người dùng chủ động nhập/chọn và không xin quyền, đọc hoặc lưu GPS/vị trí hiện tại của thiết bị.
 
 ---
 
@@ -526,8 +526,8 @@ Các trạng thái derived dưới đây đã được đồng bộ từ root re
 ### BR-56 — Nguồn dữ liệu nhà hàng từ Google Maps Platform
 
 - **Mã quy tắc:** BR-56
-- **Trạng thái (Derived):** DEFERRED
-- **Nội dung:** Kết quả nhà hàng phải đến từ Google Maps Platform và không được Gemini tạo ra. Tìm nhà hàng không trừ lượt AI và app không được trình bày phân loại của Google như xác minh độc lập của hệ thống.
+- **Trạng thái (Derived):** OUT_OF_SCOPE
+- **Nội dung:** Ràng buộc lịch sử: đề xuất cũ yêu cầu kết quả nhà hàng đến từ Google Maps Platform, không do Gemini tạo ra, không trừ lượt AI và không được trình bày phân loại của Google như xác minh độc lập của hệ thống.
 
 ---
 
@@ -535,8 +535,8 @@ Các trạng thái derived dưới đây đã được đồng bộ từ root re
 ### BR-57 — Xử lý lỗi không tìm thấy địa chỉ hoặc vượt hạn mức Google
 
 - **Mã quy tắc:** BR-57
-- **Trạng thái (Derived):** DEFERRED
-- **Nội dung:** Khi địa chỉ không xác định được, không có kết quả hoặc dịch vụ Google lỗi/hết hạn mức, hệ thống phải thông báo đúng trạng thái và không tạo địa điểm thay thế không có nguồn.
+- **Trạng thái (Derived):** OUT_OF_SCOPE
+- **Nội dung:** Ràng buộc lịch sử: đề xuất cũ yêu cầu thông báo đúng trạng thái khi địa chỉ không xác định được, không có kết quả hoặc dịch vụ Google lỗi/hết hạn mức, đồng thời không tạo địa điểm thay thế không có nguồn.
 
 ---
 
@@ -589,8 +589,8 @@ Các trạng thái derived dưới đây đã được đồng bộ từ root re
 ### BR-63 — Đề xuất nhà hàng theo bán kính và không duy trì danh mục riêng
 
 - **Mã quy tắc:** BR-63
-- **Trạng thái (Derived):** DEFERRED
-- **Nội dung:** Đề xuất nhà hàng chỉ dựa trên địa chỉ/bán kính và dữ liệu Google Maps Platform, không dựa trên món đã tìm. Hệ thống không duy trì danh mục nhà hàng do Administrator quản lý và không được trình bày dữ liệu ngoài như dữ liệu đã được app xác minh.
+- **Trạng thái (Derived):** OUT_OF_SCOPE
+- **Nội dung:** Ràng buộc lịch sử: đề xuất cũ chỉ dựa trên địa chỉ/bán kính và dữ liệu Google Maps Platform, không dựa trên món đã tìm. Hệ thống không duy trì danh mục nhà hàng do Administrator quản lý và không được trình bày dữ liệu ngoài như dữ liệu đã được app xác minh.
 
 ---
 
@@ -625,8 +625,8 @@ Các trạng thái derived dưới đây đã được đồng bộ từ root re
 ### BR-67 — Xác thực Member trước khi gọi Google Maps Platform
 
 - **Mã quy tắc:** BR-67
-- **Trạng thái (Derived):** DEFERRED
-- **Nội dung:** Backend chỉ gửi yêu cầu tìm nhà hàng tới Google Maps Platform sau khi xác thực Member. Yêu cầu của Guest bị chặn trước khi gọi dịch vụ ngoài và không tiêu thụ quota tìm kiếm của ứng dụng.
+- **Trạng thái (Derived):** OUT_OF_SCOPE
+- **Nội dung:** Ràng buộc lịch sử: đề xuất cũ chỉ cho Backend gửi yêu cầu tìm nhà hàng tới Google Maps Platform sau khi xác thực Member; yêu cầu của Guest bị chặn trước khi gọi dịch vụ ngoài và không tiêu thụ quota tìm kiếm của ứng dụng.
 
 ---
 
@@ -634,5 +634,5 @@ Các trạng thái derived dưới đây đã được đồng bộ từ root re
 ### BR-68 — 4 ngưỡng bán kính tìm nhà hàng cố định
 
 - **Mã quy tắc:** BR-68
-- **Trạng thái (Derived):** DEFERRED
-- **Nội dung:** Nếu M11 được kích hoạt bởi một quyết định scope mới, bán kính chỉ nhận 500 m, 1 km, 5 km hoặc 10 km; giá trị khác bị từ chối trước khi gọi Google Maps Platform.
+- **Trạng thái (Derived):** OUT_OF_SCOPE
+- **Nội dung:** Ràng buộc lịch sử: nếu M11 được đưa lại vào scope bằng một quyết định và phân rã mới, đề xuất cũ chỉ nhận bán kính 500 m, 1 km, 5 km hoặc 10 km; giá trị khác bị từ chối trước khi gọi Google Maps Platform.

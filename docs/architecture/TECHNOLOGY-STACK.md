@@ -1,8 +1,8 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.2.0
+> **Version:** v1.3.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-14
+> **Last Updated:** 2026-09-16
 > **Status:** Active  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -74,7 +74,7 @@ Google Login là khả năng authentication đã được SRS xác nhận; Sprin
 | Upload trực tiếp bằng scoped SAS URL | Khả năng upload từ client tới Blob khi xuất hiện nhu cầu scaling đã được đo | Future option | Có thể giảm tải truyền file qua Backend | Tăng độ phức tạp về CORS, expiry, upload chưa hoàn tất và verification; chưa có ngưỡng áp dụng |
 | YouTube embed | Phát video được liên kết trong Recipe Post mà không sao chép video | Confirmed | Dùng player của provider và tránh phải vận hành video pipeline | Khả năng embed phụ thuộc setting của video nguồn và hành vi của provider |
 | Google Gemini | AI provider cho các khả năng được SRS định nghĩa | Confirmed at provider level | Cho nhóm một ranh giới provider thống nhất để đánh giá và tích hợp | Model, kiến trúc chi tiết, chất lượng, latency, quota và chi phí vẫn cần kiểm thử/chốt |
-| Google Maps Platform | Phụ thuộc dự kiến cho FR-42/FR-43 | Deferred | M11 không thuộc MVP hiện tại | Không chọn/tích hợp trong MVP nếu chưa có quyết định scope mới |
+| Google Maps Platform | Phụ thuộc lịch sử từng được đề xuất cho FR-42/FR-43 | `OUT_OF_SCOPE` | M11 không phục vụ trực tiếp luồng meal-planning cốt lõi và ứng dụng không quản lý dữ liệu nhà hàng bên ngoài | Không chọn dependency hoặc tích hợp trong baseline hiện tại; chỉ xem xét lại sau quyết định scope và phân rã mới |
 | Payment provider | Xác minh payment thật cho Plus/Pro trước khi kích hoạt entitlement | TBD implementation | Business baseline đã chốt FREE 0, PLUS 49,000, PRO 99,000 VND/tháng | Chỉ provider/webhook còn chọn; phải hỗ trợ verified activation, expiry, no auto-renew/no partial refund và idempotency |
 | Email service | Verification, reset và notification bất đồng bộ/best-effort | TBD implementation | Email failure không rollback business action; moderation-result email phải được thử gửi | Provider, deliverability, template và retry detail chưa chốt |
 

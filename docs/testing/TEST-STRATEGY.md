@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.1.1
+> **Version:** v1.2.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-15
+> **Last Updated:** 2026-09-16
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -44,7 +44,7 @@ Việc kiểm thử nên ưu tiên:
 - Điều kiện dùng AI, quota 5/15/50 reset 00:00 `Asia/Ho_Chi_Minh`, account/cookie+coarse-IP tracking, chỉ tính lượt thành công, telemetry không raw prompt và retention 90 ngày.
 - Điều kiện dùng chức năng dinh dưỡng, quy đổi khẩu phần, công khai dữ liệu thiếu và cấm bịa hoặc diễn giải theo hướng chẩn đoán.
 - Validation ảnh, tính nhất quán của reference, lỗi YouTube embed và xử lý error/quota của external provider.
-- M11/Google Maps đã `DEFERRED`, không nằm trong MVP test scope hoặc release gate.
+- M11/Google Maps là `OUT_OF_SCOPE`, không có test scope hoặc release gate trong baseline hiện tại.
 - Xác minh payment trước khi kích hoạt entitlement, expiry cuối kỳ, FREE/PLUS/PRO ở 0/49,000/99,000 VND/tháng, no auto-renew/no partial refund và idempotency cho duplicate processing.
 - Authentication: rate limit account identifier + IP 10 phút sau 5 lần sai; access token ngắn hạn, rotating refresh, server-side revocation và logout thu hồi refresh session.
 - Notification: in-app theo business event; email async/best-effort không rollback hành động gốc, moderation email phải được attempt.
@@ -53,7 +53,7 @@ Danh sách này dùng để ưu tiên. Test Case chi tiết phải được suy 
 
 ## 5. Chiến lược kiểm thử external service và AI
 
-Sử dụng nhiều lớp bằng chứng cho Gemini, Azure Blob Storage, Google Maps (nếu M11 được kích hoạt sau này), Google authentication, email, YouTube và payment provider trong tương lai:
+Sử dụng nhiều lớp bằng chứng cho Gemini, Azure Blob Storage, Google authentication, email, YouTube và payment provider trong tương lai:
 
 1. Unit Test có tính xác định kiểm tra quyết định của ứng dụng bằng phản hồi thành công/thất bại được kiểm soát.
 2. Adapter/Integration Test kiểm tra request/response mapping và phân loại lỗi mà không khiến mọi test phụ thuộc vào live provider.

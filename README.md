@@ -1,8 +1,8 @@
 > **Document:** Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.6.0
+> **Version:** v0.7.1
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-14
+> **Last Updated:** 2026-09-16
 > **Status:** Under Review
 
 # Vegetarian Support System
@@ -14,7 +14,7 @@
 ## Phạm vi MVP
 
 - Guest đọc/tìm bài công thức công khai, xem bình luận và dùng AI hỏi đáp cơ bản theo hạn mức.
-- Member quản lý hồ sơ, lưu công thức, lập lịch ăn ba bữa, Shopping List và tương tác Like/bình luận. Nearby Restaurant Discovery/Google Maps (M11) là `DEFERRED`, không thuộc MVP hiện tại.
+- Member quản lý hồ sơ, lưu công thức, lập lịch ăn ba bữa, Shopping List và tương tác Like/bình luận. Nearby Restaurant Discovery/Google Maps (M11) là `OUT_OF_SCOPE` và không thuộc baseline triển khai hiện tại.
 - Member đã đăng nhập có thể tạo và công khai Recipe Post trực tiếp; Administrator hậu kiểm nội dung theo báo cáo của người dùng.
 - Gemini hỗ trợ hỏi đáp, gợi ý công thức có sẵn, lập/thay thực đơn và tạo nội dung có thể chỉnh sửa trong biểu mẫu; AI không tự tạo dữ liệu dinh dưỡng chính thức hoặc tự quyết định kiểm duyệt. Lưu nháp Recipe Post, lịch sử chat AI và AI quét/gắn cờ nội dung không thuộc MVP hiện tại.
 - Free, Plus và Pro có cùng nhóm chức năng AI, với hạn mức 5/15/50 request thành công/ngày. Giá tháng cố định cho MVP là FREE 0 VND, PLUS 49,000 VND và PRO 99,000 VND; không tự động gia hạn hoặc hoàn tiền một phần, entitlement chỉ có hiệu lực sau thanh toán được xác minh và hết hạn cuối kỳ đã trả.
@@ -29,7 +29,7 @@ Chi tiết nghiệp vụ nằm trong [SRS](docs/requirements/SRS.md). Các đề
 | Backend | Java 21, Spring Boot, Maven, REST API/JSON |
 | Data | Microsoft SQL Server, Spring Data JPA/Hibernate, Flyway |
 | Security | Spring Security, short-lived JWT access token, rotating refresh token với server-side revocation, BCrypt, role-based authorization |
-| External services | Azure Blob Storage, Google Gemini và YouTube embedding; Google Maps là dependency của M11 đã deferred; payment/email provider cụ thể còn chọn khi tích hợp. |
+| External services | Azure Blob Storage, Google Gemini và YouTube embedding; payment/email provider cụ thể còn chọn khi tích hợp. Google Maps không phải dependency của baseline hiện tại vì M11 là `OUT_OF_SCOPE`. |
 | Quality | JUnit 5, Mockito, JaCoCo, OpenAPI/Swagger UI, Bean Validation |
 
 Model Gemini, AI architecture, frontend state management, CSS/UI library và deployment vẫn là `TBD`. Xem [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) trước khi thêm dependency và [System Architecture](docs/architecture/ARCHITECTURE.md) trước khi thay đổi ranh giới hệ thống.
@@ -62,8 +62,8 @@ Model Gemini, AI architecture, frontend state management, CSS/UI library và dep
 
 | Nội dung | Nguồn chính | Trạng thái |
 |---|---|---|
-| Yêu cầu chi tiết | [SRS](docs/requirements/SRS.md) | Draft |
-| Yêu cầu sản phẩm cấp cao | [PRD](docs/requirements/PRD.md) | Under Review |
+| Yêu cầu chi tiết | [SRS](docs/requirements/SRS.md) | Requirements Baseline v1.0.0 — Active |
+| Yêu cầu sản phẩm cấp cao | [PRD](docs/requirements/PRD.md) | Requirements Baseline v1.0.0 — Active |
 | Kiến trúc cấp cao | [System Architecture](docs/architecture/ARCHITECTURE.md) | Active; chưa phải bằng chứng implementation |
 | Công nghệ | [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) | Active baseline |
 | Chiến lược kiểm thử | [Test Strategy](docs/testing/TEST-STRATEGY.md) | Active; chưa khẳng định test đã tồn tại |

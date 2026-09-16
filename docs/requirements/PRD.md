@@ -1,9 +1,9 @@
 > **Document:** Product Requirements Document
 > **File:** `docs/requirements/PRD.md`
-> **Version:** v0.7.0
+> **Version:** v1.0.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-14
-> **Status:** Under Review
+> **Last Updated:** 2026-09-16
+> **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `README.md`
 
 # Product Requirements Document
@@ -12,7 +12,7 @@
 
 Vegetarian Support System là ứng dụng web phục vụ người ăn chay khám phá công thức, quản lý lựa chọn cá nhân, lập thực đơn tuần và nhận hỗ trợ AI có kiểm soát. Tài liệu này mô tả phạm vi sản phẩm cấp cao; [SRS](SRS.md) là nguồn chi tiết cho Functional Requirements, Business Rules và truy vết đề tài.
 
-`Under Review` nghĩa là PRD và SRS chưa phải baseline ổn định để triển khai toàn bộ hoặc phân rã hàng loạt thành Issue. Không suy diễn các mục còn mở thành yêu cầu đã chốt.
+`Active` nghĩa là PRD thuộc Requirements Baseline v1.0.0 đã được chốt ngày 16/09/2026. [SRS](SRS.md) và các tài liệu con sở hữu requirement chi tiết cùng lifecycle chính thức; các chi tiết thiết kế/triển khai còn mở không được suy diễn thành yêu cầu sản phẩm mới. Mọi thay đổi semantic sau baseline này phải được review, đánh giá ảnh hưởng và version theo governance hiện hành.
 
 ## 2. Vấn đề sản phẩm
 
@@ -26,11 +26,11 @@ Sản phẩm MVP tập trung vào nội dung `Recipe Post`; mô hình Blog độ
 
 | Actor | Mục tiêu chính | Ranh giới chính |
 |---|---|---|
-| Guest | Khám phá nội dung công khai và thử AI cơ bản | Không có dữ liệu cá nhân lưu theo tài khoản; không Like, bình luận, đăng bài hoặc tìm nhà hàng |
+| Guest | Khám phá nội dung công khai và thử AI cơ bản | Không có dữ liệu cá nhân lưu theo tài khoản; không Like, bình luận hoặc đăng bài |
 | Member | Cá nhân hóa, lưu công thức, lập lịch ăn, tương tác, tạo/công khai Recipe Post trực tiếp và dùng AI theo gói | Chỉ quản lý dữ liệu và nội dung thuộc tài khoản của mình |
 | Member có quyền đăng | — | RETIRED — không còn actor/phân quyền riêng sau khi bỏ workflow đơn xin quyền đăng ngày 2026-09-13 |
 | Administrator | Quản lý tài khoản, danh mục, báo cáo và nội dung vi phạm | Quyết định quản trị phải có lý do và khả năng truy vết; không duyệt quyền đăng hoặc từng bài trước khi công khai |
-| Dịch vụ ngoài | Gemini, Azure Blob Storage, YouTube, Google authentication/email và dịch vụ thanh toán hỗ trợ năng lực MVP; Google Maps chỉ hỗ trợ M11 đã deferred | Lỗi/quota của nhà cung cấp phải được xử lý minh bạch; không giả lập dữ liệu thành kết quả thật |
+| Dịch vụ ngoài | Gemini, Azure Blob Storage, YouTube, Google authentication/email và dịch vụ thanh toán hỗ trợ năng lực MVP | Lỗi/quota của nhà cung cấp phải được xử lý minh bạch; không giả lập dữ liệu thành kết quả thật. Google Maps không thuộc baseline hiện tại. |
 
 Free, Plus và Pro là hạng gói của Member, không phải actor hoặc role phân quyền.
 
@@ -45,7 +45,7 @@ Free, Plus và Pro là hạng gói của Member, không phải actor hoặc role
 | Dinh dưỡng | Tính từ gram nguyên liệu/khẩu phần và danh mục có nguồn USDA/NIH, thể hiện dữ liệu thiếu; BMI chỉ tham khảo, không tự kê calorie/macro target từ BMI hoặc weight goal |
 | Cộng đồng | Like/Unlike, bình luận/reply tối đa 5 cấp, cha bị xóa thành tombstone, báo cáo nội dung; không có đánh giá sao |
 | Đăng bài và moderation | Member đã đăng nhập công khai Recipe Post hợp lệ trực tiếp; Administrator hậu kiểm theo báo cáo |
-| Địa điểm | `DEFERRED` — M11/Google Maps không thuộc MVP hiện tại và không tạo MVP implementation Issue. |
+| Địa điểm | `OUT_OF_SCOPE` — M11/Google Maps không thuộc baseline triển khai hiện tại; ứng dụng không quản lý, xác minh hoặc cam kết tích hợp dữ liệu nhà hàng bên ngoài. |
 | Gói AI | Guest/Free/Plus/Pro có hạn mức 5/5/15/50 request thành công/ngày. FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; không auto-renew/partial refund; entitlement sau xác minh và hết hạn cuối kỳ; xử lý trùng idempotent. |
 
 ## 5. Ngoài phạm vi MVP
@@ -55,7 +55,7 @@ Free, Plus và Pro là hạng gói của Member, không phải actor hoặc role
 - Mobile app native, GPS/vị trí hiện tại, wearable và health platform.
 - Chẩn đoán hoặc tư vấn điều trị; chức năng dinh dưỡng cho nhóm ngoài điều kiện an toàn đã ghi trong SRS.
 - AI tạo công thức không có nguồn, AI tự tạo số liệu dinh dưỡng hoặc tự quyết định duyệt/xóa nội dung.
-- Upload video trực tiếp, queue món, đánh giá 1–5 sao, quản lý hồ sơ nhà hàng nội bộ, chia sẻ Shopping List nhiều tài khoản, đồng bộ realtime, AI tự nhận diện nguyên liệu tương đương hoặc tự quy đổi đơn vị phức tạp, và xuất PDF phức tạp.
+- Upload video trực tiếp, queue món, đánh giá 1–5 sao, tìm/đề xuất hoặc quản lý hồ sơ nhà hàng qua Google Maps, chia sẻ Shopping List nhiều tài khoản, đồng bộ realtime, AI tự nhận diện nguyên liệu tương đương hoặc tự quy đổi đơn vị phức tạp, và xuất PDF phức tạp.
 - Gói Max không giới hạn, nhận diện ảnh nguyên liệu, tóm tắt video và dự báo giá/mùa nguyên liệu.
 
 ## 6. Nguyên tắc chất lượng
