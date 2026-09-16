@@ -25,3 +25,21 @@ application-local.properties
 
 # Maven wrapper generated files
 .mvn/wrapper/maven-wrapper.jar
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# AI Agent runtime and evaluation outputs
+.agents/outputs/
+.agents/evals/promptfoo/workspaces/
+active_run.json
+recorded-mutations.json
+.agent_last_output.txt
+.agent_last_msg.txt
+
+# Promptfoo cache and output files
+.promptfoo/
+promptfoo-output*

@@ -1,9 +1,9 @@
 # Promptfoo Agent Acceptance Evaluation Suite (A01–A10)
 
-> **Document:** Promptfoo Evaluation Suite Architecture & Guide  
-> **Location:** `.agents/evals/promptfoo/`  
-> **Version:** v2.1.0  
-> **Status:** Active  
+> **Document:** Promptfoo Evaluation Suite Architecture & Guide
+> **Location:** `.agents/evals/promptfoo/`
+> **Version:** v2.1.0
+> **Status:** Active
 
 Tài liệu đặc tả kiến trúc, phân định chế độ kiểm thử, cơ chế cô lập không gian ngoài kho mã nguồn, và hướng dẫn vận hành bộ nghiệm thu tác tử (A01–A10) trên framework Promptfoo.
 
@@ -108,11 +108,12 @@ npx.cmd promptfoo@latest validate config -c .agents\evals\promptfoo\promptfoocon
 
 ### Chạy kiểm thử tự thân harness (Harness Self-Test):
 ```cmd
-RUN-AGENT-EVALS-SIMULATED.cmd
+.agents\evals\promptfoo\run-evals-simulated.cmd
 ```
+*(Hoặc `cd .agents\evals\promptfoo` rồi chạy `run-evals-simulated.cmd`)*
 
 ### Chạy đánh giá nghiệm thu tác tử thực tế (Real Acceptance Eval):
 ```cmd
-RUN-AGENT-EVALS.cmd
+.agents\evals\promptfoo\run-evals.cmd
 ```
-*(Yêu cầu Codex CLI đã đăng nhập và vượt qua preflight check)*
+*(Hoặc `cd .agents\evals\promptfoo` rồi chạy `run-evals.cmd`; yêu cầu Codex CLI đã đăng nhập và vượt qua preflight check)*

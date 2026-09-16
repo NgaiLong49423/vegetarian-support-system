@@ -1,9 +1,9 @@
-> **Document:** Agent Instructions  
-> **File:** `AGENTS.md`  
+> **Document:** Agent Instructions
+> **File:** `AGENTS.md`
 > **Version:** v3.4.0
-> **Created:** 2026-06-29  
+> **Created:** 2026-06-29
 > **Last Updated:** 2026-09-16
-> **Status:** Active  
+> **Status:** Active
 
 # Agent Entry Point
 
@@ -77,6 +77,16 @@ Once lifecycle is confirmed, use `srs-to-github-issues` to create, update, defer
 If a linked Issue is already completed and the SRS later changes semantically, preserve the completed Issue as history. Create follow-up work when additional implementation is required instead of rewriting the completed Issue as if the new requirement had always existed.
 
 Live GitHub mutations require authorization for the current task. Authorization may cover the full reconciliation operation; it does not need to be requested separately for every individual Issue action. If live mutation is not authorized, prepare the required synchronization and ask before applying it.
+
+## Workflow selection
+
+| Situation | Workflow |
+|---|---|
+| Requirements còn mơ hồ cần chốt | `requirement-finalization.md` |
+| Requirement semantic/lifecycle changed | `requirement-change-reconciliation.md` |
+| Audit toàn docs rồi sửa finding rõ ràng | `documentation-audit-and-fix.md` |
+| Important multi-artifact output needs bounded quality loop | `evaluator-optimizer.md` |
+| Validate agent assets/runtime behavior | `acceptance-evaluation.md` |
 
 ## Project overrides and generated artifacts
 
