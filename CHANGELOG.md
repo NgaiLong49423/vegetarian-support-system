@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-18 — Add C4 Container Guide and Standardize Conceptual ERD Documentation
 
-**Status:** Committed — c1929e1.
+**Status:** Committed — 5accbaa.
 
 **Scope:** Document the runtime system architecture in `docs/diagrams/C4 Container Diagram/README.md` (v1.0.0) explaining the C4 Container model (Web Application, Spring Boot REST API, SQL Server Database, and Azure Blob Storage) and external cloud services (Gemini, YouTube, Google GIS); refactor `docs/diagrams/ERD/README.md` (v1.2.0) to focus on the project purpose and architectural boundary of the 17-entity conceptual data model; and register the C4 diagram workspace in `docs/README.md` (v3.7.0).
 
@@ -28,7 +28,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-17 — Realign Conceptual Baseline to 17 Entities and Adopt Feature-based AI Entitlements
 
-**Status:** Committed — c1929e1.
+**Status:** Committed — 5accbaa.
 
 **Scope:** Realign the entire project documentation suite (PRD, SRS, Functional Requirements, Business Rules, Non-Functional Requirements, Architecture, Test Strategy, and ERD documentation) according to 10 confirmed business decisions: establishing a 17-entity conceptual baseline, replacing daily AI request quotas (5/15/50) with Feature-based Entitlements, applying technical rate limiting for Guest AI chat, consolidating recipe instructions into a single free-form field (retiring FR-22), limiting Recipe Post media to 1 cover image + 0..1 YouTube URL, dropping moderation action entities into direct fields on Report, merging user profile into User, and completely eliminating Like and Unlike capabilities across recipes and comments (retiring FR-45 and BR-65).
 
