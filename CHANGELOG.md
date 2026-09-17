@@ -1,13 +1,34 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.16.0
+> **Version:** v2.17.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-16
+> **Last Updated:** 2026-09-17
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-17 — Initial Backend Scaffold and Workflow Setup
+
+**Status:** Working tree — not committed.
+
+**Scope:** Initialize the Java 21 and Spring Boot backend workspace under `app/vegetarian-system-backend/`, add GitHub Actions release source verification, and update workspace documentation and repository registers.
+
+### Added
+
+- Scaffolded the backend application under `app/vegetarian-system-backend/` using Spring Boot 4.1.1, Java 21, and Maven Wrapper (`mvnw`, `mvnw.cmd`).
+- Configured backend dependencies for Spring Data JPA, SQL Server driver (`mssql-jdbc`), Flyway migrations (`spring-boot-starter-flyway`, `flyway-sqlserver`), Spring Security, Bean Validation, Spring Web MVC, Springdoc OpenAPI (`springdoc-openapi-starter-webmvc-ui`), and Lombok.
+- Added GitHub Actions workflow `.github/workflows/release-source.yml` to enforce that pull requests targeting `main` originate only from `develop`.
+
+### Changed
+
+- Updated Backend Workspace Guide (`app/vegetarian-system-backend/README.md`) with scaffold status, dependency stack, and verified compilation commands.
+- Updated repository layout and document registers in `docs/README.md` and `AGENTS.md` to reference `app/vegetarian-system-backend/`.
+
+### Fixed
+
+- None.
 
 ## 2026-09-16 — Harden Promptfoo Acceptance Checks
 

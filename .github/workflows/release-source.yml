@@ -1,0 +1,22 @@
+name: Validate Release Source
+
+on:
+  pull_request_target:
+    branches:
+      - main
+
+jobs:
+  release-source:
+    name: release-source
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Require develop to main
+        shell: bash
+        run: |
+          if [[ "${{ github.event.pull_request.head.ref }}" != "develop" ]]; then
+            echo "::error::Pull requests to main must come from the develop branch."
+            exit 1
+          fi
+
+          echo "Valid release PR: develop -> main"

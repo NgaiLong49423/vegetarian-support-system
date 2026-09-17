@@ -1,9 +1,9 @@
 > **Document:** Backend Workspace Guide  
-> **File:** `app/backend/README.md`  
-> **Version:** v0.3.0
+> **File:** `app/vegetarian-system-backend/README.md`  
+> **Version:** v0.4.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-14
-> **Status:** Under Review  
+> **Last Updated:** 2026-09-17
+> **Status:** Active  
 
 # Backend Workspace
 
@@ -11,7 +11,25 @@ Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và
 
 ## Trạng thái hiện tại
 
-Backend chưa được scaffold: chưa có `pom.xml`, source code, migration hoặc test. Vì vậy chưa có lệnh Maven hay endpoint nào được xác minh trong repository.
+Backend đã được scaffold thành công với Java 21 và Spring Boot:
+- Cấu hình Maven project độc lập và đính kèm Maven Wrapper (`mvnw`, `mvnw.cmd`).
+- Khởi tạo ứng dụng chính `VegetarianSystemBackendApplication` tại package `com.vegetarian.system`.
+- Cấu hình sẵn các dependency cốt lõi:
+  - **Data / Persistence:** `spring-boot-starter-data-jpa`, `mssql-jdbc` (SQL Server driver), Flyway migration (`spring-boot-starter-flyway`, `flyway-sqlserver`).
+  - **Security:** `spring-boot-starter-security`.
+  - **Web / Validation:** `spring-boot-starter-webmvc`, `spring-boot-starter-validation`.
+  - **Documentation:** `springdoc-openapi-starter-webmvc-ui` (Swagger UI & OpenAPI 3).
+  - **Productivity & Testing:** Lombok, starter test dependencies (`data-jpa-test`, `flyway-test`, `security-test`, `validation-test`, `webmvc-test`).
+
+### Lệnh chạy và kiểm tra xác minh
+
+```bash
+# Windows
+.\mvnw.cmd clean test-compile
+
+# Linux / macOS
+./mvnw clean test-compile
+```
 
 ## Ranh giới kiến trúc hiện tại
 
@@ -31,5 +49,3 @@ Backend chưa được scaffold: chưa có `pom.xml`, source code, migration ho�
 - Không log password, token, SAS URL hoặc dữ liệu cá nhân nhạy cảm.
 - Thay đổi schema có Flyway migration append-only, kiểm tra trên database sạch và cập nhật ERD/tài liệu.
 - Thay đổi API có OpenAPI, validation, authorization và ví dụ lỗi tương ứng.
-
-Sau khi scaffold, bổ sung JDK/Maven yêu cầu, cấu hình local an toàn, profile test, lệnh chạy và các kiểm tra đã thực thi thật.
