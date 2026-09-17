@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.2.0
+> **Version:** v1.3.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-16
+> **Last Updated:** 2026-09-17
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -17,7 +17,7 @@ Hành vi mong đợi chi tiết được xác định trong [SRS](../requirement
 ## 2. Mục tiêu kiểm thử
 
 - Chứng minh hành vi đã triển khai đáp ứng requirement, Business Rule và Acceptance Criteria liên quan.
-- Phát hiện lỗi về authorization, ownership, validation, quota, persistence và integration trước khi release.
+- Phát hiện lỗi về authorization, ownership, validation, feature entitlement, persistence và integration trước khi release.
 - Kiểm thử các tình huống thành công, thất bại, biên và phục hồi có ý nghĩa thay vì chỉ tối ưu một con số Coverage.
 - Làm rõ giới hạn của external service và phân biệt bằng chứng local có tính xác định với bằng chứng từ live provider.
 - Duy trì traceability từ requirement đến work item, quá trình review implementation và bằng chứng kiểm thử.
@@ -26,11 +26,11 @@ Hành vi mong đợi chi tiết được xác định trong [SRS](../requirement
 
 | Cấp độ | Phạm vi dự kiến | Bằng chứng điển hình | Ranh giới |
 |---|---|---|---|
-| Backend Unit Test | Business logic như entitlement, đếm quota, quyết định ownership, điều phối validation và mapping kết quả | Assertion bằng JUnit 5; dùng Mockito khi cần cô lập dependency | Test dựa trên Mock không chứng minh Spring configuration, SQL hoặc provider thật hoạt động đúng |
+| Backend Unit Test | Business logic như subscription entitlement, phân quyền tính năng AI, quyết định ownership, điều phối validation và mapping kết quả | Assertion bằng JUnit 5; dùng Mockito khi cần cô lập dependency | Test dựa trên Mock không chứng minh Spring configuration, SQL hoặc provider thật hoạt động đúng |
 | Backend Integration Test | Spring Security rule, persistence mapping, transaction, Flyway migration và hành vi của adapter | Test với cấu hình đại diện và hạ tầng được kiểm soát | Cách dùng test container/database cụ thể chỉ được chọn sau khi scaffold tồn tại |
 | REST API | Validation request, authentication, authorization, hành vi status/error và response contract | Automated contract/API check trên endpoint thật kết hợp với OpenAPI đã được dự án áp dụng | Thử bằng Swagger UI chỉ là bằng chứng hỗ trợ, không phải regression suite |
-| Frontend Component Test | Rendering, hành vi input và các trạng thái loading/error/quota mà người dùng nhìn thấy ở component quan trọng | Tooling sẽ được chọn cùng React scaffold | Không tự chọn framework khi chưa có package evidence |
-| End-to-End Test (E2E) | Một số ít luồng quan trọng xuyên từ browser đến Backend như khám phá → lập lịch, publish/report moderation và lỗi AI quota | Bằng chứng tự động hoặc manual có kiểm soát trong integration environment | E2E không thay thế Unit Test hoặc Integration Test tập trung để chẩn đoán lỗi |
+| Frontend Component Test | Rendering, hành vi input và các trạng thái loading/error mà người dùng nhìn thấy ở component quan trọng | Tooling sẽ được chọn cùng React scaffold | Không tự chọn framework khi chưa có package evidence |
+| End-to-End Test (E2E) | Một số ít luồng quan trọng xuyên từ browser đến Backend như khám phá → lập lịch, publish/report moderation và kiểm tra chặn quyền tính năng AI | Bằng chứng tự động hoặc manual có kiểm soát trong integration environment | E2E không thay thế Unit Test hoặc Integration Test tập trung để chẩn đoán lỗi |
 | Release Smoke Test | Các luồng demo cốt lõi trên candidate commit của `main` sau khi tích hợp release | Bằng chứng pass/fail được ghi nhận và liên kết với release workflow | Smoke Test pass không chứng minh Regression Coverage rộng |
 
 ## 4. Ưu tiên Coverage theo rủi ro
@@ -38,14 +38,14 @@ Hành vi mong đợi chi tiết được xác định trong [SRS](../requirement
 Việc kiểm thử nên ưu tiên:
 
 - Ranh giới authorization giữa Guest/Member/Administrator và ownership của Member.
-- Profile validation Recipe Post: title 3–120, ingredients 1–50, serving 1–50, prep/cook 0–1.440 và tổng > 0, tối đa 30 steps, description 2.000, tối đa 5 ảnh JPEG/PNG/WebP 5 MB/ảnh và một YouTube link; công khai trực tiếp và quyền sửa/xóa.
-- Quyền riêng tư của report, quy tắc chống report đang mở bị trùng và moderation action chỉ dành cho Administrator.
+- Profile validation Recipe Post: title 3–120, ingredients 1–50, serving 1–50, prep/cook 0–1.440 và tổng > 0, instructions 10–5.000 ký tự tự do, description 2.000, tối đa 1 ảnh JPEG/PNG/WebP 5 MB và một YouTube link; công khai trực tiếp và quyền sửa/xóa; không có bộ đếm Like.
+- Quyền riêng tư của report, quy tắc chống report đang mở bị trùng và ghi trực tiếp kết quả moderation vào Report.
 - Tính độc lập giữa Saved Recipe/Meal Planner/Shopping history, giữ unavailable/tombstone khi bài nguồn không khả dụng, các meal type và chống dữ liệu trùng.
-- Điều kiện dùng AI, quota 5/15/50 reset 00:00 `Asia/Ho_Chi_Minh`, account/cookie+coarse-IP tracking, chỉ tính lượt thành công, telemetry không raw prompt và retention 90 ngày.
+- Phân quyền tính năng AI theo gói Subscription (Free: AI Chatbot, Plus: Soạn bài & Biến tấu, Pro: Lập thực đơn tuần), Guest dùng AI Chatbot có technical rate limit chống spam, telemetry token không raw prompt và retention 90 ngày.
 - Điều kiện dùng chức năng dinh dưỡng, quy đổi khẩu phần, công khai dữ liệu thiếu và cấm bịa hoặc diễn giải theo hướng chẩn đoán.
-- Validation ảnh, tính nhất quán của reference, lỗi YouTube embed và xử lý error/quota của external provider.
+- Validation ảnh cover, tính nhất quán của reference, lỗi YouTube embed và xử lý error của external provider.
 - M11/Google Maps là `OUT_OF_SCOPE`, không có test scope hoặc release gate trong baseline hiện tại.
-- Xác minh payment trước khi kích hoạt entitlement, expiry cuối kỳ, FREE/PLUS/PRO ở 0/49,000/99,000 VND/tháng, no auto-renew/no partial refund và idempotency cho duplicate processing.
+- Xác minh payment trước khi kích hoạt feature entitlement, expiry cuối kỳ, FREE/PLUS/PRO ở 0/49,000/99,000 VND/tháng, no auto-renew/no partial refund và idempotency cho duplicate processing.
 - Authentication: rate limit account identifier + IP 10 phút sau 5 lần sai; access token ngắn hạn, rotating refresh, server-side revocation và logout thu hồi refresh session.
 - Notification: in-app theo business event; email async/best-effort không rollback hành động gốc, moderation email phải được attempt.
 

@@ -1,43 +1,45 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.4.0
+> **Version:** v1.5.0  
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-17
+> **Last Updated:** 2026-09-18  
 > **Status:** Active  
-> **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`
+> **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/C4 Container Diagram/README.md`
 
-# System Architecture
+# Architecture Document — Mâm Xanh
 
-## 1. Mục đích và ranh giới bằng chứng
+Tài liệu này xác định các ranh giới kiến trúc, thành phần runtime, luồng giao tiếp và các quyết định kỹ thuật cốt lõi của hệ thống **Mâm Xanh (Vegetarian Support System)**.
 
-Tài liệu này mô tả cấu trúc cấp cao đã được xác nhận của **Mâm Xanh** (Vegetarian Support System). Tài liệu phản ánh baseline kiến trúc đã chốt cho pha triển khai, bao gồm các thành phần runtime, luồng giao tiếp với external service và topology đám mây.
+Chi tiết về lý do lựa chọn từng công nghệ, đánh giá trade-off và công cụ hỗ trợ được quản lý tại [TECHNOLOGY-STACK.md](TECHNOLOGY-STACK.md). Sơ đồ trực quan C4 Container Diagram được lưu trữ tại [C4 Container Diagram/](../diagrams/C4%20Container%20Diagram/README.md).
 
-Hành vi nghiệp vụ chi tiết thuộc [SRS](../requirements/SRS.md). Các lựa chọn công nghệ, thư viện và trade-off thuộc [Technology Stack](TECHNOLOGY-STACK.md).
+## 1. Mục tiêu và phạm vi kiến trúc
 
-## 2. Bối cảnh hệ thống
+- Định hình các ranh giới đáng tin cậy giữa Frontend, Backend, Cơ sở dữ liệu và các Nhà cung cấp dịch vụ bên ngoài (External Providers).
+- Xác định mô hình kiến trúc thực thi thống nhất cho nhóm phát triển 5 thành viên trong môn SWP391.
+- Bảo đảm tính toàn vẹn dữ liệu, kiểm soát chi phí API đám mây và phòng ngừa các lỗ hổng bảo mật phổ biến.
+- Giữ vững phạm vi MVP đã cam kết; không tự tiện mở rộng sang các công nghệ hoặc cấu trúc phức tạp chưa được phê duyệt.
 
-Hệ thống là web application responsive bằng tiếng Việt, được sử dụng qua browser. Tương tác của Guest, Member và Administrator đi qua ranh giới client công khai vào Backend ứng dụng. Backend chịu trách nhiệm thực thi quy tắc nghiệp vụ và làm trung gian cho toàn bộ persistence cũng như các lệnh gọi external service cần đặc quyền.
+## 2. Bối cảnh hệ thống (System Context)
+
+Hệ thống cung cấp nền tảng web responsive phục vụ người ăn chay khám phá công thức, quản lý lịch ăn và nhận gợi ý thông minh:
 
 ```text
-Guest / Member / Administrator
-             |
-             v
-   Browser + React client (Azure Static Web Apps)
-             |
-        REST/JSON over HTTPS (CORS / Linked Backends)
-             |
-             v
-   Spring Boot backend (Azure App Service)
-    |          |             |
-    |          |             +--> Azure Application Insights (Observability)
-    |          |
-    v          v
-SQL Server   Azure Blob      External Providers
-(Azure SQL   (Media Images)  ├── Google Gemini (gemini-3.8-flash)
-Serverless)                  ├── Google Identity Services (Google Login)
-                             ├── Brevo (Transactional Email SMTP)
-                             ├── payOS (VietQR Payment REST & Webhook)
-                             └── YouTube (Embed player)
+[ Người dùng / Trình duyệt Web ]
+              │ (HTTPS / REST)
+              ▼
+[ Azure Static Web Apps (Frontend React + TS + Vite) ]
+              │ (REST API / JSON / HttpOnly Cookie)
+              ▼
+[ Azure App Service (Backend Spring Boot + Java 21) ]
+       │            │                  │
+       │ (JDBC)     │ (Azure SDK)      │ (REST API / HTTPS)
+       ▼            ▼                  ▼
+[ Azure SQL ] [ Azure Blob ] [ External Providers ]
+(Serverless)   (Images)        ├── Google Gemini 3.8 Flash (AI)
+                               ├── Google Identity Services (GIS Login)
+                               ├── Brevo (Transactional Email SMTP)
+                               ├── payOS (VietQR Payment Gateway)
+                               └── YouTube (Embed player)
 ```
 
 Toàn bộ hệ thống được triển khai trên nền tảng **Microsoft Azure** nhằm đồng nhất môi trường, tối ưu chi phí vận hành cho nhóm và tận dụng gói Azure for Students.
@@ -46,11 +48,11 @@ Toàn bộ hệ thống được triển khai trên nền tảng **Microsoft Azu
 
 | Thành phần | Nền tảng / Công nghệ | Trách nhiệm đã xác nhận | Ranh giới |
 |---|---|---|---|
-| Browser client | React, TypeScript, Vite (Azure Static Web Apps) | Hiển thị giao diện responsive, nhận input người dùng, xử lý trạng thái loading/error/quota, nhúng YouTube player và nút Google Login | Không phải ranh giới tin cậy cho authorization, validation hoặc lưu secret |
-| Spring Boot Backend | Java 21, Spring Boot (Azure App Service) | Xác thực request (JWT + Cookie Refresh Token), kiểm tra role/ownership, validate input, áp dụng quota AI, điều phối nghiệp vụ và gọi external services | Quy tắc nghiệp vụ bắt buộc thực thi ở server-side kể cả khi UI đã ẩn thao tác |
+| Browser client | React, TypeScript, Vite (Azure Static Web Apps) | Hiển thị giao diện responsive, nhận input người dùng, xử lý trạng thái loading/error, nhúng YouTube player và nút Google Login | Không phải ranh giới tin cậy cho authorization, validation hoặc lưu secret |
+| Spring Boot Backend | Java 21, Spring Boot (Azure App Service) | Xác thực request (JWT + Cookie Refresh Token), kiểm tra role/ownership, validate input, kiểm tra quyền tính năng AI (Feature Entitlement), áp dụng technical rate limit, điều phối nghiệp vụ và gọi external services | Quy tắc nghiệp vụ bắt buộc thực thi ở server-side kể cả khi UI đã ẩn thao tác |
 | SQL Server | Microsoft SQL Server (Azure SQL Database Serverless) | Relational Source of Truth chính cho tài khoản, công thức, thực đơn, giao dịch thanh toán và tham chiếu media | Tự động pause khi không có request; cần kích hoạt trước các buổi demo |
-| Media Storage | Azure Blob Storage | Lưu trữ tệp ảnh Recipe Post (tối đa 5 ảnh, JPEG/PNG/WebP $\le 5$ MB); SQL Server giữ URL tham chiếu | Phase 1 upload qua Backend kiểm duyệt; không upload file video |
-| External integrations | Google Gemini, GIS, Brevo, payOS, YouTube | Cung cấp AI gợi ý, xác thực Google, gửi email kích hoạt/reset, thanh toán VietQR và phát video | Lỗi provider phải được xử lý minh bạch; không trừ quota người dùng khi AI/email gặp sự cố |
+| Media Storage | Azure Blob Storage | Lưu trữ tệp ảnh đại diện Recipe Post (tối đa 1 ảnh, JPEG/PNG/WebP $\le 5$ MB); SQL Server giữ URL tham chiếu `cover_image_url` | Phase 1 upload qua Backend kiểm duyệt; không upload file video |
+| External integrations | Google Gemini, GIS, Brevo, payOS, YouTube | Cung cấp AI gợi ý, xác thực Google, gửi email kích hoạt/reset, thanh toán VietQR và phát video | Lỗi provider phải được xử lý minh bạch; không tính phí người dùng khi AI/email gặp sự cố |
 
 ### 3.1 Kiến trúc Backend
 
@@ -99,21 +101,21 @@ Recipe Post lưu link YouTube hoặc video ID được hỗ trợ. Browser nhún
 ### 4.4 Luồng Gemini AI
 
 ```text
-Browser request -> backend eligibility/quota checks -> AiClient (GeminiClient)
-                                                          |
-                                                          v
-                                                 Google Gen AI Java SDK
-                                                          |
-                                                          v
-                                                 gemini-3.8-flash
-                                                          |
-        valid JSON response <- structured output validation
-        failure / timeout   <- classified error, KHÔNG trừ quota người dùng
+Browser request -> backend feature entitlement & rate limit checks -> AiClient (GeminiClient)
+                                                                             |
+                                                                             v
+                                                                    Google Gen AI Java SDK
+                                                                             |
+                                                                             v
+                                                                    gemini-3.8-flash
+                                                                             |
+            valid JSON response <- structured output validation
+            failure / timeout   <- classified error, ghi log kỹ thuật, phản hồi thân thiện
 ```
 
 - **SDK & Model:** Dùng Google Gen AI Java SDK chính thức (`com.google.genai:google-genai`), khóa model ID cố định là `gemini-3.8-flash`.
 - **Abstraction:** Đóng gói qua interface `AiClient` để độc lập logic nghiệp vụ và hỗ trợ viết Mock Unit Test.
-- **Resilience:** Cấu hình timeout và tối đa 1 lần retry cho transient errors (mạng, 429, 5xx). Lỗi external AI không làm trừ lượt quota của người dùng.
+- **Resilience:** Cấu hình timeout và tối đa 1 lần retry cho transient errors (mạng, 429, 5xx). Lỗi external AI không làm gián đoạn các tính năng phi AI của ứng dụng.
 - **Output:** Áp dụng Native Structured Outputs (JSON Schema) để nhận kết quả gợi ý món ăn/thực đơn có cấu trúc chặt chẽ.
 
 ### 4.5 Capability Google Maps (`OUT_OF_SCOPE`)
@@ -166,7 +168,7 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 
 ## 5. Ranh giới tin cậy và bảo mật
 
-- **Ranh giới không tin cậy:** Browser là môi trường không tin cậy. Mọi quyền hạn, quota và validation phải được kiểm soát ở server-side.
+- **Ranh giới không tin cậy:** Browser là môi trường không tin cậy. Mọi quyền hạn, phân quyền tính năng AI (Feature Entitlement), rate limit và validation phải được kiểm soát ở server-side.
 - **Quản lý Secrets đa tầng:**
   - *Local Dev:* Biến môi trường hệ thống hoặc file `.env` (tuyệt đối không commit lên Git, duy trì file mẫu `.env.example`).
   - *CI/CD:* GitHub Environment Secrets trong GitHub Actions.

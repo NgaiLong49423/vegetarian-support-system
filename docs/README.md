@@ -1,6 +1,6 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v3.6.0
+> **Version:** v3.7.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-17
 > **Status:** Active  
@@ -45,6 +45,7 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 | docs/diagrams/Activity/ | Maintained activity diagram source and exports | Name by feature; link to the relevant SRS identifiers |
 | docs/diagrams/UseCase/ | Maintained use-case diagram source and exports | Name by module; do not invent a second requirement source |
 | docs/diagrams/ERD/ | Data-model diagram source and exports | Sync with approved model/migrations |
+| docs/diagrams/C4 Container Diagram/ | Maintained C4 container diagram source and exports | Sync with runtime architecture and container boundaries |
 | docs/research/ | Reusable, source-backed findings | Record research date and applicability; research does not approve a requirement |
 | .github/ISSUE_TEMPLATE/ | Issue form configuration | Intake forms; not copies of live Issues |
 | .github/ | GitHub configuration and PR template | labels.yml, pull_request_template.md; workflows only when authorized |
@@ -83,6 +84,7 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | diagrams/Activity/README.md | Activity diagram conventions | Creating/updating activity diagrams |
 | diagrams/UseCase/README.md | Use-case diagram conventions | Creating/updating use-case diagrams |
 | diagrams/ERD/README.md | ERD documentation conventions | Creating/updating the data model |
+| diagrams/C4 Container Diagram/README.md | C4 container diagram conventions and container breakdown | Creating/updating container architecture |
 | ../app/frontend/README.md | Frontend setup/state and contribution guidance | Frontend work |
 | ../app/mamxanh-backend/README.md | Backend setup/state and contribution guidance | Backend work |
 | ../database/README.md | SQL/Flyway ownership and database state | Database work |

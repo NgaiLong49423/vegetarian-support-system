@@ -46,3 +46,7 @@ promptfoo-output*
 
 # Pinned evaluation dependencies
 node_modules/
+
+# Draw.io temporary and backup files
+.$*.bkp
+.$*.dtmp

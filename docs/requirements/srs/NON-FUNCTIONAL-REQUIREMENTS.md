@@ -1,8 +1,8 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v1.0.0
+> **Version:** v1.1.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-16
+> **Last Updated:** 2026-09-17
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -10,17 +10,17 @@
 
 ## 1. Mục đích và thẩm quyền tài liệu
 
-Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho các yêu cầu phi chức năng (Non-Functional Requirements) và các ràng buộc chất lượng toàn hệ thống của Requirements Baseline v1.0.0 theo mô hình ISO/IEC 25010.
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Non-Functional Requirements (`NFR-01` đến `NFR-27`) của Requirements Baseline v1.0.0.
 
-Khung đặc tả gốc, sự tồn tại của NFR và lifecycle chính thức được duy trì tập trung tại `docs/requirements/SRS.md`. Trạng thái trong tài liệu này là giá trị dẫn xuất; nếu có xung đột, root registry là nguồn chuẩn và tài liệu này phải được đồng bộ theo.
+Khung đặc tả gốc, tiêu chí nhóm chất lượng và trạng thái vòng đời (lifecycle state) chính thức được duy trì tập trung tại `docs/requirements/SRS.md`. Nếu phát sinh bất kỳ xung đột nào, giá trị trong `SRS.md` luôn là chuẩn có thẩm quyền cao nhất; tài liệu này sẽ được đồng bộ hóa theo `SRS.md`.
 
-Mỗi yêu cầu phi chức năng được gắn thẻ stable anchor HTML cố định (`<a id="nfr-xx"></a>`) cùng với các stable anchor danh mục cấp cao (`<a id="nfr-category"></a>`) đặt trước từng nhóm để bảo đảm tính toàn vẹn và bất biến của liên kết tham chiếu.
+Mỗi yêu cầu phi chức năng được gắn một thẻ stable anchor HTML cố định `<a id="nfr-xx"></a>` đặt trước tiêu đề để đảm bảo tính bất biến của liên kết tham chiếu.
 
-## 2. Nguyên tắc phân loại và ranh giới kiến trúc
+## 2. Phân loại nhóm chất lượng và ranh giới kiến trúc
 
-1. **Mô hình phân loại:** Toàn bộ các yêu cầu phi chức năng được chuẩn hóa vào **6 nhóm danh mục cốt lõi**:
-   - **Performance** (Hiệu năng và khả năng đáp ứng)
-   - **Security** (Bảo mật và kiểm soát truy cập)
+1. **Phân loại 6 nhóm chất lượng chuẩn:**
+   - **Performance** (Hiệu năng, độ trễ và thời gian đáp ứng)
+   - **Security** (Bảo mật, xác thực, phân quyền và phòng chống tấn công)
    - **Usability** (Khả năng sử dụng và tương thích giao diện)
    - **Reliability** (Độ tin cậy, tính sẵn sàng và khả năng chịu lỗi)
    - **Privacy** (Quyền riêng tư, bảo vệ dữ liệu và tuân thủ pháp lý)
@@ -28,7 +28,7 @@ Mỗi yêu cầu phi chức năng được gắn thẻ stable anchor HTML cố �
 2. **Ranh giới kiến trúc đã xác nhận:**
    - **Backend Architecture: Modular Monolith using MVC/layered structure within each business module.** Backend là một Spring Boot application và một deployable backend; các business capability không được tách thành microservice. Modular Monolith và MVC/layered structure được áp dụng đồng thời, không thay thế nhau.
    - Tính năng AI kiểm duyệt nội dung (`FR-12`, `BR-08`) và cơ chế đề xuất theo dõi hành vi kiểu TikTok For You nằm ngoài phạm vi (`OUT_OF_SCOPE`) của phiên bản MVP ban đầu.
-   - Các hạn mức sử dụng (như quota gọi chatbot theo gói tài khoản) là quy tắc nghiệp vụ thuộc `FR-02`/`BR-01`, không nằm trong tài liệu NFR này.
+   - Các quy tắc phân quyền tính năng AI và technical rate limit thuộc `FR-02`/`FR-10`/`BR-01`, không nằm trong tài liệu NFR này.
 
 ## 3. Danh mục chi tiết Non-Functional Requirements
 
@@ -305,8 +305,8 @@ Mỗi yêu cầu phi chức năng được gắn thẻ stable anchor HTML cố �
 - **Mô tả yêu cầu:** Xử lý lỗi linh hoạt khi dịch vụ Google Gemini bên ngoài gặp sự cố mạng, timeout hoặc trả về lỗi HTTP 429/500.
 - **Nghiệp vụ liên quan:** `FR-02`, `FR-10`, `FR-51`, `BR-04`.
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
-  - *Threshold:* Thiết lập timeout tối đa 10 giây; khi vượt ngưỡng hoặc lỗi provider, hệ thống trả về thông báo lỗi thân thiện, cho phép người dùng thử lại và tuyệt đối **không trừ hạn mức sử dụng AI** của người dùng theo quy tắc `BR-04`.
-- **Phương pháp kiểm chứng (Verification Method):** Kiểm thử mô phỏng mock lỗi timeout hoặc lỗi 429 từ Gemini API và kiểm tra số dư hạn mức của tài khoản không bị thay đổi.
+  - *Threshold:* Thiết lập timeout tối đa 10 giây; khi vượt ngưỡng hoặc lỗi provider, hệ thống trả về thông báo lỗi thân thiện, cho phép người dùng thử lại và ghi log lỗi kỹ thuật theo quy tắc `BR-04`; không làm gián đoạn các tính năng phi AI của ứng dụng.
+- **Phương pháp kiểm chứng (Verification Method):** Kiểm thử mô phỏng mock lỗi timeout hoặc lỗi 429 từ Gemini API và kiểm tra hệ thống trả về thông báo lỗi chuẩn xác, ghi vết error log và cho phép người dùng thao tác bình thường.
 - **Trạng thái:** `ACTIVE`
 
 ---

@@ -1,17 +1,98 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.18.0
+> **Version:** v2.21.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-17
+> **Last Updated:** 2026-09-18
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-09-18 — Add C4 Container Guide and Standardize Conceptual ERD Documentation
+
+**Status:** Committed — c1929e1.
+
+**Scope:** Document the runtime system architecture in `docs/diagrams/C4 Container Diagram/README.md` (v1.0.0) explaining the C4 Container model (Web Application, Spring Boot REST API, SQL Server Database, and Azure Blob Storage) and external cloud services (Gemini, YouTube, Google GIS); refactor `docs/diagrams/ERD/README.md` (v1.2.0) to focus on the project purpose and architectural boundary of the 17-entity conceptual data model; and register the C4 diagram workspace in `docs/README.md` (v3.7.0).
+
+### Added
+
+- Added `docs/diagrams/C4 Container Diagram/README.md` (v1.0.0) providing a comprehensive Vietnamese guide for the C4 Container diagram (Level 2), detailing actors (Guest, Member, Administrator), internal containers, external services, protocol matrices, and trust boundaries.
+- Embedded `conceptual-erd-v1.0.0.drawio.png` and linked `conceptual-erd-v1.0.0.drawio` in `docs/diagrams/ERD/README.md`.
+- Registered `docs/diagrams/C4 Container Diagram/` in `docs/README.md` (v3.7.0) document register.
+
+### Changed
+
+- Updated `docs/diagrams/ERD/README.md` to v1.2.0, clarifying the role and purpose of the Conceptual ERD in guiding physical database implementation without conjecturing internal relationship details, while synchronizing file naming conventions to `conceptual-erd-v[version]`.
+- Updated `docs/README.md` to v3.7.0 registering the maintained C4 Container documentation workspace.
+
+## 2026-09-17 — Realign Conceptual Baseline to 17 Entities and Adopt Feature-based AI Entitlements
+
+**Status:** Committed — c1929e1.
+
+**Scope:** Realign the entire project documentation suite (PRD, SRS, Functional Requirements, Business Rules, Non-Functional Requirements, Architecture, Test Strategy, and ERD documentation) according to 10 confirmed business decisions: establishing a 17-entity conceptual baseline, replacing daily AI request quotas (5/15/50) with Feature-based Entitlements, applying technical rate limiting for Guest AI chat, consolidating recipe instructions into a single free-form field (retiring FR-22), limiting Recipe Post media to 1 cover image + 0..1 YouTube URL, dropping moderation action entities into direct fields on Report, merging user profile into User, and completely eliminating Like and Unlike capabilities across recipes and comments (retiring FR-45 and BR-65).
+
+### Added
+
+- Documented the authoritative 17 Conceptual Entities baseline in `docs/diagrams/ERD/README.md` (v1.1.0) and `docs/requirements/PRD.md` (v1.2.0): User, User Ingredient Preference, Recipe Post, Category, Recipe Category, Ingredient, Recipe Ingredient, Saved Recipe, Comment, Report, Meal Plan, Meal Plan Entry, Shopping List, Shopping List Item, Subscription, Payment Transaction, Notification.
+- Defined explicit Feature-based AI Entitlement tiers in `docs/requirements/SRS.md` and `docs/requirements/srs/BUSINESS-RULES.md`:
+  - FREE (0 VND/month): AI Chatbot (`FR-51`) + Basic ingredient-based Recipe Suggestions (`FR-34`).
+  - PLUS (49,000 VND/month): FREE rights + AI Recipe Authoring Assistant (`FR-21`) + AI Recipe Variation Suggestion (`FR-47`).
+  - PRO (99,000 VND/month): PLUS rights + Automated 7-Day Meal Planner (`FR-36`).
+- Documented Technical Rate Limiting (e.g. 10 requests/minute via anonymous cookie + IP) for Guest AI chat interactions in `FR-02`, `FR-51`, `BR-01`, and `NFR-09`.
+
+### Changed
+
+- Updated `docs/requirements/PRD.md` (v1.2.0) to reflect the 17 core entities baseline, single cover image per recipe, feature-based AI entitlements, and removal of all Like interactions.
+- Updated `docs/diagrams/ERD/README.md` (v1.1.0) to register the exact 17 conceptual entities and explicitly catalog removed/merged entities (`recipe_step`, `recipe_media`, `recipe_like`, `comment_like`, `moderation_action`, `user_profile`, `ai_usage_record`).
+- Updated `docs/requirements/SRS.md` (v1.2.0) across Core Entities (Section 3.3), AI and Media constraints (Sections 3.6, 3.8, 3.9, 3.12, 3.17), Question Baseline table Q01–Q26 (Section 3.20), Functional Modules M03/M06/M08 (Section 5), Functional Requirements Registry (Section 7.2), Business Rules Registry (Section 8.2), and Traceability Matrix (Section 12).
+- Updated `docs/requirements/srs/BUSINESS-RULES.md` (v1.2.0):
+  - Refactored `BR-01` (Guest/Free AI Chat access & rate limit), `BR-02` (Plus/Pro AI feature entitlement), `BR-03` (Server-side entitlement verification), `BR-04` (Provider error handling and technical telemetry logging), `BR-16` (Authoring flow when AI unavailable or unentitled), `BR-19` (Single cover image & free-form instructions), and `BR-31` (Safety check without quota reference).
+  - Formally retired `BR-65` ("Tương tác Like/Unlike đối với Recipe Post, Comment và Reply").
+- Updated `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md` (v1.2.0):
+  - Updated `FR-01`, `FR-08`, `FR-17`, `FR-23`, `FR-31`, and `FR-38` to completely remove Like buttons, counters, and sorting by most liked.
+  - Formally retired `FR-45` ("Like và Unlike bài công thức, bình luận và phản hồi") with permanent anchor `<a id="fr-45"></a>` and full historical description.
+  - Updated `FR-04`, `FR-14`, `FR-16`, `FR-20`, and `FR-25` to constrain recipe illustrations to at most 1 cover image (`cover_image_url`) + 0..1 YouTube URL.
+  - Updated `FR-02`, `FR-10`, `FR-11`, `FR-13`, `FR-21`, `FR-47`, and `FR-51` to eliminate daily quotas (5/15/50) and 00:00 resets, implementing Feature-based Entitlements and technical telemetry accounting.
+- Updated `docs/architecture/ARCHITECTURE.md` (v1.5.0) to reflect the 17-entity conceptual baseline, feature entitlement gating, rate limiting, and single media storage.
+- Updated `docs/testing/TEST-STRATEGY.md` (v1.3.0) to align test scenarios with feature-based entitlements, single cover image validation, and removal of like tests.
+- Updated `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md` (v1.1.0) to align technical boundaries and error handling with feature-based entitlement.
+
+### Fixed
+
+- Eliminated stale documentation references across requirements and test artifacts regarding daily request quotas (5/15/50), 00:00 quota resets, multiple recipe photos, and like/unlike interactions.
+
+## 2026-09-17 — Retire FR-22 and Adopt Free-form Recipe Instructions Context
+
+**Status:** Committed — c1929e1.
+
+**Scope:** Refactor Recipe Post functional specifications and business rules across the Modular SRS baseline (SRS.md, BUSINESS-RULES.md, FUNCTIONAL-REQUIREMENTS.md, PRD.md, and ERD guide) to replace the 1–30 cooking steps array and step reordering model with a single free-form instruction context field (`instructions`, 10–5,000 characters, markdown/plain text), officially retiring `FR-22`.
+
+### Changed
+
+- Updated `docs/requirements/SRS.md` to v1.1.0:
+  - Redefined Recipe Post cooking instructions from 1–30 sequential steps to a single free-form context field (`instructions`, 10–5,000 characters, trimmed non-blank) in Section 3.7, Section 3.9, and Section 3.20.
+  - Renamed `FR-16` to "Biểu mẫu tạo Recipe Post kết hợp thông tin món ăn có cấu trúc và trường nội dung/hướng dẫn tự do" in the requirements registry.
+  - Renamed `FR-21` to "Hỗ trợ AI gợi ý và điền nội dung hướng dẫn chế biến tự do trực tiếp vào biểu mẫu tạo/chỉnh sửa Recipe Post".
+  - Marked `FR-22` as `RETIRED` in Section 7.2 registry.
+- Updated `docs/requirements/srs/BUSINESS-RULES.md` to v1.1.0:
+  - Updated `BR-19` to mandate the single `instructions` field (10–5,000 characters, non-blank after trim) and removed the 1–30 step count constraint.
+- Updated `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md` to v1.1.0:
+  - Updated `FR-04`, `FR-07`, `FR-16`, `FR-20`, `FR-21`, `FR-25`, `FR-40`, `FR-44`, and `FR-51` to replace multi-step management, step arrays, and reordering with the single free-form `instructions` textarea and payload.
+  - Formally retired `FR-22` with a detailed Retirement Rationale and historical behavior preserved.
+  - Updated `FR-51` Recipe Context generation for Gemini to pass the full `instructions` text rather than a structured step array.
+- Updated `docs/requirements/PRD.md` to v1.1.0:
+  - Clarified that MVP Recipe Post combines structured metadata with a single free-form instruction field (10–5,000 characters) without sequential step decomposition.
+- Updated `docs/diagrams/ERD/README.md` to v1.0.1:
+  - Added `instructions` (`NVARCHAR(MAX)`, NOT NULL) to the sample `recipe_post` entity description, removing the need for a separate `recipe_step` table.
+
+### Retired
+
+- Retired `FR-22` ("Thao tác chỉnh sửa và sắp xếp bước hướng dẫn chuẩn bị/chế biến") as recipe instructions are now authored as a continuous free-form context block, eliminating explicit step reordering, moving, and discrete step editing workflows.
+
 ## 2026-09-17 — Finalize Technical Stack Baseline and Adopt Mâm Xanh Brand
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 2bbf52b.
 
 **Scope:** Finalize the concrete technical stack baseline (Google Identity Services, Brevo SMTP, payOS, Gemini 3.8 Flash, Azure Cloud, GitHub Student Pack tools) and officially rebrand the application to "Mâm Xanh" (Vegetarian Support System) with updated backend artifact coordinates and documentation.
 
