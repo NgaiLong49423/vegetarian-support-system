@@ -1,8 +1,8 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v3.4.0
+> **Version:** v3.7.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-16
+> **Last Updated:** 2026-09-17
 > **Status:** Active  
 
 # Repository Layout and Document Register
@@ -36,7 +36,7 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 |---|---|---|
 | Repository root | Entry points and root-level tooling only | README.md, AGENTS.md, CONTRIBUTING.md, CHANGELOG.md, LICENSE, .gitignore; new build/tool configs require a real root-level consumer |
 | app/frontend/ | Frontend source, tests, assets and configuration | React component, feature test, package.json after scaffolding; place files by the app's established feature structure |
-| app/backend/ | Backend source, tests, configuration and migrations | Java classes/tests, pom.xml, Flyway migrations after scaffolding |
+| app/mamxanh-backend/ | Backend source, tests, configuration and migrations | Java classes/tests, pom.xml, Flyway migrations after scaffolding |
 | database/ | Database usage guide, deliberate SQL snapshot, demo seed and diagnostic queries | schema.sql remains empty until designed; Flyway owns executable migration history when implemented |
 | docs/requirements/ | Maintained product and software requirements | PRD owns high-level product intent; root SRS owns scope, context, index, and lifecycle registry; docs/requirements/srs/ owns detailed FR, BR, and NFR specifications |
 | docs/architecture/ | Current high-level system structure and selected technology baseline | ARCHITECTURE owns runtime boundaries; TECHNOLOGY-STACK owns technology purpose, rationale, trade-offs and TBD choices |
@@ -45,6 +45,7 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 | docs/diagrams/Activity/ | Maintained activity diagram source and exports | Name by feature; link to the relevant SRS identifiers |
 | docs/diagrams/UseCase/ | Maintained use-case diagram source and exports | Name by module; do not invent a second requirement source |
 | docs/diagrams/ERD/ | Data-model diagram source and exports | Sync with approved model/migrations |
+| docs/diagrams/C4 Container Diagram/ | Maintained C4 container diagram source and exports | Sync with runtime architecture and container boundaries |
 | docs/research/ | Reusable, source-backed findings | Record research date and applicability; research does not approve a requirement |
 | .github/ISSUE_TEMPLATE/ | Issue form configuration | Intake forms; not copies of live Issues |
 | .github/ | GitHub configuration and PR template | labels.yml, pull_request_template.md; workflows only when authorized |
@@ -55,7 +56,7 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 
 Backend source subdirectories, migration location and frontend feature structure must follow the actual scaffold once it exists; this policy does not create a new application architecture.
 
-Examples: a recipe form belongs in app/frontend/, its API service in app/backend/, an AI quota rule in SRS, an integration boundary in ARCHITECTURE, and a durable provider-selection rationale in docs/decisions/. Task status belongs on its GitHub Issue/Project item.
+Examples: a recipe form belongs in app/frontend/, its API service in app/mamxanh-backend/, an AI quota rule in SRS, an integration boundary in ARCHITECTURE, and a durable provider-selection rationale in docs/decisions/. Task status belongs on its GitHub Issue/Project item.
 
 ## Maintained document register
 
@@ -83,8 +84,9 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | diagrams/Activity/README.md | Activity diagram conventions | Creating/updating activity diagrams |
 | diagrams/UseCase/README.md | Use-case diagram conventions | Creating/updating use-case diagrams |
 | diagrams/ERD/README.md | ERD documentation conventions | Creating/updating the data model |
+| diagrams/C4 Container Diagram/README.md | C4 container diagram conventions and container breakdown | Creating/updating container architecture |
 | ../app/frontend/README.md | Frontend setup/state and contribution guidance | Frontend work |
-| ../app/backend/README.md | Backend setup/state and contribution guidance | Backend work |
+| ../app/mamxanh-backend/README.md | Backend setup/state and contribution guidance | Backend work |
 | ../database/README.md | SQL/Flyway ownership and database state | Database work |
 | ../.github/pull_request_template.md | PR evidence and release checklist template | Opening or reviewing a PR |
 

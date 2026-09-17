@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v1.0.0
+> **Version:** v1.2.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-16
+> **Last Updated:** 2026-09-17
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -25,38 +25,38 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ## 3. Danh mục chi tiết Business Rules
 
 <a id="br-01"></a>
-### BR-01 — Hạn mức text AI cho Guest và tài khoản Free
+### BR-01 — Quyền sử dụng AI Chat cho Guest và Member Free
 
 - **Mã quy tắc:** BR-01
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Guest và tài khoản Free có tối đa 5 request AI thành công mỗi ngày, reset lúc 00:00 `Asia/Ho_Chi_Minh`. Member Free được theo dõi theo account; Guest theo anonymous cookie kết hợp coarse IP rate limiting.
+- **Nội dung:** Guest và Member Free có quyền sử dụng tính năng AI Chatbot cơ bản (FR-51). Member Free được xác thực theo tài khoản; Guest được trải nghiệm trực tiếp không cần đăng nhập và được bảo vệ bằng cơ chế giới hạn tần suất kỹ thuật (Technical Rate Limiting) theo anonymous cookie/IP để chống spam. Hệ thống không áp dụng daily quota theo số lượt/ngày cho Guest và Member Free.
 
 ---
 
 <a id="br-02"></a>
-### BR-02 — Hạn mức text AI cho gói Plus và Pro
+### BR-02 — Phân quyền tính năng AI cho gói Plus và Pro
 
 - **Mã quy tắc:** BR-02
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Plus có tối đa 15 và Pro có tối đa 50 request AI thành công/ngày, reset lúc 00:00 `Asia/Ho_Chi_Minh` và theo dõi theo account.
+- **Nội dung:** Gói Plus và Pro mở quyền truy cập các tính năng AI nâng cao theo mô hình Feature-based Entitlement (không giới hạn số lượt request/ngày và không có chu kỳ reset 00:00). Gói Plus mở thêm tính năng AI hỗ trợ soạn nội dung Recipe Post (FR-21) và AI gợi ý biến tấu công thức (FR-47). Gói Pro mở toàn quyền tất cả tính năng AI của sản phẩm, bao gồm tính năng AI tự động lập thực đơn tuần 7 ngày (FR-36).
 
 ---
 
 <a id="br-03"></a>
-### BR-03 — Điều kiện trừ hạn mức AI
+### BR-03 — Xác thực quyền tính năng trước khi gọi dịch vụ AI
 
 - **Mã quy tắc:** BR-03
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Lượt AI chỉ tăng sau khi backend nhận phản hồi Gemini hợp lệ và hoàn tất request thành công; request lỗi không tiêu thụ quota.
+- **Nội dung:** Mọi yêu cầu gọi tính năng AI phải được Backend xác thực quyền tính năng (Feature Entitlement) dựa trên hạng gói Subscription hiện tại của tài khoản trước khi gửi yêu cầu tới dịch vụ Gemini; yêu cầu không đủ quyền bị chặn ngay tại server và trả về hướng dẫn nâng cấp gói thích hợp.
 
 ---
 
 <a id="br-04"></a>
-### BR-04 — Xử lý lỗi provider và timeout AI
+### BR-04 — Xử lý lỗi provider, timeout AI và lưu trữ telemetry
 
 - **Mã quy tắc:** BR-04
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Lỗi provider/timeout trước phản hồi hợp lệ không được trừ lượt, nhưng phải ghi telemetry để đối soát. Telemetry không giữ raw prompt content và được lưu 90 ngày.
+- **Nội dung:** Lỗi provider hoặc timeout trước khi có phản hồi hợp lệ không được coi là hoàn tất thành công; hệ thống trả về thông báo lỗi thân thiện và ghi error log kỹ thuật. Dữ liệu đo lường kỹ thuật (telemetry token) do provider trả về chỉ dùng để đối soát chi phí vận hành, lưu trữ tối đa 90 ngày và TUYỆT ĐỐI KHÔNG lưu trữ nội dung câu hỏi thô (raw prompt).
 
 ---
 
@@ -160,11 +160,11 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-16"></a>
-### BR-16 — Không chặn công khai bài viết khi AI lỗi hoặc hết hạn mức
+### BR-16 — Không chặn công khai bài viết khi AI lỗi hoặc gói không hỗ trợ tính năng AI
 
 - **Mã quy tắc:** BR-16
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** AI lỗi hoặc hết lượt không được chặn Member đã đăng nhập tiếp tục tự viết/chỉnh sửa và công khai Recipe Post đáp ứng điều kiện.
+- **Nội dung:** Khi AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói có quyền sử dụng AI hỗ trợ soạn bài (FR-21), Member vẫn toàn quyền tự viết, chỉnh sửa và công khai Recipe Post bình thường nếu bài đạt đúng profile validation.
 
 ---
 
@@ -178,11 +178,11 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-18"></a>
-### BR-18 — Bảo vệ quyền riêng tư trong hồ sơ tác giả công khai
+### BR-18 — Bảo vệ quyền riêng tư trong thông tin tác giả công khai
 
 - **Mã quy tắc:** BR-18
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Hồ sơ tác giả công khai không tiết lộ email, thông tin đăng nhập hoặc hồ sơ ăn uống riêng tư; gắn tài khoản không được trình bày như xác minh danh tính thật hay chuyên môn.
+- **Nội dung:** Thông tin tác giả công khai (được quản lý trực tiếp trong thực thể User) không tiết lộ email, mật khẩu hoặc hồ sơ dinh dưỡng/sức khỏe riêng tư; gắn tài khoản không được trình bày như xác minh danh tính thật hay chuyên môn.
 
 ---
 
@@ -191,9 +191,9 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 
 - **Mã quy tắc:** BR-19
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Recipe Post chỉ được công khai khi Member đã đăng nhập và đạt đúng profile: title 3–120 ký tự; 1–50 nguyên liệu; serving 1–50; prep và cook time mỗi giá trị 0–1.440 phút, tổng > 0 (`cookTime = 0` hợp lệ nếu `prepTime > 0`); bắt buộc có từ 1 đến 30 bước hướng dẫn chuẩn bị/chế biến, mỗi bước có nội dung văn bản không rỗng sau khi cắt khoảng trắng đầu cuối (trim); description tối đa 2.000 ký tự; tối đa 5 ảnh JPEG/PNG/WebP, 5 MB/ảnh; tối đa một YouTube link. Bài không đạt validation không được công khai và không được lưu nháp bền vững trên máy chủ trong phạm vi hiện tại.
+- **Nội dung:** Recipe Post chỉ được công khai khi Member đã đăng nhập và đạt đúng profile: title 3–120 ký tự; 1–50 nguyên liệu; serving 1–50; prep và cook time mỗi giá trị 0–1.440 phút, tổng > 0 (`cookTime = 0` hợp lệ nếu `prepTime > 0`); bắt buộc có nội dung hướng dẫn chuẩn bị/chế biến (`instructions`) không rỗng sau khi cắt khoảng trắng đầu cuối (trim), độ dài từ 10 đến 5.000 ký tự (dạng văn bản tự do); description tối đa 2.000 ký tự (tùy chọn); tối đa 1 ảnh đại diện JPEG/PNG/WebP dung lượng $\le 5$ MB (tùy chọn); tối đa một YouTube link (tùy chọn). Bài không đạt validation không được công khai và không được lưu nháp bền vững trên máy chủ trong phạm vi hiện tại.
 - **Cơ chế thực thi và xử lý khi không đạt chuẩn (FE & BE):**
-  - **Tầng Máy chủ (Backend — bắt buộc & quyết định):** Toàn bộ quy tắc thẩm định bắt buộc phải được thực thi độc lập tại Backend API (NFR-10). Máy chủ tuyệt đối không tin cậy dữ liệu máy khách; nếu request gửi lên có bất kỳ trường nào không đạt chuẩn (ví dụ: không có bước hướng dẫn nào hoặc bước hướng dẫn rỗng), máy chủ từ chối yêu cầu công khai/cập nhật và **tuyệt đối không tạo bất kỳ bản ghi dở dang nào vào cơ sở dữ liệu** (phù hợp với FR-24 là OUT_OF_SCOPE).
+  - **Tầng Máy chủ (Backend — bắt buộc & quyết định):** Toàn bộ quy tắc thẩm định bắt buộc phải được thực thi độc lập tại Backend API (NFR-10). Máy chủ tuyệt đối không tin cậy dữ liệu máy khách; nếu request gửi lên có bất kỳ trường nào không đạt chuẩn (ví dụ: thiếu hướng dẫn chế biến hoặc nội dung hướng dẫn rỗng sau khi trim), máy chủ từ chối yêu cầu công khai/cập nhật và **tuyệt đối không tạo bất kỳ bản ghi dở dang nào vào cơ sở dữ liệu** (phù hợp với FR-24 là OUT_OF_SCOPE).
   - **Tầng Giao diện (Frontend — tối ưu trải nghiệm người dùng):** Giao diện thực hiện kiểm tra trước để phản hồi tức thì; khi dữ liệu không đạt chuẩn, giao diện giữ lại toàn bộ nội dung đã nhập trong biểu mẫu và hiển thị thông báo lỗi cụ thể để người dùng tiếp tục chỉnh sửa mà không bị mất dữ liệu. Việc giữ nội dung biểu mẫu là hành vi giao diện người dùng tạm thời, không tạo bất kỳ lưu nháp nào trên máy chủ.
 
 ---
@@ -203,7 +203,7 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 
 - **Mã quy tắc:** BR-20
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Mô tả giới thiệu và media (ảnh, video YouTube) không bắt buộc khi công khai bài công thức; thẻ món không có ảnh dùng ảnh mặc định theo phân loại ăn chay. Thời gian nấu (`cookTime`) được phép bằng 0 đối với món không cần nấu nếu thời gian chuẩn bị (`prepTime`) lớn hơn 0 và tổng thời gian thỏa mãn quy định.
+- **Nội dung:** Mô tả giới thiệu, ảnh đại diện (tối đa 1 ảnh) và đường dẫn YouTube (tối đa 1 link) là tùy chọn khi tạo và công khai bài công thức; bài không có ảnh dùng ảnh mặc định theo phân loại ăn chay. Thời gian nấu (`cookTime`) được phép bằng 0 đối với món không cần nấu nếu thời gian chuẩn bị (`prepTime`) lớn hơn 0 và tổng thời gian thỏa mãn quy định.
 
 ---
 
@@ -298,11 +298,11 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-31"></a>
-### BR-31 — Không gọi AI và không trừ hạn mức khi chặn do thiếu hồ sơ
+### BR-31 — Không gọi AI khi chặn do thiếu hồ sơ
 
 - **Mã quy tắc:** BR-31
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Khi chặn AI cá nhân hóa vì thiếu hồ sơ, backend không gọi Gemini và không trừ lượt AI. Giá trị để trống không được tự hiểu là người dùng xác nhận “Không có”.
+- **Nội dung:** Khi chặn AI cá nhân hóa vì thiếu hồ sơ dinh dưỡng/sức khỏe tối thiểu, backend không gửi yêu cầu tới Gemini. Giá trị để trống không được tự hiểu là người dùng xác nhận “Không có”.
 
 ---
 
@@ -316,11 +316,11 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-33"></a>
-### BR-33 — Thao tác lưu công thức không tiêu thụ hạn mức AI
+### BR-33 — Độc lập nghiệp vụ của thao tác lưu công thức
 
 - **Mã quy tắc:** BR-33
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Lưu công thức không gọi Gemini, không trừ lượt AI và không tự cập nhật Onboarding hoặc hồ sơ sở thích.
+- **Nội dung:** Lưu công thức là thao tác dữ liệu nội bộ độc lập, không gọi dịch vụ Gemini AI và không tự cập nhật Onboarding hoặc hồ sơ sở thích.
 
 ---
 
@@ -604,11 +604,11 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-65"></a>
-### BR-65 — Quy tắc mỗi Member tối đa một Like hiệu lực
+### BR-65 — [RETIRED] Quy tắc mỗi Member tối đa một Like hiệu lực
 
 - **Mã quy tắc:** BR-65
-- **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Mỗi cặp Member–bài công thức chỉ có tối đa một Like đang hiệu lực. Thích lại không tạo lượt trùng; bỏ Like loại lượt của Member khỏi tổng. Like không tự lưu công thức, cập nhật sở thích, thêm món vào lịch hoặc trừ lượt AI.
+- **Trạng thái (Derived):** RETIRED
+- **Nội dung:** *(Quy tắc đã bãi bỏ)* Trước đây quy định mỗi cặp Member–bài công thức chỉ có tối đa một Like đang hiệu lực. Theo quyết định tinh gọn baseline sản phẩm ngày 17/09/2026, toàn bộ tính năng Like (Recipe Like, Comment Like, Reply Like) đã bị loại bỏ hoàn toàn khỏi hệ thống để tập trung vào giá trị cốt lõi (nấu ăn, thực đơn dinh dưỡng, đi chợ). Quy tắc này không còn hiệu lực thực thi và không tạo implementation scope.
 
 ---
 

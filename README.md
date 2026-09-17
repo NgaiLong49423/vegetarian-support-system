@@ -1,15 +1,19 @@
-> **Document:** Vegetarian Support System Project Overview
+> **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.7.1
+> **Version:** v0.8.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-16
-> **Status:** Under Review
+> **Last Updated:** 2026-09-17
+> **Status:** Active
 
-# Vegetarian Support System
+# Mâm Xanh — Vegetarian Support System
 
-Ứng dụng web hỗ trợ người ăn chay khám phá bài công thức, lập thực đơn tuần và nhận gợi ý từ Gemini dựa trên nội dung đang công khai trong hệ thống. Đây là dự án môn SWP391 do nhóm 5 thành viên phát triển.
+<p align="center">
+  <img src="image/logo.png" alt="Mâm Xanh Logo" width="200" />
+</p>
 
-> Trạng thái hiện tại: đang chuẩn hóa yêu cầu và môi trường làm việc. SRS vẫn là bản nháp; source code, database schema và hướng dẫn chạy chưa được triển khai trong repository. Nội dung tài liệu không phải bằng chứng tính năng đã hoạt động.
+**Mâm Xanh** (Vegetarian Support System) là ứng dụng web hỗ trợ người ăn chay khám phá bài công thức, lập thực đơn tuần và nhận gợi ý thông minh từ Gemini AI dựa trên nội dung đang công khai trong hệ thống. Đây là dự án môn SWP391 do nhóm 5 thành viên phát triển.
+
+> **Trạng thái hiện tại:** Backend đã scaffold thành công (Java 21 + Spring Boot + Maven), bộ công nghệ và kiến trúc runtime đã chốt (Baseline v1.4.0). Frontend đang trong giai đoạn chuẩn bị khởi tạo React + Vite + TypeScript.
 
 ## Phạm vi MVP
 
@@ -18,21 +22,21 @@
 - Member đã đăng nhập có thể tạo và công khai Recipe Post trực tiếp; Administrator hậu kiểm nội dung theo báo cáo của người dùng.
 - Gemini hỗ trợ hỏi đáp, gợi ý công thức có sẵn, lập/thay thực đơn và tạo nội dung có thể chỉnh sửa trong biểu mẫu; AI không tự tạo dữ liệu dinh dưỡng chính thức hoặc tự quyết định kiểm duyệt. Lưu nháp Recipe Post, lịch sử chat AI và AI quét/gắn cờ nội dung không thuộc MVP hiện tại.
 - Free, Plus và Pro có cùng nhóm chức năng AI, với hạn mức 5/15/50 request thành công/ngày. Giá tháng cố định cho MVP là FREE 0 VND, PLUS 49,000 VND và PRO 99,000 VND; không tự động gia hạn hoặc hoàn tiền một phần, entitlement chỉ có hiệu lực sau thanh toán được xác minh và hết hạn cuối kỳ đã trả.
-
 Chi tiết nghiệp vụ nằm trong [SRS](docs/requirements/SRS.md). Các đề xuất hoặc tài liệu nghiên cứu không tự trở thành yêu cầu nếu chưa được ghi nhận trong SRS.
 
 ## Công nghệ baseline
 
-| Khu vực | Lựa chọn hiện tại |
+| Khu vực | Lựa chọn hiện tại (Confirmed) |
 |---|---|
-| Frontend | React, TypeScript, Vite, npm, Axios |
-| Backend | Java 21, Spring Boot, Maven, REST API/JSON |
-| Data | Microsoft SQL Server, Spring Data JPA/Hibernate, Flyway |
-| Security | Spring Security, short-lived JWT access token, rotating refresh token với server-side revocation, BCrypt, role-based authorization |
-| External services | Azure Blob Storage, Google Gemini và YouTube embedding; payment/email provider cụ thể còn chọn khi tích hợp. Google Maps không phải dependency của baseline hiện tại vì M11 là `OUT_OF_SCOPE`. |
-| Quality | JUnit 5, Mockito, JaCoCo, OpenAPI/Swagger UI, Bean Validation |
+| Frontend | React, TypeScript, Vite, npm, Axios, Requestly Pro (FE dev mocking) |
+| Backend | Java 21, Spring Boot, Maven, REST API/JSON, Spring Boot Actuator |
+| Data | Microsoft SQL Server (Azure SQL Database Serverless), Spring Data JPA/Hibernate, Flyway |
+| Security | Spring Security, Google Identity Services (GIS), `GoogleIdTokenVerifier`, short-lived JWT access token, rotating refresh token (HttpOnly cookie), BCrypt, role-based authorization |
+| External services | Google Gemini (`gemini-3.8-flash` qua Google Gen AI Java SDK), payOS (VietQR Payment REST & Webhook), Brevo (Transactional Email SMTP), Azure Blob Storage, YouTube embedding |
+| Quality & DevOps | JUnit 5, Mockito, JaCoCo, Codecov (CI coverage), Testmail (Email E2E testing), OpenAPI/Swagger UI, Bean Validation, Azure Application Insights |
+| Deployment | Azure Static Web Apps (FE) + Azure App Service (BE) + Azure SQL Serverless (DB) + Azure Blob (Media) + Custom Domain (.tech) |
 
-Model Gemini, AI architecture, frontend state management, CSS/UI library và deployment vẫn là `TBD`. Xem [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) trước khi thêm dependency và [System Architecture](docs/architecture/ARCHITECTURE.md) trước khi thay đổi ranh giới hệ thống.
+Xem chi tiết trong [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) và [System Architecture](docs/architecture/ARCHITECTURE.md).
 
 ## Cấu trúc repository
 
@@ -40,7 +44,7 @@ Model Gemini, AI architecture, frontend state management, CSS/UI library và dep
 .
 ├── app/
 │   ├── frontend/
-│   └── backend/
+│   └── mamxanh-backend/
 ├── database/
 ├── docs/
 │   ├── requirements/
@@ -49,6 +53,7 @@ Model Gemini, AI architecture, frontend state management, CSS/UI library và dep
 │   ├── decisions/
 │   ├── diagrams/
 │   └── research/
+├── image/
 ├── .github/
 ├── .agents/
 ├── AGENTS.md
@@ -56,7 +61,7 @@ Model Gemini, AI architecture, frontend state management, CSS/UI library và dep
 └── CHANGELOG.md
 ```
 
-`app/frontend`, `app/backend` và các SQL file hiện là điểm giữ chỗ có chủ đích. Không ghi hướng dẫn chạy giả định cho đến khi scaffold thật và các lệnh đã được kiểm tra.
+`app/frontend` và các file SQL trong `database/` hiện là điểm giữ chỗ có chủ đích; backend đã có scaffold thực tế tại `app/mamxanh-backend/`.
 
 ## Nguồn tài liệu
 

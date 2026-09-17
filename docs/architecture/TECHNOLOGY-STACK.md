@@ -1,8 +1,8 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.3.0
+> **Version:** v1.4.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-16
+> **Last Updated:** 2026-09-17
 > **Status:** Active  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -28,18 +28,20 @@ Hành vi nghiệp vụ chi tiết vẫn thuộc [SRS](../requirements/SRS.md). R
 | TypeScript | Cung cấp source Frontend có kiểu dữ liệu | Confirmed | Làm contract rõ hơn và phát hiện nhiều lỗi phổ biến trước runtime | Type phải được duy trì và không tự validate dữ liệu runtime không tin cậy |
 | Vite | Cung cấp tooling để phát triển và build Frontend | Confirmed | Cho phản hồi local nhanh và toolchain tập trung cho React/TypeScript | Script, plugin và cách xử lý environment cụ thể phải chờ scaffold thật |
 | npm | Quản lý package và script của Frontend | Confirmed | Cung cấp package workflow tiêu chuẩn cho Frontend stack đã chọn | Lockfile và dependency update phải được review; chưa khẳng định command nào trước khi `package.json` tồn tại |
-| Axios | Gửi HTTP request từ client đến Backend | Confirmed | Cung cấp client API nhất quán và hỗ trợ xử lý dùng chung | Quy ước authentication/error vẫn cần API design được phê duyệt; native `fetch` vẫn là phương án khác nhưng không phải baseline đã chọn |
+| Axios | Gửi HTTP request từ client đến Backend | Confirmed | Cung cấp client API nhất quán và hỗ trợ xử lý interceptor dùng chung (refresh token) | Cần cấu hình `withCredentials: true` để gửi HttpOnly cookie xuyên domain |
+| Requestly Pro | Mock REST API, giả lập network delay và test các kịch bản lỗi biên | Confirmed Developer Tooling | Cho phép Frontend dev song song khi Backend chưa hoàn thiện; hỗ trợ sẵn từ GitHub Student Pack | Chạy phía client/trình duyệt, không deploy lên production |
 
-Frontend state management và CSS/UI library vẫn là `TBD`.
+Frontend state management (ngoài React Context) và CSS/UI library vẫn là `TBD`.
 
 ## 3. Backend và giao tiếp ứng dụng
 
 | Công nghệ | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
 |---|---|---|---|---|
-| Java 21 | Ngôn ngữ Backend và runtime baseline | Confirmed | Java LTS baseline phù hợp với công việc Spring của nhóm trong môn học | Mọi contributor và build environment phải dùng JDK tương thích |
+| Java 21 | Ngôn ngữ Backend và runtime baseline | Confirmed | Java LTS baseline, hỗ trợ Virtual Threads phục vụ tác vụ I/O bất đồng bộ | Mọi contributor và build environment phải dùng JDK tương thích |
 | Spring Boot | Xây dựng ứng dụng Backend và các integration | Confirmed | Tích hợp ecosystem web, security, validation và persistence đã chọn | Version và tập module phải được chọn đồng bộ khi tạo Maven scaffold |
-| Maven | Build Backend và quản lý dependency | Confirmed | Cung cấp cấu trúc dự án và dependency lifecycle có thể tái lập, quen thuộc với nhóm | Chưa có build command hoặc dependency version nào được xác minh trước khi `pom.xml` tồn tại |
-| REST API qua JSON | Contract ứng dụng giữa browser và Backend | Confirmed | Ranh giới client/server rõ ràng và định dạng payload có khả năng tương tác | Endpoint path, error envelope, pagination và versioning chưa được định nghĩa |
+| Maven | Build Backend và quản lý dependency | Confirmed | Cung cấp cấu trúc dự án và dependency lifecycle có thể tái lập, quen thuộc với nhóm | Đã gắn kèm Maven Wrapper (`mvnw`, `mvnw.cmd`) |
+| REST API qua JSON | Contract ứng dụng giữa browser và Backend | Confirmed | Ranh giới client/server rõ ràng và định dạng payload có khả năng tương tác | Endpoint path, error envelope, pagination và versioning theo chuẩn REST |
+| Spring Boot Actuator | Cung cấp health check (`/actuator/health`) và metric vận hành | Confirmed | Tích hợp sẵn trong Spring Boot, kết nối trực tiếp với Azure App Service health probe | Cần bảo vệ các endpoint nhạy cảm, chỉ mở công khai `/health` |
 
 **Backend Architecture: Modular Monolith using MVC/layered structure within each business module.** Baseline này dùng một Spring Boot application và một deployable backend, tổ chức module theo business capability; MVC/layered structure được áp dụng bên trong từng module và không bị thay thế bởi Modular Monolith. Cấu trúc trách nhiệm và luồng chuẩn được quy định tại [System Architecture](ARCHITECTURE.md#31-kiến-trúc-backend).
 
@@ -47,10 +49,10 @@ Frontend state management và CSS/UI library vẫn là `TBD`.
 
 | Công nghệ | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
 |---|---|---|---|---|
-| Microsoft SQL Server | Relational datastore cốt lõi | Confirmed | Hỗ trợ relationship, constraint và transaction có cấu trúc cho account, content, plan và traceability | Hosting, backup, credential, environment và physical schema vẫn chưa chốt |
+| Microsoft SQL Server | Relational datastore cốt lõi | Confirmed | Hỗ trợ relationship, constraint và transaction có cấu trúc cho account, content, plan và traceability | Triển khai trên Azure SQL Database Serverless; cần lưu ý độ trễ cold start khi database tự động pause |
 | Spring Data JPA | Lớp abstraction cho repository/data access | Confirmed | Giảm phần code persistence lặp lại trong Spring ecosystem | Query phức tạp và transaction boundary vẫn cần được thiết kế có chủ đích |
 | Hibernate | JPA implementation và object-relational mapping | Confirmed | Cung cấp runtime integration cho JPA đã chọn | Tránh schema auto-update không kiểm soát; ORM mapping không thay thế database design |
-| Flyway | Version hóa các thay đổi database có thể thực thi | Confirmed | Migration có thứ tự và review được giúp các environment đồng bộ | Khả năng tương thích với SQL Server phải được chọn cùng Spring Boot; migration đã áp dụng ở môi trường dùng chung không được tùy tiện viết lại |
+| Flyway | Version hóa các thay đổi database có thể thực thi | Confirmed | Migration có thứ tự và review được giúp các environment đồng bộ | Migration đã áp dụng ở môi trường dùng chung không được tùy tiện viết lại |
 
 Các file SQL hiện tại chỉ là placeholder, chưa phải schema được phê duyệt. Migration có thẩm quyền và có thể thực thi chỉ bắt đầu trong Backend sau khi scaffold tồn tại.
 
@@ -58,52 +60,62 @@ Các file SQL hiện tại chỉ là placeholder, chưa phải schema được p
 
 | Công nghệ | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
 |---|---|---|---|---|
-| Spring Security | Framework authentication và authorization của Backend | Confirmed | Điểm tích hợp trung tâm để bảo vệ luồng request Spring | Filter, access rule và cách xử lý failure vẫn cần được thiết kế và kiểm thử |
-| JWT access + rotating refresh token | Mang authentication claim và duy trì refresh session có thể thu hồi | Confirmed baseline | Short-lived access token cho REST; rotating refresh token với server-side session/revocation; logout thu hồi refresh session | Expiry cụ thể, storage và reuse-detection là chi tiết thiết kế; access-token-only chỉ là fallback sau một quyết định giảm scope mới |
+| Spring Security | Framework authentication và authorization của Backend | Confirmed | Điểm tích hợp trung tâm để bảo vệ luồng request Spring | Filter, access rule và cách xử lý failure được phân tầng chặt chẽ |
+| JWT access + rotating refresh token | Mang authentication claim và duy trì refresh session có thể thu hồi | Confirmed baseline | Short-lived access token cho REST; rotating refresh token với server-side session/revocation qua HttpOnly Cookie | Cookie cross-domain cần `SameSite=None; Secure` và `Access-Control-Allow-Credentials: true` |
+| Google Identity Services (GIS) | Xác thực tài khoản Google 1-click phía Frontend | Confirmed | Trả về Google ID Token an toàn, giảm độ phức tạp so với Authorization Code flow | Phụ thuộc thư viện Google Identity phía client (dùng `@react-oauth/google`) |
+| Google API Client (`GoogleIdTokenVerifier`) | Xác thực Google ID Token tại Backend | Confirmed | Kiểm tra chữ ký số, issuer, audience và expiry với Google JWKS chính thức; trích xuất `google_subject` (`sub`) làm khóa định danh | Thêm dependency `com.google.api-client:google-api-client` vào `pom.xml` |
 | BCrypt | Hash và xác minh password | Confirmed | Cơ chế hash password một chiều có salt tích hợp với Spring Security | Work factor và xử lý input phải được chọn; không được ghi password hoặc hash vào log |
 | Role-based authorization và ownership check | Thực thi quyền Guest/Member/Administrator và ownership của resource | Confirmed | Làm ranh giới role dễ giải thích và kiểm thử | Chỉ kiểm tra role là chưa đủ khi Member chỉ được thay đổi resource của chính mình |
 
-Google Login là khả năng authentication đã được SRS xác nhận; Spring integration và luồng validation token cụ thể vẫn là chi tiết triển khai.
-
-## 6. Media và external service
+## 6. Media, AI và external service
 
 | Công nghệ/dịch vụ | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
 |---|---|---|---|---|
-| Azure Blob Storage | Lưu ảnh Recipe Post trong khi SQL Server giữ reference | Confirmed | Shared cloud object storage giúp tránh lưu binary media trong relational database | Phụ thuộc network, access policy và chi phí; không đồng nghĩa chọn Azure để deploy toàn hệ thống |
-| Upload Blob qua Backend | Xác thực, validate và upload tối đa 5 ảnh Recipe Post | Confirmed initial path | Tập trung kiểm soát truy cập và validation cho triển khai ban đầu | Chỉ JPEG/PNG/WebP, tối đa 5 MB/ảnh; timeout và consistency cleanup còn thiết kế |
+| Azure Blob Storage | Lưu ảnh Recipe Post trong khi SQL Server giữ reference | Confirmed | Shared cloud object storage giúp tránh lưu binary media trong relational database | Giới hạn tối đa 5 ảnh/bài viết, chỉ nhận JPEG/PNG/WebP $\le 5$ MB |
+| Upload Blob qua Backend | Xác thực, validate và upload ảnh Recipe Post | Confirmed initial path | Tập trung kiểm soát truy cập và validation cho triển khai ban đầu | Cần cấu hình timeout và dọn dẹp file rác khi tạo bài viết thất bại |
 | Upload trực tiếp bằng scoped SAS URL | Khả năng upload từ client tới Blob khi xuất hiện nhu cầu scaling đã được đo | Future option | Có thể giảm tải truyền file qua Backend | Tăng độ phức tạp về CORS, expiry, upload chưa hoàn tất và verification; chưa có ngưỡng áp dụng |
 | YouTube embed | Phát video được liên kết trong Recipe Post mà không sao chép video | Confirmed | Dùng player của provider và tránh phải vận hành video pipeline | Khả năng embed phụ thuộc setting của video nguồn và hành vi của provider |
-| Google Gemini | AI provider cho các khả năng được SRS định nghĩa | Confirmed at provider level | Cho nhóm một ranh giới provider thống nhất để đánh giá và tích hợp | Model, kiến trúc chi tiết, chất lượng, latency, quota và chi phí vẫn cần kiểm thử/chốt |
-| Google Maps Platform | Phụ thuộc lịch sử từng được đề xuất cho FR-42/FR-43 | `OUT_OF_SCOPE` | M11 không phục vụ trực tiếp luồng meal-planning cốt lõi và ứng dụng không quản lý dữ liệu nhà hàng bên ngoài | Không chọn dependency hoặc tích hợp trong baseline hiện tại; chỉ xem xét lại sau quyết định scope và phân rã mới |
-| Payment provider | Xác minh payment thật cho Plus/Pro trước khi kích hoạt entitlement | TBD implementation | Business baseline đã chốt FREE 0, PLUS 49,000, PRO 99,000 VND/tháng | Chỉ provider/webhook còn chọn; phải hỗ trợ verified activation, expiry, no auto-renew/no partial refund và idempotency |
-| Email service | Verification, reset và notification bất đồng bộ/best-effort | TBD implementation | Email failure không rollback business action; moderation-result email phải được thử gửi | Provider, deliverability, template và retry detail chưa chốt |
+| Google Gemini (`gemini-3.8-flash`) | AI model phục vụ gợi ý món ăn, thực đơn và hỗ trợ giải đáp | Confirmed model | Model Flash mới, tốc độ phản hồi nhanh, hỗ trợ reasoning và native JSON Structured Outputs | Khóa cứng model ID `gemini-3.8-flash`, không dùng alias `latest` để đảm bảo tính ổn định |
+| Google Gen AI Java SDK (`com.google.genai:google-genai`) | SDK chính thức gọi Gemini API từ Backend | Confirmed integration | Thuần Java 21, không cần dựng Python microservice hoặc dùng framework AI nặng | Bọc qua interface `AiClient` để dễ dàng mock trong Unit/Integration Test |
+| Google Maps Platform | Phụ thuộc lịch sử từng được đề xuất cho FR-42/FR-43 | `OUT_OF_SCOPE` | M11 không phục vụ trực tiếp luồng meal-planning cốt lõi và ứng dụng không quản lý dữ liệu nhà hàng bên ngoài | Không chọn dependency hoặc tích hợp trong baseline hiện tại |
+| payOS | Cổng thanh toán VietQR cho gói PLUS (49.000) và PRO (99.000) | Confirmed provider | Hỗ trợ thanh toán VND qua VietQR, link thanh toán, webhook tức thì và sandbox miễn phí | Tích hợp qua Spring `RestClient`; webhook yêu cầu verify chữ ký HMAC-SHA256 và xử lý idempotent theo `order_code` |
+| Brevo (Sendinblue) | Transactional email service cho verify account, reset password và thông báo | Confirmed provider | Gói miễn phí 300 email/ngày, hỗ trợ SMTP chuẩn; tích hợp qua `spring-boot-starter-mail` | Xử lý bất đồng bộ qua `@Async`; lỗi email không rollback transaction nghiệp vụ |
 
 Credential của provider phải nằm ở Backend và ngoài Source Control.
 
-## 7. Chất lượng, API Documentation, validation và logging
+## 7. Chất lượng, API Documentation, validation, logging và observability
 
 | Công nghệ | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
 |---|---|---|---|---|
 | JUnit 5 | Viết automated test cho Backend | Confirmed | Cung cấp assertion có tính lặp lại cho hành vi Java/Spring | Unit Test không tự chứng minh database, security hoặc provider integration hoạt động đúng |
-| Mockito | Cô lập collaborator của Backend trong test | Confirmed | Cho phép kiểm tra nhanh các scenario thành công/thất bại có kiểm soát mà không luôn gọi hạ tầng thật | Mock có thể khác hành vi của provider và persistence thật |
-| JaCoCo | Đo phần code Java được thực thi bởi test | Confirmed | Xác định vùng chưa được kiểm thử và hỗ trợ bằng chứng review | Chưa có Coverage threshold được phê duyệt; Coverage không chứng minh chất lượng assertion |
+| Mockito | Cô lập collaborator của Backend trong test | Confirmed | Cho phép kiểm tra nhanh các scenario thành công/thất bại có kiểm soát mà không luôn gọi hạ tầng thật | Mock `AiClient`, `JavaMailSender`, `payOSClient` |
+| JaCoCo | Đo phần code Java được thực thi bởi test | Confirmed | Tạo báo cáo coverage XML cho CI pipeline | Cần cấu hình exclude cho các DTO/Entity/Config không chứa logic |
+| Codecov | Báo cáo và hiển thị trực quan coverage trên GitHub PR | Confirmed QA Tooling | Tự động phân tích và comment tỷ lệ coverage vào PR; có sẵn từ GitHub Student Pack | Cấu hình qua GitHub Action `codecov/codecov-action` |
+| Testmail | Hộp thư ảo phục vụ kiểm thử tự động email | Confirmed QA Tooling | Cung cấp vô hạn địa chỉ email test qua API, không tốn quota Brevo thật; hỗ trợ từ GitHub Student Pack | Dành cho môi trường kiểm thử/staging |
 | OpenAPI | Mô tả REST contract đã được dự án áp dụng | Confirmed standard | Cung cấp contract có cấu trúc dùng chung cho Frontend, Backend và verification | Phải bám hành vi thật; chưa tạo API document trước khi có contract thật |
 | Swagger UI | Hiển thị và thử OpenAPI description | Confirmed companion tool | Giúp developer và tester dễ tiếp cận contract | Lệnh gọi tương tác không thay thế automated verification |
-| springdoc-openapi | Tích hợp việc sinh OpenAPI với Spring Boot | Confirmed | Giảm nội dung lặp giữa khai báo Backend và contract documentation cơ bản | Cần version tương thích cùng description/example được viết có chủ đích |
-| Jakarta Bean Validation | Biểu diễn constraint cơ bản cho input Backend | Confirmed | Cung cấp validation sớm, nhất quán và tích hợp với Spring | Không thay thế authorization, database constraint hoặc Business Rule liên quan nhiều record |
-| SLF4J + Logback | Logging facade và implementation của Backend | Confirmed | Cung cấp diagnostic logging nhất quán trong Spring ecosystem | Nơi lưu, retention và centralized observability vẫn là `TBD`; không được ghi secret hoặc dữ liệu nhạy cảm vào log |
+| springdoc-openapi | Tích hợp việc sinh OpenAPI với Spring Boot | Confirmed | Giảm nội dung lặp giữa khai báo Backend và contract documentation cơ bản | Đã có sẵn trong `pom.xml` |
+| Jakarta Bean Validation | Biểu diễn constraint cơ bản cho input Backend | Confirmed | Cung cấp validation sớm, nhất quán và tích hợp với Spring | Không thay thế authorization hoặc Business Rule phức tạp |
+| SLF4J + Logback | Logging facade và implementation của Backend | Confirmed | Cung cấp diagnostic logging nhất quán trong Spring ecosystem | Tuyệt đối không ghi secret, mật khẩu hoặc dữ liệu cá nhân vào log |
+| Azure Application Insights | Giám sát hiệu năng và lỗi ứng dụng trên production | Confirmed Observability | Tích hợp qua App Service Java Agent / OpenTelemetry, theo dõi response time, dependency calls và exceptions | Không yêu cầu dựng server Prometheus/Grafana hay ELK riêng |
 
-Chiến lược verification cấp dự án nằm trong [Test Strategy](../testing/TEST-STRATEGY.md). Repository hiện chưa có test hoặc test command đã được xác minh.
+## 8. Hạ tầng triển khai và quản lý Secret (Deployment & Secrets)
 
-## 8. Các lựa chọn chưa được giải quyết rõ ràng
+| Thành phần | Công nghệ / Nền tảng | Trạng thái | Ghi chú và Ràng buộc |
+|---|---|---|---|
+| Frontend Hosting | Azure Static Web Apps | Confirmed | Host ứng dụng React build bằng Vite; hỗ trợ CDN toàn cầu, cấp HTTPS tự động và CI/CD qua GitHub Actions |
+| Backend Hosting | Azure App Service (Java 21 SE) | Confirmed | Chạy ứng dụng Spring Boot JAR độc lập; hỗ trợ Auto-healing, Managed TLS và tích hợp Application Insights |
+| Database Hosting | Azure SQL Database (Serverless) | Confirmed | Microsoft SQL Server đám mây; tự động pause khi không hoạt động để tối ưu chi phí (cần kích hoạt trước khi demo) |
+| Media Storage | Azure Blob Storage | Confirmed | Lưu trữ ảnh bài đăng công thức nấu ăn |
+| Custom Domain | Domain `.tech` hoặc Name.com | Confirmed Polish | Sử dụng tên miền miễn phí 1 năm từ GitHub Student Pack, CNAME trỏ về Azure Static Web Apps cho buổi live demo |
+| Secrets - Local | Environment Variables / `.env` | Confirmed | Biến môi trường hệ thống; cam kết không commit file `.env`, duy trì `.env.example` mẫu |
+| Secrets - CI/CD | GitHub Environment Secrets | Confirmed | Quản lý token triển khai, Sonar/Codecov token và build secrets trong GitHub Actions |
+| Secrets - Production | Azure App Service App Settings / Key Vault | Confirmed | Cấu hình trực tiếp trên Azure Portal hoặc nạp qua Azure Key Vault reference |
 
-- Gemini model/version và kiến trúc AI chi tiết.
-- MapStruct hoặc cách mapping DTO khác.
-- Quy ước/thư viện Frontend state management.
-- CSS/UI library và design system.
-- Provider cho payment và email; business behavior/price không còn TBD.
-- Dependency version và compatibility matrix.
-- Deployment provider/topology cho Frontend, Backend, SQL Server và hoạt động hỗ trợ.
-- Access-token expiry/storage và refresh rotation/reuse implementation; timeout/retry theo provider; logging retention ngoài AI telemetry 90 ngày; mọi Coverage quality gate.
+## 9. Các lựa chọn chưa được giải quyết rõ ràng (Open Items)
 
-Lựa chọn IDE cá nhân như IntelliJ IDEA Ultimate hoặc JPA tooling là developer tool tùy chọn, không phải công nghệ cốt lõi của dự án.
+- Quy ước/thư viện Frontend state management (nếu vượt quá React Context).
+- CSS/UI library và design system (Tailwind CSS, MUI, Ant Design hoặc Shadcn).
+- MapStruct hoặc phương pháp mapping Entity $\leftrightarrow$ DTO.
+- Tên miền cụ thể được chọn (.tech hay Name.com) khi bước vào giai đoạn demo.
+- Điều chỉnh thời gian auto-pause của Azure SQL Database Serverless trong tuần báo cáo đồ án.
