@@ -1,16 +1,16 @@
-> **Document:** Product Requirements Document
+> **Document:** Product Requirements Document — Mâm Xanh
 > **File:** `docs/requirements/PRD.md`
-> **Version:** v1.0.0
+> **Version:** v1.0.1
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-16
+> **Last Updated:** 2026-09-17
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `README.md`
 
-# Product Requirements Document
+# Product Requirements Document — Mâm Xanh
 
 ## 1. Mục đích
 
-Vegetarian Support System là ứng dụng web phục vụ người ăn chay khám phá công thức, quản lý lựa chọn cá nhân, lập thực đơn tuần và nhận hỗ trợ AI có kiểm soát. Tài liệu này mô tả phạm vi sản phẩm cấp cao; [SRS](SRS.md) là nguồn chi tiết cho Functional Requirements, Business Rules và truy vết đề tài.
+**Mâm Xanh** (Vegetarian Support System) là ứng dụng web phục vụ người ăn chay khám phá công thức, quản lý lựa chọn cá nhân, lập thực đơn tuần và nhận hỗ trợ AI có kiểm soát. Tài liệu này mô tả phạm vi sản phẩm cấp cao; [SRS](SRS.md) là nguồn chi tiết cho Functional Requirements, Business Rules và truy vết đề tài.
 
 `Active` nghĩa là PRD thuộc Requirements Baseline v1.0.0 đã được chốt ngày 16/09/2026. [SRS](SRS.md) và các tài liệu con sở hữu requirement chi tiết cùng lifecycle chính thức; các chi tiết thiết kế/triển khai còn mở không được suy diễn thành yêu cầu sản phẩm mới. Mọi thay đổi semantic sau baseline này phải được review, đánh giá ảnh hưởng và version theo governance hiện hành.
 

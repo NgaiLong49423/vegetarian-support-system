@@ -1,6 +1,6 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v3.5.0
+> **Version:** v3.6.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-17
 > **Status:** Active  
@@ -36,7 +36,7 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 |---|---|---|
 | Repository root | Entry points and root-level tooling only | README.md, AGENTS.md, CONTRIBUTING.md, CHANGELOG.md, LICENSE, .gitignore; new build/tool configs require a real root-level consumer |
 | app/frontend/ | Frontend source, tests, assets and configuration | React component, feature test, package.json after scaffolding; place files by the app's established feature structure |
-| app/vegetarian-system-backend/ | Backend source, tests, configuration and migrations | Java classes/tests, pom.xml, Flyway migrations after scaffolding |
+| app/mamxanh-backend/ | Backend source, tests, configuration and migrations | Java classes/tests, pom.xml, Flyway migrations after scaffolding |
 | database/ | Database usage guide, deliberate SQL snapshot, demo seed and diagnostic queries | schema.sql remains empty until designed; Flyway owns executable migration history when implemented |
 | docs/requirements/ | Maintained product and software requirements | PRD owns high-level product intent; root SRS owns scope, context, index, and lifecycle registry; docs/requirements/srs/ owns detailed FR, BR, and NFR specifications |
 | docs/architecture/ | Current high-level system structure and selected technology baseline | ARCHITECTURE owns runtime boundaries; TECHNOLOGY-STACK owns technology purpose, rationale, trade-offs and TBD choices |
@@ -55,7 +55,7 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 
 Backend source subdirectories, migration location and frontend feature structure must follow the actual scaffold once it exists; this policy does not create a new application architecture.
 
-Examples: a recipe form belongs in app/frontend/, its API service in app/vegetarian-system-backend/, an AI quota rule in SRS, an integration boundary in ARCHITECTURE, and a durable provider-selection rationale in docs/decisions/. Task status belongs on its GitHub Issue/Project item.
+Examples: a recipe form belongs in app/frontend/, its API service in app/mamxanh-backend/, an AI quota rule in SRS, an integration boundary in ARCHITECTURE, and a durable provider-selection rationale in docs/decisions/. Task status belongs on its GitHub Issue/Project item.
 
 ## Maintained document register
 
@@ -84,7 +84,7 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | diagrams/UseCase/README.md | Use-case diagram conventions | Creating/updating use-case diagrams |
 | diagrams/ERD/README.md | ERD documentation conventions | Creating/updating the data model |
 | ../app/frontend/README.md | Frontend setup/state and contribution guidance | Frontend work |
-| ../app/vegetarian-system-backend/README.md | Backend setup/state and contribution guidance | Backend work |
+| ../app/mamxanh-backend/README.md | Backend setup/state and contribution guidance | Backend work |
 | ../database/README.md | SQL/Flyway ownership and database state | Database work |
 | ../.github/pull_request_template.md | PR evidence and release checklist template | Opening or reviewing a PR |
 

@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
-> **File:** `app/vegetarian-system-backend/README.md`  
-> **Version:** v0.4.0
+> **File:** `app/mamxanh-backend/README.md`  
+> **Version:** v0.5.1
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-17
 > **Status:** Active  
@@ -13,7 +13,7 @@ Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và
 
 Backend đã được scaffold thành công với Java 21 và Spring Boot:
 - Cấu hình Maven project độc lập và đính kèm Maven Wrapper (`mvnw`, `mvnw.cmd`).
-- Khởi tạo ứng dụng chính `VegetarianSystemBackendApplication` tại package `com.vegetarian.system`.
+- Khởi tạo ứng dụng chính `MamXanhApplication` tại package `tech.mamxanh`.
 - Cấu hình sẵn các dependency cốt lõi:
   - **Data / Persistence:** `spring-boot-starter-data-jpa`, `mssql-jdbc` (SQL Server driver), Flyway migration (`spring-boot-starter-flyway`, `flyway-sqlserver`).
   - **Security:** `spring-boot-starter-security`.
@@ -35,11 +35,11 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 
 - SRS là nguồn nghiệp vụ; Technology Stack là nguồn lựa chọn công nghệ; System Architecture là nguồn cho cấu trúc backend đã duyệt. **Backend Architecture: Modular Monolith using MVC/layered structure within each business module.**
 - Backend gồm một Spring Boot application và một deployable backend, không tách microservices. Source code được chia theo business capability như `auth`, `recipe`, `mealplan`, `shopping`, `nutrition`, `subscription` và `admin`; bên trong mỗi module phải phân tách tối thiểu `controller`, `service`, `repository`, `model`/`entity`, cùng `dto` khi cần.
-- Luồng chuẩn là `React View -> Spring MVC Controller -> Service -> Repository -> Model/Entity -> Database`. Chi tiết package cụ thể chỉ được xác lập khi scaffold và phải tuân theo ranh giới này. AI architecture chi tiết vẫn chưa được chốt.
-- SQL Server là source of truth cho dữ liệu nghiệp vụ. Flyway phải quản lý migration theo thứ tự, còn JPA/Hibernate không thay thế lịch sử migration.
-- Authentication baseline dùng short-lived access token, rotating refresh token, refresh session/server-side revocation và logout revocation; role/ownership, validation và quota phải được thực thi ở backend.
-- Subscription baseline dùng FREE 0, PLUS 49,000 và PRO 99,000 VND/tháng; verified activation, end-of-period expiry, no auto-renew/no partial refund và idempotent duplicate payment processing. Provider cụ thể còn chọn khi tích hợp.
-- Gemini, Azure và payment credential chỉ đến từ cấu hình môi trường/secret store; không commit giá trị thật. Maps chỉ được cấu hình nếu M11 được kích hoạt lại bằng quyết định scope mới.
+- Luồng chuẩn là `React View -> Spring MVC Controller -> Service -> Repository -> Model/Entity -> Database`. Chi tiết package cụ thể chỉ được xác lập khi scaffold và phải tuân theo ranh giới này. AI architecture sử dụng Google Gen AI Java SDK (`com.google.genai:google-genai`) với model `gemini-3.8-flash`, bọc qua `AiClient` interface abstraction; cấu hình timeout + retry cho lỗi tạm thời và không trừ quota khi AI gặp sự cố.
+- SQL Server là source of truth cho dữ liệu nghiệp vụ (triển khai trên Azure SQL Database Serverless). Flyway phải quản lý migration theo thứ tự, còn JPA/Hibernate không thay thế lịch sử migration.
+- Authentication baseline dùng Google Identity Services (`GoogleIdTokenVerifier` ở Backend xác thực ID Token), short-lived JWT access token, rotating refresh token trong HttpOnly Cookie, refresh session/server-side revocation và logout revocation; role/ownership, validation và quota phải được thực thi ở backend.
+- Subscription baseline dùng FREE 0, PLUS 49,000 và PRO 99,000 VND/tháng; verified activation, end-of-period expiry, no auto-renew/no partial refund và idempotent duplicate payment processing. Cổng thanh toán đã chốt là **payOS** (REST API qua Spring `RestClient` + Webhook HMAC-SHA256).
+- Gemini, Azure, Brevo SMTP và payOS credential chỉ đến từ cấu hình môi trường/secret store (local `.env`, GitHub Secrets, Azure App Service Settings); không commit giá trị thật. Maps chỉ được cấu hình nếu M11 được kích hoạt lại bằng quyết định scope mới.
 - API được mô tả bằng OpenAPI và trả lỗi nhất quán; không để frontend suy đoán business rule.
 
 ## Definition of Done cho thay đổi backend

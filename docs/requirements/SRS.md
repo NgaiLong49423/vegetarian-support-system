@@ -1,16 +1,16 @@
-> **Document:** Software Requirements Specification
+> **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v1.0.0
+> **Version:** v1.0.1
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-09-16
+> **Last Updated:** 2026-09-17
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
-# Software Requirements Specification
+# Software Requirements Specification — Mâm Xanh
 
 ## 1. Mục đích và trạng thái tài liệu
 
-Tài liệu này là khung đặc tả gốc (Root Specification) và **Authoritative Registry** cho **Đề tài 03 — Ứng dụng hỗ trợ người ăn chay**. Trong cấu trúc Modular SRS, tài liệu này sở hữu sự tồn tại của requirement, mã định danh ổn định (stable ID), phân bổ module cấp chỉ mục, trạng thái lifecycle chính thức, phạm vi tổng thể, actors, ranh giới hệ thống và tổng quan truy vết.
+Tài liệu này là khung đặc tả gốc (Root Specification) và **Authoritative Registry** cho **Đề tài 03 — Mâm Xanh (Vegetarian Support System)**. Trong cấu trúc Modular SRS, tài liệu này sở hữu sự tồn tại của requirement, mã định danh ổn định (stable ID), phân bổ module cấp chỉ mục, trạng thái lifecycle chính thức, phạm vi tổng thể, actors, ranh giới hệ thống và tổng quan truy vết.
 
 Đặc tả chi tiết hành vi chức năng, quy tắc nghiệp vụ và yêu cầu phi chức năng được quản lý chuyên sâu tại các tài liệu:
 - `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md` (FR chi tiết)
@@ -21,7 +21,7 @@ Tài liệu này là khung đặc tả gốc (Root Specification) và **Authorit
 
 ## 2. Mô tả sản phẩm
 
-Định hướng được người dùng chốt ngày 11/09/2026: **Ứng dụng khám phá món ăn và lập thực đơn chay theo tuần, sử dụng Gemini AI để gợi ý món phù hợp từ các bài công thức đang công khai; người dùng chủ động chọn và thay đổi thực đơn.**
+Định hướng được người dùng chốt ngày 11/09/2026: **Mâm Xanh là ứng dụng khám phá món ăn và lập thực đơn chay theo tuần, sử dụng Gemini AI để gợi ý món phù hợp từ các bài công thức đang công khai; người dùng chủ động chọn và thay đổi thực đơn.**
 
 Luồng lõi: khai báo sở thích → khám phá món → nhận gợi ý AI → chọn món → lưu vào thực đơn tuần → chọn món thay thế khi cần. Bài công thức và tương tác cộng đồng cung cấp nội dung hỗ trợ luồng này. Hệ thống không có loại Blog tổng quát tách khỏi công thức.
 

@@ -1,6 +1,6 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.5.0
+> **Version:** v3.6.0
 > **Created:** 2026-06-29
 > **Last Updated:** 2026-09-17
 > **Status:** Active
@@ -35,7 +35,7 @@ Do not recursively read the repository, all documentation, all skills, old logs 
 | Understand the product | README.md; PRD sections in docs/requirements/PRD.md | SRS headings for the requested capability |
 | Implement/change business behavior | Registered SRS root plus applicable authoritative FR/BR/NFR documents; target code/tests | Related SRS sections and supporting decomposition named by the document register |
 | Frontend | app/frontend/README.md; target feature | Relevant SRS and backend API contract; technology baseline for dependency decisions |
-| Backend | app/vegetarian-system-backend/README.md; target code/tests | Relevant SRS, API contract, database guide |
+| Backend | app/mamxanh-backend/README.md; target code/tests | Relevant SRS, API contract, database guide |
 | Database | database/README.md; affected migrations/model | Relevant SRS and docs/diagrams/ERD/; empty SQL files are not an approved schema |
 | Technologies/integration | Technology-stack or technology-baseline document registered in docs/README.md | Relevant SRS; do not turn provider selection into an unapproved model/architecture |
 | Architecture or trust boundaries | docs/architecture/ARCHITECTURE.md | Relevant SRS and technology stack; do not invent packages, endpoints, tables, deployment topology or AI architecture |

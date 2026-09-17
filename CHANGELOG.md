@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.17.0
+> **Version:** v2.18.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-17
 > **Status:** Active
@@ -9,9 +9,40 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-09-17 — Initial Backend Scaffold and Workflow Setup
+## 2026-09-17 — Finalize Technical Stack Baseline and Adopt Mâm Xanh Brand
 
 **Status:** Working tree — not committed.
+
+**Scope:** Finalize the concrete technical stack baseline (Google Identity Services, Brevo SMTP, payOS, Gemini 3.8 Flash, Azure Cloud, GitHub Student Pack tools) and officially rebrand the application to "Mâm Xanh" (Vegetarian Support System) with updated backend artifact coordinates and documentation.
+
+### Added
+
+- Added official Mâm Xanh brand logo to `image/logo.png`.
+- Added C4 Container Diagram source model and rendered asset under `docs/diagrams/C4 Container Diagram/`.
+- Finalized integration specifications in `docs/architecture/TECHNOLOGY-STACK.md` and `docs/architecture/ARCHITECTURE.md` (v1.4.0):
+  - Google Login: Google Identity Services (GIS) on frontend, Google ID Token verification via `GoogleIdTokenVerifier` in backend.
+  - Transactional Email: Brevo SMTP via `spring-boot-starter-mail`.
+  - Payment Gateway: payOS REST API with VietQR and HMAC-SHA256 signature verification for webhook callbacks.
+  - AI Integration: Google Gemini `gemini-3.8-flash` via official Google Gen AI Java SDK, wrapped in backend `AiClient` abstraction with circuit breaker, timeout, and retry handling.
+  - Deployment Topology: Azure Static Web Apps (frontend), Azure App Service (backend), Azure SQL Database Serverless, and Azure Blob Storage.
+  - Observability: Spring Boot Actuator and Azure Application Insights.
+  - GitHub Student Developer Pack developer tooling: Codecov (test coverage reporting), Testmail (automation mailbox testing), Requestly Pro (API mocking/interception), and custom `.tech` domain.
+
+### Changed
+
+- Adopted "Mâm Xanh" brand name across project documentation, including `README.md`, `docs/requirements/PRD.md`, and `docs/requirements/SRS.md`.
+- Renamed backend module from `app/vegetarian-system-backend/` to `app/mamxanh-backend/` with Maven coordinates `tech.mamxanh:mamxanh-backend`.
+- Refactored backend package structure to `tech.mamxanh`, renaming the main Spring Boot application to `tech.mamxanh.MamXanhApplication`.
+- Updated backend documentation in `app/mamxanh-backend/README.md` and repository registers in `docs/README.md` and `AGENTS.md` to reflect the new backend module path.
+
+### Fixed
+
+- Resolved test suite package mismatch and excluded unconfigured `DataSourceAutoConfiguration` and `FlywayAutoConfiguration` for smoke test suite in `MamXanhApplicationTests`.
+- Removed stale draw.io backup file artifacts from `docs/diagrams/C4 Container Diagram/`.
+
+## 2026-09-17 — Initial Backend Scaffold and Workflow Setup
+
+**Status:** Committed — 7880900.
 
 **Scope:** Initialize the Java 21 and Spring Boot backend workspace under `app/vegetarian-system-backend/`, add GitHub Actions release source verification, and update workspace documentation and repository registers.
 
