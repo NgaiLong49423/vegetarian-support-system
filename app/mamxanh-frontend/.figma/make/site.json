@@ -1,0 +1,12 @@
+{
+  "title": "Mâm Xanh - Hệ Thống Hỗ Trợ Ăn Chay",
+  "language": "vi",
+  "description": "Hệ thống hỗ trợ lối sống ăn chay cân bằng, lành mạnh và dễ tiếp cận.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
