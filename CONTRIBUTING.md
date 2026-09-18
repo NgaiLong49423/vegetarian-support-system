@@ -108,6 +108,7 @@ PR chỉ được merge vào `develop` khi toàn bộ checklist sau đạt:
 
 ### Đồng bộ GitHub Projects và Issue
 
+* Bảng theo dõi tiến độ chính của dự án đặt tại [GitHub Project #15 (Vegetarian Support System — SWP391)](https://github.com/users/NgaiLong49423/projects/15).
 * Không bật workflow tổng quát `Pull request merged -> Done` nếu nó không lọc được nhánh đích `main`; merge feature vào `develop` sẽ làm Issue Done quá sớm.
 * Chỉ dùng automation đóng Issue khi trạng thái `Done` đã được thiết kế để xảy ra sau merge vào `main`.
 

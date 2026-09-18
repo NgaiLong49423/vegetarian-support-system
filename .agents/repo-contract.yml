@@ -65,6 +65,12 @@ progress:
   source: GitHub Issues and Projects
   evidence: linked Pull Requests
   local_reports: false
+  github_project:
+    name: "Vegetarian Support System — SWP391"
+    owner: "NgaiLong49423"
+    number: 15
+    id: "PVT_kwHOCcGJZc4Bjt8o"
+    url: "https://github.com/users/NgaiLong49423/projects/15"
 agent_paths:
   skills: .agents/skills/
   workflows: .agents/workflows/

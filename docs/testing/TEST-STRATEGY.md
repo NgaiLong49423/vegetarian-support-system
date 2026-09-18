@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.3.0
+> **Version:** v1.4.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-17
+> **Last Updated:** 2026-09-18
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -38,11 +38,17 @@ Hành vi mong đợi chi tiết được xác định trong [SRS](../requirement
 Việc kiểm thử nên ưu tiên:
 
 - Ranh giới authorization giữa Guest/Member/Administrator và ownership của Member.
-- Profile validation Recipe Post: title 3–120, ingredients 1–50, serving 1–50, prep/cook 0–1.440 và tổng > 0, instructions 10–5.000 ký tự tự do, description 2.000, tối đa 1 ảnh JPEG/PNG/WebP 5 MB và một YouTube link; công khai trực tiếp và quyền sửa/xóa; không có bộ đếm Like.
+- Profile validation Recipe Post: title 3–120 ký tự, ingredients 1–50 mục, serving 1–50 người, prep/cook 0–1.440 phút và tổng > 0, description tối đa 2.000 ký tự, một YouTube link hợp lệ (tùy chọn); công khai trực tiếp và quyền sửa/xóa; không có bộ đếm Like.
+- Kiểm thử cấu trúc các bước thực hiện (`RECIPE_STEP`): bắt buộc 1–30 bước, mỗi bước có nội dung 10–2.000 ký tự (tiêu đề tùy chọn $\le 120$ ký tự), thứ tự liên tục $1..N$; kiểm thử nghiệp vụ thêm, sửa, xóa và kéo thả / thay đổi vị trí (`step_order`) không để lại khoảng trống hoặc trùng lặp số thứ tự.
+- Quản lý bộ sưu tập hình ảnh (`RECIPE_MEDIA`): kiểm thử tải lên 0–5 ảnh (JPEG/PNG/WebP/GIF, tối đa 5 MB/ảnh) qua Azure Blob Storage, bắt buộc chỉ định đúng 1 ảnh đại diện (`is_cover = true`), thứ tự hiển thị `media_order` 1..5; tự động dọn rác ảnh mồ côi khi hủy soạn thảo hoặc xóa ảnh.
+- Cổng kiểm định xuất bản về nguyên liệu và đơn vị quy đổi (`UNIT`, `INGREDIENT_UNIT_CONVERSION`): số lượng bắt buộc là số thực dương > 0, loại bỏ hoàn toàn "vừa đủ"; nếu tổ hợp nguyên liệu + đơn vị cần quy đổi sang gram mà chưa có conversion trong hệ thống thì chặn publish (Validation Error với thông báo rõ ràng).
+- Kiểm thử đánh giá công thức (`RECIPE_RATING`): thang điểm 1–5 sao, chỉ Member đã đăng nhập mới được đánh giá, mỗi Member chỉ được 1 đánh giá/công thức (có thể cập nhật), tác giả không được tự đánh giá bài của chính mình; Guest chỉ có quyền xem điểm TB và số lượt đánh giá; kiểm tra chống IDOR/tampering điểm số.
+- Kiểm thử theo dõi lượt xem (`RECIPE_VIEW`): cơ chế chống trùng lặp trong cửa sổ 30 phút theo IP hash / Session ID / Member ID; cập nhật bộ đếm bất đồng bộ không nghẽn luồng đọc công thức; kiểm tra tính chính xác của dữ liệu tổng hợp 24h, 7 ngày, 30 ngày và toàn thời gian.
+- Kiểm thử 6 chế độ khám phá/sắp xếp công thức: Mới nhất, Đánh giá cao nhất (kèm số lượt đánh giá), Xem nhiều nhất (theo 4 mốc thời gian), Bình luận nhiều nhất, Hoạt động sôi nổi nhất (BR-71, tương tác gần 7 ngày không phân rã), và Thịnh hành (BR-72, tương tác có phân rã thời gian theo công thức trọng số); đảm bảo truy vấn SQL không dùng AI, tối ưu chỉ mục và giới hạn độ trễ $\le 3$s.
 - Quyền riêng tư của report, quy tắc chống report đang mở bị trùng và ghi trực tiếp kết quả moderation vào Report.
 - Tính độc lập giữa Saved Recipe/Meal Planner/Shopping history, giữ unavailable/tombstone khi bài nguồn không khả dụng, các meal type và chống dữ liệu trùng.
 - Phân quyền tính năng AI theo gói Subscription (Free: AI Chatbot, Plus: Soạn bài & Biến tấu, Pro: Lập thực đơn tuần), Guest dùng AI Chatbot có technical rate limit chống spam, telemetry token không raw prompt và retention 90 ngày.
-- Điều kiện dùng chức năng dinh dưỡng, quy đổi khẩu phần, công khai dữ liệu thiếu và cấm bịa hoặc diễn giải theo hướng chẩn đoán.
+- Điều kiện dùng chức năng dinh dưỡng, quy đổi khẩu phần qua `INGREDIENT_UNIT_CONVERSION`, công khai dữ liệu thiếu và cấm bịa hoặc diễn giải theo hướng chẩn đoán.
 - Validation ảnh cover, tính nhất quán của reference, lỗi YouTube embed và xử lý error của external provider.
 - M11/Google Maps là `OUT_OF_SCOPE`, không có test scope hoặc release gate trong baseline hiện tại.
 - Xác minh payment trước khi kích hoạt feature entitlement, expiry cuối kỳ, FREE/PLUS/PRO ở 0/49,000/99,000 VND/tháng, no auto-renew/no partial refund và idempotency cho duplicate processing.

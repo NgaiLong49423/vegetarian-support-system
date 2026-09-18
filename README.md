@@ -1,8 +1,8 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.8.0
+> **Version:** v0.8.1
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-17
+> **Last Updated:** 2026-09-18
 > **Status:** Active
 
 # Mâm Xanh — Vegetarian Support System
@@ -43,7 +43,7 @@ Xem chi tiết trong [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) v
 ```text
 .
 ├── app/
-│   ├── frontend/
+│   ├── mamxanh-frontend/
 │   └── mamxanh-backend/
 ├── database/
 ├── docs/
@@ -61,7 +61,7 @@ Xem chi tiết trong [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) v
 └── CHANGELOG.md
 ```
 
-`app/frontend` và các file SQL trong `database/` hiện là điểm giữ chỗ có chủ đích; backend đã có scaffold thực tế tại `app/mamxanh-backend/`.
+Các file SQL trong `database/` hiện là điểm giữ chỗ có chủ đích; backend đã có scaffold thực tế tại `app/mamxanh-backend/` và `app/mamxanh-frontend` .
 
 ## Nguồn tài liệu
 
@@ -96,7 +96,51 @@ Chưa có source code hoặc build manifest (`pom.xml`, `package.json`) để cu
 
 ## Thành viên
 
-Nhóm gồm 5 thành viên. Tên tài khoản GitHub, phạm vi chính và người backup được quản lý trong GitHub Project/Team, không hard-code khi chưa được nhóm xác nhận. Trách nhiệm chung và cơ chế ra quyết định nằm trong [ADR-002](docs/decisions/002-five-member-team-operating-agreement.md).
+Dự án được phát triển bởi nhóm 5 thành viên (SWP391):
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="20%">
+        <a href="https://github.com/NgaiLong49423">
+          <img src="https://github.com/NgaiLong49423.png?size=100" width="80" height="80" alt="Ngo Gia Long" style="border-radius: 50%;" /><br />
+          <sub><b>Ngo Gia Long</b></sub>
+        </a><br />
+        <sub><a href="https://github.com/NgaiLong49423">@NgaiLong49423</a></sub>
+      </td>
+      <td align="center" width="20%">
+        <a href="https://github.com/TonyDuongg">
+          <img src="https://github.com/TonyDuongg.png?size=100" width="80" height="80" alt="Nguyen Hai Duong" style="border-radius: 50%;" /><br />
+          <sub><b>Nguyen Hai Duong</b></sub>
+        </a><br />
+        <sub><a href="https://github.com/TonyDuongg">@TonyDuongg</a></sub>
+      </td>
+      <td align="center" width="20%">
+        <a href="https://github.com/ngocthom2212">
+          <img src="https://github.com/ngocthom2212.png?size=100" width="80" height="80" alt="Dương Thị Ngọc Thơm" style="border-radius: 50%;" /><br />
+          <sub><b>Dương Thị Ngọc Thơm</b></sub>
+        </a><br />
+        <sub><a href="https://github.com/ngocthom2212">@ngocthom2212</a></sub>
+      </td>
+      <td align="center" width="20%">
+        <a href="https://github.com/Gao2511">
+          <img src="https://github.com/Gao2511.png?size=100" width="80" height="80" alt="Gao2511" style="border-radius: 50%;" /><br />
+          <sub><b>Gao2511</b></sub>
+        </a><br />
+        <sub><a href="https://github.com/Gao2511">@Gao2511</a></sub>
+      </td>
+      <td align="center" width="20%">
+        <a href="https://github.com/onlyKaizz">
+          <img src="https://github.com/onlyKaizz.png?size=100" width="80" height="80" alt="Truong Van Khai" style="border-radius: 50%;" /><br />
+          <sub><b>Truong Van Khai</b></sub>
+        </a><br />
+        <sub><a href="https://github.com/onlyKaizz">@onlyKaizz</a></sub>
+      </td>
+    </tr>
+  </table>
+</div>
+
+Phạm vi chính, phân công công việc và người backup được quản lý trong [GitHub Project #15 (Vegetarian Support System — SWP391)](https://github.com/users/NgaiLong49423/projects/15). Trách nhiệm chung và cơ chế ra quyết định nằm trong [ADR-002](docs/decisions/002-five-member-team-operating-agreement.md).
 
 ## License
 
