@@ -1,8 +1,8 @@
 > **Document:** Use Case Diagram Workspace Guide  
 > **File:** `docs/diagrams/UseCase/README.md`  
-> **Version:** v1.0.0  
+> **Version:** v1.1.0  
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-12  
+> **Last Updated:** 2026-09-18  
 > **Status:** Active  
 
 # Use Case Diagram - Sơ Đồ Ca Sử Dụng
@@ -15,23 +15,35 @@
 * Định hình rõ phạm vi ranh giới của dự án (System Boundary).
 * Làm cơ sở để viết bảng yêu cầu chức năng (FR) trong đặc tả yêu cầu dự án.
 
+## Sơ Đồ Ca Sử Dụng Tổng Thể (System Use Case Diagram)
+
+Dưới đây là sơ đồ ca sử dụng tổng thể của hệ thống Mâm Xanh (Vegetarian Support Application), mô hình hóa tương tác của 3 tác nhân chính (**Guest**, **Member**, **Administrator**) với các phân hệ chức năng:
+
+![Use Case Diagram - Vegetarian Support Application](./usecase-vegetarian-support-application.drawio.png)
+
+* Tệp nguồn Draw.io có thể mở và chỉnh sửa trực tiếp: [usecase-vegetarian-support-application.drawio](./usecase-vegetarian-support-application.drawio)
+* Các thành viên có thể mở trực tiếp bằng extension Draw.io trên VS Code hoặc tại [Draw.io](https://app.diagrams.net/).
+
+---
+
 ## Thành Phần Cơ Bản
 
-* **Actor (Tác nhân):** Là người dùng hoặc hệ thống bên ngoài tương tác trực tiếp với ứng dụng (ví dụ: User, Admin, Staff).
-* **Use Case (Ca sử dụng):** Một chức năng cụ thể mà actor có thể thực hiện trên hệ thống để đạt được một mục tiêu nào đó (ví dụ: Đăng nhập, Đặt lịch).
+* **Actor (Tác nhân):** Là người dùng hoặc hệ thống bên ngoài tương tác trực tiếp với ứng dụng (ví dụ: Guest, Member, Administrator).
+* **Use Case (Ca sử dụng):** Một chức năng cụ thể mà actor có thể thực hiện trên hệ thống để đạt được một mục tiêu nào đó (ví dụ: Đăng ký/Đăng nhập, Khám phá công thức, Đánh giá sao, Lập thực đơn).
 * **System Boundary (Ranh giới hệ thống):** Khung giới hạn hiển thị phạm vi của ứng dụng, các use case sẽ nằm bên trong và các actor nằm bên ngoài ranh giới này.
-* **Include (Quan hệ bao gồm):** Thể hiện một use case bắt buộc phải chạy qua một use case khác (ví dụ: Đặt lịch hẹn thì *bao gồm* việc xác thực tài khoản).
-* **Extend (Quan hệ mở rộng):** Thể hiện một use case phụ chỉ xảy ra dưới một điều kiện cụ thể (ví dụ: Đặt lịch hẹn thành công thì có thể chọn *mở rộng* thêm là Gửi email thông báo).
+* **Include (Quan hệ bao gồm):** Thể hiện một use case bắt buộc phải chạy qua một use case khác (ví dụ: Đăng bài công thức thì *bao gồm* việc xác thực đăng nhập Member).
+* **Extend (Quan hệ mở rộng):** Thể hiện một use case phụ chỉ xảy ra dưới một điều kiện cụ thể (ví dụ: Soạn bài viết thì có thể chọn *mở rộng* thêm là Sử dụng AI gợi ý các bước nấu).
 
 ## Quy Tắc Đặt Tên File
 
-Các file sơ đồ Use Case nên được đặt tên phân loại theo module hoặc vai trò người dùng:
+Các file sơ đồ Use Case được đặt tên phân loại theo module hoặc sơ đồ tổng thể:
 ```text
 usecase-[ten-module-viet-lien-khong-dau].drawio
 usecase-[ten-module-viet-lien-khong-dau].png
 ```
 
 Ví dụ cụ thể:
+* `usecase-vegetarian-support-application.drawio` (sơ đồ Use Case tổng thể toàn hệ thống)
 * `usecase-auth.drawio` (sơ đồ Use Case phân quyền & đăng nhập)
 * `usecase-meal-planner.png` (sơ đồ Use Case chức năng lập lịch ăn)
 

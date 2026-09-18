@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.21.0
+> **Version:** v2.22.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-18
 > **Status:** Active
@@ -8,6 +8,51 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-18 — Restore Steps and Media, Add Rating, View Tracking, Unit Conversion, and Multi-Mode Discovery
+
+**Status:** Committed.
+
+**Scope:** Realign the entire project documentation suite (PRD, SRS, Functional Requirements, Business Rules, Non-Functional Requirements, ERD Documentation, Architecture, and Test Strategy) to reflect newly confirmed business decisions: restore sequential cooking steps (`RECIPE_STEP`, 1–30 steps, reorderable, reactivating `FR-22`), restore recipe media gallery (`RECIPE_MEDIA`, 0–5 images with exactly 1 cover image), add recipe rating (`RECIPE_RATING`, 1–5 stars, authenticated Member only, 1 per recipe, editable, author excluded, Guest view-only, `FR-57`, `BR-69`), add recipe view tracking (`RECIPE_VIEW`, 30-minute deduplication window, 24h/7d/30d/all-time stats, `FR-58`, `BR-70`), define 6 discovery/sorting modes (Newest, Highest Rated, Most Viewed, Most Commented, Most Active `BR-71` via 7-day raw interactions, and Trending `BR-72` via freshness decay, non-AI based), standardize unit and conversion management (`UNIT`, `INGREDIENT_UNIT_CONVERSION`, `BR-73`) with strict elimination of qualitative terms like "vừa đủ" and a mandatory validation gate blocking publish if required conversion to gram is missing, and expand conceptual ERD baseline from 17 to exactly 23 entities.
+
+### Added
+
+- Added `FR-57` ("Đánh giá công thức nấu ăn bằng thang điểm sao (Recipe Rating)"): allows authenticated Members to rate recipes (1–5 stars), updates rating aggregates (`average_rating`, `rating_count`), prevents author self-rating, limits to 1 rating per user per recipe (editable), and grants Guests view-only access.
+- Added `FR-58` ("Ghi nhận và tổng hợp lượt xem công thức (Recipe View Tracking)"): logs recipe view events with a 30-minute deduplication window per viewer session/IP/Member, updates view count asynchronously, and aggregates stats across 24h, 7 days, 30 days, and all-time.
+- Added Business Rules:
+  - `BR-69` ("Quy tắc đánh giá và tính điểm xếp hạng công thức (Recipe Rating)"): 1–5 integer stars, 1 rating per user/recipe, author self-rating prohibited, guest view-only.
+  - `BR-70` ("Quy tắc ghi nhận lượt xem và chống trùng lặp (Recipe View Tracking & Deduplication)"): 30-minute deduplication window per viewer identity, asynchronous counter flush.
+  - `BR-71` ("Quy tắc xếp hạng công thức hoạt động sôi nổi nhất (Most Active Recipe Ranking)"): calculated from 7-day raw interactions ($V_{7d} + 5 \times C_{7d} + 10 \times R_{7d}$) without freshness time decay.
+  - `BR-72` ("Quy tắc xếp hạng công thức thịnh hành (Trending Recipe Ranking)"): calculated by scoring recent interactions scaled by a freshness decay factor ($\text{Score} / (T_{\text{age\_hours}} + 2)^\gamma$).
+  - `BR-73` ("Quy tắc chuẩn hóa đơn vị đo lường và cổng kiểm định quy đổi nguyên liệu (Unit & Conversion Gate)"): mandates positive numeric quantities ($>0$), eliminates "vừa đủ", standardizes dimensions (`MASS`, `VOLUME`, `COUNT`), and strictly blocks publishing if inter-dimension conversion to gram is missing in `INGREDIENT_UNIT_CONVERSION`.
+- Added Non-AI Ranking Architecture constraint to `docs/architecture/ARCHITECTURE.md` (Section 6) establishing that all 6 discovery/sorting modes and view tracking run via relational SQL queries and scheduled aggregations without AI, recommendation engines, vector databases, or Redis/Kafka.
+- Added testing priorities in `docs/testing/TEST-STRATEGY.md` (Section 4) covering step reordering, 0–5 media with single cover validation, unit conversion publish gate rejection, rating authorization and anti-tampering, view deduplication window, and Most Active vs. Trending score calculations.
+
+### Changed
+
+- Updated `docs/requirements/PRD.md` to v1.3.0: expanded core entity baseline to 23 entities, added recipe steps (1–30), media gallery (0–5 images with 1 cover), ratings, view tracking, 6 discovery/sorting modes, and ingredient unit conversion gate.
+- Updated `docs/requirements/SRS.md` to v1.3.0:
+  - Expanded conceptual baseline to 23 entities in Section 3.3.
+  - Updated Section 3.1, 3.4, 3.5, 3.6, 3.7, 3.9, and Question Baseline Section 3.20 (Q01, Q05, Q06, Q07, Q16, Q18, Q20, Q23, Q25).
+  - Updated Section 5 Module descriptions (M01, M03, M06).
+  - Updated Section 7.2 Functional Requirements Registry (reactivated FR-22; added FR-57, FR-58).
+  - Updated Section 8.2 Business Rules Registry (updated BR-14, BR-19, BR-20, BR-48; added BR-69, BR-70, BR-71, BR-72, BR-73).
+  - Updated Section 12 Traceability Matrix to map all 23 entities to requirements.
+- Updated `docs/requirements/srs/BUSINESS-RULES.md` to v1.3.0: updated BR-14, BR-19, BR-20, BR-48 and added full specifications for BR-69 through BR-73.
+- Updated `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md` to v1.3.0:
+  - Updated `FR-01` to include recipe rating view-only, view count, 6 discovery modes, cover image, and sequential steps.
+  - Updated `FR-04`, `FR-14`, `FR-16`, `FR-17`, `FR-18`, `FR-19`, `FR-20`, `FR-21`, `FR-25`, `FR-39`, `FR-44`, `FR-51`, `FR-54` to incorporate 1–30 steps, 0–5 media with 1 cover, numeric quantities, unit conversion publish validation gate, and rating/view presentation.
+  - Reactivated `FR-22` ("Thao tác chỉnh sửa và sắp xếp bước hướng dẫn chuẩn bị/chế biến") from `RETIRED` to `ACTIVE` with full specification for step CRUD and drag-and-drop / numeric reordering.
+  - Appended detailed technical specifications for `FR-57` and `FR-58`.
+- Updated `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md` to v1.2.0: updated NFR-02 (indexing for 6 sorting modes), NFR-05 (handling high write throughput for recipe views under 50 CCU), and NFR-10 (security boundaries for steps, media, rating, and view tracking).
+- Updated `docs/diagrams/ERD/README.md` to v1.4.0: expanded conceptual data model from 17 to 23 entities (`RECIPE_STEP`, `RECIPE_MEDIA`, `RECIPE_RATING`, `RECIPE_VIEW`, `UNIT`, `INGREDIENT_UNIT_CONVERSION`), removing `recipe_step` and `recipe_media` from the removed entity catalog, and documented the full 37-relationship and cardinality matrix synchronized with `conceptual-erd-v1.0.0.drawio`.
+- Updated `docs/diagrams/UseCase/README.md` to v1.1.0: embedded and linked the system-wide use case diagram `usecase-vegetarian-support-application.drawio.png`.
+- Updated `docs/architecture/ARCHITECTURE.md` to v1.6.0: updated media storage boundaries (0–5 images, Azure Blob Storage, SQL Server `RECIPE_MEDIA`) and added Non-AI Ranking Architecture.
+- Updated `docs/testing/TEST-STRATEGY.md` to v1.4.0: aligned test priorities with step reordering, media constraints, unit conversion validation gate, rating constraints, view deduplication, and discovery mode ranking.
+
+### Reactivated
+
+- Reactivated `FR-22` ("Thao tác chỉnh sửa và sắp xếp bước hướng dẫn chuẩn bị/chế biến") from `RETIRED` back to `ACTIVE` lifecycle state following the team's decision to restore structured, sequential recipe cooking steps (1–30 steps) with drag-and-drop and order manipulation.
 
 ## 2026-09-18 — Add C4 Container Guide and Standardize Conceptual ERD Documentation
 

@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v1.2.0
+> **Version:** v1.3.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-17
+> **Last Updated:** 2026-09-18
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -10,7 +10,7 @@
 
 ## 1. Mục đích và thẩm quyền tài liệu
 
-Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Business Rules (`BR-01` đến `BR-68`) của Requirements Baseline v1.0.0.
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Business Rules (`BR-01` đến `BR-73`) của Requirements Baseline v1.0.0 (cập nhật v1.3.0).
 
 Khung đặc tả gốc và **Authoritative Registry** cho sự tồn tại của quy tắc, mã định danh ổn định (stable ID), và trạng thái vòng đời (lifecycle state) chính thức được duy trì tập trung tại `docs/requirements/SRS.md`.
 
@@ -142,11 +142,11 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-14"></a>
-### BR-14 — Quy tắc định lượng và tổng hợp Shopping List an toàn
+### BR-14 — Quy tắc định lượng nguyên liệu số học và tổng hợp Shopping List an toàn theo đơn vị chuẩn
 
 - **Mã quy tắc:** BR-14
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Dòng nguyên liệu dùng “vừa đủ” không yêu cầu số lượng/đơn vị, không lưu số giả và không được cộng số. Shopping List chỉ gom các dòng cùng `ingredientId`; cho phép quy đổi `g ↔ kg` và `ml ↔ l`; đơn vị khác chỉ gom khi giống hệt. Không suy diễn mass ↔ volume hoặc `piece` ↔ mass/volume.
+- **Nội dung:** Bãi bỏ hoàn toàn khái niệm "vừa đủ" hoặc để trống định lượng. Mọi dòng nguyên liệu bắt buộc phải có số lượng số học dương (`quantity > 0`) và đơn vị đo lường hợp lệ thuộc danh mục `UNIT` (`MASS`, `VOLUME`, `COUNT`). Shopping List chỉ gom các dòng cùng `ingredientId`. Tự động quy đổi trong cùng thứ nguyên: `g ↔ kg` ($1\text{ kg} = 1.000\text{ g}$) và `ml ↔ l` ($1\text{ l} = 1.000\text{ ml}$). Quy đổi khác thứ nguyên (ví dụ `COUNT` dạng quả/củ hoặc `VOLUME` dạng muỗng/thìa/ml sang khối lượng `g`) BẮT BUỘC phải dựa trên bảng tỷ lệ quy đổi cụ thể của nguyên liệu đó trong `INGREDIENT_UNIT_CONVERSION`. Nếu nguyên liệu chưa có tỷ lệ quy đổi trong hệ thống, xem BR-73 về quy tắc chặn xuất bản; trên Shopping List nếu có các dòng không quy đổi được, hệ thống giữ nguyên các dòng riêng rẽ, tuyệt đối không suy diễn tùy tiện hay cộng dồn sai lệch.
 
 ---
 
@@ -187,23 +187,32 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-19"></a>
-### BR-19 — Điều kiện bắt buộc để công khai Recipe Post
+### BR-19 — Điều kiện bắt buộc để công khai Recipe Post (1–30 RECIPE_STEP, 0..5 RECIPE_MEDIA, đơn vị quy đổi hợp lệ)
 
 - **Mã quy tắc:** BR-19
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Recipe Post chỉ được công khai khi Member đã đăng nhập và đạt đúng profile: title 3–120 ký tự; 1–50 nguyên liệu; serving 1–50; prep và cook time mỗi giá trị 0–1.440 phút, tổng > 0 (`cookTime = 0` hợp lệ nếu `prepTime > 0`); bắt buộc có nội dung hướng dẫn chuẩn bị/chế biến (`instructions`) không rỗng sau khi cắt khoảng trắng đầu cuối (trim), độ dài từ 10 đến 5.000 ký tự (dạng văn bản tự do); description tối đa 2.000 ký tự (tùy chọn); tối đa 1 ảnh đại diện JPEG/PNG/WebP dung lượng $\le 5$ MB (tùy chọn); tối đa một YouTube link (tùy chọn). Bài không đạt validation không được công khai và không được lưu nháp bền vững trên máy chủ trong phạm vi hiện tại.
+- **Nội dung:** Recipe Post chỉ được công khai khi Member đã đăng nhập và đạt đúng profile validation bắt buộc:
+  1. Tiêu đề (`title`): 3–120 ký tự.
+  2. Nguyên liệu (`ingredients`): 1–50 dòng. Mỗi dòng bắt buộc: tên/liên kết nguyên liệu, định lượng số học dương (`quantity > 0`), và đơn vị đo lường hợp lệ thuộc `UNIT`. Cấm tuyệt đối giá trị phi số học ("vừa đủ").
+  3. Ràng buộc quy đổi đơn vị: Nếu nguyên liệu sử dụng đơn vị cần quy đổi sang gam (để tính dinh dưỡng hoặc tổng hợp danh sách mua sắm) mà chưa có tỷ lệ quy đổi tương ứng trong `INGREDIENT_UNIT_CONVERSION` (ví dụ: dùng đơn vị đếm `COUNT` dạng quả/củ/trái hoặc đơn vị thể tích dạng muỗng/thìa/ml sang gam mà nguyên liệu chưa được cấu hình hệ số), hệ thống **BẮT BUỘC CHẶN XUẤT BẢN (Validation Error)**. Không cho phép công khai bài viết khi thiếu dữ liệu quy đổi (BR-73).
+  4. Hướng dẫn chuẩn bị/chế biến: Bắt buộc từ 1 đến 30 bước tuần tự (`RECIPE_STEP`). Mỗi bước có thứ tự (`step_order` từ 1..N) và nội dung độc lập từ 10 đến 2.000 ký tự (sau khi trim). Bãi bỏ hoàn toàn trường instructions văn bản tự do duy nhất.
+  5. Khẩu phần (`serving`): 1–50.
+  6. Thời gian: `prepTime` và `cookTime` mỗi giá trị 0–1.440 phút, tổng thời gian > 0 (`cookTime = 0` hợp lệ nếu `prepTime > 0`).
+  7. Phân loại ăn chay: Chọn 1 trong 4 loại chuẩn (Vegan, Lacto Vegetarian, Ovo Vegetarian, Lacto-Ovo Vegetarian).
+  8. Mô tả giới thiệu (`description`): Tối đa 2.000 ký tự (tùy chọn).
+  9. Media: Tối đa 5 ảnh trên mỗi bài công thức (`RECIPE_MEDIA`), định dạng JPEG/PNG/WebP, dung lượng $\le 5$ MB/ảnh (tùy chọn). Nếu bài có từ 1 ảnh trở lên, **BẮT BUỘC phải có đúng 1 ảnh được đánh dấu làm ảnh bìa (`is_cover = true`)**. Đường dẫn YouTube (tối đa 1 link tùy chọn) được lưu trực tiếp trên Recipe Post.
 - **Cơ chế thực thi và xử lý khi không đạt chuẩn (FE & BE):**
-  - **Tầng Máy chủ (Backend — bắt buộc & quyết định):** Toàn bộ quy tắc thẩm định bắt buộc phải được thực thi độc lập tại Backend API (NFR-10). Máy chủ tuyệt đối không tin cậy dữ liệu máy khách; nếu request gửi lên có bất kỳ trường nào không đạt chuẩn (ví dụ: thiếu hướng dẫn chế biến hoặc nội dung hướng dẫn rỗng sau khi trim), máy chủ từ chối yêu cầu công khai/cập nhật và **tuyệt đối không tạo bất kỳ bản ghi dở dang nào vào cơ sở dữ liệu** (phù hợp với FR-24 là OUT_OF_SCOPE).
+  - **Tầng Máy chủ (Backend — bắt buộc & quyết định):** Toàn bộ quy tắc thẩm định bắt buộc phải được thực thi độc lập tại Backend API (NFR-10). Máy chủ tuyệt đối không tin cậy dữ liệu máy khách; nếu request gửi lên có bất kỳ trường nào không đạt chuẩn (ví dụ: thiếu bước nấu, thiếu ảnh bìa khi có upload ảnh, hoặc nguyên liệu chưa có tỷ lệ quy đổi sang gam), máy chủ từ chối yêu cầu công khai/cập nhật và **tuyệt đối không tạo bất kỳ bản ghi dở dang nào vào cơ sở dữ liệu** (phù hợp với FR-24 là OUT_OF_SCOPE).
   - **Tầng Giao diện (Frontend — tối ưu trải nghiệm người dùng):** Giao diện thực hiện kiểm tra trước để phản hồi tức thì; khi dữ liệu không đạt chuẩn, giao diện giữ lại toàn bộ nội dung đã nhập trong biểu mẫu và hiển thị thông báo lỗi cụ thể để người dùng tiếp tục chỉnh sửa mà không bị mất dữ liệu. Việc giữ nội dung biểu mẫu là hành vi giao diện người dùng tạm thời, không tạo bất kỳ lưu nháp nào trên máy chủ.
 
 ---
 
 <a id="br-20"></a>
-### BR-20 — Tính tùy chọn của mô tả giới thiệu và ảnh đại diện
+### BR-20 — Tính tùy chọn của mô tả giới thiệu và ảnh đại diện (tối đa 5 ảnh, đúng 1 ảnh bìa)
 
 - **Mã quy tắc:** BR-20
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Mô tả giới thiệu, ảnh đại diện (tối đa 1 ảnh) và đường dẫn YouTube (tối đa 1 link) là tùy chọn khi tạo và công khai bài công thức; bài không có ảnh dùng ảnh mặc định theo phân loại ăn chay. Thời gian nấu (`cookTime`) được phép bằng 0 đối với món không cần nấu nếu thời gian chuẩn bị (`prepTime`) lớn hơn 0 và tổng thời gian thỏa mãn quy định.
+- **Nội dung:** Mô tả giới thiệu, thư viện ảnh (0..5 ảnh trong `RECIPE_MEDIA`) và đường dẫn YouTube (tối đa 1 link) là tùy chọn khi tạo và công khai bài công thức. Khi bài có từ 1 đến 5 ảnh, bắt buộc có đúng 1 ảnh được chọn làm ảnh bìa (cover image) để hiển thị trên thẻ món; bài không có ảnh nào (0 ảnh) sẽ dùng ảnh mặc định của hệ thống theo phân loại ăn chay. Thời gian nấu (`cookTime`) được phép bằng 0 đối với món không cần nấu nếu thời gian chuẩn bị (`prepTime`) lớn hơn 0 và tổng thời gian thỏa mãn quy định.
 
 ---
 
@@ -451,11 +460,14 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-48"></a>
-### BR-48 — Xử lý nguyên liệu thiếu định lượng hoặc thiếu số liệu dinh dưỡng
+### BR-48 — Xử lý nguyên liệu thiếu số liệu dinh dưỡng và chặn công khai khi thiếu quy đổi đơn vị
 
 - **Mã quy tắc:** BR-48
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Nguyên liệu thiếu định lượng, dùng “vừa đủ”, không quy đổi được hoặc chưa có dữ liệu dinh dưỡng không được tự tính là 0. Hệ thống phải đánh dấu kết quả chưa đầy đủ và AI không được che giấu hoặc tự bù dữ liệu thiếu.
+- **Nội dung:**
+  - Dinh dưỡng món ăn được tính từ lượng khối lượng (gam) của từng nguyên liệu nhân với bảng giá trị dinh dưỡng trên 100g.
+  - **Ràng buộc quy đổi đơn vị (Publish Gate):** Đơn vị đo lường của nguyên liệu bắt buộc phải quy đổi được ra gam. Nếu đơn vị nguyên liệu chưa có tỷ lệ quy đổi ra gam trong `INGREDIENT_UNIT_CONVERSION` (và không phải là đơn vị khối lượng `MASS` g/kg), hệ thống **BẮT BUỘC CHẶN CÔNG KHAI BÀI VIẾT (Validation Error)** theo BR-19 và BR-73, tuyệt đối không cho phép công khai khi thiếu tỷ lệ quy đổi.
+  - **Dữ liệu dinh dưỡng trong catalog:** Trường hợp nguyên liệu đã có định lượng và quy đổi gam hợp lệ, nhưng bản thân nguyên liệu đó chưa được định nghĩa trong danh mục 9 chỉ tiêu dinh dưỡng của hệ thống: hệ thống vẫn cho phép công khai bài viết (BR-50), nhưng bài viết sẽ được gắn cờ hiển thị "Chưa đủ dữ liệu dinh dưỡng", không được AI đưa vào thực đơn dinh dưỡng chuẩn (BR-40) và tuyệt đối không được tự động gán các chỉ tiêu dinh dưỡng bằng 0.
 
 ---
 
@@ -636,3 +648,85 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 - **Mã quy tắc:** BR-68
 - **Trạng thái (Derived):** OUT_OF_SCOPE
 - **Nội dung:** Ràng buộc lịch sử: nếu M11 được đưa lại vào scope bằng một quyết định và phân rã mới, đề xuất cũ chỉ nhận bán kính 500 m, 1 km, 5 km hoặc 10 km; giá trị khác bị từ chối trước khi gọi Google Maps Platform.
+
+---
+
+<a id="br-69"></a>
+### BR-69 — Đánh giá chất lượng bài công thức từ 1 đến 5 sao (RECIPE_RATING)
+
+- **Mã quy tắc:** BR-69
+- **Trạng thái (Derived):** ACTIVE
+- **Nội dung:**
+  - Guest chỉ được xem điểm đánh giá trung bình (`average_rating`) và tổng số lượt đánh giá (`rating_count`), tuyệt đối không được gửi đánh giá điểm sao.
+  - Chỉ Member đã đăng nhập mới được gửi đánh giá điểm sao (giá trị nguyên từ 1 đến 5).
+  - Mỗi Member chỉ có tối đa 1 bản ghi đánh giá hiệu lực trên một bài công thức (`UNIQUE(recipe_id, user_id)`). Member có quyền cập nhật lại số điểm sao đã đánh giá trước đó.
+  - Tác giả bài viết không được tự đánh giá bài công thức của chính mình.
+  - Điểm đánh giá trung bình được tính bằng trung bình cộng số học của toàn bộ các đánh giá hiệu lực trên bài viết: $\text{average\_rating} = \frac{\sum \text{ratings}}{\text{rating\_count}}$, làm tròn đến 1 chữ số thập phân khi hiển thị trên giao diện.
+  - Khi bài viết bị ẩn hoặc bị xóa, các bản ghi đánh giá tương ứng lập tức bị loại bỏ khỏi bảng xếp hạng công khai.
+
+---
+
+<a id="br-70"></a>
+### BR-70 — Ghi nhận lượt xem và khử trùng lặp theo phiên (RECIPE_VIEW)
+
+- **Mã quy tắc:** BR-70
+- **Trạng thái (Derived):** ACTIVE
+- **Nội dung:**
+  - Hệ thống ghi nhận sự kiện xem bài công thức vào thực thể `RECIPE_VIEW` để phục vụ theo dõi lịch sử, thống kê phân tích và tính điểm xếp hạng.
+  - **Cơ chế khử trùng lặp theo phiên (View Deduplication Window):** Nhằm ngăn chặn hành vi spam tải lại trang (F5/refresh) tạo lượt xem ảo, hệ thống áp dụng cửa sổ khử trùng lặp thời gian $T_{\text{dedup}} = 30\text{ phút}$:
+    - Đối với Member đã đăng nhập: Căn cứ theo cặp định danh `(user_id, recipe_id)`. Các lượt truy cập lặp lại trong vòng 30 phút từ cùng một tài khoản trên cùng một bài chỉ tính là 1 lượt xem hợp lệ.
+    - Đối với Guest (chưa đăng nhập): Căn cứ theo `(session_id / anonymous token / IP hash, recipe_id)`. Các lượt truy cập lặp lại trong vòng 30 phút từ cùng một phiên khách chỉ tính là 1 lượt xem hợp lệ.
+  - Mỗi bản ghi `RECIPE_VIEW` lưu trữ timestamp chi tiết phục vụ tổng hợp số lượt xem theo các khung thời gian linh hoạt: 24 giờ qua, 7 ngày qua, 30 ngày qua và toàn thời gian (all-time).
+
+---
+
+<a id="br-71"></a>
+### BR-71 — Thuật toán xếp hạng hoạt động sôi nổi nhất (Most Active)
+
+- **Mã quy tắc:** BR-71
+- **Trạng thái (Derived):** ACTIVE
+- **Nội dung:**
+  - Chế độ "Most Active" (Hoạt động sôi nổi nhất) trên trang Khám phá đánh giá mức độ tương tác thực tế của cộng đồng đối với bài công thức trong vòng 7 ngày gần nhất ($t \in [\text{now} - 7\text{ ngày}, \text{now}]$).
+  - Điểm hoạt động (Activity Score) được tính theo công thức:
+    $$\text{Score}_{\text{active}} = w_v \cdot V_{7d} + w_c \cdot C_{7d} + w_r \cdot R_{7d}$$
+    Trong đó:
+    - $V_{7d}$: Tổng số lượt xem hợp lệ đã khử trùng lặp trong 7 ngày qua (từ `RECIPE_VIEW`).
+    - $C_{7d}$: Tổng số bình luận và phản hồi hợp lệ tạo mới trong 7 ngày qua.
+    - $R_{7d}$: Tổng số lượt đánh giá sao hợp lệ tạo mới hoặc cập nhật trong 7 ngày qua.
+    - Trọng số chuẩn hóa mặc định: $w_v = 1$, $w_c = 5$, $w_r = 10$.
+  - **Đặc trưng nghiệp vụ phân biệt với Trending:** Most Active đo lường tổng khối lượng tương tác thực tế gần đây thuần túy, KHÔNG áp dụng hệ số suy giảm thời gian đăng bài (freshness decay). Một bài công thức cũ đã đăng từ lâu nhưng có đợt tương tác thảo luận tăng vọt trong 7 ngày qua vẫn sẽ đạt thứ hạng cao nhất trên bảng Most Active.
+
+---
+
+<a id="br-72"></a>
+### BR-72 — Thuật toán xếp hạng thịnh hành (Trending Ranking)
+
+- **Mã quy tắc:** BR-72
+- **Trạng thái (Derived):** ACTIVE
+- **Nội dung:**
+  - Chế độ "Trending" (Thịnh hành) trên trang Khám phá xác định các bài viết đang thu hút sự chú ý nhanh chóng của cộng đồng bằng thuật toán xếp hạng phi AI kết hợp giữa tương tác gần đây và hệ số tươi mới của bài viết (freshness decay).
+  - Thuật toán thịnh hành (Trending Algorithm):
+    $$\text{Score}_{\text{trending}} = \frac{w_v \cdot V_{3d} + w_c \cdot C_{3d} + w_r \cdot R_{3d} + B_{\text{new}}}{(T_{\text{age\_hours}} + 2)^\gamma}$$
+    Trong đó:
+    - $V_{3d}, C_{3d}, R_{3d}$: Khối lượng tương tác hợp lệ trong 3 ngày (72 giờ) gần nhất (views, comments, ratings).
+    - $B_{\text{new}}$: Điểm thưởng khởi đầu dành cho bài viết mới công khai trong vòng 48 giờ đầu nhằm tạo cơ hội xuất hiện cho nội dung mới.
+    - $T_{\text{age\_hours}}$: Tuổi của bài viết tính từ thời điểm công khai đến hiện tại (tính bằng giờ).
+    - $\gamma$: Hệ số suy giảm trọng số theo thời gian (chuẩn hóa mặc định $\gamma = 1.5$).
+  - Nhờ mẫu số $(T_{\text{age\_hours}} + 2)^\gamma$, điểm số của bài viết sẽ suy giảm dần theo thời gian, giúp ưu tiên các bài viết mới đăng có tốc độ gia tăng tương tác đột phá và ngăn chặn bài cũ chiếm giữ vị trí thịnh hành quá lâu.
+
+---
+
+<a id="br-73"></a>
+### BR-73 — Chuẩn hóa đơn vị đo lường và chặn công khai khi thiếu quy đổi
+
+- **Mã quy tắc:** BR-73
+- **Trạng thái (Derived):** ACTIVE
+- **Nội dung:**
+  - Hệ thống quản lý danh mục đơn vị đo lường chuẩn hóa `UNIT`, phân loại theo 3 thứ nguyên đo lường:
+    1. Khối lượng (`MASS`): gam (g), kilogam (kg) với tỷ lệ quy đổi cố định $1\text{ kg} = 1.000\text{ g}$.
+    2. Thể tích (`VOLUME`): mililit (ml), lít (l) với tỷ lệ quy đổi cố định $1\text{ l} = 1.000\text{ ml}$.
+    3. Đếm số lượng (`COUNT`): quả, củ, trái, tép, bìa, gói, lát, muỗng canh, thìa cà phê,...
+  - Bảng quy đổi nguyên liệu `INGREDIENT_UNIT_CONVERSION` lưu trữ tỷ lệ quy đổi cụ thể từ một đơn vị đo lường (thuộc `COUNT` hoặc `VOLUME`) sang khối lượng gam (`MASS` in grams) cho từng nguyên liệu cụ thể (ví dụ: 1 quả chuối tiêu $\approx 120\text{ g}$, 1 bìa đậu phụ $\approx 150\text{ g}$, 1 muỗng canh dầu thực vật $\approx 14\text{ g}$).
+  - **Quy tắc chặn xuất bản nghiêm ngặt (Strict Validation Gate):** Khi Member tạo hoặc chỉnh sửa bài công thức, nếu bất kỳ nguyên liệu nào sử dụng đơn vị đo lường mà nguyên liệu đó chưa được định nghĩa tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION` (và không phải là đơn vị khối lượng `MASS` g/kg đã biết tỷ lệ), Backend **BẮT BUỘC TỪ CHỐI LƯU VÀ CHẶN CÔNG KHAI**, trả về lỗi validation: `"Đơn vị đo lường [Tên đơn vị] của nguyên liệu [Tên nguyên liệu] chưa có tỷ lệ quy đổi sang gam. Vui lòng chọn đơn vị khối lượng (gam/kg) hoặc liên hệ quản trị viên."`
+  - Cấm hoàn toàn việc dùng chữ "vừa đủ" hoặc để trống định lượng số học. Mọi dòng nguyên liệu bắt buộc phải có số lượng số học dương (`quantity > 0`) và đơn vị đo lường hợp lệ.
+

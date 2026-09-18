@@ -1,6 +1,6 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.5.0  
+> **Version:** v1.6.0  
 > **Created:** 2026-09-13  
 > **Last Updated:** 2026-09-18  
 > **Status:** Active  
@@ -51,7 +51,7 @@ Toàn bộ hệ thống được triển khai trên nền tảng **Microsoft Azu
 | Browser client | React, TypeScript, Vite (Azure Static Web Apps) | Hiển thị giao diện responsive, nhận input người dùng, xử lý trạng thái loading/error, nhúng YouTube player và nút Google Login | Không phải ranh giới tin cậy cho authorization, validation hoặc lưu secret |
 | Spring Boot Backend | Java 21, Spring Boot (Azure App Service) | Xác thực request (JWT + Cookie Refresh Token), kiểm tra role/ownership, validate input, kiểm tra quyền tính năng AI (Feature Entitlement), áp dụng technical rate limit, điều phối nghiệp vụ và gọi external services | Quy tắc nghiệp vụ bắt buộc thực thi ở server-side kể cả khi UI đã ẩn thao tác |
 | SQL Server | Microsoft SQL Server (Azure SQL Database Serverless) | Relational Source of Truth chính cho tài khoản, công thức, thực đơn, giao dịch thanh toán và tham chiếu media | Tự động pause khi không có request; cần kích hoạt trước các buổi demo |
-| Media Storage | Azure Blob Storage | Lưu trữ tệp ảnh đại diện Recipe Post (tối đa 1 ảnh, JPEG/PNG/WebP $\le 5$ MB); SQL Server giữ URL tham chiếu `cover_image_url` | Phase 1 upload qua Backend kiểm duyệt; không upload file video |
+| Media Storage | Azure Blob Storage | Lưu trữ tệp ảnh minh họa Recipe Post (0–5 ảnh qua thực thể `RECIPE_MEDIA`, JPEG/PNG/WebP $\le 5$ MB, đúng 1 ảnh bìa cover); SQL Server giữ URL tham chiếu, thứ tự hiển thị và cờ ảnh bìa | Phase 1 upload qua Backend kiểm duyệt; không upload file video |
 | External integrations | Google Gemini, GIS, Brevo, payOS, YouTube | Cung cấp AI gợi ý, xác thực Google, gửi email kích hoạt/reset, thanh toán VietQR và phát video | Lỗi provider phải được xử lý minh bạch; không tính phí người dùng khi AI/email gặp sự cố |
 
 ### 3.1 Kiến trúc Backend
@@ -87,12 +87,12 @@ React View
 ### 4.2 Luồng ảnh Recipe Post
 
 ```text
-React client -> Spring Boot validation/authorization -> Azure Blob Storage
+React client -> Spring Boot validation/authorization -> Azure Blob Storage (0-5 images)
                                            |
-                                           -> SQL Server metadata/reference
+                                           -> SQL Server RECIPE_MEDIA (URL, display_order, is_cover)
 ```
 
-Luồng ban đầu giữ authorization cho upload và kiểm tra file tại Backend. Upload trực tiếp từ browser bằng SAS URL có scope hẹp là `Future option`.
+Luồng ban đầu giữ authorization cho upload và kiểm tra file (JPEG/PNG/WebP $\le 5$ MB, số lượng 0–5 ảnh, đúng 1 ảnh bìa `is_cover = true`) tại Backend. Upload trực tiếp từ browser bằng SAS URL có scope hẹp là `Future option`.
 
 ### 4.3 Luồng YouTube
 
@@ -183,6 +183,11 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 - Giữ relational database làm Source of Truth cho ứng dụng; dùng Flyway để quản lý thay đổi schema có thể thực thi sau khi Backend scaffold tồn tại.
 - Backend giữ cấu trúc Modular Monolith; MVC/layered structure bên trong từng module.
 - Không tự ý thêm microservices, Kafka, Redis, Kubernetes hay vector database khi chưa có quyết định kiến trúc mới.
+- **Kiến trúc tìm kiếm, sắp xếp và xếp hạng không dùng AI (Non-AI Ranking Architecture):**
+  - Hệ thống hỗ trợ 6 chế độ khám phá/sắp xếp bài viết/công thức: Mới nhất (*Newest*), Đánh giá cao nhất (*Highest Rated*), Xem nhiều nhất (*Most Viewed* - 24h/7d/30d/toàn thời gian), Bình luận nhiều nhất (*Most Commented*), Hoạt động sôi nổi nhất (*Most Active* - BR-71, tổng tương tác 7 ngày không phân rã), và Thịnh hành (*Trending* - BR-72, tương tác có phân rã thời gian theo công thức trọng số).
+  - Tất cả các chế độ sắp xếp, lọc và tính điểm xếp hạng này được thực thi thuần túy thông qua truy vấn quan hệ SQL chuẩn (sử dụng Index tối ưu, Computed Columns hoặc Scheduled Aggregation trên Microsoft SQL Server) và xử lý logic tại tầng Backend Spring Boot.
+  - Tuyệt đối **không sử dụng** AI, Machine Learning recommendation engines, vector database, Redis cache hay Kafka message broker cho tính năng khám phá và xếp hạng này trong phạm vi hiện tại.
+  - Ghi nhận lượt xem (`RECIPE_VIEW`) áp dụng cơ chế chống trùng lặp (deduplication window 30 phút theo IP hash / Client session / Member ID) và cập nhật bộ đếm bất đồng bộ (`@Async` hoặc in-memory buffer định kỳ flush xuống DB) để không làm nghẽn luồng đọc công thức.
 
 ## 7. Các vấn đề kiến trúc và trạng thái quyết định
 

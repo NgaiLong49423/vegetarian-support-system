@@ -1,8 +1,8 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v1.1.0
+> **Version:** v1.2.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-17
+> **Last Updated:** 2026-09-18
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -57,12 +57,12 @@ Mỗi yêu cầu phi chức năng được gắn một thẻ stable anchor HTML 
 
 - **Mã yêu cầu:** NFR-02
 - **Nhóm chất lượng:** Performance
-- **Mô tả yêu cầu:** Thời gian hệ thống thực hiện tìm kiếm, lọc và trả về danh sách bài viết công thức nấu ăn món chay.
-- **Nghiệp vụ liên quan:** `FR-01`, `FR-08` (Tìm kiếm và lọc bài công thức đa tiêu chí).
+- **Mô tả yêu cầu:** Thời gian hệ thống thực hiện tìm kiếm, lọc đa tiêu chí và trả về danh sách bài viết công thức nấu ăn món chay theo 6 chế độ sắp xếp (Mới nhất, Điểm đánh giá cao nhất, Xem nhiều nhất theo 24h/7d/30d/toàn thời gian, Bình luận nhiều nhất, Hoạt động sôi nổi nhất theo BR-71, và Xu hướng thịnh hành theo BR-72).
+- **Nghiệp vụ liên quan:** `FR-01`, `FR-08` (Tìm kiếm và lọc bài công thức đa tiêu chí), `FR-17`, `FR-20`, `FR-57`, `FR-58`.
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
-  - *Metric:* Thời gian xử lý truy vấn tìm kiếm và render danh sách trên client.
-  - *Threshold:* $\le 3$ giây với cơ sở dữ liệu thử nghiệm của đồ án.
-- **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tự động API query và kiểm tra thời gian tải trang qua Chrome DevTools/Lighthouse.
+  - *Metric:* Thời gian xử lý truy vấn tìm kiếm/sắp xếp và render danh sách trên client.
+  - *Threshold:* $\le 3$ giây cho toàn bộ 6 chế độ sắp xếp và các bộ lọc đa tiêu chí với cơ sở dữ liệu thử nghiệm của đồ án; áp dụng chiến lược tạo chỉ mục (indexing) tối ưu trên các cột thời gian, bộ đếm lượt xem, điểm đánh giá và số lượng tương tác.
+- **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tự động API query với bộ lọc/sắp xếp phức tạp và kiểm tra thời gian tải trang qua Chrome DevTools/Lighthouse.
 - **Trạng thái:** `ACTIVE`
 
 ---
@@ -102,13 +102,14 @@ Mỗi yêu cầu phi chức năng được gắn một thẻ stable anchor HTML 
 
 - **Mã yêu cầu:** NFR-05
 - **Nhóm chất lượng:** Performance
-- **Mô tả yêu cầu:** Khả năng phục vụ đồng thời nhiều người dùng truy cập và tương tác mà không bị sập hay suy giảm trải nghiệm nghiêm trọng.
-- **Nghiệp vụ liên quan:** Toàn hệ thống.
+- **Mô tả yêu cầu:** Khả năng phục vụ đồng thời nhiều người dùng truy cập, tương tác đọc/ghi dữ liệu, và ghi nhận sự kiện lượt xem (`RECIPE_VIEW`) với tần suất cao mà không bị sập hay suy giảm trải nghiệm nghiêm trọng.
+- **Nghiệp vụ liên quan:** Toàn hệ thống, đặc biệt là `FR-08`, `FR-20`, `FR-57`, `FR-58`.
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Mục tiêu thiết kế dài hạn:* 500 CCU là design goal, không phải MVP release gate.
   - *Ngưỡng nghiệm thu MVP:* Đạt 50 concurrent users trên môi trường kiểm thử/staging mà không phát sinh lỗi hệ thống hoặc suy giảm hiệu năng quá 20%.
+  - *Xử lý ghi nhận lượt xem (Write Throughput):* Thao tác ghi nhận sự kiện `RECIPE_VIEW` và kiểm tra cửa sổ khử trùng lặp 30 phút phải được xử lý non-blocking / tối ưu hóa truy vấn, không gây khóa bảng (table locking) hoặc nghẽn giao dịch khi có nhiều người dùng đồng thời xem chi tiết các bài công thức.
   - *Stretch target:* 100 concurrent users nếu nhóm đủ thời gian; không bắt buộc để nghiệm thu MVP.
-- **Phương pháp kiểm chứng (Verification Method):** Chạy JMeter với ramp-up đến 50 virtual users cho nghiệm thu; có thể chạy thêm kịch bản 100 users để đánh giá stretch target.
+- **Phương pháp kiểm chứng (Verification Method):** Chạy JMeter với ramp-up đến 50 virtual users kết hợp kịch bản duyệt bài và gửi sự kiện view song song; xác nhận không xảy ra deadlock hay lỗi 500.
 - **Trạng thái:** `ACTIVE`
 
 ---
@@ -183,11 +184,14 @@ Mỗi yêu cầu phi chức năng được gắn một thẻ stable anchor HTML 
 
 - **Mã yêu cầu:** NFR-10
 - **Nhóm chất lượng:** Security
-- **Mô tả yêu cầu:** Bảo vệ hệ thống trước các nguy cơ tấn công bảo mật web phổ biến từ dữ liệu đầu vào của người dùng.
-- **Nghiệp vụ liên quan:** Toàn hệ thống (đặc biệt là chức năng đăng bài, bình luận, báo cáo).
+- **Mô tả yêu cầu:** Bảo vệ hệ thống trước các nguy cơ tấn công bảo mật web phổ biến từ dữ liệu đầu vào của người dùng, kiểm soát IDOR và ngăn chặn gian lận thao tác dữ liệu.
+- **Nghiệp vụ liên quan:** Toàn hệ thống (đặc biệt là `FR-14`, `FR-16`, `FR-19`, `FR-22`, `FR-25`, `FR-44`, `FR-57`, `FR-58`).
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
-  - *Threshold:* Không tồn tại các lỗ hổng SQL Injection (sử dụng ORM/Hibernate parameterized queries), Cross-Site Scripting (XSS - sanitize input/escape HTML trên React) và Cross-Site Request Forgery (CSRF).
-- **Phương pháp kiểm chứng (Verification Method):** Sử dụng công cụ quét bảo mật tĩnh (SAST/SonarQube) hoặc quét động (OWASP ZAP) trong quy trình kiểm thử chất lượng.
+  - *Lỗ hổng mã độc:* Không tồn tại các lỗ hổng SQL Injection (sử dụng ORM/Hibernate parameterized queries), Cross-Site Scripting (XSS - sanitize input/escape HTML trên React) và Cross-Site Request Forgery (CSRF).
+  - *Kiểm soát IDOR & Quyền tác giả:* 100% endpoint chỉnh sửa bài viết, các bước hướng dẫn (`RECIPE_STEP`), ảnh minh họa (`RECIPE_MEDIA`) bắt buộc kiểm tra quyền sở hữu tác giả (`authorId == currentUserId`); tác giả bị chặn không được tự đánh giá bài viết của chính mình (BR-70).
+  - *Chống gian lận số liệu (Anti-tampering):* Điểm đánh giá trung bình (`rating_avg`), tổng số lượt đánh giá (`rating_count`) và số lượt xem (`view_count`) bắt buộc được tính toán và kiểm soát độc quyền ở tầng máy chủ; client tuyệt đối không được gửi giá trị trực tiếp.
+  - *Thẩm định tính hợp lệ tải tệp & dữ liệu:* Thẩm định chặt chẽ tệp tải lên (0–5 ảnh, định dạng JPEG/PNG/WebP, dung lượng $\le 5$ MB); kiểm tra tính khả dụng của quy tắc chuyển đổi đơn vị (`INGREDIENT_UNIT_CONVERSION`) trước khi lưu trữ hoặc xuất bản.
+- **Phương pháp kiểm chứng (Verification Method):** Sử dụng công cụ quét bảo mật tĩnh (SAST/SonarQube) hoặc quét động (OWASP ZAP); viết integration test kiểm tra chặn IDOR và gian lận tham số.
 - **Trạng thái:** `ACTIVE`
 
 ---
