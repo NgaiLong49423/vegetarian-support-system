@@ -279,16 +279,51 @@ Relationship sync is best-effort unless repository workflow makes it mandatory.
 
 The Issue model must cover every managed FR without duplicating implementation scope.
 
-Default hierarchy handling:
+### Delivery-Decomposition Rule
 
-- parent/capability FR -> parent/tracking Issue when useful for complete FR-to-Issue mapping;
-- leaf FR -> implementation Issue;
-- standalone FR -> implementation Issue;
-- parent Issue does not repeat the child implementation acceptance criteria.
+A Functional Requirement represents required product behavior and must not automatically be treated as a single developer task. For each ACTIVE FR, determine whether the requirement is:
+1. **Standalone delivery work**:
+   - Small enough for one implementation owner;
+   - Primarily one delivery surface (e.g. backend telemetry, background cron, pure UI presentation).
+   - Maps to a single Implementation Issue/Task.
+2. **Cross-surface feature work**:
+   - Requires coordinated Frontend, Backend, external integration, or infrastructure work (e.g. Recipe creation, Meal planning, Shopping list).
+   - Maintain one **Parent Feature Issue** as the requirement-facing source of end-to-end implementation scope, business rules, field constraints, and overall Acceptance Criteria.
+   - Create child **Delivery Task Issues** (e.g., `[FE]`, `[BE]`, `[INT]`) only for the surfaces actually needed.
+   - Every child Task MUST reference the parent FR and parent Feature Issue.
+   - Child Tasks MUST NOT redefine business behavior or invent unapproved contracts.
+   - Parent Feature completion requires all required child Tasks and end-to-end Acceptance Criteria to pass.
+3. **Multi-story capability work** (e.g. FR-03 Identity & Access):
+   - Slice vertically by User Story / Use Case first (e.g. Registration, Login, Google SSO, Password Reset) before creating delivery tasks. Avoid creating monolithic tasks for giant requirements.
 
-A leaf FR may be split into multiple Issues when necessary for delivery, but every split Issue must trace back to the same FR and the index must record the split.
+### Frontend Task Rule
 
-Multiple small FRs may be grouped only when strongly coupled and traceability remains explicit.
+A Frontend child Issue MUST contain enough information for a Frontend developer to implement the user-facing behavior without reopening the SRS. It should include, when applicable:
+- Target screens and routes (e.g. `/recipes/create`);
+- Required UI components and layout;
+- Displayed data and form fields;
+- Client-side validation rules (exact bounds, formats);
+- User interactions and flow;
+- UI States: `initial`, `validation_error`, `submitting`, `loading`, `api_error`, `success`;
+- API contracts or contract dependencies (endpoints, payload shape, expected responses);
+- Authentication/authorization presentation behavior (redirecting guests, token handling);
+- Responsive layout (Mobile vs Desktop) and accessibility constraints;
+- Frontend-specific Acceptance Criteria.
+
+It MUST NOT redefine server-side business rules, invent database schema, or fabricate unapproved backend APIs.
+
+### Backend Task Rule
+
+A Backend child Issue MUST contain enough information for a Backend developer to implement the server-side API and business logic without reopening the SRS. It should include, when applicable:
+- REST API endpoint specification (HTTP Method, path, request/response DTO contracts);
+- Server-side validation (Bean Validation, cross-field rules);
+- Security, authentication, and authorization/ownership enforcement;
+- Business logic and state transitions;
+- Persistence behavior (referencing approved data models, not invented tables);
+- External integration handling (Azure Blob, Brevo, payOS, Gemini);
+- Error semantics and status code mappings;
+- Backend unit and integration test expectations;
+- Approved architectural and performance constraints.
 
 Read `references/decomposition-rules.md`.
 
@@ -324,6 +359,30 @@ Use repository/team conventions.
 Include technical constraints/choices only when the authoritative project sources already define them.
 
 Do not turn an implementation suggestion into a requirement-derived Issue fact.
+
+### Source-Backed Implementation Rule
+
+An implementation Issue may contain a concrete technical decision only when that decision is explicitly confirmed by an authoritative Architecture, Technology Stack, ADR, approved API contract, or approved data model.
+
+If the source defines behavior but not implementation:
+- describe the required behavior;
+- do not invent framework versions, class names, table names, column types, endpoint shapes, persistence strategies, or provider response mappings.
+
+If implementation remains open, mark it as `DESIGN_TBD` or reference the issue/artifact responsible for deciding it.
+
+### Derived-Value Rule
+
+Do not transform a business invariant or cross-field validation rule into a new persisted or request field unless an approved data model/API contract explicitly defines that field.
+
+Example: `prepTime + cookTime > 0` does NOT imply a required `totalTime` request or database field.
+
+### Self-Contained Issue Rule
+
+An implementation Issue MUST contain enough authoritative behavioral information for an assigned developer and tester to understand the scope, expected flows, constraints, error behavior, and acceptance conditions without opening the source requirement documents. Linked source documents remain authoritative for traceability, conflict resolution, rationale, and deeper context; they MUST NOT be used as a substitute for missing execution-critical information in the Issue.
+
+### Selective Materialization Rule
+
+Only execution-critical information from source requirements is summarized into the Issue. Historical rationale, extensive requirement decomposition, governance metadata, and supporting context remain linked rather than duplicated.
 
 ## GitHub Creation / Reconciliation Preflight
 
