@@ -1,8 +1,8 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.8.1
+> **Version:** v0.9.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-18
+> **Last Updated:** 2026-09-19
 > **Status:** Active
 
 # Mâm Xanh — Vegetarian Support System
@@ -85,8 +85,10 @@ Quy tắc đặt file và danh mục tài liệu được duy trì nằm trong [
 2. Chọn Issue đã đạt Definition of Ready; mỗi Issue có đúng một owner.
 3. Tạo branch từ `develop` theo dạng `<type>/<issue-number>-<short-name>`.
 4. Thực hiện một phạm vi nhỏ, tự kiểm tra và cập nhật tài liệu liên quan.
-5. Mở PR vào `develop` bằng `Refs #<issue>`; tác giả không tự review/approve thay cho reviewer.
-6. Issue ở `Review` cho đến khi release PR từ `develop` vào `main` được merge.
+5. Mở PR vào `develop` bằng `Refs #<issue>` và ghi kết quả tự kiểm tra; review/approval và GitHub Actions không bắt buộc ở nhánh này.
+6. Tech Lead chọn phần ổn định để mở PR `develop -> main` cuối tuần; cần approval độc lập và required CI checks. Issue chỉ `Done` sau kiểm tra demo local trên `main` đạt. Xem [workflow chính](CONTRIBUTING.md#workflow-làm-việc-nhóm).
+
+Hiện phát triển/demo trên local; deployment Azure thực hiện riêng khi nhóm xác nhận ứng dụng đủ ổn định. Chưa bật CD trong giai đoạn này.
 
 Tại lần kiểm tra local ngày 2026-09-12, remote-tracking refs chưa có `develop`; đây là bước thiết lập còn lại, không được coi là đã cấu hình chỉ vì tài liệu mô tả workflow.
 

@@ -59,6 +59,7 @@ After execution, verify each approved action and report successes/failures. Neve
 - [ ] Lifecycle-to-Issue behavior matches `references/requirement-eligibility.md`.
 - [ ] Existing linked Issue was checked to avoid duplicate creation.
 - [ ] Labels/types conform to repository configuration or are explicitly authorized.
+- [ ] Production-clean content: internal agent meta-commentary, prompt caveats, and procedural boilerplate ("Source questions / DESIGN_TBD", "Chờ Tech Lead...", "Owner chịu trách nhiệm...") have been completely stripped.
 - [ ] Full Issue bodies will not be printed in chat unless requested.
 
 ## Reconciliation Checks
