@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v2.1.0
+> **Version:** v3.2.1
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-16
+> **Last Updated:** 2026-09-19
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -25,97 +25,109 @@ Tài liệu này cung cấp các quy định và hướng dẫn chi tiết về 
 
 ## Workflow Làm Việc Nhóm
 
-Workflow này áp dụng cho Vegetarian Support System. Quy tắc owner, reviewer/backup, WIP, Release Coordinator luân phiên và cách ra quyết định cho nhóm 5 người nằm tại [`docs/decisions/002-five-member-team-operating-agreement.md`](docs/decisions/002-five-member-team-operating-agreement.md).
+Đây là Source of Truth cho quy trình vận hành. ADR-001 và ADR-002 giữ bối cảnh, lý do và lịch sử quyết định; không xác lập cổng merge riêng.
 
-### Luồng nhánh và release
+### Luồng nhánh và demo local
 
 ```text
 Backlog -> Planning -> In Progress -> Review -> Done
 
-feature branch -> Pull Request vào develop -> review, tích hợp và chờ release -> release Pull Request vào main -> Done + đóng Issue
+branch làm việc -> PR vào develop -> kiểm tra tích hợp
+                -> PR develop vào main -> kiểm tra demo local -> Done
 ```
 
-* `main` luôn là bản ổn định có thể dùng để demo.
-* `develop` là nơi tích hợp các task đã hoàn thành về mặt kỹ thuật trước khi phát hành bản demo.
-* Mỗi task bắt đầu từ một nhánh tách từ `develop` và chỉ được đưa vào `develop` qua Pull Request (PR).
-* Mặc định, nhóm tạo một release từ `develop` sang `main` mỗi tuần trước buổi demo. Không merge chỉ vì đến lịch: release phải đạt checklist bên dưới. Nhóm có thể tạo thêm release khi có mốc quan trọng.
-* `Planning` là lúc đã làm rõ yêu cầu và chuẩn bị để code; chưa bắt đầu lập trình.
-* `In Progress` là lúc đang code hoặc tự kiểm tra trên feature branch tạo từ `develop`.
-* `Review` bắt đầu khi đã mở Pull Request vào `develop`. Sau khi PR được merge vào `develop`, Issue vẫn ở `Review` để chờ đợt release vào `main`.
-* Chỉ sau khi release được merge vào `main`, Issue mới chuyển sang `Done` và được đóng.
-* Không tạo thêm cột Blocked. Khi bị vướng, gắn label `⛔ Blocked` vào Issue và ghi rõ trợ giúp cần thiết.
+- Thành viên phát triển và debug trên local; `develop` là nhánh tích hợp, `main` là phiên bản ổn định để demo.
+- Nhánh làm việc tách từ `develop`; thay đổi đi qua PR vào `develop`, rồi PR `develop -> main`.
+- `Planning`: làm rõ scope, Acceptance Criteria, dependency và kế hoạch trước khi code. `In Progress`: triển khai và tự kiểm tra.
+- `Review` bắt đầu khi mở PR vào `develop`; sau merge Issue vẫn ở `Review` chờ nghiệm thu trên `main`. Nếu PR bị đóng hoặc cần làm lại đáng kể, chuyển về `In Progress`.
+- `Done` chỉ sau khi toàn bộ scope/Acceptance Criteria đạt trên `main` và kiểm tra demo local sau merge đạt. Merge vào `develop` hoặc `main` riêng lẻ chưa đủ.
+- Không cần hoàn thành cả module SRS mới đưa code lên `main`. Phạm vi PR gồm những thay đổi ổn định và dependency đã được đáp ứng.
+- Hiện chưa deploy hoặc bật CD. Nhóm dự kiến deploy cả hệ thống lên Azure khi app đạt điều kiện ổn định; deployment là công việc riêng, không phải điều kiện `Done` của từng FR ở giai đoạn demo local. Điều này không thay đổi lựa chọn công nghệ Azure.
+- Quản lý blocker trực tiếp trên GitHub Issue hoặc GitHub Project; ghi nguyên nhân, dependency liên quan, trợ giúp cần thiết và điều kiện để tiếp tục.
 
-### Definition of Ready: từ `Planning` sang `In Progress`
+### Phân rã và điều kiện nhận Issue
 
-Definition of Ready là checklist phối hợp của nhóm, không phải trạng thái mới trên board. Trước khi bắt đầu code, Issue phải có:
+- Mặc định mỗi FR có một Issue triển khai. Chỉ đề xuất sub-issue khi scope quá lớn cho một PR, thông thường trên 5 SP (ví dụ 8 SP); ghi rõ lý do và được Tech Lead duyệt, dùng template hiện có. Sub-issue truy về FR và Issue cha, tránh giao trùng scope giữa cha/con hoặc giữa các FR liên quan.
+- Scope và Acceptance Criteria xuất phát từ SRS; không cắt yêu cầu cho vừa người nhận. Phân rã dựa trên công việc và dependency, không dựa trên việc muốn ghi nhận hoàn thành một phần.
+- Trước khi nhận, Issue/sub-issue phải có Source Trace, scope, Acceptance Criteria kiểm tra được, đúng một owner, Type, Priority, SP, Start Date, Target Date cụ thể và dependency/blocker rõ ràng. Owner tham gia ước lượng và xác nhận cam kết. Khi chuẩn bị draft, agent phải đề xuất Story Points, Type và Priority theo options thật của Project, kèm lý do và trạng thái chờ Tech Lead duyệt; không để cả ba field TBD cho FR đã phân rã.
+- Phân biệt dependency với blocker thực tế: ghi đầu ra cần có, trạng thái đã/chưa đáp ứng và điều kiện hết block. Công việc chưa rõ nghiệp vụ hoặc bị block ngăn triển khai chưa được giao như một cam kết triển khai trong tuần; có thể giao việc làm rõ/gỡ blocker trước.
+- Khi có sub-issue triển khai, dùng SP của sub-issue để tính tải; SP ở Issue cha chỉ là ước lượng tổng thể tham khảo, không cộng thêm vào tải hoặc SP hoàn thành. Issue cha chỉ `Done` khi toàn bộ phạm vi FR được nghiệm thu.
 
-- [ ] Mục tiêu và `Source Trace` rõ ràng.
-- [ ] Phạm vi đủ rõ và Acceptance Criteria có thể kiểm tra.
-- [ ] Đúng một owner; người thực hiện đã tham gia hoặc xác nhận ước lượng.
-- [ ] Type, Priority và Story Points; Issue triển khai không vượt quá `5 SP`.
-- [ ] Start Date và Target Date trong tối đa 4–5 ngày lịch.
-- [ ] Dependency và blocker được ghi rõ; không còn câu hỏi nghiệp vụ quan trọng cản trở việc bắt đầu.
+### Nhịp tuần, Story Points và deadline
 
-Không dùng checklist này để đòi tài liệu hoàn hảo hoặc trì hoãn trao đổi. Cơ sở của quy tắc và các phần chỉ là quy ước nhóm được ghi tại [`docs/decisions/WORKFLOW-SOURCES.md`](docs/decisions/WORKFLOW-SOURCES.md).
+- Đầu tuần, nhóm chọn Issue và lượng việc phù hợp với khả năng, lịch học và thời gian của từng người; dùng thang SP `1, 2, 3, 5, 8` để ước lượng độ lớn, độ phức tạp và mức chưa chắc chắn. Không quy đổi cứng SP thành giờ hoặc yêu cầu mọi người nhận SP bằng nhau.
+- Ưu tiên một Issue và một PR hoàn chỉnh cho FR ở mức 1–5 SP. FR khoảng 8 SP cần xem xét sub-issue theo các phần hành vi có thể nghiệm thu; không tách thành các Issue ngang hàng cùng FR chỉ để chia PR, không ép giảm SP để tránh phân rã. SP là ước lượng tương đối, không phải giới hạn tự động.
+- Khi nhận Issue, owner cam kết hoàn thành toàn bộ scope và Acceptance Criteria đúng Target Date, có thời gian tự kiểm tra và sửa lỗi trước PR cuối tuần. Không tự giảm scope hoặc dời deadline.
+- Cuối tuần là mốc xem xét đưa phần ổn định vào `main`, không phải yêu cầu merge bất kể chất lượng. Tech Lead chọn phạm vi và mở PR; lỗi nghiêm trọng có thể cần đợt sửa sớm.
+- Owner cập nhật khi bắt đầu, khi có blocker, nguy cơ trễ hoặc thay đổi ảnh hưởng công việc. Không yêu cầu báo cáo repository riêng hoặc cập nhật cứng vào ngày thứ 2/3.
+- Báo ngay khi dự kiến trễ: nguyên nhân, phần còn lại, blocker, trợ giúp cần thiết và dự kiến hoàn thành mới. Tech Lead quyết định hỗ trợ, điều chỉnh phân công hoặc duyệt deadline mới; báo trễ không tự động gia hạn hay miễn trách nhiệm.
+- Ghi nhận trễ hạn so với deadline đã cam kết, kể cả khi được hỗ trợ hoặc duyệt hạn mới. Nếu owner đã bàn giao đầy đủ, đúng hạn và chỉ còn chờ review/đợt đưa lên `main`, ghi rõ thời điểm bàn giao và nguyên nhân chờ để phân biệt trách nhiệm owner với thời gian nghiệm thu.
+- Issue chưa đạt giữ mở, chưa tính SP hoàn thành; ưu tiên hoàn tất việc tồn trước khi giao thêm cho owner. Không giảm scope hay tách phần thiếu sau deadline để coi Issue gốc đã xong.
+- Nếu phần chưa hoàn thành trên `develop` ảnh hưởng bản demo, phải sửa hoặc cô lập trước PR vào `main`. SP hoàn thành chỉ tính khi work item đạt `Done`; nhóm dùng kết quả và nguyên nhân chênh lệch để điều chỉnh kế hoạch tuần sau, không chấm điểm cá nhân.
 
-`Target Date` là hạn để owner hoàn tất cổng kỹ thuật và merge feature PR vào `develop`, không phải hạn release vào `main`. Sau khi PR đã merge vào `develop`, Issue vẫn ở `Review` để chờ release nhưng owner không bị tính là trễ. Nếu PR còn mở hoặc còn yêu cầu sửa, hạn vẫn tiếp tục có hiệu lực.
+### Ownership, AI và API contract
 
-### Checklist release vào `main`
+- Owner chịu trách nhiệm toàn bộ luồng FR, gồm cả FE do AI tạo/sửa. Không mặc định chia sub-issue FE/BE; dùng checklist trong Issue. Không bắt buộc có thành viên FE riêng.
+- Phân rã FR theo SRS trước, chốt API contract cho FR sắp làm trước khi tích hợp FE/BE. Owner phụ trách BE đề xuất endpoint, request/response, validation, lỗi và quyền truy cập; kiểm tra dữ liệu đủ phục vụ giao diện; Tech Lead review và duyệt.
+- Contract chưa duyệt phải ghi rõ là đề xuất. Không tự quyết API khác nhau ở FE/BE. Bản duyệt có một nơi tham chiếu chung theo quy tắc placement; thay đổi phải được thống nhất, cập nhật và báo bên bị ảnh hưởng.
+- Không cần thiết kế toàn bộ API hoặc tạo Issue/format riêng cho contract của mọi FR. FE có thể chuẩn bị giao diện/mock theo contract; phần tích hợp chờ contract được duyệt.
+- Owner ghi phần AI hỗ trợ và bằng chứng người thực hiện đã xác minh: kiểm tra API, thao tác từ UI, các test đã chạy và kết quả. AI báo hoàn thành không phải bằng chứng nghiệm thu.
 
-- [ ] Source branch là `develop`, target branch là `main`.
-- [ ] Release PR liệt kê từng Issue được phát hành bằng `Closes #<issue-number>`.
-- [ ] Mỗi Issue trong release đã qua cổng hoàn tất kỹ thuật và code tương ứng đang nằm trong `develop`.
-- [ ] Không sửa chức năng trực tiếp trong release PR; mọi bản sửa đi qua PR khác vào `develop`.
-- [ ] Build và automated tests đạt trên commit mới nhất; nếu chưa có automated tests, release PR ghi manual test và kết quả.
-- [ ] Các luồng demo chính và sự kết hợp giữa những tính năng vừa tích hợp đã được kiểm tra.
-- [ ] Không còn blocker hoặc lỗi nghiêm trọng đã biết; lỗi nhỏ được chấp nhận có Issue riêng và được ghi trong release PR.
-- [ ] Database migration/schema đã được thử trên database sạch hoặc môi trường kiểm tra tương đương nếu có thay đổi database.
-- [ ] README, tài liệu chạy, API docs và `CHANGELOG.md` đã cập nhật khi liên quan.
-- [ ] Mọi review conversation quan trọng đã được giải quyết và required checks đã đạt.
-- [ ] Release PR có ít nhất hai approval.
-- [ ] Không bypass required checks hoặc branch protection để kịp lịch demo.
+### Template bắt buộc cho PR và Bug Issue
 
-Sau khi merge, nhóm chạy smoke test ngắn trên commit của `main`. Nếu đạt, xác nhận các Issue đã đóng và chuyển sang `Done`. Nếu thất bại, mở lại Issue bị ảnh hưởng, chuyển về `Review`, tạo Bug Issue và dừng release tiếp theo cho đến khi nhóm quyết định `revert` hay `hotfix`.
+- Mọi PR vào `develop` hoặc `main`, kể cả PR do AI agent chuẩn bị hay tạo qua CLI/API, phải dùng [PR template của dự án](.github/pull_request_template.md).
+- Mọi Bug Issue phải dùng [Bug Report form của dự án](.github/ISSUE_TEMPLATE/bug_report.yml). Khi tạo qua CLI/API, body phải giữ các mục và thông tin bắt buộc tương ứng với form hiện hành.
+- Giữ cấu trúc, các mục và checklist của template; điền nội dung theo thay đổi thực tế. Mục không áp dụng ghi `Không áp dụng` kèm lý do hoặc bỏ qua theo chỉ dẫn sẵn trong template. Không tự thay bằng format mới hoặc lược bỏ thông tin bắt buộc.
+- Quy tắc áp dụng cho cả thành viên và AI agent. Nếu template cần thay đổi, đề xuất để Tech Lead duyệt và cập nhật template chung trước khi sử dụng cấu trúc mới.
 
-### Task, tiến độ và Story Points
+### PR vào `develop`
 
-* Một task có đúng một owner, đầu ra có thể kiểm tra, tiêu chí hoàn thành rõ ràng, và thời hạn tối đa 4–5 ngày lịch.
-* Đến ngày thứ 2 hoặc 3, owner cập nhật trên Issue: phần đã làm, phần còn lại và blocker (nếu có).
-* Nếu dự kiến trễ, owner báo trước hạn và nêu phần còn lại cùng ước lượng mới. Không tự kéo dài hạn trong im lặng.
-* Nếu task trễ vì scope quá lớn, chỉ merge phần đã hoàn thành; phần còn lại được tách thành Issue mới. Nếu bị blocker, gắn label `⛔ Blocked` và nêu rõ trợ giúp cần thiết. Khi không có tiến độ hoặc cập nhật, task được đưa lại vào backlog để nhóm phân công lại.
-* Dùng Story Points (SP) theo thang `1, 2, 3, 5, 8` để ước lượng độ lớn và cân tải khi lập kế hoạch. Task `8 SP` phải được bẻ nhỏ trước khi nhận.
-* SP không là điểm xếp hạng hay kỷ luật cá nhân. Chỉ tính SP đã hoàn thành khi Issue đạt Done; dùng SP cùng với lịch học, blocker và độ phù hợp để cân tải task mới.
+- PR dùng `Refs #<issue-number>`, ghi scope, thay đổi và kết quả tự kiểm tra; không chứa secret, `.env`, credential hoặc file build/cá nhân.
+- Review có thể được request nhưng không bắt buộc approval. GitHub Actions không phải cổng bắt buộc cho merge vào `develop`.
+- Owner vẫn tự kiểm tra phần thay đổi và ghi trung thực phần chưa kiểm tra/blocker. Cổng nhẹ cho phép tích hợp sớm, không xác nhận FR đã hoàn thành.
+- Một Issue có thể có nhiều PR liên quan; không ép quan hệ một Issue/một branch/một PR.
 
-### Pull Request và review
+### PR vào `main` và nghiệm thu
 
-PR chỉ được merge vào `develop` khi toàn bộ checklist sau đạt:
+Tech Lead chịu trách nhiệm chọn phạm vi, mở PR `develop -> main`, tổng hợp bằng chứng và tổ chức nghiệm thu. Không sửa chức năng trực tiếp trong PR này; sửa qua branch/PR vào `develop`.
 
-- [ ] PR dùng `Refs #<issue-number>` để liên kết đúng Issue và thay đổi không vượt ngoài scope đã thống nhất.
-- [ ] Tất cả Acceptance Criteria đã được kiểm tra.
-- [ ] PR ghi rõ cách kiểm tra và kết quả; chạy automated tests liên quan nếu dự án có test, hoặc cung cấp bằng chứng manual test nếu chưa có.
-- [ ] Dự án build và chạy được; không còn lỗi blocker hoặc lỗi nghiêm trọng đã biết.
-- [ ] Không chứa secret, `.env`, credential, file build hoặc file cá nhân.
-- [ ] Mọi yêu cầu sửa đổi và review conversation quan trọng đã được giải quyết.
-- [ ] Tài liệu, API docs, database migration/schema, script và ERD được cập nhật khi thay đổi có liên quan.
-- [ ] Phần chưa hoàn thành được tách thành Issue mới.
+Checklist trước merge:
 
-* Mỗi PR vào `develop` cần ít nhất một reviewer khác tác giả.
-* PR liên quan database, authentication, cấu trúc dùng chung hoặc release vào `main` cần ít nhất hai người kiểm tra.
-* Khi PR được merge vào `develop`, Issue vẫn ở `Review` và được xem là hoàn tất kỹ thuật, đang chờ release.
-* Khi reviewer yêu cầu sửa, Issue vẫn ở `Review`. Chỉ đưa lại `In Progress` khi PR bị đóng hoặc cần làm lại đáng kể.
-* Review không phải là một cuộc đua lấy điểm.
-* Bằng chứng đóng góp gồm Issue, PR, review có nội dung, test, tài liệu và demo; không chỉ dựa vào số SP.
+- [ ] Liệt kê FR/Issue thuộc phạm vi bằng `Refs #<issue-number>`; toàn bộ scope được đưa vào bản demo và dependency đã đáp ứng.
+- [ ] Acceptance Criteria được bao phủ bằng test cases cho luồng chính, lỗi và quyền truy cập khi liên quan; ghi automated/manual tests và kết quả. Manual test bổ sung các phần chưa tự động hóa, không thay thế required automated checks.
+- [ ] Build, automated tests và các required GitHub Actions checks đạt trên commit mới nhất. Check fail, skip hoặc chưa có automation không được ghi là pass; không bypass để kịp demo.
+- [ ] Kiểm tra tích hợp và các luồng demo chính đạt; không còn lỗi cản trở demo. Lỗi được chấp nhận có Bug Issue và được công khai trong PR.
+- [ ] Migration/schema đã kiểm tra trên database sạch hoặc môi trường tương đương khi có thay đổi DB; tài liệu/contract liên quan đã cập nhật; không có secrets/artifacts ngoài scope.
+- [ ] Mọi yêu cầu sửa bắt buộc đã giải quyết; có ít nhất một approval từ người khác tác giả PR. Code do chính reviewer viết cần một thành viên khác kiểm tra phần đó.
+
+Sau merge, owner cung cấp bằng chứng chức năng; Tech Lead tổ chức kiểm tra demo local trên commit mới nhất của `main`. Đạt thì xác nhận, đóng Issue và chuyển `Done`. Dùng `Refs` cả ở PR vào `main` để tránh đóng Issue bằng keyword trước khi kiểm tra sau merge.
+
+Nếu kiểm tra thất bại, Issue bị ảnh hưởng chưa `Done`; nếu đã đóng sai trong chính đợt đó thì mở lại và đưa về `Review`, tạo Bug Issue liên kết. Issue đã nghiệm thu từ trước giữ lịch sử; lỗi mới có Bug Issue riêng. Lỗi nghiêm trọng làm bản demo không dùng được do Tech Lead quyết định sửa ngay hoặc revert, giữ cổng approval/checks cho PR vào `main`.
+
+**Trạng thái công cụ:** tại kiểm tra repository ngày 2026-09-18, `.github/workflows/release-source.yml` chỉ kiểm tra source PR vào `main` phải là `develop`; chưa có workflow build/test trong thư mục này. Cổng build/test bắt buộc ở trên là quyết định đã chốt, chưa có bằng chứng được triển khai đầy đủ. Khi đưa code triển khai vào `main`, phải có CI build/test phù hợp và xác minh required checks; tài liệu này không tự cấu hình GitHub hoặc tạo pipeline.
+
+### Review và phản hồi
+
+- `Request changes`: bug, sai Acceptance Criteria, security, sai contract hoặc build/test fail; phải sửa trước merge vào `main`.
+- `Comment`: hỏi hoặc trao đổi; reviewer ghi rõ nếu cần trả lời trước approval. `Suggestion`/`nit`: cải thiện nhỏ không bắt buộc, không chặn merge chỉ vì nit.
+- Reviewer kiểm tra code, scope, logic, failure cases, security, test evidence và maintainability; không chỉ đọc checklist hoặc format.
+- Tác giả sửa xong phản hồi và request kiểm tra lại; không chỉ tự resolve comment. Yêu cầu quan trọng được resolve khi người nêu xác nhận hoặc có quyết định thay thế được ghi rõ.
+- Code thay đổi sau approval cần review lại phần thay đổi và required checks chạy trên commit mới nhất.
+- Reviewer phản hồi trong khoảng 24 giờ khi lịch học cho phép; nếu bận thì báo Tech Lead để đổi reviewer.
+
+### Báo và xử lý bug
+
+- Lỗi riêng trên branch cá nhân do người làm tự xử lý. Bug trên `develop`/`main` tạo Bug Issue theo form hiện có; nếu lỗi thấy ở branch cá nhân thực chất tồn tại ở hai nhánh này hoặc chặn người khác, vẫn báo.
+- Bug report gồm tiêu đề cụ thể, branch/commit đã kiểm tra, môi trường, các bước/dữ liệu tái hiện, expected theo yêu cầu, actual, bằng chứng không chứa secret, ảnh hưởng và FR/Issue/PR liên quan nếu biết. Không cần biết nguyên nhân hoặc tác giả code mới được báo.
+- Tech Lead xác nhận bug, mức ưu tiên và owner sau khi xem nguyên nhân. Người phụ trách code liên quan là lựa chọn mặc định, nhưng lỗi có thể do tích hợp/cấu hình/yêu cầu; có thể giao người khác theo khả năng và thời gian. Giao sửa là trách nhiệm xử lý, không phải kết luận quy lỗi cá nhân.
+- Owner sửa trên branch riêng từ `develop`, kiểm tra lại các bước tái hiện và chức năng liên quan, PR vào `develop`, sau đó qua cổng `main`.
+- Bug chỉ `Done` sau khi kiểm tra bản `main` xác nhận hết lỗi. Bug nghiêm trọng trên `main` không phải chờ cuối tuần; Tech Lead tổ chức xử lý sớm.
 
 ### Đồng bộ GitHub Projects và Issue
 
-* Bảng theo dõi tiến độ chính của dự án đặt tại [GitHub Project #15 (Vegetarian Support System — SWP391)](https://github.com/users/NgaiLong49423/projects/15).
-* Không bật workflow tổng quát `Pull request merged -> Done` nếu nó không lọc được nhánh đích `main`; merge feature vào `develop` sẽ làm Issue Done quá sớm.
-* Chỉ dùng automation đóng Issue khi trạng thái `Done` đã được thiết kế để xảy ra sau merge vào `main`.
-
-**Giải thích thuật ngữ:**
-* **Commit** (lần lưu): Hành động lưu lại trạng thái thay đổi của các file mã nguồn vào lịch sử Git tại máy cá nhân.
-* **Push** (đẩy code): Hành động gửi các commit từ máy tính cá nhân (local) lên kho lưu trữ trực tuyến trên GitHub.
-* **Repository** (kho lưu trữ / repo): Nơi lưu trữ toàn bộ mã nguồn, tài liệu và lịch sử các phiên bản của dự án.
+- [GitHub Project #15](https://github.com/users/NgaiLong49423/projects/15) quản lý owner, SP, deadline, status và blocker; linked PR giữ bằng chứng kiểm tra/review.
+- Không dùng automation `PR merged -> Done` hoặc `Issue closed -> Done` để bỏ qua nghiệm thu local sau merge. Không bật automation trong thay đổi tài liệu này.
+- Source Trace và lifecycle requirement tuân theo SRS và quy tắc requirement-to-Issue trong AGENTS.md; workflow không tự tạo hoặc đồng bộ Issue thật.
 
 ---
 
@@ -305,7 +317,7 @@ chore: update .gitignore
 Để gửi một pull request thành công:
 1. **Đặt tiêu đề rõ ràng:** Tiêu đề PR nên tuân theo định dạng tương tự commit message và dùng tiếng Anh (ví dụ: `feat(auth): add login page`).
 2. **Mô tả chi tiết nội dung:** Điền đầy đủ thông tin vào mẫu PR, mô tả rõ các thay đổi bạn đã thực hiện và lý do thay đổi.
-3. **Liên kết Issue:** Feature PR vào `develop` dùng `Refs #123` để liên kết mà chưa đóng Issue. Release PR vào `main` dùng `Closes #123` cho các Issue sẽ hoàn tất khi release được merge.
+3. **Liên kết Issue:** PR vào `develop` và `main` dùng `Refs #123`. Tech Lead xác nhận và đóng Issue sau khi kiểm tra demo local trên `main` đạt; không dùng closing keywords để đóng trước nghiệm thu.
 4. **Kiểm tra hoạt động:** Chắc chắn rằng dự án của bạn vẫn chạy được và không làm hỏng các tính năng cũ.
 5. **Dọn dẹp code:** Đảm bảo không có code thừa, comment nháp hay các file rác trước khi gửi PR.
 

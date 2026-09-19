@@ -1,13 +1,36 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.22.0
+> **Version:** v2.23.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-18
+> **Last Updated:** 2026-09-19
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-19 — Confirm Weekly Workflow and Local Demo Gates
+
+**Status:** Committed.
+
+**Scope:** Apply the decision-maker's confirmed weekly workflow, keep CONTRIBUTING.md as the operational source, and align decision rationale and intake templates. Work began on September 18 and was completed on September 19 (Asia/Saigon).
+
+### Added
+
+- Require the project PR template and Bug Report form for human and agent submissions, including equivalent structured bodies through CLI/API; template changes require Tech Lead approval.
+- Document owner accountability for AI-assisted frontend work, API contract approval before integration, immediate deadline-risk reporting, bug triage, and local verification before marking work Done.
+
+### Changed
+
+- Make review/approval and GitHub Actions optional for develop integration; require independent approval, current build/test checks, integration evidence, and post-merge local demo verification for main.
+- Assign main PR coordination and acceptance to the Tech Lead; plan weekly workloads using relative SP without trimming accepted scope or counting parent and child estimates twice.
+- Retain ADR-001/002 decision history while moving operational rules to CONTRIBUTING.md; align the workflow evidence register, project overview, test strategy, PR template, and existing bug form.
+- Defer deployment/CD until the team is ready for Azure deployment. No GitHub settings, workflow code, live Issues, or Issue drafts were changed.
+
+### Fixed
+
+- Use Refs for main PRs and close Issues only after acceptance, avoiding automatic closure before post-merge verification.
+- Explicitly distinguish the approved CI build/test gate from the existing release-source Action, which only checks the source branch.
 
 ## 2026-09-18 — Restore Steps and Media, Add Rating, View Tracking, Unit Conversion, and Multi-Mode Discovery
 

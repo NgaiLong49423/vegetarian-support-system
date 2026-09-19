@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.4.0
+> **Version:** v1.5.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-18
+> **Last Updated:** 2026-09-19
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -107,9 +107,11 @@ Frontend Coverage tooling và mọi quality gate vẫn là `TBD` cho tới khi F
 
 ## 10. Quan hệ với trạng thái hoàn tất và release
 
-Một thay đổi chỉ được xem là hoàn tất kỹ thuật để review khi Acceptance Criteria áp dụng đã được kiểm tra, automated test liên quan pass (hoặc có bằng chứng manual trung thực khi automation chưa tồn tại), dự án build/run được khi đã có scaffold chạy được, các ảnh hưởng về security/data/documentation đã được xử lý và không còn review conversation quan trọng chưa giải quyết.
+[CONTRIBUTING.md](../../CONTRIBUTING.md#workflow-làm-việc-nhóm) sở hữu cổng merge và Definition of Done. PR vào `develop` có review/approval và GitHub Actions tùy chọn; owner vẫn tự kiểm tra và ghi rõ giới hạn. Merge tích hợp chưa xác nhận FR hoàn thành.
 
-Release lên `main` còn phải tuân theo release checklist trong `CONTRIBUTING.md`, bao gồm verification tích hợp/demo, kiểm thử migration trên database sạch khi áp dụng và Smoke Test sau merge. Test Strategy này bổ sung cho workflow đó; nó không tạo board status mới và không làm yếu requirement phê duyệt hiện có.
+PR `develop -> main` cần approval độc lập, build/automated tests và required GitHub Actions checks đạt trên commit mới nhất. Test cases phải bao phủ Acceptance Criteria và các luồng lỗi/quyền truy cập liên quan; manual tests bổ sung phần chưa tự động hóa, không thay thế required checks. Cổng này chưa có bằng chứng triển khai đầy đủ chỉ vì đã được ghi trong tài liệu.
+
+Sau merge, Tech Lead tổ chức kiểm tra demo local trên `main` với bằng chứng chức năng từ owner; đạt mới xác nhận Issue `Done` và đóng. Defect sau nghiệm thu được theo dõi theo workflow bug, giữ lịch sử Issue đã hoàn thành. Tạm thời chưa deploy/CD; strategy này không yêu cầu deployment để nghiệm thu demo local.
 
 ## 11. Điều kiện áp dụng và open item
 

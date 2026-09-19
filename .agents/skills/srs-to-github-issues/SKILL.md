@@ -384,6 +384,22 @@ An implementation Issue MUST contain enough authoritative behavioral information
 
 Only execution-critical information from source requirements is summarized into the Issue. Historical rationale, extensive requirement decomposition, governance metadata, and supporting context remain linked rather than duplicated.
 
+### Production-Clean Issue Body Rule (No Meta-Noise)
+
+An Issue created on GitHub is an engineering and delivery contract for developers, testers, and team members. It MUST NOT contain internal agent meta-commentary, prompt caveats, or peripheral procedural clutter.
+Specifically:
+- **FORBIDDEN in live Issue body:**
+  - AI prompt caveats (e.g. "Endpoints/DTO/query/model/migration chưa được draft này phê duyệt", "Owner chịu trách nhiệm FE/BE kể cả code AI");
+  - Meta-arguments about requirement conflicts (e.g. "Ghi cảnh báo trace, không tự sửa source", "Không thêm server draft theo câu nhắc tương lai vì FR24 OUT_OF_SCOPE");
+  - Boilerplate scheduling disclaimers (e.g. "Chờ Tech Lead/owner xác nhận; Start/Target date và assignee chốt khi giao việc");
+  - Internal AI reasoning headers (e.g. `### Source questions / DESIGN_TBD` containing agent notes).
+- **REQUIRED in live Issue body:**
+  - Clean Functional Requirements, Use Cases, Actors, Preconditions, Triggers, Step-by-step Flows, Postconditions, Permissions & Security;
+  - Concrete, testable Acceptance Criteria (Given-When-Then);
+  - Traceability to authoritative docs (Source Trace, BRs, NFRs);
+  - Clean Planning Metadata (Type, Priority, Story Points);
+  - Only genuine technical dependencies (e.g. "Phụ thuộc tích hợp dữ liệu với FR-08, FR-17").
+
 ## GitHub Creation / Reconciliation Preflight
 
 Use `references/github-creation-preflight.md` before real mutations.

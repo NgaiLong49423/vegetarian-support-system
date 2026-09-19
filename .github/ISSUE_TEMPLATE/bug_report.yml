@@ -1,8 +1,37 @@
 name: Bug Report
-description: Báo lỗi xảy ra trong dự án
+description: Báo bug trên develop/main, cung cấp bằng chứng để Tech Lead triage và giao owner
 title: "fix: "
 labels: ["🐛 Bug"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Bắt buộc dùng Bug Report form này; khi tạo qua CLI/API, giữ các mục và thông tin bắt buộc tương ứng. Không tự thay bằng format mới.
+        Báo bug trên `develop`/`main` theo CONTRIBUTING.md. Lỗi riêng trên branch cá nhân tự xử lý; nếu lỗi đã có ở hai nhánh này hoặc chặn người khác thì vẫn báo. Không cần biết nguyên nhân/tác giả code mới được báo; Tech Lead xác nhận ưu tiên và owner.
+  - type: dropdown
+    id: affected_branch
+    attributes:
+      label: "Nhánh bị ảnh hưởng"
+      options:
+        - "develop"
+        - "main"
+        - "Branch cá nhân: lỗi gốc ở develop/main hoặc chặn người khác"
+    validations:
+      required: true
+  - type: input
+    id: tested_commit
+    attributes:
+      label: "Commit đã kiểm tra"
+      description: "Ghi commit hash của phiên bản tái hiện lỗi; nếu chưa xác định, ghi rõ lý do để bổ sung."
+    validations:
+      required: true
+  - type: input
+    id: source_trace
+    attributes:
+      label: "FR/Issue/PR liên quan"
+      description: "Liên kết nếu biết; chưa xác định thì để trống."
+    validations:
+      required: false
   - type: textarea
     id: description
     attributes:
@@ -15,7 +44,7 @@ body:
     id: steps
     attributes:
       label: "2. Các bước tái hiện lỗi"
-      description: "Ghi rõ từng bước để người khác có thể tái hiện (tạo lại) lỗi."
+      description: "Ghi từng bước và dữ liệu kiểm tra để người khác tái hiện; không đưa thông tin riêng tư hoặc secrets."
       placeholder: |
         1. 
         2. 
@@ -26,7 +55,7 @@ body:
     id: expected
     attributes:
       label: "3. Kết quả mong muốn"
-      description: "Mô tả điều đáng lẽ phải xảy ra."
+      description: "Mô tả điều đáng lẽ phải xảy ra theo SRS/Acceptance Criteria; dẫn nguồn nếu biết."
       placeholder: "Mô tả kết quả mong muốn tại đây..."
     validations:
       required: true
@@ -42,7 +71,7 @@ body:
     id: screenshot-logs
     attributes:
       label: "5. Ảnh chụp màn hình hoặc Log"
-      description: "Thêm ảnh chụp màn hình, log lỗi hoặc thông báo lỗi nếu có. (Log là thông tin hệ thống in ra để hỗ trợ kiểm tra và debug. Debug là quá trình tìm và sửa lỗi)."
+      description: "Thêm screenshot/video/log nếu có; loại bỏ token, mật khẩu và dữ liệu riêng tư."
       placeholder: "Kéo thả ảnh hoặc dán log lỗi vào đây..."
     validations:
       required: false
@@ -59,12 +88,12 @@ body:
         - Database: 
         - Công cụ/IDE: 
     validations:
-      required: false
+      required: true
   - type: dropdown
     id: severity
     attributes:
       label: "7. Mức độ ảnh hưởng"
-      description: "Chọn mức độ ảnh hưởng của lỗi."
+      description: "Chọn ảnh hưởng dự kiến; Tech Lead xác nhận ưu tiên xử lý. Nêu rõ nếu lỗi chặn chức năng, tích hợp hoặc demo trong mô tả."
       options:
         - "Thấp: lỗi nhỏ, không ảnh hưởng nhiều"
         - "Trung bình: ảnh hưởng một phần chức năng"
@@ -76,7 +105,7 @@ body:
     id: notes
     attributes:
       label: "8. Ghi chú thêm"
-      description: "Ghi thêm thông tin khác nếu cần."
+      description: "Ghi nguyên nhân nghi ngờ nếu có, không kết luận tác giả gây lỗi khi chưa xác minh. Owner sửa và kiểm tra trên main trước khi Done."
       placeholder: "Nhập ghi chú thêm..."
     validations:
       required: false
