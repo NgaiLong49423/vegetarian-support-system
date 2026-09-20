@@ -1,0 +1,476 @@
+openapi: 3.1.1
+info:
+  title: Mâm Xanh API
+  version: 0.1.0
+  summary: REST API contract for the Mâm Xanh application
+  description: >-
+    Under-review contract. The current slice covers FR-03 Authentication & Account only.
+    It does not claim that the documented endpoints are implemented.
+servers:
+  - url: /api/v1
+    description: Version 1 relative base path
+tags:
+  - name: Authentication
+    description: Registration, verification, login, password recovery, session refresh, and logout.
+paths:
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register with email and password
+      description: Creates an UNVERIFIED account and triggers a best-effort verification email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Account created in UNVERIFIED state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '409':
+          description: Email is already used by an active account.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /auth/email-verifications:
+    post:
+      tags: [Authentication]
+      summary: Verify an email address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '204':
+          description: Email verified and account activated.
+        '400':
+          description: Verification token is invalid or expired.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /auth/email-verifications/resend:
+    post:
+      tags: [Authentication]
+      summary: Request another verification email
+      description: Invalidates the previous token when a new token is issued. Limited to one request per 60 seconds.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '202':
+          description: Request accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '429':
+          $ref: '#/components/responses/RateLimitProblem'
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Log in with email and password
+      description: >-
+        On success, returns a short-lived access token and sets a rotating refresh token in a Secure,
+        HttpOnly cookie. Five consecutive failures trigger a ten-minute limit by account identifier
+        and source IP without changing the account to LOCKED.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful. The response also sets the refresh_token cookie.
+          headers:
+            Set-Cookie:
+              description: Rotating refresh token cookie. Exact lifetime remains under review.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '401':
+          description: Email or password is incorrect.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Account email is not verified or the account is administratively locked.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '429':
+          $ref: '#/components/responses/RateLimitProblem'
+  /auth/google:
+    post:
+      tags: [Authentication]
+      summary: Log in with a Google ID token
+      description: >-
+        Verifies the Google token signature, issuer, audience, and expiry. A first-time user receives
+        an ACTIVE Member account. The stable Google subject is used as the external identity key.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleLoginRequest'
+      responses:
+        '200':
+          description: Google login successful. The response also sets the refresh_token cookie.
+          headers:
+            Set-Cookie:
+              description: Rotating refresh token cookie. Exact lifetime remains under review.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '401':
+          description: Google ID token is invalid or expired.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /auth/password-resets:
+    post:
+      tags: [Authentication]
+      summary: Request a password-reset email
+      description: Always returns a neutral response so clients cannot discover whether an email exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '202':
+          description: Request accepted, regardless of whether the email exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+  /auth/password-resets/confirm:
+    post:
+      tags: [Authentication]
+      summary: Set a new password with a reset token
+      description: Invalidates the used token and revokes all active sessions for the account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+      responses:
+        '204':
+          description: Password changed and existing sessions revoked.
+        '400':
+          description: Payload or reset token is invalid or expired.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Rotate the refresh token and issue a new access token
+      description: >-
+        Requires the refresh_token HttpOnly cookie. Reuse of an already rotated token revokes the
+        related token family and clears the cookie. The CSRF mechanism is still under review.
+      security:
+        - refreshCookie: []
+      responses:
+        '200':
+          description: Session refreshed and refresh token rotated.
+          headers:
+            Set-Cookie:
+              description: New rotating refresh token cookie.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Refresh token is missing, invalid, expired, revoked, or reused.
+          headers:
+            Set-Cookie:
+              description: Clears the refresh token cookie when the session must be terminated.
+              schema:
+                type: string
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Revoke the current refresh session
+      description: Requires the refresh_token cookie. The CSRF mechanism is still under review.
+      security:
+        - refreshCookie: []
+      responses:
+        '204':
+          description: Session revoked and refresh token cookie cleared.
+          headers:
+            Set-Cookie:
+              description: Clears the refresh token cookie.
+              schema:
+                type: string
+        '401':
+          description: No valid refresh session can be authenticated.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+      description: Proposed cookie name; final naming and lifetime require Tech Lead approval.
+  schemas:
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [displayName, email, password, confirmPassword]
+      properties:
+        displayName:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: Nguyễn An
+        email:
+          type: string
+          format: email
+          example: an.nguyen@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          writeOnly: true
+          description: Must satisfy the password-complexity rules defined by FR-03.
+        confirmPassword:
+          type: string
+          format: password
+          minLength: 8
+          writeOnly: true
+          description: Must match password.
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          writeOnly: true
+    GoogleLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [idToken]
+      properties:
+        idToken:
+          type: string
+          writeOnly: true
+          description: Google ID token returned by Google Identity Services.
+    EmailRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    TokenRequest:
+      type: object
+      additionalProperties: false
+      required: [token]
+      properties:
+        token:
+          type: string
+          writeOnly: true
+          minLength: 1
+    PasswordResetConfirmRequest:
+      type: object
+      additionalProperties: false
+      required: [token, newPassword, confirmPassword]
+      properties:
+        token:
+          type: string
+          writeOnly: true
+          minLength: 1
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          writeOnly: true
+          description: Must satisfy the password-complexity rules defined by FR-03.
+        confirmPassword:
+          type: string
+          format: password
+          minLength: 8
+          writeOnly: true
+          description: Must match newPassword.
+    RegistrationResponse:
+      type: object
+      additionalProperties: false
+      required: [accountStatus, message]
+      properties:
+        accountStatus:
+          type: string
+          const: UNVERIFIED
+        message:
+          type: string
+          example: Registration succeeded. Check your email to activate the account.
+    AuthResponse:
+      type: object
+      additionalProperties: false
+      required: [accessToken, tokenType, expiresInSeconds, account]
+      properties:
+        accessToken:
+          type: string
+          readOnly: true
+          description: Short-lived JWT access token.
+        tokenType:
+          type: string
+          const: Bearer
+        expiresInSeconds:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Runtime access-token lifetime; the configured value is still under review.
+        account:
+          $ref: '#/components/schemas/AccountSummary'
+    TokenResponse:
+      type: object
+      additionalProperties: false
+      required: [accessToken, tokenType, expiresInSeconds]
+      properties:
+        accessToken:
+          type: string
+          readOnly: true
+          description: Short-lived JWT access token.
+        tokenType:
+          type: string
+          const: Bearer
+        expiresInSeconds:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Runtime access-token lifetime; the configured value is still under review.
+    AccountSummary:
+      type: object
+      additionalProperties: false
+      required: [displayName, email, role, accountStatus]
+      properties:
+        displayName:
+          type: string
+        email:
+          type: string
+          format: email
+        avatarUrl:
+          type: [string, 'null']
+          format: uri
+        role:
+          type: string
+          enum: [MEMBER, ADMIN]
+        accountStatus:
+          type: string
+          const: ACTIVE
+    MessageResponse:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+    FieldError:
+      type: object
+      additionalProperties: false
+      required: [field, message]
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+    ProblemDetails:
+      type: object
+      additionalProperties: true
+      required: [title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          default: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]*$'
+          example: VALIDATION_FAILED
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+  responses:
+    ValidationProblem:
+      description: Request validation failed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    RateLimitProblem:
+      description: Request rate limit exceeded.
+      headers:
+        Retry-After:
+          description: Seconds until another attempt is accepted.
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'

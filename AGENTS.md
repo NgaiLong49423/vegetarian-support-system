@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.6.0
+> **Version:** v3.7.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-09-17
+> **Last Updated:** 2026-09-20
 > **Status:** Active
 
 # Agent Entry Point
@@ -34,7 +34,7 @@ Do not recursively read the repository, all documentation, all skills, old logs 
 |---|---|---|
 | Understand the product | README.md; PRD sections in docs/requirements/PRD.md | SRS headings for the requested capability |
 | Implement/change business behavior | Registered SRS root plus applicable authoritative FR/BR/NFR documents; target code/tests | Related SRS sections and supporting decomposition named by the document register |
-| Frontend | app/frontend/README.md; target feature | Relevant SRS and backend API contract; technology baseline for dependency decisions |
+| Frontend | app/mamxanh-frontend/README.md; target feature | Relevant SRS and backend API contract; technology baseline for dependency decisions |
 | Backend | app/mamxanh-backend/README.md; target code/tests | Relevant SRS, API contract, database guide |
 | Database | database/README.md; affected migrations/model | Relevant SRS and docs/diagrams/ERD/; empty SQL files are not an approved schema |
 | Technologies/integration | Technology-stack or technology-baseline document registered in docs/README.md | Relevant SRS; do not turn provider selection into an unapproved model/architecture |
@@ -59,8 +59,19 @@ Skills live at `.agents/skills/<name>/SKILL.md`. For maintained local skills, th
 | Cross-document consistency audit | repo-template-doc-sync-auditor | Use this project's maintained register and adopted contract; ignore skill packages and generated outputs by default |
 | Decompose requirements or maintain/synchronize GitHub Issues | srs-to-github-issues | SRS owns requirement meaning and lifecycle; the skill owns requirement-to-Issue mapping, synchronization and Issue lifecycle actions |
 | Maintain changelog or prepare release notes | changelog-automatic | Read CONTRIBUTING.md#changelog-format first; use verified evidence and do not infer release/PR/commit facts |
+| Record a credible bug discovered during repository work, or conduct a user-requested bug audit | bug-recording | Records evidence without expanding task scope; read-only instructions override file writes, and GitHub Issue creation requires explicit current-task authorization |
 
 Use the smallest set that fits the request. Do not load all five skills for every task. When a specialized skill applies, let it own its specialized mechanics while `markdown-documentation` supplies shared documentation semantics. When a skill is unavailable, report it and apply the relevant repository rule directly; do not invent its contents.
+
+### Cross-cutting bug recording
+
+During any repository task, remain alert for credible evidence that expected behavior differs from actual behavior or that another meaningful project defect exists. Do not proactively scan for bugs unless the user explicitly requests a bug audit. When a credible bug is encountered incidentally, use `bug-recording`, create one file per bug under `.agents/outputs/bugs/`, update `bugs-metadata.yaml`, report it, and continue the active task only when safe.
+
+An explicit `read-only`, `plan-only`, `review only`, `do not modify files`, or equivalent instruction takes precedence: report the finding in the conversation and do not update bug outputs. If an equivalent record already exists, do not allocate a new ID; report `Matches existing BUG-xxx` and add new evidence only when local writes are allowed.
+
+A bug record is not a GitHub Bug Issue. Never create an Issue automatically. Creation requires an explicit current-task instruction from the user and must use the current `.github/ISSUE_TEMPLATE/bug_report.yml` plus `CONTRIBUTING.md`. Recording a bug does not authorize fixing it, adding a regression test, assigning an owner, setting priority, committing, pushing, or otherwise expanding the current task.
+
+For browser-visible verification, distinguish exploratory browser control from persistent Playwright tests in `app/mamxanh-frontend/tests/e2e/`. Do not call a frontend-only or mock-backed smoke test full end-to-end evidence for Backend or database behavior.
 
 ### Requirement-to-Issue synchronization
 
@@ -94,7 +105,7 @@ Live GitHub mutations require authorization for the current task. Authorization 
 
 No automatic saved audit report, log, summary or progress file, regardless of changed-file count. Return findings in the conversation by default.
 
-Maintained project documentation follows the document lifecycle and registration rules in `docs/README.md`. Scratch and generated working artifacts belong under `.agents/outputs/`, using either the selected skill's declared structure or a task-specific subdirectory. These outputs are not maintained project documentation unless an authorized decision explicitly promotes and registers them.
+Maintained project documentation follows the document lifecycle and registration rules in `docs/README.md`. Scratch and generated working artifacts belong under `.agents/outputs/`, using either the selected skill's declared structure or a task-specific subdirectory. These outputs are not maintained project documentation unless an authorized decision explicitly promotes and registers them. The tracked `.agents/outputs/bugs/` subtree is the approved exception for cross-task bug records and their metadata index; it remains agent output rather than product or requirement authority.
 
 Metadata audits use the maintained register. `SKILL.md` retains YAML frontmatter. Do not add project-document metadata to skill packages, scratch files or generated outputs. Do not scan `.agents/skills/**` or `.agents/outputs/**` to discover supposed project requirements unless the task explicitly targets those locations.
 

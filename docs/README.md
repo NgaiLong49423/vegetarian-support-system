@@ -1,8 +1,8 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v3.7.0
+> **Version:** v3.10.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-17
+> **Last Updated:** 2026-09-20
 > **Status:** Active  
 
 # Repository Layout and Document Register
@@ -35,12 +35,13 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 | Location | Allowed purpose | Examples and boundaries |
 |---|---|---|
 | Repository root | Entry points and root-level tooling only | README.md, AGENTS.md, CONTRIBUTING.md, CHANGELOG.md, LICENSE, .gitignore; new build/tool configs require a real root-level consumer |
-| app/frontend/ | Frontend source, tests, assets and configuration | React component, feature test, package.json after scaffolding; place files by the app's established feature structure |
+| app/mamxanh-frontend/ | Frontend source, tests, assets and configuration | React component, Playwright test, package.json and tool configuration; place files by the app's established feature structure |
 | app/mamxanh-backend/ | Backend source, tests, configuration and migrations | Java classes/tests, pom.xml, Flyway migrations after scaffolding |
 | database/ | Database usage guide, deliberate SQL snapshot, demo seed and diagnostic queries | schema.sql remains empty until designed; Flyway owns executable migration history when implemented |
 | docs/requirements/ | Maintained product and software requirements | PRD owns high-level product intent; root SRS owns scope, context, index, and lifecycle registry; docs/requirements/srs/ owns detailed FR, BR, and NFR specifications |
 | docs/architecture/ | Current high-level system structure and selected technology baseline | ARCHITECTURE owns runtime boundaries; TECHNOLOGY-STACK owns technology purpose, rationale, trade-offs and TBD choices |
 | docs/testing/ | Project-level verification strategy | Strategy and quality evidence policy, not a test-case catalog or claim that tests exist |
+| docs/api/ | Maintained API integration guide and OpenAPI contract | OpenAPI owns endpoint-level contract; API.md explains shared integration conventions without duplicating schemas |
 | docs/decisions/ | Durable project/workflow decisions and rationale | Numbered ADR with context, decision, consequences and unresolved points |
 | docs/diagrams/Activity/ | Maintained activity diagram source and exports | Name by feature; link to the relevant SRS identifiers |
 | docs/diagrams/UseCase/ | Maintained use-case diagram source and exports | Name by module; do not invent a second requirement source |
@@ -51,12 +52,12 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 | .github/ | GitHub configuration and PR template | labels.yml, pull_request_template.md; workflows only when authorized |
 | .agents/skills/ | Reusable agent procedures and their own references/templates | Each skill lives in one folder with SKILL.md; no product requirements here |
 | .agents/repo-contract.yml | Machine-readable routing and maintenance contract | Keep aligned with this register and AGENTS.md |
-| .agents/outputs/<task>/ | Explicitly requested temporary deliverables only | Requested draft Issue bodies or audit export; never automatic, never authoritative |
+| .agents/outputs/<task>/ | Agent-generated artifacts, ignored by default | Explicitly requested drafts/exports are temporary; `.agents/outputs/bugs/` is the narrow tracked exception for one-file-per-bug records and its metadata index, but remains non-authoritative agent output |
 | OS temporary directory | Disposable verification artifacts and local backups | Keep these out of project documentation |
 
 Backend source subdirectories, migration location and frontend feature structure must follow the actual scaffold once it exists; this policy does not create a new application architecture.
 
-Examples: a recipe form belongs in app/frontend/, its API service in app/mamxanh-backend/, an AI quota rule in SRS, an integration boundary in ARCHITECTURE, and a durable provider-selection rationale in docs/decisions/. Task status belongs on its GitHub Issue/Project item.
+Examples: a recipe form belongs in app/mamxanh-frontend/, its API service in app/mamxanh-backend/, an AI quota rule in SRS, an integration boundary in ARCHITECTURE, and a durable provider-selection rationale in docs/decisions/. Task status belongs on its GitHub Issue/Project item.
 
 ## Maintained document register
 
@@ -75,8 +76,11 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | requirements/srs/BUSINESS-RULES.md | Authoritative detailed BR definitions, rationale, constraints, and business logic (derived lifecycle), Requirements Baseline v1.0.0, Active | Implementing or verifying business rules and constraints |
 | requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md | Authoritative detailed NFR definitions, measurable targets, quality constraints, and verification criteria, Requirements Baseline v1.0.0, Active | Architecture, performance, security, reliability, or quality assurance work |
 | architecture/ARCHITECTURE.md | High-level runtime parts, boundaries, communication paths, trust boundaries and architectural constraints | Architecture or cross-component integration work |
+| architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md | Draft package-level proposal for incrementally implementing the approved Backend modular-monolith boundary; not evidence of existing source structure | Planning or reviewing a Backend vertical slice and its package placement |
 | architecture/TECHNOLOGY-STACK.md | Selected technologies, purpose, rationale, benefits, trade-offs and unresolved choices | Dependency or technology decisions |
 | testing/TEST-STRATEGY.md | Project-level test levels, evidence boundaries, traceability, coverage interpretation and completion relationship | Test planning, quality gates or verification design |
+| api/API.md | Cross-team API integration guide, shared conventions, authentication flow and links to the detailed contract; current Auth slice remains Under Review | Frontend/Backend integration or API contract work |
+| api/openapi.yaml | Machine-readable OpenAPI Source of Truth for detailed paths, methods, schemas, status codes and security declarations; currently covers the Auth slice | Implementing, reviewing, mocking or testing REST endpoints |
 | decisions/001-team-workflow.md | Branch/release decision and rationale | Workflow changes |
 | decisions/002-five-member-team-operating-agreement.md | Team responsibilities and coordination | Team process |
 | decisions/WORKFLOW-SOURCES.md | Evidence behind workflow conventions | Reconsidering a workflow decision |
@@ -85,7 +89,7 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | diagrams/UseCase/README.md | Use-case diagram conventions | Creating/updating use-case diagrams |
 | diagrams/ERD/README.md | ERD documentation conventions | Creating/updating the data model |
 | diagrams/C4 Container Diagram/README.md | C4 container diagram conventions and container breakdown | Creating/updating container architecture |
-| ../app/frontend/README.md | Frontend setup/state and contribution guidance | Frontend work |
+| ../app/mamxanh-frontend/README.md | Frontend setup/state, Playwright commands and contribution guidance | Frontend work |
 | ../app/mamxanh-backend/README.md | Backend setup/state and contribution guidance | Backend work |
 | ../database/README.md | SQL/Flyway ownership and database state | Database work |
 | ../.github/pull_request_template.md | PR evidence and release checklist template | Opening or reviewing a PR |
@@ -100,7 +104,7 @@ Paths above are relative to docs/. Skill procedures are registered separately in
 4. Update incoming relative links and the File metadata when moving a document. Preserve Created and increment its document version appropriately.
 5. When a worksheet/draft has fulfilled its purpose, retain confirmed decisions in the authoritative document, remove navigation/Related Docs references and delete only with user authorization. Historical changelog entries may mention retired paths without making them reading targets.
 6. An unregistered file is ignored for documentation discovery, not automatically deleted, rewritten, catalogued or metadata-standardized.
-7. Return audit results in chat. Do not recreate reports directories because an old skill example mentions them. Explicitly requested exports go under .agents/outputs/<task>/ and never enter this register.
+7. Return audit results in chat. Do not recreate reports directories because an old skill example mentions them. Explicitly requested exports go under `.agents/outputs/<task>/` and never enter this register; the separately governed `.agents/outputs/bugs/` exception is managed by `bug-recording` and is not maintained project documentation.
 
 ## Evidence-triggered future documents
 
@@ -108,8 +112,6 @@ Do not create empty documents to complete a checklist. A future authorized docum
 
 - `development/DEVELOPMENT.md` only after real frontend/backend scaffolds and verified day-to-day development, build, test and migration commands exist.
 - `setup/SETUP.md` only after a clean checkout can be configured, started and verified end-to-end with tested steps.
-- `api/API.md` only after the project adopts an OpenAPI (or equivalent real) contract or implements endpoints with shared authentication, error and API conventions that can be verified.
-
 Until each trigger is satisfied, workspace READMEs and implementation artifacts may record verified local facts without pretending that a maintained cross-project guide exists.
 
 ## Progress and evidence

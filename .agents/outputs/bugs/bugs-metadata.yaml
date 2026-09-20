@@ -1,0 +1,19 @@
+schema_version: 1
+last_updated: 2026-09-20
+next_id: 2
+
+status_definitions:
+  RECORDED: Credible bug captured; no active investigation or verified resolution is recorded.
+  TRACKING: Bug is being monitored or investigated, but is not yet verified as resolved.
+  RESOLVED: A resolution and its verification evidence are recorded in the bug file.
+
+bugs:
+  - id: BUG-001
+    title: Database guide incorrectly states that the ERD does not exist
+    status: RECORDED
+    severity: Medium
+    area: Documentation/Database
+    file: .agents/outputs/bugs/BUG-001.md
+    created: 2026-09-20
+    updated: 2026-09-20
+    related_issue: Unknown
