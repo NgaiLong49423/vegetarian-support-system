@@ -21,6 +21,9 @@ export const currentUser: Author = {
   bio: 'Đang theo đuổi lối sống chay thanh đạm 🌿',
 };
 
+// UI-only placeholder until account/subscription data is supplied by the backend.
+export const demoAiPlan = 'FREE';
+
 // --- Recipes ---------------------------------------------------------------
 const dietTagOptions = ['Thuần Chay', 'Lacto', 'Ovo', 'Lacto-Ovo'] as const;
 

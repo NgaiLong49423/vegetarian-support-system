@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.1.0
+> **Version:** v1.2.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-09-20
+> **Last Updated:** 2026-09-21
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -10,6 +10,34 @@
 Thư mục mã nguồn giao diện ứng dụng Mâm Xanh được xây dựng bằng **React 19**, **TypeScript**, **Vite 8**, **Tailwind CSS v4** và xuất phát từ thiết kế Figma Make.
 
 Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy và gỡ lỗi trực tiếp trên **IntelliJ IDEA** (hoặc WebStorm/VS Code).
+
+## Giao diện demo và giới hạn hiện tại
+
+Bản demo cho giảng viên: [Mâm Xanh trên Vercel](https://mamxanh-frontend.vercel.app/). Đây là bản Frontend dùng dữ liệu mẫu; tài khoản Lan Anh và gói FREE là dữ liệu demo, chưa có đăng nhập hoặc phân quyền thật.
+
+| Khu vực | Người dùng có thể thử | Giới hạn hiện tại |
+|---|---|---|
+| Trang chủ và thanh điều hướng | Logo dự án, menu desktop trên một hàng, tiêu đề hai dòng; menu thu gọn trên màn hình nhỏ | Logo ứng dụng/favicon dùng tài nguyên của dự án |
+| Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Chỉ giữ trong bộ nhớ khi trang còn mở, chưa gửi Backend |
+| Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu | Làm tròn tối đa 2 chữ số thập phân; lượng không đọc được thành số giữ nguyên; chưa đồng bộ Shopping List |
+| Kế hoạch bữa ăn | Chọn 0,5–10 phần cho từng món, bước 0,5 | Chỉ cập nhật trạng thái UI; chưa lưu hoặc tổng hợp dinh dưỡng thật |
+| Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |
+| Dinh dưỡng công thức | Đọc rõ số liệu minh họa cho **1 khẩu phần** | 8 chỉ tiêu tĩnh, chưa tính từ nguyên liệu; còn thiếu so với FR-39, xem BUG-002 |
+| Hồ sơ dinh dưỡng và BMI | Nhập tuổi, chiều cao, cân nặng; xác nhận phạm vi hỗ trợ rồi tính BMI tham khảo | Chưa lưu hồ sơ, chưa tính nhu cầu calorie hoặc đề xuất điều trị |
+| Gói AI | Xem FREE/PLUS/PRO và giá 0/49.000/99.000 VNĐ mỗi tháng | FREE hiện tại là mock; nút thanh toán bị vô hiệu hóa, chưa mua hoặc kích hoạt quyền thật |
+| Lịch sử giao dịch | Mở trang lịch sử và xem trạng thái chưa có dữ liệu | Chưa kết nối API giao dịch; không tạo giao dịch giả |
+
+Hồ sơ BMI, **Nâng cấp gói AI** và lịch sử giao dịch nằm trong menu avatar; gói `FREE · demo` hiện dưới tên tài khoản. Trên mobile, mở menu để truy cập các trang này. Đường dẫn trực tiếp: `/ho-so/dinh-duong`, `/goi-ai`, `/giao-dich`.
+
+Các màn hình này chuẩn bị trải nghiệm cho FR-13, FR-20, FR-26/27, FR-35/38, FR-37/39 và FR-46; không xác nhận đã hoàn thành toàn bộ Acceptance Criteria của các FR. SRS vẫn là nguồn yêu cầu chính thức.
+
+## Vercel cho buổi demo
+
+- Bản UI được triển khai thủ công từ thư mục Frontend. Vercel gắn nhãn môi trường `Production` cho link demo; đây chưa phải sản phẩm cuối cùng.
+- `vercel.json` chuyển các đường dẫn SPA về `index.html`, giúp mở trực tiếp hoặc tải lại trang con bằng React Router.
+- Build dùng `npm run build`, đầu ra `dist/`. `.vercel/` là thông tin liên kết tài khoản/project local và được bỏ qua trong Git.
+- Không thiết lập GitHub CI/CD hoặc Git auto-deploy cho bản demo này. Push code không tự cập nhật link Vercel; lần cập nhật demo sau cần deploy thủ công nếu được yêu cầu.
+- Azure vẫn là baseline triển khai toàn hệ thống. Vercel chỉ phục vụ buổi giới thiệu UI, không thay thế quyết định kiến trúc.
 
 ---
 
@@ -100,6 +128,9 @@ app/mamxanh-frontend/
 │   │   ├── NutritionTracker.tsx # Nhật ký theo dõi dinh dưỡng
 │   │   ├── Community.tsx        # Diễn đàn cộng đồng
 │   │   ├── PostDetail.tsx       # Chi tiết bài viết cộng đồng
+│   │   ├── NutritionProfile.tsx # Hồ sơ BMI tham khảo
+│   │   ├── AiPlans.tsx          # Gói AI và trạng thái gói demo
+│   │   ├── TransactionHistory.tsx # Lịch sử giao dịch chưa kết nối API
 │   │   └── Profile.tsx          # Hồ sơ cá nhân
 │   ├── data/              # Dữ liệu mẫu (mock data cho UI)
 │   ├── types.ts           # Kiểu dữ liệu TypeScript
@@ -145,4 +176,4 @@ npx playwright install chromium
 
 HTML report được tạo trong `playwright-report/`; screenshot và trace lỗi nằm trong `test-results/`. Hai thư mục này là generated evidence và không được commit mặc định.
 
-Test đầu tiên là **Frontend browser smoke test** trên giao diện hiện dùng mock data. Kết quả pass chỉ chứng minh application shell và navigation được kiểm tra hoạt động trong browser; nó không chứng minh Backend, database, authentication hoặc full FE–BE E2E đã hoạt động.
+Suite hiện có 8 test: application shell/navigation; bình luận và giữ reply khi xóa cha; khẩu phần lẻ trong kế hoạch; nhân nguyên liệu theo khẩu phần; menu avatar/gói AI; điều hướng tài khoản trên mobile; validation báo cáo; BMI cùng trang gói AI/lịch sử giao dịch. Đây là kiểm thử Frontend với dữ liệu mẫu, không chứng minh Backend, database, authentication, thanh toán hoặc full FE–BE E2E đã hoạt động.

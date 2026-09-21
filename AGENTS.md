@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.7.0
+> **Version:** v3.8.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-09-20
+> **Last Updated:** 2026-09-21
 > **Status:** Active
 
 # Agent Entry Point
@@ -64,6 +64,8 @@ Skills live at `.agents/skills/<name>/SKILL.md`. For maintained local skills, th
 Use the smallest set that fits the request. Do not load all five skills for every task. When a specialized skill applies, let it own its specialized mechanics while `markdown-documentation` supplies shared documentation semantics. When a skill is unavailable, report it and apply the relevant repository rule directly; do not invent its contents.
 
 ### Cross-cutting bug recording
+
+Các bản ghi `.agents/outputs/bugs/BUG-xxx.md` phải dùng tiếng Việt cho tiêu đề, heading và phần giải thích để thành viên nhóm dễ đọc. Tiêu đề và mô tả trong metadata index cũng dùng tiếng Việt; giữ nguyên ID, YAML key, path, mã trạng thái (`RECORDED`, `TRACKING`, `RESOLVED`) và identifier kỹ thuật. Việc dịch không thay đổi bằng chứng, ngày phát hiện hoặc tự đánh dấu lỗi đã được sửa.
 
 During any repository task, remain alert for credible evidence that expected behavior differs from actual behavior or that another meaningful project defect exists. Do not proactively scan for bugs unless the user explicitly requests a bug audit. When a credible bug is encountered incidentally, use `bug-recording`, create one file per bug under `.agents/outputs/bugs/`, update `bugs-metadata.yaml`, report it, and continue the active task only when safe.
 

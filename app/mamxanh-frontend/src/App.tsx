@@ -11,6 +11,9 @@ import { CreateRecipe } from './pages/CreateRecipe';
 import { Community } from './pages/Community';
 import { PostDetail } from './pages/PostDetail';
 import { Profile } from './pages/Profile';
+import { AiPlans } from './pages/AiPlans';
+import { TransactionHistory } from './pages/TransactionHistory';
+import { NutritionProfile } from './pages/NutritionProfile';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -36,6 +39,9 @@ export default function App() {
           <Route path="/cong-dong" element={<Community />} />
           <Route path="/bai-viet/:slug" element={<PostDetail />} />
           <Route path="/ho-so" element={<Profile />} />
+          <Route path="/goi-ai" element={<AiPlans />} />
+          <Route path="/giao-dich" element={<TransactionHistory />} />
+          <Route path="/ho-so/dinh-duong" element={<NutritionProfile />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>

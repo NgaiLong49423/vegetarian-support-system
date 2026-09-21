@@ -3,7 +3,7 @@ import { BadgeCheck, Bookmark, Heart, Leaf, Settings, UtensilsCrossed } from 'lu
 import { PageContainer } from '../components/Layout';
 import { RecipeCard } from '../components/RecipeCard';
 import { Badge, Button, Card, EmptyState } from '../components/ui';
-import { currentUser, recipes } from '../data/mockData';
+import { currentUser, demoAiPlan, recipes } from '../data/mockData';
 
 const tabs = ['Công thức đã lưu', 'Món yêu thích', 'Sở thích ăn chay', 'Tùy chọn'] as const;
 type Tab = (typeof tabs)[number];
@@ -42,7 +42,7 @@ export function Profile() {
             <p className="text-sm text-ink-muted">{currentUser.bio}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <Badge tone="leaf"><Leaf className="h-3 w-3" /> Thuần Chay</Badge>
-              <Badge tone="brand">Thành viên PRO</Badge>
+              <Badge tone="brand">Gói AI {demoAiPlan} (demo)</Badge>
             </div>
           </div>
           <div className="flex gap-2">

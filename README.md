@@ -1,8 +1,8 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.10.0
+> **Version:** v0.11.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-20
+> **Last Updated:** 2026-09-21
 > **Status:** Active
 
 # Mâm Xanh — Vegetarian Support System
@@ -109,7 +109,7 @@ Quy tắc đặt file và danh mục tài liệu được duy trì nằm trong [
 5. Mở PR vào `develop` bằng `Refs #<issue>` và ghi kết quả tự kiểm tra; owner vẫn phải chạy kiểm tra phù hợp dù approval/GitHub Actions chưa phải cổng bắt buộc ở nhánh này.
 6. Tech Lead chọn phần ổn định để mở PR `develop -> main` cuối tuần; cần approval độc lập và required CI checks. Issue chỉ `Done` sau kiểm tra demo local trên `main` đạt. Xem [workflow chính](CONTRIBUTING.md#workflow-làm-việc-nhóm).
 
-Hiện phát triển/demo trên local; deployment Azure thực hiện riêng khi nhóm xác nhận ứng dụng đủ ổn định. Chưa bật CD trong giai đoạn này.
+Nhóm phát triển trên local. [Bản demo UI trên Vercel](https://mamxanh-frontend.vercel.app/) phục vụ buổi giới thiệu với giảng viên, được deploy thủ công và chưa kết nối Backend. FE đã bổ sung bình luận, chỉnh khẩu phần, biểu mẫu báo cáo công thức, BMI, trang gói AI và lịch sử giao dịch; xem [tính năng và giới hạn demo](app/mamxanh-frontend/README.md#giao-diện-demo-và-giới-hạn-hiện-tại). Không thiết lập CI/CD cho bản demo Vercel. Deployment Azure toàn hệ thống thực hiện riêng khi nhóm xác nhận ứng dụng đủ ổn định.
 
 ## Trạng thái chạy và kiểm thử
 
