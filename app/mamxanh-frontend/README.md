@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.0.0  
+> **Version:** v1.1.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-09-18  
+> **Last Updated:** 2026-09-20
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -67,6 +67,14 @@ npm run build
 
 # 5. Xem trước bản đóng gói Production
 npm run preview
+
+# 6. Chạy Frontend browser smoke test bằng Playwright
+# Lệnh này tự build trước khi khởi động preview server trên 127.0.0.1:4173.
+npm run test:e2e
+
+# 7. Mở Playwright UI hoặc xem HTML report của lần chạy gần nhất
+npm run test:e2e:ui
+npm run test:e2e:report
 ```
 
 ---
@@ -79,6 +87,7 @@ app/mamxanh-frontend/
 ├── .run/                  # Shared Run Configurations (dev, build, preview)
 ├── .figma/                # Dữ liệu xuất và cấu hình từ Figma Make
 ├── public/                # Tài nguyên tĩnh (ảnh, favicon, robots)
+├── tests/e2e/             # Playwright browser smoke và E2E tests có thể chạy lại
 ├── src/
 │   ├── components/        # Các UI component dùng chung (Layout, Header, Footer, v.v.)
 │   ├── pages/             # Các trang nghiệp vụ:
@@ -98,6 +107,7 @@ app/mamxanh-frontend/
 │   ├── main.tsx           # Entry point React 19
 │   └── index.css          # Tailwind CSS styles
 ├── package.json           # Khai báo thư viện và npm scripts
+├── playwright.config.ts   # Base URL, preview web server, Chromium và test evidence
 ├── tsconfig.json          # Cấu hình TypeScript compiler và alias path (@/*)
 └── vite.config.ts         # Cấu hình build Vite (server port 5173, alias, plugins)
 ```
@@ -115,3 +125,24 @@ app/mamxanh-frontend/
 3. **Tiêu chuẩn mã nguồn**:
    - Tương thích 100% Vite 8 native ESM và TypeScript 5.7.
    - Xóa bỏ các cảnh báo deprecated của Vite liên quan đến import JSON và `__dirname`.
+
+---
+
+## 6. Playwright browser testing
+
+Playwright có hai cách sử dụng khác nhau:
+
+- Browser control của agent dùng cho exploratory verification, kiểm tra console/network và thu thập bằng chứng trong một task cụ thể. Cách này không tự tạo regression test.
+- `@playwright/test` chạy các test có thể lặp lại trong `tests/e2e/` bằng `npm run test:e2e`.
+
+Lần đầu chạy trên một máy mới, cài Chromium runtime bằng:
+
+```bash
+npx playwright install chromium
+```
+
+`npm run test:e2e` tự gọi `npm run build`, sau đó Playwright khởi động Vite preview tại `http://127.0.0.1:4173`, chờ URL sẵn sàng rồi chạy Chromium. Port được giữ cố định và không tái sử dụng một server có sẵn để tránh kiểm thử nhầm ứng dụng.
+
+HTML report được tạo trong `playwright-report/`; screenshot và trace lỗi nằm trong `test-results/`. Hai thư mục này là generated evidence và không được commit mặc định.
+
+Test đầu tiên là **Frontend browser smoke test** trên giao diện hiện dùng mock data. Kết quả pass chỉ chứng minh application shell và navigation được kiểm tra hoạt động trong browser; nó không chứng minh Backend, database, authentication hoặc full FE–BE E2E đã hoạt động.

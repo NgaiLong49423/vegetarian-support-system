@@ -1,13 +1,92 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.23.0
+> **Version:** v2.27.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-19
+> **Last Updated:** 2026-09-20
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-20 — Align Project Overview and Local Database Configuration
+
+**Status:** Working tree — not committed.
+
+**Scope:** Align the root project overview with the actual Frontend, Backend, documentation, testing, and local SQL Server scaffolds while keeping credentials outside Git.
+
+### Added
+
+- Add a tracked local SQL Server configuration example and activate the local Spring profile by default for development.
+- Add verified Backend and Frontend build/test commands to the root project overview.
+
+### Changed
+
+- Expand the repository tree and maintained-source links to reflect the current API, Backend proposal, Playwright, and application workspaces.
+- Update the current implementation summary and MVP interaction wording without claiming that draft API or package proposals are implemented.
+
+### Fixed
+
+- Remove stale statements that the Frontend, build manifests, tests, and remote `develop` branch do not exist.
+- Remove the retired Like interaction from the root MVP summary.
+
+## 2026-09-20 — Document the Draft Backend Package Structure
+
+**Status:** Working tree — not committed.
+
+**Scope:** Record an incremental package-level proposal within the approved Backend modular-monolith boundary without claiming that the proposed modules, packages, or classes are implemented.
+
+### Added
+
+- Add a registered draft proposal covering package-by-business-capability organization, internal layer responsibilities, dependency boundaries, resources, tests, and incremental adoption criteria.
+
+### Changed
+
+- Extend the maintained document register with the proposal and its read trigger.
+
+### Fixed
+
+- None.
+
+## 2026-09-20 — Add Bug Recording and Playwright Foundations
+
+**Status:** Working tree — not committed.
+
+**Scope:** Add a bounded, human-gated bug-recording procedure and a local Chromium browser-smoke foundation without introducing automatic fixes, Issue creation, CI integration, or claims of full frontend-backend E2E coverage.
+
+### Added
+
+- Add the `bug-recording` skill with passive recording, user-requested audit, read-only precedence, lightweight duplicate handling, and explicit authorization before GitHub Bug Issue creation.
+- Add a tracked agent-output bug store with one file per bug and a compact metadata index for sequential IDs and `RECORDED`, `TRACKING`, or `RESOLVED` status; unknown evidence fields remain valid and GitHub continues to own work tracking.
+- Add Playwright configuration and a repeatable Frontend browser smoke test with a fixed preview URL, Chromium, failure evidence, and an HTML report.
+
+### Changed
+
+- Add self-contained Frontend E2E scripts, including an automatic production build before Playwright starts the preview server.
+- Align agent routing, documentation placement, Frontend guidance, and the test strategy with the real `app/mamxanh-frontend/` path and the selected Playwright boundary.
+
+### Fixed
+
+- Correct stale `app/frontend/` documentation routes that no longer matched the current Frontend scaffold.
+
+## 2026-09-20 — Start the Authentication API Contract
+
+**Status:** Working tree — not committed.
+
+**Scope:** Establish the first under-review OpenAPI vertical slice for FR-03 and a lightweight integration guide without claiming that the documented endpoints are implemented.
+
+### Added
+
+- Add an OpenAPI 3.1.1 contract for registration, email verification, email/password and Google login, password reset, refresh-token rotation, reuse handling, and logout.
+- Add a concise API integration guide for the shared base path, access/refresh-token flow, RFC 9457-style errors, security boundaries, and unresolved decisions that block implementation readiness.
+
+### Changed
+
+- Register `docs/api/API.md` and `docs/api/openapi.yaml` as maintained API documentation, with OpenAPI as the endpoint-level Source of Truth.
+
+### Fixed
+
+- None.
 
 ## 2026-09-19 — Confirm Weekly Workflow and Local Demo Gates
 

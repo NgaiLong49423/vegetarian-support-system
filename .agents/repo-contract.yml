@@ -80,6 +80,7 @@ agent_paths:
   eval_runs: .agents/evals/runs/
   scripts: .agents/scripts/
   requested_outputs: .agents/outputs/<task>/
+  bug_records: .agents/outputs/bugs/
   automatic_reports: false
 quality_loops:
   evaluator_optimizer_workflow: .agents/workflows/evaluator-optimizer.md

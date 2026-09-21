@@ -33,7 +33,11 @@ __pycache__/
 .pytest_cache/
 
 # AI Agent runtime and evaluation outputs
-.agents/outputs/
+.agents/outputs/*
+!.agents/outputs/bugs/
+.agents/outputs/bugs/*
+!.agents/outputs/bugs/bugs-metadata.yaml
+!.agents/outputs/bugs/BUG-*.md
 .agents/evals/promptfoo/workspaces/
 active_run.json
 recorded-mutations.json

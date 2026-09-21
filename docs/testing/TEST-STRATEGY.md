@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.5.0
+> **Version:** v1.6.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-19
+> **Last Updated:** 2026-09-20
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -30,7 +30,7 @@ Hành vi mong đợi chi tiết được xác định trong [SRS](../requirement
 | Backend Integration Test | Spring Security rule, persistence mapping, transaction, Flyway migration và hành vi của adapter | Test với cấu hình đại diện và hạ tầng được kiểm soát | Cách dùng test container/database cụ thể chỉ được chọn sau khi scaffold tồn tại |
 | REST API | Validation request, authentication, authorization, hành vi status/error và response contract | Automated contract/API check trên endpoint thật kết hợp với OpenAPI đã được dự án áp dụng | Thử bằng Swagger UI chỉ là bằng chứng hỗ trợ, không phải regression suite |
 | Frontend Component Test | Rendering, hành vi input và các trạng thái loading/error mà người dùng nhìn thấy ở component quan trọng | Tooling sẽ được chọn cùng React scaffold | Không tự chọn framework khi chưa có package evidence |
-| End-to-End Test (E2E) | Một số ít luồng quan trọng xuyên từ browser đến Backend như khám phá → lập lịch, publish/report moderation và kiểm tra chặn quyền tính năng AI | Bằng chứng tự động hoặc manual có kiểm soát trong integration environment | E2E không thay thế Unit Test hoặc Integration Test tập trung để chẩn đoán lỗi |
+| Browser Smoke / End-to-End Test (E2E) | Playwright kiểm tra Frontend shell và các luồng browser quan trọng; khi vertical slice tồn tại, E2E đi xuyên từ browser đến Backend như khám phá → lập lịch, publish/report moderation và kiểm tra chặn quyền tính năng AI | `@playwright/test` cho test lặp lại; browser control cho exploratory verification; HTML report, screenshot và trace khi được cấu hình | Frontend-only hoặc mock-backed smoke test không chứng minh Backend/database; E2E không thay Unit Test hoặc Integration Test tập trung |
 | Release Smoke Test | Các luồng demo cốt lõi trên candidate commit của `main` sau khi tích hợp release | Bằng chứng pass/fail được ghi nhận và liên kết với release workflow | Smoke Test pass không chứng minh Regression Coverage rộng |
 
 ## 4. Ưu tiên Coverage theo rủi ro
@@ -100,6 +100,9 @@ Frontend Coverage tooling và mọi quality gate vẫn là `TBD` cho tới khi F
 
 ## 9. Defect, bằng chứng và ownership
 
+- Credible bug phát hiện thụ động trong development/verification hoặc qua bug audit do người dùng yêu cầu được lưu thành từng file riêng tại `.agents/outputs/bugs/`; `bugs-metadata.yaml` quản lý ID, đường dẫn và trạng thái `RECORDED`, `TRACKING` hoặc `RESOLVED`. Đây là agent output kỹ thuật, không thay GitHub Bug Issue, owner, priority hoặc progress state.
+- Playwright chỉ là một trong nhiều nguồn bug signal. Một Playwright failure phải được phân biệt với test/locator sai, environment chưa sẵn sàng, tool chưa cài, expected failure hoặc lỗi tạm thời trước khi ghi product bug.
+- Agent không tự chạy bug audit trước merge/release. Explicit audit và việc promote một bug record thành GitHub Bug Issue đều cần user authorization trong task hiện tại.
 - Issue owner chịu trách nhiệm cung cấp bằng chứng verification phù hợp với thay đổi; reviewer độc lập kiểm tra implementation và bằng chứng.
 - Check fail hoặc bị skip phải được ghi rõ. Blocker được ghi trên Issue theo workflow của repository.
 - Defect nghiêm trọng đã biết chặn release gate liên quan. Defect nhỏ được chấp nhận phải có Issue riêng và được công khai rõ trong release.
@@ -115,4 +118,4 @@ Sau merge, Tech Lead tổ chức kiểm tra demo local trên `main` với bằng
 
 ## 11. Điều kiện áp dụng và open item
 
-Khi scaffold thật xuất hiện, nhóm phải xác minh và tài liệu hóa command thực tế, framework version, vị trí test và điều kiện tiên quyết của environment. Các open technical items gồm Frontend test tooling, API test runner, chiến lược tích hợp SQL Server, tần suất live-provider test, curated AI dataset chi tiết, provider-specific timeout/retry và mọi Coverage gate. NFR-01–25 vẫn `ACTIVE` dù một số chi tiết kiểm chứng cần tiếp tục phân rã.
+Frontend đã chọn Playwright cho browser smoke/E2E; persistent tests nằm tại `app/mamxanh-frontend/tests/e2e/`. Khi scaffold tích hợp thật xuất hiện, nhóm vẫn phải xác minh và tài liệu hóa command, test data và điều kiện environment cho từng full E2E flow. Các open technical items gồm Frontend component-test tooling, API test runner, chiến lược tích hợp SQL Server, tần suất live-provider test, curated AI dataset chi tiết, provider-specific timeout/retry, Playwright CI integration và mọi Coverage gate. NFR-01–25 vẫn `ACTIVE` dù một số chi tiết kiểm chứng cần tiếp tục phân rã.
