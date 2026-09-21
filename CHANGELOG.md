@@ -9,7 +9,7 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-09-21 — Expand the Frontend UI Demo and Document Manual Vercel Hosting ([PR #60](https://github.com/NgaiLong49423/vegetarian-support-system/pull/60))
+## 2026-09-21 — Expand the Frontend UI Demo and Document Manual Vercel Hosting ([PR #62](https://github.com/NgaiLong49423/vegetarian-support-system/pull/62))
 
 **Status:** Committed — cf3911b370ef1c0f697901164565e70c9ffacb51.
 
