@@ -1,8 +1,8 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.1.1
+> **Version:** v0.1.2
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-13
+> **Last Updated:** 2026-09-22
 > **Status:** Under Review  
 
 # Database Workspace
@@ -11,7 +11,7 @@ Database chính đã chốt là Microsoft SQL Server. Repository hiện có ba f
 
 ## Quyền sở hữu dữ liệu
 
-- Khi backend được scaffold, Flyway migration trong backend là lịch sử thay đổi schema có thẩm quyền và phải append-only sau khi đã chia sẻ.
+- Flyway migration trong backend là lịch sử thay đổi schema có thẩm quyền và phải append-only sau khi đã chia sẻ.
 - `database/schema.sql` chỉ nên là snapshot/manual bootstrap được sinh hoặc đồng bộ có chủ đích; không được âm thầm đi trước hoặc mâu thuẫn với Flyway.
 - `database/sample-data.sql` chỉ chứa dữ liệu demo giả, không chứa tài khoản thật, credential hoặc dữ liệu cá nhân.
 - `database/queries.sql` dành cho truy vấn kiểm tra có giải thích; không thay thế automated integration tests.
@@ -27,6 +27,6 @@ Database chính đã chốt là Microsoft SQL Server. Repository hiện có ba f
 
 ## Trạng thái thiết kế
 
-ERD và danh sách migration chưa tồn tại. Không tự suy ra bảng chỉ từ danh sách dữ liệu gợi ý trong SRS; cần hoàn thiện data model và review trước khi coi schema là baseline.
+Conceptual ERD đã có và đã được rà soát; Logical/Physical ERD và Flyway migration chưa hoàn thiện. Không tự suy ra bảng vật lý chỉ từ danh sách dữ liệu gợi ý trong SRS; cần hoàn thiện data model và review trước khi coi schema là baseline có thể triển khai.
 
 Xem [SRS](../docs/requirements/SRS.md), [ERD workspace](../docs/diagrams/ERD/README.md) và [Technology Stack](../docs/architecture/TECHNOLOGY-STACK.md).

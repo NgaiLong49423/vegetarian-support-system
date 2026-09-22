@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v1.3.0
+> **Version:** v1.7.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-18
+> **Last Updated:** 2026-09-22
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -10,7 +10,7 @@
 
 ## 1. Mục đích và thẩm quyền tài liệu
 
-Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Business Rules (`BR-01` đến `BR-73`) của Requirements Baseline v1.0.0 (cập nhật v1.3.0).
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Business Rules (`BR-01` đến `BR-74`) của Requirements Baseline v1.0.0 (cập nhật v1.7.0).
 
 Khung đặc tả gốc và **Authoritative Registry** cho sự tồn tại của quy tắc, mã định danh ổn định (stable ID), và trạng thái vòng đời (lifecycle state) chính thức được duy trì tập trung tại `docs/requirements/SRS.md`.
 
@@ -79,11 +79,11 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-07"></a>
-### BR-07 — Đăng và công khai Recipe Post trực tiếp
+### BR-07 — Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia
 
 - **Mã quy tắc:** BR-07
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Member đã đăng nhập được tạo và công khai Recipe Post trực tiếp sau khi bài đạt validation; không có trạng thái quyền đăng riêng hoặc Admin duyệt trước từng bài.
+- **Nội dung:** Quyền tạo, sửa, xóa và công khai Recipe Post dành riêng cho Chuyên gia (`Role = EXPERT`) đã được Administrator phê duyệt qua đơn đăng ký theo format (`FR-05`); `Customer`, `Guest` và `Administrator` không có quyền tạo/đăng hoặc sửa nội dung bài công thức. Backend phải từ chối thao tác trái quyền; `Guest` chưa xác thực nhận `401 Unauthorized`, tài khoản đã xác thực nhưng không có quyền nhận `403 Forbidden`. Chuyên gia công khai bài trực tiếp khi đạt validation cấu trúc mà không phải qua duyệt từng bài. Quyền hậu kiểm của Administrator theo FR-06 không phải quyền tác giả.
 
 ---
 
@@ -164,7 +164,7 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 
 - **Mã quy tắc:** BR-16
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Khi AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói có quyền sử dụng AI hỗ trợ soạn bài (FR-21), Member vẫn toàn quyền tự viết, chỉnh sửa và công khai Recipe Post bình thường nếu bài đạt đúng profile validation.
+- **Nội dung:** Khi AI gặp sự cố kỹ thuật hoặc tài khoản Chuyên gia không thuộc gói có quyền sử dụng AI hỗ trợ soạn bài (FR-21), Chuyên gia vẫn toàn quyền tự viết, chỉnh sửa và công khai Recipe Post của mình nếu bài đạt đúng profile validation.
 
 ---
 
@@ -173,7 +173,7 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 
 - **Mã quy tắc:** BR-17
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Tác giả được gắn với tài khoản Member đăng bài; người đăng không được chọn tài khoản khác đứng tên. Việc AI hỗ trợ soạn nội dung không thay đổi tác giả.
+- **Nội dung:** Tác giả được gắn với tài khoản Chuyên gia đăng bài; người đăng không được chọn tài khoản khác đứng tên. Việc AI hỗ trợ soạn nội dung không thay đổi tác giả; Administrator hậu kiểm không trở thành tác giả.
 
 ---
 
@@ -187,22 +187,23 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-19"></a>
-### BR-19 — Điều kiện bắt buộc để công khai Recipe Post (1–30 RECIPE_STEP, 0..5 RECIPE_MEDIA, đơn vị quy đổi hợp lệ)
+### BR-19 — Điều kiện bắt buộc để công khai Recipe Post (hướng dẫn chế biến linh hoạt, 0..5 RECIPE_MEDIA, đơn vị quy đổi hợp lệ)
 
 - **Mã quy tắc:** BR-19
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Recipe Post chỉ được công khai khi Member đã đăng nhập và đạt đúng profile validation bắt buộc:
+- **Nội dung:** Recipe Post chỉ được công khai khi Chuyên gia/tác giả đã đăng nhập và đạt đúng profile validation bắt buộc:
   1. Tiêu đề (`title`): 3–120 ký tự.
-  2. Nguyên liệu (`ingredients`): 1–50 dòng. Mỗi dòng bắt buộc: tên/liên kết nguyên liệu, định lượng số học dương (`quantity > 0`), và đơn vị đo lường hợp lệ thuộc `UNIT`. Cấm tuyệt đối giá trị phi số học ("vừa đủ").
-  3. Ràng buộc quy đổi đơn vị: Nếu nguyên liệu sử dụng đơn vị cần quy đổi sang gam (để tính dinh dưỡng hoặc tổng hợp danh sách mua sắm) mà chưa có tỷ lệ quy đổi tương ứng trong `INGREDIENT_UNIT_CONVERSION` (ví dụ: dùng đơn vị đếm `COUNT` dạng quả/củ/trái hoặc đơn vị thể tích dạng muỗng/thìa/ml sang gam mà nguyên liệu chưa được cấu hình hệ số), hệ thống **BẮT BUỘC CHẶN XUẤT BẢN (Validation Error)**. Không cho phép công khai bài viết khi thiếu dữ liệu quy đổi (BR-73).
-  4. Hướng dẫn chuẩn bị/chế biến: Bắt buộc từ 1 đến 30 bước tuần tự (`RECIPE_STEP`). Mỗi bước có thứ tự (`step_order` từ 1..N) và nội dung độc lập từ 10 đến 2.000 ký tự (sau khi trim). Bãi bỏ hoàn toàn trường instructions văn bản tự do duy nhất.
-  5. Khẩu phần (`serving`): 1–50.
-  6. Thời gian: `prepTime` và `cookTime` mỗi giá trị 0–1.440 phút, tổng thời gian > 0 (`cookTime = 0` hợp lệ nếu `prepTime > 0`).
-  7. Phân loại ăn chay: Chọn 1 trong 4 loại chuẩn (Vegan, Lacto Vegetarian, Ovo Vegetarian, Lacto-Ovo Vegetarian).
-  8. Mô tả giới thiệu (`description`): Tối đa 2.000 ký tự (tùy chọn).
-  9. Media: Tối đa 5 ảnh trên mỗi bài công thức (`RECIPE_MEDIA`), định dạng JPEG/PNG/WebP, dung lượng $\le 5$ MB/ảnh (tùy chọn). Nếu bài có từ 1 ảnh trở lên, **BẮT BUỘC phải có đúng 1 ảnh được đánh dấu làm ảnh bìa (`is_cover = true`)**. Đường dẫn YouTube (tối đa 1 link tùy chọn) được lưu trực tiếp trên Recipe Post.
+  2. Thể loại món (`dish_category`): Bắt buộc chọn 1 giá trị chuẩn hóa thuộc danh mục thể loại món (`món nước`, `món xào`, `món lẩu`, `món kho`, `món canh`, `món chiên`, `món hấp`, `món gỏi / salad`, `món cuốn`, `món nướng`, `món tráng miệng / chè`). Không sử dụng bảng `CATEGORY` hay `RECIPE_CATEGORY` đa tầng động mà lưu trực tiếp thuộc tính chuẩn hóa trên Recipe Post.
+  3. Nguyên liệu (`ingredients`): 1–50 dòng. Mỗi dòng bắt buộc: tên/liên kết nguyên liệu, định lượng số học dương (`quantity > 0`), và đơn vị đo lường hợp lệ thuộc `UNIT`. Cấm tuyệt đối giá trị phi số học ("vừa đủ").
+  4. Ràng buộc quy đổi đơn vị: Nếu nguyên liệu sử dụng đơn vị cần quy đổi sang gam (để tính dinh dưỡng hoặc tổng hợp danh sách mua sắm) mà chưa có tỷ lệ quy đổi tương ứng trong `INGREDIENT_UNIT_CONVERSION` (ví dụ: dùng đơn vị đếm `COUNT` dạng quả/củ/trái hoặc đơn vị thể tích dạng muỗng/thìa/ml sang gam mà nguyên liệu chưa được cấu hình hệ số), hệ thống **BẮT BUỘC CHẶN XUẤT BẢN (Validation Error)**. Không cho phép công khai bài viết khi thiếu dữ liệu quy đổi (BR-73).
+  5. Hướng dẫn chuẩn bị/chế biến: Người đăng **không bắt buộc phải viết từng bước nấu ăn** vào bài viết. Tác giả có thể nhập nội dung hướng dẫn chế biến dưới dạng văn bản tự do/tổng thể (`instructions`) từ 10 đến 5.000 ký tự hoặc chia theo bước tùy ý; hệ thống không ép buộc phải phân rã thành các bước độc lập hay quản lý theo chế độ step-to-step, giúp giảm rào cản nhập liệu.
+  6. Khẩu phần (`serving`): 1–50.
+  7. Thời gian: `prepTime` và `cookTime` mỗi giá trị 0–1.440 phút, tổng thời gian > 0 (`cookTime = 0` hợp lệ nếu `prepTime > 0`).
+  8. Phân loại ăn chay: Chọn 1 trong 4 loại chuẩn (Vegan, Lacto Vegetarian, Ovo Vegetarian, Lacto-Ovo Vegetarian).
+  9. Mô tả giới thiệu (`description`): Tối đa 2.000 ký tự (tùy chọn).
+  10. Media: Tối đa 5 ảnh trên mỗi bài công thức (`RECIPE_MEDIA`), định dạng JPEG/PNG/WebP, dung lượng $\le 5$ MB/ảnh (tùy chọn). Nếu bài có từ 1 ảnh trở lên, **BẮT BUỘC phải có đúng 1 ảnh được đánh dấu làm ảnh bìa (`is_cover = true`)**. Đường dẫn YouTube (tối đa 1 link tùy chọn) được lưu trực tiếp trên Recipe Post.
 - **Cơ chế thực thi và xử lý khi không đạt chuẩn (FE & BE):**
-  - **Tầng Máy chủ (Backend — bắt buộc & quyết định):** Toàn bộ quy tắc thẩm định bắt buộc phải được thực thi độc lập tại Backend API (NFR-10). Máy chủ tuyệt đối không tin cậy dữ liệu máy khách; nếu request gửi lên có bất kỳ trường nào không đạt chuẩn (ví dụ: thiếu bước nấu, thiếu ảnh bìa khi có upload ảnh, hoặc nguyên liệu chưa có tỷ lệ quy đổi sang gam), máy chủ từ chối yêu cầu công khai/cập nhật và **tuyệt đối không tạo bất kỳ bản ghi dở dang nào vào cơ sở dữ liệu** (phù hợp với FR-24 là OUT_OF_SCOPE).
+  - **Tầng Máy chủ (Backend — bắt buộc & quyết định):** Toàn bộ quy tắc thẩm định bắt buộc phải được thực thi độc lập tại Backend API (NFR-10). Máy chủ tuyệt đối không tin cậy dữ liệu máy khách; nếu request gửi lên có bất kỳ trường nào không đạt chuẩn (ví dụ: thiếu hướng dẫn chế biến, thiếu thể loại món `dish_category`, thiếu ảnh bìa khi có upload ảnh, hoặc nguyên liệu chưa có tỷ lệ quy đổi sang gam), máy chủ từ chối yêu cầu công khai/cập nhật và **tuyệt đối không tạo bất kỳ bản ghi dở dang nào vào cơ sở dữ liệu** (phù hợp với FR-24 là OUT_OF_SCOPE).
   - **Tầng Giao diện (Frontend — tối ưu trải nghiệm người dùng):** Giao diện thực hiện kiểm tra trước để phản hồi tức thì; khi dữ liệu không đạt chuẩn, giao diện giữ lại toàn bộ nội dung đã nhập trong biểu mẫu và hiển thị thông báo lỗi cụ thể để người dùng tiếp tục chỉnh sửa mà không bị mất dữ liệu. Việc giữ nội dung biểu mẫu là hành vi giao diện người dùng tạm thời, không tạo bất kỳ lưu nháp nào trên máy chủ.
 
 ---
@@ -566,7 +567,7 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 
 - **Mã quy tắc:** BR-59
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** MVP không có hàng đợi duyệt từng Recipe Post. Bài hợp lệ của Member đã đăng nhập được công khai trực tiếp khi tác giả chủ động công khai.
+- **Nội dung:** MVP không có hàng đợi duyệt từng Recipe Post. Bài hợp lệ của Chuyên gia đã đăng nhập được công khai trực tiếp khi tác giả chủ động công khai; Administrator chỉ hậu kiểm theo FR-06.
 
 ---
 
@@ -611,7 +612,7 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 
 - **Mã quy tắc:** BR-64
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Member đã đăng nhập chỉ được sửa/xóa Recipe Post do chính tài khoản đó đứng tên. Bài do tác giả xóa không còn công khai hoặc được AI gợi ý; bài đang bị Admin ẩn không được tác giả tự khôi phục bằng thao tác quản lý bài cá nhân.
+- **Nội dung:** Chuyên gia đã đăng nhập chỉ được sửa/xóa Recipe Post do chính tài khoản đó đứng tên. Bài do tác giả xóa không còn công khai hoặc được AI gợi ý; bài đang bị Admin ẩn không được tác giả tự khôi phục bằng thao tác quản lý bài cá nhân.
 
 ---
 
@@ -652,17 +653,26 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-69"></a>
-### BR-69 — Đánh giá chất lượng bài công thức từ 1 đến 5 sao (RECIPE_RATING)
+### BR-69 — Tương tác Like / Dislike và tỷ lệ hài lòng (% Like) của bài công thức
 
 - **Mã quy tắc:** BR-69
 - **Trạng thái (Derived):** ACTIVE
 - **Nội dung:**
-  - Guest chỉ được xem điểm đánh giá trung bình (`average_rating`) và tổng số lượt đánh giá (`rating_count`), tuyệt đối không được gửi đánh giá điểm sao.
-  - Chỉ Member đã đăng nhập mới được gửi đánh giá điểm sao (giá trị nguyên từ 1 đến 5).
-  - Mỗi Member chỉ có tối đa 1 bản ghi đánh giá hiệu lực trên một bài công thức (`UNIQUE(recipe_id, user_id)`). Member có quyền cập nhật lại số điểm sao đã đánh giá trước đó.
-  - Tác giả bài viết không được tự đánh giá bài công thức của chính mình.
-  - Điểm đánh giá trung bình được tính bằng trung bình cộng số học của toàn bộ các đánh giá hiệu lực trên bài viết: $\text{average\_rating} = \frac{\sum \text{ratings}}{\text{rating\_count}}$, làm tròn đến 1 chữ số thập phân khi hiển thị trên giao diện.
-  - Khi bài viết bị ẩn hoặc bị xóa, các bản ghi đánh giá tương ứng lập tức bị loại bỏ khỏi bảng xếp hạng công khai.
+  - Hệ thống áp dụng cơ chế bình chọn Thích / Không thích (Like / Dislike) độc quyền cho bài công thức (`RECIPE_REACTION`). Bình luận và phản hồi không hỗ trợ tính năng Like/Dislike (theo `FR-45` RETIRED).
+  - **Quyền hạn tương tác:**
+    - Guest (chưa đăng nhập): Chỉ có quyền xem tỷ lệ % Like và tổng số lượt bình chọn; khi Guest nhấp vào nút Like hoặc Dislike, hệ thống hiển thị thông báo yêu cầu đăng nhập (`BR-05`), tuyệt đối không ghi nhận phản hồi vào database.
+    - Member đã đăng nhập (Customer hoặc Expert): Có quyền gửi phản hồi `LIKE` hoặc `DISLIKE` cho bài công thức công khai.
+    - Tác giả bài viết: Bị cấm tự bình chọn (Like hoặc Dislike) cho bài công thức do chính mình sáng tác; hệ thống trả về lỗi nghiệp vụ nếu tác giả gửi yêu cầu phản hồi trên bài của mình.
+  - **Cơ chế chuyển đổi và hủy phản hồi (Toggle & Switch):**
+    - Mỗi Member chỉ có tối đa 1 phản hồi hiệu lực trên một bài công thức (`UNIQUE(user_id, recipe_id)`).
+    - Nếu Member bấm vào cùng loại phản hồi đã chọn trước đó (ví dụ đang Like mà bấm lại nút Like), hệ thống hủy bỏ phản hồi (Toggle off / Remove reaction). Bản ghi phản hồi bị xóa khỏi trạng thái hiệu lực.
+    - Nếu Member bấm vào loại phản hồi đối nghịch (ví dụ đang Like mà bấm nút Dislike), hệ thống tự động cập nhật trạng thái phản hồi sang `DISLIKE` (Switch reaction) và cập nhật lại bộ đếm.
+  - **Công thức tính tỷ lệ % Like (Satisfaction Rate / Like Percentage):**
+    $$\text{like\_percentage} = \begin{cases} \operatorname{round}\left(\dfrac{\text{total\_likes}}{\text{total\_likes} + \text{total\_dislikes}} \times 100\right), & \text{khi } (\text{total\_likes} + \text{total\_dislikes}) > 0 \\ \text{null / Chưa có dữ liệu}, & \text{khi } (\text{total\_likes} + \text{total\_dislikes}) = 0 \end{cases}$$
+  - **Quy tắc hiển thị huy hiệu (Badge Display):**
+    - Nếu bài viết có tổng số lượt bình chọn $(\text{total\_likes} + \text{total\_dislikes}) > 0$: Thẻ bài viết (Recipe Card) hiển thị huy hiệu tỷ lệ phần trăm kèm biểu tượng Like ở góc trên bên trái ảnh (ví dụ: `👍 98%`, `👍 96%`, `👍 100%`) theo phong cách Samsung Food. Trang chi tiết bài viết hiển thị thanh tỷ lệ phần trăm kèm số lượt Like và Dislike cụ thể.
+    - Nếu bài viết chưa có lượt bình chọn nào $(\text{total\_likes} + \text{total\_dislikes} = 0)$: Thẻ bài viết hiển thị nhãn `Mới` (New) thay vì hiển thị `0%` để tránh gây hiểu lầm tiêu cực cho món ăn mới đăng.
+  - **Quy tắc loại bỏ khi ẩn/xóa bài:** Khi bài viết bị ẩn hoặc bị xóa (do tác giả hoặc do Administrator xử lý vi phạm), toàn bộ lượt bình chọn của bài viết lập tức bị loại khỏi các bảng xếp hạng công khai.
 
 ---
 
@@ -692,7 +702,7 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
     Trong đó:
     - $V_{7d}$: Tổng số lượt xem hợp lệ đã khử trùng lặp trong 7 ngày qua (từ `RECIPE_VIEW`).
     - $C_{7d}$: Tổng số bình luận và phản hồi hợp lệ tạo mới trong 7 ngày qua.
-    - $R_{7d}$: Tổng số lượt đánh giá sao hợp lệ tạo mới hoặc cập nhật trong 7 ngày qua.
+    - $R_{7d}$: Tổng số lượt tương tác phản hồi (Like / Dislike) hợp lệ tạo mới hoặc cập nhật trong 7 ngày qua (từ `RECIPE_REACTION`).
     - Trọng số chuẩn hóa mặc định: $w_v = 1$, $w_c = 5$, $w_r = 10$.
   - **Đặc trưng nghiệp vụ phân biệt với Trending:** Most Active đo lường tổng khối lượng tương tác thực tế gần đây thuần túy, KHÔNG áp dụng hệ số suy giảm thời gian đăng bài (freshness decay). Một bài công thức cũ đã đăng từ lâu nhưng có đợt tương tác thảo luận tăng vọt trong 7 ngày qua vẫn sẽ đạt thứ hạng cao nhất trên bảng Most Active.
 
@@ -708,7 +718,7 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
   - Thuật toán thịnh hành (Trending Algorithm):
     $$\text{Score}_{\text{trending}} = \frac{w_v \cdot V_{3d} + w_c \cdot C_{3d} + w_r \cdot R_{3d} + B_{\text{new}}}{(T_{\text{age\_hours}} + 2)^\gamma}$$
     Trong đó:
-    - $V_{3d}, C_{3d}, R_{3d}$: Khối lượng tương tác hợp lệ trong 3 ngày (72 giờ) gần nhất (views, comments, ratings).
+    - $V_{3d}, C_{3d}, R_{3d}$: Khối lượng tương tác hợp lệ trong 3 ngày (72 giờ) gần nhất (views từ `RECIPE_VIEW`, comments từ `COMMENT`, reactions từ `RECIPE_REACTION`).
     - $B_{\text{new}}$: Điểm thưởng khởi đầu dành cho bài viết mới công khai trong vòng 48 giờ đầu nhằm tạo cơ hội xuất hiện cho nội dung mới.
     - $T_{\text{age\_hours}}$: Tuổi của bài viết tính từ thời điểm công khai đến hiện tại (tính bằng giờ).
     - $\gamma$: Hệ số suy giảm trọng số theo thời gian (chuẩn hóa mặc định $\gamma = 1.5$).
@@ -727,6 +737,20 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
     2. Thể tích (`VOLUME`): mililit (ml), lít (l) với tỷ lệ quy đổi cố định $1\text{ l} = 1.000\text{ ml}$.
     3. Đếm số lượng (`COUNT`): quả, củ, trái, tép, bìa, gói, lát, muỗng canh, thìa cà phê,...
   - Bảng quy đổi nguyên liệu `INGREDIENT_UNIT_CONVERSION` lưu trữ tỷ lệ quy đổi cụ thể từ một đơn vị đo lường (thuộc `COUNT` hoặc `VOLUME`) sang khối lượng gam (`MASS` in grams) cho từng nguyên liệu cụ thể (ví dụ: 1 quả chuối tiêu $\approx 120\text{ g}$, 1 bìa đậu phụ $\approx 150\text{ g}$, 1 muỗng canh dầu thực vật $\approx 14\text{ g}$).
-  - **Quy tắc chặn xuất bản nghiêm ngặt (Strict Validation Gate):** Khi Member tạo hoặc chỉnh sửa bài công thức, nếu bất kỳ nguyên liệu nào sử dụng đơn vị đo lường mà nguyên liệu đó chưa được định nghĩa tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION` (và không phải là đơn vị khối lượng `MASS` g/kg đã biết tỷ lệ), Backend **BẮT BUỘC TỪ CHỐI LƯU VÀ CHẶN CÔNG KHAI**, trả về lỗi validation: `"Đơn vị đo lường [Tên đơn vị] của nguyên liệu [Tên nguyên liệu] chưa có tỷ lệ quy đổi sang gam. Vui lòng chọn đơn vị khối lượng (gam/kg) hoặc liên hệ quản trị viên."`
+  - **Quy tắc chặn xuất bản nghiêm ngặt (Strict Validation Gate):** Khi Chuyên gia tạo hoặc chỉnh sửa bài công thức, nếu bất kỳ nguyên liệu nào sử dụng đơn vị đo lường mà nguyên liệu đó chưa được định nghĩa tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION` (và không phải là đơn vị khối lượng `MASS` g/kg đã biết tỷ lệ), Backend **BẮT BUỘC TỪ CHỐI LƯU VÀ CHẶN CÔNG KHAI**, trả về lỗi validation: `"Đơn vị đo lường [Tên đơn vị] của nguyên liệu [Tên nguyên liệu] chưa có tỷ lệ quy đổi sang gam. Vui lòng chọn đơn vị khối lượng (gam/kg) hoặc liên hệ quản trị viên."`
   - Cấm hoàn toàn việc dùng chữ "vừa đủ" hoặc để trống định lượng số học. Mọi dòng nguyên liệu bắt buộc phải có số lượng số học dương (`quantity > 0`) và đơn vị đo lường hợp lệ.
+
+---
+
+<a id="br-74"></a>
+### BR-74 — Quy trình xét duyệt đơn đăng ký Chuyên gia và chuyển đổi vai trò
+
+- **Mã quy tắc:** BR-74
+- **Trạng thái (Derived):** ACTIVE
+- **Nội dung:**
+  - Người dùng có vai trò `CUSTOMER` được phép nộp đơn đăng ký Chuyên gia (`EXPERT_APPLICATION`) thông qua biểu mẫu format văn bản có cấu trúc (kinh nghiệm ẩm thực $\ge 20$ ký tự, trường phái chay, tóm tắt công thức sở trường $\ge 30$ ký tự, link tham khảo tùy chọn).
+  - Hệ thống tuyệt đối không yêu cầu hoặc lưu trữ tệp tin chứng chỉ/bằng cấp vật lý.
+  - **Quy tắc chặn nộp trùng (Single Open Application Rule):** Mỗi tài khoản Customer chỉ được phép sở hữu tối đa một bản ghi đơn đăng ký ở trạng thái chờ duyệt (`PENDING`). Nếu gửi thêm đơn trong khi đơn cũ chưa được xử lý, Backend từ chối với mã lỗi `HTTP 409 Conflict`.
+  - **Quy tắc phê duyệt và chuyển đổi vai trò (Instant Role Promotion):** Khi Administrator nhấn phê duyệt một đơn ở trạng thái `PENDING`, hệ thống cập nhật trạng thái đơn thành `APPROVED`, đồng thời ngay lập tức cập nhật vai trò người dùng trong `USER` từ `CUSTOMER` thành `EXPERT`, mở khóa quyền tạo bài viết tại `FR-04` và gửi thông báo in-app.
+  - **Quy tắc từ chối bắt buộc lý do (Mandatory Rejection Note):** Khi Administrator từ chối đơn, bắt buộc phải nhập lý do từ chối cụ thể (`admin_note` từ 10 đến 500 ký tự); trạng thái đơn chuyển thành `REJECTED`, vai trò tài khoản vẫn là `CUSTOMER`, thông báo in-app gửi kèm lý do; Customer được quyền nộp đơn mới sau khi đơn cũ bị từ chối.
 

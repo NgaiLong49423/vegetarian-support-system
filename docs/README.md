@@ -1,8 +1,8 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v3.10.0
+> **Version:** v3.12.0  
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-20
+> **Last Updated:** 2026-09-22  
 > **Status:** Active  
 
 # Repository Layout and Document Register
@@ -79,7 +79,7 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md | Draft package-level proposal for incrementally implementing the approved Backend modular-monolith boundary; not evidence of existing source structure | Planning or reviewing a Backend vertical slice and its package placement |
 | architecture/TECHNOLOGY-STACK.md | Selected technologies, purpose, rationale, benefits, trade-offs and unresolved choices | Dependency or technology decisions |
 | testing/TEST-STRATEGY.md | Project-level test levels, evidence boundaries, traceability, coverage interpretation and completion relationship | Test planning, quality gates or verification design |
-| api/API.md | Cross-team API integration guide, shared conventions, authentication flow and links to the detailed contract; current Auth slice remains Under Review | Frontend/Backend integration or API contract work |
+| api/API.md | Cross-team API integration guide, shared conventions, authentication flow and links to the detailed contract, Active | Frontend/Backend integration or API contract work |
 | api/openapi.yaml | Machine-readable OpenAPI Source of Truth for detailed paths, methods, schemas, status codes and security declarations; currently covers the Auth slice | Implementing, reviewing, mocking or testing REST endpoints |
 | decisions/001-team-workflow.md | Branch/release decision and rationale | Workflow changes |
 | decisions/002-five-member-team-operating-agreement.md | Team responsibilities and coordination | Team process |
@@ -87,8 +87,8 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | research/similar-products-benchmark.md | Dated external research, non-authoritative | Relevant product comparison |
 | diagrams/Activity/README.md | Activity diagram conventions | Creating/updating activity diagrams |
 | diagrams/UseCase/README.md | Use-case diagram conventions | Creating/updating use-case diagrams |
-| diagrams/ERD/README.md | ERD documentation conventions | Creating/updating the data model |
-| diagrams/C4 Container Diagram/README.md | C4 container diagram conventions and container breakdown | Creating/updating container architecture |
+| diagrams/ERD/README.md | ERD documentation conventions; Draft (Conceptual ERD đã được rà soát; Logical ERD chờ cập nhật) | Creating/updating the data model |
+| diagrams/C4 Container Diagram/README.md | C4 container diagram conventions; Draft (Chờ cập nhật bản vẽ sơ đồ C4 phản ánh baseline 21 thực thể) | Creating/updating container architecture |
 | ../app/mamxanh-frontend/README.md | Frontend setup/state, Playwright commands and contribution guidance | Frontend work |
 | ../app/mamxanh-backend/README.md | Backend setup/state and contribution guidance | Backend work |
 | ../database/README.md | SQL/Flyway ownership and database state | Database work |

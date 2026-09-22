@@ -1,8 +1,8 @@
 > **Document:** Use Case Diagram Workspace Guide  
 > **File:** `docs/diagrams/UseCase/README.md`  
-> **Version:** v1.1.0  
+> **Version:** v1.2.0  
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-18  
+> **Last Updated:** 2026-09-22  
 > **Status:** Active  
 
 # Use Case Diagram - Sơ Đồ Ca Sử Dụng
@@ -29,7 +29,7 @@ Dưới đây là sơ đồ ca sử dụng tổng thể của hệ thống Mâm 
 ## Thành Phần Cơ Bản
 
 * **Actor (Tác nhân):** Là người dùng hoặc hệ thống bên ngoài tương tác trực tiếp với ứng dụng (ví dụ: Guest, Member, Administrator).
-* **Use Case (Ca sử dụng):** Một chức năng cụ thể mà actor có thể thực hiện trên hệ thống để đạt được một mục tiêu nào đó (ví dụ: Đăng ký/Đăng nhập, Khám phá công thức, Đánh giá sao, Lập thực đơn).
+* **Use Case (Ca sử dụng):** Một chức năng cụ thể mà actor có thể thực hiện trên hệ thống để đạt được một mục tiêu nào đó (ví dụ: Đăng ký/Đăng nhập, Khám phá công thức, Bình chọn Like/Dislike, Lập thực đơn).
 * **System Boundary (Ranh giới hệ thống):** Khung giới hạn hiển thị phạm vi của ứng dụng, các use case sẽ nằm bên trong và các actor nằm bên ngoài ranh giới này.
 * **Include (Quan hệ bao gồm):** Thể hiện một use case bắt buộc phải chạy qua một use case khác (ví dụ: Đăng bài công thức thì *bao gồm* việc xác thực đăng nhập Member).
 * **Extend (Quan hệ mở rộng):** Thể hiện một use case phụ chỉ xảy ra dưới một điều kiện cụ thể (ví dụ: Soạn bài viết thì có thể chọn *mở rộng* thêm là Sử dụng AI gợi ý các bước nấu).

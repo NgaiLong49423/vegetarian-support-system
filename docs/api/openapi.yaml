@@ -1,11 +1,13 @@
 openapi: 3.1.1
 info:
   title: Mâm Xanh API
-  version: 0.1.0
+  version: 0.2.0
   summary: REST API contract for the Mâm Xanh application
   description: >-
-    Under-review contract. The current slice covers FR-03 Authentication & Account only.
-    It does not claim that the documented endpoints are implemented.
+    Accepted API baseline for FR-03 Authentication & Account. Implementation parameters
+    listed as TBD in API.md require owner proposals and Tech Lead approval before the
+    affected endpoints are implementation-ready. Documented endpoints are not claimed
+    to be implemented. The refresh_token cookie name is provisional.
 servers:
   - url: /api/v1
     description: Version 1 relative base path
@@ -99,7 +101,7 @@ paths:
           description: Login successful. The response also sets the refresh_token cookie.
           headers:
             Set-Cookie:
-              description: Rotating refresh token cookie. Exact lifetime remains under review.
+              description: Rotating refresh token cookie. Exact lifetime is TBD for FR-03 implementation.
               schema:
                 type: string
           content:
@@ -140,7 +142,7 @@ paths:
           description: Google login successful. The response also sets the refresh_token cookie.
           headers:
             Set-Cookie:
-              description: Rotating refresh token cookie. Exact lifetime remains under review.
+              description: Rotating refresh token cookie. Exact lifetime is TBD for FR-03 implementation.
               schema:
                 type: string
           content:
@@ -201,7 +203,7 @@ paths:
       summary: Rotate the refresh token and issue a new access token
       description: >-
         Requires the refresh_token HttpOnly cookie. Reuse of an already rotated token revokes the
-        related token family and clears the cookie. The CSRF mechanism is still under review.
+        related token family and clears the cookie. The CSRF mechanism is TBD for FR-03 implementation.
       security:
         - refreshCookie: []
       responses:
@@ -231,7 +233,7 @@ paths:
     post:
       tags: [Authentication]
       summary: Revoke the current refresh session
-      description: Requires the refresh_token cookie. The CSRF mechanism is still under review.
+      description: Requires the refresh_token cookie. The CSRF mechanism is TBD for FR-03 implementation.
       security:
         - refreshCookie: []
       responses:
@@ -372,7 +374,7 @@ components:
           type: integer
           format: int64
           minimum: 1
-          description: Runtime access-token lifetime; the configured value is still under review.
+          description: Runtime access-token lifetime; the configured value is TBD for FR-03 implementation.
         account:
           $ref: '#/components/schemas/AccountSummary'
     TokenResponse:
@@ -391,7 +393,7 @@ components:
           type: integer
           format: int64
           minimum: 1
-          description: Runtime access-token lifetime; the configured value is still under review.
+          description: Runtime access-token lifetime; the configured value is TBD for FR-03 implementation.
     AccountSummary:
       type: object
       additionalProperties: false

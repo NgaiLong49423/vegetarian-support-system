@@ -16,6 +16,8 @@ If a workflow discovers that one skill lacks a reusable rule, improve that skill
 
 ## Runtime Quality Loop
 
+`implement-fr-issue.md` điều phối kiểm tra điều kiện của Issue, đối chiếu yêu cầu, triển khai local, xác minh và bàn giao FR đã được giao. Thành viên chỉ cần nêu số Issue; GitHub CLI là tùy chọn.
+
 `evaluator-optimizer.md` is a reusable meta-workflow for important outputs. It keeps Generator, Evaluator, and Optimizer responsibilities logically separate, requires evidence-backed findings, distinguishes auto-fixable issues from human decisions, and bounds self-repair iterations.
 
 Task-specific workflows may invoke it at a quality gate instead of duplicating the full evaluate/optimize loop.

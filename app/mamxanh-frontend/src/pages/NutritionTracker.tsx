@@ -5,7 +5,7 @@ import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card, ProgressBar } from '../components/ui';
 import { nutritionTargets, weekPlan } from '../data/mockData';
 
-const days = weekPlan.map((d) => ({ weekday: d.weekday.replace('Thứ ', 'T'), date: d.date, today: d.today }));
+const days = weekPlan.map((d) => ({ weekday: d.weekday, date: d.date, today: d.today }));
 
 const macros = [
   { label: 'Tổng Năng lượng (Energy)', value: '1,290', unit: 'kcal', target: '1,850 kcal', pct: 70, tone: 'brand' as const, sub: 'Còn thiếu 560 kcal — khuyến nghị bổ sung bữa phụ' },
@@ -57,11 +57,11 @@ export function NutritionTracker() {
             <button
               key={d.date}
               onClick={() => setActiveDay(i)}
-              className={`flex min-w-[92px] flex-col items-center rounded-xl border px-3 py-2.5 transition-colors ${
+              className={`flex min-w-[104px] flex-col items-center rounded-xl border px-3 py-2.5 transition-colors ${
                 activeDay === i ? 'border-brand-600 bg-brand-600 text-white' : 'border-brand-100 bg-white text-ink-soft hover:border-brand-300'
               }`}
             >
-              <span className="text-xs font-semibold">{d.weekday}{d.today ? ' • Hôm nay' : ''}</span>
+              <span className="whitespace-nowrap text-xs font-semibold">{d.weekday}{d.today ? ' • Hôm nay' : ''}</span>
               <span className="text-lg font-extrabold">{d.date}</span>
               <span className={`text-[10px] ${activeDay === i ? 'text-white/80' : 'text-ink-muted'}`}>1,290 kcal</span>
             </button>

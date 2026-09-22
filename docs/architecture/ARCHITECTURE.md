@@ -1,10 +1,10 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.6.0  
+> **Version:** v1.9.0  
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-18  
+> **Last Updated:** 2026-09-22  
 > **Status:** Active  
-> **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/C4 Container Diagram/README.md`
+> **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/C4 Container Diagram/README.md`, `docs/diagrams/ERD/README.md`
 
 # Architecture Document — Mâm Xanh
 
@@ -153,7 +153,7 @@ Backend dùng GoogleIdTokenVerifier kiểm tra chữ ký, iss, aud, exp
       |
 Trích xuất google_subject (sub), email, name, avatar
       |
-Tìm hoặc tạo tài khoản Member (ACTIVE)
+Tìm hoặc tạo tài khoản Customer (ACTIVE, role = ROLE_CUSTOMER)
       |
 Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 ```
@@ -168,6 +168,8 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 
 ## 5. Ranh giới tin cậy và bảo mật
 
+### 5.1 Ranh giới tin cậy chung & Quản lý bí mật
+
 - **Ranh giới không tin cậy:** Browser là môi trường không tin cậy. Mọi quyền hạn, phân quyền tính năng AI (Feature Entitlement), rate limit và validation phải được kiểm soát ở server-side.
 - **Quản lý Secrets đa tầng:**
   - *Local Dev:* Biến môi trường hệ thống hoặc file `.env` (tuyệt đối không commit lên Git, duy trì file mẫu `.env.example`).
@@ -177,14 +179,44 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 - **Bảo vệ phiên làm việc:** Access Token ngắn hạn, Rotating Refresh Token lưu trong Secure HttpOnly Cookie với cờ `SameSite=None; Secure`. Logout thu hồi phiên làm việc trên server-side.
 - **Bảo mật Logging:** Logback/SLF4J tuyệt đối không ghi mật khẩu, token, API key, SAS URL, nội dung prompt cá nhân hoặc thông tin sức khỏe nhạy cảm.
 
+### 5.2 Ranh giới Phân quyền RBAC & Quyền Tác giả Chuyên gia (RBAC & Expert Authorship Boundaries)
+
+- **Mô hình 3 Vai trò (Three-Role RBAC):**
+  - `ROLE_CUSTOMER`: Người dùng thông thường đã đăng ký tài khoản. Có quyền duyệt, tìm kiếm, lưu công thức (`SAVED_RECIPE`), bình chọn Like/Dislike bài công thức (`RECIPE_REACTION`, trừ bài do chính mình sáng tác), bình luận (`COMMENT`), lập kế hoạch bữa ăn (`MEAL_PLAN`), tạo danh sách đi chợ (`SHOPPING_LIST`), xuất file PDF công thức/thực đơn và báo cáo phân tích dinh dưỡng tuần kèm so sánh DRI cá nhân (FR-20, FR-33, FR-44), và nộp đơn đăng ký Chuyên gia (`EXPERT_APPLICATION`).
+  - `ROLE_EXPERT`: Chuyên gia ẩm thực chay đã được Quản trị viên phê duyệt đơn. Kế thừa toàn bộ quyền của Customer, đồng thời sở hữu độc quyền quyền tạo, chỉnh sửa, xóa và tải ảnh cho các bài viết công thức (`RECIPE_POST`).
+  - `ROLE_ADMIN`: Quản trị viên hệ thống. Quản lý tài khoản, danh mục nguyên liệu/đơn vị đo/bảng quy đổi chuẩn (FR-18), kiểm duyệt nội dung/báo cáo, và xét duyệt các đơn đăng ký Chuyên gia.
+
+- **Bảo vệ Endpoint Sáng tạo Công thức (Recipe Post Creation/Mutation Enforcement):**
+  - Các API tạo, sửa, xóa bài viết công thức và upload media liên quan:
+    - `POST /api/v1/recipes`
+    - `PUT /api/v1/recipes/{id}`
+    - `DELETE /api/v1/recipes/{id}`
+    - `POST /api/v1/recipes/{id}/media`
+  - **Quy tắc bảo vệ:** Bắt buộc áp dụng `@PreAuthorize("hasRole('EXPERT')")` tại Spring MVC Controller và Service layer cho thao tác tạo/sửa nội dung Recipe Post (`BR-07`, `FR-04`, `FR-44`); quyền hậu kiểm của Admin được kiểm soát riêng theo `FR-06`.
+  - **Xử lý vi phạm:** Nếu tài khoản mang vai trò `ROLE_CUSTOMER` cố tình gửi HTTP request đến các endpoint này (kể cả khi đã can thiệp qua DevTools/Postman), Backend lập tức chặn và trả về HTTP status `403 Forbidden` (`AC-04.6`). Phân quyền không bao giờ chỉ dựa vào việc ẩn nút bấm trên giao diện người dùng.
+
+- **Bảo vệ Endpoint Xét duyệt Đơn Chuyên gia (Expert Application Workflow Protection):**
+  - Nộp đơn: `POST /api/v1/expert-applications` dành cho `ROLE_CUSTOMER` (`@PreAuthorize("hasRole('CUSTOMER')")`). Backend kiểm tra ràng buộc không được có đơn `PENDING` nào đang chờ xử lý (`BR-74`, trả về `409 Conflict` nếu vi phạm).
+  - Tra cứu và xử lý đơn:
+    - `GET /api/v1/admin/expert-applications`
+    - `PUT /api/v1/admin/expert-applications/{id}/approve`
+    - `PUT /api/v1/admin/expert-applications/{id}/reject`
+  - **Quy tắc bảo vệ:** Bắt buộc áp dụng `@PreAuthorize("hasRole('ADMIN')")`.
+  - **Nguyên tử hóa giao dịch (Transactional Role Upgrade):** Khi Admin chấp thuận đơn (`approve`), Backend thực hiện cập nhật trạng thái đơn thành `APPROVED` và nâng cấp vai trò của người dùng từ `ROLE_CUSTOMER` lên `ROLE_EXPERT` trong cùng một Database Transaction duy nhất (`@Transactional`).
+
 ## 6. Ràng buộc kiến trúc
 
 - Giữ ranh giới giữa React client, Spring Boot Backend và Microsoft SQL Server.
 - Giữ relational database làm Source of Truth cho ứng dụng; dùng Flyway để quản lý thay đổi schema có thể thực thi sau khi Backend scaffold tồn tại.
+- **Baseline mô hình dữ liệu quan hệ (Relational Schema Baseline):**
+  - Hệ thống duy trì 21 thực thể quan hệ cốt lõi (Conceptual ERD v1.7.0).
+  - Thực thể đánh giá chất lượng công thức được chuẩn hóa thành `RECIPE_REACTION` (lưu trữ phản hồi Like/Dislike với `reaction_type: LIKE | DISLIKE`, ràng buộc `UNIQUE(user_id, recipe_id)` để đảm bảo mỗi thành viên có tối đa 1 phản hồi hiệu lực trên một bài công thức theo `BR-69`, `FR-57`).
+  - Không sử dụng các bảng phân loại động `CATEGORY` và `RECIPE_CATEGORY`; thể loại món ăn được chuẩn hóa trực tiếp thành trường thuộc tính `dish_category` trên thực thể bài công thức (`RECIPE_POST` theo BR-19).
+  - Không duy trì bảng độc lập `RECIPE_STEP`; toàn bộ hướng dẫn chế biến được lưu trữ dưới dạng trường văn bản tự do linh hoạt `instructions` (10–5.000 ký tự) trên `RECIPE_POST` (FR-16, BR-19; FR-22 đã RETIRED theo Phương án B).
 - Backend giữ cấu trúc Modular Monolith; MVC/layered structure bên trong từng module.
 - Không tự ý thêm microservices, Kafka, Redis, Kubernetes hay vector database khi chưa có quyết định kiến trúc mới.
 - **Kiến trúc tìm kiếm, sắp xếp và xếp hạng không dùng AI (Non-AI Ranking Architecture):**
-  - Hệ thống hỗ trợ 6 chế độ khám phá/sắp xếp bài viết/công thức: Mới nhất (*Newest*), Đánh giá cao nhất (*Highest Rated*), Xem nhiều nhất (*Most Viewed* - 24h/7d/30d/toàn thời gian), Bình luận nhiều nhất (*Most Commented*), Hoạt động sôi nổi nhất (*Most Active* - BR-71, tổng tương tác 7 ngày không phân rã), và Thịnh hành (*Trending* - BR-72, tương tác có phân rã thời gian theo công thức trọng số).
+  - Hệ thống hỗ trợ 6 chế độ khám phá/sắp xếp bài viết/công thức: Mới nhất (*Newest*), Được yêu thích nhất (*Most Liked / Highest Rated* theo tỷ lệ % Like giảm dần và tổng Like giảm dần), Xem nhiều nhất (*Most Viewed* - 24h/7d/30d/toàn thời gian), Bình luận nhiều nhất (*Most Commented*), Hoạt động sôi nổi nhất (*Most Active* - BR-71, tổng tương tác 7 ngày không phân rã), và Thịnh hành (*Trending* - BR-72, tương tác có phân rã thời gian theo công thức trọng số).
   - Tất cả các chế độ sắp xếp, lọc và tính điểm xếp hạng này được thực thi thuần túy thông qua truy vấn quan hệ SQL chuẩn (sử dụng Index tối ưu, Computed Columns hoặc Scheduled Aggregation trên Microsoft SQL Server) và xử lý logic tại tầng Backend Spring Boot.
   - Tuyệt đối **không sử dụng** AI, Machine Learning recommendation engines, vector database, Redis cache hay Kafka message broker cho tính năng khám phá và xếp hạng này trong phạm vi hiện tại.
   - Ghi nhận lượt xem (`RECIPE_VIEW`) áp dụng cơ chế chống trùng lặp (deduplication window 30 phút theo IP hash / Client session / Member ID) và cập nhật bộ đếm bất đồng bộ (`@Async` hoặc in-memory buffer định kỳ flush xuống DB) để không làm nghẽn luồng đọc công thức.
@@ -193,6 +225,7 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 
 | Vấn đề | Trạng thái hiện tại | Giải pháp đã xác nhận / Ghi chú |
 |---|---|---|
+| Role-Based Authorization & Expert Authorship | **Confirmed** | Phân quyền 3 vai trò (`ROLE_CUSTOMER`, `ROLE_EXPERT`, `ROLE_ADMIN`); chỉ EXPERT được tạo/sửa recipe của mình; Customer nộp đơn văn bản, ADMIN phê duyệt đơn và hậu kiểm nội dung (`BR-07`, `BR-74`, `FR-06`) |
 | AI Provider & Model | **Confirmed** | Google Gemini model `gemini-3.8-flash` qua Google Gen AI Java SDK, bọc qua `AiClient`, timeout + retry, structured output |
 | Payment Provider | **Confirmed** | `payOS` (REST API qua Spring `RestClient` + Webhook HMAC-SHA256, xử lý idempotent theo `order_code`) |
 | Email Service | **Confirmed** | `Brevo` qua Spring Boot Mail (SMTP), xử lý bất đồng bộ `@Async`, lỗi không rollback |

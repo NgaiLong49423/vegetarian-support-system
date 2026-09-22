@@ -1,8 +1,11 @@
+import { useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { AppHeader } from './AppHeader';
 import { AppFooter } from './AppFooter';
 
 export function Layout({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  if (['/dang-nhap', '/dang-ky', '/quen-mat-khau', '/xac-minh-email', '/dat-lai-mat-khau'].includes(pathname)) return <>{children}</>;
   return (
     <div className="flex min-h-screen flex-col">
       <AppHeader />
