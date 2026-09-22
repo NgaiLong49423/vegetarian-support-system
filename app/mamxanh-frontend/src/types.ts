@@ -64,6 +64,7 @@ export interface Post {
 export interface MealPlanItem {
   slot: MealSlot;
   recipe: Recipe;
+  servings?: number;
 }
 
 export interface DayPlan {

@@ -43,9 +43,9 @@ export function Home() {
             <Leaf className="h-3.5 w-3.5" />
             Hệ chuẩn dinh dưỡng thuần thực vật Việt Nam
           </Badge>
-          <h1 className="mx-auto max-w-3xl text-4xl font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">
-            Sống Xanh An Lành,{' '}
-            <span className="bg-gradient-to-r from-brand-600 via-brand-500 to-amber-500 bg-clip-text text-transparent">
+          <h1 className="mx-auto text-4xl font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">
+            <span className="block">Sống Xanh An Lành,</span>
+            <span className="block bg-gradient-to-r from-brand-600 via-brand-500 to-amber-500 bg-clip-text text-transparent">
               Cân Bằng Vi Chất
             </span>
           </h1>

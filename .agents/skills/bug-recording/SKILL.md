@@ -4,9 +4,9 @@ description: Record credible bugs discovered incidentally during repository work
 metadata:
   swp391-risk: "medium"
   swp391-source: "customized"
-  swp391-version: "v1.1.0"
+  swp391-version: "v1.2.0"
   swp391-created-date: "2026-09-20"
-  swp391-last-updated-date: "2026-09-20"
+  swp391-last-updated-date: "2026-09-21"
 ---
 
 # Bug Recording
@@ -46,6 +46,8 @@ Root cause, severity, reproduction steps, environment, requirement, Issue, and P
 
 ## Storage and status
 
+Write bug-file titles, headings, explanations, and index titles/status descriptions in Vietnamese under this repository's language policy. Preserve IDs, YAML keys, paths, technical identifiers, and machine-readable status values. Unknown fields may be explained as `Chưa xác định` in prose; keep the index sentinel `Unknown`. Translation must preserve evidence and detection dates and must not imply that a bug is resolved.
+
 Store each bug separately at `.agents/outputs/bugs/BUG-xxx.md`. Maintain `.agents/outputs/bugs/bugs-metadata.yaml` as the compact index; do not duplicate full evidence into the index.
 
 Each metadata entry must contain `id`, `title`, `status`, `severity`, `area`, `file`, `created`, `updated`, and `related_issue`. Use `Unknown` or an empty YAML value when the corresponding fact is not established. `next_id` must always point to the next unused sequential number.
@@ -58,7 +60,7 @@ Use only these statuses:
 
 New bugs start as `RECORDED`. Do not infer `TRACKING` from elapsed time or `RESOLVED` from a code change alone. Keep the status identical in the bug file and metadata index.
 
-Each bug file must contain its ID/title, status, area, severity, detection context, optional branch/commit and requirement/Issue/PR links, dates, symptom, expected behavior, actual behavior, evidence, reproduction, environment, root cause, resolution, and verification. Fill unknown values with `Unknown`; use `Not started` for an untouched resolution.
+Each bug file must contain its ID/title, status, area, severity, detection context, optional branch/commit and requirement/Issue/PR links, dates, symptom, expected behavior, actual behavior, evidence, reproduction, environment, root cause, resolution, and verification. In Vietnamese prose use `Chưa xác định` for unknown values and `Chưa bắt đầu` for an untouched resolution.
 
 Observed branch and commit are optional context only. They must not drive a decision to fix, promote, classify, or create an Issue.
 

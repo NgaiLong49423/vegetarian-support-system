@@ -1,17 +1,42 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.27.0
+> **Version:** v2.28.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-20
+> **Last Updated:** 2026-09-21
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-09-21 — Expand the Frontend UI Demo and Document Manual Vercel Hosting ([PR #62](https://github.com/NgaiLong49423/vegetarian-support-system/pull/62))
+
+**Status:** Committed — cf3911b370ef1c0f697901164565e70c9ffacb51.
+
+**Scope:** Prepare a teacher-facing UI demonstration with browser-local interactions and explicit mock-data boundaries; this does not complete Backend integration or SRS acceptance.
+
+### Added
+
+- Add threaded recipe comments with reply, edit, delete, and retained replies after parent deletion.
+- Add recipe ingredient scaling from original servings, meal-plan serving selection, and a six-reason recipe report form with local validation.
+- Add nutrition-profile/BMI, AI plan, and transaction-history screens; paid-plan checkout remains disabled and transaction history has no fabricated records.
+- Add seven browser tests alongside the existing smoke test and a Vercel SPA rewrite for direct route access.
+- Record the manual Vercel UI demo and its limits in the Frontend guide without adding GitHub CI/CD or changing the Azure architecture baseline.
+
+### Changed
+
+- Move BMI, AI upgrade, and transaction-history navigation into account menus; display the current mock FREE plan beside the avatar.
+- Label recipe nutrition explicitly as sample data for one serving, with ingredient scaling independent of the static panel.
+- Require Vietnamese bug-record prose and index descriptions; translate BUG-001 through BUG-003 and retain their unresolved status.
+- Synchronize project and contribution guidance with the manually hosted demo.
+
+### Fixed
+
+- Keep desktop navigation labels on one line, balance the home hero across two lines, and reuse the project logo for the app and favicon.
+
 ## 2026-09-20 — Align Project Overview and Local Database Configuration
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 14d6b0b9d370921494f2059e51862d7ee7065d57.
 
 **Scope:** Align the root project overview with the actual Frontend, Backend, documentation, testing, and local SQL Server scaffolds while keeping credentials outside Git.
 
@@ -32,7 +57,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-20 — Document the Draft Backend Package Structure
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 14d6b0b9d370921494f2059e51862d7ee7065d57.
 
 **Scope:** Record an incremental package-level proposal within the approved Backend modular-monolith boundary without claiming that the proposed modules, packages, or classes are implemented.
 
@@ -50,7 +75,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-20 — Add Bug Recording and Playwright Foundations
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 14d6b0b9d370921494f2059e51862d7ee7065d57.
 
 **Scope:** Add a bounded, human-gated bug-recording procedure and a local Chromium browser-smoke foundation without introducing automatic fixes, Issue creation, CI integration, or claims of full frontend-backend E2E coverage.
 
@@ -71,7 +96,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-20 — Start the Authentication API Contract
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 14d6b0b9d370921494f2059e51862d7ee7065d57.
 
 **Scope:** Establish the first under-review OpenAPI vertical slice for FR-03 and a lightweight integration guide without claiming that the documented endpoints are implemented.
 

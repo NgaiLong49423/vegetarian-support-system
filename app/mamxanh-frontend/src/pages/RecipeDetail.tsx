@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   BadgeCheck,
@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Clock,
   Flame,
+  Flag,
   Heart,
   Leaf,
   Share2,
@@ -20,7 +21,18 @@ import { PageContainer } from '../components/Layout';
 import { RecipeCard } from '../components/RecipeCard';
 import { Badge, Button, Card, SectionHeading } from '../components/ui';
 import { Modal } from '../components/Modal';
+import { RecipeComments } from '../components/RecipeComments';
 import { recipes } from '../data/mockData';
+import { scaleQuantity } from '../utils/servings';
+
+const reportReasons = [
+  { code: 'NON_VEGAN', label: 'Không phải món chay' },
+  { code: 'FOOD_SAFETY_HAZARD', label: 'Nguy cơ an toàn thực phẩm' },
+  { code: 'INAPPROPRIATE_CONTENT', label: 'Nội dung phản cảm / Bạo lực' },
+  { code: 'COPYRIGHT_VIOLATION', label: 'Vi phạm bản quyền / Sao chép' },
+  { code: 'SPAM_ADVERTISING', label: 'Spam / Quảng cáo thương mại' },
+  { code: 'OTHER', label: 'Khác' },
+] as const;
 
 const nutritionRows = [
   { label: 'Năng lượng', value: '210 kcal', rdi: '11% RDI' },
@@ -40,6 +52,37 @@ export function RecipeDetail() {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [planOpen, setPlanOpen] = useState(false);
+  const [desiredServings, setDesiredServings] = useState(recipe.servings);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportError, setReportError] = useState('');
+  const [demoReportSubmitted, setDemoReportSubmitted] = useState(false);
+
+  useEffect(() => {
+    setDesiredServings(recipe.servings);
+    setReportOpen(false);
+    setReportReason('');
+    setReportDescription('');
+    setReportError('');
+    setDemoReportSubmitted(false);
+  }, [recipe.id, recipe.servings]);
+
+  const submitDemoReport = () => {
+    const description = reportDescription.trim();
+    if (!reportReasons.some((reason) => reason.code === reportReason)) {
+      setReportError('Vui lòng chọn một lý do báo cáo.');
+      return;
+    }
+    if (description.length > 500 || (reportReason === 'OTHER' && description.length < 10)) {
+      setReportError('Mô tả cần từ 10 đến 500 ký tự khi chọn lý do Khác; tối đa 500 ký tự với các lý do khác.');
+      return;
+    }
+    setReportError('');
+    setDemoReportSubmitted(true);
+    setReportOpen(false);
+    showToast('Đã kiểm tra biểu mẫu. Chưa gửi báo cáo tới quản trị viên.');
+  };
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -90,6 +133,10 @@ export function RecipeDetail() {
           </div>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => setReportOpen(true)} aria-label="Báo cáo công thức" title="Báo cáo công thức" className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-300">
+            <Flag className="h-5 w-5" />
+            <span className="hidden sm:inline">Báo cáo</span>
+          </button>
           <button onClick={() => setSaved((v) => !v)} className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${saved ? 'border-brand-600 bg-brand-600 text-white' : 'border-brand-200 bg-white text-ink-soft hover:border-brand-300'}`}>
             <Heart className={`h-5 w-5 ${saved ? 'fill-current' : ''}`} />
           </button>
@@ -107,7 +154,7 @@ export function RecipeDetail() {
         {[
           { icon: Clock, label: 'Chuẩn bị', value: `${recipe.prepTime} phút` },
           { icon: Flame, label: 'Nấu ăn', value: `${recipe.cookTime} phút` },
-          { icon: Users, label: 'Khẩu phần', value: `${recipe.servings} người ăn` },
+          { icon: Users, label: 'Khẩu phần gốc', value: `${recipe.servings} người ăn` },
           { icon: UtensilsCrossed, label: 'Năng lượng', value: `${recipe.calories} kcal` },
         ].map((s) => (
           <div key={s.label} className="flex items-center gap-3 rounded-2xl border border-brand-100 bg-white p-4">
@@ -152,8 +199,18 @@ export function RecipeDetail() {
             <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink">
               <span className="text-brand-600">🥬</span> Nguyên liệu
             </h2>
-            <p className="text-sm text-ink-muted">Tuỳ chỉnh theo khẩu phần · {recipe.servings} người ăn</p>
+            <p className="text-sm text-ink-muted">Công thức gốc: {recipe.servings} phần · Chọn số phần để tính lại nguyên liệu.</p>
+            <p className="text-xs text-ink-muted">Định lượng được nhân theo tỷ lệ, làm tròn tối đa 2 chữ số thập phân; đơn vị được giữ nguyên.</p>
           </div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-ink">
+            Số khẩu phần
+            <input type="number" min={1} max={50} step={1} value={desiredServings}
+              onChange={(event) => {
+                const value = Number(event.target.value);
+                if (Number.isInteger(value) && value >= 1 && value <= 50) setDesiredServings(value);
+              }}
+              className="w-20 rounded-xl border border-brand-200 bg-white px-3 py-2 text-center outline-none focus:border-brand-500" />
+          </label>
           <Button
             onClick={() => showToast('Đã thêm nguyên liệu vào Danh sách đi chợ!')}
           >
@@ -179,13 +236,36 @@ export function RecipeDetail() {
                     {ing.name}
                     {ing.note && <span className="ml-1 text-xs text-ink-muted">· {ing.note}</span>}
                   </span>
-                  <Badge tone="neutral">{ing.quantity}</Badge>
+                  <Badge tone="neutral">{scaleQuantity(ing.quantity, recipe.servings, desiredServings)}</Badge>
                 </label>
               ))}
             </div>
           ))}
         </div>
       </Card>
+
+      <Modal open={reportOpen} onClose={() => setReportOpen(false)} title="Báo cáo công thức">
+        <p className="mb-3 text-sm text-ink-muted">Chọn một lý do để báo cáo “{recipe.name}”. Báo cáo chỉ là phản ánh để quản trị viên xem xét.</p>
+        <div className="max-h-48 space-y-2 overflow-y-auto">
+          {reportReasons.map((reason) => <label key={reason.code} className="flex cursor-pointer items-center gap-2 text-sm text-ink-soft">
+            <input type="radio" name="report-reason" value={reason.code} checked={reportReason === reason.code}
+              onChange={() => { setReportReason(reason.code); setReportError(''); }} /> {reason.label}
+          </label>)}
+        </div>
+        <label htmlFor="report-description" className="mt-4 block text-sm font-semibold text-ink">
+          Mô tả bổ sung {reportReason === 'OTHER' ? '(bắt buộc)' : '(tùy chọn)'}
+        </label>
+        <textarea id="report-description" maxLength={500} value={reportDescription}
+          onChange={(event) => { setReportDescription(event.target.value); setReportError(''); }} rows={3}
+          className="mt-2 w-full rounded-xl border border-brand-200 p-3 text-sm outline-none focus:border-brand-500" />
+        <p className="text-right text-xs text-ink-muted">{reportDescription.length}/500 ký tự</p>
+        {reportError && <p role="alert" className="mt-2 text-sm text-red-600">{reportError}</p>}
+        <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-ink-soft">Bản demo FE: biểu mẫu chưa được kết nối Backend, nên chưa gửi báo cáo tới quản trị viên.</p>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setReportOpen(false)}>Hủy</Button>
+          <Button onClick={submitDemoReport} disabled={demoReportSubmitted}>{demoReportSubmitted ? 'Đã kiểm tra' : 'Kiểm tra biểu mẫu'}</Button>
+        </div>
+      </Modal>
 
       {/* steps */}
       <Card className="mb-8 p-6">
@@ -208,9 +288,9 @@ export function RecipeDetail() {
       <Card className="mb-10 p-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink">
-            <span className="text-brand-600">📊</span> Bảng dinh dưỡng khoa học 8 chỉ tiêu
+            <span className="text-brand-600">📊</span> Dinh dưỡng cho 1 khẩu phần (8 chỉ tiêu minh họa)
           </h2>
-          <Badge tone="leaf"><BadgeCheck className="h-3.5 w-3.5" /> Đạt chuẩn thực dưỡng USDA</Badge>
+          <Badge tone="neutral">Dữ liệu mẫu</Badge>
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {nutritionRows.map((row) => (
@@ -222,11 +302,12 @@ export function RecipeDetail() {
           ))}
         </div>
         <p className="mt-4 text-xs leading-relaxed text-ink-muted">
-          * Chỉ số dinh dưỡng được tính toán dựa trên cơ sở dữ liệu Viện Dinh Dưỡng Quốc Gia Việt Nam &
-          USDA FoodData Central. Kết quả có thể thay đổi tuỳ vào thương hiệu nguyên liệu bạn sử dụng.
+          Số liệu đang là mẫu giao diện cho một khẩu phần, chưa được tính từ nguyên liệu của công thức này.
+          Thay đổi số khẩu phần ở trên chỉ tính lại định lượng nguyên liệu; không nhân bảng dinh dưỡng mỗi khẩu phần.
         </p>
       </Card>
 
+      <RecipeComments key={recipe.id} />
       <SectionHeading eyebrow="Có thể bạn thích" title="Công thức tương tự" />
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {related.map((r) => (

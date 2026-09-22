@@ -37,13 +37,19 @@ export function MealPlanner() {
         if (i !== dayIdx) return day;
         const recipe = recipes.find((r) => r.id === recipeId)!;
         const others = day.meals.filter((m) => m.slot !== slot);
-        return { ...day, meals: [...others, { slot, recipe }].sort((a, b) => allSlots.indexOf(a.slot) - allSlots.indexOf(b.slot)) };
+        return { ...day, meals: [...others, { slot, recipe, servings: 1 }].sort((a, b) => allSlots.indexOf(a.slot) - allSlots.indexOf(b.slot)) };
       }),
     );
   };
 
   const removeMeal = (dayIdx: number, slot: MealSlot) => {
     setWeek((prev) => prev.map((day, i) => (i === dayIdx ? { ...day, meals: day.meals.filter((m) => m.slot !== slot) } : day)));
+  };
+
+  const setServings = (dayIdx: number, slot: MealSlot, servings: number) => {
+    setWeek((prev) => prev.map((day, i) => i === dayIdx
+      ? { ...day, meals: day.meals.map((meal) => meal.slot === slot ? { ...meal, servings } : meal) }
+      : day));
   };
 
   return (
@@ -108,24 +114,39 @@ export function MealPlanner() {
                     );
                   }
                   return (
-                    <div key={slot} className="group flex items-center gap-3 rounded-xl border border-brand-100 bg-brand-50/40 p-2 pr-1">
-                      <img src={meal.recipe.image} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
-                      <div className="min-w-0 flex-1">
+                    <div key={slot} className="group rounded-xl border border-brand-100 bg-brand-50/40 p-2">
+                      <div className="flex items-center gap-2">
+                        <img src={meal.recipe.image} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                        <div className="min-w-0 flex-1">
                         <p className={`flex items-center gap-1 text-xs font-bold ${Meta.color}`}>
                           <Meta.icon className="h-3 w-3" /> {Meta.label}
                         </p>
                         <Link to={`/cong-thuc/${meal.recipe.slug}`} className="block truncate text-sm font-semibold text-ink hover:text-brand-700">
                           {meal.recipe.name}
                         </Link>
-                      </div>
-                      <div className="flex shrink-0 flex-col gap-0.5">
+                        </div>
+                        <div className="flex shrink-0 flex-col gap-0.5">
                         <button onClick={() => setPicker({ dayIdx, slot })} title="Đổi món" className="flex h-6 w-6 items-center justify-center rounded-md text-ink-muted hover:bg-white hover:text-brand-600">
                           <RefreshCw className="h-3.5 w-3.5" />
                         </button>
                         <button onClick={() => removeMeal(dayIdx, slot)} title="Xoá món" className="flex h-6 w-6 items-center justify-center rounded-md text-ink-muted hover:bg-white hover:text-red-500">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
+                        </div>
                       </div>
+                      <label className="mt-2 flex items-center justify-between border-t border-brand-100 pt-2 text-xs text-ink-muted">
+                        Khẩu phần dự định ăn
+                        <select
+                          aria-label={`Khẩu phần ${meal.recipe.name} ${day.weekday} bữa ${slot}`}
+                          value={meal.servings ?? 1}
+                          onChange={(event) => setServings(dayIdx, slot, Number(event.target.value))}
+                          className="rounded-lg border border-brand-200 bg-white px-2 py-1 font-semibold text-ink"
+                        >
+                          {Array.from({ length: 20 }, (_, i) => (i + 1) / 2).map((value) => (
+                            <option key={value} value={value}>{value} phần</option>
+                          ))}
+                        </select>
+                      </label>
                     </div>
                   );
                 })}

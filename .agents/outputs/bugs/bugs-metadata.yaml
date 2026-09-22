@@ -1,19 +1,37 @@
 schema_version: 1
-last_updated: 2026-09-20
-next_id: 2
+last_updated: 2026-09-21
+next_id: 4
 
 status_definitions:
-  RECORDED: Credible bug captured; no active investigation or verified resolution is recorded.
-  TRACKING: Bug is being monitored or investigated, but is not yet verified as resolved.
-  RESOLVED: A resolution and its verification evidence are recorded in the bug file.
+  RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
+  TRACKING: Đang theo dõi hoặc điều tra; chưa xác minh lỗi đã được sửa.
+  RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
   - id: BUG-001
-    title: Database guide incorrectly states that the ERD does not exist
+    title: Tài liệu database ghi chưa có ERD dù sơ đồ đã tồn tại
     status: RECORDED
     severity: Medium
     area: Documentation/Database
     file: .agents/outputs/bugs/BUG-001.md
     created: 2026-09-20
-    updated: 2026-09-20
+    updated: 2026-09-21
+    related_issue: Unknown
+  - id: BUG-002
+    title: Bảng dinh dưỡng công thức dùng 8 chỉ tiêu tĩnh, chưa tính đủ 9 chỉ tiêu
+    status: RECORDED
+    severity: Medium
+    area: Frontend/Recipe Detail
+    file: .agents/outputs/bugs/BUG-002.md
+    created: 2026-09-21
+    updated: 2026-09-21
+    related_issue: Unknown
+  - id: BUG-003
+    title: Nhóm lý do báo cáo công thức chưa thống nhất giữa SRS gốc và FR-27
+    status: RECORDED
+    severity: Medium
+    area: Documentation/Requirements
+    file: .agents/outputs/bugs/BUG-003.md
+    created: 2026-09-21
+    updated: 2026-09-21
     related_issue: Unknown
