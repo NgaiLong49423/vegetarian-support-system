@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-23 — Align Social, Recipe Comparison, Nutrition, and Expert Requirements
 
-**Status:** Working tree — not committed.
+**Status:** Committed — f1320f9.
 
 **Scope:** Align the conceptual data model and requirement semantics for draft social following, public two-recipe comparison, nutrition analysis/PDF reporting, and expert applications without claiming implementation or creating GitHub Issues.
 
