@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v1.7.0
+> **Version:** v1.9.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-22
+> **Last Updated:** 2026-09-23
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -10,7 +10,7 @@
 
 ## 1. Mục đích và thẩm quyền tài liệu
 
-Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Business Rules (`BR-01` đến `BR-74`) của Requirements Baseline v1.0.0 (cập nhật v1.7.0).
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Business Rules (`BR-01` đến `BR-76`) của Requirements Baseline v1.0.0 (cập nhật v1.9.0).
 
 Khung đặc tả gốc và **Authoritative Registry** cho sự tồn tại của quy tắc, mã định danh ổn định (stable ID), và trạng thái vòng đời (lifecycle state) chính thức được duy trì tập trung tại `docs/requirements/SRS.md`.
 
@@ -425,11 +425,11 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ---
 
 <a id="br-44"></a>
-### BR-44 — Quy tắc giải thích chỉ tiêu natri và năng lượng
+### BR-44 — Quy tắc diễn giải mức tham khảo theo từng chỉ tiêu dinh dưỡng
 
 - **Mã quy tắc:** BR-44
 - **Trạng thái (Derived):** ACTIVE
-- **Nội dung:** Không áp dụng cùng một cách hiểu phần trăm cho mọi chỉ tiêu: natri được theo dõi theo giới hạn tối đa, còn trạng thái của năng lượng và chất đa lượng dựa trên khoảng tham khảo đã chốt. Không khuyến khích người dùng tăng natri chỉ để đạt 100%.
+- **Nội dung:** Không dùng một tỷ lệ phần trăm hoặc một nhãn chung để thay thế ý nghĩa riêng của từng chỉ tiêu. Năng lượng và các chất đa lượng được so sánh với khoảng tham khảo đã chốt; vi chất được trình bày theo giá trị và mức tham khảo tương ứng. Kết quả thấp hơn hoặc cao hơn chỉ mô tả thực đơn dự kiến, không được diễn giải thành chẩn đoán thiếu/thừa chất của người dùng.
 
 ---
 
@@ -748,9 +748,45 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 - **Mã quy tắc:** BR-74
 - **Trạng thái (Derived):** ACTIVE
 - **Nội dung:**
-  - Người dùng có vai trò `CUSTOMER` được phép nộp đơn đăng ký Chuyên gia (`EXPERT_APPLICATION`) thông qua biểu mẫu format văn bản có cấu trúc (kinh nghiệm ẩm thực $\ge 20$ ký tự, trường phái chay, tóm tắt công thức sở trường $\ge 30$ ký tự, link tham khảo tùy chọn).
-  - Hệ thống tuyệt đối không yêu cầu hoặc lưu trữ tệp tin chứng chỉ/bằng cấp vật lý.
+  - Người dùng có vai trò `CUSTOMER` được phép nộp đơn đăng ký Chuyên gia (`EXPERT_APPLICATION`) thông qua biểu mẫu format văn bản có cấu trúc (kinh nghiệm ẩm thực $\ge 20$ ký tự, trường phái chay, tóm tắt công thức sở trường $\ge 30$ ký tự, đúng một link HTTP/HTTPS tham khảo tùy chọn).
+  - Đây là quy trình xét duyệt tư cách Chuyên gia và quyền đăng bài dựa trên thông tin tự khai, không phải xác minh danh tính/KYC hoặc xác thực bằng cấp. Hệ thống tuyệt đối không yêu cầu hoặc lưu trữ giấy tờ tùy thân, tệp chứng chỉ hay bằng cấp vật lý.
   - **Quy tắc chặn nộp trùng (Single Open Application Rule):** Mỗi tài khoản Customer chỉ được phép sở hữu tối đa một bản ghi đơn đăng ký ở trạng thái chờ duyệt (`PENDING`). Nếu gửi thêm đơn trong khi đơn cũ chưa được xử lý, Backend từ chối với mã lỗi `HTTP 409 Conflict`.
-  - **Quy tắc phê duyệt và chuyển đổi vai trò (Instant Role Promotion):** Khi Administrator nhấn phê duyệt một đơn ở trạng thái `PENDING`, hệ thống cập nhật trạng thái đơn thành `APPROVED`, đồng thời ngay lập tức cập nhật vai trò người dùng trong `USER` từ `CUSTOMER` thành `EXPERT`, mở khóa quyền tạo bài viết tại `FR-04` và gửi thông báo in-app.
+  - Customer được xem lịch sử các đơn của chính mình theo thứ tự mới nhất trước nhưng không được rút/hủy đơn `PENDING` trong MVP; không được xem đơn của tài khoản khác.
+  - **Quy tắc phê duyệt và chuyển đổi vai trò (Instant Role Promotion):** Chỉ khi đơn vẫn `PENDING` và tài khoản nộp vẫn `ACTIVE` với vai trò `CUSTOMER`, Administrator mới được phê duyệt. Hệ thống cập nhật trạng thái đơn thành `APPROVED`, đồng thời cập nhật vai trò người dùng trong `USER` thành `EXPERT`, làm mới trạng thái phân quyền để mở khóa quyền tạo bài viết tại `FR-04` và gửi thông báo in-app.
   - **Quy tắc từ chối bắt buộc lý do (Mandatory Rejection Note):** Khi Administrator từ chối đơn, bắt buộc phải nhập lý do từ chối cụ thể (`admin_note` từ 10 đến 500 ký tự); trạng thái đơn chuyển thành `REJECTED`, vai trò tài khoản vẫn là `CUSTOMER`, thông báo in-app gửi kèm lý do; Customer được quyền nộp đơn mới sau khi đơn cũ bị từ chối.
+  - **Quy tắc xử lý đồng thời:** Chỉ quyết định đầu tiên trên một đơn `PENDING` được ghi nhận. Mọi yêu cầu xử lý từ dữ liệu cũ sau khi trạng thái đã đổi phải trả `HTTP 409 Conflict`, không ghi đè kết quả, không cập nhật role và không gửi thông báo lần hai.
+
+---
+
+<a id="br-75"></a>
+### BR-75 — Tính duy nhất, có hướng và quyền riêng tư của quan hệ theo dõi (`USER_FOLLOW`)
+
+- **Mã quy tắc:** BR-75
+- **Trạng thái (Derived):** DRAFT
+- **Nội dung:**
+  - `USER_FOLLOW` biểu diễn quan hệ có hướng từ `follower_user_id` đến `followed_user_id`; A → B không suy ra B → A.
+  - Chỉ Member (`CUSTOMER` hoặc `EXPERT`) đã xác thực và có trạng thái tài khoản hoạt động được tạo/xóa quan hệ theo dõi của chính mình.
+  - Cấm tự theo dõi: `follower_user_id <> followed_user_id`.
+  - Mỗi cặp có hướng chỉ tồn tại tối đa một lần, được bảo vệ bằng khóa duy nhất hoặc khóa chính ghép trên `(follower_user_id, followed_user_id)`.
+  - Follow và unfollow phải idempotent; request lặp không tạo bản ghi trùng hoặc làm sai bộ đếm.
+  - Backend xác định `follower_user_id` từ phiên đăng nhập và kiểm tra tài khoản đích; client không được chỉ định người theo dõi thay cho tài khoản hiện tại.
+  - Quan hệ theo dõi không cấp quyền xem dữ liệu riêng tư. Danh sách chỉ trả các trường hồ sơ công khai theo BR-18.
+  - Tài khoản không hoạt động không nhận quan hệ mới và không xuất hiện trong danh sách công khai; chính sách xóa vật lý quan hệ khi xóa tài khoản được quyết định ở Physical ERD/migration theo chính sách vòng đời tài khoản.
+  - `USER_FOLLOW` phải tham chiếu `USER` bằng hai vai trò riêng: người theo dõi (`follower`) và người được theo dõi (`followed`).
+
+---
+
+<a id="br-76"></a>
+### BR-76 — Quy tắc so sánh hai công thức công khai theo một khẩu phần
+
+- **Mã quy tắc:** BR-76
+- **Trạng thái (Derived):** ACTIVE
+- **Nội dung:**
+  - Mỗi phiên so sánh phải chứa đúng hai Recipe Post khác nhau và cả hai phải đang ở trạng thái `PUBLISHED`; bài bị ẩn, xóa hoặc không còn công khai không được đưa vào kết quả.
+  - So sánh dinh dưỡng mặc định theo **một khẩu phần** của từng công thức. Giao diện phải hiển thị rõ số khẩu phần gốc của mỗi công thức để tránh hiểu sai rằng hai khẩu phần có cùng khối lượng thành phẩm.
+  - Hệ thống hiển thị đúng chín chỉ tiêu MVP: Năng lượng, Chất đạm, Carbohydrate, Chất béo, Chất xơ, Canxi, Sắt, Vitamin B12 và Kẽm. Natri/muối không thuộc kết quả so sánh.
+  - Chênh lệch dinh dưỡng được hiển thị bằng giá trị định lượng tuyệt đối theo cùng đơn vị; MVP không tính chênh lệch phần trăm, không tạo Health Score và không kết luận công thức nào tốt hơn hoặc lành mạnh hơn.
+  - Danh sách nguyên liệu giữ số lượng và đơn vị nguyên bản của từng công thức. Hệ thống có thể nhóm tên nguyên liệu chuẩn giống nhau để đối chiếu nhưng không tự coi tên gần giống là cùng nguyên liệu và không tự quy đổi đơn vị khi chưa có quy tắc `INGREDIENT_UNIT_CONVERSION` hợp lệ.
+  - Nếu một công thức hoặc chỉ tiêu thiếu dữ liệu, hệ thống hiển thị `Chưa đủ dữ liệu` đúng bên bị ảnh hưởng; giá trị chưa biết không được thay bằng `0` hoặc do AI suy đoán.
+  - Guest và Member đều được sử dụng chức năng với dữ liệu công khai. MVP không lưu lịch sử so sánh và không xuất kết quả so sánh ra PDF.
 

@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements Specification
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v1.7.0
+> **Version:** v1.9.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-22
+> **Last Updated:** 2026-09-23
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -10,7 +10,7 @@
 
 ## 1. Mục đích và thẩm quyền tài liệu
 
-Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho các Functional Requirements (`FR-01` đến `FR-58`) của Requirements Baseline v1.0.0 (cập nhật v1.7.0). Các yêu cầu `ACTIVE` có actor, luồng, ràng buộc và Acceptance Criteria làm nguồn cho thiết kế và kiểm thử; requirement không `ACTIVE` được giữ để bảo toàn lịch sử và stable ID.
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho các Functional Requirements (`FR-01` đến `FR-60`) của Requirements Baseline v1.0.0 (cập nhật v1.9.0). Các yêu cầu `ACTIVE` có actor, luồng, ràng buộc và Acceptance Criteria làm nguồn cho thiết kế và kiểm thử; requirement không `ACTIVE` được giữ để bảo toàn lịch sử và stable ID.
 
 Khung đặc tả gốc và **Authoritative Registry** cho sự tồn tại của requirement, mã định danh ổn định (stable ID), phân bổ module cấp chỉ mục, và trạng thái vòng đời (lifecycle state) chính thức được duy trì tập trung tại `docs/requirements/SRS.md`.
 
@@ -604,7 +604,7 @@ Thiết lập Mâm Xanh thành sân chơi ẩm thực chay chuyên nghiệp, nơ
 - **Mã yêu cầu:** FR-05
 - **Module:** M02 (Identity & Access), M03 (Community Recipes & Social), M09 (Administration & Moderation)
 - **Trạng thái (Derived):** ACTIVE
-- **Tóm tắt yêu cầu:** Hệ thống cho phép người dùng thông thường (`Customer`) có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản có cấu trúc (`EXPERT_APPLICATION`); hệ thống không quản lý tệp chứng chỉ hoặc văn bằng vật lý; Administrator xem xét đơn trong trung tâm quản trị, ghi nhận xét thẩm định và quyết định phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; khi được phê duyệt, tài khoản được thăng cấp tức thời lên vai trò `EXPERT` để có quyền tạo và công khai bài viết; nếu bị từ chối, người dùng có thể nộp lại đơn mới sau khi bổ sung thông tin.
+- **Tóm tắt yêu cầu:** Hệ thống cho phép người dùng thông thường (`Customer`) có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản có cấu trúc (`EXPERT_APPLICATION`); đây là quy trình xét duyệt **tư cách Chuyên gia và quyền đăng bài**, không phải xác minh danh tính/KYC. Hệ thống không yêu cầu hoặc quản lý giấy tờ tùy thân, tệp chứng chỉ hay văn bằng vật lý. Administrator xem xét đơn trong trung tâm quản trị, ghi nhận xét thẩm định và quyết định phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; khi được phê duyệt, tài khoản được thăng cấp tức thời lên vai trò `EXPERT` để có quyền tạo và công khai bài viết; nếu bị từ chối, người dùng có thể nộp lại đơn mới sau khi bổ sung thông tin.
 
 #### 1. Mục đích
 Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặt chẽ nhưng gọn nhẹ, không tạo rào cản thủ tục hành chính phức tạp về bằng cấp vật lý; bảo đảm chỉ những người dùng có kinh nghiệm, kiến thức và cam kết ẩm thực chay chân chính mới được cấp quyền đăng bài; đồng thời tạo ra công cụ quản trị quy trình xét duyệt hoàn chỉnh cho Administrator.
@@ -622,6 +622,7 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
   - `UC-05.2`: Thẩm định danh sách đơn đăng ký Chuyên gia (Review pending expert applications).
   - `UC-05.3`: Phê duyệt đơn và cấp quyền Chuyên gia (Approve application and grant Expert role).
   - `UC-05.4`: Từ chối đơn đăng ký kèm lý do giải thích (Reject application with admin reason).
+  - `UC-05.5`: Customer xem lịch sử và trạng thái các đơn đăng ký của chính mình.
 - **User Stories:**
   - `US-05.1`: Là một người nấu chay có kinh nghiệm, tôi muốn điền bản giới thiệu theo format chuẩn về kinh nghiệm ẩm thực của mình để xin cấp quyền Chuyên gia mà không cần phải chụp/nộp bằng cấp rườm rà.
   - `US-05.2`: Là một Administrator, tôi muốn xem danh sách các đơn đăng ký Chuyên gia đang chờ duyệt với đầy đủ thông tin tóm tắt để thẩm định nhanh chóng và công bằng.
@@ -641,7 +642,7 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
      - *Kinh nghiệm ẩm thực chay* (`bio_experience`): Văn bản từ 20 đến 2.000 ký tự mô tả số năm ăn chay, kinh nghiệm làm bếp hoặc triết lý nấu ăn.
      - *Trường phái chay chuyên sâu* (`vegetarian_type`): Chọn 1 trong các trường phái (Thuần chay / Vegan, Chay có sữa / Lacto, Chay có trứng / Ovo, Chay trứng sữa / Lacto-Ovo, Chay thực dưỡng dưỡng sinh).
      - *Tóm tắt công thức sở trường mẫu* (`sample_recipe_summary`): Văn bản từ 30 đến 2.000 ký tự tóm tắt 1 món chay tâm huyết (tên món, nguyên liệu chính, nét đặc sắc).
-     - *Kênh ẩm thực / liên kết tham khảo* (`portfolio_url`): Tùy chọn, tối đa 500 ký tự (link Facebook, kênh YouTube/TikTok, Blog cá nhân nếu có).
+     - *Kênh ẩm thực / liên kết tham khảo* (`portfolio_url`): Tùy chọn đúng một URL HTTP/HTTPS hợp lệ, tối đa 500 ký tự (link Facebook, kênh YouTube/TikTok hoặc Blog cá nhân nếu có).
    - Bước 3: Customer tích chọn ô cam kết chia sẻ thông tin an toàn, đúng chuẩn và nhấn "Gửi đơn đăng ký".
    - Bước 4: Hệ thống kiểm tra hợp lệ dữ liệu và kiểm tra quy tắc chống nộp đơn trùng (tài khoản không được có đơn khác đang ở trạng thái `PENDING`).
    - Bước 5: Hệ thống lưu bản ghi mới vào thực thể `EXPERT_APPLICATION` ở trạng thái chờ duyệt (`PENDING`), ghi nhận thời điểm tạo và phản hồi thông báo nộp đơn thành công.
@@ -652,9 +653,9 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
    - Bước 1: Administrator mở mục "Quản lý đơn Chuyên gia" trên trang Quản trị.
    - Bước 2: Hệ thống hiển thị danh sách các đơn đang ở trạng thái `PENDING` kèm thông tin tài khoản nộp, ngày gửi và tóm tắt nội dung.
    - Bước 3: Administrator chọn một đơn để xem chi tiết toàn bộ nội dung format do người dùng khai báo.
-   - Bước 4: Administrator đánh giá nội dung đạt chuẩn và nhấn "Phê duyệt" (Approve).
+   - Bước 4: Administrator đánh giá thủ công tính đầy đủ, liên quan, nhất quán và phù hợp chính sách của nội dung tự khai; hệ thống không tạo điểm Chuyên gia tự động và không khẳng định đã xác minh danh tính hoặc tính xác thực ngoài hệ thống. Nếu đạt, Administrator nhấn "Phê duyệt" (Approve).
    - Bước 5: Administrator có thể nhập lời nhắn/chúc mừng tùy chọn vào `admin_note`.
-   - Bước 6: Hệ thống cập nhật trạng thái bản ghi `EXPERT_APPLICATION` thành `APPROVED`, ghi nhận `reviewed_by` và `reviewed_at`.
+   - Bước 6: Hệ thống kiểm tra lại tài khoản vẫn `ACTIVE`, vai trò vẫn là `CUSTOMER` và đơn vẫn `PENDING`; sau đó cập nhật trạng thái bản ghi `EXPERT_APPLICATION` thành `APPROVED`, ghi nhận `reviewed_by` và `reviewed_at`.
    - Bước 7: Hệ thống lập tức cập nhật vai trò của tài khoản người dùng tương ứng trong thực thể `USER` thành `EXPERT`.
    - Bước 8: Hệ thống gửi thông báo in-app chúc mừng tới người dùng: "Chúc mừng bạn! Đơn đăng ký Chuyên gia của bạn đã được phê duyệt. Bạn hiện đã có quyền tạo và chia sẻ công thức trên Mâm Xanh."
 
@@ -675,17 +676,26 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
    - Nếu đơn trước đó của Customer đã có kết quả `REJECTED`, hệ thống cho phép người dùng bấm "Nộp lại đơn đăng ký" để tạo một bản ghi `EXPERT_APPLICATION` mới với thông tin đã được chỉnh sửa bổ sung.
 3. **Chặn người dùng đã là Chuyên gia nộp đơn:**
    - Nếu tài khoản đã có vai trò `Role = EXPERT` hoặc `Role = ADMIN`, hệ thống ẩn nút đăng ký và chặn request nộp đơn với mã lỗi `HTTP 400 Bad Request`.
+4. **Không cho rút đơn đang chờ trong MVP:**
+   - Customer được xem đơn `PENDING` nhưng không có thao tác rút/hủy đơn. Nếu cần dừng xử lý, Customer liên hệ Administrator theo kênh hỗ trợ ngoài phạm vi chức năng này.
+5. **Chống xử lý đồng thời hoặc xử lý lại:**
+   - Chỉ đơn còn `PENDING` mới được phê duyệt/từ chối. Nếu một Administrator khác đã xử lý đơn hoặc tài khoản không còn `ACTIVE`/`CUSTOMER`, hệ thống từ chối quyết định mới với `HTTP 409 Conflict`, không ghi đè kết quả trước đó và yêu cầu tải lại dữ liệu.
+6. **Xem lịch sử đơn của chính mình:**
+   - Customer xem danh sách các đơn đã gửi theo thứ tự mới nhất trước, gồm ngày gửi, trạng thái, thời điểm xử lý và `admin_note` khi có; không xem được đơn của tài khoản khác.
 
 #### 6. Hậu điều kiện (Postconditions)
 - Bản ghi `EXPERT_APPLICATION` được tạo với trạng thái `PENDING` hoặc cập nhật trạng thái `APPROVED` / `REJECTED`.
 - Khi được phê duyệt: Vai trò của tài khoản trong cơ sở dữ liệu chuyển thành `EXPERT`, mở khóa toàn bộ quyền đăng bài tại FR-04.
 - Khi bị từ chối: Lý do từ chối được lưu trữ và hiển thị cho người dùng; vai trò tài khoản vẫn là `CUSTOMER`.
+- Lịch sử các lần nộp được bảo toàn; đơn mới sau khi bị từ chối không ghi đè bản ghi cũ.
+- Sau khi phê duyệt, hệ thống làm mới trạng thái phân quyền để người dùng nhận quyền `EXPERT` trong phiên hợp lệ tiếp theo mà không phải nộp lại đơn.
 
 #### 7. Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Guest không được nộp đơn; hệ thống yêu cầu đăng nhập trước khi tiếp cận biểu mẫu (BR-05).
 - Customer chỉ được xem trạng thái và nội dung đơn đăng ký của chính mình (NFR-09).
 - Chỉ Administrator có quyền xem toàn bộ danh sách đơn và thực hiện phê duyệt/từ chối (NFR-09).
 - Tuyệt đối không yêu cầu người dùng tải lên tệp tin ảnh chụp văn bằng, chứng chỉ hoặc giấy tờ tùy thân nhạy cảm; việc thẩm định hoàn toàn dựa trên thông tin format văn bản có cấu trúc do người dùng tự khai báo.
+- Quy trình không được mô tả là xác minh danh tính/KYC hoặc xác thực bằng cấp của Customer.
 
 #### 8. Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
 - **Quy tắc nghiệp vụ liên quan:**
@@ -724,6 +734,21 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
   - **Given:** Customer có đơn đăng ký trước đó ở trạng thái `REJECTED`.
   - **When:** Customer mở lại biểu mẫu đăng ký, điều chỉnh nội dung format theo góp ý và nhấn "Gửi đơn đăng ký".
   - **Then:** Hệ thống tiếp nhận thành công, tạo bản ghi `EXPERT_APPLICATION` mới ở trạng thái `PENDING`, lưu trữ độc lập với bản ghi đã bị từ chối trước đó.
+
+- **AC-05.6 — Customer xem lịch sử đơn của chính mình:**
+  - **Given:** Customer đã từng gửi ít nhất một đơn đăng ký Chuyên gia.
+  - **When:** Customer mở mục lịch sử đăng ký Chuyên gia.
+  - **Then:** Hệ thống hiển thị các đơn của đúng tài khoản theo thứ tự mới nhất trước, gồm ngày gửi, trạng thái và kết quả xử lý; không hiển thị đơn của người dùng khác.
+
+- **AC-05.7 — Chặn xử lý đồng thời hoặc xử lý lại đơn:**
+  - **Given:** Hai Administrator cùng mở một đơn `PENDING` và người thứ nhất đã xử lý thành công.
+  - **When:** Administrator thứ hai gửi quyết định cho cùng đơn từ dữ liệu cũ.
+  - **Then:** Hệ thống trả `HTTP 409 Conflict`, giữ nguyên quyết định đầu tiên và không cập nhật role hoặc gửi thông báo lần hai.
+
+- **AC-05.8 — Chặn duyệt khi tài khoản không còn đủ điều kiện:**
+  - **Given:** Đơn còn `PENDING` nhưng tài khoản nộp đã không còn `ACTIVE` hoặc không còn vai trò `CUSTOMER`.
+  - **When:** Administrator cố phê duyệt đơn.
+  - **Then:** Hệ thống từ chối xử lý, không cấp role `EXPERT` và yêu cầu Administrator tải lại trạng thái hiện hành.
 
 ---
 
@@ -3892,7 +3917,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - `UC-37.5`: Xem bảng phân tích tổng thể dinh dưỡng tuần (Overall weekly nutrition summary) với giá trị trung bình 7 ngày và nhận diện vi chất đặc thù ăn chay.
   - `UC-37.6`: Xuất báo cáo dinh dưỡng ngày hoặc tuần dưới định dạng file PDF (Export nutrition report).
 - **User Stories:**
-  - *Là một Member đang theo dõi chế độ ăn uống*, tôi muốn điều chỉnh số khẩu phần ăn thực tế và kiểm tra tổng dinh dưỡng trong ngày cũng như phân tích cả tuần so với mức khuyến nghị tham khảo, để tôi biết thực đơn kế hoạch đã cân bằng năng lượng, đạm và vi chất hay chưa.
+  - *Là một Member đang lập kế hoạch ăn uống*, tôi muốn điều chỉnh số khẩu phần dự kiến trong thực đơn và kiểm tra tổng dinh dưỡng trong ngày cũng như phân tích cả tuần so với mức khuyến nghị tham khảo, để đánh giá thực đơn kế hoạch mà không coi đó là nhật ký lượng thực tế đã ăn.
   - *Là một Member đang chuẩn bị tham vấn chuyên gia dinh dưỡng hoặc bác sĩ*, tôi muốn xuất báo cáo dinh dưỡng thực đơn dạng PDF (ngày hoặc tuần) kèm đầy đủ chỉ tiêu, danh sách món và ghi chú minh bạch, để tiện in ấn và chia sẻ.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
@@ -3917,7 +3942,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
     - Tính chênh lệch định lượng ($\Delta = \text{Tổng ngày} - \text{Mức tham khảo}$).
     - Hiển thị thanh tiến trình trực quan biểu thị tỷ lệ % đạt được theo từng chỉ tiêu riêng biệt.
     - Tuyệt đối không tạo ra một "điểm số sức khỏe" (health score) tổng hợp hay gán nhãn "lành mạnh / không lành mạnh" đơn giản hóa (BR-45).
-    - Với Natri và Năng lượng, hệ thống giải thích rõ ràng ngưỡng khuyến nghị tối đa theo hướng dẫn dinh dưỡng (BR-44).
+    - Hệ thống diễn giải từng chỉ tiêu theo mức tham khảo tương ứng, không dùng một tỷ lệ hoặc nhãn chung để thay thế ý nghĩa riêng của từng chỉ tiêu (BR-44).
   - Bước 7: Nếu có món ăn chứa nguyên liệu chưa có dữ liệu dinh dưỡng, hệ thống hiển thị thông báo cảnh báo màu vàng nổi bật: *"Một số món trong ngày chưa có dữ liệu dinh dưỡng đầy đủ; số liệu thực tế có thể cao hơn bảng tính toán"* kèm danh sách tên các món bị ảnh hưởng (BR-48).
   - Bước 8: Hệ thống hiển thị nhãn ghi chú minh bạch *"Dinh dưỡng dự kiến theo thực đơn"* và Tuyên bố từ chối trách nhiệm y tế (BR-39, BR-41).
 
@@ -3933,22 +3958,24 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - Bước 4: Thống kê tỷ lệ ngày đạt chuẩn của từng chỉ tiêu (ví dụ: *6/7 ngày đạt nhu cầu Đạm*).
   - Bước 5: Phân tích các vi chất đặc thù ăn chay:
     - Phát hiện nguy cơ thiếu hụt tích lũy nếu chỉ tiêu quan trọng (như B12, Sắt non-heme, Canxi) thấp hơn ngưỡng khuyến nghị liên tiếp từ 3 ngày trở lên trong tuần.
-    - Phát hiện nguy cơ dư thừa Natri nếu mức trung bình vượt ngưỡng khuyến nghị tối đa (BR-44).
+    - Không phân tích Natri/muối vì chỉ tiêu này không thuộc bộ chín chỉ tiêu dinh dưỡng MVP.
   - Bước 6: Hiển thị kết quả phân tích trong giao diện chi tiết (Modal / Panel). Tuyệt đối không tạo ra một điểm số tổng hợp (Health Score) cho cả tuần (BR-45); hiển thị cảnh báo danh sách các ngày/món thiếu dữ liệu chuẩn (BR-48); hiển thị nhãn minh bạch "Dinh dưỡng dự kiến theo thực đơn tuần".
 
 - **Luồng xuất báo cáo PDF (Sub-flow SBF-37.2 — Xuất báo cáo PDF tuần / ngày):**
   - Bước 1: Member nhấn nút "Xuất báo cáo PDF" (hỗ trợ nút xuất nhanh "Xuất PDF tuần này").
   - Bước 2: Hệ thống hiển thị hộp thoại chọn phạm vi xuất: "Báo cáo ngày hiện tại" hoặc "Báo cáo toàn bộ tuần này" (mặc định chọn Tuần hiện tại).
   - Bước 3: Hệ thống tổng hợp dữ liệu dinh dưỡng theo phạm vi được chọn (tính toán on-demand từ dữ liệu lịch ăn hiện hành, không truy vấn hay lưu trữ vào bảng báo cáo tĩnh).
-  - Bước 4: Tạo tài liệu định dạng PDF chuẩn in A4 (2 trang đối với báo cáo tuần) bao gồm các phần bắt buộc:
-    - **Trang 1 — Tổng quan & Bảng ma trận so sánh 7 ngày:**
-      - Phần thông tin chung: Logo Mâm Xanh, Tiêu đề *"Báo Cáo Phân Tích Dinh Dưỡng Thực Đơn Tuần"*, Họ tên/Mã tài khoản Member, Thời điểm xuất dữ liệu (timestamp), Khoảng thời gian tuần (từ ngày... đến ngày...).
-      - Thông tin thể trạng tham khảo (nếu có): Nhóm tuổi, giới tính, mức vận động, mức calorie mục tiêu (FR-35).
-      - Bảng ma trận 9 chỉ tiêu x 7 ngày: hiển thị số liệu từng ngày (Thứ 2 đến Chủ nhật), cột trung bình tuần, cột chuẩn DRI cá nhân và tỷ lệ % đạt.
-    - **Trang 2 — Chi tiết thực đơn, cảnh báo & miễn trừ y tế:**
-      - Tóm tắt thực đơn tuần: Danh mục bữa ăn 3 bữa (Sáng, Trưa, Tối) từng ngày, tên món và số khẩu phần trong kỳ báo cáo.
-      - Phân tích vi chất đặc thù & cảnh báo thiếu dữ liệu: Nhận diện vi chất đạt chuẩn, cảnh báo các món chứa nguyên liệu chưa có dữ liệu chuẩn (BR-48).
-      - Tuyên bố miễn trừ y tế bắt buộc: In rõ ràng tuyên bố từ chối trách nhiệm y tế chuẩn theo BR-41.
+  - Bước 4: Tạo tài liệu định dạng PDF chuẩn in A4: một trang đối với báo cáo ngày và hai trang đối với báo cáo tuần.
+    - **Báo cáo ngày — 1 trang:** Logo/tiêu đề, thông tin Member và ngày được chọn, ba bữa cùng tên món/số khẩu phần dự kiến, bảng chín chỉ tiêu và mức tham khảo, cảnh báo thiếu dữ liệu, timestamp và tuyên bố miễn trừ y tế.
+    - **Báo cáo tuần — 2 trang:**
+      - **Trang 1 — Tổng quan & Bảng ma trận so sánh 7 ngày:**
+        - Phần thông tin chung: Logo Mâm Xanh, Tiêu đề *"Báo Cáo Phân Tích Dinh Dưỡng Thực Đơn Tuần"*, Họ tên/Mã tài khoản Member, Thời điểm xuất dữ liệu (timestamp), Khoảng thời gian tuần (từ ngày... đến ngày...).
+        - Thông tin thể trạng tham khảo (nếu có): Nhóm tuổi, giới tính, mức vận động, mức calorie mục tiêu (FR-35).
+        - Bảng ma trận 9 chỉ tiêu x 7 ngày: hiển thị số liệu từng ngày (Thứ 2 đến Chủ nhật), cột trung bình tuần, cột chuẩn DRI cá nhân và tỷ lệ % đạt.
+      - **Trang 2 — Chi tiết thực đơn, cảnh báo & miễn trừ y tế:**
+        - Tóm tắt thực đơn tuần: Danh mục bữa ăn 3 bữa (Sáng, Trưa, Tối) từng ngày, tên món và số khẩu phần trong kỳ báo cáo.
+        - Phân tích vi chất đặc thù & cảnh báo thiếu dữ liệu: Nhận diện vi chất đạt chuẩn, cảnh báo các món chứa nguyên liệu chưa có dữ liệu chuẩn (BR-48).
+        - Tuyên bố miễn trừ y tế bắt buộc: In rõ ràng tuyên bố từ chối trách nhiệm y tế chuẩn theo BR-41.
   - Bước 5: Trình duyệt tải file PDF trực tiếp về thiết bị của Member.
 
 - **Luồng thay thế (Alternative Flows):**
@@ -3957,6 +3984,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
   - *EF-37.1 (Ngày hoặc tuần không có món ăn nào):* Nếu khoảng thời gian được chọn không có bất kỳ món ăn nào trong lịch ăn, các nút "Kiểm tra dinh dưỡng ngày", "So sánh & Thống kê 7 ngày" và "Xuất báo cáo PDF" bị vô hiệu hóa kèm thông báo *"Vui lòng thêm ít nhất một món ăn vào lịch ăn để phân tích/xuất báo cáo dinh dưỡng"*.
   - *EF-37.2 (Khẩu phần không hợp lệ):* Nếu người dùng nhập số khẩu phần nhỏ hơn 0.5 hoặc lớn hơn 10, hệ thống báo lỗi và khôi phục về giá trị hợp lệ gần nhất.
+  - *EF-37.3 (Tạo PDF thất bại):* Nếu không thể tạo file PDF, hệ thống thông báo xuất báo cáo thất bại, không tạo file rỗng/hỏng và cho phép Member thử lại mà không thay đổi dữ liệu Lịch ăn.
   - *SF-37.1 (Kiểm soát quyền riêng tư):* Lịch ăn, kết quả kiểm tra dinh dưỡng và file PDF xuất ra thuộc quyền riêng tư của chính Member; tài khoản khác hoặc Guest không thể xem hoặc tải dữ liệu (RBAC theo NFR-08, NFR-09).
 
 #### 5. Hậu điều kiện (Postconditions)
@@ -3982,7 +4010,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - [BR-40](BUSINESS-RULES.md#br-40): Điều kiện dữ liệu dinh dưỡng tin cậy cho AI menu.
   - [BR-41](BUSINESS-RULES.md#br-41): Ranh giới thông tin dinh dưỡng và không thay thế chuyên gia.
   - [BR-43](BUSINESS-RULES.md#br-43): Gắn số liệu dinh dưỡng với một khẩu phần.
-  - [BR-44](BUSINESS-RULES.md#br-44): Quy tắc giải thích chỉ tiêu natri và năng lượng.
+  - [BR-44](BUSINESS-RULES.md#br-44): Quy tắc diễn giải mức tham khảo theo từng chỉ tiêu dinh dưỡng.
   - [BR-45](BUSINESS-RULES.md#br-45): Cấm hiển thị điểm tổng hợp hoặc nhãn đơn giản hóa.
   - [BR-46](BUSINESS-RULES.md#br-46): Nguồn tính toán dinh dưỡng chính thức của công thức.
   - [BR-47](BUSINESS-RULES.md#br-47): Phân bổ dinh dưỡng theo số khẩu phần và cộng dồn ngày.
@@ -4026,6 +4054,11 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - *Given* Member A đang đăng nhập,
   - *When* yêu cầu xuất báo cáo PDF,
   - *Then* hệ thống chỉ xuất báo cáo từ dữ liệu thực đơn của chính Member A, không thể xem hoặc xuất báo cáo của tài khoản khác (SF-37.1, NFR-08, NFR-09).
+
+- **AC-37.9 (Xuất báo cáo PDF ngày một trang):**
+  - *Given* Member chọn một ngày có ít nhất một món trong Lịch ăn và nhấn "Xuất báo cáo PDF" với phạm vi ngày,
+  - *When* file được tạo thành công,
+  - *Then* hệ thống tải file PDF A4 một trang gồm thông tin ngày, ba bữa, tên món, số khẩu phần dự kiến, bảng chín chỉ tiêu, mức tham khảo, cảnh báo thiếu dữ liệu, timestamp và tuyên bố miễn trừ y tế.
 
 ---
 
@@ -4248,7 +4281,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - [BR-40](BUSINESS-RULES.md#br-40): Điều kiện dữ liệu dinh dưỡng tin cậy cho AI menu.
   - [BR-41](BUSINESS-RULES.md#br-41): Ranh giới thông tin dinh dưỡng và không thay thế chuyên gia.
   - [BR-43](BUSINESS-RULES.md#br-43): Gắn số liệu dinh dưỡng với một khẩu phần.
-  - [BR-44](BUSINESS-RULES.md#br-44): Quy tắc giải thích chỉ tiêu natri và năng lượng.
+  - [BR-44](BUSINESS-RULES.md#br-44): Quy tắc diễn giải mức tham khảo theo từng chỉ tiêu dinh dưỡng.
   - [BR-45](BUSINESS-RULES.md#br-45): Cấm hiển thị điểm tổng hợp hoặc nhãn đơn giản hóa.
   - [BR-46](BUSINESS-RULES.md#br-46): Nguồn tính toán dinh dưỡng chính thức của công thức.
   - [BR-48](BUSINESS-RULES.md#br-48): Xử lý nguyên liệu thiếu định lượng hoặc thiếu số liệu dinh dưỡng.
@@ -5645,3 +5678,154 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* bài công thức có nhiều lượt xem được ghi nhận rải rác theo thời gian,
   - *When* người dùng chọn bộ lọc sắp xếp "Xem nhiều nhất" theo khung thời gian (24h, 7 ngày, 30 ngày, toàn thời gian) tại FR-08,
   - *Then* hệ thống tính toán và sắp xếp danh sách bài viết dựa trên đúng tổng số lượt xem tương ứng với khung thời gian đã chọn.
+
+---
+
+<a id="fr-59"></a>
+### FR-59 — Theo dõi, bỏ theo dõi và xem quan hệ theo dõi giữa các Member
+
+- **Mã yêu cầu:** FR-59
+- **Module:** M01, M02, M03
+- **Trạng thái (Derived):** DRAFT
+
+#### 1. Mục đích & Phạm vi
+- **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập theo dõi hoặc bỏ theo dõi một Member khác từ hồ sơ công khai; xem số lượng người theo dõi (`followers`) và số lượng tài khoản đang theo dõi (`following`); xem danh sách hai chiều có phân trang. Quan hệ có hướng được lưu trong `USER_FOLLOW`.
+- **Trong phạm vi:** Follow, unfollow, kiểm tra trạng thái đang theo dõi, bộ đếm và danh sách followers/following.
+- **Ngoài phạm vi:** News feed cá nhân hóa, tài khoản riêng tư/yêu cầu duyệt follow, block user, gợi ý tài khoản và thông báo follow.
+- **Actors:** `Member` (`CUSTOMER` hoặc `EXPERT`) là tác nhân chính; `Guest` không được tạo quan hệ theo dõi. `Administrator` không dùng quyền quản trị để tạo quan hệ thay người khác.
+
+#### 2. Use Cases & User Stories
+- `UC-59.1`: Member theo dõi một Member khác.
+- `UC-59.2`: Member bỏ theo dõi một Member khác.
+- `UC-59.3`: Xem trạng thái theo dõi và số lượng followers/following trên hồ sơ.
+- `UC-59.4`: Member xem danh sách followers/following có phân trang.
+- `US-59.1`: Là một Member, tôi muốn theo dõi người dùng khác để ghi nhận sự quan tâm tới hồ sơ và nội dung công khai của họ.
+- `US-59.2`: Là một Member, tôi muốn bỏ theo dõi bất cứ lúc nào và thấy bộ đếm được cập nhật chính xác.
+
+#### 3. Tiền điều kiện & Kích hoạt
+- Member đang đăng nhập bằng tài khoản hoạt động.
+- Tài khoản đích tồn tại, đang hoạt động và không phải chính tài khoản hiện tại.
+- Member kích hoạt nút `Theo dõi` hoặc `Đang theo dõi` trên hồ sơ công khai.
+
+#### 4. Luồng xử lý
+- **Follow:** Backend xác thực Member, kiểm tra tài khoản nguồn/đích và BR-75; nếu quan hệ chưa tồn tại thì tạo `USER_FOLLOW`; trả về `following = true` cùng bộ đếm mới.
+- **Follow lặp:** Nếu quan hệ đã tồn tại, hệ thống không tạo bản ghi thứ hai và trả về trạng thái hiện tại theo cơ chế idempotent.
+- **Unfollow:** Backend xóa quan hệ của đúng cặp có hướng; nếu quan hệ đã không tồn tại, hệ thống vẫn trả về `following = false` mà không phát sinh lỗi nghiệp vụ.
+- **Xem danh sách:** Hệ thống trả danh sách followers hoặc following có phân trang, chỉ gồm dữ liệu hồ sơ công khai theo BR-18.
+
+#### 5. Hậu điều kiện
+- Mỗi cặp có hướng `(follower_user_id, followed_user_id)` có tối đa một bản ghi hiệu lực.
+- Bộ đếm followers/following phản ánh dữ liệu `USER_FOLLOW`; không dùng số do client tự gửi.
+- Follow không cấp thêm quyền truy cập email, thông tin đăng nhập, hồ sơ dinh dưỡng hoặc dữ liệu riêng tư.
+
+#### 6. Phân quyền & Bảo mật
+- Guest thao tác follow/unfollow nhận `401 Unauthorized`.
+- Member tự theo dõi chính mình hoặc thao tác thay tài khoản khác bị từ chối với `403 Forbidden`.
+- Tài khoản đích không tồn tại nhận `404 Not Found`; tài khoản không hoạt động không nhận quan hệ mới.
+- Backend lấy `follower_user_id` từ phiên xác thực, không tin cậy ID người theo dõi do client cung cấp.
+
+#### 7. Traceability
+- [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
+- [BR-18](BUSINESS-RULES.md#br-18): Bảo vệ dữ liệu hồ sơ công khai.
+- [BR-75](BUSINESS-RULES.md#br-75): Ràng buộc quan hệ theo dõi.
+- [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
+- [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Authentication, authorization và chống IDOR.
+- [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Bảo vệ endpoint và kiểm tra dữ liệu đầu vào.
+
+#### 8. Acceptance Criteria
+- **AC-59.1 — Theo dõi thành công:** Given Member A chưa theo dõi Member B và cả hai tài khoản hoạt động, When A nhấn `Theo dõi`, Then hệ thống tạo đúng một quan hệ A → B, trả `following = true` và tăng follower count của B một đơn vị.
+- **AC-59.2 — Quan hệ có hướng:** Given A theo dõi B, Then B không tự động theo dõi A; B → A chỉ tồn tại nếu B chủ động theo dõi A.
+- **AC-59.3 — Không tự theo dõi:** Given A đang xem hồ sơ của chính mình, When A gửi yêu cầu follow trực tiếp, Then Backend trả `403 Forbidden` và không tạo bản ghi.
+- **AC-59.4 — Không trùng quan hệ:** Given A đã theo dõi B, When yêu cầu follow A → B được gửi lại, Then chỉ một bản ghi tồn tại và bộ đếm không tăng thêm.
+- **AC-59.5 — Bỏ theo dõi idempotent:** Given A đang hoặc đã ngừng theo dõi B, When A gửi yêu cầu unfollow, Then hệ thống trả `following = false`, không còn quan hệ A → B và không giảm bộ đếm xuống dưới dữ liệu thực tế.
+- **AC-59.6 — Danh sách và quyền riêng tư:** Given Member đã đăng nhập xem followers/following của một hồ sơ, When hệ thống trả danh sách có phân trang, Then chỉ các trường hồ sơ công khai được trả về; email, dữ liệu đăng nhập và hồ sơ dinh dưỡng không xuất hiện.
+- **AC-59.7 — Tài khoản không hoạt động:** Given tài khoản B đã bị vô hiệu hóa, When A gửi yêu cầu follow B hoặc tải danh sách công khai, Then hệ thống không tạo quan hệ mới và không hiển thị B trong danh sách công khai.
+
+---
+
+<a id="fr-60"></a>
+### FR-60 — So sánh hai Recipe Post công khai theo nguyên liệu và dinh dưỡng
+
+- **Mã yêu cầu:** FR-60
+- **Module:** M01, M04, M10
+- **Trạng thái (Derived):** ACTIVE
+
+#### 1. Mục đích & Phạm vi
+
+- **Tóm tắt yêu cầu:** Hệ thống cho phép Guest hoặc Member chọn đúng hai Recipe Post công khai khác nhau để xem bảng đối chiếu thông tin tổng quan, danh sách nguyên liệu và chín chỉ tiêu dinh dưỡng trên một khẩu phần. Kết quả chỉ trình bày dữ liệu và chênh lệch định lượng, không chấm điểm sức khỏe, không kết luận món nào tốt hơn và không thay thế tư vấn dinh dưỡng.
+- **Trong phạm vi:** Chọn/thay hai công thức, đối chiếu thông tin tổng quan, nguyên liệu, dữ liệu dinh dưỡng trên một khẩu phần và cảnh báo thiếu dữ liệu.
+- **Ngoài phạm vi:** So sánh theo 100 g thành phẩm, lưu lịch sử, xuất PDF, chia sẻ link kết quả, AI xếp hạng món tốt hơn và kết luận y tế.
+- **Actors:** `Guest` và `Member` (`CUSTOMER` hoặc `EXPERT`). Administrator sử dụng chức năng như người xem dữ liệu công khai, không có quyền sửa dữ liệu từ màn hình so sánh.
+
+#### 2. Use Cases & User Stories
+
+- `UC-60.1`: Bắt đầu so sánh từ Recipe Card, Recipe Detail hoặc danh sách công thức đã lưu của Member.
+- `UC-60.2`: Tìm, chọn và thay Recipe Post ở một trong hai vị trí so sánh.
+- `UC-60.3`: So sánh thông tin tổng quan và danh sách nguyên liệu.
+- `UC-60.4`: So sánh chín chỉ tiêu dinh dưỡng trên một khẩu phần.
+- `UC-60.5`: Xử lý công thức hoặc chỉ tiêu thiếu dữ liệu.
+- `US-60.1`: Là một Guest đang khám phá món chay, tôi muốn đối chiếu hai công thức công khai để thấy sự khác nhau về nguyên liệu, khẩu phần và dinh dưỡng trước khi lựa chọn.
+- `US-60.2`: Là một Member, tôi muốn thay nhanh một trong hai công thức đang so sánh mà không phải tạo hay lưu một lịch sử so sánh riêng.
+
+#### 3. Tiền điều kiện & Kích hoạt
+
+- Có ít nhất hai Recipe Post khác nhau đang ở trạng thái `PUBLISHED`.
+- Dữ liệu tổng quan/nguyên liệu lấy từ cùng nguồn Recipe Post của FR-20; dữ liệu dinh dưỡng lấy từ kết quả FR-39.
+- Người dùng nhấn `So sánh` trên Recipe Card/Recipe Detail hoặc mở giao diện so sánh và chọn công thức đầu tiên.
+
+#### 4. Luồng xử lý
+
+##### A. Chọn hai công thức
+
+1. Người dùng chọn Recipe A từ thẻ, trang chi tiết hoặc công cụ tìm kiếm.
+2. Hệ thống mở giao diện so sánh và yêu cầu chọn Recipe B.
+3. Người dùng tìm/chọn Recipe B; hệ thống loại Recipe A khỏi lựa chọn hợp lệ để ngăn chọn trùng.
+4. Hệ thống kiểm tra cả hai bài vẫn `PUBLISHED` trước khi hiển thị kết quả.
+
+##### B. So sánh thông tin và nguyên liệu
+
+1. Hệ thống hiển thị song song tên món, ảnh bìa, tác giả Chuyên gia, loại ăn chay, `dish_category`, khẩu phần gốc, thời gian chuẩn bị/nấu và tỷ lệ Like của mỗi công thức.
+2. Hệ thống hiển thị danh sách nguyên liệu hai bên với số lượng và đơn vị nguyên bản.
+3. Nguyên liệu liên kết cùng một `ingredient_id` có thể được đặt cùng hàng để đối chiếu. Nguyên liệu tự do hoặc chỉ giống tên không bị tự động hợp nhất.
+4. Nếu đơn vị khác nhau và không có quy tắc quy đổi được duyệt, hệ thống giữ nguyên đơn vị và ghi rõ không thể đối chiếu định lượng trực tiếp.
+
+##### C. So sánh dinh dưỡng trên một khẩu phần
+
+1. Hệ thống lấy chín chỉ tiêu trên một khẩu phần của Recipe A và Recipe B từ FR-39.
+2. Với mỗi chỉ tiêu có dữ liệu ở cả hai bên, hệ thống hiển thị giá trị A, giá trị B và chênh lệch tuyệt đối `A - B` theo cùng đơn vị.
+3. Hệ thống hiển thị rõ số khẩu phần gốc của từng công thức và tuyên bố rằng khẩu phần của hai món có thể không có cùng khối lượng thành phẩm.
+4. Hệ thống không hiển thị Natri/muối, chênh lệch phần trăm, Health Score hoặc kết luận món nào tốt hơn/lành mạnh hơn.
+
+##### D. Thay lựa chọn và kết thúc
+
+1. Người dùng có thể thay Recipe A hoặc Recipe B; hệ thống tính lại toàn bộ bảng từ lựa chọn mới.
+2. Khi đóng hoặc rời giao diện, hệ thống không lưu bản ghi lịch sử so sánh.
+
+#### 5. Luồng thay thế, ngoại lệ và dữ liệu thiếu
+
+- Nếu một bài không còn công khai trong lúc so sánh, hệ thống gỡ bài khỏi kết quả, thông báo nội dung không còn khả dụng và yêu cầu chọn bài khác.
+- Nếu một bên thiếu dữ liệu dinh dưỡng, hệ thống hiển thị `Chưa đủ dữ liệu` cho đúng chỉ tiêu/bên bị ảnh hưởng; không dùng `0` và không tính chênh lệch cho cặp đó.
+- Nếu chỉ có một công thức được chọn, hệ thống hiển thị trạng thái chờ chọn công thức thứ hai và chưa trình bày kết luận so sánh.
+- Nếu không còn công thức thứ hai phù hợp, hệ thống thông báo rõ và cho phép quay lại khám phá.
+
+#### 6. Hậu điều kiện
+
+- Người dùng xem được kết quả đối chiếu hiện thời mà không tạo dữ liệu nghiệp vụ mới trong database.
+- Việc so sánh không thay đổi Recipe Post, danh sách đã lưu, Meal Plan, hồ sơ dinh dưỡng hoặc dữ liệu tương tác.
+
+#### 7. Phân quyền, an toàn và traceability
+
+- Guest và Member được xem vì chức năng chỉ sử dụng dữ liệu Recipe Post công khai; thao tác không mở rộng quyền truy cập dữ liệu riêng tư.
+- Tuân thủ [BR-41](BUSINESS-RULES.md#br-41), [BR-43](BUSINESS-RULES.md#br-43), [BR-45](BUSINESS-RULES.md#br-45), [BR-46](BUSINESS-RULES.md#br-46), [BR-48](BUSINESS-RULES.md#br-48) và [BR-76](BUSINESS-RULES.md#br-76).
+- Dữ liệu nguồn liên quan: FR-08 (tìm kiếm), FR-17 (Recipe Card), FR-19 (nguyên liệu), FR-20 (chi tiết thống nhất), FR-39 (chín chỉ tiêu dinh dưỡng), NFR-13 (responsive).
+
+#### 8. Acceptance Criteria
+
+- **AC-60.1 — So sánh hai công thức công khai khác nhau:** Given Recipe A và Recipe B khác nhau và đều `PUBLISHED`, When người dùng chọn đủ hai bài, Then hệ thống hiển thị bảng so sánh tổng quan, nguyên liệu và dinh dưỡng.
+- **AC-60.2 — Chặn chọn cùng một công thức:** Given Recipe A đã được chọn, When người dùng cố chọn lại Recipe A làm Recipe B, Then hệ thống không chấp nhận và yêu cầu chọn một bài khác.
+- **AC-60.3 — So sánh theo một khẩu phần:** Given hai công thức có dữ liệu dinh dưỡng đầy đủ, When bảng dinh dưỡng hiển thị, Then chín chỉ tiêu của mỗi bên được lấy theo một khẩu phần, kèm số khẩu phần gốc và chênh lệch định lượng tuyệt đối theo cùng đơn vị.
+- **AC-60.4 — Giữ nguyên nguyên liệu/đơn vị không thể quy đổi:** Given hai dòng nguyên liệu không cùng `ingredient_id` hoặc dùng đơn vị chưa có quy đổi hợp lệ, When danh sách nguyên liệu được đối chiếu, Then hệ thống không tự hợp nhất hoặc tự quy đổi và hiển thị số lượng/đơn vị nguyên bản ở từng bên.
+- **AC-60.5 — Dữ liệu thiếu không trở thành số 0:** Given một chỉ tiêu của Recipe B chưa đủ dữ liệu, When bảng so sánh hiển thị, Then bên B ghi `Chưa đủ dữ liệu`, hệ thống không hiển thị `0` và không tính chênh lệch cho chỉ tiêu đó.
+- **AC-60.6 — Không phán xét sức khỏe:** Given bảng so sánh đã được tạo, Then giao diện không có Natri/muối, Health Score, chênh lệch phần trăm hoặc nhãn kết luận công thức tốt hơn/lành mạnh hơn.
+- **AC-60.7 — Không lưu lịch sử hoặc xuất PDF:** Given người dùng đóng giao diện so sánh, Then hệ thống không tạo bản ghi lịch sử; giao diện không cung cấp thao tác xuất kết quả so sánh ra PDF.
+- **AC-60.8 — Responsive:** Given người dùng xem trên màn hình nhỏ, Then nội dung hai công thức được trình bày theo nhóm/khối dễ đối chiếu, không yêu cầu cuộn ngang toàn trang để đọc các trường bắt buộc.

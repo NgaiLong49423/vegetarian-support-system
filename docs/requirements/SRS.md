@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v1.7.0
+> **Version:** v1.9.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-09-22
+> **Last Updated:** 2026-09-23
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -17,7 +17,7 @@ Tài liệu này là khung đặc tả gốc (Root Specification) và **Authorit
 - `docs/requirements/srs/BUSINESS-RULES.md` (BR chi tiết)
 - `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md` (NFR chi tiết)
 
-`Active` nghĩa là Modular SRS thuộc Requirements Baseline v1.0.0 đã được chốt ngày 16/09/2026, cập nhật v1.3.0 ngày 18/09/2026, v1.4.0 ngày 22/09/2026, v1.5.0 ngày 22/09/2026, v1.6.0 ngày 22/09/2026 và cập nhật v1.7.0 ngày 22/09/2026 (chuyển đổi cơ chế đánh giá chất lượng món ăn từ thang điểm 1–5 sao sang hệ thống bình chọn Thích / Không thích (Like / Dislike) `RECIPE_REACTION`, tính toán tỷ lệ % hài lòng `👍 {like_percentage}%` trên tổng số lượt bình chọn hiển thị nổi bật trên thẻ bài viết Recipe Card theo phong cách Samsung Food). Document Status của tài liệu và Requirement Lifecycle của từng yêu cầu (`DRAFT`, `ACTIVE`, `DEFERRED`, `OUT_OF_SCOPE`, `RETIRED`) là hai khái niệm độc lập. Mọi thay đổi semantic sau baseline này phải được review, đánh giá ảnh hưởng tới FR/BR/NFR và tăng document version theo governance hiện hành. DEC-001–DEC-018, quyết định phạm vi M11 ngày 16/09/2026 và giá subscription là baseline nghiệp vụ hiện hành; các chi tiết kỹ thuật còn mở không được diễn giải thành quyết định sản phẩm mới.
+`Active` nghĩa là Modular SRS thuộc Requirements Baseline v1.0.0 đã được chốt ngày 16/09/2026 và tiếp tục được cập nhật có kiểm soát. Phiên bản tài liệu v1.8.0 ngày 23/09/2026 bổ sung `FR-59`/`BR-75` ở lifecycle `DRAFT` để đồng bộ thực thể `USER_FOLLOW`; phiên bản v1.9.0 cùng ngày bổ sung `FR-60`/`BR-76` ở lifecycle `ACTIVE` cho so sánh hai công thức công khai, hoàn thiện quy trình xét duyệt Chuyên gia và thống nhất đúng chín chỉ tiêu dinh dưỡng không có natri. Document Status của tài liệu và Requirement Lifecycle của từng yêu cầu (`DRAFT`, `ACTIVE`, `DEFERRED`, `OUT_OF_SCOPE`, `RETIRED`) là hai khái niệm độc lập. Mọi thay đổi semantic sau baseline phải được review, đánh giá ảnh hưởng tới FR/BR/NFR và tăng document version theo governance hiện hành. DEC-001–DEC-018, quyết định phạm vi M11 ngày 16/09/2026 và giá subscription là baseline nghiệp vụ hiện hành; các chi tiết kỹ thuật còn mở không được diễn giải thành quyết định sản phẩm mới.
 
 ## 2. Mô tả sản phẩm
 
@@ -41,6 +41,8 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - **Quy trình thẩm định Chuyên gia (`FR-05` ACTIVE):** Customer có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản (`EXPERT_APPLICATION`: kinh nghiệm ẩm thực chay, trường phái chay, tóm tắt công thức sở trường, link tham khảo); Administrator thẩm định nội dung và phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; tài khoản được thăng cấp `Role = EXPERT` ngay khi duyệt.
 - **Đăng bài công thức độc quyền cho Chuyên gia (`FR-04` ACTIVE):** Chỉ tài khoản có vai trò `Chuyên gia` đã được Administrator phê duyệt mới được tạo, chỉnh sửa, xóa và công khai Recipe Post trực tiếp; Customer và Administrator không có quyền đăng bài. Quyền Admin tạo/cập nhật System Recipe trong `FR-07` đã `RETIRED`.
 - Đánh giá chất lượng và lượt xem: Customer và Chuyên gia được đánh giá chất lượng bài công thức bằng bình chọn Like / Dislike và tính tỷ lệ % hài lòng (`RECIPE_REACTION`); Guest chỉ có quyền xem tỷ lệ % và tổng số lượt đánh giá; hệ thống hiển thị huy hiệu `👍 {like_percentage}%` nổi bật trên thẻ bài viết Recipe Card (tương tự Samsung Food); hệ thống lưu vết chi tiết từng lượt xem (`RECIPE_VIEW`) với cơ chế khử trùng lặp (view deduplication).
+- So sánh công thức (`FR-60` ACTIVE): Guest và Member có thể chọn đúng hai Recipe Post công khai khác nhau để đối chiếu thông tin tổng quan, nguyên liệu và chín chỉ tiêu dinh dưỡng trên một khẩu phần; hệ thống không lưu lịch sử, không xuất PDF và không kết luận món nào tốt hơn hoặc lành mạnh hơn.
+- Quan hệ xã hội đang ở trạng thái dự thảo (`FR-59`, `BR-75`): Customer và Chuyên gia đã đăng nhập có thể theo dõi hoặc bỏ theo dõi một Member khác; quan hệ có hướng được lưu bằng `USER_FOLLOW`. Chức năng này chưa bao gồm news feed cá nhân hóa, tài khoản riêng tư hay thông báo follow.
 - Khám phá đa tiêu chí: Trang khám phá hỗ trợ 6 chế độ độc lập gồm Newest (Mới nhất), Most Liked / Highest Rated (Được yêu thích nhất theo tỷ lệ % Like), Most Viewed (Xem nhiều nhất theo 24h/7d/30d/all-time), Most Commented (Nhiều bình luận nhất), Most Active (Hoạt động sôi nổi nhất theo tương tác 7 ngày), và Trending (Thịnh hành theo tương tác gần đây + hệ số tươi mới freshness decay).
 - Kiểm duyệt sau đăng: người dùng báo cáo nội dung có vấn đề và Administrator xử lý báo cáo. AI quét/gắn cờ là hạng mục để sau (DEFERRED), không phải điều kiện nghiệm thu MVP.
 - Người dùng: tìm kiếm/lọc, xem nội dung, tương tác cộng đồng, lưu công thức (`Saved Recipe`), lập thực đơn ngày/tuần (`Meal Plan`), so sánh thống kê dinh dưỡng tuần, và **xuất file công thức (.txt/.pdf) / thực đơn (.txt/.pdf) / báo cáo phân tích dinh dưỡng tuần có thống kê và so sánh 7 ngày (PDF chuẩn A4) / danh sách mua sắm (.txt)**.
@@ -156,6 +158,14 @@ Luồng cấp cao: Chuyên gia đã được phê duyệt (`Role = EXPERT`) → 
 - Hồ sơ tác giả công khai (được quản lý trực tiếp trong thực thể `User`) không hiển thị email, thông tin đăng nhập hoặc dữ liệu hồ sơ dinh dưỡng/ăn uống riêng tư. Trang thông tin tác giả hiển thị tên hiển thị, avatar, giới thiệu chuyên môn ngắn, ngày tham gia và danh sách các bài công thức đã công khai.
 - Administrator xử lý báo cáo không trở thành tác giả. AI hỗ trợ viết không thay thế tác giả; Chuyên gia vẫn rà soát và chịu trách nhiệm khi công khai bài.
 - Gắn bài với tài khoản Chuyên gia nhằm định danh người chịu trách nhiệm nội dung. Quyền Chuyên gia được cấp sau khi Administrator thẩm định đơn đăng ký theo format (`FR-05`); hệ thống không quản lý văn bằng/chứng chỉ vật lý.
+
+### 3.8.1 Theo dõi người dùng — dự thảo 23/09/2026
+
+- Quan hệ theo dõi là quan hệ có hướng giữa hai Member: người theo dõi (`follower`) và người được theo dõi (`followed`). A theo dõi B không làm B tự động theo dõi A.
+- Member đã đăng nhập có thể theo dõi hoặc bỏ theo dõi Member khác từ hồ sơ công khai; không được tự theo dõi chính mình. Guest không được tạo quan hệ theo dõi.
+- Hồ sơ công khai hiển thị số lượng người theo dõi và số lượng đang theo dõi. Danh sách chi tiết chỉ dành cho Member đã đăng nhập trong phạm vi dự thảo này.
+- `USER_FOLLOW` lưu một quan hệ duy nhất cho mỗi cặp có hướng; thao tác lặp không tạo bản ghi trùng. Tài khoản không hoạt động không xuất hiện trong danh sách công khai.
+- News feed cá nhân hóa, yêu cầu phê duyệt theo dõi cho tài khoản riêng tư, chặn người dùng, thông báo follow và thuật toán gợi ý tài khoản không thuộc `FR-59`.
 
 ### 3.9 Điều kiện tạo và công khai Recipe Post của Chuyên gia — cập nhật 22/09/2026
 
@@ -317,7 +327,7 @@ Nguyên liệu “đang có” được nhập theo từng request; MVP không c
 
 **Chỉ tiêu dinh dưỡng MVP:**
 
-- MVP sử dụng chín chỉ tiêu: **năng lượng (kcal), protein, carbohydrate, tổng chất béo, chất xơ, natri, sắt, canxi và vitamin B12**.
+- MVP sử dụng chín chỉ tiêu: **năng lượng (kcal), protein, carbohydrate, tổng chất béo, chất xơ, canxi, sắt, vitamin B12 và kẽm**. Natri/muối không thuộc bộ chỉ tiêu dinh dưỡng MVP.
 - MVP có một **danh mục nguyên liệu được hỗ trợ tính dinh dưỡng** lưu trong database của ứng dụng. Mỗi mục có giá trị của chín chỉ tiêu theo 100 g cùng thông tin nguồn tham khảo; USDA FoodData Central là nguồn tham khảo chính để nhóm chuẩn bị và kiểm chứng dữ liệu ban đầu.
 - Administrator có chức năng quản lý danh mục nguyên liệu dinh dưỡng để bổ sung và duy trì dữ liệu được app hỗ trợ; đây không phải bộ dữ liệu chỉ được nhóm nạp cố định rồi không thể quản lý trong ứng dụng.
 - Trong MVP, Administrator được xem/tìm kiếm, thêm, sửa, bật lại hoặc ngừng hỗ trợ một nguyên liệu; xem các công thức đang sử dụng nguyên liệu đó; và quản lý tên nguyên liệu, chín giá trị dinh dưỡng trên 100 g, tên/đường dẫn nguồn cùng ngày tham khảo.
@@ -327,7 +337,7 @@ Nguyên liệu “đang có” được nhập theo từng request; MVP không c
 - Trang chi tiết công thức cho phép xem tổng ước tính của toàn bộ công thức và phần quy đổi theo **mỗi khẩu phần** (`Nutrition per serving`). Giá trị mỗi khẩu phần được lấy từ tổng công thức chia theo số khẩu phần tác giả đã khai báo, không phải một nguồn dinh dưỡng độc lập.
 - Mỗi chỉ tiêu hiển thị lượng, đơn vị và giải thích ngắn về ý nghĩa. Mọi tỷ lệ tham chiếu chung, nếu có, phải ghi rõ nguồn/phạm vi và không được trình bày như nhu cầu cá nhân.
 - Năng lượng thể hiện lượng năng lượng khẩu phần cung cấp; protein hỗ trợ mô/cơ; carbohydrate là nguồn năng lượng chính; tổng chất béo cung cấp năng lượng và hỗ trợ hấp thu một số vitamin nhưng không tự phân biệt chất béo tốt/xấu; chất xơ hỗ trợ tiêu hóa và cảm giác no.
-- Natri cần được giải thích theo hướng theo dõi giới hạn, không khuyến khích người dùng ăn thêm để đạt 100%. Sắt liên quan đến tạo hemoglobin và vận chuyển oxy; canxi liên quan đến xương, răng, cơ và thần kinh; vitamin B12 liên quan đến tế bào máu, thần kinh và DNA và đặc biệt cần được chú ý trong chế độ vegan.
+- Sắt liên quan đến tạo hemoglobin và vận chuyển oxy; canxi liên quan đến xương, răng, cơ và thần kinh; vitamin B12 liên quan đến tế bào máu, thần kinh và DNA và đặc biệt cần được chú ý trong chế độ vegan; kẽm hỗ trợ chức năng miễn dịch và nhiều quá trình chuyển hóa.
 - Người viết vẫn được nhập nguyên liệu ngoài danh mục dinh dưỡng và gửi bài theo workflow chung, không phải chờ danh mục được bổ sung. Nguyên liệu đó chỉ được đánh dấu **Chưa hỗ trợ tính dinh dưỡng**.
 - Nếu nguyên liệu thiếu định lượng, không quy đổi được đơn vị, chưa thuộc danh mục được hỗ trợ hoặc một chỉ tiêu không có dữ liệu đáng tin cậy, giao diện hiển thị **Chưa đủ dữ liệu** và chỉ rõ phạm vi thiếu. Giá trị chưa biết không được coi là bằng 0; nguyên liệu ghi “vừa đủ” không được dùng để suy ra kết quả chính xác.
 - MVP không có `Nutrition balance score`, Glycemic Index hoặc Glycemic Load. Các chỉ số này chỉ được xem xét ở Future Scope khi có nguồn dữ liệu và tiêu chí diễn giải đủ rõ.
@@ -346,7 +356,7 @@ Nguyên liệu “đang có” được nhập theo từng request; MVP không c
 - Kết quả hiển thị theo từng chỉ tiêu: mức tham khảo, tổng từ menu, chênh lệch và trạng thái **Thấp hơn mức tham khảo**, **Trong khoảng tham khảo**, **Cao hơn mức tham khảo** hoặc **Không đủ dữ liệu để đánh giá**.
 - Dinh dưỡng của mỗi mục lịch bằng kết quả mỗi khẩu phần của công thức nhân với số khẩu phần dự định ăn. Tổng của ngày là tổng các mục đã xếp trong Bữa sáng, Bữa trưa và Bữa tối, rồi được so sánh với mức tham khảo cá nhân trong hồ sơ; không dùng một mức cố định như 2.000 kcal thay cho mọi người.
 - Không dùng một điểm tổng hợp “Tốt/Xấu” để thay thế kết quả từng chỉ tiêu. Bản tóm tắt chỉ nêu số chỉ tiêu trong khoảng, thấp hơn, cao hơn hoặc chưa đủ dữ liệu.
-- Cách diễn giải trạng thái phụ thuộc loại chỉ tiêu: natri được theo dõi chủ yếu theo giới hạn tối đa; năng lượng và các chất đa lượng được so với khoảng tham khảo; chỉ tiêu thấp hơn trong một ngày chỉ mô tả menu đã ghi nhận, không kết luận người dùng thiếu chất.
+- Cách diễn giải trạng thái phụ thuộc loại chỉ tiêu: năng lượng và các chất đa lượng được so với khoảng tham khảo; chỉ tiêu thấp hơn trong một ngày chỉ mô tả menu dự kiến, không kết luận người dùng thiếu chất.
 - Nếu một hoặc nhiều món thiếu dữ liệu dinh dưỡng hoặc chưa xác định được lượng ăn, hệ thống phải nêu rõ phạm vi dữ liệu thiếu và không trình bày tổng chưa đầy đủ như kết quả chính xác.
 - Kết quả một ngày không được diễn đạt thành chẩn đoán “thiếu chất”, bệnh lý hoặc cam kết tăng/giảm cân. AI có thể giải thích chỉ tiêu và đề xuất thay món, nhưng món thay thế vẫn phải là công thức đang công khai có dữ liệu phù hợp.
 
@@ -457,10 +467,10 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 
 | Mã module | Module | Giá trị | Phụ thuộc chính | Trạng thái phân rã |
 | --- | --- | --- | --- | --- |
-| M01 | Public Recipe Discovery | Khách tìm/xem bài công thức công khai, xem tỷ lệ % Like (Samsung Food style), lượt xem, 6 chế độ sắp xếp (gồm Most Active & Trending), video YouTube nhúng | Nội dung đã công khai | Cần viết user stories. |
+| M01 | Public Recipe Discovery | Khách tìm/xem bài công thức công khai, so sánh hai công thức, xem tỷ lệ % Like (Samsung Food style), lượt xem, 6 chế độ sắp xếp (gồm Most Active & Trending), video YouTube nhúng | Nội dung đã công khai | User stories cho so sánh công thức đã chốt tại FR-60; các phần khác tiếp tục theo FR tương ứng. |
 | M02 | Identity & Access | Phân biệt Guest/Customer/Expert/Admin và bảo vệ thao tác | Tài khoản, role, session | Đã chốt email/password, Google Login, xác minh email và quên mật khẩu. |
 | M03 | Recipe Contribution & Post-moderation | Chuyên gia quản lý/công khai bài trực tiếp (hướng dẫn chế biến `instructions`, thể loại món ăn `dish_category`, tối đa 5 ảnh kèm cover `RECIPE_MEDIA`, 1 link YouTube); Customer/Expert bình chọn Like / Dislike (`RECIPE_REACTION`); lưu vết lượt xem (`RECIPE_VIEW`); reply tối đa 5 cấp (chỉ công thức mới có Like/Dislike, bình luận không có); Admin hậu kiểm thủ công trên Report | M02, Azure Blob, quy trình báo cáo | Validation, tombstone, lý do và audit/history đã chốt; còn User Story/Use Case/flow/AC và chi tiết UI. |
-| M04 | Recipe Classification & Discovery | Phân loại, tìm và lọc bài công thức chay theo 6 chế độ sắp xếp và thể loại món ăn; Admin quản lý từ điển nguyên liệu, đơn vị `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION` | M01, M03 | Dữ liệu và profile validation đã chốt; còn User Story/Use Case/flow/AC. |
+| M04 | Recipe Classification & Discovery | Phân loại, tìm, lọc và chọn hai bài công thức chay để so sánh; Admin quản lý từ điển nguyên liệu, đơn vị `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION` | M01, M03 | Dữ liệu, profile validation và so sánh hai công thức đã chốt; các capability khác theo FR tương ứng. |
 | M05 | Saved Recipes, Meal Planning & Shopping List | Lưu công thức để xem lại, xếp món vào lịch ăn ngày/tuần ba bữa cố định, so sánh thống kê dinh dưỡng tuần, xuất file công thức/thực đơn/báo cáo PDF và tạo/quản lý danh sách mua sắm nguyên liệu cơ bản | M02, M04 | Đã chốt ranh giới Saved/Planner/Shopping List; quy tắc gom an toàn và xuất file đã xác nhận. |
 | M06 | Gemini AI Access & Usage | Guest/Free/Plus/Pro gọi AI theo gói tính năng (Feature Entitlement), rate limit kỹ thuật cho Guest và telemetry chi phí | M02 một phần, Gemini backend | Đã có hướng; cần user stories. |
 | M07 | AI-assisted Moderation | AI rà soát/gắn cờ Recipe Post nhưng không tự áp dụng chế tài | M03, M06 | DEFERRED; không thuộc MVP hiện tại. |
@@ -552,6 +562,8 @@ Vocabulary duy nhất dùng cho requirement lifecycle là `DRAFT`, `ACTIVE`, `DE
 | FR-56 | Quản lý kho thực phẩm cá nhân và đề xuất món từ kho | M05, M06, M13 | OUT_OF_SCOPE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-56) |
 | FR-57 | Đánh giá chất lượng công thức bằng Like / Dislike và hiển thị tỷ lệ % hài lòng (`RECIPE_REACTION`) | M01, M03 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-57) |
 | FR-58 | Ghi nhận và phân tích lịch sử lượt xem công thức (`RECIPE_VIEW`) | M01, M03, M04 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-58) |
+| FR-59 | Theo dõi, bỏ theo dõi và xem quan hệ theo dõi giữa các Member (`USER_FOLLOW`) | M01, M02, M03 | DRAFT | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-59) |
+| FR-60 | So sánh hai Recipe Post công khai theo nguyên liệu và chín chỉ tiêu dinh dưỡng | M01, M04, M10 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-60) |
 
 ## 8. Business Rules và Authoritative Lifecycle Registry
 
@@ -608,7 +620,7 @@ Theo DEC-001–003, các BR hỗ trợ MVP thuộc M01–M06 và M09–M10 cùng
 | BR-41 | Ranh giới thông tin dinh dưỡng và không thay thế chuyên gia | M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-41) |
 | BR-42 | Đối tượng loại trừ khỏi tính toán nhu cầu dinh dưỡng MVP | M02, M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-42) |
 | BR-43 | Gắn số liệu dinh dưỡng với một khẩu phần | M03, M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-43) |
-| BR-44 | Quy tắc giải thích chỉ tiêu natri và năng lượng | M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-44) |
+| BR-44 | Quy tắc diễn giải mức tham khảo theo từng chỉ tiêu dinh dưỡng | M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-44) |
 | BR-45 | Cấm hiển thị điểm tổng hợp hoặc nhãn đơn giản hóa | M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-45) |
 | BR-46 | Nguồn tính toán dinh dưỡng chính thức của công thức | M03, M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-46) |
 | BR-47 | Phân bổ dinh dưỡng theo số khẩu phần và cộng dồn ngày | M05, M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-47) |
@@ -639,6 +651,8 @@ Theo DEC-001–003, các BR hỗ trợ MVP thuộc M01–M06 và M09–M10 cùng
 | BR-72 | Thuật toán xếp hạng thịnh hành (Trending Ranking) | M04 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-72) |
 | BR-73 | Chuẩn hóa đơn vị đo lường và chặn công khai khi thiếu quy đổi | M03, M04, M05 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-73) |
 | BR-74 | Quy trình xét duyệt đơn đăng ký Chuyên gia và chuyển đổi vai trò | M02, M03, M09 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-74) |
+| BR-75 | Tính duy nhất, có hướng và quyền riêng tư của quan hệ theo dõi (`USER_FOLLOW`) | M01, M02, M03 | DRAFT | [Chi tiết](srs/BUSINESS-RULES.md#br-75) |
+| BR-76 | Quy tắc so sánh hai công thức công khai theo một khẩu phần | M01, M04, M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-76) |
 
 ## 9. Non-functional Requirements Registry
 

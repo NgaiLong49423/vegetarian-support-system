@@ -1,8 +1,8 @@
 > **Document:** ERD Workspace Guide  
 > **File:** `docs/diagrams/ERD/README.md`  
-> **Version:** v1.7.1  
+> **Version:** v1.8.0  
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-22  
+> **Last Updated:** 2026-09-23  
 > **Status:** Draft (Conceptual ERD đã được rà soát; Logical ERD chờ cập nhật)  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `database/README.md`
 
@@ -10,8 +10,8 @@
 
 > [!WARNING]
 > **TÀI LIỆU ĐANG Ở TRẠNG THÁI NHÁP (DRAFT) — LOGICAL ERD CHỜ CẬP NHẬT:**  
-> Tài liệu diễn giải và danh mục thực thể trong file này phản ánh **Baseline 21 thực thể cốt lõi** theo quyết định kiến trúc cập nhật ngày 22/09/2026 (Phương án B: bỏ bảng `RECIPE_STEP`, bỏ bảng `CATEGORY` và `RECIPE_CATEGORY`; thể loại món chuẩn hóa thành `dish_category` và hướng dẫn chế biến thành `instructions` trên `Recipe Post`).  
-> Sơ đồ Conceptual ERD hiện phản ánh baseline 21 thực thể và 35 quan hệ; sơ đồ Logical ERD vẫn cần được cập nhật để đồng bộ với baseline này.
+> Tài liệu diễn giải và danh mục thực thể trong file này phản ánh **Baseline dự thảo 22 thực thể cốt lõi** sau khi bổ sung `USER_FOLLOW` ngày 23/09/2026; các quyết định trước đó về `RECIPE_STEP`, `CATEGORY` và `RECIPE_CATEGORY` vẫn giữ nguyên.  
+> Sơ đồ Conceptual ERD hiện có 22 thực thể và 36 connector; sơ đồ Logical ERD vẫn cần bổ sung hai vai trò FK của `USER_FOLLOW` để đồng bộ.
 
 ## 1. Mục Đích và Tác Dụng của Sơ Đồ ERD
 
@@ -22,7 +22,7 @@ Trong quy trình phát triển phần mềm của dự án, sơ đồ này có c
 1. **Định hình bức tranh tổng thể về dữ liệu nghiệp vụ:**
    * Giúp toàn bộ 5 thành viên trong nhóm phát triển, giảng viên và các bên liên quan có cùng một góc nhìn thống nhất về các đối tượng dữ liệu mà hệ thống cần quản trị và vận hành.
 2. **Xác lập và bảo vệ ranh giới phạm vi dữ liệu MVP:**
-   * Khóa chặt phạm vi mô hình dữ liệu ở đúng **21 thực thể cốt lõi** đã được phê duyệt.
+   * Duy trì phạm vi mô hình dữ liệu ở **22 thực thể**, trong đó `USER_FOLLOW` đang theo lifecycle `DRAFT` của FR-59/BR-75.
    * Ngăn ngừa tình trạng phình to phạm vi (scope creep) hoặc việc các thành viên tự tiện phát sinh bảng mới ngoài các quyết định kiến trúc đã chốt.
 3. **Làm cầu nối giữa Yêu cầu nghiệp vụ (SRS) và Thiết kế kỹ thuật (Database Design):**
    * Chuyển hóa các yêu cầu chức năng (FR) và quy tắc nghiệp vụ (BR) từ tài liệu đặc tả thành các khái niệm thực thể dữ liệu rõ ràng trước khi bước vào lập trình chi tiết.
@@ -37,7 +37,7 @@ Trong quy trình phát triển phần mềm của dự án, sơ đồ này có c
 
 ## 2. Hình Ảnh và Tệp Nguồn Sơ Đồ
 
-Dưới đây là sơ đồ quan hệ thực thể mức khái niệm của hệ thống Mâm Xanh, đã được đối chiếu với baseline 21 thực thể và 35 quan hệ:
+Dưới đây là sơ đồ quan hệ thực thể mức khái niệm của hệ thống Mâm Xanh, hiện có 22 thực thể và 36 connector:
 
 ![Conceptual ERD - Mâm Xanh](./conceptual-erd-v1.0.0.drawio.png)
 
@@ -47,9 +47,9 @@ Dưới đây là sơ đồ quan hệ thực thể mức khái niệm của hệ
 
 ---
 
-## 3. Ranh Giới 21 Thực Thể Khái Niệm Cốt Lõi (Conceptual Baseline)
+## 3. Ranh Giới 22 Thực Thể Khái Niệm (Conceptual Baseline)
 
-Căn cứ theo quyết định kiến trúc cập nhật ngày 22/09/2026, mô hình dữ liệu của MVP bao gồm chính xác **21 thực thể cốt lõi**:
+Căn cứ Conceptual ERD cập nhật ngày 23/09/2026, mô hình dữ liệu hiện có **22 thực thể**; `USER_FOLLOW` là phần bổ sung dự thảo gắn với FR-59/BR-75:
 
 | # | Thực thể (Entity) | Vai trò khái niệm trong hệ thống |
 |---|---|---|
@@ -74,6 +74,7 @@ Căn cứ theo quyết định kiến trúc cập nhật ngày 22/09/2026, mô h
 | 19 | **Unit** (`UNIT`) | Từ điển đơn vị đo lường chuẩn hóa thuộc các chiều `MASS` (g, kg), `VOLUME` (ml, L), `COUNT` (quả, củ, bìa...). |
 | 20 | **Ingredient Unit Conversion** (`INGREDIENT_UNIT_CONVERSION`) | Bảng quy tắc quy đổi giữa các đơn vị đặc thù (quả, củ, bìa, ml...) sang gram cho từng nguyên liệu cụ thể để tính dinh dưỡng. |
 | 21 | **Expert Application** (`EXPERT_APPLICATION`) | Quản lý đơn đăng ký cấp quyền Chuyên gia của Customer theo format văn bản (`bio_experience`, `vegetarian_type`, `sample_recipe_summary`, `portfolio_url`, `status`, `admin_note`, `reviewed_by`, `reviewed_at`; tuyệt đối không lưu tệp chứng chỉ vật lý). |
+| 22 | **User Follow** (`USER_FOLLOW`) | Quan hệ theo dõi có hướng giữa hai Member; mỗi bản ghi xác định người theo dõi (`follower`) và người được theo dõi (`followed`), không cho tự theo dõi hoặc trùng cặp. |
 
 ### Các thành phần đã loại bỏ hoặc sáp nhập để tối ưu hóa phạm vi MVP:
 * ❌ **`category` & `recipe_category`**: Loại bỏ hoàn toàn bảng danh mục động và bảng liên kết; thể loại món ăn được chuẩn hóa thành trường thuộc tính `dish_category` trực tiếp trên `Recipe Post` (món nước, món xào, món lẩu, món kho, món canh, món chiên, món hấp, món gỏi, món tráng miệng...).
@@ -88,7 +89,7 @@ Căn cứ theo quyết định kiến trúc cập nhật ngày 22/09/2026, mô h
 
 ## 3.1 Ma Trận Quan Hệ và Bản Số (Relationship & Cardinality Matrix)
 
-Dưới đây là đặc tả chi tiết toàn bộ **35 mối quan hệ nghiệp vụ** được mô hình hóa trong baseline dữ liệu quan hệ (đã loại bỏ các quan hệ của `CATEGORY`, `RECIPE_CATEGORY` và `RECIPE_STEP`):
+Dưới đây là đặc tả chi tiết **36 connector nghiệp vụ** trong Conceptual ERD hiện tại:
 
 | STT | Thực thể nguồn (Source) | Bản số nguồn | Động từ / Tên quan hệ | Thực thể đích (Target) | Bản số đích | Ý nghĩa nghiệp vụ & Ràng buộc toàn vẹn |
 |---|---|---|---|---|---|---|
@@ -127,6 +128,7 @@ Dưới đây là đặc tả chi tiết toàn bộ **35 mối quan hệ nghiệ
 | 33 | `SHOPPING_LIST` | 1 | `contains` | `SHOPPING_LIST_ITEM` | 0..* | Danh sách đi chợ chứa các mục nguyên liệu cần mua. |
 | 34 | `PAYMENT_TRANSACTION` | 0..1 | `activates` | `SUBSCRIPTION` | 0..1 | Giao dịch thanh toán thành công kích hoạt hoặc gia hạn đúng 1 gói dịch vụ tương ứng. |
 | 35 | `USER` | 1 | `submits` | `EXPERT_APPLICATION` | 0..* | Một Customer nộp đơn đăng ký Chuyên gia; mỗi đơn thuộc 1 User; tối đa 1 đơn PENDING tại 1 thời điểm (BR-74). |
+| 36 | `USER` | 1 | `follow` | `USER_FOLLOW` | 0..* | Quan hệ đệ quy có hướng theo FR-59/BR-75. Logical ERD phải tách hai vai trò bắt buộc `follower_user_id` và `followed_user_id`, đều tham chiếu `USER`; cấm hai giá trị bằng nhau và cấm trùng cặp. |
 
 **Ràng buộc XOR cho đích báo cáo (quan hệ 19 và 30):** Mỗi `REPORT` phải tham chiếu đúng một đối tượng bị báo cáo: **một `RECIPE_POST` hoặc một `COMMENT`** (bao gồm reply). Không được đồng thời tham chiếu cả hai, cũng không được thiếu cả hai. Bản số `0..1` ở từng quan hệ riêng lẻ chỉ thể hiện tính tùy chọn của từng loại đích; ràng buộc XOR bổ sung điều kiện bắt buộc khi xét hai quan hệ cùng nhau.
 

@@ -1,8 +1,8 @@
 > **Document:** C4 Container Diagram Workspace Guide  
 > **File:** `docs/diagrams/C4 Container Diagram/README.md`  
-> **Version:** v1.2.0  
+> **Version:** v1.2.1  
 > **Created:** 2026-09-17  
-> **Last Updated:** 2026-09-22  
+> **Last Updated:** 2026-09-23  
 > **Status:** Draft (Chờ cập nhật bản vẽ sơ đồ C4)  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/ERD/README.md`
 
@@ -10,7 +10,7 @@
 
 > [!WARNING]
 > **TÀI LIỆU ĐANG Ở TRẠNG THÁI NHÁP (DRAFT) — CHỜ CẬP NHẬT BẢN VẼ SƠ ĐỒ C4:**  
-> Tài liệu diễn giải và sơ đồ kiến trúc trong file này đang chờ vẽ lại và cập nhật **sơ đồ C4 Container** mới theo định vị hệ thống đã thay đổi (sân chơi Chuyên gia ẩm thực chay với baseline 21 thực thể cốt lõi, loại bỏ quản lý danh mục động `CATEGORY` / `RECIPE_CATEGORY` và loại bỏ chế độ nấu ăn từng bước `RECIPE_STEP`).  
+> Tài liệu diễn giải và sơ đồ kiến trúc trong file này đang chờ vẽ lại và cập nhật **sơ đồ C4 Container** mới theo định vị hệ thống đã thay đổi (baseline hiện có 22 thực thể, gồm `USER_FOLLOW` ở trạng thái dự thảo; loại bỏ quản lý danh mục động `CATEGORY` / `RECIPE_CATEGORY` và chế độ nấu ăn từng bước `RECIPE_STEP`).  
 > Do đó, tài liệu này được giữ ở trạng thái **Nháp (Draft)** cho đến khi bản vẽ sơ đồ C4 Container thực tế được hoàn thiện và bàn giao chính thức.
 
 ## 1. Mục Đích và Ý Nghĩa của Sơ Đồ C4 Container
@@ -88,7 +88,7 @@ Khu vực đóng khung nét đứt thể hiện phạm vi phần mềm do đội
 * **Môi trường triển khai:** Azure SQL Serverless (tự động điều chỉnh quy mô tính toán và tạm dừng khi không có truy vấn để tiết kiệm chi phí).
 * **Trách nhiệm chính:**
   * Là **Nguồn sự thật quan hệ duy nhất (Relational Source of Truth)** của toàn hệ thống.
-  * Lưu trữ bền vững dữ liệu nghiệp vụ của đúng **21 thực thể khái niệm chuẩn hóa (Conceptual ERD Baseline v1.7.0)**:
+  * Lưu trữ bền vững dữ liệu nghiệp vụ của **22 thực thể khái niệm trong Conceptual ERD v1.8.0**, gồm `USER_FOLLOW` đang ở trạng thái dự thảo:
     1. `User` (Tài khoản, vai trò, hồ sơ cá nhân và chỉ số dinh dưỡng/thể trạng)
     2. `User Ingredient Preference` (Sở thích, kiêng kỵ và dị ứng nguyên liệu)
     3. `Recipe Post` (Bài công thức kèm trường `instructions` 10–5.000 ký tự, thể loại `dish_category`, `youtube_url`)
@@ -110,6 +110,7 @@ Khu vực đóng khung nét đứt thể hiện phạm vi phần mềm do đội
     19. `Unit` (`UNIT`: Từ điển đơn vị đo lường chuẩn hóa)
     20. `Ingredient Unit Conversion` (`INGREDIENT_UNIT_CONVERSION`: Bảng quy đổi đơn vị đặc thù sang gram)
     21. `Expert Application` (`EXPERT_APPLICATION`: Đơn đăng ký quyền Chuyên gia của Customer theo BR-74)
+    22. `User Follow` (`USER_FOLLOW`: Quan hệ theo dõi có hướng giữa hai Member theo FR-59/BR-75 DRAFT)
   * Lưu trữ siêu dữ liệu (metadata), trạng thái giao dịch, đường dẫn URL trỏ tới ảnh lưu trên Azure Blob Storage (`RECIPE_MEDIA`), và đường dẫn video YouTube (`youtube_url`).
   * Thực thi các ràng buộc toàn vẹn dữ liệu (Primary Key, Foreign Key, Unique Indexes, Check Constraints). Quản lý lược đồ database thông qua các migration scripts của Flyway.
 

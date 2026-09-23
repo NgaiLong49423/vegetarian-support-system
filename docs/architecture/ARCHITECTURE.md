@@ -1,8 +1,8 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.9.0  
+> **Version:** v1.9.1  
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-22  
+> **Last Updated:** 2026-09-23  
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/C4 Container Diagram/README.md`, `docs/diagrams/ERD/README.md`
 
@@ -209,7 +209,7 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 - Giữ ranh giới giữa React client, Spring Boot Backend và Microsoft SQL Server.
 - Giữ relational database làm Source of Truth cho ứng dụng; dùng Flyway để quản lý thay đổi schema có thể thực thi sau khi Backend scaffold tồn tại.
 - **Baseline mô hình dữ liệu quan hệ (Relational Schema Baseline):**
-  - Hệ thống duy trì 21 thực thể quan hệ cốt lõi (Conceptual ERD v1.7.0).
+  - Conceptual ERD hiện có 22 thực thể (v1.8.0); `USER_FOLLOW` thuộc phần yêu cầu dự thảo FR-59/BR-75 và chưa trở thành schema triển khai cho đến khi lifecycle được chốt `ACTIVE`.
   - Thực thể đánh giá chất lượng công thức được chuẩn hóa thành `RECIPE_REACTION` (lưu trữ phản hồi Like/Dislike với `reaction_type: LIKE | DISLIKE`, ràng buộc `UNIQUE(user_id, recipe_id)` để đảm bảo mỗi thành viên có tối đa 1 phản hồi hiệu lực trên một bài công thức theo `BR-69`, `FR-57`).
   - Không sử dụng các bảng phân loại động `CATEGORY` và `RECIPE_CATEGORY`; thể loại món ăn được chuẩn hóa trực tiếp thành trường thuộc tính `dish_category` trên thực thể bài công thức (`RECIPE_POST` theo BR-19).
   - Không duy trì bảng độc lập `RECIPE_STEP`; toàn bộ hướng dẫn chế biến được lưu trữ dưới dạng trường văn bản tự do linh hoạt `instructions` (10–5.000 ký tự) trên `RECIPE_POST` (FR-16, BR-19; FR-22 đã RETIRED theo Phương án B).
