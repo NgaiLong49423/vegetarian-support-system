@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.2.0
+> **Version:** v1.3.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-09-21
+> **Last Updated:** 2026-09-22
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -13,7 +13,18 @@ Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy v
 
 ## Giao diện demo và giới hạn hiện tại
 
-Bản demo cho giảng viên: [Mâm Xanh trên Vercel](https://mamxanh-frontend.vercel.app/). Đây là bản Frontend dùng dữ liệu mẫu; tài khoản Lan Anh và gói FREE là dữ liệu demo, chưa có đăng nhập hoặc phân quyền thật.
+Bản demo cho giảng viên: [Mâm Xanh trên Vercel](https://mamxanh-frontend.vercel.app/). Đây là bản Frontend dùng dữ liệu mẫu; tài khoản Lan Anh và gói FREE là dữ liệu demo, chưa có đăng nhập hoặc phân quyền thật. Các màn hình Auth bổ sung ngày 2026-09-22 mới có ở source local, chưa deploy lại Vercel.
+
+### Đăng ký, đăng nhập và khôi phục tài khoản (UI FR-03)
+
+- Header mặc định dành cho Guest có Đăng nhập/Đăng ký. Các trang `/dang-nhap`, `/dang-ky`, `/quen-mat-khau`, `/xac-minh-email`, `/dat-lai-mat-khau` dùng bố cục responsive riêng cùng nhận diện dự án.
+- Đăng ký kiểm tra tên 3–50 ký tự, email, mật khẩu ít nhất 8 ký tự và xác nhận khớp; có nút hiện/ẩn mật khẩu. Chính sách độ phức tạp cần thống nhất theo BUG-004, chưa tuyên bố đầy đủ validation FR-03.
+- Nút Google và các biểu mẫu hiện thông báo demo; không gọi API, không gửi email, không tạo tài khoản/phiên, không xác minh token và không lưu mật khẩu vào storage. Mật khẩu được xóa khỏi state sau khi biểu mẫu hợp lệ.
+- Trang xác minh có yêu cầu gửi lại email; trang đặt lại mật khẩu cần liên kết email thật khi tích hợp Backend. Các giới hạn thời gian phía server chưa được mô phỏng thành cơ chế bảo mật FE.
+- Tại trang đăng nhập, chọn **Khám phá tài khoản demo** để xem menu Lan Anh/FREE; chọn **Thoát tài khoản demo** để quay lại Guest. Đây chỉ là chuyển chế độ xem trong bộ nhớ, không phải authentication/authorization.
+- API contract hiện `Active` nhưng chưa tích hợp trong UI này; xem [API Guide](../../docs/api/API.md) trước khi triển khai xác thực thật.
+
+### Các chức năng demo khác
 
 | Khu vực | Người dùng có thể thử | Giới hạn hiện tại |
 |---|---|---|
@@ -176,4 +187,4 @@ npx playwright install chromium
 
 HTML report được tạo trong `playwright-report/`; screenshot và trace lỗi nằm trong `test-results/`. Hai thư mục này là generated evidence và không được commit mặc định.
 
-Suite hiện có 8 test: application shell/navigation; bình luận và giữ reply khi xóa cha; khẩu phần lẻ trong kế hoạch; nhân nguyên liệu theo khẩu phần; menu avatar/gói AI; điều hướng tài khoản trên mobile; validation báo cáo; BMI cùng trang gói AI/lịch sử giao dịch. Đây là kiểm thử Frontend với dữ liệu mẫu, không chứng minh Backend, database, authentication, thanh toán hoặc full FE–BE E2E đã hoạt động.
+Suite hiện có 11 test: 3 test Auth (đăng ký/xác minh, đăng nhập/chế độ demo, khôi phục/mobile) và 8 test trước đó: application shell/navigation; bình luận và giữ reply khi xóa cha; khẩu phần lẻ trong kế hoạch; nhân nguyên liệu theo khẩu phần; menu avatar/gói AI; điều hướng tài khoản trên mobile; validation báo cáo; BMI cùng trang gói AI/lịch sử giao dịch. Đây là kiểm thử Frontend với dữ liệu mẫu, không chứng minh Backend, database, authentication, thanh toán hoặc full FE–BE E2E đã hoạt động.

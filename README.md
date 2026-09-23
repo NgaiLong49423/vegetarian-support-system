@@ -1,8 +1,8 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.11.0
+> **Version:** v0.11.1
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-21
+> **Last Updated:** 2026-09-22
 > **Status:** Active
 
 # Mâm Xanh — Vegetarian Support System
@@ -13,15 +13,15 @@
 
 **Mâm Xanh** (Vegetarian Support System) là ứng dụng web hỗ trợ người ăn chay khám phá bài công thức, lập thực đơn tuần và nhận gợi ý thông minh từ Gemini AI dựa trên nội dung đang công khai trong hệ thống. Đây là dự án môn SWP391 do nhóm 5 thành viên phát triển.
 
-> **Trạng thái hiện tại:** Backend và Frontend đã được scaffold. Backend dùng Java 21 + Spring Boot + Maven và đã có cấu hình local SQL Server theo mẫu; Frontend dùng React + Vite + TypeScript và đã có Playwright Chromium smoke test. API Authentication và cấu trúc package Backend hiện mới là tài liệu đề xuất/contract dưới review, chưa phải bằng chứng chức năng đã được triển khai.
+> **Trạng thái hiện tại:** Backend và Frontend đã được scaffold. Backend dùng Java 21 + Spring Boot + Maven và đã có cấu hình local SQL Server theo mẫu; Frontend dùng React + Vite + TypeScript và đã có Playwright Chromium smoke test. Auth API contract đã được chấp nhận nhưng chưa phải bằng chứng chức năng đã triển khai; cấu trúc package Backend vẫn là đề xuất Draft.
 
 ## Phạm vi MVP
 
 - Guest đọc/tìm bài công thức công khai, xem bình luận và dùng AI hỏi đáp cơ bản theo hạn mức.
 - Member quản lý hồ sơ, lưu công thức, lập lịch ăn ba bữa, Shopping List, đánh giá sao và bình luận/reply. Chức năng Like đã `RETIRED`; Nearby Restaurant Discovery/Google Maps (M11) là `OUT_OF_SCOPE` và không thuộc baseline triển khai hiện tại.
-- Member đã đăng nhập có thể tạo và công khai Recipe Post trực tiếp; Administrator hậu kiểm nội dung theo báo cáo của người dùng.
+- Chỉ Chuyên gia đã được phê duyệt có thể tạo và công khai Recipe Post trực tiếp; Administrator hậu kiểm nội dung theo báo cáo của người dùng.
 - Gemini hỗ trợ hỏi đáp, gợi ý công thức có sẵn, lập/thay thực đơn và tạo nội dung có thể chỉnh sửa trong biểu mẫu; AI không tự tạo dữ liệu dinh dưỡng chính thức hoặc tự quyết định kiểm duyệt. Lưu nháp Recipe Post, lịch sử chat AI và AI quét/gắn cờ nội dung không thuộc MVP hiện tại.
-- Free, Plus và Pro có cùng nhóm chức năng AI, với hạn mức 5/15/50 request thành công/ngày. Giá tháng cố định cho MVP là FREE 0 VND, PLUS 49,000 VND và PRO 99,000 VND; không tự động gia hạn hoặc hoàn tiền một phần, entitlement chỉ có hiệu lực sau thanh toán được xác minh và hết hạn cuối kỳ đã trả.
+- AI được phân quyền theo tính năng: Free dùng Chatbot và gợi ý món cơ bản; Plus mở thêm AI hỗ trợ soạn bài và gợi ý biến tấu; Pro mở thêm AI lập thực đơn tuần. Không áp dụng quota request/ngày. Giá tháng cố định cho MVP là FREE 0 VND, PLUS 49,000 VND và PRO 99,000 VND; không tự động gia hạn hoặc hoàn tiền một phần, entitlement trả phí chỉ có hiệu lực sau thanh toán được xác minh và hết hạn cuối kỳ đã trả.
 Chi tiết nghiệp vụ nằm trong [SRS](docs/requirements/SRS.md). Các đề xuất hoặc tài liệu nghiên cứu không tự trở thành yêu cầu nếu chưa được ghi nhận trong SRS.
 
 ## Công nghệ baseline
@@ -90,7 +90,7 @@ Các file SQL trong `database/` hiện là điểm giữ chỗ có chủ đích.
 | Yêu cầu sản phẩm cấp cao | [PRD](docs/requirements/PRD.md) | Requirements Baseline v1.0.0 — Active |
 | Kiến trúc cấp cao | [System Architecture](docs/architecture/ARCHITECTURE.md) | Active; chưa phải bằng chứng implementation |
 | Công nghệ | [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) | Active baseline |
-| API integration | [API Guide](docs/api/API.md) và [OpenAPI](docs/api/openapi.yaml) | Authentication slice — Under Review; chưa phải bằng chứng implementation |
+| API integration | [API Guide](docs/api/API.md) và [OpenAPI](docs/api/openapi.yaml) | Auth contract Active; các thông số FR-03 còn `TBD` chưa implementation-ready; chưa phải bằng chứng implementation |
 | Đề xuất package Backend | [Backend Package Structure Proposal](docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md) | Draft; chỉ dùng để định hướng vertical slice |
 | Chiến lược kiểm thử | [Test Strategy](docs/testing/TEST-STRATEGY.md) | Active; Frontend đã có Playwright smoke test, phạm vi khác theo bằng chứng triển khai |
 | Quy trình Git/PR/release | [CONTRIBUTING.md](CONTRIBUTING.md) | Active |

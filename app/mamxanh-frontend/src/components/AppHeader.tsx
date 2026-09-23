@@ -1,3 +1,4 @@
+import { useDemoAccount } from './DemoAccount';
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Bell, Menu, Plus, Search, X, ChevronDown } from 'lucide-react';
@@ -16,6 +17,7 @@ export function AppHeader() {
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { active, setActive } = useDemoAccount();
 
   return (
     <header className="sticky top-0 z-40 border-b border-brand-100 bg-cream/85 backdrop-blur-md">
@@ -48,22 +50,26 @@ export function AppHeader() {
           >
             <Search className="h-5 w-5" />
           </button>
-          <button
+          {active && <button
             className="relative hidden h-10 w-10 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-brand-100 md:flex"
             aria-label="Thông báo"
           >
             <Bell className="h-5 w-5" />
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand-600 ring-2 ring-cream" />
-          </button>
+          </button>}
 
-          <div className="hidden sm:block">
+          {active && <div className="hidden sm:block">
             <Button size="md" className="whitespace-nowrap" onClick={() => navigate('/dang-cong-thuc')}>
               <Plus className="h-4 w-4" />
               Đăng công thức
             </Button>
-          </div>
+          </div>}
 
-          <div className="relative hidden md:block">
+          {!active && <div className="flex items-center gap-2 whitespace-nowrap">
+            <Link to="/dang-nhap" className="rounded-xl px-2 py-2 text-sm font-semibold text-ink-soft hover:bg-brand-50 sm:px-4">Đăng nhập</Link>
+            <Link to="/dang-ky" className="hidden rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 sm:block">Đăng ký</Link>
+          </div>}
+          {active && <div className="relative hidden md:block">
             <button
               onClick={() => setMenuOpen((v) => !v)}
               aria-label={`Tài khoản ${currentUser.name}, gói AI ${demoAiPlan} demo`}
@@ -103,12 +109,12 @@ export function AppHeader() {
                   Kế hoạch bữa ăn
                 </Link>
                 <div className="my-1 border-t border-brand-50" />
-                <button className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink-muted hover:bg-brand-50">
-                  Đăng xuất
+                <button onClick={() => { setActive(false); setMenuOpen(false); navigate('/dang-nhap'); }} className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink-muted hover:bg-brand-50">
+                  Thoát tài khoản demo
                 </button>
               </div>
             )}
-          </div>
+          </div>}
 
           <button
             onClick={() => setOpen((v) => !v)}
@@ -137,7 +143,7 @@ export function AppHeader() {
                 {item.label}
               </NavLink>
             ))}
-            <div className="my-1 border-t border-brand-100 px-3 py-2 text-xs text-ink-muted">
+            {active ? <><div className="my-1 border-t border-brand-100 px-3 py-2 text-xs text-ink-muted">
               {currentUser.name} · Gói AI {demoAiPlan} (demo)
             </div>
             <Link to="/ho-so" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-ink-soft hover:bg-brand-100">Hồ sơ của tôi</Link>
@@ -148,6 +154,11 @@ export function AppHeader() {
               <Plus className="h-4 w-4" />
               Đăng công thức
             </Button>
+            <button onClick={() => { setActive(false); setOpen(false); navigate('/dang-nhap'); }} className="rounded-lg px-3 py-2.5 text-left text-sm text-ink-muted">Thoát tài khoản demo</button>
+            </> : <div className="mt-2 flex gap-3 border-t border-brand-100 pt-3">
+              <Link to="/dang-nhap" onClick={() => setOpen(false)} className="rounded-xl px-4 py-2 text-sm font-semibold text-ink">Đăng nhập</Link>
+              <Link to="/dang-ky" onClick={() => setOpen(false)} className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Đăng ký</Link>
+            </div>}
           </nav>
         </div>
       )}

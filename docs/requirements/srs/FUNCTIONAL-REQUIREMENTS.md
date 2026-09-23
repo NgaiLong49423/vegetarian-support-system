@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements Specification
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v1.3.0
+> **Version:** v1.10.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-18
+> **Last Updated:** 2026-09-23
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -10,7 +10,7 @@
 
 ## 1. Mục đích và thẩm quyền tài liệu
 
-Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho các Functional Requirements (`FR-01` đến `FR-58`) của Requirements Baseline v1.0.0 (cập nhật v1.3.0). Các yêu cầu `ACTIVE` có actor, luồng, ràng buộc và Acceptance Criteria làm nguồn cho thiết kế và kiểm thử; requirement không `ACTIVE` được giữ để bảo toàn lịch sử và stable ID.
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho các Functional Requirements (`FR-01` đến `FR-60`) của Requirements Baseline v1.0.0 (cập nhật v1.10.0). Các yêu cầu `ACTIVE` có actor, luồng, ràng buộc và Acceptance Criteria làm nguồn cho thiết kế và kiểm thử; requirement không `ACTIVE` được giữ để bảo toàn lịch sử và stable ID.
 
 Khung đặc tả gốc và **Authoritative Registry** cho sự tồn tại của requirement, mã định danh ổn định (stable ID), phân bổ module cấp chỉ mục, và trạng thái vòng đời (lifecycle state) chính thức được duy trì tập trung tại `docs/requirements/SRS.md`.
 
@@ -62,7 +62,7 @@ Tạo phễu tiếp cận mở rộng nhằm giới thiệu kiến thức ẩm t
 ##### A. Luồng Duyệt danh sách công thức công khai (UC-01.1)
 1. **Main Flow:**
    - Bước 1: Guest truy cập trang chủ hoặc trang Khám phá.
-   - Bước 2: Hệ thống truy xuất và hiển thị danh sách các bài công thức công khai kèm phân trang theo các chế độ sắp xếp (mặc định Mới nhất, hoặc Đánh giá cao nhất, Xem nhiều nhất, Bình luận nhiều nhất, Hoạt động sôi nổi nhất, Thịnh hành). Mỗi thẻ công thức hiển thị: ảnh bìa món ăn (từ `RECIPE_MEDIA` hoặc ảnh mặc định), tiêu đề, loại ăn chay chuẩn, thời gian nấu, điểm đánh giá sao trung bình & số lượt đánh giá (`RECIPE_RATING`), số lượt xem (`RECIPE_VIEW`), và thông tin tác giả.
+   - Bước 2: Hệ thống truy xuất và hiển thị danh sách các bài công thức công khai kèm phân trang theo các chế độ sắp xếp (mặc định Mới nhất, hoặc Được yêu thích nhất, Xem nhiều nhất, Bình luận nhiều nhất, Hoạt động sôi nổi nhất, Thịnh hành). Mỗi thẻ công thức hiển thị: ảnh bìa món ăn (từ `RECIPE_MEDIA` hoặc ảnh mặc định), tiêu đề, loại ăn chay chuẩn, thời gian nấu, huy hiệu tỷ lệ % Like (`👍 {like_percentage}%` theo phong cách Samsung Food hoặc nhãn "Mới" nếu chưa có bình chọn, `RECIPE_REACTION`), số lượt xem (`RECIPE_VIEW`), và thông tin tác giả.
    - Bước 3: Guest có thể cuộn trang hoặc bấm chuyển trang để xem thêm các công thức khác.
 
 ##### B. Luồng Tìm kiếm công thức cơ bản (UC-01.2)
@@ -76,10 +76,10 @@ Tạo phễu tiếp cận mở rộng nhằm giới thiệu kiến thức ẩm t
 ##### C. Luồng Xem chi tiết bài công thức (UC-01.3)
 1. **Main Flow:**
    - Bước 1: Guest nhấp vào một thẻ bài viết từ danh sách.
-   - Bước 2: Hệ thống hiển thị toàn bộ nội dung chi tiết của bài viết: tiêu đề, thư viện ảnh (tối đa 5 ảnh từ `RECIPE_MEDIA` với 1 ảnh bìa), video YouTube nhúng (nếu có), khẩu phần, thời gian chuẩn bị và nấu, danh sách nguyên liệu với số lượng số học và đơn vị chuẩn, danh sách các bước thực hiện tuần tự (`RECIPE_STEP`, từ 1 đến 30 bước), điểm đánh giá sao trung bình và số lượt đánh giá (`RECIPE_RATING`), số lượt xem (`RECIPE_VIEW`), và thông tin tác giả. Đồng thời, hệ thống ghi nhận lượt xem vào `RECIPE_VIEW` có khử trùng lặp theo phiên (BR-70).
+   - Bước 2: Hệ thống hiển thị toàn bộ nội dung chi tiết của bài viết: tiêu đề, thư viện ảnh (tối đa 5 ảnh từ `RECIPE_MEDIA` với 1 ảnh bìa), video YouTube nhúng (nếu có), khẩu phần, thời gian chuẩn bị và nấu, danh sách nguyên liệu với số lượng số học và đơn vị chuẩn, hướng dẫn thực hiện chi tiết (`instructions`, 10–5.000 ký tự theo FR-16), tỷ lệ % Like và số lượng Like/Dislike (`RECIPE_REACTION`), số lượt xem (`RECIPE_VIEW`), và thông tin tác giả. Đồng thời, hệ thống ghi nhận lượt xem vào `RECIPE_VIEW` có khử trùng lặp theo phiên (BR-70).
 2. **Security & Exception Flow (Yêu cầu đăng nhập khi thực hiện hành động thành viên):**
-   - Bước 1: Khi đang ở trang chi tiết bài viết hoặc danh sách, Guest nhấp vào các nút tương tác thành viên: "Đánh giá sao" (`RECIPE_RATING`), "Bình luận", "Lưu công thức", hoặc "Thêm vào lịch ăn".
-   - Bước 2: Hệ thống nhận diện trạng thái chưa đăng nhập của Guest. Guest chỉ được xem điểm đánh giá sao chứ tuyệt đối không được gửi đánh giá sao (BR-69).
+   - Bước 1: Khi đang ở trang chi tiết bài viết hoặc danh sách, Guest nhấp vào các nút tương tác thành viên: "Like", "Dislike" (`RECIPE_REACTION`), "Bình luận", "Lưu công thức", hoặc "Thêm vào lịch ăn".
+   - Bước 2: Hệ thống nhận diện trạng thái chưa đăng nhập của Guest. Guest chỉ được xem tỷ lệ % Like chứ tuyệt đối không được gửi bình chọn Like hoặc Dislike (BR-69).
    - Bước 3: Hệ thống hiển thị hộp thoại thông báo: "Vui lòng đăng nhập hoặc tạo tài khoản để thực hiện chức năng này" kèm nút bấm điều hướng tới trang Đăng nhập / Đăng ký (BR-05, BR-32, BR-69).
 
 #### 6. Hậu điều kiện (Postconditions)
@@ -90,15 +90,15 @@ Tạo phễu tiếp cận mở rộng nhằm giới thiệu kiến thức ẩm t
 #### 7. Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Guest được phép xem toàn bộ các bài công thức ở trạng thái `PUBLISHED`.
 - Hệ thống tuyệt đối không hiển thị cho Guest các bài viết đang ở trạng thái nháp (nếu có sau này), bài bị Quản trị viên ẩn do vi phạm, hoặc bài đã xóa.
-- Guest được xem điểm đánh giá trung bình và số lượt đánh giá (`RECIPE_RATING`), nhưng tuyệt đối không được gửi đánh giá điểm sao (BR-69).
-- Không cho phép Guest tạo, chỉnh sửa, xóa bài viết, gửi đánh giá, gửi bình luận hay lưu dữ liệu cá nhân hóa (BR-05, BR-69).
+- Guest được xem tỷ lệ % Like (`👍 {like_percentage}%`) và tổng số lượt bình chọn (`RECIPE_REACTION`), nhưng tuyệt đối không được gửi phản hồi Like hoặc Dislike (BR-69).
+- Không cho phép Guest tạo, chỉnh sửa, xóa bài viết, gửi phản hồi Like/Dislike, gửi bình luận hay lưu dữ liệu cá nhân hóa (BR-05, BR-69).
 
 #### 8. Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
 - **Quy tắc nghiệp vụ liên quan:**
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
   - [BR-18](BUSINESS-RULES.md#br-18): Bảo vệ quyền riêng tư trong hồ sơ tác giả công khai.
   - [BR-32](BUSINESS-RULES.md#br-32): Yêu cầu đăng nhập đối với Công thức đã lưu và Lịch ăn.
-  - [BR-69](BUSINESS-RULES.md#br-69): Đánh giá chất lượng bài công thức từ 1 đến 5 sao (Guest chỉ xem, không được đánh giá).
+  - [BR-69](BUSINESS-RULES.md#br-69): Tương tác Like / Dislike và tỷ lệ hài lòng (% Like) của bài công thức (Guest chỉ xem, không được bình chọn).
   - [BR-70](BUSINESS-RULES.md#br-70): Ghi nhận lượt xem và khử trùng lặp theo phiên (`RECIPE_VIEW`).
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-02](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02): Thời gian phản hồi tìm kiếm công thức $\le 1.5$ giây (P95).
@@ -110,7 +110,7 @@ Tạo phễu tiếp cận mở rộng nhằm giới thiệu kiến thức ẩm t
 - **AC-01.1 — Guest duyệt danh sách bài công thức công khai thành công:**
   - **Given:** Guest truy cập trang Khám phá mà không đăng nhập.
   - **When:** Trang web tải hoàn tất.
-  - **Then:** Hệ thống hiển thị danh sách các bài công thức đang công khai kèm tiêu đề, ảnh bìa (`RECIPE_MEDIA`), loại ăn chay, điểm sao trung bình (`RECIPE_RATING`), lượt xem (`RECIPE_VIEW`) và tác giả; có hỗ trợ phân trang và chọn 6 chế độ sắp xếp.
+  - **Then:** Hệ thống hiển thị danh sách các bài công thức đang công khai kèm tiêu đề, ảnh bìa (`RECIPE_MEDIA`), loại ăn chay, tỷ lệ % Like (`👍 {like_percentage}%` theo phong cách Samsung Food hoặc nhãn "Mới" nếu chưa có bình chọn), lượt xem (`RECIPE_VIEW`) và tác giả; có hỗ trợ phân trang và chọn 6 chế độ sắp xếp.
 
 - **AC-01.2 — Guest tìm kiếm bài công thức theo từ khóa thành công:**
   - **Given:** Guest đang ở thanh tìm kiếm của ứng dụng.
@@ -120,17 +120,17 @@ Tạo phễu tiếp cận mở rộng nhằm giới thiệu kiến thức ẩm t
 - **AC-01.3 — Guest xem đầy đủ nội dung chi tiết bài công thức:**
   - **Given:** Một bài công thức hợp lệ đang ở trạng thái công khai (`PUBLISHED`).
   - **When:** Guest nhấp vào xem chi tiết bài công thức đó.
-  - **Then:** Hệ thống hiển thị toàn bộ nội dung bao gồm tiêu đề, nguyên liệu định lượng chuẩn, các bước thực hiện tuần tự (`RECIPE_STEP`), tối đa 5 ảnh (`RECIPE_MEDIA`) kèm 1 ảnh bìa, video YouTube nhúng, điểm sao đánh giá (`RECIPE_RATING`), số lượt xem (`RECIPE_VIEW`) và thông tin tác giả; đồng thời ghi nhận 1 lượt xem nếu hợp lệ theo BR-70.
+  - **Then:** Hệ thống hiển thị toàn bộ nội dung bao gồm tiêu đề, nguyên liệu định lượng chuẩn, hướng dẫn thực hiện chi tiết (`instructions`), tối đa 5 ảnh (`RECIPE_MEDIA`) kèm 1 ảnh bìa, video YouTube nhúng, tỷ lệ % Like và tổng số lượt Like/Dislike (`RECIPE_REACTION`), số lượt xem (`RECIPE_VIEW`) và thông tin tác giả; đồng thời ghi nhận 1 lượt xem nếu hợp lệ theo BR-70.
 
 - **AC-01.4 — Không hiển thị bài viết vi phạm hoặc bài không công khai cho Guest:**
   - **Given:** Bài công thức đang bị Quản trị viên ẩn do vi phạm hoặc không tồn tại.
   - **When:** Guest cố tình truy cập bài viết đó qua đường dẫn trực tiếp.
   - **Then:** Hệ thống từ chối hiển thị và thông báo bài viết không khả dụng hoặc không tìm thấy.
 
-- **AC-01.5 — Yêu cầu đăng nhập khi Guest thực hiện thao tác thành viên (kể cả chấm sao):**
+- **AC-01.5 — Yêu cầu đăng nhập khi Guest thực hiện thao tác thành viên (kể cả bình chọn Like/Dislike):**
   - **Given:** Guest đang xem một bài công thức công khai.
-  - **When:** Guest nhấn nút "Đánh giá sao", "Lưu bài viết" hoặc "Bình luận".
-  - **Then:** Hệ thống không thực hiện lưu, đánh giá hay gửi bình luận, mà hiển thị thông báo yêu cầu đăng nhập và cung cấp liên kết chuyển đến màn hình Đăng nhập (BR-05, BR-32, BR-69).
+  - **When:** Guest nhấn nút "Like", "Dislike", "Lưu bài viết" hoặc "Bình luận".
+  - **Then:** Hệ thống không thực hiện lưu, bình chọn hay gửi bình luận, mà hiển thị thông báo yêu cầu đăng nhập và cung cấp liên kết chuyển đến màn hình Đăng nhập (BR-05, BR-32, BR-69).
 
 ---
 
@@ -373,7 +373,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 #### 8. Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
 - **Quy tắc nghiệp vụ liên quan:**
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest (Guest không có dữ liệu cá nhân hóa, phải đăng nhập để dùng tính năng thành viên).
-  - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp (yêu cầu tài khoản Member đã xác thực).
+  - [BR-07](BUSINESS-RULES.md#br-07): Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia (Role = EXPERT).
   - [BR-24](BUSINESS-RULES.md#br-24): Xác thực tài khoản khi gửi báo cáo vi phạm.
   - [BR-32](BUSINESS-RULES.md#br-32): Yêu cầu đăng nhập đối với Công thức đã lưu và Lịch ăn.
 - **Yêu cầu phi chức năng liên quan:**
@@ -388,7 +388,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 
 - **AC-03.1 — Đăng ký thành công bằng email và mật khẩu hợp lệ:**
   - **Given:** Guest đang ở trang Đăng ký và email nhập vào chưa từng tồn tại trong hệ thống.
-  - **When:** Guest nhập email hợp lệ, mật khẩu đạt chuẩn (ít nhất 8 ký tự, có chữ hoa, chữ thường và số/ký tự đặc biệt), xác nhận mật khẩu khớp, và nhấn "Đăng ký".
+  - **When:** Guest nhập email hợp lệ, mật khẩu đạt chuẩn (tối thiểu 8 ký tự, bao gồm ít nhất 1 chữ cái viết hoa, 1 chữ cái viết thường và 1 chữ số; ký tự đặc biệt là tùy chọn), xác nhận mật khẩu khớp, và nhấn "Đăng ký".
   - **Then:** Hệ thống tạo tài khoản mới ở trạng thái `UNVERIFIED`, băm mật khẩu bằng BCrypt, gửi email xác minh chứa liên kết kích hoạt, và thông báo yêu cầu kiểm tra email.
 
 - **AC-03.2 — Đăng ký từ chối email đã tồn tại trong hệ thống:**
@@ -398,7 +398,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 
 - **AC-03.3 — Đăng ký từ chối mật khẩu không đạt chuẩn độ phức tạp:**
   - **Given:** Guest đang ở trang Đăng ký với địa chỉ email hợp lệ và chưa tồn tại.
-  - **When:** Guest nhập mật khẩu không đạt yêu cầu (dưới 8 ký tự hoặc thiếu thành phần chữ hoa/chữ thường/số) và nhấn "Đăng ký".
+  - **When:** Guest nhập mật khẩu không đạt yêu cầu (dưới 8 ký tự hoặc thiếu ít nhất một trong các thành phần: chữ cái viết hoa, chữ cái viết thường, chữ số) và nhấn "Đăng ký".
   - **Then:** Hệ thống từ chối đăng ký, không tạo tài khoản, và hiển thị thông báo lỗi cụ thể về tiêu chí mật khẩu chưa thỏa mãn.
 
 - **AC-03.4 — Xác minh email thành công kích hoạt tài khoản:**
@@ -459,88 +459,94 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 ---
 
 <a id="fr-04"></a>
-### FR-04 — Member tạo và công khai trực tiếp Recipe Post của chính mình
+### FR-04 — Chuyên gia tạo và công khai trực tiếp Recipe Post
 
 - **Mã yêu cầu:** FR-04
 - **Module:** M02 (Identity & Access), M03 (Community Recipes & Social)
 - **Trạng thái (Derived):** ACTIVE
-- **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập tạo, xem, chỉnh sửa, xóa và công khai trực tiếp Recipe Post của chính mình khi đạt các tiêu chuẩn kiểm tra tính hợp lệ; Member có thể tạo danh sách các bước nấu tuần tự (`RECIPE_STEP`, 1–30 bước), upload tối đa 5 ảnh minh họa (`RECIPE_MEDIA`, $\le 5$ MB/ảnh) kèm đúng 1 ảnh bìa, và gắn tối đa 1 link YouTube; hệ thống bắt buộc các nguyên liệu phải có định lượng số học và tỷ lệ quy đổi hợp lệ sang gam (BR-73); không có luồng gửi Blog tổng quát, đơn xin quyền đăng hoặc duyệt trước từng bài.
+- **Tóm tắt yêu cầu:** Hệ thống cho phép tài khoản có vai trò Chuyên gia (`Role = EXPERT`) đã được phê duyệt tạo, xem, chỉnh sửa, xóa và công khai trực tiếp Recipe Post của chính mình khi đạt các tiêu chuẩn kiểm tra tính hợp lệ; người đăng **không bắt buộc phải viết từng bước nấu ăn** vào bài viết mà có thể nhập hướng dẫn chế biến dạng văn bản tổng thể (10–5.000 ký tự) hoặc phân đoạn tùy ý; upload tối đa 5 ảnh minh họa (`RECIPE_MEDIA`, $\le 5$ MB/ảnh) kèm đúng 1 ảnh bìa, và gắn tối đa 1 link YouTube; hệ thống bắt buộc các nguyên liệu phải có định lượng số học và tỷ lệ quy đổi hợp lệ sang gam (BR-73); `Customer`, `Guest` và `Administrator` không có quyền tạo/đăng hoặc sửa nội dung bài công thức.
 
 #### 1. Mục đích
-Trao quyền tự chủ sáng tạo nội dung cho thành viên cộng đồng; tạo điều kiện để người dùng chia sẻ công thức món chay nhanh chóng, thuận tiện mà không gặp rào cản hành chính duyệt bài trước; đồng thời đảm bảo quyền sở hữu bất biến của tác giả đối với nội dung do mình tạo ra.
+Thiết lập Mâm Xanh thành sân chơi ẩm thực chay chuyên nghiệp, nơi các công thức được sáng tạo và chia sẻ bởi các Chuyên gia ẩm thực uy tín; đảm bảo chất lượng, tính chuẩn mực và an toàn của các bài viết công thức; đồng thời trao quyền tự chủ quản lý vòng đời bài viết cho chính Chuyên gia tác giả.
 
 #### 2. Tác nhân (Actors)
 - **Primary Actor:**
-  - `Member` (Tác giả): Người dùng đã đăng nhập tạo, sửa, xóa và công khai bài viết.
+  - `Chuyên gia` (`Role = EXPERT`): Người dùng đã được Administrator phê duyệt đơn đăng ký Chuyên gia, có toàn quyền tạo, sửa, xóa và công khai bài viết của mình.
 - **Secondary Actor / External System:**
   - `Dịch vụ lưu trữ tệp đám mây (Azure Blob Storage)`: Lưu trữ ảnh minh họa bài viết.
   - `Administrator`: Quản trị viên xử lý báo cáo vi phạm sau khi bài đã công khai (hậu kiểm).
+  - `Customer`: Người dùng thông thường chỉ có quyền đọc, bình chọn Like/Dislike, bình luận và lưu công thức; bị chặn khi cố gắng đăng bài.
 
 #### 3. Danh mục Use Cases & User Stories
 - **Các Use Case con:**
-  - `UC-04.1`: Tạo và công khai bài công thức cá nhân (Create and publish personal recipe post).
-  - `UC-04.2`: Chỉnh sửa bài công thức của chính mình (Edit owned recipe post).
-  - `UC-04.3`: Xóa bài công thức của chính mình (Delete owned recipe post).
+  - `UC-04.1`: Chuyên gia tạo và công khai bài công thức cá nhân (Create and publish expert recipe post).
+  - `UC-04.2`: Chuyên gia chỉnh sửa bài công thức của chính mình (Edit owned recipe post).
+  - `UC-04.3`: Chuyên gia xóa bài công thức của chính mình (Delete owned recipe post).
 - **User Stories:**
-  - `US-04.1`: Là một thành viên yêu nấu ăn, tôi muốn tạo và chia sẻ ngay công thức món chay mới của mình lên cộng đồng mà không phải gửi đơn xin duyệt từng bài.
-  - `US-04.2`: Là tác giả bài viết, tôi muốn có thể chỉnh sửa lại định lượng gia vị hoặc cập nhật ảnh món ăn bất kỳ lúc nào để hoàn thiện bài viết.
-  - `US-04.3`: Là tác giả bài viết, tôi muốn có thể xóa bài công thức của mình khi không còn muốn chia sẻ nữa.
+  - `US-04.1`: Là một Chuyên gia ẩm thực chay, tôi muốn biên soạn và công khai công thức tâm huyết của mình lên cộng đồng với đầy đủ định lượng và các bước chi tiết mà không phải chờ duyệt từng bài.
+  - `US-04.2`: Là tác giả Chuyên gia, tôi muốn có thể cập nhật ảnh món ăn hoặc điều chỉnh định lượng gia vị bất kỳ lúc nào để hoàn thiện bài viết.
+  - `US-04.3`: Là tác giả Chuyên gia, tôi muốn có thể xóa bài công thức của mình khi không còn phù hợp.
 
 #### 4. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
-- **Preconditions:** Người dùng đã đăng nhập với tài khoản Member ở trạng thái hoạt động (`ACTIVE`) và đã xác minh email. Đối với sửa/xóa bài: người dùng phải là chính chủ tác giả của bài viết (`authenticatedUser.id == recipe.authorId`).
-- **Trigger:** Member nhấn nút "Đăng công thức" trên thanh điều hướng, hoặc nhấn "Chỉnh sửa" / "Xóa" trên trang chi tiết bài viết của mình.
+- **Preconditions:** Người dùng đã đăng nhập với tài khoản Chuyên gia (`Role = EXPERT`) ở trạng thái hoạt động (`ACTIVE`) đã được Administrator phê duyệt qua quy trình FR-05. Đối với sửa/xóa bài: người dùng phải là chính chủ tác giả của bài viết (`authenticatedUser.id == recipe.authorId`).
+- **Trigger:** Chuyên gia nhấn nút "Đăng công thức" trên thanh điều hướng, hoặc nhấn "Chỉnh sửa" / "Xóa" trên trang chi tiết bài viết của mình.
 
 #### 5. Luồng sự kiện (Flow of Events)
 
-##### A. Luồng Tạo và công khai bài công thức trực tiếp (UC-04.1)
+##### A. Luồng Chuyên gia tạo và công khai bài công thức trực tiếp (UC-04.1)
 1. **Main Flow:**
-   - Bước 1: Member nhấn "Đăng công thức". Giao diện hiển thị biểu mẫu tạo bài viết.
-   - Bước 2: Member nhập thông tin bắt buộc (cấu trúc và validation theo FR-16: 1–30 bước tuần tự `RECIPE_STEP` theo FR-22, nguyên liệu định lượng số theo FR-19 có tỷ lệ quy đổi hợp lệ theo BR-73, tải tối đa 5 ảnh lên Azure Blob Storage theo FR-14 với đúng 1 ảnh bìa, và gắn tối đa 1 link YouTube theo FR-15).
-   - Bước 3: Member nhấn "Công khai bài viết".
+   - Bước 1: Chuyên gia nhấn "Đăng công thức". Hệ thống kiểm tra vai trò `Role == EXPERT`; giao diện hiển thị biểu mẫu tạo bài viết.
+   - Bước 2: Chuyên gia nhập thông tin bắt buộc (cấu trúc và validation theo FR-16, BR-19: hướng dẫn chế biến dạng văn bản 10–5.000 ký tự hoặc chia đoạn tùy ý, người đăng không bắt buộc phải viết từng bước nấu ăn; nguyên liệu định lượng số theo FR-19 có tỷ lệ quy đổi hợp lệ theo BR-73, tải tối đa 5 ảnh lên Azure Blob Storage theo FR-14 với đúng 1 ảnh bìa, và gắn tối đa 1 link YouTube theo FR-15).
+   - Bước 3: Chuyên gia nhấn "Công khai bài viết".
    - Bước 4: Hệ thống thực thi kiểm tra tính hợp lệ toàn bộ dữ liệu (validation rules theo BR-19, BR-73, FR-16, FR-25). Toàn bộ dữ liệu đạt chuẩn.
-   - Bước 5: Hệ thống tự động gán mã định danh tác giả từ phiên đăng nhập (BR-17), lưu bài viết ở trạng thái công khai (`PUBLISHED`), và phản hồi thành công.
-   - Bước 6: Bài viết lập tức hiển thị trên trang cá nhân của tác giả, trang chủ và kết quả tìm kiếm.
+   - Bước 5: Hệ thống tự động gán mã định danh tác giả từ phiên đăng nhập (BR-17), gán nhãn Chuyên gia, lưu bài viết ở trạng thái công khai (`PUBLISHED`), và phản hồi thành công.
+   - Bước 6: Bài viết lập tức hiển thị trên trang cá nhân của Chuyên gia, trang chủ và kết quả tìm kiếm cộng đồng.
 
 ##### B. Luồng Chỉnh sửa bài công thức của chính mình (UC-04.2)
 1. **Main Flow:**
-   - Bước 1: Tác giả mở bài công thức do mình sở hữu và nhấn "Chỉnh sửa bài viết".
-   - Bước 2: Giao diện hiển thị biểu mẫu với toàn bộ thông tin hiện tại của bài viết (gồm các bước nấu, ảnh media, nguyên liệu).
+   - Bước 1: Chuyên gia mở bài công thức do mình sở hữu và nhấn "Chỉnh sửa bài viết".
+   - Bước 2: Giao diện hiển thị biểu mẫu với toàn bộ thông tin hiện tại của bài viết (gồm hướng dẫn chế biến, ảnh media, nguyên liệu).
    - Bước 3: Tác giả thay đổi thông tin cần cập nhật và nhấn "Lưu thay đổi".
    - Bước 4: Hệ thống kiểm tra quyền sở hữu của người gọi ở tầng máy chủ (Ownership Check theo BR-64).
-   - Bước 5: Hệ thống kiểm tra tính hợp lệ của dữ liệu mới (bước nấu 1–30, ảnh có cover, nguyên liệu có tỷ lệ quy đổi), cập nhật bài viết trong cơ sở dữ liệu và phản hồi thành công.
+   - Bước 5: Hệ thống kiểm tra tính hợp lệ của dữ liệu mới (hướng dẫn 10–5.000 ký tự, ảnh có cover, nguyên liệu có tỷ lệ quy đổi), cập nhật bài viết trong cơ sở dữ liệu và phản hồi thành công.
 
 ##### C. Luồng Xóa bài công thức của chính mình (UC-04.3)
 1. **Main Flow:**
-   - Bước 1: Tác giả mở bài công thức do mình sở hữu và nhấn "Xóa bài viết".
+   - Bước 1: Chuyên gia mở bài công thức do mình sở hữu và nhấn "Xóa bài viết".
    - Bước 2: Hệ thống hiển thị hộp thoại xác nhận an toàn: "Bạn có chắc chắn muốn xóa bài công thức này? Thao tác này không thể hoàn tác."
-   - Bước 3: Tác giả xác nhận đồng ý xóa.
+   - Bước 3: Chuyên gia xác nhận đồng ý xóa.
    - Bước 4: Hệ thống kiểm tra quyền sở hữu tác giả ở tầng máy chủ.
    - Bước 5: Hệ thống đánh dấu trạng thái bài viết là không khả dụng/đã xóa (tombstone pattern); gỡ bài viết khỏi danh sách công khai, kết quả tìm kiếm và các gợi ý AI; giữ lại bản ghi tham chiếu cho các Lịch ăn hoặc Danh sách đã lưu của người dùng khác ở trạng thái không khả dụng (BR-32, BR-33, BR-64).
 
 ##### D. Luồng An ninh & Xử lý ngoại lệ (Security Flow)
-1. **Main Flow:**
-   - Nếu một người dùng khác (không phải tác giả và không phải Quản trị viên) cố tình gửi yêu cầu sửa hoặc xóa bài viết tới máy chủ:
+1. **Chặn tài khoản không có vai trò Chuyên gia tạo bài viết:**
+   - Nếu tài khoản có vai trò `CUSTOMER` hoặc `ADMIN` cố tình truy cập URL đăng bài hoặc gửi request `POST /api/v1/recipes` tới máy chủ:
+   - Bộ lọc phân quyền (Spring Security) phát hiện người gọi không sở hữu vai trò `ROLE_EXPERT`.
+   - Máy chủ lập tức từ chối yêu cầu và phản hồi mã lỗi `HTTP 403 Forbidden` kèm thông điệp: "Chức năng đăng bài chỉ dành riêng cho Chuyên gia ẩm thực đã được xác minh".
+2. **Chặn sửa/xóa bài viết của người khác:**
+   - Nếu một Chuyên gia khác cố tình gửi yêu cầu sửa hoặc xóa bài viết không thuộc quyền sở hữu của mình:
    - Máy chủ so khớp định danh người gọi với định danh tác giả của bài viết.
-   - Phát hiện không trùng khớp -> Máy chủ lập tức từ chối yêu cầu và phản hồi mã lỗi HTTP 403 Forbidden.
-2. **Validation Error Flow:**
-   - Nếu bài viết thiếu bước nấu, hoặc upload ảnh mà không chọn ảnh bìa, hoặc nguyên liệu chưa có tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION`, hệ thống từ chối lưu bài viết, trả về thông báo lỗi cụ thể và giữ nguyên biểu mẫu cho tác giả chỉnh sửa (BR-19, BR-73).
+   - Phát hiện không trùng khớp -> Máy chủ từ chối yêu cầu và phản hồi mã lỗi `HTTP 403 Forbidden` (BR-64).
+3. **Validation Error Flow:**
+   - Nếu bài viết thiếu hướng dẫn chế biến hoặc không đạt 10–5.000 ký tự, hoặc upload ảnh mà không chọn ảnh bìa, hoặc nguyên liệu chưa có tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION`, hệ thống từ chối lưu bài viết, trả về thông báo lỗi cụ thể và giữ nguyên biểu mẫu cho tác giả chỉnh sửa (BR-19, BR-73).
 
 #### 6. Hậu điều kiện (Postconditions)
-- Bài viết mới được công khai trực tiếp ngay trên hệ thống (`PUBLISHED`).
+- Bài viết mới của Chuyên gia được công khai trực tiếp ngay trên hệ thống (`PUBLISHED`).
 - Khi sửa bài: Thông tin mới được cập nhật đồng bộ trên toàn hệ thống.
 - Khi xóa bài: Bài viết không còn khả dụng công khai; các mục tham chiếu trong Saved Recipes và Meal Planner chuyển sang trạng thái đã xóa.
 
 #### 7. Quy tắc phân quyền và bảo mật (Permissions & Security)
-- Guest không có quyền tạo, sửa hoặc xóa bài công thức (BR-05).
-- Tác giả chỉ có quyền chỉnh sửa hoặc xóa các bài viết do chính mình làm tác giả (BR-64, NFR-09).
-- Không áp dụng cơ chế phê duyệt trước (pre-moderation) từ Quản trị viên; toàn bộ việc kiểm soát nội dung thực hiện theo cơ chế hậu kiểm (post-moderation) dựa trên báo cáo vi phạm cộng đồng (FR-06, BR-07).
+- Guest và Customer tuyệt đối không có quyền tạo, chỉnh sửa hoặc xóa bài công thức (BR-05, BR-07).
+- Chỉ tài khoản có vai trò `Role = EXPERT` (hoặc `Role = ADMIN`) mới có quyền tạo bài viết mới.
+- Chuyên gia tác giả chỉ có quyền chỉnh sửa hoặc xóa các bài viết do chính mình làm tác giả (BR-64, NFR-09).
+- Không áp dụng cơ chế phê duyệt trước (pre-moderation) từng bài viết của Chuyên gia; chất lượng bài được bảo đảm thông qua quy trình tiền kiểm cấp quyền Chuyên gia (FR-05) và cơ chế hậu kiểm dựa trên báo cáo vi phạm cộng đồng (FR-06).
 
 #### 8. Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
 - **Quy tắc nghiệp vụ liên quan:**
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
-  - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
+  - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post dành riêng cho Chuyên gia.
   - [BR-14](BUSINESS-RULES.md#br-14): Định lượng nguyên liệu số học theo đơn vị chuẩn.
-  - [BR-17](BUSINESS-RULES.md#br-17): Gắn quyền tác giả với tài khoản đăng bài.
+  - [BR-17](BUSINESS-RULES.md#br-17): Gắn quyền tác giả với tài khoản Chuyên gia đăng bài.
   - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post.
   - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của mô tả và ảnh đại diện (0..5 ảnh, đúng 1 cover).
   - [BR-32](BUSINESS-RULES.md#br-32): Yêu cầu đăng nhập và xử lý bài đã lưu.
@@ -549,30 +555,30 @@ Trao quyền tự chủ sáng tạo nội dung cho thành viên cộng đồng; 
   - [BR-73](BUSINESS-RULES.md#br-73): Chuẩn hóa đơn vị đo lường và chặn công khai khi thiếu quy đổi.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu và truyền tải an toàn.
-  - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC, chặn truy cập trái quyền.
+  - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC chặt chẽ ở tầng Backend.
   - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Validation dữ liệu chặt chẽ ở tầng Backend.
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt.
 
 #### 9. Tiêu chí nghiệm thu chi tiết (Acceptance Criteria)
 
-- **AC-04.1 — Member công khai trực tiếp Recipe Post thành công khi dữ liệu hợp lệ:**
-  - **Given:** Member đã đăng nhập với tài khoản hoạt động và hoàn thành biểu mẫu tạo công thức với đầy đủ thông tin hợp lệ: 1–30 bước `RECIPE_STEP`, 1–50 nguyên liệu có định lượng số học và tỷ lệ quy đổi gam, 0–5 ảnh `RECIPE_MEDIA` (với đúng 1 ảnh bìa nếu upload ảnh).
-  - **When:** Member nhấn "Công khai bài viết".
-  - **Then:** Hệ thống lưu bài viết ở trạng thái `PUBLISHED` ngay lập tức mà không qua xét duyệt trước, gắn đúng định danh tác giả, và hiển thị bài viết trên trang công khai (BR-07, BR-17, BR-19).
+- **AC-04.1 — Chuyên gia công khai trực tiếp Recipe Post thành công khi dữ liệu hợp lệ:**
+  - **Given:** Chuyên gia đã đăng nhập với tài khoản có `Role = EXPERT` đang hoạt động và hoàn thành biểu mẫu tạo công thức với đầy đủ thông tin hợp lệ: hướng dẫn chế biến 10–5.000 ký tự (không bắt buộc viết từng bước), 1–50 nguyên liệu có định lượng số học và tỷ lệ quy đổi gam, 0–5 ảnh `RECIPE_MEDIA` (với đúng 1 ảnh bìa nếu upload ảnh).
+  - **When:** Chuyên gia nhấn "Công khai bài viết".
+  - **Then:** Hệ thống lưu bài viết ở trạng thái `PUBLISHED` ngay lập tức mà không qua xét duyệt trước từng bài, gắn đúng định danh tác giả Chuyên gia, và hiển thị bài viết trên trang công khai (BR-07, BR-17, BR-19).
 
-- **AC-04.2 — Tác giả chỉnh sửa thành công bài viết của chính mình:**
-  - **Given:** Member là tác giả của bài công thức đang công khai.
+- **AC-04.2 — Tác giả Chuyên gia chỉnh sửa thành công bài viết của chính mình:**
+  - **Given:** Chuyên gia là tác giả của bài công thức đang công khai.
   - **When:** Tác giả thay đổi thông tin mô tả và nhấn "Lưu thay đổi".
-  - **Then:** Hệ thống xác thực quyền tác giả, cập nhật nội dung mới vào cơ sở dữ liệu và phản ánh ngay lập tức trên bài viết.
+  - **Then:** Hệ thống xác thực quyền tác giả Chuyên gia, cập nhật nội dung mới vào cơ sở dữ liệu và phản ánh ngay lập tức trên bài viết.
 
-- **AC-04.3 — Tác giả xóa thành công bài viết của chính mình kèm xác nhận an toàn:**
-  - **Given:** Member đang ở trang bài viết do chính mình làm tác giả.
+- **AC-04.3 — Tác giả Chuyên gia xóa thành công bài viết của chính mình kèm xác nhận an toàn:**
+  - **Given:** Chuyên gia đang ở trang bài viết do chính mình làm tác giả.
   - **When:** Tác giả nhấn "Xóa bài viết" và nhấn xác nhận trên hộp thoại cảnh báo.
   - **Then:** Hệ thống gỡ bài viết khỏi danh sách công khai và tìm kiếm, đánh dấu trạng thái bài viết không khả dụng.
 
 - **AC-04.4 — Chặn người dùng khác sửa hoặc xóa bài viết không thuộc quyền sở hữu:**
-  - **Given:** Bài công thức thuộc tác giả A.
-  - **When:** Người dùng B (Member khác, không phải Admin) gửi yêu cầu sửa hoặc xóa bài viết đó.
+  - **Given:** Bài công thức thuộc tác giả Chuyên gia A.
+  - **When:** Người dùng B (Chuyên gia khác hoặc Customer, không phải Admin) gửi yêu cầu sửa hoặc xóa bài viết đó.
   - **Then:** Máy chủ kiểm tra quyền sở hữu, từ chối thao tác và trả về mã lỗi HTTP 403 Forbidden (BR-64).
 
 - **AC-04.5 — Chặn Guest tạo bài công thức:**
@@ -580,15 +586,169 @@ Trao quyền tự chủ sáng tạo nội dung cho thành viên cộng đồng; 
   - **When:** Guest cố tình mở trang tạo bài viết hoặc gửi yêu cầu tạo bài công thức.
   - **Then:** Hệ thống chuyển hướng người dùng tới trang Đăng nhập và không cho phép tạo bài (BR-05).
 
+- **AC-04.6 — Chặn Customer thông thường tạo bài công thức:**
+  - **Given:** Người dùng thông thường đã đăng nhập với vai trò `CUSTOMER`.
+  - **When:** Customer gửi yêu cầu tạo bài viết (`POST /api/v1/recipes`) hoặc cố tình truy cập đường dẫn tạo bài.
+  - **Then:** Giao diện ẩn nút đăng bài và hiển thị lời mời đăng ký Chuyên gia; Backend từ chối request với mã lỗi HTTP 403 Forbidden và thông báo yêu cầu quyền Chuyên gia.
+
+- **AC-04.7 — Chặn Administrator tạo hoặc sửa nội dung bài công thức:**
+  - **Given:** Administrator đã đăng nhập và không có vai trò `EXPERT`.
+  - **When:** Administrator gửi yêu cầu tạo hoặc sửa nội dung Recipe Post.
+  - **Then:** Backend từ chối với HTTP 403 Forbidden; quyền hậu kiểm theo FR-06 vẫn được áp dụng qua thao tác quản trị riêng.
+
 ---
 
 <a id="fr-05"></a>
-### FR-05 — Cơ chế xin quyền đăng và Administrator duyệt trước bài công thức
+### FR-05 — Cơ chế nộp đơn đăng ký Chuyên gia theo format và Administrator phê duyệt cấp quyền
 
 - **Mã yêu cầu:** FR-05
-- **Module:** M02, M03, M09
-- **Trạng thái (Derived):** RETIRED
-- **Mô tả:** Cơ chế Member gửi đơn xin quyền đăng và Administrator duyệt/từ chối đơn trước khi đăng Recipe Post.
+- **Module:** M02 (Identity & Access), M03 (Community Recipes & Social), M09 (Administration & Moderation)
+- **Trạng thái (Derived):** ACTIVE
+- **Tóm tắt yêu cầu:** Hệ thống cho phép người dùng thông thường (`Customer`) có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản có cấu trúc (`EXPERT_APPLICATION`); đây là quy trình xét duyệt **tư cách Chuyên gia và quyền đăng bài**, không phải xác minh danh tính/KYC. Hệ thống không yêu cầu hoặc quản lý giấy tờ tùy thân, tệp chứng chỉ hay văn bằng vật lý. Administrator xem xét đơn trong trung tâm quản trị, ghi nhận xét thẩm định và quyết định phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; khi được phê duyệt, tài khoản được thăng cấp tức thời lên vai trò `EXPERT` để có quyền tạo và công khai bài viết; nếu bị từ chối, người dùng có thể nộp lại đơn mới sau khi bổ sung thông tin.
+
+#### 1. Mục đích
+Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặt chẽ nhưng gọn nhẹ, không tạo rào cản thủ tục hành chính phức tạp về bằng cấp vật lý; bảo đảm chỉ những người dùng có kinh nghiệm, kiến thức và cam kết ẩm thực chay chân chính mới được cấp quyền đăng bài; đồng thời tạo ra công cụ quản trị quy trình xét duyệt hoàn chỉnh cho Administrator.
+
+#### 2. Tác nhân (Actors)
+- **Primary Actor:**
+  - `Customer`: Người dùng thông thường đã đăng nhập nộp đơn đăng ký Chuyên gia theo format quy định.
+  - `Administrator`: Quản trị viên tiếp nhận, thẩm định nội dung format và ra quyết định phê duyệt hoặc từ chối đơn.
+- **Secondary Actor / External System:**
+  - `Hệ thống thông báo (Notification Service)`: Gửi thông báo in-app cho người dùng khi đơn được xử lý.
+
+#### 3. Danh mục Use Cases & User Stories
+- **Các Use Case con:**
+  - `UC-05.1`: Nộp đơn đăng ký Chuyên gia theo format văn bản (Submit expert application form).
+  - `UC-05.2`: Thẩm định danh sách đơn đăng ký Chuyên gia (Review pending expert applications).
+  - `UC-05.3`: Phê duyệt đơn và cấp quyền Chuyên gia (Approve application and grant Expert role).
+  - `UC-05.4`: Từ chối đơn đăng ký kèm lý do giải thích (Reject application with admin reason).
+  - `UC-05.5`: Customer xem lịch sử và trạng thái các đơn đăng ký của chính mình.
+- **User Stories:**
+  - `US-05.1`: Là một người nấu chay có kinh nghiệm, tôi muốn điền bản giới thiệu theo format chuẩn về kinh nghiệm ẩm thực của mình để xin cấp quyền Chuyên gia mà không cần phải chụp/nộp bằng cấp rườm rà.
+  - `US-05.2`: Là một Administrator, tôi muốn xem danh sách các đơn đăng ký Chuyên gia đang chờ duyệt với đầy đủ thông tin tóm tắt để thẩm định nhanh chóng và công bằng.
+  - `US-05.3`: Là một Administrator, khi tôi phê duyệt một đơn hợp lệ, tôi muốn hệ thống tự động chuyển vai trò tài khoản đó sang Chuyên gia và gửi thông báo chúc mừng tới họ.
+  - `US-05.4`: Là một Customer bị từ chối đơn, tôi muốn đọc được lý do cụ thể từ Admin để có thể hoàn thiện thông tin và nộp lại đơn mới.
+
+#### 4. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
+- **Preconditions:** Người dùng đã đăng nhập với vai trò `CUSTOMER` ở trạng thái hoạt động (`ACTIVE`) và đã xác minh email. Đối với Administrator: tài khoản phải có vai trò `ADMIN`.
+- **Trigger:** Customer nhấn nút "Đăng ký làm Chuyên gia" trong trang cá nhân / thông tin tài khoản; hoặc Administrator truy cập mục "Quản lý đơn Chuyên gia" trong trang Quản trị.
+
+#### 5. Luồng sự kiện (Flow of Events)
+
+##### A. Luồng Nộp đơn đăng ký Chuyên gia (UC-05.1)
+1. **Main Flow:**
+   - Bước 1: Customer nhấn nút "Đăng ký làm Chuyên gia". Giao diện hiển thị biểu mẫu nộp đơn theo format văn bản có cấu trúc.
+   - Bước 2: Customer nhập các trường thông tin bắt buộc theo format:
+     - *Kinh nghiệm ẩm thực chay* (`bio_experience`): Văn bản từ 20 đến 2.000 ký tự mô tả số năm ăn chay, kinh nghiệm làm bếp hoặc triết lý nấu ăn.
+     - *Trường phái chay chuyên sâu* (`vegetarian_type`): Chọn 1 trong các trường phái (Thuần chay / Vegan, Chay có sữa / Lacto, Chay có trứng / Ovo, Chay trứng sữa / Lacto-Ovo, Chay thực dưỡng dưỡng sinh).
+     - *Tóm tắt công thức sở trường mẫu* (`sample_recipe_summary`): Văn bản từ 30 đến 2.000 ký tự tóm tắt 1 món chay tâm huyết (tên món, nguyên liệu chính, nét đặc sắc).
+     - *Kênh ẩm thực / liên kết tham khảo* (`portfolio_url`): Tùy chọn đúng một URL HTTP/HTTPS hợp lệ, tối đa 500 ký tự (link Facebook, kênh YouTube/TikTok hoặc Blog cá nhân nếu có).
+   - Bước 3: Customer tích chọn ô cam kết chia sẻ thông tin an toàn, đúng chuẩn và nhấn "Gửi đơn đăng ký".
+   - Bước 4: Hệ thống kiểm tra hợp lệ dữ liệu và kiểm tra quy tắc chống nộp đơn trùng (tài khoản không được có đơn khác đang ở trạng thái `PENDING`).
+   - Bước 5: Hệ thống lưu bản ghi mới vào thực thể `EXPERT_APPLICATION` ở trạng thái chờ duyệt (`PENDING`), ghi nhận thời điểm tạo và phản hồi thông báo nộp đơn thành công.
+   - Bước 6: Giao diện chuyển sang trạng thái hiển thị "Đơn đăng ký của bạn đang được Administrator xem xét".
+
+##### B. Luồng Administrator thẩm định và phê duyệt đơn (UC-05.2 & UC-05.3)
+1. **Main Flow:**
+   - Bước 1: Administrator mở mục "Quản lý đơn Chuyên gia" trên trang Quản trị.
+   - Bước 2: Hệ thống hiển thị danh sách các đơn đang ở trạng thái `PENDING` kèm thông tin tài khoản nộp, ngày gửi và tóm tắt nội dung.
+   - Bước 3: Administrator chọn một đơn để xem chi tiết toàn bộ nội dung format do người dùng khai báo.
+   - Bước 4: Administrator đánh giá thủ công tính đầy đủ, liên quan, nhất quán và phù hợp chính sách của nội dung tự khai; hệ thống không tạo điểm Chuyên gia tự động và không khẳng định đã xác minh danh tính hoặc tính xác thực ngoài hệ thống. Nếu đạt, Administrator nhấn "Phê duyệt" (Approve).
+   - Bước 5: Administrator có thể nhập lời nhắn/chúc mừng tùy chọn vào `admin_note`.
+   - Bước 6: Hệ thống kiểm tra lại tài khoản vẫn `ACTIVE`, vai trò vẫn là `CUSTOMER` và đơn vẫn `PENDING`; sau đó cập nhật trạng thái bản ghi `EXPERT_APPLICATION` thành `APPROVED`, ghi nhận `reviewed_by` và `reviewed_at`.
+   - Bước 7: Hệ thống lập tức cập nhật vai trò của tài khoản người dùng tương ứng trong thực thể `USER` thành `EXPERT`.
+   - Bước 8: Hệ thống gửi thông báo in-app chúc mừng tới người dùng: "Chúc mừng bạn! Đơn đăng ký Chuyên gia của bạn đã được phê duyệt. Bạn hiện đã có quyền tạo và chia sẻ công thức trên Mâm Xanh."
+
+##### C. Luồng Administrator từ chối đơn đăng ký (UC-05.4)
+1. **Alternative Flow:**
+   - Bước 1: Administrator xem chi tiết đơn và nhận thấy thông tin không đạt yêu cầu (nội dung qua loa, không có kinh nghiệm thực tế, hoặc vi phạm chính sách).
+   - Bước 2: Administrator nhấn "Từ chối" (Reject).
+   - Bước 3: Hệ thống hiển thị hộp thoại bắt buộc Administrator phải nhập lý do từ chối cụ thể vào ô `admin_note` (từ 10 đến 500 ký tự, không được để trống).
+   - Bước 4: Administrator nhập lý do và xác nhận từ chối.
+   - Bước 5: Hệ thống cập nhật trạng thái bản ghi `EXPERT_APPLICATION` thành `REJECTED`, lưu lý do từ chối, ghi nhận `reviewed_by` và `reviewed_at`. Tài khoản người dùng vẫn giữ nguyên vai trò `CUSTOMER`.
+   - Bước 6: Hệ thống gửi thông báo in-app tới người dùng giải thích rõ lý do đơn bị từ chối và hướng dẫn hoàn thiện để có thể nộp lại.
+
+##### D. Luồng Ngoại lệ & An ninh (Exception & Security Flow)
+1. **Chặn nộp đơn trùng lặp khi đang có đơn chờ duyệt:**
+   - Nếu Customer đang có một bản ghi đơn ở trạng thái `PENDING` mà tiếp tục gửi request nộp đơn mới:
+   - Hệ thống từ chối tiếp nhận, trả về mã lỗi `HTTP 409 Conflict` kèm thông báo: "Bạn đã có một đơn đăng ký đang chờ xét duyệt. Vui lòng chờ phản hồi từ Quản trị viên."
+2. **Cho phép nộp lại sau khi bị từ chối:**
+   - Nếu đơn trước đó của Customer đã có kết quả `REJECTED`, hệ thống cho phép người dùng bấm "Nộp lại đơn đăng ký" để tạo một bản ghi `EXPERT_APPLICATION` mới với thông tin đã được chỉnh sửa bổ sung.
+3. **Chặn người dùng đã là Chuyên gia nộp đơn:**
+   - Nếu tài khoản đã có vai trò `Role = EXPERT` hoặc `Role = ADMIN`, hệ thống ẩn nút đăng ký và chặn request nộp đơn với mã lỗi `HTTP 400 Bad Request`.
+4. **Không cho rút đơn đang chờ trong MVP:**
+   - Customer được xem đơn `PENDING` nhưng không có thao tác rút/hủy đơn. Nếu cần dừng xử lý, Customer liên hệ Administrator theo kênh hỗ trợ ngoài phạm vi chức năng này.
+5. **Chống xử lý đồng thời hoặc xử lý lại:**
+   - Chỉ đơn còn `PENDING` mới được phê duyệt/từ chối. Nếu một Administrator khác đã xử lý đơn hoặc tài khoản không còn `ACTIVE`/`CUSTOMER`, hệ thống từ chối quyết định mới với `HTTP 409 Conflict`, không ghi đè kết quả trước đó và yêu cầu tải lại dữ liệu.
+6. **Xem lịch sử đơn của chính mình:**
+   - Customer xem danh sách các đơn đã gửi theo thứ tự mới nhất trước, gồm ngày gửi, trạng thái, thời điểm xử lý và `admin_note` khi có; không xem được đơn của tài khoản khác.
+
+#### 6. Hậu điều kiện (Postconditions)
+- Bản ghi `EXPERT_APPLICATION` được tạo với trạng thái `PENDING` hoặc cập nhật trạng thái `APPROVED` / `REJECTED`.
+- Khi được phê duyệt: Vai trò của tài khoản trong cơ sở dữ liệu chuyển thành `EXPERT`, mở khóa toàn bộ quyền đăng bài tại FR-04.
+- Khi bị từ chối: Lý do từ chối được lưu trữ và hiển thị cho người dùng; vai trò tài khoản vẫn là `CUSTOMER`.
+- Lịch sử các lần nộp được bảo toàn; đơn mới sau khi bị từ chối không ghi đè bản ghi cũ.
+- Sau khi phê duyệt, hệ thống làm mới trạng thái phân quyền để người dùng nhận quyền `EXPERT` trong phiên hợp lệ tiếp theo mà không phải nộp lại đơn.
+
+#### 7. Quy tắc phân quyền và bảo mật (Permissions & Security)
+- Guest không được nộp đơn; hệ thống yêu cầu đăng nhập trước khi tiếp cận biểu mẫu (BR-05).
+- Customer chỉ được xem trạng thái và nội dung đơn đăng ký của chính mình (NFR-09).
+- Chỉ Administrator có quyền xem toàn bộ danh sách đơn và thực hiện phê duyệt/từ chối (NFR-09).
+- Tuyệt đối không yêu cầu người dùng tải lên tệp tin ảnh chụp văn bằng, chứng chỉ hoặc giấy tờ tùy thân nhạy cảm; việc thẩm định hoàn toàn dựa trên thông tin format văn bản có cấu trúc do người dùng tự khai báo.
+- Quy trình không được mô tả là xác minh danh tính/KYC hoặc xác thực bằng cấp của Customer.
+
+#### 8. Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
+- **Quy tắc nghiệp vụ liên quan:**
+  - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
+  - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post dành riêng cho Chuyên gia.
+  - [BR-74](BUSINESS-RULES.md#br-74): Quy trình xét duyệt đơn đăng ký Chuyên gia và chuyển đổi vai trò.
+- **Yêu cầu phi chức năng liên quan:**
+  - [NFR-01](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-01): Thời gian phản hồi gửi đơn và xử lý duyệt $\le 2$ giây (P95).
+  - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC và bảo vệ endpoint quản trị.
+  - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Validation dữ liệu văn bản đầu vào chặt chẽ ở tầng Backend.
+  - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt.
+
+#### 9. Tiêu chí nghiệm thu chi tiết (Acceptance Criteria)
+
+- **AC-05.1 — Customer nộp đơn đăng ký Chuyên gia hợp lệ thành công:**
+  - **Given:** Customer đã đăng nhập, tài khoản `ACTIVE`, chưa phải là Chuyên gia và không có đơn nào đang ở trạng thái `PENDING`.
+  - **When:** Customer nhập đầy đủ thông tin format hợp lệ (kinh nghiệm $\ge 20$ ký tự, chọn trường phái chay, tóm tắt công thức mẫu $\ge 30$ ký tự) và nhấn "Gửi đơn đăng ký".
+  - **Then:** Hệ thống tạo bản ghi `EXPERT_APPLICATION` mới ở trạng thái `PENDING`, liên kết với tài khoản người dùng, hiển thị thông báo gửi thành công và chuyển giao diện sang trạng thái chờ duyệt.
+
+- **AC-05.2 — Chặn nộp đơn trùng lặp khi đang có đơn chờ duyệt:**
+  - **Given:** Customer đang có một đơn đăng ký ở trạng thái `PENDING`.
+  - **When:** Customer gửi yêu cầu tạo thêm đơn đăng ký mới.
+  - **Then:** Hệ thống từ chối tiếp nhận, không tạo thêm bản ghi, trả về mã lỗi HTTP 409 Conflict và thông báo người dùng đang có đơn chờ xử lý.
+
+- **AC-05.3 — Administrator phê duyệt đơn và hệ thống tự động thăng cấp Chuyên gia:**
+  - **Given:** Administrator đang xem chi tiết một đơn đăng ký ở trạng thái `PENDING`.
+  - **When:** Administrator nhấn "Phê duyệt" và xác nhận.
+  - **Then:** Hệ thống cập nhật trạng thái đơn thành `APPROVED`, ghi nhận thời gian và người duyệt, lập tức chuyển đổi vai trò tài khoản tương ứng thành `EXPERT`, và gửi thông báo in-app chúc mừng tới người dùng. Người dùng ngay sau đó có thể truy cập chức năng tạo bài viết (FR-04).
+
+- **AC-05.4 — Administrator từ chối đơn bắt buộc nhập lý do:**
+  - **Given:** Administrator đang xem chi tiết một đơn đăng ký ở trạng thái `PENDING`.
+  - **When:** Administrator nhấn "Từ chối" nhưng bỏ trống ô lý do từ chối.
+  - **Then:** Hệ thống chặn thao tác, yêu cầu nhập lý do từ chối cụ thể (tối thiểu 10 ký tự); khi Administrator nhập lý do hợp lệ và xác nhận, hệ thống cập nhật đơn thành `REJECTED` và gửi thông báo in-app kèm lý do tới người dùng.
+
+- **AC-05.5 — Customer nộp lại đơn đăng ký mới sau khi bị từ chối:**
+  - **Given:** Customer có đơn đăng ký trước đó ở trạng thái `REJECTED`.
+  - **When:** Customer mở lại biểu mẫu đăng ký, điều chỉnh nội dung format theo góp ý và nhấn "Gửi đơn đăng ký".
+  - **Then:** Hệ thống tiếp nhận thành công, tạo bản ghi `EXPERT_APPLICATION` mới ở trạng thái `PENDING`, lưu trữ độc lập với bản ghi đã bị từ chối trước đó.
+
+- **AC-05.6 — Customer xem lịch sử đơn của chính mình:**
+  - **Given:** Customer đã từng gửi ít nhất một đơn đăng ký Chuyên gia.
+  - **When:** Customer mở mục lịch sử đăng ký Chuyên gia.
+  - **Then:** Hệ thống hiển thị các đơn của đúng tài khoản theo thứ tự mới nhất trước, gồm ngày gửi, trạng thái và kết quả xử lý; không hiển thị đơn của người dùng khác.
+
+- **AC-05.7 — Chặn xử lý đồng thời hoặc xử lý lại đơn:**
+  - **Given:** Hai Administrator cùng mở một đơn `PENDING` và người thứ nhất đã xử lý thành công.
+  - **When:** Administrator thứ hai gửi quyết định cho cùng đơn từ dữ liệu cũ.
+  - **Then:** Hệ thống trả `HTTP 409 Conflict`, giữ nguyên quyết định đầu tiên và không cập nhật role hoặc gửi thông báo lần hai.
+
+- **AC-05.8 — Chặn duyệt khi tài khoản không còn đủ điều kiện:**
+  - **Given:** Đơn còn `PENDING` nhưng tài khoản nộp đã không còn `ACTIVE` hoặc không còn vai trò `CUSTOMER`.
+  - **When:** Administrator cố phê duyệt đơn.
+  - **Then:** Hệ thống từ chối xử lý, không cấp role `EXPERT` và yêu cầu Administrator tải lại trạng thái hiện hành.
 
 ---
 
@@ -684,11 +844,12 @@ Cung cấp trung tâm điều hành hậu kiểm nội dung toàn diện cho Qu�
 
 - **Mã yêu cầu:** FR-07
 - **Module:** M04 (Recipe Catalog & Search)
-- **Trạng thái (Derived):** ACTIVE
-- **Tóm tắt yêu cầu:** Hệ thống cho phép Administrator tạo mới, cập nhật nội dung và phân loại các bài công thức chay chính thức của hệ thống (System Recipes) vào các danh mục và loại ăn chay chuẩn; đảm bảo kho nội dung nòng cốt đạt chuẩn chất lượng cho nền tảng.
+- **Trạng thái (Derived):** RETIRED
+- **Ghi chú lịch sử:** Quyền Administrator tạo, cập nhật hoặc công khai System Recipe đã bị bãi bỏ theo quyết định nghiệp vụ hiện hành. Các Use Case, User Story, luồng và Acceptance Criteria bên dưới được giữ để truy vết lịch sử; chúng không còn là scope triển khai hay nghiệm thu. Recipe Post mới chỉ do Chuyên gia tạo/công khai theo FR-04 và BR-07; Administrator tiếp tục hậu kiểm theo FR-06 và quản lý danh mục nguyên liệu/đơn vị theo FR-18.
+- **Tóm tắt yêu cầu:** Hệ thống cho phép Administrator tạo mới, cập nhật nội dung và phân loại các bài công thức chay chính thức của hệ thống (System Recipes) vào các thể loại món chuẩn hóa (`dish_category`) và loại ăn chay chuẩn; đảm bảo kho nội dung nòng cốt đạt chuẩn chất lượng cho nền tảng.
 
 #### 1. Mục đích
-Xây dựng và duy trì kho công thức ẩm thực chay chuẩn mực, đa dạng, đáng tin cậy phục vụ người dùng mới và làm dữ liệu tham chiếu nền tảng cho các tính năng gợi ý thực đơn của AI; đồng thời hỗ trợ quản trị viên tổ chức cấu trúc phân loại danh mục khoa học.
+Xây dựng và duy trì kho công thức ẩm thực chay chuẩn mực, đa dạng, đáng tin cậy phục vụ người dùng mới và làm dữ liệu tham chiếu nền tảng cho các tính năng gợi ý thực đơn của AI; đồng thời hỗ trợ quản trị viên tổ chức cấu trúc phân loại thể loại món khoa học.
 
 #### 2. Tác nhân (Actors)
 - **Primary Actor:**
@@ -700,10 +861,10 @@ Xây dựng và duy trì kho công thức ẩm thực chay chuẩn mực, đa d�
 - **Các Use Case con:**
   - `UC-07.1`: Tạo bài công thức chuẩn của hệ thống (Create official system recipe).
   - `UC-07.2`: Cập nhật bài công thức chuẩn (Update official recipe).
-  - `UC-07.3`: Phân loại bài công thức vào danh mục và loại ăn chay (Categorize official recipe).
+  - `UC-07.3`: Phân loại bài công thức vào thể loại món và loại ăn chay (Categorize official recipe).
 - **User Stories:**
   - `US-07.1`: Là một Administrator, tôi muốn tạo các bài công thức chuẩn mực với định lượng nguyên liệu chính xác để làm giàu kho nội dung chất lượng cao của nền tảng.
-  - `US-07.2`: Là một Administrator, tôi muốn cập nhật nội dung hoặc điều chỉnh phân loại danh mục của công thức khi cần thiết để người dùng dễ dàng tìm kiếm.
+  - `US-07.2`: Là một Administrator, tôi muốn cập nhật nội dung hoặc điều chỉnh phân loại thể loại món của công thức khi cần thiết để người dùng dễ dàng tìm kiếm.
 
 #### 4. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
 - **Preconditions:** Người dùng đã đăng nhập với vai trò Administrator (`Role = ADMIN`).
@@ -714,18 +875,18 @@ Xây dựng và duy trì kho công thức ẩm thực chay chuẩn mực, đa d�
 ##### A. Luồng Tạo bài công thức chuẩn (UC-07.1, UC-07.3)
 1. **Main Flow:**
    - Bước 1: Administrator vào mục "Quản lý công thức hệ thống" và nhấn "Tạo công thức mới".
-   - Bước 2: Administrator nhập thông tin: Tiêu đề, mô tả ngắn, số khẩu phần, thời gian chuẩn bị và nấu, độ khó; chọn đúng 1 trong 4 loại ăn chay chuẩn (Vegan, Lacto, Ovo, Lacto-Ovo); chọn danh mục món ăn (Món kho, Món xào, Món canh, v.v.).
+   - Bước 2: Administrator nhập thông tin: Tiêu đề, mô tả ngắn, số khẩu phần, thời gian chuẩn bị và nấu, độ khó; chọn đúng 1 trong 4 loại ăn chay chuẩn (Vegan, Lacto, Ovo, Lacto-Ovo); chọn thể loại món ăn chuẩn hóa (`dish_category`: món nước, món xào, món lẩu, món kho, món canh, món chiên, món hấp, món gỏi / salad, món cuốn, món nướng, món tráng miệng / chè).
    - Bước 3: Administrator thêm danh sách nguyên liệu kèm định lượng và đơn vị đo chuẩn; nhập nội dung hướng dẫn chế biến và tải ảnh minh họa.
    - Bước 4: Administrator nhấn "Công khai bài viết".
    - Bước 5: Hệ thống kiểm tra tính hợp lệ của toàn bộ thông tin bắt buộc, lưu bài viết vào cơ sở dữ liệu với nhãn công thức hệ thống, và phản hồi thành công.
 2. **Error Flows:**
-   - *Thiếu thông tin bắt buộc:* Nếu vi phạm bộ quy tắc Recipe Validation Profile chuẩn theo FR-16 (ví dụ: thiếu tiêu đề, thiếu nguyên liệu, thiếu nội dung hướng dẫn chuẩn bị/chế biến, chưa chọn loại ăn chay), hệ thống từ chối lưu và hiển thị thông báo lỗi chi tiết cho từng trường.
+   - *Thiếu thông tin bắt buộc:* Nếu vi phạm bộ quy tắc Recipe Validation Profile chuẩn theo FR-16 (ví dụ: thiếu tiêu đề, thiếu nguyên liệu, thiếu nội dung hướng dẫn chuẩn bị/chế biến, chưa chọn loại ăn chay hoặc thể loại món), hệ thống từ chối lưu và hiển thị thông báo lỗi chi tiết cho từng trường.
 
 ##### B. Luồng Cập nhật bài công thức chuẩn (UC-07.2)
 1. **Main Flow:**
    - Bước 1: Administrator chọn một bài công thức hệ thống cần cập nhật và nhấn "Chỉnh sửa".
    - Bước 2: Hệ thống tải thông tin hiện tại của bài viết lên biểu mẫu chỉnh sửa.
-   - Bước 3: Administrator thay đổi nội dung, điều chỉnh nguyên liệu, đổi danh mục hoặc loại ăn chay, và nhấn "Lưu thay đổi".
+   - Bước 3: Administrator thay đổi nội dung, điều chỉnh nguyên liệu, đổi thể loại món hoặc loại ăn chay, và nhấn "Lưu thay đổi".
    - Bước 4: Hệ thống xác thực dữ liệu, cập nhật bản ghi trong cơ sở dữ liệu và phản hồi thành công.
 
 ##### C. Luồng An ninh & Kiểm soát phân quyền (Security Flow)
@@ -735,7 +896,7 @@ Xây dựng và duy trì kho công thức ẩm thực chay chuẩn mực, đa d�
 
 #### 6. Hậu điều kiện (Postconditions)
 - Bài công thức chuẩn được lưu trữ thành công và hiển thị công khai cho toàn bộ người dùng.
-- Thông tin phân loại danh mục và loại ăn chay của bài viết được cập nhật đồng bộ trong bộ lọc tìm kiếm.
+- Thông tin phân loại thể loại món và loại ăn chay của bài viết được cập nhật đồng bộ trong bộ lọc tìm kiếm.
 
 #### 7. Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Chỉ tài khoản có vai trò Administrator mới có quyền truy cập các chức năng tạo và sửa bài công thức hệ thống (NFR-09).
@@ -744,7 +905,7 @@ Xây dựng và duy trì kho công thức ẩm thực chay chuẩn mực, đa d�
 
 #### 8. Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
 - **Quy tắc nghiệp vụ liên quan:**
-  - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
+  - [BR-07](BUSINESS-RULES.md#br-07): Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia (Role = EXPERT).
   - [BR-17](BUSINESS-RULES.md#br-17): Gắn quyền tác giả với tài khoản đăng bài.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu và truyền tải an toàn.
@@ -755,7 +916,7 @@ Xây dựng và duy trì kho công thức ẩm thực chay chuẩn mực, đa d�
 
 - **AC-07.1 — Administrator tạo bài công thức chuẩn thành công với đầy đủ thông tin:**
   - **Given:** Administrator đang đăng nhập và ở màn hình Tạo bài công thức hệ thống.
-  - **When:** Administrator nhập đầy đủ tiêu đề, chọn loại ăn chay `Vegan`, chọn danh mục, nhập nguyên liệu, các bước nấu và nhấn "Công khai bài viết".
+  - **When:** Administrator nhập đầy đủ tiêu đề, chọn loại ăn chay `Vegan`, chọn thể loại món, nhập nguyên liệu, hướng dẫn chế biến và nhấn "Công khai bài viết".
   - **Then:** Hệ thống lưu bài viết thành công, gắn nhãn tác giả hệ thống, và hiển thị bài viết trên trang công khai.
 
 - **AC-07.2 — Administrator cập nhật thành công bài công thức chuẩn đã tồn tại:**
@@ -763,9 +924,9 @@ Xây dựng và duy trì kho công thức ẩm thực chay chuẩn mực, đa d�
   - **When:** Administrator chỉnh sửa lại tiêu đề và thời gian nấu của bài viết, rồi nhấn "Lưu thay đổi".
   - **Then:** Hệ thống cập nhật các thông tin mới vào cơ sở dữ liệu và phản ánh ngay lập tức trên giao diện công khai.
 
-- **AC-07.3 — Phân loại chính xác bài công thức theo loại ăn chay và danh mục:**
+- **AC-07.3 — Phân loại chính xác bài công thức theo loại ăn chay và thể loại món (dish_category):**
   - **Given:** Administrator đang tạo hoặc chỉnh sửa bài công thức chuẩn.
-  - **When:** Administrator chọn loại ăn chay `Lacto Vegetarian` và danh mục "Món kho".
+  - **When:** Administrator chọn loại ăn chay `Lacto Vegetarian` và thể loại món `dish_category = "món kho"`.
   - **Then:** Hệ thống ghi nhận đúng các nhãn phân loại, cho phép người dùng lọc chính xác bài viết này theo các tiêu chí trên tại trang tìm kiếm.
 
 - **AC-07.4 — Chặn người dùng không có vai trò Admin truy cập chức năng quản trị công thức:**
@@ -781,7 +942,7 @@ Xây dựng và duy trì kho công thức ẩm thực chay chuẩn mực, đa d�
 - **Mã yêu cầu:** FR-08
 - **Module:** M04 (Recipe Catalog & Search)
 - **Trạng thái (Derived):** ACTIVE
-- **Tóm tắt yêu cầu:** Hệ thống cung cấp công cụ tìm kiếm và bộ lọc đa tiêu chí (từ khóa, loại ăn chay chuẩn, danh mục món ăn, nguyên liệu, thời gian nấu tối đa) kết hợp 6 chế độ sắp xếp độc lập: Mới nhất (Newest), Đánh giá cao nhất (Highest Rated kèm rating count), Xem nhiều nhất (Most Viewed theo 24h/7d/30d/all-time), Nhiều bình luận nhất (Most Commented), Hoạt động sôi nổi nhất (Most Active theo tương tác 7 ngày gần nhất BR-71), và Thịnh hành (Trending theo tương tác gần đây + freshness decay BR-72) cho toàn bộ người dùng (Guest, Member, Administrator).
+- **Tóm tắt yêu cầu:** Hệ thống cung cấp công cụ tìm kiếm và bộ lọc đa tiêu chí (từ khóa, loại ăn chay chuẩn, thể loại món chuẩn hóa `dish_category`, nguyên liệu, thời gian nấu tối đa) kết hợp 6 chế độ sắp xếp độc lập: Mới nhất (Newest), Được yêu thích nhất (Most Liked / Highest Rated theo tỷ lệ % Like và tổng Like BR-69), Xem nhiều nhất (Most Viewed theo 24h/7d/30d/all-time), Nhiều bình luận nhất (Most Commented), Hoạt động sôi nổi nhất (Most Active theo tương tác 7 ngày gần nhất BR-71), và Thịnh hành (Trending theo tương tác gần đây + freshness decay BR-72) cho toàn bộ người dùng (Guest, Member, Administrator).
 
 #### 1. Mục đích
 Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù hợp với nhu cầu ăn uống cụ thể, sở thích cá nhân, nguyên liệu sẵn có trong gia đình hoặc quỹ thời gian nấu nướng; tối ưu hóa trải nghiệm khám phá ẩm thực chay trên nền tảng qua các tiêu chí lọc chính xác và bảng xếp hạng đa dạng.
@@ -798,7 +959,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **User Stories:**
   - `US-08.1`: Là một người ăn chay thuần (Vegan), tôi muốn lọc các công thức theo nhãn "Thuần chay" để không phải tự kiểm tra thủ công xem món ăn có chứa sữa hay trứng không.
   - `US-08.2`: Là một người bận rộn, tôi muốn lọc món ăn có thời gian nấu dưới 30 phút và sắp xếp theo mới nhất để nhanh chóng chọn được món ngon và tiện lợi.
-  - `US-08.3`: Là một người dùng muốn tìm món ngon được cộng đồng kiểm chứng, tôi muốn sắp xếp theo "Đánh giá cao nhất" hoặc "Xem nhiều nhất" để chọn các công thức uy tín nhất.
+  - `US-08.3`: Là một người dùng muốn tìm món ngon được cộng đồng kiểm chứng, tôi muốn sắp xếp theo "Được yêu thích nhất" hoặc "Xem nhiều nhất" để chọn các công thức có tỷ lệ % Like cao và uy tín nhất.
   - `US-08.4`: Là một người dùng yêu thích xu hướng, tôi muốn sắp xếp theo "Thịnh hành" hoặc "Hoạt động sôi nổi nhất" để cập nhật các món chay đang được quan tâm thảo luận nhiều nhất tuần này.
 
 #### 4. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
@@ -813,14 +974,14 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
    - Bước 2: Người dùng có thể kết hợp các thao tác:
      - Nhập từ khóa tìm kiếm (tìm theo tên món, mô tả hoặc nguyên liệu).
      - Chọn 1 trong 4 loại ăn chay chuẩn: `Vegan`, `Lacto Vegetarian`, `Ovo Vegetarian`, `Lacto-Ovo Vegetarian`.
-     - Chọn danh mục món ăn (ví dụ: Món canh, Món kho, Món xào, Món lẩu, v.v.).
+     - Chọn thể loại món ăn chuẩn hóa (`dish_category`: món nước, món xào, món lẩu, món kho, món canh, món chiên, món hấp, món gỏi / salad, món cuốn, món nướng, món tráng miệng / chè).
      - Chọn giới hạn thời gian nấu tối đa ($\le 15$ phút, $\le 30$ phút, $\le 60$ phút, hoặc trên 60 phút).
      - Chọn 1 trong 6 chế độ sắp xếp độc lập:
        1. **Mới nhất (Newest):** Sắp xếp theo ngày giờ công khai giảm dần (mặc định).
-       2. **Đánh giá cao nhất (Highest Rated):** Sắp xếp theo điểm sao trung bình giảm dần; hiển thị kèm tổng số lượt đánh giá `rating_count` (BR-69).
+       2. **Được yêu thích nhất (Most Liked / Highest Rated):** Sắp xếp theo tỷ lệ % Like giảm dần, kèm điều kiện phụ theo tổng lượt Like (`likes_count` giảm dần); hiển thị huy hiệu tỷ lệ % Like Samsung Food (`👍 {like_percentage}%`) hoặc nhãn "Mới" nếu chưa có lượt bình chọn (BR-69).
        3. **Xem nhiều nhất (Most Viewed):** Sắp xếp theo số lượt xem hợp lệ từ `RECIPE_VIEW` (hỗ trợ chọn khung 24h, 7 ngày, 30 ngày, all-time) (BR-70).
        4. **Nhiều bình luận nhất (Most Commented):** Sắp xếp theo tổng số bình luận hợp lệ giảm dần.
-       5. **Hoạt động sôi nổi nhất (Most Active):** Sắp xếp theo tổng điểm tương tác 7 ngày qua ($\text{views} + 5 \times \text{comments} + 10 \times \text{ratings}$) không phân biệt bài cũ hay mới (BR-71).
+       5. **Hoạt động sôi nổi nhất (Most Active):** Sắp xếp theo tổng điểm tương tác 7 ngày qua ($\text{views} + 5 \times \text{comments} + 10 \times (\text{likes} + \text{dislikes})$) không phân biệt bài cũ hay mới (BR-71).
        6. **Thịnh hành (Trending):** Sắp xếp theo thuật toán suy giảm thời gian kết hợp tương tác 3 ngày và độ tuổi bài viết (BR-72).
    - Bước 3: Người dùng nhấn "Tìm kiếm" hoặc áp dụng bộ lọc.
    - Bước 4: Hệ thống thực thi truy vấn kết hợp các điều kiện lọc theo phép giao (AND logic giữa các nhóm tiêu chí khác nhau), chỉ lấy các bài công thức đang ở trạng thái `PUBLISHED`.
@@ -841,7 +1002,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Quy tắc nghiệp vụ liên quan:**
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
   - [BR-18](BUSINESS-RULES.md#br-18): Bảo vệ quyền riêng tư trong hồ sơ tác giả công khai.
-  - [BR-69](BUSINESS-RULES.md#br-69): Đánh giá chất lượng bài công thức từ 1 đến 5 sao (`RECIPE_RATING`).
+  - [BR-69](BUSINESS-RULES.md#br-69): Tương tác Like / Dislike và tỷ lệ hài lòng (% Like) của bài công thức.
   - [BR-70](BUSINESS-RULES.md#br-70): Ghi nhận lượt xem và khử trùng lặp theo phiên (`RECIPE_VIEW`).
   - [BR-71](BUSINESS-RULES.md#br-71): Thuật toán xếp hạng hoạt động sôi nổi nhất (Most Active).
   - [BR-72](BUSINESS-RULES.md#br-72): Thuật toán xếp hạng thịnh hành (Trending Ranking).
@@ -862,10 +1023,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - **When:** Người dùng chọn bộ lọc loại ăn chay là `Vegan`.
   - **Then:** Danh sách kết quả chỉ chứa 100% các bài viết được gắn nhãn `Vegan`, loại trừ hoàn toàn các món ăn có sữa hoặc trứng.
 
-- **AC-08.3 — Lọc chính xác theo danh mục món ăn:**
+- **AC-08.3 — Lọc chính xác theo thể loại món (dish_category):**
   - **Given:** Người dùng đang ở màn hình Khám phá công thức.
-  - **When:** Người dùng chọn danh mục "Món canh".
-  - **Then:** Hệ thống chỉ hiển thị các bài công thức thuộc danh mục "Món canh".
+  - **When:** Người dùng chọn thể loại món "món canh".
+  - **Then:** Hệ thống chỉ hiển thị các bài công thức có `dish_category = "món canh"`.
 
 - **AC-08.4 — Lọc chính xác theo thời gian nấu tối đa:**
   - **Given:** Người dùng đang thiết lập bộ lọc tìm kiếm.
@@ -877,10 +1038,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - **When:** Người dùng chọn sắp xếp theo "Mới nhất".
   - **Then:** Kết quả được hiển thị theo thứ tự thời gian công khai giảm dần.
 
-- **AC-08.6 — Sắp xếp theo Đánh giá cao nhất (Highest Rated):**
-  - **Given:** Các bài công thức có điểm đánh giá sao khác nhau.
-  - **When:** Người dùng chọn chế độ sắp xếp "Đánh giá cao nhất".
-  - **Then:** Kết quả sắp xếp theo điểm trung bình giảm dần; trên giao diện hiển thị rõ điểm sao kèm tổng số lượt đánh giá `rating_count` (BR-69).
+- **AC-08.6 — Sắp xếp theo Được yêu thích nhất (Most Liked / Highest Rated):**
+  - **Given:** Các bài công thức có tỷ lệ % Like và tổng số lượt bình chọn khác nhau.
+  - **When:** Người dùng chọn chế độ sắp xếp "Được yêu thích nhất".
+  - **Then:** Kết quả sắp xếp theo tỷ lệ % Like giảm dần, kèm điều kiện phụ theo tổng lượt Like (`likes_count` giảm dần); trên giao diện hiển thị rõ huy hiệu tỷ lệ % Like (`👍 {like_percentage}%`) hoặc nhãn "Mới" nếu chưa có bình chọn (BR-69).
 
 - **AC-08.7 — Sắp xếp theo Xem nhiều nhất (Most Viewed):**
   - **Given:** Các bài công thức có dữ liệu lượt xem hợp lệ trong `RECIPE_VIEW`.
@@ -956,13 +1117,13 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Độc quyền cho Authorized User (Member sở hữu tài khoản).
-- **Ràng buộc nghiệp vụ:** Cố định 3 bữa/ngày trong MVP (BR-36); thao tác trên lịch ăn hoàn toàn độc lập với danh sách công thức đã lưu (BR-35) và không tiêu tốn hạn mức AI (BR-33).
+- **Ràng buộc nghiệp vụ:** Cố định 3 bữa/ngày trong MVP (BR-36); thao tác trên lịch ăn hoàn toàn độc lập với danh sách công thức đã lưu (BR-35) và không gọi Gemini (BR-33).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
   - [BR-32](BUSINESS-RULES.md#br-32): Yêu cầu đăng nhập đối với Lịch ăn.
-  - [BR-33](BUSINESS-RULES.md#br-33): Thao tác lưu công thức không tiêu thụ hạn mức AI.
+  - [BR-33](BUSINESS-RULES.md#br-33): Thao tác lưu công thức không gọi Gemini.
   - [BR-35](BUSINESS-RULES.md#br-35): Độc lập vòng đời giữa Công thức đã lưu và Lịch ăn.
   - [BR-36](BUSINESS-RULES.md#br-36): Quy tắc 3 loại bữa ăn cố định trong Lịch ăn MVP.
   - [BR-37](BUSINESS-RULES.md#br-37): Tính duy nhất của công thức trong cùng một bữa ăn ngày.
@@ -1317,12 +1478,12 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### 1. Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Hệ thống cung cấp cơ chế lưu trữ thư viện ảnh của bài công thức nấu ăn thông qua thực thể `RECIPE_MEDIA` trên dịch vụ đám mây Azure Blob Storage; mỗi bài công thức có tối đa 5 ảnh minh họa (tùy chọn theo BR-20); nếu bài có từ 1 đến 5 ảnh thì **BẮT BUỘC phải có đúng 1 ảnh được chọn làm ảnh bìa (`is_cover = true`)**; mỗi ảnh có thứ tự hiển thị (`display_order`); áp dụng kiểm tra định dạng và dung lượng ($\le 5$ MB/ảnh, JPEG/PNG/WebP) trước khi tải lên; giải phóng tài nguyên ảnh khi bài công thức bị xóa hoặc khi tác giả gỡ ảnh; tuyệt đối không lưu tệp nhị phân trực tiếp trong cơ sở dữ liệu quan hệ.
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Thư viện ảnh minh họa được tải lên khi tạo hoặc chỉnh sửa bài công thức bởi Member (FR-04, FR-21, FR-44) và Administrator (FR-07).
+  - Áp dụng cho: Thư viện ảnh minh họa được Chuyên gia tải lên khi tạo hoặc chỉnh sửa bài công thức của chính mình (FR-04, FR-21, FR-44); FR-07 đã `RETIRED`.
   - Giới hạn: Tối đa **5 ảnh minh họa** cho mỗi Recipe Post trong `RECIPE_MEDIA`.
   - Quy tắc ảnh bìa: Khi bài có $\ge 1$ ảnh, phải có đúng 1 ảnh mang cờ `is_cover = true`.
   - Định dạng hỗ trợ: JPEG, PNG, WebP; dung lượng tối đa $\le 5$ MB trên mỗi tệp tin (NFR-10).
 - **Phân loại Actor:**
-  - Primary Actor: `Member / Administrator` (tác giả tải ảnh lên).
+  - Primary Actor: `Chuyên gia (Role = EXPERT)` (tác giả tải ảnh lên).
   - Supporting Actor: `Azure Blob Storage` (dịch vụ lưu trữ đám mây).
 
 #### 2. Use Cases & User Stories
@@ -1365,12 +1526,12 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - Đúng 1 ảnh được đánh dấu `is_cover = true` phục vụ hiển thị trên thẻ món ngoài trang Khám phá.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Member chỉ được tải/xóa ảnh của công thức do chính mình sở hữu; Administrator có quyền quản lý ảnh của công thức hệ thống.
+- **Quyền hạn:** Chuyên gia chỉ được tải/xóa ảnh của công thức do chính mình sở hữu; Administrator có quyền quản lý ảnh của công thức hệ thống.
 - **Ràng buộc:** Media công khai trực tiếp cùng bài viết, không qua duyệt trước media (BR-07, BR-11); nếu vi phạm chuẩn mực sẽ bị xử lý qua cơ chế hậu kiểm (FR-06, FR-28).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
-  - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
+  - [BR-07](BUSINESS-RULES.md#br-07): Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia (Role = EXPERT).
   - [BR-11](BUSINESS-RULES.md#br-11): Media công khai trực tiếp và hậu kiểm.
   - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post (0..5 ảnh, đúng 1 ảnh bìa nếu có ảnh).
   - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của ảnh đại diện (0..5 ảnh, đúng 1 cover; bài 0 ảnh dùng ảnh mặc định).
@@ -1409,13 +1570,13 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Hệ thống cho phép tác giả bài công thức (Member hoặc Administrator) gắn tối đa một đường link hoặc video ID hợp lệ của YouTube vào bài Recipe Post khi tạo hoặc chỉnh sửa; hệ thống kiểm tra tính hợp lệ của liên kết, trích xuất mã định danh video YouTube và nhúng trình phát video (YouTube IFrame Player) an toàn trên trang chi tiết công thức để phục vụ người xem; hệ thống TUYỆT ĐỐI KHÔNG nhận tải lên, sao chép hoặc lưu trữ tệp tin video nhị phân của YouTube trên máy chủ hay bộ lưu trữ đám mây (BR-10); video là thành phần hoàn toàn tùy chọn (BR-20).
+- **Tóm tắt yêu cầu:** Hệ thống cho phép tác giả bài công thức (Chuyên gia) gắn tối đa một đường link hoặc video ID hợp lệ của YouTube vào bài Recipe Post khi tạo hoặc chỉnh sửa; hệ thống kiểm tra tính hợp lệ của liên kết, trích xuất mã định danh video YouTube và nhúng trình phát video (YouTube IFrame Player) an toàn trên trang chi tiết công thức để phục vụ người xem; hệ thống TUYỆT ĐỐI KHÔNG nhận tải lên, sao chép hoặc lưu trữ tệp tin video nhị phân của YouTube trên máy chủ hay bộ lưu trữ đám mây (BR-10); video là thành phần hoàn toàn tùy chọn (BR-20).
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Mọi bài công thức được tạo hoặc chỉnh sửa bởi Member (FR-04, FR-16, FR-44) và Administrator (FR-07).
+  - Áp dụng cho: Mọi bài công thức được Chuyên gia tạo hoặc chỉnh sửa (FR-04, FR-16, FR-44); FR-07 đã `RETIRED`.
   - Nền tảng hỗ trợ: YouTube duy nhất trong Phase 1 (BR-10).
   - Giới hạn: Tối đa **1 liên kết video YouTube** cho mỗi bài công thức (BR-19).
 - **Phân loại Actor:**
-  - Primary Actor: `Member / Administrator` (tác giả gắn link video), `Guest / Member` (người xem video trên bài viết).
+  - Primary Actor: `Chuyên gia` (tác giả gắn link video), `Guest / Member` (người xem video trên bài viết).
   - Supporting Actor: `YouTube IFrame API / Player`.
 
 #### 2. Use Cases & User Stories
@@ -1491,23 +1652,24 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 ---
 
 <a id="fr-16"></a>
-### FR-16 — Cấu trúc dữ liệu bài công thức theo từng bước nấu và validation profile
+### FR-16 — Cấu trúc dữ liệu bài công thức, hướng dẫn chế biến và validation profile
 
 - **Mã yêu cầu:** FR-16
 - **Module:** M03, M04
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Thiết lập cấu trúc dữ liệu chuẩn mực và bộ quy tắc kiểm tra hợp lệ (Recipe Validation Profile) bắt buộc đối với mọi Recipe Post trước khi được công khai trong hệ thống theo SRS 3.9, BR-19 và BR-73: tiêu đề từ 3 đến 120 ký tự; số lượng nguyên liệu từ 1 đến 50 dòng có định lượng số học dương và tỷ lệ quy đổi hợp lệ sang gam (cấm "vừa đủ"); số khẩu phần từ 1 đến 50; thời gian chuẩn bị và nấu mỗi giá trị từ 0 đến 1.440 phút với tổng thời gian lớn hơn 0 (thời gian nấu được phép bằng 0 theo BR-20 khi thời gian chuẩn bị lớn hơn 0); loại ăn chay bắt buộc thuộc 4 loại chuẩn; mô tả bài viết tối đa 2.000 ký tự (tùy chọn theo BR-20); hướng dẫn chuẩn bị/chế biến bắt buộc từ 1 đến 30 bước tuần tự (`RECIPE_STEP`), mỗi bước có thứ tự và nội dung độc lập từ 10 đến 2.000 ký tự sau khi trim (bãi bỏ hoàn toàn trường instructions văn bản tự do duy nhất); thư viện ảnh tối đa 5 ảnh JPEG/PNG/WebP dung lượng $\le 5$ MB/ảnh (`RECIPE_MEDIA`), nếu có ảnh bắt buộc đúng 1 ảnh bìa (`is_cover = true`) (tùy chọn theo BR-19, BR-20); tối đa một link YouTube (tùy chọn theo BR-10, BR-20); tất cả bài công thức đều áp dụng thống nhất mô hình xuất bản trực tiếp và hậu kiểm (BR-07, BR-59).
+- **Tóm tắt yêu cầu:** Thiết lập cấu trúc dữ liệu chuẩn mực và bộ quy tắc kiểm tra hợp lệ (Recipe Validation Profile) bắt buộc đối với mọi Recipe Post trước khi được công khai trong hệ thống theo SRS 3.9, BR-19 và BR-73: tiêu đề từ 3 đến 120 ký tự; thể loại món ăn bắt buộc chọn 1 giá trị chuẩn hóa thuộc `dish_category`; số lượng nguyên liệu từ 1 đến 50 dòng có định lượng số học dương và tỷ lệ quy đổi hợp lệ sang gam (cấm "vừa đủ"); số khẩu phần từ 1 đến 50; thời gian chuẩn bị và nấu mỗi giá trị từ 0 đến 1.440 phút với tổng thời gian lớn hơn 0 (thời gian nấu được phép bằng 0 theo BR-20 khi thời gian chuẩn bị lớn hơn 0); loại ăn chay bắt buộc thuộc 4 loại chuẩn; mô tả bài viết tối đa 2.000 ký tự (tùy chọn theo BR-20); hướng dẫn chế biến dạng văn bản từ 10 đến 5.000 ký tự sau khi trim (người đăng không bắt buộc phải viết từng bước nấu ăn vào bài viết, có thể viết đoạn văn tự do hoặc phân bước tùy ý theo BR-19); thư viện ảnh tối đa 5 ảnh JPEG/PNG/WebP dung lượng $\le 5$ MB/ảnh (`RECIPE_MEDIA`), nếu có ảnh bắt buộc đúng 1 ảnh bìa (`is_cover = true`) (tùy chọn theo BR-19, BR-20); tối đa một link YouTube (tùy chọn theo BR-10, BR-20); tất cả bài công thức đều áp dụng thống nhất mô hình xuất bản trực tiếp và hậu kiểm (BR-07, BR-59).
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Mọi bài Recipe Post do Member (FR-04) hoặc Administrator (FR-07) tạo và chỉnh sửa (FR-44).
+  - Áp dụng cho: Mọi bài Recipe Post do Chuyên gia tạo hoặc chỉnh sửa (FR-04, FR-44); FR-07 đã `RETIRED`.
   - Validation Profile chính thức:
     | Trường dữ liệu | Ràng buộc giá trị hợp lệ | Bắt buộc / Tùy chọn |
     |---|---|---|
     | **Tiêu đề (Title)** | **3 – 120 ký tự** | Bắt buộc |
+    | **Thể loại món (`dish_category`)** | Chọn đúng 1 trong danh mục chuẩn: `món nước`, `món xào`, `món lẩu`, `món kho`, `món canh`, `món chiên`, `món hấp`, `món gỏi / salad`, `món cuốn`, `món nướng`, `món tráng miệng / chè` | Bắt buộc (BR-19) |
     | **Danh sách nguyên liệu** | **1 – 50 dòng nguyên liệu**; định lượng số học dương (`quantity > 0`), đơn vị thuộc `UNIT`, cấm "vừa đủ" | Bắt buộc (BR-14, BR-73) |
     | **Quy đổi đơn vị nguyên liệu** | Đơn vị bắt buộc có tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION` (hoặc là `MASS` g/kg); nếu thiếu **chặn xuất bản** | Bắt buộc (BR-19, BR-73) |
-    | **Hướng dẫn chuẩn bị/chế biến (`RECIPE_STEP`)** | **1 – 30 bước tuần tự**, mỗi bước **10 – 2.000 ký tự** không rỗng sau khi trim | Bắt buộc (BR-19, FR-22) |
+    | **Hướng dẫn chế biến (`instructions`)** | Văn bản hướng dẫn từ **10 – 5.000 ký tự** không rỗng sau khi trim; **không bắt buộc phải viết theo từng bước nấu ăn** (có thể nhập tự do hoặc chia đoạn tùy ý) | Bắt buộc (BR-19) |
     | **Khẩu phần (Serving size)** | **1 – 50 khẩu phần** | Bắt buộc |
     | **Thời gian chuẩn bị (Prep time)** | **0 – 1.440 phút** | Bắt buộc |
     | **Thời gian nấu (Cook time)** | **0 – 1.440 phút** (được bằng 0 khi prep time > 0) | Bắt buộc |
@@ -1517,15 +1679,15 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     | **Thư viện ảnh (`RECIPE_MEDIA`)** | **0 – 5 ảnh**, JPEG/PNG/WebP, $\le 5$ MB/ảnh; khi có $\ge 1$ ảnh thì **bắt buộc đúng 1 ảnh bìa** (`is_cover = true`) | Tùy chọn (BR-19, BR-20, FR-14) |
     | **Video YouTube** | **0 – 1 link YouTube** hợp lệ | Tùy chọn (BR-10, BR-20, FR-15) |
 - **Phân loại Actor:**
-  - Primary Actor: `Member`, `Administrator` (tác giả bài viết).
+  - Primary Actor: `Chuyên gia (Role = EXPERT)`, `Administrator` (tác giả bài viết).
   - Supporting Actor: `Hệ thống kiểm tra tính hợp lệ dữ liệu (Validation Subsystem)`.
 
 #### 2. Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-16.1`: Soạn thảo và xác thực bài công thức tuân thủ cấu trúc từng bước nấu và tỷ lệ quy đổi đơn vị bắt buộc.
+  - `UC-16.1`: Soạn thảo và xác thực bài công thức tuân thủ cấu trúc dữ liệu, hướng dẫn chế biến và tỷ lệ quy đổi đơn vị bắt buộc.
   - `UC-16.2`: Công khai bài công thức không có ảnh minh họa (sử dụng ảnh mặc định) hoặc không có mô tả giới thiệu.
 - **User Stories:**
-  - *Là một người nấu ăn*, tôi muốn nhập các bước chế biến rõ ràng theo từng bước 1, 2, 3 để người đọc dễ dàng làm theo, đồng thời hệ thống kiểm tra các đơn vị đo lường có quy đổi được không để tính toán dinh dưỡng chính xác.
+  - *Là một người nấu ăn*, tôi muốn nhập hướng dẫn chế biến linh hoạt và rõ ràng để người đọc dễ dàng làm theo, chọn thể loại món phù hợp, đồng thời hệ thống kiểm tra các đơn vị đo lường có quy đổi được không để tính toán dinh dưỡng chính xác.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
@@ -1538,9 +1700,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - Bước 1: Tác giả nhấn "Công khai bài viết".
   - Bước 2: Hệ thống tiếp nhận toàn bộ dữ liệu bài viết và kích hoạt bộ kiểm tra hợp lệ:
     - Tiêu đề: kiểm tra độ dài nằm trong khoảng 3 đến 120 ký tự.
+    - Thể loại món: kiểm tra chọn đúng 1 giá trị chuẩn hóa thuộc `dish_category`.
     - Nguyên liệu: kiểm tra số lượng dòng từ 1 đến 50, mỗi dòng có tên, định lượng số học dương và đơn vị chuẩn trong `UNIT` (FR-19).
     - Quy đổi đơn vị: kiểm tra mọi nguyên liệu có đơn vị quy đổi hợp lệ sang gam trong `INGREDIENT_UNIT_CONVERSION` (BR-73).
-    - Hướng dẫn chế biến: kiểm tra danh sách bước nấu `RECIPE_STEP` có từ 1 đến 30 bước, mỗi bước từ 10 đến 2.000 ký tự sau khi cắt khoảng trắng đầu cuối (trim).
+    - Hướng dẫn chế biến: kiểm tra nội dung hướng dẫn `instructions` từ 10 đến 5.000 ký tự sau khi cắt khoảng trắng đầu cuối (trim); không ép buộc phân rã thành các bước độc lập.
     - Khẩu phần: kiểm tra giá trị số nguyên từ 1 đến 50.
     - Thời gian: kiểm tra prep time $\ge 0$, cook time $\ge 0$, mỗi giá trị $\le 1.440$ phút và tổng thời gian $> 0$.
     - Phân loại ăn chay: kiểm tra thuộc 1 trong 4 loại chuẩn.
@@ -1554,7 +1717,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *AF-16.1 (Công thức có thời gian nấu bằng 0):* Với các món salad trộn hoặc sinh tố, tác giả nhập cook time = 0 và prep time = 15 phút. Hệ thống xác nhận tổng thời gian là 15 phút $> 0$ và chấp nhận hợp lệ theo BR-20.
   - *AF-16.2 (Công thức không có ảnh tải lên):* Tác giả không upload ảnh nào (0 ảnh). Hệ thống tự động gán ảnh đại diện mặc định theo loại ăn chay của món ăn (BR-20).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-16.1 (Dữ liệu không thỏa mãn validation profile — Xử lý phía Frontend):* Khi người dùng nhấn nút đăng bài, nếu có bất kỳ trường nào vi phạm ngưỡng hợp lệ (ví dụ: thiếu bước nấu hoặc bước nấu $< 10$ hoặc $> 2.000$ ký tự, nguyên liệu chưa có tỷ lệ quy đổi sang gam, có ảnh nhưng không chọn ảnh bìa, hoặc khẩu phần $> 50$), giao diện người dùng chặn gửi yêu cầu không hợp lệ, giữ lại toàn bộ nội dung đã nhập trong biểu mẫu và hiển thị thông báo lỗi chi tiết để tác giả chỉnh sửa mà không bị mất dữ liệu đã nhập.
+  - *EF-16.1 (Dữ liệu không thỏa mãn validation profile — Xử lý phía Frontend):* Khi người dùng nhấn nút đăng bài, nếu có bất kỳ trường nào vi phạm ngưỡng hợp lệ (ví dụ: thiếu hướng dẫn chế biến hoặc hướng dẫn $< 10$ hoặc $> 5.000$ ký tự, thiếu thể loại món `dish_category`, nguyên liệu chưa có tỷ lệ quy đổi sang gam, có ảnh nhưng không chọn ảnh bìa, hoặc khẩu phần $> 50$), giao diện người dùng chặn gửi yêu cầu không hợp lệ, giữ lại toàn bộ nội dung đã nhập trong biểu mẫu và hiển thị thông báo lỗi chi tiết để tác giả chỉnh sửa mà không bị mất dữ liệu đã nhập.
   - *SF-16.1 (Thẩm định độc lập bắt buộc tại Backend & Không lưu rác DB):* Toàn bộ quy tắc kiểm tra hợp lệ bắt buộc phải được thực thi độc lập và toàn diện tại tầng Backend của máy chủ theo NFR-10, tuyệt đối không phụ thuộc vào việc kiểm tra của Frontend. Nếu nhận yêu cầu có dữ liệu không đạt chuẩn, máy chủ độc lập từ chối yêu cầu và thông báo chi tiết lỗi; máy chủ TUYỆT ĐỐI KHÔNG ghi bất kỳ bản ghi bài viết hay tài nguyên dở dang nào vào cơ sở dữ liệu (Database), bảo đảm không phát sinh dữ liệu rác (phù hợp với FR-24 OUT_OF_SCOPE).
 
 #### 5. Hậu điều kiện (Postconditions)
@@ -1562,15 +1725,15 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - Dữ liệu chuẩn mực sẵn sàng cho các chức năng Thẻ món (FR-17), Chi tiết (FR-20), Tính dinh dưỡng (FR-39).
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Áp dụng bình đẳng cho mọi bài viết do Member hoặc Administrator tạo.
-- **Ràng buộc nghiệp vụ:** Đúng bộ tham số đã phê duyệt; bắt buộc có từ 1 đến 30 bước `RECIPE_STEP`; nguyên liệu có tỷ lệ quy đổi hợp lệ sang gam (BR-73); thư viện ảnh tối đa 5 ảnh với đúng 1 ảnh bìa (BR-19, BR-20).
+- **Quyền hạn:** Áp dụng bình đẳng cho mọi bài viết do Chuyên gia hoặc Administrator tạo.
+- **Ràng buộc nghiệp vụ:** Đúng bộ tham số đã phê duyệt; bắt buộc có hướng dẫn chế biến (`instructions` từ 10 đến 5.000 ký tự); thể loại món `dish_category` hợp lệ; nguyên liệu có tỷ lệ quy đổi hợp lệ sang gam (BR-73); thư viện ảnh tối đa 5 ảnh với đúng 1 ảnh bìa (BR-19, BR-20).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
-  - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
+  - [BR-07](BUSINESS-RULES.md#br-07): Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia (Role = EXPERT).
   - [BR-10](BUSINESS-RULES.md#br-10): Giới hạn định dạng video Phase 1.
   - [BR-14](BUSINESS-RULES.md#br-14): Định lượng nguyên liệu số học theo đơn vị chuẩn.
-  - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post (1–30 bước, 0..5 ảnh với 1 ảnh bìa, tỷ lệ quy đổi đơn vị).
+  - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post (hướng dẫn chế biến linh hoạt, 0..5 ảnh với 1 ảnh bìa, tỷ lệ quy đổi đơn vị).
   - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của mô tả giới thiệu và ảnh đại diện.
   - [BR-59](BUSINESS-RULES.md#br-59): Không có hàng đợi duyệt bài trước khi công khai.
   - [BR-64](BUSINESS-RULES.md#br-64): Quyền sửa và xóa bài công thức của chính tác giả.
@@ -1597,10 +1760,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* món salad có thời gian chuẩn bị 10 phút và thời gian nấu 0 phút,
   - *When* tác giả gửi yêu cầu đăng bài,
   - *Then* hệ thống chấp nhận hợp lệ và cho phép xuất bản bài viết.
-- **AC-16.5 (Bắt buộc có 1–30 bước RECIPE_STEP từ 10 đến 2.000 ký tự mỗi bước):**
-  - *Given* bài công thức chưa có bước nấu nào, hoặc có $> 30$ bước, hoặc có bước nấu $< 10$ ký tự hoặc chỉ chứa khoảng trắng,
+- **AC-16.5 (Bắt buộc có hướng dẫn chế biến instructions từ 10 đến 5.000 ký tự):**
+  - *Given* bài công thức chưa có nội dung hướng dẫn chế biến, hoặc nội dung $< 10$ ký tự, hoặc vượt quá 5.000 ký tự sau khi trim,
   - *When* tác giả gửi yêu cầu đăng bài,
-  - *Then* hệ thống từ chối xuất bản và hiển thị thông báo lỗi yêu cầu số lượng bước từ 1 đến 30 và độ dài mỗi bước từ 10 đến 2.000 ký tự (BR-19).
+  - *Then* hệ thống từ chối xuất bản và hiển thị thông báo lỗi yêu cầu độ dài hướng dẫn chế biến từ 10 đến 5.000 ký tự (BR-19).
 - **AC-16.6 (Chặn xuất bản nghiêm ngặt khi nguyên liệu thiếu tỷ lệ quy đổi sang gam):**
   - *Given* tác giả chọn nguyên liệu dùng đơn vị "quả" hoặc "muỗng canh" nhưng nguyên liệu đó chưa được định nghĩa tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION`,
   - *When* tác giả gửi yêu cầu đăng bài,
@@ -1610,9 +1773,9 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *When* tác giả gửi yêu cầu đăng bài,
   - *Then* hệ thống từ chối xuất bản và thông báo yêu cầu chọn đúng 1 ảnh bìa (BR-19).
 - **AC-16.8 (Cho phép công khai không có ảnh và không có mô tả):**
-  - *Given* bài công thức không có mô tả và không tải ảnh nào lên nhưng có đầy đủ nguyên liệu hợp lệ và 1–30 bước nấu hợp lệ,
+  - *Given* bài công thức không có mô tả và không tải ảnh nào lên nhưng có đầy đủ nguyên liệu hợp lệ, thể loại món hợp lệ và hướng dẫn chế biến hợp lệ (10–5.000 ký tự),
   - *When* tác giả nhấn đăng bài,
-  - *Then* hệ thống công khai bài viết thành công, hiển thị đầy đủ các bước nấu và gán ảnh mặc định cho món ăn theo BR-20.
+  - *Then* hệ thống công khai bài viết thành công, hiển thị đầy đủ nội dung hướng dẫn chế biến và gán ảnh mặc định cho món ăn theo BR-20.
 
 ---
 
@@ -1624,10 +1787,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Hệ thống trình bày các bài công thức đang công khai (không bị ẩn hoặc xóa) dưới dạng Thẻ món ăn (Recipe Card) trực quan và đồng nhất trong giao diện Khám phá (Trang chủ, duyệt danh mục, kết quả tìm kiếm và lọc tại FR-01, FR-08); hiển thị ảnh bìa từ `RECIPE_MEDIA` (hoặc ảnh mặc định nếu bài không có ảnh theo BR-20), tên món, tác giả, loại ăn chay, thời gian nấu, điểm đánh giá sao trung bình & số lượt đánh giá (`RECIPE_RATING` theo BR-69), và tổng lượt xem (`RECIPE_VIEW` theo BR-70); tích hợp trực tiếp trên thẻ các nút hành động nhanh để kết nối thẻ món với luồng lưu công thức yêu thích (FR-32) hoặc thêm món vào Lịch ăn tuần 3 bữa (FR-09, FR-33); nhấp vào thẻ điều hướng liền mạch tới trang chi tiết công thức (FR-20).
+- **Tóm tắt yêu cầu:** Hệ thống trình bày các bài công thức đang công khai (không bị ẩn hoặc xóa) dưới dạng Thẻ món ăn (Recipe Card) trực quan và đồng nhất trong giao diện Khám phá (Trang chủ, duyệt danh mục, kết quả tìm kiếm và lọc tại FR-01, FR-08); hiển thị ảnh bìa từ `RECIPE_MEDIA` (hoặc ảnh mặc định nếu bài không có ảnh theo BR-20), tên món, tác giả, loại ăn chay, thời gian nấu, huy hiệu tỷ lệ % Like theo phong cách Samsung Food (`👍 {like_percentage}%` hoặc nhãn `Mới` nếu chưa có lượt bình chọn, theo BR-69), và tổng lượt xem (`RECIPE_VIEW` theo BR-70); tích hợp trực tiếp trên thẻ các nút hành động nhanh để kết nối thẻ món với luồng lưu công thức yêu thích (FR-32) hoặc thêm món vào Lịch ăn tuần 3 bữa (FR-09, FR-33); nhấp vào thẻ điều hướng liền mạch tới trang chi tiết công thức (FR-20).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Mọi người dùng xem giao diện khám phá (Guest và Member).
-  - Thành phần hiển thị trên thẻ món: Ảnh bìa từ `RECIPE_MEDIA` (hoặc ảnh mặc định), Tên món ăn, Thẻ tác giả (Author Card thu nhỏ theo FR-23, BR-18), Phân loại trường phái ăn chay, Tổng thời gian (prep + cook), Điểm đánh giá sao trung bình & tổng lượt đánh giá (`average_rating` & `rating_count`), và Tổng số lượt xem (`view_count`).
+  - Thành phần hiển thị trên thẻ món: Ảnh bìa từ `RECIPE_MEDIA` (hoặc ảnh mặc định), Tên món ăn, Thẻ tác giả (Author Card thu nhỏ theo FR-23, BR-18), Phân loại trường phái ăn chay, Tổng thời gian (prep + cook), Huy hiệu tỷ lệ phần trăm Like (`👍 {like_percentage}%` đặt nổi bật ở góc trên bên trái ảnh theo Samsung Food, hoặc nhãn `Mới`), và Tổng số lượt xem (`view_count`).
 - **Phân loại Actor:**
   - Primary Actor: `Guest`, `Member` (người duyệt khám phá món ăn).
   - Supporting Actor: `Hệ thống hiển thị và quản lý thẻ món`.
@@ -1638,7 +1801,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - `UC-17.2`: Thực hiện thao tác lưu nhanh công thức hoặc thêm món vào Lịch ăn tuần trực tiếp từ thẻ món.
   - `UC-17.3`: Nhấp vào thẻ món để xem trang chi tiết đầy đủ của bài công thức.
 - **User Stories:**
-  - *Là một người tìm kiếm ý tưởng ăn chay*, tôi muốn lướt xem các thẻ món ăn hấp dẫn với đầy đủ thông tin về ảnh bìa, thời gian, loại chay, điểm đánh giá sao và số lượt xem, đồng thời có thể bấm lưu lại hoặc thêm ngay vào thực đơn tuần mà không cần phải mở từng bài viết.
+  - *Là một người tìm kiếm ý tưởng ăn chay*, tôi muốn lướt xem các thẻ món ăn hấp dẫn với đầy đủ thông tin về ảnh bìa, thời gian, loại chay, tỷ lệ % Like nổi bật kiểu Samsung Food và số lượt xem, đồng thời có thể bấm lưu lại hoặc thêm ngay vào thực đơn tuần mà không cần phải mở từng bài viết.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
@@ -1656,7 +1819,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     - Tên hiển thị của tác giả (liên kết tới Author Card theo FR-23, bảo vệ quyền riêng tư theo BR-18).
     - Nhãn phân loại ăn chay (Vegan, Lacto, Ovo, Lacto-Ovo).
     - Tổng thời gian thực hiện (phút).
-    - Điểm đánh giá sao trung bình kèm tổng số lượt đánh giá (`rating_count`, ví dụ ⭐ 4.8 (124)) theo BR-69.
+    - Huy hiệu tỷ lệ phần trăm Like (`👍 {like_percentage}%`, ví dụ `👍 98%`, `👍 96%`) đặt nổi bật ở góc trên bên trái ảnh bìa theo phong cách Samsung Food; nếu bài chưa có lượt bình chọn nào thì hiển thị nhãn `Mới` (theo BR-69).
     - Tổng số lượt xem hợp lệ (`view_count`) theo BR-70.
     - Nút icon "Lưu công thức" (Bookmark).
     - Nút icon "Thêm vào lịch ăn" (Cuốn lịch).
@@ -1671,7 +1834,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *SF-17.1 (Bảo mật quyền riêng tư tác giả trên thẻ):* Thông tin tác giả hiển thị trên thẻ món chỉ bao gồm tên hiển thị (display name) công khai, tuyệt đối không lộ địa chỉ email hay ID nội bộ của tác giả (BR-18, NFR-08).
 
 #### 5. Hậu điều kiện (Postconditions)
-- Các thẻ món hiển thị chuẩn xác và hấp dẫn trên giao diện với đầy đủ chỉ số điểm sao và lượt xem.
+- Các thẻ món hiển thị chuẩn xác và hấp dẫn trên giao diện với đầy đủ chỉ số huy hiệu % Like và lượt xem.
 - Các hành động lưu hoặc thêm vào lịch ăn được cập nhật đồng bộ vào hồ sơ Member.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
@@ -1687,7 +1850,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - [BR-33](BUSINESS-RULES.md#br-33): Độc lập nghiệp vụ của thao tác lưu công thức.
   - [BR-35](BUSINESS-RULES.md#br-35): Độc lập vòng đời giữa Công thức đã lưu và Lịch ăn.
   - [BR-36](BUSINESS-RULES.md#br-36): Quy tắc 3 loại bữa ăn cố định trong Lịch ăn MVP.
-  - [BR-69](BUSINESS-RULES.md#br-69): Đánh giá chất lượng bài công thức từ 1 đến 5 sao (`RECIPE_RATING`).
+  - [BR-69](BUSINESS-RULES.md#br-69): Tương tác Like / Dislike và tỷ lệ hài lòng (% Like) của bài công thức.
   - [BR-70](BUSINESS-RULES.md#br-70): Ghi nhận lượt xem và khử trùng lặp theo phiên (`RECIPE_VIEW`).
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-02](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02): Thời gian tải trang hiển thị chi tiết bài viết $\le 2$ giây.
@@ -1699,7 +1862,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **AC-17.1 (Hiển thị đầy đủ thông tin trên thẻ món):**
   - *Given* một bài công thức đang ở trạng thái công khai hợp lệ,
   - *When* hệ thống hiển thị danh sách Khám phá,
-  - *Then* thẻ món thể hiện rõ ảnh bìa từ `RECIPE_MEDIA` (hoặc ảnh mặc định), tiêu đề món ăn, tên tác giả công khai, loại ăn chay, tổng thời gian, điểm đánh giá sao trung bình kèm `rating_count`, và tổng lượt xem `view_count` (không có nút hoặc số Like do Like đã bãi bỏ toàn diện theo FR-45).
+  - *Then* thẻ món thể hiện rõ ảnh bìa từ `RECIPE_MEDIA` (hoặc ảnh mặc định), tiêu đề món ăn, tên tác giả công khai, loại ăn chay, tổng thời gian, huy hiệu tỷ lệ % Like (`👍 {like_percentage}%` hoặc nhãn `Mới` theo BR-69), và tổng lượt xem `view_count` (lưu ý: Like/Dislike chỉ áp dụng cho bài công thức, không áp dụng cho bình luận theo FR-45).
 - **AC-17.2 (Gán ảnh mặc định khi bài viết không có ảnh):**
   - *Given* bài công thức công khai không có hình ảnh đính kèm,
   - *When* thẻ món được hiển thị,
@@ -1720,19 +1883,19 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 ---
 
 <a id="fr-18"></a>
-### FR-18 — Admin quản lý danh mục nguyên liệu, món ăn, đơn vị đo lường và bảng quy đổi
+### FR-18 — Admin quản lý danh mục nguyên liệu chuẩn, đơn vị đo lường và bảng quy đổi
 
 - **Mã yêu cầu:** FR-18
 - **Module:** M04, M09
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp giao diện quản trị chuyên biệt dành cho Administrator để quản lý các danh mục phân loại nền tảng của hệ thống: Danh mục nguyên liệu chuẩn (Standard Ingredient Catalog), Danh mục món ăn / công thức (Recipe Categories), Danh mục đơn vị đo lường chuẩn (`UNIT`), và Bảng quy đổi đơn vị theo nguyên liệu (`INGREDIENT_UNIT_CONVERSION`); Administrator có thẩm quyền xem, tìm kiếm, tạo mới, chỉnh sửa thông tin, cấu hình tỷ lệ quy đổi sang gam và ngừng sử dụng (soft-disable); hệ thống nghiêm cấm xóa vĩnh viễn (hard delete) các danh mục hoặc đơn vị đang được tham chiếu trong các bài công thức công khai.
+- **Tóm tắt yêu cầu:** Cung cấp giao diện quản trị chuyên biệt dành cho Administrator để quản lý các danh mục phân loại dữ liệu nền tảng của hệ thống: Danh mục nguyên liệu chuẩn (Standard Ingredient Catalog), Danh mục đơn vị đo lường chuẩn (`UNIT`), và Bảng quy đổi đơn vị theo nguyên liệu (`INGREDIENT_UNIT_CONVERSION`) (hệ thống không sử dụng bảng động `CATEGORY` / `RECIPE_CATEGORY`, thể loại món ăn được chuẩn hóa trực tiếp thành thuộc tính `dish_category` trên Recipe Post); Administrator có thẩm quyền xem, tìm kiếm, tạo mới, chỉnh sửa thông tin, cấu hình tỷ lệ quy đổi sang gam và ngừng sử dụng (soft-disable); hệ thống nghiêm cấm xóa vĩnh viễn (hard delete) các nguyên liệu hoặc đơn vị đang được tham chiếu trong các bài công thức công khai.
 - **Phạm vi nghiệp vụ:**
   - Quản lý danh mục nguyên liệu: Tên nguyên liệu chuẩn tiếng Việt, tên tiếng Anh (tùy chọn), nhóm nguyên liệu (Rau củ, Nấm, Đậu hạt, Gia vị, v.v.).
-  - Quản lý danh mục món: Tên danh mục (Món khai vị, Món chính, Món canh, Món kho chay, Món lẩu, Món tráng miệng...), mô tả, thứ tự hiển thị, trạng thái hoạt động.
   - Quản lý đơn vị đo lường (`UNIT`): Tên đơn vị, ký hiệu, nhóm thứ nguyên (`MASS`, `VOLUME`, `COUNT`), trạng thái hoạt động (BR-73).
   - Quản lý tỷ lệ quy đổi (`INGREDIENT_UNIT_CONVERSION`): Cấu hình tỷ lệ quy đổi từ một đơn vị đo lường sang khối lượng gam (`MASS` in grams) cho từng nguyên liệu cụ thể (ví dụ: 1 quả chuối $\approx 120\text{ g}$, 1 muỗng canh dầu ăn $\approx 14\text{ g}$) để phục vụ tính toán dinh dưỡng và kiểm tra hợp lệ khi xuất bản (BR-19, BR-73).
+  - Thể loại món (`dish_category`): Được quản lý theo danh mục giá trị chuẩn hóa thuộc hệ thống (món nước, món xào, món lẩu, món kho, món canh, món chiên, món hấp, món gỏi / salad, món cuốn, món nướng, món tráng miệng / chè), không yêu cầu bảo trì bảng phân cấp động.
   - Phân quyền: Độc quyền cho vai trò `Administrator` (M09).
 - **Phân loại Actor:**
   - Primary Actor: `Administrator`.
@@ -1741,8 +1904,8 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### 2. Use Cases & User Stories
 - **Danh sách Use Cases:**
   - `UC-18.1`: Tìm kiếm, xem danh sách và quản lý danh mục nguyên liệu chuẩn của hệ thống.
-  - `UC-18.2`: Thêm mới, chỉnh sửa hoặc chuyển trạng thái ngừng sử dụng danh mục món ăn.
-  - `UC-18.3`: Quản lý danh mục đơn vị đo lường `UNIT` và cấu hình bảng quy đổi `INGREDIENT_UNIT_CONVERSION`.
+  - `UC-18.2`: Quản lý danh mục đơn vị đo lường `UNIT` và phân loại thứ nguyên (`MASS`, `VOLUME`, `COUNT`).
+  - `UC-18.3`: Quản lý cấu hình bảng quy đổi đơn vị theo nguyên liệu `INGREDIENT_UNIT_CONVERSION`.
 - **User Stories:**
   - *Là một Administrator*, tôi muốn dễ dàng cập nhật danh mục nguyên liệu, đơn vị đo lường và tỷ lệ quy đổi sang gam cho từng nguyên liệu, để các thành viên có thể chọn đơn vị đa dạng khi đăng bài mà vẫn đảm bảo tính toán dinh dưỡng chính xác.
 
@@ -1750,24 +1913,24 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Tiền điều kiện:**
   - Người dùng đã đăng nhập với tài khoản có vai trò Administrator (FR-03, NFR-09).
 - **Kích hoạt (Trigger):**
-  - Administrator truy cập phân hệ "Quản lý danh mục" trên trang quản trị hệ thống.
+  - Administrator truy cập phân hệ "Quản lý danh mục nguyên liệu & quy đổi" trên trang quản trị hệ thống.
 
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow):**
-  - Bước 1: Administrator mở trang Quản lý danh mục món ăn hoặc Quản lý đơn vị & quy đổi.
+  - Bước 1: Administrator mở trang Quản lý nguyên liệu chuẩn hoặc Quản lý đơn vị & quy đổi.
   - Bước 2: Hệ thống hiển thị bảng danh sách các mục quản lý.
   - Bước 3: Administrator thêm/sửa thông tin đơn vị đo lường `UNIT` (tên, thứ nguyên `MASS`/`VOLUME`/`COUNT`) hoặc cấu hình tỷ lệ quy đổi trong `INGREDIENT_UNIT_CONVERSION` (chọn nguyên liệu, chọn đơn vị, nhập số gam tương đương).
   - Bước 4: Hệ thống kiểm tra dữ liệu hợp lệ: tỷ lệ quy đổi $> 0$, không trùng lặp cặp `(ingredient_id, unit_id)`.
   - Bước 5: Administrator nhấn "Lưu". Hệ thống ghi nhận vào cơ sở dữ liệu và kích hoạt trạng thái sử dụng ngay lập tức cho các bài viết.
 - **Luồng thay thế (Alternative Flows):**
-  - *AF-18.1 (Chỉnh sửa danh mục hiện có):* Administrator sửa tên hoặc mô tả của danh mục. Hệ thống cập nhật và tự động phản ánh tên mới trên tất cả các bài viết đang thuộc danh mục đó.
-  - *AF-18.2 (Ngừng sử dụng danh mục hoặc đơn vị):* Administrator chọn chuyển trạng thái sang `Ngừng dùng` (Soft-disable). Mục này không còn xuất hiện trong danh sách lựa chọn khi tạo bài viết mới, nhưng các bài công thức cũ đã gắn vẫn giữ nguyên liên kết lịch sử.
+  - *AF-18.1 (Chỉnh sửa nguyên liệu/đơn vị hiện có):* Administrator sửa tên hoặc mô tả của nguyên liệu/đơn vị. Hệ thống cập nhật và tự động phản ánh tên mới trên các giao diện liên quan.
+  - *AF-18.2 (Ngừng sử dụng nguyên liệu hoặc đơn vị):* Administrator chọn chuyển trạng thái sang `Ngừng dùng` (Soft-disable). Mục này không còn xuất hiện trong danh sách lựa chọn khi tạo bài viết mới, nhưng các bài công thức cũ đã gắn vẫn giữ nguyên liên kết lịch sử.
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-18.1 (Cố gắng xóa cứng danh mục hoặc đơn vị đang được sử dụng):* Nếu Administrator cố gắng xóa vĩnh viễn (hard delete) một danh mục, đơn vị hoặc tỷ lệ quy đổi đang có bài công thức tham chiếu, hệ thống từ chối xóa và hiển thị thông báo: *"Không thể xóa dữ liệu đang có bài công thức tham chiếu. Vui lòng chọn Ngừng sử dụng."* (BR-53, BR-64).
+  - *EF-18.1 (Cố gắng xóa cứng nguyên liệu hoặc đơn vị đang được sử dụng):* Nếu Administrator cố gắng xóa vĩnh viễn (hard delete) một nguyên liệu, đơn vị hoặc tỷ lệ quy đổi đang có bài công thức tham chiếu, hệ thống từ chối xóa và hiển thị thông báo: *"Không thể xóa dữ liệu đang có bài công thức tham chiếu. Vui lòng chọn Ngừng sử dụng."* (BR-53, BR-64).
   - *SF-18.1 (Chặn truy cập trái phép phân hệ danh mục):* Người dùng không có vai trò Administrator (Member hoặc Guest) khi truy cập các API quản lý danh mục sẽ bị từ chối ngay với mã lỗi 403 Forbidden (NFR-09).
 
 #### 5. Hậu điều kiện (Postconditions)
-- Bản ghi danh mục nguyên liệu, món ăn, đơn vị `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION` được lưu trữ an toàn.
+- Bản ghi danh mục nguyên liệu, đơn vị `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION` được lưu trữ an toàn.
 - Hệ thống danh mục phân loại luôn giữ được tính toàn vẹn dữ liệu.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
@@ -1777,7 +1940,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
   - [BR-06](BUSINESS-RULES.md#br-06): Bảo mật hệ thống và phân quyền quản trị.
-  - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
+  - [BR-07](BUSINESS-RULES.md#br-07): Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia (Role = EXPERT).
   - [BR-14](BUSINESS-RULES.md#br-14): Định lượng nguyên liệu số học theo đơn vị chuẩn.
   - [BR-17](BUSINESS-RULES.md#br-17): Gắn quyền tác giả với tài khoản đăng bài.
   - [BR-53](BUSINESS-RULES.md#br-53): Cấm xóa vĩnh viễn nguyên liệu/danh mục đã tham chiếu.
@@ -1794,17 +1957,17 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* người dùng đăng nhập tài khoản Member thông thường,
   - *When* cố gắng truy cập trang hoặc gọi API quản lý danh mục/đơn vị/bảng quy đổi,
   - *Then* hệ thống từ chối thực hiện và phản hồi mã lỗi 403 Forbidden.
-- **AC-18.2 (Thêm mới danh mục món ăn hợp lệ):**
-  - *Given* Administrator nhập tên danh mục món ăn mới hợp lệ chưa từng tồn tại,
-  - *When* nhấn lưu danh mục,
-  - *Then* hệ thống tạo mới danh mục thành công và hiển thị trong danh sách lựa chọn phân loại.
+- **AC-18.2 (Thêm mới nguyên liệu chuẩn hợp lệ):**
+  - *Given* Administrator nhập tên nguyên liệu chuẩn mới hợp lệ chưa từng tồn tại,
+  - *When* nhấn lưu nguyên liệu,
+  - *Then* hệ thống tạo mới nguyên liệu thành công và hiển thị trong danh sách lựa chọn nguyên liệu khi tạo bài viết.
 - **AC-18.3 (Cấu hình tỷ lệ quy đổi nguyên liệu - đơn vị thành công):**
   - *Given* Administrator chọn nguyên liệu "Chuối tây", chọn đơn vị "quả" (thứ nguyên `COUNT`), và nhập tỷ lệ quy đổi là 120 gam,
   - *When* nhấn lưu cấu hình quy đổi,
   - *Then* hệ thống ghi nhận vào bảng `INGREDIENT_UNIT_CONVERSION` thành công và cho phép các công thức chứa "Chuối tây" dùng đơn vị "quả" vượt qua validation xuất bản (BR-73).
-- **AC-18.4 (Ngăn chặn xóa vĩnh viễn danh mục/đơn vị đang có bài viết liên kết):**
-  - *Given* danh mục "Món canh chay" đang có 10 bài công thức công khai liên kết,
-  - *When* Administrator gửi yêu cầu xóa vĩnh viễn danh mục này,
+- **AC-18.4 (Ngăn chặn xóa vĩnh viễn nguyên liệu/đơn vị đang có bài viết liên kết):**
+  - *Given* nguyên liệu "Đậu phụ mơ" đang có 10 bài công thức công khai liên kết,
+  - *When* Administrator gửi yêu cầu xóa vĩnh viễn nguyên liệu này,
   - *Then* hệ thống từ chối xóa, giữ nguyên dữ liệu và yêu cầu chuyển sang trạng thái ngừng sử dụng.
 
 ---
@@ -1817,14 +1980,14 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp cơ chế nhập danh sách nguyên liệu linh hoạt và trực quan khi Member soạn thảo bài công thức nấu ăn: mỗi bài công thức có từ 1 đến 50 dòng nguyên liệu (BR-19); tác giả có thể tìm kiếm và chọn nguyên liệu có sẵn từ danh mục chuẩn (FR-18) hoặc tự do nhập tên nguyên liệu mới khi không tìm thấy trong danh mục (BR-12, BR-50); với mỗi dòng nguyên liệu, tác giả bắt buộc phải khai báo định lượng số học dương (`quantity > 0`) kết hợp với đơn vị đo lường hợp lệ thuộc danh mục `UNIT` (như g, kg, ml, l, muỗng canh, thìa cà phê, quả, củ, bìa...); **bãi bỏ hoàn toàn và nghiêm cấm mức định lượng phi số học "vừa đủ"** (BR-14); nếu nguyên liệu sử dụng đơn vị cần quy đổi sang gam mà chưa có tỷ lệ quy đổi tương ứng trong `INGREDIENT_UNIT_CONVERSION`, hệ thống **BẮT BUỘC CHẶN XUẤT BẢN** (BR-19, BR-73); hệ thống luôn lưu trữ và bảo toàn tên hiển thị nguyên liệu do tác giả nhập kết hợp với liên kết tham chiếu tùy chọn tới nguyên liệu chuẩn (BR-12).
+- **Tóm tắt yêu cầu:** Cung cấp cơ chế nhập danh sách nguyên liệu linh hoạt và trực quan khi Chuyên gia soạn thảo bài công thức nấu ăn: mỗi bài công thức có từ 1 đến 50 dòng nguyên liệu (BR-19); tác giả có thể tìm kiếm và chọn nguyên liệu có sẵn từ danh mục chuẩn (FR-18) hoặc tự do nhập tên nguyên liệu mới khi không tìm thấy trong danh mục (BR-12, BR-50); với mỗi dòng nguyên liệu, tác giả bắt buộc phải khai báo định lượng số học dương (`quantity > 0`) kết hợp với đơn vị đo lường hợp lệ thuộc danh mục `UNIT` (như g, kg, ml, l, muỗng canh, thìa cà phê, quả, củ, bìa...); **bãi bỏ hoàn toàn và nghiêm cấm mức định lượng phi số học "vừa đủ"** (BR-14); nếu nguyên liệu sử dụng đơn vị cần quy đổi sang gam mà chưa có tỷ lệ quy đổi tương ứng trong `INGREDIENT_UNIT_CONVERSION`, hệ thống **BẮT BUỘC CHẶN XUẤT BẢN** (BR-19, BR-73); hệ thống luôn lưu trữ và bảo toàn tên hiển thị nguyên liệu do tác giả nhập kết hợp với liên kết tham chiếu tùy chọn tới nguyên liệu chuẩn (BR-12).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Mọi bài Recipe Post tạo mới hoặc chỉnh sửa trong hệ thống (FR-04, FR-16, FR-44).
   - Số lượng: Tối thiểu 1 dòng nguyên liệu, tối đa 50 dòng nguyên liệu (BR-19).
   - Định lượng bắt buộc: 100% dòng nguyên liệu phải có số lượng số học dương (`quantity > 0`) và đơn vị đo hợp lệ; cấm tuyệt đối chữ "vừa đủ" (BR-14).
   - Ràng buộc quy đổi: Bắt buộc có tỷ lệ quy đổi về gam trong `INGREDIENT_UNIT_CONVERSION` đối với các đơn vị ngoài `MASS` g/kg để phục vụ tính dinh dưỡng (BR-73).
 - **Phân loại Actor:**
-  - Primary Actor: `Member`, `Administrator` (tác giả bài viết).
+  - Primary Actor: `Chuyên gia` (tác giả bài viết).
   - Supporting Actor: `Hệ thống gợi ý và chuẩn hóa nguyên liệu`.
 
 #### 2. Use Cases & User Stories
@@ -1929,29 +2092,32 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - `UC-20.1`: Xem trang chi tiết đầy đủ của bài công thức được kết xuất từ nguồn dữ liệu duy nhất.
   - `UC-20.2`: Xem các tham chiếu công thức trong Lịch ăn và Danh sách đã lưu tự động cập nhật đồng bộ khi bài nguồn thay đổi.
   - `UC-20.3`: Xem hiển thị trạng thái Tombstone an toàn trong Lịch ăn khi bài công thức nguồn bị xóa hoặc tạm ẩn.
+  - `UC-20.4`: Xuất bản in/tệp tin công thức chi tiết dạng PDF hoặc TXT (Export recipe detail).
 - **User Stories:**
   - *Là một người sử dụng hệ thống*, tôi muốn khi tác giả cập nhật công thức nấu ăn thì các món tôi đã lưu trong lịch ăn cũng tự động cập nhật theo, và nếu bài viết có bị xóa thì lịch ăn của tôi vẫn còn ghi nhớ tên món chứ không bị mất trắng.
+  - *Là một người nội trợ*, tôi muốn có nút xuất công thức ra tệp PDF hoặc TXT để dễ dàng in ấn mang vào bếp hoặc lưu trữ ngoại tuyến khi nấu ăn.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
-  - Bài công thức đã được tạo và lưu trữ trong cơ sở dữ liệu hệ thống (FR-04, FR-07).
+  - Bài công thức đã được Chuyên gia tạo và lưu trữ trong cơ sở dữ liệu hệ thống (FR-04); FR-07 đã `RETIRED`.
 - **Kích hoạt (Trigger):**
-  - Người dùng truy cập trang chi tiết công thức, xem thẻ món, hoặc mở Lịch ăn tuần.
+  - Người dùng truy cập trang chi tiết công thức, xem thẻ món, mở Lịch ăn tuần, hoặc nhấn nút xuất công thức.
 
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow):**
   - Bước 1: Người dùng nhấp vào một thẻ món trong trang Khám phá hoặc trong Lịch ăn tuần.
   - Bước 2: Hệ thống truy vấn trực tiếp bản thể Recipe Post từ cơ sở dữ liệu dựa trên mã định danh công thức duy nhất (`recipeId`).
   - Bước 3: Hệ thống kết xuất Trang chi tiết công thức (Recipe Detail View) gồm đầy đủ các khối dữ liệu:
-    - Tiêu đề, Tác giả (FR-23), Phân loại ăn chay, Ngày đăng/cập nhật.
+    - Tiêu đề, Tác giả (FR-23), Phân loại ăn chay, Thể loại món chuẩn hóa (`dish_category`), Ngày đăng/cập nhật.
     - Thời gian chuẩn bị, Thời gian nấu, Khẩu phần (FR-16).
     - Thư viện ảnh từ `RECIPE_MEDIA` (tối đa 5 ảnh với 1 ảnh bìa, FR-14) và Video YouTube nhúng (FR-15).
-    - Điểm đánh giá sao trung bình kèm tổng số lượt đánh giá (`rating_count`) theo BR-69; hiển thị form đánh giá 1–5 sao cho Member (Guest chỉ xem điểm, tác giả không được tự đánh giá).
+    - Tỷ lệ % Like (`like_percentage`) kèm tổng số lượt Like và Dislike theo BR-69; hiển thị hai nút tương tác Like / Dislike cho Member (hỗ trợ toggle off hoặc chuyển đổi phản hồi; Guest nhấn vào thì hiển thị yêu cầu đăng nhập theo BR-05; tác giả bài viết bị chặn tự bình chọn).
     - Tổng số lượt xem hợp lệ (`RECIPE_VIEW`) theo BR-70; ghi nhận lượt xem nếu ngoài cửa sổ khử trùng lặp 30 phút.
     - Mô tả giới thiệu món ăn.
     - Danh sách 1–50 nguyên liệu kèm định lượng số học và đơn vị chuẩn (FR-19).
     - Bảng ước tính 9 chỉ tiêu dinh dưỡng trên 1 khẩu phần (FR-39).
-    - Danh sách các bước hướng dẫn chuẩn bị/chế biến tuần tự (`RECIPE_STEP`, 1–30 bước) có thứ tự rõ ràng (FR-16, FR-22).
+    - Nội dung hướng dẫn chuẩn bị/chế biến (`instructions`, 10–5.000 ký tự) rõ ràng, linh hoạt (FR-16).
+    - Nút chức năng "Xuất công thức" hỗ trợ tải tệp PDF hoặc TXT (UC-20.4).
     - Khu vực bình luận và thảo luận cộng đồng nhiều cấp (FR-46).
   - Bước 4: Trang hiển thị hoàn tất trong thời gian $\le 2$ giây (NFR-02).
 - **Luồng thay thế (Alternative Flows):**
@@ -1960,6 +2126,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     - Trạng thái bài viết chuyển sang `DELETED` hoặc `HIDDEN`.
     - Bài viết lập tức biến mất khỏi trang Khám phá, Tìm kiếm và pool gợi ý AI.
     - Tại các ô Lịch ăn tuần (FR-09) và Danh sách đã lưu (FR-32) của người dùng khác, hệ thống giữ nguyên liên kết nhưng hiển thị dạng Tombstone: *"Công thức không còn khả dụng"* và vô hiệu hóa link mở chi tiết (BR-35, BR-64).
+  - *AF-20.3 (Xuất tệp tin công thức PDF / TXT):* Người dùng nhấn nút "Xuất công thức", chọn định dạng PDF hoặc TXT. Trình duyệt tải xuống tệp tin bản in hoàn chỉnh định dạng trang A4 rõ nét bao gồm tên món, phân loại, nguyên liệu định lượng và hướng dẫn nấu.
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
   - *EF-20.1 (Truy cập trực tiếp bài viết không tồn tại hoặc đã bị xóa):* Nếu người dùng truy cập trực tiếp qua URL của bài viết đã bị xóa hoàn toàn, hệ thống phản hồi trang thông báo lỗi 404 thân thiện nêu rõ nội dung không còn khả dụng.
   - *SF-20.1 (Ngăn chặn nhân bản dữ liệu bài viết):* Kiến trúc cơ sở dữ liệu sử dụng khóa ngoại chặt chẽ trỏ về bảng công thức gốc, ngăn ngừa việc nhân bản dữ liệu gây bất nhất quán dữ liệu giữa các phân hệ (NFR-08).
@@ -1970,7 +2137,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - Trải nghiệm người dùng không bị gián đoạn khi dữ liệu gốc biến động.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Mọi người dùng đều có quyền xem chi tiết công thức công khai. Member được đánh giá sao (BR-69), Guest chỉ xem điểm.
+- **Quyền hạn:** Mọi người dùng đều có quyền xem chi tiết công thức công khai và xuất tệp PDF/TXT. Member được bình chọn Like/Dislike (BR-69), Guest chỉ xem tỷ lệ %.
 - **Ràng buộc kiến trúc:** Single Source of Truth; không tạo bản sao độc lập; áp dụng Tombstone pattern (BR-35, BR-64).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
@@ -1979,10 +2146,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - [BR-18](BUSINESS-RULES.md#br-18): Bảo vệ quyền riêng tư trong hồ sơ tác giả công khai.
   - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của mô tả giới thiệu và ảnh đại diện.
   - [BR-32](BUSINESS-RULES.md#br-32): Yêu cầu đăng nhập đối với Công thức đã lưu và Lịch ăn.
-  - [BR-33](BUSINESS-RULES.md#br-33): Thao tác lưu công thức không tiêu thụ hạn mức AI.
+  - [BR-33](BUSINESS-RULES.md#br-33): Thao tác lưu công thức không gọi Gemini.
   - [BR-35](BUSINESS-RULES.md#br-35): Độc lập vòng đời giữa Công thức đã lưu và Lịch ăn (Tombstone).
   - [BR-64](BUSINESS-RULES.md#br-64): Quyền sửa và xóa bài công thức của chính tác giả.
-  - [BR-69](BUSINESS-RULES.md#br-69): Đánh giá chất lượng bài công thức từ 1 đến 5 sao (`RECIPE_RATING`).
+  - [BR-69](BUSINESS-RULES.md#br-69): Tương tác Like / Dislike và tỷ lệ hài lòng (% Like) của bài công thức.
   - [BR-70](BUSINESS-RULES.md#br-70): Ghi nhận lượt xem và khử trùng lặp theo phiên (`RECIPE_VIEW`).
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-02](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02): Thời gian tải trang hiển thị chi tiết bài viết $\le 2$ giây.
@@ -1994,16 +2161,20 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **AC-20.1 (Hiển thị trang chi tiết công thức từ nguồn dữ liệu duy nhất):**
   - *Given* bài công thức công khai tồn tại trong hệ thống,
   - *When* người dùng mở xem trang chi tiết,
-  - *Then* hệ thống kết xuất đầy đủ thông tin chuẩn (tiêu đề, nguyên liệu định lượng số, khẩu phần, thời gian, dinh dưỡng, các bước thực hiện `RECIPE_STEP`, thư viện ảnh `RECIPE_MEDIA`, video YouTube nhúng, điểm đánh giá sao `RECIPE_RATING`, lượt xem `RECIPE_VIEW`) từ bản thể dữ liệu duy nhất.
+  - *Then* hệ thống kết xuất đầy đủ thông tin chuẩn (tiêu đề, nguyên liệu định lượng số, khẩu phần, thời gian, dinh dưỡng, thể loại món `dish_category`, hướng dẫn chế biến `instructions`, thư viện ảnh `RECIPE_MEDIA`, video YouTube nhúng, tỷ lệ % Like và số lượt bình chọn `RECIPE_REACTION`, lượt xem `RECIPE_VIEW`) từ bản thể dữ liệu duy nhất.
 - **AC-20.2 (Đồng bộ tức thì khi tác giả chỉnh sửa bài viết):**
-  - *Given* tác giả vừa cập nhật thành công tiêu đề, các bước nấu hoặc nguyên liệu của bài công thức,
+  - *Given* tác giả vừa cập nhật thành công tiêu đề, hướng dẫn chế biến hoặc nguyên liệu của bài công thức,
   - *When* một người dùng khác mở xem bài viết đó hoặc xem trong Lịch ăn tuần,
   - *Then* thông tin mới cập nhật được phản ánh chính xác ngay lập tức mà không cần đồng bộ thủ công.
 - **AC-20.3 (Bảo toàn Tombstone trong Lịch ăn khi bài nguồn bị xóa):**
   - *Given* một bài công thức đang được lưu trong Lịch ăn của Member B,
   - *When* tác giả Member A thực hiện xóa bài công thức đó,
   - *Then* ô tương ứng trong Lịch ăn của Member B hiển thị trạng thái "Công thức không còn khả dụng" và không gây lỗi sập trang.
-- **AC-20.4 (Thời gian tải trang chi tiết đáp ứng chuẩn NFR):**
+- **AC-20.4 (Xuất bản tệp tin công thức chi tiết sang PDF / TXT):**
+  - *Given* người dùng đang xem trang chi tiết bài công thức hợp lệ,
+  - *When* người dùng nhấn nút "Xuất công thức" và chọn định dạng PDF hoặc TXT,
+  - *Then* hệ thống tạo và tải xuống tệp tin chứa đầy đủ tiêu đề, tác giả, thể loại món, khẩu phần, định lượng nguyên liệu và hướng dẫn chế biến với định dạng chuẩn trang in (A4 đối với PDF).
+- **AC-20.5 (Thời gian tải trang chi tiết đáp ứng chuẩn NFR):**
   - *Given* bài công thức có ảnh đại diện và nội dung hướng dẫn chế biến dài 5.000 ký tự,
   - *When* người dùng truy cập trang chi tiết,
   - *Then* toàn bộ nội dung được tải và hiển thị hoàn tất trong thời gian không vượt quá 2 giây.
@@ -2011,53 +2182,53 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 ---
 
 <a id="fr-21"></a>
-### FR-21 — AI hỗ trợ tạo giới thiệu hoặc danh sách các bước chuẩn bị/chế biến không lưu nháp server
+### FR-21 — AI hỗ trợ tạo giới thiệu hoặc hướng dẫn chế biến không lưu nháp server
 
 - **Mã yêu cầu:** FR-21
 - **Module:** M03, M06
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Member trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn (Description $\le 2.000$ ký tự) hoặc đề xuất danh sách các bước hướng dẫn chuẩn bị/chế biến tuần tự (từ 1 đến 30 bước, mỗi bước từ 10 đến 2.000 ký tự theo FR-16, FR-22) dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập; kết quả do AI sinh ra được đưa trực tiếp vào các ô nhập liệu của biểu mẫu ở phía client (danh sách các bước `RECIPE_STEP`) ở dạng có thể chỉnh sửa tự do và chỉ được công khai khi người dùng chủ động xem xét, xác nhận (BR-15); hệ thống TUYỆT ĐỐI KHÔNG tự động công khai, không tự động lưu trữ bản nháp bền vững trên server (No Persistent Server Draft theo FR-24); tính năng thuộc gói Plus và Pro (FR-10, BR-02); nếu AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói Plus/Pro, tác giả vẫn có toàn quyền tiếp tục tự viết các bước và xuất bản bài viết bình thường (BR-16).
+- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Chuyên gia trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn (Description $\le 2.000$ ký tự) hoặc đề xuất nội dung hướng dẫn chế biến (văn bản từ 10 đến 5.000 ký tự theo FR-16, BR-19) dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, thể loại món `dish_category`, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập; kết quả do AI sinh ra được đưa trực tiếp vào các ô nhập liệu của biểu mẫu ở phía client (ô mô tả `description` hoặc ô hướng dẫn chế biến `instructions`) ở dạng có thể chỉnh sửa tự do và chỉ được công khai khi người dùng chủ động xem xét, xác nhận (BR-15); hệ thống TUYỆT ĐỐI KHÔNG tự động công khai, không tự động lưu trữ bản nháp bền vững trên server (No Persistent Server Draft theo FR-24); tính năng thuộc gói Plus và Pro (FR-10, BR-02); nếu AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói Plus/Pro, tác giả vẫn có toàn quyền tiếp tục tự viết hướng dẫn chế biến và xuất bản bài viết bình thường (BR-16).
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Member đã đăng nhập và đang đăng ký gói Plus hoặc Pro còn hiệu lực (FR-03, FR-10, BR-02).
+  - Áp dụng cho: Chuyên gia đã đăng nhập và đang đăng ký gói Plus hoặc Pro còn hiệu lực (FR-03, FR-10, BR-02).
   - Khả năng hỗ trợ:
     1. Gợi ý đoạn giới thiệu món ăn (Description $\le 2.000$ ký tự).
-    2. Đề xuất danh sách các bước hướng dẫn chuẩn bị/chế biến tuần tự (1–30 bước `RECIPE_STEP`, mỗi bước từ 10 đến 2.000 ký tự).
+    2. Đề xuất nội dung hướng dẫn chế biến linh hoạt (`instructions`, từ 10 đến 5.000 ký tự).
   - Không hỗ trợ: AI không tự thêm nguyên liệu; không tự động công khai; không lưu server draft (FR-24).
 - **Phân loại Actor:**
-  - Primary Actor: `Member` (tác giả bài viết).
+  - Primary Actor: `Chuyên gia (Role = EXPERT)` (tác giả bài viết).
   - Supporting Actor: `Google Gemini AI` (trợ lý sinh nội dung), `Hệ thống xác thực quyền tính năng (Feature Entitlement)`.
 
 #### 2. Use Cases & User Stories
 - **Danh sách Use Cases:**
   - `UC-21.1`: Yêu cầu AI gợi ý đoạn văn bản giới thiệu món ăn dựa trên nguyên liệu và tên món đã nhập.
-  - `UC-21.2`: Yêu cầu AI đề xuất danh sách các bước chuẩn bị/chế biến tuần tự (1–30 bước) dựa trên danh sách nguyên liệu.
+  - `UC-21.2`: Yêu cầu AI đề xuất nội dung hướng dẫn chế biến linh hoạt (10–5.000 ký tự) dựa trên danh sách nguyên liệu.
 - **User Stories:**
-  - *Là một người thích nấu ăn nhưng ngại viết văn*, tôi muốn nhờ AI gợi ý giúp một đoạn mô tả món ăn hấp dẫn và các bước hướng dẫn chuẩn bị/chế biến rõ ràng từ những nguyên liệu tôi đã chọn, để tôi có thể chỉnh sửa lại cho đúng bí quyết của mình và chủ động xác nhận đăng bài nhanh chóng hơn.
+  - *Là một Chuyên gia ẩm thực*, tôi muốn nhờ AI gợi ý giúp một đoạn mô tả món ăn hấp dẫn và hướng dẫn chế biến rõ ràng từ những nguyên liệu tôi đã chọn, để tôi có thể chỉnh sửa lại cho đúng bí quyết của mình và chủ động xác nhận đăng bài nhanh chóng hơn.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
-  - Người dùng đã đăng nhập tài khoản Member hợp lệ (FR-03).
-  - Tài khoản Member đang đăng ký gói Plus hoặc Pro còn hiệu lực (FR-10, BR-02, BR-03).
+  - Người dùng đã đăng nhập tài khoản Chuyên gia hợp lệ (FR-03, FR-04).
+  - Tài khoản Chuyên gia đang đăng ký gói Plus hoặc Pro còn hiệu lực (FR-10, BR-02, BR-03).
   - Tác giả đã nhập ít nhất Tên món ăn và danh sách Nguyên liệu trong biểu mẫu (FR-16, FR-19).
 - **Kích hoạt (Trigger):**
-  - Tác giả nhấn nút "Nhờ AI gợi ý giới thiệu" hoặc "Nhờ AI gợi ý các bước chế biến" trong trình soạn thảo.
+  - Tác giả nhấn nút "Nhờ AI gợi ý giới thiệu" hoặc "Nhờ AI gợi ý hướng dẫn chế biến" trong trình soạn thảo.
 
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow):**
-  - Bước 1: Tác giả nhấn nút "Nhờ AI gợi ý các bước chế biến" (hoặc "gợi ý giới thiệu").
-  - Bước 2: Hệ thống kiểm tra quyền tính năng (Feature Entitlement) của tài khoản Member (FR-10, BR-02, BR-03).
-  - Bước 3: Hệ thống trích xuất thông tin tác giả đã nhập: Tên món ăn, Loại ăn chay, Khẩu phần, và Danh sách tên các nguyên liệu kèm định lượng số dương (FR-19).
+  - Bước 1: Tác giả nhấn nút "Nhờ AI gợi ý hướng dẫn chế biến" (hoặc "gợi ý giới thiệu").
+  - Bước 2: Hệ thống kiểm tra quyền tính năng (Feature Entitlement) của tài khoản (FR-10, BR-02, BR-03).
+  - Bước 3: Hệ thống trích xuất thông tin tác giả đã nhập: Tên món ăn, Loại ăn chay, Thể loại món `dish_category`, Khẩu phần, và Danh sách tên các nguyên liệu kèm định lượng số dương (FR-19).
   - Bước 4: Hệ thống gửi prompt tới Google Gemini qua API bảo mật phía server (BR-06, đáp ứng NFR-03). Prompt bắt buộc yêu cầu:
     - Chỉ được sử dụng các nguyên liệu tác giả đã cung cấp.
     - Tuyệt đối không tự ý thêm nguyên liệu mới ngoài danh sách.
-    - Định dạng kết quả trả về: Nếu gợi ý bước làm, trả về danh sách các bước tuần tự (1–30 bước, mỗi bước từ 10 đến 2.000 ký tự); nếu gợi ý giới thiệu, trả về đoạn văn bản súc tích $\le 2.000$ ký tự.
+    - Định dạng kết quả trả về: Nếu gợi ý hướng dẫn chế biến, trả về văn bản hướng dẫn chi tiết mạch lạc (từ 10 đến 5.000 ký tự); nếu gợi ý giới thiệu, trả về đoạn văn bản súc tích $\le 2.000$ ký tự.
   - Bước 5: Google Gemini phản hồi nội dung đề xuất thành công trong thời gian quy định tại NFR-03.
   - Bước 6: Hệ thống ghi nhận dữ liệu đo lường kỹ thuật (telemetry nếu có theo BR-04) và không áp dụng quota tính theo lượt.
-  - Bước 7: Hệ thống đưa nội dung AI sinh trực tiếp vào các ô nhập liệu tương ứng trên trình soạn thảo giao diện phía client (điền vào các ô `RECIPE_STEP` theo thứ tự `step_order` 1..N) dưới dạng có thể chỉnh sửa hoàn toàn.
-  - Bước 8: Tác giả tự do đọc lại, chỉnh sửa câu từ từng bước, bổ sung hoặc sắp xếp lại các bước (FR-22) cho phù hợp với thực tế chế biến của mình. AI tuyệt đối không tự động công khai bài viết.
-  - Bước 9: Khi tác giả chủ động nhấn "Đăng công thức", bài viết được kiểm tra validation (bao gồm bắt buộc có từ 1 đến 30 bước chế biến, mỗi bước 10–2.000 ký tự theo BR-19) và xuất bản trực tiếp (BR-07, BR-19, BR-25).
+  - Bước 7: Hệ thống đưa nội dung AI sinh trực tiếp vào ô nhập liệu tương ứng trên trình soạn thảo giao diện phía client (điền vào ô `instructions` hoặc ô `description`) dưới dạng có thể chỉnh sửa hoàn toàn.
+  - Bước 8: Tác giả tự do đọc lại, chỉnh sửa câu từ, bổ sung kinh nghiệm cá nhân cho phù hợp với thực tế chế biến của mình. AI tuyệt đối không tự động công khai bài viết.
+  - Bước 9: Khi tác giả chủ động nhấn "Đăng công thức", bài viết được kiểm tra validation (bao gồm bắt buộc có hướng dẫn chế biến từ 10–5.000 ký tự theo BR-19) và xuất bản trực tiếp (BR-07, BR-19, BR-25).
   - Bước 10: Toàn bộ quá trình TUYỆT ĐỐI KHÔNG ghi bất kỳ bản ghi lưu nháp tạm thời nào vào cơ sở dữ liệu server (FR-24).
 - **Luồng thay thế (Alternative Flows):**
   - *AF-21.1 (Tác giả không hài lòng với nội dung AI gợi ý):* Tác giả có thể nhấn nút "Xóa gợi ý" để quay về trạng thái trống hoặc tự gõ lại bằng tay.
@@ -2067,12 +2238,12 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *SF-21.1 (Không lưu nháp server - Tuân thủ ranh giới FR-24):* Hệ thống không cung cấp chức năng lưu nháp trên máy chủ cho tính năng này; nếu tác giả rời khỏi biểu mẫu trước khi bấm công khai, dữ liệu dở dang không được bảo đảm lưu trữ bền vững trên máy chủ (FR-24).
 
 #### 5. Hậu điều kiện (Postconditions)
-- Nội dung gợi ý của AI được điền vào trình soạn thảo client dưới dạng các bước có thể chỉnh sửa để tác giả toàn quyền kiểm soát.
+- Nội dung gợi ý của AI được điền vào ô hướng dẫn chế biến hoặc giới thiệu trên client để tác giả toàn quyền kiểm soát.
 - Dữ liệu đo lường kỹ thuật được ghi nhận phục vụ đối soát chi phí (nếu có theo BR-04).
 - Cơ sở dữ liệu server không lưu trữ bất kỳ bản ghi nháp dở dang nào.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Chỉ Member đã đăng nhập và đang sử dụng gói Plus hoặc Pro còn hiệu lực mới được sử dụng.
+- **Quyền hạn:** Chỉ Chuyên gia đã đăng nhập và đang sử dụng gói Plus hoặc Pro còn hiệu lực mới được sử dụng.
 - **Ràng buộc an toàn:** AI không tự thêm nguyên liệu; kết quả AI phải ở dạng chỉnh sửa được và AI không được tự ý công khai; không lưu nháp server (FR-24); không chặn đăng bài khi AI lỗi (BR-16).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
@@ -2082,9 +2253,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - [BR-03](BUSINESS-RULES.md#br-03): Xác thực quyền tính năng trước khi gọi dịch vụ AI.
   - [BR-04](BUSINESS-RULES.md#br-04): Xử lý lỗi provider, timeout AI và lưu trữ telemetry.
   - [BR-06](BUSINESS-RULES.md#br-06): Bảo mật API Key của AI Provider.
+  - [BR-07](BUSINESS-RULES.md#br-07): Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia (Role = EXPERT).
   - [BR-15](BUSINESS-RULES.md#br-15): Đồng nhất chính sách bài viết tự soạn và bài có AI hỗ trợ.
   - [BR-16](BUSINESS-RULES.md#br-16): Không chặn công khai bài viết khi AI lỗi hoặc gói không hỗ trợ tính năng AI.
-  - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post.
+  - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post (hướng dẫn chế biến linh hoạt, 0..5 ảnh với 1 ảnh bìa, tỷ lệ quy đổi đơn vị).
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03): Thời gian phản hồi của tính năng AI Chatbot.
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
@@ -2095,23 +2267,23 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### 8. Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
 - **AC-21.1 (AI sinh nội dung không tự ý thêm nguyên liệu mới):**
   - *Given* tác giả khai báo danh sách nguyên liệu chỉ gồm "Đậu phụ, Cà chua, Hành boa-rô",
-  - *When* AI sinh danh sách các bước chuẩn bị/chế biến,
+  - *When* AI sinh nội dung hướng dẫn chế biến,
   - *Then* toàn bộ nội dung hướng dẫn chỉ sử dụng các nguyên liệu đã khai báo và tuyệt đối không xuất hiện nguyên liệu mới (như nấm, ớt chuông...).
-- **AC-21.2 (Đưa danh sách bước AI sinh vào form soạn thảo dưới dạng có thể chỉnh sửa):**
-  - *Given* AI phản hồi thành công danh sách các bước chuẩn bị/chế biến (ví dụ: 4 bước),
+- **AC-21.2 (Đưa nội dung AI sinh vào form soạn thảo dưới dạng có thể chỉnh sửa):**
+  - *Given* AI phản hồi thành công nội dung hướng dẫn chế biến (10–5.000 ký tự),
   - *When* dữ liệu trả về client,
-  - *Then* các bước được tự động điền vào các ô nhập liệu `RECIPE_STEP` tương ứng trên form kèm số thứ tự tuần tự 1..4 để tác giả có thể chỉnh sửa, thêm, xóa hoặc sắp xếp lại trực tiếp và chỉ được công khai khi tác giả chủ động bấm đăng.
+  - *Then* nội dung được tự động điền vào ô nhập liệu `instructions` trên form để tác giả có thể chỉnh sửa trực tiếp và chỉ được công khai khi tác giả chủ động bấm đăng.
 - **AC-21.3 (Tuyệt đối không lưu trữ bản nháp trên server):**
   - *Given* tác giả sử dụng AI hỗ trợ soạn bài nhưng chưa nhấn nút "Đăng công thức",
   - *When* kiểm tra cơ sở dữ liệu hệ thống trên máy chủ,
   - *Then* không có bất kỳ bản ghi bài viết nháp nào được lưu trên server.
 - **AC-21.4 (Không chặn xuất bản bài viết khi AI lỗi hoặc tài khoản gói Free):**
-  - *Given* tài khoản Member thuộc gói Free hoặc dịch vụ AI gặp sự cố,
-  - *When* tác giả tự gõ các bước vào biểu mẫu và nhấn đăng bài đạt chuẩn,
+  - *Given* tài khoản thuộc gói Free hoặc dịch vụ AI gặp sự cố,
+  - *When* tác giả tự gõ hướng dẫn chế biến vào biểu mẫu và nhấn đăng bài đạt chuẩn,
   - *Then* hệ thống công khai bài viết thành công mà không có bất kỳ trở ngại nào (BR-16).
 - **AC-21.5 (Xác thực quyền gói Plus/Pro trước khi gọi AI):**
-  - *Given* Member thuộc gói Plus hoặc Pro còn hiệu lực,
-  - *When* Member nhấn yêu cầu AI hỗ trợ soạn bài,
+  - *Given* Chuyên gia thuộc gói Plus hoặc Pro còn hiệu lực,
+  - *When* tác giả nhấn yêu cầu AI hỗ trợ soạn bài,
   - *Then* hệ thống xác thực quyền tính năng thành công và chuyển ngữ cảnh yêu cầu tới dịch vụ Google Gemini; đối với tài khoản gói Free, hệ thống chặn gọi AI và hướng dẫn nâng cấp gói (FR-10, BR-02, BR-03).
 
 ---
@@ -2121,7 +2293,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 
 - **Mã yêu cầu:** FR-22
 - **Module:** M01, M03, M06
-- **Trạng thái (Derived):** ACTIVE
+- **Trạng thái (Derived):** RETIRED
+
+> [!NOTE]
+> **Retirement Rationale (Phương án B — v1.6.0):** Yêu cầu chức năng phân tách và quản lý các bước nấu tuần tự độc lập (`RECIPE_STEP`) chính thức được bãi bỏ (RETIRED) theo quyết định áp dụng Phương án B. Toàn bộ nội dung hướng dẫn chế biến được chuyển sang dạng trường văn bản tự do linh hoạt `instructions` (10–5.000 ký tự) trực tiếp trên thực thể Recipe Post (được đặc tả tại FR-16 và BR-19), giúp giảm thiểu rào cản nhập liệu cho Chuyên gia ẩm thực và loại bỏ bảng dữ liệu `RECIPE_STEP`. Nội dung dưới đây được giữ nguyên phục vụ mục đích lưu trữ lịch sử thiết kế.
 
 #### 1. Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Cung cấp cho tác giả Member các công cụ quản lý danh sách bước hướng dẫn chuẩn bị/chế biến tuần tự (`RECIPE_STEP`) trong trình soạn thảo bài công thức: thêm bước mới (tối đa 30 bước), chỉnh sửa nội dung từng bước (từ 10 đến 2.000 ký tự không rỗng sau khi trim theo BR-19), xóa bỏ bước không cần thiết, và thay đổi thứ tự các bước (reorder bằng thao tác kéo thả Drag-and-Drop hoặc nút bấm Di chuyển lên/xuống). Hệ thống tự động chuẩn hóa và cập nhật lại chỉ số thứ tự liên tục từ 1 đến N (`step_order` 1..N không bị gián đoạn hay trùng lặp). Bắt buộc bài viết công khai phải có tối thiểu 1 bước và tối đa 30 bước (BR-19).
@@ -2240,7 +2415,7 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
 #### 2. Tác nhân (Actors)
 - **Primary Actor:**
   - `Guest` / `Member`: Người xem duyệt xem bài công thức và trang hồ sơ công khai của tác giả.
-  - `Member` (Tác giả / Chủ tài khoản): Người dùng xem và cập nhật thông tin hồ sơ của chính mình.
+  - `Chuyên gia` (`Role = EXPERT`) / `Member` (Tác giả / Chủ tài khoản): Người dùng xem và cập nhật thông tin hồ sơ của chính mình; tác giả bài công thức chỉ là Chuyên gia.
   - `Administrator`: Quản trị viên xem xét thông tin tài khoản phục vụ hậu kiểm nội dung vi phạm.
 - **Secondary Actor / External System:**
   - `Dịch vụ lưu trữ tệp đám mây (Azure Blob Storage)`: Lưu trữ và phân phối tệp ảnh đại diện người dùng.
@@ -2412,14 +2587,14 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
 - **Mã yêu cầu:** FR-25
 - **Module:** M02 (Identity & Access), M03 (Community Recipes & Social)
 - **Trạng thái (Derived):** ACTIVE
-- **Tóm tắt yêu cầu:** Khi Member đã đăng nhập nhấn "Công khai bài viết" và toàn bộ các điều kiện kiểm tra tính hợp lệ (validation rules theo SRS 3.9) đều thỏa mãn, hệ thống lập tức chuyển trạng thái bài viết thành công khai (`PUBLISHED`) và hiển thị ngay trên toàn hệ thống; không áp dụng luồng duyệt trước từng bài hay trạng thái Pending Review ở cấp bài viết (BR-07).
+- **Tóm tắt yêu cầu:** Khi Chuyên gia đã đăng nhập nhấn "Công khai bài viết" và toàn bộ các điều kiện kiểm tra tính hợp lệ (validation rules theo SRS 3.9) đều thỏa mãn, hệ thống lập tức chuyển trạng thái bài viết thành công khai (`PUBLISHED`) và hiển thị ngay trên toàn hệ thống; không áp dụng luồng duyệt trước từng bài hay trạng thái Pending Review ở cấp bài viết (BR-07).
 
 #### 1. Mục đích
 Triển khai cơ chế xuất bản bài viết công khai trực tiếp (Direct Publishing); giảm thiểu tối đa độ trễ trong việc chia sẻ công thức; tạo sự hứng khởi cho người dùng tham gia đóng góp nội dung; đồng thời phân định ranh giới rõ ràng giữa việc xuất bản nội dung và việc kiểm soát vi phạm qua cơ chế hậu kiểm (BR-07, FR-06).
 
 #### 2. Tác nhân (Actors)
 - **Primary Actor:**
-  - `Member` (Tác giả): Người dùng thực hiện công khai bài viết.
+  - `Chuyên gia` (`Role = EXPERT`): Tác giả thực hiện công khai bài viết.
 - **Secondary Actor / External System:**
   - `Hệ thống kiểm tra tính hợp lệ (Validation Engine)`: Tự động thẩm định dữ liệu bài viết trước khi xuất bản.
 
@@ -2427,30 +2602,30 @@ Triển khai cơ chế xuất bản bài viết công khai trực tiếp (Direct
 - **Các Use Case con:**
   - `UC-25.1`: Xuất bản trực tiếp bài công thức sau khi kiểm tra hợp lệ (Publish recipe post directly).
 - **User Stories:**
-  - `US-25.1`: Là một thành viên vừa nấu xong món ngon và ghi lại công thức, tôi muốn bài viết của mình xuất hiện ngay trên trang khám phá để cộng đồng có thể xem ngay mà không phải chờ Quản trị viên duyệt thủ công từng bài.
+  - `US-25.1`: Là một Chuyên gia ẩm thực chay vừa hoàn thiện công thức, tôi muốn bài viết của mình xuất hiện ngay trên trang khám phá để cộng đồng có thể xem ngay mà không phải chờ Quản trị viên duyệt thủ công từng bài.
 
 #### 4. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
-- **Preconditions:** Người dùng đã đăng nhập với tài khoản Member hoạt động (`ACTIVE`) và đã hoàn thiện nội dung bài công thức trên biểu mẫu.
+- **Preconditions:** Người dùng đã đăng nhập với tài khoản Chuyên gia hoạt động (`ACTIVE`) và đã hoàn thiện nội dung bài công thức trên biểu mẫu.
 - **Trigger:** Tác giả nhấn nút "Công khai bài viết".
 
 #### 5. Luồng sự kiện (Flow of Events)
 
 ##### A. Luồng Xuất bản trực tiếp khi đạt validation (UC-25.1)
 1. **Main Flow:**
-   - Bước 1: Member nhấn nút "Công khai bài viết" trên giao diện soạn thảo công thức.
+   - Bước 1: Chuyên gia nhấn nút "Công khai bài viết" trên giao diện soạn thảo công thức.
    - Bước 2: Hệ thống kích hoạt quy trình thẩm định tính hợp lệ toàn diện ở tầng máy chủ (Server-side Validation) đối chiếu trực tiếp với bộ quy tắc Recipe Validation Profile chuẩn được định nghĩa tại FR-16 và các Business Rules liên quan:
-     - Thẩm định cấu trúc và độ dài trường theo FR-16: tiêu đề (3–120 ký tự), khẩu phần (1–50), thời gian chuẩn bị và nấu (mỗi giá trị 0–1.440 phút, tổng thời gian $> 0$), mô tả bài viết ($\le 2.000$ ký tự), chọn đúng 1 trong 4 loại ăn chay chuẩn (BR-07, BR-19).
+     - Thẩm định cấu trúc và độ dài trường theo FR-16: tiêu đề (3–120 ký tự), thể loại món ăn (`dish_category` thuộc danh mục chuẩn), khẩu phần (1–50), thời gian chuẩn bị và nấu (mỗi giá trị 0–1.440 phút, tổng thời gian $> 0$), mô tả bài viết ($\le 2.000$ ký tự), chọn đúng 1 trong 4 loại ăn chay chuẩn (BR-07, BR-19).
      - Thẩm định nguyên liệu theo FR-19: danh sách từ 1 đến 50 dòng, bắt buộc có tên nguyên liệu, số lượng số dương ($> 0$) và đơn vị đo chuẩn thuộc bảng `UNIT`.
      - Thẩm định quy tắc chuyển đổi đơn vị (`INGREDIENT_UNIT_CONVERSION`): Đối với các nguyên liệu sử dụng đơn vị cần quy đổi sang gram để tính toán dinh dưỡng (như đơn vị thuộc chiều `COUNT` quả/củ/bìa hoặc chiều `VOLUME` khác), nếu trong cơ sở dữ liệu chưa có quy tắc quy đổi tương ứng cho nguyên liệu đó, hệ thống bắt buộc từ chối xuất bản (Validation Error) và yêu cầu tác giả chọn đơn vị đo khác (như gram) (BR-14, BR-19, BR-73).
-     - Thẩm định các bước hướng dẫn chuẩn bị/chế biến theo FR-16, FR-22: bắt buộc có từ 1 đến 30 bước (`RECIPE_STEP`), mỗi bước có độ dài từ 10 đến 2.000 ký tự không rỗng sau khi trim (BR-19).
+     - Thẩm định nội dung hướng dẫn chuẩn bị/chế biến theo FR-16: bắt buộc có nội dung `instructions` từ 10 đến 5.000 ký tự không rỗng sau khi trim (BR-19); không ép buộc phân rã thành các bước độc lập.
      - Thẩm định tệp ảnh và video theo FR-14 và FR-15: từ 0 đến 5 hình ảnh minh họa (`RECIPE_MEDIA`, JPEG/PNG/WebP $\le 5$ MB), nếu có ảnh thì bắt buộc có đúng 1 ảnh được chỉ định làm ảnh đại diện (`is_cover = true`) và có thứ tự hiển thị `display_order`; tối đa 1 liên kết YouTube hợp lệ.
-     - Xác thực quyền tác giả: Tác giả được trích xuất tự động và gắn cố định từ phiên đăng nhập hợp lệ của Member theo FR-23 và BR-17.
+     - Xác thực quyền tác giả: Tác giả được trích xuất tự động và gắn cố định từ phiên đăng nhập hợp lệ của Chuyên gia theo FR-23 và BR-17.
    - Bước 3: Toàn bộ các điều kiện đều thỏa mãn.
-   - Bước 4: Hệ thống cập nhật trạng thái bài viết thành `PUBLISHED`, lưu các bước `RECIPE_STEP` và ảnh `RECIPE_MEDIA`, lưu thời điểm công khai (`publishedAt`), và phản hồi thành công.
+   - Bước 4: Hệ thống cập nhật trạng thái bài viết thành `PUBLISHED`, lưu nội dung hướng dẫn `instructions` và ảnh `RECIPE_MEDIA`, lưu thời điểm công khai (`publishedAt`), và phản hồi thành công.
    - Bước 5: Bài viết xuất hiện ngay lập tức trên trang chủ, trang khám phá, kết quả tìm kiếm và trang hồ sơ cá nhân của tác giả.
    - Bước 6: Giao diện chuyển hướng tác giả đến trang chi tiết bài viết vừa xuất bản kèm thông báo chúc mừng.
 2. **Exception Flow (Kiểm tra dữ liệu không đạt):**
-   - Bước 1: Khi phát hiện dữ liệu vi phạm bộ quy tắc Recipe Validation Profile (ví dụ: tiêu đề dưới 3 ký tự, chưa có dòng nguyên liệu nào, nguyên liệu thiếu quy tắc quy đổi đơn vị, không có bước nào hoặc bước dưới 10 ký tự, thiếu ảnh bìa khi có upload ảnh, tổng thời gian bằng 0):
+   - Bước 1: Khi phát hiện dữ liệu vi phạm bộ quy tắc Recipe Validation Profile (ví dụ: tiêu đề dưới 3 ký tự, thiếu thể loại món, chưa có dòng nguyên liệu nào, nguyên liệu thiếu quy tắc quy đổi đơn vị, thiếu hướng dẫn chế biến hoặc hướng dẫn dưới 10 ký tự, thiếu ảnh bìa khi có upload ảnh, tổng thời gian bằng 0):
    - Bước 2 (Xử lý máy chủ): Máy chủ thực thi thẩm định độc lập, lập tức từ chối yêu cầu xuất bản không hợp lệ và dừng quy trình, hoàn toàn không tạo bản ghi nào trong cơ sở dữ liệu ở bất kỳ trạng thái nào (kể cả nháp hay công khai).
    - Bước 3 (Xử lý giao diện): Giao diện giữ nguyên nội dung tác giả đã nhập, không làm mất dữ liệu biểu mẫu và hiển thị thông báo lỗi cụ thể tương ứng với trường không hợp lệ để tác giả tiếp tục hoàn thiện.
 
@@ -2459,15 +2634,15 @@ Triển khai cơ chế xuất bản bài viết công khai trực tiếp (Direct
 - Không tạo ra bất kỳ trạng thái trung gian nào như `Draft`, `Pending Review`, hoặc `Waiting for Approval` ở cấp bài viết (BR-07).
 
 #### 7. Quy tắc phân quyền và bảo mật (Permissions & Security)
-- Chỉ Member đã xác thực mới có quyền xuất bản bài công thức (BR-05, BR-07, NFR-09).
+- Chỉ Chuyên gia đã xác thực mới có quyền xuất bản bài công thức (BR-05, BR-07, NFR-09).
 - Hệ thống tuyệt đối không cho phép client gửi trường `status` tùy ý; trạng thái `PUBLISHED` chỉ do máy chủ thiết lập sau khi toàn bộ điều kiện kiểm tra đã vượt qua thành công.
 
 #### 8. Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
 - **Quy tắc nghiệp vụ liên quan:**
-  - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
+  - [BR-07](BUSINESS-RULES.md#br-07): Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia (Role = EXPERT).
   - [BR-14](BUSINESS-RULES.md#br-14): Quy tắc định lượng và tổng hợp Shopping List an toàn.
   - [BR-17](BUSINESS-RULES.md#br-17): Gắn quyền tác giả với tài khoản đăng bài.
-  - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post.
+  - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post (hướng dẫn chế biến linh hoạt, 0..5 ảnh với 1 ảnh bìa, tỷ lệ quy đổi đơn vị).
   - [BR-20](BUSINESS-RULES.md#br-20): Tính tùy chọn của mô tả giới thiệu và ảnh đại diện.
   - [BR-64](BUSINESS-RULES.md#br-64): Quyền sửa và xóa bài công thức của chính tác giả.
   - [BR-73](BUSINESS-RULES.md#br-73): Quy tắc chuẩn hóa đơn vị đo và chuyển đổi đơn vị nguyên liệu.
@@ -2479,8 +2654,8 @@ Triển khai cơ chế xuất bản bài viết công khai trực tiếp (Direct
 #### 9. Tiêu chí nghiệm thu chi tiết (Acceptance Criteria)
 
 - **AC-25.1 — Công khai bài viết thành công ngay lập tức khi validation đạt:**
-  - **Given:** Member đã nhập đầy đủ và chính xác toàn bộ các trường bắt buộc của bài viết thỏa mãn Recipe Validation Profile của FR-16 (bao gồm 1–30 bước chế biến, nguyên liệu có số lượng số dương và đơn vị chuẩn có quy tắc quy đổi khả dụng, 0–5 ảnh với đúng 1 ảnh bìa nếu có ảnh).
-  - **When:** Member nhấn "Công khai bài viết".
+  - **Given:** Chuyên gia đã nhập đầy đủ và chính xác toàn bộ các trường bắt buộc của bài viết thỏa mãn Recipe Validation Profile của FR-16 (bao gồm thể loại món `dish_category`, hướng dẫn chế biến `instructions` 10–5.000 ký tự, nguyên liệu có số lượng số dương và đơn vị chuẩn có quy tắc quy đổi khả dụng, 0–5 ảnh với đúng 1 ảnh bìa nếu có ảnh).
+  - **When:** Chuyên gia nhấn "Công khai bài viết".
   - **Then:** Hệ thống chuyển trạng thái bài viết thành `PUBLISHED` ngay lập tức mà không cần phê duyệt trước (BR-07), gán đúng tác giả (BR-17) và chuyển hướng tới trang chi tiết bài viết.
 
 - **AC-25.2 — Bài viết vừa công khai xuất hiện ngay trong kết quả tìm kiếm:**
@@ -2985,7 +3160,7 @@ Tối ưu hóa quy trình tiếp nhận thông tin phản ánh; chống hành vi
 - **Mã yêu cầu:** FR-31
 - **Module:** M02, M05, M06
 - **Trạng thái (Derived):** ACTIVE
-- **Tóm tắt yêu cầu:** Hệ thống cung cấp bảng câu hỏi Onboarding tùy chọn cho Member mới; cho phép bỏ qua mà không khóa các tính năng thông thường; quản lý hồ sơ sở thích ăn uống; bắt buộc hoàn thành ba nhóm thông tin tối thiểu (loại ăn chay, nguyên liệu cần tránh do dị ứng/kiêng, món hoặc nguyên liệu không thích) trước khi gọi AI gợi ý món hoặc tạo thực đơn cá nhân hóa; chặn gọi Gemini và không trừ hạn mức AI khi thiếu thông tin.
+- **Tóm tắt yêu cầu:** Hệ thống cung cấp bảng câu hỏi Onboarding tùy chọn cho Member mới; cho phép bỏ qua mà không khóa các tính năng thông thường; quản lý hồ sơ sở thích ăn uống; bắt buộc hoàn thành ba nhóm thông tin tối thiểu (loại ăn chay, nguyên liệu cần tránh do dị ứng/kiêng, món hoặc nguyên liệu không thích) trước khi gọi AI gợi ý món hoặc tạo thực đơn cá nhân hóa; chặn gọi Gemini khi thiếu thông tin; không áp dụng quota lượt/ngày.
 
 #### 1. Mục đích
 Thu thập và chuẩn hóa dữ liệu sở thích, thói quen và các ràng buộc ăn kiêng của thành viên nhằm phục vụ các tính năng gợi ý món ăn và lập thực đơn cá nhân hóa của AI; bảo đảm quyền tự do trải nghiệm của người dùng qua cơ chế Onboarding tùy chọn (cho phép bỏ qua); đồng thời thiết lập cổng kiểm soát dữ liệu đầu vào nghiêm ngặt để đảm bảo an toàn dị ứng, ngăn ngừa AI gợi ý sai lệch và tránh lãng phí hạn mức gọi AI của người dùng.
@@ -3018,7 +3193,7 @@ Thu thập và chuẩn hóa dữ liệu sở thích, thói quen và các ràng b
   - `US-31.2`: Là một thành viên mới, tôi muốn có nút "Bỏ qua" để vào ngay ứng dụng khám phá công thức mà không bị ép buộc điền thông tin ngay lập tức.
   - `US-31.3`: Là một thành viên chưa hoàn thành Onboarding, tôi muốn vẫn sử dụng được toàn bộ các tính năng thông thường (tìm kiếm, xem bài, lưu công thức, lập lịch ăn thủ công, đăng bài, bình luận, hỏi đáp AI cơ bản) mà không bị khóa tài khoản.
   - `US-31.4`: Là một thành viên, tôi muốn vào phần Cài đặt tài khoản để cập nhật lại loại ăn chay hoặc danh sách dị ứng bất cứ khi nào có thay đổi.
-  - `US-31.5`: Là một thành viên, khi tôi yêu cầu AI gợi ý món hoặc tạo thực đơn cá nhân hóa mà chưa hoàn tất 3 thông tin tối thiểu, tôi muốn hệ thống giải thích rõ lý do, hướng dẫn tôi điền thông tin và tuyệt đối không trừ lượt AI của tôi.
+  - `US-31.5`: Là một thành viên, khi tôi yêu cầu AI gợi ý món hoặc tạo thực đơn cá nhân hóa mà chưa hoàn tất 3 thông tin tối thiểu, tôi muốn hệ thống giải thích rõ lý do, hướng dẫn tôi điền thông tin và không gọi Gemini khi thông tin chưa đầy đủ.
 
 #### 5. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
 - **Preconditions:**
@@ -3046,7 +3221,7 @@ Thu thập và chuẩn hóa dữ liệu sở thích, thói quen và các ràng b
    - Bước 1: Tại màn hình Onboarding, Member nhấn nút "Bỏ qua" (Skip).
    - Bước 2: Hệ thống ghi nhận trạng thái tài khoản chưa hoàn tất Onboarding và chuyển thẳng Member vào trang Khám phá.
     - Bước 3: **Ranh giới chức năng khi bỏ qua Onboarding (BR-30):**
-      - Member VẪN ĐƯỢC: Duyệt, tìm kiếm và lọc các bài công thức công khai; Đọc và gửi bình luận; Tạo, chỉnh sửa và công khai Recipe Post của chính mình; Lưu bài công thức vào `Saved Recipes`; Tự thêm bài công thức vào `Meal Planner` 3 bữa theo cách thủ công; Sử dụng Chatbot AI hỏi đáp kiến thức chay chung (FR-51).
+      - Member VẪN ĐƯỢC: Duyệt, tìm kiếm và lọc các bài công thức công khai; Đọc và gửi bình luận; Chuyên gia được tạo, chỉnh sửa và công khai Recipe Post của chính mình; Lưu bài công thức vào `Saved Recipes`; Tự thêm bài công thức vào `Meal Planner` 3 bữa theo cách thủ công; Sử dụng Chatbot AI hỏi đáp kiến thức chay chung (FR-51).
       - Member CHỈ BỊ CHẶN khi gọi các chức năng AI cá nhân hóa (gợi ý món ăn riêng, lập thực đơn tuần tự động).
 
 ##### B. Luồng Xem và Cập nhật hồ sơ sở thích ăn uống (UC-31.3)
@@ -3116,7 +3291,7 @@ Thu thập và chuẩn hóa dữ liệu sở thích, thói quen và các ràng b
 - **AC-31.3 — Bỏ qua Onboarding không làm khóa các tính năng thông thường:**
   - **Given:** Member mới đang ở màn hình Onboarding.
   - **When:** Member nhấn nút "Bỏ qua" (Skip).
-  - **Then:** Hệ thống ghi nhận trạng thái chưa hoàn tất Onboarding; Member vẫn có thể thực hiện tìm kiếm bài viết, lưu công thức, xếp lịch ăn thủ công, bình luận và tạo Recipe Post bình thường mà không bị ngăn cản (BR-30).
+  - **Then:** Hệ thống ghi nhận trạng thái chưa hoàn tất Onboarding; Member vẫn có thể thực hiện tìm kiếm bài viết, lưu công thức, xếp lịch ăn thủ công và bình luận; riêng Chuyên gia vẫn có thể tạo Recipe Post bình thường mà không bị ngăn cản (BR-30).
 
 - **AC-31.4 — Chặn gọi AI cá nhân hóa khi chưa chọn loại ăn chay:**
   - **Given:** Member chưa chọn loại ăn chay trong hồ sơ sở thích và thuộc gói có quyền sử dụng tính năng tương ứng.
@@ -3284,14 +3459,16 @@ Cung cấp công cụ thao tác linh hoạt, chi tiết và trực quan để th
   - `UC-33.1`: Thêm bài công thức vào bữa ăn cụ thể trong lịch (Add recipe to meal slot).
   - `UC-33.2`: Chuyển món ăn sang bữa hoặc ngày khác (Move recipe to another meal slot).
   - `UC-33.3`: Xóa món ăn khỏi bữa trong Lịch ăn (Remove recipe from meal slot).
+  - `UC-33.4`: Xuất bản Lịch ăn tuần sang tệp tin PDF hoặc TXT (Export weekly meal plan).
 - **User Stories:**
   - `US-33.1`: Là một thành viên, tôi muốn thêm món Canh nấm vào Bữa trưa Thứ Ba để chuẩn bị thực đơn cho gia đình.
   - `US-33.2`: Là một thành viên, tôi muốn có thể chuyển món ăn từ Bữa trưa sang Bữa tối khi tôi bận không kịp nấu bữa trưa.
   - `US-33.3`: Là một thành viên, tôi muốn thêm cả món xào và món canh vào cùng một Bữa trưa mà không bị giới hạn chỉ 1 món.
+  - `US-33.4`: Là một thành viên, tôi muốn xuất toàn bộ thực đơn lịch ăn 7 ngày ra tệp PDF hoặc TXT để in dán lên cửa tủ lạnh hoặc chia sẻ cho các thành viên trong gia đình cùng theo dõi.
 
 #### 4. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
 - **Preconditions:** Bài công thức đang ở trạng thái công khai (`PUBLISHED`) hoặc trong danh sách đã lưu của Member. Member đã đăng nhập với tài khoản hoạt động (`ACTIVE`).
-- **Trigger:** Member nhấn nút "Thêm món vào bữa" trên Lịch ăn, hoặc nhấn nút "Thêm vào lịch ăn" trên trang chi tiết bài công thức.
+- **Trigger:** Member nhấn nút "Thêm món vào bữa" trên Lịch ăn, nhấn nút "Thêm vào lịch ăn" trên trang chi tiết bài công thức, hoặc nhấn nút "Xuất lịch ăn tuần".
 
 #### 5. Luồng sự kiện (Flow of Events)
 
@@ -3327,6 +3504,13 @@ Cung cấp công cụ thao tác linh hoạt, chi tiết và trực quan để th
    - Mục món ăn trong Lịch ăn được giữ nguyên vị trí nhưng chuyển sang trạng thái "Không còn khả dụng" (tombstone pattern theo BR-33).
    - Thẻ hiển thị nhãn: "Món ăn đã bị gỡ bỏ hoặc ẩn vi phạm" kèm nút "Thay thế món khác" hoặc "Xóa khỏi bữa".
    - Món ăn này không còn tham gia vào tính toán dinh dưỡng (FR-37) hay danh sách mua sắm (FR-53).
+
+##### E. Luồng Xuất bản Lịch ăn tuần sang PDF / TXT (UC-33.4)
+1. **Main Flow:**
+   - Bước 1: Member nhấn nút "Xuất lịch ăn tuần" trên thanh công cụ Lịch ăn.
+   - Bước 2: Member chọn định dạng xuất: PDF hoặc TXT.
+   - Bước 3: Hệ thống tổng hợp toàn bộ các món ăn theo từng ngày (Thứ Hai đến Chủ Nhật) và từng bữa (Sáng, Trưa, Tối), kèm thông tin khẩu phần và năng lượng ước tính.
+   - Bước 4: Trình duyệt tải xuống tệp tin hoàn chỉnh để in ấn (bố cục bảng A4 đối với PDF) hoặc lưu trữ ngoại tuyến.
 
 #### 6. Hậu điều kiện (Postconditions)
 - Cấu trúc các món ăn trong từng bữa được cập nhật chính xác.
@@ -3378,6 +3562,11 @@ Cung cấp công cụ thao tác linh hoạt, chi tiết và trực quan để th
   - **When:** Member mở lại Lịch ăn tuần.
   - **Then:** Vị trí bữa ăn hiển thị nhãn "Món ăn đã bị gỡ bỏ hoặc ẩn vi phạm" kèm tùy chọn thay thế hoặc xóa bỏ (BR-33).
 
+- **AC-33.7 — Xuất bản Lịch ăn tuần sang PDF / TXT thành công:**
+  - **Given:** Member đã thiết lập thực đơn cho các ngày trong tuần trên Lịch ăn.
+  - **When:** Member nhấn nút "Xuất lịch ăn" và chọn định dạng PDF hoặc TXT.
+  - **Then:** Hệ thống tạo và tải xuống tệp tin bố cục trực quan 7 ngày đầy đủ các bữa sáng, trưa, tối với định dạng chuẩn trang in A4 đối với PDF.
+
 ---
 
 <a id="fr-34"></a>
@@ -3412,7 +3601,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - `US-34.2`: Là một thành viên bận rộn, tôi muốn AI lên giúp tôi thực đơn 7 ngày hợp khẩu vị, tôi xem qua thấy hài lòng rồi mới bấm lưu vào Lịch ăn của mình.
 
 #### 5. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
-- **Preconditions:** Member đã đăng nhập và **bắt buộc đã hoàn tất 3 nhóm thông tin tối thiểu** trong hồ sơ sở thích ăn uống theo FR-31 (loại ăn chay, xác nhận dị ứng, xác nhận món không thích); tài khoản còn hạn mức gọi AI trong ngày theo FR-10.
+- **Preconditions:** Member đã đăng nhập và **bắt buộc đã hoàn tất 3 nhóm thông tin tối thiểu** trong hồ sơ sở thích ăn uống theo FR-31 (loại ăn chay, xác nhận dị ứng, xác nhận món không thích); Backend xác thực quyền tính năng theo gói tại FR-10. Tạo thực đơn tuần bằng AI yêu cầu gói Pro.
 - **Trigger:** Member nhấn nút "AI gợi ý món" hoặc "AI tạo thực đơn tuần".
 
 #### 6. Luồng sự kiện (Flow of Events)
@@ -3421,26 +3610,26 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 1. **Main Flow:**
    - Bước 1: Member mở tính năng "AI gợi ý món ăn".
    - Bước 2: Member nhập danh sách nguyên liệu đang có (ví dụ: "đậu phụ, cà chua, nấm đùi gà").
-   - Bước 3: Hệ thống kiểm tra điều kiện hồ sơ sở thích tối thiểu (FR-31) và hạn mức AI còn lại (FR-10). Đủ điều kiện.
+   - Bước 3: Hệ thống kiểm tra điều kiện hồ sơ sở thích tối thiểu (FR-31) và quyền sử dụng tính năng (FR-10). Đủ điều kiện.
    - Bước 4: Hệ thống truy vấn cơ sở dữ liệu nội bộ để lấy danh sách các Recipe Post đang công khai (`PUBLISHED`) có chứa ít nhất một trong các nguyên liệu trên và phù hợp với loại ăn chay của Member, loại trừ các món chứa chất dị ứng của Member.
    - Bước 5: Hệ thống gửi danh sách ứng viên bài viết này cùng prompt tới Google Gemini để chọn lọc 3–5 món ăn kết hợp nguyên liệu hài hòa nhất.
    - Bước 6: Google Gemini trả về danh sách các bài viết được chọn.
-   - Bước 7: Giao diện hiển thị danh sách các món ăn kèm ảnh, tên món, lý do gợi ý và liên kết dẫn thẳng tới bài công thức nguồn. Trừ 1 lượt AI thành công.
+   - Bước 7: Giao diện hiển thị danh sách các món ăn kèm ảnh, tên món, lý do gợi ý và liên kết dẫn thẳng tới bài công thức nguồn; không trừ quota theo lượt/ngày.
 
 ##### B. Luồng AI lập thực đơn tuần và Xác nhận lưu (UC-34.2, UC-34.3)
 1. **Main Flow:**
    - Bước 1: Member nhấn nút "AI lập thực đơn tuần mới".
-   - Bước 2: Hệ thống kiểm tra điều kiện hồ sơ tối thiểu (FR-31) và hạn mức AI (FR-10). Đủ điều kiện.
+   - Bước 2: Hệ thống kiểm tra điều kiện hồ sơ tối thiểu (FR-31) và quyền gói Pro đối với AI lập thực đơn tuần (FR-10). Đủ điều kiện.
    - Bước 3: Hệ thống truy vấn kho bài công thức công khai, lọc theo loại ăn chay chuẩn của Member và loại trừ các dị ứng đã khai báo.
    - Bước 4: Hệ thống đưa danh sách bài viết ứng viên vào ngữ cảnh và yêu cầu Gemini phân bổ vào 7 ngày $\times$ 3 bữa sao cho thực đơn phong phú, không lặp món liên tục.
    - Bước 5: Gemini trả về cấu trúc thực đơn tuần đề xuất gồm các ID bài viết công khai.
-   - Bước 6: Giao diện hiển thị **Bản xem trước thực đơn tuần do AI đề xuất** (Preview Mode). Trừ 1 lượt AI thành công.
+   - Bước 6: Giao diện hiển thị **Bản xem trước thực đơn tuần do AI đề xuất** (Preview Mode); không trừ quota theo lượt/ngày.
    - Bước 7: Member xem xét thực đơn. Nếu ưng ý, Member nhấn nút "Xác nhận áp dụng vào Lịch ăn" (UC-34.3).
    - Bước 8: Hệ thống lưu các món ăn này vào Lịch ăn tuần được chọn của Member (FR-09, FR-33) và thông báo áp dụng thành công.
 2. **Alternative Flow (Không áp dụng thực đơn):**
-   - Nếu Member không hài lòng với thực đơn đề xuất, Member có thể bấm "Hủy bỏ" hoặc yêu cầu AI tạo lại phương án khác (nếu còn lượt AI). Lịch ăn hiện tại của Member giữ nguyên vẹn không bị thay đổi.
+   - Nếu Member không hài lòng với thực đơn đề xuất, Member có thể bấm "Hủy bỏ" hoặc yêu cầu AI tạo lại phương án khác trong phạm vi quyền gói hiện tại. Lịch ăn hiện tại của Member giữ nguyên vẹn không bị thay đổi.
 3. **Exception Flow (Chặn an toàn khi thiếu hồ sơ tối thiểu):**
-   - Nếu Member chưa hoàn thành 3 thông tin tối thiểu trong hồ sơ sở thích -> Hệ thống lập tức chặn yêu cầu, tuyệt đối không gọi Gemini, không trừ hạn mức AI, và hiển thị thông báo hướng dẫn bổ sung hồ sơ theo quy định tại FR-31 (BR-31).
+   - Nếu Member chưa hoàn thành 3 thông tin tối thiểu trong hồ sơ sở thích -> Hệ thống lập tức chặn yêu cầu, tuyệt đối không gọi Gemini, và hiển thị thông báo hướng dẫn bổ sung hồ sơ theo quy định tại FR-31 (BR-31).
 
 #### 7. Hậu điều kiện (Postconditions)
 - Các món ăn gợi ý luôn có bài công thức nguồn thực tế tương ứng.
@@ -3599,7 +3788,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 #### 1. Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tạo thực đơn gợi ý theo tuần hoặc theo ngày dựa trên hồ sơ dinh dưỡng tham khảo cá nhân và các ràng buộc ăn uống của Member; AI chỉ được phép lựa chọn từ các bài Recipe Post đang công khai trong hệ thống có dữ liệu định lượng dinh dưỡng tin cậy (100% nguyên liệu đã được ánh xạ gram và có số liệu dinh dưỡng); AI không được tự bịa công thức mới ngoài cơ sở dữ liệu; người dùng phải xác nhận trước khi lưu các món được gợi ý vào Lịch ăn tuần.
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Member đã đăng nhập, đã hoàn tất hồ sơ dinh dưỡng (FR-35), đã hoàn thành onboarding sở thích/ràng buộc ăn chay (FR-31) và còn hạn mức AI hợp lệ (FR-10).
+  - Áp dụng cho: Member đã đăng nhập, đã hoàn tất hồ sơ dinh dưỡng (FR-35), đã hoàn thành onboarding sở thích/ràng buộc ăn chay (FR-31) và có gói Pro hợp lệ cho AI lập thực đơn dinh dưỡng (FR-10).
   - Giới hạn: Quá trình tạo thực đơn chỉ mang tính tham khảo và hỗ trợ lên kế hoạch ăn uống; việc tối ưu hóa vi chất chuyên sâu theo bệnh lý nằm ngoài phạm vi MVP.
 - **Phân loại Actor:**
   - Primary Actor: `Member` (đã đăng nhập và đủ điều kiện).
@@ -3618,7 +3807,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - Member đã đăng nhập tài khoản hợp lệ (FR-03).
   - Member đã hoàn thành hồ sơ dinh dưỡng cá nhân (FR-35) và xác nhận phạm vi hỗ trợ (FR-38).
   - Member đã cấu hình tối thiểu trường phái ăn chay và dị ứng (FR-31).
-  - Tài khoản Member còn số dư hạn mức AI khả dụng trong ngày (FR-10, BR-01, BR-02).
+  - Tài khoản Member có quyền dùng AI lập thực đơn theo gói Pro còn hiệu lực (FR-10, BR-02, BR-03).
 - **Kích hoạt (Trigger):**
   - Member nhấn nút "Nhờ AI lập thực đơn dinh dưỡng" trên giao diện Lịch ăn tuần hoặc trang Dinh dưỡng cá nhân.
 
@@ -3626,38 +3815,38 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **Luồng chính (Main Flow):**
   - Bước 1: Member chọn phạm vi lập menu (1 ngày hoặc 7 ngày trong tuần) và xác nhận các tiêu chí ưu tiên (giữ nguyên loại trừ dị ứng, ưu tiên trường phái ăn chay hiện tại).
   - Bước 2: Member nhấn "Tạo thực đơn bằng AI".
-  - Bước 3: Hệ thống kiểm tra số dư hạn mức AI của tài khoản (BR-01, BR-02, BR-03).
+  - Bước 3: Backend kiểm tra quyền tính năng AI lập thực đơn theo gói Pro của tài khoản trước khi gọi Gemini (FR-10, BR-02, BR-03).
   - Bước 4: Hệ thống truy vấn kho công thức nội bộ để trích xuất tập hợp ứng viên (Candidate Pool) thỏa mãn các điều kiện ngặt nghèo:
     - Trạng thái công thức là đang công khai (`Public`).
     - Phù hợp với trường phái ăn chay và loại trừ hoàn toàn các thành phần dị ứng của Member (BR-30, BR-31).
     - Có 100% nguyên liệu đã được định lượng chuẩn hóa theo gram và ánh xạ đầy đủ 9 chỉ tiêu dinh dưỡng từ danh mục dinh dưỡng nội bộ (BR-40, BR-46). Các công thức chứa nguyên liệu chưa có dữ liệu dinh dưỡng bị loại bỏ hoàn toàn khỏi pool (BR-50).
   - Bước 5: Hệ thống gửi prompt kèm danh sách metadata của các công thức ứng viên (ID, tên món, 9 chỉ số dinh dưỡng/khẩu phần) và mục tiêu dinh dưỡng tham khảo của Member tới Google Gemini AI (NFR-04 $\le 8$ giây). Prompt bắt buộc yêu cầu AI chỉ được ghép nối các ID công thức có sẵn, tuyệt đối không tự tạo công thức mới (BR-38).
   - Bước 6: Google Gemini phản hồi cấu trúc menu được đề xuất phân bổ vào 3 bữa ăn cố định (Sáng, Trưa, Tối) kèm đoạn giải trình ngắn gọn lý do phân bổ.
-  - Bước 7: Hệ thống trừ 1 lượt hạn mức AI của Member sau khi nhận phản hồi hợp lệ (BR-03).
+  - Bước 7: Hệ thống xác thực kết quả AI hợp lệ; không trừ quota sử dụng theo lượt/ngày.
   - Bước 8: Hệ thống hiển thị bản xem trước (Preview) thực đơn được đề xuất kèm bảng tổng hợp 9 chỉ tiêu dinh dưỡng dự kiến và cảnh báo từ chối trách nhiệm y tế (BR-39, BR-41).
   - Bước 9: Member xem lại từng món, có thể loại bỏ hoặc giữ nguyên, sau đó nhấn "Lưu vào Lịch ăn".
   - Bước 10: Hệ thống ghi nhận các món được chọn vào các vị trí bữa tương ứng trong Lịch ăn tuần của Member (BR-35, BR-36, BR-37).
 - **Luồng thay thế (Alternative Flows):**
   - *AF-36.1 (Kho công thức tin cậy không đủ đa dạng):* Nếu số lượng công thức đạt chuẩn dinh dưỡng tin cậy không đủ để lấp đầy 21 bữa ăn trong tuần mà không bị trùng lặp, hệ thống thông báo cho Member biết phạm vi kho công thức hiện tại và cho phép AI lặp lại công thức ở các ngày khác nhau hoặc đề xuất thực đơn cho số ngày ít hơn.
-  - *AF-36.2 (Member hủy bỏ kết quả gợi ý):* Member có thể đóng cửa sổ xem trước mà không lưu vào Lịch ăn. Hạn mức AI đã trừ vẫn giữ nguyên (vì dịch vụ tính toán AI đã hoàn tất thành công theo BR-03).
+  - *AF-36.2 (Member hủy bỏ kết quả gợi ý):* Member có thể đóng cửa sổ xem trước mà không lưu vào Lịch ăn; hệ thống không tính quota theo lượt/ngày.
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-36.1 (Hết hạn mức AI):* Nếu tài khoản đã hết hạn mức trong ngày, hệ thống chặn gửi yêu cầu, hiển thị thông báo đạt ngưỡng hạn mức và gợi ý nâng cấp tài khoản hoặc quay lại vào ngày hôm sau (FR-10, BR-01, BR-02).
-  - *EF-36.2 (Lỗi kết nối Gemini hoặc phản hồi quá 8 giây):* Nếu dịch vụ AI gặp sự cố hoặc timeout vượt quá 8 giây (NFR-04), hệ thống hủy yêu cầu, không trừ hạn mức AI của Member và thông báo lỗi kỹ thuật thân thiện (BR-04).
+  - *EF-36.1 (Không có quyền tính năng):* Nếu tài khoản không có gói Pro còn hiệu lực, Backend chặn trước khi gọi Gemini và hướng dẫn nâng cấp gói phù hợp (FR-10, BR-02, BR-03).
+  - *EF-36.2 (Lỗi kết nối Gemini hoặc phản hồi quá 8 giây):* Nếu dịch vụ AI gặp sự cố hoặc timeout vượt quá 8 giây (NFR-04), hệ thống hủy yêu cầu và thông báo lỗi kỹ thuật thân thiện (BR-04); không có quota ngày để trừ.
   - *EF-36.3 (AI sinh công thức ngoài danh mục):* Nếu phản hồi của AI chứa ID không nằm trong Candidate Pool đã gửi, hệ thống tự động lọc bỏ các mục không hợp lệ trước khi hiển thị cho Member.
 
 #### 5. Hậu điều kiện (Postconditions)
 - Khi Member xác nhận lưu, các món ăn từ công thức công khai được thêm vào các bữa ăn trong Lịch ăn tuần của Member.
-- Hạn mức AI trong ngày của Member giảm đi 1 lượt.
+- Quyền tính năng theo gói không thay đổi sau yêu cầu; không áp dụng quota lượt/ngày.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Member đã đăng nhập mới có quyền yêu cầu tạo thực đơn AI. Guest không có quyền này (BR-05).
+- **Quyền hạn:** Member đã đăng nhập có gói Pro còn hiệu lực mới có quyền yêu cầu AI lập thực đơn dinh dưỡng. Guest, Free và Plus không có quyền này (FR-10, BR-02, BR-03).
 - **Ràng buộc nghiệp vụ:** AI chỉ đóng vai trò ghép nối công thức có sẵn; hệ thống cấm tuyệt đối việc tạo công thức ảo hoặc ghi đè số liệu dinh dưỡng không qua kiểm chứng (BR-38, BR-40, BR-41).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
-  - [BR-01](BUSINESS-RULES.md#br-01): Hạn mức text AI cho tài khoản Free.
-  - [BR-02](BUSINESS-RULES.md#br-02): Hạn mức text AI cho gói Plus và Pro.
-  - [BR-03](BUSINESS-RULES.md#br-03): Điều kiện trừ hạn mức AI.
+  - [BR-01](BUSINESS-RULES.md#br-01): Quyền AI cơ bản cho Guest và Free.
+  - [BR-02](BUSINESS-RULES.md#br-02): Quyền AI nâng cao theo gói Plus và Pro.
+  - [BR-03](BUSINESS-RULES.md#br-03): Kiểm tra quyền tính năng trước khi gọi Gemini.
   - [BR-04](BUSINESS-RULES.md#br-04): Xử lý lỗi provider và timeout AI.
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
   - [BR-30](BUSINESS-RULES.md#br-30): Ranh giới chức năng khi bỏ qua Onboarding.
@@ -3692,29 +3881,29 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - *Given* AI đã sinh bản xem trước thực đơn thành công,
   - *When* Member chưa nhấn nút "Lưu vào Lịch ăn",
   - *Then* hệ thống không tự động thay đổi bất kỳ mục nào trong Lịch ăn tuần hiện tại của Member.
-- **AC-36.5 (Trừ hạn mức AI chính xác):**
-  - *Given* Member còn 10 lượt sử dụng AI trong ngày,
-  - *When* yêu cầu tạo thực đơn AI hoàn thành và hiển thị kết quả thành công,
-  - *Then* số dư hạn mức AI của Member giảm đi 1 lượt (còn 9 lượt).
-- **AC-36.6 (Không trừ hạn mức khi xảy ra sự cố kỹ thuật):**
-  - *Given* Member gửi yêu cầu tạo thực đơn AI,
+- **AC-36.5 (Kiểm tra quyền gói Pro trước khi gọi AI):**
+  - *Given* Member chỉ có gói Free hoặc Plus,
+  - *When* gửi yêu cầu tạo thực đơn dinh dưỡng bằng AI,
+  - *Then* Backend từ chối trước khi gọi Gemini và hướng dẫn nâng cấp lên Pro; không kiểm tra số dư lượt/ngày.
+- **AC-36.6 (Lỗi kỹ thuật không làm thay đổi quyền tính năng):**
+  - *Given* Member có gói Pro hợp lệ gửi yêu cầu tạo thực đơn AI,
   - *When* dịch vụ AI gặp lỗi kết nối hoặc thời gian phản hồi vượt quá 8 giây,
-  - *Then* hệ thống thông báo lỗi tới người dùng và số dư hạn mức AI của Member được giữ nguyên không bị trừ.
+  - *Then* hệ thống thông báo lỗi tới người dùng; quyền gói Pro không đổi và không có quota lượt/ngày bị trừ.
 
 ---
 
 <a id="fr-37"></a>
-### FR-37 — Khai báo khẩu phần trong Lịch ăn và kiểm tra menu ngày theo 9 chỉ tiêu
+### FR-37 — Khai báo khẩu phần, kiểm tra dinh dưỡng menu ngày/tuần và xuất báo cáo PDF
 
 - **Mã yêu cầu:** FR-37
 - **Module:** M05, M06, M10
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp chức năng cho phép Member tùy chỉnh số khẩu phần ăn cho từng món trong Lịch ăn ngày (Sáng, Trưa, Tối); hệ thống tự động tính toán tổng dinh dưỡng của cả ngày theo 9 chỉ tiêu cốt lõi dựa trên định lượng nguyên liệu và số khẩu phần; so sánh với mức nhu cầu tham khảo cá nhân (nếu đã khai báo hồ sơ) để hiển thị trạng thái đạt, chưa đạt hoặc vượt mức kèm chênh lệch định lượng; hiển thị cảnh báo minh bạch nếu có món ăn chứa nguyên liệu chưa có dữ liệu dinh dưỡng; nghiêm cấm hiển thị điểm tổng hợp (health score) hoặc nhãn phán xét đơn giản hóa; tùy chọn cho phép AI giải thích chênh lệch và đề xuất món thay thế từ kho công thức có sẵn.
+- **Tóm tắt yêu cầu:** Cung cấp chức năng cho phép Member tùy chỉnh số khẩu phần ăn cho từng món trong Lịch ăn (Sáng, Trưa, Tối); hệ thống tự động tính toán dinh dưỡng theo 9 chỉ tiêu cốt lõi theo ngày đơn lẻ hoặc tổng hợp cả tuần dựa trên định lượng nguyên liệu và số khẩu phần; đối chiếu với mức nhu cầu tham khảo cá nhân (nếu đã khai báo hồ sơ) để hiển thị trạng thái đạt, chưa đạt hoặc vượt mức kèm chênh lệch định lượng; hỗ trợ phân tích tổng thể tuần (tính trung bình cộng 7 ngày, thống kê tỷ lệ ngày đạt chuẩn vi chất); hỗ trợ xuất báo cáo dinh dưỡng ngày hoặc tuần dưới định dạng file PDF phục vụ theo dõi cá nhân hoặc tham khảo ý kiến chuyên gia; hiển thị cảnh báo minh bạch nếu có món ăn chứa nguyên liệu chưa có dữ liệu dinh dưỡng; nghiêm cấm hiển thị điểm tổng hợp (health score) hoặc nhãn phán xét đơn giản hóa; xác lập rõ ranh giới thông tin là "Dinh dưỡng dự kiến theo thực đơn (Planned Intake)", không khẳng định là nhật ký thực tế đã hấp thụ.
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Member đã đăng nhập và quản lý Lịch ăn cá nhân (FR-09, FR-33).
-  - Không áp dụng: Guest không có quyền lưu lịch ăn (BR-05, BR-32).
+  - Không áp dụng: Guest không có quyền lưu lịch ăn (BR-05, BR-32). Chức năng không bao gồm ghi nhận nhật ký ăn thực tế (Food Intake Log / Meal Check-in) trong phạm vi MVP.
 - **Phân loại Actor:**
   - Primary Actor: `Member` (đã đăng nhập).
   - Supporting Actor: `Hệ thống tính toán dinh dưỡng nội bộ`, `Google Gemini AI` (tùy chọn khi Member yêu cầu giải thích).
@@ -3725,18 +3914,21 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - `UC-37.2`: Xem bảng tổng hợp dinh dưỡng ngày theo 9 chỉ tiêu cốt lõi so sánh với mức tham khảo cá nhân.
   - `UC-37.3`: Xem cảnh báo chi tiết các món ăn bị thiếu dữ liệu dinh dưỡng trong ngày.
   - `UC-37.4`: Yêu cầu AI phân tích chênh lệch dinh dưỡng và gợi ý món điều chỉnh từ kho công thức có sẵn.
+  - `UC-37.5`: Xem bảng phân tích tổng thể dinh dưỡng tuần (Overall weekly nutrition summary) với giá trị trung bình 7 ngày và nhận diện vi chất đặc thù ăn chay.
+  - `UC-37.6`: Xuất báo cáo dinh dưỡng ngày hoặc tuần dưới định dạng file PDF (Export nutrition report).
 - **User Stories:**
-  - *Là một Member đang theo dõi chế độ ăn uống*, tôi muốn điều chỉnh số khẩu phần ăn thực tế và kiểm tra tổng dinh dưỡng trong ngày so với mức khuyến nghị tham khảo, để tôi biết ngày hôm đó đã cân bằng năng lượng, đạm và vi chất hay chưa.
+  - *Là một Member đang lập kế hoạch ăn uống*, tôi muốn điều chỉnh số khẩu phần dự kiến trong thực đơn và kiểm tra tổng dinh dưỡng trong ngày cũng như phân tích cả tuần so với mức khuyến nghị tham khảo, để đánh giá thực đơn kế hoạch mà không coi đó là nhật ký lượng thực tế đã ăn.
+  - *Là một Member đang chuẩn bị tham vấn chuyên gia dinh dưỡng hoặc bác sĩ*, tôi muốn xuất báo cáo dinh dưỡng thực đơn dạng PDF (ngày hoặc tuần) kèm đầy đủ chỉ tiêu, danh sách món và ghi chú minh bạch, để tiện in ấn và chia sẻ.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
   - Member đã đăng nhập tài khoản hợp lệ (FR-03).
-  - Ngày được chọn trong Lịch ăn tuần có ít nhất một món ăn được xếp vào bữa (Sáng, Trưa hoặc Tối) (FR-33).
+  - Khoảng thời gian được chọn trong Lịch ăn (ngày hoặc tuần) có ít nhất một món ăn được xếp vào bữa (Sáng, Trưa hoặc Tối) (FR-33).
 - **Kích hoạt (Trigger):**
-  - Member bấm chọn tính năng "Kiểm tra dinh dưỡng ngày" trên giao diện Lịch ăn tuần.
+  - Member bấm nút "Kiểm tra dinh dưỡng ngày", "Phân tích tổng thể", hoặc "Xuất báo cáo PDF" trên giao diện Lịch ăn tuần / Theo dõi dinh dưỡng.
 
 #### 4. Luồng xử lý chi tiết (Flows)
-- **Luồng chính (Main Flow):**
+- **Luồng chính (Main Flow — Kiểm tra dinh dưỡng ngày):**
   - Bước 1: Member mở xem chi tiết một ngày trong Lịch ăn tuần.
   - Bước 2: Tại mỗi món ăn đã xếp vào các bữa (Sáng, Trưa, Tối), hệ thống hiển thị số khẩu phần mặc định là 1. Member có thể điều chỉnh số khẩu phần (từ 0.5 đến 10.0, bước nhảy 0.5).
   - Bước 3: Member nhấn nút "Kiểm tra dinh dưỡng ngày".
@@ -3745,30 +3937,68 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
     - Nhân giá trị dinh dưỡng của từng chỉ tiêu với số khẩu phần Member đã khai báo cho món đó (BR-47).
     - Nếu món có nguyên liệu chưa hỗ trợ tính dinh dưỡng, hệ thống ghi nhận cờ cảnh báo thiếu dữ liệu cho món đó (BR-48).
   - Bước 5: Hệ thống cộng dồn tổng giá trị của từng chỉ tiêu trong 9 chỉ tiêu cho toàn bộ các bữa ăn trong ngày:
-    $$\text{Tổng ngày}(i) = \sum_{\text{món}} \left(\text{Chỉ tiêu}_i \text{ trên 1 khẩu phần} \times \text{Số khẩu phần}
-ight)$$
+    $$\text{Tổng ngày}(i) = \sum_{\text{món}} \left(\text{Chỉ tiêu}_i \text{ trên 1 khẩu phần} \times \text{Số khẩu phần}\right)$$
   - Bước 6: Nếu Member đã có hồ sơ dinh dưỡng tham khảo (FR-35), hệ thống so sánh Tổng ngày với Mức nhu cầu tham khảo cá nhân:
     - Tính chênh lệch định lượng ($\Delta = \text{Tổng ngày} - \text{Mức tham khảo}$).
     - Hiển thị thanh tiến trình trực quan biểu thị tỷ lệ % đạt được theo từng chỉ tiêu riêng biệt.
     - Tuyệt đối không tạo ra một "điểm số sức khỏe" (health score) tổng hợp hay gán nhãn "lành mạnh / không lành mạnh" đơn giản hóa (BR-45).
-    - Với Natri và Năng lượng, hệ thống giải thích rõ ràng ngưỡng khuyến nghị tối đa theo hướng dẫn dinh dưỡng (BR-44).
+    - Hệ thống diễn giải từng chỉ tiêu theo mức tham khảo tương ứng, không dùng một tỷ lệ hoặc nhãn chung để thay thế ý nghĩa riêng của từng chỉ tiêu (BR-44).
   - Bước 7: Nếu có món ăn chứa nguyên liệu chưa có dữ liệu dinh dưỡng, hệ thống hiển thị thông báo cảnh báo màu vàng nổi bật: *"Một số món trong ngày chưa có dữ liệu dinh dưỡng đầy đủ; số liệu thực tế có thể cao hơn bảng tính toán"* kèm danh sách tên các món bị ảnh hưởng (BR-48).
-  - Bước 8: Hệ thống hiển thị Tuyên bố từ chối trách nhiệm y tế (BR-39, BR-41).
+  - Bước 8: Hệ thống hiển thị nhãn ghi chú minh bạch *"Dinh dưỡng dự kiến theo thực đơn"* và Tuyên bố từ chối trách nhiệm y tế (BR-39, BR-41).
+
+- **Luồng phân tích tổng thể tuần (Sub-flow SBF-37.1 — Phân tích tổng thể tuần & So sánh 7 ngày):**
+  - Bước 1: Member nhấn nút "So sánh & Thống kê 7 ngày" (hoặc "Phân tích tổng thể") tại màn hình Theo dõi dinh dưỡng.
+  - Bước 2: Hệ thống truy xuất dữ liệu kế hoạch ăn của 7 ngày trong tuần được chọn (từ Thứ Hai đến Chủ Nhật).
+  - Bước 3: Hệ thống kết xuất bảng ma trận so sánh trực quan đa chiều:
+    - 7 cột tương ứng với 7 ngày trong tuần (Thứ Hai đến Chủ Nhật), hiển thị chi tiết số liệu của 9 chỉ tiêu cho từng ngày.
+    - Cột "Trung bình/ngày" tính theo trung bình cộng 7 ngày:
+      $$\text{Giá trị TB/ngày}(i) = \frac{\sum_{d=1}^{7} \text{Tổng ngày}_d(i)}{7}$$
+    - Cột "Chuẩn tham khảo cá nhân (DRI)" và tỷ lệ % hoàn thành mục tiêu.
+    - Thanh trạng thái / màu sắc trực quan (đạt / vượt / thiếu) cho từng ô chỉ tiêu theo ngày mà không tạo điểm số tổng hợp phán xét (BR-45).
+  - Bước 4: Thống kê tỷ lệ ngày đạt chuẩn của từng chỉ tiêu (ví dụ: *6/7 ngày đạt nhu cầu Đạm*).
+  - Bước 5: Phân tích các vi chất đặc thù ăn chay:
+    - Phát hiện nguy cơ thiếu hụt tích lũy nếu chỉ tiêu quan trọng (như B12, Sắt non-heme, Canxi) thấp hơn ngưỡng khuyến nghị liên tiếp từ 3 ngày trở lên trong tuần.
+    - Không phân tích Natri/muối vì chỉ tiêu này không thuộc bộ chín chỉ tiêu dinh dưỡng MVP.
+  - Bước 6: Hiển thị kết quả phân tích trong giao diện chi tiết (Modal / Panel). Tuyệt đối không tạo ra một điểm số tổng hợp (Health Score) cho cả tuần (BR-45); hiển thị cảnh báo danh sách các ngày/món thiếu dữ liệu chuẩn (BR-48); hiển thị nhãn minh bạch "Dinh dưỡng dự kiến theo thực đơn tuần".
+
+- **Luồng xuất báo cáo PDF (Sub-flow SBF-37.2 — Xuất báo cáo PDF tuần / ngày):**
+  - Bước 1: Member nhấn nút "Xuất báo cáo PDF" (hỗ trợ nút xuất nhanh "Xuất PDF tuần này").
+  - Bước 2: Hệ thống hiển thị hộp thoại chọn phạm vi xuất: "Báo cáo ngày hiện tại" hoặc "Báo cáo toàn bộ tuần này" (mặc định chọn Tuần hiện tại).
+  - Bước 3: Hệ thống tổng hợp dữ liệu dinh dưỡng theo phạm vi được chọn (tính toán on-demand từ dữ liệu lịch ăn hiện hành, không truy vấn hay lưu trữ vào bảng báo cáo tĩnh).
+  - Bước 4: Tạo tài liệu định dạng PDF chuẩn in A4: một trang đối với báo cáo ngày và hai trang đối với báo cáo tuần.
+    - **Báo cáo ngày — 1 trang:** Logo/tiêu đề, thông tin Member và ngày được chọn, ba bữa cùng tên món/số khẩu phần dự kiến, bảng chín chỉ tiêu và mức tham khảo, cảnh báo thiếu dữ liệu, timestamp và tuyên bố miễn trừ y tế.
+    - **Báo cáo tuần — 2 trang:**
+      - **Trang 1 — Tổng quan & Bảng ma trận so sánh 7 ngày:**
+        - Phần thông tin chung: Logo Mâm Xanh, Tiêu đề *"Báo Cáo Phân Tích Dinh Dưỡng Thực Đơn Tuần"*, Họ tên/Mã tài khoản Member, Thời điểm xuất dữ liệu (timestamp), Khoảng thời gian tuần (từ ngày... đến ngày...).
+        - Thông tin thể trạng tham khảo (nếu có): Nhóm tuổi, giới tính, mức vận động, mức calorie mục tiêu (FR-35).
+        - Bảng ma trận 9 chỉ tiêu x 7 ngày: hiển thị số liệu từng ngày (Thứ 2 đến Chủ nhật), cột trung bình tuần, cột chuẩn DRI cá nhân và tỷ lệ % đạt.
+      - **Trang 2 — Chi tiết thực đơn, cảnh báo & miễn trừ y tế:**
+        - Tóm tắt thực đơn tuần: Danh mục bữa ăn 3 bữa (Sáng, Trưa, Tối) từng ngày, tên món và số khẩu phần trong kỳ báo cáo.
+        - Phân tích vi chất đặc thù & cảnh báo thiếu dữ liệu: Nhận diện vi chất đạt chuẩn, cảnh báo các món chứa nguyên liệu chưa có dữ liệu chuẩn (BR-48).
+        - Tuyên bố miễn trừ y tế bắt buộc: In rõ ràng tuyên bố từ chối trách nhiệm y tế chuẩn theo BR-41.
+  - Bước 5: Trình duyệt tải file PDF trực tiếp về thiết bị của Member.
+
 - **Luồng thay thế (Alternative Flows):**
-  - *AF-37.1 (Chưa khai báo hồ sơ dinh dưỡng cá nhân):* Nếu Member chưa khai báo hồ sơ dinh dưỡng theo FR-35, hệ thống vẫn hiển thị tổng 9 chỉ tiêu dinh dưỡng thực tế của cả ngày, nhưng ở cột so sánh sẽ hiển thị giá trị khuyến nghị tiêu chuẩn của người trưởng thành theo USDA kèm liên kết gợi ý: *"Khai báo hồ sơ để xem chỉ số phù hợp với thể trạng cá nhân"*.
-  - *AF-37.2 (Member nhờ AI phân tích chênh lệch):* Member bấm nút "Nhờ AI phân tích và đề xuất điều chỉnh". Hệ thống kiểm tra hạn mức AI (BR-01, BR-02, BR-03). Nếu hợp lệ, hệ thống gửi bảng số liệu chênh lệch cho Gemini kèm yêu cầu đề xuất đổi một món trong bữa sang một công thức khác có sẵn trong hệ thống để cân bằng dinh dưỡng. AI trả về đề xuất; nếu Member đồng ý, hệ thống đổi món trong Lịch ăn.
+  - *AF-37.1 (Chưa khai báo hồ sơ dinh dưỡng cá nhân):* Nếu Member chưa khai báo hồ sơ dinh dưỡng theo FR-35, hệ thống vẫn hiển thị tổng 9 chỉ tiêu dinh dưỡng của thực đơn (theo ngày hoặc tuần), nhưng ở cột so sánh sẽ hiển thị giá trị khuyến nghị tiêu chuẩn của người trưởng thành theo USDA kèm liên kết gợi ý: *"Khai báo hồ sơ để xem chỉ số phù hợp với thể trạng cá nhân"*.
+  - *AF-37.2 (Member nhờ AI phân tích chênh lệch):* Member bấm nút "Nhờ AI phân tích và đề xuất điều chỉnh". Hệ thống kiểm tra quyền dùng AI nâng cao của gói Pro (BR-02, BR-03). Nếu hợp lệ, hệ thống gửi bảng số liệu chênh lệch cho Gemini kèm yêu cầu đề xuất đổi một món trong bữa sang một công thức khác có sẵn trong hệ thống để cân bằng dinh dưỡng. AI trả về đề xuất; nếu Member đồng ý, hệ thống đổi món trong Lịch ăn.
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-37.1 (Ngày không có món ăn nào):* Nếu cả 3 bữa trong ngày đều trống, nút "Kiểm tra dinh dưỡng ngày" bị vô hiệu hóa kèm thông báo *"Vui lòng thêm ít nhất một món ăn vào lịch ăn để kiểm tra dinh dưỡng"*.
+  - *EF-37.1 (Ngày hoặc tuần không có món ăn nào):* Nếu khoảng thời gian được chọn không có bất kỳ món ăn nào trong lịch ăn, các nút "Kiểm tra dinh dưỡng ngày", "So sánh & Thống kê 7 ngày" và "Xuất báo cáo PDF" bị vô hiệu hóa kèm thông báo *"Vui lòng thêm ít nhất một món ăn vào lịch ăn để phân tích/xuất báo cáo dinh dưỡng"*.
   - *EF-37.2 (Khẩu phần không hợp lệ):* Nếu người dùng nhập số khẩu phần nhỏ hơn 0.5 hoặc lớn hơn 10, hệ thống báo lỗi và khôi phục về giá trị hợp lệ gần nhất.
-  - *SF-37.1 (Kiểm soát quyền riêng tư):* Lịch ăn và kết quả kiểm tra dinh dưỡng thuộc quyền riêng tư của chính Member; tài khoản khác hoặc Guest không thể xem (RBAC theo NFR-08, NFR-09).
+  - *EF-37.3 (Tạo PDF thất bại):* Nếu không thể tạo file PDF, hệ thống thông báo xuất báo cáo thất bại, không tạo file rỗng/hỏng và cho phép Member thử lại mà không thay đổi dữ liệu Lịch ăn.
+  - *SF-37.1 (Kiểm soát quyền riêng tư):* Lịch ăn, kết quả kiểm tra dinh dưỡng và file PDF xuất ra thuộc quyền riêng tư của chính Member; tài khoản khác hoặc Guest không thể xem hoặc tải dữ liệu (RBAC theo NFR-08, NFR-09).
 
 #### 5. Hậu điều kiện (Postconditions)
 - Số khẩu phần đã điều chỉnh được lưu vào Lịch ăn ngày của Member.
-- Kết quả kiểm tra 9 chỉ tiêu được hiển thị chi tiết, minh bạch đến từng chỉ tiêu thành phần.
+- Kết quả kiểm tra 9 chỉ tiêu (ngày hoặc tuần) được hiển thị chi tiết, minh bạch đến từng chỉ tiêu thành phần.
+- File báo cáo PDF được tạo on-demand và tải thành công về máy người dùng mà không tạo bản ghi dư thừa trong CSDL.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Chỉ Member sở hữu Lịch ăn mới có quyền điều chỉnh khẩu phần và xem bảng kiểm tra dinh dưỡng.
-- **Ràng buộc an toàn:** Không được phép tổng hợp thành một chỉ số điểm số duy nhất để đánh giá một ngày ăn (BR-45); luôn gắn kèm cảnh báo khi dữ liệu chưa trọn vẹn (BR-48).
+- **Quyền hạn:** Chỉ Member sở hữu Lịch ăn mới có quyền điều chỉnh khẩu phần, xem bảng kiểm tra dinh dưỡng và xuất báo cáo PDF.
+- **Ràng buộc an toàn:**
+  - Không được phép tổng hợp thành một chỉ số điểm số duy nhất (Health Score) để đánh giá ngày hay tuần ăn (BR-45).
+  - Luôn gắn kèm cảnh báo khi dữ liệu chưa trọn vẹn (BR-48).
+  - Bắt buộc gắn kèm Tuyên bố từ chối trách nhiệm y tế (BR-41) trên cả giao diện xem trực tiếp và file PDF xuất ra.
+  - Xác định rõ bản chất thông tin là ước tính theo thực đơn kế hoạch (Planned Intake), không thay thế hồ sơ bệnh án hay chẩn đoán lâm sàng.
 
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
@@ -3780,7 +4010,7 @@ ight)$$
   - [BR-40](BUSINESS-RULES.md#br-40): Điều kiện dữ liệu dinh dưỡng tin cậy cho AI menu.
   - [BR-41](BUSINESS-RULES.md#br-41): Ranh giới thông tin dinh dưỡng và không thay thế chuyên gia.
   - [BR-43](BUSINESS-RULES.md#br-43): Gắn số liệu dinh dưỡng với một khẩu phần.
-  - [BR-44](BUSINESS-RULES.md#br-44): Quy tắc giải thích chỉ tiêu natri và năng lượng.
+  - [BR-44](BUSINESS-RULES.md#br-44): Quy tắc diễn giải mức tham khảo theo từng chỉ tiêu dinh dưỡng.
   - [BR-45](BUSINESS-RULES.md#br-45): Cấm hiển thị điểm tổng hợp hoặc nhãn đơn giản hóa.
   - [BR-46](BUSINESS-RULES.md#br-46): Nguồn tính toán dinh dưỡng chính thức của công thức.
   - [BR-47](BUSINESS-RULES.md#br-47): Phân bổ dinh dưỡng theo số khẩu phần và cộng dồn ngày.
@@ -3812,6 +4042,23 @@ ight)$$
   - *Given* Member yêu cầu AI phân tích chênh lệch dinh dưỡng của ngày,
   - *When* AI phản hồi phân tích và đề xuất điều chỉnh,
   - *Then* AI chỉ được sử dụng các số liệu thực tế đã tính toán và đề xuất món thay thế từ các công thức có sẵn trong hệ thống, không được tự ý bịa số liệu dinh dưỡng mới.
+- **AC-37.6 (Nút So sánh và Thống kê mỗi ngày trong tuần):**
+  - *Given* Member đã xếp thực đơn cho các ngày trong tuần trên Lịch ăn,
+  - *When* Member bấm nút "So sánh & Thống kê 7 ngày",
+  - *Then* hệ thống hiển thị bảng ma trận trực quan gồm 7 cột ngày (Thứ Hai đến Chủ Nhật) chi tiết 9 chỉ tiêu, kèm cột trung bình tuần và cột so sánh chênh lệch với DRI cá nhân (thanh tiến trình/màu sắc trực quan cho từng ngày đạt/chưa đạt), không tạo điểm số tổng hợp (Health Score) theo BR-45.
+- **AC-37.7 (Xuất báo cáo PDF tuần hoàn chỉnh A4 2 trang):**
+  - *Given* Member nhấn nút "Xuất báo cáo PDF" và chọn phạm vi tuần,
+  - *When* file PDF được tạo thành công,
+  - *Then* tệp PDF đạt chuẩn in ấn A4 (2 trang), chứa đầy đủ: Trang 1 gồm thông tin chung, bảng ma trận thống kê 7 ngày x 9 chỉ tiêu so sánh với DRI cá nhân; Trang 2 gồm tóm tắt thực đơn 3 bữa/ngày, cảnh báo nguyên liệu thiếu dữ liệu (BR-48) và tuyên bố từ chối trách nhiệm y tế chuẩn (BR-41).
+- **AC-37.8 (Kiểm soát quyền riêng tư khi xuất PDF):**
+  - *Given* Member A đang đăng nhập,
+  - *When* yêu cầu xuất báo cáo PDF,
+  - *Then* hệ thống chỉ xuất báo cáo từ dữ liệu thực đơn của chính Member A, không thể xem hoặc xuất báo cáo của tài khoản khác (SF-37.1, NFR-08, NFR-09).
+
+- **AC-37.9 (Xuất báo cáo PDF ngày một trang):**
+  - *Given* Member chọn một ngày có ít nhất một món trong Lịch ăn và nhấn "Xuất báo cáo PDF" với phạm vi ngày,
+  - *When* file được tạo thành công,
+  - *Then* hệ thống tải file PDF A4 một trang gồm thông tin ngày, ba bữa, tên món, số khẩu phần dự kiến, bảng chín chỉ tiêu, mức tham khảo, cảnh báo thiếu dữ liệu, timestamp và tuyên bố miễn trừ y tế.
 
 ---
 
@@ -3884,7 +4131,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
      - *"Rất tiếc! Hệ thống Vegetarian Support Application hiện chỉ cung cấp tính toán dinh dưỡng mẫu cho người trưởng thành khỏe mạnh bình thường. Đối với người dưới 18 tuổi, phụ nữ mang thai/cho con bú hoặc người có bệnh lý nền, nhu cầu dinh dưỡng đòi hỏi phác đồ chuyên biệt từ bác sĩ chuyên khoa hoặc chuyên gia dinh dưỡng lâm sàng. Để đảm bảo an toàn tuyệt đối cho sức khỏe của bạn, hệ thống xin phép tạm dừng chức năng dinh dưỡng đối với tài khoản này."*
    - Bước 4: Hệ thống khóa quyền truy cập các chức năng dinh dưỡng (FR-35, FR-36, FR-37) đối với tài khoản.
    - Bước 5: Hệ thống điều hướng Member về trang Khám phá bài viết.
-   - Bước 6: **Bảo toàn chức năng thông thường (BR-42):** Member VẪN SỬ DỤNG HOÀN TOÀN BÌNH THƯỜNG toàn bộ các chức năng khác của hệ thống: xem bài công thức, tìm kiếm, lọc theo nguyên liệu/loại ăn chay, lưu bài viết vào `Saved Recipes`, xếp lịch ăn 3 bữa thủ công trong `Meal Planner`, tạo và công khai Recipe Post, bình luận và hỏi đáp Chatbot AI kiến thức chay chung (FR-51).
+   - Bước 6: **Bảo toàn chức năng thông thường (BR-42):** Member VẪN SỬ DỤNG HOÀN TOÀN BÌNH THƯỜNG toàn bộ các chức năng khác của hệ thống: xem bài công thức, tìm kiếm, lọc theo nguyên liệu/loại ăn chay, lưu bài viết vào `Saved Recipes`, xếp lịch ăn 3 bữa thủ công trong `Meal Planner`, bình luận và hỏi đáp Chatbot AI kiến thức chay chung (FR-51); riêng Chuyên gia được tạo và công khai Recipe Post.
 
 ##### B. Luồng Xem lại tuyên bố miễn trừ y tế và phạm vi hỗ trợ (UC-38.2)
 1. **Main Flow:**
@@ -3943,7 +4190,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 - **AC-38.4 — Bảo toàn 100% tính năng không-dinh-dưỡng cho người không đủ điều kiện:**
   - **Given:** Member đã được ghi nhận trạng thái không đủ điều kiện dinh dưỡng.
-  - **When:** Member thực hiện các thao tác: tìm kiếm món chay, xem chi tiết bài công thức, lưu công thức vào `Saved Recipes`, thêm công thức vào Lịch ăn thủ công, tạo và công khai Recipe Post, và bình luận.
+  - **When:** Member thực hiện các thao tác: tìm kiếm món chay, xem chi tiết bài công thức, lưu công thức vào `Saved Recipes`, thêm công thức vào Lịch ăn thủ công và bình luận; nếu là Chuyên gia thì tạo và công khai Recipe Post.
   - **Then:** Toàn bộ các thao tác trên được hệ thống xử lý thành công 100% mà không gặp bất kỳ thông báo lỗi hay sự hạn chế nào liên quan đến dinh dưỡng (BR-42).
 
 - **AC-38.5 — Chặn ở tầng kiểm soát máy chủ đối với các chức năng dinh dưỡng khi chưa xác nhận:**
@@ -3973,7 +4220,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 #### 1. Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Hệ thống tự động tính toán tổng ước tính của 9 chỉ tiêu dinh dưỡng cốt lõi cho một bài công thức nấu ăn bằng cách đối chiếu và cộng dồn dữ liệu từ danh mục nguyên liệu dinh dưỡng nội bộ (tham chiếu USDA/NIH) theo trọng lượng gram thực tế của từng nguyên liệu; sau đó quy đổi ra định lượng trên 1 khẩu phần dựa trên số khẩu phần mà tác giả đã khai báo; khi có nguyên liệu thiếu định lượng hoặc chưa có trong danh mục dinh dưỡng nội bộ, hệ thống phải công khai rõ ràng phạm vi thiếu dữ liệu, tuyệt đối không được tự gán giá trị bằng 0 và không cho phép AI tự suy đoán số liệu; không gọi API dinh dưỡng ngoài theo thời gian thực (realtime external API).
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Tất cả các bài Recipe Post được tạo hoặc chỉnh sửa trong hệ thống (FR-04, FR-07, FR-16, FR-19, FR-44).
+  - Áp dụng cho: Tất cả các bài Recipe Post được Chuyên gia tạo hoặc chỉnh sửa trong hệ thống (FR-04, FR-16, FR-19, FR-44); FR-07 đã `RETIRED`.
   - 9 chỉ tiêu cốt lõi: Năng lượng (kcal), Chất đạm (g), Carbohydrate (g), Chất béo (g), Chất xơ (g), Canxi (mg), Sắt (mg), Vitamin B12 (mcg), Kẽm (mg) (SRS 3.18, BR-40, BR-46).
 - **Phân loại Actor:**
   - Primary Actor: `Member / Tác giả bài viết` (khi tạo/sửa công thức), `Guest / Member` (khi xem chi tiết công thức).
@@ -4034,7 +4281,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - [BR-40](BUSINESS-RULES.md#br-40): Điều kiện dữ liệu dinh dưỡng tin cậy cho AI menu.
   - [BR-41](BUSINESS-RULES.md#br-41): Ranh giới thông tin dinh dưỡng và không thay thế chuyên gia.
   - [BR-43](BUSINESS-RULES.md#br-43): Gắn số liệu dinh dưỡng với một khẩu phần.
-  - [BR-44](BUSINESS-RULES.md#br-44): Quy tắc giải thích chỉ tiêu natri và năng lượng.
+  - [BR-44](BUSINESS-RULES.md#br-44): Quy tắc diễn giải mức tham khảo theo từng chỉ tiêu dinh dưỡng.
   - [BR-45](BUSINESS-RULES.md#br-45): Cấm hiển thị điểm tổng hợp hoặc nhãn đơn giản hóa.
   - [BR-46](BUSINESS-RULES.md#br-46): Nguồn tính toán dinh dưỡng chính thức của công thức.
   - [BR-48](BUSINESS-RULES.md#br-48): Xử lý nguyên liệu thiếu định lượng hoặc thiếu số liệu dinh dưỡng.
@@ -4079,12 +4326,12 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cho phép Member đã đăng nhập công khai trực tiếp bài công thức nấu ăn (Recipe Post) ngay cả khi bài viết có chứa các nguyên liệu tự do nằm ngoài danh mục nguyên liệu dinh dưỡng nội bộ của hệ thống; hệ thống không được chặn quyền xuất bản chỉ vì lý do nguyên liệu chưa có dữ liệu dinh dưỡng; các nguyên liệu này được gắn cờ hiển thị "Chưa hỗ trợ tính dinh dưỡng" trên giao diện bài viết; bài công thức này được hiển thị rõ cảnh báo kết quả dinh dưỡng chưa đầy đủ và bị loại trừ khỏi tập hợp ứng viên cho chức năng AI lập thực đơn theo nhu cầu dinh dưỡng (FR-36).
+- **Tóm tắt yêu cầu:** Cho phép Chuyên gia đã đăng nhập công khai trực tiếp bài công thức nấu ăn (Recipe Post) ngay cả khi bài viết có chứa các nguyên liệu tự do nằm ngoài danh mục nguyên liệu dinh dưỡng nội bộ của hệ thống; hệ thống không được chặn quyền xuất bản chỉ vì lý do nguyên liệu chưa có dữ liệu dinh dưỡng; các nguyên liệu này được gắn cờ hiển thị "Chưa hỗ trợ tính dinh dưỡng" trên giao diện bài viết; bài công thức này được hiển thị rõ cảnh báo kết quả dinh dưỡng chưa đầy đủ và bị loại trừ khỏi tập hợp ứng viên cho chức năng AI lập thực đơn theo nhu cầu dinh dưỡng (FR-36).
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Member tạo và xuất bản công thức trực tiếp (FR-04, FR-25).
+  - Áp dụng cho: Chuyên gia tạo và xuất bản công thức trực tiếp (FR-04, FR-25).
   - Phân định ranh giới: Xuất bản bài viết cộng đồng không bị phụ thuộc vào tiến độ cập nhật danh mục dinh dưỡng của Administrator (BR-07, BR-50).
 - **Phân loại Actor:**
-  - Primary Actor: `Member` (tác giả bài viết).
+  - Primary Actor: `Chuyên gia` (tác giả bài viết).
   - Secondary Actor: `Guest / Member` (người xem công thức).
   - Supporting Actor: `Hệ thống phân loại và gắn cờ dinh dưỡng`.
 
@@ -4097,7 +4344,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
-  - Tác giả là Member đã đăng nhập và hoàn thành các trường thông tin bắt buộc của bài công thức (FR-04, FR-16, FR-19).
+  - Tác giả là Chuyên gia đã đăng nhập và hoàn thành các trường thông tin bắt buộc của bài công thức (FR-04, FR-16, FR-19).
   - Bài công thức có ít nhất một nguyên liệu mà tác giả nhập dạng chữ tự do chưa khớp với danh mục dinh dưỡng nội bộ.
 - **Kích hoạt (Trigger):**
   - Tác giả nhấn nút "Đăng công thức" (Publish Recipe).
@@ -4124,7 +4371,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - Bài viết bị loại trừ khỏi pool gợi ý AI Menu theo mục tiêu dinh dưỡng.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Member có toàn quyền công khai bài viết của mình mà không cần phê duyệt trước của Admin (BR-07, BR-59).
+- **Quyền hạn:** Chuyên gia có toàn quyền công khai bài viết của mình mà không cần phê duyệt trước của Admin (BR-07, BR-59).
 - **Ràng buộc nghiệp vụ:** Không được vì thiếu dữ liệu dinh dưỡng mà ngăn cản quyền chia sẻ công thức cộng đồng (BR-50).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
@@ -4143,8 +4390,8 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 #### 8. Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
 - **AC-40.1 (Không chặn xuất bản công thức chứa nguyên liệu mới):**
-  - *Given* Member đăng bài công thức hợp lệ có chứa nguyên liệu "Nấm tràm Phú Quốc" chưa có trong danh mục dinh dưỡng nội bộ,
-  - *When* Member nhấn nút "Đăng công thức",
+  - *Given* Chuyên gia đăng bài công thức hợp lệ có chứa nguyên liệu "Nấm tràm Phú Quốc" chưa có trong danh mục dinh dưỡng nội bộ,
+  - *When* Chuyên gia nhấn nút "Đăng công thức",
   - *Then* hệ thống xuất bản bài công thức thành công ở trạng thái công khai ngay lập tức mà không hiển thị lỗi chặn xuất bản.
 - **AC-40.2 (Hiển thị nhãn chưa hỗ trợ tính dinh dưỡng cho nguyên liệu):**
   - *Given* bài công thức đã công khai có chứa nguyên liệu ngoài danh mục dinh dưỡng,
@@ -4282,19 +4529,19 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 ---
 
 <a id="fr-44"></a>
-### FR-44 — Member sửa hoặc xóa Recipe Post đã công khai của chính mình
+### FR-44 — Chuyên gia sửa hoặc xóa Recipe Post đã công khai của chính mình
 
 - **Mã yêu cầu:** FR-44
 - **Module:** M02, M03
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cho phép Member đã đăng nhập chỉnh sửa nội dung hoặc xóa bỏ bài công thức nấu ăn đã công khai do chính mình tạo ra; khi chỉnh sửa, các thay đổi phải vượt qua toàn bộ quy tắc kiểm tra hợp lệ Recipe Validation Profile chuẩn theo FR-16 (tiêu đề, khẩu phần, thời gian, loại ăn chay, danh mục, nguyên liệu theo FR-19 với số lượng số dương và chuyển đổi đơn vị khả dụng theo BR-73, 1–30 bước hướng dẫn tuần tự theo FR-22, 0–5 ảnh minh họa với đúng 1 ảnh đại diện theo FR-14, BR-19) và được cập nhật công khai ngay lập tức mà không cần Administrator phê duyệt lại; trường hợp bài viết đang bị Administrator tạm ẩn do vi phạm (BR-27), Member không được tự ý sửa để mở lại công khai; khi xóa bài công thức, hệ thống chuyển trạng thái bài viết sang xóa mềm (Tombstone), bài viết không còn xuất hiện trên danh mục công khai hay tìm kiếm, nhưng các tham chiếu lịch sử trong Lịch ăn tuần (Meal Plan), Công thức đã lưu (Saved Recipe) và Danh sách mua sắm hiện có của người dùng khác được bảo toàn ở trạng thái hiển thị "Nội dung không còn khả dụng" để tránh phá vỡ tính toàn vẹn dữ liệu.
+- **Tóm tắt yêu cầu:** Cho phép Chuyên gia đã đăng nhập chỉnh sửa nội dung hoặc xóa bỏ bài công thức nấu ăn đã công khai do chính mình tạo ra; khi chỉnh sửa, các thay đổi phải vượt qua toàn bộ quy tắc kiểm tra hợp lệ Recipe Validation Profile chuẩn theo FR-16 (tiêu đề, khẩu phần, thời gian, loại ăn chay, thể loại món `dish_category`, nguyên liệu theo FR-19 với số lượng số dương và chuyển đổi đơn vị khả dụng theo BR-73, hướng dẫn chế biến linh hoạt `instructions` 10–5.000 ký tự theo BR-19, 0–5 ảnh minh họa với đúng 1 ảnh đại diện theo FR-14, BR-19) và được cập nhật công khai ngay lập tức mà không cần Administrator phê duyệt lại; trường hợp bài viết đang bị Administrator tạm ẩn do vi phạm (BR-27), tác giả không được tự ý sửa để mở lại công khai; khi xóa bài công thức, hệ thống chuyển trạng thái bài viết sang xóa mềm (Tombstone), bài viết không còn xuất hiện trên danh mục công khai hay tìm kiếm, nhưng các tham chiếu lịch sử trong Lịch ăn tuần (Meal Plan), Công thức đã lưu (Saved Recipe) và Danh sách mua sắm hiện có của người dùng khác được bảo toàn ở trạng thái hiển thị "Nội dung không còn khả dụng" để tránh phá vỡ tính toàn vẹn dữ liệu.
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Member sở hữu bài công thức (`Author`).
+  - Áp dụng cho: Chuyên gia sở hữu bài công thức (`Role = EXPERT`, `Author`).
   - Phân quyền: Nghiêm cấm sửa hoặc xóa bài của tác giả khác (RBAC, chống IDOR theo NFR-09, NFR-10).
 - **Phân loại Actor:**
-  - Primary Actor: `Member` (tác giả bài viết).
+  - Primary Actor: `Chuyên gia` (`Role = EXPERT`) (tác giả bài viết).
   - Supporting Actor: `Hệ thống kiểm tra tính toàn vẹn dữ liệu`.
 
 #### 2. Use Cases & User Stories
@@ -4302,11 +4549,11 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - `UC-44.1`: Chỉnh sửa nội dung bài công thức đã công khai của chính mình.
   - `UC-44.2`: Xóa bài công thức đã công khai của chính mình kèm cơ chế bảo toàn tham chiếu (Tombstone).
 - **User Stories:**
-  - *Là một tác giả công thức*, tôi muốn cập nhật lại định lượng gia vị cho chính xác hơn sau khi nhận được phản hồi của bạn đọc, hoặc xóa bài viết khi không còn muốn chia sẻ mà không làm hỏng lịch ăn của những người đã lưu bài trước đó.
+  - *Là một Chuyên gia ẩm thực*, tôi muốn cập nhật lại định lượng gia vị hoặc hướng dẫn chế biến cho chính xác hơn sau khi nhận được phản hồi của bạn đọc, hoặc xóa bài viết khi không còn muốn chia sẻ mà không làm hỏng lịch ăn của những người đã lưu bài trước đó.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
-  - Người dùng đã đăng nhập tài khoản Member và là tác giả sở hữu bài công thức (BR-17, BR-64).
+  - Người dùng đã đăng nhập tài khoản Chuyên gia và là tác giả sở hữu bài công thức (BR-17, BR-64).
   - Bài công thức đang ở trạng thái công khai (`Public`) và không nằm trong trạng thái bị Administrator khóa/ẩn vi phạm (BR-27).
 - **Kích hoạt (Trigger):**
   - Tác giả nhấn nút "Chỉnh sửa công thức" hoặc "Xóa công thức" trên giao diện bài viết hoặc trang quản lý bài viết cá nhân.
@@ -4314,10 +4561,10 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow - Chỉnh sửa công thức):**
   - Bước 1: Tác giả nhấn "Chỉnh sửa công thức". Hệ thống kiểm tra quyền tác giả (BR-62, BR-64); nếu trùng khớp, hiển thị biểu mẫu chỉnh sửa với toàn bộ dữ liệu hiện tại của bài viết.
-  - Bước 2: Tác giả sửa đổi các thông tin (tiêu đề, thời gian nấu, khẩu phần, danh sách nguyên liệu và định lượng, danh sách 1–30 bước hướng dẫn theo FR-22, thêm/xóa/sắp xếp ảnh minh họa và chọn ảnh đại diện theo FR-14).
+  - Bước 2: Tác giả sửa đổi các thông tin (tiêu đề, thể loại món `dish_category`, thời gian nấu, khẩu phần, danh sách nguyên liệu và định lượng, nội dung hướng dẫn chế biến `instructions` 10–5.000 ký tự, thêm/xóa/sắp xếp ảnh minh họa và chọn ảnh đại diện theo FR-14).
   - Bước 3: Tác giả nhấn "Lưu thay đổi".
   - Bước 4: Hệ thống thực hiện kiểm tra hợp lệ toàn bộ các tiêu chí validation bắt buộc theo FR-16, BR-19 và BR-73 (bao gồm kiểm tra tính khả dụng của quy tắc chuyển đổi đơn vị nguyên liệu).
-  - Bước 5: Kiểm tra thành công, hệ thống cập nhật nội dung bài viết, các bước `RECIPE_STEP` và ảnh `RECIPE_MEDIA` vào cơ sở dữ liệu, tự động tính toán lại bảng ước tính 9 chỉ tiêu dinh dưỡng (FR-39), và xuất bản trực tiếp các thay đổi lên trang công khai ngay lập tức mà không qua kiểm duyệt trước của Admin (BR-07, BR-59, BR-62).
+  - Bước 5: Kiểm tra thành công, hệ thống cập nhật nội dung bài viết, trường `instructions` và ảnh `RECIPE_MEDIA` vào cơ sở dữ liệu, tự động tính toán lại bảng ước tính 9 chỉ tiêu dinh dưỡng (FR-39), và xuất bản trực tiếp các thay đổi lên trang công khai ngay lập tức mà không qua kiểm duyệt trước của Admin (BR-07, BR-59, BR-62).
   - Bước 6: Hệ thống hiển thị thông báo cập nhật thành công cho tác giả.
 - **Luồng thay thế (Alternative Flows - Xóa công thức):**
   - *AF-44.1 (Quy trình xóa công thức):*
@@ -4336,15 +4583,16 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - Bài viết bị xóa biến mất khỏi kết quả tìm kiếm và danh mục công khai; các tham chiếu lịch sử hiển thị an toàn dưới dạng Tombstone.
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Chỉ chính tác giả sở hữu bài công thức hoặc Administrator mới có quyền sửa/xóa bài viết.
+- **Quyền hạn:** Chỉ Chuyên gia là tác giả sở hữu bài công thức mới có quyền sửa/xóa nội dung bài viết. Administrator chỉ thực hiện hậu kiểm theo FR-06.
 - **Ràng buộc an toàn:** Sửa bài công khai trực tiếp ngay (BR-07, BR-62); xóa bài bảo toàn tính toàn vẹn dữ liệu qua cơ chế Tombstone (BR-35, BR-64).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
-  - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
+  - [BR-07](BUSINESS-RULES.md#br-07): Quyền đăng và công khai Recipe Post dành riêng cho Chuyên gia (Role = EXPERT).
   - [BR-14](BUSINESS-RULES.md#br-14): Quy tắc định lượng và tổng hợp Shopping List an toàn.
   - [BR-17](BUSINESS-RULES.md#br-17): Gắn quyền tác giả với tài khoản đăng bài.
   - [BR-18](BUSINESS-RULES.md#br-18): Bảo vệ quyền riêng tư trong hồ sơ tác giả công khai.
+  - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post (hướng dẫn chế biến linh hoạt, 0..5 ảnh với 1 ảnh bìa, tỷ lệ quy đổi đơn vị).
   - [BR-27](BUSINESS-RULES.md#br-27): Quy tắc phục hồi bài công thức bị ẩn.
   - [BR-35](BUSINESS-RULES.md#br-35): Độc lập vòng đời giữa Công thức đã lưu và Lịch ăn.
   - [BR-59](BUSINESS-RULES.md#br-59): Không có hàng đợi duyệt bài trước khi công khai.
@@ -4359,11 +4607,11 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 #### 8. Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
 - **AC-44.1 (Quyền tác giả khi chỉnh sửa bài viết):**
-  - *Given* Member đăng nhập không phải là tác giả của bài công thức,
-  - *When* Member cố gắng truy cập trang chỉnh sửa hoặc gửi yêu cầu cập nhật bài công thức,
+  - *Given* người dùng đăng nhập không phải là tác giả của bài công thức,
+  - *When* cố gắng truy cập trang chỉnh sửa hoặc gửi yêu cầu cập nhật bài công thức,
   - *Then* hệ thống từ chối thực thi và hiển thị thông báo lỗi không có quyền chỉnh sửa.
 - **AC-44.2 (Công khai trực tiếp thay đổi sau validation):**
-  - *Given* chính tác giả chỉnh sửa và gửi nội dung cập nhật thỏa mãn đầy đủ điều kiện hợp lệ bắt buộc,
+  - *Given* chính tác giả Chuyên gia chỉnh sửa và gửi nội dung cập nhật thỏa mãn đầy đủ điều kiện hợp lệ bắt buộc (bao gồm thể loại món `dish_category` và hướng dẫn chế biến `instructions` 10–5.000 ký tự),
   - *When* tác giả nhấn lưu thay đổi,
   - *Then* các thay đổi được cập nhật và hiển thị công khai ngay lập tức mà không cần Admin phê duyệt lại.
 - **AC-44.3 (Khóa tự sửa bài đang bị Admin ẩn vi phạm):**
@@ -4789,7 +5037,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 #### 1. Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Cung cấp **MỘT AI Chatbot duy nhất dành cho người dùng cuối** (Unified End-User AI Chatbot), tích hợp Google Gemini AI, hỗ trợ đa năng lực/hỏi đáp tùy theo câu hỏi và ngữ cảnh người dùng đang tương tác. Hệ thống không tạo nhiều chatbot riêng biệt (như Cooking Bot, Recipe Bot, Nutrition Bot, Ingredient Bot, BMI Bot); thay vào đó, cùng một AI Chatbot sẽ hỗ trợ linh hoạt dựa trên hai ngữ cảnh hoạt động chính:
   1. *Ngữ cảnh chung (General Context):* Người dùng mở chatbot từ giao diện chung của hệ thống để hỏi đáp về lối sống ăn chay, kỹ thuật nấu ăn và chế biến món chay, gợi ý nguyên liệu thay thế phù hợp với trường phái ăn chay, giải thích kiến thức dinh dưỡng thực vật, và giải thích ý nghĩa tham khảo của chỉ số BMI cùng mức năng lượng calorie (dựa trên hồ sơ dinh dưỡng nếu Member đã khai báo tại FR-35).
-  2. *Ngữ cảnh bài công thức (Recipe Context):* Khi người dùng đang xem một bài công thức nấu ăn cụ thể (trang Recipe Detail theo FR-20) và chủ động chọn chức năng "Hỏi AI về công thức này", hệ thống chuyển dữ liệu bài công thức hiện tại làm ngữ cảnh trực tiếp cho Chatbot FR-51. Ngữ cảnh bao gồm các dữ liệu Recipe hợp lệ: tiêu đề, loại ăn chay, khẩu phần, thời gian chuẩn bị và nấu, danh sách nguyên liệu và định lượng (FR-19), danh sách các bước hướng dẫn chuẩn bị/chế biến tuần tự (`RECIPE_STEP`, FR-16, FR-22), và dữ liệu dinh dưỡng khả dụng (FR-39). Người dùng có thể đặt các câu hỏi gắn liền với món ăn đó, ví dụ: *"Công đoạn xào nấm cần lưu ý gì và xào khoảng bao lâu?"*, *"Không có dầu mè thì thay bằng gì trong món này?"*, *"Giải thích cách làm món này chi tiết hơn cho người mới nấu"*, *"Món này có bao nhiêu calorie theo dữ liệu hiện có?"*.
+  2. *Ngữ cảnh bài công thức (Recipe Context):* Khi người dùng đang xem một bài công thức nấu ăn cụ thể (trang Recipe Detail theo FR-20) và chủ động chọn chức năng "Hỏi AI về công thức này", hệ thống chuyển dữ liệu bài công thức hiện tại làm ngữ cảnh trực tiếp cho Chatbot FR-51. Ngữ cảnh bao gồm các dữ liệu Recipe hợp lệ: tiêu đề, thể loại món (`dish_category`), loại ăn chay, khẩu phần, thời gian chuẩn bị và nấu, danh sách nguyên liệu và định lượng (FR-19), hướng dẫn thực hiện chi tiết (`instructions`, 10–5.000 ký tự theo FR-16; FR-22 đã RETIRED), và dữ liệu dinh dưỡng khả dụng (FR-39). Người dùng có thể đặt các câu hỏi gắn liền với món ăn đó, ví dụ: *"Công đoạn xào nấm cần lưu ý gì và xào khoảng bao lâu?"*, *"Không có dầu mè thì thay bằng gì trong món này?"*, *"Giải thích cách làm món này chi tiết hơn cho người mới nấu"*, *"Món này có bao nhiêu calorie theo dữ liệu hiện có?"*.
 - **Người dùng và Quyền truy cập:**
   - Cả `Guest` và `Member` sử dụng **CÙNG MỘT AI Chatbot** này; không tạo bot riêng biệt theo phân quyền người dùng.
   - Sự khác biệt nằm ở cơ chế xác thực, giới hạn tần suất kỹ thuật và mức độ cá nhân hóa:
@@ -4845,7 +5093,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - Bước 4: Hệ thống chuẩn bị dữ liệu ngữ cảnh an toàn cho cuộc gọi AI:
     - Thiết lập các chỉ dẫn an toàn bắt buộc: tuân thủ đúng `dietaryType` của context/người dùng và các giới hạn `allergiesAndRestrictions`; không gợi ý nguyên liệu vi phạm; từ chối chẩn đoán/kê đơn y khoa (BR-09, BR-41); cấm tự bịa đặt số liệu dinh dưỡng (NFR-25); nhấn mạnh tính tham khảo của BMI/calorie (BR-39); yêu cầu phân biệt nội dung AI với dữ liệu gốc của tác giả; cấm tự ý sửa đổi dữ liệu hệ thống.
     - Đóng gói dữ liệu ngữ cảnh:
-      - Nếu ở ngữ cảnh Recipe: truyền tiêu đề, loại ăn chay, khẩu phần, thời gian, danh sách nguyên liệu & định lượng (FR-19), danh sách các bước hướng dẫn chuẩn bị/chế biến tuần tự (`RECIPE_STEP`, FR-16, FR-22), và dữ liệu dinh dưỡng sẵn có của bài công thức hiện tại (FR-39).
+      - Nếu ở ngữ cảnh Recipe: truyền tiêu đề, thể loại món (`dish_category`), loại ăn chay, khẩu phần, thời gian, danh sách nguyên liệu & định lượng (FR-19), hướng dẫn thực hiện chi tiết (`instructions` theo FR-16), và dữ liệu dinh dưỡng sẵn có của bài công thức hiện tại (FR-39).
       - Nếu ở ngữ cảnh chung và Member đã đăng nhập: có thể tích hợp thông tin hồ sơ dinh dưỡng tham khảo của Member (FR-35) khi người dùng hỏi về chỉ số cá nhân.
   - Bước 5: Hệ thống gửi yêu cầu tới dịch vụ AI qua Backend an toàn (BR-06; không để lộ thông tin bảo mật hay khóa truy cập ra client).
   - Bước 6: Dịch vụ AI phản hồi kết quả hợp lệ đáp ứng thời gian quy định tại [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03).
@@ -5002,7 +5250,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
   - [BR-14](BUSINESS-RULES.md#br-14): Quy tắc định lượng và tổng hợp Shopping List an toàn.
   - [BR-32](BUSINESS-RULES.md#br-32): Yêu cầu đăng nhập đối với Lịch ăn và Shopping List.
-  - [BR-33](BUSINESS-RULES.md#br-33): Thao tác lưu công thức không tiêu thụ hạn mức AI.
+  - [BR-33](BUSINESS-RULES.md#br-33): Thao tác lưu công thức không gọi Gemini.
   - [BR-35](BUSINESS-RULES.md#br-35): Độc lập vòng đời giữa Công thức đã lưu và Lịch ăn.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
@@ -5237,104 +5485,109 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 ---
 
 <a id="fr-57"></a>
-### FR-57 — Đánh giá (Rating) bài công thức nấu ăn 1–5 sao
+### FR-57 — Tương tác bình chọn Like / Dislike và hiển thị tỷ lệ % hài lòng bài công thức
 
 - **Mã yêu cầu:** FR-57
 - **Module:** M01, M02, M03
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp tính năng đánh giá chất lượng bài công thức nấu ăn bằng thang điểm 1–5 sao (`RECIPE_RATING`); chỉ cho phép Member đã đăng nhập thực hiện đánh giá (BR-05, BR-70); mỗi Member chỉ được có tối đa 1 bản ghi đánh giá duy nhất trên một bài công thức nhưng có quyền chỉnh sửa/cập nhật lại số sao đã chấm bất kỳ lúc nào; tác giả bài viết TUYỆT ĐỐI KHÔNG được tự chấm điểm bài viết của chính mình; khách vãng lai (Guest) chỉ có quyền xem điểm đánh giá trung bình và tổng số lượt đánh giá, không được phép chấm điểm (khi Guest tương tác vào khung sao để chấm điểm, hệ thống yêu cầu đăng nhập); điểm trung bình hiển thị dạng thập phân 1 chữ số kèm tổng số lượt đánh giá (ví dụ: ⭐ 4.8 (120 đánh giá)); bảo vệ chống spam đánh giá.
+- **Tóm tắt yêu cầu:** Cung cấp tính năng tương tác bình chọn Thích / Không thích (Like / Dislike) độc quyền cho bài công thức nấu ăn (`RECIPE_REACTION`); chỉ cho phép Member đã đăng nhập thực hiện phản hồi (BR-05, BR-69); mỗi Member chỉ được có tối đa 1 bản ghi phản hồi hiệu lực trên một bài công thức (`UNIQUE(user_id, recipe_id)`) với cơ chế chuyển đổi qua lại giữa Like và Dislike (Switch reaction) hoặc bấm lại vào phản hồi đã chọn để hủy bỏ phản hồi (Toggle off); tác giả bài viết TUYỆT ĐỐI KHÔNG được tự bình chọn Like/Dislike cho bài viết của chính mình; khách vãng lai (Guest) chỉ có quyền xem tỷ lệ % Like và tổng số lượt bình chọn (khi Guest nhấp vào nút Like hoặc Dislike, hệ thống hiển thị thông báo yêu cầu đăng nhập theo BR-05, BR-69); hệ thống tự động tính toán tỷ lệ % Like: $\text{like\_percentage} = \operatorname{round}\left(\frac{\text{total\_likes}}{\text{total\_likes} + \text{total\_dislikes}} \times 100\right)$ và hiển thị huy hiệu `👍 {like_percentage}%` nổi bật ở góc trên bên trái ảnh bìa trên thẻ bài viết Recipe Card (theo phong cách Samsung Food); nếu bài chưa có lượt bình chọn nào thì hiển thị nhãn `Mới` thay vì `0%`.
 - **Phạm vi nghiệp vụ:**
-  - Thang điểm: Số nguyên từ 1 đến 5 sao ($\{1, 2, 3, 4, 5\}$).
-  - Phân quyền: Độc quyền cho Member đã đăng nhập; Guest chỉ xem (View-only theo BR-05, BR-70).
-  - Ràng buộc tác giả: Tác giả không được tự đánh giá bài của chính mình (BR-70).
-  - Khả năng cập nhật: Member có thể thay đổi số sao đã chấm; hệ thống cập nhật bản ghi hiện có, không tạo bản ghi mới.
+  - Loại tương tác: `LIKE` hoặc `DISLIKE` (thuộc thực thể `RECIPE_REACTION`).
+  - Phân quyền: Độc quyền cho Member đã đăng nhập; Guest chỉ xem (View-only theo BR-05, BR-69).
+  - Ràng buộc tác giả: Tác giả không được tự Like hoặc Dislike bài viết của chính mình (BR-69).
+  - Chuyển đổi và hủy: Member có thể đổi giữa Like và Dislike, hoặc bấm lại để hủy phản hồi; hệ thống cập nhật hoặc xóa bản ghi hiệu lực, không tạo bản ghi mới.
+  - Huy hiệu Samsung Food: Hiển thị `👍 {like_percentage}%` trên Recipe Card và thanh % tỷ lệ trên Recipe Detail; hiển thị nhãn `Mới` khi chưa có lượt bình chọn.
 - **Phân loại Actor:**
-  - Primary Actor: `Member` (người đánh giá), `Guest` (người xem điểm đánh giá).
-  - Supporting Actor: `Hệ thống tính toán xếp hạng & tổng hợp`.
+  - Primary Actor: `Member` (người bình chọn Like/Dislike), `Guest` (người xem tỷ lệ % Like).
+  - Supporting Actor: `Hệ thống tính toán tỷ lệ % và cập nhật bộ đếm`.
 
 #### 2. Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-57.1`: Đánh giá bài công thức nấu ăn (chấm điểm 1–5 sao).
-  - `UC-57.2`: Cập nhật lại số sao đánh giá đã gửi trước đó.
-  - `UC-57.3`: Xem điểm đánh giá trung bình và số lượng đánh giá của bài viết (áp dụng cho cả Guest và Member).
+  - `UC-57.1`: Member gửi bình chọn Thích (Like) cho bài công thức.
+  - `UC-57.2`: Member gửi bình chọn Không thích (Dislike) cho bài công thức.
+  - `UC-57.3`: Member chuyển đổi loại phản hồi (từ Like sang Dislike hoặc ngược lại) hoặc hủy phản hồi đã chọn (Toggle off).
+  - `UC-57.4`: Người dùng (Guest hoặc Member) xem tỷ lệ % Like và số lượng bình chọn trên thẻ bài viết (Samsung Food badge) và trang chi tiết công thức.
 - **User Stories:**
-  - *Là một Member sau khi nấu thử theo công thức*, tôi muốn chấm 5 sao để khen ngợi tác giả và giúp cộng đồng nhận biết món ngon đáng thử.
-  - *Là một Guest đang tìm kiếm công thức*, tôi muốn thấy rõ điểm đánh giá trung bình và số lượt đánh giá để chọn lọc được những công thức chất lượng và đáng tin cậy.
+  - *Là một Member sau khi nấu thử theo công thức*, tôi muốn nhấn Like để tán thành công thức ngon, giúp tăng tỷ lệ % hài lòng của món ăn trên thẻ bài viết cho cộng đồng thấy.
+  - *Là một Guest đang tìm kiếm món ăn*, tôi muốn thấy rõ tỷ lệ % Like (ví dụ `👍 98%`) nổi bật trên ảnh thẻ món theo phong cách Samsung Food để nhanh chóng chọn được những món chay được cộng đồng đánh giá cao nhất.
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
-  - Member đã đăng nhập tài khoản hoạt động (`ACTIVE`) và không phải là tác giả của bài công thức đang xem (FR-03, BR-17, BR-70).
+  - Member đã đăng nhập tài khoản hoạt động (`ACTIVE`) và không phải là tác giả của bài công thức đang xem (FR-03, BR-17, BR-69).
   - Bài công thức ở trạng thái công khai (`PUBLISHED`) (FR-20, BR-07).
 - **Kích hoạt (Trigger):**
-  - Người dùng nhấp chọn số sao từ 1 đến 5 trên khối Đánh giá của trang chi tiết bài công thức.
+  - Người dùng nhấp chọn nút Like hoặc Dislike trên khối tương tác của trang chi tiết bài công thức hoặc tương tác nhanh.
 
 #### 4. Luồng xử lý chi tiết (Flows)
-- **Luồng chính (Main Flow - Member đánh giá bài công thức):**
-  - Bước 1: Member mở trang chi tiết bài viết công khai (FR-20) và xem khối Đánh giá.
-  - Bước 2: Member nhấp vào số sao mong muốn (từ 1 đến 5 sao).
-  - Bước 3: Client gửi request đánh giá kèm `recipeId` và `ratingValue` (số nguyên 1..5) lên Backend.
-  - Bước 4: Backend thực hiện kiểm tra an toàn:
+- **Luồng chính (Main Flow - Member gửi phản hồi Like / Dislike):**
+  - Bước 1: Member mở trang chi tiết bài viết công khai (FR-20) và xem khối tương tác Like / Dislike.
+  - Bước 2: Member nhấp vào nút "Like" (hoặc "Dislike").
+  - Bước 3: Client gửi request kèm `recipeId` và `reactionType` (`LIKE` hoặc `DISLIKE`) lên Backend.
+  - Bước 4: Backend kiểm tra an toàn:
     - Xác thực phiên đăng nhập của Member (nếu chưa đăng nhập -> yêu cầu đăng nhập theo AF-57.1).
-    - Kiểm tra quyền tác giả: Nếu `userId` trùng với `authorId` của bài viết -> từ chối yêu cầu với mã lỗi HTTP 403 Forbidden và hiển thị thông báo: *"Tác giả không được tự đánh giá bài viết của chính mình"* (BR-70).
-    - Kiểm tra giá trị hợp lệ: Bắt buộc `ratingValue` là số nguyên trong khoảng 1 đến 5.
-  - Bước 5: Backend kiểm tra bản ghi đánh giá hiện có của Member trên bài viết này trong bảng `RECIPE_RATING`:
-    - Nếu chưa từng đánh giá: Tạo mới bản ghi `RECIPE_RATING` (`user_id`, `recipe_id`, `rating`, `created_at`).
-    - Nếu đã từng đánh giá trước đó: Cập nhật giá trị `rating` mới và dấu thời gian `updated_at`.
-  - Bước 6: Backend tính toán lại điểm trung bình cộng (Average Rating) và tổng số lượt đánh giá (Rating Count) của bài viết, cập nhật vào cache / thông tin tổng hợp của `Recipe Post`.
-  - Bước 7: Backend phản hồi kết quả thành công kèm điểm trung bình mới; giao diện cập nhật trạng thái hiển thị số sao đã chọn của Member và điểm trung bình của bài viết.
+    - Kiểm tra quyền tác giả: Nếu `userId` trùng với `authorId` của bài viết -> từ chối yêu cầu với mã lỗi HTTP 403 Forbidden và thông báo: *"Tác giả không được tự bình chọn bài viết của chính mình"* (BR-69).
+    - Kiểm tra giá trị hợp lệ: Bắt buộc `reactionType` thuộc `{"LIKE", "DISLIKE"}`.
+  - Bước 5: Backend kiểm tra bản ghi phản hồi hiện có của Member trên bài viết trong bảng `RECIPE_REACTION`:
+    - Nếu chưa từng có phản hồi: Tạo mới bản ghi `RECIPE_REACTION` (`user_id`, `recipe_id`, `reaction_type`, `created_at`, `updated_at`).
+    - Nếu đã chọn cùng loại phản hồi trước đó (bấm lại nút Like khi đang Like, hoặc bấm lại Dislike khi đang Dislike): Hủy phản hồi (Toggle off), xóa bản ghi khỏi trạng thái hiệu lực.
+    - Nếu đã chọn loại đối nghịch trước đó (đang Like bấm Dislike, hoặc đang Dislike bấm Like): Chuyển đổi trạng thái phản hồi (Switch), cập nhật `reaction_type` sang giá trị mới và cập nhật `updated_at`.
+  - Bước 6: Backend tính toán lại số lượng Like, số lượng Dislike và tỷ lệ % Like của bài viết theo công thức:
+    $$\text{like\_percentage} = \operatorname{round}\left(\frac{\text{total\_likes}}{\text{total\_likes} + \text{total\_dislikes}} \times 100\right)$$
+  - Bước 7: Backend phản hồi kết quả thành công kèm số lượng và tỷ lệ % mới; giao diện cập nhật trạng thái nút bấm (active/inactive), bộ đếm và thanh tỷ lệ % Like của bài viết.
 - **Luồng thay thế (Alternative Flows):**
-  - *AF-57.1 (Guest tương tác khối đánh giá):* Khi Guest (chưa đăng nhập) nhấn vào bất kỳ ngôi sao nào để đánh giá, hệ thống chặn thao tác và hiển thị modal đăng nhập/đăng ký kèm thông điệp: *"Vui lòng đăng nhập tài khoản để đánh giá bài công thức này"* (BR-05, BR-70).
+  - *AF-57.1 (Guest tương tác khối bình chọn):* Khi Guest (chưa đăng nhập) nhấn vào nút Like hoặc Dislike, hệ thống chặn thao tác và hiển thị modal đăng nhập/đăng ký kèm thông điệp: *"Vui lòng đăng nhập tài khoản để bình chọn bài công thức này"* (BR-05, BR-69).
+  - *AF-57.2 (Bài viết chưa có lượt bình chọn nào):* Khi $(\text{total\_likes} + \text{total\_dislikes}) = 0$, thẻ món hiển thị nhãn `Mới` (New) ở góc trên bên trái ảnh thay vì hiển thị `0%` để tránh gây hiểu lầm tiêu cực cho món ăn mới đăng (BR-69).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-57.1 (Giá trị rating không hợp lệ):* Nếu request gửi giá trị không phải số nguyên hoặc nằm ngoài khoảng 1 đến 5, Backend từ chối với mã HTTP 400 Bad Request (NFR-10).
-  - *EF-57.2 (Tác giả cố tình tự đánh giá bài của mình):* Backend kiểm tra quyền sở hữu và từ chối với mã HTTP 403 Forbidden (BR-70, NFR-09).
-  - *SF-57.1 (Khóa duy nhất chống duplicate rating):* Ràng buộc duy nhất `UNIQUE(user_id, recipe_id)` trên bảng `RECIPE_RATING` đảm bảo mỗi user chỉ có đúng 1 bản ghi đánh giá cho một bài viết, ngăn chặn lỗi ghi trùng khi người dùng click liên tiếp hoặc lỗi đường truyền mạng.
+  - *EF-57.1 (Giá trị phản hồi không hợp lệ):* Nếu request gửi giá trị không thuộc `LIKE` hoặc `DISLIKE`, Backend từ chối với mã HTTP 400 Bad Request (NFR-10).
+  - *EF-57.2 (Tác giả cố tình tự bình chọn bài của mình):* Backend kiểm tra quyền sở hữu và từ chối với mã HTTP 403 Forbidden (BR-69, NFR-09).
+  - *SF-57.1 (Khóa duy nhất chống duplicate reaction):* Ràng buộc duy nhất `UNIQUE(user_id, recipe_id)` trên bảng `RECIPE_REACTION` đảm bảo mỗi user chỉ có đúng 1 bản ghi phản hồi hiệu lực cho một bài viết, ngăn chặn lỗi ghi trùng khi người dùng click liên tiếp hoặc lỗi mạng.
 
 #### 5. Hậu điều kiện (Postconditions)
-- Bản ghi `RECIPE_RATING` được thêm mới hoặc cập nhật an toàn trong cơ sở dữ liệu.
-- Điểm đánh giá trung bình và tổng số lượt đánh giá của `Recipe Post` được tính toán lại chính xác và hiển thị cho toàn bộ người xem.
-- Dữ liệu đánh giá sẵn sàng phục vụ bộ lọc sắp xếp Điểm đánh giá cao nhất (FR-08) và các thuật toán xếp hạng tương tác (BR-71, BR-72).
+- Bản ghi `RECIPE_REACTION` được thêm mới, cập nhật hoặc xóa an toàn trong cơ sở dữ liệu.
+- Tỷ lệ % Like và các bộ đếm lượt Like, Dislike của `Recipe Post` được tính toán lại chính xác và hiển thị cho toàn bộ người xem.
+- Dữ liệu phản hồi sẵn sàng phục vụ bộ lọc sắp xếp Được yêu thích nhất (FR-08) và các thuật toán xếp hạng tương tác (BR-71, BR-72).
 
 #### 6. Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Chỉ Member đã đăng nhập mới có quyền đánh giá (BR-05, BR-70); Guest chỉ xem điểm (View-only).
-- **Ràng buộc an toàn:** Tác giả không được tự đánh giá bài viết của chính mình; thang điểm từ 1 đến 5 sao; mỗi Member tối đa 1 đánh giá trên 1 công thức (được phép sửa đổi) (BR-70).
+- **Quyền hạn:** Chỉ Member đã đăng nhập mới có quyền gửi bình chọn Like/Dislike (BR-05, BR-69); Guest chỉ xem tỷ lệ % (View-only).
+- **Ràng buộc an toàn:** Tác giả không được tự bình chọn bài viết của chính mình; mỗi Member tối đa 1 phản hồi hiệu lực trên 1 công thức (được phép chuyển đổi hoặc hủy) (BR-69).
 
 #### 7. Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
-  - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest (Guest không được rating).
+  - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest (Guest không được bình chọn).
   - [BR-17](BUSINESS-RULES.md#br-17): Gắn quyền tác giả với tài khoản đăng bài.
-  - [BR-70](BUSINESS-RULES.md#br-70): Quy tắc đánh giá (Rating) công thức nấu ăn.
+  - [BR-69](BUSINESS-RULES.md#br-69): Tương tác Like / Dislike và tỷ lệ hài lòng (% Like) của bài công thức.
   - [BR-71](BUSINESS-RULES.md#br-71): Quy tắc sắp xếp và xếp hạng Hoạt động sôi nổi nhất (Most Active).
   - [BR-72](BUSINESS-RULES.md#br-72): Quy tắc xếp hạng Xu hướng thịnh hành (Trending).
 - **Yêu cầu phi chức năng liên quan:**
-  - [NFR-02](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02): Thời gian hiển thị chi tiết bài viết và điểm đánh giá $\le 2$ giây.
+  - [NFR-02](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02): Thời gian hiển thị chi tiết bài viết và tỷ lệ % Like $\le 2$ giây.
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
-  - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC (chặn Guest và tác giả tự đánh giá).
+  - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC (chặn Guest và tác giả tự bình chọn).
   - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Phòng chống các lỗ hổng bảo mật phổ biến.
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt trên đa kích thước màn hình.
 
 #### 8. Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
-- **AC-57.1 (Member đánh giá 1–5 sao thành công):**
-  - *Given* Member A (không phải tác giả) đang xem bài công thức công khai "Canh nấm hạt sen",
-  - *When* Member A nhấp chọn 5 sao và xác nhận,
-  - *Then* hệ thống lưu đánh giá 5 sao của Member A vào cơ sở dữ liệu và cập nhật điểm đánh giá trung bình của bài viết.
-- **AC-57.2 (Member cập nhật lại số sao đã chấm):**
-  - *Given* Member A đã từng chấm 4 sao cho bài viết "Canh nấm hạt sen",
-  - *When* Member A quay lại và nhấp chọn 5 sao,
-  - *Then* hệ thống cập nhật bản ghi đánh giá thành 5 sao, không tạo thêm bản ghi mới trong cơ sở dữ liệu, và tính toán lại điểm trung bình.
-- **AC-57.3 (Chặn tác giả tự đánh giá bài viết của chính mình):**
+- **AC-57.1 (Member gửi phản hồi Like thành công):**
+  - *Given* Member A (không phải tác giả) đang xem bài công thức công khai "Canh nấm hạt sen" có 9 lượt Like và 1 lượt Dislike (tỷ lệ 90%),
+  - *When* Member A nhấp chọn nút "Like",
+  - *Then* hệ thống lưu bản ghi `LIKE` của Member A vào cơ sở dữ liệu, tổng số Like tăng lên 10, tỷ lệ % Like cập nhật thành 91% (10/11 * 100 làm tròn), huy hiệu trên thẻ công thức cập nhật `👍 91%`.
+- **AC-57.2 (Member chuyển đổi phản hồi từ Like sang Dislike - Switch):**
+  - *Given* Member A đã từng Like bài viết "Canh nấm hạt sen",
+  - *When* Member A nhấp vào nút "Dislike",
+  - *Then* hệ thống cập nhật bản ghi phản hồi thành `DISLIKE`, giảm 1 Like, tăng 1 Dislike, tính toán lại tỷ lệ % Like, không tạo thêm bản ghi mới trong cơ sở dữ liệu.
+- **AC-57.3 (Member bấm lại cùng nút để hủy phản hồi - Toggle off):**
+  - *Given* Member A đang có phản hồi Like trên bài viết "Canh nấm hạt sen",
+  - *When* Member A nhấp lại vào nút "Like",
+  - *Then* hệ thống hủy phản hồi của Member A, xóa bản ghi khỏi trạng thái hiệu lực, giảm 1 Like, tính toán lại tỷ lệ % Like và đưa nút Like về trạng thái chưa kích hoạt.
+- **AC-57.4 (Chặn tác giả tự bình chọn bài viết của chính mình):**
   - *Given* Member B là tác giả của bài công thức "Đậu hũ sốt cà chua",
-  - *When* Member B cố gắng chọn số sao để đánh giá bài viết của chính mình,
-  - *Then* hệ thống từ chối thực hiện, giữ nguyên điểm số và hiển thị thông báo lỗi: "Tác giả không được tự đánh giá bài viết của chính mình" (BR-70).
-- **AC-57.4 (Guest chỉ xem điểm đánh giá, không thể gửi đánh giá):**
-  - *Given* người dùng là Guest chưa đăng nhập đang xem bài công thức,
-  - *When* Guest nhấp vào các ngôi sao trên khối đánh giá,
-  - *Then* hệ thống không ghi nhận đánh giá và hiển thị thông báo yêu cầu đăng nhập tài khoản để thực hiện đánh giá (BR-05, BR-70).
-- **AC-57.5 (Hiển thị chính xác điểm trung bình và tổng số lượt đánh giá):**
-  - *Given* một bài công thức có 2 lượt đánh giá: một lượt 4 sao và một lượt 5 sao,
-  - *When* người dùng (Guest hoặc Member) xem bài viết,
-  - *Then* giao diện hiển thị điểm trung bình là 4.5 kèm số lượng đánh giá "(2 đánh giá)".
+  - *When* Member B cố gắng nhấp Like hoặc Dislike trên bài viết của chính mình,
+  - *Then* hệ thống từ chối thực hiện với mã HTTP 403 Forbidden, giữ nguyên số liệu và hiển thị thông báo: "Tác giả không được tự bình chọn bài viết của chính mình" (BR-69).
+- **AC-57.5 (Guest tương tác hiển thị yêu cầu đăng nhập và nhãn "Mới" cho bài chưa có vote):**
+  - *Given* một bài công thức mới đăng chưa có lượt bình chọn nào (0 Like, 0 Dislike),
+  - *When* người dùng xem thẻ bài viết và trang chi tiết,
+  - *Then* thẻ bài viết hiển thị nhãn "Mới" (New) thay vì "0%"; khi Guest nhấn nút Like hoặc Dislike, hệ thống hiển thị thông báo yêu cầu đăng nhập tài khoản (BR-05, BR-69).
 
 ---
 
@@ -5346,10 +5599,10 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Hệ thống tự động ghi nhận sự kiện xem bài công thức nấu ăn (`RECIPE_VIEW`) khi người dùng (Guest hoặc Member) truy cập và tương tác trang chi tiết Recipe Post; áp dụng cơ chế khử trùng lặp (Deduplication Window) theo cửa sổ thời gian 30 phút cho mỗi phiên xem của cùng một tác nhân (dựa trên `userId` đối với Member đã đăng nhập, hoặc anonymous session cookie/fingerprint đối với Guest) để ngăn chặn hành vi spam reload/F5 tăng view ảo (BR-69); hỗ trợ tổng hợp và tính toán số lượt xem theo các khung thời gian: 24 giờ qua ($V_{24h}$), 7 ngày qua ($V_{7d}$), 30 ngày qua ($V_{30d}$), và toàn thời gian ($V_{all}$); cung cấp dữ liệu số liệu xem cho trang chi tiết công thức, bộ lọc sắp xếp Xem nhiều nhất (FR-08), thuật toán Hoạt động sôi nổi nhất (BR-71) và Xu hướng thịnh hành (BR-72).
+- **Tóm tắt yêu cầu:** Hệ thống tự động ghi nhận sự kiện xem bài công thức nấu ăn (`RECIPE_VIEW`) khi người dùng (Guest hoặc Member) truy cập và tương tác trang chi tiết Recipe Post; áp dụng cơ chế khử trùng lặp (Deduplication Window) theo cửa sổ thời gian 30 phút cho mỗi phiên xem của cùng một tác nhân (dựa trên `userId` đối với Member đã đăng nhập, hoặc anonymous session cookie/fingerprint đối với Guest) để ngăn chặn hành vi spam reload/F5 tăng view ảo (BR-70); hỗ trợ tổng hợp và tính toán số lượt xem theo các khung thời gian: 24 giờ qua ($V_{24h}$), 7 ngày qua ($V_{7d}$), 30 ngày qua ($V_{30d}$), và toàn thời gian ($V_{all}$); cung cấp dữ liệu số liệu xem cho trang chi tiết công thức, bộ lọc sắp xếp Xem nhiều nhất (FR-08), thuật toán Hoạt động sôi nổi nhất (BR-71) và Xu hướng thịnh hành (BR-72).
 - **Phạm vi nghiệp vụ:**
   - Ghi nhận lượt xem cho cả `Guest` và `Member`.
-  - Cửa sổ khử trùng lặp (Deduplication Window): 30 phút cho mỗi cặp `(viewerId/sessionId, recipeId)` (BR-69).
+  - Cửa sổ khử trùng lặp (Deduplication Window): 30 phút cho mỗi cặp `(viewerId/sessionId, recipeId)` (BR-70).
   - Khung thời gian thống kê: 24 giờ qua, 7 ngày qua, 30 ngày qua, và toàn thời gian.
   - Hiển thị: Tổng số lượt xem toàn thời gian hiển thị trên Recipe Card (FR-17) và trang chi tiết (FR-20).
 - **Phân loại Actor:**
@@ -5425,3 +5678,154 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* bài công thức có nhiều lượt xem được ghi nhận rải rác theo thời gian,
   - *When* người dùng chọn bộ lọc sắp xếp "Xem nhiều nhất" theo khung thời gian (24h, 7 ngày, 30 ngày, toàn thời gian) tại FR-08,
   - *Then* hệ thống tính toán và sắp xếp danh sách bài viết dựa trên đúng tổng số lượt xem tương ứng với khung thời gian đã chọn.
+
+---
+
+<a id="fr-59"></a>
+### FR-59 — Theo dõi, bỏ theo dõi và xem quan hệ theo dõi giữa các Member
+
+- **Mã yêu cầu:** FR-59
+- **Module:** M01, M02, M03
+- **Trạng thái (Derived):** ACTIVE
+
+#### 1. Mục đích & Phạm vi
+- **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập theo dõi hoặc bỏ theo dõi một Member khác từ hồ sơ công khai; xem số lượng người theo dõi (`followers`) và số lượng tài khoản đang theo dõi (`following`); xem danh sách hai chiều có phân trang. Quan hệ có hướng được lưu trong `USER_FOLLOW`.
+- **Trong phạm vi:** Follow, unfollow, kiểm tra trạng thái đang theo dõi, bộ đếm và danh sách followers/following.
+- **Ngoài phạm vi:** News feed cá nhân hóa, tài khoản riêng tư/yêu cầu duyệt follow, block user, gợi ý tài khoản và thông báo follow.
+- **Actors:** `Member` (`CUSTOMER` hoặc `EXPERT`) là tác nhân chính; `Guest` không được tạo quan hệ theo dõi. `Administrator` không dùng quyền quản trị để tạo quan hệ thay người khác.
+
+#### 2. Use Cases & User Stories
+- `UC-59.1`: Member theo dõi một Member khác.
+- `UC-59.2`: Member bỏ theo dõi một Member khác.
+- `UC-59.3`: Xem trạng thái theo dõi và số lượng followers/following trên hồ sơ.
+- `UC-59.4`: Member xem danh sách followers/following có phân trang.
+- `US-59.1`: Là một Member, tôi muốn theo dõi người dùng khác để ghi nhận sự quan tâm tới hồ sơ và nội dung công khai của họ.
+- `US-59.2`: Là một Member, tôi muốn bỏ theo dõi bất cứ lúc nào và thấy bộ đếm được cập nhật chính xác.
+
+#### 3. Tiền điều kiện & Kích hoạt
+- Member đang đăng nhập bằng tài khoản hoạt động.
+- Tài khoản đích tồn tại, đang hoạt động và không phải chính tài khoản hiện tại.
+- Member kích hoạt nút `Theo dõi` hoặc `Đang theo dõi` trên hồ sơ công khai.
+
+#### 4. Luồng xử lý
+- **Follow:** Backend xác thực Member, kiểm tra tài khoản nguồn/đích và BR-75; nếu quan hệ chưa tồn tại thì tạo `USER_FOLLOW`; trả về `following = true` cùng bộ đếm mới.
+- **Follow lặp:** Nếu quan hệ đã tồn tại, hệ thống không tạo bản ghi thứ hai và trả về trạng thái hiện tại theo cơ chế idempotent.
+- **Unfollow:** Backend xóa quan hệ của đúng cặp có hướng; nếu quan hệ đã không tồn tại, hệ thống vẫn trả về `following = false` mà không phát sinh lỗi nghiệp vụ.
+- **Xem danh sách:** Hệ thống trả danh sách followers hoặc following có phân trang, chỉ gồm dữ liệu hồ sơ công khai theo BR-18.
+
+#### 5. Hậu điều kiện
+- Mỗi cặp có hướng `(follower_user_id, followed_user_id)` có tối đa một bản ghi hiệu lực.
+- Bộ đếm followers/following phản ánh dữ liệu `USER_FOLLOW`; không dùng số do client tự gửi.
+- Follow không cấp thêm quyền truy cập email, thông tin đăng nhập, hồ sơ dinh dưỡng hoặc dữ liệu riêng tư.
+
+#### 6. Phân quyền & Bảo mật
+- Guest thao tác follow/unfollow nhận `401 Unauthorized`.
+- Member tự theo dõi chính mình hoặc thao tác thay tài khoản khác bị từ chối với `403 Forbidden`.
+- Tài khoản đích không tồn tại nhận `404 Not Found`; tài khoản không hoạt động không nhận quan hệ mới.
+- Backend lấy `follower_user_id` từ phiên xác thực, không tin cậy ID người theo dõi do client cung cấp.
+
+#### 7. Traceability
+- [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
+- [BR-18](BUSINESS-RULES.md#br-18): Bảo vệ dữ liệu hồ sơ công khai.
+- [BR-75](BUSINESS-RULES.md#br-75): Ràng buộc quan hệ theo dõi.
+- [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
+- [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Authentication, authorization và chống IDOR.
+- [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Bảo vệ endpoint và kiểm tra dữ liệu đầu vào.
+
+#### 8. Acceptance Criteria
+- **AC-59.1 — Theo dõi thành công:** Given Member A chưa theo dõi Member B và cả hai tài khoản hoạt động, When A nhấn `Theo dõi`, Then hệ thống tạo đúng một quan hệ A → B, trả `following = true` và tăng follower count của B một đơn vị.
+- **AC-59.2 — Quan hệ có hướng:** Given A theo dõi B, Then B không tự động theo dõi A; B → A chỉ tồn tại nếu B chủ động theo dõi A.
+- **AC-59.3 — Không tự theo dõi:** Given A đang xem hồ sơ của chính mình, When A gửi yêu cầu follow trực tiếp, Then Backend trả `403 Forbidden` và không tạo bản ghi.
+- **AC-59.4 — Không trùng quan hệ:** Given A đã theo dõi B, When yêu cầu follow A → B được gửi lại, Then chỉ một bản ghi tồn tại và bộ đếm không tăng thêm.
+- **AC-59.5 — Bỏ theo dõi idempotent:** Given A đang hoặc đã ngừng theo dõi B, When A gửi yêu cầu unfollow, Then hệ thống trả `following = false`, không còn quan hệ A → B và không giảm bộ đếm xuống dưới dữ liệu thực tế.
+- **AC-59.6 — Danh sách và quyền riêng tư:** Given Member đã đăng nhập xem followers/following của một hồ sơ, When hệ thống trả danh sách có phân trang, Then chỉ các trường hồ sơ công khai được trả về; email, dữ liệu đăng nhập và hồ sơ dinh dưỡng không xuất hiện.
+- **AC-59.7 — Tài khoản không hoạt động:** Given tài khoản B đã bị vô hiệu hóa, When A gửi yêu cầu follow B hoặc tải danh sách công khai, Then hệ thống không tạo quan hệ mới và không hiển thị B trong danh sách công khai.
+
+---
+
+<a id="fr-60"></a>
+### FR-60 — So sánh hai Recipe Post công khai theo nguyên liệu và dinh dưỡng
+
+- **Mã yêu cầu:** FR-60
+- **Module:** M01, M04, M10
+- **Trạng thái (Derived):** ACTIVE
+
+#### 1. Mục đích & Phạm vi
+
+- **Tóm tắt yêu cầu:** Hệ thống cho phép Guest hoặc Member chọn đúng hai Recipe Post công khai khác nhau để xem bảng đối chiếu thông tin tổng quan, danh sách nguyên liệu và chín chỉ tiêu dinh dưỡng trên một khẩu phần. Kết quả chỉ trình bày dữ liệu và chênh lệch định lượng, không chấm điểm sức khỏe, không kết luận món nào tốt hơn và không thay thế tư vấn dinh dưỡng.
+- **Trong phạm vi:** Chọn/thay hai công thức, đối chiếu thông tin tổng quan, nguyên liệu, dữ liệu dinh dưỡng trên một khẩu phần và cảnh báo thiếu dữ liệu.
+- **Ngoài phạm vi:** So sánh theo 100 g thành phẩm, lưu lịch sử, xuất PDF, chia sẻ link kết quả, AI xếp hạng món tốt hơn và kết luận y tế.
+- **Actors:** `Guest` và `Member` (`CUSTOMER` hoặc `EXPERT`). Administrator sử dụng chức năng như người xem dữ liệu công khai, không có quyền sửa dữ liệu từ màn hình so sánh.
+
+#### 2. Use Cases & User Stories
+
+- `UC-60.1`: Bắt đầu so sánh từ Recipe Card, Recipe Detail hoặc danh sách công thức đã lưu của Member.
+- `UC-60.2`: Tìm, chọn và thay Recipe Post ở một trong hai vị trí so sánh.
+- `UC-60.3`: So sánh thông tin tổng quan và danh sách nguyên liệu.
+- `UC-60.4`: So sánh chín chỉ tiêu dinh dưỡng trên một khẩu phần.
+- `UC-60.5`: Xử lý công thức hoặc chỉ tiêu thiếu dữ liệu.
+- `US-60.1`: Là một Guest đang khám phá món chay, tôi muốn đối chiếu hai công thức công khai để thấy sự khác nhau về nguyên liệu, khẩu phần và dinh dưỡng trước khi lựa chọn.
+- `US-60.2`: Là một Member, tôi muốn thay nhanh một trong hai công thức đang so sánh mà không phải tạo hay lưu một lịch sử so sánh riêng.
+
+#### 3. Tiền điều kiện & Kích hoạt
+
+- Có ít nhất hai Recipe Post khác nhau đang ở trạng thái `PUBLISHED`.
+- Dữ liệu tổng quan/nguyên liệu lấy từ cùng nguồn Recipe Post của FR-20; dữ liệu dinh dưỡng lấy từ kết quả FR-39.
+- Người dùng nhấn `So sánh` trên Recipe Card/Recipe Detail hoặc mở giao diện so sánh và chọn công thức đầu tiên.
+
+#### 4. Luồng xử lý
+
+##### A. Chọn hai công thức
+
+1. Người dùng chọn Recipe A từ thẻ, trang chi tiết hoặc công cụ tìm kiếm.
+2. Hệ thống mở giao diện so sánh và yêu cầu chọn Recipe B.
+3. Người dùng tìm/chọn Recipe B; hệ thống loại Recipe A khỏi lựa chọn hợp lệ để ngăn chọn trùng.
+4. Hệ thống kiểm tra cả hai bài vẫn `PUBLISHED` trước khi hiển thị kết quả.
+
+##### B. So sánh thông tin và nguyên liệu
+
+1. Hệ thống hiển thị song song tên món, ảnh bìa, tác giả Chuyên gia, loại ăn chay, `dish_category`, khẩu phần gốc, thời gian chuẩn bị/nấu và tỷ lệ Like của mỗi công thức.
+2. Hệ thống hiển thị danh sách nguyên liệu hai bên với số lượng và đơn vị nguyên bản.
+3. Nguyên liệu liên kết cùng một `ingredient_id` có thể được đặt cùng hàng để đối chiếu. Nguyên liệu tự do hoặc chỉ giống tên không bị tự động hợp nhất.
+4. Nếu đơn vị khác nhau và không có quy tắc quy đổi được duyệt, hệ thống giữ nguyên đơn vị và ghi rõ không thể đối chiếu định lượng trực tiếp.
+
+##### C. So sánh dinh dưỡng trên một khẩu phần
+
+1. Hệ thống lấy chín chỉ tiêu trên một khẩu phần của Recipe A và Recipe B từ FR-39.
+2. Với mỗi chỉ tiêu có dữ liệu ở cả hai bên, hệ thống hiển thị giá trị A, giá trị B và chênh lệch tuyệt đối `A - B` theo cùng đơn vị.
+3. Hệ thống hiển thị rõ số khẩu phần gốc của từng công thức và tuyên bố rằng khẩu phần của hai món có thể không có cùng khối lượng thành phẩm.
+4. Hệ thống không hiển thị Natri/muối, chênh lệch phần trăm, Health Score hoặc kết luận món nào tốt hơn/lành mạnh hơn.
+
+##### D. Thay lựa chọn và kết thúc
+
+1. Người dùng có thể thay Recipe A hoặc Recipe B; hệ thống tính lại toàn bộ bảng từ lựa chọn mới.
+2. Khi đóng hoặc rời giao diện, hệ thống không lưu bản ghi lịch sử so sánh.
+
+#### 5. Luồng thay thế, ngoại lệ và dữ liệu thiếu
+
+- Nếu một bài không còn công khai trong lúc so sánh, hệ thống gỡ bài khỏi kết quả, thông báo nội dung không còn khả dụng và yêu cầu chọn bài khác.
+- Nếu một bên thiếu dữ liệu dinh dưỡng, hệ thống hiển thị `Chưa đủ dữ liệu` cho đúng chỉ tiêu/bên bị ảnh hưởng; không dùng `0` và không tính chênh lệch cho cặp đó.
+- Nếu chỉ có một công thức được chọn, hệ thống hiển thị trạng thái chờ chọn công thức thứ hai và chưa trình bày kết luận so sánh.
+- Nếu không còn công thức thứ hai phù hợp, hệ thống thông báo rõ và cho phép quay lại khám phá.
+
+#### 6. Hậu điều kiện
+
+- Người dùng xem được kết quả đối chiếu hiện thời mà không tạo dữ liệu nghiệp vụ mới trong database.
+- Việc so sánh không thay đổi Recipe Post, danh sách đã lưu, Meal Plan, hồ sơ dinh dưỡng hoặc dữ liệu tương tác.
+
+#### 7. Phân quyền, an toàn và traceability
+
+- Guest và Member được xem vì chức năng chỉ sử dụng dữ liệu Recipe Post công khai; thao tác không mở rộng quyền truy cập dữ liệu riêng tư.
+- Tuân thủ [BR-41](BUSINESS-RULES.md#br-41), [BR-43](BUSINESS-RULES.md#br-43), [BR-45](BUSINESS-RULES.md#br-45), [BR-46](BUSINESS-RULES.md#br-46), [BR-48](BUSINESS-RULES.md#br-48) và [BR-76](BUSINESS-RULES.md#br-76).
+- Dữ liệu nguồn liên quan: FR-08 (tìm kiếm), FR-17 (Recipe Card), FR-19 (nguyên liệu), FR-20 (chi tiết thống nhất), FR-39 (chín chỉ tiêu dinh dưỡng), NFR-13 (responsive).
+
+#### 8. Acceptance Criteria
+
+- **AC-60.1 — So sánh hai công thức công khai khác nhau:** Given Recipe A và Recipe B khác nhau và đều `PUBLISHED`, When người dùng chọn đủ hai bài, Then hệ thống hiển thị bảng so sánh tổng quan, nguyên liệu và dinh dưỡng.
+- **AC-60.2 — Chặn chọn cùng một công thức:** Given Recipe A đã được chọn, When người dùng cố chọn lại Recipe A làm Recipe B, Then hệ thống không chấp nhận và yêu cầu chọn một bài khác.
+- **AC-60.3 — So sánh theo một khẩu phần:** Given hai công thức có dữ liệu dinh dưỡng đầy đủ, When bảng dinh dưỡng hiển thị, Then chín chỉ tiêu của mỗi bên được lấy theo một khẩu phần, kèm số khẩu phần gốc và chênh lệch định lượng tuyệt đối theo cùng đơn vị.
+- **AC-60.4 — Giữ nguyên nguyên liệu/đơn vị không thể quy đổi:** Given hai dòng nguyên liệu không cùng `ingredient_id` hoặc dùng đơn vị chưa có quy đổi hợp lệ, When danh sách nguyên liệu được đối chiếu, Then hệ thống không tự hợp nhất hoặc tự quy đổi và hiển thị số lượng/đơn vị nguyên bản ở từng bên.
+- **AC-60.5 — Dữ liệu thiếu không trở thành số 0:** Given một chỉ tiêu của Recipe B chưa đủ dữ liệu, When bảng so sánh hiển thị, Then bên B ghi `Chưa đủ dữ liệu`, hệ thống không hiển thị `0` và không tính chênh lệch cho chỉ tiêu đó.
+- **AC-60.6 — Không phán xét sức khỏe:** Given bảng so sánh đã được tạo, Then giao diện không có Natri/muối, Health Score, chênh lệch phần trăm hoặc nhãn kết luận công thức tốt hơn/lành mạnh hơn.
+- **AC-60.7 — Không lưu lịch sử hoặc xuất PDF:** Given người dùng đóng giao diện so sánh, Then hệ thống không tạo bản ghi lịch sử; giao diện không cung cấp thao tác xuất kết quả so sánh ra PDF.
+- **AC-60.8 — Responsive:** Given người dùng xem trên màn hình nhỏ, Then nội dung hai công thức được trình bày theo nhóm/khối dễ đối chiếu, không yêu cầu cuộn ngang toàn trang để đọc các trường bắt buộc.

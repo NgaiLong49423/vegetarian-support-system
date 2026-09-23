@@ -22,6 +22,7 @@ import { RecipeCard } from '../components/RecipeCard';
 import { Badge, Button, Card, SectionHeading } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { RecipeComments } from '../components/RecipeComments';
+import { RecipeRating } from '../components/RecipeRating';
 import { recipes } from '../data/mockData';
 import { scaleQuantity } from '../utils/servings';
 
@@ -307,6 +308,7 @@ export function RecipeDetail() {
         </p>
       </Card>
 
+      <RecipeRating key={`rating-${recipe.id}`} recipe={recipe} />
       <RecipeComments key={recipe.id} />
       <SectionHeading eyebrow="Có thể bạn thích" title="Công thức tương tự" />
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">

@@ -95,6 +95,7 @@ Live GitHub mutations require authorization for the current task. Authorization 
 
 | Situation | Workflow |
 |---|---|
+| Triển khai FR từ GitHub Issue đã được giao | `implement-fr-issue.md` |
 | Requirements còn mơ hồ cần chốt | `requirement-finalization.md` |
 | Requirement semantic/lifecycle changed | `requirement-change-reconciliation.md` |
 | Audit toàn docs rồi sửa finding rõ ràng | `documentation-audit-and-fix.md` |

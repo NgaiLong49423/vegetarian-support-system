@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BadgeCheck, Bookmark, ChevronRight, Clock, Heart, MessageCircle, Share2 } from 'lucide-react';
+import { BadgeCheck, Bookmark, Check, ChevronRight, Clock, Heart, MessageCircle, Share2, Star } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { PostCard } from '../components/PostCard';
 import { Badge, Button, SectionHeading } from '../components/ui';
@@ -10,6 +10,10 @@ export function PostDetail() {
   const { slug } = useParams();
   const post = posts.find((p) => p.slug === slug) ?? posts[0];
   const [liked, setLiked] = useState(false);
+  const [rating, setRating] = useState<number | null>(null);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [ratedCount, setRatedCount] = useState(36);
+  const [toast, setToast] = useState<string | null>(null);
   const related = posts.filter((p) => p.id !== post.id).slice(0, 3);
 
   return (
@@ -64,7 +68,68 @@ export function PostDetail() {
             <Button variant="outline" size="sm"><Share2 className="h-4 w-4" /> Chia sẻ</Button>
           </div>
         </div>
+
+        {/* Star Rating for Blog Post */}
+        <div className="mt-6 rounded-2xl border border-brand-100 bg-brand-50/40 p-5 sm:p-6">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <h3 className="flex items-center gap-2 text-base font-bold text-ink">
+                <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+                Đánh giá bài viết ({ratedCount})
+              </h3>
+              <p className="mt-0.5 text-xs text-ink-muted">
+                Bạn thấy nội dung này hữu ích chứ? Nhấp vào sao để gửi đánh giá của bạn.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((score) => {
+                  const activeScore = hoverRating || rating || 0;
+                  const isFilled = score <= activeScore;
+                  return (
+                    <button
+                      key={score}
+                      type="button"
+                      onClick={() => {
+                        setRating(score);
+                        if (!rating) setRatedCount((c) => c + 1);
+                        setToast(`Cảm ơn bạn đã đánh giá ${score} sao cho bài viết!`);
+                        setTimeout(() => setToast(null), 3000);
+                      }}
+                      onMouseEnter={() => setHoverRating(score)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      aria-label={`${score} sao`}
+                      className="rounded-lg p-1 transition-transform hover:scale-110 focus:outline-none"
+                    >
+                      <Star
+                        className={`h-6 w-6 transition-colors ${
+                          isFilled
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'fill-brand-100 text-brand-300 hover:text-amber-300'
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+              {rating && (
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                  {rating}/5 ★
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
       </article>
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white shadow-xl">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-leaf-500">
+            <Check className="h-3.5 w-3.5" />
+          </span>
+          {toast}
+        </div>
+      )}
 
       <div className="mt-14">
         <SectionHeading eyebrow="Đọc tiếp" title="Bài viết liên quan" />

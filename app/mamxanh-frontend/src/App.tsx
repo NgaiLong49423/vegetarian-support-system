@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { AuthPage } from './pages/Auth';
+import { DemoAccountProvider } from './components/DemoAccount';
 import { Home } from './pages/Home';
 import { Explore } from './pages/Explore';
 import { RecipeDetail } from './pages/RecipeDetail';
@@ -25,10 +27,15 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter><DemoAccountProvider>
       <ScrollToTop />
       <Layout>
         <Routes>
+          <Route path="/dang-nhap" element={<AuthPage key="login" mode="login" />} />
+          <Route path="/dang-ky" element={<AuthPage key="register" mode="register" />} />
+          <Route path="/quen-mat-khau" element={<AuthPage key="forgot" mode="forgot" />} />
+          <Route path="/xac-minh-email" element={<AuthPage key="verify" mode="verify" />} />
+          <Route path="/dat-lai-mat-khau" element={<AuthPage key="reset" mode="reset" />} />
           <Route path="/" element={<Home />} />
           <Route path="/kham-pha" element={<Explore />} />
           <Route path="/cong-thuc/:slug" element={<RecipeDetail />} />
@@ -45,6 +52,6 @@ export default function App() {
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>
-    </BrowserRouter>
+    </DemoAccountProvider></BrowserRouter>
   );
 }

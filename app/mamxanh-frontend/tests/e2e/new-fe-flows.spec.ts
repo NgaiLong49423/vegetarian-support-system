@@ -32,7 +32,10 @@ test('recipe ingredients scale from the author serving count', async ({ page }) 
 });
 
 test('avatar menu shows the demo plan and links to account features', async ({ page }) => {
-  await page.goto('/ho-so');
+  await page.goto('/dang-nhap');
+  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
+  await page.getByRole('button', { name: 'Tài khoản Lan Anh, gói AI FREE demo' }).click();
+  await page.getByRole('link', { name: 'Hồ sơ của tôi', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Hồ sơ dinh dưỡng & BMI' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Tài khoản Lan Anh, gói AI FREE demo' }).click();
   await expect(page.getByText('Gói AI hiện tại: FREE (dữ liệu demo)')).toBeVisible();
@@ -44,7 +47,8 @@ test('avatar menu shows the demo plan and links to account features', async ({ p
 
 test('mobile account links remain reachable from the menu', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/dang-nhap');
+  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('link', { name: 'Lịch sử giao dịch' }).click();
   await expect(page).toHaveURL(/\/giao-dich$/);

@@ -1,13 +1,35 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.28.0
+> **Version:** v2.30.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-21
+> **Last Updated:** 2026-09-23
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-23 — Align Social, Recipe Comparison, Nutrition, and Expert Requirements
+
+**Status:** Committed — 6e49cd9.
+
+**Scope:** Align the conceptual data model and requirement semantics for required social following, public two-recipe comparison, nutrition analysis/PDF reporting, and expert applications without claiming implementation or creating GitHub Issues.
+
+### Added
+
+- Add `FR-59` and `BR-75` for directed Member follow relationships and represent `USER_FOLLOW` in the 22-entity Conceptual ERD.
+- Add active `FR-60` and `BR-76` for comparing exactly two distinct public recipes by overview data, ingredients, and nine per-serving nutrition indicators.
+
+### Changed
+
+- Confirm `FR-59` and `BR-75` as `ACTIVE`, making `USER_FOLLOW` a required capability that must be inherited by the Logical ERD, Physical ERD, and implementation schema.
+- Synchronize the document register, architecture baseline, C4 workspace guidance, and ERD workspace guidance with the active 22-entity conceptual model.
+- Keep the nutrition MVP at nine indicators excluding sodium, and define the daily one-page and weekly two-page nutrition PDF contents and failure behavior.
+- Clarify expert applications as text-based expertise and publishing-permission review, including applicant history, active-account revalidation, authorization refresh, and concurrent-decision handling.
+
+### Fixed
+
+- Resolve the mismatch between the root nutrition indicator list and the detailed nutrition requirements by using zinc consistently instead of sodium.
 
 ## 2026-09-21 — Expand the Frontend UI Demo and Document Manual Vercel Hosting ([PR #62](https://github.com/NgaiLong49423/vegetarian-support-system/pull/62))
 

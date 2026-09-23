@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.6.0
+> **Version:** v1.8.0  
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-20
+> **Last Updated:** 2026-09-22  
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -37,14 +37,15 @@ Hành vi mong đợi chi tiết được xác định trong [SRS](../requirement
 
 Việc kiểm thử nên ưu tiên:
 
-- Ranh giới authorization giữa Guest/Member/Administrator và ownership của Member.
-- Profile validation Recipe Post: title 3–120 ký tự, ingredients 1–50 mục, serving 1–50 người, prep/cook 0–1.440 phút và tổng > 0, description tối đa 2.000 ký tự, một YouTube link hợp lệ (tùy chọn); công khai trực tiếp và quyền sửa/xóa; không có bộ đếm Like.
-- Kiểm thử cấu trúc các bước thực hiện (`RECIPE_STEP`): bắt buộc 1–30 bước, mỗi bước có nội dung 10–2.000 ký tự (tiêu đề tùy chọn $\le 120$ ký tự), thứ tự liên tục $1..N$; kiểm thử nghiệp vụ thêm, sửa, xóa và kéo thả / thay đổi vị trí (`step_order`) không để lại khoảng trống hoặc trùng lặp số thứ tự.
+- Ranh giới authorization giữa Guest/Member/Administrator và ranh giới tác giả Chuyên gia: chỉ `ROLE_EXPERT` được tạo/sửa/xóa bài công thức của mình (`BR-07`, `FR-04`, `FR-44`); `ROLE_CUSTOMER` và `ROLE_ADMIN` cố truy cập endpoint mutation bị chặn `403 Forbidden`. Quy trình nộp và xét duyệt đơn Chuyên gia (`BR-74`, `FR-05`).
+- Profile validation Recipe Post: title 3–120 ký tự, ingredients 1–50 mục, serving 1–50 người, prep/cook 0–1.440 phút và tổng > 0, description tối đa 2.000 ký tự, thể loại món `dish_category`, một YouTube link hợp lệ (tùy chọn); công khai trực tiếp và quyền sửa/xóa; hiển thị huy hiệu tỷ lệ % Like (`👍 {like_percentage}%`) hoặc nhãn `Mới`.
+- Kiểm thử hướng dẫn chế biến dạng văn bản tự do linh hoạt (`instructions` theo Phương án B, `FR-16`, `BR-19`): bắt buộc độ dài từ 10 đến 5.000 ký tự không rỗng sau khi trim; kiểm thử validation biên (< 10 ký tự, > 5.000 ký tự, chuỗi toàn khoảng trắng); xác nhận loại bỏ hoàn toàn bảng dữ liệu và logic quản lý kéo thả bước nấu độc lập `RECIPE_STEP` (`FR-22` đã RETIRED).
 - Quản lý bộ sưu tập hình ảnh (`RECIPE_MEDIA`): kiểm thử tải lên 0–5 ảnh (JPEG/PNG/WebP/GIF, tối đa 5 MB/ảnh) qua Azure Blob Storage, bắt buộc chỉ định đúng 1 ảnh đại diện (`is_cover = true`), thứ tự hiển thị `media_order` 1..5; tự động dọn rác ảnh mồ côi khi hủy soạn thảo hoặc xóa ảnh.
 - Cổng kiểm định xuất bản về nguyên liệu và đơn vị quy đổi (`UNIT`, `INGREDIENT_UNIT_CONVERSION`): số lượng bắt buộc là số thực dương > 0, loại bỏ hoàn toàn "vừa đủ"; nếu tổ hợp nguyên liệu + đơn vị cần quy đổi sang gram mà chưa có conversion trong hệ thống thì chặn publish (Validation Error với thông báo rõ ràng).
-- Kiểm thử đánh giá công thức (`RECIPE_RATING`): thang điểm 1–5 sao, chỉ Member đã đăng nhập mới được đánh giá, mỗi Member chỉ được 1 đánh giá/công thức (có thể cập nhật), tác giả không được tự đánh giá bài của chính mình; Guest chỉ có quyền xem điểm TB và số lượt đánh giá; kiểm tra chống IDOR/tampering điểm số.
+- Kiểm thử bình chọn công thức (`RECIPE_REACTION`): gửi Like / Dislike, tính toán tỷ lệ % Like ($\text{total\_likes} / (\text{total\_likes} + \text{total\_dislikes}) \times 100$) làm tròn, hiển thị huy hiệu `👍 {like_percentage}%` theo phong cách Samsung Food (hoặc nhãn "Mới" nếu chưa có vote); chỉ Member đã đăng nhập mới được gửi phản hồi; hỗ trợ chuyển đổi giữa Like và Dislike (switch) hoặc bấm lại cùng nút để hủy (toggle off); tác giả bị cấm tự bình chọn bài viết của mình; Guest chỉ có quyền xem tỷ lệ % và số lượt bình chọn (tương tác nút hiển thị thông báo yêu cầu đăng nhập); kiểm tra chống IDOR và race condition.
 - Kiểm thử theo dõi lượt xem (`RECIPE_VIEW`): cơ chế chống trùng lặp trong cửa sổ 30 phút theo IP hash / Session ID / Member ID; cập nhật bộ đếm bất đồng bộ không nghẽn luồng đọc công thức; kiểm tra tính chính xác của dữ liệu tổng hợp 24h, 7 ngày, 30 ngày và toàn thời gian.
-- Kiểm thử 6 chế độ khám phá/sắp xếp công thức: Mới nhất, Đánh giá cao nhất (kèm số lượt đánh giá), Xem nhiều nhất (theo 4 mốc thời gian), Bình luận nhiều nhất, Hoạt động sôi nổi nhất (BR-71, tương tác gần 7 ngày không phân rã), và Thịnh hành (BR-72, tương tác có phân rã thời gian theo công thức trọng số); đảm bảo truy vấn SQL không dùng AI, tối ưu chỉ mục và giới hạn độ trễ $\le 3$s.
+- Kiểm thử 6 chế độ khám phá/sắp xếp công thức: Mới nhất, Được yêu thích nhất (Most Liked / Highest Rated theo tỷ lệ % Like giảm dần kèm tổng Like), Xem nhiều nhất (theo 4 mốc thời gian), Bình luận nhiều nhất, Hoạt động sôi nổi nhất (BR-71, tương tác gần 7 ngày không phân rã), và Thịnh hành (BR-72, tương tác có phân rã thời gian theo công thức trọng số); đảm bảo truy vấn SQL không dùng AI, tối ưu chỉ mục và giới hạn độ trễ $\le 3$s.
+- Kiểm thử tính năng xuất file PDF: xuất bài công thức, xuất thực đơn tuần và xuất báo cáo phân tích dinh dưỡng tuần kèm bảng chi tiết 7 ngày, tổng hợp trung bình ngày và so sánh với chỉ số DRI cá nhân của Member (`FR-37`).
 - Quyền riêng tư của report, quy tắc chống report đang mở bị trùng và ghi trực tiếp kết quả moderation vào Report.
 - Tính độc lập giữa Saved Recipe/Meal Planner/Shopping history, giữ unavailable/tombstone khi bài nguồn không khả dụng, các meal type và chống dữ liệu trùng.
 - Phân quyền tính năng AI theo gói Subscription (Free: AI Chatbot, Plus: Soạn bài & Biến tấu, Pro: Lập thực đơn tuần), Guest dùng AI Chatbot có technical rate limit chống spam, telemetry token không raw prompt và retention 90 ngày.

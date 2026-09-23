@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-09-21
-next_id: 4
+last_updated: 2026-09-22
+next_id: 5
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-004
+    title: FR-03 chưa thống nhất việc mật khẩu bắt buộc có số
+    status: RESOLVED
+    severity: Medium
+    area: Documentation/Authentication
+    file: .agents/outputs/bugs/BUG-004.md
+    created: 2026-09-22
+    updated: 2026-09-22
+    related_issue: Unknown
   - id: BUG-001
     title: Tài liệu database ghi chưa có ERD dù sơ đồ đã tồn tại
     status: RECORDED

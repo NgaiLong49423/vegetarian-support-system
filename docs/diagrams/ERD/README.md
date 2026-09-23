@@ -1,12 +1,17 @@
 > **Document:** ERD Workspace Guide  
 > **File:** `docs/diagrams/ERD/README.md`  
-> **Version:** v1.4.0  
+> **Version:** v1.9.0  
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-18  
-> **Status:** Active  
+> **Last Updated:** 2026-09-23  
+> **Status:** Draft (Conceptual ERD đã được rà soát; Logical ERD chờ cập nhật)  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `database/README.md`
 
 # ERD Workspace Guide — Hướng Dẫn Sơ Đồ Quan Hệ Thực Thể
+
+> [!WARNING]
+> **TÀI LIỆU ĐANG Ở TRẠNG THÁI NHÁP (DRAFT) — LOGICAL ERD CHỜ CẬP NHẬT:**  
+> Tài liệu diễn giải và danh mục thực thể trong file này phản ánh **Baseline 22 thực thể cốt lõi** sau khi xác nhận `USER_FOLLOW` thuộc FR-59/BR-75 `ACTIVE` ngày 23/09/2026; các quyết định trước đó về `RECIPE_STEP`, `CATEGORY` và `RECIPE_CATEGORY` vẫn giữ nguyên.  
+> Sơ đồ Conceptual ERD hiện có 22 thực thể và 36 connector; sơ đồ Logical ERD vẫn cần bổ sung hai vai trò FK của `USER_FOLLOW` để đồng bộ.
 
 ## 1. Mục Đích và Tác Dụng của Sơ Đồ ERD
 
@@ -17,7 +22,7 @@ Trong quy trình phát triển phần mềm của dự án, sơ đồ này có c
 1. **Định hình bức tranh tổng thể về dữ liệu nghiệp vụ:**
    * Giúp toàn bộ 5 thành viên trong nhóm phát triển, giảng viên và các bên liên quan có cùng một góc nhìn thống nhất về các đối tượng dữ liệu mà hệ thống cần quản trị và vận hành.
 2. **Xác lập và bảo vệ ranh giới phạm vi dữ liệu MVP:**
-   * Khóa chặt phạm vi mô hình dữ liệu ở đúng **23 thực thể cốt lõi** đã được phê duyệt.
+   * Duy trì phạm vi mô hình dữ liệu ở **22 thực thể**, trong đó `USER_FOLLOW` thuộc lifecycle `ACTIVE` của FR-59/BR-75.
    * Ngăn ngừa tình trạng phình to phạm vi (scope creep) hoặc việc các thành viên tự tiện phát sinh bảng mới ngoài các quyết định kiến trúc đã chốt.
 3. **Làm cầu nối giữa Yêu cầu nghiệp vụ (SRS) và Thiết kế kỹ thuật (Database Design):**
    * Chuyển hóa các yêu cầu chức năng (FR) và quy tắc nghiệp vụ (BR) từ tài liệu đặc tả thành các khái niệm thực thể dữ liệu rõ ràng trước khi bước vào lập trình chi tiết.
@@ -32,7 +37,7 @@ Trong quy trình phát triển phần mềm của dự án, sơ đồ này có c
 
 ## 2. Hình Ảnh và Tệp Nguồn Sơ Đồ
 
-Dưới đây là sơ đồ quan hệ thực thể mức khái niệm đã được chốt hoàn chỉnh của hệ thống Mâm Xanh:
+Dưới đây là sơ đồ quan hệ thực thể mức khái niệm của hệ thống Mâm Xanh, hiện có 22 thực thể và 36 connector:
 
 ![Conceptual ERD - Mâm Xanh](./conceptual-erd-v1.0.0.drawio.png)
 
@@ -42,38 +47,39 @@ Dưới đây là sơ đồ quan hệ thực thể mức khái niệm đã đư�
 
 ---
 
-## 3. Ranh Giới 23 Thực Thể Khái Niệm Cốt Lõi (Conceptual Baseline)
+## 3. Ranh Giới 22 Thực Thể Khái Niệm (Conceptual Baseline)
 
-Căn cứ theo quyết định kiến trúc cập nhật ngày 18/09/2026, mô hình dữ liệu của MVP bao gồm chính xác **23 thực thể cốt lõi**:
+Căn cứ Conceptual ERD cập nhật ngày 23/09/2026, mô hình dữ liệu hiện có **22 thực thể**; `USER_FOLLOW` là phần bắt buộc gắn với FR-59/BR-75 `ACTIVE`:
 
 | # | Thực thể (Entity) | Vai trò khái niệm trong hệ thống |
 |---|---|---|
-| 1 | **User** | Quản lý thông tin tài khoản, hồ sơ cá nhân và chỉ số dinh dưỡng/thể trạng (đã gộp từ `User Profile`). |
+| 1 | **User** | Quản lý thông tin tài khoản, vai trò (`CUSTOMER`, `EXPERT`, `ADMIN`), hồ sơ cá nhân và chỉ số dinh dưỡng/thể trạng (đã gộp từ `User Profile`). |
 | 2 | **User Ingredient Preference** | Lưu trữ sở thích, kiêng kỵ và dị ứng nguyên liệu của người dùng (`ALLERGY`, `AVOID`, `DISLIKE`). |
-| 3 | **Recipe Post** | Bài viết công thức nấu ăn chay (chứa thông tin cấu trúc, tác giả, khẩu phần, thời gian, loại ăn chay, 0..1 link YouTube, và liên kết đến các bước, media, rating, view). |
-| 4 | **Category** | Danh mục bài viết / món ăn do Administrator quản trị. |
-| 5 | **Recipe Category** | Thực thể liên kết nhiều–nhiều (N:M) giữa bài công thức và danh mục. |
-| 6 | **Ingredient** | Từ điển nguyên liệu chuẩn (tên, calo và dinh dưỡng tham khảo). |
-| 7 | **Recipe Ingredient** | Nguyên liệu cụ thể trong một bài công thức kèm theo định lượng số dương và đơn vị đo. |
-| 8 | **Saved Recipe** | Thực thể đánh dấu lưu lại các bài công thức yêu thích của Member (Bookmark). |
-| 9 | **Comment** | Bình luận và phản hồi trên bài viết công thức. |
-| 10 | **Report** | Báo cáo vi phạm nội dung từ người dùng, tích hợp trực tiếp kết quả và lý do xử lý của Admin (đã gộp từ `Moderation Action`). |
-| 11 | **Meal Plan** | Kế hoạch thực đơn bữa ăn theo tuần (7 ngày) của người dùng. |
-| 12 | **Meal Plan Entry** | Món ăn cụ thể được phân bổ vào từng ngày và từng bữa (Sáng, Trưa, Tối). |
-| 13 | **Shopping List** | Danh sách mua sắm nguyên liệu (tạo từ thực đơn, bài công thức hoặc lập thủ công). |
-| 14 | **Shopping List Item** | Từng mục nguyên liệu cần mua kèm số lượng, đơn vị và trạng thái đã mua (`is_bought`). |
-| 15 | **Subscription** | Quản lý gói dịch vụ hội viên (FREE, PLUS, PRO), thời hạn hiệu lực và phân tầng tính năng AI. |
-| 16 | **Payment Transaction** | Lịch sử giao dịch thanh toán trực tuyến qua payOS để kích hoạt gói dịch vụ. |
-| 17 | **Notification** | Thông báo trong ứng dụng gửi tới người dùng. |
-| 18 | **Recipe Step** (`RECIPE_STEP`) | Quản lý 1–30 bước hướng dẫn chuẩn bị/chế biến tuần tự (`step_order` 1..N, nội dung 10–2.000 ký tự). |
-| 19 | **Recipe Media** (`RECIPE_MEDIA`) | Quản lý 0–5 hình ảnh minh họa bài công thức trên Azure Blob Storage, thứ tự hiển thị và cờ ảnh đại diện (`is_cover`). |
-| 20 | **Recipe Rating** (`RECIPE_RATING`) | Quản lý đánh giá 1–5 sao của Member đối với bài công thức (1 đánh giá/user/recipe, updatable, tác giả không tự chấm). |
-| 21 | **Recipe View** (`RECIPE_VIEW`) | Ghi nhận sự kiện xem bài viết phục vụ khử trùng lặp cửa sổ 30 phút và tổng hợp thống kê 24h, 7d, 30d, all-time. |
-| 22 | **Unit** (`UNIT`) | Từ điển đơn vị đo lường chuẩn hóa thuộc các chiều `MASS` (g, kg), `VOLUME` (ml, L), `COUNT` (quả, củ, bìa...). |
-| 23 | **Ingredient Unit Conversion** (`INGREDIENT_UNIT_CONVERSION`) | Bảng quy tắc quy đổi giữa các đơn vị đặc thù (quả, củ, bìa, ml...) sang gram cho từng nguyên liệu cụ thể để tính dinh dưỡng. |
+| 3 | **Recipe Post** | Bài viết công thức nấu ăn chay do Chuyên gia làm tác giả (chứa thông tin cấu trúc, tác giả, khẩu phần, thời gian, loại ăn chay, thể loại món `dish_category`, hướng dẫn tự do `instructions` 10–5.000 ký tự, 0..1 link YouTube, và liên kết đến media, reaction, view; không dùng bảng Category hay Recipe Step). |
+| 4 | **Ingredient** | Từ điển nguyên liệu chuẩn (tên, calo và dinh dưỡng tham khảo). |
+| 5 | **Recipe Ingredient** | Nguyên liệu cụ thể trong một bài công thức kèm theo định lượng số dương và đơn vị đo. |
+| 6 | **Saved Recipe** | Thực thể đánh dấu lưu lại các bài công thức yêu thích của Customer/Chuyên gia (Bookmark). |
+| 7 | **Comment** | Bình luận và phản hồi trên bài viết công thức. |
+| 8 | **Report** | Báo cáo vi phạm nội dung từ người dùng, tích hợp trực tiếp kết quả và lý do xử lý của Admin (đã gộp từ `Moderation Action`). |
+| 9 | **Meal Plan** | Kế hoạch thực đơn bữa ăn theo ngày hoặc theo tuần của người dùng. |
+| 10 | **Meal Plan Entry** | Món ăn cụ thể được phân bổ vào từng ngày và từng bữa (Sáng, Trưa, Tối). |
+| 11 | **Shopping List** | Danh sách mua sắm nguyên liệu (tạo từ thực đơn, bài công thức hoặc lập thủ công). |
+| 12 | **Shopping List Item** | Từng mục nguyên liệu cần mua kèm số lượng, đơn vị và trạng thái đã mua (`is_bought`). |
+| 13 | **Subscription** | Quản lý gói dịch vụ hội viên (FREE, PLUS, PRO), thời hạn hiệu lực và phân tầng tính năng AI. |
+| 14 | **Payment Transaction** | Lịch sử giao dịch thanh toán trực tuyến qua payOS để kích hoạt gói dịch vụ. |
+| 15 | **Notification** | Thông báo trong ứng dụng gửi tới người dùng. |
+| 16 | **Recipe Media** (`RECIPE_MEDIA`) | Quản lý 0–5 hình ảnh minh họa bài công thức trên Azure Blob Storage, thứ tự hiển thị và cờ ảnh đại diện (`is_cover`). |
+| 17 | **Recipe Reaction** (`RECIPE_REACTION`) | Quản lý bình chọn Like / Dislike của Member đối với bài công thức (`reaction_type: LIKE | DISLIKE`, 1 phản hồi/user/recipe, toggle/switch được, tác giả không tự vote, BR-69, FR-57). |
+| 18 | **Recipe View** (`RECIPE_VIEW`) | Ghi nhận sự kiện xem bài viết phục vụ khử trùng lặp cửa sổ 30 phút và tổng hợp thống kê 24h, 7d, 30d, all-time. |
+| 19 | **Unit** (`UNIT`) | Từ điển đơn vị đo lường chuẩn hóa thuộc các chiều `MASS` (g, kg), `VOLUME` (ml, L), `COUNT` (quả, củ, bìa...). |
+| 20 | **Ingredient Unit Conversion** (`INGREDIENT_UNIT_CONVERSION`) | Bảng quy tắc quy đổi giữa các đơn vị đặc thù (quả, củ, bìa, ml...) sang gram cho từng nguyên liệu cụ thể để tính dinh dưỡng. |
+| 21 | **Expert Application** (`EXPERT_APPLICATION`) | Quản lý đơn đăng ký cấp quyền Chuyên gia của Customer theo format văn bản (`bio_experience`, `vegetarian_type`, `sample_recipe_summary`, `portfolio_url`, `status`, `admin_note`, `reviewed_by`, `reviewed_at`; tuyệt đối không lưu tệp chứng chỉ vật lý). |
+| 22 | **User Follow** (`USER_FOLLOW`) | Quan hệ theo dõi có hướng giữa hai Member; mỗi bản ghi xác định người theo dõi (`follower`) và người được theo dõi (`followed`), không cho tự theo dõi hoặc trùng cặp. |
 
 ### Các thành phần đã loại bỏ hoặc sáp nhập để tối ưu hóa phạm vi MVP:
-* ❌ **`recipe_like` & `comment_like`**: Loại bỏ hoàn toàn tương tác Thích/Bỏ thích trên toàn hệ thống.
+* ❌ **`category` & `recipe_category`**: Loại bỏ hoàn toàn bảng danh mục động và bảng liên kết; thể loại món ăn được chuẩn hóa thành trường thuộc tính `dish_category` trực tiếp trên `Recipe Post` (món nước, món xào, món lẩu, món kho, món canh, món chiên, món hấp, món gỏi, món tráng miệng...).
+* ❌ **`recipe_step`**: Loại bỏ bảng riêng theo Phương án B; toàn bộ hướng dẫn chế biến được lưu trữ linh hoạt trong trường văn bản tự do `instructions` (10–5.000 ký tự) trên `Recipe Post` (FR-16, BR-19; FR-22 RETIRED).
+* ❌ **`comment_like`**: Loại bỏ hoàn toàn tương tác Thích/Bỏ thích trên bình luận và phản hồi (`FR-45` RETIRED). Riêng bài công thức áp dụng cơ chế Like/Dislike qua thực thể `RECIPE_REACTION` (`FR-57`, `BR-69`).
 * ❌ **`moderation_action`**: Loại bỏ bảng riêng; kết quả và lý do kiểm duyệt lưu trực tiếp trên `Report`.
 * ❌ **`user_profile`**: Gộp trực tiếp vào thực thể `User`.
 * ❌ **`ai_usage_record`**: Loại bỏ bảng đếm lượt; phân quyền AI theo gói `Subscription` và đo lường kỹ thuật qua log hạ tầng.
@@ -83,7 +89,7 @@ Căn cứ theo quyết định kiến trúc cập nhật ngày 18/09/2026, mô h
 
 ## 3.1 Ma Trận Quan Hệ và Bản Số (Relationship & Cardinality Matrix)
 
-Dưới đây là đặc tả chi tiết toàn bộ **37 mối quan hệ nghiệp vụ** được mô hình hóa trong sơ đồ `conceptual-erd-v1.0.0.drawio`:
+Dưới đây là đặc tả chi tiết **36 connector nghiệp vụ** trong Conceptual ERD hiện tại:
 
 | STT | Thực thể nguồn (Source) | Bản số nguồn | Động từ / Tên quan hệ | Thực thể đích (Target) | Bản số đích | Ý nghĩa nghiệp vụ & Ràng buộc toàn vẹn |
 |---|---|---|---|---|---|---|
@@ -97,33 +103,34 @@ Dưới đây là đặc tả chi tiết toàn bộ **37 mối quan hệ nghiệ
 | 8 | `USER` | 1 | `has` | `SUBSCRIPTION` | 0..* | Một người dùng sở hữu lịch sử các gói đăng ký hội viên (FREE, PLUS, PRO). |
 | 9 | `USER` | 1 | `makes` | `PAYMENT_TRANSACTION` | 0..* | Một người dùng thực hiện 0 hoặc nhiều giao dịch thanh toán trực tuyến qua payOS. |
 | 10 | `USER` | 1 | `receives` | `NOTIFICATION` | 0..* | Một người dùng nhận 0 hoặc nhiều thông báo in-app. |
-| 11 | `USER` | 1 | `gives` | `RECIPE_RATING` | 0..* | Một Member cho điểm đánh giá bài viết (1–5 sao; tối đa 1 đánh giá/bài, tác giả không tự đánh giá bài mình). |
+| 11 | `USER` | 1 | `reacts` | `RECIPE_REACTION` | 0..* | Một Member gửi phản hồi Like/Dislike cho bài viết (tối đa 1 phản hồi hiệu lực/bài, tác giả không tự bình chọn bài mình, BR-69). |
 | 12 | `USER` | 0..1 | `generates` | `RECIPE_VIEW` | 0..* | Một lượt xem có thể sinh ra từ Member đã đăng nhập (`1`) hoặc Guest vô danh (`0..1`, định danh qua IP hash / Client session). |
-| 13 | `RECIPE_POST` | 1 | `contains` | `RECIPE_STEP` | 1..* | **Bắt buộc 1..* :** Mỗi bài công thức bắt buộc phải có từ 1 đến 30 bước thực hiện tuần tự (`RECIPE_STEP`, `BR-19`). |
-| 14 | `RECIPE_POST` | 1 | `has_media` | `RECIPE_MEDIA` | 0..* | Mỗi bài công thức chứa từ 0 đến 5 hình ảnh minh họa trên Azure Blob Storage (`BR-20`), đúng 1 ảnh đại diện (`is_cover = true`). |
-| 15 | `RECIPE_POST` | 1 | `contains` | `RECIPE_INGREDIENT` | 1..* | **Bắt buộc 1..* :** Mỗi bài công thức bắt buộc phải có từ 1 đến 50 dòng nguyên liệu định lượng. |
-| 16 | `RECIPE_POST` | 1 | `classified_by` | `RECIPE_CATEGORY` | 0..* | Liên kết N:M phân loại bài công thức vào các danh mục. |
-| 17 | `RECIPE_POST` | 1 | `receives` | `RECIPE_RATING` | 0..* | Một bài công thức nhận 0 hoặc nhiều lượt đánh giá sao từ cộng đồng Member (`FR-57`). |
-| 18 | `RECIPE_POST` | 1 | `receives_views` | `RECIPE_VIEW` | 0..* | Một bài công thức nhận các sự kiện xem phục vụ thống kê 24h/7d/30d/toàn thời gian (`FR-58`). |
-| 19 | `RECIPE_POST` | 1 | `saved_recipe` | `SAVED_RECIPE` | 0..* | Một bài công thức có thể được lưu bởi nhiều người dùng. |
-| 20 | `RECIPE_POST` | 1 | `receives` | `COMMENT` | 0..* | Một bài công thức nhận các bình luận từ cộng đồng. |
-| 21 | `RECIPE_POST` | 0..1 | `recipe_target` | `REPORT` | 0..* | Báo cáo vi phạm nhắm mục tiêu vào bài viết công thức (nếu đối tượng bị báo cáo là bài viết). |
-| 22 | `RECIPE_POST` | 1 | `scheduled_in` | `MEAL_PLAN_ENTRY` | 0..* | Một bài công thức được đưa vào các bữa ăn trong kế hoạch thực đơn. |
-| 23 | `CATEGORY` | 1 | `classifies` | `RECIPE_CATEGORY` | 0..* | Một danh mục chứa 0 hoặc nhiều bài công thức. |
-| 24 | `INGREDIENT` | 0..1 | `standardizes` | `RECIPE_INGREDIENT` | 0..* | **Linh hoạt 0..1 :** Dòng nguyên liệu trong bài có thể liên kết với nguyên liệu chuẩn (`1`) hoặc là tên tự do tác giả nhập (`0..1`, SRS 3.4). |
-| 25 | `RECIPE_INGREDIENT` | 0..* | `measures` | `UNIT` | 1 | **Bắt buộc 1 :** Mọi dòng nguyên liệu bắt buộc phải chọn 1 đơn vị đo chuẩn thuộc `UNIT` (`BR-73`). |
-| 26 | `INGREDIENT` | 1 | `references` | `USER_INGREDIENT_PREFERENCE` | 0..* | Sở thích/kiêng kỵ của người dùng liên kết trực tiếp tới nguyên liệu chuẩn. |
-| 27 | `INGREDIENT` | 0..1 | `references` | `SHOPPING_LIST_ITEM` | 0..* | Mục cần mua trong danh sách đi chợ có thể tham chiếu nguyên liệu chuẩn hoặc nhập tự do. |
-| 28 | `SHOPPING_LIST_ITEM` | 0..* | `measures` | `UNIT` | 1 | Mọi mục cần mua trong danh sách đi chợ bắt buộc có đơn vị đo chuẩn hóa. |
-| 29 | `INGREDIENT_UNIT_CONVERSION` | 0..* | `has_conversion` | `INGREDIENT` | 1 | Bảng quy đổi thuộc về 1 nguyên liệu cụ thể để quy đổi đơn vị đặc thù (quả, củ, bìa, ml...) sang gram. |
-| 30 | `INGREDIENT_UNIT_CONVERSION` | 0..* | `measures` | `UNIT` | 1 | Đơn vị nguồn trong bảng quy đổi tham chiếu đến từ điển `UNIT`. |
-| 31 | `COMMENT` | 0..1 | `replies_to` | `COMMENT` | 0..* | **Quan hệ đệ quy (Self-reference):** Hỗ trợ cây phản hồi lồng nhau tối đa 5 cấp; bình luận gốc có `parent_id = NULL`. |
-| 32 | `COMMENT` | 0..1 | `comment_trigger` | `NOTIFICATION` | 0..* | Bình luận hoặc phản hồi mới kích hoạt thông báo gửi đến tác giả hoặc người được reply. |
-| 33 | `REPORT` | 0..* | `target_of` | `COMMENT` | 0..1 | Báo cáo vi phạm nhắm mục tiêu vào 1 bình luận (nếu đối tượng bị báo cáo là bình luận). |
-| 34 | `REPORT` | 0..1 | `report_trigger` | `NOTIFICATION` | 0..* | Kết quả xử lý báo cáo kích hoạt thông báo phản hồi cho người dùng. |
-| 35 | `MEAL_PLAN` | 1 | `contains` | `MEAL_PLAN_ENTRY` | 0..* | Kế hoạch thực đơn tuần chứa các bữa ăn (Sáng, Trưa, Tối) trong từng ngày. |
-| 36 | `SHOPPING_LIST` | 1 | `contains` | `SHOPPING_LIST_ITEM` | 0..* | Danh sách đi chợ chứa các mục nguyên liệu cần mua. |
-| 37 | `PAYMENT_TRANSACTION` | 0..1 | `activates` | `SUBSCRIPTION` | 0..1 | Giao dịch thanh toán thành công kích hoạt hoặc gia hạn đúng 1 gói dịch vụ tương ứng. |
+| 13 | `RECIPE_POST` | 1 | `has_media` | `RECIPE_MEDIA` | 0..* | Mỗi bài công thức chứa từ 0 đến 5 hình ảnh minh họa trên Azure Blob Storage (`BR-20`), đúng 1 ảnh đại diện (`is_cover = true`). |
+| 14 | `RECIPE_POST` | 1 | `contains` | `RECIPE_INGREDIENT` | 1..* | **Bắt buộc 1..* :** Mỗi bài công thức bắt buộc phải có từ 1 đến 50 dòng nguyên liệu định lượng. |
+| 15 | `RECIPE_POST` | 1 | `receives_reactions` | `RECIPE_REACTION` | 0..* | Một bài công thức nhận 0 hoặc nhiều lượt Like/Dislike từ cộng đồng Member (`FR-57`). |
+| 16 | `RECIPE_POST` | 1 | `receives_views` | `RECIPE_VIEW` | 0..* | Một bài công thức nhận các sự kiện xem phục vụ thống kê 24h/7d/30d/toàn thời gian (`FR-58`). |
+| 17 | `RECIPE_POST` | 1 | `saved_recipe` | `SAVED_RECIPE` | 0..* | Một bài công thức có thể được lưu bởi nhiều người dùng. |
+| 18 | `RECIPE_POST` | 1 | `receives` | `COMMENT` | 0..* | Một bài công thức nhận các bình luận từ cộng đồng. |
+| 19 | `RECIPE_POST` | 0..1 | `recipe_target` | `REPORT` | 0..* | Báo cáo vi phạm nhắm mục tiêu vào bài viết công thức nếu đối tượng bị báo cáo là bài viết; áp dụng ràng buộc XOR với quan hệ số 30. |
+| 20 | `RECIPE_POST` | 1 | `scheduled_in` | `MEAL_PLAN_ENTRY` | 0..* | Một bài công thức được đưa vào các bữa ăn trong kế hoạch thực đơn. |
+| 21 | `INGREDIENT` | 0..1 | `standardizes` | `RECIPE_INGREDIENT` | 0..* | **Linh hoạt 0..1 :** Dòng nguyên liệu trong bài có thể liên kết với nguyên liệu chuẩn (`1`) hoặc là tên tự do tác giả nhập (`0..1`, SRS 3.4). |
+| 22 | `RECIPE_INGREDIENT` | 0..* | `measures` | `UNIT` | 1 | **Bắt buộc 1 :** Mọi dòng nguyên liệu bắt buộc phải chọn 1 đơn vị đo chuẩn thuộc `UNIT` (`BR-73`). |
+| 23 | `INGREDIENT` | 1 | `references` | `USER_INGREDIENT_PREFERENCE` | 0..* | Sở thích/kiêng kỵ của người dùng liên kết trực tiếp tới nguyên liệu chuẩn. |
+| 24 | `INGREDIENT` | 0..1 | `references` | `SHOPPING_LIST_ITEM` | 0..* | Mục cần mua trong danh sách đi chợ có thể tham chiếu nguyên liệu chuẩn hoặc nhập tự do. |
+| 25 | `SHOPPING_LIST_ITEM` | 0..* | `measures` | `UNIT` | 1 | Mọi mục cần mua trong danh sách đi chợ bắt buộc có đơn vị đo chuẩn hóa. |
+| 26 | `INGREDIENT_UNIT_CONVERSION` | 0..* | `has_conversion` | `INGREDIENT` | 1 | Bảng quy đổi thuộc về 1 nguyên liệu cụ thể để quy đổi đơn vị đặc thù (quả, củ, bìa, ml...) sang gram. |
+| 27 | `INGREDIENT_UNIT_CONVERSION` | 0..* | `measures` | `UNIT` | 1 | Đơn vị nguồn trong bảng quy đổi tham chiếu đến từ điển `UNIT`. |
+| 28 | `COMMENT` | 0..1 | `replies_to` | `COMMENT` | 0..* | **Quan hệ đệ quy (Self-reference):** Hỗ trợ cây phản hồi lồng nhau tối đa 5 cấp; bình luận gốc có `parent_id = NULL`. |
+| 29 | `COMMENT` | 0..1 | `comment_trigger` | `NOTIFICATION` | 0..* | Bình luận hoặc phản hồi mới kích hoạt thông báo gửi đến tác giả hoặc người được reply. |
+| 30 | `REPORT` | 0..* | `target_of` | `COMMENT` | 0..1 | Báo cáo vi phạm nhắm mục tiêu vào 1 bình luận hoặc reply nếu đối tượng bị báo cáo là bình luận; áp dụng ràng buộc XOR với quan hệ số 19. |
+| 31 | `REPORT` | 0..1 | `report_trigger` | `NOTIFICATION` | 0..* | Kết quả xử lý báo cáo kích hoạt thông báo phản hồi cho người dùng. |
+| 32 | `MEAL_PLAN` | 1 | `contains` | `MEAL_PLAN_ENTRY` | 0..* | Kế hoạch thực đơn tuần chứa các bữa ăn (Sáng, Trưa, Tối) trong từng ngày. |
+| 33 | `SHOPPING_LIST` | 1 | `contains` | `SHOPPING_LIST_ITEM` | 0..* | Danh sách đi chợ chứa các mục nguyên liệu cần mua. |
+| 34 | `PAYMENT_TRANSACTION` | 0..1 | `activates` | `SUBSCRIPTION` | 0..1 | Giao dịch thanh toán thành công kích hoạt hoặc gia hạn đúng 1 gói dịch vụ tương ứng. |
+| 35 | `USER` | 1 | `submits` | `EXPERT_APPLICATION` | 0..* | Một Customer nộp đơn đăng ký Chuyên gia; mỗi đơn thuộc 1 User; tối đa 1 đơn PENDING tại 1 thời điểm (BR-74). |
+| 36 | `USER` | 1 | `follow` | `USER_FOLLOW` | 0..* | Quan hệ đệ quy có hướng theo FR-59/BR-75. Logical ERD phải tách hai vai trò bắt buộc `follower_user_id` và `followed_user_id`, đều tham chiếu `USER`; cấm hai giá trị bằng nhau và cấm trùng cặp. |
+
+**Ràng buộc XOR cho đích báo cáo (quan hệ 19 và 30):** Mỗi `REPORT` phải tham chiếu đúng một đối tượng bị báo cáo: **một `RECIPE_POST` hoặc một `COMMENT`** (bao gồm reply). Không được đồng thời tham chiếu cả hai, cũng không được thiếu cả hai. Bản số `0..1` ở từng quan hệ riêng lẻ chỉ thể hiện tính tùy chọn của từng loại đích; ràng buộc XOR bổ sung điều kiện bắt buộc khi xét hai quan hệ cùng nhau.
 
 ---
 
@@ -138,7 +145,7 @@ Dưới đây là đặc tả chi tiết toàn bộ **37 mối quan hệ nghiệ
 4. **Cổng Kiểm Định Xuất Bản (Publish Gate):**
    * Sự kết hợp giữa `RECIPE_INGREDIENT`, `UNIT` và `INGREDIENT_UNIT_CONVERSION` bảo đảm mọi bài công thức công khai đều có khả năng quy đổi sang gram để phục vụ tính toán dinh dưỡng chính xác.
 5. **Cấu trúc Báo cáo Đa hình (Polymorphic Target):**
-   * Thực thể `REPORT` có quan hệ tùy chọn `0..1` với cả `RECIPE_POST` và `COMMENT`, cho phép một bảng duy nhất xử lý báo cáo cho cả hai loại nội dung vi phạm mà không cần tạo các bảng báo cáo riêng biệt.
+   * Thực thể `REPORT` có quan hệ tùy chọn `0..1` với `RECIPE_POST` và `COMMENT`; ràng buộc XOR yêu cầu mỗi báo cáo chọn đúng một trong hai đích. Nhờ đó, một thực thể xử lý được cả hai loại nội dung vi phạm mà không cần tách bảng báo cáo.
 
 ---
 
@@ -147,7 +154,7 @@ Dưới đây là đặc tả chi tiết toàn bộ **37 mối quan hệ nghiệ
 Sơ đồ ERD trong thư mục này dừng ở mức **Khái niệm (Conceptual)** để xác lập thực thể và ranh giới nghiệp vụ. Khi chuyển sang giai đoạn phát triển:
 
 1. **Thiết kế Lược đồ Chi tiết (Physical Schema):**
-   * Các bảng vật lý, kiểu dữ liệu cụ thể (`BIGINT`, `NVARCHAR`, `VARCHAR`, `DATETIME2`), chỉ mục (Indexes) và ràng buộc khóa ngoại (Foreign Keys) sẽ được đặc tả chi tiết trong tài liệu thiết kế cơ sở dữ liệu và hiện thực hóa trong [database/schema.sql](../../../database/schema.sql).
+   * Các bảng vật lý, kiểu dữ liệu cụ thể (`BIGINT`, `NVARCHAR`, `VARCHAR`, `DATETIME2`), chỉ mục (Indexes) và ràng buộc khóa ngoại (Foreign Keys) sẽ được đặc tả trong thiết kế Physical ERD và hiện thực bằng Flyway migration của Backend. [database/schema.sql](../../../database/schema.sql) chỉ là snapshot/manual bootstrap được đồng bộ có chủ đích, không phải nguồn schema có thẩm quyền.
 2. **Quản lý Phiên bản Cơ sở dữ liệu bằng Flyway:**
    * Mọi thay đổi cấu trúc bảng trong quá trình lập trình Backend phải được tạo thành các file migration tuần tự trong thư mục `app/mamxanh-backend/src/main/resources/db/migration/` (theo chuẩn `V1__...`, `V2__...`).
    * Tuyệt đối không chỉnh sửa trực tiếp database trên môi trường triển khai mà không qua migration scripts.
