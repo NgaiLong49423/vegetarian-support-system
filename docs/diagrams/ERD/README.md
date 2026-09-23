@@ -1,6 +1,6 @@
 > **Document:** ERD Workspace Guide  
 > **File:** `docs/diagrams/ERD/README.md`  
-> **Version:** v1.9.0  
+> **Version:** v1.10.0  
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-23  
 > **Status:** Draft (Conceptual ERD đã được rà soát; Logical ERD chờ cập nhật)  
@@ -11,7 +11,7 @@
 > [!WARNING]
 > **TÀI LIỆU ĐANG Ở TRẠNG THÁI NHÁP (DRAFT) — LOGICAL ERD CHỜ CẬP NHẬT:**  
 > Tài liệu diễn giải và danh mục thực thể trong file này phản ánh **Baseline 22 thực thể cốt lõi** sau khi xác nhận `USER_FOLLOW` thuộc FR-59/BR-75 `ACTIVE` ngày 23/09/2026; các quyết định trước đó về `RECIPE_STEP`, `CATEGORY` và `RECIPE_CATEGORY` vẫn giữ nguyên.  
-> Sơ đồ Conceptual ERD hiện có 22 thực thể và 36 connector; sơ đồ Logical ERD vẫn cần bổ sung hai vai trò FK của `USER_FOLLOW` để đồng bộ.
+> Sơ đồ Conceptual ERD hiện có 22 thực thể và 36 connector. Logical ERD đã được dựng lại thành `logical-erd-v1.0.0.drawio` ngày 23/09/2026 theo đúng baseline 22 thực thể, tách hai vai trò FK `follower` / `followed` của `USER_FOLLOW`. Bản `logical-erd-v0.1.0.drawio` giữ lại làm lịch sử. **Còn thiếu:** export PNG cho v1.0.0.
 
 ## 1. Mục Đích và Tác Dụng của Sơ Đồ ERD
 
@@ -61,7 +61,7 @@ Căn cứ Conceptual ERD cập nhật ngày 23/09/2026, mô hình dữ liệu hi
 | 6 | **Saved Recipe** | Thực thể đánh dấu lưu lại các bài công thức yêu thích của Customer/Chuyên gia (Bookmark). |
 | 7 | **Comment** | Bình luận và phản hồi trên bài viết công thức. |
 | 8 | **Report** | Báo cáo vi phạm nội dung từ người dùng, tích hợp trực tiếp kết quả và lý do xử lý của Admin (đã gộp từ `Moderation Action`). |
-| 9 | **Meal Plan** | Kế hoạch thực đơn bữa ăn theo ngày hoặc theo tuần của người dùng. |
+| 9 | **Meal Plan** | Kế hoạch thực đơn **theo tuần** của người dùng: đúng 7 ngày từ Thứ Hai đến Chủ Nhật, mỗi ngày ba bữa cố định Sáng / Trưa / Tối (`FR-09`, `BR-36`). |
 | 10 | **Meal Plan Entry** | Món ăn cụ thể được phân bổ vào từng ngày và từng bữa (Sáng, Trưa, Tối). |
 | 11 | **Shopping List** | Danh sách mua sắm nguyên liệu (tạo từ thực đơn, bài công thức hoặc lập thủ công). |
 | 12 | **Shopping List Item** | Từng mục nguyên liệu cần mua kèm số lượng, đơn vị và trạng thái đã mua (`is_bought`). |
