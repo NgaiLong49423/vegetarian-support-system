@@ -1,6 +1,6 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v1.9.0
+> **Version:** v1.10.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-09-23
 > **Status:** Active
@@ -10,7 +10,7 @@
 
 ## 1. Mục đích và thẩm quyền tài liệu
 
-Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Business Rules (`BR-01` đến `BR-76`) của Requirements Baseline v1.0.0 (cập nhật v1.9.0).
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Business Rules (`BR-01` đến `BR-76`) của Requirements Baseline v1.0.0 (cập nhật v1.10.0).
 
 Khung đặc tả gốc và **Authoritative Registry** cho sự tồn tại của quy tắc, mã định danh ổn định (stable ID), và trạng thái vòng đời (lifecycle state) chính thức được duy trì tập trung tại `docs/requirements/SRS.md`.
 
@@ -762,7 +762,7 @@ Các trạng thái derived dưới đây được đồng bộ từ root registr
 ### BR-75 — Tính duy nhất, có hướng và quyền riêng tư của quan hệ theo dõi (`USER_FOLLOW`)
 
 - **Mã quy tắc:** BR-75
-- **Trạng thái (Derived):** DRAFT
+- **Trạng thái (Derived):** ACTIVE
 - **Nội dung:**
   - `USER_FOLLOW` biểu diễn quan hệ có hướng từ `follower_user_id` đến `followed_user_id`; A → B không suy ra B → A.
   - Chỉ Member (`CUSTOMER` hoặc `EXPERT`) đã xác thực và có trạng thái tài khoản hoạt động được tạo/xóa quan hệ theo dõi của chính mình.

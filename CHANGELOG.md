@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.29.0
+> **Version:** v2.30.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-23
 > **Status:** Active
@@ -11,18 +11,19 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-23 — Align Social, Recipe Comparison, Nutrition, and Expert Requirements
 
-**Status:** Committed — f1320f9.
+**Status:** Working tree — not committed.
 
-**Scope:** Align the conceptual data model and requirement semantics for draft social following, public two-recipe comparison, nutrition analysis/PDF reporting, and expert applications without claiming implementation or creating GitHub Issues.
+**Scope:** Align the conceptual data model and requirement semantics for required social following, public two-recipe comparison, nutrition analysis/PDF reporting, and expert applications without claiming implementation or creating GitHub Issues.
 
 ### Added
 
-- Add draft `FR-59` and `BR-75` for directed Member follow relationships and represent `USER_FOLLOW` in the 22-entity Conceptual ERD while keeping it outside the implementation schema until activation.
+- Add `FR-59` and `BR-75` for directed Member follow relationships and represent `USER_FOLLOW` in the 22-entity Conceptual ERD.
 - Add active `FR-60` and `BR-76` for comparing exactly two distinct public recipes by overview data, ingredients, and nine per-serving nutrition indicators.
 
 ### Changed
 
-- Synchronize the document register, architecture baseline, C4 workspace guidance, and ERD workspace guidance with the 22-entity conceptual model and its draft lifecycle boundary.
+- Confirm `FR-59` and `BR-75` as `ACTIVE`, making `USER_FOLLOW` a required capability that must be inherited by the Logical ERD, Physical ERD, and implementation schema.
+- Synchronize the document register, architecture baseline, C4 workspace guidance, and ERD workspace guidance with the active 22-entity conceptual model.
 - Keep the nutrition MVP at nine indicators excluding sodium, and define the daily one-page and weekly two-page nutrition PDF contents and failure behavior.
 - Clarify expert applications as text-based expertise and publishing-permission review, including applicant history, active-account revalidation, authorization refresh, and concurrent-decision handling.
 

@@ -1,6 +1,6 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v1.9.0
+> **Version:** v1.10.0
 > **Created:** 2026-09-11
 > **Last Updated:** 2026-09-23
 > **Status:** Active
@@ -17,7 +17,7 @@ Tài liệu này là khung đặc tả gốc (Root Specification) và **Authorit
 - `docs/requirements/srs/BUSINESS-RULES.md` (BR chi tiết)
 - `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md` (NFR chi tiết)
 
-`Active` nghĩa là Modular SRS thuộc Requirements Baseline v1.0.0 đã được chốt ngày 16/09/2026 và tiếp tục được cập nhật có kiểm soát. Phiên bản tài liệu v1.8.0 ngày 23/09/2026 bổ sung `FR-59`/`BR-75` ở lifecycle `DRAFT` để đồng bộ thực thể `USER_FOLLOW`; phiên bản v1.9.0 cùng ngày bổ sung `FR-60`/`BR-76` ở lifecycle `ACTIVE` cho so sánh hai công thức công khai, hoàn thiện quy trình xét duyệt Chuyên gia và thống nhất đúng chín chỉ tiêu dinh dưỡng không có natri. Document Status của tài liệu và Requirement Lifecycle của từng yêu cầu (`DRAFT`, `ACTIVE`, `DEFERRED`, `OUT_OF_SCOPE`, `RETIRED`) là hai khái niệm độc lập. Mọi thay đổi semantic sau baseline phải được review, đánh giá ảnh hưởng tới FR/BR/NFR và tăng document version theo governance hiện hành. DEC-001–DEC-018, quyết định phạm vi M11 ngày 16/09/2026 và giá subscription là baseline nghiệp vụ hiện hành; các chi tiết kỹ thuật còn mở không được diễn giải thành quyết định sản phẩm mới.
+`Active` nghĩa là Modular SRS thuộc Requirements Baseline v1.0.0 đã được chốt ngày 16/09/2026 và tiếp tục được cập nhật có kiểm soát. Phiên bản tài liệu v1.8.0 ngày 23/09/2026 bổ sung `FR-59`/`BR-75` cùng thực thể `USER_FOLLOW`; phiên bản v1.9.0 cùng ngày bổ sung `FR-60`/`BR-76` ở lifecycle `ACTIVE` cho so sánh hai công thức công khai, hoàn thiện quy trình xét duyệt Chuyên gia và thống nhất đúng chín chỉ tiêu dinh dưỡng không có natri; phiên bản v1.10.0 xác nhận `FR-59`/`BR-75` ở lifecycle `ACTIVE` và thuộc phạm vi bắt buộc của ứng dụng. Document Status của tài liệu và Requirement Lifecycle của từng yêu cầu (`DRAFT`, `ACTIVE`, `DEFERRED`, `OUT_OF_SCOPE`, `RETIRED`) là hai khái niệm độc lập. Mọi thay đổi semantic sau baseline phải được review, đánh giá ảnh hưởng tới FR/BR/NFR và tăng document version theo governance hiện hành. DEC-001–DEC-018, quyết định phạm vi M11 ngày 16/09/2026 và giá subscription là baseline nghiệp vụ hiện hành; các chi tiết kỹ thuật còn mở không được diễn giải thành quyết định sản phẩm mới.
 
 ## 2. Mô tả sản phẩm
 
@@ -42,7 +42,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - **Đăng bài công thức độc quyền cho Chuyên gia (`FR-04` ACTIVE):** Chỉ tài khoản có vai trò `Chuyên gia` đã được Administrator phê duyệt mới được tạo, chỉnh sửa, xóa và công khai Recipe Post trực tiếp; Customer và Administrator không có quyền đăng bài. Quyền Admin tạo/cập nhật System Recipe trong `FR-07` đã `RETIRED`.
 - Đánh giá chất lượng và lượt xem: Customer và Chuyên gia được đánh giá chất lượng bài công thức bằng bình chọn Like / Dislike và tính tỷ lệ % hài lòng (`RECIPE_REACTION`); Guest chỉ có quyền xem tỷ lệ % và tổng số lượt đánh giá; hệ thống hiển thị huy hiệu `👍 {like_percentage}%` nổi bật trên thẻ bài viết Recipe Card (tương tự Samsung Food); hệ thống lưu vết chi tiết từng lượt xem (`RECIPE_VIEW`) với cơ chế khử trùng lặp (view deduplication).
 - So sánh công thức (`FR-60` ACTIVE): Guest và Member có thể chọn đúng hai Recipe Post công khai khác nhau để đối chiếu thông tin tổng quan, nguyên liệu và chín chỉ tiêu dinh dưỡng trên một khẩu phần; hệ thống không lưu lịch sử, không xuất PDF và không kết luận món nào tốt hơn hoặc lành mạnh hơn.
-- Quan hệ xã hội đang ở trạng thái dự thảo (`FR-59`, `BR-75`): Customer và Chuyên gia đã đăng nhập có thể theo dõi hoặc bỏ theo dõi một Member khác; quan hệ có hướng được lưu bằng `USER_FOLLOW`. Chức năng này chưa bao gồm news feed cá nhân hóa, tài khoản riêng tư hay thông báo follow.
+- Quan hệ xã hội (`FR-59`, `BR-75` ACTIVE): Customer và Chuyên gia đã đăng nhập có thể theo dõi hoặc bỏ theo dõi một Member khác; quan hệ có hướng được lưu bằng `USER_FOLLOW`. Chức năng này bắt buộc trong phạm vi ứng dụng nhưng chưa bao gồm news feed cá nhân hóa, tài khoản riêng tư hay thông báo follow.
 - Khám phá đa tiêu chí: Trang khám phá hỗ trợ 6 chế độ độc lập gồm Newest (Mới nhất), Most Liked / Highest Rated (Được yêu thích nhất theo tỷ lệ % Like), Most Viewed (Xem nhiều nhất theo 24h/7d/30d/all-time), Most Commented (Nhiều bình luận nhất), Most Active (Hoạt động sôi nổi nhất theo tương tác 7 ngày), và Trending (Thịnh hành theo tương tác gần đây + hệ số tươi mới freshness decay).
 - Kiểm duyệt sau đăng: người dùng báo cáo nội dung có vấn đề và Administrator xử lý báo cáo. AI quét/gắn cờ là hạng mục để sau (DEFERRED), không phải điều kiện nghiệm thu MVP.
 - Người dùng: tìm kiếm/lọc, xem nội dung, tương tác cộng đồng, lưu công thức (`Saved Recipe`), lập thực đơn ngày/tuần (`Meal Plan`), so sánh thống kê dinh dưỡng tuần, và **xuất file công thức (.txt/.pdf) / thực đơn (.txt/.pdf) / báo cáo phân tích dinh dưỡng tuần có thống kê và so sánh 7 ngày (PDF chuẩn A4) / danh sách mua sắm (.txt)**.
@@ -159,11 +159,11 @@ Luồng cấp cao: Chuyên gia đã được phê duyệt (`Role = EXPERT`) → 
 - Administrator xử lý báo cáo không trở thành tác giả. AI hỗ trợ viết không thay thế tác giả; Chuyên gia vẫn rà soát và chịu trách nhiệm khi công khai bài.
 - Gắn bài với tài khoản Chuyên gia nhằm định danh người chịu trách nhiệm nội dung. Quyền Chuyên gia được cấp sau khi Administrator thẩm định đơn đăng ký theo format (`FR-05`); hệ thống không quản lý văn bằng/chứng chỉ vật lý.
 
-### 3.8.1 Theo dõi người dùng — dự thảo 23/09/2026
+### 3.8.1 Theo dõi người dùng — phạm vi ACTIVE từ 23/09/2026
 
 - Quan hệ theo dõi là quan hệ có hướng giữa hai Member: người theo dõi (`follower`) và người được theo dõi (`followed`). A theo dõi B không làm B tự động theo dõi A.
 - Member đã đăng nhập có thể theo dõi hoặc bỏ theo dõi Member khác từ hồ sơ công khai; không được tự theo dõi chính mình. Guest không được tạo quan hệ theo dõi.
-- Hồ sơ công khai hiển thị số lượng người theo dõi và số lượng đang theo dõi. Danh sách chi tiết chỉ dành cho Member đã đăng nhập trong phạm vi dự thảo này.
+- Hồ sơ công khai hiển thị số lượng người theo dõi và số lượng đang theo dõi. Danh sách chi tiết chỉ dành cho Member đã đăng nhập trong phạm vi hiện hành.
 - `USER_FOLLOW` lưu một quan hệ duy nhất cho mỗi cặp có hướng; thao tác lặp không tạo bản ghi trùng. Tài khoản không hoạt động không xuất hiện trong danh sách công khai.
 - News feed cá nhân hóa, yêu cầu phê duyệt theo dõi cho tài khoản riêng tư, chặn người dùng, thông báo follow và thuật toán gợi ý tài khoản không thuộc `FR-59`.
 
@@ -562,7 +562,7 @@ Vocabulary duy nhất dùng cho requirement lifecycle là `DRAFT`, `ACTIVE`, `DE
 | FR-56 | Quản lý kho thực phẩm cá nhân và đề xuất món từ kho | M05, M06, M13 | OUT_OF_SCOPE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-56) |
 | FR-57 | Đánh giá chất lượng công thức bằng Like / Dislike và hiển thị tỷ lệ % hài lòng (`RECIPE_REACTION`) | M01, M03 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-57) |
 | FR-58 | Ghi nhận và phân tích lịch sử lượt xem công thức (`RECIPE_VIEW`) | M01, M03, M04 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-58) |
-| FR-59 | Theo dõi, bỏ theo dõi và xem quan hệ theo dõi giữa các Member (`USER_FOLLOW`) | M01, M02, M03 | DRAFT | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-59) |
+| FR-59 | Theo dõi, bỏ theo dõi và xem quan hệ theo dõi giữa các Member (`USER_FOLLOW`) | M01, M02, M03 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-59) |
 | FR-60 | So sánh hai Recipe Post công khai theo nguyên liệu và chín chỉ tiêu dinh dưỡng | M01, M04, M10 | ACTIVE | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-60) |
 
 ## 8. Business Rules và Authoritative Lifecycle Registry
@@ -651,7 +651,7 @@ Theo DEC-001–003, các BR hỗ trợ MVP thuộc M01–M06 và M09–M10 cùng
 | BR-72 | Thuật toán xếp hạng thịnh hành (Trending Ranking) | M04 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-72) |
 | BR-73 | Chuẩn hóa đơn vị đo lường và chặn công khai khi thiếu quy đổi | M03, M04, M05 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-73) |
 | BR-74 | Quy trình xét duyệt đơn đăng ký Chuyên gia và chuyển đổi vai trò | M02, M03, M09 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-74) |
-| BR-75 | Tính duy nhất, có hướng và quyền riêng tư của quan hệ theo dõi (`USER_FOLLOW`) | M01, M02, M03 | DRAFT | [Chi tiết](srs/BUSINESS-RULES.md#br-75) |
+| BR-75 | Tính duy nhất, có hướng và quyền riêng tư của quan hệ theo dõi (`USER_FOLLOW`) | M01, M02, M03 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-75) |
 | BR-76 | Quy tắc so sánh hai công thức công khai theo một khẩu phần | M01, M04, M10 | ACTIVE | [Chi tiết](srs/BUSINESS-RULES.md#br-76) |
 
 ## 9. Non-functional Requirements Registry

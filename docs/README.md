@@ -1,6 +1,6 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v3.12.1  
+> **Version:** v3.12.2  
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-23  
 > **Status:** Active  
@@ -88,7 +88,7 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | diagrams/Activity/README.md | Activity diagram conventions | Creating/updating activity diagrams |
 | diagrams/UseCase/README.md | Use-case diagram conventions | Creating/updating use-case diagrams |
 | diagrams/ERD/README.md | ERD documentation conventions; Draft (Conceptual ERD đã được rà soát; Logical ERD chờ cập nhật) | Creating/updating the data model |
-| diagrams/C4 Container Diagram/README.md | C4 container diagram conventions; Draft (Chờ cập nhật bản vẽ sơ đồ C4 phản ánh baseline 22 thực thể, gồm `USER_FOLLOW` dự thảo) | Creating/updating container architecture |
+| diagrams/C4 Container Diagram/README.md | C4 container diagram conventions; Draft (Chờ cập nhật bản vẽ sơ đồ C4 phản ánh baseline 22 thực thể, gồm `USER_FOLLOW` thuộc phạm vi ACTIVE) | Creating/updating container architecture |
 | ../app/mamxanh-frontend/README.md | Frontend setup/state, Playwright commands and contribution guidance | Frontend work |
 | ../app/mamxanh-backend/README.md | Backend setup/state and contribution guidance | Backend work |
 | ../database/README.md | SQL/Flyway ownership and database state | Database work |

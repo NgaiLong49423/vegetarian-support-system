@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements Specification
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v1.9.0
+> **Version:** v1.10.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-09-23
 > **Status:** Active
@@ -10,7 +10,7 @@
 
 ## 1. Mục đích và thẩm quyền tài liệu
 
-Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho các Functional Requirements (`FR-01` đến `FR-60`) của Requirements Baseline v1.0.0 (cập nhật v1.9.0). Các yêu cầu `ACTIVE` có actor, luồng, ràng buộc và Acceptance Criteria làm nguồn cho thiết kế và kiểm thử; requirement không `ACTIVE` được giữ để bảo toàn lịch sử và stable ID.
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho các Functional Requirements (`FR-01` đến `FR-60`) của Requirements Baseline v1.0.0 (cập nhật v1.10.0). Các yêu cầu `ACTIVE` có actor, luồng, ràng buộc và Acceptance Criteria làm nguồn cho thiết kế và kiểm thử; requirement không `ACTIVE` được giữ để bảo toàn lịch sử và stable ID.
 
 Khung đặc tả gốc và **Authoritative Registry** cho sự tồn tại của requirement, mã định danh ổn định (stable ID), phân bổ module cấp chỉ mục, và trạng thái vòng đời (lifecycle state) chính thức được duy trì tập trung tại `docs/requirements/SRS.md`.
 
@@ -5686,7 +5686,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 - **Mã yêu cầu:** FR-59
 - **Module:** M01, M02, M03
-- **Trạng thái (Derived):** DRAFT
+- **Trạng thái (Derived):** ACTIVE
 
 #### 1. Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập theo dõi hoặc bỏ theo dõi một Member khác từ hồ sơ công khai; xem số lượng người theo dõi (`followers`) và số lượng tài khoản đang theo dõi (`following`); xem danh sách hai chiều có phân trang. Quan hệ có hướng được lưu trong `USER_FOLLOW`.

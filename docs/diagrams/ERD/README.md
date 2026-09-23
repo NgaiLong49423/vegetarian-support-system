@@ -1,6 +1,6 @@
 > **Document:** ERD Workspace Guide  
 > **File:** `docs/diagrams/ERD/README.md`  
-> **Version:** v1.8.0  
+> **Version:** v1.9.0  
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-23  
 > **Status:** Draft (Conceptual ERD đã được rà soát; Logical ERD chờ cập nhật)  
@@ -10,7 +10,7 @@
 
 > [!WARNING]
 > **TÀI LIỆU ĐANG Ở TRẠNG THÁI NHÁP (DRAFT) — LOGICAL ERD CHỜ CẬP NHẬT:**  
-> Tài liệu diễn giải và danh mục thực thể trong file này phản ánh **Baseline dự thảo 22 thực thể cốt lõi** sau khi bổ sung `USER_FOLLOW` ngày 23/09/2026; các quyết định trước đó về `RECIPE_STEP`, `CATEGORY` và `RECIPE_CATEGORY` vẫn giữ nguyên.  
+> Tài liệu diễn giải và danh mục thực thể trong file này phản ánh **Baseline 22 thực thể cốt lõi** sau khi xác nhận `USER_FOLLOW` thuộc FR-59/BR-75 `ACTIVE` ngày 23/09/2026; các quyết định trước đó về `RECIPE_STEP`, `CATEGORY` và `RECIPE_CATEGORY` vẫn giữ nguyên.  
 > Sơ đồ Conceptual ERD hiện có 22 thực thể và 36 connector; sơ đồ Logical ERD vẫn cần bổ sung hai vai trò FK của `USER_FOLLOW` để đồng bộ.
 
 ## 1. Mục Đích và Tác Dụng của Sơ Đồ ERD
@@ -22,7 +22,7 @@ Trong quy trình phát triển phần mềm của dự án, sơ đồ này có c
 1. **Định hình bức tranh tổng thể về dữ liệu nghiệp vụ:**
    * Giúp toàn bộ 5 thành viên trong nhóm phát triển, giảng viên và các bên liên quan có cùng một góc nhìn thống nhất về các đối tượng dữ liệu mà hệ thống cần quản trị và vận hành.
 2. **Xác lập và bảo vệ ranh giới phạm vi dữ liệu MVP:**
-   * Duy trì phạm vi mô hình dữ liệu ở **22 thực thể**, trong đó `USER_FOLLOW` đang theo lifecycle `DRAFT` của FR-59/BR-75.
+   * Duy trì phạm vi mô hình dữ liệu ở **22 thực thể**, trong đó `USER_FOLLOW` thuộc lifecycle `ACTIVE` của FR-59/BR-75.
    * Ngăn ngừa tình trạng phình to phạm vi (scope creep) hoặc việc các thành viên tự tiện phát sinh bảng mới ngoài các quyết định kiến trúc đã chốt.
 3. **Làm cầu nối giữa Yêu cầu nghiệp vụ (SRS) và Thiết kế kỹ thuật (Database Design):**
    * Chuyển hóa các yêu cầu chức năng (FR) và quy tắc nghiệp vụ (BR) từ tài liệu đặc tả thành các khái niệm thực thể dữ liệu rõ ràng trước khi bước vào lập trình chi tiết.
@@ -49,7 +49,7 @@ Dưới đây là sơ đồ quan hệ thực thể mức khái niệm của hệ
 
 ## 3. Ranh Giới 22 Thực Thể Khái Niệm (Conceptual Baseline)
 
-Căn cứ Conceptual ERD cập nhật ngày 23/09/2026, mô hình dữ liệu hiện có **22 thực thể**; `USER_FOLLOW` là phần bổ sung dự thảo gắn với FR-59/BR-75:
+Căn cứ Conceptual ERD cập nhật ngày 23/09/2026, mô hình dữ liệu hiện có **22 thực thể**; `USER_FOLLOW` là phần bắt buộc gắn với FR-59/BR-75 `ACTIVE`:
 
 | # | Thực thể (Entity) | Vai trò khái niệm trong hệ thống |
 |---|---|---|
