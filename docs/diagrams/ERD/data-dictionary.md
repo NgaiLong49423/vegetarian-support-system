@@ -1,8 +1,8 @@
 > **Document:** Data Dictionary & Traceability Matrix — Mâm Xanh
 > **File:** `docs/diagrams/ERD/data-dictionary.md`
-> **Version:** v0.4.0
+> **Version:** v0.5.0
 > **Created:** 2026-09-23
-> **Last Updated:** 2026-09-23
+> **Last Updated:** 2026-09-24
 > **Status:** Under Review
 > **Related Docs:** `docs/diagrams/ERD/README.md`, `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -29,12 +29,19 @@ Ký hiệu trong tài liệu:
 
 ## 2. Quyết định đã chốt
 
-Toàn bộ điểm mở ảnh hưởng tới table, column, key hoặc constraint đã được Tech Lead chốt ngày **23/09/2026**. Pha 1 không còn `TBD`.
+Toàn bộ điểm mở ảnh hưởng tới table, column, key hoặc constraint đã được Tech Lead chốt ngày **23/09/2026** và **24/09/2026**. Pha 1 không còn `TBD`.
 
 | ID | Quyết định | Người chốt | Ngày chốt |
 |---|---|---|---|
 | `Q1` | `RECIPE_POST.dish_category` dùng **danh sách cố định**, không nhập tự do và không tạo lại bảng `Category`. Lưu **technical code** trong cột có `CHECK` constraint, gồm **11 giá trị**: `NOODLE_SOUP`, `STIR_FRY`, `HOT_POT`, `BRAISED`, `SOUP`, `FRIED`, `STEAMED`, `SALAD`, `ROLL`, `GRILLED`, `DESSERT`. Frontend hiển thị nhãn tiếng Việt tương ứng. | Ngô Gia Long | 23/09/2026 |
 | `Q2` | `RECIPE_POST` **lưu** `like_count`, `dislike_count` và `view_count`, mặc định `0` và không âm. `RECIPE_REACTION` / `RECIPE_VIEW` vẫn là **dữ liệu gốc**. Like/Dislike cập nhật bộ đếm **đồng bộ trong cùng transaction**; riêng `view_count` cập nhật **bất đồng bộ** theo ARCHITECTURE.md mục 6. `like_percentage` **tính khi đọc, không lưu thành cột**. | Ngô Gia Long | 23/09/2026 |
+| `Q5` | **Chín cột dinh dưỡng của `INGREDIENT` cho phép `NULL`.** Phân biệt ba trạng thái: `NULL` = chưa có dữ liệu · `0` = giá trị thật bằng không · `nutrition_supported = 0` = nguyên liệu chưa được hỗ trợ tính dinh dưỡng. `nutrition_supported` chỉ được bật khi **đủ chín cột khác `NULL`** và có đủ `source_name`, `source_url`, `reference_date` (BR-52). Cho phép lưu bản ghi chưa hoàn thiện ở trạng thái chưa hỗ trợ. | Ngô Gia Long | 24/09/2026 |
+| `Q6` | **`EXPERT_APPLICATION.reviewed_by` không có connector trên Conceptual ERD.** Giữ nguyên ma trận 36 connector; quan hệ này chỉ tồn tại ở mức khóa ngoại trong Data Dictionary và schema. Cách thể hiện trên Physical ERD do người thực hiện pha 2 quyết định. | Ngô Gia Long | 24/09/2026 |
+
+> [!WARNING]
+> **Quyết định `Q5` hiện mâu thuẫn với SRS và đang chờ Tech Lead cập nhật.**
+> `AC-41.2` ghi: *"khi có bất kỳ chỉ tiêu nào trong 9 chỉ tiêu bị bỏ trống hoặc thiếu thông tin nguồn tham chiếu, hệ thống **ngăn chặn việc lưu**"*, và FR-41 lặp lại *"thiếu dù chỉ một giá trị chỉ tiêu dinh dưỡng hoặc thiếu nguồn trích dẫn, hệ thống chặn lưu"*.
+> Tech Lead đã xác nhận ngày 24/09/2026 sẽ chốt lại nghiệp vụ theo hướng **cho phép lưu dữ liệu chưa đầy đủ ở trạng thái chưa hỗ trợ**. Cho tới khi `FR-41`/`AC-41.2` được sửa trong SRS, schema theo `Q5` sẽ không khớp một Acceptance Criteria đang `ACTIVE`. Không tự sửa SRS ở Task này — việc đó thuộc thẩm quyền Tech Lead.
 
 ### Các điểm đã có sẵn câu trả lời trong tài liệu
 
@@ -156,6 +163,8 @@ Theo đúng yêu cầu của [Issue #63](https://github.com/NgaiLong49423/vegeta
 | `created_at` | Thời điểm nộp đơn | Timestamp | DATETIME2 | 7 | NOT NULL | SYSUTCDATETIME() (DF_EXPERT_APP_created_at) | — | — | — | — | — | — | Technical design — audit | — | — | — |
 | `updated_at` | Thời điểm cập nhật gần nhất | Timestamp | DATETIME2 | 7 | NOT NULL | SYSUTCDATETIME() (DF_EXPERT_APP_updated_at) | — | — | — | — | — | — | Technical design — audit | — | — | — |
 
+**Quyết định `Q6` (24/09/2026):** `reviewed_by` là khóa ngoại thật trỏ về `USER.user_id`, nhưng **không được vẽ thành connector trên Conceptual ERD** — ma trận giữ nguyên 36 connector. Quan hệ này chỉ tồn tại ở Data Dictionary và schema. Cách thể hiện trên Physical ERD do người thực hiện pha 2 quyết định.
+
 **Ràng buộc nghiệp vụ:** mỗi Customer chỉ được có tối đa một đơn ở trạng thái `PENDING` tại một thời điểm. Khi `status` chuyển `APPROVED`, `USER.role` đổi thành `EXPERT`.
 
 ### 4.5 RECIPE_POST
@@ -176,7 +185,7 @@ Theo đúng yêu cầu của [Issue #63](https://github.com/NgaiLong49423/vegeta
 | `prep_time_min` | Thời gian chuẩn bị, 0–1.440 phút | Integer | INT | — | NOT NULL | — | — | — | — | CK_RECIPE_POST_prep_time (0..1440) | — | — | FR-16 | BR-19 | — | — |
 | `cook_time_min` | Thời gian nấu, 0–1.440 phút; tổng hai mốc phải > 0 | Integer | INT | — | NOT NULL | — | — | — | — | CK_RECIPE_POST_cook_time (0..1440) | — | — | FR-16 | BR-19 | — | — |
 | `youtube_url` | Liên kết YouTube để nhúng, tối đa 1 | Text, optional | VARCHAR | 2048 | NULL | — | — | — | — | — | — | 0..1 mỗi bài | FR-15 | BR-10 | — | Không tải tệp video lên |
-| `status` | Trạng thái công khai / bị ẩn sau kiểm duyệt | Enum | VARCHAR | 20 | NOT NULL | 'DRAFT' (DF_RECIPE_POST_status) | — | — | — | CK_RECIPE_POST_status ('DRAFT', 'PUBLISHED', 'HIDDEN') | IX_RECIPE_POST_status_published (status, published_at DESC) | — | FR-25, FR-28 | BR-07, BR-27 | — | Chỉ Admin ẩn được |
+| `status` | Trạng thái bài viết: `PUBLISHED` / `HIDDEN` / `DELETED`. **Không có `DRAFT`** — FR-24 (lưu nháp trên server) là `OUT_OF_SCOPE`; bài hợp lệ lưu thẳng `PUBLISHED`, `DELETED` phục vụ xóa mềm | Enum | VARCHAR | 20 | NOT NULL | 'PUBLISHED' (DF_RECIPE_POST_status) | — | — | — | CK_RECIPE_POST_status ('DRAFT', 'PUBLISHED', 'HIDDEN') | IX_RECIPE_POST_status_published (status, published_at DESC) | — | FR-25, FR-28 | BR-07, BR-27 | — | Chỉ Admin ẩn được |
 | `published_at` | Thời điểm công khai | Timestamp, optional | DATETIME2 | 7 | NULL | — | — | — | — | — | IX_RECIPE_POST_status_published | — | FR-25 | BR-07 | — | — |
 | `created_at` | Thời điểm tạo | Timestamp | DATETIME2 | 7 | NOT NULL | SYSUTCDATETIME() (DF_RECIPE_POST_created_at) | — | — | — | — | — | — | Technical design — audit | — | — | — |
 | `updated_at` | Thời điểm sửa gần nhất | Timestamp | DATETIME2 | 7 | NOT NULL | SYSUTCDATETIME() (DF_RECIPE_POST_updated_at) | — | — | — | — | — | — | FR-44 | BR-62 | — | — |
@@ -381,20 +390,20 @@ Theo đúng yêu cầu của [Issue #63](https://github.com/NgaiLong49423/vegeta
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `ingredient_id` | Định danh nguyên liệu | Identifier | BIGINT | — | NOT NULL | — | PK (Identity 1,1) | — | — | — | PK_INGREDIENT (Clustered) | PK | FR-41 | — | — | — |
 | `name` | Tên nguyên liệu chuẩn, duy nhất | Text, unique | NVARCHAR | 200 | NOT NULL | — | — | — | UQ_INGREDIENT_name | — | UQ_INGREDIENT_name (Nonclustered) | — | FR-41 | BR-51 | — | — |
-| `energy_kcal_100g` | Chỉ tiêu 1 — Năng lượng | Decimal | DECIMAL | 10,2 | NOT NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
-| `protein_g_100g` | Chỉ tiêu 2 — Chất đạm | Decimal | DECIMAL | 10,2 | NOT NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
-| `carbohydrate_g_100g` | Chỉ tiêu 3 — Carbohydrate | Decimal | DECIMAL | 10,2 | NOT NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
-| `total_fat_g_100g` | Chỉ tiêu 4 — Chất béo | Decimal | DECIMAL | 10,2 | NOT NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
-| `fiber_g_100g` | Chỉ tiêu 5 — Chất xơ | Decimal | DECIMAL | 10,2 | NOT NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
-| `calcium_mg_100g` | Chỉ tiêu 6 — Canxi | Decimal | DECIMAL | 10,2 | NOT NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
-| `iron_mg_100g` | Chỉ tiêu 7 — Sắt | Decimal | DECIMAL | 10,2 | NOT NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
-| `vitamin_b12_mcg_100g` | Chỉ tiêu 8 — Vitamin B12 | Decimal | DECIMAL | 10,4 | NOT NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
-| `zinc_mg_100g` 🆕 | Chỉ tiêu 9 — Kẽm | Decimal | DECIMAL | 10,2 | NOT NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
+| `energy_kcal_100g` | Chỉ tiêu 1 — Năng lượng — `NULL` nghĩa là chưa có dữ liệu, `0` là giá trị thật | Decimal, optional | DECIMAL | 10,2 | NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
+| `protein_g_100g` | Chỉ tiêu 2 — Chất đạm — `NULL` nghĩa là chưa có dữ liệu, `0` là giá trị thật | Decimal, optional | DECIMAL | 10,2 | NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
+| `carbohydrate_g_100g` | Chỉ tiêu 3 — Carbohydrate — `NULL` nghĩa là chưa có dữ liệu, `0` là giá trị thật | Decimal, optional | DECIMAL | 10,2 | NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
+| `total_fat_g_100g` | Chỉ tiêu 4 — Chất béo — `NULL` nghĩa là chưa có dữ liệu, `0` là giá trị thật | Decimal, optional | DECIMAL | 10,2 | NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
+| `fiber_g_100g` | Chỉ tiêu 5 — Chất xơ — `NULL` nghĩa là chưa có dữ liệu, `0` là giá trị thật | Decimal, optional | DECIMAL | 10,2 | NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
+| `calcium_mg_100g` | Chỉ tiêu 6 — Canxi — `NULL` nghĩa là chưa có dữ liệu, `0` là giá trị thật | Decimal, optional | DECIMAL | 10,2 | NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
+| `iron_mg_100g` | Chỉ tiêu 7 — Sắt — `NULL` nghĩa là chưa có dữ liệu, `0` là giá trị thật | Decimal, optional | DECIMAL | 10,2 | NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
+| `vitamin_b12_mcg_100g` | Chỉ tiêu 8 — Vitamin B12 — `NULL` nghĩa là chưa có dữ liệu, `0` là giá trị thật | Decimal, optional | DECIMAL | 10,4 | NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
+| `zinc_mg_100g` 🆕 | Chỉ tiêu 9 — Kẽm — `NULL` nghĩa là chưa có dữ liệu, `0` là giá trị thật | Decimal, optional | DECIMAL | 10,2 | NULL | — | — | — | — | — | — | — | FR-39 | BR-52 | — | — |
 | ~~`sodium_mg_100g`~~ 🗑 | **Xóa** — natri không thuộc chín chỉ tiêu MVP | — | — | — | — | — | — | — | — | — | — | — | FR-39 | BR-44 | — | — |
 | `source_name` | Nguồn số liệu, ví dụ USDA / NIH | Text | NVARCHAR | 200 | NOT NULL | — | — | — | — | — | — | — | FR-41 | BR-49 | — | — |
 | `source_url` | Liên kết nguồn | Text, optional | VARCHAR | 2048 | NULL | — | — | — | — | — | — | — | FR-41 | BR-49 | — | — |
 | `reference_date` | Ngày tham chiếu của số liệu | Date | DATE | — | NOT NULL | — | — | — | — | — | — | — | FR-41 | BR-49 | — | — |
-| `nutrition_supported` | Đã có đủ chín chỉ tiêu và nguồn để kích hoạt tính dinh dưỡng hay chưa | Boolean | BIT | — | NOT NULL | 0 (DF_INGREDIENT_nutrition_supported) | — | — | — | — | — | — | FR-40 | BR-50, BR-52 | — | — |
+| `nutrition_supported` | **Cổng kích hoạt (Q5):** chỉ được bật `1` khi đủ chín cột chỉ tiêu khác `NULL` **và** có đủ `source_name`, `source_url`, `reference_date`. `0` nghĩa là nguyên liệu chưa được hỗ trợ tính dinh dưỡng — khác với chỉ tiêu `NULL` (chưa có dữ liệu) | Boolean | BIT | — | NOT NULL | 0 (DF_INGREDIENT_nutrition_supported) | — | — | — | — | — | — | FR-40 | BR-50, BR-52 | — | — |
 | `status` | Trạng thái hoạt động của mục từ điển | Enum | VARCHAR | 20 | NOT NULL | 'ACTIVE' (DF_INGREDIENT_status) | — | — | — | CK_INGREDIENT_status ('ACTIVE', 'INACTIVE') | — | — | FR-41 | BR-53 | — | — |
 | `created_at` | Thời điểm tạo | Timestamp | DATETIME2 | 7 | NOT NULL | SYSUTCDATETIME() (DF_INGREDIENT_created_at) | — | — | — | — | — | — | Technical design — audit | — | — | — |
 | `updated_at` | Thời điểm cập nhật gần nhất | Timestamp | DATETIME2 | 7 | NOT NULL | SYSUTCDATETIME() (DF_INGREDIENT_updated_at) | — | — | — | — | — | — | Technical design — audit | — | — | — |
@@ -467,8 +476,9 @@ Issue #63 mục D yêu cầu ghi riêng các ràng buộc loại này. Trương 
 | # | Ràng buộc | Bảng | Ép được ở database? | Nguồn |
 |---|---|---|---|---|
 | 1 | `REPORT` trỏ tới **hoặc** `recipe_id` **hoặc** `comment_id`, không cả hai, không rỗng cả hai (XOR) | `REPORT` | Có — `CHECK` đếm cột khác `NULL` bằng 1 | BR-23 |
-| 2 | Mỗi bài công thức có **đúng 1** ảnh `is_cover = true` | `RECIPE_MEDIA` | Có — filtered unique index | BR-20 |
-| 3 | Mỗi bài công thức có **tối đa 5** ảnh | `RECIPE_MEDIA` | Không — tầng service | BR-20 |
+| 2 | **Không quá 1** ảnh `is_cover = true` mỗi bài | `RECIPE_MEDIA` | Có — filtered unique index `UQ_RECIPE_MEDIA_cover` | BR-20 |
+| 2b | **Bắt buộc có đúng 1 cover khi bài có ảnh** | `RECIPE_MEDIA` | Không — filtered unique index chỉ chặn nhiều hơn một, không ép phải có. Tầng service kiểm tra khi publish | BR-20 |
+| 3 | Mỗi bài công thức có **tối đa 5** ảnh | `RECIPE_MEDIA` | Không — tầng service; database hiện vẫn nhận ảnh thứ 6 | BR-20 |
 | 4 | Bình luận lồng **tối đa 5 cấp** | `COMMENT` | Không — cột `depth` + `CHECK 1..5`, service duy trì | BR-66 |
 | 5 | Xóa bình luận cha còn phản hồi thì chuyển **tombstone**, không xóa cứng | `COMMENT` | Không — tầng service | BR-66 |
 | 6 | **1 phản hồi / user / bài** | `RECIPE_REACTION` | Có — khóa chính kép | BR-69 |
@@ -484,6 +494,10 @@ Issue #63 mục D yêu cầu ghi riêng các ràng buộc loại này. Trương 
 | 16 | `dish_category` chỉ nhận **11 technical code** đã chốt | `RECIPE_POST` | Có — `CHECK` | Q1, 23/09/2026 |
 | 17 | `like_count`, `dislike_count`, `view_count` **không âm**, mặc định `0` | `RECIPE_POST` | Có — `CHECK >= 0` + `DEFAULT 0` | Q2, 23/09/2026 |
 | 18 | Bộ đếm Like/Dislike khớp `RECIPE_REACTION` — cập nhật **cùng transaction** | `RECIPE_POST` | Không — tầng service | Q2, 23/09/2026 |
+| 19 | `nutrition_supported = 1` chỉ khi đủ 9 chỉ tiêu khác `NULL` và đủ 3 trường nguồn | `INGREDIENT` | Có — `CHECK` liên cột trong cùng bảng | Q5, BR-52 |
+| 20 | **Tổng** `prep_time_min + cook_time_min` phải **> 0** (mỗi vế có thể bằng 0) | `RECIPE_POST` | Có — `CHECK` liên cột | FR-16, BR-19 |
+| 21 | `instructions` dài **tối đa 5.000** ký tự (hiện chỉ có chặn tối thiểu 10) | `RECIPE_POST` | Có — `CHECK LEN <= 5000` | FR-16, AC-16.5 |
+| 22 | `MEAL_PLAN_ENTRY.meal_date` phải nằm trong 7 ngày từ `MEAL_PLAN.week_start_date` | `MEAL_PLAN_ENTRY` | Không bằng `CHECK` thường — dữ liệu ở bảng cha. Cần trigger hoặc validation tầng service | FR-09, BR-36 |
 
 ## 6. Cảnh báo cho pha 2 — multiple cascade paths trên SQL Server
 
