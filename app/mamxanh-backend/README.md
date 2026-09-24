@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.5.1
+> **Version:** v0.6.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-17
+> **Last Updated:** 2026-09-24
 > **Status:** Active  
 
 # Backend Workspace
@@ -30,6 +30,138 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 # Linux / macOS
 ./mvnw clean test-compile
 ```
+
+## Yêu cầu để chạy ứng dụng
+
+Chọn một trong hai môi trường:
+
+- **Chạy trực tiếp:** JDK 21. Maven không cần cài riêng vì repository có Maven Wrapper.
+- **Chạy bằng Docker:** Docker Desktop đang hoạt động. Không cần cài Java/Maven trực tiếp trên máy.
+
+Cả hai cách đều cần một Microsoft SQL Server có database `MamXanhDB` và schema phù hợp. Repository hiện chưa có bộ Flyway migration hoàn chỉnh để tự tạo toàn bộ schema từ database rỗng; vì vậy Backend có thể compile thành công nhưng không thể khởi động đầy đủ nếu database chưa sẵn sàng.
+
+Không commit username, password, connection string thật hoặc file cấu hình local chứa credential.
+
+Khi mở toàn hệ thống, khởi động theo thứ tự:
+
+1. Microsoft SQL Server và database `MamXanhDB`.
+2. Backend tại port `8080`.
+3. [Frontend](../mamxanh-frontend/README.md) tại port `5173`.
+
+## Cách 1 — Chạy trực tiếp bằng Java 21
+
+### 1. Xác minh Java
+
+```powershell
+java -version
+javac -version
+```
+
+Cả hai lệnh phải hiển thị Java 21. Có `java` nhưng không có `javac` nghĩa là máy chưa dùng đầy đủ JDK.
+
+### 2. Chuẩn bị cấu hình database local
+
+Sao chép file mẫu thành file cấu hình local:
+
+```powershell
+Copy-Item `
+  'src/main/resources/application-local.properties.example' `
+  'src/main/resources/application-local.properties'
+```
+
+Mở `application-local.properties` và thay ba giá trị mẫu bằng cấu hình SQL Server trên máy của bạn:
+
+```properties
+spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true
+spring.datasource.username=YOUR_LOCAL_DB_USERNAME
+spring.datasource.password=YOUR_LOCAL_DB_PASSWORD
+```
+
+File chứa credential chỉ dùng trên máy cá nhân và không được commit.
+
+### 3. Compile và chạy
+
+Mở PowerShell tại `app/mamxanh-backend`:
+
+```powershell
+.\mvnw.cmd clean test-compile
+.\mvnw.cmd spring-boot:run
+```
+
+Backend dùng port mặc định `8080`. Dấu hiệu khởi động thành công là log Spring Boot có dòng `Started MamXanhApplication` và không có lỗi kết nối SQL Server/Flyway/Hibernate. Dừng bằng `Ctrl+C`.
+
+Sau lần tải dependency đầu tiên, các lần mở dự án tiếp theo chỉ cần bảo đảm SQL Server đang chạy rồi dùng:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+### Chạy bằng nút Run trong IntelliJ IDEA
+
+1. Mở thư mục `app/mamxanh-backend` bằng IntelliJ IDEA.
+2. Chọn **Project SDK = Java 21** và chờ Maven import dependency xong.
+3. Tạo `application-local.properties` theo bước cấu hình database ở trên.
+4. Mở `src/main/java/tech/mamxanh/MamXanhApplication.java`.
+5. Bấm nút Run cạnh hàm `main`.
+
+IntelliJ vẫn sử dụng cùng cấu hình Spring profile `local`; nút Run không thay thế yêu cầu SQL Server phải sẵn sàng.
+
+## Cách 2 — Chạy bằng Docker
+
+Dockerfile chỉ đóng gói Backend; SQL Server vẫn chạy bên ngoài container theo quyết định hiện tại.
+
+### 1. Build image
+
+Mở PowerShell tại `app/mamxanh-backend`:
+
+```powershell
+docker build -t mamxanh-backend-dev .
+```
+
+### 2. Cấu hình database cho phiên Terminal hiện tại
+
+Nếu SQL Server chạy trên máy Windows, container phải kết nối qua `host.docker.internal` thay vì `localhost`:
+
+```powershell
+$env:SPRING_DATASOURCE_URL = 'jdbc:sqlserver://host.docker.internal:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true'
+$env:SPRING_DATASOURCE_USERNAME = 'YOUR_LOCAL_DB_USERNAME'
+$env:SPRING_DATASOURCE_PASSWORD = 'YOUR_LOCAL_DB_PASSWORD'
+```
+
+Không ghi giá trị thật vào README, Dockerfile hoặc source control.
+
+### 3. Chạy container
+
+```powershell
+docker run --rm --name mamxanh-backend `
+  -p 8080:8080 `
+  -e SPRING_DATASOURCE_URL `
+  -e SPRING_DATASOURCE_USERNAME `
+  -e SPRING_DATASOURCE_PASSWORD `
+  mamxanh-backend-dev
+```
+
+Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc `pom.xml` thay đổi, build lại image trước khi chạy.
+
+Xóa credential khỏi phiên PowerShell sau khi hoàn tất:
+
+```powershell
+Remove-Item Env:SPRING_DATASOURCE_URL
+Remove-Item Env:SPRING_DATASOURCE_USERNAME
+Remove-Item Env:SPRING_DATASOURCE_PASSWORD
+```
+
+## Kiểm tra và xử lý lỗi thường gặp
+
+| Hiện tượng | Nguyên nhân thường gặp | Cách xử lý |
+|---|---|---|
+| `java` đúng nhưng `javac` không tồn tại | Máy đang dùng JRE hoặc `PATH` trỏ sai | Cài/chọn JDK 21 và mở Terminal mới. |
+| `Login failed for user` | Sai username/password hoặc SQL Login chưa được bật | Kiểm tra credential và chế độ authentication của SQL Server. |
+| `Connection refused` hoặc timeout | SQL Server chưa chạy, sai port hoặc firewall chặn | Xác minh SQL Server lắng nghe TCP `1433`; trong Docker dùng `host.docker.internal`. |
+| Hibernate báo thiếu bảng | Database chưa có schema mà `ddl-auto=validate` không tự tạo bảng | Khởi tạo schema/migration được dự án phê duyệt; không đổi sang `ddl-auto=update` để né lỗi. |
+| Flyway validation lỗi | Migration history và source migration không khớp | Không sửa migration đã áp dụng; đối chiếu đúng database/environment trước khi tiếp tục. |
+| Port `8080` đã được sử dụng | Backend/container khác đang chạy | Dừng tiến trình cũ rồi chạy lại. |
+| Docker không nhận lệnh | Docker Desktop chưa cài, chưa chạy hoặc chưa có trong `PATH` | Mở Docker Desktop và xác minh bằng `docker version`. |
 
 ## Ranh giới kiến trúc hiện tại
 

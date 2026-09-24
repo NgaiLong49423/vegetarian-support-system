@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.3.0
+> **Version:** v1.4.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-09-22
+> **Last Updated:** 2026-09-24
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -57,6 +57,84 @@ Các màn hình này chuẩn bị trải nghiệm cho FR-13, FR-20, FR-26/27, FR
 - **Node.js**: Phiên bản `>= 20.x` (khuyến nghị `v24.x` hoặc `v22.x LTS`).
 - **Package Manager**: `npm` (tiêu chuẩn của dự án).
 - **IDE**: IntelliJ IDEA (Ultimate hoặc Community với Node.js/Web plugin) / WebStorm.
+
+Nếu chạy bằng Docker, thành viên chỉ cần Docker Desktop đang hoạt động; không cần cài Node.js trực tiếp trên máy.
+
+## Khởi động nhanh
+
+Nếu cần mở cả hệ thống, dùng hai cửa sổ Terminal và khởi động theo thứ tự:
+
+1. Microsoft SQL Server và database `MamXanhDB`.
+2. [Backend](../mamxanh-backend/README.md) tại port `8080`.
+3. Frontend tại port `5173`.
+
+Frontend demo hiện vẫn có các luồng dùng mock data và có thể chạy độc lập để xem giao diện; việc mở được UI không chứng minh Backend hoặc database đã kết nối.
+
+### Cách 1 — Chạy trực tiếp bằng Node.js
+
+Mở Terminal tại `app/mamxanh-frontend` và chạy:
+
+```powershell
+npm ci
+npm run dev
+```
+
+Mở <http://localhost:5173>. Vite theo dõi source và tự cập nhật trình duyệt khi code thay đổi.
+
+Sau lần cài đầu tiên, các lần mở dự án tiếp theo chỉ cần:
+
+```powershell
+npm run dev
+```
+
+Luôn dùng `npm ci` khi cài mới từ `package-lock.json` hoặc khi dependency bị lệch. Không chia sẻ thư mục `node_modules` giữa các thành viên.
+
+### Cách 2 — Chạy bằng Docker
+
+Đảm bảo Docker Desktop đã khởi động, sau đó mở PowerShell tại `app/mamxanh-frontend`:
+
+```powershell
+docker build -t mamxanh-frontend-dev .
+
+docker run --rm --name mamxanh-frontend `
+  -p 5173:5173 `
+  --mount "type=bind,source=$($PWD.Path),target=/workspace" `
+  --mount "type=volume,source=mamxanh-frontend-node-modules,target=/workspace/node_modules" `
+  mamxanh-frontend-dev
+```
+
+Mở <http://localhost:5173>. Bind mount đồng bộ source vào container; named volume giữ `node_modules` Linux tách khỏi máy Windows để tránh lỗi dependency native khác hệ điều hành.
+
+Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`; volume dependency được giữ lại để lần chạy sau nhanh hơn.
+
+Khi `package.json` hoặc `package-lock.json` thay đổi, build lại image:
+
+```powershell
+docker build --no-cache -t mamxanh-frontend-dev .
+```
+
+### Kiểm tra trước khi bàn giao code
+
+```powershell
+npm run lint
+npm run build
+```
+
+Nếu dùng Docker và không cài Node.js trên máy, chạy kiểm tra trong image:
+
+```powershell
+docker run --rm mamxanh-frontend-dev npm run lint
+docker run --rm mamxanh-frontend-dev npm run build
+```
+
+### Lỗi khởi động thường gặp
+
+| Hiện tượng | Nguyên nhân thường gặp | Cách xử lý |
+|---|---|---|
+| `npm` không được nhận diện | Chưa cài Node.js hoặc Terminal chưa nạp lại `PATH` | Cài Node.js 22 LTS rồi mở Terminal mới, hoặc dùng Docker. |
+| Port `5173` đã được sử dụng | Một Vite/container khác đang chạy | Dừng tiến trình cũ; không tự đổi port nếu nhóm đang dùng URL chuẩn `5173`. |
+| Dependency/native binary lỗi sau khi đổi máy | `node_modules` được sao chép từ máy hoặc hệ điều hành khác | Xóa `node_modules`, chạy lại `npm ci`; với Docker, giữ dependency trong named volume Linux. |
+| Docker không nhận lệnh | Docker Desktop chưa cài, chưa chạy hoặc chưa có trong `PATH` | Mở Docker Desktop và xác minh bằng `docker version`. |
 
 ---
 
