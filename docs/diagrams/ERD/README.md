@@ -1,8 +1,8 @@
 > **Document:** ERD Workspace Guide  
 > **File:** `docs/diagrams/ERD/README.md`  
-> **Version:** v1.11.0  
+> **Version:** v1.12.0  
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-23  
+> **Last Updated:** 2026-09-24  
 > **Status:** Active (Conceptual, Logical và Physical ERD đã hoàn thiện)  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `database/README.md`, `docs/diagrams/ERD/data-dictionary.md`
 
@@ -12,9 +12,9 @@
 > **TIẾN ĐỘ VÀ BỘ SƠ ĐỒ ERD CỦA DỰ ÁN (CẬP NHẬT 23/09/2026):**  
 > Mô hình dữ liệu của Mâm Xanh phản ánh **Baseline 22 thực thể cốt lõi** sau khi xác nhận `USER_FOLLOW` thuộc FR-59/BR-75 `ACTIVE` ngày 23/09/2026:  
 > 1. **Conceptual ERD:** [conceptual-erd-v1.0.0.drawio](./conceptual-erd-v1.0.0.drawio) (22 thực thể, 36 connector; có file ảnh [conceptual-erd-v1.0.0.drawio.png](./conceptual-erd-v1.0.0.drawio.png)).  
-> 2. **Logical ERD:** [logical-erd-v1.0.0.drawio](./logical-erd-v1.0.0.drawio) (22 bảng, 36 connector, tách hai vai trò FK `follower` / `followed` của `USER_FOLLOW`; bản `v0.1.0` lưu trữ lịch sử).  
+> 2. **Logical ERD:** [logical-erd-v1.0.0.drawio](./logical-erd-v1.0.0.drawio) (22 bảng; 37 connector thể hiện đủ 36 quan hệ ở mục 3.1, vì quan hệ #36 tách hai vai trò FK `follower` / `followed` của `USER_FOLLOW`). Cập nhật ngày 24/09/2026 theo quyết định `Q7`–`Q12` trong Data Dictionary. Bản nháp `v0.1.0` đã xóa khỏi repo ngày 24/09/2026 theo yêu cầu Tech Lead.  
 > 3. **Physical ERD:** [physical-erd-v1.0.0.drawio](./physical-erd-v1.0.0.drawio) (22 bảng vật lý T-SQL, kiểu dữ liệu Microsoft SQL Server 2019, 38 FKs, 21 indexes, 41 check constraints; đối chiếu 100% với Flyway baseline migration [V1__baseline_schema.sql](../../../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) và [database/schema.sql](../../../database/schema.sql)).  
-> 4. **Data Dictionary:** [data-dictionary.md](./data-dictionary.md) v0.4.0 đặc tả chi tiết 9 cột vật lý cho toàn bộ 178 thuộc tính.
+> 4. **Data Dictionary:** [data-dictionary.md](./data-dictionary.md) v0.6.0 đặc tả chi tiết 9 cột vật lý cho toàn bộ thuộc tính. Các ô đánh dấu `⏳` là đặc tả đã chốt sau review PR #66, chưa có trong Flyway migration và Physical ERD.
 
 ## 1. Mục Đích và Tác Dụng của Sơ Đồ ERD
 
@@ -60,7 +60,7 @@ Căn cứ Conceptual ERD cập nhật ngày 23/09/2026, mô hình dữ liệu hi
 | # | Thực thể (Entity) | Vai trò khái niệm trong hệ thống |
 |---|---|---|
 | 1 | **User** | Quản lý thông tin tài khoản, vai trò (`CUSTOMER`, `EXPERT`, `ADMIN`), hồ sơ cá nhân và chỉ số dinh dưỡng/thể trạng (đã gộp từ `User Profile`). |
-| 2 | **User Ingredient Preference** | Lưu trữ sở thích, kiêng kỵ và dị ứng nguyên liệu của người dùng (`ALLERGY`, `AVOID`, `DISLIKE`). |
+| 2 | **User Ingredient Preference** | Lưu hai danh sách nguyên liệu của người dùng theo FR-31: cần tránh do dị ứng/kiêng (`AVOID`) và không thích (`DISLIKE`); mỗi nguyên liệu một loại hiệu lực (`Q11`). |
 | 3 | **Recipe Post** | Bài viết công thức nấu ăn chay do Chuyên gia làm tác giả (chứa thông tin cấu trúc, tác giả, khẩu phần, thời gian, loại ăn chay, thể loại món `dish_category`, hướng dẫn tự do `instructions` 10–5.000 ký tự, 0..1 link YouTube, và liên kết đến media, reaction, view; không dùng bảng Category hay Recipe Step). |
 | 4 | **Ingredient** | Từ điển nguyên liệu chuẩn (tên, calo và dinh dưỡng tham khảo). |
 | 5 | **Recipe Ingredient** | Nguyên liệu cụ thể trong một bài công thức kèm theo định lượng số dương và đơn vị đo. |
@@ -71,7 +71,7 @@ Căn cứ Conceptual ERD cập nhật ngày 23/09/2026, mô hình dữ liệu hi
 | 10 | **Meal Plan Entry** | Món ăn cụ thể được phân bổ vào từng ngày và từng bữa (Sáng, Trưa, Tối). |
 | 11 | **Shopping List** | Danh sách mua sắm nguyên liệu (tạo từ thực đơn, bài công thức hoặc lập thủ công). |
 | 12 | **Shopping List Item** | Từng mục nguyên liệu cần mua kèm số lượng, đơn vị và trạng thái đã mua (`is_bought`). |
-| 13 | **Subscription** | Quản lý gói dịch vụ hội viên (FREE, PLUS, PRO), thời hạn hiệu lực và phân tầng tính năng AI. |
+| 13 | **Subscription** | Quản lý gói trả phí (PLUS, PRO), thời hạn hiệu lực và phân tầng tính năng AI. Không lưu FREE: user không có gói `ACTIVE` còn hạn thì mặc định là FREE (`Q9`). |
 | 14 | **Payment Transaction** | Lịch sử giao dịch thanh toán trực tuyến qua payOS để kích hoạt gói dịch vụ. |
 | 15 | **Notification** | Thông báo trong ứng dụng gửi tới người dùng. |
 | 16 | **Recipe Media** (`RECIPE_MEDIA`) | Quản lý 0–5 hình ảnh minh họa bài công thức trên Azure Blob Storage, thứ tự hiển thị và cờ ảnh đại diện (`is_cover`). |
@@ -106,7 +106,7 @@ Dưới đây là đặc tả chi tiết **36 connector nghiệp vụ** trong Co
 | 5 | `USER` | 1 | `submits` | `REPORT` | 0..* | Một người dùng có thể gửi 0 hoặc nhiều báo cáo vi phạm. |
 | 6 | `USER` | 1 | `owns` | `MEAL_PLAN` | 0..* | Một người dùng có thể sở hữu 0 hoặc nhiều kế hoạch thực đơn tuần. |
 | 7 | `USER` | 1 | `owns` | `SHOPPING_LIST` | 0..* | Một người dùng có thể sở hữu 0 hoặc nhiều danh sách đi chợ. |
-| 8 | `USER` | 1 | `has` | `SUBSCRIPTION` | 0..* | Một người dùng sở hữu lịch sử các gói đăng ký hội viên (FREE, PLUS, PRO). |
+| 8 | `USER` | 1 | `has` | `SUBSCRIPTION` | 0..* | Một người dùng sở hữu lịch sử các gói trả phí (PLUS, PRO); tối đa 1 gói `ACTIVE` tại một thời điểm (`Q10`). |
 | 9 | `USER` | 1 | `makes` | `PAYMENT_TRANSACTION` | 0..* | Một người dùng thực hiện 0 hoặc nhiều giao dịch thanh toán trực tuyến qua payOS. |
 | 10 | `USER` | 1 | `receives` | `NOTIFICATION` | 0..* | Một người dùng nhận 0 hoặc nhiều thông báo in-app. |
 | 11 | `USER` | 1 | `reacts` | `RECIPE_REACTION` | 0..* | Một Member gửi phản hồi Like/Dislike cho bài viết (tối đa 1 phản hồi hiệu lực/bài, tác giả không tự bình chọn bài mình, BR-69). |
