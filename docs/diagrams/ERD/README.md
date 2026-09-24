@@ -1,17 +1,20 @@
 > **Document:** ERD Workspace Guide  
 > **File:** `docs/diagrams/ERD/README.md`  
-> **Version:** v1.10.0  
+> **Version:** v1.11.0  
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-23  
-> **Status:** Draft (Conceptual ERD đã được rà soát; Logical ERD chờ cập nhật)  
-> **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `database/README.md`
+> **Status:** Active (Conceptual, Logical và Physical ERD đã hoàn thiện)  
+> **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `database/README.md`, `docs/diagrams/ERD/data-dictionary.md`
 
 # ERD Workspace Guide — Hướng Dẫn Sơ Đồ Quan Hệ Thực Thể
 
-> [!WARNING]
-> **TÀI LIỆU ĐANG Ở TRẠNG THÁI NHÁP (DRAFT) — LOGICAL ERD CHỜ CẬP NHẬT:**  
-> Tài liệu diễn giải và danh mục thực thể trong file này phản ánh **Baseline 22 thực thể cốt lõi** sau khi xác nhận `USER_FOLLOW` thuộc FR-59/BR-75 `ACTIVE` ngày 23/09/2026; các quyết định trước đó về `RECIPE_STEP`, `CATEGORY` và `RECIPE_CATEGORY` vẫn giữ nguyên.  
-> Sơ đồ Conceptual ERD hiện có 22 thực thể và 36 connector. Logical ERD đã được dựng lại thành `logical-erd-v1.0.0.drawio` ngày 23/09/2026 theo đúng baseline 22 thực thể, tách hai vai trò FK `follower` / `followed` của `USER_FOLLOW`. Bản `logical-erd-v0.1.0.drawio` giữ lại làm lịch sử. **Còn thiếu:** export PNG cho v1.0.0.
+> [!NOTE]
+> **TIẾN ĐỘ VÀ BỘ SƠ ĐỒ ERD CỦA DỰ ÁN (CẬP NHẬT 23/09/2026):**  
+> Mô hình dữ liệu của Mâm Xanh phản ánh **Baseline 22 thực thể cốt lõi** sau khi xác nhận `USER_FOLLOW` thuộc FR-59/BR-75 `ACTIVE` ngày 23/09/2026:  
+> 1. **Conceptual ERD:** [conceptual-erd-v1.0.0.drawio](./conceptual-erd-v1.0.0.drawio) (22 thực thể, 36 connector; có file ảnh [conceptual-erd-v1.0.0.drawio.png](./conceptual-erd-v1.0.0.drawio.png)).  
+> 2. **Logical ERD:** [logical-erd-v1.0.0.drawio](./logical-erd-v1.0.0.drawio) (22 bảng, 36 connector, tách hai vai trò FK `follower` / `followed` của `USER_FOLLOW`; bản `v0.1.0` lưu trữ lịch sử).  
+> 3. **Physical ERD:** [physical-erd-v1.0.0.drawio](./physical-erd-v1.0.0.drawio) (22 bảng vật lý T-SQL, kiểu dữ liệu Microsoft SQL Server 2019, 38 FKs, 21 indexes, 41 check constraints; đối chiếu 100% với Flyway baseline migration [V1__baseline_schema.sql](../../../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) và [database/schema.sql](../../../database/schema.sql)).  
+> 4. **Data Dictionary:** [data-dictionary.md](./data-dictionary.md) v0.4.0 đặc tả chi tiết 9 cột vật lý cho toàn bộ 178 thuộc tính.
 
 ## 1. Mục Đích và Tác Dụng của Sơ Đồ ERD
 
@@ -41,8 +44,11 @@ Dưới đây là sơ đồ quan hệ thực thể mức khái niệm của hệ
 
 ![Conceptual ERD - Mâm Xanh](./conceptual-erd-v1.0.0.drawio.png)
 
-* File nguồn Draw.io có thể mở và chỉnh sửa trực tiếp: [conceptual-erd-v1.0.0.drawio](./conceptual-erd-v1.0.0.drawio)
-* Để xem trực quan cấu trúc sơ đồ, các thành viên có thể mở file ảnh PNG trên hoặc mở file `.drawio` bằng công cụ [Draw.io](https://app.diagrams.net/) hoặc extension Draw.io trên VS Code / IDE.
+* File nguồn Draw.io có thể mở và chỉnh sửa trực tiếp:
+  * **Conceptual:** [conceptual-erd-v1.0.0.drawio](./conceptual-erd-v1.0.0.drawio) (ảnh: [conceptual-erd-v1.0.0.drawio.png](./conceptual-erd-v1.0.0.drawio.png))
+  * **Logical:** [logical-erd-v1.0.0.drawio](./logical-erd-v1.0.0.drawio)
+  * **Physical:** [physical-erd-v1.0.0.drawio](./physical-erd-v1.0.0.drawio) (ảnh: [physical-erd-v1.0.0.drawio.png](./physical-erd-v1.0.0.drawio.png) — Mô hình vật lý Microsoft SQL Server 2019)
+* Để xem trực quan cấu trúc sơ đồ, các thành viên có thể mở file ảnh PNG trên hoặc mở các file `.drawio` bằng công cụ [Draw.io](https://app.diagrams.net/) hoặc extension Draw.io trên VS Code / IDE.
 * *Lưu ý quy trình:* Thiết kế vật lý và phân rã cơ sở dữ liệu do lập trình viên phụ trách triển khai; tác vụ tài liệu bảo toàn ranh giới khái niệm mà không tự ý sửa đổi file sơ đồ vẽ.
 
 ---
@@ -164,6 +170,11 @@ Sơ đồ ERD trong thư mục này dừng ở mức **Khái niệm (Conceptual)
 ## 5. Quy Ước Đặt Tên và Quản Lý Tệp
 
 * **Vị trí thư mục:** `docs/diagrams/ERD/`
-* **File sơ đồ Draw.io gốc:** `conceptual-erd-v[version].drawio` (Ví dụ: `conceptual-erd-v1.0.0.drawio`)
-* **File hình ảnh xuất ra:** `conceptual-erd-v[version].drawio.png` (Ví dụ: `conceptual-erd-v1.0.0.drawio.png`)
-* **Quy trình cập nhật:** Khi có điều chỉnh về danh mục thực thể theo quyết định kiến trúc mới, cần cập nhật file Draw.io, xuất lại ảnh PNG tương ứng, và cập nhật số phiên bản trong file `README.md` này.
+* **Quy ước đặt tên tệp sơ đồ Draw.io:**
+  * **Conceptual ERD:** `conceptual-erd-v[version].drawio` (Hiện tại: `conceptual-erd-v1.0.0.drawio`)
+  * **Logical ERD:** `logical-erd-v[version].drawio` (Hiện tại: `logical-erd-v1.0.0.drawio`)
+  * **Physical ERD:** `physical-erd-v[version].drawio` (Hiện tại: `physical-erd-v1.0.0.drawio`)
+* **File hình ảnh xuất ra:** `[loại-erd]-v[version].drawio.png` (Ví dụ: `conceptual-erd-v1.0.0.drawio.png`, `physical-erd-v1.0.0.drawio.png`)
+* **Từ điển dữ liệu vật lý:** `data-dictionary.md` (Phiên bản v0.4.0)
+* **Quy trình cập nhật:** Khi có điều chỉnh về danh mục thực thể theo quyết định kiến trúc mới, cần cập nhật các file Draw.io tương ứng, xuất lại ảnh PNG, và cập nhật số phiên bản trong file `README.md` này.
+

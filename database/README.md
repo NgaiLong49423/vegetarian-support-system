@@ -1,20 +1,20 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.1.2
+> **Version:** v0.2.0  
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-22
+> **Last Updated:** 2026-09-23  
 > **Status:** Under Review  
 
 # Database Workspace
 
-Database chính đã chốt là Microsoft SQL Server. Repository hiện có ba file SQL rỗng (`schema.sql`, `sample-data.sql`, `queries.sql`); chúng chưa mô tả schema đã duyệt và không phải bằng chứng database có thể khởi tạo.
+Database chính đã chốt là Microsoft SQL Server. Lược đồ cơ sở dữ liệu đã được hoàn thiện trong khuôn khổ [Issue #63](https://github.com/NgaiLong49423/vegetarian-support-system/issues/63) với 22 bảng, 38 khóa ngoại và chính sách chống multiple cascade paths (lỗi SQL Server Error 1785).
 
 ## Quyền sở hữu dữ liệu
 
-- Flyway migration trong backend là lịch sử thay đổi schema có thẩm quyền và phải append-only sau khi đã chia sẻ.
-- `database/schema.sql` chỉ nên là snapshot/manual bootstrap được sinh hoặc đồng bộ có chủ đích; không được âm thầm đi trước hoặc mâu thuẫn với Flyway.
+- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql`) là lịch sử thay đổi schema có thẩm quyền và phải append-only sau khi đã chia sẻ.
+- `database/schema.sql` là snapshot/manual bootstrap độc lập được đồng bộ có chủ đích từ Flyway baseline; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
 - `database/sample-data.sql` chỉ chứa dữ liệu demo giả, không chứa tài khoản thật, credential hoặc dữ liệu cá nhân.
-- `database/queries.sql` dành cho truy vấn kiểm tra có giải thích; không thay thế automated integration tests.
+- `database/queries.sql` chứa kịch bản kiểm tra đối tượng, bộ test tự động xác minh các ràng buộc nghiệp vụ (positive/negative) có cơ chế rollback, và các truy vấn mẫu cho tầng ứng dụng; không thay thế automated integration tests.
 
 ## Quy trình thay đổi schema
 
@@ -27,6 +27,10 @@ Database chính đã chốt là Microsoft SQL Server. Repository hiện có ba f
 
 ## Trạng thái thiết kế
 
-Conceptual ERD đã có và đã được rà soát; Logical/Physical ERD và Flyway migration chưa hoàn thiện. Không tự suy ra bảng vật lý chỉ từ danh sách dữ liệu gợi ý trong SRS; cần hoàn thiện data model và review trước khi coi schema là baseline có thể triển khai.
+- **Conceptual ERD:** 22 thực thể, 36 connector (Đã duyệt).
+- **Logical ERD:** `docs/diagrams/ERD/logical-erd-v1.0.0.drawio` (Đã duyệt, commit `cb404f7`).
+- **Data Dictionary:** `docs/diagrams/ERD/data-dictionary.md` v0.4.0 (Đã điền đủ 9 cột Physical cho 22 bảng).
+- **Schema & Migration:** `V1__baseline_schema.sql` và `database/schema.sql` đã được kiểm thử chạy thành công 100% trên database sạch Microsoft SQL Server 2019 thật (`.\SQLEXPRESS`).
 
 Xem [SRS](../docs/requirements/SRS.md), [ERD workspace](../docs/diagrams/ERD/README.md) và [Technology Stack](../docs/architecture/TECHNOLOGY-STACK.md).
+

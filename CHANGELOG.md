@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.30.0
+> **Version:** v2.31.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-23
 > **Status:** Active
@@ -8,6 +8,29 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-23 — Implement Physical ERD, SQL Server Baseline Migration, and Data Integrity Test Suite
+
+**Status:** Working tree — not committed.
+
+**Scope:** Complete Phase 2 database modeling for Issue #63, delivering the physical ERD, Flyway baseline schema migration, standalone bootstrap script, comprehensive physical data dictionary, and automated integrity validation query suite for Microsoft SQL Server 2019.
+
+### Added
+
+- Add Flyway baseline migration `V1__baseline_schema.sql` under `app/mamxanh-backend/src/main/resources/db/migration/` establishing 22 core tables, 38 foreign keys, 21 indexes (including 5 filtered unique indexes), 41 check constraints, 52 default constraints, and initial seed data for 15 standard measurement units without JDBC-incompatible batch separators.
+- Add standalone bootstrap script `database/schema.sql` with `GO` batch delimiters and ANSI settings (`SET ANSI_NULLS ON;`, `SET QUOTED_IDENTIFIER ON;`) for SSMS and `sqlcmd`.
+- Add `docs/diagrams/ERD/physical-erd-v1.0.0.drawio` defining the physical ERD with exact SQL Server 2019 data types, primary keys, foreign keys, and 36 entity relationship connectors in Crow's Foot notation, along with exported diagram image `docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png`.
+- Add comprehensive diagnostic and automated test suite in `database/queries.sql` featuring schema catalog auditing, 15 transactional positive and negative test cases verifying key constraints and cascade path behaviors, and core operational queries.
+
+### Changed
+
+- Update `docs/diagrams/ERD/data-dictionary.md` to version `v0.4.0`, completing all nine physical specification columns across 22 tables (178 entity columns), documenting the resolution of SQL Server multiple cascade path Error 1785, and checking off Phase 2 delivery milestones.
+- Update `database/README.md` to version `v0.2.0` with step-by-step guidance for running the Flyway baseline migration, executing `schema.sql`, and running the automated test suite.
+- Update `docs/diagrams/ERD/README.md` to version `v1.11.0` linking the newly created Physical ERD and updating workspace status.
+
+### Fixed
+
+- Eliminate multiple cascade path conflict (SQL Server Error 1785) across interrelated entities (`COMMENT`, `USER_FOLLOW`, `REPORT`) by restricting `ON DELETE CASCADE` strictly to four parent-child ownership relationships, applying `SET NULL` for guest recipe views, and setting the remaining 33 foreign keys to `NO ACTION`.
 
 ## 2026-09-23 — Align Social, Recipe Comparison, Nutrition, and Expert Requirements
 
