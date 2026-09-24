@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-23 — Implement Physical ERD, SQL Server Baseline Migration, and Data Integrity Test Suite
 
-**Status:** Working tree — not committed.
+**Status:** Committed — ae61073.
 
 **Scope:** Complete Phase 2 database modeling for Issue #63, delivering the physical ERD, Flyway baseline schema migration, standalone bootstrap script, comprehensive physical data dictionary, and automated integrity validation query suite for Microsoft SQL Server 2019.
 
