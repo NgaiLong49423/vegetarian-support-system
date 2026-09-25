@@ -4,9 +4,9 @@
 -- Project         : Mâm Xanh — Vegetarian Support System (SWP391)
 -- Issue           : Refs #63 — Pha 2 Physical ERD & Schema
 -- Author          : Trương Văn Khải
--- Date            : 2026-09-23
--- Source          : Logical ERD v1.0.0 + Data Dictionary v0.3.0
---                   (Nguyễn Hải Dương — Pha 1, commit cb404f7)
+-- Date            : 2026-09-25
+-- Source          : Logical ERD v1.0.0 + Data Dictionary v0.6.0
+--                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
 -- Synchronized with: V1__baseline_schema.sql (Flyway baseline)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -62,18 +62,20 @@ GO
 
 -- 1.2 INGREDIENT — Standard ingredient dictionary with 9 nutrition indicators
 -- Source: Data Dictionary 4.18, FR-39/41, BR-44/49/51/52/53
+-- Nutrition indicators are NULLable: NULL = no data yet; 0 = true measured zero.
+-- nutrition_supported = 1 requires all 9 indicators and source_url NOT NULL (Q5, BR-52).
 CREATE TABLE [INGREDIENT] (
     ingredient_id         BIGINT         IDENTITY(1,1)  NOT NULL,
     name                  NVARCHAR(200)  NOT NULL,
-    energy_kcal_100g      DECIMAL(10,2)  NOT NULL,
-    protein_g_100g        DECIMAL(10,2)  NOT NULL,
-    carbohydrate_g_100g   DECIMAL(10,2)  NOT NULL,
-    total_fat_g_100g      DECIMAL(10,2)  NOT NULL,
-    fiber_g_100g          DECIMAL(10,2)  NOT NULL,
-    calcium_mg_100g       DECIMAL(10,2)  NOT NULL,
-    iron_mg_100g          DECIMAL(10,2)  NOT NULL,
-    vitamin_b12_mcg_100g  DECIMAL(10,4)  NOT NULL,
-    zinc_mg_100g          DECIMAL(10,2)  NOT NULL,
+    energy_kcal_100g      DECIMAL(10,2)  NULL,
+    protein_g_100g        DECIMAL(10,2)  NULL,
+    carbohydrate_g_100g   DECIMAL(10,2)  NULL,
+    total_fat_g_100g      DECIMAL(10,2)  NULL,
+    fiber_g_100g          DECIMAL(10,2)  NULL,
+    calcium_mg_100g       DECIMAL(10,2)  NULL,
+    iron_mg_100g          DECIMAL(10,2)  NULL,
+    vitamin_b12_mcg_100g  DECIMAL(10,4)  NULL,
+    zinc_mg_100g          DECIMAL(10,2)  NULL,
     source_name           NVARCHAR(200)  NOT NULL,
     source_url            VARCHAR(2048)  NULL,
     reference_date        DATE           NOT NULL,
@@ -88,7 +90,21 @@ CREATE TABLE [INGREDIENT] (
 
     CONSTRAINT PK_INGREDIENT PRIMARY KEY (ingredient_id),
     CONSTRAINT UQ_INGREDIENT_name UNIQUE (name),
-    CONSTRAINT CK_INGREDIENT_status CHECK (status IN ('ACTIVE', 'INACTIVE'))
+    CONSTRAINT CK_INGREDIENT_status CHECK (status IN ('ACTIVE', 'INACTIVE')),
+    CONSTRAINT CK_INGREDIENT_nutrition_supported CHECK (
+        nutrition_supported = 0 OR (
+            energy_kcal_100g IS NOT NULL
+            AND protein_g_100g IS NOT NULL
+            AND carbohydrate_g_100g IS NOT NULL
+            AND total_fat_g_100g IS NOT NULL
+            AND fiber_g_100g IS NOT NULL
+            AND calcium_mg_100g IS NOT NULL
+            AND iron_mg_100g IS NOT NULL
+            AND vitamin_b12_mcg_100g IS NOT NULL
+            AND zinc_mg_100g IS NOT NULL
+            AND source_url IS NOT NULL
+        )
+    )
 );
 GO
 
@@ -97,8 +113,8 @@ GO
 -- SECTION 2: Core User Table
 -- ============================================================================
 
--- 2.1 USER — Account, role, profile, health metrics (merged User Profile)
--- Source: Data Dictionary 4.1, FR-03/23/31/35/38/49, BR-17/18/24/26/30/39/42
+-- 2.1 USER — Account, role, profile, health metrics, onboarding (merged User Profile)
+-- Source: Data Dictionary 4.1, FR-03/23/31/35/38/49, BR-17/18/24/26/30/39/42, Q7, Q12
 -- NOTE: [USER] requires brackets — reserved word in SQL Server.
 CREATE TABLE [USER] (
     user_id                    BIGINT         IDENTITY(1,1)  NOT NULL,
@@ -132,6 +148,14 @@ CREATE TABLE [USER] (
         CONSTRAINT DF_USER_nutrition_scope DEFAULT 0,
     reply_email_enabled        BIT            NOT NULL
         CONSTRAINT DF_USER_reply_email DEFAULT 1,
+    date_of_birth              DATE           NULL,
+    nutrition_goal             VARCHAR(20)    NULL,
+    onboarding_status          VARCHAR(20)    NOT NULL
+        CONSTRAINT DF_USER_onboarding_status DEFAULT 'NOT_STARTED',
+    avoid_none_confirmed       BIT            NOT NULL
+        CONSTRAINT DF_USER_avoid_none_confirmed DEFAULT 0,
+    dislike_none_confirmed     BIT            NOT NULL
+        CONSTRAINT DF_USER_dislike_none_confirmed DEFAULT 0,
     created_at                 DATETIME2(7)   NOT NULL
         CONSTRAINT DF_USER_created_at DEFAULT SYSUTCDATETIME(),
     updated_at                 DATETIME2(7)   NOT NULL
@@ -151,8 +175,16 @@ CREATE TABLE [USER] (
     CONSTRAINT CK_USER_height_cm CHECK (height_cm BETWEEN 100.0 AND 250.0),
     CONSTRAINT CK_USER_weight_kg CHECK (weight_kg BETWEEN 30.0 AND 300.0),
     CONSTRAINT CK_USER_activity_level CHECK (
-        activity_level IN ('SEDENTARY', 'LIGHTLY_ACTIVE', 'MODERATELY_ACTIVE',
-                           'VERY_ACTIVE', 'EXTRA_ACTIVE')
+        activity_level IN ('SEDENTARY', 'LIGHTLY_ACTIVE', 'MODERATELY_ACTIVE', 'VERY_ACTIVE')
+    ),
+    CONSTRAINT CK_USER_date_of_birth CHECK (
+        date_of_birth >= '1900-01-01' AND date_of_birth <= CAST(GETDATE() AS DATE)
+    ),
+    CONSTRAINT CK_USER_nutrition_goal CHECK (
+        nutrition_goal IN ('MAINTAIN_WEIGHT', 'IMPROVE_HEALTH', 'SUPPORT_TRAINING')
+    ),
+    CONSTRAINT CK_USER_onboarding_status CHECK (
+        onboarding_status IN ('NOT_STARTED', 'SKIPPED', 'COMPLETED')
     )
 );
 GO
@@ -187,8 +219,11 @@ CREATE TABLE [USER_FOLLOW] (
 );
 GO
 
--- 3.2 USER_INGREDIENT_PREFERENCE — Allergy / Avoid / Dislike declarations
--- Source: Data Dictionary 4.3, FR-31, BR-13/30
+-- 3.2 USER_INGREDIENT_PREFERENCE — Avoid / Dislike declarations (Q11, FR-31, BR-13/30)
+-- preference_type: 'AVOID' (gộp ALLERGY) or 'DISLIKE'.
+-- Must declare standard ingredient_id OR custom_ingredient_name (or both).
+-- Custom name must not be blank or whitespace-only.
+-- Filtered unique indexes enforce max 1 preference per ingredient per user (Q11b).
 CREATE TABLE [USER_INGREDIENT_PREFERENCE] (
     preference_id           BIGINT         IDENTITY(1,1)  NOT NULL,
     user_id                 BIGINT         NOT NULL,
@@ -204,7 +239,14 @@ CREATE TABLE [USER_INGREDIENT_PREFERENCE] (
     CONSTRAINT FK_UIP_INGREDIENT FOREIGN KEY (ingredient_id)
         REFERENCES [INGREDIENT](ingredient_id) ON DELETE NO ACTION,
     CONSTRAINT CK_UIP_preference_type CHECK (
-        preference_type IN ('ALLERGY', 'AVOID', 'DISLIKE')
+        preference_type IN ('AVOID', 'DISLIKE')
+    ),
+    CONSTRAINT CK_UIP_target CHECK (
+        ingredient_id IS NOT NULL OR custom_ingredient_name IS NOT NULL
+    ),
+    CONSTRAINT CK_UIP_custom_name_not_blank CHECK (
+        custom_ingredient_name IS NULL
+        OR LEN(TRIM(NCHAR(9)+NCHAR(10)+NCHAR(13)+NCHAR(32)+NCHAR(160) FROM custom_ingredient_name)) > 0
     )
 );
 GO
@@ -251,7 +293,10 @@ GO
 
 -- 4.1 RECIPE_POST — Recipe article authored by Expert
 -- Source: Data Dictionary 4.5, FR-04/07/08/16/17/25/28/44/57/58, BR-07/10/19/20/27/43/62/69-72
--- Tech Lead decisions Q1 (dish_category 11 codes) and Q2 (3 counters, 3NF exception)
+-- Default status: 'PUBLISHED' (no server-side drafts; FE holds unposted state).
+-- Status values: 'PUBLISHED', 'HIDDEN', 'DELETED' (tombstone soft-delete).
+-- instructions: 10..5000 chars (CK_RECIPE_POST_instructions_len).
+-- total time: prep + cook > 0 (CK_RECIPE_POST_total_time).
 CREATE TABLE [RECIPE_POST] (
     recipe_id       BIGINT          IDENTITY(1,1)  NOT NULL,
     author_id       BIGINT          NOT NULL,
@@ -266,7 +311,7 @@ CREATE TABLE [RECIPE_POST] (
     cook_time_min   INT             NOT NULL,
     youtube_url     VARCHAR(2048)   NULL,
     status          VARCHAR(20)     NOT NULL
-        CONSTRAINT DF_RECIPE_POST_status DEFAULT 'DRAFT',
+        CONSTRAINT DF_RECIPE_POST_status DEFAULT 'PUBLISHED',
     published_at    DATETIME2(7)    NULL,
     created_at      DATETIME2(7)    NOT NULL
         CONSTRAINT DF_RECIPE_POST_created_at DEFAULT SYSUTCDATETIME(),
@@ -283,7 +328,7 @@ CREATE TABLE [RECIPE_POST] (
     CONSTRAINT FK_RECIPE_POST_USER FOREIGN KEY (author_id)
         REFERENCES [USER](user_id) ON DELETE NO ACTION,
     CONSTRAINT CK_RECIPE_POST_title_len CHECK (LEN(title) >= 3),
-    CONSTRAINT CK_RECIPE_POST_instructions_len CHECK (LEN(instructions) >= 10),
+    CONSTRAINT CK_RECIPE_POST_instructions_len CHECK (LEN(instructions) BETWEEN 10 AND 5000),
     CONSTRAINT CK_RECIPE_POST_dish_category CHECK (
         dish_category IN ('NOODLE_SOUP', 'STIR_FRY', 'HOT_POT', 'BRAISED',
                           'SOUP', 'FRIED', 'STEAMED', 'SALAD', 'ROLL',
@@ -298,8 +343,9 @@ CREATE TABLE [RECIPE_POST] (
     CONSTRAINT CK_RECIPE_POST_servings CHECK (servings BETWEEN 1 AND 50),
     CONSTRAINT CK_RECIPE_POST_prep_time CHECK (prep_time_min BETWEEN 0 AND 1440),
     CONSTRAINT CK_RECIPE_POST_cook_time CHECK (cook_time_min BETWEEN 0 AND 1440),
+    CONSTRAINT CK_RECIPE_POST_total_time CHECK (prep_time_min + cook_time_min > 0),
     CONSTRAINT CK_RECIPE_POST_status CHECK (
-        status IN ('DRAFT', 'PUBLISHED', 'HIDDEN')
+        status IN ('PUBLISHED', 'HIDDEN', 'DELETED')
     ),
     CONSTRAINT CK_RECIPE_POST_like_count CHECK (like_count >= 0),
     CONSTRAINT CK_RECIPE_POST_dislike_count CHECK (dislike_count >= 0),
@@ -309,7 +355,8 @@ GO
 
 -- 4.2 RECIPE_MEDIA — 0..5 images on Azure Blob Storage per recipe
 -- Source: Data Dictionary 4.6, FR-14/17, BR-11/20
--- CASCADE: media belongs to recipe — delete recipe deletes all its media
+-- UQ_RECIPE_MEDIA_order + display_order BETWEEN 1 AND 5 limits to at most 5 images.
+-- CASCADE: media belongs to recipe — delete recipe deletes all its media.
 CREATE TABLE [RECIPE_MEDIA] (
     media_id       BIGINT         IDENTITY(1,1)  NOT NULL,
     recipe_id      BIGINT         NOT NULL,
@@ -322,6 +369,8 @@ CREATE TABLE [RECIPE_MEDIA] (
     CONSTRAINT PK_RECIPE_MEDIA PRIMARY KEY (media_id),
     CONSTRAINT FK_RECIPE_MEDIA_RECIPE_POST FOREIGN KEY (recipe_id)
         REFERENCES [RECIPE_POST](recipe_id) ON DELETE CASCADE,
+    CONSTRAINT UQ_RECIPE_MEDIA_order UNIQUE (recipe_id, display_order),
+    CONSTRAINT CK_RECIPE_MEDIA_display_order CHECK (display_order BETWEEN 1 AND 5),
     CONSTRAINT CK_RECIPE_MEDIA_mime_type CHECK (
         mime_type IN ('image/jpeg', 'image/png', 'image/webp')
     )
@@ -330,7 +379,9 @@ GO
 
 -- 4.3 RECIPE_INGREDIENT — Ingredient line with positive quantity and standard unit
 -- Source: Data Dictionary 4.7, FR-16/19, BR-12/13/14/19/73
--- CASCADE: ingredients belong to recipe — delete recipe deletes its ingredient list
+-- Must have ingredient_id OR custom_ingredient_name (or both).
+-- Custom name must not be blank or whitespace-only.
+-- CASCADE: ingredients belong to recipe — delete recipe deletes its ingredient list.
 CREATE TABLE [RECIPE_INGREDIENT] (
     recipe_ingredient_id   BIGINT         IDENTITY(1,1)  NOT NULL,
     recipe_id              BIGINT         NOT NULL,
@@ -346,7 +397,14 @@ CREATE TABLE [RECIPE_INGREDIENT] (
         REFERENCES [INGREDIENT](ingredient_id) ON DELETE NO ACTION,
     CONSTRAINT FK_RECIPE_INGREDIENT_UNIT FOREIGN KEY (unit_id)
         REFERENCES [UNIT](unit_id) ON DELETE NO ACTION,
-    CONSTRAINT CK_RECIPE_INGREDIENT_quantity CHECK (quantity > 0)
+    CONSTRAINT CK_RECIPE_INGREDIENT_quantity CHECK (quantity > 0),
+    CONSTRAINT CK_RECIPE_INGREDIENT_target CHECK (
+        ingredient_id IS NOT NULL OR custom_ingredient_name IS NOT NULL
+    ),
+    CONSTRAINT CK_RECIPE_INGREDIENT_custom_name_not_blank CHECK (
+        custom_ingredient_name IS NULL
+        OR LEN(TRIM(NCHAR(9)+NCHAR(10)+NCHAR(13)+NCHAR(32)+NCHAR(160) FROM custom_ingredient_name)) > 0
+    )
 );
 GO
 
@@ -398,14 +456,17 @@ CREATE TABLE [RECIPE_VIEW] (
 );
 GO
 
--- 5.3 COMMENT — Nested comments (self-referencing, max depth 5)
--- Source: Data Dictionary 4.10, FR-46, BR-66
--- All 3 FKs use NO ACTION (error 1785: multiple paths to USER via RECIPE_POST)
+-- 5.3 COMMENT — Nested comments (self-referencing, max depth 5, Q8, BR-66)
+-- UQ_COMMENT_id_recipe_depth enables composite FK guaranteeing replies share
+-- same recipe_id and parent_depth = parent.depth.
+-- CK_COMMENT_root_reply guarantees root comments have depth=1 and child comments
+-- have depth = parent_depth + 1.
 CREATE TABLE [COMMENT] (
     comment_id         BIGINT          IDENTITY(1,1)  NOT NULL,
     recipe_id          BIGINT          NOT NULL,
     user_id            BIGINT          NOT NULL,
     parent_comment_id  BIGINT          NULL,
+    parent_depth       INT             NULL,
     content            NVARCHAR(2000)  NOT NULL,
     depth              INT             NOT NULL
         CONSTRAINT DF_COMMENT_depth DEFAULT 1,
@@ -417,13 +478,18 @@ CREATE TABLE [COMMENT] (
         CONSTRAINT DF_COMMENT_updated_at DEFAULT SYSUTCDATETIME(),
 
     CONSTRAINT PK_COMMENT PRIMARY KEY (comment_id),
+    CONSTRAINT UQ_COMMENT_id_recipe_depth UNIQUE (comment_id, recipe_id, depth),
     CONSTRAINT FK_COMMENT_RECIPE FOREIGN KEY (recipe_id)
         REFERENCES [RECIPE_POST](recipe_id) ON DELETE NO ACTION,
     CONSTRAINT FK_COMMENT_USER FOREIGN KEY (user_id)
         REFERENCES [USER](user_id) ON DELETE NO ACTION,
-    CONSTRAINT FK_COMMENT_PARENT FOREIGN KEY (parent_comment_id)
-        REFERENCES [COMMENT](comment_id) ON DELETE NO ACTION,
-    CONSTRAINT CK_COMMENT_depth CHECK (depth BETWEEN 1 AND 5)
+    CONSTRAINT FK_COMMENT_PARENT FOREIGN KEY (parent_comment_id, recipe_id, parent_depth)
+        REFERENCES [COMMENT](comment_id, recipe_id, depth) ON DELETE NO ACTION,
+    CONSTRAINT CK_COMMENT_depth CHECK (depth BETWEEN 1 AND 5),
+    CONSTRAINT CK_COMMENT_root_reply CHECK (
+        (parent_comment_id IS NULL AND parent_depth IS NULL AND depth = 1)
+        OR (parent_comment_id IS NOT NULL AND parent_depth IS NOT NULL AND depth = parent_depth + 1)
+    )
 );
 GO
 
@@ -507,7 +573,7 @@ CREATE TABLE [NOTIFICATION] (
         CONSTRAINT DF_NOTIFICATION_created_at DEFAULT SYSUTCDATETIME(),
     read_at            DATETIME2(7)    NULL,
 
-    CONSTRAINT PK_NOTIFICATION PRIMARY KEY (notification_id),
+    CONSTRAINT PK_NOTIFICATION PRIMARY KEY (user_id, notification_id),
     CONSTRAINT FK_NOTIFICATION_USER FOREIGN KEY (user_id)
         REFERENCES [USER](user_id) ON DELETE NO ACTION,
     CONSTRAINT FK_NOTIFICATION_COMMENT FOREIGN KEY (comment_id)
@@ -522,8 +588,10 @@ GO
 -- SECTION 7: Meal Planning & Shopping
 -- ============================================================================
 
--- 7.1 MEAL_PLAN — Weekly meal plan (Mon–Sun, 3 meals/day)
--- Source: Data Dictionary 4.14, FR-09, BR-32/36
+-- 7.1 MEAL_PLAN — Weekly meal plan (Mon–Sun, 3 meals/day, Q3, FR-09, BR-32/36)
+-- week_start_date must be Monday (DATEDIFF % 7 = 0 from 1900-01-01, independent of DATEFIRST).
+-- At most 1 meal plan per user per week (UQ_MEAL_PLAN_user_week).
+-- UQ_MEAL_PLAN_id_week target of composite FK from MEAL_PLAN_ENTRY.
 CREATE TABLE [MEAL_PLAN] (
     meal_plan_id     BIGINT        IDENTITY(1,1)  NOT NULL,
     user_id          BIGINT        NOT NULL,
@@ -535,25 +603,33 @@ CREATE TABLE [MEAL_PLAN] (
 
     CONSTRAINT PK_MEAL_PLAN PRIMARY KEY (meal_plan_id),
     CONSTRAINT FK_MEAL_PLAN_USER FOREIGN KEY (user_id)
-        REFERENCES [USER](user_id) ON DELETE NO ACTION
+        REFERENCES [USER](user_id) ON DELETE NO ACTION,
+    CONSTRAINT UQ_MEAL_PLAN_user_week UNIQUE (user_id, week_start_date),
+    CONSTRAINT UQ_MEAL_PLAN_id_week UNIQUE (meal_plan_id, week_start_date),
+    CONSTRAINT CK_MEAL_PLAN_week_start_monday CHECK (
+        DATEDIFF(DAY, CONVERT(DATE, '19000101', 112), week_start_date) % 7 = 0
+    )
 );
 GO
 
 -- 7.2 MEAL_PLAN_ENTRY — Recipe assigned to a specific day and meal slot
--- Source: Data Dictionary 4.15, FR-33/37, BR-35/36/37/47
--- CASCADE: entries belong to plan — delete plan deletes all entries
--- UNIQUE on (plan, date, meal_type, recipe): no duplicate recipe in same slot
+-- Source: Data Dictionary 4.15, FR-33/37, BR-35/36/37/47, Q8
+-- Computed column meal_week_start calculates the Monday for meal_date.
+-- FK_MPE_MEAL_PLAN composite FK to (meal_plan_id, week_start_date) strictly enforces
+-- meal_date must fall within the 7 days of the parent meal plan's week.
+-- CASCADE: delete meal plan deletes all its entries.
 CREATE TABLE [MEAL_PLAN_ENTRY] (
     meal_plan_entry_id  BIGINT        IDENTITY(1,1)  NOT NULL,
     meal_plan_id        BIGINT        NOT NULL,
     recipe_id           BIGINT        NOT NULL,
     meal_date           DATE          NOT NULL,
+    meal_week_start     AS CONVERT(DATE, DATEADD(DAY, -(DATEDIFF(DAY, CONVERT(DATE, '19000101', 112), meal_date) % 7), meal_date)) PERSISTED NOT NULL,
     meal_type           VARCHAR(10)   NOT NULL,
     planned_servings    DECIMAL(5,1)  NOT NULL,
 
     CONSTRAINT PK_MEAL_PLAN_ENTRY PRIMARY KEY (meal_plan_entry_id),
-    CONSTRAINT FK_MPE_MEAL_PLAN FOREIGN KEY (meal_plan_id)
-        REFERENCES [MEAL_PLAN](meal_plan_id) ON DELETE CASCADE,
+    CONSTRAINT FK_MPE_MEAL_PLAN FOREIGN KEY (meal_plan_id, meal_week_start)
+        REFERENCES [MEAL_PLAN](meal_plan_id, week_start_date) ON DELETE CASCADE,
     CONSTRAINT FK_MPE_RECIPE FOREIGN KEY (recipe_id)
         REFERENCES [RECIPE_POST](recipe_id) ON DELETE NO ACTION,
     CONSTRAINT CK_MPE_meal_type CHECK (
@@ -585,7 +661,9 @@ GO
 
 -- 7.4 SHOPPING_LIST_ITEM — Individual item to buy
 -- Source: Data Dictionary 4.17, FR-53/54, BR-12/14/73
--- CASCADE: items belong to list — delete list deletes all items
+-- Must have ingredient_id OR custom_ingredient_name (or both).
+-- Custom name must not be blank or whitespace-only.
+-- CASCADE: items belong to list — delete list deletes all items.
 CREATE TABLE [SHOPPING_LIST_ITEM] (
     shopping_list_item_id  BIGINT         IDENTITY(1,1)  NOT NULL,
     shopping_list_id       BIGINT         NOT NULL,
@@ -603,7 +681,14 @@ CREATE TABLE [SHOPPING_LIST_ITEM] (
         REFERENCES [INGREDIENT](ingredient_id) ON DELETE NO ACTION,
     CONSTRAINT FK_SLI_UNIT FOREIGN KEY (unit_id)
         REFERENCES [UNIT](unit_id) ON DELETE NO ACTION,
-    CONSTRAINT CK_SLI_quantity CHECK (quantity > 0)
+    CONSTRAINT CK_SLI_quantity CHECK (quantity > 0),
+    CONSTRAINT CK_SLI_target CHECK (
+        ingredient_id IS NOT NULL OR custom_ingredient_name IS NOT NULL
+    ),
+    CONSTRAINT CK_SLI_custom_name_not_blank CHECK (
+        custom_ingredient_name IS NULL
+        OR LEN(TRIM(NCHAR(9)+NCHAR(10)+NCHAR(13)+NCHAR(32)+NCHAR(160) FROM custom_ingredient_name)) > 0
+    )
 );
 GO
 
@@ -638,8 +723,10 @@ GO
 -- SECTION 9: Subscription & Payment
 -- ============================================================================
 
--- 9.1 SUBSCRIPTION — Membership tier (FREE / PLUS / PRO) with validity period
--- Source: Data Dictionary 4.21, FR-10/13, BR-01/02/03
+-- 9.1 SUBSCRIPTION — Membership tier (PLUS / PRO) with validity period (Q9, Q10)
+-- Tier values: 'PLUS', 'PRO' (FREE tier is default entitlement, not stored in DB).
+-- ends_at must be strictly greater than starts_at.
+-- UQ_SUBSCRIPTION_active filtered unique index enforces max 1 ACTIVE subscription per user.
 CREATE TABLE [SUBSCRIPTION] (
     subscription_id  BIGINT        IDENTITY(1,1)  NOT NULL,
     user_id          BIGINT        NOT NULL,
@@ -656,10 +743,11 @@ CREATE TABLE [SUBSCRIPTION] (
     CONSTRAINT PK_SUBSCRIPTION PRIMARY KEY (subscription_id),
     CONSTRAINT FK_SUBSCRIPTION_USER FOREIGN KEY (user_id)
         REFERENCES [USER](user_id) ON DELETE NO ACTION,
-    CONSTRAINT CK_SUBSCRIPTION_tier CHECK (tier IN ('FREE', 'PLUS', 'PRO')),
+    CONSTRAINT CK_SUBSCRIPTION_tier CHECK (tier IN ('PLUS', 'PRO')),
     CONSTRAINT CK_SUBSCRIPTION_status CHECK (
         status IN ('ACTIVE', 'EXPIRED', 'CANCELLED')
-    )
+    ),
+    CONSTRAINT CK_SUBSCRIPTION_period CHECK (ends_at > starts_at)
 );
 GO
 
@@ -721,6 +809,24 @@ CREATE UNIQUE NONCLUSTERED INDEX UQ_REPORT_open_comment
     ON [REPORT](reporter_id, comment_id)
     WHERE comment_id IS NOT NULL
       AND status IN ('PENDING', 'PROCESSING');
+GO
+
+-- Constraint #26: At most one preference type per standard ingredient per user (Q11b)
+CREATE UNIQUE NONCLUSTERED INDEX UQ_UIP_user_ingredient
+    ON [USER_INGREDIENT_PREFERENCE](user_id, ingredient_id)
+    WHERE ingredient_id IS NOT NULL;
+GO
+
+-- Constraint #26: At most one preference type per custom ingredient name per user (Q11b)
+CREATE UNIQUE NONCLUSTERED INDEX UQ_UIP_user_custom_name
+    ON [USER_INGREDIENT_PREFERENCE](user_id, custom_ingredient_name)
+    WHERE ingredient_id IS NULL AND custom_ingredient_name IS NOT NULL;
+GO
+
+-- Constraint #27: At most one ACTIVE subscription per user (Q10)
+CREATE UNIQUE NONCLUSTERED INDEX UQ_SUBSCRIPTION_active
+    ON [SUBSCRIPTION](user_id)
+    WHERE status = 'ACTIVE';
 GO
 
 
@@ -830,17 +936,18 @@ GO
 -- ============================================================================
 -- Summary:
 --   22 tables created
---   38 foreign keys defined
+--   38 foreign keys defined (including 2 composite FKs: COMMENT, MEAL_PLAN_ENTRY)
 --    4 composite primary keys (USER_FOLLOW, RECIPE_REACTION, SAVED_RECIPE,
 --      INGREDIENT_UNIT_CONVERSION)
---    4 filtered unique indexes (cover image, pending application,
---      open report on recipe, open report on comment)
+--    7 filtered unique indexes (cover image, pending application,
+--      open report on recipe, open report on comment, UIP user_ingredient,
+--      UIP user_custom_name, active subscription)
 --    1 filtered unique index on USER.google_subject
 --   15 UNIT reference data rows seeded
 --
 -- Cascade policy:
 --   CASCADE  : RECIPE_POST → MEDIA, RECIPE_POST → INGREDIENT,
---              MEAL_PLAN → ENTRY, SHOPPING_LIST → ITEM
+--              MEAL_PLAN → ENTRY (via composite FK), SHOPPING_LIST → ITEM
 --   SET NULL : RECIPE_VIEW.user_id
 --   NO ACTION: all other 33 foreign keys
 -- ============================================================================

@@ -1,13 +1,49 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.31.0
+> **Version:** v2.32.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-23
+> **Last Updated:** 2026-09-25
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-25 — Finalize Database Modeling, Physical ERD, Schema Constraints, and Integrity Test Suite ([PR #66](https://github.com/NgaiLong49423/vegetarian-support-system/pull/66))
+
+**Status:** Uncommitted working tree — Refs #63.
+
+**Scope:** Complete Phase 2 database modeling for Issue #63 addressing Tech Lead review rounds 1 and 2 on PR #66: finalize SQL Server 2019 baseline migration and bootstrap schema with all business check/unique/composite constraints, resolve Draw.io container table layout formatting for physical ERD, update physical data dictionary, and expand verification test suite to 35 test cases.
+
+### Added
+
+- Add composite foreign key constraints enforcing relational hierarchy:
+  - `FK_COMMENT_PARENT` on `(parent_comment_id, recipe_id, parent_depth)` referencing `COMMENT(comment_id, recipe_id, depth)` ensuring replies belong to the same recipe and child depth equals parent depth plus 1.
+  - `FK_MPE_MEAL_PLAN` on `(meal_plan_id, meal_week_start)` referencing `MEAL_PLAN(meal_plan_id, week_start_date)` via persisted computed column `meal_week_start` guaranteeing `meal_date` strictly falls within the target Monday-to-Sunday planning week.
+- Add strict business CHECK and UNIQUE constraints:
+  - `CK_INGREDIENT_nutrition_supported`: requires all 9 nutrition indicators and `source_url` to be NOT NULL when `nutrition_supported = 1` (BR-52, Q5).
+  - `CK_RECIPE_POST_total_time`: enforces `prep_time_min + cook_time_min > 0` (BR-19, FR-16).
+  - `CK_RECIPE_POST_instructions_len`: enforces trimmed length between 10 and 5,000 characters (FR-16, AC-16.5).
+  - `CK_RECIPE_POST_status` and `DF_RECIPE_POST_status`: restricts statuses to `PUBLISHED`, `HIDDEN`, `DELETED` with default `PUBLISHED` (FR-24).
+  - `CK_RECIPE_MEDIA_display_order` (1..5) and `UQ_RECIPE_MEDIA_order` (`recipe_id`, `display_order`): restricts recipe media to at most 5 images (BR-20, FR-14).
+  - `CK_*_target` and `CK_*_custom_name_not_blank` on `USER_INGREDIENT_PREFERENCE`, `RECIPE_INGREDIENT`, and `SHOPPING_LIST_ITEM`: requires at least one of `ingredient_id` or `custom_ingredient_name`, and rejects whitespace-only custom names (BR-12).
+  - `UQ_UIP_user_ingredient` and `UQ_UIP_user_custom_name`: guarantees exactly one active preference type per ingredient per user (FR-31, Q11).
+  - `CK_MEAL_PLAN_week_start_monday` and `UQ_MEAL_PLAN_user_week`: enforces Monday start date (`DATEDIFF(day, '1900-01-01', week_start_date) % 7 = 0`) and one meal plan per user per week (FR-09, Q3).
+  - `CK_SUBSCRIPTION_tier` (`PLUS`, `PRO`), `CK_SUBSCRIPTION_period` (`ends_at > starts_at`), and `UQ_SUBSCRIPTION_active`: restricts paid tiers and prevents concurrent active subscriptions for the same user (FR-13, Q9, Q10).
+  - `CK_USER_date_of_birth` (<= current date and >= 1900-01-01), `CK_USER_activity_level` (4 active levels), `CK_USER_nutrition_goal` (3 active goals), and `CK_USER_onboarding_status` with `DF_USER_onboarding_status` ('NOT_STARTED') (FR-35, Q7, Q12).
+- Add 20 new test cases (TC16–TC35) to `database/queries.sql` asserting exact constraint names in `ERROR_MESSAGE()`, bringing the test suite to 35 test cases (66/66 test assertions PASS 100%).
+
+### Changed
+
+- Update `V1__baseline_schema.sql` and `database/schema.sql`: make all 9 `INGREDIENT` nutrition columns nullable (`NULL`) while preserving default `nutrition_supported = 0` (Q5).
+- Update `docs/diagrams/ERD/physical-erd-v1.0.0.drawio` and exported image `physical-erd-v1.0.0.drawio.png`: format all 22 tables and 196 physical columns with exact data types, nullability, primary/foreign/unique/check constraints, default values, and index indicators (Review Round 1 Point 1); synchronize 37 Crow's Foot connectors from Logical ERD v1.0.0; resolve container table layout styling to ensure correct row ordering and visible headers.
+- Update `docs/diagrams/ERD/data-dictionary.md` to version `v0.7.0`: remove all pending `⏳` markers for implemented items, update Section 1 status, and document Phase 2 completion in Section 8.
+- Update `database/README.md` to version `v0.3.0` with verified object counts (22 tables, 38 FKs, 56 checks, 55 defaults, 10 filtered indexes, 182 custom indexes, 35 test cases) and `sqlcmd` execution instructions.
+
+### Fixed
+
+- Fix Draw.io table row ordering and header occlusion for `COMMENT` and `MEAL_PLAN_ENTRY` by positioning added physical columns sequentially in table geometry.
+- Fix negative length assertion test in `database/queries.sql` to be UTF-8 encoding agnostic across CLI environments.
 
 ## 2026-09-23 — Implement Physical ERD, SQL Server Baseline Migration, and Data Integrity Test Suite
 
