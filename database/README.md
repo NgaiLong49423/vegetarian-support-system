@@ -1,13 +1,13 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.4.0  
+> **Version:** v0.4.1  
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-25  
 > **Status:** Under Review  
 
 # Database Workspace
 
-Database chính đã chốt là Microsoft SQL Server 2019. Lược đồ cơ sở dữ liệu đã được hoàn thiện đầy đủ trong khuôn khổ [Issue #63](https://github.com/NgaiLong49423/vegetarian-support-system/issues/63) với 22 bảng, 38 khóa ngoại (bao gồm 2 composite FKs: `COMMENT` và `MEAL_PLAN_ENTRY`), 57 ràng buộc CHECK, 55 ràng buộc DEFAULT, 10 Filtered Indexes, 182 Custom Indexes, seed 15 dòng đơn vị chuẩn trong bảng `UNIT`, cùng chính sách chống multiple cascade paths (lỗi SQL Server Error 1785).
+Database chính đã chốt là Microsoft SQL Server 2019. Lược đồ cơ sở dữ liệu đã được hoàn thiện đầy đủ trong khuôn khổ [Issue #63](https://github.com/NgaiLong49423/vegetarian-support-system/issues/63) với 22 bảng, 38 khóa ngoại (bao gồm 2 composite FKs: `COMMENT` và `MEAL_PLAN_ENTRY`), 57 ràng buộc CHECK, 55 ràng buộc DEFAULT, 55 index (22 PK, 9 UNIQUE constraint, 24 index tạo riêng; trong đó 10 filtered index gồm 8 unique và 2 không unique), seed 15 dòng đơn vị chuẩn trong bảng `UNIT`, cùng chính sách chống multiple cascade paths (lỗi SQL Server Error 1785).
 
 ## Quyền sở hữu dữ liệu
 
@@ -28,10 +28,10 @@ Database chính đã chốt là Microsoft SQL Server 2019. Lược đồ cơ s�
 ## Trạng thái thiết kế
 
 - **Conceptual ERD:** 22 thực thể, 36 connector (Đã duyệt).
-- **Logical ERD:** [logical-erd-v1.0.0.drawio](../docs/diagrams/ERD/logical-erd-v1.0.0.drawio) (22 bảng, 37 connector, commit `cb404f7`).
+- **Logical ERD:** [logical-erd-v1.0.0.drawio](../docs/diagrams/ERD/logical-erd-v1.0.0.drawio) (22 bảng, 37 connector thể hiện 36 quan hệ; cập nhật lần cuối ở commit `827353e`).
 - **Physical ERD:** [physical-erd-v1.0.0.drawio](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio) & [physical-erd-v1.0.0.drawio.png](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png) (22 bảng, 37 connector, 196 physical columns với đầy đủ kiểu dữ liệu, nullability, constraints, indexes).
-- **Data Dictionary:** [data-dictionary.md](../docs/diagrams/ERD/data-dictionary.md) v0.7.0 (22 bảng, 196 cột physical, hoàn thành triển khai toàn bộ 33 mục đánh dấu sau review PR #66).
-- **Schema & Migration:** [V1__baseline_schema.sql](../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) và [database/schema.sql](schema.sql) đã triển khai đầy đủ 22 tables, 38 FKs, 57 CHECK constraints, 55 DEFAULT constraints, 10 Filtered Indexes, 182 Custom Indexes, seed 15 dòng `UNIT`. Kiểm thử thành công 100% trên clean database Microsoft SQL Server 2019 thật (`.\SQLEXPRESS`).
+- **Data Dictionary:** [data-dictionary.md](../docs/diagrams/ERD/data-dictionary.md) v0.7.1 (22 bảng, 196 cột physical, hoàn thành triển khai toàn bộ 33 mục đánh dấu sau review PR #66).
+- **Schema & Migration:** [V1__baseline_schema.sql](../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) và [database/schema.sql](schema.sql) đã triển khai đầy đủ 22 tables, 38 FKs, 57 CHECK constraints, 55 DEFAULT constraints, 55 index (22 PK, 9 UNIQUE constraint, 24 index tạo riêng; trong đó 10 filtered index gồm 8 unique và 2 không unique), seed 15 dòng `UNIT`. Kiểm thử thành công 100% trên clean database Microsoft SQL Server 2019 thật (`.\SQLEXPRESS`).
 - **Verification Tests:** [database/queries.sql](queries.sql) gồm 37 automated test cases (TC01–TC37, 70/70 test assertions PASS 100%) kiểm thử toàn bộ positive/negative business constraints và assert chính xác tên constraint trong `ERROR_MESSAGE()`.
 
 ## Hướng dẫn kiểm thử và thẩm định

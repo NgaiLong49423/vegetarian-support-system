@@ -1,6 +1,6 @@
 > **Document:** Data Dictionary & Traceability Matrix — Mâm Xanh
 > **File:** `docs/diagrams/ERD/data-dictionary.md`
-> **Version:** v0.7.0
+> **Version:** v0.7.1
 > **Created:** 2026-09-23
 > **Last Updated:** 2026-09-25
 > **Status:** Under Review
@@ -586,7 +586,7 @@ Chỉ nên cascade ở quan hệ cha–con thật sự sở hữu, ví dụ `SHO
 
 - [x] ~~Trả lời câu hỏi chặn với Tech Lead~~ — `Q1` và `Q2` đã chốt ngày 23/09/2026, ghi tại mục 2.
 - [x] ~~Dựng `logical-erd-v1.0.0.drawio` theo delta ở mục 3~~ — đã dựng ngày 23/09/2026: 22 bảng, XML đã kiểm tra hợp lệ.
-- [ ] **Export lại PNG cho `logical-erd-v1.0.0`** — phải mở bằng draw.io và xuất thủ công. Ảnh hiện có đã cũ so với sơ đồ cập nhật ngày 24/09/2026.
+- [x] ~~Export lại PNG cho `logical-erd-v1.0.0`~~ — đã xuất lại bằng draw.io ngày 24/09/2026 sau khi cập nhật sơ đồ (commit `827353e`).
 - [x] ~~Đối chiếu hai chiều~~ — 24/09/2026: 22/22 bảng, 194/194 cột logical khớp giữa mục 4 và sơ đồ. Hai cột `chỉ Physical ERD` (`COMMENT.parent_depth`, `MEAL_PLAN_ENTRY.meal_week_start`) không vẽ trên Logical ERD theo `Q8`.
 - [x] ~~Kiểm tra chuẩn hóa 3NF~~ — ngoại lệ có chủ đích đã ghi tại mục 4.5 sau quyết định `Q2`.
 - [x] ~~Rà đủ 36 quan hệ trong ma trận của ERD README~~ — 24/09/2026:
@@ -598,7 +598,7 @@ Chỉ nên cascade ở quan hệ cha–con thật sự sở hữu, ví dụ `SHO
 
 ## 8. Tiến độ thực hiện Pha 2 (Trương Văn Khải)
 
-- [x] Viết kịch bản Flyway baseline migration: [V1__baseline_schema.sql](../../../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) (22 bảng, 38 FK, 22 PK, 9 UQ, 56 checks, 55 defaults, 10 filtered indexes, 182 custom indexes, seed 15 dòng `UNIT`).
+- [x] Viết kịch bản Flyway baseline migration: [V1__baseline_schema.sql](../../../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) (22 bảng, 196 cột, 38 FK, 57 CHECK, 55 DEFAULT, 55 index gồm 22 PK + 9 UNIQUE constraint + 24 index tạo riêng; trong đó 10 filtered index: 8 unique, 2 không unique; seed 15 dòng `UNIT`). Số liệu đếm bằng `sys.*` sau khi chạy `database/schema.sql` trên SQL Server 2019 ngày 25/09/2026.
 - [x] Tạo snapshot bootstrap độc lập: [database/schema.sql](../../../database/schema.sql) (chuẩn T-SQL cho SSMS và `sqlcmd`, DDL khớp 100% với V1).
 - [x] Khởi tạo và chạy thử trên database sạch Microsoft SQL Server 2019 thật (`.\SQLEXPRESS`): thành công 100%, 0 lỗi cú pháp hoặc cascade path.
 - [x] Điền đầy đủ 9 cột Physical vào Bảng tổng hợp mục 4 của Data Dictionary này, cập nhật trạng thái sau review PR #66.
