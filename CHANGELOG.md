@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-25 — Confirm Vercel and Azure Deployment Baseline
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 771f0d4.
 
 **Scope:** Record the approved hosting split across maintained architecture, setup, workflow, and overview documentation without claiming that deployment automation or the complete production system already exists.
 
