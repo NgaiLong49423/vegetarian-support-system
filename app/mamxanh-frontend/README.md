@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.4.0
+> **Version:** v1.5.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-09-24
+> **Last Updated:** 2026-09-25
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -42,13 +42,14 @@ Hồ sơ BMI, **Nâng cấp gói AI** và lịch sử giao dịch nằm trong me
 
 Các màn hình này chuẩn bị trải nghiệm cho FR-13, FR-20, FR-26/27, FR-35/38, FR-37/39 và FR-46; không xác nhận đã hoàn thành toàn bộ Acceptance Criteria của các FR. SRS vẫn là nguồn yêu cầu chính thức.
 
-## Vercel cho buổi demo
+## Vercel cho Frontend
 
-- Bản UI được triển khai thủ công từ thư mục Frontend. Vercel gắn nhãn môi trường `Production` cho link demo; đây chưa phải sản phẩm cuối cùng.
+- Vercel là nền tảng hosting đã chốt cho Frontend production. Backend được triển khai riêng trên Azure App Service; Frontend gọi Backend qua HTTPS/REST API.
+- Bản UI hiện tại được triển khai thủ công từ thư mục Frontend. Vercel gắn nhãn môi trường `Production` cho link demo, nhưng bản này vẫn dùng dữ liệu mẫu và chưa phải bằng chứng toàn hệ thống đã được triển khai.
 - `vercel.json` chuyển các đường dẫn SPA về `index.html`, giúp mở trực tiếp hoặc tải lại trang con bằng React Router.
 - Build dùng `npm run build`, đầu ra `dist/`. `.vercel/` là thông tin liên kết tài khoản/project local và được bỏ qua trong Git.
-- Không thiết lập GitHub CI/CD hoặc Git auto-deploy cho bản demo này. Push code không tự cập nhật link Vercel; lần cập nhật demo sau cần deploy thủ công nếu được yêu cầu.
-- Azure vẫn là baseline triển khai toàn hệ thống. Vercel chỉ phục vụ buổi giới thiệu UI, không thay thế quyết định kiến trúc.
+- Chưa thiết lập GitHub CI/CD hoặc Git auto-deploy. Push code hiện không tự cập nhật link Vercel; mỗi lần cập nhật vẫn cần deploy thủ công cho đến khi nhóm phê duyệt cơ chế tự động hóa riêng.
+- Dockerfile Frontend dùng để đồng bộ môi trường development giữa các thành viên, không dùng để deploy Frontend lên Vercel.
 
 ---
 

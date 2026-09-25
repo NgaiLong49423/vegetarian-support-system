@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.2.2
+> **Version:** v3.3.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-21
+> **Last Updated:** 2026-09-25
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -42,7 +42,7 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
 - `Review` bắt đầu khi mở PR vào `develop`; sau merge Issue vẫn ở `Review` chờ nghiệm thu trên `main`. Nếu PR bị đóng hoặc cần làm lại đáng kể, chuyển về `In Progress`.
 - `Done` chỉ sau khi toàn bộ scope/Acceptance Criteria đạt trên `main` và kiểm tra demo local sau merge đạt. Merge vào `develop` hoặc `main` riêng lẻ chưa đủ.
 - Không cần hoàn thành cả module SRS mới đưa code lên `main`. Phạm vi PR gồm những thay đổi ổn định và dependency đã được đáp ứng.
-- FE có bản demo UI trên Vercel được deploy thủ công để giới thiệu với giảng viên; bản này không cấu hình CI/CD hoặc Git auto-deploy. Nhóm dự kiến deploy cả hệ thống lên Azure khi app đạt điều kiện ổn định; deployment là công việc riêng, không phải điều kiện `Done` của từng FR ở giai đoạn demo local. Chi tiết và giới hạn bản demo nằm trong [Frontend README](app/mamxanh-frontend/README.md#vercel-cho-buổi-demo); lựa chọn công nghệ Azure được giữ nguyên.
+- Vercel là nền tảng hosting đã chốt cho Frontend; Azure App Service là nền tảng hosting đã chốt cho Backend. Bản UI hiện có trên Vercel vẫn được deploy thủ công và chưa cấu hình CI/CD hoặc Git auto-deploy. Deployment là công việc riêng, không phải điều kiện `Done` của từng FR ở giai đoạn demo local. Chi tiết và giới hạn bản hiện tại nằm trong [Frontend README](app/mamxanh-frontend/README.md#vercel-cho-frontend).
 - Quản lý blocker trực tiếp trên GitHub Issue hoặc GitHub Project; ghi nguyên nhân, dependency liên quan, trợ giúp cần thiết và điều kiện để tiếp tục.
 
 ### Phân rã và điều kiện nhận Issue
