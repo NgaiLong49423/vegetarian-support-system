@@ -12,7 +12,7 @@
 --   2. Constraint Verification: Automated positive & negative test suites
 --      proving that all database constraints, filtered unique indexes, and
 --      cascade policies enforce business rules as designed.
---      Preserves TC01..TC15 and adds TC16..TC35 for all newly implemented
+--      Preserves TC01..TC15 and adds TC16..TC37 for all newly implemented
 --      constraints from Data Dictionary v0.6.0.
 --      Every negative test verifies the EXACT constraint name in ERROR_MESSAGE().
 --   3. Operational Queries: Practical queries demonstrating core queries
@@ -44,7 +44,7 @@ PRINT 'PART 1: SCHEMA AUDIT & OBJECT INVENTORY';
 PRINT '====================================================================';
 
 -- 1.1 Object Count Summary
--- Expected: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 56 Checks, 55 Defaults, 15 UNIT rows
+-- Expected: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 57 Checks, 55 Defaults, 15 UNIT rows
 SELECT 
     'Tables' AS ObjectType, COUNT(*) AS TotalCount, 22 AS ExpectedCount,
     CASE WHEN COUNT(*) = 22 THEN 'PASS' ELSE 'FAIL' END AS AuditStatus
@@ -59,7 +59,7 @@ UNION ALL
 SELECT 'Unique Constraints', COUNT(*), 9, CASE WHEN COUNT(*) = 9 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.key_constraints WHERE type = 'UQ'
 UNION ALL
-SELECT 'Check Constraints', COUNT(*), 56, CASE WHEN COUNT(*) = 56 THEN 'PASS' ELSE 'FAIL' END
+SELECT 'Check Constraints', COUNT(*), 57, CASE WHEN COUNT(*) = 57 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.check_constraints
 UNION ALL
 SELECT 'Default Constraints', COUNT(*), 55, CASE WHEN COUNT(*) = 55 THEN 'PASS' ELSE 'FAIL' END
@@ -1050,6 +1050,48 @@ BEGIN TRY
     INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at)
     VALUES (@AliceId, 'PLUS', 'EXPIRED', '2026-09-01 00:00:00', '2026-10-01 00:00:00');
     PRINT '  [PASS] TC35b: Accepted EXPIRED subscription alongside ACTIVE.';
+
+    -- ------------------------------------------------------------------------
+    -- TC36: COMMENT Content Length Constraint (CK_COMMENT_content_len, 1..1000 chars)
+    -- ------------------------------------------------------------------------
+    -- Negative: Empty content (length = 0) -> Must FAIL
+    BEGIN TRY
+        INSERT INTO [COMMENT] (recipe_id, user_id, parent_comment_id, parent_depth, content, depth)
+        VALUES (@RecipeId, @AliceId, NULL, NULL, '', 1);
+        PRINT '  [FAIL] TC36a: Empty comment content was not rejected!';
+    END TRY
+    BEGIN CATCH
+        IF ERROR_MESSAGE() LIKE '%CK_COMMENT_content_len%'
+            PRINT '  [PASS] TC36a: Rejected empty comment content (exact CK_COMMENT_content_len, Error ' + CAST(ERROR_NUMBER() AS VARCHAR) + ')';
+        ELSE
+            PRINT '  [FAIL] TC36a: Caught unexpected error: ' + ERROR_MESSAGE();
+    END CATCH;
+
+    -- Positive: Valid comment within 1..1000 characters
+    INSERT INTO [COMMENT] (recipe_id, user_id, parent_comment_id, parent_depth, content, depth)
+    VALUES (@RecipeId, @AliceId, NULL, NULL, N'Bình luận hợp lệ thỏa mãn 1 đến 1000 ký tự.', 1);
+    PRINT '  [PASS] TC36b: Accepted valid comment content (1..1000 chars).';
+
+    -- ------------------------------------------------------------------------
+    -- TC37: PAYMENT_TRANSACTION Positive Amount Constraint (CK_PAYMENT_amount, amount_vnd > 0)
+    -- ------------------------------------------------------------------------
+    -- Negative: amount_vnd = 0 (FREE tier does not generate transaction, Q9) -> Must FAIL
+    BEGIN TRY
+        INSERT INTO [PAYMENT_TRANSACTION] (user_id, order_code, amount_vnd, status)
+        VALUES (@AliceId, 'PAYOS_ZERO_AMOUNT_TEST', 0, 'PENDING');
+        PRINT '  [FAIL] TC37a: Zero payment amount was not rejected!';
+    END TRY
+    BEGIN CATCH
+        IF ERROR_MESSAGE() LIKE '%CK_PAYMENT_amount%'
+            PRINT '  [PASS] TC37a: Rejected zero payment amount (exact CK_PAYMENT_amount, Error ' + CAST(ERROR_NUMBER() AS VARCHAR) + ')';
+        ELSE
+            PRINT '  [FAIL] TC37a: Caught unexpected error: ' + ERROR_MESSAGE();
+    END CATCH;
+
+    -- Positive: Valid positive amount (99,000 VND for PRO)
+    INSERT INTO [PAYMENT_TRANSACTION] (user_id, order_code, amount_vnd, status)
+    VALUES (@AliceId, 'PAYOS_VALID_PRO_99K', 99000, 'PENDING');
+    PRINT '  [PASS] TC37b: Accepted valid payment amount (99,000 VND > 0).';
 
 END TRY
 BEGIN CATCH

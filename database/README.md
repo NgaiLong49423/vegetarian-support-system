@@ -1,13 +1,13 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.3.0  
+> **Version:** v0.4.0  
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-25  
 > **Status:** Under Review  
 
 # Database Workspace
 
-Database chính đã chốt là Microsoft SQL Server 2019. Lược đồ cơ sở dữ liệu đã được hoàn thiện đầy đủ trong khuôn khổ [Issue #63](https://github.com/NgaiLong49423/vegetarian-support-system/issues/63) với 22 bảng, 38 khóa ngoại (bao gồm 2 composite FKs: `COMMENT` và `MEAL_PLAN_ENTRY`), 56 ràng buộc CHECK, 55 ràng buộc DEFAULT, 10 Filtered Indexes, 182 Custom Indexes, seed 15 dòng đơn vị chuẩn trong bảng `UNIT`, cùng chính sách chống multiple cascade paths (lỗi SQL Server Error 1785).
+Database chính đã chốt là Microsoft SQL Server 2019. Lược đồ cơ sở dữ liệu đã được hoàn thiện đầy đủ trong khuôn khổ [Issue #63](https://github.com/NgaiLong49423/vegetarian-support-system/issues/63) với 22 bảng, 38 khóa ngoại (bao gồm 2 composite FKs: `COMMENT` và `MEAL_PLAN_ENTRY`), 57 ràng buộc CHECK, 55 ràng buộc DEFAULT, 10 Filtered Indexes, 182 Custom Indexes, seed 15 dòng đơn vị chuẩn trong bảng `UNIT`, cùng chính sách chống multiple cascade paths (lỗi SQL Server Error 1785).
 
 ## Quyền sở hữu dữ liệu
 
@@ -31,12 +31,12 @@ Database chính đã chốt là Microsoft SQL Server 2019. Lược đồ cơ s�
 - **Logical ERD:** [logical-erd-v1.0.0.drawio](../docs/diagrams/ERD/logical-erd-v1.0.0.drawio) (22 bảng, 37 connector, commit `cb404f7`).
 - **Physical ERD:** [physical-erd-v1.0.0.drawio](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio) & [physical-erd-v1.0.0.drawio.png](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png) (22 bảng, 37 connector, 196 physical columns với đầy đủ kiểu dữ liệu, nullability, constraints, indexes).
 - **Data Dictionary:** [data-dictionary.md](../docs/diagrams/ERD/data-dictionary.md) v0.7.0 (22 bảng, 196 cột physical, hoàn thành triển khai toàn bộ 33 mục đánh dấu sau review PR #66).
-- **Schema & Migration:** [V1__baseline_schema.sql](../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) và [database/schema.sql](schema.sql) đã triển khai đầy đủ 22 tables, 38 FKs, 56 CHECK constraints, 55 DEFAULT constraints, 10 Filtered Indexes, 182 Custom Indexes, seed 15 dòng `UNIT`. Kiểm thử thành công 100% trên clean database Microsoft SQL Server 2019 thật (`.\SQLEXPRESS`).
-- **Verification Tests:** [database/queries.sql](queries.sql) gồm 35 automated test cases (TC01–TC35, 66/66 test assertions PASS 100%) kiểm thử toàn bộ positive/negative business constraints và assert chính xác tên constraint trong `ERROR_MESSAGE()`.
+- **Schema & Migration:** [V1__baseline_schema.sql](../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) và [database/schema.sql](schema.sql) đã triển khai đầy đủ 22 tables, 38 FKs, 57 CHECK constraints, 55 DEFAULT constraints, 10 Filtered Indexes, 182 Custom Indexes, seed 15 dòng `UNIT`. Kiểm thử thành công 100% trên clean database Microsoft SQL Server 2019 thật (`.\SQLEXPRESS`).
+- **Verification Tests:** [database/queries.sql](queries.sql) gồm 37 automated test cases (TC01–TC37, 70/70 test assertions PASS 100%) kiểm thử toàn bộ positive/negative business constraints và assert chính xác tên constraint trong `ERROR_MESSAGE()`.
 
 ## Hướng dẫn kiểm thử và thẩm định
 
-Kiểm tra toàn bộ schema và chạy 35 test cases (TC01–TC35) bằng `sqlcmd`:
+Kiểm tra toàn bộ schema và chạy 37 test cases (TC01–TC37) bằng `sqlcmd`:
 
 ```powershell
 # 1. Khởi tạo database kiểm thử sạch
@@ -45,7 +45,7 @@ sqlcmd -S .\SQLEXPRESS -E -Q "DROP DATABASE IF EXISTS MamXanhDB_Test; CREATE DAT
 # 2. Thực thi schema DDL (hoặc V1__baseline_schema.sql)
 sqlcmd -S .\SQLEXPRESS -E -d MamXanhDB_Test -i database/schema.sql
 
-# 3. Chạy bộ kiểm thử ràng buộc nghiệp vụ (66/66 test assertions PASS)
+# 3. Chạy bộ kiểm thử ràng buộc nghiệp vụ (70/70 test assertions PASS)
 sqlcmd -S .\SQLEXPRESS -E -d MamXanhDB_Test -i database/queries.sql
 ```
 

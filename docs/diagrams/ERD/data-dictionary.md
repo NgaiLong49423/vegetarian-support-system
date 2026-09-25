@@ -303,7 +303,7 @@ Theo đúng yêu cầu của [Issue #63](https://github.com/NgaiLong49423/vegeta
 | `recipe_id` | Bài công thức chứa bình luận | Identifier, FK | BIGINT | — | NOT NULL | — | — | FK_COMMENT_RECIPE → RECIPE_POST(recipe_id) [NO ACTION]; FK_COMMENT_PARENT (2/3) | UQ_COMMENT_id_recipe_depth (2/3) | — | IX_COMMENT_recipe (recipe_id, created_at) | `RECIPE_POST` 1 → `COMMENT` 0..* | FR-46 | BR-66 | — | — |
 | `user_id` | Người viết | Identifier, FK | BIGINT | — | NOT NULL | — | — | FK_COMMENT_USER → USER(user_id) [NO ACTION] | — | — | — | `USER` 1 → `COMMENT` 0..* | FR-46 | BR-66 | — | — |
 | `parent_comment_id` | Bình luận cha; `NULL` nếu là bình luận gốc | Identifier, FK, optional | BIGINT | — | NULL | — | — | FK_COMMENT_PARENT (parent_comment_id, recipe_id, parent_depth) → COMMENT(comment_id, recipe_id, depth) [NO ACTION] — thay FK một cột hiện tại | — | CK_COMMENT_root_reply | IX_COMMENT_parent (Nonclustered, WHERE parent_comment_id IS NOT NULL) | **Tự tham chiếu:** `COMMENT` 0..1 → `COMMENT` 0..* | FR-46 | BR-66 | — | — |
-| `content` | Nội dung bình luận | Text | NVARCHAR | 2000 | NOT NULL | — | — | — | — | — | — | — | FR-46 | BR-66 | — | — |
+| `content` | Nội dung bình luận (1–1.000 ký tự) | Text | NVARCHAR | 1000 | NOT NULL | — | — | — | — | CK_COMMENT_content_len (1..1000) | — | — | FR-46 | BR-66 | EF-46.1 | — |
 | `depth` | Cấp lồng, 1–5 | Integer | INT | — | NOT NULL | 1 (DF_COMMENT_depth) | — | — | UQ_COMMENT_id_recipe_depth (3/3) | CK_COMMENT_depth (1..5); CK_COMMENT_root_reply | — | — | FR-46 | BR-66 | — | Technical design — cần thiết vì database không tự giới hạn độ sâu đệ quy |
 | `parent_depth` 🆕 | Bản sao `depth` của bình luận cha, dùng cho FK kép ép `depth = parent_depth + 1`; `NULL` khi là bình luận gốc. **Technical design — chỉ Physical ERD (Q8)** | — (không thuộc Logical ERD) | INT | — | NULL | — | — | FK_COMMENT_PARENT (3/3) | — | CK_COMMENT_root_reply ((parent_comment_id IS NULL AND parent_depth IS NULL AND depth = 1) OR (parent_comment_id IS NOT NULL AND parent_depth IS NOT NULL AND depth = parent_depth + 1)) | — | — | FR-46 | BR-66 | — | — |
 | `is_deleted` | Cờ tombstone khi bình luận cha bị xóa nhưng còn phản hồi | Boolean | BIT | — | NOT NULL | 0 (DF_COMMENT_is_deleted) | — | — | — | — | — | — | FR-46 | BR-66 | — | — |
@@ -519,7 +519,7 @@ Các phương án trên đã chạy thử trên SQL Server 2019. Khi insert repl
 | `user_id` | Người thanh toán | Identifier, FK | BIGINT | — | NOT NULL | — | — | FK_PAYMENT_USER → USER(user_id) [NO ACTION] | — | — | — | `USER` 1 → `PAYMENT_TRANSACTION` 0..* | FR-13 | — | — | — |
 | `subscription_id` | Gói được kích hoạt bởi giao dịch này | Identifier, FK, optional | BIGINT | — | NULL | — | — | FK_PAYMENT_SUBSCRIPTION → SUBSCRIPTION(subscription_id) [NO ACTION] | — | — | — | `PAYMENT_TRANSACTION` 0..1 → `SUBSCRIPTION` 0..1 | FR-13 | BR-03 | — | — |
 | `order_code` | Mã đơn hàng payOS, **duy nhất** | Text, unique | VARCHAR | 100 | NOT NULL | — | — | — | UQ_PAYMENT_order_code | — | UQ_PAYMENT_order_code (Nonclustered) | — | FR-13 | — | — | **Cơ chế idempotent cho webhook** — webhook gửi lại nhiều lần chỉ kích hoạt gói đúng một lần |
-| `amount_vnd` | Số tiền: PLUS 49.000, PRO 99.000 VNĐ/tháng. FREE không phát sinh giao dịch (Q9) | Integer | INT | — | NOT NULL | — | — | — | — | CK_PAYMENT_amount (>= 0) | — | — | FR-13 | — | — | — |
+| `amount_vnd` | Số tiền: PLUS 49.000, PRO 99.000 VNĐ/tháng. FREE không phát sinh giao dịch (Q9) | Integer | INT | — | NOT NULL | — | — | — | — | CK_PAYMENT_amount (> 0) | — | — | FR-13 | — | — | — |
 | `status` | Trạng thái giao dịch | Enum | VARCHAR | 20 | NOT NULL | 'PENDING' (DF_PAYMENT_status) | — | — | — | CK_PAYMENT_status ('PENDING', 'PAID', 'FAILED', 'CANCELLED') | — | — | FR-13 | — | — | — |
 | `created_at` | Thời điểm tạo giao dịch | Timestamp | DATETIME2 | 7 | NOT NULL | SYSUTCDATETIME() (DF_PAYMENT_created_at) | — | — | — | — | — | — | Technical design — audit | — | — | — |
 | `paid_at` | Thời điểm thanh toán thành công | Timestamp, optional | DATETIME2 | 7 | NULL | — | — | — | — | — | — | — | FR-13 | — | — | **Không lưu số thẻ**, NFR-21 (PCI-DSS) |
@@ -561,6 +561,8 @@ Issue #63 mục D yêu cầu ghi riêng các ràng buộc loại này. Trương 
 | 28 | Nâng cấp PLUS → PRO: gói cũ `CANCELLED`, gói mới `ACTIVE` trong cùng transaction; đánh dấu `EXPIRED` trước khi tạo gói mới | `SUBSCRIPTION` | Không — tầng service | Q10, FR-13 AF-13.2 |
 | 29 | Tuổi tính từ `date_of_birth` nằm trong **18–120** khi lưu hồ sơ dinh dưỡng | `USER` | Không — tầng service. `CHECK` phụ thuộc thời gian chỉ chạy khi cột được ghi, nên không phải bất biến. Database chỉ chặn ngày trong tương lai hoặc trước 1900 | Q7, FR-35, BR-42 |
 | 30 | Cổng AI cá nhân hóa: có `vegetarian_type`; có dòng `AVOID` **hoặc** `avoid_none_confirmed = 1`; có dòng `DISLIKE` **hoặc** `dislike_none_confirmed = 1`. Khi thêm dòng `AVOID`/`DISLIKE`, service đưa cờ "Không có" tương ứng về `0` | `USER`, `USER_INGREDIENT_PREFERENCE` | Không — tầng service (liên bảng) | Q12, FR-31, BR-31 |
+| 31 | `content` bình luận dài **1–1.000** ký tự | `COMMENT` | Có — `CK_COMMENT_content_len` (1..1000) | FR-46, EF-46.1 |
+| 32 | `amount_vnd` giao dịch thanh toán phải **> 0** (FREE không phát sinh giao dịch) | `PAYMENT_TRANSACTION` | Có — `CK_PAYMENT_amount` (> 0) | Q9, FR-13 |
 
 ## 6. Cảnh báo cho pha 2 — multiple cascade paths trên SQL Server
 

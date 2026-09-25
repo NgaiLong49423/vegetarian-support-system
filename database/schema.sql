@@ -467,7 +467,7 @@ CREATE TABLE [COMMENT] (
     user_id            BIGINT          NOT NULL,
     parent_comment_id  BIGINT          NULL,
     parent_depth       INT             NULL,
-    content            NVARCHAR(2000)  NOT NULL,
+    content            NVARCHAR(1000)  NOT NULL,
     depth              INT             NOT NULL
         CONSTRAINT DF_COMMENT_depth DEFAULT 1,
     is_deleted         BIT             NOT NULL
@@ -485,6 +485,7 @@ CREATE TABLE [COMMENT] (
         REFERENCES [USER](user_id) ON DELETE NO ACTION,
     CONSTRAINT FK_COMMENT_PARENT FOREIGN KEY (parent_comment_id, recipe_id, parent_depth)
         REFERENCES [COMMENT](comment_id, recipe_id, depth) ON DELETE NO ACTION,
+    CONSTRAINT CK_COMMENT_content_len CHECK (LEN(content) BETWEEN 1 AND 1000),
     CONSTRAINT CK_COMMENT_depth CHECK (depth BETWEEN 1 AND 5),
     CONSTRAINT CK_COMMENT_root_reply CHECK (
         (parent_comment_id IS NULL AND parent_depth IS NULL AND depth = 1)
@@ -775,7 +776,7 @@ CREATE TABLE [PAYMENT_TRANSACTION] (
     CONSTRAINT CK_PAYMENT_status CHECK (
         status IN ('PENDING', 'PAID', 'FAILED', 'CANCELLED')
     ),
-    CONSTRAINT CK_PAYMENT_amount CHECK (amount_vnd >= 0)
+    CONSTRAINT CK_PAYMENT_amount CHECK (amount_vnd > 0)
 );
 GO
 

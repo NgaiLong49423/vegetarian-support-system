@@ -31,14 +31,19 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
   - `CK_MEAL_PLAN_week_start_monday` and `UQ_MEAL_PLAN_user_week`: enforces Monday start date (`DATEDIFF(day, '1900-01-01', week_start_date) % 7 = 0`) and one meal plan per user per week (FR-09, Q3).
   - `CK_SUBSCRIPTION_tier` (`PLUS`, `PRO`), `CK_SUBSCRIPTION_period` (`ends_at > starts_at`), and `UQ_SUBSCRIPTION_active`: restricts paid tiers and prevents concurrent active subscriptions for the same user (FR-13, Q9, Q10).
   - `CK_USER_date_of_birth` (<= current date and >= 1900-01-01), `CK_USER_activity_level` (4 active levels), `CK_USER_nutrition_goal` (3 active goals), and `CK_USER_onboarding_status` with `DF_USER_onboarding_status` ('NOT_STARTED') (FR-35, Q7, Q12).
-- Add 20 new test cases (TC16–TC35) to `database/queries.sql` asserting exact constraint names in `ERROR_MESSAGE()`, bringing the test suite to 35 test cases (66/66 test assertions PASS 100%).
+  - `CK_COMMENT_content_len`: enforces comment content length between 1 and 1,000 characters (FR-46, EF-46.1).
+- Add 22 new test cases (TC16–TC37) to `database/queries.sql` asserting exact constraint names in `ERROR_MESSAGE()`, including TC36 for comment content length and TC37 for positive transaction amount, bringing the test suite to 37 test cases (70/70 test assertions PASS 100%).
 
 ### Changed
 
-- Update `V1__baseline_schema.sql` and `database/schema.sql`: make all 9 `INGREDIENT` nutrition columns nullable (`NULL`) while preserving default `nutrition_supported = 0` (Q5).
-- Update `docs/diagrams/ERD/physical-erd-v1.0.0.drawio` and exported image `physical-erd-v1.0.0.drawio.png`: format all 22 tables and 196 physical columns with exact data types, nullability, primary/foreign/unique/check constraints, default values, and index indicators (Review Round 1 Point 1); synchronize 37 Crow's Foot connectors from Logical ERD v1.0.0; resolve container table layout styling to ensure correct row ordering and visible headers.
-- Update `docs/diagrams/ERD/data-dictionary.md` to version `v0.7.0`: remove all pending `⏳` markers for implemented items, update Section 1 status, and document Phase 2 completion in Section 8.
-- Update `database/README.md` to version `v0.3.0` with verified object counts (22 tables, 38 FKs, 56 checks, 55 defaults, 10 filtered indexes, 182 custom indexes, 35 test cases) and `sqlcmd` execution instructions.
+- Update `V1__baseline_schema.sql` and `database/schema.sql`:
+  - Make all 9 `INGREDIENT` nutrition columns nullable (`NULL`) while preserving default `nutrition_supported = 0` (Q5).
+  - Change `COMMENT.content` from `NVARCHAR(2000)` to `NVARCHAR(1000)` and add constraint `CK_COMMENT_content_len` (FR-46).
+  - Tighten `PAYMENT_TRANSACTION.amount_vnd` check constraint `CK_PAYMENT_amount` from `>= 0` to `> 0` because free tier generates no transaction (Q9).
+- Update `docs/diagrams/ERD/physical-erd-v1.0.0.drawio` and exported image `physical-erd-v1.0.0.drawio.png`: format all 22 tables and 196 physical columns with exact data types, nullability, primary/foreign/unique/check constraints, default values, and index indicators (Review Round 1 Point 1); synchronize 37 Crow's Foot connectors from Logical ERD v1.0.0; resolve container table layout styling to ensure correct row ordering and visible headers; synchronize `COMMENT.content` to `NVARCHAR(1000)` and `CK`.
+- Update `docs/diagrams/ERD/data-dictionary.md` to version `v0.7.0`: remove all pending `⏳` markers for implemented items, update Section 1 status, document Phase 2 completion in Section 8, and record `CK_COMMENT_content_len` and `CK_PAYMENT_amount` (> 0) in Sections 4.10, 4.22, and 5.
+- Update `database/README.md` to version `v0.4.0` with verified object counts (22 tables, 38 FKs, 57 checks, 55 defaults, 10 filtered indexes, 182 custom indexes, 37 test cases) and `sqlcmd` execution instructions.
+- Update `docs/diagrams/ERD/README.md` to version `v1.13.0` line 16 with verified physical metrics (38 FKs, 57 check constraints, 55 default constraints, 10 filtered unique indexes, 182 custom nonclustered indexes).
 
 ### Fixed
 

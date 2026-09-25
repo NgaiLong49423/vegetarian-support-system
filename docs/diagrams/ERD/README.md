@@ -1,20 +1,20 @@
 > **Document:** ERD Workspace Guide  
 > **File:** `docs/diagrams/ERD/README.md`  
-> **Version:** v1.12.0  
+> **Version:** v1.13.0  
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-24  
+> **Last Updated:** 2026-09-25  
 > **Status:** Active (Conceptual, Logical và Physical ERD đã hoàn thiện)  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `database/README.md`, `docs/diagrams/ERD/data-dictionary.md`
 
 # ERD Workspace Guide — Hướng Dẫn Sơ Đồ Quan Hệ Thực Thể
 
 > [!NOTE]
-> **TIẾN ĐỘ VÀ BỘ SƠ ĐỒ ERD CỦA DỰ ÁN (CẬP NHẬT 23/09/2026):**  
+> **TIẾN ĐỘ VÀ BỘ SƠ ĐỒ ERD CỦA DỰ ÁN (CẬP NHẬT 25/09/2026):**  
 > Mô hình dữ liệu của Mâm Xanh phản ánh **Baseline 22 thực thể cốt lõi** sau khi xác nhận `USER_FOLLOW` thuộc FR-59/BR-75 `ACTIVE` ngày 23/09/2026:  
 > 1. **Conceptual ERD:** [conceptual-erd-v1.0.0.drawio](./conceptual-erd-v1.0.0.drawio) (22 thực thể, 36 connector; có file ảnh [conceptual-erd-v1.0.0.drawio.png](./conceptual-erd-v1.0.0.drawio.png)).  
 > 2. **Logical ERD:** [logical-erd-v1.0.0.drawio](./logical-erd-v1.0.0.drawio) (22 bảng; 37 connector thể hiện đủ 36 quan hệ ở mục 3.1, vì quan hệ #36 tách hai vai trò FK `follower` / `followed` của `USER_FOLLOW`). Cập nhật ngày 24/09/2026 theo quyết định `Q7`–`Q12` trong Data Dictionary. Bản nháp `v0.1.0` đã xóa khỏi repo ngày 24/09/2026 theo yêu cầu Tech Lead.  
-> 3. **Physical ERD:** [physical-erd-v1.0.0.drawio](./physical-erd-v1.0.0.drawio) (22 bảng vật lý T-SQL, kiểu dữ liệu Microsoft SQL Server 2019, 38 FKs, 21 indexes, 41 check constraints; đối chiếu 100% với Flyway baseline migration [V1__baseline_schema.sql](../../../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) và [database/schema.sql](../../../database/schema.sql)).  
-> 4. **Data Dictionary:** [data-dictionary.md](./data-dictionary.md) v0.6.0 đặc tả chi tiết 9 cột vật lý cho toàn bộ thuộc tính. Các ô đánh dấu `⏳` là đặc tả đã chốt sau review PR #66, chưa có trong Flyway migration và Physical ERD.
+> 3. **Physical ERD:** [physical-erd-v1.0.0.drawio](./physical-erd-v1.0.0.drawio) (22 bảng vật lý T-SQL, kiểu dữ liệu Microsoft SQL Server 2019, 196 physical columns, 38 FKs, 57 check constraints, 55 default constraints, 10 filtered unique indexes, 182 custom nonclustered indexes; đối chiếu 100% với Flyway baseline migration [V1__baseline_schema.sql](../../../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) và [database/schema.sql](../../../database/schema.sql)).  
+> 4. **Data Dictionary:** [data-dictionary.md](./data-dictionary.md) v0.7.0 đặc tả chi tiết 9 cột vật lý cho toàn bộ thuộc tính, hoàn thành triển khai 100% không còn mục đánh dấu ⏳ sau review PR #66.
 
 ## 1. Mục Đích và Tác Dụng của Sơ Đồ ERD
 

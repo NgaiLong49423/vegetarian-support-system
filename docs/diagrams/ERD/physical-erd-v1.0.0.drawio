@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.5.2 Chrome/142.0.7444.265 Electron/39.6.1 Safari/537.36" compressed="false">
   <diagram id="mamxanh-physical-schema" name="Physical ERD - SQL Server 2019">
     <mxGraphModel dx="4402" dy="803" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
@@ -1033,7 +1034,7 @@
         <mxCell id="tbl_9_r5" parent="tbl_9" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;labelBackgroundColor=none;" value="" vertex="1">
           <mxGeometry height="28" width="460" y="174" as="geometry" />
         </mxCell>
-        <mxCell id="tbl_9_r5_c0" parent="tbl_9_r5" style="shape=partialRectangle;overflow=hidden;connectable=0;top=0;left=0;bottom=0;right=1;align=left;verticalAlign=middle;spacingLeft=6;fontSize=10;labelBackgroundColor=none;" value="NVARCHAR(2000) NOT NULL" vertex="1">
+        <mxCell id="tbl_9_r5_c0" parent="tbl_9_r5" style="shape=partialRectangle;overflow=hidden;connectable=0;top=0;left=0;bottom=0;right=1;align=left;verticalAlign=middle;spacingLeft=6;fontSize=10;labelBackgroundColor=none;" value="NVARCHAR(1000) NOT NULL" vertex="1">
           <mxGeometry height="28" width="140" as="geometry">
             <mxRectangle height="28" width="90" as="alternateBounds" />
           </mxGeometry>
@@ -1043,7 +1044,7 @@
             <mxRectangle height="28" width="250" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="tbl_9_r5_c2" parent="tbl_9_r5" style="shape=partialRectangle;overflow=hidden;connectable=0;top=0;left=0;bottom=0;right=1;align=left;verticalAlign=middle;spacingLeft=6;fontSize=10;fontColor=#666666;labelBackgroundColor=none;" value="" vertex="1">
+        <mxCell id="tbl_9_r5_c2" parent="tbl_9_r5" style="shape=partialRectangle;overflow=hidden;connectable=0;top=0;left=0;bottom=0;right=1;align=left;verticalAlign=middle;spacingLeft=6;fontSize=10;fontColor=#666666;labelBackgroundColor=none;" value="CK" vertex="1">
           <mxGeometry height="28" width="110" x="350" as="geometry">
             <mxRectangle height="28" width="70" as="alternateBounds" />
           </mxGeometry>
