@@ -1,8 +1,8 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.10.0  
+> **Version:** v1.11.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-23  
+> **Last Updated:** 2026-09-25
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/C4 Container Diagram/README.md`, `docs/diagrams/ERD/README.md`
 
@@ -27,7 +27,7 @@ Hệ thống cung cấp nền tảng web responsive phục vụ người ăn cha
 [ Người dùng / Trình duyệt Web ]
               │ (HTTPS / REST)
               ▼
-[ Azure Static Web Apps (Frontend React + TS + Vite) ]
+[ Vercel (Frontend React + TS + Vite) ]
               │ (REST API / JSON / HttpOnly Cookie)
               ▼
 [ Azure App Service (Backend Spring Boot + Java 21) ]
@@ -42,13 +42,13 @@ Hệ thống cung cấp nền tảng web responsive phục vụ người ăn cha
                                └── YouTube (Embed player)
 ```
 
-Toàn bộ hệ thống được triển khai trên nền tảng **Microsoft Azure** nhằm đồng nhất môi trường, tối ưu chi phí vận hành cho nhóm và tận dụng gói Azure for Students.
+Frontend được host trên **Vercel**. Backend và data services được triển khai trên **Microsoft Azure** để tận dụng Java 21 SE trên App Service, Azure SQL Database Serverless và Azure Blob Storage.
 
 ## 3. Các thành phần runtime chính
 
 | Thành phần | Nền tảng / Công nghệ | Trách nhiệm đã xác nhận | Ranh giới |
 |---|---|---|---|
-| Browser client | React, TypeScript, Vite (Azure Static Web Apps) | Hiển thị giao diện responsive, nhận input người dùng, xử lý trạng thái loading/error, nhúng YouTube player và nút Google Login | Không phải ranh giới tin cậy cho authorization, validation hoặc lưu secret |
+| Browser client | React, TypeScript, Vite (Vercel) | Hiển thị giao diện responsive, nhận input người dùng, xử lý trạng thái loading/error, nhúng YouTube player và nút Google Login | Không phải ranh giới tin cậy cho authorization, validation hoặc lưu secret |
 | Spring Boot Backend | Java 21, Spring Boot (Azure App Service) | Xác thực request (JWT + Cookie Refresh Token), kiểm tra role/ownership, validate input, kiểm tra quyền tính năng AI (Feature Entitlement), áp dụng technical rate limit, điều phối nghiệp vụ và gọi external services | Quy tắc nghiệp vụ bắt buộc thực thi ở server-side kể cả khi UI đã ẩn thao tác |
 | SQL Server | Microsoft SQL Server (Azure SQL Database Serverless) | Relational Source of Truth chính cho tài khoản, công thức, thực đơn, giao dịch thanh toán và tham chiếu media | Tự động pause khi không có request; cần kích hoạt trước các buổi demo |
 | Media Storage | Azure Blob Storage | Lưu trữ tệp ảnh minh họa Recipe Post (0–5 ảnh qua thực thể `RECIPE_MEDIA`, JPEG/PNG/WebP $\le 5$ MB, đúng 1 ảnh bìa cover); SQL Server giữ URL tham chiếu, thứ tự hiển thị và cờ ảnh bìa | Phase 1 upload qua Backend kiểm duyệt; không upload file video |
@@ -230,12 +230,12 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 | Payment Provider | **Confirmed** | `payOS` (REST API qua Spring `RestClient` + Webhook HMAC-SHA256, xử lý idempotent theo `order_code`) |
 | Email Service | **Confirmed** | `Brevo` qua Spring Boot Mail (SMTP), xử lý bất đồng bộ `@Async`, lỗi không rollback |
 | Authentication Detail | **Confirmed** | Google Identity Services + `GoogleIdTokenVerifier` + Internal JWT & Rotating Refresh Cookie |
-| Deployment Topology | **Confirmed** | Azure Stack: Static Web Apps (FE) + App Service (BE) + Azure SQL Serverless (DB) + Blob Storage (Media) |
+| Deployment Topology | **Confirmed** | Vercel (FE) + Azure App Service Java 21 SE (BE) + Azure SQL Database Serverless (DB) + Azure Blob Storage (Media) |
 | Monitoring & Observability | **Confirmed** | Spring Boot Actuator (`/actuator/health`) + Logback + Azure Application Insights Java Agent |
 | QA & Testing Tooling | **Confirmed** | JUnit 5 + Mockito + JaCoCo + Codecov (CI reporting) + Testmail (Email E2E testing) + Requestly Pro (FE mocking) |
 | Tích hợp Google Maps | `OUT_OF_SCOPE` | Không thuộc baseline kiến trúc; M11 giữ trong SRS để bảo toàn lịch sử |
 | Upload trực tiếp lên Azure | Future option | Xem xét lại khi kích thước file/tải thực tế vượt quá năng lực xử lý của Backend |
 | Module Blog cộng đồng | Out of MVP Scope | Được phân rã tại SRS 3.21; chỉ xem xét kiến trúc sau khi các module cốt lõi hoàn thành |
 | Frontend State & Styling | TBD | Sẽ quyết định cùng React scaffold (React Context / Tailwind CSS / UI library) |
-| Demo Domain Polish | Open Polish | Đăng ký 1 tên miền từ GitHub Student Pack (.tech hoặc Name.com) CNAME về Azure trước buổi demo |
+| Demo Domain Polish | Open Polish | Chọn tên miền `.tech` cụ thể và cấu hình DNS về Vercel trước buổi demo; tên miền chưa được chốt hoặc cấu hình |
 | Azure SQL Cold Start | Operational Note | Kích hoạt database trước 5-10 phút trước khi thuyết trình để tránh độ trễ thức dậy của Serverless |

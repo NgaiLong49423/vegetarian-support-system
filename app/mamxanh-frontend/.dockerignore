@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.vercel/
+.env*
+.vite/
+playwright-report/
+test-results/
+*.log
+.idea/
+.vscode/
+.git/
+.gitignore
+Dockerfile*
