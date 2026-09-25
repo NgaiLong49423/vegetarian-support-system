@@ -1,8 +1,8 @@
 > **Document:** C4 Container Diagram Workspace Guide
 > **File:** `docs/diagrams/C4 Container Diagram/README.md`
-> **Version:** v1.4.0
+> **Version:** v1.4.1
 > **Created:** 2026-09-17
-> **Last Updated:** 2026-09-24
+> **Last Updated:** 2026-09-25
 > **Status:** Under Review
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/ERD/README.md`
 
@@ -110,7 +110,6 @@ README đã được đồng bộ với nội dung hiện có, nhưng sơ đồ 
 4. Quan hệ Backend ↔ Recipe Image Storage chưa có cặp đường riêng, nên luồng Blob Storage chưa được thể hiện rõ.
 5. External Systems đang dùng một cặp HTTPS tổng quát, chưa thể hiện khác biệt giữa Gemini API, payOS API/webhook, Google sign-in/token verification và Brevo SMTP/TLS.
 6. Nhiều connector trong XML đang dùng tọa độ rời thay vì gắn `source`/`target` vào block; khi di chuyển block, đường nối có thể không đi theo.
-7. Sơ đồ dùng Vercel cho Frontend, trong khi `ARCHITECTURE.md` và bảng deployment trong `TECHNOLOGY-STACK.md` vẫn ghi Azure Static Web Apps. Quyết định nguồn có thẩm quyền cần được đồng bộ riêng trước khi coi view này là baseline chính thức.
 
 ## 6. Quy trình cập nhật
 

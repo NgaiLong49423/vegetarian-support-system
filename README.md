@@ -1,8 +1,8 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.11.1
+> **Version:** v0.12.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-22
+> **Last Updated:** 2026-09-25
 > **Status:** Active
 
 # Mâm Xanh — Vegetarian Support System
@@ -34,7 +34,7 @@ Chi tiết nghiệp vụ nằm trong [SRS](docs/requirements/SRS.md). Các đề
 | Security | Spring Security, Google Identity Services (GIS), `GoogleIdTokenVerifier`, short-lived JWT access token, rotating refresh token (HttpOnly cookie), BCrypt, role-based authorization |
 | External services | Google Gemini (`gemini-3.8-flash` qua Google Gen AI Java SDK), payOS (VietQR Payment REST & Webhook), Brevo (Transactional Email SMTP), Azure Blob Storage, YouTube embedding |
 | Quality & DevOps | JUnit 5, Mockito, Playwright, JaCoCo, Codecov (CI coverage), Testmail (Email E2E testing), OpenAPI/Swagger UI, Bean Validation, Azure Application Insights |
-| Deployment | Azure Static Web Apps (FE) + Azure App Service (BE) + Azure SQL Serverless (DB) + Azure Blob (Media) + Custom Domain (.tech) |
+| Deployment | Vercel (FE) + Azure App Service Java 21 SE (BE) + Azure SQL Serverless (DB) + Azure Blob Storage (Media) + Custom Domain `.tech` |
 
 Xem chi tiết trong [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) và [System Architecture](docs/architecture/ARCHITECTURE.md).
 
@@ -109,7 +109,7 @@ Quy tắc đặt file và danh mục tài liệu được duy trì nằm trong [
 5. Mở PR vào `develop` bằng `Refs #<issue>` và ghi kết quả tự kiểm tra; owner vẫn phải chạy kiểm tra phù hợp dù approval/GitHub Actions chưa phải cổng bắt buộc ở nhánh này.
 6. Tech Lead chọn phần ổn định để mở PR `develop -> main` cuối tuần; cần approval độc lập và required CI checks. Issue chỉ `Done` sau kiểm tra demo local trên `main` đạt. Xem [workflow chính](CONTRIBUTING.md#workflow-làm-việc-nhóm).
 
-Nhóm phát triển trên local. [Bản demo UI trên Vercel](https://mamxanh-frontend.vercel.app/) phục vụ buổi giới thiệu với giảng viên, được deploy thủ công và chưa kết nối Backend. FE đã bổ sung bình luận, chỉnh khẩu phần, biểu mẫu báo cáo công thức, BMI, trang gói AI và lịch sử giao dịch; xem [tính năng và giới hạn demo](app/mamxanh-frontend/README.md#giao-diện-demo-và-giới-hạn-hiện-tại). Không thiết lập CI/CD cho bản demo Vercel. Deployment Azure toàn hệ thống thực hiện riêng khi nhóm xác nhận ứng dụng đủ ổn định.
+Nhóm phát triển trên local. Baseline production đã chốt dùng **Vercel cho Frontend**, **Azure App Service (Java 21 SE) cho Backend**, **Azure SQL Database Serverless** và **Azure Blob Storage**. [Bản Frontend hiện có trên Vercel](https://mamxanh-frontend.vercel.app/) vẫn là demo UI dùng dữ liệu mẫu, được deploy thủ công và chưa kết nối Backend; xem [tính năng và giới hạn demo](app/mamxanh-frontend/README.md#giao-diện-demo-và-giới-hạn-hiện-tại). Việc chọn Vercel làm hosting baseline không đồng nghĩa Git auto-deploy hoặc CI/CD đã được thiết lập.
 
 ## Trạng thái chạy và kiểm thử
 

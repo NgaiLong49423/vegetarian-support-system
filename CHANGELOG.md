@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.31.0
+> **Version:** v2.32.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-25
 > **Status:** Active
@@ -8,6 +8,29 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-25 — Confirm Vercel and Azure Deployment Baseline
+
+**Status:** Committed — d1c2082.
+
+**Scope:** Record the approved hosting split across maintained architecture, setup, workflow, and overview documentation without claiming that deployment automation or the complete production system already exists.
+
+### Added
+
+- None.
+
+### Changed
+
+- Confirm Vercel as the Frontend hosting platform and Azure App Service with Java 21 SE as the Backend hosting platform.
+- Retain Azure SQL Database Serverless and Azure Blob Storage as the database and media services.
+- Point the planned `.tech` custom domain to the Vercel-hosted Frontend instead of Azure Static Web Apps.
+- Clarify that the current Vercel demo remains manually deployed and that Git auto-deploy or CI/CD has not been configured.
+- Clarify that the application-level Dockerfiles standardize local development and are not the selected production deployment artifacts.
+- Remove the resolved Vercel-versus-Azure Static Web Apps inconsistency from the C4 review findings and refresh the maintained document register.
+
+### Fixed
+
+- None.
 
 ## 2026-09-24 — Add Per-Application Docker Setup and Align C4 Guidance
 

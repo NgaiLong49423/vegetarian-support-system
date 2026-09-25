@@ -1,8 +1,8 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.5.0
+> **Version:** v1.6.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-24
+> **Last Updated:** 2026-09-25
 > **Status:** Active  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -111,11 +111,11 @@ Credential của provider phải nằm ở Backend và ngoài Source Control.
 
 | Thành phần | Công nghệ / Nền tảng | Trạng thái | Ghi chú và Ràng buộc |
 |---|---|---|---|
-| Frontend Hosting | Azure Static Web Apps | Confirmed | Host ứng dụng React build bằng Vite; hỗ trợ CDN toàn cầu, cấp HTTPS tự động và CI/CD qua GitHub Actions |
+| Frontend Hosting | Vercel | Confirmed | Host ứng dụng React build bằng Vite, cung cấp CDN và HTTPS; baseline hosting không tự xác nhận Git auto-deploy hoặc CI/CD đã được cấu hình |
 | Backend Hosting | Azure App Service (Java 21 SE) | Confirmed | Chạy ứng dụng Spring Boot JAR độc lập; hỗ trợ Auto-healing, Managed TLS và tích hợp Application Insights |
 | Database Hosting | Azure SQL Database (Serverless) | Confirmed | Microsoft SQL Server đám mây; tự động pause khi không hoạt động để tối ưu chi phí (cần kích hoạt trước khi demo) |
 | Media Storage | Azure Blob Storage | Confirmed | Lưu trữ ảnh bài đăng công thức nấu ăn |
-| Custom Domain | Domain `.tech` hoặc Name.com | Confirmed Polish | Sử dụng tên miền miễn phí 1 năm từ GitHub Student Pack, CNAME trỏ về Azure Static Web Apps cho buổi live demo |
+| Custom Domain | Domain `.tech` | Confirmed Polish | Có thể cấu hình custom domain cho Vercel; tên miền cụ thể và DNS record sẽ được chốt khi chuẩn bị live demo |
 | Secrets - Local | Environment Variables / `.env` | Confirmed | Biến môi trường hệ thống; cam kết không commit file `.env`, duy trì `.env.example` mẫu |
 | Secrets - CI/CD | GitHub Environment Secrets | Confirmed | Quản lý token triển khai, Sonar/Codecov token và build secrets trong GitHub Actions |
 | Secrets - Production | Azure App Service App Settings / Key Vault | Confirmed | Cấu hình trực tiếp trên Azure Portal hoặc nạp qua Azure Key Vault reference |
