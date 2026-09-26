@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -25,13 +25,13 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35).
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow):**
   - Bước 1: Member truy cập giao diện Hồ sơ dinh dưỡng; hệ thống hiển thị nổi bật Tuyên bố từ chối trách nhiệm y tế (Medical Safety Disclaimer theo BR-39, BR-41).
-  - Bước 2: Member nhập các thông số: Năm sinh/Tuổi (phải $\ge 18$), Giới tính sinh học, Chiều cao (cm), Cân nặng (kg), Mức độ hoạt động thể chất (Ít vận động, Vận động nhẹ, Vận động vừa, Vận động nặng) và Mục tiêu dinh dưỡng chung (Duy trì cân nặng, Tăng cường sức khỏe, Hỗ trợ tập luyện).
+  - Bước 2: Member nhập các thông số: ngày sinh (`date_of_birth`), Giới tính sinh học, Chiều cao (cm), Cân nặng (kg), Mức độ hoạt động thể chất (Ít vận động, Vận động nhẹ, Vận động vừa, Vận động nặng) và Mục tiêu dinh dưỡng chung (Duy trì cân nặng, Tăng cường sức khỏe, Hỗ trợ tập luyện). Hệ thống lưu ngày sinh, không lưu tuổi cố định.
   - Bước 3: Member nhấn "Lưu hồ sơ và Tính toán tham khảo".
-  - Bước 4: Hệ thống kiểm tra tính hợp lệ của dữ liệu đầu vào: Chiều cao từ 100 cm đến 250 cm, Cân nặng từ 30 kg đến 300 kg, Tuổi từ 18 đến 120.
+  - Bước 4: Service tính tuổi từ `date_of_birth` tại thời điểm xử lý và kiểm tra khoảng 18–120; database từ chối ngày sinh trong tương lai hoặc trước ngày 01/01/1900. Hệ thống đồng thời kiểm tra chiều cao từ 100 cm đến 250 cm và cân nặng từ 30 kg đến 300 kg.
   - Bước 5: Hệ thống tính toán chỉ số khối cơ thể: $\text{BMI} = \frac{\text{Cân nặng (kg)}}{(\text{Chiều cao (m)})^2}$, làm tròn 1 chữ số thập phân (BR-39).
   - Bước 6: Hệ thống xác định phân loại thể trạng tham khảo theo chuẩn WHO/USDA (Thiếu cân, Bình thường, Thừa cân, Béo phì) kèm văn bản cảnh báo rõ ràng rằng đây chỉ là chỉ số sàng lọc tham khảo, không đại diện cho tỷ lệ mỡ hay chẩn đoán sức khỏe cá nhân.
   - Bước 7: Hệ thống tính toán mức nhu cầu tham khảo hàng ngày cho 9 chỉ tiêu cốt lõi (Năng lượng, Đạm, Carb, Chất béo, Chất xơ, Canxi, Sắt, Vitamin B12, Kẽm) dựa trên công thức tham chiếu USDA/NIH và mức độ hoạt động.
-  - Bước 8: Hệ thống lưu trữ hồ sơ dinh dưỡng của Member vào cơ sở dữ liệu và hiển thị bảng kết quả chỉ số tham khảo.
+  - Bước 8: Hệ thống lưu hồ sơ dinh dưỡng của Member, bao gồm `date_of_birth` (không lưu tuổi), vào cơ sở dữ liệu và hiển thị bảng kết quả chỉ số tham khảo.
 - **Luồng thay thế (Alternative Flows):**
   - *AF-35.1 (Cập nhật lại thông số):* Member có thể chỉnh sửa cân nặng hoặc mức độ vận động bất kỳ lúc nào. Hệ thống tự động tính toán lại BMI và 9 chỉ tiêu tham khảo tương ứng, cập nhật ngày sửa đổi gần nhất.
   - *AF-35.2 (Xem lại hồ sơ đã lưu):* Khi Member truy cập trang hồ sơ dinh dưỡng, nếu đã có dữ liệu trước đó, hệ thống tải dữ liệu đã lưu cùng ngày cập nhật và hiển thị đầy đủ thông số tham khảo.
@@ -326,27 +326,26 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-41).
 
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow):**
-  - Bước 1: Administrator truy cập danh sách nguyên liệu dinh dưỡng; hệ thống hiển thị danh sách dạng bảng phân trang gồm: Tên nguyên liệu, Năng lượng, Đạm, Carb, Chất béo, Nguồn tham chiếu (USDA/NIH), Ngày cập nhật, Trạng thái (Đang hỗ trợ / Đã ngừng hỗ trợ), và Số lượng công thức đang sử dụng.
+  - Bước 1: Administrator truy cập danh sách nguyên liệu dinh dưỡng; hệ thống hiển thị danh sách dạng bảng phân trang gồm: Tên nguyên liệu, Năng lượng, Đạm, Carb, Chất béo, Nguồn tham chiếu (USDA/NIH), Ngày cập nhật, trạng thái danh mục (`status`: `ACTIVE`/`INACTIVE`), trạng thái hỗ trợ tính toán (`nutrition_supported`) và Số lượng công thức đang sử dụng.
   - Bước 2: Administrator nhấn nút "Thêm nguyên liệu mới".
   - Bước 3: Hệ thống hiển thị biểu mẫu yêu cầu nhập liệu:
     - Tên nguyên liệu tiếng Việt (chuẩn hóa, không trùng lặp) và tên tiếng Anh (tùy chọn).
     - Nhóm thực phẩm (Rau củ, Đậu & Chế phẩm, Ngũ cốc, Các loại hạt, Trái cây, Gia vị chay).
-    - Giá trị của đầy đủ 9 chỉ tiêu cốt lõi trên 100g (Năng lượng kcal $\ge 0$, Protein g $\ge 0$, Carb g $\ge 0$, Fat g $\ge 0$, Fiber g $\ge 0$, Calcium mg $\ge 0$, Iron mg $\ge 0$, Vitamin B12 mcg $\ge 0$, Zinc mg $\ge 0$).
-    - Nguồn dữ liệu tham chiếu (bắt buộc chọn USDA FoodData Central hoặc NIH/Viện Dinh Dưỡng).
-    - Mã định danh hoặc URL tham chiếu nguồn (bắt buộc).
-    - Ngày đối chiếu dữ liệu.
-  - Bước 4: Administrator nhập đầy đủ dữ liệu và nhấn "Lưu nguyên liệu".
-  - Bước 5: Hệ thống kiểm tra hợp lệ: Bắt buộc không được để trống bất kỳ chỉ tiêu nào trong 9 chỉ tiêu; không chấp nhận giá trị âm; tên không được trùng với nguyên liệu đang hoạt động; nguồn tham chiếu phải rõ ràng (BR-52).
-  - Bước 6: Hệ thống lưu bản ghi mới vào cơ sở dữ liệu với trạng thái `Đang hỗ trợ` (Active), ghi nhận ID của Administrator tạo và thời gian tạo.
+    - Giá trị của 9 chỉ tiêu cốt lõi trên 100g (Năng lượng kcal $\ge 0$, Protein g $\ge 0$, Carb g $\ge 0$, Fat g $\ge 0$, Fiber g $\ge 0$, Calcium mg $\ge 0$, Iron mg $\ge 0$, Vitamin B12 mcg $\ge 0$, Zinc mg $\ge 0$); chỉ tiêu chưa có dữ liệu có thể để trống khi Ingredient chưa được hỗ trợ tính toán (`nutrition_supported = 0`), còn `0` là giá trị thật.
+    - Tên nguồn dữ liệu (`source_name`, chọn USDA FoodData Central hoặc NIH/Viện Dinh dưỡng) và ngày đối chiếu (`reference_date`) theo ràng buộc database; URL nguồn (`source_url`) có thể chưa có khi `nutrition_supported = 0`.
+  - Bước 4: Administrator nhập dữ liệu hiện có và nhấn "Lưu nguyên liệu"; các chỉ tiêu dinh dưỡng chưa biết được để trống, không nhập `0` thay thế.
+  - Bước 5: Hệ thống kiểm tra hợp lệ: không chấp nhận giá trị dinh dưỡng âm; tên không được trùng với nguyên liệu đang hoạt động; tuân thủ các ràng buộc nguồn hiện hành. Khi `nutrition_supported = 0`, thiếu chỉ tiêu không chặn lưu; khi bật `nutrition_supported = 1`, phải có đủ 9 chỉ tiêu khác `NULL` và đủ `source_name`, `source_url`, `reference_date` (BR-52).
+  - Bước 6: Hệ thống lưu bản ghi mới với `nutrition_supported = 0` mặc định; trạng thái danh mục (`status`) được quản lý riêng và không có nghĩa rằng nguyên liệu đã đủ điều kiện tham gia tính toán.
   - Bước 7: Hệ thống cập nhật lại danh sách và thông báo thêm mới thành công.
 - **Luồng thay thế (Alternative Flows):**
   - *AF-41.1 (Chỉnh sửa nguyên liệu hiện có):* Administrator chọn một nguyên liệu và chỉnh sửa số liệu. Sau khi lưu hợp lệ, hệ thống cập nhật bản ghi và đánh dấu các công thức đang liên kết để tự động cập nhật lại dinh dưỡng trong chu kỳ tính toán tiếp theo.
-  - *AF-41.2 (Ngừng hỗ trợ nguyên liệu):* Administrator chọn ngừng hỗ trợ (Deactivate) một nguyên liệu. Hệ thống chuyển trạng thái nguyên liệu sang `Ngừng hỗ trợ`. Các công thức cũ đã sử dụng nguyên liệu này vẫn giữ nguyên tham chiếu lịch sử, nhưng nguyên liệu sẽ không xuất hiện trong gợi ý chọn nguyên liệu mới cho người dùng (BR-53).
-  - *AF-41.3 (Kích hoạt lại nguyên liệu):* Administrator có thể bật lại trạng thái `Đang hỗ trợ` cho một nguyên liệu đã bị ngừng hỗ trợ trước đó.
+  - *AF-41.2 (Ngừng hỗ trợ nguyên liệu trong danh mục):* Administrator chuyển `status` của nguyên liệu sang `INACTIVE`. Các công thức cũ đã sử dụng nguyên liệu này vẫn giữ nguyên tham chiếu lịch sử, nhưng nguyên liệu sẽ không xuất hiện trong gợi ý chọn nguyên liệu mới cho người dùng (BR-53).
+  - *AF-41.3 (Kích hoạt lại nguyên liệu trong danh mục):* Administrator có thể chuyển `status` về `ACTIVE` cho một nguyên liệu đã ngừng hoạt động. Thay đổi `status` không tự bật `nutrition_supported`.
   - *AF-41.4 (Xem công thức đang liên kết):* Administrator nhấn vào số lượng công thức đang sử dụng để xem danh sách chi tiết các Recipe Post đang tham chiếu đến nguyên liệu này.
+  - *AF-41.5 (Bật hỗ trợ tính toán dinh dưỡng):* Với Ingredient đã lưu ở `nutrition_supported = 0`, Administrator yêu cầu bật hỗ trợ. Hệ thống chỉ đặt `nutrition_supported = 1` khi có đủ chín chỉ tiêu và `source_name`, `source_url`, `reference_date`; nếu thiếu dữ liệu, hệ thống từ chối bật và chỉ rõ phần còn thiếu (BR-52). Thao tác này tách biệt với việc lưu bản ghi và đổi `status`.
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
   - *EF-41.1 (Cố gắng xóa vĩnh viễn nguyên liệu đã tham chiếu):* Nếu Administrator cố gắng thực hiện hành động xóa vĩnh viễn (hard delete) một nguyên liệu đã có ít nhất một bài công thức tham chiếu, hệ thống từ chối hành động, ngăn chặn xóa và hiển thị thông báo: *"Không thể xóa vĩnh viễn nguyên liệu đã được tham chiếu trong công thức. Vui lòng sử dụng tính năng Ngừng hỗ trợ"* (BR-53).
-  - *EF-41.2 (Thiếu bất kỳ chỉ tiêu nào trong 9 chỉ tiêu):* Nếu biểu mẫu thiếu dù chỉ một giá trị chỉ tiêu dinh dưỡng hoặc thiếu nguồn trích dẫn, hệ thống chặn lưu và yêu cầu nhập đủ dữ liệu (BR-52).
+  - *EF-41.2 (Thiếu dữ liệu khi bật hỗ trợ dinh dưỡng):* Nếu thiếu một trong chín chỉ tiêu hoặc thiếu metadata nguồn cần thiết khi bật `nutrition_supported = 1`, hệ thống từ chối bật hỗ trợ và yêu cầu bổ sung dữ liệu (BR-52). Khi `nutrition_supported = 0`, việc thiếu chỉ tiêu được lưu dưới dạng `NULL` và không chặn lưu Ingredient.
   - *SF-41.1 (Chặn truy cập trái phép):* Người dùng không có quyền Administrator khi cố gắng gọi thao tác CRUD danh mục dinh dưỡng sẽ bị hệ thống từ chối với mã lỗi 403 Forbidden (NFR-09).
   - *SF-41.2 (Cấm tự động nhập hàng loạt và AI can thiệp):* Hệ thống không cung cấp API import tự động không qua kiểm duyệt và tuyệt đối không cấp quyền cho AI tự động sửa đổi hoặc chèn số liệu vào danh mục dinh dưỡng (BR-51, BR-54).
 

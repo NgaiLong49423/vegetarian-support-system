@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -414,7 +414,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-52 — Yêu cầu đầy đủ 9 chỉ tiêu và nguồn trước khi kích hoạt
 
 - **Mã quy tắc:** BR-52
-- **Nội dung:** Mỗi nguyên liệu dinh dưỡng được thêm/sửa phải có đủ chín giá trị trên 100 g, tên nguồn, đường dẫn nguồn và ngày tham khảo hợp lệ trước khi được bật để tính toán chính thức.
+- **Nội dung:** Ingredient có thể được lưu khi `nutrition_supported = 0` dù một hoặc nhiều chỉ tiêu dinh dưỡng chưa có dữ liệu; `NULL` biểu thị chưa biết và không được thay bằng `0`. Chỉ được bật `nutrition_supported = 1` để tính toán chính thức khi đủ cả chín giá trị trên 100 g và đầy đủ metadata nguồn tham chiếu (`source_name`, `source_url`, `reference_date`). Các ràng buộc lưu trữ hiện hành của database vẫn áp dụng.
 
 ---
 
@@ -603,4 +603,3 @@ This document contains only requirements included in Requirements / Implementati
   - Danh sách nguyên liệu giữ số lượng và đơn vị nguyên bản của từng công thức. Hệ thống có thể nhóm tên nguyên liệu chuẩn giống nhau để đối chiếu nhưng không tự coi tên gần giống là cùng nguyên liệu và không tự quy đổi đơn vị khi chưa có quy tắc `INGREDIENT_UNIT_CONVERSION` hợp lệ.
   - Nếu một công thức hoặc chỉ tiêu thiếu dữ liệu, hệ thống hiển thị `Chưa đủ dữ liệu` đúng bên bị ảnh hưởng; giá trị chưa biết không được thay bằng `0` hoặc do AI suy đoán.
   - Guest và Member đều được sử dụng chức năng với dữ liệu công khai. MVP không lưu lịch sử so sánh và không xuất kết quả so sánh ra PDF.
-

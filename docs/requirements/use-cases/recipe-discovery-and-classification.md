@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M04
 > **File:** `docs/requirements/use-cases/recipe-discovery-and-classification.md`
-> **Version:** v2.0.0
+> **Version:** v2.0.1
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -35,7 +35,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08).
      - Chọn giới hạn thời gian nấu tối đa ($\le 15$ phút, $\le 30$ phút, $\le 60$ phút, hoặc trên 60 phút).
      - Chọn 1 trong 6 chế độ sắp xếp độc lập:
        1. **Mới nhất (Newest):** Sắp xếp theo ngày giờ công khai giảm dần (mặc định).
-       2. **Được yêu thích nhất (Most Liked / Highest Rated):** Sắp xếp theo tỷ lệ % Like giảm dần, kèm điều kiện phụ theo tổng lượt Like (`likes_count` giảm dần); hiển thị huy hiệu tỷ lệ % Like Samsung Food (`👍 {like_percentage}%`) hoặc nhãn "Mới" nếu chưa có lượt bình chọn (BR-69).
+       2. **Được yêu thích nhất (Most Liked):** Sắp xếp theo tỷ lệ % Like giảm dần, kèm điều kiện phụ theo tổng lượt Like (`like_count` giảm dần); hiển thị huy hiệu tỷ lệ % Like Samsung Food (`👍 {like_percentage}%`) hoặc nhãn "Mới" nếu chưa có lượt bình chọn (BR-69).
        3. **Xem nhiều nhất (Most Viewed):** Sắp xếp theo số lượt xem hợp lệ từ `RECIPE_VIEW` (hỗ trợ chọn khung 24h, 7 ngày, 30 ngày, all-time) (BR-70).
        4. **Nhiều bình luận nhất (Most Commented):** Sắp xếp theo tổng số bình luận hợp lệ giảm dần.
        5. **Hoạt động sôi nổi nhất (Most Active):** Sắp xếp theo tổng điểm tương tác 7 ngày qua ($\text{views} + 5 \times \text{comments} + 10 \times (\text{likes} + \text{dislikes})$) không phân biệt bài cũ hay mới (BR-71).

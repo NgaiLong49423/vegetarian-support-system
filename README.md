@@ -1,8 +1,8 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.12.0
+> **Version:** v0.12.1
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-25
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 
 # Mâm Xanh — Vegetarian Support System
@@ -18,7 +18,7 @@
 ## Phạm vi MVP
 
 - Guest đọc/tìm bài công thức công khai, xem bình luận và dùng AI hỏi đáp cơ bản theo hạn mức.
-- Member quản lý hồ sơ, lưu công thức, lập lịch ăn ba bữa, Shopping List, đánh giá sao và bình luận/reply. Chức năng Like đã `RETIRED`; Nearby Restaurant Discovery/Google Maps (M11) là `OUT_OF_SCOPE` và không thuộc baseline triển khai hiện tại.
+- Member quản lý hồ sơ, lưu công thức, lập lịch ăn ba bữa, Shopping List, bình chọn Like/Dislike trên bài công thức (`FR-57` đang `ACTIVE`) và bình luận/reply. Like trên bình luận/reply đã `RETIRED`; Nearby Restaurant Discovery/Google Maps (M11) là `OUT_OF_SCOPE` và không thuộc baseline triển khai hiện tại.
 - Chỉ Chuyên gia đã được phê duyệt có thể tạo và công khai Recipe Post trực tiếp; Administrator hậu kiểm nội dung theo báo cáo của người dùng.
 - Gemini hỗ trợ hỏi đáp, gợi ý công thức có sẵn, lập/thay thực đơn và tạo nội dung có thể chỉnh sửa trong biểu mẫu; AI không tự tạo dữ liệu dinh dưỡng chính thức hoặc tự quyết định kiểm duyệt. Lưu nháp Recipe Post, lịch sử chat AI và AI quét/gắn cờ nội dung không thuộc MVP hiện tại.
 - AI được phân quyền theo tính năng: Free dùng Chatbot và gợi ý món cơ bản; Plus mở thêm AI hỗ trợ soạn bài và gợi ý biến tấu; Pro mở thêm AI lập thực đơn tuần. Không áp dụng quota request/ngày. Giá tháng cố định cho MVP là FREE 0 VND, PLUS 49,000 VND và PRO 99,000 VND; không tự động gia hạn hoặc hoàn tiền một phần, entitlement trả phí chỉ có hiệu lực sau thanh toán được xác minh và hết hạn cuối kỳ đã trả.

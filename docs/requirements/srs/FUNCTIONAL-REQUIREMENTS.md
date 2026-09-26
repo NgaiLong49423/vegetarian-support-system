@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -517,7 +517,7 @@ Cung cấp trung tâm điều hành hậu kiểm nội dung toàn diện cho Qu�
 
 - **Mã yêu cầu:** FR-08
 - **Module:** M04 (Recipe Catalog & Search)
-- **Tóm tắt yêu cầu:** Hệ thống cung cấp công cụ tìm kiếm và bộ lọc đa tiêu chí (từ khóa, loại ăn chay chuẩn, thể loại món chuẩn hóa `dish_category`, nguyên liệu, thời gian nấu tối đa) kết hợp 6 chế độ sắp xếp độc lập: Mới nhất (Newest), Được yêu thích nhất (Most Liked / Highest Rated theo tỷ lệ % Like và tổng Like BR-69), Xem nhiều nhất (Most Viewed theo 24h/7d/30d/all-time), Nhiều bình luận nhất (Most Commented), Hoạt động sôi nổi nhất (Most Active theo tương tác 7 ngày gần nhất BR-71), và Thịnh hành (Trending theo tương tác gần đây + freshness decay BR-72) cho toàn bộ người dùng (Guest, Member, Administrator).
+- **Tóm tắt yêu cầu:** Hệ thống cung cấp công cụ tìm kiếm và bộ lọc đa tiêu chí (từ khóa, loại ăn chay chuẩn, thể loại món chuẩn hóa `dish_category`, nguyên liệu, thời gian nấu tối đa) kết hợp 6 chế độ sắp xếp độc lập: Mới nhất (Newest), Được yêu thích nhất (Most Liked theo tỷ lệ % Like và tổng lượt Like `like_count`, BR-69), Xem nhiều nhất (Most Viewed theo 24h/7d/30d/all-time), Nhiều bình luận nhất (Most Commented), Hoạt động sôi nổi nhất (Most Active theo tương tác 7 ngày gần nhất BR-71), và Thịnh hành (Trending theo tương tác gần đây + freshness decay BR-72) cho toàn bộ người dùng (Guest, Member, Administrator).
 
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-discovery-and-classification.md#fr-08).
 
@@ -580,10 +580,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - **When:** Người dùng chọn sắp xếp theo "Mới nhất".
   - **Then:** Kết quả được hiển thị theo thứ tự thời gian công khai giảm dần.
 
-- **AC-08.6 — Sắp xếp theo Được yêu thích nhất (Most Liked / Highest Rated):**
+- **AC-08.6 — Sắp xếp theo Được yêu thích nhất (Most Liked):**
   - **Given:** Các bài công thức có tỷ lệ % Like và tổng số lượt bình chọn khác nhau.
   - **When:** Người dùng chọn chế độ sắp xếp "Được yêu thích nhất".
-  - **Then:** Kết quả sắp xếp theo tỷ lệ % Like giảm dần, kèm điều kiện phụ theo tổng lượt Like (`likes_count` giảm dần); trên giao diện hiển thị rõ huy hiệu tỷ lệ % Like (`👍 {like_percentage}%`) hoặc nhãn "Mới" nếu chưa có bình chọn (BR-69).
+  - **Then:** Kết quả sắp xếp theo tỷ lệ % Like giảm dần, kèm điều kiện phụ theo tổng lượt Like (`like_count` giảm dần); trên giao diện hiển thị rõ huy hiệu tỷ lệ % Like (`👍 {like_percentage}%`) hoặc nhãn "Mới" nếu chưa có bình chọn (BR-69).
 
 - **AC-08.7 — Sắp xếp theo Xem nhiều nhất (Most Viewed):**
   - **Given:** Các bài công thức có dữ liệu lượt xem hợp lệ trong `RECIPE_VIEW`.
@@ -2318,7 +2318,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-35).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cho phép Member đã đăng nhập và đủ điều kiện sức khỏe khai báo/cập nhật thông số nhân trắc học (tuổi, giới tính, chiều cao, cân nặng, mức độ vận động, mục tiêu dinh dưỡng cá nhân); tính toán chỉ số BMI tham khảo và hiển thị nhu cầu năng lượng/dinh dưỡng ước tính dựa trên dữ liệu chuẩn USDA/NIH; bắt buộc hiển thị tuyên bố từ chối trách nhiệm y tế (Medical Safety Disclaimer); hệ thống tuyệt đối không tự chẩn đoán, kê đơn hay áp đặt chế độ ăn điều trị.
+- **Tóm tắt yêu cầu:** Cho phép Member đã đăng nhập và đủ điều kiện sức khỏe khai báo/cập nhật thông số nhân trắc học (`date_of_birth`, giới tính, chiều cao, cân nặng, mức độ vận động, mục tiêu dinh dưỡng cá nhân); service tính tuổi từ ngày sinh để kiểm tra điều kiện 18–120, không lưu tuổi cố định; tính toán chỉ số BMI tham khảo và hiển thị nhu cầu năng lượng/dinh dưỡng ước tính dựa trên dữ liệu chuẩn USDA/NIH; bắt buộc hiển thị tuyên bố từ chối trách nhiệm y tế (Medical Safety Disclaimer); hệ thống tuyệt đối không tự chẩn đoán, kê đơn hay áp đặt chế độ ăn điều trị.
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Member đã đăng nhập, từ đủ 18 tuổi, không mang thai, không cho con bú và không có bệnh lý mạn tính cần chế độ ăn điều trị đặc biệt (SRS 3.18, BR-41, BR-42).
   - Không áp dụng: Guest (BR-05), người dùng dưới 18 tuổi, phụ nữ có thai/cho con bú, người cần can thiệp y tế (BR-42).
@@ -2357,10 +2357,10 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - *Given* Member đã đăng nhập và truy cập giao diện Hồ sơ dinh dưỡng,
   - *When* trang được hiển thị,
   - *Then* hệ thống trình bày nổi bật văn bản Tuyên bố từ chối trách nhiệm y tế nêu rõ số liệu chỉ mang tính chất tham khảo dựa trên chuẩn USDA/NIH và không thay thế tư vấn y khoa chuyên nghiệp.
-- **AC-35.2 (Chặn đối tượng loại trừ y tế):**
-  - *Given* người dùng khai báo đang mang thai, cho con bú, dưới 18 tuổi hoặc có bệnh lý điều trị,
-  - *When* người dùng gửi yêu cầu lưu hồ sơ,
-  - *Then* hệ thống từ chối tính toán nhu cầu dinh dưỡng cá nhân hóa và hiển thị thông báo hướng dẫn tham vấn ý kiến bác sĩ chuyên khoa.
+- **AC-35.2 (Kiểm tra ngày sinh và chặn đối tượng ngoài phạm vi hỗ trợ):**
+  - *Given* Member nhập `date_of_birth` trong tương lai hoặc trước ngày 01/01/1900, hoặc ngày sinh cho thấy tuổi do service tính nằm ngoài khoảng 18–120; Member cũng có thể khai báo đang mang thai, cho con bú hoặc có bệnh lý cần điều trị,
+  - *When* Member gửi yêu cầu lưu hồ sơ hoặc tính nhu cầu dinh dưỡng,
+  - *Then* hệ thống từ chối ngày sinh không hợp lệ; với người ngoài khoảng tuổi hoặc thuộc nhóm loại trừ, hệ thống không tính nhu cầu cá nhân hóa và hiển thị hướng dẫn tham vấn bác sĩ/chuyên gia y tế. Tuổi được tính từ `date_of_birth`, không lưu thành thuộc tính tuổi cố định (Q7).
 - **AC-35.3 (Xác thực dữ liệu nhập liệu nhân trắc học):**
   - *Given* Member nhập thông số chiều cao hoặc cân nặng ngoài ngưỡng sinh lý hợp lệ ($100 \le \text{chiều cao} \le 250$ cm, $30 \le \text{cân nặng} \le 300$ kg),
   - *When* Member nhấn nút lưu hồ sơ,
@@ -2800,7 +2800,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-41).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp giao diện quản trị chuyên biệt cho phép Administrator xem, tìm kiếm, lọc, thêm mới, cập nhật, ngừng hỗ trợ (deactivate/soft-delete) và kích hoạt lại các bản ghi trong danh mục nguyên liệu dinh dưỡng nội bộ; mỗi bản ghi bắt buộc chứa tên chuẩn hóa, giá trị đầy đủ của 9 chỉ tiêu dinh dưỡng cốt lõi tính trên 100g, nguồn dữ liệu tham chiếu chính thức (USDA FoodData Central / Viện Dinh dưỡng Quốc gia - NIH), đường dẫn/tài liệu tham khảo và ngày cập nhật; cho phép Administrator xem danh sách các Recipe Post đang liên kết với nguyên liệu; nghiêm cấm xóa vĩnh viễn (hard delete) nguyên liệu đã được tham chiếu trong bất kỳ công thức nào; nghiêm cấm nhập hàng loạt tự động (auto bulk-import) hoặc để AI tự động tạo/sửa/xác nhận số liệu dinh dưỡng.
+- **Tóm tắt yêu cầu:** Cung cấp giao diện quản trị chuyên biệt cho phép Administrator xem, tìm kiếm, lọc, thêm mới, cập nhật, ngừng hỗ trợ (deactivate/soft-delete) và kích hoạt lại các bản ghi trong danh mục nguyên liệu dinh dưỡng nội bộ. Mỗi Ingredient có tên chuẩn hóa, có thể có các giá trị dinh dưỡng chưa biết (`NULL`) trên 100 g khi `nutrition_supported = 0`; `NULL` không đồng nghĩa với giá trị thật bằng `0`. Theo constraint database hiện hành, `source_name` và `reference_date` vẫn bắt buộc khi lưu, còn `source_url` có thể để trống khi chưa hỗ trợ tính toán. Chỉ Ingredient đủ 9 chỉ tiêu và đủ cả `source_name`, `source_url`, `reference_date` mới được bật `nutrition_supported = 1` để tham gia tính toán chính thức; nguồn tham chiếu phải thuộc USDA FoodData Central hoặc NIH/Viện Dinh dưỡng theo lựa chọn hiện hành. Việc lưu bản ghi và bật hỗ trợ dinh dưỡng là hai thao tác/điều kiện khác nhau; trạng thái danh mục `status` không thay thế `nutrition_supported`. Các chức năng quản trị, xem công thức đang liên kết, không xóa vĩnh viễn dữ liệu đã tham chiếu, và cấm nhập hàng loạt tự động hoặc để AI sửa/xác nhận số liệu vẫn được giữ nguyên.
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Người dùng có vai trò `Administrator` (M09, M10).
   - Bảo đảm tính toàn vẹn và thẩm quyền: Chỉ con người có thẩm quyền quản trị mới được điều chỉnh dữ liệu dinh dưỡng cốt lõi (BR-51, BR-52, BR-54).
@@ -2811,9 +2811,9 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 #### Use Cases & User Stories
 - **Danh sách Use Cases:**
   - `UC-41.1`: Tìm kiếm, xem chi tiết và lọc danh mục nguyên liệu dinh dưỡng nội bộ.
-  - `UC-41.2`: Thêm mới nguyên liệu dinh dưỡng với đủ 9 chỉ tiêu và thông tin nguồn tham chiếu.
+  - `UC-41.2`: Thêm mới và lưu nguyên liệu dinh dưỡng; cho phép thiếu chỉ tiêu khi chưa bật hỗ trợ tính dinh dưỡng.
   - `UC-41.3`: Chỉnh sửa thông số dinh dưỡng và thông tin nguồn của nguyên liệu hiện có.
-  - `UC-41.4`: Chuyển trạng thái ngừng hỗ trợ (Deactivate) hoặc kích hoạt lại nguyên liệu dinh dưỡng.
+  - `UC-41.4`: Chuyển trạng thái danh mục (`ACTIVE`/`INACTIVE`) hoặc kích hoạt lại Ingredient; trạng thái này độc lập với `nutrition_supported`.
   - `UC-41.5`: Xem danh sách các bài công thức đang sử dụng nguyên liệu dinh dưỡng.
 - **User Stories:**
   - *Là một Administrator*, tôi muốn duy trì và cập nhật danh mục nguyên liệu dinh dưỡng chuẩn xác từ nguồn USDA/NIH có trích dẫn nguồn minh bạch, để hệ thống có cơ sở dữ liệu dinh dưỡng tin cậy phục vụ tính toán khẩu phần cho người dùng ăn chay.
@@ -2841,10 +2841,13 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* người dùng không có vai trò Administrator (Member hoặc Guest),
   - *When* người dùng cố gắng truy cập hoặc thực hiện thao tác trên danh mục nguyên liệu dinh dưỡng,
   - *Then* hệ thống từ chối truy cập và trả về thông báo lỗi không có quyền.
-- **AC-41.2 (Bắt buộc đủ 9 chỉ tiêu và nguồn dữ liệu):**
-  - *Given* Administrator tạo mới hoặc cập nhật nguyên liệu dinh dưỡng,
-  - *When* có bất kỳ chỉ tiêu nào trong 9 chỉ tiêu bị bỏ trống hoặc thiếu thông tin nguồn tham chiếu,
-  - *Then* hệ thống ngăn chặn việc lưu và hiển thị thông báo yêu cầu nhập đầy đủ 9 chỉ tiêu và nguồn gốc trích dẫn.
+- **AC-41.2 (Cho phép lưu dữ liệu chưa đủ và kiểm tra trước khi bật hỗ trợ dinh dưỡng):**
+  - *Given* Administrator tạo mới hoặc cập nhật Ingredient với `nutrition_supported = 0`,
+  - *When* một hoặc nhiều chỉ tiêu chưa có dữ liệu,
+  - *Then* hệ thống cho phép lưu theo các ràng buộc database hiện hành (`source_name` và `reference_date` vẫn bắt buộc; `source_url` có thể `NULL`); giá trị dinh dưỡng chưa biết được lưu là `NULL`, không thay bằng `0`, và Ingredient không được dùng trong tính toán dinh dưỡng chính thức.
+  - *Given* Ingredient đang `nutrition_supported = 0`,
+  - *When* Administrator yêu cầu bật `nutrition_supported = 1`,
+  - *Then* hệ thống chỉ cho phép bật khi đủ cả 9 chỉ tiêu khác `NULL` và đủ `source_name`, `source_url`, `reference_date`; nếu thiếu, hệ thống từ chối bật hỗ trợ và nêu rõ dữ liệu còn thiếu (BR-52).
 - **AC-41.3 (Cấm xóa vĩnh viễn nguyên liệu đã tham chiếu):**
   - *Given* một nguyên liệu dinh dưỡng đang được liên kết trong ít nhất một bài Recipe Post,
   - *When* Administrator thực hiện thao tác xóa vĩnh viễn nguyên liệu đó,

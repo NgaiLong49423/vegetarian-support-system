@@ -1,8 +1,8 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -32,11 +32,11 @@ This document contains only requirements included in Requirements / Implementati
 
 - **Mã yêu cầu:** NFR-02
 - **Nhóm chất lượng:** Performance
-- **Mô tả yêu cầu:** Thời gian hệ thống thực hiện tìm kiếm, lọc đa tiêu chí và trả về danh sách bài viết công thức nấu ăn món chay theo 6 chế độ sắp xếp (Mới nhất, Điểm đánh giá cao nhất, Xem nhiều nhất theo 24h/7d/30d/toàn thời gian, Bình luận nhiều nhất, Hoạt động sôi nổi nhất theo BR-71, và Xu hướng thịnh hành theo BR-72).
+- **Mô tả yêu cầu:** Thời gian hệ thống thực hiện tìm kiếm, lọc đa tiêu chí và trả về danh sách bài viết công thức nấu ăn món chay theo 6 chế độ sắp xếp (Mới nhất, Được yêu thích nhất theo `like_percentage` và `like_count`, Xem nhiều nhất theo 24h/7d/30d/toàn thời gian, Bình luận nhiều nhất, Hoạt động sôi nổi nhất theo BR-71, và Xu hướng thịnh hành theo BR-72).
 - **Nghiệp vụ liên quan:** `FR-01`, `FR-08` (Tìm kiếm và lọc bài công thức đa tiêu chí), `FR-17`, `FR-20`, `FR-57`, `FR-58`.
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Metric:* Thời gian xử lý truy vấn tìm kiếm/sắp xếp và render danh sách trên client.
-  - *Threshold:* $\le 3$ giây cho toàn bộ 6 chế độ sắp xếp và các bộ lọc đa tiêu chí với cơ sở dữ liệu thử nghiệm của đồ án; áp dụng chiến lược tạo chỉ mục (indexing) tối ưu trên các cột thời gian, bộ đếm lượt xem, điểm đánh giá và số lượng tương tác.
+  - *Threshold:* $\le 3$ giây cho toàn bộ 6 chế độ sắp xếp và các bộ lọc đa tiêu chí với cơ sở dữ liệu thử nghiệm của đồ án; áp dụng chiến lược tạo chỉ mục (indexing) tối ưu trên các cột thời gian, `view_count`, `like_count`, `dislike_count` và các bộ đếm tương tác liên quan.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tự động API query với bộ lọc/sắp xếp phức tạp và kiểm tra thời gian tải trang qua Chrome DevTools/Lighthouse.
 
 ---
@@ -155,8 +155,8 @@ This document contains only requirements included in Requirements / Implementati
 - **Nghiệp vụ liên quan:** Toàn hệ thống (đặc biệt là `FR-14`, `FR-16`, `FR-19`, `FR-22`, `FR-25`, `FR-44`, `FR-57`, `FR-58`).
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Lỗ hổng mã độc:* Không tồn tại các lỗ hổng SQL Injection (sử dụng ORM/Hibernate parameterized queries), Cross-Site Scripting (XSS - sanitize input/escape HTML trên React) và Cross-Site Request Forgery (CSRF).
-  - *Kiểm soát IDOR & Quyền tác giả:* 100% endpoint chỉnh sửa bài viết, các bước hướng dẫn (`RECIPE_STEP`), ảnh minh họa (`RECIPE_MEDIA`) bắt buộc kiểm tra quyền sở hữu tác giả (`authorId == currentUserId`); tác giả bị chặn không được tự đánh giá bài viết của chính mình (BR-70).
-  - *Chống gian lận số liệu (Anti-tampering):* Điểm đánh giá trung bình (`rating_avg`), tổng số lượt đánh giá (`rating_count`) và số lượt xem (`view_count`) bắt buộc được tính toán và kiểm soát độc quyền ở tầng máy chủ; client tuyệt đối không được gửi giá trị trực tiếp.
+  - *Kiểm soát IDOR & Quyền tác giả:* 100% endpoint chỉnh sửa bài viết, các bước hướng dẫn (`RECIPE_STEP`), ảnh minh họa (`RECIPE_MEDIA`) bắt buộc kiểm tra quyền sở hữu tác giả (`authorId == currentUserId`); tác giả bị chặn không được tự bình chọn bài viết của chính mình (BR-69).
+  - *Chống gian lận số liệu (Anti-tampering):* `like_count`, `dislike_count` và `view_count` chỉ được cập nhật/kiểm soát ở tầng máy chủ; `like_percentage` được tính khi đọc từ số lượt Like/Dislike và không nhận từ client. Client không được gửi trực tiếp các bộ đếm hoặc tỷ lệ này (FR-57, FR-58, BR-69, BR-70).
   - *Thẩm định tính hợp lệ tải tệp & dữ liệu:* Thẩm định chặt chẽ tệp tải lên (0–5 ảnh, định dạng JPEG/PNG/WebP, dung lượng $\le 5$ MB); kiểm tra tính khả dụng của quy tắc chuyển đổi đơn vị (`INGREDIENT_UNIT_CONVERSION`) trước khi lưu trữ hoặc xuất bản.
 - **Phương pháp kiểm chứng (Verification Method):** Sử dụng công cụ quét bảo mật tĩnh (SAST/SonarQube) hoặc quét động (OWASP ZAP); viết integration test kiểm tra chặn IDOR và gian lận tham số.
 

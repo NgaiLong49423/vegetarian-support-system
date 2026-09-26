@@ -1,8 +1,8 @@
 > **Document:** Data Dictionary & Traceability Matrix — Mâm Xanh
 > **File:** `docs/diagrams/ERD/data-dictionary.md`
-> **Version:** v0.7.1
+> **Version:** v0.7.2
 > **Created:** 2026-09-23
-> **Last Updated:** 2026-09-25
+> **Last Updated:** 2026-09-27
 > **Status:** Under Review
 > **Related Docs:** `docs/diagrams/ERD/README.md`, `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -37,7 +37,7 @@ Toàn bộ điểm mở ảnh hưởng tới table, column, key hoặc constrain
 | `Q2` | `RECIPE_POST` **lưu** `like_count`, `dislike_count` và `view_count`, mặc định `0` và không âm. `RECIPE_REACTION` / `RECIPE_VIEW` vẫn là **dữ liệu gốc**. Like/Dislike cập nhật bộ đếm **đồng bộ trong cùng transaction**; riêng `view_count` cập nhật **bất đồng bộ** theo ARCHITECTURE.md mục 6. `like_percentage` **tính khi đọc, không lưu thành cột**. | Ngô Gia Long | 23/09/2026 |
 | `Q5` | **Chín cột dinh dưỡng của `INGREDIENT` cho phép `NULL`.** Phân biệt ba trạng thái: `NULL` = chưa có dữ liệu · `0` = giá trị thật bằng không · `nutrition_supported = 0` = nguyên liệu chưa được hỗ trợ tính dinh dưỡng. `nutrition_supported` chỉ được bật khi **đủ chín cột khác `NULL`** và có đủ `source_name`, `source_url`, `reference_date` (BR-52). Cho phép lưu bản ghi chưa hoàn thiện ở trạng thái chưa hỗ trợ. | Ngô Gia Long | 24/09/2026 |
 | `Q6` | **`EXPERT_APPLICATION.reviewed_by` không có connector trên Conceptual ERD.** Giữ nguyên ma trận 36 connector; quan hệ này chỉ tồn tại ở mức khóa ngoại trong Data Dictionary và schema. Cách thể hiện trên Physical ERD do người thực hiện pha 2 quyết định. | Ngô Gia Long | 24/09/2026 |
-| `Q7` | **`USER` lưu `date_of_birth`**, không lưu tuổi cố định. Điều kiện 18–120 tuổi do **service** kiểm tra; database chỉ chặn ngày sinh trong tương lai hoặc trước năm 1900. FR-35 sẽ được Tech Lead sửa từ "Năm sinh/Tuổi" thành "Ngày sinh". | Ngô Gia Long | 24/09/2026 |
+| `Q7` | **`USER` lưu `date_of_birth`**, không lưu tuổi cố định. Điều kiện 18–120 tuổi do **service** kiểm tra; database chỉ chặn ngày sinh trong tương lai hoặc trước năm 1900. Đã đồng bộ trong FR-35 và Use Case liên quan. | Ngô Gia Long | 24/09/2026 |
 | `Q8` | Ràng buộc liên dòng/liên bảng dùng **cột kỹ thuật + composite FK**: `COMMENT.parent_depth` ép `depth = depth cha + 1`; computed column `MEAL_PLAN_ENTRY.meal_week_start` ép `meal_date` nằm trong tuần của `MEAL_PLAN`. Hai cột này **chỉ thuộc Physical ERD**, không vẽ trên Logical ERD, và được ghi là `Technical design`. | Ngô Gia Long | 24/09/2026 |
 | `Q9` | **Không lưu gói FREE trong `SUBSCRIPTION`.** User không có gói trả phí `ACTIVE` còn hạn thì entitlement mặc định là FREE. `tier` chỉ còn `PLUS` / `PRO`. | Ngô Gia Long | 24/09/2026 |
 | `Q10` | **Mỗi user tối đa một gói trả phí `ACTIVE`.** Cho phép nâng cấp ngay PLUS → PRO: gói cũ chuyển `CANCELLED` và gói mới `ACTIVE` trong **cùng transaction**. MVP chưa hỗ trợ gia hạn sớm, hạ hạng hoặc nhiều gói chồng lấn. | Ngô Gia Long | 24/09/2026 |
@@ -45,12 +45,11 @@ Toàn bộ điểm mở ảnh hưởng tới table, column, key hoặc constrain
 | `Q12` | Bổ sung ngay trong PR #66: trạng thái Onboarding, hai cờ xác nhận "Không có", `nutrition_goal`, `date_of_birth`; `activity_level` sửa về đúng **4 mức** của FR-35. | Ngô Gia Long | 24/09/2026 |
 
 > [!WARNING]
-> **Quyết định `Q7` đang chờ SRS cập nhật.** FR-35 Bước 2 hiện ghi *"Năm sinh/Tuổi"*. Tech Lead đã xác nhận ngày 24/09/2026 sẽ sửa thành "Ngày sinh". Không tự sửa SRS ở Task này.
+> **Quyết định `Q7` đã được đồng bộ trong FR-35 và Use Case liên quan:** `USER` lưu `date_of_birth`; service tính tuổi 18–120 khi xử lý hồ sơ, không lưu tuổi cố định. Schema không thay đổi.
 
 > [!WARNING]
-> **Quyết định `Q5` hiện mâu thuẫn với SRS và đang chờ Tech Lead cập nhật.**
-> `AC-41.2` ghi: *"khi có bất kỳ chỉ tiêu nào trong 9 chỉ tiêu bị bỏ trống hoặc thiếu thông tin nguồn tham chiếu, hệ thống **ngăn chặn việc lưu**"*, và FR-41 lặp lại *"thiếu dù chỉ một giá trị chỉ tiêu dinh dưỡng hoặc thiếu nguồn trích dẫn, hệ thống chặn lưu"*.
-> Tech Lead đã xác nhận ngày 24/09/2026 sẽ chốt lại nghiệp vụ theo hướng **cho phép lưu dữ liệu chưa đầy đủ ở trạng thái chưa hỗ trợ**. Cho tới khi `FR-41`/`AC-41.2` được sửa trong SRS, schema theo `Q5` sẽ không khớp một Acceptance Criteria đang `ACTIVE`. Không tự sửa SRS ở Task này — việc đó thuộc thẩm quyền Tech Lead.
+> **Quyết định `Q5` đã được đồng bộ trong FR-41, BR-52 và Use Case liên quan:** được lưu các chỉ tiêu chưa có dữ liệu dưới dạng `NULL` khi `nutrition_supported = 0`; chỉ bật hỗ trợ tính toán khi đủ chín chỉ tiêu và metadata nguồn.
+> Ràng buộc database hiện hành vẫn áp dụng: `source_name` và `reference_date` là bắt buộc khi lưu; `source_url` được phép `NULL` khi chưa bật hỗ trợ và bắt buộc khi `nutrition_supported = 1`. Batch này chỉ đồng bộ wording, không thay đổi schema.
 
 ### Các điểm đã có sẵn câu trả lời trong tài liệu
 
