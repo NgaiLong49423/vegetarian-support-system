@@ -1,42 +1,25 @@
 -- ============================================================================
--- Database Schema Snapshot: schema.sql
--- Database Engine : Microsoft SQL Server 2019+
+-- Flyway Baseline Migration: V1__baseline_schema.sql
+-- Database Engine : Microsoft SQL Server
 -- Project         : Mâm Xanh — Vegetarian Support System (SWP391)
 -- Issue           : Refs #63 — Pha 2 Physical ERD & Schema
 -- Author          : Trương Văn Khải
 -- Date            : 2026-09-25
 -- Source          : Logical ERD v1.0.0 + Data Dictionary v0.6.0
---                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
--- Synchronized with: V1__baseline_schema.sql (Flyway baseline)
+--                    (Nguyễn Hải Dương — Pha 1, commit 827353e)
 -- ============================================================================
--- This file is the manual bootstrap / schema snapshot for local development,
--- testing on clean databases, or SSMS / Azure Data Studio / sqlcmd execution.
---
--- Authority rule (database/README.md):
---   Flyway migration (app/mamxanh-backend/src/main/resources/db/migration/)
---   is the authoritative schema migration history.
---   This file is a deliberate snapshot and must stay synchronized with Flyway.
---
--- Quick Start (SSMS / Azure Data Studio / sqlcmd):
---   1. Create database if it does not already exist:
---        CREATE DATABASE [MamXanhDB];
---        GO
---   2. Switch to the database context:
---        USE [MamXanhDB];
---        GO
---   3. Execute this script.
+-- Creates 22 tables, foreign keys, filtered unique indexes, performance
+-- indexes, check constraints, default constraints, and seeds mandatory
+-- UNIT reference data.
 --
 -- CASCADE POLICY (SQL Server error 1785 — multiple cascade paths):
 --   CASCADE only on true ownership: RECIPE_POST → MEDIA/INGREDIENT,
 --   MEAL_PLAN → ENTRY, SHOPPING_LIST → ITEM.
 --   SET NULL on RECIPE_VIEW.user_id (Guest support).
 --   NO ACTION on everything else — application layer handles deletion.
+--
+-- IMPORTANT: Do NOT add USE or GO statements. Flyway parses via JDBC.
 -- ============================================================================
-
-SET ANSI_NULLS ON;
-GO
-SET QUOTED_IDENTIFIER ON;
-GO
 
 
 -- ============================================================================
@@ -58,7 +41,6 @@ CREATE TABLE [UNIT] (
     CONSTRAINT UQ_UNIT_code UNIQUE (code),
     CONSTRAINT CK_UNIT_dimension CHECK (dimension IN ('MASS', 'VOLUME', 'COUNT'))
 );
-GO
 
 -- 1.2 INGREDIENT — Standard ingredient dictionary with 9 nutrition indicators
 -- Source: Data Dictionary 4.18, FR-39/41, BR-44/49/51/52/53
@@ -106,7 +88,6 @@ CREATE TABLE [INGREDIENT] (
         )
     )
 );
-GO
 
 
 -- ============================================================================
@@ -187,13 +168,11 @@ CREATE TABLE [USER] (
         onboarding_status IN ('NOT_STARTED', 'SKIPPED', 'COMPLETED')
     )
 );
-GO
 
 -- google_subject: allow multiple NULLs (standard UNIQUE only allows one NULL)
 CREATE UNIQUE NONCLUSTERED INDEX UQ_USER_google_subject
     ON [USER](google_subject)
     WHERE google_subject IS NOT NULL;
-GO
 
 
 -- ============================================================================
@@ -217,7 +196,6 @@ CREATE TABLE [USER_FOLLOW] (
         REFERENCES [USER](user_id) ON DELETE NO ACTION,
     CONSTRAINT CK_USER_FOLLOW_no_self CHECK (follower_user_id <> followed_user_id)
 );
-GO
 
 -- 3.2 USER_INGREDIENT_PREFERENCE — Avoid / Dislike declarations (Q11, FR-31, BR-13/30)
 -- preference_type: 'AVOID' (gộp ALLERGY) or 'DISLIKE'.
@@ -249,7 +227,6 @@ CREATE TABLE [USER_INGREDIENT_PREFERENCE] (
         OR LEN(TRIM(NCHAR(9)+NCHAR(10)+NCHAR(13)+NCHAR(32)+NCHAR(160) FROM custom_ingredient_name)) > 0
     )
 );
-GO
 
 -- 3.3 EXPERT_APPLICATION — Expert role application by Customer
 -- Source: Data Dictionary 4.4, FR-05, BR-21/22/26
@@ -284,7 +261,6 @@ CREATE TABLE [EXPERT_APPLICATION] (
         vegetarian_type IN ('VEGAN', 'LACTO', 'OVO', 'LACTO_OVO', 'MACROBIOTIC')
     )
 );
-GO
 
 
 -- ============================================================================
@@ -351,7 +327,6 @@ CREATE TABLE [RECIPE_POST] (
     CONSTRAINT CK_RECIPE_POST_dislike_count CHECK (dislike_count >= 0),
     CONSTRAINT CK_RECIPE_POST_view_count CHECK (view_count >= 0)
 );
-GO
 
 -- 4.2 RECIPE_MEDIA — 0..5 images on Azure Blob Storage per recipe
 -- Source: Data Dictionary 4.6, FR-14/17, BR-11/20
@@ -375,7 +350,6 @@ CREATE TABLE [RECIPE_MEDIA] (
         mime_type IN ('image/jpeg', 'image/png', 'image/webp')
     )
 );
-GO
 
 -- 4.3 RECIPE_INGREDIENT — Ingredient line with positive quantity and standard unit
 -- Source: Data Dictionary 4.7, FR-16/19, BR-12/13/14/19/73
@@ -406,7 +380,6 @@ CREATE TABLE [RECIPE_INGREDIENT] (
         OR LEN(TRIM(NCHAR(9)+NCHAR(10)+NCHAR(13)+NCHAR(32)+NCHAR(160) FROM custom_ingredient_name)) > 0
     )
 );
-GO
 
 
 -- ============================================================================
@@ -435,7 +408,6 @@ CREATE TABLE [RECIPE_REACTION] (
         reaction_type IN ('LIKE', 'DISLIKE')
     )
 );
-GO
 
 -- 5.2 RECIPE_VIEW — View event for deduplication (30-min window) and statistics
 -- Source: Data Dictionary 4.9, FR-58, BR-70
@@ -454,7 +426,6 @@ CREATE TABLE [RECIPE_VIEW] (
     CONSTRAINT FK_RECIPE_VIEW_USER FOREIGN KEY (user_id)
         REFERENCES [USER](user_id) ON DELETE SET NULL
 );
-GO
 
 -- 5.3 COMMENT — Nested comments (self-referencing, max depth 5, Q8, BR-66)
 -- UQ_COMMENT_id_recipe_depth enables composite FK guaranteeing replies share
@@ -492,7 +463,6 @@ CREATE TABLE [COMMENT] (
         OR (parent_comment_id IS NOT NULL AND parent_depth IS NOT NULL AND depth = parent_depth + 1)
     )
 );
-GO
 
 -- 5.4 SAVED_RECIPE — Bookmark (composite PK = one save per user per recipe)
 -- Source: Data Dictionary 4.13, FR-32, BR-32/33/34
@@ -508,7 +478,6 @@ CREATE TABLE [SAVED_RECIPE] (
     CONSTRAINT FK_SAVED_RECIPE_RECIPE FOREIGN KEY (recipe_id)
         REFERENCES [RECIPE_POST](recipe_id) ON DELETE NO ACTION
 );
-GO
 
 
 -- ============================================================================
@@ -556,7 +525,6 @@ CREATE TABLE [REPORT] (
         status IN ('PENDING', 'PROCESSING', 'RESOLVED', 'REJECTED')
     )
 );
-GO
 
 -- 6.2 NOTIFICATION — In-app notification to user
 -- Source: Data Dictionary 4.12, FR-49
@@ -582,7 +550,6 @@ CREATE TABLE [NOTIFICATION] (
     CONSTRAINT FK_NOTIFICATION_REPORT FOREIGN KEY (report_id)
         REFERENCES [REPORT](report_id) ON DELETE NO ACTION
 );
-GO
 
 
 -- ============================================================================
@@ -611,7 +578,6 @@ CREATE TABLE [MEAL_PLAN] (
         DATEDIFF(DAY, CONVERT(DATE, '19000101', 112), week_start_date) % 7 = 0
     )
 );
-GO
 
 -- 7.2 MEAL_PLAN_ENTRY — Recipe assigned to a specific day and meal slot
 -- Source: Data Dictionary 4.15, FR-33/37, BR-35/36/37/47, Q8
@@ -641,7 +607,6 @@ CREATE TABLE [MEAL_PLAN_ENTRY] (
         meal_plan_id, meal_date, meal_type, recipe_id
     )
 );
-GO
 
 -- 7.3 SHOPPING_LIST — Shopping list (from meal plan, recipe, or manual)
 -- Source: Data Dictionary 4.16, FR-53, BR-32
@@ -658,7 +623,6 @@ CREATE TABLE [SHOPPING_LIST] (
     CONSTRAINT FK_SHOPPING_LIST_USER FOREIGN KEY (user_id)
         REFERENCES [USER](user_id) ON DELETE NO ACTION
 );
-GO
 
 -- 7.4 SHOPPING_LIST_ITEM — Individual item to buy
 -- Source: Data Dictionary 4.17, FR-53/54, BR-12/14/73
@@ -691,7 +655,6 @@ CREATE TABLE [SHOPPING_LIST_ITEM] (
         OR LEN(TRIM(NCHAR(9)+NCHAR(10)+NCHAR(13)+NCHAR(32)+NCHAR(160) FROM custom_ingredient_name)) > 0
     )
 );
-GO
 
 
 -- ============================================================================
@@ -717,7 +680,6 @@ CREATE TABLE [INGREDIENT_UNIT_CONVERSION] (
         REFERENCES [UNIT](unit_id) ON DELETE NO ACTION,
     CONSTRAINT CK_IUC_grams_per_unit CHECK (grams_per_unit > 0)
 );
-GO
 
 
 -- ============================================================================
@@ -750,7 +712,6 @@ CREATE TABLE [SUBSCRIPTION] (
     ),
     CONSTRAINT CK_SUBSCRIPTION_period CHECK (ends_at > starts_at)
 );
-GO
 
 -- 9.2 PAYMENT_TRANSACTION — payOS payment to activate subscription
 -- Source: Data Dictionary 4.22, FR-13, BR-03
@@ -778,7 +739,6 @@ CREATE TABLE [PAYMENT_TRANSACTION] (
     ),
     CONSTRAINT CK_PAYMENT_amount CHECK (amount_vnd > 0)
 );
-GO
 
 
 -- ============================================================================
@@ -790,45 +750,38 @@ GO
 CREATE UNIQUE NONCLUSTERED INDEX UQ_RECIPE_MEDIA_cover
     ON [RECIPE_MEDIA](recipe_id)
     WHERE is_cover = 1;
-GO
 
 -- Constraint #10: At most one PENDING expert application per user (BR-21)
 CREATE UNIQUE NONCLUSTERED INDEX UQ_EXPERT_APP_pending
     ON [EXPERT_APPLICATION](user_id)
     WHERE status = 'PENDING';
-GO
 
 -- Constraint #15: Prevent duplicate open reports on same recipe by same reporter (BR-29)
 CREATE UNIQUE NONCLUSTERED INDEX UQ_REPORT_open_recipe
     ON [REPORT](reporter_id, recipe_id)
     WHERE recipe_id IS NOT NULL
       AND status IN ('PENDING', 'PROCESSING');
-GO
 
 -- Constraint #15: Prevent duplicate open reports on same comment by same reporter (BR-29)
 CREATE UNIQUE NONCLUSTERED INDEX UQ_REPORT_open_comment
     ON [REPORT](reporter_id, comment_id)
     WHERE comment_id IS NOT NULL
       AND status IN ('PENDING', 'PROCESSING');
-GO
 
 -- Constraint #26: At most one preference type per standard ingredient per user (Q11b)
 CREATE UNIQUE NONCLUSTERED INDEX UQ_UIP_user_ingredient
     ON [USER_INGREDIENT_PREFERENCE](user_id, ingredient_id)
     WHERE ingredient_id IS NOT NULL;
-GO
 
 -- Constraint #26: At most one preference type per custom ingredient name per user (Q11b)
 CREATE UNIQUE NONCLUSTERED INDEX UQ_UIP_user_custom_name
     ON [USER_INGREDIENT_PREFERENCE](user_id, custom_ingredient_name)
     WHERE ingredient_id IS NULL AND custom_ingredient_name IS NOT NULL;
-GO
 
 -- Constraint #27: At most one ACTIVE subscription per user (Q10)
 CREATE UNIQUE NONCLUSTERED INDEX UQ_SUBSCRIPTION_active
     ON [SUBSCRIPTION](user_id)
     WHERE status = 'ACTIVE';
-GO
 
 
 -- ============================================================================
@@ -838,74 +791,58 @@ GO
 -- Recipe queries
 CREATE NONCLUSTERED INDEX IX_RECIPE_POST_author
     ON [RECIPE_POST](author_id);
-GO
 CREATE NONCLUSTERED INDEX IX_RECIPE_POST_status_published
     ON [RECIPE_POST](status, published_at DESC);
-GO
 CREATE NONCLUSTERED INDEX IX_RECIPE_POST_dish_category
     ON [RECIPE_POST](dish_category);
-GO
 
 -- Comment tree traversal
 CREATE NONCLUSTERED INDEX IX_COMMENT_recipe
     ON [COMMENT](recipe_id, created_at);
-GO
 CREATE NONCLUSTERED INDEX IX_COMMENT_parent
     ON [COMMENT](parent_comment_id)
     WHERE parent_comment_id IS NOT NULL;
-GO
 
 -- Notification inbox (unread first, newest first)
 CREATE NONCLUSTERED INDEX IX_NOTIFICATION_user_inbox
     ON [NOTIFICATION](user_id, is_read, created_at DESC);
-GO
 
 -- View statistics by recipe and time window
 CREATE NONCLUSTERED INDEX IX_RECIPE_VIEW_recipe_time
     ON [RECIPE_VIEW](recipe_id, viewed_at);
-GO
 CREATE NONCLUSTERED INDEX IX_RECIPE_VIEW_user
     ON [RECIPE_VIEW](user_id)
     WHERE user_id IS NOT NULL;
-GO
 
 -- Reaction lookup by recipe
 CREATE NONCLUSTERED INDEX IX_RECIPE_REACTION_recipe
     ON [RECIPE_REACTION](recipe_id);
-GO
 
 -- Report moderation queue
 CREATE NONCLUSTERED INDEX IX_REPORT_status
     ON [REPORT](status, created_at);
-GO
 
 -- Follow: "who follows me?" query
 CREATE NONCLUSTERED INDEX IX_USER_FOLLOW_followed
     ON [USER_FOLLOW](followed_user_id);
-GO
 
 -- Subscription active lookup
 CREATE NONCLUSTERED INDEX IX_SUBSCRIPTION_user
     ON [SUBSCRIPTION](user_id, status);
-GO
 
 -- Meal plan and shopping list owner lookup
 CREATE NONCLUSTERED INDEX IX_MEAL_PLAN_user
     ON [MEAL_PLAN](user_id);
-GO
 CREATE NONCLUSTERED INDEX IX_SHOPPING_LIST_user
     ON [SHOPPING_LIST](user_id);
-GO
 
 -- Ingredient preference lookup
 CREATE NONCLUSTERED INDEX IX_UIP_user
     ON [USER_INGREDIENT_PREFERENCE](user_id);
-GO
 
 -- Expert application lookup by user
 CREATE NONCLUSTERED INDEX IX_EXPERT_APP_user
     ON [EXPERT_APPLICATION](user_id);
-GO
 
 
 -- ============================================================================
@@ -929,13 +866,12 @@ INSERT INTO [UNIT] (code, name, dimension, base_factor) VALUES
     ('trái',    N'trái',            'COUNT',   1.0),
     ('miếng',   N'miếng',           'COUNT',   1.0),
     ('bó',      N'bó',              'COUNT',   1.0);
-GO
 
 
 -- ============================================================================
--- END OF SCHEMA SNAPSHOT
+-- END OF BASELINE MIGRATION
 -- ============================================================================
--- Summary:
+-- Summary placeholder (will be verified on real DB):
 --   22 tables created
 --   38 foreign keys defined (including 2 composite FKs: COMMENT, MEAL_PLAN_ENTRY)
 --    4 composite primary keys (USER_FOLLOW, RECIPE_REACTION, SAVED_RECIPE,

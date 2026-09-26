@@ -9,6 +9,69 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-09-25 — Finalize Database Modeling, Physical ERD, Schema Constraints, and Integrity Test Suite ([PR #66](https://github.com/NgaiLong49423/vegetarian-support-system/pull/66))
+
+**Status:** Uncommitted working tree — Refs #63.
+
+**Scope:** Complete Phase 2 database modeling for Issue #63 addressing Tech Lead review rounds 1 and 2 on PR #66: finalize SQL Server 2019 baseline migration and bootstrap schema with all business check/unique/composite constraints, resolve Draw.io container table layout formatting for physical ERD, update physical data dictionary, and expand verification test suite to 35 test cases.
+
+### Added
+
+- Add composite foreign key constraints enforcing relational hierarchy:
+  - `FK_COMMENT_PARENT` on `(parent_comment_id, recipe_id, parent_depth)` referencing `COMMENT(comment_id, recipe_id, depth)` ensuring replies belong to the same recipe and child depth equals parent depth plus 1.
+  - `FK_MPE_MEAL_PLAN` on `(meal_plan_id, meal_week_start)` referencing `MEAL_PLAN(meal_plan_id, week_start_date)` via persisted computed column `meal_week_start` guaranteeing `meal_date` strictly falls within the target Monday-to-Sunday planning week.
+- Add strict business CHECK and UNIQUE constraints:
+  - `CK_INGREDIENT_nutrition_supported`: requires all 9 nutrition indicators and `source_url` to be NOT NULL when `nutrition_supported = 1` (BR-52, Q5).
+  - `CK_RECIPE_POST_total_time`: enforces `prep_time_min + cook_time_min > 0` (BR-19, FR-16).
+  - `CK_RECIPE_POST_instructions_len`: enforces trimmed length between 10 and 5,000 characters (FR-16, AC-16.5).
+  - `CK_RECIPE_POST_status` and `DF_RECIPE_POST_status`: restricts statuses to `PUBLISHED`, `HIDDEN`, `DELETED` with default `PUBLISHED` (FR-24).
+  - `CK_RECIPE_MEDIA_display_order` (1..5) and `UQ_RECIPE_MEDIA_order` (`recipe_id`, `display_order`): restricts recipe media to at most 5 images (BR-20, FR-14).
+  - `CK_*_target` and `CK_*_custom_name_not_blank` on `USER_INGREDIENT_PREFERENCE`, `RECIPE_INGREDIENT`, and `SHOPPING_LIST_ITEM`: requires at least one of `ingredient_id` or `custom_ingredient_name`, and rejects whitespace-only custom names (BR-12).
+  - `UQ_UIP_user_ingredient` and `UQ_UIP_user_custom_name`: guarantees exactly one active preference type per ingredient per user (FR-31, Q11).
+  - `CK_MEAL_PLAN_week_start_monday` and `UQ_MEAL_PLAN_user_week`: enforces Monday start date (`DATEDIFF(day, '1900-01-01', week_start_date) % 7 = 0`) and one meal plan per user per week (FR-09, Q3).
+  - `CK_SUBSCRIPTION_tier` (`PLUS`, `PRO`), `CK_SUBSCRIPTION_period` (`ends_at > starts_at`), and `UQ_SUBSCRIPTION_active`: restricts paid tiers and prevents concurrent active subscriptions for the same user (FR-13, Q9, Q10).
+  - `CK_USER_date_of_birth` (<= current date and >= 1900-01-01), `CK_USER_activity_level` (4 active levels), `CK_USER_nutrition_goal` (3 active goals), and `CK_USER_onboarding_status` with `DF_USER_onboarding_status` ('NOT_STARTED') (FR-35, Q7, Q12).
+  - `CK_COMMENT_content_len`: enforces comment content length between 1 and 1,000 characters (FR-46, EF-46.1).
+- Add 22 new test cases (TC16–TC37) to `database/queries.sql` asserting exact constraint names in `ERROR_MESSAGE()`, including TC36 for comment content length and TC37 for positive transaction amount, bringing the test suite to 37 test cases (70/70 test assertions PASS 100%).
+
+### Changed
+
+- Update `V1__baseline_schema.sql` and `database/schema.sql`:
+  - Make all 9 `INGREDIENT` nutrition columns nullable (`NULL`) while preserving default `nutrition_supported = 0` (Q5).
+  - Change `COMMENT.content` from `NVARCHAR(2000)` to `NVARCHAR(1000)` and add constraint `CK_COMMENT_content_len` (FR-46).
+  - Tighten `PAYMENT_TRANSACTION.amount_vnd` check constraint `CK_PAYMENT_amount` from `>= 0` to `> 0` because free tier generates no transaction (Q9).
+- Update `docs/diagrams/ERD/physical-erd-v1.0.0.drawio` and exported image `physical-erd-v1.0.0.drawio.png`: format all 22 tables and 196 physical columns with exact data types, nullability, primary/foreign/unique/check constraints, default values, and index indicators (Review Round 1 Point 1); synchronize 37 Crow's Foot connectors from Logical ERD v1.0.0; resolve container table layout styling to ensure correct row ordering and visible headers; synchronize `COMMENT.content` to `NVARCHAR(1000)` and `CK`.
+- Update `docs/diagrams/ERD/data-dictionary.md` to version `v0.7.0`: remove all pending `⏳` markers for implemented items, update Section 1 status, document Phase 2 completion in Section 8, and record `CK_COMMENT_content_len` and `CK_PAYMENT_amount` (> 0) in Sections 4.10, 4.22, and 5.
+- Update `database/README.md` to version `v0.4.0` with verified object counts (22 tables, 38 FKs, 57 checks, 55 defaults, 10 filtered indexes, 182 custom indexes, 37 test cases) and `sqlcmd` execution instructions.
+- Update `docs/diagrams/ERD/README.md` to version `v1.13.0` line 16 with verified physical metrics (38 FKs, 57 check constraints, 55 default constraints, 10 filtered unique indexes, 182 custom nonclustered indexes).
+
+### Fixed
+
+- Fix Draw.io table row ordering and header occlusion for `COMMENT` and `MEAL_PLAN_ENTRY` by positioning added physical columns sequentially in table geometry.
+- Fix negative length assertion test in `database/queries.sql` to be UTF-8 encoding agnostic across CLI environments.
+
+## 2026-09-23 — Implement Physical ERD, SQL Server Baseline Migration, and Data Integrity Test Suite
+
+**Status:** Committed — ae61073.
+
+**Scope:** Complete Phase 2 database modeling for Issue #63, delivering the physical ERD, Flyway baseline schema migration, standalone bootstrap script, comprehensive physical data dictionary, and automated integrity validation query suite for Microsoft SQL Server 2019.
+
+### Added
+
+- Add Flyway baseline migration `V1__baseline_schema.sql` under `app/mamxanh-backend/src/main/resources/db/migration/` establishing 22 core tables, 38 foreign keys, 21 indexes (including 5 filtered unique indexes), 41 check constraints, 52 default constraints, and initial seed data for 15 standard measurement units without JDBC-incompatible batch separators.
+- Add standalone bootstrap script `database/schema.sql` with `GO` batch delimiters and ANSI settings (`SET ANSI_NULLS ON;`, `SET QUOTED_IDENTIFIER ON;`) for SSMS and `sqlcmd`.
+- Add `docs/diagrams/ERD/physical-erd-v1.0.0.drawio` defining the physical ERD with exact SQL Server 2019 data types, primary keys, foreign keys, and 36 entity relationship connectors in Crow's Foot notation, along with exported diagram image `docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png`.
+- Add comprehensive diagnostic and automated test suite in `database/queries.sql` featuring schema catalog auditing, 15 transactional positive and negative test cases verifying key constraints and cascade path behaviors, and core operational queries.
+
+### Changed
+
+- Update `docs/diagrams/ERD/data-dictionary.md` to version `v0.4.0`, completing all nine physical specification columns across 22 tables (178 entity columns), documenting the resolution of SQL Server multiple cascade path Error 1785, and checking off Phase 2 delivery milestones.
+- Update `database/README.md` to version `v0.2.0` with step-by-step guidance for running the Flyway baseline migration, executing `schema.sql`, and running the automated test suite.
+- Update `docs/diagrams/ERD/README.md` to version `v1.11.0` linking the newly created Physical ERD and updating workspace status.
+
+### Fixed
+
+- Eliminate multiple cascade path conflict (SQL Server Error 1785) across interrelated entities (`COMMENT`, `USER_FOLLOW`, `REPORT`) by restricting `ON DELETE CASCADE` strictly to four parent-child ownership relationships, applying `SET NULL` for guest recipe views, and setting the remaining 33 foreign keys to `NO ACTION`.
 ## 2026-09-25 — Confirm Vercel and Azure Deployment Baseline
 
 **Status:** Committed — d1c2082.
@@ -53,7 +116,6 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
-
 ## 2026-09-23 — Align Social, Recipe Comparison, Nutrition, and Expert Requirements
 
 **Status:** Committed — 6e49cd9.

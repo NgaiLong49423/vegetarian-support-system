@@ -1,6 +1,6 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v3.12.3
+> **Version:** v3.13.0  
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-25
 > **Status:** Active  
@@ -87,7 +87,8 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | research/similar-products-benchmark.md | Dated external research, non-authoritative | Relevant product comparison |
 | diagrams/Activity/README.md | Activity diagram conventions | Creating/updating activity diagrams |
 | diagrams/UseCase/README.md | Use-case diagram conventions | Creating/updating use-case diagrams |
-| diagrams/ERD/README.md | ERD documentation conventions; Draft (Conceptual ERD đã được rà soát; Logical ERD chờ cập nhật) | Creating/updating the data model |
+| diagrams/ERD/README.md | ERD documentation conventions; Draft (Conceptual ERD đã được rà soát; Logical ERD v1.0.0 đã dựng 23/09/2026) | Creating/updating the data model |
+| diagrams/ERD/data-dictionary.md | Data Dictionary & Traceability Matrix: một dòng cho mỗi cột của 22 bảng, truy vết tới FR/BR/UC/AC, ràng buộc không biểu diễn được bằng đường nối và các quyết định đã chốt; Draft, tầng Logical đã điền, tầng Physical do pha 2 hoàn thiện | Thiết kế hoặc triển khai database, đặt tên cột, FK, constraint và index |
 | diagrams/C4 Container Diagram/README.md | C4 container diagram conventions and current diagram review findings; Under Review | Creating/updating container architecture |
 | ../app/mamxanh-frontend/README.md | Frontend setup/state, Playwright commands and contribution guidance | Frontend work |
 | ../app/mamxanh-backend/README.md | Backend setup/state and contribution guidance | Backend work |
