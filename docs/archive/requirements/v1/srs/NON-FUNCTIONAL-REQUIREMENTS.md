@@ -1,14 +1,38 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.0.0
+> **Version:** v1.2.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-18
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
-# Non-Functional Requirements
+# Non-Functional Requirements Specification
 
-This document contains only requirements included in Requirements / Implementation Baseline v2.0.0. Stable identifiers are preserved; historical requirements remain in the archived v1 snapshot.
+## 1. Mục đích và thẩm quyền tài liệu
+
+Tài liệu này là **Authoritative Detailed Specification** sở hữu các định nghĩa chi tiết cho toàn bộ Non-Functional Requirements (`NFR-01` đến `NFR-27`) của Requirements Baseline v1.0.0.
+
+Khung đặc tả gốc, tiêu chí nhóm chất lượng và trạng thái vòng đời (lifecycle state) chính thức được duy trì tập trung tại `docs/requirements/SRS.md`. Nếu phát sinh bất kỳ xung đột nào, giá trị trong `SRS.md` luôn là chuẩn có thẩm quyền cao nhất; tài liệu này sẽ được đồng bộ hóa theo `SRS.md`.
+
+Mỗi yêu cầu phi chức năng được gắn một thẻ stable anchor HTML cố định `<a id="nfr-xx"></a>` đặt trước tiêu đề để đảm bảo tính bất biến của liên kết tham chiếu.
+
+## 2. Phân loại nhóm chất lượng và ranh giới kiến trúc
+
+1. **Phân loại 6 nhóm chất lượng chuẩn:**
+   - **Performance** (Hiệu năng, độ trễ và thời gian đáp ứng)
+   - **Security** (Bảo mật, xác thực, phân quyền và phòng chống tấn công)
+   - **Usability** (Khả năng sử dụng và tương thích giao diện)
+   - **Reliability** (Độ tin cậy, tính sẵn sàng và khả năng chịu lỗi)
+   - **Privacy** (Quyền riêng tư, bảo vệ dữ liệu và tuân thủ pháp lý)
+   - **Auditability & Maintainability** (Khả năng kiểm toán, giám sát và bảo trì)
+2. **Ranh giới kiến trúc đã xác nhận:**
+   - **Backend Architecture: Modular Monolith using MVC/layered structure within each business module.** Backend là một Spring Boot application và một deployable backend; các business capability không được tách thành microservice. Modular Monolith và MVC/layered structure được áp dụng đồng thời, không thay thế nhau.
+   - Tính năng AI kiểm duyệt nội dung (`FR-12`, `BR-08`) và cơ chế đề xuất theo dõi hành vi kiểu TikTok For You nằm ngoài phạm vi (`OUT_OF_SCOPE`) của phiên bản MVP ban đầu.
+   - Các quy tắc phân quyền tính năng AI và technical rate limit thuộc `FR-02`/`FR-10`/`BR-01`, không nằm trong tài liệu NFR này.
+
+## 3. Danh mục chi tiết Non-Functional Requirements
+
+---
 
 <a id="nfr-performance"></a>
 ### Nhóm 1: Performance (Hiệu năng và Trải nghiệm phản hồi)
@@ -24,6 +48,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Metric:* Thời gian phản hồi của API Login/Logout (Response Time).
   - *Threshold:* $\le 2$ giây cho 95% số lượt request (P95) trong điều kiện tải bình thường.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm thử hiệu năng (Performance/Load Test) bằng JMeter hoặc K6 trên môi trường staging.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -38,6 +63,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Metric:* Thời gian xử lý truy vấn tìm kiếm/sắp xếp và render danh sách trên client.
   - *Threshold:* $\le 3$ giây cho toàn bộ 6 chế độ sắp xếp và các bộ lọc đa tiêu chí với cơ sở dữ liệu thử nghiệm của đồ án; áp dụng chiến lược tạo chỉ mục (indexing) tối ưu trên các cột thời gian, bộ đếm lượt xem, điểm đánh giá và số lượng tương tác.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tự động API query với bộ lọc/sắp xếp phức tạp và kiểm tra thời gian tải trang qua Chrome DevTools/Lighthouse.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -52,6 +78,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Metric:* Thời gian từ khi gửi câu hỏi đến khi nhận toàn bộ hoặc token đầu tiên của câu trả lời.
   - *Threshold:* $\le 5$ giây cho điều kiện mạng thông thường; phân vị 90% (P90) $\le 7$ giây khi tải mạng cao. Giao diện người dùng bắt buộc hiển thị trạng thái đang xử lý (loading indicator hoặc stream phản hồi) ngay lập tức.
 - **Phương pháp kiểm chứng (Verification Method):** Đo thời gian round-trip request từ client qua Spring Boot Backend tới Google Gemini API.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -66,6 +93,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Metric:* Thời gian xử lý thuật toán chọn công thức và phản hồi từ Backend.
   - *Threshold:* $\le 8$ giây để trả về trọn vẹn thực đơn tuần đề xuất. Giao diện hiển thị loading rõ ràng.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tích hợp đo thời gian thực thi của endpoint tạo thực đơn với các hồ sơ mẫu.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -82,6 +110,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Xử lý ghi nhận lượt xem (Write Throughput):* Thao tác ghi nhận sự kiện `RECIPE_VIEW` và kiểm tra cửa sổ khử trùng lặp 30 phút phải được xử lý non-blocking / tối ưu hóa truy vấn, không gây khóa bảng (table locking) hoặc nghẽn giao dịch khi có nhiều người dùng đồng thời xem chi tiết các bài công thức.
   - *Stretch target:* 100 concurrent users nếu nhóm đủ thời gian; không bắt buộc để nghiệm thu MVP.
 - **Phương pháp kiểm chứng (Verification Method):** Chạy JMeter với ramp-up đến 50 virtual users kết hợp kịch bản duyệt bài và gửi sự kiện view song song; xác nhận không xảy ra deadlock hay lỗi 500.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -99,6 +128,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Metric:* Thuật toán băm mật khẩu và cơ chế salt.
   - *Threshold:* 100% mật khẩu được băm bằng BCrypt (với work factor thích hợp) hoặc Argon2; tuyệt đối 0% mật khẩu lưu dưới dạng văn bản thô (plaintext) hay mã hóa đối xứng có thể giải mã.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm tra mã nguồn cấu hình Spring Security `PasswordEncoder` và kiểm tra dữ liệu trực tiếp trong database table `Users`/`Accounts`.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -113,6 +143,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Metric:* Số lần thất bại cho phép và thời gian khóa tạm thời.
   - *Threshold:* Sau 5 lần nhập sai liên tiếp, rate limit đồng thời theo account identifier và IP trong 10 phút.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tự động ngưỡng 5 lần sai, xác nhận cả account identifier và IP bị rate limit 10 phút, rồi xác nhận đăng nhập hợp lệ hoạt động lại sau thời hạn mà không cần Admin mở khóa.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -128,6 +159,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Kiểm soát truy cập:* Dữ liệu sức khỏe chỉ được truy cập bởi chính chủ tài khoản (ownership check) hoặc Administrator qua phân quyền chặt chẽ ở Backend.
   - *Đề xuất kiến trúc:* **Khuyến nghị không áp dụng mã hóa cột AES-256 ở mức cơ sở dữ liệu** đối với chỉ số BMI/chiều cao/cân nặng để tránh làm tăng độ phức tạp database và overhead xử lý không cần thiết cho phạm vi MVP của đồ án. Việc bảo vệ được bảo đảm ở tầng ứng dụng (Spring Security) và mã hóa đường truyền.
 - **Phương pháp kiểm chứng (Verification Method):** Code review chính sách kiểm tra quyền sở hữu (`@PreAuthorize` / ownership verification) và kiểm tra chứng chỉ SSL/TLS trên API endpoint.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -143,6 +175,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Threshold:* 100% endpoint quản trị chỉ dành cho Administrator. Mọi thao tác truy cập trái quyền hoặc không có token hợp lệ đều bị chặn ở Backend và trả về mã lỗi HTTP 401 Unauthorized hoặc 403 Forbidden.
   - *Token baseline:* Access token ngắn hạn; rotating refresh token gắn với refresh session có thể thu hồi phía server; logout thu hồi refresh session. Access-token-only không phải baseline đang hoạt động.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tự động RBAC, refresh rotation/reuse handling, server-side revocation và logout; request dùng token/session không còn hợp lệ phải bị chặn với HTTP 401/403 phù hợp.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -159,6 +192,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Chống gian lận số liệu (Anti-tampering):* Điểm đánh giá trung bình (`rating_avg`), tổng số lượt đánh giá (`rating_count`) và số lượt xem (`view_count`) bắt buộc được tính toán và kiểm soát độc quyền ở tầng máy chủ; client tuyệt đối không được gửi giá trị trực tiếp.
   - *Thẩm định tính hợp lệ tải tệp & dữ liệu:* Thẩm định chặt chẽ tệp tải lên (0–5 ảnh, định dạng JPEG/PNG/WebP, dung lượng $\le 5$ MB); kiểm tra tính khả dụng của quy tắc chuyển đổi đơn vị (`INGREDIENT_UNIT_CONVERSION`) trước khi lưu trữ hoặc xuất bản.
 - **Phương pháp kiểm chứng (Verification Method):** Sử dụng công cụ quét bảo mật tĩnh (SAST/SonarQube) hoặc quét động (OWASP ZAP); viết integration test kiểm tra chặn IDOR và gian lận tham số.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -176,6 +210,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Metric:* Số bước và số thao tác click để hoàn tất tạo tài khoản.
   - *Threshold:* Hoàn thành đăng ký trong $\le 3$ bước / $\le 3$ lượt click chuyển màn hình (hỗ trợ cả đăng ký form chuẩn và Google Login 1-click).
 - **Phương pháp kiểm chứng (Verification Method):** Đánh giá trải nghiệm người dùng (UX walk-through) trên giao diện đã scaffold.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -189,6 +224,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* $\ge 90\%$ người dùng thử nghiệm hoàn thành 1 lượt hỏi-đáp thành công trong lần đầu tiên mà không cần trợ giúp hoặc tài liệu hướng dẫn.
 - **Phương pháp kiểm chứng (Verification Method):** Thử nghiệm chấp nhận người dùng (User Acceptance Testing) trên nhóm người dùng mẫu.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -202,6 +238,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* Hiển thị đúng bố cục, không vỡ layout hoặc tràn màn hình ngang trên các độ phân giải từ 360px (mobile) đến 1920px (desktop full HD). Nội dung văn bản hiển thị chuẩn tiếng Việt có dấu.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm tra hiển thị qua chế độ Device Mode trên Chrome DevTools và kiểm thử thực tế trên thiết bị vật lý.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -215,6 +252,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* Tương thích đầy đủ giao diện và tính năng trên 2 phiên bản chính thức gần nhất của Google Chrome, Mozilla Firefox, Apple Safari và Microsoft Edge.
 - **Phương pháp kiểm chứng (Verification Method):** Cross-browser testing trên các trình duyệt mục tiêu.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -228,6 +266,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* Hiển thị và thao tác đầy đủ các chức năng xem, tìm kiếm, đăng bài, bình luận trên trình duyệt Safari (iOS) và Chrome (Android).
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm thử trên thiết bị di động iOS và Android thực tế hoặc trình giả lập mobile.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -244,6 +283,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Design goal:* Uptime $\ge 99.5\%$ mỗi tháng trong môi trường vận hành sản phẩm, không tính bảo trì định kỳ có thông báo trước; đây không phải MVP release gate.
 - **Phương pháp kiểm chứng (Verification Method):** Review kiến trúc và kế hoạch monitoring; nếu có môi trường vận hành đủ thời gian thì thu thập health-check/uptime evidence, nhưng không chặn nghiệm thu MVP vì chưa đủ cửa sổ một tháng.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -257,6 +297,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* 100% thao tác thay đổi dữ liệu phức tạp được bao bọc trong Database Transaction (`@Transactional`); $0\%$ mất mát dữ liệu đã được backend xác nhận lưu thành công.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tích hợp mô phỏng lỗi ngắt quãng giữa chừng khi lưu bài viết nhiều bước và kiểm tra rollback tự động của database.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -270,6 +311,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* Thiết lập timeout tối đa 10 giây; khi vượt ngưỡng hoặc lỗi provider, hệ thống trả về thông báo lỗi thân thiện, cho phép người dùng thử lại và ghi log lỗi kỹ thuật theo quy tắc `BR-04`; không làm gián đoạn các tính năng phi AI của ứng dụng.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm thử mô phỏng mock lỗi timeout hoặc lỗi 429 từ Gemini API và kiểm tra hệ thống trả về thông báo lỗi chuẩn xác, ghi vết error log và cho phép người dùng thao tác bình thường.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -283,6 +325,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Design goal:* Kiến trúc Modular Monolith và SQL Server hướng tới khả năng mở rộng từ 1.000 lên 10.000 Authorized User; đây không phải MVP release gate và không phải cam kết tải đồng thời.
 - **Phương pháp kiểm chứng (Verification Method):** Review kiến trúc, stateless boundary phù hợp, connection-pool plan và benchmark dữ liệu mẫu khi khả thi; không yêu cầu chứng minh 10.000 user để nghiệm thu MVP.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -299,6 +342,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* Hiển thị rõ điều khoản bảo mật và yêu cầu người dùng xác nhận đồng ý (consent) trước khi lưu thông tin sức khỏe/chế độ ăn; cung cấp quyền cho người dùng tự xem và chỉnh sửa thông tin của mình.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm tra giao diện Onboarding và màn hình quản lý hồ sơ cá nhân có hiển thị thông báo đồng ý điều khoản.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -312,6 +356,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* Tuân thủ tiêu chuẩn bảo mật thanh toán PCI-DSS thông qua việc ủy quyền xử lý cho cổng thanh toán bên thứ ba hợp chuẩn; Backend của hệ thống **tuyệt đối không nhận, không xử lý và không lưu trữ số thẻ ngân hàng hoặc mã CVV**.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm tra mã nguồn API thanh toán để xác nhận payload không chứa trường dữ liệu nhạy cảm của thẻ.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -325,6 +370,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* MVP không lưu lịch sử hội thoại AI theo account; telemetry không giữ raw prompt content và được xóa sau 90 ngày. Người dùng được thông báo câu hỏi sẽ được chuyển tới Google Gemini API để xử lý.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm tra schema, log/telemetry configuration và retention job để xác nhận không có raw prompt, không có account chat history và dữ liệu telemetry quá 90 ngày được loại bỏ.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -341,6 +387,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* 100% endpoint REST API công khai có tài liệu tương tác Swagger/OpenAPI; mã nguồn Frontend và Backend tuân thủ quy chuẩn định dạng và quy tắc đóng góp đã ban hành tại [CONTRIBUTING.md](../../../CONTRIBUTING.md).
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm tra tài liệu Swagger UI được sinh tự động và kiểm tra qua quy trình code review.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -358,6 +405,7 @@ This document contains only requirements included in Requirements / Implementati
   - *Flow threshold:* Luồng xử lý chuẩn là `React View -> Spring MVC Controller -> Service -> Repository -> Model/Entity -> Database`.
   - *Regression threshold:* Việc sửa đổi hoặc bảo trì chức năng trong một module không gây lỗi hồi quy làm ảnh hưởng tới hoạt động của module khác; kiểm chứng qua automated test.
 - **Phương pháp kiểm chứng (Verification Method):** Review package structure và dependency flow khi backend được scaffold; chạy test của module bị ảnh hưởng và Regression Test Suite sau mỗi thay đổi liên module.
+- **Trạng thái:** `ACTIVE`
 
 ---
 
@@ -371,5 +419,28 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Threshold:* Ít nhất 80% case trong curated evaluation set phải đồng thời thỏa các quy tắc được áp dụng cho case về source boundaries, dietary/restriction constraints, không bịa nội dung (non-fabrication) và safety/business constraints.
 - **Phương pháp kiểm chứng (Verification Method):** Chạy curated evaluation set có expected constraints và chấm pass/fail theo evidence. Không yêu cầu in-product satisfaction survey chỉ để đáp ứng NFR này; exact Gemini model/version được chọn qua technical evaluation sau.
+- **Trạng thái:** `ACTIVE`
 
 ---
+
+<a id="nfr-26"></a>
+#### NFR-26 — (Ngoài phạm vi) Xử lý và lưu log bài viết bị AI gắn cờ vi phạm
+
+- **Mã yêu cầu:** NFR-26
+- **Nhóm chất lượng:** Auditability & Moderation
+- **Mô tả yêu cầu:** Lưu vết và xử lý nội dung bị AI rà soát và gắn cờ vi phạm trong vòng 24 giờ.
+- **Nghiệp vụ liên quan:** `FR-12`, `BR-08`.
+- **Trạng thái:** `OUT_OF_SCOPE`
+- **Lý do loại trừ:** Tính năng "AI rà soát và gắn cờ Recipe Post nghi vấn" (`FR-12`) và giới hạn vai trò của AI kiểm duyệt (`BR-08`) đã chính thức bị hoãn (`DEFERRED`) khỏi phạm vi phiên bản MVP ban đầu. Hệ thống hiện tại chỉ áp dụng cơ chế hậu kiểm dựa trên báo cáo vi phạm trực tiếp từ người dùng (`FR-06`). NFR này được giữ lại dưới dạng tham chiếu lịch sử và không áp dụng kiểm thử trong MVP.
+
+---
+
+<a id="nfr-27"></a>
+#### NFR-27 — (Ngoài phạm vi) Cá nhân hóa nội dung kiểu "For You" của TikTok dựa trên lịch sử tìm kiếm
+
+- **Mã yêu cầu:** NFR-27
+- **Nhóm chất lượng:** AI Personalization
+- **Mô tả yêu cầu:** Tự động ghi nhận lịch sử tìm kiếm và chủ đề người dùng quan tâm để xây dựng thuật toán máy học gợi ý nội dung tương tự cơ chế "For You" của TikTok.
+- **Nghiệp vụ liên quan:** Gợi ý bài viết và cá nhân hóa nâng cao.
+- **Trạng thái:** `OUT_OF_SCOPE`
+- **Lý do loại trừ:** Hệ thống Vegetarian Support Application không phát triển mô hình Machine Learning đề xuất theo hành vi. Tính năng gợi ý món liên quan trong MVP (`FR-47`) chỉ áp dụng tìm kiếm theo danh mục/thẻ tag có sẵn hoặc tùy chọn từ khóa qua Gemini. Đồng thời, chính sách quyền riêng tư của MVP cam kết không lưu vết hành vi tìm kiếm cá nhân của người dùng. NFR này hoàn toàn nằm ngoài phạm vi dự án.
