@@ -1,8 +1,8 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.4.0
+> **Version:** v1.6.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-17
+> **Last Updated:** 2026-09-25
 > **Status:** Active  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -99,20 +99,28 @@ Credential của provider phải nằm ở Backend và ngoài Source Control.
 | SLF4J + Logback | Logging facade và implementation của Backend | Confirmed | Cung cấp diagnostic logging nhất quán trong Spring ecosystem | Tuyệt đối không ghi secret, mật khẩu hoặc dữ liệu cá nhân vào log |
 | Azure Application Insights | Giám sát hiệu năng và lỗi ứng dụng trên production | Confirmed Observability | Tích hợp qua App Service Java Agent / OpenTelemetry, theo dõi response time, dependency calls và exceptions | Không yêu cầu dựng server Prometheus/Grafana hay ELK riêng |
 
-## 8. Hạ tầng triển khai và quản lý Secret (Deployment & Secrets)
+## 8. Docker cho môi trường phát triển
+
+| Thành phần | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
+|---|---|---|---|---|
+| Docker Engine | Chạy môi trường Frontend và Backend có thể tái lập trên máy thành viên | Confirmed Developer Tooling | Giảm chênh lệch phiên bản runtime và công cụ giữa các máy; contributor chỉ cần Docker để chạy image đã định nghĩa | Không thay thế việc quản lý dependency/lockfile và vẫn cần rebuild image khi dependency thay đổi |
+| Frontend Dockerfile | Định nghĩa môi trường phát triển/build của React, TypeScript và Vite tại `app/mamxanh-frontend/Dockerfile` | Confirmed placement | Giữ cấu hình Frontend gần source và cho phép thay đổi độc lập với Backend | Dùng để đồng bộ local development; không mặc định yêu cầu nền tảng hosting Frontend phải chạy container |
+| Backend Dockerfile | Định nghĩa môi trường build/chạy Java 21, Maven và Spring Boot tại `app/mamxanh-backend/Dockerfile` | Confirmed placement | Giữ cấu hình Backend gần source và cho phép thay đổi độc lập với Frontend | Chưa xác nhận Docker image này là production deployment artifact |
+
+## 9. Hạ tầng triển khai và quản lý Secret (Deployment & Secrets)
 
 | Thành phần | Công nghệ / Nền tảng | Trạng thái | Ghi chú và Ràng buộc |
 |---|---|---|---|
-| Frontend Hosting | Azure Static Web Apps | Confirmed | Host ứng dụng React build bằng Vite; hỗ trợ CDN toàn cầu, cấp HTTPS tự động và CI/CD qua GitHub Actions |
+| Frontend Hosting | Vercel | Confirmed | Host ứng dụng React build bằng Vite, cung cấp CDN và HTTPS; baseline hosting không tự xác nhận Git auto-deploy hoặc CI/CD đã được cấu hình |
 | Backend Hosting | Azure App Service (Java 21 SE) | Confirmed | Chạy ứng dụng Spring Boot JAR độc lập; hỗ trợ Auto-healing, Managed TLS và tích hợp Application Insights |
 | Database Hosting | Azure SQL Database (Serverless) | Confirmed | Microsoft SQL Server đám mây; tự động pause khi không hoạt động để tối ưu chi phí (cần kích hoạt trước khi demo) |
 | Media Storage | Azure Blob Storage | Confirmed | Lưu trữ ảnh bài đăng công thức nấu ăn |
-| Custom Domain | Domain `.tech` hoặc Name.com | Confirmed Polish | Sử dụng tên miền miễn phí 1 năm từ GitHub Student Pack, CNAME trỏ về Azure Static Web Apps cho buổi live demo |
+| Custom Domain | Domain `.tech` | Confirmed Polish | Có thể cấu hình custom domain cho Vercel; tên miền cụ thể và DNS record sẽ được chốt khi chuẩn bị live demo |
 | Secrets - Local | Environment Variables / `.env` | Confirmed | Biến môi trường hệ thống; cam kết không commit file `.env`, duy trì `.env.example` mẫu |
 | Secrets - CI/CD | GitHub Environment Secrets | Confirmed | Quản lý token triển khai, Sonar/Codecov token và build secrets trong GitHub Actions |
 | Secrets - Production | Azure App Service App Settings / Key Vault | Confirmed | Cấu hình trực tiếp trên Azure Portal hoặc nạp qua Azure Key Vault reference |
 
-## 9. Các lựa chọn chưa được giải quyết rõ ràng (Open Items)
+## 10. Các lựa chọn chưa được giải quyết rõ ràng (Open Items)
 
 - Quy ước/thư viện Frontend state management (nếu vượt quá React Context).
 - CSS/UI library và design system (Tailwind CSS, MUI, Ant Design hoặc Shadcn).

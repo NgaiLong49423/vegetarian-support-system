@@ -72,7 +72,50 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Eliminate multiple cascade path conflict (SQL Server Error 1785) across interrelated entities (`COMMENT`, `USER_FOLLOW`, `REPORT`) by restricting `ON DELETE CASCADE` strictly to four parent-child ownership relationships, applying `SET NULL` for guest recipe views, and setting the remaining 33 foreign keys to `NO ACTION`.
+## 2026-09-25 — Confirm Vercel and Azure Deployment Baseline
 
+**Status:** Committed — d1c2082.
+
+**Scope:** Record the approved hosting split across maintained architecture, setup, workflow, and overview documentation without claiming that deployment automation or the complete production system already exists.
+
+### Added
+
+- None.
+
+### Changed
+
+- Confirm Vercel as the Frontend hosting platform and Azure App Service with Java 21 SE as the Backend hosting platform.
+- Retain Azure SQL Database Serverless and Azure Blob Storage as the database and media services.
+- Point the planned `.tech` custom domain to the Vercel-hosted Frontend instead of Azure Static Web Apps.
+- Clarify that the current Vercel demo remains manually deployed and that Git auto-deploy or CI/CD has not been configured.
+- Clarify that the application-level Dockerfiles standardize local development and are not the selected production deployment artifacts.
+- Remove the resolved Vercel-versus-Azure Static Web Apps inconsistency from the C4 review findings and refresh the maintained document register.
+
+### Fixed
+
+- None.
+
+## 2026-09-24 — Add Per-Application Docker Setup and Align C4 Guidance
+
+**Status:** Committed — 43206ac.
+
+**Scope:** Add independent Docker development environments and reproducible run instructions for the Frontend and Backend, then align the maintained C4 workspace guide with the updated diagram while preserving unresolved deployment-baseline differences for review.
+
+### Added
+
+- Add independent `Dockerfile` and `.dockerignore` files inside the Frontend and Backend application directories.
+- Add direct and Docker-based startup, verification, database configuration, IntelliJ, and troubleshooting guidance to both application workspace guides.
+
+### Changed
+
+- Configure the Frontend container for Vite development on port 5173 with file watching and no browser launch inside the container.
+- Configure the Backend container for Java 21 and Maven Wrapper development on port 8080 while keeping database credentials outside the image.
+- Keep Docker as local development tooling with no shared root Dockerfile, database container, Docker Compose setup, or production deployment change.
+- Align the C4 workspace guide with the four current architecture areas, external providers, request/response flows, Vercel deployment view, and known diagram corrections still required before approval.
+
+### Fixed
+
+- None.
 ## 2026-09-23 — Align Social, Recipe Comparison, Nutrition, and Expert Requirements
 
 **Status:** Committed — 6e49cd9.

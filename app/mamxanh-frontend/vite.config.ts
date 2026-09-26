@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: process.env.FIGMA_DEV_SERVER_HOST || 'localhost',
       port: parseInt(process.env.PORT || '5173'),
-      open: true,
+      open: process.env.VITE_OPEN_BROWSER !== 'false',
       watch: {
         ignored: [
           '**/.figma/**',

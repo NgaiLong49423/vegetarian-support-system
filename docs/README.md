@@ -2,7 +2,7 @@
 > **File:** `docs/README.md`  
 > **Version:** v3.13.0  
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-23  
+> **Last Updated:** 2026-09-25
 > **Status:** Active  
 
 # Repository Layout and Document Register
@@ -89,7 +89,7 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | diagrams/UseCase/README.md | Use-case diagram conventions | Creating/updating use-case diagrams |
 | diagrams/ERD/README.md | ERD documentation conventions; Draft (Conceptual ERD đã được rà soát; Logical ERD v1.0.0 đã dựng 23/09/2026) | Creating/updating the data model |
 | diagrams/ERD/data-dictionary.md | Data Dictionary & Traceability Matrix: một dòng cho mỗi cột của 22 bảng, truy vết tới FR/BR/UC/AC, ràng buộc không biểu diễn được bằng đường nối và các quyết định đã chốt; Draft, tầng Logical đã điền, tầng Physical do pha 2 hoàn thiện | Thiết kế hoặc triển khai database, đặt tên cột, FK, constraint và index |
-| diagrams/C4 Container Diagram/README.md | C4 container diagram conventions; Draft (Chờ cập nhật bản vẽ sơ đồ C4 phản ánh baseline 22 thực thể, gồm `USER_FOLLOW` thuộc phạm vi ACTIVE) | Creating/updating container architecture |
+| diagrams/C4 Container Diagram/README.md | C4 container diagram conventions and current diagram review findings; Under Review | Creating/updating container architecture |
 | ../app/mamxanh-frontend/README.md | Frontend setup/state, Playwright commands and contribution guidance | Frontend work |
 | ../app/mamxanh-backend/README.md | Backend setup/state and contribution guidance | Backend work |
 | ../database/README.md | SQL/Flyway ownership and database state | Database work |
