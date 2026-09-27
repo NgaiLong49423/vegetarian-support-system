@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M04
 > **File:** `docs/requirements/use-cases/recipe-discovery-and-classification.md`
-> **Version:** v2.1.0
+> **Version:** v2.2.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -44,6 +44,10 @@ Danh sách kết quả tìm kiếm được hiển thị; bài ẩn hoặc đã 
 - **Parent FR:** [FR-08](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08).
 - **Relevant NFR:** [NFR-02](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02) (thời gian phản hồi tìm kiếm); [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10) (truy vấn an toàn).
 
+#### Acceptance Coverage
+- [AC-08.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) — Tìm kiếm theo từ khóa.
+- [AC-08.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) — Xử lý trạng thái không có kết quả.
+
 ---
 
 <a id="uc-08-2"></a>
@@ -76,6 +80,12 @@ Danh sách chỉ còn các bài công thức công khai thỏa mãn các tiêu c
 - **Parent FR:** [FR-08](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08).
 - **Relevant NFR:** [NFR-02](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02) (thời gian phản hồi); [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10) (truy vấn an toàn); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện responsive).
 
+#### Acceptance Coverage
+- [AC-08.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) — Lọc theo loại ăn chay.
+- [AC-08.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) — Lọc theo thể loại món.
+- [AC-08.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) — Lọc theo thời gian nấu.
+- [AC-08.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) — Trạng thái không có kết quả sau lọc.
+
 ---
 
 <a id="uc-08-3"></a>
@@ -105,6 +115,12 @@ Danh sách hiển thị theo chế độ được chọn bằng dữ liệu Like
 - **Parent FR:** [FR-08](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08).
 - **Relevant BR:** [BR-69](../srs/BUSINESS-RULES.md#br-69) (Like/Dislike và tỷ lệ % Like); [BR-70](../srs/BUSINESS-RULES.md#br-70) (lượt xem); [BR-71](../srs/BUSINESS-RULES.md#br-71) (Most Active); [BR-72](../srs/BUSINESS-RULES.md#br-72) (Trending).
 - **Relevant NFR:** [NFR-02](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02) (thời gian phản hồi sắp xếp).
+
+#### Acceptance Coverage
+- [AC-08.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) — Sắp xếp bài mới nhất.
+- [AC-08.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) — Sắp xếp theo Most Liked.
+- [AC-08.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) — Sắp xếp theo Most Viewed.
+- [AC-08.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) — Phân biệt Most Active và Trending.
 
 ---
 
@@ -144,6 +160,10 @@ Các thẻ món công khai được hiển thị với chỉ số Like/Dislike v
 - **Relevant BR:** [BR-18](../srs/BUSINESS-RULES.md#br-18) (thông tin tác giả công khai); [BR-20](../srs/BUSINESS-RULES.md#br-20) (ảnh mặc định khi không có ảnh); [BR-69](../srs/BUSINESS-RULES.md#br-69) (tỷ lệ Like); [BR-70](../srs/BUSINESS-RULES.md#br-70) (lượt xem).
 - **Relevant NFR:** [NFR-02](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02) (thời gian tải); [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08) (quyền riêng tư dữ liệu cá nhân); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (responsive tiếng Việt).
 
+#### Acceptance Coverage
+- [AC-17.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-17) — Hiển thị thông tin trên thẻ món.
+- [AC-17.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-17) — Ảnh mặc định khi bài không có ảnh.
+
 ---
 
 <a id="uc-17-2"></a>
@@ -180,6 +200,10 @@ Thao tác lưu hoặc cập nhật Meal Plan được phản ánh trong hồ sơ
 - **Relevant BR:** [BR-05](../srs/BUSINESS-RULES.md#br-05) (Guest không có quyền thao tác); [BR-32](../srs/BUSINESS-RULES.md#br-32) (yêu cầu đăng nhập); [BR-33](../srs/BUSINESS-RULES.md#br-33) (thao tác lưu không gọi Gemini); [BR-36](../srs/BUSINESS-RULES.md#br-36) (ba bữa cố định).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền).
 
+#### Acceptance Coverage
+- [AC-17.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-17) — Lưu công thức từ thẻ.
+- [AC-17.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-17) — Thêm món vào Lịch ăn từ thẻ.
+
 ---
 
 <a id="uc-17-3"></a>
@@ -212,6 +236,9 @@ Người dùng xem trang chi tiết đúng bài viết, hoặc nhận thông bá
 - **Related FR:** [FR-20](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-20) (trang chi tiết dùng cùng nguồn Recipe Post).
 - **Relevant BR:** [BR-35](../srs/BUSINESS-RULES.md#br-35) (bài không khả dụng và tham chiếu/tombstone).
 - **Relevant NFR:** [NFR-02](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02) (thời gian tải trang).
+
+#### Acceptance Coverage
+- [AC-17.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-17) — Điều hướng từ thẻ tới trang chi tiết.
 
 ---
 
@@ -258,6 +285,12 @@ Danh mục nguyên liệu được cập nhật để dùng trong các lựa ch�
 - **Relevant BR:** [BR-53](../srs/BUSINESS-RULES.md#br-53) (không xóa nguyên liệu dinh dưỡng đang được tham chiếu).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (quyền quản trị).
 
+#### Acceptance Coverage
+- [AC-18.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Chỉ Administrator được quản lý danh mục.
+- [AC-18.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Thêm nguyên liệu chuẩn hợp lệ.
+- [AC-18.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Chặn xóa vĩnh viễn nguyên liệu đang được bài viết tham chiếu.
+- Coverage gap — Chưa có AC kiểm tra trực tiếp tìm kiếm, chỉnh sửa hoặc ngừng sử dụng nguyên liệu; [AC-18.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) chỉ kiểm tra tạo mới, [AC-18.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) kiểm tra từ chối xóa cứng.
+
 ---
 
 <a id="uc-18-2"></a>
@@ -287,6 +320,10 @@ Danh mục đơn vị phản ánh thông tin và trạng thái được Administ
 - **Parent FR:** [FR-18](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18).
 - **Relevant BR:** [BR-73](../srs/BUSINESS-RULES.md#br-73) (đơn vị chuẩn và thứ nguyên đo lường).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (quyền quản trị).
+
+#### Acceptance Coverage
+- [AC-18.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Chỉ Administrator được quản lý danh mục.
+- `AC COVERAGE GAP` — Chưa có AC kiểm tra trực tiếp thao tác xem/thêm/chỉnh sửa danh mục `UNIT`; [AC-18.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) kiểm tra cấu hình quy đổi ở UC-18.3, không thay thế kiểm chứng quản lý danh mục đơn vị.
 
 ---
 
@@ -318,6 +355,11 @@ Tỷ lệ quy đổi gắn với đúng nguyên liệu/đơn vị được lưu 
 - **Related FR:** [FR-19](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-19) (định lượng Recipe Post).
 - **Relevant BR:** [BR-14](../srs/BUSINESS-RULES.md#br-14) (định lượng nguyên liệu); [BR-73](../srs/BUSINESS-RULES.md#br-73) (quy tắc bảng quy đổi).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (quyền quản trị); [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10) (validation dữ liệu).
+
+#### Acceptance Coverage
+- [AC-18.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Chỉ Administrator được quản lý danh mục.
+- [AC-18.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Cấu hình tỷ lệ quy đổi nguyên liệu–đơn vị.
+- Coverage gap — Chưa có AC cho việc từ chối tỷ lệ quy đổi không hợp lệ hoặc cặp nguyên liệu–đơn vị bị trùng; [AC-18.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) chỉ kiểm tra lưu thành công.
 
 ---
 
@@ -362,6 +404,11 @@ Kết quả gợi ý tham chiếu tới Recipe Post công khai thực tế; hệ
 - **Relevant BR:** [BR-31](../srs/BUSINESS-RULES.md#br-31) (thiếu thông tin thì chặn cá nhân hóa); [BR-38](../srs/BUSINESS-RULES.md#br-38) (AI chỉ dùng công thức công khai có sẵn).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03) (thời gian phản hồi AI); [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18) (provider fallback); [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25) (chất lượng và tuân thủ nội dung AI).
 
+#### Acceptance Coverage
+- [AC-34.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Chỉ gợi ý Recipe Post công khai có link nguồn.
+- [AC-34.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Chặn yêu cầu khi thiếu hồ sơ tối thiểu.
+- Coverage gap — Chưa có AC kiểm tra kết quả gợi ý nguyên liệu tuân thủ trường phái ăn chay và dị ứng; [AC-34.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) kiểm tra thực đơn tuần, không phải UC-34.1.
+
 ---
 
 <a id="uc-34-2"></a>
@@ -400,6 +447,12 @@ Preview được hiển thị; chưa có thay đổi nào được ghi vào Meal
 - **Relevant BR:** [BR-31](../srs/BUSINESS-RULES.md#br-31) (chặn khi thiếu hồ sơ); [BR-38](../srs/BUSINESS-RULES.md#br-38) (chỉ dùng công thức công khai).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03); [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18); [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
 
+#### Acceptance Coverage
+- [AC-34.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Tuân thủ loại ăn chay và danh sách dị ứng.
+- [AC-34.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Preview chưa làm thay đổi Lịch ăn khi chưa xác nhận.
+- [AC-34.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Chặn yêu cầu khi thiếu hồ sơ tối thiểu.
+- Coverage gap — Chưa có AC kiểm tra trực tiếp entitlement Pro cho UC-34.2; [AC-10.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) hiện nêu FR-36, còn [AC-10.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) chỉ kiểm tra quyền cho Member Pro nói chung.
+
 ---
 
 <a id="uc-34-3"></a>
@@ -429,6 +482,9 @@ Meal Plan được cập nhật chỉ sau hành động xác nhận chủ độn
 - **Related FR:** [FR-09](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) (lịch tuần); [FR-33](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-33) (thêm công thức vào bữa).
 - **Relevant BR:** [BR-37](../srs/BUSINESS-RULES.md#br-37) (không tạo món trùng trong cùng bữa/ngày).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (quyền sở hữu Meal Plan).
+
+#### Acceptance Coverage
+- [AC-34.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Lưu thực đơn sau xác nhận chủ động.
 
 ---
 
@@ -463,6 +519,9 @@ Khối công thức liên quan thông thường được hiển thị cho ngư�
 #### Traceability
 - **Parent FR:** [FR-47](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47).
 - **Relevant NFR:** [NFR-02](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02) (thời gian tải nội dung).
+
+#### Acceptance Coverage
+- [AC-47.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47) — Hiển thị gợi ý thông thường từ dữ liệu nội bộ.
 
 ---
 
@@ -503,5 +562,10 @@ Khi yêu cầu hợp lệ và Gemini thành công, kết quả xuất hiện tro
 - **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (entitlement); [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) (telemetry); [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) (thông tin gói).
 - **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền Plus/Pro); [BR-03](../srs/BUSINESS-RULES.md#br-03) (kiểm tra entitlement trước khi gọi); [BR-04](../srs/BUSINESS-RULES.md#br-04) (provider error/telemetry); [BR-05](../srs/BUSINESS-RULES.md#br-05) (Guest phải đăng nhập).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03) (thời gian phản hồi AI); [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18) (provider fallback).
+
+#### Acceptance Coverage
+- [AC-47.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47) — Chỉ gọi AI sau thao tác chủ động và entitlement hợp lệ.
+- [AC-47.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47) — Chỉ đề xuất công thức có sẵn.
+- [AC-47.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47) — Xác thực quyền Plus/Pro trước khi gọi AI.
 
 ---

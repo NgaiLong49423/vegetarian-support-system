@@ -1,6 +1,6 @@
 > **Document:** Use Case Specification Index
 > **File:** `docs/requirements/use-cases/README.md`
-> **Version:** v2.1.0
+> **Version:** v2.2.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -24,6 +24,12 @@ Each UC specification should contain:
 - **Traceability** to its parent FR and only the relevant BR/NFR. Link to their authoritative definitions; do not reproduce them.
 
 Omit a section when the UC has no supported content for it; do not add empty headings. Describe the interaction sequence in the UC, but do not copy the FR's Given/When/Then Acceptance Criteria wholesale. Keep those criteria in the Functional Requirements document.
+
+### Acceptance Coverage
+
+When one or more parent-FR Acceptance Criteria verify a UC's observable outcome, include an `Acceptance Coverage` section in that UC. List the canonical AC IDs and, when useful, a short statement of the behavior each ID covers. Link each ID to the stable anchor of its parent FR in `FUNCTIONAL-REQUIREMENTS.md`; the AC entries currently do not have separate stable anchors.
+
+Do not copy Given/When/Then text into a UC. An AC may map to multiple UCs only when its behavior genuinely spans those flows; do not map an AC merely because it belongs to the same FR. If no AC verifies any observable outcome of a current actor-goal UC, include the literal marker `AC COVERAGE GAP` and state the uncovered outcome. System/background acceptance that has no actor-goal UC remains under the parent FR and must be identified as `FR-level/system acceptance`; do not create a synthetic UC for it.
 
 Use an explicit lowercase anchor immediately before each UC heading. Replace the dot in the UC ID with a hyphen in the anchor:
 

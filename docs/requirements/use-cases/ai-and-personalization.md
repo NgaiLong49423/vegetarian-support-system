@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M06
 > **File:** `docs/requirements/use-cases/ai-and-personalization.md`
-> **Version:** v2.1.0
+> **Version:** v2.2.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -51,6 +51,12 @@ Guest được chuyển tiếp tới hội thoại FR-51 khi yêu cầu hợp l�
 - **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền Guest và giới hạn tần suất); [BR-05](../srs/BUSINESS-RULES.md#br-05) (giới hạn trải nghiệm Guest).
 - **Relevant NFR:** [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10) (kiểm soát đầu vào và bảo vệ API).
 
+#### Acceptance Coverage
+- [AC-02.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) — Guest gửi câu hỏi trong ngưỡng được tiếp tục vào chatbot.
+- [AC-02.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) — Chặn request khi Guest vượt tần suất.
+- [AC-02.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) — Thông báo thân thiện khi provider lỗi hoặc timeout.
+- [AC-02.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) — Gợi ý đăng ký sau trải nghiệm Guest.
+
 ---
 
 <a id="fr-10"></a>
@@ -98,6 +104,11 @@ Yêu cầu được chuyển tới đúng luồng tính năng khi quyền hợp 
 - **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền Chatbot cơ bản); [BR-02](../srs/BUSINESS-RULES.md#br-02) (entitlement Plus/Pro); [BR-03](../srs/BUSINESS-RULES.md#br-03) (kiểm tra quyền trước khi gọi AI).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền); [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10) (chống vượt quyền và bảo mật request).
 
+#### Acceptance Coverage
+- [AC-10.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Quyền Chatbot/gợi ý cơ bản cho Guest và Member Free.
+- [AC-10.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Quyền tính năng AI thuộc Plus.
+- [AC-10.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Quyền tính năng AI thuộc Pro.
+
 ---
 
 <a id="uc-10-2"></a>
@@ -128,6 +139,11 @@ Yêu cầu không được thực thi và không phát sinh chi phí gọi Gemin
 - **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền theo gói Plus/Pro); [BR-03](../srs/BUSINESS-RULES.md#br-03) (chặn trước khi gọi AI).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền Backend); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện tiếng Việt, responsive).
 
+#### Acceptance Coverage
+- [AC-10.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Từ chối tính năng Plus với Member Free.
+- [AC-10.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Từ chối tính năng Pro với Member Plus.
+- [AC-10.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Chặn tại Backend trước khi gọi Gemini.
+
 ---
 
 <a id="fr-11"></a>
@@ -150,6 +166,12 @@ FR-11 xác định việc ghi telemetry và dọn bản ghi quá 90 ngày là c�
 - **Parent FR:** [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11).
 - **Relevant BR:** [BR-04](../srs/BUSINESS-RULES.md#br-04) (provider errors, telemetry và retention).
 - **Relevant NFR:** [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08) (bảo vệ dữ liệu cá nhân); [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20) (quyền riêng tư dữ liệu sức khỏe); [NFR-22](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22) (không lưu prompt thô, giới hạn retention).
+
+#### FR-level/system acceptance
+- [AC-11.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) — Ghi metadata token sau lượt Gemini thành công.
+- [AC-11.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) — Không lưu raw prompt trong telemetry.
+- [AC-11.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) — Provider lỗi không được ghi là lượt thành công.
+- [AC-11.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) — Tiến trình nền xóa telemetry quá 90 ngày.
 
 <a id="uc-11-2"></a>
 ### UC-11.2 — Administrator xem thống kê lượng token và chi phí AI
@@ -178,6 +200,9 @@ Administrator đã xem được báo cáo tổng hợp; nội dung prompt hoặc
 - **Parent FR:** [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11).
 - **Relevant BR:** [BR-04](../srs/BUSINESS-RULES.md#br-04) (bản chất dữ liệu telemetry và lỗi provider).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (chỉ Administrator được xem dữ liệu quản trị).
+
+#### Acceptance Coverage
+- [AC-11.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) — Chỉ Administrator được phép xem báo cáo telemetry.
 
 ---
 
@@ -245,6 +270,13 @@ Người dùng nhận được phản hồi cho câu hỏi chung; không có d�
 - **Relevant BR:** [BR-09](../srs/BUSINESS-RULES.md#br-09) (ranh giới y tế); [BR-39](../srs/BUSINESS-RULES.md#br-39) (BMI chỉ mang tính tham khảo); [BR-41](../srs/BUSINESS-RULES.md#br-41) (thông tin dinh dưỡng không thay thế chuyên gia).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03), [NFR-12](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-12), [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20), [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
 
+#### Acceptance Coverage
+- [AC-51.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Từ chối yêu cầu chẩn đoán/phác đồ y khoa (hành vi an toàn dùng chung).
+- [AC-51.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Dùng một chatbot cho Guest và Member (hành vi dùng chung).
+- [AC-51.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Chatbot không tự sửa dữ liệu nghiệp vụ (hành vi dùng chung).
+- [AC-51.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Xử lý lỗi hoặc timeout (hành vi dùng chung).
+- `AC COVERAGE GAP` — Chưa có AC kiểm tra trực tiếp câu trả lời bình thường cho câu hỏi ở ngữ cảnh chung; các AC liệt kê phía trên chỉ kiểm chứng an toàn và hành vi dùng chung.
+
 ---
 
 <a id="uc-51-2"></a>
@@ -281,5 +313,14 @@ Người dùng nhận được câu trả lời gắn với Recipe Post đã ch�
 - **Parent FR:** [FR-51](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51).
 - **Relevant BR:** [BR-09](../srs/BUSINESS-RULES.md#br-09) (ranh giới y tế); [BR-41](../srs/BUSINESS-RULES.md#br-41) (ranh giới tư vấn dinh dưỡng); [BR-51](../srs/BUSINESS-RULES.md#br-51) (AI không quản lý danh mục dinh dưỡng).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03), [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10), [NFR-12](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-12), [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18), [NFR-22](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22), [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
+
+#### Acceptance Coverage
+- [AC-51.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Trả lời theo context Recipe Post.
+- [AC-51.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Giải thích bước chế biến và phân biệt dữ kiện với ước tính AI.
+- [AC-51.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Gợi ý thay thế nguyên liệu phù hợp trường phái ăn chay.
+- [AC-51.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Từ chối yêu cầu chẩn đoán/phác đồ y khoa (hành vi dùng chung).
+- [AC-51.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Dùng một chatbot cho Guest và Member (hành vi dùng chung).
+- [AC-51.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Không tự sửa dữ liệu nghiệp vụ (hành vi dùng chung).
+- [AC-51.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Xử lý lỗi hoặc timeout (hành vi dùng chung).
 
 ---

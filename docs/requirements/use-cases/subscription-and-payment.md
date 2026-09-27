@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M08
 > **File:** `docs/requirements/use-cases/subscription-and-payment.md`
-> **Version:** v2.0.1
+> **Version:** v2.1.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -25,6 +25,9 @@ Quy tắc hết hạn gói trả phí được giữ ở cấp FR-group dưới 
 
 #### Shared system-triggered flow — AF-13.2 (Hết hạn chu kỳ đã trả phí)
 Khi chu kỳ tháng đã trả phí kết thúc, quyền lợi Plus hoặc Pro tự động hết hạn. Hệ thống tự động chuyển gói tài khoản về `Free`, không phát sinh thêm chi phí và không tự động trừ tiền gia hạn.
+
+#### FR-level/system acceptance
+- [AC-13.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) — Hệ thống tự chuyển gói đã hết hạn về Free và không tự gia hạn; đây là sự kiện theo thời gian, không phải UC xem trạng thái.
 
 ---
 
@@ -52,6 +55,9 @@ Người dùng đã xem được giá và quyền lợi để so sánh các gói
 - **Parent FR:** [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13).
 - **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền AI cơ bản của Guest/Member Free); [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền tính năng AI theo gói Plus/Pro).
 - **Relevant NFR:** [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện tiếng Việt, responsive).
+
+#### Acceptance Coverage
+- [AC-13.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) — Hiển thị đúng bảng giá và quyền lợi các gói.
 
 ---
 
@@ -101,6 +107,12 @@ Với giao dịch thành công đã xác minh, giao dịch được ghi nhận `
 - **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền tính năng AI của các gói trả phí).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền); [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10) (xác thực dữ liệu/IPN); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện ứng dụng); [NFR-21](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-21) (bảo mật dữ liệu thanh toán).
 
+#### Acceptance Coverage
+- [AC-13.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) — Kích hoạt quyền lợi sau khi xác minh thanh toán thành công.
+- [AC-13.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) — Xử lý callback/IPN lặp idempotently.
+- [AC-13.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) — Từ chối chữ ký hoặc số tiền không hợp lệ.
+- Coverage gap — Chưa có AC kiểm tra Member hủy thanh toán/thanh toán thất bại thì gói hiện tại được giữ nguyên.
+
 ---
 
 <a id="uc-13-3"></a>
@@ -129,5 +141,8 @@ Member đã xem được trạng thái gói hiện tại và ngày hết hạn c
 - **Parent FR:** [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13).
 - **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền tính năng theo hạng gói).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền truy cập); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện tiếng Việt, responsive).
+
+#### Acceptance Coverage
+`AC COVERAGE GAP` — FR-13 hiện không có AC kiểm tra trực tiếp việc Member xem được trạng thái gói hiện tại và ngày hết hạn trên trang tài khoản.
 
 ---

@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M09
 > **File:** `docs/requirements/use-cases/administration.md`
-> **Version:** v2.0.1
+> **Version:** v2.1.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -14,6 +14,9 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 ## FR-06 — Administrator xử lý báo cáo và quản lý nội dung hậu kiểm
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06).
+
+#### FR-level/system acceptance
+- [AC-06.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Bảo đảm việc hậu kiểm không chặn cơ chế công khai trực tiếp bài hợp lệ; không phải mục tiêu actor-goal của các UC quản trị.
 
 ### Use Case navigation
 
@@ -50,6 +53,9 @@ Danh sách và thông tin báo cáo được hiển thị để Administrator l�
 - **Relevant BR:** [BR-23](../srs/BUSINESS-RULES.md#br-23) (báo cáo là tín hiệu cần xem xét, không phải kết luận); [BR-28](../srs/BUSINESS-RULES.md#br-28) (quyền riêng tư của báo cáo).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền truy cập khu vực quản trị).
 
+#### Acceptance Coverage
+- [AC-06.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Hiển thị bảng điều khiển và danh sách hậu kiểm.
+
 ---
 
 <a id="uc-06-2"></a>
@@ -83,5 +89,9 @@ Quyết định hậu kiểm và lý do được lưu lại trong lịch sử ki
 - **Parent FR:** [FR-06](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06).
 - **Relevant BR:** [BR-23](../srs/BUSINESS-RULES.md#br-23) (báo cáo không tự quyết định vi phạm); [BR-26](../srs/BUSINESS-RULES.md#br-26) (thẩm quyền và lưu kết luận/lịch sử xử lý); [BR-28](../srs/BUSINESS-RULES.md#br-28) (quyền riêng tư của báo cáo).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền truy cập và thao tác quản trị).
+
+#### Acceptance Coverage
+- [AC-06.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Ẩn bài vi phạm và thông báo lý do.
+- [AC-06.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) — Khóa tài khoản vi phạm nghiêm trọng.
 
 ---

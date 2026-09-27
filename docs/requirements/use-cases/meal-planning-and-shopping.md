@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M05
 > **File:** `docs/requirements/use-cases/meal-planning-and-shopping.md`
-> **Version:** v2.1.0
+> **Version:** v2.2.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -50,6 +50,10 @@ Lịch tuần được hiển thị theo cấu trúc 7 ngày × 3 bữa; UC này
 - **Relevant BR:** [BR-05](../srs/BUSINESS-RULES.md#br-05) (Guest không có quyền lưu); [BR-32](../srs/BUSINESS-RULES.md#br-32) (yêu cầu đăng nhập); [BR-36](../srs/BUSINESS-RULES.md#br-36) (cấu trúc ba bữa cố định).
 - **Relevant NFR:** [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08) (quyền riêng tư dữ liệu cá nhân); [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện responsive tiếng Việt).
 
+#### Acceptance Coverage
+- [AC-09.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Cấu trúc lịch 7 ngày × 3 bữa.
+- [AC-09.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Quyền riêng tư của lịch ăn (áp dụng xuyên các UC FR-09).
+
 ---
 
 <a id="uc-09-2"></a>
@@ -85,6 +89,12 @@ Vị trí bữa ăn được cập nhật theo thao tác của Member; danh sác
 - **Relevant BR:** [BR-35](../srs/BUSINESS-RULES.md#br-35) (vòng đời độc lập giữa món đã lưu và lịch ăn); [BR-36](../srs/BUSINESS-RULES.md#br-36) (ba bữa cố định); [BR-37](../srs/BUSINESS-RULES.md#br-37) (không trùng công thức trong cùng bữa/ngày).
 - **Relevant NFR:** [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08); [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09).
 
+#### Acceptance Coverage
+- [AC-09.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Thêm công thức vào bữa ăn.
+- [AC-09.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Chặn công thức trùng trong cùng bữa.
+- [AC-09.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Quyền riêng tư của lịch ăn (áp dụng xuyên các UC FR-09).
+- Chưa có AC kiểm tra trực tiếp thao tác đổi hoặc gỡ công thức khỏi bữa; [AC-09.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) và [AC-09.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) chỉ bao phủ thêm mới và ngăn trùng.
+
 ---
 
 <a id="uc-09-3"></a>
@@ -113,6 +123,10 @@ Member thấy được vị trí món không còn khả dụng; tham chiếu cá
 - **Parent FR:** [FR-09](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09).
 - **Relevant BR:** [BR-26](../srs/BUSINESS-RULES.md#br-26) (quyết định Admin ẩn nội dung); [BR-35](../srs/BUSINESS-RULES.md#br-35) (bảo toàn quan hệ tham chiếu trong lịch).
 - **Relevant NFR:** [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08); [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09).
+
+#### Acceptance Coverage
+- [AC-09.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Giữ tombstone khi Recipe Post nguồn không còn khả dụng.
+- [AC-09.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Quyền riêng tư của lịch ăn (áp dụng xuyên các UC FR-09).
 
 ---
 
@@ -160,6 +174,11 @@ Shopping List mới được lưu theo tài khoản Member; các mục đã tổ
 - **Relevant BR:** [BR-14](../srs/BUSINESS-RULES.md#br-14) (tổng hợp an toàn); [BR-32](../srs/BUSINESS-RULES.md#br-32) (yêu cầu đăng nhập).
 - **Relevant NFR:** [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08); [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13).
 
+#### Acceptance Coverage
+- [AC-53.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Tạo Shopping List từ Meal Plan.
+- [AC-53.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Yêu cầu đăng nhập (áp dụng xuyên các thao tác Shopping List).
+- Coverage gap — [AC-53.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) chỉ kiểm tra tạo danh sách từ Meal Plan; chưa có AC cho nguồn một/nhiều Recipe Post được chọn.
+
 ---
 
 <a id="uc-53-2"></a>
@@ -196,6 +215,11 @@ Mặt hàng được thêm, cập nhật hoặc gỡ khỏi danh sách của ch�
 - **Relevant BR:** [BR-32](../srs/BUSINESS-RULES.md#br-32) (danh sách thuộc thao tác Member đã đăng nhập).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền); [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10) (xử lý XSS); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện dùng trên thiết bị di động).
 
+#### Acceptance Coverage
+- [AC-53.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Thêm mặt hàng thủ công.
+- [AC-53.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Chỉnh sửa hoặc xóa mặt hàng.
+- [AC-53.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Yêu cầu đăng nhập (áp dụng xuyên các thao tác Shopping List).
+
 ---
 
 <a id="uc-53-3"></a>
@@ -228,6 +252,10 @@ Trạng thái checklist được lưu bền vững; nội dung Recipe Post ngu�
 - **Parent FR:** [FR-53](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53).
 - **Relevant BR:** [BR-32](../srs/BUSINESS-RULES.md#br-32) (yêu cầu tài khoản Member).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (quyền sở hữu); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (checklist tương tác/responsive).
+
+#### Acceptance Coverage
+- [AC-53.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Đổi trạng thái đã mua/chưa mua.
+- [AC-53.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Yêu cầu đăng nhập (áp dụng xuyên các thao tác Shopping List).
 
 ---
 
@@ -279,6 +307,11 @@ Member thấy một dòng tổng hợp khi các dòng nguồn đáp ứng quy t�
 - **Relevant BR:** [BR-14](../srs/BUSINESS-RULES.md#br-14); [BR-73](../srs/BUSINESS-RULES.md#br-73).
 - **Relevant NFR:** [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10).
 
+#### Acceptance Coverage
+- [AC-54.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-54) — Tổng hợp khối lượng g sang kg.
+- [AC-54.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-54) — Tổng hợp thể tích ml sang lít.
+- [AC-54.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-54) — Quy đổi khác dimension khi có quy tắc hợp lệ.
+
 ---
 
 <a id="uc-54-2"></a>
@@ -307,6 +340,10 @@ Các dòng không tương thích vẫn tách riêng; hệ thống không tự g�
 - **Parent FR:** [FR-54](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-54).
 - **Relevant BR:** [BR-14](../srs/BUSINESS-RULES.md#br-14); [BR-73](../srs/BUSINESS-RULES.md#br-73).
 - **Relevant NFR:** [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10).
+
+#### Acceptance Coverage
+- [AC-54.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-54) — Không tự quy đổi giữa khối lượng và thể tích khi thiếu quy tắc.
+- [AC-54.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-54) — Giữ riêng dòng không có quy tắc quy đổi tương thích.
 
 ---
 
@@ -346,6 +383,11 @@ Nội dung danh sách hiện tại có trong Clipboard; dữ liệu gốc không
 - **Relevant BR:** [BR-32](../srs/BUSINESS-RULES.md#br-32) (Shopping List cho Member đã đăng nhập).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (quyền sở hữu); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện/tiếng Việt).
 
+#### Acceptance Coverage
+- [AC-55.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-55) — Sao chép toàn bộ danh sách vào Clipboard.
+- [AC-55.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-55) — Giữ trạng thái đã mua/chưa mua khi sao chép (AC này cũng áp dụng cho UC-55.2).
+- [AC-55.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-55) — Vô hiệu hóa thao tác khi danh sách trống.
+
 ---
 
 <a id="uc-55-2"></a>
@@ -380,5 +422,10 @@ Member nhận tệp `.txt`; danh sách trong hệ thống không bị thay đổ
 - **Parent FR:** [FR-55](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-55).
 - **Relevant BR:** [BR-32](../srs/BUSINESS-RULES.md#br-32) (Shopping List cho Member đã đăng nhập).
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (quyền sở hữu); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (hiển thị tiếng Việt).
+
+#### Acceptance Coverage
+- [AC-55.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-55) — Xuất và tải tệp `.txt`.
+- [AC-55.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-55) — Giữ trạng thái đã mua/chưa mua trong tệp.
+- [AC-55.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-55) — Vô hiệu hóa thao tác khi danh sách trống.
 
 ---
