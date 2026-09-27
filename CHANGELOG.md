@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-27 — Fix Unit Code Encoding and Conceptual ERD Connectors After the PR #66 Merge
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 3917ead.
 
 **Scope:** Post-merge verification of PR #66 on `develop` found that Vietnamese unit codes lost their diacritics and that the conceptual ERD update merged through PR #67 had re-attached or detached several relationship connectors. Fix both on a branch from `develop` without editing the already shared V1 migration, and restore the chronology and accuracy of the PR #66 changelog entries.
 
