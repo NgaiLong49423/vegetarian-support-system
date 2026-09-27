@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M02
 > **File:** `docs/requirements/use-cases/identity-and-access.md`
-> **Version:** v2.1.0
+> **Version:** v2.2.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -398,19 +398,19 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
 1. **Main Flow (Đăng ký thành công):**
    - Bước 1: Guest truy cập trang Đăng ký, nhập thông tin: Tên hiển thị (3–50 ký tự), Email hợp lệ, Mật khẩu (tối thiểu 8 ký tự, đáp ứng yêu cầu độ phức tạp), Xác nhận mật khẩu.
    - Bước 2: Guest nhấn "Đăng ký". Ứng dụng gửi yêu cầu đăng ký tới máy chủ.
-   - Bước 3: Hệ thống kiểm tra tính hợp lệ của dữ liệu, xác nhận email chưa tồn tại, băm mật khẩu bằng thuật toán an toàn (BCrypt theo NFR-06), tạo tài khoản ở trạng thái chưa xác minh (`UNVERIFIED`).
+   - Bước 3: Hệ thống kiểm tra tính hợp lệ của dữ liệu, xác nhận email chưa tồn tại, băm mật khẩu bằng thuật toán an toàn (BCrypt theo NFR-06), tạo tài khoản với `account_status = ACTIVE` và `email_verified = false`.
    - Bước 4: Hệ thống tạo mã xác minh ngẫu nhiên có thời hạn (24 giờ) gắn với tài khoản.
-   - Bước 5: Hệ thống kích hoạt gửi email xác minh bất đồng bộ tới email người dùng kèm đường dẫn kích hoạt chứa mã xác minh.
+   - Bước 5: Hệ thống gửi email xác minh bất đồng bộ tới email người dùng kèm đường dẫn xác minh chứa mã xác minh.
    - Bước 6: Hệ thống phản hồi thông báo đăng ký thành công và nhắc nhở người dùng kiểm tra hộp thư.
    - Bước 7: Người dùng nhấp vào liên kết xác minh trong email.
-   - Bước 8: Hệ thống kiểm tra mã xác minh hợp lệ và còn hạn; cập nhật trạng thái tài khoản thành hoạt động (`ACTIVE`) và vô hiệu hóa mã xác minh đó.
+   - Bước 8: Hệ thống kiểm tra mã xác minh hợp lệ và còn hạn; cập nhật `email_verified = true`, giữ nguyên `account_status` và vô hiệu hóa mã xác minh đó.
    - Bước 9: Giao diện hiển thị thông báo xác minh thành công và điều hướng người dùng tới Onboarding Questionnaire hoặc màn hình Đăng nhập.
 2. **Alternative Flows:**
    - *Gửi lại email xác minh (UC-03.3):* Nếu người dùng chưa nhận được email hoặc mã xác minh hết hạn, người dùng có thể yêu cầu gửi lại email xác minh. Hệ thống tạo mã mới, hủy mã cũ và gửi lại email (áp dụng giới hạn tần suất gửi tối thiểu 60 giây/lần để tránh spam).
 3. **Error Flows:**
    - *Email đã tồn tại:* Nếu email đã được đăng ký trong hệ thống, hệ thống từ chối yêu cầu và phản hồi thông báo lỗi tương ứng.
    - *Mật khẩu không đạt độ phức tạp:* Hệ thống từ chối yêu cầu và thông báo chi tiết tiêu chí mật khẩu chưa đạt chuẩn.
-   - *Mã xác minh không hợp lệ hoặc đã hết hạn:* Hệ thống từ chối kích hoạt và cung cấp tùy chọn gửi lại email xác minh mới.
+   - *Mã xác minh không hợp lệ hoặc đã hết hạn:* Hệ thống từ chối xác minh và cung cấp tùy chọn gửi lại email xác minh mới.
 
 ##### B. Luồng Đăng nhập bằng Email/Mật khẩu & Phòng vệ Brute-force (UC-03.4)
 1. **Main Flow (Đăng nhập thành công):**
@@ -418,7 +418,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
    - Bước 2: Hệ thống kiểm tra cơ chế giới hạn thử sai (rate limit) đối với định danh tài khoản và địa chỉ IP nguồn. Nếu chưa chạm ngưỡng giới hạn, tiếp tục xử lý.
    - Bước 3: Hệ thống tìm kiếm thông tin tài khoản theo email.
    - Bước 4: Hệ thống so khớp mật khẩu qua thuật toán băm an toàn (BCrypt). Mật khẩu khớp chính xác.
-   - Bước 5: Hệ thống kiểm tra trạng thái tài khoản: tài khoản đã xác minh email và không ở trạng thái bị khóa quản trị (`LOCKED`).
+   - Bước 5: Hệ thống chỉ cho đăng nhập khi `account_status = ACTIVE` và `email_verified = true`; tài khoản `LOCKED` bị từ chối độc lập với trạng thái xác minh email.
    - Bước 6: Hệ thống xóa bộ đếm thử sai liên quan đến tài khoản và IP nguồn về 0.
    - Bước 7: Hệ thống tạo Access Token ngắn hạn và Rotating Refresh Token; thiết lập Refresh Token vào Secure HttpOnly Cookie (ngăn chặn JavaScript phía máy khách truy cập trực tiếp).
    - Bước 8: Hệ thống ghi nhận và lưu trữ phiên làm việc được theo dõi phía máy chủ (server-side session tracking).
@@ -432,7 +432,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
    - *Hết thời hạn 10 phút:* Cơ chế bảo vệ tạm thời tự động hết hiệu lực; người dùng có thể tiếp tục đăng nhập bình thường mà KHÔNG cần Quản trị viên can thiệp.
    - *Ranh giới bảo mật cốt lõi:* Hệ thống TUYỆT ĐỐI KHÔNG chuyển trạng thái tài khoản sang trạng thái khóa quản trị (`LOCKED`) trong cơ sở dữ liệu khi bị rate limit (trạng thái `LOCKED` chỉ do Quản trị viên áp dụng thủ công sau hậu kiểm theo BR-26).
 3. **Error Flows:**
-   - *Tài khoản chưa xác minh email:* Hệ thống từ chối đăng nhập, thông báo tài khoản chưa kích hoạt và cung cấp liên kết gửi lại email xác minh.
+   - *Email chưa xác minh (`email_verified = false`):* Hệ thống từ chối đăng nhập và cung cấp liên kết gửi lại email xác minh; `account_status` không được dùng để biểu diễn trạng thái xác minh.
    - *Tài khoản bị Quản trị viên khóa (`LOCKED`):* Hệ thống từ chối đăng nhập và thông báo tài khoản đang bị khóa theo quyết định quản trị.
 
 ##### C. Luồng Đăng nhập bằng Google (UC-03.5)
@@ -442,7 +442,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
    - Bước 3: Ứng dụng nhận mã xác thực từ Google và gửi yêu cầu xác thực tới máy chủ hệ thống.
    - Bước 4: Máy chủ hệ thống xác thực tính hợp lệ của token với dịch vụ Google Identity.
    - Bước 5: Hệ thống trích xuất email, tên và ảnh đại diện từ dữ liệu xác thực Google.
-   - Bước 6: Nếu email chưa tồn tại trong hệ thống, hệ thống tự động tạo tài khoản Member mới với email này ở trạng thái đã xác minh (`ACTIVE`) và thiết lập ảnh đại diện từ Google. Nếu email đã tồn tại, hệ thống liên kết định danh Google với tài khoản đó.
+   - Bước 6: Nếu email chưa tồn tại trong hệ thống, hệ thống tự động tạo tài khoản Member mới với `account_status = ACTIVE` và `email_verified = true`, đồng thời thiết lập ảnh đại diện từ Google. Nếu email đã tồn tại, hệ thống liên kết định danh Google với tài khoản đó.
    - Bước 7: Hệ thống tạo Access Token ngắn hạn, thiết lập Rotating Refresh Token qua Secure HttpOnly Cookie, lưu trữ và theo dõi phiên làm việc phía máy chủ và hoàn tất đăng nhập thành công.
 
 ##### D. Luồng Quên & Đặt lại mật khẩu (UC-03.6, UC-03.7)
@@ -477,8 +477,8 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
    - Bước 4: Hệ thống xác nhận đăng xuất thành công; người dùng trở về trạng thái Guest.
 
 #### 6. Hậu điều kiện (Postconditions)
-- Sau khi đăng ký: Bản ghi tài khoản mới được tạo ở trạng thái chưa xác minh (`UNVERIFIED`); email xác minh được gửi đi.
-- Sau khi xác minh email: Trạng thái tài khoản chuyển thành hoạt động (`ACTIVE`); email được ghi nhận đã xác thực.
+- Sau khi đăng ký: Bản ghi tài khoản mới có `account_status = ACTIVE` và `email_verified = false`; email xác minh được gửi đi.
+- Sau khi xác minh email: `email_verified` chuyển thành `true`; `account_status` giữ nguyên, độc lập với xác minh email.
 - Sau khi đăng nhập: Access Token ngắn hạn được cấp phát, Refresh Token được thiết lập qua Secure HttpOnly Cookie; phiên làm việc được lưu trữ và theo dõi phía máy chủ; bộ đếm thử sai được đặt lại về 0.
 - Sau khi bị rate limit: Cơ chế bảo vệ theo định danh tài khoản và IP nguồn tạm dừng tiếp nhận đăng nhập trong 10 phút; trạng thái tài khoản trong cơ sở dữ liệu tuyệt đối không bị chuyển sang `LOCKED`.
 - Sau khi đăng xuất: Phiên làm việc tương ứng bị thu hồi vĩnh viễn trên máy chủ; cookie Refresh Token bị xóa/hết hạn; trạng thái xác thực phía máy khách được xóa; token cũ không thể sử dụng để làm mới phiên.

@@ -1,7 +1,7 @@
 openapi: 3.1.1
 info:
   title: Mâm Xanh API
-  version: 0.2.0
+  version: 0.3.0
   summary: REST API contract for the Mâm Xanh application
   description: >-
     Accepted API baseline for FR-03 Authentication & Account. Implementation parameters
@@ -19,7 +19,7 @@ paths:
     post:
       tags: [Authentication]
       summary: Register with email and password
-      description: Creates an UNVERIFIED account and triggers a best-effort verification email.
+      description: Creates an ACTIVE account with emailVerified=false and triggers a best-effort verification email.
       requestBody:
         required: true
         content:
@@ -28,7 +28,7 @@ paths:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: Account created in UNVERIFIED state.
+          description: Account created with accountStatus ACTIVE and emailVerified false.
           content:
             application/json:
               schema:
@@ -53,7 +53,7 @@ paths:
               $ref: '#/components/schemas/TokenRequest'
       responses:
         '204':
-          description: Email verified and account activated.
+          description: Email is verified; accountStatus is unchanged.
         '400':
           description: Verification token is invalid or expired.
           content:
@@ -350,14 +350,17 @@ components:
     RegistrationResponse:
       type: object
       additionalProperties: false
-      required: [accountStatus, message]
+      required: [accountStatus, emailVerified, message]
       properties:
         accountStatus:
           type: string
-          const: UNVERIFIED
+          const: ACTIVE
+        emailVerified:
+          type: boolean
+          const: false
         message:
           type: string
-          example: Registration succeeded. Check your email to activate the account.
+          example: Registration succeeded. Check your email to verify your address.
     AuthResponse:
       type: object
       additionalProperties: false
@@ -397,7 +400,7 @@ components:
     AccountSummary:
       type: object
       additionalProperties: false
-      required: [displayName, email, role, accountStatus]
+      required: [displayName, email, role, accountStatus, emailVerified]
       properties:
         displayName:
           type: string
@@ -409,10 +412,13 @@ components:
           format: uri
         role:
           type: string
-          enum: [MEMBER, ADMIN]
+          enum: [CUSTOMER, EXPERT, ADMIN]
         accountStatus:
           type: string
           const: ACTIVE
+        emailVerified:
+          type: boolean
+          const: true
     MessageResponse:
       type: object
       additionalProperties: false

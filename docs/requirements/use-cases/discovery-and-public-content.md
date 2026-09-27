@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M01
 > **File:** `docs/requirements/use-cases/discovery-and-public-content.md`
-> **Version:** v2.1.0
+> **Version:** v2.1.1
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -217,7 +217,7 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 - **Main Flow:** Hệ thống trả và hiển thị tổng view toàn thời gian.
 - **Alternative / Security:** Thiếu aggregate tạm thời không làm lỗi nội dung; không lộ viewer identity.
 - **Postconditions:** Chỉ số được xem, không tạo thêm view chỉ do render aggregate.
-- **Traceability / Acceptance Coverage:** FR-58; BR-70; [AC-58.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-58).
+- **Traceability / Acceptance Coverage:** FR-58; BR-70; [AC-17.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-17) verifies the Recipe Card count and [AC-20.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-20) verifies the Recipe Detail count.
 
 `UC-58.1`, `UC-58.2` và `UC-58.4` là system/background mechanisms (capture, deduplication và aggregation), không phải actor-goal UC. [AC-58.1–AC-58.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-58) vẫn là FR-level/system acceptance.
 

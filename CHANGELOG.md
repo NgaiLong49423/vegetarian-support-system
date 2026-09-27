@@ -1,13 +1,34 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.32.0
+> **Version:** v2.33.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-25
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-27 — Finalize Requirements Baseline v2 and Prepare Issue Reconciliation ([PR #72](https://github.com/NgaiLong49423/vegetarian-support-system/pull/72))
+
+**Status:** Working tree — not committed.
+
+**Scope:** Stabilize the maintained requirements baseline for implementation planning while preserving prior requirements as history. GitHub Issue reconciliation is prepared separately and remains pending user approval.
+
+### Added
+
+- Add current Use Case specifications with Acceptance Coverage mappings to canonical Acceptance Criteria, preserving stable requirement and Use Case IDs.
+
+### Changed
+
+- Define current implementation scope by presence in the Requirements Baseline v2 registry; retain the v1 requirements baseline in the archive.
+- Align current requirements and contracts with Like/Dislike reactions, feature-based AI entitlements, and the implemented SQL Server schema/Flyway baseline.
+- Align account verification and API role documentation with the approved account-state and concrete-role models.
+
+### Fixed
+
+- Correct stale account verification wording and Recipe View traceability; preserve Like/Dislike requirements instead of restoring historical star-rating behavior.
+- Prepare current and historical GitHub Issue reconciliation for review without changing any remote Issue.
 
 ## 2026-09-25 — Finalize Database Modeling, Physical ERD, Schema Constraints, and Integrity Test Suite ([PR #66](https://github.com/NgaiLong49423/vegetarian-support-system/pull/66))
 

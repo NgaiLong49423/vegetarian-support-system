@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.4.0
+> **Version:** v2.5.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -162,7 +162,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 #### Danh mục Use Cases & User Stories
 - **Các Use Case con:**
   - `UC-03.1`: Đăng ký tài khoản mới bằng email và mật khẩu (Register with email and password).
-  - `UC-03.2`: Xác minh địa chỉ email qua liên kết kích hoạt (Verify email address).
+  - `UC-03.2`: Xác minh địa chỉ email qua liên kết xác minh (Verify email address).
   - `UC-03.3`: Yêu cầu gửi lại email xác minh (Resend verification email).
   - `UC-03.4`: Đăng nhập bằng email và mật khẩu (Login with email and password). *(Bao gồm luồng xử lý phòng vệ brute-force rate limiting)*
   - `UC-03.5`: Đăng nhập 1-click bằng tài khoản Google (Login with Google OAuth2/OIDC).
@@ -180,6 +180,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Khách vãng lai (Guest) chỉ được tiếp cận các chức năng: đăng ký, đăng nhập, đăng nhập Google, xác minh email, gửi lại email xác minh, yêu cầu đặt lại mật khẩu, thiết lập mật khẩu mới.
 - Thành viên (Member) và Quản trị viên (Administrator) được tiếp cận chức năng làm mới phiên xác thực và đăng xuất.
+- Mô hình trạng thái tài khoản tách biệt với xác minh email: `account_status` chỉ gồm `ACTIVE` và `LOCKED`; đăng ký tạo tài khoản `ACTIVE` với `email_verified = false`, xác minh email chỉ đổi `email_verified` thành `true`, và đăng nhập yêu cầu `account_status = ACTIVE` cùng `email_verified = true`. Khóa quản trị `LOCKED` độc lập với trạng thái xác minh email.
 - Ràng buộc kỹ thuật được phê duyệt:
   - Mật khẩu người dùng phải được băm một chiều an toàn bằng thuật toán BCrypt với work factor tối thiểu 10 (NFR-06); tuyệt đối không lưu trữ mật khẩu dạng rõ (plaintext) hoặc mã hóa hai chiều.
   - Cơ chế xác thực sử dụng JWT Access Token ngắn hạn kết hợp Rotating Refresh Token truyền qua Secure HttpOnly Cookie (không để JavaScript truy cập trực tiếp Refresh Token) và cơ chế thu hồi phía máy chủ (server-side revocation) (NFR-09).
@@ -206,7 +207,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 - **AC-03.1 — Đăng ký thành công bằng email và mật khẩu hợp lệ:**
   - **Given:** Guest đang ở trang Đăng ký và email nhập vào chưa từng tồn tại trong hệ thống.
   - **When:** Guest nhập email hợp lệ, mật khẩu đạt chuẩn (tối thiểu 8 ký tự, bao gồm ít nhất 1 chữ cái viết hoa, 1 chữ cái viết thường và 1 chữ số; ký tự đặc biệt là tùy chọn), xác nhận mật khẩu khớp, và nhấn "Đăng ký".
-  - **Then:** Hệ thống tạo tài khoản mới ở trạng thái `UNVERIFIED`, băm mật khẩu bằng BCrypt, gửi email xác minh chứa liên kết kích hoạt, và thông báo yêu cầu kiểm tra email.
+  - **Then:** Hệ thống tạo tài khoản mới với `account_status = ACTIVE` và `email_verified = false`, băm mật khẩu bằng BCrypt, gửi email xác minh chứa liên kết xác minh, và thông báo yêu cầu kiểm tra email.
 
 - **AC-03.2 — Đăng ký từ chối email đã tồn tại trong hệ thống:**
   - **Given:** Guest đang ở trang Đăng ký.
@@ -218,15 +219,15 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
   - **When:** Guest nhập mật khẩu không đạt yêu cầu (dưới 8 ký tự hoặc thiếu ít nhất một trong các thành phần: chữ cái viết hoa, chữ cái viết thường, chữ số) và nhấn "Đăng ký".
   - **Then:** Hệ thống từ chối đăng ký, không tạo tài khoản, và hiển thị thông báo lỗi cụ thể về tiêu chí mật khẩu chưa thỏa mãn.
 
-- **AC-03.4 — Xác minh email thành công kích hoạt tài khoản:**
-  - **Given:** Tài khoản đang ở trạng thái `UNVERIFIED` với mã xác minh hợp lệ còn thời hạn.
+- **AC-03.4 — Xác minh email thành công cập nhật trạng thái xác minh:**
+  - **Given:** Tài khoản có `email_verified = false` và mã xác minh hợp lệ còn thời hạn.
   - **When:** Người dùng nhấp vào liên kết xác minh từ email gửi tới.
-  - **Then:** Hệ thống kiểm tra mã hợp lệ, cập nhật trạng thái tài khoản thành `ACTIVE`, vô hiệu hóa mã xác minh, và hiển thị thông báo kích hoạt thành công.
+  - **Then:** Hệ thống kiểm tra mã hợp lệ, cập nhật `email_verified = true`, giữ nguyên `account_status`, vô hiệu hóa mã xác minh và hiển thị thông báo xác minh thành công.
 
 - **AC-03.5 — Xác minh email thất bại do mã không hợp lệ hoặc hết hạn:**
   - **Given:** Người dùng mở liên kết xác minh có mã xác thực đã hết hạn hoặc không tồn tại.
   - **When:** Yêu cầu xác minh gửi tới hệ thống.
-  - **Then:** Hệ thống từ chối kích hoạt, thông báo mã xác thực không hợp lệ/hết hạn, và hiển thị tùy chọn yêu cầu gửi lại email xác minh mới.
+  - **Then:** Hệ thống từ chối xác minh email, thông báo mã xác thực không hợp lệ/hết hạn, và hiển thị tùy chọn yêu cầu gửi lại email xác minh mới.
 
 - **AC-03.6 — Đăng nhập thành công với thông tin chính xác:**
   - **Given:** Tài khoản đang ở trạng thái `ACTIVE` và đã xác minh email.
@@ -251,7 +252,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 - **AC-03.10 — Đăng nhập 1-click bằng tài khoản Google:**
   - **Given:** Guest chọn đăng nhập với Google và hoàn tất xác thực trên Google OAuth2/OIDC.
   - **When:** Dữ liệu xác thực Google hợp lệ được gửi tới máy chủ hệ thống.
-  - **Then:** Hệ thống xác thực tính hợp lệ với Google; nếu tài khoản chưa có thì tự động tạo Member mới với trạng thái email đã xác minh, thiết lập Refresh Token qua Secure HttpOnly Cookie, cấp phát Access Token phiên làm việc và hoàn tất đăng nhập thành công.
+  - **Then:** Hệ thống xác thực tính hợp lệ với Google; nếu tài khoản chưa có thì tự động tạo Member mới với `account_status = ACTIVE` và `email_verified = true`, thiết lập Refresh Token qua Secure HttpOnly Cookie, cấp phát Access Token phiên làm việc và hoàn tất đăng nhập thành công.
 
 - **AC-03.11 — Xoay vòng Refresh Token thành công khi làm mới phiên:**
   - **Given:** Member sở hữu Access Token đã hết hạn và Refresh Token hợp lệ còn thời hạn được ghi nhận trên máy chủ (được trình duyệt gửi qua Secure HttpOnly Cookie).
@@ -3697,12 +3698,12 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Cả Guest và Member đều được ghi nhận lượt xem khi duyệt bài.
-- **Ràng buộc an toàn:** Cửa sổ khử trùng lặp 30 phút là bắt buộc (BR-69); số lượt xem không được phép can thiệp thủ công từ phía client.
+  - **Ràng buộc an toàn:** Cửa sổ khử trùng lặp 30 phút là bắt buộc (BR-70); số lượt xem không được phép can thiệp thủ công từ phía client.
 
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
   - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
-  - [BR-69](BUSINESS-RULES.md#br-69): Quy tắc ghi nhận lượt xem (Recipe Views) và chống trùng lặp.
+  - [BR-70](BUSINESS-RULES.md#br-70): Quy tắc ghi nhận lượt xem (Recipe Views) và chống trùng lặp.
   - [BR-71](BUSINESS-RULES.md#br-71): Quy tắc sắp xếp và xếp hạng Hoạt động sôi nổi nhất (Most Active).
   - [BR-72](BUSINESS-RULES.md#br-72): Quy tắc xếp hạng Xu hướng thịnh hành (Trending).
 - **Yêu cầu phi chức năng liên quan:**
