@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M01
 > **File:** `docs/requirements/use-cases/discovery-and-public-content.md`
-> **Version:** v2.0.0
+> **Version:** v2.0.1
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 

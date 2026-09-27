@@ -1,8 +1,8 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v3.13.0  
+> **Version:** v3.13.1
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-25
+> **Last Updated:** 2026-09-27
 > **Status:** Active  
 
 # Repository Layout and Document Register

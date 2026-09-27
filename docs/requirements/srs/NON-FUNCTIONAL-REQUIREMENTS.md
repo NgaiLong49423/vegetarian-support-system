@@ -1,6 +1,6 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.1.0
+> **Version:** v2.1.1
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-09-27
 > **Status:** Active

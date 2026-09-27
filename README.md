@@ -1,6 +1,6 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.12.1
+> **Version:** v0.12.2
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-27
 > **Status:** Active
