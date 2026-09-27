@@ -1,8 +1,8 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.11.0
+> **Version:** v1.11.2
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-25
+> **Last Updated:** 2026-09-27
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/C4 Container Diagram/README.md`, `docs/diagrams/ERD/README.md`
 
@@ -118,9 +118,9 @@ Browser request -> backend feature entitlement & rate limit checks -> AiClient (
 - **Resilience:** Cấu hình timeout và tối đa 1 lần retry cho transient errors (mạng, 429, 5xx). Lỗi external AI không làm gián đoạn các tính năng phi AI của ứng dụng.
 - **Output:** Áp dụng Native Structured Outputs (JSON Schema) để nhận kết quả gợi ý món ăn/thực đơn có cấu trúc chặt chẽ.
 
-### 4.5 Capability Google Maps (`OUT_OF_SCOPE`)
+### 4.5 Capability Google Maps không thuộc baseline hiện hành
 
-FR-42/FR-43, M11 và tích hợp Google Maps là `OUT_OF_SCOPE`. Ứng dụng không quản lý hoặc xác minh dữ liệu nhà hàng bên ngoài; Google Maps không phải dependency của baseline kiến trúc hiện tại.
+Tìm kiếm/quản lý nhà hàng và tích hợp Google Maps không thuộc baseline kiến trúc hiện tại. Ứng dụng không quản lý hoặc xác minh dữ liệu nhà hàng bên ngoài.
 
 ### 4.6 Luồng thanh toán payOS
 
@@ -209,14 +209,14 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 - Giữ ranh giới giữa React client, Spring Boot Backend và Microsoft SQL Server.
 - Giữ relational database làm Source of Truth cho ứng dụng; dùng Flyway để quản lý thay đổi schema có thể thực thi sau khi Backend scaffold tồn tại.
 - **Baseline mô hình dữ liệu quan hệ (Relational Schema Baseline):**
-  - Conceptual ERD hiện có 22 thực thể (v1.8.0); `USER_FOLLOW` thuộc phạm vi bắt buộc theo FR-59/BR-75 `ACTIVE` và phải được kế thừa xuống Logical ERD, Physical ERD cùng schema triển khai.
+  - Conceptual ERD hiện có 22 thực thể (v1.8.0); `USER_FOLLOW` thuộc phạm vi hiện hành theo FR-59/BR-75 và phải được kế thừa xuống Logical ERD, Physical ERD cùng schema triển khai.
   - Thực thể đánh giá chất lượng công thức được chuẩn hóa thành `RECIPE_REACTION` (lưu trữ phản hồi Like/Dislike với `reaction_type: LIKE | DISLIKE`, ràng buộc `UNIQUE(user_id, recipe_id)` để đảm bảo mỗi thành viên có tối đa 1 phản hồi hiệu lực trên một bài công thức theo `BR-69`, `FR-57`).
   - Không sử dụng các bảng phân loại động `CATEGORY` và `RECIPE_CATEGORY`; thể loại món ăn được chuẩn hóa trực tiếp thành trường thuộc tính `dish_category` trên thực thể bài công thức (`RECIPE_POST` theo BR-19).
-  - Không duy trì bảng độc lập `RECIPE_STEP`; toàn bộ hướng dẫn chế biến được lưu trữ dưới dạng trường văn bản tự do linh hoạt `instructions` (10–5.000 ký tự) trên `RECIPE_POST` (FR-16, BR-19; FR-22 đã RETIRED theo Phương án B).
+  - Không duy trì bảng độc lập cho các bước chế biến; toàn bộ hướng dẫn được lưu trong trường văn bản `instructions` (10–5.000 ký tự) trên `RECIPE_POST` (FR-16, BR-19).
 - Backend giữ cấu trúc Modular Monolith; MVC/layered structure bên trong từng module.
 - Không tự ý thêm microservices, Kafka, Redis, Kubernetes hay vector database khi chưa có quyết định kiến trúc mới.
 - **Kiến trúc tìm kiếm, sắp xếp và xếp hạng không dùng AI (Non-AI Ranking Architecture):**
-  - Hệ thống hỗ trợ 6 chế độ khám phá/sắp xếp bài viết/công thức: Mới nhất (*Newest*), Được yêu thích nhất (*Most Liked / Highest Rated* theo tỷ lệ % Like giảm dần và tổng Like giảm dần), Xem nhiều nhất (*Most Viewed* - 24h/7d/30d/toàn thời gian), Bình luận nhiều nhất (*Most Commented*), Hoạt động sôi nổi nhất (*Most Active* - BR-71, tổng tương tác 7 ngày không phân rã), và Thịnh hành (*Trending* - BR-72, tương tác có phân rã thời gian theo công thức trọng số).
+  - Hệ thống hỗ trợ 6 chế độ khám phá/sắp xếp bài viết/công thức: Mới nhất (*Newest*), Được yêu thích nhất (*Most Liked* theo tỷ lệ `like_percentage` giảm dần và tổng Like giảm dần), Xem nhiều nhất (*Most Viewed* - 24h/7d/30d/toàn thời gian), Bình luận nhiều nhất (*Most Commented*), Hoạt động sôi nổi nhất (*Most Active* - BR-71, tổng tương tác 7 ngày không phân rã), và Thịnh hành (*Trending* - BR-72, tương tác có phân rã thời gian theo công thức trọng số).
   - Tất cả các chế độ sắp xếp, lọc và tính điểm xếp hạng này được thực thi thuần túy thông qua truy vấn quan hệ SQL chuẩn (sử dụng Index tối ưu, Computed Columns hoặc Scheduled Aggregation trên Microsoft SQL Server) và xử lý logic tại tầng Backend Spring Boot.
   - Tuyệt đối **không sử dụng** AI, Machine Learning recommendation engines, vector database, Redis cache hay Kafka message broker cho tính năng khám phá và xếp hạng này trong phạm vi hiện tại.
   - Ghi nhận lượt xem (`RECIPE_VIEW`) áp dụng cơ chế chống trùng lặp (deduplication window 30 phút theo IP hash / Client session / Member ID) và cập nhật bộ đếm bất đồng bộ (`@Async` hoặc in-memory buffer định kỳ flush xuống DB) để không làm nghẽn luồng đọc công thức.
@@ -233,9 +233,9 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 | Deployment Topology | **Confirmed** | Vercel (FE) + Azure App Service Java 21 SE (BE) + Azure SQL Database Serverless (DB) + Azure Blob Storage (Media) |
 | Monitoring & Observability | **Confirmed** | Spring Boot Actuator (`/actuator/health`) + Logback + Azure Application Insights Java Agent |
 | QA & Testing Tooling | **Confirmed** | JUnit 5 + Mockito + JaCoCo + Codecov (CI reporting) + Testmail (Email E2E testing) + Requestly Pro (FE mocking) |
-| Tích hợp Google Maps | `OUT_OF_SCOPE` | Không thuộc baseline kiến trúc; M11 giữ trong SRS để bảo toàn lịch sử |
+| Tích hợp Google Maps | Không thuộc baseline hiện hành | Không chọn dependency hoặc tích hợp Google Maps; ứng dụng không quản lý dữ liệu nhà hàng bên ngoài. |
 | Upload trực tiếp lên Azure | Future option | Xem xét lại khi kích thước file/tải thực tế vượt quá năng lực xử lý của Backend |
-| Module Blog cộng đồng | Out of MVP Scope | Được phân rã tại SRS 3.21; chỉ xem xét kiến trúc sau khi các module cốt lõi hoàn thành |
+| Module Blog cộng đồng | Không thuộc baseline hiện hành | Không có FR hiện hành; chỉ xem xét lại sau một quyết định phạm vi và phân rã yêu cầu mới. |
 | Frontend State & Styling | TBD | Sẽ quyết định cùng React scaffold (React Context / Tailwind CSS / UI library) |
 | Demo Domain Polish | Open Polish | Chọn tên miền `.tech` cụ thể và cấu hình DNS về Vercel trước buổi demo; tên miền chưa được chốt hoặc cấu hình |
 | Azure SQL Cold Start | Operational Note | Kích hoạt database trước 5-10 phút trước khi thuyết trình để tránh độ trễ thức dậy của Serverless |

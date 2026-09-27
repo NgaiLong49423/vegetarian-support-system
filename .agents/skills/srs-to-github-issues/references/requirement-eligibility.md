@@ -1,76 +1,32 @@
-# Requirement Lifecycle for Issue Management
+# Current-Scope Eligibility for Issue Management
 
-Use this reference to decide how an explicitly confirmed requirement lifecycle state affects GitHub work-item management.
+For this repository's Requirements / Implementation Baseline v2.0.0, the root `docs/requirements/SRS.md` registry is the authority for current requirement existence and scope. An FR present there belongs to current implementation scope. An FR absent there is non-current; historical lifecycle labels in `docs/archive/requirements/v1/` do not restore it to current scope.
 
-## Mandatory Rule: No Lifecycle Guessing
+## Mandatory Scope Rule
 
-Every FR managed by this skill must have an explicit lifecycle state in the authoritative requirement registry (e.g. root `SRS.md` in a modular SRS) or an explicit authorized decision. Status displayed in child detailed documents is derived; if conflict occurs, the authoritative registry in root SRS wins.
+- Include every FR in the current root registry in the current requirement-to-Issue index.
+- Do not create implementation Issues from archive-only requirements.
+- Keep existing Issue mappings for non-current requirements as historical traceability.
+- Before proposing closure, verify the FR-to-Issue mapping and confirm the Issue is unfinished. Completed work remains history.
+- If root SRS and a detailed child disagree about whether an FR is current, root SRS wins; report the child-only entry and do not create scope from it.
+- If the current registry or Issue mapping is ambiguous, stop only the affected action and request the missing authoritative evidence.
 
-Fallback vocabulary:
+## Issue Treatment
 
-```text
-DRAFT
-ACTIVE
-DEFERRED
-OUT_OF_SCOPE
-RETIRED
-```
-
-If the project uses equivalent names, map by meaning.
-
-If status is missing or ambiguous:
-
-1. record the FR as `Lifecycle unresolved` in the local planning result;
-2. do not create, close, reopen, or materially update a real Issue for that FR;
-3. ask the authorized decision-maker to choose the lifecycle state;
-4. continue after the state is explicit.
-
-Do not infer lifecycle from implementation progress, position in the SRS, GitHub Issue state, version number, or model judgment.
-
-## Lifecycle-to-Issue Behavior
-
-| Requirement status | Index behavior | Default real-Issue behavior |
+| Requirement evidence | Index behavior | Default Issue treatment |
 |---|---|---|
-| `DRAFT` | Always tracked | Planning/tracking Issue only when the workflow intentionally tracks drafts; never present as implementation-ready by default |
-| `ACTIVE` | Always tracked | Open current implementation/tracking Issue |
-| `DEFERRED` | Always tracked | Keep/create backlog Issue marked deferred; do not place in active implementation automatically |
-| `OUT_OF_SCOPE` | Always tracked for history | Do not create new implementation work; close linked unfinished Issue as not planned when authorized |
-| `RETIRED` | Always tracked for history | Do not create new work; preserve historical mapping and close linked unfinished Issue as not planned when authorized |
+| FR present in current root SRS | Current | Maintain or create one traceable implementation/tracking Issue, without duplicating parent/child scope |
+| FR absent from current root SRS, linked Issue unfinished | Historical / non-current | Preserve mapping; propose close-as-not-planned only when the current baseline and archive evidence confirm the scope change |
+| FR absent from current root SRS, linked Issue completed | Historical / completed | Preserve Issue and mapping; do not rewrite or reopen solely due to the new baseline |
+| FR present in current root SRS, linked Issue completed but new semantics require work | Current with completed history | Preserve completed Issue and propose a follow-up Issue for new work |
 
-`OUT_OF_SCOPE` and `RETIRED` do not mean delete the Issue mapping.
-
-## SRS Means the FR Is Managed
-
-The agent must not independently exclude an FR from management because it seems trivial, difficult, low-priority, or inconvenient.
-
-Every FR with explicit lifecycle belongs in the index.
-
-Hierarchy controls **Issue role**, not whether the FR disappears:
-
-- parent/capability FR -> parent/tracking Issue where useful;
-- leaf/standalone FR -> implementation Issue when lifecycle permits current/future work.
-
-## Readiness
-
-If the project explicitly tracks readiness:
-
-| Readiness | Effect |
-|---|---|
-| `Ready` | May be presented as implementation-ready |
-| `Ready with open items` | May proceed when open items are non-blocking and recorded |
-| `Needs clarification` | Keep the Issue/FR tracked, but do not present it as ready for implementation until the blocking ambiguity is resolved |
-
-If the project does not track readiness, do not invent it.
-
-Readiness does not replace lifecycle and does not make an FR disappear from the index.
+Execution readiness is separate from scope. Do not invent readiness or exclude a current FR because planning details remain open; report blocking ambiguities for that FR.
 
 ## Examples
 
 ```text
-FR-01 | ACTIVE      | current implementation Issue
-FR-02 | DEFERRED    | backlog/deferred Issue
-FR-03 | DRAFT       | tracked; planning Issue only if draft tracking is enabled
-FR-04 | OUT_OF_SCOPE| historical mapping; no new implementation Issue
-FR-05 | RETIRED     | historical mapping; no new work
-FR-06 | <missing>   | HARD BLOCKER: ask authorized decision-maker
+FR-01 | Current | linked open issue -> maintain/update
+FR-02 | Current | no linked issue -> create candidate
+FR-03 | Historical / non-current | linked completed issue -> preserve
+FR-04 | Historical / non-current | linked unfinished issue -> close candidate after history verification
 ```

@@ -9,7 +9,7 @@ Dùng khi thành viên yêu cầu agent triển khai một GitHub Issue đã li�
 - Đọc `AGENTS.md`, `CONTRIBUTING.md` và `.agents/POLICY.md`. `CONTRIBUTING.md` là nguồn quy định quy trình đóng góp và review.
 - Đọc Issue thật, các Project field và công việc liên kết bằng phương thức truy cập GitHub hiện có. GitHub CLI là tùy chọn. Nếu không truy cập được, xin quyền truy cập hoặc nội dung Issue; không đoán scope.
 - Kiểm tra Source Trace, Acceptance Criteria có thể kiểm chứng, đúng một owner, các field lập kế hoạch và dependency theo `CONTRIBUTING.md`. Xác nhận người yêu cầu là owner hoặc được giao xử lý. Báo phần thiếu hoặc mâu thuẫn trước khi code.
-- Kiểm tra FR và lifecycle trong `docs/requirements/SRS.md`, sau đó chỉ đọc định nghĩa FR/BR/NFR chi tiết và nguồn API/kiến trúc liên quan. SRS xác định yêu cầu; Issue theo dõi việc triển khai. Dùng `docs/architecture/ARCHITECTURE.md` và `app/mamxanh-backend/README.md` làm baseline kiến trúc Backend; dùng `docs/api/openapi.yaml` cho chi tiết contract hiện có và `docs/api/API.md` cho quy ước tích hợp. Dừng phần triển khai nếu FR không `ACTIVE` hoặc Issue mâu thuẫn đáng kể với yêu cầu có thẩm quyền.
+- Xác nhận FR có trong current registry `docs/requirements/SRS.md`, sau đó chỉ đọc định nghĩa FR/BR/NFR chi tiết và nguồn API/kiến trúc liên quan. SRS xác định yêu cầu; Issue theo dõi việc triển khai. Dùng `docs/architecture/ARCHITECTURE.md` và `app/mamxanh-backend/README.md` làm baseline kiến trúc Backend; dùng `docs/api/openapi.yaml` cho chi tiết contract hiện có và `docs/api/API.md` cho quy ước tích hợp. Dừng phần triển khai nếu FR không thuộc current registry hoặc Issue mâu thuẫn đáng kể với yêu cầu có thẩm quyền.
 
 ## Các bước
 

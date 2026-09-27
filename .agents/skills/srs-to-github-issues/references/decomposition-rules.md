@@ -2,29 +2,27 @@
 
 ## Coverage Principle
 
-Every FR with explicit lifecycle must appear in the Issue registry. Hierarchy determines the **kind of Issue**, not whether the FR silently disappears.
+Every FR present in the current root SRS registry must appear in the Issue registry. Hierarchy determines the **kind of Issue**, not whether a current FR is omitted.
 
 ## Parent vs Leaf Functional Requirements
 
 Example:
 
 ```text
-FR-03 — Recipe Management
-├── FR-03.1 — Create Recipe
-├── FR-03.2 — Save Draft
-└── FR-03.3 — Publish Recipe
+FR-X — Parent capability
+├── FR-X.1 — Independently deliverable slice A
+├── FR-X.2 — Independently deliverable slice B
+└── FR-X.3 — Independently deliverable slice C
 ```
 
 Default mapping:
 
-- `FR-03` -> parent/tracking Issue when real Issue tracking is enabled for the capability;
-- `FR-03.1` -> implementation Issue when lifecycle permits;
-- `FR-03.2` -> implementation Issue when lifecycle permits;
-- `FR-03.3` -> implementation Issue when lifecycle permits.
+- `FR-X` -> parent/tracking Issue when real Issue tracking is enabled for the capability;
+- each current child FR -> implementation Issue when its scope and hierarchy justify independent tracking.
 
 The parent Issue coordinates and links child work. It must not duplicate the children's detailed implementation acceptance criteria.
 
-A standalone FR maps directly to its own Issue role according to lifecycle.
+A standalone current FR maps directly to its own Issue role.
 
 ## Split One Leaf Requirement When
 
@@ -66,12 +64,6 @@ Create UI
 
 when the requirement can be represented as a vertical behavior slice.
 
-## Lifecycle and Decomposition
+## Current Scope and Decomposition
 
-- `ACTIVE` -> current implementation/tracking work.
-- `DEFERRED` -> backlog/future work; decomposition may exist, but do not activate it automatically.
-- `DRAFT` -> planning representation only unless the project intentionally tracks draft work.
-- `OUT_OF_SCOPE` -> preserve registry/history; no new implementation decomposition.
-- `RETIRED` -> preserve registry/history; no new work.
-
-Missing lifecycle is a hard blocker; never decompose by guessing.
+For this repository's v2 baseline, presence in the current root SRS registry defines current implementation scope. Archive-only requirements remain historical and must not generate new implementation work. Preserve existing Issue mappings for history; reconcile unfinished work through the approved preview gate.

@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.8.0  
+> **Version:** v1.9.1
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-22  
+> **Last Updated:** 2026-09-27
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -39,24 +39,24 @@ Việc kiểm thử nên ưu tiên:
 
 - Ranh giới authorization giữa Guest/Member/Administrator và ranh giới tác giả Chuyên gia: chỉ `ROLE_EXPERT` được tạo/sửa/xóa bài công thức của mình (`BR-07`, `FR-04`, `FR-44`); `ROLE_CUSTOMER` và `ROLE_ADMIN` cố truy cập endpoint mutation bị chặn `403 Forbidden`. Quy trình nộp và xét duyệt đơn Chuyên gia (`BR-74`, `FR-05`).
 - Profile validation Recipe Post: title 3–120 ký tự, ingredients 1–50 mục, serving 1–50 người, prep/cook 0–1.440 phút và tổng > 0, description tối đa 2.000 ký tự, thể loại món `dish_category`, một YouTube link hợp lệ (tùy chọn); công khai trực tiếp và quyền sửa/xóa; hiển thị huy hiệu tỷ lệ % Like (`👍 {like_percentage}%`) hoặc nhãn `Mới`.
-- Kiểm thử hướng dẫn chế biến dạng văn bản tự do linh hoạt (`instructions` theo Phương án B, `FR-16`, `BR-19`): bắt buộc độ dài từ 10 đến 5.000 ký tự không rỗng sau khi trim; kiểm thử validation biên (< 10 ký tự, > 5.000 ký tự, chuỗi toàn khoảng trắng); xác nhận loại bỏ hoàn toàn bảng dữ liệu và logic quản lý kéo thả bước nấu độc lập `RECIPE_STEP` (`FR-22` đã RETIRED).
-- Quản lý bộ sưu tập hình ảnh (`RECIPE_MEDIA`): kiểm thử tải lên 0–5 ảnh (JPEG/PNG/WebP/GIF, tối đa 5 MB/ảnh) qua Azure Blob Storage, bắt buộc chỉ định đúng 1 ảnh đại diện (`is_cover = true`), thứ tự hiển thị `media_order` 1..5; tự động dọn rác ảnh mồ côi khi hủy soạn thảo hoặc xóa ảnh.
+- Kiểm thử hướng dẫn chế biến dạng văn bản tự do linh hoạt (`instructions`, `FR-16`, `BR-19`): bắt buộc độ dài từ 10 đến 5.000 ký tự không rỗng sau khi trim; kiểm thử validation biên (< 10 ký tự, > 5.000 ký tự, chuỗi toàn khoảng trắng).
+- Quản lý bộ sưu tập hình ảnh (`RECIPE_MEDIA`): kiểm thử tải lên 0–5 ảnh (JPEG/PNG/WebP, tối đa 5 MB/ảnh) qua Azure Blob Storage, bắt buộc chỉ định đúng 1 ảnh đại diện (`is_cover = true`), thứ tự hiển thị `media_order` 1..5; tự động dọn rác ảnh mồ côi khi hủy soạn thảo hoặc xóa ảnh.
 - Cổng kiểm định xuất bản về nguyên liệu và đơn vị quy đổi (`UNIT`, `INGREDIENT_UNIT_CONVERSION`): số lượng bắt buộc là số thực dương > 0, loại bỏ hoàn toàn "vừa đủ"; nếu tổ hợp nguyên liệu + đơn vị cần quy đổi sang gram mà chưa có conversion trong hệ thống thì chặn publish (Validation Error với thông báo rõ ràng).
 - Kiểm thử bình chọn công thức (`RECIPE_REACTION`): gửi Like / Dislike, tính toán tỷ lệ % Like ($\text{total\_likes} / (\text{total\_likes} + \text{total\_dislikes}) \times 100$) làm tròn, hiển thị huy hiệu `👍 {like_percentage}%` theo phong cách Samsung Food (hoặc nhãn "Mới" nếu chưa có vote); chỉ Member đã đăng nhập mới được gửi phản hồi; hỗ trợ chuyển đổi giữa Like và Dislike (switch) hoặc bấm lại cùng nút để hủy (toggle off); tác giả bị cấm tự bình chọn bài viết của mình; Guest chỉ có quyền xem tỷ lệ % và số lượt bình chọn (tương tác nút hiển thị thông báo yêu cầu đăng nhập); kiểm tra chống IDOR và race condition.
 - Kiểm thử theo dõi lượt xem (`RECIPE_VIEW`): cơ chế chống trùng lặp trong cửa sổ 30 phút theo IP hash / Session ID / Member ID; cập nhật bộ đếm bất đồng bộ không nghẽn luồng đọc công thức; kiểm tra tính chính xác của dữ liệu tổng hợp 24h, 7 ngày, 30 ngày và toàn thời gian.
-- Kiểm thử 6 chế độ khám phá/sắp xếp công thức: Mới nhất, Được yêu thích nhất (Most Liked / Highest Rated theo tỷ lệ % Like giảm dần kèm tổng Like), Xem nhiều nhất (theo 4 mốc thời gian), Bình luận nhiều nhất, Hoạt động sôi nổi nhất (BR-71, tương tác gần 7 ngày không phân rã), và Thịnh hành (BR-72, tương tác có phân rã thời gian theo công thức trọng số); đảm bảo truy vấn SQL không dùng AI, tối ưu chỉ mục và giới hạn độ trễ $\le 3$s.
+- Kiểm thử 6 chế độ khám phá/sắp xếp công thức: Mới nhất, Được yêu thích nhất (Most Liked theo `like_percentage` giảm dần rồi tổng Like), Xem nhiều nhất (theo 4 mốc thời gian), Bình luận nhiều nhất, Hoạt động sôi nổi nhất (BR-71, tương tác gần 7 ngày không phân rã), và Thịnh hành (BR-72, tương tác có phân rã thời gian theo công thức trọng số); đảm bảo truy vấn SQL không dùng AI, tối ưu chỉ mục và giới hạn độ trễ $\le 3$s.
 - Kiểm thử tính năng xuất file PDF: xuất bài công thức, xuất thực đơn tuần và xuất báo cáo phân tích dinh dưỡng tuần kèm bảng chi tiết 7 ngày, tổng hợp trung bình ngày và so sánh với chỉ số DRI cá nhân của Member (`FR-37`).
 - Quyền riêng tư của report, quy tắc chống report đang mở bị trùng và ghi trực tiếp kết quả moderation vào Report.
 - Tính độc lập giữa Saved Recipe/Meal Planner/Shopping history, giữ unavailable/tombstone khi bài nguồn không khả dụng, các meal type và chống dữ liệu trùng.
 - Phân quyền tính năng AI theo gói Subscription (Free: AI Chatbot, Plus: Soạn bài & Biến tấu, Pro: Lập thực đơn tuần), Guest dùng AI Chatbot có technical rate limit chống spam, telemetry token không raw prompt và retention 90 ngày.
 - Điều kiện dùng chức năng dinh dưỡng, quy đổi khẩu phần qua `INGREDIENT_UNIT_CONVERSION`, công khai dữ liệu thiếu và cấm bịa hoặc diễn giải theo hướng chẩn đoán.
 - Validation ảnh cover, tính nhất quán của reference, lỗi YouTube embed và xử lý error của external provider.
-- M11/Google Maps là `OUT_OF_SCOPE`, không có test scope hoặc release gate trong baseline hiện tại.
+- Tìm kiếm/quản lý nhà hàng và tích hợp Google Maps không thuộc test scope hoặc release gate trong baseline hiện tại.
 - Xác minh payment trước khi kích hoạt feature entitlement, expiry cuối kỳ, FREE/PLUS/PRO ở 0/49,000/99,000 VND/tháng, no auto-renew/no partial refund và idempotency cho duplicate processing.
 - Authentication: rate limit account identifier + IP 10 phút sau 5 lần sai; access token ngắn hạn, rotating refresh, server-side revocation và logout thu hồi refresh session.
 - Notification: in-app theo business event; email async/best-effort không rollback hành động gốc, moderation email phải được attempt.
 
-Danh sách này dùng để ưu tiên. Test Case chi tiết phải được suy ra từ các requirement có lifecycle đã được phê duyệt và Acceptance Criteria tương ứng.
+Danh sách này dùng để ưu tiên. Test Case chi tiết phải được suy ra từ các yêu cầu trong current baseline và Acceptance Criteria tương ứng.
 
 ## 5. Chiến lược kiểm thử external service và AI
 
@@ -66,14 +66,14 @@ Sử dụng nhiều lớp bằng chứng cho Gemini, Azure Blob Storage, Google 
 2. Adapter/Integration Test kiểm tra request/response mapping và phân loại lỗi mà không khiến mọi test phụ thuộc vào live provider.
 3. Live check giới hạn kiểm tra credential, configuration và một tương tác thật tối thiểu trong non-production environment được phép khi integration đã được triển khai.
 
-Live call phải dùng test configuration riêng, quota có giới hạn và dữ liệu không nhạy cảm. Secret không được xuất hiện trong Source Control, log hoặc test fixture. Test dùng Mock không chứng minh khả năng kết nối thật; một live call thành công cũng không chứng minh reliability, mức chi phí phù hợp hoặc quota dài hạn.
+Live call phải dùng test configuration riêng, giới hạn chi phí phù hợp và dữ liệu không nhạy cảm. Secret không được xuất hiện trong Source Control, log hoặc test fixture. Test dùng Mock không chứng minh khả năng kết nối thật; một live call thành công cũng không chứng minh reliability hoặc mức chi phí phù hợp trong dài hạn.
 
-Riêng với AI, verification phải dùng curated evaluation set và đạt ít nhất 80% case thỏa các rule áp dụng về allowed Recipe Post sources, restrictions, non-fabrication và safety/business constraints. Không bắt buộc in-product satisfaction survey chỉ để đáp ứng NFR-25; exact Gemini model/version được chọn bằng technical evaluation. Test còn bao phủ không trừ lượt khi provider lỗi và nutrition không tự kê mục tiêu từ BMI/weight goal.
+Riêng với AI, verification phải dùng curated evaluation set và đạt ít nhất 80% case thỏa các rule áp dụng về allowed Recipe Post sources, restrictions, non-fabrication và safety/business constraints. Không bắt buộc in-product satisfaction survey chỉ để đáp ứng NFR-25; exact Gemini model/version được chọn bằng technical evaluation. Test còn bao phủ việc không ghi nhận lượt gọi thành công hoặc phát sinh thay đổi entitlement khi provider lỗi, cùng ranh giới nutrition không tự kê mục tiêu từ BMI/weight goal.
 
 ## 6. Test Data và environment
 
 - Giữ fixture có tính xác định, nhỏ, có mục đích rõ ràng và không chứa dữ liệu riêng tư thật của người dùng.
-- Đại diện đủ actor role, relationship về ownership, content state liên quan lifecycle, ranh giới quota và trường hợp thiếu dữ liệu dinh dưỡng cần cho hành vi được kiểm thử.
+- Đại diện đủ actor role, relationship về ownership, trạng thái nội dung, phân quyền tính năng AI, giới hạn tần suất kỹ thuật và trường hợp thiếu dữ liệu dinh dưỡng cần cho hành vi được kiểm thử.
 - Seed/reference data trở thành dữ liệu có thẩm quyền phải thuộc asset của Backend/database, không nằm trong Frontend Mock.
 - Việc kiểm chứng database migration nên bắt đầu từ database state sạch và được hỗ trợ sau khi Flyway migration tồn tại.
 - Tách cấu hình local/unit khỏi integration environment dùng chung và mọi live-provider environment. Deployment topology cụ thể cho các environment hiện chưa được phê duyệt.
@@ -85,13 +85,13 @@ Riêng với AI, verification phải dùng curated evaluation set và đạt ít
 
 ```text
 SRS requirement / BR
-        -> lifecycle-approved GitHub Issue + Acceptance Criteria
+        -> current-baseline GitHub Issue + Acceptance Criteria
         -> Pull Request và review evidence
         -> automated/manual test result
         -> release evidence trên main
 ```
 
-Requirement ID phải ổn định. GitHub Issues quản lý tiến độ triển khai; chúng không được định nghĩa lại ý nghĩa của SRS. Issue synchronization phải chờ SRS lifecycle baseline được xác nhận rõ ràng. Test nên tham chiếu requirement/acceptance identifier nhỏ nhất nhưng đủ hữu ích đã được repository hỗ trợ, thay vì tạo thêm một nguồn requirement song song.
+Requirement ID phải ổn định. GitHub Issues quản lý tiến độ triển khai; chúng không được định nghĩa lại ý nghĩa của SRS. Chỉ requirement hiện diện trong current SRS baseline thuộc scope triển khai hiện tại; nội dung lưu trong archive chỉ có giá trị lịch sử. Test nên tham chiếu requirement/acceptance identifier nhỏ nhất nhưng đủ hữu ích đã được repository hỗ trợ, thay vì tạo thêm một nguồn requirement song song.
 
 ## 8. Cách hiểu Coverage
 
@@ -119,4 +119,4 @@ Sau merge, Tech Lead tổ chức kiểm tra demo local trên `main` với bằng
 
 ## 11. Điều kiện áp dụng và open item
 
-Frontend đã chọn Playwright cho browser smoke/E2E; persistent tests nằm tại `app/mamxanh-frontend/tests/e2e/`. Khi scaffold tích hợp thật xuất hiện, nhóm vẫn phải xác minh và tài liệu hóa command, test data và điều kiện environment cho từng full E2E flow. Các open technical items gồm Frontend component-test tooling, API test runner, chiến lược tích hợp SQL Server, tần suất live-provider test, curated AI dataset chi tiết, provider-specific timeout/retry, Playwright CI integration và mọi Coverage gate. NFR-01–25 vẫn `ACTIVE` dù một số chi tiết kiểm chứng cần tiếp tục phân rã.
+Frontend đã chọn Playwright cho browser smoke/E2E; persistent tests nằm tại `app/mamxanh-frontend/tests/e2e/`. Khi scaffold tích hợp thật xuất hiện, nhóm vẫn phải xác minh và tài liệu hóa command, test data và điều kiện environment cho từng full E2E flow. Các open technical items gồm Frontend component-test tooling, API test runner, chiến lược tích hợp SQL Server, tần suất live-provider test, curated AI dataset chi tiết, provider-specific timeout/retry, Playwright CI integration và mọi Coverage gate. Một số chi tiết kiểm chứng NFR cần tiếp tục phân rã.

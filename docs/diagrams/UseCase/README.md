@@ -1,8 +1,8 @@
 > **Document:** Use Case Diagram Workspace Guide  
 > **File:** `docs/diagrams/UseCase/README.md`  
-> **Version:** v1.2.0  
+> **Version:** v1.3.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-22  
+> **Last Updated:** 2026-09-27
 > **Status:** Active  
 
 # Use Case Diagram - Sơ Đồ Ca Sử Dụng
@@ -10,14 +10,15 @@
 ## Mục Đích
 
 `Use Case Diagram` (Sơ đồ ca sử dụng) là sơ đồ mô tả mối quan hệ tương tác giữa những đối tượng bên ngoài (Actor) và các chức năng (Use Case) bên trong hệ thống. Sơ đồ này giúp:
-* Xác định rõ những ai sẽ sử dụng hệ thống và họ có quyền làm gì.
-* Khái quát hóa toàn bộ các chức năng mà hệ thống cung cấp dưới dạng các ca sử dụng.
-* Định hình rõ phạm vi ranh giới của dự án (System Boundary).
-* Làm cơ sở để viết bảng yêu cầu chức năng (FR) trong đặc tả yêu cầu dự án.
+* Minh họa những actor nào tương tác với các capability đã được yêu cầu hiện hành xác nhận.
+* Khái quát hóa các actor-goal Use Case để hỗ trợ trao đổi và review thiết kế.
+* Minh họa ranh giới hệ thống (System Boundary) mà không thay thế SRS.
+
+Sơ đồ là supporting visualization. Root SRS và các tài liệu FR/BR/NFR được đăng ký mới là nguồn định nghĩa requirement; khi sơ đồ khác requirement, phải sửa sơ đồ chứ không suy ngược requirement từ sơ đồ.
 
 ## Sơ Đồ Ca Sử Dụng Tổng Thể (System Use Case Diagram)
 
-Dưới đây là sơ đồ ca sử dụng tổng thể của hệ thống Mâm Xanh (Vegetarian Support Application), mô hình hóa tương tác của 3 tác nhân chính (**Guest**, **Member**, **Administrator**) với các phân hệ chức năng:
+Dưới đây là sơ đồ tổng quan hiện có. Trong baseline hiện hành, **Guest** là actor chưa xác thực; **Member** là lớp actor đã xác thực gồm hai business role `CUSTOMER` và `EXPERT`; **Administrator** tương ứng `ADMIN`. `EXPERT` có quyền riêng về tạo/sửa/xóa Recipe Post. Tệp hình hiện cần một vòng cập nhật supporting artifact để thể hiện mapping này nhất quán và sửa các nhãn cũ; nó không được dùng để thay đổi requirement.
 
 ![Use Case Diagram - Vegetarian Support Application](./usecase-vegetarian-support-application.drawio.png)
 

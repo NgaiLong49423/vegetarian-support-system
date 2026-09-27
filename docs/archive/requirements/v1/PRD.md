@@ -1,8 +1,8 @@
 > **Document:** Product Requirements Document — Mâm Xanh
 > **File:** `docs/requirements/PRD.md`
-> **Version:** v2.1.0
+> **Version:** v1.6.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-22
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `README.md`
 
@@ -12,7 +12,7 @@
 
 **Mâm Xanh** (Vegetarian Support System) là nền tảng web ẩm thực chay chuyên nghiệp, đóng vai trò là **sân chơi của các Chuyên gia ẩm thực chay** chia sẻ công thức chuẩn mực, đồng thời phục vụ người ăn chay khám phá món ăn, quản lý lựa chọn cá nhân, lập thực đơn ngày/tuần, xuất file công thức/thực đơn và nhận hỗ trợ AI có kiểm soát. Tài liệu này mô tả phạm vi sản phẩm cấp cao; [SRS](SRS.md) là nguồn chi tiết cho Functional Requirements, Business Rules và truy vết đề tài.
 
-PRD này tóm tắt Requirements / Implementation Baseline v2.0.0. [SRS](SRS.md) là registry của scope hiện hành; các tài liệu SRS con sở hữu đặc tả chi tiết và Acceptance Criteria. Các tài liệu trong `docs/archive/requirements/v1/` chỉ lưu lịch sử, không xác định scope hiện hành.
+`Active` nghĩa là PRD thuộc Requirements Baseline v1.0.0 đã được chốt ngày 16/09/2026, cập nhật v1.3.0 ngày 18/09/2026, v1.4.0 ngày 22/09/2026, v1.5.0 ngày 22/09/2026 và cập nhật v1.6.0 ngày 22/09/2026 (chuyển đổi cơ chế đánh giá chất lượng bài công thức từ thang điểm 1–5 sao sang hệ thống bình chọn Thích / Không thích (Like / Dislike), tính toán tỷ lệ % hài lòng `👍 {like_percentage}%` trên tổng số lượt bình chọn hiển thị nổi bật trên thẻ món ăn Recipe Card theo phong cách Samsung Food; không áp dụng Like cho bình luận/reply). [SRS](SRS.md) và các tài liệu con sở hữu requirement chi tiết cùng lifecycle chính thức.
 
 ## 2. Vấn đề sản phẩm
 
@@ -38,28 +38,29 @@ Free, Plus và Pro là hạng gói dịch vụ (Subscription Tier) của Custome
 
 | Nhóm | Kết quả sản phẩm |
 |---|---|
-| Khám phá công thức | Tìm/lọc/xem bài công thức công khai của Chuyên gia theo 6 chế độ sắp xếp độc lập (Newest, Most Liked theo tỷ lệ % Like, Most Viewed 24h/7d/30d/all-time, Most Commented, Most Active theo tương tác gần nhất 7 ngày, Trending theo tương tác + độ tươi mới); hiển thị dữ liệu món ăn có cấu trúc (hướng dẫn chế biến chi tiết, thể loại món ăn chuẩn hóa, nguyên liệu định lượng chuẩn, thời gian, khẩu phần), bộ sưu tập tối đa 5 ảnh (`RECIPE_MEDIA`) và 1 video YouTube; hiển thị huy hiệu `👍 {like_percentage}%` nổi bật trên ảnh thẻ món ăn |
-| Thẩm định Chuyên gia | Customer nộp đơn xin cấp quyền Chuyên gia theo format văn bản (`EXPERT_APPLICATION`: kinh nghiệm ẩm thực chay, trường phái chay, tóm tắt công thức mẫu, link tham khảo); Administrator thẩm định và phê duyệt hoặc từ chối kèm lý do; tài khoản được thăng cấp `EXPERT` ngay khi duyệt (`FR-05`) |
+| Khám phá công thức | Tìm/lọc/xem bài công thức công khai của Chuyên gia theo 6 chế độ sắp xếp độc lập (Newest, Most Liked / Highest Rated theo tỷ lệ % Like, Most Viewed 24h/7d/30d/all-time, Most Commented, Most Active theo tương tác gần nhất 7 ngày, Trending theo tương tác + độ tươi mới); hiển thị dữ liệu món ăn có cấu trúc (hướng dẫn chế biến chi tiết, thể loại món ăn chuẩn hóa, nguyên liệu định lượng chuẩn, thời gian, khẩu phần), bộ sưu tập tối đa 5 ảnh (`RECIPE_MEDIA`) và 1 video YouTube; hiển thị huy hiệu `👍 {like_percentage}%` nổi bật trên ảnh thẻ món ăn |
+| Thẩm định Chuyên gia | Customer nộp đơn xin cấp quyền Chuyên gia theo format văn bản (`EXPERT_APPLICATION`: kinh nghiệm ẩm thực chay, trường phái chay, tóm tắt công thức mẫu, link tham khảo); Administrator thẩm định và phê duyệt hoặc từ chối kèm lý do; tài khoản được thăng cấp `EXPERT` ngay khi duyệt (`FR-05` ACTIVE) |
 | Đăng bài Chuyên gia | Chỉ tài khoản có vai trò `Chuyên gia` đã được phê duyệt mới được tạo và công khai Recipe Post trực tiếp (hướng dẫn chế biến 10–5.000 ký tự linh hoạt, chọn 1 thể loại món ăn `dish_category`, người đăng không bắt buộc phải viết từng bước nấu ăn, tối đa 5 ảnh với đúng 1 ảnh cover, 1 YouTube URL, nguyên liệu bắt buộc số lượng > 0 và đơn vị có công thức quy đổi hợp lệ); Administrator hậu kiểm sau đăng dựa trên báo cáo vi phạm |
 | Cá nhân hóa | Thu thập sở thích/kiêng/dị ứng tối thiểu trước khi gọi AI cá nhân hóa; lưu trực tiếp trong hồ sơ User và User Ingredient Preference |
-| AI (Feature-based) | Guest dùng AI Chatbot cơ bản với technical rate limit. Free Member dùng Chatbot và gợi ý món cơ bản theo nguyên liệu (`UC-34.1`). Plus có thêm AI hỗ trợ giới thiệu/hướng dẫn (`FR-21`) và gợi ý biến tấu (`FR-47`). Pro có thêm thực đơn tuần thông thường (`UC-34.2`/`UC-34.3`) và thực đơn theo dinh dưỡng cá nhân (`FR-36`). |
+| AI (Feature-based) | Phân quyền theo gói Subscription: Free (AI Chatbot cơ bản), Plus (AI soạn bài giới thiệu/hướng dẫn + AI gợi ý biến tấu món), Pro (Toàn quyền gồm AI Lập thực đơn tuần tự động 7 ngày); Guest được dùng AI Chatbot cơ bản với technical rate limit |
 | Meal planning & Shopping | Lưu công thức vào Saved Recipe, quản lý lịch ăn ngày/tuần ba bữa và Shopping List; chuẩn hóa đơn vị qua `UNIT` và `INGREDIENT_UNIT_CONVERSION` theo 3 chiều (`MASS`, `VOLUME`, `COUNT`), gom nguyên liệu cùng chiều an toàn; cấm hoàn toàn giá trị phi số học như “vừa đủ”. |
 | Xuất file (Export) & Báo cáo | Hỗ trợ Customer xuất dữ liệu công thức chi tiết (.txt/.pdf), kế hoạch thực đơn tuần (.txt/.pdf), báo cáo phân tích dinh dưỡng tuần có thống kê và so sánh 7 ngày ra file PDF chuẩn A4, và Shopping List ra file văn bản (.txt) để tiện theo dõi, nấu nướng và mua sắm |
 | Dinh dưỡng | Tính từ gram nguyên liệu/khẩu phần và danh mục có nguồn USDA/NIH; 100% nguyên liệu công khai đều có đơn vị đo lường và tỷ lệ quy đổi xác định (chặn xuất bản nếu thiếu quy đổi); BMI chỉ tham khảo, không tự kê calorie/macro target từ BMI hoặc weight goal |
 | Cộng đồng | Bình luận/reply tối đa 5 cấp, cha bị xóa thành tombstone, lưu công thức (Saved Recipe), báo cáo nội dung; đánh giá chất lượng công thức bằng bình chọn Like / Dislike dành cho Customer/Expert đã đăng nhập (`RECIPE_REACTION`, Guest chỉ có quyền xem); hiển thị tỷ lệ % hài lòng `👍 {like_percentage}%` trên thẻ món ăn (tương tự Samsung Food); lưu vết lượt xem chi tiết có khử trùng lặp (`RECIPE_VIEW`); không áp dụng Like cho bình luận/reply |
-| Địa điểm | Không có chức năng tìm hoặc quản lý nhà hàng; Google Maps không phải dependency hiện hành. |
+| Địa điểm | `OUT_OF_SCOPE` — M11/Google Maps không thuộc baseline triển khai hiện tại; ứng dụng không quản lý, xác minh hoặc cam kết tích hợp dữ liệu nhà hàng bên ngoài. |
 | Gói AI | Phân quyền tính năng theo gói: FREE 0 VNĐ/tháng, PLUS 49.000 VNĐ/tháng, PRO 99.000 VNĐ/tháng; không auto-renew/partial refund; entitlement kích hoạt sau xác minh thanh toán và hết hạn cuối kỳ; xử lý trùng idempotent; không quản lý quota đếm số lượt/ngày. |
 
 ## 5. Ngoài phạm vi MVP
 
 - Bảng quản lý danh mục động (`CATEGORY`, `RECIPE_CATEGORY`); mỗi Recipe Post chọn 1 thể loại món ăn trong danh mục chuẩn hóa (`dish_category`).
-- Hướng dẫn chế biến tách thành các bản ghi bước độc lập; hướng dẫn được lưu thành trường văn bản `instructions` trên `Recipe Post`.
+- Quản lý chế độ nấu ăn từng bước và bảng lưu trữ các bước độc lập (`RECIPE_STEP`); hướng dẫn chế biến được lưu trữ dưới dạng văn bản tự do/tổng thể `instructions` (10–5.000 ký tự) trực tiếp trên `Recipe Post` (Phương án B).
 - Quản lý tệp chứng chỉ, văn bằng hoặc bằng cấp vật lý trong quy trình xét duyệt Chuyên gia (ứng dụng chỉ thẩm định dựa trên format văn bản có cấu trúc do người dùng khai báo).
 - Người dùng thông thường (Customer) tự do đăng tải bài công thức (chỉ dành riêng cho Chuyên gia đã được phê duyệt).
-- Đăng Blog độc lập nhúng Recipe Post và quản lý kho thực phẩm cá nhân.
-- Like/Dislike cho bình luận hoặc reply; Like/Dislike hiện chỉ áp dụng cho Recipe Post.
+- Chức năng Đăng Blog thật nhúng thẻ công thức (True Blog with Embedded Recipes theo mô hình Samsung Food) — đã được phân rã chi tiết để chuẩn bị mở rộng sau này, nhưng nằm ngoài phạm vi MVP ban đầu (`OUT_OF_SCOPE`); chỉ phát triển khi toàn bộ các chức năng cốt lõi đã hoàn thành.
+- Quản lý kho thực phẩm cá nhân (Pantry/Inventory) và đề xuất công thức/bài viết từ kho hoặc nhờ AI sáng tạo món mới từ kho: Đã phân rã định hướng (`FR-56`), nằm ngoài phạm vi MVP ban đầu (`OUT_OF_SCOPE`).
+- Tính năng Thích (Like) đối với Bình luận (`Comment Like`) và Phản hồi (`Reply Like`) (đã loại bỏ triệt để khỏi MVP để giữ môi trường thảo luận tinh gọn; tính năng Like/Dislike chỉ áp dụng độc quyền cho Bài công thức để đánh giá chất lượng món ăn thay cho thang điểm sao).
 - Lưu vết lịch sử nhiều lần xử lý kiểm duyệt (`moderation_action`) độc lập; kết quả xử lý lưu trực tiếp tại `Report`.
-- Daily request quota cho AI và bộ đếm lượt sử dụng theo ngày.
+- Quản lý quota sử dụng AI theo số lượng request/ngày (5/15/50) và thực thể `ai_usage_record`.
 - Mobile app native, GPS/vị trí hiện tại, wearable và health platform.
 - Chẩn đoán hoặc tư vấn điều trị; chức năng dinh dưỡng cho nhóm ngoài điều kiện an toàn đã ghi trong SRS.
 - AI tạo công thức không có nguồn, AI tự tạo số liệu dinh dưỡng hoặc tự quyết định duyệt/xóa nội dung.
@@ -84,8 +85,9 @@ Chỉ số sản phẩm định lượng cho người dùng thật chưa đượ
 
 ## 8. Phụ thuộc và quyết định còn mở
 
+- Gemini model và AI architecture.
 - Công thức/hệ số dinh dưỡng cần nghiên cứu khi triển khai.
-- Chi tiết timeout/retry, error mapping và test fixture cho Gemini, payOS và Brevo; các provider này đã được chọn trong Technology Stack.
+- Provider cho payment/email và chi tiết kỹ thuật webhook/retry; giá/chính sách subscription đã chốt.
 - Thời lượng access token và storage/rotation implementation trong baseline refresh-session đã chốt.
 - Frontend state management, CSS/UI library và deployment.
 

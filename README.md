@@ -1,8 +1,8 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.12.0
+> **Version:** v0.12.3
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-25
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 
 # Mâm Xanh — Vegetarian Support System
@@ -17,8 +17,8 @@
 
 ## Phạm vi MVP
 
-- Guest đọc/tìm bài công thức công khai, xem bình luận và dùng AI hỏi đáp cơ bản theo hạn mức.
-- Member quản lý hồ sơ, lưu công thức, lập lịch ăn ba bữa, Shopping List, đánh giá sao và bình luận/reply. Chức năng Like đã `RETIRED`; Nearby Restaurant Discovery/Google Maps (M11) là `OUT_OF_SCOPE` và không thuộc baseline triển khai hiện tại.
+- Guest đọc/tìm bài công thức công khai, xem bình luận và dùng AI hỏi đáp cơ bản với giới hạn tần suất kỹ thuật.
+- Member quản lý hồ sơ, lưu công thức, lập lịch ăn ba bữa, Shopping List, bình chọn Like/Dislike trên bài công thức và bình luận/reply. Like trên bình luận/reply và Nearby Restaurant Discovery không nằm trong baseline hiện tại.
 - Chỉ Chuyên gia đã được phê duyệt có thể tạo và công khai Recipe Post trực tiếp; Administrator hậu kiểm nội dung theo báo cáo của người dùng.
 - Gemini hỗ trợ hỏi đáp, gợi ý công thức có sẵn, lập/thay thực đơn và tạo nội dung có thể chỉnh sửa trong biểu mẫu; AI không tự tạo dữ liệu dinh dưỡng chính thức hoặc tự quyết định kiểm duyệt. Lưu nháp Recipe Post, lịch sử chat AI và AI quét/gắn cờ nội dung không thuộc MVP hiện tại.
 - AI được phân quyền theo tính năng: Free dùng Chatbot và gợi ý món cơ bản; Plus mở thêm AI hỗ trợ soạn bài và gợi ý biến tấu; Pro mở thêm AI lập thực đơn tuần. Không áp dụng quota request/ngày. Giá tháng cố định cho MVP là FREE 0 VND, PLUS 49,000 VND và PRO 99,000 VND; không tự động gia hạn hoặc hoàn tiền một phần, entitlement trả phí chỉ có hiệu lực sau thanh toán được xác minh và hết hạn cuối kỳ đã trả.
@@ -80,14 +80,14 @@ Xem chi tiết trong [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) v
 └── CHANGELOG.md
 ```
 
-Các file SQL trong `database/` hiện là điểm giữ chỗ có chủ đích. Flyway migration executable sẽ nằm trong `app/mamxanh-backend/src/main/resources/db/migration/` sau khi physical schema được duyệt. `node_modules/`, `dist/`, `target/`, cấu hình local chứa credential và test report sinh ra không được trình bày trong cây trên vì không phải source được Git theo dõi.
+`database/schema.sql` hiện là schema snapshot dùng để khởi tạo thủ công và được đồng bộ với Flyway baseline migration `V1__baseline_schema.sql` tại `app/mamxanh-backend/src/main/resources/db/migration/`; Flyway migration là lịch sử schema thực thi của Backend. `node_modules/`, `dist/`, `target/`, cấu hình local chứa credential và test report sinh ra không được trình bày trong cây trên vì không phải source được Git theo dõi.
 
 ## Nguồn tài liệu
 
 | Nội dung | Nguồn chính | Trạng thái |
 |---|---|---|
-| Yêu cầu chi tiết | [SRS](docs/requirements/SRS.md) | Requirements Baseline v1.0.0 — Active |
-| Yêu cầu sản phẩm cấp cao | [PRD](docs/requirements/PRD.md) | Requirements Baseline v1.0.0 — Active |
+| Yêu cầu chi tiết | [SRS](docs/requirements/SRS.md) | Requirements / Implementation Baseline v2.0.0 — Current |
+| Yêu cầu sản phẩm cấp cao | [PRD](docs/requirements/PRD.md) | Requirements / Implementation Baseline v2.0.0 — Current |
 | Kiến trúc cấp cao | [System Architecture](docs/architecture/ARCHITECTURE.md) | Active; chưa phải bằng chứng implementation |
 | Công nghệ | [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) | Active baseline |
 | API integration | [API Guide](docs/api/API.md) và [OpenAPI](docs/api/openapi.yaml) | Auth contract Active; các thông số FR-03 còn `TBD` chưa implementation-ready; chưa phải bằng chứng implementation |
