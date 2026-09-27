@@ -1,14 +1,40 @@
 > **Document:** Use Case Specification Index
 > **File:** `docs/requirements/use-cases/README.md`
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
 # Use Case Specifications
 
-This index groups detailed interaction flows by primary feature area. Functional Requirements own required behavior and Acceptance Criteria; Use Case Specifications own actor/system interaction detail. Stable UC IDs are preserved from the previous baseline.
+This index groups Use Case Specifications by feature/module. Functional Requirements own the requirement statement, scope, constraints, related BR/NFR definitions, and Acceptance Criteria. Use Case Specifications own the detailed actor/system interaction; their traceability sections link to the owning requirements without copying their full definitions or duplicating Acceptance Criteria.
+
+## Use Case Specification Contract
+
+One FR may be realized by multiple Use Cases; FR and UC are not a one-to-one mapping. A module file may contain multiple FR groups and multiple UC specifications. Keep the FR-level anchor as the navigation/group anchor, then give every UC its own stable anchor and section.
+
+Each UC specification should contain:
+
+- **UC ID and name**, using the stable ID already listed by its parent FR.
+- **Goal** and **Primary Actor**.
+- **Supporting Actors**, only when applicable.
+- **Trigger**, **Preconditions**, **Main Flow**, and **Postconditions**.
+- **Alternative Flows** and **Exception/Security Flows**, when applicable and supported by the requirements.
+- **Traceability** to its parent FR and only the relevant BR/NFR. Link to their authoritative definitions; do not reproduce them.
+
+Omit a section when the UC has no supported content for it; do not add empty headings. Describe the interaction sequence in the UC, but do not copy the FR's Given/When/Then Acceptance Criteria wholesale. Keep those criteria in the Functional Requirements document.
+
+Use an explicit lowercase anchor immediately before each UC heading. Replace the dot in the UC ID with a hyphen in the anchor:
+
+```markdown
+<a id="uc-13-1"></a>
+### UC-13.1 — Xem bảng giá và quyền lợi gói
+```
+
+Keep existing FR-level anchors such as `<a id="fr-13"></a>` unchanged so current links to FR groups continue to resolve. Do not renumber or reuse FR or UC IDs.
+
+## FR-to-Use-Case Map
 
 | FR | Detailed Use Case Specification |
 |---|---|

@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M08
 > **File:** `docs/requirements/use-cases/subscription-and-payment.md`
-> **Version:** v2.0.0
+> **Version:** v2.0.1
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -15,35 +15,119 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13).
 
-#### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
-- **Tiền điều kiện:**
-  - Người dùng đã đăng nhập tài khoản Member hợp lệ (FR-03, BR-05).
-- **Kích hoạt (Trigger):**
-  - Member bấm nút "Nâng cấp gói" trên giao diện quản lý tài khoản hoặc từ thông báo hướng dẫn nâng cấp gói khi truy cập tính năng nâng cao.
+### Use Case navigation
 
-#### 4. Luồng xử lý chi tiết (Flows)
-- **Luồng chính (Main Flow):**
-  - Bước 1: Member truy cập trang Bảng giá dịch vụ, xem bảng so sánh: Free (0 VNĐ, Chatbot & Gợi ý món cơ bản), Plus (49.000 VNĐ/tháng, thêm AI Soạn bài & Gợi ý biến tấu), Pro (99.000 VNĐ/tháng, toàn quyền gồm AI Lập thực đơn tuần 7 ngày).
-  - Bước 2: Member chọn gói mong muốn (ví dụ gói Plus 49.000 VNĐ) và nhấn "Tiến hành thanh toán".
-  - Bước 3: Hệ thống tạo một giao dịch thanh toán mới ở trạng thái `Pending` với mã giao dịch duy nhất (Transaction ID), lưu trữ số tiền (49.000 VNĐ), mã gói (PLUS), và ID tài khoản của Member.
-  - Bước 4: Hệ thống tạo URL chuyển hướng an toàn kèm chữ ký số và điều hướng Member tới cổng thanh toán.
-  - Bước 5: Member hoàn tất thanh toán trên giao diện cổng thanh toán.
-  - Bước 6: Cổng thanh toán gửi thông báo kết quả giao dịch (Webhook / IPN) về máy chủ hệ thống kèm chữ ký số hợp lệ.
-  - Bước 7: Hệ thống xác thực tính hợp lệ của chữ ký số, số tiền và trạng thái giao dịch:
-    - Nếu chữ ký hợp lệ và giao dịch thành công: Hệ thống cập nhật trạng thái giao dịch sang `Success`.
-    - Hệ thống kích hoạt quyền lợi (Entitlement) gói Plus cho Member: Mở khóa quyền sử dụng AI Soạn bài (FR-21) và Gợi ý biến tấu (FR-47) (BR-02), thiết lập thời hạn hiệu lực của quyền lợi tương ứng với chu kỳ tháng đã trả phí được xác thực.
-  - Bước 8: Hệ thống gửi thông báo xác nhận thanh toán thành công trong ứng dụng và qua email cho Member.
-  - Bước 9: Member được chuyển hướng về trang thông tin tài khoản hiển thị gói dịch vụ hiện tại là `Plus` kèm ngày hết hạn.
-- **Luồng thay thế (Alternative Flows):**
-  - *AF-13.1 (Member hủy thanh toán hoặc giao dịch thất bại):* Nếu Member bấm hủy hoặc thanh toán không thành công tại cổng thanh toán, giao dịch được ghi nhận trạng thái `Cancelled` hoặc `Failed`. Quyền lợi tài khoản của Member giữ nguyên ở mức hiện tại; hệ thống hiển thị thông báo thanh toán chưa hoàn tất và cho phép thử lại.
-  - *AF-13.2 (Hết hạn chu kỳ đã trả phí - Graceful Expiration):* Khi chu kỳ tháng đã trả phí kết thúc, quyền lợi Plus hoặc Pro tự động hết hạn. Hệ thống tự động chuyển gói tài khoản về `Free` mà hoàn toàn không phát sinh thêm bất kỳ chi phí nào và không tự động trừ tiền gia hạn.
-- **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-13.1 (Xử lý thông báo thanh toán lặp - Idempotent Handling):* Nếu cổng thanh toán gửi nhiều lần thông báo IPN cho cùng một mã giao dịch đã xử lý thành công trước đó, hệ thống nhận diện mã giao dịch đã ở trạng thái `Success`, lập tức phản hồi xác nhận cho cổng thanh toán mà không cộng dồn thời hạn hay kích hoạt quyền lợi lần thứ hai.
-  - *SF-13.1 (Phát hiện giả mạo dữ liệu thanh toán):* Nếu dữ liệu IPN/Callback có chữ ký số không khớp hoặc số tiền thanh toán không đúng với giá niêm yết của gói (ví dụ giả mạo số tiền 1.000 VNĐ thay vì 49.000 VNĐ), hệ thống từ chối kích hoạt quyền lợi, đánh dấu giao dịch `Tampered/Invalid` và ghi vết cảnh báo an ninh (NFR-10).
-  - *SF-13.2 (Không lưu trữ thông tin thẻ ngân hàng):* Toàn bộ thao tác nhập thông tin thẻ/tài khoản ngân hàng diễn ra trực tiếp trên hạ tầng bảo mật của cổng thanh toán; hệ thống của dự án tuyệt đối không lưu trữ số thẻ tín dụng, mã CVV hay mật khẩu ngân hàng của người dùng (NFR-08, NFR-10).
+- [UC-13.1 — Xem bảng giá, quyền lợi và so sánh các gói](#uc-13-1)
+- [UC-13.2 — Khởi tạo đơn hàng và thanh toán nâng cấp](#uc-13-2)
+- [UC-13.3 — Xem trạng thái gói hiện tại và ngày hết hạn](#uc-13-3)
 
-#### 5. Hậu điều kiện (Postconditions)
-- Quyền lợi tính năng AI của Member được kích hoạt đúng theo gói dịch vụ đã thanh toán.
-- Bản ghi giao dịch được lưu vết kiểm toán đầy đủ và minh bạch.
+Quy tắc hết hạn gói trả phí được giữ ở cấp FR-group dưới đây vì đây là sự kiện theo thời gian, không phải luồng do một thao tác xem hoặc thanh toán khởi phát.
+
+#### Shared system-triggered flow — AF-13.2 (Hết hạn chu kỳ đã trả phí)
+Khi chu kỳ tháng đã trả phí kết thúc, quyền lợi Plus hoặc Pro tự động hết hạn. Hệ thống tự động chuyển gói tài khoản về `Free`, không phát sinh thêm chi phí và không tự động trừ tiền gia hạn.
+
+---
+
+<a id="uc-13-1"></a>
+### UC-13.1 — Xem bảng giá, quyền lợi và so sánh các gói
+
+#### Goal
+Cho phép người dùng xem và so sánh giá cùng quyền lợi của các gói Free, Plus và Pro.
+
+#### Primary Actor
+`Member`.
+
+#### Trigger
+Người dùng mở trang Bảng giá dịch vụ.
+
+#### Main Flow
+1. Hệ thống hiển thị ba gói: Free (0 VNĐ/tháng), Plus (49.000 VNĐ/tháng) và Pro (99.000 VNĐ/tháng).
+2. Hệ thống trình bày quyền lợi AI của từng gói theo bảng quyền lợi trong FR-13: Free có Chatbot và gợi ý món cơ bản; Plus bổ sung AI soạn bài và gợi ý biến tấu; Pro bổ sung AI lập thực đơn tuần 7 ngày.
+3. Hệ thống không hiển thị gói năm, mã giảm giá, khuyến mãi hoặc gói dùng thử trong bảng giá Phase 1.
+
+#### Postconditions
+Người dùng đã xem được giá và quyền lợi để so sánh các gói; UC này chưa khởi tạo giao dịch thanh toán.
+
+#### Traceability
+- **Parent FR:** [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13).
+- **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền AI cơ bản của Guest/Member Free); [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền tính năng AI theo gói Plus/Pro).
+- **Relevant NFR:** [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện tiếng Việt, responsive).
+
+---
+
+<a id="uc-13-2"></a>
+### UC-13.2 — Khởi tạo đơn hàng và thanh toán nâng cấp
+
+#### Goal
+Cho phép Member mua gói Plus hoặc Pro và chỉ nhận quyền lợi trả phí sau khi thanh toán được xác minh thành công.
+
+#### Primary Actor
+`Member`.
+
+#### Supporting Actors
+Cổng thanh toán trực tuyến.
+
+#### Trigger
+Member đã đăng nhập nhấn “Nâng cấp gói” tại khu vực quản lý tài khoản hoặc từ thông báo nâng cấp khi truy cập tính năng nâng cao.
+
+#### Preconditions
+Member đã đăng nhập tài khoản hợp lệ; giao dịch được thực hiện cho một gói trả phí đang được niêm yết trong FR-13.
+
+#### Main Flow
+1. Member chọn Plus hoặc Pro và nhấn “Tiến hành thanh toán”.
+2. Hệ thống tạo giao dịch mới với mã giao dịch duy nhất, trạng thái `Pending`, số tiền, mã gói và ID tài khoản Member.
+3. Hệ thống tạo URL chuyển hướng an toàn có chữ ký số và chuyển Member tới cổng thanh toán.
+4. Member hoàn tất thanh toán trên giao diện của cổng thanh toán.
+5. Cổng thanh toán gửi kết quả giao dịch về máy chủ qua Webhook/IPN.
+6. Hệ thống xác thực chữ ký số, số tiền và trạng thái giao dịch. Khi thông tin hợp lệ và giao dịch thành công, hệ thống chuyển giao dịch sang `Success` và kích hoạt quyền lợi của gói đã mua theo chu kỳ tháng được xác minh (BR-02).
+7. Hệ thống gửi thông báo xác nhận thanh toán thành công trong ứng dụng và qua email cho Member.
+8. Sau khi hoàn tất, Member được chuyển tới trang thông tin tài khoản; xem [UC-13.3](#uc-13-3) để biết thông tin trạng thái gói được hiển thị.
+
+#### Alternative Flows
+- **AF-13.1 — Member hủy thanh toán hoặc giao dịch thất bại:** Nếu Member hủy hoặc thanh toán không thành công tại cổng thanh toán, giao dịch được ghi nhận là `Cancelled` hoặc `Failed`; quyền lợi hiện tại được giữ nguyên, hệ thống thông báo thanh toán chưa hoàn tất và cho phép thử lại.
+
+#### Exception Flows
+- **EF-13.1 — Thông báo thanh toán lặp:** Nếu cổng thanh toán gửi lại IPN cho mã giao dịch đã xử lý thành công, hệ thống xác nhận đã xử lý mà không cộng dồn thời hạn hoặc kích hoạt quyền lợi lần nữa (idempotent handling).
+
+#### Security Flows
+- **SF-13.1 — Chữ ký hoặc số tiền không hợp lệ:** Hệ thống từ chối kích hoạt quyền lợi, đánh dấu giao dịch `Tampered/Invalid` và ghi vết cảnh báo an ninh nếu chữ ký không khớp hoặc số tiền sai với giá niêm yết.
+- **SF-13.2 — Không lưu thông tin thẻ ngân hàng:** Việc nhập thông tin thẻ/tài khoản ngân hàng diễn ra trên hạ tầng của cổng thanh toán; hệ thống dự án không nhận, xử lý hoặc lưu số thẻ, CVV hay mật khẩu ngân hàng.
+
+#### Postconditions
+Với giao dịch thành công đã xác minh, giao dịch được ghi nhận `Success` và quyền lợi Member được kích hoạt theo gói/chu kỳ đã thanh toán. Giao dịch lặp không làm thay đổi thêm thời hạn hoặc quyền lợi.
+
+#### Traceability
+- **Parent FR:** [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13).
+- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền tính năng AI của các gói trả phí).
+- **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền); [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10) (xác thực dữ liệu/IPN); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện ứng dụng); [NFR-21](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-21) (bảo mật dữ liệu thanh toán).
+
+---
+
+<a id="uc-13-3"></a>
+### UC-13.3 — Xem trạng thái gói hiện tại và ngày hết hạn
+
+#### Goal
+Giúp Member biết gói hiện tại và thời điểm kết thúc chu kỳ đã thanh toán, nếu có.
+
+#### Primary Actor
+`Member`.
+
+#### Trigger
+Member yêu cầu xem thông tin gói hiện tại của tài khoản.
+
+#### Preconditions
+Member đã đăng nhập tài khoản hợp lệ.
+
+#### Main Flow
+1. Member yêu cầu xem thông tin gói hiện tại; sau luồng thanh toán thành công, Member cũng được chuyển tới trang thông tin tài khoản như đã mô tả ở UC-13.2.
+2. Hệ thống hiển thị trạng thái gói hiện tại; với gói trả phí, hiển thị ngày hết hạn của chu kỳ đã thanh toán.
+
+#### Postconditions
+Member đã xem được trạng thái gói hiện tại và ngày hết hạn chu kỳ trả phí khi áp dụng.
+
+#### Traceability
+- **Parent FR:** [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13).
+- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền tính năng theo hạng gói).
+- **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền truy cập); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện tiếng Việt, responsive).
 
 ---
