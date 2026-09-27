@@ -1,8 +1,8 @@
 > **Document:** Data Dictionary & Traceability Matrix — Mâm Xanh
 > **File:** `docs/diagrams/ERD/data-dictionary.md`
-> **Version:** v0.7.1
+> **Version:** v0.7.2
 > **Created:** 2026-09-23
-> **Last Updated:** 2026-09-25
+> **Last Updated:** 2026-09-27
 > **Status:** Under Review
 > **Related Docs:** `docs/diagrams/ERD/README.md`, `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -467,7 +467,7 @@ Các phương án trên đã chạy thử trên SQL Server 2019. Khi insert repl
 | Column | Business meaning | Logical type | SQL Server type | Length/Precision | Nullable | Default | PK | FK reference | UNIQUE | CHECK | Index | Relationship / Cardinality | FR | BR | UC/AC | Security / Privacy |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `unit_id` | Định danh đơn vị | Identifier | INT | — | NOT NULL | — | PK (Identity 1,1) | — | — | — | PK_UNIT (Clustered) | PK | FR-18 | BR-73 | — | — |
-| `code` | Mã đơn vị, duy nhất — `g`, `kg`, `ml`, `L`, `quả`, `củ`, `bìa`… | Text, unique | VARCHAR | 20 | NOT NULL | — | — | — | UQ_UNIT_code | — | UQ_UNIT_code (Nonclustered) | — | FR-18 | BR-73 | — | — |
+| `code` | Mã đơn vị, duy nhất — `g`, `kg`, `ml`, `L`, `quả`, `củ`, `bìa`…. Phải là `NVARCHAR`: với collation mặc định `SQL_Latin1_General_CP1_CI_AS`, `VARCHAR` lưu `quả`, `củ`, `miếng` thành `qu?`, `c?`, `mi?ng`. Sửa bằng migration `V2__unit_code_unicode.sql` (27/09/2026) | Text, unique | NVARCHAR | 20 | NOT NULL | — | — | — | UQ_UNIT_code | — | UQ_UNIT_code (Nonclustered) | — | FR-18 | BR-73 | — | — |
 | `name` | Tên hiển thị | Text | NVARCHAR | 50 | NOT NULL | — | — | — | — | — | — | — | FR-18 | — | — | — |
 | `dimension` | Chiều đo: `MASS` / `VOLUME` / `COUNT` | Enum | VARCHAR | 10 | NOT NULL | — | — | — | — | CK_UNIT_dimension ('MASS', 'VOLUME', 'COUNT') | — | Quyết định có gom an toàn được hay không | FR-18 | BR-14, BR-73 | — | — |
 | `base_factor` | Hệ số quy về đơn vị cơ sở của cùng chiều | Decimal | DECIMAL | 18,6 | NOT NULL | — | — | — | — | — | — | — | FR-18 | BR-73 | — | — |
@@ -619,4 +619,5 @@ Toàn bộ đặc tả chi tiết đánh dấu `⏳` trước đây trong mục 
   - Export PNG thành công, căn chỉnh container layout chuẩn xác.
 - [x] `database/queries.sql`: nâng cấp inventory và bổ sung 20 test case mới (TC16–TC35) kiểm thử từng constraint mới, assert đúng tên constraint trong `ERROR_MESSAGE()`. 66/66 test assertions PASS.
 - [x] Đồng bộ số liệu và cập nhật [database/README.md](../../../database/README.md).
+- [x] Sửa sau merge PR #66 (27/09/2026): `UNIT.code` đổi từ `VARCHAR(20)` sang `NVARCHAR(20)` qua migration mới `V2__unit_code_unicode.sql`, không sửa V1 vì V1 đã chia sẻ trên `develop`. V2 khôi phục 3 mã bị mất dấu (`quả`, `củ`, `miếng`); `database/schema.sql` đồng bộ theo trạng thái V1 + V2; Physical ERD ghi `NVARCHAR(20) NOT NULL` cho `UNIT.code`; thêm TC38 vào `database/queries.sql`. Đã kiểm chứng trên SQL Server 2019: catalog của V1 + V2 giống hệt `schema.sql`; `queries.sql` đạt 72/72 PASS; trên database chỉ chạy V1, TC38a báo FAIL đúng như mong đợi.
 - [x] Cập nhật `CHANGELOG.md` và chuẩn bị ma trận truy vết cho mô tả PR #66.

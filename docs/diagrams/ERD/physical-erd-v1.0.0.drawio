@@ -2574,7 +2574,7 @@
         <mxCell id="tbl_22_r2" parent="tbl_22" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;labelBackgroundColor=none;" value="" vertex="1">
           <mxGeometry height="28" width="460" y="62" as="geometry" />
         </mxCell>
-        <mxCell id="tbl_22_r2_c0" parent="tbl_22_r2" style="shape=partialRectangle;overflow=hidden;connectable=0;top=0;left=0;bottom=0;right=1;align=left;verticalAlign=middle;spacingLeft=6;fontSize=10;labelBackgroundColor=none;" value="VARCHAR(20) NOT NULL" vertex="1">
+        <mxCell id="tbl_22_r2_c0" parent="tbl_22_r2" style="shape=partialRectangle;overflow=hidden;connectable=0;top=0;left=0;bottom=0;right=1;align=left;verticalAlign=middle;spacingLeft=6;fontSize=10;labelBackgroundColor=none;" value="NVARCHAR(20) NOT NULL" vertex="1">
           <mxGeometry height="28" width="140" as="geometry">
             <mxRectangle height="28" width="90" as="alternateBounds" />
           </mxGeometry>
