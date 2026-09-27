@@ -110,8 +110,14 @@ canonical_docs:
   labels: .github/labels.yml
 database_state:
   schema_snapshot: database/schema.sql
-  status: empty_placeholder_not_approved_schema
-  migration_owner: backend_flyway_when_scaffolded
+  status: implemented_baseline_synced_with_flyway
+  migration_owner: backend_flyway
+requirements_baseline:
+  version: v2.0.0
+  scope_rule: current_srs_registry_presence_means_implementation_scope
+  history: docs/archive/requirements/v1/
+  acceptance_criteria_owner: docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md
+  use_case_owner: docs/requirements/use-cases/
 doc_sync_rules:
   - when: requirements_change
     check: [docs/requirements/SRS.md, docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md, docs/requirements/srs/BUSINESS-RULES.md, docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md, docs/requirements/PRD.md, docs/architecture/ARCHITECTURE.md, docs/testing/TEST-STRATEGY.md, README.md, CHANGELOG.md]

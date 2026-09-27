@@ -1,6 +1,6 @@
 ---
 name: srs-to-github-issues
-description: 'Convert SRS requirements into traceable GitHub work items and keep linked Issues synchronized when the SRS changes. Use this skill to draft, create, reconcile, update, defer, reopen, or close requirement-linked Issues; maintain an Issue index; estimate work; assign repository-approved labels; and optionally sync verified GitHub Project metadata. Requirement lifecycle status must be explicit before Issue creation or reconciliation; never guess it.'
+description: 'Convert current SRS requirements into traceable GitHub work items and reconcile linked Issues when the current baseline changes. Use this skill to draft, create, update, close, reopen, or preserve requirement-linked Issues; maintain an Issue index; estimate work; assign repository-approved labels; and optionally sync verified GitHub Project metadata. Follow the repository current-scope rule; never infer scope from archived material.'
 compatibility: >
   Draft and planning modes work without GitHub write access. Real GitHub synchronization requires an
   authenticated runtime with repository-scoped GitHub read/write capability and a human approval gate
@@ -9,9 +9,9 @@ metadata:
   swp391-risk: "critical"
   swp391-source: "self"
   swp391-source-type: "custom"
-  swp391-version: "v2.0.1"
+  swp391-version: "v2.1.0"
   swp391-created-date: "2026-06-27"
-  swp391-last-updated-date: "2026-09-16"
+  swp391-last-updated-date: "2026-09-27"
 ---
 
 # SRS to GitHub Issues
@@ -29,8 +29,8 @@ Use this skill when the user asks to:
 - convert SRS functional requirements into GitHub Issue drafts or real Issues;
 - create or refresh a requirement-to-Issue index;
 - synchronize linked Issues after SRS edits;
-- update Issue title/body/lifecycle labels when a requirement changes;
-- defer, reopen, or close linked Issues when requirement lifecycle changes;
+- update Issue title/body or execution labels when a requirement changes;
+- create, reopen, or propose closing linked Issues when current-baseline scope changes;
 - split/group work while preserving requirement traceability;
 - estimate story points, priority, dependencies, or planning metadata;
 - sync verified GitHub Project metadata.
@@ -39,33 +39,17 @@ Do not use this skill as the primary tool for ordinary coding, PR review, CI deb
 
 ## Core Safety Rules
 
-### 1. Never Invent Requirement State
+### 1. Never Invent Requirement Scope
 
-Do not invent product behavior, technical choices, workflows, actors, labels, Project fields, dates, dependencies, relationships, lifecycle status, or readiness.
+Do not invent product behavior, technical choices, workflows, actors, labels, Project fields, dates, dependencies, relationships, scope decisions, or readiness.
 
-Every functional requirement managed by this skill must have an explicit lifecycle state from the authoritative requirement source or an explicit authorized decision.
-
-Supported fallback vocabulary:
-
-```text
-DRAFT
-ACTIVE
-DEFERRED
-OUT_OF_SCOPE
-RETIRED
-```
-
-If the repository uses equivalent names, map by meaning rather than renaming them.
-
-If a requirement has no explicit lifecycle state, **stop Issue generation/reconciliation for that requirement and ask the authorized decision-maker to choose the state**. Do not infer it from wording, file location, version number, implementation progress, or whether an Issue already exists.
+For Requirements / Implementation Baseline v2.0.0 in this repository, a stable requirement ID present in the current root SRS registry is in current implementation scope. A requirement absent from that registry is non-current; lifecycle labels in archived v1 documents explain history but do not restore current scope. Do not infer current scope from child documents, Issues, implementation state, wording, or agent judgment.
 
 ### 2. SRS Requirements Participate in Issue Management
 
 For an authoritative SRS, do not independently decide that a confirmed FR is "not worth tracking" merely because it seems small, difficult, or low priority.
 
-Every FR with an explicit lifecycle state must appear in the managed requirement-to-Issue index.
-
-Issue treatment is determined by the explicit lifecycle state and requirement hierarchy, not by agent preference.
+Every current FR in the root SRS registry must appear in the managed requirement-to-Issue index. Existing Issues linked to non-current FRs remain historical mappings; they are not implementation scope merely because they remain open.
 
 This does not mean every SRS section becomes an implementation Issue. Actors, glossary entries, explanatory text, BRs, NFRs, constraints, and references are linked to relevant work unless repository policy or the user explicitly manages them as independent work items.
 
@@ -76,9 +60,9 @@ Issue decomposition may split or group implementation work, but it must not sile
 Preserve requirement identifiers exactly.
 
 - Do not renumber requirements.
-- Do not reuse retired IDs.
+- Do not reuse IDs absent from the current baseline.
 - Do not invent child IDs that do not exist in the SRS.
-- Do not delete historical Issue links merely because a requirement changes lifecycle.
+- Do not delete historical Issue links when a requirement leaves the current baseline.
 
 ### 4. GitHub Mutations Require Previewed Batch Approval
 
@@ -86,7 +70,7 @@ Draft/index generation and GitHub reads are local/read-only preparation work.
 
 Before any real GitHub write:
 
-1. complete lifecycle, mapping, and repository preflight checks;
+1. complete current-scope, mapping, and repository preflight checks;
 2. build one complete mutation preview grouped by `CREATE`, `UPDATE`, `CLOSE`, `REOPEN`, and `PROJECT_FIELD_UPDATE` as applicable;
 3. show the affected requirement/Issue identifiers and the evidence/reason for every planned action;
 4. stop before the first remote write and request one human approval for the complete previewed batch;
@@ -113,14 +97,14 @@ Typical fallback ownership:
 - architecture -> architecture documentation;
 - important decision rationale -> ADR / Decision Record;
 - GitHub workflow -> repository governance / contribution policy;
-- work-item state -> GitHub, but only as a mirror of requirement lifecycle and implementation progress.
+- work-item execution state -> GitHub, as a mirror of implementation progress; current product scope -> root SRS registry.
 
-When a Modular SRS Requirement Set is used:
-- Root SRS is the Authoritative Registry for requirement existence, stable IDs, index-level module allocation, and authoritative lifecycle state.
+For this repository's Requirements / Implementation Baseline v2.0.0:
+- Root SRS is the Authoritative Registry for current requirement presence, stable IDs, and index-level module allocation. Presence defines current implementation scope.
 - Registered child documents are Authoritative Detailed Specifications for detailed requirement statements, actors/triggers, preconditions, exceptions, and acceptance criteria.
-- Requirement eligibility and lifecycle gate are resolved directly from the authoritative lifecycle registry in root SRS.
+- Requirement eligibility is resolved directly from presence in the root SRS registry, not from a lifecycle column.
 - Detailed requirement content is then hydrated from the corresponding registered child document via stable anchors (`#fr-xx`).
-- If a lifecycle conflict occurs between root SRS and child document, root SRS wins; use the root SRS lifecycle and record a sync warning.
+- If a current-scope conflict occurs between root SRS and a child document, root SRS wins; record a sync warning and do not create work for a non-current ID.
 
 If equally authoritative requirement sources conflict, stop affected synchronization and report the conflict.
 
@@ -147,34 +131,24 @@ Fallback generated-working-artifact path when no stronger convention exists:
 
 Generated drafts/indexes are working artifacts, not authoritative project requirements.
 
-## Mandatory Lifecycle Gate
+## Mandatory Current-Scope Gate
 
 Before creating drafts, real Issues, or reconciling existing Issues:
 
 1. enumerate the requirements in the authoritative SRS registry (root SRS);
-2. verify that each requirement has an explicit lifecycle state in the registry;
-3. list missing/ambiguous states;
-4. ask the authorized decision-maker to resolve them;
-5. continue only for requirements whose lifecycle is explicit;
+2. classify current requirements by presence in that registry;
+3. list child-only or archive-only IDs separately as historical/non-current;
+4. resolve genuine conflicts about scope with the authorized decision-maker;
+5. continue only for current registry entries, while preserving historical mappings;
 6. resolve detailed content (statements, acceptance criteria) from the registered child requirement documents.
 
-Do not substitute a separate agent-inferred "eligibility" decision for this lifecycle gate.
-
-Default lifecycle-to-Issue treatment:
-
-- `DRAFT` -> keep in the index; planning/tracking Issue may exist, but do not present it as implementation-ready.
-- `ACTIVE` -> maintain an open current implementation/tracking Issue.
-- `DEFERRED` -> maintain a future/backlog Issue and mark it deferred according to repository conventions; do not place it in active implementation automatically.
-- `OUT_OF_SCOPE` -> do not create new implementation work; if a linked open Issue exists, close it as not planned when authorized and preserve the link/history.
-- `RETIRED` -> do not create new work; preserve historical mapping and close still-open linked work as not planned when authorized.
-
-Read `references/requirement-eligibility.md` for lifecycle handling.
+Do not substitute a separate agent-inferred scope decision for this gate. Propose `CLOSE_AS_NOT_PLANNED` only for unfinished work linked to an FR absent from the current registry when the baseline/archive evidence confirms the scope change. Preserve completed work and all historical links. Never mutate GitHub before one complete preview is approved.
 
 ### Readiness Is Secondary
 
 If the repository explicitly tracks `Ready`, `Ready with open items`, or `Needs clarification`, synchronize that information.
 
-Do not invent readiness and do not use missing readiness as a reason to ignore an FR that already has an explicit lifecycle. Readiness controls whether an Issue is presented as implementation-ready, not whether the FR disappears from Issue management.
+Do not invent readiness or use missing readiness to exclude a current FR. Readiness describes planning detail, not whether the FR is in current scope.
 
 ## Traceability Rule
 
@@ -195,7 +169,7 @@ Where UC/BR/NFR/Test artifacts exist, preserve real references. Do not fabricate
 It must record, at minimum:
 
 - requirement ID;
-- lifecycle;
+- current-scope disposition (`Current` or `Historical / non-current`);
 - hierarchy role (`Parent/Capability`, `Leaf`, or `Standalone`);
 - linked draft(s);
 - linked GitHub Issue number/URL when available;
@@ -224,7 +198,7 @@ When regenerating:
 - update existing drafts instead of duplicating them;
 - preserve stable mappings where possible;
 - remove or archive stale generated drafts according to repository convention;
-- never delete historical GitHub mappings from the index merely because the current requirement is no longer active.
+- never delete historical GitHub mappings from the index when the requirement leaves the current registry.
 
 ### 2. GitHub Creation Mode
 
@@ -233,10 +207,8 @@ Create real Issues only after preflight **and approval of the exact mutation bat
 Rules:
 
 - create from the managed index/drafts, not by scanning arbitrary Markdown;
-- `ACTIVE` requirements create/open current work;
-- `DEFERRED` requirements may create/open backlog work, clearly marked deferred;
-- `DRAFT` requirements may create planning/tracking Issues only when the requested workflow wants draft tracking;
-- `OUT_OF_SCOPE` and `RETIRED` requirements do not cause creation of new implementation Issues;
+- current registry entries are eligible for current implementation/tracking work;
+- archive-only/non-current requirements do not cause new implementation Issues;
 - parent/capability Issues must not duplicate child implementation scope;
 - update the index immediately after successful creation.
 
@@ -244,7 +216,7 @@ Run `references/github-creation-preflight.md`.
 
 ### 3. Issue Reconciliation Mode
 
-Use after SRS semantic, lifecycle, or hierarchy changes when linked Issues already exist or Issue sync is part of the requested workflow.
+Use after SRS semantic, current-scope, or hierarchy changes when linked Issues already exist or Issue sync is part of the requested workflow.
 
 Reconcile by stable requirement ID, not by title matching alone.
 
@@ -253,13 +225,11 @@ Typical actions:
 - title/wording changed -> update the managed Issue fields when meaning remains the same;
 - semantic requirement change + open unfinished Issue -> update managed scope/acceptance content;
 - semantic requirement change + already-completed Issue -> preserve the completed Issue as history and create/link a follow-up change Issue for new work unless repository policy explicitly prefers reopening;
-- `ACTIVE -> DEFERRED` -> keep linked Issue as backlog/deferred according to repository policy;
-- `DEFERRED -> ACTIVE` -> restore it to current work rather than creating a duplicate;
-- `ACTIVE/DEFERRED -> OUT_OF_SCOPE` -> close linked unfinished Issue as not planned when authorized;
-- `ACTIVE/DEFERRED -> RETIRED` -> close linked unfinished Issue as not planned when authorized;
-- `OUT_OF_SCOPE/RETIRED -> ACTIVE` -> reopen the historical linked Issue when appropriate and not already completed, otherwise create a new follow-up Issue and preserve the old link;
+- current FR changes semantically -> update the linked Issue to match current requirements without rewriting completed history;
+- FR leaves the current registry -> preserve its mapping and propose closing unfinished work as not planned only when baseline/archive evidence confirms it is non-current;
+- FR enters the current registry -> create or reopen implementation work only after checking stable-ID mappings and completed history;
 - requirement split -> preserve original mapping as parent/superseded context and create child mappings;
-- requirement removed from the active SRS without an explicit lifecycle/history decision -> do not guess; stop and ask before closing anything.
+- absence from the current registry is not enough by itself to mutate an Issue: verify the current baseline and archive/history mapping, then include only a proposal in the approved preview.
 
 Never delete Issues or comments as part of reconciliation.
 
@@ -390,7 +360,7 @@ An Issue created on GitHub is an engineering and delivery contract for developer
 Specifically:
 - **FORBIDDEN in live Issue body:**
   - AI prompt caveats (e.g. "Endpoints/DTO/query/model/migration chưa được draft này phê duyệt", "Owner chịu trách nhiệm FE/BE kể cả code AI");
-  - Meta-arguments about requirement conflicts (e.g. "Ghi cảnh báo trace, không tự sửa source", "Không thêm server draft theo câu nhắc tương lai vì FR24 OUT_OF_SCOPE");
+  - Meta-arguments about requirement conflicts (e.g. "Ghi cảnh báo trace, không tự sửa source", "Không thêm server-side draft vì capability này không thuộc current baseline");
   - Boilerplate scheduling disclaimers (e.g. "Chờ Tech Lead/owner xác nhận; Start/Target date và assignee chốt khi giao việc");
   - Internal AI reasoning headers (e.g. `### Source questions / DESIGN_TBD` containing agent notes).
 - **REQUIRED in live Issue body:**
@@ -409,11 +379,11 @@ Preflight outcomes are classified:
 - **Hard blocker** -> do not continue merely because the user says "continue"; resolve the missing authority/source/mapping first.
 - **Overridable workflow warning** -> the authorized user may explicitly accept the risk and continue.
 
-Missing explicit requirement lifecycle is a hard blocker for the affected requirement.
+Missing current-scope evidence is a hard blocker for the affected mutation. In this repository, the current root SRS registry is the scope authority.
 
 ## Coordination With Documentation Skills
 
-When `markdown-documentation` is available, it owns shared requirement semantics, lifecycle definitions, stable IDs, source-of-truth rules, and documentation impact analysis.
+When `markdown-documentation` is available, it owns shared requirement semantics, stable IDs, source-of-truth rules, and documentation impact analysis.
 
 This skill owns GitHub work-item representation and synchronization.
 
@@ -432,7 +402,7 @@ Issues never override the SRS solely because an Issue body differs.
 
 For large SRS files, work by phase:
 
-1. Inventory + lifecycle validation.
+1. Inventory current registry + stable-ID mapping validation.
 2. Update `ISSUE_INDEX.md` and reconciliation plan.
 3. Generate/update selected drafts.
 4. Perform authorized GitHub mutations.

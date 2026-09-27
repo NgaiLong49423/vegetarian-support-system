@@ -12,14 +12,14 @@ Fallback:
 # SRS ↔ GitHub Issue Index
 
 ## Summary
-- Authoritative SRS Registry: `...` (e.g. `docs/requirements/SRS.md`)
+- Current-scope SRS Registry: `...` (this repository: `docs/requirements/SRS.md`)
 - Detailed Requirements Specification: `...` (e.g. `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md` or monolithic SRS)
 - Draft output directory: `.agents/outputs/drafts/github-issues/`
 - Real GitHub mutations authorized: Yes / No
 - Last reconciliation source revision: <verified commit/hash or Unknown>
 
 ## Source Authority
-- Authoritative lifecycle registry: ... (e.g. `docs/requirements/SRS.md`)
+- Current-scope authority: ... (this repository: presence in `docs/requirements/SRS.md`)
 - Detailed requirements source: ...
 - Repository governance: ...
 - Adopted repo contract: None / ...
@@ -27,14 +27,13 @@ Fallback:
 
 ## Requirement ↔ Issue Registry
 
-| Source ID | Lifecycle | Hierarchy Role | Draft(s) | GitHub Issue | Issue Disposition | Sync State | Notes |
+| Source ID | Current Scope | Hierarchy Role | Draft(s) | GitHub Issue | Issue Disposition | Sync State | Notes |
 |---|---|---|---|---|---|---|---|
-| FR-01 | ACTIVE | Standalone | 001 | #12 | Open / Current | In Sync | ... |
-| FR-02 | DEFERRED | Leaf | 002 | #13 | Open / Deferred | In Sync | ... |
-| FR-03 | DRAFT | Parent | 003 | N/A | Planning only | Draft | ... |
-| FR-04 | OUT_OF_SCOPE | Leaf | N/A | #14 | Closed / Not planned | In Sync | Historical link preserved |
-| FR-05 | RETIRED | Standalone | N/A | #15 | Closed / Not planned | In Sync | Historical link preserved |
-| FR-06 | <missing> | Leaf | N/A | N/A | Blocked | Lifecycle Required | Ask authorized decision-maker |
+| FR-01 | Current | Standalone | 001 | #12 | Open / Current | In Sync | ... |
+| FR-02 | Current | Leaf | 002 | #13 | Open / Current | In Sync | ... |
+| FR-03 | Current | Parent | 003 | N/A | Planning only | Draft | ... |
+| FR-04 | Historical / non-current | Leaf | N/A | #14 | Closed / Not planned | In Sync | Historical link preserved |
+| FR-05 | Historical / completed | Standalone | N/A | #15 | Closed / Completed | Preserved | Historical link preserved |
 
 ## Split / Group / Supersession Mapping
 
@@ -47,7 +46,7 @@ Fallback:
 
 | Source ID | Detected Change | Existing Issue | Required Action | Authorization State |
 |---|---|---|---|---|
-| FR-07 | ACTIVE -> DEFERRED | #17 | Mark deferred/backlog | Pending / Authorized |
+| FR-07 | Removed from current registry | #17 | Verify mapping/history; close unfinished Issue candidate | Pending approval |
 | FR-08 | Semantic change after completion | #18 | Preserve #18; create follow-up | Pending / Authorized |
 ```
 
@@ -57,7 +56,7 @@ Use concise states such as:
 
 ```text
 Draft
-Lifecycle Required
+Scope Evidence Required
 Ready to Create
 Created
 In Sync
@@ -72,10 +71,10 @@ Repository conventions may replace these names.
 ## Index Rules
 
 - This index is the synchronization registry, not the SRS source of truth.
-- Every FR with explicit lifecycle must appear in the registry.
-- Missing lifecycle is recorded as a blocker; do not guess it.
+- Every FR in the current root SRS registry must appear in the index.
+- Archive-only IDs are recorded as historical mappings, not current scope.
 - Preserve old Issue numbers/URLs for historical traceability.
-- Do not erase a mapping merely because the requirement becomes `OUT_OF_SCOPE` or `RETIRED`.
+- Do not erase a historical mapping when an FR leaves the current root registry.
 - Do not map both parent and child FRs to duplicate implementation scope; parent Issues are tracking/grouping work.
 - When an already-completed Issue no longer represents new semantic work, keep it historical and link a follow-up Issue.
 - Owner, estimates, priority, and dates may remain `TBD` when repository policy permits.

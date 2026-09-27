@@ -1,8 +1,8 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.6.0
+> **Version:** v1.6.1
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-25
+> **Last Updated:** 2026-09-27
 > **Status:** Active  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -77,7 +77,7 @@ Các file SQL hiện tại chỉ là placeholder, chưa phải schema được p
 | YouTube embed | Phát video được liên kết trong Recipe Post mà không sao chép video | Confirmed | Dùng player của provider và tránh phải vận hành video pipeline | Khả năng embed phụ thuộc setting của video nguồn và hành vi của provider |
 | Google Gemini (`gemini-3.8-flash`) | AI model phục vụ gợi ý món ăn, thực đơn và hỗ trợ giải đáp | Confirmed model | Model Flash mới, tốc độ phản hồi nhanh, hỗ trợ reasoning và native JSON Structured Outputs | Khóa cứng model ID `gemini-3.8-flash`, không dùng alias `latest` để đảm bảo tính ổn định |
 | Google Gen AI Java SDK (`com.google.genai:google-genai`) | SDK chính thức gọi Gemini API từ Backend | Confirmed integration | Thuần Java 21, không cần dựng Python microservice hoặc dùng framework AI nặng | Bọc qua interface `AiClient` để dễ dàng mock trong Unit/Integration Test |
-| Google Maps Platform | Phụ thuộc lịch sử từng được đề xuất cho FR-42/FR-43 | `OUT_OF_SCOPE` | M11 không phục vụ trực tiếp luồng meal-planning cốt lõi và ứng dụng không quản lý dữ liệu nhà hàng bên ngoài | Không chọn dependency hoặc tích hợp trong baseline hiện tại |
+| Google Maps Platform | Không thuộc capability hiện hành | Không được chọn | Ứng dụng không quản lý dữ liệu nhà hàng bên ngoài | Không chọn dependency hoặc tích hợp trong baseline hiện tại |
 | payOS | Cổng thanh toán VietQR cho gói PLUS (49.000) và PRO (99.000) | Confirmed provider | Hỗ trợ thanh toán VND qua VietQR, link thanh toán, webhook tức thì và sandbox miễn phí | Tích hợp qua Spring `RestClient`; webhook yêu cầu verify chữ ký HMAC-SHA256 và xử lý idempotent theo `order_code` |
 | Brevo (Sendinblue) | Transactional email service cho verify account, reset password và thông báo | Confirmed provider | Gói miễn phí 300 email/ngày, hỗ trợ SMTP chuẩn; tích hợp qua `spring-boot-starter-mail` | Xử lý bất đồng bộ qua `@Async`; lỗi email không rollback transaction nghiệp vụ |
 

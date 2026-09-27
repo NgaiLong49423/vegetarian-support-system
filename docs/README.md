@@ -1,6 +1,6 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v3.13.1
+> **Version:** v4.0.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-27
 > **Status:** Active  
@@ -38,7 +38,7 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 | app/mamxanh-frontend/ | Frontend source, tests, assets and configuration | React component, Playwright test, package.json and tool configuration; place files by the app's established feature structure |
 | app/mamxanh-backend/ | Backend source, tests, configuration and migrations | Java classes/tests, pom.xml, and the implemented Flyway baseline migration |
 | database/ | Database usage guide, deliberate SQL snapshot, demo seed and diagnostic queries | `schema.sql` is the manual bootstrap snapshot synchronized with the implemented Flyway baseline migration; Flyway owns executable migration history |
-| docs/requirements/ | Maintained product and software requirements | PRD owns high-level product intent; root SRS owns scope, context, index, and lifecycle registry; docs/requirements/srs/ owns detailed FR, BR, and NFR specifications |
+| docs/requirements/ | Maintained product and software requirements | PRD owns high-level product intent; root SRS owns current scope, context and stable-ID registries; docs/requirements/srs/ owns detailed FR, BR, and NFR specifications |
 | docs/architecture/ | Current high-level system structure and selected technology baseline | ARCHITECTURE owns runtime boundaries; TECHNOLOGY-STACK owns technology purpose, rationale, trade-offs and TBD choices |
 | docs/testing/ | Project-level verification strategy | Strategy and quality evidence policy, not a test-case catalog or claim that tests exist |
 | docs/api/ | Maintained API integration guide and OpenAPI contract | OpenAPI owns endpoint-level contract; API.md explains shared integration conventions without duplicating schemas |
@@ -57,7 +57,7 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 
 Backend source subdirectories, migration location and frontend feature structure must follow the actual scaffold once it exists; this policy does not create a new application architecture.
 
-Examples: a recipe form belongs in app/mamxanh-frontend/, its API service in app/mamxanh-backend/, an AI quota rule in SRS, an integration boundary in ARCHITECTURE, and a durable provider-selection rationale in docs/decisions/. Task status belongs on its GitHub Issue/Project item.
+Examples: a recipe form belongs in app/mamxanh-frontend/, its API service in app/mamxanh-backend/, an AI entitlement or technical rate-limit rule in SRS, an integration boundary in ARCHITECTURE, and a durable provider-selection rationale in docs/decisions/. Task status belongs on its GitHub Issue/Project item.
 
 ## Maintained document register
 
@@ -70,11 +70,13 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | ../CONTRIBUTING.md | Operational Git/Issue/PR/release rules | Contributing or reviewing changes |
 | ../CHANGELOG.md | Historical changes, not current progress | Updating notable changes or investigating history |
 | README.md | File placement and document registry | Creating/moving files or routing documentation |
-| requirements/PRD.md | High-level product summary, Requirements Baseline v1.0.0, Active | Product intent and scope |
-| requirements/SRS.md | Root software requirements specification, scope, actors, system context, requirement indexes, cross-cutting information, and authoritative lifecycle registry, Requirements Baseline v1.0.0, Active | Scoping, routing, identifying requirements, verifying lifecycle state, or reading system context |
-| requirements/srs/FUNCTIONAL-REQUIREMENTS.md | Authoritative detailed FR definitions, triggers, preconditions, exceptions, and acceptance criteria (derived lifecycle), Requirements Baseline v1.0.0, Active | Implementing or verifying functional behavior and acceptance criteria |
-| requirements/srs/BUSINESS-RULES.md | Authoritative detailed BR definitions, rationale, constraints, and business logic (derived lifecycle), Requirements Baseline v1.0.0, Active | Implementing or verifying business rules and constraints |
-| requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md | Authoritative detailed NFR definitions, measurable targets, quality constraints, and verification criteria, Requirements Baseline v1.0.0, Active | Architecture, performance, security, reliability, or quality assurance work |
+| requirements/PRD.md | High-level product summary, Requirements / Implementation Baseline v2.0.0 | Product intent and scope |
+| requirements/SRS.md | Root software requirements specification, current scope, actors, system context, stable-ID registries and cross-cutting information; Requirements / Implementation Baseline v2.0.0 | Scoping, routing, identifying current requirements, or reading system context |
+| requirements/srs/FUNCTIONAL-REQUIREMENTS.md | Detailed FR definitions, triggers, preconditions, exceptions, and canonical acceptance criteria; Requirements / Implementation Baseline v2.0.0 | Implementing or verifying functional behavior and acceptance criteria |
+| requirements/srs/BUSINESS-RULES.md | Detailed BR definitions, rationale, constraints, and business logic; Requirements / Implementation Baseline v2.0.0 | Implementing or verifying business rules and constraints |
+| requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md | Detailed NFR definitions, measurable targets, quality constraints, and verification criteria; Requirements / Implementation Baseline v2.0.0 | Architecture, performance, security, reliability, or quality assurance work |
+| requirements/use-cases/README.md and `*.md` | Use Case Specification contract, module index, actor/system interactions and Acceptance Coverage mappings; FR remains the owner of required behavior and canonical Acceptance Criteria | Designing, implementing or testing actor-goal flows |
+| archive/requirements/v1/ | Frozen historical Requirements Baseline v1; not a current implementation source | Comparing historical requirements or investigating past decisions |
 | architecture/ARCHITECTURE.md | High-level runtime parts, boundaries, communication paths, trust boundaries and architectural constraints | Architecture or cross-component integration work |
 | architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md | Draft package-level proposal for incrementally implementing the approved Backend modular-monolith boundary; not evidence of existing source structure | Planning or reviewing a Backend vertical slice and its package placement |
 | architecture/TECHNOLOGY-STACK.md | Selected technologies, purpose, rationale, benefits, trade-offs and unresolved choices | Dependency or technology decisions |
@@ -87,8 +89,8 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | research/similar-products-benchmark.md | Dated external research, non-authoritative | Relevant product comparison |
 | diagrams/Activity/README.md | Activity diagram conventions | Creating/updating activity diagrams |
 | diagrams/UseCase/README.md | Use-case diagram conventions | Creating/updating use-case diagrams |
-| diagrams/ERD/README.md | ERD documentation conventions; Draft (Conceptual ERD đã được rà soát; Logical ERD v1.0.0 đã dựng 23/09/2026) | Creating/updating the data model |
-| diagrams/ERD/data-dictionary.md | Data Dictionary & Traceability Matrix: một dòng cho mỗi cột của 22 bảng, truy vết tới FR/BR/UC/AC, ràng buộc không biểu diễn được bằng đường nối và các quyết định đã chốt; Draft, tầng Logical đã điền, tầng Physical do pha 2 hoàn thiện | Thiết kế hoặc triển khai database, đặt tên cột, FK, constraint và index |
+| diagrams/ERD/README.md | ERD workspace guide and current data-model scope; see the guide for artifact-specific status | Creating/updating the data model |
+| diagrams/ERD/data-dictionary.md | Data Dictionary & Traceability Matrix for the 22-table model, including column definitions, FR/BR/UC/AC traceability and database constraints | Designing or implementing the database, columns, FKs, constraints and indexes |
 | diagrams/C4 Container Diagram/README.md | C4 container diagram conventions and current diagram review findings; Under Review | Creating/updating container architecture |
 | ../app/mamxanh-frontend/README.md | Frontend setup/state, Playwright commands and contribution guidance | Frontend work |
 | ../app/mamxanh-backend/README.md | Backend setup/state and contribution guidance | Backend work |

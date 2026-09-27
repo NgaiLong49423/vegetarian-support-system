@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.1.0
+> **Version:** v2.1.1
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -15,34 +15,125 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35).
 
-#### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
-- **Tiền điều kiện:**
-  - Người dùng đã đăng nhập tài khoản Member hợp lệ (FR-03).
-  - Người dùng đã hoàn thành bước xác nhận phạm vi hỗ trợ và không thuộc đối tượng loại trừ (FR-38, BR-41, BR-42).
-- **Kích hoạt (Trigger):**
-  - Member truy cập màn hình "Hồ sơ dinh dưỡng cá nhân" hoặc chọn mục cập nhật chỉ số sức khỏe trong trang quản lý tài khoản.
+<a id="uc-35-1"></a>
+### UC-35.1 — Khai báo và cập nhật thông số hồ sơ dinh dưỡng cá nhân
 
-#### 4. Luồng xử lý chi tiết (Flows)
-- **Luồng chính (Main Flow):**
-  - Bước 1: Member truy cập giao diện Hồ sơ dinh dưỡng; hệ thống hiển thị nổi bật Tuyên bố từ chối trách nhiệm y tế (Medical Safety Disclaimer theo BR-39, BR-41).
-  - Bước 2: Member nhập các thông số: ngày sinh (`date_of_birth`), Giới tính sinh học, Chiều cao (cm), Cân nặng (kg), Mức độ hoạt động thể chất (Ít vận động, Vận động nhẹ, Vận động vừa, Vận động nặng) và Mục tiêu dinh dưỡng chung (Duy trì cân nặng, Tăng cường sức khỏe, Hỗ trợ tập luyện). Hệ thống lưu ngày sinh, không lưu tuổi cố định.
-  - Bước 3: Member nhấn "Lưu hồ sơ và Tính toán tham khảo".
-  - Bước 4: Service tính tuổi từ `date_of_birth` tại thời điểm xử lý và kiểm tra khoảng 18–120; database từ chối ngày sinh trong tương lai hoặc trước ngày 01/01/1900. Hệ thống đồng thời kiểm tra chiều cao từ 100 cm đến 250 cm và cân nặng từ 30 kg đến 300 kg.
-  - Bước 5: Hệ thống tính toán chỉ số khối cơ thể: $\text{BMI} = \frac{\text{Cân nặng (kg)}}{(\text{Chiều cao (m)})^2}$, làm tròn 1 chữ số thập phân (BR-39).
-  - Bước 6: Hệ thống xác định phân loại thể trạng tham khảo theo chuẩn WHO/USDA (Thiếu cân, Bình thường, Thừa cân, Béo phì) kèm văn bản cảnh báo rõ ràng rằng đây chỉ là chỉ số sàng lọc tham khảo, không đại diện cho tỷ lệ mỡ hay chẩn đoán sức khỏe cá nhân.
-  - Bước 7: Hệ thống tính toán mức nhu cầu tham khảo hàng ngày cho 9 chỉ tiêu cốt lõi (Năng lượng, Đạm, Carb, Chất béo, Chất xơ, Canxi, Sắt, Vitamin B12, Kẽm) dựa trên công thức tham chiếu USDA/NIH và mức độ hoạt động.
-  - Bước 8: Hệ thống lưu hồ sơ dinh dưỡng của Member, bao gồm `date_of_birth` (không lưu tuổi), vào cơ sở dữ liệu và hiển thị bảng kết quả chỉ số tham khảo.
-- **Luồng thay thế (Alternative Flows):**
-  - *AF-35.1 (Cập nhật lại thông số):* Member có thể chỉnh sửa cân nặng hoặc mức độ vận động bất kỳ lúc nào. Hệ thống tự động tính toán lại BMI và 9 chỉ tiêu tham khảo tương ứng, cập nhật ngày sửa đổi gần nhất.
-  - *AF-35.2 (Xem lại hồ sơ đã lưu):* Khi Member truy cập trang hồ sơ dinh dưỡng, nếu đã có dữ liệu trước đó, hệ thống tải dữ liệu đã lưu cùng ngày cập nhật và hiển thị đầy đủ thông số tham khảo.
-- **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-35.1 (Vi phạm điều kiện loại trừ y tế):* Nếu Member thay đổi thông tin xác nhận và khai báo thuộc nhóm đối tượng loại trừ (dưới 18 tuổi, đang mang thai, cho con bú hoặc mắc bệnh mạn tính theo BR-42), hệ thống lập tức khóa chức năng tính toán cá nhân hóa, hiển thị thông báo khuyến nghị tham vấn bác sĩ/chuyên gia dinh dưỡng và xóa/ẩn mục tiêu dinh dưỡng cá nhân.
-  - *EF-35.2 (Thông số nhập không hợp lệ):* Nếu chiều cao hoặc cân nặng nằm ngoài ngưỡng cho phép, hệ thống hiển thị thông báo lỗi tại trường nhập liệu và không tiến hành tính toán.
-  - *SF-35.1 (Bảo mật dữ liệu sức khỏe):* Dữ liệu hồ sơ dinh dưỡng và BMI là thông tin nhạy cảm; chỉ chính Member đó mới có quyền xem và sửa (RBAC theo NFR-08, NFR-09, NFR-20). Hệ thống không công khai các chỉ số này trên Author Card hay Profile công khai của Member.
+#### Goal
+Lưu các thông số sức khỏe do Member khai báo để hỗ trợ các phép tính tham khảo thuộc FR-35.
 
-#### 5. Hậu điều kiện (Postconditions)
-- Hồ sơ dinh dưỡng của Member được cập nhật an toàn trong hệ thống.
-- Bảng 9 chỉ tiêu dinh dưỡng tham khảo cá nhân sẵn sàng để làm mốc so sánh cho chức năng Lịch ăn ngày (FR-37) và gợi ý AI Menu (FR-36).
+#### Primary Actor
+`Member` đã đăng nhập.
+
+#### Trigger
+Member mở biểu mẫu hồ sơ dinh dưỡng hoặc chọn cập nhật thông số đã lưu.
+
+#### Preconditions
+Member đã đăng nhập và đã xác nhận thuộc phạm vi hỗ trợ dinh dưỡng theo FR-38.
+
+#### Main Flow
+1. Member mở hoặc chỉnh sửa hồ sơ dinh dưỡng.
+2. Hệ thống hiển thị thông báo từ chối trách nhiệm y tế.
+3. Member nhập/cập nhật `date_of_birth`, giới tính sinh học, chiều cao, cân nặng, mức độ hoạt động và mục tiêu dinh dưỡng chung.
+4. Member gửi biểu mẫu lưu.
+5. Hệ thống kiểm tra ngày sinh hợp lệ; service tính tuổi từ `date_of_birth` để xác minh giới hạn 18–120, không lưu tuổi cố định. Hệ thống kiểm tra chiều cao và cân nặng trong các ngưỡng được FR-35 quy định.
+6. Hệ thống lưu hồ sơ hợp lệ gắn với tài khoản Member.
+
+#### Alternative Flows
+- Member cập nhật cân nặng hoặc mức độ hoạt động; hệ thống lưu giá trị mới và thời điểm cập nhật.
+
+#### Exception/Security Flows
+- Ngày sinh sai định dạng/ngoài giới hạn hoặc chiều cao, cân nặng ngoài ngưỡng: từ chối lưu và chỉ rõ trường cần sửa.
+- Dữ liệu hồ sơ chỉ được chính Member sở hữu xem hoặc cập nhật; không hiển thị trên hồ sơ công khai (NFR-08, NFR-09, NFR-20).
+- Nếu Member thuộc nhóm loại trừ, xử lý theo [FR-38](#fr-38) và không thực hiện cá nhân hóa dinh dưỡng.
+
+#### Postconditions
+Hồ sơ hợp lệ được lưu với `date_of_birth`; tuổi không được lưu thành thuộc tính cố định.
+
+#### Traceability
+- **Parent FR:** [FR-35](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35).
+- **Relevant BR:** [BR-42](../srs/BUSINESS-RULES.md#br-42) (đối tượng loại trừ); [BR-48](../srs/BUSINESS-RULES.md#br-48) (quyền sở hữu hồ sơ).
+- **Relevant NFR:** [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08), [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09), [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20).
+
+#### Acceptance Coverage
+- [AC-35.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35) — Ngày sinh và điều kiện tuổi/phạm vi.
+- [AC-35.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35) — Kiểm tra chiều cao và cân nặng.
+- [AC-35.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35) — Bảo vệ dữ liệu hồ sơ.
+
+<a id="uc-35-2"></a>
+### UC-35.2 — Xem BMI và phân loại thể trạng tham khảo
+
+#### Goal
+Cho Member xem BMI tham khảo được tính từ hồ sơ đã lưu, không coi đó là chẩn đoán y tế.
+
+#### Primary Actor
+`Member` đã đăng nhập.
+
+#### Supporting Actor
+Hệ thống tính toán dinh dưỡng nội bộ.
+
+#### Trigger
+Member mở hồ sơ dinh dưỡng đã có thông số hợp lệ.
+
+#### Preconditions
+Member đã xác nhận đủ điều kiện; hồ sơ có chiều cao và cân nặng hợp lệ.
+
+#### Main Flow
+1. Member mở hồ sơ dinh dưỡng.
+2. Hệ thống hiển thị tuyên bố từ chối trách nhiệm y tế.
+3. Hệ thống tính BMI từ cân nặng và chiều cao, làm tròn một chữ số thập phân.
+4. Hệ thống hiển thị BMI cùng phân loại thể trạng tham khảo và cảnh báo đây không phải chẩn đoán.
+
+#### Postconditions
+BMI và phân loại tham khảo được hiển thị riêng tư cho Member; dữ liệu hồ sơ không bị thay đổi.
+
+#### Traceability
+- **Parent FR:** [FR-35](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35).
+- **Relevant BR:** [BR-39](../srs/BUSINESS-RULES.md#br-39) (BMI chỉ mang tính tham khảo); [BR-41](../srs/BUSINESS-RULES.md#br-41) (ranh giới thông tin y tế).
+- **Relevant NFR:** [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08), [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09), [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20).
+
+#### Acceptance Coverage
+- [AC-35.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35) — Hiển thị disclaimer y tế.
+- [AC-35.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35) — Tính và trình bày BMI tham khảo.
+- [AC-35.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35) — Không lộ dữ liệu trên hồ sơ công khai.
+
+<a id="uc-35-3"></a>
+### UC-35.3 — Xem nhu cầu tham khảo hằng ngày cho 9 chỉ tiêu dinh dưỡng
+
+#### Goal
+Cho Member xem bảng nhu cầu dinh dưỡng hằng ngày ước tính từ hồ sơ hợp lệ.
+
+#### Primary Actor
+`Member` đã đăng nhập.
+
+#### Supporting Actor
+Hệ thống tính toán dinh dưỡng nội bộ và dữ liệu tham khảo USDA/NIH.
+
+#### Trigger
+Member mở phần nhu cầu dinh dưỡng trong hồ sơ cá nhân.
+
+#### Preconditions
+Member đã xác nhận đủ điều kiện và đã lưu các thông số hồ sơ cần thiết.
+
+#### Main Flow
+1. Member mở phần nhu cầu dinh dưỡng.
+2. Hệ thống xác định thông số hồ sơ đã lưu và tính mức tham khảo theo phương pháp hiện hành trong FR-35.
+3. Hệ thống hiển thị 9 chỉ tiêu cùng đơn vị đo và disclaimer y tế.
+
+#### Exception Flows
+- Nếu hồ sơ thiếu hoặc không còn đủ điều kiện, hệ thống không tính nhu cầu cá nhân hóa và hướng dẫn Member cập nhật hồ sơ hoặc xác nhận phạm vi hỗ trợ theo FR-38.
+
+#### Postconditions
+Bảng 9 chỉ tiêu được hiển thị cho Member để tham khảo khi xem dinh dưỡng thực đơn hoặc yêu cầu gợi ý AI.
+
+#### Traceability
+- **Parent FR:** [FR-35](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35).
+- **Relevant BR:** [BR-41](../srs/BUSINESS-RULES.md#br-41) (ranh giới thông tin y tế); [BR-43](../srs/BUSINESS-RULES.md#br-43) (đơn vị khẩu phần).
+- **Relevant NFR:** [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08), [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09), [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20).
+
+#### Acceptance Coverage
+- [AC-35.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35) — Hiển thị disclaimer y tế.
+- [AC-35.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35) — Trình bày đầy đủ 9 chỉ tiêu.
+- [AC-35.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35) — Không lộ dữ liệu trên hồ sơ công khai.
 
 ---
 
@@ -51,41 +142,131 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35).
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36).
 
-#### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
-- **Tiền điều kiện:**
-  - Member đã đăng nhập tài khoản hợp lệ (FR-03).
-  - Member đã hoàn thành hồ sơ dinh dưỡng cá nhân (FR-35) và xác nhận phạm vi hỗ trợ (FR-38).
-  - Member đã cấu hình tối thiểu trường phái ăn chay và dị ứng (FR-31).
-  - Tài khoản Member có quyền dùng AI lập thực đơn theo gói Pro còn hiệu lực (FR-10, BR-02, BR-03).
-- **Kích hoạt (Trigger):**
-  - Member nhấn nút "Nhờ AI lập thực đơn dinh dưỡng" trên giao diện Lịch ăn tuần hoặc trang Dinh dưỡng cá nhân.
+<a id="uc-36-1"></a>
+### UC-36.1 — Yêu cầu AI tạo thực đơn tham khảo
 
-#### 4. Luồng xử lý chi tiết (Flows)
-- **Luồng chính (Main Flow):**
-  - Bước 1: Member chọn phạm vi lập menu (1 ngày hoặc 7 ngày trong tuần) và xác nhận các tiêu chí ưu tiên (giữ nguyên loại trừ dị ứng, ưu tiên trường phái ăn chay hiện tại).
-  - Bước 2: Member nhấn "Tạo thực đơn bằng AI".
-  - Bước 3: Backend kiểm tra quyền tính năng AI lập thực đơn theo gói Pro của tài khoản trước khi gọi Gemini (FR-10, BR-02, BR-03).
-  - Bước 4: Hệ thống truy vấn kho công thức nội bộ để trích xuất tập hợp ứng viên (Candidate Pool) thỏa mãn các điều kiện ngặt nghèo:
-    - Trạng thái công thức là đang công khai (`Public`).
-    - Phù hợp với trường phái ăn chay và loại trừ hoàn toàn các thành phần dị ứng của Member (BR-30, BR-31).
-    - Có 100% nguyên liệu đã được định lượng chuẩn hóa theo gram và ánh xạ đầy đủ 9 chỉ tiêu dinh dưỡng từ danh mục dinh dưỡng nội bộ (BR-40, BR-46). Các công thức chứa nguyên liệu chưa có dữ liệu dinh dưỡng bị loại bỏ hoàn toàn khỏi pool (BR-50).
-  - Bước 5: Hệ thống gửi prompt kèm danh sách metadata của các công thức ứng viên (ID, tên món, 9 chỉ số dinh dưỡng/khẩu phần) và mục tiêu dinh dưỡng tham khảo của Member tới Google Gemini AI (NFR-04 $\le 8$ giây). Prompt bắt buộc yêu cầu AI chỉ được ghép nối các ID công thức có sẵn, tuyệt đối không tự tạo công thức mới (BR-38).
-  - Bước 6: Google Gemini phản hồi cấu trúc menu được đề xuất phân bổ vào 3 bữa ăn cố định (Sáng, Trưa, Tối) kèm đoạn giải trình ngắn gọn lý do phân bổ.
-  - Bước 7: Hệ thống xác thực kết quả AI hợp lệ; không trừ quota sử dụng theo lượt/ngày.
-  - Bước 8: Hệ thống hiển thị bản xem trước (Preview) thực đơn được đề xuất kèm bảng tổng hợp 9 chỉ tiêu dinh dưỡng dự kiến và cảnh báo từ chối trách nhiệm y tế (BR-39, BR-41).
-  - Bước 9: Member xem lại từng món, có thể loại bỏ hoặc giữ nguyên, sau đó nhấn "Lưu vào Lịch ăn".
-  - Bước 10: Hệ thống ghi nhận các món được chọn vào các vị trí bữa tương ứng trong Lịch ăn tuần của Member (BR-35, BR-36, BR-37).
-- **Luồng thay thế (Alternative Flows):**
-  - *AF-36.1 (Kho công thức tin cậy không đủ đa dạng):* Nếu số lượng công thức đạt chuẩn dinh dưỡng tin cậy không đủ để lấp đầy 21 bữa ăn trong tuần mà không bị trùng lặp, hệ thống thông báo cho Member biết phạm vi kho công thức hiện tại và cho phép AI lặp lại công thức ở các ngày khác nhau hoặc đề xuất thực đơn cho số ngày ít hơn.
-  - *AF-36.2 (Member hủy bỏ kết quả gợi ý):* Member có thể đóng cửa sổ xem trước mà không lưu vào Lịch ăn; hệ thống không tính quota theo lượt/ngày.
-- **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-36.1 (Không có quyền tính năng):* Nếu tài khoản không có gói Pro còn hiệu lực, Backend chặn trước khi gọi Gemini và hướng dẫn nâng cấp gói phù hợp (FR-10, BR-02, BR-03).
-  - *EF-36.2 (Lỗi kết nối Gemini hoặc phản hồi quá 8 giây):* Nếu dịch vụ AI gặp sự cố hoặc timeout vượt quá 8 giây (NFR-04), hệ thống hủy yêu cầu và thông báo lỗi kỹ thuật thân thiện (BR-04); không có quota ngày để trừ.
-  - *EF-36.3 (AI sinh công thức ngoài danh mục):* Nếu phản hồi của AI chứa ID không nằm trong Candidate Pool đã gửi, hệ thống tự động lọc bỏ các mục không hợp lệ trước khi hiển thị cho Member.
+#### Goal
+Yêu cầu AI đề xuất thực đơn dựa trên hồ sơ dinh dưỡng và ràng buộc ăn chay của Member.
 
-#### 5. Hậu điều kiện (Postconditions)
-- Khi Member xác nhận lưu, các món ăn từ công thức công khai được thêm vào các bữa ăn trong Lịch ăn tuần của Member.
-- Quyền tính năng theo gói không thay đổi sau yêu cầu; không áp dụng quota lượt/ngày.
+#### Primary Actor
+`Member` đã đăng nhập.
+
+#### Supporting Actors
+Google Gemini; hệ thống kiểm tra entitlement và kho công thức nội bộ.
+
+#### Trigger
+Member chọn yêu cầu tạo thực đơn dinh dưỡng từ Lịch ăn tuần hoặc khu vực dinh dưỡng.
+
+#### Preconditions
+- Member có hồ sơ dinh dưỡng hợp lệ (FR-35), đã xác nhận phạm vi hỗ trợ (FR-38), và có thông tin ăn chay/dị ứng cần thiết (FR-31).
+- Member có gói Pro còn hiệu lực cho tính năng này (FR-10).
+
+#### Main Flow
+1. Member chọn tạo thực đơn và phạm vi ngày/tuần được FR-36 hỗ trợ.
+2. Backend xác minh entitlement Pro trước khi gọi Gemini.
+3. Hệ thống lấy các Recipe Post công khai có dữ liệu dinh dưỡng đáng tin cậy, phù hợp với loại ăn chay và dị ứng của Member.
+4. Hệ thống gửi cho Gemini các ứng viên nội bộ cùng dữ liệu hồ sơ cần thiết để đề xuất thực đơn; yêu cầu chỉ chọn ID công thức có sẵn.
+5. Hệ thống nhận kết quả để tiếp tục UC-36.2.
+
+#### Alternative Flows
+- Nếu kho công thức không đủ cho phạm vi đã chọn, hệ thống thông báo giới hạn dữ liệu và cho phép đề xuất phạm vi ngắn hơn hoặc lặp món ở ngày khác theo FR-36.
+
+#### Exception/Security Flows
+- Nếu entitlement không hợp lệ, Backend từ chối trước khi gọi Gemini và hướng dẫn nâng cấp.
+- Nếu thiếu hồ sơ hoặc ràng buộc bắt buộc, không gọi Gemini và hướng dẫn Member hoàn thiện dữ liệu theo BR-31.
+- Nếu provider lỗi hoặc vượt thời gian phản hồi theo NFR-04, hệ thống thông báo lỗi; entitlement không bị thay đổi.
+- Candidate pool loại bỏ công thức không công khai, không phù hợp dị ứng/loại ăn chay hoặc thiếu dữ liệu dinh dưỡng đáng tin cậy.
+
+#### Postconditions
+Khi tạo thành công, có kết quả đề xuất cần được hệ thống xác thực và trình bày; chưa có thay đổi nào được ghi vào Meal Plan.
+
+#### Traceability
+- **Parent FR:** [FR-36](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36).
+- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02), [BR-03](../srs/BUSINESS-RULES.md#br-03), [BR-30](../srs/BUSINESS-RULES.md#br-30), [BR-31](../srs/BUSINESS-RULES.md#br-31), [BR-40](../srs/BUSINESS-RULES.md#br-40), [BR-50](../srs/BUSINESS-RULES.md#br-50).
+- **Relevant NFR:** [NFR-04](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-04), [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08), [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09), [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20).
+
+#### Acceptance Coverage
+- [AC-36.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Chỉ dùng ứng viên công khai, đủ dữ liệu dinh dưỡng.
+- [AC-36.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Tuân thủ loại ăn chay và dị ứng.
+- [AC-36.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Kiểm tra Pro trước khi gọi Gemini.
+- [AC-36.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Xử lý lỗi provider mà không đổi entitlement.
+
+<a id="uc-36-2"></a>
+### UC-36.2 — Xem thực đơn gợi ý và giải trình dinh dưỡng
+
+#### Goal
+Giúp Member xem, kiểm tra và chọn món từ kết quả AI trước khi áp dụng.
+
+#### Primary Actor
+`Member`.
+
+#### Supporting Actor
+Hệ thống xác thực kết quả AI và tính tổng dinh dưỡng tham khảo.
+
+#### Trigger
+Kết quả tạo thực đơn từ UC-36.1 đã sẵn sàng.
+
+#### Preconditions
+Hệ thống đã nhận được phản hồi AI cho yêu cầu hợp lệ.
+
+#### Main Flow
+1. Hệ thống kiểm tra mỗi món được đề xuất khớp với Recipe Post đang công khai trong candidate pool.
+2. Hệ thống loại bỏ mục không hợp lệ.
+3. Hệ thống trình bày danh sách món, giải trình ngắn và bảng tổng hợp dinh dưỡng tham khảo cùng disclaimer y tế.
+4. Member xem, giữ lại hoặc bỏ từng món; nếu muốn lưu, Member tiếp tục UC-36.3.
+
+#### Alternative Flows
+- Member đóng bản xem trước hoặc hủy đề xuất; Meal Plan không thay đổi.
+
+#### Exception Flows
+- Kết quả không chứa công thức hợp lệ: hệ thống không trình bày món ngoài kho công thức và thông báo không có kết quả phù hợp.
+
+#### Postconditions
+Member đã xem kết quả; trạng thái Meal Plan không đổi cho tới khi xác nhận UC-36.3.
+
+#### Traceability
+- **Parent FR:** [FR-36](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36).
+- **Relevant BR:** [BR-38](../srs/BUSINESS-RULES.md#br-38) (không tự tạo công thức); [BR-39](../srs/BUSINESS-RULES.md#br-39), [BR-41](../srs/BUSINESS-RULES.md#br-41) (thông tin dinh dưỡng tham khảo).
+
+#### Acceptance Coverage
+- [AC-36.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Kết quả dựa trên ứng viên đủ điều kiện.
+- [AC-36.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Loại bỏ công thức ngoài hệ thống.
+- [AC-36.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Kết quả tuân thủ ràng buộc ăn chay/dị ứng.
+
+<a id="uc-36-3"></a>
+### UC-36.3 — Xác nhận áp dụng thực đơn gợi ý vào Lịch ăn tuần
+
+#### Goal
+Cho Member áp dụng các món đã chọn từ bản xem trước vào các ô bữa tương ứng trong Meal Plan tuần.
+
+#### Primary Actor
+`Member` đã đăng nhập.
+
+#### Trigger
+Member xác nhận lưu các món trong bản xem trước.
+
+#### Preconditions
+Member đang xem kết quả hợp lệ từ UC-36.2 và có quyền cập nhật Meal Plan của chính mình.
+
+#### Main Flow
+1. Member xác nhận áp dụng các món đã chọn.
+2. Hệ thống chuyển các món đã xác nhận qua cùng ranh giới cập nhật Meal Plan tuần mà FR-09 sở hữu.
+3. Hệ thống cập nhật các vị trí bữa tương ứng theo quy tắc hiện hành; không tạo pipeline ghi Meal Plan riêng cho FR-36.
+4. Hệ thống thông báo việc áp dụng hoàn tất.
+
+#### Alternative Flows
+- Member chưa xác nhận hoặc hủy thao tác: không ghi hoặc thay đổi Meal Plan.
+
+#### Postconditions
+Chỉ các món được Member xác nhận mới được áp dụng; Meal Plan được cập nhật theo luồng chung FR-09.
+
+#### Traceability
+- **Parent FR:** [FR-36](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36).
+- **Related FR:** [FR-09](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) (Meal Plan tuần và cập nhật các bữa).
+- **Relevant BR:** [BR-35](../srs/BUSINESS-RULES.md#br-35), [BR-36](../srs/BUSINESS-RULES.md#br-36), [BR-37](../srs/BUSINESS-RULES.md#br-37).
+
+#### Acceptance Coverage
+- [AC-36.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Không ghi Meal Plan trước khi Member xác nhận.
 
 ---
 

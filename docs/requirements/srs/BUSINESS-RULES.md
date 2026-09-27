@@ -1,6 +1,6 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.1.1
+> **Version:** v2.2.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -240,10 +240,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-31"></a>
-### BR-31 — Không gọi AI khi chặn do thiếu hồ sơ
+### BR-31 — Không gọi AI khi thiếu hồ sơ
 
 - **Mã quy tắc:** BR-31
-- **Nội dung:** Khi chặn AI cá nhân hóa vì thiếu hồ sơ dinh dưỡng/sức khỏe tối thiểu, backend không gửi yêu cầu tới Gemini. Giá trị để trống không được tự hiểu là người dùng xác nhận “Không có”.
+- **Nội dung:** Khi chặn AI cá nhân hóa vì thiếu hồ sơ sở thích hoặc dữ liệu dinh dưỡng/sức khỏe tối thiểu bắt buộc cho tính năng đó, backend không gửi yêu cầu tới Gemini. Giá trị để trống không được tự hiểu là người dùng xác nhận “Không có”.
 
 ---
 

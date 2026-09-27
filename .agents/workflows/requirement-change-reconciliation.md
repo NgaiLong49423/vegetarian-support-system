@@ -6,7 +6,7 @@ Reconcile an accepted requirement change across authoritative documentation, dep
 
 ## Use When
 
-Use after an existing FR/BR/NFR is semantically changed, deferred, moved out of scope, retired, reactivated, split, or otherwise changes in a way that can affect linked artifacts.
+Use after an existing FR/BR/NFR changes semantically, enters or leaves the current SRS registry, splits, or otherwise changes in a way that can affect linked artifacts.
 
 ## Primary Skills
 
@@ -22,9 +22,9 @@ Throughout this workflow:
 
 - preserve established requirement IDs;
 - do not renumber remaining requirements to fill gaps;
-- do not reuse retired/out-of-scope IDs for new requirements;
+- do not reuse stable IDs absent from the current baseline for new requirements;
 - preserve historical Issue mappings;
-- do not infer lifecycle transitions from implementation progress;
+- do not infer current scope from implementation progress;
 - do not mutate GitHub unless authorized by the current task or adopted workflow.
 
 ## Procedure
@@ -34,17 +34,17 @@ Throughout this workflow:
 Confirm:
 
 - affected requirement ID(s);
-- previous accepted state/meaning;
-- newly authorized state/meaning;
-- whether the change is semantic, lifecycle-only, editorial, or structural.
+- previous accepted scope/meaning;
+- newly authorized scope/meaning;
+- whether the change is semantic, current-scope, editorial, or structural.
 
-If the new state is not authorized or explicit, stop.
+If the new scope or meaning is not authorized or explicit, stop.
 
 ### Step 2 — Update Authoritative Requirement Sources
 
 Use `markdown-documentation` to apply the accepted change to the authoritative requirement source(s).
 
-For a modular SRS, preserve the root registry's ownership of requirement existence/stable ID/lifecycle and the registered child document's ownership of detailed specification, when that is the repository's adopted model.
+For this repository's v2 baseline, preserve the root registry's ownership of current requirement presence/stable ID and the registered child document's ownership of detailed specification.
 
 ### Step 3 — Update Metadata if Required
 
@@ -62,11 +62,11 @@ If requirement-linked Issues exist or Issue synchronization is requested, use `s
 
 Reconcile by stable requirement ID, not title similarity alone.
 
-Examples are governed by that skill, including `ACTIVE -> DEFERRED`, `ACTIVE -> OUT_OF_SCOPE`, reactivation, completed historical work, and requirement splits.
+Examples are governed by that skill, including an FR entering or leaving the current registry, completed historical work, and requirement splits.
 
 ### Step 6 — Evaluate Changelog Impact
 
-Use `changelog-automatic` only when the accepted change is meaningful under repository changelog policy. A lifecycle change is not automatically changelog-worthy.
+Use `changelog-automatic` only when the accepted change is meaningful under repository changelog policy.
 
 ### Step 7 — Evaluator–Optimizer Quality Gate
 
@@ -76,10 +76,10 @@ Run `evaluator-optimizer.md` on the reconciled state when the change affects mul
 
 Pass only when:
 
-- authoritative requirement sources agree on the new state/meaning;
+- authoritative requirement sources agree on the new scope/meaning;
 - no stable identifier was renumbered or reused;
 - directly affected documentation is consistent or explicitly records an approved open item;
-- Issue mappings preserve history and match explicit lifecycle;
+- Issue mappings preserve history and match current registry scope;
 - no remote mutation was performed without authorization.
 
 ## Output
@@ -87,7 +87,7 @@ Pass only when:
 Report:
 
 1. affected requirement IDs;
-2. semantic/lifecycle changes applied;
+2. semantic/current-scope changes applied;
 3. dependent documents reconciled;
 4. Issue reconciliation actions or planned actions;
 5. changelog action, if any;

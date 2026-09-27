@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.2.0
+> **Version:** v2.3.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -2048,7 +2048,7 @@ Tối ưu hóa quy trình tiếp nhận thông tin phản ánh; chống hành vi
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-31).
 
 #### Mục đích
-Thu thập và chuẩn hóa dữ liệu sở thích, thói quen và các ràng buộc ăn kiêng của thành viên nhằm phục vụ các tính năng gợi ý món ăn và lập thực đơn cá nhân hóa của AI; bảo đảm quyền tự do trải nghiệm của người dùng qua cơ chế Onboarding tùy chọn (cho phép bỏ qua); đồng thời thiết lập cổng kiểm soát dữ liệu đầu vào nghiêm ngặt để đảm bảo an toàn dị ứng, ngăn ngừa AI gợi ý sai lệch và tránh lãng phí hạn mức gọi AI của người dùng.
+Thu thập và chuẩn hóa dữ liệu sở thích, thói quen và các ràng buộc ăn kiêng của thành viên nhằm phục vụ các tính năng gợi ý món ăn và lập thực đơn cá nhân hóa của AI; bảo đảm quyền tự do trải nghiệm của người dùng qua cơ chế Onboarding tùy chọn (cho phép bỏ qua); đồng thời thiết lập cổng kiểm soát dữ liệu đầu vào nghiêm ngặt để đảm bảo an toàn dị ứng và tránh gửi yêu cầu AI tới provider khi thiếu thông tin cần thiết.
 
 #### Cấu trúc hồ sơ sở thích ăn uống (Dietary Preferences Profile)
 
@@ -2328,7 +2328,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **Quy tắc nghiệp vụ liên quan:**
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
   - [BR-30](BUSINESS-RULES.md#br-30): Ranh giới chức năng khi bỏ qua Onboarding.
-  - [BR-31](BUSINESS-RULES.md#br-31): Không gọi AI và không trừ hạn mức khi thiếu hồ sơ.
+  - [BR-31](BUSINESS-RULES.md#br-31): Không gọi AI khi thiếu hồ sơ.
   - [BR-38](BUSINESS-RULES.md#br-38): AI chỉ dùng công thức công khai có sẵn và không tự tạo công thức mới.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-04](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-04): Thời gian tạo thực đơn tuần theo hồ sơ $\le 8$ giây.
@@ -2357,10 +2357,10 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - **When:** Member nhấn nút "Xác nhận áp dụng vào Lịch ăn".
   - **Then:** Hệ thống lưu toàn bộ các món ăn vào Lịch ăn tuần của Member và hiển thị thông báo thành công.
 
-- **AC-34.5 — Chặn an toàn và không trừ hạn mức khi thiếu hồ sơ sở thích:**
+- **AC-34.5 — Chặn yêu cầu AI khi thiếu hồ sơ sở thích:**
   - **Given:** Member chưa hoàn thành 3 thông tin tối thiểu trong hồ sơ sở thích theo FR-31.
   - **When:** Member nhấn yêu cầu AI gợi ý món.
-  - **Then:** Hệ thống dừng xử lý ngay, không gửi request tới Gemini, không trừ hạn mức và hiển thị hướng dẫn bổ sung hồ sơ (BR-31).
+  - **Then:** Hệ thống dừng xử lý trước khi gọi Gemini và hiển thị hướng dẫn bổ sung hồ sơ (BR-31).
 - **AC-34.6 — Gợi ý theo nguyên liệu vẫn tuân thủ trường phái ăn chay và dị ứng:**
   - **Given:** Member đã khai báo trường phái ăn chay và dị ứng trong hồ sơ FR-31, rồi yêu cầu gợi ý món theo nguyên liệu sẵn có.
   - **When:** Hệ thống trả về các Recipe Post được gợi ý.
@@ -2480,7 +2480,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - [BR-04](BUSINESS-RULES.md#br-04): Xử lý lỗi provider và timeout AI.
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
   - [BR-30](BUSINESS-RULES.md#br-30): Ranh giới chức năng khi bỏ qua Onboarding.
-  - [BR-31](BUSINESS-RULES.md#br-31): Không gọi AI và không trừ hạn mức khi thiếu hồ sơ.
+  - [BR-31](BUSINESS-RULES.md#br-31): Không gọi AI khi thiếu hồ sơ.
   - [BR-35](BUSINESS-RULES.md#br-35): Độc lập vòng đời giữa Công thức đã lưu và Lịch ăn.
   - [BR-36](BUSINESS-RULES.md#br-36): Quy tắc 3 loại bữa ăn cố định trong Lịch ăn MVP.
   - [BR-37](BUSINESS-RULES.md#br-37): Tính duy nhất của công thức trong cùng một bữa ăn ngày.
@@ -2518,7 +2518,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **AC-36.6 (Lỗi kỹ thuật không làm thay đổi quyền tính năng):**
   - *Given* Member có gói Pro hợp lệ gửi yêu cầu tạo thực đơn AI,
   - *When* dịch vụ AI gặp lỗi kết nối hoặc thời gian phản hồi vượt quá 8 giây,
-  - *Then* hệ thống thông báo lỗi tới người dùng; quyền gói Pro không đổi và không có quota lượt/ngày bị trừ.
+  - *Then* hệ thống thông báo lỗi tới người dùng và quyền gói Pro không đổi.
 
 ---
 
@@ -3372,10 +3372,10 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* người dùng gửi câu hỏi nhưng dịch vụ AI bên ngoài gặp lỗi kết nối hoặc quá thời gian phản hồi quy định tại NFR-03,
   - *When* hệ thống xử lý ngoại lệ,
   - *Then* hệ thống hiển thị thông báo lỗi kỹ thuật thân thiện và ghi error log kỹ thuật (BR-04, NFR-18).
-- **AC-51.8 (Trả lời câu hỏi hợp lệ trong ngữ cảnh chung):**
+- **AC-51.8 (Hiển thị phản hồi AI cho câu hỏi hợp lệ trong ngữ cảnh chung):**
   - *Given* Guest hoặc Member hỏi Chatbot về ăn chay, kiến thức ẩm thực hoặc kỹ thuật chế biến trong ngữ cảnh chung,
   - *When* câu hỏi hợp lệ được xử lý thành công,
-  - *Then* Chatbot trả lời phù hợp với câu hỏi và hiển thị nhãn AI.
+  - *Then* giao diện hiển thị phản hồi AI không rỗng cùng nhãn AI. Chất lượng ngữ nghĩa và độ chính xác của nội dung được đánh giá theo NFR-25; thời gian phản hồi được đo theo NFR-03.
 
 ---
 

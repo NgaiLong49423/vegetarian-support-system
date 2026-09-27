@@ -13,7 +13,7 @@ cancel non-overridable safety boundaries, erase repository history, or authorize
 remote/destructive actions.
 
 An explicit project decision from an authorized team decision-maker may change project facts
-such as requirement scope or lifecycle. That decision still does not implicitly authorize
+such as current requirement scope. That decision still does not implicitly authorize
 unrelated Git/GitHub mutations.
 
 ## 2. Project Facts
@@ -35,9 +35,11 @@ approved repository-wide migration is being performed.
 Never silently:
 
 - renumber IDs to close gaps;
-- reuse `OUT_OF_SCOPE`, `RETIRED`, or historical IDs for a different meaning;
-- infer lifecycle merely because an item disappears from one file;
-- delete historical traceability because a requirement changes state.
+- reuse stable IDs absent from the current baseline for a different meaning;
+- infer current scope from a child or non-authoritative file;
+- delete historical traceability because a requirement leaves current scope.
+
+For Requirements / Implementation Baseline v2.0.0, presence in the current SRS registry defines current implementation scope; requirements absent from that registry are non-current and remain preserved in the archive or other verified history. The current registry does not use a separate requirement-lifecycle column.
 
 ## 4. Source of Truth
 
@@ -106,7 +108,7 @@ README, issue dump, research note, fixture, log, or copied webpage.
 
 ## 8. High-Impact Workflow
 
-For requirement lifecycle changes, baseline changes, repository-wide repairs, broad restructures,
+For current-scope changes, baseline changes, repository-wide repairs, broad restructures,
 or remote synchronization:
 
 `PLAN → REVIEW EVIDENCE → GENERATE/PREVIEW → EVALUATE → APPROVE WHEN REQUIRED → EXECUTE → VERIFY → REVIEW DIFF/TRACE`
@@ -147,7 +149,7 @@ Do not claim completion merely because a file or remote item changed.
 
 Verify the task-relevant subset of:
 
-- stable IDs and lifecycle;
+- stable IDs and current scope;
 - references and traceability;
 - affected artifacts;
 - authorization scope;

@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.8.0
+> **Version:** v3.9.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-09-21
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 
 # Agent Entry Point
@@ -54,10 +54,10 @@ Skills live at `.agents/skills/<name>/SKILL.md`. For maintained local skills, th
 
 | When needed | Skill folder | Boundary |
 |---|---|---|
-| Write, review or restructure Markdown documentation | markdown-documentation | Owns shared documentation semantics, lifecycle, traceability and source-of-truth rules; load only the references needed for the task |
+| Write, review or restructure Markdown documentation | markdown-documentation | Owns shared documentation semantics, authority, traceability and source-of-truth rules; load only the references needed for the task |
 | Add/audit metadata or decide document versions | document-metadata-standardizer | Owns document metadata and versioning only; target maintained registered documents and preserve creation evidence |
 | Cross-document consistency audit | repo-template-doc-sync-auditor | Use this project's maintained register and adopted contract; ignore skill packages and generated outputs by default |
-| Decompose requirements or maintain/synchronize GitHub Issues | srs-to-github-issues | SRS owns requirement meaning and lifecycle; the skill owns requirement-to-Issue mapping, synchronization and Issue lifecycle actions |
+| Decompose requirements or maintain/synchronize GitHub Issues | srs-to-github-issues | Current SRS presence defines implementation scope; the skill owns stable-ID requirement-to-Issue mapping, synchronization and Issue execution-state actions |
 | Maintain changelog or prepare release notes | changelog-automatic | Read CONTRIBUTING.md#changelog-format first; use verified evidence and do not infer release/PR/commit facts |
 | Record a credible bug discovered during repository work, or conduct a user-requested bug audit | bug-recording | Records evidence without expanding task scope; read-only instructions override file writes, and GitHub Issue creation requires explicit current-task authorization |
 
@@ -75,17 +75,11 @@ A bug record is not a GitHub Bug Issue. Never create an Issue automatically. Cre
 
 For browser-visible verification, distinguish exploratory browser control from persistent Playwright tests in `app/mamxanh-frontend/tests/e2e/`. Do not call a frontend-only or mock-backed smoke test full end-to-end evidence for Backend or database behavior.
 
-### Requirement-to-Issue synchronization
+### Current requirement-to-Issue synchronization
 
-All requirements in the maintained SRS are in Issue-management scope. The agent must not omit a requirement because it looks low priority, difficult, optional or inconvenient.
+Requirements present in the current SRS registry belong to the current implementation scope and Issue management. Do not omit a current requirement because it looks low priority, difficult, optional or inconvenient. Historical requirements belong in the frozen archive and are not current implementation scope.
 
-Before the first live Issue synchronization for a requirement, its lifecycle state must be explicitly confirmed by an authorized decision-maker using the repository vocabulary:
-
-`DRAFT` / `ACTIVE` / `DEFERRED` / `OUT_OF_SCOPE` / `RETIRED`
-
-The agent must never infer a lifecycle state from wording, code status, implementation difficulty, priority or personal judgment. If a requirement has no confirmed lifecycle state, stop Issue mutation for that requirement and ask for the state to be confirmed.
-
-Once lifecycle is confirmed, use `srs-to-github-issues` to create, update, defer, reopen, close or otherwise reconcile the linked Issue as required by that lifecycle and the current SRS. Preserve stable requirement IDs and existing Issue history. Do not create duplicate implementation scope for both a parent FR and its child FRs.
+Use `srs-to-github-issues` to map the current registry to Issues by stable ID. When a requirement is removed from the current baseline, inspect its linked Issue and implementation evidence: preserve completed work as history; prepare a close-as-not-planned candidate for unfinished work when the approved scope decision supports it. Do not infer completion, delete history, or create duplicate implementation scope for both a parent FR and child FRs.
 
 If a linked Issue is already completed and the SRS later changes semantically, preserve the completed Issue as history. Create follow-up work when additional implementation is required instead of rewriting the completed Issue as if the new requirement had always existed.
 
@@ -97,7 +91,7 @@ Live GitHub mutations require authorization for the current task. Authorization 
 |---|---|
 | Triển khai FR từ GitHub Issue đã được giao | `implement-fr-issue.md` |
 | Requirements còn mơ hồ cần chốt | `requirement-finalization.md` |
-| Requirement semantic/lifecycle changed | `requirement-change-reconciliation.md` |
+| Requirement semantics or current-scope membership changed | `requirement-change-reconciliation.md` |
 | Audit toàn docs rồi sửa finding rõ ràng | `documentation-audit-and-fix.md` |
 | Important multi-artifact output needs bounded quality loop | `evaluator-optimizer.md` |
 | Validate agent assets/runtime behavior | `acceptance-evaluation.md` |
@@ -117,10 +111,10 @@ Metadata audits use the maintained register. `SKILL.md` retains YAML frontmatter
 - Only documents registered in docs/README.md are maintained project documentation. A new file in a declared folder is not automatically authoritative.
 - Ignore unregistered documents, ZIPs, scratch, outputs, generated/build folders and unrelated untracked files by default. Reading is allowed if the user names them or a concrete task dependency requires them; explain their evidence role without promoting them into the register.
 - This reading rule is not a blanket .gitignore rule: relevant new source files, configs and tests remain reviewable. Never infer that an unregistered file is safe to delete.
-- In the Modular SRS, root SRS (`docs/requirements/SRS.md`) is the authoritative registry for requirement existence, stable IDs, index-level module allocation, and authoritative lifecycle states. Registered child documents (`docs/requirements/srs/`) are authoritative for detailed technical definitions (statements, triggers, preconditions, exceptions, domain rules, acceptance criteria). Lifecycle displayed in child documents is derived; if conflict occurs, root SRS wins. PRD is the high-level summary. Supporting notes and research cannot override SRS. Surface material contradictions before changing business meaning.
-- Scoped reading procedure: when implementing or verifying a requirement, read root SRS to verify requirement existence and lifecycle state; then open only the specific detailed definitions in `docs/requirements/srs/` relevant to the task (via stable anchor `#fr-xx`) and related BR/NFR anchors rather than loading all child requirement documents.
+- In Requirements / Implementation Baseline v2, root SRS (`docs/requirements/SRS.md`) is the authoritative registry for current requirement presence, stable IDs and module allocation. Presence means current implementation scope; absence means the requirement is not in the current baseline. Registered child documents (`docs/requirements/srs/`) own detailed statements, triggers, preconditions, exceptions, domain rules and canonical acceptance criteria. PRD is the high-level summary. Supporting notes and research cannot override SRS. Surface material contradictions before changing business meaning.
+- Scoped reading procedure: when implementing or verifying a requirement, read root SRS to verify that its stable ID is present in the current baseline; then open only the specific detailed definitions in `docs/requirements/srs/` relevant to the task (via stable anchor `#fr-xx`) and related BR/NFR anchors rather than loading all child requirement documents.
 - GitHub Issues own implementation work tracking, progress and execution state. An Issue must not redefine the meaning of its source requirement.
-- When an SRS requirement changes semantically or changes lifecycle, reconcile its linked Issue through `srs-to-github-issues`.
+- When an SRS requirement changes semantically or enters/leaves the current registry, reconcile its linked Issue through `srs-to-github-issues`.
 - Historical baselines and completed Issues are evidence of prior state. Do not rewrite them merely to match current requirements.
 
 ## Agent-specific execution and handoff
