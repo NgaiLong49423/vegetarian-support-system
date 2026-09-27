@@ -1,6 +1,6 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.6.1
+> **Version:** v1.6.2
 > **Created:** 2026-09-13  
 > **Last Updated:** 2026-09-27
 > **Status:** Active  
@@ -54,7 +54,7 @@ Frontend state management (ngoài React Context) và CSS/UI library vẫn là `T
 | Hibernate | JPA implementation và object-relational mapping | Confirmed | Cung cấp runtime integration cho JPA đã chọn | Tránh schema auto-update không kiểm soát; ORM mapping không thay thế database design |
 | Flyway | Version hóa các thay đổi database có thể thực thi | Confirmed | Migration có thứ tự và review được giúp các environment đồng bộ | Migration đã áp dụng ở môi trường dùng chung không được tùy tiện viết lại |
 
-Các file SQL hiện tại chỉ là placeholder, chưa phải schema được phê duyệt. Migration có thẩm quyền và có thể thực thi chỉ bắt đầu trong Backend sau khi scaffold tồn tại.
+Baseline schema hiện được triển khai tại `database/schema.sql` và Flyway migration `app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql`. Các thay đổi schema tiếp theo phải dùng migration Flyway append-only; JPA/Hibernate không thay thế lịch sử migration.
 
 ## 5. Authentication và Authorization
 
@@ -65,7 +65,7 @@ Các file SQL hiện tại chỉ là placeholder, chưa phải schema được p
 | Google Identity Services (GIS) | Xác thực tài khoản Google 1-click phía Frontend | Confirmed | Trả về Google ID Token an toàn, giảm độ phức tạp so với Authorization Code flow | Phụ thuộc thư viện Google Identity phía client (dùng `@react-oauth/google`) |
 | Google API Client (`GoogleIdTokenVerifier`) | Xác thực Google ID Token tại Backend | Confirmed | Kiểm tra chữ ký số, issuer, audience và expiry với Google JWKS chính thức; trích xuất `google_subject` (`sub`) làm khóa định danh | Thêm dependency `com.google.api-client:google-api-client` vào `pom.xml` |
 | BCrypt | Hash và xác minh password | Confirmed | Cơ chế hash password một chiều có salt tích hợp với Spring Security | Work factor và xử lý input phải được chọn; không được ghi password hoặc hash vào log |
-| Role-based authorization và ownership check | Thực thi quyền Guest/Member/Administrator và ownership của resource | Confirmed | Làm ranh giới role dễ giải thích và kiểm thử | Chỉ kiểm tra role là chưa đủ khi Member chỉ được thay đổi resource của chính mình |
+| Role-based authorization và ownership check | Thực thi quyền Guest, `CUSTOMER`, `EXPERT`, `ADMIN` và ownership của resource | Confirmed | Phân biệt rõ actor chưa xác thực với business role; chỉ `EXPERT` được tạo Recipe Post | Chỉ kiểm tra role là chưa đủ khi Member chỉ được thay đổi resource của chính mình |
 
 ## 6. Media, AI và external service
 

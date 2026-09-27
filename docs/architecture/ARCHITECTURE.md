@@ -1,6 +1,6 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.11.1
+> **Version:** v1.11.2
 > **Created:** 2026-09-13  
 > **Last Updated:** 2026-09-27
 > **Status:** Active  
@@ -118,7 +118,7 @@ Browser request -> backend feature entitlement & rate limit checks -> AiClient (
 - **Resilience:** Cấu hình timeout và tối đa 1 lần retry cho transient errors (mạng, 429, 5xx). Lỗi external AI không làm gián đoạn các tính năng phi AI của ứng dụng.
 - **Output:** Áp dụng Native Structured Outputs (JSON Schema) để nhận kết quả gợi ý món ăn/thực đơn có cấu trúc chặt chẽ.
 
-### 4.5 Capability Google Maps (`OUT_OF_SCOPE`)
+### 4.5 Capability Google Maps không thuộc baseline hiện hành
 
 Tìm kiếm/quản lý nhà hàng và tích hợp Google Maps không thuộc baseline kiến trúc hiện tại. Ứng dụng không quản lý hoặc xác minh dữ liệu nhà hàng bên ngoài.
 
@@ -235,7 +235,7 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 | QA & Testing Tooling | **Confirmed** | JUnit 5 + Mockito + JaCoCo + Codecov (CI reporting) + Testmail (Email E2E testing) + Requestly Pro (FE mocking) |
 | Tích hợp Google Maps | Không thuộc baseline hiện hành | Không chọn dependency hoặc tích hợp Google Maps; ứng dụng không quản lý dữ liệu nhà hàng bên ngoài. |
 | Upload trực tiếp lên Azure | Future option | Xem xét lại khi kích thước file/tải thực tế vượt quá năng lực xử lý của Backend |
-| Module Blog cộng đồng | Out of MVP Scope | Được phân rã tại SRS 3.21; chỉ xem xét kiến trúc sau khi các module cốt lõi hoàn thành |
+| Module Blog cộng đồng | Không thuộc baseline hiện hành | Không có FR hiện hành; chỉ xem xét lại sau một quyết định phạm vi và phân rã yêu cầu mới. |
 | Frontend State & Styling | TBD | Sẽ quyết định cùng React scaffold (React Context / Tailwind CSS / UI library) |
 | Demo Domain Polish | Open Polish | Chọn tên miền `.tech` cụ thể và cấu hình DNS về Vercel trước buổi demo; tên miền chưa được chốt hoặc cấu hình |
 | Azure SQL Cold Start | Operational Note | Kích hoạt database trước 5-10 phút trước khi thuyết trình để tránh độ trễ thức dậy của Serverless |

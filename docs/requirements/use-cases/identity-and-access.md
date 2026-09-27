@@ -1,14 +1,375 @@
 > **Document:** Use Case Specifications — M02
 > **File:** `docs/requirements/use-cases/identity-and-access.md`
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
 # Use Case Specifications — M02
 
 Detailed interaction flows for current-baseline requirements. Stable UC IDs are preserved. The linked FR owns the required behavior and Acceptance Criteria; this document owns actor/system interaction detail.
+
+## Dedicated Actor-Goal Use Cases
+
+<a id="uc-03-1"></a>
+### UC-03.1 — Đăng ký bằng email và mật khẩu
+- **Goal / Primary Actor:** Guest tạo tài khoản mới; Email Provider là supporting system.
+- **Trigger / Preconditions:** Guest gửi form hợp lệ; email chưa tồn tại.
+- **Main Flow:** Backend validate, băm mật khẩu, tạo tài khoản chờ xác minh và gửi email best-effort.
+- **Alternative / Security:** Email trùng hoặc mật khẩu yếu bị từ chối; phản hồi không lộ secret.
+- **Postconditions:** Tài khoản chưa được phép đăng nhập cho tới khi email được xác minh.
+- **Traceability / Acceptance Coverage:** FR-03; NFR-06, NFR-08; [AC-03.1–AC-03.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
+
+<a id="uc-03-2"></a>
+### UC-03.2 — Xác minh địa chỉ email
+- **Goal / Primary Actor:** Guest xác nhận quyền sở hữu email.
+- **Trigger / Preconditions:** Người dùng mở liên kết có token xác minh còn hạn.
+- **Main Flow:** Backend kiểm tra token, đánh dấu email đã xác minh và vô hiệu hóa token.
+- **Alternative / Security:** Token sai/hết hạn bị từ chối và không kích hoạt quyền đăng nhập.
+- **Postconditions:** Email của tài khoản được xác minh theo account-state decision hiện hành khi được chốt.
+- **Traceability / Acceptance Coverage:** FR-03; [AC-03.4, AC-03.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
+
+<a id="uc-03-3"></a>
+### UC-03.3 — Gửi lại email xác minh
+- **Goal / Primary Actor:** Guest nhận token xác minh mới.
+- **Trigger / Preconditions:** Tài khoản tồn tại nhưng email chưa xác minh; đáp ứng resend rate limit.
+- **Main Flow:** Backend vô hiệu hóa token cũ, tạo token mới và yêu cầu Email Provider gửi lại.
+- **Alternative / Security:** Yêu cầu quá nhanh bị rate-limit; phản hồi không hỗ trợ account enumeration.
+- **Postconditions:** Tối đa token hợp lệ mới nhất có thể được sử dụng.
+- **Traceability / Acceptance Coverage:** FR-03; NFR-07, NFR-08; [AC-03.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
+
+<a id="uc-03-4"></a>
+### UC-03.4 — Đăng nhập bằng email và mật khẩu
+- **Goal / Primary Actor:** Guest tạo phiên đăng nhập hợp lệ.
+- **Trigger / Preconditions:** Email đã xác minh; tài khoản không bị khóa quản trị.
+- **Main Flow:** Backend kiểm tra rate limit, xác thực BCrypt, phát access token và rotating refresh session.
+- **Alternative / Security:** Sai credential tăng bộ đếm; lần 5 kích hoạt rate limit 10 phút theo account identifier và IP; không đổi thành admin lock.
+- **Postconditions:** Thành công tạo phiên; thất bại không tạo phiên và không lộ account existence.
+- **Traceability / Acceptance Coverage:** FR-03; NFR-06–NFR-09; [AC-03.6–AC-03.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
+
+<a id="uc-03-5"></a>
+### UC-03.5 — Đăng nhập bằng Google
+- **Goal / Primary Actor:** Guest đăng nhập 1-click; Google Identity Services là supporting system.
+- **Trigger / Preconditions:** Guest cung cấp Google ID Token hợp lệ cho đúng audience.
+- **Main Flow:** Backend xác minh token, tìm/tạo hoặc liên kết tài khoản và phát phiên nội bộ.
+- **Alternative / Security:** Token sai/expired/audience sai bị từ chối; không tin dữ liệu client chưa xác minh.
+- **Postconditions:** Tài khoản có email đã xác minh và phiên hợp lệ.
+- **Traceability / Acceptance Coverage:** FR-03; NFR-08, NFR-09; [AC-03.10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
+
+<a id="uc-03-6"></a>
+### UC-03.6 — Yêu cầu đặt lại mật khẩu
+- **Goal / Primary Actor:** Guest yêu cầu liên kết reset; Email Provider hỗ trợ gửi.
+- **Trigger / Preconditions:** Guest nhập email tại màn hình quên mật khẩu.
+- **Main Flow:** Hệ thống trả thông điệp trung tính và, nếu tài khoản hợp lệ, tạo token 15 phút rồi gửi email.
+- **Alternative / Security:** Email không tồn tại vẫn nhận phản hồi giống nhau; request bị rate-limit khi lạm dụng.
+- **Postconditions:** Không thay mật khẩu ở bước này; token dùng một lần có thể được phát hành.
+- **Traceability / Acceptance Coverage:** FR-03; NFR-07, NFR-08; [AC-03.14](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
+
+<a id="uc-03-7"></a>
+### UC-03.7 — Thiết lập mật khẩu mới
+- **Goal / Primary Actor:** Guest đặt mật khẩu mới bằng reset token hợp lệ.
+- **Trigger / Preconditions:** Token còn hạn/chưa dùng; mật khẩu mới đạt chuẩn.
+- **Main Flow:** Backend validate token, băm/lưu mật khẩu mới, vô hiệu hóa token và thu hồi session cũ.
+- **Alternative / Security:** Token sai/hết hạn hoặc mật khẩu yếu bị từ chối.
+- **Postconditions:** Chỉ mật khẩu mới có hiệu lực; phiên cũ không còn dùng được.
+- **Traceability / Acceptance Coverage:** FR-03; NFR-06, NFR-09; [AC-03.14](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
+
+<a id="uc-03-8"></a>
+### UC-03.8 — Làm mới phiên xác thực
+- **Goal / Primary Actor:** Member/Administrator duy trì phiên bằng rotating refresh token.
+- **Trigger / Preconditions:** Client gửi secure HttpOnly cookie còn hiệu lực; session chưa bị thu hồi.
+- **Main Flow:** Backend xác minh, rotate token, thu hồi token cũ và phát access token mới.
+- **Alternative / Security:** Tái sử dụng token cũ kích hoạt thu hồi session family; token sai không tạo phiên.
+- **Postconditions:** Chỉ refresh token mới nhất hợp lệ.
+- **Traceability / Acceptance Coverage:** FR-03; NFR-09; [AC-03.11, AC-03.12](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
+
+<a id="uc-03-9"></a>
+### UC-03.9 — Đăng xuất
+- **Goal / Primary Actor:** Member/Administrator kết thúc phiên hiện tại.
+- **Trigger / Preconditions:** Actor chọn Đăng xuất hoặc gửi logout request.
+- **Main Flow:** Backend thu hồi session/refresh token và yêu cầu xóa cookie.
+- **Alternative / Security:** Logout lặp vẫn trả trạng thái an toàn; access token cũ hết hiệu lực theo policy.
+- **Postconditions:** Refresh session không thể được dùng lại.
+- **Traceability / Acceptance Coverage:** FR-03; NFR-09; [AC-03.13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
+
+`UC-03.10` là historical non-standalone ID; brute-force rate limiting thuộc security flow của UC-03.4 và [AC-03.7–AC-03.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
+
+<a id="uc-04-1"></a>
+### UC-04.1 — Expert tạo và công khai Recipe Post
+- **Goal / Primary Actor:** Expert công khai công thức hợp lệ.
+- **Trigger / Preconditions:** Actor đăng nhập với quyền Expert và mở form tạo bài.
+- **Main Flow:** Expert nhập dữ liệu; Backend kiểm tra toàn bộ validation/ownership rồi lưu `PUBLISHED`.
+- **Alternative / Security:** Guest, Customer, Admin hoặc dữ liệu sai bị từ chối; không tạo server draft/bản ghi dở dang.
+- **Postconditions:** Recipe Post công khai gắn author từ phiên xác thực.
+- **Traceability / Acceptance Coverage:** FR-04; BR-07, BR-19; [AC-04.1, AC-04.5–AC-04.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-04).
+
+<a id="uc-04-2"></a>
+### UC-04.2 — Expert chỉnh sửa Recipe Post của mình
+- **Goal / Primary Actor:** Expert cập nhật bài do mình sở hữu.
+- **Trigger / Preconditions:** Bài tồn tại, thuộc actor và cho phép self-edit.
+- **Main Flow:** Backend kiểm tra ownership/validation và cập nhật bài công khai.
+- **Alternative / Security:** Người khác hoặc bài bị Admin ẩn không được self-edit.
+- **Postconditions:** Bản hiện hành được cập nhật, tham chiếu tiếp tục trỏ cùng bài.
+- **Traceability / Acceptance Coverage:** FR-04; FR-44; [AC-04.2, AC-04.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-04).
+
+<a id="uc-04-3"></a>
+### UC-04.3 — Expert xóa Recipe Post của mình
+- **Goal / Primary Actor:** Expert gỡ bài do mình sở hữu.
+- **Trigger / Preconditions:** Expert chọn Delete và xác nhận; ownership hợp lệ.
+- **Main Flow:** Backend kiểm tra quyền, thực hiện xóa logic phù hợp và giữ tham chiếu Tombstone.
+- **Alternative / Security:** Người khác bị chặn; thao tác yêu cầu xác nhận an toàn.
+- **Postconditions:** Bài không còn công khai, tham chiếu lịch sử không bị phá vỡ.
+- **Traceability / Acceptance Coverage:** FR-04; FR-44; [AC-04.3, AC-04.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-04).
+
+<a id="uc-05-1"></a>
+### UC-05.1 — Nộp đơn đăng ký Expert
+- **Goal / Primary Actor:** Customer gửi hồ sơ xin quyền đăng bài.
+- **Trigger / Preconditions:** Customer đăng nhập, chưa có đơn `PENDING`.
+- **Main Flow:** Customer điền format; Backend validate và lưu đơn `PENDING`.
+- **Alternative / Security:** Đơn trùng đang chờ bị chặn; đơn bị từ chối trước đó không cấm nộp lại.
+- **Postconditions:** Đơn mới xuất hiện trong hàng chờ Admin.
+- **Traceability / Acceptance Coverage:** FR-05; BR-74; [AC-05.1, AC-05.2, AC-05.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
+
+<a id="uc-05-2"></a>
+### UC-05.2 — Xem và thẩm định danh sách đơn Expert
+- **Goal / Primary Actor:** Administrator xem đơn đang chờ và bằng chứng do Customer nộp.
+- **Trigger / Preconditions:** Admin đăng nhập và mở hàng chờ.
+- **Main Flow:** Hệ thống tải danh sách/chi tiết đơn hợp lệ cho Admin.
+- **Alternative / Security:** Người không phải Admin bị chặn; xử lý đồng thời được bảo vệ.
+- **Postconditions:** Chưa thay đổi role khi chỉ xem.
+- **Traceability / Acceptance Coverage:** FR-05; NFR-09; [AC-05.7, AC-05.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
+
+<a id="uc-05-3"></a>
+### UC-05.3 — Phê duyệt đơn và cấp quyền Expert
+- **Goal / Primary Actor:** Administrator chấp thuận hồ sơ đủ điều kiện.
+- **Trigger / Preconditions:** Đơn còn `PENDING`; Customer còn hoạt động.
+- **Main Flow:** Trong một transaction, hệ thống đánh dấu `APPROVED` và nâng role lên `EXPERT`.
+- **Alternative / Security:** Đơn đã xử lý/tài khoản không đủ điều kiện bị từ chối.
+- **Postconditions:** Người dùng có quyền Expert và không còn đơn pending đó.
+- **Traceability / Acceptance Coverage:** FR-05; BR-74; [AC-05.3, AC-05.7, AC-05.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
+
+<a id="uc-05-4"></a>
+### UC-05.4 — Từ chối đơn Expert
+- **Goal / Primary Actor:** Administrator từ chối hồ sơ với lý do.
+- **Trigger / Preconditions:** Đơn còn `PENDING`.
+- **Main Flow:** Admin nhập lý do; hệ thống validate và chuyển đơn sang `REJECTED`.
+- **Alternative / Security:** Thiếu lý do hoặc xử lý lại bị chặn.
+- **Postconditions:** Role Customer không đổi; kết quả/lý do có thể được người nộp xem.
+- **Traceability / Acceptance Coverage:** FR-05; BR-74; [AC-05.4, AC-05.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
+
+<a id="uc-05-5"></a>
+### UC-05.5 — Customer xem lịch sử đơn Expert
+- **Goal / Primary Actor:** Customer theo dõi các đơn của chính mình.
+- **Trigger / Preconditions:** Customer đăng nhập và mở lịch sử.
+- **Main Flow:** Hệ thống trả danh sách trạng thái, thời điểm và lý do xử lý thuộc owner.
+- **Alternative / Security:** Không cho xem đơn của tài khoản khác.
+- **Postconditions:** Dữ liệu chỉ được đọc.
+- **Traceability / Acceptance Coverage:** FR-05; NFR-09; [AC-05.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
+
+<a id="uc-25-1"></a>
+### UC-25.1 — Công khai trực tiếp Recipe Post sau validation
+- **Goal / Primary Actor:** Expert đưa bài hợp lệ lên Khám phá ngay.
+- **Trigger / Preconditions:** Form hoàn tất; actor có quyền Expert.
+- **Main Flow:** Backend validate toàn bộ field, conversion, cover và author rồi lưu `PUBLISHED`.
+- **Alternative / Security:** Lỗi bất kỳ chặn toàn bộ transaction và trả lỗi theo trường.
+- **Postconditions:** Bài xuất hiện trong truy vấn công khai mà không qua pre-moderation.
+- **Traceability / Acceptance Coverage:** FR-25; BR-07, BR-48; [AC-25.1–AC-25.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-25).
+
+<a id="uc-26-1"></a>
+### UC-26.1 — Gửi báo cáo Recipe Post
+- **Goal / Primary Actor:** Member báo cáo nội dung có vấn đề.
+- **Trigger / Preconditions:** Member đăng nhập; bài tồn tại; không có báo cáo mở trùng của actor.
+- **Main Flow:** Member chọn lý do/mô tả; Backend validate và lưu report `OPEN`.
+- **Alternative / Security:** Guest được yêu cầu đăng nhập; báo cáo trùng bị chặn; bài không tự ẩn.
+- **Postconditions:** Report vào hàng chờ Admin, bài giữ trạng thái tới khi có quyết định.
+- **Traceability / Acceptance Coverage:** FR-26; BR-24, BR-29; [AC-26.1–AC-26.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-26).
+
+<a id="uc-28-1"></a>
+### UC-28.1 — Tiếp nhận báo cáo
+- **Goal / Primary Actor:** Administrator nhận một report để thẩm tra.
+- **Trigger / Preconditions:** Report đang `OPEN`.
+- **Main Flow:** Admin mở report; hệ thống kiểm tra quyền và chuyển atomically sang `IN_REVIEW`.
+- **Alternative / Security:** Report đã được người khác tiếp nhận không bị nhận trùng.
+- **Postconditions:** Report có trạng thái/người xử lý hiện hành.
+- **Traceability / Acceptance Coverage:** FR-28; BR-26; [AC-28.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-28).
+
+<a id="uc-28-2"></a>
+### UC-28.2 — Ra quyết định xử lý báo cáo
+- **Goal / Primary Actor:** Administrator kết luận và áp dụng chế tài hợp lệ.
+- **Trigger / Preconditions:** Report đang `IN_REVIEW` và thuộc quyền xử lý.
+- **Main Flow:** Admin chọn bác bỏ/ẩn bài/khóa tài khoản, nhập lý do; Backend áp dụng transaction và resolve report.
+- **Alternative / Security:** Thiếu lý do bị chặn; hành động trái quyền không thực hiện.
+- **Postconditions:** Report `RESOLVED`, audit/result được lưu và thông báo theo rule.
+- **Traceability / Acceptance Coverage:** FR-28; BR-26; [AC-28.2–AC-28.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-28).
+
+<a id="uc-29-1"></a>
+### UC-29.1 — Người gửi xem lịch sử báo cáo của mình
+- **Goal / Primary Actor:** Member xem trạng thái/kết quả report do mình gửi.
+- **Trigger / Preconditions:** Member đăng nhập và mở lịch sử report.
+- **Main Flow:** Backend lọc theo reporter hiện tại và trả dữ liệu được phép.
+- **Alternative / Security:** Truy cập report người khác bị chặn; danh tính ngoài phạm vi không được lộ.
+- **Postconditions:** Không thay đổi report.
+- **Traceability / Acceptance Coverage:** FR-29; NFR-08, NFR-09; [AC-29.1, AC-29.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-29).
+
+<a id="uc-29-2"></a>
+### UC-29.2 — Tác giả xem kết quả xử lý nội dung
+- **Goal / Primary Actor:** Expert nhận lý do chế tài đối với bài của mình mà không biết reporter.
+- **Trigger / Preconditions:** Report đã có quyết định ảnh hưởng nội dung của actor.
+- **Main Flow:** Hệ thống trả kết luận/lý do đã lọc và liên kết tới nội dung liên quan.
+- **Alternative / Security:** DTO tuyệt đối không chứa danh tính reporter; người ngoài bị chặn.
+- **Postconditions:** Tác giả hiểu quyết định nhưng reporter được bảo vệ.
+- **Traceability / Acceptance Coverage:** FR-29; NFR-08, NFR-09; [AC-29.2, AC-29.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-29).
+
+`AC-29.3` là FR-level administrative acceptance cho quyền xem đầy đủ của Administrator; hành vi xử lý actor-goal nằm tại UC-28.1/UC-28.2.
+
+<a id="uc-31-1"></a>
+### UC-31.1 — Hoàn thành Onboarding sở thích
+- **Goal / Primary Actor:** Member khai báo dữ liệu tối thiểu cho AI cá nhân hóa.
+- **Trigger / Preconditions:** Member mở questionnaire.
+- **Main Flow:** Member chọn loại ăn chay, dị ứng/kiêng và không thích hoặc xác nhận `Không có`; hệ thống validate/lưu.
+- **Alternative / Security:** Thiếu xác nhận bắt buộc bị từ chối; dữ liệu chỉ owner được truy cập.
+- **Postconditions:** Hồ sơ đủ điều kiện cho AI cá nhân hóa nếu cả ba nhóm hoàn tất.
+- **Traceability / Acceptance Coverage:** FR-31; BR-31; [AC-31.1, AC-31.2, AC-31.7, AC-31.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31).
+
+<a id="uc-31-2"></a>
+### UC-31.2 — Bỏ qua Onboarding
+- **Goal / Primary Actor:** Member tiếp tục dùng tính năng thường mà chưa khai báo sở thích.
+- **Trigger / Preconditions:** Questionnaire đang hiển thị.
+- **Main Flow:** Member chọn Skip; hệ thống đóng onboarding và giữ trạng thái hồ sơ chưa đủ.
+- **Alternative / Security:** Khi gọi AI cá nhân hóa, system gate vẫn chặn trước provider.
+- **Postconditions:** Tính năng thường không bị khóa; AI cá nhân hóa chưa mở.
+- **Traceability / Acceptance Coverage:** FR-31; BR-31; [AC-31.3–AC-31.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31).
+
+<a id="uc-31-3"></a>
+### UC-31.3 — Xem và cập nhật hồ sơ sở thích
+- **Goal / Primary Actor:** Member duy trì sở thích/kiêng/dị ứng của mình.
+- **Trigger / Preconditions:** Member đăng nhập và mở hồ sơ sở thích.
+- **Main Flow:** Hệ thống tải dữ liệu owner; Member sửa, validate và lưu.
+- **Alternative / Security:** Trường bắt buộc thiếu bị từ chối; truy cập chéo owner bị chặn.
+- **Postconditions:** AI request mới dùng dữ liệu mới; Meal Plan cũ không tự đổi.
+- **Traceability / Acceptance Coverage:** FR-31; BR-31; [AC-31.7–AC-31.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31).
+
+`UC-31.4` là system gate trước AI cá nhân hóa, không phải actor-goal UC; [AC-31.4–AC-31.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31) giữ ở FR-level/system acceptance.
+
+<a id="uc-32-1"></a>
+### UC-32.1 — Lưu Recipe Post
+- **Goal / Primary Actor:** Member thêm bài công khai vào Saved Recipes.
+- **Trigger / Preconditions:** Member đăng nhập; bài còn công khai.
+- **Main Flow:** Backend tạo quan hệ save duy nhất và trả trạng thái đã lưu.
+- **Alternative / Security:** Save lặp idempotent; Guest được yêu cầu đăng nhập.
+- **Postconditions:** Bài xuất hiện trong danh sách của owner.
+- **Traceability / Acceptance Coverage:** FR-32; BR-33; [AC-32.1, AC-32.2, AC-32.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-32).
+
+<a id="uc-32-2"></a>
+### UC-32.2 — Bỏ lưu Recipe Post
+- **Goal / Primary Actor:** Member xóa bài khỏi Saved Recipes.
+- **Trigger / Preconditions:** Member chọn Unsave; quan hệ có thể tồn tại.
+- **Main Flow:** Backend xóa quan hệ owner-recipe và trả trạng thái chưa lưu.
+- **Alternative / Security:** Yêu cầu lặp không gây lỗi dữ liệu.
+- **Postconditions:** Bài không còn trong danh sách owner.
+- **Traceability / Acceptance Coverage:** FR-32; BR-33; [AC-32.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-32).
+
+<a id="uc-32-3"></a>
+### UC-32.3 — Xem và tìm Saved Recipes
+- **Goal / Primary Actor:** Member duyệt/tìm danh sách đã lưu của mình.
+- **Trigger / Preconditions:** Member đăng nhập và mở Saved Recipes.
+- **Main Flow:** Hệ thống tải danh sách owner, hỗ trợ keyword và phân trang.
+- **Alternative / Security:** Bài nguồn ẩn/xóa hiển thị không khả dụng; không lộ danh sách của người khác.
+- **Postconditions:** Danh sách chỉ được đọc.
+- **Traceability / Acceptance Coverage:** FR-32; [AC-32.4, AC-32.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-32).
+
+<a id="uc-33-1"></a>
+### UC-33.1 — Thêm Recipe Post vào bữa ăn
+- **Goal / Primary Actor:** Member thêm món vào ngày/bữa trong lịch tuần.
+- **Trigger / Preconditions:** Member sở hữu Meal Plan; bài còn công khai; ngày thuộc tuần.
+- **Main Flow:** Backend validate slot, chống trùng cùng bài trong cùng bữa và tạo entry.
+- **Alternative / Security:** Entry trùng/ngày ngoài tuần/plan không thuộc owner bị từ chối.
+- **Postconditions:** Entry mới xuất hiện đúng ngày và meal type.
+- **Traceability / Acceptance Coverage:** FR-33; BR-36, BR-37; [AC-33.1–AC-33.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-33).
+
+<a id="uc-33-2"></a>
+### UC-33.2 — Chuyển món sang bữa hoặc ngày khác
+- **Goal / Primary Actor:** Member sắp xếp lại Meal Plan.
+- **Trigger / Preconditions:** Entry thuộc plan của actor.
+- **Main Flow:** Backend validate destination và cập nhật ngày/meal type atomically.
+- **Alternative / Security:** Destination trùng hoặc ngoài tuần bị từ chối.
+- **Postconditions:** Entry chỉ tồn tại ở vị trí mới.
+- **Traceability / Acceptance Coverage:** FR-33; BR-36, BR-37; [AC-33.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-33).
+
+<a id="uc-33-3"></a>
+### UC-33.3 — Gỡ món khỏi bữa ăn
+- **Goal / Primary Actor:** Member xóa một entry khỏi Meal Plan.
+- **Trigger / Preconditions:** Entry thuộc plan của actor.
+- **Main Flow:** Backend kiểm tra ownership và xóa entry.
+- **Alternative / Security:** Entry không tồn tại/không thuộc owner bị từ chối an toàn.
+- **Postconditions:** Slot không còn entry đó; Recipe Post nguồn không đổi.
+- **Traceability / Acceptance Coverage:** FR-33; [AC-33.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-33).
+
+<a id="uc-33-4"></a>
+### UC-33.4 — Xuất Lịch ăn tuần
+- **Goal / Primary Actor:** Member tải Meal Plan tuần dạng PDF/TXT.
+- **Trigger / Preconditions:** Member sở hữu plan và chọn Export.
+- **Main Flow:** Hệ thống dựng 7 ngày/3 bữa và trả file.
+- **Alternative / Security:** Bài nguồn không khả dụng hiển thị Tombstone; không lộ plan người khác.
+- **Postconditions:** File được tải, plan không thay đổi.
+- **Traceability / Acceptance Coverage:** FR-33; [AC-33.6, AC-33.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-33).
+
+<a id="uc-44-1"></a>
+### UC-44.1 — Chỉnh sửa Recipe Post đã công khai
+- **Goal / Primary Actor:** Expert cập nhật bài của mình.
+- **Trigger / Preconditions:** Bài thuộc actor và không bị Admin ẩn vi phạm.
+- **Main Flow:** Backend kiểm tra ownership/validation và cập nhật trực tiếp bản công khai.
+- **Alternative / Security:** Không đạt validation, không phải owner hoặc đang bị ẩn thì từ chối.
+- **Postconditions:** Tham chiếu tới bài phản ánh dữ liệu mới nhất.
+- **Traceability / Acceptance Coverage:** FR-44; BR-07; [AC-44.1–AC-44.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-44).
+
+<a id="uc-44-2"></a>
+### UC-44.2 — Xóa Recipe Post đã công khai
+- **Goal / Primary Actor:** Expert gỡ bài của mình mà không phá tham chiếu.
+- **Trigger / Preconditions:** Expert xác nhận xóa bài thuộc quyền sở hữu.
+- **Main Flow:** Backend thực hiện xóa logic và chuyển các consumer lịch sử sang Tombstone.
+- **Alternative / Security:** Người không phải owner bị chặn.
+- **Postconditions:** Bài không còn công khai; Meal Plan/history giữ được cấu trúc.
+- **Traceability / Acceptance Coverage:** FR-44; BR-16; [AC-44.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-44).
+
+<a id="uc-49-1"></a>
+### UC-49.1 — Xem Notification Center
+- **Goal / Primary Actor:** Member xem thông báo reply và kết quả moderation.
+- **Trigger / Preconditions:** Member đăng nhập và mở Notification Center.
+- **Main Flow:** Hệ thống tải thông báo của owner theo thời gian/trạng thái đọc.
+- **Alternative / Security:** Dữ liệu reporter bị lọc; không truy cập notification người khác.
+- **Postconditions:** Danh sách được xem, chưa tự đổi trạng thái đọc nếu không có thao tác.
+- **Traceability / Acceptance Coverage:** FR-49; [AC-49.1, AC-49.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-49).
+
+<a id="uc-49-2"></a>
+### UC-49.2 — Đánh dấu thông báo đã đọc
+- **Goal / Primary Actor:** Member quản lý trạng thái đọc một hoặc mọi notification.
+- **Trigger / Preconditions:** Notification thuộc owner.
+- **Main Flow:** Backend cập nhật `read` cho target hoặc toàn bộ của actor.
+- **Alternative / Security:** ID notification của người khác bị chặn.
+- **Postconditions:** Unread count phản ánh trạng thái mới.
+- **Traceability / Acceptance Coverage:** FR-49; NFR-09; [AC-49.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-49).
+
+<a id="uc-49-3"></a>
+### UC-49.3 — Nhận email notification
+- **Goal / Primary Actor:** Member nhận email về reply/kết quả moderation; Email Provider hỗ trợ gửi.
+- **Trigger / Preconditions:** Sự kiện hợp lệ xảy ra và preference cho phép.
+- **Main Flow:** Hệ thống commit nghiệp vụ, enqueue/gửi email bất đồng bộ.
+- **Alternative / Security:** Email lỗi được log/retry theo policy nhưng không rollback nghiệp vụ.
+- **Postconditions:** Email được gửi best-effort; in-app notification vẫn là nguồn trong ứng dụng.
+- **Traceability / Acceptance Coverage:** FR-49; BR-04; [AC-49.2, AC-49.3, AC-49.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-49).
+
+<a id="uc-49-4"></a>
+### UC-49.4 — Cấu hình nhận email notification
+- **Goal / Primary Actor:** Member bật/tắt kênh email.
+- **Trigger / Preconditions:** Member đăng nhập và mở cài đặt tài khoản.
+- **Main Flow:** Member thay preference; Backend kiểm tra owner và lưu.
+- **Alternative / Security:** Preference không ảnh hưởng thông báo in-app bắt buộc; truy cập chéo bị chặn.
+- **Postconditions:** Sự kiện sau đó tuân theo preference email mới.
+- **Traceability / Acceptance Coverage:** FR-49; [AC-49.2, AC-49.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-49).
+
+---
 
 <a id="fr-03"></a>
 ## FR-03 — Đăng ký, đăng nhập và quản lý tài khoản cơ bản

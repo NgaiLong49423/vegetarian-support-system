@@ -1,6 +1,6 @@
 > **Document:** Product Requirements Document — Mâm Xanh
 > **File:** `docs/requirements/PRD.md`
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -42,7 +42,7 @@ Free, Plus và Pro là hạng gói dịch vụ (Subscription Tier) của Custome
 | Thẩm định Chuyên gia | Customer nộp đơn xin cấp quyền Chuyên gia theo format văn bản (`EXPERT_APPLICATION`: kinh nghiệm ẩm thực chay, trường phái chay, tóm tắt công thức mẫu, link tham khảo); Administrator thẩm định và phê duyệt hoặc từ chối kèm lý do; tài khoản được thăng cấp `EXPERT` ngay khi duyệt (`FR-05`) |
 | Đăng bài Chuyên gia | Chỉ tài khoản có vai trò `Chuyên gia` đã được phê duyệt mới được tạo và công khai Recipe Post trực tiếp (hướng dẫn chế biến 10–5.000 ký tự linh hoạt, chọn 1 thể loại món ăn `dish_category`, người đăng không bắt buộc phải viết từng bước nấu ăn, tối đa 5 ảnh với đúng 1 ảnh cover, 1 YouTube URL, nguyên liệu bắt buộc số lượng > 0 và đơn vị có công thức quy đổi hợp lệ); Administrator hậu kiểm sau đăng dựa trên báo cáo vi phạm |
 | Cá nhân hóa | Thu thập sở thích/kiêng/dị ứng tối thiểu trước khi gọi AI cá nhân hóa; lưu trực tiếp trong hồ sơ User và User Ingredient Preference |
-| AI (Feature-based) | Phân quyền theo gói Subscription: Free (AI Chatbot cơ bản), Plus (AI soạn bài giới thiệu/hướng dẫn + AI gợi ý biến tấu món), Pro (Toàn quyền gồm AI Lập thực đơn tuần tự động 7 ngày); Guest được dùng AI Chatbot cơ bản với technical rate limit |
+| AI (Feature-based) | Guest dùng AI Chatbot cơ bản với technical rate limit. Free Member dùng Chatbot và gợi ý món cơ bản theo nguyên liệu (`UC-34.1`). Plus có thêm AI hỗ trợ giới thiệu/hướng dẫn (`FR-21`) và gợi ý biến tấu (`FR-47`). Pro có thêm thực đơn tuần thông thường (`UC-34.2`/`UC-34.3`) và thực đơn theo dinh dưỡng cá nhân (`FR-36`). |
 | Meal planning & Shopping | Lưu công thức vào Saved Recipe, quản lý lịch ăn ngày/tuần ba bữa và Shopping List; chuẩn hóa đơn vị qua `UNIT` và `INGREDIENT_UNIT_CONVERSION` theo 3 chiều (`MASS`, `VOLUME`, `COUNT`), gom nguyên liệu cùng chiều an toàn; cấm hoàn toàn giá trị phi số học như “vừa đủ”. |
 | Xuất file (Export) & Báo cáo | Hỗ trợ Customer xuất dữ liệu công thức chi tiết (.txt/.pdf), kế hoạch thực đơn tuần (.txt/.pdf), báo cáo phân tích dinh dưỡng tuần có thống kê và so sánh 7 ngày ra file PDF chuẩn A4, và Shopping List ra file văn bản (.txt) để tiện theo dõi, nấu nướng và mua sắm |
 | Dinh dưỡng | Tính từ gram nguyên liệu/khẩu phần và danh mục có nguồn USDA/NIH; 100% nguyên liệu công khai đều có đơn vị đo lường và tỷ lệ quy đổi xác định (chặn xuất bản nếu thiếu quy đổi); BMI chỉ tham khảo, không tự kê calorie/macro target từ BMI hoặc weight goal |
@@ -84,9 +84,8 @@ Chỉ số sản phẩm định lượng cho người dùng thật chưa đượ
 
 ## 8. Phụ thuộc và quyết định còn mở
 
-- Gemini model và AI architecture.
 - Công thức/hệ số dinh dưỡng cần nghiên cứu khi triển khai.
-- Provider cho payment/email và chi tiết kỹ thuật webhook/retry; giá/chính sách subscription đã chốt.
+- Chi tiết timeout/retry, error mapping và test fixture cho Gemini, payOS và Brevo; các provider này đã được chọn trong Technology Stack.
 - Thời lượng access token và storage/rotation implementation trong baseline refresh-session đã chốt.
 - Frontend state management, CSS/UI library và deployment.
 

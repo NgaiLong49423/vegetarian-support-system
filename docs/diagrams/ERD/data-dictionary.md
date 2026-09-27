@@ -1,6 +1,6 @@
 > **Document:** Data Dictionary & Traceability Matrix — Mâm Xanh
 > **File:** `docs/diagrams/ERD/data-dictionary.md`
-> **Version:** v0.7.3
+> **Version:** v0.7.4
 > **Created:** 2026-09-23
 > **Last Updated:** 2026-09-27
 > **Status:** Under Review
@@ -200,7 +200,7 @@ Theo đúng yêu cầu của [Issue #63](https://github.com/NgaiLong49423/vegeta
 | `author_id` | Tác giả, gắn với tài khoản Chuyên gia | Identifier, FK | BIGINT | — | NOT NULL | — | — | FK_RECIPE_POST_USER → USER(user_id) [NO ACTION] | — | — | IX_RECIPE_POST_author (Nonclustered) | `USER` 1 → `RECIPE_POST` 0..*; bài bắt buộc thuộc đúng 1 tác giả | FR-04, FR-23 | BR-17 | — | — |
 | `title` | Tiêu đề, 3–120 ký tự | Text | NVARCHAR | 120 | NOT NULL | — | — | — | — | CK_RECIPE_POST_title_len (LEN >= 3) | — | — | FR-16 | BR-19 | AC-16.1 | — |
 | `description` | Mô tả giới thiệu, tối đa 2.000 ký tự, tùy chọn | Text, optional | NVARCHAR | 2000 | NULL | — | — | — | — | — | — | — | FR-16 | BR-20 | — | — |
-| `instructions` 🆕 | Hướng dẫn chế biến dạng văn bản tự do, **bắt buộc** 10–5.000 ký tự sau trim; không ép phân rã theo bước | Text | NVARCHAR | MAX | NOT NULL | — | — | — | — | CK_RECIPE_POST_instructions_len (LEN(instructions) BETWEEN 10 AND 5000) — V1 hiện chỉ chặn `>= 10` | — | Không có bảng lưu các bước chế biến độc lập | FR-16 | BR-19 | AC-16.5 | — |
+| `instructions` 🆕 | Hướng dẫn chế biến dạng văn bản tự do, **bắt buộc** 10–5.000 ký tự sau trim; không ép phân rã theo bước | Text | NVARCHAR | MAX | NOT NULL | — | — | — | — | CK_RECIPE_POST_instructions_len (LEN(instructions) BETWEEN 10 AND 5000) | — | Không có bảng lưu các bước chế biến độc lập | FR-16 | BR-19 | AC-16.5 | — |
 | `dish_category` 🆕 | Thể loại món, **bắt buộc** khi công khai. Lưu technical code, 11 giá trị: `NOODLE_SOUP`, `STIR_FRY`, `HOT_POT`, `BRAISED`, `SOUP`, `FRIED`, `STEAMED`, `SALAD`, `ROLL`, `GRILLED`, `DESSERT`. Frontend hiển thị nhãn tiếng Việt | Enum, `CHECK` 11 giá trị | VARCHAR | 20 | NOT NULL | — | — | — | — | CK_RECIPE_POST_dish_category (11 codes) | IX_RECIPE_POST_dish_category (Nonclustered) | Lưu trực tiếp trên Recipe Post, không dùng bảng danh mục động | FR-08, FR-16 | — | AC-08.3 | — |
 | `vegetarian_type` | Loại ăn chay của món: Vegan / Lacto / Ovo / Lacto-Ovo (4 giá trị) | Enum | VARCHAR | 20 | NOT NULL | — | — | — | — | CK_RECIPE_POST_vegetarian_type ('VEGAN', 'LACTO', 'OVO', 'LACTO_OVO') | — | — | FR-08, FR-16 | — | AC-08.3 | — |
 | `difficulty` | Độ khó chế biến | Enum | VARCHAR | 10 | NOT NULL | — | — | — | — | CK_RECIPE_POST_difficulty ('EASY', 'MEDIUM', 'HARD') | — | — | FR-08 | — | — | — |
@@ -550,7 +550,7 @@ Issue #63 mục D yêu cầu ghi riêng các ràng buộc loại này. Trương 
 | 18 | Bộ đếm Like/Dislike khớp `RECIPE_REACTION` — cập nhật **cùng transaction** | `RECIPE_POST` | Không — tầng service | Q2, 23/09/2026 |
 | 19 | `nutrition_supported = 1` chỉ khi đủ 9 chỉ tiêu khác `NULL` và đủ 3 trường nguồn | `INGREDIENT` | Có — `CK_INGREDIENT_nutrition_supported` | Q5, BR-52 |
 | 20 | **Tổng** `prep_time_min + cook_time_min` phải **> 0** (mỗi vế có thể bằng 0) | `RECIPE_POST` | Có — `CK_RECIPE_POST_total_time` | FR-16, BR-19 |
-| 21 | `instructions` dài **10–5.000** ký tự (V1 hiện chỉ chặn tối thiểu 10) | `RECIPE_POST` | Có — `CK_RECIPE_POST_instructions_len` | FR-16, AC-16.5 |
+| 21 | `instructions` dài **10–5.000** ký tự | `RECIPE_POST` | Có — `CK_RECIPE_POST_instructions_len` | FR-16, AC-16.5 |
 | 22 | `MEAL_PLAN_ENTRY.meal_date` phải nằm trong 7 ngày từ `MEAL_PLAN.week_start_date` | `MEAL_PLAN_ENTRY` | Có — computed column `meal_week_start` + `FK_MPE_MEAL_PLAN` kép (Q8) | FR-09, BR-36 |
 | 23 | Reply thuộc cùng `recipe_id` với bình luận cha | `COMMENT` | Có — `FK_COMMENT_PARENT` gồm `recipe_id` | BR-66 |
 | 24 | Mỗi user tối đa **một** kế hoạch cho mỗi tuần; `week_start_date` là **Thứ Hai** | `MEAL_PLAN` | Có — `UQ_MEAL_PLAN_user_week` + `CK_MEAL_PLAN_week_start_monday` | FR-09, Q3 |

@@ -1,6 +1,6 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-09-11
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -57,7 +57,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - Chẩn đoán, điều trị, tư vấn sức khỏe chuyên nghiệp hoặc thay thế bác sĩ.
 - Lưu nháp Recipe Post trên server và lịch sử hội thoại AI theo tài khoản.
 - Tính nhu cầu dinh dưỡng, AI menu dinh dưỡng hoặc đánh giá menu cho người dưới 18 tuổi, người mang thai/cho con bú hay người cần chế độ ăn điều trị bệnh.
-- Mobile/native app riêng. MVP là web responsive tiếng Việt; thanh toán gói AI thật thuộc phạm vi theo Q26 với giá/chính sách đã chốt, còn lựa chọn payment provider là quyết định kỹ thuật khi tích hợp.
+- Mobile/native app riêng. MVP là web responsive tiếng Việt; thanh toán gói AI thật thuộc phạm vi theo Q26 với giá/chính sách đã chốt. SRS giữ hành vi độc lập provider; Technology Stack hiện chọn payOS cho triển khai.
 - Chức năng tìm kiếm/quản lý nhà hàng chay; không tích hợp Apple Health, Google Fit, wearable hoặc lấy vị trí hiện tại bằng GPS/trình duyệt.
 - Nhận diện ảnh nguyên liệu, tóm tắt video, dự báo mùa/giá nguyên liệu.
 - Upload/lưu file video trực tiếp trên Azure Blob Storage. Phase 1 chỉ lưu link hoặc YouTube video ID.
@@ -399,18 +399,18 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 | YouTube | Phát video nhúng từ link/video ID hợp lệ | Ứng dụng không upload, sao chép hoặc bảo đảm mọi video luôn cho phép nhúng. |
 | Google Maps Platform | Không được sử dụng trong các capability hiện hành | Không phải dependency của baseline; ứng dụng không quản lý hoặc xác minh dữ liệu nhà hàng bên ngoài. |
 | Google authentication và dịch vụ email | Hỗ trợ Google Login, xác minh email, đặt lại mật khẩu và thông báo đã xác nhận | Nhà cung cấp và chi tiết luồng triển khai chưa được SRS này tự suy diễn. |
-| Payment provider | Xác minh thanh toán thật trước khi kích hoạt quyền Plus/Pro | Provider cụ thể là quyết định kỹ thuật; giá VND, chu kỳ tháng, không tự động gia hạn, hết hạn entitlement, không hoàn tiền một phần và idempotency đã chốt tại 3.20. |
+| Payment provider | Xác minh thanh toán thật trước khi kích hoạt quyền Plus/Pro | SRS giữ contract nghiệp vụ độc lập provider; Technology Stack hiện chọn payOS. Giá VND, chu kỳ tháng, không tự động gia hạn, hết hạn entitlement, không hoàn tiền một phần và idempotency đã chốt tại 3.20. |
 
 ## 5. Phân rã dự án theo module
 
 | Mã module | Module | Giá trị | Phụ thuộc chính | Trạng thái phân rã |
 | --- | --- | --- | --- | --- |
-| M01 | Public Recipe Discovery | Khách tìm/xem bài công thức công khai, so sánh hai công thức, xem tỷ lệ % Like (Samsung Food style), lượt xem, 6 chế độ sắp xếp (gồm Most Active & Trending), video YouTube nhúng | Nội dung đã công khai | User stories cho so sánh công thức đã chốt tại FR-60; các phần khác tiếp tục theo FR tương ứng. |
+| M01 | Public Recipe Discovery | Khách tìm/xem bài công thức công khai, so sánh hai công thức, xem tỷ lệ % Like (Samsung Food style), lượt xem, 6 chế độ sắp xếp (gồm Most Active & Trending), video YouTube nhúng | Nội dung đã công khai | Ranh giới hành vi nằm tại các FR của M01; Use Case và AC tương ứng là tiêu chí thiết kế/kiểm thử. |
 | M02 | Identity & Access | Phân biệt Guest/Customer/Expert/Admin và bảo vệ thao tác | Tài khoản, role, session | Đã chốt email/password, Google Login, xác minh email và quên mật khẩu. |
-| M03 | Recipe Contribution & Post-moderation | Chuyên gia quản lý/công khai bài trực tiếp (hướng dẫn chế biến `instructions`, thể loại món ăn `dish_category`, tối đa 5 ảnh kèm cover `RECIPE_MEDIA`, 1 link YouTube); Customer/Expert bình chọn Like / Dislike (`RECIPE_REACTION`); lưu vết lượt xem (`RECIPE_VIEW`); reply tối đa 5 cấp (chỉ công thức mới có Like/Dislike, bình luận không có); Admin hậu kiểm thủ công trên Report | M02, Azure Blob, quy trình báo cáo | Validation, tombstone, lý do và audit/history đã chốt; còn User Story/Use Case/flow/AC và chi tiết UI. |
+| M03 | Recipe Contribution & Post-moderation | Chuyên gia quản lý/công khai bài trực tiếp (hướng dẫn chế biến `instructions`, thể loại món ăn `dish_category`, tối đa 5 ảnh kèm cover `RECIPE_MEDIA`, 1 link YouTube); Customer/Expert bình chọn Like / Dislike (`RECIPE_REACTION`); lưu vết lượt xem (`RECIPE_VIEW`); reply tối đa 5 cấp (chỉ công thức mới có Like/Dislike, bình luận không có); Admin hậu kiểm thủ công trên Report | M02, Azure Blob, quy trình báo cáo | Validation, tombstone, lý do và audit/history được quy định tại FR/BR; UI phải giữ đúng quyền tác giả và hậu kiểm. |
 | M04 | Recipe Classification & Discovery | Phân loại, tìm, lọc và chọn hai bài công thức chay để so sánh; Admin quản lý từ điển nguyên liệu, đơn vị `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION` | M01, M03 | Dữ liệu, profile validation và so sánh hai công thức đã chốt; các capability khác theo FR tương ứng. |
 | M05 | Saved Recipes, Meal Planning & Shopping List | Lưu công thức để xem lại, xếp món vào lịch ăn ngày/tuần ba bữa cố định, so sánh thống kê dinh dưỡng tuần, xuất file công thức/thực đơn/báo cáo PDF và tạo/quản lý danh sách mua sắm nguyên liệu cơ bản | M02, M04 | Đã chốt ranh giới Saved/Planner/Shopping List; quy tắc gom an toàn và xuất file đã xác nhận. |
-| M06 | Gemini AI Access & Usage | Guest/Free/Plus/Pro gọi AI theo gói tính năng (Feature Entitlement), rate limit kỹ thuật cho Guest và telemetry chi phí | M02 một phần, Gemini backend | Đã có hướng; cần user stories. |
+| M06 | Gemini AI Access & Usage | Guest/Free/Plus/Pro gọi AI theo gói tính năng (Feature Entitlement), rate limit kỹ thuật cho Guest và telemetry chi phí | M02 một phần, Gemini backend | Entitlement, safety, telemetry và actor-goal Use Case được quy định tại FR/BR/NFR liên quan. |
 | M08 | Subscription Administration | Hiển thị/đổi gói và phân quyền tính năng AI (Feature-based Entitlement) | M02, M06 | FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; payment provider đã chọn là payOS. |
 | M09 | Administration | Xét duyệt đơn đăng ký Chuyên gia (`FR-05`), xử lý báo cáo vi phạm, quản lý user/bài công thức/bình luận và danh mục nguyên liệu dinh dưỡng | M02–M07, M10 | Quy trình xét duyệt chuyên gia theo format; quyết định hậu kiểm thủ công có lý do, giữ audit/history. Không quản lý bảng danh mục động. |
 | M10 | Nutrition Profile & Daily Menu Check | Với Member đủ điều kiện, tính chín chỉ tiêu từ danh mục nguyên liệu dinh dưỡng nội bộ, quy đổi theo khẩu phần và đối chiếu tổng ba bữa với hồ sơ | M02, M04, M05 | Đã chốt đối tượng, chỉ tiêu, nguồn dữ liệu cấp MVP và cách cộng menu; còn dữ liệu khởi tạo, quy đổi và khoảng tham khảo chi tiết khi triển khai. |
@@ -567,7 +567,7 @@ Tài liệu này duy trì bảng chỉ mục tóm tắt các nhóm yêu cầu ph
 | Performance | NFR-01 – NFR-05 | Phản hồi đăng nhập, tìm kiếm, Chatbot AI, tạo thực đơn tuần; chịu tải đồng thời | Login $\le 2$s (P95); Search $\le 3$s; Chatbot $\le 5$s (P90 $\le 7$s); Menu $\le 8$s; nghiệm thu 50 concurrent users, 100 là stretch; 500 CCU chỉ là design goal | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-performance) |
 | Security | NFR-06 – NFR-10 | Mã hóa mật khẩu, rate limit account identifier + IP 10 phút sau 5 lần sai, token rotation/revocation, bảo vệ dữ liệu sức khỏe, RBAC và OWASP Top 10 | 100% hash BCrypt/Argon2; HTTPS/TLS 1.2+; Backend 401/403; rotating refresh session có thể thu hồi | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-security) |
 | Usability | NFR-11 – NFR-15 | Đăng ký $\le 3$ bước, Chatbot trực quan, Responsive tiếng Việt 360px–1920px, tương thích đa trình duyệt và mobile | $\ge 90\%$ dùng Chatbot không cần trợ giúp; responsive đa thiết bị; tương thích 2 bản gần nhất Chrome, Firefox, Safari, Edge, Mobile | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-usability) |
-| Reliability | NFR-16 – NFR-19 | Transaction không mất dữ liệu đã commit, xử lý lỗi/timeout Gemini $\le 10$s không trừ lượt oan; uptime 99,5% và 1.000–10.000 users là design goals | Database rollback khi lỗi; fallback thân thiện theo BR-04; design goals không phải MVP release gates | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-reliability) |
+| Reliability | NFR-16 – NFR-19 | Transaction không mất dữ liệu đã commit, xử lý lỗi/timeout Gemini $\le 10$s không ghi nhận lượt gọi thành công hoặc thay đổi entitlement; uptime 99,5% và 1.000–10.000 users là design goals | Database rollback khi lỗi; fallback thân thiện theo BR-04; design goals không phải MVP release gates | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-reliability) |
 | Privacy | NFR-20 – NFR-22 | Consent dữ liệu cá nhân/sức khỏe, PCI-DSS không lưu số thẻ, không lưu account chat history hoặc raw prompt telemetry | Thông báo forwarding tới Gemini; telemetry retention 90 ngày | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-privacy) |
 | Auditability | NFR-23 – NFR-25 | OpenAPI, Modular Monolith dùng MVC/layered structure trong từng business module, AI quality theo curated evaluation set | Một Spring Boot deployable backend; $\ge 80\%$ curated cases đạt rule | [Chi tiết](srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-auditability) |
 

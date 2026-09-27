@@ -130,6 +130,6 @@ doc_sync_rules:
   - when: workflow_changes
     check: [CONTRIBUTING.md, docs/decisions/001-team-workflow.md, docs/decisions/002-five-member-team-operating-agreement.md, .github/pull_request_template.md]
   - when: database_changes
-    check: [database/README.md, database/schema.sql, app/backend/, docs/diagrams/ERD/]
+    check: [database/README.md, database/schema.sql, app/mamxanh-backend/, docs/diagrams/ERD/]
   - when: labels_change
     check: [.github/labels.yml, .github/ISSUE_TEMPLATE/]

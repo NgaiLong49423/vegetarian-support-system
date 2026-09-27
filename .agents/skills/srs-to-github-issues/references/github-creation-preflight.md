@@ -26,7 +26,7 @@ Before the first remote write, present one complete preview such as:
 ```text
 CREATE:
 - FR-21 -> new Issue
-- FR-22 -> new Issue
+- FR-23 -> new Issue
 
 UPDATE:
 - FR-14 -> Issue #31 managed block

@@ -1,6 +1,6 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.9.0
+> **Version:** v1.9.1
 > **Created:** 2026-09-13  
 > **Last Updated:** 2026-09-27
 > **Status:** Active  
@@ -40,7 +40,7 @@ Việc kiểm thử nên ưu tiên:
 - Ranh giới authorization giữa Guest/Member/Administrator và ranh giới tác giả Chuyên gia: chỉ `ROLE_EXPERT` được tạo/sửa/xóa bài công thức của mình (`BR-07`, `FR-04`, `FR-44`); `ROLE_CUSTOMER` và `ROLE_ADMIN` cố truy cập endpoint mutation bị chặn `403 Forbidden`. Quy trình nộp và xét duyệt đơn Chuyên gia (`BR-74`, `FR-05`).
 - Profile validation Recipe Post: title 3–120 ký tự, ingredients 1–50 mục, serving 1–50 người, prep/cook 0–1.440 phút và tổng > 0, description tối đa 2.000 ký tự, thể loại món `dish_category`, một YouTube link hợp lệ (tùy chọn); công khai trực tiếp và quyền sửa/xóa; hiển thị huy hiệu tỷ lệ % Like (`👍 {like_percentage}%`) hoặc nhãn `Mới`.
 - Kiểm thử hướng dẫn chế biến dạng văn bản tự do linh hoạt (`instructions`, `FR-16`, `BR-19`): bắt buộc độ dài từ 10 đến 5.000 ký tự không rỗng sau khi trim; kiểm thử validation biên (< 10 ký tự, > 5.000 ký tự, chuỗi toàn khoảng trắng).
-- Quản lý bộ sưu tập hình ảnh (`RECIPE_MEDIA`): kiểm thử tải lên 0–5 ảnh (JPEG/PNG/WebP/GIF, tối đa 5 MB/ảnh) qua Azure Blob Storage, bắt buộc chỉ định đúng 1 ảnh đại diện (`is_cover = true`), thứ tự hiển thị `media_order` 1..5; tự động dọn rác ảnh mồ côi khi hủy soạn thảo hoặc xóa ảnh.
+- Quản lý bộ sưu tập hình ảnh (`RECIPE_MEDIA`): kiểm thử tải lên 0–5 ảnh (JPEG/PNG/WebP, tối đa 5 MB/ảnh) qua Azure Blob Storage, bắt buộc chỉ định đúng 1 ảnh đại diện (`is_cover = true`), thứ tự hiển thị `media_order` 1..5; tự động dọn rác ảnh mồ côi khi hủy soạn thảo hoặc xóa ảnh.
 - Cổng kiểm định xuất bản về nguyên liệu và đơn vị quy đổi (`UNIT`, `INGREDIENT_UNIT_CONVERSION`): số lượng bắt buộc là số thực dương > 0, loại bỏ hoàn toàn "vừa đủ"; nếu tổ hợp nguyên liệu + đơn vị cần quy đổi sang gram mà chưa có conversion trong hệ thống thì chặn publish (Validation Error với thông báo rõ ràng).
 - Kiểm thử bình chọn công thức (`RECIPE_REACTION`): gửi Like / Dislike, tính toán tỷ lệ % Like ($\text{total\_likes} / (\text{total\_likes} + \text{total\_dislikes}) \times 100$) làm tròn, hiển thị huy hiệu `👍 {like_percentage}%` theo phong cách Samsung Food (hoặc nhãn "Mới" nếu chưa có vote); chỉ Member đã đăng nhập mới được gửi phản hồi; hỗ trợ chuyển đổi giữa Like và Dislike (switch) hoặc bấm lại cùng nút để hủy (toggle off); tác giả bị cấm tự bình chọn bài viết của mình; Guest chỉ có quyền xem tỷ lệ % và số lượt bình chọn (tương tác nút hiển thị thông báo yêu cầu đăng nhập); kiểm tra chống IDOR và race condition.
 - Kiểm thử theo dõi lượt xem (`RECIPE_VIEW`): cơ chế chống trùng lặp trong cửa sổ 30 phút theo IP hash / Session ID / Member ID; cập nhật bộ đếm bất đồng bộ không nghẽn luồng đọc công thức; kiểm tra tính chính xác của dữ liệu tổng hợp 24h, 7 ngày, 30 ngày và toàn thời gian.
@@ -68,7 +68,7 @@ Sử dụng nhiều lớp bằng chứng cho Gemini, Azure Blob Storage, Google 
 
 Live call phải dùng test configuration riêng, giới hạn chi phí phù hợp và dữ liệu không nhạy cảm. Secret không được xuất hiện trong Source Control, log hoặc test fixture. Test dùng Mock không chứng minh khả năng kết nối thật; một live call thành công cũng không chứng minh reliability hoặc mức chi phí phù hợp trong dài hạn.
 
-Riêng với AI, verification phải dùng curated evaluation set và đạt ít nhất 80% case thỏa các rule áp dụng về allowed Recipe Post sources, restrictions, non-fabrication và safety/business constraints. Không bắt buộc in-product satisfaction survey chỉ để đáp ứng NFR-25; exact Gemini model/version được chọn bằng technical evaluation. Test còn bao phủ không trừ lượt khi provider lỗi và nutrition không tự kê mục tiêu từ BMI/weight goal.
+Riêng với AI, verification phải dùng curated evaluation set và đạt ít nhất 80% case thỏa các rule áp dụng về allowed Recipe Post sources, restrictions, non-fabrication và safety/business constraints. Không bắt buộc in-product satisfaction survey chỉ để đáp ứng NFR-25; exact Gemini model/version được chọn bằng technical evaluation. Test còn bao phủ việc không ghi nhận lượt gọi thành công hoặc phát sinh thay đổi entitlement khi provider lỗi, cùng ranh giới nutrition không tự kê mục tiêu từ BMI/weight goal.
 
 ## 6. Test Data và environment
 

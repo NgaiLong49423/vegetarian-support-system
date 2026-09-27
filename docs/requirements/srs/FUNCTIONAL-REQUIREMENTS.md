@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.3.0
+> **Version:** v2.4.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -1931,6 +1931,10 @@ Hệ thống quản lý trạng thái báo cáo theo luồng tuần tự:
 
 #### Mục đích
 Bảo vệ an toàn và quyền riêng tư cho người dùng tham gia đóng góp phản ánh vi phạm; ngăn chặn triệt để các hành vi đe dọa, quấy rối hoặc trả đũa cá nhân giữa các thành viên cộng đồng; đồng thời đảm bảo tính minh bạch đối với kết quả xử lý của Ban quản trị.
+
+#### Danh mục Use Cases
+- `UC-29.1`: Người gửi xem lịch sử, trạng thái và kết quả các báo cáo của chính mình.
+- `UC-29.2`: Tác giả xem thông tin xử lý nội dung của mình mà không thấy danh tính người báo cáo.
 
 #### Bảng Ma trận phân quyền hiển thị thông tin báo cáo (SRS 3.13)
 

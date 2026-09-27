@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M03
 > **File:** `docs/requirements/use-cases/recipe-contribution-and-community.md`
-> **Version:** v2.0.1
+> **Version:** v2.1.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -9,6 +9,145 @@
 # Use Case Specifications — M03
 
 Detailed interaction flows for current-baseline requirements. Stable UC IDs are preserved. The linked FR owns the required behavior and Acceptance Criteria; this document owns actor/system interaction detail.
+
+## Dedicated Actor-Goal Use Cases
+
+<a id="uc-14-1"></a>
+### UC-14.1 — Tải ảnh Recipe Post lên Azure Blob Storage
+- **Goal / Primary Actor:** Expert thêm ảnh cho bài của mình; Azure Blob Storage là supporting system.
+- **Trigger / Preconditions:** Expert đang tạo/sửa bài; tối đa 5 ảnh JPEG/PNG/WebP, mỗi ảnh tối đa 5 MB.
+- **Main Flow:** Backend validate file, upload object và lưu metadata `RECIPE_MEDIA`.
+- **Alternative / Security:** Sai loại/dung lượng/vượt 5 ảnh bị từ chối; file binary không vào SQL Server.
+- **Postconditions:** Blob và metadata hợp lệ được liên kết với bài.
+- **Traceability / Acceptance Coverage:** FR-14; BR-11; [AC-14.1, AC-14.2, AC-14.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-14).
+
+<a id="uc-14-2"></a>
+### UC-14.2 — Chọn cover và sắp xếp ảnh
+- **Goal / Primary Actor:** Expert xác định ảnh bìa và thứ tự gallery.
+- **Trigger / Preconditions:** Bài có 1–5 media thuộc actor.
+- **Main Flow:** Expert chọn đúng một cover và sắp xếp `media_order`; Backend validate/lưu atomically.
+- **Alternative / Security:** Không cover, nhiều cover hoặc thứ tự trùng bị từ chối.
+- **Postconditions:** Gallery có đúng một cover và thứ tự ổn định.
+- **Traceability / Acceptance Coverage:** FR-14; BR-11; [AC-14.2, AC-14.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-14).
+
+<a id="uc-14-3"></a>
+### UC-14.3 — Xem gallery ảnh Recipe Post
+- **Goal / Primary Actor:** Guest/Member xem cover và gallery từ Blob Storage.
+- **Trigger / Preconditions:** Recipe Card/Detail được tải; media có thể trống.
+- **Main Flow:** Hệ thống trả URL tham chiếu và hiển thị theo cover/order.
+- **Alternative / Security:** Không ảnh dùng ảnh mặc định; URL truy cập tuân thủ policy lưu trữ.
+- **Postconditions:** Ảnh được xem, không thay đổi metadata.
+- **Traceability / Acceptance Coverage:** FR-14; NFR-02; [AC-14.2–AC-14.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-14).
+
+<a id="uc-16-1"></a>
+### UC-16.1 — Soạn và xác thực Recipe Post có cấu trúc
+- **Goal / Primary Actor:** Expert hoàn thiện dữ liệu bài đúng validation profile.
+- **Trigger / Preconditions:** Expert mở form tạo/sửa bài.
+- **Main Flow:** Actor nhập title, category, servings, thời gian, ingredients và `instructions`; Backend validate toàn bộ khi gửi.
+- **Alternative / Security:** Field sai, tổng thời gian bằng 0, thiếu conversion/cover hợp lệ bị từ chối không tạo dữ liệu dở dang.
+- **Postconditions:** Payload hợp lệ sẵn sàng được công khai/cập nhật.
+- **Traceability / Acceptance Coverage:** FR-16; BR-19, BR-48; [AC-16.1–AC-16.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-16).
+
+<a id="uc-16-2"></a>
+### UC-16.2 — Công khai bài không có ảnh hoặc mô tả
+- **Goal / Primary Actor:** Expert công khai Recipe Post hợp lệ dù media/description trống.
+- **Trigger / Preconditions:** Các trường bắt buộc khác đạt validation.
+- **Main Flow:** Backend chấp nhận payload, lưu bài và frontend dùng ảnh mặc định khi cần.
+- **Alternative / Security:** Không được bỏ qua `instructions` hoặc ingredient/serving rules.
+- **Postconditions:** Bài `PUBLISHED` không có media/description vẫn hiển thị đúng.
+- **Traceability / Acceptance Coverage:** FR-16; BR-20; [AC-16.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-16).
+
+<a id="uc-19-1"></a>
+### UC-19.1 — Chọn nguyên liệu chuẩn
+- **Goal / Primary Actor:** Expert dùng Ingredient đã có trong catalog.
+- **Trigger / Preconditions:** Expert đang soạn bài và tìm nguyên liệu.
+- **Main Flow:** Hệ thống tìm catalog; actor chọn item, nhập amount dương và unit hợp lệ.
+- **Alternative / Security:** Ingredient inactive/amount sai bị từ chối.
+- **Postconditions:** Dòng nguyên liệu liên kết `ingredient_id` và giữ tên hiển thị.
+- **Traceability / Acceptance Coverage:** FR-19; [AC-19.1, AC-19.2, AC-19.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-19).
+
+<a id="uc-19-2"></a>
+### UC-19.2 — Nhập nguyên liệu tự do
+- **Goal / Primary Actor:** Expert mô tả nguyên liệu chưa có trong catalog.
+- **Trigger / Preconditions:** Không tìm thấy Ingredient phù hợp.
+- **Main Flow:** Actor nhập tên, amount số học dương và unit; hệ thống giữ `ingredient_id` tùy chọn/trống.
+- **Alternative / Security:** `vừa đủ`, amount không dương hoặc unit không hợp lệ bị từ chối.
+- **Postconditions:** Dòng giữ nguyên tên do tác giả nhập.
+- **Traceability / Acceptance Coverage:** FR-19; [AC-19.1, AC-19.2, AC-19.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-19).
+
+<a id="uc-19-3"></a>
+### UC-19.3 — Quản lý các dòng nguyên liệu
+- **Goal / Primary Actor:** Expert thêm/sửa/xóa/sắp xếp 1–50 dòng nguyên liệu.
+- **Trigger / Preconditions:** Form bài đang mở.
+- **Main Flow:** Actor thay đổi danh sách; hệ thống validate từng dòng và conversion cần thiết khi publish.
+- **Alternative / Security:** Ngoài 1–50 dòng hoặc thiếu conversion cần thiết bị chặn.
+- **Postconditions:** Danh sách hợp lệ, có thứ tự và sẵn sàng lưu.
+- **Traceability / Acceptance Coverage:** FR-19; BR-48; [AC-19.2, AC-19.3, AC-19.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-19).
+
+<a id="uc-21-1"></a>
+### UC-21.1 — AI gợi ý đoạn giới thiệu
+- **Goal / Primary Actor:** Expert gói Plus/Pro nhận draft text cho description; Gemini là supporting system.
+- **Trigger / Preconditions:** Actor chủ động bấm gợi ý và có input tên/nguyên liệu phù hợp.
+- **Main Flow:** Backend kiểm tra entitlement, gọi AI và đưa text vào form để actor chỉnh sửa.
+- **Alternative / Security:** Free/AI lỗi không chặn soạn bài; không lưu server draft và không tự thêm ingredient.
+- **Postconditions:** Text chỉ tồn tại trong form tới khi actor gửi bài.
+- **Traceability / Acceptance Coverage:** FR-21; BR-03, BR-04; [AC-21.1–AC-21.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
+
+<a id="uc-21-2"></a>
+### UC-21.2 — AI gợi ý hướng dẫn chế biến
+- **Goal / Primary Actor:** Expert gói Plus/Pro nhận draft `instructions` có thể chỉnh sửa.
+- **Trigger / Preconditions:** Actor chủ động yêu cầu; ingredient/title context hợp lệ.
+- **Main Flow:** Backend kiểm tra entitlement, gọi AI và chèn kết quả vào form client.
+- **Alternative / Security:** Provider lỗi/timeout trả fallback; không auto-publish, không lưu nháp server.
+- **Postconditions:** Actor chịu trách nhiệm review và gửi nội dung cuối.
+- **Traceability / Acceptance Coverage:** FR-21; BR-03, BR-04; [AC-21.1–AC-21.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
+
+<a id="uc-27-1"></a>
+### UC-27.1 — Chọn lý do và gửi form báo cáo Recipe Post
+- **Goal / Primary Actor:** Member gửi report theo 6 nhóm lý do chuẩn.
+- **Trigger / Preconditions:** Member mở form báo cáo trên bài công khai.
+- **Main Flow:** Actor chọn lý do, nhập mô tả khi cần và gửi; Backend validate/lưu.
+- **Alternative / Security:** `OTHER` yêu cầu 10–500 ký tự; input sai không tạo report.
+- **Postconditions:** Report hợp lệ chuyển sang quy trình hậu kiểm.
+- **Traceability / Acceptance Coverage:** FR-27; [AC-27.1–AC-27.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-27).
+
+<a id="uc-30-1"></a>
+### UC-30.1 — Bổ sung mô tả cho report đang mở
+- **Goal / Primary Actor:** Reporter cung cấp bằng chứng/thông tin thêm.
+- **Trigger / Preconditions:** Report thuộc actor và còn `OPEN`/được phép bổ sung.
+- **Main Flow:** Actor nhập nội dung; Backend validate owner/status và append lịch sử.
+- **Alternative / Security:** Report đã resolved hoặc của người khác bị từ chối.
+- **Postconditions:** Nội dung bổ sung khả dụng cho Admin, report ID không đổi.
+- **Traceability / Acceptance Coverage:** FR-30; BR-29; [AC-30.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-30).
+
+<a id="uc-30-2"></a>
+### UC-30.2 — Admin xem report nhóm theo Recipe Post
+- **Goal / Primary Actor:** Administrator xem toàn bộ report liên quan theo bài.
+- **Trigger / Preconditions:** Admin mở dashboard hậu kiểm.
+- **Main Flow:** Hệ thống group/filter report theo recipe và trạng thái, trả chi tiết được phép.
+- **Alternative / Security:** Người không phải Admin bị chặn; report trùng đang mở vẫn tuân thủ unique rule.
+- **Postconditions:** Chỉ trạng thái xem, không tự resolve report.
+- **Traceability / Acceptance Coverage:** FR-30; BR-29; [AC-30.2–AC-30.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-30).
+
+<a id="uc-48-1"></a>
+### UC-48.1 — Báo cáo comment hoặc reply
+- **Goal / Primary Actor:** Member báo cáo nội dung thảo luận vi phạm.
+- **Trigger / Preconditions:** Member đăng nhập; comment tồn tại; không có report mở trùng.
+- **Main Flow:** Actor chọn lý do/mô tả; Backend validate, lưu report và giữ comment hiển thị.
+- **Alternative / Security:** Guest bị yêu cầu login; thiếu lý do/trùng report bị chặn; reporter được bảo mật.
+- **Postconditions:** Report vào hàng chờ, comment chưa tự ẩn.
+- **Traceability / Acceptance Coverage:** FR-48; BR-24, BR-29; [AC-48.1–AC-48.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-48).
+
+<a id="uc-48-2"></a>
+### UC-48.2 — Admin xử lý report comment
+- **Goal / Primary Actor:** Administrator thẩm định và kết luận report thảo luận.
+- **Trigger / Preconditions:** Report comment đang mở/in review.
+- **Main Flow:** Admin xem ngữ cảnh, chọn quyết định/lý do; Backend resolve và áp dụng gỡ nội dung khi cần.
+- **Alternative / Security:** Người không phải Admin bị chặn; danh tính reporter không lộ cho author.
+- **Postconditions:** Report được audit; comment giữ hoặc bị gỡ theo quyết định.
+- **Traceability / Acceptance Coverage:** FR-48; FR-28; [AC-48.3, AC-48.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-48).
+
+---
 
 <a id="fr-14"></a>
 ## FR-14 — Lưu trữ thư viện ảnh bài công thức (tối đa 5 ảnh, đúng 1 ảnh bìa) trên Azure Blob Storage

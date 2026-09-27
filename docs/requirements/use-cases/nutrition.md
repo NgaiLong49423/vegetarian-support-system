@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.1.1
+> **Version:** v2.2.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -267,6 +267,172 @@ Chỉ các món được Member xác nhận mới được áp dụng; Meal Plan
 
 #### Acceptance Coverage
 - [AC-36.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36) — Không ghi Meal Plan trước khi Member xác nhận.
+
+---
+
+## Remaining Dedicated Actor-Goal Use Cases
+
+<a id="uc-37-1"></a>
+### UC-37.1 — Điều chỉnh khẩu phần món trong Meal Plan
+- **Goal / Primary Actor:** Member đặt số khẩu phần thực tế cho từng món trong ngày.
+- **Trigger / Preconditions:** Member sở hữu Meal Plan và mở Nutrition Check.
+- **Main Flow:** Actor nhập servings hợp lệ; hệ thống lưu và tính lại dữ liệu theo tỷ lệ.
+- **Alternative / Security:** Giá trị ngoài phạm vi/plan không thuộc owner bị từ chối.
+- **Postconditions:** Khẩu phần mới là đầu vào cho tổng hợp dinh dưỡng.
+- **Traceability / Acceptance Coverage:** FR-37; [AC-37.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-37).
+
+<a id="uc-37-2"></a>
+### UC-37.2 — Xem tổng hợp dinh dưỡng ngày
+- **Goal / Primary Actor:** Member đối chiếu 9 chỉ tiêu của một ngày với mức tham khảo cá nhân.
+- **Trigger / Preconditions:** Ngày có Meal Plan; hồ sơ dinh dưỡng đủ và actor đã consent.
+- **Main Flow:** Hệ thống cộng dữ liệu theo servings và hiển thị từng chỉ tiêu/đơn vị riêng.
+- **Alternative / Security:** Không tạo điểm tổng hợp; thiếu dữ liệu được chuyển sang UC-37.3.
+- **Postconditions:** Kết quả chỉ mang tính tham khảo và không thay Meal Plan.
+- **Traceability / Acceptance Coverage:** FR-37; BR-39, BR-41; [AC-37.2, AC-37.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-37).
+
+<a id="uc-37-3"></a>
+### UC-37.3 — Xem cảnh báo món thiếu dữ liệu
+- **Goal / Primary Actor:** Member biết món/chỉ tiêu nào làm kết quả chưa đầy đủ.
+- **Trigger / Preconditions:** Ít nhất một Recipe Post/Ingredient thiếu dữ liệu dinh dưỡng tin cậy.
+- **Main Flow:** Hệ thống liệt kê nguồn thiếu và đánh dấu tổng hợp là chưa đầy đủ.
+- **Alternative / Security:** NULL không bị đổi thành 0; không suy diễn số liệu bằng AI.
+- **Postconditions:** Người dùng hiểu giới hạn dữ liệu của kết quả.
+- **Traceability / Acceptance Coverage:** FR-37; [AC-37.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-37).
+
+<a id="uc-37-4"></a>
+### UC-37.4 — Yêu cầu AI phân tích chênh lệch
+- **Goal / Primary Actor:** Member có entitlement nhận giải thích/gợi ý món từ kho hiện có; Gemini hỗ trợ.
+- **Trigger / Preconditions:** Actor chủ động yêu cầu; dữ liệu số đã được hệ thống tính và hồ sơ đủ điều kiện.
+- **Main Flow:** Backend kiểm tra entitlement, gửi dữ liệu có nguồn và trả giải thích/gợi ý Recipe Post hiện có.
+- **Alternative / Security:** Thiếu dữ liệu/provider lỗi được thông báo; AI không tự tạo số hoặc kê đơn.
+- **Postconditions:** Kết quả chỉ là gợi ý, không tự sửa Meal Plan.
+- **Traceability / Acceptance Coverage:** FR-37; BR-03, BR-41; [AC-37.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-37).
+
+<a id="uc-37-5"></a>
+### UC-37.5 — Xem phân tích tổng thể tuần
+- **Goal / Primary Actor:** Member xem trung bình 7 ngày và vi chất cần lưu ý trong chế độ chay.
+- **Trigger / Preconditions:** Meal Plan tuần thuộc owner và dữ liệu ngày được tính.
+- **Main Flow:** Hệ thống tổng hợp 7 ngày, hiển thị từng chỉ tiêu và cho phép mở chi tiết ngày.
+- **Alternative / Security:** Ngày thiếu dữ liệu được đánh dấu; không chấm Health Score.
+- **Postconditions:** Tổng quan tuần được hiển thị mà không thay dữ liệu nguồn.
+- **Traceability / Acceptance Coverage:** FR-37; [AC-37.3, AC-37.4, AC-37.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-37).
+
+<a id="uc-37-6"></a>
+### UC-37.6 — Xuất báo cáo dinh dưỡng PDF
+- **Goal / Primary Actor:** Member tải báo cáo ngày hoặc tuần thuộc dữ liệu của mình.
+- **Trigger / Preconditions:** Actor chọn Export sau khi Nutrition Check hoàn tất.
+- **Main Flow:** Hệ thống dựng PDF ngày một trang hoặc tuần A4 hai trang với dữ liệu/cảnh báo hiện hành.
+- **Alternative / Security:** Plan không thuộc owner bị chặn; thiếu dữ liệu vẫn ghi minh bạch, không điền số giả.
+- **Postconditions:** File PDF được tải; dữ liệu nguồn không thay đổi.
+- **Traceability / Acceptance Coverage:** FR-37; NFR-08; [AC-37.7–AC-37.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-37).
+
+<a id="uc-38-1"></a>
+### UC-38.1 — Xác nhận điều kiện và consent dinh dưỡng
+- **Goal / Primary Actor:** Member xác nhận mình thuộc phạm vi hỗ trợ và đồng ý disclaimer.
+- **Trigger / Preconditions:** Actor truy cập capability dinh dưỡng lần đầu/chưa consent.
+- **Main Flow:** Hệ thống trình bày phạm vi; Member xác nhận eligibility/consent và Backend lưu trạng thái.
+- **Alternative / Security:** Không đủ điều kiện hoặc từ chối thì capability dinh dưỡng bị chặn, tính năng khác giữ nguyên.
+- **Postconditions:** Trạng thái consent/eligibility được lưu cho server-side gate.
+- **Traceability / Acceptance Coverage:** FR-38; BR-41; [AC-38.1–AC-38.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-38).
+
+<a id="uc-38-2"></a>
+### UC-38.2 — Xem lại disclaimer dinh dưỡng
+- **Goal / Primary Actor:** Member xem phạm vi hỗ trợ và tuyên bố không thay thế tư vấn y tế.
+- **Trigger / Preconditions:** Actor mở thông tin disclaimer.
+- **Main Flow:** Hệ thống hiển thị nội dung hiện hành và giải thích vai trò tham khảo của BMI/dinh dưỡng.
+- **Alternative / Security:** Không biến nội dung thành chẩn đoán hoặc khuyến nghị điều trị.
+- **Postconditions:** Trạng thái dữ liệu không đổi.
+- **Traceability / Acceptance Coverage:** FR-38; BR-39, BR-41; [AC-38.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-38).
+
+<a id="uc-38-3"></a>
+### UC-38.3 — Cập nhật điều kiện sức khỏe dinh dưỡng
+- **Goal / Primary Actor:** Member cập nhật eligibility khi hoàn cảnh thay đổi.
+- **Trigger / Preconditions:** Actor đăng nhập và mở nutrition settings.
+- **Main Flow:** Member cập nhật; Backend validate/ghi trạng thái mới.
+- **Alternative / Security:** Chuyển sang không đủ điều kiện lập tức chặn capability dinh dưỡng nhưng không xóa dữ liệu khác.
+- **Postconditions:** Server-side gate dùng trạng thái mới cho request sau.
+- **Traceability / Acceptance Coverage:** FR-38; [AC-38.4–AC-38.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-38).
+
+<a id="uc-39-1"></a>
+### UC-39.1 — Xem ước tính 9 chỉ tiêu của Recipe Post
+- **Goal / Primary Actor:** Guest/Member xem dữ liệu dinh dưỡng trên toàn công thức và một khẩu phần.
+- **Trigger / Preconditions:** Bài công khai có ingredient amount/unit; dữ liệu nội bộ khả dụng.
+- **Main Flow:** Hệ thống quy đổi gram, cộng 9 chỉ tiêu và chia theo servings.
+- **Alternative / Security:** Không gọi API ngoài, không tạo điểm sức khỏe; thiếu dữ liệu chuyển sang UC-39.2.
+- **Postconditions:** Ước tính có đơn vị/giới hạn được hiển thị.
+- **Traceability / Acceptance Coverage:** FR-39; [AC-39.1, AC-39.2, AC-39.4, AC-39.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-39).
+
+<a id="uc-39-2"></a>
+### UC-39.2 — Xem cảnh báo Ingredient chưa hỗ trợ
+- **Goal / Primary Actor:** Guest/Member biết thành phần nào làm ước tính chưa đầy đủ.
+- **Trigger / Preconditions:** Recipe Post chứa Ingredient không có đủ dữ liệu hỗ trợ.
+- **Main Flow:** Hệ thống liệt kê ingredient/chỉ tiêu thiếu và không tính phần không có căn cứ.
+- **Alternative / Security:** NULL hiển thị `Chưa đủ dữ liệu`, không thành 0.
+- **Postconditions:** Provenance/độ đầy đủ được trình bày minh bạch.
+- **Traceability / Acceptance Coverage:** FR-39; [AC-39.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-39).
+
+<a id="uc-40-1"></a>
+### UC-40.1 — Công khai bài có Ingredient ngoài catalog dinh dưỡng
+- **Goal / Primary Actor:** Expert công khai công thức hợp lệ dù một ingredient chưa hỗ trợ nutrition.
+- **Trigger / Preconditions:** Recipe Post đạt validation/conversion publish; ingredient dinh dưỡng có thể chưa map.
+- **Main Flow:** Backend không dùng thiếu nutrition để chặn publish và lưu bài `PUBLISHED`.
+- **Alternative / Security:** Quy tắc amount/unit/conversion của publish vẫn bắt buộc.
+- **Postconditions:** Bài công khai nhưng không tự được coi là nutrition-complete.
+- **Traceability / Acceptance Coverage:** FR-40; [AC-40.1, AC-40.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-40).
+
+<a id="uc-40-2"></a>
+### UC-40.2 — Xem nhãn chưa hỗ trợ dinh dưỡng
+- **Goal / Primary Actor:** Guest/Member hiểu hạn chế dữ liệu của Recipe Post.
+- **Trigger / Preconditions:** Bài chứa ingredient chưa hỗ trợ nutrition.
+- **Main Flow:** Hệ thống hiển thị nhãn/cảnh báo tại ingredient và phần nutrition.
+- **Alternative / Security:** Không hiển thị 0 giả hoặc phán xét sức khỏe.
+- **Postconditions:** Nội dung bài vẫn xem được, giới hạn dữ liệu rõ ràng.
+- **Traceability / Acceptance Coverage:** FR-40; [AC-40.2, AC-40.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-40).
+
+<a id="uc-41-1"></a>
+### UC-41.1 — Tìm và lọc Ingredient dinh dưỡng
+- **Goal / Primary Actor:** Administrator tra cứu catalog nội bộ.
+- **Trigger / Preconditions:** Admin đăng nhập và mở Nutrition Ingredient Management.
+- **Main Flow:** Hệ thống trả danh sách/chi tiết theo keyword, status và `nutrition_supported`.
+- **Alternative / Security:** Người không phải Admin bị chặn.
+- **Postconditions:** Dữ liệu chỉ được đọc.
+- **Traceability / Acceptance Coverage:** FR-41; NFR-09; [AC-41.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-41).
+
+<a id="uc-41-2"></a>
+### UC-41.2 — Thêm Ingredient dinh dưỡng
+- **Goal / Primary Actor:** Administrator tạo Ingredient có provenance, kể cả khi chưa đủ 9 chỉ tiêu.
+- **Trigger / Preconditions:** Admin cung cấp tên, `source_name`, `reference_date` và dữ liệu hiện có.
+- **Main Flow:** Backend lưu nullable nutrition fields với `nutrition_supported=0`; chỉ cho bật support khi đủ 9 chỉ tiêu và metadata nguồn theo schema.
+- **Alternative / Security:** NULL khác 0; dữ liệu thiếu không được bật support; AI không được ghi catalog.
+- **Postconditions:** Ingredient tồn tại với trạng thái hỗ trợ chính xác.
+- **Traceability / Acceptance Coverage:** FR-41; BR-52; [AC-41.1, AC-41.2, AC-41.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-41).
+
+<a id="uc-41-3"></a>
+### UC-41.3 — Chỉnh dữ liệu và nguồn Ingredient
+- **Goal / Primary Actor:** Administrator cập nhật số liệu/provenance đáng tin cậy.
+- **Trigger / Preconditions:** Ingredient tồn tại; actor là Admin.
+- **Main Flow:** Backend validate, lưu 9 field/source metadata và kiểm tra invariant khi support bật.
+- **Alternative / Security:** Thiếu field bắt buộc khi support=1 bị từ chối; AI không tự sửa.
+- **Postconditions:** Dữ liệu mới áp dụng cho phép tính sau, có audit phù hợp.
+- **Traceability / Acceptance Coverage:** FR-41; BR-52; [AC-41.2, AC-41.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-41).
+
+<a id="uc-41-4"></a>
+### UC-41.4 — Đổi trạng thái Ingredient
+- **Goal / Primary Actor:** Administrator ngừng/kích hoạt lại catalog item an toàn.
+- **Trigger / Preconditions:** Ingredient tồn tại; actor chọn `ACTIVE`/`INACTIVE` hoặc support flag phù hợp.
+- **Main Flow:** Backend kiểm tra invariant, cập nhật trạng thái mà không xóa tham chiếu.
+- **Alternative / Security:** Bật nutrition support khi thiếu dữ liệu bị từ chối.
+- **Postconditions:** Trạng thái mới có hiệu lực cho lookup/tính toán sau.
+- **Traceability / Acceptance Coverage:** FR-41; BR-52, BR-53; [AC-41.2, AC-41.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-41).
+
+<a id="uc-41-5"></a>
+### UC-41.5 — Xem Recipe Post đang dùng Ingredient
+- **Goal / Primary Actor:** Administrator đánh giá tác động trước khi thay trạng thái.
+- **Trigger / Preconditions:** Ingredient tồn tại.
+- **Main Flow:** Hệ thống truy vấn các Recipe Post tham chiếu và trả danh sách có phân trang.
+- **Alternative / Security:** Ingredient đang được tham chiếu không được hard-delete.
+- **Postconditions:** Admin có impact view; dữ liệu không đổi.
+- **Traceability / Acceptance Coverage:** FR-41; BR-53; [AC-41.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-41).
 
 ---
 

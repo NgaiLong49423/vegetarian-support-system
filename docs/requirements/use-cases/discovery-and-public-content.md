@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M01
 > **File:** `docs/requirements/use-cases/discovery-and-public-content.md`
-> **Version:** v2.0.1
+> **Version:** v2.1.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -9,6 +9,300 @@
 # Use Case Specifications — M01
 
 Detailed interaction flows for current-baseline requirements. Stable UC IDs are preserved. The linked FR owns the required behavior and Acceptance Criteria; this document owns actor/system interaction detail.
+
+## Dedicated Actor-Goal Use Cases
+
+<a id="uc-01-1"></a>
+### UC-01.1 — Duyệt danh sách bài công thức công khai
+- **Goal / Primary Actor:** Guest xem danh sách Recipe Post công khai; hệ thống nội dung là supporting actor.
+- **Trigger / Preconditions:** Guest mở Trang chủ/Khám phá; chỉ bài `PUBLISHED` hợp lệ được truy xuất.
+- **Main Flow:** Hệ thống tải trang kết quả, hiển thị Recipe Card và cho phép chuyển trang/sắp xếp.
+- **Alternative / Security:** Danh sách rỗng hiển thị empty state; bài ẩn/xóa không được trả về.
+- **Postconditions:** Không thay đổi dữ liệu người dùng; danh sách công khai được hiển thị.
+- **Traceability / Acceptance Coverage:** FR-01; BR-05; NFR-02; [AC-01.1, AC-01.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-01).
+
+<a id="uc-01-2"></a>
+### UC-01.2 — Tìm kiếm công thức cơ bản theo từ khóa
+- **Goal / Primary Actor:** Guest tìm Recipe Post công khai theo từ khóa.
+- **Trigger / Preconditions:** Guest nhập từ khóa; kho nội dung có thể rỗng.
+- **Main Flow:** Hệ thống chuẩn hóa truy vấn, tìm trong tiêu đề/mô tả và trả kết quả có phân trang.
+- **Alternative / Security:** Không có kết quả thì hiển thị thông báo/gợi ý; nội dung không công khai bị loại.
+- **Postconditions:** Kết quả phản ánh truy vấn, không phát sinh dữ liệu cá nhân.
+- **Traceability / Acceptance Coverage:** FR-01; NFR-02; [AC-01.2, AC-01.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-01).
+
+<a id="uc-01-3"></a>
+### UC-01.3 — Xem chi tiết bài công thức công khai
+- **Goal / Primary Actor:** Guest đọc đầy đủ một Recipe Post công khai.
+- **Trigger / Preconditions:** Guest chọn Recipe Card; bài còn `PUBLISHED`.
+- **Main Flow:** Hệ thống tải nội dung, media, nguyên liệu, hướng dẫn, tác giả và thống kê công khai.
+- **Alternative / Security:** Bài không còn khả dụng trả trạng thái phù hợp; thao tác thành viên yêu cầu đăng nhập.
+- **Postconditions:** Chi tiết được hiển thị; lượt xem hợp lệ có thể được ghi nhận theo BR-70.
+- **Traceability / Acceptance Coverage:** FR-01; BR-05, BR-69, BR-70; [AC-01.3, AC-01.4, AC-01.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-01).
+
+<a id="uc-15-1"></a>
+### UC-15.1 — Gắn hoặc cập nhật liên kết YouTube
+- **Goal / Primary Actor:** Expert gắn tối đa một video YouTube cho Recipe Post của mình; YouTube là supporting system.
+- **Trigger / Preconditions:** Expert đang tạo/sửa bài thuộc quyền sở hữu.
+- **Main Flow:** Expert nhập URL; hệ thống kiểm tra domain/format, trích Video ID và hiển thị preview trước khi lưu.
+- **Alternative / Security:** Cho phép để trống/xóa link; URL ngoài YouTube hoặc payload nguy hiểm bị từ chối.
+- **Postconditions:** Chỉ tham chiếu URL/Video ID hợp lệ được lưu, không lưu binary video.
+- **Traceability / Acceptance Coverage:** FR-15; BR-10, BR-20; NFR-10; [AC-15.1–AC-15.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-15).
+
+<a id="uc-15-2"></a>
+### UC-15.2 — Xem video YouTube nhúng
+- **Goal / Primary Actor:** Guest/Member phát video hướng dẫn trong trang chi tiết.
+- **Trigger / Preconditions:** Recipe Post công khai có Video ID hợp lệ và video cho phép nhúng.
+- **Main Flow:** Hệ thống dựng iframe an toàn; người xem chủ động bấm phát.
+- **Alternative / Security:** Không có video thì không hiển thị khung; lỗi/không cho embed không làm hỏng trang.
+- **Postconditions:** Video được phát từ YouTube; hệ thống không sao chép file video.
+- **Traceability / Acceptance Coverage:** FR-15; BR-10, BR-20; NFR-10; [AC-15.2, AC-15.4, AC-15.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-15).
+
+<a id="uc-20-1"></a>
+### UC-20.1 — Xem chi tiết từ nguồn Recipe Post duy nhất
+- **Goal / Primary Actor:** Guest/Member xem cùng một dữ liệu Recipe Post nhất quán ở trang chi tiết.
+- **Trigger / Preconditions:** Người dùng mở Recipe Post công khai.
+- **Main Flow:** Hệ thống đọc nguồn bài duy nhất và kết xuất nội dung, media, nguyên liệu, dinh dưỡng khả dụng.
+- **Alternative / Security:** Bài ẩn/xóa không lộ nội dung; trạng thái không khả dụng được xử lý an toàn.
+- **Postconditions:** Dữ liệu hiển thị nhất quán với bản ghi nguồn.
+- **Traceability / Acceptance Coverage:** FR-20; BR-16; NFR-02; [AC-20.1, AC-20.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-20).
+
+<a id="uc-20-2"></a>
+### UC-20.2 — Xem tham chiếu tự đồng bộ sau chỉnh sửa
+- **Goal / Primary Actor:** Member xem Meal Plan/Saved Recipe phản ánh nội dung Recipe Post mới nhất.
+- **Trigger / Preconditions:** Bài nguồn đã được Expert chỉnh sửa; Member có tham chiếu hợp lệ.
+- **Main Flow:** Hệ thống resolve tham chiếu tới bài nguồn và hiển thị dữ liệu hiện hành.
+- **Alternative / Security:** Không sao chép nội dung thành bản độc lập; quyền dữ liệu cá nhân vẫn được kiểm tra.
+- **Postconditions:** Không phát sinh bản sao lệch nguồn.
+- **Traceability / Acceptance Coverage:** FR-20; BR-16; [AC-20.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-20).
+
+<a id="uc-20-3"></a>
+### UC-20.3 — Xem Tombstone khi bài nguồn không khả dụng
+- **Goal / Primary Actor:** Member hiểu vì sao mục Meal Plan cũ không còn mở được.
+- **Trigger / Preconditions:** Tham chiếu tồn tại nhưng Recipe Post nguồn đã bị xóa/ẩn.
+- **Main Flow:** Hệ thống giữ tham chiếu lịch sử và hiển thị Tombstone thay cho nội dung công khai.
+- **Alternative / Security:** Không để lộ nội dung đã ẩn; người dùng có thể gỡ/thay mục lịch ăn.
+- **Postconditions:** Tính toàn vẹn Meal Plan được giữ mà không phục hồi nội dung nguồn.
+- **Traceability / Acceptance Coverage:** FR-20; BR-16; [AC-20.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-20).
+
+<a id="uc-20-4"></a>
+### UC-20.4 — Xuất chi tiết công thức PDF hoặc TXT
+- **Goal / Primary Actor:** Member tải bản Recipe Post chi tiết để sử dụng ngoại tuyến.
+- **Trigger / Preconditions:** Member chọn Export trên bài đang khả dụng.
+- **Main Flow:** Hệ thống dựng nội dung từ nguồn hiện hành và trả file PDF/TXT.
+- **Alternative / Security:** Dữ liệu thiếu được ghi minh bạch; không đưa dữ liệu riêng tư ngoài phạm vi bài.
+- **Postconditions:** File được tải; Recipe Post nguồn không bị thay đổi.
+- **Traceability / Acceptance Coverage:** FR-20; [AC-20.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-20).
+
+<a id="uc-23-1"></a>
+### UC-23.1 — Hiển thị thông tin tác giả trên Recipe Post
+- **Goal / Primary Actor:** Guest/Member nhận diện tác giả của bài công khai.
+- **Trigger / Preconditions:** Bài có author liên kết hợp lệ.
+- **Main Flow:** Hệ thống hiển thị tên, avatar và liên kết hồ sơ công khai từ tài khoản tác giả.
+- **Alternative / Security:** Dùng avatar mặc định khi thiếu; không hiển thị dữ liệu riêng tư.
+- **Postconditions:** Quyền tác giả hiển thị đúng tài khoản nguồn.
+- **Traceability / Acceptance Coverage:** FR-23; BR-18; [AC-23.1, AC-23.3, AC-23.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-23).
+
+<a id="uc-23-2"></a>
+### UC-23.2 — Xem hồ sơ công khai của Member
+- **Goal / Primary Actor:** Guest/Member xem thông tin và bài công khai của một Member.
+- **Trigger / Preconditions:** Người xem chọn tên/avatar tác giả; hồ sơ còn hoạt động.
+- **Main Flow:** Hệ thống tải các trường công khai và Recipe Post công khai của hồ sơ.
+- **Alternative / Security:** Tài khoản không khả dụng trả trạng thái phù hợp; email/dữ liệu riêng không xuất hiện.
+- **Postconditions:** Chỉ dữ liệu hồ sơ công khai được trình bày.
+- **Traceability / Acceptance Coverage:** FR-23; BR-18; NFR-08; [AC-23.2, AC-23.3, AC-23.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-23).
+
+<a id="uc-23-3"></a>
+### UC-23.3 — Xem và chỉnh sửa hồ sơ cá nhân
+- **Goal / Primary Actor:** Member cập nhật tên hiển thị, giới thiệu và avatar của mình; Blob Storage hỗ trợ avatar.
+- **Trigger / Preconditions:** Member đã đăng nhập và mở hồ sơ cá nhân.
+- **Main Flow:** Member chỉnh dữ liệu; hệ thống validate, lưu và phản ánh trên hồ sơ công khai.
+- **Alternative / Security:** Tên/tệp không hợp lệ bị từ chối; owner-only enforcement chặn sửa hồ sơ khác.
+- **Postconditions:** Hồ sơ hợp lệ được cập nhật, dữ liệu riêng vẫn được bảo vệ.
+- **Traceability / Acceptance Coverage:** FR-23; BR-18; NFR-08, NFR-09; [AC-23.4–AC-23.8, AC-23.10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-23).
+
+<a id="uc-46-1"></a>
+### UC-46.1 — Xem chuỗi bình luận lồng nhau
+- **Goal / Primary Actor:** Guest/Member đọc bình luận và reply theo cây tối đa 5 cấp.
+- **Trigger / Preconditions:** Người dùng mở Recipe Post công khai.
+- **Main Flow:** Hệ thống tải chuỗi bình luận, quan hệ cha-con và Tombstone theo thứ tự hiển thị.
+- **Alternative / Security:** Bình luận bị gỡ hiển thị Tombstone khi cần giữ con; không lộ nội dung đã gỡ.
+- **Postconditions:** Cấu trúc hội thoại được bảo toàn.
+- **Traceability / Acceptance Coverage:** FR-46; BR-66; [AC-46.1, AC-46.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-46).
+
+<a id="uc-46-2"></a>
+### UC-46.2 — Tạo bình luận gốc
+- **Goal / Primary Actor:** Member đăng bình luận mới trên Recipe Post công khai.
+- **Trigger / Preconditions:** Member đăng nhập; bài còn công khai.
+- **Main Flow:** Member nhập nội dung; Backend validate/làm sạch và công khai bình luận.
+- **Alternative / Security:** Guest bị yêu cầu đăng nhập; input rỗng/mã độc bị từ chối.
+- **Postconditions:** Bình luận gốc hợp lệ được lưu.
+- **Traceability / Acceptance Coverage:** FR-46; BR-66; NFR-10; [AC-46.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-46).
+
+<a id="uc-46-3"></a>
+### UC-46.3 — Reply bình luận trong giới hạn 5 cấp
+- **Goal / Primary Actor:** Member trả lời một bình luận/reply.
+- **Trigger / Preconditions:** Member chọn Reply; node cha thuộc cùng Recipe Post.
+- **Main Flow:** Hệ thống kiểm tra depth, lưu reply và gắn đúng parent.
+- **Alternative / Security:** Vượt cấp hoặc parent sai bài bị từ chối; input được làm sạch.
+- **Postconditions:** Reply xuất hiện đúng vị trí trong cây.
+- **Traceability / Acceptance Coverage:** FR-46; BR-66; [AC-46.1, AC-46.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-46).
+
+<a id="uc-46-4"></a>
+### UC-46.4 — Chỉnh sửa bình luận của chính mình
+- **Goal / Primary Actor:** Member sửa nội dung bình luận/reply do mình tạo.
+- **Trigger / Preconditions:** Member chọn Edit trên comment thuộc quyền sở hữu.
+- **Main Flow:** Backend kiểm tra ownership, validate nội dung và lưu thay đổi.
+- **Alternative / Security:** Sửa comment người khác bị chặn; nội dung không hợp lệ không được lưu.
+- **Postconditions:** Comment hợp lệ được cập nhật mà không đổi cấu trúc cây.
+- **Traceability / Acceptance Coverage:** FR-46; NFR-09, NFR-10; [AC-46.3, AC-46.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-46).
+
+<a id="uc-46-5"></a>
+### UC-46.5 — Xóa bình luận của chính mình
+- **Goal / Primary Actor:** Member xóa comment/reply do mình tạo.
+- **Trigger / Preconditions:** Member chọn Delete và xác nhận; ownership hợp lệ.
+- **Main Flow:** Hệ thống xóa nội dung hoặc tạo Tombstone nếu còn reply con.
+- **Alternative / Security:** Xóa comment người khác bị chặn; comment không con có thể được gỡ theo rule.
+- **Postconditions:** Nội dung không còn công khai, cây reply vẫn toàn vẹn.
+- **Traceability / Acceptance Coverage:** FR-46; BR-66; [AC-46.2, AC-46.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-46).
+
+<a id="uc-46-6"></a>
+### UC-46.6 — Administrator gỡ bình luận vi phạm
+- **Goal / Primary Actor:** Administrator hậu kiểm comment/reply vi phạm.
+- **Trigger / Preconditions:** Admin mở nội dung bị báo cáo/xác định vi phạm.
+- **Main Flow:** Admin chọn chế tài; Backend kiểm tra quyền và gỡ nội dung, giữ Tombstone khi có con.
+- **Alternative / Security:** Người không phải Admin bị chặn; quyết định phải theo audit rule liên quan.
+- **Postconditions:** Nội dung vi phạm không còn hiển thị, cấu trúc reply được giữ.
+- **Traceability / Acceptance Coverage:** FR-46; FR-48; BR-66; [AC-46.2, AC-46.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-46).
+
+<a id="uc-57-1"></a>
+### UC-57.1 — Gửi Like cho Recipe Post
+- **Goal / Primary Actor:** Member bày tỏ Like cho bài công khai.
+- **Trigger / Preconditions:** Member đăng nhập, không phải tác giả; bài `PUBLISHED`.
+- **Main Flow:** Backend upsert `LIKE`, cập nhật kết quả hiển thị và trả trạng thái hiện hành.
+- **Alternative / Security:** Guest/tác giả bị chặn; cùng lựa chọn lần nữa chuyển sang UC-57.3.
+- **Postconditions:** Tối đa một reaction hiệu lực của Member trên bài.
+- **Traceability / Acceptance Coverage:** FR-57; BR-69; [AC-57.1, AC-57.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-57).
+
+<a id="uc-57-2"></a>
+### UC-57.2 — Gửi Dislike cho Recipe Post
+- **Goal / Primary Actor:** Member bày tỏ Dislike cho bài công khai.
+- **Trigger / Preconditions:** Member đăng nhập, không phải tác giả; bài `PUBLISHED`.
+- **Main Flow:** Backend upsert `DISLIKE` và trả số liệu/tỷ lệ mới.
+- **Alternative / Security:** Guest/tác giả bị chặn; reaction trước đó được switch nguyên tử.
+- **Postconditions:** Một reaction hiệu lực được lưu.
+- **Traceability / Acceptance Coverage:** FR-57; BR-69; [AC-57.2, AC-57.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-57).
+
+<a id="uc-57-3"></a>
+### UC-57.3 — Chuyển hoặc hủy reaction
+- **Goal / Primary Actor:** Member switch Like/Dislike hoặc toggle off lựa chọn hiện tại.
+- **Trigger / Preconditions:** Member đã có reaction trên bài.
+- **Main Flow:** Hệ thống đổi loại khi chọn nút đối diện hoặc xóa reaction khi chọn lại cùng nút.
+- **Alternative / Security:** Request lặp/race được xử lý theo unique constraint và transaction.
+- **Postconditions:** Trạng thái reaction và aggregate phản ánh đúng lựa chọn cuối.
+- **Traceability / Acceptance Coverage:** FR-57; BR-69; [AC-57.2, AC-57.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-57).
+
+<a id="uc-57-4"></a>
+### UC-57.4 — Xem tỷ lệ Like và tổng bình chọn
+- **Goal / Primary Actor:** Guest/Member xem mức phản hồi của cộng đồng.
+- **Trigger / Preconditions:** Recipe Card hoặc Recipe Detail được hiển thị.
+- **Main Flow:** Hệ thống hiển thị `like_percentage` và tổng Like/Dislike; chưa có vote thì hiển thị `Mới`.
+- **Alternative / Security:** Guest bấm nút reaction được yêu cầu đăng nhập; số liệu không cho phép suy ra người bình chọn.
+- **Postconditions:** Không thay đổi reaction khi chỉ xem.
+- **Traceability / Acceptance Coverage:** FR-57; BR-69; [AC-57.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-57).
+
+<a id="uc-58-3"></a>
+### UC-58.3 — Xem tổng lượt xem Recipe Post
+- **Goal / Primary Actor:** Guest/Member xem tổng lượt xem công khai.
+- **Trigger / Preconditions:** Recipe Card/Detail được hiển thị; aggregate view khả dụng.
+- **Main Flow:** Hệ thống trả và hiển thị tổng view toàn thời gian.
+- **Alternative / Security:** Thiếu aggregate tạm thời không làm lỗi nội dung; không lộ viewer identity.
+- **Postconditions:** Chỉ số được xem, không tạo thêm view chỉ do render aggregate.
+- **Traceability / Acceptance Coverage:** FR-58; BR-70; [AC-58.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-58).
+
+`UC-58.1`, `UC-58.2` và `UC-58.4` là system/background mechanisms (capture, deduplication và aggregation), không phải actor-goal UC. [AC-58.1–AC-58.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-58) vẫn là FR-level/system acceptance.
+
+<a id="uc-59-1"></a>
+### UC-59.1 — Theo dõi Member khác
+- **Goal / Primary Actor:** Member theo dõi một Member khác.
+- **Trigger / Preconditions:** Member đăng nhập, target hoạt động và chưa được follow.
+- **Main Flow:** Backend kiểm tra hai tài khoản, tạo quan hệ có hướng và trả trạng thái/count mới.
+- **Alternative / Security:** Tự follow, target không hoạt động hoặc cặp trùng bị chặn.
+- **Postconditions:** Quan hệ A → B duy nhất tồn tại.
+- **Traceability / Acceptance Coverage:** FR-59; BR-75; [AC-59.1–AC-59.4, AC-59.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-59).
+
+<a id="uc-59-2"></a>
+### UC-59.2 — Bỏ theo dõi Member
+- **Goal / Primary Actor:** Member ngừng theo dõi một Member khác.
+- **Trigger / Preconditions:** Member bấm Unfollow; quan hệ có thể đã tồn tại hoặc đã được xóa.
+- **Main Flow:** Backend xóa quan hệ nếu có và trả `following=false`.
+- **Alternative / Security:** Yêu cầu lặp vẫn thành công về trạng thái; count không xuống dưới dữ liệu thực.
+- **Postconditions:** Không còn quan hệ A → B.
+- **Traceability / Acceptance Coverage:** FR-59; BR-75; [AC-59.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-59).
+
+<a id="uc-59-3"></a>
+### UC-59.3 — Xem trạng thái và số lượng follow
+- **Goal / Primary Actor:** Guest/Member xem follower/following counts và trạng thái follow phù hợp.
+- **Trigger / Preconditions:** Người dùng mở hồ sơ công khai.
+- **Main Flow:** Hệ thống trả count và, với Member đăng nhập, quan hệ của chính người xem với hồ sơ.
+- **Alternative / Security:** Tài khoản không hoạt động không xuất hiện; dữ liệu riêng tư không được trả.
+- **Postconditions:** Chỉ dữ liệu follow công khai được hiển thị.
+- **Traceability / Acceptance Coverage:** FR-59; BR-75; [AC-59.2, AC-59.6, AC-59.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-59).
+
+<a id="uc-59-4"></a>
+### UC-59.4 — Xem danh sách followers/following
+- **Goal / Primary Actor:** Member duyệt danh sách followers/following có phân trang.
+- **Trigger / Preconditions:** Member đăng nhập và chọn một danh sách trên hồ sơ.
+- **Main Flow:** Hệ thống tải trang dữ liệu, chỉ trả trường hồ sơ công khai.
+- **Alternative / Security:** Danh sách rỗng hiển thị empty state; tài khoản không hoạt động bị loại.
+- **Postconditions:** Danh sách được xem, quan hệ không thay đổi.
+- **Traceability / Acceptance Coverage:** FR-59; BR-75; [AC-59.6, AC-59.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-59).
+
+<a id="uc-60-1"></a>
+### UC-60.1 — Bắt đầu so sánh hai Recipe Post
+- **Goal / Primary Actor:** Guest/Member mở so sánh từ card/detail/saved list.
+- **Trigger / Preconditions:** Recipe Post khởi đầu còn công khai.
+- **Main Flow:** Hệ thống đặt bài đã chọn vào một vế và yêu cầu chọn bài thứ hai.
+- **Alternative / Security:** Bài không còn công khai bị từ chối; Saved list chỉ khả dụng cho Member.
+- **Postconditions:** Phiên so sánh tạm thời có một lựa chọn.
+- **Traceability / Acceptance Coverage:** FR-60; [AC-60.1, AC-60.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-60).
+
+<a id="uc-60-2"></a>
+### UC-60.2 — Tìm, chọn hoặc thay Recipe Post so sánh
+- **Goal / Primary Actor:** Guest/Member hoàn thiện hoặc thay một vế so sánh.
+- **Trigger / Preconditions:** Giao diện so sánh đang mở.
+- **Main Flow:** Người dùng tìm/chọn bài; hệ thống xác minh công khai và khác bài còn lại.
+- **Alternative / Security:** Chọn cùng bài hoặc bài không khả dụng bị từ chối.
+- **Postconditions:** Hai vế chứa hai Recipe Post công khai khác nhau.
+- **Traceability / Acceptance Coverage:** FR-60; [AC-60.1, AC-60.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-60).
+
+<a id="uc-60-3"></a>
+### UC-60.3 — So sánh tổng quan và nguyên liệu
+- **Goal / Primary Actor:** Guest/Member đối chiếu thông tin và nguyên liệu hai công thức.
+- **Trigger / Preconditions:** Hai bài hợp lệ đã được chọn.
+- **Main Flow:** Hệ thống trình bày hai cột, ghép nguyên liệu chỉ khi identity/quy đổi hợp lệ và giữ giá trị gốc khi không thể quy đổi.
+- **Alternative / Security:** Không tự hợp nhất khác nguyên liệu hoặc khác dimension.
+- **Postconditions:** Bảng đối chiếu minh bạch, không thay dữ liệu nguồn.
+- **Traceability / Acceptance Coverage:** FR-60; [AC-60.1, AC-60.4, AC-60.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-60).
+
+<a id="uc-60-4"></a>
+### UC-60.4 — So sánh chín chỉ tiêu dinh dưỡng
+- **Goal / Primary Actor:** Guest/Member đối chiếu 9 chỉ tiêu trên một khẩu phần.
+- **Trigger / Preconditions:** Hai bài đã chọn; dữ liệu dinh dưỡng được tính từ nguồn tin cậy khi khả dụng.
+- **Main Flow:** Hệ thống hiển thị mỗi giá trị và chênh lệch tuyệt đối theo cùng đơn vị.
+- **Alternative / Security:** Chỉ tiêu thiếu hiển thị `Chưa đủ dữ liệu`, không đổi thành 0 hoặc tính chênh lệch.
+- **Postconditions:** Bảng chỉ cung cấp dữ liệu, không kết luận món tốt hơn.
+- **Traceability / Acceptance Coverage:** FR-60; [AC-60.3, AC-60.5, AC-60.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-60).
+
+<a id="uc-60-5"></a>
+### UC-60.5 — Xử lý dữ liệu so sánh thiếu
+- **Goal / Primary Actor:** Guest/Member hiểu phần dữ liệu nào chưa đủ.
+- **Trigger / Preconditions:** Một Recipe Post/nguyên liệu/chỉ tiêu thiếu dữ liệu đáng tin cậy.
+- **Main Flow:** Hệ thống đánh dấu đúng trường thiếu và vẫn hiển thị phần có căn cứ.
+- **Alternative / Security:** Không suy diễn số 0, không tạo Health Score hay kết luận y tế.
+- **Postconditions:** Kết quả so sánh giữ provenance và giới hạn dữ liệu.
+- **Traceability / Acceptance Coverage:** FR-60; [AC-60.5–AC-60.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-60).
+
+---
 
 <a id="fr-01"></a>
 ## FR-01 — Hệ thống cho Guest xem và tìm kiếm nội dung đã công khai

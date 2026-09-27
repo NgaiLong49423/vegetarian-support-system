@@ -9,7 +9,7 @@ metadata:
   swp391-risk: "critical"
   swp391-source: "self"
   swp391-source-type: "custom"
-  swp391-version: "v2.1.0"
+  swp391-version: "v2.2.0"
   swp391-created-date: "2026-06-27"
   swp391-last-updated-date: "2026-09-27"
 ---
@@ -251,7 +251,7 @@ The Issue model must cover every managed FR without duplicating implementation s
 
 ### Delivery-Decomposition Rule
 
-A Functional Requirement represents required product behavior and must not automatically be treated as a single developer task. For each ACTIVE FR, determine whether the requirement is:
+A Functional Requirement represents required product behavior and must not automatically be treated as a single developer task. For each current FR present in the root SRS registry, determine whether the requirement is:
 1. **Standalone delivery work**:
    - Small enough for one implementation owner;
    - Primarily one delivery surface (e.g. backend telemetry, background cron, pure UI presentation).
