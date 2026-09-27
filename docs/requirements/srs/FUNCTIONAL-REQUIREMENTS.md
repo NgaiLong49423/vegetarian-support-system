@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.1.1
+> **Version:** v2.2.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -670,6 +670,14 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* Member A đăng nhập vào hệ thống,
   - *When* Member A cố gắng truy xuất lịch ăn của Member B,
   - *Then* hệ thống từ chối truy cập và phản hồi mã lỗi phân quyền.
+- **AC-09.6 (Thay công thức trong một bữa ăn):**
+  - *Given* một bữa ăn trong lịch tuần đã có công thức,
+  - *When* Member chọn một công thức công khai khác để thay thế,
+  - *Then* hệ thống cập nhật món trong đúng vị trí bữa ăn đã chọn.
+- **AC-09.7 (Gỡ công thức khỏi một bữa ăn):**
+  - *Given* một bữa ăn trong lịch tuần đã có công thức,
+  - *When* Member gỡ công thức khỏi bữa đó,
+  - *Then* hệ thống xóa liên kết khỏi bữa ăn nhưng không xóa Recipe Post nguồn hoặc mục đã lưu.
 
 ---
 
@@ -690,9 +698,9 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     | Gói tài khoản | Mức phí | Quyền tính năng AI (Feature Entitlement) | Cơ chế kiểm soát |
     |---|---|---|---|
     | **Guest Free** | 0 VNĐ | AI Chatbot hỏi đáp ẩm thực chay cơ bản (FR-51) | Giới hạn tần suất kỹ thuật (Rate Limiting theo cookie/IP, BR-01) |
-    | **Free Member** | 0 VNĐ | AI Chatbot cơ bản (FR-51) + Gợi ý món cơ bản theo nguyên liệu (FR-34) | Xác thực tài khoản Member; không giới hạn số lượt/ngày |
+    | **Free Member** | 0 VNĐ | AI Chatbot cơ bản (FR-51) + Gợi ý món theo nguyên liệu (`UC-34.1` thuộc FR-34) | Xác thực tài khoản Member; không giới hạn số lượt/ngày |
     | **Plus Member** | 49.000 VNĐ / tháng | Toàn bộ quyền gói Free + AI Hỗ trợ soạn bài Recipe Post (FR-21) + AI Gợi ý công thức biến tấu (FR-47) | Xác thực gói Subscription hiệu lực; không giới hạn số lượt/ngày |
-    | **Pro Member** | 99.000 VNĐ / tháng | Toàn bộ quyền gói Plus + AI Tự động lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân (FR-36) | Toàn quyền tất cả tính năng AI sản phẩm; không giới hạn số lượt/ngày |
+    | **Pro Member** | 99.000 VNĐ / tháng | Toàn bộ quyền gói Plus + AI lập thực đơn tuần thông thường (`UC-34.2`/`UC-34.3` thuộc FR-34) và AI lập thực đơn theo dinh dưỡng cá nhân (FR-36) | Toàn quyền tất cả tính năng AI sản phẩm; không giới hạn số lượt/ngày |
   - Nguyên tắc kiểm soát: Backend bắt buộc xác thực Feature Entitlement trước khi gửi yêu cầu tới dịch vụ Gemini (BR-03); yêu cầu không đủ quyền bị từ chối ngay tại server và tuyệt đối không phát sinh request tới Gemini API.
 - **Phân loại Actor:**
   - Primary Actor: `Guest`, `Member` (Free, Plus, Pro).
@@ -728,7 +736,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
 - **AC-10.1 (Quyền sử dụng AI cho Guest và Member Free):**
   - *Given* người dùng là Guest hoặc Member có gói Free,
-  - *When* gọi tính năng AI Chatbot (FR-51) hoặc Gợi ý công thức theo nguyên liệu (FR-34 đối với Member),
+  - *When* gọi tính năng AI Chatbot (FR-51) hoặc Gợi ý công thức theo nguyên liệu (UC-34.1 thuộc FR-34 đối với Member),
   - *Then* hệ thống xác thực hợp lệ và cho phép thực thi yêu cầu mà không giới hạn theo số lượt/ngày.
 - **AC-10.2 (Chặn Member Free khi gọi tính năng gói Plus):**
   - *Given* Member thuộc gói Free gọi tính năng AI Hỗ trợ soạn bài (FR-21) hoặc Gợi ý món biến tấu (FR-47),
@@ -750,6 +758,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* tài khoản không đủ quyền sử dụng tính năng AI yêu cầu,
   - *When* người dùng gửi request,
   - *Then* hệ thống chặn ngay tại tầng Backend Guard mà tuyệt đối không gửi bất kỳ HTTP request nào tới Google Gemini API (BR-03).
+- **AC-10.7 (Chặn gói Free và Plus khi yêu cầu thực đơn tuần FR-34):**
+  - *Given* Member đang thuộc gói Free hoặc Plus,
+  - *When* Member yêu cầu tạo thực đơn tuần thông thường theo `UC-34.2`,
+  - *Then* hệ thống từ chối yêu cầu và hướng dẫn nâng cấp lên gói Pro.
 
 ---
 
@@ -837,9 +849,9 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - Bảng định giá và quyền lợi tính năng chính thức Phase 1:
     | Gói dịch vụ | Mức giá niêm yết | Quyền tính năng AI (Feature Entitlement) | Thời hạn chu kỳ | Gia hạn tự động |
     |---|---|---|---|---|
-    | **FREE** | **0 VNĐ / tháng** | AI Chatbot cơ bản (FR-51) + Gợi ý món cơ bản (FR-34) | Không thời hạn | Không |
+    | **FREE** | **0 VNĐ / tháng** | AI Chatbot cơ bản (FR-51) + Gợi ý món theo nguyên liệu (`UC-34.1` thuộc FR-34) | Không thời hạn | Không |
     | **PLUS** | **49.000 VNĐ / tháng** | Quyền gói Free + AI Soạn bài (FR-21) + AI Gợi ý biến tấu (FR-47) | Chu kỳ tháng (Monthly) | **Không (Thanh toán từng kỳ)** |
-    | **PRO** | **99.000 VNĐ / tháng** | Toàn bộ quyền gói Plus + AI Lập thực đơn tuần 7 ngày theo dinh dưỡng (FR-36) | Chu kỳ tháng (Monthly) | **Không (Thanh toán từng kỳ)** |
+    | **PRO** | **99.000 VNĐ / tháng** | Toàn bộ quyền gói Plus + AI lập thực đơn tuần thông thường (`UC-34.2`/`UC-34.3` thuộc FR-34) và AI lập thực đơn theo dinh dưỡng (FR-36) | Chu kỳ tháng (Monthly) | **Không (Thanh toán từng kỳ)** |
   - Tiền tệ: Đồng Việt Nam (VNĐ) duy nhất.
   - Không hỗ trợ: Gói năm, coupon, giảm giá, trial, hoàn tiền một phần.
 - **Phân loại Actor:**
@@ -891,6 +903,14 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* một bản tin thanh toán gửi về máy chủ có chữ ký số không hợp lệ hoặc số tiền sai lệch với giá gói,
   - *When* hệ thống xác thực dữ liệu giao dịch,
   - *Then* hệ thống từ chối kích hoạt quyền lợi và ghi log cảnh báo an ninh.
+- **AC-13.6 (Giữ nguyên quyền lợi hiện tại khi giao dịch bị hủy hoặc thất bại):**
+  - *Given* Member đang có quyền lợi gói hiện tại và giao dịch nâng cấp bị hủy hoặc thất bại,
+  - *When* hệ thống ghi nhận kết quả giao dịch,
+  - *Then* hệ thống giữ nguyên quyền lợi hiện tại, không kích hoạt gói mới và thông báo giao dịch chưa hoàn tất.
+- **AC-13.7 (Hiển thị trạng thái gói và ngày hết hạn):**
+  - *Given* Member đã đăng nhập và mở trang thông tin tài khoản,
+  - *When* hệ thống hiển thị thông tin Subscription,
+  - *Then* Member xem được trạng thái gói hiện tại và, nếu là gói trả phí, ngày hết hạn của chu kỳ đã thanh toán.
 
 ---
 
@@ -1261,6 +1281,42 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* nguyên liệu "Đậu phụ mơ" đang có 10 bài công thức công khai liên kết,
   - *When* Administrator gửi yêu cầu xóa vĩnh viễn nguyên liệu này,
   - *Then* hệ thống từ chối xóa, giữ nguyên dữ liệu và yêu cầu chuyển sang trạng thái ngừng sử dụng.
+- **AC-18.5 (Tìm kiếm danh mục nguyên liệu chuẩn):**
+  - *Given* danh mục có các nguyên liệu chuẩn,
+  - *When* Administrator tìm kiếm trong danh mục,
+  - *Then* hệ thống hiển thị các nguyên liệu phù hợp với nội dung tìm kiếm.
+- **AC-18.6 (Chỉnh sửa thông tin nguyên liệu chuẩn):**
+  - *Given* Administrator chỉnh sửa tên tiếng Việt, tên tiếng Anh tùy chọn hoặc nhóm của một nguyên liệu,
+  - *When* Administrator lưu thay đổi,
+  - *Then* danh mục hiển thị thông tin đã cập nhật.
+- **AC-18.7 (Ngừng sử dụng nguyên liệu nhưng giữ liên kết lịch sử):**
+  - *Given* nguyên liệu chuẩn đang được sử dụng trong Recipe Post,
+  - *When* Administrator ngừng sử dụng nguyên liệu đó,
+  - *Then* nguyên liệu không còn được chọn cho liên kết mới và các liên kết lịch sử vẫn được bảo toàn.
+- **AC-18.8 (Hiển thị danh mục đơn vị đo lường):**
+  - *Given* Administrator mở danh mục `UNIT`,
+  - *When* danh mục được hiển thị,
+  - *Then* hệ thống trình bày tên, ký hiệu và thứ nguyên của các đơn vị đo lường.
+- **AC-18.9 (Thêm đơn vị đo lường):**
+  - *Given* Administrator nhập tên, ký hiệu và một thứ nguyên hợp lệ (`MASS`, `VOLUME` hoặc `COUNT`) cho đơn vị mới,
+  - *When* Administrator lưu đơn vị,
+  - *Then* đơn vị mới xuất hiện trong danh mục `UNIT`.
+- **AC-18.10 (Chỉnh sửa đơn vị đo lường):**
+  - *Given* Administrator chỉnh sửa tên, ký hiệu hoặc thứ nguyên của một đơn vị,
+  - *When* Administrator lưu thay đổi,
+  - *Then* danh mục `UNIT` hiển thị thông tin đã cập nhật.
+- **AC-18.11 (Ngừng sử dụng đơn vị nhưng giữ liên kết lịch sử):**
+  - *Given* đơn vị đo lường đang được tham chiếu bởi dữ liệu công thức,
+  - *When* Administrator ngừng sử dụng đơn vị đó,
+  - *Then* đơn vị không còn được chọn cho liên kết mới và các liên kết lịch sử vẫn được bảo toàn.
+- **AC-18.12 (Từ chối tỷ lệ quy đổi không dương):**
+  - *Given* Administrator cấu hình tỷ lệ quy đổi nguyên liệu–đơn vị với số gam tương đương bằng hoặc nhỏ hơn 0,
+  - *When* Administrator lưu cấu hình,
+  - *Then* hệ thống từ chối lưu cấu hình đó.
+- **AC-18.13 (Từ chối cặp nguyên liệu–đơn vị quy đổi bị trùng):**
+  - *Given* đã tồn tại một cấu hình quy đổi cho cùng cặp nguyên liệu và đơn vị,
+  - *When* Administrator tạo thêm cấu hình quy đổi cho cặp đó,
+  - *Then* hệ thống từ chối tạo bản ghi trùng.
 
 ---
 
@@ -2242,17 +2298,17 @@ Cung cấp công cụ thao tác linh hoạt, chi tiết và trực quan để th
 
 - **Mã yêu cầu:** FR-34
 - **Module:** M04 (Recipe Catalog & Search), M05 (Meal Planning & Shopping List), M06 (AI Assistant & Personalization)
-- **Tóm tắt yêu cầu:** AI gợi ý món, lập menu và đề xuất thay thế chỉ từ Recipe Post đang công khai (`PUBLISHED`), không hidden/deleted/unavailable, dựa trên hồ sơ sở thích (FR-31) và nguyên liệu người dùng cung cấp; AI không bịa công thức, mọi kết quả dẫn tới bài nguồn và chỉ được lưu sau khi người dùng xác nhận (SRS 3.17, BR-31, BR-34).
+- **Tóm tắt yêu cầu:** AI gợi ý món, lập menu và đề xuất thay thế chỉ từ Recipe Post đang công khai (`PUBLISHED`), không hidden/deleted/unavailable, dựa trên hồ sơ sở thích (FR-31) và nguyên liệu người dùng cung cấp; AI không bịa công thức, mọi kết quả dẫn tới bài nguồn và chỉ được lưu sau khi người dùng xác nhận (SRS 3.17, BR-31, BR-38).
 
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-discovery-and-classification.md#fr-34).
 
 #### Mục đích
 Tận dụng năng lực phân tích thông minh của AI để giải quyết bài toán gợi ý món ăn phù hợp với nguyên liệu thực tế và sở thích riêng của từng gia đình; bảo đảm 100% các món ăn được gợi ý đều là các công thức thực tế, có thể nấu được ngay từ kho công thức cộng đồng mà không bị ảo giác sinh ra công thức giả mạo.
 
-#### Ranh giới an toàn của tính năng AI gợi ý món (SRS 3.17, BR-34)
+#### Ranh giới an toàn của tính năng AI gợi ý món (SRS 3.17, BR-38)
 - **Nguyên tắc "Không bịa công thức" (No Hallucination):** AI tuyệt đối không tự sinh ra tên món ăn hay cách nấu không có trong cơ sở dữ liệu. Mọi món ăn do AI đề xuất bắt buộc phải là một Recipe Post đang tồn tại hợp lệ ở trạng thái `PUBLISHED`.
 - **Nguyên tắc dẫn nguồn bài viết:** Mỗi món ăn được gợi ý phải đi kèm đường dẫn xem chi tiết công thức gốc của tác giả trong hệ thống.
-- **Nguyên tắc xác nhận trước khi lưu:** Kết quả gợi ý thực đơn tuần của AI chỉ mang tính đề xuất; hệ thống TUYỆT ĐỐI KHÔNG tự động ghi đè vào Lịch ăn của Member nếu người dùng chưa bấm nút "Xác nhận áp dụng vào Lịch ăn" (BR-34).
+- **Nguyên tắc xác nhận trước khi lưu:** Kết quả gợi ý thực đơn tuần của AI chỉ mang tính đề xuất; hệ thống TUYỆT ĐỐI KHÔNG tự động ghi đè vào Lịch ăn của Member nếu người dùng chưa bấm nút "Xác nhận áp dụng vào Lịch ăn".
 
 #### Danh mục Use Cases & User Stories
 - **Các Use Case con:**
@@ -2265,6 +2321,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Guest không được phép sử dụng AI cá nhân hóa gợi ý món (BR-05).
+- Theo FR-10, Member Free được dùng gợi ý theo nguyên liệu ở UC-34.1; các UC-34.2 và UC-34.3 về preview và áp dụng thực đơn tuần thông thường yêu cầu gói Pro. Phạm vi này khác FR-36, vốn tạo thực đơn tuần theo dữ liệu dinh dưỡng tin cậy.
 - Ràng buộc chặt chẽ trong System Prompt và kiểm tra chéo ở Backend: chỉ chấp nhận ID bài viết hợp lệ đang ở trạng thái `PUBLISHED` từ cơ sở dữ liệu, loại bỏ bất kỳ món ăn nào không có trong hệ thống (NFR-08, NFR-10).
 
 #### Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
@@ -2272,7 +2329,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest.
   - [BR-30](BUSINESS-RULES.md#br-30): Ranh giới chức năng khi bỏ qua Onboarding.
   - [BR-31](BUSINESS-RULES.md#br-31): Không gọi AI và không trừ hạn mức khi thiếu hồ sơ.
-  - [BR-34](BUSINESS-RULES.md#br-34): AI gợi ý món từ công thức có sẵn và xác nhận trước khi lưu.
+  - [BR-38](BUSINESS-RULES.md#br-38): AI chỉ dùng công thức công khai có sẵn và không tự tạo công thức mới.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-04](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-04): Thời gian tạo thực đơn tuần theo hồ sơ $\le 8$ giây.
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu và toàn vẹn giao dịch.
@@ -2283,7 +2340,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **AC-34.1 — AI chỉ gợi ý các món ăn có công thức nguồn công khai thực tế:**
   - **Given:** Member yêu cầu AI gợi ý món từ nguyên liệu sẵn có.
   - **When:** AI trả về kết quả gợi ý.
-  - **Then:** 100% các món ăn được đề xuất đều gắn liền với Recipe Post đang công khai (`PUBLISHED`) và có đường dẫn hợp lệ dẫn tới bài viết đó (BR-34).
+  - **Then:** 100% các món ăn được đề xuất đều gắn liền với Recipe Post đang công khai (`PUBLISHED`) và có đường dẫn hợp lệ dẫn tới bài viết đó (BR-38).
 
 - **AC-34.2 — AI tuân thủ nghiêm ngặt loại ăn chay và danh sách dị ứng:**
   - **Given:** Member khai báo loại ăn chay `Vegan` và dị ứng `Đậu phộng` tại FR-31.
@@ -2293,7 +2350,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **AC-34.3 — Không tự động lưu thực đơn vào Lịch ăn khi chưa được người dùng xác nhận:**
   - **Given:** AI vừa tạo xong bản xem trước thực đơn tuần đề xuất.
   - **When:** Member đóng màn hình xem trước hoặc chưa bấm nút xác nhận.
-  - **Then:** Lịch ăn tuần của Member giữ nguyên trạng thái cũ, không bị ghi đè hay thay đổi dữ liệu (BR-34).
+  - **Then:** Lịch ăn tuần của Member giữ nguyên trạng thái cũ, không bị ghi đè hay thay đổi dữ liệu.
 
 - **AC-34.4 — Lưu thành công thực đơn AI vào Lịch ăn sau khi người dùng xác nhận:**
   - **Given:** Member đang ở màn hình xem trước thực đơn tuần do AI đề xuất.
@@ -2304,6 +2361,10 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - **Given:** Member chưa hoàn thành 3 thông tin tối thiểu trong hồ sơ sở thích theo FR-31.
   - **When:** Member nhấn yêu cầu AI gợi ý món.
   - **Then:** Hệ thống dừng xử lý ngay, không gửi request tới Gemini, không trừ hạn mức và hiển thị hướng dẫn bổ sung hồ sơ (BR-31).
+- **AC-34.6 — Gợi ý theo nguyên liệu vẫn tuân thủ trường phái ăn chay và dị ứng:**
+  - **Given:** Member đã khai báo trường phái ăn chay và dị ứng trong hồ sơ FR-31, rồi yêu cầu gợi ý món theo nguyên liệu sẵn có.
+  - **When:** Hệ thống trả về các Recipe Post được gợi ý.
+  - **Then:** Các công thức được gợi ý phù hợp với trường phái ăn chay của Member và không chứa nguyên liệu gây dị ứng đã khai báo.
 
 ---
 
@@ -3311,6 +3372,10 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* người dùng gửi câu hỏi nhưng dịch vụ AI bên ngoài gặp lỗi kết nối hoặc quá thời gian phản hồi quy định tại NFR-03,
   - *When* hệ thống xử lý ngoại lệ,
   - *Then* hệ thống hiển thị thông báo lỗi kỹ thuật thân thiện và ghi error log kỹ thuật (BR-04, NFR-18).
+- **AC-51.8 (Trả lời câu hỏi hợp lệ trong ngữ cảnh chung):**
+  - *Given* Guest hoặc Member hỏi Chatbot về ăn chay, kiến thức ẩm thực hoặc kỹ thuật chế biến trong ngữ cảnh chung,
+  - *When* câu hỏi hợp lệ được xử lý thành công,
+  - *Then* Chatbot trả lời phù hợp với câu hỏi và hiển thị nhãn AI.
 
 ---
 
@@ -3382,6 +3447,10 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* người dùng là Guest chưa đăng nhập,
   - *When* cố gắng truy cập tính năng danh sách mua sắm,
   - *Then* hệ thống chặn truy cập và hiển thị thông báo yêu cầu đăng nhập.
+- **AC-53.6 (Tạo danh sách mua sắm từ Recipe Post được chọn):**
+  - *Given* Member đã chọn một hoặc nhiều Recipe Post công khai,
+  - *When* Member xác nhận tạo Shopping List từ các bài đã chọn,
+  - *Then* hệ thống tổng hợp nguyên liệu từ các bài đó và hiển thị danh sách mua sắm.
 
 ---
 

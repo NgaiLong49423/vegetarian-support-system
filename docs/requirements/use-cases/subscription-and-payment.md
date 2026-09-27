@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M08
 > **File:** `docs/requirements/use-cases/subscription-and-payment.md`
-> **Version:** v2.1.0
+> **Version:** v2.2.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -111,7 +111,7 @@ Với giao dịch thành công đã xác minh, giao dịch được ghi nhận `
 - [AC-13.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) — Kích hoạt quyền lợi sau khi xác minh thanh toán thành công.
 - [AC-13.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) — Xử lý callback/IPN lặp idempotently.
 - [AC-13.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) — Từ chối chữ ký hoặc số tiền không hợp lệ.
-- Coverage gap — Chưa có AC kiểm tra Member hủy thanh toán/thanh toán thất bại thì gói hiện tại được giữ nguyên.
+- [AC-13.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) — Giữ quyền lợi hiện tại khi giao dịch bị hủy hoặc thất bại.
 
 ---
 
@@ -143,6 +143,6 @@ Member đã xem được trạng thái gói hiện tại và ngày hết hạn c
 - **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền truy cập); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện tiếng Việt, responsive).
 
 #### Acceptance Coverage
-`AC COVERAGE GAP` — FR-13 hiện không có AC kiểm tra trực tiếp việc Member xem được trạng thái gói hiện tại và ngày hết hạn trên trang tài khoản.
+- [AC-13.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13) — Hiển thị trạng thái gói và ngày hết hạn chu kỳ đã thanh toán.
 
 ---

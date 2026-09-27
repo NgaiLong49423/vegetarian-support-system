@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M04
 > **File:** `docs/requirements/use-cases/recipe-discovery-and-classification.md`
-> **Version:** v2.2.0
+> **Version:** v2.3.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -289,7 +289,9 @@ Danh mục nguyên liệu được cập nhật để dùng trong các lựa ch�
 - [AC-18.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Chỉ Administrator được quản lý danh mục.
 - [AC-18.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Thêm nguyên liệu chuẩn hợp lệ.
 - [AC-18.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Chặn xóa vĩnh viễn nguyên liệu đang được bài viết tham chiếu.
-- Coverage gap — Chưa có AC kiểm tra trực tiếp tìm kiếm, chỉnh sửa hoặc ngừng sử dụng nguyên liệu; [AC-18.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) chỉ kiểm tra tạo mới, [AC-18.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) kiểm tra từ chối xóa cứng.
+- [AC-18.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Tìm kiếm nguyên liệu chuẩn.
+- [AC-18.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Chỉnh sửa thông tin nguyên liệu chuẩn.
+- [AC-18.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Ngừng sử dụng nguyên liệu nhưng giữ liên kết lịch sử.
 
 ---
 
@@ -323,7 +325,10 @@ Danh mục đơn vị phản ánh thông tin và trạng thái được Administ
 
 #### Acceptance Coverage
 - [AC-18.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Chỉ Administrator được quản lý danh mục.
-- `AC COVERAGE GAP` — Chưa có AC kiểm tra trực tiếp thao tác xem/thêm/chỉnh sửa danh mục `UNIT`; [AC-18.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) kiểm tra cấu hình quy đổi ở UC-18.3, không thay thế kiểm chứng quản lý danh mục đơn vị.
+- [AC-18.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Xem danh mục đơn vị và thứ nguyên.
+- [AC-18.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Thêm đơn vị đo lường.
+- [AC-18.10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Chỉnh sửa đơn vị đo lường.
+- [AC-18.11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Ngừng sử dụng đơn vị nhưng giữ liên kết lịch sử.
 
 ---
 
@@ -359,7 +364,8 @@ Tỷ lệ quy đổi gắn với đúng nguyên liệu/đơn vị được lưu 
 #### Acceptance Coverage
 - [AC-18.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Chỉ Administrator được quản lý danh mục.
 - [AC-18.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Cấu hình tỷ lệ quy đổi nguyên liệu–đơn vị.
-- Coverage gap — Chưa có AC cho việc từ chối tỷ lệ quy đổi không hợp lệ hoặc cặp nguyên liệu–đơn vị bị trùng; [AC-18.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) chỉ kiểm tra lưu thành công.
+- [AC-18.12](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Từ chối tỷ lệ quy đổi không dương.
+- [AC-18.13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) — Từ chối cặp nguyên liệu–đơn vị quy đổi bị trùng.
 
 ---
 
@@ -407,7 +413,7 @@ Kết quả gợi ý tham chiếu tới Recipe Post công khai thực tế; hệ
 #### Acceptance Coverage
 - [AC-34.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Chỉ gợi ý Recipe Post công khai có link nguồn.
 - [AC-34.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Chặn yêu cầu khi thiếu hồ sơ tối thiểu.
-- Coverage gap — Chưa có AC kiểm tra kết quả gợi ý nguyên liệu tuân thủ trường phái ăn chay và dị ứng; [AC-34.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) kiểm tra thực đơn tuần, không phải UC-34.1.
+- [AC-34.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Gợi ý theo nguyên liệu tuân thủ trường phái ăn chay và dị ứng.
 
 ---
 
@@ -451,7 +457,7 @@ Preview được hiển thị; chưa có thay đổi nào được ghi vào Meal
 - [AC-34.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Tuân thủ loại ăn chay và danh sách dị ứng.
 - [AC-34.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Preview chưa làm thay đổi Lịch ăn khi chưa xác nhận.
 - [AC-34.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Chặn yêu cầu khi thiếu hồ sơ tối thiểu.
-- Coverage gap — Chưa có AC kiểm tra trực tiếp entitlement Pro cho UC-34.2; [AC-10.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) hiện nêu FR-36, còn [AC-10.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) chỉ kiểm tra quyền cho Member Pro nói chung.
+- [AC-10.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Chỉ gói Pro được yêu cầu thực đơn tuần thông thường FR-34.
 
 ---
 
@@ -462,7 +468,7 @@ Preview được hiển thị; chưa có thay đổi nào được ghi vào Meal
 Cho Member chủ động quyết định lưu preview AI vào một Lịch ăn tuần đã chọn.
 
 #### Primary Actor
-`Member`.
+`Member` thuộc gói Pro.
 
 #### Trigger
 Member nhấn “Xác nhận áp dụng vào Lịch ăn” trên preview đã xem.

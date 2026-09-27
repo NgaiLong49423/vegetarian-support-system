@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M06
 > **File:** `docs/requirements/use-cases/ai-and-personalization.md`
-> **Version:** v2.2.0
+> **Version:** v2.3.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -143,6 +143,7 @@ Yêu cầu không được thực thi và không phát sinh chi phí gọi Gemin
 - [AC-10.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Từ chối tính năng Plus với Member Free.
 - [AC-10.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Từ chối tính năng Pro với Member Plus.
 - [AC-10.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Chặn tại Backend trước khi gọi Gemini.
+- [AC-10.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) — Từ chối yêu cầu thực đơn tuần FR-34 với gói Free/Plus và hướng dẫn lên Pro.
 
 ---
 
@@ -275,7 +276,7 @@ Người dùng nhận được phản hồi cho câu hỏi chung; không có d�
 - [AC-51.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Dùng một chatbot cho Guest và Member (hành vi dùng chung).
 - [AC-51.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Chatbot không tự sửa dữ liệu nghiệp vụ (hành vi dùng chung).
 - [AC-51.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Xử lý lỗi hoặc timeout (hành vi dùng chung).
-- `AC COVERAGE GAP` — Chưa có AC kiểm tra trực tiếp câu trả lời bình thường cho câu hỏi ở ngữ cảnh chung; các AC liệt kê phía trên chỉ kiểm chứng an toàn và hành vi dùng chung.
+- [AC-51.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) — Trả lời câu hỏi hợp lệ trong ngữ cảnh chung và gắn nhãn AI.
 
 ---
 

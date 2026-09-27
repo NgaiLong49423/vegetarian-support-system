@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M05
 > **File:** `docs/requirements/use-cases/meal-planning-and-shopping.md`
-> **Version:** v2.2.0
+> **Version:** v2.3.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -93,7 +93,8 @@ Vị trí bữa ăn được cập nhật theo thao tác của Member; danh sác
 - [AC-09.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Thêm công thức vào bữa ăn.
 - [AC-09.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Chặn công thức trùng trong cùng bữa.
 - [AC-09.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Quyền riêng tư của lịch ăn (áp dụng xuyên các UC FR-09).
-- Chưa có AC kiểm tra trực tiếp thao tác đổi hoặc gỡ công thức khỏi bữa; [AC-09.2](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) và [AC-09.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) chỉ bao phủ thêm mới và ngăn trùng.
+- [AC-09.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Thay công thức trong bữa ăn.
+- [AC-09.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) — Gỡ công thức khỏi bữa ăn mà không xóa dữ liệu nguồn.
 
 ---
 
@@ -177,7 +178,7 @@ Shopping List mới được lưu theo tài khoản Member; các mục đã tổ
 #### Acceptance Coverage
 - [AC-53.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Tạo Shopping List từ Meal Plan.
 - [AC-53.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Yêu cầu đăng nhập (áp dụng xuyên các thao tác Shopping List).
-- Coverage gap — [AC-53.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) chỉ kiểm tra tạo danh sách từ Meal Plan; chưa có AC cho nguồn một/nhiều Recipe Post được chọn.
+- [AC-53.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Tạo danh sách từ một hoặc nhiều Recipe Post được chọn.
 
 ---
 
