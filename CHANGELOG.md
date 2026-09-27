@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-27 — Finalize Requirements Baseline v2 and Prepare Issue Reconciliation ([PR #72](https://github.com/NgaiLong49423/vegetarian-support-system/pull/72))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 30c5d0a.
 
 **Scope:** Stabilize the maintained requirements baseline for implementation planning while preserving prior requirements as history. GitHub Issue reconciliation is prepared separately and remains pending user approval.
 
