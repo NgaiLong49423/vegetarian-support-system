@@ -137,7 +137,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Mã yêu cầu:** NFR-09
 - **Nhóm chất lượng:** Security
 - **Mô tả yêu cầu:** Thực thi nghiêm ngặt phân quyền vai trò (Role-Based Access Control) giữa Guest, Member và Administrator.
-- **Nghiệp vụ liên quan:** `FR-03`, `FR-04`, `FR-06`, `FR-07` và toàn bộ các nghiệp vụ quản trị.
+- **Nghiệp vụ liên quan:** `FR-03`, `FR-04`, `FR-06` và toàn bộ nghiệp vụ quản trị hiện hành.
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Metric:* Tỉ lệ chặn truy cập trái phép ở tầng Backend.
   - *Threshold:* 100% endpoint quản trị chỉ dành cho Administrator. Mọi thao tác truy cập trái quyền hoặc không có token hợp lệ đều bị chặn ở Backend và trả về mã lỗi HTTP 401 Unauthorized hoặc 403 Forbidden.
@@ -152,10 +152,10 @@ This document contains only requirements included in Requirements / Implementati
 - **Mã yêu cầu:** NFR-10
 - **Nhóm chất lượng:** Security
 - **Mô tả yêu cầu:** Bảo vệ hệ thống trước các nguy cơ tấn công bảo mật web phổ biến từ dữ liệu đầu vào của người dùng, kiểm soát IDOR và ngăn chặn gian lận thao tác dữ liệu.
-- **Nghiệp vụ liên quan:** Toàn hệ thống (đặc biệt là `FR-14`, `FR-16`, `FR-19`, `FR-22`, `FR-25`, `FR-44`, `FR-57`, `FR-58`).
+- **Nghiệp vụ liên quan:** Toàn hệ thống (đặc biệt là `FR-14`, `FR-16`, `FR-19`, `FR-25`, `FR-44`, `FR-57`, `FR-58`).
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Lỗ hổng mã độc:* Không tồn tại các lỗ hổng SQL Injection (sử dụng ORM/Hibernate parameterized queries), Cross-Site Scripting (XSS - sanitize input/escape HTML trên React) và Cross-Site Request Forgery (CSRF).
-  - *Kiểm soát IDOR & Quyền tác giả:* 100% endpoint chỉnh sửa bài viết, các bước hướng dẫn (`RECIPE_STEP`), ảnh minh họa (`RECIPE_MEDIA`) bắt buộc kiểm tra quyền sở hữu tác giả (`authorId == currentUserId`); tác giả bị chặn không được tự bình chọn bài viết của chính mình (BR-69).
+  - *Kiểm soát IDOR & Quyền tác giả:* 100% endpoint chỉnh sửa Recipe Post và ảnh minh họa (`RECIPE_MEDIA`) bắt buộc kiểm tra quyền sở hữu tác giả (`authorId == currentUserId`); nội dung hướng dẫn chế biến thuộc trường `RECIPE_POST.instructions` và được bảo vệ cùng quyền chỉnh sửa Recipe Post (FR-16, FR-44); tác giả bị chặn không được tự bình chọn bài viết của chính mình (BR-69).
   - *Chống gian lận số liệu (Anti-tampering):* `like_count`, `dislike_count` và `view_count` chỉ được cập nhật/kiểm soát ở tầng máy chủ; `like_percentage` được tính khi đọc từ số lượt Like/Dislike và không nhận từ client. Client không được gửi trực tiếp các bộ đếm hoặc tỷ lệ này (FR-57, FR-58, BR-69, BR-70).
   - *Thẩm định tính hợp lệ tải tệp & dữ liệu:* Thẩm định chặt chẽ tệp tải lên (0–5 ảnh, định dạng JPEG/PNG/WebP, dung lượng $\le 5$ MB); kiểm tra tính khả dụng của quy tắc chuyển đổi đơn vị (`INGREDIENT_UNIT_CONVERSION`) trước khi lưu trữ hoặc xuất bản.
 - **Phương pháp kiểm chứng (Verification Method):** Sử dụng công cụ quét bảo mật tĩnh (SAST/SonarQube) hoặc quét động (OWASP ZAP); viết integration test kiểm tra chặn IDOR và gian lận tham số.
@@ -350,7 +350,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Mã yêu cầu:** NFR-24
 - **Nhóm chất lượng:** Maintainability
 - **Mô tả yêu cầu:** Backend phải là một Spring Boot application duy nhất, được phát hành thành một deployable backend theo kiến trúc Modular Monolith. Source code phải được chia theo business capability như `auth`, `recipe`, `mealplan`, `shopping`, `nutrition`, `subscription` và `admin`; bên trong mỗi module phải áp dụng MVC/layered structure.
-- **Nghiệp vụ liên quan:** Toàn bộ business module của backend, bao gồm các capability liên quan đến `FR-06`, `FR-07` và các yêu cầu nghiệp vụ khác.
+- **Nghiệp vụ liên quan:** Toàn bộ business module của backend, bao gồm các capability quản trị hiện hành như xử lý báo cáo và quản lý hậu kiểm (`FR-06`), cùng các yêu cầu nghiệp vụ khác.
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Architecture threshold:* Có đúng một Spring Boot application và một deployable backend; không có business capability nào được tách thành microservice.
   - *Module threshold:* Mỗi business capability được tổ chức thành module/package có ranh giới rõ ràng.

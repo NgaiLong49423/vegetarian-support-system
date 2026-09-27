@@ -907,7 +907,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Hệ thống cung cấp cơ chế lưu trữ thư viện ảnh của bài công thức nấu ăn thông qua thực thể `RECIPE_MEDIA` trên dịch vụ đám mây Azure Blob Storage; mỗi bài công thức có tối đa 5 ảnh minh họa (tùy chọn theo BR-20); nếu bài có từ 1 đến 5 ảnh thì **BẮT BUỘC phải có đúng 1 ảnh được chọn làm ảnh bìa (`is_cover = true`)**; mỗi ảnh có thứ tự hiển thị (`display_order`); áp dụng kiểm tra định dạng và dung lượng ($\le 5$ MB/ảnh, JPEG/PNG/WebP) trước khi tải lên; giải phóng tài nguyên ảnh khi bài công thức bị xóa hoặc khi tác giả gỡ ảnh; tuyệt đối không lưu tệp nhị phân trực tiếp trong cơ sở dữ liệu quan hệ.
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Thư viện ảnh minh họa được Chuyên gia tải lên khi tạo hoặc chỉnh sửa bài công thức của chính mình (FR-04, FR-21, FR-44); FR-07 đã `RETIRED`.
+  - Áp dụng cho: Thư viện ảnh minh họa được Chuyên gia tải lên khi tạo hoặc chỉnh sửa bài công thức của chính mình (FR-04, FR-21, FR-44).
   - Giới hạn: Tối đa **5 ảnh minh họa** cho mỗi Recipe Post trong `RECIPE_MEDIA`.
   - Quy tắc ảnh bìa: Khi bài có $\ge 1$ ảnh, phải có đúng 1 ảnh mang cờ `is_cover = true`.
   - Định dạng hỗ trợ: JPEG, PNG, WebP; dung lượng tối đa $\le 5$ MB trên mỗi tệp tin (NFR-10).
@@ -973,7 +973,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Hệ thống cho phép tác giả bài công thức (Chuyên gia) gắn tối đa một đường link hoặc video ID hợp lệ của YouTube vào bài Recipe Post khi tạo hoặc chỉnh sửa; hệ thống kiểm tra tính hợp lệ của liên kết, trích xuất mã định danh video YouTube và nhúng trình phát video (YouTube IFrame Player) an toàn trên trang chi tiết công thức để phục vụ người xem; hệ thống TUYỆT ĐỐI KHÔNG nhận tải lên, sao chép hoặc lưu trữ tệp tin video nhị phân của YouTube trên máy chủ hay bộ lưu trữ đám mây (BR-10); video là thành phần hoàn toàn tùy chọn (BR-20).
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Mọi bài công thức được Chuyên gia tạo hoặc chỉnh sửa (FR-04, FR-16, FR-44); FR-07 đã `RETIRED`.
+  - Áp dụng cho: Mọi bài công thức được Chuyên gia tạo hoặc chỉnh sửa (FR-04, FR-16, FR-44).
   - Nền tảng hỗ trợ: YouTube duy nhất trong Phase 1 (BR-10).
   - Giới hạn: Tối đa **1 liên kết video YouTube** cho mỗi bài công thức (BR-19).
 - **Phân loại Actor:**
@@ -1040,7 +1040,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Thiết lập cấu trúc dữ liệu chuẩn mực và bộ quy tắc kiểm tra hợp lệ (Recipe Validation Profile) bắt buộc đối với mọi Recipe Post trước khi được công khai trong hệ thống theo SRS 3.9, BR-19 và BR-73: tiêu đề từ 3 đến 120 ký tự; thể loại món ăn bắt buộc chọn 1 giá trị chuẩn hóa thuộc `dish_category`; số lượng nguyên liệu từ 1 đến 50 dòng có định lượng số học dương và tỷ lệ quy đổi hợp lệ sang gam (cấm "vừa đủ"); số khẩu phần từ 1 đến 50; thời gian chuẩn bị và nấu mỗi giá trị từ 0 đến 1.440 phút với tổng thời gian lớn hơn 0 (thời gian nấu được phép bằng 0 theo BR-20 khi thời gian chuẩn bị lớn hơn 0); loại ăn chay bắt buộc thuộc 4 loại chuẩn; mô tả bài viết tối đa 2.000 ký tự (tùy chọn theo BR-20); hướng dẫn chế biến dạng văn bản từ 10 đến 5.000 ký tự sau khi trim (người đăng không bắt buộc phải viết từng bước nấu ăn vào bài viết, có thể viết đoạn văn tự do hoặc phân bước tùy ý theo BR-19); thư viện ảnh tối đa 5 ảnh JPEG/PNG/WebP dung lượng $\le 5$ MB/ảnh (`RECIPE_MEDIA`), nếu có ảnh bắt buộc đúng 1 ảnh bìa (`is_cover = true`) (tùy chọn theo BR-19, BR-20); tối đa một link YouTube (tùy chọn theo BR-10, BR-20); tất cả bài công thức đều áp dụng thống nhất mô hình xuất bản trực tiếp và hậu kiểm (BR-07, BR-59).
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Mọi bài Recipe Post do Chuyên gia tạo hoặc chỉnh sửa (FR-04, FR-44); FR-07 đã `RETIRED`.
+  - Áp dụng cho: Mọi bài Recipe Post do Chuyên gia tạo hoặc chỉnh sửa (FR-04, FR-44).
   - Validation Profile chính thức:
     | Trường dữ liệu | Ràng buộc giá trị hợp lệ | Bắt buộc / Tùy chọn |
     |---|---|---|
@@ -1175,7 +1175,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **AC-17.1 (Hiển thị đầy đủ thông tin trên thẻ món):**
   - *Given* một bài công thức đang ở trạng thái công khai hợp lệ,
   - *When* hệ thống hiển thị danh sách Khám phá,
-  - *Then* thẻ món thể hiện rõ ảnh bìa từ `RECIPE_MEDIA` (hoặc ảnh mặc định), tiêu đề món ăn, tên tác giả công khai, loại ăn chay, tổng thời gian, huy hiệu tỷ lệ % Like (`👍 {like_percentage}%` hoặc nhãn `Mới` theo BR-69), và tổng lượt xem `view_count` (lưu ý: Like/Dislike chỉ áp dụng cho bài công thức, không áp dụng cho bình luận theo FR-45).
+  - *Then* thẻ món thể hiện rõ ảnh bìa từ `RECIPE_MEDIA` (hoặc ảnh mặc định), tiêu đề món ăn, tên tác giả công khai, loại ăn chay, tổng thời gian, huy hiệu tỷ lệ % Like (`👍 {like_percentage}%` hoặc nhãn `Mới` theo BR-69), và tổng lượt xem `view_count`. Like/Dislike chỉ áp dụng cho bài công thức, không áp dụng cho bình luận.
 - **AC-17.2 (Gán ảnh mặc định khi bài viết không có ảnh):**
   - *Given* bài công thức công khai không có hình ảnh đính kèm,
   - *When* thẻ món được hiển thị,
@@ -1422,13 +1422,13 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-contribution-and-community.md#fr-21).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Chuyên gia trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn (Description $\le 2.000$ ký tự) hoặc đề xuất nội dung hướng dẫn chế biến (văn bản từ 10 đến 5.000 ký tự theo FR-16, BR-19) dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, thể loại món `dish_category`, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập; kết quả do AI sinh ra được đưa trực tiếp vào các ô nhập liệu của biểu mẫu ở phía client (ô mô tả `description` hoặc ô hướng dẫn chế biến `instructions`) ở dạng có thể chỉnh sửa tự do và chỉ được công khai khi người dùng chủ động xem xét, xác nhận (BR-15); hệ thống TUYỆT ĐỐI KHÔNG tự động công khai, không tự động lưu trữ bản nháp bền vững trên server (No Persistent Server Draft theo FR-24); tính năng thuộc gói Plus và Pro (FR-10, BR-02); nếu AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói Plus/Pro, tác giả vẫn có toàn quyền tiếp tục tự viết hướng dẫn chế biến và xuất bản bài viết bình thường (BR-16).
+- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Chuyên gia trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn (Description $\le 2.000$ ký tự) hoặc đề xuất nội dung hướng dẫn chế biến (văn bản từ 10 đến 5.000 ký tự theo FR-16, BR-19) dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, thể loại món `dish_category`, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập; kết quả do AI sinh ra được đưa trực tiếp vào các ô nhập liệu của biểu mẫu ở phía client (ô mô tả `description` hoặc ô hướng dẫn chế biến `instructions`) ở dạng có thể chỉnh sửa tự do và chỉ được công khai khi người dùng chủ động xem xét, xác nhận (BR-15); hệ thống không tự động công khai hoặc lưu persistent server-side Recipe Post draft trong baseline hiện tại; tính năng thuộc gói Plus và Pro (FR-10, BR-02); nếu AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói Plus/Pro, tác giả vẫn có toàn quyền tiếp tục tự viết hướng dẫn chế biến và xuất bản bài viết bình thường (BR-16).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Chuyên gia đã đăng nhập và đang đăng ký gói Plus hoặc Pro còn hiệu lực (FR-03, FR-10, BR-02).
   - Khả năng hỗ trợ:
     1. Gợi ý đoạn giới thiệu món ăn (Description $\le 2.000$ ký tự).
     2. Đề xuất nội dung hướng dẫn chế biến linh hoạt (`instructions`, từ 10 đến 5.000 ký tự).
-  - Không hỗ trợ: AI không tự thêm nguyên liệu; không tự động công khai; không lưu server draft (FR-24).
+  - Không hỗ trợ: AI không tự thêm nguyên liệu, không tự động công khai và không lưu persistent server-side Recipe Post draft trong baseline hiện tại.
 - **Phân loại Actor:**
   - Primary Actor: `Chuyên gia (Role = EXPERT)` (tác giả bài viết).
   - Supporting Actor: `Google Gemini AI` (trợ lý sinh nội dung), `Hệ thống xác thực quyền tính năng (Feature Entitlement)`.
@@ -1442,7 +1442,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Chỉ Chuyên gia đã đăng nhập và đang sử dụng gói Plus hoặc Pro còn hiệu lực mới được sử dụng.
-- **Ràng buộc an toàn:** AI không tự thêm nguyên liệu; kết quả AI phải ở dạng chỉnh sửa được và AI không được tự ý công khai; không lưu nháp server (FR-24); không chặn đăng bài khi AI lỗi (BR-16).
+- **Ràng buộc an toàn:** AI không tự thêm nguyên liệu; kết quả AI phải ở dạng chỉnh sửa được; AI không tự ý công khai và không lưu persistent server-side Recipe Post draft trong baseline hiện tại; không chặn đăng bài khi AI lỗi (BR-16).
 
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
@@ -2666,7 +2666,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 #### Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Hệ thống tự động tính toán tổng ước tính của 9 chỉ tiêu dinh dưỡng cốt lõi cho một bài công thức nấu ăn bằng cách đối chiếu và cộng dồn dữ liệu từ danh mục nguyên liệu dinh dưỡng nội bộ (tham chiếu USDA/NIH) theo trọng lượng gram thực tế của từng nguyên liệu; sau đó quy đổi ra định lượng trên 1 khẩu phần dựa trên số khẩu phần mà tác giả đã khai báo; khi có nguyên liệu thiếu định lượng hoặc chưa có trong danh mục dinh dưỡng nội bộ, hệ thống phải công khai rõ ràng phạm vi thiếu dữ liệu, tuyệt đối không được tự gán giá trị bằng 0 và không cho phép AI tự suy đoán số liệu; không gọi API dinh dưỡng ngoài theo thời gian thực (realtime external API).
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Tất cả các bài Recipe Post được Chuyên gia tạo hoặc chỉnh sửa trong hệ thống (FR-04, FR-16, FR-19, FR-44); FR-07 đã `RETIRED`.
+  - Áp dụng cho: Tất cả các bài Recipe Post được Chuyên gia tạo hoặc chỉnh sửa trong hệ thống (FR-04, FR-16, FR-19, FR-44).
   - 9 chỉ tiêu cốt lõi: Năng lượng (kcal), Chất đạm (g), Carbohydrate (g), Chất béo (g), Chất xơ (g), Canxi (mg), Sắt (mg), Vitamin B12 (mcg), Kẽm (mg) (SRS 3.18, BR-40, BR-46).
 - **Phân loại Actor:**
   - Primary Actor: `Member / Tác giả bài viết` (khi tạo/sửa công thức), `Guest / Member` (khi xem chi tiết công thức).
@@ -3215,7 +3215,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 #### Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Cung cấp **MỘT AI Chatbot duy nhất dành cho người dùng cuối** (Unified End-User AI Chatbot), tích hợp Google Gemini AI, hỗ trợ đa năng lực/hỏi đáp tùy theo câu hỏi và ngữ cảnh người dùng đang tương tác. Hệ thống không tạo nhiều chatbot riêng biệt (như Cooking Bot, Recipe Bot, Nutrition Bot, Ingredient Bot, BMI Bot); thay vào đó, cùng một AI Chatbot sẽ hỗ trợ linh hoạt dựa trên hai ngữ cảnh hoạt động chính:
   1. *Ngữ cảnh chung (General Context):* Người dùng mở chatbot từ giao diện chung của hệ thống để hỏi đáp về lối sống ăn chay, kỹ thuật nấu ăn và chế biến món chay, gợi ý nguyên liệu thay thế phù hợp với trường phái ăn chay, giải thích kiến thức dinh dưỡng thực vật, và giải thích ý nghĩa tham khảo của chỉ số BMI cùng mức năng lượng calorie (dựa trên hồ sơ dinh dưỡng nếu Member đã khai báo tại FR-35).
-  2. *Ngữ cảnh bài công thức (Recipe Context):* Khi người dùng đang xem một bài công thức nấu ăn cụ thể (trang Recipe Detail theo FR-20) và chủ động chọn chức năng "Hỏi AI về công thức này", hệ thống chuyển dữ liệu bài công thức hiện tại làm ngữ cảnh trực tiếp cho Chatbot FR-51. Ngữ cảnh bao gồm các dữ liệu Recipe hợp lệ: tiêu đề, thể loại món (`dish_category`), loại ăn chay, khẩu phần, thời gian chuẩn bị và nấu, danh sách nguyên liệu và định lượng (FR-19), hướng dẫn thực hiện chi tiết (`instructions`, 10–5.000 ký tự theo FR-16; FR-22 đã RETIRED), và dữ liệu dinh dưỡng khả dụng (FR-39). Người dùng có thể đặt các câu hỏi gắn liền với món ăn đó, ví dụ: *"Công đoạn xào nấm cần lưu ý gì và xào khoảng bao lâu?"*, *"Không có dầu mè thì thay bằng gì trong món này?"*, *"Giải thích cách làm món này chi tiết hơn cho người mới nấu"*, *"Món này có bao nhiêu calorie theo dữ liệu hiện có?"*.
+  2. *Ngữ cảnh bài công thức (Recipe Context):* Khi người dùng đang xem một bài công thức nấu ăn cụ thể (trang Recipe Detail theo FR-20) và chủ động chọn chức năng "Hỏi AI về công thức này", hệ thống chuyển dữ liệu bài công thức hiện tại làm ngữ cảnh trực tiếp cho Chatbot FR-51. Ngữ cảnh bao gồm các dữ liệu Recipe hợp lệ: tiêu đề, thể loại món (`dish_category`), loại ăn chay, khẩu phần, thời gian chuẩn bị và nấu, danh sách nguyên liệu và định lượng (FR-19), nội dung hướng dẫn thực hiện trong trường `instructions` (10–5.000 ký tự theo FR-16), và dữ liệu dinh dưỡng khả dụng (FR-39). Người dùng có thể đặt các câu hỏi gắn liền với món ăn đó, ví dụ: *"Công đoạn xào nấm cần lưu ý gì và xào khoảng bao lâu?"*, *"Không có dầu mè thì thay bằng gì trong món này?"*, *"Giải thích cách làm món này chi tiết hơn cho người mới nấu"*, *"Món này có bao nhiêu calorie theo dữ liệu hiện có?"*.
 - **Người dùng và Quyền truy cập:**
   - Cả `Guest` và `Member` sử dụng **CÙNG MỘT AI Chatbot** này; không tạo bot riêng biệt theo phân quyền người dùng.
   - Sự khác biệt nằm ở cơ chế xác thực, giới hạn tần suất kỹ thuật và mức độ cá nhân hóa:
@@ -3233,7 +3233,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Ranh giới với các workflow AI khác:* Các chức năng AI có mục tiêu nghiệp vụ khác nhau được duy trì ở các FR độc lập tương ứng và KHÔNG bị gộp vào FR-51:
     - AI hỗ trợ tác giả soạn bài công thức (gợi ý mô tả, gợi ý bước làm, kết quả editable, người dùng chủ động xác nhận, không tự publish) -> thuộc [FR-21](FUNCTIONAL-REQUIREMENTS.md#fr-21).
     - AI gợi ý món và lập thực đơn tuần -> thuộc [FR-34](FUNCTIONAL-REQUIREMENTS.md#fr-34) và [FR-36](FUNCTIONAL-REQUIREMENTS.md#fr-36).
-    - AI rà soát và gắn cờ nội dung vi phạm -> thuộc [FR-12](FUNCTIONAL-REQUIREMENTS.md#fr-12) (DEFERRED).
+    - AI rà soát và gắn cờ nội dung vi phạm nằm ngoài phạm vi baseline hiện tại của Chatbot.
     - Gợi ý bài viết liên quan thông thường hoặc tùy chọn Gemini -> thuộc [FR-47](FUNCTIONAL-REQUIREMENTS.md#fr-47).
 - **Phân loại Actor:**
   - Primary Actor: `Guest` (người dùng chưa xác thực trải nghiệm theo FR-02), `Member` (người dùng đã đăng nhập theo FR-10).

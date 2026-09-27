@@ -162,7 +162,7 @@ This document contains only requirements included in Requirements / Implementati
   9. Mô tả giới thiệu (`description`): Tối đa 2.000 ký tự (tùy chọn).
   10. Media: Tối đa 5 ảnh trên mỗi bài công thức (`RECIPE_MEDIA`), định dạng JPEG/PNG/WebP, dung lượng $\le 5$ MB/ảnh (tùy chọn). Nếu bài có từ 1 ảnh trở lên, **BẮT BUỘC phải có đúng 1 ảnh được đánh dấu làm ảnh bìa (`is_cover = true`)**. Đường dẫn YouTube (tối đa 1 link tùy chọn) được lưu trực tiếp trên Recipe Post.
 - **Cơ chế thực thi và xử lý khi không đạt chuẩn (FE & BE):**
-  - **Tầng Máy chủ (Backend — bắt buộc & quyết định):** Toàn bộ quy tắc thẩm định bắt buộc phải được thực thi độc lập tại Backend API (NFR-10). Máy chủ tuyệt đối không tin cậy dữ liệu máy khách; nếu request gửi lên có bất kỳ trường nào không đạt chuẩn (ví dụ: thiếu hướng dẫn chế biến, thiếu thể loại món `dish_category`, thiếu ảnh bìa khi có upload ảnh, hoặc nguyên liệu chưa có tỷ lệ quy đổi sang gam), máy chủ từ chối yêu cầu công khai/cập nhật và **tuyệt đối không tạo bất kỳ bản ghi dở dang nào vào cơ sở dữ liệu** (phù hợp với FR-24 là OUT_OF_SCOPE).
+  - **Tầng Máy chủ (Backend — bắt buộc & quyết định):** Toàn bộ quy tắc thẩm định bắt buộc phải được thực thi độc lập tại Backend API (NFR-10). Máy chủ tuyệt đối không tin cậy dữ liệu máy khách; nếu request gửi lên có bất kỳ trường nào không đạt chuẩn (ví dụ: thiếu hướng dẫn chế biến, thiếu thể loại món `dish_category`, thiếu ảnh bìa khi có upload ảnh, hoặc nguyên liệu chưa có tỷ lệ quy đổi sang gam), máy chủ từ chối yêu cầu công khai/cập nhật và **không tạo bản ghi bài viết hoặc tài nguyên dở dang từ yêu cầu không hợp lệ vào cơ sở dữ liệu**.
   - **Tầng Giao diện (Frontend — tối ưu trải nghiệm người dùng):** Giao diện thực hiện kiểm tra trước để phản hồi tức thì; khi dữ liệu không đạt chuẩn, giao diện giữ lại toàn bộ nội dung đã nhập trong biểu mẫu và hiển thị thông báo lỗi cụ thể để người dùng tiếp tục chỉnh sửa mà không bị mất dữ liệu. Việc giữ nội dung biểu mẫu là hành vi giao diện người dùng tạm thời, không tạo bất kỳ lưu nháp nào trên máy chủ.
 
 ---
@@ -479,7 +479,7 @@ This document contains only requirements included in Requirements / Implementati
 
 - **Mã quy tắc:** BR-69
 - **Nội dung:**
-  - Hệ thống áp dụng cơ chế bình chọn Thích / Không thích (Like / Dislike) độc quyền cho bài công thức (`RECIPE_REACTION`). Bình luận và phản hồi không hỗ trợ tính năng Like/Dislike (theo `FR-45` RETIRED).
+  - Hệ thống áp dụng cơ chế bình chọn Thích / Không thích (Like / Dislike) độc quyền cho bài công thức (`RECIPE_REACTION`). Bình luận và phản hồi không hỗ trợ tính năng Like/Dislike trong baseline hiện tại.
   - **Quyền hạn tương tác:**
     - Guest (chưa đăng nhập): Chỉ có quyền xem tỷ lệ % Like và tổng số lượt bình chọn; khi Guest nhấp vào nút Like hoặc Dislike, hệ thống hiển thị thông báo yêu cầu đăng nhập (`BR-05`), tuyệt đối không ghi nhận phản hồi vào database.
     - Member đã đăng nhập (Customer hoặc Expert): Có quyền gửi phản hồi `LIKE` hoặc `DISLIKE` cho bài công thức công khai.

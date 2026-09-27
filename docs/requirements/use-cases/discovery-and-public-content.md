@@ -96,7 +96,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-20).
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
-  - Bài công thức đã được Chuyên gia tạo và lưu trữ trong cơ sở dữ liệu hệ thống (FR-04); FR-07 đã `RETIRED`.
+  - Bài công thức đã được Chuyên gia tạo và lưu trữ trong cơ sở dữ liệu hệ thống (FR-04).
 - **Kích hoạt (Trigger):**
   - Người dùng truy cập trang chi tiết công thức, xem thẻ món, mở Lịch ăn tuần, hoặc nhấn nút xuất công thức.
 

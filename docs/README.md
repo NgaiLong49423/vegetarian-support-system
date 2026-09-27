@@ -36,8 +36,8 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 |---|---|---|
 | Repository root | Entry points and root-level tooling only | README.md, AGENTS.md, CONTRIBUTING.md, CHANGELOG.md, LICENSE, .gitignore; new build/tool configs require a real root-level consumer |
 | app/mamxanh-frontend/ | Frontend source, tests, assets and configuration | React component, Playwright test, package.json and tool configuration; place files by the app's established feature structure |
-| app/mamxanh-backend/ | Backend source, tests, configuration and migrations | Java classes/tests, pom.xml, Flyway migrations after scaffolding |
-| database/ | Database usage guide, deliberate SQL snapshot, demo seed and diagnostic queries | schema.sql remains empty until designed; Flyway owns executable migration history when implemented |
+| app/mamxanh-backend/ | Backend source, tests, configuration and migrations | Java classes/tests, pom.xml, and the implemented Flyway baseline migration |
+| database/ | Database usage guide, deliberate SQL snapshot, demo seed and diagnostic queries | `schema.sql` is the manual bootstrap snapshot synchronized with the implemented Flyway baseline migration; Flyway owns executable migration history |
 | docs/requirements/ | Maintained product and software requirements | PRD owns high-level product intent; root SRS owns scope, context, index, and lifecycle registry; docs/requirements/srs/ owns detailed FR, BR, and NFR specifications |
 | docs/architecture/ | Current high-level system structure and selected technology baseline | ARCHITECTURE owns runtime boundaries; TECHNOLOGY-STACK owns technology purpose, rationale, trade-offs and TBD choices |
 | docs/testing/ | Project-level verification strategy | Strategy and quality evidence policy, not a test-case catalog or claim that tests exist |

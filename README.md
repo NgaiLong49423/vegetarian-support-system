@@ -80,7 +80,7 @@ Xem chi tiết trong [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) v
 └── CHANGELOG.md
 ```
 
-Các file SQL trong `database/` hiện là điểm giữ chỗ có chủ đích. Flyway migration executable sẽ nằm trong `app/mamxanh-backend/src/main/resources/db/migration/` sau khi physical schema được duyệt. `node_modules/`, `dist/`, `target/`, cấu hình local chứa credential và test report sinh ra không được trình bày trong cây trên vì không phải source được Git theo dõi.
+`database/schema.sql` hiện là schema snapshot dùng để khởi tạo thủ công và được đồng bộ với Flyway baseline migration `V1__baseline_schema.sql` tại `app/mamxanh-backend/src/main/resources/db/migration/`; Flyway migration là lịch sử schema thực thi của Backend. `node_modules/`, `dist/`, `target/`, cấu hình local chứa credential và test report sinh ra không được trình bày trong cây trên vì không phải source được Git theo dõi.
 
 ## Nguồn tài liệu
 
