@@ -1,48 +1,55 @@
 > **Document:** Use Case Specifications — M06
 > **File:** `docs/requirements/use-cases/ai-and-personalization.md`
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-26
+> **Last Updated:** 2026-09-27
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
 # Use Case Specifications — M06
 
-Detailed interaction flows for current-baseline requirements. Stable UC IDs are preserved. The linked FR owns the required behavior and Acceptance Criteria; this document owns actor/system interaction detail.
+Detailed interaction flows for current-baseline requirements. Stable UC IDs are preserved. The linked FR owns required behavior and Acceptance Criteria; this document owns actor/system interaction detail.
 
 <a id="fr-02"></a>
 ## FR-02 — Quyền Guest trải nghiệm AI Chatbot chung có giới hạn tần suất kỹ thuật
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-02).
 
-#### 2. Tác nhân (Actors)
-- **Primary Actor:**
-  - `Guest`: Người dùng chưa xác thực trải nghiệm tương tác với AI Chatbot chung (FR-51).
-- **Secondary Actor / External System:**
-  - `Google Gemini AI`: Dịch vụ trí tuệ nhân tạo xử lý và phản hồi câu hỏi thông qua FR-51.
+<a id="uc-02-1"></a>
+### UC-02.1 — Trải nghiệm dùng thử AI Chatbot chung cho Guest
 
-#### 4. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
-- **Preconditions:** Thiết bị của Guest có thể kết nối mạng và hỗ trợ cookie trình duyệt; tần suất gửi yêu cầu của Guest không vượt quá ngưỡng rate limit kỹ thuật (BR-01).
-- **Trigger:** Guest mở cửa sổ AI Chatbot chung hoặc nhấn nút "Hỏi AI về công thức này" khi đang xem bài công thức công khai (FR-20) và gửi câu hỏi.
+#### Goal
+Cho phép Guest dùng thử AI Chatbot ở ngữ cảnh chung hoặc ngữ cảnh Recipe Post công khai, đồng thời bảo vệ dịch vụ bằng giới hạn tần suất kỹ thuật.
 
-#### 5. Luồng sự kiện (Flow of Events)
+#### Primary Actor
+`Guest`.
 
-##### A. Luồng Dùng thử Chatbot AI cho Guest (UC-02.1)
-1. **Main Flow:**
-   - Bước 1: Guest mở hộp thoại AI Chatbot FR-51 trên trang web (ở ngữ cảnh chung hoặc ngữ cảnh Recipe Post công khai đang xem).
-   - Bước 2: Hệ thống kiểm tra anonymous cookie của trình duyệt (nếu chưa có, máy chủ tạo cookie định danh ẩn danh mới) kết hợp kiểm tra địa chỉ IP để áp dụng rate limiting kỹ thuật (BR-01).
-   - Bước 3: Hệ thống xác nhận tần suất gửi yêu cầu của Guest nằm trong ngưỡng an toàn (ví dụ: $< 10$ request / phút).
-   - Bước 4: Guest gửi câu hỏi. Hệ thống kiểm soát tính hợp lệ của đầu vào và chuyển yêu cầu tới quy trình xử lý hội thoại của FR-51.
-   - Bước 5: Dịch vụ AI phản hồi kết quả hợp lệ đáp ứng thời gian quy định tại NFR-03.
-   - Bước 6: Hệ thống hiển thị câu trả lời cho Guest kèm lời gợi ý đăng ký tài khoản Member để sử dụng đầy đủ các tính năng lập thực đơn và lưu trữ yêu thích.
-2. **Alternative Flow (Vượt ngưỡng Rate Limit kỹ thuật):**
-   - Khi Guest gửi quá nhiều yêu cầu trong thời gian ngắn (vượt ngưỡng rate limit kỹ thuật): hệ thống tạm khóa tiếp nhận request từ IP/cookie đó, trả về mã HTTP 429 và thông báo thân thiện: *"Bạn đang thao tác quá nhanh. Vui lòng thử lại sau giây lát hoặc đăng ký tài khoản để có trải nghiệm tốt hơn!"*.
-3. **Exception Flow (Gián đoạn dịch vụ AI bên ngoài hoặc timeout):**
-   - Nếu dịch vụ AI gặp sự cố kỹ thuật hoặc quá thời gian phản hồi theo quy định -> Hệ thống hiển thị thông báo lỗi thân thiện và ghi log kỹ thuật (BR-04, NFR-18).
+#### Trigger
+Guest gửi câu hỏi từ giao diện Chatbot chung hoặc chọn hỏi AI trên một Recipe Post công khai.
 
-#### 6. Hậu điều kiện (Postconditions)
-- Guest nhận được câu trả lời từ AI hoặc thông báo lỗi/giới hạn tần suất thích hợp.
-- Dữ liệu đo lường kỹ thuật (telemetry token) được ghi nhận để đối soát chi phí (FR-11).
+#### Preconditions
+- Guest chưa đăng nhập; Guest không có hồ sơ dinh dưỡng hoặc lịch sử hội thoại gắn với tài khoản.
+- Nếu chọn ngữ cảnh Recipe Post, bài viết đang công khai và Guest có quyền xem.
+- Trình duyệt có thể sử dụng anonymous cookie để nhận diện phiên; hệ thống có thể áp dụng coarse IP protection.
+
+#### Main Flow
+1. Guest mở Chatbot và gửi câu hỏi hợp lệ.
+2. Hệ thống nhận diện phiên Guest bằng anonymous cookie kết hợp bảo vệ theo IP và kiểm tra giới hạn tần suất kỹ thuật theo BR-01.
+3. Khi yêu cầu nằm trong ngưỡng, hệ thống cho phép Guest tiếp tục luồng hội thoại do [FR-51](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51) sở hữu; FR-02 không tạo daily quota hay lịch sử hội thoại theo tài khoản.
+
+#### Alternative Flows
+- **Vượt giới hạn tần suất:** Hệ thống không chuyển yêu cầu tới dịch vụ AI, trả HTTP 429, thông báo Guest tạm dừng thao tác và cung cấp gợi ý đăng ký theo BR-05.
+
+#### Exception Flows
+- **Dịch vụ AI lỗi hoặc timeout:** Phần phản hồi lỗi thân thiện thuộc luồng hội thoại dùng chung tại [FR-51](#fr-51), theo BR-04 và NFR-18.
+
+#### Postconditions
+Guest được chuyển tiếp tới hội thoại FR-51 khi yêu cầu hợp lệ và chưa vượt giới hạn; yêu cầu quá giới hạn bị chặn trước khi gọi dịch vụ AI.
+
+#### Traceability
+- **Parent FR:** [FR-02](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-02).
+- **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền Guest và giới hạn tần suất); [BR-05](../srs/BUSINESS-RULES.md#br-05) (giới hạn trải nghiệm Guest).
+- **Relevant NFR:** [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10) (kiểm soát đầu vào và bảo vệ API).
 
 ---
 
@@ -51,35 +58,75 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-02).
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10).
 
-#### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
-- **Tiền điều kiện:**
-  - Người dùng gửi yêu cầu sử dụng một tính năng AI cụ thể (FR-21, FR-34, FR-36, FR-47, FR-51).
-- **Kích hoạt (Trigger):**
-  - Hệ thống tiếp nhận yêu cầu gọi tính năng AI tại Backend Controller/Gateway trước khi kích hoạt logic xử lý nghiệp vụ AI.
+<a id="uc-10-1"></a>
+### UC-10.1 — Xác thực quyền sử dụng tính năng AI trước khi kích hoạt
 
-#### 4. Luồng xử lý chi tiết (Flows)
-- **Luồng chính (Main Flow):**
-  - Bước 1: Người dùng thao tác gọi một tính năng AI trên giao diện.
-  - Bước 2: Backend xác định danh tính và hạng gói Subscription hiện tại của người dùng:
-    - Nếu là Guest: Chỉ cho phép gọi AI Chatbot FR-51 (kiểm tra Rate Limiting kỹ thuật theo BR-01).
-    - Nếu là Member: Xác định hạng gói (`FREE`, `PLUS`, `PRO`) từ thông tin Subscription có hiệu lực.
-  - Bước 3: Backend đối chiếu tính năng được gọi với ma trận phân quyền (Feature Entitlement):
-    - Yêu cầu AI Chatbot (FR-51) hoặc Gợi ý món cơ bản (FR-34): Cho phép với mọi Member (kể cả Free) và Guest (với FR-51).
-    - Yêu cầu AI Soạn bài (FR-21) hoặc Gợi ý biến tấu (FR-47): Yêu cầu tối thiểu gói `PLUS` hoặc `PRO`.
-    - Yêu cầu AI Lập thực đơn tuần 7 ngày (FR-36): Bắt buộc gói `PRO`.
-  - Bước 4: Nếu tài khoản đủ quyền lợi tính năng, hệ thống chuẩn bị ngữ cảnh an toàn và chuyển tiếp yêu cầu tới dịch vụ Google Gemini AI.
-  - Bước 5: Sau khi Gemini phản hồi hợp lệ thành công, hệ thống ghi nhận telemetry đo lường kỹ thuật để đối soát chi phí (FR-11) và trả kết quả cho người dùng.
-- **Luồng thay thế (Alternative Flows):**
-  - *AF-10.1 (Yêu cầu tính năng vượt quá hạng gói):*
-    - Khi tài khoản Free cố gắng gọi tính năng của gói Plus/Pro, hoặc tài khoản Plus cố gắng gọi tính năng của gói Pro:
-    - Hệ thống chặn yêu cầu ngay tại Backend, trả về mã lỗi HTTP 403 Forbidden kèm thông báo: *"Tính năng này chỉ dành cho thành viên gói [Plus/Pro]. Vui lòng nâng cấp gói để trải nghiệm!"* kèm đường dẫn điều hướng tới trang Đăng ký gói dịch vụ (FR-13).
-- **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-10.1 (Lỗi kết nối Gemini hoặc timeout):* Nếu yêu cầu gọi AI gặp lỗi từ nhà cung cấp hoặc quá thời gian chờ, hệ thống trả về thông báo lỗi thân thiện và ghi error log kỹ thuật (BR-04, NFR-18).
-  - *SF-10.1 (Bảo mật kiểm tra quyền tại Backend):* Toàn bộ quy trình xác thực quyền tính năng bắt buộc phải thực thi tại Backend API (NFR-10); không cho phép client vượt qua kiểm tra bằng cách chỉnh sửa giao diện người dùng.
+#### Goal
+Chỉ cho phép yêu cầu gọi tính năng AI khi actor có quyền theo hạng gói hiện tại; kiểm tra được thực hiện ở Backend trước khi gọi provider.
 
-#### 5. Hậu điều kiện (Postconditions)
-- Yêu cầu AI được thực thi chính xác nếu đủ quyền tính năng, hoặc bị từ chối an toàn nếu không đủ quyền.
-- Không phát sinh chi phí gọi Gemini API đối với các yêu cầu không đủ thẩm quyền.
+#### Primary Actor
+`Guest` hoặc `Member` thuộc gói Free, Plus hoặc Pro.
+
+#### Supporting Actors
+Hệ thống phân quyền tính năng AI (Feature Entitlement Guard).
+
+#### Trigger
+Backend nhận yêu cầu sử dụng một tính năng AI.
+
+#### Preconditions
+Yêu cầu xác định được actor, tính năng cần gọi và gói Subscription đang có hiệu lực nếu actor là Member.
+
+#### Main Flow
+1. Backend xác định actor và hạng gói hiện tại.
+2. Feature Entitlement Guard đối chiếu tính năng được yêu cầu với ma trận quyền của FR-10: Guest chỉ dùng Chatbot; Free Member dùng Chatbot và gợi ý món cơ bản; Plus có thêm AI hỗ trợ soạn bài và gợi ý biến tấu; Pro có toàn bộ tính năng, gồm lập thực đơn tuần.
+3. Với quyền hợp lệ, Backend cho phép chuyển yêu cầu tới luồng AI sở hữu tính năng tương ứng; các quyền không bị giới hạn theo số lượt/ngày.
+
+#### Alternative Flows
+- **AF-10.1 — Yêu cầu tính năng vượt quyền gói:** Member Free/Plus yêu cầu tính năng thuộc gói cao hơn; xử lý theo [UC-10.2](#uc-10-2) và không chuyển yêu cầu tới Gemini.
+
+#### Exception Flows
+- **EF-10.1 — Provider lỗi sau khi quyền đã được xác thực:** Lỗi/timeout được xử lý bởi FR sở hữu tính năng theo BR-04 và NFR-18; quyền hợp lệ không đồng nghĩa yêu cầu AI thành công.
+
+#### Security Flows
+- **SF-10.1 — Kiểm tra entitlement tại Backend:** Feature Entitlement Guard bắt buộc chạy tại Backend; thay đổi giao diện/client không thể vượt qua kiểm tra. Yêu cầu không đủ quyền bị chặn trước mọi HTTP request tới Google Gemini API.
+
+#### Postconditions
+Yêu cầu được chuyển tới đúng luồng tính năng khi quyền hợp lệ; nếu không hợp lệ, luồng UC-10.2 kết thúc mà không phát sinh lời gọi Gemini.
+
+#### Traceability
+- **Parent FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10).
+- **Relevant BR:** [BR-01](../srs/BUSINESS-RULES.md#br-01) (quyền Chatbot cơ bản); [BR-02](../srs/BUSINESS-RULES.md#br-02) (entitlement Plus/Pro); [BR-03](../srs/BUSINESS-RULES.md#br-03) (kiểm tra quyền trước khi gọi AI).
+- **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền); [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10) (chống vượt quyền và bảo mật request).
+
+---
+
+<a id="uc-10-2"></a>
+### UC-10.2 — Nhận hướng dẫn nâng cấp khi tính năng vượt quyền gói hiện tại
+
+#### Goal
+Thông báo rõ quyền lợi/gói cần thiết khi Member yêu cầu tính năng AI cao hơn gói hiện tại.
+
+#### Primary Actor
+`Member` thuộc gói Free hoặc Plus.
+
+#### Trigger
+Member yêu cầu tính năng AI mà gói hiện tại không bao gồm.
+
+#### Preconditions
+Backend đã xác định gói hiện tại và tính năng yêu cầu; entitlement check tại UC-10.1 cho kết quả không đủ quyền.
+
+#### Main Flow
+1. Backend từ chối yêu cầu tại máy chủ với HTTP 403 trước khi gọi Gemini.
+2. Giao diện thông báo gói tối thiểu cần có: Free Member được hướng dẫn nâng cấp Plus khi yêu cầu tính năng Plus; Plus Member được hướng dẫn nâng cấp Pro khi yêu cầu lập thực đơn tuần.
+3. Giao diện cung cấp đường dẫn tới thông tin gói dịch vụ tại [FR-13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-13).
+
+#### Postconditions
+Yêu cầu không được thực thi và không phát sinh chi phí gọi Gemini; trạng thái Subscription của Member không thay đổi.
+
+#### Traceability
+- **Parent FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10).
+- **Relevant BR:** [BR-02](../srs/BUSINESS-RULES.md#br-02) (quyền theo gói Plus/Pro); [BR-03](../srs/BUSINESS-RULES.md#br-03) (chặn trước khi gọi AI).
+- **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (phân quyền Backend); [NFR-13](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13) (giao diện tiếng Việt, responsive).
 
 ---
 
@@ -88,34 +135,49 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10).
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11).
 
-#### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
-- **Tiền điều kiện:**
-  - Một request gọi Google Gemini API hoàn tất thành công và trả về mã trạng thái HTTP 200 kèm payload kết quả hợp lệ.
-- **Kích hoạt (Trigger):**
-  - Module AI client nhận được phản hồi thành công từ Google Gemini API, hoặc Administrator truy cập trang thống kê tiêu thụ token.
+#### Shared system-triggered behavior — telemetry capture and retention
+FR-11 xác định việc ghi telemetry và dọn bản ghi quá 90 ngày là cơ chế hệ thống, không phải UC độc lập. Không tạo UC-11.1 hoặc UC-11.3; chỉ [UC-11.2](#uc-11-2) là mục tiêu tương tác có actor.
 
-#### 4. Luồng xử lý chi tiết (Flows)
-- **Luồng nghiệp vụ Actor — Administrator xem thống kê tiêu thụ (UC-11.2):**
-  - Bước 1: Administrator truy cập trang Thống kê kỹ thuật trên giao diện quản trị (M06, M09).
-  - Bước 2: Hệ thống truy vấn dữ liệu telemetry tổng hợp, hiển thị biểu đồ và bảng dữ liệu tổng lượng token tiêu thụ theo ngày, tuần, tháng và phân bổ theo từng tính năng (Chatbot, Lập thực đơn, Gợi ý công thức).
-  - Bước 3: Administrator xem xét số liệu và chi phí ước tính phục vụ lập kế hoạch vận hành.
-- **Hành vi hệ thống — Ghi nhận siêu dữ liệu telemetry khi gọi AI thành công:**
-  - Bước 1: Google Gemini API trả về phản hồi hợp lệ cho backend.
-  - Bước 2: Hệ thống trích xuất siêu dữ liệu sử dụng token (`usageMetadata`) từ đối tượng phản hồi của Gemini, gồm: `promptTokenCount`, `candidatesTokenCount`, và `totalTokenCount`.
-  - Bước 3: Hệ thống chuẩn bị bản ghi đo lường (Telemetry Record) gồm: Mã tài khoản người dùng (hoặc Anonymous Session ID đối với Guest), Loại tính năng được gọi (Menu, Chatbot, Authoring), Dấu thời gian (Timestamp UTC), và Số lượng token tiêu thụ.
-  - Bước 4: Hệ thống TUYỆT ĐỐI LOẠI BỎ toàn bộ nội dung văn bản câu hỏi thô (raw prompt content) và câu trả lời thô khỏi bản ghi telemetry (BR-04).
-  - Bước 5: Hệ thống ghi bản ghi đo lường vào bảng nhật ký kỹ thuật trong cơ sở dữ liệu.
-  - Bước 6: Trả kết quả nghiệp vụ về cho người dùng bình thường.
-- **Luồng thay thế (Alternative Flows):**
-  - *AF-11.1 (Gemini không trả về trường usageMetadata):* Nếu phản hồi từ Gemini thành công nhưng thiếu khối thông tin token, hệ thống vẫn ghi nhận bản ghi với số token = 0 và đánh dấu cờ kiểm toán kỹ thuật để không làm gián đoạn trải nghiệm người dùng.
-- **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-11.1 (Gọi AI thất bại hoặc timeout):* Nếu request tới Gemini bị lỗi mạng, timeout hoặc trả về mã lỗi 4xx/5xx, hệ thống không ghi nhận bản ghi đo lường thành công mà chỉ ghi nhật ký lỗi (Error Log) riêng biệt để phục vụ khắc phục sự cố (BR-04).
-  - *SF-11.1 (Bảo mật quyền riêng tư - Không lưu Prompt):* Các quy tắc kiểm tra tự động và mã nguồn bảo đảm trường nội dung prompt không bao giờ được đưa vào bảng telemetry, ngăn chặn rò rỉ dữ liệu cá nhân nhạy cảm (NFR-08, NFR-20).
-  - *SF-11.2 (Chính sách thanh lọc dữ liệu định kỳ 90 ngày - Retention & Cleanup Behavior):* Một tiến trình ngầm (Background Job) chạy định kỳ hàng tuần tự động xóa các bản ghi telemetry có dấu thời gian cũ hơn 90 ngày (BR-04).
+- **Ghi telemetry:** Sau phản hồi Gemini thành công, hệ thống ghi metadata token do provider trả về (`promptTokenCount`, `candidatesTokenCount`, `totalTokenCount`) cùng tài khoản/anonymous session ID, loại tính năng và timestamp UTC. Nếu phản hồi không có `usageMetadata`, hệ thống ghi nhận 0 token và đánh dấu cờ kiểm toán kỹ thuật theo luồng hiện hành.
+- **Lỗi provider:** Timeout hoặc lỗi 4xx/5xx không tạo bản ghi telemetry thành công; hệ thống ghi error log riêng theo BR-04.
+- **Dọn dữ liệu:** Tiến trình nền chạy định kỳ xóa bản ghi telemetry quá 90 ngày.
+- **AF-11.1 — Thiếu usageMetadata:** Phản hồi thành công không có metadata token vẫn được ghi nhận với số token bằng 0 và cờ kiểm toán, không làm gián đoạn trải nghiệm.
+- **EF-11.1 — Gọi AI thất bại hoặc timeout:** Không ghi lượt thành công; chỉ ghi log lỗi kỹ thuật riêng.
+- **SF-11.1 — Không lưu prompt thô:** Bản ghi telemetry không chứa câu hỏi hoặc câu trả lời thô.
+- **SF-11.2 — Retention 90 ngày:** Bản ghi quá hạn được dọn bởi tiến trình nền định kỳ.
 
-#### 5. Hậu điều kiện (Postconditions)
-- Siêu dữ liệu đo lường token được lưu trữ an toàn, phục vụ đối soát.
-- Không có bất kỳ nội dung văn bản câu hỏi thô nào của người dùng bị lưu giữ trong bảng đo lường kỹ thuật.
+#### Traceability — shared system behavior
+- **Parent FR:** [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11).
+- **Relevant BR:** [BR-04](../srs/BUSINESS-RULES.md#br-04) (provider errors, telemetry và retention).
+- **Relevant NFR:** [NFR-08](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08) (bảo vệ dữ liệu cá nhân); [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20) (quyền riêng tư dữ liệu sức khỏe); [NFR-22](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22) (không lưu prompt thô, giới hạn retention).
+
+<a id="uc-11-2"></a>
+### UC-11.2 — Administrator xem thống kê lượng token và chi phí AI
+
+#### Goal
+Giúp Administrator theo dõi lượng token tiêu thụ và chi phí AI ước tính theo chu kỳ để phục vụ vận hành.
+
+#### Primary Actor
+`Administrator`.
+
+#### Trigger
+Administrator mở trang Thống kê kỹ thuật trong khu vực quản trị.
+
+#### Preconditions
+Administrator đã xác thực; dữ liệu telemetry hợp lệ sẵn có để tổng hợp.
+
+#### Main Flow
+1. Hệ thống truy vấn dữ liệu telemetry đã tổng hợp.
+2. Hệ thống hiển thị lượng token theo ngày, tuần, tháng và phân bổ theo tính năng AI.
+3. Administrator xem số liệu và chi phí ước tính để theo dõi mức sử dụng tài nguyên.
+
+#### Postconditions
+Administrator đã xem được báo cáo tổng hợp; nội dung prompt hoặc câu trả lời thô không được hiển thị qua báo cáo telemetry.
+
+#### Traceability
+- **Parent FR:** [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11).
+- **Relevant BR:** [BR-04](../srs/BUSINESS-RULES.md#br-04) (bản chất dữ liệu telemetry và lỗi provider).
+- **Relevant NFR:** [NFR-09](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09) (chỉ Administrator được xem dữ liệu quản trị).
 
 ---
 
@@ -124,43 +186,100 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11).
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51).
 
-#### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
-- **Tiền điều kiện:**
-  - Guest: Thiết bị hỗ trợ cookie; tuân thủ giới hạn tần suất kỹ thuật (FR-02, BR-01).
-  - Member: Đã đăng nhập tài khoản Member hợp lệ ở trạng thái hoạt động (FR-03, FR-10, BR-01); đã xác nhận phạm vi hỗ trợ dinh dưỡng trước khi hỏi về chỉ số cá nhân (FR-38, BR-41).
-  - Đối với ngữ cảnh bài công thức: Bài công thức đang ở trạng thái công khai (`PUBLISHED`) mà người dùng có quyền xem (FR-20).
-- **Kích hoạt (Trigger):**
-  - Người dùng mở khung Chatbot AI từ thanh công cụ/menu chính; HOẶC
-  - Người dùng nhấn nút "Hỏi AI về công thức này" trên trang chi tiết công thức (Recipe Detail View).
+#### Shared chatbot processing behavior — UC-51.1 and UC-51.2
+Hai Use Case bên dưới dùng chung quy trình xử lý hội thoại; các quyền Guest/Member vẫn do [FR-02](#fr-02) và [FR-10](#fr-10) sở hữu, không được biến thành entitlement mới của chatbot.
 
-#### 4. Luồng xử lý chi tiết (Flows)
-- **Luồng chính (Main Flow):**
-  - Bước 1: Người dùng kích hoạt AI Chatbot (từ giao diện chung hoặc từ nút "Hỏi AI về công thức này" tại Recipe Detail View). Giao diện hiển thị rõ thông báo từ chối trách nhiệm y tế chuẩn: *"Trợ lý AI cung cấp thông tin tham khảo tổng quát, không đưa ra chẩn đoán hay thay thế tư vấn y khoa"* (BR-09, BR-41). Nếu mở từ bài công thức, giao diện hiển thị huy hiệu gắn ngữ cảnh công thức kèm tiêu đề món.
-  - Bước 2: Người dùng nhập câu hỏi và nhấn gửi.
-  - Bước 3: Hệ thống kiểm tra tính hợp lệ của dữ liệu đầu vào và kiểm tra quyền truy cập hoặc giới hạn tần suất kỹ thuật (Guest theo FR-02/BR-01, Member theo FR-10/BR-01/BR-02).
-  - Bước 4: Hệ thống chuẩn bị dữ liệu ngữ cảnh an toàn cho cuộc gọi AI:
-    - Thiết lập các chỉ dẫn an toàn bắt buộc: tuân thủ đúng `dietaryType` của context/người dùng và các giới hạn `allergiesAndRestrictions`; không gợi ý nguyên liệu vi phạm; từ chối chẩn đoán/kê đơn y khoa (BR-09, BR-41); cấm tự bịa đặt số liệu dinh dưỡng (NFR-25); nhấn mạnh tính tham khảo của BMI/calorie (BR-39); yêu cầu phân biệt nội dung AI với dữ liệu gốc của tác giả; cấm tự ý sửa đổi dữ liệu hệ thống.
-    - Đóng gói dữ liệu ngữ cảnh:
-      - Nếu ở ngữ cảnh Recipe: truyền tiêu đề, thể loại món (`dish_category`), loại ăn chay, khẩu phần, thời gian, danh sách nguyên liệu & định lượng (FR-19), hướng dẫn thực hiện chi tiết (`instructions` theo FR-16), và dữ liệu dinh dưỡng sẵn có của bài công thức hiện tại (FR-39).
-      - Nếu ở ngữ cảnh chung và Member đã đăng nhập: có thể tích hợp thông tin hồ sơ dinh dưỡng tham khảo của Member (FR-35) khi người dùng hỏi về chỉ số cá nhân.
-  - Bước 5: Hệ thống gửi yêu cầu tới dịch vụ AI qua Backend an toàn (BR-06; không để lộ thông tin bảo mật hay khóa truy cập ra client).
-  - Bước 6: Dịch vụ AI phản hồi kết quả hợp lệ đáp ứng thời gian quy định tại [NFR-03](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03).
-  - Bước 7: Hệ thống ghi nhận dữ liệu đo lường kỹ thuật (telemetry nếu có theo BR-04) và TUYỆT ĐỐI KHÔNG lưu trữ nội dung câu hỏi thô (FR-11, BR-04, NFR-22).
-  - Bước 8: Giao diện hiển thị câu trả lời dạng văn bản định dạng rõ ràng cho người dùng, phân biệt rõ lời AI với nội dung gốc của tác giả (và tùy chọn đóng/chuyển đổi ngữ cảnh nếu đang ở ngữ cảnh Recipe).
-- **Luồng thay thế (Alternative Flows):**
-  - *AF-51.1 (Đóng hoặc chuyển đổi ngữ cảnh công thức):* Khi đang ở ngữ cảnh Recipe Post, người dùng có thể đóng ngữ cảnh công thức để chuyển khung chat về ngữ cảnh chung, hoặc chuyển sang xem bài công thức khác để nhận ngữ cảnh công thức mới mà không cần mở lại cửa sổ chat.
-  - *AF-51.2 (Vượt giới hạn tần suất kỹ thuật — Guest):* Khi Guest gửi request vượt quá tần suất kỹ thuật cho phép trong 1 phút, hệ thống tạm dừng nhận câu hỏi, hiển thị thông báo thao tác quá nhanh và gợi ý đăng ký/đăng nhập tài khoản Member (FR-02, BR-01, BR-05).
-  - *AF-51.3 (Yêu cầu tính năng AI nâng cao khi ở gói Free):* Khi Member thuộc gói Free yêu cầu các tính năng AI nâng cao (như hỗ trợ soạn bài hoặc lập thực đơn tuần), hệ thống hiển thị thông báo hướng dẫn nâng cấp gói Plus/Pro thích hợp (FR-10, BR-02, BR-03).
-  - *AF-51.4 (Member hỏi BMI cá nhân nhưng chưa khai báo hồ sơ dinh dưỡng):* Nếu Member hỏi về BMI cá nhân mà chưa hoàn thành khai báo tại FR-35, Chatbot giải thích công thức tính BMI chuẩn tham khảo và hiển thị liên kết dẫn tới trang Hồ sơ dinh dưỡng để Member tự tính toán.
-- **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-51.1 (Yêu cầu chẩn đoán bệnh tật hoặc kê đơn điều trị y khoa):* Nếu câu hỏi chứa yêu cầu chẩn đoán triệu chứng hoặc chữa bệnh qua ăn chay, Chatbot tuân thủ ranh giới an toàn, lịch sự từ chối đưa ra kết luận bệnh lý hay phác đồ điều trị, và hướng dẫn người dùng tham vấn ý kiến bác sĩ chuyên khoa hoặc chuyên gia y tế (SRS 3.15, BR-09, BR-41).
-  - *EF-51.2 (Lỗi kết nối dịch vụ AI hoặc quá thời gian phản hồi):* Nếu dịch vụ AI gặp sự cố kết nối, lỗi kỹ thuật hoặc quá thời gian phản hồi quy định tại NFR-03 (NFR-18), hệ thống hiển thị thông báo sự cố kỹ thuật thân thiện và ghi error log kỹ thuật (BR-04).
-  - *EF-51.3 (Yêu cầu AI chỉnh sửa dữ liệu hệ thống hoặc dữ liệu dinh dưỡng):* Nếu người dùng yêu cầu Chatbot sửa đổi bài viết, thêm món vào Lịch ăn, sửa hồ sơ cá nhân hay thay đổi giá trị trong danh mục dinh dưỡng, Chatbot giải thích rõ rằng AI chỉ đóng vai trò tư vấn thông tin trong hội thoại, không có thẩm quyền sửa đổi dữ liệu người dùng và không được phép can thiệp vào danh mục dinh dưỡng chính thức (BR-51).
-  - *SF-51.1 (Bảo vệ thông tin xác thực backend và phòng chống lạm dụng prompt):* Khóa truy cập dịch vụ AI được lưu trữ và kiểm soát bảo mật tại backend (BR-06); hệ thống kiểm duyệt và làm sạch dữ liệu đầu vào nhằm ngăn chặn các hành vi tấn công vượt rào an toàn (Prompt Injection) (NFR-10).
+1. Hệ thống hiển thị thông báo AI chỉ cung cấp thông tin tham khảo, không chẩn đoán hoặc thay thế tư vấn y khoa.
+2. Hệ thống kiểm tra đầu vào và quyền/tần suất theo FR-02 hoặc FR-10; request bị từ chối không được gửi tới Gemini.
+3. Backend chuẩn bị ngữ cảnh phù hợp với UC đang thực hiện và gửi yêu cầu an toàn tới Google Gemini; API key không lộ ra client.
+4. Hệ thống hiển thị câu trả lời có nhãn AI rõ ràng, tách biệt nội dung gốc của tác giả; telemetry tuân theo FR-11 và không lưu raw prompt.
 
-#### 5. Hậu điều kiện (Postconditions)
-- Người dùng nhận được câu trả lời an toàn, phù hợp ngữ cảnh và dễ hiểu.
-- Dữ liệu đo lường kỹ thuật (telemetry) được lưu trữ ẩn danh không chứa nội dung câu hỏi thô theo thời hạn tối đa 90 ngày (FR-11, BR-04, NFR-22).
-- Không có bất kỳ thay đổi nào xảy ra đối với cơ sở dữ liệu bài viết, thực đơn tuần hay hồ sơ của người dùng.
+#### Shared Alternative Flows
+- **AF-51.2 — Guest vượt giới hạn tần suất:** Dừng nhận câu hỏi, thông báo thao tác quá nhanh và gợi ý đăng ký/đăng nhập theo FR-02, BR-01 và BR-05.
+- **AF-51.3 — Member Free yêu cầu tính năng AI nâng cao:** Không xử lý như năng lực chatbot; chuyển quyền kiểm tra và hướng dẫn nâng cấp về [FR-10](#fr-10) / [UC-10.2](#uc-10-2) và FR sở hữu tính năng đó.
+
+#### Shared Exception and Security Flows
+- **EF-51.1 — Yêu cầu chẩn đoán hoặc điều trị y khoa:** Từ chối đưa kết luận chẩn đoán/phác đồ và khuyến nghị tham vấn bác sĩ hoặc chuyên gia y tế.
+- **EF-51.2 — Gemini lỗi hoặc timeout:** Hiển thị thông báo sự cố thân thiện và ghi error log theo BR-04/NFR-18.
+- **EF-51.3 — Yêu cầu ghi/sửa dữ liệu hệ thống:** Giải thích chatbot chỉ tư vấn, không tự sửa Recipe Post, Meal Plan, hồ sơ hoặc danh mục dinh dưỡng.
+- **SF-51.1 — Bảo vệ API key và prompt:** API key được kiểm soát tại Backend; đầu vào được kiểm soát để phòng prompt injection.
+
+#### Traceability — shared chatbot behavior
+- **Parent FR:** [FR-51](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51).
+- **Related FR:** [FR-02](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-02) (Guest access); [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) (Feature Entitlement); [FR-11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-11) (telemetry).
+- **Relevant BR:** [BR-04](../srs/BUSINESS-RULES.md#br-04), [BR-06](../srs/BUSINESS-RULES.md#br-06), [BR-09](../srs/BUSINESS-RULES.md#br-09), [BR-41](../srs/BUSINESS-RULES.md#br-41), [BR-51](../srs/BUSINESS-RULES.md#br-51).
+- **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03), [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10), [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18), [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20), [NFR-22](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22), [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
+
+<a id="uc-51-1"></a>
+### UC-51.1 — Hỏi đáp AI trong ngữ cảnh chung
+
+#### Goal
+Cho phép người dùng hỏi Chatbot về ăn chay, kỹ thuật chế biến và thông tin dinh dưỡng tham khảo trong ngữ cảnh chung.
+
+#### Primary Actor
+`Guest` hoặc `Member`.
+
+#### Supporting Actors
+Google Gemini AI.
+
+#### Trigger
+Người dùng mở Chatbot từ giao diện chung của hệ thống.
+
+#### Preconditions
+- Guest đáp ứng kiểm tra truy cập/tần suất tại FR-02; Member đã đăng nhập và được kiểm tra entitlement tại FR-10.
+- Nếu Member hỏi về chỉ số sức khỏe cá nhân, Member phải xác nhận phạm vi hỗ trợ theo FR-38 trước khi Chatbot xử lý câu hỏi đó.
+
+#### Main Flow
+1. Người dùng mở ngữ cảnh chung và nhập câu hỏi về ăn chay, kiến thức ẩm thực hoặc kỹ thuật chế biến.
+2. Hệ thống xử lý theo quy trình chatbot dùng chung ở cấp FR-51; nếu câu hỏi liên quan tới BMI/calorie cá nhân, hệ thống chỉ dùng thông tin hồ sơ phù hợp khi Member yêu cầu.
+3. Chatbot trả lời theo dữ liệu ngữ cảnh chung và các ranh giới an toàn; nội dung AI được gắn nhãn riêng.
+
+#### Alternative Flows
+- **AF-51.4 — Member hỏi BMI nhưng chưa khai báo hồ sơ:** Giải thích công thức BMI ở mức tham khảo và cung cấp liên kết tới Hồ sơ dinh dưỡng theo FR-35; không suy diễn hồ sơ cá nhân chưa có.
+
+#### Postconditions
+Người dùng nhận được phản hồi cho câu hỏi chung; không có dữ liệu nghiệp vụ nào bị chatbot tự sửa.
+
+#### Traceability
+- **Parent FR:** [FR-51](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51).
+- **Relevant BR:** [BR-09](../srs/BUSINESS-RULES.md#br-09) (ranh giới y tế); [BR-39](../srs/BUSINESS-RULES.md#br-39) (BMI chỉ mang tính tham khảo); [BR-41](../srs/BUSINESS-RULES.md#br-41) (thông tin dinh dưỡng không thay thế chuyên gia).
+- **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03), [NFR-12](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-12), [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20), [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
+
+---
+
+<a id="uc-51-2"></a>
+### UC-51.2 — Hỏi đáp AI theo Recipe Post đang xem
+
+#### Goal
+Giúp người đang xem Recipe Post công khai hỏi AI về chính công thức đó mà không phải nhập lại dữ liệu bài viết.
+
+#### Primary Actor
+`Guest` hoặc `Member`.
+
+#### Supporting Actors
+Google Gemini AI.
+
+#### Trigger
+Người dùng nhấn “Hỏi AI về công thức này” trên trang chi tiết Recipe Post.
+
+#### Preconditions
+Bài Recipe Post đang công khai (`PUBLISHED`) và người dùng có quyền xem; truy cập AI vẫn phải qua kiểm tra tại FR-02 hoặc FR-10.
+
+#### Main Flow
+1. Giao diện mở Chatbot với huy hiệu/tiêu đề của Recipe Post đang xem.
+2. Người dùng nhập câu hỏi về công đoạn chế biến, nguyên liệu thay thế phù hợp hoặc thông tin có sẵn trong bài.
+3. Hệ thống chuẩn bị context gồm dữ liệu công thức, trường phái ăn chay, khẩu phần, thời gian, nguyên liệu/định lượng, `instructions` và dữ liệu dinh dưỡng hiện có; sau đó xử lý theo quy trình chatbot dùng chung.
+4. Chatbot trả lời dựa trên context bài; nếu công thức không ghi một chi tiết, câu trả lời phải phân biệt rõ phần gợi ý ước tính của AI với dữ kiện gốc.
+
+#### Alternative Flows
+- **AF-51.1 — Đóng hoặc chuyển ngữ cảnh:** Người dùng có thể đóng context công thức để về hội thoại chung hoặc chuyển sang Recipe Post khác; Chatbot cập nhật context theo bài mới.
+
+#### Postconditions
+Người dùng nhận được câu trả lời gắn với Recipe Post đã chọn; nội dung gốc và dữ liệu nghiệp vụ không bị chatbot thay đổi.
+
+#### Traceability
+- **Parent FR:** [FR-51](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51).
+- **Relevant BR:** [BR-09](../srs/BUSINESS-RULES.md#br-09) (ranh giới y tế); [BR-41](../srs/BUSINESS-RULES.md#br-41) (ranh giới tư vấn dinh dưỡng); [BR-51](../srs/BUSINESS-RULES.md#br-51) (AI không quản lý danh mục dinh dưỡng).
+- **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03), [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10), [NFR-12](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-12), [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18), [NFR-22](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22), [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
 
 ---
