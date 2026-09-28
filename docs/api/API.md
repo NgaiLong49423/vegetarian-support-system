@@ -11,7 +11,7 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester sử dụng contract API chung của Mâm Xanh. [OpenAPI contract](openapi.yaml) là Source of Truth cho path, HTTP method, parameter, request/response schema và status code chi tiết; tài liệu này không lặp lại toàn bộ contract.
 
-Phiên bản đầu tiên chỉ bao phủ vertical slice `Authentication & Account` của [FR-03](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-03). Các module khác được bổ sung khi FR tương ứng chuẩn bị triển khai và contract đã được Tech Lead review theo [CONTRIBUTING.md](../../CONTRIBUTING.md#ownership-ai-và-api-contract).
+Contract hiện bao phủ `Authentication & Account` của [FR-03](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-03) và danh mục quản trị nguyên liệu, đơn vị, quy đổi của [FR-18](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-18). Các module khác được bổ sung khi FR tương ứng chuẩn bị triển khai và contract đã được Tech Lead review theo [CONTRIBUTING.md](../../CONTRIBUTING.md#ownership-ai-và-api-contract).
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 6 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
@@ -107,3 +107,11 @@ Quy ước status chính:
 | Public/development server URLs và CORS origins | `TBD` | Chốt theo môi trường thực tế trước khi cấu hình OpenAPI `servers` và CORS. |
 
 Baseline API đã được nhóm chấp nhận; các mục `TBD` không tự có giá trị chỉ vì tài liệu chuyển sang `Active`. Owner FR-03 phân rã, đề xuất giá trị và cách kiểm thử; Tech Lead duyệt trước khi phần liên quan được coi là implementation-ready. Không suy diễn các giá trị này từ ví dụ hoặc cấu hình tạm.
+
+## 7. Tích hợp danh mục quản trị FR-18
+
+- Endpoint FR-18 dùng prefix `/api/v1/admin` và yêu cầu Bearer access token có role `ADMIN`. Role khác nhận `403 Forbidden`; Guest phải xác thực trước.
+- `GET /admin/ingredients` hỗ trợ tham số `query` để tìm theo tên nguyên liệu tiếng Việt hoặc nhóm nguyên liệu. MVP không có trường tên tiếng Anh/đa ngôn ngữ.
+- Khi tạo/cập nhật nguyên liệu, `sourceName` và `referenceDate` là bắt buộc theo schema hiện hành, dù `nutritionSupported` vẫn là `false` và chín chỉ tiêu dinh dưỡng chưa có dữ liệu. Chi tiết request/response nằm trong OpenAPI.
+- Không có hard-delete cho nguyên liệu hoặc đơn vị. Client gọi endpoint trạng thái để ngừng sử dụng; API hard-delete trả `409` với code `HARD_DELETE_NOT_SUPPORTED`.
+- Conversion là duy nhất theo cặp `(ingredientId, unitId)`, cần `gramsPerUnit > 0`. Rule active được service tra cứu để FR-19/BR-73 sử dụng trong validation Recipe Post; validation xuất bản thuộc implementation của FR-19.
