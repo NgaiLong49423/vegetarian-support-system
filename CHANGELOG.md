@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-09-28 — Implement Email Registration and Verification (FR-03-A, Issue #5)
+## 2026-09-28 — Implement Email Registration and Verification (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 87076f9, efc4f75, 4915a96, c7b36bb.
 
 **Scope:** Implement UC-03.1–UC-03.3 (AC-03.1–AC-03.5) end to end under the stateless JWT baseline and decisions Q13–Q18: account registration, email verification and verification-email resend in the Backend and Frontend, plus the shared error, security and integration-test foundation that later FR-03 issues and other modules reuse.
 
