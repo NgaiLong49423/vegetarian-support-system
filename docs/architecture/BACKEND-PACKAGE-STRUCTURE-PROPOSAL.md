@@ -1,41 +1,39 @@
-> **Document:** Backend Package Structure Proposal
+> **Document:** Backend Package Structure Specification
 > **File:** `docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md`
-> **Version:** v0.1.0
+> **Version:** v1.0.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-09-20
-> **Status:** Draft
-> **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `app/mamxanh-backend/README.md`
+> **Last Updated:** 2026-09-28
+> **Status:** Active
+> **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `app/mamxanh-backend/README.md`
 
-# Đề xuất cấu trúc package Backend
+# Quy chuẩn cấu trúc package Backend (Backend Package Structure Specification)
 
-## 1. Mục đích và giới hạn
+## 1. Mục đích và phạm vi áp dụng
 
-Tài liệu này ghi lại cấu trúc package dự kiến cho Backend Mâm Xanh để nhóm có điểm tham chiếu khi bắt đầu triển khai các vertical slice. Đây là **đề xuất đang ở trạng thái Draft**, không phải bằng chứng rằng các package, class hoặc module đã tồn tại trong source code.
+Tài liệu này xác lập quy chuẩn cấu trúc package và tổ chức mã nguồn chính thức cho Backend Mâm Xanh. Đây là **quy chuẩn kiến trúc đã được phê duyệt (`Status: Active`)**, cụ thể hóa mô hình **Modular Monolith** kết hợp MVC/layered structure theo [System Architecture](ARCHITECTURE.md#31-kiến-trúc-backend) và [Technology Stack](TECHNOLOGY-STACK.md).
 
-Kiến trúc có thẩm quyền hiện tại vẫn là [System Architecture](ARCHITECTURE.md): một Spring Boot application theo **Modular Monolith**, tổ chức theo business capability và áp dụng MVC/layered structure bên trong từng module. Tài liệu này chỉ cụ thể hóa một phương án package ban đầu trong ranh giới đó.
+Quy chuẩn này là kim chỉ nam bắt buộc cho tất cả thành viên khi triển khai các vertical slice. Mã nguồn sẽ được tạo lập dần theo từng tính năng/Issue thực tế; nhóm không tạo trước các package rỗng hoặc abstraction khi chưa có nhu cầu sử dụng thực tế.
 
-Cấu trúc thực tế sẽ được hình thành dần theo Issue, Functional Requirement, Business Rule và code đã triển khai. Khi implementation cho thấy một cách phân chia khác phù hợp hơn, nhóm phải cập nhật đề xuất thay vì ép code tuân theo các thư mục rỗng hoặc abstraction chưa cần thiết.
+## 2. Nguyên tắc tổ chức cốt lõi
 
-## 2. Nguyên tắc tổ chức đề xuất
+- **Ưu tiên Business Capability:** Phân chia package cấp cao nhất theo nghiệp vụ (`auth`, `recipe`, `mealplan`, `shopping`, `nutrition`, `subscription`, `admin`), sau đó mới phân chia layer bên trong từng module.
+- **Áp dụng MVC/Layered bên trong module:** Mỗi module tự đóng gói các thành phần trách nhiệm: `controller`, `service`, `repository`, `entity`, `dto`, và `mapper` (nếu cần).
+- **Ranh giới liên module nghiêm ngặt (Inter-module Boundary):** Module A tuyệt đối không inject hoặc truy cập `Repository` của Module B. Phối hợp nghiệp vụ liên module bắt buộc phải thông qua public `Service` của module đích.
+- **Cách ly hợp đồng giao tiếp (DTO vs Entity):** DTO request/response là hợp đồng dữ liệu ở biên HTTP; không trả trực tiếp JPA Entity ra cho client/Frontend.
+- **Tập trung nghiệp vụ tại Service:** Toàn bộ business rules, điều phối transaction (`@Transactional`), kiểm tra quyền (authorization) và quyền sở hữu (ownership) được xử lý tại tầng Service.
+- **Cô lập tích hợp dịch vụ ngoài (`integration`):** Các SDK và client gọi dịch vụ bên ngoài (Gemini AI, Azure Blob, payOS, Brevo, Google GIS) được đóng gói riêng biệt, không để lộ chi tiết hạ tầng vào business service.
+- **Tiêu chuẩn dùng chung (`common`):** Chỉ đưa vào `common` những thành phần hạ tầng/tiện ích dùng chung đã có consumer thực tế (exception handling tập trung, envelope response, cross-cutting configs).
 
-- Chia package theo business capability trước, sau đó chia layer bên trong từng module.
-- Ưu tiên một vertical slice hoàn chỉnh từ API đến database thay vì tạo trước toàn bộ package cho mọi module.
-- Giữ luồng phụ thuộc thông thường: `Controller -> Service -> Repository -> Entity -> Database`.
-- DTO request/response là contract ở biên HTTP; không trả trực tiếp JPA Entity cho Frontend.
-- Business rule, authorization và ownership check thuộc Backend, chủ yếu được điều phối ở Service.
-- Chỉ đưa thành phần vào `common` khi có nhu cầu dùng chung đã được chứng minh ở nhiều module.
-- External provider được cô lập khỏi Controller và business logic chính.
-
-## 3. Cấu trúc package dự kiến
+## 3. Cấu trúc package quy chuẩn
 
 ```text
 src/main/java/tech/mamxanh/
 ├── MamXanhApplication.java
 ├── common/
-│   ├── config/
-│   ├── exception/
-│   ├── response/
-│   └── validation/
+│   ├── config/              # SecurityConfig, CorsConfig, OpenApiConfig, AsyncConfig
+│   ├── exception/           # GlobalExceptionHandler, AppException, ErrorCode
+│   ├── response/            # ApiResponse<T>, PageResponse<T>
+│   └── validation/          # Custom validators / annotations dùng chung
 ├── auth/
 │   ├── controller/
 │   ├── service/
@@ -44,8 +42,18 @@ src/main/java/tech/mamxanh/
 │   ├── dto/
 │   │   ├── request/
 │   │   └── response/
-│   └── security/
+│   ├── mapper/              # (Tùy chọn) Mapping Auth DTO <-> Entity
+│   └── security/            # JwtTokenProvider, JwtAuthFilter, GoogleTokenVerifier
 ├── recipe/
+│   ├── controller/
+│   ├── service/
+│   ├── repository/
+│   ├── entity/
+│   ├── dto/
+│   │   ├── request/
+│   │   └── response/
+│   └── mapper/
+├── mealplan/
 │   ├── controller/
 │   ├── service/
 │   ├── repository/
@@ -53,99 +61,125 @@ src/main/java/tech/mamxanh/
 │   └── dto/
 │       ├── request/
 │       └── response/
-├── mealplan/
-│   ├── controller/
-│   ├── service/
-│   ├── repository/
-│   ├── entity/
-│   └── dto/
 ├── shopping/
 │   ├── controller/
 │   ├── service/
 │   ├── repository/
 │   ├── entity/
 │   └── dto/
+│       ├── request/
+│       └── response/
 ├── nutrition/
 │   ├── controller/
 │   ├── service/
 │   ├── repository/
 │   ├── entity/
 │   └── dto/
+│       ├── request/
+│       └── response/
 ├── subscription/
 │   ├── controller/
 │   ├── service/
 │   ├── repository/
 │   ├── entity/
 │   └── dto/
+│       ├── request/
+│       └── response/
 ├── admin/
 │   ├── controller/
 │   ├── service/
 │   └── dto/
+│       ├── request/
+│       └── response/
 └── integration/
-    ├── ai/
-    ├── storage/
-    ├── payment/
-    └── email/
+    ├── ai/                  # Google Gen AI Java SDK (Gemini 3.8 Flash), AiClient
+    ├── storage/             # Azure Blob Storage Client (Upload & quản lý ảnh)
+    ├── payment/             # payOS VietQR Client, Webhook signature verification
+    ├── email/               # Brevo SMTP / JavaMailSender
+    └── google/              # Google Identity Services verification helper
 ```
 
-Tên module trong cây trên là định hướng ban đầu dựa trên các capability đã được kiến trúc hiện tại nêu rõ. Chúng không tạo requirement mới và không buộc mọi module phải có đủ tất cả subpackage. Ví dụ, `admin` có thể điều phối use case quản trị nhưng không cần sao chép Entity thuộc `auth`, `recipe` hoặc `nutrition`.
+*Lưu ý:* Các subpackage được tạo khi có vertical slice tương ứng. Module `admin` đóng vai trò điều phối quản trị, tái sử dụng service của các module khác và không nhất thiết phải tạo lại Entity trùng lặp.
 
-## 4. Trách nhiệm dự kiến của từng layer
+## 4. Trách nhiệm của từng layer và chuẩn thành phần
 
-| Package | Trách nhiệm chính |
-|---|---|
-| `controller` | Nhận HTTP request, kiểm tra dữ liệu đầu vào ở biên, gọi Service và trả HTTP response. |
-| `service` | Điều phối use case, transaction, business rule, authorization và ownership check. |
-| `repository` | Truy cập Microsoft SQL Server qua Spring Data JPA. |
-| `entity` | Ánh xạ mô hình lưu trữ bằng JPA; không đóng vai trò response contract. |
-| `dto/request` | Biểu diễn dữ liệu Client gửi vào API. |
-| `dto/response` | Biểu diễn dữ liệu Backend công khai qua API. |
-| `security` | Chứa các thành phần authentication/authorization gắn với Identity & Access. |
-| `integration` | Bao bọc giao tiếp với Gemini, Azure Blob Storage, payOS và Brevo theo baseline đã chốt. |
-| `common` | Chứa cấu hình và cơ chế dùng chung đã có consumer thực tế; không phải nơi chứa mọi helper. |
+### 4.1 Phân định trách nhiệm các layer
 
-`mapper` chỉ nên được thêm trong một module khi việc chuyển đổi Entity và DTO đủ phức tạp. Đề xuất này chưa chọn hoặc yêu cầu thêm thư viện mapping.
+| Package / Layer | Trách nhiệm chính | Ràng buộc kiến trúc |
+|---|---|---|
+| `controller` | Tiếp nhận HTTP request, validate format ở biên (`@Valid`), ủy quyền xử lý cho Service và đóng gói trả về `ApiResponse<T>`. | Không chứa business logic; không gọi trực tiếp `Repository`. |
+| `service` | Điều phối use case, transaction (`@Transactional`), thực thi Business Rules, kiểm tra authorization/ownership và tích hợp liên module. | Không phụ thuộc vào servlet request/response của HTTP. |
+| `repository` | Thao tác dữ liệu với SQL Server thông qua Spring Data JPA (`JpaRepository`). | Chỉ được truy cập bởi Service của chính module sở hữu. |
+| `entity` | Ánh xạ các bảng cơ sở dữ liệu (`@Entity`). | Không dùng làm response contract cho REST API; hạn chế logic phức tạp. |
+| `dto/request` | Biểu diễn dữ liệu Client gửi lên API kèm các annotation validation (`@NotBlank`, `@Min`, `@Pattern`...). | Bất biến (immutable) hoặc dùng Lombok `@Data`/`@Getter`. |
+| `dto/response` | Biểu diễn payload dữ liệu Backend trả về cho Client. | Che giấu các trường nhạy cảm (như mật khẩu, hash token). |
+| `mapper` | Chuyển đổi dữ liệu hai chiều giữa JPA Entity và DTO. | Có thể dùng MapStruct hoặc method mapping thủ công với `@Builder`. |
+| `security` | Cấu hình xác thực, giải mã JWT, filter bảo mật, nạp UserDetails. | Tập trung trong `auth/security/` để quản lý Identity & Access. |
+| `integration` | Đóng gói chi tiết kỹ thuật khi kết nối các dịch vụ ngoài (Gemini, Blob, payOS, Brevo). | Cung cấp interface rõ ràng (`AiClient`, `PaymentGateway`) để dễ mock khi kiểm thử. |
+| `common` | Chứa cấu hình hạ tầng và tiện ích dùng chung toàn ứng dụng. | Không biến thành nơi chứa các helper nghiệp vụ hỗn tạp. |
 
-## 5. Resources và test dự kiến
+### 4.2 Chuẩn hóa phản hồi API và xử lý ngoại lệ (`common/`)
+
+Để đảm bảo Frontend nhận payload nhất quán, Backend chuẩn hóa cấu trúc:
+
+1. **Chuẩn Envelope phản hồi (`common/response/ApiResponse.java`):**
+   ```json
+   {
+     "success": true,
+     "message": "Thực hiện thành công",
+     "data": { ... },
+     "timestamp": "2026-09-28T14:55:00Z"
+   }
+   ```
+2. **Xử lý ngoại lệ tập trung (`common/exception/GlobalExceptionHandler.java`):**
+   - Sử dụng `@RestControllerAdvice` để bắt và chuyển đổi toàn bộ ngoại lệ thành JSON format chuẩn.
+   - Bắt các lỗi validation biên (`MethodArgumentNotValidException`) và trả về chi tiết field lỗi.
+   - Định nghĩa `AppException` kế thừa `RuntimeException` nhận `ErrorCode` (enum định nghĩa mã lỗi nghiệp vụ, HTTP status tương ứng và message mặc định).
+
+## 5. Cấu trúc Resources và Test
+
+### 5.1 Resources cấu hình và Migration
 
 ```text
 src/main/resources/
-├── application.properties
-├── application-local.properties
+├── application.properties               # Cấu hình chung cho ứng dụng
+├── application-local.properties         # Cấu hình máy cá nhân (chứa credentials, Git ignored)
 └── db/
-    └── migration/
-        ├── V1__initial_schema.sql
-        └── ...
+    └── migration/                       # Lịch sử migration Flyway append-only
+        ├── V1__baseline_schema.sql      # Schema khởi tạo cơ sở dữ liệu
+        ├── V2__unit_code_unicode.sql    # Migration bổ sung Unicode cho đơn vị
+        └── ...                          # Các migration tiếp theo theo thứ tự version
 ```
 
-`application-local.properties` là cấu hình cá nhân và không được Git theo dõi. Flyway migration là lịch sử schema executable, append-only sau khi được áp dụng; Hibernate không thay thế migration history.
+### 5.2 Kiểm thử tự động (Unit & Integration Tests)
 
-Test nên phản chiếu package của source code thay vì tạo một cấu trúc phân loại không liên quan:
+Cấu trúc thư mục test phản chiếu chính xác package của source code để đảm bảo tính đồng bộ:
 
 ```text
 src/test/java/tech/mamxanh/
+├── common/
 ├── auth/
 ├── recipe/
 ├── mealplan/
 ├── shopping/
 ├── nutrition/
-└── subscription/
+├── subscription/
+└── integration/
 ```
 
-Cấu trúc test cụ thể chỉ được tạo khi có behavior và test case thực tế.
+Mỗi test class kiểm tra đúng trách nhiệm: Unit Test cho Service (dùng Mockito mock Repository/Client ngoài), WebMvcTest cho Controller, hoặc DataJpaTest cho các query phức tạp.
 
-## 6. Quy tắc phụ thuộc ban đầu
+## 6. Quy tắc phụ thuộc và ranh giới liên module
 
-- Controller không gọi Repository trực tiếp.
-- Module không truy cập tùy tiện Repository nội bộ của module khác; ưu tiên đi qua Service/use-case boundary khi cần phối hợp nghiệp vụ.
-- Không đưa business logic vào Controller, DTO, Entity callback hoặc class tiện ích chung.
-- Không tạo interface cho mọi Service nếu chưa có nhiều implementation hoặc một boundary cần thay thế rõ ràng.
-- Không bổ sung Clean Architecture, Hexagonal Architecture, CQRS, event bus hoặc microservice chỉ để hoàn thiện cấu trúc thư mục.
-- Không tạo package rỗng cho toàn bộ capability trước khi bắt đầu implementation tương ứng.
+1. **Cấm gọi chéo Repository:** Module A tuyệt đối không được inject `Repository` của Module B. Ví dụ: `MealPlanService` cần thông tin món ăn bắt buộc phải gọi `RecipeService.getRecipeById(...)`, không được inject `RecipeRepository`.
+2. **Controller chỉ gọi Service:** Controller không được gọi trực tiếp `Repository` hoặc Service của module khác ngoài module mà nó đại diện.
+3. **Không rò rỉ JPA Entity ra API:** Toàn bộ dữ liệu trả về client phải đi qua DTO.
+4. **Không tạo abstraction dư thừa:** Không ép buộc tạo interface cho mọi Service nếu chỉ có duy nhất một implementation và không có nhu cầu thay thế runtime.
+5. **Không tạo package rỗng:** Chỉ tạo package khi bắt tay vào triển khai vertical slice tương ứng.
 
-## 7. Cách áp dụng dần
+## 7. Quy trình áp dụng theo từng Vertical Slice
 
-Khi bắt đầu một FR, nhóm tạo đúng các package và class cần cho vertical slice đó. Ví dụ, một slice Authentication có thể bắt đầu với:
+Khi bắt đầu một FR, thành viên tạo đúng các package và class cần thiết cho lát cắt đó. Ví dụ lát cắt Authentication (`auth`):
 
 ```text
 auth/
@@ -154,18 +188,16 @@ auth/
 ├── repository/UserRepository.java
 ├── entity/User.java
 ├── dto/request/LoginRequest.java
-└── dto/response/AuthResponse.java
+├── dto/request/RegisterRequest.java
+├── dto/response/AuthResponse.java
+└── security/JwtTokenProvider.java
 ```
 
-Ví dụ chỉ minh họa cách tổ chức; nó không xác nhận tên endpoint, field, Entity hoặc class đã được duyệt. Những chi tiết đó phải xuất phát từ SRS, API contract và schema áp dụng cho FR đang triển khai.
+Mọi chi tiết class, field, validation và endpoint phải bám sát [OpenAPI Contract](../api/openapi.yaml), [SRS Requirements](../requirements/SRS.md) và [Data Dictionary](../diagrams/ERD/data-dictionary.md).
 
-## 8. Điều kiện cập nhật trạng thái tài liệu
+## 8. Quản lý vòng đời và duy trì quy chuẩn
 
-Tài liệu tiếp tục ở trạng thái `Draft` trong khi cấu trúc mới là đề xuất. Sau khi có ít nhất một vertical slice Backend được triển khai và kiểm chứng, nhóm cần đối chiếu:
+- Tài liệu này là **Active Baseline** có thẩm quyền về cấu trúc package Backend của dự án.
+- Mọi điều chỉnh, tái cấu trúc hoặc phát sinh module mới trong quá trình code phải được thống nhất với Tech Lead và cập nhật lại vào tài liệu này.
+- Khi một module hoặc vertical slice mới được đưa vào `main`, cấu trúc thực tế trong mã nguồn phải tuân thủ nghiêm ngặt các ranh giới và quy tắc phụ thuộc đã nêu tại đây.
 
-1. Package thực tế có giữ đúng ranh giới module và layer hay không.
-2. Có package đề xuất nào không cần thiết hoặc thiếu trách nhiệm thực tế hay không.
-3. Dependency giữa các module có rõ ràng và kiểm thử được hay không.
-4. Tài liệu có phản ánh source code thay vì mô tả cấu trúc lý tưởng chưa tồn tại hay không.
-
-Chỉ sau bước đối chiếu và quyết định của nhóm, tài liệu mới được cập nhật để phản ánh cấu trúc thực tế hoặc được hợp nhất vào tài liệu Backend phù hợp. Việc đổi trạng thái tài liệu không tự thay đổi kiến trúc đã duyệt trong `ARCHITECTURE.md`.

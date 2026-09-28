@@ -1,13 +1,16 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.7.1
+> **Version:** v0.7.2
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-28
 > **Status:** Active  
 
 # Backend Workspace
 
 Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và truy cập Microsoft SQL Server qua Spring Data JPA/Hibernate theo [Technology Stack](../../docs/architecture/TECHNOLOGY-STACK.md).
+
+> [!IMPORTANT]
+> **Quy chuẩn kiến trúc bắt buộc:** Mọi thành viên và AI agent khi triển khai mã nguồn Backend **bắt buộc phải tuân thủ nghiêm ngặt** cấu trúc package Modular Monolith, phân tầng MVC và ranh giới liên module được quy định tại [Backend Package Structure Specification](../../docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md). Cấm inject chéo Repository giữa các module và không trả JPA Entity trực tiếp ra REST API.
 
 ## Trạng thái hiện tại
 

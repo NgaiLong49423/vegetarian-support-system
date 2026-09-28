@@ -101,6 +101,7 @@ canonical_docs:
   non_functional_requirements: docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md
   architecture: docs/architecture/ARCHITECTURE.md
   technology_stack: docs/architecture/TECHNOLOGY-STACK.md
+  backend_package_structure: docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md
   test_strategy: docs/testing/TEST-STRATEGY.md
   contribution_rules: CONTRIBUTING.md
   workflow: docs/decisions/001-team-workflow.md
@@ -122,7 +123,7 @@ doc_sync_rules:
   - when: requirements_change
     check: [docs/requirements/SRS.md, docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md, docs/requirements/srs/BUSINESS-RULES.md, docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md, docs/requirements/PRD.md, docs/architecture/ARCHITECTURE.md, docs/testing/TEST-STRATEGY.md, README.md, CHANGELOG.md]
   - when: architecture_or_technology_changes
-    check: [docs/architecture/ARCHITECTURE.md, docs/architecture/TECHNOLOGY-STACK.md, docs/requirements/SRS.md, docs/README.md, README.md]
+    check: [docs/architecture/ARCHITECTURE.md, docs/architecture/TECHNOLOGY-STACK.md, docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md, docs/requirements/SRS.md, docs/README.md, README.md]
   - when: test_strategy_changes
     check: [docs/testing/TEST-STRATEGY.md, docs/requirements/SRS.md, CONTRIBUTING.md]
   - when: layout_or_agent_policy_changes
