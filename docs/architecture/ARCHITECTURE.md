@@ -28,7 +28,7 @@ Hệ thống cung cấp nền tảng web responsive phục vụ người ăn cha
               │ (HTTPS / REST)
               ▼
 [ Vercel (Frontend React + TS + Vite) ]
-              │ (REST API / JSON / HttpOnly Cookie)
+              │ (REST API / JSON / Bearer Token)
               ▼
 [ Azure App Service (Backend Spring Boot + Java 21) ]
        │            │                  │
@@ -49,7 +49,7 @@ Frontend được host trên **Vercel**. Backend và data services được tri�
 | Thành phần | Nền tảng / Công nghệ | Trách nhiệm đã xác nhận | Ranh giới |
 |---|---|---|---|
 | Browser client | React, TypeScript, Vite (Vercel) | Hiển thị giao diện responsive, nhận input người dùng, xử lý trạng thái loading/error, nhúng YouTube player và nút Google Login | Không phải ranh giới tin cậy cho authorization, validation hoặc lưu secret |
-| Spring Boot Backend | Java 21, Spring Boot (Azure App Service) | Xác thực request (JWT + Cookie Refresh Token), kiểm tra role/ownership, validate input, kiểm tra quyền tính năng AI (Feature Entitlement), áp dụng technical rate limit, điều phối nghiệp vụ và gọi external services | Quy tắc nghiệp vụ bắt buộc thực thi ở server-side kể cả khi UI đã ẩn thao tác |
+| Spring Boot Backend | Java 21, Spring Boot (Azure App Service) | Xác thực request (Stateless JWT Bearer Token, Spring Security OAuth2 Resource Server), kiểm tra role/ownership, validate input, kiểm tra quyền tính năng AI (Feature Entitlement), áp dụng technical rate limit, điều phối nghiệp vụ và gọi external services | Quy tắc nghiệp vụ bắt buộc thực thi ở server-side kể cả khi UI đã ẩn thao tác |
 | SQL Server | Microsoft SQL Server (Azure SQL Database Serverless) | Relational Source of Truth chính cho tài khoản, công thức, thực đơn, giao dịch thanh toán và tham chiếu media | Tự động pause khi không có request; cần kích hoạt trước các buổi demo |
 | Media Storage | Azure Blob Storage | Lưu trữ tệp ảnh minh họa Recipe Post (0–5 ảnh qua thực thể `RECIPE_MEDIA`, JPEG/PNG/WebP $\le 5$ MB, đúng 1 ảnh bìa cover); SQL Server giữ URL tham chiếu, thứ tự hiển thị và cờ ảnh bìa | Phase 1 upload qua Backend kiểm duyệt; không upload file video |
 | External integrations | Google Gemini, GIS, Brevo, payOS, YouTube | Cung cấp AI gợi ý, xác thực Google, gửi email kích hoạt/reset, thanh toán VietQR và phát video | Lỗi provider phải được xử lý minh bạch; không tính phí người dùng khi AI/email gặp sự cố |
@@ -155,7 +155,7 @@ Trích xuất google_subject (sub), email, name, avatar
       |
 Tìm hoặc tạo tài khoản Customer (ACTIVE, role = ROLE_CUSTOMER)
       |
-Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
+Backend phát hành Stateless JWT Access Token
 ```
 
 - Lưu trữ `google_subject` (`sub`) làm khóa định danh tài khoản Google ổn định, phòng trường hợp tài khoản thay đổi email.
@@ -176,7 +176,7 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
   - *CI/CD:* GitHub Environment Secrets trong GitHub Actions.
   - *Production:* Cấu hình trực tiếp trên Azure App Service Application Settings hoặc nạp qua Azure Key Vault reference.
 - **Bảo mật Webhook:** Bắt buộc xác minh chữ ký số HMAC-SHA256 với `checksumKey` của payOS trước khi đọc payload webhook.
-- **Bảo vệ phiên làm việc:** Access Token ngắn hạn, Rotating Refresh Token lưu trong Secure HttpOnly Cookie với cờ `SameSite=None; Secure`. Logout thu hồi phiên làm việc trên server-side.
+- **Bảo vệ phiên làm việc:** Stateless JWT Access Token gửi qua `Authorization: Bearer`. Kiểm tra tức thời trạng thái tài khoản `USER.account_status` trên mọi request (trả về 403 Forbidden `ACCOUNT_LOCKED` nếu tài khoản bị khóa). Đăng xuất xử lý hoàn toàn phía client (xóa token khỏi client storage); không dùng refresh token, cookie hay server-side session.
 - **Bảo mật Logging:** Logback/SLF4J tuyệt đối không ghi mật khẩu, token, API key, SAS URL, nội dung prompt cá nhân hoặc thông tin sức khỏe nhạy cảm.
 
 ### 5.2 Ranh giới Phân quyền RBAC & Quyền Tác giả Chuyên gia (RBAC & Expert Authorship Boundaries)
@@ -229,7 +229,7 @@ Backend phát hành JWT Access Token + Rotating Refresh Token (HttpOnly Cookie)
 | AI Provider & Model | **Confirmed** | Google Gemini model `gemini-3.8-flash` qua Google Gen AI Java SDK, bọc qua `AiClient`, timeout + retry, structured output |
 | Payment Provider | **Confirmed** | `payOS` (REST API qua Spring `RestClient` + Webhook HMAC-SHA256, xử lý idempotent theo `order_code`) |
 | Email Service | **Confirmed** | `Brevo` qua Spring Boot Mail (SMTP), xử lý bất đồng bộ `@Async`, lỗi không rollback |
-| Authentication Detail | **Confirmed** | Google Identity Services + `GoogleIdTokenVerifier` + Internal JWT & Rotating Refresh Cookie |
+| Authentication Detail | **Confirmed** | Google Identity Services + `GoogleIdTokenVerifier` + Stateless JWT Access Token (Spring Security OAuth2 Resource Server, Nimbus) |
 | Deployment Topology | **Confirmed** | Vercel (FE) + Azure App Service Java 21 SE (BE) + Azure SQL Database Serverless (DB) + Azure Blob Storage (Media) |
 | Monitoring & Observability | **Confirmed** | Spring Boot Actuator (`/actuator/health`) + Logback + Azure Application Insights Java Agent |
 | QA & Testing Tooling | **Confirmed** | JUnit 5 + Mockito + JaCoCo + Codecov (CI reporting) + Testmail (Email E2E testing) + Requestly Pro (FE mocking) |

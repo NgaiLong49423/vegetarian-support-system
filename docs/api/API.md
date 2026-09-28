@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.2.0
+> **Version:** v0.3.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-09-22
+> **Last Updated:** 2026-09-28
 > **Status:** Active
 
 # API Integration Guide
@@ -29,25 +29,26 @@ Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn b�
 
 ### 3.1 Access token
 
-Đăng nhập email/password hoặc Google Login trả JWT access token ngắn hạn trong JSON. Frontend gửi token ở các API được bảo vệ:
+Đăng nhập email/password hoặc Google Login trả Stateless JWT Access Token trong JSON body (`AuthResponse`). Frontend gửi token ở các API được bảo vệ:
 
 ```http
 Authorization: Bearer <access-token>
 ```
 
-Frontend không lưu hoặc ghi access token vào log. Thời lượng access token là thông số còn mở ở mục 6; owner FR-03 cần đề xuất giá trị để Tech Lead duyệt trước khi triển khai và kiểm thử phần phụ thuộc.
+Frontend không ghi access token vào log. Thời lượng access token là thông số còn mở ở mục 6; owner FR-03 cần đề xuất giá trị để Tech Lead duyệt trước khi triển khai và kiểm thử phần phụ thuộc.
 
-### 3.2 Refresh session
+### 3.2 Client-side Logout
 
-Backend đặt rotating refresh token trong Secure HttpOnly Cookie. JavaScript không được đọc refresh token. Khi refresh thành công, Backend vô hiệu hóa token cũ, phát hành token mới và cập nhật phiên phía máy chủ.
+Hệ thống sử dụng Stateless JWT Access Token, không duy trì server-side session, cookie hay refresh token. Do đó không tồn tại endpoint `POST /auth/logout` trên máy chủ.
 
-OpenAPI hiện dùng tên cookie tạm `refresh_token`. Owner FR-03 cần đề xuất tên chính thức, thời lượng refresh token và cơ chế storage phía máy chủ để Tech Lead duyệt trước khi triển khai phần phụ thuộc.
+Khi người dùng chọn Đăng xuất, Frontend thực hiện:
+1. Xóa Access Token khỏi nơi lưu trữ client.
+2. Xóa thông tin người dùng trong AuthContext / state.
+3. Điều hướng người dùng về trạng thái Guest hoặc màn hình Đăng nhập.
 
-Frontend gọi refresh/logout với credential mode bật, ví dụ Axios `withCredentials: true`. Allowed origin phải được cấu hình tường minh; không dùng wildcard origin khi cho phép credential.
+### 3.3 Candidate Follow-up: GET /auth/me
 
-### 3.3 CSRF boundary
-
-`POST /auth/refresh` và `POST /auth/logout` là state-changing endpoint dùng cookie do browser tự gửi. Owner FR-03 cần đề xuất cơ chế CSRF phù hợp với Spring Security để Tech Lead duyệt và kiểm thử trước khi triển khai hai endpoint này. CORS không thay thế CSRF protection.
+Endpoint `GET /auth/me` (tra cứu thông tin người dùng hiện tại từ token) là một ứng viên follow-up tiềm năng nhưng chưa thuộc contract chính thức trong OpenAPI `openapi.yaml`. Việc thêm endpoint này sẽ được xem xét trong task riêng khi có yêu cầu cụ thể.
 
 ## 4. Error convention
 
@@ -79,29 +80,30 @@ Quy ước status chính:
 | `202 Accepted` | Yêu cầu email đã được tiếp nhận; không xác nhận email có tồn tại. |
 | `204 No Content` | Thao tác thành công và không cần response body. |
 | `400 Bad Request` | Payload, token xác minh hoặc token đặt lại mật khẩu không hợp lệ. |
-| `401 Unauthorized` | Credential không hợp lệ, hết hạn hoặc phiên đã bị thu hồi. |
-| `403 Forbidden` | Tài khoản chưa xác minh hoặc bị Administrator khóa. |
-| `409 Conflict` | Email đã được sử dụng. |
-| `429 Too Many Requests` | Vượt rate limit; client đọc `Retry-After` khi có. |
+| `401 Unauthorized` | Credential không hợp lệ hoặc token hết hạn. |
+| `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`) hoặc bị Administrator khóa (`ACCOUNT_LOCKED`). |
+| `409 Conflict` | Email đã được sử dụng hoặc đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`). |
+| `429 Too Many Requests` | Vượt rate limit (đăng nhập thử sai quá 5 lần hoặc gửi email quá tần suất); client đọc `Retry-After` khi có. |
 
 ## 5. Quy tắc bảo mật của Auth slice
 
-- Không trả password, password hash, refresh token hoặc Google ID token trong response/log.
+- Không trả password, password hash hoặc Google ID token trong response/log.
 - Login sai dùng thông báo chung để tránh tiết lộ email có tồn tại.
-- Password-reset request luôn trả thông điệp trung tính.
-- Sau 5 lần đăng nhập sai liên tiếp, chặn theo account identifier và IP trong 10 phút; không đổi account status thành `LOCKED`.
-- Reset password thành công thu hồi toàn bộ session đang hoạt động.
-- Phát hiện refresh-token reuse thu hồi toàn bộ token family liên quan và xóa cookie.
-- Google ID token phải được Backend xác minh chữ ký, issuer, audience và expiry trước khi tạo phiên.
+- Password-reset request luôn trả HTTP 202 trung tính; rate limit 60 giây cooldown và tối đa 5 email/giờ/tài khoản.
+- Sau 5 lần đăng nhập sai liên tiếp, rate limit tạm thời 10 phút ở cấp tài khoản (lưu trên bảng `USER`); không rate limit IP; không đổi account status thành `LOCKED`.
+- Giới hạn độ dài mật khẩu: 8–64 ký tự, tối đa 72 bytes UTF-8 (chuẩn BCrypt).
+- Đăng xuất xử lý hoàn toàn phía client (không gọi backend API).
+- Google ID token phải được Backend xác minh chữ ký, issuer, audience và expiry trước khi phát hành token.
 
 ## 6. Thông số cần chốt trước khi triển khai phần phụ thuộc
 
 | Quyết định | Trạng thái | Ảnh hưởng |
 |---|---|---|
-| Access-token lifetime | `TBD` | Owner FR-03 đề xuất giá trị `expiresInSeconds`, security test và refresh timing. |
-| Refresh-token lifetime và server-side storage | `TBD` | Owner FR-03 đề xuất cookie expiry và session retention/storage. |
-| Refresh cookie name | `TBD`; OpenAPI tạm dùng `refresh_token` | Owner FR-03 xác nhận tên chính thức trước khi FE/BE tích hợp. |
-| CSRF mechanism cho refresh/logout | `TBD` | Owner FR-03 đề xuất và kiểm thử cơ chế bảo vệ hai endpoint dùng cookie. |
+| Access-token lifetime | `TBD` | Đề xuất giá trị `expiresInSeconds` và cấu hình token TTL. |
+| JWT Claims set | `TBD` | Token chứa `sub` (subject), `role`, claim định danh; không chứa `sid`; claim `jti` là TBD. |
+| Frontend token storage | `TBD` | Frontend quyết định nơi lưu trữ Access Token an toàn (memory, storage...). |
+| Candidate endpoint `GET /auth/me` | `PENDING` | Xem xét bổ sung sau nếu Frontend cần đồng bộ lại user profile. |
+| Role freshness sau khi đổi role | `PENDING` | Cơ chế cập nhật role sau khi Admin nâng cấp vai trò trong lúc JWT cũ chưa hết hạn. |
 | Public/development server URLs và CORS origins | `TBD` | Chốt theo môi trường thực tế trước khi cấu hình OpenAPI `servers` và CORS. |
 
 Baseline API đã được nhóm chấp nhận; các mục `TBD` không tự có giá trị chỉ vì tài liệu chuyển sang `Active`. Owner FR-03 phân rã, đề xuất giá trị và cách kiểm thử; Tech Lead duyệt trước khi phần liên quan được coi là implementation-ready. Không suy diễn các giá trị này từ ví dụ hoặc cấu hình tạm.

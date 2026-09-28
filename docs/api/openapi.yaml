@@ -1,19 +1,19 @@
 openapi: 3.1.1
 info:
   title: Mâm Xanh API
-  version: 0.3.0
+  version: 0.4.0
   summary: REST API contract for the Mâm Xanh application
   description: >-
     Accepted API baseline for FR-03 Authentication & Account. Implementation parameters
     listed as TBD in API.md require owner proposals and Tech Lead approval before the
     affected endpoints are implementation-ready. Documented endpoints are not claimed
-    to be implemented. The refresh_token cookie name is provisional.
+    to be implemented.
 servers:
   - url: /api/v1
     description: Version 1 relative base path
 tags:
   - name: Authentication
-    description: Registration, verification, login, password recovery, session refresh, and logout.
+    description: Registration, verification, login, and password recovery.
 paths:
   /auth/register:
     post:
@@ -87,9 +87,8 @@ paths:
       tags: [Authentication]
       summary: Log in with email and password
       description: >-
-        On success, returns a short-lived access token and sets a rotating refresh token in a Secure,
-        HttpOnly cookie. Five consecutive failures trigger a ten-minute limit by account identifier
-        and source IP without changing the account to LOCKED.
+        On success, returns a Stateless JWT Access Token. Five consecutive failures trigger a ten-minute
+        temporary block on the account without changing the account to LOCKED.
       requestBody:
         required: true
         content:
@@ -98,12 +97,7 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Login successful. The response also sets the refresh_token cookie.
-          headers:
-            Set-Cookie:
-              description: Rotating refresh token cookie. Exact lifetime is TBD for FR-03 implementation.
-              schema:
-                type: string
+          description: Login successful. Returns a Stateless JWT Access Token.
           content:
             application/json:
               schema:
@@ -139,12 +133,7 @@ paths:
               $ref: '#/components/schemas/GoogleLoginRequest'
       responses:
         '200':
-          description: Google login successful. The response also sets the refresh_token cookie.
-          headers:
-            Set-Cookie:
-              description: Rotating refresh token cookie. Exact lifetime is TBD for FR-03 implementation.
-              schema:
-                type: string
+          description: Google login successful. Returns a Stateless JWT Access Token.
           content:
             application/json:
               schema:
@@ -153,6 +142,18 @@ paths:
           $ref: '#/components/responses/ValidationProblem'
         '401':
           description: Google ID token is invalid or expired.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Account is administratively locked (ACCOUNT_LOCKED).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Email is already linked to a different Google account (GOOGLE_ACCOUNT_CONFLICT).
           content:
             application/problem+json:
               schema:
@@ -181,7 +182,7 @@ paths:
     post:
       tags: [Authentication]
       summary: Set a new password with a reset token
-      description: Invalidates the used token and revokes all active sessions for the account.
+      description: Sets a new password using a valid reset token and invalidates the token.
       requestBody:
         required: true
         content:
@@ -190,62 +191,9 @@ paths:
               $ref: '#/components/schemas/PasswordResetConfirmRequest'
       responses:
         '204':
-          description: Password changed and existing sessions revoked.
+          description: Password changed successfully.
         '400':
           description: Payload or reset token is invalid or expired.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /auth/refresh:
-    post:
-      tags: [Authentication]
-      summary: Rotate the refresh token and issue a new access token
-      description: >-
-        Requires the refresh_token HttpOnly cookie. Reuse of an already rotated token revokes the
-        related token family and clears the cookie. The CSRF mechanism is TBD for FR-03 implementation.
-      security:
-        - refreshCookie: []
-      responses:
-        '200':
-          description: Session refreshed and refresh token rotated.
-          headers:
-            Set-Cookie:
-              description: New rotating refresh token cookie.
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenResponse'
-        '401':
-          description: Refresh token is missing, invalid, expired, revoked, or reused.
-          headers:
-            Set-Cookie:
-              description: Clears the refresh token cookie when the session must be terminated.
-              schema:
-                type: string
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /auth/logout:
-    post:
-      tags: [Authentication]
-      summary: Revoke the current refresh session
-      description: Requires the refresh_token cookie. The CSRF mechanism is TBD for FR-03 implementation.
-      security:
-        - refreshCookie: []
-      responses:
-        '204':
-          description: Session revoked and refresh token cookie cleared.
-          headers:
-            Set-Cookie:
-              description: Clears the refresh token cookie.
-              schema:
-                type: string
-        '401':
-          description: No valid refresh session can be authenticated.
           content:
             application/problem+json:
               schema:
@@ -256,11 +204,6 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-    refreshCookie:
-      type: apiKey
-      in: cookie
-      name: refresh_token
-      description: Proposed cookie name; final naming and lifetime require Tech Lead approval.
   schemas:
     RegisterRequest:
       type: object
@@ -280,12 +223,14 @@ components:
           type: string
           format: password
           minLength: 8
+          maxLength: 64
           writeOnly: true
-          description: Must satisfy the password-complexity rules defined by FR-03.
+          description: Must satisfy password-complexity rules (8-64 chars, max 72 bytes UTF-8).
         confirmPassword:
           type: string
           format: password
           minLength: 8
+          maxLength: 64
           writeOnly: true
           description: Must match password.
     LoginRequest:
@@ -339,12 +284,14 @@ components:
           type: string
           format: password
           minLength: 8
+          maxLength: 64
           writeOnly: true
-          description: Must satisfy the password-complexity rules defined by FR-03.
+          description: Must satisfy password-complexity rules (8-64 chars, max 72 bytes UTF-8).
         confirmPassword:
           type: string
           format: password
           minLength: 8
+          maxLength: 64
           writeOnly: true
           description: Must match newPassword.
     RegistrationResponse:
@@ -380,28 +327,15 @@ components:
           description: Runtime access-token lifetime; the configured value is TBD for FR-03 implementation.
         account:
           $ref: '#/components/schemas/AccountSummary'
-    TokenResponse:
-      type: object
-      additionalProperties: false
-      required: [accessToken, tokenType, expiresInSeconds]
-      properties:
-        accessToken:
-          type: string
-          readOnly: true
-          description: Short-lived JWT access token.
-        tokenType:
-          type: string
-          const: Bearer
-        expiresInSeconds:
-          type: integer
-          format: int64
-          minimum: 1
-          description: Runtime access-token lifetime; the configured value is TBD for FR-03 implementation.
     AccountSummary:
       type: object
       additionalProperties: false
-      required: [displayName, email, role, accountStatus, emailVerified]
+      required: [id, displayName, email, role, accountStatus, emailVerified]
       properties:
+        id:
+          type: integer
+          format: int64
+          example: 101
         displayName:
           type: string
         email:

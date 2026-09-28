@@ -43,7 +43,7 @@ src/main/java/tech/mamxanh/
 │   │   ├── request/
 │   │   └── response/
 │   ├── mapper/              # (Tùy chọn) Mapping Auth DTO <-> Entity
-│   └── security/            # JwtTokenProvider, JwtAuthFilter, GoogleTokenVerifier
+│   └── security/            # JwtTokenProvider, GoogleTokenVerifier, SecurityContextHelper
 ├── recipe/
 │   ├── controller/
 │   ├── service/
@@ -107,32 +107,26 @@ src/main/java/tech/mamxanh/
 
 | Package / Layer | Trách nhiệm chính | Ràng buộc kiến trúc |
 |---|---|---|
-| `controller` | Tiếp nhận HTTP request, validate format ở biên (`@Valid`), ủy quyền xử lý cho Service và đóng gói trả về `ApiResponse<T>`. | Không chứa business logic; không gọi trực tiếp `Repository`. |
+| `controller` | Tiếp nhận HTTP request, validate format ở biên (`@Valid`), ủy quyền xử lý cho Service và trả về DTO tương ứng theo API contract (hoặc `PageResponse<T>` cho danh sách phân trang). | Không chứa business logic; không gọi trực tiếp `Repository`. |
 | `service` | Điều phối use case, transaction (`@Transactional`), thực thi Business Rules, kiểm tra authorization/ownership và tích hợp liên module. | Không phụ thuộc vào servlet request/response của HTTP. |
 | `repository` | Thao tác dữ liệu với SQL Server thông qua Spring Data JPA (`JpaRepository`). | Chỉ được truy cập bởi Service của chính module sở hữu. |
 | `entity` | Ánh xạ các bảng cơ sở dữ liệu (`@Entity`). | Không dùng làm response contract cho REST API; hạn chế logic phức tạp. |
 | `dto/request` | Biểu diễn dữ liệu Client gửi lên API kèm các annotation validation (`@NotBlank`, `@Min`, `@Pattern`...). | Bất biến (immutable) hoặc dùng Lombok `@Data`/`@Getter`. |
 | `dto/response` | Biểu diễn payload dữ liệu Backend trả về cho Client. | Che giấu các trường nhạy cảm (như mật khẩu, hash token). |
 | `mapper` | Chuyển đổi dữ liệu hai chiều giữa JPA Entity và DTO. | Có thể dùng MapStruct hoặc method mapping thủ công với `@Builder`. |
-| `security` | Cấu hình xác thực, giải mã JWT, filter bảo mật, nạp UserDetails. | Tập trung trong `auth/security/` để quản lý Identity & Access. |
+| `security` | Cấu hình xác thực, phát hành JWT, bộ lọc kiểm tra trạng thái tài khoản, tích hợp Resource Server. | Tập trung trong `auth/security/` để quản lý Identity & Access. |
 | `integration` | Đóng gói chi tiết kỹ thuật khi kết nối các dịch vụ ngoài (Gemini, Blob, payOS, Brevo). | Cung cấp interface rõ ràng (`AiClient`, `PaymentGateway`) để dễ mock khi kiểm thử. |
 | `common` | Chứa cấu hình hạ tầng và tiện ích dùng chung toàn ứng dụng. | Không biến thành nơi chứa các helper nghiệp vụ hỗn tạp. |
 
 ### 4.2 Chuẩn hóa phản hồi API và xử lý ngoại lệ (`common/`)
 
-Để đảm bảo Frontend nhận payload nhất quán, Backend chuẩn hóa cấu trúc:
+Để đảm bảo Frontend nhận payload nhất quán và bám sát OpenAPI contract:
 
-1. **Chuẩn Envelope phản hồi (`common/response/ApiResponse.java`):**
-   ```json
-   {
-     "success": true,
-     "message": "Thực hiện thành công",
-     "data": { ... },
-     "timestamp": "2026-09-28T14:55:00Z"
-   }
-   ```
+1. **Chuẩn phản hồi dữ liệu thành công:**
+   - Các API trả dữ liệu đơn lẻ (như đăng nhập, tạo bài, chi tiết) trả trực tiếp DTO định nghĩa trong API contract (ví dụ `AuthResponse { accessToken, tokenType, account }`), không bọc thêm tầng envelope `ApiResponse<T>` ngoài ý muốn.
+   - Các API danh sách có phân trang sử dụng `PageResponse<T>` (`common/response/PageResponse.java`) chứa `items`, `page`, `size`, `totalElements`, `totalPages`.
 2. **Xử lý ngoại lệ tập trung (`common/exception/GlobalExceptionHandler.java`):**
-   - Sử dụng `@RestControllerAdvice` để bắt và chuyển đổi toàn bộ ngoại lệ thành JSON format chuẩn.
+   - Sử dụng `@RestControllerAdvice` để bắt và chuyển đổi toàn bộ ngoại lệ thành JSON format chuẩn theo contract OpenAPI (`error`, `message`, `timestamp`, `details`).
    - Bắt các lỗi validation biên (`MethodArgumentNotValidException`) và trả về chi tiết field lỗi.
    - Định nghĩa `AppException` kế thừa `RuntimeException` nhận `ErrorCode` (enum định nghĩa mã lỗi nghiệp vụ, HTTP status tương ứng và message mặc định).
 

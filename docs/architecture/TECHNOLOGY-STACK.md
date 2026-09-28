@@ -28,7 +28,7 @@ Hành vi nghiệp vụ chi tiết vẫn thuộc [SRS](../requirements/SRS.md). R
 | TypeScript | Cung cấp source Frontend có kiểu dữ liệu | Confirmed | Làm contract rõ hơn và phát hiện nhiều lỗi phổ biến trước runtime | Type phải được duy trì và không tự validate dữ liệu runtime không tin cậy |
 | Vite | Cung cấp tooling để phát triển và build Frontend | Confirmed | Cho phản hồi local nhanh và toolchain tập trung cho React/TypeScript | Script, plugin và cách xử lý environment cụ thể phải chờ scaffold thật |
 | npm | Quản lý package và script của Frontend | Confirmed | Cung cấp package workflow tiêu chuẩn cho Frontend stack đã chọn | Lockfile và dependency update phải được review; chưa khẳng định command nào trước khi `package.json` tồn tại |
-| Axios | Gửi HTTP request từ client đến Backend | Confirmed | Cung cấp client API nhất quán và hỗ trợ xử lý interceptor dùng chung (refresh token) | Cần cấu hình `withCredentials: true` để gửi HttpOnly cookie xuyên domain |
+| Axios | Gửi HTTP request từ client đến Backend | Confirmed | Cung cấp client API nhất quán và hỗ trợ xử lý interceptor (gắn `Authorization: Bearer <token>`) | Không cần gửi cookie xuyên domain (stateless Bearer token) |
 | Requestly Pro | Mock REST API, giả lập network delay và test các kịch bản lỗi biên | Confirmed Developer Tooling | Cho phép Frontend dev song song khi Backend chưa hoàn thiện; hỗ trợ sẵn từ GitHub Student Pack | Chạy phía client/trình duyệt, không deploy lên production |
 
 Frontend state management (ngoài React Context) và CSS/UI library vẫn là `TBD`.
@@ -61,7 +61,7 @@ Baseline schema hiện được triển khai tại `database/schema.sql` và Fly
 | Công nghệ | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
 |---|---|---|---|---|
 | Spring Security | Framework authentication và authorization của Backend | Confirmed | Điểm tích hợp trung tâm để bảo vệ luồng request Spring | Filter, access rule và cách xử lý failure được phân tầng chặt chẽ |
-| JWT access + rotating refresh token | Mang authentication claim và duy trì refresh session có thể thu hồi | Confirmed baseline | Short-lived access token cho REST; rotating refresh token với server-side session/revocation qua HttpOnly Cookie | Cookie cross-domain cần `SameSite=None; Secure` và `Access-Control-Allow-Credentials: true` |
+| Stateless JWT Access Token | Mang authentication claim và định danh người dùng trong request | Confirmed baseline | Stateless JWT cho REST; xác thực qua Spring Security OAuth2 Resource Server (Nimbus); kiểm tra tức thời `USER.account_status` | Token tự hết hạn theo TTL; không hỗ trợ server-side revocation hay refresh token; đăng xuất xóa token phía client |
 | Google Identity Services (GIS) | Xác thực tài khoản Google 1-click phía Frontend | Confirmed | Trả về Google ID Token an toàn, giảm độ phức tạp so với Authorization Code flow | Phụ thuộc thư viện Google Identity phía client (dùng `@react-oauth/google`) |
 | Google API Client (`GoogleIdTokenVerifier`) | Xác thực Google ID Token tại Backend | Confirmed | Kiểm tra chữ ký số, issuer, audience và expiry với Google JWKS chính thức; trích xuất `google_subject` (`sub`) làm khóa định danh | Thêm dependency `com.google.api-client:google-api-client` vào `pom.xml` |
 | BCrypt | Hash và xác minh password | Confirmed | Cơ chế hash password một chiều có salt tích hợp với Spring Security | Work factor và xử lý input phải được chọn; không được ghi password hoặc hash vào log |
