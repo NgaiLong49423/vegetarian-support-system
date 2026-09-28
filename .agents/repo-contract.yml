@@ -66,6 +66,23 @@ diagram_artifact_protection:
   agent_default_access: read_only
   prohibited_without_explicit_current_task_authorization: [create, edit, rename, delete, regenerate, export]
   authorization_requirement: user_must_name_diagram_work_and_affected_artifact
+engineering_autonomy:
+  policy_reference: "CONTRIBUTING.md#engineering-autonomy-policy"
+  overrides_diagram_protection: false
+  local_schema_evolution:
+    allowed_autonomous: [add_columns_to_existing_table, local_constraints_and_indexes, implement_approved_baseline_foreign_keys, nullability_and_defaults_compatible_with_requirements]
+    requires_decision_issue_and_vote: [new_table_or_entity, drop_table, split_or_merge_table, new_or_changed_relationship_or_cardinality, cross_module_relation_redesign, breaking_data_type_change, database_engine_swap]
+    rule: new_append_only_flyway_migration_and_snapshot_sync
+    diagram_boundary: "docs/diagrams/ERD/ remains read-only under diagram_artifact_protection"
+  auxiliary_dependencies:
+    baseline_authority: "docs/architecture/TECHNOLOGY-STACK.md confirmed entries"
+    allowed_autonomous: [test_libraries, validation_and_mapping_utilities, helper_client_sdks, build_and_dev_tools]
+    requires_decision_issue_and_vote: [new_framework, orm_swap, auth_architecture_swap, message_broker, distributed_cache, database_driver_swap]
+    rule: declare_in_manifest_with_active_usage
+  api_design_evolution:
+    allowed_autonomous: [new_endpoints_in_scope, new_request_response_dtos, business_validations_and_error_codes]
+    documentation_rule: sync_api_md_and_openapi_yaml_in_same_work_item_or_pr
+    requires_coordination_and_approval: [delete_active_endpoint, rename_endpoint, change_http_method, remove_or_rename_response_fields, change_auth_model, change_error_envelope]
 progress:
   source: GitHub Issues and Projects
   evidence: linked Pull Requests

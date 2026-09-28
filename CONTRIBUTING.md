@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.3.0
+> **Version:** v3.4.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-25
+> **Last Updated:** 2026-09-28
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -68,10 +68,10 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
 ### Ownership, AI và API contract
 
 - Owner chịu trách nhiệm toàn bộ luồng FR, gồm cả FE do AI tạo/sửa. Không mặc định chia sub-issue FE/BE; dùng checklist trong Issue. Không bắt buộc có thành viên FE riêng.
-- Phân rã FR theo SRS trước, chốt API contract cho FR sắp làm trước khi tích hợp FE/BE. Owner phụ trách BE đề xuất endpoint, request/response, validation, lỗi và quyền truy cập; kiểm tra dữ liệu đủ phục vụ giao diện; Tech Lead review và duyệt.
-- Contract chưa duyệt phải ghi rõ là đề xuất. Không tự quyết API khác nhau ở FE/BE. Bản duyệt có một nơi tham chiếu chung theo quy tắc placement; thay đổi phải được thống nhất, cập nhật và báo bên bị ảnh hưởng.
-- Không cần thiết kế toàn bộ API hoặc tạo Issue/format riêng cho contract của mọi FR. FE có thể chuẩn bị giao diện/mock theo contract; phần tích hợp chờ contract được duyệt.
-- Owner ghi phần AI hỗ trợ và bằng chứng người thực hiện đã xác minh: kiểm tra API, thao tác từ UI, các test đã chạy và kết quả. AI báo hoàn thành không phải bằng chứng nghiệm thu.
+- Phân rã FR theo SRS trước khi triển khai. Theo [Engineering Autonomy Policy](#engineering-autonomy-policy), người thực hiện (developer hoặc AI coding agent) có quyền tự chủ thiết kế các endpoint, request/response DTOs, validation và error codes trong phạm vi Issue được giao.
+- **Quy tắc đồng bộ hợp đồng API:** Mã nguồn (code) + tài liệu tích hợp (`docs/api/API.md`) + đặc tả máy đọc (`docs/api/openapi.yaml`) phải được cập nhật đồng bộ trong cùng một work item / Pull Request trước khi merge vào `develop` hoặc `main` (không bắt buộc code và docs phải nằm trong cùng một Git commit đơn lẻ). Không tự quyết API khác nhau ở FE và BE; tài liệu API đã đồng bộ là nguồn tham chiếu chung duy nhất.
+- Không tạo các breaking API changes (xóa endpoint, đổi path/method, xóa/đổi tên trường response, đổi auth model) mà không có sự phối hợp, thống nhất trước với các bên tiêu thụ (consumer).
+- Owner ghi nhận phần AI hỗ trợ và bằng chứng người thực hiện đã xác minh: kiểm tra API, thao tác từ UI, các test đã chạy và kết quả. AI báo hoàn thành không phải bằng chứng nghiệm thu.
 
 ### Template bắt buộc cho PR và Bug Issue
 
@@ -127,7 +127,60 @@ Nếu kiểm tra thất bại, Issue bị ảnh hưởng chưa `Done`; nếu đ�
 
 - [GitHub Project #15](https://github.com/users/NgaiLong49423/projects/15) quản lý owner, SP, deadline, status và blocker; linked PR giữ bằng chứng kiểm tra/review.
 - Không dùng automation `PR merged -> Done` hoặc `Issue closed -> Done` để bỏ qua nghiệm thu local sau merge. Không bật automation trong thay đổi tài liệu này.
-- Source Trace và lifecycle requirement tuân theo SRS và quy tắc requirement-to-Issue trong AGENTS.md; workflow không tự tạo hoặc đồng bộ Issue thật.
+---
+
+## Engineering Autonomy Policy
+
+Chính sách Tự chủ Kỹ thuật (Engineering Autonomy Policy) phân định rõ ràng giữa các quyết định kỹ thuật cục bộ thuộc quyền chủ động của người thực hiện (thành viên hoặc AI coding agent) và các thay đổi cấu trúc lớn cấp hệ thống đòi hỏi phải có Decision Issue cùng biểu quyết đồng thuận 3/5 từ nhóm. Chính sách này giúp loại bỏ nút thắt quy trình, tránh biến mọi điều chỉnh kỹ thuật thường nhật thành rào cản làm chậm tiến độ.
+
+### 1. Database Schema Autonomy (Tự chủ tiến hóa Lược đồ Cơ sở dữ liệu)
+
+- **Quyền tự chủ (Autonomous Evolution):** Developer và coding agent có toàn quyền tự chủ thực hiện các thay đổi schema cục bộ trên các bảng hiện có phục vụ trực tiếp cho Issue được giao:
+  - Bổ sung cột mới trên bảng đã có.
+  - Điều chỉnh nullability hoặc giá trị mặc định (DEFAULT) tương thích với yêu cầu nghiệp vụ.
+  - Thêm index phục vụ tối ưu hóa hiệu năng truy vấn.
+  - Thêm ràng buộc CHECK hoặc ràng buộc khóa ngoại (Foreign Key) **nhằm triển khai một mối quan hệ (relationship) đã được requirement hoặc schema baseline chấp thuận**.
+  - *Thủ tục:* Không cần mở Decision Issue, không cần biểu quyết 3/5.
+  - *Quy tắc bắt buộc:* Phải tạo file Flyway migration mới (append-only), cập nhật entity JPA, DTO, repository, unit/integration test tương ứng, và cập nhật snapshot `database/schema.sql`. Tuyệt đối không chỉnh sửa lịch sử migration đã chia sẻ (`V1`, `V2`).
+  - *Ranh giới Diagram:* Quyền tự chủ schema **chỉ áp dụng** cho migration, JPA code, test và snapshot `database/schema.sql`. Nó **tuyệt đối không cấp quyền** chỉnh sửa ERD trong `docs/diagrams/ERD/`.
+- **Ngưỡng bắt buộc Decision Issue & Biểu quyết 3/5 (Structural/Cross-module Redesign):**
+  - Tạo bảng / thực thể mới trong cơ sở dữ liệu.
+  - Xóa bảng hiện có.
+  - Chia tách (split) hoặc gộp (merge) bảng.
+  - **Tạo mối quan hệ (relationship) hoặc bản số (cardinality) mới chưa có trong baseline**, hoặc thay đổi mối quan hệ hiện tại.
+  - Thay đổi kiểu dữ liệu phá vỡ tính tương thích (breaking data type change).
+  - Thay đổi hệ quản trị cơ sở dữ liệu (DBMS) hoặc kiến trúc lưu trữ dữ liệu.
+
+### 2. Dependency Autonomy (Tự chủ Thư viện và Phụ thuộc)
+
+- **Baseline bắt buộc theo Technology Stack Authority:** Các technology, provider hoặc framework có trạng thái `Confirmed` trong [docs/architecture/TECHNOLOGY-STACK.md](docs/architecture/TECHNOLOGY-STACK.md) là baseline bắt buộc; thành viên và coding agent không được tự ý thay thế. Không hard-code technology hoặc version chưa được authority document chốt.
+- **Quyền tự chủ (Auxiliary Implementation Dependencies):** Developer và coding agent có quyền tự chủ bổ sung các dependency phụ trợ khi có lý do kỹ thuật rõ ràng phục vụ cho Issue (ví dụ: thư viện kiểm thử như Testcontainers, công cụ mapping như MapStruct, utility helpers, client SDK phụ trợ, dev/build plugins).
+  - *Quy tắc bắt buộc:* Khai báo tường minh trong `pom.xml` hoặc `package.json`, khóa phiên bản ổn định, và bắt buộc phải có mã nguồn hoặc test sử dụng thực tế trong dự án.
+- **Ngưỡng bắt buộc Decision Issue & Biểu quyết 3/5 (Core/Project-wide Dependencies):**
+  - Thêm một framework hoặc runtime mới thay thế hoặc cạnh tranh với Confirmed baseline.
+  - Thay đổi ORM (Hibernate/JPA sang framework khác).
+  - Thay đổi kiến trúc xác thực (Authentication/Security Framework).
+  - Bổ sung Message Broker (Kafka, RabbitMQ) hoặc Distributed Cache (Redis).
+  - Thay đổi database driver hoặc engine kết nối.
+
+### 3. API Design Autonomy (Tự chủ Thiết kế API và Đồng bộ Hợp đồng)
+
+- **Quyền tự chủ (Non-breaking API Additions):** Developer và coding agent có quyền tự chủ thiết kế các REST endpoint mới, request/response DTOs, cơ chế validation, và các stable business error codes cần thiết để hoàn thành nghiệp vụ của Issue.
+  - *Quy tắc đồng bộ hợp đồng (Work Item / PR Synchronization Rule):* Mã nguồn (code) + tài liệu tích hợp (`docs/api/API.md`) + đặc tả máy đọc (`docs/api/openapi.yaml`) **bắt buộc phải được cập nhật đồng bộ trong cùng một work item / Pull Request trước khi merge** vào `develop` hoặc `main`. Quy tắc không ép buộc code và tài liệu API phải nằm trong cùng một Git commit đơn lẻ, mà yêu cầu tính hoàn chỉnh và đồng bộ tại mốc PR review / merge.
+- **Ngưỡng yêu cầu phối hợp và phê duyệt (Breaking API Changes):**
+  - Xóa bỏ một endpoint đang hoạt động.
+  - Thay đổi URI path hoặc HTTP method của endpoint hiện có.
+  - Xóa bỏ hoặc đổi tên các trường trong payload response mà client đang sử dụng.
+  - Thay đổi kiểu dữ liệu các trường hiện có gây lỗi phân tích cú pháp (breaking type change).
+  - Thay đổi mô hình xác thực/ủy quyền hoặc cấu trúc envelope lỗi dùng chung toàn hệ thống.
+  - *Yêu cầu:* Phải mở trao đổi phối hợp với bên tiêu thụ (consumer), thống nhất phiên bản/kế hoạch chuyển đổi trước khi thực hiện.
+
+### 4. Ranh giới bất biến: Bảo vệ Diagram Artifact Workspace
+
+- `docs/diagrams/` là **human-maintained presentation workspace** (không gian trình diễn do con người duy trì và trình bày).
+- **Engineering Autonomy tuyệt đối không mở rộng quyền ghi sang `docs/diagrams/`.** Toàn bộ thư mục này duy trì trạng thái **read-only** đối với AI coding agent theo mặc định.
+- Việc thay đổi Flyway migration, `database/schema.sql`, JPA entity quan hệ, API contract hay tài liệu kỹ thuật **không tự động cấp quyền sửa, tạo mới, xóa, regenerate hoặc export diagram** trong `docs/diagrams/`.
+- Coding agent chỉ được phép chỉnh sửa diagram khi và chỉ khi người dùng đưa ra **explicit authorization trong task hiện tại**, nêu rõ công việc diagram và định danh artifact cụ thể. Nếu không có ủy quyền cụ thể, agent chỉ được phép ghi nhận cảnh báo rằng diagram có thể đã cũ và cần con người cập nhật.
 
 ---
 
@@ -341,7 +394,7 @@ GitHub Issues/Projects manage progress, owners, dates and blockers; linked PRs h
 
 ## Shared Editing Rules
 
-Preserve existing contributor changes and stay within the requested scope. Changes to architecture, database schema, public APIs or core dependencies require authorization. Follow the [Documentation Language Policy](docs/README.md#documentation-language-policy). Update affected links and metadata, and record meaningful changes in the changelog. Verify against the actual repository and state any failed or unavailable checks.
+Preserve existing contributor changes and stay within the requested scope. Structural changes to architecture, new database tables or relationships, breaking API changes, or project-wide core dependencies require explicit authorization and decision records according to the [Engineering Autonomy Policy](#engineering-autonomy-policy). Local schema evolution, auxiliary dependencies, and non-breaking API additions needed by an assigned Issue are permitted under autonomous engineering conventions with appropriate tests, migrations, and contract documentation updates. Presentation diagrams under `docs/diagrams/` remain protected and read-only for agents unless explicitly authorized. Follow the [Documentation Language Policy](docs/README.md#documentation-language-policy). Update affected links and metadata, and record meaningful changes in the changelog. Verify against the actual repository and state any failed or unavailable checks.
 
 ## Changelog Format
 

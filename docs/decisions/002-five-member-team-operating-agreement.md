@@ -1,8 +1,8 @@
 > **Document:** Five-Member Team Operating Agreement  
 > **File:** `docs/decisions/002-five-member-team-operating-agreement.md`  
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-09-12  
-> **Last Updated:** 2026-09-19
+> **Last Updated:** 2026-09-28
 > **Status:** Active  
 > **Related Docs:** `CONTRIBUTING.md`, `docs/decisions/001-team-workflow.md`  
 
@@ -30,7 +30,10 @@ Không cần thành viên FE riêng; owner phụ trách BE kiểm tra nhu cầu 
 
 ## Quyền quyết định ngoài workflow đã chốt
 
-Quy tắc đã có về thay đổi requirement, schema, kiến trúc hoặc core dependency vẫn giữ: nêu phương án/ảnh hưởng trong Decision Issue hoặc ADR phù hợp và cần ít nhất 3/5 thành viên đồng ý (áp dụng cho thay đổi lớn cấp hệ thống như thêm bảng/thực thể mới, xóa bảng, hoặc thay đổi quan hệ ERD liên module; việc bổ sung trường/cột cục bộ trên bảng hiện có phục vụ implementation issue đã giao không cần biểu quyết 3/5 mà tuân theo quy trình code review thông thường). Tech Lead duyệt contract triển khai trong scope đã xác nhận; việc duyệt không tự cho phép thay đổi business meaning, schema hoặc kiến trúc ngoài scope.
+Quy tắc về thay đổi requirement, schema, kiến trúc hoặc core dependency tiếp tục phân định rõ phạm vi theo [Engineering Autonomy Policy](../../CONTRIBUTING.md#engineering-autonomy-policy):
+- **Yêu cầu Decision Issue & biểu quyết 3/5 thành viên:** Chỉ áp dụng cho các thay đổi lớn cấp hệ thống (structural redesign): thêm bảng/thực thể mới, xóa bảng, split/merge bảng, tạo mới hoặc thay đổi relationship/cardinality so với baseline, thay đổi core technology stack hoặc framework cốt lõi, breaking API changes, và thay đổi ý nghĩa nghiệp vụ của SRS.
+- **Quyền tự chủ kỹ thuật (Engineering Autonomy):** Developer và AI coding agent có quyền tự chủ thực hiện các thay đổi implementation cục bộ trong phạm vi Issue được giao: bổ sung cột, thêm ràng buộc CHECK hoặc Foreign Key để triển khai quan hệ đã được baseline phê duyệt, thêm auxiliary dependency (thư viện test/helper), và thiết kế endpoint/DTO non-breaking (đồng bộ tài liệu API trong cùng PR). Các thay đổi này không cần mở Decision Issue hay biểu quyết 3/5.
+- **Bảo vệ Diagram Artifacts:** Thư mục `docs/diagrams/` là presentation workspace do con người duy trì; thay đổi code/schema/API không tự động cấp quyền sửa hoặc regenerate diagram cho coding agent.
 
 Workflow hiện hành được cập nhật theo quyết định trực tiếp ngày 2026-09-18. Các thay đổi chính sách tiếp theo cần quyết định có thẩm quyền được ghi nhận; không dùng phiếu bầu để bỏ qua yêu cầu môn học, bảo mật hoặc quality gate.
 

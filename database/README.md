@@ -1,6 +1,6 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.5.0<br>
+> **Version:** v0.6.0<br>
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-28<br>
 > **Status:** Active  
@@ -16,11 +16,13 @@ Database chính đã chốt là Microsoft SQL Server 2019. Lược đồ cơ s�
 - `database/sample-data.sql` chỉ chứa dữ liệu demo giả, không chứa tài khoản thật, credential hoặc dữ liệu cá nhân.
 - `database/queries.sql` chứa kịch bản kiểm tra đối tượng, bộ test tự động xác minh các ràng buộc nghiệp vụ (positive/negative) có cơ chế rollback, và các truy vấn mẫu cho tầng ứng dụng; không thay thế automated integration tests.
 
-## Quy trình thay đổi schema & Quản trị phân bổ (Q13 Governance)
+## Quy trình thay đổi schema & Engineering Autonomy Policy
+
+Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy Policy](../CONTRIBUTING.md#engineering-autonomy-policy):
 
 1. **Phân định thẩm quyền thay đổi:**
-   - **Thay đổi nhỏ/cục bộ (Minor/Local Column Additions):** Việc thêm các cột cục bộ trên bảng hiện có (như bổ sung các cột phục vụ auth/security trên bảng `USER`) trong khuôn khổ implementation issue đã phân công **không** cần phải tổ chức biểu quyết toàn nhóm (3/5 vote). Developer được chủ động tạo Flyway migration mới và PR sẽ được review theo quy trình code review thông thường.
-   - **Thay đổi lớn/cấp hệ thống (Major/System-wide Changes):** Chỉ áp dụng biểu quyết nhóm 3/5 đối với: thêm bảng/thực thể mới, thay đổi quan hệ ERD liên module, xóa bảng hoặc cấu trúc lại dữ liệu dùng chung.
+   - **Thay đổi nhỏ/cục bộ (Minor/Local Schema Evolution — Autonomous):** Việc thêm các cột cục bộ trên bảng hiện có (như bổ sung các cột phục vụ auth/security trên bảng `USER`), điều chỉnh nullability/default tương thích, thêm index, hoặc thêm ràng buộc CHECK/FK nhằm triển khai một mối quan hệ (relationship) đã được requirement hoặc schema baseline chấp thuận trong khuôn khổ implementation issue đã phân công **không** cần phải tổ chức biểu quyết toàn nhóm (3/5 vote). Developer hoặc AI coding agent được chủ động tạo Flyway migration mới, cập nhật entity, repository, tests, và PR sẽ được review theo quy trình code review thông thường.
+   - **Thay đổi lớn/cấp hệ thống (Major/System-wide Changes — Decision Required):** Chỉ áp dụng Decision Issue và biểu quyết nhóm 3/5 đối với: thêm bảng/thực thể mới, xóa bảng, split/merge bảng, tạo mới hoặc thay đổi relationship/cardinality so với baseline, thay đổi kiểu dữ liệu phá vỡ tính tương thích, hoặc thay đổi hệ quản trị cơ sở dữ liệu.
 2. **Thiết kế mục tiêu bảng `USER` cho Auth (FR-03 Target Design):**
    - Không tạo 3 bảng độc lập (`REFRESH_TOKEN`, `LOGIN_THROTTLE`, `ACCOUNT_TOKEN`).
    - Toàn bộ trường phục vụ xác minh email, đặt lại mật khẩu và rate limit được lưu trữ trực tiếp trên bảng `USER`:
@@ -28,11 +30,13 @@ Database chính đã chốt là Microsoft SQL Server 2019. Lược đồ cơ s�
      - Đặt lại mật khẩu: `password_reset_token` (VARCHAR), `reset_token_expires_at` (DATETIME2).
      - Brute-force rate limit: `failed_login_attempts` (INT DEFAULT 0), `locked_until` (DATETIME2 NULL), `last_failed_login_at` (DATETIME2 NULL).
      - Metadata rate limit email (Q27): cho phép bổ sung các trường tối thiểu trên `USER` nếu cần theo dõi 60s cooldown và tối đa 5 email/giờ/tài khoản.
-   - Developer (Tony) sẽ viết Flyway migration mới trong các Issue thực thi (#5, #6, #9). `database/schema.sql` và Physical ERD giữ nguyên baseline 22 bảng / 196 cột cho đến khi migration được merge chính thức vào `develop`.
+   - Developer (Tony) sẽ viết Flyway migration mới trong các Issue thực thi (#5, #6, #9) và cập nhật snapshot `database/schema.sql`.
+   - **Ranh giới Diagram Artifact Protection:** Thư mục `docs/diagrams/ERD/` (Physical ERD, Logical ERD) là presentation workspace do con người duy trì và được bảo vệ theo `AGENTS.md`. Việc thay đổi schema hoặc migration **tuyệt đối không tự động cấp quyền sửa hoặc regenerate ERD diagrams** cho coding agent trừ khi có task riêng được ủy quyền tường minh.
 3. **Quy trình thực hiện migration:**
    - Truy vết thay đổi đến SRS/Issue và xác nhận không mở rộng scope ngoài quyết định đã duyệt.
    - Thêm Flyway migration mới trong backend (`V3__...`); không sửa migration đã được chia sẻ.
    - Cập nhật entity/DTO/repository và test liên quan.
+   - Cập nhật snapshot `database/schema.sql`.
    - Kiểm tra migration trên database sạch và kiểm thử nâng cấp.
    - PR cần review theo ADR-002.
 

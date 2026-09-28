@@ -1,6 +1,6 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.10.0
+> **Version:** v3.11.0
 > **Created:** 2026-06-29
 > **Last Updated:** 2026-09-28
 > **Status:** Active
@@ -110,6 +110,8 @@ Metadata audits use the maintained register. `SKILL.md` retains YAML frontmatter
 
 `docs/diagrams/` is a human-maintained presentation workspace. Agents may read its contents when they are relevant, but must not create, edit, rename, delete, regenerate, export, or otherwise modify any file in that subtree by default. A write is allowed only when the user gives explicit authorization in the current task that names the diagram work and affected artifact(s); a database, documentation, or synchronization task alone is not sufficient authorization.
 
+Engineering Autonomy does not override protected artifact boundaries. `docs/diagrams/` remains read-only for agents unless the current user request explicitly authorizes diagram work and identifies the affected artifact(s). Local schema autonomy, migration changes, or implementation tasks never grant permission to edit or regenerate diagram files.
+
 ## Context and authority boundaries
 
 - Only documents registered in docs/README.md are maintained project documentation. A new file in a declared folder is not automatically authoritative.
@@ -120,6 +122,11 @@ Metadata audits use the maintained register. `SKILL.md` retains YAML frontmatter
 - GitHub Issues own implementation work tracking, progress and execution state. An Issue must not redefine the meaning of its source requirement.
 - When an SRS requirement changes semantically or enters/leaves the current registry, reconcile its linked Issue through `srs-to-github-issues`.
 - Historical baselines and completed Issues are evidence of prior state. Do not rewrite them merely to match current requirements.
+- **Engineering autonomy for coding agents:** Agents have engineering autonomy for local implementation choices within the assigned Issue: adding required columns or approved baseline foreign keys/constraints to existing tables via append-only Flyway migrations, adding auxiliary dependencies (test/helpers) with active usage, and designing non-breaking REST endpoints/DTOs synchronized in `docs/api/API.md` and `docs/api/openapi.yaml` within the same work item/PR before merge.
+- Core technologies follow the `Confirmed` baseline in `docs/architecture/TECHNOLOGY-STACK.md`; agents must not swap them or hard-code technologies/versions not confirmed by authority documents.
+- Coding agents **must not** pause, ask for confirmation, or demand a Decision Issue / 3/5 team vote for these local implementation details.
+- Coding agents **must** surface a decision requirement only when crossing structural boundaries: new tables/entities, table removal/merge/split, new or changed relationships/cardinality, core technology stack swaps, breaking API changes, or changing SRS business meaning.
+- Engineering autonomy does not grant write permission to `docs/diagrams/`. For complete governance details, see [CONTRIBUTING.md#engineering-autonomy-policy](CONTRIBUTING.md#engineering-autonomy-policy).
 
 ## Agent-specific execution and handoff
 

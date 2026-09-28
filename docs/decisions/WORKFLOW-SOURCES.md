@@ -1,8 +1,8 @@
 > **Document:** Workflow Evidence Register  
 > **File:** `docs/decisions/WORKFLOW-SOURCES.md`  
-> **Version:** v2.0.0
+> **Version:** v2.1.0
 > **Created:** 2026-09-08  
-> **Last Updated:** 2026-09-19
+> **Last Updated:** 2026-09-28
 > **Status:** Active  
 
 # Nguồn và bằng chứng cho workflow
@@ -48,7 +48,7 @@ Ngày 2026-09-18, decision-maker xác nhận workflow nhẹ ở nhánh tích h�
 | Bug trên `develop`/`main` được báo theo form, Tech Lead triage/giao owner | Team convention | Tái hiện theo commit và xác định nguyên nhân trước khi giao sửa |
 | Chưa deploy/CD, triển khai Azure khi nhóm sẵn sàng | Team convention | Demo local hiện tại; không thay đổi technology baseline |
 
-Các ngưỡng 5 SP/4–5 ngày, cập nhật ngày thứ 2/3, reviewer/backup cố định, coordinator luân phiên và hai approval cho `main` thuộc baseline cũ; đã được thay thế như ghi trong ADR-001/002. Quy tắc 3/5 cho thay đổi requirement/schema/kiến trúc/core dependency vẫn được giữ tại ADR-002 (áp dụng cho thay đổi lớn cấp hệ thống; không áp dụng cho việc bổ sung trường/cột cục bộ trên bảng đã phân công), không suy diễn quyền Tech Lead vượt scope.
+Các ngưỡng 5 SP/4–5 ngày, cập nhật ngày thứ 2/3, reviewer/backup cố định, coordinator luân phiên và hai approval cho `main` thuộc baseline cũ; đã được thay thế như ghi trong ADR-001/002. Quy tắc 3/5 cho thay đổi requirement/schema/kiến trúc/core dependency vẫn được giữ tại ADR-002 (áp dụng cho thay đổi lớn cấp hệ thống; các quyết định implementation cục bộ về schema, auxiliary dependencies và non-breaking API design được trao quyền tự chủ theo [Engineering Autonomy Policy](../../CONTRIBUTING.md#engineering-autonomy-policy)), không suy diễn quyền Tech Lead vượt scope. Presentation diagrams trong `docs/diagrams/` duy trì trạng thái read-only mặc định đối với agent.
 
 ## Chính sách rà soát
 
