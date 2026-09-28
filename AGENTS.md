@@ -1,6 +1,6 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.9.1
+> **Version:** v3.10.0
 > **Created:** 2026-06-29
 > **Last Updated:** 2026-09-28
 > **Status:** Active
@@ -105,6 +105,10 @@ No automatic saved audit report, log, summary or progress file, regardless of ch
 Maintained project documentation follows the document lifecycle and registration rules in `docs/README.md`. Scratch and generated working artifacts belong under `.agents/outputs/`, using either the selected skill's declared structure or a task-specific subdirectory. These outputs are not maintained project documentation unless an authorized decision explicitly promotes and registers them. The tracked `.agents/outputs/bugs/` subtree is the approved exception for cross-task bug records and their metadata index; it remains agent output rather than product or requirement authority.
 
 Metadata audits use the maintained register. `SKILL.md` retains YAML frontmatter. Do not add project-document metadata to skill packages, scratch files or generated outputs. Do not scan `.agents/skills/**` or `.agents/outputs/**` to discover supposed project requirements unless the task explicitly targets those locations.
+
+### Diagram artifact protection
+
+`docs/diagrams/` is a human-maintained presentation workspace. Agents may read its contents when they are relevant, but must not create, edit, rename, delete, regenerate, export, or otherwise modify any file in that subtree by default. A write is allowed only when the user gives explicit authorization in the current task that names the diagram work and affected artifact(s); a database, documentation, or synchronization task alone is not sufficient authorization.
 
 ## Context and authority boundaries
 

@@ -61,6 +61,11 @@ reading_policy:
   auto_inventory_all_contents: false
   auto_register_unknown_files: false
   auto_delete_unknown_files: false
+diagram_artifact_protection:
+  path: docs/diagrams/
+  agent_default_access: read_only
+  prohibited_without_explicit_current_task_authorization: [create, edit, rename, delete, regenerate, export]
+  authorization_requirement: user_must_name_diagram_work_and_affected_artifact
 progress:
   source: GitHub Issues and Projects
   evidence: linked Pull Requests
