@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.2.0
+> **Version:** v2.3.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-28
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -676,7 +676,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-41).
   - Bước 1: Administrator truy cập danh sách nguyên liệu dinh dưỡng; hệ thống hiển thị danh sách dạng bảng phân trang gồm: Tên nguyên liệu, Năng lượng, Đạm, Carb, Chất béo, Nguồn tham chiếu (USDA/NIH), Ngày cập nhật, trạng thái danh mục (`status`: `ACTIVE`/`INACTIVE`), trạng thái hỗ trợ tính toán (`nutrition_supported`) và Số lượng công thức đang sử dụng.
   - Bước 2: Administrator nhấn nút "Thêm nguyên liệu mới".
   - Bước 3: Hệ thống hiển thị biểu mẫu yêu cầu nhập liệu:
-    - Tên nguyên liệu tiếng Việt (chuẩn hóa, không trùng lặp) và tên tiếng Anh (tùy chọn).
+    - Tên nguyên liệu tiếng Việt (chuẩn hóa, không trùng lặp); MVP không quản lý tên tiếng Anh hoặc đa ngôn ngữ.
     - Nhóm thực phẩm (Rau củ, Đậu & Chế phẩm, Ngũ cốc, Các loại hạt, Trái cây, Gia vị chay).
     - Giá trị của 9 chỉ tiêu cốt lõi trên 100g (Năng lượng kcal $\ge 0$, Protein g $\ge 0$, Carb g $\ge 0$, Fat g $\ge 0$, Fiber g $\ge 0$, Calcium mg $\ge 0$, Iron mg $\ge 0$, Vitamin B12 mcg $\ge 0$, Zinc mg $\ge 0$); chỉ tiêu chưa có dữ liệu có thể để trống khi Ingredient chưa được hỗ trợ tính toán (`nutrition_supported = 0`), còn `0` là giá trị thật.
     - Tên nguồn dữ liệu (`source_name`, chọn USDA FoodData Central hoặc NIH/Viện Dinh dưỡng) và ngày đối chiếu (`reference_date`) theo ràng buộc database; URL nguồn (`source_url`) có thể chưa có khi `nutrition_supported = 0`.

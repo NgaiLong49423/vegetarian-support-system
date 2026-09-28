@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M04
 > **File:** `docs/requirements/use-cases/recipe-discovery-and-classification.md`
-> **Version:** v2.3.0
+> **Version:** v2.4.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-28
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -274,7 +274,7 @@ Administrator đã đăng nhập với quyền quản trị.
 
 #### Main Flow
 1. Hệ thống hiển thị danh sách nguyên liệu chuẩn và hỗ trợ tìm kiếm.
-2. Administrator tạo mới hoặc chỉnh sửa tên tiếng Việt, tên tiếng Anh tùy chọn và nhóm nguyên liệu.
+2. Administrator tạo mới hoặc chỉnh sửa tên nguyên liệu tiếng Việt và nhóm nguyên liệu; MVP không quản lý tên tiếng Anh hoặc đa ngôn ngữ.
 3. Administrator có thể ngừng sử dụng nguyên liệu; nguyên liệu ngừng sử dụng không được chọn cho liên kết mới nhưng giữ nguyên liên kết lịch sử.
 
 #### Postconditions

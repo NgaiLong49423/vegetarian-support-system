@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.5.0
+> **Version:** v2.6.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-28
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -1229,7 +1229,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Cung cấp giao diện quản trị chuyên biệt dành cho Administrator để quản lý các danh mục phân loại dữ liệu nền tảng của hệ thống: Danh mục nguyên liệu chuẩn (Standard Ingredient Catalog), Danh mục đơn vị đo lường chuẩn (`UNIT`), và Bảng quy đổi đơn vị theo nguyên liệu (`INGREDIENT_UNIT_CONVERSION`) (hệ thống không sử dụng bảng động `CATEGORY` / `RECIPE_CATEGORY`, thể loại món ăn được chuẩn hóa trực tiếp thành thuộc tính `dish_category` trên Recipe Post); Administrator có thẩm quyền xem, tìm kiếm, tạo mới, chỉnh sửa thông tin, cấu hình tỷ lệ quy đổi sang gam và ngừng sử dụng (soft-disable); hệ thống nghiêm cấm xóa vĩnh viễn (hard delete) các nguyên liệu hoặc đơn vị đang được tham chiếu trong các bài công thức công khai.
 - **Phạm vi nghiệp vụ:**
-  - Quản lý danh mục nguyên liệu: Tên nguyên liệu chuẩn tiếng Việt, tên tiếng Anh (tùy chọn), nhóm nguyên liệu (Rau củ, Nấm, Đậu hạt, Gia vị, v.v.).
+  - Quản lý danh mục nguyên liệu: Tên nguyên liệu chuẩn bằng tiếng Việt và nhóm nguyên liệu (Rau củ, Nấm, Đậu hạt, Gia vị, v.v.). Ứng dụng MVP không quản lý tên tiếng Anh hoặc đa ngôn ngữ.
   - Quản lý đơn vị đo lường (`UNIT`): Tên đơn vị, ký hiệu, nhóm thứ nguyên (`MASS`, `VOLUME`, `COUNT`), trạng thái hoạt động (BR-73).
   - Quản lý tỷ lệ quy đổi (`INGREDIENT_UNIT_CONVERSION`): Cấu hình tỷ lệ quy đổi từ một đơn vị đo lường sang khối lượng gam (`MASS` in grams) cho từng nguyên liệu cụ thể (ví dụ: 1 quả chuối $\approx 120\text{ g}$, 1 muỗng canh dầu ăn $\approx 14\text{ g}$) để phục vụ tính toán dinh dưỡng và kiểm tra hợp lệ khi xuất bản (BR-19, BR-73).
   - Thể loại món (`dish_category`): Được quản lý theo danh mục giá trị chuẩn hóa thuộc hệ thống (món nước, món xào, món lẩu, món kho, món canh, món chiên, món hấp, món gỏi / salad, món cuốn, món nướng, món tráng miệng / chè), không yêu cầu bảo trì bảng phân cấp động.
@@ -1287,7 +1287,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *When* Administrator tìm kiếm trong danh mục,
   - *Then* hệ thống hiển thị các nguyên liệu phù hợp với nội dung tìm kiếm.
 - **AC-18.6 (Chỉnh sửa thông tin nguyên liệu chuẩn):**
-  - *Given* Administrator chỉnh sửa tên tiếng Việt, tên tiếng Anh tùy chọn hoặc nhóm của một nguyên liệu,
+  - *Given* Administrator chỉnh sửa tên nguyên liệu tiếng Việt hoặc nhóm của một nguyên liệu,
   - *When* Administrator lưu thay đổi,
   - *Then* danh mục hiển thị thông tin đã cập nhật.
 - **AC-18.7 (Ngừng sử dụng nguyên liệu nhưng giữ liên kết lịch sử):**
