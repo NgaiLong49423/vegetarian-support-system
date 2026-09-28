@@ -1,20 +1,20 @@
 > **Document:** ERD Workspace Guide  
 > **File:** `docs/diagrams/ERD/README.md`  
-> **Version:** v1.13.2  
+> **Version:** v1.13.3<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-27  
-> **Status:** Active (Conceptual, Logical và Physical ERD đã hoàn thiện)  
+> **Last Updated:** 2026-09-27<br>
+> **Status:** Active
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `database/README.md`, `docs/diagrams/ERD/data-dictionary.md`
 
 # ERD Workspace Guide — Hướng Dẫn Sơ Đồ Quan Hệ Thực Thể
 
 > [!NOTE]
 > **TIẾN ĐỘ VÀ BỘ SƠ ĐỒ ERD CỦA DỰ ÁN (CẬP NHẬT 25/09/2026):**  
-> Mô hình dữ liệu của Mâm Xanh phản ánh **Baseline 22 thực thể cốt lõi** sau khi xác nhận `USER_FOLLOW` thuộc FR-59/BR-75 `ACTIVE` ngày 23/09/2026:  
+> Mô hình dữ liệu của Mâm Xanh phản ánh **Baseline 22 thực thể cốt lõi**; `USER_FOLLOW` thuộc phạm vi hiện hành theo FR-59/BR-75:
 > 1. **Conceptual ERD:** [conceptual-erd-v1.0.0.drawio](./conceptual-erd-v1.0.0.drawio) (22 thực thể, 36 connector; có file ảnh [conceptual-erd-v1.0.0.drawio.png](./conceptual-erd-v1.0.0.drawio.png)).  
 > 2. **Logical ERD:** [logical-erd-v1.0.0.drawio](./logical-erd-v1.0.0.drawio) (22 bảng; 37 connector thể hiện đủ 36 quan hệ ở mục 3.1, vì quan hệ #36 tách hai vai trò FK `follower` / `followed` của `USER_FOLLOW`). Cập nhật ngày 24/09/2026 theo quyết định `Q7`–`Q12` trong Data Dictionary. Bản nháp `v0.1.0` đã xóa khỏi repo ngày 24/09/2026 theo yêu cầu Tech Lead.  
-> 3. **Physical ERD:** [physical-erd-v1.0.0.drawio](./physical-erd-v1.0.0.drawio) (22 bảng vật lý T-SQL, kiểu dữ liệu Microsoft SQL Server 2019, 196 physical columns, 38 FKs, 57 check constraints, 55 default constraints, 55 index gồm 22 PK + 9 UNIQUE constraint + 24 index tạo riêng (trong đó 10 filtered index: 8 unique, 2 không unique); đối chiếu 100% với Flyway baseline migration [V1__baseline_schema.sql](../../../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) và [database/schema.sql](../../../database/schema.sql)).  
-> 4. **Data Dictionary:** [data-dictionary.md](./data-dictionary.md) v0.7.2 đặc tả chi tiết 9 cột vật lý cho toàn bộ thuộc tính, hoàn thành triển khai 100% không còn mục đánh dấu ⏳ sau review PR #66.
+> 3. **Physical ERD:** [physical-erd-v1.0.0.drawio](./physical-erd-v1.0.0.drawio) (22 bảng vật lý T-SQL, kiểu dữ liệu Microsoft SQL Server 2019, 196 physical columns, 38 FKs, 57 check constraints, 55 default constraints, 55 index gồm 22 PK + 9 UNIQUE constraint + 24 index tạo riêng (trong đó 10 filtered index: 8 unique, 2 không unique); đối chiếu 100% với Flyway migrations [V1__baseline_schema.sql](../../../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql) và [V2__unit_code_unicode.sql](../../../app/mamxanh-backend/src/main/resources/db/migration/V2__unit_code_unicode.sql), cùng [database/schema.sql](../../../database/schema.sql)).<br>
+> 4. **Data Dictionary:** [data-dictionary.md](./data-dictionary.md) v0.7.5 đặc tả chi tiết 9 cột vật lý cho toàn bộ thuộc tính, hoàn thành triển khai 100% không còn mục đánh dấu ⏳ sau review PR #66.
 
 ## 1. Mục Đích và Tác Dụng của Sơ Đồ ERD
 
@@ -25,7 +25,7 @@ Trong quy trình phát triển phần mềm của dự án, sơ đồ này có c
 1. **Định hình bức tranh tổng thể về dữ liệu nghiệp vụ:**
    * Giúp toàn bộ 5 thành viên trong nhóm phát triển, giảng viên và các bên liên quan có cùng một góc nhìn thống nhất về các đối tượng dữ liệu mà hệ thống cần quản trị và vận hành.
 2. **Xác lập và bảo vệ ranh giới phạm vi dữ liệu MVP:**
-   * Duy trì phạm vi mô hình dữ liệu ở **22 thực thể**, trong đó `USER_FOLLOW` thuộc lifecycle `ACTIVE` của FR-59/BR-75.
+   * Duy trì phạm vi mô hình dữ liệu ở **22 thực thể**, trong đó `USER_FOLLOW` thuộc phạm vi hiện hành theo FR-59/BR-75.
    * Ngăn ngừa tình trạng phình to phạm vi (scope creep) hoặc việc các thành viên tự tiện phát sinh bảng mới ngoài các quyết định kiến trúc đã chốt.
 3. **Làm cầu nối giữa Yêu cầu nghiệp vụ (SRS) và Thiết kế kỹ thuật (Database Design):**
    * Chuyển hóa các yêu cầu chức năng (FR) và quy tắc nghiệp vụ (BR) từ tài liệu đặc tả thành các khái niệm thực thể dữ liệu rõ ràng trước khi bước vào lập trình chi tiết.
@@ -55,7 +55,7 @@ Dưới đây là sơ đồ quan hệ thực thể mức khái niệm của hệ
 
 ## 3. Ranh Giới 22 Thực Thể Khái Niệm (Conceptual Baseline)
 
-Căn cứ Conceptual ERD cập nhật ngày 23/09/2026, mô hình dữ liệu hiện có **22 thực thể**; `USER_FOLLOW` là phần bắt buộc gắn với FR-59/BR-75 `ACTIVE`:
+Căn cứ Conceptual ERD hiện hành, mô hình dữ liệu có **22 thực thể**; `USER_FOLLOW` thuộc FR-59/BR-75:
 
 | # | Thực thể (Entity) | Vai trò khái niệm trong hệ thống |
 |---|---|---|
@@ -84,8 +84,8 @@ Căn cứ Conceptual ERD cập nhật ngày 23/09/2026, mô hình dữ liệu hi
 
 ### Các thành phần đã loại bỏ hoặc sáp nhập để tối ưu hóa phạm vi MVP:
 * ❌ **`category` & `recipe_category`**: Loại bỏ hoàn toàn bảng danh mục động và bảng liên kết; thể loại món ăn được chuẩn hóa thành trường thuộc tính `dish_category` trực tiếp trên `Recipe Post` (món nước, món xào, món lẩu, món kho, món canh, món chiên, món hấp, món gỏi, món tráng miệng...).
-* ❌ **`recipe_step`**: Loại bỏ bảng riêng theo Phương án B; toàn bộ hướng dẫn chế biến được lưu trữ linh hoạt trong trường văn bản tự do `instructions` (10–5.000 ký tự) trên `Recipe Post` (FR-16, BR-19; FR-22 RETIRED).
-* ❌ **`comment_like`**: Loại bỏ hoàn toàn tương tác Thích/Bỏ thích trên bình luận và phản hồi (`FR-45` RETIRED). Riêng bài công thức áp dụng cơ chế Like/Dislike qua thực thể `RECIPE_REACTION` (`FR-57`, `BR-69`).
+* ❌ **`recipe_step`**: Không có bảng riêng; hướng dẫn chế biến được lưu trong trường văn bản `instructions` (10–5.000 ký tự) trên `Recipe Post` (FR-16, BR-19).
+* ❌ **`comment_like`**: Bình luận/reply không có tương tác Like/Dislike. Bài công thức áp dụng Like/Dislike qua thực thể `RECIPE_REACTION` (FR-57, BR-69).
 * ❌ **`moderation_action`**: Loại bỏ bảng riêng; kết quả và lý do kiểm duyệt lưu trực tiếp trên `Report`.
 * ❌ **`user_profile`**: Gộp trực tiếp vào thực thể `User`.
 * ❌ **`ai_usage_record`**: Loại bỏ bảng đếm lượt; phân quyền AI theo gói `Subscription` và đo lường kỹ thuật qua log hạ tầng.
@@ -175,6 +175,6 @@ Sơ đồ ERD trong thư mục này dừng ở mức **Khái niệm (Conceptual)
   * **Logical ERD:** `logical-erd-v[version].drawio` (Hiện tại: `logical-erd-v1.0.0.drawio`)
   * **Physical ERD:** `physical-erd-v[version].drawio` (Hiện tại: `physical-erd-v1.0.0.drawio`)
 * **File hình ảnh xuất ra:** `[loại-erd]-v[version].drawio.png` (Ví dụ: `conceptual-erd-v1.0.0.drawio.png`, `physical-erd-v1.0.0.drawio.png`)
-* **Từ điển dữ liệu vật lý:** `data-dictionary.md` (Phiên bản v0.7.2)
+* **Từ điển dữ liệu vật lý:** `data-dictionary.md` (Phiên bản v0.7.5)
 * **Quy trình cập nhật:** Khi có điều chỉnh về danh mục thực thể theo quyết định kiến trúc mới, cần cập nhật các file Draw.io tương ứng, xuất lại ảnh PNG, và cập nhật số phiên bản trong file `README.md` này.
 

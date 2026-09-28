@@ -17,7 +17,7 @@ When compatible with the repository template, place requirement-derived content 
 - Root SRS Registry: docs/requirements/SRS.md (or monolithic SRS.md)
 - Detailed Specification: docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-xx (when modular)
 - Requirement: FR-xx
-- Requirement Lifecycle: ACTIVE / DEFERRED / DRAFT / ... (from authoritative SRS registry)
+- Current-Scope Disposition: Current (FR present in root SRS registry)
 - Requirement Readiness: Ready / ... / Not used
 - Hierarchy Role: Parent / Leaf / Standalone
 
@@ -57,12 +57,10 @@ When compatible with the repository template, place requirement-derived content 
 ## Required Rules
 
 - Source Trace is mandatory.
-- Requirement Lifecycle must be explicit; never infer it.
+- Confirm the FR is present in the current root SRS registry before creating current implementation work.
 - Acceptance Criteria must come from the requirement meaning and must not add new semantics.
 - Parent/capability Issues must not repeat child implementation acceptance scope.
-- `DEFERRED` Issues must be clearly marked as deferred/backlog according to repository convention.
-- `DRAFT` tracking Issues must not be presented as implementation-ready.
-- `OUT_OF_SCOPE` / `RETIRED` do not create new implementation work.
-- Do not invent technology, dates, dependencies, labels, lifecycle, readiness, or relationships.
+- Archive-only/non-current FRs do not create new implementation work; retain their existing mapping as history.
+- Do not invent technology, dates, dependencies, labels, current scope, readiness, or relationships.
 - Preserve human notes/comments when synchronizing.
 - If the managed boundary is missing or ambiguous on an existing manually edited Issue, report the conflict before rewriting the body.

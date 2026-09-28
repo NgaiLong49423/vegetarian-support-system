@@ -14,7 +14,7 @@ Do not use this workflow to invent product decisions on behalf of the team.
 
 ## Primary Skills
 
-- `markdown-documentation` — requirement content, ambiguity handling, source-of-truth, stable IDs, lifecycle semantics.
+- `markdown-documentation` — requirement content, ambiguity handling, source-of-truth, current-scope boundaries, stable IDs.
 - `document-metadata-standardizer` — metadata/version updates after approved semantic edits.
 - `repo-template-doc-sync-auditor` — cross-document consistency audit and authorized fixes.
 - `srs-to-github-issues` — optional downstream handoff after the finalization gate passes.
@@ -37,7 +37,7 @@ Find decision-blocking issues such as:
 - missing actor/trigger/precondition when required for implementation understanding;
 - contradictory FR/BR/NFR statements;
 - unsupported numeric NFR targets;
-- unclear lifecycle state;
+- uncertainty about whether a requirement belongs in the current SRS registry;
 - unresolved external dependency or scope boundary;
 - acceptance criteria that cannot be objectively checked.
 
@@ -80,7 +80,7 @@ For a baseline/finalization request, run `evaluator-optimizer.md` against the ca
 The workflow passes only when:
 
 - no decision-blocking ambiguity remains in the selected scope;
-- lifecycle states required by repository policy are explicit;
+- current scope is explicit in the root SRS registry;
 - stable IDs are preserved;
 - authoritative requirement documents do not contradict each other;
 - required metadata is valid;
@@ -92,14 +92,14 @@ A known `TBD` may remain only when repository policy permits it and it does not 
 
 Only after the finalization gate passes, and only when requested/authorized, invoke `srs-to-github-issues`.
 
-That skill performs its own lifecycle gate and GitHub mutation authorization. Finalization does not itself authorize remote Issue creation.
+That skill performs its own current-scope gate and GitHub mutation authorization. Finalization does not itself authorize remote Issue creation.
 
 ## Stop Conditions
 
 Stop and ask for a decision when:
 
 - equally authoritative requirement sources conflict;
-- a lifecycle state required for the next step is missing;
+- an authorized current-scope decision required for the next step is missing;
 - a numeric target or business rule would have to be invented;
 - a requested change would overwrite an accepted decision without authorization.
 

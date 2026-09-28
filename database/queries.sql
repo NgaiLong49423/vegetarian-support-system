@@ -13,7 +13,7 @@
 --      proving that all database constraints, filtered unique indexes, and
 --      cascade policies enforce business rules as designed.
 --      Preserves TC01..TC15 and adds TC16..TC37 for all newly implemented
---      constraints from Data Dictionary v0.6.0, plus TC38 for the NVARCHAR
+--      constraints from Data Dictionary v0.7.5, plus TC38 for the NVARCHAR
 --      UNIT.code fix in migration V2__unit_code_unicode.sql.
 --      Every negative test verifies the EXACT constraint name in ERROR_MESSAGE().
 --   3. Operational Queries: Practical queries demonstrating core queries

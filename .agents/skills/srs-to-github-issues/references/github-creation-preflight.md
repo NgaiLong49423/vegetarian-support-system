@@ -9,12 +9,12 @@ A hard blocker must be resolved before the affected mutation. A simple "continue
 - [ ] The complete remote mutation batch has been previewed and explicitly approved after this preflight.
 - [ ] The approved batch identifies exact planned action groups and affected targets; no material target/action changes occurred after approval.
 - [ ] Repository owner/name is known for the target repository.
-- [ ] Every affected FR has an explicit lifecycle state from the authoritative SRS registry or authorized decision, and no unresolved lifecycle conflict exists between root registry and detailed specification.
+- [ ] Every creation target is present in the current root SRS registry; current-scope conflicts between the root registry and detailed specification are resolved.
 - [ ] The target Issue mapping is known, or creation of a new Issue is clearly intended.
 - [ ] No conflicting authoritative requirement sources remain unresolved for the affected scope.
 - [ ] Parent/capability tracking scope does not duplicate child implementation scope.
 - [ ] No requirement ID is being reused for a different meaning.
-- [ ] A requirement removed from the active SRS is not being treated as retired/out-of-scope without explicit lifecycle/history evidence.
+- [ ] Any close candidate for an FR absent from the current registry is supported by a verified stable-ID mapping, archive/baseline evidence, and unfinished Issue state; completed work is preserved.
 
 If any hard blocker fails, stop the affected mutation and report exactly what must be resolved.
 
@@ -26,7 +26,7 @@ Before the first remote write, present one complete preview such as:
 ```text
 CREATE:
 - FR-21 -> new Issue
-- FR-22 -> new Issue
+- FR-23 -> new Issue
 
 UPDATE:
 - FR-14 -> Issue #31 managed block
@@ -56,7 +56,7 @@ After execution, verify each approved action and report successes/failures. Neve
 - [ ] Every selected draft file exists.
 - [ ] No local `file:///` paths exist in content to be posted.
 - [ ] Source Trace is present.
-- [ ] Lifecycle-to-Issue behavior matches `references/requirement-eligibility.md`.
+- [ ] Current-scope behavior matches `references/requirement-eligibility.md`.
 - [ ] Existing linked Issue was checked to avoid duplicate creation.
 - [ ] Labels/types conform to repository configuration or are explicitly authorized.
 - [ ] Production-clean content: internal agent meta-commentary, prompt caveats, and procedural boilerplate ("Source questions / DESIGN_TBD", "Chờ Tech Lead...", "Owner chịu trách nhiệm...") have been completely stripped.
@@ -69,8 +69,8 @@ After execution, verify each approved action and report successes/failures. Neve
 - [ ] Human comments and unrelated manual notes will be preserved.
 - [ ] Closed-completed Issues will not be rewritten as if their historical completed scope had always been different.
 - [ ] Semantic changes to completed work will use a follow-up Issue unless repository policy explicitly prefers reopening.
-- [ ] `OUT_OF_SCOPE` / `RETIRED` transitions will not delete Issues or comments.
-- [ ] Re-activation will reuse/reopen an appropriate unfinished historical Issue rather than create a duplicate when possible.
+- [ ] Leaving-current-scope proposals will not delete Issues or comments.
+- [ ] If an FR re-enters the current registry, an appropriate unfinished historical Issue is reused/reopened rather than duplicated when possible.
 
 ## Overridable Workflow Warnings
 
@@ -107,4 +107,4 @@ Project-sync ID failures block only the Project mutation when the core Issue ope
 - merge pull requests;
 - modify source code merely to satisfy an Issue;
 - create branches unless separately requested;
-- infer requirement lifecycle from GitHub state.
+- infer current requirement scope from GitHub state.

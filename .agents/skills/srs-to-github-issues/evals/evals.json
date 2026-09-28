@@ -5,23 +5,25 @@
   "cases": [
     {
       "id": "ISSUE-E01",
-      "name": "Missing lifecycle blocks synchronization",
-      "prompt": "FR-21 exists in the SRS but has no explicit lifecycle state. Create its GitHub Issue.",
+      "name": "Archive-only FR does not enter current scope",
+      "prompt": "FR-21 appears only in the archived v1 SRS and is absent from the current root SRS registry. Create its GitHub Issue.",
       "expected": [
-        "Stops Issue generation for FR-21 and asks for lifecycle decision"
+        "Does not create current implementation work for FR-21",
+        "Classifies FR-21 as historical/non-current and preserves any existing mapping"
       ],
       "forbidden": [
-        "Inferring ACTIVE from wording or location"
+        "Treating archive presence or old lifecycle labels as current scope"
       ]
     },
     {
       "id": "ISSUE-E02",
-      "name": "Stable IDs during out-of-scope transition",
-      "prompt": "FR-19 becomes OUT_OF_SCOPE; FR-20 remains ACTIVE. Reconcile Issues.",
+      "name": "Stable IDs when FR leaves current registry",
+      "prompt": "FR-19 leaves the current root SRS registry while FR-20 remains present. Reconcile their linked Issues.",
       "expected": [
         "Preserves FR-19 historical mapping",
         "Keeps FR-20 ID unchanged",
-        "Does not create new implementation work for FR-19"
+        "Does not create new implementation work for FR-19",
+        "Proposes closure of unfinished FR-19 work only after verifying baseline/history and only in an approval preview"
       ],
       "forbidden": [
         "Renumbering FR-20",

@@ -1,8 +1,8 @@
 > **Document:** Similar Products Benchmark for Topic 03  
 > **File:** `docs/research/similar-products-benchmark.md`  
-> **Version:** v0.2.0
+> **Version:** v0.2.1
 > **Created:** 2026-09-12  
-> **Last Updated:** 2026-09-15
+> **Last Updated:** 2026-09-27
 > **Status:** Under Review  
 
 # Benchmark sản phẩm tương tự — Đề tài 03
@@ -51,7 +51,7 @@ Nguồn:
 
 ### Bài học cho dự án
 
-- Tách rõ chức năng miễn phí và giá trị premium là một hướng đối thủ đang dùng. Dự án hiện chọn Free/Plus/Pro cùng nhóm chức năng AI và khác hạn mức 5/15/50; benchmark này không thay đổi quyết định đó.
+- Tách rõ chức năng miễn phí và giá trị premium là một hướng đối thủ đang dùng. Dự án hiện phân quyền Free/Plus/Pro theo nhóm tính năng AI (Feature-based Entitlement), không theo hạn mức lượt/ngày; benchmark này không thay đổi quyết định của SRS.
 - AI meal planning là một giá trị sản phẩm dễ giải thích, nhưng quyền theo gói của dự án vẫn do SRS quyết định.
 - Content policy cần nêu nội dung phù hợp chủ đề ăn chay, spam/trùng lặp, nội dung nguy hiểm và chế tài.
 - Dự án của nhóm chỉ có một loại bài là bài công thức (`Recipe Post`), không có Blog tổng quát tách riêng. Hướng dẫn chuẩn bị/chế biến từng bước thuộc bài và bắt buộc có từ 1–30 bước (BR-19).
@@ -135,7 +135,7 @@ Quyết định hiện tại của dự án: Phase 1 lưu ảnh trên Azure Blob
 | Human moderation | HappyCow + Samsung Food guidelines | Member công khai Recipe Post hợp lệ trực tiếp; người dùng báo cáo nội dung và Admin hậu kiểm, không có đơn xin quyền đăng hoặc hàng đợi duyệt từng bài |
 | Recipe content | Forks Over Knives | Bài công thức có dữ liệu tối thiểu để tìm/lọc; hướng dẫn chuẩn bị/chế biến từng bước (1–30 bước) |
 | Meal planning | Forks Over Knives + Samsung Food | Tách Đã lưu và Lịch ăn; thêm/chuyển/thay/xóa món theo ngày/bữa; chưa thêm Queue hay shopping integration |
-| AI premium | Samsung Food+ | Free/Plus/Pro cùng AI, khác hạn mức 5/15/50; thanh toán thật theo Q19/Q26, không sao chép cách khóa tính năng của đối thủ |
+| AI premium | Samsung Food+ | Free/Plus/Pro được phân quyền theo nhóm tính năng; không áp dụng hạn mức lượt/ngày; thanh toán thật theo Q19/Q26, không sao chép cách khóa tính năng của đối thủ |
 
 ## 8. Kết quả chốt phạm vi — 12/09/2026
 

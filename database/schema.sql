@@ -5,7 +5,7 @@
 -- Issue           : Refs #63 — Pha 2 Physical ERD & Schema
 -- Author          : Trương Văn Khải
 -- Date            : 2026-09-25
--- Source          : Logical ERD v1.0.0 + Data Dictionary v0.6.0
+-- Source          : Logical ERD v1.0.0 + Data Dictionary v0.7.5
 --                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
 -- Synchronized with: V1__baseline_schema.sql + V2__unit_code_unicode.sql
 --                   (Flyway state after all migrations)

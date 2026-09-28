@@ -1,8 +1,8 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.4.2  
+> **Version:** v0.4.2<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-27  
+> **Last Updated:** 2026-09-27<br>
 > **Status:** Under Review  
 
 # Database Workspace

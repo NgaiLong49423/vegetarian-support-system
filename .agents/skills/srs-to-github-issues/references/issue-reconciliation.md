@@ -42,32 +42,21 @@ Default:
 
 Repository policy may explicitly choose reopening instead.
 
-## Lifecycle Transitions
+## Current-Scope Changes
 
-### `DRAFT -> ACTIVE`
+For this repository's v2 baseline, current scope is determined by presence in the root SRS registry, not by lifecycle labels.
 
-Promote/create the current implementation Issue after authorization and preflight.
+### FR enters the current registry
 
-### `ACTIVE -> DEFERRED`
+- Check for a historical Issue mapping by stable FR ID.
+- Reopen an appropriate unfinished Issue when it still represents the current work; otherwise create a new Issue candidate.
+- Preserve any completed historical Issue and do not rewrite its scope.
 
-Keep the linked Issue, mark it deferred/backlog, and remove it from active implementation status according to repository workflow.
+### FR leaves the current registry
 
-### `DEFERRED -> ACTIVE`
-
-Reactivate the existing linked unfinished Issue rather than creating a duplicate.
-
-### `ACTIVE/DEFERRED -> OUT_OF_SCOPE`
-
-For an unfinished linked Issue, close as not planned when authorized. Preserve the mapping and reason.
-
-### `ACTIVE/DEFERRED -> RETIRED`
-
-For unfinished linked work, close as not planned when authorized. Preserve historical mapping.
-
-### `OUT_OF_SCOPE/RETIRED -> ACTIVE`
-
-- reopen the linked Issue if it is the correct unfinished historical work item;
-- if the old Issue was already completed or no longer represents the new scope, create a follow-up and preserve the old mapping.
+- Preserve the historical mapping and verify the linked Issue state.
+- For unfinished work, propose closing as not planned only when the current baseline/archive evidence confirms the scope change.
+- Preserve completed Issues as history; do not rewrite, delete, or reopen them solely because the FR left current scope.
 
 ## Requirement Split
 
@@ -82,17 +71,11 @@ When an FR becomes a parent with new child FRs:
 
 Do not delete old Issues.
 
-Record supersession in the index and close unfinished superseded Issues only when the requirement lifecycle/decision authorizes it.
+Record supersession in the index and propose closing unfinished superseded Issues only when the current baseline/history evidence supports the scope change.
 
 ## Requirement Missing From Current SRS
 
-Absence alone is not enough to infer `OUT_OF_SCOPE` or `RETIRED`.
-
-If a previously mapped FR disappears without an explicit lifecycle/history decision:
-
-- do not close/delete/reassign its Issue;
-- inspect authoritative history/governance if available;
-- otherwise ask the authorized decision-maker.
+Absence from the current root registry means non-current scope in this repository's v2 baseline, but does not automatically authorize a remote write. Verify the Issue mapping, archive/history, completion state and approval preview before proposing a close. If this evidence is ambiguous, stop the affected action and ask for direction.
 
 ## Human Content Protection
 
