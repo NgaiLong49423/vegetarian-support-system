@@ -30,7 +30,7 @@ Không cần thành viên FE riêng; owner phụ trách BE kiểm tra nhu cầu 
 
 ## Quyền quyết định ngoài workflow đã chốt
 
-Quy tắc đã có về thay đổi requirement, schema, kiến trúc hoặc core dependency vẫn giữ: nêu phương án/ảnh hưởng trong Decision Issue hoặc ADR phù hợp và cần ít nhất 3/5 thành viên đồng ý. Tech Lead duyệt contract triển khai trong scope đã xác nhận; việc duyệt không tự cho phép thay đổi business meaning, schema hoặc kiến trúc ngoài scope.
+Quy tắc đã có về thay đổi requirement, schema, kiến trúc hoặc core dependency vẫn giữ: nêu phương án/ảnh hưởng trong Decision Issue hoặc ADR phù hợp và cần ít nhất 3/5 thành viên đồng ý (áp dụng cho thay đổi lớn cấp hệ thống như thêm bảng/thực thể mới, xóa bảng, hoặc thay đổi quan hệ ERD liên module; việc bổ sung trường/cột cục bộ trên bảng hiện có phục vụ implementation issue đã giao không cần biểu quyết 3/5 mà tuân theo quy trình code review thông thường). Tech Lead duyệt contract triển khai trong scope đã xác nhận; việc duyệt không tự cho phép thay đổi business meaning, schema hoặc kiến trúc ngoài scope.
 
 Workflow hiện hành được cập nhật theo quyết định trực tiếp ngày 2026-09-18. Các thay đổi chính sách tiếp theo cần quyết định có thẩm quyền được ghi nhận; không dùng phiếu bầu để bỏ qua yêu cầu môn học, bảo mật hoặc quality gate.
 

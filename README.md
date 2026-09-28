@@ -31,7 +31,7 @@ Chi tiết nghiệp vụ nằm trong [SRS](docs/requirements/SRS.md). Các đề
 | Frontend | React, TypeScript, Vite, npm, Axios, Requestly Pro (FE dev mocking) |
 | Backend | Java 21, Spring Boot, Maven, REST API/JSON, Spring Boot Actuator |
 | Data | Microsoft SQL Server (Azure SQL Database Serverless), Spring Data JPA/Hibernate, Flyway |
-| Security | Spring Security, Google Identity Services (GIS), `GoogleIdTokenVerifier`, short-lived JWT access token, rotating refresh token (HttpOnly cookie), BCrypt, role-based authorization |
+| Security | Spring Security, Google Identity Services (GIS), `GoogleIdTokenVerifier`, Stateless JWT Access Token (OAuth2 Resource Server, Nimbus), BCrypt, role-based authorization |
 | External services | Google Gemini (`gemini-3.8-flash` qua Google Gen AI Java SDK), payOS (VietQR Payment REST & Webhook), Brevo (Transactional Email SMTP), Azure Blob Storage, YouTube embedding |
 | Quality & DevOps | JUnit 5, Mockito, Playwright, JaCoCo, Codecov (CI coverage), Testmail (Email E2E testing), OpenAPI/Swagger UI, Bean Validation, Azure Application Insights |
 | Deployment | Vercel (FE) + Azure App Service Java 21 SE (BE) + Azure SQL Serverless (DB) + Azure Blob Storage (Media) + Custom Domain `.tech` |

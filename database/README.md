@@ -1,9 +1,9 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.4.2<br>
+> **Version:** v0.5.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-27<br>
-> **Status:** Under Review  
+> **Last Updated:** 2026-09-28<br>
+> **Status:** Active  
 
 # Database Workspace
 
@@ -16,14 +16,25 @@ Database chính đã chốt là Microsoft SQL Server 2019. Lược đồ cơ s�
 - `database/sample-data.sql` chỉ chứa dữ liệu demo giả, không chứa tài khoản thật, credential hoặc dữ liệu cá nhân.
 - `database/queries.sql` chứa kịch bản kiểm tra đối tượng, bộ test tự động xác minh các ràng buộc nghiệp vụ (positive/negative) có cơ chế rollback, và các truy vấn mẫu cho tầng ứng dụng; không thay thế automated integration tests.
 
-## Quy trình thay đổi schema
+## Quy trình thay đổi schema & Quản trị phân bổ (Q13 Governance)
 
-1. Truy vết thay đổi đến SRS/Issue và xác nhận không mở rộng scope ngoài quyết định đã duyệt.
-2. Thêm Flyway migration mới trong backend; không sửa migration đã được chia sẻ hoặc chạy ở môi trường chung.
-3. Cập nhật entity/DTO/repository và test liên quan.
-4. Kiểm tra migration trên database sạch và, khi phù hợp, đường nâng cấp từ baseline gần nhất.
-5. Đồng bộ ERD, `database/schema.sql`, OpenAPI/SRS và `CHANGELOG.md` khi bị ảnh hưởng.
-6. PR cần hai người kiểm tra theo ADR-002.
+1. **Phân định thẩm quyền thay đổi:**
+   - **Thay đổi nhỏ/cục bộ (Minor/Local Column Additions):** Việc thêm các cột cục bộ trên bảng hiện có (như bổ sung các cột phục vụ auth/security trên bảng `USER`) trong khuôn khổ implementation issue đã phân công **không** cần phải tổ chức biểu quyết toàn nhóm (3/5 vote). Developer được chủ động tạo Flyway migration mới và PR sẽ được review theo quy trình code review thông thường.
+   - **Thay đổi lớn/cấp hệ thống (Major/System-wide Changes):** Chỉ áp dụng biểu quyết nhóm 3/5 đối với: thêm bảng/thực thể mới, thay đổi quan hệ ERD liên module, xóa bảng hoặc cấu trúc lại dữ liệu dùng chung.
+2. **Thiết kế mục tiêu bảng `USER` cho Auth (FR-03 Target Design):**
+   - Không tạo 3 bảng độc lập (`REFRESH_TOKEN`, `LOGIN_THROTTLE`, `ACCOUNT_TOKEN`).
+   - Toàn bộ trường phục vụ xác minh email, đặt lại mật khẩu và rate limit được lưu trữ trực tiếp trên bảng `USER`:
+     - Xác minh email: `email_verification_token` (VARCHAR), `verification_token_expires_at` (DATETIME2).
+     - Đặt lại mật khẩu: `password_reset_token` (VARCHAR), `reset_token_expires_at` (DATETIME2).
+     - Brute-force rate limit: `failed_login_attempts` (INT DEFAULT 0), `locked_until` (DATETIME2 NULL), `last_failed_login_at` (DATETIME2 NULL).
+     - Metadata rate limit email (Q27): cho phép bổ sung các trường tối thiểu trên `USER` nếu cần theo dõi 60s cooldown và tối đa 5 email/giờ/tài khoản.
+   - Developer (Tony) sẽ viết Flyway migration mới trong các Issue thực thi (#5, #6, #9). `database/schema.sql` và Physical ERD giữ nguyên baseline 22 bảng / 196 cột cho đến khi migration được merge chính thức vào `develop`.
+3. **Quy trình thực hiện migration:**
+   - Truy vết thay đổi đến SRS/Issue và xác nhận không mở rộng scope ngoài quyết định đã duyệt.
+   - Thêm Flyway migration mới trong backend (`V3__...`); không sửa migration đã được chia sẻ.
+   - Cập nhật entity/DTO/repository và test liên quan.
+   - Kiểm tra migration trên database sạch và kiểm thử nâng cấp.
+   - PR cần review theo ADR-002.
 
 ## Trạng thái thiết kế
 
