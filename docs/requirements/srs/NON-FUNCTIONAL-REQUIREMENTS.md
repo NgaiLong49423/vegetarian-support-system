@@ -111,8 +111,8 @@ This document contains only requirements included in Requirements / Implementati
 - **Nghiệp vụ liên quan:** `FR-03` (Đăng ký, đăng nhập và quản lý tài khoản cơ bản).
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Metric:* Số lần thất bại cho phép và thời gian khóa tạm thời.
-  - *Threshold:* Sau 5 lần nhập sai liên tiếp, rate limit đồng thời theo account identifier và IP trong 10 phút.
-- **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tự động ngưỡng 5 lần sai, xác nhận cả account identifier và IP bị rate limit 10 phút, rồi xác nhận đăng nhập hợp lệ hoạt động lại sau thời hạn mà không cần Admin mở khóa.
+  - *Threshold:* Sau 5 lần nhập sai liên tiếp, rate limit tạm thời ở cấp tài khoản trong 10 phút (lưu trạng thái trên bảng `USER`, ví dụ `failed_login_attempts`, `locked_until`). Bỏ rate limit theo IP để tránh rủi ro NAT/proxy dùng chung. Không chuyển `USER.account_status` sang `LOCKED`.
+- **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tự động ngưỡng 5 lần sai của một tài khoản, xác nhận trả về mã lỗi và thời gian chờ (10 phút); xác nhận tài khoản khác trên cùng IP vẫn đăng nhập bình thường; xác nhận đăng nhập thành công sau 10 phút mà không cần can thiệp của Admin.
 
 ---
 
@@ -141,8 +141,8 @@ This document contains only requirements included in Requirements / Implementati
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Metric:* Tỉ lệ chặn truy cập trái phép ở tầng Backend.
   - *Threshold:* 100% endpoint quản trị chỉ dành cho Administrator. Mọi thao tác truy cập trái quyền hoặc không có token hợp lệ đều bị chặn ở Backend và trả về mã lỗi HTTP 401 Unauthorized hoặc 403 Forbidden.
-  - *Token baseline:* Access token ngắn hạn; rotating refresh token gắn với refresh session có thể thu hồi phía server; logout thu hồi refresh session. Access-token-only không phải baseline đang hoạt động.
-- **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tự động RBAC, refresh rotation/reuse handling, server-side revocation và logout; request dùng token/session không còn hợp lệ phải bị chặn với HTTP 401/403 phù hợp.
+  - *Token baseline:* Cấp Stateless JWT Access Token cho client. RBAC thực thi ở tầng Backend (Spring Security OAuth2 Resource Server). Trên mọi authenticated request, hệ thống kiểm tra tức thời trạng thái tài khoản `account_status` từ database; nếu `account_status == 'LOCKED'`, từ chối ngay với HTTP 403 Forbidden (`ACCOUNT_LOCKED`). Đăng xuất xử lý hoàn toàn phía client (xóa token, clear context). Không sử dụng Refresh Token hay server-side session.
+- **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tự động RBAC (Guest/Member/Admin), kiểm thử chặn tức thời khi tài khoản bị Admin đổi `account_status` sang `LOCKED` (403), kiểm thử token hết hạn (401); xác nhận client xóa token không gọi backend server-side logout.
 
 ---
 

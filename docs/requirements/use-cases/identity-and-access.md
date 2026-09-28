@@ -42,55 +42,50 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 <a id="uc-03-4"></a>
 ### UC-03.4 — Đăng nhập bằng email và mật khẩu
 - **Goal / Primary Actor:** Guest tạo phiên đăng nhập hợp lệ.
-- **Trigger / Preconditions:** Email đã xác minh; tài khoản không bị khóa quản trị.
-- **Main Flow:** Backend kiểm tra rate limit, xác thực BCrypt, phát access token và rotating refresh session.
-- **Alternative / Security:** Sai credential tăng bộ đếm; lần 5 kích hoạt rate limit 10 phút theo account identifier và IP; không đổi thành admin lock.
-- **Postconditions:** Thành công tạo phiên; thất bại không tạo phiên và không lộ account existence.
+- **Trigger / Preconditions:** Email đã xác minh; tài khoản không bị khóa quản trị (`account_status != 'LOCKED'`).
+- **Main Flow:** Backend kiểm tra rate limit cấp tài khoản, xác thực BCrypt, phát stateless JWT Access Token.
+- **Alternative / Security:** Sai credential tăng bộ đếm; lần 5 kích hoạt temporary rate limit 10 phút ở cấp tài khoản (lưu trên `USER`); không rate limit IP; không đổi thành admin lock.
+- **Postconditions:** Thành công cấp Access Token; thất bại không cấp token và không lộ account existence.
 - **Traceability / Acceptance Coverage:** FR-03; NFR-06–NFR-09; [AC-03.6–AC-03.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
 
 <a id="uc-03-5"></a>
 ### UC-03.5 — Đăng nhập bằng Google
 - **Goal / Primary Actor:** Guest đăng nhập 1-click; Google Identity Services là supporting system.
 - **Trigger / Preconditions:** Guest cung cấp Google ID Token hợp lệ cho đúng audience.
-- **Main Flow:** Backend xác minh token, tìm/tạo hoặc liên kết tài khoản và phát phiên nội bộ.
-- **Alternative / Security:** Token sai/expired/audience sai bị từ chối; không tin dữ liệu client chưa xác minh.
-- **Postconditions:** Tài khoản có email đã xác minh và phiên hợp lệ.
+- **Main Flow:** Backend xác minh Google ID token với Google Identity Services, tìm/tạo hoặc liên kết tài khoản và phát stateless JWT Access Token.
+- **Alternative / Security:** Token sai/expired/audience sai bị từ chối; nếu email chưa xác minh qua password đăng ký trước đó, liên kết tài khoản và xóa password_hash; nếu tài khoản đang bị Admin khóa (`account_status == 'LOCKED'`), trả 403 `ACCOUNT_LOCKED`; nếu email đã liên kết với `google_id` khác, trả 409 Conflict.
+- **Postconditions:** Tài khoản có email đã xác minh và nhận stateless JWT Access Token.
 - **Traceability / Acceptance Coverage:** FR-03; NFR-08, NFR-09; [AC-03.10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
 
 <a id="uc-03-6"></a>
 ### UC-03.6 — Yêu cầu đặt lại mật khẩu
 - **Goal / Primary Actor:** Guest yêu cầu liên kết reset; Email Provider hỗ trợ gửi.
 - **Trigger / Preconditions:** Guest nhập email tại màn hình quên mật khẩu.
-- **Main Flow:** Hệ thống trả thông điệp trung tính và, nếu tài khoản hợp lệ, tạo token 15 phút rồi gửi email.
-- **Alternative / Security:** Email không tồn tại vẫn nhận phản hồi giống nhau; request bị rate-limit khi lạm dụng.
-- **Postconditions:** Không thay mật khẩu ở bước này; token dùng một lần có thể được phát hành.
+- **Main Flow:** Hệ thống trả HTTP 202 trung tính và, nếu tài khoản hợp lệ, tạo token 15 phút lưu trên `USER` rồi gửi email (rate limit 60s cooldown và tối đa 5 email/giờ/tài khoản).
+- **Alternative / Security:** Email không tồn tại vẫn nhận phản hồi 202 giống nhau; request vượt rate limit bị từ chối 429.
+- **Postconditions:** Không thay mật khẩu ở bước này; reset token mới ghi đè token cũ trên `USER`.
 - **Traceability / Acceptance Coverage:** FR-03; NFR-07, NFR-08; [AC-03.14](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
 
 <a id="uc-03-7"></a>
 ### UC-03.7 — Thiết lập mật khẩu mới
 - **Goal / Primary Actor:** Guest đặt mật khẩu mới bằng reset token hợp lệ.
-- **Trigger / Preconditions:** Token còn hạn/chưa dùng; mật khẩu mới đạt chuẩn.
-- **Main Flow:** Backend validate token, băm/lưu mật khẩu mới, vô hiệu hóa token và thu hồi session cũ.
-- **Alternative / Security:** Token sai/hết hạn hoặc mật khẩu yếu bị từ chối.
-- **Postconditions:** Chỉ mật khẩu mới có hiệu lực; phiên cũ không còn dùng được.
+- **Trigger / Preconditions:** Token còn hạn/chưa dùng; mật khẩu mới đạt chuẩn (8–64 ký tự, tối đa 72 bytes UTF-8).
+- **Main Flow:** Backend validate token trên `USER`, băm/lưu mật khẩu mới, xóa reset token. Không thu hồi server session (do dùng stateless JWT).
+- **Alternative / Security:** Token sai/hết hạn hoặc mật khẩu không hợp lệ bị từ chối.
+- **Postconditions:** Chỉ mật khẩu mới có hiệu lực; reset token bị xóa.
 - **Traceability / Acceptance Coverage:** FR-03; NFR-06, NFR-09; [AC-03.14](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
 
 <a id="uc-03-8"></a>
-### UC-03.8 — Làm mới phiên xác thực
-- **Goal / Primary Actor:** Member/Administrator duy trì phiên bằng rotating refresh token.
-- **Trigger / Preconditions:** Client gửi secure HttpOnly cookie còn hiệu lực; session chưa bị thu hồi.
-- **Main Flow:** Backend xác minh, rotate token, thu hồi token cũ và phát access token mới.
-- **Alternative / Security:** Tái sử dụng token cũ kích hoạt thu hồi session family; token sai không tạo phiên.
-- **Postconditions:** Chỉ refresh token mới nhất hợp lệ.
-- **Traceability / Acceptance Coverage:** FR-03; NFR-09; [AC-03.11, AC-03.12](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
+### UC-03.8 — [SUPERSEDED / RETIRED] Làm mới phiên xác thực
+- Yêu cầu làm mới phiên bằng rotating refresh token đã bị bãi bỏ khỏi phạm vi hiện hành theo quyết định tinh giản baseline xác thực của Project Owner. Hệ thống sử dụng Stateless JWT Access Token.
 
 <a id="uc-03-9"></a>
-### UC-03.9 — Đăng xuất
-- **Goal / Primary Actor:** Member/Administrator kết thúc phiên hiện tại.
-- **Trigger / Preconditions:** Actor chọn Đăng xuất hoặc gửi logout request.
-- **Main Flow:** Backend thu hồi session/refresh token và yêu cầu xóa cookie.
-- **Alternative / Security:** Logout lặp vẫn trả trạng thái an toàn; access token cũ hết hiệu lực theo policy.
-- **Postconditions:** Refresh session không thể được dùng lại.
+### UC-03.9 — Đăng xuất (Client-side Logout)
+- **Goal / Primary Actor:** Member/Administrator đăng xuất khỏi phiên làm việc phía client.
+- **Trigger / Preconditions:** Actor chọn Đăng xuất trên giao diện người dùng.
+- **Main Flow:** Ứng dụng phía máy khách xóa bỏ Access Token khỏi nơi lưu trữ cục bộ, xóa trạng thái AuthContext / User State và chuyển hướng về trạng thái Guest / Login. Không gửi request lên máy chủ (không có endpoint `/auth/logout`).
+- **Alternative / Security:** Stateless JWT Access Token cũ tự hết hiệu lực khi hết thời gian sống (TTL).
+- **Postconditions:** Client trở về trạng thái Guest, không còn lưu trữ token.
 - **Traceability / Acceptance Coverage:** FR-03; NFR-09; [AC-03.13](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
 
 `UC-03.10` là historical non-standalone ID; brute-force rate limiting thuộc security flow của UC-03.4 và [AC-03.7–AC-03.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
@@ -387,10 +382,9 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
 #### 4. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
 - **Preconditions:**
   - Đối với đăng ký: Địa chỉ email chưa được liên kết với một tài khoản đang hoạt động trong hệ thống.
-  - Đối với đăng nhập bằng email/mật khẩu: Tài khoản đã được tạo và email đã được xác minh thành công.
+  - Đối với đăng nhập bằng email/mật khẩu: Tài khoản đã được tạo, email đã xác minh và `account_status != 'LOCKED'`.
   - Đối với Google Login: Người dùng sở hữu tài khoản Google hợp lệ.
-  - Đối với làm mới phiên: Thiết bị gửi kèm refresh token hợp lệ, còn thời hạn và chưa bị thu hồi trên máy chủ.
-- **Trigger:** Người dùng gửi yêu cầu Đăng ký, Đăng nhập, Quên mật khẩu, Đăng xuất trên giao diện, hoặc ứng dụng gửi yêu cầu làm mới phiên khi access token chuẩn bị hết hạn.
+- **Trigger:** Người dùng gửi yêu cầu Đăng ký, Đăng nhập, Quên mật khẩu trên giao diện, hoặc nhấn Đăng xuất phía máy khách.
 
 #### 5. Luồng sự kiện (Flow of Events)
 
@@ -399,36 +393,33 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
    - Bước 1: Guest truy cập trang Đăng ký, nhập thông tin: Tên hiển thị (3–50 ký tự), Email hợp lệ, Mật khẩu (tối thiểu 8 ký tự, đáp ứng yêu cầu độ phức tạp), Xác nhận mật khẩu.
    - Bước 2: Guest nhấn "Đăng ký". Ứng dụng gửi yêu cầu đăng ký tới máy chủ.
    - Bước 3: Hệ thống kiểm tra tính hợp lệ của dữ liệu, xác nhận email chưa tồn tại, băm mật khẩu bằng thuật toán an toàn (BCrypt theo NFR-06), tạo tài khoản với `account_status = ACTIVE` và `email_verified = false`.
-   - Bước 4: Hệ thống tạo mã xác minh ngẫu nhiên có thời hạn (24 giờ) gắn với tài khoản.
+   - Bước 4: Hệ thống tạo mã xác minh ngẫu nhiên có thời hạn (24 giờ) gắn với tài khoản (lưu trên bảng `USER`).
    - Bước 5: Hệ thống gửi email xác minh bất đồng bộ tới email người dùng kèm đường dẫn xác minh chứa mã xác minh.
    - Bước 6: Hệ thống phản hồi thông báo đăng ký thành công và nhắc nhở người dùng kiểm tra hộp thư.
    - Bước 7: Người dùng nhấp vào liên kết xác minh trong email.
    - Bước 8: Hệ thống kiểm tra mã xác minh hợp lệ và còn hạn; cập nhật `email_verified = true`, giữ nguyên `account_status` và vô hiệu hóa mã xác minh đó.
    - Bước 9: Giao diện hiển thị thông báo xác minh thành công và điều hướng người dùng tới Onboarding Questionnaire hoặc màn hình Đăng nhập.
 2. **Alternative Flows:**
-   - *Gửi lại email xác minh (UC-03.3):* Nếu người dùng chưa nhận được email hoặc mã xác minh hết hạn, người dùng có thể yêu cầu gửi lại email xác minh. Hệ thống tạo mã mới, hủy mã cũ và gửi lại email (áp dụng giới hạn tần suất gửi tối thiểu 60 giây/lần để tránh spam).
+   - *Gửi lại email xác minh (UC-03.3):* Nếu người dùng chưa nhận được email hoặc mã xác minh hết hạn, người dùng có thể yêu cầu gửi lại email xác minh. Hệ thống tạo mã mới (ghi đè mã cũ trên `USER`), hủy mã cũ và gửi lại email (áp dụng giới hạn tần suất gửi tối thiểu 60 giây/lần để tránh spam).
 3. **Error Flows:**
    - *Email đã tồn tại:* Nếu email đã được đăng ký trong hệ thống, hệ thống từ chối yêu cầu và phản hồi thông báo lỗi tương ứng.
-   - *Mật khẩu không đạt độ phức tạp:* Hệ thống từ chối yêu cầu và thông báo chi tiết tiêu chí mật khẩu chưa đạt chuẩn.
+   - *Mật khẩu không đạt độ phức tạp:* Hệ thống từ chối yêu cầu và thông báo chi tiết tiêu chí mật khẩu chưa đạt chuẩn (8–64 ký tự, tối đa 72 bytes UTF-8).
    - *Mã xác minh không hợp lệ hoặc đã hết hạn:* Hệ thống từ chối xác minh và cung cấp tùy chọn gửi lại email xác minh mới.
 
 ##### B. Luồng Đăng nhập bằng Email/Mật khẩu & Phòng vệ Brute-force (UC-03.4)
 1. **Main Flow (Đăng nhập thành công):**
    - Bước 1: Guest nhập email và mật khẩu tại màn hình Đăng nhập, nhấn "Đăng nhập".
-   - Bước 2: Hệ thống kiểm tra cơ chế giới hạn thử sai (rate limit) đối với định danh tài khoản và địa chỉ IP nguồn. Nếu chưa chạm ngưỡng giới hạn, tiếp tục xử lý.
+   - Bước 2: Hệ thống kiểm tra cơ chế giới hạn thử sai (rate limit) ở cấp tài khoản (`failed_login_attempts`, `locked_until` trên bảng `USER`). Nếu tài khoản đang trong thời gian tạm khóa 10 phút, từ chối ngay.
    - Bước 3: Hệ thống tìm kiếm thông tin tài khoản theo email.
    - Bước 4: Hệ thống so khớp mật khẩu qua thuật toán băm an toàn (BCrypt). Mật khẩu khớp chính xác.
    - Bước 5: Hệ thống chỉ cho đăng nhập khi `account_status = ACTIVE` và `email_verified = true`; tài khoản `LOCKED` bị từ chối độc lập với trạng thái xác minh email.
-   - Bước 6: Hệ thống xóa bộ đếm thử sai liên quan đến tài khoản và IP nguồn về 0.
-   - Bước 7: Hệ thống tạo Access Token ngắn hạn và Rotating Refresh Token; thiết lập Refresh Token vào Secure HttpOnly Cookie (ngăn chặn JavaScript phía máy khách truy cập trực tiếp).
-   - Bước 8: Hệ thống ghi nhận và lưu trữ phiên làm việc được theo dõi phía máy chủ (server-side session tracking).
-   - Bước 9: Hệ thống phản hồi đăng nhập thành công kèm Access Token cho ứng dụng; giao diện chuyển sang trạng thái đã đăng nhập.
-2. **Alternative & Security Flow (Phòng vệ Brute-force Rate Limiting theo cả Account Identifier và Source IP):**
-   - *Đăng nhập sai từ lần 1 đến lần 4:* Mật khẩu không khớp -> Hệ thống tăng bộ đếm thất bại đối với định danh tài khoản và địa chỉ IP nguồn, từ chối xác thực kèm thông báo an toàn chung: "Email hoặc mật khẩu không chính xác".
-   - *Đăng nhập sai liên tiếp lần thứ 5:* Khi ghi nhận 5 lần đăng nhập thất bại liên tiếp liên quan đến định danh tài khoản hoặc phát xuất từ địa chỉ IP nguồn, hệ thống tự động kích hoạt cơ chế bảo vệ tạm thời (Temporary Rate Limit) trong đúng 10 phút theo cả hai chiều độc lập:
-     - **Bảo vệ theo định danh tài khoản (Account Identifier):** Các nỗ lực đăng nhập tiếp theo nhắm vào tài khoản đó bị tạm chặn trong 10 phút để phòng chống tấn công dò quét mật khẩu (brute-force);
-     - **Bảo vệ theo địa chỉ IP nguồn (Source IP):** Các nỗ lực đăng nhập tiếp theo phát xuất từ địa chỉ IP đó bị tạm chặn trong 10 phút để phòng chống tấn công rà quét diện rộng (credential stuffing).
-   - *Yêu cầu đăng nhập trong 10 phút bị rate limit:* Mọi yêu cầu đăng nhập liên quan đến tài khoản đang bị bảo vệ hoặc gửi từ IP nguồn đang bị hạn chế đều bị từ chối ngay tại cổng tiếp nhận với thông báo: *"Bạn đã đăng nhập sai quá số lần quy định. Vui lòng thử lại sau 10 phút."*, hoàn toàn không truy vấn kiểm tra mật khẩu trong cơ sở dữ liệu (NFR-07).
+   - Bước 6: Hệ thống đặt lại bộ đếm thử sai `failed_login_attempts` về 0 và xóa `locked_until` trên bảng `USER`.
+   - Bước 7: Hệ thống tạo Stateless JWT Access Token cho ứng dụng; không cấp Refresh Token, không ghi cookie, không tạo phiên máy chủ.
+   - Bước 8: Hệ thống phản hồi đăng nhập thành công kèm Access Token và thông tin định danh cơ bản (`AccountSummary`) cho ứng dụng; giao diện chuyển sang trạng thái đã đăng nhập.
+2. **Alternative & Security Flow (Phòng vệ Brute-force Rate Limiting ở cấp tài khoản):**
+   - *Đăng nhập sai từ lần 1 đến lần 4:* Mật khẩu không khớp -> Hệ thống tăng bộ đếm thất bại `failed_login_attempts` trên bảng `USER`, từ chối xác thực kèm thông báo an toàn chung: "Email hoặc mật khẩu không chính xác".
+   - *Đăng nhập sai liên tiếp lần thứ 5:* Khi ghi nhận 5 lần đăng nhập thất bại liên tiếp của tài khoản, hệ thống tự động kích hoạt cơ chế bảo vệ tạm thời (Temporary Rate Limit) trong đúng 10 phút bằng cách thiết lập `locked_until = now() + 10 phút` trên bảng `USER`. Bỏ rate limit theo IP để tránh rủi ro ảnh hưởng người dùng chung mạng NAT/proxy.
+   - *Yêu cầu đăng nhập trong 10 phút bị rate limit:* Mọi yêu cầu đăng nhập nhắm vào tài khoản đang bị bảo vệ đều bị từ chối ngay tại cổng tiếp nhận với thông báo: *"Bạn đã đăng nhập sai quá số lần quy định. Vui lòng thử lại sau 10 phút."*, hoàn toàn không truy vấn kiểm tra mật khẩu trong cơ sở dữ liệu (NFR-07).
    - *Hết thời hạn 10 phút:* Cơ chế bảo vệ tạm thời tự động hết hiệu lực; người dùng có thể tiếp tục đăng nhập bình thường mà KHÔNG cần Quản trị viên can thiệp.
    - *Ranh giới bảo mật cốt lõi:* Hệ thống TUYỆT ĐỐI KHÔNG chuyển trạng thái tài khoản sang trạng thái khóa quản trị (`LOCKED`) trong cơ sở dữ liệu khi bị rate limit (trạng thái `LOCKED` chỉ do Quản trị viên áp dụng thủ công sau hậu kiểm theo BR-26).
 3. **Error Flows:**
@@ -439,49 +430,48 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
 1. **Main Flow:**
    - Bước 1: Guest nhấn nút "Đăng nhập với Google" (Google One Tap hoặc nút đăng nhập Google).
    - Bước 2: Người dùng xác thực tài khoản trên giao diện Google và đồng ý chia sẻ thông tin cơ bản (email, tên, ảnh đại diện).
-   - Bước 3: Ứng dụng nhận mã xác thực từ Google và gửi yêu cầu xác thực tới máy chủ hệ thống.
-   - Bước 4: Máy chủ hệ thống xác thực tính hợp lệ của token với dịch vụ Google Identity.
-   - Bước 5: Hệ thống trích xuất email, tên và ảnh đại diện từ dữ liệu xác thực Google.
-   - Bước 6: Nếu email chưa tồn tại trong hệ thống, hệ thống tự động tạo tài khoản Member mới với `account_status = ACTIVE` và `email_verified = true`, đồng thời thiết lập ảnh đại diện từ Google. Nếu email đã tồn tại, hệ thống liên kết định danh Google với tài khoản đó.
-   - Bước 7: Hệ thống tạo Access Token ngắn hạn, thiết lập Rotating Refresh Token qua Secure HttpOnly Cookie, lưu trữ và theo dõi phiên làm việc phía máy chủ và hoàn tất đăng nhập thành công.
+   - Bước 3: Ứng dụng nhận mã xác thực từ Google và gửi Google ID Token tới máy chủ hệ thống.
+   - Bước 4: Máy chủ hệ thống xác thực tính hợp lệ của token với dịch vụ Google Identity Services (Google API Client).
+   - Bước 5: Hệ thống trích xuất Google ID, email, tên và ảnh đại diện từ dữ liệu xác thực Google.
+   - Bước 6: Xử lý tài khoản theo các kịch bản:
+     - Nếu email chưa tồn tại: Tự động tạo tài khoản Member mới với `account_status = ACTIVE`, `email_verified = true`, gán `avatar_url` và `display_name` từ Google.
+     - Nếu email đã tồn tại với `google_id` trùng khớp: Đăng nhập thành công.
+     - Nếu email đã tồn tại tạo bằng email/password chưa xác minh: Liên kết `google_id`, bật `email_verified = true`, đồng thời xóa `password_hash` (tránh rủi ro tài khoản bị chiếm trước đó).
+     - Nếu tài khoản có `account_status == 'LOCKED'`: Từ chối đăng nhập với HTTP 403 `ACCOUNT_LOCKED`.
+     - Nếu email đã liên kết với `google_id` khác: Từ chối đăng nhập với HTTP 409 Conflict.
+     - *Lưu ý:* Chỉ đồng bộ `avatar_url` và `display_name` khi tạo tài khoản lần đầu; không ghi đè nếu tài khoản đã tồn tại.
+   - Bước 7: Hệ thống tạo Stateless JWT Access Token và trả về cho ứng dụng; không tạo Refresh Token hay cookie hay session máy chủ.
+   - Bước 8: Giao diện chuyển sang trạng thái đã đăng nhập.
 
 ##### D. Luồng Quên & Đặt lại mật khẩu (UC-03.6, UC-03.7)
 1. **Main Flow:**
    - Bước 1: Guest truy cập chức năng Quên mật khẩu, nhập email đã đăng ký và gửi yêu cầu.
-   - Bước 2: Hệ thống kiểm tra email trong hệ thống. Nếu tài khoản tồn tại, tạo mã đặt lại mật khẩu ngẫu nhiên an toàn có thời hạn ngắn (15 phút).
+   - Bước 2: Hệ thống kiểm tra email. Nếu tài khoản tồn tại: áp dụng rate limit gửi email (60 giây cooldown và tối đa 5 email/giờ trên mỗi tài khoản; lưu metadata trên bảng `USER`); tạo mã đặt lại mật khẩu ngẫu nhiên an toàn có thời hạn ngắn (15 phút) lưu trên bảng `USER` (ghi đè mã cũ nếu có).
    - Bước 3: Hệ thống gửi email chứa liên kết đặt lại mật khẩu an toàn theo cơ chế bất đồng bộ.
-   - Bước 4: Hệ thống luôn phản hồi thông điệp trung tính: "Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi đến hộp thư của bạn" (nhằm phòng chống tấn công dò quét sự tồn tại của email người dùng).
+   - Bước 4: Hệ thống luôn phản hồi HTTP 202 Accepted trung tính: "Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi đến hộp thư của bạn" (nhằm phòng chống tấn công dò quét sự tồn tại của email người dùng).
    - Bước 5: Người dùng nhấp vào liên kết trong email, giao diện hiển thị biểu mẫu thiết lập mật khẩu mới.
-   - Bước 6: Người dùng gửi mật khẩu mới kèm mã xác thực. Hệ thống kiểm tra mã hợp lệ và còn hạn; băm mật khẩu mới bằng BCrypt, cập nhật mật khẩu tài khoản, vô hiệu hóa mã đặt lại mật khẩu đã sử dụng, đồng thời lập tức thu hồi toàn bộ các phiên đăng nhập đang hoạt động của tài khoản trên máy chủ.
+   - Bước 6: Người dùng gửi mật khẩu mới kèm mã xác thực. Hệ thống kiểm tra mã hợp lệ và còn hạn; băm mật khẩu mới bằng BCrypt (8–64 ký tự, tối đa 72 bytes UTF-8), cập nhật mật khẩu tài khoản, xóa mã đặt lại mật khẩu trên bảng `USER`. Do hệ thống sử dụng Stateless JWT Access Token, không có phiên máy chủ nào cần thu hồi.
    - Bước 7: Giao diện thông báo đổi mật khẩu thành công và điều hướng tới màn hình Đăng nhập.
 2. **Error Flows:**
    - *Mã đặt lại mật khẩu hết hạn hoặc không hợp lệ:* Hệ thống từ chối yêu cầu và thông báo người dùng khởi tạo lại quy trình quên mật khẩu.
+   - *Yêu cầu gửi email vượt rate limit:* Hệ thống trả HTTP 429 Too Many Requests kèm thông báo yêu cầu chờ.
 
-##### E. Luồng Làm mới phiên xác thực & Đăng xuất (UC-03.8, UC-03.9)
-1. **Main Flow Làm mới phiên (Token Rotation):**
-   - Bước 1: Khi Access Token hết hạn, ứng dụng gửi yêu cầu làm mới phiên tới máy chủ (Refresh Token được trình duyệt tự động gửi kèm qua Secure HttpOnly Cookie mà JavaScript không truy cập trực tiếp).
-   - Bước 2: Hệ thống kiểm tra tính hợp lệ của Refresh Token từ cookie và đối chiếu với danh sách phiên đang hoạt động trên máy chủ.
-   - Bước 3: Nếu Refresh Token hợp lệ và khớp với phiên đang hoạt động:
-     - Hệ thống tạo Access Token mới.
-     - Hệ thống tạo Refresh Token mới (xoay vòng token).
-     - Hệ thống cập nhật phiên làm việc máy chủ với Refresh Token mới, vô hiệu hóa Refresh Token cũ.
-     - Hệ thống thiết lập Secure HttpOnly Cookie mới chứa Refresh Token mới và trả về Access Token mới cho ứng dụng.
-2. **Luồng An ninh — Phát hiện tái sử dụng Token (Token Reuse Detection):**
-   - Nếu hệ thống nhận được một Refresh Token đã từng bị thay thế trước đó (dấu hiệu token bị rò rỉ hoặc bị đánh cắp phiên):
-     - Hệ thống lập tức thu hồi và hủy toàn bộ các phiên làm việc thuộc nhóm phiên liên quan (token family) của tài khoản trên máy chủ.
-     - Hệ thống gửi phản hồi xóa/hết hạn Secure HttpOnly Cookie của Refresh Token và từ chối yêu cầu xác thực, buộc người dùng phải đăng nhập lại từ đầu trên mọi thiết bị.
-3. **Main Flow Đăng xuất (UC-03.9):**
-   - Bước 1: Người dùng nhấn "Đăng xuất". Ứng dụng gửi yêu cầu đăng xuất tới máy chủ.
-   - Bước 2: Hệ thống xác thực yêu cầu, lập tức thu hồi và hủy vĩnh viễn phiên làm việc tương ứng trên máy chủ (server-side session revocation).
-   - Bước 3: Hệ thống gửi phản hồi chỉ thị xóa/hết hạn Secure HttpOnly Cookie của Refresh Token về trình duyệt; ứng dụng xóa bỏ Access Token và trạng thái xác thực cục bộ phía máy khách.
-   - Bước 4: Hệ thống xác nhận đăng xuất thành công; người dùng trở về trạng thái Guest.
+##### E. Luồng Đăng xuất phía máy khách (UC-03.9)
+1. **UC-03.8 — [SUPERSEDED / RETIRED] Làm mới phiên xác thực:**
+   - Yêu cầu làm mới phiên bằng rotating refresh token và cơ chế phát hiện tái sử dụng token (Token Reuse Detection) đã bị loại bỏ hoàn toàn khỏi phạm vi hiện hành. Hệ thống chuyển sang Stateless JWT Access Token.
+2. **UC-03.9 — Main Flow Đăng xuất phía máy khách (Client-side Logout):**
+   - Bước 1: Người dùng nhấn "Đăng xuất" trên giao diện ứng dụng.
+   - Bước 2: Ứng dụng phía máy khách lập tức xóa bỏ Access Token khỏi nơi lưu trữ cục bộ (ví dụ memory / state / storage).
+   - Bước 3: Ứng dụng xóa bỏ toàn bộ thông tin người dùng trong AuthContext / global state.
+   - Bước 4: Ứng dụng điều hướng người dùng về trang Đăng nhập hoặc trang chủ với tư cách Guest.
+   - *Ghi chú:* Hoàn toàn không gửi yêu cầu HTTP đăng xuất đến máy chủ (không duy trì endpoint `POST /auth/logout`); Backend không duy trì trạng thái hay phiên cần thu hồi.
 
 #### 6. Hậu điều kiện (Postconditions)
 - Sau khi đăng ký: Bản ghi tài khoản mới có `account_status = ACTIVE` và `email_verified = false`; email xác minh được gửi đi.
 - Sau khi xác minh email: `email_verified` chuyển thành `true`; `account_status` giữ nguyên, độc lập với xác minh email.
-- Sau khi đăng nhập: Access Token ngắn hạn được cấp phát, Refresh Token được thiết lập qua Secure HttpOnly Cookie; phiên làm việc được lưu trữ và theo dõi phía máy chủ; bộ đếm thử sai được đặt lại về 0.
-- Sau khi bị rate limit: Cơ chế bảo vệ theo định danh tài khoản và IP nguồn tạm dừng tiếp nhận đăng nhập trong 10 phút; trạng thái tài khoản trong cơ sở dữ liệu tuyệt đối không bị chuyển sang `LOCKED`.
-- Sau khi đăng xuất: Phiên làm việc tương ứng bị thu hồi vĩnh viễn trên máy chủ; cookie Refresh Token bị xóa/hết hạn; trạng thái xác thực phía máy khách được xóa; token cũ không thể sử dụng để làm mới phiên.
+- Sau khi đăng nhập: Cấp Stateless JWT Access Token cho client; bộ đếm thử sai trên bảng `USER` được đặt lại về 0.
+- Sau khi bị rate limit: Cơ chế bảo vệ theo định danh tài khoản tạm dừng tiếp nhận đăng nhập trong 10 phút; không khóa IP; trạng thái tài khoản trong cơ sở dữ liệu tuyệt đối không bị chuyển sang `LOCKED`.
+- Sau khi đăng xuất: Access Token và AuthContext bị xóa sạch phía client; người dùng trở về trạng thái Guest; Backend không thay đổi trạng thái.
 
 ---
 

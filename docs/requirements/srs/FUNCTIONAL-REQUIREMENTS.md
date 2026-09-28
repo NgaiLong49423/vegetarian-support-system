@@ -152,39 +152,39 @@ Cho phép người dùng vãng lai (Guest) trải nghiệm trực tiếp năng l
 
 - **Mã yêu cầu:** FR-03
 - **Module:** M02 (Identity & Access)
-- **Tóm tắt yêu cầu:** Hệ thống cung cấp cơ chế đăng ký và đăng nhập bằng email/mật khẩu hoặc Google Login, xác minh email bắt buộc, quên/đặt lại mật khẩu, làm mới phiên xác thực an toàn bằng rotating refresh token có server-side revocation, đăng xuất thu hồi session, và phòng vệ brute-force bằng rate limiting 10 phút sau 5 lần thất bại liên tiếp (không khóa vĩnh viễn tài khoản sang trạng thái Admin `LOCKED`).
+- **Tóm tắt yêu cầu:** Hệ thống cung cấp cơ chế đăng ký và đăng nhập bằng email/mật khẩu hoặc Google Login, xác minh email bắt buộc, quên/đặt lại mật khẩu, cấp stateless JWT Access Token, đăng xuất an toàn phía client, và phòng vệ brute-force bằng rate limiting 10 phút sau 5 lần thất bại liên tiếp (không khóa vĩnh viễn tài khoản sang trạng thái Admin `LOCKED`).
 
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-03).
 
 #### Mục đích
-Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng đời tài khoản/phiên đăng nhập cho người dùng hệ thống (Guest, Member, Administrator); đảm bảo tính bảo mật của thông tin định danh, phòng chống các tấn công brute-force và credential stuffing, đồng thời duy trì trải nghiệm người dùng liền mạch qua cơ chế xoay vòng token có kiểm soát.
+Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng đời tài khoản cho người dùng hệ thống (Guest, Member, Administrator); đảm bảo tính bảo mật của thông tin định danh, phòng chống các tấn công brute-force cấp tài khoản, kiểm tra trạng thái tài khoản thời gian thực và hỗ trợ đăng xuất an toàn phía client.
 
 #### Danh mục Use Cases & User Stories
 - **Các Use Case con:**
   - `UC-03.1`: Đăng ký tài khoản mới bằng email và mật khẩu (Register with email and password).
   - `UC-03.2`: Xác minh địa chỉ email qua liên kết xác minh (Verify email address).
   - `UC-03.3`: Yêu cầu gửi lại email xác minh (Resend verification email).
-  - `UC-03.4`: Đăng nhập bằng email và mật khẩu (Login with email and password). *(Bao gồm luồng xử lý phòng vệ brute-force rate limiting)*
+  - `UC-03.4`: Đăng nhập bằng email và mật khẩu (Login with email and password). *(Bao gồm luồng xử lý phòng vệ brute-force rate limiting theo tài khoản)*
   - `UC-03.5`: Đăng nhập 1-click bằng tài khoản Google (Login with Google OAuth2/OIDC).
   - `UC-03.6`: Yêu cầu gửi liên kết đặt lại mật khẩu qua email (Request password reset).
   - `UC-03.7`: Thiết lập mật khẩu mới từ liên kết hợp lệ (Reset password).
-  - `UC-03.8`: Làm mới phiên xác thực qua Secure HttpOnly Cookie (Refresh authenticated session via Secure HttpOnly Cookie).
-  - `UC-03.9`: Đăng xuất và thu hồi phiên làm việc trên máy chủ (Logout and terminate session).
+  - `UC-03.8`: *[SUPERSEDED / RETIRED]* Làm mới phiên xác thực (Refresh token out of scope).
+  - `UC-03.9`: Đăng xuất phía client (Client-side logout and state cleanup).
   *(Ghi chú: UC-03.10 trước đây về giới hạn tần suất đăng nhập sai không còn là Use Case độc lập vì không phải mục tiêu của Actor; hành vi này được chuẩn hóa thành Luồng rẽ nhánh / Luồng bảo mật thuộc UC-03.4).*
 - **User Stories:**
   - `US-03.1`: Là một người dùng mới, tôi muốn đăng ký tài khoản nhanh chóng bằng email và mật khẩu để có thể lưu trữ thông tin cá nhân và cá nhân hóa chế độ ăn chay.
   - `US-03.2`: Là một người dùng, tôi muốn đăng nhập linh hoạt bằng tài khoản hệ thống hoặc tài khoản Google để truy cập thuận tiện trên các thiết bị.
-  - `US-03.3`: Là một thành viên đang sử dụng ứng dụng, tôi muốn phiên đăng nhập được duy trì tự động và an toàn mà không phải nhập lại mật khẩu thường xuyên.
-  - `US-03.4`: Là một thành viên, tôi muốn khi đăng xuất thì phiên làm việc trên thiết bị bị hủy hoàn toàn trên máy chủ để bảo đảm an toàn cho tài khoản.
+  - `US-03.3`: Là một thành viên đang sử dụng ứng dụng, tôi muốn phiên làm việc được xác thực an toàn qua Access Token mà không làm tăng độ phức tạp hệ thống.
+  - `US-03.4`: Là một thành viên, tôi muốn khi đăng xuất thì ứng dụng xóa toàn bộ thông tin đăng nhập trên thiết bị để đưa về trạng thái Guest an toàn.
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Khách vãng lai (Guest) chỉ được tiếp cận các chức năng: đăng ký, đăng nhập, đăng nhập Google, xác minh email, gửi lại email xác minh, yêu cầu đặt lại mật khẩu, thiết lập mật khẩu mới.
-- Thành viên (Member) và Quản trị viên (Administrator) được tiếp cận chức năng làm mới phiên xác thực và đăng xuất.
+- Thành viên (Member) và Quản trị viên (Administrator) được tiếp cận chức năng đăng xuất phía client.
 - Mô hình trạng thái tài khoản tách biệt với xác minh email: `account_status` chỉ gồm `ACTIVE` và `LOCKED`; đăng ký tạo tài khoản `ACTIVE` với `email_verified = false`, xác minh email chỉ đổi `email_verified` thành `true`, và đăng nhập yêu cầu `account_status = ACTIVE` cùng `email_verified = true`. Khóa quản trị `LOCKED` độc lập với trạng thái xác minh email.
 - Ràng buộc kỹ thuật được phê duyệt:
   - Mật khẩu người dùng phải được băm một chiều an toàn bằng thuật toán BCrypt với work factor tối thiểu 10 (NFR-06); tuyệt đối không lưu trữ mật khẩu dạng rõ (plaintext) hoặc mã hóa hai chiều.
-  - Cơ chế xác thực sử dụng JWT Access Token ngắn hạn kết hợp Rotating Refresh Token truyền qua Secure HttpOnly Cookie (không để JavaScript truy cập trực tiếp Refresh Token) và cơ chế thu hồi phía máy chủ (server-side revocation) (NFR-09).
-  - Cơ chế phòng vệ brute-force áp dụng quy tắc 5 lần đăng nhập thất bại liên tiếp thì rate limit trong 10 phút, độc lập hoàn toàn với trạng thái khóa tài khoản quản trị `LOCKED` (NFR-07).
+  - Cơ chế xác thực sử dụng Stateless JWT Access Token, phân quyền RBAC và kiểm tra tức thời trạng thái tài khoản `account_status` trên mọi authenticated request; đăng xuất xử lý phía client; không dùng refresh token hay server-side session (NFR-09).
+  - Cơ chế phòng vệ brute-force áp dụng quy tắc 5 lần đăng nhập thất bại liên tiếp thì khóa tạm thời tài khoản trong 10 phút trên `USER`, độc lập hoàn toàn với trạng thái khóa tài khoản quản trị `LOCKED` (NFR-07).
   - Tích hợp đăng nhập bên thứ ba sử dụng chuẩn OAuth2/OIDC của Google Identity Services.
   - Không để lộ secret key, API key, thông tin lỗi nội bộ hoặc token trong log hệ thống.
 
@@ -195,10 +195,10 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
   - [BR-24](BUSINESS-RULES.md#br-24): Xác thực tài khoản khi gửi báo cáo vi phạm.
   - [BR-32](BUSINESS-RULES.md#br-32): Yêu cầu đăng nhập đối với Công thức đã lưu và Lịch ăn.
 - **Yêu cầu phi chức năng liên quan:**
-  - [NFR-01](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-01): Thời gian phản hồi xử lý Đăng nhập/Đăng xuất $\le 2$ giây (P95).
+  - [NFR-01](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-01): Thời gian phản hồi xử lý Đăng nhập $\le 2$ giây (P95).
   - [NFR-06](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-06): Mã hóa mật khẩu 100% bằng BCrypt, 0% plaintext.
-  - [NFR-07](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-07): Giới hạn 5 lần đăng nhập sai liên tiếp, rate limit tài khoản + IP trong 10 phút, không chuyển sang `LOCKED`.
-  - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC, chặn trái phép, JWT access ngắn hạn + rotating refresh token qua Secure HttpOnly Cookie với server-side revocation, logout thu hồi phiên.
+  - [NFR-07](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-07): Giới hạn 5 lần đăng nhập sai liên tiếp, khóa tài khoản tạm thời 10 phút trên `USER`, không chuyển sang `LOCKED`.
+  - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC, chặn trái phép, stateless JWT access token, kiểm tra tức thời `account_status`, client-side logout.
   - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Phòng chống lỗ hổng OWASP Top 10.
   - [NFR-11](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-11): Giao diện đăng ký $\le 3$ bước / $\le 3$ click; hỗ trợ Google Login 1-click.
 
@@ -230,49 +230,45 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
   - **Then:** Hệ thống từ chối xác minh email, thông báo mã xác thực không hợp lệ/hết hạn, và hiển thị tùy chọn yêu cầu gửi lại email xác minh mới.
 
 - **AC-03.6 — Đăng nhập thành công với thông tin chính xác:**
-  - **Given:** Tài khoản đang ở trạng thái `ACTIVE` và đã xác minh email.
+  - **Given:** Tài khoản đang ở trạng thái `ACTIVE` và đã xác minh email (`email_verified = true`).
   - **When:** Người dùng nhập đúng email và mật khẩu tại trang Đăng nhập và nhấn "Đăng nhập".
-  - **Then:** Hệ thống phản hồi thành công trong vòng $\le 2$ giây (P95 theo NFR-01), cấp phát Access Token ngắn hạn, thiết lập Refresh Token qua Secure HttpOnly Cookie, ghi nhận phiên máy chủ, xóa bộ đếm đăng nhập sai về 0, và chuyển trạng thái sang đã đăng nhập.
+  - **Then:** Hệ thống phản hồi thành công trong vòng $\le 2$ giây (P95 theo NFR-01), cấp phát JWT Access Token, đặt lại bộ đếm đăng nhập sai về 0 (`USER.failed_login_attempts = 0`, `USER.login_blocked_until = NULL`), và chuyển trạng thái sang đã đăng nhập.
 
 - **AC-03.7 — Đăng nhập thất bại do sai mật khẩu và ghi nhận số lần sai:**
   - **Given:** Người dùng nhập đúng email nhưng sai mật khẩu và số lần sai trước đó $< 4$.
   - **When:** Người dùng nhấn "Đăng nhập".
-  - **Then:** Hệ thống tăng bộ đếm thất bại đối với định danh tài khoản và địa chỉ IP nguồn, từ chối xác thực kèm thông báo "Email hoặc mật khẩu không chính xác", và không cấp phát token.
+  - **Then:** Hệ thống tăng bộ đếm thất bại đối với tài khoản (`USER.failed_login_attempts`), từ chối xác thực kèm thông báo trung tính "Email hoặc mật khẩu không chính xác", và không cấp phát token.
 
-- **AC-03.8 — Kích hoạt rate limit sau 5 lần đăng nhập sai liên tiếp theo tài khoản và IP:**
-  - **Given:** Đã có 4 lần đăng nhập sai liên tiếp đối với một tài khoản hoặc từ một địa chỉ IP.
+- **AC-03.8 — Kích hoạt khóa tạm thời sau 5 lần đăng nhập sai liên tiếp theo tài khoản:**
+  - **Given:** Đã có 4 lần đăng nhập sai liên tiếp đối với một tài khoản.
   - **When:** Người dùng tiếp tục thực hiện lần đăng nhập sai thứ 5.
-  - **Then:** Hệ thống kích hoạt cơ chế bảo vệ tạm thời trong đúng 10 phút (chặn theo cả định danh tài khoản và theo địa chỉ IP), từ chối xử lý kèm thông báo thử lại sau 10 phút; trạng thái tài khoản trong cơ sở dữ liệu KHÔNG bị chuyển thành `LOCKED`.
+  - **Then:** Hệ thống kích hoạt cơ chế bảo vệ tạm thời trong đúng 10 phút trên tài khoản (`USER.login_blocked_until = now + 10m`), từ chối xử lý kèm thông báo thử lại sau 10 phút; trạng thái tài khoản `account_status` trong cơ sở dữ liệu KHÔNG bị chuyển thành `LOCKED`.
 
 - **AC-03.9 — Phục hồi đăng nhập tự động sau khi hết 10 phút rate limit:**
-  - **Given:** Tài khoản hoặc địa chỉ IP đang bị rate limit 10 phút do đã đăng nhập sai 5 lần liên tiếp.
+  - **Given:** Tài khoản đang bị khóa tạm thời 10 phút do đã đăng nhập sai 5 lần liên tiếp.
   - **When:** Thời gian 10 phút đã trôi qua và người dùng thực hiện đăng nhập lại với mật khẩu chính xác.
-  - **Then:** Hệ thống tiếp nhận yêu cầu, xác thực thành công, xóa bộ đếm rate limit về 0, cấp phát token và đăng nhập thành công mà không cần Quản trị viên can thiệp mở khóa.
+  - **Then:** Hệ thống tiếp nhận yêu cầu, xác thực thành công, xóa bộ đếm đăng nhập sai về 0, cấp phát JWT Access Token và hoàn tất đăng nhập mà không cần Quản trị viên can thiệp mở khóa.
 
 - **AC-03.10 — Đăng nhập 1-click bằng tài khoản Google:**
   - **Given:** Guest chọn đăng nhập với Google và hoàn tất xác thực trên Google OAuth2/OIDC.
-  - **When:** Dữ liệu xác thực Google hợp lệ được gửi tới máy chủ hệ thống.
-  - **Then:** Hệ thống xác thực tính hợp lệ với Google; nếu tài khoản chưa có thì tự động tạo Member mới với `account_status = ACTIVE` và `email_verified = true`, thiết lập Refresh Token qua Secure HttpOnly Cookie, cấp phát Access Token phiên làm việc và hoàn tất đăng nhập thành công.
+  - **When:** Dữ liệu xác thực Google ID Token hợp lệ được gửi tới máy chủ hệ thống.
+  - **Then:** Hệ thống xác thực tính hợp lệ với Google; nếu tài khoản chưa có thì tự động tạo Member mới với `account_status = ACTIVE` và `email_verified = true`, cấp phát JWT Access Token và hoàn tất đăng nhập thành công.
 
-- **AC-03.11 — Xoay vòng Refresh Token thành công khi làm mới phiên:**
-  - **Given:** Member sở hữu Access Token đã hết hạn và Refresh Token hợp lệ còn thời hạn được ghi nhận trên máy chủ (được trình duyệt gửi qua Secure HttpOnly Cookie).
-  - **When:** Ứng dụng gửi yêu cầu làm mới phiên tới máy chủ.
-  - **Then:** Hệ thống sinh ra một Access Token mới và một Refresh Token mới thay thế, cập nhật phiên máy chủ, vô hiệu hóa Refresh Token cũ, thiết lập Refresh Token mới vào Secure HttpOnly Cookie và trả về Access Token mới cho ứng dụng mà không để lộ Refresh Token cho mã nguồn JavaScript phía máy khách.
+- **AC-03.11 — [SUPERSEDED / OUT OF SCOPE] Xoay vòng Refresh Token:**
+  - Yêu cầu xoay vòng Refresh Token qua Secure HttpOnly Cookie đã bị bãi bỏ khỏi phạm vi hiện hành theo quyết định tinh giản baseline xác thực của Project Owner. Hệ thống sử dụng Stateless JWT Access Token.
 
-- **AC-03.12 — Thu hồi phiên khi phát hiện tái sử dụng Refresh Token cũ:**
-  - **Given:** Một Refresh Token cũ đã từng bị xoay vòng thay thế.
-  - **When:** Yêu cầu làm mới phiên gửi lại Refresh Token cũ đó tới hệ thống.
-  - **Then:** Hệ thống phát hiện hành vi tái sử dụng token, lập tức hủy toàn bộ phiên làm việc thuộc nhóm phiên liên quan của tài khoản trên máy chủ, gửi chỉ thị xóa cookie Refresh Token, từ chối xác thực, buộc tài khoản phải đăng nhập lại từ đầu.
+- **AC-03.12 — [SUPERSEDED / OUT OF SCOPE] Thu hồi phiên khi phát hiện tái sử dụng Refresh Token:**
+  - Yêu cầu phát hiện tái sử dụng Refresh Token và thu hồi nhóm phiên máy chủ đã bị bãi bỏ khỏi phạm vi hiện hành cùng với việc loại bỏ Refresh Token.
 
-- **AC-03.13 — Đăng xuất thu hồi phiên làm việc trên máy chủ và xóa cookie:**
-  - **Given:** Member đang trong phiên đăng nhập hợp lệ trên hệ thống.
-  - **When:** Member nhấn "Đăng xuất".
-  - **Then:** Hệ thống thu hồi và hủy bản ghi phiên làm việc tương ứng trên máy chủ, gửi phản hồi chỉ thị xóa/hết hạn Secure HttpOnly Cookie của Refresh Token; ứng dụng xóa bỏ Access Token và trạng thái xác thực cục bộ; token đã thu hồi không thể tái sử dụng để làm mới phiên.
+- **AC-03.13 — Đăng xuất an toàn phía máy khách (Client-side Logout):**
+  - **Given:** Member hoặc Administrator đang trong trạng thái đăng nhập trên ứng dụng client.
+  - **When:** Người dùng nhấn "Đăng xuất".
+  - **Then:** Ứng dụng client xóa bỏ Access Token và làm sạch trạng thái xác thực cục bộ (AuthContext), đưa người dùng về trạng thái Guest / trang Đăng nhập; không gọi endpoint thu hồi phiên máy chủ; không tồn tại `POST /auth/logout` trong baseline API mới.
 
-- **AC-03.14 — Đặt lại mật khẩu thành công thu hồi các phiên đăng nhập cũ:**
+- **AC-03.14 — Đặt lại mật khẩu thành công:**
   - **Given:** Người dùng có mã đặt lại mật khẩu hợp lệ còn thời hạn trong 15 phút.
   - **When:** Người dùng nhập mật khẩu mới đạt chuẩn độ phức tạp và gửi yêu cầu đặt lại mật khẩu.
-  - **Then:** Hệ thống băm mật khẩu mới bằng BCrypt, cập nhật tài khoản, hủy mã đặt lại mật khẩu, đồng thời thu hồi toàn bộ các phiên làm việc hiện có của tài khoản trên máy chủ; người dùng có thể đăng nhập bằng mật khẩu mới.
+  - **Then:** Hệ thống băm mật khẩu mới bằng BCrypt, cập nhật tài khoản, xóa/null mã đặt lại mật khẩu; token cũ hết hiệu lực theo `exp`; người dùng có thể đăng nhập bằng mật khẩu mới.
 
 ---
 
@@ -1575,7 +1571,7 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
 |---|---|---|---|
 | **Hồ sơ công khai (Public Profile)** | Công khai cho toàn bộ người dùng (Guest, Member, Admin) | - Tên hiển thị (3–50 ký tự)<br>- Ảnh đại diện (avatar)<br>- Giới thiệu ngắn (bio, tối đa 500 ký tự)<br>- Thời điểm tham gia (định dạng Tháng/Năm)<br>- Danh sách Recipe Post đang công khai | - Nếu chưa có avatar: hiển thị ảnh mặc định hệ thống.<br>- Nếu bio trống: cho phép để trống/ẩn.<br>- Tuyệt đối KHÔNG gán nhãn "Chuyên gia", "Bác sĩ" hoặc "Đã xác minh danh tính ngoài đời" (BR-18).<br>- Không hiển thị bài viết đang bị ẩn do vi phạm. |
 | **Dữ liệu tài khoản & hồ sơ riêng tư (Private Account & Profile Data)** | Mặc định độc quyền chủ sở hữu (`Owner-only by default`); Administrator chỉ được tiếp cận các thông tin định danh và quản trị tối thiểu được BR/NFR cho phép rõ ràng | - Địa chỉ email đăng ký<br>- Trạng thái xác minh email<br>- Trạng thái tài khoản (`ACTIVE`, `LOCKED`)<br>- Hồ sơ sở thích ăn chay (FR-31)<br>- Hồ sơ dinh dưỡng & chỉ số sức khỏe (FR-35, FR-38)<br>- Công thức đã lưu (FR-32)<br>- Lịch ăn tuần (FR-09, FR-33)<br>- Danh sách mua sắm (FR-53)<br>- Báo cáo vi phạm đã gửi (FR-26) | - Máy chủ bắt buộc kiểm tra quyền sở hữu (`Ownership Check`): Dữ liệu cá nhân hóa (hồ sơ dinh dưỡng, chỉ số sức khỏe/BMI, sở thích ăn uống, công thức đã lưu, lịch ăn, danh sách mua sắm) thuộc quyền ĐỘC QUYỀN của chính chủ tài khoản (`Resource Owner`).<br>- Administrator TUYỆT ĐỐI KHÔNG tự động có quyền truy cập dữ liệu cá nhân hóa (nghiêm cấm quy tắc generic `isOwner || isAdmin`).<br>- Quyền của Administrator là riêng biệt theo từng tài nguyên (resource-specific) và giới hạn ở mức tối thiểu cần thiết để thực thi nhiệm vụ quản trị (account ID, email quản trị, trạng thái tài khoản, lịch sử kiểm duyệt/báo cáo) theo BR/NFR.<br>- Tuyệt đối không trả các trường riêng tư trong giao diện hay dữ liệu public profile. |
-| **Dữ liệu an ninh / Thông tin định danh nhạy cảm nội bộ (Security / Credential Internals)** | Xử lý nội bộ độc quyền bởi các thành phần an ninh/xác thực tin cậy của hệ thống (System Security Components Only) | - Mật khẩu / Password hash<br>- Refresh tokens / Refresh session material<br>- Active session credentials / tokens<br>- Password reset token<br>- Email verification token<br>- Authentication secrets / API keys | - **Tuyệt đối KHÔNG BAO GIỜ** để lộ qua Public Profile.<br>- **Tuyệt đối KHÔNG BAO GIỜ** trả về qua Member UI/API thông thường.<br>- **Tuyệt đối KHÔNG BAO GIỜ** trả về qua Administrator UI/API thông thường.<br>- Administrator không được phép truy cập hoặc xem các bí mật xác thực này chỉ vì có vai trò Admin (tuân thủ nguyên tắc đặc quyền tối thiểu - Least Privilege).<br>- Chỉ được xử lý bởi các thành phần an ninh/xác thực tin cậy của hệ thống khi có yêu cầu kỹ thuật hợp lệ. |
+| **Dữ liệu an ninh / Thông tin định danh nhạy cảm nội bộ (Security / Credential Internals)** | Xử lý nội bộ độc quyền bởi các thành phần an ninh/xác thực tin cậy của hệ thống (System Security Components Only) | - Mật khẩu / Password hash<br>- Password reset token<br>- Email verification token<br>- Authentication secrets / API keys | - **Tuyệt đối KHÔNG BAO GIỜ** để lộ qua Public Profile.<br>- **Tuyệt đối KHÔNG BAO GIỜ** trả về qua Member UI/API thông thường.<br>- **Tuyệt đối KHÔNG BAO GIỜ** trả về qua Administrator UI/API thông thường.<br>- Administrator không được phép truy cập hoặc xem các bí mật xác thực này chỉ vì có vai trò Admin (tuân thủ nguyên tắc đặc quyền tối thiểu - Least Privilege).<br>- Chỉ được xử lý bởi các thành phần an ninh/xác thực tin cậy của hệ thống khi có yêu cầu kỹ thuật hợp lệ. |
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Mọi người dùng (Guest, Member, Admin) đều có quyền xem thông tin công khai của tác giả và trang hồ sơ công khai của thành viên.

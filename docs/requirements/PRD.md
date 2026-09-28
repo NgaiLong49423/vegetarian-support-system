@@ -86,7 +86,7 @@ Chỉ số sản phẩm định lượng cho người dùng thật chưa đượ
 
 - Công thức/hệ số dinh dưỡng cần nghiên cứu khi triển khai.
 - Chi tiết timeout/retry, error mapping và test fixture cho Gemini, payOS và Brevo; các provider này đã được chọn trong Technology Stack.
-- Thời lượng access token và storage/rotation implementation trong baseline refresh-session đã chốt.
+- Thời lượng access token, claim tối thiểu và vị trí lưu token phía Frontend trong baseline stateless JWT Access Token (đăng xuất phía client, kiểm tra tức thời trạng thái tài khoản `account_status`).
 - Frontend state management, CSS/UI library và deployment.
 
 Mọi thay đổi phạm vi phải cập nhật PRD/SRS, ghi lý do trong ADR hoặc Issue quyết định và bổ sung `CHANGELOG.md` khi có ý nghĩa.
