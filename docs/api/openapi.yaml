@@ -1,7 +1,7 @@
 openapi: 3.1.1
 info:
   title: Mâm Xanh API
-  version: 0.4.0
+  version: 0.4.1
   summary: REST API contract for the Mâm Xanh application
   description: >-
     Accepted API baseline for FR-03 Authentication & Account. Implementation parameters
@@ -36,7 +36,7 @@ paths:
         '400':
           $ref: '#/components/responses/ValidationProblem'
         '409':
-          description: Email is already used by an active account.
+          description: Email is already used by another account (code EMAIL_ALREADY_USED); comparison ignores case.
           content:
             application/problem+json:
               schema:
@@ -55,7 +55,9 @@ paths:
         '204':
           description: Email is verified; accountStatus is unchanged.
         '400':
-          description: Verification token is invalid or expired.
+          description: >-
+            Verification token is unknown, already used, replaced by a newer token or expired
+            (code VERIFICATION_TOKEN_INVALID), or the payload is invalid (code VALIDATION_FAILED).
           content:
             application/problem+json:
               schema:
@@ -64,7 +66,10 @@ paths:
     post:
       tags: [Authentication]
       summary: Request another verification email
-      description: Invalidates the previous token when a new token is issued. Limited to one request per 60 seconds.
+      description: >-
+        Invalidates the previous token when a new token is issued. Limited to one email per 60 seconds;
+        earlier requests return 429 with code RESEND_TOO_SOON and Retry-After. Unknown and already verified
+        emails receive the same 202 response and no email is sent.
       requestBody:
         required: true
         content:

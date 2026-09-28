@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.7.2
+> **Version:** v0.8.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-28
 > **Status:** Active  
@@ -22,17 +22,23 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
   - **Security:** `spring-boot-starter-security`.
   - **Web / Validation:** `spring-boot-starter-webmvc`, `spring-boot-starter-validation`.
   - **Documentation:** `springdoc-openapi-starter-webmvc-ui` (Swagger UI & OpenAPI 3).
-  - **Productivity & Testing:** Lombok, starter test dependencies (`data-jpa-test`, `flyway-test`, `security-test`, `validation-test`, `webmvc-test`).
+  - **Email:** `spring-boot-starter-mail` (Brevo SMTP, gửi bất đồng bộ).
+  - **Productivity & Testing:** Lombok, starter test dependencies (`data-jpa-test`, `flyway-test`, `security-test`, `validation-test`, `webmvc-test`), Testcontainers SQL Server (`spring-boot-testcontainers`, `testcontainers-mssqlserver`).
+- Đã có luồng FR-03-A (Issue #5): `POST /api/v1/auth/register`, `/auth/email-verifications`, `/auth/email-verifications/resend`; lỗi trả `application/problem+json` có `code` ổn định; migration `V3__user_email_verification_token.sql`.
 
 ### Lệnh chạy và kiểm tra xác minh
 
 ```bash
 # Windows
 .\mvnw.cmd clean test-compile
+.\mvnw.cmd verify
 
 # Linux / macOS
 ./mvnw clean test-compile
+./mvnw verify
 ```
+
+`verify` chạy cả unit test và integration test. Integration test dùng Testcontainers để khởi động Microsoft SQL Server 2019 thật (`mcr.microsoft.com/mssql/server:2019-latest`), chạy Flyway từ V1 và kiểm tra mapping Hibernate, nên **Docker Desktop phải đang chạy**; lần đầu cần tải image hơn 1 GB. Test không cần file `application-local.properties` và không gửi email thật.
 
 ## Yêu cầu để chạy ứng dụng
 
@@ -81,6 +87,15 @@ spring.datasource.password=YOUR_LOCAL_DB_PASSWORD
 ```
 
 File chứa credential chỉ dùng trên máy cá nhân và không được commit.
+
+Các biến môi trường tùy chọn cho FR-03 (giá trị dùng chung lấy từ kho mật khẩu của nhóm, không dán vào Issue/PR):
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | trống | SMTP Brevo. Khi thiếu `SPRING_MAIL_HOST`, Backend vẫn chạy nhưng bỏ qua việc gửi email và ghi cảnh báo. |
+| `MAMXANH_MAIL_FROM` | trống | Địa chỉ người gửi đã xác minh trên Brevo. |
+| `MAMXANH_FRONTEND_BASE_URL` | `http://localhost:5173` | Origin dùng để tạo liên kết trong email (`/xac-minh-email?token=...`). |
+| `MAMXANH_CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Danh sách origin được gọi API, phân tách bằng dấu phẩy, không dùng wildcard. |
 
 ### 3. Compile và chạy
 
@@ -164,6 +179,7 @@ Remove-Item Env:SPRING_DATASOURCE_PASSWORD
 | Hibernate báo thiếu bảng | Database chưa có schema mà `ddl-auto=validate` không tự tạo bảng | Khởi tạo schema/migration được dự án phê duyệt; không đổi sang `ddl-auto=update` để né lỗi. |
 | Flyway validation lỗi | Migration history và source migration không khớp | Không sửa migration đã áp dụng; đối chiếu đúng database/environment trước khi tiếp tục. |
 | Port `8080` đã được sử dụng | Backend/container khác đang chạy | Dừng tiến trình cũ rồi chạy lại. |
+| Test báo `Could not find a valid Docker environment` | Docker Desktop chưa chạy | Mở Docker Desktop, chờ trạng thái Running rồi chạy lại `verify`. |
 | Docker không nhận lệnh | Docker Desktop chưa cài, chưa chạy hoặc chưa có trong `PATH` | Mở Docker Desktop và xác minh bằng `docker version`. |
 
 ## Ranh giới kiến trúc hiện tại

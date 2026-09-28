@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.3.0
+> **Version:** v0.3.1
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-09-28
 > **Status:** Active
@@ -84,6 +84,21 @@ Quy ước status chính:
 | `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`) hoặc bị Administrator khóa (`ACCOUNT_LOCKED`). |
 | `409 Conflict` | Email đã được sử dụng hoặc đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`). |
 | `429 Too Many Requests` | Vượt rate limit (đăng nhập thử sai quá 5 lần hoặc gửi email quá tần suất); client đọc `Retry-After` khi có. |
+
+Mã `code` đã triển khai (Issue #5). Các mã của đăng nhập, Google Login và đặt lại mật khẩu được bổ sung khi các Issue tương ứng triển khai.
+
+| `code` | Status | Khi nào |
+|---|---|---|
+| `VALIDATION_FAILED` | 400 | Payload sai định dạng hoặc vi phạm validation; chi tiết theo field nằm trong `errors`. Mật khẩu yếu trả một phần tử `errors` cho mỗi tiêu chí còn thiếu. |
+| `EMAIL_ALREADY_USED` | 409 | `POST /auth/register` với email đã có tài khoản (không phân biệt hoa/thường). |
+| `VERIFICATION_TOKEN_INVALID` | 400 | `POST /auth/email-verifications` với mã không tồn tại, đã dùng, đã bị thay bằng mã mới hoặc hết hạn. |
+| `RESEND_TOO_SOON` | 429 | `POST /auth/email-verifications/resend` trong vòng 60 giây kể từ email xác minh trước; kèm `Retry-After`. |
+| `UNAUTHENTICATED` | 401 | Gọi endpoint cần đăng nhập mà không có thông tin xác thực hợp lệ. |
+| `ACCESS_DENIED` | 403 | Đã xác thực nhưng không đủ quyền. |
+| `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE` | 404, 405, 415 | Lỗi định tuyến/định dạng do framework phát hiện. |
+| `INTERNAL_ERROR` | 500 | Lỗi không mong đợi; `detail` không chứa thông tin nội bộ. |
+
+`POST /auth/email-verifications/resend` trả cùng một phản hồi `202` cho email không tồn tại và email đã xác minh; hai trường hợp này không gửi email.
 
 ## 5. Quy tắc bảo mật của Auth slice
 

@@ -1,13 +1,43 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.34.0
+> **Version:** v2.35.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-28
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-28 — Implement Email Registration and Verification (FR-03-A, Issue #5)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Implement UC-03.1–UC-03.3 (AC-03.1–AC-03.5) end to end under the stateless JWT baseline and decisions Q13–Q18: account registration, email verification and verification-email resend in the Backend and Frontend, plus the shared error, security and integration-test foundation that later FR-03 issues and other modules reuse.
+
+### Added
+
+- Add `POST /api/v1/auth/register`, `/auth/email-verifications` and `/auth/email-verifications/resend` following `docs/api/openapi.yaml`: accounts are created `ACTIVE` with `email_verified = false`, passwords are hashed with BCrypt (work factor 12), and verification links use single-use 256-bit tokens valid for 24 hours with a 60-second resend cooldown.
+- Add Flyway migration `V3__user_email_verification_token.sql` storing only the SHA-256 digest and expiry of the current verification token on `USER`, with a filtered unique index and a pairing check constraint.
+- Add a shared FR-03 password rule (8–64 characters, at most 72 UTF-8 bytes, uppercase, lowercase and digit) that reports each unmet criterion, and mirror it in the Frontend.
+- Add `application/problem+json` error handling with stable `code` values and field `errors`, a stateless Spring Security baseline with ProblemDetail 401/403 responses, and a CORS allowlist configured by `MAMXANH_CORS_ALLOWED_ORIGINS`.
+- Add best-effort verification emails through `spring-boot-starter-mail` (Brevo SMTP), sent asynchronously after commit and skipped with a warning when SMTP is not configured.
+- Add Testcontainers SQL Server integration tests covering AC-03.1–AC-03.5, CORS, 401 responses and the absence of passwords and tokens in logs.
+- Add the Frontend API client (Axios), registration and email-verification integration, and `.env.example` for `VITE_API_BASE_URL`.
+- Add test case TC39 to `database/queries.sql` for the new token pairing check and the unique token-digest index.
+- Add the implemented error codes to `docs/api/API.md` and the matching response descriptions to `docs/api/openapi.yaml`.
+
+### Changed
+
+- Run the application-context test against SQL Server through Testcontainers instead of disabling the DataSource and Flyway; `./mvnw verify` now requires a running Docker daemon.
+- Replace the demo-only registration Playwright scenario with API-stubbed registration and verification scenarios, labelled as Frontend-only evidence.
+- Document mail, CORS and frontend-link environment variables and the Docker requirement in the Backend README, the API base URL in the Frontend README, and migration V3 in the database guide.
+- Synchronize `database/schema.sql` with V3 (22 tables, 198 columns, 58 CHECK constraints, 56 indexes) and record the two `USER` columns and decisions Q13, Q15 and Q16 in the Data Dictionary.
+
+### Fixed
+
+- Replace the Frontend registration hint that suggested special characters with the approved FR-03 password rule.
+- Correct the Data Dictionary trace for `USER.google_subject` from UC-03.8 to UC-03.5.
 
 ## 2026-09-27 — Finalize Requirements Baseline v2 and Prepare Issue Reconciliation ([PR #72](https://github.com/NgaiLong49423/vegetarian-support-system/pull/72))
 
