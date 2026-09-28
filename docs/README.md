@@ -1,8 +1,8 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v4.0.0
+> **Version:** v4.0.1
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-28
 > **Status:** Active  
 
 # Repository Layout and Document Register
@@ -78,7 +78,7 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | requirements/use-cases/README.md and `*.md` | Use Case Specification contract, module index, actor/system interactions and Acceptance Coverage mappings; FR remains the owner of required behavior and canonical Acceptance Criteria | Designing, implementing or testing actor-goal flows |
 | archive/requirements/v1/ | Frozen historical Requirements Baseline v1; not a current implementation source | Comparing historical requirements or investigating past decisions |
 | architecture/ARCHITECTURE.md | High-level runtime parts, boundaries, communication paths, trust boundaries and architectural constraints | Architecture or cross-component integration work |
-| architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md | Draft package-level proposal for incrementally implementing the approved Backend modular-monolith boundary; not evidence of existing source structure | Planning or reviewing a Backend vertical slice and its package placement |
+| architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md | Approved Backend package structure specification; mandatory architectural standard for all Backend source code and package placement | Planning, implementing or reviewing any Backend package, class or vertical slice |
 | architecture/TECHNOLOGY-STACK.md | Selected technologies, purpose, rationale, benefits, trade-offs and unresolved choices | Dependency or technology decisions |
 | testing/TEST-STRATEGY.md | Project-level test levels, evidence boundaries, traceability, coverage interpretation and completion relationship | Test planning, quality gates or verification design |
 | api/API.md | Cross-team API integration guide, shared conventions, authentication flow and links to the detailed contract, Active | Frontend/Backend integration or API contract work |
