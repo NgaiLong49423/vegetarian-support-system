@@ -13,7 +13,8 @@
 --      proving that all database constraints, filtered unique indexes, and
 --      cascade policies enforce business rules as designed.
 --      Preserves TC01..TC15 and adds TC16..TC37 for all newly implemented
---      constraints from Data Dictionary v0.6.0.
+--      constraints from Data Dictionary v0.7.5, plus TC38 for the NVARCHAR
+--      UNIT.code fix in migration V2__unit_code_unicode.sql.
 --      Every negative test verifies the EXACT constraint name in ERROR_MESSAGE().
 --   3. Operational Queries: Practical queries demonstrating core queries
 --      for recipes, nested comments, weekly meal plans, and subscriptions.
@@ -1092,6 +1093,30 @@ BEGIN TRY
     INSERT INTO [PAYMENT_TRANSACTION] (user_id, order_code, amount_vnd, status)
     VALUES (@AliceId, 'PAYOS_VALID_PRO_99K', 99000, 'PENDING');
     PRINT '  [PASS] TC37b: Accepted valid payment amount (99,000 VND > 0).';
+
+    -- ------------------------------------------------------------------------
+    -- TC38: UNIT Vietnamese Codes Preserved (NVARCHAR code from V2, UQ_UNIT_code)
+    -- ------------------------------------------------------------------------
+    -- Positive: COUNT codes with Vietnamese diacritics are stored without loss.
+    -- Before V2, VARCHAR under code page 1252 stored 'qu?', 'c?', 'mi?ng'.
+    IF (SELECT COUNT(*) FROM [UNIT] WHERE code IN (N'quả', N'củ', N'miếng')) = 3
+       AND NOT EXISTS (SELECT 1 FROM [UNIT] WHERE code LIKE N'%?%')
+        PRINT '  [PASS] TC38a: Vietnamese unit codes (qua, cu, mieng) are stored without character loss.';
+    ELSE
+        PRINT '  [FAIL] TC38a: Vietnamese unit codes are corrupted (check UNIT.code type and V2 migration)!';
+
+    -- Negative: Duplicate Vietnamese unit code -> Must FAIL
+    BEGIN TRY
+        INSERT INTO [UNIT] (code, name, dimension, base_factor)
+        VALUES (N'quả', N'quả trùng', 'COUNT', 1.0);
+        PRINT '  [FAIL] TC38b: Duplicate unit code was not rejected!';
+    END TRY
+    BEGIN CATCH
+        IF ERROR_MESSAGE() LIKE '%UQ_UNIT_code%'
+            PRINT '  [PASS] TC38b: Rejected duplicate unit code (exact UQ_UNIT_code, Error ' + CAST(ERROR_NUMBER() AS VARCHAR) + ')';
+        ELSE
+            PRINT '  [FAIL] TC38b: Caught unexpected error: ' + ERROR_MESSAGE();
+    END CATCH;
 
 END TRY
 BEGIN CATCH

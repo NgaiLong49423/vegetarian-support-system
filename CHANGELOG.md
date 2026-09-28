@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.33.0
+> **Version:** v2.34.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-27
 > **Status:** Active
@@ -30,11 +30,34 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Correct stale account verification wording and Recipe View traceability; preserve Like/Dislike requirements instead of restoring historical star-rating behavior.
 - Prepare current and historical GitHub Issue reconciliation for review without changing any remote Issue.
 
+## 2026-09-27 — Fix Unit Code Encoding and Conceptual ERD Connectors After the PR #66 Merge
+
+**Status:** Committed — 3917ead.
+
+**Scope:** Post-merge verification of PR #66 on `develop` found that Vietnamese unit codes lost their diacritics and that the conceptual ERD update merged through PR #67 had re-attached or detached several relationship connectors. Fix both on a branch from `develop` without editing the already shared V1 migration, and restore the chronology and accuracy of the PR #66 changelog entries.
+
+### Added
+
+- Add Flyway migration `V2__unit_code_unicode.sql` that widens `UNIT.code` from `VARCHAR(20)` to `NVARCHAR(20)` and restores the `quả`, `củ` and `miếng` codes that V1 stored as `qu?`, `c?` and `mi?ng` under the default `SQL_Latin1_General_CP1_CI_AS` collation.
+- Add test case TC38 to `database/queries.sql`, asserting that Vietnamese unit codes are stored without loss and that a duplicate code is rejected by `UQ_UNIT_code`.
+
+### Changed
+
+- Synchronize `database/schema.sql` with the V1 plus V2 state, using `NVARCHAR(20)` and Unicode seed literals for `UNIT.code`.
+- Update the `UNIT.code` type label on the physical ERD to `NVARCHAR(20) NOT NULL`, and re-export the conceptual and physical ERD images from their updated sources.
+- Update `docs/diagrams/ERD/data-dictionary.md` to `v0.7.2`, `database/README.md` to `v0.4.2` and `docs/diagrams/ERD/README.md` to `v1.13.2` for the V2 migration, the 38-case test suite and the current data dictionary version.
+- Reorder the changelog entries of 2026-09-23 to 2026-09-25 into reverse chronological order, record the verified PR #66 commits, and add the missing logical ERD and data dictionary entries.
+
+### Fixed
+
+- Fix the conceptual ERD connectors changed by PR #67: attach `owns` from `USER` instead of `EXPERT_APPLICATION` to `MEAL_PLAN`, attach `reacts` from `USER` instead of `RECIPE_VIEW` to `RECIPE_REACTION`, bind both ends of `comment_trigger` to `COMMENT` and `NOTIFICATION`, remove a stray `SAVED_RECIPE` self-loop, and align the `reacts` and `receives_reactions` labels with the relationship matrix, restoring 36 connectors for 36 relationships.
+- Correct the PR #66 entry, which still reported an uncommitted working tree and an inaccurate count of 182 custom indexes.
+
 ## 2026-09-25 — Finalize Database Modeling, Physical ERD, Schema Constraints, and Integrity Test Suite ([PR #66](https://github.com/NgaiLong49423/vegetarian-support-system/pull/66))
 
-**Status:** Uncommitted working tree — Refs #63.
+**Status:** Committed — f4b9cd2, 9be5058 and de893df; merged into `develop` through PR #66 as 1acbb8a.
 
-**Scope:** Complete Phase 2 database modeling for Issue #63 addressing Tech Lead review rounds 1 and 2 on PR #66: finalize SQL Server 2019 baseline migration and bootstrap schema with all business check/unique/composite constraints, resolve Draw.io container table layout formatting for physical ERD, update physical data dictionary, and expand verification test suite to 35 test cases.
+**Scope:** Complete Phase 2 database modeling for Issue #63 addressing Tech Lead review rounds 1 and 2 on PR #66: finalize SQL Server 2019 baseline migration and bootstrap schema with all business check/unique/composite constraints, resolve Draw.io container table layout formatting for physical ERD, update physical data dictionary, and expand the verification test suite to 37 test cases.
 
 ### Added
 
@@ -63,36 +86,15 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
   - Tighten `PAYMENT_TRANSACTION.amount_vnd` check constraint `CK_PAYMENT_amount` from `>= 0` to `> 0` because free tier generates no transaction (Q9).
 - Update `docs/diagrams/ERD/physical-erd-v1.0.0.drawio` and exported image `physical-erd-v1.0.0.drawio.png`: format all 22 tables and 196 physical columns with exact data types, nullability, primary/foreign/unique/check constraints, default values, and index indicators (Review Round 1 Point 1); synchronize 37 Crow's Foot connectors from Logical ERD v1.0.0; resolve container table layout styling to ensure correct row ordering and visible headers; synchronize `COMMENT.content` to `NVARCHAR(1000)` and `CK`.
 - Update `docs/diagrams/ERD/data-dictionary.md` to version `v0.7.0`: remove all pending `⏳` markers for implemented items, update Section 1 status, document Phase 2 completion in Section 8, and record `CK_COMMENT_content_len` and `CK_PAYMENT_amount` (> 0) in Sections 4.10, 4.22, and 5.
-- Update `database/README.md` to version `v0.4.0` with verified object counts (22 tables, 38 FKs, 57 checks, 55 defaults, 10 filtered indexes, 182 custom indexes, 37 test cases) and `sqlcmd` execution instructions.
-- Update `docs/diagrams/ERD/README.md` to version `v1.13.0` line 16 with verified physical metrics (38 FKs, 57 check constraints, 55 default constraints, 10 filtered unique indexes, 182 custom nonclustered indexes).
+- Update `database/README.md` to version `v0.4.0` with object counts, the 37-case test suite and `sqlcmd` execution instructions.
+- Update `docs/diagrams/ERD/README.md` to version `v1.13.0` with physical metrics on line 16.
 
 ### Fixed
 
 - Fix Draw.io table row ordering and header occlusion for `COMMENT` and `MEAL_PLAN_ENTRY` by positioning added physical columns sequentially in table geometry.
 - Fix negative length assertion test in `database/queries.sql` to be UTF-8 encoding agnostic across CLI environments.
+- Correct the index counts published in `database/README.md`, `docs/diagrams/ERD/README.md` and the data dictionary to the measured 55 indexes (22 primary keys, 9 unique constraints and 24 standalone indexes, of which 10 are filtered: 8 unique and 2 non-unique), and align data dictionary version references to `v0.7.1` (de893df).
 
-## 2026-09-23 — Implement Physical ERD, SQL Server Baseline Migration, and Data Integrity Test Suite
-
-**Status:** Committed — ae61073.
-
-**Scope:** Complete Phase 2 database modeling for Issue #63, delivering the physical ERD, Flyway baseline schema migration, standalone bootstrap script, comprehensive physical data dictionary, and automated integrity validation query suite for Microsoft SQL Server 2019.
-
-### Added
-
-- Add Flyway baseline migration `V1__baseline_schema.sql` under `app/mamxanh-backend/src/main/resources/db/migration/` establishing 22 core tables, 38 foreign keys, 21 indexes (including 5 filtered unique indexes), 41 check constraints, 52 default constraints, and initial seed data for 15 standard measurement units without JDBC-incompatible batch separators.
-- Add standalone bootstrap script `database/schema.sql` with `GO` batch delimiters and ANSI settings (`SET ANSI_NULLS ON;`, `SET QUOTED_IDENTIFIER ON;`) for SSMS and `sqlcmd`.
-- Add `docs/diagrams/ERD/physical-erd-v1.0.0.drawio` defining the physical ERD with exact SQL Server 2019 data types, primary keys, foreign keys, and 36 entity relationship connectors in Crow's Foot notation, along with exported diagram image `docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png`.
-- Add comprehensive diagnostic and automated test suite in `database/queries.sql` featuring schema catalog auditing, 15 transactional positive and negative test cases verifying key constraints and cascade path behaviors, and core operational queries.
-
-### Changed
-
-- Update `docs/diagrams/ERD/data-dictionary.md` to version `v0.4.0`, completing all nine physical specification columns across 22 tables (178 entity columns), documenting the resolution of SQL Server multiple cascade path Error 1785, and checking off Phase 2 delivery milestones.
-- Update `database/README.md` to version `v0.2.0` with step-by-step guidance for running the Flyway baseline migration, executing `schema.sql`, and running the automated test suite.
-- Update `docs/diagrams/ERD/README.md` to version `v1.11.0` linking the newly created Physical ERD and updating workspace status.
-
-### Fixed
-
-- Eliminate multiple cascade path conflict (SQL Server Error 1785) across interrelated entities (`COMMENT`, `USER_FOLLOW`, `REPORT`) by restricting `ON DELETE CASCADE` strictly to four parent-child ownership relationships, applying `SET NULL` for guest recipe views, and setting the remaining 33 foreign keys to `NO ACTION`.
 ## 2026-09-25 — Confirm Vercel and Azure Deployment Baseline
 
 **Status:** Committed — d1c2082.
@@ -137,6 +139,72 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+
+## 2026-09-24 — Apply PR #66 Review Decisions to the Logical ERD and Data Dictionary ([PR #66](https://github.com/NgaiLong49423/vegetarian-support-system/pull/66))
+
+**Status:** Committed — 2b5d25d and 827353e.
+
+**Scope:** Record the Tech Lead decisions Q5 to Q12 from the PR #66 review in the logical model and the data dictionary so that phase 2 can implement them, and repair the logical ERD connectors found during the relationship audit.
+
+### Added
+
+- Add `date_of_birth`, `nutrition_goal`, `onboarding_status`, `avoid_none_confirmed` and `dislike_none_confirmed` to `USER` in the logical ERD and the data dictionary (Q7, Q12).
+- Add the missing relationship 17 connector between `RECIPE_POST` and `SAVED_RECIPE` to the logical ERD.
+
+### Changed
+
+- Record decisions Q5 to Q12: nullable nutrition indicators, `reviewed_by` without a conceptual connector, date of birth with the 18 to 120 age check in the service layer, technical columns with composite foreign keys for cross-row rules, paid-only subscriptions with at most one active subscription, `AVOID` and `DISLIKE` preference types, and four activity levels.
+- Specify the pending round 1 and round 2 constraints in the data dictionary with pending markers and a phase 2 handover list.
+- Flag the open conflicts between Q5 and `FR-41`/`AC-41.2`, and between Q7 and the birth-year wording of `FR-35`, until the SRS is updated.
+- Remove the superseded `logical-erd-v0.1.0.drawio` draft and its exported image.
+
+### Fixed
+
+- Re-attach nine logical ERD connectors whose ends were not bound to a table, and align two relationship labels with the relationship matrix.
+
+## 2026-09-23 — Implement Physical ERD, SQL Server Baseline Migration, and Data Integrity Test Suite
+
+**Status:** Committed — ae61073.
+
+**Scope:** Complete Phase 2 database modeling for Issue #63, delivering the physical ERD, Flyway baseline schema migration, standalone bootstrap script, comprehensive physical data dictionary, and automated integrity validation query suite for Microsoft SQL Server 2019.
+
+### Added
+
+- Add Flyway baseline migration `V1__baseline_schema.sql` under `app/mamxanh-backend/src/main/resources/db/migration/` establishing 22 core tables, 38 foreign keys, 21 indexes (including 5 filtered unique indexes), 41 check constraints, 52 default constraints, and initial seed data for 15 standard measurement units without JDBC-incompatible batch separators.
+- Add standalone bootstrap script `database/schema.sql` with `GO` batch delimiters and ANSI settings (`SET ANSI_NULLS ON;`, `SET QUOTED_IDENTIFIER ON;`) for SSMS and `sqlcmd`.
+- Add `docs/diagrams/ERD/physical-erd-v1.0.0.drawio` defining the physical ERD with exact SQL Server 2019 data types, primary keys, foreign keys, and 36 entity relationship connectors in Crow's Foot notation, along with exported diagram image `docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png`.
+- Add comprehensive diagnostic and automated test suite in `database/queries.sql` featuring schema catalog auditing, 15 transactional positive and negative test cases verifying key constraints and cascade path behaviors, and core operational queries.
+
+### Changed
+
+- Update `docs/diagrams/ERD/data-dictionary.md` to version `v0.4.0`, completing all nine physical specification columns across 22 tables (178 entity columns), documenting the resolution of SQL Server multiple cascade path Error 1785, and checking off Phase 2 delivery milestones.
+- Update `database/README.md` to version `v0.2.0` with step-by-step guidance for running the Flyway baseline migration, executing `schema.sql`, and running the automated test suite.
+- Update `docs/diagrams/ERD/README.md` to version `v1.11.0` linking the newly created Physical ERD and updating workspace status.
+
+### Fixed
+
+- Eliminate multiple cascade path conflict (SQL Server Error 1785) across interrelated entities (`COMMENT`, `USER_FOLLOW`, `REPORT`) by restricting `ON DELETE CASCADE` strictly to four parent-child ownership relationships, applying `SET NULL` for guest recipe views, and setting the remaining 33 foreign keys to `NO ACTION`.
+
+## 2026-09-23 — Add Logical ERD v1.0.0 and Data Dictionary Baseline ([PR #66](https://github.com/NgaiLong49423/vegetarian-support-system/pull/66))
+
+**Status:** Committed — cb404f7.
+
+**Scope:** Rebuild the logical ERD on the confirmed 22-entity conceptual baseline and add the data dictionary and traceability matrix that phase 2 uses as its specification.
+
+### Added
+
+- Add `docs/diagrams/ERD/logical-erd-v1.0.0.drawio` with 22 tables, including `EXPERT_APPLICATION` and `USER_FOLLOW` with separate `follower_user_id` and `followed_user_id` roles.
+- Add `docs/diagrams/ERD/data-dictionary.md` covering every column of the 22 tables with logical types, relationships, FR/BR/UC/AC traceability and constraints that a connector cannot express.
+
+### Changed
+
+- Remove `CATEGORY`, `RECIPE_CATEGORY` and `RECIPE_STEP`; add `instructions`, `dish_category` and the like, dislike and view counters to `RECIPE_POST`; replace sodium with zinc in `INGREDIENT`.
+- Record decisions Q1 (eleven fixed `dish_category` codes) and Q2 (stored interaction counters as a documented third normal form exception).
+
+### Fixed
+
+- None.
+
 ## 2026-09-23 — Align Social, Recipe Comparison, Nutrition, and Expert Requirements
 
 **Status:** Committed — 6e49cd9.

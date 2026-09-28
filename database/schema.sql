@@ -5,9 +5,10 @@
 -- Issue           : Refs #63 — Pha 2 Physical ERD & Schema
 -- Author          : Trương Văn Khải
 -- Date            : 2026-09-25
--- Source          : Logical ERD v1.0.0 + Data Dictionary v0.6.0
+-- Source          : Logical ERD v1.0.0 + Data Dictionary v0.7.5
 --                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
--- Synchronized with: V1__baseline_schema.sql (Flyway baseline)
+-- Synchronized with: V1__baseline_schema.sql + V2__unit_code_unicode.sql
+--                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
 -- testing on clean databases, or SSMS / Azure Data Studio / sqlcmd execution.
@@ -45,9 +46,10 @@ GO
 
 -- 1.1 UNIT — Measurement unit dictionary (MASS / VOLUME / COUNT)
 -- Source: Data Dictionary 4.19, FR-18, BR-73
+-- code is NVARCHAR (V2): VARCHAR under code page 1252 loses 'quả', 'củ', 'miếng'
 CREATE TABLE [UNIT] (
     unit_id       INT            IDENTITY(1,1)  NOT NULL,
-    code          VARCHAR(20)    NOT NULL,
+    code          NVARCHAR(20)   NOT NULL,
     name          NVARCHAR(50)   NOT NULL,
     dimension     VARCHAR(10)    NOT NULL,
     base_factor   DECIMAL(18,6)  NOT NULL,
@@ -914,21 +916,21 @@ GO
 -- ============================================================================
 
 INSERT INTO [UNIT] (code, name, dimension, base_factor) VALUES
-    ('g',       N'gram',            'MASS',    1.0),
-    ('kg',      N'kilogram',        'MASS',    1000.0),
-    ('ml',      N'mililít',         'VOLUME',  1.0),
-    ('L',       N'lít',             'VOLUME',  1000.0),
-    ('tbsp',    N'muỗng canh',      'VOLUME',  15.0),
-    ('tsp',     N'muỗng cà phê',    'VOLUME',  5.0),
-    ('cup',     N'chén/cốc',        'VOLUME',  240.0),
-    ('quả',     N'quả',             'COUNT',   1.0),
-    ('củ',      N'củ',              'COUNT',   1.0),
-    ('bìa',     N'bìa',             'COUNT',   1.0),
-    ('lá',      N'lá',              'COUNT',   1.0),
-    ('nhánh',   N'nhánh',           'COUNT',   1.0),
-    ('trái',    N'trái',            'COUNT',   1.0),
-    ('miếng',   N'miếng',           'COUNT',   1.0),
-    ('bó',      N'bó',              'COUNT',   1.0);
+    (N'g',      N'gram',            'MASS',    1.0),
+    (N'kg',     N'kilogram',        'MASS',    1000.0),
+    (N'ml',     N'mililít',         'VOLUME',  1.0),
+    (N'L',      N'lít',             'VOLUME',  1000.0),
+    (N'tbsp',   N'muỗng canh',      'VOLUME',  15.0),
+    (N'tsp',    N'muỗng cà phê',    'VOLUME',  5.0),
+    (N'cup',    N'chén/cốc',        'VOLUME',  240.0),
+    (N'quả',    N'quả',             'COUNT',   1.0),
+    (N'củ',     N'củ',              'COUNT',   1.0),
+    (N'bìa',    N'bìa',             'COUNT',   1.0),
+    (N'lá',     N'lá',              'COUNT',   1.0),
+    (N'nhánh',  N'nhánh',           'COUNT',   1.0),
+    (N'trái',   N'trái',            'COUNT',   1.0),
+    (N'miếng',  N'miếng',           'COUNT',   1.0),
+    (N'bó',     N'bó',              'COUNT',   1.0);
 GO
 
 
