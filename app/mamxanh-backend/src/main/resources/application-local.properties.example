@@ -1,3 +1,11 @@
 spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true
 spring.datasource.username=YOUR_LOCAL_DB_USERNAME
 spring.datasource.password=YOUR_LOCAL_DB_PASSWORD
+
+# Optional: Brevo SMTP for real verification emails (shared dev values are in the team password vault).
+# Leave these commented out to run without sending email.
+#spring.mail.host=smtp-relay.brevo.com
+#spring.mail.port=587
+#spring.mail.username=YOUR_BREVO_SMTP_LOGIN
+#spring.mail.password=YOUR_BREVO_SMTP_KEY
+#mamxanh.mail.from=YOUR_VERIFIED_SENDER_ADDRESS

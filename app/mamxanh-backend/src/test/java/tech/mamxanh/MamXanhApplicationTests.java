@@ -1,12 +1,9 @@
 package tech.mamxanh;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(properties = {
-    "spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration"
-})
-class MamXanhApplicationTests {
+/** Full context with Flyway V1→latest on a clean SQL Server and Hibernate {@code ddl-auto=validate}. */
+class MamXanhApplicationTests extends AbstractIntegrationTest {
 
     @Test
     void contextLoads() {
