@@ -58,7 +58,8 @@ CREATE TABLE [UNIT] (
 
     CONSTRAINT PK_UNIT PRIMARY KEY (unit_id),
     CONSTRAINT UQ_UNIT_code UNIQUE (code),
-    CONSTRAINT CK_UNIT_dimension CHECK (dimension IN ('MASS', 'VOLUME', 'COUNT'))
+    CONSTRAINT CK_UNIT_dimension CHECK (dimension IN ('MASS', 'VOLUME', 'COUNT')),
+    CONSTRAINT CK_UNIT_base_factor_positive CHECK (base_factor > 0)
 );
 GO
 
@@ -69,6 +70,8 @@ GO
 CREATE TABLE [INGREDIENT] (
     ingredient_id         BIGINT         IDENTITY(1,1)  NOT NULL,
     name                  NVARCHAR(200)  NOT NULL,
+    ingredient_group      NVARCHAR(100)  NOT NULL
+        CONSTRAINT DF_INGREDIENT_ingredient_group DEFAULT N'Khác',
     energy_kcal_100g      DECIMAL(10,2)  NULL,
     protein_g_100g        DECIMAL(10,2)  NULL,
     carbohydrate_g_100g   DECIMAL(10,2)  NULL,
