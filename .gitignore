@@ -21,7 +21,8 @@ Thumbs.db
 
 # Environment files
 .env
-application-local.properties
+.env.*
+!.env.example
 
 # Maven wrapper generated files
 .mvn/wrapper/maven-wrapper.jar

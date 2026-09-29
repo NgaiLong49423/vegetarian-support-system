@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.11.0
+> **Version:** v3.12.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-09-29
 > **Status:** Active
 
 # Agent Entry Point
@@ -111,6 +111,44 @@ Metadata audits use the maintained register. `SKILL.md` retains YAML frontmatter
 `docs/diagrams/` is a human-maintained presentation workspace. Agents may read its contents when they are relevant, but must not create, edit, rename, delete, regenerate, export, or otherwise modify any file in that subtree by default. A write is allowed only when the user gives explicit authorization in the current task that names the diagram work and affected artifact(s); a database, documentation, or synchronization task alone is not sufficient authorization.
 
 Engineering Autonomy does not override protected artifact boundaries. `docs/diagrams/` remains read-only for agents unless the current user request explicitly authorizes diagram work and identifies the affected artifact(s). Local schema autonomy, migration changes, or implementation tasks never grant permission to edit or regenerate diagram files.
+
+## Environment Configuration & Secret Management Policy
+
+Agents MUST classify configuration before deciding whether to externalize it:
+
+- **Secret configuration** (for example passwords, API keys, access or refresh tokens, JWT signing secrets, OAuth client secrets, cloud-storage keys, private keys, and service credentials) MUST use environment variables plus an approved, provider-agnostic secret-management mechanism. Never hard-code or commit real secret values.
+- **Environment-dependent configuration** that is not secret but legitimately changes between environments (for example database/service URLs, frontend/backend origins, deployment ports, or external endpoints) SHOULD use environment variables.
+- **Stable application configuration** that is not secret and has no evidence of varying between environments MUST remain directly in application configuration. Agents MUST NOT externalize configuration merely for the sake of externalizing it; `spring.application.name` and `spring.jpa.open-in-view` are examples unless repository evidence establishes environment-specific behavior.
+
+### Secret disclosure and rotation reporting
+
+Real secret values MUST NOT appear in source code, tracked configuration, `.env.example`, documentation, test fixtures, scripts, comments, or agent reports. If repository evidence indicates that a real credential has been committed or otherwise exposed through tracked history, report `ROTATION REQUIRED` with the credential type, affected file/location, and reason for rotation without reproducing its value. Do not automatically revoke or rotate credentials, rewrite Git history, force-push, or purge history; each requires separate explicit authorization.
+
+### `.env` and environment-variable contracts
+
+`.env` and `.env.*` files containing real local values or secrets MUST remain untracked and ignored. `.env.example` may be tracked only as the developer environment-variable contract and MUST contain no real credential. Each component-local `.env.example` MUST contain every variable name from its matching `.env`; when a variable is added, removed, or renamed in `.env`, update the matching `.env.example` in the same change with a safe placeholder and any necessary usage guidance, never the real value. Before changing `.gitignore`, inspect existing `.env*` files and tracked templates so intentional safe templates remain available. Do not create multiple example files with the same purpose without repository evidence.
+
+### Configuration placement and ownership
+
+Place configuration with the component that consumes it. Repository-root environment files are reserved for genuine repository-wide tooling; they MUST NOT become a catch-all for application runtime values. Backend runtime configuration and secrets belong under `app/mamxanh-backend/`, while frontend environment files belong under `app/mamxanh-frontend/` and may contain only client-safe public values. Before adding or moving a variable, identify its runtime consumer and place it in that component's configuration scope.
+
+### Trackable configuration files
+
+A configuration file is not automatically local or untrackable merely because part of its runtime value differs by environment. Agents MUST keep a configuration file trackable when it can safely contain stable non-secret settings and environment-variable placeholders for secret or environment-dependent values. Only real secret and local runtime values belong outside Git. When configuration work is authorized, replace such values with placeholders supported by the established runtime mechanism before tracking the file; do not replace stable non-secret settings with placeholders without evidence. Never unignore or commit an existing local configuration file before inspecting it for real values and sanitizing it where needed.
+
+### Spring Boot runtime environment loading
+
+Agents MUST NOT assume that Spring Boot automatically loads `.env`. Before changing runtime configuration loading, inspect the established mechanism, including IntelliJ Run Configurations, operating-system environment variables, Docker or Docker Compose, CI/CD, existing configuration loaders, and Spring profiles. Do not add a dotenv dependency, configuration framework, bootstrap mechanism, or other runtime dependency solely to make `.env` work without repository evidence or explicit user approval.
+
+### Frontend public environment variables
+
+Every client-exposed environment variable is public after frontend build. For Vite, this includes `VITE_*` by default and every additional prefix configured through `envPrefix`. Secrets MUST NOT be exposed through client-exposed variables; backend services perform operations that require secrets.
+
+### Configuration duplication
+
+`.env.example` is an environment-variable contract, not a replacement for meaningful Spring profile configuration. Do not delete `application-local.properties`, `application-local.properties.example`, `application-*.properties`, or similar profile files merely because `.env.example` exists. Inspect their contents first: retain files with meaningful profile behavior, and only propose removal or consolidation when a file merely duplicates environment-variable placeholders without an independent purpose.
+
+This policy does not authorize an unrelated runtime-configuration refactor, application-configuration changes, dependency additions, source-of-truth changes, or edits to protected diagram artifacts.
 
 ## Context and authority boundaries
 

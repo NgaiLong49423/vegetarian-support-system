@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.7.2
+> **Version:** v0.8.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-09-29
 > **Status:** Active  
 
 # Backend Workspace
@@ -64,23 +64,15 @@ Cả hai lệnh phải hiển thị Java 21. Có `java` nhưng không có `javac
 
 ### 2. Chuẩn bị cấu hình database local
 
-Sao chép file mẫu thành file cấu hình local:
-
-```powershell
-Copy-Item `
-  'src/main/resources/application-local.properties.example' `
-  'src/main/resources/application-local.properties'
-```
-
-Mở `application-local.properties` và thay ba giá trị mẫu bằng cấu hình SQL Server trên máy của bạn:
+Tạo hoặc cập nhật file `app/mamxanh-backend/.env` theo contract trong `.env.example`:
 
 ```properties
-spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true
-spring.datasource.username=YOUR_LOCAL_DB_USERNAME
-spring.datasource.password=YOUR_LOCAL_DB_PASSWORD
+SPRING_DATASOURCE_URL=jdbc:sqlserver://localhost:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true
+SPRING_DATASOURCE_USERNAME=YOUR_LOCAL_DB_USERNAME
+SPRING_DATASOURCE_PASSWORD=YOUR_LOCAL_DB_PASSWORD
 ```
 
-File chứa credential chỉ dùng trên máy cá nhân và không được commit.
+`.env` chỉ dùng trên máy cá nhân và không được commit. File `src/main/resources/application-local.properties` được theo dõi với placeholder an toàn và nạp `.env` bằng `spring.config.import=optional:file:.env[.properties]`; không ghi credential thật vào file này.
 
 ### 3. Compile và chạy
 
@@ -103,7 +95,7 @@ Sau lần tải dependency đầu tiên, các lần mở dự án tiếp theo ch
 
 1. Mở thư mục `app/mamxanh-backend` bằng IntelliJ IDEA.
 2. Chọn **Project SDK = Java 21** và chờ Maven import dependency xong.
-3. Tạo `application-local.properties` theo bước cấu hình database ở trên.
+3. Bảo đảm `.env` có đủ các biến theo `.env.example` và cấu hình database local ở trên.
 4. Mở `src/main/java/tech/mamxanh/MamXanhApplication.java`.
 5. Bấm nút Run cạnh hàm `main`.
 
@@ -121,14 +113,12 @@ Mở PowerShell tại `app/mamxanh-backend`:
 docker build -t mamxanh-backend-dev .
 ```
 
-### 2. Cấu hình database cho phiên Terminal hiện tại
+### 2. Cấu hình database
 
-Nếu SQL Server chạy trên máy Windows, container phải kết nối qua `host.docker.internal` thay vì `localhost`:
+Nếu SQL Server chạy trên máy Windows, đặt `SPRING_DATASOURCE_URL` trong `.env` dùng `host.docker.internal` thay vì `localhost`. Giữ các biến còn lại theo `.env.example`:
 
-```powershell
-$env:SPRING_DATASOURCE_URL = 'jdbc:sqlserver://host.docker.internal:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true'
-$env:SPRING_DATASOURCE_USERNAME = 'YOUR_LOCAL_DB_USERNAME'
-$env:SPRING_DATASOURCE_PASSWORD = 'YOUR_LOCAL_DB_PASSWORD'
+```properties
+SPRING_DATASOURCE_URL=jdbc:sqlserver://host.docker.internal:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true
 ```
 
 Không ghi giá trị thật vào README, Dockerfile hoặc source control.
@@ -138,21 +128,11 @@ Không ghi giá trị thật vào README, Dockerfile hoặc source control.
 ```powershell
 docker run --rm --name mamxanh-backend `
   -p 8080:8080 `
-  -e SPRING_DATASOURCE_URL `
-  -e SPRING_DATASOURCE_USERNAME `
-  -e SPRING_DATASOURCE_PASSWORD `
+  --env-file .env `
   mamxanh-backend-dev
 ```
 
 Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc `pom.xml` thay đổi, build lại image trước khi chạy.
-
-Xóa credential khỏi phiên PowerShell sau khi hoàn tất:
-
-```powershell
-Remove-Item Env:SPRING_DATASOURCE_URL
-Remove-Item Env:SPRING_DATASOURCE_USERNAME
-Remove-Item Env:SPRING_DATASOURCE_PASSWORD
-```
 
 ## Kiểm tra và xử lý lỗi thường gặp
 
