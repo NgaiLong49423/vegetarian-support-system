@@ -41,9 +41,24 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Install Playwright Chromium and Linux dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E coverage gate
+        run: npm run test:e2e:coverage
+
+      - name: Upload frontend LCOV report
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-lcov
+          path: app/mamxanh-frontend/coverage/lcov.info
+          if-no-files-found: error
+
   backend:
     name: Backend
     runs-on: ubuntu-latest
+    needs: frontend
+
     defaults:
       run:
         working-directory: app/mamxanh-backend
@@ -51,6 +66,14 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download frontend LCOV report
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-lcov
+          path: app/mamxanh-frontend/coverage
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -61,3 +84,8 @@ jobs:
 
       - name: Test and package
         run: bash ./mvnw --batch-mode verify
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v8.2.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

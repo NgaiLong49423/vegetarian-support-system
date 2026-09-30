@@ -25,5 +25,7 @@ logs/
 # Playwright generated evidence
 /playwright-report/
 /test-results/
+/coverage/
+/.nyc_output/
 
 .vercel

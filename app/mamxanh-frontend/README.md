@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.5.0
+> **Version:** v1.6.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-09-25
+> **Last Updated:** 2026-09-30
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -263,6 +263,8 @@ npx playwright install chromium
 ```
 
 `npm run test:e2e` tự gọi `npm run build`, sau đó Playwright khởi động Vite preview tại `http://127.0.0.1:4173`, chờ URL sẵn sàng rồi chạy Chromium. Port được giữ cố định và không tái sử dụng một server có sẵn để tránh kiểm thử nhầm ứng dụng.
+
+Để chạy E2E cùng coverage gate, dùng `npm run test:e2e:coverage`. Script tự làm sạch dữ liệu coverage cũ, tạo build có instrumentation chỉ dành cho coverage, chạy cùng suite E2E rồi xuất text summary, HTML và `coverage/lcov.info`; ngưỡng coverage được kiểm tra ngay trong command. Cài Chromium lần đầu bằng `npx playwright install chromium`. GitHub Actions cài thêm Linux dependencies, chạy gate này và chuyển LCOV sang SonarQube.
 
 HTML report được tạo trong `playwright-report/`; screenshot và trace lỗi nằm trong `test-results/`. Hai thư mục này là generated evidence và không được commit mặc định.
 

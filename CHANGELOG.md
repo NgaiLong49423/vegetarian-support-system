@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.35.0
+> **Version:** v2.36.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-30
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-30 — Add Reproducible Playwright E2E Coverage Gate
+
+**Status:** Working tree — not committed.
+
+**Scope:** Add a repository-managed Playwright and Istanbul/NYC coverage workflow for the frontend, CI and SonarQube.
+
+### Added
+
+- Add portable npm coverage scripts, shared E2E coverage collection, HTML/LCOV/text reports, and baseline-derived thresholds of 59% lines, 54% statements, 42% functions, and 53% branches.
+- Run the Chromium coverage gate in CI and pass its LCOV artifact to the SonarQube scan after backend JaCoCo generation.
+
+### Changed
+
+- Document the normal E2E and E2E coverage commands in the Frontend testing guide.
+
+### Fixed
+
+None.
 
 ## 2026-09-30 — Align Authentication Documentation for Q27 and Login Blocking Field
 

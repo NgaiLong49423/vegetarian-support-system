@@ -1,6 +1,7 @@
 import { defineConfig, type HtmlTagDescriptor, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import istanbul from 'vite-plugin-istanbul'
 import path from 'node:path'
 
 import siteConfiguration from './.figma/make/site.json' with { type: 'json' }
@@ -8,7 +9,8 @@ import siteConfiguration from './.figma/make/site.json' with { type: 'json' }
 // Vite config — https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // .figma/make/deploy-preview passes `--mode development` for cached-preview builds.
-  const emitSourcemaps = mode === 'development'
+  const coverageEnabled = process.env.VITE_COVERAGE === 'true'
+  const emitSourcemaps = mode === 'development' || coverageEnabled
 
   return {
     base: process.env.FIGMA_PUBLIC_URL ? `${process.env.FIGMA_PUBLIC_URL}/` : '/',
@@ -23,6 +25,16 @@ export default defineConfig(({ mode }) => {
       figmaErrorOverlayReplay(),
       figmaReactRefreshBoundaryFallback(),
       figmaMakeKitPlugin({ storiesGlob: '/src/**/*.stories.{ts,tsx,js,jsx}' }),
+      ...(coverageEnabled
+        ? [
+            istanbul({
+              include: ['src/**/*.{ts,tsx,js,jsx}'],
+              exclude: ['**/*.d.ts', '**/*.stories.{ts,tsx,js,jsx}', 'tests/**'],
+              requireEnv: true,
+              forceBuildInstrument: true,
+            }),
+          ]
+        : []),
     ],
     resolve: {
       alias: {
