@@ -1,6 +1,6 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.6.0
+> **Version:** v1.7.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-09-30
 > **Status:** Active  
@@ -48,7 +48,7 @@ Các màn hình này chuẩn bị trải nghiệm cho FR-13, FR-20, FR-26/27, FR
 - Bản UI hiện tại được triển khai thủ công từ thư mục Frontend. Vercel gắn nhãn môi trường `Production` cho link demo, nhưng bản này vẫn dùng dữ liệu mẫu và chưa phải bằng chứng toàn hệ thống đã được triển khai.
 - `vercel.json` chuyển các đường dẫn SPA về `index.html`, giúp mở trực tiếp hoặc tải lại trang con bằng React Router.
 - Build dùng `npm run build`, đầu ra `dist/`. `.vercel/` là thông tin liên kết tài khoản/project local và được bỏ qua trong Git.
-- Chưa thiết lập GitHub CI/CD hoặc Git auto-deploy. Push code hiện không tự cập nhật link Vercel; mỗi lần cập nhật vẫn cần deploy thủ công cho đến khi nhóm phê duyệt cơ chế tự động hóa riêng.
+- Chưa thiết lập Vercel Git auto-deploy hoặc deployment workflow. GitHub test CI chạy verification; push code không tự cập nhật link Vercel, mỗi lần cập nhật demo vẫn cần deploy thủ công.
 - Dockerfile Frontend dùng để đồng bộ môi trường development giữa các thành viên, không dùng để deploy Frontend lên Vercel.
 
 ---
@@ -264,7 +264,9 @@ npx playwright install chromium
 
 `npm run test:e2e` tự gọi `npm run build`, sau đó Playwright khởi động Vite preview tại `http://127.0.0.1:4173`, chờ URL sẵn sàng rồi chạy Chromium. Port được giữ cố định và không tái sử dụng một server có sẵn để tránh kiểm thử nhầm ứng dụng.
 
-Để chạy E2E cùng coverage gate, dùng `npm run test:e2e:coverage`. Script tự làm sạch dữ liệu coverage cũ, tạo build có instrumentation chỉ dành cho coverage, chạy cùng suite E2E rồi xuất text summary, HTML và `coverage/lcov.info`; ngưỡng coverage được kiểm tra ngay trong command. Cài Chromium lần đầu bằng `npx playwright install chromium`. GitHub Actions cài thêm Linux dependencies, chạy gate này và chuyển LCOV sang SonarQube.
+Để chạy E2E cùng coverage hard gate, dùng `npm run test:e2e:coverage`. Playwright + Istanbul/NYC làm sạch coverage cũ, tạo build instrumentation riêng, chạy cùng suite E2E rồi xuất text summary, HTML và `coverage/lcov.info`. **Lines ≥60%, Statements ≥60%, Functions ≥60%, Branches ≥60%**; bất kỳ metric nào dưới 60% làm command trả exit code khác 0 và job CI `Frontend` fail. Không hạ threshold theo baseline, exclude production source hoặc thêm test vô nghĩa để pass. Cài Chromium lần đầu bằng `npx playwright install chromium`; GitHub Actions cài thêm Linux dependencies.
+
+Job `Sonar` chỉ đọc LCOV/JaCoCo XML sau khi tải artifacts từ Frontend/Backend; Sonar không tạo coverage. Policy yêu cầu các required checks pass trước merge vào `develop`, còn technical merge block phải được cấu hình ở [Ruleset](../../CONTRIBUTING.md#develop-required-checks). Tests hiện tại kiểm chứng demo UI/browser behavior, không chứng minh Backend/database E2E.
 
 HTML report được tạo trong `playwright-report/`; screenshot và trace lỗi nằm trong `test-results/`. Hai thư mục này là generated evidence và không được commit mặc định.
 

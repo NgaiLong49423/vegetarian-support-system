@@ -161,6 +161,16 @@ pull_request_integration:
   verification:
     rerun_after_synchronization: true
     scope_and_repository_rules_determine_checks: true
+    required_checks_authority: "CONTRIBUTING.md#develop-required-checks"
+    required_ci_job_contexts: [Frontend, Backend, Sonar]
+    required_codeql_contexts: ["Analyze (javascript-typescript)", "Analyze (java-kotlin)", "Analyze (actions)"]
+    frontend_coverage_minimum_percent: {lines: 60, statements: 60, functions: 60, branches: 60}
+    backend_jacoco: {element: BUNDLE, counter: LINE, value: COVEREDRATIO, minimum: 0.80}
+    lowering_thresholds_or_excluding_production_to_pass: forbidden
+    sonar: reads_reports_after_artifact_download_and_waits_for_quality_gate
+    github_merge_enforcement: requires_external_required_check_ruleset_and_strict_up_to_date_configuration
+    ruleset_changes: separate_owner_approval_required
+    ai_review: advisory_not_required_status_check
 progress:
   source: GitHub Issues and Projects
   evidence: linked Pull Requests

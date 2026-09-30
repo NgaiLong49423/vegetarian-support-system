@@ -1,8 +1,8 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.11.2
+> **Version:** v1.12.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-30
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/C4 Container Diagram/README.md`, `docs/diagrams/ERD/README.md`
 
@@ -232,7 +232,7 @@ Backend phát hành Stateless JWT Access Token
 | Authentication Detail | **Confirmed** | Google Identity Services + `GoogleIdTokenVerifier` + Stateless JWT Access Token (Spring Security OAuth2 Resource Server, Nimbus) |
 | Deployment Topology | **Confirmed** | Vercel (FE) + Azure App Service Java 21 SE (BE) + Azure SQL Database Serverless (DB) + Azure Blob Storage (Media) |
 | Monitoring & Observability | **Confirmed** | Spring Boot Actuator (`/actuator/health`) + Logback + Azure Application Insights Java Agent |
-| QA & Testing Tooling | **Confirmed** | JUnit 5 + Mockito + JaCoCo + Codecov (CI reporting) + Testmail (Email E2E testing) + Requestly Pro (FE mocking) |
+| QA & Testing Tooling | **Confirmed** | JUnit/Maven + JaCoCo (overall Backend line ≥80%); Playwright + Istanbul/NYC (FE Lines/Statements/Functions/Branches ≥60%); SonarQube Cloud đọc reports để analysis/Quality Gate; CodeQL. Codecov/Testmail là tooling đã chọn, chưa wire trong CI này; Requestly Pro dùng FE mocking |
 | Tích hợp Google Maps | Không thuộc baseline hiện hành | Không chọn dependency hoặc tích hợp Google Maps; ứng dụng không quản lý dữ liệu nhà hàng bên ngoài. |
 | Upload trực tiếp lên Azure | Future option | Xem xét lại khi kích thước file/tải thực tế vượt quá năng lực xử lý của Backend |
 | Module Blog cộng đồng | Không thuộc baseline hiện hành | Không có FR hiện hành; chỉ xem xét lại sau một quyết định phạm vi và phân rã yêu cầu mới. |

@@ -1,6 +1,6 @@
 > **Document:** Pull Request Template  
 > **File:** `.github/pull_request_template.md`  
-> **Version:** v2.2.0
+> **Version:** v2.3.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-09-30
 > **Status:** Template  
@@ -9,7 +9,7 @@
 
 Bắt buộc dùng template này, giữ các mục và checklist; không tự thay bằng format mới. Mục không áp dụng xử lý theo chỉ dẫn bên dưới hoặc ghi `Không áp dụng` kèm lý do.
 
-Quy tắc áp dụng: [CONTRIBUTING.md](../CONTRIBUTING.md#workflow-làm-việc-nhóm). Với PR vào `develop`, review/approval và GitHub Actions không bắt buộc; PR vào `main` phải đạt cổng bên dưới.
+Quy tắc áp dụng: [CONTRIBUTING.md](../CONTRIBUTING.md#workflow-làm-việc-nhóm). PR vào `develop` phải pass [required validation checks](../CONTRIBUTING.md#develop-required-checks) và review gate hiện hành; PR vào `main` phải đạt cổng bên dưới. Workflow YAML không tự bật GitHub required-check settings.
 
 ## Tóm tắt và phạm vi
 
@@ -45,6 +45,7 @@ Chỉ áp dụng cho PR hướng vào `develop`; không phải checklist cho PR 
 - [ ] Git conflicts và semantic conflicts phát sinh sau sync đã được xử lý.
 - [ ] Flyway migration version đã được kiểm tra lại nếu PR có migration.
 - [ ] Verification phù hợp với scope đã chạy lại sau lần synchronization cuối có ảnh hưởng tới feature.
+- [ ] Required Frontend/Backend/Sonar và CodeQL checks liên quan pass trên commit cập nhật; thất bại/skip chưa được coi là pass. Review gate hiện hành đã đáp ứng.
 
 ## Cổng PR vào `main`
 

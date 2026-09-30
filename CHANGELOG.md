@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.36.0
+> **Version:** v2.37.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-09-30
 > **Status:** Active
@@ -9,9 +9,32 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-09-30 — Enforce Coverage Gates and Separate Sonar Validation
+
+**Status:** Working tree — not committed.
+
+**Scope:** Enforce the approved Frontend and Backend coverage policies, validate demo UI behavior, and document the required-check setup for develop integration.
+
+### Added
+
+- Add meaningful browser tests for recipe search, shopping list editing/export, recipe draft rows, community article rating, profile preferences, and nutrition day navigation.
+- Add a JaCoCo BUNDLE LINE COVEREDRATIO check at 0.80 and exercise the scaffold application entry point in its context test.
+- Define the external Ruleset setup for required Frontend, Backend, Sonar and relevant CodeQL checks, keeping Kody/Gemini review advisory.
+
+### Changed
+
+- Replace baseline-derived Frontend thresholds with 60% for lines, statements, functions and branches; any metric below its threshold fails the command.
+- Run Frontend/Backend jobs independently and transfer LCOV, JaCoCo XML and Java bytecode through artifacts to a separate Sonar job that waits for its Quality Gate.
+- Align testing, contributor, tooling and agent documentation; record the distinction between repository workflow configuration and GitHub enforcement awaiting separate approval.
+
+### Fixed
+
+- Wait for the recovery form before entering email in the navigation test.
+- Correct stale documentation claiming that build/test CI or coverage gates were not configured.
+
 ## 2026-09-30 — Add Reproducible Playwright E2E Coverage Gate
 
-**Status:** Committed — f765937.
+**Status:** Committed — 5c20a71.
 
 **Scope:** Add a repository-managed Playwright and Istanbul/NYC coverage workflow for the frontend, CI and SonarQube.
 

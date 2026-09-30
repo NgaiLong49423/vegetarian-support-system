@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.8.0
+> **Version:** v0.9.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-29
+> **Last Updated:** 2026-09-30
 > **Status:** Active  
 
 # Backend Workspace
@@ -33,6 +33,17 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 # Linux / macOS
 ./mvnw clean test-compile
 ```
+
+Chạy JUnit tests, package và coverage hard gate:
+
+```powershell
+# Windows
+.\mvnw.cmd clean verify
+# Linux / macOS
+./mvnw clean verify
+```
+
+JaCoCo chạy `prepare-agent`, `report` rồi `check`. Overall backend `BUNDLE / LINE / COVEREDRATIO` phải **≥0.80**; dưới 80% làm Maven trả exit code khác 0 và job CI `Backend` fail. Đây không phải new-code coverage. Reports: `target/site/jacoco/index.html` và `target/site/jacoco/jacoco.xml`. Không exclude production code để pass; thêm test có assertion phù hợp theo report. Sonar đọc XML sau khi reports được truyền qua artifact, không tạo coverage hoặc thay gate này. Coverage không thay thế Acceptance Criteria, authorization hoặc database integration evidence.
 
 ## Yêu cầu để chạy ứng dụng
 
@@ -162,7 +173,7 @@ Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc 
 ## Definition of Done cho thay đổi backend
 
 - Business Rule và failure case liên quan có test phù hợp.
-- `mvn test` và build/package chạy thành công trên commit hiện tại sau khi Maven project tồn tại.
+- `./mvnw clean verify` (Windows: `.\mvnw.cmd clean verify`) pass trên commit hiện tại, gồm tests, build/package và overall JaCoCo line coverage ≥80%.
 - Không log password, token, SAS URL hoặc dữ liệu cá nhân nhạy cảm.
 - Thay đổi schema có Flyway migration append-only, kiểm tra trên database sạch và cập nhật ERD/tài liệu.
 - Thay đổi API có OpenAPI, validation, authorization và ví dụ lỗi tương ứng.

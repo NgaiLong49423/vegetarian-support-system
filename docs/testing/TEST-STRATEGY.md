@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.9.1
+> **Version:** v1.10.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-30
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -10,7 +10,7 @@
 
 ## 1. Mục đích và ranh giới trạng thái hiện tại
 
-Tài liệu này định nghĩa cách dự án dự kiến kiểm chứng requirement và chất lượng trên các ranh giới React, Spring Boot, SQL Server và các external service. Đây không phải danh mục Test Case và không khẳng định rằng test, framework, CI job, environment hoặc command có thể chạy hiện đã tồn tại.
+Tài liệu này định nghĩa cách dự án kiểm chứng requirement và chất lượng trên các ranh giới React, Spring Boot, SQL Server và các external service. Test cases nằm trong source/tests; trạng thái tooling và quality gates được ghi theo cấu hình và bằng chứng chạy thực tế. Scaffold smoke test không chứng minh mọi requirement đã được triển khai.
 
 Hành vi mong đợi chi tiết được xác định trong [SRS](../requirements/SRS.md). Công việc triển khai và bằng chứng liên quan được quản lý qua GitHub Issues và các Pull Request được liên kết theo [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
@@ -95,9 +95,16 @@ Requirement ID phải ổn định. GitHub Issues quản lý tiến độ triể
 
 ## 8. Cách hiểu Coverage
 
-JaCoCo là công cụ Java Coverage đã được chọn. Coverage giúp phát hiện phần code chưa được thực thi bởi test, nhưng tỷ lệ cao không chứng minh assertion đúng, scenario đủ, security đúng hoặc integration hoạt động. Dự án chưa phê duyệt Coverage threshold dạng số, vì vậy tài liệu này không tự đặt một con số. Cần xem Coverage cùng rủi ro requirement, scenario nhánh/lỗi, thay đổi của outcome quan trọng và defect lọt qua kiểm thử.
+Coverage giúp phát hiện code chưa được thực thi, nhưng tỷ lệ cao không chứng minh assertion đúng, scenario đủ, security đúng hoặc integration hoạt động. Project Owner đã chốt hard gates sau; baseline đo được không được dùng để hạ threshold.
 
-Frontend Coverage tooling và mọi quality gate vẫn là `TBD` cho tới khi Frontend scaffold và workflow của nhóm cung cấp đủ bằng chứng để chọn.
+| Layer | Command | Hard gate | Reports |
+|---|---|---|---|
+| Frontend | `npm run test:e2e:coverage` | Playwright + Istanbul/NYC: Lines, Statements, Functions và Branches đều **≥60%**; một metric dưới 60% làm command và job `Frontend` fail | `coverage/lcov.info`, HTML, text summary |
+| Backend | `./mvnw clean verify` hoặc `.\mvnw.cmd clean verify` | JUnit/Maven + JaCoCo: overall `BUNDLE / LINE / COVEREDRATIO ≥0.80`; dưới 80% làm build và job `Backend` fail | `target/site/jacoco/jacoco.xml`, HTML |
+
+Backend gate gồm `prepare-agent`, `report`, `check`; đây là overall coverage của source hiện tại, không phải new-code coverage. Frontend `npm run test:e2e` chạy browser suite không đo coverage; command coverage chạy cùng suite với instrumentation riêng. Không exclude production source hoặc thêm test vô nghĩa để pass. Khi thấp hơn gate, đọc report và bổ sung test cho hành vi thực tế; CI được phép fail cho tới khi đạt policy.
+
+Sonar không tạo coverage. Job `Sonar` đọc LCOV/JaCoCo XML qua artifacts sau hai jobs kiểm thử, rồi chạy static analysis cho bugs, vulnerabilities, maintainability, duplication, coverage visualization và Quality Gate. Scan chờ Quality Gate; lỗi scan, thiếu report, timeout hoặc gate fail làm check fail. Quality Gate trên Sonar không thay hai coverage gates ở trên. Các điều kiện server-side vẫn cần xác minh trên Sonar dashboard.
 
 ## 9. Defect, bằng chứng và ownership
 
@@ -111,7 +118,7 @@ Frontend Coverage tooling và mọi quality gate vẫn là `TBD` cho tới khi F
 
 ## 10. Quan hệ với trạng thái hoàn tất và release
 
-[CONTRIBUTING.md](../../CONTRIBUTING.md#workflow-làm-việc-nhóm) sở hữu cổng merge và Definition of Done. PR vào `develop` có review/approval và GitHub Actions tùy chọn; owner vẫn tự kiểm tra và ghi rõ giới hạn. Merge tích hợp chưa xác nhận FR hoàn thành.
+[CONTRIBUTING.md](../../CONTRIBUTING.md#develop-required-checks) sở hữu cổng merge và Definition of Done. Policy yêu cầu PR vào `develop` pass các required validation checks trên baseline cập nhật. GitHub technical enforcement cần Ruleset/Branch Protection có required contexts và strict up-to-date mode; workflow YAML riêng không bật các settings đó. Merge tích hợp chưa xác nhận FR hoàn thành.
 
 PR `develop -> main` cần approval độc lập, build/automated tests và required GitHub Actions checks đạt trên commit mới nhất. Test cases phải bao phủ Acceptance Criteria và các luồng lỗi/quyền truy cập liên quan; manual tests bổ sung phần chưa tự động hóa, không thay thế required checks. Cổng này chưa có bằng chứng triển khai đầy đủ chỉ vì đã được ghi trong tài liệu.
 
@@ -119,4 +126,4 @@ Sau merge, Tech Lead tổ chức kiểm tra demo local trên `main` với bằng
 
 ## 11. Điều kiện áp dụng và open item
 
-Frontend đã chọn Playwright cho browser smoke/E2E; persistent tests nằm tại `app/mamxanh-frontend/tests/e2e/`. Khi scaffold tích hợp thật xuất hiện, nhóm vẫn phải xác minh và tài liệu hóa command, test data và điều kiện environment cho từng full E2E flow. Các open technical items gồm Frontend component-test tooling, API test runner, chiến lược tích hợp SQL Server, tần suất live-provider test, curated AI dataset chi tiết, provider-specific timeout/retry, Playwright CI integration và mọi Coverage gate. Một số chi tiết kiểm chứng NFR cần tiếp tục phân rã.
+Frontend Playwright browser smoke/E2E và coverage gate nằm tại `app/mamxanh-frontend/tests/e2e/` và workflow `CI`. Các tests demo UI chưa xác nhận Backend/database hay live-provider behavior. Khi vertical slice thật xuất hiện, nhóm phải tài liệu hóa test data/environment cho full E2E flow. Các open technical items gồm Frontend component-test tooling, API test runner, chiến lược tích hợp SQL Server, tần suất live-provider test, curated AI dataset chi tiết và provider-specific timeout/retry. Ruleset required checks và Sonar server-side Quality Gate phải được xác minh riêng; không coi là đã bật chỉ vì repository có cấu hình CI.
