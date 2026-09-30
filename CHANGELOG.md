@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-30 — Add Reproducible Playwright E2E Coverage Gate
 
-**Status:** Working tree — not committed.
+**Status:** Committed — f765937.
 
 **Scope:** Add a repository-managed Playwright and Istanbul/NYC coverage workflow for the frontend, CI and SonarQube.
 
