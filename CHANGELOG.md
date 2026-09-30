@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-30 — Enforce Coverage Gates and Separate Sonar Validation
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 38e0226.
 
 **Scope:** Enforce the approved Frontend and Backend coverage policies, validate demo UI behavior, and document the required-check setup for develop integration.
 
