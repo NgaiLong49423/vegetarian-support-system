@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.12.0
+> **Version:** v3.14.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-09-29
+> **Last Updated:** 2026-09-30
 > **Status:** Active
 
 # Agent Entry Point
@@ -54,6 +54,8 @@ Skills live at `.agents/skills/<name>/SKILL.md`. For maintained local skills, th
 
 | When needed | Skill folder | Boundary |
 |---|---|---|
+| Frontend implementation/review/validation for Mâm Xanh | mamxanh-frontend-development | Project-local React/Vite/Tailwind guidance; preserves existing UI identity and does not replace `implement-fr-issue` |
+| Backend implementation/review/validation for Mâm Xanh | mamxanh-backend-development | Project-local Spring/Maven/JPA/Flyway/API guidance; preserves the modular monolith and does not replace `implement-fr-issue` |
 | Write, review or restructure Markdown documentation | markdown-documentation | Owns shared documentation semantics, authority, traceability and source-of-truth rules; load only the references needed for the task |
 | Add/audit metadata or decide document versions | document-metadata-standardizer | Owns document metadata and versioning only; target maintained registered documents and preserve creation evidence |
 | Cross-document consistency audit | repo-template-doc-sync-auditor | Use this project's maintained register and adopted contract; ignore skill packages and generated outputs by default |
@@ -61,7 +63,7 @@ Skills live at `.agents/skills/<name>/SKILL.md`. For maintained local skills, th
 | Maintain changelog or prepare release notes | changelog-automatic | Read CONTRIBUTING.md#changelog-format first; use verified evidence and do not infer release/PR/commit facts |
 | Record a credible bug discovered during repository work, or conduct a user-requested bug audit | bug-recording | Records evidence without expanding task scope; read-only instructions override file writes, and GitHub Issue creation requires explicit current-task authorization |
 
-Use the smallest set that fits the request. Do not load all five skills for every task. When a specialized skill applies, let it own its specialized mechanics while `markdown-documentation` supplies shared documentation semantics. When a skill is unavailable, report it and apply the relevant repository rule directly; do not invent its contents.
+Use the smallest set that fits the request. Do not load all registered skills for every task. When a specialized skill applies, let it own its specialized mechanics while `markdown-documentation` supplies shared documentation semantics. When a skill is unavailable, report it and apply the relevant repository rule directly; do not invent its contents.
 
 ### Cross-cutting bug recording
 
@@ -149,6 +151,15 @@ Every client-exposed environment variable is public after frontend build. For Vi
 `.env.example` is an environment-variable contract, not a replacement for meaningful Spring profile configuration. Do not delete `application-local.properties`, `application-local.properties.example`, `application-*.properties`, or similar profile files merely because `.env.example` exists. Inspect their contents first: retain files with meaningful profile behavior, and only propose removal or consolidation when a file merely duplicates environment-variable placeholders without an independent purpose.
 
 This policy does not authorize an unrelated runtime-configuration refactor, application-configuration changes, dependency additions, source-of-truth changes, or edits to protected diagram artifacts.
+
+### Repository-local Codex MCP
+
+- Repository MCP configuration MUST live in `.codex/config.toml` when the MCP is required only for this project.
+- Agents MUST NOT modify the global `~/.codex/config.toml` for project-scoped MCP work.
+- Agents MUST NOT store API keys or tokens directly in `.codex/config.toml`; use a local ignored `.env` file and the repository launcher at `scripts/codex.ps1`.
+- `.env` MUST NOT be committed. `.env.example` MAY be committed only with variable names and safe empty placeholders.
+- Agents MUST NOT create persistent Windows User/System environment variables for project secrets unless the user explicitly requests it.
+- When the project needs Codex MCP credentials, contributors should start Codex with `./scripts/codex.ps1` so credentials are limited to that process and its child processes.
 
 ## Context and authority boundaries
 
