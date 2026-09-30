@@ -124,4 +124,72 @@ class IngredientCatalogServiceTest {
         assertThat(updated.baseFactor()).isEqualByComparingTo("1000");
         assertThat(deactivated.active()).isFalse();
     }
+
+    @Test void updatesIngredientMetadataAndRejectsRenamingToAnExistingName() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
+        when(ingredientRepository.findById(1L)).thenReturn(Optional.of(ingredient));
+        var request = new IngredientSaveRequest(" Đậu hũ ", " Đậu hạt ", " USDA ", "https://example.com/source", LocalDate.of(2026, 9, 1));
+
+        var updated = service.updateIngredient(1L, request);
+
+        assertThat(updated.name()).isEqualTo("Đậu hũ");
+        assertThat(updated.sourceUrl()).isEqualTo("https://example.com/source");
+        when(ingredientRepository.existsByNameIgnoreCase("Chuối")).thenReturn(true);
+        assertThatThrownBy(() -> service.updateIngredient(1L,
+                new IngredientSaveRequest("Chuối", "Trái cây", "USDA", null, LocalDate.now())))
+                .isInstanceOf(ApiException.class).hasMessage("Tên nguyên liệu đã tồn tại.");
+        assertThat(ingredient.getName()).isEqualTo("Đậu hũ");
+    }
+
+    @Test void createsTrimmedUnitAndRejectsDuplicateCode() {
+        when(unitRepository.save(org.mockito.ArgumentMatchers.any(UnitEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var request = new UnitSaveRequest(" kg ", " kilôgam ", MeasurementDimension.MASS, new BigDecimal("1000"));
+
+        var created = service.createUnit(request);
+
+        assertThat(created.code()).isEqualTo("kg");
+        assertThat(created.name()).isEqualTo("kilôgam");
+        assertThat(created.baseFactor()).isEqualByComparingTo("1000");
+        when(unitRepository.existsByCodeIgnoreCase("kg")).thenReturn(true);
+        assertThatThrownBy(() -> service.createUnit(request)).isInstanceOf(ApiException.class)
+                .hasMessage("Ký hiệu đơn vị đã tồn tại.");
+    }
+
+    @Test void updatesConversionAndDisablesItWithoutChangingItsPair() {
+        var id = new IngredientUnitConversionId(1L, 2);
+        var conversion = new IngredientUnitConversionEntity(id, new BigDecimal("120"), false);
+        when(conversionRepository.findById(id)).thenReturn(Optional.of(conversion));
+
+        var updated = service.updateConversion(1L, 2, new ConversionSaveRequest(new BigDecimal("135"), true));
+        var disabled = service.setConversionStatus(1L, 2, new CatalogStatusUpdateRequest(false));
+
+        assertThat(updated.gramsPerUnit()).isEqualByComparingTo("135");
+        assertThat(updated.approximate()).isTrue();
+        assertThat(disabled.ingredientId()).isEqualTo(1L);
+        assertThat(disabled.unitId()).isEqualTo(2);
+        assertThat(disabled.active()).isFalse();
+    }
+
+    @Test void missingCatalogResourcesReturnNotFoundInsteadOfBeingCreated() {
+        assertThatThrownBy(() -> service.setIngredientStatus(99L, new CatalogStatusUpdateRequest(false)))
+                .isInstanceOfSatisfying(ApiException.class, error -> {
+                    assertThat(error.getStatus()).isEqualTo(org.springframework.http.HttpStatus.NOT_FOUND);
+                    assertThat(error.getCode()).isEqualTo("INGREDIENT_NOT_FOUND");
+                });
+        assertThatThrownBy(() -> service.setUnitStatus(99, new CatalogStatusUpdateRequest(false)))
+                .isInstanceOf(ApiException.class).hasMessage("Không tìm thấy đơn vị.");
+        assertThatThrownBy(() -> service.updateConversion(99L, 99, new ConversionSaveRequest(BigDecimal.ONE, false)))
+                .isInstanceOf(ApiException.class).hasMessage("Không tìm thấy tỷ lệ quy đổi.");
+    }
+
+    @Test void rejectsNewConversionForAnInactiveUnit() {
+        var ingredient = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
+        var unit = new UnitEntity("quả", "Quả", MeasurementDimension.COUNT, BigDecimal.ONE);
+        unit.setActive(false);
+        when(ingredientRepository.findById(1L)).thenReturn(Optional.of(ingredient));
+        when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
+
+        assertThatThrownBy(() -> service.createConversion(1L, 2, new ConversionSaveRequest(new BigDecimal("120"), false)))
+                .isInstanceOf(ApiException.class).hasMessage("Đơn vị đã ngừng sử dụng.");
+    }
 }
