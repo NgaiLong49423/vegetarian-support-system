@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-09-30 — Align Authentication Documentation for Q27 and Login Blocking Field
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — a9c5f0f.
 
 **Scope:** Align active authentication documentation with the approved password-reset privacy behavior and temporary login-block field name.
 
@@ -30,7 +30,7 @@ None.
 
 ## 2026-09-30 — Define Develop Integration Baseline and PR Synchronization
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — a9c5f0f.
 
 **Scope:** Establish contributor and coding-agent documentation for concurrent feature integration against `develop`.
 
