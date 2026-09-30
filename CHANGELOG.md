@@ -1,13 +1,51 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.34.0
+> **Version:** v2.35.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-30
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-09-30 — Align Authentication Documentation for Q27 and Login Blocking Field
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Align active authentication documentation with the approved password-reset privacy behavior and temporary login-block field name.
+
+### Added
+
+None.
+
+### Changed
+
+- Clarify that password-reset rate limits suppress email delivery while the request retains the same neutral `202 Accepted` response.
+- Use `login_blocked_until` as the canonical temporary login-block field name.
+
+### Fixed
+
+- Remove active Use Case wording that described password-reset rate limiting as returning `429`.
+
+## 2026-09-30 — Define Develop Integration Baseline and PR Synchronization
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Establish contributor and coding-agent documentation for concurrent feature integration against `develop`.
+
+### Added
+
+- Define merged `develop` content as the current integration baseline and document synchronization, conflict review, shared-infrastructure reuse, Flyway collision handling, and scope-appropriate re-validation.
+- Align the agent entry point, machine-readable repository contract, implementation workflow, and `develop` PR checklist with the contribution policy.
+
+### Changed
+
+None.
+
+### Fixed
+
+None.
 
 ## 2026-09-27 — Finalize Requirements Baseline v2 and Prepare Issue Reconciliation ([PR #72](https://github.com/NgaiLong49423/vegetarian-support-system/pull/72))
 

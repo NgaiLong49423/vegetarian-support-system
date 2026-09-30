@@ -139,6 +139,28 @@ engineering_autonomy:
     allowed_autonomous: [new_endpoints_in_scope, new_request_response_dtos, business_validations_and_error_codes]
     documentation_rule: sync_api_md_and_openapi_yaml_in_same_work_item_or_pr
     requires_coordination_and_approval: [delete_active_endpoint, rename_endpoint, change_http_method, remove_or_rename_response_fields, change_auth_model, change_error_envelope]
+pull_request_integration:
+  policy_authority: "CONTRIBUTING.md#develop-integration-baseline"
+  integration_baseline: develop
+  baseline_scope: [merged_code, merged_documentation, merged_migrations, merged_common_infrastructure]
+  baseline_advances_when: content_is_actually_merged_into_develop
+  unmerged_work_is_baseline: false
+  explicit_dependency_still_applies: [github_issue, owner_or_tech_lead, requirement, repository_policy, confirmed_integration_dependency]
+  merge_order_basis: current_repository_merge_gates_not_issue_or_pr_order_or_creation_time
+  synchronization_triggers: [preparing_ready_for_review, before_merge_after_relevant_baseline_change, owner_requested]
+  continuous_sync_for_unrelated_commits: false
+  before_integration: [sync_current_develop_when_relevant, resolve_git_conflicts_on_feature_branch, inspect_semantic_conflicts, reuse_or_adapt_merged_common_infrastructure, check_flyway_history_and_versions_when_applicable, rerun_scope_relevant_verification]
+  conflict_resolution:
+    semantic_conflict_inspection_required_even_without_git_conflict: true
+    blind_whole_file_ours_theirs_selection_allowed: false
+    unclear_semantic_intent: stop_and_escalate_to_owner_or_reviewer
+  flyway:
+    merged_migration_version_and_content_immutable: true
+    unmerged_collision: use_next_available_version_after_sync
+    follow_up_changes: append_only_migration
+  verification:
+    rerun_after_synchronization: true
+    scope_and_repository_rules_determine_checks: true
 progress:
   source: GitHub Issues and Projects
   evidence: linked Pull Requests

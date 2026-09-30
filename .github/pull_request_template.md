@@ -1,8 +1,8 @@
 > **Document:** Pull Request Template  
 > **File:** `.github/pull_request_template.md`  
-> **Version:** v2.1.0
+> **Version:** v2.2.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-19
+> **Last Updated:** 2026-09-30
 > **Status:** Template  
 
 # Pull Request
@@ -36,6 +36,15 @@ Thêm screenshot/video khi có thay đổi UI. Không ghi test pass nếu chưa 
 - [ ] Đã ghi kết quả tự kiểm tra và phần còn chưa kiểm tra
 - [ ] Không có secret, `.env`, credential, file build/cá nhân
 - [ ] Tài liệu/contract/migration liên quan được cập nhật khi áp dụng
+
+## Đồng bộ trước khi merge vào `develop`
+
+Chỉ áp dụng cho PR hướng vào `develop`; không phải checklist cho PR `develop` → `main`. Xem [Develop integration baseline và đồng bộ PR](../CONTRIBUTING.md#develop-integration-baseline).
+
+- [ ] Branch đã được kiểm tra/sync với integration baseline `develop` hiện hành trước merge.
+- [ ] Git conflicts và semantic conflicts phát sinh sau sync đã được xử lý.
+- [ ] Flyway migration version đã được kiểm tra lại nếu PR có migration.
+- [ ] Verification phù hợp với scope đã chạy lại sau lần synchronization cuối có ảnh hưởng tới feature.
 
 ## Cổng PR vào `main`
 

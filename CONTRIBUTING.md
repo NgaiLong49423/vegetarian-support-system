@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.4.0
+> **Version:** v3.5.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-09-30
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -36,7 +36,7 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
                 -> PR develop vào main -> kiểm tra demo local -> Done
 ```
 
-- Thành viên phát triển và debug trên local; `develop` là nhánh tích hợp, `main` là phiên bản ổn định để demo.
+- Thành viên phát triển và debug trên local; `develop` là current integration baseline của code, documentation, migration và common infrastructure đã merge; `main` là phiên bản ổn định để demo. Baseline này không thay thế authority theo concern như SRS, OpenAPI, Technology Stack hoặc architecture docs.
 - Nhánh làm việc tách từ `develop`; thay đổi đi qua PR vào `develop`, rồi PR `develop -> main`.
 - `Planning`: làm rõ scope, Acceptance Criteria, dependency và kế hoạch trước khi code. `In Progress`: triển khai và tự kiểm tra.
 - `Review` bắt đầu khi mở PR vào `develop`; sau merge Issue vẫn ở `Review` chờ nghiệm thu trên `main`. Nếu PR bị đóng hoặc cần làm lại đáng kể, chuyển về `In Progress`.
@@ -86,6 +86,35 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
 - Review có thể được request nhưng không bắt buộc approval. GitHub Actions không phải cổng bắt buộc cho merge vào `develop`.
 - Owner vẫn tự kiểm tra phần thay đổi và ghi trung thực phần chưa kiểm tra/blocker. Cổng nhẹ cho phép tích hợp sớm, không xác nhận FR đã hoàn thành.
 - Một Issue có thể có nhiều PR liên quan; không ép quan hệ một Issue/một branch/một PR.
+
+<a id="develop-integration-baseline"></a>
+#### Develop integration baseline và đồng bộ PR song song
+
+- **Baseline:** `develop` là current integration baseline. Chỉ code, documentation, migration và common infrastructure thực sự đã merge vào `develop` mới thuộc baseline tích hợp mà các branch khác phải tương thích trước khi merge. Quy tắc này không thay thế source of truth theo concern của repository, gồm SRS/requirements, OpenAPI contract, Technology Stack, architecture và các authority được chỉ định khác.
+- **Draft/Open work:** Draft PR, Open PR chưa merge, feature branch khác hoặc commit ngoài `develop` không tự trở thành integration baseline hoặc dependency bắt buộc, và không buộc branch khác đổi implementation chỉ vì chúng tồn tại. Dependency được xác định rõ trong GitHub Issue, bởi owner/Tech Lead, requirement, repository policy hoặc quyết định integration đã chốt vẫn phải được tôn trọng.
+- **Baseline tiến lên:** Integration baseline chỉ thay đổi khi nội dung thực sự được merge vào `develop`, theo merge gates hiện hành. PR nào được merge trước tạo baseline mới; không suy thứ tự merge từ số Issue/PR, thời điểm mở PR, tạo branch hoặc commit. Không yêu cầu giữ compatibility với Draft/Open PR chưa merge, trừ dependency đã được xác nhận.
+- **Thời điểm đồng bộ:** Owner kiểm tra/sync `develop` khi chuẩn bị Ready for Review, trước merge nếu baseline liên quan đã thay đổi kể từ lần sync gần nhất, hoặc khi owner yêu cầu. Không cần sync lặp lại cho mỗi commit không liên quan trên `develop`.
+
+```text
+PR được merge vào develop
+        ↓
+develop trở thành integration baseline mới
+        ↓
+PR liên quan còn mở sync baseline mới trên feature branch
+        ↓
+resolve Git conflict + inspect semantic conflict
+        ↓
+adapt implementation + kiểm tra migration nếu có
+        ↓
+chạy lại verification phù hợp với scope
+        ↓
+merge theo gates hiện hành
+```
+
+- **Git và semantic conflict:** Git conflict được resolve trên feature branch. Dù Git merge tự động thành công, owner vẫn kiểm tra semantic conflict: duplicate common infrastructure/service/helper; exception hierarchy hoặc API/error convention không tương thích; entity/schema assumptions thay đổi; DTO/client abstraction trùng; FE/BE contract drift; shared frontend client/component conventions và các xung đột architecture/behavior khác. “Git không báo conflict” không chứng minh branch an toàn để merge.
+- **Common infrastructure:** Nếu `develop` đã có infrastructure dùng chung, PR còn mở phải reuse, extend hoặc adapt theo baseline đó thay vì giữ implementation song song không cần thiết. Bao gồm `GlobalExceptionHandler`, `ErrorCode`, exception hierarchy, auth/security abstraction, API response/error convention, shared DTO, common utility/service, repository conventions, shared frontend API client và design/component primitives. Nếu baseline thật sự không đáp ứng feature, owner/agent surface concern trong PR hoặc xin quyết định phù hợp; không tự tạo convention cạnh tranh.
+- **Flyway:** Migration đã merge giữ nguyên version và content. Sau khi sync, migration chưa merge phải thích ứng với lịch sử mới và dùng version khả dụng tiếp theo khi collision. Không sửa migration đã baseline hóa để giải collision; thay đổi tiếp theo dùng append-only migration. Trước khi chọn version, kiểm tra migration history hiện hành trên `develop`.
+- **Resolve an toàn và re-validation:** Không chọn `ours`, `theirs`, Accept Current hoặc Accept Incoming cho toàn file khi chưa hiểu intent. Xác định phần đã thành baseline và intent feature, kết hợp đúng hai phía; nếu semantic intent chưa rõ, dừng và hỏi owner/reviewer. Sau sync, chạy lại verification phù hợp với scope và repository rules (ví dụ backend build/tests/migration validation, frontend typecheck/build/tests hoặc cross-layer API/FE-BE contract checks). Kết quả trước sync không phải bằng chứng cuối nếu synchronization có thể ảnh hưởng feature; cập nhật PR evidence khi cần.
 
 ### PR vào `main` và nghiệm thu
 
@@ -373,6 +402,8 @@ chore: update .gitignore
 3. **Liên kết Issue:** PR vào `develop` và `main` dùng `Refs #123`. Tech Lead xác nhận và đóng Issue sau khi kiểm tra demo local trên `main` đạt; không dùng closing keywords để đóng trước nghiệm thu.
 4. **Kiểm tra hoạt động:** Chắc chắn rằng dự án của bạn vẫn chạy được và không làm hỏng các tính năng cũ.
 5. **Dọn dẹp code:** Đảm bảo không có code thừa, comment nháp hay các file rác trước khi gửi PR.
+
+Các yêu cầu đồng bộ integration baseline cho PR vào `develop` được quy định tại [Develop integration baseline và đồng bộ PR song song](#develop-integration-baseline); không lặp lại checklist tại đây.
 
 ---
 

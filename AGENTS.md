@@ -1,6 +1,6 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.14.0
+> **Version:** v3.15.0
 > **Created:** 2026-06-29
 > **Last Updated:** 2026-09-30
 > **Status:** Active
@@ -184,4 +184,5 @@ This policy does not authorize an unrelated runtime-configuration refactor, appl
 - Do not infer runnable commands or completed features from plans, empty workspaces or a draft document.
 - Inspect the actual tool/test result before reporting success; explain unavailable verification without claiming it passed.
 - When writing changelog entries, use the evidence procedure in the selected changelog skill. Do not infer PR numbers, commit status or dates from file names.
+- For integration, treat `develop` as the current integration baseline; an unmerged Draft/Open PR is not baseline unless an explicit dependency is confirmed. Before integration, follow [Develop integration baseline and PR synchronization](CONTRIBUTING.md#develop-integration-baseline), inspect both Git and semantic conflicts, and re-validate affected behavior after synchronization.
 - Finish with the changes, verification and unresolved questions in the conversation; do not create an additional report file.
