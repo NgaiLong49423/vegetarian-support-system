@@ -1,13 +1,34 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.37.0
+> **Version:** v2.38.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-01
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-01 — Implement Issue #24 Catalog Management
+
+**Status:** Working tree — not committed.
+
+**Scope:** Implement the ingredient, measurement-unit and ingredient-specific conversion management slice, with isolated SQL Server integration-test setup and Frontend administration screens.
+
+### Added
+
+- Add the Vietnamese admin catalog interface for ingredient search/edit/status, unit management and per-ingredient gram conversions, backed by the existing API contract.
+- Configure database integration tests to use an isolated SQL Server Testcontainers instance with generated test credentials.
+- Add browser coverage for catalog authorization errors and admin catalog workflows.
+
+### Changed
+
+- Accept any positive conversion weight, aligning request validation with the FR-18 contract.
+- Exclude conversions from recipe lookup when the conversion, ingredient or unit is inactive.
+
+### Fixed
+
+- Stop offering management controls in the Frontend when the API denies access.
 
 ## 2026-09-30 — Enforce Coverage Gates and Separate Sonar Validation
 

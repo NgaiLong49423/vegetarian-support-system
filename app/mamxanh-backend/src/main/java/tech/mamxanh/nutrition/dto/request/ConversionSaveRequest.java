@@ -5,5 +5,5 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 public record ConversionSaveRequest(
-        @NotNull @DecimalMin(value = "0.01") BigDecimal gramsPerUnit,
+        @NotNull @DecimalMin(value = "0", inclusive = false) BigDecimal gramsPerUnit,
         boolean approximate) { }

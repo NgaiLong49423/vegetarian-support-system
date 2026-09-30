@@ -21,7 +21,7 @@ import tech.mamxanh.nutrition.service.IngredientCatalogService;
 
 @SpringBootTest
 @Transactional
-class IngredientCatalogDatabaseIntegrationTest {
+class IngredientCatalogDatabaseIntegrationTest extends SqlServerIntegrationTest {
     @Autowired private IngredientRepository ingredientRepository;
     @Autowired private UnitRepository unitRepository;
     @Autowired private IngredientCatalogService catalogService;
@@ -68,5 +68,28 @@ class IngredientCatalogDatabaseIntegrationTest {
         assertThat(conversion.gramsPerUnit()).isEqualByComparingTo("120.00");
         assertThat(catalogService.findActiveGramsPerUnit(ingredient.getId(), unit.getId()))
                 .contains(new BigDecimal("120.00"));
+
+        ingredient.setActive(false);
+        ingredientRepository.saveAndFlush(ingredient);
+        assertThat(catalogService.findActiveGramsPerUnit(ingredient.getId(), unit.getId())).isEmpty();
+
+        ingredient.setActive(true);
+        ingredientRepository.saveAndFlush(ingredient);
+        unit.setActive(false);
+        unitRepository.saveAndFlush(unit);
+        assertThat(catalogService.findActiveGramsPerUnit(ingredient.getId(), unit.getId())).isEmpty();
+    }
+
+    @Test void acceptsEveryPositiveConversionValueSupportedByTheDatabasePrecision() {
+        IngredientEntity ingredient = ingredientRepository.saveAndFlush(new IngredientEntity(
+                "Nguyên liệu quy đổi nhỏ " + UUID.randomUUID(), "Gia vị", "Nguồn kiểm thử", null, LocalDate.now()));
+        String code = "s" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        UnitEntity unit = unitRepository.saveAndFlush(new UnitEntity(
+                code, "Đơn vị nhỏ", MeasurementDimension.COUNT, BigDecimal.ONE));
+
+        var conversion = catalogService.createConversion(ingredient.getId(), unit.getId(),
+                new ConversionSaveRequest(new BigDecimal("0.001"), true));
+
+        assertThat(conversion.gramsPerUnit()).isEqualByComparingTo("0.001");
     }
 }

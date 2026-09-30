@@ -40,6 +40,12 @@ class AdminCatalogControllerTest {
     @Test void rejectsCustomerFromAdminCatalog() throws Exception {
         mockMvc.perform(get("/api/v1/admin/ingredients").with(user("member").roles("CUSTOMER")))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/admin/units").with(user("member").roles("CUSTOMER")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/admin/ingredient-unit-conversions").with(user("member").roles("CUSTOMER")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/v1/admin/units/1").with(user("member").roles("CUSTOMER")).with(csrf()))
+                .andExpect(status().isForbidden());
     }
 
     @Test void createsIngredientForAdministrator() throws Exception {
@@ -59,6 +65,16 @@ class AdminCatalogControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"gramsPerUnit\":0,\"approximate\":false}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test void acceptsAnyStrictlyPositiveConversionValueAtHttpBoundary() throws Exception {
+        when(catalogService.createConversion(org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.eq(2), any()))
+                .thenReturn(new tech.mamxanh.nutrition.dto.response.ConversionResponse(1L, 2, new BigDecimal("0.001"), true, true));
+
+        mockMvc.perform(post("/api/v1/admin/ingredients/1/unit-conversions/2").with(user("admin").roles("ADMIN")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"gramsPerUnit\":0.001,\"approximate\":true}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.gramsPerUnit").value(0.001));
     }
 
     @Test void searchesIngredientsForAdministrator() throws Exception {

@@ -133,7 +133,19 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
 
     @Override @Transactional(readOnly = true)
     public Optional<BigDecimal> findActiveGramsPerUnit(long ingredientId, int unitId) {
-        return conversionRepository.findByIdAndActiveTrue(new IngredientUnitConversionId(ingredientId, unitId)).map(IngredientUnitConversionEntity::getGramsPerUnit);
+        Optional<IngredientUnitConversionEntity> conversion = conversionRepository.findByIdAndActiveTrue(
+                new IngredientUnitConversionId(ingredientId, unitId));
+        if (conversion.isEmpty()) return Optional.empty();
+
+        boolean ingredientActive = ingredientRepository.findById(ingredientId)
+                .filter(ingredient -> ingredient.getStatus() == CatalogStatus.ACTIVE)
+                .isPresent();
+        boolean unitActive = unitRepository.findById(unitId)
+                .filter(UnitEntity::isActive)
+                .isPresent();
+        if (!ingredientActive || !unitActive) return Optional.empty();
+
+        return conversion.map(IngredientUnitConversionEntity::getGramsPerUnit);
     }
 
     private IngredientEntity requireIngredient(long id) { return ingredientRepository.findById(id).orElseThrow(() -> notFound("INGREDIENT_NOT_FOUND", "Không tìm thấy nguyên liệu.")); }

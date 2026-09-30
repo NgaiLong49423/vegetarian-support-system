@@ -69,9 +69,19 @@ class IngredientCatalogServiceTest {
     @Test void exposesOnlyActiveConversionToDependentRecipeValidation() {
         IngredientUnitConversionId id = new IngredientUnitConversionId(1L, 2);
         IngredientUnitConversionEntity conversion = new IngredientUnitConversionEntity(id, new BigDecimal("120.00"), true);
+        IngredientEntity ingredient = new IngredientEntity("Chuối tây", "Trái cây", "USDA", null, LocalDate.now());
+        UnitEntity unit = new UnitEntity("quả", "Quả", MeasurementDimension.COUNT, BigDecimal.ONE);
         when(conversionRepository.findByIdAndActiveTrue(id)).thenReturn(Optional.of(conversion));
+        when(ingredientRepository.findById(1L)).thenReturn(Optional.of(ingredient));
+        when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
 
         assertThat(service.findActiveGramsPerUnit(1L, 2)).contains(new BigDecimal("120.00"));
+
+        ingredient.setActive(false);
+        assertThat(service.findActiveGramsPerUnit(1L, 2)).isEmpty();
+        ingredient.setActive(true);
+        unit.setActive(false);
+        assertThat(service.findActiveGramsPerUnit(1L, 2)).isEmpty();
     }
 
     @Test void searchesByIngredientNameOrGroup() {
@@ -117,11 +127,12 @@ class IngredientCatalogServiceTest {
         UnitEntity unit = new UnitEntity("ml", "mililit", MeasurementDimension.VOLUME, BigDecimal.ONE);
         when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
 
-        var updated = service.updateUnit(2, new UnitSaveRequest("l", "lít", MeasurementDimension.VOLUME, new BigDecimal("1000")));
+        var updated = service.updateUnit(2, new UnitSaveRequest("l", "lít", MeasurementDimension.MASS, new BigDecimal("1000")));
         var deactivated = service.setUnitStatus(2, new CatalogStatusUpdateRequest(false));
 
         assertThat(updated.code()).isEqualTo("l");
         assertThat(updated.baseFactor()).isEqualByComparingTo("1000");
+        assertThat(updated.dimension()).isEqualTo(MeasurementDimension.MASS);
         assertThat(deactivated.active()).isFalse();
     }
 

@@ -406,7 +406,7 @@ components:
       additionalProperties: false
       required: [gramsPerUnit, approximate]
       properties:
-        gramsPerUnit: {type: number, exclusiveMinimum: 0, example: 120}
+        gramsPerUnit: {type: number, exclusiveMinimum: 0, example: 120, description: Must be greater than zero.}
         approximate: {type: boolean, example: true}
     CatalogStatusUpdateRequest:
       type: object
