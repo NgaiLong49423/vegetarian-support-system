@@ -69,16 +69,25 @@ test('recipe report form validates the six reason groups without claiming a serv
   await expect(page.getByText('Đã kiểm tra biểu mẫu. Chưa gửi báo cáo tới quản trị viên.')).toBeVisible();
 });
 
-test('BMI result is gated and plan/history pages do not simulate payment', async ({ page }) => {
+test('nutrition profile requires real authentication and plan/history pages do not simulate payment', async ({ page }) => {
   await page.goto('/ho-so/dinh-duong');
-  await page.getByRole('spinbutton', { name: 'Tuổi' }).fill('25');
-  await page.getByLabel('Chiều cao').fill('170');
-  await page.getByLabel('Cân nặng').fill('65');
-  await page.getByRole('button', { name: 'Tính BMI tham khảo' }).click();
-  await expect(page.getByRole('alert')).toContainText('xác nhận phạm vi');
-  await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: 'Tính BMI tham khảo' }).click();
-  await expect(page.getByText('22.5', { exact: true })).toBeVisible();
+  await expect(page.getByText('Đăng nhập tài khoản thật để khai báo và lưu hồ sơ.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
+  await expect(page.getByRole('alert')).toContainText('cần phiên đăng nhập đã được xác thực');
+  await expect(page.getByLabel('Ngày sinh *')).toBeDisabled();
+  await expect(page.getByLabel('Chiều cao *')).toBeDisabled();
+  await expect(page.getByLabel('Cân nặng *')).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toBeDisabled();
+  await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
+
+  await page.goto('/dang-nhap');
+  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
+  await page.getByRole('button', { name: 'Tài khoản Lan Anh, gói AI FREE demo' }).click();
+  await page.getByRole('link', { name: 'Hồ sơ dinh dưỡng & BMI' }).click();
+  await expect(page.getByText('Đăng nhập tài khoản thật để khai báo và lưu hồ sơ.')).toBeVisible();
+  await expect(page.getByLabel('Ngày sinh *')).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toBeDisabled();
+  await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
 
   await page.goto('/goi-ai');
   await expect(page.getByText('49.000')).toBeVisible();
