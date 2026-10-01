@@ -1,13 +1,35 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.34.0
+> **Version:** v2.35.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-10-01
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-01 — Implement Nutrition Profile Reference Flow
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Implement the FR-35 nutrition profile vertical slice within the existing Member profile model, while preserving the application's non-clinical, informational boundary.
+
+### Added
+
+- Add authenticated nutrition profile read, save and eligibility-confirmed calculation endpoints, with the matching OpenAPI contract and a consent timestamp migration.
+- Add a responsive green Frontend flow for self-reported profile data, eligibility confirmation, approximate BMI, energy and eight nutrient targets, source links, and the required informational disclaimer.
+- Add unit coverage for reference calculations, consent, saved-profile behavior, and rejection of unauthenticated or out-of-scope access.
+
+### Changed
+
+- Keep calculated results out of profile reads and saves; return results only after a separate eligibility-confirmed calculation request.
+- Record API integration guidance for the FR-35 endpoints and the pending real JWT integration boundary.
+- Remove the feature-specific E2E runner and tests while retaining the nutrition functionality and the repository's general Playwright setup, as requested.
+
+### Fixed
+
+- Prevent previously calculated results from reappearing after reload or after eligibility answers change.
 
 ## 2026-09-27 — Finalize Requirements Baseline v2 and Prepare Issue Reconciliation ([PR #72](https://github.com/NgaiLong49423/vegetarian-support-system/pull/72))
 

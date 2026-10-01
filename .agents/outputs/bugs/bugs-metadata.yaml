@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-09-28
-next_id: 7
+last_updated: 2026-10-01
+next_id: 8
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-007
+    title: Migration đồng thuận dinh dưỡng lỗi trên SQL Server mới
+    status: RESOLVED
+    severity: High
+    area: Backend/Database migration
+    file: .agents/outputs/bugs/BUG-007.md
+    created: 2026-10-01
+    updated: 2026-10-01
+    related_issue: 78
   - id: BUG-006
     title: Mục Nhánh làm việc bị gán sai trong một số GitHub Issue
     status: RESOLVED

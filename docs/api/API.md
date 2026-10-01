@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.3.0
+> **Version:** v0.4.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-10-01
 > **Status:** Active
 
 # API Integration Guide
@@ -11,7 +11,7 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester sử dụng contract API chung của Mâm Xanh. [OpenAPI contract](openapi.yaml) là Source of Truth cho path, HTTP method, parameter, request/response schema và status code chi tiết; tài liệu này không lặp lại toàn bộ contract.
 
-Phiên bản đầu tiên chỉ bao phủ vertical slice `Authentication & Account` của [FR-03](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-03). Các module khác được bổ sung khi FR tương ứng chuẩn bị triển khai và contract đã được Tech Lead review theo [CONTRIBUTING.md](../../CONTRIBUTING.md#ownership-ai-và-api-contract).
+Contract hiện bao phủ `Authentication & Account` của [FR-03](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-03) và hồ sơ tham khảo dinh dưỡng của [FR-35](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-35). Các module khác được bổ sung khi FR tương ứng chuẩn bị triển khai và contract đã được Tech Lead review theo [CONTRIBUTING.md](../../CONTRIBUTING.md#ownership-ai-và-api-contract).
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 6 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
@@ -95,7 +95,17 @@ Quy ước status chính:
 - Đăng xuất xử lý hoàn toàn phía client (không gọi backend API).
 - Google ID token phải được Backend xác minh chữ ký, issuer, audience và expiry trước khi phát hành token.
 
-## 6. Thông số cần chốt trước khi triển khai phần phụ thuộc
+## 6. Nutrition Profile — FR-35
+
+Ba endpoint trong [OpenAPI contract](openapi.yaml) thao tác hồ sơ của Member hiện tại; client không truyền `userId`. Chúng yêu cầu Bearer JWT theo contract, nhưng tích hợp JWT thật phụ thuộc phần Auth đang được triển khai riêng. Kết quả không được lưu thành lịch sử theo dõi.
+
+- `GET /nutrition/profile` chỉ trả dữ liệu hồ sơ đã lưu; không trả BMI hoặc các chỉ tiêu.
+- `PUT /nutrition/profile` nhận câu trả lời phạm vi hiện tại cùng ngày sinh, giới tính sinh học, chiều cao, cân nặng, mức vận động, mục tiêu chung và đồng thuận. Backend từ chối lưu nếu ngày sinh không hợp lệ, tuổi dưới 18/trên 120 hoặc có điều kiện loại trừ. Câu trả lời loại trừ chỉ dùng để kiểm tra yêu cầu và không được lưu lên hồ sơ.
+- `POST /nutrition/profile/calculate` nhận xác nhận phạm vi hiện tại. Chỉ khi cả ba cờ đều `false` và hồ sơ lưu hợp lệ mới trả BMI cùng 8 thành phần dinh dưỡng (9 chỉ tiêu khi tính cả năng lượng). Phản hồi tính toán không được lưu và giao diện xóa kết quả khi đóng/tải lại trang hoặc thay đổi xác nhận.
+- Response hiển thị số dạng xấp xỉ. Đây là tham khảo, không phải chẩn đoán/điều trị/kê đơn, tư vấn y tế, chứng nhận hay giám sát liên tục.
+- Lỗi dùng `application/problem+json` và mã ổn định; trường hợp ngoài phạm vi trả `422 NUTRITION_PROFILE_OUT_OF_SCOPE`.
+
+## 7. Thông số cần chốt trước khi triển khai phần phụ thuộc
 
 | Quyết định | Trạng thái | Ảnh hưởng |
 |---|---|---|

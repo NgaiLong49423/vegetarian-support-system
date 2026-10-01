@@ -148,6 +148,9 @@ CREATE TABLE [USER] (
         CONSTRAINT DF_USER_therapeutic DEFAULT 0,
     nutrition_scope_confirmed  BIT            NOT NULL
         CONSTRAINT DF_USER_nutrition_scope DEFAULT 0,
+    health_data_consent        BIT            NOT NULL
+        CONSTRAINT DF_USER_health_data_consent DEFAULT 0,
+    health_data_consent_at     DATETIME2(7)   NULL,
     reply_email_enabled        BIT            NOT NULL
         CONSTRAINT DF_USER_reply_email DEFAULT 1,
     date_of_birth              DATE           NULL,
@@ -184,6 +187,10 @@ CREATE TABLE [USER] (
     ),
     CONSTRAINT CK_USER_nutrition_goal CHECK (
         nutrition_goal IN ('MAINTAIN_WEIGHT', 'IMPROVE_HEALTH', 'SUPPORT_TRAINING')
+    ),
+    CONSTRAINT CK_USER_health_data_consent_timestamp CHECK (
+        (health_data_consent = 0 AND health_data_consent_at IS NULL)
+        OR (health_data_consent = 1 AND health_data_consent_at IS NOT NULL)
     ),
     CONSTRAINT CK_USER_onboarding_status CHECK (
         onboarding_status IN ('NOT_STARTED', 'SKIPPED', 'COMPLETED')
