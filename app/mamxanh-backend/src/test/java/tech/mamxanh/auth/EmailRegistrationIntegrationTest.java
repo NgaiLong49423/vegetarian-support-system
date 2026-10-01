@@ -21,7 +21,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -184,6 +190,25 @@ class EmailRegistrationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.errors[*].field", hasItem("displayName")));
     }
 
+    @ParameterizedTest(name = "{0} characters")
+    @ValueSource(ints = {3, 50})
+    void registerAcceptsDisplayNamesAtTheLengthBoundaries(int length) throws Exception {
+        String displayName = "Ă".repeat(length);
+
+        register(displayName, "an@example.com", PASSWORD, PASSWORD).andExpect(status().isCreated());
+
+        assertThat(userRepository.findByEmail("an@example.com").orElseThrow().getDisplayName()).isEqualTo(displayName);
+    }
+
+    @Test
+    void registerRejectsADisplayNameLongerThanFiftyCharacters() throws Exception {
+        register("Ă".repeat(51), "an@example.com", PASSWORD, PASSWORD)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[*].field", hasItem("displayName")));
+
+        assertThat(userRepository.findByEmail("an@example.com")).isEmpty();
+    }
+
     // ---------------------------------------------------------------- AC-03.4
 
     @Test
@@ -276,6 +301,48 @@ class EmailRegistrationIntegrationTest extends AbstractIntegrationTest {
         submitVerification(oldToken).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VERIFICATION_TOKEN_INVALID"));
         submitVerification(newToken).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void resendIsAcceptedExactlyWhenTheSixtySecondCooldownEnds() throws Exception {
+        registerAndAwaitToken("an@example.com");
+
+        clock.advance(Duration.ofSeconds(59));
+        resend("an@example.com")
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string(HttpHeaders.RETRY_AFTER, "1"));
+
+        clock.advance(Duration.ofSeconds(1));
+        resend("an@example.com").andExpect(status().isAccepted());
+        awaitEmailBodies("an@example.com", 2);
+    }
+
+    @Test
+    void concurrentResendsAfterTheCooldownAcceptOnlyOneAndKeepItsToken() throws Exception {
+        String firstToken = registerAndAwaitToken("an@example.com");
+        clock.advance(Duration.ofSeconds(61));
+
+        int requests = 5;
+        List<Callable<Integer>> resends = new ArrayList<>();
+        for (int i = 0; i < requests; i++) {
+            resends.add(() -> resend("an@example.com").andReturn().getResponse().getStatus());
+        }
+        List<Integer> statuses = new ArrayList<>();
+        try (ExecutorService pool = Executors.newFixedThreadPool(requests)) {
+            for (Future<Integer> result : pool.invokeAll(resends)) {
+                statuses.add(result.get());
+            }
+        }
+
+        assertThat(statuses).filteredOn(code -> code == 202).hasSize(1);
+        assertThat(statuses).filteredOn(code -> code == 429).hasSize(requests - 1);
+        ArgumentCaptor<String> bodies = ArgumentCaptor.forClass(String.class);
+        verify(emailSender, after(1000).times(2)).sendPlainText(eq("an@example.com"), eq(VERIFY_SUBJECT), bodies.capture());
+        String resentToken = extractToken(bodies.getAllValues().get(1));
+        assertThat(userRepository.findByEmail("an@example.com").orElseThrow().getEmailVerificationToken())
+                .isEqualTo(tokenService.hash(resentToken));
+        submitVerification(firstToken).andExpect(status().isBadRequest());
+        submitVerification(resentToken).andExpect(status().isNoContent());
     }
 
     @Test

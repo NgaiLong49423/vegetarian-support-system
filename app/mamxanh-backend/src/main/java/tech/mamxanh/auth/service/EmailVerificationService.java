@@ -57,11 +57,13 @@ public class EmailVerificationService {
      * Issues a new token (overwriting the previous one) and requests a new email. Unknown or
      * already verified emails get the same neutral response and no email. Requests closer than
      * the cooldown to the previous email are rejected with {@code RESEND_TOO_SOON}; the time of the
-     * previous email is derived from the stored expiry minus the verification TTL.
+     * previous email is derived from the stored expiry minus the verification TTL. The row lock
+     * makes the cooldown check and the token replacement atomic, so of several concurrent requests
+     * only the first is accepted and only it publishes an email event.
      */
     @Transactional
     public MessageResponse resend(String email) {
-        Optional<User> found = userRepository.findByEmail(email);
+        Optional<User> found = userRepository.findByEmailForUpdate(email);
         if (found.isEmpty() || found.get().isEmailVerified()) {
             return new MessageResponse(RESEND_ACCEPTED_MESSAGE);
         }
