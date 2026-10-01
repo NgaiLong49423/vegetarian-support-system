@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-01 — Implement Password Login and Temporary Login Blocking (FR-03-B, Issue #6)
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — d9b6ef4, f3deae8, e5da120, 3057480.
 
 **Scope:** Implement UC-03.4 (AC-03.6–AC-03.9, NFR-07), client-side logout (AC-03.13) and the account-status check of NFR-09 end to end: password login that issues a Stateless JWT access token, a ten-minute per-account block after five consecutive wrong passwords, validation of Bearer tokens on every protected request, and the Frontend session that uses them.
 
