@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './baseFixtures';
 
 test('recipe discussion supports reply and keeps replies after parent deletion', async ({ page }) => {
   await page.goto('/cong-thuc/dau-hu-non-sot-nam-dong-co');

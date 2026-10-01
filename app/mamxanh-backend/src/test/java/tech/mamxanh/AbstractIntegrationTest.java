@@ -12,11 +12,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import tech.mamxanh.integration.email.EmailSender;
 
 /**
- * Base for integration tests: full application context, MockMvc, SQL Server via Testcontainers
- * and a controllable clock. Outgoing email is mocked here (not per test class) so every
- * integration test shares one cached context and one container.
+ * Base for integration tests: full application context started through the real {@code main}
+ * entry point, MockMvc, SQL Server via Testcontainers and a controllable clock. Outgoing email is
+ * mocked here (not per test class) so every integration test shares one cached context and one
+ * container.
  */
-@SpringBootTest
+@SpringBootTest(useMainMethod = SpringBootTest.UseMainMethod.ALWAYS)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration.class)

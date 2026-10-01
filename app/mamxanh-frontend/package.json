@@ -11,6 +11,7 @@
     "format": "oxfmt",
     "pretest:e2e": "npm run build",
     "test:e2e": "playwright test",
+    "test:e2e:coverage": "node ./scripts/clean-coverage.mjs && cross-env VITE_COVERAGE=true vite build && playwright test && nyc report",
     "pretest:e2e:ui": "npm run build",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report"
@@ -23,15 +24,19 @@
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "1.0.2",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^6.0.0",
+    "cross-env": "10.1.0",
+    "nyc": "18.0.0",
     "oxfmt": "^0.2.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",
-    "vite": "^8.0.5"
+    "vite": "^8.0.5",
+    "vite-plugin-istanbul": "9.0.1"
   }
 }

@@ -66,6 +66,62 @@ diagram_artifact_protection:
   agent_default_access: read_only
   prohibited_without_explicit_current_task_authorization: [create, edit, rename, delete, regenerate, export]
   authorization_requirement: user_must_name_diagram_work_and_affected_artifact
+environment_configuration_policy:
+  secret_categories: [passwords, api_keys, access_tokens, refresh_tokens, jwt_signing_secrets, oauth_client_secrets, cloud_storage_keys, private_keys, service_credentials]
+  prohibited_locations: [source_code, tracked_configuration, env_example, documentation, test_fixtures, scripts, comments, agent_reports]
+  approved_sources: [environment_variables, approved_provider_agnostic_secret_management]
+  environment_dependent_configuration:
+    rule: externalize_only_when_configuration_legitimately_varies_between_environments
+    examples: [database_urls, service_urls, frontend_backend_origins, deployment_ports, external_service_endpoints]
+  stable_configuration:
+    rule: keep_directly_in_application_configuration_when_non_secret_and_stable_across_environments
+    do_not_externalize_merely_for_externalization: true
+    examples: [spring.application.name, spring.jpa.open-in-view]
+  env_file_policy:
+    local_files: [.env, .env.*]
+    local_files_must_be_untracked_and_ignored: true
+    tracked_contract_file: .env.example
+    tracked_contract_must_not_contain_real_credentials: true
+    matching_example_must_cover_all_local_env_variable_names: true
+    sync_matching_example_when_local_env_variable_is: [added, removed, renamed]
+    matching_example_values_must_be_safe_placeholders: true
+    matching_example_scope: same_component_as_local_env
+    inspect_existing_env_files_and_tracked_templates_before_gitignore_change: true
+    avoid_duplicate_example_contracts_without_repository_evidence: true
+  configuration_placement:
+    rule: place_configuration_with_the_component_that_consumes_it
+    repository_root_environment_files: repository_wide_tooling_only
+    backend_runtime_configuration_scope: app/mamxanh-backend/
+    frontend_runtime_configuration_scope: app/mamxanh-frontend/
+    root_environment_files_must_not_be_application_runtime_catch_all: true
+    identify_runtime_consumer_before_adding_or_moving_variable: true
+  trackable_configuration_files:
+    rule: configuration_files_may_be_tracked_when_they_contain_stable_non_secret_settings_and_supported_environment_variable_placeholders
+    real_secret_and_local_runtime_values: must_remain_outside_git
+    preserve_stable_non_secret_settings_directly: true
+    before_tracking_existing_local_configuration: inspect_for_real_values_and_sanitize_when_needed
+    do_not_unignore_or_commit_unsanitized_local_configuration: true
+  frontend_public_environment:
+    rule: all_client_exposed_environment_variables_are_public_after_frontend_build
+    vite_default_public_prefixes: [VITE_]
+    include_prefixes_configured_through: envPrefix
+    secrets_forbidden_in_client_exposed_variables: true
+    secret_requiring_operations: backend_only
+  spring_boot_runtime_loading:
+    do_not_assume_dotenv_is_loaded_automatically: true
+    inspect_before_changing: [intellij_run_configurations, operating_system_environment, docker_or_compose, ci_cd, existing_configuration_loader, spring_profiles]
+    prohibited_without_repository_evidence_or_explicit_approval: [dotenv_dependency, configuration_framework, bootstrap_mechanism, runtime_dependency_for_dotenv]
+  configuration_duplication:
+    environment_variable_contract: .env.example
+    spring_profiles_are_not_replaced_by_env_example: true
+    retain_profile_files_with_meaningful_behavior: true
+    removal_or_consolidation_requires: evidence_of_placeholder_only_duplication_without_independent_purpose
+  rotation_reporting:
+    trigger: repository_evidence_of_real_credential_committed_or_exposed_through_tracked_history
+    required_report: ROTATION REQUIRED
+    report_fields: [credential_type, affected_file_or_location, reason]
+    never_reproduce_secret_value: true
+    prohibited_without_explicit_authorization: [revoke_credential, rotate_credential, rewrite_git_history, force_push, purge_repository_history]
 engineering_autonomy:
   policy_reference: "CONTRIBUTING.md#engineering-autonomy-policy"
   overrides_diagram_protection: false
@@ -83,6 +139,38 @@ engineering_autonomy:
     allowed_autonomous: [new_endpoints_in_scope, new_request_response_dtos, business_validations_and_error_codes]
     documentation_rule: sync_api_md_and_openapi_yaml_in_same_work_item_or_pr
     requires_coordination_and_approval: [delete_active_endpoint, rename_endpoint, change_http_method, remove_or_rename_response_fields, change_auth_model, change_error_envelope]
+pull_request_integration:
+  policy_authority: "CONTRIBUTING.md#develop-integration-baseline"
+  integration_baseline: develop
+  baseline_scope: [merged_code, merged_documentation, merged_migrations, merged_common_infrastructure]
+  baseline_advances_when: content_is_actually_merged_into_develop
+  unmerged_work_is_baseline: false
+  explicit_dependency_still_applies: [github_issue, owner_or_tech_lead, requirement, repository_policy, confirmed_integration_dependency]
+  merge_order_basis: current_repository_merge_gates_not_issue_or_pr_order_or_creation_time
+  synchronization_triggers: [preparing_ready_for_review, before_merge_after_relevant_baseline_change, owner_requested]
+  continuous_sync_for_unrelated_commits: false
+  before_integration: [sync_current_develop_when_relevant, resolve_git_conflicts_on_feature_branch, inspect_semantic_conflicts, reuse_or_adapt_merged_common_infrastructure, check_flyway_history_and_versions_when_applicable, rerun_scope_relevant_verification]
+  conflict_resolution:
+    semantic_conflict_inspection_required_even_without_git_conflict: true
+    blind_whole_file_ours_theirs_selection_allowed: false
+    unclear_semantic_intent: stop_and_escalate_to_owner_or_reviewer
+  flyway:
+    merged_migration_version_and_content_immutable: true
+    unmerged_collision: use_next_available_version_after_sync
+    follow_up_changes: append_only_migration
+  verification:
+    rerun_after_synchronization: true
+    scope_and_repository_rules_determine_checks: true
+    required_checks_authority: "CONTRIBUTING.md#develop-required-checks"
+    required_ci_job_contexts: [Frontend, Backend, Sonar]
+    required_codeql_contexts: ["Analyze (javascript-typescript)", "Analyze (java-kotlin)", "Analyze (actions)"]
+    frontend_coverage_minimum_percent: {lines: 60, statements: 60, functions: 60, branches: 60}
+    backend_jacoco: {element: BUNDLE, counter: LINE, value: COVEREDRATIO, minimum: 0.80}
+    lowering_thresholds_or_excluding_production_to_pass: forbidden
+    sonar: reads_reports_after_artifact_download_and_waits_for_quality_gate
+    github_merge_enforcement: requires_external_required_check_ruleset_and_strict_up_to_date_configuration
+    ruleset_changes: separate_owner_approval_required
+    ai_review: advisory_not_required_status_check
 progress:
   source: GitHub Issues and Projects
   evidence: linked Pull Requests

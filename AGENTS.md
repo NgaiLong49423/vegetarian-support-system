@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.11.0
+> **Version:** v3.16.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-09-30
 > **Status:** Active
 
 # Agent Entry Point
@@ -54,6 +54,8 @@ Skills live at `.agents/skills/<name>/SKILL.md`. For maintained local skills, th
 
 | When needed | Skill folder | Boundary |
 |---|---|---|
+| Frontend implementation/review/validation for Mâm Xanh | mamxanh-frontend-development | Project-local React/Vite/Tailwind guidance; preserves existing UI identity and does not replace `implement-fr-issue` |
+| Backend implementation/review/validation for Mâm Xanh | mamxanh-backend-development | Project-local Spring/Maven/JPA/Flyway/API guidance; preserves the modular monolith and does not replace `implement-fr-issue` |
 | Write, review or restructure Markdown documentation | markdown-documentation | Owns shared documentation semantics, authority, traceability and source-of-truth rules; load only the references needed for the task |
 | Add/audit metadata or decide document versions | document-metadata-standardizer | Owns document metadata and versioning only; target maintained registered documents and preserve creation evidence |
 | Cross-document consistency audit | repo-template-doc-sync-auditor | Use this project's maintained register and adopted contract; ignore skill packages and generated outputs by default |
@@ -61,7 +63,7 @@ Skills live at `.agents/skills/<name>/SKILL.md`. For maintained local skills, th
 | Maintain changelog or prepare release notes | changelog-automatic | Read CONTRIBUTING.md#changelog-format first; use verified evidence and do not infer release/PR/commit facts |
 | Record a credible bug discovered during repository work, or conduct a user-requested bug audit | bug-recording | Records evidence without expanding task scope; read-only instructions override file writes, and GitHub Issue creation requires explicit current-task authorization |
 
-Use the smallest set that fits the request. Do not load all five skills for every task. When a specialized skill applies, let it own its specialized mechanics while `markdown-documentation` supplies shared documentation semantics. When a skill is unavailable, report it and apply the relevant repository rule directly; do not invent its contents.
+Use the smallest set that fits the request. Do not load all registered skills for every task. When a specialized skill applies, let it own its specialized mechanics while `markdown-documentation` supplies shared documentation semantics. When a skill is unavailable, report it and apply the relevant repository rule directly; do not invent its contents.
 
 ### Cross-cutting bug recording
 
@@ -112,6 +114,53 @@ Metadata audits use the maintained register. `SKILL.md` retains YAML frontmatter
 
 Engineering Autonomy does not override protected artifact boundaries. `docs/diagrams/` remains read-only for agents unless the current user request explicitly authorizes diagram work and identifies the affected artifact(s). Local schema autonomy, migration changes, or implementation tasks never grant permission to edit or regenerate diagram files.
 
+## Environment Configuration & Secret Management Policy
+
+Agents MUST classify configuration before deciding whether to externalize it:
+
+- **Secret configuration** (for example passwords, API keys, access or refresh tokens, JWT signing secrets, OAuth client secrets, cloud-storage keys, private keys, and service credentials) MUST use environment variables plus an approved, provider-agnostic secret-management mechanism. Never hard-code or commit real secret values.
+- **Environment-dependent configuration** that is not secret but legitimately changes between environments (for example database/service URLs, frontend/backend origins, deployment ports, or external endpoints) SHOULD use environment variables.
+- **Stable application configuration** that is not secret and has no evidence of varying between environments MUST remain directly in application configuration. Agents MUST NOT externalize configuration merely for the sake of externalizing it; `spring.application.name` and `spring.jpa.open-in-view` are examples unless repository evidence establishes environment-specific behavior.
+
+### Secret disclosure and rotation reporting
+
+Real secret values MUST NOT appear in source code, tracked configuration, `.env.example`, documentation, test fixtures, scripts, comments, or agent reports. If repository evidence indicates that a real credential has been committed or otherwise exposed through tracked history, report `ROTATION REQUIRED` with the credential type, affected file/location, and reason for rotation without reproducing its value. Do not automatically revoke or rotate credentials, rewrite Git history, force-push, or purge history; each requires separate explicit authorization.
+
+### `.env` and environment-variable contracts
+
+`.env` and `.env.*` files containing real local values or secrets MUST remain untracked and ignored. `.env.example` may be tracked only as the developer environment-variable contract and MUST contain no real credential. Each component-local `.env.example` MUST contain every variable name from its matching `.env`; when a variable is added, removed, or renamed in `.env`, update the matching `.env.example` in the same change with a safe placeholder and any necessary usage guidance, never the real value. Before changing `.gitignore`, inspect existing `.env*` files and tracked templates so intentional safe templates remain available. Do not create multiple example files with the same purpose without repository evidence.
+
+### Configuration placement and ownership
+
+Place configuration with the component that consumes it. Repository-root environment files are reserved for genuine repository-wide tooling; they MUST NOT become a catch-all for application runtime values. Backend runtime configuration and secrets belong under `app/mamxanh-backend/`, while frontend environment files belong under `app/mamxanh-frontend/` and may contain only client-safe public values. Before adding or moving a variable, identify its runtime consumer and place it in that component's configuration scope.
+
+### Trackable configuration files
+
+A configuration file is not automatically local or untrackable merely because part of its runtime value differs by environment. Agents MUST keep a configuration file trackable when it can safely contain stable non-secret settings and environment-variable placeholders for secret or environment-dependent values. Only real secret and local runtime values belong outside Git. When configuration work is authorized, replace such values with placeholders supported by the established runtime mechanism before tracking the file; do not replace stable non-secret settings with placeholders without evidence. Never unignore or commit an existing local configuration file before inspecting it for real values and sanitizing it where needed.
+
+### Spring Boot runtime environment loading
+
+Agents MUST NOT assume that Spring Boot automatically loads `.env`. Before changing runtime configuration loading, inspect the established mechanism, including IntelliJ Run Configurations, operating-system environment variables, Docker or Docker Compose, CI/CD, existing configuration loaders, and Spring profiles. Do not add a dotenv dependency, configuration framework, bootstrap mechanism, or other runtime dependency solely to make `.env` work without repository evidence or explicit user approval.
+
+### Frontend public environment variables
+
+Every client-exposed environment variable is public after frontend build. For Vite, this includes `VITE_*` by default and every additional prefix configured through `envPrefix`. Secrets MUST NOT be exposed through client-exposed variables; backend services perform operations that require secrets.
+
+### Configuration duplication
+
+`.env.example` is an environment-variable contract, not a replacement for meaningful Spring profile configuration. Do not delete `application-local.properties`, `application-local.properties.example`, `application-*.properties`, or similar profile files merely because `.env.example` exists. Inspect their contents first: retain files with meaningful profile behavior, and only propose removal or consolidation when a file merely duplicates environment-variable placeholders without an independent purpose.
+
+This policy does not authorize an unrelated runtime-configuration refactor, application-configuration changes, dependency additions, source-of-truth changes, or edits to protected diagram artifacts.
+
+### Repository-local Codex MCP
+
+- Repository MCP configuration MUST live in `.codex/config.toml` when the MCP is required only for this project.
+- Agents MUST NOT modify the global `~/.codex/config.toml` for project-scoped MCP work.
+- Agents MUST NOT store API keys or tokens directly in `.codex/config.toml`; use a local ignored `.env` file and the repository launcher at `scripts/codex.ps1`.
+- `.env` MUST NOT be committed. `.env.example` MAY be committed only with variable names and safe empty placeholders.
+- Agents MUST NOT create persistent Windows User/System environment variables for project secrets unless the user explicitly requests it.
+- When the project needs Codex MCP credentials, contributors should start Codex with `./scripts/codex.ps1` so credentials are limited to that process and its child processes.
+
 ## Context and authority boundaries
 
 - Only documents registered in docs/README.md are maintained project documentation. A new file in a declared folder is not automatically authoritative.
@@ -135,4 +184,6 @@ Engineering Autonomy does not override protected artifact boundaries. `docs/diag
 - Do not infer runnable commands or completed features from plans, empty workspaces or a draft document.
 - Inspect the actual tool/test result before reporting success; explain unavailable verification without claiming it passed.
 - When writing changelog entries, use the evidence procedure in the selected changelog skill. Do not infer PR numbers, commit status or dates from file names.
+- For integration, treat `develop` as the current integration baseline; an unmerged Draft/Open PR is not baseline unless an explicit dependency is confirmed. Before integration, follow [Develop integration baseline and PR synchronization](CONTRIBUTING.md#develop-integration-baseline), inspect both Git and semantic conflicts, and re-validate affected behavior after synchronization.
+- Before a PR into `develop`, follow [Required checks and technical enforcement](CONTRIBUTING.md#develop-required-checks). Preserve the approved Frontend 60/60/60/60 and Backend overall line 80% hard gates; never lower thresholds, exclude production source, or add meaningless tests to pass. Report failed/unverified CI or Sonar checks, and do not claim GitHub merge blocking is active without verifying its Ruleset. Kody/Gemini review remains advisory.
 - Finish with the changes, verification and unresolved questions in the conversation; do not create an additional report file.

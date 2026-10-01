@@ -1,8 +1,8 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.6.2
+> **Version:** v1.7.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-30
 > **Status:** Active  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -89,8 +89,10 @@ Credential của provider phải nằm ở Backend và ngoài Source Control.
 |---|---|---|---|---|
 | JUnit 5 | Viết automated test cho Backend | Confirmed | Cung cấp assertion có tính lặp lại cho hành vi Java/Spring | Unit Test không tự chứng minh database, security hoặc provider integration hoạt động đúng |
 | Mockito | Cô lập collaborator của Backend trong test | Confirmed | Cho phép kiểm tra nhanh các scenario thành công/thất bại có kiểm soát mà không luôn gọi hạ tầng thật | Mock `AiClient`, `JavaMailSender`, `payOSClient` |
-| JaCoCo | Đo phần code Java được thực thi bởi test | Confirmed | Tạo báo cáo coverage XML cho CI pipeline | Cần cấu hình exclude cho các DTO/Entity/Config không chứa logic |
-| Codecov | Báo cáo và hiển thị trực quan coverage trên GitHub PR | Confirmed QA Tooling | Tự động phân tích và comment tỷ lệ coverage vào PR; có sẵn từ GitHub Student Pack | Cấu hình qua GitHub Action `codecov/codecov-action` |
+| JaCoCo | Đo code Java được tests thực thi và enforce hard gate | Confirmed | Maven `prepare-agent/report/check`; overall BUNDLE LINE ≥80%, XML/HTML reports | Không exclude production code để pass; không dùng new-code hoặc baseline threshold |
+| Playwright + Istanbul/NYC | Browser E2E và Frontend coverage hard gate | Confirmed | `npm run test:e2e:coverage`: Lines/Statements/Functions/Branches đều ≥60%, tạo LCOV/HTML | Một metric thấp hơn gate làm CI fail; không exclude source hoặc thêm test vô nghĩa |
+| SonarQube Cloud | Static analysis và Quality Gate | Confirmed | Đọc FE LCOV/BE JaCoCo XML, bugs/vulnerabilities/maintainability/duplication và coverage visualization | Không tạo coverage; job `Sonar` chờ gate sau artifact download, GitHub merge blocking cần Ruleset riêng |
+| Codecov | Báo cáo và hiển thị trực quan coverage trên GitHub PR | Confirmed QA Tooling | Tool đã chọn từ GitHub Student Pack; chưa được tích hợp vào workflow CI hiện hành | Không tự thêm hoặc thay thế provider trong task coverage gates |
 | Testmail | Hộp thư ảo phục vụ kiểm thử tự động email | Confirmed QA Tooling | Cung cấp vô hạn địa chỉ email test qua API, không tốn quota Brevo thật; hỗ trợ từ GitHub Student Pack | Dành cho môi trường kiểm thử/staging |
 | OpenAPI | Mô tả REST contract đã được dự án áp dụng | Confirmed standard | Cung cấp contract có cấu trúc dùng chung cho Frontend, Backend và verification | Phải bám hành vi thật; chưa tạo API document trước khi có contract thật |
 | Swagger UI | Hiển thị và thử OpenAPI description | Confirmed companion tool | Giúp developer và tester dễ tiếp cận contract | Lệnh gọi tương tác không thay thế automated verification |

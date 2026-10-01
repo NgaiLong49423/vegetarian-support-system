@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.8.0
+> **Version:** v0.10.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-10-01
 > **Status:** Active  
 
 # Backend Workspace
@@ -38,7 +38,18 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 ./mvnw verify
 ```
 
-`verify` chạy cả unit test và integration test. Integration test dùng Testcontainers để khởi động Microsoft SQL Server 2019 thật (`mcr.microsoft.com/mssql/server:2019-latest`), chạy Flyway từ V1 và kiểm tra mapping Hibernate, nên **Docker Desktop phải đang chạy**; lần đầu cần tải image hơn 1 GB. Test không cần file `application-local.properties` và không gửi email thật.
+Chạy JUnit tests, package và coverage hard gate:
+
+```powershell
+# Windows
+.\mvnw.cmd clean verify
+# Linux / macOS
+./mvnw clean verify
+```
+
+JaCoCo chạy `prepare-agent`, `report` rồi `check`. Overall backend `BUNDLE / LINE / COVEREDRATIO` phải **≥0.80**; dưới 80% làm Maven trả exit code khác 0 và job CI `Backend` fail. Đây không phải new-code coverage. Reports: `target/site/jacoco/index.html` và `target/site/jacoco/jacoco.xml`. Không exclude production code để pass; thêm test có assertion phù hợp theo report. Sonar đọc XML sau khi reports được truyền qua artifact, không tạo coverage hoặc thay gate này. Coverage không thay thế Acceptance Criteria, authorization hoặc database integration evidence.
+
+`verify` chạy cả unit test và integration test. Integration test dùng Testcontainers để khởi động Microsoft SQL Server 2019 thật (`mcr.microsoft.com/mssql/server:2019-latest`), khởi động ứng dụng qua `MamXanhApplication.main`, chạy Flyway từ V1 và kiểm tra mapping Hibernate, nên **Docker Desktop phải đang chạy**; lần đầu cần tải image hơn 1 GB. Test dùng profile `test`, không cần file `.env` và không gửi email thật.
 
 ## Yêu cầu để chạy ứng dụng
 
@@ -70,30 +81,22 @@ Cả hai lệnh phải hiển thị Java 21. Có `java` nhưng không có `javac
 
 ### 2. Chuẩn bị cấu hình database local
 
-Sao chép file mẫu thành file cấu hình local:
-
-```powershell
-Copy-Item `
-  'src/main/resources/application-local.properties.example' `
-  'src/main/resources/application-local.properties'
-```
-
-Mở `application-local.properties` và thay ba giá trị mẫu bằng cấu hình SQL Server trên máy của bạn:
+Tạo hoặc cập nhật file `app/mamxanh-backend/.env` theo contract trong `.env.example`:
 
 ```properties
-spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true
-spring.datasource.username=YOUR_LOCAL_DB_USERNAME
-spring.datasource.password=YOUR_LOCAL_DB_PASSWORD
+SPRING_DATASOURCE_URL=jdbc:sqlserver://localhost:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true
+SPRING_DATASOURCE_USERNAME=YOUR_LOCAL_DB_USERNAME
+SPRING_DATASOURCE_PASSWORD=YOUR_LOCAL_DB_PASSWORD
 ```
 
-File chứa credential chỉ dùng trên máy cá nhân và không được commit.
+`.env` chỉ dùng trên máy cá nhân và không được commit. File `src/main/resources/application-local.properties` được theo dõi với placeholder an toàn và nạp `.env` bằng `spring.config.import=optional:file:.env[.properties]`; không ghi credential thật vào file này.
 
 Các biến môi trường tùy chọn cho FR-03 (giá trị dùng chung lấy từ kho mật khẩu của nhóm, không dán vào Issue/PR):
 
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
-| `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | trống | SMTP Brevo. Khi thiếu `SPRING_MAIL_HOST`, Backend vẫn chạy nhưng bỏ qua việc gửi email và ghi cảnh báo. |
-| `MAMXANH_MAIL_FROM` | trống | Địa chỉ người gửi đã xác minh trên Brevo. |
+| `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | trống (port `587`) | SMTP Brevo. Khi `SPRING_MAIL_HOST` trống, Backend vẫn chạy nhưng bỏ qua việc gửi email và ghi cảnh báo. |
+| `MAMXANH_MAIL_FROM` | trống | Địa chỉ người gửi đã xác minh trên Brevo; trống thì cũng bỏ qua việc gửi email. |
 | `MAMXANH_FRONTEND_BASE_URL` | `http://localhost:5173` | Origin dùng để tạo liên kết trong email (`/xac-minh-email?token=...`). |
 | `MAMXANH_CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Danh sách origin được gọi API, phân tách bằng dấu phẩy, không dùng wildcard. |
 
@@ -118,7 +121,7 @@ Sau lần tải dependency đầu tiên, các lần mở dự án tiếp theo ch
 
 1. Mở thư mục `app/mamxanh-backend` bằng IntelliJ IDEA.
 2. Chọn **Project SDK = Java 21** và chờ Maven import dependency xong.
-3. Tạo `application-local.properties` theo bước cấu hình database ở trên.
+3. Bảo đảm `.env` có đủ các biến theo `.env.example` và cấu hình database local ở trên.
 4. Mở `src/main/java/tech/mamxanh/MamXanhApplication.java`.
 5. Bấm nút Run cạnh hàm `main`.
 
@@ -136,14 +139,12 @@ Mở PowerShell tại `app/mamxanh-backend`:
 docker build -t mamxanh-backend-dev .
 ```
 
-### 2. Cấu hình database cho phiên Terminal hiện tại
+### 2. Cấu hình database
 
-Nếu SQL Server chạy trên máy Windows, container phải kết nối qua `host.docker.internal` thay vì `localhost`:
+Nếu SQL Server chạy trên máy Windows, đặt `SPRING_DATASOURCE_URL` trong `.env` dùng `host.docker.internal` thay vì `localhost`. Giữ các biến còn lại theo `.env.example`:
 
-```powershell
-$env:SPRING_DATASOURCE_URL = 'jdbc:sqlserver://host.docker.internal:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true'
-$env:SPRING_DATASOURCE_USERNAME = 'YOUR_LOCAL_DB_USERNAME'
-$env:SPRING_DATASOURCE_PASSWORD = 'YOUR_LOCAL_DB_PASSWORD'
+```properties
+SPRING_DATASOURCE_URL=jdbc:sqlserver://host.docker.internal:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true
 ```
 
 Không ghi giá trị thật vào README, Dockerfile hoặc source control.
@@ -153,21 +154,11 @@ Không ghi giá trị thật vào README, Dockerfile hoặc source control.
 ```powershell
 docker run --rm --name mamxanh-backend `
   -p 8080:8080 `
-  -e SPRING_DATASOURCE_URL `
-  -e SPRING_DATASOURCE_USERNAME `
-  -e SPRING_DATASOURCE_PASSWORD `
+  --env-file .env `
   mamxanh-backend-dev
 ```
 
 Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc `pom.xml` thay đổi, build lại image trước khi chạy.
-
-Xóa credential khỏi phiên PowerShell sau khi hoàn tất:
-
-```powershell
-Remove-Item Env:SPRING_DATASOURCE_URL
-Remove-Item Env:SPRING_DATASOURCE_USERNAME
-Remove-Item Env:SPRING_DATASOURCE_PASSWORD
-```
 
 ## Kiểm tra và xử lý lỗi thường gặp
 
@@ -198,7 +189,7 @@ Remove-Item Env:SPRING_DATASOURCE_PASSWORD
 ## Definition of Done cho thay đổi backend
 
 - Business Rule và failure case liên quan có test phù hợp.
-- `mvn test` và build/package chạy thành công trên commit hiện tại sau khi Maven project tồn tại.
+- `./mvnw clean verify` (Windows: `.\mvnw.cmd clean verify`) pass trên commit hiện tại, gồm tests, build/package và overall JaCoCo line coverage ≥80%.
 - Không log password, token, SAS URL hoặc dữ liệu cá nhân nhạy cảm.
 - Thay đổi schema có Flyway migration append-only, kiểm tra trên database sạch và cập nhật ERD/tài liệu.
 - Thay đổi API có OpenAPI, validation, authorization và ví dụ lỗi tương ứng.

@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.3.1
+> **Version:** v0.3.2
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-10-01
 > **Status:** Active
 
 # API Integration Guide
@@ -83,7 +83,7 @@ Quy ước status chính:
 | `401 Unauthorized` | Credential không hợp lệ hoặc token hết hạn. |
 | `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`) hoặc bị Administrator khóa (`ACCOUNT_LOCKED`). |
 | `409 Conflict` | Email đã được sử dụng hoặc đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`). |
-| `429 Too Many Requests` | Vượt rate limit (đăng nhập thử sai quá 5 lần hoặc gửi email quá tần suất); client đọc `Retry-After` khi có. |
+| `429 Too Many Requests` | Chỉ áp dụng khi contract của endpoint quy định `429` (ví dụ login, resend verification hoặc AI rate limiting); client đọc `Retry-After` khi có. Password-reset request không trả `429`. |
 
 Mã `code` đã triển khai (Issue #5). Các mã của đăng nhập, Google Login và đặt lại mật khẩu được bổ sung khi các Issue tương ứng triển khai.
 
@@ -104,7 +104,7 @@ Mã `code` đã triển khai (Issue #5). Các mã của đăng nhập, Google Lo
 
 - Không trả password, password hash hoặc Google ID token trong response/log.
 - Login sai dùng thông báo chung để tránh tiết lộ email có tồn tại.
-- Password-reset request luôn trả HTTP 202 trung tính; rate limit 60 giây cooldown và tối đa 5 email/giờ/tài khoản.
+- Password-reset request luôn trả cùng HTTP 202 trung tính; silent rate limiting vẫn enforce cooldown 60 giây và tối đa 5 email/giờ/tài khoản. Khi vượt limit hoặc email không tồn tại, không gửi email; response không tiết lộ account existence hay trạng thái rate limit.
 - Sau 5 lần đăng nhập sai liên tiếp, rate limit tạm thời 10 phút ở cấp tài khoản (lưu trên bảng `USER`); không rate limit IP; không đổi account status thành `LOCKED`.
 - Giới hạn độ dài mật khẩu: 8–64 ký tự, tối đa 72 bytes UTF-8 (chuẩn BCrypt).
 - Đăng xuất xử lý hoàn toàn phía client (không gọi backend API).

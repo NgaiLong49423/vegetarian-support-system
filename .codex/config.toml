@@ -1,0 +1,8 @@
+# Project-scoped Codex configuration.
+# The API key is loaded from STITCH_API_KEY by scripts/codex.ps1.
+
+[mcp_servers.stitch]
+url = "https://stitch.googleapis.com/mcp"
+
+[mcp_servers.stitch.env_http_headers]
+"X-Goog-Api-Key" = "STITCH_API_KEY"

@@ -1,8 +1,8 @@
 > **Document:** Backend Package Structure Specification
 > **File:** `docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md`
-> **Version:** v1.0.0
+> **Version:** v1.1.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-09-29
 > **Status:** Active
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `app/mamxanh-backend/README.md`
 
@@ -137,7 +137,7 @@ src/main/java/tech/mamxanh/
 ```text
 src/main/resources/
 ├── application.properties               # Cấu hình chung cho ứng dụng
-├── application-local.properties         # Cấu hình máy cá nhân (chứa credentials, Git ignored)
+├── application-local.properties         # Local profile imports Backend .env; tracked with safe placeholders
 └── db/
     └── migration/                       # Lịch sử migration Flyway append-only
         ├── V1__baseline_schema.sql      # Schema khởi tạo cơ sở dữ liệu

@@ -1,8 +1,8 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.12.3
+> **Version:** v0.13.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-30
 > **Status:** Active
 
 # Mâm Xanh — Vegetarian Support System
@@ -33,7 +33,7 @@ Chi tiết nghiệp vụ nằm trong [SRS](docs/requirements/SRS.md). Các đề
 | Data | Microsoft SQL Server (Azure SQL Database Serverless), Spring Data JPA/Hibernate, Flyway |
 | Security | Spring Security, Google Identity Services (GIS), `GoogleIdTokenVerifier`, Stateless JWT Access Token (OAuth2 Resource Server, Nimbus), BCrypt, role-based authorization |
 | External services | Google Gemini (`gemini-3.8-flash` qua Google Gen AI Java SDK), payOS (VietQR Payment REST & Webhook), Brevo (Transactional Email SMTP), Azure Blob Storage, YouTube embedding |
-| Quality & DevOps | JUnit 5, Mockito, Playwright, JaCoCo, Codecov (CI coverage), Testmail (Email E2E testing), OpenAPI/Swagger UI, Bean Validation, Azure Application Insights |
+| Quality & DevOps | JUnit/Maven + JaCoCo (Backend line ≥80%), Playwright + Istanbul/NYC (Frontend 60/60/60/60), Sonar (analysis/Quality Gate), CodeQL; Codecov và Testmail là tooling đã chọn nhưng chưa được wire trong CI này; OpenAPI/Swagger UI, Bean Validation, Azure Application Insights |
 | Deployment | Vercel (FE) + Azure App Service Java 21 SE (BE) + Azure SQL Serverless (DB) + Azure Blob Storage (Media) + Custom Domain `.tech` |
 
 Xem chi tiết trong [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) và [System Architecture](docs/architecture/ARCHITECTURE.md).
@@ -106,7 +106,7 @@ Quy tắc đặt file và danh mục tài liệu được duy trì nằm trong [
 2. Chọn Issue đã đạt Definition of Ready; mỗi Issue có đúng một owner.
 3. Tạo branch từ `develop` theo dạng `<type>/<issue-number>-<short-name>`.
 4. Thực hiện một phạm vi nhỏ, tự kiểm tra và cập nhật tài liệu liên quan.
-5. Mở PR vào `develop` bằng `Refs #<issue>` và ghi kết quả tự kiểm tra; owner vẫn phải chạy kiểm tra phù hợp dù approval/GitHub Actions chưa phải cổng bắt buộc ở nhánh này.
+5. Mở PR vào `develop` bằng `Refs #<issue>` và ghi kết quả tự kiểm tra; required validation checks phải pass và tuân thủ review gate hiện hành. Xem [required checks/Ruleset setup](CONTRIBUTING.md#develop-required-checks): technical merge block còn cần cấu hình/xác minh GitHub settings riêng.
 6. Tech Lead chọn phần ổn định để mở PR `develop -> main` cuối tuần; cần approval độc lập và required CI checks. Issue chỉ `Done` sau kiểm tra demo local trên `main` đạt. Xem [workflow chính](CONTRIBUTING.md#workflow-làm-việc-nhóm).
 
 Nhóm phát triển trên local. Baseline production đã chốt dùng **Vercel cho Frontend**, **Azure App Service (Java 21 SE) cho Backend**, **Azure SQL Database Serverless** và **Azure Blob Storage**. [Bản Frontend hiện có trên Vercel](https://mamxanh-frontend.vercel.app/) vẫn là demo UI dùng dữ liệu mẫu, được deploy thủ công và chưa kết nối Backend; xem [tính năng và giới hạn demo](app/mamxanh-frontend/README.md#giao-diện-demo-và-giới-hạn-hiện-tại). Việc chọn Vercel làm hosting baseline không đồng nghĩa Git auto-deploy hoặc CI/CD đã được thiết lập.
@@ -123,7 +123,7 @@ Các lệnh kiểm tra chính trên Windows:
 ```powershell
 # Backend
 cd app/mamxanh-backend
-.\mvnw.cmd test
+.\mvnw.cmd clean verify
 
 # Frontend
 cd ../mamxanh-frontend
@@ -131,9 +131,10 @@ npm ci
 npm run lint
 npm run build
 npm run test:e2e
+npm run test:e2e:coverage
 ```
 
-`npm run test:e2e` tự build Frontend, khởi động Vite preview trên port cố định `4173` và chạy Playwright bằng Chromium. Kết quả của một lần chạy local không thay thế CI hoặc bằng chứng nghiệm thu cho một FR cụ thể.
+`npm run test:e2e` tự build Frontend, khởi động Vite preview trên port `4173` và chạy Chromium; lần đầu cài browser bằng `npx playwright install chromium`. Command coverage dùng Istanbul/NYC, bắt buộc Lines/Statements/Functions/Branches đều ≥60%; Backend `clean verify` tạo JaCoCo XML/HTML và fail khi overall line <80%. Job `Sonar` đọc reports qua artifacts và chờ Quality Gate. Kết quả local không thay CI hay nghiệm thu FR; tests demo UI không chứng minh Backend/database E2E.
 
 ## Thành viên
 

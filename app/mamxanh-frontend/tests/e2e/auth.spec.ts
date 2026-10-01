@@ -1,4 +1,5 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
+import type { Page, Route } from '@playwright/test';
+import { expect, test } from './baseFixtures';
 
 // Registration and email verification call the backend API. These browser tests replace the API with
 // page.route stubs, so they check the Frontend flow only; they are not full FE–BE end-to-end evidence.
@@ -115,6 +116,7 @@ test('recovery and mobile layouts remain usable without claiming email delivery'
   await page.goto('/');
   await page.getByRole('link', { name: 'Đăng nhập', exact: true }).click();
   await page.getByRole('link', { name: 'Quên mật khẩu?' }).click();
+  await expect(page.getByRole('heading', { name: 'Quên mật khẩu?' })).toBeVisible();
   await page.getByLabel('Email', { exact: true }).fill('unknown@example.com');
   await page.getByRole('button', { name: 'Yêu cầu đặt lại mật khẩu' }).click();
   await expect(page.getByRole('status')).toContainText('không kiểm tra địa chỉ này có tài khoản');

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 class EmailSenderTest {
 
@@ -40,6 +42,18 @@ class EmailSenderTest {
         EmailSender sender = new EmailSender(provider, "no-reply@mamxanh.test");
 
         assertThatCode(() -> sender.sendPlainText("an@example.com", "Chủ đề", "Nội dung")).doesNotThrowAnyException();
+    }
+
+    @Test
+    void skipsWhenSmtpHostIsBlank() {
+        JavaMailSenderImpl blankHostSender = spy(new JavaMailSenderImpl());
+        blankHostSender.setHost("");
+        when(provider.getIfAvailable()).thenReturn(blankHostSender);
+        EmailSender sender = new EmailSender(provider, "no-reply@mamxanh.test");
+
+        sender.sendPlainText("an@example.com", "Chủ đề", "Nội dung");
+
+        verify(blankHostSender, never()).send(org.mockito.ArgumentMatchers.any(SimpleMailMessage.class));
     }
 
     @Test

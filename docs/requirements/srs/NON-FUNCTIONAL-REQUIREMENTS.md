@@ -1,8 +1,8 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.1.1
+> **Version:** v2.1.2
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-30
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -111,7 +111,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Nghiệp vụ liên quan:** `FR-03` (Đăng ký, đăng nhập và quản lý tài khoản cơ bản).
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
   - *Metric:* Số lần thất bại cho phép và thời gian khóa tạm thời.
-  - *Threshold:* Sau 5 lần nhập sai liên tiếp, rate limit tạm thời ở cấp tài khoản trong 10 phút (lưu trạng thái trên bảng `USER`, ví dụ `failed_login_attempts`, `locked_until`). Bỏ rate limit theo IP để tránh rủi ro NAT/proxy dùng chung. Không chuyển `USER.account_status` sang `LOCKED`.
+  - *Threshold:* Sau 5 lần nhập sai liên tiếp, rate limit tạm thời ở cấp tài khoản trong 10 phút (lưu trạng thái trên bảng `USER`, ví dụ `failed_login_attempts`, `login_blocked_until`). Bỏ rate limit theo IP để tránh rủi ro NAT/proxy dùng chung. Không chuyển `USER.account_status` sang `LOCKED`.
 - **Phương pháp kiểm chứng (Verification Method):** Kiểm thử tự động ngưỡng 5 lần sai của một tài khoản, xác nhận trả về mã lỗi và thời gian chờ (10 phút); xác nhận tài khoản khác trên cùng IP vẫn đăng nhập bình thường; xác nhận đăng nhập thành công sau 10 phút mà không cần can thiệp của Admin.
 
 ---

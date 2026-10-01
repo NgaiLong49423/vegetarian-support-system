@@ -1,8 +1,8 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.6.1<br>
+> **Version:** v0.6.2<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-28<br>
+> **Last Updated:** 2026-10-01<br>
 > **Status:** Active  
 
 # Database Workspace
@@ -28,7 +28,7 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
    - Toàn bộ trường phục vụ xác minh email, đặt lại mật khẩu và rate limit được lưu trữ trực tiếp trên bảng `USER`:
      - Xác minh email: `email_verification_token` (VARCHAR), `verification_token_expires_at` (DATETIME2).
      - Đặt lại mật khẩu: `password_reset_token` (VARCHAR), `reset_token_expires_at` (DATETIME2).
-     - Brute-force rate limit: `failed_login_attempts` (INT DEFAULT 0), `locked_until` (DATETIME2 NULL), `last_failed_login_at` (DATETIME2 NULL).
+     - Brute-force rate limit: `failed_login_attempts` (INT DEFAULT 0), `login_blocked_until` (DATETIME2 NULL), `last_failed_login_at` (DATETIME2 NULL).
      - Metadata rate limit email (Q27): cho phép bổ sung các trường tối thiểu trên `USER` nếu cần theo dõi 60s cooldown và tối đa 5 email/giờ/tài khoản.
    - Developer (Tony) sẽ viết Flyway migration mới trong các Issue thực thi (#5, #6, #9) và cập nhật snapshot `database/schema.sql`.
    - **Ranh giới Diagram Artifact Protection:** Thư mục `docs/diagrams/ERD/` (Physical ERD, Logical ERD) là presentation workspace do con người duy trì và được bảo vệ theo `AGENTS.md`. Việc thay đổi schema hoặc migration **tuyệt đối không tự động cấp quyền sửa hoặc regenerate ERD diagrams** cho coding agent trừ khi có task riêng được ủy quyền tường minh.

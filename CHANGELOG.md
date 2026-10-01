@@ -1,13 +1,115 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.35.0
+> **Version:** v2.38.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-10-01
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-01 — Synchronize Email Registration with the Develop Baseline (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Merge the current `develop` integration baseline into the FR-03-A branch and adapt the registration work to the new environment-configuration policy and coverage gates.
+
+### Added
+
+- Add the FR-03 mail, CORS and frontend-link variables to `app/mamxanh-backend/.env.example`, matching the `.env` import used by the `local` profile.
+- Add a unit test proving that verification emails are skipped when the SMTP host is blank.
+
+### Changed
+
+- Resolve mail settings through explicit `SPRING_MAIL_*` placeholders so values also load from the local `.env` file, and treat a blank SMTP host as email not configured.
+- Start the shared integration-test context through `MamXanhApplication.main`, combining the entry-point check from `develop` with the SQL Server Testcontainers context.
+- Use the coverage-collecting Playwright fixture in the registration and email-verification browser tests.
+- Remove `application-local.properties.example` following `develop` and move its optional Brevo settings into `.env.example`.
+
+### Fixed
+
+None.
+
+## 2026-09-30 — Enforce Coverage Gates and Separate Sonar Validation
+
+**Status:** Committed — 38e0226.
+
+**Scope:** Enforce the approved Frontend and Backend coverage policies, validate demo UI behavior, and document the required-check setup for develop integration.
+
+### Added
+
+- Add meaningful browser tests for recipe search, shopping list editing/export, recipe draft rows, community article rating, profile preferences, and nutrition day navigation.
+- Add a JaCoCo BUNDLE LINE COVEREDRATIO check at 0.80 and exercise the scaffold application entry point in its context test.
+- Define the external Ruleset setup for required Frontend, Backend, Sonar and relevant CodeQL checks, keeping Kody/Gemini review advisory.
+
+### Changed
+
+- Replace baseline-derived Frontend thresholds with 60% for lines, statements, functions and branches; any metric below its threshold fails the command.
+- Run Frontend/Backend jobs independently and transfer LCOV, JaCoCo XML and Java bytecode through artifacts to a separate Sonar job that waits for its Quality Gate.
+- Align testing, contributor, tooling and agent documentation; record the distinction between repository workflow configuration and GitHub enforcement awaiting separate approval.
+
+### Fixed
+
+- Wait for the recovery form before entering email in the navigation test.
+- Correct stale documentation claiming that build/test CI or coverage gates were not configured.
+
+## 2026-09-30 — Add Reproducible Playwright E2E Coverage Gate
+
+**Status:** Committed — 5c20a71.
+
+**Scope:** Add a repository-managed Playwright and Istanbul/NYC coverage workflow for the frontend, CI and SonarQube.
+
+### Added
+
+- Add portable npm coverage scripts, shared E2E coverage collection, HTML/LCOV/text reports, and baseline-derived thresholds of 59% lines, 54% statements, 42% functions, and 53% branches.
+- Run the Chromium coverage gate in CI and pass its LCOV artifact to the SonarQube scan after backend JaCoCo generation.
+
+### Changed
+
+- Document the normal E2E and E2E coverage commands in the Frontend testing guide.
+
+### Fixed
+
+None.
+
+## 2026-09-30 — Align Authentication Documentation for Q27 and Login Blocking Field
+
+**Status:** Committed — a9c5f0f.
+
+**Scope:** Align active authentication documentation with the approved password-reset privacy behavior and temporary login-block field name.
+
+### Added
+
+None.
+
+### Changed
+
+- Clarify that password-reset rate limits suppress email delivery while the request retains the same neutral `202 Accepted` response.
+- Use `login_blocked_until` as the canonical temporary login-block field name.
+
+### Fixed
+
+- Remove active Use Case wording that described password-reset rate limiting as returning `429`.
+
+## 2026-09-30 — Define Develop Integration Baseline and PR Synchronization
+
+**Status:** Committed — a9c5f0f.
+
+**Scope:** Establish contributor and coding-agent documentation for concurrent feature integration against `develop`.
+
+### Added
+
+- Define merged `develop` content as the current integration baseline and document synchronization, conflict review, shared-infrastructure reuse, Flyway collision handling, and scope-appropriate re-validation.
+- Align the agent entry point, machine-readable repository contract, implementation workflow, and `develop` PR checklist with the contribution policy.
+
+### Changed
+
+None.
+
+### Fixed
+
+None.
 
 ## 2026-09-28 — Implement Email Registration and Verification (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
