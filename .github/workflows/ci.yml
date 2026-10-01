@@ -47,11 +47,34 @@ jobs:
       - name: Run Playwright E2E coverage gate
         run: npm run test:e2e:coverage
 
+      - name: Summarize Frontend E2E coverage
+        run: |
+          npx nyc report --reporter=json-summary
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const { total } = require('./coverage/coverage-summary.json');
+
+          console.log('## Frontend — Playwright E2E coverage');
+          console.log('');
+          console.log('| Metric | Coverage | Required |');
+          console.log('| --- | ---: | ---: |');
+          for (const metric of ['lines', 'statements', 'functions', 'branches']) {
+            const label = metric[0].toUpperCase() + metric.slice(1);
+            console.log(`| ${label} | ${total[metric].pct.toFixed(1)}% | ≥60% |`);
+          }
+          NODE
+
       - name: Upload frontend LCOV report
         uses: actions/upload-artifact@v4
         with:
           name: frontend-lcov
           path: app/mamxanh-frontend/coverage/lcov.info
+          if-no-files-found: error
+
+      - name: Upload Frontend HTML coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-e2e-coverage-html
+          path: app/mamxanh-frontend/coverage/index.html
           if-no-files-found: error
 
   backend:
@@ -78,6 +101,29 @@ jobs:
       - name: Test and package
         run: bash ./mvnw --batch-mode clean verify
 
+      - name: Summarize Backend JaCoCo coverage
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+
+          report = ET.parse('target/site/jacoco/jacoco.xml').getroot()
+          line = next((counter for counter in report.findall('counter') if counter.get('type') == 'LINE'), None)
+          if line is None:
+              raise SystemExit('JaCoCo report does not contain a BUNDLE LINE counter')
+
+          covered = int(line.get('covered', '0'))
+          missed = int(line.get('missed', '0'))
+          total = covered + missed
+          if total == 0:
+              raise SystemExit('JaCoCo BUNDLE LINE counter has no lines')
+
+          print('## Backend — JaCoCo coverage')
+          print()
+          print('| Scope | Covered lines | Coverage | Required |')
+          print('| --- | ---: | ---: | ---: |')
+          print(f'| BUNDLE / LINE | {covered}/{total} | {covered / total * 100:.1f}% | ≥80% |')
+          PY
+
       - name: Upload backend coverage and bytecode
         uses: actions/upload-artifact@v4
         with:
@@ -86,6 +132,13 @@ jobs:
             app/mamxanh-backend/target/site/jacoco/jacoco.xml
             app/mamxanh-backend/target/classes/
             app/mamxanh-backend/target/test-classes/
+          if-no-files-found: error
+
+      - name: Upload Backend JaCoCo HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-html
+          path: app/mamxanh-backend/target/site/jacoco/index.html
           if-no-files-found: error
 
   sonar:
