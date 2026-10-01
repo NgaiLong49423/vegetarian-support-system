@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-01 — Synchronize Email Registration with the Develop Baseline (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — 7f80186.
 
 **Scope:** Merge the current `develop` integration baseline into the FR-03-A branch and adapt the registration work to the new environment-configuration policy and coverage gates.
 
