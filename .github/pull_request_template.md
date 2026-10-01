@@ -1,15 +1,15 @@
 > **Document:** Pull Request Template  
 > **File:** `.github/pull_request_template.md`  
-> **Version:** v2.1.0
+> **Version:** v2.3.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-19
+> **Last Updated:** 2026-09-30
 > **Status:** Template  
 
 # Pull Request
 
 Bắt buộc dùng template này, giữ các mục và checklist; không tự thay bằng format mới. Mục không áp dụng xử lý theo chỉ dẫn bên dưới hoặc ghi `Không áp dụng` kèm lý do.
 
-Quy tắc áp dụng: [CONTRIBUTING.md](../CONTRIBUTING.md#workflow-làm-việc-nhóm). Với PR vào `develop`, review/approval và GitHub Actions không bắt buộc; PR vào `main` phải đạt cổng bên dưới.
+Quy tắc áp dụng: [CONTRIBUTING.md](../CONTRIBUTING.md#workflow-làm-việc-nhóm). PR vào `develop` phải pass [required validation checks](../CONTRIBUTING.md#develop-required-checks) và review gate hiện hành; PR vào `main` phải đạt cổng bên dưới. Workflow YAML không tự bật GitHub required-check settings.
 
 ## Tóm tắt và phạm vi
 
@@ -36,6 +36,16 @@ Thêm screenshot/video khi có thay đổi UI. Không ghi test pass nếu chưa 
 - [ ] Đã ghi kết quả tự kiểm tra và phần còn chưa kiểm tra
 - [ ] Không có secret, `.env`, credential, file build/cá nhân
 - [ ] Tài liệu/contract/migration liên quan được cập nhật khi áp dụng
+
+## Đồng bộ trước khi merge vào `develop`
+
+Chỉ áp dụng cho PR hướng vào `develop`; không phải checklist cho PR `develop` → `main`. Xem [Develop integration baseline và đồng bộ PR](../CONTRIBUTING.md#develop-integration-baseline).
+
+- [ ] Branch đã được kiểm tra/sync với integration baseline `develop` hiện hành trước merge.
+- [ ] Git conflicts và semantic conflicts phát sinh sau sync đã được xử lý.
+- [ ] Flyway migration version đã được kiểm tra lại nếu PR có migration.
+- [ ] Verification phù hợp với scope đã chạy lại sau lần synchronization cuối có ảnh hưởng tới feature.
+- [ ] Required Frontend/Backend/Sonar và CodeQL checks liên quan pass trên commit cập nhật; thất bại/skip chưa được coi là pass. Review gate hiện hành đã đáp ứng.
 
 ## Cổng PR vào `main`
 

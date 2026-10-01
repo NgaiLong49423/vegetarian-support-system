@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M02
 > **File:** `docs/requirements/use-cases/identity-and-access.md`
-> **Version:** v2.2.0
+> **Version:** v2.3.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-09-30
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -62,7 +62,7 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 - **Goal / Primary Actor:** Guest yêu cầu liên kết reset; Email Provider hỗ trợ gửi.
 - **Trigger / Preconditions:** Guest nhập email tại màn hình quên mật khẩu.
 - **Main Flow:** Hệ thống trả HTTP 202 trung tính và, nếu tài khoản hợp lệ, tạo token 15 phút lưu trên `USER` rồi gửi email (rate limit 60s cooldown và tối đa 5 email/giờ/tài khoản).
-- **Alternative / Security:** Email không tồn tại vẫn nhận phản hồi 202 giống nhau; request vượt rate limit bị từ chối 429.
+- **Alternative / Security:** Email không tồn tại hoặc request vượt rate limit đều không gửi email và vẫn nhận cùng phản hồi HTTP 202 trung tính; không tiết lộ email có tồn tại hay trạng thái rate limit.
 - **Postconditions:** Không thay mật khẩu ở bước này; reset token mới ghi đè token cũ trên `USER`.
 - **Traceability / Acceptance Coverage:** FR-03; NFR-07, NFR-08; [AC-03.14](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
 
@@ -409,16 +409,16 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
 ##### B. Luồng Đăng nhập bằng Email/Mật khẩu & Phòng vệ Brute-force (UC-03.4)
 1. **Main Flow (Đăng nhập thành công):**
    - Bước 1: Guest nhập email và mật khẩu tại màn hình Đăng nhập, nhấn "Đăng nhập".
-   - Bước 2: Hệ thống kiểm tra cơ chế giới hạn thử sai (rate limit) ở cấp tài khoản (`failed_login_attempts`, `locked_until` trên bảng `USER`). Nếu tài khoản đang trong thời gian tạm khóa 10 phút, từ chối ngay.
+   - Bước 2: Hệ thống kiểm tra cơ chế giới hạn thử sai (rate limit) ở cấp tài khoản (`failed_login_attempts`, `login_blocked_until` trên bảng `USER`). Nếu tài khoản đang trong thời gian tạm chặn 10 phút, từ chối ngay.
    - Bước 3: Hệ thống tìm kiếm thông tin tài khoản theo email.
    - Bước 4: Hệ thống so khớp mật khẩu qua thuật toán băm an toàn (BCrypt). Mật khẩu khớp chính xác.
    - Bước 5: Hệ thống chỉ cho đăng nhập khi `account_status = ACTIVE` và `email_verified = true`; tài khoản `LOCKED` bị từ chối độc lập với trạng thái xác minh email.
-   - Bước 6: Hệ thống đặt lại bộ đếm thử sai `failed_login_attempts` về 0 và xóa `locked_until` trên bảng `USER`.
+   - Bước 6: Hệ thống đặt lại bộ đếm thử sai `failed_login_attempts` về 0 và xóa `login_blocked_until` trên bảng `USER`.
    - Bước 7: Hệ thống tạo Stateless JWT Access Token cho ứng dụng; không cấp Refresh Token, không ghi cookie, không tạo phiên máy chủ.
    - Bước 8: Hệ thống phản hồi đăng nhập thành công kèm Access Token và thông tin định danh cơ bản (`AccountSummary`) cho ứng dụng; giao diện chuyển sang trạng thái đã đăng nhập.
 2. **Alternative & Security Flow (Phòng vệ Brute-force Rate Limiting ở cấp tài khoản):**
    - *Đăng nhập sai từ lần 1 đến lần 4:* Mật khẩu không khớp -> Hệ thống tăng bộ đếm thất bại `failed_login_attempts` trên bảng `USER`, từ chối xác thực kèm thông báo an toàn chung: "Email hoặc mật khẩu không chính xác".
-   - *Đăng nhập sai liên tiếp lần thứ 5:* Khi ghi nhận 5 lần đăng nhập thất bại liên tiếp của tài khoản, hệ thống tự động kích hoạt cơ chế bảo vệ tạm thời (Temporary Rate Limit) trong đúng 10 phút bằng cách thiết lập `locked_until = now() + 10 phút` trên bảng `USER`. Bỏ rate limit theo IP để tránh rủi ro ảnh hưởng người dùng chung mạng NAT/proxy.
+   - *Đăng nhập sai liên tiếp lần thứ 5:* Khi ghi nhận 5 lần đăng nhập thất bại liên tiếp của tài khoản, hệ thống tự động kích hoạt cơ chế bảo vệ tạm thời (Temporary Rate Limit) trong đúng 10 phút bằng cách thiết lập `login_blocked_until = now() + 10 phút` trên bảng `USER`. Bỏ rate limit theo IP để tránh rủi ro ảnh hưởng người dùng chung mạng NAT/proxy.
    - *Yêu cầu đăng nhập trong 10 phút bị rate limit:* Mọi yêu cầu đăng nhập nhắm vào tài khoản đang bị bảo vệ đều bị từ chối ngay tại cổng tiếp nhận với thông báo: *"Bạn đã đăng nhập sai quá số lần quy định. Vui lòng thử lại sau 10 phút."*, hoàn toàn không truy vấn kiểm tra mật khẩu trong cơ sở dữ liệu (NFR-07).
    - *Hết thời hạn 10 phút:* Cơ chế bảo vệ tạm thời tự động hết hiệu lực; người dùng có thể tiếp tục đăng nhập bình thường mà KHÔNG cần Quản trị viên can thiệp.
    - *Ranh giới bảo mật cốt lõi:* Hệ thống TUYỆT ĐỐI KHÔNG chuyển trạng thái tài khoản sang trạng thái khóa quản trị (`LOCKED`) trong cơ sở dữ liệu khi bị rate limit (trạng thái `LOCKED` chỉ do Quản trị viên áp dụng thủ công sau hậu kiểm theo BR-26).
@@ -447,14 +447,14 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03).
 1. **Main Flow:**
    - Bước 1: Guest truy cập chức năng Quên mật khẩu, nhập email đã đăng ký và gửi yêu cầu.
    - Bước 2: Hệ thống kiểm tra email. Nếu tài khoản tồn tại: áp dụng rate limit gửi email (60 giây cooldown và tối đa 5 email/giờ trên mỗi tài khoản; lưu metadata trên bảng `USER`); tạo mã đặt lại mật khẩu ngẫu nhiên an toàn có thời hạn ngắn (15 phút) lưu trên bảng `USER` (ghi đè mã cũ nếu có).
-   - Bước 3: Hệ thống gửi email chứa liên kết đặt lại mật khẩu an toàn theo cơ chế bất đồng bộ.
+   - Bước 3: Nếu tài khoản tồn tại và chưa vượt rate limit, hệ thống gửi email chứa liên kết đặt lại mật khẩu an toàn theo cơ chế bất đồng bộ. Nếu vượt cooldown 60 giây hoặc tối đa 5 email/giờ/tài khoản, hệ thống không gửi email.
    - Bước 4: Hệ thống luôn phản hồi HTTP 202 Accepted trung tính: "Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi đến hộp thư của bạn" (nhằm phòng chống tấn công dò quét sự tồn tại của email người dùng).
    - Bước 5: Người dùng nhấp vào liên kết trong email, giao diện hiển thị biểu mẫu thiết lập mật khẩu mới.
    - Bước 6: Người dùng gửi mật khẩu mới kèm mã xác thực. Hệ thống kiểm tra mã hợp lệ và còn hạn; băm mật khẩu mới bằng BCrypt (8–64 ký tự, tối đa 72 bytes UTF-8), cập nhật mật khẩu tài khoản, xóa mã đặt lại mật khẩu trên bảng `USER`. Do hệ thống sử dụng Stateless JWT Access Token, không có phiên máy chủ nào cần thu hồi.
    - Bước 7: Giao diện thông báo đổi mật khẩu thành công và điều hướng tới màn hình Đăng nhập.
 2. **Error Flows:**
    - *Mã đặt lại mật khẩu hết hạn hoặc không hợp lệ:* Hệ thống từ chối yêu cầu và thông báo người dùng khởi tạo lại quy trình quên mật khẩu.
-   - *Yêu cầu gửi email vượt rate limit:* Hệ thống trả HTTP 429 Too Many Requests kèm thông báo yêu cầu chờ.
+   - *Yêu cầu gửi email vượt rate limit:* Hệ thống không gửi email nhưng vẫn trả cùng phản hồi HTTP 202 Accepted trung tính như các request hợp lệ khác; không trả `429` và không tiết lộ account existence hoặc trạng thái rate limit.
 
 ##### E. Luồng Đăng xuất phía máy khách (UC-03.9)
 1. **UC-03.8 — [SUPERSEDED / RETIRED] Làm mới phiên xác thực:**

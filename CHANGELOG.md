@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.35.0
+> **Version:** v2.37.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-01
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-01 — Implement Nutrition Profile Reference Flow
 
-**Status:** Implemented locally; not yet pushed.
+**Status:** Committed — db6b690.
 
 **Scope:** Implement the FR-35 nutrition profile vertical slice within the existing Member profile model, while preserving the application's non-clinical, informational boundary.
 
@@ -31,6 +31,86 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Prevent previously calculated results from reappearing after reload or after eligibility answers change.
 - Record the manual SQL confirmation of current consent columns and constraint as schema-state evidence only; fresh-database Flyway execution and authenticated end-to-end acceptance remain unverified.
+
+## 2026-09-30 — Enforce Coverage Gates and Separate Sonar Validation
+
+**Status:** Committed — 38e0226.
+
+**Scope:** Enforce the approved Frontend and Backend coverage policies, validate demo UI behavior, and document the required-check setup for develop integration.
+
+### Added
+
+- Add meaningful browser tests for recipe search, shopping list editing/export, recipe draft rows, community article rating, profile preferences, and nutrition day navigation.
+- Add a JaCoCo BUNDLE LINE COVEREDRATIO check at 0.80 and exercise the scaffold application entry point in its context test.
+- Define the external Ruleset setup for required Frontend, Backend, Sonar and relevant CodeQL checks, keeping Kody/Gemini review advisory.
+
+### Changed
+
+- Replace baseline-derived Frontend thresholds with 60% for lines, statements, functions and branches; any metric below its threshold fails the command.
+- Run Frontend/Backend jobs independently and transfer LCOV, JaCoCo XML and Java bytecode through artifacts to a separate Sonar job that waits for its Quality Gate.
+- Align testing, contributor, tooling and agent documentation; record the distinction between repository workflow configuration and GitHub enforcement awaiting separate approval.
+
+### Fixed
+
+- Wait for the recovery form before entering email in the navigation test.
+- Correct stale documentation claiming that build/test CI or coverage gates were not configured.
+
+## 2026-09-30 — Add Reproducible Playwright E2E Coverage Gate
+
+**Status:** Committed — 5c20a71.
+
+**Scope:** Add a repository-managed Playwright and Istanbul/NYC coverage workflow for the frontend, CI and SonarQube.
+
+### Added
+
+- Add portable npm coverage scripts, shared E2E coverage collection, HTML/LCOV/text reports, and baseline-derived thresholds of 59% lines, 54% statements, 42% functions, and 53% branches.
+- Run the Chromium coverage gate in CI and pass its LCOV artifact to the SonarQube scan after backend JaCoCo generation.
+
+### Changed
+
+- Document the normal E2E and E2E coverage commands in the Frontend testing guide.
+
+### Fixed
+
+None.
+
+## 2026-09-30 — Align Authentication Documentation for Q27 and Login Blocking Field
+
+**Status:** Committed — a9c5f0f.
+
+**Scope:** Align active authentication documentation with the approved password-reset privacy behavior and temporary login-block field name.
+
+### Added
+
+None.
+
+### Changed
+
+- Clarify that password-reset rate limits suppress email delivery while the request retains the same neutral `202 Accepted` response.
+- Use `login_blocked_until` as the canonical temporary login-block field name.
+
+### Fixed
+
+- Remove active Use Case wording that described password-reset rate limiting as returning `429`.
+
+## 2026-09-30 — Define Develop Integration Baseline and PR Synchronization
+
+**Status:** Committed — a9c5f0f.
+
+**Scope:** Establish contributor and coding-agent documentation for concurrent feature integration against `develop`.
+
+### Added
+
+- Define merged `develop` content as the current integration baseline and document synchronization, conflict review, shared-infrastructure reuse, Flyway collision handling, and scope-appropriate re-validation.
+- Align the agent entry point, machine-readable repository contract, implementation workflow, and `develop` PR checklist with the contribution policy.
+
+### Changed
+
+None.
+
+### Fixed
+
+None.
 
 ## 2026-09-27 — Finalize Requirements Baseline v2 and Prepare Issue Reconciliation ([PR #72](https://github.com/NgaiLong49423/vegetarian-support-system/pull/72))
 

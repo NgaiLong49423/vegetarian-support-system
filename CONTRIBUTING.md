@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.4.0
+> **Version:** v3.6.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-09-30
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -36,7 +36,7 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
                 -> PR develop vào main -> kiểm tra demo local -> Done
 ```
 
-- Thành viên phát triển và debug trên local; `develop` là nhánh tích hợp, `main` là phiên bản ổn định để demo.
+- Thành viên phát triển và debug trên local; `develop` là current integration baseline của code, documentation, migration và common infrastructure đã merge; `main` là phiên bản ổn định để demo. Baseline này không thay thế authority theo concern như SRS, OpenAPI, Technology Stack hoặc architecture docs.
 - Nhánh làm việc tách từ `develop`; thay đổi đi qua PR vào `develop`, rồi PR `develop -> main`.
 - `Planning`: làm rõ scope, Acceptance Criteria, dependency và kế hoạch trước khi code. `In Progress`: triển khai và tự kiểm tra.
 - `Review` bắt đầu khi mở PR vào `develop`; sau merge Issue vẫn ở `Review` chờ nghiệm thu trên `main`. Nếu PR bị đóng hoặc cần làm lại đáng kể, chuyển về `In Progress`.
@@ -83,9 +83,66 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
 ### PR vào `develop`
 
 - PR dùng `Refs #<issue-number>`, ghi scope, thay đổi và kết quả tự kiểm tra; không chứa secret, `.env`, credential hoặc file build/cá nhân.
-- Review có thể được request nhưng không bắt buộc approval. GitHub Actions không phải cổng bắt buộc cho merge vào `develop`.
-- Owner vẫn tự kiểm tra phần thay đổi và ghi trung thực phần chưa kiểm tra/blocker. Cổng nhẹ cho phép tích hợp sớm, không xác nhận FR đã hoàn thành.
+- Required validation checks phải pass trước merge; xem [Required checks và technical enforcement](#develop-required-checks). Ruleset hiện có yêu cầu một approval; giữ gate review hiện hành, không coi AI review là approval của thành viên.
+- Owner tự kiểm tra phần thay đổi và ghi trung thực phần chưa kiểm tra/blocker. Merge vào `develop` là tích hợp, chưa xác nhận FR đã hoàn thành.
 - Một Issue có thể có nhiều PR liên quan; không ép quan hệ một Issue/một branch/một PR.
+
+<a id="develop-integration-baseline"></a>
+#### Develop integration baseline và đồng bộ PR song song
+
+- **Baseline:** `develop` là current integration baseline. Chỉ code, documentation, migration và common infrastructure thực sự đã merge vào `develop` mới thuộc baseline tích hợp mà các branch khác phải tương thích trước khi merge. Quy tắc này không thay thế source of truth theo concern của repository, gồm SRS/requirements, OpenAPI contract, Technology Stack, architecture và các authority được chỉ định khác.
+- **Draft/Open work:** Draft PR, Open PR chưa merge, feature branch khác hoặc commit ngoài `develop` không tự trở thành integration baseline hoặc dependency bắt buộc, và không buộc branch khác đổi implementation chỉ vì chúng tồn tại. Dependency được xác định rõ trong GitHub Issue, bởi owner/Tech Lead, requirement, repository policy hoặc quyết định integration đã chốt vẫn phải được tôn trọng.
+- **Baseline tiến lên:** Integration baseline chỉ thay đổi khi nội dung thực sự được merge vào `develop`, theo merge gates hiện hành. PR nào được merge trước tạo baseline mới; không suy thứ tự merge từ số Issue/PR, thời điểm mở PR, tạo branch hoặc commit. Không yêu cầu giữ compatibility với Draft/Open PR chưa merge, trừ dependency đã được xác nhận.
+- **Thời điểm đồng bộ:** Owner kiểm tra/sync `develop` khi chuẩn bị Ready for Review, trước merge nếu baseline liên quan đã thay đổi kể từ lần sync gần nhất, hoặc khi owner yêu cầu. Không cần sync lặp lại cho mỗi commit không liên quan trên `develop`.
+
+```text
+PR được merge vào develop
+        ↓
+develop trở thành integration baseline mới
+        ↓
+PR liên quan còn mở sync baseline mới trên feature branch
+        ↓
+resolve Git conflict + inspect semantic conflict
+        ↓
+adapt implementation + kiểm tra migration nếu có
+        ↓
+chạy lại verification phù hợp với scope
+        ↓
+merge theo gates hiện hành
+```
+
+- **Git và semantic conflict:** Git conflict được resolve trên feature branch. Dù Git merge tự động thành công, owner vẫn kiểm tra semantic conflict: duplicate common infrastructure/service/helper; exception hierarchy hoặc API/error convention không tương thích; entity/schema assumptions thay đổi; DTO/client abstraction trùng; FE/BE contract drift; shared frontend client/component conventions và các xung đột architecture/behavior khác. “Git không báo conflict” không chứng minh branch an toàn để merge.
+- **Common infrastructure:** Nếu `develop` đã có infrastructure dùng chung, PR còn mở phải reuse, extend hoặc adapt theo baseline đó thay vì giữ implementation song song không cần thiết. Bao gồm `GlobalExceptionHandler`, `ErrorCode`, exception hierarchy, auth/security abstraction, API response/error convention, shared DTO, common utility/service, repository conventions, shared frontend API client và design/component primitives. Nếu baseline thật sự không đáp ứng feature, owner/agent surface concern trong PR hoặc xin quyết định phù hợp; không tự tạo convention cạnh tranh.
+- **Flyway:** Migration đã merge giữ nguyên version và content. Sau khi sync, migration chưa merge phải thích ứng với lịch sử mới và dùng version khả dụng tiếp theo khi collision. Không sửa migration đã baseline hóa để giải collision; thay đổi tiếp theo dùng append-only migration. Trước khi chọn version, kiểm tra migration history hiện hành trên `develop`.
+- **Resolve an toàn và re-validation:** Không chọn `ours`, `theirs`, Accept Current hoặc Accept Incoming cho toàn file khi chưa hiểu intent. Xác định phần đã thành baseline và intent feature, kết hợp đúng hai phía; nếu semantic intent chưa rõ, dừng và hỏi owner/reviewer. Sau sync, chạy lại verification phù hợp với scope và repository rules (ví dụ backend build/tests/migration validation, frontend typecheck/build/tests hoặc cross-layer API/FE-BE contract checks). Kết quả trước sync không phải bằng chứng cuối nếu synchronization có thể ảnh hưởng feature; cập nhật PR evidence khi cần.
+
+<a id="develop-required-checks"></a>
+#### Required checks và technical enforcement cho `develop`
+
+Project Owner chốt hard gates: Frontend Playwright/Istanbul/NYC đạt **≥60% cho cả Lines, Statements, Functions và Branches**; Backend JaCoCo đạt **overall BUNDLE LINE ≥80%**. Command/check fail không được coi là pass. Xem [Test Strategy](docs/testing/TEST-STRATEGY.md#8-cách-hiểu-coverage) và app README cho lệnh, metric và report paths.
+
+| Required check context | Phạm vi |
+|---|---|
+| `Frontend` | Typecheck, build và Playwright coverage hard gate |
+| `Backend` | `clean verify`: JUnit, package và JaCoCo hard gate |
+| `Sonar` | Đọc LCOV/JaCoCo qua artifacts, static analysis và chờ Sonar Quality Gate; scan/gate fail hoặc timeout làm check fail |
+| `Analyze (javascript-typescript)` | CodeQL default setup: JavaScript/TypeScript validation |
+| `Analyze (java-kotlin)` | CodeQL default setup: Java validation |
+| `Analyze (actions)` | CodeQL default setup: GitHub Actions validation |
+
+CodeQL là GitHub default setup, không có workflow YAML local. Ba tên CodeQL và `Frontend`/`Backend` đã được thấy trên GitHub check runs; `Sonar` là job riêng trong workflow mới và cần xác nhận context sau lần chạy đầu. Mọi PR validation liên quan phải pass; khi bổ sung validation job mới, cập nhật danh sách required contexts cùng workflow, không coi job mới là advisory mặc định.
+
+Không yêu cầu `release-source` cho PR `develop`: workflow này chỉ kiểm tra PR vào `main`. Dependabot Updates là utility, deployment/manual/release jobs không chạy PR không phải merge gate của `develop`. `SonarCloud Code Analysis` là report từ Sonar app và có thể `neutral`; dùng job `Sonar` chờ Quality Gate làm gate. Kody/Kodus + Gemini chỉ advisory AI reviewer; chưa đưa thành required check trước khi đánh giá đủ PR, false positives và có quyết định riêng của owner.
+
+**Trạng thái enforcement ngày 2026-09-30:** Ruleset `protect-develop` đang active, yêu cầu PR và một approval, chặn force push/xóa branch, có owner/admin bypass. Ruleset được kiểm tra chưa có required status checks hoặc strict up-to-date rule. Repository workflow không tự bật GitHub settings; task coverage không tự sửa Ruleset.
+
+Để GitHub thực sự block merge khi check fail, owner cấu hình Ruleset/Branch Protection ngoài repository sau approval riêng:
+
+1. Target đúng `refs/heads/develop`; require PR before merging, giữ approval/review gate hiện hành.
+2. Require status checks to pass; chọn các contexts trong bảng từ PR check runs thực tế, với source GitHub Actions khi có tùy chọn. Xác minh các CodeQL checks chạy trên PR target `develop` trước khi require.
+3. Bật require branches to be up to date (strict mode); sau sync phải chạy lại checks trên commit cập nhật.
+4. Giữ block force pushes và branch deletion. Owner bypass là quyền quản trị hiện có, không làm member PR được bỏ qua gates.
+5. Dùng PR kiểm tra để xác nhận mỗi check fail thực sự khóa merge; không ghi technical enforcement hoàn tất chỉ từ YAML hoặc checklist. Sonar secret/Quality Gate phải sẵn sàng; không skip Sonar và báo xanh khi secret/report thiếu.
 
 ### PR vào `main` và nghiệm thu
 
@@ -104,7 +161,7 @@ Sau merge, owner cung cấp bằng chứng chức năng; Tech Lead tổ chức k
 
 Nếu kiểm tra thất bại, Issue bị ảnh hưởng chưa `Done`; nếu đã đóng sai trong chính đợt đó thì mở lại và đưa về `Review`, tạo Bug Issue liên kết. Issue đã nghiệm thu từ trước giữ lịch sử; lỗi mới có Bug Issue riêng. Lỗi nghiêm trọng làm bản demo không dùng được do Tech Lead quyết định sửa ngay hoặc revert, giữ cổng approval/checks cho PR vào `main`.
 
-**Trạng thái công cụ:** tại kiểm tra repository ngày 2026-09-18, `.github/workflows/release-source.yml` chỉ kiểm tra source PR vào `main` phải là `develop`; chưa có workflow build/test trong thư mục này. Cổng build/test bắt buộc ở trên là quyết định đã chốt, chưa có bằng chứng được triển khai đầy đủ. Khi đưa code triển khai vào `main`, phải có CI build/test phù hợp và xác minh required checks; tài liệu này không tự cấu hình GitHub hoặc tạo pipeline.
+**Trạng thái công cụ:** `.github/workflows/ci.yml` chạy Frontend/Backend verification cho PR và push vào `develop`/`main`, cùng job Sonar nhận artifacts và chờ Quality Gate. `.github/workflows/release-source.yml` kiểm tra PR vào `main` phải có source `develop`. Build/test automation có trong repository; GitHub required checks và server-side Sonar settings phải được xác minh riêng, không suy ra từ workflow YAML.
 
 ### Review và phản hồi
 
@@ -373,6 +430,8 @@ chore: update .gitignore
 3. **Liên kết Issue:** PR vào `develop` và `main` dùng `Refs #123`. Tech Lead xác nhận và đóng Issue sau khi kiểm tra demo local trên `main` đạt; không dùng closing keywords để đóng trước nghiệm thu.
 4. **Kiểm tra hoạt động:** Chắc chắn rằng dự án của bạn vẫn chạy được và không làm hỏng các tính năng cũ.
 5. **Dọn dẹp code:** Đảm bảo không có code thừa, comment nháp hay các file rác trước khi gửi PR.
+
+Các yêu cầu đồng bộ integration baseline cho PR vào `develop` được quy định tại [Develop integration baseline và đồng bộ PR song song](#develop-integration-baseline); không lặp lại checklist tại đây.
 
 ---
 

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './baseFixtures';
 
 test('loads the application shell and navigates to Explore', async ({ page }) => {
   const pageErrors: string[] = [];
