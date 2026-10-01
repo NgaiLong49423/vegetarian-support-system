@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.39.0
+> **Version:** v2.40.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-01
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-01 — Serialize Verification Email Resends (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Address the PR #74 review: concurrent resend requests could all pass the 60-second cooldown, several boundaries were untested, and the pull request must leave `docs/diagrams/` unchanged.
+
+### Added
+
+- Add regression and boundary tests: five concurrent resends after the cooldown accept exactly one request, keep only its token and send one email; a resend at 59 seconds is rejected and at exactly 60 seconds is accepted; display names of 3 and 50 characters are accepted and 51 are rejected.
+- Assert that integration tests started through `MamXanhApplication.main` use only the `test` profile, the SQL Server Testcontainers database and the applied Flyway history.
+
+### Changed
+
+- Revert the Data Dictionary edits made earlier in this pull request (the two `USER` columns, decisions Q13, Q15 and Q16, and the `google_subject` trace correction). Per the Tech Lead decision on 2026-10-01, files under `docs/diagrams/` stay a reference baseline until the final documentation phase; `database/README.md` now says so.
+
+### Fixed
+
+- Lock the `USER` row while checking the resend cooldown and replacing the verification token, so concurrent requests are serialized and only the accepted one publishes an email event.
 
 ## 2026-10-01 — Compute the Verification Resend Cooldown with Time Zone-Aware Values (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
