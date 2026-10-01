@@ -65,7 +65,7 @@ public class NutritionCalculationService {
 
     public List<Target> dailyTargets(int age, String sex, BigDecimal energyKcal) {
         boolean male = "MALE".equals(sex);
-        BigDecimal proteinLow = age == 18 ? new BigDecimal("0.10") : new BigDecimal("0.10");
+        BigDecimal proteinLow = new BigDecimal("0.10");
         BigDecimal proteinHigh = age == 18 ? new BigDecimal("0.30") : new BigDecimal("0.35");
         BigDecimal carbLow = new BigDecimal("0.45");
         BigDecimal carbHigh = new BigDecimal("0.65");

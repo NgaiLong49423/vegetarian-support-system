@@ -1,4 +1,87 @@
+import type { Page } from '@playwright/test';
 import { expect, test } from './baseFixtures';
+
+declare global {
+  interface Window {
+    __nutritionE2eAccessToken?: string;
+  }
+}
+
+const exampleProfile = {
+  dateOfBirth: '1990-01-01',
+  biologicalSex: 'FEMALE',
+  heightCm: 170,
+  weightKg: 65,
+  activityLevel: 'SEDENTARY',
+  nutritionGoal: 'MAINTAIN_WEIGHT',
+};
+
+const emptyNutritionResponse = {
+  hasProfile: false,
+  eligible: false,
+  outOfScopeReasons: [],
+  profile: null,
+  results: null,
+};
+
+const savedNutritionResponse = {
+  hasProfile: true,
+  eligible: false,
+  outOfScopeReasons: [],
+  profile: exampleProfile,
+  results: null,
+};
+
+const calculatedNutritionResponse = {
+  ...savedNutritionResponse,
+  eligible: true,
+  results: {
+    bmi: 22.491349481,
+    bmiCategory: 'Bình thường',
+    energyKcal: 2200,
+    energySource: 'NASEM EER — https://example.org/energy',
+    nutrientSource: 'NASEM DRI',
+    dailyTargets: [
+      { key: 'protein', label: 'Chất đạm', minimum: 55, maximum: 165, unit: 'g', referenceType: 'AMDR', source: 'NASEM — https://example.org/macros' },
+      { key: 'carbohydrate', label: 'Carbohydrate', minimum: 250, maximum: 350, unit: 'g', referenceType: 'AMDR', source: 'NASEM — https://example.org/macros' },
+      { key: 'fat', label: 'Chất béo', minimum: 50, maximum: 85, unit: 'g', referenceType: 'AMDR', source: 'NASEM — https://example.org/macros' },
+      { key: 'fiber', label: 'Chất xơ', minimum: 25, maximum: 25, unit: 'g', referenceType: 'AI', source: 'NASEM DRI' },
+      { key: 'calcium', label: 'Canxi', minimum: 1000, maximum: 1000, unit: 'mg', referenceType: 'RDA', source: 'NIH ODS — https://example.org/calcium' },
+      { key: 'iron', label: 'Sắt', minimum: 18, maximum: 18, unit: 'mg', referenceType: 'RDA', source: 'NIH ODS — https://example.org/iron' },
+      { key: 'vitaminB12', label: 'Vitamin B12', minimum: 2.4, maximum: 2.4, unit: 'mcg', referenceType: 'RDA', source: 'NIH ODS — https://example.org/b12' },
+      { key: 'zinc', label: 'Kẽm', minimum: 8, maximum: 8, unit: 'mg', referenceType: 'RDA', source: 'NIH ODS — https://example.org/zinc' },
+    ],
+  },
+};
+
+async function prepareMockAuthenticatedNutritionPage(page: Page) {
+  await page.addInitScript(() => { window.__nutritionE2eAccessToken = 'test-only-token'; });
+  await page.route('**/api/v1/nutrition/profile**', async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const method = route.request().method();
+    if (path.endsWith('/calculate')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(calculatedNutritionResponse) });
+    } else if (method === 'PUT') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(savedNutritionResponse) });
+    } else {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(emptyNutritionResponse) });
+    }
+  });
+  await page.goto('/ho-so/dinh-duong');
+}
+
+async function fillEligibleNutritionProfile(page: Page) {
+  await page.getByLabel('Ngày sinh *').fill(exampleProfile.dateOfBirth);
+  await page.getByRole('radio', { name: 'Nữ' }).check();
+  await page.getByLabel('Chiều cao *').fill(String(exampleProfile.heightCm));
+  await page.getByLabel('Cân nặng *').fill(String(exampleProfile.weightKg));
+  await page.getByLabel('Mức độ vận động *').selectOption(exampleProfile.activityLevel);
+  await page.getByLabel('Mục tiêu dinh dưỡng chung *').selectOption(exampleProfile.nutritionGoal);
+  for (const name of ['pregnant', 'breastfeeding', 'therapeuticDietRequired']) {
+    await page.locator(`input[name="${name}"][value="no"]`).check();
+  }
+  await page.getByRole('checkbox').check();
+}
 
 test('recipe discussion supports reply and keeps replies after parent deletion', async ({ page }) => {
   await page.goto('/cong-thuc/dau-hu-non-sot-nam-dong-co');
@@ -95,4 +178,83 @@ test('nutrition profile requires real authentication and plan/history pages do n
   await expect(page.getByRole('button', { name: 'Thanh toán chưa khả dụng' }).first()).toBeDisabled();
   await page.getByRole('link', { name: 'Xem lịch sử giao dịch' }).click();
   await expect(page.getByText('Chưa có dữ liệu giao dịch')).toBeVisible();
+});
+
+// The coverage build's test-only token seam is paired with route mocks; this is not real authentication or FE→BE→DB evidence.
+test('mock-authenticated nutrition profile saves consent and shows approximate results with intercepted API', async ({ page }) => {
+  const requestHeaders: string[] = [];
+  const savedBodies: string[] = [];
+  await page.addInitScript(() => { window.__nutritionE2eAccessToken = 'test-only-token'; });
+  await page.route('**/api/v1/nutrition/profile**', async (route) => {
+    requestHeaders.push(route.request().headers().authorization ?? '');
+    const path = new URL(route.request().url()).pathname;
+    const method = route.request().method();
+    if (method === 'PUT') savedBodies.push(route.request().postData() ?? '');
+    const response = path.endsWith('/calculate') ? calculatedNutritionResponse
+      : method === 'PUT' ? savedNutritionResponse : emptyNutritionResponse;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(response) });
+  });
+
+  await page.goto('/ho-so/dinh-duong');
+  await fillEligibleNutritionProfile(page);
+  await page.getByRole('button', { name: 'Lưu hồ sơ' }).click();
+  await expect(page.getByText('Đã lưu')).toBeVisible();
+  expect(requestHeaders).toContain('Bearer test-only-token');
+  expect(JSON.parse(savedBodies[0])).toMatchObject({
+    ...exampleProfile,
+    pregnant: false,
+    breastfeeding: false,
+    therapeuticDietRequired: false,
+    consentAccepted: true,
+  });
+
+  await page.getByRole('button', { name: 'Tính chỉ số tham khảo' }).click();
+  await expect(page.getByText('Xấp xỉ 22,5')).toBeVisible();
+  await expect(page.getByText('Xấp xỉ 2.200')).toBeVisible();
+  await expect(page.getByText('9 chỉ tiêu tham khảo mỗi ngày')).toBeVisible();
+  await expect(page.getByText('Chất xơ').locator('..').locator('..').getByText('Xấp xỉ 25,0')).toBeVisible();
+  await expect(page.getByRole('link', { name: /Nguồn tham khảo: NASEM EER/ })).toHaveAttribute('href', 'https://example.org/energy');
+
+  await page.getByLabel('Chiều cao *').fill('171');
+  await expect(page.getByText('Lưu các thay đổi hồ sơ trước khi tính lại chỉ số tham khảo.')).toBeVisible();
+  await expect(page.getByText('Xấp xỉ 22,5')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Tính chỉ số tham khảo' })).toBeDisabled();
+});
+
+test('nutrition profile hides all metrics for underage and excluded declarations', async ({ page }) => {
+  await prepareMockAuthenticatedNutritionPage(page);
+  await page.getByLabel('Ngày sinh *').fill('2011-01-01');
+  await page.getByRole('radio', { name: 'Nữ' }).check();
+  await page.getByLabel('Chiều cao *').fill('160');
+  await page.getByLabel('Cân nặng *').fill('55');
+  await page.getByLabel('Mức độ vận động *').selectOption('SEDENTARY');
+  await page.getByLabel('Mục tiêu dinh dưỡng chung *').selectOption('MAINTAIN_WEIGHT');
+  await page.locator('input[name="pregnant"][value="yes"]').check();
+  await page.locator('input[name="breastfeeding"][value="no"]').check();
+  await page.locator('input[name="therapeuticDietRequired"][value="no"]').check();
+  await page.getByRole('checkbox').check();
+
+  await expect(page.getByText('Ứng dụng hiện không hỗ trợ hồ sơ dinh dưỡng cho người dưới 18 tuổi.')).toBeVisible();
+  await expect(page.getByText('Vui lòng tham khảo bác sĩ hoặc chuyên gia dinh dưỡng. Ứng dụng không lưu hồ sơ, tính BMI hoặc hiển thị 9 chỉ tiêu cho trường hợp này.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toBeDisabled();
+  await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
+});
+
+test('nutrition profile maps backend validation errors to their fields', async ({ page }) => {
+  await page.addInitScript(() => { window.__nutritionE2eAccessToken = 'test-only-token'; });
+  await page.route('**/api/v1/nutrition/profile**', async (route) => {
+    if (route.request().method() === 'PUT') {
+      await route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({
+        code: 'VALIDATION_FAILED',
+        errors: [{ field: 'heightCm', message: 'Chiều cao phải từ 100 đến 250 cm.' }],
+      }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(emptyNutritionResponse) });
+  });
+  await page.goto('/ho-so/dinh-duong');
+  await fillEligibleNutritionProfile(page);
+  await page.getByRole('button', { name: 'Lưu hồ sơ' }).click();
+  await expect(page.getByText('Chiều cao phải từ 100 đến 250 cm.')).toBeVisible();
+  await expect(page.getByLabel('Chiều cao *')).toHaveAttribute('aria-invalid', 'true');
 });

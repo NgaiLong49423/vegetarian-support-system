@@ -13,6 +13,17 @@ export interface ApiFieldError {
 type AccessTokenProvider = () => string | null | undefined;
 let accessTokenProvider: AccessTokenProvider = () => null;
 
+declare global {
+  interface Window {
+    /** Set only by Playwright on the instrumented coverage build; never used by production builds. */
+    __nutritionE2eAccessToken?: string;
+  }
+}
+
+if (import.meta.env.VITE_COVERAGE === 'true' && typeof window !== 'undefined') {
+  accessTokenProvider = () => window.__nutritionE2eAccessToken ?? null;
+}
+
 /** Auth integration point; the Auth slice can register its verified token provider when available. */
 export function setAccessTokenProvider(provider: AccessTokenProvider) {
   accessTokenProvider = provider;
