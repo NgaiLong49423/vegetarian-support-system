@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Info, Star, ThumbsUp, User } from 'lucide-react';
 import { Button, Card, ProgressBar } from './ui';
-import { useDemoAccount } from './DemoAccount';
+import { useAuth } from './AuthContext';
 import { currentUser } from '../data/mockData';
 import type { Recipe } from '../types';
 
@@ -58,8 +58,9 @@ const ratingLabels: Record<number, string> = {
 };
 
 export function RecipeRating({ recipe }: { recipe: Recipe }) {
-  const { active } = useDemoAccount();
-  const isAuthor = active && recipe.author.name === currentUser.name;
+  const { memberView: active, demoActive } = useAuth();
+  // Mock recipes belong to demo authors, so only the demo preview can be the author.
+  const isAuthor = demoActive && recipe.author.name === currentUser.name;
 
   const [reviews, setReviews] = useState<ReviewItem[]>(() => initialReviews[recipe.id] ?? initialReviews.default);
   const [userRating, setUserRating] = useState<number | null>(null);

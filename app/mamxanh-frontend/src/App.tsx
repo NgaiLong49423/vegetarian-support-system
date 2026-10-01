@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { AuthPage } from './pages/Auth';
-import { DemoAccountProvider } from './components/DemoAccount';
+import { AuthProvider } from './components/AuthContext';
 import { Home } from './pages/Home';
 import { Explore } from './pages/Explore';
 import { RecipeDetail } from './pages/RecipeDetail';
@@ -27,7 +27,7 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <BrowserRouter><DemoAccountProvider>
+    <BrowserRouter><AuthProvider>
       <ScrollToTop />
       <Layout>
         <Routes>
@@ -52,6 +52,6 @@ export default function App() {
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>
-    </DemoAccountProvider></BrowserRouter>
+    </AuthProvider></BrowserRouter>
   );
 }
