@@ -72,7 +72,7 @@ test('recipe report form validates the six reason groups without claiming a serv
 test('nutrition profile requires real authentication and plan/history pages do not simulate payment', async ({ page }) => {
   await page.goto('/ho-so/dinh-duong');
   await expect(page.getByText('Đăng nhập tài khoản thật để khai báo và lưu hồ sơ.')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
+  await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
   await expect(page.getByRole('alert')).toContainText('cần phiên đăng nhập đã được xác thực');
   await expect(page.getByLabel('Ngày sinh *')).toBeDisabled();
   await expect(page.getByLabel('Chiều cao *')).toBeDisabled();
