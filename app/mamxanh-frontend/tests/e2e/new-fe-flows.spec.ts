@@ -198,7 +198,7 @@ test('mock-authenticated nutrition profile saves consent and shows approximate r
   await page.goto('/ho-so/dinh-duong');
   await fillEligibleNutritionProfile(page);
   await page.getByRole('button', { name: 'Lưu hồ sơ' }).click();
-  await expect(page.getByText('Đã lưu')).toBeVisible();
+  await expect(page.getByText('Đã lưu', { exact: true })).toBeVisible();
   expect(requestHeaders).toContain('Bearer test-only-token');
   expect(JSON.parse(savedBodies[0])).toMatchObject({
     ...exampleProfile,
