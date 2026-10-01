@@ -78,7 +78,7 @@ async function fillEligibleNutritionProfile(page: Page) {
   await page.getByLabel('Mức độ vận động *').selectOption(exampleProfile.activityLevel);
   await page.getByLabel('Mục tiêu dinh dưỡng chung *').selectOption(exampleProfile.nutritionGoal);
   for (const name of ['pregnant', 'breastfeeding', 'therapeuticDietRequired']) {
-    await page.locator(`input[name="${name}"][value="no"]`).check();
+    await page.locator(`input[name="${name}"]`).nth(0).check();
   }
   await page.getByRole('checkbox').check();
 }
@@ -229,9 +229,9 @@ test('nutrition profile hides all metrics for underage and excluded declarations
   await page.getByLabel('Cân nặng *').fill('55');
   await page.getByLabel('Mức độ vận động *').selectOption('SEDENTARY');
   await page.getByLabel('Mục tiêu dinh dưỡng chung *').selectOption('MAINTAIN_WEIGHT');
-  await page.locator('input[name="pregnant"][value="yes"]').check();
-  await page.locator('input[name="breastfeeding"][value="no"]').check();
-  await page.locator('input[name="therapeuticDietRequired"][value="no"]').check();
+  await page.locator('input[name="pregnant"]').nth(1).check();
+  await page.locator('input[name="breastfeeding"]').nth(0).check();
+  await page.locator('input[name="therapeuticDietRequired"]').nth(0).check();
   await page.getByRole('checkbox').check();
 
   await expect(page.getByText('Ứng dụng hiện không hỗ trợ hồ sơ dinh dưỡng cho người dưới 18 tuổi.')).toBeVisible();
