@@ -30,6 +30,11 @@ public class AppException extends RuntimeException {
         return new AppException(errorCode, errorCode.defaultDetail(), retryAfter);
     }
 
+    /** Rate-limit style error with a specific user-facing detail. */
+    public static AppException retryAfter(ErrorCode errorCode, String detail, Duration retryAfter) {
+        return new AppException(errorCode, detail, retryAfter);
+    }
+
     public ErrorCode errorCode() {
         return errorCode;
     }

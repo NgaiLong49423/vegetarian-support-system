@@ -1,5 +1,6 @@
 package tech.mamxanh.auth.entity;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.Nationalized;
@@ -66,6 +67,14 @@ public class User {
     @Column(name = "verification_token_expires_at")
     private LocalDateTime verificationTokenExpiresAt;
 
+    /** Consecutive wrong passwords since the last successful login or the end of the last block. */
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts;
+
+    /** End of the temporary login block (NFR-07); independent of {@code accountStatus = LOCKED}. */
+    @Column(name = "login_blocked_until")
+    private LocalDateTime loginBlockedUntil;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -100,5 +109,39 @@ public class User {
         this.emailVerificationToken = null;
         this.verificationTokenExpiresAt = null;
         this.updatedAt = now;
+    }
+
+    public boolean isLoginBlocked(LocalDateTime now) {
+        return loginBlockedUntil != null && now.isBefore(loginBlockedUntil);
+    }
+
+    /**
+     * AC-03.7/AC-03.8: counts a wrong password. A block that has already expired starts a new
+     * count (AC-03.9); reaching {@code maxAttempts} blocks login until {@code now + blockDuration}.
+     * The administrative {@code accountStatus} is never changed here.
+     *
+     * @return {@code true} when this failure started a new block
+     */
+    public boolean recordFailedLogin(LocalDateTime now, int maxAttempts, Duration blockDuration) {
+        if (loginBlockedUntil != null && !now.isBefore(loginBlockedUntil)) {
+            failedLoginAttempts = 0;
+            loginBlockedUntil = null;
+        }
+        failedLoginAttempts++;
+        updatedAt = now;
+        if (failedLoginAttempts >= maxAttempts) {
+            loginBlockedUntil = now.plus(blockDuration);
+            return true;
+        }
+        return false;
+    }
+
+    /** AC-03.6/AC-03.9: a successful login clears the counter and any expired block. */
+    public void recordSuccessfulLogin(LocalDateTime now) {
+        if (failedLoginAttempts != 0 || loginBlockedUntil != null) {
+            failedLoginAttempts = 0;
+            loginBlockedUntil = null;
+            updatedAt = now;
+        }
     }
 }
