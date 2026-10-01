@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-01 — Implement Nutrition Profile Reference Flow
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — b95090a (local; not pushed).
 
 **Scope:** Implement the FR-35 nutrition profile vertical slice within the existing Member profile model, while preserving the application's non-clinical, informational boundary.
 
