@@ -15,7 +15,8 @@
 --      Preserves TC01..TC15 and adds TC16..TC37 for all newly implemented
 --      constraints from Data Dictionary v0.7.5, plus TC38 for the NVARCHAR
 --      UNIT.code fix in migration V2__unit_code_unicode.sql and TC39 for the
---      USER email-verification token columns in V3__user_email_verification_token.sql.
+--      USER email-verification token columns in V3__user_email_verification_token.sql
+--      and TC40 for the login-throttle columns in V4__user_login_throttle.sql.
 --      Every negative test verifies the EXACT constraint name in ERROR_MESSAGE().
 --   3. Operational Queries: Practical queries demonstrating core queries
 --      for recipes, nested comments, weekly meal plans, and subscriptions.
@@ -46,7 +47,7 @@ PRINT 'PART 1: SCHEMA AUDIT & OBJECT INVENTORY';
 PRINT '====================================================================';
 
 -- 1.1 Object Count Summary
--- Expected: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 58 Checks, 55 Defaults, 15 UNIT rows
+-- Expected: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 59 Checks, 56 Defaults, 15 UNIT rows
 SELECT 
     'Tables' AS ObjectType, COUNT(*) AS TotalCount, 22 AS ExpectedCount,
     CASE WHEN COUNT(*) = 22 THEN 'PASS' ELSE 'FAIL' END AS AuditStatus
@@ -61,10 +62,10 @@ UNION ALL
 SELECT 'Unique Constraints', COUNT(*), 9, CASE WHEN COUNT(*) = 9 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.key_constraints WHERE type = 'UQ'
 UNION ALL
-SELECT 'Check Constraints', COUNT(*), 58, CASE WHEN COUNT(*) = 58 THEN 'PASS' ELSE 'FAIL' END
+SELECT 'Check Constraints', COUNT(*), 59, CASE WHEN COUNT(*) = 59 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.check_constraints
 UNION ALL
-SELECT 'Default Constraints', COUNT(*), 55, CASE WHEN COUNT(*) = 55 THEN 'PASS' ELSE 'FAIL' END
+SELECT 'Default Constraints', COUNT(*), 56, CASE WHEN COUNT(*) = 56 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.default_constraints
 UNION ALL
 SELECT 'UNIT Seed Rows', COUNT(*), 15, CASE WHEN COUNT(*) = 15 THEN 'PASS' ELSE 'FAIL' END
@@ -1156,6 +1157,39 @@ BEGIN TRY
         ELSE
             PRINT '  [FAIL] TC39c: Caught unexpected error: ' + ERROR_MESSAGE();
     END CATCH;
+
+    -- ------------------------------------------------------------------------
+    -- TC40: USER login throttle (V4, DF_USER_failed_login_attempts,
+    --       CK_USER_failed_login_attempts_non_negative) — Issue #6
+    -- ------------------------------------------------------------------------
+    -- Positive: rows inserted without the column start at 0 consecutive failures
+    IF (SELECT failed_login_attempts FROM [USER] WHERE user_id = @AliceId) = 0
+        PRINT '  [PASS] TC40a: New accounts start with failed_login_attempts = 0 (DF_USER_failed_login_attempts).';
+    ELSE
+        PRINT '  [FAIL] TC40a: failed_login_attempts default is not 0!';
+
+    -- Negative: negative failure counter -> Must FAIL
+    BEGIN TRY
+        UPDATE [USER] SET failed_login_attempts = -1 WHERE user_id = @AliceId;
+        PRINT '  [FAIL] TC40b: Negative failure counter was not rejected!';
+    END TRY
+    BEGIN CATCH
+        IF ERROR_MESSAGE() LIKE '%CK_USER_failed_login_attempts_non_negative%'
+            PRINT '  [PASS] TC40b: Rejected negative failure counter (exact CK_USER_failed_login_attempts_non_negative, Error ' + CAST(ERROR_NUMBER() AS VARCHAR) + ')';
+        ELSE
+            PRINT '  [FAIL] TC40b: Caught unexpected error: ' + ERROR_MESSAGE();
+    END CATCH;
+
+    -- Positive: a temporary block keeps the administrative status ACTIVE
+    UPDATE [USER]
+    SET failed_login_attempts = 5,
+        login_blocked_until = DATEADD(MINUTE, 10, SYSUTCDATETIME())
+    WHERE user_id = @AliceId;
+    IF EXISTS (SELECT 1 FROM [USER] WHERE user_id = @AliceId AND failed_login_attempts = 5
+               AND login_blocked_until IS NOT NULL AND account_status = 'ACTIVE')
+        PRINT '  [PASS] TC40c: Accepted a 10-minute login block while account_status stays ACTIVE.';
+    ELSE
+        PRINT '  [FAIL] TC40c: Login block was not stored as expected!';
 
 END TRY
 BEGIN CATCH
