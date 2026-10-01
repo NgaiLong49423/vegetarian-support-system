@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-01 — Compute the Verification Resend Cooldown with Time Zone-Aware Values (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — 528d966.
 
 **Scope:** Resolve the SonarQube Cloud reliability issue (rule `java:S8700`) that failed the Quality Gate on PR #74.
 
