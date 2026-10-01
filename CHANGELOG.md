@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-01 — Implement Nutrition Profile Reference Flow
 
-**Status:** Committed — b95090a (local; not pushed).
+**Status:** Implemented locally; not yet pushed.
 
 **Scope:** Implement the FR-35 nutrition profile vertical slice within the existing Member profile model, while preserving the application's non-clinical, informational boundary.
 
@@ -30,6 +30,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Prevent previously calculated results from reappearing after reload or after eligibility answers change.
+- Record the manual SQL confirmation of current consent columns and constraint as schema-state evidence only; fresh-database Flyway execution and authenticated end-to-end acceptance remain unverified.
 
 ## 2026-09-27 — Finalize Requirements Baseline v2 and Prepare Issue Reconciliation ([PR #72](https://github.com/NgaiLong49423/vegetarian-support-system/pull/72))
 

@@ -10,7 +10,7 @@ status_definitions:
 bugs:
   - id: BUG-007
     title: Migration đồng thuận dinh dưỡng lỗi trên SQL Server mới
-    status: RESOLVED
+    status: TRACKING
     severity: High
     area: Backend/Database migration
     file: .agents/outputs/bugs/BUG-007.md
