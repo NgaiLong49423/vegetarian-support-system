@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-01 — Serialize Verification Email Resends (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — 9ba491d, fcc74a8.
 
 **Scope:** Address the PR #74 review: concurrent resend requests could all pass the 60-second cooldown, several boundaries were untested, and the pull request must leave `docs/diagrams/` unchanged.
 
