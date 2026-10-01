@@ -72,7 +72,9 @@ public class EmailVerificationService {
                     .minus(authProperties.emailVerificationTtl());
             LocalDateTime nextAllowedAt = lastSentAt.plus(authProperties.verificationResendCooldown());
             if (now.isBefore(nextAllowedAt)) {
-                throw AppException.retryAfter(ErrorCode.RESEND_TOO_SOON, Duration.between(now, nextAllowedAt));
+                // Both values come from LocalDateTime.now(clock), so they are interpreted in the clock's zone.
+                Duration retryAfter = Duration.between(now.atZone(clock.getZone()), nextAllowedAt.atZone(clock.getZone()));
+                throw AppException.retryAfter(ErrorCode.RESEND_TOO_SOON, retryAfter);
             }
         }
         IssuedToken token = tokenService.issue();

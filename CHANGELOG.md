@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.38.0
+> **Version:** v2.39.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-01
 > **Status:** Active
@@ -8,6 +8,24 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-01 — Compute the Verification Resend Cooldown with Time Zone-Aware Values (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Resolve the SonarQube Cloud reliability issue (rule `java:S8700`) that failed the Quality Gate on PR #74.
+
+### Added
+
+None.
+
+### Changed
+
+None.
+
+### Fixed
+
+- Compute the `Retry-After` duration for `RESEND_TOO_SOON` from values bound to the application clock zone instead of plain `LocalDateTime` values, so the result stays correct if the clock zone ever observes daylight saving time.
 
 ## 2026-10-01 — Synchronize Email Registration with the Develop Baseline (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
