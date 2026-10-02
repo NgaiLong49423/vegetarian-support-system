@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.16.0
+> **Version:** v3.17.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active
 
 # Agent Entry Point
@@ -39,6 +39,7 @@ Do not recursively read the repository, all documentation, all skills, old logs 
 | Database | database/README.md; affected migrations/model | Relevant SRS and docs/diagrams/ERD/; empty SQL files are not an approved schema |
 | Technologies/integration | Technology-stack or technology-baseline document registered in docs/README.md | Relevant SRS; do not turn provider selection into an unapproved model/architecture |
 | Architecture or trust boundaries | docs/architecture/ARCHITECTURE.md | Relevant SRS and technology stack; do not invent packages, endpoints, tables, deployment topology or AI architecture |
+| Shared Docker development/integration | CONTRIBUTING.md#docker-development; root docker-compose.yml | Component README for environment details; use Compose as the shared FE/BE/SQL integration stack |
 | Testing or verification strategy | docs/testing/TEST-STRATEGY.md; relevant SRS requirements | Target code/tests and CONTRIBUTING.md completion/release rules; do not invent tests, commands or coverage thresholds |
 | Development, setup or API guide | docs/README.md creation triggers; actual scaffold/contract evidence | Create a maintained guide only in an authorized documentation task after its trigger is satisfied |
 | Git, review, release or teamwork | CONTRIBUTING.md | ADR-001 for branch/release rationale; ADR-002 for team responsibilities |
@@ -186,4 +187,5 @@ This policy does not authorize an unrelated runtime-configuration refactor, appl
 - When writing changelog entries, use the evidence procedure in the selected changelog skill. Do not infer PR numbers, commit status or dates from file names.
 - For integration, treat `develop` as the current integration baseline; an unmerged Draft/Open PR is not baseline unless an explicit dependency is confirmed. Before integration, follow [Develop integration baseline and PR synchronization](CONTRIBUTING.md#develop-integration-baseline), inspect both Git and semantic conflicts, and re-validate affected behavior after synchronization.
 - Before a PR into `develop`, follow [Required checks and technical enforcement](CONTRIBUTING.md#develop-required-checks). Preserve the approved Frontend 60/60/60/60 and Backend overall line 80% hard gates; never lower thresholds, exclude production source, or add meaningless tests to pass. Report failed/unverified CI or Sonar checks, and do not claim GitHub merge blocking is active without verifying its Ruleset. Kody/Gemini review remains advisory.
+- For shared local integration testing, agents MUST use the root `docker-compose.yml` as the canonical stack for Frontend + Backend + SQL Server. Keep application Dockerfiles component-local; do not add duplicate standalone FE/BE CI gates when the Compose gate already builds and smoke-tests both. Follow [Docker development and integration testing](CONTRIBUTING.md#docker-development) and report when Docker execution is unavailable instead of claiming it passed.
 - Finish with the changes, verification and unresolved questions in the conversation; do not create an additional report file.

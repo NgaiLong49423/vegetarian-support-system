@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.6.0
+> **Version:** v3.7.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -116,6 +116,53 @@ merge theo gates hiện hành
 - **Flyway:** Migration đã merge giữ nguyên version và content. Sau khi sync, migration chưa merge phải thích ứng với lịch sử mới và dùng version khả dụng tiếp theo khi collision. Không sửa migration đã baseline hóa để giải collision; thay đổi tiếp theo dùng append-only migration. Trước khi chọn version, kiểm tra migration history hiện hành trên `develop`.
 - **Resolve an toàn và re-validation:** Không chọn `ours`, `theirs`, Accept Current hoặc Accept Incoming cho toàn file khi chưa hiểu intent. Xác định phần đã thành baseline và intent feature, kết hợp đúng hai phía; nếu semantic intent chưa rõ, dừng và hỏi owner/reviewer. Sau sync, chạy lại verification phù hợp với scope và repository rules (ví dụ backend build/tests/migration validation, frontend typecheck/build/tests hoặc cross-layer API/FE-BE contract checks). Kết quả trước sync không phải bằng chứng cuối nếu synchronization có thể ảnh hưởng feature; cập nhật PR evidence khi cần.
 
+<a id="docker-development"></a>
+#### Docker development và kiểm thử tích hợp
+
+**Quy tắc chuẩn:** `docker-compose.yml` ở repository root là entry point chuẩn cho stack Docker development tích hợp FE/BE/SQL Server. Compose build các Dockerfile riêng của Frontend và Backend từ source hiện tại trong branch, khởi tạo SQL Server và chờ service phụ thuộc khỏe trước khi đưa stack lên. Đây là cách chuẩn để thành viên và agent kiểm tra thay đổi xuyên FE/BE/database trên cùng một cấu hình.
+
+- Dockerfile tại `app/mamxanh-frontend/` và `app/mamxanh-backend/` vẫn thuộc từng component, định nghĩa cách build component đó; chúng không phải hai môi trường tích hợp độc lập và không thay thế Compose.
+- Không yêu cầu hoặc tạo hai CI gate build riêng cho FE và BE chỉ để lặp lại việc build đã được `Docker Development` thực hiện. Có thể chạy riêng một Dockerfile để debug component; kiểm tra riêng không thay thế Compose gate khi PR ảnh hưởng stack hoặc tích hợp.
+- Mọi thay đổi source FE/BE, Dockerfile, dependency/lockfile, cấu hình runtime được Compose sử dụng, database initialization hoặc `docker-compose.yml` phải được đánh giá theo toàn stack. Trước khi Ready for Review, chạy Compose local nếu Docker khả dụng; PR sau đó phải pass `Docker Development` trên commit mới nhất.
+- Docker chỉ phục vụ development và verification. Không suy ra thay đổi deployment/production từ Docker Compose; production baseline vẫn là Vercel cho Frontend, Azure App Service cho Backend và Azure SQL theo tài liệu công nghệ hiện hành.
+
+**Thiết lập lần đầu (PowerShell tại repository root):**
+
+```powershell
+if (-not (Test-Path app/mamxanh-backend/.env)) {
+    Copy-Item app/mamxanh-backend/.env.example app/mamxanh-backend/.env
+} else {
+    Write-Output 'Existing app/mamxanh-backend/.env preserved; edit it only if needed.'
+}
+```
+
+Mở `app/mamxanh-backend/.env`, thay `MSSQL_SA_PASSWORD` bằng mật khẩu local mạnh đáp ứng yêu cầu SQL Server. File `.env` bị ignore và không được commit/chia sẻ; `.env.example` chỉ là hợp đồng biến môi trường an toàn. Compose override connection URL/user/password của Backend để kết nối service `sqlserver`; SMTP để trống thì không gửi email thật. Không đưa secret vào command line, workflow YAML, PR log hay tài liệu.
+
+**Khởi động và xác minh:**
+
+```powershell
+docker compose --env-file app/mamxanh-backend/.env config --quiet
+docker compose --env-file app/mamxanh-backend/.env up --build --detach --wait --wait-timeout 600
+Invoke-WebRequest http://localhost:5173/ -UseBasicParsing
+Invoke-WebRequest http://localhost:8080/v3/api-docs -UseBasicParsing
+docker compose --env-file app/mamxanh-backend/.env ps
+```
+
+`config --quiet` xác nhận Compose parse/interpolate được, không chứng minh image chạy. Sau khi `up` thành công, FE phải phản hồi tại `http://localhost:5173/`, Backend OpenAPI tại `http://localhost:8080/v3/api-docs`, và `ps` phải cho thấy các service dài hạn healthy. Compose kiểm tra khởi động và endpoint smoke; nó không thay unit, integration, authorization hoặc acceptance tests của feature. Khi xác minh xong, dừng stack:
+
+```powershell
+docker compose --env-file app/mamxanh-backend/.env down
+```
+
+Lệnh `down` giữ named volumes, bao gồm dữ liệu SQL local và Frontend dependencies. Không dùng `down --volumes` như bước dọn dẹp thường lệ vì nó xóa dữ liệu local; chỉ dùng khi chủ động muốn reset các volume này. Nếu đổi branch hoặc gặp dependency/image cũ, build lại bằng `up --build`; chỉ xóa đúng volume dependency/database khi đã cân nhắc dữ liệu cần giữ.
+
+**PR và GitHub gate:**
+
+- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job build Compose, đợi health checks rồi smoke-test FE và Backend; CI dùng password tạm, dọn container/volume trên runner sau job.
+- Ruleset `protect-develop` yêu cầu status context `Docker Development` và strict up-to-date. PR vào `develop` phải sync baseline theo phần trên; sau lần sync cuối có ảnh hưởng, chạy lại kiểm tra liên quan và đợi CI trên commit cập nhật.
+- Nếu Docker không chạy được local, ghi rõ nguyên nhân và kết quả nào chưa xác minh trong PR; không ghi “Docker test passed”. Required CI check vẫn phải pass trước khi merge. Việc Docker daemon của máy cá nhân unavailable không tự cho phép bỏ qua gate.
+- Khi sửa Compose, workflow hoặc Dockerfile, giữ cùng stack/entry point và cùng smoke criteria nhất quán; không tạo nhánh cấu hình local riêng hoặc yêu cầu thành viên pull image `latest` thủ công ngoài định nghĩa đã review trong Git.
+
 <a id="develop-required-checks"></a>
 #### Required checks và technical enforcement cho `develop`
 
@@ -125,21 +172,22 @@ Project Owner chốt hard gates: Frontend Playwright/Istanbul/NYC đạt **≥60
 |---|---|
 | `Frontend` | Typecheck, build và Playwright coverage hard gate |
 | `Backend` | `clean verify`: JUnit, package và JaCoCo hard gate |
+| `Docker Development` | Build và chạy smoke test toàn bộ development stack từ Docker Compose |
 | `Sonar` | Đọc LCOV/JaCoCo qua artifacts, static analysis và chờ Sonar Quality Gate; scan/gate fail hoặc timeout làm check fail |
 | `Analyze (javascript-typescript)` | CodeQL default setup: JavaScript/TypeScript validation |
 | `Analyze (java-kotlin)` | CodeQL default setup: Java validation |
 | `Analyze (actions)` | CodeQL default setup: GitHub Actions validation |
 
-CodeQL là GitHub default setup, không có workflow YAML local. Ba tên CodeQL và `Frontend`/`Backend` đã được thấy trên GitHub check runs; `Sonar` là job riêng trong workflow mới và cần xác nhận context sau lần chạy đầu. Mọi PR validation liên quan phải pass; khi bổ sung validation job mới, cập nhật danh sách required contexts cùng workflow, không coi job mới là advisory mặc định.
+CodeQL là GitHub default setup, không có workflow YAML local. Ba tên CodeQL và `Frontend`/`Backend` đã được thấy trên GitHub check runs; `Sonar` và `Docker Development` là job riêng trong workflow và cần xác nhận context sau lần chạy đầu. Mọi PR validation liên quan phải pass; khi bổ sung validation job mới, cập nhật danh sách required contexts cùng workflow, không coi job mới là advisory mặc định.
 
 Không yêu cầu `release-source` cho PR `develop`: workflow này chỉ kiểm tra PR vào `main`. Dependabot Updates là utility, deployment/manual/release jobs không chạy PR không phải merge gate của `develop`. `SonarCloud Code Analysis` là report từ Sonar app và có thể `neutral`; dùng job `Sonar` chờ Quality Gate làm gate. Kody/Kodus + Gemini chỉ advisory AI reviewer; chưa đưa thành required check trước khi đánh giá đủ PR, false positives và có quyết định riêng của owner.
 
-**Trạng thái enforcement ngày 2026-09-30:** Ruleset `protect-develop` đang active, yêu cầu PR và một approval, chặn force push/xóa branch, có owner/admin bypass. Ruleset được kiểm tra chưa có required status checks hoặc strict up-to-date rule. Repository workflow không tự bật GitHub settings; task coverage không tự sửa Ruleset.
+**Trạng thái enforcement ngày 2026-10-02:** Ruleset `protect-develop` đang active, yêu cầu PR và một approval, chặn force push/xóa branch, bật strict up-to-date và có owner/admin bypass. Required status check `Docker Development` đã được cấu hình trực tiếp trên Ruleset. Các context khác trong bảng mô tả policy validation nhưng chưa được xác nhận là required trong Ruleset; cần kiểm tra sau khi các check tương ứng chạy trên PR. Workflow YAML riêng không tự bật GitHub settings.
 
-Để GitHub thực sự block merge khi check fail, owner cấu hình Ruleset/Branch Protection ngoài repository sau approval riêng:
+Để duy trì/mở rộng technical merge blocking, owner cấu hình Ruleset/Branch Protection ngoài repository; trạng thái hiện tại được xác minh ở trên:
 
 1. Target đúng `refs/heads/develop`; require PR before merging, giữ approval/review gate hiện hành.
-2. Require status checks to pass; chọn các contexts trong bảng từ PR check runs thực tế, với source GitHub Actions khi có tùy chọn. Xác minh các CodeQL checks chạy trên PR target `develop` trước khi require.
+2. Ruleset hiện yêu cầu `Docker Development`. Sau khi có PR run, xác minh context được GitHub nhận diện đúng và một lần chạy fail chặn merge. Bổ sung các contexts còn lại trong bảng từ PR check runs thực tế, với source GitHub Actions khi có tùy chọn; xác minh CodeQL checks chạy trên PR target `develop` trước khi require.
 3. Bật require branches to be up to date (strict mode); sau sync phải chạy lại checks trên commit cập nhật.
 4. Giữ block force pushes và branch deletion. Owner bypass là quyền quản trị hiện có, không làm member PR được bỏ qua gates.
 5. Dùng PR kiểm tra để xác nhận mỗi check fail thực sự khóa merge; không ghi technical enforcement hoàn tất chỉ từ YAML hoặc checklist. Sonar secret/Quality Gate phải sẵn sàng; không skip Sonar và báo xanh khi secret/report thiếu.

@@ -88,6 +88,28 @@ jobs:
             app/mamxanh-backend/target/test-classes/
           if-no-files-found: error
 
+  docker-development:
+    name: Docker Development
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build and smoke-test the shared development stack
+        run: |
+          set -euo pipefail
+          export MSSQL_SA_PASSWORD="$(openssl rand -hex 20)Aa1!"
+          cleanup() {
+            docker compose down --volumes --remove-orphans
+          }
+          trap cleanup EXIT
+
+          docker compose up --build --detach --wait --wait-timeout 600
+          curl --fail --silent --show-error http://localhost:5173/
+          curl --fail --silent --show-error http://localhost:8080/v3/api-docs > /dev/null
+
   sonar:
     name: Sonar
     runs-on: ubuntu-latest

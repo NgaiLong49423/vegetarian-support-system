@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.10.0
+> **Version:** v1.11.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -118,7 +118,11 @@ Sonar không tạo coverage. Job `Sonar` đọc LCOV/JaCoCo XML qua artifacts sa
 
 ## 10. Quan hệ với trạng thái hoàn tất và release
 
-[CONTRIBUTING.md](../../CONTRIBUTING.md#develop-required-checks) sở hữu cổng merge và Definition of Done. Policy yêu cầu PR vào `develop` pass các required validation checks trên baseline cập nhật. GitHub technical enforcement cần Ruleset/Branch Protection có required contexts và strict up-to-date mode; workflow YAML riêng không bật các settings đó. Merge tích hợp chưa xác nhận FR hoàn thành.
+[CONTRIBUTING.md](../../CONTRIBUTING.md#develop-required-checks) sở hữu cổng merge và Definition of Done. Policy yêu cầu PR vào `develop` pass các required validation checks trên baseline cập nhật. GitHub technical enforcement cần Ruleset/Branch Protection có required contexts và strict up-to-date mode; workflow YAML riêng không bật các settings đó. Quy tắc và lệnh kiểm thử Compose chuẩn nằm tại [Docker development và kiểm thử tích hợp](../../CONTRIBUTING.md#docker-development).
+
+Job `Docker Development` build duy nhất stack root `docker-compose.yml`, dùng Dockerfile hiện hành của FE/BE và SQL Server, đợi health rồi gọi `GET /` của Frontend và `GET /v3/api-docs` của Backend. Đây là build + startup/integration smoke gate; không chứng minh UI business flow, API authorization, toàn bộ persistence behavior hoặc acceptance criteria. Các hành vi đó vẫn cần test Frontend/Backend riêng tương ứng. Không tạo hai required CI gate FE/BE Docker tách biệt trùng build; thay đổi trong một component vẫn được build lại trong Compose stack chung.
+
+Ruleset `protect-develop` hiện yêu cầu context `Docker Development`; danh sách test/check khác và ranh giới CI được mô tả ở [Required checks](../../CONTRIBUTING.md#develop-required-checks). Merge tích hợp chưa xác nhận FR hoàn thành.
 
 PR `develop -> main` cần approval độc lập, build/automated tests và required GitHub Actions checks đạt trên commit mới nhất. Test cases phải bao phủ Acceptance Criteria và các luồng lỗi/quyền truy cập liên quan; manual tests bổ sung phần chưa tự động hóa, không thay thế required checks. Cổng này chưa có bằng chứng triển khai đầy đủ chỉ vì đã được ghi trong tài liệu.
 

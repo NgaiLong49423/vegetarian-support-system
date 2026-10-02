@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.10.0
+> **Version:** v0.11.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-01
+> **Last Updated:** 2026-10-02
 > **Status:** Active  
 
 # Backend Workspace
@@ -129,7 +129,19 @@ IntelliJ vẫn sử dụng cùng cấu hình Spring profile `local`; nút Run kh
 
 ## Cách 2 — Chạy bằng Docker
 
-Dockerfile chỉ đóng gói Backend; SQL Server vẫn chạy bên ngoài container theo quyết định hiện tại.
+Để chạy Frontend, Backend và SQL Server theo một cấu hình dùng chung, ưu tiên Docker Compose ở repository root. Hướng dẫn dưới đây vẫn hữu ích khi chỉ cần chạy riêng Backend.
+
+Tại root repository, sao chép `app/mamxanh-backend/.env.example` thành `.env` trong cùng thư mục, đặt một mật khẩu SQL Server local mạnh cho `MSSQL_SA_PASSWORD`, rồi chạy:
+
+```powershell
+docker compose --env-file app/mamxanh-backend/.env up --build
+```
+
+Mở Frontend tại <http://localhost:5173>; Backend OpenAPI tại <http://localhost:8080/v3/api-docs>. Dừng bằng `Ctrl+C`; dùng `docker compose --env-file app/mamxanh-backend/.env down` để dừng stack. Dữ liệu SQL Server được giữ trong named volume `sqlserver-data`; chỉ thêm `--volumes` khi chủ động muốn xóa dữ liệu local.
+
+Để kiểm tra trạng thái, endpoint smoke, cấu hình local và quy tắc CI/PR, xem [Docker development và kiểm thử tích hợp](../../CONTRIBUTING.md#docker-development). Không commit `.env` hoặc chia sẻ mật khẩu. `Docker Development` trong GitHub Actions build và smoke-test stack trên mỗi PR hướng vào `develop` hoặc `main`; Ruleset `protect-develop` hiện yêu cầu check này trước merge vào `develop`.
+
+Các lệnh Dockerfile bên dưới chỉ chạy Backend độc lập để debug; chúng không phải cách test tích hợp chuẩn và không thay thế Docker Compose chung. Dockerfile chỉ đóng gói Backend; SQL Server vẫn chạy bên ngoài container trong cách chạy độc lập này.
 
 ### 1. Build image
 

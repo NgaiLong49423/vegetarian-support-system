@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.8.0
+> **Version:** v1.9.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-01
+> **Last Updated:** 2026-10-02
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -92,6 +92,8 @@ npm run dev
 Luôn dùng `npm ci` khi cài mới từ `package-lock.json` hoặc khi dependency bị lệch. Không chia sẻ thư mục `node_modules` giữa các thành viên.
 
 ### Cách 2 — Chạy bằng Docker
+
+Để chạy đồng bộ toàn bộ ứng dụng, dùng Docker Compose từ root repository theo hướng dẫn tại [Backend README](../mamxanh-backend/README.md#cách-2--chạy-bằng-docker). Cách chạy riêng Frontend bên dưới chỉ dành cho debug component; không thay thế kiểm thử tích hợp hoặc Docker Development gate. Quy tắc chung do [CONTRIBUTING.md](../../CONTRIBUTING.md#docker-development) quản lý.
 
 Đảm bảo Docker Desktop đã khởi động, sau đó mở PowerShell tại `app/mamxanh-frontend`:
 

@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.41.0
+> **Version:** v2.42.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-02
 > **Status:** Active
@@ -8,6 +8,27 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-02 — Standardize the Docker Development Stack and Add a CI Gate
+
+**Status:** Working tree — not committed.
+
+**Scope:** Provide one Docker Compose development environment for Frontend, Backend and SQL Server, and require a GitHub Actions build/smoke-test check before merging changes into the integration baseline.
+
+### Added
+
+- Add root `docker-compose.yml` with health-ordered SQL Server, database initialization, Backend and Frontend services, plus persistent local database/dependency volumes.
+- Add the `Docker Development` GitHub Actions job to build and smoke-test the shared stack using an ephemeral SQL Server password.
+- Document the shared Compose setup, PowerShell startup/verification/shutdown commands, local-secret handling, volume safety, and the rules for members and agents in CONTRIBUTING.md, AGENTS.md and component guides.
+
+### Changed
+
+- Define root Compose as the canonical FE/BE/SQL Server integration-test entry point; retain per-app Dockerfiles for component builds without duplicating CI gates.
+- Add `Docker Development` to the documented required validation contexts and the PR synchronization checklist, and distinguish its smoke coverage from feature/acceptance tests.
+
+### Fixed
+
+None.
 
 ## 2026-10-02 — Force Overlapping Requests in the Concurrent Resend Test (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
