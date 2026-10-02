@@ -33,7 +33,10 @@ class ScalarUiSecurityTest {
         mockMvc.perform(get("/scalar"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("API Reference")))
-                .andExpect(content().string(containsString("@scalar/api-reference@1.72.3")));
+                .andExpect(content().string(containsString("@scalar/api-reference@1.72.3")))
+                .andExpect(content().string(containsString(
+                        "integrity=\"sha384-HWi/QCSPi64AQ0xBXFGDk+7gmvZ4hJ/7sZMIXqWVz6Ikb6+Cxej/hWKaomOStyFb\"")))
+                .andExpect(content().string(containsString("crossorigin=\"anonymous\"")));
     }
 
     @Test

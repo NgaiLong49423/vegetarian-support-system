@@ -100,7 +100,7 @@ jobs:
       - name: Set up Node.js for pinned Scalar CLI
         uses: actions/setup-node@v4
         with:
-          node-version: 22.23.3
+          node-version: 24.21.0
 
       - name: Build and smoke-test the shared development stack
         run: |
