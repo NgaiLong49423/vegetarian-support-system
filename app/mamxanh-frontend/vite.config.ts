@@ -47,7 +47,7 @@ export default defineConfig(({ mode }) => {
       open: process.env.VITE_OPEN_BROWSER !== 'false',
       proxy: {
         '/api': {
-          target: 'http://localhost:8080',
+          target: process.env.BACKEND_PROXY_TARGET || 'http://localhost:8080',
           changeOrigin: true,
         },
       },

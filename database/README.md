@@ -1,8 +1,8 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.6.1<br>
+> **Version:** v0.7.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-30<br>
+> **Last Updated:** 2026-10-02<br>
 > **Status:** Active  
 
 # Database Workspace
@@ -13,7 +13,7 @@ Database chính đã chốt là Microsoft SQL Server 2019. Lược đồ cơ s�
 
 - Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`, hiện gồm `V1__baseline_schema.sql`, `V2__unit_code_unicode.sql` và `V3__nutrition_profile_consent.sql`) là lịch sử thay đổi schema có thẩm quyền và phải append-only sau khi đã chia sẻ. V3 bổ sung trạng thái đồng ý lưu dữ liệu sức khỏe và thời điểm đồng ý trên bảng `[USER]`.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
-- `database/sample-data.sql` chỉ chứa dữ liệu demo giả, không chứa tài khoản thật, credential hoặc dữ liệu cá nhân.
+- `database/sample-data.sql` chứa fixture giả cho môi trường Docker Compose, được nạp sau khi Flyway hoàn tất. Tác giả mẫu không có mật khẩu đăng nhập; fixture không chứa credential hoặc dữ liệu cá nhân thật.
 - `database/queries.sql` chứa kịch bản kiểm tra đối tượng, bộ test tự động xác minh các ràng buộc nghiệp vụ (positive/negative) có cơ chế rollback, và các truy vấn mẫu cho tầng ứng dụng; không thay thế automated integration tests.
 
 ## Quy trình thay đổi schema & Engineering Autonomy Policy

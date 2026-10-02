@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.9.0
+> **Version:** v0.10.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active  
 
 # Backend Workspace
@@ -52,7 +52,7 @@ Chọn một trong hai môi trường:
 - **Chạy trực tiếp:** JDK 21. Maven không cần cài riêng vì repository có Maven Wrapper.
 - **Chạy bằng Docker:** Docker Desktop đang hoạt động. Không cần cài Java/Maven trực tiếp trên máy.
 
-Cả hai cách đều cần một Microsoft SQL Server có database `MamXanhDB`. Flyway migration `V1__baseline_schema.sql` hiện tạo baseline schema từ database rỗng; Backend vẫn không thể khởi động đầy đủ nếu SQL Server chưa sẵn sàng hoặc credential/migration validation không hợp lệ.
+Cả hai cách đều cần một Microsoft SQL Server có database `MamXanhDB`. Flyway migration `V1__baseline_schema.sql` hiện tạo baseline schema từ database rỗng; Backend vẫn không thể khởi động đầy đủ nếu SQL Server chưa sẵn sàng hoặc credential/migration validation không hợp lệ. Khi chạy toàn hệ thống bằng Docker Compose ở thư mục gốc, Compose tự tạo database trước khi Backend chạy Flyway.
 
 Không commit username, password, connection string thật hoặc file cấu hình local chứa credential.
 
@@ -112,9 +112,15 @@ Sau lần tải dependency đầu tiên, các lần mở dự án tiếp theo ch
 
 IntelliJ vẫn sử dụng cùng cấu hình Spring profile `local`; nút Run không thay thế yêu cầu SQL Server phải sẵn sàng.
 
-## Cách 2 — Chạy bằng Docker
+## Cách 2 — Chạy toàn hệ thống bằng Docker Compose
 
-Dockerfile chỉ đóng gói Backend; SQL Server vẫn chạy bên ngoài container theo quyết định hiện tại.
+Để dùng cùng cấu hình Frontend, Backend và SQL Server 2019, xem hướng dẫn **Docker Compose** trong [Frontend README](../mamxanh-frontend/README.md#chạy-toàn-hệ-thống-bằng-docker-compose). Compose giữ SQL Server trong named volume theo project; `down` rồi `up` không xóa dữ liệu.
+
+Backend trong Compose kết nối SQL Server qua hostname service `database`. Khi chạy riêng bằng Docker, SQL Server vẫn có thể chạy bên ngoài container.
+
+## Chạy riêng Backend bằng Docker
+
+Dockerfile đóng gói riêng Backend; cách chạy này cần một SQL Server đã chạy sẵn và database `MamXanhDB` đã được tạo.
 
 ### 1. Build image
 

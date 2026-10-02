@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.7.0
+> **Version:** v1.8.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -113,6 +113,22 @@ Khi `package.json` hoặc `package-lock.json` thay đổi, build lại image:
 ```powershell
 docker build --no-cache -t mamxanh-frontend-dev .
 ```
+
+### Chạy toàn hệ thống bằng Docker Compose
+
+Từ thư mục gốc repository, sao chép `.env.docker.example` thành `.env.docker`, thay mật khẩu SQL Server bằng giá trị riêng của máy rồi chạy:
+
+```powershell
+docker compose --env-file .env.docker up --build --detach
+```
+
+Lần khởi động đầu tạo database `MamXanhDB`, chạy Flyway, nạp fixture từ `database/sample-data.sql`, rồi mở Frontend tại <http://localhost:5173>. Backend ở <http://localhost:8080>; SQL Server được ánh xạ ra cổng `14333` để tránh chiếm cổng mặc định `1433` của SQL Server cài trực tiếp trên Windows.
+
+Compose lưu DB trong volume Docker. `docker compose down` rồi chạy lại `up` sẽ giữ nguyên dữ liệu; không thêm `--volumes` nếu muốn giữ DB. Để xóa DB và nạp lại schema/fixture, chạy `./scripts/reset-docker-db.ps1` trong PowerShell rồi xác nhận bằng cách nhập `RESET`.
+
+Fixture có một tác giả demo để gắn công thức. Tài khoản này không có mật khẩu và không thể đăng nhập; luồng đăng nhập thật chưa thuộc phần Compose này. Không dùng dữ liệu demo trong production.
+
+Vite dùng hostname Backend riêng khi chạy trong Compose. Khi chạy trực tiếp bằng `npm run dev`, proxy vẫn mặc định trỏ tới `http://localhost:8080`.
 
 ### Kiểm tra trước khi bàn giao code
 

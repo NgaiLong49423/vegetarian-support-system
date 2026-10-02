@@ -1,13 +1,33 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.37.0
+> **Version:** v2.38.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-01
+> **Last Updated:** 2026-10-02
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-02 — Add Reproducible Docker Compose Development Environment
+
+**Status:** Working tree — not committed.
+
+**Scope:** Provide one repeatable local environment for Frontend, Backend and SQL Server 2019 with persistent local development data.
+
+### Added
+
+- Add Docker Compose services for SQL Server, database creation, Backend, sample data and Frontend, plus a guarded command to reset the local database volume.
+- Add deterministic fictional recipe fixtures that are safe to apply repeatedly and a data-only demo author without login credentials.
+
+### Changed
+
+- Route the Frontend API proxy to the Backend service name in Compose while retaining the localhost default for direct development.
+- Document per-machine Docker credentials, startup, persistence and reset behavior.
+
+### Fixed
+
+- Populate the previously empty sample-data script so a clean Docker database receives the documented fixtures.
 
 ## 2026-10-01 — Implement Nutrition Profile Reference Flow
 
