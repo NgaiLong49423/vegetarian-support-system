@@ -1,13 +1,90 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.37.0
+> **Version:** v2.41.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-02 — Force Overlapping Requests in the Concurrent Resend Test (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
+
+**Status:** Committed — 95fd0ef.
+
+**Scope:** Address review finding F-03: the concurrent resend regression test did not prove that the requests overlapped, so it could pass even without the row lock.
+
+### Added
+
+None.
+
+### Changed
+
+- Hold the `USER` row lock in a test transaction while five resends start, and release it only after SQL Server reports all five requests waiting on the lock. The test now passes with the lock (1×202, 4×429, one email) and fails without it (5×202).
+
+### Fixed
+
+None.
+
+## 2026-10-01 — Serialize Verification Email Resends (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
+
+**Status:** Committed — 9ba491d, fcc74a8.
+
+**Scope:** Address the PR #74 review: concurrent resend requests could all pass the 60-second cooldown, several boundaries were untested, and the pull request must leave `docs/diagrams/` unchanged.
+
+### Added
+
+- Add regression and boundary tests: five concurrent resends after the cooldown accept exactly one request, keep only its token and send one email; a resend at 59 seconds is rejected and at exactly 60 seconds is accepted; display names of 3 and 50 characters are accepted and 51 are rejected.
+- Assert that integration tests started through `MamXanhApplication.main` use only the `test` profile, the SQL Server Testcontainers database and the applied Flyway history.
+
+### Changed
+
+- Revert the Data Dictionary edits made earlier in this pull request (the two `USER` columns, decisions Q13, Q15 and Q16, and the `google_subject` trace correction). Per the Tech Lead decision on 2026-10-01, files under `docs/diagrams/` stay a reference baseline until the final documentation phase; `database/README.md` now says so.
+
+### Fixed
+
+- Lock the `USER` row while checking the resend cooldown and replacing the verification token, so concurrent requests are serialized and only the accepted one publishes an email event.
+
+## 2026-10-01 — Compute the Verification Resend Cooldown with Time Zone-Aware Values (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
+
+**Status:** Committed — 528d966.
+
+**Scope:** Resolve the SonarQube Cloud reliability issue (rule `java:S8700`) that failed the Quality Gate on PR #74.
+
+### Added
+
+None.
+
+### Changed
+
+None.
+
+### Fixed
+
+- Compute the `Retry-After` duration for `RESEND_TOO_SOON` from values bound to the application clock zone instead of plain `LocalDateTime` values, so the result stays correct if the clock zone ever observes daylight saving time.
+
+## 2026-10-01 — Synchronize Email Registration with the Develop Baseline (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
+
+**Status:** Committed — 7f80186.
+
+**Scope:** Merge the current `develop` integration baseline into the FR-03-A branch and adapt the registration work to the new environment-configuration policy and coverage gates.
+
+### Added
+
+- Add the FR-03 mail, CORS and frontend-link variables to `app/mamxanh-backend/.env.example`, matching the `.env` import used by the `local` profile.
+- Add a unit test proving that verification emails are skipped when the SMTP host is blank.
+
+### Changed
+
+- Resolve mail settings through explicit `SPRING_MAIL_*` placeholders so values also load from the local `.env` file, and treat a blank SMTP host as email not configured.
+- Start the shared integration-test context through `MamXanhApplication.main`, combining the entry-point check from `develop` with the SQL Server Testcontainers context.
+- Use the coverage-collecting Playwright fixture in the registration and email-verification browser tests.
+- Remove `application-local.properties.example` following `develop` and move its optional Brevo settings into `.env.example`.
+
+### Fixed
+
+None.
 
 ## 2026-09-30 — Enforce Coverage Gates and Separate Sonar Validation
 
@@ -88,6 +165,36 @@ None.
 ### Fixed
 
 None.
+
+## 2026-09-28 — Implement Email Registration and Verification (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
+
+**Status:** Committed — 87076f9, efc4f75, 4915a96, c7b36bb.
+
+**Scope:** Implement UC-03.1–UC-03.3 (AC-03.1–AC-03.5) end to end under the stateless JWT baseline and decisions Q13–Q18: account registration, email verification and verification-email resend in the Backend and Frontend, plus the shared error, security and integration-test foundation that later FR-03 issues and other modules reuse.
+
+### Added
+
+- Add `POST /api/v1/auth/register`, `/auth/email-verifications` and `/auth/email-verifications/resend` following `docs/api/openapi.yaml`: accounts are created `ACTIVE` with `email_verified = false`, passwords are hashed with BCrypt (work factor 12), and verification links use single-use 256-bit tokens valid for 24 hours with a 60-second resend cooldown.
+- Add Flyway migration `V3__user_email_verification_token.sql` storing only the SHA-256 digest and expiry of the current verification token on `USER`, with a filtered unique index and a pairing check constraint.
+- Add a shared FR-03 password rule (8–64 characters, at most 72 UTF-8 bytes, uppercase, lowercase and digit) that reports each unmet criterion, and mirror it in the Frontend.
+- Add `application/problem+json` error handling with stable `code` values and field `errors`, a stateless Spring Security baseline with ProblemDetail 401/403 responses, and a CORS allowlist configured by `MAMXANH_CORS_ALLOWED_ORIGINS`.
+- Add best-effort verification emails through `spring-boot-starter-mail` (Brevo SMTP), sent asynchronously after commit and skipped with a warning when SMTP is not configured.
+- Add Testcontainers SQL Server integration tests covering AC-03.1–AC-03.5, CORS, 401 responses and the absence of passwords and tokens in logs.
+- Add the Frontend API client (Axios), registration and email-verification integration, and `.env.example` for `VITE_API_BASE_URL`.
+- Add test case TC39 to `database/queries.sql` for the new token pairing check and the unique token-digest index.
+- Add the implemented error codes to `docs/api/API.md` and the matching response descriptions to `docs/api/openapi.yaml`.
+
+### Changed
+
+- Run the application-context test against SQL Server through Testcontainers instead of disabling the DataSource and Flyway; `./mvnw verify` now requires a running Docker daemon.
+- Replace the demo-only registration Playwright scenario with API-stubbed registration and verification scenarios, labelled as Frontend-only evidence.
+- Document mail, CORS and frontend-link environment variables and the Docker requirement in the Backend README, the API base URL in the Frontend README, and migration V3 in the database guide.
+- Synchronize `database/schema.sql` with V3 (22 tables, 198 columns, 58 CHECK constraints, 56 indexes) and record the two `USER` columns and decisions Q13, Q15 and Q16 in the Data Dictionary.
+
+### Fixed
+
+- Replace the Frontend registration hint that suggested special characters with the approved FR-03 password rule.
+- Correct the Data Dictionary trace for `USER.google_subject` from UC-03.8 to UC-03.5.
 
 ## 2026-09-27 — Finalize Requirements Baseline v2 and Prepare Issue Reconciliation ([PR #72](https://github.com/NgaiLong49423/vegetarian-support-system/pull/72))
 
