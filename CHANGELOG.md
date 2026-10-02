@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-02 — Force Overlapping Requests in the Concurrent Resend Test (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — 95fd0ef.
 
 **Scope:** Address review finding F-03: the concurrent resend regression test did not prove that the requests overlapped, so it could pass even without the row lock.
 
