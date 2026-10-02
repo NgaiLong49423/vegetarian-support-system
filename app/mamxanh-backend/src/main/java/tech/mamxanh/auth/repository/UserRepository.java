@@ -20,10 +20,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmailVerificationToken(String tokenHash);
 
     /**
-     * Login lookup with a row lock held until the transaction ends, so concurrent attempts on one
-     * account are counted one after another and parallel requests cannot bypass the block (NFR-07).
+     * Lookup with a row lock held until the transaction ends, for read-check-write flows on one
+     * account: concurrent requests run one after another and the later ones see the state written
+     * by the earlier ones. Used by the resend cooldown and by password login, where it keeps
+     * parallel attempts from bypassing the failed-login counter and temporary block (NFR-07).
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from User u where u.email = :email")
-    Optional<User> findByEmailForLogin(@Param("email") String email);
+    Optional<User> findByEmailForUpdate(@Param("email") String email);
 }

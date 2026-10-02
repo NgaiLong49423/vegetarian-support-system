@@ -56,13 +56,13 @@ public class LoginService {
 
     /**
      * Failure counters must survive the exception that reports the failure, hence
-     * {@code noRollbackFor}. The row lock from {@link UserRepository#findByEmailForLogin} serializes
+     * {@code noRollbackFor}. The row lock from {@link UserRepository#findByEmailForUpdate} serializes
      * concurrent attempts on the same account.
      */
     @Transactional(noRollbackFor = AppException.class)
     public AuthResponse login(LoginRequest request) {
         LocalDateTime now = LocalDateTime.now(clock);
-        Optional<User> found = userRepository.findByEmailForLogin(request.email());
+        Optional<User> found = userRepository.findByEmailForUpdate(request.email());
         if (found.isEmpty()) {
             passwordMatches(request.password(), dummyPasswordHash);
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);

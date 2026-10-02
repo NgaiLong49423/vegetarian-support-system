@@ -1,8 +1,8 @@
 > **Document:** Data Dictionary & Traceability Matrix — Mâm Xanh
 > **File:** `docs/diagrams/ERD/data-dictionary.md`
-> **Version:** v0.8.0
+> **Version:** v0.7.5
 > **Created:** 2026-09-23
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-09-27
 > **Status:** Under Review
 > **Related Docs:** `docs/diagrams/ERD/README.md`, `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -23,13 +23,13 @@ Toàn bộ 9 cột thuộc Pha 2 đã được Trương Văn Khải điền chi 
 
 Ký hiệu trong tài liệu:
 
-- `🆕` — cột hoặc bảng chưa có trong bản nháp `logical-erd-v0.1.0.drawio`, phải bổ sung khi dựng v1.0.0; hoặc cột bổ sung theo quyết định `Q7`–`Q12`, `Q15`–`Q16`.
+- `🆕` — cột hoặc bảng chưa có trong bản nháp `logical-erd-v0.1.0.drawio`, phải bổ sung khi dựng v1.0.0; hoặc cột bổ sung theo quyết định `Q7`–`Q12`.
 - `🗑` — cột hoặc bảng phải xóa khỏi sơ đồ logical.
 - `Technical design` — trường kỹ thuật không bắt nguồn trực tiếp từ requirement, có ghi lý do. Cột ghi `chỉ Physical ERD` không vẽ trên Logical ERD (quyết định `Q8`).
 
 ## 2. Quyết định đã chốt
 
-Toàn bộ điểm mở ảnh hưởng tới table, column, key hoặc constraint đã được Tech Lead chốt ngày **23/09/2026** và **24/09/2026**. Pha 1 không còn `TBD`. Các quyết định `Q13`, `Q15`, `Q16` ngày **28/09/2026** thuộc FR-03 và bổ sung cột mới cho `USER`.
+Toàn bộ điểm mở ảnh hưởng tới table, column, key hoặc constraint đã được Tech Lead chốt ngày **23/09/2026** và **24/09/2026**. Pha 1 không còn `TBD`.
 
 | ID | Quyết định | Người chốt | Ngày chốt |
 |---|---|---|---|
@@ -43,9 +43,6 @@ Toàn bộ điểm mở ảnh hưởng tới table, column, key hoặc constrain
 | `Q10` | **Mỗi user tối đa một gói trả phí `ACTIVE`.** Cho phép nâng cấp ngay PLUS → PRO: gói cũ chuyển `CANCELLED` và gói mới `ACTIVE` trong **cùng transaction**. MVP chưa hỗ trợ gia hạn sớm, hạ hạng hoặc nhiều gói chồng lấn. | Ngô Gia Long | 24/09/2026 |
 | `Q11` | **`preference_type` chỉ còn `AVOID` và `DISLIKE`** — gộp dị ứng/kiêng vào `AVOID`, khớp hai danh sách của FR-31 mục 3. Mỗi nguyên liệu chỉ có **một loại hiệu lực** trên một user; đổi danh sách thì cập nhật `preference_type`, không tạo dòng trùng. | Ngô Gia Long | 24/09/2026 |
 | `Q12` | Bổ sung ngay trong PR #66: trạng thái Onboarding, hai cờ xác nhận "Không có", `nutrition_goal`, `date_of_birth`; `activity_level` sửa về đúng **4 mức** của FR-35. | Ngô Gia Long | 24/09/2026 |
-| `Q13` | Thêm cột, ràng buộc hoặc index cục bộ trên bảng đã có trong một implementation issue **không** cần biểu quyết 3/5; thêm bảng/thực thể mới hoặc tạo/thay đổi quan hệ vẫn cần Decision Issue. Chi tiết tại `CONTRIBUTING.md` mục Engineering Autonomy Policy. | Ngô Gia Long | 28/09/2026 |
-| `Q15` | **Không tạo** các bảng `REFRESH_TOKEN`, `ACCOUNT_TOKEN`, `LOGIN_THROTTLE`; giữ baseline 22 bảng. Trường phục vụ xác minh email, đặt lại mật khẩu và giới hạn đăng nhập sai lưu trực tiếp trên `USER` (FR-03 chuyển sang Stateless JWT, không có server session). | Ngô Gia Long | 28/09/2026 |
-| `Q16` | Mã xác minh email lưu trên `USER` dưới dạng digest SHA-256 kèm thời hạn; mã mới ghi đè mã cũ, dùng xong xóa, không lưu lịch sử mã. Đã thêm `email_verification_token`, `verification_token_expires_at` bằng `V3__user_email_verification_token.sql` (Issue #5). | Ngô Gia Long | 28/09/2026 |
 
 > [!WARNING]
 > **Quyết định `Q7` đã được đồng bộ trong FR-35 và Use Case liên quan:** `USER` lưu `date_of_birth`; service tính tuổi 18–120 khi xử lý hồ sơ, không lưu tuổi cố định. Schema không thay đổi.
@@ -111,15 +108,13 @@ Theo đúng yêu cầu của [Issue #63](https://github.com/NgaiLong49423/vegeta
 | `user_id` | Định danh tài khoản | Identifier | BIGINT | — | NOT NULL | — | PK (Identity 1,1) | — | — | — | PK_USER (Clustered) | PK; đầu `1` của 12 quan hệ xuất phát từ `USER` | FR-03 | — | UC-03.1 | — |
 | `email` | Email đăng nhập, định danh duy nhất | Text, unique | VARCHAR | 255 | NOT NULL | — | — | — | UQ_USER_email | — | UQ_USER_email (Nonclustered) | — | FR-03 | BR-24 | UC-03.1 | Dữ liệu cá nhân |
 | `password_hash` | Mật khẩu đã băm BCrypt | Text | VARCHAR | 255 | NULL | — | — | — | — | — | — | — | FR-03 | — | AC-03.1 | **Tuyệt đối không log**; NFR-06 |
-| `google_subject` | `sub` từ Google ID Token, khóa định danh Google ổn định | Text, unique, optional | VARCHAR | 255 | NULL | — | — | — | UQ_USER_google_subject (Filtered) | — | UQ_USER_google_subject (Nonclustered, WHERE google_subject IS NOT NULL) | — | FR-03 | — | UC-03.5 | Dữ liệu cá nhân |
+| `google_subject` | `sub` từ Google ID Token, khóa định danh Google ổn định | Text, unique, optional | VARCHAR | 255 | NULL | — | — | — | UQ_USER_google_subject (Filtered) | — | UQ_USER_google_subject (Nonclustered, WHERE google_subject IS NOT NULL) | — | FR-03 | — | UC-03.8 | Dữ liệu cá nhân |
 | `display_name` | Tên hiển thị công khai | Text | NVARCHAR | 100 | NOT NULL | — | — | — | — | — | — | — | FR-23 | BR-18 | — | Công khai theo BR-18 |
 | `avatar_url` | Ảnh đại diện | Text, optional | VARCHAR | 2048 | NULL | — | — | — | — | — | — | — | FR-23 | BR-18 | — | Công khai |
 | `bio` | Giới thiệu ngắn của tác giả | Text, optional | NVARCHAR | 500 | NULL | — | — | — | — | — | — | — | FR-23 | BR-18 | — | Công khai |
 | `role` | Vai trò: `CUSTOMER` / `EXPERT` / `ADMIN` | Enum | VARCHAR | 20 | NOT NULL | 'CUSTOMER' (DF_USER_role) | — | — | — | CK_USER_role ('CUSTOMER', 'EXPERT', 'ADMIN') | — | Quyết định quyền đăng bài và quản trị | FR-03, FR-05 | BR-17, BR-26 | — | Quyết định phân quyền, NFR-09 |
 | `account_status` | Trạng thái tài khoản (hoạt động / bị khóa) | Enum | VARCHAR | 20 | NOT NULL | 'ACTIVE' (DF_USER_account_status) | — | — | — | CK_USER_account_status ('ACTIVE', 'LOCKED') | — | — | FR-03 | BR-26 | — | Chỉ Admin đổi được |
 | `email_verified` | Đã xác minh email hay chưa | Boolean | BIT | — | NOT NULL | 0 (DF_USER_email_verified) | — | — | — | — | — | — | FR-03 | — | UC-03.2 | — |
-| `email_verification_token` 🆕 | Digest SHA-256 (hex) của mã xác minh email hiện hành (Q15, Q16). Mã mới ghi đè mã cũ nên chỉ liên kết mới nhất còn hiệu lực; xác minh thành công thì đặt về `NULL`. Không lưu mã thô | Text, optional | VARCHAR | 64 | NULL | — | — | — | UQ_USER_email_verification_token (Filtered) | CK_USER_verification_token_pair (cùng `NULL` hoặc cùng có giá trị với `verification_token_expires_at`) | UQ_USER_email_verification_token (Nonclustered, WHERE email_verification_token IS NOT NULL) | — | FR-03 | — | UC-03.2, UC-03.3, AC-03.4, AC-03.5 | **Tuyệt đối không log**; chỉ lưu digest, mã thô chỉ nằm trong liên kết email |
-| `verification_token_expires_at` 🆕 | Thời điểm hết hạn (UTC) của mã xác minh hiện hành, 24 giờ sau khi phát hành (Q16). Thời điểm gửi gần nhất = giá trị này trừ 24 giờ, dùng cho giới hạn gửi lại 60 giây | Timestamp, optional | DATETIME2 | 7 | NULL | — | — | — | — | CK_USER_verification_token_pair | — | — | FR-03 | — | UC-03.2, UC-03.3, AC-03.5 | — |
 | `vegetarian_type` | Trường phái ăn chay của người dùng: Vegan / Lacto / Ovo / Lacto-Ovo (4 giá trị) | Enum | VARCHAR | 20 | NULL | — | — | — | — | CK_USER_vegetarian_type ('VEGAN', 'LACTO', 'OVO', 'LACTO_OVO') | — | — | FR-31 | BR-30 | — | — |
 | `cuisine_preference` | Khẩu vị vùng miền ưa thích | Text, optional | NVARCHAR | 200 | NULL | — | — | — | — | — | — | — | FR-31 | BR-30 | — | — |
 | `preferred_difficulty` | Độ khó món ăn ưa thích | Enum, optional | VARCHAR | 20 | NULL | — | — | — | — | CK_USER_preferred_difficulty ('EASY', 'MEDIUM', 'HARD') | — | — | FR-31 | BR-30 | — | — |
