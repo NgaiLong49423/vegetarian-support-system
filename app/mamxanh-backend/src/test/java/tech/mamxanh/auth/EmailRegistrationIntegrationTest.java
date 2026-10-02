@@ -23,10 +23,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,6 +47,8 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import tech.mamxanh.AbstractIntegrationTest;
 import tech.mamxanh.MutableClock;
@@ -77,6 +81,9 @@ class EmailRegistrationIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @BeforeEach
     void deleteUsers() {
@@ -317,20 +324,42 @@ class EmailRegistrationIntegrationTest extends AbstractIntegrationTest {
         awaitEmailBodies("an@example.com", 2);
     }
 
+    /**
+     * F-01/F-03: overlap is forced at database level. A test transaction holds the {@code USER} row
+     * lock while five resends start, and the lock is released only after SQL Server reports all five
+     * requests blocked by that transaction. With the row lock the requests then run one by one;
+     * without it they would all pass the cooldown check before any write and all be accepted.
+     */
     @Test
     void concurrentResendsAfterTheCooldownAcceptOnlyOneAndKeepItsToken() throws Exception {
         String firstToken = registerAndAwaitToken("an@example.com");
         clock.advance(Duration.ofSeconds(61));
 
         int requests = 5;
-        List<Callable<Integer>> resends = new ArrayList<>();
-        for (int i = 0; i < requests; i++) {
-            resends.add(() -> resend("an@example.com").andReturn().getResponse().getStatus());
-        }
+        CountDownLatch lockHeld = new CountDownLatch(1);
+        CountDownLatch releaseLock = new CountDownLatch(1);
+        AtomicInteger holderSession = new AtomicInteger();
         List<Integer> statuses = new ArrayList<>();
-        try (ExecutorService pool = Executors.newFixedThreadPool(requests)) {
-            for (Future<Integer> result : pool.invokeAll(resends)) {
-                statuses.add(result.get());
+        try (ExecutorService pool = Executors.newFixedThreadPool(requests + 1)) {
+            Future<?> holder = pool.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+                userRepository.findByEmailForUpdate("an@example.com").orElseThrow();
+                holderSession.set(jdbcTemplate.queryForObject("SELECT @@SPID", Integer.class));
+                lockHeld.countDown();
+                awaitUninterruptibly(releaseLock);
+            }));
+            List<Future<Integer>> results = new ArrayList<>();
+            try {
+                assertThat(lockHeld.await(10, TimeUnit.SECONDS)).isTrue();
+                for (int i = 0; i < requests; i++) {
+                    results.add(pool.submit(() -> resend("an@example.com").andReturn().getResponse().getStatus()));
+                }
+                awaitLockWaits(holderSession.get(), requests);
+            } finally {
+                releaseLock.countDown();
+            }
+            holder.get(10, TimeUnit.SECONDS);
+            for (Future<Integer> result : results) {
+                statuses.add(result.get(30, TimeUnit.SECONDS));
             }
         }
 
@@ -410,6 +439,33 @@ class EmailRegistrationIntegrationTest extends AbstractIntegrationTest {
                 {"displayName":"%s","email":"%s","password":"%s","confirmPassword":"%s"}
                 """.formatted(displayName, email, password, confirmPassword);
         return mockMvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    /**
+     * Polls SQL Server until {@code count} other sessions of this database wait on a lock, i.e. the
+     * requests are queued behind the transaction held by {@code holderSession}.
+     */
+    private void awaitLockWaits(int holderSession, int count) throws InterruptedException {
+        String waiting = "SELECT COUNT(*) FROM sys.dm_exec_requests WHERE database_id = DB_ID() "
+                + "AND wait_type LIKE 'LCK_M_%' AND session_id <> ?";
+        long deadline = System.nanoTime() + Duration.ofSeconds(20).toNanos();
+        while (jdbcTemplate.queryForObject(waiting, Integer.class, holderSession) < count) {
+            if (System.nanoTime() > deadline) {
+                throw new AssertionError("Expected " + count + " requests waiting on the row lock held by session "
+                        + holderSession + "; requests: " + jdbcTemplate.queryForList(
+                                "SELECT session_id, blocking_session_id, wait_type, command FROM sys.dm_exec_requests "
+                                        + "WHERE database_id = DB_ID()"));
+            }
+            Thread.sleep(50);
+        }
+    }
+
+    private static void awaitUninterruptibly(CountDownLatch latch) {
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private ResultActions submitVerification(String token) throws Exception {

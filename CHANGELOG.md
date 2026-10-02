@@ -1,13 +1,31 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.40.0
+> **Version:** v2.41.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-01
+> **Last Updated:** 2026-10-02
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-02 — Force Overlapping Requests in the Concurrent Resend Test (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Address review finding F-03: the concurrent resend regression test did not prove that the requests overlapped, so it could pass even without the row lock.
+
+### Added
+
+None.
+
+### Changed
+
+- Hold the `USER` row lock in a test transaction while five resends start, and release it only after SQL Server reports all five requests waiting on the lock. The test now passes with the lock (1×202, 4×429, one email) and fails without it (5×202).
+
+### Fixed
+
+None.
 
 ## 2026-10-01 — Serialize Verification Email Resends (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
