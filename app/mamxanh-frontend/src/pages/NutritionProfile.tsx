@@ -89,13 +89,19 @@ export function NutritionProfile() {
   const [calculating, setCalculating] = useState(false);
 
   useEffect(() => {
+    if (!authenticated) {
+      setLoading(false);
+      setLoadError('Hồ sơ dinh dưỡng cần phiên đăng nhập đã được xác thực. Đăng nhập thật sẽ được nối khi phần xác thực sẵn sàng.');
+      return;
+    }
+
     let active = true;
     nutritionApi.getProfile()
       .then((response) => { if (active) { setSavedResponse(response); setForm(applyResponse(response)); } })
       .catch((error: unknown) => { if (active) setLoadError(loadErrorMessage(error)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [authenticated]);
 
   const age = useMemo(() => ageFromDate(form.dateOfBirth), [form.dateOfBirth]);
   const excluded = [form.pregnant, form.breastfeeding, form.therapeuticDietRequired].includes('yes');
