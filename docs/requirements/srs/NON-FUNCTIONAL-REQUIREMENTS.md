@@ -1,8 +1,8 @@
 > **Document:** Non-Functional Requirements Specification
 > **File:** `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.1.2
+> **Version:** v2.1.3
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`
 
@@ -339,8 +339,8 @@ This document contains only requirements included in Requirements / Implementati
 - **Mô tả yêu cầu:** Đảm bảo chất lượng mã nguồn dễ đọc, dễ bảo trì và các giao diện lập trình được mô tả đầy đủ.
 - **Nghiệp vụ liên quan:** Toàn hệ thống.
 - **Tiêu chí đo lường (Acceptance Criteria / Metric / Threshold):**
-  - *Threshold:* 100% endpoint REST API công khai có tài liệu tương tác Swagger/OpenAPI; mã nguồn Frontend và Backend tuân thủ quy chuẩn định dạng và quy tắc đóng góp đã ban hành tại [CONTRIBUTING.md](../../../CONTRIBUTING.md).
-- **Phương pháp kiểm chứng (Verification Method):** Kiểm tra tài liệu Swagger UI được sinh tự động và kiểm tra qua quy trình code review.
+  - *Threshold:* 100% endpoint REST API công khai được mô tả trong generated OpenAPI và có thể tra cứu tương tác qua Scalar UI; mã nguồn Frontend và Backend tuân thủ quy chuẩn định dạng và quy tắc đóng góp đã ban hành tại [CONTRIBUTING.md](../../../CONTRIBUTING.md).
+- **Phương pháp kiểm chứng (Verification Method):** Kiểm tra generated OpenAPI, Scalar UI và quy trình code review. Smoke test HTTP cho route Scalar không thay thế xác nhận trên browser rằng JavaScript tải contract và có thể gửi request.
 
 ---
 

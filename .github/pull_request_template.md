@@ -1,8 +1,8 @@
 > **Document:** Pull Request Template  
 > **File:** `.github/pull_request_template.md`  
-> **Version:** v2.3.0
+> **Version:** v2.4.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Template  
 
 # Pull Request
@@ -45,7 +45,8 @@ Chỉ áp dụng cho PR hướng vào `develop`; không phải checklist cho PR 
 - [ ] Git conflicts và semantic conflicts phát sinh sau sync đã được xử lý.
 - [ ] Flyway migration version đã được kiểm tra lại nếu PR có migration.
 - [ ] Verification phù hợp với scope đã chạy lại sau lần synchronization cuối có ảnh hưởng tới feature.
-- [ ] Required Frontend/Backend/Sonar và CodeQL checks liên quan pass trên commit cập nhật; thất bại/skip chưa được coi là pass. Review gate hiện hành đã đáp ứng.
+- [ ] Nếu thay đổi ảnh hưởng FE/BE, Dockerfile, Compose, runtime config hoặc database initialization: đã kiểm tra bằng root Docker Compose; nếu không chạy được local thì ghi rõ blocker và chưa xác minh.
+- [ ] Required Frontend/Backend/Docker Development/Sonar và CodeQL checks liên quan pass trên commit cập nhật; thất bại/skip chưa được coi là pass. Review gate hiện hành đã đáp ứng.
 
 ## Cổng PR vào `main`
 

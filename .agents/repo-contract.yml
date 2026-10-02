@@ -137,7 +137,7 @@ engineering_autonomy:
     rule: declare_in_manifest_with_active_usage
   api_design_evolution:
     allowed_autonomous: [new_endpoints_in_scope, new_request_response_dtos, business_validations_and_error_codes]
-    documentation_rule: sync_api_md_and_openapi_yaml_in_same_work_item_or_pr
+    documentation_rule: generated_openapi_is_runtime_contract; manual_yaml_is_planned_reference_during_migration; update_api_md_when_shared_integration_conventions_change
     requires_coordination_and_approval: [delete_active_endpoint, rename_endpoint, change_http_method, remove_or_rename_response_fields, change_auth_model, change_error_envelope]
 pull_request_integration:
   policy_authority: "CONTRIBUTING.md#develop-integration-baseline"
@@ -162,7 +162,7 @@ pull_request_integration:
     rerun_after_synchronization: true
     scope_and_repository_rules_determine_checks: true
     required_checks_authority: "CONTRIBUTING.md#develop-required-checks"
-    required_ci_job_contexts: [Frontend, Backend, Sonar]
+    required_ci_job_contexts: [Frontend, Backend, Docker Development, Sonar]
     required_codeql_contexts: ["Analyze (javascript-typescript)", "Analyze (java-kotlin)", "Analyze (actions)"]
     frontend_coverage_minimum_percent: {lines: 60, statements: 60, functions: 60, branches: 60}
     backend_jacoco: {element: BUNDLE, counter: LINE, value: COVEREDRATIO, minimum: 0.80}

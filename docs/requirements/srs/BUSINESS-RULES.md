@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.2.0
+> **Version:** v2.3.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-10-02
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -235,7 +235,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-30 — Ranh giới chức năng khi bỏ qua Onboarding
 
 - **Mã quy tắc:** BR-30
-- **Nội dung:** Bỏ qua Onboarding không khóa các chức năng không cá nhân hóa đã nêu tại 3.15; chỉ chặn yêu cầu AI cá nhân hóa khi thiếu dữ liệu tối thiểu.
+- **Nội dung:** Bỏ qua Onboarding không khóa các chức năng không cá nhân hóa đã nêu tại 3.15; chỉ chặn yêu cầu AI cá nhân hóa khi thiếu dữ liệu tối thiểu. Hệ thống không tự hiển thị lại lời mời Onboarding ở các lần đăng nhập sau khi Member đã Skip; Member có thể chủ động mở hồ sơ sở thích trong Cài đặt để hoàn tất sau. Tài khoản đã tồn tại không tự động bị hỏi.
 
 ---
 
