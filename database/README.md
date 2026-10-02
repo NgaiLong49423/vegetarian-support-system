@@ -1,6 +1,6 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.6.3<br>
+> **Version:** v0.7.0<br>
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-01<br>
 > **Status:** Active  
@@ -11,7 +11,7 @@ Database chính đã chốt là Microsoft SQL Server 2019. Lược đồ cơ s�
 
 ## Quyền sở hữu dữ liệu
 
-- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`, hiện gồm `V1__baseline_schema.sql`, `V2__unit_code_unicode.sql` và `V3__user_email_verification_token.sql` của Issue #5) là lịch sử thay đổi schema có thẩm quyền và phải append-only sau khi đã chia sẻ. Snapshot `database/schema.sql` được đồng bộ với V3 trong cùng PR; Physical ERD trong `docs/diagrams/ERD/` do người phụ trách sơ đồ cập nhật riêng.
+- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`, hiện gồm `V1__baseline_schema.sql`, `V2__unit_code_unicode.sql`, `V3__user_email_verification_token.sql` của Issue #5 và `V4__user_login_throttle.sql` của Issue #6) là lịch sử thay đổi schema có thẩm quyền và phải append-only sau khi đã chia sẻ. Snapshot `database/schema.sql` được đồng bộ với migration mới nhất trong cùng PR; Physical ERD trong `docs/diagrams/ERD/` do người phụ trách sơ đồ cập nhật riêng.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
 - `database/sample-data.sql` chỉ chứa dữ liệu demo giả, không chứa tài khoản thật, credential hoặc dữ liệu cá nhân.
 - `database/queries.sql` chứa kịch bản kiểm tra đối tượng, bộ test tự động xác minh các ràng buộc nghiệp vụ (positive/negative) có cơ chế rollback, và các truy vấn mẫu cho tầng ứng dụng; không thay thế automated integration tests.
@@ -46,22 +46,22 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
 - **Logical ERD:** [logical-erd-v1.0.0.drawio](../docs/diagrams/ERD/logical-erd-v1.0.0.drawio) (22 bảng, 37 connector thể hiện 36 quan hệ; cập nhật lần cuối ở commit `827353e`).
 - **Physical ERD:** [physical-erd-v1.0.0.drawio](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio) & [physical-erd-v1.0.0.drawio.png](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png) (22 bảng, 37 connector, 196 physical columns với đầy đủ kiểu dữ liệu, nullability, constraints, indexes).
 - **Data Dictionary:** [data-dictionary.md](../docs/diagrams/ERD/data-dictionary.md) v0.7.2 (22 bảng, 196 cột physical, hoàn thành triển khai toàn bộ 33 mục đánh dấu sau review PR #66). Theo quyết định của Tech Lead ngày 01/10/2026, các tài liệu trong `docs/diagrams/` (ERD, Data Dictionary) là baseline tham khảo và chỉ được đồng bộ ở giai đoạn viết tài liệu nộp; trạng thái schema hiện hành lấy theo Flyway migration và `database/schema.sql`.
-- **Schema & Migration:** [V1__baseline_schema.sql](../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql), [V2__unit_code_unicode.sql](../app/mamxanh-backend/src/main/resources/db/migration/V2__unit_code_unicode.sql) (đổi `UNIT.code` sang `NVARCHAR(20)` và khôi phục các mã `quả`, `củ`, `miếng` bị mất dấu) , [V3__user_email_verification_token.sql](../app/mamxanh-backend/src/main/resources/db/migration/V3__user_email_verification_token.sql) (Issue #5: thêm `email_verification_token`, `verification_token_expires_at` trên `USER`) và [database/schema.sql](schema.sql) đã triển khai đầy đủ 22 tables, 198 columns, 38 FKs, 58 CHECK constraints, 55 DEFAULT constraints, 56 index (22 PK, 9 UNIQUE constraint, 25 index tạo riêng; trong đó 11 filtered index gồm 9 unique và 2 không unique), seed 15 dòng `UNIT`. Baseline V1–V2 kiểm thử thành công 100% trên clean database Microsoft SQL Server 2019 thật (`.\SQLEXPRESS`); ngày 28/09/2026 snapshot được đối chiếu với database dựng bằng V1→V3 trên container SQL Server 2019: 0 khác biệt về cột, CHECK, DEFAULT, index và FK.
-- **Verification Tests:** [database/queries.sql](queries.sql) gồm 39 automated test cases (TC01–TC39, 75/75 test assertions PASS 100%) kiểm thử toàn bộ positive/negative business constraints và assert chính xác tên constraint trong `ERROR_MESSAGE()`.
+- **Schema & Migration:** [V1__baseline_schema.sql](../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql), [V2__unit_code_unicode.sql](../app/mamxanh-backend/src/main/resources/db/migration/V2__unit_code_unicode.sql) (đổi `UNIT.code` sang `NVARCHAR(20)` và khôi phục các mã `quả`, `củ`, `miếng` bị mất dấu) , [V3__user_email_verification_token.sql](../app/mamxanh-backend/src/main/resources/db/migration/V3__user_email_verification_token.sql) (Issue #5: thêm `email_verification_token`, `verification_token_expires_at` trên `USER`), [V4__user_login_throttle.sql](../app/mamxanh-backend/src/main/resources/db/migration/V4__user_login_throttle.sql) (Issue #6: thêm `failed_login_attempts`, `login_blocked_until` trên `USER`; cột `last_failed_login_at` của thiết kế mục tiêu chưa thêm vì chưa có Acceptance Criteria nào dùng) và [database/schema.sql](schema.sql) đã triển khai đầy đủ 22 tables, 200 columns, 38 FKs, 59 CHECK constraints, 56 DEFAULT constraints, 56 index (22 PK, 9 UNIQUE constraint, 25 index tạo riêng; trong đó 11 filtered index gồm 9 unique và 2 không unique), seed 15 dòng `UNIT`. Baseline V1–V2 kiểm thử thành công 100% trên clean database Microsoft SQL Server 2019 thật (`.\SQLEXPRESS`); ngày 01/10/2026 snapshot được đối chiếu với database dựng bằng V1→V4 trên container SQL Server 2019: 0 khác biệt về cột, CHECK, DEFAULT, index và FK.
+- **Verification Tests:** [database/queries.sql](queries.sql) gồm 40 automated test cases (TC01–TC40, 78/78 test assertions PASS 100%) kiểm thử toàn bộ positive/negative business constraints và assert chính xác tên constraint trong `ERROR_MESSAGE()`.
 
 ## Hướng dẫn kiểm thử và thẩm định
 
-Kiểm tra toàn bộ schema và chạy 39 test cases (TC01–TC39) bằng `sqlcmd`:
+Kiểm tra toàn bộ schema và chạy 40 test cases (TC01–TC40) bằng `sqlcmd`:
 
 ```powershell
 # 1. Khởi tạo database kiểm thử sạch
 sqlcmd -S .\SQLEXPRESS -E -Q "DROP DATABASE IF EXISTS MamXanhDB_Test; CREATE DATABASE MamXanhDB_Test;"
 
-# 2. Thực thi schema DDL (hoặc chạy lần lượt V1, V2 rồi V3 trong db/migration với cờ -I,
+# 2. Thực thi schema DDL (hoặc chạy lần lượt V1→V4 trong db/migration với cờ -I,
 #    vì filtered index cần QUOTED_IDENTIFIER ON)
 sqlcmd -S .\SQLEXPRESS -E -d MamXanhDB_Test -i database/schema.sql
 
-# 3. Chạy bộ kiểm thử ràng buộc nghiệp vụ (75/75 test assertions PASS)
+# 3. Chạy bộ kiểm thử ràng buộc nghiệp vụ (78/78 test assertions PASS)
 sqlcmd -S .\SQLEXPRESS -E -d MamXanhDB_Test -i database/queries.sql
 ```
 

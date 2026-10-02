@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.41.0
+> **Version:** v2.42.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-02
 > **Status:** Active
@@ -45,6 +45,33 @@ None.
 ### Fixed
 
 - Lock the `USER` row while checking the resend cooldown and replacing the verification token, so concurrent requests are serialized and only the accepted one publishes an email event.
+
+## 2026-10-01 — Implement Password Login and Temporary Login Blocking (FR-03-B, Issue #6)
+
+**Status:** Committed — d9b6ef4, f3deae8, e5da120, 3057480.
+
+**Scope:** Implement UC-03.4 (AC-03.6–AC-03.9, NFR-07), client-side logout (AC-03.13) and the account-status check of NFR-09 end to end: password login that issues a Stateless JWT access token, a ten-minute per-account block after five consecutive wrong passwords, validation of Bearer tokens on every protected request, and the Frontend session that uses them.
+
+### Added
+
+- Add `POST /api/v1/auth/login` returning `AuthResponse` (HS256 access token, `tokenType`, `expiresInSeconds`, `AccountSummary`) with neutral `INVALID_CREDENTIALS` answers for unknown emails, wrong passwords and password-less Google accounts, and `EMAIL_NOT_VERIFIED` or `ACCOUNT_LOCKED` only after a correct password.
+- Add Flyway migration `V4__user_login_throttle.sql` with `USER.failed_login_attempts` and `USER.login_blocked_until`; the fifth consecutive wrong password blocks login for ten minutes with `429 LOGIN_TEMPORARILY_BLOCKED` and `Retry-After`, checked before the password and without changing `account_status`.
+- Add Spring Security OAuth2 Resource Server validation of Bearer tokens (signature, issuer, expiry against the application clock) and re-read `USER` on every authenticated request so a `LOCKED` account is rejected immediately with `403 ACCOUNT_LOCKED`.
+- Add the required `MAMXANH_JWT_SECRET` setting (at least 32 bytes, never printed) and configurable `mamxanh.auth.access-token-ttl`, `max-failed-login-attempts` and `login-block-duration` properties.
+- Add unit and SQL Server integration tests for AC-03.6–AC-03.9, concurrent wrong passwords, other accounts staying unaffected, expired, tampered, foreign-signed and orphan tokens, immediate administrative lock and log redaction, plus TC40 in `database/queries.sql`.
+- Add the Frontend login flow: `POST /auth/login` from the login page, messages chosen by problem `code` (neutral invalid credentials, unverified email with a resend link, administrative lock, temporary block with the remaining minutes), and a session kept in `localStorage` behind a single storage function while the storage decision is pending.
+- Add an `AuthContext` with client-side logout, automatic logout when the token expires, cross-tab synchronization, and an Axios interceptor that sends `Authorization: Bearer` and ends the session on `401` or `403 ACCOUNT_LOCKED`.
+- Add API-stubbed Playwright scenarios for login, logout without a server call, login error codes, expired stored sessions and token expiry.
+
+### Changed
+
+- Lock the `USER` row during a login attempt so parallel requests cannot bypass the failure count.
+- Replace the `DemoAccount` context with `AuthContext`; the explicit demo preview remains a separate, token-free mode, and the header shows the real account name, email and a logout action for real sessions.
+- Synchronize `database/schema.sql` with V4 (200 columns, 59 CHECK and 56 DEFAULT constraints) and document the login error codes, token claims and pending token parameters in `docs/api/API.md` and `docs/api/openapi.yaml`.
+
+### Fixed
+
+None.
 
 ## 2026-10-01 — Compute the Verification Resend Cooldown with Time Zone-Aware Values (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 

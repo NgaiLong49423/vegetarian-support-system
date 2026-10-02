@@ -1,4 +1,4 @@
-import { useDemoAccount } from './DemoAccount';
+import { useAuth } from './AuthContext';
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Bell, Menu, Plus, Search, X, ChevronDown } from 'lucide-react';
@@ -17,7 +17,23 @@ export function AppHeader() {
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { active, setActive } = useDemoAccount();
+  const { account, isAuthenticated, memberView: active, signOut, exitDemo } = useAuth();
+  const displayName = account?.displayName ?? currentUser.name;
+  const accountLabel = account ? `Tài khoản ${account.displayName}` : `Tài khoản ${currentUser.name}, gói AI ${demoAiPlan} demo`;
+  const leaveLabel = isAuthenticated ? 'Đăng xuất' : 'Thoát tài khoản demo';
+  // AC-03.13: logout only clears the token and auth state on this device; no server call.
+  const leave = () => {
+    if (isAuthenticated) signOut();
+    else exitDemo();
+    setMenuOpen(false);
+    setOpen(false);
+    navigate('/dang-nhap');
+  };
+  const avatar = account
+    ? account.avatarUrl
+      ? <img src={account.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-brand-200" />
+      : <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white ring-2 ring-brand-200">{account.displayName.trim().charAt(0).toUpperCase()}</span>
+    : <img src={currentUser.avatar} alt={currentUser.name} className="h-9 w-9 rounded-full object-cover ring-2 ring-brand-200" />;
 
   return (
     <header className="sticky top-0 z-40 border-b border-brand-100 bg-cream/85 backdrop-blur-md">
@@ -72,23 +88,23 @@ export function AppHeader() {
           {active && <div className="relative hidden md:block">
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              aria-label={`Tài khoản ${currentUser.name}, gói AI ${demoAiPlan} demo`}
+              aria-label={accountLabel}
               aria-expanded={menuOpen}
               aria-haspopup="menu"
               className="flex items-center gap-2 whitespace-nowrap rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-brand-100/70"
             >
-              <img src={currentUser.avatar} alt={currentUser.name} className="h-9 w-9 rounded-full object-cover ring-2 ring-brand-200" />
+              {avatar}
               <span className="text-left leading-tight">
-                <span className="block text-sm font-semibold text-ink">{currentUser.name}</span>
-                <span className="block text-xs text-ink-muted">{demoAiPlan} · demo</span>
+                <span className="block max-w-40 truncate text-sm font-semibold text-ink">{displayName}</span>
+                <span className="block text-xs text-ink-muted">{account ? 'Thành viên' : `${demoAiPlan} · demo`}</span>
               </span>
               <ChevronDown className="h-4 w-4 text-ink-muted" />
             </button>
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-brand-100 bg-white py-1 shadow-xl shadow-brand-900/10">
                 <div className="border-b border-brand-50 px-4 py-3">
-                  <p className="font-bold text-ink">{currentUser.name}</p>
-                  <p className="text-xs text-ink-muted">Gói AI hiện tại: {demoAiPlan} (dữ liệu demo)</p>
+                  <p className="truncate font-bold text-ink">{displayName}</p>
+                  <p className="truncate text-xs text-ink-muted">{account ? account.email : `Gói AI hiện tại: ${demoAiPlan} (dữ liệu demo)`}</p>
                 </div>
                 <Link to="/ho-so" onClick={() => setMenuOpen(false)} className="block px-4 py-2.5 text-sm font-medium text-ink-soft hover:bg-brand-50">
                   Hồ sơ của tôi
@@ -109,8 +125,8 @@ export function AppHeader() {
                   Kế hoạch bữa ăn
                 </Link>
                 <div className="my-1 border-t border-brand-50" />
-                <button onClick={() => { setActive(false); setMenuOpen(false); navigate('/dang-nhap'); }} className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink-muted hover:bg-brand-50">
-                  Thoát tài khoản demo
+                <button onClick={leave} className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink-muted hover:bg-brand-50">
+                  {leaveLabel}
                 </button>
               </div>
             )}
@@ -144,7 +160,7 @@ export function AppHeader() {
               </NavLink>
             ))}
             {active ? <><div className="my-1 border-t border-brand-100 px-3 py-2 text-xs text-ink-muted">
-              {currentUser.name} · Gói AI {demoAiPlan} (demo)
+              {account ? `${account.displayName} · ${account.email}` : `${currentUser.name} · Gói AI ${demoAiPlan} (demo)`}
             </div>
             <Link to="/ho-so" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-ink-soft hover:bg-brand-100">Hồ sơ của tôi</Link>
             <Link to="/ho-so/dinh-duong" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-ink-soft hover:bg-brand-100">Hồ sơ dinh dưỡng & BMI</Link>
@@ -154,7 +170,7 @@ export function AppHeader() {
               <Plus className="h-4 w-4" />
               Đăng công thức
             </Button>
-            <button onClick={() => { setActive(false); setOpen(false); navigate('/dang-nhap'); }} className="rounded-lg px-3 py-2.5 text-left text-sm text-ink-muted">Thoát tài khoản demo</button>
+            <button onClick={leave} className="rounded-lg px-3 py-2.5 text-left text-sm text-ink-muted">{leaveLabel}</button>
             </> : <div className="mt-2 flex gap-3 border-t border-brand-100 pt-3">
               <Link to="/dang-nhap" onClick={() => setOpen(false)} className="rounded-xl px-4 py-2 text-sm font-semibold text-ink">Đăng nhập</Link>
               <Link to="/dang-ky" onClick={() => setOpen(false)} className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Đăng ký</Link>
