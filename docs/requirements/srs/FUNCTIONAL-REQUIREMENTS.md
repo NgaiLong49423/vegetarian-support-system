@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.6.0
+> **Version:** v2.7.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-10-02
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -2044,7 +2044,7 @@ Tối ưu hóa quy trình tiếp nhận thông tin phản ánh; chống hành vi
 
 - **Mã yêu cầu:** FR-31
 - **Module:** M02, M05, M06
-- **Tóm tắt yêu cầu:** Hệ thống cung cấp bảng câu hỏi Onboarding tùy chọn cho Member mới; cho phép bỏ qua mà không khóa các tính năng thông thường; quản lý hồ sơ sở thích ăn uống; bắt buộc hoàn thành ba nhóm thông tin tối thiểu (loại ăn chay, nguyên liệu cần tránh do dị ứng/kiêng, món hoặc nguyên liệu không thích) trước khi gọi AI gợi ý món hoặc tạo thực đơn cá nhân hóa; chặn gọi Gemini khi thiếu thông tin; không áp dụng quota lượt/ngày.
+- **Tóm tắt yêu cầu:** Sau lần xác thực thành công đầu tiên, hệ thống mời Member vừa đăng ký thực hiện bảng câu hỏi Onboarding một lần; lời mời không tự xuất hiện lại sau Skip hoặc ở các lần đăng nhập sau, nhưng Member có thể mở mục sở thích ăn uống trong Cài đặt để hoàn tất/cập nhật hồ sơ. Tài khoản đã tồn tại không tự động bị hỏi. Skip không khóa tính năng thông thường. Trước khi gọi AI gợi ý món hoặc tạo thực đơn cá nhân hóa, hồ sơ phải hoàn tất ba nhóm thông tin tối thiểu (loại ăn chay, nguyên liệu cần tránh do dị ứng/kiêng, món hoặc nguyên liệu không thích); chặn gọi Gemini khi thiếu thông tin; không áp dụng quota lượt/ngày.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-31).
 
@@ -2139,6 +2139,11 @@ Thu thập và chuẩn hóa dữ liệu sở thích, thói quen và các ràng b
   - **Given:** Member A đã khai báo danh sách dị ứng và sở thích ăn uống cá nhân.
   - **When:** Người dùng khác xem trang hồ sơ công khai của Member A.
   - **Then:** Trang hồ sơ công khai tuyệt đối không chứa thông tin về loại ăn chay, danh sách dị ứng hay món không thích của Member A.
+
+- **AC-31.10 — Chỉ mời Member mới một lần và không tự hỏi lại sau Skip:**
+  - **Given:** Member vừa đăng ký và hoàn tất xác thực thành công lần đầu; hoặc Member đã chọn Skip tại lời mời Onboarding.
+  - **When:** Member mới đăng nhập lần đầu; hoặc Member đăng nhập lại sau khi đã chọn Skip.
+  - **Then:** Hệ thống chỉ hiển thị lời mời/questionnaire ở lần xác thực thành công đầu tiên của tài khoản mới; sau Skip không hiển thị lại tự động ở lần đăng nhập sau. Tài khoản đã tồn tại không tự động bị hỏi. Member vẫn dùng được các tính năng thông thường và có thể mở mục sở thích ăn uống trong Cài đặt để hoàn tất hoặc chỉnh sửa hồ sơ (UC-31.2, UC-31.3; BR-30).
 
 ---
 

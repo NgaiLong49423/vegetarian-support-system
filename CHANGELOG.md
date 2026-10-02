@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.42.0
+> **Version:** v2.43.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-02
 > **Status:** Active
@@ -9,9 +9,28 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-02 — Standardize the Docker Development Stack and Add a CI Gate
+## 2026-10-02 — Clarify One-Time Onboarding for New Members (FR-31, Issue #36)
 
 **Status:** Working tree — not committed.
+
+**Scope:** Specify when the optional onboarding questionnaire is shown and how members can return to it after skipping.
+
+### Added
+
+- Add acceptance coverage for one-time onboarding invitations, no automatic re-prompt after Skip, and manual access through Settings.
+
+### Changed
+
+- Clarify that only newly registered Members are invited after their first successful authentication; existing accounts are not prompted automatically.
+- Clarify that skipping preserves normal features and does not prevent later completion from Settings.
+
+### Fixed
+
+None.
+
+## 2026-10-02 — Standardize the Docker Development Stack and Add a CI Gate
+
+**Status:** Committed — 2ff0254.
 
 **Scope:** Provide one Docker Compose development environment for Frontend, Backend and SQL Server, and require a GitHub Actions build/smoke-test check before merging changes into the integration baseline.
 
