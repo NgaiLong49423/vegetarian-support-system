@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.45.0
+> **Version:** v2.46.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-02
 > **Status:** Active
@@ -9,9 +9,27 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-02 — Pin and Harden the Docker Development Stack
+## 2026-10-02 — Fix Docker Development and Scalar Security Gates ([PR #81](https://github.com/NgaiLong49423/vegetarian-support-system/pull/81))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `0360577`.
+
+**Scope:** Resolve the PR's Docker Development failure and the Sonar security rating finding without weakening validation.
+
+### Added
+
+- Add Subresource Integrity (SRI) and anonymous CORS mode to the version-pinned Scalar UI asset.
+
+### Changed
+
+- Pin the Scalar CLI workflow runtime to Node.js `24.21.0`, meeting the CLI's Node.js `>=24` requirement.
+
+### Fixed
+
+- Resolve the Docker Development Node.js engine mismatch and the Sonar finding for the external Scalar script.
+
+## 2026-10-02 — Pin and Harden the Docker Development Stack ([PR #81](https://github.com/NgaiLong49423/vegetarian-support-system/pull/81))
+
+**Status:** Committed — `9a2ae5e`.
 
 **Scope:** Make SQL Server and Backend integration tests consume one verified image, restrict local port exposure, and document safe Compose project/volume lifecycles.
 
