@@ -14,7 +14,8 @@
 --      cascade policies enforce business rules as designed.
 --      Preserves TC01..TC15 and adds TC16..TC37 for all newly implemented
 --      constraints from Data Dictionary v0.7.5, plus TC38 for the NVARCHAR
---      UNIT.code fix in migration V2__unit_code_unicode.sql.
+--      UNIT.code fix in migration V2__unit_code_unicode.sql and TC39 for the
+--      USER email-verification token columns in V3__user_email_verification_token.sql.
 --      Every negative test verifies the EXACT constraint name in ERROR_MESSAGE().
 --   3. Operational Queries: Practical queries demonstrating core queries
 --      for recipes, nested comments, weekly meal plans, and subscriptions.
@@ -45,7 +46,7 @@ PRINT 'PART 1: SCHEMA AUDIT & OBJECT INVENTORY';
 PRINT '====================================================================';
 
 -- 1.1 Object Count Summary
--- Expected: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 57 Checks, 55 Defaults, 15 UNIT rows
+-- Expected after V1-V4: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 59 Checks, 55 Defaults, 15 UNIT rows
 SELECT 
     'Tables' AS ObjectType, COUNT(*) AS TotalCount, 22 AS ExpectedCount,
     CASE WHEN COUNT(*) = 22 THEN 'PASS' ELSE 'FAIL' END AS AuditStatus
@@ -60,7 +61,7 @@ UNION ALL
 SELECT 'Unique Constraints', COUNT(*), 9, CASE WHEN COUNT(*) = 9 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.key_constraints WHERE type = 'UQ'
 UNION ALL
-SELECT 'Check Constraints', COUNT(*), 57, CASE WHEN COUNT(*) = 57 THEN 'PASS' ELSE 'FAIL' END
+SELECT 'Check Constraints', COUNT(*), 59, CASE WHEN COUNT(*) = 59 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.check_constraints
 UNION ALL
 SELECT 'Default Constraints', COUNT(*), 55, CASE WHEN COUNT(*) = 55 THEN 'PASS' ELSE 'FAIL' END
@@ -71,7 +72,7 @@ FROM [UNIT];
 GO
 
 -- 1.2 Filtered Indexes Audit
--- Expected: 8 filtered UNIQUE indexes (1 google_subject + 7 Section 10) + 2 filtered performance indexes = 10 filtered indexes
+-- Expected: 9 filtered UNIQUE indexes (1 google_subject + 1 email_verification_token from V3 + 7 Section 10) + 2 filtered performance indexes = 11 filtered indexes
 SELECT 
     OBJECT_NAME(i.object_id) AS TableName,
     i.name AS IndexName,
@@ -1116,6 +1117,44 @@ BEGIN TRY
             PRINT '  [PASS] TC38b: Rejected duplicate unit code (exact UQ_UNIT_code, Error ' + CAST(ERROR_NUMBER() AS VARCHAR) + ')';
         ELSE
             PRINT '  [FAIL] TC38b: Caught unexpected error: ' + ERROR_MESSAGE();
+    END CATCH;
+
+    -- ------------------------------------------------------------------------
+    -- TC39: USER email-verification token (V3, CK_USER_verification_token_pair,
+    --       UQ_USER_email_verification_token) — Issue #5
+    -- ------------------------------------------------------------------------
+    -- Negative: token digest without expiry -> Must FAIL
+    BEGIN TRY
+        UPDATE [USER] SET email_verification_token = REPLICATE('a', 64) WHERE user_id = @AliceId;
+        PRINT '  [FAIL] TC39a: Token without expiry was not rejected!';
+    END TRY
+    BEGIN CATCH
+        IF ERROR_MESSAGE() LIKE '%CK_USER_verification_token_pair%'
+            PRINT '  [PASS] TC39a: Rejected token without expiry (exact CK_USER_verification_token_pair, Error ' + CAST(ERROR_NUMBER() AS VARCHAR) + ')';
+        ELSE
+            PRINT '  [FAIL] TC39a: Caught unexpected error: ' + ERROR_MESSAGE();
+    END CATCH;
+
+    -- Positive: token digest with expiry is accepted
+    UPDATE [USER]
+    SET email_verification_token = REPLICATE('a', 64),
+        verification_token_expires_at = DATEADD(HOUR, 24, SYSUTCDATETIME())
+    WHERE user_id = @AliceId;
+    PRINT '  [PASS] TC39b: Accepted token digest together with its expiry.';
+
+    -- Negative: same token digest on a second account -> Must FAIL
+    BEGIN TRY
+        UPDATE [USER]
+        SET email_verification_token = REPLICATE('a', 64),
+            verification_token_expires_at = DATEADD(HOUR, 24, SYSUTCDATETIME())
+        WHERE user_id = @BobId;
+        PRINT '  [FAIL] TC39c: Duplicate token digest was not rejected!';
+    END TRY
+    BEGIN CATCH
+        IF ERROR_MESSAGE() LIKE '%UQ_USER_email_verification_token%'
+            PRINT '  [PASS] TC39c: Rejected duplicate token digest (exact UQ_USER_email_verification_token, Error ' + CAST(ERROR_NUMBER() AS VARCHAR) + ')';
+        ELSE
+            PRINT '  [FAIL] TC39c: Caught unexpected error: ' + ERROR_MESSAGE();
     END CATCH;
 
 END TRY

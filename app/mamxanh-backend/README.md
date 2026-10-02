@@ -22,16 +22,20 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
   - **Security:** `spring-boot-starter-security`.
   - **Web / Validation:** `spring-boot-starter-webmvc`, `spring-boot-starter-validation`.
   - **Documentation:** `springdoc-openapi-starter-webmvc-ui` (Swagger UI & OpenAPI 3).
-  - **Productivity & Testing:** Lombok, starter test dependencies (`data-jpa-test`, `flyway-test`, `security-test`, `validation-test`, `webmvc-test`).
+  - **Email:** `spring-boot-starter-mail` (Brevo SMTP, gửi bất đồng bộ).
+  - **Productivity & Testing:** Lombok, starter test dependencies (`data-jpa-test`, `flyway-test`, `security-test`, `validation-test`, `webmvc-test`), Testcontainers SQL Server (`spring-boot-testcontainers`, `testcontainers-mssqlserver`).
+- Đã có luồng FR-03-A (Issue #5): `POST /api/v1/auth/register`, `/auth/email-verifications`, `/auth/email-verifications/resend`; lỗi trả `application/problem+json` có `code` ổn định; migration `V3__user_email_verification_token.sql`. FR-35 bổ sung consent bằng migration `V4__nutrition_profile_consent.sql`.
 
 ### Lệnh chạy và kiểm tra xác minh
 
 ```bash
 # Windows
 .\mvnw.cmd clean test-compile
+.\mvnw.cmd verify
 
 # Linux / macOS
 ./mvnw clean test-compile
+./mvnw verify
 ```
 
 Chạy JUnit tests, package và coverage hard gate:
@@ -44,6 +48,8 @@ Chạy JUnit tests, package và coverage hard gate:
 ```
 
 JaCoCo chạy `prepare-agent`, `report` rồi `check`. Overall backend `BUNDLE / LINE / COVEREDRATIO` phải **≥0.80**; dưới 80% làm Maven trả exit code khác 0 và job CI `Backend` fail. Đây không phải new-code coverage. Reports: `target/site/jacoco/index.html` và `target/site/jacoco/jacoco.xml`. Không exclude production code để pass; thêm test có assertion phù hợp theo report. Sonar đọc XML sau khi reports được truyền qua artifact, không tạo coverage hoặc thay gate này. Coverage không thay thế Acceptance Criteria, authorization hoặc database integration evidence.
+
+`verify` chạy cả unit test và integration test. Integration test dùng Testcontainers để khởi động Microsoft SQL Server 2019 thật (`mcr.microsoft.com/mssql/server:2019-latest`), khởi động ứng dụng qua `MamXanhApplication.main`, chạy Flyway từ V1 và kiểm tra mapping Hibernate, nên **Docker Desktop phải đang chạy**; lần đầu cần tải image hơn 1 GB. Test dùng profile `test`, không cần file `.env` và không gửi email thật.
 
 ## Yêu cầu để chạy ứng dụng
 
@@ -84,6 +90,15 @@ SPRING_DATASOURCE_PASSWORD=YOUR_LOCAL_DB_PASSWORD
 ```
 
 `.env` chỉ dùng trên máy cá nhân và không được commit. File `src/main/resources/application-local.properties` được theo dõi với placeholder an toàn và nạp `.env` bằng `spring.config.import=optional:file:.env[.properties]`; không ghi credential thật vào file này.
+
+Các biến môi trường tùy chọn cho FR-03 (giá trị dùng chung lấy từ kho mật khẩu của nhóm, không dán vào Issue/PR):
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | trống (port `587`) | SMTP Brevo. Khi `SPRING_MAIL_HOST` trống, Backend vẫn chạy nhưng bỏ qua việc gửi email và ghi cảnh báo. |
+| `MAMXANH_MAIL_FROM` | trống | Địa chỉ người gửi đã xác minh trên Brevo; trống thì cũng bỏ qua việc gửi email. |
+| `MAMXANH_FRONTEND_BASE_URL` | `http://localhost:5173` | Origin dùng để tạo liên kết trong email (`/xac-minh-email?token=...`). |
+| `MAMXANH_CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Danh sách origin được gọi API, phân tách bằng dấu phẩy, không dùng wildcard. |
 
 ### 3. Compile và chạy
 
@@ -161,6 +176,7 @@ Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc 
 | Hibernate báo thiếu bảng | Database chưa có schema mà `ddl-auto=validate` không tự tạo bảng | Khởi tạo schema/migration được dự án phê duyệt; không đổi sang `ddl-auto=update` để né lỗi. |
 | Flyway validation lỗi | Migration history và source migration không khớp | Không sửa migration đã áp dụng; đối chiếu đúng database/environment trước khi tiếp tục. |
 | Port `8080` đã được sử dụng | Backend/container khác đang chạy | Dừng tiến trình cũ rồi chạy lại. |
+| Test báo `Could not find a valid Docker environment` | Docker Desktop chưa chạy | Mở Docker Desktop, chờ trạng thái Running rồi chạy lại `verify`. |
 | Docker không nhận lệnh | Docker Desktop chưa cài, chưa chạy hoặc chưa có trong `PATH` | Mở Docker Desktop và xác minh bằng `docker version`. |
 
 ## Ranh giới kiến trúc hiện tại

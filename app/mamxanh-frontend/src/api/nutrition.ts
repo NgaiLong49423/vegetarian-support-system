@@ -1,4 +1,4 @@
-import { apiRequest } from './client';
+import { apiClient, asApiError } from '../lib/apiClient';
 
 export type ActivityLevel = 'SEDENTARY' | 'LIGHTLY_ACTIVE' | 'MODERATELY_ACTIVE' | 'VERY_ACTIVE';
 export type BiologicalSex = 'FEMALE' | 'MALE';
@@ -48,14 +48,20 @@ export interface ConfirmNutritionEligibilityRequest {
   therapeuticDietRequired: boolean;
 }
 
+async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
+  try {
+    return (await operation()).data;
+  } catch (error) {
+    throw asApiError(error);
+  }
+}
+
 export const nutritionApi = {
-  getProfile: () => apiRequest<NutritionProfileResponse>('/nutrition/profile'),
-  saveProfile: (request: NutritionProfileRequest) => apiRequest<NutritionProfileResponse>('/nutrition/profile', {
-    method: 'PUT',
-    body: JSON.stringify(request),
-  }),
-  calculateProfile: (request: ConfirmNutritionEligibilityRequest) => apiRequest<NutritionProfileResponse>('/nutrition/profile/calculate', {
-    method: 'POST',
-    body: JSON.stringify(request),
-  }),
+  getProfile: () => request(() => apiClient.get<NutritionProfileResponse>('/nutrition/profile')),
+  saveProfile: (payload: NutritionProfileRequest) => request(
+    () => apiClient.put<NutritionProfileResponse>('/nutrition/profile', payload),
+  ),
+  calculateProfile: (payload: ConfirmNutritionEligibilityRequest) => request(
+    () => apiClient.post<NutritionProfileResponse>('/nutrition/profile/calculate', payload),
+  ),
 };

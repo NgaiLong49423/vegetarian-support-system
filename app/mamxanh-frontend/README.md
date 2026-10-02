@@ -18,11 +18,10 @@ Bản demo cho giảng viên: [Mâm Xanh trên Vercel](https://mamxanh-frontend.
 ### Đăng ký, đăng nhập và khôi phục tài khoản (UI FR-03)
 
 - Header mặc định dành cho Guest có Đăng nhập/Đăng ký. Các trang `/dang-nhap`, `/dang-ky`, `/quen-mat-khau`, `/xac-minh-email`, `/dat-lai-mat-khau` dùng bố cục responsive riêng cùng nhận diện dự án.
-- Đăng ký kiểm tra tên 3–50 ký tự, email, mật khẩu ít nhất 8 ký tự và xác nhận khớp; có nút hiện/ẩn mật khẩu. Chính sách độ phức tạp cần thống nhất theo BUG-004, chưa tuyên bố đầy đủ validation FR-03.
-- Nút Google và các biểu mẫu hiện thông báo demo; không gọi API, không gửi email, không tạo tài khoản/phiên, không xác minh token và không lưu mật khẩu vào storage. Mật khẩu được xóa khỏi state sau khi biểu mẫu hợp lệ.
-- Trang xác minh có yêu cầu gửi lại email; trang đặt lại mật khẩu cần liên kết email thật khi tích hợp Backend. Các giới hạn thời gian phía server chưa được mô phỏng thành cơ chế bảo mật FE.
+- **Đăng ký và xác minh email đã gọi Backend thật (Issue #5):** form đăng ký kiểm tra tên 3–50 ký tự, email và mật khẩu 8–64 ký tự (tối đa 72 byte UTF-8) có chữ in hoa, chữ thường, chữ số, rồi gửi `POST /auth/register`. Liên kết trong email mở `/xac-minh-email?token=...`; trang gửi mã một lần, xóa mã khỏi thanh địa chỉ và báo kết quả. Mã sai/hết hạn cho phép yêu cầu gửi lại email; gửi lại trong 60 giây hiển thị số giây chờ từ header `Retry-After`.
+- Đăng nhập, Google Login, quên và đặt lại mật khẩu vẫn là biểu mẫu demo cho tới Issue #6, #8, #9: không tạo phiên, không gửi email và không lưu mật khẩu vào storage. Mật khẩu được xóa khỏi state sau khi biểu mẫu hợp lệ.
 - Tại trang đăng nhập, chọn **Khám phá tài khoản demo** để xem menu Lan Anh/FREE; chọn **Thoát tài khoản demo** để quay lại Guest. Đây chỉ là chuyển chế độ xem trong bộ nhớ, không phải authentication/authorization.
-- API contract hiện `Active` nhưng chưa tích hợp trong UI này; xem [API Guide](../../docs/api/API.md) trước khi triển khai xác thực thật.
+- Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
 
 ### Các chức năng demo khác
 
@@ -69,7 +68,9 @@ Nếu cần mở cả hệ thống, dùng hai cửa sổ Terminal và khởi đ�
 2. [Backend](../mamxanh-backend/README.md) tại port `8080`.
 3. Frontend tại port `5173`.
 
-Frontend demo hiện vẫn có các luồng dùng mock data và có thể chạy độc lập để xem giao diện; việc mở được UI không chứng minh Backend hoặc database đã kết nối.
+Frontend gọi Backend tại `VITE_API_BASE_URL`. Khi chạy trực tiếp, `/api/v1` được Vite proxy tới `http://localhost:8080`; trong Docker Compose, proxy dùng service `backend`. Để đổi base path, sao chép `.env.example` thành `.env.local` (đã được Git bỏ qua) rồi sửa giá trị; không đặt secret trong biến `VITE_` vì chúng nằm trong bundle công khai. Backend phải cho phép origin của Frontend qua `MAMXANH_CORS_ALLOWED_ORIGINS`.
+
+Các màn hình ngoài đăng ký/xác minh email vẫn dùng mock data và chạy độc lập được; việc mở được UI không chứng minh Backend hoặc database đã kết nối.
 
 ### Cách 1 — Chạy trực tiếp bằng Node.js
 
@@ -286,4 +287,4 @@ Job `Sonar` chỉ đọc LCOV/JaCoCo XML sau khi tải artifacts từ Frontend/B
 
 HTML report được tạo trong `playwright-report/`; screenshot và trace lỗi nằm trong `test-results/`. Hai thư mục này là generated evidence và không được commit mặc định.
 
-Suite hiện có 11 test: 3 test Auth (đăng ký/xác minh, đăng nhập/chế độ demo, khôi phục/mobile) và 8 test trước đó: application shell/navigation; bình luận và giữ reply khi xóa cha; khẩu phần lẻ trong kế hoạch; nhân nguyên liệu theo khẩu phần; menu avatar/gói AI; điều hướng tài khoản trên mobile; validation báo cáo; BMI cùng trang gói AI/lịch sử giao dịch. Đây là kiểm thử Frontend với dữ liệu mẫu, không chứng minh Backend, database, authentication, thanh toán hoặc full FE–BE E2E đã hoạt động.
+Suite hiện có 15 test: 7 test Auth (đăng ký, email trùng, mở liên kết xác minh, liên kết không hợp lệ và thời gian chờ gửi lại, gửi lại thành công, đăng nhập/chế độ demo, khôi phục/mobile) và 8 test trước đó: application shell/navigation; bình luận và giữ reply khi xóa cha; khẩu phần lẻ trong kế hoạch; nhân nguyên liệu theo khẩu phần; menu avatar/gói AI; điều hướng tài khoản trên mobile; validation báo cáo; BMI cùng trang gói AI/lịch sử giao dịch. Các test đăng ký/xác minh thay API bằng `page.route`, nên chỉ kiểm tra luồng Frontend. Đây là kiểm thử Frontend với dữ liệu mẫu hoặc API giả, không chứng minh Backend, database, authentication, thanh toán hoặc full FE–BE E2E đã hoạt động.

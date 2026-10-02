@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Activity, AlertCircle, CheckCircle2, Info, LoaderCircle, LockKeyhole, Save, Calculator } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Card } from '../components/ui';
-import { ApiError, hasAccessToken } from '../api/client';
+import { ApiError, hasAccessToken } from '../lib/apiClient';
 import { nutritionApi, type ActivityLevel, type BiologicalSex, type NutritionGoal, type NutritionProfileRequest, type NutritionProfileResponse } from '../api/nutrition';
 
 type YesNo = '' | 'yes' | 'no';
