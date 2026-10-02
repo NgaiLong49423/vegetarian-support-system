@@ -1,5 +1,5 @@
 package tech.mamxanh.auth.dto.response;
 
-/** Neutral acknowledgement (openapi.yaml MessageResponse). */
+/** Neutral acknowledgement payload exposed in generated runtime OpenAPI. */
 public record MessageResponse(String message) {
 }

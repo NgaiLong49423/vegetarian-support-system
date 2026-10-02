@@ -1,8 +1,8 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.7.0
+> **Version:** v1.8.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -94,9 +94,10 @@ Credential của provider phải nằm ở Backend và ngoài Source Control.
 | SonarQube Cloud | Static analysis và Quality Gate | Confirmed | Đọc FE LCOV/BE JaCoCo XML, bugs/vulnerabilities/maintainability/duplication và coverage visualization | Không tạo coverage; job `Sonar` chờ gate sau artifact download, GitHub merge blocking cần Ruleset riêng |
 | Codecov | Báo cáo và hiển thị trực quan coverage trên GitHub PR | Confirmed QA Tooling | Tool đã chọn từ GitHub Student Pack; chưa được tích hợp vào workflow CI hiện hành | Không tự thêm hoặc thay thế provider trong task coverage gates |
 | Testmail | Hộp thư ảo phục vụ kiểm thử tự động email | Confirmed QA Tooling | Cung cấp vô hạn địa chỉ email test qua API, không tốn quota Brevo thật; hỗ trợ từ GitHub Student Pack | Dành cho môi trường kiểm thử/staging |
-| OpenAPI | Mô tả REST contract đã được dự án áp dụng | Confirmed standard | Cung cấp contract có cấu trúc dùng chung cho Frontend, Backend và verification | Phải bám hành vi thật; chưa tạo API document trước khi có contract thật |
-| Swagger UI | Hiển thị và thử OpenAPI description | Confirmed companion tool | Giúp developer và tester dễ tiếp cận contract | Lệnh gọi tương tác không thay thế automated verification |
-| springdoc-openapi | Tích hợp việc sinh OpenAPI với Spring Boot | Confirmed | Giảm nội dung lặp giữa khai báo Backend và contract documentation cơ bản | Đã có sẵn trong `pom.xml` |
+| OpenAPI | Generated REST contract của Backend runtime | Confirmed standard | Contract có cấu trúc cho Frontend, Backend, CI và agent; generated từ Controller/DTO/annotations | Generated schema vẫn cần review; YAML hiện tại là planned/reference trong migration, không phải runtime evidence |
+| Scalar API Reference | Giao diện chính thức để team xem và thử API tại Backend `/scalar` | Confirmed team tooling | Hiển thị operations/schema/security và hỗ trợ request thật; Bearer được dùng khi generated contract khai báo scheme phù hợp | Browser UI/manual request cần browser acceptance; không thay automated tests; JS asset version được pin |
+| Swagger UI | Giao diện OpenAPI tương thích hiện giữ lại trong migration | Supporting/legacy UI | Cho phép fallback trong giai đoạn đầu mà không gỡ springdoc | Không phải UI chính thức được khuyến nghị cho team sau khi Scalar hoạt động |
+| springdoc-openapi | Tích hợp việc sinh OpenAPI với Spring Boot | Confirmed | Sinh runtime contract từ source Backend tại `/v3/api-docs` | Đã có sẵn trong `pom.xml`; Scalar chỉ render spec, không thay generator |
 | Jakarta Bean Validation | Biểu diễn constraint cơ bản cho input Backend | Confirmed | Cung cấp validation sớm, nhất quán và tích hợp với Spring | Không thay thế authorization hoặc Business Rule phức tạp |
 | SLF4J + Logback | Logging facade và implementation của Backend | Confirmed | Cung cấp diagnostic logging nhất quán trong Spring ecosystem | Tuyệt đối không ghi secret, mật khẩu hoặc dữ liệu cá nhân vào log |
 | Azure Application Insights | Giám sát hiệu năng và lỗi ứng dụng trên production | Confirmed Observability | Tích hợp qua App Service Java Agent / OpenTelemetry, theo dõi response time, dependency calls và exceptions | Không yêu cầu dựng server Prometheus/Grafana hay ELK riêng |

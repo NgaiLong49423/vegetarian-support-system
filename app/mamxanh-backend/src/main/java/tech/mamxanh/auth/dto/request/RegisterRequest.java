@@ -8,7 +8,7 @@ import tech.mamxanh.common.validation.PasswordConfirmation;
 import tech.mamxanh.common.validation.PasswordsMatch;
 import tech.mamxanh.common.validation.ValidPassword;
 
-/** {@code POST /api/v1/auth/register} (openapi.yaml RegisterRequest). */
+/** {@code POST /api/v1/auth/register}; springdoc exposes this DTO in runtime OpenAPI. */
 @PasswordsMatch
 public record RegisterRequest(
         @NotNull(message = "Vui lòng nhập tên hiển thị.")

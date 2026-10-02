@@ -97,6 +97,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Set up Node.js for pinned Scalar CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.3
+
       - name: Build and smoke-test the shared development stack
         run: |
           set -euo pipefail
@@ -108,7 +113,20 @@ jobs:
 
           docker compose up --build --detach --wait --wait-timeout 600
           curl --fail --silent --show-error http://localhost:5173/
-          curl --fail --silent --show-error http://localhost:8080/v3/api-docs > /dev/null
+          curl --fail --silent --show-error http://localhost:8080/v3/api-docs \
+            --output "$RUNNER_TEMP/openapi-runtime.json"
+          npx --yes @scalar/cli@2.5.2 document validate "$RUNNER_TEMP/openapi-runtime.json"
+          curl --fail --silent --show-error http://localhost:8080/scalar \
+            --output "$RUNNER_TEMP/scalar-route.html"
+          grep --fixed-strings 'API Reference' "$RUNNER_TEMP/scalar-route.html"
+          grep --fixed-strings '@scalar/api-reference@1.72.3' "$RUNNER_TEMP/scalar-route.html"
+
+      - name: Upload generated runtime OpenAPI
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-runtime-${{ github.event.pull_request.number || github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/openapi-runtime.json
+          if-no-files-found: error
 
   sonar:
     name: Sonar

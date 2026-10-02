@@ -1,6 +1,6 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.7.0
+> **Version:** v3.8.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-02
 > **Status:** Active  
@@ -69,7 +69,7 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
 
 - Owner chịu trách nhiệm toàn bộ luồng FR, gồm cả FE do AI tạo/sửa. Không mặc định chia sub-issue FE/BE; dùng checklist trong Issue. Không bắt buộc có thành viên FE riêng.
 - Phân rã FR theo SRS trước khi triển khai. Theo [Engineering Autonomy Policy](#engineering-autonomy-policy), người thực hiện (developer hoặc AI coding agent) có quyền tự chủ thiết kế các endpoint, request/response DTOs, validation và error codes trong phạm vi Issue được giao.
-- **Quy tắc đồng bộ hợp đồng API:** Mã nguồn (code) + tài liệu tích hợp (`docs/api/API.md`) + đặc tả máy đọc (`docs/api/openapi.yaml`) phải được cập nhật đồng bộ trong cùng một work item / Pull Request trước khi merge vào `develop` hoặc `main` (không bắt buộc code và docs phải nằm trong cùng một Git commit đơn lẻ). Không tự quyết API khác nhau ở FE và BE; tài liệu API đã đồng bộ là nguồn tham chiếu chung duy nhất.
+- **Quy tắc contract API:** Generated OpenAPI tại `/v3/api-docs` từ source Spring Boot là runtime contract cho endpoint đã implement và là contract agent/CI phải tra cứu. Trong migration, `docs/api/openapi.yaml` chỉ giữ planned/reference contract cho endpoint chưa implement; reviewer đối chiếu semantic contract với runtime cho phần đã implement, không duy trì hai nguồn chuẩn song song. Cập nhật `docs/api/API.md` trong cùng work item khi thay đổi convention tích hợp chung; không yêu cầu sao chép mọi endpoint runtime vào YAML thủ công. FE và BE không được tự quyết contract khác nhau; conflict phải được nêu rõ trước merge.
 - Không tạo các breaking API changes (xóa endpoint, đổi path/method, xóa/đổi tên trường response, đổi auth model) mà không có sự phối hợp, thống nhất trước với các bên tiêu thụ (consumer).
 - Owner ghi nhận phần AI hỗ trợ và bằng chứng người thực hiện đã xác minh: kiểm tra API, thao tác từ UI, các test đã chạy và kết quả. AI báo hoàn thành không phải bằng chứng nghiệm thu.
 
@@ -158,7 +158,8 @@ Lệnh `down` giữ named volumes, bao gồm dữ liệu SQL local và Frontend 
 
 **PR và GitHub gate:**
 
-- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job build Compose, đợi health checks rồi smoke-test FE và Backend; CI dùng password tạm, dọn container/volume trên runner sau job.
+- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job setup Node.js `22.23.3`, build Compose, đợi health checks, capture `/v3/api-docs`, validate bằng Scalar CLI `2.5.2`, upload OpenAPI artifact riêng theo PR/run, rồi smoke-test route `/scalar`; CI dùng password tạm, dọn container/volume trên runner sau job. HTTP `curl /scalar` chỉ chứng minh route/HTML shell trả về, không chứng minh Scalar JavaScript đã render contract hoặc request API chạy được.
+- Scalar tại `http://localhost:8080/scalar` là giao diện chính thức để team đọc và manual-test API. Browser acceptance phải xác nhận JavaScript tải/render generated `/v3/api-docs`, kiểm tra operation và gửi request phù hợp trong giao diện; đây là bằng chứng riêng với CI route smoke và không thay automated regression/authorization tests.
 - Ruleset `protect-develop` yêu cầu status context `Docker Development` và strict up-to-date. PR vào `develop` phải sync baseline theo phần trên; sau lần sync cuối có ảnh hưởng, chạy lại kiểm tra liên quan và đợi CI trên commit cập nhật.
 - Nếu Docker không chạy được local, ghi rõ nguyên nhân và kết quả nào chưa xác minh trong PR; không ghi “Docker test passed”. Required CI check vẫn phải pass trước khi merge. Việc Docker daemon của máy cá nhân unavailable không tự cho phép bỏ qua gate.
 - Khi sửa Compose, workflow hoặc Dockerfile, giữ cùng stack/entry point và cùng smoke criteria nhất quán; không tạo nhánh cấu hình local riêng hoặc yêu cầu thành viên pull image `latest` thủ công ngoài định nghĩa đã review trong Git.
@@ -271,7 +272,7 @@ Chính sách Tự chủ Kỹ thuật (Engineering Autonomy Policy) phân định
 ### 3. API Design Autonomy (Tự chủ Thiết kế API và Đồng bộ Hợp đồng)
 
 - **Quyền tự chủ (Non-breaking API Additions):** Developer và coding agent có quyền tự chủ thiết kế các REST endpoint mới, request/response DTOs, cơ chế validation, và các stable business error codes cần thiết để hoàn thành nghiệp vụ của Issue.
-  - *Quy tắc đồng bộ hợp đồng (Work Item / PR Synchronization Rule):* Mã nguồn (code) + tài liệu tích hợp (`docs/api/API.md`) + đặc tả máy đọc (`docs/api/openapi.yaml`) **bắt buộc phải được cập nhật đồng bộ trong cùng một work item / Pull Request trước khi merge** vào `develop` hoặc `main`. Quy tắc không ép buộc code và tài liệu API phải nằm trong cùng một Git commit đơn lẻ, mà yêu cầu tính hoàn chỉnh và đồng bộ tại mốc PR review / merge.
+  - *Quy tắc contract trong migration:* API implementation và OpenAPI annotations/DTOs phải làm generated `/v3/api-docs` phản ánh runtime contract. `docs/api/openapi.yaml` chỉ là planned/reference cho endpoint chưa implement; semantic đối chiếu endpoint đã implement thuộc review cho tới khi migration comparison tự động được thiết lập. Cập nhật `docs/api/API.md` khi convention tích hợp chung thay đổi. Không yêu cầu đồng bộ bản sao endpoint runtime vào manual YAML.
 - **Ngưỡng yêu cầu phối hợp và phê duyệt (Breaking API Changes):**
   - Xóa bỏ một endpoint đang hoạt động.
   - Thay đổi URI path hoặc HTTP method của endpoint hiện có.

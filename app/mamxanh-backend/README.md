@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.11.0
+> **Version:** v0.12.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-02
 > **Status:** Active  
@@ -21,7 +21,7 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
   - **Data / Persistence:** `spring-boot-starter-data-jpa`, `mssql-jdbc` (SQL Server driver), Flyway migration (`spring-boot-starter-flyway`, `flyway-sqlserver`).
   - **Security:** `spring-boot-starter-security`.
   - **Web / Validation:** `spring-boot-starter-webmvc`, `spring-boot-starter-validation`.
-  - **Documentation:** `springdoc-openapi-starter-webmvc-ui` (Swagger UI & OpenAPI 3).
+  - **Documentation:** `springdoc-openapi-starter-webmvc-ui` (generated OpenAPI 3 + Swagger UI compatibility) and Scalar API Reference static browser UI.
   - **Email:** `spring-boot-starter-mail` (Brevo SMTP, gửi bất đồng bộ).
   - **Productivity & Testing:** Lombok, starter test dependencies (`data-jpa-test`, `flyway-test`, `security-test`, `validation-test`, `webmvc-test`), Testcontainers SQL Server (`spring-boot-testcontainers`, `testcontainers-mssqlserver`).
 - Đã có luồng FR-03-A (Issue #5): `POST /api/v1/auth/register`, `/auth/email-verifications`, `/auth/email-verifications/resend`; lỗi trả `application/problem+json` có `code` ổn định; migration `V3__user_email_verification_token.sql`.
@@ -137,9 +137,11 @@ Tại root repository, sao chép `app/mamxanh-backend/.env.example` thành `.env
 docker compose --env-file app/mamxanh-backend/.env up --build
 ```
 
-Mở Frontend tại <http://localhost:5173>; Backend OpenAPI tại <http://localhost:8080/v3/api-docs>. Dừng bằng `Ctrl+C`; dùng `docker compose --env-file app/mamxanh-backend/.env down` để dừng stack. Dữ liệu SQL Server được giữ trong named volume `sqlserver-data`; chỉ thêm `--volumes` khi chủ động muốn xóa dữ liệu local.
+Mở Frontend tại <http://localhost:5173>; Scalar API Reference chính thức tại <http://localhost:8080/scalar>; generated OpenAPI JSON tại <http://localhost:8080/v3/api-docs>. Scalar tải JS asset đã pin từ jsDelivr nên browser cần truy cập CDN; spec được tải cùng origin Backend. Dừng bằng `Ctrl+C`; dùng `docker compose --env-file app/mamxanh-backend/.env down` để dừng stack. Dữ liệu SQL Server được giữ trong named volume `sqlserver-data`; chỉ thêm `--volumes` khi chủ động muốn xóa dữ liệu local.
 
-Để kiểm tra trạng thái, endpoint smoke, cấu hình local và quy tắc CI/PR, xem [Docker development và kiểm thử tích hợp](../../CONTRIBUTING.md#docker-development). Không commit `.env` hoặc chia sẻ mật khẩu. `Docker Development` trong GitHub Actions build và smoke-test stack trên mỗi PR hướng vào `develop` hoặc `main`; Ruleset `protect-develop` hiện yêu cầu check này trước merge vào `develop`.
+Trong Scalar, tìm endpoint, xem schema/status/auth, nhập Bearer/JWT token thủ công khi generated runtime spec khai báo scheme và endpoint được bảo vệ, rồi gửi request tới Backend. CI chỉ xác nhận HTTP route/HTML shell `/scalar`; để nghiệm thu browser, mở trang và xác minh Scalar JS render đúng endpoint từ runtime spec, sau đó thử request phù hợp. Không ghi token thật vào log, ảnh chụp hoặc tài liệu; manual thử bằng Scalar không thay automated regression tests.
+
+Để kiểm tra trạng thái, endpoint smoke, cấu hình local và quy tắc CI/PR, xem [Docker development và kiểm thử tích hợp](../../CONTRIBUTING.md#docker-development). Không commit `.env` hoặc chia sẻ mật khẩu. `Docker Development` trong GitHub Actions build và smoke-test stack trên mỗi PR hướng vào `develop` hoặc `main`; job cũng capture/validate/upload generated OpenAPI. Ruleset `protect-develop` được tài liệu branch ghi nhận yêu cầu check này trước merge vào `develop`.
 
 Các lệnh Dockerfile bên dưới chỉ chạy Backend độc lập để debug; chúng không phải cách test tích hợp chuẩn và không thay thế Docker Compose chung. Dockerfile chỉ đóng gói Backend; SQL Server vẫn chạy bên ngoài container trong cách chạy độc lập này.
 

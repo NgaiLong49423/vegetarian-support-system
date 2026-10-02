@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.43.0
+> **Version:** v2.44.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-02
 > **Status:** Active
@@ -8,6 +8,28 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-02 — Add Scalar API Reference and Runtime OpenAPI Validation
+
+**Status:** Working tree — not committed.
+
+**Scope:** Make Scalar the team's local API reference UI and validate the generated runtime contract through the existing Docker Development gate.
+
+### Added
+
+- Serve a version-pinned Scalar browser UI at Backend `/scalar`, retain Swagger UI compatibility, and apply the existing public API-documentation access policy.
+- Capture and validate generated `/v3/api-docs` in Docker Development, upload a run-specific artifact, and smoke-test only the Scalar route/HTML shell.
+- Add WebMvc/security tests for the public Scalar route and document separate browser acceptance for actual rendering and manual API requests.
+
+### Changed
+
+- Establish generated OpenAPI as runtime contract; retain the manual YAML as planned/reference contract during migration and update agent lookup/governance rules.
+- Pin Docker Development Node.js and Scalar CLI versions; align the documented required CI context with the existing gate.
+- Identify Scalar as the official human-facing API documentation/manual testing UI without treating it as automated regression evidence.
+
+### Fixed
+
+- Correct stale machine-readable API documentation and required-CI-context rules that conflicted with the active repository policy.
 
 ## 2026-10-02 — Clarify One-Time Onboarding for New Members (FR-31, Issue #36)
 

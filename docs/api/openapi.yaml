@@ -1,3 +1,6 @@
+# Migration reference only: planned Auth endpoints may not exist in the running Backend yet.
+# Implemented endpoints are evidenced by springdoc at /v3/api-docs; do not treat this file as
+# a second permanent runtime authority. See API.md for the migration policy.
 openapi: 3.1.1
 info:
   title: Mâm Xanh API
