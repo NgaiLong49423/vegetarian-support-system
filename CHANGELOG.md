@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-02 — Add Reproducible Docker Compose Development Environment
+## 2026-10-02 — Add Reproducible Docker Compose Development Environment ([PR #79](https://github.com/NgaiLong49423/vegetarian-support-system/pull/79))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — c2bac47.
 
 **Scope:** Provide one repeatable local environment for Frontend, Backend and SQL Server 2019 with persistent local development data.
 
