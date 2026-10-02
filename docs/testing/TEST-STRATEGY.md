@@ -1,6 +1,6 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.12.0
+> **Version:** v1.13.0
 > **Created:** 2026-09-13  
 > **Last Updated:** 2026-10-02
 > **Status:** Active  
@@ -27,7 +27,7 @@ Hành vi mong đợi chi tiết được xác định trong [SRS](../requirement
 | Cấp độ | Phạm vi dự kiến | Bằng chứng điển hình | Ranh giới |
 |---|---|---|---|
 | Backend Unit Test | Business logic như subscription entitlement, phân quyền tính năng AI, quyết định ownership, điều phối validation và mapping kết quả | Assertion bằng JUnit 5; dùng Mockito khi cần cô lập dependency | Test dựa trên Mock không chứng minh Spring configuration, SQL hoặc provider thật hoạt động đúng |
-| Backend Integration Test | Spring Security rule, persistence mapping, transaction, Flyway migration và hành vi của adapter | Test với cấu hình đại diện và hạ tầng được kiểm soát (Testcontainers với Microsoft SQL Server container đã được phê duyệt theo Q17 APPROVED) | Máy local cần cài đặt Docker/Testcontainers; fallback sang SQL Server local khi môi trường không có Docker |
+| Backend Integration Test | Spring Security rule, persistence mapping, transaction, Flyway migration và hành vi của adapter | Testcontainers với cùng SQL Server image/digest đã pin trong Docker Compose (theo Q17 APPROVED); image phải khởi động được và Flyway phải chạy trên SQL Server thật | Cần Docker daemon khả dụng; compile-only hoặc mock database không thay thế evidence này |
 | REST API | Validation request, authentication, authorization, hành vi status/error và response contract | Automated contract/API check trên endpoint thật kết hợp với generated OpenAPI | Manual request bằng Scalar UI là supporting evidence, không phải regression suite |
 | Frontend Component Test | Rendering, hành vi input và các trạng thái loading/error mà người dùng nhìn thấy ở component quan trọng | Tooling sẽ được chọn cùng React scaffold | Không tự chọn framework khi chưa có package evidence |
 | Browser Smoke / End-to-End Test (E2E) | Playwright kiểm tra Frontend shell và các luồng browser quan trọng; khi vertical slice tồn tại, E2E đi xuyên từ browser đến Backend như khám phá → lập lịch, publish/report moderation và kiểm tra chặn quyền tính năng AI | `@playwright/test` cho test lặp lại; browser control cho exploratory verification; HTML report, screenshot và trace khi được cấu hình | Frontend-only hoặc mock-backed smoke test không chứng minh Backend/database; E2E không thay Unit Test hoặc Integration Test tập trung |

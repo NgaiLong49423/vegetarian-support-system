@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.44.0
+> **Version:** v2.45.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-02
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-02 — Pin and Harden the Docker Development Stack
+
+**Status:** Working tree — not committed.
+
+**Scope:** Make SQL Server and Backend integration tests consume one verified image, restrict local port exposure, and document safe Compose project/volume lifecycles.
+
+### Added
+
+- Pin the MCR tag `2019-CU32-GDR11-ubuntu-20.04` with verified repository manifest digest `sha256:ef0b8db33970ecd01bed49c3a84a1d083c435a9891718df619298b67b352e74a` in Compose and Testcontainers; bind development ports to loopback.
+- Add a Compose one-off `npm ci` workflow for refreshing the Frontend dependency volume and document consistent project-name use, SQL-only reset, and full-volume reset boundaries.
+
+### Changed
+
+- Use `/opt/mssql-tools18/bin/sqlcmd` consistently and pass the local SQL password through `SQLCMDPASSWORD` rather than a command-line argument.
+- Keep the `Docker Development` context and shared stack while naming its Compose project consistently for startup and cleanup.
+
+### Fixed
+
+- Replace floating SQL Server `2019-latest` references in Compose and Testcontainers with the same verified manifest-pinned image.
 
 ## 2026-10-02 — Add Scalar API Reference and Runtime OpenAPI Validation
 

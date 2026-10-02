@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.12.0
+> **Version:** v0.13.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-02
 > **Status:** Active  
@@ -49,7 +49,7 @@ Chạy JUnit tests, package và coverage hard gate:
 
 JaCoCo chạy `prepare-agent`, `report` rồi `check`. Overall backend `BUNDLE / LINE / COVEREDRATIO` phải **≥0.80**; dưới 80% làm Maven trả exit code khác 0 và job CI `Backend` fail. Đây không phải new-code coverage. Reports: `target/site/jacoco/index.html` và `target/site/jacoco/jacoco.xml`. Không exclude production code để pass; thêm test có assertion phù hợp theo report. Sonar đọc XML sau khi reports được truyền qua artifact, không tạo coverage hoặc thay gate này. Coverage không thay thế Acceptance Criteria, authorization hoặc database integration evidence.
 
-`verify` chạy cả unit test và integration test. Integration test dùng Testcontainers để khởi động Microsoft SQL Server 2019 thật (`mcr.microsoft.com/mssql/server:2019-latest`), khởi động ứng dụng qua `MamXanhApplication.main`, chạy Flyway từ V1 và kiểm tra mapping Hibernate, nên **Docker Desktop phải đang chạy**; lần đầu cần tải image hơn 1 GB. Test dùng profile `test`, không cần file `.env` và không gửi email thật.
+`verify` chạy cả unit test và integration test. Integration test dùng Testcontainers để khởi động cùng SQL Server container image được pin với Docker Compose (tag `2019-CU32-GDR11-ubuntu-20.04`, repository manifest digest lấy từ MCR), khởi động ứng dụng qua `MamXanhApplication.main`, chạy Flyway từ V1 và kiểm tra mapping Hibernate, nên **Docker Desktop phải đang chạy**; lần đầu cần tải image dung lượng lớn. Test dùng profile `test`, không cần file `.env` và không gửi email thật. Khi thay image/digest, phải chạy integration tests thật; compile-only không xác minh DockerImageName, SQL Server startup hay Flyway.
 
 ## Yêu cầu để chạy ứng dụng
 
@@ -134,10 +134,20 @@ IntelliJ vẫn sử dụng cùng cấu hình Spring profile `local`; nút Run kh
 Tại root repository, sao chép `app/mamxanh-backend/.env.example` thành `.env` trong cùng thư mục, đặt một mật khẩu SQL Server local mạnh cho `MSSQL_SA_PASSWORD`, rồi chạy:
 
 ```powershell
-docker compose --env-file app/mamxanh-backend/.env up --build
+$composeProject = 'mamxanh-dev'
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env up --build --detach --wait --wait-timeout 600
 ```
 
-Mở Frontend tại <http://localhost:5173>; Scalar API Reference chính thức tại <http://localhost:8080/scalar>; generated OpenAPI JSON tại <http://localhost:8080/v3/api-docs>. Scalar tải JS asset đã pin từ jsDelivr nên browser cần truy cập CDN; spec được tải cùng origin Backend. Dừng bằng `Ctrl+C`; dùng `docker compose --env-file app/mamxanh-backend/.env down` để dừng stack. Dữ liệu SQL Server được giữ trong named volume `sqlserver-data`; chỉ thêm `--volumes` khi chủ động muốn xóa dữ liệu local.
+Mở Frontend tại <http://localhost:5173>; Scalar API Reference chính thức tại <http://localhost:8080/scalar>; generated OpenAPI JSON tại <http://localhost:8080/v3/api-docs>. Các port chỉ bind vào loopback của máy local. Scalar tải JS asset đã pin từ jsDelivr nên browser cần truy cập CDN; spec được tải cùng origin Backend. Dừng bằng `docker compose -p $composeProject --env-file app/mamxanh-backend/.env down`; lệnh này giữ database và dependency volume. Sửa `MSSQL_SA_PASSWORD` trong `.env` không tự đổi credential đã khởi tạo trong SQL volume.
+
+Để reset riêng database development, chạy `down` với cùng project name rồi xóa đúng volume SQL; Frontend dependency volume vẫn được giữ:
+
+```powershell
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env down
+docker volume rm "$($composeProject)_sqlserver-data"
+```
+
+Lệnh xóa volume SQL sẽ xóa toàn bộ database local. `docker compose -p $composeProject --env-file app/mamxanh-backend/.env down --volumes` là full reset, xóa cả SQL data lẫn Frontend dependency volume; chỉ dùng nếu chấp nhận mất tất cả named-volume data. Khi dùng project override, giữ nguyên cùng tên ở mọi lệnh Compose và dùng prefix đó cho volume tương ứng.
 
 Trong Scalar, tìm endpoint, xem schema/status/auth, nhập Bearer/JWT token thủ công khi generated runtime spec khai báo scheme và endpoint được bảo vệ, rồi gửi request tới Backend. CI chỉ xác nhận HTTP route/HTML shell `/scalar`; để nghiệm thu browser, mở trang và xác minh Scalar JS render đúng endpoint từ runtime spec, sau đó thử request phù hợp. Không ghi token thật vào log, ảnh chụp hoặc tài liệu; manual thử bằng Scalar không thay automated regression tests.
 
@@ -167,7 +177,7 @@ Không ghi giá trị thật vào README, Dockerfile hoặc source control.
 
 ```powershell
 docker run --rm --name mamxanh-backend `
-  -p 8080:8080 `
+  -p 127.0.0.1:8080:8080 `
   --env-file .env `
   mamxanh-backend-dev
 ```

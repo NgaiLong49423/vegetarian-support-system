@@ -1,6 +1,6 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.8.0
+> **Version:** v1.9.0
 > **Created:** 2026-09-13  
 > **Last Updated:** 2026-10-02
 > **Status:** Active  
@@ -106,7 +106,8 @@ Credential của provider phải nằm ở Backend và ngoài Source Control.
 
 | Thành phần | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
 |---|---|---|---|---|
-| Docker Engine | Chạy môi trường Frontend và Backend có thể tái lập trên máy thành viên | Confirmed Developer Tooling | Giảm chênh lệch phiên bản runtime và công cụ giữa các máy; contributor chỉ cần Docker để chạy image đã định nghĩa | Không thay thế việc quản lý dependency/lockfile và vẫn cần rebuild image khi dependency thay đổi |
+| Docker Engine | Chạy môi trường development tích hợp FE/BE/SQL Server có thể tái lập | Confirmed Developer Tooling | Compose là stack chung cho local và Docker Development gate; host ports chỉ bind loopback, project name có thể override để tách resource giữa worktree | Project name không tránh xung đột port; Frontend named volume phải được refresh từ `package-lock.json` bằng workflow trong CONTRIBUTING |
+| SQL Server development image | SQL Server 2019 Linux container dùng chung trong Compose và Backend Testcontainers | Confirmed Developer Tooling | Tag `2019-CU32-GDR11-ubuntu-20.04` được pin bằng repository manifest digest từ MCR; cùng immutable reference giữ image nhất quán | Microsoft hỗ trợ Linux container trên x86-64; cập nhật pin cần PR, kiểm tra digest/tools, Backend integration tests và Docker Development gate; đây không phải production image baseline |
 | Frontend Dockerfile | Định nghĩa môi trường phát triển/build của React, TypeScript và Vite tại `app/mamxanh-frontend/Dockerfile` | Confirmed placement | Giữ cấu hình Frontend gần source và cho phép thay đổi độc lập với Backend | Dùng để đồng bộ local development; không mặc định yêu cầu nền tảng hosting Frontend phải chạy container |
 | Backend Dockerfile | Định nghĩa môi trường build/chạy Java 21, Maven và Spring Boot tại `app/mamxanh-backend/Dockerfile` | Confirmed placement | Giữ cấu hình Backend gần source và cho phép thay đổi độc lập với Frontend | Chưa xác nhận Docker image này là production deployment artifact |
 

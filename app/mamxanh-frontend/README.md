@@ -1,6 +1,6 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.9.0
+> **Version:** v1.10.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-10-02
 > **Status:** Active  
@@ -101,7 +101,7 @@ Luôn dùng `npm ci` khi cài mới từ `package-lock.json` hoặc khi dependen
 docker build -t mamxanh-frontend-dev .
 
 docker run --rm --name mamxanh-frontend `
-  -p 5173:5173 `
+  -p 127.0.0.1:5173:5173 `
   --mount "type=bind,source=$($PWD.Path),target=/workspace" `
   --mount "type=volume,source=mamxanh-frontend-node-modules,target=/workspace/node_modules" `
   mamxanh-frontend-dev
@@ -111,11 +111,14 @@ Mở <http://localhost:5173>. Bind mount đồng bộ source vào container; nam
 
 Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`; volume dependency được giữ lại để lần chạy sau nhanh hơn.
 
-Khi `package.json` hoặc `package-lock.json` thay đổi, build lại image:
+Với stack Compose chuẩn, khi `package.json` hoặc `package-lock.json` thay đổi, mở PowerShell tại root repository rồi refresh đúng named volume theo lockfile bằng one-off command (xem [hướng dẫn chuẩn](../../CONTRIBUTING.md#docker-development)); dùng cùng `-p <project>` với stack đang chạy:
 
 ```powershell
-docker build --no-cache -t mamxanh-frontend-dev .
+$composeProject = 'mamxanh-dev'
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env run --rm --no-deps frontend npm ci
 ```
+
+Lệnh này không xóa hay reset SQL volume. Với lệnh standalone `docker run` ở trên, volume riêng tên `mamxanh-frontend-node-modules` không được Compose quản lý: dừng container, xóa riêng volume đó bằng `docker volume rm mamxanh-frontend-node-modules`, build lại image rồi chạy lại để khởi tạo dependency từ `package-lock.json` mới. Không dùng lệnh này để reset dữ liệu SQL của stack Compose.
 
 ### Kiểm tra trước khi bàn giao code
 
@@ -137,7 +140,7 @@ docker run --rm mamxanh-frontend-dev npm run build
 |---|---|---|
 | `npm` không được nhận diện | Chưa cài Node.js hoặc Terminal chưa nạp lại `PATH` | Cài Node.js 22 LTS rồi mở Terminal mới, hoặc dùng Docker. |
 | Port `5173` đã được sử dụng | Một Vite/container khác đang chạy | Dừng tiến trình cũ; không tự đổi port nếu nhóm đang dùng URL chuẩn `5173`. |
-| Dependency/native binary lỗi sau khi đổi máy | `node_modules` được sao chép từ máy hoặc hệ điều hành khác | Xóa `node_modules`, chạy lại `npm ci`; với Docker, giữ dependency trong named volume Linux. |
+| Dependency/native binary lỗi sau khi đổi máy | `node_modules` được sao chép từ máy hoặc hệ điều hành khác hoặc dependency volume cũ sau khi lockfile đổi | Cài bằng `npm ci`; với Compose dùng one-off `run --rm --no-deps frontend npm ci`; chỉ troubleshooting mới xóa riêng Frontend dependency volume. |
 | Docker không nhận lệnh | Docker Desktop chưa cài, chưa chạy hoặc chưa có trong `PATH` | Mở Docker Desktop và xác minh bằng `docker version`. |
 
 ---

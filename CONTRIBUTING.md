@@ -1,6 +1,6 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.8.0
+> **Version:** v3.9.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-02
 > **Status:** Active  
@@ -119,11 +119,12 @@ merge theo gates hiện hành
 <a id="docker-development"></a>
 #### Docker development và kiểm thử tích hợp
 
-**Quy tắc chuẩn:** `docker-compose.yml` ở repository root là entry point chuẩn cho stack Docker development tích hợp FE/BE/SQL Server. Compose build các Dockerfile riêng của Frontend và Backend từ source hiện tại trong branch, khởi tạo SQL Server và chờ service phụ thuộc khỏe trước khi đưa stack lên. Đây là cách chuẩn để thành viên và agent kiểm tra thay đổi xuyên FE/BE/database trên cùng một cấu hình.
+**Quy tắc chuẩn:** `docker-compose.yml` ở repository root là entry point chuẩn cho stack Docker development tích hợp FE/BE/SQL Server. Compose build các Dockerfile riêng của Frontend và Backend từ source hiện tại trong branch, khởi tạo SQL Server và chờ service phụ thuộc khỏe trước khi đưa stack lên. SQL Server image được pin bằng tag dễ đọc cộng repository manifest digest lấy từ MCR; Compose và Testcontainers dùng cùng reference. Khi nâng image, cập nhật cả hai reference trong PR, xác minh digest/architecture và tools trên MCR, chạy Backend integration tests và Docker Development gate trước merge. Không dùng `latest`, không dùng config/image ID làm digest, và không ghi nhãn image tag thành tên product release.
 
 - Dockerfile tại `app/mamxanh-frontend/` và `app/mamxanh-backend/` vẫn thuộc từng component, định nghĩa cách build component đó; chúng không phải hai môi trường tích hợp độc lập và không thay thế Compose.
 - Không yêu cầu hoặc tạo hai CI gate build riêng cho FE và BE chỉ để lặp lại việc build đã được `Docker Development` thực hiện. Có thể chạy riêng một Dockerfile để debug component; kiểm tra riêng không thay thế Compose gate khi PR ảnh hưởng stack hoặc tích hợp.
 - Mọi thay đổi source FE/BE, Dockerfile, dependency/lockfile, cấu hình runtime được Compose sử dụng, database initialization hoặc `docker-compose.yml` phải được đánh giá theo toàn stack. Trước khi Ready for Review, chạy Compose local nếu Docker khả dụng; PR sau đó phải pass `Docker Development` trên commit mới nhất.
+- Compose publish các port development chỉ trên loopback `127.0.0.1`; SQL host port `1433` được giữ để hỗ trợ Backend chạy trực tiếp trên máy. `name: mamxanh-dev` là project mặc định. Nếu dùng `-p <project>` để cô lập worktree, dùng chính project name đó cho mọi lệnh lifecycle của stack: `config`, `up`, `ps`, `run`, `down` và volume reset. Tên project không tránh xung đột host ports khi chạy nhiều stack song song.
 - Docker chỉ phục vụ development và verification. Không suy ra thay đổi deployment/production từ Docker Compose; production baseline vẫn là Vercel cho Frontend, Azure App Service cho Backend và Azure SQL theo tài liệu công nghệ hiện hành.
 
 **Thiết lập lần đầu (PowerShell tại repository root):**
@@ -141,24 +142,46 @@ Mở `app/mamxanh-backend/.env`, thay `MSSQL_SA_PASSWORD` bằng mật khẩu lo
 **Khởi động và xác minh:**
 
 ```powershell
-docker compose --env-file app/mamxanh-backend/.env config --quiet
-docker compose --env-file app/mamxanh-backend/.env up --build --detach --wait --wait-timeout 600
+$composeProject = 'mamxanh-dev'
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env config --quiet
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env up --build --detach --wait --wait-timeout 600
 Invoke-WebRequest http://localhost:5173/ -UseBasicParsing
 Invoke-WebRequest http://localhost:8080/v3/api-docs -UseBasicParsing
-docker compose --env-file app/mamxanh-backend/.env ps
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env ps
 ```
 
 `config --quiet` xác nhận Compose parse/interpolate được, không chứng minh image chạy. Sau khi `up` thành công, FE phải phản hồi tại `http://localhost:5173/`, Backend OpenAPI tại `http://localhost:8080/v3/api-docs`, và `ps` phải cho thấy các service dài hạn healthy. Compose kiểm tra khởi động và endpoint smoke; nó không thay unit, integration, authorization hoặc acceptance tests của feature. Khi xác minh xong, dừng stack:
 
 ```powershell
-docker compose --env-file app/mamxanh-backend/.env down
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env down
 ```
 
-Lệnh `down` giữ named volumes, bao gồm dữ liệu SQL local và Frontend dependencies. Không dùng `down --volumes` như bước dọn dẹp thường lệ vì nó xóa dữ liệu local; chỉ dùng khi chủ động muốn reset các volume này. Nếu đổi branch hoặc gặp dependency/image cũ, build lại bằng `up --build`; chỉ xóa đúng volume dependency/database khi đã cân nhắc dữ liệu cần giữ.
+Lệnh `down` giữ named volumes, bao gồm dữ liệu SQL local và Frontend dependencies. Sửa `MSSQL_SA_PASSWORD` trong `.env` không tự đổi password đã khởi tạo trong SQL Server volume; volume còn giữ database state/credential cũ. Nếu cần reset database development nhưng giữ dependency Frontend, dừng project rồi xóa riêng SQL volume, sau đó khởi động lại:
+
+```powershell
+$composeProject = 'mamxanh-dev'
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env down
+docker volume rm "$($composeProject)_sqlserver-data"
+# Đặt password mong muốn trong app/mamxanh-backend/.env trước khi khởi động lại.
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env up --build --detach --wait --wait-timeout 600
+```
+
+> Xóa SQL volume sẽ xóa toàn bộ database development local của project đó; không chạy nếu cần giữ dữ liệu. Thay `mamxanh-dev` bằng cùng project name đã dùng cho stack nếu có override.
+
+Sau khi `package.json` hoặc `package-lock.json` thay đổi, cập nhật dependency trong named volume từ lockfile bằng one-off container; lệnh này không khởi động dependencies và không chạm SQL volume:
+
+```powershell
+$composeProject = 'mamxanh-dev'
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env run --rm --no-deps frontend npm ci
+```
+
+Mọi lệnh sau đó (`up`, `down`, `run`, reset volume) phải tiếp tục dùng cùng `$composeProject`. Chỉ khi troubleshooting fallback không dùng được `run npm ci`, dừng stack và xóa riêng `<project>_frontend-node-modules`; không xóa SQL volume để làm mới Frontend dependencies.
+
+`docker compose ... down --volumes --remove-orphans` là **full reset**: xóa cả SQL data và `frontend-node-modules`. Chỉ dùng khi chủ động chấp nhận mất toàn bộ named-volume data. CI được phép làm vậy vì runner là disposable.
 
 **PR và GitHub gate:**
 
-- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job setup Node.js `22.23.3`, build Compose, đợi health checks, capture `/v3/api-docs`, validate bằng Scalar CLI `2.5.2`, upload OpenAPI artifact riêng theo PR/run, rồi smoke-test route `/scalar`; CI dùng password tạm, dọn container/volume trên runner sau job. HTTP `curl /scalar` chỉ chứng minh route/HTML shell trả về, không chứng minh Scalar JavaScript đã render contract hoặc request API chạy được.
+- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job setup Node.js `22.23.3`, dùng project `mamxanh-ci` thống nhất cho `up`/cleanup, build Compose, đợi health checks, capture `/v3/api-docs`, validate bằng Scalar CLI `2.5.2`, upload OpenAPI artifact riêng theo PR/run, rồi smoke-test route `/scalar`; CI dùng password tạm, dọn volume trên runner disposable sau job. HTTP `curl /scalar` chỉ chứng minh route/HTML shell trả về, không chứng minh Scalar JavaScript đã render contract hoặc request API chạy được.
 - Scalar tại `http://localhost:8080/scalar` là giao diện chính thức để team đọc và manual-test API. Browser acceptance phải xác nhận JavaScript tải/render generated `/v3/api-docs`, kiểm tra operation và gửi request phù hợp trong giao diện; đây là bằng chứng riêng với CI route smoke và không thay automated regression/authorization tests.
 - Ruleset `protect-develop` yêu cầu status context `Docker Development` và strict up-to-date. PR vào `develop` phải sync baseline theo phần trên; sau lần sync cuối có ảnh hưởng, chạy lại kiểm tra liên quan và đợi CI trên commit cập nhật.
 - Nếu Docker không chạy được local, ghi rõ nguyên nhân và kết quả nào chưa xác minh trong PR; không ghi “Docker test passed”. Required CI check vẫn phải pass trước khi merge. Việc Docker daemon của máy cá nhân unavailable không tự cho phép bỏ qua gate.
