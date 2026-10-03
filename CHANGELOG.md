@@ -1,13 +1,35 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.46.0
+> **Version:** v2.47.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-03
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-03 — Complete FR-18 Review Fixes ([PR #75](https://github.com/NgaiLong49423/vegetarian-support-system/pull/75))
+
+**Status:** Working tree — not committed.
+
+**Scope:** Synchronize the catalog-management branch with the current develop baseline, preserve the email-verification migration, and address verified FR-18 review findings.
+
+### Added
+
+- Add database-side insert-only handling for concurrent duplicate ingredient-unit conversion requests.
+
+### Changed
+
+- Align conversion and unit numeric validation with their SQL Server decimal precision and scale.
+- Reuse the shared Frontend API client and expose Bearer-token injection for the pending login integration.
+- Move the unmerged ingredient-group migration to V4 after the email-verification V3 baseline.
+
+### Fixed
+
+- Preserve the complete coverage HTML reports, Authentication contract, and catalog form context during status changes.
+- Keep the conversion ingredient lookup independent from filtered search results and use the local calendar date for reference-date defaults.
+- Reject removal of a required source URL before updating nutrition-supported ingredients.
 
 ## 2026-10-02 — Fix Docker Development and Scalar Security Gates ([PR #81](https://github.com/NgaiLong49423/vegetarian-support-system/pull/81))
 

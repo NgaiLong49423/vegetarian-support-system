@@ -7,8 +7,8 @@
 -- Date            : 2026-09-25
 -- Source          : Logical ERD v1.0.0 + Data Dictionary v0.7.5
 --                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
--- Synchronized with: V1__baseline_schema.sql + V2__unit_code_unicode.sql
---                   + V3__user_email_verification_token.sql
+-- Synchronized with: V1 baseline + V2 unit-code normalization
+--                   + V3 email verification + V4 ingredient-group and unit validation
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -59,7 +59,8 @@ CREATE TABLE [UNIT] (
 
     CONSTRAINT PK_UNIT PRIMARY KEY (unit_id),
     CONSTRAINT UQ_UNIT_code UNIQUE (code),
-    CONSTRAINT CK_UNIT_dimension CHECK (dimension IN ('MASS', 'VOLUME', 'COUNT'))
+    CONSTRAINT CK_UNIT_dimension CHECK (dimension IN ('MASS', 'VOLUME', 'COUNT')),
+    CONSTRAINT CK_UNIT_base_factor_positive CHECK (base_factor > 0)
 );
 GO
 
@@ -70,6 +71,8 @@ GO
 CREATE TABLE [INGREDIENT] (
     ingredient_id         BIGINT         IDENTITY(1,1)  NOT NULL,
     name                  NVARCHAR(200)  NOT NULL,
+    ingredient_group      NVARCHAR(100)  NOT NULL
+        CONSTRAINT DF_INGREDIENT_ingredient_group DEFAULT N'Khác',
     energy_kcal_100g      DECIMAL(10,2)  NULL,
     protein_g_100g        DECIMAL(10,2)  NULL,
     carbohydrate_g_100g   DECIMAL(10,2)  NULL,

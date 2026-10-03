@@ -16,6 +16,7 @@ import { Profile } from './pages/Profile';
 import { AiPlans } from './pages/AiPlans';
 import { TransactionHistory } from './pages/TransactionHistory';
 import { NutritionProfile } from './pages/NutritionProfile';
+import { AdminCatalogPage } from './pages/AdminCatalogPage';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/goi-ai" element={<AiPlans />} />
           <Route path="/giao-dich" element={<TransactionHistory />} />
           <Route path="/ho-so/dinh-duong" element={<NutritionProfile />} />
+          <Route path="/quan-tri/danh-muc" element={<AdminCatalogPage />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>
