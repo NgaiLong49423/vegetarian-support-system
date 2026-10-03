@@ -128,7 +128,7 @@ export function RecipeDetail() {
                 {recipe.author.name}
                 {recipe.author.verified && <BadgeCheck className="h-4 w-4 text-brand-600" />}
               </p>
-              <p className="text-xs text-ink-muted">{recipe.author.bio ?? 'Thành viên cộng đồng Mâm Xanh'}</p>
+                <p className="text-xs text-ink-muted">{recipe.author.bio ?? 'Chuyên gia ẩm thực Mâm Xanh'}</p>
             </div>
             <Button variant="outline" size="sm" className="ml-2">Theo dõi tác giả</Button>
           </div>

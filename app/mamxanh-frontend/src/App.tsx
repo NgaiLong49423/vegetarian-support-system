@@ -16,6 +16,9 @@ import { Profile } from './pages/Profile';
 import { AiPlans } from './pages/AiPlans';
 import { TransactionHistory } from './pages/TransactionHistory';
 import { NutritionProfile } from './pages/NutritionProfile';
+import { EditRecipe } from './pages/EditRecipe';
+import { ApiRecipeDetail } from './pages/ApiRecipeDetail';
+import { ExpertRecipeProfile } from './pages/ExpertRecipeProfile';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -38,6 +41,8 @@ export default function App() {
           <Route path="/dat-lai-mat-khau" element={<AuthPage key="reset" mode="reset" />} />
           <Route path="/" element={<Home />} />
           <Route path="/kham-pha" element={<Explore />} />
+          <Route path="/cong-thuc/:recipeId/chinh-sua" element={<EditRecipe />} />
+          <Route path="/cong-thuc/id/:recipeId" element={<ApiRecipeDetail />} />
           <Route path="/cong-thuc/:slug" element={<RecipeDetail />} />
           <Route path="/ke-hoach" element={<MealPlanner />} />
           <Route path="/di-cho" element={<ShoppingList />} />
@@ -46,6 +51,7 @@ export default function App() {
           <Route path="/cong-dong" element={<Community />} />
           <Route path="/bai-viet/:slug" element={<PostDetail />} />
           <Route path="/ho-so" element={<Profile />} />
+          <Route path="/ho-so/chuyen-gia-demo" element={<ExpertRecipeProfile />} />
           <Route path="/goi-ai" element={<AiPlans />} />
           <Route path="/giao-dich" element={<TransactionHistory />} />
           <Route path="/ho-so/dinh-duong" element={<NutritionProfile />} />

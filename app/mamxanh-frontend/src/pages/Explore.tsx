@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Search, SlidersHorizontal, X, Clock, Users } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { RecipeCard } from '../components/RecipeCard';
 import { Badge, Button, EmptyState } from '../components/ui';
 import { recipes } from '../data/mockData';
 import type { DietTag, Difficulty } from '../types';
+import { apiClient } from '../lib/apiClient';
+import type { RecipePost } from '../api/recipes';
 
 const dietFilters: DietTag[] = ['Thuần Chay', 'Lacto', 'Ovo', 'Lacto-Ovo'];
 const difficultyFilters: Difficulty[] = ['Dễ', 'Trung bình', 'Khó'];
@@ -55,6 +57,16 @@ export function Explore() {
   const [timeMax, setTimeMax] = useState<number | null>(null);
   const [sort, setSort] = useState('popular');
   const [showFilters, setShowFilters] = useState(false);
+  const [backendRecipes, setBackendRecipes] = useState<RecipePost[]>([]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      apiClient.get<{ items: RecipePost[] }>('/recipes', { params: { keyword: query.trim(), page: 0, size: 12 } })
+        .then(({ data }) => setBackendRecipes(data.items))
+        .catch(() => setBackendRecipes([]));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [query]);
 
   const filtered = useMemo(() => {
     let list = recipes.filter((r) => {
@@ -164,6 +176,16 @@ export function Explore() {
         {showFilters && <div className="lg:hidden">{filterPanel}</div>}
 
         <div>
+          {backendRecipes.length > 0 && <section className="mb-8">
+            <div className="mb-4"><h2 className="text-xl font-extrabold text-ink">Công thức cộng đồng đã xuất bản</h2><p className="mt-1 text-sm text-ink-muted">Dữ liệu công khai từ Backend Mâm Xanh.</p></div>
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{backendRecipes.map((recipe) => {
+              const image = recipe.media.find((item) => item.cover) ?? recipe.media[0];
+              return <Link key={recipe.id} to={`/cong-thuc/id/${recipe.id}`} className="group overflow-hidden rounded-2xl border border-brand-100 bg-white transition-all hover:-translate-y-1 hover:shadow-xl">
+                <div className="aspect-[4/3] bg-brand-50">{image && <img src={image.url} alt={recipe.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />}</div>
+                <div className="p-4"><div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-700"><span className="rounded-full bg-brand-50 px-2.5 py-1">{recipe.vegetarianType}</span><span className="rounded-full bg-brand-50 px-2.5 py-1">{recipe.dishCategory}</span></div><h3 className="mt-3 line-clamp-2 font-bold text-ink group-hover:text-brand-700">{recipe.title}</h3><p className="mt-2 flex items-center gap-4 text-xs text-ink-muted"><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{recipe.prepTimeMin + recipe.cookTimeMin} phút</span><span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />{recipe.servings} khẩu phần</span></p><p className="mt-3 border-t border-brand-50 pt-3 text-xs text-ink-soft">Tác giả: {recipe.authorName}</p></div>
+              </Link>;
+            })}</div>
+          </section>}
           <div className="mb-4 flex items-center gap-3 text-sm text-ink-muted">
             <span><strong className="text-ink">{filtered.length}</strong> công thức</span>
             {activeCount > 0 && (

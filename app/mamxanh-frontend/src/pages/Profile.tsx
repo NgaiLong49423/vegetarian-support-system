@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { BadgeCheck, Bookmark, Heart, Leaf, Settings, UtensilsCrossed } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { RecipeCard } from '../components/RecipeCard';
@@ -45,7 +46,7 @@ export function Profile() {
               <Badge tone="brand">Gói AI {demoAiPlan} (demo)</Badge>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <div className="rounded-xl border border-brand-100 px-4 py-2 text-center">
               <p className="text-lg font-extrabold text-ink">28</p>
               <p className="text-xs text-ink-muted">Đã lưu</p>
@@ -55,6 +56,9 @@ export function Profile() {
               <p className="text-xs text-ink-muted">Đã đăng</p>
             </div>
             <Button variant="outline"><Settings className="h-4 w-4" /> Chỉnh sửa</Button>
+            <Link to="/ho-so/chuyen-gia-demo" aria-label="Xem hồ sơ chuyên gia demo Issue 47">
+              <Button variant="secondary">Hồ sơ chuyên gia mẫu #47</Button>
+            </Link>
           </div>
         </div>
       </Card>
