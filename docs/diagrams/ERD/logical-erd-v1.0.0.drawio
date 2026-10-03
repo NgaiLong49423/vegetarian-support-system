@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.5.2 Chrome/142.0.7444.265 Electron/39.6.1 Safari/537.36" compressed="false">
   <diagram id="mamxanh-logical-teacher-format" name="Logical ERD - Team Review">
-    <mxGraphModel dx="5793" dy="1750" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="4402" dy="803" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -461,7 +461,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="tbl_6" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;rounded=0;shadow=0;fontSize=13;labelBackgroundColor=none;" value="INGREDIENT" vertex="1">
-          <mxGeometry height="538" width="410" x="-1730" y="530" as="geometry" />
+          <mxGeometry height="538" width="410" x="-1810" y="530" as="geometry" />
         </mxCell>
         <mxCell id="tbl_6_r1" parent="tbl_6" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;labelBackgroundColor=none;" value="" vertex="1">
           <mxGeometry height="28" width="410" y="30" as="geometry" />
@@ -899,7 +899,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="tbl_8" parent="1" style="shape=table;startSize=34;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;rounded=0;shadow=0;fontSize=13;labelBackgroundColor=none;" value="SAVED_RECIPE" vertex="1">
-          <mxGeometry height="118" width="410" x="570" y="1910" as="geometry" />
+          <mxGeometry height="118" width="410" x="1450" y="2170" as="geometry" />
         </mxCell>
         <mxCell id="tbl_8_r1" parent="tbl_8" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;labelBackgroundColor=none;" value="" vertex="1">
           <mxGeometry height="28" width="410" y="34" as="geometry" />
@@ -1350,7 +1350,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="tbl_11" parent="1" style="shape=table;startSize=34;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;rounded=0;shadow=0;fontSize=13;labelBackgroundColor=none;" value="MEAL_PLAN" vertex="1">
-          <mxGeometry height="174" width="410" x="1090" y="2100" as="geometry" />
+          <mxGeometry height="174" width="410" x="950" y="2170" as="geometry" />
         </mxCell>
         <mxCell id="tbl_11_r1" parent="tbl_11" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;labelBackgroundColor=none;" value="" vertex="1">
           <mxGeometry height="28" width="410" y="34" as="geometry" />
@@ -1554,7 +1554,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="tbl_13" parent="1" style="shape=table;startSize=34;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;rounded=0;shadow=0;fontSize=13;labelBackgroundColor=none;" value="SHOPPING_LIST" vertex="1">
-          <mxGeometry height="174" width="410" x="-2270" y="2054" as="geometry" />
+          <mxGeometry height="174" width="410" x="-2350" y="2054" as="geometry" />
         </mxCell>
         <mxCell id="tbl_13_r1" parent="tbl_13" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;labelBackgroundColor=none;" value="" vertex="1">
           <mxGeometry height="28" width="410" y="34" as="geometry" />
@@ -1647,7 +1647,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="tbl_14" parent="1" style="shape=table;startSize=34;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;rounded=0;shadow=0;fontSize=13;labelBackgroundColor=none;" value="SHOPPING_LIST_ITEM" vertex="1">
-          <mxGeometry height="230" width="410" x="-2270" y="1570" as="geometry" />
+          <mxGeometry height="230" width="410" x="-2350" y="1570" as="geometry" />
         </mxCell>
         <mxCell id="tbl_14_r1" parent="tbl_14" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;labelBackgroundColor=none;" value="" vertex="1">
           <mxGeometry height="28" width="410" y="34" as="geometry" />
@@ -1923,7 +1923,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="tbl_16" parent="1" style="shape=table;startSize=34;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;rounded=0;shadow=0;fontSize=13;labelBackgroundColor=none;" value="PAYMENT_TRANSACTION" vertex="1">
-          <mxGeometry height="258" width="410" x="1750" y="1170" as="geometry" />
+          <mxGeometry height="258" width="410" x="1750" y="1176" as="geometry" />
         </mxCell>
         <mxCell id="tbl_16_r1" parent="tbl_16" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;labelBackgroundColor=none;" value="" vertex="1">
           <mxGeometry height="28" width="410" y="34" as="geometry" />
@@ -2364,7 +2364,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="tbl_20" parent="1" style="shape=table;startSize=34;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;rounded=0;shadow=0;fontSize=13;labelBackgroundColor=none;" value="RECIPE_REACTION" vertex="1">
-          <mxGeometry height="174" width="410" x="100" y="1696" as="geometry" />
+          <mxGeometry height="174" width="410" x="80" y="1696" as="geometry" />
         </mxCell>
         <mxCell id="tbl_20_r1" parent="tbl_20" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;labelBackgroundColor=none;" value="" vertex="1">
           <mxGeometry height="28" width="410" y="34" as="geometry" />
@@ -2550,7 +2550,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="tbl_22" parent="1" style="shape=table;startSize=34;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;rounded=0;shadow=0;fontSize=13;labelBackgroundColor=none;" value="UNIT" vertex="1">
-          <mxGeometry height="202" width="410" x="-1730" y="1570" as="geometry" />
+          <mxGeometry height="202" width="410" x="-1810" y="1570" as="geometry" />
         </mxCell>
         <mxCell id="tbl_22_r1" parent="tbl_22" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;labelBackgroundColor=none;" value="" vertex="1">
           <mxGeometry height="28" width="410" y="34" as="geometry" />
@@ -2661,7 +2661,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="tbl_23" parent="1" style="shape=table;startSize=34;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;rounded=0;shadow=0;fontSize=13;labelBackgroundColor=none;" value="INGREDIENT_UNIT_CONVERSION" vertex="1">
-          <mxGeometry height="174" width="410" x="-1730" y="1200" as="geometry" />
+          <mxGeometry height="174" width="410" x="-1810" y="1200" as="geometry" />
         </mxCell>
         <mxCell id="tbl_23_r1" parent="tbl_23" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;labelBackgroundColor=none;" value="" vertex="1">
           <mxGeometry height="28" width="410" y="34" as="geometry" />
@@ -2757,7 +2757,7 @@
           <mxGeometry relative="1" y="-20" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="1460" y="606" />
+              <mxPoint x="1460" y="600" />
             </Array>
             <mxPoint x="1640" y="1110" as="sourcePoint" />
           </mxGeometry>
@@ -2769,7 +2769,7 @@
             <mxPoint x="-500" y="600" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="rel_3" edge="1" parent="1" source="tbl_1_r10" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="tbl_3_r3" value="authors">
+        <mxCell id="rel_3" edge="1" parent="1" source="tbl_1_r11" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;entryX=0.996;entryY=-0.006;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="tbl_3_r4" value="authors">
           <mxGeometry relative="1" x="-0.0224" y="-6" as="geometry">
             <mxPoint as="offset" />
             <mxPoint x="1280" y="1440" as="sourcePoint" />
@@ -2795,7 +2795,7 @@
             <mxPoint x="-955" y="1010" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="rel_8" edge="1" parent="1" source="tbl_1_r25" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="tbl_8_r1" value="saves">
+        <mxCell id="rel_8" edge="1" parent="1" source="tbl_1_r26" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0.9024;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.304;entryY=-0.014;entryDx=0;entryDy=0;entryPerimeter=0;" target="tbl_8" value="saves">
           <mxGeometry relative="1" x="0.0361" y="-22" as="geometry">
             <mxPoint as="offset" />
             <mxPoint x="1569.9999999999995" y="1850.232" as="sourcePoint" />
@@ -2810,18 +2810,18 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="rel_11" edge="1" parent="1" source="tbl_3" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" target="tbl_9" value="receives">
+        <mxCell id="rel_11" edge="1" parent="1" source="tbl_3" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=1.002;exitY=0.06;exitDx=0;exitDy=0;exitPerimeter=0;" target="tbl_9" value="receives">
           <mxGeometry relative="1" x="-0.003" y="30" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="-320" y="813" />
+              <mxPoint y="1355.56" />
+              <mxPoint y="813" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="rel_12" edge="1" parent="1" source="tbl_1_r8" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=-0.007;exitY=0.115;exitDx=0;exitDy=0;exitPerimeter=0;" target="tbl_10_r11" value="submits">
+        <mxCell id="rel_12" edge="1" parent="1" source="tbl_1_r8" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="tbl_10_r11" value="submits">
           <mxGeometry relative="1" x="-0.0001" y="-11" as="geometry">
             <mxPoint as="offset" />
-            <mxPoint x="1190" y="1372" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="rel_13" edge="1" parent="1" source="tbl_3_r1" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERzeroToOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.9297;entryDx=0;entryDy=0;entryPerimeter=0;" target="tbl_10" value="recipe_target">
@@ -2830,17 +2830,17 @@
             <mxPoint x="90.41" y="1378" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="rel_14" edge="1" parent="1" source="tbl_1_r26" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0.484;exitY=0.958;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" target="tbl_11" value="owns">
+        <mxCell id="rel_14" edge="1" parent="1" source="tbl_1_r26" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0.182;exitY=1.036;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.7918;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="tbl_11" value="owns">
           <mxGeometry relative="1" x="-0.018" y="-30" as="geometry">
             <mxPoint as="offset" />
             <mxPoint x="1274.62" y="2168.61" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="rel_15" edge="1" parent="1" source="tbl_11_r3" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="tbl_12" value="contains">
-          <mxGeometry relative="1" x="0.8282" y="28" as="geometry">
-            <mxPoint y="1" as="offset" />
+          <mxGeometry relative="1" x="0.727" y="25" as="geometry">
+            <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="-975" y="2204" />
+              <mxPoint x="-975" y="2280" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -2849,14 +2849,13 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="rel_17" edge="1" parent="1" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;" target="tbl_13" value="owns">
-          <mxGeometry relative="1" x="0.97" y="25" as="geometry">
-            <mxPoint y="-1" as="offset" />
+        <mxCell id="rel_17" edge="1" parent="1" source="tbl_1_r26" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0.491;exitY=1.131;exitDx=0;exitDy=0;exitPerimeter=0;" target="tbl_13" value="owns">
+          <mxGeometry relative="1" x="0.9562" y="25" as="geometry">
+            <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="1580" y="2320" />
-              <mxPoint x="-2065" y="2320" />
+              <mxPoint x="1401.31" y="2400" />
+              <mxPoint x="-2145" y="2400" />
             </Array>
-            <mxPoint x="1580" y="2005.19" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="rel_18" edge="1" parent="1" source="tbl_13" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;" target="tbl_14" value="contains">
@@ -2868,7 +2867,7 @@
           <mxGeometry relative="1" x="0.0085" y="-45" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="-2060" y="940" />
+              <mxPoint x="-2140" y="940" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -2878,11 +2877,10 @@
             <mxPoint x="1610.82" y="1714.34" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="rel_21" edge="1" parent="1" source="tbl_1_r3" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=-0.006;entryY=0.029;entryDx=0;entryDy=0;entryPerimeter=0;" target="tbl_16_r2" value="makes">
+        <mxCell id="rel_21" edge="1" parent="1" source="tbl_1_r4" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;entryX=0.001;entryY=0.004;entryDx=0;entryDy=0;entryPerimeter=0;exitX=1.004;exitY=0.175;exitDx=0;exitDy=0;exitPerimeter=0;" target="tbl_16_r2" value="makes">
           <mxGeometry relative="1" x="0.0601" y="9" as="geometry">
             <mxPoint as="offset" />
-            <mxPoint x="1620" y="1240" as="sourcePoint" />
-            <mxPoint x="1740" y="1238.11" as="targetPoint" />
+            <mxPoint x="1613.69" y="1240" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="rel_22" edge="1" parent="1" source="tbl_16_r8" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERzeroToOne;startSize=10;endArrow=ERzeroToOne;endSize=10;fontColor=default;exitX=0.524;exitY=1.029;exitDx=0;exitDy=0;exitPerimeter=0;" target="tbl_15" value="activates">
@@ -2890,7 +2888,7 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="rel_23" edge="1" parent="1" source="tbl_1_r2" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=-0.003;exitY=1.163;exitDx=0;exitDy=0;exitPerimeter=0;" target="tbl_17_r8" value="receives">
+        <mxCell id="rel_23" edge="1" parent="1" source="tbl_1_r3" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.002;exitY=0.666;exitDx=0;exitDy=0;exitPerimeter=0;" target="tbl_17_r8" value="receives">
           <mxGeometry relative="1" x="-0.125" y="-14" as="geometry">
             <mxPoint as="offset" />
             <mxPoint x="1290" y="1224" as="sourcePoint" />
@@ -2919,7 +2917,7 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="rel_30" edge="1" parent="1" source="tbl_1_r22" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="tbl_20_r1" value="reacts">
+        <mxCell id="rel_30" edge="1" parent="1" source="tbl_1_r22" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.1609;entryDx=0;entryDy=0;entryPerimeter=0;" target="tbl_20" value="reacts">
           <mxGeometry relative="1" x="-0.0113" y="-14" as="geometry">
             <mxPoint as="offset" />
             <mxPoint x="490.82" y="1724" as="targetPoint" />
@@ -2931,10 +2929,9 @@
             <mxPoint x="80" y="1730" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="rel_32" edge="1" parent="1" source="tbl_1_r16" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERzeroToOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=-0.005;exitY=0.798;exitDx=0;exitDy=0;exitPerimeter=0;" target="tbl_21" value="generates">
+        <mxCell id="rel_32" edge="1" parent="1" source="tbl_1_r17" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERzeroToOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=-0.008;exitY=0.151;exitDx=0;exitDy=0;exitPerimeter=0;" target="tbl_21" value="generates">
           <mxGeometry relative="1" x="-0.0424" y="-15" as="geometry">
             <mxPoint as="offset" />
-            <mxPoint x="1196.72" y="1577" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="rel_33" edge="1" parent="1" source="tbl_3" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=1;exitY=0.4364;exitDx=0;exitDy=0;exitPerimeter=0;" target="tbl_21" value="receives_views">
@@ -2947,22 +2944,22 @@
           <mxGeometry relative="1" x="0.0084" y="-30" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="-1240" y="1087" />
-              <mxPoint x="-1240" y="1680" />
+              <mxPoint x="-1280" y="1087" />
+              <mxPoint x="-1280" y="1671" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="rel_35" edge="1" parent="1" source="tbl_14_r4" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERzeroToMany;startSize=10;endArrow=ERmandOne;endSize=10;fontColor=default;entryX=-0.004;entryY=0.057;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.993;exitY=0.081;exitDx=0;exitDy=0;exitPerimeter=0;" target="tbl_22_r4" value="measures">
           <mxGeometry relative="1" x="0.1269" y="9" as="geometry">
             <mxPoint as="offset" />
-            <mxPoint x="-1820" y="1680" as="sourcePoint" />
-            <mxPoint x="-1730" y="1681.98" as="targetPoint" />
+            <mxPoint x="-1900" y="1680" as="sourcePoint" />
+            <mxPoint x="-1810" y="1681.98" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="rel_36" edge="1" parent="1" source="tbl_23" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERzeroToMany;startSize=10;endArrow=ERmandOne;endSize=10;fontColor=default;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" target="tbl_6" value="has_conversion">
           <mxGeometry relative="1" x="-0.0909" y="45" as="geometry">
             <mxPoint as="offset" />
-            <mxPoint x="-590" y="799" as="sourcePoint" />
+            <mxPoint x="-670" y="799" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="rel_37" edge="1" parent="1" source="tbl_23" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERzeroToMany;startSize=10;endArrow=ERmandOne;endSize=10;fontColor=default;" target="tbl_22" value="measures">
@@ -3792,7 +3789,15 @@
         <mxCell id="rel_40" edge="1" parent="1" source="tbl_1" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0.909;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitPerimeter=0;" target="tbl_24_r2" value="submits">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1572.69" y="606" />
+              <mxPoint x="1650" y="606" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_41" edge="1" parent="1" source="tbl_1_r1" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=1;exitY=0.306;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitPerimeter=0;" target="tbl_25_r1" value="follower">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1680" y="1162" />
+              <mxPoint x="1680" y="1010" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -3804,11 +3809,12 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="rel_43" edge="1" parent="1" source="tbl_3" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="tbl_8" value="saved_recipe">
+        <mxCell id="rel_43" edge="1" parent="1" source="tbl_3" style="orthogonalLoop=1;jettySize=auto;html=1;rounded=0;jumpStyle=arc;jumpSize=8;labelBackgroundColor=none;fontSize=11;startArrow=ERmandOne;startSize=10;endArrow=ERzeroToMany;endSize=10;fontColor=default;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.8049;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="tbl_8" value="saved_recipe">
           <mxGeometry relative="1" x="-0.55" y="-12" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="-315" y="1969" />
+              <mxPoint x="-315" y="2372" />
+              <mxPoint x="1780" y="2372" />
             </Array>
           </mxGeometry>
         </mxCell>
