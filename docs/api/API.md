@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.5.0
+> **Version:** v0.5.1
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-03
+> **Last Updated:** 2026-10-04
 > **Status:** Active
 
 # API Integration Guide
@@ -11,9 +11,9 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
 
-Contract hiện bao phủ `Authentication & Account` của [FR-03](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-03) và danh mục quản trị nguyên liệu, đơn vị, quy đổi của [FR-18](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-18). Các module khác được bổ sung khi FR tương ứng chuẩn bị triển khai và contract đã được Tech Lead review theo [CONTRIBUTING.md](../../CONTRIBUTING.md#ownership-ai-và-api-contract).
+Trong branch này, Backend source gồm các endpoint đăng ký/xác minh email (FR-03), danh mục quản trị nguyên liệu, đơn vị và quy đổi (FR-18), cùng hồ sơ dinh dưỡng tham khảo (FR-35). Generated OpenAPI runtime là contract để xác minh endpoint đã triển khai; endpoint FR-03 chưa triển khai chỉ được mô tả trong planned/reference YAML.
 
-Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 6 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
+Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 7 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
 ## 2. Contract và công cụ
 
@@ -46,7 +46,7 @@ Scalar là giao diện xem và manual testing; request thử bằng Scalar khôn
 Authorization: Bearer <access-token>
 ```
 
-Frontend không ghi access token vào log. Thời lượng access token là thông số còn mở ở mục 6; owner FR-03 cần đề xuất giá trị để Tech Lead duyệt trước khi triển khai và kiểm thử phần phụ thuộc.
+Frontend không ghi access token vào log. Thời lượng access token là thông số còn mở ở mục 7; owner FR-03 cần đề xuất giá trị để Tech Lead duyệt trước khi triển khai và kiểm thử phần phụ thuộc.
 
 ### 3.2 Client-side Logout
 
@@ -121,7 +121,17 @@ Mã `code` đã triển khai (Issue #5). Các mã của đăng nhập, Google Lo
 - Đăng xuất xử lý hoàn toàn phía client (không gọi backend API).
 - Google ID token phải được Backend xác minh chữ ký, issuer, audience và expiry trước khi phát hành token.
 
-## 6. Thông số cần chốt trước khi triển khai phần phụ thuộc
+## 6. Nutrition Profile — FR-35
+
+Ba endpoint runtime trong generated OpenAPI thao tác hồ sơ của Member hiện tại; client không truyền `userId`. Chúng yêu cầu authenticated Member principal. Tích hợp JWT thật phụ thuộc authentication contract chung; không dùng fake authentication trong production. Kết quả không được lưu thành lịch sử theo dõi.
+
+- `GET /nutrition/profile` chỉ trả dữ liệu hồ sơ đã lưu; không trả BMI hoặc các chỉ tiêu.
+- `PUT /nutrition/profile` nhận câu trả lời phạm vi hiện tại cùng ngày sinh, giới tính sinh học, chiều cao, cân nặng, mức vận động, mục tiêu chung và đồng thuận. Backend từ chối lưu nếu ngày sinh không hợp lệ, tuổi dưới 18/trên 120 hoặc có điều kiện loại trừ. Câu trả lời loại trừ chỉ dùng để kiểm tra yêu cầu và không được lưu lên hồ sơ.
+- `POST /nutrition/profile/calculate` nhận xác nhận phạm vi hiện tại. Chỉ khi cả ba cờ đều `false` và hồ sơ lưu hợp lệ mới trả BMI cùng 8 thành phần dinh dưỡng (9 chỉ tiêu khi tính cả năng lượng). Phản hồi tính toán không được lưu và giao diện xóa kết quả khi đóng/tải lại trang hoặc thay đổi xác nhận.
+- Response hiển thị số dạng xấp xỉ. Đây là tham khảo, không phải chẩn đoán/điều trị/kê đơn, tư vấn y tế, chứng nhận hay giám sát liên tục.
+- Lỗi dùng `application/problem+json` và mã ổn định; trường hợp ngoài phạm vi trả `422 NUTRITION_PROFILE_OUT_OF_SCOPE`.
+
+## 7. Thông số cần chốt trước khi triển khai phần phụ thuộc
 
 | Quyết định | Trạng thái | Ảnh hưởng |
 |---|---|---|
@@ -133,12 +143,3 @@ Mã `code` đã triển khai (Issue #5). Các mã của đăng nhập, Google Lo
 | Public/development server URLs và CORS origins | `TBD` | Chốt theo môi trường thực tế trước khi cấu hình OpenAPI `servers` và CORS. |
 
 Baseline API đã được nhóm chấp nhận; các mục `TBD` không tự có giá trị chỉ vì tài liệu chuyển sang `Active`. Owner FR-03 phân rã, đề xuất giá trị và cách kiểm thử; Tech Lead duyệt trước khi phần liên quan được coi là implementation-ready. Không suy diễn các giá trị này từ ví dụ hoặc cấu hình tạm.
-
-## 7. Tích hợp danh mục quản trị FR-18
-
-- Endpoint FR-18 dùng prefix `/api/v1/admin` và yêu cầu Bearer access token có role `ADMIN`. Role khác nhận `403 Forbidden`; Guest phải xác thực trước.
-- Frontend requests use the shared Axios client. The login flow must register its short-lived JWT with `setAccessTokenProvider`; that login integration is still pending, so the Admin UI cannot complete a real authenticated request yet. Mocked browser responses do not prove this integration.
-- `GET /admin/ingredients` hỗ trợ tham số `query` để tìm theo tên nguyên liệu tiếng Việt hoặc nhóm nguyên liệu. MVP không có trường tên tiếng Anh/đa ngôn ngữ.
-- Khi tạo/cập nhật nguyên liệu, `sourceName` và `referenceDate` là bắt buộc theo schema hiện hành, dù `nutritionSupported` vẫn là `false` và chín chỉ tiêu dinh dưỡng chưa có dữ liệu. Chi tiết request/response nằm trong OpenAPI.
-- Không có hard-delete cho nguyên liệu hoặc đơn vị. Client gọi endpoint trạng thái để ngừng sử dụng; API hard-delete trả `409` với code `HARD_DELETE_NOT_SUPPORTED`.
-- Conversion là duy nhất theo cặp `(ingredientId, unitId)`, cần `gramsPerUnit > 0`. Rule active được service tra cứu để FR-19/BR-73 sử dụng trong validation Recipe Post; validation xuất bản thuộc implementation của FR-19.

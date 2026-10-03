@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.10.0
+> **Version:** v1.11.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-03
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -68,7 +68,7 @@ Nếu cần mở cả hệ thống, dùng hai cửa sổ Terminal và khởi đ�
 2. [Backend](../mamxanh-backend/README.md) tại port `8080`.
 3. Frontend tại port `5173`.
 
-Frontend gọi Backend tại `VITE_API_BASE_URL` (mặc định `http://localhost:8080/api/v1`). Để đổi địa chỉ, sao chép `.env.example` thành `.env.local` (đã được Git bỏ qua) rồi sửa giá trị; không đặt secret trong biến `VITE_` vì chúng nằm trong bundle công khai. Backend phải cho phép origin của Frontend qua `MAMXANH_CORS_ALLOWED_ORIGINS`.
+Frontend gọi Backend tại `VITE_API_BASE_URL`. Khi chạy trực tiếp, `/api/v1` được Vite proxy tới `http://localhost:8080`; trong Docker Compose, proxy dùng service `backend`. Để đổi base path, sao chép `.env.example` thành `.env.local` (đã được Git bỏ qua) rồi sửa giá trị; không đặt secret trong biến `VITE_` vì chúng nằm trong bundle công khai. Backend phải cho phép origin của Frontend qua `MAMXANH_CORS_ALLOWED_ORIGINS`.
 
 Các màn hình ngoài đăng ký/xác minh email vẫn dùng mock data và chạy độc lập được; việc mở được UI không chứng minh Backend hoặc database đã kết nối.
 
@@ -119,6 +119,8 @@ docker compose -p $composeProject --env-file app/mamxanh-backend/.env run --rm -
 ```
 
 Lệnh này không xóa hay reset SQL volume. Với lệnh standalone `docker run` ở trên, volume riêng tên `mamxanh-frontend-node-modules` không được Compose quản lý: dừng container, xóa riêng volume đó bằng `docker volume rm mamxanh-frontend-node-modules`, build lại image rồi chạy lại để khởi tạo dependency từ `package-lock.json` mới. Không dùng lệnh này để reset dữ liệu SQL của stack Compose.
+
+Để chạy cả Frontend, Backend và SQL Server trong Compose chuẩn, dùng phần **Docker Compose** trong [Backend README](../mamxanh-backend/README.md). Compose nạp seed mẫu sau Flyway và giữ dữ liệu qua `down`/`up`; reset riêng SQL volume được thực hiện bằng script có xác nhận.
 
 ### Kiểm tra trước khi bàn giao code
 

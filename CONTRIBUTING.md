@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.10.0
+> **Version:** v3.11.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-03
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -82,10 +82,27 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
 
 ### PR vào `develop`
 
-- PR dùng `Refs #<issue-number>`, ghi scope, thay đổi và kết quả tự kiểm tra; không chứa secret, `.env`, credential hoặc file build/cá nhân.
+- PR implementation dùng `Refs #<issue-number>` theo quy tắc bên dưới, ghi scope, thay đổi và kết quả tự kiểm tra; không chứa secret, `.env`, credential hoặc file build/cá nhân.
 - Required validation checks phải pass trước merge; xem [Required checks và technical enforcement](#develop-required-checks). Ruleset hiện có yêu cầu một approval; giữ gate review hiện hành, không coi AI review là approval của thành viên.
 - Owner tự kiểm tra phần thay đổi và ghi trung thực phần chưa kiểm tra/blocker. Merge vào `develop` là tích hợp, chưa xác nhận FR đã hoàn thành.
-- Một Issue có thể có nhiều PR liên quan; không ép quan hệ một Issue/một branch/một PR.
+
+<a id="implementation-issue-pr"></a>
+#### Một implementation Issue — một implementation PR
+
+- **1 implementation Issue = 1 implementation PR.** Feature/FR implementation, bug fix hoặc refactor có work item, thay đổi business behavior và implementation task khác được quản lý bằng Issue phải có `Refs #<issue-number>`. Hoàn tất scope/AC của work item trong PR đó; review fixes/rebuttals tiếp tục trên cùng PR.
+- Sub-issue triển khai đã được Tech Lead duyệt áp dụng quy tắc trên cho từng work item; Issue cha chỉ tổng hợp phạm vi, không tạo implementation trùng. Release PR `develop -> main` tổng hợp các Issue đã tích hợp và dùng `Refs` để trace, không phải implementation PR thứ hai của chúng.
+- Sau khi Issue gốc đã hoàn thành, bug fix, refactor hoặc thay đổi bổ sung cần Issue mới và PR mới tương ứng; liên kết lịch sử khi phù hợp. Không mở lại work item đã nghiệm thu chỉ để tránh tạo Issue mới.
+- **Ngoại lệ hẹp:** chỉ repository setup, internal agent tooling hoặc governance/configuration chore ở cấp repository mới có thể không cần Issue, và phải được Tech Lead cho phép. Khi đó dùng `Refs: N/A` kèm `Reason` nêu scope và authorization; branch có thể dùng `chore/<short-name>`. Không tạo Issue chỉ để thỏa hình thức cho ngoại lệ đã duyệt.
+- `Refs: N/A` không phải lựa chọn chung cho mọi PR; không mở rộng ngoại lệ sang feature/bug/refactor thông thường để tránh Issue. Ví dụ “Implement Meal Planner” phải có Issue, kể cả khi đặt tên branch là chore.
+
+Ví dụ hợp lệ cho tooling setup đã được duyệt:
+
+```text
+Refs: N/A
+
+Reason:
+Repository internal agent tooling setup approved by Tech Lead.
+```
 
 <a id="develop-integration-baseline"></a>
 #### Develop integration baseline và đồng bộ PR song song
@@ -320,6 +337,8 @@ Chính sách Tự chủ Kỹ thuật (Engineering Autonomy Policy) phân định
 Khi làm việc, tạo nhánh từ `develop` và đặt tên theo cấu trúc:
 `[loại-nhánh]/[issue-number]-[tên-ngắn-gọn]`
 
+Repository-level chore không cần Issue chỉ được dùng `chore/<tên-ngắn-gọn>` theo [ngoại lệ đã được Tech Lead duyệt](#implementation-issue-pr).
+
 ### Các tiền tố nhánh thông dụng:
 * **`feature/`**: Sử dụng khi phát triển một tính năng mới.
 * **`fix/`**: Sử dụng khi sửa lỗi (bug).
@@ -499,7 +518,7 @@ chore: update .gitignore
 Để gửi một pull request thành công:
 1. **Đặt tiêu đề rõ ràng:** Tiêu đề PR nên tuân theo định dạng tương tự commit message và dùng tiếng Anh (ví dụ: `feat(auth): add login page`).
 2. **Mô tả chi tiết nội dung:** Điền đầy đủ thông tin vào mẫu PR, mô tả rõ các thay đổi bạn đã thực hiện và lý do thay đổi.
-3. **Liên kết Issue:** PR vào `develop` và `main` dùng `Refs #123`. Tech Lead xác nhận và đóng Issue sau khi kiểm tra demo local trên `main` đạt; không dùng closing keywords để đóng trước nghiệm thu.
+3. **Liên kết Issue:** PR vào `develop` và `main` dùng `Refs #123`; chỉ repository-level chore được Tech Lead cho phép mới dùng `Refs: N/A` kèm lý do theo [quy tắc Issue/PR](#implementation-issue-pr). Tech Lead xác nhận và đóng Issue sau khi kiểm tra demo local trên `main` đạt; không dùng closing keywords để đóng trước nghiệm thu.
 4. **Kiểm tra hoạt động:** Chắc chắn rằng dự án của bạn vẫn chạy được và không làm hỏng các tính năng cũ.
 5. **Dọn dẹp code:** Đảm bảo không có code thừa, comment nháp hay các file rác trước khi gửi PR.
 
