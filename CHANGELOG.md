@@ -9,7 +9,7 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-03 — Stateful PR Review Lifecycle
+## 2026-10-03 — Stateful PR Review Lifecycle ([PR #83](https://github.com/NgaiLong49423/vegetarian-support-system/pull/83))
 
 **Status:** Committed — `454b5b5c89d058faba0782070c2aac5ac83520ef`.
 
