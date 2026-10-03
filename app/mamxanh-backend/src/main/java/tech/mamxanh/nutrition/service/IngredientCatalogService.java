@@ -3,7 +3,9 @@ package tech.mamxanh.nutrition.service;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.sql.SQLException;
 import java.util.Optional;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,6 +72,10 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         IngredientEntity ingredient = requireIngredient(id);
         String name = request.name().trim();
         if (!ingredient.getName().equalsIgnoreCase(name) && ingredientRepository.existsByNameIgnoreCase(name)) throw conflict("INGREDIENT_NAME_EXISTS", "Tên nguyên liệu đã tồn tại.");
+        if (ingredient.isNutritionSupported() && (request.sourceUrl() == null || request.sourceUrl().isBlank())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "SOURCE_REQUIRED_WHEN_NUTRITION_SUPPORTED",
+                    "Cần cung cấp nguồn tham khảo cho nguyên liệu đang hỗ trợ dinh dưỡng.");
+        }
         ingredient.update(name, request.ingredientGroup().trim(), request.sourceName().trim(), request.sourceUrl(), request.referenceDate());
         return toResponse(ingredient);
     }
@@ -116,7 +122,15 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         requireActiveIngredient(ingredientId); requireActiveUnit(unitId);
         IngredientUnitConversionId id = new IngredientUnitConversionId(ingredientId, unitId);
         if (conversionRepository.existsById(id)) throw conflict("CONVERSION_EXISTS", "Cặp nguyên liệu và đơn vị đã có tỷ lệ quy đổi.");
-        return toResponse(conversionRepository.save(new IngredientUnitConversionEntity(id, request.gramsPerUnit(), request.approximate())));
+        try {
+            conversionRepository.insertNew(ingredientId, unitId, request.gramsPerUnit(), request.approximate());
+        } catch (DataIntegrityViolationException exception) {
+            if (isDuplicateKeyViolation(exception)) {
+                throw conflict("CONVERSION_EXISTS", "Cặp nguyên liệu và đơn vị đã có tỷ lệ quy đổi.");
+            }
+            throw exception;
+        }
+        return toResponse(new IngredientUnitConversionEntity(id, request.gramsPerUnit(), request.approximate()));
     }
 
     @Transactional
@@ -156,6 +170,16 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     private IngredientResponse toResponse(IngredientEntity entity) { return new IngredientResponse(entity.getId(), entity.getName(), entity.getIngredientGroup(), entity.getSourceName(), entity.getSourceUrl(), entity.getReferenceDate(), entity.isNutritionSupported(), entity.getStatus() == CatalogStatus.ACTIVE); }
     private UnitResponse toResponse(UnitEntity entity) { return new UnitResponse(entity.getId(), entity.getCode(), entity.getName(), entity.getDimension(), entity.getBaseFactor(), entity.isActive()); }
     private ConversionResponse toResponse(IngredientUnitConversionEntity entity) { return new ConversionResponse(entity.getId().getIngredientId(), entity.getId().getUnitId(), entity.getGramsPerUnit(), entity.isApproximate(), entity.isActive()); }
+    private boolean isDuplicateKeyViolation(Throwable exception) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SQLException sqlException
+                    && (sqlException.getErrorCode() == 2601 || sqlException.getErrorCode() == 2627)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private ApiException conflict(String code, String message) { return new ApiException(HttpStatus.CONFLICT, code, message); }
     private ApiException notFound(String code, String message) { return new ApiException(HttpStatus.NOT_FOUND, code, message); }
 }

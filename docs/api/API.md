@@ -1,15 +1,15 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.3.1
+> **Version:** v0.5.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-03
 > **Status:** Active
 
 # API Integration Guide
 
 ## 1. Mục đích và phạm vi
 
-Tài liệu này hướng dẫn Frontend, Backend và tester sử dụng contract API chung của Mâm Xanh. [OpenAPI contract](openapi.yaml) là Source of Truth cho path, HTTP method, parameter, request/response schema và status code chi tiết; tài liệu này không lặp lại toàn bộ contract.
+Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
 
 Contract hiện bao phủ `Authentication & Account` của [FR-03](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-03) và danh mục quản trị nguyên liệu, đơn vị, quy đổi của [FR-18](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-18). Các module khác được bổ sung khi FR tương ứng chuẩn bị triển khai và contract đã được Tech Lead review theo [CONTRIBUTING.md](../../CONTRIBUTING.md#ownership-ai-và-api-contract).
 
@@ -17,13 +17,24 @@ Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn b�
 
 ## 2. Contract và công cụ
 
-- Contract chi tiết: [`openapi.yaml`](openapi.yaml).
+- Runtime OpenAPI được sinh từ Controller/DTO/annotations bằng springdoc: `/v3/api-docs` (JSON) và `/v3/api-docs.yaml` (YAML).
+- Planned/reference contract trong migration: [`openapi.yaml`](openapi.yaml); các endpoint chỉ có tại đây chưa được xem là runtime API.
 - Base path: `/api/v1`.
-- Runtime document dự kiến từ Springdoc: `/v3/api-docs` và `/v3/api-docs.yaml`.
-- Swagger UI dự kiến: `/swagger-ui.html`.
+- Giao diện chính thức để team xem và thử API: `/scalar` trên cùng Backend host/port. Scalar tải generated contract từ `/v3/api-docs`.
+- Swagger UI vẫn được giữ như giao diện tương thích trong giai đoạn đầu; Scalar là UI được khuyến nghị cho team.
 - JSON property dùng `camelCase`.
 - Timestamp biểu diễn instant dùng ISO-8601 UTC; calendar date dùng `YYYY-MM-DD` và không timezone-shift.
 - Response lỗi dùng `application/problem+json` theo `ProblemDetail`, bổ sung `code` ổn định và `errors` cho lỗi theo field khi cần.
+
+Trong migration, generated OpenAPI là bằng chứng runtime cho endpoint đã implement. Endpoint chưa xuất hiện trong spec runtime nhưng còn trong YAML chỉ là planned contract, không chứng minh endpoint đã tồn tại hoặc hoạt động. Khi migration hoàn tất, generated OpenAPI sẽ là nguồn contract duy nhất; YAML thủ công sẽ không tiếp tục làm authority song song.
+
+Khi triển khai một endpoint đang có trong planned YAML, reviewer đối chiếu ý nghĩa contract của path/method, request/response, status và security với runtime spec và implementation. Docker Development hiện validate cấu trúc generated OpenAPI, không tự thực hiện semantic comparison giữa runtime JSON và YAML tham chiếu.
+
+### 2.1 Scalar dành cho thành viên và tester
+
+Mở `http://localhost:8080/scalar` khi Backend chạy local (bao gồm stack Docker Compose). Tại Scalar, thành viên có thể tìm operation, đọc request/response/schema/status/security, nhập Bearer/JWT token thủ công nếu generated runtime spec khai báo scheme phù hợp, và gửi request tới Backend. Không dùng JWT thật trong ảnh chụp, log hoặc tài liệu.
+
+Scalar là giao diện xem và manual testing; request thử bằng Scalar không thay thế automated regression, authorization, integration hoặc acceptance tests. CI kiểm tra HTTP route và nội dung HTML entry point `/scalar` nhưng không chứng minh JavaScript đã tải/render, OpenAPI đã hiển thị trong browser, hoặc một API request đã chạy thành công. Runtime UI chỉ hiển thị auth schemes do generated OpenAPI khai báo; Bearer/JWT acceptance cần scheme và protected runtime endpoint thật.
 
 ## 3. Authentication flow
 
@@ -48,7 +59,7 @@ Khi người dùng chọn Đăng xuất, Frontend thực hiện:
 
 ### 3.3 Candidate Follow-up: GET /auth/me
 
-Endpoint `GET /auth/me` (tra cứu thông tin người dùng hiện tại từ token) là một ứng viên follow-up tiềm năng nhưng chưa thuộc contract chính thức trong OpenAPI `openapi.yaml`. Việc thêm endpoint này sẽ được xem xét trong task riêng khi có yêu cầu cụ thể.
+Endpoint `GET /auth/me` (tra cứu thông tin người dùng hiện tại từ token) là một ứng viên follow-up tiềm năng nhưng chưa thuộc planned contract hoặc runtime API. Việc thêm endpoint này sẽ được xem xét trong task riêng khi có yêu cầu cụ thể.
 
 ## 4. Error convention
 
@@ -85,6 +96,21 @@ Quy ước status chính:
 | `409 Conflict` | Email đã được sử dụng hoặc đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`). |
 | `429 Too Many Requests` | Chỉ áp dụng khi contract của endpoint quy định `429` (ví dụ login, resend verification hoặc AI rate limiting); client đọc `Retry-After` khi có. Password-reset request không trả `429`. |
 
+Mã `code` đã triển khai (Issue #5). Các mã của đăng nhập, Google Login và đặt lại mật khẩu được bổ sung khi các Issue tương ứng triển khai.
+
+| `code` | Status | Khi nào |
+|---|---|---|
+| `VALIDATION_FAILED` | 400 | Payload sai định dạng hoặc vi phạm validation; chi tiết theo field nằm trong `errors`. Mật khẩu yếu trả một phần tử `errors` cho mỗi tiêu chí còn thiếu. |
+| `EMAIL_ALREADY_USED` | 409 | `POST /auth/register` với email đã có tài khoản (không phân biệt hoa/thường). |
+| `VERIFICATION_TOKEN_INVALID` | 400 | `POST /auth/email-verifications` với mã không tồn tại, đã dùng, đã bị thay bằng mã mới hoặc hết hạn. |
+| `RESEND_TOO_SOON` | 429 | `POST /auth/email-verifications/resend` trong vòng 60 giây kể từ email xác minh trước; kèm `Retry-After`. |
+| `UNAUTHENTICATED` | 401 | Gọi endpoint cần đăng nhập mà không có thông tin xác thực hợp lệ. |
+| `ACCESS_DENIED` | 403 | Đã xác thực nhưng không đủ quyền. |
+| `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE` | 404, 405, 415 | Lỗi định tuyến/định dạng do framework phát hiện. |
+| `INTERNAL_ERROR` | 500 | Lỗi không mong đợi; `detail` không chứa thông tin nội bộ. |
+
+`POST /auth/email-verifications/resend` trả cùng một phản hồi `202` cho email không tồn tại và email đã xác minh; hai trường hợp này không gửi email.
+
 ## 5. Quy tắc bảo mật của Auth slice
 
 - Không trả password, password hash hoặc Google ID token trong response/log.
@@ -111,6 +137,7 @@ Baseline API đã được nhóm chấp nhận; các mục `TBD` không tự có
 ## 7. Tích hợp danh mục quản trị FR-18
 
 - Endpoint FR-18 dùng prefix `/api/v1/admin` và yêu cầu Bearer access token có role `ADMIN`. Role khác nhận `403 Forbidden`; Guest phải xác thực trước.
+- Frontend requests use the shared Axios client. The login flow must register its short-lived JWT with `setAccessTokenProvider`; that login integration is still pending, so the Admin UI cannot complete a real authenticated request yet. Mocked browser responses do not prove this integration.
 - `GET /admin/ingredients` hỗ trợ tham số `query` để tìm theo tên nguyên liệu tiếng Việt hoặc nhóm nguyên liệu. MVP không có trường tên tiếng Anh/đa ngôn ngữ.
 - Khi tạo/cập nhật nguyên liệu, `sourceName` và `referenceDate` là bắt buộc theo schema hiện hành, dù `nutritionSupported` vẫn là `false` và chín chỉ tiêu dinh dưỡng chưa có dữ liệu. Chi tiết request/response nằm trong OpenAPI.
 - Không có hard-delete cho nguyên liệu hoặc đơn vị. Client gọi endpoint trạng thái để ngừng sử dụng; API hard-delete trả `409` với code `HARD_DELETE_NOT_SUPPORTED`.

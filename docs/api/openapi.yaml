@@ -1,3 +1,6 @@
+# Migration reference only: planned Auth endpoints may not exist in the running Backend yet.
+# Implemented endpoints are evidenced by springdoc at /v3/api-docs; do not treat this file as
+# a second permanent runtime authority. See API.md for the migration policy.
 openapi: 3.1.1
 info:
   title: Mâm Xanh API
@@ -38,7 +41,7 @@ paths:
         '400':
           $ref: '#/components/responses/ValidationProblem'
         '409':
-          description: Email is already used by an active account.
+          description: Email is already used by another account (code EMAIL_ALREADY_USED); comparison ignores case.
           content:
             application/problem+json:
               schema:
@@ -57,7 +60,9 @@ paths:
         '204':
           description: Email is verified; accountStatus is unchanged.
         '400':
-          description: Verification token is invalid or expired.
+          description: >-
+            Verification token is unknown, already used, replaced by a newer token or expired
+            (code VERIFICATION_TOKEN_INVALID), or the payload is invalid (code VALIDATION_FAILED).
           content:
             application/problem+json:
               schema:
@@ -66,7 +71,10 @@ paths:
     post:
       tags: [Authentication]
       summary: Request another verification email
-      description: Invalidates the previous token when a new token is issued. Limited to one request per 60 seconds.
+      description: >-
+        Invalidates the previous token when a new token is issued. Limited to one email per 60 seconds;
+        earlier requests return 429 with code RESEND_TOO_SOON and Retry-After. Unknown and already verified
+        emails receive the same 202 response and no email is sent.
       requestBody:
         required: true
         content:
@@ -148,6 +156,18 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Account is administratively locked (ACCOUNT_LOCKED).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Email is already linked to a different Google account (GOOGLE_ACCOUNT_CONFLICT).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
   /auth/password-resets:
     post:
       tags: [Authentication]
@@ -172,7 +192,7 @@ paths:
     post:
       tags: [Authentication]
       summary: Set a new password with a reset token
-      description: Invalidates the used token and revokes all active sessions for the account.
+      description: Invalidates the used reset token.
       requestBody:
         required: true
         content:
@@ -181,7 +201,7 @@ paths:
               $ref: '#/components/schemas/PasswordResetConfirmRequest'
       responses:
         '204':
-          description: Password changed and existing sessions revoked.
+          description: Password changed.
         '400':
           description: Payload or reset token is invalid or expired.
           content:
@@ -400,13 +420,13 @@ components:
         code: {type: string, minLength: 1, maxLength: 20, example: quả}
         name: {type: string, minLength: 1, maxLength: 50, example: Quả}
         dimension: {type: string, enum: [MASS, VOLUME, COUNT]}
-        baseFactor: {type: number, minimum: 0.000001, example: 1}
+        baseFactor: {type: number, minimum: 0.000001, maximum: 999999999999.999999, multipleOf: 0.000001, example: 1}
     ConversionSaveRequest:
       type: object
       additionalProperties: false
       required: [gramsPerUnit, approximate]
       properties:
-        gramsPerUnit: {type: number, exclusiveMinimum: 0, example: 120, description: Must be greater than zero.}
+        gramsPerUnit: {type: number, minimum: 0.01, maximum: 99999999.99, multipleOf: 0.01, example: 120, description: Must be positive with at most two decimal places.}
         approximate: {type: boolean, example: true}
     CatalogStatusUpdateRequest:
       type: object
@@ -518,6 +538,7 @@ components:
           type: string
           format: password
           minLength: 8
+          maxLength: 64
           writeOnly: true
           description: Must match password.
     LoginRequest:
@@ -578,6 +599,7 @@ components:
           type: string
           format: password
           minLength: 8
+          maxLength: 64
           writeOnly: true
           description: Must match newPassword.
     RegistrationResponse:

@@ -26,7 +26,12 @@ import {
 
 type Tab = 'ingredients' | 'units' | 'conversions';
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => {
+  const date = new Date();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return date.getFullYear() + '-' + month + '-' + day;
+};
 const fieldClass =
   'mt-1.5 w-full rounded-xl border border-brand-200/80 bg-white px-3.5 py-2.5 text-sm text-ink outline-none transition-all placeholder:text-ink-muted/50 focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 const labelClass = 'block text-sm font-semibold text-ink';
@@ -43,6 +48,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 export function AdminCatalogPage() {
   const [tab, setTab] = useState<Tab>('ingredients');
   const [ingredients, setIngredients] = useState<CatalogIngredient[]>([]);
+  const [catalogIngredients, setCatalogIngredients] = useState<CatalogIngredient[]>([]);
   const [units, setUnits] = useState<CatalogUnit[]>([]);
   const [conversions, setConversions] = useState<CatalogConversion[]>([]);
   const [query, setQuery] = useState('');
@@ -80,12 +86,16 @@ export function AdminCatalogPage() {
     setError('');
     setAccessDenied(false);
     try {
-      const [nextIngredients, nextUnits, nextConversions] = await Promise.all([
-        adminCatalogApi.ingredients(filter),
+      const filteredIngredients = adminCatalogApi.ingredients(filter);
+      const allIngredients = filter ? adminCatalogApi.ingredients('') : filteredIngredients;
+      const [nextIngredients, nextCatalogIngredients, nextUnits, nextConversions] = await Promise.all([
+        filteredIngredients,
+        allIngredients,
         adminCatalogApi.units(),
         adminCatalogApi.conversions(),
       ]);
       setIngredients(nextIngredients);
+      setCatalogIngredients(nextCatalogIngredients);
       setUnits(nextUnits);
       setConversions(nextConversions);
     } catch (cause) {
@@ -117,9 +127,6 @@ export function AdminCatalogPage() {
       await action();
       onSuccess?.();
       setNotice(successMessage);
-      setIngredientId(null);
-      setUnitId(null);
-      setConversionEditing(false);
       await refresh();
     } catch (cause) {
       setError(
@@ -147,14 +154,16 @@ export function AdminCatalogPage() {
       ingredientId === null
         ? 'Đã thêm nguyên liệu.'
         : 'Đã cập nhật nguyên liệu.',
-      () =>
+      () => {
+        setIngredientId(null);
         setIngredientForm({
           name: '',
           ingredientGroup: '',
           sourceName: '',
           sourceUrl: '',
           referenceDate: today(),
-        }),
+        });
+      },
     );
   };
 
@@ -185,13 +194,15 @@ export function AdminCatalogPage() {
           ? adminCatalogApi.createUnit(body)
           : adminCatalogApi.updateUnit(unitId, body),
       unitId === null ? 'Đã thêm đơn vị.' : 'Đã cập nhật đơn vị.',
-      () =>
+      () => {
+        setUnitId(null);
         setUnitForm({
           code: '',
           name: '',
           dimension: 'MASS',
           baseFactor: '1',
-        }),
+        });
+      },
     );
   };
 
@@ -221,13 +232,15 @@ export function AdminCatalogPage() {
       conversionEditing
         ? 'Đã cập nhật tỷ lệ quy đổi.'
         : 'Đã thêm tỷ lệ quy đổi.',
-      () =>
+      () => {
+        setConversionEditing(false);
         setConversionForm({
           ingredientId: '',
           unitId: '',
           gramsPerUnit: '',
           approximate: true,
-        }),
+        });
+      },
     );
   };
 
@@ -755,7 +768,8 @@ export function AdminCatalogPage() {
                       className={fieldClass}
                       type="number"
                       min="0.000001"
-                      step="any"
+                      max="999999999999.999999"
+                      step="0.000001"
                       required
                       value={unitForm.baseFactor}
                       onChange={(event) =>
@@ -801,7 +815,7 @@ export function AdminCatalogPage() {
                   />
                 ) : (
                   conversions.map((item) => {
-                    const ingredient = ingredients.find(
+                    const ingredient = catalogIngredients.find(
                       (candidate) => candidate.id === item.ingredientId,
                     );
                     const unit = units.find(
@@ -900,7 +914,7 @@ export function AdminCatalogPage() {
                       }
                     >
                       <option value="">Chọn nguyên liệu</option>
-                      {ingredients.map((item) => (
+                      {catalogIngredients.map((item) => (
                         <option key={item.id} value={item.id} disabled={!item.active}>
                           {item.name}
                           {item.active ? '' : ' (ngừng dùng)'}
@@ -934,8 +948,9 @@ export function AdminCatalogPage() {
                     <input
                       className={fieldClass}
                       type="number"
-                      min="0.000001"
-                      step="any"
+                      min="0.01"
+                      max="99999999.99"
+                      step="0.01"
                       required
                       value={conversionForm.gramsPerUnit}
                       onChange={(event) =>

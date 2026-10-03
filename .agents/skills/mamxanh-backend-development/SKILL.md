@@ -85,9 +85,12 @@ baseline, and project conventions rather than inventing conventions from nonexis
   Backend Package Structure Specification. Do not introduce a generic response envelope unless
   the contract explicitly requires one. Single-resource responses normally return the defined
   response DTO directly; paginated lists use the project's `PageResponse<T>` convention where
-  applicable; errors follow the centralized `GlobalExceptionHandler` contract. Synchronize
-  code, `docs/api/API.md`, and `docs/api/openapi.yaml` in the same work item when the public
-  contract changes.
+  applicable; errors follow the centralized `GlobalExceptionHandler` contract. Inspect generated
+  `/v3/api-docs` (or the same-commit CI artifact) before implementing/reviewing API behavior.
+  Keep implementation annotations and DTOs accurate so generated OpenAPI represents runtime.
+  Update `docs/api/API.md` when shared integration conventions change. During migration,
+  `docs/api/openapi.yaml` is a planned/reference contract only for endpoints not yet implemented;
+  do not maintain it as a duplicate authority for runtime endpoints.
 - Choose transaction boundaries deliberately around an atomic business operation. Consider
   duplicate requests, retries, idempotency, concurrent updates, and partial external failure
   when the operation requires them; do not add infrastructure without evidence.

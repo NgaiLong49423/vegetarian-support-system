@@ -67,14 +67,21 @@ class AdminCatalogControllerTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
     }
 
-    @Test void acceptsAnyStrictlyPositiveConversionValueAtHttpBoundary() throws Exception {
-        when(catalogService.createConversion(org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.eq(2), any()))
-                .thenReturn(new tech.mamxanh.nutrition.dto.response.ConversionResponse(1L, 2, new BigDecimal("0.001"), true, true));
-
+    @Test void rejectsConversionWithMoreFractionDigitsThanTheDatabaseStores() throws Exception {
         mockMvc.perform(post("/api/v1/admin/ingredients/1/unit-conversions/2").with(user("admin").roles("ADMIN")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"gramsPerUnit\":0.001,\"approximate\":true}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test void acceptsConversionAtTheSmallestStoredScaleAtHttpBoundary() throws Exception {
+        when(catalogService.createConversion(org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.eq(2), any()))
+                .thenReturn(new tech.mamxanh.nutrition.dto.response.ConversionResponse(1L, 2, new BigDecimal("0.01"), true, true));
+
+        mockMvc.perform(post("/api/v1/admin/ingredients/1/unit-conversions/2").with(user("admin").roles("ADMIN")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"gramsPerUnit\":0.01,\"approximate\":true}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.gramsPerUnit").value(0.001));
+                .andExpect(jsonPath("$.data.gramsPerUnit").value(0.01));
     }
 
     @Test void searchesIngredientsForAdministrator() throws Exception {

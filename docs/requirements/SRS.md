@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.1.0
+> **Version:** v2.2.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-10-02
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -260,7 +260,8 @@ Mọi quyết định xử lý được ghi nhận trực tiếp trên thực th
 
 ### 3.15 Onboarding tùy chọn và điều kiện AI cá nhân hóa — đã chốt 12/09/2026
 
-- Sau khi đăng ký, hệ thống mời Member thực hiện Onboarding Questionnaire và cho phép bỏ qua để vào ứng dụng.
+- Sau lần xác thực thành công đầu tiên của Member vừa đăng ký (sau xác minh email hoặc đăng nhập Google lần đầu), hệ thống mời Member thực hiện Onboarding Questionnaire một lần. Tài khoản đã tồn tại trước khi quy tắc này có hiệu lực không tự động bị hỏi lại.
+- Nếu Member chọn Skip, hệ thống ghi nhận đã đóng lời mời Onboarding; các lần đăng nhập sau không tự hiển thị lại questionnaire. Member có thể mở mục sở thích ăn uống trong Cài đặt để hoàn tất hoặc cập nhật hồ sơ bất cứ lúc nào.
 - Member chưa hoàn thành Onboarding vẫn được xem/tìm món, tự thêm món vào thực đơn, đọc/bình luận và dùng AI hỏi đáp thông thường theo quyền tính năng của gói. Chuyên gia được đăng bài dù chưa hoàn thành Onboarding nếu đáp ứng các điều kiện của `FR-04`.
 - Trước khi dùng AI gợi ý món hoặc tạo thực đơn cá nhân hóa, hồ sơ phải có ba nhóm thông tin tối thiểu: loại ăn chay; nguyên liệu cần tránh do dị ứng/kiêng; món hoặc nguyên liệu không thích.
 - Với hai nhóm danh sách, người dùng phải được chủ động xác nhận “Không có” nếu không có mục cần khai báo. Bỏ trống không được tự hiểu là không có dị ứng/kiêng hoặc không có món không thích.
