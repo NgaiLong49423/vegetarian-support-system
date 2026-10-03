@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.13.0
+> **Version:** v0.14.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-03
 > **Status:** Active  
 
 # Backend Workspace
@@ -24,7 +24,7 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
   - **Documentation:** `springdoc-openapi-starter-webmvc-ui` (generated OpenAPI 3 + Swagger UI compatibility) and Scalar API Reference static browser UI.
   - **Email:** `spring-boot-starter-mail` (Brevo SMTP, gửi bất đồng bộ).
   - **Productivity & Testing:** Lombok, starter test dependencies (`data-jpa-test`, `flyway-test`, `security-test`, `validation-test`, `webmvc-test`), Testcontainers SQL Server (`spring-boot-testcontainers`, `testcontainers-mssqlserver`).
-- Đã có luồng FR-03-A (Issue #5): `POST /api/v1/auth/register`, `/auth/email-verifications`, `/auth/email-verifications/resend`; lỗi trả `application/problem+json` có `code` ổn định; migration `V3__user_email_verification_token.sql`.
+- Đã có luồng FR-03-A (Issue #5): `POST /api/v1/auth/register`, `/auth/email-verifications`, `/auth/email-verifications/resend`; lỗi trả `application/problem+json` có `code` ổn định; migration `V3__user_email_verification_token.sql`. FR-35 bổ sung consent bằng migration `V4__nutrition_profile_consent.sql`.
 
 ### Lệnh chạy và kiểm tra xác minh
 
@@ -58,7 +58,7 @@ Chọn một trong hai môi trường:
 - **Chạy trực tiếp:** JDK 21. Maven không cần cài riêng vì repository có Maven Wrapper.
 - **Chạy bằng Docker:** Docker Desktop đang hoạt động. Không cần cài Java/Maven trực tiếp trên máy.
 
-Cả hai cách đều cần một Microsoft SQL Server có database `MamXanhDB`. Flyway migration `V1__baseline_schema.sql` hiện tạo baseline schema từ database rỗng; Backend vẫn không thể khởi động đầy đủ nếu SQL Server chưa sẵn sàng hoặc credential/migration validation không hợp lệ.
+Cả hai cách đều cần một Microsoft SQL Server có database `MamXanhDB`. Flyway migration `V1__baseline_schema.sql` hiện tạo baseline schema từ database rỗng; Backend vẫn không thể khởi động đầy đủ nếu SQL Server chưa sẵn sàng hoặc credential/migration validation không hợp lệ. Khi chạy toàn hệ thống bằng Docker Compose ở thư mục gốc, Compose tự tạo database trước khi Backend chạy Flyway.
 
 Không commit username, password, connection string thật hoặc file cấu hình local chứa credential.
 
@@ -127,24 +127,33 @@ Sau lần tải dependency đầu tiên, các lần mở dự án tiếp theo ch
 
 IntelliJ vẫn sử dụng cùng cấu hình Spring profile `local`; nút Run không thay thế yêu cầu SQL Server phải sẵn sàng.
 
-## Cách 2 — Chạy bằng Docker
+## Cách 2 — Chạy toàn hệ thống bằng Docker Compose
 
 Để chạy Frontend, Backend và SQL Server theo một cấu hình dùng chung, ưu tiên Docker Compose ở repository root. Hướng dẫn dưới đây vẫn hữu ích khi chỉ cần chạy riêng Backend.
 
-Tại root repository, sao chép `app/mamxanh-backend/.env.example` thành `.env` trong cùng thư mục, đặt một mật khẩu SQL Server local mạnh cho `MSSQL_SA_PASSWORD`, rồi chạy:
+Tại root repository, nếu chưa có file local thì sao chép `app/mamxanh-backend/.env.example` thành `app/mamxanh-backend/.env`, giữ nguyên file `.env` đang có, rồi đặt một mật khẩu SQL Server local mạnh cho `MSSQL_SA_PASSWORD`:
+
+```powershell
+if (-not (Test-Path app/mamxanh-backend/.env)) {
+    Copy-Item app/mamxanh-backend/.env.example app/mamxanh-backend/.env
+}
+```
+
+Khởi động stack bằng:
 
 ```powershell
 $composeProject = 'mamxanh-dev'
 docker compose -p $composeProject --env-file app/mamxanh-backend/.env up --build --detach --wait --wait-timeout 600
 ```
 
+Lần khởi động đầu, SQL Server tạo `MamXanhDB`, Backend chạy Flyway, sau đó service `sample-data` nạp fixture mẫu từ `database/sample-data.sql` trước khi Frontend sẵn sàng. Script seed có thể chạy lại an toàn; `down` rồi `up` giữ SQL volume và dữ liệu hiện có.
+
 Mở Frontend tại <http://localhost:5173>; Scalar API Reference chính thức tại <http://localhost:8080/scalar>; generated OpenAPI JSON tại <http://localhost:8080/v3/api-docs>. Các port chỉ bind vào loopback của máy local. Scalar tải JS asset đã pin từ jsDelivr nên browser cần truy cập CDN; spec được tải cùng origin Backend. Dừng bằng `docker compose -p $composeProject --env-file app/mamxanh-backend/.env down`; lệnh này giữ database và dependency volume. Sửa `MSSQL_SA_PASSWORD` trong `.env` không tự đổi credential đã khởi tạo trong SQL volume.
 
-Để reset riêng database development, chạy `down` với cùng project name rồi xóa đúng volume SQL; Frontend dependency volume vẫn được giữ:
+Để reset riêng database development, chạy script có xác nhận riêng. Script chỉ xóa SQL volume, sau đó Compose khởi động lại SQL Server, áp dụng Flyway và nạp lại fixture; Frontend dependency volume vẫn được giữ:
 
 ```powershell
-docker compose -p $composeProject --env-file app/mamxanh-backend/.env down
-docker volume rm "$($composeProject)_sqlserver-data"
+./scripts/reset-docker-db.ps1
 ```
 
 Lệnh xóa volume SQL sẽ xóa toàn bộ database local. `docker compose -p $composeProject --env-file app/mamxanh-backend/.env down --volumes` là full reset, xóa cả SQL data lẫn Frontend dependency volume; chỉ dùng nếu chấp nhận mất tất cả named-volume data. Khi dùng project override, giữ nguyên cùng tên ở mọi lệnh Compose và dùng prefix đó cho volume tương ứng.
