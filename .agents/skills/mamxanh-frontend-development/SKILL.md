@@ -54,8 +54,10 @@ Before editing, read only the relevant slice in this order:
    Read `.agents/repo-contract.yml` only when the task needs machine-readable policy detail
    not already available in `AGENTS.md`.
 2. `app/mamxanh-frontend/README.md` and `package.json`.
-3. The relevant SRS/Acceptance Criteria and `docs/api/API.md` or `docs/api/openapi.yaml`
-   when the feature crosses the API boundary.
+3. The relevant SRS/Acceptance Criteria and generated Backend OpenAPI (`/v3/api-docs`, or the
+   artifact/spec generated from the same branch commit) before implementing/reviewing an API-backed
+   feature. During migration, use `docs/api/openapi.yaml` only as planned contract for endpoints
+   not present in the runtime spec; do not assume those endpoints are implemented.
 4. Existing route composition, the target page, at least one nearby component, and
    `src/index.css` or the existing token/style source.
 5. Existing Figma/Figma Make/Stitch material only when it is present and relevant. Treat it

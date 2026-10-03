@@ -1,8 +1,8 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.13.0
+> **Version:** v0.14.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active
 
 # Mâm Xanh — Vegetarian Support System
@@ -33,7 +33,7 @@ Chi tiết nghiệp vụ nằm trong [SRS](docs/requirements/SRS.md). Các đề
 | Data | Microsoft SQL Server (Azure SQL Database Serverless), Spring Data JPA/Hibernate, Flyway |
 | Security | Spring Security, Google Identity Services (GIS), `GoogleIdTokenVerifier`, Stateless JWT Access Token (OAuth2 Resource Server, Nimbus), BCrypt, role-based authorization |
 | External services | Google Gemini (`gemini-3.8-flash` qua Google Gen AI Java SDK), payOS (VietQR Payment REST & Webhook), Brevo (Transactional Email SMTP), Azure Blob Storage, YouTube embedding |
-| Quality & DevOps | JUnit/Maven + JaCoCo (Backend line ≥80%), Playwright + Istanbul/NYC (Frontend 60/60/60/60), Sonar (analysis/Quality Gate), CodeQL; Codecov và Testmail là tooling đã chọn nhưng chưa được wire trong CI này; OpenAPI/Swagger UI, Bean Validation, Azure Application Insights |
+| Quality & DevOps | JUnit/Maven + JaCoCo (Backend line ≥80%), Playwright + Istanbul/NYC (Frontend 60/60/60/60), Sonar (analysis/Quality Gate), CodeQL; Codecov và Testmail là tooling đã chọn nhưng chưa được wire trong CI này; generated OpenAPI/springdoc, Scalar API Reference, Bean Validation, Azure Application Insights |
 | Deployment | Vercel (FE) + Azure App Service Java 21 SE (BE) + Azure SQL Serverless (DB) + Azure Blob Storage (Media) + Custom Domain `.tech` |
 
 Xem chi tiết trong [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) và [System Architecture](docs/architecture/ARCHITECTURE.md).
@@ -90,7 +90,7 @@ Xem chi tiết trong [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) v
 | Yêu cầu sản phẩm cấp cao | [PRD](docs/requirements/PRD.md) | Requirements / Implementation Baseline v2.0.0 — Current |
 | Kiến trúc cấp cao | [System Architecture](docs/architecture/ARCHITECTURE.md) | Active; chưa phải bằng chứng implementation |
 | Công nghệ | [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) | Active baseline |
-| API integration | [API Guide](docs/api/API.md) và [OpenAPI](docs/api/openapi.yaml) | Auth contract Active; các thông số FR-03 còn `TBD` chưa implementation-ready; chưa phải bằng chứng implementation |
+| API integration | [API Guide](docs/api/API.md), runtime `/v3/api-docs`, [planned OpenAPI reference](docs/api/openapi.yaml) | Generated spec là runtime evidence; YAML còn planned endpoints trong migration; chưa phải bằng chứng các endpoint planned đã implement |
 | Đề xuất package Backend | [Backend Package Structure Proposal](docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md) | Draft; chỉ dùng để định hướng vertical slice |
 | Chiến lược kiểm thử | [Test Strategy](docs/testing/TEST-STRATEGY.md) | Active; Frontend đã có Playwright smoke test, phạm vi khác theo bằng chứng triển khai |
 | Quy trình Git/PR/release | [CONTRIBUTING.md](CONTRIBUTING.md) | Active |

@@ -8,6 +8,8 @@
 -- Source          : Logical ERD v1.0.0 + Data Dictionary v0.7.5
 --                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
 -- Synchronized with: V1__baseline_schema.sql + V2__unit_code_unicode.sql
+--                   + V3__user_email_verification_token.sql
+--                   + V4__nutrition_profile_consent.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -148,6 +150,10 @@ CREATE TABLE [USER] (
         CONSTRAINT DF_USER_therapeutic DEFAULT 0,
     nutrition_scope_confirmed  BIT            NOT NULL
         CONSTRAINT DF_USER_nutrition_scope DEFAULT 0,
+    -- V4 (FR-35): explicit consent before storing self-reported health data
+    health_data_consent        BIT            NOT NULL
+        CONSTRAINT DF_USER_health_data_consent DEFAULT 0,
+    health_data_consent_at     DATETIME2(7)   NULL,
     reply_email_enabled        BIT            NOT NULL
         CONSTRAINT DF_USER_reply_email DEFAULT 1,
     date_of_birth              DATE           NULL,
@@ -162,6 +168,9 @@ CREATE TABLE [USER] (
         CONSTRAINT DF_USER_created_at DEFAULT SYSUTCDATETIME(),
     updated_at                 DATETIME2(7)   NOT NULL
         CONSTRAINT DF_USER_updated_at DEFAULT SYSUTCDATETIME(),
+    -- V3 (Issue #5): SHA-256 hex digest of the current email-verification token
+    email_verification_token       VARCHAR(64)    NULL,
+    verification_token_expires_at  DATETIME2(7)   NULL,
 
     CONSTRAINT PK_USER PRIMARY KEY (user_id),
     CONSTRAINT UQ_USER_email UNIQUE (email),
@@ -185,8 +194,16 @@ CREATE TABLE [USER] (
     CONSTRAINT CK_USER_nutrition_goal CHECK (
         nutrition_goal IN ('MAINTAIN_WEIGHT', 'IMPROVE_HEALTH', 'SUPPORT_TRAINING')
     ),
+    CONSTRAINT CK_USER_health_data_consent_timestamp CHECK (
+        (health_data_consent = 0 AND health_data_consent_at IS NULL)
+        OR (health_data_consent = 1 AND health_data_consent_at IS NOT NULL)
+    ),
     CONSTRAINT CK_USER_onboarding_status CHECK (
         onboarding_status IN ('NOT_STARTED', 'SKIPPED', 'COMPLETED')
+    ),
+    CONSTRAINT CK_USER_verification_token_pair CHECK (
+        (email_verification_token IS NULL AND verification_token_expires_at IS NULL)
+        OR (email_verification_token IS NOT NULL AND verification_token_expires_at IS NOT NULL)
     )
 );
 GO
@@ -195,6 +212,12 @@ GO
 CREATE UNIQUE NONCLUSTERED INDEX UQ_USER_google_subject
     ON [USER](google_subject)
     WHERE google_subject IS NOT NULL;
+GO
+
+-- email_verification_token (V3): lookup by token digest; verified accounts have no token
+CREATE UNIQUE NONCLUSTERED INDEX UQ_USER_email_verification_token
+    ON [USER](email_verification_token)
+    WHERE email_verification_token IS NOT NULL;
 GO
 
 

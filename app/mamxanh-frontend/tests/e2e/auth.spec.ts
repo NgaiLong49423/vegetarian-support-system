@@ -1,26 +1,98 @@
+import type { Page, Route } from '@playwright/test';
 import { expect, test } from './baseFixtures';
 
-test('guest can reach registration, validate fields and preview email verification', async ({ page }) => {
+// Registration and email verification call the backend API. These browser tests replace the API with
+// page.route stubs, so they check the Frontend flow only; they are not full FE–BE end-to-end evidence.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'content-type, accept',
+  'Access-Control-Expose-Headers': 'Retry-After',
+};
+
+async function stubApi(page: Page, path: string, respond: (route: Route) => Promise<void>) {
+  await page.route(`**/api/v1${path}`, async route => {
+    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: corsHeaders });
+    return respond(route);
+  });
+}
+
+function problem(status: number, code: string, extra: Record<string, unknown> = {}, headers: Record<string, string> = {}) {
+  return { status, contentType: 'application/problem+json', headers: { ...corsHeaders, ...headers }, body: JSON.stringify({ title: code, status, code, ...extra }) };
+}
+
+test('registration validates password rules, submits to the API and links to email verification (mock API)', async ({ page }) => {
+  let submitted: Record<string, string> | null = null;
+  await stubApi(page, '/auth/register', async route => {
+    submitted = route.request().postDataJSON();
+    await route.fulfill({ status: 201, contentType: 'application/json', headers: corsHeaders, body: JSON.stringify({ accountStatus: 'ACTIVE', emailVerified: false, message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác minh tài khoản.' }) });
+  });
   await page.goto('/');
   await page.getByRole('link', { name: 'Đăng ký', exact: true }).click();
   await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
   await expect(page.getByText('Tên hiển thị cần từ 3 đến 50 ký tự.')).toBeVisible();
   await expect(page.getByText('Vui lòng nhập địa chỉ email hợp lệ.')).toBeVisible();
-  await page.getByLabel('Tên hiển thị').fill('Nguyễn An');
+  await page.getByLabel('Tên hiển thị').fill('  Nguyễn An ');
   await page.getByLabel('Email', { exact: true }).fill('an@example.com');
+  await page.getByLabel('Mật khẩu', { exact: true }).fill('demopass');
+  await page.getByLabel('Xác nhận mật khẩu').fill('demopass');
+  await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
+  await expect(page.locator('#password-error')).toContainText('chữ in hoa');
+  await expect(page.locator('#password-error')).toContainText('chữ số');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('DemoPass123!');
   await page.getByLabel('Xác nhận mật khẩu').fill('Different123!');
   await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
   await expect(page.getByText('Mật khẩu xác nhận chưa khớp.')).toBeVisible();
+  expect(submitted).toBeNull();
   await page.getByLabel('Xác nhận mật khẩu').fill('DemoPass123!');
   await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Chưa tạo tài khoản hoặc gửi email');
+  await expect(page.getByRole('status')).toContainText('Đăng ký thành công');
+  expect(submitted).toEqual({ displayName: 'Nguyễn An', email: 'an@example.com', password: 'DemoPass123!', confirmPassword: 'DemoPass123!' });
   await expect(page.getByLabel('Mật khẩu', { exact: true })).toHaveValue('');
-  await page.getByRole('link', { name: 'Xem bước xác minh email' }).click();
+  await page.getByRole('link', { name: 'Chưa nhận được email? Gửi lại email xác minh' }).click();
   await expect(page.getByRole('heading', { name: 'Xác minh email của bạn' })).toBeVisible();
+});
+
+test('registration shows the duplicate-email error returned by the API (mock API)', async ({ page }) => {
+  await stubApi(page, '/auth/register', route => route.fulfill(problem(409, 'EMAIL_ALREADY_USED', { detail: 'Email này đã được sử dụng.' })));
+  await page.goto('/dang-ky');
+  await page.getByLabel('Tên hiển thị').fill('Nguyễn An');
+  await page.getByLabel('Email', { exact: true }).fill('an@example.com');
+  await page.getByLabel('Mật khẩu', { exact: true }).fill('DemoPass123!');
+  await page.getByLabel('Xác nhận mật khẩu').fill('DemoPass123!');
+  await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
+  await expect(page.locator('#email-error')).toContainText('Email này đã được sử dụng');
+});
+
+test('verification link is submitted once and removed from the address bar (mock API)', async ({ page }) => {
+  const tokens: string[] = [];
+  await stubApi(page, '/auth/email-verifications', async route => {
+    tokens.push(route.request().postDataJSON().token);
+    await route.fulfill({ status: 204, headers: corsHeaders });
+  });
+  await page.goto('/xac-minh-email?token=abc123');
+  await expect(page.getByRole('status')).toContainText('Email của bạn đã được xác minh.');
+  await expect(page).toHaveURL(/\/xac-minh-email$/);
+  expect(tokens).toEqual(['abc123']);
+  await page.getByRole('link', { name: 'Đến trang đăng nhập' }).click();
+  await expect(page).toHaveURL(/\/dang-nhap$/);
+});
+
+test('invalid verification link offers a new email and reports the resend cooldown (mock API)', async ({ page }) => {
+  await stubApi(page, '/auth/email-verifications', route => route.fulfill(problem(400, 'VERIFICATION_TOKEN_INVALID')));
+  await stubApi(page, '/auth/email-verifications/resend', route => route.fulfill(problem(429, 'RESEND_TOO_SOON', {}, { 'Retry-After': '42' })));
+  await page.goto('/xac-minh-email?token=expired');
+  await expect(page.getByRole('alert')).toContainText('không hợp lệ hoặc đã hết hạn');
   await page.getByLabel('Email', { exact: true }).fill('an@example.com');
   await page.getByRole('button', { name: 'Yêu cầu gửi lại email' }).click();
-  await expect(page.getByRole('status')).toContainText('chưa gửi email');
+  await expect(page.getByRole('alert')).toContainText('42 giây');
+});
+
+test('resend request shows the neutral message from the API (mock API)', async ({ page }) => {
+  await stubApi(page, '/auth/email-verifications/resend', route => route.fulfill({ status: 202, contentType: 'application/json', headers: corsHeaders, body: JSON.stringify({ message: 'Nếu email thuộc một tài khoản chưa xác minh, chúng tôi đã gửi liên kết xác minh mới.' }) }));
+  await page.goto('/xac-minh-email');
+  await page.getByLabel('Email', { exact: true }).fill('an@example.com');
+  await page.getByRole('button', { name: 'Yêu cầu gửi lại email' }).click();
+  await expect(page.getByRole('status')).toContainText('Nếu email thuộc một tài khoản chưa xác minh');
 });
 
 test('login does not create a fake session; demo entry and exit are explicit', async ({ page }) => {

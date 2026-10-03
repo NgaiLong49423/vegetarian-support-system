@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.7.0
+> **Version:** v1.11.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-03
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -18,11 +18,10 @@ Bản demo cho giảng viên: [Mâm Xanh trên Vercel](https://mamxanh-frontend.
 ### Đăng ký, đăng nhập và khôi phục tài khoản (UI FR-03)
 
 - Header mặc định dành cho Guest có Đăng nhập/Đăng ký. Các trang `/dang-nhap`, `/dang-ky`, `/quen-mat-khau`, `/xac-minh-email`, `/dat-lai-mat-khau` dùng bố cục responsive riêng cùng nhận diện dự án.
-- Đăng ký kiểm tra tên 3–50 ký tự, email, mật khẩu ít nhất 8 ký tự và xác nhận khớp; có nút hiện/ẩn mật khẩu. Chính sách độ phức tạp cần thống nhất theo BUG-004, chưa tuyên bố đầy đủ validation FR-03.
-- Nút Google và các biểu mẫu hiện thông báo demo; không gọi API, không gửi email, không tạo tài khoản/phiên, không xác minh token và không lưu mật khẩu vào storage. Mật khẩu được xóa khỏi state sau khi biểu mẫu hợp lệ.
-- Trang xác minh có yêu cầu gửi lại email; trang đặt lại mật khẩu cần liên kết email thật khi tích hợp Backend. Các giới hạn thời gian phía server chưa được mô phỏng thành cơ chế bảo mật FE.
+- **Đăng ký và xác minh email đã gọi Backend thật (Issue #5):** form đăng ký kiểm tra tên 3–50 ký tự, email và mật khẩu 8–64 ký tự (tối đa 72 byte UTF-8) có chữ in hoa, chữ thường, chữ số, rồi gửi `POST /auth/register`. Liên kết trong email mở `/xac-minh-email?token=...`; trang gửi mã một lần, xóa mã khỏi thanh địa chỉ và báo kết quả. Mã sai/hết hạn cho phép yêu cầu gửi lại email; gửi lại trong 60 giây hiển thị số giây chờ từ header `Retry-After`.
+- Đăng nhập, Google Login, quên và đặt lại mật khẩu vẫn là biểu mẫu demo cho tới Issue #6, #8, #9: không tạo phiên, không gửi email và không lưu mật khẩu vào storage. Mật khẩu được xóa khỏi state sau khi biểu mẫu hợp lệ.
 - Tại trang đăng nhập, chọn **Khám phá tài khoản demo** để xem menu Lan Anh/FREE; chọn **Thoát tài khoản demo** để quay lại Guest. Đây chỉ là chuyển chế độ xem trong bộ nhớ, không phải authentication/authorization.
-- API contract hiện `Active` nhưng chưa tích hợp trong UI này; xem [API Guide](../../docs/api/API.md) trước khi triển khai xác thực thật.
+- Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
 
 ### Các chức năng demo khác
 
@@ -69,7 +68,9 @@ Nếu cần mở cả hệ thống, dùng hai cửa sổ Terminal và khởi đ�
 2. [Backend](../mamxanh-backend/README.md) tại port `8080`.
 3. Frontend tại port `5173`.
 
-Frontend demo hiện vẫn có các luồng dùng mock data và có thể chạy độc lập để xem giao diện; việc mở được UI không chứng minh Backend hoặc database đã kết nối.
+Frontend gọi Backend tại `VITE_API_BASE_URL`. Khi chạy trực tiếp, `/api/v1` được Vite proxy tới `http://localhost:8080`; trong Docker Compose, proxy dùng service `backend`. Để đổi base path, sao chép `.env.example` thành `.env.local` (đã được Git bỏ qua) rồi sửa giá trị; không đặt secret trong biến `VITE_` vì chúng nằm trong bundle công khai. Backend phải cho phép origin của Frontend qua `MAMXANH_CORS_ALLOWED_ORIGINS`.
+
+Các màn hình ngoài đăng ký/xác minh email vẫn dùng mock data và chạy độc lập được; việc mở được UI không chứng minh Backend hoặc database đã kết nối.
 
 ### Cách 1 — Chạy trực tiếp bằng Node.js
 
@@ -92,13 +93,15 @@ Luôn dùng `npm ci` khi cài mới từ `package-lock.json` hoặc khi dependen
 
 ### Cách 2 — Chạy bằng Docker
 
+Để chạy đồng bộ toàn bộ ứng dụng, dùng Docker Compose từ root repository theo hướng dẫn tại [Backend README](../mamxanh-backend/README.md#cách-2--chạy-bằng-docker). Cách chạy riêng Frontend bên dưới chỉ dành cho debug component; không thay thế kiểm thử tích hợp hoặc Docker Development gate. Quy tắc chung do [CONTRIBUTING.md](../../CONTRIBUTING.md#docker-development) quản lý.
+
 Đảm bảo Docker Desktop đã khởi động, sau đó mở PowerShell tại `app/mamxanh-frontend`:
 
 ```powershell
 docker build -t mamxanh-frontend-dev .
 
 docker run --rm --name mamxanh-frontend `
-  -p 5173:5173 `
+  -p 127.0.0.1:5173:5173 `
   --mount "type=bind,source=$($PWD.Path),target=/workspace" `
   --mount "type=volume,source=mamxanh-frontend-node-modules,target=/workspace/node_modules" `
   mamxanh-frontend-dev
@@ -108,11 +111,16 @@ Mở <http://localhost:5173>. Bind mount đồng bộ source vào container; nam
 
 Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`; volume dependency được giữ lại để lần chạy sau nhanh hơn.
 
-Khi `package.json` hoặc `package-lock.json` thay đổi, build lại image:
+Với stack Compose chuẩn, khi `package.json` hoặc `package-lock.json` thay đổi, mở PowerShell tại root repository rồi refresh đúng named volume theo lockfile bằng one-off command (xem [hướng dẫn chuẩn](../../CONTRIBUTING.md#docker-development)); dùng cùng `-p <project>` với stack đang chạy:
 
 ```powershell
-docker build --no-cache -t mamxanh-frontend-dev .
+$composeProject = 'mamxanh-dev'
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env run --rm --no-deps frontend npm ci
 ```
+
+Lệnh này không xóa hay reset SQL volume. Với lệnh standalone `docker run` ở trên, volume riêng tên `mamxanh-frontend-node-modules` không được Compose quản lý: dừng container, xóa riêng volume đó bằng `docker volume rm mamxanh-frontend-node-modules`, build lại image rồi chạy lại để khởi tạo dependency từ `package-lock.json` mới. Không dùng lệnh này để reset dữ liệu SQL của stack Compose.
+
+Để chạy cả Frontend, Backend và SQL Server trong Compose chuẩn, dùng phần **Docker Compose** trong [Backend README](../mamxanh-backend/README.md). Compose nạp seed mẫu sau Flyway và giữ dữ liệu qua `down`/`up`; reset riêng SQL volume được thực hiện bằng script có xác nhận.
 
 ### Kiểm tra trước khi bàn giao code
 
@@ -134,7 +142,7 @@ docker run --rm mamxanh-frontend-dev npm run build
 |---|---|---|
 | `npm` không được nhận diện | Chưa cài Node.js hoặc Terminal chưa nạp lại `PATH` | Cài Node.js 22 LTS rồi mở Terminal mới, hoặc dùng Docker. |
 | Port `5173` đã được sử dụng | Một Vite/container khác đang chạy | Dừng tiến trình cũ; không tự đổi port nếu nhóm đang dùng URL chuẩn `5173`. |
-| Dependency/native binary lỗi sau khi đổi máy | `node_modules` được sao chép từ máy hoặc hệ điều hành khác | Xóa `node_modules`, chạy lại `npm ci`; với Docker, giữ dependency trong named volume Linux. |
+| Dependency/native binary lỗi sau khi đổi máy | `node_modules` được sao chép từ máy hoặc hệ điều hành khác hoặc dependency volume cũ sau khi lockfile đổi | Cài bằng `npm ci`; với Compose dùng one-off `run --rm --no-deps frontend npm ci`; chỉ troubleshooting mới xóa riêng Frontend dependency volume. |
 | Docker không nhận lệnh | Docker Desktop chưa cài, chưa chạy hoặc chưa có trong `PATH` | Mở Docker Desktop và xác minh bằng `docker version`. |
 
 ---
@@ -270,4 +278,4 @@ Job `Sonar` chỉ đọc LCOV/JaCoCo XML sau khi tải artifacts từ Frontend/B
 
 HTML report được tạo trong `playwright-report/`; screenshot và trace lỗi nằm trong `test-results/`. Hai thư mục này là generated evidence và không được commit mặc định.
 
-Suite hiện có 11 test: 3 test Auth (đăng ký/xác minh, đăng nhập/chế độ demo, khôi phục/mobile) và 8 test trước đó: application shell/navigation; bình luận và giữ reply khi xóa cha; khẩu phần lẻ trong kế hoạch; nhân nguyên liệu theo khẩu phần; menu avatar/gói AI; điều hướng tài khoản trên mobile; validation báo cáo; BMI cùng trang gói AI/lịch sử giao dịch. Đây là kiểm thử Frontend với dữ liệu mẫu, không chứng minh Backend, database, authentication, thanh toán hoặc full FE–BE E2E đã hoạt động.
+Suite hiện có 15 test: 7 test Auth (đăng ký, email trùng, mở liên kết xác minh, liên kết không hợp lệ và thời gian chờ gửi lại, gửi lại thành công, đăng nhập/chế độ demo, khôi phục/mobile) và 8 test trước đó: application shell/navigation; bình luận và giữ reply khi xóa cha; khẩu phần lẻ trong kế hoạch; nhân nguyên liệu theo khẩu phần; menu avatar/gói AI; điều hướng tài khoản trên mobile; validation báo cáo; BMI cùng trang gói AI/lịch sử giao dịch. Các test đăng ký/xác minh thay API bằng `page.route`, nên chỉ kiểm tra luồng Frontend. Đây là kiểm thử Frontend với dữ liệu mẫu hoặc API giả, không chứng minh Backend, database, authentication, thanh toán hoặc full FE–BE E2E đã hoạt động.

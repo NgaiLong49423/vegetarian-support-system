@@ -1,8 +1,8 @@
 > **Document:** Technology Stack  
 > **File:** `docs/architecture/TECHNOLOGY-STACK.md`  
-> **Version:** v1.7.0
+> **Version:** v1.9.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active  
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/requirements/SRS.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -94,9 +94,10 @@ Credential của provider phải nằm ở Backend và ngoài Source Control.
 | SonarQube Cloud | Static analysis và Quality Gate | Confirmed | Đọc FE LCOV/BE JaCoCo XML, bugs/vulnerabilities/maintainability/duplication và coverage visualization | Không tạo coverage; job `Sonar` chờ gate sau artifact download, GitHub merge blocking cần Ruleset riêng |
 | Codecov | Báo cáo và hiển thị trực quan coverage trên GitHub PR | Confirmed QA Tooling | Tool đã chọn từ GitHub Student Pack; chưa được tích hợp vào workflow CI hiện hành | Không tự thêm hoặc thay thế provider trong task coverage gates |
 | Testmail | Hộp thư ảo phục vụ kiểm thử tự động email | Confirmed QA Tooling | Cung cấp vô hạn địa chỉ email test qua API, không tốn quota Brevo thật; hỗ trợ từ GitHub Student Pack | Dành cho môi trường kiểm thử/staging |
-| OpenAPI | Mô tả REST contract đã được dự án áp dụng | Confirmed standard | Cung cấp contract có cấu trúc dùng chung cho Frontend, Backend và verification | Phải bám hành vi thật; chưa tạo API document trước khi có contract thật |
-| Swagger UI | Hiển thị và thử OpenAPI description | Confirmed companion tool | Giúp developer và tester dễ tiếp cận contract | Lệnh gọi tương tác không thay thế automated verification |
-| springdoc-openapi | Tích hợp việc sinh OpenAPI với Spring Boot | Confirmed | Giảm nội dung lặp giữa khai báo Backend và contract documentation cơ bản | Đã có sẵn trong `pom.xml` |
+| OpenAPI | Generated REST contract của Backend runtime | Confirmed standard | Contract có cấu trúc cho Frontend, Backend, CI và agent; generated từ Controller/DTO/annotations | Generated schema vẫn cần review; YAML hiện tại là planned/reference trong migration, không phải runtime evidence |
+| Scalar API Reference | Giao diện chính thức để team xem và thử API tại Backend `/scalar` | Confirmed team tooling | Hiển thị operations/schema/security và hỗ trợ request thật; Bearer được dùng khi generated contract khai báo scheme phù hợp | Browser UI/manual request cần browser acceptance; không thay automated tests; JS asset version được pin |
+| Swagger UI | Giao diện OpenAPI tương thích hiện giữ lại trong migration | Supporting/legacy UI | Cho phép fallback trong giai đoạn đầu mà không gỡ springdoc | Không phải UI chính thức được khuyến nghị cho team sau khi Scalar hoạt động |
+| springdoc-openapi | Tích hợp việc sinh OpenAPI với Spring Boot | Confirmed | Sinh runtime contract từ source Backend tại `/v3/api-docs` | Đã có sẵn trong `pom.xml`; Scalar chỉ render spec, không thay generator |
 | Jakarta Bean Validation | Biểu diễn constraint cơ bản cho input Backend | Confirmed | Cung cấp validation sớm, nhất quán và tích hợp với Spring | Không thay thế authorization hoặc Business Rule phức tạp |
 | SLF4J + Logback | Logging facade và implementation của Backend | Confirmed | Cung cấp diagnostic logging nhất quán trong Spring ecosystem | Tuyệt đối không ghi secret, mật khẩu hoặc dữ liệu cá nhân vào log |
 | Azure Application Insights | Giám sát hiệu năng và lỗi ứng dụng trên production | Confirmed Observability | Tích hợp qua App Service Java Agent / OpenTelemetry, theo dõi response time, dependency calls và exceptions | Không yêu cầu dựng server Prometheus/Grafana hay ELK riêng |
@@ -105,7 +106,8 @@ Credential của provider phải nằm ở Backend và ngoài Source Control.
 
 | Thành phần | Mục đích | Trạng thái | Lý do chọn / lợi ích chính | Trade-off hoặc chi tiết chưa giải quyết |
 |---|---|---|---|---|
-| Docker Engine | Chạy môi trường Frontend và Backend có thể tái lập trên máy thành viên | Confirmed Developer Tooling | Giảm chênh lệch phiên bản runtime và công cụ giữa các máy; contributor chỉ cần Docker để chạy image đã định nghĩa | Không thay thế việc quản lý dependency/lockfile và vẫn cần rebuild image khi dependency thay đổi |
+| Docker Engine | Chạy môi trường development tích hợp FE/BE/SQL Server có thể tái lập | Confirmed Developer Tooling | Compose là stack chung cho local và Docker Development gate; host ports chỉ bind loopback, project name có thể override để tách resource giữa worktree | Project name không tránh xung đột port; Frontend named volume phải được refresh từ `package-lock.json` bằng workflow trong CONTRIBUTING |
+| SQL Server development image | SQL Server 2019 Linux container dùng chung trong Compose và Backend Testcontainers | Confirmed Developer Tooling | Tag `2019-CU32-GDR11-ubuntu-20.04` được pin bằng repository manifest digest từ MCR; cùng immutable reference giữ image nhất quán | Microsoft hỗ trợ Linux container trên x86-64; cập nhật pin cần PR, kiểm tra digest/tools, Backend integration tests và Docker Development gate; đây không phải production image baseline |
 | Frontend Dockerfile | Định nghĩa môi trường phát triển/build của React, TypeScript và Vite tại `app/mamxanh-frontend/Dockerfile` | Confirmed placement | Giữ cấu hình Frontend gần source và cho phép thay đổi độc lập với Backend | Dùng để đồng bộ local development; không mặc định yêu cầu nền tảng hosting Frontend phải chạy container |
 | Backend Dockerfile | Định nghĩa môi trường build/chạy Java 21, Maven và Spring Boot tại `app/mamxanh-backend/Dockerfile` | Confirmed placement | Giữ cấu hình Backend gần source và cho phép thay đổi độc lập với Frontend | Chưa xác nhận Docker image này là production deployment artifact |
 
