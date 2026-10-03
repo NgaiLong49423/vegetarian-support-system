@@ -1,5 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
+> **Version:** v2.47.0
 > **Version:** v2.47.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-03

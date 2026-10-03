@@ -23,7 +23,7 @@ For each runtime/model being accepted:
 1. Record the exact Git commit or snapshot being evaluated.
 2. Run deterministic validation first.
 3. Run routing cases three times in clean contexts.
-4. Run the 10 acceptance cases **WITH the applicable skill/policy**.
+4. Run the 23 acceptance cases **WITH the applicable skill/policy**.
 5. Run a comparable baseline **WITHOUT the skill** or against the previously accepted skill version.
 6. Grade only observable assertions with evidence from output, diff, trace, or explicit tool behavior.
 7. Keep critical invariants at 100%:
@@ -32,6 +32,7 @@ For each runtime/model being accepted:
    - sensitive-data protection;
    - no unauthorized remote mutation;
    - GitHub approval boundary.
+   - Pre-Review Readiness and exact PR/HEAD/action authorization before GitHub Review submission.
 8. Save completed evidence under `.agents/evals/runs/<run-id>/`.
 
 Do not compare two runs that inherit different hidden context. A baseline should be a genuinely clean run, not the same conversation followed by “ignore the skill.”
