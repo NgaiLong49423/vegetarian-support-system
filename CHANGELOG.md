@@ -1,13 +1,31 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.46.0
+> **Version:** v2.47.1
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-03
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-03 — Fix Docker Sample Data Seed ([PR #79](https://github.com/NgaiLong49423/vegetarian-support-system/pull/79))
+
+**Status:** Committed — `7107e5e`.
+
+**Scope:** Make the SQL Server 2019 development seed compatible with filtered indexes and capture the container logs when the Docker gate fails.
+
+### Added
+
+- Print Compose service status and Backend/seed logs before CI cleanup when Docker Development fails.
+
+### Changed
+
+- Enable `QUOTED_IDENTIFIER` before inserting sample data.
+
+### Fixed
+
+- Resolve SQL Server error 1934 when the sample seed inserts into tables with filtered indexes.
 
 ## 2026-10-02 — Fix Docker Development and Scalar Security Gates ([PR #81](https://github.com/NgaiLong49423/vegetarian-support-system/pull/81))
 
@@ -49,7 +67,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-02 — Add Scalar API Reference and Runtime OpenAPI Validation
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 596443c.
 
 **Scope:** Make Scalar the team's local API reference UI and validate the generated runtime contract through the existing Docker Development gate.
 
@@ -71,7 +89,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-02 — Clarify One-Time Onboarding for New Members (FR-31, Issue #36)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 101b218.
 
 **Scope:** Specify when the optional onboarding questionnaire is shown and how members can return to it after skipping.
 
@@ -109,6 +127,26 @@ None.
 
 None.
 
+## 2026-10-02 — Add Reproducible Docker Compose Development Environment ([PR #79](https://github.com/NgaiLong49423/vegetarian-support-system/pull/79))
+
+**Status:** Committed — c2bac47.
+
+**Scope:** Provide one repeatable local environment for Frontend, Backend and SQL Server 2019 with persistent local development data.
+
+### Added
+
+- Add Docker Compose services for SQL Server, database creation, Backend, sample data and Frontend, plus a guarded command to reset the local database volume.
+- Add deterministic fictional recipe fixtures that are safe to apply repeatedly and a data-only demo author without login credentials.
+
+### Changed
+
+- Route the Frontend API proxy to the Backend service name in Compose while retaining the localhost default for direct development.
+- Document per-machine Docker credentials, startup, persistence and reset behavior.
+
+### Fixed
+
+- Populate the previously empty sample-data script so a clean Docker database receives the documented fixtures.
+
 ## 2026-10-02 — Force Overlapping Requests in the Concurrent Resend Test (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
 **Status:** Committed — 95fd0ef.
@@ -126,6 +164,29 @@ None.
 ### Fixed
 
 None.
+
+## 2026-10-01 — Implement Nutrition Profile Reference Flow
+
+**Status:** Committed — db6b690.
+
+**Scope:** Implement the FR-35 nutrition profile vertical slice within the existing Member profile model, while preserving the application's non-clinical, informational boundary.
+
+### Added
+
+- Add authenticated nutrition profile read, save and eligibility-confirmed calculation endpoints, with the matching OpenAPI contract and a consent timestamp migration.
+- Add a responsive green Frontend flow for self-reported profile data, eligibility confirmation, approximate BMI, energy and eight nutrient targets, source links, and the required informational disclaimer.
+- Add unit coverage for reference calculations, consent, saved-profile behavior, and rejection of unauthenticated or out-of-scope access.
+
+### Changed
+
+- Keep calculated results out of profile reads and saves; return results only after a separate eligibility-confirmed calculation request.
+- Record API integration guidance for the FR-35 endpoints and the pending real JWT integration boundary.
+- Remove the feature-specific E2E runner and tests while retaining the nutrition functionality and the repository's general Playwright setup, as requested.
+
+### Fixed
+
+- Prevent previously calculated results from reappearing after reload or after eligibility answers change.
+- Record the manual SQL confirmation of current consent columns and constraint as schema-state evidence only; fresh-database Flyway execution and authenticated end-to-end acceptance remain unverified.
 
 ## 2026-10-01 — Serialize Verification Email Resends (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 

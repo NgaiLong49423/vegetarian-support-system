@@ -46,7 +46,7 @@ PRINT 'PART 1: SCHEMA AUDIT & OBJECT INVENTORY';
 PRINT '====================================================================';
 
 -- 1.1 Object Count Summary
--- Expected: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 58 Checks, 55 Defaults, 15 UNIT rows
+-- Expected after V1-V4: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 59 Checks, 55 Defaults, 15 UNIT rows
 SELECT 
     'Tables' AS ObjectType, COUNT(*) AS TotalCount, 22 AS ExpectedCount,
     CASE WHEN COUNT(*) = 22 THEN 'PASS' ELSE 'FAIL' END AS AuditStatus
@@ -61,7 +61,7 @@ UNION ALL
 SELECT 'Unique Constraints', COUNT(*), 9, CASE WHEN COUNT(*) = 9 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.key_constraints WHERE type = 'UQ'
 UNION ALL
-SELECT 'Check Constraints', COUNT(*), 58, CASE WHEN COUNT(*) = 58 THEN 'PASS' ELSE 'FAIL' END
+SELECT 'Check Constraints', COUNT(*), 59, CASE WHEN COUNT(*) = 59 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.check_constraints
 UNION ALL
 SELECT 'Default Constraints', COUNT(*), 55, CASE WHEN COUNT(*) = 55 THEN 'PASS' ELSE 'FAIL' END

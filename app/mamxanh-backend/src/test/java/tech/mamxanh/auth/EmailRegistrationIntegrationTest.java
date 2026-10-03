@@ -59,7 +59,7 @@ import tech.mamxanh.auth.repository.UserRepository;
 import tech.mamxanh.auth.security.OneTimeTokenService;
 
 /**
- * FR-03-A (#5): UC-03.1–UC-03.3, AC-03.1–AC-03.5 against a real SQL Server (Flyway V1→V3).
+ * FR-03-A (#5): UC-03.1–UC-03.3, AC-03.1–AC-03.5 against a real SQL Server (Flyway V1→V4).
  * Outgoing email is mocked; the verification link is read from the captured email body.
  */
 @ExtendWith(OutputCaptureExtension.class)
