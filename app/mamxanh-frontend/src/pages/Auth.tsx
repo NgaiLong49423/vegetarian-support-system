@@ -20,7 +20,7 @@ const copy = {
   reset: { title: 'Đặt mật khẩu mới', subtitle: 'Chọn mật khẩu mới cho tài khoản Mâm Xanh của bạn.', action: 'Lưu mật khẩu mới' },
 };
 
-// API field names (docs/api/openapi.yaml) -> form field keys.
+// API field names follow the generated Backend runtime contract -> form field keys.
 const apiFieldToForm: Record<string, string> = { displayName: 'name', email: 'email', password: 'password', confirmPassword: 'confirm' };
 const NETWORK_ERROR = 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.';
 const INVALID_LINK = 'Liên kết xác minh không hợp lệ hoặc đã hết hạn. Nhập email bên dưới để nhận liên kết mới.';

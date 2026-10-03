@@ -1,13 +1,19 @@
+param(
+    [string]$ProjectName = 'mamxanh-dev'
+)
+
 $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
-$envFile = Join-Path $repositoryRoot '.env.docker'
+$envFile = Join-Path $repositoryRoot 'app/mamxanh-backend/.env'
+$composeFile = Join-Path $repositoryRoot 'docker-compose.yml'
+$composeArgs = @('compose', '-f', $composeFile, '-p', $ProjectName, '--env-file', $envFile)
 
 if (-not (Test-Path -LiteralPath $envFile)) {
-    throw 'Không tìm thấy .env.docker. Hãy sao chép .env.docker.example thành .env.docker và đặt mật khẩu SQL Server trước.'
+    throw 'Không tìm thấy app/mamxanh-backend/.env. Hãy sao chép .env.example thành .env tại cùng thư mục và đặt mật khẩu SQL Server trước.'
 }
 
-Write-Host 'CẢNH BÁO: thao tác này xóa vĩnh viễn database Docker và toàn bộ dữ liệu trên máy này.' -ForegroundColor Yellow
+Write-Host "CẢNH BÁO: thao tác này xóa vĩnh viễn SQL Server volume của Compose project '$ProjectName' và toàn bộ database trong volume đó." -ForegroundColor Yellow
 Write-Host 'Dữ liệu sẽ được tạo lại từ Flyway và database/sample-data.sql.'
 $confirmation = Read-Host 'Nhập RESET để tiếp tục'
 if ($confirmation -cne 'RESET') {
@@ -17,12 +23,13 @@ if ($confirmation -cne 'RESET') {
 
 Push-Location $repositoryRoot
 try {
-    $composeConfig = docker compose --env-file $envFile config --format json | ConvertFrom-Json
+    $configJson = & docker @composeArgs config --format json
     if ($LASTEXITCODE -ne 0) { throw 'Không thể đọc cấu hình Docker Compose để xác định volume database.' }
+    $composeConfig = $configJson | ConvertFrom-Json
     $volumeName = $composeConfig.volumes.'sqlserver-data'.name
     if ([string]::IsNullOrWhiteSpace($volumeName)) { throw 'Không xác định được volume SQL Server từ cấu hình Compose.' }
 
-    docker compose --env-file $envFile down --remove-orphans
+    & docker @composeArgs down --remove-orphans
     if ($LASTEXITCODE -ne 0) { throw 'Không thể dừng Docker Compose.' }
 
     $existingVolume = docker volume ls --quiet --filter "name=^$volumeName$"
@@ -31,7 +38,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Không thể xóa volume SQL Server.' }
     }
 
-    docker compose --env-file $envFile up --build --detach
+    & docker @composeArgs up --build --detach --wait --wait-timeout 600
     if ($LASTEXITCODE -ne 0) { throw 'Không thể khởi động lại Docker Compose.' }
 }
 finally {

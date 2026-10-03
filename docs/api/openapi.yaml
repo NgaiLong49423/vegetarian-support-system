@@ -1,93 +1,21 @@
+# Migration reference only: planned Auth endpoints may not exist in the running Backend yet.
+# Implemented endpoints are evidenced by springdoc at /v3/api-docs; do not treat this file as
+# a second permanent runtime authority. See API.md for the migration policy.
 openapi: 3.1.1
 info:
   title: Mâm Xanh API
-  version: 0.5.0
+  version: 0.6.0
   summary: REST API contract for the Mâm Xanh application
   description: >-
-    API contract for FR-03 Authentication & Account and FR-35 Nutrition Profile. The
-    nutrition endpoints require an authenticated Member principal; real login/JWT integration
-    remains pending Issue #6.
+    Planned reference for FR-03 Authentication endpoints that are not implemented in the runtime API.
+    Implemented endpoints are documented by generated Springdoc OpenAPI.
 servers:
   - url: /api/v1
     description: Version 1 relative base path
 tags:
   - name: Authentication
     description: Registration, verification, login, and password recovery.
-  - name: Nutrition
-    description: Member-owned nutrition reference profile and calculations.
 paths:
-  /auth/register:
-    post:
-      tags: [Authentication]
-      summary: Register with email and password
-      description: Creates an ACTIVE account with emailVerified=false and triggers a best-effort verification email.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-      responses:
-        '201':
-          description: Account created with accountStatus ACTIVE and emailVerified false.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RegistrationResponse'
-        '400':
-          $ref: '#/components/responses/ValidationProblem'
-        '409':
-          description: Email is already used by another account (code EMAIL_ALREADY_USED); comparison ignores case.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /auth/email-verifications:
-    post:
-      tags: [Authentication]
-      summary: Verify an email address
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenRequest'
-      responses:
-        '204':
-          description: Email is verified; accountStatus is unchanged.
-        '400':
-          description: >-
-            Verification token is unknown, already used, replaced by a newer token or expired
-            (code VERIFICATION_TOKEN_INVALID), or the payload is invalid (code VALIDATION_FAILED).
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /auth/email-verifications/resend:
-    post:
-      tags: [Authentication]
-      summary: Request another verification email
-      description: >-
-        Invalidates the previous token when a new token is issued. Limited to one email per 60 seconds;
-        earlier requests return 429 with code RESEND_TOO_SOON and Retry-After. Unknown and already verified
-        emails receive the same 202 response and no email is sent.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EmailRequest'
-      responses:
-        '202':
-          description: Request accepted.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageResponse'
-        '400':
-          $ref: '#/components/responses/ValidationProblem'
-        '429':
-          $ref: '#/components/responses/RateLimitProblem'
   /auth/login:
     post:
       tags: [Authentication]
@@ -204,124 +132,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-  /nutrition/profile:
-    get:
-      tags: [Nutrition]
-      summary: Read the authenticated Member's saved nutrition profile
-      description: Results are intentionally omitted. The Member must reconfirm eligibility with POST /nutrition/profile/calculate before each results view.
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Saved profile and eligibility state without calculated results.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NutritionProfileResponse'
-        '401':
-          $ref: '#/components/responses/AuthenticationProblem'
-        '403':
-          $ref: '#/components/responses/AccessProblem'
-    put:
-      tags: [Nutrition]
-      summary: Save the authenticated Member's nutrition profile
-      description: Stores self-reported data only after consent and eligibility checks; out-of-scope profiles are not stored.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SaveNutritionProfileRequest'
-      responses:
-        '200':
-          description: Profile saved without calculated results; results require explicit eligibility confirmation.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NutritionProfileResponse'
-        '400':
-          description: Request validation failed or anthropometric values are outside the supported range.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          $ref: '#/components/responses/AuthenticationProblem'
-        '403':
-          $ref: '#/components/responses/AccessProblem'
-        '422':
-          $ref: '#/components/responses/OutOfScopeProblem'
-  /nutrition/profile/calculate:
-    post:
-      tags: [Nutrition]
-      summary: Reconfirm eligibility and calculate reference results
-      description: All exclusion flags must be false. The response is not stored and expires when the view is closed or eligibility answers change.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ConfirmNutritionEligibilityRequest'
-      responses:
-        '200':
-          description: Reference results for the authenticated Member's saved profile.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NutritionProfileResponse'
-        '400':
-          $ref: '#/components/responses/ValidationProblem'
-        '401':
-          $ref: '#/components/responses/AuthenticationProblem'
-        '403':
-          $ref: '#/components/responses/AccessProblem'
-        '409':
-          description: A saved nutrition profile is required.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '422':
-          $ref: '#/components/responses/OutOfScopeProblem'
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   schemas:
-    RegisterRequest:
-      type: object
-      additionalProperties: false
-      required: [displayName, email, password, confirmPassword]
-      properties:
-        displayName:
-          type: string
-          minLength: 3
-          maxLength: 50
-          example: Nguyễn An
-        email:
-          type: string
-          format: email
-          example: an.nguyen@example.com
-        password:
-          type: string
-          format: password
-          minLength: 8
-          maxLength: 64
-          writeOnly: true
-          description: Must satisfy password-complexity rules (8-64 chars, max 72 bytes UTF-8).
-        confirmPassword:
-          type: string
-          format: password
-          minLength: 8
-          maxLength: 64
-          writeOnly: true
-          description: Must match password.
     LoginRequest:
       type: object
       additionalProperties: false
@@ -351,15 +163,6 @@ components:
         email:
           type: string
           format: email
-    TokenRequest:
-      type: object
-      additionalProperties: false
-      required: [token]
-      properties:
-        token:
-          type: string
-          writeOnly: true
-          minLength: 1
     PasswordResetConfirmRequest:
       type: object
       additionalProperties: false
@@ -383,152 +186,6 @@ components:
           maxLength: 64
           writeOnly: true
           description: Must match newPassword.
-    SaveNutritionProfileRequest:
-      type: object
-      additionalProperties: false
-      required: [dateOfBirth, biologicalSex, heightCm, weightKg, activityLevel, nutritionGoal, pregnant, breastfeeding, therapeuticDietRequired, consentAccepted]
-      properties:
-        dateOfBirth:
-          type: string
-          format: date
-          description: Must be between 1900-01-01 and the current date.
-        biologicalSex:
-          type: string
-          enum: [FEMALE, MALE]
-        heightCm:
-          type: number
-          minimum: 100
-          maximum: 250
-        weightKg:
-          type: number
-          minimum: 30
-          maximum: 300
-        activityLevel:
-          type: string
-          enum: [SEDENTARY, LIGHTLY_ACTIVE, MODERATELY_ACTIVE, VERY_ACTIVE]
-        nutritionGoal:
-          type: string
-          enum: [MAINTAIN_WEIGHT, IMPROVE_HEALTH, SUPPORT_TRAINING]
-        pregnant:
-          type: boolean
-        breastfeeding:
-          type: boolean
-        therapeuticDietRequired:
-          type: boolean
-        consentAccepted:
-          type: boolean
-          const: true
-    ConfirmNutritionEligibilityRequest:
-      type: object
-      additionalProperties: false
-      required: [pregnant, breastfeeding, therapeuticDietRequired]
-      properties:
-        pregnant:
-          type: boolean
-        breastfeeding:
-          type: boolean
-        therapeuticDietRequired:
-          type: boolean
-    NutritionProfileResponse:
-      type: object
-      additionalProperties: false
-      required: [hasProfile, eligible, outOfScopeReasons, profile, results]
-      properties:
-        hasProfile:
-          type: boolean
-        eligible:
-          type: boolean
-        outOfScopeReasons:
-          type: array
-          items:
-            type: string
-            enum: [AGE_OUT_OF_SCOPE, PREGNANT, BREASTFEEDING, THERAPEUTIC_DIET_REQUIRED]
-        profile:
-          oneOf:
-            - $ref: '#/components/schemas/NutritionProfile'
-            - type: 'null'
-        results:
-          oneOf:
-            - $ref: '#/components/schemas/NutritionResults'
-            - type: 'null'
-    NutritionProfile:
-      type: object
-      additionalProperties: false
-      required: [dateOfBirth, biologicalSex, heightCm, weightKg, activityLevel, nutritionGoal]
-      properties:
-        dateOfBirth:
-          type: string
-          format: date
-        biologicalSex:
-          type: string
-          enum: [FEMALE, MALE]
-        heightCm:
-          type: number
-        weightKg:
-          type: number
-        activityLevel:
-          type: string
-          enum: [SEDENTARY, LIGHTLY_ACTIVE, MODERATELY_ACTIVE, VERY_ACTIVE]
-        nutritionGoal:
-          type: string
-          enum: [MAINTAIN_WEIGHT, IMPROVE_HEALTH, SUPPORT_TRAINING]
-    NutritionResults:
-      type: object
-      additionalProperties: false
-      required: [bmi, bmiCategory, energyKcal, dailyTargets, energySource, nutrientSource]
-      properties:
-        bmi:
-          type: number
-        bmiCategory:
-          type: string
-        energyKcal:
-          type: number
-        dailyTargets:
-          type: array
-          minItems: 8
-          maxItems: 8
-          description: Eight nutrient targets; energyKcal is the ninth daily indicator.
-          items:
-            $ref: '#/components/schemas/NutritionTarget'
-        energySource:
-          type: string
-        nutrientSource:
-          type: string
-    NutritionTarget:
-      type: object
-      additionalProperties: false
-      required: [key, label, minimum, maximum, unit, referenceType, source]
-      properties:
-        key:
-          type: string
-          enum: [protein, carbohydrate, fat, fiber, calcium, iron, vitaminB12, zinc]
-        label:
-          type: string
-        minimum:
-          type: number
-        maximum:
-          type: number
-        unit:
-          type: string
-        referenceType:
-          type: string
-          enum: [AMDR, AI, RDA]
-        source:
-          type: string
-    RegistrationResponse:
-      type: object
-      additionalProperties: false
-      required: [accountStatus, emailVerified, message]
-      properties:
-        accountStatus:
-          type: string
-          const: ACTIVE
-        emailVerified:
-          type: boolean
-          const: false
-        message:
-          type: string
-          example: Registration succeeded. Check your email to verify your address.
     AuthResponse:
       type: object
       additionalProperties: false

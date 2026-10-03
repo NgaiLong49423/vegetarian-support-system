@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Mâm Xanh API Reference</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.72.3"
+      integrity="sha384-HWi/QCSPi64AQ0xBXFGDk+7gmvZ4hJ/7sZMIXqWVz6Ikb6+Cxej/hWKaomOStyFb"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      Scalar.createApiReference('#app', {
+        url: '/v3/api-docs',
+        pageTitle: 'Mâm Xanh API Reference',
+      });
+    </script>
+  </body>
+</html>

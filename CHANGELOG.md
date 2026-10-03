@@ -1,13 +1,113 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.42.0
+> **Version:** v2.47.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-03
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-02 — Fix Docker Development and Scalar Security Gates ([PR #81](https://github.com/NgaiLong49423/vegetarian-support-system/pull/81))
+
+**Status:** Committed — `0360577`.
+
+**Scope:** Resolve the PR's Docker Development failure and the Sonar security rating finding without weakening validation.
+
+### Added
+
+- Add Subresource Integrity (SRI) and anonymous CORS mode to the version-pinned Scalar UI asset.
+
+### Changed
+
+- Pin the Scalar CLI workflow runtime to Node.js `24.21.0`, meeting the CLI's Node.js `>=24` requirement.
+
+### Fixed
+
+- Resolve the Docker Development Node.js engine mismatch and the Sonar finding for the external Scalar script.
+
+## 2026-10-02 — Pin and Harden the Docker Development Stack ([PR #81](https://github.com/NgaiLong49423/vegetarian-support-system/pull/81))
+
+**Status:** Committed — `9a2ae5e`.
+
+**Scope:** Make SQL Server and Backend integration tests consume one verified image, restrict local port exposure, and document safe Compose project/volume lifecycles.
+
+### Added
+
+- Pin the MCR tag `2019-CU32-GDR11-ubuntu-20.04` with verified repository manifest digest `sha256:ef0b8db33970ecd01bed49c3a84a1d083c435a9891718df619298b67b352e74a` in Compose and Testcontainers; bind development ports to loopback.
+- Add a Compose one-off `npm ci` workflow for refreshing the Frontend dependency volume and document consistent project-name use, SQL-only reset, and full-volume reset boundaries.
+
+### Changed
+
+- Use `/opt/mssql-tools18/bin/sqlcmd` consistently and pass the local SQL password through `SQLCMDPASSWORD` rather than a command-line argument.
+- Keep the `Docker Development` context and shared stack while naming its Compose project consistently for startup and cleanup.
+
+### Fixed
+
+- Replace floating SQL Server `2019-latest` references in Compose and Testcontainers with the same verified manifest-pinned image.
+
+## 2026-10-02 — Add Scalar API Reference and Runtime OpenAPI Validation
+
+**Status:** Committed — 596443c.
+
+**Scope:** Make Scalar the team's local API reference UI and validate the generated runtime contract through the existing Docker Development gate.
+
+### Added
+
+- Serve a version-pinned Scalar browser UI at Backend `/scalar`, retain Swagger UI compatibility, and apply the existing public API-documentation access policy.
+- Capture and validate generated `/v3/api-docs` in Docker Development, upload a run-specific artifact, and smoke-test only the Scalar route/HTML shell.
+- Add WebMvc/security tests for the public Scalar route and document separate browser acceptance for actual rendering and manual API requests.
+
+### Changed
+
+- Establish generated OpenAPI as runtime contract; retain the manual YAML as planned/reference contract during migration and update agent lookup/governance rules.
+- Pin Docker Development Node.js and Scalar CLI versions; align the documented required CI context with the existing gate.
+- Identify Scalar as the official human-facing API documentation/manual testing UI without treating it as automated regression evidence.
+
+### Fixed
+
+- Correct stale machine-readable API documentation and required-CI-context rules that conflicted with the active repository policy.
+
+## 2026-10-02 — Clarify One-Time Onboarding for New Members (FR-31, Issue #36)
+
+**Status:** Committed — 101b218.
+
+**Scope:** Specify when the optional onboarding questionnaire is shown and how members can return to it after skipping.
+
+### Added
+
+- Add acceptance coverage for one-time onboarding invitations, no automatic re-prompt after Skip, and manual access through Settings.
+
+### Changed
+
+- Clarify that only newly registered Members are invited after their first successful authentication; existing accounts are not prompted automatically.
+- Clarify that skipping preserves normal features and does not prevent later completion from Settings.
+
+### Fixed
+
+None.
+
+## 2026-10-02 — Standardize the Docker Development Stack and Add a CI Gate
+
+**Status:** Committed — 2ff0254.
+
+**Scope:** Provide one Docker Compose development environment for Frontend, Backend and SQL Server, and require a GitHub Actions build/smoke-test check before merging changes into the integration baseline.
+
+### Added
+
+- Add root `docker-compose.yml` with health-ordered SQL Server, database initialization, Backend and Frontend services, plus persistent local database/dependency volumes.
+- Add the `Docker Development` GitHub Actions job to build and smoke-test the shared stack using an ephemeral SQL Server password.
+- Document the shared Compose setup, PowerShell startup/verification/shutdown commands, local-secret handling, volume safety, and the rules for members and agents in CONTRIBUTING.md, AGENTS.md and component guides.
+
+### Changed
+
+- Define root Compose as the canonical FE/BE/SQL Server integration-test entry point; retain per-app Dockerfiles for component builds without duplicating CI gates.
+- Add `Docker Development` to the documented required validation contexts and the PR synchronization checklist, and distinguish its smoke coverage from feature/acceptance tests.
+
+### Fixed
+
+None.
 
 ## 2026-10-02 — Add Reproducible Docker Compose Development Environment ([PR #79](https://github.com/NgaiLong49423/vegetarian-support-system/pull/79))
 
@@ -28,6 +128,24 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Populate the previously empty sample-data script so a clean Docker database receives the documented fixtures.
+
+## 2026-10-02 — Force Overlapping Requests in the Concurrent Resend Test (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
+
+**Status:** Committed — 95fd0ef.
+
+**Scope:** Address review finding F-03: the concurrent resend regression test did not prove that the requests overlapped, so it could pass even without the row lock.
+
+### Added
+
+None.
+
+### Changed
+
+- Hold the `USER` row lock in a test transaction while five resends start, and release it only after SQL Server reports all five requests waiting on the lock. The test now passes with the lock (1×202, 4×429, one email) and fails without it (5×202).
+
+### Fixed
+
+None.
 
 ## 2026-10-01 — Implement Nutrition Profile Reference Flow
 
@@ -51,23 +169,6 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Prevent previously calculated results from reappearing after reload or after eligibility answers change.
 - Record the manual SQL confirmation of current consent columns and constraint as schema-state evidence only; fresh-database Flyway execution and authenticated end-to-end acceptance remain unverified.
-## 2026-10-02 — Force Overlapping Requests in the Concurrent Resend Test (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
-
-**Status:** Committed — 95fd0ef.
-
-**Scope:** Address review finding F-03: the concurrent resend regression test did not prove that the requests overlapped, so it could pass even without the row lock.
-
-### Added
-
-None.
-
-### Changed
-
-- Hold the `USER` row lock in a test transaction while five resends start, and release it only after SQL Server reports all five requests waiting on the lock. The test now passes with the lock (1×202, 4×429, one email) and fails without it (5×202).
-
-### Fixed
-
-None.
 
 ## 2026-10-01 — Serialize Verification Email Resends (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 
