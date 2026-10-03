@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.47.0
+> **Version:** v2.47.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-03
 > **Status:** Active
@@ -8,6 +8,24 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-03 — Fix Docker Sample Data Seed ([PR #79](https://github.com/NgaiLong49423/vegetarian-support-system/pull/79))
+
+**Status:** Working tree — not committed.
+
+**Scope:** Make the SQL Server 2019 development seed compatible with filtered indexes and capture the container logs when the Docker gate fails.
+
+### Added
+
+- Print Compose service status and Backend/seed logs before CI cleanup when Docker Development fails.
+
+### Changed
+
+- Enable `QUOTED_IDENTIFIER` before inserting sample data.
+
+### Fixed
+
+- Resolve SQL Server error 1934 when the sample seed inserts into tables with filtered indexes.
 
 ## 2026-10-02 — Fix Docker Development and Scalar Security Gates ([PR #81](https://github.com/NgaiLong49423/vegetarian-support-system/pull/81))
 

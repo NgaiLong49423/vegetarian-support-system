@@ -1,6 +1,6 @@
 schema_version: 1
 last_updated: 2026-10-01
-next_id: 9
+next_id: 10
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-009
+    title: Seed Docker lỗi do QUOTED_IDENTIFIER tắt
+    status: TRACKING
+    severity: Medium
+    area: Backend/Database seed
+    file: .agents/outputs/bugs/BUG-009.md
+    created: 2026-10-03
+    updated: 2026-10-03
+    related_issue: Unknown
   - id: BUG-008
     title: Hướng dẫn Frontend mô tả sai cách dùng hồ sơ dinh dưỡng
     status: RECORDED

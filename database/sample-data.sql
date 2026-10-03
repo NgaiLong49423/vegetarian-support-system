@@ -1,6 +1,7 @@
 -- Dữ liệu demo giả cho môi trường phát triển Docker.
 -- Script có thể chạy lại an toàn: chỉ thêm fixture còn thiếu, không sửa dữ liệu người dùng.
 -- Tài khoản tác giả demo không có mật khẩu và không dùng để đăng nhập.
+SET QUOTED_IDENTIFIER ON;
 SET XACT_ABORT ON;
 BEGIN TRANSACTION;
 
