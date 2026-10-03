@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-03 — Fix Docker Sample Data Seed ([PR #79](https://github.com/NgaiLong49423/vegetarian-support-system/pull/79))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `7107e5e`.
 
 **Scope:** Make the SQL Server 2019 development seed compatible with filtered indexes and capture the container logs when the Docker gate fails.
 

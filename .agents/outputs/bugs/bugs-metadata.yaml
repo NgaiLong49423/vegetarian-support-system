@@ -10,7 +10,7 @@ status_definitions:
 bugs:
   - id: BUG-009
     title: Seed Docker lỗi do QUOTED_IDENTIFIER tắt
-    status: TRACKING
+    status: RESOLVED
     severity: Medium
     area: Backend/Database seed
     file: .agents/outputs/bugs/BUG-009.md
