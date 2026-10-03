@@ -31,7 +31,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-03 — Recipe Post Backend API and Data Handling (Issue #47)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `06e7b0d`.
 
 **Scope:** Add the Backend API and persistence behavior needed to edit and soft-delete an Expert's own public Recipe Post.
 
