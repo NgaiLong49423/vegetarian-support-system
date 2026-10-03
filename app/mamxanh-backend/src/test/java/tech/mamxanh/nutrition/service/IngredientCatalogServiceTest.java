@@ -2,16 +2,20 @@ package tech.mamxanh.nutrition.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.nutrition.dto.request.ConversionSaveRequest;
 import tech.mamxanh.nutrition.dto.request.CatalogStatusUpdateRequest;
@@ -94,6 +98,31 @@ class IngredientCatalogServiceTest {
         assertThat(results).singleElement().extracting(response -> response.name()).isEqualTo("Đậu phụ");
     }
 
+    @Test void listsAllIngredientsForNullOrBlankQueryAndSortsByName() {
+        IngredientEntity banana = new IngredientEntity("Chuối", "Trái cây", "USDA", null, LocalDate.now());
+        IngredientEntity tofu = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
+        when(ingredientRepository.findAll()).thenReturn(List.of(banana, tofu));
+
+        assertThat(service.listIngredients(null)).extracting(response -> response.name())
+                .containsExactly("Chuối", "Đậu phụ");
+        assertThat(service.listIngredients("  ")).extracting(response -> response.name())
+                .containsExactly("Chuối", "Đậu phụ");
+    }
+
+    @Test void searchesActiveIngredientsByGroupAndHandlesEmptyAndMissingQueries() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
+        when(ingredientRepository.findByStatus(tech.mamxanh.nutrition.entity.CatalogStatus.ACTIVE))
+                .thenReturn(List.of(ingredient));
+
+        assertThat(service.findActiveIngredients("hạt")).extracting(response -> response.name())
+                .containsExactly("Đậu phụ");
+        assertThat(service.findActiveIngredients(null)).extracting(response -> response.name())
+                .containsExactly("Đậu phụ");
+        assertThat(service.findActiveIngredients("   ")).extracting(response -> response.name())
+                .containsExactly("Đậu phụ");
+        assertThat(service.findActiveIngredients("không có")).isEmpty();
+    }
+
     @Test void deactivatesIngredientWithoutDeletingItsRecord() {
         IngredientEntity ingredient = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
         when(ingredientRepository.findById(1L)).thenReturn(Optional.of(ingredient));
@@ -134,6 +163,19 @@ class IngredientCatalogServiceTest {
         assertThat(updated.baseFactor()).isEqualByComparingTo("1000");
         assertThat(updated.dimension()).isEqualTo(MeasurementDimension.MASS);
         assertThat(deactivated.active()).isFalse();
+    }
+
+    @Test void updatesUnitWithSameCodeAndRejectsAnotherUnitsCode() {
+        UnitEntity unit = new UnitEntity("g", "gam", MeasurementDimension.MASS, BigDecimal.ONE);
+        when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
+
+        var updated = service.updateUnit(2, new UnitSaveRequest("g", "gam mới", MeasurementDimension.MASS, BigDecimal.ONE));
+        assertThat(updated.name()).isEqualTo("gam mới");
+
+        when(unitRepository.existsByCodeIgnoreCase("ml")).thenReturn(true);
+        assertThatThrownBy(() -> service.updateUnit(2,
+                new UnitSaveRequest("ml", "mililit", MeasurementDimension.VOLUME, BigDecimal.ONE)))
+                .isInstanceOf(ApiException.class).hasMessage("Ký hiệu đơn vị đã tồn tại.");
     }
 
     @Test void updatesIngredientMetadataAndRejectsRenamingToAnExistingName() {
@@ -179,6 +221,66 @@ class IngredientCatalogServiceTest {
         assertThat(disabled.ingredientId()).isEqualTo(1L);
         assertThat(disabled.unitId()).isEqualTo(2);
         assertThat(disabled.active()).isFalse();
+    }
+
+    @Test void listsConversionsWithAndWithoutAnIngredientFilter() {
+        IngredientUnitConversionEntity first = new IngredientUnitConversionEntity(
+                new IngredientUnitConversionId(1L, 2), new BigDecimal("120"), true);
+        IngredientUnitConversionEntity second = new IngredientUnitConversionEntity(
+                new IngredientUnitConversionId(3L, 4), new BigDecimal("250"), false);
+        when(conversionRepository.findAll()).thenReturn(List.of(first, second));
+        when(conversionRepository.findByIdIngredientId(1L)).thenReturn(List.of(first));
+
+        assertThat(service.listConversions(null)).hasSize(2);
+        assertThat(service.listConversions(1L)).singleElement()
+                .satisfies(response -> assertThat(response.ingredientId()).isEqualTo(1L));
+    }
+
+    @Test void mapsConcurrentDuplicateInsertToConflictAndRethrowsOtherDatabaseErrors() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
+        UnitEntity unit = new UnitEntity("g", "gam", MeasurementDimension.MASS, BigDecimal.ONE);
+        when(ingredientRepository.findById(1L)).thenReturn(Optional.of(ingredient));
+        when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
+        SQLException duplicateKey = new SQLException("Duplicate key", "23000", 2627);
+        doThrow(new DataIntegrityViolationException("Duplicate key", duplicateKey))
+                .when(conversionRepository).insertNew(1L, 2, new BigDecimal("120"), true);
+
+        assertThatThrownBy(() -> service.createConversion(1L, 2,
+                new ConversionSaveRequest(new BigDecimal("120"), true)))
+                .isInstanceOf(ApiException.class)
+                .hasMessage("Cặp nguyên liệu và đơn vị đã có tỷ lệ quy đổi.");
+
+        DataIntegrityViolationException otherConstraint = new DataIntegrityViolationException(
+                "Check constraint", new SQLException("Check constraint", "23000", 547));
+        doThrow(otherConstraint).when(conversionRepository).insertNew(1L, 2, new BigDecimal("135"), false);
+        assertThatThrownBy(() -> service.createConversion(1L, 2,
+                new ConversionSaveRequest(new BigDecimal("135"), false)))
+                .isSameAs(otherConstraint);
+    }
+
+    @Test void hidesConversionWhenItIsMissingOrItsIngredientOrUnitIsMissing() {
+        IngredientUnitConversionId id = new IngredientUnitConversionId(1L, 2);
+        when(conversionRepository.findByIdAndActiveTrue(id)).thenReturn(Optional.empty());
+        assertThat(service.findActiveGramsPerUnit(1L, 2)).isEmpty();
+
+        when(conversionRepository.findByIdAndActiveTrue(id)).thenReturn(Optional.of(
+                new IngredientUnitConversionEntity(id, new BigDecimal("120"), true)));
+        when(ingredientRepository.findById(1L)).thenReturn(Optional.empty());
+        when(unitRepository.findById(2)).thenReturn(Optional.empty());
+        assertThat(service.findActiveGramsPerUnit(1L, 2)).isEmpty();
+    }
+
+    @Test void rejectsHardDeleteAndComparesConversionIdsByBothKeys() {
+        assertThatThrownBy(() -> service.rejectHardDelete("nguyên liệu"))
+                .isInstanceOf(ApiException.class)
+                .hasMessage("Không hỗ trợ xóa vĩnh viễn nguyên liệu; hãy chuyển sang trạng thái ngừng sử dụng.");
+
+        IngredientUnitConversionId id = new IngredientUnitConversionId(1L, 2);
+        assertThat(id).isEqualTo(new IngredientUnitConversionId(1L, 2))
+                .isNotEqualTo(new IngredientUnitConversionId(2L, 2))
+                .isNotEqualTo(new IngredientUnitConversionId(1L, 3))
+                .isNotEqualTo(null)
+                .hasSameHashCodeAs(new IngredientUnitConversionId(1L, 2));
     }
 
     @Test void missingCatalogResourcesReturnNotFoundInsteadOfBeingCreated() {
