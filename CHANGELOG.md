@@ -1,13 +1,33 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.46.0
+> **Version:** v2.47.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-03
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-03 — Stateful PR Review Lifecycle ([PR #83](https://github.com/NgaiLong49423/vegetarian-support-system/pull/83))
+
+**Status:** Committed — `454b5b5c89d058faba0782070c2aac5ac83520ef`.
+
+**Scope:** Introduce a reusable PR review lifecycle with persistent local evidence and separate merge readiness and Issue acceptance.
+
+### Added
+
+- Add the pr-issue-review skill and review-pr-and-accept-issue workflow, with SHA snapshots, delta review, stable findings, fix/rebuttal verification, and main/local-demo acceptance.
+- Keep one ignored live review report per PR, separate from disposable source worktrees; require actionable GitHub comments independent of local reports.
+
+### Changed
+
+- Register the review skill/workflow in AGENTS and scope its local-report exception.
+- Require one implementation PR per implementation Issue; permit issue-free repository-level chores only with Tech Lead approval and an explicit reason in the PR template.
+
+### Fixed
+
+- None.
 
 ## 2026-10-02 — Fix Docker Development and Scalar Security Gates ([PR #81](https://github.com/NgaiLong49423/vegetarian-support-system/pull/81))
 
