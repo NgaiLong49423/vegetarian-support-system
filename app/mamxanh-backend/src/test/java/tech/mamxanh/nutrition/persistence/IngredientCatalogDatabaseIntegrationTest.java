@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.LocalDate;
 import java.util.UUID;
 import java.math.BigDecimal;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,6 +30,7 @@ class IngredientCatalogDatabaseIntegrationTest extends SqlServerIntegrationTest 
     @Autowired private UnitRepository unitRepository;
     @Autowired private IngredientCatalogService catalogService;
     @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired private EntityManager entityManager;
 
     @Test void v4SchemaStoresIngredientGroupAndRegistersPositiveUnitFactorConstraint() {
         String ingredientName = "Nguyên liệu kiểm thử " + UUID.randomUUID();
@@ -101,6 +103,7 @@ class IngredientCatalogDatabaseIntegrationTest extends SqlServerIntegrationTest 
                     zinc_mg_100g = 1
                 WHERE ingredient_id = ?
                 """, ingredient.getId());
+        entityManager.clear();
 
         assertThatThrownBy(() -> catalogService.updateIngredient(ingredient.getId(),
                 new IngredientSaveRequest(name, "Gia vị", "Nguồn kiểm thử", null, LocalDate.now())))
