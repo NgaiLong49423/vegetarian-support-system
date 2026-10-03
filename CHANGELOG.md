@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-03 — Stateful PR Review Lifecycle
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `454b5b5c89d058faba0782070c2aac5ac83520ef`.
 
 **Scope:** Introduce a reusable PR review lifecycle with persistent local evidence and separate merge readiness and Issue acceptance.
 
