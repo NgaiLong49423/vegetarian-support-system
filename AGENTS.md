@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.19.0
+> **Version:** v3.20.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-03
 > **Status:** Active
 
 # Agent Entry Point
@@ -58,6 +58,7 @@ Skills live at `.agents/skills/<name>/SKILL.md`. For maintained local skills, th
 |---|---|---|
 | Frontend implementation/review/validation for Mâm Xanh | mamxanh-frontend-development | Project-local React/Vite/Tailwind guidance; preserves existing UI identity and does not replace `implement-fr-issue` |
 | Backend implementation/review/validation for Mâm Xanh | mamxanh-backend-development | Project-local Spring/Maven/JPA/Flyway/API guidance; preserves the modular monolith and does not replace `implement-fr-issue` |
+| Stateful PR review, delta re-review, rebuttal or main acceptance | pr-issue-review | Owns review evidence and finding lifecycle; delegates FE/BE mechanics and uses the review-pr-and-accept-issue workflow |
 | Write, review or restructure Markdown documentation | markdown-documentation | Owns shared documentation semantics, authority, traceability and source-of-truth rules; load only the references needed for the task |
 | Add/audit metadata or decide document versions | document-metadata-standardizer | Owns document metadata and versioning only; target maintained registered documents and preserve creation evidence |
 | Cross-document consistency audit | repo-template-doc-sync-auditor | Use this project's maintained register and adopted contract; ignore skill packages and generated outputs by default |
@@ -94,6 +95,7 @@ Live GitHub mutations require authorization for the current task. Authorization 
 | Situation | Workflow |
 |---|---|
 | Triển khai FR từ GitHub Issue đã được giao | `implement-fr-issue.md` |
+| Review PR/Issue qua nhiều vòng và nghiệm thu trên main | `review-pr-and-accept-issue.md` |
 | Requirements còn mơ hồ cần chốt | `requirement-finalization.md` |
 | Requirement semantics or current-scope membership changed | `requirement-change-reconciliation.md` |
 | Audit toàn docs rồi sửa finding rõ ràng | `documentation-audit-and-fix.md` |
@@ -105,6 +107,8 @@ Live GitHub mutations require authorization for the current task. Authorization 
 **Project overrides for every local skill:** the user request within the user's authorized scope, CONTRIBUTING.md for shared contribution rules, and this file for agent-specific behavior take precedence over generic skill examples. Repository governance and adopted project contracts define project-specific authority; a skill must not override them.
 
 No automatic saved audit report, log, summary or progress file, regardless of changed-file count. Return findings in the conversation by default.
+
+When the user requests the stateful PR review lifecycle, `review-pr-and-accept-issue` maintains one ignored local `.agents/outputs/review-pr/PR-<number>/ACCEPTANCE-REVIEW.md` across rounds. This narrow exception stores reviewer state/evidence, not authoritative project progress. Explicit read-only/plan-only instructions still prohibit writes. Keep source checkouts in separate temporary/detached worktrees outside the report directory; GitHub comments must be self-contained because developers cannot read this local report.
 
 Maintained project documentation follows the document lifecycle and registration rules in `docs/README.md`. Scratch and generated working artifacts belong under `.agents/outputs/`, using either the selected skill's declared structure or a task-specific subdirectory. These outputs are not maintained project documentation unless an authorized decision explicitly promotes and registers them. The tracked `.agents/outputs/bugs/` subtree is the approved exception for cross-task bug records and their metadata index; it remains agent output rather than product or requirement authority.
 
