@@ -182,7 +182,7 @@ function CreateRecipeForm() {
         setFieldErrors(Object.fromEntries(error.errors.map((item) => [item.field, item.message])));
       }
       if (error instanceof ApiError && error.status === 401) {
-        setSubmitError('Cần phiên đăng nhập thật để đăng bài. Đăng nhập/JWT đang chờ Issue #6; tài khoản demo không có quyền đăng.');
+        setSubmitError('Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại bằng tài khoản Chuyên gia.');
       } else if (error instanceof ApiError && error.status === 403) {
         setSubmitError('Chỉ Chuyên gia đang hoạt động mới được đăng công thức.');
       } else {
@@ -208,7 +208,7 @@ function CreateRecipeForm() {
 
       <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <Info className="mt-0.5 h-5 w-5 shrink-0" />
-        <p><strong>Chỉ Chuyên gia được đăng.</strong> Đăng nhập thật chưa có trong nhánh này; phần đăng nhập/JWT thuộc Issue #6. Backend vẫn chặn mọi yêu cầu chưa xác thực hoặc không phải Chuyên gia. Tài khoản demo không được dùng làm quyền đăng.</p>
+        <p><strong>Chỉ Chuyên gia được đăng.</strong> Bạn cần đăng nhập bằng tài khoản Chuyên gia đang hoạt động. Tài khoản demo chỉ dùng để xem giao diện và không được cấp quyền đăng.</p>
       </div>
 
       {loadingOptions && <div role="status" className="mb-5 flex items-center gap-2 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" /> Đang tải danh mục…</div>}
