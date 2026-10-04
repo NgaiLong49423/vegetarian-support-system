@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.14.0
+> **Version:** v0.14.1
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-03
+> **Last Updated:** 2026-10-04
 > **Status:** Active  
 
 # Backend Workspace

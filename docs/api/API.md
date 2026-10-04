@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.5.0
+> **Version:** v0.5.1
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-03
+> **Last Updated:** 2026-10-04
 > **Status:** Active
 
 # API Integration Guide
@@ -11,7 +11,7 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
 
-Runtime API hiện có các endpoint đăng ký/xác minh email của `Authentication & Account` (FR-03) và hồ sơ dinh dưỡng tham khảo (FR-35). Các endpoint FR-03 chưa triển khai chỉ được mô tả trong planned/reference YAML; endpoint đã triển khai được xác nhận qua generated OpenAPI runtime.
+Trong branch này, Backend source gồm các endpoint đăng ký/xác minh email (FR-03), danh mục quản trị nguyên liệu, đơn vị và quy đổi (FR-18), cùng hồ sơ dinh dưỡng tham khảo (FR-35). Generated OpenAPI runtime là contract để xác minh endpoint đã triển khai; endpoint FR-03 chưa triển khai chỉ được mô tả trong planned/reference YAML.
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 7 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
