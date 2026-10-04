@@ -68,6 +68,13 @@ export function validateYouTubeUrl(rawUrl: string): YouTubeValidationResult {
 
   try {
     const parsed = new URL(trimmed);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return {
+        valid: false,
+        videoId: null,
+        error: 'Vui lòng nhập đường dẫn URL hợp lệ bắt đầu bằng https://',
+      };
+    }
     const hostname = parsed.hostname.toLowerCase();
     const isYouTube =
       hostname === 'youtu.be' ||
