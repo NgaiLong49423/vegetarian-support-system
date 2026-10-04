@@ -29,7 +29,7 @@ None.
 
 ## 2026-10-04 — Fix Docker Development JWT Configuration
 
-**Status:** Committed — d60632b.
+**Status:** Working tree — not committed.
 
 **Scope:** Restore the Docker Development CI gate by passing the required JWT signing secret to the Backend under its configured environment-variable name.
 
@@ -46,6 +46,7 @@ None.
 - Generate and pass `MAMXANH_JWT_SECRET` in the Docker Development workflow so the Backend starts during the integration smoke test.
 - Preserve SQL client output in Playwright failures so integration query errors are actionable in CI logs.
 - Enable `QUOTED_IDENTIFIER` for test SQL sessions that update tables with filtered indexes.
+- Suppress `sqlcmd` row-count output so integration assertions parse only query results.
 
 ## 2026-10-04 — Complete Password Login Integration Evidence (Issue #6)
 

@@ -17,7 +17,7 @@ function sql(query: string): string {
       'compose', '-p', composeProject, '-f', path.join(repositoryRoot, 'docker-compose.yml'),
       'exec', '-T', 'sqlserver', '/opt/mssql-tools18/bin/sqlcmd',
       '-S', 'sqlserver', '-U', 'sa', '-C', '-d', 'MamXanhDB', '-h', '-1', '-W', '-b',
-      '-Q', `SET QUOTED_IDENTIFIER ON; ${query}`,
+      '-Q', `SET QUOTED_IDENTIFIER ON; SET NOCOUNT ON; ${query}`,
     ], { cwd: repositoryRoot, encoding: 'utf8', timeout: 30_000 }).trim();
   } catch (error) {
     const diagnostic = error instanceof Error
