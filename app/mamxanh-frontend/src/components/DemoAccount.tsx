@@ -53,7 +53,9 @@ export function DemoAccountProvider({ children }: { children: ReactNode }) {
     if (applicationStatus === 'PENDING') {
       return { ok: false, message: '409 Conflict: Bạn đang có đơn ở trạng thái PENDING, không thể gửi thêm.' };
     }
-    const newId = `EX-${Math.floor(10000 + Math.random() * 90000)}`;
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const newId = `EX-${10000 + (array[0] % 90000)}`;
     const newApp: ExpertApplication = {
       id: newId,
       applicantId: currentUser.id,

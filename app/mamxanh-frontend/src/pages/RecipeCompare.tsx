@@ -135,10 +135,11 @@ export function RecipeComparePage() {
           <div className="grid items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
             {/* Left Picker */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted">
+              <label htmlFor="compare-recipe-left" className="block text-xs font-bold uppercase tracking-wider text-ink-muted">
                 Công thức 1
               </label>
               <select
+                  id="compare-recipe-left"
                   value={leftRecipe.slug}
                   onChange={(e) => handleLeftChange(e.target.value)}
                   className="mt-1.5 w-full rounded-xl border border-brand-200 bg-white p-3 text-sm font-bold text-ink outline-none focus:border-brand-500"
@@ -160,10 +161,11 @@ export function RecipeComparePage() {
 
             {/* Right Picker */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted">
+              <label htmlFor="compare-recipe-right" className="block text-xs font-bold uppercase tracking-wider text-ink-muted">
                 Công thức 2
               </label>
               <select
+                  id="compare-recipe-right"
                   value={rightRecipe.slug}
                   onChange={(e) => handleRightChange(e.target.value)}
                   className="mt-1.5 w-full rounded-xl border border-brand-200 bg-white p-3 text-sm font-bold text-ink outline-none focus:border-brand-500"

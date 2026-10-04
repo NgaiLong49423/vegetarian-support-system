@@ -208,7 +208,7 @@ export function NutritionTracker() {
       </div>
 
       {/* MODAL PHÂN TÍCH TỔNG THỂ (FR-37) */}
-      <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="Phân tích dinh dưỡng tổng thể (FR-37)">
+      <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="Phân tích dinh dưỡng tổng thể (FR-37)" size="lg">
         <div className="space-y-5">
           {/* Header row in modal */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-100 pb-3">

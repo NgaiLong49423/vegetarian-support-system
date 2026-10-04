@@ -80,8 +80,10 @@ export function AppHeader() {
         {/* ============ DRAWER BACKDROP & DRAWER ============ */}
         {drawerOpen && (
           <>
-            <div
-                className="fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm"
+            <button
+                type="button"
+                aria-label="Đóng nền"
+                className="fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm cursor-default"
                 onClick={() => setDrawerOpen(false)}
             />
 

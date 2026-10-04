@@ -355,10 +355,11 @@ export function ExpertApplicationPage() {
 
                       {selectedApp.status === 'PENDING' ? (
                           <div className="space-y-3 border-t border-brand-100 pt-4">
-                            <label className="block text-xs font-bold text-ink">
+                            <label htmlFor="reject-reason-input" className="block text-xs font-bold text-ink">
                               Lý do từ chối (bắt buộc khi bấm Từ chối):
                             </label>
                             <textarea
+                                id="reject-reason-input"
                                 value={rejectReasonInput}
                                 onChange={(e) => {
                                   setRejectReasonInput(e.target.value);
