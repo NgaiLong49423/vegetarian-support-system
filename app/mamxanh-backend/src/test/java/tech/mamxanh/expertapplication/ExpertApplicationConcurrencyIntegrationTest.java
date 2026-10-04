@@ -1,6 +1,7 @@
 package tech.mamxanh.expertapplication;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.UUID;
@@ -41,6 +42,33 @@ class ExpertApplicationConcurrencyIntegrationTest extends AbstractIntegrationTes
         } finally {
             SecurityContextHolder.clearContext();
             jdbc.update("DELETE FROM [NOTIFICATION] WHERE user_id=?", applicant);
+            jdbc.update("DELETE FROM [EXPERT_APPLICATION] WHERE application_id=?", application);
+            jdbc.update("DELETE FROM [USER] WHERE user_id IN (?,?)", applicant, admin);
+        }
+    }
+
+    @Test void ineligibleAccountRollsBackApprovalAndDoesNotNotify() {
+        String suffix = UUID.randomUUID().toString();
+        long applicant = user("locked-applicant-" + suffix + "@example.org", "CUSTOMER");
+        long admin = user("rollback-admin-" + suffix + "@example.org", "ADMIN");
+        long application = jdbc.queryForObject("INSERT INTO [EXPERT_APPLICATION](user_id,bio_experience,vegetarian_type,sample_recipe_summary) OUTPUT INSERTED.application_id VALUES(?,?,?,?)",
+                Long.class, applicant, "Kinh nghiệm nấu các món chay nhiều năm.", "VEGAN", "Công thức rau củ hấp với hướng dẫn đầy đủ.");
+        jdbc.update("UPDATE [USER] SET account_status='LOCKED' WHERE user_id=?", applicant);
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(admin + "", "test", List.of()));
+        SecurityContextHolder.setContext(context);
+        try {
+            assertThatThrownBy(() -> service.approve(application, null)).isInstanceOf(ApiException.class)
+                    .satisfies(error -> assertThat(((ApiException) error).getStatus())
+                            .isEqualTo(org.springframework.http.HttpStatus.CONFLICT));
+            assertThat(jdbc.queryForObject("SELECT status FROM [EXPERT_APPLICATION] WHERE application_id=?", String.class, application))
+                    .isEqualTo("PENDING");
+            assertThat(jdbc.queryForObject("SELECT role FROM [USER] WHERE user_id=?", String.class, applicant))
+                    .isEqualTo("CUSTOMER");
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM [NOTIFICATION] WHERE user_id=?", Integer.class, applicant))
+                    .isZero();
+        } finally {
+            SecurityContextHolder.clearContext();
             jdbc.update("DELETE FROM [EXPERT_APPLICATION] WHERE application_id=?", application);
             jdbc.update("DELETE FROM [USER] WHERE user_id IN (?,?)", applicant, admin);
         }

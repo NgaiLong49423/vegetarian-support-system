@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.7.0
+> **Version:** v2.8.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -399,7 +399,6 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
   - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post dành riêng cho Chuyên gia.
   - [BR-74](BUSINESS-RULES.md#br-74): Quy trình xét duyệt đơn đăng ký Chuyên gia và chuyển đổi vai trò.
 - **Yêu cầu phi chức năng liên quan:**
-  - [NFR-01](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-01): Thời gian phản hồi gửi đơn và xử lý duyệt $\le 2$ giây (P95).
   - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC và bảo vệ endpoint quản trị.
   - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Validation dữ liệu văn bản đầu vào chặt chẽ ở tầng Backend.
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt.
@@ -419,12 +418,12 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
 - **AC-05.3 — Administrator phê duyệt đơn và hệ thống tự động thăng cấp Chuyên gia:**
   - **Given:** Administrator đang xem chi tiết một đơn đăng ký ở trạng thái `PENDING`.
   - **When:** Administrator nhấn "Phê duyệt" và xác nhận.
-  - **Then:** Hệ thống cập nhật trạng thái đơn thành `APPROVED`, ghi nhận thời gian và người duyệt, lập tức chuyển đổi vai trò tài khoản tương ứng thành `EXPERT`, và gửi thông báo in-app chúc mừng tới người dùng. Người dùng ngay sau đó có thể truy cập chức năng tạo bài viết (FR-04).
+  - **Then:** Trong cùng một transaction, hệ thống cập nhật trạng thái đơn thành `APPROVED`, ghi nhận thời gian và người duyệt, lập tức chuyển đổi vai trò tài khoản tương ứng thành `EXPERT`, và ghi thông báo in-app chúc mừng tới người dùng. Nếu một bước thất bại, toàn bộ thay đổi được rollback. Người dùng ngay sau đó có thể truy cập chức năng tạo bài viết (FR-04).
 
 - **AC-05.4 — Administrator từ chối đơn bắt buộc nhập lý do:**
   - **Given:** Administrator đang xem chi tiết một đơn đăng ký ở trạng thái `PENDING`.
   - **When:** Administrator nhấn "Từ chối" nhưng bỏ trống ô lý do từ chối.
-  - **Then:** Hệ thống chặn thao tác, yêu cầu nhập lý do từ chối cụ thể (tối thiểu 10 ký tự); khi Administrator nhập lý do hợp lệ và xác nhận, hệ thống cập nhật đơn thành `REJECTED` và gửi thông báo in-app kèm lý do tới người dùng.
+  - **Then:** Hệ thống chặn thao tác, yêu cầu nhập lý do từ chối cụ thể (tối thiểu 10 ký tự); khi Administrator nhập lý do hợp lệ và xác nhận, trong cùng một transaction hệ thống cập nhật đơn thành `REJECTED` và ghi thông báo in-app kèm lý do tới người dùng.
 
 - **AC-05.5 — Customer nộp lại đơn đăng ký mới sau khi bị từ chối:**
   - **Given:** Customer có đơn đăng ký trước đó ở trạng thái `REJECTED`.
@@ -444,7 +443,7 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
 - **AC-05.8 — Chặn duyệt khi tài khoản không còn đủ điều kiện:**
   - **Given:** Đơn còn `PENDING` nhưng tài khoản nộp đã không còn `ACTIVE` hoặc không còn vai trò `CUSTOMER`.
   - **When:** Administrator cố phê duyệt đơn.
-  - **Then:** Hệ thống từ chối xử lý, không cấp role `EXPERT` và yêu cầu Administrator tải lại trạng thái hiện hành.
+  - **Then:** Hệ thống trả `HTTP 409 Conflict`, rollback quyết định, không cấp role `EXPERT` hoặc ghi notification, và yêu cầu Administrator tải lại trạng thái hiện hành.
 
 ---
 
