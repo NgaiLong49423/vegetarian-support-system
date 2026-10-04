@@ -33,7 +33,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-04 — Synchronize Password Login with the Develop Baseline (FR-03-B, Issue #6)
 
-**Status:** Working tree.
+**Status:** Committed — 998e404.
 
 **Scope:** Resolve the authentication feature branch conflicts with the current `develop` baseline while preserving the nutrition and ingredient-catalog schema changes.
 
