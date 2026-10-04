@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.15.0
+> **Version:** v0.15.1
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-04
 > **Status:** Active  
@@ -27,6 +27,7 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 - Đã có luồng FR-03-A (Issue #5): `POST /api/v1/auth/register`, `/auth/email-verifications`, `/auth/email-verifications/resend`; lỗi trả `application/problem+json` có `code` ổn định; migration `V3__user_email_verification_token.sql`.
 - FR-35 bổ sung consent bằng migration `V4__nutrition_profile_consent.sql`; FR-18 bổ sung ingredient group và kiểm tra unit bằng migration `V5__ingredient_group_and_unit_validation.sql`.
 - Đã có luồng FR-03-B (Issue #6): `POST /api/v1/auth/login` phát Stateless JWT (HS256), khóa đăng nhập tạm 10 phút sau 5 lần sai liên tiếp theo tài khoản (migration `V6__user_login_throttle.sql`), và mọi request mang Bearer token đều kiểm tra `USER.account_status`.
+- FR-05 (Issue #68) triển khai luồng nộp/xem lịch sử đơn Chuyên gia và Admin xét duyệt qua Backend API; phê duyệt đổi `CUSTOMER` thành `EXPERT` và ghi notification trong cùng transaction. Migration `V7__expert_application_notifications.sql` bổ sung internal target path cùng index truy vấn. Chi tiết API được tạo từ runtime OpenAPI.
 
 ### Lệnh chạy và kiểm tra xác minh
 

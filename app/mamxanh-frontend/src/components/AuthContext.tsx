@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SESSION_ENDED_EVENT, type SessionEndReason } from '../lib/apiClient';
-import { clearSession, loadSession, saveSession, type StoredSession } from '../lib/authStorage';
+import { clearSession, loadSession, saveSession, updateStoredAccountRole, type StoredSession } from '../lib/authStorage';
 import type { AccountSummary, AuthResponse } from '../services/authApi';
 
 /** Shown on the login page after the app ends a session by itself. */
@@ -19,6 +19,7 @@ type AuthContextValue = {
   signOut: () => void;
   enterDemo: () => void;
   exitDemo: () => void;
+  updateAccountRole: (role: AccountSummary['role']) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -48,6 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [session, endSession]);
 
+  const updateAccountRole = useCallback((role: AccountSummary['role']) => {
+    setSession((current) => current?.account.role === role ? current : updateStoredAccountRole(role));
+  }, []);
+
   const value = useMemo<AuthContextValue>(() => ({
     account: session?.account ?? null,
     isAuthenticated: !!session,
@@ -63,7 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     enterDemo: () => setDemoActive(true),
     exitDemo: () => setDemoActive(false),
-  }), [session, demoActive]);
+    updateAccountRole,
+  }), [session, demoActive, updateAccountRole]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

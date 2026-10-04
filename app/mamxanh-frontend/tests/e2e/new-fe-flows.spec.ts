@@ -301,49 +301,95 @@ test('nutrition tracker opens overall 9-indicator analysis modal (FR-37)', async
   await expect(modal).toBeHidden();
 });
 
-test('expert application flow handles guest prompt, customer submission and admin review (FR-05)', async ({ page }) => {
+test('expert application customer and admin workflows use the API and recover from stale decisions (FR-05)', async ({ page }) => {
   await page.goto('/dang-ky-chuyen-gia');
-  await expect(page.getByText('Yêu cầu đăng nhập')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Đăng nhập ngay' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Đăng nhập để tiếp tục' })).toBeVisible();
+  await page.evaluate(() => sessionStorage.setItem('mamxanh.auth', JSON.stringify({
+    accessToken: 'test-only-token', expiresAt: Date.now() + 3600000,
+    account: { id: 41, displayName: 'Nguyễn An', email: 'an@example.org', role: 'CUSTOMER', accountStatus: 'ACTIVE', emailVerified: true },
+  })));
 
-  await page.getByRole('link', { name: 'Đăng nhập ngay' }).click();
-  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
-  await page.getByRole('button', { name: 'Đăng ký Chuyên gia' }).first().click();
-
-  // Trigger validation error
+  let status: 'PENDING' | 'REJECTED' | 'APPROVED' | null = null;
+  let adminNote = '';
+  let conflictOnce = true;
+  let posted: Record<string, unknown> | null = null;
+  await page.route('**/api/v1/**expert-applications**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    const application = { id: 501, userId: 41, displayName: 'Nguyễn An', email: 'an@example.org', experience: 'Hơn 5 năm kinh nghiệm nấu ăn thuần chay thực dưỡng.', vegetarianType: 'VEGAN', sampleRecipeSummary: 'Đậu hũ sốt nấm hương tiêu xanh hấp dẫn và thơm lừng.', portfolioUrl: null, status, adminNote, submittedAt: new Date().toISOString(), reviewedAt: status && status !== 'PENDING' ? new Date().toISOString() : null };
+    if (path.endsWith('/admin/expert-applications') && request.method() === 'GET') {
+      return route.fulfill({ json: { content: status ? [application] : [], page: 0, size: 20, totalElements: Number(!!status), totalPages: Number(!!status) } });
+    }
+    if (path.endsWith('/admin/expert-applications/501') && request.method() === 'GET') {
+      return route.fulfill({ json: application });
+    }
+    if (path.endsWith('/reject') && request.method() === 'POST') {
+      adminNote = request.postDataJSON().reason;
+      status = 'REJECTED';
+      if (conflictOnce) {
+        conflictOnce = false;
+        return route.fulfill({ status: 409, contentType: 'application/problem+json', body: JSON.stringify({ status: 409, detail: 'Đơn đã được xử lý bởi một yêu cầu khác.', code: 'EXPERT_APPLICATION_STALE' }) });
+      }
+    }
+    if (path.endsWith('/approve') && request.method() === 'POST') {
+      status = 'APPROVED';
+      return route.fulfill({ json: { ...application, status, adminNote: null } });
+    }
+    if (request.method() === 'POST' && path.endsWith('/expert-applications')) {
+      posted = request.postDataJSON();
+      status = 'PENDING';
+      adminNote = '';
+      return route.fulfill({ status: 201, json: { ...application, status, adminNote: null } });
+    }
+    if (path.endsWith('/me') && request.method() === 'GET') {
+      return route.fulfill({ json: { content: status ? [application] : [], page: 0, size: 20, totalElements: Number(!!status), totalPages: Number(!!status) } });
+    }
+    return route.fulfill({ json: application });
+  });
+  await page.reload();
+  await page.getByLabel(/Kinh nghiệm ẩm thực chay/).fill('Hơn 5 năm kinh nghiệm nấu ăn thuần chay thực dưỡng.');
+  await page.getByLabel(/Tóm tắt công thức sở trường/).fill('Đậu hũ sốt nấm hương tiêu xanh hấp dẫn và thơm lừng.');
+  await page.getByLabel(/Tôi cam kết/).check();
   await page.getByRole('button', { name: 'Gửi đơn đăng ký' }).click();
-  await expect(page.getByText('Kinh nghiệm ẩm thực chay cần tối thiểu 20 ký tự (theo FR-05).')).toBeVisible();
+  await expect(page.getByRole('status')).toContainText('Đơn đã được gửi');
+  expect(posted).toMatchObject({ vegetarianType: 'VEGAN' });
 
-  await page.locator('#culinaryExperience').fill('Hơn 5 năm kinh nghiệm nấu ăn thuần chay thực dưỡng.');
-  await page.locator('#sampleRecipe').fill('Đậu hũ sốt nấm hương tiêu xanh hấp dẫn thơm lừng.');
-  await page.getByRole('button', { name: 'Gửi đơn đăng ký' }).click();
+  await page.evaluate(() => {
+    const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'ADMIN'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session));
+    window.location.assign('/admin/xet-duyet-chuyen-gia');
+  });
+  await expect(page.getByRole('heading', { name: 'Xét duyệt Chuyên gia' })).toBeVisible();
+  await page.getByRole('button', { name: 'Xem chi tiết' }).click();
+  await page.getByLabel(/Lý do từ chối/).fill('Cần bổ sung thêm kinh nghiệm cụ thể.');
+  await page.getByRole('button', { name: 'Từ chối', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Đơn đã được xử lý');
+  await expect(page.getByText('REJECTED', { exact: true })).toBeVisible();
 
-  await expect(page.getByText(/PENDING · Đang chờ phê duyệt/i)).toBeVisible();
-
-  // Admin view & review
-  await page.getByRole('button', { name: 'Admin Duyệt' }).click();
-  await expect(page.getByText(/Bảng xét duyệt đơn đăng ký Chuyên gia/i)).toBeVisible();
-  await page.getByRole('button', { name: 'Xem chi tiết & Thẩm định' }).first().click();
-
-  // Attempt reject without reason error
-  await page.getByRole('button', { name: 'Từ chối đơn' }).click();
-  await expect(page.getByText('Bắt buộc nhập lý do khi từ chối đơn đăng ký (theo FR-05).')).toBeVisible();
-
-  // Fill rejection reason and reject
-  await page.locator('#reject-reason-input').fill('Cần bổ sung thêm kinh nghiệm cụ thể.');
-  await page.getByRole('button', { name: 'Từ chối đơn' }).click();
-
-  // Back to customer view to verify rejected state & resubmit
-  await page.getByRole('button', { name: 'Customer' }).click();
-  await expect(page.getByText(/REJECTED · Đơn bị từ chối/i)).toBeVisible();
+  await page.evaluate(() => {
+    const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'CUSTOMER'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session));
+    window.location.assign('/dang-ky-chuyen-gia');
+  });
   await expect(page.getByText('Cần bổ sung thêm kinh nghiệm cụ thể.')).toBeVisible();
-  await page.getByRole('button', { name: 'Nộp lại đơn đăng ký mới' }).click();
-  await expect(page.getByRole('heading', { name: /Biểu mẫu Đăng ký Chuyên gia/i })).toBeVisible();
-  await page.getByRole('button', { name: 'Hủy' }).click();
+  await page.getByLabel(/Kinh nghiệm ẩm thực chay/).fill('Tôi đã bổ sung kinh nghiệm chế biến món chay trong nhiều năm.');
+  await page.getByLabel(/Tóm tắt công thức sở trường/).fill('Công thức đậu hũ và nấm được hướng dẫn đầy đủ, dễ thực hiện.');
+  await page.getByLabel(/Tôi cam kết/).check();
+  await expect(page.getByRole('button', { name: 'Gửi đơn đăng ký' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Gửi đơn đăng ký' }).click();
+  await expect(page.getByText(/#501 · PENDING/)).toBeVisible();
 
-  // Test Expert view
-  await page.getByRole('button', { name: 'Chuyên gia', exact: true }).click();
-  await expect(page.getByText('Bạn là Chuyên gia ẩm thực chay')).toBeVisible();
+  await page.evaluate(() => {
+    const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'ADMIN'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session));
+    window.location.assign('/admin/xet-duyet-chuyen-gia');
+  });
+  await page.getByRole('button', { name: 'Xem chi tiết' }).click();
+  await page.getByRole('button', { name: 'Phê duyệt' }).click();
+  await expect(page.getByRole('status')).toContainText('Đã phê duyệt đơn');
+
+  await page.evaluate(() => {
+    const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'CUSTOMER'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session));
+    window.location.assign('/dang-ky-chuyen-gia');
+  });
+  await expect(page.getByText('Tài khoản đã được phê duyệt Chuyên gia.')).toBeVisible();
 });
 
 test('recipe like and dislike reactions update state without rating stars (FR-57)', async ({ page }) => {

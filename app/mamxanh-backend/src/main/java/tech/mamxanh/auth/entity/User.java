@@ -144,4 +144,9 @@ public class User {
             updatedAt = now;
         }
     }
+
+    public void promoteToExpert(LocalDateTime now) {
+        this.role = Role.EXPERT;
+        this.updatedAt = now;
+    }
 }
