@@ -3,7 +3,10 @@ import { AlertCircle, CheckCircle2, ImagePlus, Info, LoaderCircle, Plus, Trash2,
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
 import { ApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
+import { useDemoAccount } from '../components/DemoAccount';
 import { Button, Card } from '../components/ui';
+import type { UserRole } from '../types';
+import { Link } from 'react-router-dom';
 
 type IngredientRow = {
   key: string;
@@ -24,6 +27,42 @@ const emptyIngredient = (): IngredientRow => ({
 });
 
 export function CreateRecipe() {
+  const { active, role } = useDemoAccount();
+
+  if (!active || role !== 'EXPERT') {
+    return <RecipeCreationAccessGate active={active} role={role} />;
+  }
+
+  return <CreateRecipeForm />;
+}
+
+function RecipeCreationAccessGate({ active, role }: { active: boolean; role: UserRole }) {
+  const isGuest = !active;
+  const destination = isGuest ? '/dang-nhap' : role === 'CUSTOMER' ? '/dang-ky-chuyen-gia' : undefined;
+  const action = isGuest ? 'Đăng nhập' : 'Đăng ký trở thành Chuyên gia';
+
+  return (
+    <PageContainer className="py-12">
+      <Card className="mx-auto max-w-xl p-8 text-center">
+        <h1 className="text-2xl font-extrabold text-ink">Đăng công thức chỉ dành cho Chuyên gia</h1>
+        <p className="mt-3 text-sm text-ink-muted">
+          {isGuest
+            ? 'Đăng nhập và được phê duyệt trở thành Chuyên gia để đăng công thức.'
+            : role === 'CUSTOMER'
+              ? 'Bạn cần được phê duyệt đơn đăng ký Chuyên gia trước khi đăng công thức.'
+              : 'Vai trò hiện tại không có quyền đăng công thức.'}
+        </p>
+        {destination && (
+          <Link to={destination} className="mt-5 inline-flex rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-700">
+            {action}
+          </Link>
+        )}
+      </Card>
+    </PageContainer>
+  );
+}
+
+function CreateRecipeForm() {
   const [options, setOptions] = useState<RecipeFormOptions | null>(null);
   const [optionsError, setOptionsError] = useState('');
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -156,7 +195,7 @@ export function CreateRecipe() {
       </nav>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Đăng công thức món chay</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Đăng công thức món chay mới</h1>
         <p className="mt-1 text-sm text-ink-muted">Điền thông tin và định lượng để người khác có thể làm lại món ăn.</p>
       </div>
 
