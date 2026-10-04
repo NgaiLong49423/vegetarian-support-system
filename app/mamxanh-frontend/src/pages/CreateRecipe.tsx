@@ -5,7 +5,9 @@ import { ApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
 import { useDemoAccount } from '../components/DemoAccount';
 import { useAuth } from '../components/AuthContext';
-import type { DietTag } from '../types';
+import { Button, Card } from '../components/ui';
+import type { UserRole } from '../types';
+import { Link } from 'react-router-dom';
 
 type IngredientRow = {
   key: string;
