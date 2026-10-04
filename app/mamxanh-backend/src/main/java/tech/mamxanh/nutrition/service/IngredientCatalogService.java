@@ -106,6 +106,9 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     public UnitResponse updateUnit(int id, UnitSaveRequest request) {
         UnitEntity unit = requireUnit(id); String code = request.code().trim();
         if (!unit.getCode().equalsIgnoreCase(code) && unitRepository.existsByCodeIgnoreCase(code)) throw conflict("UNIT_CODE_EXISTS", "Ký hiệu đơn vị đã tồn tại.");
+        if (unit.getDimension() != request.dimension() && conversionRepository.existsByIdUnitId(id)) {
+            throw conflict("UNIT_HAS_INGREDIENT_CONVERSIONS", "Không thể đổi thứ nguyên khi đơn vị đã có tỷ lệ quy đổi theo nguyên liệu.");
+        }
         unit.update(code, request.name().trim(), request.dimension(), request.baseFactor()); return toResponse(unit);
     }
 
@@ -146,7 +149,10 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
 
     @Transactional
     public ConversionResponse setConversionStatus(long ingredientId, int unitId, CatalogStatusUpdateRequest request) {
-        IngredientUnitConversionEntity conversion = requireConversion(ingredientId, unitId); conversion.setActive(request.active()); return toResponse(conversion);
+        IngredientUnitConversionEntity conversion = requireConversion(ingredientId, unitId);
+        if (request.active()) requireConvertibleUnit(requireUnit(unitId));
+        conversion.setActive(request.active());
+        return toResponse(conversion);
     }
 
     public void rejectHardDelete(String resource) { throw conflict("HARD_DELETE_NOT_SUPPORTED", "Không hỗ trợ xóa vĩnh viễn " + resource + "; hãy chuyển sang trạng thái ngừng sử dụng."); }

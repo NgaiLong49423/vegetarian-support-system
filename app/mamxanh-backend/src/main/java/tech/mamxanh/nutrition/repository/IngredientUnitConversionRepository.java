@@ -13,6 +13,7 @@ import tech.mamxanh.nutrition.entity.IngredientUnitConversionId;
 public interface IngredientUnitConversionRepository extends JpaRepository<IngredientUnitConversionEntity, IngredientUnitConversionId> {
     Optional<IngredientUnitConversionEntity> findByIdAndActiveTrue(IngredientUnitConversionId id);
     List<IngredientUnitConversionEntity> findByIdIngredientId(Long ingredientId);
+    boolean existsByIdUnitId(int unitId);
 
     @Modifying
     @Query(value = """

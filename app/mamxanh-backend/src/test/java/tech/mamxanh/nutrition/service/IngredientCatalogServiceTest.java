@@ -179,6 +179,20 @@ class IngredientCatalogServiceTest {
         assertThat(deactivated.active()).isFalse();
     }
 
+    @Test void rejectsChangingUnitDimensionWhenConversionsExist() {
+        UnitEntity unit = new UnitEntity("ml", "Mililit", MeasurementDimension.VOLUME, BigDecimal.ONE);
+        when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
+        when(conversionRepository.existsByIdUnitId(2)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.updateUnit(2,
+                new UnitSaveRequest("g", "Gam", MeasurementDimension.MASS, BigDecimal.ONE)))
+                .isInstanceOfSatisfying(ApiException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(exception.getCode()).isEqualTo("UNIT_HAS_INGREDIENT_CONVERSIONS");
+                });
+        assertThat(unit.getDimension()).isEqualTo(MeasurementDimension.VOLUME);
+    }
+
     @Test void updatesUnitWithSameCodeAndRejectsAnotherUnitsCode() {
         UnitEntity unit = new UnitEntity("g", "gam", MeasurementDimension.MASS, BigDecimal.ONE);
         when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
@@ -265,6 +279,26 @@ class IngredientCatalogServiceTest {
                     assertThat(exception.getCode()).isEqualTo("MASS_CONVERSION_NOT_ALLOWED");
                 });
         assertThat(conversion.getGramsPerUnit()).isEqualByComparingTo("120");
+    }
+
+    @Test void rejectsReactivatingMassUnitConversionButAllowsDeactivation() {
+        var id = new IngredientUnitConversionId(1L, 2);
+        var conversion = new IngredientUnitConversionEntity(id, new BigDecimal("120"), false);
+        conversion.setActive(false);
+        UnitEntity unit = new UnitEntity("g", "Gam", MeasurementDimension.MASS, BigDecimal.ONE);
+        when(conversionRepository.findById(id)).thenReturn(Optional.of(conversion));
+        when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
+
+        assertThatThrownBy(() -> service.setConversionStatus(1L, 2, new CatalogStatusUpdateRequest(true)))
+                .isInstanceOfSatisfying(ApiException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(exception.getCode()).isEqualTo("MASS_CONVERSION_NOT_ALLOWED");
+                });
+        assertThat(conversion.isActive()).isFalse();
+
+        conversion.setActive(true);
+        service.setConversionStatus(1L, 2, new CatalogStatusUpdateRequest(false));
+        assertThat(conversion.isActive()).isFalse();
     }
 
     @Test void mapsConcurrentDuplicateInsertToConflictAndRethrowsOtherDatabaseErrors() {
