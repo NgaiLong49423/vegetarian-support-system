@@ -65,7 +65,7 @@ export function TransactionHistory() {
   }
 
   useEffect(() => {
-    loadTransactions();
+    void loadTransactions();
   }, [isLoggedIn]);
 
   return (

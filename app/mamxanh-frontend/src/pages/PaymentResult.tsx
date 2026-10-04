@@ -41,7 +41,7 @@ export function PaymentResult({ mode }: PaymentResultProps) {
       }
     }
 
-    fetchLatestSubscription();
+    void fetchLatestSubscription();
 
     return () => {
       active = false;

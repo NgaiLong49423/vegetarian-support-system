@@ -170,6 +170,16 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
     });
   });
 
+  test('AC-13.5: Thanh toán thành công chuyển hướng đến trang kết quả thành công và hiển thị gói mới', async ({ page }) => {
+    await setupMockSubscriptionApis(page, mockPlusSubscription);
+    await page.goto('/payment/success?orderCode=1728038400123&status=PAID');
+
+    await expect(page.getByRole('heading', { name: /Thanh toán thành công/i })).toBeVisible();
+    await expect(page.getByText('#1728038400123')).toBeVisible();
+    await expect(page.getByText('Gói PLUS')).toBeVisible();
+    await expect(page.getByRole('link', { name: /Xem hồ sơ/i })).toBeVisible();
+  });
+
   test('AC-13.6: Huỷ thanh toán quay lại hệ thống bảo toàn quyền lợi gói cũ', async ({ page }) => {
     await setupMockSubscriptionApis(page, mockPlusSubscription);
     await page.goto('/payment/cancel?orderCode=1728038400999&status=CANCELLED');

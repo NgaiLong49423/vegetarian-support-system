@@ -88,7 +88,7 @@ export function AiPlans() {
       }
     }
 
-    loadData();
+    void loadData();
 
     return () => {
       active = false;

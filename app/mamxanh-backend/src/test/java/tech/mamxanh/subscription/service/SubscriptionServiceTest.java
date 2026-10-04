@@ -281,6 +281,122 @@ class SubscriptionServiceTest {
         verify(paymentTransactionRepository).save(any(PaymentTransactionEntity.class));
     }
 
+    @Test
+    @DisplayName("Should throw exception when creating checkout with null tier")
+    void shouldThrowExceptionWhenCreatingCheckoutWithNullTier() {
+        Long userId = 1L;
+        assertThatThrownBy(() -> subscriptionService.createCheckout(userId, null))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("chọn gói đăng ký hợp lệ");
+    }
+
+    @Test
+    @DisplayName("Should mark transaction FAILED when payOS returns unsuccessful response")
+    void shouldMarkTransactionFailedWhenPayOsReturnsError() {
+        Long userId = 1L;
+        mockActiveUser(userId);
+
+        when(payOsClient.createPaymentLink(anyLong(), anyInt(), anyString()))
+                .thenReturn(new CreatePaymentLinkResponse("99", "Failed", null, ""));
+
+        assertThatThrownBy(() -> subscriptionService.createCheckout(userId, SubscriptionTier.PLUS))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Không thể khởi tạo liên kết thanh toán payOS");
+
+        verify(paymentTransactionRepository, org.mockito.Mockito.atLeastOnce()).save(any(PaymentTransactionEntity.class));
+    }
+
+    @Test
+    @DisplayName("Should throw exception when webhook payload has null orderCode")
+    void shouldThrowExceptionWhenWebhookHasNullOrderCode() {
+        when(payOsClient.verifyWebhook(any())).thenReturn(true);
+
+        PayOsWebhookPayload payloadWithoutOrderCode = new PayOsWebhookPayload(
+                "00", "success",
+                Map.of("amount", 49000),
+                "sig"
+        );
+
+        assertThatThrownBy(() -> subscriptionService.handlePayOsWebhook(payloadWithoutOrderCode))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("thiếu mã đơn hàng orderCode");
+    }
+
+    @Test
+    @DisplayName("AC-13.4: Should automatically downgrade expired subscription to FREE")
+    void shouldDowngradeExpiredSubscriptionToFree() {
+        Long userId = 1L;
+        mockActiveUser(userId);
+
+        LocalDateTime expiredStartsAt = LocalDateTime.now(clock).minusDays(35);
+        LocalDateTime expiredEndsAt = LocalDateTime.now(clock).minusDays(5);
+        SubscriptionEntity expiredSub = new SubscriptionEntity(userId, SubscriptionTier.PLUS, expiredStartsAt, expiredEndsAt);
+
+        when(subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE))
+                .thenReturn(Optional.of(expiredSub));
+
+        MySubscriptionResponse response = subscriptionService.getMySubscription(userId);
+
+        assertThat(response.tier()).isEqualTo("FREE");
+        assertThat(expiredSub.getStatus()).isEqualTo(SubscriptionStatus.EXPIRED);
+        verify(subscriptionRepository).save(expiredSub);
+    }
+
+    @Test
+    @DisplayName("AC-13.7: Should return PLUS features for active PLUS subscription")
+    void shouldReturnPlusFeaturesForPlusSubscription() {
+        Long userId = 1L;
+        mockActiveUser(userId);
+
+        LocalDateTime startsAt = LocalDateTime.now(clock).minusDays(1);
+        LocalDateTime endsAt = LocalDateTime.now(clock).plusDays(29);
+        SubscriptionEntity plusSub = new SubscriptionEntity(userId, SubscriptionTier.PLUS, startsAt, endsAt);
+
+        when(subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE))
+                .thenReturn(Optional.of(plusSub));
+
+        MySubscriptionResponse response = subscriptionService.getMySubscription(userId);
+
+        assertThat(response.tier()).isEqualTo("PLUS");
+        assertThat(response.unlockedFeatures()).contains("AI hỗ trợ soạn bài viết và công thức");
+    }
+
+    @Test
+    @DisplayName("Should cover entity constructors, getters and setters")
+    void shouldCoverEntityMethods() {
+        LocalDateTime now = LocalDateTime.now(clock);
+        SubscriptionEntity sub = new SubscriptionEntity(20L, SubscriptionTier.PRO, now, now.plusDays(30));
+        sub.setId(10L);
+        sub.setStatus(SubscriptionStatus.ACTIVE);
+        sub.setCreatedAt(now);
+        sub.setUpdatedAt(now);
+
+        assertThat(sub.getId()).isEqualTo(10L);
+        assertThat(sub.getUserId()).isEqualTo(20L);
+        assertThat(sub.getTier()).isEqualTo(SubscriptionTier.PRO);
+        assertThat(sub.getStatus()).isEqualTo(SubscriptionStatus.ACTIVE);
+        assertThat(sub.getStartsAt()).isEqualTo(now);
+        assertThat(sub.getEndsAt()).isEqualTo(now.plusDays(30));
+        assertThat(sub.getCreatedAt()).isEqualTo(now);
+        assertThat(sub.getUpdatedAt()).isEqualTo(now);
+
+        PaymentTransactionEntity tx = new PaymentTransactionEntity(20L, "ORD123", 99000);
+        tx.setId(100L);
+        tx.setStatus(PaymentStatus.PAID);
+        tx.setSubscriptionId(10L);
+        tx.setCreatedAt(now);
+        tx.setPaidAt(now);
+
+        assertThat(tx.getId()).isEqualTo(100L);
+        assertThat(tx.getUserId()).isEqualTo(20L);
+        assertThat(tx.getOrderCode()).isEqualTo("ORD123");
+        assertThat(tx.getAmountVnd()).isEqualTo(99000);
+        assertThat(tx.getStatus()).isEqualTo(PaymentStatus.PAID);
+        assertThat(tx.getSubscriptionId()).isEqualTo(10L);
+        assertThat(tx.getCreatedAt()).isEqualTo(now);
+        assertThat(tx.getPaidAt()).isEqualTo(now);
+    }
+
     private void mockActiveUser(Long userId) {
         User user = org.mockito.Mockito.mock(User.class);
         org.mockito.Mockito.lenient().when(user.getId()).thenReturn(userId);
