@@ -38,6 +38,7 @@ class ExpertPromotionServiceTest {
     void activeCustomerCanBePromotedAndSubmissionRequiresActiveCustomer() {
         var applicant = mock(User.class);
         when(users.findByIdForUpdate(17L)).thenReturn(Optional.of(applicant));
+        when(users.findById(17L)).thenReturn(Optional.of(applicant));
         when(applicant.getAccountStatus()).thenReturn(AccountStatus.ACTIVE);
         when(applicant.getRole()).thenReturn(Role.CUSTOMER);
 
