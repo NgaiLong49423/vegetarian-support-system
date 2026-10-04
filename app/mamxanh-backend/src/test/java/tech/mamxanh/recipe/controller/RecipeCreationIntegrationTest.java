@@ -204,6 +204,37 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void acceptsSupportedYoutubeFormatsAndRejectsWatchLinksWithoutVideoId() throws Exception {
+        for (String youtubeUrl : List.of(
+                "https://www.youtube.com/watch?v=video-1",
+                "https://www.youtube.com/watch?feature=share&v=video-2",
+                "https://youtu.be/video-3",
+                "https://youtube.com/embed/video-4",
+                "https://youtube.com/shorts/video-5")) {
+            mockMvc.perform(post("/api/v1/recipes")
+                            .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(request(List.of(ingredient(gramUnitId, "200")), List.of(), youtubeUrl))))
+                    .andExpect(status().isCreated());
+        }
+
+        for (String youtubeUrl : List.of(
+                "https://www.youtube.com/watch?v=",
+                "https://www.youtube.com/watch?feature=share",
+                "https://www.youtube.com/watch?x=1%26v=video-6")) {
+            mockMvc.perform(post("/api/v1/recipes")
+                            .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(request(List.of(ingredient(gramUnitId, "200")), List.of(), youtubeUrl))))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors[*].field", hasItem("youtubeUrl")));
+        }
+
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM [RECIPE_POST] WHERE author_id = ?", Integer.class, expertId)).isEqualTo(5);
+    }
+
+    @Test
     void servesCurrentDishUnitAndIngredientOptionsWithoutAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/recipes/form-options"))
                 .andExpect(status().isOk())
@@ -249,8 +280,13 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     }
 
     private CreateRecipeRequest request(List<RecipeIngredientInput> ingredients, List<RecipeMediaInput> media) {
+        return request(ingredients, media, "");
+    }
+
+    private CreateRecipeRequest request(List<RecipeIngredientInput> ingredients, List<RecipeMediaInput> media,
+            String youtubeUrl) {
         return new CreateRecipeRequest("Đậu hũ kho cà chua", "", "Cắt đậu hũ, rim cùng cà chua đến khi thấm vị.",
-                DishCategory.BRAISED, VegetarianType.VEGAN, Difficulty.EASY, 2, 10, 0, "", ingredients, media);
+                DishCategory.BRAISED, VegetarianType.VEGAN, Difficulty.EASY, 2, 10, 0, youtubeUrl, ingredients, media);
     }
 
     private String json(Object value) throws Exception { return jsonMapper.writeValueAsString(value); }

@@ -17,8 +17,10 @@ type IngredientRow = {
   unitId: number | null;
 };
 
+let ingredientRowSequence = 0;
+
 const emptyIngredient = (): IngredientRow => ({
-  key: `${Date.now()}-${Math.random()}`,
+  key: `ingredient-${Date.now()}-${++ingredientRowSequence}`,
   ingredientId: null,
   ingredientName: '',
   search: '',
@@ -76,7 +78,7 @@ function CreateRecipeForm() {
   const [prepTimeMinutes, setPrepTimeMinutes] = useState('');
   const [cookTimeMinutes, setCookTimeMinutes] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [ingredients, setIngredients] = useState<IngredientRow[]>([emptyIngredient()]);
+  const [ingredients, setIngredients] = useState<IngredientRow[]>(() => [emptyIngredient()]);
   const [files, setFiles] = useState<File[]>([]);
   const [coverIndex, setCoverIndex] = useState<number | null>(null);
   const [mediaError, setMediaError] = useState('');

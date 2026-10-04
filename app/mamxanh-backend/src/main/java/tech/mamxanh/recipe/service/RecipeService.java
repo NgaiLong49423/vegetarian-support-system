@@ -254,13 +254,25 @@ public class RecipeService {
             String path = uri.getPath() == null ? "" : uri.getPath();
             boolean hasVideo = host.equals("youtu.be") ? path.length() > 1
                     : path.startsWith("/embed/") || path.startsWith("/shorts/")
-                    || (path.equals("/watch") && uri.getQuery() != null && uri.getQuery().matches(".*(?:^|&)v=[^&]+.*"));
+                    || (path.equals("/watch") && hasNonEmptyVideoParameter(uri.getRawQuery()));
             if (!"https".equalsIgnoreCase(uri.getScheme()) || !supportedHost || !hasVideo) {
                 errors.add(new FieldError("youtubeUrl", "Nhập link video YouTube hợp lệ hoặc để trống."));
             }
         } catch (IllegalArgumentException exception) {
             errors.add(new FieldError("youtubeUrl", "Nhập link video YouTube hợp lệ hoặc để trống."));
         }
+    }
+
+    private static boolean hasNonEmptyVideoParameter(String rawQuery) {
+        if (rawQuery == null) return false;
+        for (String parameter : rawQuery.split("&")) {
+            int separator = parameter.indexOf('=');
+            if (separator > 0 && "v".equals(parameter.substring(0, separator))
+                    && separator < parameter.length() - 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void validateMedia(List<RecipeMediaInput> media, List<FieldError> errors) {
