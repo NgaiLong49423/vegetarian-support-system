@@ -20,6 +20,7 @@ import tech.mamxanh.nutrition.dto.response.UnitResponse;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionEntity;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionId;
+import tech.mamxanh.nutrition.entity.MeasurementDimension;
 import tech.mamxanh.nutrition.entity.CatalogStatus;
 import tech.mamxanh.nutrition.entity.UnitEntity;
 import tech.mamxanh.nutrition.repository.IngredientRepository;
@@ -119,7 +120,9 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
 
     @Transactional
     public ConversionResponse createConversion(long ingredientId, int unitId, ConversionSaveRequest request) {
-        requireActiveIngredient(ingredientId); requireActiveUnit(unitId);
+        requireActiveIngredient(ingredientId);
+        UnitEntity unit = requireActiveUnit(unitId);
+        requireConvertibleUnit(unit);
         IngredientUnitConversionId id = new IngredientUnitConversionId(ingredientId, unitId);
         if (conversionRepository.existsById(id)) throw conflict("CONVERSION_EXISTS", "Cặp nguyên liệu và đơn vị đã có tỷ lệ quy đổi.");
         try {
@@ -135,7 +138,10 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
 
     @Transactional
     public ConversionResponse updateConversion(long ingredientId, int unitId, ConversionSaveRequest request) {
-        IngredientUnitConversionEntity conversion = requireConversion(ingredientId, unitId); conversion.update(request.gramsPerUnit(), request.approximate()); return toResponse(conversion);
+        IngredientUnitConversionEntity conversion = requireConversion(ingredientId, unitId);
+        requireConvertibleUnit(requireUnit(unitId));
+        conversion.update(request.gramsPerUnit(), request.approximate());
+        return toResponse(conversion);
     }
 
     @Transactional
@@ -165,7 +171,16 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     private IngredientEntity requireIngredient(long id) { return ingredientRepository.findById(id).orElseThrow(() -> notFound("INGREDIENT_NOT_FOUND", "Không tìm thấy nguyên liệu.")); }
     private UnitEntity requireUnit(int id) { return unitRepository.findById(id).orElseThrow(() -> notFound("UNIT_NOT_FOUND", "Không tìm thấy đơn vị.")); }
     private void requireActiveIngredient(long id) { if (requireIngredient(id).getStatus() == CatalogStatus.INACTIVE) throw conflict("INGREDIENT_INACTIVE", "Nguyên liệu đã ngừng sử dụng."); }
-    private void requireActiveUnit(int id) { if (!requireUnit(id).isActive()) throw conflict("UNIT_INACTIVE", "Đơn vị đã ngừng sử dụng."); }
+    private UnitEntity requireActiveUnit(int id) {
+        UnitEntity unit = requireUnit(id);
+        if (!unit.isActive()) throw conflict("UNIT_INACTIVE", "Đơn vị đã ngừng sử dụng.");
+        return unit;
+    }
+    private void requireConvertibleUnit(UnitEntity unit) {
+        if (unit.getDimension() == MeasurementDimension.MASS) {
+            throw conflict("MASS_CONVERSION_NOT_ALLOWED", "Không thể cấu hình quy đổi riêng cho đơn vị khối lượng.");
+        }
+    }
     private IngredientUnitConversionEntity requireConversion(long ingredientId, int unitId) { return conversionRepository.findById(new IngredientUnitConversionId(ingredientId, unitId)).orElseThrow(() -> notFound("CONVERSION_NOT_FOUND", "Không tìm thấy tỷ lệ quy đổi.")); }
     private IngredientResponse toResponse(IngredientEntity entity) { return new IngredientResponse(entity.getId(), entity.getName(), entity.getIngredientGroup(), entity.getSourceName(), entity.getSourceUrl(), entity.getReferenceDate(), entity.isNutritionSupported(), entity.getStatus() == CatalogStatus.ACTIVE); }
     private UnitResponse toResponse(UnitEntity entity) { return new UnitResponse(entity.getId(), entity.getCode(), entity.getName(), entity.getDimension(), entity.getBaseFactor(), entity.isActive()); }

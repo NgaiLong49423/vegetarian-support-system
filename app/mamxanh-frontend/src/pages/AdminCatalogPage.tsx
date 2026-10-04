@@ -936,7 +936,7 @@ export function AdminCatalogPage() {
                       }
                     >
                       <option value="">Chọn đơn vị</option>
-                      {units.map((item) => (
+                      {units.filter((item) => item.dimension !== 'MASS').map((item) => (
                         <option key={item.id} value={item.id} disabled={!item.active}>
                           {item.name} ({item.code})
                           {item.active ? '' : ' (ngừng dùng)'}

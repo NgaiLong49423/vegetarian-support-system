@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.nutrition.dto.request.ConversionSaveRequest;
 import tech.mamxanh.nutrition.dto.request.CatalogStatusUpdateRequest;
@@ -86,6 +87,19 @@ class IngredientCatalogServiceTest {
         ingredient.setActive(true);
         unit.setActive(false);
         assertThat(service.findActiveGramsPerUnit(1L, 2)).isEmpty();
+    }
+
+    @Test void rejectsMassUnitConversionOnCreate() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
+        UnitEntity unit = new UnitEntity("g", "Gam", MeasurementDimension.MASS, BigDecimal.ONE);
+        when(ingredientRepository.findById(1L)).thenReturn(Optional.of(ingredient));
+        when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
+
+        assertThatThrownBy(() -> service.createConversion(1L, 2, new ConversionSaveRequest(new BigDecimal("100"), false)))
+                .isInstanceOfSatisfying(ApiException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(exception.getCode()).isEqualTo("MASS_CONVERSION_NOT_ALLOWED");
+                });
     }
 
     @Test void searchesByIngredientNameOrGroup() {
@@ -211,7 +225,9 @@ class IngredientCatalogServiceTest {
     @Test void updatesConversionAndDisablesItWithoutChangingItsPair() {
         var id = new IngredientUnitConversionId(1L, 2);
         var conversion = new IngredientUnitConversionEntity(id, new BigDecimal("120"), false);
+        UnitEntity unit = new UnitEntity("quả", "Quả", MeasurementDimension.COUNT, BigDecimal.ONE);
         when(conversionRepository.findById(id)).thenReturn(Optional.of(conversion));
+        when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
 
         var updated = service.updateConversion(1L, 2, new ConversionSaveRequest(new BigDecimal("135"), true));
         var disabled = service.setConversionStatus(1L, 2, new CatalogStatusUpdateRequest(false));
@@ -236,9 +252,24 @@ class IngredientCatalogServiceTest {
                 .satisfies(response -> assertThat(response.ingredientId()).isEqualTo(1L));
     }
 
+    @Test void rejectsMassUnitConversionOnUpdate() {
+        var id = new IngredientUnitConversionId(1L, 2);
+        var conversion = new IngredientUnitConversionEntity(id, new BigDecimal("120"), true);
+        UnitEntity unit = new UnitEntity("kg", "Kilogram", MeasurementDimension.MASS, new BigDecimal("1000"));
+        when(conversionRepository.findById(id)).thenReturn(Optional.of(conversion));
+        when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
+
+        assertThatThrownBy(() -> service.updateConversion(1L, 2, new ConversionSaveRequest(new BigDecimal("135"), false)))
+                .isInstanceOfSatisfying(ApiException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(exception.getCode()).isEqualTo("MASS_CONVERSION_NOT_ALLOWED");
+                });
+        assertThat(conversion.getGramsPerUnit()).isEqualByComparingTo("120");
+    }
+
     @Test void mapsConcurrentDuplicateInsertToConflictAndRethrowsOtherDatabaseErrors() {
         IngredientEntity ingredient = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
-        UnitEntity unit = new UnitEntity("g", "gam", MeasurementDimension.MASS, BigDecimal.ONE);
+        UnitEntity unit = new UnitEntity("quả", "Quả", MeasurementDimension.COUNT, BigDecimal.ONE);
         when(ingredientRepository.findById(1L)).thenReturn(Optional.of(ingredient));
         when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
         SQLException duplicateKey = new SQLException("Duplicate key", "23000", 2627);

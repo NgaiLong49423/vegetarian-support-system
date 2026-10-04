@@ -81,7 +81,8 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
 
 test('administrator can manage units and conversion rules and sees duplicate-pair errors', async ({ page }) => {
   const unit = { id: 3, code: 'quả', name: 'Quả', dimension: 'COUNT' as const, baseFactor: 1, active: true };
-  const units = [unit];
+  const massUnit = { id: 2, code: 'g', name: 'Gam', dimension: 'MASS' as const, baseFactor: 1, active: true };
+  const units = [unit, massUnit];
   await page.route('**/api/v1/admin/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -93,9 +94,11 @@ test('administrator can manage units and conversion rules and sees duplicate-pai
       units.push(created);
       return route.fulfill({ status: 201, json: { success: true, data: created } });
     }
-    if (url.pathname.endsWith('/units/4') && method === 'PUT') {
-      Object.assign(units[1], request.postDataJSON());
-      return route.fulfill({ json: { success: true, data: units[1] } });
+    if (/\/units\/\d+$/.test(url.pathname) && method === 'PUT') {
+      const id = Number(url.pathname.split('/').at(-1));
+      const target = units.find((item) => item.id === id)!;
+      Object.assign(target, request.postDataJSON());
+      return route.fulfill({ json: { success: true, data: target } });
     }
     if (/\/units\/\d+\/status$/.test(url.pathname) && method === 'PATCH') {
       const id = Number(url.pathname.match(/\/units\/(\d+)\/status$/)?.[1]);
@@ -123,8 +126,10 @@ test('administrator can manage units and conversion rules and sees duplicate-pai
   await expect(page.getByText('Mi-li-lít nước', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Ngừng sử dụng Mi-li-lít nước' }).click();
   await expect(page.getByRole('button', { name: 'Bật lại Mi-li-lít nước' })).toBeVisible();
+  await expect(page.getByText('Gam', { exact: true })).toBeVisible();
 
   await page.getByRole('tab', { name: /Bảng quy đổi/ }).click();
+  await expect(page.getByLabel('Đơn vị đo').locator('option[value="2"]')).toHaveCount(0);
   await page.getByLabel('Nguyên liệu').selectOption('7');
   await page.getByLabel('Đơn vị đo').selectOption('3');
   await page.getByLabel('Gam trên mỗi đơn vị').fill('120');
