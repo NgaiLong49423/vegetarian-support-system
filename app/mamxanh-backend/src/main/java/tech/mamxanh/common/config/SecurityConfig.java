@@ -3,17 +3,23 @@ package tech.mamxanh.common.config;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
- * Stateless REST security baseline (ARCHITECTURE section 5.1, decisions Q20/Q22): no server
- * session, no cookies carrying authentication, so CSRF protection is disabled. Public endpoints
+ * Stateless REST security baseline (ARCHITECTURE section 5.1, decisions Q19/Q20/Q22): no server
+ * session, no cookies carrying authentication, so CSRF protection is disabled. Protected requests
+ * carry a JWT in {@code Authorization: Bearer}, validated by the OAuth2 Resource Server; the JWT
+ * converter also enforces {@code USER.account_status}. Public endpoints
  * are listed explicitly; everything else requires authentication. Authentication and
  * authorization failures are delegated to {@code GlobalExceptionHandler} so they share the
  * ProblemDetail format.
@@ -25,6 +31,7 @@ public class SecurityConfig {
             "/api/v1/auth/register",
             "/api/v1/auth/email-verifications",
             "/api/v1/auth/email-verifications/resend",
+            "/api/v1/auth/login",
     };
 
     private static final String[] API_DOCS_ENDPOINTS = {
@@ -37,7 +44,10 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
-            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) throws Exception {
+            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver,
+            Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter) throws Exception {
+        AuthenticationEntryPoint problemEntryPoint = (request, response, ex) ->
+                exceptionResolver.resolveException(request, response, null, ex);
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
@@ -50,9 +60,11 @@ public class SecurityConfig {
                         .requestMatchers(API_DOCS_ENDPOINTS).permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
+                .oauth2ResourceServer(resourceServer -> resourceServer
+                        .authenticationEntryPoint(problemEntryPoint)
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)))
                 .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, ex) ->
-                                exceptionResolver.resolveException(request, response, null, ex))
+                        .authenticationEntryPoint(problemEntryPoint)
                         .accessDeniedHandler((request, response, ex) ->
                                 exceptionResolver.resolveException(request, response, null, ex)));
         return http.build();

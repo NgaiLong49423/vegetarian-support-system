@@ -11,6 +11,7 @@
     "format": "oxfmt",
     "pretest:e2e": "cross-env VITE_COVERAGE=true vite build",
     "test:e2e": "playwright test",
+    "test:e2e:integration": "playwright test --config playwright.integration.config.ts",
     "test:e2e:coverage": "node ./scripts/clean-coverage.mjs && cross-env VITE_COVERAGE=true vite build && playwright test && nyc report",
     "pretest:e2e:ui": "npm run build",
     "test:e2e:ui": "playwright test --ui",

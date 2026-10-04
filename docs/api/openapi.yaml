@@ -4,54 +4,18 @@
 openapi: 3.1.1
 info:
   title: Mâm Xanh API
-  version: 0.6.0
+  version: 0.7.0
   summary: REST API contract for the Mâm Xanh application
   description: >-
-    Planned reference for FR-03 Authentication endpoints that are not implemented in the runtime API.
+    Planned reference for Google authentication and password recovery endpoints not implemented in runtime.
     Implemented endpoints are documented by generated Springdoc OpenAPI.
 servers:
   - url: /api/v1
     description: Version 1 relative base path
 tags:
   - name: Authentication
-    description: Registration, verification, login, and password recovery.
+    description: Google authentication and password recovery.
 paths:
-  /auth/login:
-    post:
-      tags: [Authentication]
-      summary: Log in with email and password
-      description: >-
-        On success, returns a Stateless JWT Access Token. Five consecutive failures trigger a ten-minute
-        temporary block on the account without changing the account to LOCKED.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-      responses:
-        '200':
-          description: Login successful. Returns a Stateless JWT Access Token.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
-          $ref: '#/components/responses/ValidationProblem'
-        '401':
-          description: Email or password is incorrect.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Account email is not verified or the account is administratively locked.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '429':
-          $ref: '#/components/responses/RateLimitProblem'
   /auth/google:
     post:
       tags: [Authentication]
@@ -134,18 +98,6 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
 components:
   schemas:
-    LoginRequest:
-      type: object
-      additionalProperties: false
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-          writeOnly: true
     GoogleLoginRequest:
       type: object
       additionalProperties: false
@@ -194,7 +146,10 @@ components:
         accessToken:
           type: string
           readOnly: true
-          description: Short-lived JWT access token.
+          description: >-
+            Short-lived HS256 JWT access token with claims iss, sub (USER.user_id), role, iat and exp;
+            send it as Authorization: Bearer. A token whose account is LOCKED is rejected with 403
+            ACCOUNT_LOCKED on every protected request.
         tokenType:
           type: string
           const: Bearer
@@ -202,7 +157,8 @@ components:
           type: integer
           format: int64
           minimum: 1
-          description: Runtime access-token lifetime; the configured value is TBD for FR-03 implementation.
+          description: >-
+            Runtime access-token lifetime from mamxanh.auth.access-token-ttl (60 minutes; see API.md).
         account:
           $ref: '#/components/schemas/AccountSummary'
     AccountSummary:

@@ -11,6 +11,7 @@
 --                   + V3__user_email_verification_token.sql
 --                   + V4__nutrition_profile_consent.sql
 --                   + V5__ingredient_group_and_unit_validation.sql
+--                   + V6__user_login_throttle.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -175,6 +176,10 @@ CREATE TABLE [USER] (
     -- V3 (Issue #5): SHA-256 hex digest of the current email-verification token
     email_verification_token       VARCHAR(64)    NULL,
     verification_token_expires_at  DATETIME2(7)   NULL,
+    -- V6 (Issue #6): consecutive wrong passwords and end of the temporary login block (NFR-07)
+    failed_login_attempts          INT            NOT NULL
+        CONSTRAINT DF_USER_failed_login_attempts DEFAULT 0,
+    login_blocked_until            DATETIME2(7)   NULL,
 
     CONSTRAINT PK_USER PRIMARY KEY (user_id),
     CONSTRAINT UQ_USER_email UNIQUE (email),
@@ -208,7 +213,8 @@ CREATE TABLE [USER] (
     CONSTRAINT CK_USER_verification_token_pair CHECK (
         (email_verification_token IS NULL AND verification_token_expires_at IS NULL)
         OR (email_verification_token IS NOT NULL AND verification_token_expires_at IS NOT NULL)
-    )
+    ),
+    CONSTRAINT CK_USER_failed_login_attempts_non_negative CHECK (failed_login_attempts >= 0)
 );
 GO
 

@@ -155,10 +155,18 @@ jobs:
         with:
           node-version: 24.21.0
 
+      - name: Install Frontend dependencies and Chromium
+        working-directory: app/mamxanh-frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
       - name: Build and smoke-test the shared development stack
         run: |
           set -euo pipefail
           export MSSQL_SA_PASSWORD="$(openssl rand -hex 20)Aa1!"
+          export MAMXANH_JWT_SECRET="$(openssl rand -hex 32)"
+          export MAMXANX_E2E_COMPOSE_PROJECT=mamxanh-ci
           cleanup() {
             status=$?
             if [ "$status" -ne 0 ]; then
@@ -171,6 +179,7 @@ jobs:
           trap cleanup EXIT
 
           docker compose -p mamxanh-ci up --build --detach --wait --wait-timeout 600
+          npm --prefix app/mamxanh-frontend run test:e2e:integration
           curl --fail --silent --show-error http://localhost:5173/
           curl --fail --silent --show-error http://localhost:8080/v3/api-docs \
             --output "$RUNNER_TEMP/openapi-runtime.json"

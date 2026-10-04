@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import tech.mamxanh.AbstractIntegrationTest;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
 import tech.mamxanh.nutrition.entity.CatalogStatus;
 import tech.mamxanh.nutrition.entity.MeasurementDimension;
@@ -23,9 +23,8 @@ import tech.mamxanh.nutrition.repository.IngredientRepository;
 import tech.mamxanh.nutrition.repository.UnitRepository;
 import tech.mamxanh.nutrition.service.IngredientCatalogService;
 
-@SpringBootTest
 @Transactional
-class IngredientCatalogDatabaseIntegrationTest extends SqlServerIntegrationTest {
+class IngredientCatalogDatabaseIntegrationTest extends AbstractIntegrationTest {
     @Autowired private IngredientRepository ingredientRepository;
     @Autowired private UnitRepository unitRepository;
     @Autowired private IngredientCatalogService catalogService;

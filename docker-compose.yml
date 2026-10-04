@@ -47,6 +47,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:sqlserver://sqlserver:1433;databaseName=MamXanhDB;encrypt=true;trustServerCertificate=true
       SPRING_DATASOURCE_USERNAME: sa
       SPRING_DATASOURCE_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in app/mamxanh-backend/.env}
+      MAMXANH_JWT_SECRET: ${MAMXANH_JWT_SECRET:?Set MAMXANH_JWT_SECRET in app/mamxanh-backend/.env}
       MAMXANH_FRONTEND_BASE_URL: http://localhost:5173
       MAMXANH_CORS_ALLOWED_ORIGINS: http://localhost:5173
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-}

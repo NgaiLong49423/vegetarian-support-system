@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, ShieldAlert, ThumbsDown, ThumbsUp, User } from 'lucide-react';
 import { Button, Card, ProgressBar } from './ui';
-import { useDemoAccount } from './DemoAccount';
+import { useAuth } from './AuthContext';
 import { currentUser } from '../data/mockData';
 import type { Recipe } from '../types';
 
 export function RecipeRating({ recipe }: { recipe: Recipe }) {
-  const { active, role } = useDemoAccount();
-  const isAuthor = (active && recipe.author.name === currentUser.name) || (role === 'EXPERT' && recipe.author.name === currentUser.name);
+  const { memberView: active, demoActive } = useAuth();
+  const isAuthor = demoActive && recipe.author.name === currentUser.name;
 
   // FR-57 Vote State
   const [userVote, setUserVote] = useState<'like' | 'dislike' | null>(null);

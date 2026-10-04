@@ -4,6 +4,7 @@ import { Check, ImagePlus, Info, Plus, Sparkles, Trash2, UploadCloud } from 'luc
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card, ProgressBar } from '../components/ui';
 import { useDemoAccount } from '../components/DemoAccount';
+import { useAuth } from '../components/AuthContext';
 import type { DietTag } from '../types';
 
 const dietOptions: { value: DietTag; label: string; desc: string }[] = [
@@ -16,7 +17,11 @@ const dietOptions: { value: DietTag; label: string; desc: string }[] = [
 interface Row { id: string; name: string; qty: string; unit: string }
 
 export function CreateRecipe() {
-  const { active, role } = useDemoAccount();
+  const { memberView } = useAuth();
+  const { role: demoRole } = useDemoAccount();
+  const { account } = useAuth();
+  const active = memberView;
+  const role = account?.role ?? demoRole;
 
   if (!active || role !== 'EXPERT') {
     return <RecipeCreationAccessGate active={active} role={role} />;

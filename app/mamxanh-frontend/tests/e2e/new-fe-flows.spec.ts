@@ -449,4 +449,3 @@ test('saved recipe appears in profile and disappears when unsaved', async ({ pag
   await savedCard.getByRole('button', { name: 'Bỏ lưu công thức' }).click();
   await expect(page.getByRole('heading', { name: 'Chưa có công thức đã lưu' })).toBeVisible();
 });
-
