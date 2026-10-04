@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.50.0
+> **Version:** v2.50.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-04
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-04 — Implement Expert Application Review (Issue #68)
+
+**Status:** Committed — ad6764d.
+
+**Scope:** Add the Customer submission/history and Admin review workflows for expert applications, including the atomic role promotion and in-app decision notice.
+
+### Added
+
+- Add the Expert Application and Notification backend services, runtime API endpoints, SQL Server migration V7, and API-backed Frontend workflow.
+- Add request validation and SQL Server concurrency integration coverage for competing Admin decisions.
+
+### Changed
+
+- Extend the package specification and workspace guides for the implemented modules and migration.
+- Replace the FR-05 demo workflow with authenticated API submission, history, review, conflict recovery and role display.
+
+### Fixed
+
+None.
 
 ## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
 
