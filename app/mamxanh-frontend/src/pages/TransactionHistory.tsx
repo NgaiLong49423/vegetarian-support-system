@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CreditCard, Loader2, AlertCircle, ArrowLeft, RefreshCw, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card, EmptyState } from '../components/ui';
+import { useDemoAccount } from '../components/DemoAccount';
 import { subscriptionApi, type TransactionHistoryResponse, type PaymentStatus } from '../api/subscription';
 import { hasAccessToken } from '../lib/apiClient';
 import { formatDateTime, formatVnd } from '../utils/date';
@@ -39,6 +40,7 @@ function renderStatusBadge(status: PaymentStatus) {
 }
 
 export function TransactionHistory() {
+  const { active: isDemoActive } = useDemoAccount();
   const isLoggedIn = hasAccessToken();
   const [transactions, setTransactions] = useState<TransactionHistoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +98,18 @@ export function TransactionHistory() {
         </div>
       </div>
 
-      {!isLoggedIn ? (
+      {!isLoggedIn || isDemoActive ? (
+        <Card className="mt-8 p-10 text-center">
+          <CreditCard className="mx-auto h-10 w-10 text-brand-500" />
+          <h2 className="mt-4 text-lg font-bold text-ink">Chưa có dữ liệu giao dịch</h2>
+          <p className="mx-auto mt-2 max-w-lg text-sm text-ink-muted">
+            Lịch sử sẽ hiển thị mã giao dịch, gói, số tiền, thời gian và trạng thái khi kết nối dịch vụ thanh toán. Giao diện demo không tạo giao dịch giả.
+          </p>
+          <Link to="/goi-ai" className="mt-5 inline-block font-semibold text-brand-600 hover:text-brand-700">
+            Xem các gói AI
+          </Link>
+        </Card>
+      ) : !isLoggedIn ? (
         <Card className="mt-8 p-10 text-center">
           <CreditCard className="mx-auto h-12 w-12 text-brand-400" />
           <h2 className="mt-4 text-lg font-bold text-ink">Cần đăng nhập để xem lịch sử</h2>
@@ -123,18 +136,16 @@ export function TransactionHistory() {
           </Button>
         </Card>
       ) : transactions.length === 0 ? (
-        <div className="mt-8">
-          <EmptyState
-            icon="💳"
-            title="Chưa có giao dịch nào"
-            description="Bạn chưa thực hiện giao dịch mua gói AI nào. Khi bạn thanh toán gói PLUS hoặc PRO, thông tin đơn hàng sẽ được lưu tại đây."
-            action={
-              <Link to="/goi-ai">
-                <Button variant="primary">Khám phá các gói AI</Button>
-              </Link>
-            }
-          />
-        </div>
+        <Card className="mt-8 p-10 text-center">
+          <CreditCard className="mx-auto h-10 w-10 text-brand-500" />
+          <h2 className="mt-4 text-lg font-bold text-ink">Chưa có dữ liệu giao dịch</h2>
+          <p className="mx-auto mt-2 max-w-lg text-sm text-ink-muted">
+            Bạn chưa thực hiện giao dịch mua gói AI nào. Khi bạn thanh toán gói PLUS hoặc PRO, thông tin đơn hàng sẽ được lưu tại đây.
+          </p>
+          <Link to="/goi-ai" className="mt-5 inline-block font-semibold text-brand-600 hover:text-brand-700">
+            Xem các gói AI
+          </Link>
+        </Card>
       ) : (
         <div className="mt-8 overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm">
           <div className="overflow-x-auto">

@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Calendar, Check, CreditCard, Loader2, Sparkles } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card } from '../components/ui';
+import { useDemoAccount } from '../components/DemoAccount';
+import { demoAiPlan } from '../data/mockData';
 import { hasAccessToken } from '../lib/apiClient';
 import {
   subscriptionApi,
@@ -48,6 +50,7 @@ const DEFAULT_PLANS: PlanResponse[] = [
 
 export function AiPlans() {
   const navigate = useNavigate();
+  const { active: isDemoActive } = useDemoAccount();
   const isLoggedIn = hasAccessToken();
 
   const [plans, setPlans] = useState<PlanResponse[]>(DEFAULT_PLANS);
@@ -69,7 +72,7 @@ export function AiPlans() {
         // Fall back to DEFAULT_PLANS if API is unreachable
       }
 
-      if (isLoggedIn) {
+      if (isLoggedIn && !isDemoActive) {
         try {
           const sub = await subscriptionApi.getMySubscription();
           if (active) {
@@ -90,9 +93,10 @@ export function AiPlans() {
     return () => {
       active = false;
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, isDemoActive]);
 
-  const currentTier: SubscriptionTier = subscription?.status === 'ACTIVE' ? subscription.tier : 'FREE';
+  const currentTier: SubscriptionTier =
+    isLoggedIn && subscription?.status === 'ACTIVE' ? subscription.tier : 'FREE';
 
   async function handleSubscribe(tier: 'PLUS' | 'PRO') {
     if (!isLoggedIn) {
@@ -137,28 +141,31 @@ export function AiPlans() {
 
       <div className="mb-8 text-center">
         <Sparkles className="mx-auto mb-3 h-8 w-8 text-brand-600" />
-        <h1 className="text-3xl font-extrabold text-ink">Bảng giá nâng cấp gói AI</h1>
+        <h1 className="text-3xl font-extrabold text-ink">Nâng cấp gói AI</h1>
+        {!isLoggedIn || isDemoActive ? (
+          <p className="mt-2 text-sm font-semibold text-brand-700">
+            Gói hiện tại: {demoAiPlan} (demo)
+          </p>
+        ) : (
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm">
+            <span className="text-ink-muted">Gói hiện tại của bạn:</span>
+            {currentTier === 'FREE' ? (
+              <Badge tone="neutral">Miễn phí</Badge>
+            ) : (
+              <Badge tone="brand">
+                Gói {currentTier}
+              </Badge>
+            )}
 
-        {/* AC-13.7: Display current tier and expiration date */}
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm">
-          <span className="text-ink-muted">Gói hiện tại của bạn:</span>
-          {currentTier === 'FREE' ? (
-            <Badge tone="neutral">Miễn phí</Badge>
-          ) : (
-            <Badge tone="brand">
-              Gói {currentTier}
-            </Badge>
-          )}
+            {currentTier !== 'FREE' && subscription?.endsAt && (
+              <span className="inline-flex items-center gap-1 font-medium text-brand-700">
+                <Calendar className="h-4 w-4" />
+                Hết hạn ngày: {formatDate(subscription.endsAt)}
+              </span>
+            )}
+          </div>
+        )}
 
-          {currentTier !== 'FREE' && subscription?.endsAt && (
-            <span className="inline-flex items-center gap-1 font-medium text-brand-700">
-              <Calendar className="h-4 w-4" />
-              Hết hạn ngày: {formatDate(subscription.endsAt)}
-            </span>
-          )}
-        </div>
-
-        {/* Phase 1 rules note */}
         <p className="mt-2 text-xs text-ink-muted">
           Giá theo tháng, thanh toán từng kỳ qua VietQR (payOS) và không tự động gia hạn.
         </p>
@@ -213,7 +220,21 @@ export function AiPlans() {
                 </ul>
 
                 <div className="pt-2">
-                  {isCurrent ? (
+                  {!isLoggedIn || isDemoActive ? (
+                    plan.name === demoAiPlan ? (
+                      <p className="rounded-xl bg-brand-50 px-4 py-3 text-center text-sm font-semibold text-brand-700">
+                        Gói hiện tại (demo)
+                      </p>
+                    ) : (
+                      <button
+                        disabled
+                        title="Chưa kết nối cổng thanh toán"
+                        className="w-full cursor-not-allowed rounded-xl bg-brand-200 px-4 py-3 text-sm font-semibold text-ink-muted"
+                      >
+                        Thanh toán chưa khả dụng
+                      </button>
+                    )
+                  ) : isCurrent ? (
                     <div className="rounded-xl bg-brand-50 px-4 py-3 text-center text-sm font-semibold text-brand-700">
                       Gói hiện tại của bạn
                     </div>

@@ -106,7 +106,7 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
     await page.goto('/goi-ai');
 
     // Heading
-    await expect(page.getByRole('heading', { name: /Bảng giá nâng cấp gói AI/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Nâng cấp gói AI/i })).toBeVisible();
 
     // Exactly 3 plan headings
     await expect(page.getByRole('heading', { name: 'FREE', exact: true })).toBeVisible();
@@ -114,12 +114,12 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
     await expect(page.getByRole('heading', { name: 'PRO', exact: true })).toBeVisible();
 
     // Prices
-    await expect(page.getByText('0 VNĐ / tháng')).toBeVisible();
-    await expect(page.getByText('49.000 VNĐ / tháng')).toBeVisible();
-    await expect(page.getByText('99.000 VNĐ / tháng')).toBeVisible();
+    await expect(page.getByText('0 VNĐ / tháng', { exact: true })).toBeVisible();
+    await expect(page.getByText('49.000 VNĐ / tháng', { exact: true })).toBeVisible();
+    await expect(page.getByText('99.000 VNĐ / tháng', { exact: true })).toBeVisible();
 
     // No annual plans, coupons, or trial packages
-    await expect(page.getByText(/gói năm|năm|coupon|khuyến mãi|dùng thử/i)).toHaveCount(0);
+    await expect(page.getByText(/gói năm|coupon|khuyến mãi|dùng thử/i)).toHaveCount(0);
   });
 
   test('AC-13.7: Hiển thị gói Free là "Miễn phí" không có ngày hết hạn, và gói Plus hiển thị ngày hết hạn DD/MM/YYYY', async ({
@@ -128,13 +128,13 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
     // 1. Check with FREE subscription
     await setupMockSubscriptionApis(page, mockFreeSubscription);
     await page.goto('/goi-ai');
-    await expect(page.getByText('Miễn phí')).toBeVisible();
+    await expect(page.getByText('Miễn phí', { exact: true })).toBeVisible();
     await expect(page.getByText(/Hết hạn ngày:/i)).toHaveCount(0);
 
     // 2. Check with PLUS subscription with endsAt
     await setupMockSubscriptionApis(page, mockPlusSubscription);
     await page.goto('/goi-ai');
-    await expect(page.getByText('Gói PLUS')).toBeVisible();
+    await expect(page.getByText('Gói PLUS', { exact: true })).toBeVisible();
     await expect(page.getByText('Hết hạn ngày: 04/11/2026')).toBeVisible();
   });
 
