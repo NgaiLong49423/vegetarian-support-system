@@ -27,7 +27,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Fixed
 
-- Read UTC timestamps from the injected clock instant so UTC-only test clocks work during expert application decisions.
+- Read UTC timestamps from injected clock instants across expert promotion and decision notifications so UTC-only test clocks work through the full review transaction.
 
 ## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
 

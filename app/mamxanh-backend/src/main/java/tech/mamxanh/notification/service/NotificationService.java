@@ -24,6 +24,6 @@ public class NotificationService {
                 : "Đơn đăng ký Chuyên gia bị từ chối. Lý do: " + reason;
         jdbc.update("INSERT INTO [NOTIFICATION](user_id,notification_type,title,message,target_path,created_at) VALUES(?,?,?,?,?,?)",
                 userId, type, title, message, "/dang-ky-chuyen-gia?applicationId=" + applicationId,
-                LocalDateTime.now(clock.withZone(ZoneOffset.UTC)));
+                LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
     }
 }

@@ -29,7 +29,7 @@ public class ExpertPromotionService {
         if (user.getAccountStatus() != AccountStatus.ACTIVE || user.getRole() != Role.CUSTOMER) {
             throw new ApiException(HttpStatus.CONFLICT, "EXPERT_APPLICATION_ACCOUNT_INELIGIBLE", "Tài khoản phải đang ACTIVE và có vai trò CUSTOMER để được phê duyệt.");
         }
-        user.promoteToExpert(LocalDateTime.now(clock.withZone(ZoneOffset.UTC)));
+        user.promoteToExpert(LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
     }
 
     @Transactional(readOnly = true)
