@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 2345a61.
 
 **Scope:** Prevent Codex from reporting a failed GitHub CLI login solely because its Windows sandbox cannot access the user's keyring or network.
 
