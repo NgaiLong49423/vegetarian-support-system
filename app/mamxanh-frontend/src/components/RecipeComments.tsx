@@ -1,9 +1,7 @@
 import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { Lock, MessageCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { currentUser } from '../data/mockData';
 import { Button, Card } from './ui';
-import { useDemoAccount } from './DemoAccount';
 
 type Comment = {
   id: string;
@@ -17,38 +15,11 @@ type Comment = {
 };
 
 export function RecipeComments() {
-  const { active } = useDemoAccount();
   const [comments, setComments] = useState<Comment[]>([]);
   const [body, setBody] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState('');
-
-  // AC-01.5 / BR-05: Guest không thể bình luận
-  if (!active) {
-    return (
-        <Card className="mb-10 p-6">
-          <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink">
-            <MessageCircle className="h-5 w-5 text-brand-600" /> Bình luận
-          </h2>
-          <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            <Lock className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-            <div className="flex-1">
-              <p className="font-bold">Bình luận là tính năng dành cho thành viên</p>
-              <p className="mt-1 text-xs text-amber-700">
-                Vui lòng đăng nhập để tham gia thảo luận cùng cộng đồng Mâm Xanh.
-              </p>
-              <Link
-                  to="/dang-nhap"
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-700"
-              >
-                Đăng nhập ngay
-              </Link>
-            </div>
-          </div>
-        </Card>
-    );
-  }
 
   const submit = () => {
     const content = body.trim();

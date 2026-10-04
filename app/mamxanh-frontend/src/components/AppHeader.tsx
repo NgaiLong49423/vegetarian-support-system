@@ -15,6 +15,7 @@ import {
   Activity,
   Sliders,
   Award,
+  Sparkles,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { Button } from './ui';
@@ -32,7 +33,7 @@ const drawerNavItems = [
   { section: 'Khám phá', items: [
       { to: '/', label: 'Trang chủ', icon: Home },
       { to: '/kham-pha', label: 'Khám phá món chay', icon: Search },
-      { to: '/ho-so', label: 'Đã lưu', icon: Bookmark, hasBadge: true },
+      { to: '/ho-so', label: 'Công thức đã lưu', icon: Bookmark, hasBadge: true },
     ]},
   { section: 'Kế hoạch & Dinh dưỡng', items: [
       { to: '/ke-hoach', label: 'Kế hoạch tuần', icon: Calendar },
@@ -76,75 +77,171 @@ export function AppHeader() {
 
   return (
       <>
-        {/* ============ DRAWER BACKDROP ============ */}
-        <div
-            className={`fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm transition-opacity ${
-                drawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
-            }`}
-            onClick={() => setDrawerOpen(false)}
-        />
-
-        {/* ============ DRAWER ============ */}
-        <aside
-            className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col bg-white shadow-2xl transition-transform duration-300 ${
-                drawerOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
-        >
-          <div className="flex items-center justify-between border-b border-brand-100 p-4">
-            <Logo />
-            <button
+        {/* ============ DRAWER BACKDROP & DRAWER ============ */}
+        {drawerOpen && (
+          <>
+            <div
+                className="fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm"
                 onClick={() => setDrawerOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-brand-100 hover:text-brand-700"
-                aria-label="Đóng menu"
+            />
+
+            <aside
+                className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col bg-white shadow-2xl"
             >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+              <div className="flex items-center justify-between border-b border-brand-100 p-4">
+                <Logo />
+                <button
+                    onClick={() => setDrawerOpen(false)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-brand-100 hover:text-brand-700"
+                    aria-label="Đóng"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
-          <nav className="flex-1 overflow-y-auto p-3">
-            {drawerNavItems.map((group) => (
-                <div key={group.section} className="mb-2">
-                  <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                    {group.section}
-                  </p>
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                        <NavLink
-                            key={item.to}
-                            to={item.to}
-                            onClick={() => setDrawerOpen(false)}
-                            className={({ isActive }) =>
-                                `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                                    isActive
-                                        ? 'bg-brand-600 text-white'
-                                        : 'text-ink-soft hover:bg-brand-50 hover:text-brand-700'
-                                }`
-                            }
-                        >
-                          <Icon className="h-4 w-4 shrink-0" />
-                          <span className="flex-1">{item.label}</span>
-                          {item.hasBadge && savedCount > 0 && (
-                              <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand-600 px-1.5 text-[10px] font-bold text-white">
-                        {savedCount}
-                      </span>
-                          )}
-                        </NavLink>
-                    );
-                  })}
-                </div>
-            ))}
-          </nav>
+              <nav className="flex-1 overflow-y-auto p-3">
+                {drawerNavItems.map((group) => (
+                    <div key={group.section} className="mb-2">
+                      <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                        {group.section}
+                      </p>
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <NavLink
+                                key={item.to}
+                                to={item.to}
+                                onClick={() => setDrawerOpen(false)}
+                                className={({ isActive }) =>
+                                    `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                                        isActive
+                                            ? 'bg-brand-600 text-white'
+                                            : 'text-ink-soft hover:bg-brand-50 hover:text-brand-700'
+                                    }`
+                                }
+                            >
+                              <Icon className="h-4 w-4 shrink-0" />
+                              <span className="flex-1">{item.label}</span>
+                              {item.hasBadge && savedCount > 0 && (
+                                  <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand-600 px-1.5 text-[10px] font-bold text-white">
+                            {savedCount}
+                          </span>
+                              )}
+                            </NavLink>
+                        );
+                      })}
+                    </div>
+                ))}
 
-          <div className="border-t border-brand-100 p-4">
-          <span className="inline-flex rounded-full bg-brand-100 px-2.5 py-1 text-[10px] font-bold text-brand-700">
-            Phiên bản demo
-          </span>
-            <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">
-              © 2025 Mâm Xanh · Nuôi dưỡng lối sống xanh lành
-            </p>
-          </div>
-        </aside>
+                {active ? (
+                  <div className="mt-2 border-t border-brand-100 pt-2">
+                    <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                      Tài khoản ({currentUser.name})
+                    </p>
+                    <NavLink
+                      to="/ho-so"
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-soft hover:bg-brand-50 hover:text-brand-700"
+                    >
+                      <Sliders className="h-4 w-4 shrink-0" />
+                      <span className="flex-1">Hồ sơ của tôi</span>
+                    </NavLink>
+                    <NavLink
+                      to="/ho-so/dinh-duong"
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-soft hover:bg-brand-50 hover:text-brand-700"
+                    >
+                      <Activity className="h-4 w-4 shrink-0" />
+                      <span className="flex-1">Hồ sơ dinh dưỡng & BMI</span>
+                    </NavLink>
+                    <NavLink
+                      to="/goi-ai"
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50"
+                    >
+                      <Sparkles className="h-4 w-4 shrink-0" />
+                      <span className="flex-1">Nâng cấp gói AI</span>
+                    </NavLink>
+                    <NavLink
+                      to="/giao-dich"
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-soft hover:bg-brand-50 hover:text-brand-700"
+                    >
+                      <Award className="h-4 w-4 shrink-0" />
+                      <span className="flex-1">Lịch sử giao dịch</span>
+                    </NavLink>
+                    {role === 'EXPERT' && (
+                      <NavLink
+                        to="/dang-cong-thuc"
+                        onClick={() => setDrawerOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50"
+                      >
+                        <Plus className="h-4 w-4 shrink-0" />
+                        <span className="flex-1">Đăng công thức</span>
+                      </NavLink>
+                    )}
+                    {role === 'CUSTOMER' && (
+                      <NavLink
+                        to="/dang-ky-chuyen-gia"
+                        onClick={() => setDrawerOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-leaf-700 hover:bg-leaf-50"
+                      >
+                        <Award className="h-4 w-4 shrink-0" />
+                        <span className="flex-1">Đăng ký Chuyên gia</span>
+                      </NavLink>
+                    )}
+                    {role === 'ADMIN' && (
+                      <NavLink
+                        to="/admin/xet-duyet-chuyen-gia"
+                        onClick={() => setDrawerOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-50"
+                      >
+                        <Award className="h-4 w-4 shrink-0" />
+                        <span className="flex-1">Xét duyệt Chuyên gia</span>
+                      </NavLink>
+                    )}
+                    <button
+                      onClick={() => {
+                        setActive(false);
+                        setDrawerOpen(false);
+                        navigate('/dang-nhap');
+                      }}
+                      className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-ink-muted hover:bg-brand-50"
+                    >
+                      Thoát tài khoản demo
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex flex-col gap-2 border-t border-brand-100 p-3">
+                    <Link
+                      to="/dang-nhap"
+                      onClick={() => setDrawerOpen(false)}
+                      className="rounded-xl px-3 py-2 text-center text-sm font-semibold text-ink-soft hover:bg-brand-50"
+                    >
+                      Đăng nhập
+                    </Link>
+                    <Link
+                      to="/dang-ky"
+                      onClick={() => setDrawerOpen(false)}
+                      className="rounded-xl bg-brand-600 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-brand-700"
+                    >
+                      Đăng ký
+                    </Link>
+                  </div>
+                )}
+              </nav>
+
+              <div className="border-t border-brand-100 p-4">
+                <span className="inline-flex rounded-full bg-brand-100 px-2.5 py-1 text-[10px] font-bold text-brand-700">
+                  Phiên bản demo
+                </span>
+                <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">
+                  © 2025 Mâm Xanh · Nuôi dưỡng lối sống xanh lành
+                </p>
+              </div>
+            </aside>
+          </>
+        )}
 
         {/* ============ HEADER ============ */}
         <header className="sticky top-0 z-30 border-b border-brand-100 bg-cream/85 backdrop-blur-md">
@@ -153,7 +250,7 @@ export function AppHeader() {
             <button
                 onClick={() => setDrawerOpen(true)}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-brand-100"
-                aria-label="Mở menu"
+                aria-label="Menu"
             >
               <Menu className="h-5 w-5" />
             </button>
