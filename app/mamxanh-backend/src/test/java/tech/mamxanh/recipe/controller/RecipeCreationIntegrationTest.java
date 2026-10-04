@@ -22,7 +22,7 @@ import tech.mamxanh.recipe.dto.request.RecipeMediaInput;
 import tech.mamxanh.recipe.entity.RecipeCodes.Difficulty;
 import tech.mamxanh.recipe.entity.RecipeCodes.DishCategory;
 import tech.mamxanh.recipe.entity.RecipeCodes.VegetarianType;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     private static final String EXPERT_EMAIL = "issue22-expert@test.local";
@@ -32,7 +32,7 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     private static final String INGREDIENT_NAME = "Issue22 Ingredient";
 
     @Autowired private JdbcTemplate jdbcTemplate;
-    @Autowired private ObjectMapper objectMapper;
+    @Autowired private JsonMapper jsonMapper;
 
     private long expertId;
     private long customerId;
@@ -253,5 +253,5 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
                 DishCategory.BRAISED, VegetarianType.VEGAN, Difficulty.EASY, 2, 10, 0, "", ingredients, media);
     }
 
-    private String json(Object value) throws Exception { return objectMapper.writeValueAsString(value); }
+    private String json(Object value) throws Exception { return jsonMapper.writeValueAsString(value); }
 }
