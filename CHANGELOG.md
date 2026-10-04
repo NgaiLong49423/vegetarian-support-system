@@ -29,7 +29,7 @@ None.
 
 ## 2026-10-04 — Fix Docker Development JWT Configuration
 
-**Status:** Working tree — not committed.
+**Status:** Committed — d60632b.
 
 **Scope:** Restore the Docker Development CI gate by passing the required JWT signing secret to the Backend under its configured environment-variable name.
 
