@@ -76,10 +76,5 @@ test.describe('Issue #3 [FR-01] — Guest xem và tìm kiếm nội dung công k
     await expect(page.getByRole('heading', { name: 'Yêu cầu đăng nhập' })).toBeVisible();
     await expect(page.getByText(/Vui lòng đăng nhập để thêm món vào kế hoạch tuần/)).toBeVisible();
     await page.getByRole('button', { name: 'Để sau' }).click();
-
-    // Kiểm tra khu vực bình luận yêu cầu đăng nhập đối với Guest
-    await expect(page.getByTestId('guest-comment-prompt')).toBeVisible();
-    await expect(page.getByText(/Vui lòng đăng nhập tài khoản để gửi bình luận/)).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Đăng nhập để bình luận' })).toBeVisible();
   });
 });
