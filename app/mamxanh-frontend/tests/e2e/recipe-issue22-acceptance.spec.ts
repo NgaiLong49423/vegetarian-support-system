@@ -256,8 +256,7 @@ test('Issue 22: YouTube/mô tả tùy chọn; 401 và 403 bị chặn, không c�
   await action(page, 'Để trống mô tả (trường tùy chọn)', () => page.getByLabel('Mô tả').fill(''));
   await action(page, 'Để trống link YouTube (trường tùy chọn)', () => page.getByLabel('Link YouTube').fill(''));
   await action(page, 'Gửi khi chưa đăng nhập', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByRole('alert')).toContainText('Đăng nhập/JWT đang chờ Issue #6');
-  await expect(page.getByRole('alert')).toContainText('tài khoản demo không có quyền đăng');
+  await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không hợp lệ hoặc đã hết hạn');
   postStatus = 403;
   await action(page, 'Gửi lại bằng vai trò không phải EXPERT', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
   await expect(page.getByRole('alert')).toContainText('Chỉ Chuyên gia đang hoạt động mới được đăng');
