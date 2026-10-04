@@ -83,6 +83,6 @@ public class ExpertApplicationService {
         try { return Long.parseLong(authentication.getName()); }
         catch (RuntimeException exception) { throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Cần đăng nhập."); }
     }
-    private LocalDateTime now() { return LocalDateTime.now(clock.withZone(ZoneOffset.UTC)); }
+    private LocalDateTime now() { return LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC); }
     private static ApiException stale() { return new ApiException(HttpStatus.CONFLICT, "EXPERT_APPLICATION_STALE", "Đơn đã được xử lý hoặc không còn chờ duyệt."); }
 }
