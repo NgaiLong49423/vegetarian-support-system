@@ -20,22 +20,28 @@ declare global {
   interface Window {
     /** Set only by Playwright on the instrumented coverage build; never used by production builds. */
     __nutritionE2eAccessToken?: string;
+    __mamxanhAccessToken?: string;
   }
 }
 
-function coverageTestToken() {
-  return import.meta.env.VITE_COVERAGE === 'true' && typeof window !== 'undefined'
-    ? window.__nutritionE2eAccessToken ?? null
-    : null;
+export function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return (
+    localStorage.getItem('token') ||
+    localStorage.getItem('access_token') ||
+    window.__mamxanhAccessToken ||
+    window.__nutritionE2eAccessToken ||
+    null
+  );
 }
 
-export function hasAccessToken() {
-  return Boolean(coverageTestToken());
+export function hasAccessToken(): boolean {
+  return Boolean(getAuthToken());
 }
 
 /**
  * Shared HTTP client. Authentication uses `Authorization: Bearer` (stateless JWT), so no cookies
- * are sent (`withCredentials` stays false). The Bearer interceptor is added with login (#6).
+ * are sent (`withCredentials` stays false).
  */
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -44,7 +50,7 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = config.url?.startsWith('/nutrition/') ? coverageTestToken() : null;
+  const token = getAuthToken();
   if (token) config.headers.set('Authorization', `Bearer ${token}`);
   return config;
 });
