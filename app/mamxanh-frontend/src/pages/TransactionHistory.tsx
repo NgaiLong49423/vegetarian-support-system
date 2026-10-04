@@ -98,7 +98,7 @@ export function TransactionHistory() {
         </div>
       </div>
 
-      {isDemoActive ? (
+      {!isLoggedIn || isDemoActive ? (
         <Card className="mt-8 p-10 text-center">
           <CreditCard className="mx-auto h-10 w-10 text-brand-500" />
           <h2 className="mt-4 text-lg font-bold text-ink">Chưa có dữ liệu giao dịch</h2>
