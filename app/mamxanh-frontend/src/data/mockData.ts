@@ -25,6 +25,60 @@ export const demoAiPlan = 'FREE';
  * Recipes — 6 mode sort cần: popular, rating, time, calories, newest, views
  * ------------------------------------------------------------------------ */
 
+const recipeAuthors: Record<string, Recipe['author']> = {
+  a1: {
+    id: 'a1',
+    name: 'Bếp Chay Tâm An',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
+    verified: true,
+    bio: 'Chuyên gia thực dưỡng · 86 công thức chia sẻ',
+  },
+  a2: {
+    id: 'a2',
+    name: 'Bếp Chay Lan',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200',
+    verified: true,
+    bio: 'Chuyên gia ẩm thực thực vật · 42 công thức',
+  },
+  a3: {
+    id: 'a3',
+    name: 'Bếp Chay Lan',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
+    verified: true,
+    bio: 'Chuyên gia ẩm thực chay · 35 công thức',
+  },
+  a4: {
+    id: 'a4',
+    name: 'Minh Foodie',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+    verified: false,
+    bio: 'Food blogger thực vật · 52 công thức',
+  },
+  a5: {
+    id: 'a5',
+    name: 'Thảo My',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',
+    verified: true,
+    bio: 'Chuyên gia ẩm thực Ấn · 28 công thức',
+  },
+  a6: {
+    id: 'a6',
+    name: 'Tú An',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+    verified: false,
+    bio: 'Đầu bếp chay tại gia · 20 công thức',
+  },
+};
+
+const recipeEngagement: Record<string, Pick<Recipe, 'viewCount' | 'likes' | 'dislikes' | 'likePercentage'>> = {
+  r1: { viewCount: 12480, likes: 248, dislikes: 10, likePercentage: 96 },
+  r2: { viewCount: 8560, likes: 178, dislikes: 6, likePercentage: 97 },
+  r3: { viewCount: 6420, likes: 165, dislikes: 8, likePercentage: 94 },
+  r4: { viewCount: 9480, likes: 220, dislikes: 7, likePercentage: 97 },
+  r5: { viewCount: 5280, likes: 132, dislikes: 13, likePercentage: 91 },
+  r6: { viewCount: 4180, likes: 96, dislikes: 5, likePercentage: 95 },
+};
+
 export const recipes: Recipe[] = [
   {
     id: 'r1',
@@ -57,17 +111,8 @@ export const recipes: Recipe[] = [
       'Hấp đậu hũ non trong xửng 5 phút cho nóng đều.',
       'Rưới sốt nấm lên đậu hũ, rắc tiêu xanh đập dập và vài lá ngò.',
     ],
-    author: {
-      id: 'a1',
-      name: 'Bếp Chay Tâm An',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-      verified: true,
-      bio: 'Chuyên gia thực dưỡng · 86 công thức chia sẻ',
-    },
-    viewCount: 12480,
-    likes: 248,
-    dislikes: 10,
-    likePercentage: 96,
+    author: recipeAuthors.a1,
+    ...recipeEngagement.r1,
   },
   {
     id: 'r2',
@@ -96,17 +141,8 @@ export const recipes: Recipe[] = [
       'Trộn đều quinoa, bơ, nước cốt chanh và dầu ô liu.',
       'Rắc hạt bí rang lên trên, nêm muối tiêu vừa ăn.',
     ],
-    author: {
-      id: 'a2',
-      name: 'Bếp Chay Lan',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200',
-      verified: true,
-      bio: 'Chuyên gia ẩm thực thực vật · 42 công thức',
-    },
-    viewCount: 8560,
-    likes: 178,
-    dislikes: 6,
-    likePercentage: 97,
+    author: recipeAuthors.a2,
+    ...recipeEngagement.r2,
   },
   {
     id: 'r3',
@@ -133,17 +169,8 @@ export const recipes: Recipe[] = [
       'Hầm rau củ 40 phút lấy nước ngọt.',
       'Chần bánh phở, xếp topping, chan nước dùng.',
     ],
-    author: {
-      id: 'a3',
-      name: 'Bếp Chay Lan',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
-      verified: true,
-      bio: 'Chuyên gia ẩm thực chay · 35 công thức',
-    },
-    viewCount: 6420,
-    likes: 165,
-    dislikes: 8,
-    likePercentage: 94,
+    author: recipeAuthors.a3,
+    ...recipeEngagement.r3,
   },
   {
     id: 'r4',
@@ -172,17 +199,8 @@ export const recipes: Recipe[] = [
       'Cuộn chặt tay, cắt đôi nếu muốn.',
       'Pha sốt tương đậu với chút đậu phộng rang.',
     ],
-    author: {
-      id: 'a4',
-      name: 'Minh Foodie',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-      verified: false,
-      bio: 'Food blogger thực vật · 52 công thức',
-    },
-    viewCount: 9480,
-    likes: 220,
-    dislikes: 7,
-    likePercentage: 97,
+    author: recipeAuthors.a4,
+    ...recipeEngagement.r4,
   },
   {
     id: 'r5',
@@ -211,17 +229,8 @@ export const recipes: Recipe[] = [
       'Cho khoai tây, cà rốt vào xào săn.',
       'Đổ hỗn hợp hạt điều vào, nấu lửa nhỏ đến khi sánh.',
     ],
-    author: {
-      id: 'a5',
-      name: 'Thảo My',
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',
-      verified: true,
-      bio: 'Chuyên gia ẩm thực Ấn · 28 công thức',
-    },
-    viewCount: 5280,
-    likes: 132,
-    dislikes: 13,
-    likePercentage: 91,
+    author: recipeAuthors.a5,
+    ...recipeEngagement.r5,
   },
   {
     id: 'r6',
@@ -249,17 +258,8 @@ export const recipes: Recipe[] = [
       'Thêm rong biển, nêm nếm vừa ăn.',
       'Múc ra tô, rắc tiêu và hành lá.',
     ],
-    author: {
-      id: 'a6',
-      name: 'Tú An',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-      verified: false,
-      bio: 'Đầu bếp chay tại gia · 20 công thức',
-    },
-    viewCount: 4180,
-    likes: 96,
-    dislikes: 5,
-    likePercentage: 95,
+    author: recipeAuthors.a6,
+    ...recipeEngagement.r6,
   },
 ];
 

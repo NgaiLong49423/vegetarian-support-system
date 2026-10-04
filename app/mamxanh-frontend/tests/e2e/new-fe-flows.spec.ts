@@ -369,3 +369,30 @@ test('recipe like and dislike reactions update state without rating stars (FR-57
   await expect(page.getByText(/Không thể gửi bình chọn/i)).toBeVisible();
 });
 
+test('recipe card save and add-to-plan actions handle guest alert and authenticated updates (AC-01.5)', async ({ page }) => {
+  // 1. As guest on explore page:
+  await page.goto('/kham-pha');
+  await page.getByLabel('Lưu công thức').first().click();
+  await expect(page.getByText('Vui lòng đăng nhập để lưu công thức.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Thêm vào lịch ăn' }).first().click();
+  await expect(page.getByText('Vui lòng đăng nhập để thêm vào lịch ăn.')).toBeVisible();
+
+  // 2. Log in with demo account:
+  await page.goto('/dang-nhap');
+  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
+  await page.getByRole('link', { name: 'Khám phá món chay' }).first().click();
+
+  // 3. Save recipe and add to plan on card:
+  await page.getByLabel('Lưu công thức').first().click();
+  await expect(page.getByLabel('Bỏ lưu công thức').first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Thêm vào lịch ăn' }).first().click();
+  await expect(page.getByText('Đã thêm vào lịch ăn').first()).toBeVisible();
+
+  // 4. Open recipe detail and un-save:
+  await page.getByRole('link', { name: /Đậu hũ non/i }).first().click();
+  await page.getByRole('button', { name: 'Đã lưu' }).click();
+  await expect(page.getByRole('button', { name: 'Lưu lại' })).toBeVisible();
+});
+
