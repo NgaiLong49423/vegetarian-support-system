@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { AuthPage } from './pages/Auth';
+import { AuthProvider } from './components/AuthContext';
 import { DemoAccountProvider } from './components/DemoAccount';
 import { Home } from './pages/Home';
 import { Explore } from './pages/Explore';
@@ -30,7 +31,7 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <BrowserRouter><DemoAccountProvider>
+    <BrowserRouter><AuthProvider><DemoAccountProvider>
       <ScrollToTop />
       <Layout>
         <Routes>
@@ -59,6 +60,6 @@ export default function App() {
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>
-    </DemoAccountProvider></BrowserRouter>
+    </DemoAccountProvider></AuthProvider></BrowserRouter>
   );
 }

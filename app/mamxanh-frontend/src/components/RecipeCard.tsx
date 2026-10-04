@@ -14,14 +14,14 @@ import {
 import type { Recipe } from '../types';
 import { Badge } from './ui';
 import { isSaved, toggleSaved, subscribeSaved } from '../lib/savedRecipes';
-import { useDemoAccount } from './DemoAccount';
+import { useAuth } from './AuthContext';
 
 export function RecipeCard({ recipe }: { recipe: Recipe }) {
   const [saved, setSaved] = useState(false);
   const [addedToPlan, setAddedToPlan] = useState(false);
   const [guestNotice, setGuestNotice] = useState<'save' | 'plan' | null>(null);
   const navigate = useNavigate();
-  const { active } = useDemoAccount();
+  const { memberView: active } = useAuth();
 
   useEffect(() => {
     setSaved(isSaved(recipe.slug));

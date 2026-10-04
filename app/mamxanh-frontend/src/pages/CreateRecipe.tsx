@@ -4,9 +4,8 @@ import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOptio
 import { ApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
 import { useDemoAccount } from '../components/DemoAccount';
-import { Button, Card } from '../components/ui';
-import type { UserRole } from '../types';
-import { Link } from 'react-router-dom';
+import { useAuth } from '../components/AuthContext';
+import type { DietTag } from '../types';
 
 type IngredientRow = {
   key: string;
@@ -29,7 +28,11 @@ const emptyIngredient = (): IngredientRow => ({
 });
 
 export function CreateRecipe() {
-  const { active, role } = useDemoAccount();
+  const { memberView } = useAuth();
+  const { role: demoRole } = useDemoAccount();
+  const { account } = useAuth();
+  const active = memberView;
+  const role = account?.role ?? demoRole;
 
   if (!active || role !== 'EXPERT') {
     return <RecipeCreationAccessGate active={active} role={role} />;

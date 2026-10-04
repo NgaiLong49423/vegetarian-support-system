@@ -1,13 +1,13 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.8.1<br>
+> **Version:** v0.9.0<br>
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-04<br>
 > **Status:** Active  
 
 # Database Workspace
 
-Database chính đã chốt là Microsoft SQL Server 2019. Snapshot của branch sau khi đồng bộ V1–V5 dự kiến gồm 22 bảng, 201 cột, 38 khóa ngoại, 60 CHECK constraints, 56 DEFAULT constraints và 56 indexes, cùng seed 15 dòng UNIT. Các tổng số này cần được xác minh lại trên database sạch.
+Database chính đã chốt là Microsoft SQL Server 2019. Sau khi đồng bộ, thứ tự migration hiện hành là V1–V6; `database/schema.sql` và `database/queries.sql` là các snapshot/kiểm tra cần được xác minh lại trên database sạch.
 
 ## Quyền sở hữu dữ liệu
 
@@ -34,7 +34,7 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
    - **Ranh giới Diagram Artifact Protection:** Thư mục `docs/diagrams/ERD/` (Physical ERD, Logical ERD) là presentation workspace do con người duy trì và được bảo vệ theo `AGENTS.md`. Việc thay đổi schema hoặc migration **tuyệt đối không tự động cấp quyền sửa hoặc regenerate ERD diagrams** cho coding agent trừ khi có task riêng được ủy quyền tường minh.
 3. **Quy trình thực hiện migration:**
    - Truy vết thay đổi đến SRS/Issue và xác nhận không mở rộng scope ngoài quyết định đã duyệt.
-   - Thêm Flyway migration mới ở phiên bản tiếp theo khả dụng (hiện là `V4__...`); không sửa migration đã được chia sẻ.
+   - Thêm Flyway migration mới ở phiên bản tiếp theo khả dụng (hiện là `V7__...`); không sửa migration đã được chia sẻ.
    - Cập nhật entity/DTO/repository và test liên quan.
    - Cập nhật snapshot `database/schema.sql`.
    - Kiểm tra migration trên database sạch và kiểm thử nâng cấp.
@@ -46,18 +46,18 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
 - **Logical ERD:** [logical-erd-v1.0.0.drawio](../docs/diagrams/ERD/logical-erd-v1.0.0.drawio) (22 bảng, 37 connector thể hiện 36 quan hệ; cập nhật lần cuối ở commit `827353e`).
 - **Physical ERD:** [physical-erd-v1.0.0.drawio](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio) & [physical-erd-v1.0.0.drawio.png](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png) (22 bảng, 37 connector, 196 physical columns với đầy đủ kiểu dữ liệu, nullability, constraints, indexes).
 - **Data Dictionary:** [data-dictionary.md](../docs/diagrams/ERD/data-dictionary.md) v0.7.2 (22 bảng, 196 cột physical, hoàn thành triển khai toàn bộ 33 mục đánh dấu sau review PR #66). Theo quyết định của Tech Lead ngày 01/10/2026, các tài liệu trong `docs/diagrams/` (ERD, Data Dictionary) là baseline tham khảo và chỉ được đồng bộ ở giai đoạn viết tài liệu nộp; trạng thái schema hiện hành lấy theo Flyway migration và `database/schema.sql`.
-- **Schema & Migration:** Lịch sử schema gồm [V1__baseline_schema.sql](../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql), [V2__unit_code_unicode.sql](../app/mamxanh-backend/src/main/resources/db/migration/V2__unit_code_unicode.sql), [V3__user_email_verification_token.sql](../app/mamxanh-backend/src/main/resources/db/migration/V3__user_email_verification_token.sql), [V4__nutrition_profile_consent.sql](../app/mamxanh-backend/src/main/resources/db/migration/V4__nutrition_profile_consent.sql) và [V5__ingredient_group_and_unit_validation.sql](../app/mamxanh-backend/src/main/resources/db/migration/V5__ingredient_group_and_unit_validation.sql). database/schema.sql là snapshot thủ công sau toàn bộ migration; tổng số dự kiến là 22 bảng, 201 cột, 38 FKs, 60 CHECK constraints, 56 DEFAULT constraints, 56 indexes và 15 dòng UNIT. database/queries.sql giữ 39 test cases; kết quả 75/75 assertion được ghi nhận trước khi đồng bộ V3–V5 và cần chạy lại trên database sạch.
-- **Verification Tests:** [database/queries.sql](queries.sql) có 39 test case (TC01–TC39) kiểm tra positive/negative constraints. Kết quả 75/75 assertion được ghi nhận trước khi tích hợp V3/V4; cần chạy lại để xác minh trạng thái mới.
+- **Schema & Migration:** Lịch sử schema gồm V1 baseline, V2 Unicode cho `UNIT.code`, V3 xác minh email, V4 consent FR-35, V5 ingredient group/unit validation FR-18 và V6 login throttle cho Issue #6. `database/schema.sql` là snapshot thủ công sau toàn bộ migration; đối chiếu trên database sạch sau lần đồng bộ này chưa được xác nhận.
+- **Verification Tests:** [database/queries.sql](queries.sql) có 40 test cases (TC01–TC40), bao gồm các assertion cho giới hạn đăng nhập. Kết quả ghi nhận trước lần đồng bộ này không xác nhận trạng thái hợp nhất; cần chạy lại bộ truy vấn trên database sạch.
 
 ## Hướng dẫn kiểm thử và thẩm định
 
-Kiểm tra toàn bộ schema và chạy 39 test cases (TC01–TC39) bằng `sqlcmd`:
+Kiểm tra toàn bộ schema và chạy 40 test cases (TC01–TC40) bằng `sqlcmd`; xác nhận kết quả thực tế trên database sạch:
 
 ```powershell
 # 1. Khởi tạo database kiểm thử sạch
 sqlcmd -S .\SQLEXPRESS -E -Q "DROP DATABASE IF EXISTS MamXanhDB_Test; CREATE DATABASE MamXanhDB_Test;"
 
-# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V5 trong db/migration với cờ -I,
+# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V6 trong db/migration với cờ -I,
 #    vì filtered index cần QUOTED_IDENTIFIER ON)
 sqlcmd -S .\SQLEXPRESS -E -d MamXanhDB_Test -i database/schema.sql
 

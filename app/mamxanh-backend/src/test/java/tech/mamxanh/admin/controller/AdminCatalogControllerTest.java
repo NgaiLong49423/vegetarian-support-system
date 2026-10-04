@@ -30,12 +30,14 @@ import tech.mamxanh.nutrition.dto.response.UnitResponse;
 import tech.mamxanh.nutrition.entity.MeasurementDimension;
 import org.springframework.http.HttpStatus;
 import tech.mamxanh.nutrition.service.IngredientCatalogService;
+import tech.mamxanh.auth.repository.UserRepository;
 
 @WebMvcTest(AdminCatalogController.class)
 @Import({MethodSecurityConfiguration.class, GlobalExceptionHandler.class})
 class AdminCatalogControllerTest {
     @Autowired private MockMvc mockMvc;
     @MockitoBean private IngredientCatalogService catalogService;
+    @MockitoBean private UserRepository userRepository;
 
     @Test void rejectsCustomerFromAdminCatalog() throws Exception {
         mockMvc.perform(get("/api/v1/admin/ingredients").with(user("member").roles("CUSTOMER")))

@@ -17,7 +17,8 @@ import tech.mamxanh.integration.email.EmailSender;
  * mocked here (not per test class) so every integration test shares one cached context and one
  * container.
  */
-@SpringBootTest(useMainMethod = SpringBootTest.UseMainMethod.ALWAYS)
+@SpringBootTest(useMainMethod = SpringBootTest.UseMainMethod.ALWAYS,
+        properties = "mamxanh.auth.jwt-secret=integration-test-only-signing-secret-0123456789")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration.class)
