@@ -1,17 +1,30 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BadgeCheck, ChevronLeft, ChevronRight, Download, FileText } from 'lucide-react';
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FileText,
+  Info,
+  RefreshCw,
+} from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card, ProgressBar } from '../components/ui';
-import { nutritionTargets, weekPlan } from '../data/mockData';
+import { Modal } from '../components/Modal';
+import { nutrientsDay, nutrientsWeek, weekPlan } from '../data/mockData';
+import type { NutrientComparisonItem } from '../types';
 
 const days = weekPlan.map((d) => ({ weekday: d.weekday, date: d.date, today: d.today }));
 
 const macros = [
-  { label: 'Tổng Năng lượng (Energy)', value: '1,290', unit: 'kcal', target: '1,850 kcal', pct: 70, tone: 'brand' as const, sub: 'Còn thiếu 560 kcal — khuyến nghị bổ sung bữa phụ' },
-  { label: 'Đạm thực vật (Protein)', value: '56.4', unit: 'g/60 g', target: '', pct: 94, tone: 'leaf' as const, sub: 'Tuyệt vời, đủ đạm hoàn hảo' },
-  { label: 'Carbohydrate phức hợp', value: '182', unit: 'g/220 g', target: '', pct: 83, tone: 'brand' as const, sub: 'Duy trì đường huyết ổn định' },
-  { label: 'Chất béo tốt (Lipid)', value: '34', unit: 'g/45 g', target: '', pct: 76, tone: 'leaf' as const, sub: 'Bảo vệ sức khoẻ tim mạch' },
+  { label: 'Tổng Năng lượng (Energy)', value: '1,290', unit: 'kcal', target: '1,850 kcal', pct: 70, tone: 'brand' as const, sub: 'Còn thiếu 560 kcal so với mức dự kiến' },
+  { label: 'Đạm thực vật (Protein)', value: '56.4', unit: 'g/60 g', target: '', pct: 94, tone: 'leaf' as const, sub: 'Đạt mức dự kiến cho thực đơn ngày' },
+  { label: 'Carbohydrate phức hợp', value: '182', unit: 'g/220 g', target: '', pct: 83, tone: 'brand' as const, sub: 'Mức tiêu thụ carbohydrate cân đối' },
+  { label: 'Chất béo tốt (Lipid)', value: '34', unit: 'g/45 g', target: '', pct: 76, tone: 'leaf' as const, sub: 'Chất béo không bão hòa từ hạt và dầu thực vật' },
 ];
 
 const meals = [
@@ -20,14 +33,38 @@ const meals = [
   { slot: 'Bữa tối', time: '18:30 – 20:00', name: 'Cà ri đậu gà cốt dừa & Salad bơ chanh dây', kcal: 500, recipe: weekPlan[1].meals[2].recipe },
 ];
 
-const statusStyle: Record<string, { label: string; cls: string }> = {
-  ok: { label: 'Trong khoảng tham khảo', cls: 'bg-leaf-100 text-leaf-700' },
-  low: { label: 'Thấp hơn mức tham khảo', cls: 'bg-amber-100 text-amber-700' },
-  missing: { label: 'Chưa dữ liệu', cls: 'bg-brand-100 text-brand-700' },
-};
-
 export function NutritionTracker() {
   const [activeDay, setActiveDay] = useState(4);
+  const [pdfAlert, setPdfAlert] = useState(false);
+
+  // Analysis modal & state
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [period, setPeriod] = useState<'day' | 'week'>('day');
+  const [analysisState, setAnalysisState] = useState<'success' | 'empty' | 'error' | 'incomplete'>('success');
+  const [loading, setLoading] = useState(false);
+
+  const triggerAnalyze = () => {
+    setLoading(true);
+    setAnalysisOpen(true);
+    setTimeout(() => {
+      setLoading(false);
+    }, 350);
+  };
+
+  const currentNutrients: NutrientComparisonItem[] = period === 'day' ? nutrientsDay : nutrientsWeek;
+
+  const renderStatusBadge = (status: NutrientComparisonItem['status']) => {
+    switch (status) {
+      case 'good':
+        return <span className="inline-flex rounded-full bg-leaf-100 px-2.5 py-0.5 text-xs font-semibold text-leaf-800">Trong khoảng tham khảo</span>;
+      case 'low':
+        return <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Thấp hơn tham khảo</span>;
+      case 'high':
+        return <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-800">Cao hơn tham khảo</span>;
+      case 'missing':
+        return <span className="inline-flex rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-800">Chưa đủ dữ liệu</span>;
+    }
+  };
 
   return (
     <PageContainer className="py-8">
@@ -37,21 +74,57 @@ export function NutritionTracker() {
 
       <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-brand-600">Dinh dưỡng khoa học</p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Theo dõi & Kiểm tra Dinh dưỡng Ngày</h1>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-[0.15em] text-brand-600">Dinh dưỡng tham khảo</span>
+            <Badge tone="leaf">FR-37</Badge>
+          </div>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Theo dõi Dinh dưỡng Thực đơn</h1>
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-            Phân tích khoa học 9 chỉ tiêu vi chất từ thực đơn thực vật của bạn, đối chiếu chuẩn Viện Dinh Dưỡng Quốc Gia (DRI Việt Nam) và USDA FoodData Central.
+            Tổng hợp 9 chỉ tiêu tham khảo từ thực đơn dự kiến của bạn. Số liệu tính theo khẩu phần dự kiến, không ngầm hiểu món đã lên lịch là món đã ăn.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline"><Download className="h-4 w-4" /> Xuất báo cáo PDF</Button>
-          <Button><FileText className="h-4 w-4" /> Phân tích tổng thể</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setPdfAlert(true)}>
+            <Download className="h-4 w-4" /> Xuất báo cáo PDF
+          </Button>
+          <Button onClick={triggerAnalyze}>
+            <FileText className="h-4 w-4" /> Phân tích tổng thể
+          </Button>
         </div>
       </div>
 
-      {/* day selector */}
+      {/* PDF simulated alert */}
+      {pdfAlert && (
+        <div className="mb-6 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+            <span>Tính năng xuất PDF đang ở chế độ mô phỏng giao diện và chưa kết nối dịch vụ tạo tệp PDF thật.</span>
+          </div>
+          <button type="button" onClick={() => setPdfAlert(false)} className="text-xs font-bold text-amber-900 underline hover:no-underline">
+            Đóng
+          </button>
+        </div>
+      )}
+
+      {/* Uniform Nutrition Disclaimer Banner */}
+      <div className="mb-6 flex items-start gap-3 rounded-2xl border border-leaf-200 bg-leaf-50/60 p-4 text-xs leading-relaxed text-ink-soft">
+        <Info className="h-4 w-4 shrink-0 text-leaf-600 mt-0.5" />
+        <div>
+          <strong className="text-leaf-800">Tuyên bố miễn trừ y tế (BR-08 / FR-37):</strong>
+          <p className="mt-0.5 text-ink-muted">
+            Thông tin chỉ mang tính tham khảo, không phải theo dõi sức khỏe lâm sàng, không có giá trị pháp lý/y tế và không thay thế chuyên gia y tế. Mâm Xanh không cung cấp Health Score, không đưa ra chẩn đoán hay phác đồ điều trị bệnh.
+          </p>
+        </div>
+      </div>
+
+      {/* Day Selector */}
       <div className="mb-6 flex items-center gap-2">
-        <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-white text-ink-soft hover:bg-brand-50"><ChevronLeft className="h-4 w-4" /></button>
+        <button
+          onClick={() => setActiveDay((d) => Math.max(0, d - 1))}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-white text-ink-soft hover:bg-brand-50"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
         <div className="flex flex-1 gap-2 overflow-x-auto scrollbar-thin">
           {days.map((d, i) => (
             <button
@@ -67,10 +140,15 @@ export function NutritionTracker() {
             </button>
           ))}
         </div>
-        <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-white text-ink-soft hover:bg-brand-50"><ChevronRight className="h-4 w-4" /></button>
+        <button
+          onClick={() => setActiveDay((d) => Math.min(days.length - 1, d + 1))}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-white text-ink-soft hover:bg-brand-50"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
 
-      {/* macro cards */}
+      {/* Macro Cards */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {macros.map((m) => (
           <Card key={m.label} className="p-5">
@@ -87,11 +165,11 @@ export function NutritionTracker() {
         ))}
       </div>
 
-      {/* calorie distribution */}
+      {/* Calorie distribution */}
       <Card className="mb-6 p-5">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-bold text-ink">Phân bố Calorie theo 3 bữa ăn</h3>
-          <span className="text-sm text-ink-muted">Tổng hợp: <strong className="text-ink">1,290 kcal</strong></span>
+          <span className="text-sm text-ink-muted">Tổng hợp thực đơn: <strong className="text-ink">1,290 kcal</strong></span>
         </div>
         <div className="flex h-4 overflow-hidden rounded-full">
           <div className="bg-amber-400" style={{ width: '25%' }} />
@@ -105,15 +183,17 @@ export function NutritionTracker() {
         </div>
       </Card>
 
-      {/* meals of the day */}
-      <h3 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">🍽️ Thực đơn 3 Bữa Ngày {days[activeDay].date}</h3>
+      {/* Meals of the day */}
+      <h3 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
+        🍽️ Thực đơn 3 Bữa Ngày {days[activeDay].date}
+      </h3>
       <div className="mb-6 grid gap-4 md:grid-cols-3">
         {meals.map((meal) => (
           <Card key={meal.slot} hover className="overflow-hidden">
             <div className="relative">
               <img src={meal.recipe.image} alt="" className="h-36 w-full object-cover" />
               <div className="absolute left-3 top-3"><Badge tone="brand" soft={false}>{meal.slot}</Badge></div>
-              <div className="absolute right-3 top-3"><Badge tone="leaf"><BadgeCheck className="h-3 w-3" /> Chuẩn khoa học</Badge></div>
+              <div className="absolute right-3 top-3"><Badge tone="neutral">Thực đơn mẫu</Badge></div>
             </div>
             <div className="p-4">
               <p className="text-xs text-ink-muted">{meal.time}</p>
@@ -127,52 +207,125 @@ export function NutritionTracker() {
         ))}
       </div>
 
-      {/* nutrition table */}
-      <Card className="overflow-hidden">
-        <div className="border-b border-brand-50 p-5">
-          <h3 className="font-extrabold text-ink">Bảng Đánh Giá 9 Chỉ Tiêu Dinh Dưỡng Cốt Lõi</h3>
-          <p className="text-sm text-ink-muted">Đối chiếu chuẩn Viện Dinh Dưỡng Quốc Gia (DRI Việt Nam) & USDA FoodData Central cho người trưởng thành.</p>
+      {/* MODAL PHÂN TÍCH TỔNG THỂ (FR-37) */}
+      <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="Phân tích dinh dưỡng tổng thể (FR-37)" size="lg">
+        <div className="space-y-5">
+          {/* Header row in modal */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-100 pb-3">
+            {/* Period tabs */}
+            <div className="flex rounded-xl bg-brand-100/60 p-1">
+              <button
+                type="button"
+                onClick={() => setPeriod('day')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  period === 'day' ? 'bg-white text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
+                }`}
+              >
+                Hôm nay (1 ngày)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriod('week')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  period === 'week' ? 'bg-white text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
+                }`}
+              >
+                Tuần qua (7 ngày)
+              </button>
+            </div>
+
+            {/* Test Simulation selector */}
+            <div className="flex items-center gap-1.5 text-xs text-ink-muted">
+              <span>Mô phỏng state:</span>
+              <select
+                value={analysisState}
+                onChange={(e) => setAnalysisState(e.target.value as typeof analysisState)}
+                className="rounded-lg border border-brand-200 bg-white p-1 text-xs text-ink outline-none"
+              >
+                <option value="success">Success</option>
+                <option value="incomplete">Incomplete data</option>
+                <option value="empty">Empty</option>
+                <option value="error">Error</option>
+              </select>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="py-12 text-center">
+              <RefreshCw className="mx-auto h-8 w-8 animate-spin text-brand-600" />
+              <p className="mt-3 text-sm font-bold text-ink">Đang tổng hợp 9 chỉ tiêu dinh dưỡng...</p>
+              <p className="text-xs text-ink-muted">Dữ liệu được tính theo khẩu phần dự kiến của thực đơn.</p>
+            </div>
+          ) : analysisState === 'empty' ? (
+            <div className="py-10 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600">
+                <FileText className="h-6 w-6" />
+              </div>
+              <h4 className="mt-3 font-bold text-ink">Chưa có thực đơn để phân tích</h4>
+              <p className="mt-1 text-xs text-ink-muted">Hãy thêm món vào kế hoạch ngày trước khi thực hiện phân tích tổng thể.</p>
+            </div>
+          ) : analysisState === 'error' ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-center">
+              <AlertCircle className="mx-auto h-8 w-8 text-rose-600" />
+              <h4 className="mt-2 font-bold text-rose-900">Không thể tải dữ liệu dinh dưỡng</h4>
+              <p className="mt-1 text-xs text-rose-700">Dữ liệu bạn đã chọn vẫn được giữ nguyên. Vui lòng thử lại.</p>
+              <Button size="sm" variant="outline" className="mt-4" onClick={() => setAnalysisState('success')}>
+                Thử lại
+              </Button>
+            </div>
+          ) : (
+            <>
+              {/* Incomplete warning if state is incomplete */}
+              {analysisState === 'incomplete' && (
+                <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                  <span>Cảnh báo: Một số công thức hoặc nguyên liệu trong thực đơn chưa có đầy đủ số liệu dinh dưỡng chuẩn hóa.</span>
+                </div>
+              )}
+
+              {/* 9 Nutrients Table */}
+              <div className="overflow-x-auto rounded-xl border border-brand-100">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-brand-100 bg-brand-50/50 text-[11px] font-bold uppercase text-ink-muted">
+                      <th className="p-3">Chỉ tiêu</th>
+                      <th className="p-3">Thực đơn</th>
+                      <th className="p-3">Khuyến nghị</th>
+                      <th className="p-3">% Đạt</th>
+                      <th className="p-3">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-brand-50">
+                    {currentNutrients.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-brand-50/30">
+                        <td className="p-3 font-semibold text-ink">{item.name}</td>
+                        <td className="p-3 font-bold text-ink">{item.actual}</td>
+                        <td className="p-3 text-ink-muted">{item.target}</td>
+                        <td className="p-3 font-semibold text-ink">{item.percentage}</td>
+                        <td className="p-3">{renderStatusBadge(item.status)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* PDF note and disclaimer */}
+              <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-3 text-xs text-ink-muted leading-relaxed">
+                <p>
+                  <strong>Lưu ý:</strong> Dữ liệu mỗi món được tính theo khẩu phần dự định. Không tạo Health Score, nhãn "lành mạnh/không lành mạnh" hoặc lời khuyên điều trị theo quy định của FR-37.
+                </p>
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-xs text-ink-muted">Mâm Xanh · Báo cáo dinh dưỡng tham khảo</span>
+                <Button variant="outline" onClick={() => setAnalysisOpen(false)}>
+                  Đóng
+                </Button>
+              </div>
+            </>
+          )}
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead>
-              <tr className="border-b border-brand-50 text-left text-xs uppercase tracking-wider text-ink-muted">
-                <th className="p-4 font-bold">Chỉ tiêu dinh dưỡng</th>
-                <th className="p-4 font-bold">Thực tế nạp</th>
-                <th className="p-4 font-bold">Chuẩn DRI</th>
-                <th className="p-4 font-bold">% Đạt</th>
-                <th className="p-4 font-bold">Trạng thái đánh giá</th>
-              </tr>
-            </thead>
-            <tbody>
-              {nutritionTargets.map((n, i) => {
-                const st = statusStyle[n.status] ?? statusStyle.ok;
-                return (
-                  <tr key={n.key} className="border-b border-brand-50 last:border-0 hover:bg-brand-50/40">
-                    <td className="p-4 font-semibold text-ink">{i + 1}. {n.key}</td>
-                    <td className="p-4 font-bold text-ink">{n.actual}</td>
-                    <td className="p-4 text-ink-soft">{n.target}</td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-brand-100">
-                          <div className={`h-full rounded-full ${n.status === 'ok' ? 'bg-leaf-500' : 'bg-amber-400'}`} style={{ width: `${n.pct}%` }} />
-                        </div>
-                        <span className="font-bold text-ink">{n.pct}%</span>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${st.cls}`}>{st.label}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="border-t border-brand-50 bg-brand-50/40 p-4 text-xs leading-relaxed text-ink-muted">
-          <strong className="text-brand-700">Lưu ý B12:</strong> Không phụ thuộc quá 2.0. Khuyến nghị bổ sung men dinh dưỡng hoặc viên uống thuần chay để đảm bảo vi chất ổn định lâu dài.
-        </div>
-      </Card>
+      </Modal>
     </PageContainer>
   );
 }

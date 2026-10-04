@@ -1,9 +1,12 @@
-import { useState } from 'react';
-import { BadgeCheck, Bookmark, Heart, Leaf, Settings, UtensilsCrossed } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Award, BadgeCheck, Bookmark, Heart, Leaf, Plus, Settings, UtensilsCrossed } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { RecipeCard } from '../components/RecipeCard';
 import { Badge, Button, Card, EmptyState } from '../components/ui';
+import { useDemoAccount } from '../components/DemoAccount';
 import { currentUser, demoAiPlan, recipes } from '../data/mockData';
+import { getSavedRecipeSlugs, subscribeSaved } from '../lib/savedRecipes';
 
 const tabs = ['Công thức đã lưu', 'Món yêu thích', 'Sở thích ăn chay', 'Tùy chọn'] as const;
 type Tab = (typeof tabs)[number];
@@ -23,10 +26,15 @@ const toggles = [
 ];
 
 export function Profile() {
+  const { role, applicationStatus } = useDemoAccount();
   const [tab, setTab] = useState<Tab>('Công thức đã lưu');
-  const saved = recipes.slice(0, 4);
+  const [savedSlugs, setSavedSlugs] = useState(getSavedRecipeSlugs);
   const favorites = recipes.slice(2, 5);
   const [switches, setSwitches] = useState(toggles);
+
+  useEffect(() => subscribeSaved((list) => setSavedSlugs(list.map((recipe) => recipe.slug))), []);
+
+  const saved = recipes.filter((recipe) => savedSlugs.includes(recipe.slug));
 
   return (
     <PageContainer className="py-8">
@@ -42,21 +50,51 @@ export function Profile() {
             <p className="text-sm text-ink-muted">{currentUser.bio}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <Badge tone="leaf"><Leaf className="h-3 w-3" /> Thuần Chay</Badge>
+              <Badge tone={role === 'EXPERT' ? 'leaf' : role === 'ADMIN' ? 'brand' : 'neutral'}>
+                {role === 'EXPERT' ? 'Chuyên gia ẩm thực' : role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên'}
+              </Badge>
               <Badge tone="brand">Gói AI {demoAiPlan} (demo)</Badge>
             </div>
           </div>
-          <div className="flex gap-2">
-            <div className="rounded-xl border border-brand-100 px-4 py-2 text-center">
-              <p className="text-lg font-extrabold text-ink">28</p>
-              <p className="text-xs text-ink-muted">Đã lưu</p>
-            </div>
-            <div className="rounded-xl border border-brand-100 px-4 py-2 text-center">
-              <p className="text-lg font-extrabold text-ink">12</p>
-              <p className="text-xs text-ink-muted">Đã đăng</p>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {role === 'EXPERT' && (
+              <Link to="/dang-cong-thuc" className="inline-flex items-center gap-1.5 rounded-xl bg-leaf-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-leaf-700">
+                <Plus className="h-4 w-4" /> Đăng công thức
+              </Link>
+            )}
+            {role === 'ADMIN' && (
+              <Link to="/admin/xet-duyet-chuyen-gia" className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-amber-700">
+                Xét duyệt Chuyên gia
+              </Link>
+            )}
+            {role === 'CUSTOMER' && (
+              <Link to="/dang-ky-chuyen-gia" className="inline-flex items-center gap-1.5 rounded-xl border border-leaf-300 bg-leaf-50 px-4 py-2 text-sm font-bold text-leaf-800 hover:bg-leaf-100">
+                <Award className="h-4 w-4 text-leaf-600" /> Đăng ký Chuyên gia
+              </Link>
+            )}
             <Button variant="outline"><Settings className="h-4 w-4" /> Chỉnh sửa</Button>
           </div>
         </div>
+
+        {/* Customer CTA Banner if not expert */}
+        {role === 'CUSTOMER' && (
+          <div className="border-t border-brand-50 bg-leaf-50/50 p-4 sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-ink">Bạn có đam mê và bí quyết nấu món chay ngon?</p>
+                <p className="text-xs text-ink-muted">
+                  Đăng ký trở thành Chuyên gia ẩm thực để chia sẻ công thức độc quyền với cộng đồng Mâm Xanh. Không yêu cầu bằng cấp hay giấy tờ vật lý.
+                </p>
+              </div>
+              <Link
+                to="/dang-ky-chuyen-gia"
+                className="rounded-xl bg-leaf-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-leaf-700"
+              >
+                {applicationStatus === 'PENDING' ? 'Xem trạng thái đơn đang chờ' : 'Nộp đơn xét duyệt ngay'}
+              </Link>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* tabs */}
@@ -75,9 +113,13 @@ export function Profile() {
       </div>
 
       {tab === 'Công thức đã lưu' && (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {saved.map((r) => <RecipeCard key={r.id} recipe={r} />)}
-        </div>
+        saved.length ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {saved.map((r) => <RecipeCard key={r.id} recipe={r} />)}
+          </div>
+        ) : (
+          <EmptyState icon="🔖" title="Chưa có công thức đã lưu" description="Lưu công thức bạn yêu thích để xem lại tại đây." />
+        )
       )}
 
       {tab === 'Món yêu thích' && (

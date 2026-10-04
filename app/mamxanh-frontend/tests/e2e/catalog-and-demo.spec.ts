@@ -48,7 +48,11 @@ test('shopping export contains the newly added item', async ({ page }) => {
 });
 
 test('recipe draft edits ingredient rows and updates completion in the demo UI', async ({ page }) => {
-  await page.goto('/dang-cong-thuc');
+  await page.goto('/dang-nhap');
+  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
+  await page.getByRole('button', { name: /Tài khoản Lan Anh/ }).click();
+  await page.getByRole('button', { name: 'Expert', exact: true }).click();
+  await page.getByRole('link', { name: 'Đăng công thức mới' }).click();
   await page.getByPlaceholder('VD: Đậu hũ non sốt nấm đông cô tiêu xanh').fill('Đậu hũ kho nấm');
   await page.getByPlaceholder('Chia sẻ nguồn cảm hứng, hương vị đặc trưng và bí quyết của món ăn...').fill('Công thức bữa tối thuần chay với đậu hũ và nấm.');
   await page.getByRole('button', { name: /Chay Có Sữa/ }).click();
