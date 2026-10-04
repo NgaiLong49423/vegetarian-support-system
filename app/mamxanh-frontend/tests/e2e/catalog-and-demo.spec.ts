@@ -84,8 +84,8 @@ test('recipe form uses catalog choices and reports that real login is still requ
   await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Cắt đậu hũ, rim với cà chua đến khi thấm vị.');
   await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
 
-  await expect(page.getByRole('alert')).toContainText('Đăng nhập/JWT đang chờ Issue #6');
-  await expect(page.getByText('Tài khoản demo không có quyền đăng.')).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không hợp lệ hoặc đã hết hạn');
+  await expect(page.getByText('Tài khoản demo chỉ dùng để xem giao diện và không được cấp quyền đăng.')).toBeVisible();
 });
 
 test('recipe image list requires one cover and blocks publishing until FR-14 upload is connected', async ({ page }) => {

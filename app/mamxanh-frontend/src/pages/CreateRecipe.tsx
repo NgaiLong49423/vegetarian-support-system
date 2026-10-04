@@ -382,7 +382,7 @@ function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, ro
       <input id={`ingredient-${rowNumber}`} value={value} onFocus={() => setOpen(true)} onChange={(event) => onTextChange(event.target.value)} onBlur={() => window.setTimeout(() => setOpen(false), 120)} placeholder="Tìm nguyên liệu có sẵn" autoComplete="off" className={inputClass} aria-label={`Chọn nguyên liệu ${rowNumber}`} aria-expanded={open} />
       {open && <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-brand-200 bg-white p-1 shadow-lg">
         {searchError && <p className="px-3 py-2 text-xs text-red-700">{searchError}</p>}
-        {!searchError && suggestions.length === 0 && <p className="px-3 py-2 text-xs text-ink-muted">Không tìm thấy nguyên liệu trong danh mục.</p>}
+        {!searchError && suggestions.length === 0 && <p className="px-3 py-2 text-xs text-ink-muted">Nguyên liệu này hiện chưa được hỗ trợ.</p>}
         {suggestions.map((item) => <button key={item.ingredientId} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(item); setOpen(false); }} className={`block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-brand-50 ${selectedId === item.ingredientId ? 'bg-brand-50 font-semibold' : ''}`}>{item.name}</button>)}
       </div>}
       {error && <p className={errorClass}>{error}</p>}

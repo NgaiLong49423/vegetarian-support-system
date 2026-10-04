@@ -88,7 +88,8 @@ test('Issue 22: tìm nguyên liệu có sẵn, từ chối tên ngoài danh mụ
   await installApi(page, () => ({ status: 201, body: { recipeId: 2201, title: 'Đậu hũ kho cà chua', status: 'PUBLISHED', publishedAt: '2026-10-04T08:00:00' } }));
   await openForm(page);
   await action(page, 'Tìm một tên không có trong danh mục', () => page.getByLabel('Chọn nguyên liệu 1').fill('nguyên liệu lạ'));
-  await expect(page.getByText('Không tìm thấy nguyên liệu trong danh mục.')).toBeVisible();
+  await expect(page.getByText('Nguyên liệu này hiện chưa được hỗ trợ.')).toBeVisible();
+  await expect(page.getByRole('button', { name: /tạo nguyên liệu mới|thêm nguyên liệu mới/i })).toHaveCount(0);
   await action(page, 'Thay bằng từ khóa nguyên liệu có sẵn', () => page.getByLabel('Chọn nguyên liệu 1').fill('Đậu'));
   await expect(page.getByRole('button', { name: 'Đậu hũ', exact: true })).toBeVisible();
   await action(page, 'Chọn nguyên liệu có sẵn', () => page.getByRole('button', { name: 'Đậu hũ', exact: true }).click());
