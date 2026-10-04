@@ -97,7 +97,7 @@ test('resend request shows the neutral message from the API (mock API)', async (
 
 const account = { id: 101, displayName: 'Nguyễn An', email: 'an@example.com', avatarUrl: null, role: 'CUSTOMER', accountStatus: 'ACTIVE', emailVerified: true };
 
-function authResponse(expiresInSeconds = 900) {
+function authResponse(expiresInSeconds = 3600) {
   return { status: 200, contentType: 'application/json', headers: corsHeaders, body: JSON.stringify({ accessToken: 'header.payload.signature', tokenType: 'Bearer', expiresInSeconds, account }) };
 }
 
@@ -107,9 +107,9 @@ async function submitLogin(page: Page, email = 'an@example.com', password = 'Mat
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
 }
 
-const storedSession = (page: Page) => page.evaluate(() => localStorage.getItem('mamxanh.auth'));
+const storedSession = (page: Page) => page.evaluate(() => sessionStorage.getItem('mamxanh.auth'));
 
-test('login keeps the session on this device and logout clears it without calling the server (mock API)', async ({ page }) => {
+test('login keeps the session in this tab and logout clears it without calling the server (mock API)', async ({ page }) => {
   let submitted: Record<string, string> | null = null;
   let loginAuthorization: string | null = null;
   const serverCalls: string[] = [];
@@ -131,6 +131,7 @@ test('login keeps the session on this device and logout clears it without callin
   const stored = JSON.parse((await storedSession(page)) ?? 'null');
   expect(stored).toMatchObject({ accessToken: 'header.payload.signature', account: { id: 101, email: 'an@example.com' } });
   expect(stored.expiresAt).toBeGreaterThan(Date.now());
+  expect(await page.evaluate(() => localStorage.getItem('mamxanh.auth'))).toBeNull();
 
   await page.reload();
   await page.getByRole('button', { name: 'Tài khoản Nguyễn An' }).click();
@@ -172,7 +173,7 @@ test('login errors follow the problem code and never keep the password (mock API
 test('an expired stored session is dropped and a live session ends when its token expires (mock API)', async ({ page }) => {
   await page.addInitScript(([key, value]) => {
     if (!sessionStorage.getItem('seeded')) {
-      localStorage.setItem(key, value);
+      sessionStorage.setItem(key, value);
       sessionStorage.setItem('seeded', '1');
     }
   }, ['mamxanh.auth', JSON.stringify({ accessToken: 'old.token.value', expiresAt: 1, account })]);

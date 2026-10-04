@@ -7,14 +7,14 @@ info:
   version: 0.7.0
   summary: REST API contract for the Mâm Xanh application
   description: >-
-    Planned reference for FR-03 Authentication endpoints that are not implemented in the runtime API.
+    Planned reference for Google authentication and password recovery endpoints not implemented in runtime.
     Implemented endpoints are documented by generated Springdoc OpenAPI.
 servers:
   - url: /api/v1
     description: Version 1 relative base path
 tags:
   - name: Authentication
-    description: Registration, verification, login, and password recovery.
+    description: Google authentication and password recovery.
 paths:
   /auth/google:
     post:
@@ -98,18 +98,6 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
 components:
   schemas:
-    LoginRequest:
-      type: object
-      additionalProperties: false
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-          writeOnly: true
     GoogleLoginRequest:
       type: object
       additionalProperties: false
@@ -170,8 +158,7 @@ components:
           format: int64
           minimum: 1
           description: >-
-            Runtime access-token lifetime from mamxanh.auth.access-token-ttl (currently 900 seconds,
-            pending Tech Lead approval in API.md section 6).
+            Runtime access-token lifetime from mamxanh.auth.access-token-ttl (60 minutes; see API.md).
         account:
           $ref: '#/components/schemas/AccountSummary'
     AccountSummary:

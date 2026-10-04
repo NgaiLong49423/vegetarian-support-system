@@ -15,8 +15,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param frontendBaseUrl           origin used to build links in emails ({@code MAMXANH_FRONTEND_BASE_URL})
  * @param maxFailedLoginAttempts    consecutive wrong passwords that start a temporary block (NFR-07: 5)
  * @param loginBlockDuration        length of the temporary login block (NFR-07: 10 minutes)
- * @param accessTokenTtl            JWT access-token lifetime; configurable because the value is still
- *                                  under review (docs/api/API.md section 6)
+ * @param accessTokenTtl            JWT access-token lifetime (Q30: 60 minutes for MVP/demo)
  * @param jwtSecret                 HS256 signing secret ({@code MAMXANH_JWT_SECRET}), at least 32 bytes
  * @param jwtIssuer                 {@code iss} claim written and required on access tokens
  */
@@ -28,7 +27,7 @@ public record AuthProperties(
         @DefaultValue("http://localhost:5173") String frontendBaseUrl,
         @DefaultValue("5") int maxFailedLoginAttempts,
         @DefaultValue("10m") Duration loginBlockDuration,
-        @DefaultValue("15m") Duration accessTokenTtl,
+        @DefaultValue("60m") Duration accessTokenTtl,
         String jwtSecret,
         @DefaultValue("mamxanh") String jwtIssuer) {
 

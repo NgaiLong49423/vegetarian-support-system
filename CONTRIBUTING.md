@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.11.0
+> **Version:** v3.12.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-03
+> **Last Updated:** 2026-10-04
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -154,7 +154,7 @@ if (-not (Test-Path app/mamxanh-backend/.env)) {
 }
 ```
 
-Mở `app/mamxanh-backend/.env`, thay `MSSQL_SA_PASSWORD` bằng mật khẩu local mạnh đáp ứng yêu cầu SQL Server. File `.env` bị ignore và không được commit/chia sẻ; `.env.example` chỉ là hợp đồng biến môi trường an toàn. Compose override connection URL/user/password của Backend để kết nối service `sqlserver`; SMTP để trống thì không gửi email thật. Không đưa secret vào command line, workflow YAML, PR log hay tài liệu.
+Mở `app/mamxanh-backend/.env`, thay `MSSQL_SA_PASSWORD` bằng mật khẩu local mạnh đáp ứng yêu cầu SQL Server và tạo `MAMXANX_JWT_SECRET` theo hướng dẫn trong `.env.example`; Backend cần secret JWT để khởi động. File `.env` bị ignore và không được commit/chia sẻ; `.env.example` chỉ là hợp đồng biến môi trường an toàn. Compose override connection URL/user/password của Backend để kết nối service `sqlserver`; SMTP để trống thì không gửi email thật. Không đưa secret vào command line, workflow YAML, PR log hay tài liệu.
 
 **Khởi động và xác minh:**
 
@@ -198,7 +198,7 @@ Mọi lệnh sau đó (`up`, `down`, `run`, reset volume) phải tiếp tục d�
 
 **PR và GitHub gate:**
 
-- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job setup Node.js `24.21.0` (exact pin, đáp ứng yêu cầu Node `>=24` của Scalar CLI `2.5.2`), dùng project `mamxanh-ci` thống nhất cho `up`/cleanup, build Compose, đợi health checks, capture `/v3/api-docs`, validate bằng Scalar CLI `2.5.2`, upload OpenAPI artifact riêng theo PR/run, rồi smoke-test route `/scalar`; CI dùng password tạm, dọn volume trên runner disposable sau job. HTTP `curl /scalar` chỉ chứng minh route/HTML shell trả về, không chứng minh Scalar JavaScript đã render contract hoặc request API chạy được.
+- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job setup Node.js `24.21.0` (exact pin, đáp ứng yêu cầu Node `>=24` của Scalar CLI `2.5.2`), dùng project `mamxanh-ci` thống nhất cho `up`/cleanup, build Compose, đợi health checks, capture `/v3/api-docs`, validate bằng Scalar CLI `2.5.2`, upload OpenAPI artifact riêng theo PR/run, smoke-test route `/scalar`, rồi chạy Playwright qua Frontend thật tới Backend và xác minh trạng thái throttle trực tiếp trong SQL Server. CI tạo secret JWT/SQL tạm và dọn volume trên runner disposable sau job. HTTP `curl /scalar` chỉ chứng minh route/HTML shell trả về, không chứng minh Scalar JavaScript đã render contract hoặc request API chạy được.
 - Scalar tại `http://localhost:8080/scalar` là giao diện chính thức để team đọc và manual-test API. Browser acceptance phải xác nhận JavaScript tải/render generated `/v3/api-docs`, kiểm tra operation và gửi request phù hợp trong giao diện; đây là bằng chứng riêng với CI route smoke và không thay automated regression/authorization tests.
 - Ruleset `protect-develop` yêu cầu status context `Docker Development` và strict up-to-date. PR vào `develop` phải sync baseline theo phần trên; sau lần sync cuối có ảnh hưởng, chạy lại kiểm tra liên quan và đợi CI trên commit cập nhật.
 - Nếu Docker không chạy được local, ghi rõ nguyên nhân và kết quả nào chưa xác minh trong PR; không ghi “Docker test passed”. Required CI check vẫn phải pass trước khi merge. Việc Docker daemon của máy cá nhân unavailable không tự cho phép bỏ qua gate.

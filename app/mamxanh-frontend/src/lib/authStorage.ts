@@ -11,13 +11,12 @@ export type StoredSession = {
 const STORAGE_KEY = 'mamxanh.auth';
 
 /**
- * Single place that decides where the access token lives (API.md section 6, decision pending as
- * Q33). localStorage keeps the session across reloads and tabs; switching storage only changes
- * this function.
+ * Single place that decides where the access token lives (Q33: sessionStorage). The session
+ * survives reloads in this tab and is cleared when the tab's browsing session ends.
  */
 function storage(): Storage | null {
   try {
-    return window.localStorage;
+    return window.sessionStorage;
   } catch {
     return null;
   }

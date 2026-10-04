@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SESSION_ENDED_EVENT, type SessionEndReason } from '../lib/apiClient';
-import { SESSION_STORAGE_KEY, clearSession, loadSession, saveSession, type StoredSession } from '../lib/authStorage';
+import { clearSession, loadSession, saveSession, type StoredSession } from '../lib/authStorage';
 import type { AccountSummary, AuthResponse } from '../services/authApi';
 
 /** Shown on the login page after the app ends a session by itself. */
@@ -47,15 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const timer = window.setTimeout(() => endSession('timeout'), Math.max(0, session.expiresAt - Date.now()));
     return () => window.clearTimeout(timer);
   }, [session, endSession]);
-
-  // Keep tabs in sync: logging in or out in one tab applies to the others.
-  useEffect(() => {
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === SESSION_STORAGE_KEY || event.key === null) setSession(loadSession());
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
 
   const value = useMemo<AuthContextValue>(() => ({
     account: session?.account ?? null,

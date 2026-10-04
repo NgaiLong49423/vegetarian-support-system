@@ -51,7 +51,7 @@ import tech.mamxanh.auth.repository.UserRepository;
 
 /**
  * FR-03-B (#6): UC-03.4, AC-03.6–AC-03.9, NFR-07 and the account-status check of NFR-09 against
- * a real SQL Server (Flyway V1→V4). Time is controlled through the shared {@code MutableClock}.
+ * a real SQL Server (Flyway V1→V6). Time is controlled through the shared {@code MutableClock}.
  */
 @ExtendWith(OutputCaptureExtension.class)
 class PasswordLoginIntegrationTest extends AbstractIntegrationTest {
@@ -89,7 +89,7 @@ class PasswordLoginIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE))
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresInSeconds").value(900))
+                .andExpect(jsonPath("$.expiresInSeconds").value(3600))
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andExpect(jsonPath("$.account.id").value(user.getId()))
@@ -111,7 +111,7 @@ class PasswordLoginIntegrationTest extends AbstractIntegrationTest {
         assertThat(jwt.getClaimAsString("role")).isEqualTo("CUSTOMER");
         assertThat(jwt.getClaimAsString("iss")).isEqualTo("mamxanh");
         assertThat(jwt.getIssuedAt()).isEqualTo(clock.instant());
-        assertThat(jwt.getExpiresAt()).isEqualTo(clock.instant().plus(Duration.ofMinutes(15)));
+        assertThat(jwt.getExpiresAt()).isEqualTo(clock.instant().plus(Duration.ofHours(1)));
         assertThat(jwt.getClaims()).doesNotContainKeys("sid", "email");
         assertThat(jwt.getHeaders()).containsEntry("alg", "HS256");
     }
@@ -319,7 +319,7 @@ class PasswordLoginIntegrationTest extends AbstractIntegrationTest {
         createVerifiedUser(EMAIL);
         String token = accessToken(EMAIL, PASSWORD);
 
-        clock.advance(Duration.ofMinutes(15).minusSeconds(1));
+        clock.advance(Duration.ofHours(1).minusSeconds(1));
         mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isNotFound());
 
@@ -404,7 +404,7 @@ class PasswordLoginIntegrationTest extends AbstractIntegrationTest {
                 new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256")));
         Instant issuedAt = clock.instant();
         JwtClaimsSet claims = JwtClaimsSet.builder().issuer(issuer).subject(userId.toString())
-                .issuedAt(issuedAt).expiresAt(issuedAt.plus(Duration.ofMinutes(15))).claim("role", "ADMIN").build();
+                .issuedAt(issuedAt).expiresAt(issuedAt.plus(Duration.ofHours(1))).claim("role", "ADMIN").build();
         return encoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
                 .getTokenValue();
     }

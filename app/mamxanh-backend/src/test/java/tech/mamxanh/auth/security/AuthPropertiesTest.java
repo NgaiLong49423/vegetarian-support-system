@@ -13,9 +13,9 @@ class AuthPropertiesTest {
 
     @Test
     void rejectsAMissingOrShortJwtSecret() {
-        assertThatIllegalArgumentException().isThrownBy(() -> properties(null, Duration.ofMinutes(15)))
+        assertThatIllegalArgumentException().isThrownBy(() -> properties(null, Duration.ofMinutes(60)))
                 .withMessageContaining("MAMXANH_JWT_SECRET");
-        assertThatIllegalArgumentException().isThrownBy(() -> properties("x".repeat(31), Duration.ofMinutes(15)));
+        assertThatIllegalArgumentException().isThrownBy(() -> properties("x".repeat(31), Duration.ofMinutes(60)));
     }
 
     @Test
@@ -26,9 +26,9 @@ class AuthPropertiesTest {
 
     @Test
     void neverPrintsTheJwtSecret() {
-        assertThat(properties(SECRET, Duration.ofMinutes(15)).toString())
+        assertThat(properties(SECRET, Duration.ofMinutes(60)).toString())
                 .doesNotContain(SECRET)
-                .contains("jwtSecret=[redacted]", "accessTokenTtl=PT15M");
+                .contains("jwtSecret=[redacted]", "accessTokenTtl=PT1H");
     }
 
     private static AuthProperties properties(String jwtSecret, Duration accessTokenTtl) {

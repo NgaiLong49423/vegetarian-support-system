@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.48.0
+> **Version:** v2.49.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-04
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-04 — Complete Password Login Integration Evidence (Issue #6)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Verify password login through the real Frontend, Backend and SQL Server Compose stack, and align the implementation and integration guidance with approved authentication decisions.
+
+### Added
+
+- Add a Docker Development Playwright integration test that verifies browser login, failed-login persistence, temporary blocking and successful counter reset against SQL Server.
+
+### Changed
+
+- Use 60-minute JWT access tokens and tab-scoped `sessionStorage`; document the accepted temporary account-enumeration risk.
+- Require the JWT signing secret in the Compose Backend and generate a disposable secret in CI.
+- Remove password login from the planned OpenAPI reference now that it is implemented at runtime.
+
+### Fixed
+
+- Reuse the shared SQL Server integration-test context for the ingredient catalog database tests so required JWT configuration is present.
 
 ## 2026-10-03 — Complete FR-18 Review Fixes ([PR #75](https://github.com/NgaiLong49423/vegetarian-support-system/pull/75))
 

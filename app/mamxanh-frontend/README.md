@@ -1,6 +1,6 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.12.0
+> **Version:** v1.13.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-10-04
 > **Status:** Active  
@@ -19,8 +19,9 @@ Bản demo cho giảng viên: [Mâm Xanh trên Vercel](https://mamxanh-frontend.
 
 - Header mặc định dành cho Guest có Đăng nhập/Đăng ký. Các trang `/dang-nhap`, `/dang-ky`, `/quen-mat-khau`, `/xac-minh-email`, `/dat-lai-mat-khau` dùng bố cục responsive riêng cùng nhận diện dự án.
 - **Đăng ký và xác minh email đã gọi Backend thật (Issue #5):** form đăng ký kiểm tra tên 3–50 ký tự, email và mật khẩu 8–64 ký tự (tối đa 72 byte UTF-8) có chữ in hoa, chữ thường, chữ số, rồi gửi `POST /auth/register`. Liên kết trong email mở `/xac-minh-email?token=...`; trang gửi mã một lần, xóa mã khỏi thanh địa chỉ và báo kết quả. Mã sai/hết hạn cho phép yêu cầu gửi lại email; gửi lại trong 60 giây hiển thị số giây chờ từ header `Retry-After`.
-- **Đăng nhập bằng email/mật khẩu đã gọi Backend thật (Issue #6):** gửi `POST /auth/login`; thành công thì lưu phiên (access token, thời điểm hết hạn, `account`) trong `localStorage` key `mamxanh.auth` và hiển thị tên tài khoản thật ở header. Lỗi hiển thị theo `code`: sai email/mật khẩu (thông báo trung tính), email chưa xác minh (kèm liên kết gửi lại email), tài khoản bị khóa, và khóa đăng nhập tạm 10 phút (số phút lấy từ `Retry-After`). Mật khẩu luôn được xóa khỏi state sau mỗi lần gửi.
-- Nơi lưu token nằm trong một hàm duy nhất (`src/lib/authStorage.ts`) vì quyết định Q33 còn chờ Tech Lead chốt. Axios tự gắn `Authorization: Bearer` cho request cần đăng nhập (không gắn cho `/auth/*`); Backend trả `401` hoặc `403 ACCOUNT_LOCKED` thì Frontend xóa phiên và đưa về trang Đăng nhập. Phiên tự kết thúc khi token hết hạn (không có refresh token) và đồng bộ giữa các tab.
+- **Đăng nhập bằng email/mật khẩu đã gọi Backend thật (Issue #6):** gửi `POST /auth/login`; thành công thì lưu phiên (access token, thời điểm hết hạn, `account`) trong `sessionStorage` key `mamxanh.auth` của tab hiện tại và hiển thị tên tài khoản thật ở header. Lỗi hiển thị theo `code`: sai email/mật khẩu (thông báo trung tính), email chưa xác minh (kèm liên kết gửi lại email), tài khoản bị khóa, và khóa đăng nhập tạm 10 phút (số phút lấy từ `Retry-After`). Mật khẩu luôn được xóa khỏi state sau mỗi lần gửi.
+- Nơi lưu token nằm trong một hàm duy nhất (`src/lib/authStorage.ts`). Axios tự gắn `Authorization: Bearer` cho request cần đăng nhập (không gắn cho `/auth/*`); Backend trả `401` hoặc `403 ACCOUNT_LOCKED` thì Frontend xóa phiên và đưa về trang Đăng nhập. Phiên tự kết thúc khi token hết hạn (không có refresh token), bị xóa khi tab đóng và không đồng bộ giữa các tab.
+- Docker Development chạy thêm kiểm thử Playwright tích hợp: trình duyệt đăng nhập qua Frontend/Backend đang chạy và truy vấn SQL Server Compose để xác minh bộ đếm login sai, khóa lần thứ năm và reset sau khi hết hạn.
 - **Đăng xuất** chỉ xóa token và trạng thái đăng nhập trên thiết bị, không gọi Backend (AC-03.13). Google Login, quên và đặt lại mật khẩu vẫn là biểu mẫu demo cho tới Issue #8, #9.
 - Tại trang đăng nhập, chọn **Khám phá tài khoản demo** để xem menu Lan Anh/FREE; chọn **Thoát tài khoản demo** để quay lại Guest. Đây chỉ là chuyển chế độ xem trong bộ nhớ, không tạo phiên, không lưu token và không phải authentication/authorization; chế độ này tách riêng với phiên đăng nhập thật trong `AuthContext`.
 - Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
