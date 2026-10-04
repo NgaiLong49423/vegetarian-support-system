@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Award, BadgeCheck, Bookmark, Heart, Leaf, Plus, Settings, UtensilsCrossed } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
@@ -6,6 +6,7 @@ import { RecipeCard } from '../components/RecipeCard';
 import { Badge, Button, Card, EmptyState } from '../components/ui';
 import { useDemoAccount } from '../components/DemoAccount';
 import { currentUser, demoAiPlan, recipes } from '../data/mockData';
+import { getSavedRecipeSlugs, subscribeSaved } from '../lib/savedRecipes';
 
 const tabs = ['Công thức đã lưu', 'Món yêu thích', 'Sở thích ăn chay', 'Tùy chọn'] as const;
 type Tab = (typeof tabs)[number];
@@ -27,9 +28,13 @@ const toggles = [
 export function Profile() {
   const { role, applicationStatus } = useDemoAccount();
   const [tab, setTab] = useState<Tab>('Công thức đã lưu');
-  const saved = recipes.slice(0, 4);
+  const [savedSlugs, setSavedSlugs] = useState(getSavedRecipeSlugs);
   const favorites = recipes.slice(2, 5);
   const [switches, setSwitches] = useState(toggles);
+
+  useEffect(() => subscribeSaved((list) => setSavedSlugs(list.map((recipe) => recipe.slug))), []);
+
+  const saved = recipes.filter((recipe) => savedSlugs.includes(recipe.slug));
 
   return (
     <PageContainer className="py-8">
@@ -108,9 +113,13 @@ export function Profile() {
       </div>
 
       {tab === 'Công thức đã lưu' && (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {saved.map((r) => <RecipeCard key={r.id} recipe={r} />)}
-        </div>
+        saved.length ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {saved.map((r) => <RecipeCard key={r.id} recipe={r} />)}
+          </div>
+        ) : (
+          <EmptyState icon="🔖" title="Chưa có công thức đã lưu" description="Lưu công thức bạn yêu thích để xem lại tại đây." />
+        )
       )}
 
       {tab === 'Món yêu thích' && (

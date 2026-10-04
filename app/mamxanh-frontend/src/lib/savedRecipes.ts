@@ -33,6 +33,10 @@ export function isSaved(slug: string): boolean {
     return getAll().some((x) => x.slug === slug);
 }
 
+export function getSavedRecipeSlugs(): string[] {
+    return getAll().map((recipe) => recipe.slug);
+}
+
 export function toggleSaved(recipe: Omit<SavedRecipe, "savedAt">): boolean {
     const list = getAll();
     const idx = list.findIndex((x) => x.slug === recipe.slug);

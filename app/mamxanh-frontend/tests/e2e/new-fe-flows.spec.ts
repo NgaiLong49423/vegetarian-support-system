@@ -396,3 +396,57 @@ test('recipe card save and add-to-plan actions handle guest alert and authentica
   await expect(page.getByRole('button', { name: 'Lưu lại' })).toBeVisible();
 });
 
+test('recipe creation route is restricted to approved Expert demo role (FR-05)', async ({ page }) => {
+  await page.goto('/dang-cong-thuc');
+  await expect(page.getByRole('heading', { name: 'Đăng công thức chỉ dành cho Chuyên gia' })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
+
+  await page.goto('/dang-nhap');
+  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
+  const accountMenu = page.getByRole('button', { name: /Tài khoản Lan Anh/ });
+
+  await accountMenu.click();
+  await page.getByRole('button', { name: 'Customer', exact: true }).click();
+  await page.evaluate(() => {
+    window.history.pushState({}, '', '/dang-cong-thuc');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page.getByText('Bạn cần được phê duyệt đơn đăng ký Chuyên gia trước khi đăng công thức.')).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Đăng ký trở thành Chuyên gia' })).toHaveAttribute('href', '/dang-ky-chuyen-gia');
+
+  await page.getByRole('button', { name: 'Expert', exact: true }).click();
+  await page.evaluate(() => {
+    window.history.pushState({}, '', '/dang-cong-thuc');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Admin', exact: true }).click();
+  await page.evaluate(() => {
+    window.history.pushState({}, '', '/dang-cong-thuc');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page.getByText('Vai trò hiện tại không có quyền đăng công thức.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toHaveCount(0);
+});
+
+test('saved recipe appears in profile and disappears when unsaved', async ({ page }) => {
+  await page.goto('/ho-so');
+  await expect(page.getByRole('heading', { name: 'Chưa có công thức đã lưu' })).toBeVisible();
+
+  await page.goto('/dang-nhap');
+  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
+  await page.getByRole('link', { name: 'Khám phá món chay' }).first().click();
+  await page.getByLabel('Lưu công thức').first().click();
+  await expect(page.getByLabel('Bỏ lưu công thức').first()).toBeVisible();
+
+  await page.evaluate(() => {
+    window.history.pushState({}, '', '/ho-so');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  const savedCard = page.getByRole('link', { name: /Đậu hũ non sốt nấm đông cô tiêu xanh/i });
+  await expect(savedCard).toBeVisible();
+  await savedCard.getByRole('button', { name: 'Bỏ lưu công thức' }).click();
+  await expect(page.getByRole('heading', { name: 'Chưa có công thức đã lưu' })).toBeVisible();
+});
+
