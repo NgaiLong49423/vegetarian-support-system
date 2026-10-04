@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Check, ImagePlus, Info, Plus, Sparkles, Trash2, UploadCloud } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card, ProgressBar } from '../components/ui';
 import { useDemoAccount } from '../components/DemoAccount';
+import { RECIPE_INGREDIENT_UNITS, validateIngredientQuantity } from '../lib/recipeIngredientValidation';
 import type { DietTag } from '../types';
 
 const dietOptions: { value: DietTag; label: string; desc: string }[] = [
@@ -14,6 +15,7 @@ const dietOptions: { value: DietTag; label: string; desc: string }[] = [
 ];
 
 interface Row { id: string; name: string; qty: string; unit: string }
+const suggestedIngredients = ['Đậu hũ', 'Cà chua', 'Rau muống', 'Tỏi', 'Tiêu đen'];
 
 export function CreateRecipe() {
   const { active, role } = useDemoAccount();
@@ -52,31 +54,65 @@ function RecipeCreationAccessGate({ active, role }: { active: boolean; role: str
 }
 
 function CreateRecipeForm() {
-  const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [diet, setDiet] = useState<DietTag>('Thuần Chay');
-  const [rows, setRows] = useState<Row[]>([
-    { id: '1', name: 'Đậu hũ non Nhật Bản', qty: '300', unit: 'gram' },
-    { id: '2', name: 'Nấm đông cô tươi', qty: '150', unit: 'gram' },
-    { id: '3', name: 'Tiêu xanh Phú Quốc', qty: '2', unit: 'nhánh' },
-  ]);
-  const [saved, setSaved] = useState(false);
+  const [rows, setRows] = useState<Row[]>([{ id: '1', name: '', qty: '', unit: 'g' }]);
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const [submitMessage, setSubmitMessage] = useState('');
 
+  const completeRows = rows.filter((row) => row.name.trim() && !validateIngredientQuantity({ quantity: row.qty, unit: row.unit })).length;
   const completeness = Math.round(
-    ([title, desc].filter(Boolean).length / 2) * 40 + (rows.filter((r) => r.name && r.qty).length / Math.max(rows.length, 1)) * 60,
+    ([title, desc].filter(Boolean).length / 2) * 40 + (completeRows / Math.max(rows.length, 1)) * 60,
   );
 
   const checklist = [
     { label: 'Đặt tên món hấp dẫn', done: title.length > 3 },
     { label: 'Mô tả câu chuyện món ăn', done: desc.length > 10 },
     { label: 'Chọn chế độ ăn chay', done: true },
-    { label: 'Có tối thiểu 3 nguyên liệu', done: rows.filter((r) => r.name).length >= 3 },
+    { label: 'Có ít nhất 1 nguyên liệu đủ tên, lượng và đơn vị', done: rows.length >= 1 && completeRows === rows.length },
   ];
 
-  const addRow = () => setRows((r) => [...r, { id: `${Date.now()}`, name: '', qty: '', unit: 'gram' }]);
-  const removeRow = (id: string) => setRows((r) => r.filter((x) => x.id !== id));
-  const updateRow = (id: string, patch: Partial<Row>) => setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  const addRow = () => {
+    if (rows.length >= 50) return;
+    setRows((current) => [...current, { id: `${Date.now()}-${current.length}`, name: '', qty: '', unit: 'g' }]);
+    setSubmitMessage('');
+  };
+  const removeRow = (id: string) => {
+    if (rows.length <= 1) return;
+    setRows((current) => current.filter((row) => row.id !== id));
+    setRowErrors((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+    setSubmitMessage('');
+  };
+  const updateRow = (id: string, patch: Partial<Row>) => {
+    setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+    setRowErrors((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+    setSubmitMessage('');
+  };
+  const validateBeforePublish = () => {
+    const errors: Record<string, string> = {};
+    rows.forEach((row) => {
+      if (!row.name.trim()) errors[row.id] = 'Nhập tên nguyên liệu hoặc ghi phần nêm thêm trong mô tả.';
+      else {
+        const quantityError = validateIngredientQuantity({ quantity: row.qty, unit: row.unit });
+        if (quantityError) errors[row.id] = quantityError;
+      }
+    });
+    setRowErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setSubmitMessage('Còn nguyên liệu chưa hợp lệ. Hãy sửa các dòng được đánh dấu.');
+      return;
+    }
+    setSubmitMessage('Kiểm tra số lượng cơ bản tại giao diện đã đạt. Conversion theo nguyên liệu chưa được kiểm tra; Recipe API chưa được tích hợp nên chưa thể đăng bài.');
+  };
 
   return (
     <PageContainer className="py-8">
@@ -170,48 +206,62 @@ function CreateRecipeForm() {
             <StepHead num={3} title="Danh sách nguyên liệu chuẩn hoá" />
             <div className="mb-3 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
               <Info className="mt-0.5 h-4 w-4 shrink-0" />
-              Hệ thống sẽ tự động chuẩn hoá nguyên liệu để tính toán chính xác 9 chỉ tiêu dinh dưỡng cho món ăn của bạn.
+              Chỉ thêm nguyên liệu có lượng và đơn vị cụ thể. Gia vị nêm “một ít/vừa đủ” có thể ghi trong mô tả. Đơn vị g/kg cần từ 100g và theo bước 100g; đơn vị khác sẽ cần conversion theo đúng nguyên liệu trước khi đăng.
             </div>
-            <div className="space-y-2">
+            <p className="mb-3 text-xs text-ink-muted">Gõ để tìm trong gợi ý hoặc nhập tên nguyên liệu mới. Tên mới chỉ thuộc công thức này, không tự thêm vào danh mục chung.</p>
+            <datalist id="recipe-ingredient-suggestions">
+              {suggestedIngredients.map((name) => <option key={name} value={name} />)}
+            </datalist>
+            <div className="space-y-3" aria-label="Các dòng nguyên liệu">
               {rows.map((row, i) => (
-                <div key={row.id} className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-xs font-bold text-brand-600">{i + 1}</span>
+                <div key={row.id} className="grid grid-cols-[2rem_minmax(0,1fr)_5.5rem_2rem] items-start gap-2 md:grid-cols-[2rem_minmax(0,1fr)_5.5rem_7rem_2rem]">
+                  <span className="mt-2 flex h-8 w-8 items-center justify-center rounded-lg bg-brand-100 text-xs font-bold text-brand-600">{i + 1}</span>
                   <input
                     value={row.name}
                     onChange={(e) => updateRow(row.id, { name: e.target.value })}
                     placeholder="Tên nguyên liệu"
-                    className="min-w-0 flex-[2] rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-400"
+                    list="recipe-ingredient-suggestions"
+                    maxLength={200}
+                    aria-label={`Tên nguyên liệu dòng ${i + 1}`}
+                    aria-invalid={Boolean(rowErrors[row.id])}
+                    className={`min-w-0 rounded-lg border bg-white px-3 py-2 text-sm outline-none focus:border-brand-400 ${rowErrors[row.id] ? 'border-red-500' : 'border-brand-200'}`}
                   />
                   <input
                     value={row.qty}
                     onChange={(e) => updateRow(row.id, { qty: e.target.value })}
-                    placeholder="SL"
-                    className="w-16 rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-400"
+                    placeholder="Số lượng"
+                    inputMode="decimal"
+                    aria-label={`Số lượng nguyên liệu dòng ${i + 1}`}
+                    aria-invalid={Boolean(rowErrors[row.id])}
+                    className={`min-w-0 rounded-lg border bg-white px-2 py-2 text-sm outline-none focus:border-brand-400 ${rowErrors[row.id] ? 'border-red-500' : 'border-brand-200'}`}
                   />
                   <select
                     value={row.unit}
                     onChange={(e) => updateRow(row.id, { unit: e.target.value })}
-                    className="w-24 rounded-lg border border-brand-200 bg-white px-2 py-2 text-sm outline-none focus:border-brand-400"
+                    aria-label={`Đơn vị nguyên liệu dòng ${i + 1}`}
+                    className="col-start-2 col-span-2 min-w-0 rounded-lg border border-brand-200 bg-white px-2 py-2 text-sm outline-none focus:border-brand-400 md:col-start-4 md:col-span-1"
                   >
-                    {['gram', 'ml', 'củ', 'quả', 'nhánh', 'muỗng', 'hộp'].map((u) => <option key={u}>{u}</option>)}
+                    {RECIPE_INGREDIENT_UNITS.map((unit) => <option key={unit.code} value={unit.code}>{unit.label}</option>)}
                   </select>
-                  <button onClick={() => removeRow(row.id)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-brand-100 hover:text-red-500">
+                  <button type="button" onClick={() => removeRow(row.id)} disabled={rows.length <= 1} aria-label={`Xóa nguyên liệu dòng ${i + 1}`} className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-brand-100 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40">
                     <Trash2 className="h-4 w-4" />
                   </button>
+                  {rowErrors[row.id] && <p className="col-start-2 col-span-3 -mt-1 text-xs text-red-700" role="alert">{rowErrors[row.id]}</p>}
                 </div>
               ))}
             </div>
-            <button onClick={addRow} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:underline">
-              <Plus className="h-4 w-4" /> Thêm nguyên liệu
+            <button type="button" onClick={addRow} disabled={rows.length >= 50} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50">
+              <Plus className="h-4 w-4" /> Thêm nguyên liệu ({rows.length}/50)
             </button>
           </Card>
 
           <div className="flex justify-end gap-3">
-            <Button variant="outline">Lưu nháp</Button>
-            <Button onClick={() => { setSaved(true); setTimeout(() => navigate('/kham-pha'), 1200); }}>
-              {saved ? <><Check className="h-4 w-4" /> Đã đăng!</> : 'Xuất bản công thức'}
+            <Button variant="outline" disabled title="Lưu nháp trên máy chủ chưa được hỗ trợ.">Lưu nháp</Button>
+            <Button onClick={validateBeforePublish}>
+              Xuất bản công thức
             </Button>
           </div>
+          {submitMessage && <p className="text-right text-sm text-ink-muted" role="status" aria-live="polite">{submitMessage}</p>}
         </div>
 
         {/* live sidebar */}

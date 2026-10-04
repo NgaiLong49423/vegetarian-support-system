@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.47.2
+> **Version:** v2.47.3
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-04
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-04 — Prepare Recipe Ingredient Entry for Issue #25
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Update the existing recipe-entry demo for ingredient quantity input and add repeatable Docker sample conversions. Recipe Post API integration remains pending Issues #11/#22.
+
+### Added
+
+- Validate positive ingredient quantities and the 100g minimum/step for direct `g`/`kg` input.
+- Add ingredient-specific conversion fixtures for tofu, tomato, water spinach, garlic, and black pepper.
+
+### Changed
+
+- Let the Expert recipe-entry demo add, remove, and edit 1–50 ingredient rows with free-text names and known `UNIT` choices.
+- Keep publish feedback explicit that this UI-only check does not validate conversions or publish without the Recipe API.
+
+### Fixed
+
+- Remove the demo's misleading successful-publish message before a Recipe Post API is available.
 
 ## 2026-10-03 — Complete FR-18 Review Fixes ([PR #75](https://github.com/NgaiLong49423/vegetarian-support-system/pull/75))
 

@@ -47,7 +47,7 @@ test('shopping export contains the newly added item', async ({ page }) => {
   expect(await readFile(downloadedPath!, 'utf8')).toContain('[ ] Rau cải cho ngày mai — vừa đủ');
 });
 
-test('recipe draft edits ingredient rows and updates completion in the demo UI', async ({ page }) => {
+test('recipe ingredient rows support free text, units and direct-mass validation in the demo UI', async ({ page }) => {
   await page.goto('/dang-nhap');
   await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
   await page.getByRole('button', { name: /Tài khoản Lan Anh/ }).click();
@@ -56,16 +56,30 @@ test('recipe draft edits ingredient rows and updates completion in the demo UI',
   await page.getByPlaceholder('VD: Đậu hũ non sốt nấm đông cô tiêu xanh').fill('Đậu hũ kho nấm');
   await page.getByPlaceholder('Chia sẻ nguồn cảm hứng, hương vị đặc trưng và bí quyết của món ăn...').fill('Công thức bữa tối thuần chay với đậu hũ và nấm.');
   await page.getByRole('button', { name: /Chay Có Sữa/ }).click();
-  await page.getByRole('button', { name: 'Thêm nguyên liệu', exact: true }).click();
-  await expect(page.getByPlaceholder('Tên nguyên liệu')).toHaveCount(4);
-  await page.getByPlaceholder('Tên nguyên liệu').last().fill('Cà rốt');
-  await page.getByPlaceholder('SL', { exact: true }).last().fill('2');
-  const row = page.getByPlaceholder('Tên nguyên liệu').last().locator('..');
-  await row.getByRole('combobox').selectOption('củ');
-  await expect(row.getByRole('combobox')).toHaveValue('củ');
-  await row.getByRole('button').click();
-  await expect(page.getByPlaceholder('Tên nguyên liệu')).toHaveCount(3);
+  await expect(page.getByPlaceholder('Tên nguyên liệu')).toHaveCount(1);
+  await page.getByRole('button', { name: /Thêm nguyên liệu/ }).click();
+  await expect(page.getByPlaceholder('Tên nguyên liệu')).toHaveCount(2);
+  await page.getByLabel('Tên nguyên liệu dòng 2').fill('Cà rốt');
+  await page.getByLabel('Số lượng nguyên liệu dòng 2').fill('2');
+  await page.getByLabel('Đơn vị nguyên liệu dòng 2').selectOption('củ');
+  await expect(page.getByLabel('Đơn vị nguyên liệu dòng 2')).toHaveValue('củ');
+  await page.getByRole('button', { name: 'Xóa nguyên liệu dòng 1' }).click();
+  await expect(page.getByPlaceholder('Tên nguyên liệu')).toHaveCount(1);
   await expect(page.getByText('100%', { exact: true }).first()).toBeVisible();
+
+  await page.getByLabel('Đơn vị nguyên liệu dòng 1').selectOption('g');
+  await page.getByLabel('Số lượng nguyên liệu dòng 1').fill('50');
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+  await expect(page.getByRole('alert')).toContainText('tối thiểu 100g');
+
+  await page.getByLabel('Số lượng nguyên liệu dòng 1').fill('150');
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+  await expect(page.getByRole('alert')).toContainText('theo bước 100g');
+
+  await page.getByLabel('Số lượng nguyên liệu dòng 1').fill('1.5');
+  await page.getByLabel('Đơn vị nguyên liệu dòng 1').selectOption('kg');
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+  await expect(page.getByRole('status')).toContainText('Recipe API chưa được tích hợp nên chưa thể đăng bài.');
 });
 
 test('community topics lead to article content and demo rating updates only once', async ({ page }) => {
