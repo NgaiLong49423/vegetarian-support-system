@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-04 — Fix Docker Development JWT Configuration
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 4b1d57b.
 
 **Scope:** Restore the Docker Development CI gate by passing the required JWT signing secret to the Backend under its configured environment-variable name.
 
