@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "RECIPE_INGREDIENT")
+@Table(name = "\"RECIPE_INGREDIENT\"")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "RECIPE_POST")
+@Table(name = "\"RECIPE_POST\"")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -10,7 +10,7 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "INGREDIENT_UNIT_CONVERSION")
+@Table(name = "\"INGREDIENT_UNIT_CONVERSION\"")
 @IdClass(RecipeConversionId.class)
 @Getter
 @NoArgsConstructor

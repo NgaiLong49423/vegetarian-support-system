@@ -11,7 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "RECIPE_MEDIA")
+@Table(name = "\"RECIPE_MEDIA\"")
 @Getter
 @Setter
 @NoArgsConstructor
