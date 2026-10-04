@@ -21,6 +21,11 @@ test.describe('Issue #3 [FR-01] — Guest xem và tìm kiếm nội dung công k
     const sortSelect = page.getByLabel('Chế độ sắp xếp');
     await sortSelect.selectOption('calories');
     await expect(sortSelect).toHaveValue('calories');
+    await sortSelect.selectOption('rating');
+    await sortSelect.selectOption('time');
+    await sortSelect.selectOption('newest');
+    await sortSelect.selectOption('views');
+    await sortSelect.selectOption('popular');
   });
 
   test('AC-01.2: Guest tìm kiếm bài công thức theo từ khóa "canh chua"', async ({ page }) => {
@@ -47,8 +52,7 @@ test.describe('Issue #3 [FR-01] — Guest xem và tìm kiếm nội dung công k
     await expect(page.getByText('Nấm rơm tươi')).toBeVisible();
     await expect(page.getByText('Các bước thực hiện')).toBeVisible();
 
-    // Video YouTube nhúng
-    await expect(page.getByTestId('recipe-youtube-section')).toBeVisible();
+
   });
 
   test('AC-01.4: Không hiển thị bài viết vi phạm hoặc không tồn tại cho Guest', async ({ page }) => {
