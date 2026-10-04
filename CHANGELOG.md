@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
 
-**Status:** Committed — 2345a61.
+**Status:** Working tree — not committed.
 
 **Scope:** Prevent Codex from reporting a failed GitHub CLI login solely because its Windows sandbox cannot access the user's keyring or network.
 
@@ -44,8 +44,8 @@ None.
 ### Fixed
 
 - Generate and pass `MAMXANH_JWT_SECRET` in the Docker Development workflow so the Backend starts during the integration smoke test.
-- Pass the SQL Server container's existing SA password to `sqlcmd` through its environment for the real-stack login test, without exposing it in command arguments.
 - Preserve SQL client output in Playwright failures so integration query errors are actionable in CI logs.
+- Enable `QUOTED_IDENTIFIER` for test SQL sessions that update tables with filtered indexes.
 
 ## 2026-10-04 — Complete Password Login Integration Evidence (Issue #6)
 

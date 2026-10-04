@@ -15,9 +15,9 @@ function sql(query: string): string {
   try {
     return execFileSync('docker', [
       'compose', '-p', composeProject, '-f', path.join(repositoryRoot, 'docker-compose.yml'),
-      'exec', '-T', 'sqlserver', '/bin/bash', '-c',
-      'export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"; exec /opt/mssql-tools18/bin/sqlcmd "$@"',
-      'sqlcmd', '-S', 'sqlserver', '-U', 'sa', '-C', '-d', 'MamXanhDB', '-h', '-1', '-W', '-b', '-Q', query,
+      'exec', '-T', 'sqlserver', '/opt/mssql-tools18/bin/sqlcmd',
+      '-S', 'sqlserver', '-U', 'sa', '-C', '-d', 'MamXanhDB', '-h', '-1', '-W', '-b',
+      '-Q', `SET QUOTED_IDENTIFIER ON; ${query}`,
     ], { cwd: repositoryRoot, encoding: 'utf8', timeout: 30_000 }).trim();
   } catch (error) {
     const diagnostic = error instanceof Error
