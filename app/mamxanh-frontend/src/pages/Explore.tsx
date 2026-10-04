@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
@@ -61,9 +61,13 @@ export function Explore() {
   const [timeMax, setTimeMax] = useState<number | null>(null);
   const [sort, setSort] = useState('popular');
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
 
   const filtered = useMemo(() => {
     let list = recipes.filter((r) => {
+      // AC-01.4: Không hiển thị bài viết vi phạm hoặc bài không công khai cho Guest
+      if (r.status === 'HIDDEN' || r.status === 'DELETED') return false;
       if (
           query &&
           !r.name.toLowerCase().includes(query.toLowerCase()) &&
@@ -97,6 +101,17 @@ export function Explore() {
 
     return list;
   }, [query, diet, difficulty, category, timeMax, sort]);
+
+  // Reset về trang 1 khi thay đổi tìm kiếm, bộ lọc hoặc chế độ sắp xếp
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, diet, difficulty, category, timeMax, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedList = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   const activeCount = [diet, difficulty, category, timeMax].filter((x) => x !== null).length;
   const reset = () => {
@@ -228,11 +243,64 @@ export function Explore() {
                     }
                 />
             ) : (
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                  {filtered.map((r) => (
-                      <RecipeCard key={r.id} recipe={r} />
-                  ))}
-                </div>
+                <>
+                  <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    {paginatedList.map((r) => (
+                        <RecipeCard key={r.id} recipe={r} />
+                    ))}
+                  </div>
+
+                  {/* Thanh điều khiển phân trang — AC-01.1 */}
+                  {totalPages > 1 && (
+                    <div
+                      className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-brand-100 pt-6 sm:flex-row"
+                      data-testid="pagination-controls"
+                    >
+                      <p className="text-xs text-ink-muted">
+                        Hiển thị <span className="font-semibold text-ink">{(currentPage - 1) * pageSize + 1}</span> -{' '}
+                        <span className="font-semibold text-ink">
+                          {Math.min(currentPage * pageSize, filtered.length)}
+                        </span>{' '}
+                        trên tổng số <span className="font-semibold text-ink">{filtered.length}</span> công thức
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          aria-label="Trang trước"
+                        >
+                          Trang trước
+                        </Button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p)}
+                            className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold transition-colors ${
+                              currentPage === p
+                                ? 'bg-brand-600 text-white shadow-sm'
+                                : 'border border-brand-200 bg-white text-ink-soft hover:bg-brand-50'
+                            }`}
+                            aria-label={`Trang ${p}`}
+                            aria-current={currentPage === p ? 'page' : undefined}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          aria-label="Trang sau"
+                        >
+                          Trang sau
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
             )}
           </div>
         </div>

@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import { currentUser } from '../data/mockData';
+import { useDemoAccount } from './DemoAccount';
 import { Button, Card } from './ui';
 
 type Comment = {
@@ -15,6 +17,7 @@ type Comment = {
 };
 
 export function RecipeComments() {
+  const { active } = useDemoAccount();
   const [comments, setComments] = useState<Comment[]>([]);
   const [body, setBody] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
@@ -22,6 +25,10 @@ export function RecipeComments() {
   const [error, setError] = useState('');
 
   const submit = () => {
+    if (!active) {
+      setError('Vui lòng đăng nhập để gửi bình luận.');
+      return;
+    }
     const content = body.trim();
     if (!content || content.length > 1000) {
       setError('Bình luận cần từ 1 đến 1.000 ký tự.');
@@ -151,31 +158,51 @@ export function RecipeComments() {
               </button>
             </div>
         )}
-        <label htmlFor="recipe-comment" className="mt-5 block text-sm font-semibold text-ink">
-          Viết bình luận
-        </label>
-        <textarea
-            id="recipe-comment"
-            value={body}
-            onChange={(event) => {
-              setBody(event.target.value);
-              setError('');
-            }}
-            maxLength={1000}
-            rows={3}
-            placeholder="Chia sẻ câu hỏi hoặc kinh nghiệm nấu món này..."
-            className="mt-2 w-full rounded-xl border border-brand-200 bg-white p-3 text-sm outline-none focus:border-brand-500"
-        />
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <span className="text-xs text-ink-muted">{body.length}/1.000 ký tự</span>
-          <Button onClick={submit}>
-            {editing ? 'Lưu chỉnh sửa' : replyTo ? 'Gửi trả lời' : 'Gửi bình luận'}
-          </Button>
-        </div>
-        {error && (
-            <p role="alert" className="mt-2 text-sm text-red-600">
-              {error}
+        {!active ? (
+          <div
+            className="mt-6 flex flex-col items-center justify-center rounded-2xl border border-dashed border-brand-200 bg-brand-50/50 p-6 text-center"
+            data-testid="guest-comment-prompt"
+          >
+            <p className="text-sm font-semibold text-ink">Bạn muốn tham gia trao đổi về công thức này?</p>
+            <p className="mt-1 max-w-md text-xs text-ink-muted">
+              Vui lòng đăng nhập tài khoản để gửi bình luận hoặc câu hỏi cho tác giả (BR-05 / AC-01.5).
             </p>
+            <Link
+              to="/dang-nhap"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-700"
+            >
+              Đăng nhập để bình luận
+            </Link>
+          </div>
+        ) : (
+          <>
+            <label htmlFor="recipe-comment" className="mt-5 block text-sm font-semibold text-ink">
+              Viết bình luận
+            </label>
+            <textarea
+              id="recipe-comment"
+              value={body}
+              onChange={(event) => {
+                setBody(event.target.value);
+                setError('');
+              }}
+              maxLength={1000}
+              rows={3}
+              placeholder="Chia sẻ câu hỏi hoặc kinh nghiệm nấu món này..."
+              className="mt-2 w-full rounded-xl border border-brand-200 bg-white p-3 text-sm outline-none focus:border-brand-500"
+            />
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="text-xs text-ink-muted">{body.length}/1.000 ký tự</span>
+              <Button onClick={submit}>
+                {editing ? 'Lưu chỉnh sửa' : replyTo ? 'Gửi trả lời' : 'Gửi bình luận'}
+              </Button>
+            </div>
+            {error && (
+              <p role="alert" className="mt-2 text-sm text-red-600">
+                {error}
+              </p>
+            )}
+          </>
         )}
       </Card>
   );
