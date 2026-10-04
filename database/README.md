@@ -1,17 +1,17 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.8.0<br>
+> **Version:** v0.8.1<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-02<br>
+> **Last Updated:** 2026-10-04<br>
 > **Status:** Active  
 
 # Database Workspace
 
-Database chính đã chốt là Microsoft SQL Server 2019. Snapshot hiện tích hợp các migration đã có trên `develop` và FR-35: 22 bảng, 200 cột, 38 khóa ngoại (bao gồm 2 composite FKs: `COMMENT` và `MEAL_PLAN_ENTRY`), 59 ràng buộc CHECK, 55 ràng buộc DEFAULT, 56 index, seed 15 dòng đơn vị chuẩn trong bảng `UNIT`, cùng chính sách chống multiple cascade paths (lỗi SQL Server Error 1785). Các tổng số tích hợp này cần được xác minh lại trên database sạch.
+Database chính đã chốt là Microsoft SQL Server 2019. Snapshot của branch sau khi đồng bộ V1–V5 dự kiến gồm 22 bảng, 201 cột, 38 khóa ngoại, 60 CHECK constraints, 56 DEFAULT constraints và 56 indexes, cùng seed 15 dòng UNIT. Các tổng số này cần được xác minh lại trên database sạch.
 
 ## Quyền sở hữu dữ liệu
 
-- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử thay đổi schema có thẩm quyền và phải append-only sau khi đã chia sẻ. Baseline hiện gồm V1, V2, V3 xác minh email của Issue #5 và V4 đồng ý lưu dữ liệu sức khỏe của FR-35. Snapshot `database/schema.sql` phải phản ánh trạng thái sau toàn bộ migration; Physical ERD trong `docs/diagrams/ERD/` do người phụ trách sơ đồ cập nhật riêng.
+- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử thay đổi schema có thẩm quyền và phải append-only sau khi đã chia sẻ. Baseline trên branch hiện gồm V1, V2, V3 xác minh email của Issue #5, V4 đồng ý lưu dữ liệu sức khỏe của FR-35 và V5 cho ingredient_group cùng kiểm tra base_factor của FR-18. Snapshot `database/schema.sql` phải phản ánh trạng thái sau toàn bộ migration; Physical ERD trong `docs/diagrams/ERD/` do người phụ trách sơ đồ cập nhật riêng.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
 - `database/sample-data.sql` chứa fixture giả cho môi trường Docker Compose, được nạp sau khi Flyway hoàn tất. Tác giả mẫu không có mật khẩu đăng nhập; fixture không chứa credential hoặc dữ liệu cá nhân thật.
 - `database/queries.sql` chứa kịch bản kiểm tra đối tượng, bộ test tự động xác minh các ràng buộc nghiệp vụ (positive/negative) có cơ chế rollback, và các truy vấn mẫu cho tầng ứng dụng; không thay thế automated integration tests.
@@ -46,7 +46,7 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
 - **Logical ERD:** [logical-erd-v1.0.0.drawio](../docs/diagrams/ERD/logical-erd-v1.0.0.drawio) (22 bảng, 37 connector thể hiện 36 quan hệ; cập nhật lần cuối ở commit `827353e`).
 - **Physical ERD:** [physical-erd-v1.0.0.drawio](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio) & [physical-erd-v1.0.0.drawio.png](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png) (22 bảng, 37 connector, 196 physical columns với đầy đủ kiểu dữ liệu, nullability, constraints, indexes).
 - **Data Dictionary:** [data-dictionary.md](../docs/diagrams/ERD/data-dictionary.md) v0.7.2 (22 bảng, 196 cột physical, hoàn thành triển khai toàn bộ 33 mục đánh dấu sau review PR #66). Theo quyết định của Tech Lead ngày 01/10/2026, các tài liệu trong `docs/diagrams/` (ERD, Data Dictionary) là baseline tham khảo và chỉ được đồng bộ ở giai đoạn viết tài liệu nộp; trạng thái schema hiện hành lấy theo Flyway migration và `database/schema.sql`.
-- **Schema & Migration:** Lịch sử schema gồm [V1__baseline_schema.sql](../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql), [V2__unit_code_unicode.sql](../app/mamxanh-backend/src/main/resources/db/migration/V2__unit_code_unicode.sql), [V3__user_email_verification_token.sql](../app/mamxanh-backend/src/main/resources/db/migration/V3__user_email_verification_token.sql) và [V4__nutrition_profile_consent.sql](../app/mamxanh-backend/src/main/resources/db/migration/V4__nutrition_profile_consent.sql). `database/schema.sql` là snapshot thủ công sau toàn bộ migration; dự kiến có 22 bảng, 200 cột, 38 FKs, 59 CHECK constraints, 55 DEFAULT constraints, 56 indexes và 15 dòng `UNIT`. Cần chạy xác minh V1→V4 trên database sạch sau khi tích hợp.
+- **Schema & Migration:** Lịch sử schema gồm [V1__baseline_schema.sql](../app/mamxanh-backend/src/main/resources/db/migration/V1__baseline_schema.sql), [V2__unit_code_unicode.sql](../app/mamxanh-backend/src/main/resources/db/migration/V2__unit_code_unicode.sql), [V3__user_email_verification_token.sql](../app/mamxanh-backend/src/main/resources/db/migration/V3__user_email_verification_token.sql), [V4__nutrition_profile_consent.sql](../app/mamxanh-backend/src/main/resources/db/migration/V4__nutrition_profile_consent.sql) và [V5__ingredient_group_and_unit_validation.sql](../app/mamxanh-backend/src/main/resources/db/migration/V5__ingredient_group_and_unit_validation.sql). database/schema.sql là snapshot thủ công sau toàn bộ migration; tổng số dự kiến là 22 bảng, 201 cột, 38 FKs, 60 CHECK constraints, 56 DEFAULT constraints, 56 indexes và 15 dòng UNIT. database/queries.sql giữ 39 test cases; kết quả 75/75 assertion được ghi nhận trước khi đồng bộ V3–V5 và cần chạy lại trên database sạch.
 - **Verification Tests:** [database/queries.sql](queries.sql) có 39 test case (TC01–TC39) kiểm tra positive/negative constraints. Kết quả 75/75 assertion được ghi nhận trước khi tích hợp V3/V4; cần chạy lại để xác minh trạng thái mới.
 
 ## Hướng dẫn kiểm thử và thẩm định
@@ -57,7 +57,7 @@ Kiểm tra toàn bộ schema và chạy 39 test cases (TC01–TC39) bằng `sqlc
 # 1. Khởi tạo database kiểm thử sạch
 sqlcmd -S .\SQLEXPRESS -E -Q "DROP DATABASE IF EXISTS MamXanhDB_Test; CREATE DATABASE MamXanhDB_Test;"
 
-# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V4 trong db/migration với cờ -I,
+# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V5 trong db/migration với cờ -I,
 #    vì filtered index cần QUOTED_IDENTIFIER ON)
 sqlcmd -S .\SQLEXPRESS -E -d MamXanhDB_Test -i database/schema.sql
 
@@ -66,4 +66,3 @@ sqlcmd -S .\SQLEXPRESS -E -d MamXanhDB_Test -i database/queries.sql
 ```
 
 Xem [SRS](../docs/requirements/SRS.md), [ERD workspace](../docs/diagrams/ERD/README.md) và [Technology Stack](../docs/architecture/TECHNOLOGY-STACK.md).
-
