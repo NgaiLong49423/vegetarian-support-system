@@ -1,11 +1,14 @@
-export type DietTag =
-  | 'Thuần Chay'
-  | 'Lacto'
-  | 'Ovo'
-  | 'Lacto-Ovo'
-  | 'Chay Kỳ';
+/* --------------------------------------------------------------------------
+ * Shared TypeScript types for the Mâm Xanh frontend demo.
+ * ------------------------------------------------------------------------ */
+
+export type UserRole = 'GUEST' | 'CUSTOMER' | 'EXPERT' | 'ADMIN';
+
+export type DietTag = 'Thuần Chay' | 'Lacto' | 'Ovo' | 'Lacto-Ovo';
 
 export type Difficulty = 'Dễ' | 'Trung bình' | 'Khó';
+
+export type ExpertApplicationStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export type MealSlot = 'Sáng' | 'Trưa' | 'Tối';
 
@@ -13,15 +16,15 @@ export interface Author {
   id: string;
   name: string;
   avatar: string;
-  bio?: string;
   verified?: boolean;
+  bio?: string;
 }
 
 export interface Ingredient {
   id: string;
   name: string;
   quantity: string;
-  group: string; // e.g. "Rau củ quả tươi"
+  group: string;
   note?: string;
 }
 
@@ -30,20 +33,23 @@ export interface Recipe {
   slug: string;
   name: string;
   image: string;
-  description: string;
-  prepTime: number; // minutes
-  cookTime: number; // minutes
+  diet: DietTag;
+  category: string;
+  tags: string[];
+  prepTime: number;
+  cookTime: number;
   servings: number;
   calories: number;
   difficulty: Difficulty;
-  diet: DietTag;
-  category: string;
-  rating: number;
-  reviews: number;
-  author: Author;
+  description: string;
   ingredients: Ingredient[];
   steps: string[];
-  tags: string[];
+  author: Author;
+  /** Tổng số lượt xem — theo BR-70 (RECIPE_VIEW) */
+  viewCount: number;
+  likes: number;
+  dislikes: number;
+  likePercentage?: number;
 }
 
 export interface Post {
@@ -51,34 +57,58 @@ export interface Post {
   slug: string;
   title: string;
   excerpt: string;
+  body: string[];
   image: string;
+  tags: string[];
   author: Author;
-  publishedAt: string;
   readTime: number;
   likes: number;
   comments: number;
-  tags: string[];
-  body: string[];
+  publishedAt: string;
 }
 
-export interface MealPlanItem {
-  slot: MealSlot;
-  recipe: Recipe;
-  servings?: number;
+export interface Category {
+  id: string;
+  name: string;
+  desc: string;
+  count: number;
+  tone: 'brand' | 'leaf';
 }
 
 export interface DayPlan {
-  date: string; // "14/10"
-  weekday: string; // "Thứ Hai"
-  meals: MealPlanItem[];
+  date: string;
+  weekday: string;
   today?: boolean;
+  meals: { slot: MealSlot; recipe: Recipe; servings: number }[];
 }
 
 export interface ShoppingListItem {
   id: string;
+  group: string;
   name: string;
   quantity: string;
-  group: string;
-  checked: boolean;
   note?: string;
+  checked: boolean;
+}
+
+export interface NutrientComparisonItem {
+  name: string;
+  actual: string;
+  target: string;
+  percentage: string;
+  status: 'good' | 'low' | 'high' | 'missing';
+}
+
+export interface ExpertApplication {
+  id: string;
+  applicantId: string;
+  applicantName: string;
+  applicantEmail: string;
+  experience: string;
+  dietaryStyle: DietTag;
+  sampleRecipe: string;
+  status: ExpertApplicationStatus;
+  submittedAt: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
 }
