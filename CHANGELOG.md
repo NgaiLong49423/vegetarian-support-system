@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-04 — Prepare Recipe Ingredient Entry for Issue #25
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — f8a90152dcf5ccf88a96f4120d36295ef6bb6af5.
 
 **Scope:** Update the existing recipe-entry demo for ingredient quantity input and add repeatable Docker sample conversions. Recipe Post API integration remains pending Issues #11/#22.
 
