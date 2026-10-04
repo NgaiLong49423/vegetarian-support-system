@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-04 — Complete Password Login Integration Evidence (Issue #6)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — cfb7f9c.
 
 **Scope:** Verify password login through the real Frontend, Backend and SQL Server Compose stack, and align the implementation and integration guidance with approved authentication decisions.
 
