@@ -1,6 +1,14 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from './baseFixtures';
 
+async function openRecipeFormAsDemoExpert(page: import('@playwright/test').Page) {
+  await page.goto('/dang-nhap');
+  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
+  await page.getByRole('button', { name: /Tài khoản Lan Anh/ }).click();
+  await page.getByRole('button', { name: 'Expert', exact: true }).click();
+  await page.getByRole('link', { name: 'Đăng công thức mới' }).click();
+}
+
 test('recipe search and filters show matching recipes and recover from an empty result', async ({ page }) => {
   await page.goto('/kham-pha');
   const search = page.getByPlaceholder('Tìm món chay hoặc nguyên liệu...');
@@ -61,7 +69,7 @@ test('recipe form uses catalog choices and reports that real login is still requ
     status: 401, code: 'UNAUTHENTICATED', title: 'Unauthenticated', detail: 'Bạn cần đăng nhập.',
   } }));
 
-  await page.goto('/dang-cong-thuc');
+  await openRecipeFormAsDemoExpert(page);
   await page.getByLabel('Tên món *').fill('Đậu hũ kho cà chua');
   await page.getByLabel('Thể loại món').selectOption('BRAISED');
   await page.getByLabel('Loại ăn chay').selectOption('VEGAN');
@@ -84,7 +92,7 @@ test('recipe image list requires one cover and blocks publishing until FR-14 upl
   await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: {
     dishCategories: [], vegetarianTypes: [], difficulties: [], units: [],
   } }));
-  await page.goto('/dang-cong-thuc');
+  await openRecipeFormAsDemoExpert(page);
   await page.getByLabel('Chọn tối đa 5 ảnh').setInputFiles([
     { name: 'one.png', mimeType: 'image/png', buffer: Buffer.from('one') },
     { name: 'two.png', mimeType: 'image/png', buffer: Buffer.from('two') },
