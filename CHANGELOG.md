@@ -18,7 +18,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Added
 
 - Add the Expert Application and Notification backend services, runtime API endpoints, SQL Server migration V7, and API-backed Frontend workflow.
-- Add request validation and SQL Server concurrency integration coverage for competing Admin decisions.
+- Add request-validation, service/controller, SQL Server repository, promotion-eligibility and competing-decision concurrency coverage.
 
 ### Changed
 
