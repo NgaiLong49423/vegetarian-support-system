@@ -51,7 +51,7 @@ test('real browser login updates throttle data in the Compose SQL Server', async
 
   await page.goto('/dang-nhap');
   await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Mật khẩu').fill(password);
+  await page.getByRole('textbox', { name: 'Mật khẩu' }).fill(password);
   const successResponse = page.waitForResponse(response => response.url().endsWith('/auth/login'));
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   expect((await successResponse).status()).toBe(200);
@@ -68,7 +68,7 @@ test('real browser login updates throttle data in the Compose SQL Server', async
   await page.goto('/dang-nhap');
   for (let attempt = 1; attempt <= 4; attempt += 1) {
     await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Mật khẩu').fill(`Wrong-${attempt}-Aa1!`);
+    await page.getByRole('textbox', { name: 'Mật khẩu' }).fill(`Wrong-${attempt}-Aa1!`);
     const response = page.waitForResponse(item => item.url().endsWith('/auth/login'));
     await page.getByRole('button', { name: 'Đăng nhập' }).click();
     expect((await response).status()).toBe(401);
@@ -76,7 +76,7 @@ test('real browser login updates throttle data in the Compose SQL Server', async
   }
 
   await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Mật khẩu').fill('Wrong-fifth-Aa1!');
+  await page.getByRole('textbox', { name: 'Mật khẩu' }).fill('Wrong-fifth-Aa1!');
   const blockedResponsePromise = page.waitForResponse(item => item.url().endsWith('/auth/login'));
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   const blockedResponse = await blockedResponsePromise;
@@ -91,7 +91,7 @@ test('real browser login updates throttle data in the Compose SQL Server', async
 
   sql(`UPDATE [USER] SET login_blocked_until = DATEADD(minute, -1, SYSUTCDATETIME()) WHERE email = '${literal}'`);
   await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Mật khẩu').fill(password);
+  await page.getByRole('textbox', { name: 'Mật khẩu' }).fill(password);
   const retryResponsePromise = page.waitForResponse(item => item.url().endsWith('/auth/login'));
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   expect((await retryResponsePromise).status()).toBe(200);
