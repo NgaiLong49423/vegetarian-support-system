@@ -1,9 +1,13 @@
-import { useState } from 'react';
-import { BadgeCheck, Bookmark, Heart, Leaf, Settings, UtensilsCrossed } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { BadgeCheck, Bookmark, Heart, Leaf, Settings, Sparkles, UtensilsCrossed } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { RecipeCard } from '../components/RecipeCard';
 import { Badge, Button, Card, EmptyState } from '../components/ui';
 import { currentUser, demoAiPlan, recipes } from '../data/mockData';
+import { subscriptionApi, type MySubscriptionResponse } from '../api/subscription';
+import { formatDate } from '../utils/date';
+import { hasAccessToken } from '../lib/apiClient';
 
 const tabs = ['Công thức đã lưu', 'Món yêu thích', 'Sở thích ăn chay', 'Tùy chọn'] as const;
 type Tab = (typeof tabs)[number];
@@ -27,6 +31,25 @@ export function Profile() {
   const saved = recipes.slice(0, 4);
   const favorites = recipes.slice(2, 5);
   const [switches, setSwitches] = useState(toggles);
+  const [subscription, setSubscription] = useState<MySubscriptionResponse | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (hasAccessToken()) {
+      subscriptionApi
+        .getMySubscription()
+        .then((res) => {
+          if (active) setSubscription(res);
+        })
+        .catch(() => {});
+    }
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const activeTier = subscription?.status === 'ACTIVE' ? subscription.tier : null;
+  const isFree = !activeTier || activeTier === 'FREE';
 
   return (
     <PageContainer className="py-8">
@@ -40,9 +63,22 @@ export function Profile() {
               {currentUser.name} <BadgeCheck className="h-5 w-5 text-brand-600" />
             </h1>
             <p className="text-sm text-ink-muted">{currentUser.bio}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge tone="leaf"><Leaf className="h-3 w-3" /> Thuần Chay</Badge>
-              <Badge tone="brand">Gói AI {demoAiPlan} (demo)</Badge>
+              {isFree ? (
+                <Badge tone="neutral">Gói AI: Miễn phí</Badge>
+              ) : (
+                <Badge tone="brand">
+                  <Sparkles className="h-3 w-3" /> Gói {activeTier}
+                  {subscription?.endsAt ? ` (Hạn: ${formatDate(subscription.endsAt)})` : ''}
+                </Badge>
+              )}
+              <Link to="/goi-ai" className="text-xs font-semibold text-brand-600 hover:text-brand-700 underline">
+                {isFree ? 'Nâng cấp gói' : 'Đổi gói'}
+              </Link>
+              <Link to="/giao-dich" className="text-xs text-ink-muted hover:text-ink-soft">
+                Lịch sử GD
+              </Link>
             </div>
           </div>
           <div className="flex gap-2">

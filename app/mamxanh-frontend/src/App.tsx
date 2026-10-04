@@ -16,6 +16,7 @@ import { Profile } from './pages/Profile';
 import { AiPlans } from './pages/AiPlans';
 import { TransactionHistory } from './pages/TransactionHistory';
 import { NutritionProfile } from './pages/NutritionProfile';
+import { PaymentResult } from './pages/PaymentResult';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -47,6 +48,8 @@ export default function App() {
           <Route path="/bai-viet/:slug" element={<PostDetail />} />
           <Route path="/ho-so" element={<Profile />} />
           <Route path="/goi-ai" element={<AiPlans />} />
+          <Route path="/payment/success" element={<PaymentResult mode="success" />} />
+          <Route path="/payment/cancel" element={<PaymentResult mode="cancel" />} />
           <Route path="/giao-dich" element={<TransactionHistory />} />
           <Route path="/ho-so/dinh-duong" element={<NutritionProfile />} />
           <Route path="*" element={<Home />} />

@@ -21,6 +21,10 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed", "Phương thức HTTP không được hỗ trợ."),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type",
             "Định dạng nội dung không được hỗ trợ."),
+    PAYMENT_SIGNATURE_INVALID(HttpStatus.BAD_REQUEST, "Payment signature invalid",
+            "Chữ ký số xác thực giao dịch không hợp lệ hoặc dữ liệu đã bị can thiệp."),
+    PAYMENT_TRANSACTION_NOT_FOUND(HttpStatus.NOT_FOUND, "Payment transaction not found",
+            "Không tìm thấy thông tin giao dịch thanh toán tương ứng."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error", "Hệ thống gặp lỗi. Vui lòng thử lại sau.");
 
     private final HttpStatus status;
