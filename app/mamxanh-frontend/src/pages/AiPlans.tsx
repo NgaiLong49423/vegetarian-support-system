@@ -142,9 +142,13 @@ export function AiPlans() {
       <div className="mb-8 text-center">
         <Sparkles className="mx-auto mb-3 h-8 w-8 text-brand-600" />
         <h1 className="text-3xl font-extrabold text-ink">Nâng cấp gói AI</h1>
-        {!isLoggedIn || isDemoActive ? (
+        {isDemoActive ? (
           <p className="mt-2 text-sm font-semibold text-brand-700">
             Gói hiện tại: {demoAiPlan} (demo)
+          </p>
+        ) : !isLoggedIn ? (
+          <p className="mt-2 text-sm text-ink-muted">
+            Đăng nhập tài khoản để đăng ký hoặc nâng cấp gói dịch vụ
           </p>
         ) : (
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm">
@@ -220,7 +224,7 @@ export function AiPlans() {
                 </ul>
 
                 <div className="pt-2">
-                  {!isLoggedIn || isDemoActive ? (
+                  {isDemoActive ? (
                     plan.name === demoAiPlan ? (
                       <p className="rounded-xl bg-brand-50 px-4 py-3 text-center text-sm font-semibold text-brand-700">
                         Gói hiện tại (demo)
@@ -255,7 +259,7 @@ export function AiPlans() {
                           Đang tạo liên kết thanh toán...
                         </>
                       ) : !isLoggedIn ? (
-                        'Đăng nhập để nâng cấp'
+                        'Đăng nhập để thanh toán'
                       ) : (
                         `Nâng cấp lên ${plan.name}`
                       )}
