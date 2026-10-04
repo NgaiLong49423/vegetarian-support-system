@@ -154,7 +154,7 @@ if (-not (Test-Path app/mamxanh-backend/.env)) {
 }
 ```
 
-Mở `app/mamxanh-backend/.env`, thay `MSSQL_SA_PASSWORD` bằng mật khẩu local mạnh đáp ứng yêu cầu SQL Server và tạo `MAMXANX_JWT_SECRET` theo hướng dẫn trong `.env.example`; Backend cần secret JWT để khởi động. File `.env` bị ignore và không được commit/chia sẻ; `.env.example` chỉ là hợp đồng biến môi trường an toàn. Compose override connection URL/user/password của Backend để kết nối service `sqlserver`; SMTP để trống thì không gửi email thật. Không đưa secret vào command line, workflow YAML, PR log hay tài liệu.
+Mở `app/mamxanh-backend/.env`, thay `MSSQL_SA_PASSWORD` bằng mật khẩu local mạnh đáp ứng yêu cầu SQL Server và tạo `MAMXANH_JWT_SECRET` theo hướng dẫn trong `.env.example`; Backend cần secret JWT để khởi động. File `.env` bị ignore và không được commit/chia sẻ; `.env.example` chỉ là hợp đồng biến môi trường an toàn. Compose override connection URL/user/password của Backend để kết nối service `sqlserver`; SMTP để trống thì không gửi email thật. Không đưa secret vào command line, workflow YAML, PR log hay tài liệu.
 
 **Khởi động và xác minh:**
 

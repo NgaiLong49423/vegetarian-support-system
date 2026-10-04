@@ -9,6 +9,24 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-04 — Fix Docker Development JWT Configuration
+
+**Status:** Working tree — not committed.
+
+**Scope:** Restore the Docker Development CI gate by passing the required JWT signing secret to the Backend under its configured environment-variable name.
+
+### Added
+
+None.
+
+### Changed
+
+- Align the Docker Compose variable and contributor setup instructions with the Backend's `MAMXANH_JWT_SECRET` configuration.
+
+### Fixed
+
+- Generate and pass `MAMXANH_JWT_SECRET` in the Docker Development workflow so the Backend starts during the integration smoke test.
+
 ## 2026-10-04 — Complete Password Login Integration Evidence (Issue #6)
 
 **Status:** Committed — cfb7f9c.
