@@ -12,11 +12,23 @@ const email = `ci-${randomUUID()}@example.invalid`;
 const password = `Aa1!${randomUUID()}z`;
 
 function sql(query: string): string {
-  return execFileSync('docker', [
-    'compose', '-p', composeProject, '-f', path.join(repositoryRoot, 'docker-compose.yml'),
-    'exec', '-T', 'sqlserver', '/opt/mssql-tools18/bin/sqlcmd',
-    '-S', 'sqlserver', '-U', 'sa', '-C', '-d', 'MamXanhDB', '-h', '-1', '-W', '-b', '-Q', query,
-  ], { cwd: repositoryRoot, encoding: 'utf8', timeout: 30_000 }).trim();
+  try {
+    return execFileSync('docker', [
+      'compose', '-p', composeProject, '-f', path.join(repositoryRoot, 'docker-compose.yml'),
+      'exec', '-T', 'sqlserver', '/bin/bash', '-c',
+      'export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"; exec /opt/mssql-tools18/bin/sqlcmd "$@"',
+      'sqlcmd', '-S', 'sqlserver', '-U', 'sa', '-C', '-d', 'MamXanhDB', '-h', '-1', '-W', '-b', '-Q', query,
+    ], { cwd: repositoryRoot, encoding: 'utf8', timeout: 30_000 }).trim();
+  } catch (error) {
+    const diagnostic = error instanceof Error
+      ? ['stderr', 'stdout']
+        .filter(name => name in error)
+        .map(name => String(error[name as keyof typeof error]).trim())
+        .filter(Boolean)
+        .join('\n')
+      : '';
+    throw new Error(diagnostic ? `SQL Server integration query failed: ${diagnostic}` : 'SQL Server integration query failed');
+  }
 }
 
 function accountState(): { attempts: number; status: string; blockedUntil: string } {

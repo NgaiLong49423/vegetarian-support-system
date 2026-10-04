@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.49.0
+> **Version:** v2.50.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-04
 > **Status:** Active
@@ -9,9 +9,27 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
+
+**Status:** Working tree — not committed.
+
+**Scope:** Prevent Codex from reporting a failed GitHub CLI login solely because its Windows sandbox cannot access the user's keyring or network.
+
+### Added
+
+None.
+
+### Changed
+
+- Require an authorized out-of-sandbox authentication check and separate keyring, network, and credential failures before asking a user to sign in again.
+
+### Fixed
+
+None.
+
 ## 2026-10-04 — Fix Docker Development JWT Configuration
 
-**Status:** Committed — 4b1d57b.
+**Status:** Working tree — not committed.
 
 **Scope:** Restore the Docker Development CI gate by passing the required JWT signing secret to the Backend under its configured environment-variable name.
 
@@ -26,6 +44,8 @@ None.
 ### Fixed
 
 - Generate and pass `MAMXANH_JWT_SECRET` in the Docker Development workflow so the Backend starts during the integration smoke test.
+- Pass the SQL Server container's existing SA password to `sqlcmd` through its environment for the real-stack login test, without exposing it in command arguments.
+- Preserve SQL client output in Playwright failures so integration query errors are actionable in CI logs.
 
 ## 2026-10-04 — Complete Password Login Integration Evidence (Issue #6)
 
