@@ -50,6 +50,10 @@ export interface Recipe {
   likes: number;
   dislikes: number;
   likePercentage?: number;
+  /** Liên kết YouTube tùy chọn (FR-15 / BR-10) */
+  youtubeUrl?: string;
+  /** Trạng thái bài viết: PUBLISHED (mặc định), HIDDEN, DELETED (BR-05) */
+  status?: 'PUBLISHED' | 'HIDDEN' | 'DELETED';
 }
 
 export interface Post {

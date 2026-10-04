@@ -25,6 +25,7 @@ import { Badge, Button, Card, SectionHeading } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { RecipeComments } from '../components/RecipeComments';
 import { RecipeRating } from '../components/RecipeRating';
+import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { recipes } from '../data/mockData';
 import { scaleQuantity } from '../utils/servings';
 import { isSaved, toggleSaved, subscribeSaved } from '../lib/savedRecipes';
@@ -392,6 +393,24 @@ export function RecipeDetail() {
             </Button>
           </div>
         </Modal>
+
+        {/* YouTube Video Section - FR-15 / UC-15.2 */}
+        {recipe.youtubeUrl && (
+          <Card className="mb-8 p-6" data-testid="recipe-youtube-section">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink">
+                <span className="text-red-600">▶</span> Video hướng dẫn thực hiện (YouTube)
+              </h2>
+              <span className="text-xs text-ink-muted">Trình phát nhúng YouTube (BR-10)</span>
+            </div>
+            <div className="mx-auto max-w-3xl">
+              <YouTubeEmbed
+                urlOrId={recipe.youtubeUrl}
+                title={`Video hướng dẫn nấu món ${recipe.name}`}
+              />
+            </div>
+          </Card>
+        )}
 
         {/* steps */}
         <Card className="mb-8 p-6">

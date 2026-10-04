@@ -5,6 +5,8 @@ import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card, ProgressBar } from '../components/ui';
 import { useDemoAccount } from '../components/DemoAccount';
 import { useAuth } from '../components/AuthContext';
+import { YouTubeEmbed } from '../components/YouTubeEmbed';
+import { validateYouTubeUrl } from '../utils/youtube';
 import type { DietTag } from '../types';
 
 const dietOptions: { value: DietTag; label: string; desc: string }[] = [
@@ -66,7 +68,22 @@ function CreateRecipeForm() {
     { id: '2', name: 'Nấm đông cô tươi', qty: '150', unit: 'gram' },
     { id: '3', name: 'Tiêu xanh Phú Quốc', qty: '2', unit: 'nhánh' },
   ]);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeError, setYoutubeError] = useState('');
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const handleYoutubeChange = (val: string) => {
+    setYoutubeUrl(val);
+    const result = validateYouTubeUrl(val);
+    if (!result.valid) {
+      setYoutubeError(result.error ?? 'Đường dẫn YouTube không hợp lệ.');
+      setYoutubeVideoId(null);
+    } else {
+      setYoutubeError('');
+      setYoutubeVideoId(result.videoId);
+    }
+  };
 
   const completeness = Math.round(
     ([title, desc].filter(Boolean).length / 2) * 40 + (rows.filter((r) => r.name && r.qty).length / Math.max(rows.length, 1)) * 60,
@@ -154,18 +171,67 @@ function CreateRecipeForm() {
 
           {/* Step 2 */}
           <Card className="p-6">
-            <StepHead num={2} title="Hình ảnh" />
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 text-center transition-colors hover:border-brand-400 hover:bg-brand-50">
-                <UploadCloud className="mb-2 h-7 w-7 text-brand-500" />
-                <p className="px-4 text-xs font-semibold text-brand-600">Kéo thả hoặc chọn ảnh bìa</p>
-                <p className="text-[10px] text-ink-muted">JPG, PNG tối đa 5MB</p>
+            <StepHead num={2} title="Hình ảnh & Video YouTube" />
+            <div className="space-y-6">
+              <div>
+                <p className="mb-2 text-sm font-semibold text-ink-soft">Ảnh món ăn (tối đa 5 ảnh)</p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 text-center transition-colors hover:border-brand-400 hover:bg-brand-50">
+                    <UploadCloud className="mb-2 h-7 w-7 text-brand-500" />
+                    <p className="px-4 text-xs font-semibold text-brand-600">Kéo thả hoặc chọn ảnh bìa</p>
+                    <p className="text-[10px] text-ink-muted">JPG, PNG tối đa 5MB</p>
+                  </div>
+                  <div className="flex aspect-square items-center justify-center rounded-xl border border-brand-100 bg-brand-50/40 text-ink-muted">
+                    <ImagePlus className="h-6 w-6" />
+                  </div>
+                  <div className="flex aspect-square items-center justify-center rounded-xl border border-brand-100 bg-brand-50/40 text-ink-muted">
+                    <ImagePlus className="h-6 w-6" />
+                  </div>
+                </div>
               </div>
-              <div className="flex aspect-square items-center justify-center rounded-xl border border-brand-100 bg-brand-50/40 text-ink-muted">
-                <ImagePlus className="h-6 w-6" />
-              </div>
-              <div className="flex aspect-square items-center justify-center rounded-xl border border-brand-100 bg-brand-50/40 text-ink-muted">
-                <ImagePlus className="h-6 w-6" />
+
+              {/* YouTube video section - FR-15 / UC-15.1 */}
+              <div className="border-t border-brand-100 pt-5">
+                <div className="mb-1 flex items-center justify-between">
+                  <label htmlFor="youtube-url" className="text-sm font-semibold text-ink-soft">
+                    Liên kết video YouTube (Tùy chọn)
+                  </label>
+                  <span className="text-[11px] font-medium text-brand-600">Tối đa 1 liên kết (BR-19)</span>
+                </div>
+                <p className="mb-3 text-xs text-ink-muted">
+                  Dán đường dẫn video YouTube hướng dẫn nấu ăn. Hệ thống chỉ hỗ trợ YouTube (BR-10) và không lưu trữ tệp video nhị phân (mp4/mkv) trên máy chủ.
+                </p>
+                <div className="space-y-2">
+                  <input
+                    id="youtube-url"
+                    type="url"
+                    value={youtubeUrl}
+                    onChange={(e) => handleYoutubeChange(e.target.value)}
+                    placeholder="VD: https://youtu.be/dQw4w9WgXcQ hoặc https://www.youtube.com/watch?v=..."
+                    className={`w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition ${
+                      youtubeError
+                        ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+                        : 'border-brand-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100'
+                    }`}
+                  />
+                  {youtubeError && (
+                    <p role="alert" className="text-xs font-semibold text-red-600">
+                      {youtubeError}
+                    </p>
+                  )}
+                  {youtubeVideoId && !youtubeError && (
+                    <div className="mt-3 space-y-2 rounded-xl border border-leaf-200 bg-leaf-50/40 p-4">
+                      <div className="flex items-center gap-2 text-xs font-bold text-leaf-700">
+                        <Check className="h-4 w-4 text-leaf-600" />
+                        Đã trích xuất YouTube Video ID: <span className="font-mono text-ink">{youtubeVideoId}</span>
+                      </div>
+                      <p className="text-xs text-ink-muted">Khung xem trước video nhúng (AC-15.1):</p>
+                      <div className="max-w-lg">
+                        <YouTubeEmbed urlOrId={youtubeVideoId} title="Xem trước video YouTube" />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </Card>
@@ -213,7 +279,19 @@ function CreateRecipeForm() {
 
           <div className="flex justify-end gap-3">
             <Button variant="outline">Lưu nháp</Button>
-            <Button onClick={() => { setSaved(true); setTimeout(() => navigate('/kham-pha'), 1200); }}>
+            <Button
+              onClick={() => {
+                if (youtubeUrl.trim()) {
+                  const check = validateYouTubeUrl(youtubeUrl);
+                  if (!check.valid) {
+                    setYoutubeError(check.error ?? 'Đường dẫn YouTube không hợp lệ.');
+                    return;
+                  }
+                }
+                setSaved(true);
+                setTimeout(() => navigate('/kham-pha'), 1200);
+              }}
+            >
               {saved ? <><Check className="h-4 w-4" /> Đã đăng!</> : 'Xuất bản công thức'}
             </Button>
           </div>
