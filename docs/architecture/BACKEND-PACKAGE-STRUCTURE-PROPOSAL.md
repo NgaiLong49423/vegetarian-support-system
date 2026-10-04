@@ -1,8 +1,8 @@
 > **Document:** Backend Package Structure Specification
 > **File:** `docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md`
-> **Version:** v1.1.0
+> **Version:** v1.2.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-09-29
+> **Last Updated:** 2026-10-02
 > **Status:** Active
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `app/mamxanh-backend/README.md`
 
@@ -187,7 +187,7 @@ auth/
 └── security/JwtTokenProvider.java
 ```
 
-Mọi chi tiết class, field, validation và endpoint phải bám sát [OpenAPI Contract](../api/openapi.yaml), [SRS Requirements](../requirements/SRS.md) và [Data Dictionary](../diagrams/ERD/data-dictionary.md).
+Mọi chi tiết class, field, validation và endpoint phải bám sát Controller/DTO và generated runtime OpenAPI từ springdoc; trong giai đoạn chuyển tiếp, [manual OpenAPI](../api/openapi.yaml) chỉ là planned/reference contract cho endpoint chưa triển khai. Đồng thời đối chiếu [SRS Requirements](../requirements/SRS.md) và [Data Dictionary](../diagrams/ERD/data-dictionary.md).
 
 ## 8. Quản lý vòng đời và duy trì quy chuẩn
 

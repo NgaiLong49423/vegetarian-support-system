@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, Leaf, Mail, ShieldChe
 import { Logo } from '../components/Logo';
 import { Button } from '../components/ui';
 import { useAuth, type SessionNotice } from '../components/AuthContext';
+import { useDemoAccount } from '../components/DemoAccount';
 import { fieldMessages, retryAfterSeconds, toProblem, type ProblemDetails } from '../lib/problem';
 import { login, register, resendVerificationEmail, verifyEmail } from '../services/authApi';
 import { passwordProblems } from '../utils/password';
@@ -20,7 +21,7 @@ const copy = {
   reset: { title: 'Đặt mật khẩu mới', subtitle: 'Chọn mật khẩu mới cho tài khoản Mâm Xanh của bạn.', action: 'Lưu mật khẩu mới' },
 };
 
-// API field names (docs/api/openapi.yaml) -> form field keys.
+// API field names follow the generated Backend runtime contract -> form field keys.
 const apiFieldToForm: Record<string, string> = { displayName: 'name', email: 'email', password: 'password', confirmPassword: 'confirm' };
 const NETWORK_ERROR = 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.';
 const INVALID_LINK = 'Liên kết xác minh không hợp lệ hoặc đã hết hạn. Nhập email bên dưới để nhận liên kết mới.';
@@ -67,6 +68,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const handledToken = useRef<string | null>(null);
   const { signIn, enterDemo } = useAuth();
+  const { setActive } = useDemoAccount();
   const navigate = useNavigate();
   const details = copy[mode];
   const newPassword = mode === 'register' || mode === 'reset';
@@ -111,6 +113,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
     setSubmitting(true);
     try {
       signIn(await login({ email: email.trim(), password }));
+      setActive(false);
       navigate('/', { replace: true });
     } catch (error) {
       const problem = toProblem(error);
@@ -214,7 +217,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
         <div className="mt-6 border-t border-brand-100 pt-5 text-center text-sm text-ink-soft">
           {mode === 'login' ? <>Chưa có tài khoản? <Link to="/dang-ky" className="font-bold text-brand-700 hover:underline">Đăng ký ngay</Link><Link to="/xac-minh-email" className="mt-3 block text-xs text-ink-muted hover:underline">Chưa nhận được email xác minh?</Link></> : mode === 'register' ? <>Đã có tài khoản? <Link to="/dang-nhap" className="font-bold text-brand-700 hover:underline">Đăng nhập</Link></> : <Link to="/dang-nhap" className="font-semibold text-brand-700 hover:underline">Quay lại đăng nhập</Link>}
         </div>
-        {mode === 'login' && <button type="button" onClick={() => { enterDemo(); navigate('/'); }} className="mt-5 w-full rounded-xl bg-brand-50 px-4 py-3 text-xs font-semibold text-ink-soft hover:bg-brand-100">Khám phá tài khoản demo</button>}
+        {mode === 'login' && <button type="button" onClick={() => { enterDemo(); setActive(true); navigate('/'); }} className="mt-5 w-full rounded-xl bg-brand-50 px-4 py-3 text-xs font-semibold text-ink-soft hover:bg-brand-100">Khám phá tài khoản demo</button>}
       </section>
     </main>
   </div>;

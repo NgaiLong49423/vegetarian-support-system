@@ -15,7 +15,9 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
 
-    static final DockerImageName SQL_SERVER_IMAGE = DockerImageName.parse("mcr.microsoft.com/mssql/server:2019-latest");
+    static final DockerImageName SQL_SERVER_IMAGE = DockerImageName.parse(
+            "mcr.microsoft.com/mssql/server:2019-CU32-GDR11-ubuntu-20.04@sha256:ef0b8db33970ecd01bed49c3a84a1d083c435a9891718df619298b67b352e74a")
+            .asCompatibleSubstituteFor("mcr.microsoft.com/mssql/server");
 
     @Bean
     @ServiceConnection

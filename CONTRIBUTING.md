@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.6.0
+> **Version:** v3.11.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-03
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -69,7 +69,7 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
 
 - Owner chịu trách nhiệm toàn bộ luồng FR, gồm cả FE do AI tạo/sửa. Không mặc định chia sub-issue FE/BE; dùng checklist trong Issue. Không bắt buộc có thành viên FE riêng.
 - Phân rã FR theo SRS trước khi triển khai. Theo [Engineering Autonomy Policy](#engineering-autonomy-policy), người thực hiện (developer hoặc AI coding agent) có quyền tự chủ thiết kế các endpoint, request/response DTOs, validation và error codes trong phạm vi Issue được giao.
-- **Quy tắc đồng bộ hợp đồng API:** Mã nguồn (code) + tài liệu tích hợp (`docs/api/API.md`) + đặc tả máy đọc (`docs/api/openapi.yaml`) phải được cập nhật đồng bộ trong cùng một work item / Pull Request trước khi merge vào `develop` hoặc `main` (không bắt buộc code và docs phải nằm trong cùng một Git commit đơn lẻ). Không tự quyết API khác nhau ở FE và BE; tài liệu API đã đồng bộ là nguồn tham chiếu chung duy nhất.
+- **Quy tắc contract API:** Generated OpenAPI tại `/v3/api-docs` từ source Spring Boot là runtime contract cho endpoint đã implement và là contract agent/CI phải tra cứu. Trong migration, `docs/api/openapi.yaml` chỉ giữ planned/reference contract cho endpoint chưa implement; reviewer đối chiếu semantic contract với runtime cho phần đã implement, không duy trì hai nguồn chuẩn song song. Cập nhật `docs/api/API.md` trong cùng work item khi thay đổi convention tích hợp chung; không yêu cầu sao chép mọi endpoint runtime vào YAML thủ công. FE và BE không được tự quyết contract khác nhau; conflict phải được nêu rõ trước merge.
 - Không tạo các breaking API changes (xóa endpoint, đổi path/method, xóa/đổi tên trường response, đổi auth model) mà không có sự phối hợp, thống nhất trước với các bên tiêu thụ (consumer).
 - Owner ghi nhận phần AI hỗ trợ và bằng chứng người thực hiện đã xác minh: kiểm tra API, thao tác từ UI, các test đã chạy và kết quả. AI báo hoàn thành không phải bằng chứng nghiệm thu.
 
@@ -82,10 +82,27 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
 
 ### PR vào `develop`
 
-- PR dùng `Refs #<issue-number>`, ghi scope, thay đổi và kết quả tự kiểm tra; không chứa secret, `.env`, credential hoặc file build/cá nhân.
+- PR implementation dùng `Refs #<issue-number>` theo quy tắc bên dưới, ghi scope, thay đổi và kết quả tự kiểm tra; không chứa secret, `.env`, credential hoặc file build/cá nhân.
 - Required validation checks phải pass trước merge; xem [Required checks và technical enforcement](#develop-required-checks). Ruleset hiện có yêu cầu một approval; giữ gate review hiện hành, không coi AI review là approval của thành viên.
 - Owner tự kiểm tra phần thay đổi và ghi trung thực phần chưa kiểm tra/blocker. Merge vào `develop` là tích hợp, chưa xác nhận FR đã hoàn thành.
-- Một Issue có thể có nhiều PR liên quan; không ép quan hệ một Issue/một branch/một PR.
+
+<a id="implementation-issue-pr"></a>
+#### Một implementation Issue — một implementation PR
+
+- **1 implementation Issue = 1 implementation PR.** Feature/FR implementation, bug fix hoặc refactor có work item, thay đổi business behavior và implementation task khác được quản lý bằng Issue phải có `Refs #<issue-number>`. Hoàn tất scope/AC của work item trong PR đó; review fixes/rebuttals tiếp tục trên cùng PR.
+- Sub-issue triển khai đã được Tech Lead duyệt áp dụng quy tắc trên cho từng work item; Issue cha chỉ tổng hợp phạm vi, không tạo implementation trùng. Release PR `develop -> main` tổng hợp các Issue đã tích hợp và dùng `Refs` để trace, không phải implementation PR thứ hai của chúng.
+- Sau khi Issue gốc đã hoàn thành, bug fix, refactor hoặc thay đổi bổ sung cần Issue mới và PR mới tương ứng; liên kết lịch sử khi phù hợp. Không mở lại work item đã nghiệm thu chỉ để tránh tạo Issue mới.
+- **Ngoại lệ hẹp:** chỉ repository setup, internal agent tooling hoặc governance/configuration chore ở cấp repository mới có thể không cần Issue, và phải được Tech Lead cho phép. Khi đó dùng `Refs: N/A` kèm `Reason` nêu scope và authorization; branch có thể dùng `chore/<short-name>`. Không tạo Issue chỉ để thỏa hình thức cho ngoại lệ đã duyệt.
+- `Refs: N/A` không phải lựa chọn chung cho mọi PR; không mở rộng ngoại lệ sang feature/bug/refactor thông thường để tránh Issue. Ví dụ “Implement Meal Planner” phải có Issue, kể cả khi đặt tên branch là chore.
+
+Ví dụ hợp lệ cho tooling setup đã được duyệt:
+
+```text
+Refs: N/A
+
+Reason:
+Repository internal agent tooling setup approved by Tech Lead.
+```
 
 <a id="develop-integration-baseline"></a>
 #### Develop integration baseline và đồng bộ PR song song
@@ -116,6 +133,77 @@ merge theo gates hiện hành
 - **Flyway:** Migration đã merge giữ nguyên version và content. Sau khi sync, migration chưa merge phải thích ứng với lịch sử mới và dùng version khả dụng tiếp theo khi collision. Không sửa migration đã baseline hóa để giải collision; thay đổi tiếp theo dùng append-only migration. Trước khi chọn version, kiểm tra migration history hiện hành trên `develop`.
 - **Resolve an toàn và re-validation:** Không chọn `ours`, `theirs`, Accept Current hoặc Accept Incoming cho toàn file khi chưa hiểu intent. Xác định phần đã thành baseline và intent feature, kết hợp đúng hai phía; nếu semantic intent chưa rõ, dừng và hỏi owner/reviewer. Sau sync, chạy lại verification phù hợp với scope và repository rules (ví dụ backend build/tests/migration validation, frontend typecheck/build/tests hoặc cross-layer API/FE-BE contract checks). Kết quả trước sync không phải bằng chứng cuối nếu synchronization có thể ảnh hưởng feature; cập nhật PR evidence khi cần.
 
+<a id="docker-development"></a>
+#### Docker development và kiểm thử tích hợp
+
+**Quy tắc chuẩn:** `docker-compose.yml` ở repository root là entry point chuẩn cho stack Docker development tích hợp FE/BE/SQL Server. Compose build các Dockerfile riêng của Frontend và Backend từ source hiện tại trong branch, khởi tạo SQL Server và chờ service phụ thuộc khỏe trước khi đưa stack lên. SQL Server image được pin bằng tag dễ đọc cộng repository manifest digest lấy từ MCR; Compose và Testcontainers dùng cùng reference. Khi nâng image, cập nhật cả hai reference trong PR, xác minh digest/architecture và tools trên MCR, chạy Backend integration tests và Docker Development gate trước merge. Không dùng `latest`, không dùng config/image ID làm digest, và không ghi nhãn image tag thành tên product release.
+
+- Dockerfile tại `app/mamxanh-frontend/` và `app/mamxanh-backend/` vẫn thuộc từng component, định nghĩa cách build component đó; chúng không phải hai môi trường tích hợp độc lập và không thay thế Compose.
+- Không yêu cầu hoặc tạo hai CI gate build riêng cho FE và BE chỉ để lặp lại việc build đã được `Docker Development` thực hiện. Có thể chạy riêng một Dockerfile để debug component; kiểm tra riêng không thay thế Compose gate khi PR ảnh hưởng stack hoặc tích hợp.
+- Mọi thay đổi source FE/BE, Dockerfile, dependency/lockfile, cấu hình runtime được Compose sử dụng, database initialization hoặc `docker-compose.yml` phải được đánh giá theo toàn stack. Trước khi Ready for Review, chạy Compose local nếu Docker khả dụng; PR sau đó phải pass `Docker Development` trên commit mới nhất.
+- Compose publish các port development chỉ trên loopback `127.0.0.1`; SQL host port `1433` được giữ để hỗ trợ Backend chạy trực tiếp trên máy. `name: mamxanh-dev` là project mặc định. Nếu dùng `-p <project>` để cô lập worktree, dùng chính project name đó cho mọi lệnh lifecycle của stack: `config`, `up`, `ps`, `run`, `down` và volume reset. Tên project không tránh xung đột host ports khi chạy nhiều stack song song.
+- Docker chỉ phục vụ development và verification. Không suy ra thay đổi deployment/production từ Docker Compose; production baseline vẫn là Vercel cho Frontend, Azure App Service cho Backend và Azure SQL theo tài liệu công nghệ hiện hành.
+
+**Thiết lập lần đầu (PowerShell tại repository root):**
+
+```powershell
+if (-not (Test-Path app/mamxanh-backend/.env)) {
+    Copy-Item app/mamxanh-backend/.env.example app/mamxanh-backend/.env
+} else {
+    Write-Output 'Existing app/mamxanh-backend/.env preserved; edit it only if needed.'
+}
+```
+
+Mở `app/mamxanh-backend/.env`, thay `MSSQL_SA_PASSWORD` bằng mật khẩu local mạnh đáp ứng yêu cầu SQL Server. File `.env` bị ignore và không được commit/chia sẻ; `.env.example` chỉ là hợp đồng biến môi trường an toàn. Compose override connection URL/user/password của Backend để kết nối service `sqlserver`; SMTP để trống thì không gửi email thật. Không đưa secret vào command line, workflow YAML, PR log hay tài liệu.
+
+**Khởi động và xác minh:**
+
+```powershell
+$composeProject = 'mamxanh-dev'
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env config --quiet
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env up --build --detach --wait --wait-timeout 600
+Invoke-WebRequest http://localhost:5173/ -UseBasicParsing
+Invoke-WebRequest http://localhost:8080/v3/api-docs -UseBasicParsing
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env ps
+```
+
+`config --quiet` xác nhận Compose parse/interpolate được, không chứng minh image chạy. Sau khi `up` thành công, FE phải phản hồi tại `http://localhost:5173/`, Backend OpenAPI tại `http://localhost:8080/v3/api-docs`, và `ps` phải cho thấy các service dài hạn healthy. Compose kiểm tra khởi động và endpoint smoke; nó không thay unit, integration, authorization hoặc acceptance tests của feature. Khi xác minh xong, dừng stack:
+
+```powershell
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env down
+```
+
+Lệnh `down` giữ named volumes, bao gồm dữ liệu SQL local và Frontend dependencies. Sửa `MSSQL_SA_PASSWORD` trong `.env` không tự đổi password đã khởi tạo trong SQL Server volume; volume còn giữ database state/credential cũ. Nếu cần reset database development nhưng giữ dependency Frontend, dừng project rồi xóa riêng SQL volume, sau đó khởi động lại:
+
+```powershell
+$composeProject = 'mamxanh-dev'
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env down
+docker volume rm "$($composeProject)_sqlserver-data"
+# Đặt password mong muốn trong app/mamxanh-backend/.env trước khi khởi động lại.
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env up --build --detach --wait --wait-timeout 600
+```
+
+> Xóa SQL volume sẽ xóa toàn bộ database development local của project đó; không chạy nếu cần giữ dữ liệu. Thay `mamxanh-dev` bằng cùng project name đã dùng cho stack nếu có override.
+
+Sau khi `package.json` hoặc `package-lock.json` thay đổi, cập nhật dependency trong named volume từ lockfile bằng one-off container; lệnh này không khởi động dependencies và không chạm SQL volume:
+
+```powershell
+$composeProject = 'mamxanh-dev'
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env run --rm --no-deps frontend npm ci
+```
+
+Mọi lệnh sau đó (`up`, `down`, `run`, reset volume) phải tiếp tục dùng cùng `$composeProject`. Chỉ khi troubleshooting fallback không dùng được `run npm ci`, dừng stack và xóa riêng `<project>_frontend-node-modules`; không xóa SQL volume để làm mới Frontend dependencies.
+
+`docker compose ... down --volumes --remove-orphans` là **full reset**: xóa cả SQL data và `frontend-node-modules`. Chỉ dùng khi chủ động chấp nhận mất toàn bộ named-volume data. CI được phép làm vậy vì runner là disposable.
+
+**PR và GitHub gate:**
+
+- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job setup Node.js `24.21.0` (exact pin, đáp ứng yêu cầu Node `>=24` của Scalar CLI `2.5.2`), dùng project `mamxanh-ci` thống nhất cho `up`/cleanup, build Compose, đợi health checks, capture `/v3/api-docs`, validate bằng Scalar CLI `2.5.2`, upload OpenAPI artifact riêng theo PR/run, rồi smoke-test route `/scalar`; CI dùng password tạm, dọn volume trên runner disposable sau job. HTTP `curl /scalar` chỉ chứng minh route/HTML shell trả về, không chứng minh Scalar JavaScript đã render contract hoặc request API chạy được.
+- Scalar tại `http://localhost:8080/scalar` là giao diện chính thức để team đọc và manual-test API. Browser acceptance phải xác nhận JavaScript tải/render generated `/v3/api-docs`, kiểm tra operation và gửi request phù hợp trong giao diện; đây là bằng chứng riêng với CI route smoke và không thay automated regression/authorization tests.
+- Ruleset `protect-develop` yêu cầu status context `Docker Development` và strict up-to-date. PR vào `develop` phải sync baseline theo phần trên; sau lần sync cuối có ảnh hưởng, chạy lại kiểm tra liên quan và đợi CI trên commit cập nhật.
+- Nếu Docker không chạy được local, ghi rõ nguyên nhân và kết quả nào chưa xác minh trong PR; không ghi “Docker test passed”. Required CI check vẫn phải pass trước khi merge. Việc Docker daemon của máy cá nhân unavailable không tự cho phép bỏ qua gate.
+- Khi sửa Compose, workflow hoặc Dockerfile, giữ cùng stack/entry point và cùng smoke criteria nhất quán; không tạo nhánh cấu hình local riêng hoặc yêu cầu thành viên pull image `latest` thủ công ngoài định nghĩa đã review trong Git.
+
 <a id="develop-required-checks"></a>
 #### Required checks và technical enforcement cho `develop`
 
@@ -125,21 +213,22 @@ Project Owner chốt hard gates: Frontend Playwright/Istanbul/NYC đạt **≥60
 |---|---|
 | `Frontend` | Typecheck, build và Playwright coverage hard gate |
 | `Backend` | `clean verify`: JUnit, package và JaCoCo hard gate |
+| `Docker Development` | Build và chạy smoke test toàn bộ development stack từ Docker Compose |
 | `Sonar` | Đọc LCOV/JaCoCo qua artifacts, static analysis và chờ Sonar Quality Gate; scan/gate fail hoặc timeout làm check fail |
 | `Analyze (javascript-typescript)` | CodeQL default setup: JavaScript/TypeScript validation |
 | `Analyze (java-kotlin)` | CodeQL default setup: Java validation |
 | `Analyze (actions)` | CodeQL default setup: GitHub Actions validation |
 
-CodeQL là GitHub default setup, không có workflow YAML local. Ba tên CodeQL và `Frontend`/`Backend` đã được thấy trên GitHub check runs; `Sonar` là job riêng trong workflow mới và cần xác nhận context sau lần chạy đầu. Mọi PR validation liên quan phải pass; khi bổ sung validation job mới, cập nhật danh sách required contexts cùng workflow, không coi job mới là advisory mặc định.
+CodeQL là GitHub default setup, không có workflow YAML local. Ba tên CodeQL và `Frontend`/`Backend` đã được thấy trên GitHub check runs; `Sonar` và `Docker Development` là job riêng trong workflow và cần xác nhận context sau lần chạy đầu. Mọi PR validation liên quan phải pass; khi bổ sung validation job mới, cập nhật danh sách required contexts cùng workflow, không coi job mới là advisory mặc định.
 
 Không yêu cầu `release-source` cho PR `develop`: workflow này chỉ kiểm tra PR vào `main`. Dependabot Updates là utility, deployment/manual/release jobs không chạy PR không phải merge gate của `develop`. `SonarCloud Code Analysis` là report từ Sonar app và có thể `neutral`; dùng job `Sonar` chờ Quality Gate làm gate. Kody/Kodus + Gemini chỉ advisory AI reviewer; chưa đưa thành required check trước khi đánh giá đủ PR, false positives và có quyết định riêng của owner.
 
-**Trạng thái enforcement ngày 2026-09-30:** Ruleset `protect-develop` đang active, yêu cầu PR và một approval, chặn force push/xóa branch, có owner/admin bypass. Ruleset được kiểm tra chưa có required status checks hoặc strict up-to-date rule. Repository workflow không tự bật GitHub settings; task coverage không tự sửa Ruleset.
+**Trạng thái enforcement ngày 2026-10-02:** Ruleset `protect-develop` đang active, yêu cầu PR và một approval, chặn force push/xóa branch, bật strict up-to-date và có owner/admin bypass. Required status check `Docker Development` đã được cấu hình trực tiếp trên Ruleset. Các context khác trong bảng mô tả policy validation nhưng chưa được xác nhận là required trong Ruleset; cần kiểm tra sau khi các check tương ứng chạy trên PR. Workflow YAML riêng không tự bật GitHub settings.
 
-Để GitHub thực sự block merge khi check fail, owner cấu hình Ruleset/Branch Protection ngoài repository sau approval riêng:
+Để duy trì/mở rộng technical merge blocking, owner cấu hình Ruleset/Branch Protection ngoài repository; trạng thái hiện tại được xác minh ở trên:
 
 1. Target đúng `refs/heads/develop`; require PR before merging, giữ approval/review gate hiện hành.
-2. Require status checks to pass; chọn các contexts trong bảng từ PR check runs thực tế, với source GitHub Actions khi có tùy chọn. Xác minh các CodeQL checks chạy trên PR target `develop` trước khi require.
+2. Ruleset hiện yêu cầu `Docker Development`. Sau khi có PR run, xác minh context được GitHub nhận diện đúng và một lần chạy fail chặn merge. Bổ sung các contexts còn lại trong bảng từ PR check runs thực tế, với source GitHub Actions khi có tùy chọn; xác minh CodeQL checks chạy trên PR target `develop` trước khi require.
 3. Bật require branches to be up to date (strict mode); sau sync phải chạy lại checks trên commit cập nhật.
 4. Giữ block force pushes và branch deletion. Owner bypass là quyền quản trị hiện có, không làm member PR được bỏ qua gates.
 5. Dùng PR kiểm tra để xác nhận mỗi check fail thực sự khóa merge; không ghi technical enforcement hoàn tất chỉ từ YAML hoặc checklist. Sonar secret/Quality Gate phải sẵn sàng; không skip Sonar và báo xanh khi secret/report thiếu.
@@ -223,7 +312,7 @@ Chính sách Tự chủ Kỹ thuật (Engineering Autonomy Policy) phân định
 ### 3. API Design Autonomy (Tự chủ Thiết kế API và Đồng bộ Hợp đồng)
 
 - **Quyền tự chủ (Non-breaking API Additions):** Developer và coding agent có quyền tự chủ thiết kế các REST endpoint mới, request/response DTOs, cơ chế validation, và các stable business error codes cần thiết để hoàn thành nghiệp vụ của Issue.
-  - *Quy tắc đồng bộ hợp đồng (Work Item / PR Synchronization Rule):* Mã nguồn (code) + tài liệu tích hợp (`docs/api/API.md`) + đặc tả máy đọc (`docs/api/openapi.yaml`) **bắt buộc phải được cập nhật đồng bộ trong cùng một work item / Pull Request trước khi merge** vào `develop` hoặc `main`. Quy tắc không ép buộc code và tài liệu API phải nằm trong cùng một Git commit đơn lẻ, mà yêu cầu tính hoàn chỉnh và đồng bộ tại mốc PR review / merge.
+  - *Quy tắc contract trong migration:* API implementation và OpenAPI annotations/DTOs phải làm generated `/v3/api-docs` phản ánh runtime contract. `docs/api/openapi.yaml` chỉ là planned/reference cho endpoint chưa implement; semantic đối chiếu endpoint đã implement thuộc review cho tới khi migration comparison tự động được thiết lập. Cập nhật `docs/api/API.md` khi convention tích hợp chung thay đổi. Không yêu cầu đồng bộ bản sao endpoint runtime vào manual YAML.
 - **Ngưỡng yêu cầu phối hợp và phê duyệt (Breaking API Changes):**
   - Xóa bỏ một endpoint đang hoạt động.
   - Thay đổi URI path hoặc HTTP method của endpoint hiện có.
@@ -247,6 +336,8 @@ Chính sách Tự chủ Kỹ thuật (Engineering Autonomy Policy) phân định
 
 Khi làm việc, tạo nhánh từ `develop` và đặt tên theo cấu trúc:
 `[loại-nhánh]/[issue-number]-[tên-ngắn-gọn]`
+
+Repository-level chore không cần Issue chỉ được dùng `chore/<tên-ngắn-gọn>` theo [ngoại lệ đã được Tech Lead duyệt](#implementation-issue-pr).
 
 ### Các tiền tố nhánh thông dụng:
 * **`feature/`**: Sử dụng khi phát triển một tính năng mới.
@@ -427,7 +518,7 @@ chore: update .gitignore
 Để gửi một pull request thành công:
 1. **Đặt tiêu đề rõ ràng:** Tiêu đề PR nên tuân theo định dạng tương tự commit message và dùng tiếng Anh (ví dụ: `feat(auth): add login page`).
 2. **Mô tả chi tiết nội dung:** Điền đầy đủ thông tin vào mẫu PR, mô tả rõ các thay đổi bạn đã thực hiện và lý do thay đổi.
-3. **Liên kết Issue:** PR vào `develop` và `main` dùng `Refs #123`. Tech Lead xác nhận và đóng Issue sau khi kiểm tra demo local trên `main` đạt; không dùng closing keywords để đóng trước nghiệm thu.
+3. **Liên kết Issue:** PR vào `develop` và `main` dùng `Refs #123`; chỉ repository-level chore được Tech Lead cho phép mới dùng `Refs: N/A` kèm lý do theo [quy tắc Issue/PR](#implementation-issue-pr). Tech Lead xác nhận và đóng Issue sau khi kiểm tra demo local trên `main` đạt; không dùng closing keywords để đóng trước nghiệm thu.
 4. **Kiểm tra hoạt động:** Chắc chắn rằng dự án của bạn vẫn chạy được và không làm hỏng các tính năng cũ.
 5. **Dọn dẹp code:** Đảm bảo không có code thừa, comment nháp hay các file rác trước khi gửi PR.
 

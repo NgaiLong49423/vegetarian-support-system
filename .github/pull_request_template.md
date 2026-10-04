@@ -1,8 +1,8 @@
 > **Document:** Pull Request Template  
 > **File:** `.github/pull_request_template.md`  
-> **Version:** v2.3.0
+> **Version:** v2.5.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-03
 > **Status:** Template  
 
 # Pull Request
@@ -14,10 +14,15 @@ Quy tắc áp dụng: [CONTRIBUTING.md](../CONTRIBUTING.md#workflow-làm-việc-
 ## Tóm tắt và phạm vi
 
 - Thay đổi và lý do:
-- FR/Issue liên quan: `Refs #<issue-number>`
+- FR/Issue liên quan: `Refs #<issue-number>` (bắt buộc cho implementation work item)
+- Reason / Tech Lead authorization nếu dùng ngoại lệ `Refs: N/A`:
 - Dependency/blocker hoặc phần chưa kiểm tra:
 
 Dùng `Refs` cho cả hai nhánh; đóng Issue sau nghiệm thu local trên `main`, không dùng closing keywords để đóng ngay khi merge.
+
+Tuân thủ [1 implementation Issue = 1 implementation PR](../CONTRIBUTING.md#implementation-issue-pr). Feature/FR, bug fix/refactor có work item, business behavior và implementation task khác phải có Issue. `Refs: N/A` chỉ dành cho repository setup/internal agent tooling/governance-configuration chore được Tech Lead cho phép; ghi `Reason` và căn cứ authorization. Đây không phải tùy chọn chung.
+
+Ví dụ hợp lệ: `Refs: N/A` cùng `Reason: Repository internal agent tooling setup approved by Tech Lead.` Ví dụ không hợp lệ: “Implement Meal Planner — Refs: N/A”; feature này phải có Issue.
 
 ## Bằng chứng kiểm tra
 
@@ -32,7 +37,7 @@ Thêm screenshot/video khi có thay đổi UI. Không ghi test pass nếu chưa 
 
 ## Checklist chung
 
-- [ ] Thay đổi truy về đúng FR/Issue và scope đã thống nhất
+- [ ] Thay đổi truy về đúng FR/Issue và scope đã thống nhất; nếu là ngoại lệ repository-level chore, đã ghi Reason và Tech Lead authorization
 - [ ] Đã ghi kết quả tự kiểm tra và phần còn chưa kiểm tra
 - [ ] Không có secret, `.env`, credential, file build/cá nhân
 - [ ] Tài liệu/contract/migration liên quan được cập nhật khi áp dụng
@@ -45,7 +50,8 @@ Chỉ áp dụng cho PR hướng vào `develop`; không phải checklist cho PR 
 - [ ] Git conflicts và semantic conflicts phát sinh sau sync đã được xử lý.
 - [ ] Flyway migration version đã được kiểm tra lại nếu PR có migration.
 - [ ] Verification phù hợp với scope đã chạy lại sau lần synchronization cuối có ảnh hưởng tới feature.
-- [ ] Required Frontend/Backend/Sonar và CodeQL checks liên quan pass trên commit cập nhật; thất bại/skip chưa được coi là pass. Review gate hiện hành đã đáp ứng.
+- [ ] Nếu thay đổi ảnh hưởng FE/BE, Dockerfile, Compose, runtime config hoặc database initialization: đã kiểm tra bằng root Docker Compose; nếu không chạy được local thì ghi rõ blocker và chưa xác minh.
+- [ ] Required Frontend/Backend/Docker Development/Sonar và CodeQL checks liên quan pass trên commit cập nhật; thất bại/skip chưa được coi là pass. Review gate hiện hành đã đáp ứng.
 
 ## Cổng PR vào `main`
 

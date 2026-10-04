@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-09-28
-next_id: 7
+last_updated: 2026-10-04
+next_id: 11
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,42 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-010
+    title: Cấu hình local lưu mật khẩu SQL Server dạng plaintext
+    status: RECORDED
+    severity: High
+    area: Backend/Configuration Security
+    file: .agents/outputs/bugs/BUG-010.md
+    created: 2026-09-28
+    updated: 2026-09-28
+    related_issue: Unknown
+  - id: BUG-009
+    title: Seed Docker lỗi do QUOTED_IDENTIFIER tắt
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Database seed
+    file: .agents/outputs/bugs/BUG-009.md
+    created: 2026-10-03
+    updated: 2026-10-03
+    related_issue: Unknown
+  - id: BUG-008
+    title: Hướng dẫn Frontend mô tả sai cách dùng hồ sơ dinh dưỡng
+    status: RECORDED
+    severity: Low
+    area: Tài liệu/Frontend
+    file: .agents/outputs/bugs/BUG-008.md
+    created: 2026-10-01
+    updated: 2026-10-01
+    related_issue: 78
+  - id: BUG-007
+    title: Migration đồng thuận dinh dưỡng lỗi trên SQL Server mới
+    status: TRACKING
+    severity: High
+    area: Backend/Database migration
+    file: .agents/outputs/bugs/BUG-007.md
+    created: 2026-10-01
+    updated: 2026-10-01
+    related_issue: 78
   - id: BUG-006
     title: Mục Nhánh làm việc bị gán sai trong một số GitHub Issue
     status: RESOLVED

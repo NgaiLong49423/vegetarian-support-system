@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.10.0
+> **Version:** v1.13.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -27,8 +27,8 @@ Hành vi mong đợi chi tiết được xác định trong [SRS](../requirement
 | Cấp độ | Phạm vi dự kiến | Bằng chứng điển hình | Ranh giới |
 |---|---|---|---|
 | Backend Unit Test | Business logic như subscription entitlement, phân quyền tính năng AI, quyết định ownership, điều phối validation và mapping kết quả | Assertion bằng JUnit 5; dùng Mockito khi cần cô lập dependency | Test dựa trên Mock không chứng minh Spring configuration, SQL hoặc provider thật hoạt động đúng |
-| Backend Integration Test | Spring Security rule, persistence mapping, transaction, Flyway migration và hành vi của adapter | Test với cấu hình đại diện và hạ tầng được kiểm soát (Testcontainers với Microsoft SQL Server container đã được phê duyệt theo Q17 APPROVED) | Máy local cần cài đặt Docker/Testcontainers; fallback sang SQL Server local khi môi trường không có Docker |
-| REST API | Validation request, authentication, authorization, hành vi status/error và response contract | Automated contract/API check trên endpoint thật kết hợp với OpenAPI đã được dự án áp dụng | Thử bằng Swagger UI chỉ là bằng chứng hỗ trợ, không phải regression suite |
+| Backend Integration Test | Spring Security rule, persistence mapping, transaction, Flyway migration và hành vi của adapter | Testcontainers với cùng SQL Server image/digest đã pin trong Docker Compose (theo Q17 APPROVED); image phải khởi động được và Flyway phải chạy trên SQL Server thật | Cần Docker daemon khả dụng; compile-only hoặc mock database không thay thế evidence này |
+| REST API | Validation request, authentication, authorization, hành vi status/error và response contract | Automated contract/API check trên endpoint thật kết hợp với generated OpenAPI | Manual request bằng Scalar UI là supporting evidence, không phải regression suite |
 | Frontend Component Test | Rendering, hành vi input và các trạng thái loading/error mà người dùng nhìn thấy ở component quan trọng | Tooling sẽ được chọn cùng React scaffold | Không tự chọn framework khi chưa có package evidence |
 | Browser Smoke / End-to-End Test (E2E) | Playwright kiểm tra Frontend shell và các luồng browser quan trọng; khi vertical slice tồn tại, E2E đi xuyên từ browser đến Backend như khám phá → lập lịch, publish/report moderation và kiểm tra chặn quyền tính năng AI | `@playwright/test` cho test lặp lại; browser control cho exploratory verification; HTML report, screenshot và trace khi được cấu hình | Frontend-only hoặc mock-backed smoke test không chứng minh Backend/database; E2E không thay Unit Test hoặc Integration Test tập trung |
 | Release Smoke Test | Các luồng demo cốt lõi trên candidate commit của `main` sau khi tích hợp release | Bằng chứng pass/fail được ghi nhận và liên kết với release workflow | Smoke Test pass không chứng minh Regression Coverage rộng |
@@ -118,7 +118,11 @@ Sonar không tạo coverage. Job `Sonar` đọc LCOV/JaCoCo XML qua artifacts sa
 
 ## 10. Quan hệ với trạng thái hoàn tất và release
 
-[CONTRIBUTING.md](../../CONTRIBUTING.md#develop-required-checks) sở hữu cổng merge và Definition of Done. Policy yêu cầu PR vào `develop` pass các required validation checks trên baseline cập nhật. GitHub technical enforcement cần Ruleset/Branch Protection có required contexts và strict up-to-date mode; workflow YAML riêng không bật các settings đó. Merge tích hợp chưa xác nhận FR hoàn thành.
+[CONTRIBUTING.md](../../CONTRIBUTING.md#develop-required-checks) sở hữu cổng merge và Definition of Done. Policy yêu cầu PR vào `develop` pass các required validation checks trên baseline cập nhật. GitHub technical enforcement cần Ruleset/Branch Protection có required contexts và strict up-to-date mode; workflow YAML riêng không bật các settings đó. Quy tắc và lệnh kiểm thử Compose chuẩn nằm tại [Docker development và kiểm thử tích hợp](../../CONTRIBUTING.md#docker-development).
+
+Job `Docker Development` build duy nhất stack root `docker-compose.yml`, dùng Dockerfile hiện hành của FE/BE và SQL Server, đợi health, smoke-test `GET /` Frontend và `GET /scalar` Backend, capture `GET /v3/api-docs`, validate OpenAPI và upload runtime spec artifact. Đây là build, health, HTTP route, contract-structure và startup/integration smoke evidence. `curl /scalar` chỉ chứng minh route/HTML shell được trả; không chứng minh Scalar JavaScript tải/render OpenAPI trong browser hoặc test request thành công. Browser/manual acceptance phải mở Scalar, xác nhận operation hiển thị từ runtime spec và gửi một request phù hợp riêng. Các smoke checks không chứng minh UI business flow, API authorization hay toàn bộ persistence behavior. Không tạo hai required CI gate FE/BE Docker tách biệt trùng build.
+
+Ruleset `protect-develop` hiện yêu cầu context `Docker Development`; danh sách test/check khác và ranh giới CI được mô tả ở [Required checks](../../CONTRIBUTING.md#develop-required-checks). Merge tích hợp chưa xác nhận FR hoàn thành.
 
 PR `develop -> main` cần approval độc lập, build/automated tests và required GitHub Actions checks đạt trên commit mới nhất. Test cases phải bao phủ Acceptance Criteria và các luồng lỗi/quyền truy cập liên quan; manual tests bổ sung phần chưa tự động hóa, không thay thế required checks. Cổng này chưa có bằng chứng triển khai đầy đủ chỉ vì đã được ghi trong tài liệu.
 

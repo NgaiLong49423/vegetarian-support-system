@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Check, ImagePlus, Info, Plus, Sparkles, Trash2, UploadCloud } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card, ProgressBar } from '../components/ui';
+import { useDemoAccount } from '../components/DemoAccount';
+import { useAuth } from '../components/AuthContext';
 import type { DietTag } from '../types';
 
 const dietOptions: { value: DietTag; label: string; desc: string }[] = [
@@ -15,6 +17,46 @@ const dietOptions: { value: DietTag; label: string; desc: string }[] = [
 interface Row { id: string; name: string; qty: string; unit: string }
 
 export function CreateRecipe() {
+  const { memberView } = useAuth();
+  const { role: demoRole } = useDemoAccount();
+  const { account } = useAuth();
+  const active = memberView;
+  const role = account?.role ?? demoRole;
+
+  if (!active || role !== 'EXPERT') {
+    return <RecipeCreationAccessGate active={active} role={role} />;
+  }
+
+  return <CreateRecipeForm />;
+}
+
+function RecipeCreationAccessGate({ active, role }: { active: boolean; role: string }) {
+  const isGuest = !active;
+  const destination = isGuest ? '/dang-nhap' : role === 'CUSTOMER' ? '/dang-ky-chuyen-gia' : undefined;
+  const action = isGuest ? 'Đăng nhập' : 'Đăng ký trở thành Chuyên gia';
+
+  return (
+    <PageContainer className="py-12">
+      <Card className="mx-auto max-w-xl p-8 text-center">
+        <h1 className="text-2xl font-extrabold text-ink">Đăng công thức chỉ dành cho Chuyên gia</h1>
+        <p className="mt-3 text-sm text-ink-muted">
+          {isGuest
+            ? 'Đăng nhập và được phê duyệt trở thành Chuyên gia để đăng công thức.'
+            : role === 'CUSTOMER'
+              ? 'Bạn cần được phê duyệt đơn đăng ký Chuyên gia trước khi đăng công thức.'
+              : 'Vai trò hiện tại không có quyền đăng công thức.'}
+        </p>
+        {destination && (
+          <Link to={destination} className="mt-5 inline-flex rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-700">
+            {action}
+          </Link>
+        )}
+      </Card>
+    </PageContainer>
+  );
+}
+
+function CreateRecipeForm() {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');

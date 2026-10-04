@@ -23,6 +23,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+!.env.docker.example
 
 # Maven wrapper generated files
 .mvn/wrapper/maven-wrapper.jar

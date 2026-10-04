@@ -1,13 +1,14 @@
+# Migration reference only: planned Auth endpoints may not exist in the running Backend yet.
+# Implemented endpoints are evidenced by springdoc at /v3/api-docs; do not treat this file as
+# a second permanent runtime authority. See API.md for the migration policy.
 openapi: 3.1.1
 info:
   title: Mâm Xanh API
-  version: 0.5.0
+  version: 0.7.0
   summary: REST API contract for the Mâm Xanh application
   description: >-
-    Accepted API baseline for FR-03 Authentication & Account. Implementation parameters
-    listed as TBD in API.md require owner proposals and Tech Lead approval before the
-    affected endpoints are implementation-ready. Documented endpoints are not claimed
-    to be implemented.
+    Planned reference for FR-03 Authentication endpoints that are not implemented in the runtime API.
+    Implemented endpoints are documented by generated Springdoc OpenAPI.
 servers:
   - url: /api/v1
     description: Version 1 relative base path
@@ -15,132 +16,6 @@ tags:
   - name: Authentication
     description: Registration, verification, login, and password recovery.
 paths:
-  /auth/register:
-    post:
-      tags: [Authentication]
-      summary: Register with email and password
-      description: Creates an ACTIVE account with emailVerified=false and triggers a best-effort verification email.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-      responses:
-        '201':
-          description: Account created with accountStatus ACTIVE and emailVerified false.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RegistrationResponse'
-        '400':
-          $ref: '#/components/responses/ValidationProblem'
-        '409':
-          description: Email is already used by another account (code EMAIL_ALREADY_USED); comparison ignores case.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /auth/email-verifications:
-    post:
-      tags: [Authentication]
-      summary: Verify an email address
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenRequest'
-      responses:
-        '204':
-          description: Email is verified; accountStatus is unchanged.
-        '400':
-          description: >-
-            Verification token is unknown, already used, replaced by a newer token or expired
-            (code VERIFICATION_TOKEN_INVALID), or the payload is invalid (code VALIDATION_FAILED).
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /auth/email-verifications/resend:
-    post:
-      tags: [Authentication]
-      summary: Request another verification email
-      description: >-
-        Invalidates the previous token when a new token is issued. Limited to one email per 60 seconds;
-        earlier requests return 429 with code RESEND_TOO_SOON and Retry-After. Unknown and already verified
-        emails receive the same 202 response and no email is sent.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EmailRequest'
-      responses:
-        '202':
-          description: Request accepted.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageResponse'
-        '400':
-          $ref: '#/components/responses/ValidationProblem'
-        '429':
-          $ref: '#/components/responses/RateLimitProblem'
-  /auth/login:
-    post:
-      tags: [Authentication]
-      summary: Log in with email and password
-      description: >-
-        On success, returns a Stateless JWT Access Token and resets the failure counter. Five consecutive
-        wrong passwords trigger a ten-minute temporary block on the account without changing the account
-        to LOCKED. The block is checked before the password; ACCOUNT_LOCKED and EMAIL_NOT_VERIFIED are
-        returned only after a correct password.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-      responses:
-        '200':
-          description: Login successful. Returns a Stateless JWT Access Token.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
-          $ref: '#/components/responses/ValidationProblem'
-        '401':
-          description: >-
-            Email or password is incorrect, the email is unknown or the account has no password
-            (code INVALID_CREDENTIALS, same neutral detail in every case).
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: >-
-            Correct password, but the email is not verified (code EMAIL_NOT_VERIFIED) or the account is
-            administratively locked (code ACCOUNT_LOCKED).
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '429':
-          description: >-
-            The fifth consecutive wrong password, or any attempt during the ten-minute block
-            (code LOGIN_TEMPORARILY_BLOCKED); Retry-After gives the remaining seconds.
-          headers:
-            Retry-After:
-              description: Seconds until another attempt is accepted.
-              schema:
-                type: integer
-                minimum: 1
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
   /auth/google:
     post:
       tags: [Authentication]
@@ -222,40 +97,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   schemas:
-    RegisterRequest:
-      type: object
-      additionalProperties: false
-      required: [displayName, email, password, confirmPassword]
-      properties:
-        displayName:
-          type: string
-          minLength: 3
-          maxLength: 50
-          example: Nguyễn An
-        email:
-          type: string
-          format: email
-          example: an.nguyen@example.com
-        password:
-          type: string
-          format: password
-          minLength: 8
-          maxLength: 64
-          writeOnly: true
-          description: Must satisfy password-complexity rules (8-64 chars, max 72 bytes UTF-8).
-        confirmPassword:
-          type: string
-          format: password
-          minLength: 8
-          maxLength: 64
-          writeOnly: true
-          description: Must match password.
     LoginRequest:
       type: object
       additionalProperties: false
@@ -285,15 +127,6 @@ components:
         email:
           type: string
           format: email
-    TokenRequest:
-      type: object
-      additionalProperties: false
-      required: [token]
-      properties:
-        token:
-          type: string
-          writeOnly: true
-          minLength: 1
     PasswordResetConfirmRequest:
       type: object
       additionalProperties: false
@@ -317,20 +150,6 @@ components:
           maxLength: 64
           writeOnly: true
           description: Must match newPassword.
-    RegistrationResponse:
-      type: object
-      additionalProperties: false
-      required: [accountStatus, emailVerified, message]
-      properties:
-        accountStatus:
-          type: string
-          const: ACTIVE
-        emailVerified:
-          type: boolean
-          const: false
-        message:
-          type: string
-          example: Registration succeeded. Check your email to verify your address.
     AuthResponse:
       type: object
       additionalProperties: false
@@ -426,6 +245,24 @@ components:
           items:
             $ref: '#/components/schemas/FieldError'
   responses:
+    AuthenticationProblem:
+      description: Authentication is required.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    AccessProblem:
+      description: An active Member account is required.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    OutOfScopeProblem:
+      description: The declared case is outside the application's nutrition reference scope.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
     ValidationProblem:
       description: Request validation failed.
       content:

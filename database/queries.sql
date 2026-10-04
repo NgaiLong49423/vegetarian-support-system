@@ -16,7 +16,7 @@
 --      constraints from Data Dictionary v0.7.5, plus TC38 for the NVARCHAR
 --      UNIT.code fix in migration V2__unit_code_unicode.sql and TC39 for the
 --      USER email-verification token columns in V3__user_email_verification_token.sql
---      and TC40 for the login-throttle columns in V4__user_login_throttle.sql.
+--      and TC40 for the login-throttle columns in V6__user_login_throttle.sql.
 --      Every negative test verifies the EXACT constraint name in ERROR_MESSAGE().
 --   3. Operational Queries: Practical queries demonstrating core queries
 --      for recipes, nested comments, weekly meal plans, and subscriptions.
@@ -47,7 +47,7 @@ PRINT 'PART 1: SCHEMA AUDIT & OBJECT INVENTORY';
 PRINT '====================================================================';
 
 -- 1.1 Object Count Summary
--- Expected: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 59 Checks, 56 Defaults, 15 UNIT rows
+-- Expected after V1-V6: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 61 Checks, 58 Defaults, 15 UNIT rows
 SELECT 
     'Tables' AS ObjectType, COUNT(*) AS TotalCount, 22 AS ExpectedCount,
     CASE WHEN COUNT(*) = 22 THEN 'PASS' ELSE 'FAIL' END AS AuditStatus
@@ -62,10 +62,10 @@ UNION ALL
 SELECT 'Unique Constraints', COUNT(*), 9, CASE WHEN COUNT(*) = 9 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.key_constraints WHERE type = 'UQ'
 UNION ALL
-SELECT 'Check Constraints', COUNT(*), 59, CASE WHEN COUNT(*) = 59 THEN 'PASS' ELSE 'FAIL' END
+SELECT 'Check Constraints', COUNT(*), 61, CASE WHEN COUNT(*) = 61 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.check_constraints
 UNION ALL
-SELECT 'Default Constraints', COUNT(*), 56, CASE WHEN COUNT(*) = 56 THEN 'PASS' ELSE 'FAIL' END
+SELECT 'Default Constraints', COUNT(*), 58, CASE WHEN COUNT(*) = 58 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.default_constraints
 UNION ALL
 SELECT 'UNIT Seed Rows', COUNT(*), 15, CASE WHEN COUNT(*) = 15 THEN 'PASS' ELSE 'FAIL' END
@@ -1159,7 +1159,7 @@ BEGIN TRY
     END CATCH;
 
     -- ------------------------------------------------------------------------
-    -- TC40: USER login throttle (V4, DF_USER_failed_login_attempts,
+    -- TC40: USER login throttle (V6, DF_USER_failed_login_attempts,
     --       CK_USER_failed_login_attempts_non_negative) — Issue #6
     -- ------------------------------------------------------------------------
     -- Positive: rows inserted without the column start at 0 consecutive failures

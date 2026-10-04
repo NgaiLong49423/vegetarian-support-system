@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.9.0
+> **Version:** v1.12.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-01
+> **Last Updated:** 2026-10-04
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -70,7 +70,7 @@ Nếu cần mở cả hệ thống, dùng hai cửa sổ Terminal và khởi đ�
 2. [Backend](../mamxanh-backend/README.md) tại port `8080`.
 3. Frontend tại port `5173`.
 
-Frontend gọi Backend tại `VITE_API_BASE_URL` (mặc định `http://localhost:8080/api/v1`). Để đổi địa chỉ, sao chép `.env.example` thành `.env.local` (đã được Git bỏ qua) rồi sửa giá trị; không đặt secret trong biến `VITE_` vì chúng nằm trong bundle công khai. Backend phải cho phép origin của Frontend qua `MAMXANH_CORS_ALLOWED_ORIGINS`.
+Frontend gọi Backend tại `VITE_API_BASE_URL`. Khi chạy trực tiếp, `/api/v1` được Vite proxy tới `http://localhost:8080`; trong Docker Compose, proxy dùng service `backend`. Để đổi base path, sao chép `.env.example` thành `.env.local` (đã được Git bỏ qua) rồi sửa giá trị; không đặt secret trong biến `VITE_` vì chúng nằm trong bundle công khai. Backend phải cho phép origin của Frontend qua `MAMXANH_CORS_ALLOWED_ORIGINS`.
 
 Các màn hình ngoài đăng ký/xác minh email vẫn dùng mock data và chạy độc lập được; việc mở được UI không chứng minh Backend hoặc database đã kết nối.
 
@@ -95,13 +95,15 @@ Luôn dùng `npm ci` khi cài mới từ `package-lock.json` hoặc khi dependen
 
 ### Cách 2 — Chạy bằng Docker
 
+Để chạy đồng bộ toàn bộ ứng dụng, dùng Docker Compose từ root repository theo hướng dẫn tại [Backend README](../mamxanh-backend/README.md#cách-2--chạy-bằng-docker). Cách chạy riêng Frontend bên dưới chỉ dành cho debug component; không thay thế kiểm thử tích hợp hoặc Docker Development gate. Quy tắc chung do [CONTRIBUTING.md](../../CONTRIBUTING.md#docker-development) quản lý.
+
 Đảm bảo Docker Desktop đã khởi động, sau đó mở PowerShell tại `app/mamxanh-frontend`:
 
 ```powershell
 docker build -t mamxanh-frontend-dev .
 
 docker run --rm --name mamxanh-frontend `
-  -p 5173:5173 `
+  -p 127.0.0.1:5173:5173 `
   --mount "type=bind,source=$($PWD.Path),target=/workspace" `
   --mount "type=volume,source=mamxanh-frontend-node-modules,target=/workspace/node_modules" `
   mamxanh-frontend-dev
@@ -111,11 +113,16 @@ Mở <http://localhost:5173>. Bind mount đồng bộ source vào container; nam
 
 Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`; volume dependency được giữ lại để lần chạy sau nhanh hơn.
 
-Khi `package.json` hoặc `package-lock.json` thay đổi, build lại image:
+Với stack Compose chuẩn, khi `package.json` hoặc `package-lock.json` thay đổi, mở PowerShell tại root repository rồi refresh đúng named volume theo lockfile bằng one-off command (xem [hướng dẫn chuẩn](../../CONTRIBUTING.md#docker-development)); dùng cùng `-p <project>` với stack đang chạy:
 
 ```powershell
-docker build --no-cache -t mamxanh-frontend-dev .
+$composeProject = 'mamxanh-dev'
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env run --rm --no-deps frontend npm ci
 ```
+
+Lệnh này không xóa hay reset SQL volume. Với lệnh standalone `docker run` ở trên, volume riêng tên `mamxanh-frontend-node-modules` không được Compose quản lý: dừng container, xóa riêng volume đó bằng `docker volume rm mamxanh-frontend-node-modules`, build lại image rồi chạy lại để khởi tạo dependency từ `package-lock.json` mới. Không dùng lệnh này để reset dữ liệu SQL của stack Compose.
+
+Để chạy cả Frontend, Backend và SQL Server trong Compose chuẩn, dùng phần **Docker Compose** trong [Backend README](../mamxanh-backend/README.md). Compose nạp seed mẫu sau Flyway và giữ dữ liệu qua `down`/`up`; reset riêng SQL volume được thực hiện bằng script có xác nhận.
 
 ### Kiểm tra trước khi bàn giao code
 
@@ -137,7 +144,7 @@ docker run --rm mamxanh-frontend-dev npm run build
 |---|---|---|
 | `npm` không được nhận diện | Chưa cài Node.js hoặc Terminal chưa nạp lại `PATH` | Cài Node.js 22 LTS rồi mở Terminal mới, hoặc dùng Docker. |
 | Port `5173` đã được sử dụng | Một Vite/container khác đang chạy | Dừng tiến trình cũ; không tự đổi port nếu nhóm đang dùng URL chuẩn `5173`. |
-| Dependency/native binary lỗi sau khi đổi máy | `node_modules` được sao chép từ máy hoặc hệ điều hành khác | Xóa `node_modules`, chạy lại `npm ci`; với Docker, giữ dependency trong named volume Linux. |
+| Dependency/native binary lỗi sau khi đổi máy | `node_modules` được sao chép từ máy hoặc hệ điều hành khác hoặc dependency volume cũ sau khi lockfile đổi | Cài bằng `npm ci`; với Compose dùng one-off `run --rm --no-deps frontend npm ci`; chỉ troubleshooting mới xóa riêng Frontend dependency volume. |
 | Docker không nhận lệnh | Docker Desktop chưa cài, chưa chạy hoặc chưa có trong `PATH` | Mở Docker Desktop và xác minh bằng `docker version`. |
 
 ---

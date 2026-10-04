@@ -1,56 +1,65 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.4.0
+> **Version:** v0.6.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-01
+> **Last Updated:** 2026-10-04
 > **Status:** Active
 
 # API Integration Guide
 
 ## 1. Mục đích và phạm vi
 
-Tài liệu này hướng dẫn Frontend, Backend và tester sử dụng contract API chung của Mâm Xanh. [OpenAPI contract](openapi.yaml) là Source of Truth cho path, HTTP method, parameter, request/response schema và status code chi tiết; tài liệu này không lặp lại toàn bộ contract.
+Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
 
-Phiên bản đầu tiên chỉ bao phủ vertical slice `Authentication & Account` của [FR-03](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-03). Các module khác được bổ sung khi FR tương ứng chuẩn bị triển khai và contract đã được Tech Lead review theo [CONTRIBUTING.md](../../CONTRIBUTING.md#ownership-ai-và-api-contract).
+Backend source trong branch gồm đăng ký, xác minh email và đăng nhập (FR-03), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), cùng hồ sơ dinh dưỡng tham khảo (FR-35). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML chỉ giữ các endpoint FR-03 chưa có trong runtime.
 
-Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 6 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
+Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 7 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
 ## 2. Contract và công cụ
 
-- Contract chi tiết: [`openapi.yaml`](openapi.yaml).
+- Runtime OpenAPI được sinh từ Controller/DTO/annotations bằng springdoc: `/v3/api-docs` (JSON) và `/v3/api-docs.yaml` (YAML).
+- Planned/reference contract trong migration: [`openapi.yaml`](openapi.yaml); các endpoint chỉ có tại đây chưa được xem là runtime API.
 - Base path: `/api/v1`.
-- Runtime document dự kiến từ Springdoc: `/v3/api-docs` và `/v3/api-docs.yaml`.
-- Swagger UI dự kiến: `/swagger-ui.html`.
+- Giao diện chính thức để team xem và thử API: `/scalar` trên cùng Backend host/port. Scalar tải generated contract từ `/v3/api-docs`.
+- Swagger UI vẫn được giữ như giao diện tương thích trong giai đoạn đầu; Scalar là UI được khuyến nghị cho team.
 - JSON property dùng `camelCase`.
 - Timestamp biểu diễn instant dùng ISO-8601 UTC; calendar date dùng `YYYY-MM-DD` và không timezone-shift.
 - Response lỗi dùng `application/problem+json` theo `ProblemDetail`, bổ sung `code` ổn định và `errors` cho lỗi theo field khi cần.
+
+Trong migration, generated OpenAPI là bằng chứng runtime cho endpoint đã implement. Endpoint chưa xuất hiện trong spec runtime nhưng còn trong YAML chỉ là planned contract, không chứng minh endpoint đã tồn tại hoặc hoạt động. Khi migration hoàn tất, generated OpenAPI sẽ là nguồn contract duy nhất; YAML thủ công sẽ không tiếp tục làm authority song song.
+
+Khi triển khai một endpoint đang có trong planned YAML, reviewer đối chiếu ý nghĩa contract của path/method, request/response, status và security với runtime spec và implementation. Docker Development hiện validate cấu trúc generated OpenAPI, không tự thực hiện semantic comparison giữa runtime JSON và YAML tham chiếu.
+
+### 2.1 Scalar dành cho thành viên và tester
+
+Mở `http://localhost:8080/scalar` khi Backend chạy local (bao gồm stack Docker Compose). Tại Scalar, thành viên có thể tìm operation, đọc request/response/schema/status/security, nhập Bearer/JWT token thủ công nếu generated runtime spec khai báo scheme phù hợp, và gửi request tới Backend. Không dùng JWT thật trong ảnh chụp, log hoặc tài liệu.
+
+Scalar là giao diện xem và manual testing; request thử bằng Scalar không thay thế automated regression, authorization, integration hoặc acceptance tests. CI kiểm tra HTTP route và nội dung HTML entry point `/scalar` nhưng không chứng minh JavaScript đã tải/render, OpenAPI đã hiển thị trong browser, hoặc một API request đã chạy thành công. Runtime UI chỉ hiển thị auth schemes do generated OpenAPI khai báo; Bearer/JWT acceptance cần scheme và protected runtime endpoint thật.
 
 ## 3. Authentication flow
 
 ### 3.1 Access token
 
-Đăng nhập email/password hoặc Google Login trả Stateless JWT Access Token trong JSON body (`AuthResponse`). Frontend gửi token ở các API được bảo vệ:
+Đăng nhập email/password trả Stateless JWT Access Token trong JSON body (`AuthResponse`). Frontend gửi token ở các API được bảo vệ:
 
 ```http
 Authorization: Bearer <access-token>
 ```
 
-Frontend không ghi access token vào log. Token ký HS256 bằng `MAMXANH_JWT_SECRET`, chứa `iss`, `sub` (`USER.user_id`), `role`, `iat`, `exp`; không có `sid` hay refresh token. Thời lượng đọc từ `mamxanh.auth.access-token-ttl` (cấu hình tạm `15m`, `expiresInSeconds = 900`); giá trị chính thức vẫn là thông số mở ở mục 6.
-
-Mỗi request mang Bearer token đều được Backend đọc lại `USER`: token sai chữ ký, sai issuer, hết hạn hoặc của tài khoản không còn tồn tại trả `401 UNAUTHENTICATED`; tài khoản đang `LOCKED` trả `403 ACCOUNT_LOCKED` ngay cả khi token còn hạn. Khi nhận `401`, Frontend xóa token và đưa người dùng về trang Đăng nhập.
+Frontend không ghi access token vào log. Login phát JWT ký HS256 bằng secret cấu hình qua `MAMXANH_JWT_SECRET`; token chứa `iss`, `sub` (`USER.user_id`), `role`, `iat`, `exp`, không có `sid` hoặc refresh token. TTL hiện cấu hình `15m` (`expiresInSeconds = 900`) và vẫn là giá trị tạm theo mục 7. Request mang Bearer token được Backend kiểm tra tài khoản hiện hành; token không hợp lệ/hết hạn hoặc user không còn tồn tại trả `401`, tài khoản bị quản trị khóa trả `403 ACCOUNT_LOCKED`. Frontend xóa phiên khi nhận các lỗi kết thúc phiên này.
 
 ### 3.2 Client-side Logout
 
 Hệ thống sử dụng Stateless JWT Access Token, không duy trì server-side session, cookie hay refresh token. Do đó không tồn tại endpoint `POST /auth/logout` trên máy chủ.
 
-Khi người dùng chọn Đăng xuất, Frontend thực hiện:
+Khi người dùng chọn Đăng xuất, Frontend xóa phiên cục bộ và điều hướng về Đăng nhập; không gọi Backend. Frontend thực hiện:
 1. Xóa Access Token khỏi nơi lưu trữ client.
 2. Xóa thông tin người dùng trong AuthContext / state.
 3. Điều hướng người dùng về trạng thái Guest hoặc màn hình Đăng nhập.
 
 ### 3.3 Candidate Follow-up: GET /auth/me
 
-Endpoint `GET /auth/me` (tra cứu thông tin người dùng hiện tại từ token) là một ứng viên follow-up tiềm năng nhưng chưa thuộc contract chính thức trong OpenAPI `openapi.yaml`. Việc thêm endpoint này sẽ được xem xét trong task riêng khi có yêu cầu cụ thể.
+Endpoint `GET /auth/me` (tra cứu thông tin người dùng hiện tại từ token) là một ứng viên follow-up tiềm năng nhưng chưa thuộc planned contract hoặc runtime API. Việc thêm endpoint này sẽ được xem xét trong task riêng khi có yêu cầu cụ thể.
 
 ## 4. Error convention
 
@@ -116,7 +125,17 @@ Mã `code` đã triển khai (Issue #5, #6). Các mã của Google Login và đ�
 - Đăng xuất xử lý hoàn toàn phía client (không gọi backend API).
 - Google ID token phải được Backend xác minh chữ ký, issuer, audience và expiry trước khi phát hành token.
 
-## 6. Thông số cần chốt trước khi triển khai phần phụ thuộc
+## 6. Nutrition Profile — FR-35
+
+Ba endpoint runtime trong generated OpenAPI thao tác hồ sơ của Member hiện tại; client không truyền `userId`. Chúng yêu cầu authenticated Member principal. Tích hợp JWT thật phụ thuộc authentication contract chung; không dùng fake authentication trong production. Kết quả không được lưu thành lịch sử theo dõi.
+
+- `GET /nutrition/profile` chỉ trả dữ liệu hồ sơ đã lưu; không trả BMI hoặc các chỉ tiêu.
+- `PUT /nutrition/profile` nhận câu trả lời phạm vi hiện tại cùng ngày sinh, giới tính sinh học, chiều cao, cân nặng, mức vận động, mục tiêu chung và đồng thuận. Backend từ chối lưu nếu ngày sinh không hợp lệ, tuổi dưới 18/trên 120 hoặc có điều kiện loại trừ. Câu trả lời loại trừ chỉ dùng để kiểm tra yêu cầu và không được lưu lên hồ sơ.
+- `POST /nutrition/profile/calculate` nhận xác nhận phạm vi hiện tại. Chỉ khi cả ba cờ đều `false` và hồ sơ lưu hợp lệ mới trả BMI cùng 8 thành phần dinh dưỡng (9 chỉ tiêu khi tính cả năng lượng). Phản hồi tính toán không được lưu và giao diện xóa kết quả khi đóng/tải lại trang hoặc thay đổi xác nhận.
+- Response hiển thị số dạng xấp xỉ. Đây là tham khảo, không phải chẩn đoán/điều trị/kê đơn, tư vấn y tế, chứng nhận hay giám sát liên tục.
+- Lỗi dùng `application/problem+json` và mã ổn định; trường hợp ngoài phạm vi trả `422 NUTRITION_PROFILE_OUT_OF_SCOPE`.
+
+## 7. Thông số cần chốt trước khi triển khai phần phụ thuộc
 
 | Quyết định | Trạng thái | Ảnh hưởng |
 |---|---|---|

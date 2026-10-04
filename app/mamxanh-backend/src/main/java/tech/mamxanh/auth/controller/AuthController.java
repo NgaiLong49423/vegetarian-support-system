@@ -19,7 +19,7 @@ import tech.mamxanh.auth.service.EmailVerificationService;
 import tech.mamxanh.auth.service.LoginService;
 import tech.mamxanh.auth.service.RegistrationService;
 
-/** FR-03 authentication endpoints (docs/api/openapi.yaml, tag Authentication). */
+/** FR-03 authentication endpoints; springdoc generates their runtime OpenAPI contract. */
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {

@@ -32,6 +32,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public record FieldErrorDetail(String field, String message) {
     }
 
+    @ExceptionHandler(ApiException.class)
+    ResponseEntity<Object> handleApiException(ApiException ex, WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getMessage());
+        problem.setTitle(ex.getStatus().getReasonPhrase());
+        problem.setInstance(URI.create(requestPath(request)));
+        problem.setProperty("code", ex.getCode());
+        return ResponseEntity.status(ex.getStatus()).body(problem);
+    }
+
     @ExceptionHandler(AppException.class)
     ResponseEntity<Object> handleAppException(AppException ex, WebRequest request) {
         ProblemDetail problem = problem(ex.errorCode(), ex.getMessage(), request);

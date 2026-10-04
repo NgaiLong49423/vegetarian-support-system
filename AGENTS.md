@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.16.0
+> **Version:** v3.20.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-03
 > **Status:** Active
 
 # Agent Entry Point
@@ -36,9 +36,11 @@ Do not recursively read the repository, all documentation, all skills, old logs 
 | Implement/change business behavior | Registered SRS root plus applicable authoritative FR/BR/NFR documents; target code/tests | Related SRS sections and supporting decomposition named by the document register |
 | Frontend | app/mamxanh-frontend/README.md; target feature | Relevant SRS and backend API contract; technology baseline for dependency decisions |
 | Backend | app/mamxanh-backend/README.md; docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md (mandatory package structure); target code/tests | Relevant SRS, API contract, database guide |
+| API-backed implementation/review | Generated Backend OpenAPI (`/v3/api-docs` or same-commit CI artifact) first; `docs/api/openapi.yaml` only for planned endpoints during migration | Then inspect Controller/DTO/source; report contract conflict instead of guessing |
 | Database | database/README.md; affected migrations/model | Relevant SRS and docs/diagrams/ERD/; empty SQL files are not an approved schema |
 | Technologies/integration | Technology-stack or technology-baseline document registered in docs/README.md | Relevant SRS; do not turn provider selection into an unapproved model/architecture |
 | Architecture or trust boundaries | docs/architecture/ARCHITECTURE.md | Relevant SRS and technology stack; do not invent packages, endpoints, tables, deployment topology or AI architecture |
+| Shared Docker development/integration | CONTRIBUTING.md#docker-development; root docker-compose.yml | Component README for environment details; use Compose as the shared FE/BE/SQL integration stack |
 | Testing or verification strategy | docs/testing/TEST-STRATEGY.md; relevant SRS requirements | Target code/tests and CONTRIBUTING.md completion/release rules; do not invent tests, commands or coverage thresholds |
 | Development, setup or API guide | docs/README.md creation triggers; actual scaffold/contract evidence | Create a maintained guide only in an authorized documentation task after its trigger is satisfied |
 | Git, review, release or teamwork | CONTRIBUTING.md | ADR-001 for branch/release rationale; ADR-002 for team responsibilities |
@@ -56,6 +58,7 @@ Skills live at `.agents/skills/<name>/SKILL.md`. For maintained local skills, th
 |---|---|---|
 | Frontend implementation/review/validation for Mâm Xanh | mamxanh-frontend-development | Project-local React/Vite/Tailwind guidance; preserves existing UI identity and does not replace `implement-fr-issue` |
 | Backend implementation/review/validation for Mâm Xanh | mamxanh-backend-development | Project-local Spring/Maven/JPA/Flyway/API guidance; preserves the modular monolith and does not replace `implement-fr-issue` |
+| Stateful PR review, delta re-review, rebuttal or main acceptance | pr-issue-review | Owns review evidence and finding lifecycle; delegates FE/BE mechanics and uses the review-pr-and-accept-issue workflow |
 | Write, review or restructure Markdown documentation | markdown-documentation | Owns shared documentation semantics, authority, traceability and source-of-truth rules; load only the references needed for the task |
 | Add/audit metadata or decide document versions | document-metadata-standardizer | Owns document metadata and versioning only; target maintained registered documents and preserve creation evidence |
 | Cross-document consistency audit | repo-template-doc-sync-auditor | Use this project's maintained register and adopted contract; ignore skill packages and generated outputs by default |
@@ -92,6 +95,7 @@ Live GitHub mutations require authorization for the current task. Authorization 
 | Situation | Workflow |
 |---|---|
 | Triển khai FR từ GitHub Issue đã được giao | `implement-fr-issue.md` |
+| Review PR/Issue qua nhiều vòng và nghiệm thu trên main | `review-pr-and-accept-issue.md` |
 | Requirements còn mơ hồ cần chốt | `requirement-finalization.md` |
 | Requirement semantics or current-scope membership changed | `requirement-change-reconciliation.md` |
 | Audit toàn docs rồi sửa finding rõ ràng | `documentation-audit-and-fix.md` |
@@ -103,6 +107,8 @@ Live GitHub mutations require authorization for the current task. Authorization 
 **Project overrides for every local skill:** the user request within the user's authorized scope, CONTRIBUTING.md for shared contribution rules, and this file for agent-specific behavior take precedence over generic skill examples. Repository governance and adopted project contracts define project-specific authority; a skill must not override them.
 
 No automatic saved audit report, log, summary or progress file, regardless of changed-file count. Return findings in the conversation by default.
+
+When the user requests the stateful PR review lifecycle, `review-pr-and-accept-issue` maintains exactly two ignored local files across rounds: `.agents/outputs/review-pr/PR-<number>/REVIEW-PLAN.md` and `ACCEPTANCE-REVIEW.md`. They contain Vietnamese human-facing review plan/state/evidence, each begins with an Agent-generated notice, and are not authoritative project progress. This is the only automatic report exception; explicit read-only/plan-only instructions still prohibit writes. Keep source checkouts in separate temporary/detached worktrees outside the report directory. Do not create fake GitHub links to local reports; return both paths in chat for the user to attach manually in a separate GitHub comment.
 
 Maintained project documentation follows the document lifecycle and registration rules in `docs/README.md`. Scratch and generated working artifacts belong under `.agents/outputs/`, using either the selected skill's declared structure or a task-specific subdirectory. These outputs are not maintained project documentation unless an authorized decision explicitly promotes and registers them. The tracked `.agents/outputs/bugs/` subtree is the approved exception for cross-task bug records and their metadata index; it remains agent output rather than product or requirement authority.
 
@@ -171,7 +177,7 @@ This policy does not authorize an unrelated runtime-configuration refactor, appl
 - GitHub Issues own implementation work tracking, progress and execution state. An Issue must not redefine the meaning of its source requirement.
 - When an SRS requirement changes semantically or enters/leaves the current registry, reconcile its linked Issue through `srs-to-github-issues`.
 - Historical baselines and completed Issues are evidence of prior state. Do not rewrite them merely to match current requirements.
-- **Engineering autonomy for coding agents:** Agents have engineering autonomy for local implementation choices within the assigned Issue: adding required columns or approved baseline foreign keys/constraints to existing tables via append-only Flyway migrations, adding auxiliary dependencies (test/helpers) with active usage, and designing non-breaking REST endpoints/DTOs synchronized in `docs/api/API.md` and `docs/api/openapi.yaml` within the same work item/PR before merge.
+- **Engineering autonomy for coding agents:** Agents have engineering autonomy for local implementation choices within the assigned Issue: adding required columns or approved baseline foreign keys/constraints to existing tables via append-only Flyway migrations, adding auxiliary dependencies (test/helpers) with active usage, and designing non-breaking REST endpoints/DTOs whose generated OpenAPI reflects the implementation. Update `docs/api/API.md` when shared integration conventions change; during migration, keep `docs/api/openapi.yaml` as planned/reference contract for unimplemented endpoints, not a second permanent authority.
 - Core technologies follow the `Confirmed` baseline in `docs/architecture/TECHNOLOGY-STACK.md`; agents must not swap them or hard-code technologies/versions not confirmed by authority documents.
 - Coding agents **must not** pause, ask for confirmation, or demand a Decision Issue / 3/5 team vote for these local implementation details.
 - Coding agents **must** surface a decision requirement only when crossing structural boundaries: new tables/entities, table removal/merge/split, new or changed relationships/cardinality, core technology stack swaps, breaking API changes, or changing SRS business meaning.
@@ -186,4 +192,6 @@ This policy does not authorize an unrelated runtime-configuration refactor, appl
 - When writing changelog entries, use the evidence procedure in the selected changelog skill. Do not infer PR numbers, commit status or dates from file names.
 - For integration, treat `develop` as the current integration baseline; an unmerged Draft/Open PR is not baseline unless an explicit dependency is confirmed. Before integration, follow [Develop integration baseline and PR synchronization](CONTRIBUTING.md#develop-integration-baseline), inspect both Git and semantic conflicts, and re-validate affected behavior after synchronization.
 - Before a PR into `develop`, follow [Required checks and technical enforcement](CONTRIBUTING.md#develop-required-checks). Preserve the approved Frontend 60/60/60/60 and Backend overall line 80% hard gates; never lower thresholds, exclude production source, or add meaningless tests to pass. Report failed/unverified CI or Sonar checks, and do not claim GitHub merge blocking is active without verifying its Ruleset. Kody/Gemini review remains advisory.
-- Finish with the changes, verification and unresolved questions in the conversation; do not create an additional report file.
+- For shared local integration testing, agents MUST use the root `docker-compose.yml` as the canonical stack for Frontend + Backend + SQL Server. Keep application Dockerfiles component-local; do not add duplicate standalone FE/BE CI gates when the Compose gate already builds and smoke-tests both. When using `docker compose -p <project>`, use that same project name for every stack lifecycle command, including `up`, `run`, `down` and named-volume reset. Normal `down` preserves SQL data; SQL-only reset removes only `<project>_sqlserver-data`, while `down --volumes` resets all named volumes. Follow [Docker development and integration testing](CONTRIBUTING.md#docker-development) and report when Docker execution is unavailable instead of claiming it passed.
+- For API-related implementation or review, agents MUST inspect generated OpenAPI before inferring an API contract: prefer the running `/v3/api-docs`, otherwise use the artifact/spec generated for the same branch commit. During migration, use `docs/api/openapi.yaml` only as planned contract for endpoints absent from runtime; planned does not mean implemented. If implementation and generated contract conflict, report the exact path/method/schema/status/security discrepancy and do not silently choose an authority. Scalar at Backend `/scalar` is the official human API reference and manual test UI; HTTP route smoke is not browser-rendering or API-execution evidence.
+- Finish with changes, verification and unresolved questions in the conversation. For the stateful PR review workflow only, its two declared local artifacts are the sole report-file exception; do not create another report.

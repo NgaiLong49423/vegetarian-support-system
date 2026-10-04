@@ -1,6 +1,6 @@
 import { apiClient } from '../lib/apiClient';
 
-// Contract: docs/api/openapi.yaml (tag Authentication).
+// Runtime API contract: generated OpenAPI from the Backend; manual YAML is planned reference only during migration.
 
 export type RegisterPayload = {
   displayName: string;

@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M02
 > **File:** `docs/requirements/use-cases/identity-and-access.md`
-> **Version:** v2.3.0
+> **Version:** v2.4.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-02
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -230,11 +230,12 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 <a id="uc-31-2"></a>
 ### UC-31.2 — Bỏ qua Onboarding
 - **Goal / Primary Actor:** Member tiếp tục dùng tính năng thường mà chưa khai báo sở thích.
-- **Trigger / Preconditions:** Questionnaire đang hiển thị.
-- **Main Flow:** Member chọn Skip; hệ thống đóng onboarding và giữ trạng thái hồ sơ chưa đủ.
+- **Trigger / Preconditions:** Questionnaire đang hiển thị với Member mới sau lần xác thực thành công đầu tiên.
+- **Main Flow:** Member chọn Skip; hệ thống ghi nhận đã đóng lời mời Onboarding, đóng questionnaire và giữ trạng thái hồ sơ chưa đủ. Các lần đăng nhập sau không tự hiển thị lại lời mời.
+- **Alternative:** Member chủ động mở mục sở thích ăn uống trong Cài đặt để hoàn tất hoặc cập nhật hồ sơ sau đó (UC-31.3).
 - **Alternative / Security:** Khi gọi AI cá nhân hóa, system gate vẫn chặn trước provider.
-- **Postconditions:** Tính năng thường không bị khóa; AI cá nhân hóa chưa mở.
-- **Traceability / Acceptance Coverage:** FR-31; BR-31; [AC-31.3–AC-31.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31).
+- **Postconditions:** Tính năng thường không bị khóa; AI cá nhân hóa chưa mở; không còn lời mời tự động ở các lần đăng nhập tiếp theo.
+- **Traceability / Acceptance Coverage:** FR-31; BR-30, BR-31; [AC-31.3–AC-31.6, AC-31.10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31).
 
 <a id="uc-31-3"></a>
 ### UC-31.3 — Xem và cập nhật hồ sơ sở thích
@@ -802,7 +803,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31).
 
 ##### A. Luồng Khảo sát Onboarding ban đầu (UC-31.1, UC-31.2)
 1. **Main Flow (Hoàn thành Onboarding):**
-   - Bước 1: Sau khi hoàn tất xác minh email hoặc đăng nhập Google lần đầu, hệ thống chuyển hướng Member tới màn hình Onboarding Questionnaire.
+   - Bước 1: Sau khi hoàn tất xác minh email hoặc đăng nhập Google lần đầu cho tài khoản Member mới, hệ thống chuyển hướng Member tới màn hình Onboarding Questionnaire. Tài khoản đã tồn tại không tự động bị hỏi.
    - Bước 2: Màn hình hiển thị lần lượt các câu hỏi:
      - Câu 1: Chọn 1 trong 4 loại ăn chay (bắt buộc).
      - Câu 2: Khai báo nguyên liệu cần tránh/dị ứng (chọn từ gợi ý hoặc nhập tự do, hoặc tích chọn "Tôi không có dị ứng/kiêng cử").
@@ -814,8 +815,9 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31).
    - Bước 6: Hệ thống phản hồi thành công; giao diện hiển thị thông báo hoàn tất và điều hướng Member vào trang Khám phá.
 2. **Alternative Flow — Bỏ qua Onboarding (UC-31.2):**
    - Bước 1: Tại màn hình Onboarding, Member nhấn nút "Bỏ qua" (Skip).
-   - Bước 2: Hệ thống ghi nhận trạng thái tài khoản chưa hoàn tất Onboarding và chuyển thẳng Member vào trang Khám phá.
-    - Bước 3: **Ranh giới chức năng khi bỏ qua Onboarding (BR-30):**
+   - Bước 2: Hệ thống ghi nhận Member đã đóng lời mời Onboarding nhưng hồ sơ chưa hoàn tất, rồi chuyển thẳng Member vào trang Khám phá.
+   - Bước 3: Ở các lần đăng nhập tiếp theo, hệ thống không tự hiển thị lại lời mời. Member có thể mở mục sở thích ăn uống trong Cài đặt để hoàn tất hoặc cập nhật hồ sơ theo UC-31.3.
+   - Bước 4: **Ranh giới chức năng khi bỏ qua Onboarding (BR-30):**
       - Member VẪN ĐƯỢC: Duyệt, tìm kiếm và lọc các bài công thức công khai; Đọc và gửi bình luận; Chuyên gia được tạo, chỉnh sửa và công khai Recipe Post của chính mình; Lưu bài công thức vào `Saved Recipes`; Tự thêm bài công thức vào `Meal Planner` 3 bữa theo cách thủ công; Sử dụng Chatbot AI hỏi đáp kiến thức chay chung (FR-51).
       - Member CHỈ BỊ CHẶN khi gọi các chức năng AI cá nhân hóa (gợi ý món ăn riêng, lập thực đơn tuần tự động).
 

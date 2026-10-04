@@ -1,5 +1,5 @@
 -- ============================================================================
--- Flyway Migration: V4__user_login_throttle.sql
+-- Flyway Migration: V6__user_login_throttle.sql
 -- Database Engine : Microsoft SQL Server
 -- Project         : Mâm Xanh — Vegetarian Support System (SWP391)
 -- Issue           : Refs #6 — FR-03-B password login and temporary login blocking

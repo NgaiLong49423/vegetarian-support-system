@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.11.0
+> **Version:** v0.15.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-01
+> **Last Updated:** 2026-10-04
 > **Status:** Active  
 
 # Backend Workspace
@@ -21,11 +21,12 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
   - **Data / Persistence:** `spring-boot-starter-data-jpa`, `mssql-jdbc` (SQL Server driver), Flyway migration (`spring-boot-starter-flyway`, `flyway-sqlserver`).
   - **Security:** `spring-boot-starter-security`, `spring-boot-starter-oauth2-resource-server` (xác thực JWT Bearer bằng Nimbus).
   - **Web / Validation:** `spring-boot-starter-webmvc`, `spring-boot-starter-validation`.
-  - **Documentation:** `springdoc-openapi-starter-webmvc-ui` (Swagger UI & OpenAPI 3).
+  - **Documentation:** `springdoc-openapi-starter-webmvc-ui` (generated OpenAPI 3 + Swagger UI compatibility) and Scalar API Reference static browser UI.
   - **Email:** `spring-boot-starter-mail` (Brevo SMTP, gửi bất đồng bộ).
   - **Productivity & Testing:** Lombok, starter test dependencies (`data-jpa-test`, `flyway-test`, `security-test`, `validation-test`, `webmvc-test`), Testcontainers SQL Server (`spring-boot-testcontainers`, `testcontainers-mssqlserver`).
 - Đã có luồng FR-03-A (Issue #5): `POST /api/v1/auth/register`, `/auth/email-verifications`, `/auth/email-verifications/resend`; lỗi trả `application/problem+json` có `code` ổn định; migration `V3__user_email_verification_token.sql`.
-- Đã có luồng FR-03-B (Issue #6): `POST /api/v1/auth/login` phát Stateless JWT (HS256), khóa đăng nhập tạm 10 phút sau 5 lần sai liên tiếp theo tài khoản (migration `V4__user_login_throttle.sql`), và mọi request mang Bearer token đều kiểm tra `USER.account_status`.
+- FR-35 bổ sung consent bằng migration `V4__nutrition_profile_consent.sql`; FR-18 bổ sung ingredient group và kiểm tra unit bằng migration `V5__ingredient_group_and_unit_validation.sql`.
+- Đã có luồng FR-03-B (Issue #6): `POST /api/v1/auth/login` phát Stateless JWT (HS256), khóa đăng nhập tạm 10 phút sau 5 lần sai liên tiếp theo tài khoản (migration `V6__user_login_throttle.sql`), và mọi request mang Bearer token đều kiểm tra `USER.account_status`.
 
 ### Lệnh chạy và kiểm tra xác minh
 
@@ -50,7 +51,7 @@ Chạy JUnit tests, package và coverage hard gate:
 
 JaCoCo chạy `prepare-agent`, `report` rồi `check`. Overall backend `BUNDLE / LINE / COVEREDRATIO` phải **≥0.80**; dưới 80% làm Maven trả exit code khác 0 và job CI `Backend` fail. Đây không phải new-code coverage. Reports: `target/site/jacoco/index.html` và `target/site/jacoco/jacoco.xml`. Không exclude production code để pass; thêm test có assertion phù hợp theo report. Sonar đọc XML sau khi reports được truyền qua artifact, không tạo coverage hoặc thay gate này. Coverage không thay thế Acceptance Criteria, authorization hoặc database integration evidence.
 
-`verify` chạy cả unit test và integration test. Integration test dùng Testcontainers để khởi động Microsoft SQL Server 2019 thật (`mcr.microsoft.com/mssql/server:2019-latest`), khởi động ứng dụng qua `MamXanhApplication.main`, chạy Flyway từ V1 và kiểm tra mapping Hibernate, nên **Docker Desktop phải đang chạy**; lần đầu cần tải image hơn 1 GB. Test dùng profile `test`, không cần file `.env` và không gửi email thật.
+`verify` chạy cả unit test và integration test. Integration test dùng Testcontainers để khởi động cùng SQL Server container image được pin với Docker Compose (tag `2019-CU32-GDR11-ubuntu-20.04`, repository manifest digest lấy từ MCR), khởi động ứng dụng qua `MamXanhApplication.main`, chạy Flyway từ V1 và kiểm tra mapping Hibernate, nên **Docker Desktop phải đang chạy**; lần đầu cần tải image dung lượng lớn. Test dùng profile `test`, không cần file `.env` và không gửi email thật. Khi thay image/digest, phải chạy integration tests thật; compile-only không xác minh DockerImageName, SQL Server startup hay Flyway.
 
 ## Yêu cầu để chạy ứng dụng
 
@@ -59,7 +60,7 @@ Chọn một trong hai môi trường:
 - **Chạy trực tiếp:** JDK 21. Maven không cần cài riêng vì repository có Maven Wrapper.
 - **Chạy bằng Docker:** Docker Desktop đang hoạt động. Không cần cài Java/Maven trực tiếp trên máy.
 
-Cả hai cách đều cần một Microsoft SQL Server có database `MamXanhDB`. Flyway migration `V1__baseline_schema.sql` hiện tạo baseline schema từ database rỗng; Backend vẫn không thể khởi động đầy đủ nếu SQL Server chưa sẵn sàng hoặc credential/migration validation không hợp lệ.
+Cả hai cách đều cần một Microsoft SQL Server có database `MamXanhDB`. Flyway migration `V1__baseline_schema.sql` hiện tạo baseline schema từ database rỗng; Backend vẫn không thể khởi động đầy đủ nếu SQL Server chưa sẵn sàng hoặc credential/migration validation không hợp lệ. Khi chạy toàn hệ thống bằng Docker Compose ở thư mục gốc, Compose tự tạo database trước khi Backend chạy Flyway.
 
 Không commit username, password, connection string thật hoặc file cấu hình local chứa credential.
 
@@ -129,9 +130,42 @@ Sau lần tải dependency đầu tiên, các lần mở dự án tiếp theo ch
 
 IntelliJ vẫn sử dụng cùng cấu hình Spring profile `local`; nút Run không thay thế yêu cầu SQL Server phải sẵn sàng.
 
-## Cách 2 — Chạy bằng Docker
+## Cách 2 — Chạy toàn hệ thống bằng Docker Compose
 
-Dockerfile chỉ đóng gói Backend; SQL Server vẫn chạy bên ngoài container theo quyết định hiện tại.
+Để chạy Frontend, Backend và SQL Server theo một cấu hình dùng chung, ưu tiên Docker Compose ở repository root. Hướng dẫn dưới đây vẫn hữu ích khi chỉ cần chạy riêng Backend.
+
+Tại root repository, nếu chưa có file local thì sao chép `app/mamxanh-backend/.env.example` thành `app/mamxanh-backend/.env`, giữ nguyên file `.env` đang có, rồi đặt một mật khẩu SQL Server local mạnh cho `MSSQL_SA_PASSWORD`:
+
+```powershell
+if (-not (Test-Path app/mamxanh-backend/.env)) {
+    Copy-Item app/mamxanh-backend/.env.example app/mamxanh-backend/.env
+}
+```
+
+Khởi động stack bằng:
+
+```powershell
+$composeProject = 'mamxanh-dev'
+docker compose -p $composeProject --env-file app/mamxanh-backend/.env up --build --detach --wait --wait-timeout 600
+```
+
+Lần khởi động đầu, SQL Server tạo `MamXanhDB`, Backend chạy Flyway, sau đó service `sample-data` nạp fixture mẫu từ `database/sample-data.sql` trước khi Frontend sẵn sàng. Script seed có thể chạy lại an toàn; `down` rồi `up` giữ SQL volume và dữ liệu hiện có.
+
+Mở Frontend tại <http://localhost:5173>; Scalar API Reference chính thức tại <http://localhost:8080/scalar>; generated OpenAPI JSON tại <http://localhost:8080/v3/api-docs>. Các port chỉ bind vào loopback của máy local. Scalar tải JS asset đã pin từ jsDelivr nên browser cần truy cập CDN; spec được tải cùng origin Backend. Dừng bằng `docker compose -p $composeProject --env-file app/mamxanh-backend/.env down`; lệnh này giữ database và dependency volume. Sửa `MSSQL_SA_PASSWORD` trong `.env` không tự đổi credential đã khởi tạo trong SQL volume.
+
+Để reset riêng database development, chạy script có xác nhận riêng. Script chỉ xóa SQL volume, sau đó Compose khởi động lại SQL Server, áp dụng Flyway và nạp lại fixture; Frontend dependency volume vẫn được giữ:
+
+```powershell
+./scripts/reset-docker-db.ps1
+```
+
+Lệnh xóa volume SQL sẽ xóa toàn bộ database local. `docker compose -p $composeProject --env-file app/mamxanh-backend/.env down --volumes` là full reset, xóa cả SQL data lẫn Frontend dependency volume; chỉ dùng nếu chấp nhận mất tất cả named-volume data. Khi dùng project override, giữ nguyên cùng tên ở mọi lệnh Compose và dùng prefix đó cho volume tương ứng.
+
+Trong Scalar, tìm endpoint, xem schema/status/auth, nhập Bearer/JWT token thủ công khi generated runtime spec khai báo scheme và endpoint được bảo vệ, rồi gửi request tới Backend. CI chỉ xác nhận HTTP route/HTML shell `/scalar`; để nghiệm thu browser, mở trang và xác minh Scalar JS render đúng endpoint từ runtime spec, sau đó thử request phù hợp. Không ghi token thật vào log, ảnh chụp hoặc tài liệu; manual thử bằng Scalar không thay automated regression tests.
+
+Để kiểm tra trạng thái, endpoint smoke, cấu hình local và quy tắc CI/PR, xem [Docker development và kiểm thử tích hợp](../../CONTRIBUTING.md#docker-development). Không commit `.env` hoặc chia sẻ mật khẩu. `Docker Development` trong GitHub Actions build và smoke-test stack trên mỗi PR hướng vào `develop` hoặc `main`; job cũng capture/validate/upload generated OpenAPI. Ruleset `protect-develop` được tài liệu branch ghi nhận yêu cầu check này trước merge vào `develop`.
+
+Các lệnh Dockerfile bên dưới chỉ chạy Backend độc lập để debug; chúng không phải cách test tích hợp chuẩn và không thay thế Docker Compose chung. Dockerfile chỉ đóng gói Backend; SQL Server vẫn chạy bên ngoài container trong cách chạy độc lập này.
 
 ### 1. Build image
 
@@ -155,7 +189,7 @@ Không ghi giá trị thật vào README, Dockerfile hoặc source control.
 
 ```powershell
 docker run --rm --name mamxanh-backend `
-  -p 8080:8080 `
+  -p 127.0.0.1:8080:8080 `
   --env-file .env `
   mamxanh-backend-dev
 ```
