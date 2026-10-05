@@ -12,6 +12,7 @@
 --                   + V4__nutrition_profile_consent.sql
 --                   + V5__ingredient_group_and_unit_validation.sql
 --                   + V6__user_login_throttle.sql
+--                   + V7__user_onboarding_invitation.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -180,6 +181,8 @@ CREATE TABLE [USER] (
     failed_login_attempts          INT            NOT NULL
         CONSTRAINT DF_USER_failed_login_attempts DEFAULT 0,
     login_blocked_until            DATETIME2(7)   NULL,
+    -- V7 (Issue #36): when the FR-31 Onboarding invitation was shown; NULL = not shown yet (AC-31.10)
+    onboarding_invited_at          DATETIME2(7)   NULL,
 
     CONSTRAINT PK_USER PRIMARY KEY (user_id),
     CONSTRAINT UQ_USER_email UNIQUE (email),
