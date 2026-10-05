@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.13.0
+> **Version:** v1.14.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-04
+> **Last Updated:** 2026-10-05
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -22,6 +22,7 @@ Bản demo cho giảng viên: [Mâm Xanh trên Vercel](https://mamxanh-frontend.
 - **Đăng nhập bằng email/mật khẩu đã gọi Backend thật (Issue #6):** gửi `POST /auth/login`; thành công thì lưu phiên (access token, thời điểm hết hạn, `account`) trong `sessionStorage` key `mamxanh.auth` của tab hiện tại và hiển thị tên tài khoản thật ở header. Lỗi hiển thị theo `code`: sai email/mật khẩu (thông báo trung tính), email chưa xác minh (kèm liên kết gửi lại email), tài khoản bị khóa, và khóa đăng nhập tạm 10 phút (số phút lấy từ `Retry-After`). Mật khẩu luôn được xóa khỏi state sau mỗi lần gửi.
 - Nơi lưu token nằm trong một hàm duy nhất (`src/lib/authStorage.ts`). Axios tự gắn `Authorization: Bearer` cho request cần đăng nhập (không gắn cho `/auth/*`); Backend trả `401` hoặc `403 ACCOUNT_LOCKED` thì Frontend xóa phiên và đưa về trang Đăng nhập. Phiên tự kết thúc khi token hết hạn (không có refresh token), bị xóa khi tab đóng và không đồng bộ giữa các tab.
 - Docker Development chạy thêm kiểm thử Playwright tích hợp: trình duyệt đăng nhập qua Frontend/Backend đang chạy và truy vấn SQL Server Compose để xác minh bộ đếm login sai, khóa lần thứ năm và reset sau khi hết hạn.
+- **Onboarding và Sở thích ăn uống đã gọi Backend thật (Issue #36):** sau khi đăng nhập, Frontend gọi `POST /nutrition/dietary-preferences/onboarding/invitation`; chỉ khi Backend trả `show = true` (lần đầu của tài khoản mới chưa trả lời) Member mới được chuyển tới `/khoi-tao-so-thich` để chọn loại ăn chay, nguyên liệu cần tránh, món không thích (hoặc xác nhận "Không có") và sở thích tùy chọn. Rời trang mà chưa trả lời hoặc bấm "Bỏ qua" (ghi nhận `SKIPPED`) thì các lần đăng nhập sau không hỏi lại; trang vẫn mở thủ công được. Trang `/ho-so/so-thich-an-uong` (menu "Sở thích ăn uống") cho xem, cập nhật hồ sơ và cho biết còn thiếu thông tin nào trước khi dùng AI cá nhân hóa. Gợi ý tên lấy từ danh mục nguyên liệu chuẩn đang hoạt động.
 - **Đăng xuất** chỉ xóa token và trạng thái đăng nhập trên thiết bị, không gọi Backend (AC-03.13). Google Login, quên và đặt lại mật khẩu vẫn là biểu mẫu demo cho tới Issue #8, #9.
 - Tại trang đăng nhập, chọn **Khám phá tài khoản demo** để xem menu Lan Anh/FREE; chọn **Thoát tài khoản demo** để quay lại Guest. Đây chỉ là chuyển chế độ xem trong bộ nhớ, không tạo phiên, không lưu token và không phải authentication/authorization; chế độ này tách riêng với phiên đăng nhập thật trong `AuthContext`.
 - Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
@@ -275,7 +276,7 @@ npx playwright install chromium
 
 `npm run test:e2e` tự gọi `npm run build`, sau đó Playwright khởi động Vite preview tại `http://127.0.0.1:4173`, chờ URL sẵn sàng rồi chạy Chromium. Port được giữ cố định và không tái sử dụng một server có sẵn để tránh kiểm thử nhầm ứng dụng.
 
-Để chạy E2E cùng coverage hard gate, dùng `npm run test:e2e:coverage`. Playwright + Istanbul/NYC làm sạch coverage cũ, tạo build instrumentation riêng, chạy cùng suite E2E rồi xuất text summary, HTML và `coverage/lcov.info`. **Lines ≥60%, Statements ≥60%, Functions ≥60%, Branches ≥60%**; bất kỳ metric nào dưới 60% làm command trả exit code khác 0 và job CI `Frontend` fail. Không hạ threshold theo baseline, exclude production source hoặc thêm test vô nghĩa để pass. Cài Chromium lần đầu bằng `npx playwright install chromium`; GitHub Actions cài thêm Linux dependencies.
+Để chạy E2E cùng coverage hard gate, dùng `npm run test:e2e:coverage`. Playwright + Istanbul/NYC làm sạch coverage cũ, tạo build instrumentation riêng, chạy cùng suite E2E rồi xuất text summary, HTML và `coverage/lcov.info`. **Lines ≥80%, Statements ≥80%, Functions ≥80%, Branches ≥80%**; bất kỳ metric nào dưới 80% làm command trả exit code khác 0 và job CI `Frontend` fail. Không hạ threshold theo baseline, exclude production source hoặc thêm test vô nghĩa để pass. Cài Chromium lần đầu bằng `npx playwright install chromium`; GitHub Actions cài thêm Linux dependencies.
 
 Job `Sonar` chỉ đọc LCOV/JaCoCo XML sau khi tải artifacts từ Frontend/Backend; Sonar không tạo coverage. Policy yêu cầu các required checks pass trước merge vào `develop`, còn technical merge block phải được cấu hình ở [Ruleset](../../CONTRIBUTING.md#develop-required-checks). Tests hiện tại kiểm chứng demo UI/browser behavior, không chứng minh Backend/database E2E.
 

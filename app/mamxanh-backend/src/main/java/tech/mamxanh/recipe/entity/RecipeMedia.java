@@ -16,7 +16,7 @@ import lombok.Setter;
  * Stores Blob URL, MIME type, display order, and cover flag.
  */
 @Entity
-@Table(name = "RECIPE_MEDIA")
+@Table(name = "\"RECIPE_MEDIA\"")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

@@ -46,7 +46,9 @@ test('real browser login updates throttle data in the Compose SQL Server', async
   expect(registration.status()).toBe(201);
 
   const literal = email.replaceAll("'", "''");
-  sql(`UPDATE [USER] SET email_verified = 1 WHERE email = '${literal}'`);
+  // This test covers the login throttle (NFR-07); record the FR-31 Onboarding invitation as already shown so a
+  // successful sign-in lands on the home page instead of the questionnaire offered once to new Members.
+  sql(`UPDATE [USER] SET email_verified = 1, onboarding_invited_at = SYSUTCDATETIME() WHERE email = '${literal}'`);
   expect(accountState()).toMatchObject({ attempts: 0, status: 'ACTIVE', blockedUntil: 'NULL' });
 
   await page.goto('/dang-nhap');

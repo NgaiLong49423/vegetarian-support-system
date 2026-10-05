@@ -99,7 +99,7 @@ Coverage giúp phát hiện code chưa được thực thi, nhưng tỷ lệ cao
 
 | Layer | Command | Hard gate | Reports |
 |---|---|---|---|
-| Frontend | `npm run test:e2e:coverage` | Playwright + Istanbul/NYC: Lines, Statements, Functions và Branches đều **≥60%**; một metric dưới 60% làm command và job `Frontend` fail | `coverage/lcov.info`, HTML, text summary |
+| Frontend | `npm run test:e2e:coverage` | Playwright + Istanbul/NYC: Lines, Statements, Functions và Branches đều **≥80%**; một metric dưới 80% làm command và job `Frontend` fail | `coverage/lcov.info`, HTML, text summary |
 | Backend | `./mvnw clean verify` hoặc `.\mvnw.cmd clean verify` | JUnit/Maven + JaCoCo: overall `BUNDLE / LINE / COVEREDRATIO ≥0.80`; dưới 80% làm build và job `Backend` fail | `target/site/jacoco/jacoco.xml`, HTML |
 
 Backend gate gồm `prepare-agent`, `report`, `check`; đây là overall coverage của source hiện tại, không phải new-code coverage. Frontend `npm run test:e2e` chạy browser suite không đo coverage; command coverage chạy cùng suite với instrumentation riêng. Không exclude production source hoặc thêm test vô nghĩa để pass. Khi thấp hơn gate, đọc report và bổ sung test cho hành vi thực tế; CI được phép fail cho tới khi đạt policy.
