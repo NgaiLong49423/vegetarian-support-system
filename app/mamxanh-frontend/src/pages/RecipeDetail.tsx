@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeftRight,
@@ -122,9 +122,11 @@ function RecipeDefaultArtwork({ vegetarianType, label }: { vegetarianType: Recip
 function MockRecipeDetail() {
   const { slug } = useParams();
   const recipe = recipes.find((r) => r.slug === slug) ?? recipes[0];
-  const mediaList = recipe.media && recipe.media.length > 0
-    ? recipe.media
-    : [{ url: recipe.image, isCover: true, displayOrder: 1 }];
+  const mediaList = useMemo(() => {
+    return recipe.media && recipe.media.length > 0
+      ? recipe.media
+      : [{ url: recipe.image, isCover: true, displayOrder: 1 }];
+  }, [recipe.id, recipe.image, recipe.media]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [saved, setSaved] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
