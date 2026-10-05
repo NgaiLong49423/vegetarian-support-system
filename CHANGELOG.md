@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-05 — Enforce Strict Coverage Gates for Every FE/BE Metric
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 517ae10.
 
 **Scope:** Make every frontend and backend coverage counter a strict, visible CI gate and preserve reports when coverage fails.
 
@@ -28,6 +28,25 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Correct stale coverage policy references that described a 60% Frontend threshold or a Backend line-only gate.
+
+## 2026-10-05 — Configure IntelliJ Development Runs and Docker SQL Port
+
+**Status:** Committed — 2e21e79.
+
+**Scope:** Support running the root Compose development stack from IntelliJ alongside a Windows SQL Server installation, without committing local credentials.
+
+### Added
+
+- Add shared IntelliJ Run configurations for Backend, Frontend, their local compound run, and the complete Docker Compose stack using the Backend env file and image builds.
+- Record BUG-011: the observed IntelliJ Services Stop command omits the env file; document the verified Compose stop workaround.
+
+### Changed
+
+- Publish Docker SQL Server on loopback port 1434 while keeping its internal port 1433; document the connection port for a Backend running directly on the host.
+
+### Fixed
+
+- Avoid the Docker SQL startup port conflict with Windows SQL Server listening on port 1433. Local verification confirmed healthy SQL, Backend and Frontend, successful initialization services, HTTP 200 at the Frontend and generated OpenAPI endpoints, and preserved SQL volume after stopping with the env file.
 
 ## 2026-10-05 — Implement Onboarding and the Personalized AI Eligibility Gate (FR-31, Issue #36) ([PR #92](https://github.com/NgaiLong49423/vegetarian-support-system/pull/92))
 
@@ -74,6 +93,26 @@ None.
 ### Fixed
 
 None.
+
+## 2026-10-04 — Recipe Post Frontend Management (Issue #47)
+
+**Status:** Committed — `c144b85`.
+
+**Scope:** Add the Frontend experience for Experts to edit and delete their own public Recipe Posts from the expert profile.
+
+### Added
+
+- Add the recipe API client, expert profile recipe list, edit form, separate delete action, confirmation dialog and success feedback.
+- Add Playwright scenarios for the edit and delete flows using mocked API responses.
+
+### Changed
+
+- Return to the expert profile after saving and remove a deleted recipe from that list.
+- Keep recipe management actions on the expert profile instead of the public recipe detail page.
+
+### Fixed
+
+- None.
 
 ## 2026-10-04 — Prepare Recipe Ingredient Entry for Issue #25
 
@@ -195,6 +234,26 @@ None.
 ### Fixed
 
 - Keep demo role switching limited to demo sessions and clear demo state when a real user signs in or leaves the account.
+
+## 2026-10-03 — Recipe Post Backend API and Data Handling (Issue #47)
+
+**Status:** Committed — `06e7b0d`.
+
+**Scope:** Add the Backend API and persistence behavior needed to edit and soft-delete an Expert's own public Recipe Post.
+
+### Added
+
+- Add public Recipe Post detail/search and reference-data APIs, plus author-only edit and soft-delete endpoints.
+- Add Backend service tests for ownership, direct publication after update, hidden recipes, soft deletion and validation.
+
+### Changed
+
+- Resolve the active Expert from the authenticated server principal; do not accept an author ID from the client.
+- Block authors from opening or editing a recipe hidden by an Administrator.
+
+### Fixed
+
+- Preserve Recipe Post rows as tombstones so existing Meal Plan foreign-key references remain intact and exclude deleted recipes from public search.
 
 ## 2026-10-03 — Fix Docker Sample Data Seed ([PR #79](https://github.com/NgaiLong49423/vegetarian-support-system/pull/79))
 

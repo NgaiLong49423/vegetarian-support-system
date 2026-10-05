@@ -7,6 +7,7 @@ import { Badge, Button, Card, EmptyState } from '../components/ui';
 import { useDemoAccount } from '../components/DemoAccount';
 import { currentUser, demoAiPlan, recipes } from '../data/mockData';
 import { getSavedRecipeSlugs, subscribeSaved } from '../lib/savedRecipes';
+import { useAuth } from '../components/AuthContext';
 
 const tabs = ['Công thức đã lưu', 'Món yêu thích', 'Sở thích ăn chay', 'Tùy chọn'] as const;
 type Tab = (typeof tabs)[number];
@@ -27,6 +28,7 @@ const toggles = [
 
 export function Profile() {
   const { role, applicationStatus } = useDemoAccount();
+  const { account } = useAuth();
   const [tab, setTab] = useState<Tab>('Công thức đã lưu');
   const [savedSlugs, setSavedSlugs] = useState(getSavedRecipeSlugs);
   const favorites = recipes.slice(2, 5);
@@ -60,6 +62,11 @@ export function Profile() {
             {role === 'EXPERT' && (
               <Link to="/dang-cong-thuc" className="inline-flex items-center gap-1.5 rounded-xl bg-leaf-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-leaf-700">
                 <Plus className="h-4 w-4" /> Đăng công thức
+              </Link>
+            )}
+            {account?.role === 'EXPERT' && (
+              <Link to="/ho-so/chuyen-gia-demo" className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50">
+                Bài công thức của tôi
               </Link>
             )}
             {role === 'ADMIN' && (

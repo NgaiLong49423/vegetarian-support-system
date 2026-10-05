@@ -122,4 +122,36 @@ BEGIN
     VALUES (@spinach_recipe, @water_spinach, @gram, 300), (@spinach_recipe, @garlic, @clove, 3);
 END;
 
+-- Issue #47: a second account's meal slot references the demo recipe. The account has no
+-- password and cannot sign in; the fixture only provides repeatable database/API test data.
+IF NOT EXISTS (SELECT 1 FROM [USER] WHERE email = 'demo-customer@mamxanh.local')
+BEGIN
+    INSERT INTO [USER] (email, password_hash, display_name, role, email_verified)
+    VALUES ('demo-customer@mamxanh.local', NULL, N'Khách hàng mẫu', 'CUSTOMER', 0);
+END;
+
+DECLARE @customer_id BIGINT;
+DECLARE @sample_week_start DATE = CONVERT(DATE, SYSUTCDATETIME());
+DECLARE @sample_meal_plan_id BIGINT;
+SELECT @customer_id = user_id FROM [USER] WHERE email = 'demo-customer@mamxanh.local';
+SET @sample_week_start = DATEADD(DAY,
+    -(DATEDIFF(DAY, CONVERT(DATE, '19000101', 112), @sample_week_start) % 7), @sample_week_start);
+
+IF NOT EXISTS (SELECT 1 FROM [MEAL_PLAN] WHERE user_id = @customer_id AND week_start_date = @sample_week_start)
+BEGIN
+    INSERT INTO [MEAL_PLAN] (user_id, week_start_date) VALUES (@customer_id, @sample_week_start);
+END;
+SELECT @sample_meal_plan_id = meal_plan_id FROM [MEAL_PLAN]
+WHERE user_id = @customer_id AND week_start_date = @sample_week_start;
+
+IF NOT EXISTS (
+    SELECT 1 FROM [MEAL_PLAN_ENTRY]
+    WHERE meal_plan_id = @sample_meal_plan_id AND recipe_id = @tofu_recipe
+        AND meal_date = DATEADD(DAY, 1, @sample_week_start) AND meal_type = 'LUNCH'
+)
+BEGIN
+    INSERT INTO [MEAL_PLAN_ENTRY] (meal_plan_id, recipe_id, meal_date, meal_type, planned_servings)
+    VALUES (@sample_meal_plan_id, @tofu_recipe, DATEADD(DAY, 1, @sample_week_start), 'LUNCH', 2);
+END;
+
 COMMIT TRANSACTION;
