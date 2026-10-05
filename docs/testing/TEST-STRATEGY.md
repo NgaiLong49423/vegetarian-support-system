@@ -1,8 +1,8 @@
 > **Document:** Test Strategy  
 > **File:** `docs/testing/TEST-STRATEGY.md`  
-> **Version:** v1.13.0
+> **Version:** v1.14.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-05
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/ARCHITECTURE.md`, `CONTRIBUTING.md`
 
@@ -99,10 +99,10 @@ Coverage giúp phát hiện code chưa được thực thi, nhưng tỷ lệ cao
 
 | Layer | Command | Hard gate | Reports |
 |---|---|---|---|
-| Frontend | `npm run test:e2e:coverage` | Playwright + Istanbul/NYC: Lines, Statements, Functions và Branches đều **≥80%**; một metric dưới 80% làm command và job `Frontend` fail | `coverage/lcov.info`, HTML, text summary |
-| Backend | `./mvnw clean verify` hoặc `.\mvnw.cmd clean verify` | JUnit/Maven + JaCoCo: overall `BUNDLE / LINE / COVEREDRATIO ≥0.80`; dưới 80% làm build và job `Backend` fail | `target/site/jacoco/jacoco.xml`, HTML |
+| Frontend | `npm run test:e2e:coverage` | Playwright + Istanbul/NYC: Lines, Statements, Functions và Branches đều **>80%**; đúng 80% hoặc thấp hơn ở một metric làm command và job `Frontend` fail | `coverage/lcov.info`, HTML, JSON và strict Markdown summary |
+| Backend | `./mvnw clean verify` hoặc `.\mvnw.cmd clean verify` | JUnit/Maven + JaCoCo: `BUNDLE` Lines, Branches, Methods và Instructions đều **>80%**; đúng 80% hoặc thấp hơn ở một metric làm build và job `Backend` fail. JaCoCo không đo Statements. | `target/site/jacoco/jacoco.xml`, HTML, strict Markdown summary |
 
-Backend gate gồm `prepare-agent`, `report`, `check`; đây là overall coverage của source hiện tại, không phải new-code coverage. Frontend `npm run test:e2e` chạy browser suite không đo coverage; command coverage chạy cùng suite với instrumentation riêng. Không exclude production source hoặc thêm test vô nghĩa để pass. Khi thấp hơn gate, đọc report và bổ sung test cho hành vi thực tế; CI được phép fail cho tới khi đạt policy.
+Backend gate gồm `prepare-agent`, `report`, JaCoCo limits và checker Java; checker so sánh covered/total bằng số nguyên chính xác (`covered × 5 > total × 4`), fail nếu report/counter thiếu, sai định dạng hoặc rỗng, và ghi summary từng metric. Đây là overall coverage của source hiện tại, không phải new-code coverage. Frontend `npm run test:e2e` chạy browser suite không đo coverage; command coverage chạy cùng suite với instrumentation riêng và strict checker Node. FE/BE summary và report artifacts được thu thập khi gate fail nếu report đã được sinh; browser test failures vẫn làm command fail. Không exclude production source hoặc thêm test vô nghĩa để pass. Khi thấp hơn gate, đọc report và bổ sung test cho hành vi thực tế; CI được phép fail cho tới khi đạt policy.
 
 Sonar không tạo coverage. Job `Sonar` đọc LCOV/JaCoCo XML qua artifacts sau hai jobs kiểm thử, rồi chạy static analysis cho bugs, vulnerabilities, maintainability, duplication, coverage visualization và Quality Gate. Scan chờ Quality Gate; lỗi scan, thiếu report, timeout hoặc gate fail làm check fail. Quality Gate trên Sonar không thay hai coverage gates ở trên. Các điều kiện server-side vẫn cần xác minh trên Sonar dashboard.
 
