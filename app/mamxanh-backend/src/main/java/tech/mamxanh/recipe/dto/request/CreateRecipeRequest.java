@@ -12,9 +12,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateRecipeRequest(
-        @NotBlank String title,
+        @NotBlank @Size(min = 3, max = 120) String title,
         String description,
-        @NotBlank String instructions,
+        @NotBlank @Size(min = 10, max = 5000) String instructions,
         @NotNull DishCategory dishCategory,
         @NotNull VegetarianType vegetarianType,
         @NotNull Difficulty difficulty,

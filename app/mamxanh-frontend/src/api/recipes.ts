@@ -45,6 +45,33 @@ export interface CreateRecipeResponse {
   publishedAt: string;
 }
 
+export interface RecipeDetail {
+  recipeId: number;
+  title: string;
+  description: string | null;
+  instructions: string;
+  dishCategory: string;
+  dishCategoryLabel: string;
+  vegetarianType: 'VEGAN' | 'LACTO' | 'OVO' | 'LACTO_OVO';
+  vegetarianTypeLabel: string;
+  difficulty: string;
+  difficultyLabel: string;
+  servings: number;
+  prepTimeMinutes: number;
+  cookTimeMinutes: number;
+  youtubeUrl: string | null;
+  publishedAt: string;
+  ingredients: Array<{
+    ingredientId: number;
+    name: string;
+    quantity: number;
+    unitId: number;
+    unitCode: string;
+    unitName: string;
+  }>;
+  media: Array<{ blobUrl: string; mimeType: string; displayOrder: number; cover: boolean }>;
+}
+
 async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
   try {
     return (await operation()).data;
@@ -60,5 +87,8 @@ export const recipesApi = {
   ),
   publish: (payload: CreateRecipeRequest) => request(
     () => apiClient.post<CreateRecipeResponse>('/recipes', payload),
+  ),
+  getPublished: (recipeId: number) => request(
+    () => apiClient.get<RecipeDetail>(`/recipes/${recipeId}`),
   ),
 };

@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +15,7 @@ import tech.mamxanh.recipe.dto.request.CreateRecipeRequest;
 import tech.mamxanh.recipe.dto.response.CreateRecipeResponse;
 import tech.mamxanh.recipe.dto.response.IngredientOptionResponse;
 import tech.mamxanh.recipe.dto.response.RecipeFormOptionsResponse;
+import tech.mamxanh.recipe.dto.response.RecipeDetailResponse;
 import tech.mamxanh.recipe.service.RecipeService;
 import jakarta.validation.Valid;
 
@@ -30,6 +32,11 @@ public class RecipeController {
     @GetMapping("/ingredient-options")
     public List<IngredientOptionResponse> ingredientOptions(@RequestParam(defaultValue = "") String query) {
         return service.findIngredients(query);
+    }
+
+    @GetMapping("/{recipeId}")
+    public RecipeDetailResponse recipeDetail(@PathVariable Long recipeId) {
+        return service.getPublishedRecipe(recipeId);
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)

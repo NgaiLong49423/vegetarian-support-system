@@ -1,10 +1,9 @@
 package tech.mamxanh.recipe.service;
 
 import java.net.URI;
-import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -23,6 +22,7 @@ import tech.mamxanh.recipe.dto.request.RecipeMediaInput;
 import tech.mamxanh.recipe.dto.response.CreateRecipeResponse;
 import tech.mamxanh.recipe.dto.response.IngredientOptionResponse;
 import tech.mamxanh.recipe.dto.response.RecipeFormOptionsResponse;
+import tech.mamxanh.recipe.dto.response.RecipeDetailResponse;
 import tech.mamxanh.recipe.dto.response.RecipeFormOptionsResponse.Choice;
 import tech.mamxanh.recipe.dto.response.RecipeFormOptionsResponse.UnitOption;
 import tech.mamxanh.recipe.entity.RecipeAuthorReferenceEntity;
@@ -32,25 +32,20 @@ import tech.mamxanh.recipe.entity.RecipeCodes.MediaType;
 import tech.mamxanh.recipe.entity.RecipeCodes.VegetarianType;
 import tech.mamxanh.recipe.entity.RecipeIngredientEntity;
 import tech.mamxanh.recipe.entity.RecipeIngredientReferenceEntity;
-import tech.mamxanh.recipe.entity.RecipeMediaEntity;
 import tech.mamxanh.recipe.entity.RecipePostEntity;
 import tech.mamxanh.recipe.entity.RecipeUnitReferenceEntity;
 import tech.mamxanh.recipe.repository.RecipeAuthorReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeConversionRepository;
 import tech.mamxanh.recipe.repository.RecipeIngredientReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeIngredientRepository;
-import tech.mamxanh.recipe.repository.RecipeMediaRepository;
 import tech.mamxanh.recipe.repository.RecipePostRepository;
 import tech.mamxanh.recipe.repository.RecipeUnitReferenceRepository;
 import tech.mamxanh.recipe.service.RecipeValidationException.FieldError;
 
 @Service
 public class RecipeService {
-    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
-    private static final BigDecimal THOUSAND = BigDecimal.valueOf(1000);
     private final RecipePostRepository recipeRepository;
     private final RecipeIngredientRepository ingredientRepository;
-    private final RecipeMediaRepository mediaRepository;
     private final RecipeIngredientReferenceRepository ingredientReferenceRepository;
     private final RecipeUnitReferenceRepository unitReferenceRepository;
     private final RecipeConversionRepository conversionRepository;
@@ -60,14 +55,12 @@ public class RecipeService {
     @Autowired
     public RecipeService(RecipePostRepository recipeRepository,
             RecipeIngredientRepository ingredientRepository,
-            RecipeMediaRepository mediaRepository,
             RecipeIngredientReferenceRepository ingredientReferenceRepository,
             RecipeUnitReferenceRepository unitReferenceRepository,
             RecipeConversionRepository conversionRepository,
             RecipeAuthorReferenceRepository authorRepository, Clock clock) {
         this.recipeRepository = recipeRepository;
         this.ingredientRepository = ingredientRepository;
-        this.mediaRepository = mediaRepository;
         this.ingredientReferenceRepository = ingredientReferenceRepository;
         this.unitReferenceRepository = unitReferenceRepository;
         this.conversionRepository = conversionRepository;
@@ -99,7 +92,6 @@ public class RecipeService {
             if (unit == null) {
                 errors.add(new FieldError(field + ".unitId", "Chọn đơn vị đang có trong danh mục."));
             } else {
-                validateMassQuantity(input.quantity(), unit, field, errors);
                 if (ingredient != null && !"MASS".equals(unit.getDimension())
                         && !conversionRepository.existsByIngredientIdAndUnitIdAndActiveTrue(ingredient.getId(), unit.getId())) {
                     errors.add(new FieldError(field + ".unitId",
@@ -136,21 +128,35 @@ public class RecipeService {
         }).toList();
         ingredientRepository.saveAll(recipeIngredients);
 
-        List<RecipeMediaInput> media = request.media() == null ? List.of() : request.media();
-        List<RecipeMediaEntity> recipeMedia = new ArrayList<>(media.size());
-        for (int index = 0; index < media.size(); index++) {
-            RecipeMediaInput input = media.get(index);
-            RecipeMediaEntity item = new RecipeMediaEntity();
-            item.setRecipeId(saved.getId());
-            item.setBlobUrl(input.blobUrl().trim());
-            item.setMimeType(input.mimeType().toLowerCase());
-            item.setDisplayOrder(index + 1);
-            item.setCover(input.cover());
-            recipeMedia.add(item);
-        }
-        if (!recipeMedia.isEmpty()) mediaRepository.saveAll(recipeMedia);
-
         return new CreateRecipeResponse(saved.getId(), saved.getTitle(), saved.getStatus(), publishedAt);
+    }
+
+    @Transactional(readOnly = true)
+    public RecipeDetailResponse getPublishedRecipe(Long recipeId) {
+        RecipePostEntity recipe = recipeRepository.findByIdAndStatus(recipeId, "PUBLISHED")
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        List<RecipeIngredientEntity> recipeIngredients = ingredientRepository
+                .findAllByRecipeIdOrderByIdAsc(recipeId);
+        Map<Long, RecipeIngredientReferenceEntity> ingredientReferences = ingredientReferenceRepository
+                .findAllById(recipeIngredients.stream().map(RecipeIngredientEntity::getIngredientId).distinct().toList())
+                .stream().collect(Collectors.toMap(RecipeIngredientReferenceEntity::getId, Function.identity()));
+        Map<Integer, RecipeUnitReferenceEntity> unitReferences = unitReferenceRepository
+                .findAllById(recipeIngredients.stream().map(RecipeIngredientEntity::getUnitId).distinct().toList())
+                .stream().collect(Collectors.toMap(RecipeUnitReferenceEntity::getId, Function.identity()));
+
+        DishCategory category = DishCategory.valueOf(recipe.getDishCategory());
+        VegetarianType vegetarianType = VegetarianType.valueOf(recipe.getVegetarianType());
+        Difficulty difficulty = Difficulty.valueOf(recipe.getDifficulty());
+        List<RecipeDetailResponse.Ingredient> ingredients = recipeIngredients.stream().map(line -> {
+            RecipeIngredientReferenceEntity ingredient = ingredientReferences.get(line.getIngredientId());
+            RecipeUnitReferenceEntity unit = unitReferences.get(line.getUnitId());
+            return new RecipeDetailResponse.Ingredient(line.getIngredientId(), ingredient.getName(), line.getQuantity(),
+                    line.getUnitId(), unit.getCode(), unit.getName());
+        }).toList();
+        return new RecipeDetailResponse(recipe.getId(), recipe.getTitle(), recipe.getDescription(),
+                recipe.getInstructions(), category.name(), category.label(), vegetarianType.name(), vegetarianType.label(),
+                difficulty.name(), difficulty.label(), recipe.getServings(), recipe.getPrepTimeMinutes(),
+                recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getPublishedAt(), ingredients, List.of());
     }
 
     @Transactional(readOnly = true)
@@ -214,37 +220,6 @@ public class RecipeService {
         return errors;
     }
 
-    private static void validateMassQuantity(BigDecimal quantity, RecipeUnitReferenceEntity unit,
-            String field, List<FieldError> errors) {
-        if (quantity == null) return;
-        String message = massQuantityError(quantity, unit.getCode());
-        if (message != null) {
-            errors.add(new FieldError(field + ".quantity", message));
-        }
-    }
-
-    static String massQuantityError(BigDecimal quantity, String unitCode) {
-        if (quantity == null) return null;
-        BigDecimal grams;
-        if ("g".equalsIgnoreCase(unitCode)) {
-            if (quantity.stripTrailingZeros().scale() > 0) {
-                return "Số lượng đơn vị g phải là số nguyên bội số của 100 g (100, 200, 500...).";
-            }
-            grams = quantity;
-        } else if ("kg".equalsIgnoreCase(unitCode)) {
-            grams = quantity.multiply(THOUSAND);
-        } else {
-            return null;
-        }
-        if (grams.remainder(HUNDRED).compareTo(BigDecimal.ZERO) != 0) {
-            if ("g".equalsIgnoreCase(unitCode)) {
-                return "Số lượng đơn vị g phải là bội số của 100 g (100, 200, 500...).";
-            }
-            return "Khối lượng sau khi đổi ra gram phải chia hết cho 100 g.";
-        }
-        return null;
-    }
-
     private static void validateYoutube(String rawUrl, List<FieldError> errors) {
         if (rawUrl == null || rawUrl.isBlank()) return;
         try {
@@ -280,6 +255,7 @@ public class RecipeService {
         if (media.size() > 5) errors.add(new FieldError("media", "Mỗi công thức được có tối đa 5 ảnh."));
         long covers = media.stream().filter(RecipeMediaInput::cover).count();
         if (covers != 1) errors.add(new FieldError("media", "Nếu có ảnh, hãy chọn đúng 1 ảnh bìa."));
+        errors.add(new FieldError("media", "Đăng công thức kèm ảnh chưa được hỗ trợ. Hãy bỏ ảnh; upload ảnh sẽ được tích hợp sau FR-14."));
         for (int index = 0; index < media.size(); index++) {
             RecipeMediaInput item = media.get(index);
             if (item.mimeType() == null || !MediaType.accepts(item.mimeType().trim())) {

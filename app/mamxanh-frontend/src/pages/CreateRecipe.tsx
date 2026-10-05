@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { AlertCircle, CheckCircle2, ImagePlus, Info, LoaderCircle, Plus, Trash2, UploadCloud } from 'lucide-react';
+import { AlertCircle, ImagePlus, Info, LoaderCircle, Plus, Trash2, UploadCloud } from 'lucide-react';
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
 import { ApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
@@ -7,7 +7,7 @@ import { useDemoAccount } from '../components/DemoAccount';
 import { useAuth } from '../components/AuthContext';
 import { Button, Card } from '../components/ui';
 import type { UserRole } from '../types';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 type IngredientRow = {
   key: string;
@@ -90,7 +90,7 @@ function CreateRecipeForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [createdRecipeId, setCreatedRecipeId] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
@@ -134,7 +134,6 @@ function CreateRecipeForm() {
     event.preventDefault();
     setSubmitError('');
     setFieldErrors({});
-    setCreatedRecipeId(null);
     if (!validateMediaSelection()) return;
     if (!options) {
       setSubmitError('Danh mục công thức chưa tải được. Hãy thử tải lại trang.');
@@ -143,11 +142,8 @@ function CreateRecipeForm() {
 
     const quantityErrors: Record<string, string> = {};
     ingredients.forEach((row, index) => {
-      const unitCode = options.units.find((unit) => unit.unitId === row.unitId)?.code;
-      if (unitCode === 'g' || unitCode === 'kg') {
-        const error = massQuantityError(row.quantity, unitCode);
-        if (error) quantityErrors[`ingredients[${index}].quantity`] = error;
-      }
+      const error = quantityError(row.quantity);
+      if (error) quantityErrors[`ingredients[${index}].quantity`] = error;
     });
     if (Object.keys(quantityErrors).length > 0) {
       setFieldErrors(quantityErrors);
@@ -176,7 +172,7 @@ function CreateRecipeForm() {
     setSubmitting(true);
     try {
       const created = await recipesApi.publish(payload);
-      setCreatedRecipeId(created.recipeId);
+      navigate(`/cong-thuc/${created.recipeId}`);
     } catch (error) {
       if (error instanceof ApiError && error.errors.length > 0) {
         setFieldErrors(Object.fromEntries(error.errors.map((item) => [item.field, item.message])));
@@ -248,7 +244,7 @@ function CreateRecipeForm() {
 
           <Card className="space-y-4 p-5 sm:p-6">
             <SectionHead number="2" title="Nguyên liệu và định lượng" />
-            <p className="text-sm text-ink-muted">Chọn nguyên liệu trong danh mục. Với g, nhập số gram là bội số của 100; với kg, số kg thập phân phải đổi ra gram chia hết cho 100. Đơn vị khác cần có tỷ lệ quy đổi sẵn.</p>
+            <p className="text-sm text-ink-muted">Chọn nguyên liệu trong danh mục và nhập số lượng lớn hơn 0. Đơn vị khác g/kg cần có tỷ lệ quy đổi sẵn.</p>
             {ingredients.map((row, index) => (
               <div key={row.key} className="rounded-xl border border-brand-100 p-3">
                 <div className="mb-2 flex items-center justify-between">
@@ -322,7 +318,6 @@ function CreateRecipeForm() {
           </Card>
 
           {submitError && <div role="alert" className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{submitError}</div>}
-          {createdRecipeId !== null && <div role="status" className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800"><CheckCircle2 className="h-4 w-4" />Đã đăng công thức #{createdRecipeId}.</div>}
           <div className="flex justify-end">
             <Button type="submit" size="lg" disabled={submitting || loadingOptions || Boolean(optionsError) || !options}>
               {submitting ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Đang gửi…</> : 'Xuất bản công thức'}
@@ -343,7 +338,7 @@ function CreateRecipeForm() {
           </Card>
           <Card className="flex items-start gap-3 p-5 text-sm text-ink-soft">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-            <p>Đơn vị g phải nhập bội số 100 g; kg được nhập thập phân nhưng sau khi đổi ra gram phải chia hết cho 100. Đơn vị như quả/củ/bó/gói chỉ được đăng khi đã có conversion theo đúng nguyên liệu; Issue #22 không tạo dữ liệu quy đổi.</p>
+            <p>Số lượng phải lớn hơn 0, tối đa hai chữ số thập phân. Đơn vị như quả/củ/bó/gói chỉ được đăng khi đã có conversion theo đúng nguyên liệu; Issue #22 không tạo dữ liệu quy đổi.</p>
           </Card>
         </aside>
       </form>
@@ -415,17 +410,10 @@ function SectionHead({ number, title }: { number: string; title: string }) {
 const inputClass = 'w-full rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 const errorClass = 'mt-1 text-xs font-medium text-red-700';
 
-function massQuantityError(rawQuantity: string, unitCode: string): string | null {
+function quantityError(rawQuantity: string): string | null {
   const quantity = rawQuantity.trim();
-  if (!/^\d+(?:\.\d{1,2})?$/.test(quantity)) return 'Định lượng phải là số dương, tối đa hai chữ số thập phân.';
-
-  const [whole, fraction = ''] = quantity.split('.');
-  const hundredths = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0'));
-  const gramsInHundredths = unitCode === 'kg' ? hundredths * 1000n : hundredths;
-  if (gramsInHundredths % 10000n !== 0n) {
-    return unitCode === 'g'
-      ? 'Số lượng đơn vị g phải là bội số của 100 g (100, 200, 500...).'
-      : 'Số lượng kg sau khi đổi ra gram phải chia hết cho 100 g (ví dụ 0,1 kg hoặc 0,5 kg).';
+  if (!/^\d+(?:\.\d{1,2})?$/.test(quantity) || Number(quantity) <= 0) {
+    return 'Định lượng phải là số dương, tối đa hai chữ số thập phân.';
   }
   return null;
 }

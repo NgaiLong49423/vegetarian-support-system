@@ -40,15 +40,53 @@ async function action(page: Page, label: string, operation: () => Promise<unknow
 }
 
 async function installApi(page: Page, getPostResponse: (body: Record<string, any>) => PostResponse) {
+  const publishedDetails = new Map<number, Record<string, unknown>>();
   await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: options }));
   await page.route('**/api/v1/recipes/ingredient-options**', (route) => {
     const query = new URL(route.request().url()).searchParams.get('query')?.toLowerCase() ?? '';
     const matches = ingredients.filter((item) => item.name.toLowerCase().includes(query));
     return route.fulfill({ json: matches });
   });
+  await page.route(/\/api\/v1\/recipes\/\d+$/, async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback();
+    const recipeId = Number(new URL(route.request().url()).pathname.split('/').at(-1));
+    const detail = publishedDetails.get(recipeId);
+    await route.fulfill(detail
+      ? { status: 200, json: detail }
+      : { status: 404, json: { detail: 'Không tìm thấy công thức.' }, contentType: 'application/problem+json' });
+  });
   await page.route('**/api/v1/recipes', async (route) => {
     const body = route.request().postDataJSON() as Record<string, any>;
     const response = getPostResponse(body);
+    if (response.status === 201) {
+      const recipeId = Number(response.body.recipeId);
+      publishedDetails.set(recipeId, {
+        recipeId,
+        title: body.title,
+        description: body.description || null,
+        instructions: body.instructions,
+        dishCategory: body.dishCategory,
+        dishCategoryLabel: options.dishCategories.find((item) => item.code === body.dishCategory)?.label ?? body.dishCategory,
+        vegetarianType: body.vegetarianType,
+        vegetarianTypeLabel: options.vegetarianTypes.find((item) => item.code === body.vegetarianType)?.label ?? body.vegetarianType,
+        difficulty: body.difficulty,
+        difficultyLabel: options.difficulties.find((item) => item.code === body.difficulty)?.label ?? body.difficulty,
+        servings: body.servings,
+        prepTimeMinutes: body.prepTimeMinutes,
+        cookTimeMinutes: body.cookTimeMinutes,
+        youtubeUrl: body.youtubeUrl || null,
+        publishedAt: response.body.publishedAt,
+        ingredients: body.ingredients.map((item: Record<string, number>) => ({
+          ingredientId: item.ingredientId,
+          name: ingredients.find((option) => option.ingredientId === item.ingredientId)?.name ?? 'Nguyên liệu',
+          quantity: item.quantity,
+          unitId: item.unitId,
+          unitCode: options.units.find((unit) => unit.unitId === item.unitId)?.code ?? 'g',
+          unitName: options.units.find((unit) => unit.unitId === item.unitId)?.name ?? 'gram',
+        })),
+        media: [],
+      });
+    }
     await route.fulfill({
       status: response.status,
       contentType: response.status >= 400 ? 'application/problem+json' : 'application/json',
@@ -157,7 +195,7 @@ test('Issue 22: biên số khẩu phần, thời gian, lượng nguyên liệu v
   await expect(page.getByRole('button', { name: 'Thêm nguyên liệu' })).toBeDisabled();
 });
 
-test('Issue 22: g là bội số nguyên 100; kg thập phân phải đổi ra gram chia hết cho 100', async ({ page }) => {
+test('Issue 22: chấp nhận định lượng dương không theo bước 100g và mở chi tiết bài mới', async ({ page }) => {
   let publishCount = 0;
   await installApi(page, (body) => {
     publishCount++;
@@ -167,39 +205,18 @@ test('Issue 22: g là bội số nguyên 100; kg thập phân phải đổi ra g
   await fillValidRecipe(page, 'g');
   const quantity = page.getByLabel('Số lượng nguyên liệu 1');
 
-  for (const invalidGram of ['80', '120', '150', '100.5']) {
-    await action(page, `Nhập ${invalidGram} g`, () => quantity.fill(invalidGram));
-    await action(page, `Thử đăng với ${invalidGram} g`, () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-    await expect(page.getByText('Số lượng đơn vị g phải là bội số của 100 g (100, 200, 500...).')).toBeVisible();
-  }
-  expect(publishCount).toBe(0);
-
-  for (const validGram of ['100', '200', '500']) {
-    await action(page, `Nhập ${validGram} g`, () => quantity.fill(validGram));
-    await action(page, `Đăng với ${validGram} g`, () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-    await expect(page.getByText('Đã đăng công thức #2260.')).toBeVisible();
-  }
-  expect(publishCount).toBe(3);
-
-  await action(page, 'Đổi đơn vị từ g sang kg', () => page.getByLabel('Đơn vị nguyên liệu 1').selectOption({ label: 'kilogram (kg)' }));
-  for (const validKilogram of ['0.5', '1.5']) {
-    await action(page, `Nhập ${validKilogram} kg`, () => quantity.fill(validKilogram));
-    await action(page, `Đăng với ${validKilogram} kg`, () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-    await expect(page.getByText('Đã đăng công thức #2260.')).toBeVisible();
-  }
-  expect(publishCount).toBe(5);
-
-  await action(page, 'Nhập 0.15 kg (tương đương 150 g, không chia hết cho 100)', () => quantity.fill('0.15'));
-  await action(page, 'Thử đăng với 0.15 kg', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByText('Số lượng kg sau khi đổi ra gram phải chia hết cho 100 g (ví dụ 0,1 kg hoặc 0,5 kg).')).toBeVisible();
-  expect(publishCount).toBe(5);
+  await action(page, 'Nhập 80 g', () => quantity.fill('80'));
+  await action(page, 'Đăng công thức với 80 g', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
+  await expect(page).toHaveURL(/\/cong-thuc\/2260$/);
+  await expect(page.getByRole('heading', { name: 'Đậu hũ kho cà chua', level: 1 })).toBeVisible();
+  await expect(page.getByText('80 g', { exact: true })).toBeVisible();
+  expect(publishCount).toBe(1);
 });
 
 test('Issue 22: g/kg đi trực tiếp; đơn vị đếm chỉ qua khi API xác nhận conversion có sẵn', async ({ page }) => {
-  let conversionExists = false;
   await installApi(page, (body) => {
     const usesCountUnit = body.ingredients?.some((item: Record<string, number>) => item.unitId === 3);
-    if (usesCountUnit && !conversionExists) {
+    if (usesCountUnit) {
       return {
         status: 400,
         body: { status: 400, code: 'VALIDATION_FAILED', title: 'Validation failed', detail: 'Dữ liệu công thức chưa hợp lệ.', errors: [{ field: 'ingredients[0].unitId', message: 'Chưa có conversion cho nguyên liệu và đơn vị này.' }] },
@@ -213,19 +230,13 @@ test('Issue 22: g/kg đi trực tiếp; đơn vị đếm chỉ qua khi API xác
   await expect(page.getByText('Chưa có conversion cho nguyên liệu và đơn vị này.')).toBeVisible();
   await action(page, 'Đổi sang gram', () => page.getByLabel('Đơn vị nguyên liệu 1').selectOption({ label: 'gram (g)' }));
   await action(page, 'Gửi lại với đơn vị khối lượng', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByText('Đã đăng công thức #2202.')).toBeVisible();
-  conversionExists = true;
-  await action(page, 'Chọn lại đơn vị quả sau khi mock dữ liệu conversion có sẵn', () => page.getByLabel('Đơn vị nguyên liệu 1').selectOption({ label: 'quả (quả)' }));
-  await action(page, 'Gửi lại cặp nguyên liệu–đơn vị có conversion', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByText('Đã đăng công thức #2202.')).toBeVisible();
+  await expect(page).toHaveURL(/\/cong-thuc\/2202$/);
 });
 
 test('Issue 22: 0 ảnh được đăng; giới hạn tối đa 5 và yêu cầu cover đúng một ảnh', async ({ page }) => {
   await installApi(page, (body) => ({ status: 201, body: { recipeId: 2203, title: body.title, status: 'PUBLISHED', publishedAt: '2026-10-04T08:00:00' } }));
   await openForm(page);
   await fillValidRecipe(page);
-  await action(page, 'Để trống ảnh và xuất bản', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByText('Đã đăng công thức #2203.')).toBeVisible();
   const chooser = page.getByLabel('Chọn tối đa 5 ảnh');
   await action(page, 'Chọn một ảnh nhưng chưa chọn cover', () => chooser.setInputFiles([{ name: 'cover.png', mimeType: 'image/png', buffer: Buffer.from('cover') }]));
   await action(page, 'Thử xuất bản khi chưa chọn cover', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
@@ -240,6 +251,11 @@ test('Issue 22: 0 ảnh được đăng; giới hạn tối đa 5 và yêu cầu
   await action(page, 'Chọn một cover trong năm ảnh', () => page.getByLabel('Chọn five-1.png làm ảnh cover').check());
   await action(page, 'Xác nhận năm ảnh và một cover qua validation của form', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
   await expect(page.getByRole('alert')).toContainText('Upload ảnh thuộc FR-14');
+  await action(page, 'Bỏ các ảnh đã chọn', () => chooser.setInputFiles([]));
+  await action(page, 'Để trống ảnh và xuất bản', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
+  await expect(page).toHaveURL(/\/cong-thuc\/2203$/);
+  await expect(page.getByRole('img', { name: 'Ảnh mặc định cho món Thuần chay' })).toBeVisible();
+  await expect(page.getByText('Cắt đậu hũ, rim với cà chua đến khi thấm vị.')).toBeVisible();
 });
 
 test('Issue 22: YouTube/mô tả tùy chọn; 401 và 403 bị chặn, không có login giả', async ({ page }) => {
@@ -263,9 +279,9 @@ test('Issue 22: YouTube/mô tả tùy chọn; 401 và 403 bị chặn, không c�
   await expect(page.getByRole('alert')).toContainText('Chỉ Chuyên gia đang hoạt động mới được đăng');
   postStatus = 201;
   await action(page, 'Mô phỏng phản hồi thành công từ phiên EXPERT', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByText('Đã đăng công thức #2204.')).toBeVisible();
-  await expect(page.getByLabel('Mô tả')).toHaveValue('');
-  await expect(page.getByLabel('Link YouTube')).toHaveValue('');
+  await expect(page).toHaveURL(/\/cong-thuc\/2204$/);
+  await expect(page.getByRole('heading', { name: 'Đậu hũ kho cà chua', level: 1 })).toBeVisible();
+  await expect(page.getByText('Hướng dẫn chế biến')).toBeVisible();
 });
 
 test('Issue 22: link YouTube có định dạng URL nhưng sai host bị báo lỗi', async ({ page }) => {
