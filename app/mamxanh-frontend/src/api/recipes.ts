@@ -111,6 +111,23 @@ export interface RecipePost {
   ingredients: RecipeIngredient[];
 }
 
+export interface MealPlanWeek {
+  weekStartDate: string;
+  entries: Array<{
+    entryId: number;
+    mealDate: string;
+    mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER';
+    plannedServings: number;
+    recipeId: number;
+    recipeTitle: string | null;
+    recipeCoverUrl: string | null;
+    dishCategory: string | null;
+    totalTimeMinutes: number | null;
+    recipeDeleted: boolean;
+    unavailableMessage: string | null;
+  }>;
+}
+
 export interface UpdateRecipePost {
   title: string;
   description: string;
@@ -151,9 +168,18 @@ export const recipesApi = {
 };
 
 export const recipeApi = {
+  listMine: async (page = 0, size = 50) =>
+    (await apiClient.get<{ items: RecipePost[]; page: number; size: number; totalElements: number; totalPages: number }>(
+      '/recipes/mine', { params: { page, size } },
+    )).data,
   getForAuthor: async (recipeId: number) => (await apiClient.get<RecipePost>(`/recipes/${recipeId}/manage`)).data,
   getReferenceData: async () => (await apiClient.get<RecipeReferenceData>('/recipes/reference-data')).data,
   update: async (recipeId: number, payload: UpdateRecipePost) =>
     (await apiClient.put<RecipePost>(`/recipes/${recipeId}`, payload)).data,
   delete: (recipeId: number) => apiClient.delete<void>(`/recipes/${recipeId}`),
+};
+
+export const mealPlanApi = {
+  getWeek: async (weekStartDate: string) =>
+    (await apiClient.get<MealPlanWeek>('/meal-plans', { params: { weekStartDate } })).data,
 };

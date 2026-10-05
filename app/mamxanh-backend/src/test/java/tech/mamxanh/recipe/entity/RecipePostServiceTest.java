@@ -12,6 +12,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,18 +61,34 @@ class RecipePostServiceTest {
         recipe.setCookTimeMinutes(10);
         recipe.setStatus("PUBLISHED");
         recipe.setUpdatedAt(LocalDateTime.now());
-        when(clock.instant()).thenReturn(Instant.parse("2026-10-05T00:00:00Z"));
-        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         when(currentUserService.requireActiveExpert()).thenReturn(new CurrentUser(7L, Role.EXPERT));
     }
 
     @Test
-    void authorCannotOpenRecipeHiddenByAdmin() {
+    void authorCanViewRecipeHiddenByAdminWithoutGettingEditAuthorization() {
         recipe.setStatus("HIDDEN");
         when(repository.findById(47L)).thenReturn(Optional.of(recipe));
+        when(currentUserService.getPublicProfile(7L)).thenReturn(new PublicProfile(7L, "Chuyên gia", null));
+        when(ingredientRepository.findAllByRecipeIdOrderByIdAsc(47L)).thenReturn(List.of());
+        when(mediaRepository.findAllByRecipeIdOrderByDisplayOrderAsc(47L)).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.getForAuthor(47L)).isInstanceOf(AppException.class)
-                .satisfies(exception -> assertThat(((AppException) exception).errorCode()).isEqualTo(ErrorCode.RECIPE_HIDDEN));
+        assertThat(service.getForAuthor(47L).status()).isEqualTo("HIDDEN");
+    }
+
+    @Test
+    void personalListIncludesOnlyOwnedPublishedAndHiddenRecipes() {
+        when(repository.findAllByAuthorIdAndStatusInOrderByUpdatedAtDesc(7L, List.of("PUBLISHED", "HIDDEN"),
+                PageRequest.of(0, 20))).thenReturn(new PageImpl<>(List.of(recipe)));
+        when(currentUserService.getPublicProfile(7L)).thenReturn(new PublicProfile(7L, "Chuyên gia", null));
+        when(ingredientRepository.findAllByRecipeIdOrderByIdAsc(47L)).thenReturn(List.of());
+        when(mediaRepository.findAllByRecipeIdOrderByDisplayOrderAsc(47L)).thenReturn(List.of());
+
+        var response = service.listMine(0, 20);
+
+        assertThat(response.items()).singleElement().satisfies(item -> {
+            assertThat(item.id()).isEqualTo(47L);
+            assertThat(item.status()).isEqualTo("PUBLISHED");
+        });
     }
 
     @Test
@@ -86,6 +104,8 @@ class RecipePostServiceTest {
 
     @Test
     void authorUpdatePersistsPublishedRecipeAndReturnsCurrentData() {
+        when(clock.instant()).thenReturn(Instant.parse("2026-10-05T00:00:00Z"));
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         when(repository.lockById(47L)).thenReturn(Optional.of(recipe));
         when(validationRepository.isActiveIngredient(1L)).thenReturn(true);
         when(validationRepository.hasValidConvertibleUnit(1L, 1)).thenReturn(true);
@@ -114,6 +134,8 @@ class RecipePostServiceTest {
 
     @Test
     void authorDeleteSetsTombstoneInsteadOfRemovingRecipe() {
+        when(clock.instant()).thenReturn(Instant.parse("2026-10-05T00:00:00Z"));
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         when(repository.lockById(47L)).thenReturn(Optional.of(recipe));
 
         service.delete(47L);

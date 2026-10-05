@@ -57,6 +57,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, PUBLIC_AUTH_POST_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/recipes/mine").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/*/manage").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes", "/api/v1/recipes/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/form-options",

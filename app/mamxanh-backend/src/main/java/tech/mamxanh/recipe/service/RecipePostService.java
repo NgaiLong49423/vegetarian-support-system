@@ -2,7 +2,10 @@ package tech.mamxanh.recipe.service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -50,13 +53,22 @@ public class RecipePostService {
         CurrentUser author = currentUserService.requireActiveExpert();
         RecipePostEntity recipe = findById(recipeId);
         requireOwner(recipe, author);
-        if ("HIDDEN".equals(recipe.getStatus())) {
-            throw new AppException(ErrorCode.RECIPE_HIDDEN);
-        }
-        if (!"PUBLISHED".equals(recipe.getStatus())) {
+        if ("DELETED".equals(recipe.getStatus())) {
             throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
         }
         return response(recipe);
+    }
+
+    @Transactional(readOnly = true)
+    public RecipePageResponse listMine(int page, int size) {
+        CurrentUser author = currentUserService.requireActiveExpert();
+        if (page < 0 || size < 1 || size > 50) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED);
+        }
+        Page<RecipePostEntity> result = repository.findAllByAuthorIdAndStatusInOrderByUpdatedAtDesc(
+                author.id(), List.of("PUBLISHED", "HIDDEN"), PageRequest.of(page, size, Sort.unsorted()));
+        List<RecipePostResponse> items = result.getContent().stream().map(this::response).toList();
+        return new RecipePageResponse(items, result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages());
     }
 
     @Transactional(readOnly = true)
@@ -78,6 +90,17 @@ public class RecipePostService {
             throw new AppException(ErrorCode.VALIDATION_FAILED);
         }
         return new RecipeReferenceData(validationRepository.findIngredientOptions(query));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, MealPlanRecipeReference> findMealPlanReferences(Collection<Long> recipeIds) {
+        if (recipeIds == null || recipeIds.isEmpty()) return Map.of();
+        return repository.findAllById(recipeIds).stream().collect(Collectors.toMap(RecipePostEntity::getId, recipe -> {
+            String coverUrl = mediaRepository.findAllByRecipeIdOrderByDisplayOrderAsc(recipe.getId()).stream()
+                    .filter(RecipeMediaEntity::isCover).map(RecipeMediaEntity::getBlobUrl).findFirst().orElse(null);
+            return new MealPlanRecipeReference(recipe.getId(), recipe.getTitle(), recipe.getStatus(), coverUrl,
+                    recipe.getDishCategory(), recipe.getPrepTimeMinutes() + recipe.getCookTimeMinutes());
+        }, (first, ignored) -> first));
     }
 
     @Transactional
@@ -193,4 +216,7 @@ public class RecipePostService {
             long totalElements, int totalPages) { }
 
     public record RecipeReferenceData(List<RecipeValidationRepository.IngredientOption> ingredients) { }
+
+    public record MealPlanRecipeReference(long recipeId, String title, String status, String coverUrl,
+            String dishCategory, int totalTimeMinutes) { }
 }

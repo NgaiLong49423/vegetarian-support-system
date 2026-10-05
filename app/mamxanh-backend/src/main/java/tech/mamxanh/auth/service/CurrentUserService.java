@@ -29,6 +29,11 @@ public class CurrentUserService {
         return new CurrentUser(user.getId(), user.getRole());
     }
 
+    public CurrentUser requireActiveMember() {
+        User user = requireActiveUser();
+        return new CurrentUser(user.getId(), user.getRole());
+    }
+
     public PublicProfile getPublicProfile(long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
         return new PublicProfile(user.getId(), user.getDisplayName(), user.getAvatarUrl());

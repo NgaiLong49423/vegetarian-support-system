@@ -16,7 +16,7 @@ const diets = [['VEGAN', 'Thuần chay'], ['LACTO', 'Chay có sữa'], ['OVO', '
 const difficulties = [['EASY', 'Dễ'], ['MEDIUM', 'Trung bình'], ['HARD', 'Khó']];
 
 function messageFor(error: ApiError) {
-  if (error.status === 401) return 'Bạn cần đăng nhập bằng tài khoản chuyên gia để sửa công thức. Đăng nhập hiện chưa kết nối Backend trong ứng dụng.';
+  if (error.status === 401) return 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại bằng tài khoản Chuyên gia.';
   if (error.code === 'RECIPE_HIDDEN') return 'Công thức đang bị quản trị viên ẩn. Bạn không thể sửa cho đến khi quản trị viên phục hồi bài.';
   if (error.code === 'RECIPE_EDIT_NOT_ALLOWED' || error.status === 403) return 'Bạn không có quyền sửa công thức này.';
   if (error.status === 404) return 'Không tìm thấy công thức công khai này.';
@@ -42,9 +42,12 @@ export function EditRecipe() {
       setLoading(false);
       return;
     }
-    Promise.all([recipeApi.getForAuthor(recipeId), recipeApi.getReferenceData()]).then(([data, refData]) => {
+    recipeApi.getForAuthor(recipeId).then(async (data) => {
       if (!alive) return;
       setRecipe(data);
+      if (data.status === 'HIDDEN') return;
+      const refData = await recipeApi.getReferenceData();
+      if (!alive) return;
       setReferences(refData);
       setForm({
         title: data.title,
@@ -78,7 +81,7 @@ export function EditRecipe() {
     setFieldErrors({});
     try {
       const updated = await recipeApi.update(recipeId, form);
-      navigate('/ho-so/chuyen-gia-demo', { replace: true, state: { recipeUpdated: { id: updated.id, title: updated.title, updatedLabel: 'Đã cập nhật thành công' }, notice: 'Lưu thay đổi thành công.' } });
+      navigate('/ho-so/chuyen-gia-demo', { replace: true, state: { recipeUpdated: updated, notice: 'Lưu thay đổi thành công.' } });
     } catch (cause) {
       const apiError = asApiError(cause);
       setError(messageFor(apiError));
@@ -87,6 +90,21 @@ export function EditRecipe() {
   };
 
   if (loading) return <PageContainer className="py-16 text-center text-ink-muted"><LoaderCircle className="mx-auto mb-3 h-7 w-7 animate-spin" />Đang tải công thức…</PageContainer>;
+  if (recipe?.status === 'HIDDEN') return <PageContainer className="py-8">
+    <Link to="/ho-so/chuyen-gia-demo" className="mb-5 inline-flex text-sm font-semibold text-brand-700">Quay lại danh sách bài</Link>
+    <Card className="mx-auto max-w-3xl p-6 sm:p-8">
+      <div role="status" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+        <strong>Đã bị Admin ẩn.</strong> Bạn có thể xem bài nhưng không thể sửa hoặc tự công khai lại. Hãy liên hệ Admin để được phục hồi.
+      </div>
+      <h1 className="text-2xl font-extrabold text-ink">{recipe.title}</h1>
+      {recipe.description && <p className="mt-3 text-sm text-ink-muted">{recipe.description}</p>}
+      <p className="mt-5 whitespace-pre-line text-sm leading-6 text-ink-soft">{recipe.instructions}</p>
+      <h2 className="mt-6 text-lg font-bold text-ink">Nguyên liệu</h2>
+      <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-ink-soft">{recipe.ingredients.map((item, index) => <li key={`${item.ingredientId}-${index}`}>{item.name} — {item.quantity} {item.unitName}</li>)}</ul>
+      {recipe.media.length > 0 && <div className="mt-6 flex flex-wrap gap-3">{recipe.media.map((image) => <img key={image.displayOrder} src={image.url} alt="Ảnh công thức" className="h-24 w-24 rounded-xl object-cover" />)}</div>}
+    </Card>
+  </PageContainer>;
+
   if (!recipe || !form || !references) return <PageContainer className="py-12"><Card className="mx-auto max-w-2xl p-6 sm:p-8">
     <h1 className="mb-3 flex items-center gap-2 text-lg font-bold text-ink"><AlertTriangle className="h-5 w-5 text-amber-600" />Không thể mở biểu mẫu sửa</h1>
     <p className="text-sm leading-6 text-ink-muted">{error}</p>

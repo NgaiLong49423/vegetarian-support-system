@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 import jakarta.persistence.LockModeType;
 import tech.mamxanh.recipe.entity.RecipePostEntity;
 
+import java.util.List;
+
 public interface RecipePostRepository extends JpaRepository<RecipePostEntity, Long> {
     java.util.Optional<RecipePostEntity> findByIdAndStatus(Long id, String status);
 
@@ -18,4 +20,7 @@ public interface RecipePostRepository extends JpaRepository<RecipePostEntity, Lo
 
     Page<RecipePostEntity> findAllByStatusAndTitleContainingIgnoreCaseOrderByPublishedAtDesc(
             String status, String title, Pageable pageable);
+
+    Page<RecipePostEntity> findAllByAuthorIdAndStatusInOrderByUpdatedAtDesc(
+            Long authorId, List<String> statuses, Pageable pageable);
 }
