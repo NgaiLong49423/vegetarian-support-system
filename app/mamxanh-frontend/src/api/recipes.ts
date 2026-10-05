@@ -61,6 +61,8 @@ export interface RecipeDetail {
   cookTimeMinutes: number;
   youtubeUrl: string | null;
   publishedAt: string;
+  nutritionComplete: boolean;
+  ingredientsWithoutNutrition: string[];
   ingredients: Array<{
     ingredientId: number;
     name: string;

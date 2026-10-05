@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M03
 > **File:** `docs/requirements/use-cases/recipe-contribution-and-community.md`
-> **Version:** v2.1.0
+> **Version:** v2.2.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -58,22 +58,22 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 - **Traceability / Acceptance Coverage:** FR-16; BR-20; [AC-16.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-16).
 
 <a id="uc-19-1"></a>
-### UC-19.1 — Chọn nguyên liệu chuẩn
+### UC-19.1 — Tìm kiếm và chọn nguyên liệu chuẩn
 - **Goal / Primary Actor:** Expert dùng Ingredient đã có trong catalog.
-- **Trigger / Preconditions:** Expert đang soạn bài và tìm nguyên liệu.
-- **Main Flow:** Hệ thống tìm catalog; actor chọn item, nhập amount dương và unit hợp lệ.
-- **Alternative / Security:** Ingredient inactive/amount sai bị từ chối.
-- **Postconditions:** Dòng nguyên liệu liên kết `ingredient_id` và giữ tên hiển thị.
+- **Trigger / Preconditions:** Expert đang tạo hoặc sửa bài và tìm nguyên liệu.
+- **Main Flow:** Hệ thống tìm catalog; Expert chọn item, nhập amount dương và unit hợp lệ.
+- **Alternative / Security:** Ingredient inactive/amount sai bị từ chối. Nếu không có kết quả thì không thể thêm/lưu tên tự do hoặc gửi đề xuất; hệ thống hướng dẫn liên hệ Admin.
+- **Postconditions:** Dòng nguyên liệu có `ingredient_id` bắt buộc và hiển thị tên chuẩn từ catalog.
 - **Traceability / Acceptance Coverage:** FR-19; [AC-19.1, AC-19.2, AC-19.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-19).
 
 <a id="uc-19-2"></a>
-### UC-19.2 — Nhập nguyên liệu tự do
-- **Goal / Primary Actor:** Expert mô tả nguyên liệu chưa có trong catalog.
-- **Trigger / Preconditions:** Không tìm thấy Ingredient phù hợp.
-- **Main Flow:** Actor nhập tên, amount số học dương và unit; hệ thống giữ `ingredient_id` tùy chọn/trống.
-- **Alternative / Security:** `vừa đủ`, amount không dương hoặc unit không hợp lệ bị từ chối.
-- **Postconditions:** Dòng giữ nguyên tên do tác giả nhập.
-- **Traceability / Acceptance Coverage:** FR-19; [AC-19.1, AC-19.2, AC-19.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-19).
+### UC-19.2 — Xử lý khi không tìm thấy nguyên liệu
+- **Goal / Primary Actor:** Expert biết cách xử lý khi catalog chưa có Ingredient cần dùng.
+- **Trigger / Preconditions:** Expert đang tạo hoặc sửa bài và tìm kiếm không có kết quả phù hợp.
+- **Main Flow:** Hệ thống thông báo không thể thêm nguyên liệu chưa có trong catalog và hướng dẫn Expert liên hệ Admin để Admin quản lý catalog.
+- **Alternative / Security:** Không lưu tên nguyên liệu tự do, dòng không có `ingredient_id` hoặc đề xuất nguyên liệu qua hệ thống.
+- **Postconditions:** Recipe không có dòng nguyên liệu mới; catalog chỉ thay đổi khi Admin tự quản lý theo FR-18.
+- **Traceability / Acceptance Coverage:** FR-19; [AC-19.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-19).
 
 <a id="uc-19-3"></a>
 ### UC-19.3 — Quản lý các dòng nguyên liệu
@@ -204,7 +204,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-16).
   - Bước 2: Hệ thống tiếp nhận toàn bộ dữ liệu bài viết và kích hoạt bộ kiểm tra hợp lệ:
     - Tiêu đề: kiểm tra độ dài nằm trong khoảng 3 đến 120 ký tự.
     - Thể loại món: kiểm tra chọn đúng 1 giá trị chuẩn hóa thuộc `dish_category`.
-    - Nguyên liệu: kiểm tra số lượng dòng từ 1 đến 50, mỗi dòng có tên, định lượng số học dương và đơn vị chuẩn trong `UNIT` (FR-19).
+    - Nguyên liệu: kiểm tra số lượng dòng từ 1 đến 50; mỗi dòng tham chiếu mục catalog FR-18, có định lượng số học dương và đơn vị chuẩn trong `UNIT` (FR-19, BR-12).
     - Quy đổi đơn vị: kiểm tra mọi nguyên liệu có đơn vị quy đổi hợp lệ sang gam trong `INGREDIENT_UNIT_CONVERSION` (BR-73).
     - Hướng dẫn chế biến: kiểm tra nội dung hướng dẫn `instructions` từ 10 đến 5.000 ký tự sau khi cắt khoảng trắng đầu cuối (trim); không ép buộc phân rã thành các bước độc lập.
     - Khẩu phần: kiểm tra giá trị số nguyên từ 1 đến 50.
@@ -245,20 +245,20 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-19).
   - Bước 1: Tác giả mở phần nhập nguyên liệu của bài công thức. Mặc định có sẵn 1 dòng nguyên liệu trống.
   - Bước 2: Tác giả gõ tên nguyên liệu vào ô tìm kiếm nguyên liệu:
     - Hệ thống tự động gợi ý danh sách các nguyên liệu khớp từ Danh mục nguyên liệu chuẩn (FR-18).
-    - Tác giả có thể nhấp chọn một nguyên liệu gợi ý (hệ thống ghi nhận liên kết `ingredientId` chuẩn).
-    - Hoặc nếu không thấy, tác giả giữ nguyên tên tự do mình vừa gõ (hệ thống ghi nhận tên tự do, `ingredientId = null`).
+    - Tác giả chọn một nguyên liệu trong kết quả (hệ thống bắt buộc ghi nhận liên kết `ingredientId` và tên chuẩn từ catalog).
   - Bước 3: Tác giả nhập định lượng số học dương (ví dụ: `200`, `1.5`) và chọn đơn vị đo từ danh mục `UNIT` (ví dụ: gam, ml, muỗng canh, quả, bìa). Hệ thống không hỗ trợ tùy chọn "vừa đủ".
   - Bước 4: Tác giả nhấn nút "Thêm nguyên liệu" để tạo thêm dòng mới (tối đa 50 dòng theo BR-19).
   - Bước 5: Khi lưu hoặc công khai bài viết, hệ thống kiểm tra: số dòng từ 1 đến 50, mọi dòng có `quantity > 0` và đơn vị đo hợp lệ; đồng thời kiểm tra tính khả dụng của tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION` (BR-73).
-  - Bước 6: Toàn bộ đạt chuẩn, hệ thống lưu trữ danh sách nguyên liệu và bảo toàn chuỗi tên hiển thị do tác giả nhập.
+  - Bước 6: Toàn bộ đạt chuẩn, hệ thống lưu danh sách nguyên liệu có tham chiếu catalog bắt buộc và tên hiển thị chuẩn.
 - **Luồng thay thế (Alternative Flows):**
   - *AF-19.1 (Xóa bớt hoặc đổi thứ tự dòng nguyên liệu):* Tác giả nhấn nút xóa dòng hoặc kéo thả để đổi thứ tự các nguyên liệu trong danh sách.
-  - *AF-19.2 (Chỉnh sửa nguyên liệu đã lưu):* Tác giả sửa đổi tên hoặc định lượng của bất kỳ dòng nào khi cập nhật bài viết (FR-44).
+  - *AF-19.2 (Chỉnh sửa nguyên liệu đã lưu):* Tác giả chọn lại mục catalog hoặc sửa định lượng/đơn vị của dòng khi cập nhật bài viết (FR-44).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
   - *EF-19.1 (Để trống nguyên liệu hoặc vượt quá 50 dòng):* Nếu tác giả không nhập dòng nguyên liệu nào (0 dòng) hoặc tạo quá 50 dòng nguyên liệu, hệ thống chặn lưu bài và hiển thị thông báo lỗi yêu cầu số dòng từ 1 đến 50 (BR-19).
   - *EF-19.2 (Dòng nguyên liệu thiếu số lượng, số lượng $\le 0$ hoặc thiếu đơn vị):* Nếu một dòng nguyên liệu có tên nhưng bỏ trống số lượng, nhập số $\le 0$, nhập chữ phi số học ("vừa đủ") hoặc bỏ trống đơn vị, hệ thống yêu cầu nhập số lượng số học dương và chọn đơn vị hợp lệ (BR-14).
   - *EF-19.3 (Chặn xuất bản khi thiếu tỷ lệ quy đổi sang gam):* Nếu tác giả dùng đơn vị đo lường (như quả, bìa, muỗng) mà nguyên liệu đó chưa được cấu hình tỷ lệ quy đổi về gam trong `INGREDIENT_UNIT_CONVERSION`, hệ thống từ chối công khai bài viết và hiển thị lỗi validation theo BR-19 và BR-73.
-  - *SF-19.1 (Làm sạch chuỗi tên nguyên liệu tự do):* Tên nguyên liệu do tác giả tự do gõ được lọc và làm sạch mã độc (sanitize HTML) nhằm ngăn chặn tấn công XSS qua dữ liệu đầu vào (NFR-10).
+  - *EF-19.4 (Nguyên liệu không có trong catalog):* Nếu không tìm thấy mục phù hợp trong danh mục chuẩn, hệ thống không cho thêm/lưu dòng đó và hướng dẫn liên hệ Admin; không mở luồng đề xuất nguyên liệu.
+  - *SF-19.1 (Xử lý an toàn truy vấn tìm kiếm):* Chuỗi tìm kiếm nguyên liệu được xử lý an toàn theo NFR-10; kết quả được chọn vẫn phải là mục catalog hợp lệ.
 
 #### 5. Hậu điều kiện (Postconditions)
 - Danh sách nguyên liệu được lưu trữ chuẩn xác, sẵn sàng phục vụ hiển thị chi tiết (FR-20), tính toán dinh dưỡng (FR-39) và tổng hợp danh sách mua sắm (FR-54).

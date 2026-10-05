@@ -30,14 +30,45 @@ IF NOT EXISTS (SELECT 1 FROM [INGREDIENT] WHERE name = N'Tỏi')
     INSERT INTO [INGREDIENT] (name, source_name, reference_date)
     VALUES (N'Tỏi', N'Dữ liệu demo nội bộ', '2026-10-02');
 
+IF NOT EXISTS (SELECT 1 FROM [INGREDIENT] WHERE name = N'Tiêu đen')
+    INSERT INTO [INGREDIENT] (name, source_name, reference_date)
+    VALUES (N'Tiêu đen', N'Dữ liệu demo nội bộ', '2026-10-02');
+
 DECLARE @tofu BIGINT, @tomato BIGINT, @water_spinach BIGINT, @garlic BIGINT;
-DECLARE @gram INT, @clove INT;
+DECLARE @pepper BIGINT;
+DECLARE @gram INT, @clove INT, @block INT, @fruit INT, @bunch INT, @teaspoon INT;
 SELECT @tofu = ingredient_id FROM [INGREDIENT] WHERE name = N'Đậu hũ';
 SELECT @tomato = ingredient_id FROM [INGREDIENT] WHERE name = N'Cà chua';
 SELECT @water_spinach = ingredient_id FROM [INGREDIENT] WHERE name = N'Rau muống';
 SELECT @garlic = ingredient_id FROM [INGREDIENT] WHERE name = N'Tỏi';
+SELECT @pepper = ingredient_id FROM [INGREDIENT] WHERE name = N'Tiêu đen';
 SELECT @gram = unit_id FROM [UNIT] WHERE code = N'g';
 SELECT @clove = unit_id FROM [UNIT] WHERE code = N'nhánh';
+SELECT @block = unit_id FROM [UNIT] WHERE code = N'bìa';
+SELECT @fruit = unit_id FROM [UNIT] WHERE code = N'quả';
+SELECT @bunch = unit_id FROM [UNIT] WHERE code = N'bó';
+SELECT @teaspoon = unit_id FROM [UNIT] WHERE code = N'tsp';
+
+-- Conversion fixtures are ingredient-specific and idempotent for shared Docker testing.
+IF NOT EXISTS (SELECT 1 FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id = @tofu AND unit_id = @block)
+    INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit, is_approximate)
+    VALUES (@tofu, @block, 150, 1);
+
+IF NOT EXISTS (SELECT 1 FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id = @tomato AND unit_id = @fruit)
+    INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit, is_approximate)
+    VALUES (@tomato, @fruit, 120, 1);
+
+IF NOT EXISTS (SELECT 1 FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id = @water_spinach AND unit_id = @bunch)
+    INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit, is_approximate)
+    VALUES (@water_spinach, @bunch, 300, 1);
+
+IF NOT EXISTS (SELECT 1 FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id = @garlic AND unit_id = @clove)
+    INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit, is_approximate)
+    VALUES (@garlic, @clove, 3, 1);
+
+IF NOT EXISTS (SELECT 1 FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id = @pepper AND unit_id = @teaspoon)
+    INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit, is_approximate)
+    VALUES (@pepper, @teaspoon, 2, 1);
 
 IF NOT EXISTS (
     SELECT 1 FROM [RECIPE_POST]

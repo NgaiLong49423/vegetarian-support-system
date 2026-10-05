@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.3.0
+> **Version:** v2.4.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -91,10 +91,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-12"></a>
-### BR-12 — Tính tùy chọn của liên kết nguyên liệu chuẩn
+### BR-12 — Bắt buộc liên kết nguyên liệu công thức với catalog chuẩn
 
 - **Mã quy tắc:** BR-12
-- **Nội dung:** Liên kết nguyên liệu chuẩn là tùy chọn. Tên mới trên công thức không tự trở thành mục chuẩn; việc thiếu liên kết không tự chặn hoàn thiện hoặc công khai bài theo workflow chung.
+- **Nội dung:** Mọi dòng nguyên liệu trong Recipe Post phải tham chiếu một mục đang dùng được trong danh mục chuẩn FR-18. Chuyên gia không được nhập/lưu tên nguyên liệu tự do hoặc gửi đề xuất qua hệ thống. Khi không tìm thấy mục phù hợp, Chuyên gia liên hệ Administrator để Administrator tự quản lý catalog; hệ thống không thêm luồng đề xuất/duyệt mới. Quy tắc này không yêu cầu mục catalog phải có hồ sơ dinh dưỡng; áp dụng FR-40/BR-50 cho nguyên liệu chuẩn thiếu dữ liệu dinh dưỡng.
 
 ---
 
@@ -395,10 +395,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-50"></a>
-### BR-50 — Cho phép công khai bài chứa nguyên liệu ngoài danh mục dinh dưỡng
+### BR-50 — Cho phép công khai bài thiếu dữ liệu dinh dưỡng
 
 - **Mã quy tắc:** BR-50
-- **Nội dung:** Nguyên liệu ngoài danh mục dinh dưỡng không chặn công khai Recipe Post theo workflow chung. Bài có kết quả dinh dưỡng chưa đầy đủ không được sử dụng trong AI menu có mục tiêu dinh dưỡng.
+- **Nội dung:** Nguyên liệu đã có trong catalog chuẩn FR-18 nhưng chưa có hồ sơ dinh dưỡng không chặn công khai Recipe Post theo workflow chung. Bài có kết quả dinh dưỡng chưa đầy đủ không được sử dụng trong AI menu có mục tiêu dinh dưỡng. Quy tắc này không cho phép lưu nguyên liệu Recipe Post không có trong catalog chuẩn (BR-12).
 
 ---
 

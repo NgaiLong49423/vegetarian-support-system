@@ -55,6 +55,25 @@ None.
 
 None.
 
+## 2026-10-04 — Prepare Recipe Ingredient Entry for Issue #25
+
+**Status:** Committed — f8a90152dcf5ccf88a96f4120d36295ef6bb6af5.
+
+**Scope:** Prototype ingredient quantity input and add repeatable Docker conversion samples while the Recipe Post API was pending Issues #11/#22.
+
+### Added
+
+- Validate positive ingredient quantities and the then-agreed 100g minimum/step for direct `g`/`kg` input.
+- Add ingredient-specific conversion fixtures for tofu, tomato, water spinach, garlic, and black pepper.
+
+### Changed
+
+- Prototype 1–50 ingredient rows with free-text names and local-only publish feedback before the Recipe Post API was available.
+
+### Fixed
+
+- Remove the demo's misleading successful-publish message before API integration.
+
 ## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
 
 **Status:** Working tree — not committed.
