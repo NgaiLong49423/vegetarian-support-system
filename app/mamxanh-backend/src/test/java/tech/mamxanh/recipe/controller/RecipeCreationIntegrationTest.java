@@ -23,6 +23,7 @@ import tech.mamxanh.recipe.entity.RecipeCodes.Difficulty;
 import tech.mamxanh.recipe.entity.RecipeCodes.DishCategory;
 import tech.mamxanh.recipe.entity.RecipeCodes.VegetarianType;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     private static final String EXPERT_EMAIL = "issue22-expert@test.local";
@@ -177,7 +178,7 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void reportsTrimmedValidationErrorsAndKeepsOptionalDescriptionAndVideoBlank() throws Exception {
+    void reportsTitleAndInstructionLengthErrorsAfterTrim() throws Exception {
         CreateRecipeRequest invalid = new CreateRecipeRequest("  ab  ", "", "too short", DishCategory.BRAISED,
                 VegetarianType.VEGAN, Difficulty.EASY, 2, 10, 0, "", List.of(ingredient(gramUnitId, "200")), List.of());
         mockMvc.perform(post("/api/v1/recipes")
@@ -187,6 +188,29 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.errors[*].field", hasItem("title")))
                 .andExpect(jsonPath("$.errors[*].field", hasItem("instructions")));
         assertNoRecipe();
+    }
+
+    @Test
+    void trimsValidTitleAndInstructionsBeforeValidationAndKeepsOptionalFieldsBlank() throws Exception {
+        ObjectNode payload = (ObjectNode) jsonMapper.readTree(json(request(List.of(ingredient(gramUnitId, "200")), List.of())));
+        payload.put("title", "  Đậu hũ kho cà chua  ");
+        payload.put("instructions", "  Cắt đậu hũ, rim cùng cà chua đến khi thấm vị.  ");
+
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON).content(jsonMapper.writeValueAsString(payload)))
+                .andExpect(status().isCreated());
+
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT title FROM [RECIPE_POST] WHERE author_id = ?", String.class, expertId))
+                .isEqualTo("Đậu hũ kho cà chua");
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT instructions FROM [RECIPE_POST] WHERE author_id = ?", String.class, expertId))
+                .isEqualTo("Cắt đậu hũ, rim cùng cà chua đến khi thấm vị.");
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT description FROM [RECIPE_POST] WHERE author_id = ?", String.class, expertId)).isNull();
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT youtube_url FROM [RECIPE_POST] WHERE author_id = ?", String.class, expertId)).isNull();
     }
 
     @Test

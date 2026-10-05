@@ -24,4 +24,9 @@ public record CreateRecipeRequest(
         @Size(max = 2048) String youtubeUrl,
         @NotNull @Size(min = 1, max = 50) List<@Valid RecipeIngredientInput> ingredients,
         @Size(max = 5) List<@Valid RecipeMediaInput> media) {
+
+    public CreateRecipeRequest {
+        title = title == null ? null : title.trim();
+        instructions = instructions == null ? null : instructions.trim();
+    }
 }
