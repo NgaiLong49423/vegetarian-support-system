@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.16.0
+> **Version:** v0.17.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-05
 > **Status:** Active  
@@ -50,7 +50,7 @@ Chạy JUnit tests, package và coverage hard gate:
 ./mvnw clean verify
 ```
 
-JaCoCo chạy `prepare-agent`, `report` rồi `check`. Overall backend `BUNDLE / LINE / COVEREDRATIO` phải **≥0.80**; dưới 80% làm Maven trả exit code khác 0 và job CI `Backend` fail. Đây không phải new-code coverage. Reports: `target/site/jacoco/index.html` và `target/site/jacoco/jacoco.xml`. Không exclude production code để pass; thêm test có assertion phù hợp theo report. Sonar đọc XML sau khi reports được truyền qua artifact, không tạo coverage hoặc thay gate này. Coverage không thay thế Acceptance Criteria, authorization hoặc database integration evidence.
+JaCoCo chạy `prepare-agent`, `report` rồi kiểm tra aggregate `BUNDLE` cho **LINE, BRANCH, METHOD và INSTRUCTION**; cả bốn metric phải **>80%** (đúng 80% vẫn fail). JaCoCo không đo Statements; Methods và Instructions là counter riêng. Checker đọc số đếm trong XML và so sánh chính xác, đồng thời ghi từng metric, `covered/total`, tỷ lệ và trạng thái vào `target/site/jacoco/strict-coverage-summary.md`. `JaCoCoCoverageGateTest` kiểm tra các biên của gate. Đây không phải new-code coverage. Reports: `target/site/jacoco/index.html` và `target/site/jacoco/jacoco.xml`. Không exclude production code để pass; thêm test có assertion phù hợp theo report. Sonar đọc XML sau khi reports được truyền qua artifact, không tạo coverage hoặc thay gate này. Coverage không thay thế Acceptance Criteria, authorization hoặc database integration evidence.
 
 `verify` chạy cả unit test và integration test. Integration test dùng Testcontainers để khởi động cùng SQL Server container image được pin với Docker Compose (tag `2019-CU32-GDR11-ubuntu-20.04`, repository manifest digest lấy từ MCR), khởi động ứng dụng qua `MamXanhApplication.main`, chạy Flyway từ V1 và kiểm tra mapping Hibernate, nên **Docker Desktop phải đang chạy**; lần đầu cần tải image dung lượng lớn. Test dùng profile `test`, không cần file `.env` và không gửi email thật. Khi thay image/digest, phải chạy integration tests thật; compile-only không xác minh DockerImageName, SQL Server startup hay Flyway.
 
@@ -226,7 +226,7 @@ Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc 
 ## Definition of Done cho thay đổi backend
 
 - Business Rule và failure case liên quan có test phù hợp.
-- `./mvnw clean verify` (Windows: `.\mvnw.cmd clean verify`) pass trên commit hiện tại, gồm tests, build/package và overall JaCoCo line coverage ≥80%.
+- `./mvnw clean verify` (Windows: `.\mvnw.cmd clean verify`) pass trên commit hiện tại, gồm tests, build/package và JaCoCo BUNDLE Lines, Branches, Methods, Instructions đều >80%.
 - Không log password, token, SAS URL hoặc dữ liệu cá nhân nhạy cảm.
 - Thay đổi schema có Flyway migration append-only, kiểm tra trên database sạch và cập nhật ERD/tài liệu.
 - Thay đổi API có OpenAPI, validation, authorization và ví dụ lỗi tương ứng.

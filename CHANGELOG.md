@@ -9,6 +9,26 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-05 — Enforce Strict Coverage Gates for Every FE/BE Metric
+
+**Status:** Committed — 517ae10.
+
+**Scope:** Make every frontend and backend coverage counter a strict, visible CI gate and preserve reports when coverage fails.
+
+### Added
+
+- Add exact-count strict coverage checkers and boundary regression tests for Frontend Istanbul/NYC and Backend JaCoCo counters.
+- Report all four metrics, covered/total counts, coverage, required threshold and gate status in CI summaries.
+
+### Changed
+
+- Require Frontend Lines, Statements, Functions and Branches, and Backend JaCoCo BUNDLE Lines, Branches, Methods and Instructions to each exceed 80%; exactly 80% fails.
+- Collect coverage summaries and artifacts after a gate failure when reports are available.
+
+### Fixed
+
+- Correct stale coverage policy references that described a 60% Frontend threshold or a Backend line-only gate.
+
 ## 2026-10-05 — Configure IntelliJ Development Runs and Docker SQL Port
 
 **Status:** Committed — 2e21e79.

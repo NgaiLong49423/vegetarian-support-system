@@ -89,6 +89,25 @@ test('public recipe page has no management action; expert manages recipes from p
   await expect(page.getByRole('button', { name: 'Xóa', exact: true })).toBeVisible();
 });
 
+test('public detail and edit pages reject invalid recipe IDs without calling the API', async ({ page }) => {
+  let apiRequested = false;
+  await page.route('**/api/v1/recipes/**', (route) => {
+    apiRequested = true;
+    return route.fulfill({ status: 500, body: '' });
+  });
+
+  await page.goto('/cong-thuc/id/not-a-number');
+  await expect(page.getByRole('heading', { name: 'Không thể mở công thức' })).toBeVisible();
+  await expect(page.getByText('ID công thức không hợp lệ.')).toBeVisible();
+
+  await page.goto('/cong-thuc/id/0');
+  await expect(page.getByText('ID công thức không hợp lệ.')).toBeVisible();
+
+  await page.goto('/cong-thuc/0/chinh-sua');
+  await expect(page.getByText('Đường dẫn cần có ID công thức hợp lệ. Ví dụ: /cong-thuc/123/chinh-sua.')).toBeVisible();
+  expect(apiRequested).toBe(false);
+});
+
 test('expert edits recipe, saves, and sees success on the expert profile', async ({ page }) => {
   await mockEditorApi(page);
   let savedPayload: Record<string, unknown> | undefined;
