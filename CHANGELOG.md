@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-05 — Complete Catalog-backed Recipe Ingredient Validation for Issue #25
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b34ec67`.
 
 **Scope:** Complete catalog-backed quantity validation in recipe creation and expose missing-nutrition status without blocking publication.
 
