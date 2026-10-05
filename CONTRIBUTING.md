@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.10.0
+> **Version:** v3.12.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-04
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -82,10 +82,27 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
 
 ### PR vào `develop`
 
-- PR dùng `Refs #<issue-number>`, ghi scope, thay đổi và kết quả tự kiểm tra; không chứa secret, `.env`, credential hoặc file build/cá nhân.
+- PR implementation dùng `Refs #<issue-number>` theo quy tắc bên dưới, ghi scope, thay đổi và kết quả tự kiểm tra; không chứa secret, `.env`, credential hoặc file build/cá nhân.
 - Required validation checks phải pass trước merge; xem [Required checks và technical enforcement](#develop-required-checks). Ruleset hiện có yêu cầu một approval; giữ gate review hiện hành, không coi AI review là approval của thành viên.
 - Owner tự kiểm tra phần thay đổi và ghi trung thực phần chưa kiểm tra/blocker. Merge vào `develop` là tích hợp, chưa xác nhận FR đã hoàn thành.
-- Một Issue có thể có nhiều PR liên quan; không ép quan hệ một Issue/một branch/một PR.
+
+<a id="implementation-issue-pr"></a>
+#### Một implementation Issue — một implementation PR
+
+- **1 implementation Issue = 1 implementation PR.** Feature/FR implementation, bug fix hoặc refactor có work item, thay đổi business behavior và implementation task khác được quản lý bằng Issue phải có `Refs #<issue-number>`. Hoàn tất scope/AC của work item trong PR đó; review fixes/rebuttals tiếp tục trên cùng PR.
+- Sub-issue triển khai đã được Tech Lead duyệt áp dụng quy tắc trên cho từng work item; Issue cha chỉ tổng hợp phạm vi, không tạo implementation trùng. Release PR `develop -> main` tổng hợp các Issue đã tích hợp và dùng `Refs` để trace, không phải implementation PR thứ hai của chúng.
+- Sau khi Issue gốc đã hoàn thành, bug fix, refactor hoặc thay đổi bổ sung cần Issue mới và PR mới tương ứng; liên kết lịch sử khi phù hợp. Không mở lại work item đã nghiệm thu chỉ để tránh tạo Issue mới.
+- **Ngoại lệ hẹp:** chỉ repository setup, internal agent tooling hoặc governance/configuration chore ở cấp repository mới có thể không cần Issue, và phải được Tech Lead cho phép. Khi đó dùng `Refs: N/A` kèm `Reason` nêu scope và authorization; branch có thể dùng `chore/<short-name>`. Không tạo Issue chỉ để thỏa hình thức cho ngoại lệ đã duyệt.
+- `Refs: N/A` không phải lựa chọn chung cho mọi PR; không mở rộng ngoại lệ sang feature/bug/refactor thông thường để tránh Issue. Ví dụ “Implement Meal Planner” phải có Issue, kể cả khi đặt tên branch là chore.
+
+Ví dụ hợp lệ cho tooling setup đã được duyệt:
+
+```text
+Refs: N/A
+
+Reason:
+Repository internal agent tooling setup approved by Tech Lead.
+```
 
 <a id="develop-integration-baseline"></a>
 #### Develop integration baseline và đồng bộ PR song song
@@ -137,7 +154,7 @@ if (-not (Test-Path app/mamxanh-backend/.env)) {
 }
 ```
 
-Mở `app/mamxanh-backend/.env`, thay `MSSQL_SA_PASSWORD` bằng mật khẩu local mạnh đáp ứng yêu cầu SQL Server. File `.env` bị ignore và không được commit/chia sẻ; `.env.example` chỉ là hợp đồng biến môi trường an toàn. Compose override connection URL/user/password của Backend để kết nối service `sqlserver`; SMTP để trống thì không gửi email thật. Không đưa secret vào command line, workflow YAML, PR log hay tài liệu.
+Mở `app/mamxanh-backend/.env`, thay `MSSQL_SA_PASSWORD` bằng mật khẩu local mạnh đáp ứng yêu cầu SQL Server và tạo `MAMXANH_JWT_SECRET` theo hướng dẫn trong `.env.example`; Backend cần secret JWT để khởi động. File `.env` bị ignore và không được commit/chia sẻ; `.env.example` chỉ là hợp đồng biến môi trường an toàn. Compose override connection URL/user/password của Backend để kết nối service `sqlserver`; SMTP để trống thì không gửi email thật. Không đưa secret vào command line, workflow YAML, PR log hay tài liệu.
 
 **Khởi động và xác minh:**
 
@@ -181,7 +198,7 @@ Mọi lệnh sau đó (`up`, `down`, `run`, reset volume) phải tiếp tục d�
 
 **PR và GitHub gate:**
 
-- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job setup Node.js `24.21.0` (exact pin, đáp ứng yêu cầu Node `>=24` của Scalar CLI `2.5.2`), dùng project `mamxanh-ci` thống nhất cho `up`/cleanup, build Compose, đợi health checks, capture `/v3/api-docs`, validate bằng Scalar CLI `2.5.2`, upload OpenAPI artifact riêng theo PR/run, rồi smoke-test route `/scalar`; CI dùng password tạm, dọn volume trên runner disposable sau job. HTTP `curl /scalar` chỉ chứng minh route/HTML shell trả về, không chứng minh Scalar JavaScript đã render contract hoặc request API chạy được.
+- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job setup Node.js `24.21.0` (exact pin, đáp ứng yêu cầu Node `>=24` của Scalar CLI `2.5.2`), dùng project `mamxanh-ci` thống nhất cho `up`/cleanup, build Compose, đợi health checks, capture `/v3/api-docs`, validate bằng Scalar CLI `2.5.2`, upload OpenAPI artifact riêng theo PR/run, smoke-test route `/scalar`, rồi chạy Playwright qua Frontend thật tới Backend và xác minh trạng thái throttle trực tiếp trong SQL Server. CI tạo secret JWT/SQL tạm và dọn volume trên runner disposable sau job. HTTP `curl /scalar` chỉ chứng minh route/HTML shell trả về, không chứng minh Scalar JavaScript đã render contract hoặc request API chạy được.
 - Scalar tại `http://localhost:8080/scalar` là giao diện chính thức để team đọc và manual-test API. Browser acceptance phải xác nhận JavaScript tải/render generated `/v3/api-docs`, kiểm tra operation và gửi request phù hợp trong giao diện; đây là bằng chứng riêng với CI route smoke và không thay automated regression/authorization tests.
 - Ruleset `protect-develop` yêu cầu status context `Docker Development` và strict up-to-date. PR vào `develop` phải sync baseline theo phần trên; sau lần sync cuối có ảnh hưởng, chạy lại kiểm tra liên quan và đợi CI trên commit cập nhật.
 - Nếu Docker không chạy được local, ghi rõ nguyên nhân và kết quả nào chưa xác minh trong PR; không ghi “Docker test passed”. Required CI check vẫn phải pass trước khi merge. Việc Docker daemon của máy cá nhân unavailable không tự cho phép bỏ qua gate.
@@ -190,7 +207,7 @@ Mọi lệnh sau đó (`up`, `down`, `run`, reset volume) phải tiếp tục d�
 <a id="develop-required-checks"></a>
 #### Required checks và technical enforcement cho `develop`
 
-Project Owner chốt hard gates: Frontend Playwright/Istanbul/NYC đạt **≥60% cho cả Lines, Statements, Functions và Branches**; Backend JaCoCo đạt **overall BUNDLE LINE ≥80%**. Command/check fail không được coi là pass. Xem [Test Strategy](docs/testing/TEST-STRATEGY.md#8-cách-hiểu-coverage) và app README cho lệnh, metric và report paths.
+Project Owner chốt hard gates: Frontend Playwright/Istanbul/NYC đạt **≥80% cho cả Lines, Statements, Functions và Branches**; Backend JaCoCo đạt **overall BUNDLE LINE ≥80%**. Command/check fail không được coi là pass. Xem [Test Strategy](docs/testing/TEST-STRATEGY.md#8-cách-hiểu-coverage) và app README cho lệnh, metric và report paths.
 
 | Required check context | Phạm vi |
 |---|---|
@@ -319,6 +336,8 @@ Chính sách Tự chủ Kỹ thuật (Engineering Autonomy Policy) phân định
 
 Khi làm việc, tạo nhánh từ `develop` và đặt tên theo cấu trúc:
 `[loại-nhánh]/[issue-number]-[tên-ngắn-gọn]`
+
+Repository-level chore không cần Issue chỉ được dùng `chore/<tên-ngắn-gọn>` theo [ngoại lệ đã được Tech Lead duyệt](#implementation-issue-pr).
 
 ### Các tiền tố nhánh thông dụng:
 * **`feature/`**: Sử dụng khi phát triển một tính năng mới.
@@ -499,7 +518,7 @@ chore: update .gitignore
 Để gửi một pull request thành công:
 1. **Đặt tiêu đề rõ ràng:** Tiêu đề PR nên tuân theo định dạng tương tự commit message và dùng tiếng Anh (ví dụ: `feat(auth): add login page`).
 2. **Mô tả chi tiết nội dung:** Điền đầy đủ thông tin vào mẫu PR, mô tả rõ các thay đổi bạn đã thực hiện và lý do thay đổi.
-3. **Liên kết Issue:** PR vào `develop` và `main` dùng `Refs #123`. Tech Lead xác nhận và đóng Issue sau khi kiểm tra demo local trên `main` đạt; không dùng closing keywords để đóng trước nghiệm thu.
+3. **Liên kết Issue:** PR vào `develop` và `main` dùng `Refs #123`; chỉ repository-level chore được Tech Lead cho phép mới dùng `Refs: N/A` kèm lý do theo [quy tắc Issue/PR](#implementation-issue-pr). Tech Lead xác nhận và đóng Issue sau khi kiểm tra demo local trên `main` đạt; không dùng closing keywords để đóng trước nghiệm thu.
 4. **Kiểm tra hoạt động:** Chắc chắn rằng dự án của bạn vẫn chạy được và không làm hỏng các tính năng cũ.
 5. **Dọn dẹp code:** Đảm bảo không có code thừa, comment nháp hay các file rác trước khi gửi PR.
 

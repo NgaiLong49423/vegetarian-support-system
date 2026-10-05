@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { AuthPage } from './pages/Auth';
+import { AuthProvider } from './components/AuthContext';
 import { DemoAccountProvider } from './components/DemoAccount';
 import { Home } from './pages/Home';
 import { Explore } from './pages/Explore';
@@ -16,6 +17,11 @@ import { Profile } from './pages/Profile';
 import { AiPlans } from './pages/AiPlans';
 import { TransactionHistory } from './pages/TransactionHistory';
 import { NutritionProfile } from './pages/NutritionProfile';
+import { DietaryPreferencesPage } from './pages/DietaryPreferencesPage';
+import { OnboardingPage } from './pages/OnboardingPage';
+import { AdminCatalogPage } from './pages/AdminCatalogPage';
+import { ExpertApplicationPage } from './pages/ExpertApplication';
+import { RecipeComparePage } from './pages/RecipeCompare';
 import { EditRecipe } from './pages/EditRecipe';
 import { ApiRecipeDetail } from './pages/ApiRecipeDetail';
 import { ExpertRecipeProfile } from './pages/ExpertRecipeProfile';
@@ -30,7 +36,7 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <BrowserRouter><DemoAccountProvider>
+    <BrowserRouter><AuthProvider><DemoAccountProvider>
       <ScrollToTop />
       <Layout>
         <Routes>
@@ -55,9 +61,15 @@ export default function App() {
           <Route path="/goi-ai" element={<AiPlans />} />
           <Route path="/giao-dich" element={<TransactionHistory />} />
           <Route path="/ho-so/dinh-duong" element={<NutritionProfile />} />
+          <Route path="/ho-so/so-thich-an-uong" element={<DietaryPreferencesPage />} />
+          <Route path="/khoi-tao-so-thich" element={<OnboardingPage />} />
+          <Route path="/quan-tri/danh-muc" element={<AdminCatalogPage />} />
+          <Route path="/dang-ky-chuyen-gia" element={<ExpertApplicationPage />} />
+          <Route path="/admin/xet-duyet-chuyen-gia" element={<ExpertApplicationPage />} />
+          <Route path="/so-sanh" element={<RecipeComparePage />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>
-    </DemoAccountProvider></BrowserRouter>
+    </DemoAccountProvider></AuthProvider></BrowserRouter>
   );
 }

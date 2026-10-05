@@ -1,13 +1,59 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.47.2
+> **Version:** v2.52.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-04
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-05 — Implement Onboarding and the Personalized AI Eligibility Gate (FR-31, Issue #36) ([PR #92](https://github.com/NgaiLong49423/vegetarian-support-system/pull/92))
+
+**Status:** Committed — 98f5dd9, fc13b75, ab661ef, 7e20917, 06aa22f, b8dcd6a, dc0f6f8, 434add6.
+
+**Scope:** Implement UC-31.1–UC-31.3 and AC-31.1–AC-31.10: a one-time Onboarding questionnaire for new Members, Skip without locking regular features, viewing and updating the private dietary-preference profile, and the BR-31 gate that must run before any personalized AI request.
+
+### Added
+
+- Add `GET`/`PUT /api/v1/nutrition/dietary-preferences`, `POST /api/v1/nutrition/dietary-preferences/onboarding/skip`, `POST /api/v1/nutrition/dietary-preferences/onboarding/invitation` and `GET /api/v1/nutrition/dietary-preferences/ingredient-suggestions` for the signed-in Member; administrators receive `403 MEMBER_ACCESS_REQUIRED`.
+- Add a nutrition-owned entity for the dietary-preference and Onboarding columns of `USER` (decision Q18, `@DynamicUpdate`) and an entity for `USER_INGREDIENT_PREFERENCE`; names matching an active standard ingredient are linked to it.
+- Add `DietaryPreferenceService.requirePersonalizedAiEligible`, which stops a request with `409 DIETARY_PROFILE_INCOMPLETE` and a `missing` list before any Gemini call or Meal Plan write.
+- Add the Flyway migration `V7__user_onboarding_invitation.sql` with the column `USER.onboarding_invited_at`: the invitation endpoint returns `show = true` only once, for a `NOT_STARTED` account that has not been shown it, under a `USER` row lock. Accounts that existed before V7 are recorded as already invited and keep their `onboarding_status` (AC-31.10).
+- Add the `MEMBER_ACCESS_REQUIRED`, `INGREDIENT_PREFERENCE_CONFLICT` and `DIETARY_PROFILE_INCOMPLETE` error codes, and let application errors carry extra problem properties.
+- Add the `bearerAuth` HTTP bearer security scheme (`OpenApiConfig`) to the generated OpenAPI and require it on the dietary-preference operations.
+- Add the Frontend Onboarding page `/khoi-tao-so-thich`, the Settings page `/ho-so/so-thich-an-uong` with the missing-information notice, and the redirect to Onboarding when the invitation endpoint returns `show = true` after sign-in.
+- Add SQL Server integration tests for AC-31.1–AC-31.10 (including the invitation shown once, parallel claims and the V6→V7 upgrade), validation, access, privacy and the generated OpenAPI, a problem-detail unit test, `TC41` in `database/queries.sql`, and API-stubbed Playwright scenarios for the Onboarding and Settings flows.
+
+### Changed
+
+- Point the "Sở thích ăn uống" menu item to the new Settings page, stub the invitation call in the existing login browser tests, record the invitation as already shown for the real-stack login test account, and document the endpoints, rules and error codes in `docs/api/API.md`, `database/schema.sql`, `database/README.md` and both app READMEs.
+
+### Fixed
+
+- Stop inviting a Member again after the questionnaire was left without Skip or Complete, and stop marking existing accounts as `SKIPPED` (PR #92 review F001).
+- Publish `minimum: 1` for `maxCookingTimeMinutes`, matching the validator that rejects `0` (PR #92 review F002).
+- Declare bearer security for the dietary-preference operations in the generated OpenAPI (PR #92 review F003).
+
+## 2026-10-05 — Record Password Login Follow-Up Database Checks (FR-03-B, Issue #6)
+
+**Status:** Committed — 7757560.
+
+**Scope:** Apply the Tech Lead decision Q29 to the database guide and replace the unverified post-sync notes with results measured on a clean SQL Server 2019 database after V1–V6.
+
+### Added
+
+None.
+
+### Changed
+
+- Remove `last_failed_login_at` from the FR-03 target design in `database/README.md`, because no Acceptance Criterion uses it.
+- Record that `database/schema.sql` matches a database built by V1–V6 with 0 differences in columns, CHECK, DEFAULT, index and FK definitions, and that `database/queries.sql` passes 78/78 assertions on both databases.
+
+### Fixed
+
+None.
 
 ## 2026-10-04 — Recipe Post Frontend Management (Issue #47)
 
@@ -28,6 +74,127 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+
+## 2026-10-04 — Prepare Recipe Ingredient Entry for Issue #25
+
+**Status:** Committed — f8a90152dcf5ccf88a96f4120d36295ef6bb6af5.
+
+**Scope:** Prototype ingredient quantity input and add repeatable Docker conversion samples while the Recipe Post API was pending Issues #11/#22.
+
+### Added
+
+- Validate positive ingredient quantities and the then-agreed 100g minimum/step for direct `g`/`kg` input.
+- Add ingredient-specific conversion fixtures for tofu, tomato, water spinach, garlic, and black pepper.
+
+### Changed
+
+- Prototype 1–50 ingredient rows with free-text names and local-only publish feedback before the Recipe Post API was available.
+
+### Fixed
+
+- Remove the demo's misleading successful-publish message before API integration.
+
+## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
+
+**Status:** Working tree — not committed.
+
+**Scope:** Prevent Codex from reporting a failed GitHub CLI login solely because its Windows sandbox cannot access the user's keyring or network.
+
+### Added
+
+None.
+
+### Changed
+
+- Require an authorized out-of-sandbox authentication check and separate keyring, network, and credential failures before asking a user to sign in again.
+
+### Fixed
+
+None.
+
+## 2026-10-04 — Fix Docker Development JWT Configuration
+
+**Status:** Committed — 7371bf6.
+
+**Scope:** Restore the Docker Development CI gate by passing the required JWT signing secret to the Backend under its configured environment-variable name.
+
+### Added
+
+None.
+
+### Changed
+
+- Align the Docker Compose variable and contributor setup instructions with the Backend's `MAMXANH_JWT_SECRET` configuration.
+
+### Fixed
+
+- Generate and pass `MAMXANH_JWT_SECRET` in the Docker Development workflow so the Backend starts during the integration smoke test.
+- Preserve SQL client output in Playwright failures so integration query errors are actionable in CI logs.
+- Enable `QUOTED_IDENTIFIER` for test SQL sessions that update tables with filtered indexes.
+- Suppress `sqlcmd` row-count output so integration assertions parse only query results.
+- Target the password input uniquely when the visible-password control shares its accessible label.
+
+## 2026-10-04 — Complete Password Login Integration Evidence (Issue #6)
+
+**Status:** Committed — cfb7f9c.
+
+**Scope:** Verify password login through the real Frontend, Backend and SQL Server Compose stack, and align the implementation and integration guidance with approved authentication decisions.
+
+### Added
+
+- Add a Docker Development Playwright integration test that verifies browser login, failed-login persistence, temporary blocking and successful counter reset against SQL Server.
+
+### Changed
+
+- Use 60-minute JWT access tokens and tab-scoped `sessionStorage`; document the accepted temporary account-enumeration risk.
+- Require the JWT signing secret in the Compose Backend and generate a disposable secret in CI.
+- Remove password login from the planned OpenAPI reference now that it is implemented at runtime.
+
+### Fixed
+
+- Reuse the shared SQL Server integration-test context for the ingredient catalog database tests so required JWT configuration is present.
+
+## 2026-10-03 — Complete FR-18 Review Fixes ([PR #75](https://github.com/NgaiLong49423/vegetarian-support-system/pull/75))
+
+**Status:** Committed — f2e571df269d8522764b7b776b1ff5d18eb2a363.
+
+**Scope:** Synchronize the catalog-management feature with the develop baseline, preserve ordered schema migrations, and address verified FR-18 review findings.
+
+### Added
+
+- Add database-side insert-only handling for concurrent duplicate ingredient-unit conversion requests.
+
+### Changed
+
+- Align conversion and unit numeric validation with their SQL Server decimal precision and scale.
+- Reuse the shared Frontend API client and expose Bearer-token injection for the pending login integration.
+- Move the ingredient-group migration to V5 after the email-verification V3 and nutrition-consent V4 migrations.
+
+### Fixed
+
+- Preserve the complete coverage HTML reports, Authentication contract, and catalog form context during status changes.
+- Keep the conversion ingredient lookup independent from filtered search results and use the local calendar date for reference-date defaults.
+- Reject removal of a required source URL before updating nutrition-supported ingredients.
+
+## 2026-10-04 — Synchronize Password Login with the Develop Baseline (FR-03-B, Issue #6)
+
+**Status:** Committed — 998e404.
+
+**Scope:** Resolve the authentication feature branch conflicts with the current `develop` baseline while preserving the nutrition and ingredient-catalog schema changes.
+
+### Added
+
+None.
+
+### Changed
+
+- Move the account login-throttle migration to V6 after the existing V4 nutrition-consent and V5 ingredient-validation migrations.
+- Integrate real authenticated account state with the role-aware demo navigation, shared API client and nutrition requests.
+- Align the schema snapshot, verification query and API/database guides with the merged baseline.
+
+### Fixed
+
+- Keep demo role switching limited to demo sessions and clear demo state when a real user signs in or leaves the account.
 
 ## 2026-10-03 — Recipe Post Backend API and Data Handling (Issue #47)
 
@@ -246,6 +413,33 @@ None.
 ### Fixed
 
 - Lock the `USER` row while checking the resend cooldown and replacing the verification token, so concurrent requests are serialized and only the accepted one publishes an email event.
+
+## 2026-10-01 — Implement Password Login and Temporary Login Blocking (FR-03-B, Issue #6)
+
+**Status:** Committed — d9b6ef4, f3deae8, e5da120, 3057480.
+
+**Scope:** Implement UC-03.4 (AC-03.6–AC-03.9, NFR-07), client-side logout (AC-03.13) and the account-status check of NFR-09 end to end: password login that issues a Stateless JWT access token, a ten-minute per-account block after five consecutive wrong passwords, validation of Bearer tokens on every protected request, and the Frontend session that uses them.
+
+### Added
+
+- Add `POST /api/v1/auth/login` returning `AuthResponse` (HS256 access token, `tokenType`, `expiresInSeconds`, `AccountSummary`) with neutral `INVALID_CREDENTIALS` answers for unknown emails, wrong passwords and password-less Google accounts, and `EMAIL_NOT_VERIFIED` or `ACCOUNT_LOCKED` only after a correct password.
+- Add Flyway migration `V4__user_login_throttle.sql` with `USER.failed_login_attempts` and `USER.login_blocked_until`; the fifth consecutive wrong password blocks login for ten minutes with `429 LOGIN_TEMPORARILY_BLOCKED` and `Retry-After`, checked before the password and without changing `account_status`.
+- Add Spring Security OAuth2 Resource Server validation of Bearer tokens (signature, issuer, expiry against the application clock) and re-read `USER` on every authenticated request so a `LOCKED` account is rejected immediately with `403 ACCOUNT_LOCKED`.
+- Add the required `MAMXANH_JWT_SECRET` setting (at least 32 bytes, never printed) and configurable `mamxanh.auth.access-token-ttl`, `max-failed-login-attempts` and `login-block-duration` properties.
+- Add unit and SQL Server integration tests for AC-03.6–AC-03.9, concurrent wrong passwords, other accounts staying unaffected, expired, tampered, foreign-signed and orphan tokens, immediate administrative lock and log redaction, plus TC40 in `database/queries.sql`.
+- Add the Frontend login flow: `POST /auth/login` from the login page, messages chosen by problem `code` (neutral invalid credentials, unverified email with a resend link, administrative lock, temporary block with the remaining minutes), and a session kept in `localStorage` behind a single storage function while the storage decision is pending.
+- Add an `AuthContext` with client-side logout, automatic logout when the token expires, cross-tab synchronization, and an Axios interceptor that sends `Authorization: Bearer` and ends the session on `401` or `403 ACCOUNT_LOCKED`.
+- Add API-stubbed Playwright scenarios for login, logout without a server call, login error codes, expired stored sessions and token expiry.
+
+### Changed
+
+- Lock the `USER` row during a login attempt so parallel requests cannot bypass the failure count.
+- Replace the `DemoAccount` context with `AuthContext`; the explicit demo preview remains a separate, token-free mode, and the header shows the real account name, email and a logout action for real sessions.
+- Synchronize `database/schema.sql` with V4 (200 columns, 59 CHECK and 56 DEFAULT constraints) and document the login error codes, token claims and pending token parameters in `docs/api/API.md` and `docs/api/openapi.yaml`.
+
+### Fixed
+
+None.
 
 ## 2026-10-01 — Compute the Verification Resend Cooldown with Time Zone-Aware Values (FR-03-A, Issue #5) ([PR #74](https://github.com/NgaiLong49423/vegetarian-support-system/pull/74))
 

@@ -1,7 +1,7 @@
 import type { Page, Route } from '@playwright/test';
 import { expect, test } from './baseFixtures';
 
-// Registration and email verification call the backend API. These browser tests replace the API with
+// Registration, email verification and login call the backend API. These browser tests replace the API with
 // page.route stubs, so they check the Frontend flow only; they are not full FE–BE end-to-end evidence.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -95,18 +95,120 @@ test('resend request shows the neutral message from the API (mock API)', async (
   await expect(page.getByRole('status')).toContainText('Nếu email thuộc một tài khoản chưa xác minh');
 });
 
-test('login does not create a fake session; demo entry and exit are explicit', async ({ page }) => {
+const account = { id: 101, displayName: 'Nguyễn An', email: 'an@example.com', avatarUrl: null, role: 'CUSTOMER', accountStatus: 'ACTIVE', emailVerified: true };
+
+function authResponse(expiresInSeconds = 3600) {
+  return { status: 200, contentType: 'application/json', headers: corsHeaders, body: JSON.stringify({ accessToken: 'header.payload.signature', tokenType: 'Bearer', expiresInSeconds, account }) };
+}
+
+async function submitLogin(page: Page, email = 'an@example.com', password = 'MatKhau123') {
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
+}
+
+const storedSession = (page: Page) => page.evaluate(() => sessionStorage.getItem('mamxanh.auth'));
+
+// After a successful login the app asks whether to show the FR-31 Onboarding invitation; without it the login lands on the home page.
+async function stubAnsweredOnboarding(page: Page) {
+  await stubApi(page, '/nutrition/dietary-preferences/onboarding/invitation', async route => route.fulfill({
+    status: 200, contentType: 'application/json', headers: corsHeaders, body: JSON.stringify({ show: false }),
+  }));
+}
+
+test('login keeps the session in this tab and logout clears it without calling the server (mock API)', async ({ page }) => {
+  let submitted: Record<string, string> | null = null;
+  let loginAuthorization: string | null = null;
+  const serverCalls: string[] = [];
+  page.on('request', request => {
+    if (request.url().includes('/api/v1/') && request.method() !== 'OPTIONS') serverCalls.push(`${request.method()} ${new URL(request.url()).pathname}`);
+  });
+  await stubApi(page, '/auth/login', async route => {
+    submitted = route.request().postDataJSON();
+    loginAuthorization = await route.request().headerValue('authorization');
+    await route.fulfill(authResponse());
+  });
+  await stubAnsweredOnboarding(page);
+
   await page.goto('/dang-nhap');
-  await page.getByLabel('Email', { exact: true }).fill('an@example.com');
+  await submitLogin(page, '  An@Example.com ');
+
+  await expect(page).toHaveURL(/\/$/);
+  expect(submitted).toEqual({ email: 'An@Example.com', password: 'MatKhau123' });
+  expect(loginAuthorization).toBeNull();
+  const stored = JSON.parse((await storedSession(page)) ?? 'null');
+  expect(stored).toMatchObject({ accessToken: 'header.payload.signature', account: { id: 101, email: 'an@example.com' } });
+  expect(stored.expiresAt).toBeGreaterThan(Date.now());
+  expect(await page.evaluate(() => localStorage.getItem('mamxanh.auth'))).toBeNull();
+
+  await page.reload();
+  await page.getByRole('button', { name: 'Tài khoản Nguyễn An' }).click();
+  await expect(page.getByText('an@example.com')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Đăng nhập', exact: true })).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Đăng xuất' }).click();
+  await expect(page).toHaveURL(/\/dang-nhap$/);
+  expect(await storedSession(page)).toBeNull();
+  expect(serverCalls).toEqual(['POST /api/v1/auth/login', 'POST /api/v1/nutrition/dietary-preferences/onboarding/invitation']);
+});
+
+test('login errors follow the problem code and never keep the password (mock API)', async ({ page }) => {
+  const responses = [
+    problem(401, 'INVALID_CREDENTIALS', { detail: 'Email hoặc mật khẩu không chính xác.' }),
+    problem(403, 'EMAIL_NOT_VERIFIED'),
+    problem(429, 'LOGIN_TEMPORARILY_BLOCKED', {}, { 'Retry-After': '360' }),
+    problem(403, 'ACCOUNT_LOCKED'),
+  ];
+  await stubApi(page, '/auth/login', async route => route.fulfill(responses.shift()!));
+  await page.goto('/dang-nhap');
+
+  await submitLogin(page);
+  await expect(page.getByRole('alert')).toHaveText('Email hoặc mật khẩu không chính xác.');
+  await expect(page.getByLabel('Mật khẩu', { exact: true })).toHaveValue('');
+
+  await submitLogin(page);
+  await expect(page.getByRole('alert')).toContainText('Tài khoản chưa xác minh email');
+  await expect(page.getByRole('link', { name: 'Gửi lại email xác minh' })).toHaveAttribute('href', '/xac-minh-email');
+
+  await submitLogin(page);
+  await expect(page.getByRole('alert')).toContainText('Vui lòng thử lại sau 6 phút.');
+
+  await submitLogin(page);
+  await expect(page.getByRole('alert')).toContainText('Tài khoản đã bị quản trị viên khóa');
+  expect(await storedSession(page)).toBeNull();
+});
+
+test('an expired stored session is dropped and a live session ends when its token expires (mock API)', async ({ page }) => {
+  await page.addInitScript(([key, value]) => {
+    if (!sessionStorage.getItem('seeded')) {
+      sessionStorage.setItem(key, value);
+      sessionStorage.setItem('seeded', '1');
+    }
+  }, ['mamxanh.auth', JSON.stringify({ accessToken: 'old.token.value', expiresAt: 1, account })]);
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: 'Đăng nhập', exact: true })).toBeVisible();
+  expect(await storedSession(page)).toBeNull();
+
+  await stubApi(page, '/auth/login', async route => route.fulfill(authResponse(2)));
+  await stubAnsweredOnboarding(page);
+  await page.goto('/dang-nhap');
+  await submitLogin(page);
+  await expect(page.getByRole('button', { name: 'Tài khoản Nguyễn An' })).toBeVisible();
+  await expect(page).toHaveURL(/\/dang-nhap$/, { timeout: 5000 });
+  await expect(page.getByRole('alert')).toHaveText('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+  expect(await storedSession(page)).toBeNull();
+});
+
+test('demo entry and exit stay explicit and never create a server session', async ({ page }) => {
+  await page.goto('/dang-nhap');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('DemoPass123!');
   await page.getByRole('button', { name: 'Hiện mật khẩu', exact: true }).click();
   await expect(page.getByLabel('Mật khẩu', { exact: true })).toHaveAttribute('type', 'text');
-  await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('chưa tạo phiên tài khoản');
   await page.getByRole('button', { name: 'Tiếp tục với Google' }).click();
   await expect(page.getByRole('status')).toContainText('Google Login chưa được kết nối');
   await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
   await page.getByRole('button', { name: 'Tài khoản Lan Anh, gói AI FREE demo' }).click();
+  expect(await storedSession(page)).toBeNull();
   await page.getByRole('button', { name: 'Thoát tài khoản demo' }).click();
   await expect(page).toHaveURL(/\/dang-nhap$/);
 });

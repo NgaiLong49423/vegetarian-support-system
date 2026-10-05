@@ -57,8 +57,7 @@ export function EditRecipe() {
         prepTimeMin: data.prepTimeMin,
         cookTimeMin: data.cookTimeMin,
         youtubeUrl: data.youtubeUrl ?? '',
-        ingredients: data.ingredients.map(({ ingredientId, customName, unitId, quantity }) => ({ ingredientId, customName, unitId, quantity })),
-        media: data.media.map((image) => ({ ...image })),
+        ingredients: data.ingredients.map(({ ingredientId, unitId, quantity }) => ({ ingredientId, unitId, quantity })),
       });
     }).catch((cause: unknown) => { if (alive) setError(messageFor(asApiError(cause))); })
       .finally(() => { if (alive) setLoading(false); });
@@ -78,8 +77,7 @@ export function EditRecipe() {
     setError('');
     setFieldErrors({});
     try {
-      const normalized = { ...form, media: form.media.map((image, index) => ({ ...image, displayOrder: index + 1 })) };
-      const updated = await recipeApi.update(recipeId, normalized);
+      const updated = await recipeApi.update(recipeId, form);
       navigate('/ho-so/chuyen-gia-demo', { replace: true, state: { recipeUpdated: { id: updated.id, title: updated.title, updatedLabel: 'Đã cập nhật thành công' }, notice: 'Lưu thay đổi thành công.' } });
     } catch (cause) {
       const apiError = asApiError(cause);
@@ -102,7 +100,7 @@ export function EditRecipe() {
   const fieldLabels: Record<string, string> = {
     title: 'Tên món', description: 'Mô tả', instructions: 'Hướng dẫn nấu', dishCategory: 'Danh mục món',
     vegetarianType: 'Chế độ chay', difficulty: 'Độ khó', servings: 'Khẩu phần', prepTimeMin: 'Thời gian chuẩn bị',
-    cookTimeMin: 'Thời gian nấu', youtubeUrl: 'Video YouTube', ingredients: 'Nguyên liệu', media: 'Hình ảnh',
+    cookTimeMin: 'Thời gian nấu', youtubeUrl: 'Video YouTube', ingredients: 'Nguyên liệu',
   };
 
   return <PageContainer className="py-6 sm:py-9">
@@ -134,23 +132,19 @@ export function EditRecipe() {
         </Card>
         <Card className="p-5 sm:p-6"><div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-bold text-ink">Nguyên liệu</h2><p className="text-xs text-ink-muted">Giữ nguyên mã nguyên liệu và đơn vị hiện tại; chỉnh tên hiển thị, số lượng.</p></div></div>
           <div className="space-y-3">{form.ingredients.map((ingredient, index) => {
-            const allowedUnits = ingredient.ingredientId === null ? references.customIngredientUnits
-              : references.ingredients.filter((item) => item.ingredientId === ingredient.ingredientId).map((item) => ({ unitId: item.unitId, code: item.unitCode, name: item.unitName }));
+            const matchingOptions = references.ingredients.filter((item) => item.ingredientId === ingredient.ingredientId);
+            const allowedUnits = matchingOptions.map((item) => ({ unitId: item.unitId, code: item.unitCode, name: item.unitName }));
+            const currentIngredient = recipe.ingredients.find((item) => item.ingredientId === ingredient.ingredientId);
             return <div key={`${ingredient.ingredientId}-${index}`} className="grid gap-2 rounded-xl bg-brand-50/70 p-3 sm:grid-cols-[minmax(0,1fr)_120px_120px_auto] sm:items-end">
-            <label className="text-xs font-medium text-ink-muted">Nguyên liệu{ingredient.ingredientId === null
-              ? <input className={input} required maxLength={200} value={ingredient.customName ?? ''} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, customName: e.target.value } : item))} />
-              : <select className={input} value={ingredient.ingredientId} onChange={(e) => { const chosen = references.ingredients.find((item) => item.ingredientId === Number(e.target.value)); if (chosen) setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, ingredientId: chosen.ingredientId, unitId: chosen.unitId } : item)); }}>{[...new Map(references.ingredients.map((item) => [item.ingredientId, item])).values()].map((item) => <option key={item.ingredientId} value={item.ingredientId}>{item.name}</option>)}</select>}</label>
+            <label className="text-xs font-medium text-ink-muted">Nguyên liệu<select className={input} value={ingredient.ingredientId} onChange={(e) => { const chosen = references.ingredients.find((item) => item.ingredientId === Number(e.target.value)); if (chosen) setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, ingredientId: chosen.ingredientId, unitId: chosen.unitId } : item)); }}>{!matchingOptions.length && currentIngredient && <option value={ingredient.ingredientId}>{currentIngredient.name} (hiện không hỗ trợ)</option>}{[...new Map(references.ingredients.map((item) => [item.ingredientId, item])).values()].map((item) => <option key={item.ingredientId} value={item.ingredientId}>{item.name}</option>)}</select>{!matchingOptions.length && <span className="mt-1 block text-xs text-amber-800">Nguyên liệu này hiện không được hỗ trợ.</span>}</label>
             <label className="text-xs font-medium text-ink-muted">Số lượng<input className={input} type="number" min="0.01" step="0.01" required value={ingredient.quantity} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, quantity: Number(e.target.value) } : item))} /></label>
             <label className="text-xs font-medium text-ink-muted">Đơn vị<select className={input} value={ingredient.unitId} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, unitId: Number(e.target.value) } : item))}>{allowedUnits.map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code})</option>)}</select></label>
             <Button type="button" variant="ghost" size="sm" disabled={form.ingredients.length === 1} aria-label="Xóa nguyên liệu" onClick={() => setField('ingredients', form.ingredients.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4 text-red-600" /></Button>
           </div>; })}</div>
-          <button type="button" className="mt-4 text-sm font-semibold text-brand-700" onClick={() => setField('ingredients', [...form.ingredients, { ingredientId: references.ingredients[0]?.ingredientId ?? null, customName: references.ingredients.length ? null : '', unitId: references.ingredients[0]?.unitId ?? references.customIngredientUnits[0]?.unitId ?? 1, quantity: 1 }])}>+ Thêm dòng nguyên liệu</button>
+          <button type="button" disabled={!references.ingredients.length} className="mt-4 text-sm font-semibold text-brand-700 disabled:cursor-not-allowed disabled:text-ink-muted" onClick={() => { const first = references.ingredients[0]; if (first) setField('ingredients', [...form.ingredients, { ingredientId: first.ingredientId, unitId: first.unitId, quantity: 1 }]); }}>+ Thêm dòng nguyên liệu</button>
           {fieldError('ingredients')}
         </Card>
-        <Card className="p-5 sm:p-6"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-lg font-bold text-ink">Hình ảnh</h2><p className="text-xs text-ink-muted">Tối đa 5 ảnh; có thể bỏ toàn bộ ảnh. Chọn đúng một ảnh bìa.</p></div><ImagePlus className="h-5 w-5 text-brand-600" /></div>
-          <div className="space-y-3">{form.media.map((image, index) => <div className="flex gap-3 rounded-xl border border-brand-100 p-3" key={`${image.displayOrder}-${index}`}><img src={image.url} alt="Ảnh công thức" className="h-16 w-16 rounded-lg object-cover" /><div className="min-w-0 flex-1"><input className={input} aria-label={`Đường dẫn ảnh ${index + 1}`} value={image.url} onChange={(e) => setField('media', form.media.map((entry, i) => i === index ? { ...entry, url: e.target.value } : entry))} /><label className="mt-2 flex items-center gap-2 text-xs"><input type="radio" name="cover" checked={image.cover} onChange={() => setField('media', form.media.map((entry, i) => ({ ...entry, cover: i === index })))} />Ảnh bìa</label></div><button type="button" aria-label="Xóa ảnh" onClick={() => setField('media', form.media.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4 text-red-600" /></button></div>)}</div>
-          {form.media.length < 5 && <button type="button" className="mt-3 text-sm font-semibold text-brand-700" onClick={() => setField('media', [...form.media, { url: '', mimeType: 'image/jpeg', displayOrder: form.media.length + 1, cover: form.media.length === 0 }])}>+ Thêm URL ảnh</button>}{fieldError('media')}
-        </Card>
+        {recipe.media.length > 0 && <Card className="p-5 sm:p-6"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-lg font-bold text-ink">Hình ảnh</h2><p className="text-xs text-ink-muted">Ảnh được giữ nguyên khi lưu nội dung. Quản lý ảnh chưa hỗ trợ.</p></div><ImagePlus className="h-5 w-5 text-brand-600" /></div><div className="flex flex-wrap gap-3">{recipe.media.map((image) => <div className="relative" key={image.displayOrder}><img src={image.url} alt="Ảnh công thức" className="h-20 w-20 rounded-lg object-cover" />{image.cover && <span className="absolute bottom-1 left-1 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold">Ảnh bìa</span>}</div>)}</div></Card>}
       </div>
       <aside className="space-y-4 lg:sticky lg:top-6"><Card className="p-5"><p className="mb-1 text-xs font-bold uppercase tracking-wide text-brand-600">Đang chỉnh sửa</p><h2 className="text-lg font-bold text-ink">{recipe.title}</h2><p className="mt-2 text-sm text-ink-muted">Bài đang công khai. Khi lưu hợp lệ, nội dung mới được cập nhật ngay.</p><Button type="submit" disabled={saving} className="mt-5 w-full">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Lưu thay đổi</Button><Button type="button" variant="outline" className="mt-3 w-full" onClick={() => navigate('/ho-so/chuyen-gia-demo')}>Hủy</Button></Card><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-950"><strong>Lưu ý:</strong> Bài bị quản trị viên ẩn sẽ bị chặn mọi thao tác sửa. Chỉ quản trị viên mới có thể phục hồi.</div></aside>
     </form>

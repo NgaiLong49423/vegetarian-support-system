@@ -41,11 +41,6 @@ public class RecipePostController {
         return service.referenceData(keyword);
     }
 
-    @GetMapping("/{recipeId}")
-    public RecipePostResponse getPublic(@PathVariable @Min(1) long recipeId) {
-        return service.getPublished(recipeId);
-    }
-
     @GetMapping("/{recipeId}/manage")
     public RecipePostResponse getForAuthor(@PathVariable @Min(1) long recipeId) {
         return service.getForAuthor(recipeId);

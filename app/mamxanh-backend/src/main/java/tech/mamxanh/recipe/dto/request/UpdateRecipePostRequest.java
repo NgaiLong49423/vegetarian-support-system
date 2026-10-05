@@ -23,18 +23,10 @@ public record UpdateRecipePostRequest(
         @NotNull @Min(0) @Max(1440) Integer prepTimeMin,
         @NotNull @Min(0) @Max(1440) Integer cookTimeMin,
         @Pattern(regexp = "^$|https?://(www\\.)?(youtube\\.com|youtu\\.be)/.+") @Size(max = 2048) String youtubeUrl,
-        @NotNull @Size(min = 1, max = 50) List<@NotNull @Valid Ingredient> ingredients,
-        @NotNull @Size(max = 5) List<@NotNull @Valid Media> media) {
+        @NotNull @Size(min = 1, max = 50) List<@NotNull @Valid Ingredient> ingredients) {
 
     public record Ingredient(
-            Long ingredientId,
-            @Size(max = 200) String customName,
+            @NotNull @Min(1) Long ingredientId,
             @NotNull @Min(1) Integer unitId,
             @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 8, fraction = 2) BigDecimal quantity) { }
-
-    public record Media(
-            @NotBlank @Pattern(regexp = "https?://.+") @Size(max = 2048) String url,
-            @NotBlank @Pattern(regexp = "image/jpeg|image/png|image/webp") String mimeType,
-            @NotNull @Min(1) @Max(5) Integer displayOrder,
-            @NotNull Boolean cover) { }
 }

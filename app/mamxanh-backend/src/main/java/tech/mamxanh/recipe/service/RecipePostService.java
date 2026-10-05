@@ -1,7 +1,7 @@
 package tech.mamxanh.recipe.service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,42 +20,41 @@ import tech.mamxanh.recipe.dto.response.RecipePostResponse.Media;
 import tech.mamxanh.recipe.entity.RecipeIngredientEntity;
 import tech.mamxanh.recipe.entity.RecipeMediaEntity;
 import tech.mamxanh.recipe.entity.RecipePostEntity;
-import tech.mamxanh.recipe.entity.RecipePostStatus;
+import tech.mamxanh.recipe.repository.RecipeIngredientRepository;
+import tech.mamxanh.recipe.repository.RecipeMediaRepository;
 import tech.mamxanh.recipe.repository.RecipePostRepository;
 import tech.mamxanh.recipe.repository.RecipeValidationRepository;
 
 @Service
 public class RecipePostService {
     private final RecipePostRepository repository;
+    private final RecipeIngredientRepository ingredientRepository;
+    private final RecipeMediaRepository mediaRepository;
     private final RecipeValidationRepository validationRepository;
     private final CurrentUserService currentUserService;
+    private final Clock clock;
 
-    public RecipePostService(RecipePostRepository repository, RecipeValidationRepository validationRepository,
-            CurrentUserService currentUserService) {
+    public RecipePostService(RecipePostRepository repository, RecipeIngredientRepository ingredientRepository,
+            RecipeMediaRepository mediaRepository, RecipeValidationRepository validationRepository,
+            CurrentUserService currentUserService, Clock clock) {
         this.repository = repository;
+        this.ingredientRepository = ingredientRepository;
+        this.mediaRepository = mediaRepository;
         this.validationRepository = validationRepository;
         this.currentUserService = currentUserService;
-    }
-
-    @Transactional(readOnly = true)
-    public RecipePostResponse getPublished(long recipeId) {
-        RecipePostEntity recipe = findDetailed(recipeId);
-        if (recipe.getStatus() != RecipePostStatus.PUBLISHED) {
-            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
-        }
-        return response(recipe);
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public RecipePostResponse getForAuthor(long recipeId) {
         CurrentUser author = currentUserService.requireActiveExpert();
-        RecipePostEntity recipe = findDetailed(recipeId);
-        if (recipe.getStatus() == RecipePostStatus.DELETED) {
-            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
-        }
+        RecipePostEntity recipe = findById(recipeId);
         requireOwner(recipe, author);
-        if (recipe.getStatus() == RecipePostStatus.HIDDEN) {
+        if ("HIDDEN".equals(recipe.getStatus())) {
             throw new AppException(ErrorCode.RECIPE_HIDDEN);
+        }
+        if (!"PUBLISHED".equals(recipe.getStatus())) {
+            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
         }
         return response(recipe);
     }
@@ -67,7 +66,7 @@ public class RecipePostService {
             throw new AppException(ErrorCode.VALIDATION_FAILED);
         }
         Page<RecipePostEntity> result = repository.findAllByStatusAndTitleContainingIgnoreCaseOrderByPublishedAtDesc(
-                RecipePostStatus.PUBLISHED, query, PageRequest.of(page, size, Sort.unsorted()));
+                "PUBLISHED", query, PageRequest.of(page, size, Sort.unsorted()));
         List<RecipePostResponse> items = result.getContent().stream().map(this::response).toList();
         return new RecipePageResponse(items, result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages());
     }
@@ -78,8 +77,7 @@ public class RecipePostService {
         if (query.length() > 100) {
             throw new AppException(ErrorCode.VALIDATION_FAILED);
         }
-        return new RecipeReferenceData(validationRepository.findIngredientOptions(query),
-                validationRepository.findCustomIngredientUnits());
+        return new RecipeReferenceData(validationRepository.findIngredientOptions(query));
     }
 
     @Transactional
@@ -88,36 +86,37 @@ public class RecipePostService {
         RecipePostEntity recipe = repository.lockById(recipeId)
                 .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
         requireOwner(recipe, author);
-        if (recipe.getStatus() == RecipePostStatus.HIDDEN) {
+        if ("HIDDEN".equals(recipe.getStatus())) {
             throw new AppException(ErrorCode.RECIPE_HIDDEN);
         }
-        if (recipe.getStatus() != RecipePostStatus.PUBLISHED) {
+        if (!"PUBLISHED".equals(recipe.getStatus())) {
             throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
         }
-        String title = request.title().trim();
-        String instructions = request.instructions().trim();
-        if (title.length() < 3 || instructions.length() < 10 || instructions.length() > 5000) {
-            throw new AppException(ErrorCode.RECIPE_DATA_INVALID,
-                    "Tên món sau khi bỏ khoảng trắng cần ít nhất 3 ký tự; hướng dẫn cần từ 10 đến 5.000 ký tự.");
-        }
+
         validateProfile(request);
-        recipe.setTitle(title);
+        recipe.setTitle(request.title().trim());
         recipe.setDescription(blankToNull(request.description()));
-        recipe.setInstructions(instructions);
+        recipe.setInstructions(request.instructions().trim());
         recipe.setDishCategory(request.dishCategory());
         recipe.setVegetarianType(request.vegetarianType());
         recipe.setDifficulty(request.difficulty());
         recipe.setServings(request.servings());
-        recipe.setPrepTimeMin(request.prepTimeMin());
-        recipe.setCookTimeMin(request.cookTimeMin());
+        recipe.setPrepTimeMinutes(request.prepTimeMin());
+        recipe.setCookTimeMinutes(request.cookTimeMin());
         recipe.setYoutubeUrl(blankToNull(request.youtubeUrl()));
-        recipe.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
-        recipe.replaceMedia(request.media().stream()
-                .map(item -> new RecipeMediaEntity(item.url(), item.mimeType(), item.displayOrder(), item.cover()))
-                .toList());
-        recipe.replaceIngredients(request.ingredients().stream()
-                .map(item -> new RecipeIngredientEntity(item.ingredientId(), item.unitId(), blankToNull(item.customName()), item.quantity()))
-                .toList());
+        recipe.setUpdatedAt(LocalDateTime.now(clock));
+        repository.save(recipe);
+
+        ingredientRepository.deleteAllByRecipeId(recipeId);
+        List<RecipeIngredientEntity> replacements = request.ingredients().stream().map(item -> {
+            RecipeIngredientEntity line = new RecipeIngredientEntity();
+            line.setRecipeId(recipeId);
+            line.setIngredientId(item.ingredientId());
+            line.setUnitId(item.unitId());
+            line.setQuantity(item.quantity());
+            return line;
+        }).toList();
+        ingredientRepository.saveAll(replacements);
         return response(recipe);
     }
 
@@ -127,57 +126,57 @@ public class RecipePostService {
         RecipePostEntity recipe = repository.lockById(recipeId)
                 .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
         requireOwner(recipe, author);
-        if (recipe.getStatus() == RecipePostStatus.DELETED) {
+        if ("DELETED".equals(recipe.getStatus())) {
             throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
         }
-        recipe.setStatus(RecipePostStatus.DELETED);
-        recipe.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        recipe.setStatus("DELETED");
+        recipe.setUpdatedAt(LocalDateTime.now(clock));
     }
 
     private void validateProfile(UpdateRecipePostRequest request) {
+        String title = request.title() == null ? "" : request.title().trim();
+        String instructions = request.instructions() == null ? "" : request.instructions().trim();
+        String description = request.description() == null ? "" : request.description().trim();
+        if (title.length() < 3 || title.length() > 120 || instructions.length() < 10
+                || instructions.length() > 5000 || description.length() > 2000) {
+            throw new AppException(ErrorCode.RECIPE_DATA_INVALID,
+                    "Kiểm tra lại tên món, mô tả và hướng dẫn theo giới hạn của Recipe Validation Profile.");
+        }
         if (request.prepTimeMin() + request.cookTimeMin() <= 0) {
-            throw new AppException(ErrorCode.RECIPE_DATA_INVALID, "Tổng thời gian chuẩn bị và nấu phải lớn hơn 0.");
+            throw new AppException(ErrorCode.RECIPE_DATA_INVALID,
+                    "Tổng thời gian chuẩn bị và nấu phải lớn hơn 0.");
         }
-        List<UpdateRecipePostRequest.Media> media = request.media();
-        if (!media.isEmpty() && media.stream().filter(UpdateRecipePostRequest.Media::cover).count() != 1) {
-            throw new AppException(ErrorCode.RECIPE_DATA_INVALID, "Chọn đúng một ảnh bìa khi công thức có hình ảnh.");
-        }
-        if (media.stream().map(UpdateRecipePostRequest.Media::displayOrder).distinct().count() != media.size()) {
-            throw new AppException(ErrorCode.RECIPE_DATA_INVALID, "Thứ tự hình ảnh không được trùng nhau.");
-        }
-        for (UpdateRecipePostRequest.Ingredient item : request.ingredients()) {
-            if ((item.ingredientId() == null && (item.customName() == null || item.customName().isBlank()))
-                    || !validationRepository.isActiveIngredient(item.ingredientId())
+        for (int index = 0; index < request.ingredients().size(); index++) {
+            UpdateRecipePostRequest.Ingredient item = request.ingredients().get(index);
+            if (item.ingredientId() == null || !validationRepository.isActiveIngredient(item.ingredientId())
                     || !validationRepository.hasValidConvertibleUnit(item.ingredientId(), item.unitId())) {
                 throw new AppException(ErrorCode.RECIPE_DATA_INVALID,
-                        "Mỗi nguyên liệu cần tên hợp lệ và đơn vị đang dùng có thể quy đổi sang gam.");
+                        "ingredients[" + index + "].ingredientId: Chọn nguyên liệu có trong danh mục và đơn vị có quy đổi hợp lệ.");
             }
         }
     }
 
     private RecipePostResponse response(RecipePostEntity recipe) {
         PublicProfile author = currentUserService.getPublicProfile(recipe.getAuthorId());
-        List<Media> media = recipe.getMedia().stream()
-                .sorted(java.util.Comparator.comparingInt(RecipeMediaEntity::getDisplayOrder))
-                .map(item -> new Media(item.getUrl(), item.getMimeType(), item.getDisplayOrder(), item.isCover())).toList();
-        List<Ingredient> ingredients = recipe.getIngredients().stream()
+        List<Media> media = mediaRepository.findAllByRecipeIdOrderByDisplayOrderAsc(recipe.getId()).stream()
+                .map(item -> new Media(item.getBlobUrl(), item.getMimeType(), item.getDisplayOrder(), item.isCover()))
+                .toList();
+        List<Ingredient> ingredients = ingredientRepository.findAllByRecipeIdOrderByIdAsc(recipe.getId()).stream()
                 .map(item -> {
                     RecipeValidationRepository.IngredientUnit lookup = validationRepository.findIngredientUnit(
                             item.getIngredientId(), item.getUnitId());
-                    return new Ingredient(item.getIngredientId(), lookup.ingredientName(), item.getCustomName(),
+                    return new Ingredient(item.getIngredientId(), lookup.ingredientName(), null,
                             item.getUnitId(), lookup.unitCode(), lookup.unitName(), item.getQuantity());
                 })
                 .toList();
         return new RecipePostResponse(recipe.getId(), recipe.getAuthorId(), author.displayName(), author.avatarUrl(),
                 recipe.getTitle(), recipe.getDescription(), recipe.getInstructions(), recipe.getDishCategory(),
-                recipe.getVegetarianType(), recipe.getDifficulty(), recipe.getServings(), recipe.getPrepTimeMin(),
-                recipe.getCookTimeMin(), recipe.getYoutubeUrl(), recipe.getStatus().name(), media, ingredients);
+                recipe.getVegetarianType(), recipe.getDifficulty(), recipe.getServings(), recipe.getPrepTimeMinutes(),
+                recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getStatus(), media, ingredients);
     }
 
-    private RecipePostEntity findDetailed(long recipeId) {
-        RecipePostEntity recipe = repository.findWithMediaById(recipeId)
-                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
-        return repository.findWithIngredientsById(recipeId).orElse(recipe);
+    private RecipePostEntity findById(long recipeId) {
+        return repository.findById(recipeId).orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
     }
 
     private static void requireOwner(RecipePostEntity recipe, CurrentUser author) {
@@ -193,6 +192,5 @@ public class RecipePostService {
     public record RecipePageResponse(List<RecipePostResponse> items, int page, int size,
             long totalElements, int totalPages) { }
 
-    public record RecipeReferenceData(List<RecipeValidationRepository.IngredientOption> ingredients,
-            List<RecipeValidationRepository.UnitOption> customIngredientUnits) { }
+    public record RecipeReferenceData(List<RecipeValidationRepository.IngredientOption> ingredients) { }
 }

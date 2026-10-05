@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.5.0
+> **Version:** v0.8.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-03
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 
 # API Integration Guide
@@ -11,7 +11,7 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
 
-Runtime API hiện có các endpoint đăng ký/xác minh email của `Authentication & Account` (FR-03) và hồ sơ dinh dưỡng tham khảo (FR-35). Các endpoint FR-03 chưa triển khai chỉ được mô tả trong planned/reference YAML; endpoint đã triển khai được xác nhận qua generated OpenAPI runtime.
+Backend source trong branch gồm đăng ký, xác minh email và đăng nhập (FR-03), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), cùng hồ sơ dinh dưỡng tham khảo (FR-35). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML chỉ giữ Google login và password recovery chưa có trong runtime.
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 7 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
@@ -40,19 +40,19 @@ Scalar là giao diện xem và manual testing; request thử bằng Scalar khôn
 
 ### 3.1 Access token
 
-Đăng nhập email/password hoặc Google Login trả Stateless JWT Access Token trong JSON body (`AuthResponse`). Frontend gửi token ở các API được bảo vệ:
+Đăng nhập email/password trả Stateless JWT Access Token trong JSON body (`AuthResponse`). Frontend gửi token ở các API được bảo vệ:
 
 ```http
 Authorization: Bearer <access-token>
 ```
 
-Frontend không ghi access token vào log. Thời lượng access token là thông số còn mở ở mục 7; owner FR-03 cần đề xuất giá trị để Tech Lead duyệt trước khi triển khai và kiểm thử phần phụ thuộc.
+Frontend không ghi access token vào log. Login phát JWT ký HS256 bằng secret cấu hình qua `MAMXANH_JWT_SECRET`; token chứa `iss`, `sub` (`USER.user_id`), `role`, `iat`, `exp`, không có `sid` hoặc refresh token. TTL là 60 phút (`expiresInSeconds = 3600`). Frontend lưu phiên trong `sessionStorage` của tab hiện tại; phiên bị xóa khi tab đóng và không đồng bộ giữa các tab. Request mang Bearer token được Backend kiểm tra tài khoản hiện hành; token không hợp lệ/hết hạn hoặc user không còn tồn tại trả `401`, tài khoản bị quản trị khóa trả `403 ACCOUNT_LOCKED`. Frontend xóa phiên khi nhận các lỗi kết thúc phiên này.
 
 ### 3.2 Client-side Logout
 
 Hệ thống sử dụng Stateless JWT Access Token, không duy trì server-side session, cookie hay refresh token. Do đó không tồn tại endpoint `POST /auth/logout` trên máy chủ.
 
-Khi người dùng chọn Đăng xuất, Frontend thực hiện:
+Khi người dùng chọn Đăng xuất, Frontend xóa phiên cục bộ và điều hướng về Đăng nhập; không gọi Backend. Frontend thực hiện:
 1. Xóa Access Token khỏi nơi lưu trữ client.
 2. Xóa thông tin người dùng trong AuthContext / state.
 3. Điều hướng người dùng về trạng thái Guest hoặc màn hình Đăng nhập.
@@ -92,11 +92,11 @@ Quy ước status chính:
 | `204 No Content` | Thao tác thành công và không cần response body. |
 | `400 Bad Request` | Payload, token xác minh hoặc token đặt lại mật khẩu không hợp lệ. |
 | `401 Unauthorized` | Credential không hợp lệ hoặc token hết hạn. |
-| `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`) hoặc bị Administrator khóa (`ACCOUNT_LOCKED`). |
-| `409 Conflict` | Email đã được sử dụng hoặc đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`). |
+| `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`), bị Administrator khóa (`ACCOUNT_LOCKED`) hoặc không phải Member khi dùng hồ sơ sở thích (`MEMBER_ACCESS_REQUIRED`). |
+| `409 Conflict` | Email đã được sử dụng, đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`), hoặc hồ sơ sở thích chưa đủ để gọi AI cá nhân hóa (`DIETARY_PROFILE_INCOMPLETE`). |
 | `429 Too Many Requests` | Chỉ áp dụng khi contract của endpoint quy định `429` (ví dụ login, resend verification hoặc AI rate limiting); client đọc `Retry-After` khi có. Password-reset request không trả `429`. |
 
-Mã `code` đã triển khai (Issue #5). Các mã của đăng nhập, Google Login và đặt lại mật khẩu được bổ sung khi các Issue tương ứng triển khai.
+Mã `code` đã triển khai (Issue #5, #6, #36). Các mã của Google Login và đặt lại mật khẩu được bổ sung khi các Issue tương ứng triển khai.
 
 | `code` | Status | Khi nào |
 |---|---|---|
@@ -104,7 +104,14 @@ Mã `code` đã triển khai (Issue #5). Các mã của đăng nhập, Google Lo
 | `EMAIL_ALREADY_USED` | 409 | `POST /auth/register` với email đã có tài khoản (không phân biệt hoa/thường). |
 | `VERIFICATION_TOKEN_INVALID` | 400 | `POST /auth/email-verifications` với mã không tồn tại, đã dùng, đã bị thay bằng mã mới hoặc hết hạn. |
 | `RESEND_TOO_SOON` | 429 | `POST /auth/email-verifications/resend` trong vòng 60 giây kể từ email xác minh trước; kèm `Retry-After`. |
-| `UNAUTHENTICATED` | 401 | Gọi endpoint cần đăng nhập mà không có thông tin xác thực hợp lệ. |
+| `INVALID_CREDENTIALS` | 401 | `POST /auth/login` với email không tồn tại, sai mật khẩu hoặc tài khoản chỉ đăng nhập Google (không có mật khẩu); mọi trường hợp cùng `detail` trung tính "Email hoặc mật khẩu không chính xác." |
+| `EMAIL_NOT_VERIFIED` | 403 | `POST /auth/login` đúng mật khẩu nhưng email chưa xác minh. |
+| `ACCOUNT_LOCKED` | 403 | `POST /auth/login` đúng mật khẩu nhưng tài khoản bị Administrator khóa; hoặc request mang Bearer token hợp lệ của tài khoản đang `LOCKED`. |
+| `LOGIN_TEMPORARILY_BLOCKED` | 429 | Lần sai mật khẩu thứ 5 liên tiếp và mọi lần thử `POST /auth/login` trong 10 phút sau đó (kiểm tra trước khi so mật khẩu); kèm `Retry-After` là số giây còn lại. Không đổi `account_status`. |
+| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31); chỉ Member (`CUSTOMER`, `EXPERT`) có hồ sơ này. |
+| `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |
+| `DIETARY_PROFILE_INCOMPLETE` | 409 | Cổng AI cá nhân hóa (BR-31) chặn yêu cầu vì hồ sơ thiếu nhóm thông tin tối thiểu; body có thêm `missing` (`VEGETARIAN_TYPE`, `AVOID_INGREDIENTS`, `DISLIKED_INGREDIENTS`). |
+| `UNAUTHENTICATED` | 401 | Gọi endpoint cần đăng nhập mà không có Bearer token, hoặc token sai chữ ký, sai issuer, hết hạn hay thuộc tài khoản không còn tồn tại. |
 | `ACCESS_DENIED` | 403 | Đã xác thực nhưng không đủ quyền. |
 | `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE` | 404, 405, 415 | Lỗi định tuyến/định dạng do framework phát hiện. |
 | `INTERNAL_ERROR` | 500 | Lỗi không mong đợi; `detail` không chứa thông tin nội bộ. |
@@ -115,6 +122,7 @@ Mã `code` đã triển khai (Issue #5). Các mã của đăng nhập, Google Lo
 
 - Không trả password, password hash hoặc Google ID token trong response/log.
 - Login sai dùng thông báo chung để tránh tiết lộ email có tồn tại.
+- Quy tắc trên không che giấu hoàn toàn trạng thái khóa tạm: tài khoản đang bị chặn trả `429 LOGIN_TEMPORARILY_BLOCKED`, còn email không tồn tại/sai mật khẩu trả `401 INVALID_CREDENTIALS`. Đây là rủi ro account-enumeration đã được owner chấp nhận cho Issue #6.
 - Password-reset request luôn trả cùng HTTP 202 trung tính; silent rate limiting vẫn enforce cooldown 60 giây và tối đa 5 email/giờ/tài khoản. Khi vượt limit hoặc email không tồn tại, không gửi email; response không tiết lộ account existence hay trạng thái rate limit.
 - Sau 5 lần đăng nhập sai liên tiếp, rate limit tạm thời 10 phút ở cấp tài khoản (lưu trên bảng `USER`); không rate limit IP; không đổi account status thành `LOCKED`.
 - Giới hạn độ dài mật khẩu: 8–64 ký tự, tối đa 72 bytes UTF-8 (chuẩn BCrypt).
@@ -135,11 +143,31 @@ Ba endpoint runtime trong generated OpenAPI thao tác hồ sơ của Member hi�
 
 | Quyết định | Trạng thái | Ảnh hưởng |
 |---|---|---|
-| Access-token lifetime | `TBD` | Đề xuất giá trị `expiresInSeconds` và cấu hình token TTL. |
-| JWT Claims set | `TBD` | Token chứa `sub` (subject), `role`, claim định danh; không chứa `sid`; claim `jti` là TBD. |
-| Frontend token storage | `TBD` | Frontend quyết định nơi lưu trữ Access Token an toàn (memory, storage...). |
+| Access-token lifetime | `Confirmed (Q30)` | JWT HS256 có hiệu lực 60 phút; MVP/demo chấp nhận access token không bị thu hồi trước hạn. |
+| JWT Claims set | `Confirmed (Q31)` | Dùng `iss`, `sub` (`USER.user_id`), `role`, `iat`, `exp`; không dùng `jti`. |
+| Frontend token storage | `Confirmed (Q33)` | Lưu phiên trong `sessionStorage`; không đồng bộ giữa các tab. |
 | Candidate endpoint `GET /auth/me` | `PENDING` | Xem xét bổ sung sau nếu Frontend cần đồng bộ lại user profile. |
-| Role freshness sau khi đổi role | `PENDING` | Cơ chế cập nhật role sau khi Admin nâng cấp vai trò trong lúc JWT cũ chưa hết hạn. |
+| Role freshness sau khi đổi role | `Confirmed (Q32)` | Backend lấy quyền từ `USER.role` khi xác thực từng request; claim `role` chỉ phục vụ hiển thị. |
 | Public/development server URLs và CORS origins | `TBD` | Chốt theo môi trường thực tế trước khi cấu hình OpenAPI `servers` và CORS. |
 
 Baseline API đã được nhóm chấp nhận; các mục `TBD` không tự có giá trị chỉ vì tài liệu chuyển sang `Active`. Owner FR-03 phân rã, đề xuất giá trị và cách kiểm thử; Tech Lead duyệt trước khi phần liên quan được coi là implementation-ready. Không suy diễn các giá trị này từ ví dụ hoặc cấu hình tạm.
+
+## 8. Sở thích ăn uống và Onboarding — FR-31
+
+Năm endpoint runtime thao tác hồ sơ của Member đang đăng nhập; client không truyền `userId`. Generated OpenAPI khai báo security scheme `bearerAuth` (HTTP bearer, JWT) cho cả năm operation; client gửi access token của `POST /auth/login` trong header `Authorization: Bearer`. Guest nhận `401 UNAUTHENTICATED`, Administrator nhận `403 MEMBER_ACCESS_REQUIRED`. Dữ liệu này riêng tư: không có endpoint nào trả sở thích của người khác.
+
+- `GET /nutrition/dietary-preferences` trả `vegetarianType`, `avoid` và `dislike` (mỗi danh sách gồm `noneConfirmed` và `items` với `ingredientId`, `name`), ba sở thích tùy chọn, `onboardingStatus` và `aiPersonalization` (`eligible`, `missing`).
+- `PUT /nutrition/dietary-preferences` lưu toàn bộ hồ sơ và chuyển `onboardingStatus` sang `COMPLETED` (dùng cho cả "Hoàn tất" Onboarding và "Lưu thay đổi" trong Cài đặt).
+  - `vegetarianType` bắt buộc, một trong `VEGAN`, `LACTO`, `OVO`, `LACTO_OVO`.
+  - `avoid` và `dislike` bắt buộc: có ít nhất một mục trong `items` hoặc `noneConfirmed = true`. Danh sách rỗng mà không xác nhận trả `400 VALIDATION_FAILED` với `errors[].field` là `avoid` hoặc `dislike` (BR-31). Thiếu `noneConfirmed` được hiểu là chưa xác nhận.
+  - Mỗi danh sách tối đa 30 mục, mỗi tên 1–200 ký tự. Backend bỏ khoảng trắng thừa, gộp tên trùng (không phân biệt hoa/thường) và liên kết `ingredientId` khi tên trùng một nguyên liệu chuẩn đang hoạt động. Khi danh sách có mục, `noneConfirmed` được đưa về `false`.
+  - Một tên ở cả hai danh sách trả `400 INGREDIENT_PREFERENCE_CONFLICT`.
+  - Tùy chọn: `cuisinePreference` (tối đa 200 ký tự), `maxCookingTimeMinutes` (1–1440), `preferredDifficulty` (`EASY`, `MEDIUM`, `HARD`; giao diện hiển thị `HARD` là "Nâng cao").
+  - Cập nhật hồ sơ không sửa Meal Plan đã lưu; chỉ các yêu cầu AI sau đó dùng dữ liệu mới.
+- `POST /nutrition/dietary-preferences/onboarding/skip` trả `204`, chuyển `NOT_STARTED` sang `SKIPPED`; gọi lại hoặc gọi khi đã `COMPLETED` không đổi trạng thái.
+- `POST /nutrition/dietary-preferences/onboarding/invitation` trả `200` với `{ "show": true | false }`. Chỉ trả `true` khi `onboardingStatus = NOT_STARTED` và lời mời chưa từng hiển thị; khi trả `true`, Backend ghi thời điểm vào `USER.onboarding_invited_at`. Backend khóa dòng `USER` của tài khoản trong lúc kiểm tra, nên các request song song chỉ có một request nhận `true`.
+- `GET /nutrition/dietary-preferences/ingredient-suggestions?query=` trả tối đa 10 nguyên liệu chuẩn đang hoạt động (`id`, `name`, `ingredientGroup`); query rỗng trả danh sách rỗng.
+
+Luồng Onboarding (AC-31.10): sau mỗi lần đăng nhập thành công của Member, Frontend gọi `POST .../onboarding/invitation` và chỉ chuyển tới trang Onboarding khi `show = true`. Vì vậy lời mời chỉ hiện một lần, kể cả khi Member rời questionnaire mà chưa "Hoàn tất" hay "Bỏ qua" (trạng thái vẫn `NOT_STARTED`). Trang Onboarding và trang Sở thích ăn uống trong Cài đặt vẫn mở thủ công được. Tài khoản tồn tại trước migration V7 được ghi `onboarding_invited_at` nên không bị hỏi và giữ nguyên `onboardingStatus`; tài khoản tạo sau đó bắt đầu ở `NOT_STARTED` với `onboarding_invited_at = NULL`. Luồng đăng nhập khác (ví dụ Google Login, Issue #8) cần gọi endpoint này sau khi đăng nhập thành công.
+
+Cổng AI cá nhân hóa (AC-31.4–AC-31.6): endpoint AI gợi ý món hoặc tạo thực đơn tuần phải gọi `DietaryPreferenceService.requirePersonalizedAiEligible(userId)` trước mọi xử lý khác. Khi thiếu thông tin, request dừng với `409 DIETARY_PROFILE_INCOMPLETE` kèm `missing`; không gọi Gemini và không ghi Meal Plan. Cổng chỉ kiểm tra dữ liệu hồ sơ, không dựa vào `onboardingStatus`.

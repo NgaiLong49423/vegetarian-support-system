@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, Leaf, Mail, ShieldCheck, Utensils } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { Button } from '../components/ui';
+import { useAuth, type SessionNotice } from '../components/AuthContext';
 import { useDemoAccount } from '../components/DemoAccount';
 import { fieldMessages, retryAfterSeconds, toProblem, type ProblemDetails } from '../lib/problem';
-import { register, resendVerificationEmail, verifyEmail } from '../services/authApi';
+import { login, register, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
+import { claimOnboardingInvitation } from '../services/dietaryPreferencesApi';
 import { passwordProblems } from '../utils/password';
 
 type Mode = 'login' | 'register' | 'forgot' | 'verify' | 'reset';
-type Notice = { tone: 'success' | 'error'; text: string };
+type Notice = { tone: 'success' | 'error'; text: string; link?: { to: string; label: string } };
 type VerifyState = 'idle' | 'verifying' | 'verified' | 'failed';
 
 const copy = {
@@ -24,6 +26,40 @@ const copy = {
 const apiFieldToForm: Record<string, string> = { displayName: 'name', email: 'email', password: 'password', confirmPassword: 'confirm' };
 const NETWORK_ERROR = 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.';
 const INVALID_LINK = 'Liên kết xác minh không hợp lệ hoặc đã hết hạn. Nhập email bên dưới để nhận liên kết mới.';
+const SESSION_NOTICES: Record<SessionNotice, string> = {
+  timeout: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+  expired: 'Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.',
+  locked: 'Tài khoản đã bị quản trị viên khóa. Vui lòng liên hệ quản trị viên.',
+};
+
+// UC-03.4: messages follow the problem code (API.md section 4), never the detail text.
+function loginError(problem: ProblemDetails | null, retryAfter: number | null): Notice {
+  switch (problem?.code) {
+    case 'INVALID_CREDENTIALS':
+      return { tone: 'error', text: 'Email hoặc mật khẩu không chính xác.' };
+    case 'EMAIL_NOT_VERIFIED':
+      return { tone: 'error', text: 'Tài khoản chưa xác minh email. Vui lòng mở liên kết xác minh trong hộp thư trước khi đăng nhập.', link: { to: '/xac-minh-email', label: 'Gửi lại email xác minh' } };
+    case 'ACCOUNT_LOCKED':
+      return { tone: 'error', text: SESSION_NOTICES.locked };
+    case 'LOGIN_TEMPORARILY_BLOCKED':
+      return { tone: 'error', text: retryAfter ? `Bạn đã nhập sai mật khẩu nhiều lần liên tiếp. Vui lòng thử lại sau ${Math.ceil(retryAfter / 60)} phút.` : problem.detail ?? NETWORK_ERROR };
+    default:
+      return { tone: 'error', text: problem?.detail ?? NETWORK_ERROR };
+  }
+}
+
+/**
+ * AC-31.10: the Backend shows the Onboarding questionnaire once, to a new Member who has not answered it;
+ * everyone else lands on the home page. Failing to check the invitation never blocks the sign-in.
+ */
+async function landingAfterLogin(account: AccountSummary): Promise<string> {
+  if (account.role === 'ADMIN') return '/';
+  try {
+    return (await claimOnboardingInvitation()) ? '/khoi-tao-so-thich' : '/';
+  } catch {
+    return '/';
+  }
+}
 
 function formErrors(problem: ProblemDetails): Record<string, string> {
   const errors: Record<string, string> = {};
@@ -38,11 +74,14 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [confirm, setConfirm] = useState('');
   const [visible, setVisible] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const location = useLocation();
+  const sessionNotice = mode === 'login' ? (location.state as { sessionNotice?: SessionNotice } | null)?.sessionNotice : undefined;
+  const [notice, setNotice] = useState<Notice | null>(() => sessionNotice ? { tone: 'error', text: SESSION_NOTICES[sessionNotice] } : null);
   const [submitting, setSubmitting] = useState(false);
   const [verifyState, setVerifyState] = useState<VerifyState>('idle');
   const [searchParams, setSearchParams] = useSearchParams();
   const handledToken = useRef<string | null>(null);
+  const { signIn, enterDemo } = useAuth();
   const { setActive } = useDemoAccount();
   const navigate = useNavigate();
   const details = copy[mode];
@@ -84,6 +123,23 @@ export function AuthPage({ mode }: { mode: Mode }) {
     }
   };
 
+  const submitLogin = async () => {
+    setSubmitting(true);
+    try {
+      const session = await login({ email: email.trim(), password });
+      signIn(session);
+      setActive(false);
+      navigate(await landingAfterLogin(session.account), { replace: true });
+    } catch (error) {
+      const problem = toProblem(error);
+      if (problem?.code === 'VALIDATION_FAILED' && problem.errors?.length) setErrors(formErrors(problem));
+      else setNotice(loginError(problem, retryAfterSeconds(error)));
+    } finally {
+      setPassword('');
+      setSubmitting(false);
+    }
+  };
+
   const submitResend = async () => {
     setSubmitting(true);
     try {
@@ -116,20 +172,19 @@ export function AuthPage({ mode }: { mode: Mode }) {
     if (Object.keys(next).length) return;
     if (mode === 'register') return void submitRegistration();
     if (mode === 'verify') return void submitResend();
-    // Login (#6), forgot/reset password (#9) are not connected to the backend yet.
+    if (mode === 'login') return void submitLogin();
+    // Forgot/reset password (#9) are not connected to the backend yet.
     setPassword('');
     setConfirm('');
-    setNotice({ tone: 'success', text: mode === 'login'
-      ? 'Biểu mẫu hợp lệ. Bản demo chưa kết nối đăng nhập; chưa tạo phiên tài khoản.'
-      : mode === 'reset'
+    setNotice({ tone: 'success', text: mode === 'reset'
         ? 'Đã kiểm tra biểu mẫu. Chưa xác minh liên kết hoặc thay đổi mật khẩu tài khoản.'
         : 'Đã kiểm tra định dạng email. Bản demo chưa gửi email và không kiểm tra địa chỉ này có tài khoản hay chưa.' });
   };
   const fieldClass = 'mt-2 w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100';
   const error = (field: string) => errors[field] && <p id={`${field}-error`} className="mt-1.5 text-xs text-red-700">{errors[field]}</p>;
   const showForm = !(mode === 'verify' && (verifyState === 'verifying' || verifyState === 'verified'));
-  const demoNote = mode === 'register'
-    ? 'Đăng ký và xác minh email được gửi tới máy chủ · Đăng nhập Google chưa được kết nối.'
+  const demoNote = mode === 'register' || mode === 'login'
+    ? `${mode === 'login' ? 'Đăng nhập' : 'Đăng ký và xác minh email'} được gửi tới máy chủ · Đăng nhập Google chưa được kết nối.`
     : mode === 'verify' ? '' : 'Bản demo giao diện · Chưa kết nối xác thực, gửi email hoặc lưu thông tin tài khoản.';
 
   return <div className="min-h-screen bg-cream">
@@ -172,12 +227,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
           {Object.keys(errors).length > 0 && <p role="alert" className="text-sm text-red-700">Vui lòng kiểm tra các trường được đánh dấu.</p>}
           <Button type="submit" disabled={submitting} className="w-full py-3">{submitting ? 'Đang gửi...' : details.action}<ArrowRight className="h-4 w-4" /></Button>
         </form>}
-        {notice && <div role={notice.tone === 'error' ? 'alert' : 'status'} className={`mt-4 rounded-xl border p-4 text-sm leading-6 ${notice.tone === 'error' ? 'border-red-200 bg-red-50 text-red-800' : 'border-leaf-100 bg-leaf-50 text-leaf-800'}`}>{notice.text}{mode === 'register' && notice.tone === 'success' && <Link to="/xac-minh-email" className="mt-2 block font-semibold underline">Chưa nhận được email? Gửi lại email xác minh</Link>}</div>}
+        {notice && <div role={notice.tone === 'error' ? 'alert' : 'status'} className={`mt-4 rounded-xl border p-4 text-sm leading-6 ${notice.tone === 'error' ? 'border-red-200 bg-red-50 text-red-800' : 'border-leaf-100 bg-leaf-50 text-leaf-800'}`}>{notice.text}{mode === 'register' && notice.tone === 'success' && <Link to="/xac-minh-email" className="mt-2 block font-semibold underline">Chưa nhận được email? Gửi lại email xác minh</Link>}{notice.link && <Link to={notice.link.to} className="mt-2 block font-semibold underline">{notice.link.label}</Link>}</div>}
         {demoNote && <p id="auth-demo-note" className="mt-5 text-xs leading-5 text-ink-muted">{demoNote}</p>}
         <div className="mt-6 border-t border-brand-100 pt-5 text-center text-sm text-ink-soft">
           {mode === 'login' ? <>Chưa có tài khoản? <Link to="/dang-ky" className="font-bold text-brand-700 hover:underline">Đăng ký ngay</Link><Link to="/xac-minh-email" className="mt-3 block text-xs text-ink-muted hover:underline">Chưa nhận được email xác minh?</Link></> : mode === 'register' ? <>Đã có tài khoản? <Link to="/dang-nhap" className="font-bold text-brand-700 hover:underline">Đăng nhập</Link></> : <Link to="/dang-nhap" className="font-semibold text-brand-700 hover:underline">Quay lại đăng nhập</Link>}
         </div>
-        {mode === 'login' && <button type="button" onClick={() => { setActive(true); navigate('/'); }} className="mt-5 w-full rounded-xl bg-brand-50 px-4 py-3 text-xs font-semibold text-ink-soft hover:bg-brand-100">Khám phá tài khoản demo</button>}
+        {mode === 'login' && <button type="button" onClick={() => { enterDemo(); setActive(true); navigate('/'); }} className="mt-5 w-full rounded-xl bg-brand-50 px-4 py-3 text-xs font-semibold text-ink-soft hover:bg-brand-100">Khám phá tài khoản demo</button>}
       </section>
     </main>
   </div>;

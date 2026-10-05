@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, SlidersHorizontal, X, Clock, Users } from 'lucide-react';
+import { Clock, Search, SlidersHorizontal, Users, X } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { RecipeCard } from '../components/RecipeCard';
 import { Badge, Button, EmptyState } from '../components/ui';
@@ -17,34 +17,40 @@ const timeFilters = [
   { label: '20 – 40 phút', max: 40 },
   { label: 'Trên 40 phút', max: Infinity },
 ];
+
+/**
+ * AC-01.1: Hỗ trợ 6 chế độ sắp xếp.
+ */
 const sortOptions = [
   { value: 'popular', label: 'Phổ biến nhất' },
-  { value: 'rating', label: 'Đánh giá cao' },
+  { value: 'rating', label: 'Được yêu thích nhất' },
   { value: 'time', label: 'Nấu nhanh nhất' },
   { value: 'calories', label: 'Ít calo nhất' },
+  { value: 'newest', label: 'Mới nhất' },
+  { value: 'views', label: 'Nhiều lượt xem nhất' },
 ];
 
 function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border-b border-brand-50 py-4 last:border-0">
-      <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-ink-soft">{title}</h4>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
+      <div className="border-b border-brand-50 py-4 last:border-0">
+        <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-ink-soft">{title}</h4>
+        <div className="flex flex-wrap gap-2">{children}</div>
+      </div>
   );
 }
 
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
-      onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-        active
-          ? 'border-brand-600 bg-brand-600 text-white'
-          : 'border-brand-200 bg-white text-ink-soft hover:border-brand-300 hover:text-brand-700'
-      }`}
-    >
-      {children}
-    </button>
+      <button
+          onClick={onClick}
+          className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+              active
+                  ? 'border-brand-600 bg-brand-600 text-white'
+                  : 'border-brand-200 bg-white text-ink-soft hover:border-brand-300 hover:text-brand-700'
+          }`}
+      >
+        {children}
+      </button>
   );
 }
 
@@ -70,19 +76,37 @@ export function Explore() {
 
   const filtered = useMemo(() => {
     let list = recipes.filter((r) => {
-      if (query && !r.name.toLowerCase().includes(query.toLowerCase()) && !r.tags.join(' ').toLowerCase().includes(query.toLowerCase())) return false;
+      if (
+          query &&
+          !r.name.toLowerCase().includes(query.toLowerCase()) &&
+          !r.tags.join(' ').toLowerCase().includes(query.toLowerCase())
+      )
+        return false;
       if (diet && r.diet !== diet) return false;
       if (difficulty && r.difficulty !== difficulty) return false;
       if (category && r.category !== category) return false;
       if (timeMax !== null && r.prepTime + r.cookTime > timeMax) return false;
       return true;
     });
+
     list = [...list].sort((a, b) => {
-      if (sort === 'rating') return b.rating - a.rating;
+      if (sort === 'rating') {
+        const aPct = a.likePercentage ?? -1;
+        const bPct = b.likePercentage ?? -1;
+        if (bPct !== aPct) return bPct - aPct;
+        return b.likes + b.dislikes - (a.likes + a.dislikes);
+      }
       if (sort === 'time') return a.prepTime + a.cookTime - (b.prepTime + b.cookTime);
       if (sort === 'calories') return a.calories - b.calories;
-      return b.reviews - a.reviews;
+      if (sort === 'newest') {
+        // Demo: sắp xếp theo id giảm dần (id cao = mới nhất)
+        return b.id.localeCompare(a.id, undefined, { numeric: true });
+      }
+      if (sort === 'views') return b.viewCount - a.viewCount;
+      // popular (default): tổng lượt bình chọn
+      return b.likes + b.dislikes - (a.likes + a.dislikes);
     });
+
     return list;
   }, [query, diet, difficulty, category, timeMax, sort]);
 
@@ -95,122 +119,146 @@ export function Explore() {
   };
 
   const filterPanel = (
-    <div className="rounded-2xl border border-brand-100 bg-white p-5">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 font-bold text-ink">
-          <SlidersHorizontal className="h-[18px] w-[18px] text-brand-600" /> Bộ lọc
-        </h3>
-        {activeCount > 0 && (
-          <button onClick={reset} className="text-xs font-semibold text-brand-600 hover:underline">
-            Xoá lọc ({activeCount})
-          </button>
-        )}
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 font-bold text-ink">
+            <SlidersHorizontal className="h-[18px] w-[18px] text-brand-600" /> Bộ lọc
+          </h3>
+          {activeCount > 0 && (
+              <button onClick={reset} className="text-xs font-semibold text-brand-600 hover:underline">
+                Xoá lọc ({activeCount})
+              </button>
+          )}
+        </div>
+        <FilterGroup title="Chế độ ăn chay">
+          {dietFilters.map((d) => (
+              <Chip key={d} active={diet === d} onClick={() => setDiet(diet === d ? null : d)}>
+                {d}
+              </Chip>
+          ))}
+        </FilterGroup>
+        <FilterGroup title="Loại món">
+          {categoryFilters.map((c) => (
+              <Chip key={c} active={category === c} onClick={() => setCategory(category === c ? null : c)}>
+                {c}
+              </Chip>
+          ))}
+        </FilterGroup>
+        <FilterGroup title="Thời gian nấu">
+          {timeFilters.map((t) => (
+              <Chip
+                  key={t.label}
+                  active={timeMax === t.max}
+                  onClick={() => setTimeMax(timeMax === t.max ? null : t.max)}
+              >
+                {t.label}
+              </Chip>
+          ))}
+        </FilterGroup>
+        <FilterGroup title="Mức độ khó">
+          {difficultyFilters.map((d) => (
+              <Chip key={d} active={difficulty === d} onClick={() => setDifficulty(difficulty === d ? null : d)}>
+                {d}
+              </Chip>
+          ))}
+        </FilterGroup>
       </div>
-      <FilterGroup title="Chế độ ăn chay">
-        {dietFilters.map((d) => (
-          <Chip key={d} active={diet === d} onClick={() => setDiet(diet === d ? null : d)}>{d}</Chip>
-        ))}
-      </FilterGroup>
-      <FilterGroup title="Loại món">
-        {categoryFilters.map((c) => (
-          <Chip key={c} active={category === c} onClick={() => setCategory(category === c ? null : c)}>{c}</Chip>
-        ))}
-      </FilterGroup>
-      <FilterGroup title="Thời gian nấu">
-        {timeFilters.map((t) => (
-          <Chip key={t.label} active={timeMax === t.max} onClick={() => setTimeMax(timeMax === t.max ? null : t.max)}>{t.label}</Chip>
-        ))}
-      </FilterGroup>
-      <FilterGroup title="Mức độ khó">
-        {difficultyFilters.map((d) => (
-          <Chip key={d} active={difficulty === d} onClick={() => setDifficulty(difficulty === d ? null : d)}>{d}</Chip>
-        ))}
-      </FilterGroup>
-    </div>
   );
 
   return (
-    <PageContainer className="py-8">
-      <div className="mb-6">
-        <p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-brand-600">Khám phá</p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink">Khám phá công thức chay</h1>
-        <p className="mt-1 text-ink-muted">Hơn 1.800 công thức thuần thực vật cân bằng vi chất, chọn lọc từ cộng đồng.</p>
-      </div>
-
-      {/* search + sort */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-        <div className="flex flex-1 items-center gap-2 rounded-xl border border-brand-200 bg-white px-3">
-          <Search className="h-5 w-5 shrink-0 text-ink-muted" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm món chay hoặc nguyên liệu..."
-            className="w-full bg-transparent py-2.5 text-sm outline-none placeholder:text-ink-muted"
-          />
-          {query && (
-            <button onClick={() => setQuery('')} className="text-ink-muted hover:text-brand-600">
-              <X className="h-4 w-4" />
-            </button>
-          )}
+      <PageContainer className="py-8">
+        <div className="mb-6">
+          <p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-brand-600">Khám phá</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink">Khám phá công thức chay</h1>
+          <p className="mt-1 text-ink-muted">
+            Hơn 1.800 công thức thuần thực vật cân bằng vi chất, chọn lọc từ cộng đồng.
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="lg:hidden" onClick={() => setShowFilters((v) => !v)}>
-            <SlidersHorizontal className="h-4 w-4" /> Lọc {activeCount > 0 && `(${activeCount})`}
-          </Button>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm font-medium text-ink-soft outline-none focus:border-brand-400"
-          >
-            {sortOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <aside className="hidden lg:block">
-          <div className="sticky top-20">{filterPanel}</div>
-        </aside>
-        {showFilters && <div className="lg:hidden">{filterPanel}</div>}
-
-        <div>
-          {backendRecipes.length > 0 && <section className="mb-8">
-            <div className="mb-4"><h2 className="text-xl font-extrabold text-ink">Công thức cộng đồng đã xuất bản</h2><p className="mt-1 text-sm text-ink-muted">Dữ liệu công khai từ Backend Mâm Xanh.</p></div>
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{backendRecipes.map((recipe) => {
-              const image = recipe.media.find((item) => item.cover) ?? recipe.media[0];
-              return <Link key={recipe.id} to={`/cong-thuc/id/${recipe.id}`} className="group overflow-hidden rounded-2xl border border-brand-100 bg-white transition-all hover:-translate-y-1 hover:shadow-xl">
-                <div className="aspect-[4/3] bg-brand-50">{image && <img src={image.url} alt={recipe.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />}</div>
-                <div className="p-4"><div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-700"><span className="rounded-full bg-brand-50 px-2.5 py-1">{recipe.vegetarianType}</span><span className="rounded-full bg-brand-50 px-2.5 py-1">{recipe.dishCategory}</span></div><h3 className="mt-3 line-clamp-2 font-bold text-ink group-hover:text-brand-700">{recipe.title}</h3><p className="mt-2 flex items-center gap-4 text-xs text-ink-muted"><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{recipe.prepTimeMin + recipe.cookTimeMin} phút</span><span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />{recipe.servings} khẩu phần</span></p><p className="mt-3 border-t border-brand-50 pt-3 text-xs text-ink-soft">Tác giả: {recipe.authorName}</p></div>
-              </Link>;
-            })}</div>
-          </section>}
-          <div className="mb-4 flex items-center gap-3 text-sm text-ink-muted">
-            <span><strong className="text-ink">{filtered.length}</strong> công thức</span>
-            {activeCount > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {diet && <Badge tone="leaf">{diet}</Badge>}
-                {category && <Badge>{category}</Badge>}
-                {difficulty && <Badge>{difficulty}</Badge>}
-              </div>
+        {/* search + sort */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-1 items-center gap-2 rounded-xl border border-brand-200 bg-white px-3">
+            <Search className="h-5 w-5 shrink-0 text-ink-muted" />
+            <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Tìm món chay hoặc nguyên liệu..."
+                className="w-full bg-transparent py-2.5 text-sm outline-none placeholder:text-ink-muted"
+            />
+            {query && (
+                <button onClick={() => setQuery('')} className="text-ink-muted hover:text-brand-600">
+                  <X className="h-4 w-4" />
+                </button>
             )}
           </div>
-          {filtered.length === 0 ? (
-            <EmptyState
-              title="Không tìm thấy công thức phù hợp"
-              description="Thử điều chỉnh bộ lọc hoặc từ khoá tìm kiếm để khám phá nhiều món chay hơn nhé."
-              action={<Button variant="secondary" onClick={reset}>Xoá tất cả bộ lọc</Button>}
-            />
-          ) : (
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {filtered.map((r) => (
-                <RecipeCard key={r.id} recipe={r} />
+          <div className="flex gap-2">
+            <Button variant="outline" className="lg:hidden" onClick={() => setShowFilters((v) => !v)}>
+              <SlidersHorizontal className="h-4 w-4" /> Lọc {activeCount > 0 && `(${activeCount})`}
+            </Button>
+            <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm font-medium text-ink-soft outline-none focus:border-brand-400"
+                aria-label="Chế độ sắp xếp"
+            >
+              {sortOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
               ))}
-            </div>
-          )}
+            </select>
+          </div>
         </div>
-      </div>
-    </PageContainer>
+
+        {backendRecipes.length > 0 && <section className="mb-8">
+          <div className="mb-4"><h2 className="text-xl font-extrabold text-ink">Công thức cộng đồng đã xuất bản</h2><p className="mt-1 text-sm text-ink-muted">Dữ liệu công khai từ Backend Mâm Xanh.</p></div>
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{backendRecipes.map((recipe) => {
+            const image = recipe.media.find((item) => item.cover) ?? recipe.media[0];
+            return <Link key={recipe.id} to={`/cong-thuc/id/${recipe.id}`} className="group overflow-hidden rounded-2xl border border-brand-100 bg-white transition-all hover:-translate-y-1 hover:shadow-xl">
+              <div className="aspect-[4/3] bg-brand-50">{image && <img src={image.url} alt={recipe.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />}</div>
+              <div className="p-4"><div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-700"><span className="rounded-full bg-brand-50 px-2.5 py-1">{recipe.vegetarianType}</span><span className="rounded-full bg-brand-50 px-2.5 py-1">{recipe.dishCategory}</span></div><h3 className="mt-3 line-clamp-2 font-bold text-ink group-hover:text-brand-700">{recipe.title}</h3><p className="mt-2 flex items-center gap-4 text-xs text-ink-muted"><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{recipe.prepTimeMin + recipe.cookTimeMin} phút</span><span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />{recipe.servings} khẩu phần</span></p><p className="mt-3 border-t border-brand-50 pt-3 text-xs text-ink-soft">Tác giả: {recipe.authorName}</p></div>
+            </Link>;
+          })}</div>
+        </section>}
+
+        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+          <aside className="hidden lg:block">
+            <div className="sticky top-20">{filterPanel}</div>
+          </aside>
+          {showFilters && <div className="lg:hidden">{filterPanel}</div>}
+
+          <div>
+            <div className="mb-4 flex items-center gap-3 text-sm text-ink-muted">
+            <span>
+              <strong className="text-ink">{filtered.length}</strong> công thức
+            </span>
+              {activeCount > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {diet && <Badge tone="leaf">{diet}</Badge>}
+                    {category && <Badge>{category}</Badge>}
+                    {difficulty && <Badge>{difficulty}</Badge>}
+                  </div>
+              )}
+            </div>
+            {filtered.length === 0 ? (
+                <EmptyState
+                    title="Không tìm thấy công thức phù hợp"
+                    description="Thử điều chỉnh bộ lọc hoặc từ khoá tìm kiếm để khám phá nhiều món chay hơn nhé."
+                    action={
+                      <Button variant="secondary" onClick={reset}>
+                        Xoá tất cả bộ lọc
+                      </Button>
+                    }
+                />
+            ) : (
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {filtered.map((r) => (
+                      <RecipeCard key={r.id} recipe={r} />
+                  ))}
+                </div>
+            )}
+          </div>
+        </div>
+      </PageContainer>
   );
 }

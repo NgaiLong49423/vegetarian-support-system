@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.19.0
+> **Version:** v3.20.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-03
 > **Status:** Active
 
 # Agent Entry Point
@@ -58,6 +58,7 @@ Skills live at `.agents/skills/<name>/SKILL.md`. For maintained local skills, th
 |---|---|---|
 | Frontend implementation/review/validation for Mâm Xanh | mamxanh-frontend-development | Project-local React/Vite/Tailwind guidance; preserves existing UI identity and does not replace `implement-fr-issue` |
 | Backend implementation/review/validation for Mâm Xanh | mamxanh-backend-development | Project-local Spring/Maven/JPA/Flyway/API guidance; preserves the modular monolith and does not replace `implement-fr-issue` |
+| Stateful PR review, delta re-review, rebuttal or main acceptance | pr-issue-review | Owns review evidence and finding lifecycle; delegates FE/BE mechanics and uses the review-pr-and-accept-issue workflow |
 | Write, review or restructure Markdown documentation | markdown-documentation | Owns shared documentation semantics, authority, traceability and source-of-truth rules; load only the references needed for the task |
 | Add/audit metadata or decide document versions | document-metadata-standardizer | Owns document metadata and versioning only; target maintained registered documents and preserve creation evidence |
 | Cross-document consistency audit | repo-template-doc-sync-auditor | Use this project's maintained register and adopted contract; ignore skill packages and generated outputs by default |
@@ -94,6 +95,7 @@ Live GitHub mutations require authorization for the current task. Authorization 
 | Situation | Workflow |
 |---|---|
 | Triển khai FR từ GitHub Issue đã được giao | `implement-fr-issue.md` |
+| Review PR/Issue qua nhiều vòng và nghiệm thu trên main | `review-pr-and-accept-issue.md` |
 | Requirements còn mơ hồ cần chốt | `requirement-finalization.md` |
 | Requirement semantics or current-scope membership changed | `requirement-change-reconciliation.md` |
 | Audit toàn docs rồi sửa finding rõ ràng | `documentation-audit-and-fix.md` |
@@ -105,6 +107,8 @@ Live GitHub mutations require authorization for the current task. Authorization 
 **Project overrides for every local skill:** the user request within the user's authorized scope, CONTRIBUTING.md for shared contribution rules, and this file for agent-specific behavior take precedence over generic skill examples. Repository governance and adopted project contracts define project-specific authority; a skill must not override them.
 
 No automatic saved audit report, log, summary or progress file, regardless of changed-file count. Return findings in the conversation by default.
+
+When the user requests the stateful PR review lifecycle, `review-pr-and-accept-issue` maintains exactly two ignored local files across rounds: `.agents/outputs/review-pr/PR-<number>/REVIEW-PLAN.md` and `ACCEPTANCE-REVIEW.md`. They contain Vietnamese human-facing review plan/state/evidence, each begins with an Agent-generated notice, and are not authoritative project progress. This is the only automatic report exception; explicit read-only/plan-only instructions still prohibit writes. Keep source checkouts in separate temporary/detached worktrees outside the report directory. Do not create fake GitHub links to local reports; return both paths in chat for the user to attach manually in a separate GitHub comment.
 
 Maintained project documentation follows the document lifecycle and registration rules in `docs/README.md`. Scratch and generated working artifacts belong under `.agents/outputs/`, using either the selected skill's declared structure or a task-specific subdirectory. These outputs are not maintained project documentation unless an authorized decision explicitly promotes and registers them. The tracked `.agents/outputs/bugs/` subtree is the approved exception for cross-task bug records and their metadata index; it remains agent output rather than product or requirement authority.
 
@@ -190,4 +194,4 @@ This policy does not authorize an unrelated runtime-configuration refactor, appl
 - Before a PR into `develop`, follow [Required checks and technical enforcement](CONTRIBUTING.md#develop-required-checks). Preserve the approved Frontend 60/60/60/60 and Backend overall line 80% hard gates; never lower thresholds, exclude production source, or add meaningless tests to pass. Report failed/unverified CI or Sonar checks, and do not claim GitHub merge blocking is active without verifying its Ruleset. Kody/Gemini review remains advisory.
 - For shared local integration testing, agents MUST use the root `docker-compose.yml` as the canonical stack for Frontend + Backend + SQL Server. Keep application Dockerfiles component-local; do not add duplicate standalone FE/BE CI gates when the Compose gate already builds and smoke-tests both. When using `docker compose -p <project>`, use that same project name for every stack lifecycle command, including `up`, `run`, `down` and named-volume reset. Normal `down` preserves SQL data; SQL-only reset removes only `<project>_sqlserver-data`, while `down --volumes` resets all named volumes. Follow [Docker development and integration testing](CONTRIBUTING.md#docker-development) and report when Docker execution is unavailable instead of claiming it passed.
 - For API-related implementation or review, agents MUST inspect generated OpenAPI before inferring an API contract: prefer the running `/v3/api-docs`, otherwise use the artifact/spec generated for the same branch commit. During migration, use `docs/api/openapi.yaml` only as planned contract for endpoints absent from runtime; planned does not mean implemented. If implementation and generated contract conflict, report the exact path/method/schema/status/security discrepancy and do not silently choose an authority. Scalar at Backend `/scalar` is the official human API reference and manual test UI; HTTP route smoke is not browser-rendering or API-execution evidence.
-- Finish with the changes, verification and unresolved questions in the conversation; do not create an additional report file.
+- Finish with changes, verification and unresolved questions in the conversation. For the stateful PR review workflow only, its two declared local artifacts are the sole report-file exception; do not create another report.
