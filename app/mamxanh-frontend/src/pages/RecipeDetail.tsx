@@ -52,6 +52,10 @@ const nutritionRows = [
 export function RecipeDetail() {
   const { slug } = useParams();
   const recipe = recipes.find((r) => r.slug === slug) ?? recipes[0];
+  const mediaList = recipe.media && recipe.media.length > 0
+    ? recipe.media
+    : [{ url: recipe.image, isCover: true, displayOrder: 1 }];
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [saved, setSaved] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
@@ -72,12 +76,14 @@ export function RecipeDetail() {
 
   useEffect(() => {
     setDesiredServings(recipe.servings);
+    const coverIdx = mediaList.findIndex((m) => m.isCover);
+    setSelectedImageIndex(coverIdx >= 0 ? coverIdx : 0);
     setReportOpen(false);
     setReportReason('');
     setReportDescription('');
     setReportError('');
     setDemoReportSubmitted(false);
-  }, [recipe.id, recipe.servings]);
+  }, [recipe.id, recipe.servings, mediaList]);
 
   const submitDemoReport = () => {
     const description = reportDescription.trim();
@@ -243,10 +249,50 @@ export function RecipeDetail() {
           ))}
         </div>
 
-        {/* image + description */}
+        {/* image gallery + description (FR-14) */}
         <div className="mb-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-          <div className="overflow-hidden rounded-2xl border border-brand-100">
-            <img src={recipe.image} alt={recipe.name} className="h-full w-full object-cover" />
+          <div className="flex flex-col gap-3">
+            <div className="relative overflow-hidden rounded-2xl border border-brand-100 bg-brand-50 aspect-[4/3] sm:aspect-[16/10]">
+              <img
+                src={mediaList[selectedImageIndex]?.url ?? recipe.image}
+                alt={recipe.name}
+                className="h-full w-full object-cover transition-all duration-300"
+              />
+              {mediaList[selectedImageIndex]?.isCover && (
+                <span className="absolute top-3 left-3 flex items-center gap-1 rounded-full bg-brand-600/90 px-3 py-1 text-xs font-bold text-white shadow backdrop-blur-sm">
+                  Ảnh bìa chính
+                </span>
+              )}
+            </div>
+
+            {/* Thumbnail selector when multiple images exist */}
+            {mediaList.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {mediaList.map((m, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedImageIndex(idx)}
+                    className={`relative h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                      selectedImageIndex === idx
+                        ? 'border-brand-600 ring-2 ring-brand-400 scale-[1.02]'
+                        : 'border-brand-200 opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={m.url}
+                      alt={`Thumbnail ${idx + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    {m.isCover && (
+                      <span className="absolute bottom-0 inset-x-0 bg-brand-600/80 py-0.5 text-center text-[9px] font-bold text-white">
+                        Bìa
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <Card className="flex flex-col p-6">
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-brand-600">

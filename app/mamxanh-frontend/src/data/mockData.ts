@@ -94,7 +94,7 @@ export const recipes: Recipe[] = [
     calories: 210,
     difficulty: 'Trung bình',
     description:
-        'Đậu hũ non mềm mịn hòa quyện cùng sốt nấm đông cô đậm đà, thơm nồng tiêu xanh Phú Quốc. Món ăn cân bằng đạm thực vật và vi chất, phù hợp cho bữa cơm gia đình.',
+      'Đậu hũ non mềm mịn hòa quyện cùng sốt nấm đông cô đậm đà, thơm nồng tiêu xanh Phú Quốc. Món ăn cân bằng đạm thực vật và vi chất, phù hợp cho bữa cơm gia đình.',
     ingredients: [
       { id: 'i1', name: 'Đậu hũ non Nhật Bản', quantity: '300 g', group: 'Đạm thực vật' },
       { id: 'i2', name: 'Nấm đông cô tươi', quantity: '150 g', group: 'Rau củ' },
@@ -128,7 +128,7 @@ export const recipes: Recipe[] = [
     calories: 345,
     difficulty: 'Dễ',
     description:
-        'Quinoa giàu đạm kết hợp cùng bơ sáp béo ngậy và nước cốt chanh tươi mát, món salad này là lựa chọn hoàn hảo cho bữa trưa nhẹ nhàng.',
+      'Quinoa giàu đạm kết hợp cùng bơ sáp béo ngậy và nước cốt chanh tươi mát, món salad này là lựa chọn hoàn hảo cho bữa trưa nhẹ nhàng.',
     ingredients: [
       { id: 'i6', name: 'Quinoa chín', quantity: '1 cup', group: 'Ngũ cốc' },
       { id: 'i7', name: 'Bơ sáp chín', quantity: '120 g', group: 'Rau củ' },
@@ -158,7 +158,7 @@ export const recipes: Recipe[] = [
     calories: 280,
     difficulty: 'Trung bình',
     description:
-        'Nước dùng phở chay ngọt thanh từ rau củ và nấm hương rừng, sợi phở mềm dai, thơm lừng quế hồi.',
+      'Nước dùng phở chay ngọt thanh từ rau củ và nấm hương rừng, sợi phở mềm dai, thơm lừng quế hồi.',
     ingredients: [
       { id: 'i10', name: 'Nấm hương rừng', quantity: '80 g', group: 'Rau củ quả tươi' },
       { id: 'i11', name: 'Bánh phở tươi', quantity: '400 g', group: 'Ngũ cốc' },
@@ -186,7 +186,7 @@ export const recipes: Recipe[] = [
     calories: 190,
     difficulty: 'Dễ',
     description:
-        'Bảy sắc cầu vồng cuộn trong từng chiếc bánh tráng, chấm cùng sốt tương đậu đậm đà. Món khai vị thanh mát, dễ làm.',
+      'Bảy sắc cầu vồng cuộn trong từng chiếc bánh tráng, chấm cùng sốt tương đậu đậm đà. Món khai vị thanh mát, dễ làm.',
     ingredients: [
       { id: 'i14', name: 'Bánh tráng gạo', quantity: '8 cái', group: 'Ngũ cốc' },
       { id: 'i15', name: 'Rau xà lách', quantity: '150 g', group: 'Rau củ' },
@@ -216,7 +216,7 @@ export const recipes: Recipe[] = [
     calories: 380,
     difficulty: 'Trung bình',
     description:
-        'Hạt điều rang béo ngậy kết hợp cùng nước cốt dừa và bột cà ri Ấn Độ tạo nên món cà ri đậm đà, giàu chất béo tốt.',
+      'Hạt điều rang béo ngậy kết hợp cùng nước cốt dừa và bột cà ri Ấn Độ tạo nên món cà ri đậm đà, giàu chất béo tốt.',
     ingredients: [
       { id: 'i18', name: 'Hạt điều rang', quantity: '100 g', group: 'Hạt dinh dưỡng' },
       { id: 'i19', name: 'Nước cốt dừa', quantity: '200 ml', group: 'Nguyên liệu khác' },
@@ -246,7 +246,7 @@ export const recipes: Recipe[] = [
     calories: 185,
     difficulty: 'Dễ',
     description:
-        'Cháo rong biển hạt sen thanh mát, dễ tiêu hóa, phù hợp cho bữa sáng dưỡng sinh hoặc người đang ăn nhẹ.',
+      'Cháo rong biển hạt sen thanh mát, dễ tiêu hóa, phù hợp cho bữa sáng dưỡng sinh hoặc người đang ăn nhẹ.',
     ingredients: [
       { id: 'i22', name: 'Gạo tẻ', quantity: '100 g', group: 'Ngũ cốc' },
       { id: 'i23', name: 'Rong biển khô', quantity: '10 g', group: 'Rau củ' },

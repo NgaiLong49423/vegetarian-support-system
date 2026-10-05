@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, ImagePlus, Info, Plus, Sparkles, Trash2, UploadCloud } from 'lucide-react';
+import { AlertCircle, Check, Info, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card, ProgressBar } from '../components/ui';
 import { useDemoAccount } from '../components/DemoAccount';
 import { useAuth } from '../components/AuthContext';
+import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
 import type { DietTag } from '../types';
 
 const dietOptions: { value: DietTag; label: string; desc: string }[] = [
@@ -61,6 +62,8 @@ function CreateRecipeForm() {
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [diet, setDiet] = useState<DietTag>('Thuần Chay');
+  const [mediaList, setMediaList] = useState<ImageItem[]>([]);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([
     { id: '1', name: 'Đậu hũ non Nhật Bản', qty: '300', unit: 'gram' },
     { id: '2', name: 'Nấm đông cô tươi', qty: '150', unit: 'gram' },
@@ -69,7 +72,9 @@ function CreateRecipeForm() {
   const [saved, setSaved] = useState(false);
 
   const completeness = Math.round(
-    ([title, desc].filter(Boolean).length / 2) * 40 + (rows.filter((r) => r.name && r.qty).length / Math.max(rows.length, 1)) * 60,
+    ([title, desc].filter(Boolean).length / 2) * 30 +
+      (rows.filter((r) => r.name && r.qty).length / Math.max(rows.length, 1)) * 50 +
+      (mediaList.length > 0 ? 20 : 0),
   );
 
   const checklist = [
@@ -77,11 +82,31 @@ function CreateRecipeForm() {
     { label: 'Mô tả câu chuyện món ăn', done: desc.length > 10 },
     { label: 'Chọn chế độ ăn chay', done: true },
     { label: 'Có tối thiểu 3 nguyên liệu', done: rows.filter((r) => r.name).length >= 3 },
+    {
+      label: 'Ảnh bìa hợp lệ (0–5 ảnh, đúng 1 ảnh bìa nếu có ảnh)',
+      done: mediaList.length === 0 || mediaList.filter((m) => m.isCover).length === 1,
+    },
   ];
 
   const addRow = () => setRows((r) => [...r, { id: `${Date.now()}`, name: '', qty: '', unit: 'gram' }]);
   const removeRow = (id: string) => setRows((r) => r.filter((x) => x.id !== id));
   const updateRow = (id: string, patch: Partial<Row>) => setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+
+  const handlePublish = () => {
+    setPublishError(null);
+
+    // Validate AC-14.3 & BR-19
+    if (mediaList.length > 0) {
+      const coverCount = mediaList.filter((m) => m.isCover).length;
+      if (coverCount !== 1) {
+        setPublishError('Vui lòng chỉ định chính xác 1 ảnh đại diện (ảnh bìa) cho bài viết (FR-14, BR-19).');
+        return;
+      }
+    }
+
+    setSaved(true);
+    setTimeout(() => navigate('/kham-pha'), 1200);
+  };
 
   return (
     <PageContainer className="py-8">
@@ -154,20 +179,12 @@ function CreateRecipeForm() {
 
           {/* Step 2 */}
           <Card className="p-6">
-            <StepHead num={2} title="Hình ảnh" />
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 text-center transition-colors hover:border-brand-400 hover:bg-brand-50">
-                <UploadCloud className="mb-2 h-7 w-7 text-brand-500" />
-                <p className="px-4 text-xs font-semibold text-brand-600">Kéo thả hoặc chọn ảnh bìa</p>
-                <p className="text-[10px] text-ink-muted">JPG, PNG tối đa 5MB</p>
-              </div>
-              <div className="flex aspect-square items-center justify-center rounded-xl border border-brand-100 bg-brand-50/40 text-ink-muted">
-                <ImagePlus className="h-6 w-6" />
-              </div>
-              <div className="flex aspect-square items-center justify-center rounded-xl border border-brand-100 bg-brand-50/40 text-ink-muted">
-                <ImagePlus className="h-6 w-6" />
-              </div>
-            </div>
+            <StepHead num={2} title="Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)" />
+            <RecipeImageUploader
+              images={mediaList}
+              onChange={setMediaList}
+              maxImages={5}
+            />
           </Card>
 
           {/* Step 3 */}
@@ -211,9 +228,16 @@ function CreateRecipeForm() {
             </button>
           </Card>
 
+          {publishError && (
+            <div className="flex items-center gap-2 rounded-xl bg-red-50 p-4 text-sm text-red-700">
+              <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
+              <span>{publishError}</span>
+            </div>
+          )}
+
           <div className="flex justify-end gap-3">
             <Button variant="outline">Lưu nháp</Button>
-            <Button onClick={() => { setSaved(true); setTimeout(() => navigate('/kham-pha'), 1200); }}>
+            <Button onClick={handlePublish}>
               {saved ? <><Check className="h-4 w-4" /> Đã đăng!</> : 'Xuất bản công thức'}
             </Button>
           </div>
