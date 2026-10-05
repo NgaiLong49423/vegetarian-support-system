@@ -103,6 +103,30 @@ test('meal serving selector accepts half portions', async ({ page }) => {
   await expect(selector).toHaveValue('1.5');
 });
 
+test('meal planner adds, changes serving count and removes a recipe from a meal slot', async ({ page }) => {
+  await page.goto('/ke-hoach', { waitUntil: 'domcontentloaded' });
+
+  const addSlot = page.getByRole('button', { name: /Thêm món/ }).first();
+  const slot = (await addSlot.innerText()).replace('Thêm món', '').trim();
+  const dayCard = addSlot.locator('xpath=../../..');
+  await addSlot.click();
+  const picker = page.getByRole('dialog');
+  await expect(picker.getByRole('heading', { name: `Chọn món ${slot}` })).toBeVisible();
+  await expect(picker).toBeVisible();
+  const recipeButton = picker.locator('button:has(p)').first();
+  const recipeName = (await recipeButton.locator('p').first().textContent())?.trim();
+  await recipeButton.click();
+
+  expect(recipeName).toBeTruthy();
+  const servings = dayCard.getByLabel(/Khẩu phần/).last();
+  await expect(servings).toHaveValue('1');
+  await servings.selectOption('1.5');
+  await expect(servings).toHaveValue('1.5');
+
+  await dayCard.getByRole('button', { name: 'Xoá món' }).last().click();
+  await expect(addSlot).toBeVisible();
+});
+
 test('recipe ingredients scale from the author serving count', async ({ page }) => {
   await page.goto('/cong-thuc/pho-chay-nam-huong-rung');
   await expect(page.getByRole('heading', { name: 'Dinh dưỡng cho 1 khẩu phần (8 chỉ tiêu minh họa)' })).toBeVisible();

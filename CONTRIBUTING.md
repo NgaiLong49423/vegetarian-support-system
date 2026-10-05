@@ -207,7 +207,7 @@ Mọi lệnh sau đó (`up`, `down`, `run`, reset volume) phải tiếp tục d�
 <a id="develop-required-checks"></a>
 #### Required checks và technical enforcement cho `develop`
 
-Project Owner chốt hard gates: Frontend Playwright/Istanbul/NYC đạt **≥60% cho cả Lines, Statements, Functions và Branches**; Backend JaCoCo đạt **overall BUNDLE LINE ≥80%**. Command/check fail không được coi là pass. Xem [Test Strategy](docs/testing/TEST-STRATEGY.md#8-cách-hiểu-coverage) và app README cho lệnh, metric và report paths.
+Project Owner chốt hard gates: Frontend Playwright/Istanbul/NYC đạt **≥80% cho cả Lines, Statements, Functions và Branches**; Backend JaCoCo đạt **overall BUNDLE LINE ≥80%**. Command/check fail không được coi là pass. Xem [Test Strategy](docs/testing/TEST-STRATEGY.md#8-cách-hiểu-coverage) và app README cho lệnh, metric và report paths.
 
 | Required check context | Phạm vi |
 |---|---|

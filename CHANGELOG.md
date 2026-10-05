@@ -9,6 +9,26 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-05 — Complete Catalog-backed Recipe Ingredient Validation for Issue #25
+
+**Status:** Working tree — not committed.
+
+**Scope:** Complete catalog-backed quantity validation in recipe creation and expose missing-nutrition status without blocking publication.
+
+### Added
+
+- Return nutrition completeness and unsupported ingredient names from published recipe details.
+- Show an incomplete-nutrition warning for recipes containing catalog ingredients without supported nutrition data.
+
+### Changed
+
+- Restrict recipe forms and publication to active measurement units.
+- Raise Frontend E2E coverage hard gates to 80% for lines, statements, functions, and branches.
+
+### Fixed
+
+- Reject publication requests that reference inactive units.
+
 ## 2026-10-05 — Record Password Login Follow-Up Database Checks (FR-03-B, Issue #6)
 
 **Status:** Committed — 7757560.

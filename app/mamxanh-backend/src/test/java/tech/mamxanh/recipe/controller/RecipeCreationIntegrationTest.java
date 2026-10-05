@@ -1,6 +1,7 @@
 package tech.mamxanh.recipe.controller;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -43,6 +44,7 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     private int gramUnitId;
     private int kilogramUnitId;
     private int countUnitId;
+    private int blockUnitId;
 
     @BeforeEach
     void prepareCatalogAndAccounts() {
@@ -59,9 +61,11 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
         jdbcTemplate.update("INSERT INTO [INGREDIENT] (name, source_name, reference_date) VALUES (?, ?, '2026-10-04')",
                 INGREDIENT_NAME, "Issue #22 integration fixture");
         ingredientId = jdbcTemplate.queryForObject("SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?", Long.class, INGREDIENT_NAME);
+        jdbcTemplate.update("UPDATE [INGREDIENT] SET nutrition_supported = 0 WHERE ingredient_id = ?", ingredientId);
         gramUnitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'g'", Integer.class);
         kilogramUnitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'kg'", Integer.class);
         countUnitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'quả'", Integer.class);
+        blockUnitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'bìa'", Integer.class);
     }
 
     @Test
@@ -134,7 +138,7 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void acceptsPositiveGramAndKilogramQuantitiesWithoutHundredGramStep() throws Exception {
-        for (String quantity : List.of("80", "120", "150", "100.5")) {
+        for (String quantity : List.of("80", "120", "150", "100.5", "120.5")) {
             mockMvc.perform(post("/api/v1/recipes")
                             .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
                             .contentType(MediaType.APPLICATION_JSON)
@@ -147,7 +151,7 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
                         .content(json(request(List.of(ingredient(kilogramUnitId, "0.15")), null))))
                 .andExpect(status().isCreated());
 
-        for (String quantity : List.of("0", "-1")) {
+        for (String quantity : List.of("0", "-1", "2.555")) {
             mockMvc.perform(post("/api/v1/recipes")
                             .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
                             .contentType(MediaType.APPLICATION_JSON)
@@ -155,6 +159,92 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errors[*].field", hasItem("ingredients[0].quantity")));
         }
+    }
+
+    @Test
+    void enforcesIngredientLineCountFromOneThroughFifty() throws Exception {
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(List.of(), null))))
+                .andExpect(status().isBadRequest());
+        assertNoRecipe();
+
+        List<RecipeIngredientInput> fifty = java.util.stream.IntStream.range(0, 50)
+                .mapToObj(index -> ingredient(gramUnitId, "1")).toList();
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(fifty, null))))
+                .andExpect(status().isCreated());
+
+        List<RecipeIngredientInput> fiftyOne = java.util.stream.IntStream.range(0, 51)
+                .mapToObj(index -> ingredient(gramUnitId, "1")).toList();
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(fiftyOne, null))))
+                .andExpect(status().isBadRequest());
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM [RECIPE_POST] WHERE author_id = ? AND title = ?", Integer.class,
+                expertId, "Đậu hũ kho cà chua")).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM [RECIPE_INGREDIENT] ri JOIN [RECIPE_POST] rp ON rp.recipe_id = ri.recipe_id WHERE rp.author_id = ? AND rp.title = ?",
+                Integer.class, expertId, "Đậu hũ kho cà chua")).isEqualTo(50);
+    }
+
+    @Test
+    void acceptsCountUnitWhenActiveIngredientSpecificConversionExists() throws Exception {
+        jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 150)",
+                ingredientId, blockUnitId);
+
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(List.of(ingredient(blockUnitId, "2")), null))))
+                .andExpect(status().isCreated());
+
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM [RECIPE_INGREDIENT] ri JOIN [RECIPE_POST] rp ON rp.recipe_id = ri.recipe_id WHERE rp.author_id = ? AND ri.ingredient_id = ? AND ri.unit_id = ? AND ri.quantity = 2",
+                Integer.class, expertId, ingredientId, blockUnitId)).isEqualTo(1);
+    }
+
+    @Test
+    void excludesInactiveUnitsFromOptionsAndRejectsThemOnPublish() throws Exception {
+        jdbcTemplate.update("UPDATE [UNIT] SET is_active = 0 WHERE unit_id = ?", blockUnitId);
+        try {
+            mockMvc.perform(get("/api/v1/recipes/form-options"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.units[*].unitId", not(hasItem(blockUnitId))));
+
+            mockMvc.perform(post("/api/v1/recipes")
+                            .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json(request(List.of(ingredient(blockUnitId, "2")), null))))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors[*].field", hasItem("ingredients[0].unitId")));
+            assertNoRecipe();
+        } finally {
+            jdbcTemplate.update("UPDATE [UNIT] SET is_active = 1 WHERE unit_id = ?", blockUnitId);
+        }
+    }
+
+    @Test
+    void publishesCatalogIngredientWithoutNutritionDataAndMarksRecipeIncomplete() throws Exception {
+        var created = mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(List.of(ingredient(gramUnitId, "80")), null))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        long recipeId = jsonMapper.readTree(created.getResponse().getContentAsString()).path("recipeId").asLong();
+
+        mockMvc.perform(get("/api/v1/recipes/{recipeId}", recipeId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nutritionComplete").value(false))
+                .andExpect(jsonPath("$.ingredientsWithoutNutrition", hasItem(INGREDIENT_NAME)))
+                .andExpect(jsonPath("$.ingredients[0].name").value(INGREDIENT_NAME))
+                .andExpect(jsonPath("$.ingredients[0].quantity").value(80));
     }
 
     @Test

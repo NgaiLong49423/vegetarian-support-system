@@ -21,4 +21,7 @@ public class RecipeIngredientReferenceEntity {
 
     @Column(name = "status", nullable = false, length = 20)
     private String status;
+
+    @Column(name = "nutrition_supported", nullable = false)
+    private boolean nutritionSupported;
 }
