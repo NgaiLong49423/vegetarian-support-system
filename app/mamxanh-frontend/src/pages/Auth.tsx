@@ -7,7 +7,7 @@ import { useAuth, type SessionNotice } from '../components/AuthContext';
 import { useDemoAccount } from '../components/DemoAccount';
 import { fieldMessages, retryAfterSeconds, toProblem, type ProblemDetails } from '../lib/problem';
 import { login, register, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
-import { getDietaryPreferences } from '../services/dietaryPreferencesApi';
+import { claimOnboardingInvitation } from '../services/dietaryPreferencesApi';
 import { passwordProblems } from '../utils/password';
 
 type Mode = 'login' | 'register' | 'forgot' | 'verify' | 'reset';
@@ -49,13 +49,13 @@ function loginError(problem: ProblemDetails | null, retryAfter: number | null): 
 }
 
 /**
- * AC-31.10: a Member whose Onboarding invitation is still unanswered goes to the questionnaire;
- * everyone else lands on the home page. Failing to read the profile never blocks the sign-in.
+ * AC-31.10: the Backend shows the Onboarding questionnaire once, to a new Member who has not answered it;
+ * everyone else lands on the home page. Failing to check the invitation never blocks the sign-in.
  */
 async function landingAfterLogin(account: AccountSummary): Promise<string> {
   if (account.role === 'ADMIN') return '/';
   try {
-    return (await getDietaryPreferences()).onboardingStatus === 'NOT_STARTED' ? '/khoi-tao-so-thich' : '/';
+    return (await claimOnboardingInvitation()) ? '/khoi-tao-so-thich' : '/';
   } catch {
     return '/';
   }

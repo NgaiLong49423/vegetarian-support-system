@@ -47,6 +47,12 @@ export async function skipOnboarding(): Promise<void> {
   await apiClient.post(`${BASE}/onboarding/skip`);
 }
 
+/** AC-31.10: true only the first time an unanswered invitation is claimed; the Backend records it. */
+export async function claimOnboardingInvitation(): Promise<boolean> {
+  const { data } = await apiClient.post<{ show: boolean }>(`${BASE}/onboarding/invitation`);
+  return data.show;
+}
+
 export async function suggestIngredients(query: string): Promise<IngredientSuggestion[]> {
   const { data } = await apiClient.get<IngredientSuggestion[]>(`${BASE}/ingredient-suggestions`, { params: { query } });
   return data;

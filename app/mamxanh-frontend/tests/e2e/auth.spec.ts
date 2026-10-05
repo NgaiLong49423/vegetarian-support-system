@@ -109,11 +109,10 @@ async function submitLogin(page: Page, email = 'an@example.com', password = 'Mat
 
 const storedSession = (page: Page) => page.evaluate(() => sessionStorage.getItem('mamxanh.auth'));
 
-// After a successful login the app reads the FR-31 Onboarding status; an answered invitation lands on the home page.
+// After a successful login the app asks whether to show the FR-31 Onboarding invitation; without it the login lands on the home page.
 async function stubAnsweredOnboarding(page: Page) {
-  await stubApi(page, '/nutrition/dietary-preferences', async route => route.fulfill({
-    status: 200, contentType: 'application/json', headers: corsHeaders,
-    body: JSON.stringify({ vegetarianType: null, avoid: { noneConfirmed: false, items: [] }, dislike: { noneConfirmed: false, items: [] }, cuisinePreference: null, maxCookingTimeMinutes: null, preferredDifficulty: null, onboardingStatus: 'SKIPPED', aiPersonalization: { eligible: false, missing: ['VEGETARIAN_TYPE', 'AVOID_INGREDIENTS', 'DISLIKED_INGREDIENTS'] } }),
+  await stubApi(page, '/nutrition/dietary-preferences/onboarding/invitation', async route => route.fulfill({
+    status: 200, contentType: 'application/json', headers: corsHeaders, body: JSON.stringify({ show: false }),
   }));
 }
 
@@ -150,7 +149,7 @@ test('login keeps the session in this tab and logout clears it without calling t
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
   await expect(page).toHaveURL(/\/dang-nhap$/);
   expect(await storedSession(page)).toBeNull();
-  expect(serverCalls).toEqual(['POST /api/v1/auth/login', 'GET /api/v1/nutrition/dietary-preferences']);
+  expect(serverCalls).toEqual(['POST /api/v1/auth/login', 'POST /api/v1/nutrition/dietary-preferences/onboarding/invitation']);
 });
 
 test('login errors follow the problem code and never keep the password (mock API)', async ({ page }) => {

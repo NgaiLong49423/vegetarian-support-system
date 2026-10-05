@@ -10,6 +10,7 @@ const corsHeaders = {
 };
 
 const PREFERENCES = '/nutrition/dietary-preferences';
+const INVITATION = `${PREFERENCES}/onboarding/invitation`;
 
 type Profile = Record<string, unknown>;
 
@@ -68,6 +69,27 @@ async function stubPreferences(page: Page, initial: Profile, onSave?: (body: Rec
   return saved;
 }
 
+/**
+ * Server side of AC-31.10: only the first claim of an unanswered invitation shows the questionnaire.
+ * Returns the Authorization header of every claim.
+ */
+async function stubInvitation(page: Page, unanswered = true) {
+  const claims: string[] = [];
+  let shown = !unanswered;
+  await stubApi(page, INVITATION, async route => {
+    claims.push(route.request().headers().authorization ?? '');
+    const show = !shown;
+    shown = true;
+    return route.fulfill(json({ show }));
+  });
+  return claims;
+}
+
+async function signOut(page: Page) {
+  await page.getByRole('button', { name: 'Tài khoản Trần Bình' }).click();
+  await page.getByRole('button', { name: 'Đăng xuất' }).click();
+}
+
 async function signInAs(page: Page, account = member) {
   await stubApi(page, '/auth/login', async route => route.fulfill(json({ accessToken: 'header.payload.signature', tokenType: 'Bearer', expiresInSeconds: 3600, account })));
   await page.goto('/dang-nhap');
@@ -87,6 +109,7 @@ async function seedSession(page: Page, account = member) {
 
 test('a new member is invited after the first sign-in and completes onboarding with ingredients (AC-31.1, mock API)', async ({ page }) => {
   const saved = await stubPreferences(page, emptyProfile('NOT_STARTED'));
+  const claims = await stubInvitation(page);
   await stubApi(page, `${PREFERENCES}/ingredient-suggestions*`, async route => {
     const query = new URL(route.request().url()).searchParams.get('query') ?? '';
     return route.fulfill(json(query.includes('phộng') ? [{ id: 7, name: 'Đậu phộng', ingredientGroup: 'Hạt' }] : []));
@@ -94,6 +117,7 @@ test('a new member is invited after the first sign-in and completes onboarding w
 
   await signInAs(page);
   await expect(page).toHaveURL(/\/khoi-tao-so-thich$/);
+  expect(claims).toEqual(['Bearer header.payload.signature']);
   await expect(page.getByRole('heading', { name: 'Cho Mâm Xanh biết khẩu vị của bạn' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Hoàn tất' }).click();
@@ -145,6 +169,7 @@ test('skip closes the invitation and the next sign-in goes straight home (AC-31.
   let status = 'NOT_STARTED';
   const skips: string[] = [];
   await stubApi(page, PREFERENCES, async route => route.fulfill(json(emptyProfile(status))));
+  const claims = await stubInvitation(page);
   await stubApi(page, `${PREFERENCES}/onboarding/skip`, async route => {
     skips.push(route.request().headers().authorization ?? '');
     status = 'SKIPPED';
@@ -157,11 +182,46 @@ test('skip closes the invitation and the next sign-in goes straight home (AC-31.
   await expect(page).toHaveURL(/\/kham-pha$/);
   expect(skips).toEqual(['Bearer header.payload.signature']);
 
-  await page.getByRole('button', { name: 'Tài khoản Trần Bình' }).click();
-  await page.getByRole('button', { name: 'Đăng xuất' }).click();
+  await signOut(page);
   await signInAs(page);
   await expect(page).toHaveURL(/\/$/);
+  expect(claims).toHaveLength(2);
   expect(skips).toHaveLength(1);
+});
+
+test('leaving the questionnaire unanswered is not invited again but stays open from settings (AC-31.10, mock API)', async ({ page }) => {
+  await stubPreferences(page, emptyProfile('NOT_STARTED'));
+  const claims = await stubInvitation(page);
+
+  await signInAs(page);
+  await expect(page).toHaveURL(/\/khoi-tao-so-thich$/);
+  await page.getByRole('link', { name: 'Khám phá món chay' }).first().click();
+  await expect(page).toHaveURL(/\/kham-pha$/);
+
+  await signOut(page);
+  await signInAs(page);
+  await expect(page).toHaveURL(/\/$/);
+  expect(claims).toHaveLength(2);
+
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('link', { name: 'Sở thích ăn uống' }).click();
+  await expect(page).toHaveURL(/\/ho-so\/so-thich-an-uong$/);
+  await expect(page.getByRole('form', { name: 'Sở thích ăn uống' })).toBeVisible();
+  await expect(page.getByRole('note', { name: 'Thông tin còn thiếu cho AI cá nhân hóa' })).toBeVisible();
+
+  await page.goto('/khoi-tao-so-thich');
+  await expect(page.getByRole('heading', { name: 'Cho Mâm Xanh biết khẩu vị của bạn' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Hoàn tất' })).toBeEnabled();
+  expect(claims).toHaveLength(2);
+});
+
+test('a failed invitation check never blocks the sign-in (mock API)', async ({ page }) => {
+  await stubApi(page, INVITATION, async route => route.fulfill(problem(500, 'INTERNAL_ERROR', { detail: 'Hệ thống gặp lỗi. Vui lòng thử lại sau.' })));
+
+  await signInAs(page);
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('button', { name: 'Tài khoản Trần Bình' })).toBeVisible();
 });
 
 test('an administrator signs in without being asked about dietary preferences (mock API)', async ({ page }) => {
@@ -170,11 +230,13 @@ test('an administrator signs in without being asked about dietary preferences (m
     calls.push(route.request().method());
     return route.fulfill(json(emptyProfile('NOT_STARTED')));
   });
+  const claims = await stubInvitation(page);
 
   await signInAs(page, { ...member, id: 1, displayName: 'Quản trị', email: 'admin@example.com', role: 'ADMIN' });
 
   await expect(page).toHaveURL(/\/$/);
   expect(calls).toEqual([]);
+  expect(claims).toEqual([]);
 });
 
 test('settings refuse an empty allergy list until "none" is confirmed (AC-31.7, mock API)', async ({ page }) => {
