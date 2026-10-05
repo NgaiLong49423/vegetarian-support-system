@@ -28,7 +28,7 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
    - Toàn bộ trường phục vụ xác minh email, đặt lại mật khẩu và rate limit được lưu trữ trực tiếp trên bảng `USER`:
      - Xác minh email: `email_verification_token` (VARCHAR), `verification_token_expires_at` (DATETIME2).
      - Đặt lại mật khẩu: `password_reset_token` (VARCHAR), `reset_token_expires_at` (DATETIME2).
-     - Brute-force rate limit: `failed_login_attempts` (INT DEFAULT 0), `login_blocked_until` (DATETIME2 NULL), `last_failed_login_at` (DATETIME2 NULL).
+     - Brute-force rate limit: `failed_login_attempts` (INT DEFAULT 0), `login_blocked_until` (DATETIME2 NULL). Không thêm `last_failed_login_at` vì Acceptance Criteria không dùng cột này (Tech Lead chốt Q29 ngày 03/10/2026).
      - Metadata rate limit email (Q27): cho phép bổ sung các trường tối thiểu trên `USER` nếu cần theo dõi 60s cooldown và tối đa 5 email/giờ/tài khoản.
    - Developer (Tony) sẽ viết Flyway migration mới trong các Issue thực thi (#5, #6, #9) và cập nhật snapshot `database/schema.sql`.
    - **Ranh giới Diagram Artifact Protection:** Thư mục `docs/diagrams/ERD/` (Physical ERD, Logical ERD) là presentation workspace do con người duy trì và được bảo vệ theo `AGENTS.md`. Việc thay đổi schema hoặc migration **tuyệt đối không tự động cấp quyền sửa hoặc regenerate ERD diagrams** cho coding agent trừ khi có task riêng được ủy quyền tường minh.
@@ -49,6 +49,8 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
 - **Schema & Migration:** Lịch sử schema gồm V1 baseline, V2 Unicode cho `UNIT.code`, V3 xác minh email, V4 consent FR-35, V5 ingredient group/unit validation FR-18 và V6 login throttle cho Issue #6. `database/schema.sql` là snapshot thủ công sau toàn bộ migration; đối chiếu trên database sạch sau lần đồng bộ này chưa được xác nhận.
 - **Migration dữ liệu V7 (Issue #36, FR-31):** [V7__onboarding_existing_accounts.sql](../app/mamxanh-backend/src/main/resources/db/migration/V7__onboarding_existing_accounts.sql) chỉ đổi dữ liệu: tài khoản tồn tại trước migration đang `onboarding_status = NOT_STARTED` được chuyển sang `SKIPPED` để không bị mời Onboarding tự động (AC-31.10). Không đổi cột, ràng buộc hay index nên `database/schema.sql` không đổi.
 - **Verification Tests:** [database/queries.sql](queries.sql) có 40 test cases (TC01–TC40), bao gồm các assertion cho giới hạn đăng nhập. Kết quả ghi nhận trước lần đồng bộ này không xác nhận trạng thái hợp nhất; cần chạy lại bộ truy vấn trên database sạch.
+- **Schema & Migration:** Lịch sử schema gồm V1 baseline, V2 Unicode cho `UNIT.code`, V3 xác minh email, V4 consent FR-35, V5 ingredient group/unit validation FR-18 và V6 login throttle cho Issue #6. `database/schema.sql` là snapshot thủ công sau toàn bộ migration; ngày 05/10/2026 snapshot được đối chiếu với database dựng bằng V1–V6 trên container SQL Server 2019: 0 khác biệt về cột, CHECK, DEFAULT, index và FK (22 tables, 203 columns, 38 FKs, 61 CHECK, 58 DEFAULT, 56 index).
+- **Verification Tests:** [database/queries.sql](queries.sql) có 40 test cases (TC01–TC40), bao gồm các assertion cho giới hạn đăng nhập. Ngày 05/10/2026 bộ truy vấn đạt 78/78 test assertions PASS trên database sạch dựng bằng V1–V6 và trên database dựng từ `schema.sql`.
 
 ## Hướng dẫn kiểm thử và thẩm định
 

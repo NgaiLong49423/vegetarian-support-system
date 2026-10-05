@@ -9,25 +9,20 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-05 — Implement Onboarding and the Personalized AI Eligibility Gate (FR-31, Issue #36)
+## 2026-10-05 — Record Password Login Follow-Up Database Checks (FR-03-B, Issue #6)
 
-**Status:** Committed — 98f5dd9, fc13b75, ab661ef, 7e20917, 06aa22f.
+**Status:** Committed — 7757560.
 
-**Scope:** Implement UC-31.1–UC-31.3 and AC-31.1–AC-31.10: a one-time Onboarding questionnaire for new Members, Skip without locking regular features, viewing and updating the private dietary-preference profile, and the BR-31 gate that must run before any personalized AI request.
+**Scope:** Apply the Tech Lead decision Q29 to the database guide and replace the unverified post-sync notes with results measured on a clean SQL Server 2019 database after V1–V6.
 
 ### Added
 
-- Add `GET`/`PUT /api/v1/nutrition/dietary-preferences`, `POST /api/v1/nutrition/dietary-preferences/onboarding/skip` and `GET /api/v1/nutrition/dietary-preferences/ingredient-suggestions` for the signed-in Member; administrators receive `403 MEMBER_ACCESS_REQUIRED`.
-- Add a nutrition-owned entity for the dietary-preference and Onboarding columns of `USER` (decision Q18, `@DynamicUpdate`) and an entity for `USER_INGREDIENT_PREFERENCE`; names matching an active standard ingredient are linked to it.
-- Add `DietaryPreferenceService.requirePersonalizedAiEligible`, which stops a request with `409 DIETARY_PROFILE_INCOMPLETE` and a `missing` list before any Gemini call or Meal Plan write.
-- Add the data-only Flyway migration `V7__onboarding_existing_accounts.sql`, which marks accounts that existed before FR-31 as `SKIPPED` so they are not invited (AC-31.10).
-- Add the `MEMBER_ACCESS_REQUIRED`, `INGREDIENT_PREFERENCE_CONFLICT` and `DIETARY_PROFILE_INCOMPLETE` error codes, and let application errors carry extra problem properties.
-- Add the Frontend Onboarding page `/khoi-tao-so-thich`, the Settings page `/ho-so/so-thich-an-uong` with the missing-information notice, and the redirect to Onboarding after the sign-in of a Member whose invitation is unanswered.
-- Add SQL Server integration tests for AC-31.1–AC-31.10, validation, access and privacy, a problem-detail unit test, and API-stubbed Playwright scenarios for the Onboarding and Settings flows.
+None.
 
 ### Changed
 
-- Point the "Sở thích ăn uống" menu item to the new Settings page, stub the Onboarding lookup in the existing login browser tests, mark the real-stack login test account as having closed the invitation, and document the endpoints, rules and error codes in `docs/api/API.md`, `database/README.md` and both app READMEs.
+- Remove `last_failed_login_at` from the FR-03 target design in `database/README.md`, because no Acceptance Criterion uses it.
+- Record that `database/schema.sql` matches a database built by V1–V6 with 0 differences in columns, CHECK, DEFAULT, index and FK definitions, and that `database/queries.sql` passes 78/78 assertions on both databases.
 
 ### Fixed
 
