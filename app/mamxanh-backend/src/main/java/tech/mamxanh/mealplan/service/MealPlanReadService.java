@@ -34,7 +34,7 @@ public class MealPlanReadService {
     @Transactional(readOnly = true)
     public MealPlanWeekResponse getWeek(LocalDate weekStartDate) {
         var currentUser = currentUserService.requireActiveMember();
-        if (weekStartDate == null || weekStartDate.getDayOfWeek() != DayOfWeek.MONDAY) {
+        if (weekStartDate == null || !weekStartDate.getDayOfWeek().equals(DayOfWeek.MONDAY)) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Ngày bắt đầu tuần phải là thứ Hai.");
         }
         var plan = mealPlanRepository.findByUserIdAndWeekStartDate(currentUser.id(), weekStartDate);
