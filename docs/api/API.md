@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.7.0
+> **Version:** v0.8.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-04
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 
 # API Integration Guide
@@ -92,11 +92,11 @@ Quy ước status chính:
 | `204 No Content` | Thao tác thành công và không cần response body. |
 | `400 Bad Request` | Payload, token xác minh hoặc token đặt lại mật khẩu không hợp lệ. |
 | `401 Unauthorized` | Credential không hợp lệ hoặc token hết hạn. |
-| `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`) hoặc bị Administrator khóa (`ACCOUNT_LOCKED`). |
-| `409 Conflict` | Email đã được sử dụng hoặc đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`). |
+| `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`), bị Administrator khóa (`ACCOUNT_LOCKED`) hoặc không phải Member khi dùng hồ sơ sở thích (`MEMBER_ACCESS_REQUIRED`). |
+| `409 Conflict` | Email đã được sử dụng, đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`), hoặc hồ sơ sở thích chưa đủ để gọi AI cá nhân hóa (`DIETARY_PROFILE_INCOMPLETE`). |
 | `429 Too Many Requests` | Chỉ áp dụng khi contract của endpoint quy định `429` (ví dụ login, resend verification hoặc AI rate limiting); client đọc `Retry-After` khi có. Password-reset request không trả `429`. |
 
-Mã `code` đã triển khai (Issue #5, #6). Các mã của Google Login và đặt lại mật khẩu được bổ sung khi các Issue tương ứng triển khai.
+Mã `code` đã triển khai (Issue #5, #6, #36). Các mã của Google Login và đặt lại mật khẩu được bổ sung khi các Issue tương ứng triển khai.
 
 | `code` | Status | Khi nào |
 |---|---|---|
@@ -108,6 +108,9 @@ Mã `code` đã triển khai (Issue #5, #6). Các mã của Google Login và đ�
 | `EMAIL_NOT_VERIFIED` | 403 | `POST /auth/login` đúng mật khẩu nhưng email chưa xác minh. |
 | `ACCOUNT_LOCKED` | 403 | `POST /auth/login` đúng mật khẩu nhưng tài khoản bị Administrator khóa; hoặc request mang Bearer token hợp lệ của tài khoản đang `LOCKED`. |
 | `LOGIN_TEMPORARILY_BLOCKED` | 429 | Lần sai mật khẩu thứ 5 liên tiếp và mọi lần thử `POST /auth/login` trong 10 phút sau đó (kiểm tra trước khi so mật khẩu); kèm `Retry-After` là số giây còn lại. Không đổi `account_status`. |
+| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31); chỉ Member (`CUSTOMER`, `EXPERT`) có hồ sơ này. |
+| `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |
+| `DIETARY_PROFILE_INCOMPLETE` | 409 | Cổng AI cá nhân hóa (BR-31) chặn yêu cầu vì hồ sơ thiếu nhóm thông tin tối thiểu; body có thêm `missing` (`VEGETARIAN_TYPE`, `AVOID_INGREDIENTS`, `DISLIKED_INGREDIENTS`). |
 | `UNAUTHENTICATED` | 401 | Gọi endpoint cần đăng nhập mà không có Bearer token, hoặc token sai chữ ký, sai issuer, hết hạn hay thuộc tài khoản không còn tồn tại. |
 | `ACCESS_DENIED` | 403 | Đã xác thực nhưng không đủ quyền. |
 | `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE` | 404, 405, 415 | Lỗi định tuyến/định dạng do framework phát hiện. |
@@ -148,3 +151,22 @@ Ba endpoint runtime trong generated OpenAPI thao tác hồ sơ của Member hi�
 | Public/development server URLs và CORS origins | `TBD` | Chốt theo môi trường thực tế trước khi cấu hình OpenAPI `servers` và CORS. |
 
 Baseline API đã được nhóm chấp nhận; các mục `TBD` không tự có giá trị chỉ vì tài liệu chuyển sang `Active`. Owner FR-03 phân rã, đề xuất giá trị và cách kiểm thử; Tech Lead duyệt trước khi phần liên quan được coi là implementation-ready. Không suy diễn các giá trị này từ ví dụ hoặc cấu hình tạm.
+
+## 8. Sở thích ăn uống và Onboarding — FR-31
+
+Bốn endpoint runtime thao tác hồ sơ của Member đang đăng nhập; client không truyền `userId`. Guest nhận `401 UNAUTHENTICATED`, Administrator nhận `403 MEMBER_ACCESS_REQUIRED`. Dữ liệu này riêng tư: không có endpoint nào trả sở thích của người khác.
+
+- `GET /nutrition/dietary-preferences` trả `vegetarianType`, `avoid` và `dislike` (mỗi danh sách gồm `noneConfirmed` và `items` với `ingredientId`, `name`), ba sở thích tùy chọn, `onboardingStatus` và `aiPersonalization` (`eligible`, `missing`).
+- `PUT /nutrition/dietary-preferences` lưu toàn bộ hồ sơ và chuyển `onboardingStatus` sang `COMPLETED` (dùng cho cả "Hoàn tất" Onboarding và "Lưu thay đổi" trong Cài đặt).
+  - `vegetarianType` bắt buộc, một trong `VEGAN`, `LACTO`, `OVO`, `LACTO_OVO`.
+  - `avoid` và `dislike` bắt buộc: có ít nhất một mục trong `items` hoặc `noneConfirmed = true`. Danh sách rỗng mà không xác nhận trả `400 VALIDATION_FAILED` với `errors[].field` là `avoid` hoặc `dislike` (BR-31). Thiếu `noneConfirmed` được hiểu là chưa xác nhận.
+  - Mỗi danh sách tối đa 30 mục, mỗi tên 1–200 ký tự. Backend bỏ khoảng trắng thừa, gộp tên trùng (không phân biệt hoa/thường) và liên kết `ingredientId` khi tên trùng một nguyên liệu chuẩn đang hoạt động. Khi danh sách có mục, `noneConfirmed` được đưa về `false`.
+  - Một tên ở cả hai danh sách trả `400 INGREDIENT_PREFERENCE_CONFLICT`.
+  - Tùy chọn: `cuisinePreference` (tối đa 200 ký tự), `maxCookingTimeMinutes` (1–1440), `preferredDifficulty` (`EASY`, `MEDIUM`, `HARD`; giao diện hiển thị `HARD` là "Nâng cao").
+  - Cập nhật hồ sơ không sửa Meal Plan đã lưu; chỉ các yêu cầu AI sau đó dùng dữ liệu mới.
+- `POST /nutrition/dietary-preferences/onboarding/skip` trả `204`, chuyển `NOT_STARTED` sang `SKIPPED`; gọi lại hoặc gọi khi đã `COMPLETED` không đổi trạng thái.
+- `GET /nutrition/dietary-preferences/ingredient-suggestions?query=` trả tối đa 10 nguyên liệu chuẩn đang hoạt động (`id`, `name`, `ingredientGroup`); query rỗng trả danh sách rỗng.
+
+Luồng Onboarding (AC-31.10): sau khi đăng nhập thành công, Frontend đọc `onboardingStatus`; chỉ `NOT_STARTED` mới chuyển tới trang Onboarding. Tài khoản tồn tại trước migration V7 được đánh dấu `SKIPPED` nên không bị hỏi; tài khoản tạo sau đó bắt đầu ở `NOT_STARTED`.
+
+Cổng AI cá nhân hóa (AC-31.4–AC-31.6): endpoint AI gợi ý món hoặc tạo thực đơn tuần phải gọi `DietaryPreferenceService.requirePersonalizedAiEligible(userId)` trước mọi xử lý khác. Khi thiếu thông tin, request dừng với `409 DIETARY_PROFILE_INCOMPLETE` kèm `missing`; không gọi Gemini và không ghi Meal Plan. Cổng chỉ kiểm tra dữ liệu hồ sơ, không dựa vào `onboardingStatus`.

@@ -1,13 +1,13 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.9.0<br>
+> **Version:** v0.10.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-04<br>
+> **Last Updated:** 2026-10-05<br>
 > **Status:** Active  
 
 # Database Workspace
 
-Database chính đã chốt là Microsoft SQL Server 2019. Sau khi đồng bộ, thứ tự migration hiện hành là V1–V6; `database/schema.sql` và `database/queries.sql` là các snapshot/kiểm tra cần được xác minh lại trên database sạch.
+Database chính đã chốt là Microsoft SQL Server 2019. Sau khi đồng bộ, thứ tự migration hiện hành là V1–V7; `database/schema.sql` và `database/queries.sql` là các snapshot/kiểm tra cần được xác minh lại trên database sạch.
 
 ## Quyền sở hữu dữ liệu
 
@@ -34,7 +34,7 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
    - **Ranh giới Diagram Artifact Protection:** Thư mục `docs/diagrams/ERD/` (Physical ERD, Logical ERD) là presentation workspace do con người duy trì và được bảo vệ theo `AGENTS.md`. Việc thay đổi schema hoặc migration **tuyệt đối không tự động cấp quyền sửa hoặc regenerate ERD diagrams** cho coding agent trừ khi có task riêng được ủy quyền tường minh.
 3. **Quy trình thực hiện migration:**
    - Truy vết thay đổi đến SRS/Issue và xác nhận không mở rộng scope ngoài quyết định đã duyệt.
-   - Thêm Flyway migration mới ở phiên bản tiếp theo khả dụng (hiện là `V7__...`); không sửa migration đã được chia sẻ.
+   - Thêm Flyway migration mới ở phiên bản tiếp theo khả dụng (hiện là `V8__...`); không sửa migration đã được chia sẻ.
    - Cập nhật entity/DTO/repository và test liên quan.
    - Cập nhật snapshot `database/schema.sql`.
    - Kiểm tra migration trên database sạch và kiểm thử nâng cấp.
@@ -47,6 +47,7 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
 - **Physical ERD:** [physical-erd-v1.0.0.drawio](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio) & [physical-erd-v1.0.0.drawio.png](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png) (22 bảng, 37 connector, 196 physical columns với đầy đủ kiểu dữ liệu, nullability, constraints, indexes).
 - **Data Dictionary:** [data-dictionary.md](../docs/diagrams/ERD/data-dictionary.md) v0.7.2 (22 bảng, 196 cột physical, hoàn thành triển khai toàn bộ 33 mục đánh dấu sau review PR #66). Theo quyết định của Tech Lead ngày 01/10/2026, các tài liệu trong `docs/diagrams/` (ERD, Data Dictionary) là baseline tham khảo và chỉ được đồng bộ ở giai đoạn viết tài liệu nộp; trạng thái schema hiện hành lấy theo Flyway migration và `database/schema.sql`.
 - **Schema & Migration:** Lịch sử schema gồm V1 baseline, V2 Unicode cho `UNIT.code`, V3 xác minh email, V4 consent FR-35, V5 ingredient group/unit validation FR-18 và V6 login throttle cho Issue #6. `database/schema.sql` là snapshot thủ công sau toàn bộ migration; đối chiếu trên database sạch sau lần đồng bộ này chưa được xác nhận.
+- **Migration dữ liệu V7 (Issue #36, FR-31):** [V7__onboarding_existing_accounts.sql](../app/mamxanh-backend/src/main/resources/db/migration/V7__onboarding_existing_accounts.sql) chỉ đổi dữ liệu: tài khoản tồn tại trước migration đang `onboarding_status = NOT_STARTED` được chuyển sang `SKIPPED` để không bị mời Onboarding tự động (AC-31.10). Không đổi cột, ràng buộc hay index nên `database/schema.sql` không đổi.
 - **Verification Tests:** [database/queries.sql](queries.sql) có 40 test cases (TC01–TC40), bao gồm các assertion cho giới hạn đăng nhập. Kết quả ghi nhận trước lần đồng bộ này không xác nhận trạng thái hợp nhất; cần chạy lại bộ truy vấn trên database sạch.
 
 ## Hướng dẫn kiểm thử và thẩm định
@@ -57,7 +58,7 @@ Kiểm tra toàn bộ schema và chạy 40 test cases (TC01–TC40) bằng `sqlc
 # 1. Khởi tạo database kiểm thử sạch
 sqlcmd -S .\SQLEXPRESS -E -Q "DROP DATABASE IF EXISTS MamXanhDB_Test; CREATE DATABASE MamXanhDB_Test;"
 
-# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V6 trong db/migration với cờ -I,
+# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V7 trong db/migration với cờ -I,
 #    vì filtered index cần QUOTED_IDENTIFIER ON)
 sqlcmd -S .\SQLEXPRESS -E -d MamXanhDB_Test -i database/schema.sql
 
