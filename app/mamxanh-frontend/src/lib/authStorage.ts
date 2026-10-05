@@ -55,6 +55,14 @@ export function saveSession(response: AuthResponse, now = Date.now()): StoredSes
   return session;
 }
 
+export function updateStoredAccountRole(role: AccountSummary['role']): StoredSession | null {
+  const current = loadSession();
+  if (!current) return null;
+  const updated = { ...current, account: { ...current.account, role } };
+  storage()?.setItem(STORAGE_KEY, JSON.stringify(updated));
+  return updated;
+}
+
 /** Client-side logout (AC-03.13): the backend keeps no session, so removing the token is enough. */
 export function clearSession(): void {
   storage()?.removeItem(STORAGE_KEY);

@@ -569,8 +569,9 @@ This document contains only requirements included in Requirements / Implementati
   - **Quy tắc chặn nộp trùng (Single Open Application Rule):** Mỗi tài khoản Customer chỉ được phép sở hữu tối đa một bản ghi đơn đăng ký ở trạng thái chờ duyệt (`PENDING`). Nếu gửi thêm đơn trong khi đơn cũ chưa được xử lý, Backend từ chối với mã lỗi `HTTP 409 Conflict`.
   - Customer được xem lịch sử các đơn của chính mình theo thứ tự mới nhất trước nhưng không được rút/hủy đơn `PENDING` trong MVP; không được xem đơn của tài khoản khác.
   - **Quy tắc phê duyệt và chuyển đổi vai trò (Instant Role Promotion):** Chỉ khi đơn vẫn `PENDING` và tài khoản nộp vẫn `ACTIVE` với vai trò `CUSTOMER`, Administrator mới được phê duyệt. Hệ thống cập nhật trạng thái đơn thành `APPROVED`, đồng thời cập nhật vai trò người dùng trong `USER` thành `EXPERT`, làm mới trạng thái phân quyền để mở khóa quyền tạo bài viết tại `FR-04` và gửi thông báo in-app.
+  - **Tính nguyên tử quyết định:** Cập nhật trạng thái đơn, chuyển role khi approve và ghi notification kết quả phải thuộc cùng transaction; nếu bất kỳ bước nào thất bại, không lưu một phần quyết định hoặc notification.
   - **Quy tắc từ chối bắt buộc lý do (Mandatory Rejection Note):** Khi Administrator từ chối đơn, bắt buộc phải nhập lý do từ chối cụ thể (`admin_note` từ 10 đến 500 ký tự); trạng thái đơn chuyển thành `REJECTED`, vai trò tài khoản vẫn là `CUSTOMER`, thông báo in-app gửi kèm lý do; Customer được quyền nộp đơn mới sau khi đơn cũ bị từ chối.
-  - **Quy tắc xử lý đồng thời:** Chỉ quyết định đầu tiên trên một đơn `PENDING` được ghi nhận. Mọi yêu cầu xử lý từ dữ liệu cũ sau khi trạng thái đã đổi phải trả `HTTP 409 Conflict`, không ghi đè kết quả, không cập nhật role và không gửi thông báo lần hai.
+  - **Quy tắc xử lý đồng thời:** Chỉ quyết định đầu tiên trên một đơn `PENDING` được ghi nhận. Mọi yêu cầu xử lý từ dữ liệu cũ sau khi trạng thái đã đổi hoặc khi tài khoản không còn `ACTIVE`/`CUSTOMER` phải trả `HTTP 409 Conflict`, không ghi đè kết quả, không cập nhật role và không gửi thông báo lần hai.
 
 ---
 
