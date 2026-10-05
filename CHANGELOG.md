@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.52.0
+> **Version:** v2.53.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-05
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-05 — Configure IntelliJ Development Runs and Docker SQL Port
+
+**Status:** Committed — 2e21e79.
+
+**Scope:** Support running the root Compose development stack from IntelliJ alongside a Windows SQL Server installation, without committing local credentials.
+
+### Added
+
+- Add shared IntelliJ Run configurations for Backend, Frontend, their local compound run, and the complete Docker Compose stack using the Backend env file and image builds.
+- Record BUG-011: the observed IntelliJ Services Stop command omits the env file; document the verified Compose stop workaround.
+
+### Changed
+
+- Publish Docker SQL Server on loopback port 1434 while keeping its internal port 1433; document the connection port for a Backend running directly on the host.
+
+### Fixed
+
+- Avoid the Docker SQL startup port conflict with Windows SQL Server listening on port 1433. Local verification confirmed healthy SQL, Backend and Frontend, successful initialization services, HTTP 200 at the Frontend and generated OpenAPI endpoints, and preserved SQL volume after stopping with the env file.
 
 ## 2026-10-05 — Implement Onboarding and the Personalized AI Eligibility Gate (FR-31, Issue #36) ([PR #92](https://github.com/NgaiLong49423/vegetarian-support-system/pull/92))
 
