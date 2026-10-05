@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-05 — Record Password Login Follow-Up Database Checks (FR-03-B, Issue #6)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 7757560.
 
 **Scope:** Apply the Tech Lead decision Q29 to the database guide and replace the unverified post-sync notes with results measured on a clean SQL Server 2019 database after V1–V6.
 
