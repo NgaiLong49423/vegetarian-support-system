@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-05 — Implement Onboarding and the Personalized AI Eligibility Gate (FR-31, Issue #36)
 
-**Status:** Committed — 98f5dd9, fc13b75, ab661ef, 7e20917.
+**Status:** Committed — 98f5dd9, fc13b75, ab661ef, 7e20917, 06aa22f.
 
 **Scope:** Implement UC-31.1–UC-31.3 and AC-31.1–AC-31.10: a one-time Onboarding questionnaire for new Members, Skip without locking regular features, viewing and updating the private dietary-preference profile, and the BR-31 gate that must run before any personalized AI request.
 
