@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from './baseFixtures';
 
 // The scenarios intentionally pause for two seconds after each user action so
 // they can be observed. The 50-ingredient boundary scenario therefore needs a
@@ -39,8 +40,53 @@ async function action(page: Page, label: string, operation: () => Promise<unknow
   await page.waitForTimeout(2000);
 }
 
-async function installApi(page: Page, getPostResponse: (body: Record<string, any>) => PostResponse) {
-  const publishedDetails = new Map<number, Record<string, unknown>>();
+type PublishedDetail = {
+  recipeId: number;
+  title: string;
+  description: string | null;
+  instructions: string;
+  dishCategory: string;
+  dishCategoryLabel: string;
+  vegetarianType: 'VEGAN' | 'LACTO' | 'OVO' | 'LACTO_OVO';
+  vegetarianTypeLabel: string;
+  difficulty: string;
+  difficultyLabel: string;
+  servings: number;
+  prepTimeMinutes: number;
+  cookTimeMinutes: number;
+  youtubeUrl: string | null;
+  publishedAt: string;
+  ingredients: Array<{ ingredientId: number; name: string; quantity: number; unitId: number; unitCode: string; unitName: string }>;
+  media: Array<{ blobUrl: string; mimeType: string; displayOrder: number; cover: boolean }>;
+};
+
+const detailFixture = (overrides: Partial<PublishedDetail> = {}): PublishedDetail => ({
+  recipeId: 2280,
+  title: 'Canh cà chua đậu hũ',
+  description: 'Món dễ nấu cho bữa tối.',
+  instructions: 'Đun nước, cho cà chua và đậu hũ vào nấu chín.',
+  dishCategory: 'SOUP',
+  dishCategoryLabel: 'Món canh',
+  vegetarianType: 'VEGAN',
+  vegetarianTypeLabel: 'Thuần chay',
+  difficulty: 'EASY',
+  difficultyLabel: 'Dễ',
+  servings: 2,
+  prepTimeMinutes: 10,
+  cookTimeMinutes: 15,
+  youtubeUrl: 'https://www.youtube.com/watch?v=recipe-1',
+  publishedAt: '2026-10-04T08:00:00',
+  ingredients: [{ ingredientId: 12, name: 'Cà chua', quantity: 2, unitId: 1, unitCode: 'quả', unitName: 'quả' }],
+  media: [],
+  ...overrides,
+});
+
+async function installApi(
+  page: Page,
+  getPostResponse: (body: Record<string, any>) => PostResponse,
+  initialDetails: PublishedDetail[] = [],
+) {
+  const publishedDetails = new Map<number, Record<string, unknown>>(initialDetails.map((detail) => [detail.recipeId, detail]));
   await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: options }));
   await page.route('**/api/v1/recipes/ingredient-options**', (route) => {
     const query = new URL(route.request().url()).searchParams.get('query')?.toLowerCase() ?? '';
@@ -53,7 +99,7 @@ async function installApi(page: Page, getPostResponse: (body: Record<string, any
     const detail = publishedDetails.get(recipeId);
     await route.fulfill(detail
       ? { status: 200, json: detail }
-      : { status: 404, json: { detail: 'Không tìm thấy công thức.' }, contentType: 'application/problem+json' });
+      : { status: 404, json: { status: 404, code: 'NOT_FOUND', detail: 'Không tìm thấy công thức.' }, contentType: 'application/problem+json' });
   });
   await page.route('**/api/v1/recipes', async (route) => {
     const body = route.request().postDataJSON() as Record<string, any>;
@@ -94,6 +140,56 @@ async function installApi(page: Page, getPostResponse: (body: Record<string, any
     });
   });
 }
+
+test('Issue 22: trang chi tiết tải trực tiếp nội dung công thức, cover, mô tả và YouTube', async ({ page }) => {
+  const detail = detailFixture({
+    media: [
+      { blobUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a+ioAAAAASUVORK5CYII=', mimeType: 'image/png', displayOrder: 0, cover: false },
+      { blobUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a+ioAAAAASUVORK5CYII=', mimeType: 'image/png', displayOrder: 1, cover: true },
+    ],
+  });
+  await installApi(page, () => ({ status: 201, body: {} }), [detail]);
+
+  await action(page, 'Mở trực tiếp đường dẫn chi tiết bằng ID', () => page.goto('/cong-thuc/2280', { waitUntil: 'commit' }));
+  await expect(page.getByRole('heading', { name: detail.title, level: 1 })).toBeVisible();
+  await expect(page.getByText(detail.description!)).toBeVisible();
+  await expect(page.getByRole('img', { name: detail.title })).toHaveAttribute('src', detail.media[1].blobUrl);
+  await expect(page.getByRole('link', { name: 'Xem video hướng dẫn' })).toHaveAttribute('href', detail.youtubeUrl!);
+  await expect(page.getByText(detail.instructions)).toBeVisible();
+  await expect(page.getByText('2 quả', { exact: true })).toBeVisible();
+});
+
+test('Issue 22: trang chi tiết không ảnh và trường tùy chọn trống dùng placeholder theo loại ăn chay', async ({ page }) => {
+  const types: PublishedDetail['vegetarianType'][] = ['VEGAN', 'LACTO', 'OVO', 'LACTO_OVO'];
+  const labels = ['Thuần chay', 'Có sữa', 'Có trứng', 'Có trứng và sữa'];
+  const details = types.map((vegetarianType, index) => detailFixture({
+    recipeId: 2281 + index,
+    title: `Món chay ${index + 1}`,
+    description: null,
+    youtubeUrl: null,
+    vegetarianType,
+    vegetarianTypeLabel: labels[index],
+    media: [],
+  }));
+  await installApi(page, () => ({ status: 201, body: {} }), details);
+
+  for (const detail of details) {
+    await action(page, `Mở chi tiết món ${detail.vegetarianTypeLabel} không có ảnh`, () => page.goto(`/cong-thuc/${detail.recipeId}`));
+    await expect(page.getByRole('heading', { name: detail.title, level: 1 })).toBeVisible();
+    await expect(page.getByRole('img', { name: `Ảnh mặc định cho món ${detail.vegetarianTypeLabel}` })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Xem video hướng dẫn' })).toHaveCount(0);
+    await expect(page.getByText('Món dễ nấu cho bữa tối.')).toHaveCount(0);
+  }
+});
+
+test('Issue 22: API không tìm thấy công thức hiển thị trạng thái lỗi', async ({ page }) => {
+  await installApi(page, () => ({ status: 201, body: {} }));
+
+  await action(page, 'Mở ID công thức không tồn tại', () => page.goto('/cong-thuc/2299', { waitUntil: 'domcontentloaded' }));
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức' })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Không tìm thấy công thức.');
+  await expect(page.getByRole('link', { name: 'Quay lại khám phá' })).toBeVisible();
+});
 
 async function openForm(page: Page) {
   // Existing demo role selection only reveals the Expert form in the prototype;

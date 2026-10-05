@@ -112,6 +112,27 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void rejectsIngredientAndUnitIdsOutsideTheCatalogWithoutCreatingRecipe() throws Exception {
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(List.of(new RecipeIngredientInput(Long.MAX_VALUE, gramUnitId, new BigDecimal("2"))), null))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.errors[*].field", hasItem("ingredients[0].ingredientId")));
+        assertNoRecipe();
+
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(List.of(new RecipeIngredientInput(ingredientId, Integer.MAX_VALUE, new BigDecimal("2"))), null))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.errors[*].field", hasItem("ingredients[0].unitId")));
+        assertNoRecipe();
+    }
+
+    @Test
     void acceptsPositiveGramAndKilogramQuantitiesWithoutHundredGramStep() throws Exception {
         for (String quantity : List.of("80", "120", "150", "100.5")) {
             mockMvc.perform(post("/api/v1/recipes")
@@ -184,6 +205,22 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/recipes")
                         .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
                         .contentType(MediaType.APPLICATION_JSON).content(json(invalid)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[*].field", hasItem("title")))
+                .andExpect(jsonPath("$.errors[*].field", hasItem("instructions")));
+        assertNoRecipe();
+    }
+
+    @Test
+    void rejectsNullTitleAndInstructionsBeforeCreatingRecipe() throws Exception {
+        ObjectNode payload = (ObjectNode) jsonMapper.readTree(json(request(List.of(ingredient(gramUnitId, "200")), List.of())));
+        payload.putNull("title");
+        payload.putNull("instructions");
+
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(payload)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors[*].field", hasItem("title")))
                 .andExpect(jsonPath("$.errors[*].field", hasItem("instructions")));
