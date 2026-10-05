@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.2.0
+> **Version:** v2.3.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -102,17 +102,14 @@ Trang Khám phá trình bày bài công thức đang công khai và không bị 
 
 Trường bắt buộc trước khi công khai được chốt tại mục 3.9. Dữ liệu dinh dưỡng vẫn không bắt buộc để bài được công khai, nhưng bài thiếu dữ liệu dinh dưỡng đáng tin cậy không đủ điều kiện tham gia AI lập menu theo dinh dưỡng hoặc kiểm tra dinh dưỡng ngày tại mục 3.18. **Đã chốt:** Vegan, Lacto Vegetarian, Ovo Vegetarian và Lacto-Ovo Vegetarian. Giới hạn giá trị và chuẩn hóa chi tiết để bước thiết kế. Có trường nguyên liệu không đồng nghĩa hệ thống đã bảo đảm kiểm tra dị ứng chính xác. Chưa tự thêm import công thức từ URL, Queue hoặc shopping list.
 
-### 3.4 Nhập nguyên liệu linh hoạt và chuẩn hóa — đã chốt 11/09/2026
+### 3.4 Chọn nguyên liệu từ danh mục chuẩn — cập nhật 05/10/2026
 
-Quyết định này thay thế yêu cầu bắt buộc mọi nguyên liệu phải có trong danh mục ở v0.6.0. Chuẩn hóa phục vụ tìm/lọc và AI, không phải điều kiện để người dùng hoàn thiện công thức.
+Quyết định này thay thế phạm vi nhập tên nguyên liệu tự do đã chốt trước đây. FR-18 là danh mục chuẩn dùng chung và là nguồn nguyên liệu duy nhất cho các dòng trong công thức.
 
-- Administrator quản lý danh mục nguyên liệu chuẩn dùng chung, danh mục đơn vị đo chuẩn `UNIT` và bảng quy đổi xấp xỉ `INGREDIENT_UNIT_CONVERSION`.
-- Ô nhập nguyên liệu ưu tiên gợi ý từ danh mục. Người đăng có thể chọn kết quả có sẵn hoặc dùng tên mới khi không tìm thấy, rồi khai báo lượng và đơn vị cho từng dòng theo mục 3.5.
-- Mỗi dòng giữ tên hiển thị do người dùng nhập/chọn, thông tin lượng, đơn vị và liên kết nguyên liệu chuẩn nếu có. Liên kết này là tùy chọn; khi chuẩn hóa sau vẫn giữ tên đã nhập để hiển thị công thức.
-- Ví dụ: chọn `Đậu hũ` có sẵn và nhập `200 g`; hoặc dùng tên mới `Nấm hầu thủ` và nhập `100 g` dù danh mục chưa có.
-- Tên mới thuộc dòng nguyên liệu của công thức, không tự trở thành mục chuẩn dùng chung. Chuyên gia đã đăng nhập vẫn hoàn thiện và công khai bài bình thường, không phải chờ Admin bổ sung danh mục hay qua cửa duyệt nguyên liệu riêng.
-- Việc chưa liên kết danh mục không tự ngăn bài được công khai; tác giả vẫn chịu trách nhiệm tuân thủ chính sách nội dung. Admin có thể chuẩn hóa/liên kết nguyên liệu sau.
-- Tìm kiếm có thể sử dụng cả tên đã nhập và danh mục chuẩn. AI hỗ trợ đối chiếu tên chỉ là khả năng đề xuất, chưa chốt triển khai và không mặc định kết quả AI đúng.
+- Administrator quản lý danh mục nguyên liệu chuẩn dùng chung, danh mục đơn vị đo chuẩn `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION`.
+- Khi tạo hoặc sửa công thức, Chuyên gia chỉ tìm kiếm và chọn nguyên liệu đã có trong danh mục chuẩn; mọi dòng nguyên liệu phải tham chiếu một mục catalog. Hệ thống không cho nhập tên mới, lưu dòng thiếu liên kết hoặc gửi đề xuất nguyên liệu.
+- Nếu không tìm thấy nguyên liệu, Chuyên gia liên hệ Admin để Admin tự quản lý catalog. Không có luồng đề xuất/duyệt nguyên liệu trong hệ thống.
+- Chuyên gia vẫn nhập định lượng và đơn vị theo mục 3.5. Nguyên liệu có trong catalog chuẩn nhưng chưa có hồ sơ dinh dưỡng vẫn được chọn; việc thiếu hồ sơ dinh dưỡng không tự chặn công khai theo FR-40/BR-50.
 - Không coi nguyên liệu chưa nhận diện là phù hợp với mọi chế độ ăn. Với gợi ý có ràng buộc loại trừ, hệ thống không tự khẳng định món phù hợp khi chưa kiểm tra được thành phần.
 
 ### 3.5 Định lượng nguyên liệu và chuẩn hóa đơn vị — cập nhật 18/09/2026
@@ -338,8 +335,8 @@ Nguyên liệu “đang có” được nhập theo từng request; MVP không c
 - Mỗi chỉ tiêu hiển thị lượng, đơn vị và giải thích ngắn về ý nghĩa. Mọi tỷ lệ tham chiếu chung, nếu có, phải ghi rõ nguồn/phạm vi và không được trình bày như nhu cầu cá nhân.
 - Năng lượng thể hiện lượng năng lượng khẩu phần cung cấp; protein hỗ trợ mô/cơ; carbohydrate là nguồn năng lượng chính; tổng chất béo cung cấp năng lượng và hỗ trợ hấp thu một số vitamin nhưng không tự phân biệt chất béo tốt/xấu; chất xơ hỗ trợ tiêu hóa và cảm giác no.
 - Sắt liên quan đến tạo hemoglobin và vận chuyển oxy; canxi liên quan đến xương, răng, cơ và thần kinh; vitamin B12 liên quan đến tế bào máu, thần kinh và DNA và đặc biệt cần được chú ý trong chế độ vegan; kẽm hỗ trợ chức năng miễn dịch và nhiều quá trình chuyển hóa.
-- Người viết vẫn được nhập nguyên liệu ngoài danh mục dinh dưỡng và gửi bài theo workflow chung, không phải chờ danh mục được bổ sung. Nguyên liệu đó chỉ được đánh dấu **Chưa hỗ trợ tính dinh dưỡng**.
-- Nếu nguyên liệu thiếu định lượng, không quy đổi được đơn vị, chưa thuộc danh mục được hỗ trợ hoặc một chỉ tiêu không có dữ liệu đáng tin cậy, giao diện hiển thị **Chưa đủ dữ liệu** và chỉ rõ phạm vi thiếu. Giá trị chưa biết không được coi là bằng 0; nguyên liệu ghi “vừa đủ” không được dùng để suy ra kết quả chính xác.
+- Chuyên gia chỉ sử dụng nguyên liệu đã có trong catalog chuẩn FR-18. Nếu mục đó chưa có hồ sơ trong danh mục dinh dưỡng FR-41, vẫn được gửi bài theo workflow chung và hiển thị cảnh báo **Chưa hỗ trợ tính dinh dưỡng**; nếu chưa có trong catalog chuẩn, Chuyên gia liên hệ Admin ngoài hệ thống.
+- Nếu nguyên liệu chuẩn thiếu định lượng, không quy đổi được đơn vị, chưa có hồ sơ trong danh mục dinh dưỡng hoặc một chỉ tiêu không có dữ liệu đáng tin cậy, giao diện hiển thị **Chưa đủ dữ liệu** và chỉ rõ phạm vi thiếu. Giá trị chưa biết không được coi là bằng 0; nguyên liệu ghi “vừa đủ” không được dùng để suy ra kết quả chính xác.
 - MVP không có `Nutrition balance score`, Glycemic Index hoặc Glycemic Load. Các chỉ số này chỉ được xem xét ở Future Scope khi có nguồn dữ liệu và tiêu chí diễn giải đủ rõ.
 
 **AI lập menu theo nhu cầu dinh dưỡng:**
@@ -371,7 +368,7 @@ Mục này tóm tắt các quyết định sản phẩm hiện hành được ph
 | Area | Current product baseline | Boundary |
 | --- | --- | --- |
 | Actors | Guest, Member, Expert, Administrator | Vai trò, quyền và quyền sở hữu được chi tiết trong SRS con; Guest không phải tài khoản lưu trữ. |
-| Content | Chuyên gia đã được xác nhận đăng Recipe Post trực tiếp; nội dung được hậu kiểm qua báo cáo. Bài viết dùng `instructions` dạng văn bản, `dish_category` chuẩn hóa và tối đa 5 ảnh. | Không có persistent server-side Recipe Post draft; bản nháp chỉ tồn tại trong biểu mẫu client trước khi gửi. |
+| Content | Chuyên gia đã được xác nhận đăng Recipe Post trực tiếp; nội dung được hậu kiểm qua báo cáo. Bài viết dùng nguyên liệu chọn từ danh mục chuẩn FR-18, `instructions` dạng văn bản, `dish_category` chuẩn hóa và tối đa 5 ảnh. | Không có persistent server-side Recipe Post draft; bản nháp chỉ tồn tại trong biểu mẫu client trước khi gửi. |
 | Community | Recipe Post hỗ trợ Like/Dislike và `like_percentage`; bình luận/reply không có Like/Dislike. Hệ thống ghi nhận lượt xem. | Guest chỉ đọc nội dung công khai. |
 | AI | Quyền truy cập theo Feature Entitlement cho Guest/Free/Plus/Pro; AI chỉ đề xuất Recipe Post có thật, còn công khai, và dùng dữ liệu dinh dưỡng tin cậy khi tính năng yêu cầu. | Không áp dụng daily request quota; Guest chịu technical rate limiting. Không lưu lịch sử chat theo tài khoản. |
 | Meal planning | Member quản lý lịch tuần 7 ngày với ba bữa cố định mỗi ngày; AI tạo preview và chỉ lưu sau khi Member xác nhận. | Dữ liệu dinh dưỡng là ước tính theo kế hoạch, không phải nhật ký lượng ăn thực tế. |
@@ -451,7 +448,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | FR-16 | Cấu trúc dữ liệu bài công thức, hướng dẫn chế biến và validation profile | M03, M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-16) |
 | FR-17 | Trình bày thẻ món trong Khám phá và liên kết lịch ăn | M04, M05 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-17) |
 | FR-18 | Admin quản lý danh mục nguyên liệu, đơn vị đo lường và bảng quy đổi | M04, M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) |
-| FR-19 | Nhập nguyên liệu linh hoạt và định lượng | M03, M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-19) |
+| FR-19 | Chọn nguyên liệu từ danh mục chuẩn và khai báo định lượng | M03, M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-19) |
 | FR-20 | Thống nhất nguồn hiển thị thẻ món, chi tiết và thực đơn | M01, M04, M05 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-20) |
 | FR-21 | AI hỗ trợ tạo giới thiệu hoặc hướng dẫn chuẩn bị/chế biến không lưu nháp server | M03, M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-21) |
 | FR-23 | Hiển thị thông tin tác giả gắn liền với tài khoản | M01, M02, M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-23) |
@@ -470,7 +467,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | FR-37 | Khai báo khẩu phần, kiểm tra dinh dưỡng menu ngày/tuần, so sánh thống kê và xuất báo cáo PDF | M05, M06, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-37) |
 | FR-38 | Xác nhận phạm vi hỗ trợ trước khi dùng chức năng dinh dưỡng | M02, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-38) |
 | FR-39 | Tính toán ước tính 9 chỉ tiêu dinh dưỡng cho công thức | M03, M04, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-39) |
-| FR-40 | Công khai Recipe Post chứa nguyên liệu ngoài danh mục dinh dưỡng | M03, M04, M06, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-40) |
+| FR-40 | Công khai Recipe Post chứa nguyên liệu chuẩn thiếu dữ liệu dinh dưỡng | M03, M04, M06, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-40) |
 | FR-41 | Administrator quản lý danh mục nguyên liệu dinh dưỡng | M09, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-41) |
 | FR-44 | Chuyên gia sửa hoặc xóa Recipe Post đã công khai của chính mình | M02, M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-44) |
 | FR-46 | Hiển thị và quản lý bình luận, reply lồng nhiều cấp | M01, M02, M03, M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-46) |
@@ -504,7 +501,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại và mã ID 
 | BR-09 | Ranh giới y tế và sức khỏe của câu trả lời AI | M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-09) |
 | BR-10 | Giới hạn định dạng video Phase 1 | M01, M03 | [Chi tiết](srs/BUSINESS-RULES.md#br-10) |
 | BR-11 | Media công khai trực tiếp và hậu kiểm | M03 | [Chi tiết](srs/BUSINESS-RULES.md#br-11) |
-| BR-12 | Tính tùy chọn của liên kết nguyên liệu chuẩn | M03, M04 | [Chi tiết](srs/BUSINESS-RULES.md#br-12) |
+| BR-12 | Bắt buộc liên kết nguyên liệu công thức với catalog chuẩn | M03, M04 | [Chi tiết](srs/BUSINESS-RULES.md#br-12) |
 | BR-13 | Xử lý nguyên liệu chưa nhận diện trong ràng buộc ăn uống | M04, M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-13) |
 | BR-14 | Quy tắc định lượng nguyên liệu số học và tổng hợp Shopping List an toàn theo đơn vị chuẩn | M03, M05, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-14) |
 | BR-15 | Đồng nhất chính sách bài viết tự soạn và bài có AI hỗ trợ | M03, M06 | [Chi tiết](srs/BUSINESS-RULES.md#br-15) |
@@ -540,7 +537,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại và mã ID 
 | BR-47 | Phân bổ dinh dưỡng theo số khẩu phần và cộng dồn ngày | M05, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-47) |
 | BR-48 | Xử lý nguyên liệu thiếu số liệu dinh dưỡng và chặn công khai khi thiếu quy đổi đơn vị | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-48) |
 | BR-49 | Không gọi API dinh dưỡng ngoài realtime và nguồn tham khảo | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-49) |
-| BR-50 | Cho phép công khai bài chứa nguyên liệu ngoài danh mục dinh dưỡng | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-50) |
+| BR-50 | Cho phép công khai bài thiếu dữ liệu dinh dưỡng | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-50) |
 | BR-51 | Thẩm quyền quản lý danh mục nguyên liệu dinh dưỡng | M09, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-51) |
 | BR-52 | Yêu cầu đầy đủ 9 chỉ tiêu và nguồn trước khi kích hoạt | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-52) |
 | BR-53 | Cấm xóa vĩnh viễn nguyên liệu dinh dưỡng đã tham chiếu | M09, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-53) |
@@ -584,7 +581,7 @@ Dùng Use Cases và Acceptance Criteria hiện có để lập ERD, API contract
 
 | Yêu cầu đề tài | FR | Phạm vi nhóm chọn |
 | --- | --- | --- |
-| Quản lý thành viên/bài/bình luận/danh mục | FR-04, FR-06, FR-14, FR-16, FR-18, FR-28 | Công khai trực tiếp, hướng dẫn chế biến linh hoạt (`instructions`), tối đa 5 ảnh kèm 1 ảnh bìa (`RECIPE_MEDIA`), quản lý `UNIT` & chuyển đổi, hậu kiểm nội dung theo báo cáo |
+| Quản lý thành viên/bài/bình luận/danh mục | FR-04, FR-06, FR-14, FR-16, FR-18, FR-19, FR-28 | Công khai trực tiếp, nguyên liệu công thức chọn từ catalog chuẩn, hướng dẫn chế biến linh hoạt (`instructions`), tối đa 5 ảnh kèm 1 ảnh bìa (`RECIPE_MEDIA`), quản lý `UNIT` & chuyển đổi, hậu kiểm nội dung theo báo cáo |
 | Bình luận/bình chọn/báo cáo/quản lý nội dung mình | FR-26–FR-30, FR-44, FR-46, FR-48, FR-57 | Reply nhiều cấp; Like / Dislike chỉ áp dụng cho bài công thức (`RECIPE_REACTION`) kèm tỷ lệ % Like |
 | Thống kê lượt xem và xu hướng khám phá | FR-08, FR-58 | Ghi nhận RECIPE_VIEW khử trùng lặp theo phiên; 6 chế độ khám phá (Newest, Most Liked, Most Viewed, Most Commented, Most Active, Trending) |
 | Thực đơn tuần theo nguyên liệu và BMI | FR-09, FR-31, FR-33–FR-39 | Hồ sơ rộng hơn BMI, AI chọn công thức có sẵn |

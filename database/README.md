@@ -1,17 +1,17 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.9.1<br>
+> **Version:** v0.11.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-04<br>
+> **Last Updated:** 2026-10-06<br>
 > **Status:** Active  
 
 # Database Workspace
 
-Database chính đã chốt là Microsoft SQL Server 2019. Sau khi đồng bộ, thứ tự migration hiện hành là V1–V7; `database/schema.sql` và `database/queries.sql` là các snapshot/kiểm tra cần được xác minh lại trên database sạch.
+Database chính đã chốt là Microsoft SQL Server 2019. Sau khi đồng bộ, thứ tự migration hiện hành là V1–V8; cần xác minh migration V8 cùng `database/schema.sql` và `database/queries.sql` trên database sạch.
 
 ## Quyền sở hữu dữ liệu
 
-- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử thay đổi schema có thẩm quyền và phải append-only sau khi đã chia sẻ. Baseline trên branch hiện gồm V1, V2, V3 xác minh email của Issue #5, V4 đồng ý lưu dữ liệu sức khỏe của FR-35 và V5 cho ingredient_group cùng kiểm tra base_factor của FR-18. Snapshot `database/schema.sql` phải phản ánh trạng thái sau toàn bộ migration; Physical ERD trong `docs/diagrams/ERD/` do người phụ trách sơ đồ cập nhật riêng.
+- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Baseline hiện gồm V1–V8, bao gồm V7 cho lời mời Onboarding và V8 cho notification target/index của Expert Application. `database/schema.sql` phải phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
 - `database/sample-data.sql` chứa fixture giả cho môi trường Docker Compose, được nạp sau khi Flyway hoàn tất. Tác giả mẫu không có mật khẩu đăng nhập; fixture không chứa credential hoặc dữ liệu cá nhân thật.
 - `database/queries.sql` chứa kịch bản kiểm tra đối tượng, bộ test tự động xác minh các ràng buộc nghiệp vụ (positive/negative) có cơ chế rollback, và các truy vấn mẫu cho tầng ứng dụng; không thay thế automated integration tests.
@@ -28,13 +28,13 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
    - Toàn bộ trường phục vụ xác minh email, đặt lại mật khẩu và rate limit được lưu trữ trực tiếp trên bảng `USER`:
      - Xác minh email: `email_verification_token` (VARCHAR), `verification_token_expires_at` (DATETIME2).
      - Đặt lại mật khẩu: `password_reset_token` (VARCHAR), `reset_token_expires_at` (DATETIME2).
-     - Brute-force rate limit: `failed_login_attempts` (INT DEFAULT 0), `login_blocked_until` (DATETIME2 NULL), `last_failed_login_at` (DATETIME2 NULL).
+     - Brute-force rate limit: `failed_login_attempts` (INT DEFAULT 0), `login_blocked_until` (DATETIME2 NULL). Không thêm `last_failed_login_at` vì Acceptance Criteria không dùng cột này (Tech Lead chốt Q29 ngày 03/10/2026).
      - Metadata rate limit email (Q27): cho phép bổ sung các trường tối thiểu trên `USER` nếu cần theo dõi 60s cooldown và tối đa 5 email/giờ/tài khoản.
    - Developer (Tony) sẽ viết Flyway migration mới trong các Issue thực thi (#5, #6, #9) và cập nhật snapshot `database/schema.sql`.
    - **Ranh giới Diagram Artifact Protection:** Thư mục `docs/diagrams/ERD/` (Physical ERD, Logical ERD) là presentation workspace do con người duy trì và được bảo vệ theo `AGENTS.md`. Việc thay đổi schema hoặc migration **tuyệt đối không tự động cấp quyền sửa hoặc regenerate ERD diagrams** cho coding agent trừ khi có task riêng được ủy quyền tường minh.
 3. **Quy trình thực hiện migration:**
    - Truy vết thay đổi đến SRS/Issue và xác nhận không mở rộng scope ngoài quyết định đã duyệt.
-   - Thêm Flyway migration mới ở phiên bản tiếp theo khả dụng (hiện là `V7__...`); không sửa migration đã được chia sẻ.
+   - Thêm Flyway migration mới ở phiên bản tiếp theo khả dụng (hiện là `V9__...`); không sửa migration đã được chia sẻ.
    - Cập nhật entity/DTO/repository và test liên quan.
    - Cập nhật snapshot `database/schema.sql`.
    - Kiểm tra migration trên database sạch và kiểm thử nâng cấp.
@@ -46,18 +46,20 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
 - **Logical ERD:** [logical-erd-v1.0.0.drawio](../docs/diagrams/ERD/logical-erd-v1.0.0.drawio) (22 bảng, 37 connector thể hiện 36 quan hệ; cập nhật lần cuối ở commit `827353e`).
 - **Physical ERD:** [physical-erd-v1.0.0.drawio](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio) & [physical-erd-v1.0.0.drawio.png](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png) (22 bảng, 37 connector, 196 physical columns với đầy đủ kiểu dữ liệu, nullability, constraints, indexes).
 - **Data Dictionary:** [data-dictionary.md](../docs/diagrams/ERD/data-dictionary.md) v0.7.2 (22 bảng, 196 cột physical, hoàn thành triển khai toàn bộ 33 mục đánh dấu sau review PR #66). Theo quyết định của Tech Lead ngày 01/10/2026, các tài liệu trong `docs/diagrams/` (ERD, Data Dictionary) là baseline tham khảo và chỉ được đồng bộ ở giai đoạn viết tài liệu nộp; trạng thái schema hiện hành lấy theo Flyway migration và `database/schema.sql`.
-- **Schema & Migration:** Lịch sử schema gồm V1 baseline, V2 Unicode cho `UNIT.code`, V3 xác minh email, V4 consent FR-35, V5 ingredient group/unit validation FR-18, V6 login throttle cho Issue #6 và V7 internal notification target cùng index Expert Application cho Issue #68. `database/schema.sql` là snapshot thủ công sau toàn bộ migration; đối chiếu trên database sạch sau lần đồng bộ này chưa được xác nhận.
-- **Verification Tests:** [database/queries.sql](queries.sql) có 40 test cases (TC01–TC40), bao gồm các assertion cho giới hạn đăng nhập. Kết quả ghi nhận trước lần đồng bộ này không xác nhận trạng thái hợp nhất; cần chạy lại bộ truy vấn trên database sạch.
+- **Schema & Migration:** Lịch sử hiện hành gồm V1 baseline, V2 Unicode cho `UNIT.code`, V3 xác minh email, V4 consent FR-35, V5 ingredient group/unit validation FR-18, V6 login throttle, V7 lời mời Onboarding (Issue #36) và V8 notification target cùng index Expert Application (Issue #68). `database/schema.sql` là snapshot thủ công sau toàn bộ migration; kết quả đối chiếu ngày 05/10/2026 chỉ áp dụng cho V1–V7, trước khi thêm V8.
+- **Migration V7 (Issue #36, FR-31):** [V7__user_onboarding_invitation.sql](../app/mamxanh-backend/src/main/resources/db/migration/V7__user_onboarding_invitation.sql) thêm cột `USER.onboarding_invited_at DATETIME2(7) NULL`: thời điểm lời mời Onboarding đã hiển thị, `NULL` là chưa mời. Backend chỉ mời khi `onboarding_status = NOT_STARTED` và cột còn `NULL`, nên Member bỏ dở questionnaire không bị mời lại (AC-31.10). Tài khoản tồn tại trước migration được ghi thời điểm chạy migration nên không bị hỏi tự động; `onboarding_status` giữ nguyên, nên `SKIPPED` vẫn chỉ có nghĩa là Member đã bấm "Bỏ qua".
+- **Migration V8 (Issue #68, FR-05):** [V8__expert_application_notifications.sql](../app/mamxanh-backend/src/main/resources/db/migration/V8__expert_application_notifications.sql) thêm `NOTIFICATION.target_path` và hai index phục vụ truy vấn lịch sử/xét duyệt đơn Chuyên gia. Cần xác minh migration này cùng snapshot trên database sạch trước khi dùng kết quả kiểm tra V1–V7 làm bằng chứng cho baseline đã đồng bộ.
+- **Verification Tests:** [database/queries.sql](queries.sql) có 41 test cases (TC01–TC41), gồm các assertion cho giới hạn đăng nhập và lời mời Onboarding. Kết quả 80/80 ngày 05/10/2026 được xác minh trên V1–V7; chưa bao gồm migration V8.
 
 ## Hướng dẫn kiểm thử và thẩm định
 
-Kiểm tra toàn bộ schema và chạy 40 test cases (TC01–TC40) bằng `sqlcmd`; xác nhận kết quả thực tế trên database sạch:
+Kiểm tra toàn bộ schema và chạy 41 test cases (TC01–TC41) bằng `sqlcmd`; xác nhận kết quả thực tế trên database sạch:
 
 ```powershell
 # 1. Khởi tạo database kiểm thử sạch
 sqlcmd -S .\SQLEXPRESS -E -Q "DROP DATABASE IF EXISTS MamXanhDB_Test; CREATE DATABASE MamXanhDB_Test;"
 
-# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V7 trong db/migration với cờ -I,
+# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V8 trong db/migration với cờ -I,
 #    vì filtered index cần QUOTED_IDENTIFIER ON)
 sqlcmd -S .\SQLEXPRESS -E -d MamXanhDB_Test -i database/schema.sql
 

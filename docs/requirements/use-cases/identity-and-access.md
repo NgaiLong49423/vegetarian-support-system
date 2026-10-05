@@ -636,7 +636,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-25).
    - Bước 1: Chuyên gia nhấn nút "Công khai bài viết" trên giao diện soạn thảo công thức.
    - Bước 2: Hệ thống kích hoạt quy trình thẩm định tính hợp lệ toàn diện ở tầng máy chủ (Server-side Validation) đối chiếu trực tiếp với bộ quy tắc Recipe Validation Profile chuẩn được định nghĩa tại FR-16 và các Business Rules liên quan:
      - Thẩm định cấu trúc và độ dài trường theo FR-16: tiêu đề (3–120 ký tự), thể loại món ăn (`dish_category` thuộc danh mục chuẩn), khẩu phần (1–50), thời gian chuẩn bị và nấu (mỗi giá trị 0–1.440 phút, tổng thời gian $> 0$), mô tả bài viết ($\le 2.000$ ký tự), chọn đúng 1 trong 4 loại ăn chay chuẩn (BR-07, BR-19).
-     - Thẩm định nguyên liệu theo FR-19: danh sách từ 1 đến 50 dòng, bắt buộc có tên nguyên liệu, số lượng số dương ($> 0$) và đơn vị đo chuẩn thuộc bảng `UNIT`.
+      - Thẩm định nguyên liệu theo FR-19: danh sách từ 1 đến 50 dòng; mỗi dòng bắt buộc tham chiếu một mục đang dùng được trong catalog chuẩn FR-18, có số lượng số dương ($> 0$) và đơn vị đo chuẩn thuộc bảng `UNIT`; không chấp nhận tên tự do hoặc thiếu `ingredientId` (BR-12).
      - Thẩm định quy tắc chuyển đổi đơn vị (`INGREDIENT_UNIT_CONVERSION`): Đối với các nguyên liệu sử dụng đơn vị cần quy đổi sang gram để tính toán dinh dưỡng (như đơn vị thuộc chiều `COUNT` quả/củ/bìa hoặc chiều `VOLUME` khác), nếu trong cơ sở dữ liệu chưa có quy tắc quy đổi tương ứng cho nguyên liệu đó, hệ thống bắt buộc từ chối xuất bản (Validation Error) và yêu cầu tác giả chọn đơn vị đo khác (như gram) (BR-14, BR-19, BR-73).
      - Thẩm định nội dung hướng dẫn chuẩn bị/chế biến theo FR-16: bắt buộc có nội dung `instructions` từ 10 đến 5.000 ký tự không rỗng sau khi trim (BR-19); không ép buộc phân rã thành các bước độc lập.
      - Thẩm định tệp ảnh và video theo FR-14 và FR-15: từ 0 đến 5 hình ảnh minh họa (`RECIPE_MEDIA`, JPEG/PNG/WebP $\le 5$ MB), nếu có ảnh thì bắt buộc có đúng 1 ảnh được chỉ định làm ảnh đại diện (`is_cover = true`) và có thứ tự hiển thị `display_order`; tối đa 1 liên kết YouTube hợp lệ.
@@ -986,9 +986,9 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-44).
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow - Chỉnh sửa công thức):**
   - Bước 1: Tác giả nhấn "Chỉnh sửa công thức". Hệ thống kiểm tra quyền tác giả (BR-62, BR-64); nếu trùng khớp, hiển thị biểu mẫu chỉnh sửa với toàn bộ dữ liệu hiện tại của bài viết.
-  - Bước 2: Tác giả sửa đổi các thông tin (tiêu đề, thể loại món `dish_category`, thời gian nấu, khẩu phần, danh sách nguyên liệu và định lượng, nội dung hướng dẫn chế biến `instructions` 10–5.000 ký tự, thêm/xóa/sắp xếp ảnh minh họa và chọn ảnh đại diện theo FR-14).
+  - Bước 2: Tác giả sửa đổi các thông tin (tiêu đề, thể loại món `dish_category`, thời gian nấu, khẩu phần, danh sách nguyên liệu đã chọn từ catalog FR-18 và định lượng, nội dung hướng dẫn chế biến `instructions` 10–5.000 ký tự, thêm/xóa/sắp xếp ảnh minh họa và chọn ảnh đại diện theo FR-14).
   - Bước 3: Tác giả nhấn "Lưu thay đổi".
-  - Bước 4: Hệ thống thực hiện kiểm tra hợp lệ toàn bộ các tiêu chí validation bắt buộc theo FR-16, BR-19 và BR-73 (bao gồm kiểm tra tính khả dụng của quy tắc chuyển đổi đơn vị nguyên liệu).
+  - Bước 4: Hệ thống thực hiện kiểm tra hợp lệ toàn bộ các tiêu chí validation bắt buộc theo FR-16, FR-19/BR-12, BR-19 và BR-73 (bao gồm tham chiếu catalog bắt buộc cho từng dòng và tính khả dụng của quy tắc chuyển đổi đơn vị nguyên liệu).
   - Bước 5: Kiểm tra thành công, hệ thống cập nhật nội dung bài viết, trường `instructions` và ảnh `RECIPE_MEDIA` vào cơ sở dữ liệu, tự động tính toán lại bảng ước tính 9 chỉ tiêu dinh dưỡng (FR-39), và xuất bản trực tiếp các thay đổi lên trang công khai ngay lập tức mà không qua kiểm duyệt trước của Admin (BR-07, BR-59, BR-62).
   - Bước 6: Hệ thống hiển thị thông báo cập nhật thành công cho tác giả.
 - **Luồng thay thế (Alternative Flows - Xóa công thức):**

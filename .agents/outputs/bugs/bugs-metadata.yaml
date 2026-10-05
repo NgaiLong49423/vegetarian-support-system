@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-04
-next_id: 11
+last_updated: 2026-10-05
+next_id: 12
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-011
+    title: Nút Stop của IntelliJ không truyền env file cho Docker Compose
+    status: RECORDED
+    severity: Medium
+    area: Development/IntelliJ Docker
+    file: .agents/outputs/bugs/BUG-011.md
+    created: 2026-10-05
+    updated: 2026-10-05
+    related_issue: Unknown
   - id: BUG-010
     title: Cấu hình local lưu mật khẩu SQL Server dạng plaintext
     status: RECORDED
