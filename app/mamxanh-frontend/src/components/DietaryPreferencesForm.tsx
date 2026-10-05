@@ -181,7 +181,7 @@ function IngredientList({ id, legend, hint, noneLabel, examples, items, none, er
         <label htmlFor={`${id}-input`} className="sr-only">Thêm vào danh sách {legend.toLowerCase()}</label>
         <input id={`${id}-input`} value={text} disabled={none} maxLength={200} onChange={(event) => setText(event.target.value)} onKeyDown={onKeyDown} placeholder="Nhập tên rồi nhấn Thêm" autoComplete="off" className={`${fieldClass} mt-0`} />
         <Button type="button" variant="outline" disabled={none || !clean(text)} onClick={() => add(text)} aria-label={`Thêm mục vào ${legend.toLowerCase()}`}>
-          <Plus aria-hidden="true" className="h-4 w-4" /> Thêm
+          <Plus aria-hidden="true" className="h-4 w-4" /> <span className="hidden sm:inline">Thêm</span>
         </Button>
       </div>
 
@@ -249,9 +249,10 @@ export function DietaryPreferencesForm({ profile, submitLabel, disabled = false,
           <legend className={labelClass}>1. Bạn ăn chay theo kiểu nào? *</legend>
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
             {VEGETARIAN_TYPES.map((type) => (
-              <label key={type.value} className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition focus-within:ring-2 focus-within:ring-leaf-100 ${form.vegetarianType === type.value ? 'border-leaf-600 bg-leaf-50' : 'border-leaf-100 bg-white hover:border-leaf-300'}`}>
-                <input className="mt-1 accent-leaf-700" type="radio" name={`${formId}-type`} checked={form.vegetarianType === type.value} onChange={() => set('vegetarianType', type.value)} />
-                <span><span className="block font-semibold text-ink">{type.label}</span><span className="text-xs text-ink-muted">{type.description}</span></span>
+              <label key={type.value} className={`grid cursor-pointer grid-cols-[auto_1fr] items-start gap-x-3 rounded-xl border px-4 py-3 text-sm transition focus-within:ring-2 focus-within:ring-leaf-100 ${form.vegetarianType === type.value ? 'border-leaf-600 bg-leaf-50' : 'border-leaf-100 bg-white hover:border-leaf-300'}`}>
+                <input className="row-span-2 mt-1 accent-leaf-700" type="radio" name={`${formId}-type`} checked={form.vegetarianType === type.value} onChange={() => set('vegetarianType', type.value)} />
+                <span className="font-semibold text-ink">{type.label}</span>
+                <span className="text-xs text-ink-muted">{type.description}</span>
               </label>
             ))}
           </div>
