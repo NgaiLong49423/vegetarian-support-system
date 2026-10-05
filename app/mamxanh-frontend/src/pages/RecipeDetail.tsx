@@ -13,6 +13,7 @@ import {
   Flag,
   Heart,
   Leaf,
+  LoaderCircle,
   Lock,
   Share2,
   ShoppingBasket,
@@ -28,6 +29,7 @@ import { RecipeComments } from '../components/RecipeComments';
 import { RecipeRating } from '../components/RecipeRating';
 import { useDemoAccount } from '../components/DemoAccount';
 import { recipes } from '../data/mockData';
+import { recipesApi, type RecipeDetail as RecipeDetailData } from '../api/recipes';
 import { scaleQuantity } from '../utils/servings';
 import { isSaved, toggleSaved, subscribeSaved } from '../lib/savedRecipes';
 
@@ -52,6 +54,65 @@ const nutritionRows = [
 ];
 
 export function RecipeDetail() {
+  const { slug } = useParams();
+  if (slug && /^\d+$/.test(slug)) return <PublishedRecipeDetail recipeId={Number(slug)} />;
+  return <MockRecipeDetail />;
+}
+
+function PublishedRecipeDetail({ recipeId }: { recipeId: number }) {
+  const [recipe, setRecipe] = useState<RecipeDetailData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    recipesApi.getPublished(recipeId)
+      .then((result) => { if (active) setRecipe(result); })
+      .catch((error: unknown) => {
+        if (active) setLoadError(error instanceof Error ? error.message : 'Không tải được công thức này.');
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [recipeId]);
+
+  if (loading) return <PageContainer className="py-16"><p role="status" className="flex items-center justify-center gap-2 text-ink-muted"><LoaderCircle className="h-5 w-5 animate-spin" />Đang tải công thức…</p></PageContainer>;
+  if (loadError || !recipe) return <PageContainer className="py-16"><Card className="mx-auto max-w-xl p-8 text-center"><h1 className="text-xl font-bold text-ink">Không tìm thấy công thức</h1><p role="alert" className="mt-2 text-sm text-ink-muted">{loadError || 'Công thức này không tồn tại hoặc chưa được công khai.'}</p><Link to="/kham-pha" className="mt-5 inline-flex text-sm font-bold text-brand-700">Quay lại khám phá</Link></Card></PageContainer>;
+
+  const cover = recipe.media.find((item) => item.cover) ?? recipe.media[0];
+  return (
+    <PageContainer className="py-8">
+      <Link to="/kham-pha" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeftRight className="h-4 w-4" />Khám phá công thức</Link>
+      <article className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-brand-100 bg-white shadow-sm">
+        <div className="h-56 sm:h-80">
+          {cover
+            ? <img src={cover.blobUrl} alt={recipe.title} className="h-full w-full object-cover" />
+            : <RecipeDefaultArtwork vegetarianType={recipe.vegetarianType} label={recipe.vegetarianTypeLabel} />}
+        </div>
+        <div className="p-5 sm:p-8">
+          <div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-800"><span className="rounded-full bg-brand-50 px-3 py-1">{recipe.dishCategoryLabel}</span><span className="rounded-full bg-leaf-50 px-3 py-1">{recipe.vegetarianTypeLabel}</span><span className="rounded-full bg-stone-100 px-3 py-1">Độ khó: {recipe.difficultyLabel}</span></div>
+          <h1 className="mt-4 text-3xl font-extrabold text-ink">{recipe.title}</h1>
+          {recipe.description && <p className="mt-3 text-base leading-7 text-ink-soft">{recipe.description}</p>}
+          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-muted"><span>{recipe.servings} khẩu phần</span><span>Chuẩn bị {recipe.prepTimeMinutes} phút</span><span>Nấu {recipe.cookTimeMinutes} phút</span></div>
+          <section className="mt-8"><h2 className="text-xl font-extrabold text-ink">Nguyên liệu</h2><ul className="mt-3 space-y-2">{recipe.ingredients.map((item, index) => <li key={`${item.ingredientId}-${item.unitId}-${index}`} className="flex justify-between gap-4 border-b border-brand-50 py-2 text-sm"><span>{item.name}</span><span className="shrink-0 font-semibold text-ink">{item.quantity} {item.unitCode}</span></li>)}</ul></section>
+          <section className="mt-8"><h2 className="text-xl font-extrabold text-ink">Hướng dẫn chế biến</h2><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-ink-soft">{recipe.instructions}</p></section>
+          {recipe.youtubeUrl && <a href={recipe.youtubeUrl} target="_blank" rel="noreferrer" className="mt-6 inline-flex text-sm font-bold text-brand-700">Xem video hướng dẫn</a>}
+        </div>
+      </article>
+    </PageContainer>
+  );
+}
+
+function RecipeDefaultArtwork({ vegetarianType, label }: { vegetarianType: RecipeDetailData['vegetarianType']; label: string }) {
+  const appearance = {
+    VEGAN: 'from-leaf-100 to-emerald-50 text-leaf-800',
+    LACTO: 'from-amber-100 to-orange-50 text-amber-900',
+    OVO: 'from-yellow-100 to-lime-50 text-lime-900',
+    LACTO_OVO: 'from-brand-100 to-yellow-50 text-brand-800',
+  }[vegetarianType];
+  return <div role="img" aria-label={`Ảnh mặc định cho món ${label}`} className={`flex h-full w-full flex-col items-center justify-center bg-gradient-to-br ${appearance}`}><Leaf className="h-14 w-14" /><span className="mt-3 text-sm font-bold">Ảnh mặc định · {label}</span></div>;
+}
+
+function MockRecipeDetail() {
   const { slug } = useParams();
   const { active } = useDemoAccount();
   const matchedRecipe = recipes.find((r) => r.slug === slug);
