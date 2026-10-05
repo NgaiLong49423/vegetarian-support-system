@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import type { Page } from '@playwright/test';
 import { expect, test } from './baseFixtures';
 
@@ -473,3 +474,180 @@ test('saved recipe appears in profile and disappears when unsaved', async ({ pag
   await savedCard.getByRole('button', { name: 'Bỏ lưu công thức' }).click();
   await expect(page.getByRole('heading', { name: 'Chưa có công thức đã lưu' })).toBeVisible();
 });
+
+test('FR-25: Direct Recipe Publishing with image uploader, validation error preservation, and successful publish flow', async ({ page }) => {
+  await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({
+    json: {
+      dishCategories: [{ code: 'BRAISED', label: 'Món kho' }],
+      vegetarianTypes: [{ code: 'VEGAN', label: 'Thuần chay' }],
+      difficulties: [{ code: 'EASY', label: 'Dễ' }],
+      units: [{ unitId: 1, code: 'g', name: 'gram', dimension: 'MASS' }],
+    },
+  }));
+  await page.route('**/api/v1/recipes/ingredient-options**', (route) => route.fulfill({
+    json: [{ ingredientId: 1, name: 'Đậu hũ' }],
+  }));
+
+  // Mock upload media API (FR-14)
+  await page.route('**/api/v1/recipes/media/upload', (route) => route.fulfill({
+    status: 200,
+    json: {
+      code: 1000,
+      message: 'Success',
+      result: {
+        url: 'https://storage.mamxanh.tech/recipes/mon-kho.jpg',
+        fileName: 'mon-kho.jpg',
+        contentType: 'image/jpeg',
+        size: 10240,
+      },
+    },
+  }));
+
+  // Control recipes publish route: first fail validation, then succeed
+  let publishAttempts = 0;
+  let receivedPayload: any = null;
+  await page.route('**/api/v1/recipes', async (route) => {
+    if (route.request().method() !== 'POST') {
+      return route.continue();
+    }
+    publishAttempts++;
+    receivedPayload = route.request().postDataJSON();
+
+    if (publishAttempts === 1) {
+      // AC-25.3: Server validation failure
+      return route.fulfill({
+        status: 400,
+        contentType: 'application/problem+json',
+        json: {
+          status: 400,
+          code: 'VALIDATION_FAILED',
+          title: 'Validation Failed',
+          detail: 'Dữ liệu không hợp lệ',
+          errors: [
+            { field: 'title', message: 'Tên món ăn đã tồn tại hoặc không hợp lệ' },
+          ],
+        },
+      });
+    }
+
+    // AC-25.1: Success response
+    return route.fulfill({
+      status: 201,
+      json: {
+        recipeId: 999,
+        title: receivedPayload.title,
+        status: 'PUBLISHED',
+      },
+    });
+  });
+
+  // Mock recipe detail page route after redirect
+  await page.route('**/api/v1/recipes/999', (route) => route.fulfill({
+    json: {
+      id: 999,
+      title: 'Nấm đùi gà kho tiêu xanh',
+      description: 'Món kho thơm lừng đậm đà.',
+      instructions: 'Cắt nấm thành từng lát vừa ăn, ướp gia vị chay và kho liu riu cho thấm.',
+      dishCategory: 'BRAISED',
+      vegetarianType: 'VEGAN',
+      difficulty: 'EASY',
+      servings: 4,
+      prepTimeMinutes: 15,
+      cookTimeMinutes: 20,
+      status: 'PUBLISHED',
+      authorId: 42,
+      authorName: 'Trần Thị Chuyên Gia',
+      media: [
+        {
+          mediaId: 101,
+          url: 'https://storage.mamxanh.tech/recipes/mon-kho.jpg',
+          mimeType: 'image/jpeg',
+          cover: true,
+        },
+      ],
+      ingredients: [
+        {
+          ingredientId: 1,
+          ingredientName: 'Đậu hũ',
+          quantity: 200,
+          unitId: 1,
+          unitCode: 'g',
+          unitName: 'gram',
+        },
+      ],
+    },
+  }));
+
+  // 1. Log in as Expert
+  await page.goto('/dang-nhap');
+  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
+  const accountMenu = page.getByRole('button', { name: /Tài khoản Lan Anh/ });
+  await accountMenu.click();
+  await page.getByRole('button', { name: 'Expert', exact: true }).click();
+  await page.evaluate(() => {
+    window.history.pushState({}, '', '/dang-cong-thuc');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
+  await expect(page.getByText('Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)')).toBeVisible();
+
+  // 2. Upload image via uploader
+  const fileInput = page.locator('#recipe-media-upload-input');
+  await fileInput.setInputFiles({
+    name: 'mon-kho.jpg',
+    mimeType: 'image/jpeg',
+    buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]),
+  });
+  await expect(page.getByText('Đã tải 1/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
+  await expect(page.getByText('Ảnh bìa').first()).toBeVisible();
+
+  // 3. Fill form fields
+  await page.getByLabel('Tên món *').fill('Nấm đùi gà kho tiêu xanh');
+  await page.getByLabel('Mô tả').fill('Món kho thơm lừng đậm đà.');
+  await page.getByLabel('Thể loại món').selectOption('BRAISED');
+  await page.getByLabel('Loại ăn chay').selectOption('VEGAN');
+  await page.getByLabel('Độ khó').selectOption('EASY');
+  await page.getByLabel('Khẩu phần').fill('4');
+  await page.getByLabel('Thời gian chuẩn bị').fill('15');
+  await page.getByLabel('Thời gian nấu').fill('20');
+
+  // Fill ingredient
+  await page.getByLabel('Chọn nguyên liệu 1').fill('Đậu');
+  await page.getByRole('button', { name: 'Đậu hũ', exact: true }).click();
+  await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
+  await page.getByLabel('Đơn vị nguyên liệu 1').selectOption('1');
+
+  // Fill instructions
+  await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Cắt nấm thành từng lát vừa ăn, ướp gia vị chay và kho liu riu cho thấm.');
+
+  // 4. Submit once: trigger validation failure from server (AC-25.3)
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+
+  // Field error from API response should be rendered
+  await expect(page.getByText('Tên món ăn đã tồn tại hoặc không hợp lệ')).toBeVisible();
+
+  // Form input preservation (AC-25.3)
+  expect(await page.getByLabel('Tên món *').inputValue()).toBe('Nấm đùi gà kho tiêu xanh');
+  expect(await page.getByLabel('Mô tả').inputValue()).toBe('Món kho thơm lừng đậm đà.');
+  expect(await page.getByLabel('Khẩu phần').inputValue()).toBe('4');
+  expect(await page.getByLabel('Thời gian chuẩn bị').inputValue()).toBe('15');
+  expect(await page.getByLabel('Thời gian nấu').inputValue()).toBe('20');
+  expect(await page.getByLabel('Số lượng nguyên liệu 1').inputValue()).toBe('200');
+  expect(await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').inputValue()).toContain('Cắt nấm thành từng lát');
+  await expect(page.getByText('Đã tải 1/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
+
+  // 5. Submit again: validation passes, direct publish succeeds (AC-25.1)
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+
+  // Verify server payload contains uploaded media
+  expect(receivedPayload).toBeTruthy();
+  expect(receivedPayload.title).toBe('Nấm đùi gà kho tiêu xanh');
+  expect(receivedPayload.media).toHaveLength(1);
+  expect(receivedPayload.media[0].blobUrl).toBe('https://storage.mamxanh.tech/recipes/mon-kho.jpg');
+  expect(receivedPayload.media[0].cover).toBe(true);
+
+  // Navigates directly to published recipe detail
+  await page.waitForURL('**/cong-thuc/999');
+});
+
