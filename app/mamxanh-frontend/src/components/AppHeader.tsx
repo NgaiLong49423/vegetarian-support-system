@@ -1,3 +1,4 @@
+import { useAuth } from './AuthContext';
 import { useDemoAccount } from './DemoAccount';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
@@ -52,7 +53,26 @@ export function AppHeader() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
   const navigate = useNavigate();
-  const { active, setActive, role, setRole } = useDemoAccount();
+  const { account, isAuthenticated, memberView: active, signOut, exitDemo, demoActive } = useAuth();
+  const { setActive, role: demoRole, setRole } = useDemoAccount();
+  const role = account?.role ?? demoRole;
+  const displayName = account?.displayName ?? currentUser.name;
+  const accountLabel = account ? `Tài khoản ${account.displayName}` : `Tài khoản ${displayName}, gói AI ${demoAiPlan} demo`;
+  const leaveLabel = isAuthenticated ? 'Đăng xuất' : 'Thoát tài khoản demo';
+  const avatar = account
+    ? account.avatarUrl
+      ? <img src={account.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-brand-200" />
+      : <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white ring-2 ring-brand-200">{account.displayName.trim().charAt(0).toUpperCase()}</span>
+    : <img src={currentUser.avatar} alt={displayName} className="h-9 w-9 rounded-full object-cover ring-2 ring-brand-200" />;
+  const leave = () => {
+    if (isAuthenticated) signOut();
+    else exitDemo();
+    setActive(false);
+    setMenuOpen(false);
+    setOpen(false);
+    setDrawerOpen(false);
+    navigate('/dang-nhap');
+  };
 
   // Cập nhật badge số lượng đã lưu
   useEffect(() => {
@@ -138,7 +158,7 @@ export function AppHeader() {
                 {active ? (
                   <div className="mt-2 border-t border-brand-100 pt-2">
                     <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                      Tài khoản ({currentUser.name})
+                      Tài khoản ({displayName})
                     </p>
                     <NavLink
                       to="/ho-so"
@@ -204,13 +224,11 @@ export function AppHeader() {
                     )}
                     <button
                       onClick={() => {
-                        setActive(false);
-                        setDrawerOpen(false);
-                        navigate('/dang-nhap');
+                        leave();
                       }}
                       className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-ink-muted hover:bg-brand-50"
                     >
-                      Thoát tài khoản demo
+                      {leaveLabel}
                     </button>
                   </div>
                 ) : (
@@ -351,20 +369,16 @@ export function AppHeader() {
                   <div className="relative hidden md:block">
                     <button
                         onClick={() => setMenuOpen((v) => !v)}
-                        aria-label={`Tài khoản ${currentUser.name}, gói AI ${demoAiPlan} demo`}
+                        aria-label={accountLabel}
                         aria-expanded={menuOpen}
                         aria-haspopup="menu"
                         className="flex items-center gap-2 whitespace-nowrap rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-brand-100/70"
                     >
-                      <img
-                          src={currentUser.avatar}
-                          alt={currentUser.name}
-                          className="h-9 w-9 rounded-full object-cover ring-2 ring-brand-200"
-                      />
+                      {avatar}
                       <span className="text-left leading-tight">
-                    <span className="block text-sm font-semibold text-ink">{currentUser.name}</span>
+                    <span className="block text-sm font-semibold text-ink">{displayName}</span>
                     <span className="block text-xs text-ink-muted">
-                      {role === 'EXPERT' ? 'Chuyên gia' : role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên'} · demo
+                      {account ? (role === 'EXPERT' ? 'Chuyên gia' : role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên') : `${role === 'EXPERT' ? 'Chuyên gia' : role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên'} · demo`}
                     </span>
                   </span>
                       <ChevronDown className="h-4 w-4 text-ink-muted" />
@@ -373,7 +387,7 @@ export function AppHeader() {
                     {menuOpen && (
                         <div className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-brand-100 bg-white py-1 shadow-xl shadow-brand-900/10">
                           <div className="border-b border-brand-50 px-4 py-3">
-                            <p className="font-bold text-ink">{currentUser.name}</p>
+                            <p className="font-bold text-ink">{displayName}</p>
                             <p className="text-xs font-semibold text-leaf-700">
                               Vai trò:{' '}
                               {role === 'EXPERT'
@@ -382,10 +396,10 @@ export function AppHeader() {
                                       ? 'Quản trị viên (ADMIN)'
                                       : 'Khách hàng (CUSTOMER)'}
                             </p>
-                            <p className="text-xs text-ink-muted">Gói AI hiện tại: {demoAiPlan} (dữ liệu demo)</p>
+                            <p className="text-xs text-ink-muted">{account ? account.email : `Gói AI hiện tại: ${demoAiPlan} (dữ liệu demo)`}</p>
                           </div>
 
-                          <div className="border-b border-brand-50 bg-brand-50/40 px-4 py-2 text-xs">
+                          {demoActive && <div className="border-b border-brand-50 bg-brand-50/40 px-4 py-2 text-xs">
                             <span className="font-bold text-ink-soft">Chuyển vai trò demo:</span>
                             <div className="mt-1.5 flex gap-1">
                               <button
@@ -422,7 +436,7 @@ export function AppHeader() {
                                 Admin
                               </button>
                             </div>
-                          </div>
+                          </div>}
 
                           <Link
                               to="/ho-so"
@@ -486,13 +500,11 @@ export function AppHeader() {
                           <div className="my-1 border-t border-brand-50" />
                           <button
                               onClick={() => {
-                                setActive(false);
-                                setMenuOpen(false);
-                                navigate('/dang-nhap');
+                                leave();
                               }}
                               className="block w-full px-4 py-2.5 text-left text-sm font-medium text-ink-muted hover:bg-brand-50"
                           >
-                            Thoát tài khoản demo
+                            {leaveLabel}
                           </button>
                         </div>
                     )}

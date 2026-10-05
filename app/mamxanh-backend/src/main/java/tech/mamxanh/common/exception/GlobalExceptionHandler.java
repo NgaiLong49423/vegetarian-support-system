@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,6 +50,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             headers.set(HttpHeaders.RETRY_AFTER, Long.toString(seconds));
         }
         return ResponseEntity.status(ex.errorCode().status()).headers(headers).body(problem);
+    }
+
+    /** Valid token, but {@code USER.account_status = LOCKED} (decision Q20, NFR-09). */
+    @ExceptionHandler(LockedException.class)
+    ResponseEntity<Object> handleLocked(LockedException ex, WebRequest request) {
+        return build(ErrorCode.ACCOUNT_LOCKED, request);
     }
 
     @ExceptionHandler(AuthenticationException.class)
