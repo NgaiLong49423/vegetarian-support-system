@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.3.0
+> **Version:** v2.4.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -616,7 +616,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-39).
     - Trên bảng dinh dưỡng, hệ thống hiển thị nhãn cảnh báo màu vàng: *"Ước tính chưa đầy đủ: công thức có X nguyên liệu chưa hỗ trợ tính dinh dưỡng"* kèm danh sách tên các nguyên liệu đó (BR-48).
     - Hệ thống tuyệt đối không tự gán số liệu dinh dưỡng của nguyên liệu thiếu bằng 0 trong các phép so sánh nghiêm ngặt và không cho AI tự bịa số liệu (BR-48).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-39.1 (Không có nguyên liệu nào có dữ liệu dinh dưỡng):* Nếu toàn bộ nguyên liệu trong bài đều nằm ngoài danh mục nội bộ, hệ thống hiển thị thông báo: *"Công thức chưa hỗ trợ tính toán dinh dưỡng do chưa có dữ liệu nguyên liệu chuẩn"* thay vì hiển thị toàn bộ số 0.
+  - *EF-39.1 (Không có nguyên liệu nào có hồ sơ dinh dưỡng):* Nếu tất cả nguyên liệu đã chọn từ catalog chuẩn đều chưa có hồ sơ trong danh mục dinh dưỡng nội bộ, hệ thống hiển thị thông báo: *"Công thức chưa hỗ trợ tính toán dinh dưỡng do chưa có dữ liệu nguyên liệu chuẩn"* thay vì hiển thị toàn bộ số 0.
   - *SF-39.1 (Cấm gọi API ngoài realtime):* Hệ thống xử lý tính toán 100% dựa trên cơ sở dữ liệu nội bộ đã được Administrator phê duyệt (BR-49, BR-51); không thực hiện cuộc gọi API ra ngoài mạng Internet trong lúc người dùng xem bài viết nhằm bảo vệ hiệu năng và tính ổn định (NFR-02, NFR-10).
 
 #### 5. Hậu điều kiện (Postconditions)
@@ -626,36 +626,36 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-39).
 ---
 
 <a id="fr-40"></a>
-## FR-40 — Công khai Recipe Post chứa nguyên liệu ngoài danh mục dinh dưỡng
+## FR-40 — Công khai Recipe Post chứa nguyên liệu chuẩn thiếu dữ liệu dinh dưỡng
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-40).
 
 #### 3. Tiền điều kiện & Kích hoạt (Preconditions & Triggers)
 - **Tiền điều kiện:**
   - Tác giả là Chuyên gia đã đăng nhập và hoàn thành các trường thông tin bắt buộc của bài công thức (FR-04, FR-16, FR-19).
-  - Bài công thức có ít nhất một nguyên liệu mà tác giả nhập dạng chữ tự do chưa khớp với danh mục dinh dưỡng nội bộ.
+  - Bài công thức có ít nhất một nguyên liệu đã chọn từ catalog chuẩn FR-18 nhưng chưa có hồ sơ trong danh mục dinh dưỡng nội bộ.
 - **Kích hoạt (Trigger):**
   - Tác giả nhấn nút "Đăng công thức" (Publish Recipe).
 
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow):**
-  - Bước 1: Tác giả hoàn thành soạn thảo công thức; trong danh sách nguyên liệu có một số nguyên liệu tự do không tìm thấy trong danh mục dinh dưỡng nội bộ.
+  - Bước 1: Tác giả hoàn thành soạn thảo công thức; trong danh sách có một số nguyên liệu chuẩn chưa có hồ sơ trong danh mục dinh dưỡng nội bộ.
   - Bước 2: Tác giả nhấn "Đăng công thức".
   - Bước 3: Hệ thống thực hiện quy trình kiểm tra hợp lệ thông tin bài viết theo bộ quy tắc Recipe Validation Profile chuẩn của FR-16 (tiêu đề, khẩu phần, thời gian chuẩn bị và nấu, loại ăn chay; nguyên liệu theo FR-19; nội dung hướng dẫn chuẩn bị/chế biến từ 10 đến 5.000 ký tự theo FR-16, BR-19).
   - Bước 4: Kiểm tra hợp lệ thành công; hệ thống xác định có nguyên liệu chưa ánh xạ được với bảng dinh dưỡng nội bộ.
   - Bước 5: Hệ thống cho phép công khai trực tiếp bài viết lên nền tảng ngay lập tức mà không chặn và không đưa vào hàng đợi duyệt trước (BR-07, BR-50, BR-59).
   - Bước 6: Hệ thống đánh dấu trạng thái dinh dưỡng của bài viết là `Chưa đầy đủ` (Incomplete Nutrition Data) và đánh dấu cờ `Loại trừ khỏi AI Menu Dinh dưỡng` (BR-40).
-  - Bước 7: Trên trang chi tiết công thức công khai, bên cạnh tên của nguyên liệu tự do đó, hệ thống hiển thị biểu tượng ghi chú nhỏ: *"Chưa hỗ trợ tính dinh dưỡng"* (BR-48).
+  - Bước 7: Trên trang chi tiết công thức công khai, bên cạnh tên nguyên liệu chuẩn chưa có hồ sơ dinh dưỡng, hệ thống hiển thị biểu tượng ghi chú nhỏ: *"Chưa hỗ trợ tính dinh dưỡng"* (BR-48).
   - Bước 8: Bảng ước tính dinh dưỡng của bài viết hiển thị giá trị cộng dồn của các nguyên liệu đã biết kèm dòng ghi chú cảnh báo minh bạch (FR-39).
 - **Luồng thay thế (Alternative Flows):**
-  - *AF-40.1 (Sau này Admin bổ sung nguyên liệu vào danh mục):* Khi Administrator bổ sung nguyên liệu tương ứng vào danh mục nội bộ (FR-41) và liên kết với nguyên liệu của bài viết, hệ thống tự động tính toán lại dinh dưỡng của bài; nếu 100% nguyên liệu đã được hỗ trợ, cờ cảnh báo được gỡ bỏ và bài viết tự động đủ điều kiện tham gia pool AI menu.
+  - *AF-40.1 (Sau này Admin bổ sung hồ sơ dinh dưỡng):* Khi Administrator bổ sung hồ sơ dinh dưỡng cho nguyên liệu đã có trong catalog chuẩn (FR-41), hệ thống tính lại dinh dưỡng của các công thức sử dụng mục đó; nếu 100% nguyên liệu đã có dữ liệu được hỗ trợ, cờ cảnh báo được gỡ bỏ và bài viết đủ điều kiện tham gia pool AI menu.
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
   - *EF-40.1 (Tác giả bỏ trống tên hoặc định lượng nguyên liệu):* Nếu nguyên liệu không có tên hoặc không có định lượng (số lượng + đơn vị đo chuẩn hoặc "vừa đủ"), hệ thống chặn đăng theo quy tắc validation bắt buộc (FR-16, FR-19), không liên quan đến việc nguyên liệu có trong danh mục dinh dưỡng hay không.
   - *SF-40.1 (Ngăn chặn AI đưa bài thiếu số liệu vào menu dinh dưỡng):* Khi module AI Menu (FR-36) truy vấn danh sách công thức để lập thực đơn theo calo/macro, truy vấn cơ sở dữ liệu bắt buộc lọc bỏ các bài viết có cờ `Chưa đầy đủ dinh dưỡng` để đảm bảo an toàn cho người dùng (BR-40).
 
 #### 5. Hậu điều kiện (Postconditions)
 - Recipe Post được công khai ngay lập tức cho toàn bộ cộng đồng xem và tương tác.
-- Nguyên liệu ngoài danh mục được hiển thị minh bạch trạng thái.
+- Nguyên liệu chuẩn chưa có hồ sơ dinh dưỡng được hiển thị minh bạch trạng thái.
 - Bài viết bị loại trừ khỏi pool gợi ý AI Menu theo mục tiêu dinh dưỡng.
 
 ---
