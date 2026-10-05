@@ -143,6 +143,7 @@ export const recipes: Recipe[] = [
       'Rắc hạt bí rang lên trên, nêm muối tiêu vừa ăn.',
     ],
     author: recipeAuthors.a2,
+    youtubeUrl: 'https://www.youtube.com/watch?v=7wtfhZwyrcc',
     ...recipeEngagement.r2,
   },
   {
@@ -171,6 +172,7 @@ export const recipes: Recipe[] = [
       'Chần bánh phở, xếp topping, chan nước dùng.',
     ],
     author: recipeAuthors.a3,
+    youtubeUrl: 'https://www.youtube.com/watch?v=kXYiU_JCYtU',
     ...recipeEngagement.r3,
   },
   {
@@ -231,6 +233,7 @@ export const recipes: Recipe[] = [
       'Đổ hỗn hợp hạt điều vào, nấu lửa nhỏ đến khi sánh.',
     ],
     author: recipeAuthors.a5,
+    youtubeUrl: 'https://www.youtube.com/watch?v=fJ9rUzIMcZQ',
     ...recipeEngagement.r5,
   },
   {
