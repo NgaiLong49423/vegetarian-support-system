@@ -117,6 +117,7 @@ public class RecipeService {
         recipe.setYoutubeUrl(trimToNull(request.youtubeUrl()));
         recipe.setStatus("PUBLISHED");
         recipe.setPublishedAt(publishedAt);
+        recipe.setUpdatedAt(publishedAt);
         RecipePostEntity saved = recipeRepository.save(recipe);
 
         List<RecipeIngredientEntity> recipeIngredients = request.ingredients().stream().map(input -> {

@@ -74,6 +74,26 @@ None.
 
 None.
 
+## 2026-10-04 — Recipe Post Frontend Management (Issue #47)
+
+**Status:** Committed — `c144b85`.
+
+**Scope:** Add the Frontend experience for Experts to edit and delete their own public Recipe Posts from the expert profile.
+
+### Added
+
+- Add the recipe API client, expert profile recipe list, edit form, separate delete action, confirmation dialog and success feedback.
+- Add Playwright scenarios for the edit and delete flows using mocked API responses.
+
+### Changed
+
+- Return to the expert profile after saving and remove a deleted recipe from that list.
+- Keep recipe management actions on the expert profile instead of the public recipe detail page.
+
+### Fixed
+
+- None.
+
 ## 2026-10-04 — Prepare Recipe Ingredient Entry for Issue #25
 
 **Status:** Committed — f8a90152dcf5ccf88a96f4120d36295ef6bb6af5.
@@ -194,6 +214,26 @@ None.
 ### Fixed
 
 - Keep demo role switching limited to demo sessions and clear demo state when a real user signs in or leaves the account.
+
+## 2026-10-03 — Recipe Post Backend API and Data Handling (Issue #47)
+
+**Status:** Committed — `06e7b0d`.
+
+**Scope:** Add the Backend API and persistence behavior needed to edit and soft-delete an Expert's own public Recipe Post.
+
+### Added
+
+- Add public Recipe Post detail/search and reference-data APIs, plus author-only edit and soft-delete endpoints.
+- Add Backend service tests for ownership, direct publication after update, hidden recipes, soft deletion and validation.
+
+### Changed
+
+- Resolve the active Expert from the authenticated server principal; do not accept an author ID from the client.
+- Block authors from opening or editing a recipe hidden by an Administrator.
+
+### Fixed
+
+- Preserve Recipe Post rows as tombstones so existing Meal Plan foreign-key references remain intact and exclude deleted recipes from public search.
 
 ## 2026-10-03 — Fix Docker Sample Data Seed ([PR #79](https://github.com/NgaiLong49423/vegetarian-support-system/pull/79))
 
