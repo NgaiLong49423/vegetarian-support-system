@@ -6,7 +6,8 @@ import { Button } from '../components/ui';
 import { useAuth, type SessionNotice } from '../components/AuthContext';
 import { useDemoAccount } from '../components/DemoAccount';
 import { fieldMessages, retryAfterSeconds, toProblem, type ProblemDetails } from '../lib/problem';
-import { login, register, resendVerificationEmail, verifyEmail } from '../services/authApi';
+import { login, register, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
+import { getDietaryPreferences } from '../services/dietaryPreferencesApi';
 import { passwordProblems } from '../utils/password';
 
 type Mode = 'login' | 'register' | 'forgot' | 'verify' | 'reset';
@@ -44,6 +45,19 @@ function loginError(problem: ProblemDetails | null, retryAfter: number | null): 
       return { tone: 'error', text: retryAfter ? `Bạn đã nhập sai mật khẩu nhiều lần liên tiếp. Vui lòng thử lại sau ${Math.ceil(retryAfter / 60)} phút.` : problem.detail ?? NETWORK_ERROR };
     default:
       return { tone: 'error', text: problem?.detail ?? NETWORK_ERROR };
+  }
+}
+
+/**
+ * AC-31.10: a Member whose Onboarding invitation is still unanswered goes to the questionnaire;
+ * everyone else lands on the home page. Failing to read the profile never blocks the sign-in.
+ */
+async function landingAfterLogin(account: AccountSummary): Promise<string> {
+  if (account.role === 'ADMIN') return '/';
+  try {
+    return (await getDietaryPreferences()).onboardingStatus === 'NOT_STARTED' ? '/khoi-tao-so-thich' : '/';
+  } catch {
+    return '/';
   }
 }
 
@@ -112,9 +126,10 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const submitLogin = async () => {
     setSubmitting(true);
     try {
-      signIn(await login({ email: email.trim(), password }));
+      const session = await login({ email: email.trim(), password });
+      signIn(session);
       setActive(false);
-      navigate('/', { replace: true });
+      navigate(await landingAfterLogin(session.account), { replace: true });
     } catch (error) {
       const problem = toProblem(error);
       if (problem?.code === 'VALIDATION_FAILED' && problem.errors?.length) setErrors(formErrors(problem));
