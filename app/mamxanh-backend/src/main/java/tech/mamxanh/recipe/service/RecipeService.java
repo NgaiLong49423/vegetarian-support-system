@@ -144,7 +144,7 @@ public class RecipeService {
                 media.setBlobUrl(input.blobUrl().trim());
                 media.setMimeType(input.mimeType().trim());
                 media.setDisplayOrder(index + 1);
-                media.setCover(input.cover());
+                media.setCover(Boolean.TRUE.equals(input.cover()));
                 mediaEntities.add(media);
             }
             mediaRepository.saveAll(mediaEntities);
@@ -286,7 +286,7 @@ public class RecipeService {
     private static void validateMedia(List<RecipeMediaInput> media, List<FieldError> errors) {
         if (media == null || media.isEmpty()) return;
         if (media.size() > 5) errors.add(new FieldError("media", "Mỗi công thức được có tối đa 5 ảnh."));
-        long covers = media.stream().filter(RecipeMediaInput::cover).count();
+        long covers = media.stream().filter(item -> Boolean.TRUE.equals(item.cover())).count();
         if (covers != 1) errors.add(new FieldError("media", "Nếu có ảnh, hãy chọn đúng 1 ảnh bìa."));
         for (int index = 0; index < media.size(); index++) {
             RecipeMediaInput item = media.get(index);

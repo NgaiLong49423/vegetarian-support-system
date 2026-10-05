@@ -256,7 +256,6 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
                 new RecipeMediaInput("https://blob.test/fr25/b.webp", "image/webp", true),
                 new RecipeMediaInput("https://blob.test/fr25/c.jpg", "image/jpeg", false));
 
-        Integer mediaCountBefore = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM [RECIPE_MEDIA]", Integer.class);
         var result = mockMvc.perform(post("/api/v1/recipes")
                         .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -268,8 +267,9 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
 
         long recipeId = jsonMapper.readTree(result.getResponse().getContentAsString()).path("recipeId").asLong();
 
-        Integer mediaCountAfter = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM [RECIPE_MEDIA]", Integer.class);
-        org.assertj.core.api.Assertions.assertThat(mediaCountAfter).isEqualTo(mediaCountBefore + 3);
+        Integer mediaCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM [RECIPE_MEDIA] WHERE recipe_id = ?", Integer.class, recipeId);
+        org.assertj.core.api.Assertions.assertThat(mediaCount).isEqualTo(3);
 
         Integer coverCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM [RECIPE_MEDIA] WHERE recipe_id = ? AND is_cover = 1", Integer.class, recipeId);
@@ -287,24 +287,34 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void publishedRecipeAppearsImmediatelyInPublicSearch() throws Exception {
+    void publishedRecipeAppearsImmediatelyWithPublishedStatusAndPublicDetail() throws Exception {
         String uniqueTitle = "Nấm đùi gà kho tiêu FR25";
         CreateRecipeRequest request = new CreateRecipeRequest(uniqueTitle, "Món ngon đậm vị",
                 "Kho nấm với tiêu cho đến khi cạn nước.", DishCategory.BRAISED,
                 VegetarianType.VEGAN, Difficulty.EASY, 4, 15, 20, null,
                 List.of(ingredient(gramUnitId, "300")), List.of());
 
-        mockMvc.perform(post("/api/v1/recipes")
+        var result = mockMvc.perform(post("/api/v1/recipes")
                         .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("PUBLISHED"));
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.recipeId").isNumber())
+                .andReturn();
 
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", "Nấm đùi gà kho tiêu FR25"))
+        long recipeId = jsonMapper.readTree(result.getResponse().getContentAsString()).path("recipeId").asLong();
+
+        // AC-25.2: Trạng thái trong DB phải là PUBLISHED ngay lập tức, không qua PENDING
+        String dbStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM [RECIPE_POST] WHERE recipe_id = ?", String.class, recipeId);
+        org.assertj.core.api.Assertions.assertThat(dbStatus).isEqualTo("PUBLISHED");
+
+        // AC-25.2: Hiển thị công khai ngay lập tức không cần đăng nhập
+        mockMvc.perform(get("/api/v1/recipes/{recipeId}", recipeId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[*].title", hasItem(uniqueTitle)))
-                .andExpect(jsonPath("$.items[0].status").value("PUBLISHED"));
+                .andExpect(jsonPath("$.title").value(uniqueTitle))
+                .andExpect(jsonPath("$.recipeId").value(recipeId));
     }
 
     @Test
