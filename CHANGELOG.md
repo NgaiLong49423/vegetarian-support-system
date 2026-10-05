@@ -1,13 +1,32 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.50.0
+> **Version:** v2.51.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-04
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-05 — Record Password Login Follow-Up Database Checks (FR-03-B, Issue #6)
+
+**Status:** Committed — 7757560.
+
+**Scope:** Apply the Tech Lead decision Q29 to the database guide and replace the unverified post-sync notes with results measured on a clean SQL Server 2019 database after V1–V6.
+
+### Added
+
+None.
+
+### Changed
+
+- Remove `last_failed_login_at` from the FR-03 target design in `database/README.md`, because no Acceptance Criterion uses it.
+- Record that `database/schema.sql` matches a database built by V1–V6 with 0 differences in columns, CHECK, DEFAULT, index and FK definitions, and that `database/queries.sql` passes 78/78 assertions on both databases.
+
+### Fixed
+
+None.
 
 ## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
 

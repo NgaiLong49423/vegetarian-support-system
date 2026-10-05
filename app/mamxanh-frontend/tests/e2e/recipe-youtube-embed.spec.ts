@@ -1,6 +1,74 @@
 import { expect, test } from './baseFixtures';
 
+const options = {
+  dishCategories: [
+    { code: 'BRAISED', label: 'Món kho' },
+    { code: 'SOUP', label: 'Món canh' },
+  ],
+  vegetarianTypes: [
+    { code: 'VEGAN', label: 'Thuần chay' },
+    { code: 'LACTO_OVO', label: 'Có trứng và sữa' },
+  ],
+  difficulties: [
+    { code: 'EASY', label: 'Dễ' },
+    { code: 'MEDIUM', label: 'Trung bình' },
+    { code: 'HARD', label: 'Khó' },
+  ],
+  units: [
+    { unitId: 1, code: 'g', name: 'gram', dimension: 'MASS' },
+    { unitId: 2, code: 'kg', name: 'kilogram', dimension: 'MASS' },
+    { unitId: 3, code: 'quả', name: 'quả', dimension: 'COUNT' },
+  ],
+};
+
+const ingredients = [
+  { ingredientId: 11, name: 'Đậu hũ' },
+  { ingredientId: 12, name: 'Cà chua' },
+];
+
 test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài công thức', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: options }));
+    await page.route('**/api/v1/recipes/ingredient-options**', (route) => {
+      const query = new URL(route.request().url()).searchParams.get('query')?.toLowerCase() ?? '';
+      const matches = ingredients.filter((item) => item.name.toLowerCase().includes(query));
+      return route.fulfill({ json: matches });
+    });
+    await page.route('**/api/v1/recipes', (route) => {
+      if (route.request().method() === 'POST') {
+        return route.fulfill({
+          status: 201,
+          json: { recipeId: 2199, title: 'Món Chay Thử Nghiệm', status: 'PUBLISHED', publishedAt: '2026-10-05T12:00:00' },
+        });
+      }
+      return route.fallback();
+    });
+    await page.route(/\/api\/v1\/recipes\/2199$/, (route) => {
+      return route.fulfill({
+        status: 200,
+        json: {
+          recipeId: 2199,
+          title: 'Món Chay Thử Nghiệm',
+          description: 'Mô tả hương vị thanh đạm hấp dẫn.',
+          instructions: 'Hướng dẫn chế biến món ăn ngon lành.',
+          dishCategory: 'BRAISED',
+          dishCategoryLabel: 'Món kho',
+          vegetarianType: 'VEGAN',
+          vegetarianTypeLabel: 'Thuần chay',
+          difficulty: 'EASY',
+          difficultyLabel: 'Dễ',
+          servings: 2,
+          prepTimeMinutes: 10,
+          cookTimeMinutes: 20,
+          youtubeUrl: null,
+          publishedAt: '2026-10-05T12:00:00',
+          ingredients: [],
+          media: [],
+        },
+      });
+    });
+  });
+
   test('AC-15.1, AC-15.2, AC-15.3, AC-15.5: YouTube input validation, error handling, preview, and optionality', async ({ page }) => {
     // Đăng nhập vai trò Expert để mở form đăng công thức
     await page.goto('/dang-nhap');
@@ -12,10 +80,11 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
     // AC-15.3: Duy nhất 1 trường nhập link YouTube cho toàn bộ bài viết
     const youtubeInput = page.getByLabel(/Liên kết video YouTube/);
     await expect(youtubeInput).toHaveCount(1);
+    const youtubeContainer = youtubeInput.locator('xpath=..');
 
     // AC-15.2: Từ chối liên kết video ngoài YouTube (ví dụ Vimeo)
     await youtubeInput.fill('https://vimeo.com/123456789');
-    await expect(page.getByRole('alert')).toContainText('chỉ hỗ trợ video từ YouTube');
+    await expect(youtubeContainer.getByRole('alert')).toContainText('chỉ hỗ trợ video từ YouTube');
     await expect(page.getByTestId('youtube-embed-container')).toHaveCount(0);
 
     // AC-15.1: Trích xuất Video ID từ đường link YouTube hợp lệ và hiển thị preview
@@ -30,13 +99,25 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
 
     // AC-15.5: Tính tùy chọn của video YouTube (để trống không báo lỗi khi đăng)
     await youtubeInput.fill('');
-    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(youtubeContainer.getByRole('alert')).toHaveCount(0);
 
-    // Điền thông tin tối thiểu và nhấn xuất bản
-    await page.getByPlaceholder('VD: Đậu hũ non sốt nấm đông cô tiêu xanh').fill('Món Chay Thử Nghiệm');
-    await page.getByPlaceholder('Chia sẻ nguồn cảm hứng, hương vị đặc trưng và bí quyết của món ăn...').fill('Mô tả hương vị thanh đạm hấp dẫn.');
+    // Điền thông tin hợp lệ theo backend schema và nhấn xuất bản
+    await page.getByLabel('Tên món *').fill('Món Chay Thử Nghiệm');
+    await page.getByLabel('Mô tả').fill('Mô tả hương vị thanh đạm hấp dẫn.');
+    await page.getByLabel('Thể loại món').selectOption('BRAISED');
+    await page.getByLabel('Loại ăn chay').selectOption('VEGAN');
+    await page.getByLabel('Độ khó').selectOption('EASY');
+    await page.getByLabel('Khẩu phần').fill('2');
+    await page.getByLabel('Thời gian chuẩn bị').fill('10');
+    await page.getByLabel('Thời gian nấu').fill('20');
+    await page.getByLabel('Chọn nguyên liệu 1').fill('Đậu');
+    await page.getByRole('button', { name: 'Đậu hũ', exact: true }).click();
+    await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
+    await page.getByLabel('Đơn vị nguyên liệu 1').selectOption({ label: 'gram (g)' });
+    await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Hướng dẫn chế biến món ăn ngon lành chuẩn vị.');
     await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
-    await expect(page.getByText('Đã đăng!')).toBeVisible();
+    await expect(page).toHaveURL(/\/cong-thuc\/2199$/);
+    await expect(page.getByRole('heading', { name: 'Món Chay Thử Nghiệm', level: 1 })).toBeVisible();
   });
 
   test('UC-15.2: Chi tiết công thức nhúng YouTube IFrame Player an toàn', async ({ page }) => {
@@ -61,6 +142,7 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
     await page.getByRole('link', { name: 'Đăng công thức mới' }).click();
 
     const youtubeInput = page.getByLabel(/Liên kết video YouTube/);
+    const youtubeContainer = youtubeInput.locator('xpath=..');
 
     // Shorts
     await youtubeInput.fill('https://www.youtube.com/shorts/dQw4w9WgXcQ');
@@ -76,19 +158,20 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
 
     // Protocol không phải http/https (ftp://)
     await youtubeInput.fill('ftp://youtube.com/watch?v=dQw4w9WgXcQ');
-    await expect(page.getByRole('alert')).toContainText('bắt đầu bằng https://');
+    await expect(youtubeContainer.getByRole('alert')).toContainText('bắt đầu bằng https://');
 
     // Link youtube nhưng thiếu video ID hoặc sai định dạng
     await youtubeInput.fill('https://www.youtube.com/watch?v=');
-    await expect(page.getByRole('alert')).toContainText('không hợp lệ');
+    await expect(youtubeContainer.getByRole('alert')).toContainText('không hợp lệ');
 
     // Chuỗi không phải URL
     await youtubeInput.fill('not-a-valid-url');
-    await expect(page.getByRole('alert')).toContainText('bắt đầu bằng https://');
+    await expect(youtubeContainer.getByRole('alert')).toContainText('bắt đầu bằng https://');
 
     // Thử submit form khi link youtube đang lỗi
-    await page.getByPlaceholder('VD: Đậu hũ non sốt nấm đông cô tiêu xanh').fill('Món Chay Thử Nghiệm');
+    await page.getByLabel('Tên món *').fill('Món Chay Thử Nghiệm');
     await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
-    await expect(page.getByText('Đã đăng!')).toHaveCount(0);
+    await expect(page).not.toHaveURL(/\/cong-thuc\/2199$/);
   });
 });
+
