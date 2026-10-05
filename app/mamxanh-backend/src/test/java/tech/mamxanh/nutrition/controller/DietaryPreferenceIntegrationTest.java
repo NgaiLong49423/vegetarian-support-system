@@ -10,21 +10,36 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.sql.DataSource;
+
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.testcontainers.mssqlserver.MSSQLServerContainer;
 
 import com.jayway.jsonpath.JsonPath;
 
@@ -58,6 +73,12 @@ class DietaryPreferenceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private DietaryPreferenceService dietaryPreferenceService;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private MSSQLServerContainer sqlServer;
 
     private Long insertedPeanutId;
 
@@ -200,21 +221,113 @@ class DietaryPreferenceIntegrationTest extends AbstractIntegrationTest {
         assertThat(userRow("em@fr31.test")).containsEntry("onboarding_status", "COMPLETED");
     }
 
+    // ---------------------------------------------------------------- AC-31.10 (invitation shown once)
+
     @Test
-    void theOnboardingMigrationStopsInvitingExistingAccountsOnly() throws Exception {
-        createMember("cu@fr31.test", "CUSTOMER");
-        String done = memberToken("xong@fr31.test");
-        save(done, "{\"vegetarianType\":\"VEGAN\",\"avoid\":{\"noneConfirmed\":true},\"dislike\":{\"noneConfirmed\":true}}")
+    void aNewMemberIsInvitedOnceEvenWhenTheQuestionnaireIsLeftUnanswered() throws Exception {
+        String token = memberToken("moi@fr31.test");
+
+        claimInvitation(token).andExpect(status().isOk()).andExpect(jsonPath("$.show").value(true));
+        Map<String, Object> invited = userRow("moi@fr31.test");
+        assertThat(invited).containsEntry("onboarding_status", "NOT_STARTED");
+        assertThat(((Timestamp) invited.get("onboarding_invited_at")).toLocalDateTime()).isEqualTo(LocalDateTime.now(clock));
+
+        clock.advance(Duration.ofMinutes(10));
+        claimInvitation(token).andExpect(status().isOk()).andExpect(jsonPath("$.show").value(false));
+        assertThat(userRow("moi@fr31.test")).containsEntry("onboarding_status", "NOT_STARTED")
+                .containsEntry("onboarding_invited_at", invited.get("onboarding_invited_at"));
+    }
+
+    @Test
+    void noInvitationAfterSkippingOrCompletingTheQuestionnaire() throws Exception {
+        String skipped = memberToken("bo-qua@fr31.test");
+        mockMvc.perform(post(BASE + "/onboarding/skip").header(HttpHeaders.AUTHORIZATION, bearer(skipped)))
+                .andExpect(status().isNoContent());
+        String completed = memberToken("hoan-tat@fr31.test");
+        save(completed, "{\"vegetarianType\":\"VEGAN\",\"avoid\":{\"noneConfirmed\":true},\"dislike\":{\"noneConfirmed\":true}}")
                 .andExpect(status().isOk());
-        String migration = new ClassPathResource("db/migration/V7__onboarding_existing_accounts.sql")
-                .getContentAsString(StandardCharsets.UTF_8);
 
-        jdbcTemplate.execute(migration);
+        claimInvitation(skipped).andExpect(status().isOk()).andExpect(jsonPath("$.show").value(false));
+        claimInvitation(completed).andExpect(status().isOk()).andExpect(jsonPath("$.show").value(false));
+        assertThat(userRow("bo-qua@fr31.test").get("onboarding_invited_at")).isNull();
+        assertThat(userRow("hoan-tat@fr31.test").get("onboarding_invited_at")).isNull();
+    }
 
-        assertThat(userRow("cu@fr31.test")).containsEntry("onboarding_status", "SKIPPED");
-        assertThat(userRow("xong@fr31.test")).containsEntry("onboarding_status", "COMPLETED");
-        createMember("moi@fr31.test", "CUSTOMER");
-        assertThat(userRow("moi@fr31.test")).containsEntry("onboarding_status", "NOT_STARTED");
+    /**
+     * Overlap is forced at database level, as in the resend test of #5: a test transaction holds the
+     * {@code USER} row lock until SQL Server reports all five requests waiting for it. With the row
+     * lock the requests then run one by one and only the first sees an unanswered invitation.
+     */
+    @Test
+    void concurrentSignInsShowTheInvitationOnlyOnce() throws Exception {
+        String token = memberToken("song-song@fr31.test");
+        long userId = userId("song-song@fr31.test");
+
+        int requests = 5;
+        CountDownLatch lockHeld = new CountDownLatch(1);
+        CountDownLatch releaseLock = new CountDownLatch(1);
+        AtomicInteger holderSession = new AtomicInteger();
+        List<Boolean> shown = new ArrayList<>();
+        try (ExecutorService pool = Executors.newFixedThreadPool(requests + 1)) {
+            Future<?> holder = pool.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+                jdbcTemplate.queryForObject("SELECT user_id FROM [USER] WITH (UPDLOCK, ROWLOCK) WHERE user_id = ?",
+                        Long.class, userId);
+                holderSession.set(jdbcTemplate.queryForObject("SELECT @@SPID", Integer.class));
+                lockHeld.countDown();
+                awaitUninterruptibly(releaseLock);
+            }));
+            List<Future<Boolean>> results = new ArrayList<>();
+            try {
+                assertThat(lockHeld.await(10, TimeUnit.SECONDS)).isTrue();
+                for (int i = 0; i < requests; i++) {
+                    results.add(pool.submit(() -> JsonPath.<Boolean>read(claimInvitation(token)
+                            .andExpect(status().isOk())
+                            .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8), "$.show")));
+                }
+                awaitLockWaits(holderSession.get(), requests);
+            } finally {
+                releaseLock.countDown();
+            }
+            holder.get(10, TimeUnit.SECONDS);
+            for (Future<Boolean> result : results) {
+                shown.add(result.get(30, TimeUnit.SECONDS));
+            }
+        }
+
+        assertThat(shown).containsOnlyOnce(true).filteredOn(show -> !show).hasSize(requests - 1);
+    }
+
+    /**
+     * V7 against a real upgrade: a separate database is migrated to V6, receives accounts, then
+     * V7 runs. Accounts that existed before V7 count as already invited (AC-31.10) and keep their
+     * Onboarding status, so SKIPPED still only means "the Member pressed Skip".
+     */
+    @Test
+    void theV7MigrationTreatsExistingAccountsAsAlreadyInvited() {
+        jdbcTemplate.execute("CREATE DATABASE fr31_v7_upgrade");
+        try {
+            DriverManagerDataSource upgrade = new DriverManagerDataSource(
+                    sqlServer.getJdbcUrl() + ";databaseName=fr31_v7_upgrade", sqlServer.getUsername(), sqlServer.getPassword());
+            JdbcTemplate upgradeJdbc = new JdbcTemplate(upgrade);
+            migrate(upgrade, "6");
+            upgradeJdbc.update("INSERT INTO [USER] (email, display_name) VALUES ('cu@fr31.test', N'Tài khoản cũ')");
+            upgradeJdbc.update("INSERT INTO [USER] (email, display_name, onboarding_status) VALUES ('xong@fr31.test', N'Đã hoàn tất', 'COMPLETED')");
+
+            migrate(upgrade, "7");
+
+            Map<String, Object> existing = upgradeJdbc.queryForMap(
+                    "SELECT onboarding_status, onboarding_invited_at FROM [USER] WHERE email = 'cu@fr31.test'");
+            assertThat(existing).containsEntry("onboarding_status", "NOT_STARTED");
+            assertThat(existing.get("onboarding_invited_at")).isNotNull();
+            assertThat(upgradeJdbc.queryForObject("SELECT onboarding_status FROM [USER] WHERE email = 'xong@fr31.test'",
+                    String.class)).isEqualTo("COMPLETED");
+            upgradeJdbc.update("INSERT INTO [USER] (email, display_name) VALUES ('moi@fr31.test', N'Tài khoản mới')");
+            assertThat(upgradeJdbc.queryForMap("SELECT onboarding_status, onboarding_invited_at FROM [USER] WHERE email = 'moi@fr31.test'"))
+                    .containsEntry("onboarding_status", "NOT_STARTED").containsEntry("onboarding_invited_at", null);
+        } finally {
+            jdbcTemplate.execute("ALTER DATABASE fr31_v7_upgrade SET SINGLE_USER WITH ROLLBACK IMMEDIATE");
+            jdbcTemplate.execute("DROP DATABASE fr31_v7_upgrade");
+        }
     }
 
     // ---------------------------------------------------------------- AC-31.7 and validation
@@ -392,6 +505,7 @@ class DietaryPreferenceIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(put(BASE).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(post(BASE + "/onboarding/skip")).andExpect(status().isUnauthorized());
+        mockMvc.perform(post(BASE + "/onboarding/invitation")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -402,6 +516,10 @@ class DietaryPreferenceIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get(BASE).header(HttpHeaders.AUTHORIZATION, bearer(token)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("MEMBER_ACCESS_REQUIRED"));
+        claimInvitation(token)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("MEMBER_ACCESS_REQUIRED"));
+        assertThat(userRow("admin@fr31.test").get("onboarding_invited_at")).isNull();
     }
 
     @Test
@@ -443,11 +561,69 @@ class DietaryPreferenceIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$").isEmpty());
     }
 
+    // ---------------------------------------------------------------- generated OpenAPI (runtime contract)
+
+    @Test
+    void generatedOpenApiPublishesTheCookingTimeRangeTheValidatorEnforces() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.components.schemas.SaveDietaryPreferencesRequest.properties.maxCookingTimeMinutes.minimum").value(1))
+                .andExpect(jsonPath("$.components.schemas.SaveDietaryPreferencesRequest.properties.maxCookingTimeMinutes.maximum").value(1440));
+    }
+
+    @Test
+    void generatedOpenApiRequiresABearerTokenForEveryPreferenceOperation() throws Exception {
+        ResultActions docs = mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.type").value("http"))
+                .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.scheme").value("bearer"))
+                .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.bearerFormat").value("JWT"))
+                .andExpect(jsonPath("$.paths['/api/v1/auth/login'].post.security").doesNotExist());
+        for (String operation : List.of("['" + BASE + "'].get", "['" + BASE + "'].put",
+                "['" + BASE + "/onboarding/skip'].post", "['" + BASE + "/onboarding/invitation'].post",
+                "['" + BASE + "/ingredient-suggestions'].get")) {
+            docs.andExpect(jsonPath("$.paths" + operation + ".security[0].bearerAuth").isArray());
+        }
+    }
+
     // ---------------------------------------------------------------- helpers
 
     private ResultActions save(String token, String body) throws Exception {
         return mockMvc.perform(put(BASE).header(HttpHeaders.AUTHORIZATION, bearer(token))
                 .contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    private ResultActions claimInvitation(String token) throws Exception {
+        return mockMvc.perform(post(BASE + "/onboarding/invitation").header(HttpHeaders.AUTHORIZATION, bearer(token)));
+    }
+
+    private static void migrate(DataSource dataSource, String targetVersion) {
+        Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target(targetVersion)
+                .load().migrate();
+    }
+
+    /** Polls SQL Server until {@code count} other sessions of this database wait on a lock. */
+    private void awaitLockWaits(int holderSession, int count) throws InterruptedException {
+        String waiting = "SELECT COUNT(*) FROM sys.dm_exec_requests WHERE database_id = DB_ID() "
+                + "AND wait_type LIKE 'LCK_M_%' AND session_id <> ?";
+        long deadline = System.nanoTime() + Duration.ofSeconds(20).toNanos();
+        while (jdbcTemplate.queryForObject(waiting, Integer.class, holderSession) < count) {
+            if (System.nanoTime() > deadline) {
+                throw new AssertionError("Expected " + count + " requests waiting on the row lock held by session "
+                        + holderSession + "; requests: " + jdbcTemplate.queryForList(
+                                "SELECT session_id, blocking_session_id, wait_type, command FROM sys.dm_exec_requests "
+                                        + "WHERE database_id = DB_ID()"));
+            }
+            Thread.sleep(50);
+        }
+    }
+
+    private static void awaitUninterruptibly(CountDownLatch latch) {
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private List<DietaryRequirement> missingFor(long userId) {
@@ -487,7 +663,7 @@ class DietaryPreferenceIntegrationTest extends AbstractIntegrationTest {
     private Map<String, Object> userRow(String email) {
         return jdbcTemplate.queryForMap("""
                 SELECT vegetarian_type, cuisine_preference, preferred_difficulty, max_cooking_time_min,
-                       onboarding_status, avoid_none_confirmed, dislike_none_confirmed
+                       onboarding_status, onboarding_invited_at, avoid_none_confirmed, dislike_none_confirmed
                 FROM [USER] WHERE email = ?""", email);
     }
 

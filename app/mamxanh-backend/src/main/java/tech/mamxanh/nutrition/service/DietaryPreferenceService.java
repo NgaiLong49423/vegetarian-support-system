@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -27,6 +28,7 @@ import tech.mamxanh.nutrition.dto.response.DietaryPreferencesResponse.Ingredient
 import tech.mamxanh.nutrition.dto.response.DietaryPreferencesResponse.PreferenceItem;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientSuggestionResponse;
+import tech.mamxanh.nutrition.dto.response.OnboardingInvitationResponse;
 import tech.mamxanh.nutrition.entity.DietaryPreferenceEntity;
 import tech.mamxanh.nutrition.entity.PreferenceType;
 import tech.mamxanh.nutrition.entity.UserIngredientPreferenceEntity;
@@ -91,6 +93,17 @@ public class DietaryPreferenceService {
         currentMember().skipOnboarding(LocalDateTime.now(clock));
     }
 
+    /**
+     * AC-31.10: called by the client after each successful sign-in. Only the first call of an account
+     * whose invitation is unanswered returns {@code true}; the row lock keeps parallel sign-ins from
+     * both receiving it.
+     */
+    @Transactional
+    public OnboardingInvitationResponse claimOnboardingInvitation() {
+        DietaryPreferenceEntity profile = currentMember(profiles::findByIdForUpdate);
+        return new OnboardingInvitationResponse(profile.recordOnboardingInvitation(LocalDateTime.now(clock)));
+    }
+
     @Transactional(readOnly = true)
     public List<IngredientSuggestionResponse> suggestIngredients(String query) {
         currentMember();
@@ -121,6 +134,10 @@ public class DietaryPreferenceService {
     }
 
     private DietaryPreferenceEntity currentMember() {
+        return currentMember(profiles::findById);
+    }
+
+    private DietaryPreferenceEntity currentMember(Function<Long, Optional<DietaryPreferenceEntity>> loader) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {
@@ -132,7 +149,7 @@ public class DietaryPreferenceService {
         } catch (NumberFormatException exception) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
-        DietaryPreferenceEntity profile = profiles.findById(userId)
+        DietaryPreferenceEntity profile = loader.apply(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
         if (!profile.isActiveMember()) {
             throw new AppException(ErrorCode.MEMBER_ACCESS_REQUIRED);

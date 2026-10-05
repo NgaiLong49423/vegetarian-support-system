@@ -56,6 +56,10 @@ public class DietaryPreferenceEntity {
     @Column(name = "onboarding_status", nullable = false, length = 20)
     private OnboardingStatus onboardingStatus;
 
+    /** When the Onboarding invitation was shown (V7); accounts older than V7 count as invited. */
+    @Column(name = "onboarding_invited_at")
+    private LocalDateTime onboardingInvitedAt;
+
     @Column(name = "avoid_none_confirmed", nullable = false)
     private boolean avoidNoneConfirmed;
 
@@ -85,6 +89,22 @@ public class DietaryPreferenceEntity {
         this.preferredDifficulty = preferredDifficulty;
         this.onboardingStatus = OnboardingStatus.COMPLETED;
         this.updatedAt = now;
+    }
+
+    /**
+     * AC-31.10: the questionnaire is offered automatically only once, to an account that has neither
+     * answered nor already been shown the invitation. Leaving the questionnaire unanswered keeps
+     * {@code NOT_STARTED} but is not invited again.
+     *
+     * @return {@code true} when the invitation is shown now and has been recorded
+     */
+    public boolean recordOnboardingInvitation(LocalDateTime now) {
+        if (onboardingStatus != OnboardingStatus.NOT_STARTED || onboardingInvitedAt != null) {
+            return false;
+        }
+        onboardingInvitedAt = now;
+        updatedAt = now;
+        return true;
     }
 
     /** UC-31.2: closing an unanswered invitation; a completed profile keeps its status. */

@@ -2,8 +2,8 @@ package tech.mamxanh.nutrition.dto.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import tech.mamxanh.nutrition.entity.CookingDifficulty;
 import tech.mamxanh.nutrition.entity.VegetarianType;
@@ -29,7 +29,7 @@ public record SaveDietaryPreferencesRequest(
         @Size(max = 200, message = "Khẩu vị tối đa 200 ký tự.")
         String cuisinePreference,
 
-        @Positive(message = "Thời gian nấu tối đa phải là số phút dương.")
+        @Min(value = 1, message = "Thời gian nấu tối đa phải là số phút dương.")
         @Max(value = 1440, message = "Thời gian nấu tối đa không quá 1440 phút.")
         Integer maxCookingTimeMinutes,
 
