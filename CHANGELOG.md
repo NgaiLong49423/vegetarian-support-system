@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.51.0
+> **Version:** v2.52.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-05
 > **Status:** Active
@@ -9,25 +9,32 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-05 — Complete Catalog-backed Recipe Ingredient Validation for Issue #25
+## 2026-10-05 — Implement Onboarding and the Personalized AI Eligibility Gate (FR-31, Issue #36) ([PR #92](https://github.com/NgaiLong49423/vegetarian-support-system/pull/92))
 
-**Status:** Committed — `b34ec67`.
+**Status:** Committed — 98f5dd9, fc13b75, ab661ef, 7e20917, 06aa22f, b8dcd6a, dc0f6f8, 434add6.
 
-**Scope:** Complete catalog-backed quantity validation in recipe creation and expose missing-nutrition status without blocking publication.
+**Scope:** Implement UC-31.1–UC-31.3 and AC-31.1–AC-31.10: a one-time Onboarding questionnaire for new Members, Skip without locking regular features, viewing and updating the private dietary-preference profile, and the BR-31 gate that must run before any personalized AI request.
 
 ### Added
 
-- Return nutrition completeness and unsupported ingredient names from published recipe details.
-- Show an incomplete-nutrition warning for recipes containing catalog ingredients without supported nutrition data.
+- Add `GET`/`PUT /api/v1/nutrition/dietary-preferences`, `POST /api/v1/nutrition/dietary-preferences/onboarding/skip`, `POST /api/v1/nutrition/dietary-preferences/onboarding/invitation` and `GET /api/v1/nutrition/dietary-preferences/ingredient-suggestions` for the signed-in Member; administrators receive `403 MEMBER_ACCESS_REQUIRED`.
+- Add a nutrition-owned entity for the dietary-preference and Onboarding columns of `USER` (decision Q18, `@DynamicUpdate`) and an entity for `USER_INGREDIENT_PREFERENCE`; names matching an active standard ingredient are linked to it.
+- Add `DietaryPreferenceService.requirePersonalizedAiEligible`, which stops a request with `409 DIETARY_PROFILE_INCOMPLETE` and a `missing` list before any Gemini call or Meal Plan write.
+- Add the Flyway migration `V7__user_onboarding_invitation.sql` with the column `USER.onboarding_invited_at`: the invitation endpoint returns `show = true` only once, for a `NOT_STARTED` account that has not been shown it, under a `USER` row lock. Accounts that existed before V7 are recorded as already invited and keep their `onboarding_status` (AC-31.10).
+- Add the `MEMBER_ACCESS_REQUIRED`, `INGREDIENT_PREFERENCE_CONFLICT` and `DIETARY_PROFILE_INCOMPLETE` error codes, and let application errors carry extra problem properties.
+- Add the `bearerAuth` HTTP bearer security scheme (`OpenApiConfig`) to the generated OpenAPI and require it on the dietary-preference operations.
+- Add the Frontend Onboarding page `/khoi-tao-so-thich`, the Settings page `/ho-so/so-thich-an-uong` with the missing-information notice, and the redirect to Onboarding when the invitation endpoint returns `show = true` after sign-in.
+- Add SQL Server integration tests for AC-31.1–AC-31.10 (including the invitation shown once, parallel claims and the V6→V7 upgrade), validation, access, privacy and the generated OpenAPI, a problem-detail unit test, `TC41` in `database/queries.sql`, and API-stubbed Playwright scenarios for the Onboarding and Settings flows.
 
 ### Changed
 
-- Restrict recipe forms and publication to active measurement units.
-- Raise Frontend E2E coverage hard gates to 80% for lines, statements, functions, and branches.
+- Point the "Sở thích ăn uống" menu item to the new Settings page, stub the invitation call in the existing login browser tests, record the invitation as already shown for the real-stack login test account, and document the endpoints, rules and error codes in `docs/api/API.md`, `database/schema.sql`, `database/README.md` and both app READMEs.
 
 ### Fixed
 
-- Reject publication requests that reference inactive units.
+- Stop inviting a Member again after the questionnaire was left without Skip or Complete, and stop marking existing accounts as `SKIPPED` (PR #92 review F001).
+- Publish `minimum: 1` for `maxCookingTimeMinutes`, matching the validator that rejects `0` (PR #92 review F002).
+- Declare bearer security for the dietary-preference operations in the generated OpenAPI (PR #92 review F003).
 
 ## 2026-10-05 — Record Password Login Follow-Up Database Checks (FR-03-B, Issue #6)
 

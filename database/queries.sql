@@ -15,8 +15,9 @@
 --      Preserves TC01..TC15 and adds TC16..TC37 for all newly implemented
 --      constraints from Data Dictionary v0.7.5, plus TC38 for the NVARCHAR
 --      UNIT.code fix in migration V2__unit_code_unicode.sql and TC39 for the
---      USER email-verification token columns in V3__user_email_verification_token.sql
---      and TC40 for the login-throttle columns in V6__user_login_throttle.sql.
+--      USER email-verification token columns in V3__user_email_verification_token.sql,
+--      TC40 for the login-throttle columns in V6__user_login_throttle.sql
+--      and TC41 for the Onboarding invitation column in V7__user_onboarding_invitation.sql.
 --      Every negative test verifies the EXACT constraint name in ERROR_MESSAGE().
 --   3. Operational Queries: Practical queries demonstrating core queries
 --      for recipes, nested comments, weekly meal plans, and subscriptions.
@@ -1190,6 +1191,25 @@ BEGIN TRY
         PRINT '  [PASS] TC40c: Accepted a 10-minute login block while account_status stays ACTIVE.';
     ELSE
         PRINT '  [FAIL] TC40c: Login block was not stored as expected!';
+
+    -- ------------------------------------------------------------------------
+    -- TC41: USER Onboarding invitation (V7, onboarding_invited_at) — Issue #36
+    -- ------------------------------------------------------------------------
+    -- Positive: rows inserted without the column have not been invited yet
+    IF (SELECT onboarding_invited_at FROM [USER] WHERE user_id = @AliceId) IS NULL
+        PRINT '  [PASS] TC41a: New accounts start with onboarding_invited_at = NULL (invitation not shown yet).';
+    ELSE
+        PRINT '  [FAIL] TC41a: onboarding_invited_at should be NULL for a new account!';
+
+    -- Positive: showing the invitation is recorded without answering it (AC-31.10)
+    UPDATE [USER]
+    SET onboarding_invited_at = SYSUTCDATETIME()
+    WHERE user_id = @AliceId AND onboarding_status = 'NOT_STARTED' AND onboarding_invited_at IS NULL;
+    IF EXISTS (SELECT 1 FROM [USER] WHERE user_id = @AliceId AND onboarding_invited_at IS NOT NULL
+               AND onboarding_status = 'NOT_STARTED')
+        PRINT '  [PASS] TC41b: Recorded the invitation while onboarding_status stays NOT_STARTED.';
+    ELSE
+        PRINT '  [FAIL] TC41b: Onboarding invitation was not stored as expected!';
 
 END TRY
 BEGIN CATCH

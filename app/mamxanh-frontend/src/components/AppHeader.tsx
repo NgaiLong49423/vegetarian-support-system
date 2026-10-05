@@ -42,7 +42,7 @@ const drawerNavItems = [
       { to: '/dinh-duong', label: 'Theo dõi dinh dưỡng', icon: Activity },
     ]},
   { section: 'Cá nhân', items: [
-      { to: '/ho-so', label: 'Sở thích ăn uống', icon: Sliders },
+      { to: '/ho-so/so-thich-an-uong', label: 'Sở thích ăn uống', icon: Sliders },
       { to: '/dang-ky-chuyen-gia', label: 'Đăng ký Chuyên gia', icon: Award },
     ]},
 ];
