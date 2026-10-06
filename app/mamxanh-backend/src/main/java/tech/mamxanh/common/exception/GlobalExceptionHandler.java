@@ -44,6 +44,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AppException.class)
     ResponseEntity<Object> handleAppException(AppException ex, WebRequest request) {
         ProblemDetail problem = problem(ex.errorCode(), ex.getMessage(), request);
+        ex.properties().forEach(problem::setProperty);
         HttpHeaders headers = new HttpHeaders();
         if (ex.retryAfter() != null) {
             long seconds = Math.max(1, (ex.retryAfter().toMillis() + 999) / 1000);

@@ -79,6 +79,7 @@ public class RecipeService {
                 .findAllByIdInAndStatus(ingredientIds, "ACTIVE").stream()
                 .collect(Collectors.toMap(RecipeIngredientReferenceEntity::getId, Function.identity()));
         Map<Integer, RecipeUnitReferenceEntity> units = unitReferenceRepository.findAllById(unitIds).stream()
+                .filter(RecipeUnitReferenceEntity::isActive)
                 .collect(Collectors.toMap(RecipeUnitReferenceEntity::getId, Function.identity()));
 
         for (int index = 0; index < request.ingredients().size(); index++) {
@@ -90,7 +91,7 @@ public class RecipeService {
                 errors.add(new FieldError(field + ".ingredientId", "Chọn nguyên liệu đang có trong danh mục."));
             }
             if (unit == null) {
-                errors.add(new FieldError(field + ".unitId", "Chọn đơn vị đang có trong danh mục."));
+                errors.add(new FieldError(field + ".unitId", "Chọn đơn vị đang hoạt động trong danh mục."));
             } else {
                 if (ingredient != null && !"MASS".equals(unit.getDimension())
                         && !conversionRepository.existsByIngredientIdAndUnitIdAndActiveTrue(ingredient.getId(), unit.getId())) {
@@ -116,6 +117,7 @@ public class RecipeService {
         recipe.setYoutubeUrl(trimToNull(request.youtubeUrl()));
         recipe.setStatus("PUBLISHED");
         recipe.setPublishedAt(publishedAt);
+        recipe.setUpdatedAt(publishedAt);
         RecipePostEntity saved = recipeRepository.save(recipe);
 
         List<RecipeIngredientEntity> recipeIngredients = request.ingredients().stream().map(input -> {
@@ -153,10 +155,17 @@ public class RecipeService {
             return new RecipeDetailResponse.Ingredient(line.getIngredientId(), ingredient.getName(), line.getQuantity(),
                     line.getUnitId(), unit.getCode(), unit.getName());
         }).toList();
+        List<String> ingredientsWithoutNutrition = recipeIngredients.stream()
+                .map(line -> ingredientReferences.get(line.getIngredientId()))
+                .filter(ingredient -> !ingredient.isNutritionSupported())
+                .map(RecipeIngredientReferenceEntity::getName)
+                .distinct()
+                .toList();
         return new RecipeDetailResponse(recipe.getId(), recipe.getTitle(), recipe.getDescription(),
                 recipe.getInstructions(), category.name(), category.label(), vegetarianType.name(), vegetarianType.label(),
                 difficulty.name(), difficulty.label(), recipe.getServings(), recipe.getPrepTimeMinutes(),
-                recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getPublishedAt(), ingredients, List.of());
+                recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getPublishedAt(), ingredients,
+                ingredientsWithoutNutrition.isEmpty(), ingredientsWithoutNutrition, List.of());
     }
 
     @Transactional(readOnly = true)
@@ -168,6 +177,7 @@ public class RecipeService {
         List<Choice> difficulties = java.util.Arrays.stream(Difficulty.values())
                 .map(value -> new Choice(value.name(), value.label())).toList();
         List<UnitOption> units = unitReferenceRepository.findAllByOrderByNameAsc().stream()
+                .filter(RecipeUnitReferenceEntity::isActive)
                 .map(unit -> new UnitOption(unit.getId(), unit.getCode(), unit.getName(), unit.getDimension())).toList();
         return new RecipeFormOptionsResponse(categories, vegetarianTypes, difficulties, units);
     }

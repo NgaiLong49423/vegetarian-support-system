@@ -109,6 +109,13 @@ async function submitLogin(page: Page, email = 'an@example.com', password = 'Mat
 
 const storedSession = (page: Page) => page.evaluate(() => sessionStorage.getItem('mamxanh.auth'));
 
+// After a successful login the app asks whether to show the FR-31 Onboarding invitation; without it the login lands on the home page.
+async function stubAnsweredOnboarding(page: Page) {
+  await stubApi(page, '/nutrition/dietary-preferences/onboarding/invitation', async route => route.fulfill({
+    status: 200, contentType: 'application/json', headers: corsHeaders, body: JSON.stringify({ show: false }),
+  }));
+}
+
 test('login keeps the session in this tab and logout clears it without calling the server (mock API)', async ({ page }) => {
   let submitted: Record<string, string> | null = null;
   let loginAuthorization: string | null = null;
@@ -121,6 +128,7 @@ test('login keeps the session in this tab and logout clears it without calling t
     loginAuthorization = await route.request().headerValue('authorization');
     await route.fulfill(authResponse());
   });
+  await stubAnsweredOnboarding(page);
 
   await page.goto('/dang-nhap');
   await submitLogin(page, '  An@Example.com ');
@@ -141,7 +149,7 @@ test('login keeps the session in this tab and logout clears it without calling t
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
   await expect(page).toHaveURL(/\/dang-nhap$/);
   expect(await storedSession(page)).toBeNull();
-  expect(serverCalls).toEqual(['POST /api/v1/auth/login']);
+  expect(serverCalls).toEqual(['POST /api/v1/auth/login', 'POST /api/v1/nutrition/dietary-preferences/onboarding/invitation']);
 });
 
 test('login errors follow the problem code and never keep the password (mock API)', async ({ page }) => {
@@ -182,6 +190,7 @@ test('an expired stored session is dropped and a live session ends when its toke
   expect(await storedSession(page)).toBeNull();
 
   await stubApi(page, '/auth/login', async route => route.fulfill(authResponse(2)));
+  await stubAnsweredOnboarding(page);
   await page.goto('/dang-nhap');
   await submitLogin(page);
   await expect(page.getByRole('button', { name: 'Tài khoản Nguyễn An' })).toBeVisible();

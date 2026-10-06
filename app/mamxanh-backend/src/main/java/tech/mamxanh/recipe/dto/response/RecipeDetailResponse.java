@@ -21,6 +21,8 @@ public record RecipeDetailResponse(
         String youtubeUrl,
         LocalDateTime publishedAt,
         List<Ingredient> ingredients,
+        boolean nutritionComplete,
+        List<String> ingredientsWithoutNutrition,
         List<Media> media) {
 
     public record Ingredient(Long ingredientId, String name, BigDecimal quantity, Integer unitId,

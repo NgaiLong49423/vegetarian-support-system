@@ -56,6 +56,8 @@ type PublishedDetail = {
   cookTimeMinutes: number;
   youtubeUrl: string | null;
   publishedAt: string;
+  nutritionComplete: boolean;
+  ingredientsWithoutNutrition: string[];
   ingredients: Array<{ ingredientId: number; name: string; quantity: number; unitId: number; unitCode: string; unitName: string }>;
   media: Array<{ blobUrl: string; mimeType: string; displayOrder: number; cover: boolean }>;
 };
@@ -76,6 +78,8 @@ const detailFixture = (overrides: Partial<PublishedDetail> = {}): PublishedDetai
   cookTimeMinutes: 15,
   youtubeUrl: 'https://www.youtube.com/watch?v=recipe-1',
   publishedAt: '2026-10-04T08:00:00',
+  nutritionComplete: true,
+  ingredientsWithoutNutrition: [],
   ingredients: [{ ingredientId: 12, name: 'Cà chua', quantity: 2, unitId: 1, unitCode: 'quả', unitName: 'quả' }],
   media: [],
   ...overrides,
@@ -122,6 +126,8 @@ async function installApi(
         cookTimeMinutes: body.cookTimeMinutes,
         youtubeUrl: body.youtubeUrl || null,
         publishedAt: response.body.publishedAt,
+        nutritionComplete: true,
+        ingredientsWithoutNutrition: [],
         ingredients: body.ingredients.map((item: Record<string, number>) => ({
           ingredientId: item.ingredientId,
           name: ingredients.find((option) => option.ingredientId === item.ingredientId)?.name ?? 'Nguyên liệu',
@@ -157,6 +163,20 @@ test('Issue 22: trang chi tiết tải trực tiếp nội dung công thức, co
   await expect(page.getByRole('link', { name: 'Xem video hướng dẫn' })).toHaveAttribute('href', detail.youtubeUrl!);
   await expect(page.getByText(detail.instructions)).toBeVisible();
   await expect(page.getByText('2 quả', { exact: true })).toBeVisible();
+});
+
+test('Issue 25: recipe detail flags catalog ingredients without nutrition data', async ({ page }) => {
+  const detail = detailFixture({
+    nutritionComplete: false,
+    ingredientsWithoutNutrition: ['Cà chua'],
+  });
+  await installApi(page, () => ({ status: 201, body: {} }), [detail]);
+
+  await page.goto(`/cong-thuc/${detail.recipeId}`, { waitUntil: 'commit' });
+
+  await expect(page.getByRole('heading', { name: 'Chưa đủ dữ liệu dinh dưỡng' })).toBeVisible();
+  await expect(page.getByRole('status')).toContainText('Ước tính dinh dưỡng chưa đầy đủ');
+  await expect(page.locator('[aria-labelledby="nutrition-status-heading"] li')).toHaveText('Cà chua');
 });
 
 test('Issue 22: trang chi tiết không ảnh và trường tùy chọn trống dùng placeholder theo loại ăn chay', async ({ page }) => {

@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.20.0
+> **Version:** v3.21.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-10-03
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 
 # Agent Entry Point
@@ -191,7 +191,7 @@ This policy does not authorize an unrelated runtime-configuration refactor, appl
 - Inspect the actual tool/test result before reporting success; explain unavailable verification without claiming it passed.
 - When writing changelog entries, use the evidence procedure in the selected changelog skill. Do not infer PR numbers, commit status or dates from file names.
 - For integration, treat `develop` as the current integration baseline; an unmerged Draft/Open PR is not baseline unless an explicit dependency is confirmed. Before integration, follow [Develop integration baseline and PR synchronization](CONTRIBUTING.md#develop-integration-baseline), inspect both Git and semantic conflicts, and re-validate affected behavior after synchronization.
-- Before a PR into `develop`, follow [Required checks and technical enforcement](CONTRIBUTING.md#develop-required-checks). Preserve the approved Frontend 60/60/60/60 and Backend overall line 80% hard gates; never lower thresholds, exclude production source, or add meaningless tests to pass. Report failed/unverified CI or Sonar checks, and do not claim GitHub merge blocking is active without verifying its Ruleset. Kody/Gemini review remains advisory.
+- Before a PR into `develop`, follow [Required checks and technical enforcement](CONTRIBUTING.md#develop-required-checks). Preserve the approved Frontend Lines/Statements/Functions/Branches and Backend JaCoCo BUNDLE Lines/Branches/Methods/Instructions hard gates at strictly >80%; never lower thresholds, exclude production source, or add meaningless tests to pass. Report failed/unverified CI or Sonar checks, and do not claim GitHub merge blocking is active without verifying its Ruleset. Kody/Gemini review remains advisory.
 - For shared local integration testing, agents MUST use the root `docker-compose.yml` as the canonical stack for Frontend + Backend + SQL Server. Keep application Dockerfiles component-local; do not add duplicate standalone FE/BE CI gates when the Compose gate already builds and smoke-tests both. When using `docker compose -p <project>`, use that same project name for every stack lifecycle command, including `up`, `run`, `down` and named-volume reset. Normal `down` preserves SQL data; SQL-only reset removes only `<project>_sqlserver-data`, while `down --volumes` resets all named volumes. Follow [Docker development and integration testing](CONTRIBUTING.md#docker-development) and report when Docker execution is unavailable instead of claiming it passed.
 - For API-related implementation or review, agents MUST inspect generated OpenAPI before inferring an API contract: prefer the running `/v3/api-docs`, otherwise use the artifact/spec generated for the same branch commit. During migration, use `docs/api/openapi.yaml` only as planned contract for endpoints absent from runtime; planned does not mean implemented. If implementation and generated contract conflict, report the exact path/method/schema/status/security discrepancy and do not silently choose an authority. Scalar at Backend `/scalar` is the official human API reference and manual test UI; HTTP route smoke is not browser-rendering or API-execution evidence.
 - Finish with changes, verification and unresolved questions in the conversation. For the stateful PR review workflow only, its two declared local artifacts are the sole report-file exception; do not create another report.
