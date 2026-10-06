@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,15 @@ class RecipeReportIntegrationTest extends AbstractIntegrationTest {
         memberId = insertUser("issue31-member@test.local", "CUSTOMER", "ACTIVE");
         authorId = insertUser("issue31-author@test.local", "EXPERT", "ACTIVE");
         recipeId = insertRecipe(authorId, "Công thức công khai", "PUBLISHED");
+    }
+
+    @AfterEach
+    void cleanupFixtures() {
+        if (recipeId > 0) {
+            jdbcTemplate.update("DELETE FROM [REPORT] WHERE recipe_id = ?", recipeId);
+            jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE recipe_id = ?", recipeId);
+        }
+        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue31-%@test.local'");
     }
 
     @Test
