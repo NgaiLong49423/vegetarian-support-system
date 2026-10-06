@@ -206,6 +206,7 @@ function MockRecipeDetail() {
 
   return (
       <PageContainer className="py-8">
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-900">Nội dung công thức minh họa UI · chưa lấy từ Backend. Công thức thật được mở qua đường dẫn ID.</p>
         {/* breadcrumb */}
         <nav className="mb-5 flex items-center gap-1.5 text-sm text-ink-muted">
           <Link to="/" className="hover:text-brand-600">Trang chủ</Link>

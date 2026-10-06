@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.18.0
+> **Version:** v0.21.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-06<br>
 > **Status:** Active  
@@ -95,6 +95,8 @@ SPRING_DATASOURCE_PASSWORD=YOUR_LOCAL_DB_PASSWORD
 
 `.env` chỉ dùng trên máy cá nhân và không được commit. File `src/main/resources/application-local.properties` được theo dõi với placeholder an toàn và nạp `.env` bằng `spring.config.import=optional:file:.env[.properties]`; không ghi credential thật vào file này.
 
+Trước khi chạy profile `local`, đặt `MAMXANH_DEMO_PASSWORD` trong `.env` theo mục [Tài khoản demo local](#tài-khoản-demo-local). Các giá trị trong `.env.example` chỉ là placeholder, không phải credential dùng được.
+
 Các biến môi trường cho FR-03 (giá trị dùng chung lấy từ kho mật khẩu của nhóm, không dán vào Issue/PR):
 
 | Biến | Mặc định | Ý nghĩa |
@@ -104,6 +106,13 @@ Các biến môi trường cho FR-03 (giá trị dùng chung lấy từ kho mậ
 | `MAMXANH_MAIL_FROM` | trống | Địa chỉ người gửi đã xác minh trên Brevo; trống thì cũng bỏ qua việc gửi email. |
 | `MAMXANH_FRONTEND_BASE_URL` | `http://localhost:5173` | Origin dùng để tạo liên kết trong email (`/xac-minh-email?token=...`). |
 | `MAMXANH_CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Danh sách origin được gọi API, phân tách bằng dấu phẩy, không dùng wildcard. |
+| `MAMXANH_DEMO_PASSWORD` | **bắt buộc khi dùng profile `local`** | Mật khẩu local chung cho tài khoản demo; 12–72 byte UTF-8. Backend tạo BCrypt hash khi khởi động; không đưa mật khẩu vào Git hoặc tài liệu. |
+
+### Tài khoản demo local
+
+Khi Flyway nạp seed trong profile `local`, Backend tạo năm tài khoản đã xác minh email: `demo-customer@mamxanh.local` (Member có hồ sơ, sở thích, lịch ăn và đơn Expert đang chờ), `demo-new-member@mamxanh.local` (Member mới để thử onboarding), `demo-applicant@mamxanh.local` (Member chưa nộp đơn), `demo-expert@mamxanh.local` (quản lý công thức) và `demo-admin@mamxanh.local` (quản trị/xét duyệt). Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả năm tài khoản.
+
+Seed repeatable chỉ dùng với profile `local`. Trong IntelliJ/Maven, profile `local,local-reset` mặc định xóa và dựng lại `MamXanhDB` trước khi chạy migration; Docker Compose giữ volume/database khi `down`/`up`, và chạy lại seed an toàn. Reset SQL volume Compose sẽ dựng lại toàn bộ schema và fixture. Không dùng tài khoản hoặc mật khẩu demo ngoài máy local.
 
 ### 3. Compile và chạy
 
@@ -132,6 +141,14 @@ Sau lần tải dependency đầu tiên, các lần mở dự án tiếp theo ch
 
 IntelliJ vẫn sử dụng cùng cấu hình Spring profile `local`; nút Run không thay thế yêu cầu SQL Server phải sẵn sàng.
 
+### Tùy chọn reset schema mỗi lần chạy local
+
+Mặc định khi chạy local, Backend bật profile phá hủy dữ liệu `local-reset` cùng với `local`. Mỗi lần khởi động, Backend xác minh JDBC URL trỏ tới SQL Server loopback, kết nối đúng database `MamXanhDB`, và tài khoản có quyền tạo/xóa database; sau đó app kết nối `master`, drop rồi tạo lại database `MamXanhDB`, và chạy toàn bộ migration hiện hành. Database này bị xóa hoàn toàn mỗi lần chạy; không dùng profile này với database dùng chung, staging hoặc production. Docker Compose truyền profile `local` tường minh nên không reset database container.
+
+- **IntelliJ IDEA:** Để trống **Active profiles** để dùng mặc định `local,local-reset`. Nếu cấu hình đã đặt profile tường minh, đặt thành `local,local-reset` để reset mỗi lần chạy. Muốn giữ database, đặt thành `local`. Không lưu credential trong Run Configuration.
+- **Maven (PowerShell):** `.\mvnw.cmd spring-boot:run` dùng mặc định reset. Đặt `$env:SPRING_PROFILES_ACTIVE='local'` trước lệnh để giữ database.
+- Việc reset drop database vật lý, nên mọi bảng và dữ liệu trong `MamXanhDB` bị xóa. Database được tạo lại với collation `SQL_Latin1_General_CP1_CI_AS` và compatibility level `150`. Nếu preflight không xác nhận đúng local server, database hoặc quyền SQL Server, ứng dụng dừng trước khi drop.
+
 ## Cách 2 — Chạy toàn hệ thống bằng Docker Compose
 
 Để chạy Frontend, Backend và SQL Server theo một cấu hình dùng chung, ưu tiên Docker Compose ở repository root. Hướng dẫn dưới đây vẫn hữu ích khi chỉ cần chạy riêng Backend.
@@ -151,11 +168,11 @@ $composeProject = 'mamxanh-dev'
 docker compose -p $composeProject --env-file app/mamxanh-backend/.env up --build --detach --wait --wait-timeout 600
 ```
 
-Lần khởi động đầu, SQL Server tạo `MamXanhDB`, Backend chạy Flyway, sau đó service `sample-data` nạp fixture mẫu từ `database/sample-data.sql` trước khi Frontend sẵn sàng. Script seed có thể chạy lại an toàn; `down` rồi `up` giữ SQL volume và dữ liệu hiện có.
+Khi chạy với profile `local`, Flyway áp dụng migration schema và repeatable demo seed `db/demo/R__demo_sample_data.sql` trước khi Backend báo healthy. Cơ chế này áp dụng cho IntelliJ và Docker Compose; Compose chỉ khởi động Frontend sau khi Backend khỏe. Seed có thể chạy lại an toàn; `down` rồi `up` giữ SQL volume và dữ liệu hiện có.
 
 Mở Frontend tại <http://localhost:5173>; Scalar API Reference chính thức tại <http://localhost:8080/scalar>; generated OpenAPI JSON tại <http://localhost:8080/v3/api-docs>. Các port chỉ bind vào loopback của máy local. Scalar tải JS asset đã pin từ jsDelivr nên browser cần truy cập CDN; spec được tải cùng origin Backend. Dừng bằng `docker compose -p $composeProject --env-file app/mamxanh-backend/.env down`; lệnh này giữ database và dependency volume. Sửa `MSSQL_SA_PASSWORD` trong `.env` không tự đổi credential đã khởi tạo trong SQL volume.
 
-Để reset riêng database development, chạy script có xác nhận riêng. Script chỉ xóa SQL volume, sau đó Compose khởi động lại SQL Server, áp dụng Flyway và nạp lại fixture; Frontend dependency volume vẫn được giữ:
+Để reset riêng database development, chạy script có xác nhận riêng. Script chỉ xóa SQL volume, sau đó Compose khởi động lại SQL Server và Flyway dựng lại schema cùng fixture; Frontend dependency volume vẫn được giữ:
 
 ```powershell
 ./scripts/reset-docker-db.ps1

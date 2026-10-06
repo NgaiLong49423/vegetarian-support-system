@@ -1,6 +1,6 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.11.0<br>
+> **Version:** v0.15.0<br>
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-06<br>
 > **Status:** Active  
@@ -13,8 +13,34 @@ Database chính đã chốt là Microsoft SQL Server 2019. Sau khi đồng bộ,
 
 - Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Baseline hiện gồm V1–V8, bao gồm V7 cho lời mời Onboarding và V8 cho notification target/index của Expert Application. `database/schema.sql` phải phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
-- `database/sample-data.sql` chứa fixture giả cho môi trường Docker Compose, được nạp sau khi Flyway hoàn tất. Tác giả mẫu không có mật khẩu đăng nhập; fixture không chứa credential hoặc dữ liệu cá nhân thật.
+- Flyway repeatable migration `app/mamxanh-backend/src/main/resources/db/demo/R__demo_sample_data.sql` nạp fixture demo khi profile `local` chạy (IntelliJ hoặc Docker Compose). Năm tài khoản đã xác minh phục vụ demo Auth, onboarding, hồ sơ/sở thích, công thức, lịch ăn và duyệt Chuyên gia/Admin. `MAMXANH_DEMO_PASSWORD` được lấy từ `.env` local và BCrypt hóa lúc Backend khởi động; không lưu password/hash trong SQL migration hoặc Git.
+- Profile `local` dùng thêm location `classpath:db/demo`; các profile `test` và production chỉ chạy location migration schema `classpath:db/migration`. Seed dùng khóa xác định/kiểm tra tồn tại trước khi thêm nên Flyway chạy lại không nhân bản fixture.
 - `database/queries.sql` chứa kịch bản kiểm tra đối tượng, bộ test tự động xác minh các ràng buộc nghiệp vụ (positive/negative) có cơ chế rollback, và các truy vấn mẫu cho tầng ứng dụng; không thay thế automated integration tests.
+
+## Khôi phục database local khi Flyway history không tương thích
+
+- Với database phát triển local `MamXanhDB`, Flyway history phải khớp với các migration hiện hành trong branch đang chạy. Nếu cùng version nhưng khác ý nghĩa (ví dụ database ghi V3 là `ingredient group and unit validation` trong khi code hiện tại dùng V3 cho email verification), đây là hai baseline khác nhau; **không chạy `flyway repair`** để ép checksum khớp và không sửa migration đã chia sẻ.
+- Khi chạy Backend local, profile mặc định `local,local-reset` drop và tạo lại database mỗi lần khởi động theo [Backend Workspace Guide](../app/mamxanh-backend/README.md#tùy-chọn-reset-schema-mỗi-lần-chạy-local). Profile chỉ chạy trên SQL Server loopback, database `MamXanhDB`, và yêu cầu tài khoản có quyền tạo/xóa database; sau khi tạo database mới, Flyway áp dụng toàn bộ migration hiện hành. Toàn bộ database và dữ liệu cũ bị xóa mỗi lần chạy. Compose đặt profile `local` rõ ràng nên giữ database container.
+- Nếu cần reset toàn database do database vật lý hoặc cấu hình bị hỏng, chỉ làm khi chủ sở hữu database xác nhận dữ liệu local có thể xóa: dừng Backend, xác minh `.env` trỏ tới đúng SQL Server local và đúng `MamXanhDB`, rồi xóa/tạo lại **chính database `MamXanhDB`**. Không tự tạo database tên khác để né migration drift. Database khác hoặc remote/shared database không thuộc quy trình reset local này.
+- Nếu dữ liệu cần giữ, không drop database và không sửa `flyway_schema_history` thủ công; dừng lại để sao lưu và chọn phương án phục hồi/migration phù hợp với baseline đã xác nhận.
+- Sau khi tạo lại, giữ database name `MamXanhDB`, collation `SQL_Latin1_General_CP1_CI_AS` và compatibility level `150` (SQL Server 2019), sau đó khởi động Backend để Flyway áp dụng các migration hiện hành. Xác minh toàn bộ migration thành công trước khi báo Backend sẵn sàng.
+
+Ví dụ reset chỉ dành cho database local đã được xác nhận là có thể xóa (chạy trên đúng SQL Server instance):
+
+```sql
+USE [master];
+GO
+IF DB_ID(N'MamXanhDB') IS NOT NULL
+BEGIN
+    ALTER DATABASE [MamXanhDB] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE [MamXanhDB];
+END;
+GO
+CREATE DATABASE [MamXanhDB] COLLATE SQL_Latin1_General_CP1_CI_AS;
+GO
+ALTER DATABASE [MamXanhDB] SET COMPATIBILITY_LEVEL = 150;
+GO
+```
 
 ## Quy trình thay đổi schema & Engineering Autonomy Policy
 

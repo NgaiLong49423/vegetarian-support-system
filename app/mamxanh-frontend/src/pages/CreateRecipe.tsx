@@ -3,7 +3,6 @@ import { AlertCircle, ImagePlus, Info, LoaderCircle, Plus, Trash2, UploadCloud }
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
 import { ApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
-import { useDemoAccount } from '../components/DemoAccount';
 import { useAuth } from '../components/AuthContext';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { validateYouTubeUrl } from '../utils/youtube';
@@ -32,11 +31,8 @@ const emptyIngredient = (): IngredientRow => ({
 });
 
 export function CreateRecipe() {
-  const { memberView } = useAuth();
-  const { role: demoRole } = useDemoAccount();
-  const { account } = useAuth();
-  const active = memberView;
-  const role = account?.role ?? demoRole;
+  const { isAuthenticated: active, account } = useAuth();
+  const role = account?.role ?? 'CUSTOMER';
 
   if (!active || role !== 'EXPERT') {
     return <RecipeCreationAccessGate active={active} role={role} />;

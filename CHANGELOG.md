@@ -9,6 +9,28 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-06 — Use Backend Data in Local Demo Flows
+
+**Status:** Uncommitted.
+
+**Scope:** Prepare a local demo that uses the real Backend and SQL Server for Frontend-connected flows while identifying UI-only prototypes.
+
+### Added
+
+- Add repeatable local fixtures for verified customer, new-member, applicant, expert and admin accounts; broader ingredient/recipe data; customer profile/preferences; an expert review application; and a complete weekly meal plan.
+- Generate BCrypt demo-account passwords at local Backend startup from an ignored `.env` value; keep credentials and password hashes out of Git.
+
+### Changed
+
+- Replace Frontend role-switching/demo authentication and mock recipe listings with real session/API-backed views for connected flows.
+- Keep screens without Backend endpoints as explicitly identified UI prototypes; document the local demo accounts, seed scope and reset behavior.
+- Configure the local profile to include demo migrations and make Docker Compose wait for the Flyway-backed Backend before starting Frontend.
+- Remove the separate SQLCMD sample-data service from Docker Compose.
+
+### Fixed
+
+None.
+
 ## 2026-10-05 — Enforce Strict Coverage Gates for Every FE/BE Metric
 
 **Status:** Committed — 517ae10.
