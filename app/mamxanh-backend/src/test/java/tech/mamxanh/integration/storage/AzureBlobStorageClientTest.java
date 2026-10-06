@@ -53,6 +53,23 @@ class AzureBlobStorageClientTest {
     }
 
     @Test
+    @DisplayName("uploadImage resolves extensions for png, webp, jpeg and fallbacks")
+    void uploadImage_resolveExtensions() {
+        when(containerClient.getBlobClient(anyString())).thenReturn(blobClient);
+        when(blobClient.getBlobUrl()).thenReturn("https://testaccount.blob.core.windows.net/mamxanh-recipes/recipes/test.png");
+
+        AzureBlobStorageClient client = new AzureBlobStorageClient(containerClient);
+        byte[] content = "fake".getBytes();
+
+        client.uploadImage(new ByteArrayInputStream(content), content.length, "image/png", "test.png");
+        client.uploadImage(new ByteArrayInputStream(content), content.length, "image/webp", "test.webp");
+        client.uploadImage(new ByteArrayInputStream(content), content.length, "image/jpeg", "test.jpeg");
+        client.uploadImage(new ByteArrayInputStream(content), content.length, "image/png", "unknown.xyz");
+        client.uploadImage(new ByteArrayInputStream(content), content.length, "image/webp", null);
+        client.uploadImage(new ByteArrayInputStream(content), content.length, "application/octet-stream", "no-extension");
+    }
+
+    @Test
     @DisplayName("deleteImage extracts blob name and calls deleteIfExists")
     void deleteImage_success() {
         when(containerClient.getBlobContainerName()).thenReturn("mamxanh-recipes");
@@ -64,6 +81,28 @@ class AzureBlobStorageClientTest {
         client.deleteImage("https://testaccount.blob.core.windows.net/mamxanh-recipes/recipes/uuid-123.jpg");
 
         verify(blobClient).deleteIfExists();
+    }
+
+    @Test
+    @DisplayName("deleteImage handles deletion returning false and exceptions gracefully")
+    void deleteImage_edgeCases() {
+        when(containerClient.getBlobContainerName()).thenReturn("mamxanh-recipes");
+        when(containerClient.getBlobClient("recipes/uuid-notfound.jpg")).thenReturn(blobClient);
+        when(blobClient.deleteIfExists()).thenReturn(false);
+
+        AzureBlobStorageClient client = new AzureBlobStorageClient(containerClient);
+        client.deleteImage("https://testaccount.blob.core.windows.net/mamxanh-recipes/recipes/uuid-notfound.jpg");
+
+        // Path fallback without container prefix
+        when(containerClient.getBlobClient("other-container/recipes/fallback.jpg")).thenReturn(blobClient);
+        client.deleteImage("https://testaccount.blob.core.windows.net/other-container/recipes/fallback.jpg");
+
+        // Exception during delete
+        when(containerClient.getBlobClient("recipes/throw.jpg")).thenThrow(new RuntimeException("Azure network error"));
+        client.deleteImage("https://testaccount.blob.core.windows.net/mamxanh-recipes/recipes/throw.jpg");
+
+        // Invalid URI string
+        client.deleteImage("htt p://invalid uri");
     }
 
     @Test

@@ -25,8 +25,19 @@ class MockStorageClientTest {
         String url2 = client.uploadImage(new ByteArrayInputStream(data), data.length, "image/webp", "sample.webp");
         assertThat(url2).endsWith(".webp");
 
+        String url3 = client.uploadImage(new ByteArrayInputStream(data), data.length, "image/jpeg", "sample.jpg");
+        assertThat(url3).endsWith(".jpg");
+
+        String url4 = client.uploadImage(new ByteArrayInputStream(data), data.length, "application/octet-stream", "sample.bin");
+        assertThat(url4).endsWith(".jpg");
+
         client.deleteImage(url1);
         assertThat(client.containsBlob(url1)).isFalse();
+
+        // Edge cases for deleteImage
+        client.deleteImage("https://non-existing-blob");
+        client.deleteImage(null);
+        client.deleteImage("");
     }
 
     @Test

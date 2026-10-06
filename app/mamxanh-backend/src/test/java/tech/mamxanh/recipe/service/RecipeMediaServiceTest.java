@@ -204,4 +204,20 @@ class RecipeMediaServiceTest {
         verify(storageClient).deleteImage("https://blob/2.png");
         verify(recipeMediaRepository).deleteByRecipeId(recipeId);
     }
+
+    @Test
+    @DisplayName("RecipeMediaEntity and UpdateRecipeMediaRequest helper and branch coverage")
+    void entityAndRequestCoverage() {
+        RecipeMediaEntity entity = new RecipeMediaEntity(100L, "https://blob/1.jpg", "image/jpeg", 1, null);
+        assertThat(entity.getIsCover()).isFalse();
+        entity.setIsCover(null);
+        assertThat(entity.getIsCover()).isFalse();
+        entity.setIsCover(true);
+        assertThat(entity.getIsCover()).isTrue();
+        entity.setId(1L);
+        assertThat(entity.getId()).isEqualTo(1L);
+
+        UpdateRecipeMediaRequest req = new UpdateRecipeMediaRequest(null);
+        assertThat(req.mediaItems()).isEmpty();
+    }
 }
