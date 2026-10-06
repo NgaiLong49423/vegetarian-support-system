@@ -93,12 +93,12 @@ function PublishedRecipeDetail({ recipeId }: { recipeId: number }) {
           {recipe.description && <p className="mt-3 text-base leading-7 text-ink-soft">{recipe.description}</p>}
           <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-muted"><span>{recipe.servings} khẩu phần</span><span>Chuẩn bị {recipe.prepTimeMinutes} phút</span><span>Nấu {recipe.cookTimeMinutes} phút</span></div>
           <section className="mt-8"><h2 className="text-xl font-extrabold text-ink">Nguyên liệu</h2><ul className="mt-3 space-y-2">{recipe.ingredients.map((item, index) => <li key={`${item.ingredientId}-${item.unitId}-${index}`} className="flex justify-between gap-4 border-b border-brand-50 py-2 text-sm"><span>{item.name}</span><span className="shrink-0 font-semibold text-ink">{item.quantity} {item.unitCode}</span></li>)}</ul></section>
-          {!recipe.nutritionComplete && (
+          {!recipe.nutritionComplete && (recipe.ingredientsWithoutNutrition ?? []).length > 0 && (
             <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4" aria-labelledby="nutrition-status-heading">
               <h2 id="nutrition-status-heading" className="font-bold text-amber-900">Chưa đủ dữ liệu dinh dưỡng</h2>
               <p role="status" className="mt-1 text-sm text-amber-800">Ước tính dinh dưỡng chưa đầy đủ. Chưa hỗ trợ tính dinh dưỡng cho:</p>
               <ul className="mt-2 list-inside list-disc text-sm text-amber-900">
-                {recipe.ingredientsWithoutNutrition.map((name) => <li key={name}>{name}</li>)}
+                {(recipe.ingredientsWithoutNutrition ?? []).map((name) => <li key={name}>{name}</li>)}
               </ul>
             </section>
           )}
