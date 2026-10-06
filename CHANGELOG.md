@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-06 — Submit Recipe Post Reports
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `03648fe`.
 
 **Scope:** Implement member submission of reports for published recipe posts and align the report contract with the current requirements baseline.
 
