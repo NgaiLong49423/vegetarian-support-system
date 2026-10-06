@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.4.0
+> **Version:** v2.5.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-06
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -195,7 +195,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-25 — Yêu cầu lý do và mô tả trong biểu mẫu báo cáo
 
 - **Mã quy tắc:** BR-25
-- **Nội dung:** Mỗi báo cáo phải có một lý do hợp lệ trong sáu nhóm đã chốt. Nếu chọn “Khác”, mô tả không được rỗng hoặc chỉ chứa khoảng trắng; không tạo báo cáo khi chưa thỏa điều kiện.
+- **Nội dung:** Mỗi báo cáo phải có một lý do hợp lệ trong sáu nhóm tại SRS 3.11. Mô tả tùy chọn của năm nhóm đầu tối đa 500 ký tự; nếu chọn “Khác”, mô tả sau khi trim phải từ 10 đến 500 ký tự. Không tạo báo cáo nếu lý do hoặc mô tả không hợp lệ.
 
 ---
 

@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.53.0
+> **Version:** v2.54.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-06
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-06 — Submit Recipe Post Reports
+
+**Status:** Working tree — not committed.
+
+**Scope:** Implement member submission of reports for published recipe posts and align the report contract with the current requirements baseline.
+
+### Added
+
+- Add authenticated report submission with reason and description validation, private receipts, and duplicate detection for open or in-review reports.
+- Add Flyway V9 to preserve and migrate existing report values to the current status and reason taxonomy.
+- Add SQL Server integration coverage for report storage, authorization, validation, duplicates and recipe visibility.
+
+### Changed
+
+- Align the root SRS, FR-26/27, BR-25, database snapshot and API integration guide with the approved six report reasons and description limits for the Backend contract.
+
+### Fixed
+
+- Correct the report reason taxonomy mismatch between the root SRS and FR-27.
 
 ## 2026-10-06 — Use Backend Data in Local Demo Flows
 

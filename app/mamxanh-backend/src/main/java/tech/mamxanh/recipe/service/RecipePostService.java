@@ -59,6 +59,16 @@ public class RecipePostService {
         return response(recipe);
     }
 
+    /** Locks the recipe row so concurrent report submissions for the same post serialize. */
+    @Transactional
+    public void requirePublishedForReport(long recipeId) {
+        RecipePostEntity recipe = repository.lockById(recipeId)
+                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
+        if (!"PUBLISHED".equals(recipe.getStatus())) {
+            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
+        }
+    }
+
     @Transactional(readOnly = true)
     public RecipePageResponse listMine(int page, int size) {
         CurrentUser author = currentUserService.requireActiveExpert();
