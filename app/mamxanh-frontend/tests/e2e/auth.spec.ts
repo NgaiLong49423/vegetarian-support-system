@@ -149,7 +149,12 @@ test('login keeps the session in this tab and logout clears it without calling t
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
   await expect(page).toHaveURL(/\/dang-nhap$/);
   expect(await storedSession(page)).toBeNull();
-  expect(serverCalls).toEqual(['POST /api/v1/auth/login', 'POST /api/v1/nutrition/dietary-preferences/onboarding/invitation']);
+  expect(serverCalls).toEqual([
+    'POST /api/v1/auth/login',
+    'POST /api/v1/nutrition/dietary-preferences/onboarding/invitation',
+    'GET /api/v1/recipes',
+    'GET /api/v1/recipes',
+  ]);
 });
 
 test('login errors follow the problem code and never keep the password (mock API)', async ({ page }) => {
