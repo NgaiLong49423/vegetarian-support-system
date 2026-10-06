@@ -81,7 +81,7 @@ export function EditRecipe() {
     setFieldErrors({});
     try {
       const updated = await recipeApi.update(recipeId, form);
-      navigate('/ho-so/chuyen-gia-demo', { replace: true, state: { recipeUpdated: updated, notice: 'Lưu thay đổi thành công.' } });
+      navigate('/ho-so/chuyen-gia', { replace: true, state: { recipeUpdated: updated, notice: 'Lưu thay đổi thành công.' } });
     } catch (cause) {
       const apiError = asApiError(cause);
       setError(messageFor(apiError));
@@ -91,7 +91,7 @@ export function EditRecipe() {
 
   if (loading) return <PageContainer className="py-16 text-center text-ink-muted"><LoaderCircle className="mx-auto mb-3 h-7 w-7 animate-spin" />Đang tải công thức…</PageContainer>;
   if (recipe?.status === 'HIDDEN') return <PageContainer className="py-8">
-    <Link to="/ho-so/chuyen-gia-demo" className="mb-5 inline-flex text-sm font-semibold text-brand-700">Quay lại danh sách bài</Link>
+    <Link to="/ho-so/chuyen-gia" className="mb-5 inline-flex text-sm font-semibold text-brand-700">Quay lại danh sách bài</Link>
     <Card className="mx-auto max-w-3xl p-6 sm:p-8">
       <div role="status" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
         <strong>Đã bị Admin ẩn.</strong> Bạn có thể xem bài nhưng không thể sửa hoặc tự công khai lại. Hãy liên hệ Admin để được phục hồi.
@@ -164,7 +164,7 @@ export function EditRecipe() {
         </Card>
         {recipe.media.length > 0 && <Card className="p-5 sm:p-6"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-lg font-bold text-ink">Hình ảnh</h2><p className="text-xs text-ink-muted">Ảnh được giữ nguyên khi lưu nội dung. Quản lý ảnh chưa hỗ trợ.</p></div><ImagePlus className="h-5 w-5 text-brand-600" /></div><div className="flex flex-wrap gap-3">{recipe.media.map((image) => <div className="relative" key={image.displayOrder}><img src={image.url} alt="Ảnh công thức" className="h-20 w-20 rounded-lg object-cover" />{image.cover && <span className="absolute bottom-1 left-1 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold">Ảnh bìa</span>}</div>)}</div></Card>}
       </div>
-      <aside className="space-y-4 lg:sticky lg:top-6"><Card className="p-5"><p className="mb-1 text-xs font-bold uppercase tracking-wide text-brand-600">Đang chỉnh sửa</p><h2 className="text-lg font-bold text-ink">{recipe.title}</h2><p className="mt-2 text-sm text-ink-muted">Bài đang công khai. Khi lưu hợp lệ, nội dung mới được cập nhật ngay.</p><Button type="submit" disabled={saving} className="mt-5 w-full">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Lưu thay đổi</Button><Button type="button" variant="outline" className="mt-3 w-full" onClick={() => navigate('/ho-so/chuyen-gia-demo')}>Hủy</Button></Card><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-950"><strong>Lưu ý:</strong> Bài bị quản trị viên ẩn sẽ bị chặn mọi thao tác sửa. Chỉ quản trị viên mới có thể phục hồi.</div></aside>
+      <aside className="space-y-4 lg:sticky lg:top-6"><Card className="p-5"><p className="mb-1 text-xs font-bold uppercase tracking-wide text-brand-600">Đang chỉnh sửa</p><h2 className="text-lg font-bold text-ink">{recipe.title}</h2><p className="mt-2 text-sm text-ink-muted">Bài đang công khai. Khi lưu hợp lệ, nội dung mới được cập nhật ngay.</p><Button type="submit" disabled={saving} className="mt-5 w-full">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Lưu thay đổi</Button><Button type="button" variant="outline" className="mt-3 w-full" onClick={() => navigate('/ho-so/chuyen-gia')}>Hủy</Button></Card><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-950"><strong>Lưu ý:</strong> Bài bị quản trị viên ẩn sẽ bị chặn mọi thao tác sửa. Chỉ quản trị viên mới có thể phục hồi.</div></aside>
     </form>
   </PageContainer>;
 }

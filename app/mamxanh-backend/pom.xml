@@ -10,7 +10,7 @@
     </parent>
     <groupId>tech.mamxanh</groupId>
     <artifactId>mamxanh-backend</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <name>mamxanh-backend</name>
     <description>mamxanh-backend</description>
     <url/>

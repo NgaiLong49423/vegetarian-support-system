@@ -82,7 +82,7 @@ test('public recipe page has no management action; expert manages recipes from p
   await expect(page.getByRole('heading', { name: 'Nấm kho tiêu' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Quản lý công thức' })).toHaveCount(0);
 
-  await page.goto('/ho-so/chuyen-gia-demo');
+  await page.goto('/ho-so/chuyen-gia');
   await expect(page.getByRole('heading', { name: 'Chuyên gia Issue 47' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Công thức của tôi' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Sửa' })).toHaveAttribute('href', '/cong-thuc/47/chinh-sua');
@@ -134,7 +134,7 @@ test('expert edits recipe, saves, and sees success on the expert profile', async
   await page.getByRole('button', { name: 'Xóa nguyên liệu' }).first().click();
   await page.getByRole('button', { name: 'Lưu thay đổi' }).first().click();
 
-  await expect(page).toHaveURL(/\/ho-so\/chuyen-gia-demo$/);
+  await expect(page).toHaveURL(/\/ho-so\/chuyen-gia$/);
   await expect(page.getByRole('status')).toContainText('Lưu thay đổi thành công');
   await expect(page.getByRole('heading', { name: 'Nấm kho tiêu xanh' })).toBeVisible();
   expect(savedPayload?.title).toBe('Nấm kho tiêu xanh');
@@ -144,7 +144,7 @@ test('expert edits recipe, saves, and sees success on the expert profile', async
 
 test('hidden recipe stays visible to its expert but all edit paths stay disabled', async ({ page }) => {
   await mockProfileApi(page, [hiddenRecipe]);
-  await page.goto('/ho-so/chuyen-gia-demo');
+  await page.goto('/ho-so/chuyen-gia');
 
   await expect(page.getByText('Đã bị Admin ẩn')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sửa Canh đang bị ẩn' })).toBeDisabled();
@@ -172,7 +172,7 @@ test('delete is separate on profile, asks confirmation, then removes recipe from
     }
   });
 
-  await page.goto('/ho-so/chuyen-gia-demo');
+  await page.goto('/ho-so/chuyen-gia');
   await page.getByRole('button', { name: 'Xóa', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('Bạn chắc chắn muốn xóa bài này?');
   await page.getByRole('button', { name: 'Hủy' }).click();
@@ -203,7 +203,7 @@ test('expert profile retry recovers after a temporary load error', async ({ page
     }
   });
 
-  await page.goto('/ho-so/chuyen-gia-demo');
+  await page.goto('/ho-so/chuyen-gia');
   await expect(page.getByRole('alert')).toContainText('Máy chủ tạm thời bận.');
   await page.getByRole('button', { name: 'Thử tải lại' }).click();
   await expect(page.getByRole('heading', { name: 'Nấm kho tiêu' })).toBeVisible();
@@ -217,7 +217,7 @@ test('customers cannot open the Expert recipe management profile', async ({ page
     return route.fulfill({ json: { items: [], page: 0, size: 50, totalElements: 0, totalPages: 0 } });
   });
   await assumeRole(page, 'CUSTOMER');
-  await page.goto('/ho-so/chuyen-gia-demo');
+  await page.goto('/ho-so/chuyen-gia');
 
   await expect(page.getByRole('heading', { name: 'Không có quyền quản lý bài công thức' })).toBeVisible();
   expect(managementRequest).toBe(false);

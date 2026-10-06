@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.15.0
+> **Version:** v1.16.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-06
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -13,7 +13,7 @@ Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy v
 
 ## Giao diện demo và giới hạn hiện tại
 
-Bản demo cho giảng viên: [Mâm Xanh trên Vercel](https://mamxanh-frontend.vercel.app/). Đây là bản Frontend dùng dữ liệu mẫu; tài khoản Lan Anh và gói FREE là dữ liệu demo, chưa có đăng nhập hoặc phân quyền thật. Các màn hình Auth bổ sung ngày 2026-09-22 mới có ở source local, chưa deploy lại Vercel.
+Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-frontend.vercel.app/) vẫn là bản UI cũ dùng dữ liệu mẫu và chưa có đăng nhập/phân quyền thật. Bản chạy local dưới đây dùng Backend và SQL Server thật cho các luồng đã tích hợp; thay đổi hiện tại chưa được deploy lên Vercel.
 
 ### Đăng ký, đăng nhập và khôi phục tài khoản (UI FR-03)
 
@@ -24,24 +24,23 @@ Bản demo cho giảng viên: [Mâm Xanh trên Vercel](https://mamxanh-frontend.
 - Docker Development chạy thêm kiểm thử Playwright tích hợp: trình duyệt đăng nhập qua Frontend/Backend đang chạy và truy vấn SQL Server Compose để xác minh bộ đếm login sai, khóa lần thứ năm và reset sau khi hết hạn.
 - **Onboarding và Sở thích ăn uống đã gọi Backend thật (Issue #36):** sau khi đăng nhập, Frontend gọi `POST /nutrition/dietary-preferences/onboarding/invitation`; chỉ khi Backend trả `show = true` (lần đầu của tài khoản mới chưa trả lời) Member mới được chuyển tới `/khoi-tao-so-thich` để chọn loại ăn chay, nguyên liệu cần tránh, món không thích (hoặc xác nhận "Không có") và sở thích tùy chọn. Rời trang mà chưa trả lời hoặc bấm "Bỏ qua" (ghi nhận `SKIPPED`) thì các lần đăng nhập sau không hỏi lại; trang vẫn mở thủ công được. Trang `/ho-so/so-thich-an-uong` (menu "Sở thích ăn uống") cho xem, cập nhật hồ sơ và cho biết còn thiếu thông tin nào trước khi dùng AI cá nhân hóa. Gợi ý tên lấy từ danh mục nguyên liệu chuẩn đang hoạt động.
 - **Đăng xuất** chỉ xóa token và trạng thái đăng nhập trên thiết bị, không gọi Backend (AC-03.13). Google Login, quên và đặt lại mật khẩu vẫn là biểu mẫu demo cho tới Issue #8, #9.
-- Tại trang đăng nhập, chọn **Khám phá tài khoản demo** để xem menu Lan Anh/FREE; chọn **Thoát tài khoản demo** để quay lại Guest. Đây chỉ là chuyển chế độ xem trong bộ nhớ, không tạo phiên, không lưu token và không phải authentication/authorization; chế độ này tách riêng với phiên đăng nhập thật trong `AuthContext`.
+- Không còn chế độ đổi vai trò/tài khoản giả trên Frontend. Dùng tài khoản local do Backend seed tạo sẵn; danh sách email và cách đặt chung mật khẩu nằm trong [Backend Workspace Guide](../mamxanh-backend/README.md#tài-khoản-demo-local). Mỗi vai trò phải đăng nhập bằng tài khoản riêng; quyền được Backend xác thực.
+- Các luồng Backend hiện hiển thị từ API/SQL thật: khám phá và chi tiết công thức; tạo/sửa/quản lý công thức; lịch ăn tuần; hồ sơ dinh dưỡng; sở thích/onboarding; nộp và duyệt đơn Chuyên gia; danh mục nguyên liệu/đơn vị Admin. Trang khám phá chỉ cung cấp tìm kiếm từ khóa và phân trang vì đó là các tham số API hiện hỗ trợ.
 - Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
 
 ### Các chức năng demo khác
 
 | Khu vực | Người dùng có thể thử | Giới hạn hiện tại |
 |---|---|---|
-| Trang chủ và thanh điều hướng | Logo dự án, menu desktop trên một hàng, tiêu đề hai dòng; menu thu gọn trên màn hình nhỏ | Logo ứng dụng/favicon dùng tài nguyên của dự án |
+| Trang chủ và thanh điều hướng | Logo dự án, menu desktop trên một hàng, tiêu đề hai dòng; menu thu gọn trên màn hình nhỏ | Danh mục, bài cộng đồng và banner AI vẫn là nội dung UI mẫu; công thức nổi bật lấy từ Backend |
 | Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Chỉ giữ trong bộ nhớ khi trang còn mở, chưa gửi Backend |
 | Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu | Làm tròn tối đa 2 chữ số thập phân; lượng không đọc được thành số giữ nguyên; chưa đồng bộ Shopping List |
 | Kế hoạch bữa ăn | Chọn 0,5–10 phần cho từng món, bước 0,5 | Chỉ cập nhật trạng thái UI; chưa lưu hoặc tổng hợp dinh dưỡng thật |
 | Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |
 | Dinh dưỡng công thức | Đọc rõ số liệu minh họa cho **1 khẩu phần** | 8 chỉ tiêu tĩnh, chưa tính từ nguyên liệu; còn thiếu so với FR-39, xem BUG-002 |
-| Hồ sơ dinh dưỡng và BMI | Nhập tuổi, chiều cao, cân nặng; xác nhận phạm vi hỗ trợ rồi tính BMI tham khảo | Chưa lưu hồ sơ, chưa tính nhu cầu calorie hoặc đề xuất điều trị |
-| Gói AI | Xem FREE/PLUS/PRO và giá 0/49.000/99.000 VNĐ mỗi tháng | FREE hiện tại là mock; nút thanh toán bị vô hiệu hóa, chưa mua hoặc kích hoạt quyền thật |
-| Lịch sử giao dịch | Mở trang lịch sử và xem trạng thái chưa có dữ liệu | Chưa kết nối API giao dịch; không tạo giao dịch giả |
+| Theo dõi dinh dưỡng, danh sách mua sắm, bài cộng đồng/bình luận/báo cáo, lưu/yêu thích công thức, gói AI và giao dịch | Tương tác UI minh họa theo từng màn hình | Các chức năng này chưa có API tương ứng; không ghi hoặc trình bày như dữ liệu Backend |
 
-Hồ sơ BMI, **Nâng cấp gói AI** và lịch sử giao dịch nằm trong menu avatar; gói `FREE · demo` hiện dưới tên tài khoản. Trên mobile, mở menu để truy cập các trang này. Đường dẫn trực tiếp: `/ho-so/dinh-duong`, `/goi-ai`, `/giao-dich`.
+Các trang chưa có API được giữ làm prototype để minh họa phạm vi giao diện; chúng được ghi nhãn demo và không đại diện cho dữ liệu đã lưu trên Backend.
 
 Các màn hình này chuẩn bị trải nghiệm cho FR-13, FR-20, FR-26/27, FR-35/38, FR-37/39 và FR-46; không xác nhận đã hoàn thành toàn bộ Acceptance Criteria của các FR. SRS vẫn là nguồn yêu cầu chính thức.
 
@@ -74,7 +73,7 @@ Nếu cần mở cả hệ thống, dùng hai cửa sổ Terminal và khởi đ�
 
 Frontend gọi Backend tại `VITE_API_BASE_URL`. Khi chạy trực tiếp, `/api/v1` được Vite proxy tới `http://localhost:8080`; trong Docker Compose, proxy dùng service `backend`. Để đổi base path, sao chép `.env.example` thành `.env.local` (đã được Git bỏ qua) rồi sửa giá trị; không đặt secret trong biến `VITE_` vì chúng nằm trong bundle công khai. Backend phải cho phép origin của Frontend qua `MAMXANH_CORS_ALLOWED_ORIGINS`.
 
-Các màn hình ngoài đăng ký/xác minh email vẫn dùng mock data và chạy độc lập được; việc mở được UI không chứng minh Backend hoặc database đã kết nối.
+Chỉ các luồng được liệt kê là đã kết nối mới là bằng chứng hiển thị dữ liệu Backend; các UI demo khác không chứng minh Backend hoặc database đã kết nối.
 
 ### Cách 1 — Chạy trực tiếp bằng Node.js
 
@@ -282,4 +281,4 @@ Job `Sonar` chỉ đọc LCOV/JaCoCo XML sau khi tải artifacts từ Frontend/B
 
 HTML report được tạo trong `playwright-report/`; screenshot và trace lỗi nằm trong `test-results/`. Hai thư mục này là generated evidence và không được commit mặc định.
 
-Suite hiện có 15 test: 7 test Auth (đăng ký, email trùng, mở liên kết xác minh, liên kết không hợp lệ và thời gian chờ gửi lại, gửi lại thành công, đăng nhập/chế độ demo, khôi phục/mobile) và 8 test trước đó: application shell/navigation; bình luận và giữ reply khi xóa cha; khẩu phần lẻ trong kế hoạch; nhân nguyên liệu theo khẩu phần; menu avatar/gói AI; điều hướng tài khoản trên mobile; validation báo cáo; BMI cùng trang gói AI/lịch sử giao dịch. Các test đăng ký/xác minh thay API bằng `page.route`, nên chỉ kiểm tra luồng Frontend. Đây là kiểm thử Frontend với dữ liệu mẫu hoặc API giả, không chứng minh Backend, database, authentication, thanh toán hoặc full FE–BE E2E đã hoạt động.
+Playwright hiện kiểm tra các tương tác UI prototype bằng API giả, các luồng API-backed với response được intercept, và tích hợp đăng nhập thật qua Docker Development trên Compose. Test file `backend-demo-flows.spec.ts` dùng `page.route` để kiểm tra session, dữ liệu công thức, loading, lỗi và empty state; đây là kiểm thử Frontend, không chứng minh SQL seed hoặc xác thực Backend. Chỉ Docker Development chạy trình duyệt qua Backend/SQL Server thật và có thể làm bằng chứng tích hợp FE–BE.

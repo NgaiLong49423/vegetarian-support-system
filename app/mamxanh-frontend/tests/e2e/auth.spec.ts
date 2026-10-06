@@ -199,18 +199,16 @@ test('an expired stored session is dropped and a live session ends when its toke
   expect(await storedSession(page)).toBeNull();
 });
 
-test('demo entry and exit stay explicit and never create a server session', async ({ page }) => {
+test('local account access requires a Backend-issued login session', async ({ page }) => {
   await page.goto('/dang-nhap');
   await page.getByLabel('Mật khẩu', { exact: true }).fill('DemoPass123!');
   await page.getByRole('button', { name: 'Hiện mật khẩu', exact: true }).click();
   await expect(page.getByLabel('Mật khẩu', { exact: true })).toHaveAttribute('type', 'text');
   await page.getByRole('button', { name: 'Tiếp tục với Google' }).click();
   await expect(page.getByRole('status')).toContainText('Google Login chưa được kết nối');
-  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
-  await page.getByRole('button', { name: 'Tài khoản Lan Anh, gói AI FREE demo' }).click();
+  await expect(page.getByRole('button', { name: 'Khám phá tài khoản demo' })).toHaveCount(0);
   expect(await storedSession(page)).toBeNull();
-  await page.getByRole('button', { name: 'Thoát tài khoản demo' }).click();
-  await expect(page).toHaveURL(/\/dang-nhap$/);
+  await expect(page.getByRole('button', { name: 'Đăng nhập', exact: true })).toBeVisible();
 });
 
 test('recovery and mobile layouts remain usable without claiming email delivery', async ({ page }) => {

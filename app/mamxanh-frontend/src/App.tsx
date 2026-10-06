@@ -3,7 +3,6 @@ import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { AuthPage } from './pages/Auth';
 import { AuthProvider } from './components/AuthContext';
-import { DemoAccountProvider } from './components/DemoAccount';
 import { Home } from './pages/Home';
 import { Explore } from './pages/Explore';
 import { RecipeDetail } from './pages/RecipeDetail';
@@ -36,7 +35,7 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <BrowserRouter><AuthProvider><DemoAccountProvider>
+    <BrowserRouter><AuthProvider>
       <ScrollToTop />
       <Layout>
         <Routes>
@@ -57,7 +56,7 @@ export default function App() {
           <Route path="/cong-dong" element={<Community />} />
           <Route path="/bai-viet/:slug" element={<PostDetail />} />
           <Route path="/ho-so" element={<Profile />} />
-          <Route path="/ho-so/chuyen-gia-demo" element={<ExpertRecipeProfile />} />
+          <Route path="/ho-so/chuyen-gia" element={<ExpertRecipeProfile />} />
           <Route path="/goi-ai" element={<AiPlans />} />
           <Route path="/giao-dich" element={<TransactionHistory />} />
           <Route path="/ho-so/dinh-duong" element={<NutritionProfile />} />
@@ -70,6 +69,6 @@ export default function App() {
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>
-    </DemoAccountProvider></AuthProvider></BrowserRouter>
+    </AuthProvider></BrowserRouter>
   );
 }
