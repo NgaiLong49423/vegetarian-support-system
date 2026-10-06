@@ -576,23 +576,31 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
   await page.route('**/api/v1/recipes/999', (route) => route.fulfill({
     json: {
       id: 999,
+      recipeId: 999,
       title: 'Nấm đùi gà kho tiêu xanh',
       description: 'Món kho thơm lừng đậm đà.',
       instructions: 'Cắt nấm thành từng lát vừa ăn, ướp gia vị chay và kho liu riu cho thấm.',
       dishCategory: 'BRAISED',
+      dishCategoryLabel: 'Món kho',
       vegetarianType: 'VEGAN',
+      vegetarianTypeLabel: 'Thuần chay',
       difficulty: 'EASY',
+      difficultyLabel: 'Dễ',
       servings: 4,
       prepTimeMinutes: 15,
       cookTimeMinutes: 20,
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       status: 'PUBLISHED',
+      publishedAt: '2026-10-06T10:00:00',
       authorId: 42,
       authorName: 'Trần Thị Chuyên Gia',
+      nutritionComplete: false,
+      ingredientsWithoutNutrition: ['Đậu hũ'],
       media: [],
       ingredients: [
         {
           ingredientId: 1,
-          ingredientName: 'Đậu hũ',
+          name: 'Đậu hũ',
           quantity: 200,
           unitId: 1,
           unitCode: 'g',
@@ -644,8 +652,19 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
   // Fill ingredient
   await page.getByLabel('Chọn nguyên liệu 1').fill('Đậu');
   await page.getByRole('button', { name: 'Đậu hũ', exact: true }).click();
-  await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
   await page.getByLabel('Đơn vị nguyên liệu 1').selectOption('1');
+
+  // Exercise quantity error branch
+  await page.getByLabel('Số lượng nguyên liệu 1').fill('-5');
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+  await expect(page.getByText('Định lượng phải là số dương, tối đa hai chữ số thập phân.')).toBeVisible();
+  await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
+
+  // Exercise YouTube validation branch
+  const ytInput = page.getByLabel(/Link YouTube/);
+  await ytInput.fill('https://not-youtube.com/video');
+  await expect(page.getByText('Hệ thống chỉ hỗ trợ video từ YouTube (BR-10). Vui lòng không sử dụng nền tảng khác.')).toBeVisible();
+  await ytInput.fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 
   // Fill instructions
   await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Cắt nấm thành từng lát vừa ăn, ướp gia vị chay và kho liu riu cho thấm.');
@@ -674,5 +693,8 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
 
   // Navigates directly to published recipe detail
   await page.waitForURL('**/cong-thuc/999');
+  await expect(page.getByRole('heading', { name: 'Nấm đùi gà kho tiêu xanh', level: 1 })).toBeVisible();
+  await expect(page.getByText('Chưa đủ dữ liệu dinh dưỡng')).toBeVisible();
+  await expect(page.getByTestId('recipe-youtube-section')).toBeVisible();
 });
 
