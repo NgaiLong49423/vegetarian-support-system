@@ -2,6 +2,6 @@
   "name": "swp391-agent-evals",
   "private": true,
   "version": "1.0.0",
-  "devDependencies": {"promptfoo": "0.123.0"},
+  "devDependencies": {"promptfoo": "0.124.0"},
   "scripts": {"validate": "promptfoo validate config -c promptfooconfig.yaml"}
 }
