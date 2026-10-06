@@ -15,6 +15,8 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 **Scope:** Implement member submission of reports for published recipe posts and align the report contract with the current requirements baseline.
 
+**Related PR:** [#103](https://github.com/NgaiLong49423/vegetarian-support-system/pull/103).
+
 ### Added
 
 - Add authenticated report submission with reason and description validation, private receipts, and duplicate detection for open or in-review reports.
