@@ -56,6 +56,20 @@ class RecipeReportIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void authenticatedMemberCanSubmitOtherReasonWithTrimmedDescription() throws Exception {
+        submit("{\"reasonCode\":\"OTHER\",\"description\":\"  Mô tả hợp lệ tối thiểu  \"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("OPEN"));
+
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT reason_code FROM [REPORT] WHERE reporter_id = ? AND recipe_id = ?",
+                String.class, memberId, recipeId)).isEqualTo("OTHER");
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT description FROM [REPORT] WHERE reporter_id = ? AND recipe_id = ?",
+                String.class, memberId, recipeId)).isEqualTo("Mô tả hợp lệ tối thiểu");
+    }
+
+    @Test
     void guestCannotSubmitReport() throws Exception {
         mockMvc.perform(post("/api/v1/recipes/{recipeId}/reports", recipeId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -67,7 +81,11 @@ class RecipeReportIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void rejectsUnknownReasonAndInvalidOtherDescriptionWithoutPersisting() throws Exception {
+        submit("{}").andExpect(status().isBadRequest());
         submit("{\"reasonCode\":\"NON_VEGAN\",\"description\":\"\"}")
+                .andExpect(status().isBadRequest());
+        submit("{\"reasonCode\":\"OTHER\"}").andExpect(status().isBadRequest());
+        submit("{\"reasonCode\":\"OTHER\",\"description\":\"   \"}")
                 .andExpect(status().isBadRequest());
         submit("{\"reasonCode\":\"OTHER\",\"description\":\"ngắn\"}")
                 .andExpect(status().isBadRequest());
