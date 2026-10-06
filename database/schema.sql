@@ -13,6 +13,7 @@
 --                   + V5__ingredient_group_and_unit_validation.sql
 --                   + V6__user_login_throttle.sql
 --                   + V7__user_onboarding_invitation.sql
+--                   + V8__expert_application_notifications.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -606,6 +607,7 @@ CREATE TABLE [NOTIFICATION] (
     notification_type  VARCHAR(30)     NOT NULL,
     title              NVARCHAR(200)   NOT NULL,
     message            NVARCHAR(1000)  NOT NULL,
+    target_path        NVARCHAR(2048)  NULL,
     is_read            BIT             NOT NULL
         CONSTRAINT DF_NOTIFICATION_is_read DEFAULT 0,
     created_at         DATETIME2(7)    NOT NULL
@@ -943,6 +945,15 @@ GO
 -- Expert application lookup by user
 CREATE NONCLUSTERED INDEX IX_EXPERT_APP_user
     ON [EXPERT_APPLICATION](user_id);
+GO
+
+CREATE NONCLUSTERED INDEX IX_EXPERT_APP_pending_created
+    ON [EXPERT_APPLICATION](created_at DESC, application_id DESC)
+    WHERE status = 'PENDING';
+GO
+
+CREATE NONCLUSTERED INDEX IX_EXPERT_APP_user_history
+    ON [EXPERT_APPLICATION](user_id, created_at DESC, application_id DESC);
 GO
 
 

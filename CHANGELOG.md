@@ -2,7 +2,7 @@
 > **File:** `CHANGELOG.md`
 > **Version:** v2.53.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-06
 > **Status:** Active
 
 # Changelog
@@ -93,6 +93,26 @@ None.
 ### Fixed
 
 None.
+
+## 2026-10-04 — Implement Expert Application Review (Issue #68) ([PR #86](https://github.com/NgaiLong49423/vegetarian-support-system/pull/86))
+
+**Status:** Committed — ad6764d.
+
+**Scope:** Add the Customer submission/history and Admin review workflows for expert applications, including the atomic role promotion and in-app decision notice.
+
+### Added
+
+- Add the Expert Application and Notification backend services, runtime API endpoints, SQL Server migration V8, and API-backed Frontend workflow.
+- Add request-validation, service/controller, SQL Server repository, promotion-eligibility and competing-decision concurrency coverage.
+
+### Changed
+
+- Extend the package specification and workspace guides for the implemented modules and migration.
+- Replace the FR-05 demo workflow with authenticated API submission, history, review, conflict recovery and role display.
+
+### Fixed
+
+- Read UTC timestamps from injected clock instants across expert promotion and decision notifications so UTC-only test clocks work through the full review transaction.
 
 ## 2026-10-04 — Recipe Post Frontend Management (Issue #47)
 
