@@ -21,7 +21,7 @@ export function RecipeCard({ recipe }: { recipe: Recipe }) {
   const [addedToPlan, setAddedToPlan] = useState(false);
   const [guestNotice, setGuestNotice] = useState<'save' | 'plan' | null>(null);
   const navigate = useNavigate();
-  const { memberView: active } = useAuth();
+  const { isAuthenticated: active } = useAuth();
 
   useEffect(() => {
     setSaved(isSaved(recipe.slug));

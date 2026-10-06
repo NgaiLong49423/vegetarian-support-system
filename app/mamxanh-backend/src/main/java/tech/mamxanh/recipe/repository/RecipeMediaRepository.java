@@ -2,20 +2,22 @@ package tech.mamxanh.recipe.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import tech.mamxanh.recipe.entity.RecipeMedia;
+import tech.mamxanh.recipe.entity.RecipeMediaEntity;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Spring Data JPA repository for RecipeMedia (FR-14).
+ * Spring Data JPA repository for RecipeMediaEntity (FR-14, FR-25).
  */
 @Repository
-public interface RecipeMediaRepository extends JpaRepository<RecipeMedia, Long> {
+public interface RecipeMediaRepository extends JpaRepository<RecipeMediaEntity, Long> {
 
-    List<RecipeMedia> findByRecipeIdOrderByDisplayOrderAsc(Long recipeId);
+    List<RecipeMediaEntity> findByRecipeIdOrderByDisplayOrderAsc(Long recipeId);
 
-    Optional<RecipeMedia> findByRecipeIdAndIsCoverTrue(Long recipeId);
+    List<RecipeMediaEntity> findAllByRecipeIdOrderByDisplayOrderAsc(Long recipeId);
+
+    Optional<RecipeMediaEntity> findByRecipeIdAndCoverTrue(Long recipeId);
 
     long countByRecipeId(Long recipeId);
 

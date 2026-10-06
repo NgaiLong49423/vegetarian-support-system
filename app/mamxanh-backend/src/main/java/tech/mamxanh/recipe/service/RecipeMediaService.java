@@ -13,7 +13,7 @@ import tech.mamxanh.recipe.dto.request.RecipeMediaItemRequest;
 import tech.mamxanh.recipe.dto.request.UpdateRecipeMediaRequest;
 import tech.mamxanh.recipe.dto.response.RecipeMediaResponse;
 import tech.mamxanh.recipe.dto.response.UploadImageResponse;
-import tech.mamxanh.recipe.entity.RecipeMedia;
+import tech.mamxanh.recipe.entity.RecipeMediaEntity;
 import tech.mamxanh.recipe.repository.RecipeMediaRepository;
 
 import java.io.IOException;
@@ -125,8 +125,8 @@ public class RecipeMediaService {
             return List.of();
         }
 
-        List<RecipeMedia> newEntities = items.stream()
-                .map(item -> new RecipeMedia(
+        List<RecipeMediaEntity> newEntities = items.stream()
+                .map(item -> new RecipeMediaEntity(
                         recipeId,
                         item.blobUrl(),
                         item.mimeType(),
@@ -135,7 +135,7 @@ public class RecipeMediaService {
                 ))
                 .toList();
 
-        List<RecipeMedia> saved = recipeMediaRepository.saveAll(newEntities);
+        List<RecipeMediaEntity> saved = recipeMediaRepository.saveAll(newEntities);
         log.info("Saved {} media items for recipeId={}", saved.size(), recipeId);
 
         return saved.stream()
@@ -148,8 +148,8 @@ public class RecipeMediaService {
      */
     @Transactional
     public void deleteRecipeMedia(Long recipeId) {
-        List<RecipeMedia> mediaList = recipeMediaRepository.findByRecipeIdOrderByDisplayOrderAsc(recipeId);
-        for (RecipeMedia media : mediaList) {
+        List<RecipeMediaEntity> mediaList = recipeMediaRepository.findByRecipeIdOrderByDisplayOrderAsc(recipeId);
+        for (RecipeMediaEntity media : mediaList) {
             storageClient.deleteImage(media.getBlobUrl());
         }
         recipeMediaRepository.deleteByRecipeId(recipeId);

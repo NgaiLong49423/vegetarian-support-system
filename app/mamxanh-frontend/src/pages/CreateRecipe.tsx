@@ -4,8 +4,9 @@ import { AlertCircle, ImagePlus, Info, LoaderCircle, Plus, Trash2, UploadCloud }
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
 import { ApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
-import { useDemoAccount } from '../components/DemoAccount';
 import { useAuth } from '../components/AuthContext';
+import { YouTubeEmbed } from '../components/YouTubeEmbed';
+import { validateYouTubeUrl } from '../utils/youtube';
 import { Button, Card } from '../components/ui';
 import type { UserRole } from '../types';
 import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
@@ -31,11 +32,8 @@ const emptyIngredient = (): IngredientRow => ({
 });
 
 export function CreateRecipe() {
-  const { memberView } = useAuth();
-  const { role: demoRole } = useDemoAccount();
-  const { account } = useAuth();
-  const active = memberView;
-  const role = account?.role ?? demoRole;
+  const { isAuthenticated: active, account } = useAuth();
+  const role = account?.role ?? 'CUSTOMER';
 
   if (!active || role !== 'EXPERT') {
     return <RecipeCreationAccessGate active={active} role={role} />;
@@ -84,6 +82,20 @@ function CreateRecipeForm() {
   const [prepTimeMinutes, setPrepTimeMinutes] = useState('');
   const [cookTimeMinutes, setCookTimeMinutes] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeError, setYoutubeError] = useState('');
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
+
+  const handleYoutubeChange = (val: string) => {
+    setYoutubeUrl(val);
+    const result = validateYouTubeUrl(val);
+    if (!result.valid) {
+      setYoutubeError(result.error ?? 'Đường dẫn YouTube không hợp lệ.');
+      setYoutubeVideoId(null);
+    } else {
+      setYoutubeError('');
+      setYoutubeVideoId(result.videoId);
+    }
+  };
   const [ingredients, setIngredients] = useState<IngredientRow[]>(() => [emptyIngredient()]);
   const [files, setFiles] = useState<File[]>([]);
   const [coverIndex, setCoverIndex] = useState<number | null>(null);
@@ -157,6 +169,13 @@ function CreateRecipeForm() {
     if (Object.keys(quantityErrors).length > 0) {
       setFieldErrors(quantityErrors);
       return;
+    }
+
+    if (youtubeUrl.trim()) {
+      const youtubeCheck = validateYouTubeUrl(youtubeUrl);
+      if (!youtubeCheck.valid) {
+        setYoutubeError(youtubeCheck.error ?? 'Đường dẫn YouTube không hợp lệ.');
+      }
     }
 
     const payload: CreateRecipeRequest = {
@@ -331,8 +350,36 @@ function CreateRecipeForm() {
               {mediaError && <p role="alert" className={errorClass}>{mediaError}</p>}
               {errorFor('media') && <p role="alert" className={errorClass}>{errorFor('media')}</p>}
             </div>
-            <Field label="Link YouTube (không bắt buộc)" error={errorFor('youtubeUrl')}>
-              <input type="url" aria-label="Link YouTube" value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} maxLength={2048} placeholder="https://www.youtube.com/watch?v=..." className={inputClass} />
+            <Field label="Link YouTube / Liên kết video YouTube (không bắt buộc)">
+              <input
+                type="url"
+                aria-label="Link YouTube / Liên kết video YouTube"
+                value={youtubeUrl}
+                onChange={(event) => handleYoutubeChange(event.target.value)}
+                maxLength={2048}
+                placeholder="https://www.youtube.com/watch?v=... hoặc https://youtu.be/..."
+                className={inputClass}
+              />
+              <p className="mt-1 text-xs text-ink-muted">Chỉ hỗ trợ video từ YouTube (BR-10). Tối đa 1 video cho mỗi bài công thức.</p>
+              {errorFor('youtubeUrl') ? (
+                <p role="alert" className={errorClass}>
+                  {errorFor('youtubeUrl')}
+                </p>
+              ) : youtubeError ? (
+                <p role="alert" className={errorClass}>
+                  {youtubeError}
+                </p>
+              ) : null}
+              {youtubeVideoId && !youtubeError && (
+                <div className="mt-3 space-y-2 rounded-xl border border-brand-100 bg-brand-50/50 p-3">
+                  <p className="text-xs font-semibold text-brand-700">
+                    Đã trích xuất YouTube Video ID: <span className="font-mono">{youtubeVideoId}</span>
+                  </p>
+                  <div className="max-w-md">
+                    <YouTubeEmbed urlOrId={youtubeVideoId} title="Xem trước video YouTube" />
+                  </div>
+                </div>
+              )}
             </Field>
           </Card>
 

@@ -79,16 +79,18 @@ export function Card({
   children,
   className = '',
   hover = false,
+  ...rest
 }: {
   children: ReactNode;
   className?: string;
   hover?: boolean;
-}) {
+} & React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={`rounded-2xl border border-brand-100 bg-white ${
         hover ? 'transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-900/5 hover:border-brand-200' : ''
       } ${className}`}
+      {...rest}
     >
       {children}
     </div>

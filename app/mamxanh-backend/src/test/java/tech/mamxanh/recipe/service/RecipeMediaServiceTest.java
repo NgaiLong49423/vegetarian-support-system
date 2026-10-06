@@ -14,7 +14,7 @@ import tech.mamxanh.recipe.dto.request.RecipeMediaItemRequest;
 import tech.mamxanh.recipe.dto.request.UpdateRecipeMediaRequest;
 import tech.mamxanh.recipe.dto.response.RecipeMediaResponse;
 import tech.mamxanh.recipe.dto.response.UploadImageResponse;
-import tech.mamxanh.recipe.entity.RecipeMedia;
+import tech.mamxanh.recipe.entity.RecipeMediaEntity;
 import tech.mamxanh.recipe.repository.RecipeMediaRepository;
 
 import java.io.InputStream;
@@ -193,8 +193,8 @@ class RecipeMediaServiceTest {
     @DisplayName("deleteRecipeMedia deletes from blob storage and database")
     void deleteRecipeMedia() {
         Long recipeId = 100L;
-        RecipeMedia m1 = new RecipeMedia(recipeId, "https://blob/1.jpg", "image/jpeg", 1, true);
-        RecipeMedia m2 = new RecipeMedia(recipeId, "https://blob/2.png", "image/png", 2, false);
+        RecipeMediaEntity m1 = new RecipeMediaEntity(recipeId, "https://blob/1.jpg", "image/jpeg", 1, true);
+        RecipeMediaEntity m2 = new RecipeMediaEntity(recipeId, "https://blob/2.png", "image/png", 2, false);
 
         when(recipeMediaRepository.findByRecipeIdOrderByDisplayOrderAsc(recipeId)).thenReturn(List.of(m1, m2));
 

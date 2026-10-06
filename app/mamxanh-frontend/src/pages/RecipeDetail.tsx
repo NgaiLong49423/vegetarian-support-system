@@ -26,6 +26,7 @@ import { Badge, Button, Card, SectionHeading } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { RecipeComments } from '../components/RecipeComments';
 import { RecipeRating } from '../components/RecipeRating';
+import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { recipes } from '../data/mockData';
 import { recipesApi, type RecipeDetail as RecipeDetailData } from '../api/recipes';
 import { scaleQuantity } from '../utils/servings';
@@ -102,7 +103,15 @@ function PublishedRecipeDetail({ recipeId }: { recipeId: number }) {
             </section>
           )}
           <section className="mt-8"><h2 className="text-xl font-extrabold text-ink">Hướng dẫn chế biến</h2><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-ink-soft">{recipe.instructions}</p></section>
-          {recipe.youtubeUrl && <a href={recipe.youtubeUrl} target="_blank" rel="noreferrer" className="mt-6 inline-flex text-sm font-bold text-brand-700">Xem video hướng dẫn</a>}
+          {recipe.youtubeUrl && (
+            <section className="mt-8" data-testid="recipe-youtube-section">
+              <h2 className="text-xl font-extrabold text-ink">Video hướng dẫn thực hiện (YouTube)</h2>
+              <div className="mt-4 max-w-2xl">
+                <YouTubeEmbed urlOrId={recipe.youtubeUrl} title={`Video hướng dẫn nấu món ${recipe.title}`} />
+              </div>
+              <a href={recipe.youtubeUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex text-sm font-bold text-brand-700">Xem video hướng dẫn</a>
+            </section>
+          )}
         </div>
       </article>
     </PageContainer>
@@ -205,6 +214,7 @@ function MockRecipeDetail() {
 
   return (
       <PageContainer className="py-8">
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-900">Nội dung công thức minh họa UI · chưa lấy từ Backend. Công thức thật được mở qua đường dẫn ID.</p>
         {/* breadcrumb */}
         <nav className="mb-5 flex items-center gap-1.5 text-sm text-ink-muted">
           <Link to="/" className="hover:text-brand-600">Trang chủ</Link>
@@ -510,6 +520,24 @@ function MockRecipeDetail() {
             </Button>
           </div>
         </Modal>
+
+        {/* YouTube Video Section - FR-15 / UC-15.2 */}
+        {recipe.youtubeUrl && (
+          <Card className="mb-8 p-6" data-testid="recipe-youtube-section">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink">
+                <span className="text-red-600">▶</span> Video hướng dẫn thực hiện (YouTube)
+              </h2>
+              <span className="text-xs text-ink-muted">Trình phát nhúng YouTube (BR-10)</span>
+            </div>
+            <div className="mx-auto max-w-3xl">
+              <YouTubeEmbed
+                urlOrId={recipe.youtubeUrl}
+                title={`Video hướng dẫn nấu món ${recipe.name}`}
+              />
+            </div>
+          </Card>
+        )}
 
         {/* steps */}
         <Card className="mb-8 p-6">

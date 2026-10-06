@@ -1,13 +1,74 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.52.0
+> **Version:** v2.53.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-06
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-06 — Use Backend Data in Local Demo Flows
+
+**Status:** Uncommitted.
+
+**Scope:** Prepare a local demo that uses the real Backend and SQL Server for Frontend-connected flows while identifying UI-only prototypes.
+
+### Added
+
+- Add repeatable local fixtures for verified customer, new-member, applicant, expert and admin accounts; broader ingredient/recipe data; customer profile/preferences; an expert review application; and a complete weekly meal plan.
+- Generate BCrypt demo-account passwords at local Backend startup from an ignored `.env` value; keep credentials and password hashes out of Git.
+
+### Changed
+
+- Replace Frontend role-switching/demo authentication and mock recipe listings with real session/API-backed views for connected flows.
+- Keep screens without Backend endpoints as explicitly identified UI prototypes; document the local demo accounts, seed scope and reset behavior.
+- Configure the local profile to include demo migrations and make Docker Compose wait for the Flyway-backed Backend before starting Frontend.
+- Remove the separate SQLCMD sample-data service from Docker Compose.
+
+### Fixed
+
+None.
+
+## 2026-10-05 — Enforce Strict Coverage Gates for Every FE/BE Metric
+
+**Status:** Committed — 517ae10.
+
+**Scope:** Make every frontend and backend coverage counter a strict, visible CI gate and preserve reports when coverage fails.
+
+### Added
+
+- Add exact-count strict coverage checkers and boundary regression tests for Frontend Istanbul/NYC and Backend JaCoCo counters.
+- Report all four metrics, covered/total counts, coverage, required threshold and gate status in CI summaries.
+
+### Changed
+
+- Require Frontend Lines, Statements, Functions and Branches, and Backend JaCoCo BUNDLE Lines, Branches, Methods and Instructions to each exceed 80%; exactly 80% fails.
+- Collect coverage summaries and artifacts after a gate failure when reports are available.
+
+### Fixed
+
+- Correct stale coverage policy references that described a 60% Frontend threshold or a Backend line-only gate.
+
+## 2026-10-05 — Configure IntelliJ Development Runs and Docker SQL Port
+
+**Status:** Committed — 2e21e79.
+
+**Scope:** Support running the root Compose development stack from IntelliJ alongside a Windows SQL Server installation, without committing local credentials.
+
+### Added
+
+- Add shared IntelliJ Run configurations for Backend, Frontend, their local compound run, and the complete Docker Compose stack using the Backend env file and image builds.
+- Record BUG-011: the observed IntelliJ Services Stop command omits the env file; document the verified Compose stop workaround.
+
+### Changed
+
+- Publish Docker SQL Server on loopback port 1434 while keeping its internal port 1433; document the connection port for a Backend running directly on the host.
+
+### Fixed
+
+- Avoid the Docker SQL startup port conflict with Windows SQL Server listening on port 1433. Local verification confirmed healthy SQL, Backend and Frontend, successful initialization services, HTTP 200 at the Frontend and generated OpenAPI endpoints, and preserved SQL volume after stopping with the env file.
 
 ## 2026-10-05 — Implement Onboarding and the Personalized AI Eligibility Gate (FR-31, Issue #36) ([PR #92](https://github.com/NgaiLong49423/vegetarian-support-system/pull/92))
 
@@ -54,6 +115,46 @@ None.
 ### Fixed
 
 None.
+
+## 2026-10-04 — Implement Expert Application Review (Issue #68) ([PR #86](https://github.com/NgaiLong49423/vegetarian-support-system/pull/86))
+
+**Status:** Committed — ad6764d.
+
+**Scope:** Add the Customer submission/history and Admin review workflows for expert applications, including the atomic role promotion and in-app decision notice.
+
+### Added
+
+- Add the Expert Application and Notification backend services, runtime API endpoints, SQL Server migration V8, and API-backed Frontend workflow.
+- Add request-validation, service/controller, SQL Server repository, promotion-eligibility and competing-decision concurrency coverage.
+
+### Changed
+
+- Extend the package specification and workspace guides for the implemented modules and migration.
+- Replace the FR-05 demo workflow with authenticated API submission, history, review, conflict recovery and role display.
+
+### Fixed
+
+- Read UTC timestamps from injected clock instants across expert promotion and decision notifications so UTC-only test clocks work through the full review transaction.
+
+## 2026-10-04 — Recipe Post Frontend Management (Issue #47)
+
+**Status:** Committed — `c144b85`.
+
+**Scope:** Add the Frontend experience for Experts to edit and delete their own public Recipe Posts from the expert profile.
+
+### Added
+
+- Add the recipe API client, expert profile recipe list, edit form, separate delete action, confirmation dialog and success feedback.
+- Add Playwright scenarios for the edit and delete flows using mocked API responses.
+
+### Changed
+
+- Return to the expert profile after saving and remove a deleted recipe from that list.
+- Keep recipe management actions on the expert profile instead of the public recipe detail page.
+
+### Fixed
+
+- None.
 
 ## 2026-10-04 — Prepare Recipe Ingredient Entry for Issue #25
 
@@ -175,6 +276,26 @@ None.
 ### Fixed
 
 - Keep demo role switching limited to demo sessions and clear demo state when a real user signs in or leaves the account.
+
+## 2026-10-03 — Recipe Post Backend API and Data Handling (Issue #47)
+
+**Status:** Committed — `06e7b0d`.
+
+**Scope:** Add the Backend API and persistence behavior needed to edit and soft-delete an Expert's own public Recipe Post.
+
+### Added
+
+- Add public Recipe Post detail/search and reference-data APIs, plus author-only edit and soft-delete endpoints.
+- Add Backend service tests for ownership, direct publication after update, hidden recipes, soft deletion and validation.
+
+### Changed
+
+- Resolve the active Expert from the authenticated server principal; do not accept an author ID from the client.
+- Block authors from opening or editing a recipe hidden by an Administrator.
+
+### Fixed
+
+- Preserve Recipe Post rows as tombstones so existing Meal Plan foreign-key references remain intact and exclude deleted recipes from public search.
 
 ## 2026-10-03 — Fix Docker Sample Data Seed ([PR #79](https://github.com/NgaiLong49423/vegetarian-support-system/pull/79))
 

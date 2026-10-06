@@ -1,6 +1,6 @@
 package tech.mamxanh.recipe.dto.response;
 
-import tech.mamxanh.recipe.entity.RecipeMedia;
+import tech.mamxanh.recipe.entity.RecipeMediaEntity;
 
 /**
  * Response representation of a recipe media entry (FR-14).
@@ -13,7 +13,7 @@ public record RecipeMediaResponse(
         Integer displayOrder,
         Boolean isCover
 ) {
-    public static RecipeMediaResponse fromEntity(RecipeMedia entity) {
+    public static RecipeMediaResponse fromEntity(RecipeMediaEntity entity) {
         return new RecipeMediaResponse(
                 entity.getId(),
                 entity.getRecipeId(),

@@ -1,5 +1,4 @@
 import { useAuth } from './AuthContext';
-import { useDemoAccount } from './DemoAccount';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
@@ -20,7 +19,6 @@ import {
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { Button } from './ui';
-import { currentUser, demoAiPlan } from '../data/mockData';
 import { countSaved, subscribeSaved } from '../lib/savedRecipes';
 
 const navItems = [
@@ -53,21 +51,16 @@ export function AppHeader() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
   const navigate = useNavigate();
-  const { account, isAuthenticated, memberView: active, signOut, exitDemo, demoActive } = useAuth();
-  const { setActive, role: demoRole, setRole } = useDemoAccount();
-  const role = account?.role ?? demoRole;
-  const displayName = account?.displayName ?? currentUser.name;
-  const accountLabel = account ? `Tài khoản ${account.displayName}` : `Tài khoản ${displayName}, gói AI ${demoAiPlan} demo`;
-  const leaveLabel = isAuthenticated ? 'Đăng xuất' : 'Thoát tài khoản demo';
-  const avatar = account
-    ? account.avatarUrl
-      ? <img src={account.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-brand-200" />
-      : <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white ring-2 ring-brand-200">{account.displayName.trim().charAt(0).toUpperCase()}</span>
-    : <img src={currentUser.avatar} alt={displayName} className="h-9 w-9 rounded-full object-cover ring-2 ring-brand-200" />;
+  const { account, isAuthenticated: active, signOut } = useAuth();
+  const role = account?.role;
+  const displayName = account?.displayName ?? '';
+  const accountLabel = account ? `Tài khoản ${account.displayName}` : 'Tài khoản';
+  const leaveLabel = 'Đăng xuất';
+  const avatar = account?.avatarUrl
+    ? <img src={account.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-brand-200" />
+    : <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white ring-2 ring-brand-200">{displayName.trim().charAt(0).toUpperCase()}</span>;
   const leave = () => {
-    if (isAuthenticated) signOut();
-    else exitDemo();
-    setActive(false);
+    signOut();
     setMenuOpen(false);
     setOpen(false);
     setDrawerOpen(false);
@@ -378,7 +371,7 @@ export function AppHeader() {
                       <span className="text-left leading-tight">
                     <span className="block text-sm font-semibold text-ink">{displayName}</span>
                     <span className="block text-xs text-ink-muted">
-                      {account ? (role === 'EXPERT' ? 'Chuyên gia' : role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên') : `${role === 'EXPERT' ? 'Chuyên gia' : role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên'} · demo`}
+                      {role === 'EXPERT' ? 'Chuyên gia' : role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên'}
                     </span>
                   </span>
                       <ChevronDown className="h-4 w-4 text-ink-muted" />
@@ -396,47 +389,8 @@ export function AppHeader() {
                                       ? 'Quản trị viên (ADMIN)'
                                       : 'Khách hàng (CUSTOMER)'}
                             </p>
-                            <p className="text-xs text-ink-muted">{account ? account.email : `Gói AI hiện tại: ${demoAiPlan} (dữ liệu demo)`}</p>
+                            <p className="text-xs text-ink-muted">{account?.email}</p>
                           </div>
-
-                          {demoActive && <div className="border-b border-brand-50 bg-brand-50/40 px-4 py-2 text-xs">
-                            <span className="font-bold text-ink-soft">Chuyển vai trò demo:</span>
-                            <div className="mt-1.5 flex gap-1">
-                              <button
-                                  type="button"
-                                  onClick={() => setRole('CUSTOMER')}
-                                  className={`rounded px-2 py-0.5 font-semibold ${
-                                      role === 'CUSTOMER'
-                                          ? 'bg-brand-600 text-white'
-                                          : 'border border-brand-200 bg-white text-ink-soft'
-                                  }`}
-                              >
-                                Customer
-                              </button>
-                              <button
-                                  type="button"
-                                  onClick={() => setRole('EXPERT')}
-                                  className={`rounded px-2 py-0.5 font-semibold ${
-                                      role === 'EXPERT'
-                                          ? 'bg-brand-600 text-white'
-                                          : 'border border-brand-200 bg-white text-ink-soft'
-                                  }`}
-                              >
-                                Expert
-                              </button>
-                              <button
-                                  type="button"
-                                  onClick={() => setRole('ADMIN')}
-                                  className={`rounded px-2 py-0.5 font-semibold ${
-                                      role === 'ADMIN'
-                                          ? 'bg-brand-600 text-white'
-                                          : 'border border-brand-200 bg-white text-ink-soft'
-                                  }`}
-                              >
-                                Admin
-                              </button>
-                            </div>
-                          </div>}
 
                           <Link
                               to="/ho-so"

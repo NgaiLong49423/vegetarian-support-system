@@ -1,5 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './baseFixtures';
+import { seedDemoSession } from './demo-session';
 
 // The scenarios intentionally pause for two seconds after each user action so
 // they can be observed. The 50-ingredient boundary scenario therefore needs a
@@ -212,13 +213,8 @@ test('Issue 22: API không tìm thấy công thức hiển thị trạng thái l
 });
 
 async function openForm(page: Page) {
-  // Existing demo role selection only reveals the Expert form in the prototype;
-  // it does not create an authenticated session or bypass Backend authorization.
-  await action(page, 'Mở trang tài khoản demo có sẵn', () => page.goto('/dang-nhap'));
-  await action(page, 'Chọn tài khoản demo để kiểm tra giao diện', () => page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click());
-  await action(page, 'Mở menu vai trò demo', () => page.getByRole('button', { name: /Tài khoản Lan Anh/ }).click());
-  await action(page, 'Chọn vai trò EXPERT demo', () => page.getByRole('button', { name: 'Expert', exact: true }).click());
-  await action(page, 'Mở trang Đăng công thức', () => page.getByRole('link', { name: 'Đăng công thức mới' }).click());
+  await seedDemoSession(page, 'EXPERT');
+  await action(page, 'Mở trang đăng công thức bằng phiên EXPERT test', () => page.goto('/dang-cong-thuc'));
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Thông tin món ăn' })).toBeVisible();
 }
