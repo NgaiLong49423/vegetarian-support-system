@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { AlertCircle, Info, LoaderCircle, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, ImagePlus, Info, LoaderCircle, Plus, Trash2, UploadCloud } from 'lucide-react';
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
 import { ApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
@@ -8,7 +8,6 @@ import { useAuth } from '../components/AuthContext';
 import { Button, Card } from '../components/ui';
 import type { UserRole } from '../types';
 import { Link, useNavigate } from 'react-router-dom';
-import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
 
 type IngredientRow = {
   key: string;
@@ -85,7 +84,8 @@ function CreateRecipeForm() {
   const [cookTimeMinutes, setCookTimeMinutes] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [ingredients, setIngredients] = useState<IngredientRow[]>(() => [emptyIngredient()]);
-  const [mediaList, setMediaList] = useState<ImageItem[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [coverIndex, setCoverIndex] = useState<number | null>(null);
   const [mediaError, setMediaError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
@@ -107,17 +107,24 @@ function CreateRecipeForm() {
     setIngredients((current) => current.map((row) => row.key === key ? { ...row, ...patch } : row));
   };
 
+  const handleFiles = (selected: FileList | null) => {
+    setFiles(selected ? Array.from(selected) : []);
+    setCoverIndex(null);
+    setMediaError('');
+  };
+
   const validateMediaSelection = () => {
-    if (mediaList.length > 5) {
+    if (files.length > 5) {
       setMediaError('Mỗi công thức được chọn tối đa 5 ảnh.');
       return false;
     }
-    if (mediaList.length > 0) {
-      const coverCount = mediaList.filter((m) => m.isCover).length;
-      if (coverCount !== 1) {
-        setMediaError('Vui lòng chỉ định chính xác 1 ảnh đại diện (ảnh bìa) cho bài viết (FR-14, BR-19).');
-        return false;
-      }
+    if (files.length > 0 && (coverIndex === null || coverIndex >= files.length)) {
+      setMediaError('Nếu chọn ảnh, hãy chọn đúng 1 ảnh bìa.');
+      return false;
+    }
+    if (files.length > 0) {
+      setMediaError('Upload ảnh thuộc FR-14 và chưa được nối vào form này. Hiện hãy đăng bài không kèm ảnh.');
+      return false;
     }
     setMediaError('');
     return true;
@@ -159,11 +166,7 @@ function CreateRecipeForm() {
         unitId: row.unitId ?? 0,
         quantity: Number(row.quantity),
       })),
-      media: mediaList.map((m) => ({
-        blobUrl: m.url,
-        mimeType: m.mimeType,
-        cover: m.isCover,
-      })),
+      media: [],
     };
 
     setSubmitting(true);
@@ -288,14 +291,27 @@ function CreateRecipeForm() {
           </Card>
 
           <Card className="space-y-4 p-5 sm:p-6">
-            <SectionHead number="4" title="Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)" />
-            <RecipeImageUploader
-              images={mediaList}
-              onChange={setMediaList}
-              maxImages={5}
-            />
-            {mediaError && <p role="alert" className={errorClass}>{mediaError}</p>}
-            {errorFor('media') && <p role="alert" className={errorClass}>{errorFor('media')}</p>}
+            <SectionHead number="4" title="Ảnh và video" />
+            <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/50 p-4">
+              <div className="flex items-start gap-3">
+                <UploadCloud className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-ink">Ảnh công thức (0–5 ảnh)</p>
+                  <p className="mt-1 text-xs text-ink-muted">Upload và lưu Azure thuộc FR-14. Ở đây chỉ kiểm tra số ảnh và ảnh cover; ảnh đã chọn chưa thể gửi lên khi FR-14 chưa tích hợp.</p>
+                  <input type="file" accept="image/*" multiple onChange={(event) => handleFiles(event.target.files)} className="mt-3 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:font-semibold file:text-brand-700" aria-label="Chọn tối đa 5 ảnh" />
+                </div>
+                {files.length === 0 && <ImagePlus className="h-6 w-6 text-brand-400" />}
+              </div>
+              {files.length > 0 && <ul className="mt-3 space-y-2 border-t border-brand-100 pt-3">{files.map((file, index) => (
+                <li key={`${file.name}-${index}`} className="flex items-center gap-2 text-sm">
+                  <input type="radio" name="cover-image" checked={coverIndex === index} onChange={() => { setCoverIndex(index); setMediaError(''); }} aria-label={`Chọn ${file.name} làm ảnh cover`} />
+                  <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                  <span className="text-xs text-ink-muted">{coverIndex === index ? 'Cover' : ''}</span>
+                </li>
+              ))}</ul>}
+              {mediaError && <p role="alert" className={errorClass}>{mediaError}</p>}
+              {errorFor('media') && <p role="alert" className={errorClass}>{errorFor('media')}</p>}
+            </div>
             <Field label="Link YouTube (không bắt buộc)" error={errorFor('youtubeUrl')}>
               <input type="url" aria-label="Link YouTube" value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} maxLength={2048} placeholder="https://www.youtube.com/watch?v=..." className={inputClass} />
             </Field>

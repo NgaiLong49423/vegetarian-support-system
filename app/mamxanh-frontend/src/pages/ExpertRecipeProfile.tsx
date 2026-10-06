@@ -120,7 +120,7 @@ export function ExpertRecipeProfile() {
 
     {notice && <p role="status" className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{notice}</p>}
     {error && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"><p>{error}</p><Button variant="outline" size="sm" className="mt-3" onClick={() => void loadRecipes()}>Thử tải lại</Button></div>}
-    {loading && <div role="status" className="py-10 text-center text-sm text-ink-muted"><LoaderCircle className="mx-auto mb-2 h-6 w-6 animate-spin" />Đang tải bài công thức…</div>}
+    {loading && <div aria-live="polite" className="py-10 text-center text-sm text-ink-muted"><LoaderCircle className="mx-auto mb-2 h-6 w-6 animate-spin" />Đang tải bài công thức…</div>}
 
     {!loading && !error && recipes.length === 0 && <Card className="p-6 text-center text-sm text-ink-muted">Bạn chưa có công thức nào.</Card>}
     {!loading && recipes.length > 0 && <div className="space-y-3">

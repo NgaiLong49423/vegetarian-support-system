@@ -355,6 +355,20 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void rejectsUnsupportedMediaType() throws Exception {
+        List<RecipeMediaInput> invalidMime = List.of(
+                new RecipeMediaInput("https://blob.test/fr25/a.gif", "image/gif", true));
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(List.of(ingredient(gramUnitId, "200")), invalidMime))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[*].field", hasItem("media[0].mimeType")))
+                .andExpect(jsonPath("$.errors[*].message", hasItem("Ảnh phải có định dạng JPEG, PNG hoặc WebP.")));
+        assertNoRecipe();
+    }
+
+    @Test
     void reportsTitleAndInstructionLengthErrorsAfterTrim() throws Exception {
         CreateRecipeRequest invalid = new CreateRecipeRequest("  ab  ", "", "too short", DishCategory.BRAISED,
                 VegetarianType.VEGAN, Difficulty.EASY, 2, 10, 0, "", List.of(ingredient(gramUnitId, "200")), List.of());

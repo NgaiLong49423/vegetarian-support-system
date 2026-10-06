@@ -475,7 +475,7 @@ test('saved recipe appears in profile and disappears when unsaved', async ({ pag
   await expect(page.getByRole('heading', { name: 'Chưa có công thức đã lưu' })).toBeVisible();
 });
 
-test('FR-25: Direct Recipe Publishing with image uploader, validation error preservation, and successful publish flow', async ({ page }) => {
+test('FR-25: Direct Recipe Publishing with validation error preservation and successful publish flow', async ({ page }) => {
   await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({
     json: {
       dishCategories: [{ code: 'BRAISED', label: 'Món kho' }],
@@ -486,21 +486,6 @@ test('FR-25: Direct Recipe Publishing with image uploader, validation error pres
   }));
   await page.route('**/api/v1/recipes/ingredient-options**', (route) => route.fulfill({
     json: [{ ingredientId: 1, name: 'Đậu hũ' }],
-  }));
-
-  // Mock upload media API (FR-14)
-  await page.route('**/api/v1/recipes/media/upload', (route) => route.fulfill({
-    status: 200,
-    json: {
-      code: 1000,
-      message: 'Success',
-      result: {
-        url: 'https://storage.mamxanh.tech/recipes/mon-kho.jpg',
-        fileName: 'mon-kho.jpg',
-        contentType: 'image/jpeg',
-        size: 10240,
-      },
-    },
   }));
 
   // Control recipes publish route: first fail validation, then succeed
@@ -557,14 +542,7 @@ test('FR-25: Direct Recipe Publishing with image uploader, validation error pres
       status: 'PUBLISHED',
       authorId: 42,
       authorName: 'Trần Thị Chuyên Gia',
-      media: [
-        {
-          mediaId: 101,
-          url: 'https://storage.mamxanh.tech/recipes/mon-kho.jpg',
-          mimeType: 'image/jpeg',
-          cover: true,
-        },
-      ],
+      media: [],
       ingredients: [
         {
           ingredientId: 1,
@@ -590,17 +568,22 @@ test('FR-25: Direct Recipe Publishing with image uploader, validation error pres
   });
 
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
-  await expect(page.getByText('Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)')).toBeVisible();
 
-  // 2. Upload image via uploader
-  const fileInput = page.locator('#recipe-media-upload-input');
-  await fileInput.setInputFiles({
-    name: 'mon-kho.jpg',
-    mimeType: 'image/jpeg',
-    buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]),
-  });
-  await expect(page.getByText('Đã tải 1/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
-  await expect(page.getByText('Ảnh bìa').first()).toBeVisible();
+  // 2. Validate image cover selection (AC-25.6)
+  const imageInput = page.getByLabel('Chọn tối đa 5 ảnh');
+  await imageInput.setInputFiles([
+    { name: 'cover-candidate.png', mimeType: 'image/png', buffer: Buffer.from('cover') },
+  ]);
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+  await expect(page.getByRole('alert')).toContainText('hãy chọn đúng 1 ảnh bìa');
+
+  // Select cover image, verify notice that FR-14 storage is disconnected
+  await page.getByLabel('Chọn cover-candidate.png làm ảnh cover').check();
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+  await expect(page.getByRole('alert')).toContainText('Upload ảnh thuộc FR-14');
+
+  // Clear images for direct publish
+  await imageInput.setInputFiles([]);
 
   // 3. Fill form fields
   await page.getByLabel('Tên món *').fill('Nấm đùi gà kho tiêu xanh');
@@ -635,17 +618,13 @@ test('FR-25: Direct Recipe Publishing with image uploader, validation error pres
   expect(await page.getByLabel('Thời gian nấu').inputValue()).toBe('20');
   expect(await page.getByLabel('Số lượng nguyên liệu 1').inputValue()).toBe('200');
   expect(await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').inputValue()).toContain('Cắt nấm thành từng lát');
-  await expect(page.getByText('Đã tải 1/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
 
   // 5. Submit again: validation passes, direct publish succeeds (AC-25.1)
   await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
 
-  // Verify server payload contains uploaded media
+  // Verify server payload
   expect(receivedPayload).toBeTruthy();
   expect(receivedPayload.title).toBe('Nấm đùi gà kho tiêu xanh');
-  expect(receivedPayload.media).toHaveLength(1);
-  expect(receivedPayload.media[0].blobUrl).toBe('https://storage.mamxanh.tech/recipes/mon-kho.jpg');
-  expect(receivedPayload.media[0].cover).toBe(true);
 
   // Navigates directly to published recipe detail
   await page.waitForURL('**/cong-thuc/999');
