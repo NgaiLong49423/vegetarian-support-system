@@ -23,7 +23,7 @@ public record CreateRecipeRequest(
         @NotNull @Min(0) @Max(1440) Integer cookTimeMinutes,
         @Size(max = 2048) String youtubeUrl,
         @NotNull @Size(min = 1, max = 50) List<@Valid RecipeIngredientInput> ingredients,
-        @Size(max = 5) List<@Valid RecipeMediaInput> media) {
+        @Size(max = 5, message = "Mỗi công thức được có tối đa 5 ảnh.") List<@Valid RecipeMediaInput> media) {
 
     public CreateRecipeRequest {
         title = title == null ? null : title.trim();

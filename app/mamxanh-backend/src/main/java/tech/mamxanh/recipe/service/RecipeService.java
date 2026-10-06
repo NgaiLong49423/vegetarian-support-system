@@ -32,12 +32,14 @@ import tech.mamxanh.recipe.entity.RecipeCodes.MediaType;
 import tech.mamxanh.recipe.entity.RecipeCodes.VegetarianType;
 import tech.mamxanh.recipe.entity.RecipeIngredientEntity;
 import tech.mamxanh.recipe.entity.RecipeIngredientReferenceEntity;
+import tech.mamxanh.recipe.entity.RecipeMediaEntity;
 import tech.mamxanh.recipe.entity.RecipePostEntity;
 import tech.mamxanh.recipe.entity.RecipeUnitReferenceEntity;
 import tech.mamxanh.recipe.repository.RecipeAuthorReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeConversionRepository;
 import tech.mamxanh.recipe.repository.RecipeIngredientReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeIngredientRepository;
+import tech.mamxanh.recipe.repository.RecipeMediaRepository;
 import tech.mamxanh.recipe.repository.RecipePostRepository;
 import tech.mamxanh.recipe.repository.RecipeUnitReferenceRepository;
 import tech.mamxanh.recipe.service.RecipeValidationException.FieldError;
@@ -50,6 +52,7 @@ public class RecipeService {
     private final RecipeUnitReferenceRepository unitReferenceRepository;
     private final RecipeConversionRepository conversionRepository;
     private final RecipeAuthorReferenceRepository authorRepository;
+    private final RecipeMediaRepository mediaRepository;
     private final Clock clock;
 
     @Autowired
@@ -58,13 +61,15 @@ public class RecipeService {
             RecipeIngredientReferenceRepository ingredientReferenceRepository,
             RecipeUnitReferenceRepository unitReferenceRepository,
             RecipeConversionRepository conversionRepository,
-            RecipeAuthorReferenceRepository authorRepository, Clock clock) {
+            RecipeAuthorReferenceRepository authorRepository,
+            RecipeMediaRepository mediaRepository, Clock clock) {
         this.recipeRepository = recipeRepository;
         this.ingredientRepository = ingredientRepository;
         this.ingredientReferenceRepository = ingredientReferenceRepository;
         this.unitReferenceRepository = unitReferenceRepository;
         this.conversionRepository = conversionRepository;
         this.authorRepository = authorRepository;
+        this.mediaRepository = mediaRepository;
         this.clock = clock;
     }
 
@@ -130,6 +135,21 @@ public class RecipeService {
         }).toList();
         ingredientRepository.saveAll(recipeIngredients);
 
+        if (request.media() != null && !request.media().isEmpty()) {
+            List<RecipeMediaEntity> mediaEntities = new ArrayList<>();
+            for (int index = 0; index < request.media().size(); index++) {
+                RecipeMediaInput input = request.media().get(index);
+                RecipeMediaEntity media = new RecipeMediaEntity();
+                media.setRecipeId(saved.getId());
+                media.setBlobUrl(input.blobUrl().trim());
+                media.setMimeType(input.mimeType().trim());
+                media.setDisplayOrder(index + 1);
+                media.setCover(input.cover());
+                mediaEntities.add(media);
+            }
+            mediaRepository.saveAll(mediaEntities);
+        }
+
         return new CreateRecipeResponse(saved.getId(), saved.getTitle(), saved.getStatus(), publishedAt);
     }
 
@@ -161,11 +181,14 @@ public class RecipeService {
                 .map(RecipeIngredientReferenceEntity::getName)
                 .distinct()
                 .toList();
+        List<RecipeDetailResponse.Media> media = mediaRepository.findAllByRecipeIdOrderByDisplayOrderAsc(recipeId).stream()
+                .map(m -> new RecipeDetailResponse.Media(m.getBlobUrl(), m.getMimeType(), m.getDisplayOrder(), m.isCover()))
+                .toList();
         return new RecipeDetailResponse(recipe.getId(), recipe.getTitle(), recipe.getDescription(),
                 recipe.getInstructions(), category.name(), category.label(), vegetarianType.name(), vegetarianType.label(),
                 difficulty.name(), difficulty.label(), recipe.getServings(), recipe.getPrepTimeMinutes(),
                 recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getPublishedAt(), ingredients,
-                ingredientsWithoutNutrition.isEmpty(), ingredientsWithoutNutrition, List.of());
+                ingredientsWithoutNutrition.isEmpty(), ingredientsWithoutNutrition, media);
     }
 
     @Transactional(readOnly = true)
@@ -262,17 +285,12 @@ public class RecipeService {
 
     private static void validateMedia(List<RecipeMediaInput> media, List<FieldError> errors) {
         if (media == null || media.isEmpty()) return;
-        if (media.size() > 5) errors.add(new FieldError("media", "Mỗi công thức được có tối đa 5 ảnh."));
         long covers = media.stream().filter(RecipeMediaInput::cover).count();
         if (covers != 1) errors.add(new FieldError("media", "Nếu có ảnh, hãy chọn đúng 1 ảnh bìa."));
-        errors.add(new FieldError("media", "Đăng công thức kèm ảnh chưa được hỗ trợ. Hãy bỏ ảnh; upload ảnh sẽ được tích hợp sau FR-14."));
         for (int index = 0; index < media.size(); index++) {
             RecipeMediaInput item = media.get(index);
-            if (item.mimeType() == null || !MediaType.accepts(item.mimeType().trim())) {
+            if (!MediaType.accepts(item.mimeType().trim())) {
                 errors.add(new FieldError("media[" + index + "].mimeType", "Ảnh phải có định dạng JPEG, PNG hoặc WebP."));
-            }
-            if (item.blobUrl() == null || item.blobUrl().isBlank()) {
-                errors.add(new FieldError("media[" + index + "].blobUrl", "Thiếu tham chiếu ảnh đã được upload."));
             }
         }
     }

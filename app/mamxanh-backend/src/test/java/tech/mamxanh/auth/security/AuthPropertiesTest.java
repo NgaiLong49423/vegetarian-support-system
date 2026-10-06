@@ -31,6 +31,28 @@ class AuthPropertiesTest {
                 .contains("jwtSecret=[redacted]", "accessTokenTtl=PT1H");
     }
 
+    @Test
+    void rejectsWeakBcryptStrength() {
+        assertThatIllegalArgumentException().isThrownBy(() ->
+                new AuthProperties(Duration.ofHours(24), Duration.ofSeconds(60), 9, "http://localhost:5173",
+                        5, Duration.ofMinutes(10), Duration.ofMinutes(60), SECRET, "mamxanh"))
+                .withMessageContaining("bcrypt-strength must be at least 10");
+    }
+
+    @Test
+    void rejectsZeroOrNegativeFailedLoginAttempts() {
+        assertThatIllegalArgumentException().isThrownBy(() ->
+                new AuthProperties(Duration.ofHours(24), Duration.ofSeconds(60), 12, "http://localhost:5173",
+                        0, Duration.ofMinutes(10), Duration.ofMinutes(60), SECRET, "mamxanh"))
+                .withMessageContaining("max-failed-login-attempts must be at least 1");
+    }
+
+    @Test
+    void rejectsNegativeAccessTokenLifetime() {
+        assertThatIllegalArgumentException().isThrownBy(() -> properties(SECRET, Duration.ofSeconds(-10)))
+                .withMessageContaining("access-token-ttl must be at least 1 second");
+    }
+
     private static AuthProperties properties(String jwtSecret, Duration accessTokenTtl) {
         return new AuthProperties(Duration.ofHours(24), Duration.ofSeconds(60), 12, "http://localhost:5173",
                 5, Duration.ofMinutes(10), accessTokenTtl, jwtSecret, "mamxanh");
