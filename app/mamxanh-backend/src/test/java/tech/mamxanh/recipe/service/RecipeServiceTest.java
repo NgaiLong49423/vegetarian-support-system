@@ -40,6 +40,10 @@ import tech.mamxanh.recipe.repository.RecipeIngredientReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeIngredientRepository;
 import tech.mamxanh.recipe.repository.RecipePostRepository;
 import tech.mamxanh.recipe.repository.RecipeUnitReferenceRepository;
+import tech.mamxanh.auth.service.CurrentUserService;
+import tech.mamxanh.recipe.repository.RecipeMediaRepository;
+import tech.mamxanh.recipe.repository.RecipeStatisticsRepository;
+import tech.mamxanh.nutrition.service.RecipeNutritionService;
 
 @ExtendWith(MockitoExtension.class)
 class RecipeServiceTest {
@@ -50,6 +54,10 @@ class RecipeServiceTest {
     @Mock private RecipeConversionRepository conversionRepository;
     @Mock private RecipeAuthorReferenceRepository authorRepository;
     @Mock private Clock clock;
+    @Mock private CurrentUserService currentUserService;
+    @Mock private RecipeMediaRepository mediaRepository;
+    @Mock private RecipeNutritionService nutritionService;
+    @Mock private RecipeStatisticsRepository statisticsRepository;
     @InjectMocks private RecipeService service;
 
     private RecipeAuthorReferenceEntity author;
@@ -95,6 +103,43 @@ class RecipeServiceTest {
         assertThatThrownBy(() -> service.publish(validRequest())).isInstanceOf(AppException.class)
                 .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.UNAUTHENTICATED));
         verify(authorRepository, never()).findById(any());
+    }
+
+    @Test
+    void detailReadsCurrentPublicRecipeAndProjectsAuthorNutritionAndSeparateInteractionCounts() {
+        RecipePostEntity recipe = new RecipePostEntity();
+        recipe.setId(44L);
+        recipe.setAuthorId(7L);
+        recipe.setTitle("Đậu hũ kho");
+        recipe.setInstructions("Kho đến khi thấm gia vị");
+        recipe.setDishCategory("BRAISED");
+        recipe.setVegetarianType("VEGAN");
+        recipe.setDifficulty("EASY");
+        recipe.setServings(2);
+        recipe.setPrepTimeMinutes(5);
+        recipe.setCookTimeMinutes(15);
+        recipe.setStatus("PUBLISHED");
+        when(recipeRepository.findByIdAndStatus(44L, "PUBLISHED")).thenReturn(Optional.of(recipe));
+        when(ingredientRepository.findAllByRecipeIdOrderByIdAsc(44L)).thenReturn(List.of());
+        when(currentUserService.getPublicProfile(7L)).thenReturn(
+                new CurrentUserService.PublicProfile(7L, "Bếp xanh", "/public/avatar.png"));
+        when(nutritionService.calculate(List.of(), 2)).thenReturn(
+                new RecipeNutritionService.NutritionSummary(true, List.of(), java.util.Map.of(), java.util.Map.of()));
+        var projection = org.mockito.Mockito.mock(RecipeStatisticsRepository.StatisticsProjection.class);
+        when(projection.getLikes()).thenReturn(3L);
+        when(projection.getDislikes()).thenReturn(1L);
+        when(projection.getReactionCount()).thenReturn(4L);
+        when(projection.getViewCount()).thenReturn(21L);
+        when(statisticsRepository.findStatistics(44L)).thenReturn(Optional.of(projection));
+
+        var result = service.getPublishedRecipe(44L);
+
+        assertThat(result.author().displayName()).isEqualTo("Bếp xanh");
+        assertThat(result.statistics().likes()).isEqualTo(3);
+        assertThat(result.statistics().viewCount()).isEqualTo(21);
+        assertThat(result.statistics().likePercentage()).isEqualByComparingTo("75.00");
+        assertThat(result.nutrition().complete()).isTrue();
+        assertThat(result.instructions()).isEqualTo("Kho đến khi thấm gia vị");
     }
 
     @Test
@@ -259,6 +304,7 @@ class RecipeServiceTest {
 
         RecipePostEntity recipe = new RecipePostEntity();
         recipe.setId(7L);
+        recipe.setAuthorId(7L);
         recipe.setTitle("Canh");
         recipe.setInstructions("Hướng dẫn");
         recipe.setDishCategory("SOUP");
@@ -267,6 +313,8 @@ class RecipeServiceTest {
         recipe.setServings(2);
         recipe.setPrepTimeMinutes(1);
         recipe.setCookTimeMinutes(2);
+        when(currentUserService.getPublicProfile(7L)).thenReturn(
+                new CurrentUserService.PublicProfile(7L, "Chủ bếp", null));
 
         RecipeIngredientEntity supportedLine = ingredientLine(10L, 1);
         RecipeIngredientEntity unsupportedLine = ingredientLine(11L, 2);
@@ -289,6 +337,14 @@ class RecipeServiceTest {
         when(ingredientRepository.findAllByRecipeIdOrderByIdAsc(7L)).thenReturn(List.of(supportedLine, unsupportedLine));
         when(ingredientReferenceRepository.findAllById(List.of(10L, 11L))).thenReturn(List.of(supported, unsupported));
         when(unitReferenceRepository.findAllById(List.of(1, 2))).thenReturn(List.of(gram, pinch));
+        when(nutritionService.calculate(any(), org.mockito.ArgumentMatchers.eq(2))).thenReturn(
+                new RecipeNutritionService.NutritionSummary(false, List.of("Lá"), java.util.Map.of(), java.util.Map.of()));
+        var statistics = org.mockito.Mockito.mock(RecipeStatisticsRepository.StatisticsProjection.class);
+        when(statistics.getLikes()).thenReturn(0L);
+        when(statistics.getDislikes()).thenReturn(0L);
+        when(statistics.getReactionCount()).thenReturn(0L);
+        when(statistics.getViewCount()).thenReturn(0L);
+        when(statisticsRepository.findStatistics(7L)).thenReturn(Optional.of(statistics));
 
         var response = service.getPublishedRecipe(7L);
 
