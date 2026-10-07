@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.8.0
+> **Version:** v2.9.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-06
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -1758,8 +1758,8 @@ Thiết lập cơ chế giám sát cộng đồng (crowdsourced moderation) nh�
   - **When:** Member chọn lý do báo cáo hợp lệ và nhấn "Gửi báo cáo".
   - **Then:** Hệ thống lưu báo cáo ở trạng thái `OPEN` và phản hồi thông báo đã tiếp nhận thành công.
 
-- **AC-26.2 — Ngăn chặn tạo báo cáo mới trùng lặp từ cùng tài khoản:**
-  - **Given:** Member đã có một báo cáo ở trạng thái `OPEN` đối với bài viết A.
+- **AC-26.2 — Ngăn chặn tạo báo cáo mới trùng lặp từ cùng tài khoản (FR-30):**
+  - **Given:** Member đã có một báo cáo ở trạng thái `OPEN` hoặc `IN_REVIEW` đối với bài viết A.
   - **When:** Member cố tình gửi thêm một báo cáo mới cho bài viết A.
   - **Then:** Hệ thống chặn tạo mới và thông báo tài khoản đã có báo cáo đang chờ xử lý (FR-30).
 
@@ -1782,7 +1782,7 @@ Thiết lập cơ chế giám sát cộng đồng (crowdsourced moderation) nh�
 
 - **Mã yêu cầu:** FR-27
 - **Module:** M03 (Community Recipes & Social)
-- **Tóm tắt yêu cầu:** Biểu mẫu báo cáo bài công thức cho phép chọn đúng một trong sáu nhóm lý do chuẩn hóa tại SRS 3.11 và nhập mô tả bổ sung; mô tả bổ sung là bắt buộc khi chọn nhóm lý do "Khác" (10–500 ký tự) và là tùy chọn đối với các nhóm lý do còn lại.
+- **Tóm tắt yêu cầu:** Biểu mẫu báo cáo bài công thức cho phép chọn đúng một trong sáu nhóm lý do chuẩn hóa tại SRS 3.11 và nhập mô tả bổ sung; mô tả bổ sung là bắt buộc khi chọn nhóm lý do "Khác" (10–500 ký tự sau khi trim) và là tùy chọn, tối đa 500 ký tự, đối với các nhóm lý do còn lại.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-contribution-and-community.md#fr-27).
 
@@ -1793,17 +1793,17 @@ Chuẩn hóa dữ liệu đầu vào của các báo cáo vi phạm nội dung; 
 - **Các Use Case con:**
   - `UC-27.1`: Chọn lý do và gửi biểu mẫu báo cáo bài công thức (Submit recipe report form).
 - **User Stories:**
-  - `US-27.1`: Là một người báo cáo, tôi muốn chọn đúng lý do "Không phải món chay" từ danh sách có sẵn để Ban quản trị hiểu ngay vấn đề mà tôi không cần phải gõ giải thích dài dòng nếu không cần thiết.
+  - `US-27.1`: Là một người báo cáo, tôi muốn chọn đúng lý do "Sai thông tin công thức hoặc nhãn ăn chay" từ danh sách có sẵn để Ban quản trị hiểu ngay vấn đề mà tôi không cần phải gõ giải thích dài dòng nếu không cần thiết.
 
 #### Cấu trúc 6 nhóm lý do báo cáo chuẩn hóa (SRS 3.11)
 
 | Nhóm lý do | Mã phân loại | Tính chất mô tả bổ sung | Mô tả chi tiết phạm vi vi phạm |
 |---|---|---|---|
-| **1. Không phải món chay** | `NON_VEGAN` | Tùy chọn (Optional) | Công thức chứa thịt, cá, hải sản, mỡ động vật hoặc các thành phần không thuần chay. |
+| **1. Sai thông tin công thức hoặc nhãn ăn chay** | `RECIPE_INFO_OR_DIET_LABEL` | Tùy chọn (Optional) | Thông tin công thức sai hoặc nhãn/chỉ dẫn chế độ ăn chay không chính xác. |
 | **2. Nguy cơ an toàn thực phẩm** | `FOOD_SAFETY_HAZARD` | Tùy chọn (Optional) | Hướng dẫn kết hợp nguyên liệu gây ngộ độc, liều lượng nguy hiểm hoặc phương pháp nấu có hại cho sức khỏe. |
-| **3. Nội dung phản cảm / Bạo lực** | `INAPPROPRIATE_CONTENT` | Tùy chọn (Optional) | Hình ảnh ghê rợn, phản cảm, ngôn từ bạo lực hoặc vi phạm thuần phong mỹ tục. |
-| **4. Vi phạm bản quyền / Sao chép** | `COPYRIGHT_VIOLATION` | Tùy chọn (Optional) | Sao chép nguyên văn công thức, ảnh hoặc nội dung thuộc quyền sở hữu của người khác mà không xin phép. |
-| **5. Spam / Quảng cáo thương mại** | `SPAM_ADVERTISING` | Tùy chọn (Optional) | Chèn liên kết bán hàng, quảng cáo thương mại không liên quan, nội dung rác hoặc lừa đảo. |
+| **3. Spam / Quảng cáo không phù hợp** | `SPAM_ADVERTISING` | Tùy chọn (Optional) | Chèn nội dung spam, quảng cáo không phù hợp hoặc thương mại không liên quan. |
+| **4. Nội dung xúc phạm / Không phù hợp** | `INAPPROPRIATE_CONTENT` | Tùy chọn (Optional) | Nội dung xúc phạm hoặc không phù hợp. |
+| **5. Sao chép / Nghi vi phạm bản quyền** | `COPYRIGHT_VIOLATION` | Tùy chọn (Optional) | Sao chép công thức, hình ảnh hoặc nội dung có dấu hiệu vi phạm bản quyền. |
 | **6. Khác** | `OTHER` | **Bắt buộc (Mandatory)** | Các vấn đề khác; **bắt buộc nhập từ 10 đến 500 ký tự** để giải thích rõ lý do báo cáo. |
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
@@ -1825,7 +1825,7 @@ Chuẩn hóa dữ liệu đầu vào của các báo cáo vi phạm nội dung; 
   - **Then:** Giao diện hiển thị đúng và đủ 6 nhóm lý do theo quy định tại SRS 3.11.
 
 - **AC-27.2 — Gửi thành công báo cáo với mô tả để trống cho 5 nhóm lý do đầu:**
-  - **Given:** Member chọn nhóm lý do "Không phải món chay".
+  - **Given:** Member chọn nhóm lý do "Sai thông tin công thức hoặc nhãn ăn chay".
   - **When:** Member để trống ô mô tả bổ sung và nhấn "Gửi báo cáo".
   - **Then:** Hệ thống xác nhận hợp lệ và gửi báo cáo thành công.
 
@@ -1838,6 +1838,11 @@ Chuẩn hóa dữ liệu đầu vào của các báo cáo vi phạm nội dung; 
   - **Given:** Member chọn nhóm lý do "Khác".
   - **When:** Member nhập mô tả "Sai món" (7 ký tự) hoặc để trống và nhấn gửi.
   - **Then:** Hệ thống từ chối và hiển thị thông báo lỗi yêu cầu mô tả tối thiểu 10 ký tự.
+
+- **AC-27.5 — Giới hạn mô tả bổ sung:**
+  - **Given:** Member chọn một lý do hợp lệ.
+  - **When:** Mô tả sau khi trim vượt quá 500 ký tự.
+  - **Then:** Hệ thống từ chối và không tạo báo cáo; mô tả của năm lý do đầu vẫn có thể để trống.
 
 ---
 

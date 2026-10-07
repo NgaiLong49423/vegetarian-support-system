@@ -1,17 +1,17 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.15.0<br>
+> **Version:** v0.16.0<br>
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-06<br>
 > **Status:** Active  
 
 # Database Workspace
 
-Database chính đã chốt là Microsoft SQL Server 2019. Sau khi đồng bộ, thứ tự migration hiện hành là V1–V8; cần xác minh migration V8 cùng `database/schema.sql` và `database/queries.sql` trên database sạch.
+Database chính đã chốt là Microsoft SQL Server 2019. Sau khi đồng bộ, thứ tự migration hiện hành là V1–V9; cần xác minh migration V9 cùng `database/schema.sql` và `database/queries.sql` trên database sạch.
 
 ## Quyền sở hữu dữ liệu
 
-- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Baseline hiện gồm V1–V8, bao gồm V7 cho lời mời Onboarding và V8 cho notification target/index của Expert Application. `database/schema.sql` phải phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng.
+- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Baseline hiện gồm V1–V9, bao gồm V7 cho lời mời Onboarding, V8 cho notification target/index của Expert Application và V9 đồng bộ taxonomy/trạng thái REPORT với FR-26/27. `database/schema.sql` phải phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
 - Flyway repeatable migration `app/mamxanh-backend/src/main/resources/db/demo/R__demo_sample_data.sql` nạp fixture demo khi profile `local` chạy (IntelliJ hoặc Docker Compose). Năm tài khoản đã xác minh phục vụ demo Auth, onboarding, hồ sơ/sở thích, công thức, lịch ăn và duyệt Chuyên gia/Admin. `MAMXANH_DEMO_PASSWORD` được lấy từ `.env` local và BCrypt hóa lúc Backend khởi động; không lưu password/hash trong SQL migration hoặc Git.
 - Profile `local` dùng thêm location `classpath:db/demo`; các profile `test` và production chỉ chạy location migration schema `classpath:db/migration`. Seed dùng khóa xác định/kiểm tra tồn tại trước khi thêm nên Flyway chạy lại không nhân bản fixture.
