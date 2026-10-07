@@ -25,6 +25,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Normalize unavailable Meal Plan references to the generic `Công thức không còn khả dụng` message while retaining the existing deletion indicator.
+- Return out-of-range Saved Recipes pagination as a standard validation problem and describe the bounds in OpenAPI.
 
 ## 2026-10-06 — Submit Recipe Post Reports
 
