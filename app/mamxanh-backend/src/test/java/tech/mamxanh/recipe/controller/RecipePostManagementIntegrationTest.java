@@ -109,7 +109,8 @@ class RecipePostManagementIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(2))
                 .andExpect(jsonPath("$.content[*].available", hasItems(true, false)))
-                .andExpect(jsonPath("$.content[?(@.available == false)].title").doesNotExist())
+                .andExpect(jsonPath("$.content[?(@.available == false)].title")
+                        .value(hasItem(org.hamcrest.Matchers.nullValue())))
                 .andExpect(jsonPath("$.content[?(@.available == false)].unavailableMessage")
                         .value(hasItem("Công thức không còn khả dụng")));
         mockMvc.perform(get("/api/v1/saved-recipes").param("size", "51")
