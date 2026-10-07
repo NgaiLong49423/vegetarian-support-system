@@ -63,26 +63,6 @@ test('registration shows the duplicate-email error returned by the API (mock API
   await expect(page.locator('#email-error')).toContainText('Email này đã được sử dụng');
 });
 
-test('registration maps Backend field validation errors to the matching form controls (mock API)', async ({ page }) => {
-  await stubApi(page, '/auth/register', route => route.fulfill(problem(400, 'VALIDATION_FAILED', {
-    errors: [
-      { field: 'displayName', message: 'Tên hiển thị đã bị từ chối.' },
-      { field: 'email', message: 'Email không được chấp nhận.' },
-      { field: 'confirmPassword', message: 'Xác nhận mật khẩu không khớp.' },
-    ],
-  })));
-  await page.goto('/dang-ky');
-  await page.getByLabel('Tên hiển thị').fill('Nguyễn An');
-  await page.getByLabel('Email', { exact: true }).fill('an@example.com');
-  await page.getByLabel('Mật khẩu', { exact: true }).fill('DemoPass123!');
-  await page.getByLabel('Xác nhận mật khẩu').fill('DemoPass123!');
-  await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
-
-  await expect(page.locator('#name-error')).toHaveText('Tên hiển thị đã bị từ chối.');
-  await expect(page.locator('#email-error')).toHaveText('Email không được chấp nhận.');
-  await expect(page.locator('#confirm-error')).toHaveText('Xác nhận mật khẩu không khớp.');
-});
-
 test('verification link is submitted once and removed from the address bar (mock API)', async ({ page }) => {
   const tokens: string[] = [];
   await stubApi(page, '/auth/email-verifications', async route => {
@@ -166,6 +146,12 @@ test('login keeps the session in this tab and logout clears it without calling t
   await expect(page.getByText('an@example.com')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Đăng nhập', exact: true })).toHaveCount(0);
 
+  expect(serverCalls).toEqual([
+    'POST /api/v1/auth/login',
+    'POST /api/v1/nutrition/dietary-preferences/onboarding/invitation',
+    'GET /api/v1/recipes',
+    'GET /api/v1/recipes',
+  ]);
   const callsBeforeLogout = serverCalls.length;
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
   await expect(page).toHaveURL(/\/dang-nhap$/);

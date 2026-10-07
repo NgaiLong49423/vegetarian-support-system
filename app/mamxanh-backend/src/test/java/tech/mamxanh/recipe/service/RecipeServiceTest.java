@@ -3,9 +3,6 @@ package tech.mamxanh.recipe.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,6 +10,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -23,19 +21,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.recipe.dto.request.CreateRecipeRequest;
 import tech.mamxanh.recipe.dto.request.RecipeIngredientInput;
 import tech.mamxanh.recipe.dto.request.RecipeMediaInput;
 import tech.mamxanh.recipe.entity.RecipeAuthorReferenceEntity;
-import tech.mamxanh.recipe.entity.RecipeCodes.Difficulty;
-import tech.mamxanh.recipe.entity.RecipeCodes.DishCategory;
-import tech.mamxanh.recipe.entity.RecipeCodes.VegetarianType;
 import tech.mamxanh.recipe.entity.RecipeIngredientEntity;
 import tech.mamxanh.recipe.entity.RecipeIngredientReferenceEntity;
 import tech.mamxanh.recipe.entity.RecipePostEntity;
@@ -46,7 +40,6 @@ import tech.mamxanh.recipe.repository.RecipeIngredientReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeIngredientRepository;
 import tech.mamxanh.recipe.repository.RecipePostRepository;
 import tech.mamxanh.recipe.repository.RecipeUnitReferenceRepository;
-import tech.mamxanh.recipe.service.RecipeValidationException.FieldError;
 
 @ExtendWith(MockitoExtension.class)
 class RecipeServiceTest {
@@ -59,158 +52,203 @@ class RecipeServiceTest {
     @Mock private Clock clock;
     @InjectMocks private RecipeService service;
 
+    private RecipeAuthorReferenceEntity author;
+    private RecipeIngredientReferenceEntity ingredient;
+    private RecipeUnitReferenceEntity gram;
+
     @BeforeEach
     void setUp() {
-        lenient().when(clock.getZone()).thenReturn(ZoneOffset.UTC);
-        lenient().when(clock.instant()).thenReturn(Instant.parse("2026-10-01T00:00:00Z"));
+        SecurityContextHolder.clearContext();
+        author = new RecipeAuthorReferenceEntity();
+        ReflectionTestUtils.setField(author, "id", 7L);
+        ReflectionTestUtils.setField(author, "role", "EXPERT");
+        ReflectionTestUtils.setField(author, "accountStatus", "ACTIVE");
+        ingredient = new RecipeIngredientReferenceEntity();
+        ReflectionTestUtils.setField(ingredient, "id", 11L);
+        ReflectionTestUtils.setField(ingredient, "name", "Đậu hũ");
+        ReflectionTestUtils.setField(ingredient, "nutritionSupported", true);
+        gram = new RecipeUnitReferenceEntity();
+        ReflectionTestUtils.setField(gram, "id", 1);
+        ReflectionTestUtils.setField(gram, "code", "g");
+        ReflectionTestUtils.setField(gram, "name", "gram");
+        ReflectionTestUtils.setField(gram, "dimension", "MASS");
+        ReflectionTestUtils.setField(gram, "active", true);
     }
 
     @AfterEach
-    void clearAuthentication() {
+    void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
 
     @Test
-    void publishRejectsMissingUnauthenticatedAnonymousAndMalformedPrincipals() {
-        assertUnauthorized(() -> service.publish(validRequest()));
+    void rejectsMissingUnauthenticatedAnonymousAndUnparseablePrincipals() {
+        assertUnauthenticated();
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("7", "password"));
-        assertUnauthorized(() -> service.publish(validRequest()));
-        SecurityContextHolder.getContext().setAuthentication(new AnonymousAuthenticationToken("key", "guest",
-                AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
-        assertUnauthorized(() -> service.publish(validRequest()));
+                UsernamePasswordAuthenticationToken.unauthenticated("7", "ignored"));
+        assertUnauthenticated();
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("not-an-id", "password"));
-        assertUnauthorized(() -> service.publish(validRequest()));
+                new org.springframework.security.authentication.AnonymousAuthenticationToken("key", "anonymous",
+                        List.of(() -> "ROLE_ANONYMOUS")));
+        assertUnauthenticated();
+        SecurityContextHolder.getContext().setAuthentication(
+                UsernamePasswordAuthenticationToken.authenticated("not-a-number", null, List.of()));
+        assertThatThrownBy(() -> service.publish(validRequest())).isInstanceOf(AppException.class)
+                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.UNAUTHENTICATED));
+        verify(authorRepository, never()).findById(any());
     }
 
     @Test
-    void publishRequiresAnExistingActiveExpertAccount() {
+    void rejectsUnknownInactiveAndNonExpertAccounts() {
         authenticate("7");
         when(authorRepository.findById(7L)).thenReturn(Optional.empty());
-        assertUnauthorized(() -> service.publish(validRequest()));
+        assertUnauthenticated();
 
-        RecipeAuthorReferenceEntity inactive = author("LOCKED", "EXPERT");
-        when(authorRepository.findById(7L)).thenReturn(Optional.of(inactive));
-        assertAccessDenied(() -> service.publish(validRequest()));
-
-        RecipeAuthorReferenceEntity nonExpert = author("ACTIVE", "CUSTOMER");
-        when(authorRepository.findById(7L)).thenReturn(Optional.of(nonExpert));
-        assertAccessDenied(() -> service.publish(validRequest()));
+        when(authorRepository.findById(7L)).thenReturn(Optional.of(author));
+        ReflectionTestUtils.setField(author, "accountStatus", "LOCKED");
+        assertAccessDenied();
+        ReflectionTestUtils.setField(author, "accountStatus", "ACTIVE");
+        ReflectionTestUtils.setField(author, "role", "CUSTOMER");
+        assertAccessDenied();
     }
 
     @Test
-    void publishRejectsInvalidFieldsYoutubeAndMediaWithoutSaving() {
-        authenticate("7");
-        givenActiveExpert();
-        CreateRecipeRequest invalid = request("  ", "x".repeat(2001), "short", 0, 0,
-                "http://youtube.com/watch", List.of(validIngredient()), List.of(
-                        new RecipeMediaInput(" ", "image/gif", false),
-                        new RecipeMediaInput("https://image.test/a", "image/png", false)));
-        assertThatThrownBy(() -> service.publish(invalid)).isInstanceOf(RecipeValidationException.class)
-                .satisfies(error -> assertThat(((RecipeValidationException) error).errors())
-                        .extracting(FieldError::field)
-                        .contains("title", "instructions", "description", "prepTimeMinutes", "youtubeUrl",
-                                "media", "media[0].mimeType", "media[0].blobUrl"));
-        verify(recipeRepository, never()).save(any());
-        verify(ingredientRepository, never()).saveAll(anyList());
-    }
-
-    @Test
-    void publishRejectsYoutubeUrlsWithoutAValidVideoReference() {
-        authenticate("7");
-        givenActiveExpert();
-        RecipeIngredientReferenceEntity mushroom = ingredient(1L, "Nấm", true);
-        RecipeUnitReferenceEntity gram = unit(1, "g", "gram", "MASS", true);
-        when(ingredientReferenceRepository.findAllByIdInAndStatus(List.of(1L), "ACTIVE"))
-                .thenReturn(List.of(mushroom));
-        when(unitReferenceRepository.findAllById(List.of(1))).thenReturn(List.of(gram));
-        for (String url : List.of("https://example.com/watch?v=abc", "https://youtube.com/channel/x",
-                "https://youtube.com/watch", "https://youtube.com/watch?v=", "https://youtu.be/")) {
-            assertThatThrownBy(() -> service.publish(request("Soup", "", "Hướng dẫn nấu món ăn ngon", 0, 1,
-                    url, List.of(validIngredient()), null))).isInstanceOf(RecipeValidationException.class)
-                    .satisfies(error -> assertThat(((RecipeValidationException) error).errors())
-                            .extracting(FieldError::field).contains("youtubeUrl"));
-        }
-    }
-
-    @Test
-    void publishAcceptsSupportedYoutubeFormsAndBlankOptionalValues() {
-        authenticate("7");
-        givenActiveExpert();
-        RecipeIngredientReferenceEntity ingredient = ingredient(1L, "Nấm", true);
-        RecipeUnitReferenceEntity unit = unit(1, "g", "gram", "MASS", true);
-        when(ingredientReferenceRepository.findAllByIdInAndStatus(List.of(1L), "ACTIVE"))
-                .thenReturn(List.of(ingredient));
-        when(unitReferenceRepository.findAllById(List.of(1))).thenReturn(List.of(unit));
+    void trimsOptionalValuesAndPersistsAValidRecipeAtTheInjectedTime() {
+        prepareCatalog();
+        LocalDateTime now = LocalDateTime.of(2026, 10, 6, 8, 30);
+        when(clock.instant()).thenReturn(now.toInstant(ZoneOffset.UTC));
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         when(recipeRepository.save(any(RecipePostEntity.class))).thenAnswer(invocation -> {
-            RecipePostEntity recipe = invocation.getArgument(0);
-            recipe.setId(99L);
-            return recipe;
+            RecipePostEntity saved = invocation.getArgument(0);
+            saved.setId(99L);
+            return saved;
         });
-        when(ingredientRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        authenticate("7");
 
-        for (String url : java.util.Arrays.asList(null, "  ", "https://youtu.be/video", "https://youtube.com/embed/video",
-                "https://www.youtube.com/shorts/video", "https://youtube.com/watch?x=1&v=video")) {
-            var result = service.publish(request(" Soup ", "   ", "  Hướng dẫn nấu món ăn ngon  ", 0, 1,
-                    url, List.of(validIngredient()), null));
-            assertThat(result.recipeId()).isEqualTo(99L);
-            assertThat(result.status()).isEqualTo("PUBLISHED");
-        }
-        verify(conversionRepository, never()).existsByIngredientIdAndUnitIdAndActiveTrue(1L, 1);
+        var result = service.publish(request("  Đậu hũ kho  ", "  Mô tả  ", "  Kho thật ngon nhé  ",
+                "https://youtu.be/abcdef", List.of(), 10, 15));
+
+        assertThat(result.recipeId()).isEqualTo(99L);
+        assertThat(result.title()).isEqualTo("Đậu hũ kho");
+        assertThat(result.status()).isEqualTo("PUBLISHED");
+        assertThat(result.publishedAt()).isEqualTo(now);
+        verify(ingredientRepository).saveAll(any());
     }
 
     @Test
-    void publishRejectsMissingInactiveAndUnconvertibleIngredientReferences() {
+    void collectsAllTextAndTimeValidationErrorsAfterCheckingCatalog() {
+        prepareCatalog();
         authenticate("7");
-        givenActiveExpert();
-        RecipeUnitReferenceEntity inactiveUnit = unit(1, "cup", "cup", "VOLUME", false);
-        when(ingredientReferenceRepository.findAllByIdInAndStatus(List.of(1L), "ACTIVE")).thenReturn(List.of());
-        when(unitReferenceRepository.findAllById(List.of(1))).thenReturn(List.of(inactiveUnit));
-        assertThatThrownBy(() -> service.publish(validRequest())).isInstanceOf(RecipeValidationException.class)
-                .satisfies(error -> assertThat(((RecipeValidationException) error).errors())
-                        .extracting(FieldError::field).contains("ingredients[0].ingredientId", "ingredients[0].unitId"));
+        var request = new CreateRecipeRequest("  ", "x".repeat(2001), "short", null, null, null,
+                2, 0, 0, null, List.of(new RecipeIngredientInput(11L, 1, BigDecimal.ONE)), null);
 
-        RecipeIngredientReferenceEntity ingredient = ingredient(1L, "Nấm", true);
-        RecipeUnitReferenceEntity unit = unit(1, "cup", "cup", "VOLUME", true);
-        when(ingredientReferenceRepository.findAllByIdInAndStatus(List.of(1L), "ACTIVE"))
-                .thenReturn(List.of(ingredient));
-        when(unitReferenceRepository.findAllById(List.of(1))).thenReturn(List.of(unit));
-        when(conversionRepository.existsByIngredientIdAndUnitIdAndActiveTrue(1L, 1)).thenReturn(false);
-        assertThatThrownBy(() -> service.publish(validRequest())).isInstanceOf(RecipeValidationException.class)
+        assertThatThrownBy(() -> service.publish(request)).isInstanceOf(RecipeValidationException.class)
                 .satisfies(error -> assertThat(((RecipeValidationException) error).errors())
-                        .extracting(FieldError::field).contains("ingredients[0].unitId"));
-        verify(recipeRepository, never()).save(any());
+                        .extracting(RecipeValidationException.FieldError::field)
+                        .contains("title", "instructions", "description", "prepTimeMinutes"));
     }
 
     @Test
-    void publishPersistsTrimmedRecipeIngredientsAndTimestamp() {
+    void rejectsOverlongTitleAndInstructions() {
+        prepareCatalog();
         authenticate("7");
-        givenActiveExpert();
-        RecipeIngredientReferenceEntity ingredient = ingredient(1L, "Nấm", true);
-        RecipeUnitReferenceEntity unit = unit(1, "cup", "cốc", "VOLUME", true);
-        when(ingredientReferenceRepository.findAllByIdInAndStatus(List.of(1L), "ACTIVE"))
+        assertValidationError(request("t".repeat(121), "", "valid instruction", null, List.of(), 1, 1), "title");
+        assertValidationError(request("Valid title", "", "i".repeat(5001), null, List.of(), 1, 1), "instructions");
+    }
+
+    @Test
+    void validatesYoutubeSchemeHostPathAndWatchQuery() {
+        prepareCatalog();
+        authenticate("7");
+        assertValidationError(withYoutube("http://youtu.be/abcdef"), "youtubeUrl");
+        assertValidationError(withYoutube("https://m.youtube.com/watch?v=abcdef"), "youtubeUrl");
+        assertValidationError(withYoutube("https:///watch?v=abcdef"), "youtubeUrl");
+        assertValidationError(withYoutube("https://www.youtube.com/watch"), "youtubeUrl");
+        assertValidationError(withYoutube("https://youtube.com/watch?x=1&v="), "youtubeUrl");
+        assertValidationError(withYoutube("https://youtube.com/watch?x=1&v=abcdef"), null);
+        assertValidationError(withYoutube("https://www.youtube.com/embed/abcdef"), null);
+        assertValidationError(withYoutube("https://www.youtube.com/shorts/abcdef"), null);
+        assertValidationError(withYoutube("https://youtube.com/watch?x=1&v=video"), null);
+        assertValidationError(withYoutube("not a URI"), "youtubeUrl");
+        assertValidationError(withYoutube("  "), null);
+    }
+
+    @Test
+    void validatesMediaCountCoverMimeTypeAndUploadedReference() {
+        prepareCatalog();
+        authenticate("7");
+        assertValidationError(withMedia(List.of()), null);
+        assertValidationError(withMedia(List.of(new RecipeMediaInput("blob", "image/jpeg", false))), "media");
+        assertValidationError(withMedia(List.of(new RecipeMediaInput("blob", "image/gif", true))), "media[0].mimeType");
+        assertValidationError(withMedia(List.of(new RecipeMediaInput(" ", "image/png", true))), "media[0].blobUrl");
+        assertValidationError(withMedia(List.of(new RecipeMediaInput(null, null, true))), "media[0].mimeType");
+        var tooMany = java.util.stream.IntStream.range(0, 6)
+                .mapToObj(i -> new RecipeMediaInput("blob-" + i, "image/webp", i == 0)).toList();
+        assertValidationError(withMedia(tooMany), "media");
+    }
+
+    @Test
+    void reportsUnavailableIngredientUnitAndMissingUnitConversion() {
+        authenticate("7");
+        when(authorRepository.findById(7L)).thenReturn(Optional.of(author));
+        when(ingredientReferenceRepository.findAllByIdInAndStatus(any(), org.mockito.ArgumentMatchers.eq("ACTIVE")))
+                .thenReturn(List.of());
+        when(unitReferenceRepository.findAllById(List.of(1))).thenReturn(List.of());
+        assertValidationError(validRequest(), "ingredients[0].ingredientId");
+
+        when(ingredientReferenceRepository.findAllByIdInAndStatus(any(), org.mockito.ArgumentMatchers.eq("ACTIVE")))
                 .thenReturn(List.of(ingredient));
-        when(unitReferenceRepository.findAllById(List.of(1))).thenReturn(List.of(unit));
-        when(conversionRepository.existsByIngredientIdAndUnitIdAndActiveTrue(1L, 1)).thenReturn(true);
-        when(recipeRepository.save(any(RecipePostEntity.class))).thenAnswer(invocation -> {
-            RecipePostEntity recipe = invocation.getArgument(0);
-            recipe.setId(99L);
-            assertThat(recipe.getTitle()).isEqualTo("Soup");
-            assertThat(recipe.getDescription()).isNull();
-            assertThat(recipe.getInstructions()).isEqualTo("Hướng dẫn nấu món ăn ngon");
-            assertThat(recipe.getYoutubeUrl()).isNull();
-            assertThat(recipe.getPublishedAt()).isEqualTo(java.time.LocalDateTime.of(2026, 10, 1, 0, 0));
-            return recipe;
-        });
-        when(ingredientRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(unitReferenceRepository.findAllById(List.of(1))).thenReturn(List.of());
+        assertValidationError(validRequest(), "ingredients[0].unitId");
 
-        var response = service.publish(request(" Soup ", "  ", " Hướng dẫn nấu món ăn ngon ", 0, 1,
-                " ", List.of(validIngredient()), null));
+        var countingUnit = new RecipeUnitReferenceEntity();
+        ReflectionTestUtils.setField(countingUnit, "id", 2);
+        ReflectionTestUtils.setField(countingUnit, "active", true);
+        ReflectionTestUtils.setField(countingUnit, "dimension", "COUNT");
+        when(ingredientReferenceRepository.findAllByIdInAndStatus(any(), org.mockito.ArgumentMatchers.eq("ACTIVE")))
+                .thenReturn(List.of(ingredient));
+        when(unitReferenceRepository.findAllById(List.of(2))).thenReturn(List.of(countingUnit));
+        when(conversionRepository.existsByIngredientIdAndUnitIdAndActiveTrue(11L, 2)).thenReturn(false);
+        assertValidationError(requestWithUnit(2), "ingredients[0].unitId");
+    }
 
-        assertThat(response.recipeId()).isEqualTo(99L);
-        assertThat(response.status()).isEqualTo("PUBLISHED");
-        verify(ingredientRepository).saveAll(anyList());
+    @Test
+    void allowsCountingUnitWhenItsIngredientHasAnActiveConversion() {
+        authenticate("7");
+        when(authorRepository.findById(7L)).thenReturn(Optional.of(author));
+        when(ingredientReferenceRepository.findAllByIdInAndStatus(any(), org.mockito.ArgumentMatchers.eq("ACTIVE")))
+                .thenReturn(List.of(ingredient));
+        var countingUnit = new RecipeUnitReferenceEntity();
+        ReflectionTestUtils.setField(countingUnit, "id", 2);
+        ReflectionTestUtils.setField(countingUnit, "active", true);
+        ReflectionTestUtils.setField(countingUnit, "dimension", "COUNT");
+        when(unitReferenceRepository.findAllById(List.of(2))).thenReturn(List.of(countingUnit));
+        when(conversionRepository.existsByIngredientIdAndUnitIdAndActiveTrue(11L, 2)).thenReturn(true);
+        when(recipeRepository.save(any(RecipePostEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(clock.instant()).thenReturn(Instant.parse("2026-10-06T00:00:00Z"));
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+
+        assertThat(service.publish(requestWithUnit(2)).status()).isEqualTo("PUBLISHED");
+    }
+
+    @Test
+    void formOptionsAndIngredientLookupFilterInactiveUnitsAndNormalizeQuery() {
+        var inactive = new RecipeUnitReferenceEntity();
+        ReflectionTestUtils.setField(inactive, "active", false);
+        when(unitReferenceRepository.findAllByOrderByNameAsc()).thenReturn(List.of(gram, inactive));
+
+        var options = service.formOptions();
+        assertThat(options.dishCategories()).isNotEmpty();
+        assertThat(options.vegetarianTypes()).isNotEmpty();
+        assertThat(options.difficulties()).isNotEmpty();
+        assertThat(options.units()).hasSize(1);
+
+        when(ingredientReferenceRepository.findTop30ByStatusAndNameContainingIgnoreCaseOrderByNameAsc("ACTIVE", ""))
+                .thenReturn(List.of(ingredient));
+        assertThat(service.findIngredients(null)).hasSize(1);
+        verify(ingredientReferenceRepository).findTop30ByStatusAndNameContainingIgnoreCaseOrderByNameAsc("ACTIVE", "");
+        when(ingredientReferenceRepository.findTop30ByStatusAndNameContainingIgnoreCaseOrderByNameAsc("ACTIVE", "Đậu hũ"))
+                .thenReturn(List.of(ingredient));
+        assertThat(service.findIngredients("  Đậu hũ  ")).hasSize(1);
     }
 
     @Test
@@ -229,15 +267,27 @@ class RecipeServiceTest {
         recipe.setServings(2);
         recipe.setPrepTimeMinutes(1);
         recipe.setCookTimeMinutes(2);
-        RecipeIngredientEntity line = ingredientLine(10L, 1);
+
+        RecipeIngredientEntity supportedLine = ingredientLine(10L, 1);
         RecipeIngredientEntity unsupportedLine = ingredientLine(11L, 2);
+        RecipeIngredientReferenceEntity supported = new RecipeIngredientReferenceEntity();
+        ReflectionTestUtils.setField(supported, "id", 10L);
+        ReflectionTestUtils.setField(supported, "name", "Nấm");
+        ReflectionTestUtils.setField(supported, "nutritionSupported", true);
+        RecipeIngredientReferenceEntity unsupported = new RecipeIngredientReferenceEntity();
+        ReflectionTestUtils.setField(unsupported, "id", 11L);
+        ReflectionTestUtils.setField(unsupported, "name", "Lá");
+        ReflectionTestUtils.setField(unsupported, "nutritionSupported", false);
+        RecipeUnitReferenceEntity pinch = new RecipeUnitReferenceEntity();
+        ReflectionTestUtils.setField(pinch, "id", 2);
+        ReflectionTestUtils.setField(pinch, "code", "pinch");
+        ReflectionTestUtils.setField(pinch, "name", "nhúm");
+        ReflectionTestUtils.setField(pinch, "dimension", "MASS");
+        ReflectionTestUtils.setField(pinch, "active", true);
+
         when(recipeRepository.findByIdAndStatus(7L, "PUBLISHED")).thenReturn(Optional.of(recipe));
-        when(ingredientRepository.findAllByRecipeIdOrderByIdAsc(7L)).thenReturn(List.of(line, unsupportedLine));
-        RecipeIngredientReferenceEntity supported = ingredient(10L, "Nấm", true);
-        RecipeIngredientReferenceEntity unsupported = ingredient(11L, "Lá", false);
+        when(ingredientRepository.findAllByRecipeIdOrderByIdAsc(7L)).thenReturn(List.of(supportedLine, unsupportedLine));
         when(ingredientReferenceRepository.findAllById(List.of(10L, 11L))).thenReturn(List.of(supported, unsupported));
-        RecipeUnitReferenceEntity gram = unit(1, "g", "gram", "MASS", true);
-        RecipeUnitReferenceEntity pinch = unit(2, "pinch", "nhúm", "MASS", true);
         when(unitReferenceRepository.findAllById(List.of(1, 2))).thenReturn(List.of(gram, pinch));
 
         var response = service.getPublishedRecipe(7L);
@@ -247,91 +297,75 @@ class RecipeServiceTest {
         assertThat(response.ingredients()).hasSize(2);
     }
 
-    @Test
-    void formOptionsOnlyReturnsActiveUnitsAndFindIngredientsNormalizesQuery() {
-        RecipeUnitReferenceEntity active = unit(1, "g", "gram", "MASS", true);
-        RecipeUnitReferenceEntity inactive = unit(2, "cup", "cốc", "VOLUME", false);
-        when(unitReferenceRepository.findAllByOrderByNameAsc()).thenReturn(List.of(active, inactive));
-        var options = service.formOptions();
-        assertThat(options.dishCategories()).isNotEmpty();
-        assertThat(options.vegetarianTypes()).isNotEmpty();
-        assertThat(options.difficulties()).isNotEmpty();
-        assertThat(options.units()).extracting("unitId").containsExactly(1);
-
-        when(ingredientReferenceRepository.findTop30ByStatusAndNameContainingIgnoreCaseOrderByNameAsc("ACTIVE", ""))
-                .thenReturn(List.of());
-        assertThat(service.findIngredients(null)).isEmpty();
-        RecipeIngredientReferenceEntity mushroom = ingredient(5L, "Nấm", true);
-        when(ingredientReferenceRepository.findTop30ByStatusAndNameContainingIgnoreCaseOrderByNameAsc("ACTIVE", "nam"))
-                .thenReturn(List.of(mushroom));
-        assertThat(service.findIngredients(" nam ")).extracting("name").containsExactly("Nấm");
-    }
-
-    private static CreateRecipeRequest validRequest() {
-        return request("Soup", "", "Hướng dẫn nấu món ăn ngon", 0, 1, null, List.of(validIngredient()), null);
-    }
-
-    private static CreateRecipeRequest request(String title, String description, String instructions, Integer prep,
-            Integer cook, String youtube, List<RecipeIngredientInput> ingredients, List<RecipeMediaInput> media) {
-        return new CreateRecipeRequest(title, description, instructions, DishCategory.SOUP, VegetarianType.VEGAN,
-                Difficulty.EASY, 2, prep, cook, youtube, ingredients, media);
-    }
-
-    private static RecipeIngredientInput validIngredient() {
-        return new RecipeIngredientInput(1L, 1, new BigDecimal("100.00"));
-    }
-
-    private static void authenticate(String principal) {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(principal, "password", AuthorityUtils.NO_AUTHORITIES));
-    }
-
-    private void givenActiveExpert() {
-        RecipeAuthorReferenceEntity author = author("ACTIVE", "EXPERT");
+    private void prepareCatalog() {
+        authenticate("7");
         when(authorRepository.findById(7L)).thenReturn(Optional.of(author));
+        when(ingredientReferenceRepository.findAllByIdInAndStatus(any(), org.mockito.ArgumentMatchers.eq("ACTIVE")))
+                .thenReturn(List.of(ingredient));
+        when(unitReferenceRepository.findAllById(any())).thenReturn(List.of(gram));
     }
 
-    private static RecipeAuthorReferenceEntity author(String status, String role) {
-        RecipeAuthorReferenceEntity author = mock(RecipeAuthorReferenceEntity.class);
-        lenient().when(author.getId()).thenReturn(7L);
-        lenient().when(author.getAccountStatus()).thenReturn(status);
-        lenient().when(author.getRole()).thenReturn(role);
-        return author;
+    private void assertUnauthenticated() {
+        assertThatThrownBy(() -> service.publish(validRequest())).isInstanceOf(AppException.class)
+                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.UNAUTHENTICATED));
     }
 
-    private static RecipeIngredientReferenceEntity ingredient(long id, String name, boolean nutritionSupported) {
-        RecipeIngredientReferenceEntity ingredient = mock(RecipeIngredientReferenceEntity.class);
-        lenient().when(ingredient.getId()).thenReturn(id);
-        lenient().when(ingredient.getName()).thenReturn(name);
-        lenient().when(ingredient.isNutritionSupported()).thenReturn(nutritionSupported);
-        return ingredient;
+    private void assertAccessDenied() {
+        assertThatThrownBy(() -> service.publish(validRequest())).isInstanceOf(AppException.class)
+                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.ACCESS_DENIED));
     }
 
-    private static RecipeUnitReferenceEntity unit(int id, String code, String name, String dimension, boolean active) {
-        RecipeUnitReferenceEntity unit = mock(RecipeUnitReferenceEntity.class);
-        lenient().when(unit.getId()).thenReturn(id);
-        lenient().when(unit.getCode()).thenReturn(code);
-        lenient().when(unit.getName()).thenReturn(name);
-        lenient().when(unit.getDimension()).thenReturn(dimension);
-        lenient().when(unit.isActive()).thenReturn(active);
-        return unit;
+    private void assertValidationError(CreateRecipeRequest request, String field) {
+        if (field == null) {
+            when(recipeRepository.save(any(RecipePostEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(clock.instant()).thenReturn(Instant.parse("2026-10-06T00:00:00Z"));
+            when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+            assertThat(service.publish(request)).isNotNull();
+        } else {
+            assertThatThrownBy(() -> service.publish(request)).isInstanceOf(RecipeValidationException.class)
+                    .satisfies(error -> assertThat(((RecipeValidationException) error).errors())
+                            .extracting(RecipeValidationException.FieldError::field).contains(field));
+        }
+    }
+
+    private CreateRecipeRequest validRequest() {
+        return request("Đậu hũ kho", "", "Kho đậu hũ thật ngon", null, List.of(), 10, 10);
+    }
+
+    private CreateRecipeRequest request(String title, String description, String instructions, String youtube,
+            List<RecipeMediaInput> media, int prep, int cook) {
+        return new CreateRecipeRequest(title, description, instructions, tech.mamxanh.recipe.entity.RecipeCodes.DishCategory.BRAISED,
+                tech.mamxanh.recipe.entity.RecipeCodes.VegetarianType.VEGAN,
+                tech.mamxanh.recipe.entity.RecipeCodes.Difficulty.EASY, 2, prep, cook, youtube,
+                List.of(new RecipeIngredientInput(11L, 1, BigDecimal.ONE)), media);
+    }
+
+    private CreateRecipeRequest withYoutube(String youtube) {
+        return request("Đậu hũ kho", "", "Kho đậu hũ thật ngon", youtube, List.of(), 10, 10);
+    }
+
+    private CreateRecipeRequest withMedia(List<RecipeMediaInput> media) {
+        return request("Đậu hũ kho", "", "Kho đậu hũ thật ngon", null, media, 10, 10);
+    }
+
+    private CreateRecipeRequest requestWithUnit(int unitId) {
+        return new CreateRecipeRequest("Đậu hũ kho", "", "Kho đậu hũ thật ngon",
+                tech.mamxanh.recipe.entity.RecipeCodes.DishCategory.BRAISED,
+                tech.mamxanh.recipe.entity.RecipeCodes.VegetarianType.VEGAN,
+                tech.mamxanh.recipe.entity.RecipeCodes.Difficulty.EASY, 2, 10, 10, null,
+                List.of(new RecipeIngredientInput(11L, unitId, BigDecimal.ONE)), List.of());
     }
 
     private static RecipeIngredientEntity ingredientLine(long ingredientId, int unitId) {
         RecipeIngredientEntity line = new RecipeIngredientEntity();
         line.setIngredientId(ingredientId);
         line.setUnitId(unitId);
-        line.setQuantity(new BigDecimal("1.00"));
+        line.setQuantity(BigDecimal.ONE);
         return line;
     }
 
-    private static void assertUnauthorized(org.assertj.core.api.ThrowableAssert.ThrowingCallable action) {
-        assertThatThrownBy(action).isInstanceOf(AppException.class)
-                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.UNAUTHENTICATED));
-    }
-
-    private static void assertAccessDenied(org.assertj.core.api.ThrowableAssert.ThrowingCallable action) {
-        assertThatThrownBy(action).isInstanceOf(AppException.class)
-                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.ACCESS_DENIED));
+    private static void authenticate(String principal) {
+        SecurityContextHolder.getContext().setAuthentication(
+                UsernamePasswordAuthenticationToken.authenticated(principal, null, List.of()));
     }
 }

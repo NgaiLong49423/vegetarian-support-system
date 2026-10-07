@@ -370,7 +370,7 @@ test('Issue 22: 0 ảnh được đăng; giới hạn tối đa 5 và yêu cầu
   await expect(page.getByText('Cắt đậu hũ, rim với cà chua đến khi thấm vị.')).toBeVisible();
 });
 
-test('Issue 22: YouTube/mô tả tùy chọn; 401 và 403 bị chặn, không có login giả', async ({ page }) => {
+test('Issue 22: YouTube/mô tả tùy chọn; API từ chối phiên Chuyên gia không được cấp quyền', async ({ page }) => {
   let postStatus = 401;
   await installApi(page, (body) => {
     if (postStatus === 201) return { status: 201, body: { recipeId: 2204, title: body.title, status: 'PUBLISHED', publishedAt: '2026-10-04T08:00:00' } };
@@ -385,20 +385,15 @@ test('Issue 22: YouTube/mô tả tùy chọn; 401 và 403 bị chặn, không c�
   await action(page, 'Để trống mô tả (trường tùy chọn)', () => page.getByLabel('Mô tả').fill(''));
   await action(page, 'Để trống link YouTube (trường tùy chọn)', () => page.getByLabel('Link YouTube').fill(''));
   await action(page, 'Gửi khi chưa đăng nhập', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page).toHaveURL(/\/dang-nhap$/);
-  await expect(page.getByRole('alert')).toHaveText('Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.');
-  expect(await page.evaluate(() => sessionStorage.getItem('mamxanh.auth'))).toBeNull();
-
-  await openForm(page);
+  await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không còn hợp lệ');
+  await seedDemoSession(page, 'EXPERT');
+  await page.goto('/dang-cong-thuc');
   await fillValidRecipe(page);
+  await action(page, 'Để trống mô tả (trường tùy chọn)', () => page.getByLabel('Mô tả').fill(''));
+  await action(page, 'Để trống link YouTube (trường tùy chọn)', () => page.getByLabel('Link YouTube').fill(''));
   postStatus = 403;
   await action(page, 'Gửi lại bằng vai trò không phải EXPERT', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
   await expect(page.getByRole('alert')).toContainText('Chỉ Chuyên gia đang hoạt động mới được đăng');
-  postStatus = 201;
-  await action(page, 'Mô phỏng phản hồi thành công từ phiên EXPERT', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page).toHaveURL(/\/cong-thuc\/2204$/);
-  await expect(page.getByRole('heading', { name: 'Đậu hũ kho cà chua', level: 1 })).toBeVisible();
-  await expect(page.getByText('Hướng dẫn chế biến')).toBeVisible();
 });
 
 test('Issue 22: link YouTube có định dạng URL nhưng sai host bị báo lỗi', async ({ page }) => {

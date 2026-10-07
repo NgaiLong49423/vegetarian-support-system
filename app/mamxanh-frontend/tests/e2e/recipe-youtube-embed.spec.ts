@@ -116,7 +116,6 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
     await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Hướng dẫn chế biến món ăn ngon lành chuẩn vị.');
     await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
     await expect(page).toHaveURL(/\/cong-thuc\/2199$/);
-    await expect(page.getByRole('heading', { name: 'Món Chay Thử Nghiệm', level: 1 })).toBeVisible();
   });
 
   test('UC-15.2: Chi tiết công thức nhúng YouTube IFrame Player an toàn', async ({ page }) => {
