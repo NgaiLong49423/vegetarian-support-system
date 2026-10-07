@@ -174,6 +174,53 @@ test('recipe report form validates the six reason groups without claiming a serv
   await expect(page.getByText('Đã kiểm tra biểu mẫu. Chưa gửi báo cáo tới quản trị viên.')).toBeVisible();
 });
 
+test('recipe report form accepts an empty optional description for each standard reason', async ({ page }) => {
+  const optionalReasons = [
+    'Không phải món chay',
+    'Nguy cơ an toàn thực phẩm',
+    'Nội dung phản cảm / Bạo lực',
+    'Vi phạm bản quyền / Sao chép',
+    'Spam / Quảng cáo thương mại',
+  ];
+
+  for (const reason of optionalReasons) {
+    await page.goto('/cong-thuc/pho-chay-nam-huong-rung');
+    await page.getByRole('button', { name: 'Báo cáo công thức' }).click();
+    await page.getByRole('radio', { name: reason }).check();
+    await expect(page.getByRole('radio', { checked: true })).toHaveCount(1);
+    await expect(page.getByLabel('Mô tả bổ sung')).toHaveValue('');
+    await page.getByRole('button', { name: 'Kiểm tra biểu mẫu' }).click();
+    await expect(page.getByText('Đã kiểm tra biểu mẫu. Chưa gửi báo cáo tới quản trị viên.')).toBeVisible();
+  }
+});
+
+test('recipe report form enforces trimmed OTHER boundaries and the 500 character limit', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/cong-thuc/pho-chay-nam-huong-rung');
+  await page.getByRole('button', { name: 'Báo cáo công thức' }).click();
+  await page.getByRole('radio', { name: 'Khác' }).check();
+  await page.getByLabel('Mô tả bổ sung').fill('         ');
+  await page.getByRole('button', { name: 'Kiểm tra biểu mẫu' }).click();
+  await expect(page.getByRole('alert')).toContainText('10 đến 500');
+  await page.getByLabel('Mô tả bổ sung').fill('123456789');
+  await page.getByRole('button', { name: 'Kiểm tra biểu mẫu' }).click();
+  await expect(page.getByRole('alert')).toContainText('10 đến 500');
+  await page.getByLabel('Mô tả bổ sung').fill('1234567890');
+  await page.getByRole('button', { name: 'Kiểm tra biểu mẫu' }).click();
+  await expect(page.getByText('Đã kiểm tra biểu mẫu. Chưa gửi báo cáo tới quản trị viên.')).toBeVisible();
+
+  await page.reload();
+  await page.getByRole('button', { name: 'Báo cáo công thức' }).click();
+  await page.getByRole('radio', { name: 'Khác' }).check();
+  const longDescription = 'x'.repeat(501);
+  await page.getByLabel('Mô tả bổ sung').fill(longDescription);
+  await expect(page.getByLabel('Mô tả bổ sung')).toHaveValue('x'.repeat(500));
+  await expect(page.getByText('500/500 ký tự')).toBeVisible();
+  await page.getByRole('button', { name: 'Kiểm tra biểu mẫu' }).click();
+  await expect(page.getByText('Đã kiểm tra biểu mẫu. Chưa gửi báo cáo tới quản trị viên.')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
 test('nutrition profile requires real authentication and plan/history pages do not simulate payment', async ({ page }) => {
   await page.goto('/ho-so/dinh-duong');
   await expect(page.getByText('Đăng nhập tài khoản thật để khai báo và lưu hồ sơ.')).toBeVisible();
