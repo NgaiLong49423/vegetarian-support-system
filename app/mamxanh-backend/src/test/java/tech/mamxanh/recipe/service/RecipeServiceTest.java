@@ -30,6 +30,7 @@ import tech.mamxanh.recipe.dto.request.CreateRecipeRequest;
 import tech.mamxanh.recipe.dto.request.RecipeIngredientInput;
 import tech.mamxanh.recipe.dto.request.RecipeMediaInput;
 import tech.mamxanh.recipe.entity.RecipeAuthorReferenceEntity;
+import tech.mamxanh.recipe.entity.RecipeIngredientEntity;
 import tech.mamxanh.recipe.entity.RecipeIngredientReferenceEntity;
 import tech.mamxanh.recipe.entity.RecipePostEntity;
 import tech.mamxanh.recipe.entity.RecipeUnitReferenceEntity;
@@ -165,6 +166,8 @@ class RecipeServiceTest {
         assertValidationError(withYoutube("https://youtube.com/watch?x=1&v="), "youtubeUrl");
         assertValidationError(withYoutube("https://youtube.com/watch?x=1&v=abcdef"), null);
         assertValidationError(withYoutube("https://www.youtube.com/embed/abcdef"), null);
+        assertValidationError(withYoutube("https://www.youtube.com/shorts/abcdef"), null);
+        assertValidationError(withYoutube("https://youtube.com/watch?x=1&v=video"), null);
         assertValidationError(withYoutube("not a URI"), "youtubeUrl");
         assertValidationError(withYoutube("  "), null);
     }
@@ -248,6 +251,52 @@ class RecipeServiceTest {
         assertThat(service.findIngredients("  Đậu hũ  ")).hasSize(1);
     }
 
+    @Test
+    void getPublishedRecipeRejectsUnavailablePostAndReportsNutritionAvailability() {
+        when(recipeRepository.findByIdAndStatus(7L, "PUBLISHED")).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.getPublishedRecipe(7L)).isInstanceOf(AppException.class)
+                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.NOT_FOUND));
+
+        RecipePostEntity recipe = new RecipePostEntity();
+        recipe.setId(7L);
+        recipe.setTitle("Canh");
+        recipe.setInstructions("Hướng dẫn");
+        recipe.setDishCategory("SOUP");
+        recipe.setVegetarianType("VEGAN");
+        recipe.setDifficulty("EASY");
+        recipe.setServings(2);
+        recipe.setPrepTimeMinutes(1);
+        recipe.setCookTimeMinutes(2);
+
+        RecipeIngredientEntity supportedLine = ingredientLine(10L, 1);
+        RecipeIngredientEntity unsupportedLine = ingredientLine(11L, 2);
+        RecipeIngredientReferenceEntity supported = new RecipeIngredientReferenceEntity();
+        ReflectionTestUtils.setField(supported, "id", 10L);
+        ReflectionTestUtils.setField(supported, "name", "Nấm");
+        ReflectionTestUtils.setField(supported, "nutritionSupported", true);
+        RecipeIngredientReferenceEntity unsupported = new RecipeIngredientReferenceEntity();
+        ReflectionTestUtils.setField(unsupported, "id", 11L);
+        ReflectionTestUtils.setField(unsupported, "name", "Lá");
+        ReflectionTestUtils.setField(unsupported, "nutritionSupported", false);
+        RecipeUnitReferenceEntity pinch = new RecipeUnitReferenceEntity();
+        ReflectionTestUtils.setField(pinch, "id", 2);
+        ReflectionTestUtils.setField(pinch, "code", "pinch");
+        ReflectionTestUtils.setField(pinch, "name", "nhúm");
+        ReflectionTestUtils.setField(pinch, "dimension", "MASS");
+        ReflectionTestUtils.setField(pinch, "active", true);
+
+        when(recipeRepository.findByIdAndStatus(7L, "PUBLISHED")).thenReturn(Optional.of(recipe));
+        when(ingredientRepository.findAllByRecipeIdOrderByIdAsc(7L)).thenReturn(List.of(supportedLine, unsupportedLine));
+        when(ingredientReferenceRepository.findAllById(List.of(10L, 11L))).thenReturn(List.of(supported, unsupported));
+        when(unitReferenceRepository.findAllById(List.of(1, 2))).thenReturn(List.of(gram, pinch));
+
+        var response = service.getPublishedRecipe(7L);
+
+        assertThat(response.nutritionComplete()).isFalse();
+        assertThat(response.ingredientsWithoutNutrition()).containsExactly("Lá");
+        assertThat(response.ingredients()).hasSize(2);
+    }
+
     private void prepareCatalog() {
         authenticate("7");
         when(authorRepository.findById(7L)).thenReturn(Optional.of(author));
@@ -305,6 +354,14 @@ class RecipeServiceTest {
                 tech.mamxanh.recipe.entity.RecipeCodes.VegetarianType.VEGAN,
                 tech.mamxanh.recipe.entity.RecipeCodes.Difficulty.EASY, 2, 10, 10, null,
                 List.of(new RecipeIngredientInput(11L, unitId, BigDecimal.ONE)), List.of());
+    }
+
+    private static RecipeIngredientEntity ingredientLine(long ingredientId, int unitId) {
+        RecipeIngredientEntity line = new RecipeIngredientEntity();
+        line.setIngredientId(ingredientId);
+        line.setUnitId(unitId);
+        line.setQuantity(BigDecimal.ONE);
+        return line;
     }
 
     private static void authenticate(String principal) {
