@@ -1,13 +1,30 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.53.0
+> **Version:** v2.54.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-06
+> **Last Updated:** 2026-10-07
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-07 — Add Recipe Detail and Saved Recipe Read Projections (Issue #89)
+
+**Status:** Uncommitted.
+
+**Scope:** Prepare Backend read APIs for the Frontend's FR-20 recipe detail, Meal Plan, saved recipe and export integrations.
+
+### Added
+
+- Extend public recipe detail with public author, ordered media, nine local nutrition estimates with missing-data warnings, and reaction/view statistics.
+- Add authenticated, paginated read-only saved recipe projections scoped to the current account, with safe unavailable-item responses.
+- Add focused unit coverage for ingredient-specific unit conversion, per-serving nutrition, and missing nutrition data.
+- Document the runtime API and map AC-20.1–AC-20.5 to Backend or Frontend ownership.
+
+### Changed
+
+- Normalize unavailable Meal Plan references to the generic `Công thức không còn khả dụng` message while retaining the existing deletion indicator.
 
 ## 2026-10-06 — Use Backend Data in Local Demo Flows
 

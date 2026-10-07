@@ -20,13 +20,23 @@ public record RecipeDetailResponse(
         Integer cookTimeMinutes,
         String youtubeUrl,
         LocalDateTime publishedAt,
+        Author author,
         List<Ingredient> ingredients,
         boolean nutritionComplete,
         List<String> ingredientsWithoutNutrition,
+        Nutrition nutrition,
+        Statistics statistics,
         List<Media> media) {
 
     public record Ingredient(Long ingredientId, String name, BigDecimal quantity, Integer unitId,
             String unitCode, String unitName) {}
+
+    public record Author(Long userId, String displayName, String avatarUrl) { }
+
+    public record Nutrition(boolean complete, List<String> ingredientsMissingData,
+            java.util.Map<String, BigDecimal> total, java.util.Map<String, BigDecimal> perServing) { }
+
+    public record Statistics(long likes, long dislikes, long reactionCount, BigDecimal likePercentage, long viewCount) { }
 
     public record Media(String blobUrl, String mimeType, Integer displayOrder, boolean cover) {}
 }

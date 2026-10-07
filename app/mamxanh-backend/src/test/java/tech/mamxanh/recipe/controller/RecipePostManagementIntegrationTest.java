@@ -1,6 +1,7 @@
 package tech.mamxanh.recipe.controller;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -44,6 +45,9 @@ class RecipePostManagementIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void prepareDatabaseFixtures() {
         jdbcTemplate.update("DELETE FROM [MEAL_PLAN] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local')");
+        jdbcTemplate.update("DELETE FROM [SAVED_RECIPE] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local')");
+        jdbcTemplate.update("DELETE FROM [RECIPE_REACTION] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local'))");
+        jdbcTemplate.update("DELETE FROM [RECIPE_VIEW] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local'))");
         jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue47-%@test.local')");
         jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue47-%@test.local'");
         jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_NAME);
@@ -63,12 +67,54 @@ class RecipePostManagementIntegrationTest extends AbstractIntegrationTest {
         otherRecipeId = insertRecipe(otherExpertId, "Canh của chuyên gia khác", "PUBLISHED");
         jdbcTemplate.update("INSERT INTO [RECIPE_INGREDIENT] (recipe_id, ingredient_id, unit_id, quantity) VALUES (?, ?, ?, 200)",
                 publishedRecipeId, ingredientId, gramUnitId);
+        jdbcTemplate.update("INSERT INTO [RECIPE_MEDIA] (recipe_id, blob_url, mime_type, display_order, is_cover) VALUES (?, ?, 'image/jpeg', 1, 1)",
+                publishedRecipeId, "https://cdn.test/recipe-cover.jpg");
+        jdbcTemplate.update("INSERT INTO [RECIPE_REACTION] (user_id, recipe_id, reaction_type) VALUES (?, ?, 'LIKE')",
+                customerId, publishedRecipeId);
+        jdbcTemplate.update("INSERT INTO [RECIPE_REACTION] (user_id, recipe_id, reaction_type) VALUES (?, ?, 'DISLIKE')",
+                otherExpertId, publishedRecipeId);
+        jdbcTemplate.update("INSERT INTO [RECIPE_VIEW] (recipe_id, user_id) VALUES (?, ?)", publishedRecipeId, customerId);
+        jdbcTemplate.update("INSERT INTO [SAVED_RECIPE] (user_id, recipe_id) VALUES (?, ?)", customerId, publishedRecipeId);
+        jdbcTemplate.update("INSERT INTO [SAVED_RECIPE] (user_id, recipe_id) VALUES (?, ?)", customerId, hiddenRecipeId);
 
         Long mealPlanId = jdbcTemplate.queryForObject(
                 "INSERT INTO [MEAL_PLAN] (user_id, week_start_date) OUTPUT INSERTED.meal_plan_id VALUES (?, ?)",
                 Long.class, customerId, WEEK_START);
         jdbcTemplate.update("INSERT INTO [MEAL_PLAN_ENTRY] (meal_plan_id, recipe_id, meal_date, meal_type, planned_servings) VALUES (?, ?, ?, 'LUNCH', 2)",
                 mealPlanId, publishedRecipeId, WEEK_START.plusDays(1));
+    }
+
+    @Test
+    void publicRecipeDetailProjectsCurrentAuthorMediaNutritionAndIndependentStatistics() throws Exception {
+        mockMvc.perform(get("/api/v1/recipes/{recipeId}", publishedRecipeId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.author.displayName").value("Issue 47 test"))
+                .andExpect(jsonPath("$.ingredients[0].quantity").value(200))
+                .andExpect(jsonPath("$.media[0].blobUrl").value("https://cdn.test/recipe-cover.jpg"))
+                .andExpect(jsonPath("$.nutrition.complete").value(false))
+                .andExpect(jsonPath("$.nutrition.ingredientsMissingData[0]").value(INGREDIENT_NAME))
+                .andExpect(jsonPath("$.statistics.likes").value(1))
+                .andExpect(jsonPath("$.statistics.dislikes").value(1))
+                .andExpect(jsonPath("$.statistics.reactionCount").value(2))
+                .andExpect(jsonPath("$.statistics.viewCount").value(1));
+        mockMvc.perform(get("/api/v1/recipes/{recipeId}", hiddenRecipeId))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void savedRecipeListIsAuthenticatedPrivateAndKeepsUnavailableReferencesSafe() throws Exception {
+        mockMvc.perform(get("/api/v1/saved-recipes"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/saved-recipes").with(principal(customerId, "ROLE_CUSTOMER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[*].available", hasItems(true, false)))
+                .andExpect(jsonPath("$.content[?(@.available == false)].title").doesNotExist())
+                .andExpect(jsonPath("$.content[?(@.available == false)].unavailableMessage")
+                        .value(hasItem("Công thức không còn khả dụng")));
+        mockMvc.perform(get("/api/v1/saved-recipes").param("size", "51")
+                        .with(principal(customerId, "ROLE_CUSTOMER")))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -163,7 +209,7 @@ class RecipePostManagementIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.entries[0].mealType").value("LUNCH"))
                 .andExpect(jsonPath("$.entries[0].recipeDeleted").value(true))
                 .andExpect(jsonPath("$.entries[0].recipeTitle").value(org.hamcrest.Matchers.nullValue()))
-                .andExpect(jsonPath("$.entries[0].unavailableMessage").value("Công thức này đã bị xóa bởi tác giả"));
+                .andExpect(jsonPath("$.entries[0].unavailableMessage").value("Công thức không còn khả dụng"));
     }
 
     @Test
@@ -183,11 +229,14 @@ class RecipePostManagementIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/{recipeId}'].put").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/{recipeId}'].delete").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/recipes/{recipeId}'].get.summary").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/saved-recipes'].get").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/mine'].get.security[0].bearerAuth").isArray())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/{recipeId}/manage'].get.security[0].bearerAuth").isArray())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/{recipeId}'].put.security[0].bearerAuth").isArray())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/{recipeId}'].delete.security[0].bearerAuth").isArray())
-                .andExpect(jsonPath("$.paths['/api/v1/meal-plans'].get.security[0].bearerAuth").isArray());
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans'].get.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/v1/saved-recipes'].get.security[0].bearerAuth").isArray());
     }
 
     private org.springframework.test.web.servlet.request.RequestPostProcessor principal(long userId, String role) {

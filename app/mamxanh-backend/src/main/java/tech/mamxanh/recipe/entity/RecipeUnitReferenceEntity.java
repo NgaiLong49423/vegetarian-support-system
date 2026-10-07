@@ -1,5 +1,6 @@
 package tech.mamxanh.recipe.entity;
 
+import java.math.BigDecimal;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import jakarta.persistence.Column;
@@ -24,6 +25,9 @@ public class RecipeUnitReferenceEntity {
 
     @Column(name = "dimension", nullable = false, length = 20)
     private String dimension;
+
+    @Column(name = "base_factor", nullable = false, precision = 18, scale = 6)
+    private BigDecimal baseFactor;
 
     @Column(name = "is_active", nullable = false)
     private boolean active;
