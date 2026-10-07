@@ -566,7 +566,7 @@ CREATE TABLE [REPORT] (
     reason_code      VARCHAR(30)     NOT NULL,
     description      NVARCHAR(500)   NULL,
     status           VARCHAR(20)     NOT NULL
-        CONSTRAINT DF_REPORT_status DEFAULT 'PENDING',
+        CONSTRAINT DF_REPORT_status DEFAULT 'OPEN',
     decision         VARCHAR(30)     NULL,
     decision_reason  NVARCHAR(1000)  NULL,
     created_at       DATETIME2(7)    NOT NULL
@@ -587,12 +587,12 @@ CREATE TABLE [REPORT] (
         OR (recipe_id IS NULL AND comment_id IS NOT NULL)
     ),
     CONSTRAINT CK_REPORT_reason_code CHECK (
-        reason_code IN ('NON_VEGAN', 'FOOD_SAFETY_HAZARD',
-                        'INAPPROPRIATE_CONTENT', 'COPYRIGHT_VIOLATION',
-                        'SPAM_ADVERTISING', 'OTHER')
+        reason_code IN ('RECIPE_INFO_OR_DIET_LABEL', 'FOOD_SAFETY_HAZARD',
+                        'SPAM_ADVERTISING', 'INAPPROPRIATE_CONTENT',
+                        'COPYRIGHT_VIOLATION', 'OTHER')
     ),
     CONSTRAINT CK_REPORT_status CHECK (
-        status IN ('PENDING', 'PROCESSING', 'RESOLVED', 'REJECTED')
+        status IN ('OPEN', 'IN_REVIEW', 'RESOLVED')
     )
 );
 GO
@@ -842,14 +842,14 @@ GO
 CREATE UNIQUE NONCLUSTERED INDEX UQ_REPORT_open_recipe
     ON [REPORT](reporter_id, recipe_id)
     WHERE recipe_id IS NOT NULL
-      AND status IN ('PENDING', 'PROCESSING');
+      AND status IN ('OPEN', 'IN_REVIEW');
 GO
 
 -- Constraint #15: Prevent duplicate open reports on same comment by same reporter (BR-29)
 CREATE UNIQUE NONCLUSTERED INDEX UQ_REPORT_open_comment
     ON [REPORT](reporter_id, comment_id)
     WHERE comment_id IS NOT NULL
-      AND status IN ('PENDING', 'PROCESSING');
+      AND status IN ('OPEN', 'IN_REVIEW');
 GO
 
 -- Constraint #26: At most one preference type per standard ingredient per user (Q11b)

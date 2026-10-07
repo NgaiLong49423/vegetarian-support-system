@@ -34,6 +34,8 @@ public enum ErrorCode {
     RECIPE_EDIT_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Recipe edit not allowed", "Bạn không có quyền chỉnh sửa công thức này."),
     RECIPE_HIDDEN(HttpStatus.FORBIDDEN, "Recipe hidden", "Công thức đang bị quản trị viên ẩn. Vui lòng liên hệ quản trị viên để được phục hồi trước khi chỉnh sửa."),
     RECIPE_DATA_INVALID(HttpStatus.BAD_REQUEST, "Recipe data invalid", "Thông tin công thức không hợp lệ."),
+    REPORT_ALREADY_OPEN(HttpStatus.CONFLICT, "Report already open",
+            "Bạn đã gửi báo cáo cho công thức này. Hãy bổ sung thông tin vào báo cáo hiện có."),
     NOT_FOUND(HttpStatus.NOT_FOUND, "Not found", "Không tìm thấy tài nguyên được yêu cầu."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed", "Phương thức HTTP không được hỗ trợ."),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type",

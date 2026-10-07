@@ -2,6 +2,9 @@ package tech.mamxanh.recipe.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -61,7 +64,7 @@ class RecipePostServiceTest {
         recipe.setCookTimeMinutes(10);
         recipe.setStatus("PUBLISHED");
         recipe.setUpdatedAt(LocalDateTime.now());
-        when(currentUserService.requireActiveExpert()).thenReturn(new CurrentUser(7L, Role.EXPERT));
+        lenient().when(currentUserService.requireActiveExpert()).thenReturn(new CurrentUser(7L, Role.EXPERT));
     }
 
     @Test
@@ -104,8 +107,8 @@ class RecipePostServiceTest {
 
     @Test
     void authorUpdatePersistsPublishedRecipeAndReturnsCurrentData() {
-        when(clock.instant()).thenReturn(Instant.parse("2026-10-05T00:00:00Z"));
-        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+        lenient().when(clock.instant()).thenReturn(Instant.parse("2026-10-05T00:00:00Z"));
+        lenient().when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         when(repository.lockById(47L)).thenReturn(Optional.of(recipe));
         when(validationRepository.isActiveIngredient(1L)).thenReturn(true);
         when(validationRepository.hasValidConvertibleUnit(1L, 1)).thenReturn(true);
@@ -153,6 +156,38 @@ class RecipePostServiceTest {
         assertThatThrownBy(() -> service.update(47L, request)).isInstanceOf(AppException.class)
                 .satisfies(exception -> assertThat(((AppException) exception).errorCode()).isEqualTo(ErrorCode.RECIPE_DATA_INVALID));
         assertThat(recipe.getInstructions()).isEqualTo("Cách làm món ăn cũ");
+    }
+
+    @Test
+    void referenceDataTrimsKeywordsAndRejectsTooLongSearches() {
+        var option = new RecipeValidationRepository.IngredientOption(1L, "Nấm", 1, "g", "gram");
+        when(validationRepository.findIngredientOptions("nam")).thenReturn(List.of(option));
+        when(validationRepository.findIngredientOptions("")).thenReturn(List.of());
+
+        assertThat(service.referenceData(" nam ").ingredients()).containsExactly(option);
+        assertThat(service.referenceData(null).ingredients()).isEmpty();
+        assertThatThrownBy(() -> service.referenceData("x".repeat(101)))
+                .isInstanceOf(AppException.class)
+                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+        verify(validationRepository, never()).findIngredientOptions("x".repeat(101));
+    }
+
+    @Test
+    void mineAndPublicSearchRejectOutOfRangePagingAndNormalizePublicKeyword() {
+        assertThatThrownBy(() -> service.listMine(-1, 20)).isInstanceOf(AppException.class)
+                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+        assertThatThrownBy(() -> service.listMine(0, 51)).isInstanceOf(AppException.class)
+                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+        assertThatThrownBy(() -> service.searchPublished("x".repeat(121), 0, 20)).isInstanceOf(AppException.class)
+                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+        assertThatThrownBy(() -> service.searchPublished(null, 0, 0)).isInstanceOf(AppException.class)
+                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+        when(repository.findAllByStatusAndTitleContainingIgnoreCaseOrderByPublishedAtDesc(
+                "PUBLISHED", "", PageRequest.of(0, 20))).thenReturn(new PageImpl<>(List.of()));
+        assertThat(service.searchPublished(null, 0, 20).items()).isEmpty();
+        assertThat(service.searchPublished("  ", 0, 20).items()).isEmpty();
+        verify(repository, times(2)).findAllByStatusAndTitleContainingIgnoreCaseOrderByPublishedAtDesc(
+                "PUBLISHED", "", PageRequest.of(0, 20));
     }
 
     private static UpdateRecipePostRequest validRequest() {
