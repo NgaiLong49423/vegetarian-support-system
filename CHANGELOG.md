@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-07 — Add Recipe Detail and Saved Recipe Read Projections (Issue #89)
 
-**Status:** Uncommitted.
+**Status:** Committed — `3ca211f`.
 
 **Scope:** Prepare Backend read APIs for the Frontend's FR-20 recipe detail, Meal Plan, saved recipe and export integrations.
 
