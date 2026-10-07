@@ -29,10 +29,12 @@ test('local demo login creates a real API session and renders the Backend accoun
 
 test('recipe exploration shows API results only and handles empty, loading and failure states', async ({ page }) => {
   let requestCount = 0;
+  let releaseInitialResponse!: () => void;
+  const initialResponsePaused = new Promise<void>((resolve) => { releaseInitialResponse = resolve; });
   await page.route('**/api/v1/recipes?**', async (route) => {
     requestCount += 1;
-    await new Promise((resolve) => setTimeout(resolve, 100));
     const keyword = new URL(route.request().url()).searchParams.get('keyword');
+    if (!keyword) await initialResponsePaused;
     if (keyword === 'api-error') return route.fulfill({ status: 503, json: { title: 'Unavailable' } });
     if (keyword === 'empty') return route.fulfill({ json: { ...recipePage, items: [], totalElements: 0, totalPages: 0 } });
     return route.fulfill({ json: recipePage });
@@ -40,6 +42,7 @@ test('recipe exploration shows API results only and handles empty, loading and f
 
   await page.goto('/kham-pha');
   await expect(page.getByRole('status')).toContainText('Đang tải công thức');
+  releaseInitialResponse();
   await expect(page.getByRole('heading', { name: 'Đậu hũ kho tiêu API' })).toBeVisible();
   await expect(page.getByText('Đậu hũ sốt cà chua', { exact: true })).toHaveCount(0);
   await page.getByPlaceholder('Tìm món chay hoặc nguyên liệu...').fill('empty');

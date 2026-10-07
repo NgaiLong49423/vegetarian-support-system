@@ -441,17 +441,28 @@ test('recipe creation route uses authenticated account role (FR-05)', async ({ p
   await expect(page.getByRole('heading', { name: 'Đăng công thức chỉ dành cho Chuyên gia' })).toBeVisible();
   await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
 
-  await seedDemoSession(page, 'CUSTOMER');
+  await page.evaluate(() => sessionStorage.setItem('mamxanh.auth', JSON.stringify({
+    accessToken: 'header.payload.signature',
+    expiresAt: Date.now() + 3_600_000,
+    account: {
+      id: 901,
+      displayName: 'Demo CUSTOMER',
+      email: 'demo-customer@mamxanh.local',
+      role: 'CUSTOMER',
+      accountStatus: 'ACTIVE',
+      emailVerified: true,
+    },
+  })));
   await page.goto('/dang-cong-thuc');
   await expect(page.getByText('Bạn cần được phê duyệt đơn đăng ký Chuyên gia trước khi đăng công thức.')).toBeVisible();
   await expect(page.getByRole('main').getByRole('link', { name: 'Đăng ký trở thành Chuyên gia' })).toHaveAttribute('href', '/dang-ky-chuyen-gia');
 
-  await page.evaluate(() => { const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'EXPERT'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session)); window.location.reload(); });
-  await page.waitForLoadState('domcontentloaded');
+  await page.evaluate(() => { const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'EXPERT'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session)); });
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
 
-  await page.evaluate(() => { const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'ADMIN'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session)); window.location.reload(); });
-  await page.waitForLoadState('domcontentloaded');
+  await page.evaluate(() => { const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'ADMIN'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session)); });
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.getByText('Vai trò hiện tại không có quyền đăng công thức.')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toHaveCount(0);
 });

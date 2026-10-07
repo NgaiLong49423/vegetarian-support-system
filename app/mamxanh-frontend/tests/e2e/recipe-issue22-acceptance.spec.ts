@@ -385,7 +385,12 @@ test('Issue 22: YouTube/mô tả tùy chọn; 401 và 403 bị chặn, không c�
   await action(page, 'Để trống mô tả (trường tùy chọn)', () => page.getByLabel('Mô tả').fill(''));
   await action(page, 'Để trống link YouTube (trường tùy chọn)', () => page.getByLabel('Link YouTube').fill(''));
   await action(page, 'Gửi khi chưa đăng nhập', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không hợp lệ hoặc đã hết hạn');
+  await expect(page).toHaveURL(/\/dang-nhap$/);
+  await expect(page.getByRole('alert')).toHaveText('Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.');
+  expect(await page.evaluate(() => sessionStorage.getItem('mamxanh.auth'))).toBeNull();
+
+  await openForm(page);
+  await fillValidRecipe(page);
   postStatus = 403;
   await action(page, 'Gửi lại bằng vai trò không phải EXPERT', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
   await expect(page.getByRole('alert')).toContainText('Chỉ Chuyên gia đang hoạt động mới được đăng');

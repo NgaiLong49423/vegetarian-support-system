@@ -166,10 +166,11 @@ test('login keeps the session in this tab and logout clears it without calling t
   await expect(page.getByText('an@example.com')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Đăng nhập', exact: true })).toHaveCount(0);
 
+  const callsBeforeLogout = serverCalls.length;
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
   await expect(page).toHaveURL(/\/dang-nhap$/);
   expect(await storedSession(page)).toBeNull();
-  expect(serverCalls).toEqual(['POST /api/v1/auth/login', 'POST /api/v1/nutrition/dietary-preferences/onboarding/invitation']);
+  expect(serverCalls.slice(callsBeforeLogout)).toEqual([]);
 });
 
 test('login errors follow the problem code and never keep the password (mock API)', async ({ page }) => {
