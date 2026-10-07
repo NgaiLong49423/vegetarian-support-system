@@ -1,28 +1,21 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from './baseFixtures';
+import { seedDemoSession } from './demo-session';
 
 async function openRecipeFormAsDemoExpert(page: import('@playwright/test').Page) {
-  await page.goto('/dang-nhap');
-  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
-  await page.getByRole('button', { name: /Tài khoản Lan Anh/ }).click();
-  await page.getByRole('button', { name: 'Expert', exact: true }).click();
-  await page.getByRole('link', { name: 'Đăng công thức mới' }).click();
+  await seedDemoSession(page, 'EXPERT');
+  await page.goto('/dang-cong-thuc');
 }
 
-test('recipe search and filters show matching recipes and recover from an empty result', async ({ page }) => {
+test('recipe exploration uses only API search and reports an empty result honestly', async ({ page }) => {
+  await page.route('**/api/v1/recipes?**', (route) => route.fulfill({ json: {
+    items: [], page: 0, size: 12, totalElements: 0, totalPages: 0,
+  } }));
   await page.goto('/kham-pha');
   const search = page.getByPlaceholder('Tìm món chay hoặc nguyên liệu...');
   await search.fill('không có món này');
-  await expect(page.getByText('Không tìm thấy công thức')).toBeVisible();
-  await search.fill('');
-  await page.getByRole('button', { name: 'Món nước', exact: true }).click();
-  await expect(page.getByRole('button', { name: /Xoá lọc/ })).toBeVisible();
-  await page.getByRole('button', { name: /Xoá lọc/ }).click();
-  await expect(page.getByRole('button', { name: /Xoá lọc/ })).toHaveCount(0);
-  await page.getByRole('combobox').selectOption('time');
-  await expect(page.getByRole('combobox')).toHaveValue('time');
-  await search.fill('Phở');
-  await expect(page.getByRole('heading', { name: /Phở chay/i }).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Chưa có công thức phù hợp' })).toBeVisible();
+  await expect(page.getByText('Phở chay', { exact: true })).toHaveCount(0);
 });
 
 test('shopping demo adds an item, filters purchased items and clears them', async ({ page }) => {
@@ -84,8 +77,7 @@ test('recipe form uses catalog choices and reports that real login is still requ
   await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Cắt đậu hũ, rim với cà chua đến khi thấm vị.');
   await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
 
-  await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không hợp lệ hoặc đã hết hạn');
-  await expect(page.getByText('Tài khoản demo chỉ dùng để xem giao diện và không được cấp quyền đăng.')).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không còn hợp lệ');
 });
 
 test('recipe image list requires one cover and blocks publishing until FR-14 upload is connected', async ({ page }) => {

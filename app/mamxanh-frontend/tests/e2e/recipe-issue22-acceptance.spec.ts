@@ -1,5 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './baseFixtures';
+import { seedDemoSession } from './demo-session';
 
 // The scenarios intentionally pause for two seconds after each user action so
 // they can be observed. The 50-ingredient boundary scenario therefore needs a
@@ -56,6 +57,8 @@ type PublishedDetail = {
   cookTimeMinutes: number;
   youtubeUrl: string | null;
   publishedAt: string;
+  nutritionComplete: boolean;
+  ingredientsWithoutNutrition: string[];
   ingredients: Array<{ ingredientId: number; name: string; quantity: number; unitId: number; unitCode: string; unitName: string }>;
   media: Array<{ blobUrl: string; mimeType: string; displayOrder: number; cover: boolean }>;
 };
@@ -76,6 +79,8 @@ const detailFixture = (overrides: Partial<PublishedDetail> = {}): PublishedDetai
   cookTimeMinutes: 15,
   youtubeUrl: 'https://www.youtube.com/watch?v=recipe-1',
   publishedAt: '2026-10-04T08:00:00',
+  nutritionComplete: true,
+  ingredientsWithoutNutrition: [],
   ingredients: [{ ingredientId: 12, name: 'Cà chua', quantity: 2, unitId: 1, unitCode: 'quả', unitName: 'quả' }],
   media: [],
   ...overrides,
@@ -122,6 +127,8 @@ async function installApi(
         cookTimeMinutes: body.cookTimeMinutes,
         youtubeUrl: body.youtubeUrl || null,
         publishedAt: response.body.publishedAt,
+        nutritionComplete: true,
+        ingredientsWithoutNutrition: [],
         ingredients: body.ingredients.map((item: Record<string, number>) => ({
           ingredientId: item.ingredientId,
           name: ingredients.find((option) => option.ingredientId === item.ingredientId)?.name ?? 'Nguyên liệu',
@@ -159,6 +166,20 @@ test('Issue 22: trang chi tiết tải trực tiếp nội dung công thức, co
   await expect(page.getByText('2 quả', { exact: true })).toBeVisible();
 });
 
+test('Issue 25: recipe detail flags catalog ingredients without nutrition data', async ({ page }) => {
+  const detail = detailFixture({
+    nutritionComplete: false,
+    ingredientsWithoutNutrition: ['Cà chua'],
+  });
+  await installApi(page, () => ({ status: 201, body: {} }), [detail]);
+
+  await page.goto(`/cong-thuc/${detail.recipeId}`, { waitUntil: 'commit' });
+
+  await expect(page.getByRole('heading', { name: 'Chưa đủ dữ liệu dinh dưỡng' })).toBeVisible();
+  await expect(page.getByRole('status')).toContainText('Ước tính dinh dưỡng chưa đầy đủ');
+  await expect(page.locator('[aria-labelledby="nutrition-status-heading"] li')).toHaveText('Cà chua');
+});
+
 test('Issue 22: trang chi tiết không ảnh và trường tùy chọn trống dùng placeholder theo loại ăn chay', async ({ page }) => {
   const types: PublishedDetail['vegetarianType'][] = ['VEGAN', 'LACTO', 'OVO', 'LACTO_OVO'];
   const labels = ['Thuần chay', 'Có sữa', 'Có trứng', 'Có trứng và sữa'];
@@ -192,13 +213,8 @@ test('Issue 22: API không tìm thấy công thức hiển thị trạng thái l
 });
 
 async function openForm(page: Page) {
-  // Existing demo role selection only reveals the Expert form in the prototype;
-  // it does not create an authenticated session or bypass Backend authorization.
-  await action(page, 'Mở trang tài khoản demo có sẵn', () => page.goto('/dang-nhap'));
-  await action(page, 'Chọn tài khoản demo để kiểm tra giao diện', () => page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click());
-  await action(page, 'Mở menu vai trò demo', () => page.getByRole('button', { name: /Tài khoản Lan Anh/ }).click());
-  await action(page, 'Chọn vai trò EXPERT demo', () => page.getByRole('button', { name: 'Expert', exact: true }).click());
-  await action(page, 'Mở trang Đăng công thức', () => page.getByRole('link', { name: 'Đăng công thức mới' }).click());
+  await seedDemoSession(page, 'EXPERT');
+  await action(page, 'Mở trang đăng công thức bằng phiên EXPERT test', () => page.goto('/dang-cong-thuc'));
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Thông tin món ăn' })).toBeVisible();
 }
@@ -354,7 +370,7 @@ test('Issue 22: 0 ảnh được đăng; giới hạn tối đa 5 và yêu cầu
   await expect(page.getByText('Cắt đậu hũ, rim với cà chua đến khi thấm vị.')).toBeVisible();
 });
 
-test('Issue 22: YouTube/mô tả tùy chọn; 401 và 403 bị chặn, không có login giả', async ({ page }) => {
+test('Issue 22: YouTube/mô tả tùy chọn; API từ chối phiên Chuyên gia không được cấp quyền', async ({ page }) => {
   let postStatus = 401;
   await installApi(page, (body) => {
     if (postStatus === 201) return { status: 201, body: { recipeId: 2204, title: body.title, status: 'PUBLISHED', publishedAt: '2026-10-04T08:00:00' } };
@@ -369,15 +385,15 @@ test('Issue 22: YouTube/mô tả tùy chọn; 401 và 403 bị chặn, không c�
   await action(page, 'Để trống mô tả (trường tùy chọn)', () => page.getByLabel('Mô tả').fill(''));
   await action(page, 'Để trống link YouTube (trường tùy chọn)', () => page.getByLabel('Link YouTube').fill(''));
   await action(page, 'Gửi khi chưa đăng nhập', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không hợp lệ hoặc đã hết hạn');
+  await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không còn hợp lệ');
+  await seedDemoSession(page, 'EXPERT');
+  await page.goto('/dang-cong-thuc');
+  await fillValidRecipe(page);
+  await action(page, 'Để trống mô tả (trường tùy chọn)', () => page.getByLabel('Mô tả').fill(''));
+  await action(page, 'Để trống link YouTube (trường tùy chọn)', () => page.getByLabel('Link YouTube').fill(''));
   postStatus = 403;
   await action(page, 'Gửi lại bằng vai trò không phải EXPERT', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
   await expect(page.getByRole('alert')).toContainText('Chỉ Chuyên gia đang hoạt động mới được đăng');
-  postStatus = 201;
-  await action(page, 'Mô phỏng phản hồi thành công từ phiên EXPERT', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page).toHaveURL(/\/cong-thuc\/2204$/);
-  await expect(page.getByRole('heading', { name: 'Đậu hũ kho cà chua', level: 1 })).toBeVisible();
-  await expect(page.getByText('Hướng dẫn chế biến')).toBeVisible();
 });
 
 test('Issue 22: link YouTube có định dạng URL nhưng sai host bị báo lỗi', async ({ page }) => {

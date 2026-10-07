@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -14,15 +14,16 @@ import {
   Activity,
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
-import { RecipeCard } from '../components/RecipeCard';
 import { PostCard } from '../components/PostCard';
 import { Badge, Button, SectionHeading } from '../components/ui';
-import { categories, posts, recipes } from '../data/mockData';
+import { categories, posts } from '../data/mockData';
+import { apiClient } from '../lib/apiClient';
+import type { RecipePost } from '../api/recipes';
 
 const categoryIcons = [Salad, Leaf, Soup, UtensilsCrossed];
 
 const quickLinks = [
-  { icon: ChefHat, label: 'Khám phá công thức', desc: 'Hơn 1.800 món chay', to: '/kham-pha', tone: 'bg-brand-100 text-brand-600' },
+  { icon: ChefHat, label: 'Khám phá công thức', desc: 'Công thức đã xuất bản', to: '/kham-pha', tone: 'bg-brand-100 text-brand-600' },
   { icon: CalendarCheck, label: 'Kế hoạch bữa ăn', desc: 'Thực đơn 7 ngày', to: '/ke-hoach', tone: 'bg-leaf-100 text-leaf-600' },
   { icon: ShoppingBasket, label: 'Danh sách đi chợ', desc: 'Tự động tổng hợp', to: '/di-cho', tone: 'bg-amber-100 text-amber-600' },
   { icon: Activity, label: 'Theo dõi dinh dưỡng', desc: 'Cân bằng vi chất', to: '/dinh-duong', tone: 'bg-brand-100 text-brand-600' },
@@ -31,6 +32,12 @@ const quickLinks = [
 export function Home() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [featured, setFeatured] = useState<RecipePost[]>([]);
+  useEffect(() => {
+    apiClient.get<{ items: RecipePost[] }>('/recipes', { params: { page: 0, size: 4 } })
+      .then(({ data }) => setFeatured(data.items))
+      .catch(() => setFeatured([]));
+  }, []);
 
   return (
     <>
@@ -41,7 +48,7 @@ export function Home() {
         <PageContainer className="relative py-16 text-center sm:py-24">
           <Badge tone="brand" className="mx-auto mb-6">
             <Leaf className="h-3.5 w-3.5" />
-            Hệ chuẩn dinh dưỡng thuần thực vật Việt Nam
+            Mâm Xanh · bản demo
           </Badge>
           <h1 className="mx-auto text-4xl font-extrabold leading-[1.18] tracking-tight text-ink sm:text-6xl sm:leading-[1.15]">
             <span className="block">Sống Xanh An Lành,</span>
@@ -50,8 +57,7 @@ export function Home() {
             </span>
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-ink-soft sm:text-lg">
-            Hệ sinh thái hơn 1.800+ công thức thuần thực vật được chứng nhận vi chất bởi chuyên gia.
-            Nấu ngon, đủ chất, nuôi dưỡng thân tâm và trọn vẹn an yên mỗi ngày.
+            Khám phá công thức thuần thực vật và xây dựng thói quen ăn chay phù hợp với bạn.
           </p>
 
           <form
@@ -70,7 +76,7 @@ export function Home() {
             />
             <Button type="submit" size="md" className="shrink-0">
               <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">Tìm với Gemini AI</span>
+              <span className="hidden sm:inline">Tìm công thức</span>
               <span className="sm:hidden">Tìm</span>
             </Button>
           </form>
@@ -114,7 +120,7 @@ export function Home() {
                   <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${cat.tone === 'leaf' ? 'bg-leaf-100 text-leaf-600' : 'bg-brand-100 text-brand-600'}`}>
                     <Icon className="h-[22px] w-[22px]" />
                   </span>
-                  <Badge tone={cat.tone === 'leaf' ? 'leaf' : 'brand'}>{cat.count} món</Badge>
+                  <Badge tone={cat.tone === 'leaf' ? 'leaf' : 'brand'}>UI demo</Badge>
                 </div>
                 <h3 className="mb-1 font-bold text-ink group-hover:text-brand-700">{cat.name}</h3>
                 <p className="text-sm text-ink-muted">{cat.desc}</p>
@@ -134,10 +140,10 @@ export function Home() {
             </span>
             <div className="flex-1">
               <h3 className="text-xl font-extrabold text-ink sm:text-2xl">
-                Không biết hôm nay ăn gì? Trợ lý Gemini AI hỗ trợ tận tay!
+                Khu vực minh họa trợ lý Gemini AI
               </h3>
               <p className="mt-1 text-sm text-ink-soft">
-                Gợi ý thực đơn cân bằng vi chất dựa trên nguyên liệu sẵn có và sở thích của bạn.
+                Gợi ý AI chưa kết nối Backend trong bản demo local.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -175,8 +181,8 @@ export function Home() {
       {/* Featured recipes */}
       <PageContainer>
         <SectionHeading
-          eyebrow="Thực đơn hay tuyển"
-          title="Thực đơn thay tinh tuyển"
+          eyebrow="Dữ liệu Backend"
+          title="Công thức đã xuất bản"
           action={
             <Link to="/kham-pha" className="hidden items-center gap-1 text-sm font-semibold text-brand-600 hover:text-brand-700 sm:inline-flex">
               Xem tất cả <ArrowRight className="h-4 w-4" />
@@ -184,13 +190,18 @@ export function Home() {
           }
         />
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {recipes.map((r) => (
-            <RecipeCard key={r.id} recipe={r} />
-          ))}
+          {featured.map((recipe) => {
+            const image = recipe.media.find((item) => item.cover) ?? recipe.media[0];
+            return <Link key={recipe.id} to={`/cong-thuc/id/${recipe.id}`} className="overflow-hidden rounded-2xl border border-brand-100 bg-white hover:shadow-lg">
+              <div className="aspect-[4/3] bg-brand-50">{image ? <img src={image.url} alt={recipe.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-sm text-ink-muted">Ảnh công thức</div>}</div>
+              <div className="p-4"><p className="text-xs font-semibold text-brand-700">{recipe.vegetarianType} · {recipe.dishCategory}</p><h3 className="mt-2 font-bold text-ink">{recipe.title}</h3><p className="mt-2 text-xs text-ink-muted">Tác giả: {recipe.authorName}</p></div>
+            </Link>;
+          })}
         </div>
+        {featured.length === 0 && <p className="text-sm text-ink-muted">Backend chưa có công thức công khai hoặc chưa thể kết nối.</p>}
         <div className="mt-8 flex justify-center">
           <Button variant="outline" size="lg" onClick={() => navigate('/kham-pha')}>
-            Xem thêm 34 công thức khác
+            Khám phá công thức
           </Button>
         </div>
       </PageContainer>
@@ -198,8 +209,8 @@ export function Home() {
       {/* Blog */}
       <PageContainer className="py-14">
         <SectionHeading
-          eyebrow="Kiến thức cộng đồng"
-          title={<>Bài viết blog chay <span className="text-brand-600">hot nhất</span></>}
+          eyebrow="UI demo · chưa kết nối Backend"
+          title={<>Bài viết cộng đồng <span className="text-brand-600">minh họa</span></>}
           action={
             <Link to="/cong-dong" className="hidden items-center gap-1 text-sm font-semibold text-brand-600 hover:text-brand-700 sm:inline-flex">
               Xem tất cả bài viết <ArrowRight className="h-4 w-4" />

@@ -1,13 +1,123 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.51.0
+> **Version:** v2.54.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-06
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-06 — Submit Recipe Post Reports
+
+**Status:** Committed — `03648fe`.
+
+**Scope:** Implement member submission of reports for published recipe posts and align the report contract with the current requirements baseline.
+
+**Related PR:** [#103](https://github.com/NgaiLong49423/vegetarian-support-system/pull/103).
+
+### Added
+
+- Add authenticated report submission with reason and description validation, private receipts, and duplicate detection for open or in-review reports.
+- Add Flyway V9 to preserve and migrate existing report values to the current status and reason taxonomy.
+- Add SQL Server integration coverage for report storage, authorization, validation, duplicates and recipe visibility.
+
+### Changed
+
+- Align the root SRS, FR-26/27, BR-25, database snapshot and API integration guide with the approved six report reasons and description limits for the Backend contract.
+
+### Fixed
+
+- Correct the report reason taxonomy mismatch between the root SRS and FR-27.
+
+## 2026-10-06 — Use Backend Data in Local Demo Flows
+
+**Status:** Uncommitted.
+
+**Scope:** Prepare a local demo that uses the real Backend and SQL Server for Frontend-connected flows while identifying UI-only prototypes.
+
+### Added
+
+- Add repeatable local fixtures for verified customer, new-member, applicant, expert and admin accounts; broader ingredient/recipe data; customer profile/preferences; an expert review application; and a complete weekly meal plan.
+- Generate BCrypt demo-account passwords at local Backend startup from an ignored `.env` value; keep credentials and password hashes out of Git.
+
+### Changed
+
+- Replace Frontend role-switching/demo authentication and mock recipe listings with real session/API-backed views for connected flows.
+- Keep screens without Backend endpoints as explicitly identified UI prototypes; document the local demo accounts, seed scope and reset behavior.
+- Configure the local profile to include demo migrations and make Docker Compose wait for the Flyway-backed Backend before starting Frontend.
+- Remove the separate SQLCMD sample-data service from Docker Compose.
+
+### Fixed
+
+None.
+
+## 2026-10-05 — Enforce Strict Coverage Gates for Every FE/BE Metric
+
+**Status:** Committed — 517ae10.
+
+**Scope:** Make every frontend and backend coverage counter a strict, visible CI gate and preserve reports when coverage fails.
+
+### Added
+
+- Add exact-count strict coverage checkers and boundary regression tests for Frontend Istanbul/NYC and Backend JaCoCo counters.
+- Report all four metrics, covered/total counts, coverage, required threshold and gate status in CI summaries.
+
+### Changed
+
+- Require Frontend Lines, Statements, Functions and Branches, and Backend JaCoCo BUNDLE Lines, Branches, Methods and Instructions to each exceed 80%; exactly 80% fails.
+- Collect coverage summaries and artifacts after a gate failure when reports are available.
+
+### Fixed
+
+- Correct stale coverage policy references that described a 60% Frontend threshold or a Backend line-only gate.
+
+## 2026-10-05 — Configure IntelliJ Development Runs and Docker SQL Port
+
+**Status:** Committed — 2e21e79.
+
+**Scope:** Support running the root Compose development stack from IntelliJ alongside a Windows SQL Server installation, without committing local credentials.
+
+### Added
+
+- Add shared IntelliJ Run configurations for Backend, Frontend, their local compound run, and the complete Docker Compose stack using the Backend env file and image builds.
+- Record BUG-011: the observed IntelliJ Services Stop command omits the env file; document the verified Compose stop workaround.
+
+### Changed
+
+- Publish Docker SQL Server on loopback port 1434 while keeping its internal port 1433; document the connection port for a Backend running directly on the host.
+
+### Fixed
+
+- Avoid the Docker SQL startup port conflict with Windows SQL Server listening on port 1433. Local verification confirmed healthy SQL, Backend and Frontend, successful initialization services, HTTP 200 at the Frontend and generated OpenAPI endpoints, and preserved SQL volume after stopping with the env file.
+
+## 2026-10-05 — Implement Onboarding and the Personalized AI Eligibility Gate (FR-31, Issue #36) ([PR #92](https://github.com/NgaiLong49423/vegetarian-support-system/pull/92))
+
+**Status:** Committed — 98f5dd9, fc13b75, ab661ef, 7e20917, 06aa22f, b8dcd6a, dc0f6f8, 434add6.
+
+**Scope:** Implement UC-31.1–UC-31.3 and AC-31.1–AC-31.10: a one-time Onboarding questionnaire for new Members, Skip without locking regular features, viewing and updating the private dietary-preference profile, and the BR-31 gate that must run before any personalized AI request.
+
+### Added
+
+- Add `GET`/`PUT /api/v1/nutrition/dietary-preferences`, `POST /api/v1/nutrition/dietary-preferences/onboarding/skip`, `POST /api/v1/nutrition/dietary-preferences/onboarding/invitation` and `GET /api/v1/nutrition/dietary-preferences/ingredient-suggestions` for the signed-in Member; administrators receive `403 MEMBER_ACCESS_REQUIRED`.
+- Add a nutrition-owned entity for the dietary-preference and Onboarding columns of `USER` (decision Q18, `@DynamicUpdate`) and an entity for `USER_INGREDIENT_PREFERENCE`; names matching an active standard ingredient are linked to it.
+- Add `DietaryPreferenceService.requirePersonalizedAiEligible`, which stops a request with `409 DIETARY_PROFILE_INCOMPLETE` and a `missing` list before any Gemini call or Meal Plan write.
+- Add the Flyway migration `V7__user_onboarding_invitation.sql` with the column `USER.onboarding_invited_at`: the invitation endpoint returns `show = true` only once, for a `NOT_STARTED` account that has not been shown it, under a `USER` row lock. Accounts that existed before V7 are recorded as already invited and keep their `onboarding_status` (AC-31.10).
+- Add the `MEMBER_ACCESS_REQUIRED`, `INGREDIENT_PREFERENCE_CONFLICT` and `DIETARY_PROFILE_INCOMPLETE` error codes, and let application errors carry extra problem properties.
+- Add the `bearerAuth` HTTP bearer security scheme (`OpenApiConfig`) to the generated OpenAPI and require it on the dietary-preference operations.
+- Add the Frontend Onboarding page `/khoi-tao-so-thich`, the Settings page `/ho-so/so-thich-an-uong` with the missing-information notice, and the redirect to Onboarding when the invitation endpoint returns `show = true` after sign-in.
+- Add SQL Server integration tests for AC-31.1–AC-31.10 (including the invitation shown once, parallel claims and the V6→V7 upgrade), validation, access, privacy and the generated OpenAPI, a problem-detail unit test, `TC41` in `database/queries.sql`, and API-stubbed Playwright scenarios for the Onboarding and Settings flows.
+
+### Changed
+
+- Point the "Sở thích ăn uống" menu item to the new Settings page, stub the invitation call in the existing login browser tests, record the invitation as already shown for the real-stack login test account, and document the endpoints, rules and error codes in `docs/api/API.md`, `database/schema.sql`, `database/README.md` and both app READMEs.
+
+### Fixed
+
+- Stop inviting a Member again after the questionnaire was left without Skip or Complete, and stop marking existing accounts as `SKIPPED` (PR #92 review F001).
+- Publish `minimum: 1` for `maxCookingTimeMinutes`, matching the validator that rejects `0` (PR #92 review F002).
+- Declare bearer security for the dietary-preference operations in the generated OpenAPI (PR #92 review F003).
 
 ## 2026-10-05 — Record Password Login Follow-Up Database Checks (FR-03-B, Issue #6)
 
@@ -27,6 +137,65 @@ None.
 ### Fixed
 
 None.
+
+## 2026-10-04 — Implement Expert Application Review (Issue #68) ([PR #86](https://github.com/NgaiLong49423/vegetarian-support-system/pull/86))
+
+**Status:** Committed — ad6764d.
+
+**Scope:** Add the Customer submission/history and Admin review workflows for expert applications, including the atomic role promotion and in-app decision notice.
+
+### Added
+
+- Add the Expert Application and Notification backend services, runtime API endpoints, SQL Server migration V8, and API-backed Frontend workflow.
+- Add request-validation, service/controller, SQL Server repository, promotion-eligibility and competing-decision concurrency coverage.
+
+### Changed
+
+- Extend the package specification and workspace guides for the implemented modules and migration.
+- Replace the FR-05 demo workflow with authenticated API submission, history, review, conflict recovery and role display.
+
+### Fixed
+
+- Read UTC timestamps from injected clock instants across expert promotion and decision notifications so UTC-only test clocks work through the full review transaction.
+
+## 2026-10-04 — Recipe Post Frontend Management (Issue #47)
+
+**Status:** Committed — `c144b85`.
+
+**Scope:** Add the Frontend experience for Experts to edit and delete their own public Recipe Posts from the expert profile.
+
+### Added
+
+- Add the recipe API client, expert profile recipe list, edit form, separate delete action, confirmation dialog and success feedback.
+- Add Playwright scenarios for the edit and delete flows using mocked API responses.
+
+### Changed
+
+- Return to the expert profile after saving and remove a deleted recipe from that list.
+- Keep recipe management actions on the expert profile instead of the public recipe detail page.
+
+### Fixed
+
+- None.
+
+## 2026-10-04 — Prepare Recipe Ingredient Entry for Issue #25
+
+**Status:** Committed — f8a90152dcf5ccf88a96f4120d36295ef6bb6af5.
+
+**Scope:** Prototype ingredient quantity input and add repeatable Docker conversion samples while the Recipe Post API was pending Issues #11/#22.
+
+### Added
+
+- Validate positive ingredient quantities and the then-agreed 100g minimum/step for direct `g`/`kg` input.
+- Add ingredient-specific conversion fixtures for tofu, tomato, water spinach, garlic, and black pepper.
+
+### Changed
+
+- Prototype 1–50 ingredient rows with free-text names and local-only publish feedback before the Recipe Post API was available.
+
+### Fixed
+
+- Remove the demo's misleading successful-publish message before API integration.
 
 ## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
 
@@ -129,6 +298,26 @@ None.
 ### Fixed
 
 - Keep demo role switching limited to demo sessions and clear demo state when a real user signs in or leaves the account.
+
+## 2026-10-03 — Recipe Post Backend API and Data Handling (Issue #47)
+
+**Status:** Committed — `06e7b0d`.
+
+**Scope:** Add the Backend API and persistence behavior needed to edit and soft-delete an Expert's own public Recipe Post.
+
+### Added
+
+- Add public Recipe Post detail/search and reference-data APIs, plus author-only edit and soft-delete endpoints.
+- Add Backend service tests for ownership, direct publication after update, hidden recipes, soft deletion and validation.
+
+### Changed
+
+- Resolve the active Expert from the authenticated server principal; do not accept an author ID from the client.
+- Block authors from opening or editing a recipe hidden by an Administrator.
+
+### Fixed
+
+- Preserve Recipe Post rows as tombstones so existing Meal Plan foreign-key references remain intact and exclude deleted recipes from public search.
 
 ## 2026-10-03 — Fix Docker Sample Data Seed ([PR #79](https://github.com/NgaiLong49423/vegetarian-support-system/pull/79))
 

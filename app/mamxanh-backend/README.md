@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.15.0
+> **Version:** v0.22.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-04
+> **Last Updated:** 2026-10-06<br>
 > **Status:** Active  
 
 # Backend Workspace
@@ -27,6 +27,9 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 - Đã có luồng FR-03-A (Issue #5): `POST /api/v1/auth/register`, `/auth/email-verifications`, `/auth/email-verifications/resend`; lỗi trả `application/problem+json` có `code` ổn định; migration `V3__user_email_verification_token.sql`.
 - FR-35 bổ sung consent bằng migration `V4__nutrition_profile_consent.sql`; FR-18 bổ sung ingredient group và kiểm tra unit bằng migration `V5__ingredient_group_and_unit_validation.sql`.
 - Đã có luồng FR-03-B (Issue #6): `POST /api/v1/auth/login` phát Stateless JWT (HS256), khóa đăng nhập tạm 10 phút sau 5 lần sai liên tiếp theo tài khoản (migration `V6__user_login_throttle.sql`), và mọi request mang Bearer token đều kiểm tra `USER.account_status`.
+- FR-05 (Issue #68) triển khai luồng nộp/xem lịch sử đơn Chuyên gia và Admin xét duyệt qua Backend API; phê duyệt đổi `CUSTOMER` thành `EXPERT` và ghi notification trong cùng transaction. Migration `V8__expert_application_notifications.sql` bổ sung internal target path cùng index truy vấn. Chi tiết API được tạo từ runtime OpenAPI.
+- Đã có FR-31 (Issue #36) trong module `nutrition`: `GET`/`PUT /api/v1/nutrition/dietary-preferences`, `POST /api/v1/nutrition/dietary-preferences/onboarding/skip`, `POST /api/v1/nutrition/dietary-preferences/onboarding/invitation` (lời mời Onboarding chỉ hiện một lần, AC-31.10) và `GET /api/v1/nutrition/dietary-preferences/ingredient-suggestions`; entity riêng ánh xạ các cột sở thích của `USER` (quyết định Q18) và bảng `USER_INGREDIENT_PREFERENCE`; migration `V7__user_onboarding_invitation.sql` thêm cột `USER.onboarding_invited_at`. Generated OpenAPI khai báo security scheme `bearerAuth` (`common/config/OpenApiConfig`); controller cần đăng nhập gắn `@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)`. Endpoint AI cá nhân hóa sau này phải gọi `DietaryPreferenceService.requirePersonalizedAiEligible(userId)` trước khi gọi Gemini (BR-31).
+- FR-26/27 thêm `POST /api/v1/recipes/{recipeId}/reports` cho Member gửi báo cáo bài công khai; báo cáo lưu `OPEN`, xác thực và chống trùng ở Backend, migration V9 đồng bộ trạng thái/mã lý do với SRS. Luồng bổ sung thông tin thuộc FR-30 chưa có trong Issue này.
 
 ### Lệnh chạy và kiểm tra xác minh
 
@@ -49,7 +52,7 @@ Chạy JUnit tests, package và coverage hard gate:
 ./mvnw clean verify
 ```
 
-JaCoCo chạy `prepare-agent`, `report` rồi `check`. Overall backend `BUNDLE / LINE / COVEREDRATIO` phải **≥0.80**; dưới 80% làm Maven trả exit code khác 0 và job CI `Backend` fail. Đây không phải new-code coverage. Reports: `target/site/jacoco/index.html` và `target/site/jacoco/jacoco.xml`. Không exclude production code để pass; thêm test có assertion phù hợp theo report. Sonar đọc XML sau khi reports được truyền qua artifact, không tạo coverage hoặc thay gate này. Coverage không thay thế Acceptance Criteria, authorization hoặc database integration evidence.
+JaCoCo chạy `prepare-agent`, `report` rồi kiểm tra aggregate `BUNDLE` cho **LINE, BRANCH, METHOD và INSTRUCTION**; cả bốn metric phải **>80%** (đúng 80% vẫn fail). JaCoCo không đo Statements; Methods và Instructions là counter riêng. Checker đọc số đếm trong XML và so sánh chính xác, đồng thời ghi từng metric, `covered/total`, tỷ lệ và trạng thái vào `target/site/jacoco/strict-coverage-summary.md`. `JaCoCoCoverageGateTest` kiểm tra các biên của gate. Đây không phải new-code coverage. Reports: `target/site/jacoco/index.html` và `target/site/jacoco/jacoco.xml`. Không exclude production code để pass; thêm test có assertion phù hợp theo report. Sonar đọc XML sau khi reports được truyền qua artifact, không tạo coverage hoặc thay gate này. Coverage không thay thế Acceptance Criteria, authorization hoặc database integration evidence.
 
 `verify` chạy cả unit test và integration test. Integration test dùng Testcontainers để khởi động cùng SQL Server container image được pin với Docker Compose (tag `2019-CU32-GDR11-ubuntu-20.04`, repository manifest digest lấy từ MCR), khởi động ứng dụng qua `MamXanhApplication.main`, chạy Flyway từ V1 và kiểm tra mapping Hibernate, nên **Docker Desktop phải đang chạy**; lần đầu cần tải image dung lượng lớn. Test dùng profile `test`, không cần file `.env` và không gửi email thật. Khi thay image/digest, phải chạy integration tests thật; compile-only không xác minh DockerImageName, SQL Server startup hay Flyway.
 
@@ -93,6 +96,8 @@ SPRING_DATASOURCE_PASSWORD=YOUR_LOCAL_DB_PASSWORD
 
 `.env` chỉ dùng trên máy cá nhân và không được commit. File `src/main/resources/application-local.properties` được theo dõi với placeholder an toàn và nạp `.env` bằng `spring.config.import=optional:file:.env[.properties]`; không ghi credential thật vào file này.
 
+Trước khi chạy profile `local`, đặt `MAMXANH_DEMO_PASSWORD` trong `.env` theo mục [Tài khoản demo local](#tài-khoản-demo-local). Các giá trị trong `.env.example` chỉ là placeholder, không phải credential dùng được.
+
 Các biến môi trường cho FR-03 (giá trị dùng chung lấy từ kho mật khẩu của nhóm, không dán vào Issue/PR):
 
 | Biến | Mặc định | Ý nghĩa |
@@ -102,6 +107,13 @@ Các biến môi trường cho FR-03 (giá trị dùng chung lấy từ kho mậ
 | `MAMXANH_MAIL_FROM` | trống | Địa chỉ người gửi đã xác minh trên Brevo; trống thì cũng bỏ qua việc gửi email. |
 | `MAMXANH_FRONTEND_BASE_URL` | `http://localhost:5173` | Origin dùng để tạo liên kết trong email (`/xac-minh-email?token=...`). |
 | `MAMXANH_CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Danh sách origin được gọi API, phân tách bằng dấu phẩy, không dùng wildcard. |
+| `MAMXANH_DEMO_PASSWORD` | **bắt buộc khi dùng profile `local`** | Mật khẩu local chung cho tài khoản demo; 12–72 byte UTF-8. Backend tạo BCrypt hash khi khởi động; không đưa mật khẩu vào Git hoặc tài liệu. |
+
+### Tài khoản demo local
+
+Khi Flyway nạp seed trong profile `local`, Backend tạo năm tài khoản đã xác minh email: `demo-customer@mamxanh.local` (Member có hồ sơ, sở thích, lịch ăn và đơn Expert đang chờ), `demo-new-member@mamxanh.local` (Member mới để thử onboarding), `demo-applicant@mamxanh.local` (Member chưa nộp đơn), `demo-expert@mamxanh.local` (quản lý công thức) và `demo-admin@mamxanh.local` (quản trị/xét duyệt). Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả năm tài khoản.
+
+Seed repeatable chỉ dùng với profile `local`. Trong IntelliJ/Maven, profile `local,local-reset` mặc định xóa và dựng lại `MamXanhDB` trước khi chạy migration; Docker Compose giữ volume/database khi `down`/`up`, và chạy lại seed an toàn. Reset SQL volume Compose sẽ dựng lại toàn bộ schema và fixture. Không dùng tài khoản hoặc mật khẩu demo ngoài máy local.
 
 ### 3. Compile và chạy
 
@@ -130,6 +142,14 @@ Sau lần tải dependency đầu tiên, các lần mở dự án tiếp theo ch
 
 IntelliJ vẫn sử dụng cùng cấu hình Spring profile `local`; nút Run không thay thế yêu cầu SQL Server phải sẵn sàng.
 
+### Tùy chọn reset schema mỗi lần chạy local
+
+Mặc định khi chạy local, Backend bật profile phá hủy dữ liệu `local-reset` cùng với `local`. Mỗi lần khởi động, Backend xác minh JDBC URL trỏ tới SQL Server loopback, kết nối đúng database `MamXanhDB`, và tài khoản có quyền tạo/xóa database; sau đó app kết nối `master`, drop rồi tạo lại database `MamXanhDB`, và chạy toàn bộ migration hiện hành. Database này bị xóa hoàn toàn mỗi lần chạy; không dùng profile này với database dùng chung, staging hoặc production. Docker Compose truyền profile `local` tường minh nên không reset database container.
+
+- **IntelliJ IDEA:** Để trống **Active profiles** để dùng mặc định `local,local-reset`. Nếu cấu hình đã đặt profile tường minh, đặt thành `local,local-reset` để reset mỗi lần chạy. Muốn giữ database, đặt thành `local`. Không lưu credential trong Run Configuration.
+- **Maven (PowerShell):** `.\mvnw.cmd spring-boot:run` dùng mặc định reset. Đặt `$env:SPRING_PROFILES_ACTIVE='local'` trước lệnh để giữ database.
+- Việc reset drop database vật lý, nên mọi bảng và dữ liệu trong `MamXanhDB` bị xóa. Database được tạo lại với collation `SQL_Latin1_General_CP1_CI_AS` và compatibility level `150`. Nếu preflight không xác nhận đúng local server, database hoặc quyền SQL Server, ứng dụng dừng trước khi drop.
+
 ## Cách 2 — Chạy toàn hệ thống bằng Docker Compose
 
 Để chạy Frontend, Backend và SQL Server theo một cấu hình dùng chung, ưu tiên Docker Compose ở repository root. Hướng dẫn dưới đây vẫn hữu ích khi chỉ cần chạy riêng Backend.
@@ -149,11 +169,11 @@ $composeProject = 'mamxanh-dev'
 docker compose -p $composeProject --env-file app/mamxanh-backend/.env up --build --detach --wait --wait-timeout 600
 ```
 
-Lần khởi động đầu, SQL Server tạo `MamXanhDB`, Backend chạy Flyway, sau đó service `sample-data` nạp fixture mẫu từ `database/sample-data.sql` trước khi Frontend sẵn sàng. Script seed có thể chạy lại an toàn; `down` rồi `up` giữ SQL volume và dữ liệu hiện có.
+Khi chạy với profile `local`, Flyway áp dụng migration schema và repeatable demo seed `db/demo/R__demo_sample_data.sql` trước khi Backend báo healthy. Cơ chế này áp dụng cho IntelliJ và Docker Compose; Compose chỉ khởi động Frontend sau khi Backend khỏe. Seed có thể chạy lại an toàn; `down` rồi `up` giữ SQL volume và dữ liệu hiện có.
 
 Mở Frontend tại <http://localhost:5173>; Scalar API Reference chính thức tại <http://localhost:8080/scalar>; generated OpenAPI JSON tại <http://localhost:8080/v3/api-docs>. Các port chỉ bind vào loopback của máy local. Scalar tải JS asset đã pin từ jsDelivr nên browser cần truy cập CDN; spec được tải cùng origin Backend. Dừng bằng `docker compose -p $composeProject --env-file app/mamxanh-backend/.env down`; lệnh này giữ database và dependency volume. Sửa `MSSQL_SA_PASSWORD` trong `.env` không tự đổi credential đã khởi tạo trong SQL volume.
 
-Để reset riêng database development, chạy script có xác nhận riêng. Script chỉ xóa SQL volume, sau đó Compose khởi động lại SQL Server, áp dụng Flyway và nạp lại fixture; Frontend dependency volume vẫn được giữ:
+Để reset riêng database development, chạy script có xác nhận riêng. Script chỉ xóa SQL volume, sau đó Compose khởi động lại SQL Server và Flyway dựng lại schema cùng fixture; Frontend dependency volume vẫn được giữ:
 
 ```powershell
 ./scripts/reset-docker-db.ps1
@@ -225,7 +245,7 @@ Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc 
 ## Definition of Done cho thay đổi backend
 
 - Business Rule và failure case liên quan có test phù hợp.
-- `./mvnw clean verify` (Windows: `.\mvnw.cmd clean verify`) pass trên commit hiện tại, gồm tests, build/package và overall JaCoCo line coverage ≥80%.
+- `./mvnw clean verify` (Windows: `.\mvnw.cmd clean verify`) pass trên commit hiện tại, gồm tests, build/package và JaCoCo BUNDLE Lines, Branches, Methods, Instructions đều >80%.
 - Không log password, token, SAS URL hoặc dữ liệu cá nhân nhạy cảm.
 - Thay đổi schema có Flyway migration append-only, kiểm tra trên database sạch và cập nhật ERD/tài liệu.
 - Thay đổi API có OpenAPI, validation, authorization và ví dụ lỗi tương ứng.

@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M02
 > **File:** `docs/requirements/use-cases/identity-and-access.md`
-> **Version:** v2.4.0
+> **Version:** v2.5.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -120,7 +120,7 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 <a id="uc-05-1"></a>
 ### UC-05.1 — Nộp đơn đăng ký Expert
 - **Goal / Primary Actor:** Customer gửi hồ sơ xin quyền đăng bài.
-- **Trigger / Preconditions:** Customer đăng nhập, chưa có đơn `PENDING`.
+- **Trigger / Preconditions:** Customer đăng nhập với tài khoản `ACTIVE`, đã xác minh email, chưa có đơn `PENDING`.
 - **Main Flow:** Customer điền format; Backend validate và lưu đơn `PENDING`.
 - **Alternative / Security:** Đơn trùng đang chờ bị chặn; đơn bị từ chối trước đó không cấm nộp lại.
 - **Postconditions:** Đơn mới xuất hiện trong hàng chờ Admin.
@@ -139,7 +139,7 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 ### UC-05.3 — Phê duyệt đơn và cấp quyền Expert
 - **Goal / Primary Actor:** Administrator chấp thuận hồ sơ đủ điều kiện.
 - **Trigger / Preconditions:** Đơn còn `PENDING`; Customer còn hoạt động.
-- **Main Flow:** Trong một transaction, hệ thống đánh dấu `APPROVED` và nâng role lên `EXPERT`.
+- **Main Flow:** Trong một transaction, hệ thống đánh dấu `APPROVED`, nâng role lên `EXPERT` và ghi notification kết quả.
 - **Alternative / Security:** Đơn đã xử lý/tài khoản không đủ điều kiện bị từ chối.
 - **Postconditions:** Người dùng có quyền Expert và không còn đơn pending đó.
 - **Traceability / Acceptance Coverage:** FR-05; BR-74; [AC-05.3, AC-05.7, AC-05.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
@@ -148,7 +148,7 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 ### UC-05.4 — Từ chối đơn Expert
 - **Goal / Primary Actor:** Administrator từ chối hồ sơ với lý do.
 - **Trigger / Preconditions:** Đơn còn `PENDING`.
-- **Main Flow:** Admin nhập lý do; hệ thống validate và chuyển đơn sang `REJECTED`.
+- **Main Flow:** Admin nhập lý do; hệ thống validate và trong cùng transaction chuyển đơn sang `REJECTED`, ghi notification kèm lý do.
 - **Alternative / Security:** Thiếu lý do hoặc xử lý lại bị chặn.
 - **Postconditions:** Role Customer không đổi; kết quả/lý do có thể được người nộp xem.
 - **Traceability / Acceptance Coverage:** FR-05; BR-74; [AC-05.4, AC-05.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
@@ -577,9 +577,9 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
    - Bước 3: Administrator chọn một đơn để xem chi tiết toàn bộ nội dung format do người dùng khai báo.
    - Bước 4: Administrator đánh giá thủ công tính đầy đủ, liên quan, nhất quán và phù hợp chính sách của nội dung tự khai; hệ thống không tạo điểm Chuyên gia tự động và không khẳng định đã xác minh danh tính hoặc tính xác thực ngoài hệ thống. Nếu đạt, Administrator nhấn "Phê duyệt" (Approve).
    - Bước 5: Administrator có thể nhập lời nhắn/chúc mừng tùy chọn vào `admin_note`.
-   - Bước 6: Hệ thống kiểm tra lại tài khoản vẫn `ACTIVE`, vai trò vẫn là `CUSTOMER` và đơn vẫn `PENDING`; sau đó cập nhật trạng thái bản ghi `EXPERT_APPLICATION` thành `APPROVED`, ghi nhận `reviewed_by` và `reviewed_at`.
-   - Bước 7: Hệ thống lập tức cập nhật vai trò của tài khoản người dùng tương ứng trong thực thể `USER` thành `EXPERT`.
-   - Bước 8: Hệ thống gửi thông báo in-app chúc mừng tới người dùng: "Chúc mừng bạn! Đơn đăng ký Chuyên gia của bạn đã được phê duyệt. Bạn hiện đã có quyền tạo và chia sẻ công thức trên Mâm Xanh."
+   - Bước 6: Trong một transaction, hệ thống kiểm tra lại tài khoản vẫn `ACTIVE`, vai trò vẫn là `CUSTOMER` và đơn vẫn `PENDING`; sau đó cập nhật trạng thái bản ghi `EXPERT_APPLICATION` thành `APPROVED`, ghi nhận `reviewed_by` và `reviewed_at`.
+   - Bước 7: Trong cùng transaction, hệ thống lập tức cập nhật vai trò tài khoản trong `USER` thành `EXPERT` và ghi notification in-app chúc mừng tới người dùng: "Chúc mừng bạn! Đơn đăng ký Chuyên gia của bạn đã được phê duyệt. Bạn hiện đã có quyền tạo và chia sẻ công thức trên Mâm Xanh."
+   - Nếu bất kỳ thao tác nào trong transaction thất bại, toàn bộ thay đổi quyết định, role và notification được rollback.
 
 ##### C. Luồng Administrator từ chối đơn đăng ký (UC-05.4)
 1. **Alternative Flow:**
@@ -587,8 +587,8 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
    - Bước 2: Administrator nhấn "Từ chối" (Reject).
    - Bước 3: Hệ thống hiển thị hộp thoại bắt buộc Administrator phải nhập lý do từ chối cụ thể vào ô `admin_note` (từ 10 đến 500 ký tự, không được để trống).
    - Bước 4: Administrator nhập lý do và xác nhận từ chối.
-   - Bước 5: Hệ thống cập nhật trạng thái bản ghi `EXPERT_APPLICATION` thành `REJECTED`, lưu lý do từ chối, ghi nhận `reviewed_by` và `reviewed_at`. Tài khoản người dùng vẫn giữ nguyên vai trò `CUSTOMER`.
-   - Bước 6: Hệ thống gửi thông báo in-app tới người dùng giải thích rõ lý do đơn bị từ chối và hướng dẫn hoàn thiện để có thể nộp lại.
+   - Bước 5: Trong một transaction, hệ thống cập nhật trạng thái bản ghi `EXPERT_APPLICATION` thành `REJECTED`, lưu lý do từ chối, ghi nhận `reviewed_by` và `reviewed_at`. Tài khoản người dùng vẫn giữ nguyên vai trò `CUSTOMER`.
+   - Bước 6: Trong cùng transaction, hệ thống ghi thông báo in-app cho người dùng, kèm lý do bị từ chối và hướng dẫn hoàn thiện để có thể nộp lại.
 
 ##### D. Luồng Ngoại lệ & An ninh (Exception & Security Flow)
 1. **Chặn nộp đơn trùng lặp khi đang có đơn chờ duyệt:**
@@ -597,11 +597,11 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
 2. **Cho phép nộp lại sau khi bị từ chối:**
    - Nếu đơn trước đó của Customer đã có kết quả `REJECTED`, hệ thống cho phép người dùng bấm "Nộp lại đơn đăng ký" để tạo một bản ghi `EXPERT_APPLICATION` mới với thông tin đã được chỉnh sửa bổ sung.
 3. **Chặn người dùng đã là Chuyên gia nộp đơn:**
-   - Nếu tài khoản đã có vai trò `Role = EXPERT` hoặc `Role = ADMIN`, hệ thống ẩn nút đăng ký và chặn request nộp đơn với mã lỗi `HTTP 400 Bad Request`.
+   - Nếu tài khoản đã có vai trò `Role = EXPERT` hoặc `Role = ADMIN`, hệ thống chặn request nộp đơn ở tầng RBAC với mã lỗi `HTTP 403 Forbidden`, vì người dùng đã xác thực nhưng không được cấp quyền Customer cho endpoint này. Giao diện không hiển thị thao tác nộp đơn cho các role này.
 4. **Không cho rút đơn đang chờ trong MVP:**
    - Customer được xem đơn `PENDING` nhưng không có thao tác rút/hủy đơn. Nếu cần dừng xử lý, Customer liên hệ Administrator theo kênh hỗ trợ ngoài phạm vi chức năng này.
 5. **Chống xử lý đồng thời hoặc xử lý lại:**
-   - Chỉ đơn còn `PENDING` mới được phê duyệt/từ chối. Nếu một Administrator khác đã xử lý đơn hoặc tài khoản không còn `ACTIVE`/`CUSTOMER`, hệ thống từ chối quyết định mới với `HTTP 409 Conflict`, không ghi đè kết quả trước đó và yêu cầu tải lại dữ liệu.
+   - Chỉ đơn còn `PENDING` mới được phê duyệt/từ chối. Nếu một Administrator khác đã xử lý đơn hoặc tài khoản không còn `ACTIVE`/`CUSTOMER`, hệ thống từ chối quyết định mới với `HTTP 409 Conflict`, rollback thay đổi quyết định, không ghi đè kết quả trước đó, không đổi role/ghi notification và yêu cầu tải lại dữ liệu.
 6. **Xem lịch sử đơn của chính mình:**
    - Customer xem danh sách các đơn đã gửi theo thứ tự mới nhất trước, gồm ngày gửi, trạng thái, thời điểm xử lý và `admin_note` khi có; không xem được đơn của tài khoản khác.
 
@@ -636,7 +636,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-25).
    - Bước 1: Chuyên gia nhấn nút "Công khai bài viết" trên giao diện soạn thảo công thức.
    - Bước 2: Hệ thống kích hoạt quy trình thẩm định tính hợp lệ toàn diện ở tầng máy chủ (Server-side Validation) đối chiếu trực tiếp với bộ quy tắc Recipe Validation Profile chuẩn được định nghĩa tại FR-16 và các Business Rules liên quan:
      - Thẩm định cấu trúc và độ dài trường theo FR-16: tiêu đề (3–120 ký tự), thể loại món ăn (`dish_category` thuộc danh mục chuẩn), khẩu phần (1–50), thời gian chuẩn bị và nấu (mỗi giá trị 0–1.440 phút, tổng thời gian $> 0$), mô tả bài viết ($\le 2.000$ ký tự), chọn đúng 1 trong 4 loại ăn chay chuẩn (BR-07, BR-19).
-     - Thẩm định nguyên liệu theo FR-19: danh sách từ 1 đến 50 dòng, bắt buộc có tên nguyên liệu, số lượng số dương ($> 0$) và đơn vị đo chuẩn thuộc bảng `UNIT`.
+      - Thẩm định nguyên liệu theo FR-19: danh sách từ 1 đến 50 dòng; mỗi dòng bắt buộc tham chiếu một mục đang dùng được trong catalog chuẩn FR-18, có số lượng số dương ($> 0$) và đơn vị đo chuẩn thuộc bảng `UNIT`; không chấp nhận tên tự do hoặc thiếu `ingredientId` (BR-12).
      - Thẩm định quy tắc chuyển đổi đơn vị (`INGREDIENT_UNIT_CONVERSION`): Đối với các nguyên liệu sử dụng đơn vị cần quy đổi sang gram để tính toán dinh dưỡng (như đơn vị thuộc chiều `COUNT` quả/củ/bìa hoặc chiều `VOLUME` khác), nếu trong cơ sở dữ liệu chưa có quy tắc quy đổi tương ứng cho nguyên liệu đó, hệ thống bắt buộc từ chối xuất bản (Validation Error) và yêu cầu tác giả chọn đơn vị đo khác (như gram) (BR-14, BR-19, BR-73).
      - Thẩm định nội dung hướng dẫn chuẩn bị/chế biến theo FR-16: bắt buộc có nội dung `instructions` từ 10 đến 5.000 ký tự không rỗng sau khi trim (BR-19); không ép buộc phân rã thành các bước độc lập.
      - Thẩm định tệp ảnh và video theo FR-14 và FR-15: từ 0 đến 5 hình ảnh minh họa (`RECIPE_MEDIA`, JPEG/PNG/WebP $\le 5$ MB), nếu có ảnh thì bắt buộc có đúng 1 ảnh được chỉ định làm ảnh đại diện (`is_cover = true`) và có thứ tự hiển thị `display_order`; tối đa 1 liên kết YouTube hợp lệ.
@@ -986,9 +986,9 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-44).
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow - Chỉnh sửa công thức):**
   - Bước 1: Tác giả nhấn "Chỉnh sửa công thức". Hệ thống kiểm tra quyền tác giả (BR-62, BR-64); nếu trùng khớp, hiển thị biểu mẫu chỉnh sửa với toàn bộ dữ liệu hiện tại của bài viết.
-  - Bước 2: Tác giả sửa đổi các thông tin (tiêu đề, thể loại món `dish_category`, thời gian nấu, khẩu phần, danh sách nguyên liệu và định lượng, nội dung hướng dẫn chế biến `instructions` 10–5.000 ký tự, thêm/xóa/sắp xếp ảnh minh họa và chọn ảnh đại diện theo FR-14).
+  - Bước 2: Tác giả sửa đổi các thông tin (tiêu đề, thể loại món `dish_category`, thời gian nấu, khẩu phần, danh sách nguyên liệu đã chọn từ catalog FR-18 và định lượng, nội dung hướng dẫn chế biến `instructions` 10–5.000 ký tự, thêm/xóa/sắp xếp ảnh minh họa và chọn ảnh đại diện theo FR-14).
   - Bước 3: Tác giả nhấn "Lưu thay đổi".
-  - Bước 4: Hệ thống thực hiện kiểm tra hợp lệ toàn bộ các tiêu chí validation bắt buộc theo FR-16, BR-19 và BR-73 (bao gồm kiểm tra tính khả dụng của quy tắc chuyển đổi đơn vị nguyên liệu).
+  - Bước 4: Hệ thống thực hiện kiểm tra hợp lệ toàn bộ các tiêu chí validation bắt buộc theo FR-16, FR-19/BR-12, BR-19 và BR-73 (bao gồm tham chiếu catalog bắt buộc cho từng dòng và tính khả dụng của quy tắc chuyển đổi đơn vị nguyên liệu).
   - Bước 5: Kiểm tra thành công, hệ thống cập nhật nội dung bài viết, trường `instructions` và ảnh `RECIPE_MEDIA` vào cơ sở dữ liệu, tự động tính toán lại bảng ước tính 9 chỉ tiêu dinh dưỡng (FR-39), và xuất bản trực tiếp các thay đổi lên trang công khai ngay lập tức mà không qua kiểm duyệt trước của Admin (BR-07, BR-59, BR-62).
   - Bước 6: Hệ thống hiển thị thông báo cập nhật thành công cho tác giả.
 - **Luồng thay thế (Alternative Flows - Xóa công thức):**

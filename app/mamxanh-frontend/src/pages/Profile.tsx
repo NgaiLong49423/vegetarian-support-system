@@ -4,9 +4,9 @@ import { Award, BadgeCheck, Bookmark, Heart, Leaf, Plus, Settings, UtensilsCross
 import { PageContainer } from '../components/Layout';
 import { RecipeCard } from '../components/RecipeCard';
 import { Badge, Button, Card, EmptyState } from '../components/ui';
-import { useDemoAccount } from '../components/DemoAccount';
-import { currentUser, demoAiPlan, recipes } from '../data/mockData';
+import { recipes } from '../data/mockData';
 import { getSavedRecipeSlugs, subscribeSaved } from '../lib/savedRecipes';
+import { useAuth } from '../components/AuthContext';
 
 const tabs = ['Công thức đã lưu', 'Món yêu thích', 'Sở thích ăn chay', 'Tùy chọn'] as const;
 type Tab = (typeof tabs)[number];
@@ -26,7 +26,8 @@ const toggles = [
 ];
 
 export function Profile() {
-  const { role, applicationStatus } = useDemoAccount();
+  const { account } = useAuth();
+  const role = account?.role;
   const [tab, setTab] = useState<Tab>('Công thức đã lưu');
   const [savedSlugs, setSavedSlugs] = useState(getSavedRecipeSlugs);
   const favorites = recipes.slice(2, 5);
@@ -42,24 +43,29 @@ export function Profile() {
       <Card className="mb-6 overflow-hidden">
         <div className="h-28 bg-gradient-to-r from-brand-500 via-brand-400 to-amber-400" />
         <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end">
-          <img src={currentUser.avatar} alt="" className="-mt-16 h-24 w-24 rounded-2xl object-cover ring-4 ring-white" />
+          <div className="-mt-16 flex h-24 w-24 items-center justify-center rounded-2xl bg-brand-600 text-3xl font-bold text-white ring-4 ring-white">{account?.displayName.charAt(0).toUpperCase() ?? '?'}</div>
           <div className="flex-1">
             <h1 className="flex items-center gap-2 text-2xl font-extrabold text-ink">
-              {currentUser.name} <BadgeCheck className="h-5 w-5 text-brand-600" />
+              {account?.displayName ?? 'Khách'} <BadgeCheck className="h-5 w-5 text-brand-600" />
             </h1>
-            <p className="text-sm text-ink-muted">{currentUser.bio}</p>
+            <p className="text-sm text-ink-muted">{account?.email ?? 'Đăng nhập để xem hồ sơ của bạn'}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <Badge tone="leaf"><Leaf className="h-3 w-3" /> Thuần Chay</Badge>
-              <Badge tone={role === 'EXPERT' ? 'leaf' : role === 'ADMIN' ? 'brand' : 'neutral'}>
+              {role && <Badge tone={role === 'EXPERT' ? 'leaf' : role === 'ADMIN' ? 'brand' : 'neutral'}>
                 {role === 'EXPERT' ? 'Chuyên gia ẩm thực' : role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên'}
-              </Badge>
-              <Badge tone="brand">Gói AI {demoAiPlan} (demo)</Badge>
+              </Badge>}
+              {account && <Badge tone="neutral">Tài khoản Backend · {account.role}</Badge>}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {role === 'EXPERT' && (
               <Link to="/dang-cong-thuc" className="inline-flex items-center gap-1.5 rounded-xl bg-leaf-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-leaf-700">
                 <Plus className="h-4 w-4" /> Đăng công thức
+              </Link>
+            )}
+            {account?.role === 'EXPERT' && (
+              <Link to="/ho-so/chuyen-gia" className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50">
+                Bài công thức của tôi
               </Link>
             )}
             {role === 'ADMIN' && (
@@ -90,7 +96,7 @@ export function Profile() {
                 to="/dang-ky-chuyen-gia"
                 className="rounded-xl bg-leaf-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-leaf-700"
               >
-                {applicationStatus === 'PENDING' ? 'Xem trạng thái đơn đang chờ' : 'Nộp đơn xét duyệt ngay'}
+                Nộp đơn xét duyệt
               </Link>
             </div>
           </div>
@@ -113,12 +119,19 @@ export function Profile() {
       </div>
 
       {tab === 'Công thức đã lưu' && (
+        <p className="mb-4 text-xs font-semibold text-amber-700">UI demo · trạng thái lưu chỉ nằm trên thiết bị và chưa đồng bộ Backend.</p>
+      )}
+      {tab === 'Món yêu thích' && (
+        <p className="mb-4 text-xs font-semibold text-amber-700">UI demo · danh sách minh họa, chưa lấy từ Backend.</p>
+      )}
+
+      {tab === 'Công thức đã lưu' && (
         saved.length ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {saved.map((r) => <RecipeCard key={r.id} recipe={r} />)}
           </div>
         ) : (
-          <EmptyState icon="🔖" title="Chưa có công thức đã lưu" description="Lưu công thức bạn yêu thích để xem lại tại đây." />
+        <EmptyState icon="🔖" title="Chức năng lưu đang ở chế độ demo UI" description="API lưu công thức chưa được kết nối trong phiên bản này." />
         )
       )}
 
@@ -133,7 +146,7 @@ export function Profile() {
       )}
 
       {tab === 'Sở thích ăn chay' && (
-        <Card className="max-w-2xl p-6">
+        <Card className="max-w-2xl p-6"><p className="mb-3 text-xs font-semibold text-amber-700">Nội dung minh họa UI — chưa kết nối Backend.</p>
           <h3 className="mb-4 flex items-center gap-2 font-bold text-ink"><UtensilsCrossed className="h-5 w-5 text-brand-600" /> Thông tin cá nhân & sở thích</h3>
           <dl className="divide-y divide-brand-50">
             {preferences.map((p) => (
@@ -147,7 +160,7 @@ export function Profile() {
       )}
 
       {tab === 'Tùy chọn' && (
-        <Card className="max-w-2xl p-6">
+        <Card className="max-w-2xl p-6"><p className="mb-3 text-xs font-semibold text-amber-700">Tùy chọn minh họa UI — chưa kết nối Backend.</p>
           <h3 className="mb-4 font-bold text-ink">Tùy chọn thông báo cơ bản</h3>
           <div className="space-y-1">
             {switches.map((s, i) => (
@@ -167,7 +180,7 @@ export function Profile() {
       )}
 
       <div className="mt-8 flex items-center gap-2 text-sm text-ink-muted">
-        <Bookmark className="h-4 w-4" /> Dữ liệu được lưu cục bộ trên thiết bị cho phiên bản demo.
+        <Bookmark className="h-4 w-4" /> Các tab lưu/yêu thích/tùy chọn hiện là UI demo; hồ sơ dinh dưỡng và sở thích thật nằm tại mục điều hướng tương ứng.
       </div>
     </PageContainer>
   );

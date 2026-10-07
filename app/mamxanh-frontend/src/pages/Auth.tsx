@@ -4,9 +4,9 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, Leaf, Mail, ShieldChe
 import { Logo } from '../components/Logo';
 import { Button } from '../components/ui';
 import { useAuth, type SessionNotice } from '../components/AuthContext';
-import { useDemoAccount } from '../components/DemoAccount';
 import { fieldMessages, retryAfterSeconds, toProblem, type ProblemDetails } from '../lib/problem';
-import { login, register, resendVerificationEmail, verifyEmail } from '../services/authApi';
+import { login, register, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
+import { claimOnboardingInvitation } from '../services/dietaryPreferencesApi';
 import { passwordProblems } from '../utils/password';
 
 type Mode = 'login' | 'register' | 'forgot' | 'verify' | 'reset';
@@ -47,6 +47,19 @@ function loginError(problem: ProblemDetails | null, retryAfter: number | null): 
   }
 }
 
+/**
+ * AC-31.10: the Backend shows the Onboarding questionnaire once, to a new Member who has not answered it;
+ * everyone else lands on the home page. Failing to check the invitation never blocks the sign-in.
+ */
+async function landingAfterLogin(account: AccountSummary): Promise<string> {
+  if (account.role === 'ADMIN') return '/';
+  try {
+    return (await claimOnboardingInvitation()) ? '/khoi-tao-so-thich' : '/';
+  } catch {
+    return '/';
+  }
+}
+
 function formErrors(problem: ProblemDetails): Record<string, string> {
   const errors: Record<string, string> = {};
   for (const [field, message] of Object.entries(fieldMessages(problem))) errors[apiFieldToForm[field] ?? field] = message;
@@ -67,8 +80,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [verifyState, setVerifyState] = useState<VerifyState>('idle');
   const [searchParams, setSearchParams] = useSearchParams();
   const handledToken = useRef<string | null>(null);
-  const { signIn, enterDemo } = useAuth();
-  const { setActive } = useDemoAccount();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const details = copy[mode];
   const newPassword = mode === 'register' || mode === 'reset';
@@ -112,9 +124,9 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const submitLogin = async () => {
     setSubmitting(true);
     try {
-      signIn(await login({ email: email.trim(), password }));
-      setActive(false);
-      navigate('/', { replace: true });
+      const session = await login({ email: email.trim(), password });
+      signIn(session);
+      navigate(await landingAfterLogin(session.account), { replace: true });
     } catch (error) {
       const problem = toProblem(error);
       if (problem?.code === 'VALIDATION_FAILED' && problem.errors?.length) setErrors(formErrors(problem));
@@ -217,7 +229,6 @@ export function AuthPage({ mode }: { mode: Mode }) {
         <div className="mt-6 border-t border-brand-100 pt-5 text-center text-sm text-ink-soft">
           {mode === 'login' ? <>Chưa có tài khoản? <Link to="/dang-ky" className="font-bold text-brand-700 hover:underline">Đăng ký ngay</Link><Link to="/xac-minh-email" className="mt-3 block text-xs text-ink-muted hover:underline">Chưa nhận được email xác minh?</Link></> : mode === 'register' ? <>Đã có tài khoản? <Link to="/dang-nhap" className="font-bold text-brand-700 hover:underline">Đăng nhập</Link></> : <Link to="/dang-nhap" className="font-semibold text-brand-700 hover:underline">Quay lại đăng nhập</Link>}
         </div>
-        {mode === 'login' && <button type="button" onClick={() => { enterDemo(); setActive(true); navigate('/'); }} className="mt-5 w-full rounded-xl bg-brand-50 px-4 py-3 text-xs font-semibold text-ink-soft hover:bg-brand-100">Khám phá tài khoản demo</button>}
       </section>
     </main>
   </div>;

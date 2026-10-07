@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.7.0
+> **Version:** v2.9.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-06
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -399,7 +399,6 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
   - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post dành riêng cho Chuyên gia.
   - [BR-74](BUSINESS-RULES.md#br-74): Quy trình xét duyệt đơn đăng ký Chuyên gia và chuyển đổi vai trò.
 - **Yêu cầu phi chức năng liên quan:**
-  - [NFR-01](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-01): Thời gian phản hồi gửi đơn và xử lý duyệt $\le 2$ giây (P95).
   - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC và bảo vệ endpoint quản trị.
   - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Validation dữ liệu văn bản đầu vào chặt chẽ ở tầng Backend.
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt.
@@ -419,12 +418,12 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
 - **AC-05.3 — Administrator phê duyệt đơn và hệ thống tự động thăng cấp Chuyên gia:**
   - **Given:** Administrator đang xem chi tiết một đơn đăng ký ở trạng thái `PENDING`.
   - **When:** Administrator nhấn "Phê duyệt" và xác nhận.
-  - **Then:** Hệ thống cập nhật trạng thái đơn thành `APPROVED`, ghi nhận thời gian và người duyệt, lập tức chuyển đổi vai trò tài khoản tương ứng thành `EXPERT`, và gửi thông báo in-app chúc mừng tới người dùng. Người dùng ngay sau đó có thể truy cập chức năng tạo bài viết (FR-04).
+  - **Then:** Trong cùng một transaction, hệ thống cập nhật trạng thái đơn thành `APPROVED`, ghi nhận thời gian và người duyệt, lập tức chuyển đổi vai trò tài khoản tương ứng thành `EXPERT`, và ghi thông báo in-app chúc mừng tới người dùng. Nếu một bước thất bại, toàn bộ thay đổi được rollback. Người dùng ngay sau đó có thể truy cập chức năng tạo bài viết (FR-04).
 
 - **AC-05.4 — Administrator từ chối đơn bắt buộc nhập lý do:**
   - **Given:** Administrator đang xem chi tiết một đơn đăng ký ở trạng thái `PENDING`.
   - **When:** Administrator nhấn "Từ chối" nhưng bỏ trống ô lý do từ chối.
-  - **Then:** Hệ thống chặn thao tác, yêu cầu nhập lý do từ chối cụ thể (tối thiểu 10 ký tự); khi Administrator nhập lý do hợp lệ và xác nhận, hệ thống cập nhật đơn thành `REJECTED` và gửi thông báo in-app kèm lý do tới người dùng.
+  - **Then:** Hệ thống chặn thao tác, yêu cầu nhập lý do từ chối cụ thể (tối thiểu 10 ký tự); khi Administrator nhập lý do hợp lệ và xác nhận, trong cùng một transaction hệ thống cập nhật đơn thành `REJECTED` và ghi thông báo in-app kèm lý do tới người dùng.
 
 - **AC-05.5 — Customer nộp lại đơn đăng ký mới sau khi bị từ chối:**
   - **Given:** Customer có đơn đăng ký trước đó ở trạng thái `REJECTED`.
@@ -444,7 +443,7 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
 - **AC-05.8 — Chặn duyệt khi tài khoản không còn đủ điều kiện:**
   - **Given:** Đơn còn `PENDING` nhưng tài khoản nộp đã không còn `ACTIVE` hoặc không còn vai trò `CUSTOMER`.
   - **When:** Administrator cố phê duyệt đơn.
-  - **Then:** Hệ thống từ chối xử lý, không cấp role `EXPERT` và yêu cầu Administrator tải lại trạng thái hiện hành.
+  - **Then:** Hệ thống trả `HTTP 409 Conflict`, rollback quyết định, không cấp role `EXPERT` hoặc ghi notification, và yêu cầu Administrator tải lại trạng thái hiện hành.
 
 ---
 
@@ -1055,7 +1054,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-contribution-and-community.md#fr-16).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Thiết lập cấu trúc dữ liệu chuẩn mực và bộ quy tắc kiểm tra hợp lệ (Recipe Validation Profile) bắt buộc đối với mọi Recipe Post trước khi được công khai trong hệ thống theo SRS 3.9, BR-19 và BR-73: tiêu đề từ 3 đến 120 ký tự; thể loại món ăn bắt buộc chọn 1 giá trị chuẩn hóa thuộc `dish_category`; số lượng nguyên liệu từ 1 đến 50 dòng có định lượng số học dương và tỷ lệ quy đổi hợp lệ sang gam (cấm "vừa đủ"); số khẩu phần từ 1 đến 50; thời gian chuẩn bị và nấu mỗi giá trị từ 0 đến 1.440 phút với tổng thời gian lớn hơn 0 (thời gian nấu được phép bằng 0 theo BR-20 khi thời gian chuẩn bị lớn hơn 0); loại ăn chay bắt buộc thuộc 4 loại chuẩn; mô tả bài viết tối đa 2.000 ký tự (tùy chọn theo BR-20); hướng dẫn chế biến dạng văn bản từ 10 đến 5.000 ký tự sau khi trim (người đăng không bắt buộc phải viết từng bước nấu ăn vào bài viết, có thể viết đoạn văn tự do hoặc phân bước tùy ý theo BR-19); thư viện ảnh tối đa 5 ảnh JPEG/PNG/WebP dung lượng $\le 5$ MB/ảnh (`RECIPE_MEDIA`), nếu có ảnh bắt buộc đúng 1 ảnh bìa (`is_cover = true`) (tùy chọn theo BR-19, BR-20); tối đa một link YouTube (tùy chọn theo BR-10, BR-20); tất cả bài công thức đều áp dụng thống nhất mô hình xuất bản trực tiếp và hậu kiểm (BR-07, BR-59).
+- **Tóm tắt yêu cầu:** Thiết lập cấu trúc dữ liệu chuẩn mực và bộ quy tắc kiểm tra hợp lệ (Recipe Validation Profile) bắt buộc đối với mọi Recipe Post trước khi được công khai trong hệ thống theo SRS 3.9, BR-19 và BR-73: tiêu đề từ 3 đến 120 ký tự; thể loại món ăn bắt buộc chọn 1 giá trị chuẩn hóa thuộc `dish_category`; số lượng nguyên liệu từ 1 đến 50 dòng và mỗi dòng bắt buộc tham chiếu nguyên liệu trong danh mục chuẩn theo FR-19/BR-12, có định lượng số học dương và tỷ lệ quy đổi hợp lệ sang gam (cấm "vừa đủ"); số khẩu phần từ 1 đến 50; thời gian chuẩn bị và nấu mỗi giá trị từ 0 đến 1.440 phút với tổng thời gian lớn hơn 0 (thời gian nấu được phép bằng 0 theo BR-20 khi thời gian chuẩn bị lớn hơn 0); loại ăn chay bắt buộc thuộc 4 loại chuẩn; mô tả bài viết tối đa 2.000 ký tự (tùy chọn theo BR-20); hướng dẫn chế biến dạng văn bản từ 10 đến 5.000 ký tự sau khi trim (người đăng không bắt buộc phải viết từng bước nấu ăn vào bài viết, có thể viết đoạn văn tự do hoặc phân bước tùy ý theo BR-19); thư viện ảnh tối đa 5 ảnh JPEG/PNG/WebP dung lượng $\le 5$ MB/ảnh (`RECIPE_MEDIA`), nếu có ảnh bắt buộc đúng 1 ảnh bìa (`is_cover = true`) (tùy chọn theo BR-19, BR-20); tối đa một link YouTube (tùy chọn theo BR-10, BR-20); tất cả bài công thức đều áp dụng thống nhất mô hình xuất bản trực tiếp và hậu kiểm (BR-07, BR-59).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Mọi bài Recipe Post do Chuyên gia tạo hoặc chỉnh sửa (FR-04, FR-44).
   - Validation Profile chính thức:
@@ -1063,7 +1062,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     |---|---|---|
     | **Tiêu đề (Title)** | **3 – 120 ký tự** | Bắt buộc |
     | **Thể loại món (`dish_category`)** | Chọn đúng 1 trong danh mục chuẩn: `món nước`, `món xào`, `món lẩu`, `món kho`, `món canh`, `món chiên`, `món hấp`, `món gỏi / salad`, `món cuốn`, `món nướng`, `món tráng miệng / chè` | Bắt buộc (BR-19) |
-    | **Danh sách nguyên liệu** | **1 – 50 dòng nguyên liệu**; định lượng số học dương (`quantity > 0`), đơn vị thuộc `UNIT`, cấm "vừa đủ" | Bắt buộc (BR-14, BR-73) |
+    | **Danh sách nguyên liệu** | **1 – 50 dòng nguyên liệu**; mỗi dòng bắt buộc tham chiếu mục catalog FR-18 (BR-12), có định lượng số học dương (`quantity > 0`), đơn vị thuộc `UNIT`, cấm "vừa đủ" | Bắt buộc (BR-12, BR-14, BR-73) |
     | **Quy đổi đơn vị nguyên liệu** | Đơn vị bắt buộc có tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION` (hoặc là `MASS` g/kg); nếu thiếu **chặn xuất bản** | Bắt buộc (BR-19, BR-73) |
     | **Hướng dẫn chế biến (`instructions`)** | Văn bản hướng dẫn từ **10 – 5.000 ký tự** không rỗng sau khi trim; **không bắt buộc phải viết theo từng bước nấu ăn** (có thể nhập tự do hoặc chia đoạn tùy ý) | Bắt buộc (BR-19) |
     | **Khẩu phần (Serving size)** | **1 – 50 khẩu phần** | Bắt buộc |
@@ -1320,7 +1319,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 ---
 
 <a id="fr-19"></a>
-### FR-19 — Nhập nguyên liệu linh hoạt và định lượng số học chuẩn
+### FR-19 — Chọn nguyên liệu từ danh mục chuẩn và khai báo định lượng
 
 - **Mã yêu cầu:** FR-19
 - **Module:** M03, M04
@@ -1328,7 +1327,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-contribution-and-community.md#fr-19).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp cơ chế nhập danh sách nguyên liệu linh hoạt và trực quan khi Chuyên gia soạn thảo bài công thức nấu ăn: mỗi bài công thức có từ 1 đến 50 dòng nguyên liệu (BR-19); tác giả có thể tìm kiếm và chọn nguyên liệu có sẵn từ danh mục chuẩn (FR-18) hoặc tự do nhập tên nguyên liệu mới khi không tìm thấy trong danh mục (BR-12, BR-50); với mỗi dòng nguyên liệu, tác giả bắt buộc phải khai báo định lượng số học dương (`quantity > 0`) kết hợp với đơn vị đo lường hợp lệ thuộc danh mục `UNIT` (như g, kg, ml, l, muỗng canh, thìa cà phê, quả, củ, bìa...); **bãi bỏ hoàn toàn và nghiêm cấm mức định lượng phi số học "vừa đủ"** (BR-14); nếu nguyên liệu sử dụng đơn vị cần quy đổi sang gam mà chưa có tỷ lệ quy đổi tương ứng trong `INGREDIENT_UNIT_CONVERSION`, hệ thống **BẮT BUỘC CHẶN XUẤT BẢN** (BR-19, BR-73); hệ thống luôn lưu trữ và bảo toàn tên hiển thị nguyên liệu do tác giả nhập kết hợp với liên kết tham chiếu tùy chọn tới nguyên liệu chuẩn (BR-12).
+- **Tóm tắt yêu cầu:** Khi tạo hoặc sửa Recipe Post, Chuyên gia chỉ được tìm kiếm và chọn nguyên liệu đã có trong danh mục chuẩn do Admin quản lý (FR-18); mọi dòng nguyên liệu phải tham chiếu một mục catalog, không được nhập tên tự do, lưu dòng thiếu liên kết hoặc gửi đề xuất thêm nguyên liệu. Nếu không tìm thấy nguyên liệu, hệ thống không cho thêm/lưu dòng đó và hướng dẫn Chuyên gia liên hệ Admin ngoài hệ thống. Mỗi bài có từ 1 đến 50 dòng nguyên liệu (BR-19); mỗi dòng bắt buộc có định lượng số học dương (`quantity > 0`) và đơn vị hợp lệ thuộc danh mục `UNIT`; **bãi bỏ hoàn toàn và nghiêm cấm mức định lượng phi số học "vừa đủ"** (BR-14). Nếu đơn vị cần quy đổi sang gam mà chưa có tỷ lệ trong `INGREDIENT_UNIT_CONVERSION`, hệ thống **BẮT BUỘC CHẶN XUẤT BẢN** (BR-19, BR-73). Việc thiếu hồ sơ dinh dưỡng của một nguyên liệu đã có trong catalog chuẩn không tự chặn chọn hoặc công khai bài (FR-40, BR-50).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Mọi bài Recipe Post tạo mới hoặc chỉnh sửa trong hệ thống (FR-04, FR-16, FR-44).
   - Số lượng: Tối thiểu 1 dòng nguyên liệu, tối đa 50 dòng nguyên liệu (BR-19).
@@ -1336,28 +1335,28 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - Ràng buộc quy đổi: Bắt buộc có tỷ lệ quy đổi về gam trong `INGREDIENT_UNIT_CONVERSION` đối với các đơn vị ngoài `MASS` g/kg để phục vụ tính dinh dưỡng (BR-73).
 - **Phân loại Actor:**
   - Primary Actor: `Chuyên gia` (tác giả bài viết).
-  - Supporting Actor: `Hệ thống gợi ý và chuẩn hóa nguyên liệu`.
+  - Supporting Actor: `Danh mục nguyên liệu chuẩn do Administrator quản lý`.
 
 #### Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-19.1`: Tìm kiếm và chọn nguyên liệu có sẵn từ danh mục chuẩn khi soạn công thức.
-  - `UC-19.2`: Tự do nhập tên nguyên liệu mới chưa có trong danh mục và khai báo định lượng số học kèm đơn vị đo chuẩn.
+  - `UC-19.1`: Tìm kiếm và chọn nguyên liệu từ danh mục chuẩn khi tạo hoặc sửa công thức.
+  - `UC-19.2`: Xử lý khi không tìm thấy nguyên liệu trong danh mục chuẩn.
   - `UC-19.3`: Quản lý danh sách 1–50 dòng nguyên liệu trong bài công thức (thêm, sửa, xóa, sắp xếp dòng).
 - **User Stories:**
-  - *Là một người nấu ăn sáng tạo*, tôi muốn nhập nhanh các nguyên liệu quen thuộc từ danh mục gợi ý và cũng có thể gõ các loại rau rừng đặc sản địa phương chưa có sẵn, với định lượng số và đơn vị đo rõ ràng để người nấu theo đong đếm chuẩn xác và hệ thống tính đúng dinh dưỡng.
+  - *Là một Chuyên gia*, tôi muốn chọn nguyên liệu từ danh mục chuẩn rồi khai báo định lượng và đơn vị rõ ràng để các công thức dùng thống nhất cùng một danh mục.
 
 #### Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Member và Administrator đều có quyền nhập nguyên liệu linh hoạt cho bài viết của mình.
-- **Ràng buộc nghiệp vụ:** Không ép buộc phải liên kết nguyên liệu chuẩn (BR-12); cấm tuyệt đối định lượng "vừa đủ" (BR-14); bắt buộc có tỷ lệ quy đổi sang gam khi xuất bản (BR-73); đúng giới hạn 1–50 dòng (BR-19).
+- **Quyền hạn:** Chuyên gia tạo hoặc sửa Recipe Post chỉ được chọn nguyên liệu từ danh mục chuẩn; chỉ Administrator quản lý catalog theo FR-18.
+- **Ràng buộc nghiệp vụ:** Bắt buộc tham chiếu nguyên liệu chuẩn (BR-12); cấm tên tự do và luồng đề xuất nguyên liệu; cấm tuyệt đối định lượng "vừa đủ" (BR-14); bắt buộc có tỷ lệ quy đổi sang gam khi xuất bản (BR-73); đúng giới hạn 1–50 dòng (BR-19). Nguyên liệu chuẩn thiếu hồ sơ dinh dưỡng vẫn được chọn và xử lý theo FR-40/BR-50.
 
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
   - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
-  - [BR-12](BUSINESS-RULES.md#br-12): Tính tùy chọn của liên kết nguyên liệu chuẩn.
+  - [BR-12](BUSINESS-RULES.md#br-12): Bắt buộc liên kết tới nguyên liệu chuẩn.
   - [BR-14](BUSINESS-RULES.md#br-14): Quy tắc định lượng nguyên liệu số học và tổng hợp Shopping List an toàn.
   - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post (1–50 nguyên liệu có định lượng số học và tỷ lệ quy đổi).
   - [BR-48](BUSINESS-RULES.md#br-48): Xử lý nguyên liệu thiếu số liệu dinh dưỡng và chặn công khai khi thiếu quy đổi đơn vị.
-  - [BR-50](BUSINESS-RULES.md#br-50): Cho phép công khai bài chứa nguyên liệu ngoài danh mục dinh dưỡng.
+  - [BR-50](BUSINESS-RULES.md#br-50): Cho phép công khai bài thiếu dữ liệu dinh dưỡng.
   - [BR-73](BUSINESS-RULES.md#br-73): Chuẩn hóa đơn vị đo lường và chặn công khai khi thiếu quy đổi.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
@@ -1365,10 +1364,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt trên đa kích thước màn hình.
 
 #### Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
-- **AC-19.1 (Hỗ trợ chọn nguyên liệu từ danh mục hoặc gõ tên tự do):**
-  - *Given* tác giả đang soạn thảo nguyên liệu bài công thức,
-  - *When* tác giả gõ một tên nguyên liệu không có trong danh mục chuẩn,
-  - *Then* hệ thống vẫn chấp nhận tên nguyên liệu tự do đó và không báo lỗi chặn nhập.
+- **AC-19.1 (Chỉ chọn nguyên liệu có trong danh mục chuẩn):**
+  - *Given* Chuyên gia đang tạo hoặc sửa Recipe Post,
+  - *When* tìm kiếm nguyên liệu không có trong danh mục chuẩn,
+  - *Then* hệ thống không cho thêm/lưu nguyên liệu bằng tên tự do, không tạo luồng đề xuất và hướng dẫn liên hệ Admin để quản lý catalog.
 - **AC-19.2 (Bắt buộc định lượng số học dương và từ chối 'vừa đủ'):**
   - *Given* tác giả nhập dòng nguyên liệu "Muối tiêu",
   - *When* tác giả cố tình nhập chuỗi "vừa đủ" hoặc nhập số lượng $\le 0$,
@@ -1377,10 +1376,10 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Given* tác giả tạo bài viết có 0 dòng nguyên liệu hoặc có 51 dòng nguyên liệu,
   - *When* tác giả gửi yêu cầu lưu bài viết,
   - *Then* hệ thống từ chối lưu và hiển thị thông báo số lượng nguyên liệu phải từ 1 đến 50 dòng.
-- **AC-19.4 (Bảo toàn tên hiển thị và liên kết chuẩn tùy chọn):**
-  - *Given* tác giả chọn nguyên liệu chuẩn "Đậu phụ" nhưng gõ tên hiển thị là "Đậu phụ Làng Mơ",
+- **AC-19.4 (Bắt buộc lưu tham chiếu và tên catalog chuẩn):**
+  - *Given* Chuyên gia chọn nguyên liệu "Đậu phụ" trong danh mục,
   - *When* bài viết được lưu thành công,
-  - *Then* hệ thống lưu giữ chuỗi "Đậu phụ Làng Mơ" để hiển thị cho người đọc kèm mã tham chiếu chuẩn tới "Đậu phụ".
+  - *Then* dòng nguyên liệu lưu tham chiếu tới đúng mục catalog và hiển thị tên chuẩn "Đậu phụ"; không thể thay bằng tên tự nhập hoặc lưu thiếu tham chiếu.
 - **AC-19.5 (Chặn xuất bản khi đơn vị thiếu tỷ lệ quy đổi sang gam):**
   - *Given* nguyên liệu chọn đơn vị đếm "quả" hoặc "muỗng" nhưng nguyên liệu đó chưa có tỷ lệ quy đổi sang gam trong `INGREDIENT_UNIT_CONVERSION`,
   - *When* tác giả nhấn công khai bài viết,
@@ -1654,7 +1653,7 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
 
 - **Mã yêu cầu:** FR-25
 - **Module:** M02 (Identity & Access), M03 (Community Recipes & Social)
-- **Tóm tắt yêu cầu:** Khi Chuyên gia đã đăng nhập nhấn "Công khai bài viết" và toàn bộ các điều kiện kiểm tra tính hợp lệ (validation rules theo SRS 3.9) đều thỏa mãn, hệ thống lập tức chuyển trạng thái bài viết thành công khai (`PUBLISHED`) và hiển thị ngay trên toàn hệ thống; không áp dụng luồng duyệt trước từng bài hay trạng thái Pending Review ở cấp bài viết (BR-07).
+- **Tóm tắt yêu cầu:** Khi Chuyên gia đã đăng nhập nhấn "Công khai bài viết" và toàn bộ các điều kiện kiểm tra tính hợp lệ (validation rules theo SRS 3.9), gồm tham chiếu catalog bắt buộc cho mọi dòng nguyên liệu theo FR-19/BR-12, đều thỏa mãn, hệ thống lập tức chuyển trạng thái bài viết thành công khai (`PUBLISHED`) và hiển thị ngay trên toàn hệ thống; không áp dụng luồng duyệt trước từng bài hay trạng thái Pending Review ở cấp bài viết (BR-07).
 
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-25).
 
@@ -1759,8 +1758,8 @@ Thiết lập cơ chế giám sát cộng đồng (crowdsourced moderation) nh�
   - **When:** Member chọn lý do báo cáo hợp lệ và nhấn "Gửi báo cáo".
   - **Then:** Hệ thống lưu báo cáo ở trạng thái `OPEN` và phản hồi thông báo đã tiếp nhận thành công.
 
-- **AC-26.2 — Ngăn chặn tạo báo cáo mới trùng lặp từ cùng tài khoản:**
-  - **Given:** Member đã có một báo cáo ở trạng thái `OPEN` đối với bài viết A.
+- **AC-26.2 — Ngăn chặn tạo báo cáo mới trùng lặp từ cùng tài khoản (FR-30):**
+  - **Given:** Member đã có một báo cáo ở trạng thái `OPEN` hoặc `IN_REVIEW` đối với bài viết A.
   - **When:** Member cố tình gửi thêm một báo cáo mới cho bài viết A.
   - **Then:** Hệ thống chặn tạo mới và thông báo tài khoản đã có báo cáo đang chờ xử lý (FR-30).
 
@@ -1783,7 +1782,7 @@ Thiết lập cơ chế giám sát cộng đồng (crowdsourced moderation) nh�
 
 - **Mã yêu cầu:** FR-27
 - **Module:** M03 (Community Recipes & Social)
-- **Tóm tắt yêu cầu:** Biểu mẫu báo cáo bài công thức cho phép chọn đúng một trong sáu nhóm lý do chuẩn hóa tại SRS 3.11 và nhập mô tả bổ sung; mô tả bổ sung là bắt buộc khi chọn nhóm lý do "Khác" (10–500 ký tự) và là tùy chọn đối với các nhóm lý do còn lại.
+- **Tóm tắt yêu cầu:** Biểu mẫu báo cáo bài công thức cho phép chọn đúng một trong sáu nhóm lý do chuẩn hóa tại SRS 3.11 và nhập mô tả bổ sung; mô tả bổ sung là bắt buộc khi chọn nhóm lý do "Khác" (10–500 ký tự sau khi trim) và là tùy chọn, tối đa 500 ký tự, đối với các nhóm lý do còn lại.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-contribution-and-community.md#fr-27).
 
@@ -1794,17 +1793,17 @@ Chuẩn hóa dữ liệu đầu vào của các báo cáo vi phạm nội dung; 
 - **Các Use Case con:**
   - `UC-27.1`: Chọn lý do và gửi biểu mẫu báo cáo bài công thức (Submit recipe report form).
 - **User Stories:**
-  - `US-27.1`: Là một người báo cáo, tôi muốn chọn đúng lý do "Không phải món chay" từ danh sách có sẵn để Ban quản trị hiểu ngay vấn đề mà tôi không cần phải gõ giải thích dài dòng nếu không cần thiết.
+  - `US-27.1`: Là một người báo cáo, tôi muốn chọn đúng lý do "Sai thông tin công thức hoặc nhãn ăn chay" từ danh sách có sẵn để Ban quản trị hiểu ngay vấn đề mà tôi không cần phải gõ giải thích dài dòng nếu không cần thiết.
 
 #### Cấu trúc 6 nhóm lý do báo cáo chuẩn hóa (SRS 3.11)
 
 | Nhóm lý do | Mã phân loại | Tính chất mô tả bổ sung | Mô tả chi tiết phạm vi vi phạm |
 |---|---|---|---|
-| **1. Không phải món chay** | `NON_VEGAN` | Tùy chọn (Optional) | Công thức chứa thịt, cá, hải sản, mỡ động vật hoặc các thành phần không thuần chay. |
+| **1. Sai thông tin công thức hoặc nhãn ăn chay** | `RECIPE_INFO_OR_DIET_LABEL` | Tùy chọn (Optional) | Thông tin công thức sai hoặc nhãn/chỉ dẫn chế độ ăn chay không chính xác. |
 | **2. Nguy cơ an toàn thực phẩm** | `FOOD_SAFETY_HAZARD` | Tùy chọn (Optional) | Hướng dẫn kết hợp nguyên liệu gây ngộ độc, liều lượng nguy hiểm hoặc phương pháp nấu có hại cho sức khỏe. |
-| **3. Nội dung phản cảm / Bạo lực** | `INAPPROPRIATE_CONTENT` | Tùy chọn (Optional) | Hình ảnh ghê rợn, phản cảm, ngôn từ bạo lực hoặc vi phạm thuần phong mỹ tục. |
-| **4. Vi phạm bản quyền / Sao chép** | `COPYRIGHT_VIOLATION` | Tùy chọn (Optional) | Sao chép nguyên văn công thức, ảnh hoặc nội dung thuộc quyền sở hữu của người khác mà không xin phép. |
-| **5. Spam / Quảng cáo thương mại** | `SPAM_ADVERTISING` | Tùy chọn (Optional) | Chèn liên kết bán hàng, quảng cáo thương mại không liên quan, nội dung rác hoặc lừa đảo. |
+| **3. Spam / Quảng cáo không phù hợp** | `SPAM_ADVERTISING` | Tùy chọn (Optional) | Chèn nội dung spam, quảng cáo không phù hợp hoặc thương mại không liên quan. |
+| **4. Nội dung xúc phạm / Không phù hợp** | `INAPPROPRIATE_CONTENT` | Tùy chọn (Optional) | Nội dung xúc phạm hoặc không phù hợp. |
+| **5. Sao chép / Nghi vi phạm bản quyền** | `COPYRIGHT_VIOLATION` | Tùy chọn (Optional) | Sao chép công thức, hình ảnh hoặc nội dung có dấu hiệu vi phạm bản quyền. |
 | **6. Khác** | `OTHER` | **Bắt buộc (Mandatory)** | Các vấn đề khác; **bắt buộc nhập từ 10 đến 500 ký tự** để giải thích rõ lý do báo cáo. |
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
@@ -1826,7 +1825,7 @@ Chuẩn hóa dữ liệu đầu vào của các báo cáo vi phạm nội dung; 
   - **Then:** Giao diện hiển thị đúng và đủ 6 nhóm lý do theo quy định tại SRS 3.11.
 
 - **AC-27.2 — Gửi thành công báo cáo với mô tả để trống cho 5 nhóm lý do đầu:**
-  - **Given:** Member chọn nhóm lý do "Không phải món chay".
+  - **Given:** Member chọn nhóm lý do "Sai thông tin công thức hoặc nhãn ăn chay".
   - **When:** Member để trống ô mô tả bổ sung và nhấn "Gửi báo cáo".
   - **Then:** Hệ thống xác nhận hợp lệ và gửi báo cáo thành công.
 
@@ -1839,6 +1838,11 @@ Chuẩn hóa dữ liệu đầu vào của các báo cáo vi phạm nội dung; 
   - **Given:** Member chọn nhóm lý do "Khác".
   - **When:** Member nhập mô tả "Sai món" (7 ký tự) hoặc để trống và nhấn gửi.
   - **Then:** Hệ thống từ chối và hiển thị thông báo lỗi yêu cầu mô tả tối thiểu 10 ký tự.
+
+- **AC-27.5 — Giới hạn mô tả bổ sung:**
+  - **Given:** Member chọn một lý do hợp lệ.
+  - **When:** Mô tả sau khi trim vượt quá 500 ký tự.
+  - **Then:** Hệ thống từ chối và không tạo báo cáo; mô tả của năm lý do đầu vẫn có thể để trống.
 
 ---
 
@@ -2493,7 +2497,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - [BR-38](BUSINESS-RULES.md#br-38): AI không tự tạo công thức mới ngoài hệ thống.
   - [BR-40](BUSINESS-RULES.md#br-40): Điều kiện dữ liệu dinh dưỡng tin cậy cho AI menu.
   - [BR-41](BUSINESS-RULES.md#br-41): Ranh giới thông tin dinh dưỡng và không thay thế chuyên gia.
-  - [BR-50](BUSINESS-RULES.md#br-50): Cho phép công khai bài chứa nguyên liệu ngoài danh mục dinh dưỡng (nhưng bị loại khỏi pool AI menu).
+  - [BR-50](BUSINESS-RULES.md#br-50): Cho phép công khai bài thiếu dữ liệu dinh dưỡng (nhưng bị loại khỏi pool AI menu).
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-04](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-04): Thời gian tạo thực đơn tuần theo hồ sơ $\le 8$ giây.
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân và chỉ số sức khỏe.
@@ -2731,7 +2735,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-39).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Hệ thống tự động tính toán tổng ước tính của 9 chỉ tiêu dinh dưỡng cốt lõi cho một bài công thức nấu ăn bằng cách đối chiếu và cộng dồn dữ liệu từ danh mục nguyên liệu dinh dưỡng nội bộ (tham chiếu USDA/NIH) theo trọng lượng gram thực tế của từng nguyên liệu; sau đó quy đổi ra định lượng trên 1 khẩu phần dựa trên số khẩu phần mà tác giả đã khai báo; khi có nguyên liệu thiếu định lượng hoặc chưa có trong danh mục dinh dưỡng nội bộ, hệ thống phải công khai rõ ràng phạm vi thiếu dữ liệu, tuyệt đối không được tự gán giá trị bằng 0 và không cho phép AI tự suy đoán số liệu; không gọi API dinh dưỡng ngoài theo thời gian thực (realtime external API).
+- **Tóm tắt yêu cầu:** Hệ thống tự động tính toán tổng ước tính của 9 chỉ tiêu dinh dưỡng cốt lõi cho một bài công thức nấu ăn bằng cách đối chiếu và cộng dồn dữ liệu từ danh mục nguyên liệu dinh dưỡng nội bộ (tham chiếu USDA/NIH) theo trọng lượng gram thực tế của từng nguyên liệu đã chọn từ catalog chuẩn FR-18; sau đó quy đổi ra định lượng trên 1 khẩu phần dựa trên số khẩu phần mà tác giả đã khai báo. Khi nguyên liệu thiếu định lượng hoặc đã có trong catalog chuẩn nhưng chưa có hồ sơ dinh dưỡng, hệ thống phải công khai rõ ràng phạm vi thiếu dữ liệu, tuyệt đối không được tự gán giá trị bằng 0 và không cho phép AI tự suy đoán số liệu; không gọi API dinh dưỡng ngoài theo thời gian thực (realtime external API).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Tất cả các bài Recipe Post được Chuyên gia tạo hoặc chỉnh sửa trong hệ thống (FR-04, FR-16, FR-19, FR-44).
   - 9 chỉ tiêu cốt lõi: Năng lượng (kcal), Chất đạm (g), Carbohydrate (g), Chất béo (g), Chất xơ (g), Canxi (mg), Sắt (mg), Vitamin B12 (mcg), Kẽm (mg) (SRS 3.18, BR-40, BR-46).
@@ -2763,7 +2767,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - [BR-46](BUSINESS-RULES.md#br-46): Nguồn tính toán dinh dưỡng chính thức của công thức.
   - [BR-48](BUSINESS-RULES.md#br-48): Xử lý nguyên liệu thiếu định lượng hoặc thiếu số liệu dinh dưỡng.
   - [BR-49](BUSINESS-RULES.md#br-49): Không gọi API dinh dưỡng ngoài realtime và nguồn tham khảo.
-  - [BR-50](BUSINESS-RULES.md#br-50): Cho phép công khai bài chứa nguyên liệu ngoài danh mục dinh dưỡng.
+  - [BR-50](BUSINESS-RULES.md#br-50): Cho phép công khai bài thiếu dữ liệu dinh dưỡng.
   - [BR-73](BUSINESS-RULES.md#br-73): Quy tắc chuẩn hóa đơn vị đo và chuyển đổi đơn vị nguyên liệu.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-02](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-02): Thời gian tải trang hiển thị chi tiết bài viết $\le 2$ giây.
@@ -2781,7 +2785,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *When* người dùng xem bảng dinh dưỡng công thức,
   - *Then* hệ thống hiển thị chính xác và đầy đủ 9 chỉ tiêu: Năng lượng (kcal), Chất đạm (g), Carbohydrate (g), Chất béo (g), Chất xơ (g), Canxi (mg), Sắt (mg), Vitamin B12 (mcg), Kẽm (mg).
 - **AC-39.3 (Minh bạch khi có nguyên liệu thiếu số liệu):**
-  - *Given* công thức chứa một nguyên liệu tự do không có trong danh mục dinh dưỡng nội bộ,
+  - *Given* công thức chứa một nguyên liệu đã có trong catalog chuẩn FR-18 nhưng chưa có hồ sơ trong danh mục dinh dưỡng nội bộ,
   - *When* bảng dinh dưỡng công thức được hiển thị,
   - *Then* hệ thống gắn nhãn cảnh báo "Ước tính chưa đầy đủ", liệt kê rõ tên nguyên liệu chưa hỗ trợ tính toán và không được gán ngầm giá trị của nguyên liệu đó bằng 0.
 - **AC-39.4 (Cấm hiển thị điểm tổng hợp sức khỏe):**
@@ -2798,7 +2802,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 ---
 
 <a id="fr-40"></a>
-### FR-40 — Công khai Recipe Post chứa nguyên liệu ngoài danh mục dinh dưỡng
+### FR-40 — Công khai Recipe Post chứa nguyên liệu chuẩn thiếu dữ liệu dinh dưỡng
 
 - **Mã yêu cầu:** FR-40
 - **Module:** M03, M04, M06, M10
@@ -2806,7 +2810,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-40).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cho phép Chuyên gia đã đăng nhập công khai trực tiếp bài công thức nấu ăn (Recipe Post) ngay cả khi bài viết có chứa các nguyên liệu tự do nằm ngoài danh mục nguyên liệu dinh dưỡng nội bộ của hệ thống; hệ thống không được chặn quyền xuất bản chỉ vì lý do nguyên liệu chưa có dữ liệu dinh dưỡng; các nguyên liệu này được gắn cờ hiển thị "Chưa hỗ trợ tính dinh dưỡng" trên giao diện bài viết; bài công thức này được hiển thị rõ cảnh báo kết quả dinh dưỡng chưa đầy đủ và bị loại trừ khỏi tập hợp ứng viên cho chức năng AI lập thực đơn theo nhu cầu dinh dưỡng (FR-36).
+- **Tóm tắt yêu cầu:** Cho phép Chuyên gia đã đăng nhập công khai trực tiếp bài công thức có các nguyên liệu đã được chọn từ catalog chuẩn FR-18 nhưng còn thiếu hồ sơ trong danh mục dinh dưỡng nội bộ; hệ thống không được chặn quyền xuất bản chỉ vì lý do thiếu dữ liệu dinh dưỡng. Các nguyên liệu thiếu hồ sơ được gắn cờ "Chưa hỗ trợ tính dinh dưỡng"; bài viết hiển thị cảnh báo kết quả dinh dưỡng chưa đầy đủ và bị loại khỏi tập hợp ứng viên cho AI lập thực đơn theo dinh dưỡng (FR-36). Yêu cầu này không cho phép nhập nguyên liệu ngoài catalog chuẩn.
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Chuyên gia tạo và xuất bản công thức trực tiếp (FR-04, FR-25).
   - Phân định ranh giới: Xuất bản bài viết cộng đồng không bị phụ thuộc vào tiến độ cập nhật danh mục dinh dưỡng của Administrator (BR-07, BR-50).
@@ -2817,10 +2821,10 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 #### Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-40.1`: Công khai trực tiếp Recipe Post có chứa nguyên liệu ngoài danh mục dinh dưỡng nội bộ.
+  - `UC-40.1`: Công khai trực tiếp Recipe Post có nguyên liệu chuẩn chưa có hồ sơ dinh dưỡng nội bộ.
   - `UC-40.2`: Xem chỉ dẫn và cảnh báo về nguyên liệu chưa hỗ trợ tính dinh dưỡng trên trang chi tiết công thức.
 - **User Stories:**
-  - *Là một người nấu ăn sáng tạo*, tôi muốn chia sẻ công thức sử dụng một loại gia vị hoặc rau rừng đặc sản địa phương chưa có trong danh mục chuẩn, để công thức của tôi vẫn được chia sẻ cho cộng đồng mà không bị hệ thống từ chối xuất bản.
+  - *Là một Chuyên gia*, tôi muốn công khai công thức dùng nguyên liệu đã có trong catalog chuẩn dù nguyên liệu đó chưa có hồ sơ dinh dưỡng, để dữ liệu dinh dưỡng được cảnh báo minh bạch mà không tự đặt số liệu.
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Chuyên gia có toàn quyền công khai bài viết của mình mà không cần phê duyệt trước của Admin (BR-07, BR-59).
@@ -2833,7 +2837,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - [BR-40](BUSINESS-RULES.md#br-40): Điều kiện dữ liệu dinh dưỡng tin cậy cho AI menu.
   - [BR-46](BUSINESS-RULES.md#br-46): Nguồn tính toán dinh dưỡng chính thức của công thức.
   - [BR-48](BUSINESS-RULES.md#br-48): Xử lý nguyên liệu thiếu định lượng hoặc thiếu số liệu dinh dưỡng.
-  - [BR-50](BUSINESS-RULES.md#br-50): Cho phép công khai bài chứa nguyên liệu ngoài danh mục dinh dưỡng.
+  - [BR-50](BUSINESS-RULES.md#br-50): Cho phép công khai bài thiếu dữ liệu dinh dưỡng.
   - [BR-59](BUSINESS-RULES.md#br-59): Không có hàng đợi duyệt bài trước khi công khai.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
@@ -2841,14 +2845,14 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt trên đa kích thước màn hình.
 
 #### Tiêu chí chấp nhận nguyên tử (Acceptance Criteria)
-- **AC-40.1 (Không chặn xuất bản công thức chứa nguyên liệu mới):**
-  - *Given* Chuyên gia đăng bài công thức hợp lệ có chứa nguyên liệu "Nấm tràm Phú Quốc" chưa có trong danh mục dinh dưỡng nội bộ,
+- **AC-40.1 (Không chặn xuất bản khi thiếu hồ sơ dinh dưỡng):**
+  - *Given* Chuyên gia đăng công thức hợp lệ có chứa nguyên liệu đã có trong catalog chuẩn nhưng chưa có hồ sơ dinh dưỡng nội bộ,
   - *When* Chuyên gia nhấn nút "Đăng công thức",
   - *Then* hệ thống xuất bản bài công thức thành công ở trạng thái công khai ngay lập tức mà không hiển thị lỗi chặn xuất bản.
-- **AC-40.2 (Hiển thị nhãn chưa hỗ trợ tính dinh dưỡng cho nguyên liệu):**
-  - *Given* bài công thức đã công khai có chứa nguyên liệu ngoài danh mục dinh dưỡng,
+- **AC-40.2 (Hiển thị nhãn chưa hỗ trợ tính dinh dưỡng cho nguyên liệu chuẩn):**
+  - *Given* bài công thức đã công khai có chứa nguyên liệu chuẩn chưa có hồ sơ dinh dưỡng,
   - *When* người dùng xem danh sách nguyên liệu trên trang chi tiết công thức,
-  - *Then* cạnh tên nguyên liệu ngoài danh mục có gắn nhãn hoặc chú thích rõ ràng "Chưa hỗ trợ tính dinh dưỡng".
+  - *Then* cạnh tên nguyên liệu đó có gắn nhãn hoặc chú thích rõ ràng "Chưa hỗ trợ tính dinh dưỡng".
 - **AC-40.3 (Loại trừ bài viết khỏi pool gợi ý AI Menu dinh dưỡng):**
   - *Given* bài công thức được gắn trạng thái "Chưa đầy đủ dữ liệu dinh dưỡng",
   - *When* hệ thống thực hiện truy vấn trích xuất ứng viên cho chức năng AI lập thực đơn theo dinh dưỡng (FR-36),
@@ -2941,7 +2945,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-44).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cho phép Chuyên gia đã đăng nhập chỉnh sửa nội dung hoặc xóa bỏ bài công thức nấu ăn đã công khai do chính mình tạo ra; khi chỉnh sửa, các thay đổi phải vượt qua toàn bộ quy tắc kiểm tra hợp lệ Recipe Validation Profile chuẩn theo FR-16 (tiêu đề, khẩu phần, thời gian, loại ăn chay, thể loại món `dish_category`, nguyên liệu theo FR-19 với số lượng số dương và chuyển đổi đơn vị khả dụng theo BR-73, hướng dẫn chế biến linh hoạt `instructions` 10–5.000 ký tự theo BR-19, 0–5 ảnh minh họa với đúng 1 ảnh đại diện theo FR-14, BR-19) và được cập nhật công khai ngay lập tức mà không cần Administrator phê duyệt lại; trường hợp bài viết đang bị Administrator tạm ẩn do vi phạm (BR-27), tác giả không được tự ý sửa để mở lại công khai; khi xóa bài công thức, hệ thống chuyển trạng thái bài viết sang xóa mềm (Tombstone), bài viết không còn xuất hiện trên danh mục công khai hay tìm kiếm, nhưng các tham chiếu lịch sử trong Lịch ăn tuần (Meal Plan), Công thức đã lưu (Saved Recipe) và Danh sách mua sắm hiện có của người dùng khác được bảo toàn ở trạng thái hiển thị "Nội dung không còn khả dụng" để tránh phá vỡ tính toàn vẹn dữ liệu.
+- **Tóm tắt yêu cầu:** Cho phép Chuyên gia đã đăng nhập chỉnh sửa nội dung hoặc xóa bỏ bài công thức nấu ăn đã công khai do chính mình tạo ra; khi chỉnh sửa, các thay đổi phải vượt qua toàn bộ Recipe Validation Profile chuẩn theo FR-16 (tiêu đề, khẩu phần, thời gian, loại ăn chay, thể loại món `dish_category`, từng nguyên liệu tham chiếu catalog chuẩn bắt buộc theo FR-19/BR-12, định lượng số dương và chuyển đổi đơn vị khả dụng theo BR-73, hướng dẫn chế biến linh hoạt `instructions` 10–5.000 ký tự theo BR-19, 0–5 ảnh minh họa với đúng 1 ảnh đại diện theo FR-14, BR-19) và được cập nhật công khai ngay lập tức mà không cần Administrator phê duyệt lại; trường hợp bài viết đang bị Administrator tạm ẩn do vi phạm (BR-27), tác giả không được tự ý sửa để mở lại công khai; khi xóa bài công thức, hệ thống chuyển trạng thái bài viết sang xóa mềm (Tombstone), bài viết không còn xuất hiện trên danh mục công khai hay tìm kiếm, nhưng các tham chiếu lịch sử trong Lịch ăn tuần (Meal Plan), Công thức đã lưu (Saved Recipe) và Danh sách mua sắm hiện có của người dùng khác được bảo toàn ở trạng thái hiển thị "Nội dung không còn khả dụng" để tránh phá vỡ tính toàn vẹn dữ liệu.
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Chuyên gia sở hữu bài công thức (`Role = EXPERT`, `Author`).
   - Phân quyền: Nghiêm cấm sửa hoặc xóa bài của tác giả khác (RBAC, chống IDOR theo NFR-09, NFR-10).

@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-04
-next_id: 11
+last_updated: 2026-10-06
+next_id: 15
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,42 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-014
+    title: Integration test gửi báo cáo để sót Recipe Post trong SQL Server
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Test cleanup
+    file: .agents/outputs/bugs/BUG-014.md
+    created: 2026-10-06
+    updated: 2026-10-06
+    related_issue: 31
+  - id: BUG-013
+    title: Backend chấp nhận link YouTube thiếu mã video
+    status: RECORDED
+    severity: Medium
+    area: Backend/Recipe validation
+    file: .agents/outputs/bugs/BUG-013.md
+    created: 2026-10-06
+    updated: 2026-10-06
+    related_issue: Unknown
+  - id: BUG-012
+    title: Schema báo cáo lưu trạng thái và mã lý do lỗi thời
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Cơ sở dữ liệu báo cáo
+    file: .agents/outputs/bugs/BUG-012.md
+    created: 2026-10-06
+    updated: 2026-10-06
+    related_issue: 31
+  - id: BUG-011
+    title: Nút Stop của IntelliJ không truyền env file cho Docker Compose
+    status: RECORDED
+    severity: Medium
+    area: Development/IntelliJ Docker
+    file: .agents/outputs/bugs/BUG-011.md
+    created: 2026-10-05
+    updated: 2026-10-05
+    related_issue: Unknown
   - id: BUG-010
     title: Cấu hình local lưu mật khẩu SQL Server dạng plaintext
     status: RECORDED

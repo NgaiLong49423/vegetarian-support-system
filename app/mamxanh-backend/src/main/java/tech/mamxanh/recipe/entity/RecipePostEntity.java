@@ -60,4 +60,7 @@ public class RecipePostEntity {
 
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 }

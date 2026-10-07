@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.3.0
+> **Version:** v2.5.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-06
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -91,10 +91,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-12"></a>
-### BR-12 — Tính tùy chọn của liên kết nguyên liệu chuẩn
+### BR-12 — Bắt buộc liên kết nguyên liệu công thức với catalog chuẩn
 
 - **Mã quy tắc:** BR-12
-- **Nội dung:** Liên kết nguyên liệu chuẩn là tùy chọn. Tên mới trên công thức không tự trở thành mục chuẩn; việc thiếu liên kết không tự chặn hoàn thiện hoặc công khai bài theo workflow chung.
+- **Nội dung:** Mọi dòng nguyên liệu trong Recipe Post phải tham chiếu một mục đang dùng được trong danh mục chuẩn FR-18. Chuyên gia không được nhập/lưu tên nguyên liệu tự do hoặc gửi đề xuất qua hệ thống. Khi không tìm thấy mục phù hợp, Chuyên gia liên hệ Administrator để Administrator tự quản lý catalog; hệ thống không thêm luồng đề xuất/duyệt mới. Quy tắc này không yêu cầu mục catalog phải có hồ sơ dinh dưỡng; áp dụng FR-40/BR-50 cho nguyên liệu chuẩn thiếu dữ liệu dinh dưỡng.
 
 ---
 
@@ -195,7 +195,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-25 — Yêu cầu lý do và mô tả trong biểu mẫu báo cáo
 
 - **Mã quy tắc:** BR-25
-- **Nội dung:** Mỗi báo cáo phải có một lý do hợp lệ trong sáu nhóm đã chốt. Nếu chọn “Khác”, mô tả không được rỗng hoặc chỉ chứa khoảng trắng; không tạo báo cáo khi chưa thỏa điều kiện.
+- **Nội dung:** Mỗi báo cáo phải có một lý do hợp lệ trong sáu nhóm tại SRS 3.11. Mô tả tùy chọn của năm nhóm đầu tối đa 500 ký tự; nếu chọn “Khác”, mô tả sau khi trim phải từ 10 đến 500 ký tự. Không tạo báo cáo nếu lý do hoặc mô tả không hợp lệ.
 
 ---
 
@@ -395,10 +395,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-50"></a>
-### BR-50 — Cho phép công khai bài chứa nguyên liệu ngoài danh mục dinh dưỡng
+### BR-50 — Cho phép công khai bài thiếu dữ liệu dinh dưỡng
 
 - **Mã quy tắc:** BR-50
-- **Nội dung:** Nguyên liệu ngoài danh mục dinh dưỡng không chặn công khai Recipe Post theo workflow chung. Bài có kết quả dinh dưỡng chưa đầy đủ không được sử dụng trong AI menu có mục tiêu dinh dưỡng.
+- **Nội dung:** Nguyên liệu đã có trong catalog chuẩn FR-18 nhưng chưa có hồ sơ dinh dưỡng không chặn công khai Recipe Post theo workflow chung. Bài có kết quả dinh dưỡng chưa đầy đủ không được sử dụng trong AI menu có mục tiêu dinh dưỡng. Quy tắc này không cho phép lưu nguyên liệu Recipe Post không có trong catalog chuẩn (BR-12).
 
 ---
 
@@ -569,8 +569,9 @@ This document contains only requirements included in Requirements / Implementati
   - **Quy tắc chặn nộp trùng (Single Open Application Rule):** Mỗi tài khoản Customer chỉ được phép sở hữu tối đa một bản ghi đơn đăng ký ở trạng thái chờ duyệt (`PENDING`). Nếu gửi thêm đơn trong khi đơn cũ chưa được xử lý, Backend từ chối với mã lỗi `HTTP 409 Conflict`.
   - Customer được xem lịch sử các đơn của chính mình theo thứ tự mới nhất trước nhưng không được rút/hủy đơn `PENDING` trong MVP; không được xem đơn của tài khoản khác.
   - **Quy tắc phê duyệt và chuyển đổi vai trò (Instant Role Promotion):** Chỉ khi đơn vẫn `PENDING` và tài khoản nộp vẫn `ACTIVE` với vai trò `CUSTOMER`, Administrator mới được phê duyệt. Hệ thống cập nhật trạng thái đơn thành `APPROVED`, đồng thời cập nhật vai trò người dùng trong `USER` thành `EXPERT`, làm mới trạng thái phân quyền để mở khóa quyền tạo bài viết tại `FR-04` và gửi thông báo in-app.
+  - **Tính nguyên tử quyết định:** Cập nhật trạng thái đơn, chuyển role khi approve và ghi notification kết quả phải thuộc cùng transaction; nếu bất kỳ bước nào thất bại, không lưu một phần quyết định hoặc notification.
   - **Quy tắc từ chối bắt buộc lý do (Mandatory Rejection Note):** Khi Administrator từ chối đơn, bắt buộc phải nhập lý do từ chối cụ thể (`admin_note` từ 10 đến 500 ký tự); trạng thái đơn chuyển thành `REJECTED`, vai trò tài khoản vẫn là `CUSTOMER`, thông báo in-app gửi kèm lý do; Customer được quyền nộp đơn mới sau khi đơn cũ bị từ chối.
-  - **Quy tắc xử lý đồng thời:** Chỉ quyết định đầu tiên trên một đơn `PENDING` được ghi nhận. Mọi yêu cầu xử lý từ dữ liệu cũ sau khi trạng thái đã đổi phải trả `HTTP 409 Conflict`, không ghi đè kết quả, không cập nhật role và không gửi thông báo lần hai.
+  - **Quy tắc xử lý đồng thời:** Chỉ quyết định đầu tiên trên một đơn `PENDING` được ghi nhận. Mọi yêu cầu xử lý từ dữ liệu cũ sau khi trạng thái đã đổi hoặc khi tài khoản không còn `ACTIVE`/`CUSTOMER` phải trả `HTTP 409 Conflict`, không ghi đè kết quả, không cập nhật role và không gửi thông báo lần hai.
 
 ---
 

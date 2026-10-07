@@ -27,7 +27,8 @@ import { Badge, Button, Card, SectionHeading } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { RecipeComments } from '../components/RecipeComments';
 import { RecipeRating } from '../components/RecipeRating';
-import { useDemoAccount } from '../components/DemoAccount';
+import { useAuth } from '../components/AuthContext';
+import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { recipes } from '../data/mockData';
 import { recipesApi, type RecipeDetail as RecipeDetailData } from '../api/recipes';
 import { scaleQuantity } from '../utils/servings';
@@ -94,8 +95,25 @@ function PublishedRecipeDetail({ recipeId }: { recipeId: number }) {
           {recipe.description && <p className="mt-3 text-base leading-7 text-ink-soft">{recipe.description}</p>}
           <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-muted"><span>{recipe.servings} khẩu phần</span><span>Chuẩn bị {recipe.prepTimeMinutes} phút</span><span>Nấu {recipe.cookTimeMinutes} phút</span></div>
           <section className="mt-8"><h2 className="text-xl font-extrabold text-ink">Nguyên liệu</h2><ul className="mt-3 space-y-2">{recipe.ingredients.map((item, index) => <li key={`${item.ingredientId}-${item.unitId}-${index}`} className="flex justify-between gap-4 border-b border-brand-50 py-2 text-sm"><span>{item.name}</span><span className="shrink-0 font-semibold text-ink">{item.quantity} {item.unitCode}</span></li>)}</ul></section>
+          {!recipe.nutritionComplete && (
+            <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4" aria-labelledby="nutrition-status-heading">
+              <h2 id="nutrition-status-heading" className="font-bold text-amber-900">Chưa đủ dữ liệu dinh dưỡng</h2>
+              <p role="status" className="mt-1 text-sm text-amber-800">Ước tính dinh dưỡng chưa đầy đủ. Chưa hỗ trợ tính dinh dưỡng cho:</p>
+              <ul className="mt-2 list-inside list-disc text-sm text-amber-900">
+                {recipe.ingredientsWithoutNutrition.map((name) => <li key={name}>{name}</li>)}
+              </ul>
+            </section>
+          )}
           <section className="mt-8"><h2 className="text-xl font-extrabold text-ink">Hướng dẫn chế biến</h2><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-ink-soft">{recipe.instructions}</p></section>
-          {recipe.youtubeUrl && <a href={recipe.youtubeUrl} target="_blank" rel="noreferrer" className="mt-6 inline-flex text-sm font-bold text-brand-700">Xem video hướng dẫn</a>}
+          {recipe.youtubeUrl && (
+            <section className="mt-8" data-testid="recipe-youtube-section">
+              <h2 className="text-xl font-extrabold text-ink">Video hướng dẫn thực hiện (YouTube)</h2>
+              <div className="mt-4 max-w-2xl">
+                <YouTubeEmbed urlOrId={recipe.youtubeUrl} title={`Video hướng dẫn nấu món ${recipe.title}`} />
+              </div>
+              <a href={recipe.youtubeUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex text-sm font-bold text-brand-700">Xem video hướng dẫn</a>
+            </section>
+          )}
         </div>
       </article>
     </PageContainer>
@@ -114,7 +132,7 @@ function RecipeDefaultArtwork({ vegetarianType, label }: { vegetarianType: Recip
 
 function MockRecipeDetail() {
   const { slug } = useParams();
-  const { active } = useDemoAccount();
+  const { isAuthenticated } = useAuth();
   const matchedRecipe = recipes.find((r) => r.slug === slug);
   const isAvailable = matchedRecipe && matchedRecipe.status !== 'HIDDEN' && matchedRecipe.status !== 'DELETED';
 
@@ -201,7 +219,7 @@ function MockRecipeDetail() {
   };
 
   const handleToggleSave = () => {
-    if (!active) {
+    if (!isAuthenticated) {
       setGuestNoticeModal({
         open: true,
         message: 'Vui lòng đăng nhập để lưu công thức yêu thích (BR-05 / BR-32 / AC-01.5).',
@@ -222,7 +240,7 @@ function MockRecipeDetail() {
   };
 
   const handleOpenPlan = () => {
-    if (!active) {
+    if (!isAuthenticated) {
       setGuestNoticeModal({
         open: true,
         message: 'Vui lòng đăng nhập để thêm món vào kế hoạch tuần (BR-05 / BR-32 / AC-01.5).',
@@ -243,6 +261,7 @@ function MockRecipeDetail() {
 
   return (
       <PageContainer className="py-8">
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-900">Nội dung công thức minh họa UI · chưa lấy từ Backend. Công thức thật được mở qua đường dẫn ID.</p>
         {/* breadcrumb */}
         <nav className="mb-5 flex items-center gap-1.5 text-sm text-ink-muted">
           <Link to="/" className="hover:text-brand-600">Trang chủ</Link>
@@ -509,7 +528,23 @@ function MockRecipeDetail() {
           </div>
         </Modal>
 
-
+        {/* YouTube Video Section - FR-15 / UC-15.2 */}
+        {recipe.youtubeUrl && (
+          <Card className="mb-8 p-6" data-testid="recipe-youtube-section">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink">
+                <span className="text-red-600">▶</span> Video hướng dẫn thực hiện (YouTube)
+              </h2>
+              <span className="text-xs text-ink-muted">Trình phát nhúng YouTube (BR-10)</span>
+            </div>
+            <div className="mx-auto max-w-3xl">
+              <YouTubeEmbed
+                urlOrId={recipe.youtubeUrl}
+                title={`Video hướng dẫn nấu món ${recipe.name}`}
+              />
+            </div>
+          </Card>
+        )}
 
         {/* steps */}
         <Card className="mb-8 p-6">
