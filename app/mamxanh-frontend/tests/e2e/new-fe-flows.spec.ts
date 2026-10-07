@@ -493,12 +493,12 @@ test('recipe creation route uses authenticated account role (FR-05)', async ({ p
   await expect(page.getByText('Bạn cần được phê duyệt đơn đăng ký Chuyên gia trước khi đăng công thức.')).toBeVisible();
   await expect(page.getByRole('main').getByRole('link', { name: 'Đăng ký trở thành Chuyên gia' })).toHaveAttribute('href', '/dang-ky-chuyen-gia');
 
-  await page.evaluate(() => { const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'EXPERT'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session)); window.location.reload(); });
-  await page.waitForLoadState('domcontentloaded');
-  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
+  await seedDemoSession(page, 'EXPERT');
+  await page.goto('/dang-cong-thuc');
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay' })).toBeVisible();
 
-  await page.evaluate(() => { const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'ADMIN'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session)); window.location.reload(); });
-  await page.waitForLoadState('domcontentloaded');
+  await seedDemoSession(page, 'ADMIN');
+  await page.goto('/dang-cong-thuc');
   await expect(page.getByText('Vai trò hiện tại không có quyền đăng công thức.')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toHaveCount(0);
 });
