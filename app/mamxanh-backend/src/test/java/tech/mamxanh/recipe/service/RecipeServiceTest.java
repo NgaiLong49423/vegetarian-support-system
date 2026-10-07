@@ -160,6 +160,7 @@ class RecipeServiceTest {
         authenticate("7");
         assertValidationError(withYoutube("http://youtu.be/abcdef"), "youtubeUrl");
         assertValidationError(withYoutube("https://m.youtube.com/watch?v=abcdef"), "youtubeUrl");
+        assertValidationError(withYoutube("https:///watch?v=abcdef"), "youtubeUrl");
         assertValidationError(withYoutube("https://www.youtube.com/watch"), "youtubeUrl");
         assertValidationError(withYoutube("https://youtube.com/watch?x=1&v="), "youtubeUrl");
         assertValidationError(withYoutube("https://youtube.com/watch?x=1&v=abcdef"), null);
@@ -176,6 +177,7 @@ class RecipeServiceTest {
         assertValidationError(withMedia(List.of(new RecipeMediaInput("blob", "image/jpeg", false))), "media");
         assertValidationError(withMedia(List.of(new RecipeMediaInput("blob", "image/gif", true))), "media[0].mimeType");
         assertValidationError(withMedia(List.of(new RecipeMediaInput(" ", "image/png", true))), "media[0].blobUrl");
+        assertValidationError(withMedia(List.of(new RecipeMediaInput(null, null, true))), "media[0].mimeType");
         var tooMany = java.util.stream.IntStream.range(0, 6)
                 .mapToObj(i -> new RecipeMediaInput("blob-" + i, "image/webp", i == 0)).toList();
         assertValidationError(withMedia(tooMany), "media");
