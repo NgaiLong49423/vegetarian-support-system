@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.16.0
+> **Version:** v1.17.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-06
+> **Last Updated:** 2026-10-08
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -25,7 +25,7 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - **Onboarding và Sở thích ăn uống đã gọi Backend thật (Issue #36):** sau khi đăng nhập, Frontend gọi `POST /nutrition/dietary-preferences/onboarding/invitation`; chỉ khi Backend trả `show = true` (lần đầu của tài khoản mới chưa trả lời) Member mới được chuyển tới `/khoi-tao-so-thich` để chọn loại ăn chay, nguyên liệu cần tránh, món không thích (hoặc xác nhận "Không có") và sở thích tùy chọn. Rời trang mà chưa trả lời hoặc bấm "Bỏ qua" (ghi nhận `SKIPPED`) thì các lần đăng nhập sau không hỏi lại; trang vẫn mở thủ công được. Trang `/ho-so/so-thich-an-uong` (menu "Sở thích ăn uống") cho xem, cập nhật hồ sơ và cho biết còn thiếu thông tin nào trước khi dùng AI cá nhân hóa. Gợi ý tên lấy từ danh mục nguyên liệu chuẩn đang hoạt động.
 - **Đăng xuất** chỉ xóa token và trạng thái đăng nhập trên thiết bị, không gọi Backend (AC-03.13). Google Login, quên và đặt lại mật khẩu vẫn là biểu mẫu demo cho tới Issue #8, #9.
 - Không còn chế độ đổi vai trò/tài khoản giả trên Frontend. Dùng tài khoản local do Backend seed tạo sẵn; danh sách email và cách đặt chung mật khẩu nằm trong [Backend Workspace Guide](../mamxanh-backend/README.md#tài-khoản-demo-local). Mỗi vai trò phải đăng nhập bằng tài khoản riêng; quyền được Backend xác thực.
-- Các luồng Backend hiện hiển thị từ API/SQL thật: khám phá và chi tiết công thức; tạo/sửa/quản lý công thức; lịch ăn tuần; hồ sơ dinh dưỡng; sở thích/onboarding; nộp và duyệt đơn Chuyên gia; danh mục nguyên liệu/đơn vị Admin. Trang khám phá chỉ cung cấp tìm kiếm từ khóa và phân trang vì đó là các tham số API hiện hỗ trợ.
+- Các luồng Backend hiện hiển thị từ API/SQL thật: khám phá và chi tiết công thức; tạo/sửa/quản lý công thức; lịch ăn tuần; hồ sơ dinh dưỡng; sở thích/onboarding; nộp và duyệt đơn Chuyên gia; danh mục nguyên liệu/đơn vị Admin. Trang khám phá gửi từ khóa, bộ lọc loại ăn chay/thể loại/nguyên liệu/tổng thời gian, phân trang và chế độ sắp xếp tới API công khai; tùy chọn chuẩn và nguyên liệu được tải từ Backend, mọi điều kiện lọc kết hợp bằng AND.
 - Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
 
 ### Các chức năng demo khác

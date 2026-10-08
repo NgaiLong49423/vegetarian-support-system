@@ -26,6 +26,8 @@ import tech.mamxanh.recipe.dto.response.RecipePostResponse.Media;
 import tech.mamxanh.recipe.entity.RecipeIngredientEntity;
 import tech.mamxanh.recipe.entity.RecipeMediaEntity;
 import tech.mamxanh.recipe.entity.RecipePostEntity;
+import tech.mamxanh.recipe.entity.RecipeCodes.DishCategory;
+import tech.mamxanh.recipe.entity.RecipeCodes.VegetarianType;
 import tech.mamxanh.recipe.entity.RecipeIngredientReferenceEntity;
 import tech.mamxanh.recipe.entity.RecipeUnitReferenceEntity;
 import tech.mamxanh.recipe.repository.RecipeIngredientRepository;
@@ -110,14 +112,29 @@ public class RecipePostService {
     @Transactional(readOnly = true)
     public RecipePageResponse searchPublished(String keyword, int page, int size,
             RecipeSortMode sortMode, RecipeViewPeriod viewPeriod) {
+        return searchPublished(keyword, page, size, sortMode, viewPeriod, null, null, List.of(), null);
+    }
+
+    @Transactional(readOnly = true)
+    public RecipePageResponse searchPublished(String keyword, int page, int size,
+            RecipeSortMode sortMode, RecipeViewPeriod viewPeriod, String vegetarianType,
+            String dishCategory, List<Long> ingredientIds, Integer maxTotalTimeMinutes) {
         String query = keyword == null ? "" : keyword.trim();
-        if (query.length() > 120 || page < 0 || size < 1 || size > 50) {
+        String normalizedVegetarianType = normalizeCode(vegetarianType, VegetarianType.class);
+        String normalizedDishCategory = normalizeCode(dishCategory, DishCategory.class);
+        List<Long> normalizedIngredientIds = ingredientIds == null ? List.of()
+                : ingredientIds.stream().distinct().toList();
+        if (query.length() > 120 || page < 0 || size < 1 || size > 50
+                || normalizedIngredientIds.size() > 20
+                || normalizedIngredientIds.stream().anyMatch(id -> id == null || id < 1)
+                || (maxTotalTimeMinutes != null && maxTotalTimeMinutes < 1)) {
             throw new AppException(ErrorCode.VALIDATION_FAILED);
         }
         LocalDateTime now = LocalDateTime.now(clock);
         LocalDateTime viewSince = viewPeriod.hours() == null
                 ? LocalDateTime.of(1, 1, 1, 0, 0) : now.minusHours(viewPeriod.hours());
-        var result = browseRepository.findPublished(query, sortMode, viewSince, now, page, size);
+        var result = browseRepository.findPublished(query, normalizedVegetarianType, normalizedDishCategory,
+                normalizedIngredientIds, maxTotalTimeMinutes, sortMode, viewSince, now, page, size);
         List<Long> ids = result.rows().stream().map(BrowseRow::recipeId).toList();
         Map<Long, RecipePostEntity> recipes = repository.findAllById(ids).stream()
                 .collect(Collectors.toMap(RecipePostEntity::getId, Function.identity()));
@@ -128,6 +145,15 @@ public class RecipePostService {
         List<RecipePostResponse> items = publicResponses(orderedRecipes, metrics);
         int totalPages = (int) Math.ceil((double) result.totalElements() / size);
         return new RecipePageResponse(items, page, size, result.totalElements(), totalPages);
+    }
+
+    private static <T extends Enum<T>> String normalizeCode(String value, Class<T> enumType) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Enum.valueOf(enumType, value.trim().toUpperCase(java.util.Locale.ROOT)).name();
+        } catch (IllegalArgumentException exception) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED);
+        }
     }
 
     @Transactional(readOnly = true)

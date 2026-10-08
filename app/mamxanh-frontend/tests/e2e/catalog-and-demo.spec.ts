@@ -14,7 +14,7 @@ test('recipe exploration uses only API search and reports an empty result honest
   await page.goto('/kham-pha');
   const search = page.getByPlaceholder('Tìm món chay hoặc nguyên liệu...');
   await search.fill('không có món này');
-  await expect(page.getByRole('heading', { name: 'Chưa có công thức phù hợp' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();
   await expect(page.getByText('Phở chay', { exact: true })).toHaveCount(0);
 });
 
