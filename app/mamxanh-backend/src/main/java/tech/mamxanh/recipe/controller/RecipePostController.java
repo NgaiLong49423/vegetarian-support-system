@@ -39,8 +39,12 @@ public class RecipePostController {
     public RecipePageResponse searchPublic(
             @Parameter(description = "Tìm trong tiêu đề và mô tả ngắn công thức.")
             @RequestParam(defaultValue = "") String keyword,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "12") @Min(1) @Max(50) int size,
+            @Parameter(description = "Số trang bắt đầu từ 0.")
+            @Schema(minimum = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Số công thức mỗi trang (từ 1 đến 50).")
+            @Schema(minimum = "1", maximum = "50")
+            @RequestParam(defaultValue = "12") int size,
             @Parameter(description = "Chế độ sắp xếp công thức công khai.")
             @Schema(allowableValues = {"NEWEST", "MOST_LIKED", "MOST_VIEWED", "MOST_COMMENTED", "MOST_ACTIVE", "TRENDING"})
             @RequestParam(defaultValue = "NEWEST") String sort,
