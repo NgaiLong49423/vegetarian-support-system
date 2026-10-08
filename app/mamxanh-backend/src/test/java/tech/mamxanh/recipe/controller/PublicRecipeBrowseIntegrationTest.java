@@ -122,6 +122,21 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.items[0].id").value(recentId));
     }
 
+    @Test
+    void futurePublishedAtDoesNotCauseInvalidTrendingPowerCalculation() throws Exception {
+        LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), java.time.ZoneOffset.UTC);
+        long futureId = insertRecipe("Canh chua hẹn giờ", "Bài có thời điểm công khai tương lai", "PUBLISHED",
+                now.plusHours(4));
+
+        mockMvc.perform(get("/api/v1/recipes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(futureId));
+
+        mockMvc.perform(get("/api/v1/recipes").param("sort", "TRENDING"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(recentId));
+    }
+
     private long insertRecipe(String title, String description, String status, LocalDateTime publishedAt) {
         jdbcTemplate.update("""
                 INSERT INTO [RECIPE_POST]

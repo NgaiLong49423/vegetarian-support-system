@@ -58,8 +58,12 @@ class RecipeBrowseRepositoryImpl implements RecipeBrowseRepository {
                 + COALESCE(rs.reactions7d, 0) * :reactionWeight AS activeScore,
               (COALESCE(vs.views3d, 0) * :viewWeight + COALESCE(cs.comments3d, 0) * :commentWeight
                 + COALESCE(rs.reactions3d, 0) * :reactionWeight
-                + CASE WHEN DATEDIFF(HOUR, m.published_at, :now) < :newRecipeHours THEN :newRecipeBonus ELSE 0 END)
-                / POWER(CAST(DATEDIFF(MINUTE, m.published_at, :now) AS FLOAT) / 60.0 + 2.0, :freshnessExponent) AS trendingScore,
+                + CASE WHEN m.published_at <= :now
+                    AND DATEDIFF(HOUR, m.published_at, :now) < :newRecipeHours
+                    THEN :newRecipeBonus ELSE 0 END)
+                / POWER(CASE WHEN m.published_at > :now THEN 2.0
+                    ELSE CAST(DATEDIFF(MINUTE, m.published_at, :now) AS FLOAT) / 60.0 + 2.0 END,
+                    :freshnessExponent) AS trendingScore,
               COALESCE(CAST(rs.likes AS FLOAT) * 100.0 / NULLIF(rs.likes + rs.dislikes, 0), -1) AS likePercentage
             FROM matched m
             LEFT JOIN reaction_stats rs ON rs.recipe_id = m.recipe_id
