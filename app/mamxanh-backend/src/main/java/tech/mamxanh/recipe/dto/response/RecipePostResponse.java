@@ -20,7 +20,11 @@ public record RecipePostResponse(
         String youtubeUrl,
         String status,
         List<Media> media,
-        List<Ingredient> ingredients) {
+        List<Ingredient> ingredients,
+        long likes,
+        long dislikes,
+        BigDecimal likePercentage,
+        long viewCount) {
 
     public record Media(String url, String mimeType, int displayOrder, boolean cover) { }
     public record Ingredient(Long ingredientId, String name, String customName, int unitId,
