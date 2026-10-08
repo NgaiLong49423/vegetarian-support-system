@@ -5,4 +5,5 @@ import tech.mamxanh.recipe.entity.RecipeMediaEntity;
 
 public interface RecipeMediaRepository extends JpaRepository<RecipeMediaEntity, Long> {
     java.util.List<RecipeMediaEntity> findAllByRecipeIdOrderByDisplayOrderAsc(Long recipeId);
+    java.util.List<RecipeMediaEntity> findAllByRecipeIdInOrderByRecipeIdAscDisplayOrderAsc(java.util.Collection<Long> recipeIds);
 }

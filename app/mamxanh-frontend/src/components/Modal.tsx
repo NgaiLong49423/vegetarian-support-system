@@ -40,6 +40,7 @@ export function Modal({
         className={`relative w-full ${size === 'lg' ? 'max-w-2xl' : 'max-w-md'} max-h-[90vh] overflow-y-auto rounded-2xl border border-brand-100 bg-white p-6 shadow-2xl`}
         role="dialog"
         aria-modal="true"
+        aria-label={title}
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <h3 className="text-lg font-extrabold text-ink">{title}</h3>

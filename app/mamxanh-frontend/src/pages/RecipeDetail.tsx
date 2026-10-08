@@ -14,6 +14,7 @@ import {
   Heart,
   Leaf,
   LoaderCircle,
+  Lock,
   Share2,
   ShoppingBasket,
   ThumbsUp,
@@ -26,6 +27,7 @@ import { Badge, Button, Card, SectionHeading } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { RecipeComments } from '../components/RecipeComments';
 import { RecipeRating } from '../components/RecipeRating';
+import { useAuth } from '../components/AuthContext';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { recipes } from '../data/mockData';
 import { recipesApi, type RecipeDetail as RecipeDetailData } from '../api/recipes';
@@ -130,7 +132,16 @@ function RecipeDefaultArtwork({ vegetarianType, label }: { vegetarianType: Recip
 
 function MockRecipeDetail() {
   const { slug } = useParams();
-  const recipe = recipes.find((r) => r.slug === slug) ?? recipes[0];
+  const { isAuthenticated } = useAuth();
+  const matchedRecipe = recipes.find((r) => r.slug === slug);
+  const isAvailable = matchedRecipe && matchedRecipe.status !== 'HIDDEN' && matchedRecipe.status !== 'DELETED';
+
+  const [guestNoticeModal, setGuestNoticeModal] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: '',
+  });
+
+  const recipe = matchedRecipe ?? recipes[0];
   const [saved, setSaved] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
@@ -144,19 +155,45 @@ function MockRecipeDetail() {
 
   // Sync trạng thái Lưu với localStorage
   useEffect(() => {
+    if (!isAvailable) return;
     setSaved(isSaved(recipe.slug));
     const unsub = subscribeSaved(() => setSaved(isSaved(recipe.slug)));
     return unsub;
-  }, [recipe.slug]);
+  }, [recipe.slug, isAvailable]);
 
   useEffect(() => {
+    if (!isAvailable) return;
     setDesiredServings(recipe.servings);
     setReportOpen(false);
     setReportReason('');
     setReportDescription('');
     setReportError('');
     setDemoReportSubmitted(false);
-  }, [recipe.id, recipe.servings]);
+  }, [recipe.id, recipe.servings, isAvailable]);
+
+  if (!matchedRecipe || !isAvailable) {
+    return (
+      <PageContainer className="py-16">
+        <Card className="mx-auto max-w-lg p-8 text-center" data-testid="recipe-not-available">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+            <Lock className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-ink">Công thức không khả dụng hoặc đã bị ẩn</h1>
+          <p className="mt-2 text-sm text-ink-muted">
+            Bài viết bạn đang tìm không tồn tại hoặc đã bị Quản trị viên ẩn do vi phạm tiêu chuẩn cộng đồng (BR-05 / AC-01.4).
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <Link
+              to="/kham-pha"
+              className="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-700"
+            >
+              Khám phá món chay khác
+            </Link>
+          </div>
+        </Card>
+      </PageContainer>
+    );
+  }
 
   const submitDemoReport = () => {
     const description = reportDescription.trim();
@@ -166,7 +203,7 @@ function MockRecipeDetail() {
     }
     if (description.length > 500 || (reportReason === 'OTHER' && description.length < 10)) {
       setReportError(
-          'Mô tả cần từ 10 đến 500 ký tự khi chọn lý do Khác; tối đa 500 ký tự với các lý do khác.',
+        'Mô tả cần từ 10 đến 500 ký tự khi chọn lý do Khác; tối đa 500 ký tự với các lý do khác.',
       );
       return;
     }
@@ -182,6 +219,13 @@ function MockRecipeDetail() {
   };
 
   const handleToggleSave = () => {
+    if (!isAuthenticated) {
+      setGuestNoticeModal({
+        open: true,
+        message: 'Vui lòng đăng nhập để lưu công thức yêu thích (BR-05 / BR-32 / AC-01.5).',
+      });
+      return;
+    }
     toggleSaved({
       slug: recipe.slug,
       name: recipe.name,
@@ -193,6 +237,17 @@ function MockRecipeDetail() {
       author: recipe.author.name,
     });
     showToast(saved ? 'Đã bỏ lưu công thức' : 'Đã lưu công thức');
+  };
+
+  const handleOpenPlan = () => {
+    if (!isAuthenticated) {
+      setGuestNoticeModal({
+        open: true,
+        message: 'Vui lòng đăng nhập để thêm món vào kế hoạch tuần (BR-05 / BR-32 / AC-01.5).',
+      });
+      return;
+    }
+    setPlanOpen(true);
   };
 
   const related = recipes.filter((r) => r.id !== recipe.id).slice(0, 4);
@@ -289,7 +344,7 @@ function MockRecipeDetail() {
             <button className="flex h-11 w-11 items-center justify-center rounded-xl border border-brand-200 bg-white text-ink-soft transition-colors hover:border-brand-300">
               <Share2 className="h-5 w-5" />
             </button>
-            <Button onClick={() => setPlanOpen(true)}>
+            <Button onClick={handleOpenPlan}>
               <CalendarPlus className="h-4 w-4" /> Thêm vào kế hoạch
             </Button>
           </div>
@@ -578,6 +633,31 @@ function MockRecipeDetail() {
               {toast}
             </div>
         )}
+
+        {/* guest notice modal - AC-01.5 / BR-05 / BR-32 */}
+        <Modal
+          open={guestNoticeModal.open}
+          onClose={() => setGuestNoticeModal({ open: false, message: '' })}
+          title="Yêu cầu đăng nhập"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <Lock className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+              <p>{guestNoticeModal.message}</p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setGuestNoticeModal({ open: false, message: '' })}>
+                Để sau
+              </Button>
+              <Link
+                to="/dang-nhap"
+                className="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-700"
+              >
+                Đăng nhập ngay
+              </Link>
+            </div>
+          </div>
+        </Modal>
       </PageContainer>
   );
 }
