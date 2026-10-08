@@ -7,7 +7,6 @@ import { expect, test } from '@playwright/test';
 const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const repositoryRoot = path.resolve(frontendDir, '../..');
 const composeProject = process.env.MAMXANX_E2E_COMPOSE_PROJECT ?? 'mamxanh-dev';
-const frontendBaseUrl = process.env.MAMXANX_E2E_FRONTEND_URL ?? 'http://localhost:5173';
 const fixtureId = randomUUID();
 const authorEmail = `issue14-${fixtureId}@test.local`;
 const ingredientAName = `Issue14 ingredient A ${fixtureId}`;
@@ -105,35 +104,43 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     await expect(page.getByRole('link', { name: new RegExp(recipeBOnly) })).toHaveCount(0);
 
     for (const sort of ['MOST_LIKED', 'MOST_VIEWED', 'MOST_COMMENTED', 'MOST_ACTIVE', 'TRENDING']) {
-      const sortResponsePromise = page.waitForResponse((response) => {
-        const url = new URL(response.url());
-        return response.request().method() === 'GET' && url.origin + url.pathname === `${frontendBaseUrl}/api/v1/recipes`
+      const sortRequestPromise = page.waitForRequest((request) => {
+        const url = new URL(request.url());
+        return request.method() === 'GET' && url.pathname === '/api/v1/recipes'
           && url.searchParams.get('sort') === sort;
       });
       await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption(sort);
-      const sortResponse = await sortResponsePromise;
+      const sortRequest = await sortRequestPromise;
+      const sortResponse = await sortRequest.response();
+      if (!sortResponse) throw new Error(`Recipe search for sort ${sort} failed before Backend returned a response.`);
       expect(sortResponse.ok()).toBeTruthy();
       if (sort === 'MOST_LIKED') {
         await expect(page.getByText('Mới', { exact: true })).toBeVisible();
       }
       if (sort === 'MOST_VIEWED') {
-        const periodResponsePromise = page.waitForResponse((response) => {
-          const url = new URL(response.url());
-          return response.request().method() === 'GET' && url.origin + url.pathname === `${frontendBaseUrl}/api/v1/recipes`
+        const periodRequestPromise = page.waitForRequest((request) => {
+          const url = new URL(request.url());
+          return request.method() === 'GET' && url.pathname === '/api/v1/recipes'
             && url.searchParams.get('sort') === 'MOST_VIEWED' && url.searchParams.get('viewPeriod') === 'LAST_7_DAYS';
         });
         await page.getByRole('combobox', { name: 'Khung thời gian lượt xem' }).selectOption('LAST_7_DAYS');
-        expect((await periodResponsePromise).ok()).toBeTruthy();
+        const periodRequest = await periodRequestPromise;
+        const periodResponse = await periodRequest.response();
+        if (!periodResponse) throw new Error('Recipe search for view period failed before Backend returned a response.');
+        expect(periodResponse.ok()).toBeTruthy();
       }
     }
 
-    const emptyResponsePromise = page.waitForResponse((response) => {
-      const url = new URL(response.url());
-      return response.request().method() === 'GET' && url.origin + url.pathname === `${frontendBaseUrl}/api/v1/recipes`
+    const emptyRequestPromise = page.waitForRequest((request) => {
+      const url = new URL(request.url());
+      return request.method() === 'GET' && url.pathname === '/api/v1/recipes'
         && url.searchParams.get('vegetarianType') === 'LACTO';
     });
     await page.getByRole('combobox', { name: 'Trường phái ăn chay' }).selectOption('LACTO');
-    expect((await emptyResponsePromise).ok()).toBeTruthy();
+    const emptyRequest = await emptyRequestPromise;
+    const emptyResponse = await emptyRequest.response();
+    if (!emptyResponse) throw new Error('Recipe search for empty result failed before Backend returned a response.');
+    expect(emptyResponse.ok()).toBeTruthy();
     await expect(page.getByText('Không tìm thấy công thức phù hợp', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Đặt lại bộ lọc' }).last().click();
     await expect(page.getByRole('link', { name: new RegExp(recipeBoth) })).toBeVisible();
