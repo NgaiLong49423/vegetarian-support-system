@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-08 — Add Public Recipe Search Filters and Explore Controls (Issue #14)
+## 2026-10-08 — Add Public Recipe Search Filters and Explore Controls (Issue #14) ([PR #108](https://github.com/NgaiLong49423/vegetarian-support-system/pull/108))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `60a3788`.
 
 **Scope:** Complete the public recipe discovery flow for FR-08 with database-backed filters and sorting controls.
 
