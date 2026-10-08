@@ -14,6 +14,7 @@ import tech.mamxanh.AbstractIntegrationTest;
 
 class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
     private static final String EMAIL_PREFIX = "issue3-browse-%@test.local";
+    private static final String BROWSE_TEST_KEYWORD = "issue3-browse-token";
     @Autowired private JdbcTemplate jdbcTemplate;
 
     private long authorId;
@@ -33,15 +34,15 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
         authorId = jdbcTemplate.queryForObject("SELECT user_id FROM [USER] WHERE email = ?", Long.class,
                 "issue3-browse-author@test.local");
         LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), java.time.ZoneOffset.UTC);
-        recentId = insertRecipe("Canh chua mới", "Mô tả tìm kiếm đặc biệt", "PUBLISHED", now.minusHours(1));
-        middleId = insertRecipe("Món giữa", "Món đăng năm ngày trước", "PUBLISHED", now.minusDays(5));
-        oldId = insertRecipe("Canh chua cũ", "Công thức lâu năm", "PUBLISHED", now.minusDays(10));
-        insertRecipe("Canh chua ẩn", "Không được tìm thấy", "HIDDEN", now);
+        recentId = insertRecipe("Issue3-browse-token Canh chua mới", "Issue3-description-token Mô tả tìm kiếm đặc biệt", "PUBLISHED", now.minusHours(1));
+        middleId = insertRecipe("Issue3-browse-token Món giữa", "Món đăng năm ngày trước", "PUBLISHED", now.minusDays(5));
+        oldId = insertRecipe("Issue3-browse-token Canh chua cũ", "Công thức lâu năm", "PUBLISHED", now.minusDays(10));
+        insertRecipe("Issue3-browse-token Canh chua ẩn", "Không được tìm thấy", "HIDDEN", now);
     }
 
     @Test
     void guestSearchesTitleAndDescriptionAndGetsPublicFieldsOnlyWithDefaultPageSize() throws Exception {
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", "TÌM KIẾM ĐẶC BIỆT"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", "ISSUE3-DESCRIPTION-TOKEN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size").value(12))
                 .andExpect(jsonPath("$.totalElements").value(1))
@@ -53,23 +54,25 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.items[0].viewCount").value(0))
                 .andExpect(jsonPath("$.items[0].authorEmail").doesNotExist());
 
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", "CANH CHUA"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD + " CANH CHUA"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(2));
     }
 
     @Test
     void defaultsToNewestAndPaginatesAtTwelveUnlessCallerChoosesAnotherSize() throws Exception {
+        long newestId = 0;
         for (int index = 0; index < 12; index++) {
-            insertRecipe("Thêm món " + index, "Mô tả", "PUBLISHED",
+            long recipeId = insertRecipe("Issue3-browse-token Thêm món " + index, "Mô tả", "PUBLISHED",
                     LocalDateTime.ofInstant(clock.instant(), java.time.ZoneOffset.UTC).minusMinutes(index + 2));
+            if (index == 0) newestId = recipeId;
         }
-        mockMvc.perform(get("/api/v1/recipes").param("size", "2"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("size", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size").value(2))
                 .andExpect(jsonPath("$.totalElements").value(15))
-                .andExpect(jsonPath("$.items[0].id").value(recentId));
-        mockMvc.perform(get("/api/v1/recipes").param("size", "51"))
+                .andExpect(jsonPath("$.items[0].id").value(newestId));
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("size", "51"))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(get("/api/v1/recipes").param("sort", "unknown"))
                 .andExpect(status().isBadRequest());
@@ -82,16 +85,16 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
         for (int index = 0; index < 3; index++) insertView(middleId, now.minusDays(4));
         insertView(recentId, LocalDateTime.ofInstant(clock.instant(), java.time.ZoneOffset.UTC).minusHours(2));
 
-        mockMvc.perform(get("/api/v1/recipes").param("sort", "MOST_VIEWED"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(oldId));
-        mockMvc.perform(get("/api/v1/recipes").param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_24_HOURS"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_24_HOURS"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(recentId));
-        mockMvc.perform(get("/api/v1/recipes").param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_7_DAYS"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_7_DAYS"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(middleId));
-        mockMvc.perform(get("/api/v1/recipes").param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_30_DAYS"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_30_DAYS"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(oldId));
     }
@@ -106,18 +109,18 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
                     oldId, authorId, "Bình luận " + index, now.minusDays(1), now.minusDays(1));
         }
 
-        mockMvc.perform(get("/api/v1/recipes").param("sort", "MOST_LIKED"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_LIKED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(oldId))
                 .andExpect(jsonPath("$.items[0].likes").value(2))
                 .andExpect(jsonPath("$.items[0].likePercentage").value(100));
-        mockMvc.perform(get("/api/v1/recipes").param("sort", "MOST_COMMENTED"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_COMMENTED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(oldId));
-        mockMvc.perform(get("/api/v1/recipes").param("sort", "MOST_ACTIVE"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_ACTIVE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(oldId));
-        mockMvc.perform(get("/api/v1/recipes").param("sort", "TRENDING"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "TRENDING"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(recentId));
     }
@@ -125,14 +128,14 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
     @Test
     void futurePublishedAtDoesNotCauseInvalidTrendingPowerCalculation() throws Exception {
         LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), java.time.ZoneOffset.UTC);
-        long futureId = insertRecipe("Canh chua hẹn giờ", "Bài có thời điểm công khai tương lai", "PUBLISHED",
+        long futureId = insertRecipe("Issue3-browse-token Canh chua hẹn giờ", "Bài có thời điểm công khai tương lai", "PUBLISHED",
                 now.plusHours(4));
 
-        mockMvc.perform(get("/api/v1/recipes"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(futureId));
 
-        mockMvc.perform(get("/api/v1/recipes").param("sort", "TRENDING"))
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "TRENDING"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(recentId));
     }
