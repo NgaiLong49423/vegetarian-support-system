@@ -89,6 +89,7 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     const filteredRequest = await filteredRequestPromise;
     const requestUrl = new URL(filteredRequest.url());
     expect(new Set(requestUrl.searchParams.getAll('ingredientIds'))).toEqual(new Set([String(ingredientAId), String(ingredientBId)]));
+    expect(requestUrl.searchParams.get('sort')).toBe('NEWEST');
     const filteredResponse = await filteredRequest.response();
     if (!filteredResponse) throw new Error('Recipe search request failed before Backend returned a response.');
     expect(filteredResponse.ok()).toBeTruthy();
@@ -103,7 +104,7 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     await expect(page.getByRole('link', { name: new RegExp(recipeAOnly) })).toHaveCount(0);
     await expect(page.getByRole('link', { name: new RegExp(recipeBOnly) })).toHaveCount(0);
 
-    for (const sort of ['NEWEST', 'MOST_LIKED', 'MOST_VIEWED', 'MOST_COMMENTED', 'MOST_ACTIVE', 'TRENDING']) {
+    for (const sort of ['MOST_LIKED', 'MOST_VIEWED', 'MOST_COMMENTED', 'MOST_ACTIVE', 'TRENDING']) {
       const sortResponsePromise = page.waitForResponse((response) => {
         const url = new URL(response.url());
         return response.request().method() === 'GET' && url.origin + url.pathname === `${frontendBaseUrl}/api/v1/recipes`
