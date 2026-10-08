@@ -69,7 +69,7 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
 
     const formOptionsResponsePromise = page.waitForResponse((response) => {
       const url = new URL(response.url());
-      return response.request().method() === 'GET' && url.origin + url.pathname === `${frontendBaseUrl}/api/v1/recipes/form-options`;
+      return response.request().method() === 'GET' && url.pathname === '/api/v1/recipes/form-options';
     });
     await page.goto('/kham-pha');
     expect((await formOptionsResponsePromise).ok()).toBeTruthy();
@@ -81,19 +81,20 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     await page.getByRole('textbox', { name: 'Nguyên liệu (kết quả phải có đủ nguyên liệu đã chọn)' }).fill(ingredientAName);
     await page.getByRole('checkbox', { name: ingredientAName }).check();
     await page.getByRole('textbox', { name: 'Nguyên liệu (kết quả phải có đủ nguyên liệu đã chọn)' }).fill(ingredientBName);
-    const filteredResponsePromise = page.waitForResponse((response) => {
-      const url = new URL(response.url());
-      return response.request().method() === 'GET' && url.origin + url.pathname === `${frontendBaseUrl}/api/v1/recipes`
-        && url.searchParams.getAll('ingredientIds').length === 2;
+    const filteredRequestPromise = page.waitForRequest((request) => {
+      const url = new URL(request.url());
+      return request.method() === 'GET' && url.pathname === '/api/v1/recipes';
     });
     await page.getByRole('checkbox', { name: ingredientBName }).check();
-    const filteredResponse = await filteredResponsePromise;
+    const filteredRequest = await filteredRequestPromise;
+    const requestUrl = new URL(filteredRequest.url());
+    expect(new Set(requestUrl.searchParams.getAll('ingredientIds'))).toEqual(new Set([String(ingredientAId), String(ingredientBId)]));
+    const filteredResponse = await filteredRequest.response();
+    if (!filteredResponse) throw new Error('Recipe search request failed before Backend returned a response.');
     expect(filteredResponse.ok()).toBeTruthy();
-    const requestUrl = new URL(filteredResponse.url());
     expect(requestUrl.searchParams.get('vegetarianType')).toBe('VEGAN');
     expect(requestUrl.searchParams.get('dishCategory')).toBe('SOUP');
     expect(requestUrl.searchParams.get('maxTotalTimeMinutes')).toBe('30');
-    expect(new Set(requestUrl.searchParams.getAll('ingredientIds'))).toEqual(new Set([String(ingredientAId), String(ingredientBId)]));
     const payload = await filteredResponse.json() as { items: Array<{ id: number; title: string }>; totalElements: number };
     expect(payload.totalElements).toBe(1);
     expect(payload.items).toHaveLength(1);

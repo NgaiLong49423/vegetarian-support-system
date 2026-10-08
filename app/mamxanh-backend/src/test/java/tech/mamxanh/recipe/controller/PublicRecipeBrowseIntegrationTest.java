@@ -173,12 +173,14 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("vegetarianType", "VEGAN"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
-                .andExpect(jsonPath("$.items[*].id", org.hamcrest.Matchers.containsInAnyOrder(bothIngredients, onlyIngredientA)));
+                .andExpect(jsonPath("$.items[*].id", org.hamcrest.Matchers.containsInAnyOrder(
+                        Math.toIntExact(bothIngredients), Math.toIntExact(onlyIngredientA))));
         mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("dishCategory", "SOUP"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2));
         mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("maxTotalTimeMinutes", "15"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
-                .andExpect(jsonPath("$.items[*].id", org.hamcrest.Matchers.containsInAnyOrder(bothIngredients, onlyIngredientB)));
+                .andExpect(jsonPath("$.items[*].id", org.hamcrest.Matchers.containsInAnyOrder(
+                        Math.toIntExact(bothIngredients), Math.toIntExact(onlyIngredientB))));
         mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword)
                         .param("ingredientIds", Long.toString(ingredientAId), Long.toString(ingredientBId)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
