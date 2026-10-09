@@ -236,7 +236,7 @@ function CreateRecipeForm() {
         setFieldErrors(Object.fromEntries(error.errors.map((item) => [item.field, item.message])));
       }
       if (error instanceof ApiError && error.status === 401) {
-        setSubmitError('Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại bằng tài khoản Chuyên gia.');
+        setSubmitError('Phiên đăng nhập không còn hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại bằng tài khoản Chuyên gia.');
       } else if (error instanceof ApiError && error.status === 403) {
         setSubmitError('Chỉ Chuyên gia đang hoạt động mới được đăng công thức.');
       } else {

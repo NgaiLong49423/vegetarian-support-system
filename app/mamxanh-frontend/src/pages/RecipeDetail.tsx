@@ -11,6 +11,7 @@ import {
   Eye,
   Flame,
   Flag,
+  Heart,
   Leaf,
   LoaderCircle,
   Lock,
@@ -331,22 +332,19 @@ function MockRecipeDetail() {
               <Flag className="h-5 w-5" />
               <span className="hidden sm:inline">Báo cáo</span>
             </button>
-            <div
-              className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-all ${
-                saved
-                  ? 'border-rose-200 bg-rose-50/70 shadow-2xs'
-                  : 'border-brand-200 bg-white hover:border-brand-300'
-              }`}
-              title={saved ? 'Bỏ lưu' : 'Lưu'}
-            >
-              <HeartCheckbox
-                checked={saved}
+            <button
+                type="button"
                 onClick={handleToggleSave}
-                size={36}
+                className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${
+                    saved
+                        ? 'border-brand-600 bg-brand-600 text-white'
+                        : 'border-brand-200 bg-white text-ink-soft hover:border-brand-300'
+                }`}
                 aria-label={saved ? 'Bỏ lưu' : 'Lưu'}
                 title={saved ? 'Bỏ lưu' : 'Lưu'}
-              />
-            </div>
+            >
+              <Heart className={`h-5 w-5 ${saved ? 'fill-current text-white' : ''}`} />
+            </button>
             <button className="flex h-11 w-11 items-center justify-center rounded-xl border border-brand-200 bg-white text-ink-soft transition-colors hover:border-brand-300">
               <Share2 className="h-5 w-5" />
             </button>

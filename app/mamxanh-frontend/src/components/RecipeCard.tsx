@@ -6,6 +6,7 @@ import {
   Clock,
   Eye,
   Flame,
+  Heart,
   Lock,
   ThumbsUp,
   Users,
@@ -85,16 +86,20 @@ export function RecipeCard({ recipe }: { recipe: Recipe }) {
             </Badge>
           </div>
 
-          {/* Nút Lưu / Yêu thích — góc trên phải */}
-          <div className="absolute right-2.5 top-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-all hover:scale-105 hover:bg-white">
-            <HeartCheckbox
-              checked={saved}
+          {/* Nút Lưu — góc trên phải */}
+          <button
+              type="button"
               onClick={handleToggleSave}
-              size={32}
+              className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full shadow-sm backdrop-blur transition-all hover:scale-105 ${
+                  saved
+                      ? 'bg-brand-600 text-white'
+                      : 'bg-white/90 text-ink-soft hover:text-brand-600'
+              }`}
               aria-label={saved ? 'Bỏ lưu công thức' : 'Lưu công thức'}
               title={saved ? 'Bỏ lưu' : 'Lưu công thức'}
-            />
-          </div>
+          >
+            <Heart className={`h-[18px] w-[18px] ${saved ? 'fill-current text-white' : ''}`} />
+          </button>
         </div>
 
         <div className="flex flex-1 flex-col p-4">

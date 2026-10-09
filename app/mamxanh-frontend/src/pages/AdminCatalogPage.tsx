@@ -260,7 +260,7 @@ export function AdminCatalogPage() {
     void perform(
       () => adminCatalogApi.setIngredientActive(item.id, !item.active),
       item.active
-        ? 'Đã ngừng sử dụng nguyên liệu, các liên kết cũ vẫn được giữ nguyên.'
+        ? 'Đã ngừng sử dụng nguyên liệu; liên kết cũ được giữ nguyên.'
         : 'Đã bật lại nguyên liệu.',
     );
 
@@ -268,7 +268,7 @@ export function AdminCatalogPage() {
     void perform(
       () => adminCatalogApi.setUnitActive(item.id, !item.active),
       item.active
-        ? 'Đã ngừng sử dụng đơn vị, các liên kết cũ vẫn được giữ nguyên.'
+        ? 'Đã ngừng sử dụng đơn vị; liên kết cũ được giữ nguyên.'
         : 'Đã bật lại đơn vị.',
     );
 

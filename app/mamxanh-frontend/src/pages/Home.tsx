@@ -239,7 +239,7 @@ export function Home() {
                 </Link>;
               })}
             </div>
-            {featured.length === 0 && <p className="text-sm text-ink-muted">Đang cập nhật các công thức nổi bật.</p>}
+            {featured.length === 0 && <p className="text-sm text-ink-muted">Backend chưa có công thức công khai hoặc chưa thể kết nối.</p>}
             <div className="mt-8 flex justify-center">
               <Button variant="outline" size="lg" onClick={() => navigate('/kham-pha')}>
                 Khám phá công thức

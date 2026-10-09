@@ -124,7 +124,7 @@ export function Profile() {
             {saved.map((r) => <RecipeCard key={r.id} recipe={r} />)}
           </div>
         ) : (
-          <EmptyState icon="🔖" title="Chưa có công thức đã lưu" description="Lưu lại các món ăn yêu thích để dễ dàng nấu lại bất cứ lúc nào." />
+          <EmptyState icon="🔖" title="Chức năng lưu đang ở chế độ demo UI" description="API lưu công thức chưa được kết nối trong phiên bản này." />
         )
       )}
 

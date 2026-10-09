@@ -396,10 +396,10 @@ export function AppHeader() {
         <header className="sticky top-0 z-30 border-b-2 border-brand-300/85 bg-cream/90 backdrop-blur-md shadow-2xs">
           <div className="mx-auto flex h-16 max-w-screen-2xl items-center gap-3 px-4 sm:px-6 lg:px-8">
             {/* Hamburger & Logo */}
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setDrawerOpen(true)}
-                className="menu-btn-animated group relative flex h-11 items-center gap-2.5 rounded-xl border border-brand-200/80 bg-white/85 px-3.5 text-ink-soft shadow-2xs backdrop-blur-xs transition-all hover:border-brand-300 hover:bg-brand-50/90 hover:text-brand-700 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                className="menu-btn-animated group relative flex h-10 sm:h-11 items-center justify-center sm:justify-start gap-2 sm:gap-2.5 rounded-xl border border-brand-200/80 bg-white/85 px-2.5 sm:px-3.5 text-ink-soft shadow-2xs backdrop-blur-xs transition-all hover:border-brand-300 hover:bg-brand-50/90 hover:text-brand-700 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                 aria-label="Menu"
               >
                 <div className="flex h-4.5 w-5 flex-col items-start justify-center gap-1 overflow-hidden" aria-hidden="true">
@@ -407,7 +407,7 @@ export function AppHeader() {
                   <span className="menu-btn-line block h-0.5 w-3.5 rounded-full bg-current group-hover:w-5 group-hover:translate-x-1" />
                   <span className="menu-btn-line block h-0.5 w-4.5 rounded-full bg-current group-hover:w-5 group-hover:translate-x-0.5" />
                 </div>
-                <span className="text-xs font-bold tracking-wide uppercase text-ink-soft group-hover:text-brand-700 transition-colors">
+                <span className="hidden sm:inline text-xs font-bold tracking-wide uppercase text-ink-soft group-hover:text-brand-700 transition-colors">
                   Menu
                 </span>
               </button>
