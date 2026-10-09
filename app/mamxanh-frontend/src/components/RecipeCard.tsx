@@ -15,7 +15,6 @@ import type { Recipe } from '../types';
 import { Badge } from './ui';
 import { isSaved, toggleSaved, subscribeSaved } from '../lib/savedRecipes';
 import { useAuth } from './AuthContext';
-import { HeartCheckbox } from './HeartCheckbox';
 
 export function RecipeCard({ recipe }: { recipe: Recipe }) {
   const [saved, setSaved] = useState(false);

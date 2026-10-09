@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BadgeCheck, Bookmark, Check, ChevronRight, Clock, MessageCircle, Share2, Star } from 'lucide-react';
+import { BadgeCheck, Bookmark, Check, ChevronRight, Clock, Heart, MessageCircle, Share2, Star } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { PostCard } from '../components/PostCard';
 import { Badge, Button, SectionHeading } from '../components/ui';
-import { HeartCheckbox } from '../components/HeartCheckbox';
 import { posts } from '../data/mockData';
 
 export function PostDetail() {
@@ -55,22 +54,12 @@ export function PostDetail() {
         </div>
 
         <div className="mt-8 flex items-center gap-3 rounded-2xl border border-brand-100 bg-white p-3">
-          <div
+          <button
             onClick={() => setLiked((v) => !v)}
-            className={`flex cursor-pointer select-none items-center gap-2 rounded-xl border px-3.5 py-1.5 text-sm font-semibold transition-all ${
-              liked
-                ? 'border-rose-200 bg-rose-50/80 text-rose-700 shadow-2xs'
-                : 'border-brand-200 bg-white text-ink-soft hover:border-brand-300 hover:bg-brand-50/60'
-            }`}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${liked ? 'bg-brand-600 text-white' : 'bg-brand-100 text-brand-700 hover:bg-brand-200'}`}
           >
-            <HeartCheckbox
-              checked={liked}
-              size={28}
-              aria-label={liked ? 'Bỏ thích bài viết' : 'Thích bài viết'}
-              title={liked ? 'Bỏ thích' : 'Thích bài viết'}
-            />
-            <span>{post.likes + (liked ? 1 : 0)}</span>
-          </div>
+            <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} /> {post.likes + (liked ? 1 : 0)}
+          </button>
           <span className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-ink-soft">
             <MessageCircle className="h-4 w-4" /> {post.comments} bình luận
           </span>

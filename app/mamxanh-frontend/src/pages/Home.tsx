@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { PostCard } from '../components/PostCard';
-import { AiButton, Badge, BorderGlow, Button, Pattern, RippleDistortion, SectionHeading } from '../components/ui';
+import { AiButton, Badge, BorderGlow, Button, Pattern, SectionHeading } from '../components/ui';
 import { categories, posts } from '../data/mockData';
 import { apiClient } from '../lib/apiClient';
 import type { RecipePost } from '../api/recipes';
@@ -41,26 +41,13 @@ export function Home() {
 
   return (
     <>
-      {/* Hero with interactive water ripple distortion */}
+      {/* Hero with soft atmospheric background */}
       <section className="relative overflow-hidden border-b-2 border-brand-300/85 bg-stone-900 shadow-sm">
-        {/* Full-width Ripple Distortion Water Background */}
-        <div className="absolute inset-0 z-0">
-          <RippleDistortion
-            src="/hero-art.jpg"
-            brushSize={110}
-            strength={0.22}
-            swirl={1}
-            rings={4}
-            grayscale={false}
-            spread={3}
-            fade={3}
-            spacing={12}
-            tint="#16a34a"
-            tintAmount={0.04}
-            trigger="both"
-            quality="medium"
-          />
-        </div>
+        {/* Full-width Hero Art Background */}
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center opacity-40"
+          style={{ backgroundImage: "url('/hero-art.jpg')" }}
+        />
 
         {/* Soft atmospheric overlay for crystal clear text readability */}
         <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-white/75 via-white/65 to-white/90" />

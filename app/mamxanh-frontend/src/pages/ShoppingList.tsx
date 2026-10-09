@@ -10,8 +10,6 @@ import {
   X,
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
-import { BinButton } from '../components/BinButton';
-import SpringCheck from '../components/SpringCheck';
 import { Badge, Button, ProgressBar } from '../components/ui';
 import { shoppingList as initialList, nutritionTargets } from '../data/mockData';
 import type { ShoppingListItem } from '../types';
