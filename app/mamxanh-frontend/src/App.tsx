@@ -24,6 +24,7 @@ import { RecipeComparePage } from './pages/RecipeCompare';
 import { EditRecipe } from './pages/EditRecipe';
 import { ApiRecipeDetail } from './pages/ApiRecipeDetail';
 import { ExpertRecipeProfile } from './pages/ExpertRecipeProfile';
+import { ClickSpark } from './components/ClickSpark';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -37,7 +38,8 @@ export default function App() {
   return (
     <BrowserRouter><AuthProvider>
       <ScrollToTop />
-      <Layout>
+      <ClickSpark sparkColor="#ea580c" sparkSize={11} sparkRadius={20} sparkCount={8} duration={420}>
+        <Layout>
         <Routes>
           <Route path="/dang-nhap" element={<AuthPage key="login" mode="login" />} />
           <Route path="/dang-ky" element={<AuthPage key="register" mode="register" />} />
@@ -69,6 +71,7 @@ export default function App() {
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>
+      </ClickSpark>
     </AuthProvider></BrowserRouter>
   );
 }

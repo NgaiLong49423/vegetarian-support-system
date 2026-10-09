@@ -6,7 +6,6 @@ import {
   Clock,
   Eye,
   Flame,
-  Heart,
   Lock,
   ThumbsUp,
   Users,
@@ -15,6 +14,7 @@ import type { Recipe } from '../types';
 import { Badge } from './ui';
 import { isSaved, toggleSaved, subscribeSaved } from '../lib/savedRecipes';
 import { useAuth } from './AuthContext';
+import { HeartCheckbox } from './HeartCheckbox';
 
 export function RecipeCard({ recipe }: { recipe: Recipe }) {
   const [saved, setSaved] = useState(false);
@@ -85,19 +85,16 @@ export function RecipeCard({ recipe }: { recipe: Recipe }) {
             </Badge>
           </div>
 
-          {/* Nút Lưu — góc trên phải */}
-          <button
+          {/* Nút Lưu / Yêu thích — góc trên phải */}
+          <div className="absolute right-2.5 top-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-all hover:scale-105 hover:bg-white">
+            <HeartCheckbox
+              checked={saved}
               onClick={handleToggleSave}
-              className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full shadow-sm backdrop-blur transition-colors ${
-                  saved
-                      ? 'bg-brand-600 text-white'
-                      : 'bg-white/90 text-ink-soft hover:text-brand-600'
-              }`}
+              size={32}
               aria-label={saved ? 'Bỏ lưu công thức' : 'Lưu công thức'}
               title={saved ? 'Bỏ lưu' : 'Lưu công thức'}
-          >
-            <Heart className={`h-[18px] w-[18px] ${saved ? 'fill-current' : ''}`} />
-          </button>
+            />
+          </div>
         </div>
 
         <div className="flex flex-1 flex-col p-4">
@@ -147,7 +144,7 @@ export function RecipeCard({ recipe }: { recipe: Recipe }) {
                       ? 'bg-leaf-100 text-leaf-700'
                       : 'bg-brand-50 text-brand-700 hover:bg-brand-100'
               }`}
-              title="Thêm món vào lịch ăn tuần (FR-09 / AC-17.4)"
+              title="Thêm món vào lịch ăn tuần"
           >
             {addedToPlan ? (
                 <>

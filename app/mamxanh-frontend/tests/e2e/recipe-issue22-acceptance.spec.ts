@@ -355,14 +355,14 @@ test('Issue 22: 0 ảnh được đăng; giới hạn tối đa 5 và yêu cầu
   await expect(page.getByRole('alert')).toContainText('hãy chọn đúng 1 ảnh bìa');
   await action(page, 'Chọn cover cho ảnh', () => page.getByLabel('Chọn cover.png làm ảnh cover').check());
   await action(page, 'Thử đăng ảnh đã có cover', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByRole('alert')).toContainText('Upload ảnh thuộc FR-14');
+  await expect(page.getByRole('alert')).toContainText('đang được hoàn thiện');
   await action(page, 'Chọn sáu ảnh để kiểm tra giới hạn', () => chooser.setInputFiles(Array.from({ length: 6 }, (_, index) => ({ name: `photo-${index + 1}.png`, mimeType: 'image/png', buffer: Buffer.from(`photo-${index + 1}`) }))));
   await action(page, 'Thử xuất bản quá năm ảnh', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
   await expect(page.getByRole('alert')).toContainText('tối đa 5 ảnh');
   await action(page, 'Chọn đúng năm ảnh', () => chooser.setInputFiles(Array.from({ length: 5 }, (_, index) => ({ name: `five-${index + 1}.png`, mimeType: 'image/png', buffer: Buffer.from(`five-${index + 1}`) }))));
   await action(page, 'Chọn một cover trong năm ảnh', () => page.getByLabel('Chọn five-1.png làm ảnh cover').check());
   await action(page, 'Xác nhận năm ảnh và một cover qua validation của form', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByRole('alert')).toContainText('Upload ảnh thuộc FR-14');
+  await expect(page.getByRole('alert')).toContainText('đang được hoàn thiện');
   await action(page, 'Bỏ các ảnh đã chọn', () => chooser.setInputFiles([]));
   await action(page, 'Để trống ảnh và xuất bản', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
   await expect(page).toHaveURL(/\/cong-thuc\/2203$/);

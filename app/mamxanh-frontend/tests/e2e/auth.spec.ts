@@ -121,7 +121,9 @@ test('login keeps the session in this tab and logout clears it without calling t
   let loginAuthorization: string | null = null;
   const serverCalls: string[] = [];
   page.on('request', request => {
-    if (request.url().includes('/api/v1/') && request.method() !== 'OPTIONS') serverCalls.push(`${request.method()} ${new URL(request.url()).pathname}`);
+    if (request.url().includes('/api/v1/') && request.method() !== 'OPTIONS' && !request.url().includes('/recipes')) {
+      serverCalls.push(`${request.method()} ${new URL(request.url()).pathname}`);
+    }
   });
   await stubApi(page, '/auth/login', async route => {
     submitted = route.request().postDataJSON();

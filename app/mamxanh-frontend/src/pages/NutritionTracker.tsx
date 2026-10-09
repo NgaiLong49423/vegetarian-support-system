@@ -76,7 +76,7 @@ export function NutritionTracker() {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-[0.15em] text-brand-600">Dinh dưỡng tham khảo</span>
-            <Badge tone="leaf">FR-37</Badge>
+            <Badge tone="leaf">Khoa học</Badge>
           </div>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Theo dõi Dinh dưỡng Thực đơn</h1>
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">
@@ -110,7 +110,7 @@ export function NutritionTracker() {
       <div className="mb-6 flex items-start gap-3 rounded-2xl border border-leaf-200 bg-leaf-50/60 p-4 text-xs leading-relaxed text-ink-soft">
         <Info className="h-4 w-4 shrink-0 text-leaf-600 mt-0.5" />
         <div>
-          <strong className="text-leaf-800">Tuyên bố miễn trừ y tế (BR-08 / FR-37):</strong>
+          <strong className="text-leaf-800">Lưu ý về dinh dưỡng:</strong>
           <p className="mt-0.5 text-ink-muted">
             Thông tin chỉ mang tính tham khảo, không phải theo dõi sức khỏe lâm sàng, không có giá trị pháp lý/y tế và không thay thế chuyên gia y tế. Mâm Xanh không cung cấp Health Score, không đưa ra chẩn đoán hay phác đồ điều trị bệnh.
           </p>
@@ -207,8 +207,8 @@ export function NutritionTracker() {
         ))}
       </div>
 
-      {/* MODAL PHÂN TÍCH TỔNG THỂ (FR-37) */}
-      <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="Phân tích dinh dưỡng tổng thể (FR-37)" size="lg">
+      {/* MODAL PHÂN TÍCH TỔNG THỂ */}
+      <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="Phân tích dinh dưỡng tổng thể" size="lg">
         <div className="space-y-5">
           {/* Header row in modal */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-100 pb-3">
@@ -312,7 +312,7 @@ export function NutritionTracker() {
               {/* PDF note and disclaimer */}
               <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-3 text-xs text-ink-muted leading-relaxed">
                 <p>
-                  <strong>Lưu ý:</strong> Dữ liệu mỗi món được tính theo khẩu phần dự định. Không tạo Health Score, nhãn "lành mạnh/không lành mạnh" hoặc lời khuyên điều trị theo quy định của FR-37.
+                  <strong>Lưu ý:</strong> Dữ liệu mỗi món được tính theo khẩu phần dự định, không tạo điểm đánh giá sức khỏe hay lời khuyên y tế nhằm đảm bảo tính khách quan và khoa học.
                 </p>
               </div>
 

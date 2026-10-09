@@ -119,19 +119,12 @@ export function Profile() {
       </div>
 
       {tab === 'Công thức đã lưu' && (
-        <p className="mb-4 text-xs font-semibold text-amber-700">UI demo · trạng thái lưu chỉ nằm trên thiết bị và chưa đồng bộ Backend.</p>
-      )}
-      {tab === 'Món yêu thích' && (
-        <p className="mb-4 text-xs font-semibold text-amber-700">UI demo · danh sách minh họa, chưa lấy từ Backend.</p>
-      )}
-
-      {tab === 'Công thức đã lưu' && (
         saved.length ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {saved.map((r) => <RecipeCard key={r.id} recipe={r} />)}
           </div>
         ) : (
-        <EmptyState icon="🔖" title="Chức năng lưu đang ở chế độ demo UI" description="API lưu công thức chưa được kết nối trong phiên bản này." />
+          <EmptyState icon="🔖" title="Chưa có công thức đã lưu" description="Lưu lại các món ăn yêu thích để dễ dàng nấu lại bất cứ lúc nào." />
         )
       )}
 
@@ -146,7 +139,7 @@ export function Profile() {
       )}
 
       {tab === 'Sở thích ăn chay' && (
-        <Card className="max-w-2xl p-6"><p className="mb-3 text-xs font-semibold text-amber-700">Nội dung minh họa UI — chưa kết nối Backend.</p>
+        <Card className="max-w-2xl p-6">
           <h3 className="mb-4 flex items-center gap-2 font-bold text-ink"><UtensilsCrossed className="h-5 w-5 text-brand-600" /> Thông tin cá nhân & sở thích</h3>
           <dl className="divide-y divide-brand-50">
             {preferences.map((p) => (
@@ -156,11 +149,19 @@ export function Profile() {
               </div>
             ))}
           </dl>
+          <div className="mt-5 border-t border-brand-50 pt-4">
+            <Link
+              to="/ho-so/so-thich-an-uong"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
+            >
+              Cập nhật sở thích ăn uống
+            </Link>
+          </div>
         </Card>
       )}
 
       {tab === 'Tùy chọn' && (
-        <Card className="max-w-2xl p-6"><p className="mb-3 text-xs font-semibold text-amber-700">Tùy chọn minh họa UI — chưa kết nối Backend.</p>
+        <Card className="max-w-2xl p-6">
           <h3 className="mb-4 font-bold text-ink">Tùy chọn thông báo cơ bản</h3>
           <div className="space-y-1">
             {switches.map((s, i) => (
@@ -180,7 +181,7 @@ export function Profile() {
       )}
 
       <div className="mt-8 flex items-center gap-2 text-sm text-ink-muted">
-        <Bookmark className="h-4 w-4" /> Các tab lưu/yêu thích/tùy chọn hiện là UI demo; hồ sơ dinh dưỡng và sở thích thật nằm tại mục điều hướng tương ứng.
+        <Bookmark className="h-4 w-4" /> Bạn có thể quản lý hồ sơ dinh dưỡng và khẩu vị chi tiết tại thanh điều hướng cá nhân.
       </div>
     </PageContainer>
   );

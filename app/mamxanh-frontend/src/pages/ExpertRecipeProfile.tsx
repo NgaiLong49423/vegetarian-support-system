@@ -113,7 +113,7 @@ export function ExpertRecipeProfile() {
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
         <h2 className="text-xl font-extrabold text-ink">Công thức của tôi</h2>
-        <p className="mt-1 text-sm text-ink-muted">Bài bị Admin ẩn vẫn nằm trong danh sách để bạn xem; không thể sửa hoặc tự công khai lại.</p>
+        <p className="mt-1 text-sm text-ink-muted">Bài viết bị tạm ẩn vẫn nằm trong danh sách để bạn xem, vui lòng liên hệ Ban quản trị để được hỗ trợ mở lại.</p>
       </div>
       <span className="rounded-full bg-brand-50 px-3 py-1 text-sm font-semibold text-brand-700">{recipes.length} bài</span>
     </div>
@@ -137,7 +137,7 @@ export function ExpertRecipeProfile() {
                 <span className="rounded-full bg-brand-50 px-2.5 py-1 text-brand-700">{recipe.vegetarianType}</span>
                 <span className={`rounded-full px-2.5 py-1 ${hidden ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'}`}>{recipeStatus(recipe.status)}</span>
               </div>
-              {hidden && <p className="mt-2 text-sm text-amber-900">Admin đã ẩn bài. Bạn có thể xem nội dung nhưng không thể sửa; hãy liên hệ Admin để được phục hồi.</p>}
+              {hidden && <p className="mt-2 text-sm text-amber-900">Bài viết đang ở trạng thái tạm ẩn, bạn có thể xem lại nội dung và liên hệ Ban quản trị khi cần hỗ trợ mở lại.</p>}
               <details className="mt-3 text-sm">
                 <summary className="cursor-pointer font-semibold text-brand-700">Xem nội dung bài</summary>
                 <div className="mt-3 space-y-2 rounded-xl bg-brand-50/60 p-4 text-ink-soft">
