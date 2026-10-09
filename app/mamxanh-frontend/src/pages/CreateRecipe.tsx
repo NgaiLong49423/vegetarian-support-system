@@ -7,7 +7,6 @@ import { useAuth } from '../components/AuthContext';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { validateYouTubeUrl } from '../utils/youtube';
 import { Button, Card } from '../components/ui';
-import { BinButton } from '../components/BinButton';
 import type { UserRole } from '../types';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -269,14 +268,8 @@ function CreateRecipeForm() {
             {ingredients.map((row, index) => (
               <div key={row.key} className="rounded-xl border border-brand-100 p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  {ingredients.length > 1 && (
-                    <BinButton
-                      size={26}
-                      onClick={() => setIngredients((current) => current.filter((item) => item.key !== row.key))}
-                      title={`Xóa nguyên liệu ${index + 1}`}
-                      aria-label={`Xóa nguyên liệu ${index + 1}`}
-                    />
-                  )}
+                  <span className="text-xs font-bold uppercase tracking-wide text-brand-700">Nguyên liệu {index + 1}</span>
+                  {ingredients.length > 1 && <button type="button" onClick={() => setIngredients((current) => current.filter((item) => item.key !== row.key))} className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-red-700" aria-label={`Xóa nguyên liệu ${index + 1}`}><Trash2 className="h-4 w-4" /></button>}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px_180px]">
                   <IngredientPicker

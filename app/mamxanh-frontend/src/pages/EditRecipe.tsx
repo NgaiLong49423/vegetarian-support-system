@@ -3,7 +3,6 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, ImagePlus, LoaderCircle, Save, Trash2 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
-import { BinButton } from '../components/BinButton';
 import { Button, Card } from '../components/ui';
 import { ApiError, asApiError } from '../lib/apiClient';
 import { recipeApi, type RecipePost, type RecipeReferenceData, type UpdateRecipePost } from '../api/recipes';
@@ -158,9 +157,7 @@ export function EditRecipe() {
             <label className="text-xs font-medium text-ink-muted">Nguyên liệu<select className={input} value={ingredient.ingredientId} onChange={(e) => { const chosen = references.ingredients.find((item) => item.ingredientId === Number(e.target.value)); if (chosen) setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, ingredientId: chosen.ingredientId, unitId: chosen.unitId } : item)); }}>{!matchingOptions.length && currentIngredient && <option value={ingredient.ingredientId}>{currentIngredient.name} (hiện không hỗ trợ)</option>}{[...new Map(references.ingredients.map((item) => [item.ingredientId, item])).values()].map((item) => <option key={item.ingredientId} value={item.ingredientId}>{item.name}</option>)}</select>{!matchingOptions.length && <span className="mt-1 block text-xs text-amber-800">Nguyên liệu này hiện không được hỗ trợ.</span>}</label>
             <label className="text-xs font-medium text-ink-muted">Số lượng<input className={input} type="number" min="0.01" step="0.01" required value={ingredient.quantity} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, quantity: Number(e.target.value) } : item))} /></label>
             <label className="text-xs font-medium text-ink-muted">Đơn vị<select className={input} value={ingredient.unitId} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, unitId: Number(e.target.value) } : item))}>{allowedUnits.map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code})</option>)}</select></label>
-            <div className="flex pb-0.5 sm:justify-center">
-              <BinButton size={28} disabled={form.ingredients.length === 1} aria-label="Xóa nguyên liệu" title="Xóa nguyên liệu" onClick={() => setField('ingredients', form.ingredients.filter((_, i) => i !== index))} />
-            </div>
+            <Button type="button" variant="ghost" size="sm" disabled={form.ingredients.length === 1} aria-label="Xóa nguyên liệu" onClick={() => setField('ingredients', form.ingredients.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4 text-red-600" /></Button>
           </div>; })}</div>
           <button type="button" disabled={!references.ingredients.length} className="mt-4 text-sm font-semibold text-brand-700 disabled:cursor-not-allowed disabled:text-ink-muted" onClick={() => { const first = references.ingredients[0]; if (first) setField('ingredients', [...form.ingredients, { ingredientId: first.ingredientId, unitId: first.unitId, quantity: 1 }]); }}>+ Thêm dòng nguyên liệu</button>
           {fieldError('ingredients')}

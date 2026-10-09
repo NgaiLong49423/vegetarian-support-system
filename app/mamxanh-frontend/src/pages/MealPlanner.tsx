@@ -16,7 +16,6 @@ import {
   Trash2,
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
-import { BinButton } from '../components/BinButton';
 import { AiButton, Badge, Button } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { weekPlan as initialPlan, recipes } from '../data/mockData';
@@ -167,12 +166,9 @@ export function MealPlanner() {
                         <button onClick={() => setPicker({ dayIdx, slot })} title="Đổi món" className="flex h-6 w-6 items-center justify-center rounded-md text-ink-muted hover:bg-white hover:text-brand-600">
                           <RefreshCw className="h-3.5 w-3.5" />
                         </button>
-                        <BinButton
-                          size={24}
-                          onClick={() => removeMeal(dayIdx, slot)}
-                          title="Xoá món"
-                          aria-label="Xoá món khỏi thực đơn"
-                        />
+                        <button onClick={() => removeMeal(dayIdx, slot)} title="Xoá món" className="flex h-6 w-6 items-center justify-center rounded-md text-ink-muted hover:bg-white hover:text-red-500">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                         </div>
                       </div>
                       <label className="mt-2 flex items-center justify-between border-t border-brand-100 pt-2 text-xs text-ink-muted">
