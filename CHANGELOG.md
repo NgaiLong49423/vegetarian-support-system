@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-10 — Add Google Login and Account Linking (Issue #8)
+## 2026-10-10 — Add Google Login and Account Linking (Issue #8) ([PR #111](https://github.com/NgaiLong49423/vegetarian-support-system/pull/111))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `519ecbb`.
 
 **Scope:** Implement UC-03.5 so members can sign in with Google Identity Services, following decisions Q25, Q26 and Q39–Q42.
 
