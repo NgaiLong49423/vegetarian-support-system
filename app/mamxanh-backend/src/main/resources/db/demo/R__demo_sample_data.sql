@@ -7,7 +7,7 @@ BEGIN TRANSACTION;
 IF NOT EXISTS (SELECT 1 FROM [USER] WHERE email = 'demo-expert@mamxanh.local')
 BEGIN
     INSERT INTO [USER] (email, password_hash, display_name, role, email_verified)
-    VALUES ('demo-expert@mamxanh.local', NULL, N'Chuyên gia mẫu', 'EXPERT', 0);
+    VALUES ('demo-expert@mamxanh.local', NULL, N'Nguyễn Tuệ Tâm', 'EXPERT', 0);
 END;
 
 DECLARE @author_id BIGINT;
@@ -113,18 +113,18 @@ IF NOT EXISTS (SELECT 1 FROM [RECIPE_INGREDIENT] WHERE recipe_id = @spinach_reci
 IF NOT EXISTS (SELECT 1 FROM [USER] WHERE email = 'demo-customer@mamxanh.local')
 BEGIN
     INSERT INTO [USER] (email, password_hash, display_name, role, email_verified)
-    VALUES ('demo-customer@mamxanh.local', NULL, N'Khách hàng mẫu', 'CUSTOMER', 0);
+    VALUES ('demo-customer@mamxanh.local', NULL, N'Nguyễn Minh An', 'CUSTOMER', 0);
 END;
 
 IF NOT EXISTS (SELECT 1 FROM [USER] WHERE email = 'demo-new-member@mamxanh.local')
     INSERT INTO [USER] (email, display_name, role, email_verified)
-    VALUES ('demo-new-member@mamxanh.local', N'Thành viên mới', 'CUSTOMER', 1);
+    VALUES ('demo-new-member@mamxanh.local', N'Trần Mai Anh', 'CUSTOMER', 1);
 IF NOT EXISTS (SELECT 1 FROM [USER] WHERE email = 'demo-applicant@mamxanh.local')
     INSERT INTO [USER] (email, display_name, role, email_verified)
-    VALUES ('demo-applicant@mamxanh.local', N'Ứng viên Chuyên gia', 'CUSTOMER', 1);
+    VALUES ('demo-applicant@mamxanh.local', N'Lê Thanh Sơn', 'CUSTOMER', 1);
 IF NOT EXISTS (SELECT 1 FROM [USER] WHERE email = 'demo-admin@mamxanh.local')
     INSERT INTO [USER] (email, display_name, role, email_verified)
-    VALUES ('demo-admin@mamxanh.local', N'Quản trị viên mẫu', 'ADMIN', 1);
+    VALUES ('demo-admin@mamxanh.local', N'Lê Hoàng Nam', 'ADMIN', 1);
 
 UPDATE [USER]
 SET email_verified = 1, account_status = 'ACTIVE', updated_at = SYSUTCDATETIME()
