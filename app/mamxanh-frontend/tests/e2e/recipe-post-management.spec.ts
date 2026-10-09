@@ -135,7 +135,7 @@ test('expert edits recipe, saves, and sees success on the expert profile', async
   await page.getByRole('button', { name: 'Lưu thay đổi' }).first().click();
 
   await expect(page).toHaveURL(/\/ho-so\/chuyen-gia$/);
-  await expect(page.getByRole('status')).toContainText('Lưu thay đổi thành công');
+  await expect(page.getByRole('status').filter({ hasText: 'Lưu thay đổi thành công' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Nấm kho tiêu xanh' })).toBeVisible();
   expect(savedPayload?.title).toBe('Nấm kho tiêu xanh');
   expect(savedPayload?.instructions).toBe('Kho nấm với nước dừa và tiêu xanh trong 20 phút.');
