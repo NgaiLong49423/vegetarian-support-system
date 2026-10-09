@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.8.0
+> **Version:** v0.10.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-07
 > **Status:** Active
 
 # API Integration Guide
@@ -11,9 +11,9 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
 
-Backend source trong branch gồm đăng ký, xác minh email và đăng nhập (FR-03), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), cùng hồ sơ dinh dưỡng tham khảo (FR-35). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML chỉ giữ Google login và password recovery chưa có trong runtime.
+Backend source trong branch gồm đăng ký, xác minh email và đăng nhập (FR-03), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML chỉ giữ Google login và password recovery chưa có trong runtime.
 
-Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 7 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
+Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 8 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
 ## 2. Contract và công cụ
 
@@ -139,7 +139,24 @@ Ba endpoint runtime trong generated OpenAPI thao tác hồ sơ của Member hi�
 - Response hiển thị số dạng xấp xỉ. Đây là tham khảo, không phải chẩn đoán/điều trị/kê đơn, tư vấn y tế, chứng nhận hay giám sát liên tục.
 - Lỗi dùng `application/problem+json` và mã ổn định; trường hợp ngoài phạm vi trả `422 NUTRITION_PROFILE_OUT_OF_SCOPE`.
 
-## 7. Thông số cần chốt trước khi triển khai phần phụ thuộc
+## 7. Recipe detail, Meal Plan references and saved recipes — FR-20
+
+Các endpoint dưới đây trả projection đọc từ `RECIPE_POST` và bảng liên quan hiện có. Chúng không tạo bản sao recipe, ghi lượt xem/bình chọn, hoặc thay đổi công thức đã lưu hay Meal Plan. Generated `/v3/api-docs` là contract chi tiết của runtime.
+
+| Acceptance criterion / integration | Runtime API hoặc owner | Hành vi |
+|---|---|---|
+| AC-20.1 — detail từ nguồn RecipePost duy nhất | `GET /api/v1/recipes/{recipeId}` (public) | Trả dữ liệu recipe hiện tại, hồ sơ tác giả công khai, nguyên liệu định lượng, media theo thứ tự, YouTube URL, 9 chỉ tiêu dinh dưỡng ước tính trên toàn công thức và mỗi khẩu phần kèm cảnh báo thiếu dữ liệu, thống kê Like/Dislike và lượt xem. Bài không công khai hoặc không tồn tại trả `404`. |
+| AC-20.2 — cập nhật mới nhất ở detail và Meal Plan | `GET /api/v1/recipes/{recipeId}` và `GET /api/v1/meal-plans?weekStartDate=YYYY-MM-DD` (có xác thực) | Mỗi request đọc RecipePost và nguyên liệu hiện tại; không lưu snapshot recipe trùng lặp. |
+| AC-20.3 — tombstone an toàn trong Meal Plan | `GET /api/v1/meal-plans?weekStartDate=YYYY-MM-DD` (có xác thực) | Tham chiếu không khả dụng vẫn ở đúng ô, kèm `recipeDeleted` và `unavailableMessage` chung `Công thức không còn khả dụng`; nội dung recipe bị lược bỏ. |
+| Projection công thức đã lưu cho UC-20.2 | `GET /api/v1/saved-recipes?page=0&size=20` (có xác thực) | Chỉ trả tham chiếu của tài khoản hiện tại, sắp xếp theo thời điểm lưu. `size` giới hạn 1–50. Mục không khả dụng vẫn tồn tại an toàn với `available=false`, thông báo chung và không có tên, tác giả hay media. Issue này không cung cấp thao tác lưu/xóa. |
+| AC-20.4 — export PDF/TXT | Frontend | Backend trả dữ liệu detail cần cho export. Frontend tạo TXT và PDF khổ A4; API này không tạo file. |
+| AC-20.5 — tải toàn trang trong hai giây | Frontend xác minh acceptance | Backend trả đủ instructions trong cùng response detail. Frontend cần đo thời gian tải và render toàn trang trên môi trường mục tiêu. |
+
+Các key trong `nutrition.total` và `nutrition.perServing` lần lượt là `ENERGY_KCAL` (kcal), `PROTEIN_G` (g), `CARBOHYDRATE_G` (g), `TOTAL_FAT_G` (g), `FIBER_G` (g), `CALCIUM_MG` (mg), `IRON_MG` (mg), `VITAMIN_B12_MCG` (mcg) và `ZINC_MG` (mg). Nếu chưa có lượt bình chọn, `statistics.reactionCount` bằng `0` và `statistics.likePercentage` là `null`; Frontend hiển thị nhãn “Mới” theo BR-69.
+
+Nutrition chỉ dùng danh mục nội bộ và quy đổi gram hiện có. `nutrition.complete=false` cùng `ingredientsMissingData` chỉ rõ nguyên liệu tùy chỉnh/thiếu dữ liệu hoặc thiếu quy đổi; không ngầm coi dữ liệu chưa biết là giá trị đo bằng không. Đây là số liệu tham khảo, không phải tư vấn y tế. Không gọi dịch vụ dinh dưỡng ngoài.
+
+## 8. Thông số cần chốt trước khi triển khai phần phụ thuộc
 
 | Quyết định | Trạng thái | Ảnh hưởng |
 |---|---|---|
@@ -152,7 +169,7 @@ Ba endpoint runtime trong generated OpenAPI thao tác hồ sơ của Member hi�
 
 Baseline API đã được nhóm chấp nhận; các mục `TBD` không tự có giá trị chỉ vì tài liệu chuyển sang `Active`. Owner FR-03 phân rã, đề xuất giá trị và cách kiểm thử; Tech Lead duyệt trước khi phần liên quan được coi là implementation-ready. Không suy diễn các giá trị này từ ví dụ hoặc cấu hình tạm.
 
-## 8. Sở thích ăn uống và Onboarding — FR-31
+## 9. Sở thích ăn uống và Onboarding — FR-31
 
 Năm endpoint runtime thao tác hồ sơ của Member đang đăng nhập; client không truyền `userId`. Generated OpenAPI khai báo security scheme `bearerAuth` (HTTP bearer, JWT) cho cả năm operation; client gửi access token của `POST /auth/login` trong header `Authorization: Bearer`. Guest nhận `401 UNAUTHENTICATED`, Administrator nhận `403 MEMBER_ACCESS_REQUIRED`. Dữ liệu này riêng tư: không có endpoint nào trả sở thích của người khác.
 

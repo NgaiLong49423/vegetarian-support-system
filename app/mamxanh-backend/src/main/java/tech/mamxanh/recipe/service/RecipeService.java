@@ -8,12 +8,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.recipe.dto.request.CreateRecipeRequest;
@@ -39,8 +42,11 @@ import tech.mamxanh.recipe.repository.RecipeConversionRepository;
 import tech.mamxanh.recipe.repository.RecipeIngredientReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeIngredientRepository;
 import tech.mamxanh.recipe.repository.RecipePostRepository;
+import tech.mamxanh.recipe.repository.RecipeMediaRepository;
+import tech.mamxanh.recipe.repository.RecipeStatisticsRepository;
 import tech.mamxanh.recipe.repository.RecipeUnitReferenceRepository;
 import tech.mamxanh.recipe.service.RecipeValidationException.FieldError;
+import tech.mamxanh.nutrition.service.RecipeNutritionService;
 
 @Service
 public class RecipeService {
@@ -51,6 +57,10 @@ public class RecipeService {
     private final RecipeConversionRepository conversionRepository;
     private final RecipeAuthorReferenceRepository authorRepository;
     private final Clock clock;
+    private final CurrentUserService currentUserService;
+    private final RecipeMediaRepository mediaRepository;
+    private final RecipeNutritionService nutritionService;
+    private final RecipeStatisticsRepository statisticsRepository;
 
     @Autowired
     public RecipeService(RecipePostRepository recipeRepository,
@@ -58,7 +68,9 @@ public class RecipeService {
             RecipeIngredientReferenceRepository ingredientReferenceRepository,
             RecipeUnitReferenceRepository unitReferenceRepository,
             RecipeConversionRepository conversionRepository,
-            RecipeAuthorReferenceRepository authorRepository, Clock clock) {
+            RecipeAuthorReferenceRepository authorRepository, Clock clock,
+            CurrentUserService currentUserService, RecipeMediaRepository mediaRepository,
+            RecipeNutritionService nutritionService, RecipeStatisticsRepository statisticsRepository) {
         this.recipeRepository = recipeRepository;
         this.ingredientRepository = ingredientRepository;
         this.ingredientReferenceRepository = ingredientReferenceRepository;
@@ -66,6 +78,10 @@ public class RecipeService {
         this.conversionRepository = conversionRepository;
         this.authorRepository = authorRepository;
         this.clock = clock;
+        this.currentUserService = currentUserService;
+        this.mediaRepository = mediaRepository;
+        this.nutritionService = nutritionService;
+        this.statisticsRepository = statisticsRepository;
     }
 
     @Transactional
@@ -140,7 +156,8 @@ public class RecipeService {
         List<RecipeIngredientEntity> recipeIngredients = ingredientRepository
                 .findAllByRecipeIdOrderByIdAsc(recipeId);
         Map<Long, RecipeIngredientReferenceEntity> ingredientReferences = ingredientReferenceRepository
-                .findAllById(recipeIngredients.stream().map(RecipeIngredientEntity::getIngredientId).distinct().toList())
+                .findAllById(recipeIngredients.stream().map(RecipeIngredientEntity::getIngredientId)
+                        .filter(java.util.Objects::nonNull).distinct().toList())
                 .stream().collect(Collectors.toMap(RecipeIngredientReferenceEntity::getId, Function.identity()));
         Map<Integer, RecipeUnitReferenceEntity> unitReferences = unitReferenceRepository
                 .findAllById(recipeIngredients.stream().map(RecipeIngredientEntity::getUnitId).distinct().toList())
@@ -150,22 +167,39 @@ public class RecipeService {
         VegetarianType vegetarianType = VegetarianType.valueOf(recipe.getVegetarianType());
         Difficulty difficulty = Difficulty.valueOf(recipe.getDifficulty());
         List<RecipeDetailResponse.Ingredient> ingredients = recipeIngredients.stream().map(line -> {
-            RecipeIngredientReferenceEntity ingredient = ingredientReferences.get(line.getIngredientId());
+            RecipeIngredientReferenceEntity ingredient = line.getIngredientId() == null
+                    ? null : ingredientReferences.get(line.getIngredientId());
             RecipeUnitReferenceEntity unit = unitReferences.get(line.getUnitId());
-            return new RecipeDetailResponse.Ingredient(line.getIngredientId(), ingredient.getName(), line.getQuantity(),
+            String name = ingredient == null ? line.getCustomIngredientName() : ingredient.getName();
+            return new RecipeDetailResponse.Ingredient(line.getIngredientId(), name, line.getQuantity(),
                     line.getUnitId(), unit.getCode(), unit.getName());
         }).toList();
-        List<String> ingredientsWithoutNutrition = recipeIngredients.stream()
-                .map(line -> ingredientReferences.get(line.getIngredientId()))
-                .filter(ingredient -> !ingredient.isNutritionSupported())
-                .map(RecipeIngredientReferenceEntity::getName)
-                .distinct()
-                .toList();
+        var nutrition = nutritionService.calculate(recipeIngredients.stream().map(line -> {
+            RecipeUnitReferenceEntity unit = unitReferences.get(line.getUnitId());
+            RecipeIngredientReferenceEntity ingredient = line.getIngredientId() == null
+                    ? null : ingredientReferences.get(line.getIngredientId());
+            return new RecipeNutritionService.RecipeIngredient(line.getIngredientId(), line.getUnitId(),
+                    unit.getDimension(), unit.getBaseFactor(), line.getQuantity(),
+                    ingredient == null ? line.getCustomIngredientName() : ingredient.getName());
+        }).toList(), recipe.getServings());
+        var author = currentUserService.getPublicProfile(recipe.getAuthorId());
+        var stats = statisticsRepository.findStatistics(recipeId).orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        BigDecimal likePercentage = stats.getReactionCount() == 0 ? null
+                : BigDecimal.valueOf(stats.getLikes()).multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(stats.getReactionCount()), 2, RoundingMode.HALF_UP);
+        List<RecipeDetailResponse.Media> media = mediaRepository.findAllByRecipeIdOrderByDisplayOrderAsc(recipeId)
+                .stream().map(item -> new RecipeDetailResponse.Media(item.getBlobUrl(), item.getMimeType(),
+                        item.getDisplayOrder(), item.isCover())).toList();
         return new RecipeDetailResponse(recipe.getId(), recipe.getTitle(), recipe.getDescription(),
                 recipe.getInstructions(), category.name(), category.label(), vegetarianType.name(), vegetarianType.label(),
                 difficulty.name(), difficulty.label(), recipe.getServings(), recipe.getPrepTimeMinutes(),
-                recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getPublishedAt(), ingredients,
-                ingredientsWithoutNutrition.isEmpty(), ingredientsWithoutNutrition, List.of());
+                recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getPublishedAt(),
+                new RecipeDetailResponse.Author(author.id(), author.displayName(), author.avatarUrl()), ingredients,
+                nutrition.complete(), nutrition.ingredientsMissingData(),
+                new RecipeDetailResponse.Nutrition(nutrition.complete(), nutrition.ingredientsMissingData(),
+                        nutrition.total(), nutrition.perServing()),
+                new RecipeDetailResponse.Statistics(stats.getLikes(), stats.getDislikes(), stats.getReactionCount(),
+                        likePercentage, stats.getViewCount()), media);
     }
 
     @Transactional(readOnly = true)

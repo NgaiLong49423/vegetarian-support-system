@@ -2,6 +2,7 @@ package tech.mamxanh.nutrition.repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -13,6 +14,7 @@ import tech.mamxanh.nutrition.entity.IngredientUnitConversionId;
 public interface IngredientUnitConversionRepository extends JpaRepository<IngredientUnitConversionEntity, IngredientUnitConversionId> {
     Optional<IngredientUnitConversionEntity> findByIdAndActiveTrue(IngredientUnitConversionId id);
     List<IngredientUnitConversionEntity> findByIdIngredientId(Long ingredientId);
+    List<IngredientUnitConversionEntity> findByIdIngredientIdInAndActiveTrue(Collection<Long> ingredientIds);
     boolean existsByIdUnitId(int unitId);
 
     @Modifying

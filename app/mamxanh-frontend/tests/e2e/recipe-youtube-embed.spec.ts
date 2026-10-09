@@ -63,6 +63,8 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
           cookTimeMinutes: 20,
           youtubeUrl: null,
           publishedAt: '2026-10-05T12:00:00',
+          nutritionComplete: true,
+          ingredientsWithoutNutrition: [],
           ingredients: [],
           media: [],
         },
@@ -167,4 +169,3 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
     await expect(page).not.toHaveURL(/\/cong-thuc\/2199$/);
   });
 });
-

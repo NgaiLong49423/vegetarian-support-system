@@ -6,6 +6,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.function.Function;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -23,25 +26,43 @@ import tech.mamxanh.recipe.dto.response.RecipePostResponse.Media;
 import tech.mamxanh.recipe.entity.RecipeIngredientEntity;
 import tech.mamxanh.recipe.entity.RecipeMediaEntity;
 import tech.mamxanh.recipe.entity.RecipePostEntity;
+import tech.mamxanh.recipe.entity.RecipeIngredientReferenceEntity;
+import tech.mamxanh.recipe.entity.RecipeUnitReferenceEntity;
 import tech.mamxanh.recipe.repository.RecipeIngredientRepository;
+import tech.mamxanh.recipe.repository.RecipeIngredientReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeMediaRepository;
 import tech.mamxanh.recipe.repository.RecipePostRepository;
+import tech.mamxanh.recipe.repository.RecipeUnitReferenceRepository;
+import tech.mamxanh.recipe.repository.RecipeBrowseRepository;
+import tech.mamxanh.recipe.repository.RecipeBrowseRepository.BrowseRow;
+import tech.mamxanh.recipe.repository.RecipeStatisticsRepository;
 import tech.mamxanh.recipe.repository.RecipeValidationRepository;
 
 @Service
 public class RecipePostService {
     private final RecipePostRepository repository;
+    private final RecipeBrowseRepository browseRepository;
+    private final RecipeStatisticsRepository statisticsRepository;
     private final RecipeIngredientRepository ingredientRepository;
+    private final RecipeIngredientReferenceRepository ingredientReferenceRepository;
+    private final RecipeUnitReferenceRepository unitReferenceRepository;
     private final RecipeMediaRepository mediaRepository;
     private final RecipeValidationRepository validationRepository;
     private final CurrentUserService currentUserService;
     private final Clock clock;
 
-    public RecipePostService(RecipePostRepository repository, RecipeIngredientRepository ingredientRepository,
+    public RecipePostService(RecipePostRepository repository, RecipeBrowseRepository browseRepository,
+            RecipeStatisticsRepository statisticsRepository, RecipeIngredientRepository ingredientRepository,
+            RecipeIngredientReferenceRepository ingredientReferenceRepository,
+            RecipeUnitReferenceRepository unitReferenceRepository,
             RecipeMediaRepository mediaRepository, RecipeValidationRepository validationRepository,
             CurrentUserService currentUserService, Clock clock) {
         this.repository = repository;
+        this.browseRepository = browseRepository;
+        this.statisticsRepository = statisticsRepository;
         this.ingredientRepository = ingredientRepository;
+        this.ingredientReferenceRepository = ingredientReferenceRepository;
+        this.unitReferenceRepository = unitReferenceRepository;
         this.mediaRepository = mediaRepository;
         this.validationRepository = validationRepository;
         this.currentUserService = currentUserService;
@@ -59,6 +80,16 @@ public class RecipePostService {
         return response(recipe);
     }
 
+    /** Locks the recipe row so concurrent report submissions for the same post serialize. */
+    @Transactional
+    public void requirePublishedForReport(long recipeId) {
+        RecipePostEntity recipe = repository.lockById(recipeId)
+                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
+        if (!"PUBLISHED".equals(recipe.getStatus())) {
+            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
+        }
+    }
+
     @Transactional(readOnly = true)
     public RecipePageResponse listMine(int page, int size) {
         CurrentUser author = currentUserService.requireActiveExpert();
@@ -73,14 +104,30 @@ public class RecipePostService {
 
     @Transactional(readOnly = true)
     public RecipePageResponse searchPublished(String keyword, int page, int size) {
+        return searchPublished(keyword, page, size, RecipeSortMode.NEWEST, RecipeViewPeriod.ALL_TIME);
+    }
+
+    @Transactional(readOnly = true)
+    public RecipePageResponse searchPublished(String keyword, int page, int size,
+            RecipeSortMode sortMode, RecipeViewPeriod viewPeriod) {
         String query = keyword == null ? "" : keyword.trim();
         if (query.length() > 120 || page < 0 || size < 1 || size > 50) {
             throw new AppException(ErrorCode.VALIDATION_FAILED);
         }
-        Page<RecipePostEntity> result = repository.findAllByStatusAndTitleContainingIgnoreCaseOrderByPublishedAtDesc(
-                "PUBLISHED", query, PageRequest.of(page, size, Sort.unsorted()));
-        List<RecipePostResponse> items = result.getContent().stream().map(this::response).toList();
-        return new RecipePageResponse(items, result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages());
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime viewSince = viewPeriod.hours() == null
+                ? LocalDateTime.of(1, 1, 1, 0, 0) : now.minusHours(viewPeriod.hours());
+        var result = browseRepository.findPublished(query, sortMode, viewSince, now, page, size);
+        List<Long> ids = result.rows().stream().map(BrowseRow::recipeId).toList();
+        Map<Long, RecipePostEntity> recipes = repository.findAllById(ids).stream()
+                .collect(Collectors.toMap(RecipePostEntity::getId, Function.identity()));
+        Map<Long, BrowseRow> metrics = result.rows().stream()
+                .collect(Collectors.toMap(BrowseRow::recipeId, Function.identity()));
+        List<RecipePostEntity> orderedRecipes = ids.stream().map(recipes::get)
+                .filter(java.util.Objects::nonNull).toList();
+        List<RecipePostResponse> items = publicResponses(orderedRecipes, metrics);
+        int totalPages = (int) Math.ceil((double) result.totalElements() / size);
+        return new RecipePageResponse(items, page, size, result.totalElements(), totalPages);
     }
 
     @Transactional(readOnly = true)
@@ -180,6 +227,12 @@ public class RecipePostService {
     }
 
     private RecipePostResponse response(RecipePostEntity recipe) {
+        var stats = statisticsRepository.findStatistics(recipe.getId()).orElse(null);
+        return response(recipe, stats == null ? null : new BrowseRow(recipe.getId(), stats.getLikes(),
+                stats.getDislikes(), stats.getViewCount(), 0, stats.getViewCount()));
+    }
+
+    private RecipePostResponse response(RecipePostEntity recipe, BrowseRow stats) {
         PublicProfile author = currentUserService.getPublicProfile(recipe.getAuthorId());
         List<Media> media = mediaRepository.findAllByRecipeIdOrderByDisplayOrderAsc(recipe.getId()).stream()
                 .map(item -> new Media(item.getBlobUrl(), item.getMimeType(), item.getDisplayOrder(), item.isCover()))
@@ -192,10 +245,56 @@ public class RecipePostService {
                             item.getUnitId(), lookup.unitCode(), lookup.unitName(), item.getQuantity());
                 })
                 .toList();
+        return assembleResponse(recipe, stats, author, media, ingredients);
+    }
+
+    private List<RecipePostResponse> publicResponses(List<RecipePostEntity> recipes, Map<Long, BrowseRow> metrics) {
+        if (recipes.isEmpty()) return List.of();
+        List<Long> recipeIds = recipes.stream().map(RecipePostEntity::getId).toList();
+        Map<Long, PublicProfile> authors = currentUserService.getPublicProfiles(
+                recipes.stream().map(RecipePostEntity::getAuthorId).distinct().toList());
+        Map<Long, List<Media>> mediaByRecipe = mediaRepository.findAllByRecipeIdInOrderByRecipeIdAscDisplayOrderAsc(recipeIds)
+                .stream().collect(Collectors.groupingBy(RecipeMediaEntity::getRecipeId, Collectors.mapping(
+                        item -> new Media(item.getBlobUrl(), item.getMimeType(), item.getDisplayOrder(), item.isCover()),
+                        Collectors.toList())));
+        List<RecipeIngredientEntity> ingredientRows = ingredientRepository
+                .findAllByRecipeIdInOrderByRecipeIdAscIdAsc(recipeIds);
+        List<Long> ingredientIds = ingredientRows.stream().map(RecipeIngredientEntity::getIngredientId)
+                .filter(java.util.Objects::nonNull).distinct().toList();
+        List<Integer> unitIds = ingredientRows.stream().map(RecipeIngredientEntity::getUnitId).distinct().toList();
+        Map<Long, RecipeIngredientReferenceEntity> ingredients = ingredientIds.isEmpty() ? Map.of()
+                : ingredientReferenceRepository.findAllById(ingredientIds).stream()
+                        .collect(Collectors.toMap(RecipeIngredientReferenceEntity::getId, Function.identity()));
+        Map<Integer, RecipeUnitReferenceEntity> units = unitIds.isEmpty() ? Map.of()
+                : unitReferenceRepository.findAllById(unitIds).stream()
+                        .collect(Collectors.toMap(RecipeUnitReferenceEntity::getId, Function.identity()));
+        Map<Long, List<Ingredient>> ingredientsByRecipe = ingredientRows.stream().collect(Collectors.groupingBy(
+                RecipeIngredientEntity::getRecipeId, Collectors.mapping(row -> {
+                    RecipeIngredientReferenceEntity ingredient = row.getIngredientId() == null
+                            ? null : ingredients.get(row.getIngredientId());
+                    RecipeUnitReferenceEntity unit = units.get(row.getUnitId());
+                    return new Ingredient(row.getIngredientId(), ingredient == null ? row.getCustomIngredientName() : ingredient.getName(),
+                            row.getCustomIngredientName(), row.getUnitId(), unit == null ? null : unit.getCode(),
+                            unit == null ? null : unit.getName(), row.getQuantity());
+                }, Collectors.toList())));
+        return recipes.stream().map(recipe -> assembleResponse(recipe, metrics.get(recipe.getId()),
+                authors.get(recipe.getAuthorId()), mediaByRecipe.getOrDefault(recipe.getId(), List.of()),
+                ingredientsByRecipe.getOrDefault(recipe.getId(), List.of()))).toList();
+    }
+
+    private RecipePostResponse assembleResponse(RecipePostEntity recipe, BrowseRow stats, PublicProfile author,
+            List<Media> media, List<Ingredient> ingredients) {
+        long likes = stats == null ? 0 : stats.likes();
+        long dislikes = stats == null ? 0 : stats.dislikes();
+        long reactionCount = likes + dislikes;
+        BigDecimal likePercentage = reactionCount == 0 ? null
+                : BigDecimal.valueOf(likes).multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(reactionCount), 2, RoundingMode.HALF_UP);
         return new RecipePostResponse(recipe.getId(), recipe.getAuthorId(), author.displayName(), author.avatarUrl(),
                 recipe.getTitle(), recipe.getDescription(), recipe.getInstructions(), recipe.getDishCategory(),
                 recipe.getVegetarianType(), recipe.getDifficulty(), recipe.getServings(), recipe.getPrepTimeMinutes(),
-                recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getStatus(), media, ingredients);
+                recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getStatus(), media, ingredients,
+                likes, dislikes, likePercentage, stats == null ? 0 : stats.views());
     }
 
     private RecipePostEntity findById(long recipeId) {

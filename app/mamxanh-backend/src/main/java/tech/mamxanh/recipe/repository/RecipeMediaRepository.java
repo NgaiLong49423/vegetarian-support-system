@@ -22,4 +22,6 @@ public interface RecipeMediaRepository extends JpaRepository<RecipeMediaEntity, 
     long countByRecipeId(Long recipeId);
 
     void deleteByRecipeId(Long recipeId);
+
+    List<RecipeMediaEntity> findAllByRecipeIdInOrderByRecipeIdAscDisplayOrderAsc(java.util.Collection<Long> recipeIds);
 }
