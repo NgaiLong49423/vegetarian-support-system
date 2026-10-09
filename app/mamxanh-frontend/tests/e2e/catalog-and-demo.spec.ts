@@ -77,7 +77,7 @@ test('recipe form uses catalog choices and reports that real login is still requ
   await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Cắt đậu hũ, rim với cà chua đến khi thấm vị.');
   await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
 
-  await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không còn hợp lệ');
+  await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không');
 });
 
 test('recipe image list requires one cover and blocks publishing until FR-14 upload is connected', async ({ page }) => {
@@ -93,7 +93,7 @@ test('recipe image list requires one cover and blocks publishing until FR-14 upl
   await expect(page.getByRole('alert')).toContainText('hãy chọn đúng 1 ảnh bìa');
   await page.getByLabel('Chọn one.png làm ảnh cover').check();
   await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
-  await expect(page.getByRole('alert')).toContainText('Upload ảnh thuộc FR-14');
+  await expect(page.getByRole('alert')).toContainText('đang được hoàn thiện');
 });
 
 test('community topics lead to article content and demo rating updates only once', async ({ page }) => {

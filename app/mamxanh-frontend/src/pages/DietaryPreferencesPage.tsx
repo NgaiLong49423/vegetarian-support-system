@@ -81,7 +81,7 @@ export function DietaryPreferencesPage() {
             <Sparkles aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
               <p>Bạn cần hoàn tất 3 thông tin cơ bản về chế độ ăn chay (Loại ăn chay, Nguyên liệu dị ứng/kiêng, Món không thích) để AI có thể gợi ý chính xác và an toàn.</p>
-              <p className="mt-1 font-semibold">Còn thiếu: {ai.missing.map((item) => REQUIREMENT_LABELS[item]).join(', ')}.</p>
+              <p className="mt-1 font-semibold">Còn thiếu: {ai.missing.map((item) => REQUIREMENT_LABELS[item] || item).join(', ')}.</p>
             </div>
           </aside>
         )

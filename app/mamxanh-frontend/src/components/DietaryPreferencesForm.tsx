@@ -42,20 +42,36 @@ type FormState = {
 type Errors = Partial<Record<'vegetarianType' | 'avoid' | 'dislike' | 'cuisinePreference' | 'maxCookingTimeMinutes' | 'form', string>>;
 
 function fromProfile(profile: DietaryPreferences | null): FormState {
+  const extractItems = (items: { ingredientId: number | null; name: string }[] | undefined): string[] => {
+    if (!items || !Array.isArray(items)) return [];
+    return items
+      .map((item) => (item && typeof item === 'object' ? item.name : item))
+      .filter((name): name is string => typeof name === 'string' && name.trim().length > 0)
+      .map((name) => clean(name));
+  };
+
   return {
     vegetarianType: profile?.vegetarianType ?? '',
-    avoidItems: profile?.avoid.items.map((item) => item.name) ?? [],
-    avoidNone: profile?.avoid.noneConfirmed ?? false,
-    dislikeItems: profile?.dislike.items.map((item) => item.name) ?? [],
-    dislikeNone: profile?.dislike.noneConfirmed ?? false,
-    cuisinePreference: profile?.cuisinePreference ?? '',
+    avoidItems: extractItems(profile?.avoid?.items),
+    avoidNone: profile?.avoid?.noneConfirmed ?? false,
+    dislikeItems: extractItems(profile?.dislike?.items),
+    dislikeNone: profile?.dislike?.noneConfirmed ?? false,
+    cuisinePreference: profile?.cuisinePreference ? clean(profile.cuisinePreference) : '',
     maxCookingTimeMinutes: profile?.maxCookingTimeMinutes ? String(profile.maxCookingTimeMinutes) : '',
     preferredDifficulty: profile?.preferredDifficulty ?? '',
   };
 }
 
-const clean = (value: string) => value.normalize('NFC').replace(/[\s ]+/g, ' ').trim();
-const sameName = (a: string, b: string) => clean(a).toLowerCase() === clean(b).toLowerCase();
+const clean = (value: string | null | undefined): string => {
+  if (!value || typeof value !== 'string') return '';
+  return value.normalize('NFC').replace(/[\s ]+/g, ' ').trim();
+};
+
+const sameName = (a: string | null | undefined, b: string | null | undefined): boolean => {
+  const cleanA = clean(a).toLowerCase();
+  const cleanB = clean(b).toLowerCase();
+  return cleanA.length > 0 && cleanA === cleanB;
+};
 
 /** Mirrors the Backend rules (BR-31) so most mistakes are shown before sending. */
 function validate(form: FormState): Errors {
