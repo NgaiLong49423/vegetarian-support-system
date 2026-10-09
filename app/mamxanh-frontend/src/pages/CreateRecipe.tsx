@@ -7,6 +7,8 @@ import { useAuth } from '../components/AuthContext';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { validateYouTubeUrl } from '../utils/youtube';
 import { Button, Card } from '../components/ui';
+import { BinButton } from '../components/BinButton';
+import { AiRecipeAssistantModal, type GeneratedRecipeData } from '../components/AiRecipeAssistantModal';
 import type { UserRole } from '../types';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -103,6 +105,8 @@ function CreateRecipeForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiNotice, setAiNotice] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -118,6 +122,40 @@ function CreateRecipeForm() {
 
   const updateIngredient = (key: string, patch: Partial<IngredientRow>) => {
     setIngredients((current) => current.map((row) => row.key === key ? { ...row, ...patch } : row));
+  };
+
+  const handleApplyAiRecipe = (aiRecipe: GeneratedRecipeData) => {
+    setTitle(aiRecipe.title);
+    setDescription(aiRecipe.description);
+    setInstructions(aiRecipe.instructions);
+    if (aiRecipe.dishCategory) setDishCategory(aiRecipe.dishCategory);
+    if (aiRecipe.vegetarianType) setVegetarianType(aiRecipe.vegetarianType);
+    if (aiRecipe.difficulty) setDifficulty(aiRecipe.difficulty);
+    setServings(String(aiRecipe.servings));
+    setPrepTimeMinutes(String(aiRecipe.prepTimeMinutes));
+    setCookTimeMinutes(String(aiRecipe.cookTimeMinutes));
+
+    if (options && options.units.length > 0) {
+      const newRows: IngredientRow[] = aiRecipe.ingredients.map((ing) => {
+        const matchedUnit = options.units.find(
+          (u) =>
+            u.code.toLowerCase() === ing.unitCode.toLowerCase() ||
+            u.name.toLowerCase().includes(ing.unitCode.toLowerCase()) ||
+            ing.unitName.toLowerCase().includes(u.code.toLowerCase()),
+        );
+        return {
+          key: `ingredient-${Date.now()}-${++ingredientRowSequence}`,
+          ingredientId: null,
+          ingredientName: ing.name,
+          search: ing.name,
+          quantity: String(ing.quantity),
+          unitId: matchedUnit?.unitId ?? options.units[0]?.unitId ?? null,
+        };
+      });
+      setIngredients(newRows);
+    }
+    setAiNotice('✨ Đã nạp thành công thông tin món, định lượng và nguyên liệu từ Trợ lý AI!');
+    setTimeout(() => setAiNotice(''), 5000);
   };
 
   const handleFiles = (selected: FileList | null) => {
@@ -222,6 +260,36 @@ function CreateRecipeForm() {
         <p className="mt-1 text-sm text-ink-muted">Chia sẻ bí quyết nấu ăn thuần lành và định lượng chính xác để mọi người cùng thực hiện.</p>
       </div>
 
+      {/* Banner AI Trợ lý công thức đồng hành cùng Chuyên gia */}
+      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-brand-200 bg-gradient-to-r from-brand-50/80 via-white to-amber-50/60 p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-md shadow-brand-700/20">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-sm font-extrabold text-ink sm:text-base">
+              Trợ lý AI hỗ trợ Chuyên gia: Soạn công thức & định lượng nhanh
+            </h2>
+            <p className="mt-0.5 text-xs text-ink-muted">
+              Nhập nguyên liệu sẵn có, đặt ràng buộc calo để AI tự động tính toán định lượng chính xác và nạp trực tiếp vào biểu mẫu.
+            </p>
+          </div>
+        </div>
+        <Button
+          type="button"
+          onClick={() => setAiModalOpen(true)}
+          className="shrink-0 flex items-center gap-2 bg-brand-700 text-white font-bold hover:bg-brand-800 shadow-sm"
+        >
+          <Sparkles className="h-4 w-4" /> Soạn với Trợ lý AI
+        </Button>
+      </div>
+
+      {aiNotice && (
+        <div role="status" className="mb-6 rounded-xl bg-leaf-50 border border-leaf-200 p-4 text-sm font-semibold text-leaf-800 shadow-sm">
+          {aiNotice}
+        </div>
+      )}
+
       <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <Info className="mt-0.5 h-5 w-5 shrink-0" />
         <p><strong>Dành cho Chuyên gia ẩm thực:</strong> Vui lòng kiểm tra kỹ định lượng nguyên liệu và các bước hướng dẫn trước khi xuất bản công thức.</p>
@@ -268,8 +336,14 @@ function CreateRecipeForm() {
             {ingredients.map((row, index) => (
               <div key={row.key} className="rounded-xl border border-brand-100 p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wide text-brand-700">Nguyên liệu {index + 1}</span>
-                  {ingredients.length > 1 && <button type="button" onClick={() => setIngredients((current) => current.filter((item) => item.key !== row.key))} className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-red-700" aria-label={`Xóa nguyên liệu ${index + 1}`}><Trash2 className="h-4 w-4" /></button>}
+                  {ingredients.length > 1 && (
+                    <BinButton
+                      size={26}
+                      onClick={() => setIngredients((current) => current.filter((item) => item.key !== row.key))}
+                      title={`Xóa nguyên liệu ${index + 1}`}
+                      aria-label={`Xóa nguyên liệu ${index + 1}`}
+                    />
+                  )}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px_180px]">
                   <IngredientPicker
@@ -390,6 +464,13 @@ function CreateRecipeForm() {
           </Card>
         </aside>
       </form>
+
+      <AiRecipeAssistantModal
+        open={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        options={options}
+        onApplyRecipe={handleApplyAiRecipe}
+      />
     </PageContainer>
   );
 }

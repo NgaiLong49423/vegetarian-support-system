@@ -11,7 +11,6 @@ import {
   Eye,
   Flame,
   Flag,
-  Heart,
   Leaf,
   LoaderCircle,
   Lock,
@@ -23,7 +22,9 @@ import {
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { RecipeCard } from '../components/RecipeCard';
+import SpringCheck from '../components/SpringCheck';
 import { Badge, Button, Card, SectionHeading } from '../components/ui';
+import { HeartCheckbox } from '../components/HeartCheckbox';
 import { Modal } from '../components/Modal';
 import { RecipeComments } from '../components/RecipeComments';
 import { RecipeRating } from '../components/RecipeRating';
@@ -330,19 +331,18 @@ function MockRecipeDetail() {
               <Flag className="h-5 w-5" />
               <span className="hidden sm:inline">Báo cáo</span>
             </button>
-            <button
-                type="button"
-                onClick={handleToggleSave}
-                className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${
-                    saved
-                        ? 'border-brand-600 bg-brand-600 text-white'
-                        : 'border-brand-200 bg-white text-ink-soft hover:border-brand-300'
-                }`}
-                aria-label={saved ? 'Bỏ lưu' : 'Lưu'}
-                title={saved ? 'Bỏ lưu' : 'Lưu'}
-            >
-              <Heart className={`h-5 w-5 ${saved ? 'fill-current text-white' : ''}`} />
-            </button>
+            <HeartCheckbox
+              checked={saved}
+              onClick={handleToggleSave}
+              size={36}
+              aria-label={saved ? 'Bỏ lưu' : 'Lưu'}
+              title={saved ? 'Bỏ lưu' : 'Lưu'}
+              className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-all ${
+                saved
+                  ? 'border-rose-200 bg-rose-50/70 shadow-2xs'
+                  : 'border-brand-200 bg-white hover:border-brand-300'
+              }`}
+            />
             <button className="flex h-11 w-11 items-center justify-center rounded-xl border border-brand-200 bg-white text-ink-soft transition-colors hover:border-brand-300">
               <Share2 className="h-5 w-5" />
             </button>
@@ -446,33 +446,33 @@ function MockRecipeDetail() {
             {Object.entries(groupedIngredients).map(([group, items]) => (
                 <div key={group} className="sm:contents">
                   {items.map((ing) => (
-                      <label
+                      <div
                           key={ing.id}
-                          className="flex cursor-pointer items-center gap-3 rounded-xl border border-brand-50 px-3 py-2.5 transition-colors hover:bg-brand-50/60"
+                          className="flex items-center justify-between gap-3 rounded-xl border border-brand-50 px-3 py-2 transition-colors hover:bg-brand-50/60"
                       >
-                        <button
-                            type="button"
-                            onClick={() => setChecked((c) => ({ ...c, [ing.id]: !c[ing.id] }))}
-                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                                checked[ing.id]
-                                    ? 'border-brand-600 bg-brand-600 text-white'
-                                    : 'border-brand-300 bg-white'
-                            }`}
-                        >
-                          {checked[ing.id] && <Check className="h-3.5 w-3.5" />}
-                        </button>
-                        <span
-                            className={`flex-1 text-sm ${
-                                checked[ing.id] ? 'text-ink-muted line-through' : 'text-ink-soft'
-                            }`}
-                        >
-                          {ing.name}
-                          {ing.note && <span className="ml-1 text-xs text-ink-muted">· {ing.note}</span>}
-                        </span>
+                        <SpringCheck
+                          checked={!!checked[ing.id]}
+                          onChange={() => setChecked((c) => ({ ...c, [ing.id]: !c[ing.id] }))}
+                          label={
+                            <span className="text-sm font-medium">
+                              {ing.name}
+                              {ing.note && <span className="ml-1 text-xs font-normal text-ink-muted">· {ing.note}</span>}
+                            </span>
+                          }
+                          strike="left"
+                          boxSize={22}
+                          boxRadius={6}
+                          fontSize={14}
+                          color="#ea580c"
+                          fillColor="#ea580c"
+                          checkColor="#ffffff"
+                          textColor="#2d2b28"
+                          className="flex-1 min-w-0"
+                        />
                         <Badge tone="neutral">
                           {scaleQuantity(ing.quantity, recipe.servings, desiredServings)}
                         </Badge>
-                      </label>
+                      </div>
                   ))}
                 </div>
             ))}

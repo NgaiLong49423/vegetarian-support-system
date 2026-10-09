@@ -184,6 +184,10 @@ body {
   align-items: center;
   transition: transform 0.3s ease;
   user-select: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 .heart-container .checkbox {
@@ -234,11 +238,13 @@ body {
   pointer-events: none;
 }
 
-.heart-container .checkbox:checked ~ .svg-container .svg-filled {
+.heart-container .checkbox:checked ~ .svg-container .svg-filled,
+.heart-container.is-checked .svg-container .svg-filled {
   display: block;
 }
 
-.heart-container .checkbox:checked ~ .svg-container .svg-celebrate {
+.heart-container .checkbox:checked ~ .svg-container .svg-celebrate,
+.heart-container.is-checked .svg-container .svg-celebrate {
   display: block;
 }
 

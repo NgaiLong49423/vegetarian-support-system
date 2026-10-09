@@ -183,4 +183,6 @@ export function ProgressBar({ pct, tone = 'brand' }: { pct: number; tone?: 'bran
 }
 
 export { AiButton, type AiButtonProps } from './AiButton';
+export { BorderGlow, type BorderGlowProps } from './BorderGlow';
+export { RippleDistortion, type RippleDistortionProps } from './RippleDistortion';
 export { Pattern, type PatternProps } from './Pattern';

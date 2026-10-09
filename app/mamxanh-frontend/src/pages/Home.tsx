@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { PostCard } from '../components/PostCard';
-import { AiButton, Badge, Button, Pattern, SectionHeading } from '../components/ui';
+import { AiButton, Badge, BorderGlow, Button, Pattern, RippleDistortion, SectionHeading } from '../components/ui';
 import { categories, posts } from '../data/mockData';
 import { apiClient } from '../lib/apiClient';
 import type { RecipePost } from '../api/recipes';
@@ -41,13 +41,26 @@ export function Home() {
 
   return (
     <>
-      {/* Hero with soft atmospheric background */}
+      {/* Hero with interactive water ripple distortion */}
       <section className="relative overflow-hidden border-b-2 border-brand-300/85 bg-stone-900 shadow-sm">
-        {/* Full-width Hero Art Background */}
-        <div
-          className="absolute inset-0 z-0 bg-cover bg-center opacity-40"
-          style={{ backgroundImage: "url('/hero-art.jpg')" }}
-        />
+        {/* Full-width Ripple Distortion Water Background */}
+        <div className="absolute inset-0 z-0">
+          <RippleDistortion
+            src="/hero-art.jpg"
+            brushSize={110}
+            strength={0.22}
+            swirl={1}
+            rings={4}
+            grayscale={false}
+            spread={3}
+            fade={3}
+            spacing={12}
+            tint="#16a34a"
+            tintAmount={0.04}
+            trigger="both"
+            quality="medium"
+          />
+        </div>
 
         {/* Soft atmospheric overlay for crystal clear text readability */}
         <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-white/75 via-white/65 to-white/90" />
@@ -156,7 +169,13 @@ export function Home() {
 
           {/* AI banner */}
           <PageContainer>
-            <div className="rounded-3xl border border-brand-200/80 bg-white/85 p-8 sm:p-10 shadow-lg shadow-brand-900/5 backdrop-blur-sm">
+            <BorderGlow
+              data-testid="border-glow-card"
+              borderRadius={24}
+              backgroundColor="rgba(255, 255, 255, 0.75)"
+              orbitSpeed={8}
+              className="p-8 sm:p-10 shadow-lg shadow-brand-900/5"
+            >
               <div className="relative flex flex-col items-start gap-6 lg:flex-row lg:items-center">
                 <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-lg shadow-brand-600/30">
                   <Sparkles className="h-7 w-7" />
@@ -176,7 +195,7 @@ export function Home() {
                   </AiButton>
                 </div>
               </div>
-            </div>
+            </BorderGlow>
           </PageContainer>
 
           {/* Quick links */}
