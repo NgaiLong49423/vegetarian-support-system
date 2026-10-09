@@ -10,7 +10,7 @@ export function passwordProblems(password: string): string[] {
   if (length < 8) problems.push('Mật khẩu cần ít nhất 8 ký tự.');
   if (length > 64) problems.push('Mật khẩu tối đa 64 ký tự.');
   else if (new TextEncoder().encode(password).length > 72) {
-    problems.push('Mật khẩu vượt quá 72 byte, ký tự có dấu chiếm nhiều byte hơn, hãy rút ngắn mật khẩu.');
+    problems.push('Mật khẩu vượt quá 72 byte; ký tự có dấu chiếm nhiều byte hơn, hãy rút ngắn mật khẩu.');
   }
   if (!/\p{Lu}/u.test(password)) problems.push('Mật khẩu cần ít nhất 1 chữ in hoa.');
   if (!/\p{Ll}/u.test(password)) problems.push('Mật khẩu cần ít nhất 1 chữ thường.');

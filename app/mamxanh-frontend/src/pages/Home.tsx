@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { PostCard } from '../components/PostCard';
-import { AiButton, Badge, BorderGlow, Button, Pattern, SectionHeading } from '../components/ui';
+import { AiButton, Badge, Button, Pattern, SectionHeading } from '../components/ui';
 import { categories, posts } from '../data/mockData';
 import { apiClient } from '../lib/apiClient';
 import type { RecipePost } from '../api/recipes';
@@ -156,12 +156,7 @@ export function Home() {
 
           {/* AI banner */}
           <PageContainer>
-            <BorderGlow
-              borderRadius={24}
-              backgroundColor="rgba(255, 255, 255, 0.75)"
-              orbitSpeed={8}
-              className="p-8 sm:p-10 shadow-lg shadow-brand-900/5"
-            >
+            <div className="rounded-3xl border border-brand-200/80 bg-white/85 p-8 sm:p-10 shadow-lg shadow-brand-900/5 backdrop-blur-sm">
               <div className="relative flex flex-col items-start gap-6 lg:flex-row lg:items-center">
                 <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-lg shadow-brand-600/30">
                   <Sparkles className="h-7 w-7" />
@@ -181,7 +176,7 @@ export function Home() {
                   </AiButton>
                 </div>
               </div>
-            </BorderGlow>
+            </div>
           </PageContainer>
 
           {/* Quick links */}

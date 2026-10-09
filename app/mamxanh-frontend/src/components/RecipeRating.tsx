@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, ShieldAlert, ThumbsDown, ThumbsUp, User } from 'lucide-react';
 import { Button, Card, ProgressBar } from './ui';
 import { useAuth } from './AuthContext';
-import { StarRating } from './StarRating';
 import type { Recipe } from '../types';
 
 export function RecipeRating({ recipe }: { recipe: Recipe }) {
@@ -12,7 +11,6 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
 
   // FR-57 Vote State
   const [userVote, setUserVote] = useState<'like' | 'dislike' | null>(null);
-  const [starScore, setStarScore] = useState<number | null>(5);
   const [submitting, setSubmitting] = useState(false);
   const [feedbackState, setFeedbackState] = useState<'idle' | 'success' | 'error'>('idle');
 
@@ -58,10 +56,10 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
         <div>
           <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink sm:text-2xl">
             <ThumbsUp className="h-6 w-6 text-leaf-600" />
-            Mức độ yêu thích từ cộng đồng
+            Mức độ yêu thích từ cộng đồng (FR-57)
           </h2>
           <p className="mt-1 text-xs text-ink-muted">
-            Đánh giá và phản hồi thực tế từ những người đã thực hiện món ăn.
+            Bản minh họa UI; API bình chọn công thức chưa được kết nối.
           </p>
         </div>
       </div>
@@ -130,27 +128,11 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
           <div className="mt-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             <ShieldAlert className="h-5 w-5 shrink-0 text-amber-600" />
             <p>
-              Đây là công thức của bạn. Tác giả không thể tự bình chọn cho bài viết của chính mình.
+              Đây là công thức của bạn. Tác giả không thể tự Like hoặc Dislike bài viết của chính mình (FR-57 / BR-28).
             </p>
           </div>
         ) : (
           <div className="mt-4 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-brand-50/50 p-3.5">
-              <span className="text-xs sm:text-sm font-semibold text-ink">Đánh giá chất lượng món ăn:</span>
-              <div className="flex items-center gap-2.5">
-                <StarRating
-                  value={starScore}
-                  onChange={(s) => setStarScore(s)}
-                  name={`recipe-rating-${recipe.id}`}
-                />
-                {starScore && (
-                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
-                    {starScore}/5 ★
-                  </span>
-                )}
-              </div>
-            </div>
-
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
