@@ -1,13 +1,33 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.55.0
+> **Version:** v2.56.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-07
+> **Last Updated:** 2026-10-09
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-09 — Manage Saved Recipes in Backend (Issue #37)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Implement the Backend portion of FR-32 without changing Frontend source.
+
+### Added
+
+- Add authenticated idempotent save and unsave operations for public recipes.
+- Add saved-recipe search by title or description while preserving private ownership, stable pagination, and safe unavailable tombstones.
+- Add SQL Server integration coverage for persistence, authorization, search, pagination, tombstones, validation, and generated OpenAPI.
+
+### Changed
+
+- Update the API integration guide to describe the runtime Saved Recipes read and write operations.
+
+### Fixed
+
+None.
 
 ## 2026-10-07 — Add Recipe Detail and Saved Recipe Read Projections (Issue #89)
 

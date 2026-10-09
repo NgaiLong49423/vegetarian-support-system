@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.10.0
+> **Version:** v0.11.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-07
+> **Last Updated:** 2026-10-09
 > **Status:** Active
 
 # API Integration Guide
@@ -141,14 +141,15 @@ Ba endpoint runtime trong generated OpenAPI thao tác hồ sơ của Member hi�
 
 ## 7. Recipe detail, Meal Plan references and saved recipes — FR-20
 
-Các endpoint dưới đây trả projection đọc từ `RECIPE_POST` và bảng liên quan hiện có. Chúng không tạo bản sao recipe, ghi lượt xem/bình chọn, hoặc thay đổi công thức đã lưu hay Meal Plan. Generated `/v3/api-docs` là contract chi tiết của runtime.
+Các endpoint detail và Meal Plan dưới đây trả projection đọc từ `RECIPE_POST` và bảng liên quan hiện có. Saved Recipes đọc và thay đổi tham chiếu riêng của tài khoản hiện tại trong `SAVED_RECIPE`, không tạo bản sao recipe. Generated `/v3/api-docs` là contract chi tiết của runtime.
 
 | Acceptance criterion / integration | Runtime API hoặc owner | Hành vi |
 |---|---|---|
 | AC-20.1 — detail từ nguồn RecipePost duy nhất | `GET /api/v1/recipes/{recipeId}` (public) | Trả dữ liệu recipe hiện tại, hồ sơ tác giả công khai, nguyên liệu định lượng, media theo thứ tự, YouTube URL, 9 chỉ tiêu dinh dưỡng ước tính trên toàn công thức và mỗi khẩu phần kèm cảnh báo thiếu dữ liệu, thống kê Like/Dislike và lượt xem. Bài không công khai hoặc không tồn tại trả `404`. |
 | AC-20.2 — cập nhật mới nhất ở detail và Meal Plan | `GET /api/v1/recipes/{recipeId}` và `GET /api/v1/meal-plans?weekStartDate=YYYY-MM-DD` (có xác thực) | Mỗi request đọc RecipePost và nguyên liệu hiện tại; không lưu snapshot recipe trùng lặp. |
 | AC-20.3 — tombstone an toàn trong Meal Plan | `GET /api/v1/meal-plans?weekStartDate=YYYY-MM-DD` (có xác thực) | Tham chiếu không khả dụng vẫn ở đúng ô, kèm `recipeDeleted` và `unavailableMessage` chung `Công thức không còn khả dụng`; nội dung recipe bị lược bỏ. |
-| Projection công thức đã lưu cho UC-20.2 | `GET /api/v1/saved-recipes?page=0&size=20` (có xác thực) | Chỉ trả tham chiếu của tài khoản hiện tại, sắp xếp theo thời điểm lưu. `size` giới hạn 1–50. Mục không khả dụng vẫn tồn tại an toàn với `available=false`, thông báo chung và không có tên, tác giả hay media. Issue này không cung cấp thao tác lưu/xóa. |
+| UC-32.1/32.2 — lưu và bỏ lưu | `PUT /api/v1/saved-recipes/{recipeId}` và `DELETE /api/v1/saved-recipes/{recipeId}` (có xác thực) | Chỉ tài khoản Member hiện tại được xử lý. Lưu chỉ chấp nhận công thức công khai; gọi lặp không tạo mục trùng. Bỏ lưu chỉ xóa tham chiếu của tài khoản hiện tại và an toàn khi gọi lặp. |
+| UC-32.3 — danh sách, tìm kiếm và phân trang công thức đã lưu | `GET /api/v1/saved-recipes?keyword=&page=0&size=20` (có xác thực) | Chỉ trả tham chiếu của tài khoản hiện tại, sắp xếp mới lưu gần đây trước. `size` giới hạn 1–50; `keyword` tối đa 120 ký tự, tìm trong tên và mô tả. Mục không khả dụng vẫn được giữ an toàn với `available=false`, thông báo chung và không có nội dung recipe, tác giả hay media. |
 | AC-20.4 — export PDF/TXT | Frontend | Backend trả dữ liệu detail cần cho export. Frontend tạo TXT và PDF khổ A4; API này không tạo file. |
 | AC-20.5 — tải toàn trang trong hai giây | Frontend xác minh acceptance | Backend trả đủ instructions trong cùng response detail. Frontend cần đo thời gian tải và render toàn trang trên môi trường mục tiêu. |
 
