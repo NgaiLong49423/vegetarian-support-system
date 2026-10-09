@@ -116,15 +116,14 @@ export function RecipeComparePage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <Badge tone="leaf">FR-60</Badge>
-                <Badge tone="neutral">Frontend Integration (#64 / #70)</Badge>
+                <Badge tone="leaf">Đối chiếu dinh dưỡng</Badge>
               </div>
               <h1 className="mt-2 text-3xl font-extrabold text-ink sm:text-4xl">
                 So sánh hai công thức công khai
               </h1>
               <p className="mt-1 text-sm text-ink-muted">
-                Đối chiếu hai Recipe Post theo khẩu phần dự kiến. Ký hiệu ≈ biểu thị số liệu ước tính;
-                giao diện không đưa ra Health Score hay kết luận món nào tốt hơn.
+                Đối chiếu các chỉ số dinh dưỡng theo khẩu phần dự kiến. Ký hiệu ≈ biểu thị số liệu ước tính,
+                hệ thống không đưa ra nhận định chủ quan món nào tốt hơn mà để bạn lựa chọn phù hợp.
               </p>
             </div>
           </div>
@@ -388,7 +387,7 @@ export function RecipeComparePage() {
             <div className="flex items-start gap-2">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
               <div>
-                <strong>Tuyên bố miễn trừ trách nhiệm (FR-60 / BR-08):</strong>
+                <strong>Lưu ý về thông tin tham khảo:</strong>
                 <p className="mt-1">
                   Bảng so sánh mang tính chất tham khảo thông tin ẩm thực, không phải công cụ chẩn đoán
                   y tế hoặc phân định chất lượng món ăn. Mâm Xanh không tính toán điểm Health Score và

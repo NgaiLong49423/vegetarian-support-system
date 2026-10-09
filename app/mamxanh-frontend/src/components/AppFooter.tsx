@@ -33,7 +33,7 @@ const columns = [
 
 export function AppFooter() {
   return (
-    <footer className="mt-16 border-t border-brand-100 bg-white/60">
+    <footer className="mt-16 border-t-2 border-brand-300/85 bg-white/80 shadow-xs">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="max-w-xs">
@@ -58,7 +58,7 @@ export function AppFooter() {
             </div>
           ))}
         </div>
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-brand-100 pt-6 text-sm text-ink-muted sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-brand-200/90 pt-6 text-sm text-ink-muted sm:flex-row">
           <p>© 2025 Mâm Xanh System. Nuôi dưỡng lối sống xanh lành.</p>
           <p>
             <span className="font-semibold text-brand-600">Phiên bản 2.4.0-VN</span> · Hỗ trợ ẩm thực

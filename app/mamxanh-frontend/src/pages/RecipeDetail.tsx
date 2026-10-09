@@ -316,7 +316,7 @@ function MockRecipeDetail() {
             <Link
                 to={`/so-sanh?left=${recipe.slug}`}
                 className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-300"
-                title="So sánh với công thức khác (FR-60)"
+                title="So sánh với công thức khác"
             >
               <ArrowLeftRight className="h-4 w-4 text-brand-600" />
               <span className="hidden sm:inline">So sánh món</span>
@@ -331,6 +331,7 @@ function MockRecipeDetail() {
               <span className="hidden sm:inline">Báo cáo</span>
             </button>
             <button
+                type="button"
                 onClick={handleToggleSave}
                 className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${
                     saved
@@ -338,8 +339,9 @@ function MockRecipeDetail() {
                         : 'border-brand-200 bg-white text-ink-soft hover:border-brand-300'
                 }`}
                 aria-label={saved ? 'Bỏ lưu' : 'Lưu'}
+                title={saved ? 'Bỏ lưu' : 'Lưu'}
             >
-              <Heart className={`h-5 w-5 ${saved ? 'fill-current' : ''}`} />
+              <Heart className={`h-5 w-5 ${saved ? 'fill-current text-white' : ''}`} />
             </button>
             <button className="flex h-11 w-11 items-center justify-center rounded-xl border border-brand-200 bg-white text-ink-soft transition-colors hover:border-brand-300">
               <Share2 className="h-5 w-5" />
@@ -464,9 +466,9 @@ function MockRecipeDetail() {
                                 checked[ing.id] ? 'text-ink-muted line-through' : 'text-ink-soft'
                             }`}
                         >
-                    {ing.name}
+                          {ing.name}
                           {ing.note && <span className="ml-1 text-xs text-ink-muted">· {ing.note}</span>}
-                  </span>
+                        </span>
                         <Badge tone="neutral">
                           {scaleQuantity(ing.quantity, recipe.servings, desiredServings)}
                         </Badge>
@@ -518,7 +520,7 @@ function MockRecipeDetail() {
           <p className="text-right text-xs text-ink-muted">{reportDescription.length}/500 ký tự</p>
           {reportError && <p role="alert" className="mt-2 text-sm text-red-600">{reportError}</p>}
           <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-ink-soft">
-            Bản demo FE: biểu mẫu chưa được kết nối Backend, nên chưa gửi báo cáo tới quản trị viên.
+            Biểu mẫu đang ở chế độ xem trước, hệ thống chưa gửi báo cáo tới quản trị viên.
           </p>
           <div className="mt-4 flex justify-end gap-2">
             <Button variant="outline" onClick={() => setReportOpen(false)}>Hủy</Button>
@@ -528,14 +530,14 @@ function MockRecipeDetail() {
           </div>
         </Modal>
 
-        {/* YouTube Video Section - FR-15 / UC-15.2 */}
+        {/* YouTube Video Section */}
         {recipe.youtubeUrl && (
           <Card className="mb-8 p-6" data-testid="recipe-youtube-section">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink">
                 <span className="text-red-600">▶</span> Video hướng dẫn thực hiện (YouTube)
               </h2>
-              <span className="text-xs text-ink-muted">Trình phát nhúng YouTube (BR-10)</span>
+              <span className="text-xs text-ink-muted">Video hướng dẫn từ YouTube</span>
             </div>
             <div className="mx-auto max-w-3xl">
               <YouTubeEmbed
