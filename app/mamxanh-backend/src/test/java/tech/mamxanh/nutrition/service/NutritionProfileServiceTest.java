@@ -28,7 +28,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import tech.mamxanh.nutrition.dto.request.SaveNutritionProfileRequest;
+import tech.mamxanh.nutrition.dto.request.UpdateNutritionEligibilityRequest;
+import tech.mamxanh.nutrition.dto.request.NutritionEligibilityConfirmationStatus;
 import tech.mamxanh.nutrition.entity.NutritionProfileEntity;
+import tech.mamxanh.nutrition.entity.NutritionEligibilityStatus;
 import tech.mamxanh.nutrition.repository.NutritionProfileRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,7 +53,7 @@ class NutritionProfileServiceTest {
 
     @Test
     void savesOnlyForAuthenticatedEligibleMemberAfterConsentWithoutReturningResults() {
-        NutritionProfileEntity member = member();
+        NutritionProfileEntity member = eligibleMember();
         when(repository.findById(42L)).thenReturn(Optional.of(member));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -86,7 +89,7 @@ class NutritionProfileServiceTest {
 
     @Test
     void profileReadReturnsSavedDataWithoutResultsOrCrossFeatureEligibilityFlags() {
-        NutritionProfileEntity member = member();
+        NutritionProfileEntity member = eligibleMember();
         member.setDateOfBirth(LocalDate.of(2000, 7, 1));
         member.setBiologicalSex("FEMALE");
         member.setHeightCm(new BigDecimal("170.0"));
@@ -107,7 +110,7 @@ class NutritionProfileServiceTest {
 
     @Test
     void blocksResultCalculationWhenAnyExclusionIsConfirmed() {
-        NutritionProfileEntity member = member();
+        NutritionProfileEntity member = eligibleMember();
         member.setDateOfBirth(LocalDate.of(2000, 7, 1));
         member.setBiologicalSex("FEMALE");
         member.setHeightCm(new BigDecimal("170.0"));
@@ -126,13 +129,105 @@ class NutritionProfileServiceTest {
 
     @Test
     void rejectsIneligibleMemberWithoutSavingAnything() {
-        when(repository.findById(42L)).thenReturn(Optional.of(member()));
+        when(repository.findById(42L)).thenReturn(Optional.of(eligibleMember()));
         var exception = assertThrows(NutritionProfileException.class, () -> service.saveOwnProfile(new SaveNutritionProfileRequest(
                 LocalDate.of(2000, 7, 1), "FEMALE", new BigDecimal("170"), new BigDecimal("65"),
                 "SEDENTARY", "MAINTAIN_WEIGHT", true, false, false, true)));
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, exception.getStatus());
         assertEquals("NUTRITION_PROFILE_OUT_OF_SCOPE", exception.getCode());
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void recordsExplicitEligibleConfirmationWithIndependentUtcTimestamp() {
+        NutritionProfileEntity member = member();
+        member.setNutritionEligibilityStatus(NutritionEligibilityStatus.NOT_CONFIRMED);
+        member.setNutritionEligibilityConfirmedAt(null);
+        when(repository.findById(42L)).thenReturn(Optional.of(member));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.updateOwnEligibility(new UpdateNutritionEligibilityRequest(NutritionEligibilityConfirmationStatus.ELIGIBLE));
+
+        assertEquals(NutritionEligibilityStatus.ELIGIBLE, response.status());
+        assertEquals(localDateTimeUtc("2026-01-01T12:00:00"), response.confirmedAt());
+        assertEquals(response.confirmedAt(), member.getNutritionEligibilityConfirmedAt());
+        assertTrue(member.isNutritionScopeConfirmed());
+        assertEquals(null, member.getHealthDataConsentAt());
+        verify(repository).save(member);
+    }
+
+    @Test
+    void recordsIneligibleConfirmationAndAllowsLaterEligibleConfirmation() {
+        NutritionProfileEntity member = member();
+        when(repository.findById(42L)).thenReturn(Optional.of(member));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.updateOwnEligibility(new UpdateNutritionEligibilityRequest(NutritionEligibilityConfirmationStatus.INELIGIBLE));
+        var response = service.updateOwnEligibility(new UpdateNutritionEligibilityRequest(NutritionEligibilityConfirmationStatus.ELIGIBLE));
+
+        assertEquals(NutritionEligibilityStatus.ELIGIBLE, response.status());
+        assertEquals(localDateTimeUtc("2026-01-01T12:00:00"), response.confirmedAt());
+        assertEquals(NutritionEligibilityStatus.ELIGIBLE, member.getNutritionEligibilityStatus());
+        verify(repository, org.mockito.Mockito.times(2)).save(member);
+    }
+
+    @Test
+    void refusesMissingConfirmationStatusWithoutMutation() {
+        NutritionProfileEntity member = eligibleMember();
+        when(repository.findById(42L)).thenReturn(Optional.of(member));
+
+        var exception = assertThrows(NutritionProfileException.class,
+                () -> service.updateOwnEligibility(new UpdateNutritionEligibilityRequest(null)));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals(NutritionEligibilityStatus.ELIGIBLE, member.getNutritionEligibilityStatus());
+        assertEquals(localDateTimeUtc("2025-12-01T12:00:00"), member.getNutritionEligibilityConfirmedAt());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void nutritionProfileReadsAreBlockedForNotConfirmedAndIneligibleMembers() {
+        NutritionProfileEntity member = completeMember();
+        member.setNutritionEligibilityStatus(NutritionEligibilityStatus.NOT_CONFIRMED);
+        when(repository.findById(42L)).thenReturn(Optional.of(member));
+        var notConfirmed = assertThrows(NutritionProfileException.class, service::getOwnProfile);
+        assertEquals("NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED", notConfirmed.getCode());
+
+        member.setNutritionEligibilityStatus(NutritionEligibilityStatus.INELIGIBLE);
+        var ineligible = assertThrows(NutritionProfileException.class, service::getOwnProfile);
+        assertEquals("NUTRITION_ELIGIBILITY_INELIGIBLE", ineligible.getCode());
+    }
+
+    @Test
+    void nutritionProfileSaveAndCalculationAreBlockedBeforeDataProcessing() {
+        NutritionProfileEntity member = member();
+        member.setNutritionEligibilityStatus(NutritionEligibilityStatus.INELIGIBLE);
+        when(repository.findById(42L)).thenReturn(Optional.of(member));
+
+        var save = assertThrows(NutritionProfileException.class, () -> service.saveOwnProfile(saveRequest(
+                LocalDate.of(2000, 1, 1), "FEMALE", "170", "65", true)));
+        var calculate = assertThrows(NutritionProfileException.class, () -> service.calculateOwnResults(
+                new tech.mamxanh.nutrition.dto.request.ConfirmNutritionEligibilityRequest(false, false, false)));
+
+        assertEquals("NUTRITION_ELIGIBILITY_INELIGIBLE", save.getCode());
+        assertEquals("NUTRITION_ELIGIBILITY_INELIGIBLE", calculate.getCode());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void sharedGuardAllowsEligibleMemberAndRejectsNotConfirmedOrIneligibleAccounts() {
+        NutritionProfileEntity member = eligibleMember();
+        when(repository.findById(42L)).thenReturn(Optional.of(member));
+
+        service.requireEligible(42L);
+
+        member.setNutritionEligibilityStatus(NutritionEligibilityStatus.NOT_CONFIRMED);
+        var notConfirmed = assertThrows(NutritionProfileException.class, () -> service.requireEligible(42L));
+        assertEquals("NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED", notConfirmed.getCode());
+
+        member.setNutritionEligibilityStatus(NutritionEligibilityStatus.INELIGIBLE);
+        var ineligible = assertThrows(NutritionProfileException.class, () -> service.requireEligible(42L));
+        assertEquals("NUTRITION_ELIGIBILITY_INELIGIBLE", ineligible.getCode());
     }
 
     @Test
@@ -158,7 +253,7 @@ class NutritionProfileServiceTest {
 
     @Test
     void returnsEmptyResponseWhenMemberHasNoSavedProfile() {
-        when(repository.findById(42L)).thenReturn(Optional.of(member()));
+        when(repository.findById(42L)).thenReturn(Optional.of(eligibleMember()));
 
         var response = service.getOwnProfile();
 
@@ -183,7 +278,7 @@ class NutritionProfileServiceTest {
 
     @Test
     void requiresACompleteSavedProfileBeforeCalculating() {
-        when(repository.findById(42L)).thenReturn(Optional.of(member()));
+        when(repository.findById(42L)).thenReturn(Optional.of(eligibleMember()));
 
         var exception = assertThrows(NutritionProfileException.class, () -> service.calculateOwnResults(
                 new tech.mamxanh.nutrition.dto.request.ConfirmNutritionEligibilityRequest(false, false, false)));
@@ -210,7 +305,7 @@ class NutritionProfileServiceTest {
 
     @Test
     void rejectsInvalidProfileDatesMeasurementsConsentAndSelections() {
-        when(repository.findById(42L)).thenReturn(Optional.of(member()));
+        when(repository.findById(42L)).thenReturn(Optional.of(eligibleMember()));
 
         assertRejected(saveRequest(LocalDate.of(1899, 12, 31), "FEMALE", "170", "65", true));
         assertRejected(saveRequest(LocalDate.of(2026, 1, 2), "FEMALE", "170", "65", true));
@@ -271,7 +366,7 @@ class NutritionProfileServiceTest {
     }
 
     private static NutritionProfileEntity completeMember() {
-        NutritionProfileEntity member = member();
+        NutritionProfileEntity member = eligibleMember();
         member.setDateOfBirth(LocalDate.of(2000, 7, 1));
         member.setBiologicalSex("FEMALE");
         member.setHeightCm(new BigDecimal("170.0"));
@@ -287,7 +382,13 @@ class NutritionProfileServiceTest {
         member.setUserId(42L);
         member.setRole("CUSTOMER");
         member.setAccountStatus("ACTIVE");
+        member.setNutritionEligibilityStatus(NutritionEligibilityStatus.ELIGIBLE);
+        member.setNutritionEligibilityConfirmedAt(localDateTimeUtc("2025-12-01T12:00:00"));
         return member;
+    }
+
+    private static NutritionProfileEntity eligibleMember() {
+        return member();
     }
 
     private static java.time.LocalDateTime localDateTimeUtc(String value) {
