@@ -1,11 +1,48 @@
 package tech.mamxanh.integration.storage;
 
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class StorageConfigTest {
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void initializesAzureStorageAndCreatesOnlyMissingContainers(boolean exists) {
+        var properties = new StorageProperties("UseDevelopmentStorage=true", "mamxanh-recipes");
+        var serviceClient = mock(BlobServiceClient.class);
+        var containerClient = mock(BlobContainerClient.class);
+        when(serviceClient.getBlobContainerClient(properties.containerName())).thenReturn(containerClient);
+        when(containerClient.exists()).thenReturn(exists);
+
+        try (var builders = mockConstruction(BlobServiceClientBuilder.class, (builder, context) -> {
+            when(builder.connectionString(properties.connectionString())).thenReturn(builder);
+            when(builder.buildClient()).thenReturn(serviceClient);
+        })) {
+            StorageClient client = new StorageConfig().storageClient(properties);
+
+            assertThat(client).isInstanceOf(AzureBlobStorageClient.class);
+            assertThat(client.isCloudStorageConfigured()).isTrue();
+            assertThat(builders.constructed()).hasSize(1);
+            verify(builders.constructed().getFirst()).connectionString(properties.connectionString());
+            if (exists) {
+                verify(containerClient, never()).create();
+            } else {
+                verify(containerClient).create();
+            }
+        }
+    }
 
     @Test
     @DisplayName("storageClient returns MockStorageClient when connection string is missing or invalid")

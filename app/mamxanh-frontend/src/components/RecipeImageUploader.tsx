@@ -74,7 +74,7 @@ export function RecipeImageUploader({
     const newItems: ImageItem[] = [];
 
     for (const file of filesToUpload) {
-      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      const tempId = `temp-${crypto.randomUUID()}`;
       try {
         const uploadResult = await recipeMediaApi.uploadImage(file);
         newItems.push({
