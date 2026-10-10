@@ -11,7 +11,7 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
 
-Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu, tìm kiếm/lọc RecipePost công khai (FR-03/FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML không còn endpoint nào chưa có trong runtime.
+Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML không còn endpoint nào chưa có trong runtime.
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 8 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
@@ -170,13 +170,17 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #36).
 - Google ID token phải được Backend xác minh chữ ký, issuer, audience và expiry trước khi phát hành token; tài khoản được định danh bằng `google_subject`, không bằng email hay tên do client gửi.
 - Liên kết Google vào tài khoản mật khẩu chưa xác minh sẽ xóa mật khẩu đó, vì mật khẩu có thể do người không sở hữu hộp thư đặt trước (Q26).
 
-## 6. Nutrition Profile — FR-35
+## 6. Nutrition eligibility — FR-38 và Nutrition Profile — FR-35
 
-Ba endpoint runtime trong generated OpenAPI thao tác hồ sơ của Member hiện tại; client không truyền `userId`. Chúng yêu cầu authenticated Member principal. Tích hợp JWT thật phụ thuộc authentication contract chung; không dùng fake authentication trong production. Kết quả không được lưu thành lịch sử theo dõi.
+Eligibility và hồ sơ dinh dưỡng là hai thao tác Backend riêng. Client không truyền `userId`; các endpoint yêu cầu authenticated Member principal. Tích hợp JWT thật phụ thuộc authentication contract chung; không dùng fake authentication trong production.
 
-- `GET /nutrition/profile` chỉ trả dữ liệu hồ sơ đã lưu; không trả BMI hoặc các chỉ tiêu.
-- `PUT /nutrition/profile` nhận câu trả lời phạm vi hiện tại cùng ngày sinh, giới tính sinh học, chiều cao, cân nặng, mức vận động, mục tiêu chung và đồng thuận. Backend từ chối lưu nếu ngày sinh không hợp lệ, tuổi dưới 18/trên 120 hoặc có điều kiện loại trừ. Câu trả lời loại trừ chỉ dùng để kiểm tra yêu cầu và không được lưu lên hồ sơ.
-- `POST /nutrition/profile/calculate` nhận xác nhận phạm vi hiện tại. Chỉ khi cả ba cờ đều `false` và hồ sơ lưu hợp lệ mới trả BMI cùng 8 thành phần dinh dưỡng (9 chỉ tiêu khi tính cả năng lượng). Phản hồi tính toán không được lưu và giao diện xóa kết quả khi đóng/tải lại trang hoặc thay đổi xác nhận.
+- `GET /nutrition/profile/eligibility` trả trạng thái hiện tại (`NOT_CONFIRMED`, `ELIGIBLE`, `INELIGIBLE`) và `confirmedAt`. Trạng thái ban đầu là `NOT_CONFIRMED`, timestamp `null`.
+- `PUT /nutrition/profile/eligibility` nhận trạng thái xác nhận `ELIGIBLE` hoặc `INELIGIBLE`. Chỉ request xác nhận chủ động mới cập nhật Database; Backend ghi trạng thái và thời điểm xác nhận thành công gần nhất trong cùng giao dịch. `NOT_CONFIRMED` không phải trạng thái được gửi để xác nhận. Lỗi validation/Backend không cập nhật giá trị cũ. Endpoint này tách biệt với lưu hồ sơ và `health_data_consent_at`; không có draft/autosave hoặc lịch sử xác nhận.
+- `GET /nutrition/profile`, `PUT /nutrition/profile` và `POST /nutrition/profile/calculate` yêu cầu `ELIGIBLE`. `NOT_CONFIRMED` và `INELIGIBLE` bị chặn ở Backend trước khi đọc, lưu hay tính hồ sơ cá nhân; `INELIGIBLE` vẫn được gọi API eligibility để xác nhận lại. Khi trở lại `ELIGIBLE`, quyền truy cập được khôi phục theo phân quyền hiện hành, không tự động tính lại dữ liệu cũ.
+- Guard trả `403 NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED` cho `NOT_CONFIRMED` và `403 NUTRITION_ELIGIBILITY_INELIGIBLE` cho `INELIGIBLE`.
+- `PUT /nutrition/profile` lưu hồ sơ FR-35 và đồng thuận xử lý dữ liệu sức khỏe theo hợp đồng FR-35. Việc này không tự xác nhận hoặc đổi trạng thái eligibility.
+- `POST /nutrition/profile/calculate` trả BMI cùng 8 thành phần dinh dưỡng (9 chỉ tiêu khi tính cả năng lượng) khi hồ sơ lưu hợp lệ. Phản hồi tính toán không được lưu thành lịch sử theo dõi.
+- Guard dùng chung cho endpoint dinh dưỡng cá nhân FR-36/FR-37 cần được tích hợp tại các API do các FR đó sở hữu; chỉ endpoint đã tồn tại và được bảo vệ mới có bằng chứng nghiệm thu.
 - Response hiển thị số dạng xấp xỉ. Đây là tham khảo, không phải chẩn đoán/điều trị/kê đơn, tư vấn y tế, chứng nhận hay giám sát liên tục.
 - Lỗi dùng `application/problem+json` và mã ổn định; trường hợp ngoài phạm vi trả `422 NUTRITION_PROFILE_OUT_OF_SCOPE`.
 

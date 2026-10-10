@@ -50,6 +50,14 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed", "Phương thức HTTP không được hỗ trợ."),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type",
             "Định dạng nội dung không được hỗ trợ."),
+    FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "File too large",
+            "Dung lượng tệp vượt quá 5 MB cho phép."),
+    UNSUPPORTED_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "Unsupported image type",
+            "Chỉ hỗ trợ tệp hình ảnh định dạng JPEG, PNG hoặc WebP."),
+    MAX_RECIPE_MEDIA_EXCEEDED(HttpStatus.BAD_REQUEST, "Max recipe media exceeded",
+            "Mỗi bài công thức chỉ được có tối đa 5 ảnh minh họa."),
+    INVALID_COVER_IMAGE_CONFIGURATION(HttpStatus.BAD_REQUEST, "Invalid cover image configuration",
+            "Bài công thức có ảnh bắt buộc phải có đúng một ảnh được chọn làm ảnh bìa."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error", "Hệ thống gặp lỗi. Vui lòng thử lại sau.");
 
     private final HttpStatus status;

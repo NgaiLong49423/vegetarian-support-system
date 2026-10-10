@@ -15,7 +15,8 @@
 --                   + V7__user_onboarding_invitation.sql
 --                   + V8__expert_application_notifications.sql
 --                   + V9__align_recipe_report_contract.sql
---                   + V10__user_password_reset.sql
+--                   + V10__nutrition_eligibility_status.sql
+--                   + V11__user_password_reset.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -159,6 +160,10 @@ CREATE TABLE [USER] (
         CONSTRAINT DF_USER_therapeutic DEFAULT 0,
     nutrition_scope_confirmed  BIT            NOT NULL
         CONSTRAINT DF_USER_nutrition_scope DEFAULT 0,
+    -- V10 (FR-38): eligibility state is separate from FR-35 health-data consent
+    nutrition_eligibility_status VARCHAR(20) NOT NULL
+        CONSTRAINT DF_USER_nutrition_eligibility_status DEFAULT 'NOT_CONFIRMED',
+    nutrition_eligibility_confirmed_at DATETIME2(7) NULL,
     -- V4 (FR-35): explicit consent before storing self-reported health data
     health_data_consent        BIT            NOT NULL
         CONSTRAINT DF_USER_health_data_consent DEFAULT 0,
@@ -186,7 +191,7 @@ CREATE TABLE [USER] (
     login_blocked_until            DATETIME2(7)   NULL,
     -- V7 (Issue #36): when the FR-31 Onboarding invitation was shown; NULL = not shown yet (AC-31.10)
     onboarding_invited_at          DATETIME2(7)   NULL,
-    -- V10 (Issue #9): SHA-256 hex digest of the current password-reset token (15 minutes) and
+    -- V11 (Issue #9): SHA-256 hex digest of the current password-reset token (15 minutes) and
     -- reset-email rate-limit metadata: last email time (60 s cooldown), one-hour window and its count (Q27)
     password_reset_token              VARCHAR(64)    NULL,
     reset_token_expires_at            DATETIME2(7)   NULL,
@@ -221,6 +226,13 @@ CREATE TABLE [USER] (
         (health_data_consent = 0 AND health_data_consent_at IS NULL)
         OR (health_data_consent = 1 AND health_data_consent_at IS NOT NULL)
     ),
+    CONSTRAINT CK_USER_nutrition_eligibility_status CHECK (
+        nutrition_eligibility_status IN ('NOT_CONFIRMED', 'ELIGIBLE', 'INELIGIBLE')
+    ),
+    CONSTRAINT CK_USER_nutrition_eligibility_timestamp CHECK (
+        (nutrition_eligibility_status = 'NOT_CONFIRMED' AND nutrition_eligibility_confirmed_at IS NULL)
+        OR (nutrition_eligibility_status IN ('ELIGIBLE', 'INELIGIBLE') AND nutrition_eligibility_confirmed_at IS NOT NULL)
+    ),
     CONSTRAINT CK_USER_onboarding_status CHECK (
         onboarding_status IN ('NOT_STARTED', 'SKIPPED', 'COMPLETED')
     ),
@@ -249,7 +261,7 @@ CREATE UNIQUE NONCLUSTERED INDEX UQ_USER_email_verification_token
     WHERE email_verification_token IS NOT NULL;
 GO
 
--- password_reset_token (V10): lookup by token digest; most accounts have no reset token
+-- password_reset_token (V11): lookup by token digest; most accounts have no reset token
 CREATE UNIQUE NONCLUSTERED INDEX UQ_USER_password_reset_token
     ON [USER](password_reset_token)
     WHERE password_reset_token IS NOT NULL;

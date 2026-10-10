@@ -1,5 +1,5 @@
 -- ============================================================================
--- Flyway Migration: V10__user_password_reset.sql
+-- Flyway Migration: V11__user_password_reset.sql
 -- Database Engine : Microsoft SQL Server
 -- Project         : Mâm Xanh — Vegetarian Support System (SWP391)
 -- Issue           : Refs #9 — FR-03-E password reset
