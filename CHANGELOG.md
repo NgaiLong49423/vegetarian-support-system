@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-11 — Close Expert Recipe Publishing Gaps (Issue #11)
+## 2026-10-11 — Close Expert Recipe Publishing Gaps (Issue #11) ([PR #115](https://github.com/NgaiLong49423/vegetarian-support-system/pull/115))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `3e20875`.
 
 **Scope:** Complete the FR-04 acceptance gaps found while reviewing Issue #11 as the FR-04 coordination Issue (decisions Q49 and Q50): only the Expert author may change a Recipe Post's images, an Administrator is not an author, and a Guest who opens the create page is sent to the login page.
 
