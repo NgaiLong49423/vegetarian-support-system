@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M04
 > **File:** `docs/requirements/use-cases/recipe-discovery-and-classification.md`
-> **Version:** v2.4.0
+> **Version:** v2.5.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-28
+> **Last Updated:** 2026-10-08
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -69,8 +69,8 @@ Người dùng đang ở trang Tìm kiếm/Khám phá; các tùy chọn lọc ch
 1. Người dùng chọn một hoặc nhiều tiêu chí:
    - Trường phái ăn chay: `Vegan`, `Lacto Vegetarian`, `Ovo Vegetarian`, hoặc `Lacto-Ovo Vegetarian`.
    - Thể loại món `dish_category`: món nước, món xào, món lẩu, món kho, món canh, món chiên, món hấp, món gỏi/salad, món cuốn, món nướng, hoặc món tráng miệng/chè.
-   - Nguyên liệu và giới hạn thời gian nấu tối đa (≤ 15, ≤ 30, ≤ 60 phút hoặc trên 60 phút).
-2. Hệ thống áp dụng điều kiện giao (AND) giữa các nhóm tiêu chí và chỉ truy vấn Recipe Post công khai.
+   - Nguyên liệu chuẩn trong danh mục; giới hạn tổng thời gian chuẩn bị và nấu tối đa (≤ 15, ≤ 30, ≤ 60 phút hoặc không giới hạn).
+2. Hệ thống áp dụng điều kiện giao (AND) giữa từ khóa và mọi nhóm tiêu chí; nếu chọn nhiều nguyên liệu, mỗi công thức phải chứa tất cả nguyên liệu đó. Hệ thống chỉ truy vấn Recipe Post công khai.
 3. Hệ thống hiển thị danh sách kết quả có phân trang.
 
 #### Postconditions

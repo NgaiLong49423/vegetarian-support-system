@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.hasItems;
 
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,12 +16,20 @@ import tech.mamxanh.AbstractIntegrationTest;
 class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
     private static final String EMAIL_PREFIX = "issue3-browse-%@test.local";
     private static final String BROWSE_TEST_KEYWORD = "issue3-browse-token";
+    private static final String FILTER_EMAIL = "issue14-filter-author@test.local";
+    private static final String FILTER_TOKEN = "issue14-filter-token";
+    private static final String FILTER_INGREDIENT_A = "Issue14 Filter Ingredient A";
+    private static final String FILTER_INGREDIENT_B = "Issue14 Filter Ingredient B";
     @Autowired private JdbcTemplate jdbcTemplate;
 
     private long authorId;
     private long recentId;
     private long middleId;
     private long oldId;
+    private long filterAuthorId;
+    private long ingredientAId;
+    private long ingredientBId;
+    private int gramUnitId;
 
     @BeforeEach
     void preparePublicRecipes() {
@@ -29,6 +38,19 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
         jdbcTemplate.update("DELETE FROM [COMMENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", EMAIL_PREFIX);
         jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)", EMAIL_PREFIX);
         jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE ?", EMAIL_PREFIX);
+        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = ?)", FILTER_EMAIL);
+        jdbcTemplate.update("DELETE FROM [USER] WHERE email = ?", FILTER_EMAIL);
+        jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name IN (?, ?)", FILTER_INGREDIENT_A, FILTER_INGREDIENT_B);
+        jdbcTemplate.update("INSERT INTO [USER] (email, display_name, avatar_url, role, account_status, email_verified) VALUES (?, ?, ?, 'EXPERT', 'ACTIVE', 1)",
+                FILTER_EMAIL, "Tác giả lọc", "https://img.test/filter-avatar.png");
+        filterAuthorId = jdbcTemplate.queryForObject("SELECT user_id FROM [USER] WHERE email = ?", Long.class, FILTER_EMAIL);
+        jdbcTemplate.update("INSERT INTO [INGREDIENT] (name, source_name, reference_date) VALUES (?, ?, '2026-10-04')",
+                FILTER_INGREDIENT_A, "Issue #14 SQL Server integration fixture");
+        jdbcTemplate.update("INSERT INTO [INGREDIENT] (name, source_name, reference_date) VALUES (?, ?, '2026-10-04')",
+                FILTER_INGREDIENT_B, "Issue #14 SQL Server integration fixture");
+        ingredientAId = jdbcTemplate.queryForObject("SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?", Long.class, FILTER_INGREDIENT_A);
+        ingredientBId = jdbcTemplate.queryForObject("SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?", Long.class, FILTER_INGREDIENT_B);
+        gramUnitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'g'", Integer.class);
         jdbcTemplate.update("INSERT INTO [USER] (email, display_name, avatar_url, role, account_status, email_verified) VALUES (?, ?, ?, 'EXPERT', 'ACTIVE', 1)",
                 "issue3-browse-author@test.local", "Tác giả công khai", "https://img.test/avatar.png");
         authorId = jdbcTemplate.queryForObject("SELECT user_id FROM [USER] WHERE email = ?", Long.class,
@@ -140,6 +162,51 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.items[0].id").value(recentId));
     }
 
+    @Test
+    void filtersPublicRecipesByEachCriterionAndCombinesSelectedIngredientsWithAnd() throws Exception {
+        long bothIngredients = insertFilterRecipe("đủ nguyên liệu", "PUBLISHED", "VEGAN", "SOUP", 5, 10,
+                ingredientAId, ingredientBId);
+        long onlyIngredientA = insertFilterRecipe("chỉ A", "PUBLISHED", "VEGAN", "SOUP", 10, 25, ingredientAId);
+        long onlyIngredientB = insertFilterRecipe("chỉ B", "PUBLISHED", "LACTO", "FRIED", 5, 10, ingredientBId);
+        insertFilterRecipe("bài ẩn", "HIDDEN", "VEGAN", "SOUP", 5, 10, ingredientAId, ingredientBId);
+        String keyword = FILTER_TOKEN;
+
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("vegetarianType", "VEGAN"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.items[*].id", org.hamcrest.Matchers.containsInAnyOrder(
+                        Math.toIntExact(bothIngredients), Math.toIntExact(onlyIngredientA))));
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("dishCategory", "SOUP"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2));
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("maxTotalTimeMinutes", "15"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.items[*].id", org.hamcrest.Matchers.containsInAnyOrder(
+                        Math.toIntExact(bothIngredients), Math.toIntExact(onlyIngredientB))));
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword)
+                        .param("ingredientIds", Long.toString(ingredientAId), Long.toString(ingredientBId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(bothIngredients));
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("vegetarianType", "VEGAN")
+                        .param("dishCategory", "SOUP").param("maxTotalTimeMinutes", "15")
+                        .param("ingredientIds", Long.toString(ingredientAId), Long.toString(ingredientBId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(bothIngredients));
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("ingredientIds", "0"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("dishCategory", "NOT_A_CATEGORY"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("maxTotalTimeMinutes", "0"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void generatedOpenApiDocumentsAllPublicBrowseFilterParameters() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/recipes'].get.parameters[*].name", hasItems(
+                        "keyword", "page", "size", "sort", "viewPeriod", "vegetarianType",
+                        "dishCategory", "ingredientIds", "maxTotalTimeMinutes")));
+    }
+
     private long insertRecipe(String title, String description, String status, LocalDateTime publishedAt) {
         jdbcTemplate.update("""
                 INSERT INTO [RECIPE_POST]
@@ -149,6 +216,25 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
                 """, authorId, title, description, status, publishedAt);
         return jdbcTemplate.queryForObject("SELECT recipe_id FROM [RECIPE_POST] WHERE author_id = ? AND title = ?",
                 Long.class, authorId, title);
+    }
+
+    private long insertFilterRecipe(String title, String status, String vegetarianType, String category,
+            int prepMinutes, int cookMinutes, long... ingredients) {
+        String fullTitle = FILTER_TOKEN + " " + title;
+        jdbcTemplate.update("""
+                INSERT INTO [RECIPE_POST]
+                (author_id, title, description, instructions, dish_category, vegetarian_type, difficulty,
+                 servings, prep_time_min, cook_time_min, status, published_at)
+                VALUES (?, ?, N'Issue #14 filter description', N'Nấu đến khi chín và nêm vừa ăn.', ?, ?, 'EASY', 2, ?, ?, ?, ?)
+                """, filterAuthorId, fullTitle, category, vegetarianType, prepMinutes, cookMinutes, status,
+                LocalDateTime.ofInstant(clock.instant(), java.time.ZoneOffset.UTC));
+        long recipeId = jdbcTemplate.queryForObject("SELECT recipe_id FROM [RECIPE_POST] WHERE author_id = ? AND title = ?",
+                Long.class, filterAuthorId, fullTitle);
+        for (long ingredientId : ingredients) {
+            jdbcTemplate.update("INSERT INTO [RECIPE_INGREDIENT] (recipe_id, ingredient_id, unit_id, quantity) VALUES (?, ?, ?, 100)",
+                    recipeId, ingredientId, gramUnitId);
+        }
+        return recipeId;
     }
 
     private void insertView(long recipeId, LocalDateTime viewedAt) {

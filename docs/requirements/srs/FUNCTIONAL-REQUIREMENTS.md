@@ -520,6 +520,11 @@ Cung cấp trung tâm điều hành hậu kiểm nội dung toàn diện cho Qu�
 #### Mục đích
 Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù hợp với nhu cầu ăn uống cụ thể, sở thích cá nhân, nguyên liệu sẵn có trong gia đình hoặc quỹ thời gian nấu nướng; tối ưu hóa trải nghiệm khám phá ẩm thực chay trên nền tảng qua các tiêu chí lọc chính xác và bảng xếp hạng đa dạng.
 
+#### Ngữ nghĩa lọc
+- Từ khóa, loại ăn chay, thể loại món, nguyên liệu và giới hạn thời gian được áp dụng đồng thời theo điều kiện AND.
+- Khi chọn nhiều nguyên liệu, một Recipe Post chỉ khớp nếu có đủ tất cả nguyên liệu chuẩn đã chọn.
+- Tổng thời gian dùng để so sánh với giới hạn là thời gian chuẩn bị cộng thời gian nấu (`prep_time_min + cook_time_min`). Bộ lọc chỉ trả Recipe Post công khai và không làm thay đổi chế độ sắp xếp đã chọn.
+
 #### Danh mục Use Cases & User Stories
 - **Các Use Case con:**
   - `UC-08.1`: Tìm kiếm bài công thức theo từ khóa (Search recipes by keyword).
