@@ -485,9 +485,10 @@ test('recipe exploration does not expose local-only card actions as Backend feat
 });
 
 test('recipe creation route uses authenticated account role (FR-05)', async ({ page }) => {
+  // AC-04.5: a Guest is sent to the login page and never sees the recipe form.
   await page.goto('/dang-cong-thuc');
-  await expect(page.getByRole('heading', { name: 'Đăng công thức chỉ dành cho Chuyên gia' })).toBeVisible();
-  await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
+  await expect(page).toHaveURL(/\/dang-nhap$/);
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toHaveCount(0);
 
   await seedDemoSession(page, 'CUSTOMER');
   await page.goto('/dang-cong-thuc');

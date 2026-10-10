@@ -1,5 +1,6 @@
 package tech.mamxanh.recipe.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.common.response.ApiResponse;
 import tech.mamxanh.recipe.dto.request.UpdateRecipeMediaRequest;
 import tech.mamxanh.recipe.dto.response.RecipeMediaResponse;
@@ -38,10 +40,11 @@ public class RecipeMediaController {
 
     /**
      * Upload an image file to storage (UC-14.1, AC-14.1, AC-14.2).
-     * Restricted to Chuyên gia (ROLE_EXPERT) and Administrator (ROLE_ADMIN).
+     * Restricted to Chuyên gia (ROLE_EXPERT); an Administrator is not a recipe author (AC-04.7).
      */
     @PostMapping(value = "/media/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('EXPERT', 'ADMIN')")
+    @PreAuthorize("hasRole('EXPERT')")
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     public ResponseEntity<ApiResponse<UploadImageResponse>> uploadImage(
             @RequestParam("file") MultipartFile file) {
         UploadImageResponse response = recipeMediaService.uploadImage(file);
@@ -64,7 +67,8 @@ public class RecipeMediaController {
      * Enforces max 5 images and exactly 1 cover image when media items exist.
      */
     @PutMapping("/{recipeId}/media")
-    @PreAuthorize("hasAnyRole('EXPERT', 'ADMIN')")
+    @PreAuthorize("hasRole('EXPERT')")
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     public ApiResponse<List<RecipeMediaResponse>> updateRecipeMedia(
             @PathVariable Long recipeId,
             @Valid @RequestBody UpdateRecipeMediaRequest request) {
@@ -76,7 +80,8 @@ public class RecipeMediaController {
      * Delete all media items of a recipe and clean up Azure Blob resources.
      */
     @DeleteMapping("/{recipeId}/media")
-    @PreAuthorize("hasAnyRole('EXPERT', 'ADMIN')")
+    @PreAuthorize("hasRole('EXPERT')")
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     public ApiResponse<Void> deleteRecipeMedia(@PathVariable Long recipeId) {
         recipeMediaService.deleteRecipeMedia(recipeId);
         return ApiResponse.success("Xóa toàn bộ ảnh công thức thành công.", null);
