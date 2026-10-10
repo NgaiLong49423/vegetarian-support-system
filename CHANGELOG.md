@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-11 — Add Public Author Profiles (Issue #29)
+## 2026-10-11 — Add Public Author Profiles (Issue #29) ([PR #116](https://github.com/NgaiLong49423/vegetarian-support-system/pull/116))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `20399b3`.
 
 **Scope:** Implement UC-23.1–UC-23.3 so readers see who wrote a Recipe Post and can open the author's public profile, and members can edit their name, short bio and avatar, following AC-23.1–AC-23.10 and decisions Q54–Q58.
 
