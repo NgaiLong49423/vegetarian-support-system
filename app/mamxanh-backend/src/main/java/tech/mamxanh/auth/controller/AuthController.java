@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 import tech.mamxanh.auth.dto.request.EmailRequest;
+import tech.mamxanh.auth.dto.request.GoogleLoginRequest;
 import tech.mamxanh.auth.dto.request.LoginRequest;
 import tech.mamxanh.auth.dto.request.PasswordResetConfirmRequest;
 import tech.mamxanh.auth.dto.request.RegisterRequest;
@@ -17,6 +18,7 @@ import tech.mamxanh.auth.dto.response.AuthResponse;
 import tech.mamxanh.auth.dto.response.MessageResponse;
 import tech.mamxanh.auth.dto.response.RegistrationResponse;
 import tech.mamxanh.auth.service.EmailVerificationService;
+import tech.mamxanh.auth.service.GoogleLoginService;
 import tech.mamxanh.auth.service.LoginService;
 import tech.mamxanh.auth.service.PasswordResetService;
 import tech.mamxanh.auth.service.RegistrationService;
@@ -29,14 +31,16 @@ public class AuthController {
     private final RegistrationService registrationService;
     private final EmailVerificationService emailVerificationService;
     private final LoginService loginService;
+    private final GoogleLoginService googleLoginService;
     private final PasswordResetService passwordResetService;
 
     public AuthController(RegistrationService registrationService,
             EmailVerificationService emailVerificationService, LoginService loginService,
-            PasswordResetService passwordResetService) {
+            GoogleLoginService googleLoginService, PasswordResetService passwordResetService) {
         this.registrationService = registrationService;
         this.emailVerificationService = emailVerificationService;
         this.loginService = loginService;
+        this.googleLoginService = googleLoginService;
         this.passwordResetService = passwordResetService;
     }
 
@@ -61,6 +65,12 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return loginService.login(request);
+    }
+
+    /** UC-03.5: exchanges a Google ID Token from Google Identity Services for an access token. */
+    @PostMapping("/google")
+    public AuthResponse googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
+        return googleLoginService.login(request.idToken());
     }
 
     @PostMapping("/password-resets")

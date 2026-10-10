@@ -114,6 +114,42 @@ public class User {
         return user;
     }
 
+    /**
+     * UC-03.5 / Q26: a new account created from a verified Google identity. It has no password,
+     * its email is already verified, and only here does the Google name and avatar become the profile.
+     */
+    public static User registerWithGoogle(String email, String googleSubject, String displayName, String avatarUrl,
+            LocalDateTime now) {
+        User user = new User();
+        user.email = email;
+        user.googleSubject = googleSubject;
+        user.displayName = displayName;
+        user.avatarUrl = avatarUrl;
+        user.role = Role.CUSTOMER;
+        user.accountStatus = AccountStatus.ACTIVE;
+        user.emailVerified = true;
+        user.createdAt = now;
+        user.updatedAt = now;
+        return user;
+    }
+
+    /**
+     * Links a Google identity to an existing account with the same email. An unverified password
+     * account becomes verified and loses its password and verification token, because the password
+     * may have been set by someone who never owned the mailbox (Q26). A verified account keeps its
+     * password (Q39). Name and avatar are never overwritten.
+     */
+    public void linkGoogleAccount(String googleSubject, LocalDateTime now) {
+        if (!emailVerified) {
+            this.emailVerified = true;
+            this.passwordHash = null;
+            this.emailVerificationToken = null;
+            this.verificationTokenExpiresAt = null;
+        }
+        this.googleSubject = googleSubject;
+        this.updatedAt = now;
+    }
+
     /** Replaces any previous verification token, so only the newest link stays valid. */
     public void assignEmailVerificationToken(String tokenHash, LocalDateTime expiresAt, LocalDateTime now) {
         this.emailVerificationToken = tokenHash;

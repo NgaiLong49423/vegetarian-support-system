@@ -37,4 +37,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from User u where u.id = :id")
     Optional<User> findByIdForUpdate(@Param("id") Long id);
+
+    /** Google login looks an account up by its Google ID before its email (FR-03-D), with a row lock. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.googleSubject = :googleSubject")
+    Optional<User> findByGoogleSubjectForUpdate(@Param("googleSubject") String googleSubject);
 }

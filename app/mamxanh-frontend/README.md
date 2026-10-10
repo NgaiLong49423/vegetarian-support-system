@@ -1,6 +1,6 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.17.0
+> **Version:** v1.19.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-10-10
 > **Status:** Active  
@@ -23,10 +23,11 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - Nơi lưu token nằm trong một hàm duy nhất (`src/lib/authStorage.ts`). Axios tự gắn `Authorization: Bearer` cho request cần đăng nhập (không gắn cho `/auth/*`); Backend trả `401` hoặc `403 ACCOUNT_LOCKED` thì Frontend xóa phiên và đưa về trang Đăng nhập. Phiên tự kết thúc khi token hết hạn (không có refresh token), bị xóa khi tab đóng và không đồng bộ giữa các tab.
 - Docker Development chạy thêm kiểm thử Playwright tích hợp: trình duyệt đăng nhập qua Frontend/Backend đang chạy và truy vấn SQL Server Compose để xác minh bộ đếm login sai, khóa lần thứ năm và reset sau khi hết hạn.
 - **Onboarding và Sở thích ăn uống đã gọi Backend thật (Issue #36):** sau khi đăng nhập, Frontend gọi `POST /nutrition/dietary-preferences/onboarding/invitation`; chỉ khi Backend trả `show = true` (lần đầu của tài khoản mới chưa trả lời) Member mới được chuyển tới `/khoi-tao-so-thich` để chọn loại ăn chay, nguyên liệu cần tránh, món không thích (hoặc xác nhận "Không có") và sở thích tùy chọn. Rời trang mà chưa trả lời hoặc bấm "Bỏ qua" (ghi nhận `SKIPPED`) thì các lần đăng nhập sau không hỏi lại; trang vẫn mở thủ công được. Trang `/ho-so/so-thich-an-uong` (menu "Sở thích ăn uống") cho xem, cập nhật hồ sơ và cho biết còn thiếu thông tin nào trước khi dùng AI cá nhân hóa. Gợi ý tên lấy từ danh mục nguyên liệu chuẩn đang hoạt động.
-- **Đăng xuất** chỉ xóa token và trạng thái đăng nhập trên thiết bị, không gọi Backend (AC-03.13). Google Login vẫn là biểu mẫu demo cho tới Issue #8.
+- **Đăng nhập Google đã gọi Backend thật (Issue #8):** trang Đăng nhập và Đăng ký hiện nút "Tiếp tục với Google" của Google Identity Services (`@react-oauth/google`) khi có `VITE_GOOGLE_CLIENT_ID`; script Google chỉ được tải trên hai trang này. Google trả ID Token, Frontend gửi `POST /auth/google` rồi lưu phiên và kiểm tra lời mời Onboarding như khi đăng nhập bằng mật khẩu. Lỗi hiển thị theo `code`: token Google không hợp lệ (`GOOGLE_TOKEN_INVALID`), tài khoản bị khóa (`ACCOUNT_LOCKED`), email đã liên kết Google khác (`GOOGLE_ACCOUNT_CONFLICT`) và Google tạm không khả dụng (`GOOGLE_LOGIN_UNAVAILABLE`). Thiếu Client ID thì thay nút bằng thông báo; script Google không tải được thì vẫn đăng nhập bằng email được.
+- **Đăng xuất** chỉ xóa token và trạng thái đăng nhập trên thiết bị, không gọi Backend (AC-03.13).
 - **Quên và đặt lại mật khẩu đã gọi Backend thật (Issue #9):** `/quen-mat-khau` gửi `POST /auth/password-resets` và hiển thị nguyên văn thông báo trung tính của Backend. Liên kết trong email mở `/dat-lai-mat-khau?token=...`; Frontend giữ token trong bộ nhớ, xóa nó khỏi thanh địa chỉ, kiểm tra quy tắc mật khẩu rồi gửi `POST /auth/password-resets/confirm`. Liên kết hỏng, đã dùng hoặc hết hạn (`PASSWORD_RESET_TOKEN_INVALID`) ẩn biểu mẫu và dẫn tới yêu cầu liên kết mới; mật khẩu trùng mật khẩu hiện tại (`NEW_PASSWORD_SAME_AS_CURRENT`) báo ngay dưới ô mật khẩu.
 - Không còn chế độ đổi vai trò/tài khoản giả trên Frontend. Dùng tài khoản local do Backend seed tạo sẵn; danh sách email và cách đặt chung mật khẩu nằm trong [Backend Workspace Guide](../mamxanh-backend/README.md#tài-khoản-demo-local). Mỗi vai trò phải đăng nhập bằng tài khoản riêng; quyền được Backend xác thực.
-- Các luồng Backend hiện hiển thị từ API/SQL thật: khám phá và chi tiết công thức; tạo/sửa/quản lý công thức; lịch ăn tuần; hồ sơ dinh dưỡng; sở thích/onboarding; nộp và duyệt đơn Chuyên gia; danh mục nguyên liệu/đơn vị Admin. Trang khám phá chỉ cung cấp tìm kiếm từ khóa và phân trang vì đó là các tham số API hiện hỗ trợ.
+- Các luồng Backend hiện hiển thị từ API/SQL thật: khám phá và chi tiết công thức; tạo/sửa/quản lý công thức; lịch ăn tuần; hồ sơ dinh dưỡng; sở thích/onboarding; nộp và duyệt đơn Chuyên gia; danh mục nguyên liệu/đơn vị Admin. Trang khám phá gửi từ khóa, bộ lọc loại ăn chay/thể loại/nguyên liệu/tổng thời gian, phân trang và chế độ sắp xếp tới API công khai; tùy chọn chuẩn và nguyên liệu được tải từ Backend, mọi điều kiện lọc kết hợp bằng AND.
 - Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
 
 ### Các chức năng demo khác
@@ -73,6 +74,8 @@ Nếu cần mở cả hệ thống, dùng hai cửa sổ Terminal và khởi đ�
 3. Frontend tại port `5173`.
 
 Frontend gọi Backend tại `VITE_API_BASE_URL`. Khi chạy trực tiếp, `/api/v1` được Vite proxy tới `http://localhost:8080`; trong Docker Compose, proxy dùng service `backend`. Để đổi base path, sao chép `.env.example` thành `.env.local` (đã được Git bỏ qua) rồi sửa giá trị; không đặt secret trong biến `VITE_` vì chúng nằm trong bundle công khai. Backend phải cho phép origin của Frontend qua `MAMXANH_CORS_ALLOWED_ORIGINS`.
+
+Đăng nhập Google cần `VITE_GOOGLE_CLIENT_ID` (Client ID công khai, cùng giá trị với `MAMXANH_GOOGLE_CLIENT_ID` của Backend) và origin của Frontend (ví dụ `http://localhost:5173`) phải có trong mục Authorized JavaScript origins của OAuth client trên Google Cloud Console. Biến được gắn vào bundle lúc build. Bản build kiểm thử E2E (`npm run test:e2e:coverage`) tự đặt một Client ID giả và thay Google Identity Services bằng script stub, nên test không gọi Google; khi tự build rồi chạy Playwright, đặt `VITE_GOOGLE_CLIENT_ID` trước lệnh build.
 
 Chỉ các luồng được liệt kê là đã kết nối mới là bằng chứng hiển thị dữ liệu Backend; các UI demo khác không chứng minh Backend hoặc database đã kết nối.
 

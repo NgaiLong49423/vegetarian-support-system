@@ -4,8 +4,9 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, Leaf, Mail, ShieldChe
 import { Logo } from '../components/Logo';
 import { Button } from '../components/ui';
 import { useAuth, type SessionNotice } from '../components/AuthContext';
+import { GoogleSignIn } from '../components/GoogleSignIn';
 import { fieldMessages, retryAfterSeconds, toProblem, type ProblemDetails } from '../lib/problem';
-import { confirmPasswordReset, login, register, requestPasswordReset, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
+import { confirmPasswordReset, googleLogin, login, register, requestPasswordReset, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
 import { claimOnboardingInvitation } from '../services/dietaryPreferencesApi';
 import { passwordProblems } from '../utils/password';
 
@@ -48,6 +49,24 @@ function loginError(problem: ProblemDetails | null, retryAfter: number | null): 
       return { tone: 'error', text: SESSION_NOTICES.locked };
     case 'LOGIN_TEMPORARILY_BLOCKED':
       return { tone: 'error', text: retryAfter ? `Bạn đã nhập sai mật khẩu nhiều lần liên tiếp. Vui lòng thử lại sau ${Math.ceil(retryAfter / 60)} phút.` : problem.detail ?? NETWORK_ERROR };
+    default:
+      return { tone: 'error', text: problem?.detail ?? NETWORK_ERROR };
+  }
+}
+
+const GOOGLE_RETRY = 'Không đăng nhập được với Google. Vui lòng thử lại.';
+
+// UC-03.5: Google sign-in errors, also chosen by problem code.
+function googleLoginError(problem: ProblemDetails | null): Notice {
+  switch (problem?.code) {
+    case 'GOOGLE_TOKEN_INVALID':
+      return { tone: 'error', text: 'Không xác thực được tài khoản Google. Vui lòng thử đăng nhập Google lại.' };
+    case 'ACCOUNT_LOCKED':
+      return { tone: 'error', text: SESSION_NOTICES.locked };
+    case 'GOOGLE_ACCOUNT_CONFLICT':
+      return { tone: 'error', text: 'Email này đã được liên kết với một tài khoản Google khác. Hãy đăng nhập bằng tài khoản Google đó hoặc bằng email và mật khẩu.' };
+    case 'GOOGLE_LOGIN_UNAVAILABLE':
+      return { tone: 'error', text: 'Chưa thể đăng nhập bằng Google lúc này. Vui lòng thử lại sau hoặc đăng nhập bằng email.' };
     default:
       return { tone: 'error', text: problem?.detail ?? NETWORK_ERROR };
   }
@@ -150,6 +169,20 @@ export function AuthPage({ mode }: { mode: Mode }) {
     }
   };
 
+  const submitGoogle = async (idToken: string) => {
+    setNotice(null);
+    setSubmitting(true);
+    try {
+      const session = await googleLogin(idToken);
+      signIn(session);
+      navigate(await landingAfterLogin(session.account), { replace: true });
+    } catch (error) {
+      setNotice(googleLoginError(toProblem(error)));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const submitResend = async () => {
     setSubmitting(true);
     try {
@@ -226,9 +259,6 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const fieldClass = 'mt-2 w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100';
   const error = (field: string) => errors[field] && <p id={`${field}-error`} className="mt-1.5 text-xs text-red-700">{errors[field]}</p>;
   const showForm = !(mode === 'verify' && (verifyState === 'verifying' || verifyState === 'verified')) && !(mode === 'reset' && resetState !== 'ready');
-  const demoNote = mode === 'register' || mode === 'login'
-    ? `${mode === 'login' ? 'Đăng nhập' : 'Đăng ký và xác minh email'} được gửi tới máy chủ · Đăng nhập Google chưa được kết nối.`
-    : '';
 
   return <div className="min-h-screen bg-cream">
     <header className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-6 sm:px-8">
@@ -251,7 +281,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink">{details.title}</h1>
         <p className="mt-3 text-sm leading-6 text-ink-muted">{details.subtitle}</p>
         {(mode === 'login' || mode === 'register') && <>
-          <button type="button" aria-describedby="auth-demo-note" onClick={() => setNotice({ tone: 'success', text: 'Google Login chưa được kết nối trong bản demo. Chưa có tài khoản hoặc phiên đăng nhập được tạo.' })} className="mt-6 flex w-full items-center justify-center gap-3 rounded-xl border border-brand-200 py-3 text-sm font-semibold text-ink hover:bg-brand-50"><span aria-hidden="true" className="text-lg font-bold text-blue-600">G</span>Tiếp tục với Google</button>
+          <GoogleSignIn onCredential={idToken => void submitGoogle(idToken)} onFailure={() => setNotice({ tone: 'error', text: GOOGLE_RETRY })} />
           <div className="my-5 flex items-center gap-3 text-xs text-ink-muted"><span className="h-px flex-1 bg-brand-100" />hoặc sử dụng email<span className="h-px flex-1 bg-brand-100" /></div>
         </>}
         {mode === 'verify' && verifyState === 'verifying' && <p role="status" className="mt-5 rounded-xl bg-leaf-50 p-4 text-sm leading-6 text-leaf-800">Đang xác minh email của bạn...</p>}
@@ -276,7 +306,6 @@ export function AuthPage({ mode }: { mode: Mode }) {
           <Button type="submit" disabled={submitting} className="w-full py-3">{submitting ? 'Đang gửi...' : details.action}<ArrowRight className="h-4 w-4" /></Button>
         </form>}
         {notice && <div role={notice.tone === 'error' ? 'alert' : 'status'} className={`mt-4 rounded-xl border p-4 text-sm leading-6 ${notice.tone === 'error' ? 'border-red-200 bg-red-50 text-red-800' : 'border-leaf-100 bg-leaf-50 text-leaf-800'}`}>{notice.text}{mode === 'register' && notice.tone === 'success' && <Link to="/xac-minh-email" className="mt-2 block font-semibold underline">Chưa nhận được email? Gửi lại email xác minh</Link>}{notice.link && <Link to={notice.link.to} className="mt-2 block font-semibold underline">{notice.link.label}</Link>}</div>}
-        {demoNote && <p id="auth-demo-note" className="mt-5 text-xs leading-5 text-ink-muted">{demoNote}</p>}
         <div className="mt-6 border-t border-brand-100 pt-5 text-center text-sm text-ink-soft">
           {mode === 'login' ? <>Chưa có tài khoản? <Link to="/dang-ky" className="font-bold text-brand-700 hover:underline">Đăng ký ngay</Link><Link to="/xac-minh-email" className="mt-3 block text-xs text-ink-muted hover:underline">Chưa nhận được email xác minh?</Link></> : mode === 'register' ? <>Đã có tài khoản? <Link to="/dang-nhap" className="font-bold text-brand-700 hover:underline">Đăng nhập</Link></> : <Link to="/dang-nhap" className="font-semibold text-brand-700 hover:underline">Quay lại đăng nhập</Link>}
         </div>

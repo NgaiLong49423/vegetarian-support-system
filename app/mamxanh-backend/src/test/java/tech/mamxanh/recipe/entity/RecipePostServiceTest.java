@@ -198,13 +198,15 @@ class RecipePostServiceTest {
                 .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
         when(clock.instant()).thenReturn(Instant.parse("2026-10-08T00:00:00Z"));
         when(clock.getZone()).thenReturn(ZoneOffset.UTC);
-        when(browseRepository.findPublished("", tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
-                LocalDateTime.of(1, 1, 1, 0, 0), LocalDateTime.of(2026, 10, 8, 0, 0), 0, 12))
+        when(browseRepository.findPublished("", null, null, List.of(), null,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST, LocalDateTime.of(1, 1, 1, 0, 0),
+                LocalDateTime.of(2026, 10, 8, 0, 0), 0, 12))
                 .thenReturn(new RecipeBrowseRepository.BrowsePage(List.of(), 0));
         assertThat(service.searchPublished(null, 0, 12).items()).isEmpty();
         assertThat(service.searchPublished("  ", 0, 12).items()).isEmpty();
-        verify(browseRepository, times(2)).findPublished("", tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
-                LocalDateTime.of(1, 1, 1, 0, 0), LocalDateTime.of(2026, 10, 8, 0, 0), 0, 12);
+        verify(browseRepository, times(2)).findPublished("", null, null, List.of(), null,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST, LocalDateTime.of(1, 1, 1, 0, 0),
+                LocalDateTime.of(2026, 10, 8, 0, 0), 0, 12);
     }
 
     @Test
@@ -217,7 +219,7 @@ class RecipePostServiceTest {
         var mode = tech.mamxanh.recipe.service.RecipeSortMode.MOST_VIEWED;
         var period = tech.mamxanh.recipe.service.RecipeViewPeriod.LAST_24_HOURS;
         var row = new RecipeBrowseRepository.BrowseRow(47L, 3, 1, 19, 2, 5);
-        when(browseRepository.findPublished("canh", mode, now.minusHours(24), now, 0, 12))
+        when(browseRepository.findPublished("canh", null, null, List.of(), null, mode, now.minusHours(24), now, 0, 12))
                 .thenReturn(new RecipeBrowseRepository.BrowsePage(List.of(row), 1));
         when(repository.findAllById(List.of(47L))).thenReturn(List.of(recipe));
         when(currentUserService.getPublicProfiles(List.of(7L))).thenReturn(Map.of(7L,
@@ -236,7 +238,7 @@ class RecipePostServiceTest {
         assertThat(result.items().getFirst().dislikes()).isEqualTo(1);
         assertThat(result.items().getFirst().likePercentage()).isEqualByComparingTo("75.00");
         assertThat(result.items().getFirst().viewCount()).isEqualTo(19);
-        verify(browseRepository).findPublished("canh", mode, now.minusHours(24), now, 0, 12);
+        verify(browseRepository).findPublished("canh", null, null, List.of(), null, mode, now.minusHours(24), now, 0, 12);
     }
 
     @Test
@@ -245,8 +247,8 @@ class RecipePostServiceTest {
         when(clock.instant()).thenReturn(now.toInstant(ZoneOffset.UTC));
         when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         var row = new RecipeBrowseRepository.BrowseRow(47L, 1, 1, 6, 0, 2);
-        when(browseRepository.findPublished("", tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
-                LocalDateTime.of(1, 1, 1, 0, 0), now, 0, 12))
+        when(browseRepository.findPublished("", null, null, List.of(), null,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST, LocalDateTime.of(1, 1, 1, 0, 0), now, 0, 12))
                 .thenReturn(new RecipeBrowseRepository.BrowsePage(List.of(row), 1));
         when(repository.findAllById(List.of(47L))).thenReturn(List.of(recipe));
         when(currentUserService.getPublicProfiles(List.of(7L))).thenReturn(Map.of(7L,
@@ -285,6 +287,30 @@ class RecipePostServiceTest {
         assertThat(result.items().getFirst().ingredients()).containsExactly(
                 new RecipePostResponse.Ingredient(91L, "Đậu hũ", null, 3, "g", "gram", new BigDecimal("125.00")));
         assertThat(result.items().getFirst().likePercentage()).isEqualByComparingTo("50.00");
+    }
+
+    @Test
+    void publicBrowseNormalizesFilterCodesAndDeduplicatesIngredientIds() {
+        LocalDateTime now = LocalDateTime.of(2026, 10, 8, 0, 0);
+        when(clock.instant()).thenReturn(now.toInstant(ZoneOffset.UTC));
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+        when(browseRepository.findPublished("", "VEGAN", "SOUP", List.of(44L, 55L), 30,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
+                LocalDateTime.of(1, 1, 1, 0, 0), now, 0, 12))
+                .thenReturn(new RecipeBrowseRepository.BrowsePage(List.of(), 0));
+
+        service.searchPublished("", 0, 12, tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
+                tech.mamxanh.recipe.service.RecipeViewPeriod.ALL_TIME, " vegan ", "soup",
+                List.of(44L, 44L, 55L), 30);
+
+        verify(browseRepository).findPublished("", "VEGAN", "SOUP", List.of(44L, 55L), 30,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
+                LocalDateTime.of(1, 1, 1, 0, 0), now, 0, 12);
+        assertThatThrownBy(() -> service.searchPublished("", 0, 12,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
+                tech.mamxanh.recipe.service.RecipeViewPeriod.ALL_TIME, "UNKNOWN", null, List.of(), null))
+                .isInstanceOf(AppException.class)
+                .satisfies(error -> assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
     }
 
     private static UpdateRecipePostRequest validRequest() {
