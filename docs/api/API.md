@@ -2,7 +2,7 @@
 > **File:** `docs/api/API.md`
 > **Version:** v0.11.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-09
+> **Last Updated:** 2026-10-10
 > **Status:** Active
 
 # API Integration Guide
@@ -11,7 +11,7 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
 
-Backend source trong branch gồm đăng ký, xác minh email và đăng nhập (FR-03), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML chỉ giữ Google login và password recovery chưa có trong runtime.
+Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và bằng Google (FR-03), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML chỉ giữ password recovery chưa có trong runtime.
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 8 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
@@ -40,7 +40,7 @@ Scalar là giao diện xem và manual testing; request thử bằng Scalar khôn
 
 ### 3.1 Access token
 
-Đăng nhập email/password trả Stateless JWT Access Token trong JSON body (`AuthResponse`). Frontend gửi token ở các API được bảo vệ:
+Đăng nhập email/password (`POST /auth/login`) và đăng nhập Google (`POST /auth/google`, mục 3.4) cùng trả Stateless JWT Access Token trong JSON body (`AuthResponse`). Frontend gửi token ở các API được bảo vệ:
 
 ```http
 Authorization: Bearer <access-token>
@@ -60,6 +60,28 @@ Khi người dùng chọn Đăng xuất, Frontend xóa phiên cục bộ và đi
 ### 3.3 Candidate Follow-up: GET /auth/me
 
 Endpoint `GET /auth/me` (tra cứu thông tin người dùng hiện tại từ token) là một ứng viên follow-up tiềm năng nhưng chưa thuộc planned contract hoặc runtime API. Việc thêm endpoint này sẽ được xem xét trong task riêng khi có yêu cầu cụ thể.
+
+### 3.4 Google Login — FR-03-D
+
+Frontend dùng Google Identity Services (`@react-oauth/google`) để lấy Google ID Token rồi gửi `POST /auth/google` với body `{ "idToken": "<Google ID Token>" }` (tối đa 4096 ký tự). Endpoint công khai, không cần Bearer token; response thành công là `200` với `AuthResponse` như đăng nhập mật khẩu. Không có refresh token hay session máy chủ.
+
+Backend xác minh ID Token bằng `GoogleIdTokenVerifier` (`com.google.api-client:google-api-client`): chữ ký RS256 theo chứng chỉ Google công bố, `exp`, issuer `accounts.google.com`/`https://accounts.google.com` và audience bằng `MAMXANH_GOOGLE_CLIENT_ID`. Việc xác minh chạy trước transaction database. Email, tên và ảnh chỉ lấy từ claim đã xác minh; client không gửi các giá trị này.
+
+Tài khoản được xử lý theo thứ tự (Q26, Q39–Q42):
+
+1. Google `email_verified = false`, token không hợp lệ hoặc email Google không lưu được (không phải ASCII hợp lệ, dài hơn 255 ký tự): `401 GOOGLE_TOKEN_INVALID`, không tạo hay liên kết tài khoản.
+2. Tìm theo `USER.google_subject` (`sub`) trước. Tìm thấy: tài khoản `LOCKED` trả `403 ACCOUNT_LOCKED`, còn lại đăng nhập; tên và ảnh không bị ghi đè.
+3. Không thấy theo `google_subject` thì tìm theo email đã chuẩn hóa (trim, chữ thường):
+   - Không có tài khoản: tạo Member mới `CUSTOMER`, `ACTIVE`, `email_verified = true`, không có mật khẩu; `display_name` và `avatar_url` lấy từ Google. Tên được trim, cắt còn 50 ký tự; nếu rỗng hoặc dưới 3 ký tự thì dùng phần trước `@` của email khi phần đó dài 3–50 ký tự, nếu không thì dùng `Thành viên Mâm Xanh`. Ảnh dài hơn 2048 ký tự bị bỏ qua.
+   - Tài khoản `LOCKED`: `403 ACCOUNT_LOCKED`, không liên kết.
+   - Email đã liên kết với `google_subject` khác: `409 GOOGLE_ACCOUNT_CONFLICT`.
+   - Tài khoản mật khẩu chưa xác minh email: liên kết `google_subject`, đặt `email_verified = true`, xóa `password_hash` và mã xác minh email.
+   - Tài khoản mật khẩu đã xác minh email: liên kết `google_subject` và giữ nguyên mật khẩu; người dùng đăng nhập được bằng cả hai cách.
+4. Chặn tạm thời do sai mật khẩu (`login_blocked_until`) không ngăn Google Login, và Google Login thành công không đặt lại bộ đếm sai mật khẩu.
+
+Không tải được chứng chỉ Google trả `503 GOOGLE_LOGIN_UNAVAILABLE`. Khi `MAMXANH_GOOGLE_CLIENT_ID` để trống, Backend từ chối mọi token (`401 GOOGLE_TOKEN_INVALID`) và Frontend không hiện nút Google (thiếu `VITE_GOOGLE_CLIENT_ID`). Client ID là giá trị công khai; Backend và Frontend phải dùng cùng một Client ID, và Google Cloud Console phải khai báo origin của Frontend (ví dụ `http://localhost:5173`).
+
+Sau khi Google Login thành công, Frontend gọi `POST /nutrition/dietary-preferences/onboarding/invitation` như sau đăng nhập mật khẩu (mục 9).
 
 ## 4. Error convention
 
@@ -91,12 +113,13 @@ Quy ước status chính:
 | `202 Accepted` | Yêu cầu email đã được tiếp nhận; không xác nhận email có tồn tại. |
 | `204 No Content` | Thao tác thành công và không cần response body. |
 | `400 Bad Request` | Payload, token xác minh hoặc token đặt lại mật khẩu không hợp lệ. |
-| `401 Unauthorized` | Credential không hợp lệ hoặc token hết hạn. |
+| `401 Unauthorized` | Credential, access token hoặc Google ID Token không hợp lệ hay đã hết hạn. |
 | `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`), bị Administrator khóa (`ACCOUNT_LOCKED`) hoặc không phải Member khi dùng hồ sơ sở thích (`MEMBER_ACCESS_REQUIRED`). |
 | `409 Conflict` | Email đã được sử dụng, đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`), hoặc hồ sơ sở thích chưa đủ để gọi AI cá nhân hóa (`DIETARY_PROFILE_INCOMPLETE`). |
 | `429 Too Many Requests` | Chỉ áp dụng khi contract của endpoint quy định `429` (ví dụ login, resend verification hoặc AI rate limiting); client đọc `Retry-After` khi có. Password-reset request không trả `429`. |
+| `503 Service Unavailable` | Dịch vụ phụ thuộc tạm thời không dùng được, ví dụ không tải được chứng chỉ Google (`GOOGLE_LOGIN_UNAVAILABLE`). |
 
-Mã `code` đã triển khai (Issue #5, #6, #36). Các mã của Google Login và đặt lại mật khẩu được bổ sung khi các Issue tương ứng triển khai.
+Mã `code` đã triển khai (Issue #5, #6, #8, #36). Các mã của đặt lại mật khẩu được bổ sung khi Issue tương ứng triển khai.
 
 | `code` | Status | Khi nào |
 |---|---|---|
@@ -106,8 +129,11 @@ Mã `code` đã triển khai (Issue #5, #6, #36). Các mã của Google Login v�
 | `RESEND_TOO_SOON` | 429 | `POST /auth/email-verifications/resend` trong vòng 60 giây kể từ email xác minh trước; kèm `Retry-After`. |
 | `INVALID_CREDENTIALS` | 401 | `POST /auth/login` với email không tồn tại, sai mật khẩu hoặc tài khoản chỉ đăng nhập Google (không có mật khẩu); mọi trường hợp cùng `detail` trung tính "Email hoặc mật khẩu không chính xác." |
 | `EMAIL_NOT_VERIFIED` | 403 | `POST /auth/login` đúng mật khẩu nhưng email chưa xác minh. |
-| `ACCOUNT_LOCKED` | 403 | `POST /auth/login` đúng mật khẩu nhưng tài khoản bị Administrator khóa; hoặc request mang Bearer token hợp lệ của tài khoản đang `LOCKED`. |
-| `LOGIN_TEMPORARILY_BLOCKED` | 429 | Lần sai mật khẩu thứ 5 liên tiếp và mọi lần thử `POST /auth/login` trong 10 phút sau đó (kiểm tra trước khi so mật khẩu); kèm `Retry-After` là số giây còn lại. Không đổi `account_status`. |
+| `ACCOUNT_LOCKED` | 403 | `POST /auth/login` đúng mật khẩu nhưng tài khoản bị Administrator khóa; `POST /auth/google` cho tài khoản đang `LOCKED`; hoặc request mang Bearer token hợp lệ của tài khoản đang `LOCKED`. |
+| `LOGIN_TEMPORARILY_BLOCKED` | 429 | Lần sai mật khẩu thứ 5 liên tiếp và mọi lần thử `POST /auth/login` trong 10 phút sau đó (kiểm tra trước khi so mật khẩu); kèm `Retry-After` là số giây còn lại. Không đổi `account_status` và không áp dụng cho `POST /auth/google`. |
+| `GOOGLE_TOKEN_INVALID` | 401 | `POST /auth/google` với ID Token sai định dạng, sai chữ ký, hết hạn, sai issuer/audience, thiếu `sub`/email, email Google chưa xác minh hoặc không lưu được; cũng trả khi Backend chưa cấu hình `MAMXANH_GOOGLE_CLIENT_ID`. |
+| `GOOGLE_ACCOUNT_CONFLICT` | 409 | `POST /auth/google` khi email đã liên kết với một tài khoản Google khác. |
+| `GOOGLE_LOGIN_UNAVAILABLE` | 503 | `POST /auth/google` khi Backend không tải được chứng chỉ ký của Google. |
 | `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31); chỉ Member (`CUSTOMER`, `EXPERT`) có hồ sơ này. |
 | `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |
 | `DIETARY_PROFILE_INCOMPLETE` | 409 | Cổng AI cá nhân hóa (BR-31) chặn yêu cầu vì hồ sơ thiếu nhóm thông tin tối thiểu; body có thêm `missing` (`VEGETARIAN_TYPE`, `AVOID_INGREDIENTS`, `DISLIKED_INGREDIENTS`). |
@@ -127,7 +153,8 @@ Mã `code` đã triển khai (Issue #5, #6, #36). Các mã của Google Login v�
 - Sau 5 lần đăng nhập sai liên tiếp, rate limit tạm thời 10 phút ở cấp tài khoản (lưu trên bảng `USER`); không rate limit IP; không đổi account status thành `LOCKED`.
 - Giới hạn độ dài mật khẩu: 8–64 ký tự, tối đa 72 bytes UTF-8 (chuẩn BCrypt).
 - Đăng xuất xử lý hoàn toàn phía client (không gọi backend API).
-- Google ID token phải được Backend xác minh chữ ký, issuer, audience và expiry trước khi phát hành token.
+- Google ID token phải được Backend xác minh chữ ký, issuer, audience và expiry trước khi phát hành token; tài khoản được định danh bằng `google_subject`, không bằng email hay tên do client gửi.
+- Liên kết Google vào tài khoản mật khẩu chưa xác minh sẽ xóa mật khẩu đó, vì mật khẩu có thể do người không sở hữu hộp thư đặt trước (Q26).
 
 ## 6. Nutrition Profile — FR-35
 
