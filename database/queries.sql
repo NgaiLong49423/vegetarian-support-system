@@ -48,7 +48,7 @@ PRINT 'PART 1: SCHEMA AUDIT & OBJECT INVENTORY';
 PRINT '====================================================================';
 
 -- 1.1 Object Count Summary
--- Expected after V1-V6: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 61 Checks, 58 Defaults, 15 UNIT rows
+-- Expected after V1-V10: 22 Tables, 38 FKs, 22 PKs, 9 UQ constraints, 63 Checks, 59 Defaults, 15 UNIT rows
 SELECT 
     'Tables' AS ObjectType, COUNT(*) AS TotalCount, 22 AS ExpectedCount,
     CASE WHEN COUNT(*) = 22 THEN 'PASS' ELSE 'FAIL' END AS AuditStatus
@@ -63,10 +63,10 @@ UNION ALL
 SELECT 'Unique Constraints', COUNT(*), 9, CASE WHEN COUNT(*) = 9 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.key_constraints WHERE type = 'UQ'
 UNION ALL
-SELECT 'Check Constraints', COUNT(*), 61, CASE WHEN COUNT(*) = 61 THEN 'PASS' ELSE 'FAIL' END
+SELECT 'Check Constraints', COUNT(*), 63, CASE WHEN COUNT(*) = 63 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.check_constraints
 UNION ALL
-SELECT 'Default Constraints', COUNT(*), 58, CASE WHEN COUNT(*) = 58 THEN 'PASS' ELSE 'FAIL' END
+SELECT 'Default Constraints', COUNT(*), 59, CASE WHEN COUNT(*) = 59 THEN 'PASS' ELSE 'FAIL' END
 FROM sys.default_constraints
 UNION ALL
 SELECT 'UNIT Seed Rows', COUNT(*), 15, CASE WHEN COUNT(*) = 15 THEN 'PASS' ELSE 'FAIL' END
@@ -74,7 +74,7 @@ FROM [UNIT];
 GO
 
 -- 1.2 Filtered Indexes Audit
--- Expected: 9 filtered UNIQUE indexes (1 google_subject + 1 email_verification_token from V3 + 7 Section 10) + 2 filtered performance indexes = 11 filtered indexes
+-- Expected: 10 filtered UNIQUE indexes (1 google_subject + 1 email_verification_token from V3 + 1 password_reset_token from V10 + 7 Section 10) + 3 filtered performance indexes = 13 filtered indexes
 SELECT 
     OBJECT_NAME(i.object_id) AS TableName,
     i.name AS IndexName,

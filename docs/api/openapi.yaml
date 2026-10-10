@@ -4,17 +4,17 @@
 openapi: 3.1.1
 info:
   title: Mâm Xanh API
-  version: 0.7.0
+  version: 0.8.0
   summary: REST API contract for the Mâm Xanh application
   description: >-
-    Planned reference for Google authentication and password recovery endpoints not implemented in runtime.
+    Planned reference for the Google authentication endpoint not implemented in runtime.
     Implemented endpoints are documented by generated Springdoc OpenAPI.
 servers:
   - url: /api/v1
     description: Version 1 relative base path
 tags:
   - name: Authentication
-    description: Google authentication and password recovery.
+    description: Google authentication.
 paths:
   /auth/google:
     post:
@@ -56,46 +56,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-  /auth/password-resets:
-    post:
-      tags: [Authentication]
-      summary: Request a password-reset email
-      description: Always returns a neutral response so clients cannot discover whether an email exists.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EmailRequest'
-      responses:
-        '202':
-          description: Request accepted, regardless of whether the email exists.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageResponse'
-        '400':
-          $ref: '#/components/responses/ValidationProblem'
-  /auth/password-resets/confirm:
-    post:
-      tags: [Authentication]
-      summary: Set a new password with a reset token
-      description: Sets a new password using a valid reset token and invalidates the token.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PasswordResetConfirmRequest'
-      responses:
-        '204':
-          description: Password changed successfully.
-        '400':
-          description: Payload or reset token is invalid or expired.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
 components:
   schemas:
     GoogleLoginRequest:
@@ -107,37 +67,6 @@ components:
           type: string
           writeOnly: true
           description: Google ID token returned by Google Identity Services.
-    EmailRequest:
-      type: object
-      additionalProperties: false
-      required: [email]
-      properties:
-        email:
-          type: string
-          format: email
-    PasswordResetConfirmRequest:
-      type: object
-      additionalProperties: false
-      required: [token, newPassword, confirmPassword]
-      properties:
-        token:
-          type: string
-          writeOnly: true
-          minLength: 1
-        newPassword:
-          type: string
-          format: password
-          minLength: 8
-          maxLength: 64
-          writeOnly: true
-          description: Must satisfy password-complexity rules (8-64 chars, max 72 bytes UTF-8).
-        confirmPassword:
-          type: string
-          format: password
-          minLength: 8
-          maxLength: 64
-          writeOnly: true
-          description: Must match newPassword.
     AuthResponse:
       type: object
       additionalProperties: false
@@ -187,13 +116,6 @@ components:
         emailVerified:
           type: boolean
           const: true
-    MessageResponse:
-      type: object
-      additionalProperties: false
-      required: [message]
-      properties:
-        message:
-          type: string
     FieldError:
       type: object
       additionalProperties: false
