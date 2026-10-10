@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-10
-next_id: 17
+last_updated: 2026-10-11
+next_id: 19
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,24 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-018
+    title: Thay danh sách ảnh của Recipe Post đã có ảnh luôn trả 500
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Recipe Media
+    file: .agents/outputs/bugs/BUG-018.md
+    created: 2026-10-11
+    updated: 2026-10-11
+    related_issue: 11
+  - id: BUG-017
+    title: Expert khác hoặc Administrator thay, xóa được ảnh của Recipe Post không thuộc mình
+    status: RESOLVED
+    severity: High
+    area: Backend/Recipe Media
+    file: .agents/outputs/bugs/BUG-017.md
+    created: 2026-10-10
+    updated: 2026-10-11
+    related_issue: 11
   - id: BUG-016
     title: API hồ sơ dinh dưỡng trả 500 thay cho lỗi nghiệp vụ 400/403
     status: RECORDED

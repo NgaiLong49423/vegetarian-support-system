@@ -1,13 +1,36 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.58.0
+> **Version:** v2.59.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-10
+> **Last Updated:** 2026-10-11
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Close Expert Recipe Publishing Gaps (Issue #11)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Complete the FR-04 acceptance gaps found while reviewing Issue #11 as the FR-04 coordination Issue (decisions Q49 and Q50): only the Expert author may change a Recipe Post's images, an Administrator is not an author, and a Guest who opens the create page is sent to the login page.
+
+### Added
+
+- Add `RecipeMediaAuthorizationIntegrationTest` (SQL Server Testcontainers) for image upload, replacement and removal by the author, another Expert, an Administrator, a missing recipe and a hidden recipe.
+- Record BUG-017 and BUG-018 under `.agents/outputs/bugs/`.
+
+### Changed
+
+- Restrict `POST /api/v1/recipes/media/upload`, `PUT /api/v1/recipes/{recipeId}/media` and `DELETE /api/v1/recipes/{recipeId}/media` to `ROLE_EXPERT`; an Administrator now gets `403` (AC-04.7).
+- Make the image replacement and removal endpoints use the same author check as Recipe Post editing (`RecipePostService.lockOwnEditableRecipe`): another Expert gets `403 RECIPE_EDIT_NOT_ALLOWED`, a hidden post `403 RECIPE_HIDDEN` and a missing post `404 RECIPE_NOT_FOUND`.
+- Send a Guest who opens `/dang-cong-thuc` straight to `/dang-nhap` (AC-04.5); Customers and Administrators still see the access notice.
+- Remove the Administrator-as-author wording from FR-04 and FR-16 in `FUNCTIONAL-REQUIREMENTS.md` so they match AC-04.7 and decision Q50.
+
+### Fixed
+
+- Fix BUG-017: another Expert or an Administrator could replace or delete the images of a Recipe Post they did not write, including the stored blobs.
+- Fix BUG-018: replacing the images of a Recipe Post that already had images always failed with `500` because the new rows were inserted before the old ones were deleted.
 
 ## 2026-10-10 — Add Google Login and Account Linking (Issue #8) ([PR #111](https://github.com/NgaiLong49423/vegetarian-support-system/pull/111))
 
