@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-10 — Add Password Reset (Issue #9)
+## 2026-10-10 — Add Password Reset (Issue #9) ([PR #113](https://github.com/NgaiLong49423/vegetarian-support-system/pull/113))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `8794862`.
 
 **Scope:** Implement UC-03.6 and UC-03.7 so members can request a reset link by email and set a new password, following AC-03.14 and decisions Q13, Q27, Q47 and Q48.
 
