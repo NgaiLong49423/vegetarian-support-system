@@ -12,6 +12,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 class GlobalExceptionHandlerTest {
 
@@ -43,6 +44,16 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(403);
         assertThat(problem.getProperties()).containsOnlyKeys("code");
         assertThat(problem.getInstance()).hasToString("/api/v1/nutrition/dietary-preferences");
+    }
+
+    @Test
+    void uploadsAboveTheServletMultipartLimitGetTheFileTooLargeCode() throws Exception {
+        ResponseEntity<Object> response = handler.handleException(new MaxUploadSizeExceededException(5L * 1024 * 1024),
+                new ServletWebRequest(new MockHttpServletRequest("POST", "/api/v1/me/profile/avatar")));
+
+        ProblemDetail problem = (ProblemDetail) response.getBody();
+        assertThat(response.getStatusCode().value()).isEqualTo(413);
+        assertThat(problem.getProperties()).containsEntry("code", "FILE_TOO_LARGE");
     }
 
     @Test

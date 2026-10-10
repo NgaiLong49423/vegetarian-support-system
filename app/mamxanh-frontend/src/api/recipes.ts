@@ -61,6 +61,8 @@ export interface RecipeDetail {
   cookTimeMinutes: number;
   youtubeUrl: string | null;
   publishedAt: string;
+  /** FR-23 (AC-23.1): current public data of the author's account. */
+  author: { userId: number; displayName: string; avatarUrl: string | null };
   nutritionComplete: boolean;
   ingredientsWithoutNutrition: string[];
   ingredients: Array<{
