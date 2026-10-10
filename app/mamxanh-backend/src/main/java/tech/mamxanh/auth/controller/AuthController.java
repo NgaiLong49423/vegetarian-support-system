@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import tech.mamxanh.auth.dto.request.EmailRequest;
 import tech.mamxanh.auth.dto.request.GoogleLoginRequest;
 import tech.mamxanh.auth.dto.request.LoginRequest;
+import tech.mamxanh.auth.dto.request.PasswordResetConfirmRequest;
 import tech.mamxanh.auth.dto.request.RegisterRequest;
 import tech.mamxanh.auth.dto.request.TokenRequest;
 import tech.mamxanh.auth.dto.response.AuthResponse;
@@ -19,6 +20,7 @@ import tech.mamxanh.auth.dto.response.RegistrationResponse;
 import tech.mamxanh.auth.service.EmailVerificationService;
 import tech.mamxanh.auth.service.GoogleLoginService;
 import tech.mamxanh.auth.service.LoginService;
+import tech.mamxanh.auth.service.PasswordResetService;
 import tech.mamxanh.auth.service.RegistrationService;
 
 /** FR-03 authentication endpoints; springdoc generates their runtime OpenAPI contract. */
@@ -30,14 +32,16 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
     private final LoginService loginService;
     private final GoogleLoginService googleLoginService;
+    private final PasswordResetService passwordResetService;
 
     public AuthController(RegistrationService registrationService,
             EmailVerificationService emailVerificationService, LoginService loginService,
-            GoogleLoginService googleLoginService) {
+            GoogleLoginService googleLoginService, PasswordResetService passwordResetService) {
         this.registrationService = registrationService;
         this.emailVerificationService = emailVerificationService;
         this.loginService = loginService;
         this.googleLoginService = googleLoginService;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping("/register")
@@ -67,5 +71,17 @@ public class AuthController {
     @PostMapping("/google")
     public AuthResponse googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
         return googleLoginService.login(request.idToken());
+    }
+
+    @PostMapping("/password-resets")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public MessageResponse requestPasswordReset(@Valid @RequestBody EmailRequest request) {
+        return passwordResetService.requestReset(request.email());
+    }
+
+    @PostMapping("/password-resets/confirm")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest request) {
+        passwordResetService.confirmReset(request);
     }
 }

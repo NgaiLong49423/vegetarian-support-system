@@ -7,7 +7,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@EnableConfigurationProperties(AuthProperties.class)
+@EnableConfigurationProperties({ AuthProperties.class, PasswordResetProperties.class })
 public class AuthSecurityConfig {
 
     /** BCrypt only; passwords are never stored in plaintext or with reversible encryption (NFR-06). */

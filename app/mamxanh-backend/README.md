@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.23.0
+> **Version:** v0.24.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-10<br>
 > **Status:** Active  
@@ -28,6 +28,7 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 - FR-35 bổ sung consent bằng migration `V4__nutrition_profile_consent.sql`; FR-18 bổ sung ingredient group và kiểm tra unit bằng migration `V5__ingredient_group_and_unit_validation.sql`.
 - Đã có luồng FR-03-B (Issue #6): `POST /api/v1/auth/login` phát Stateless JWT (HS256), khóa đăng nhập tạm 10 phút sau 5 lần sai liên tiếp theo tài khoản (migration `V6__user_login_throttle.sql`), và mọi request mang Bearer token đều kiểm tra `USER.account_status`.
 - Đã có luồng FR-03-D (Issue #8): `POST /api/v1/auth/google` xác minh Google ID Token bằng `GoogleIdTokenVerifier` (`com.google.api-client:google-api-client`, audience `MAMXANH_GOOGLE_CLIENT_ID`), tìm tài khoản theo `google_subject` rồi theo email, tạo hoặc liên kết tài khoản theo [API Guide mục 3.4](../../docs/api/API.md) và phát cùng `AuthResponse` như đăng nhập mật khẩu. Không có migration mới: cột và unique index `google_subject` đã có từ baseline. Test không gọi Google: test tích hợp giả lập `GoogleTokenVerifier`, còn test adapter dùng chứng chỉ tự ký phục vụ qua transport giả.
+- Đã có luồng FR-03-E (Issue #9): `POST /api/v1/auth/password-resets` luôn trả `202` trung tính và chỉ gửi email cho tài khoản `ACTIVE` ngoài cooldown 60 giây, tối đa 5 email/giờ/tài khoản; `POST /api/v1/auth/password-resets/confirm` đặt mật khẩu mới bằng token 15 phút (chỉ lưu SHA-256) và trả `204`. Migration `V11__user_password_reset.sql` thêm token và metadata rate limit trên `USER`; quy tắc chi tiết ở [API Guide mục 3.5](../../docs/api/API.md). Thời hạn và giới hạn cấu hình bằng `mamxanh.auth.password-reset.*` trong `application.properties`.
 - FR-05 (Issue #68) triển khai luồng nộp/xem lịch sử đơn Chuyên gia và Admin xét duyệt qua Backend API; phê duyệt đổi `CUSTOMER` thành `EXPERT` và ghi notification trong cùng transaction. Migration `V8__expert_application_notifications.sql` bổ sung internal target path cùng index truy vấn. Chi tiết API được tạo từ runtime OpenAPI.
 - Đã có FR-31 (Issue #36) trong module `nutrition`: `GET`/`PUT /api/v1/nutrition/dietary-preferences`, `POST /api/v1/nutrition/dietary-preferences/onboarding/skip`, `POST /api/v1/nutrition/dietary-preferences/onboarding/invitation` (lời mời Onboarding chỉ hiện một lần, AC-31.10) và `GET /api/v1/nutrition/dietary-preferences/ingredient-suggestions`; entity riêng ánh xạ các cột sở thích của `USER` (quyết định Q18) và bảng `USER_INGREDIENT_PREFERENCE`; migration `V7__user_onboarding_invitation.sql` thêm cột `USER.onboarding_invited_at`. Generated OpenAPI khai báo security scheme `bearerAuth` (`common/config/OpenApiConfig`); controller cần đăng nhập gắn `@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)`. Endpoint AI cá nhân hóa sau này phải gọi `DietaryPreferenceService.requirePersonalizedAiEligible(userId)` trước khi gọi Gemini (BR-31).
 - FR-26/27 thêm `POST /api/v1/recipes/{recipeId}/reports` cho Member gửi báo cáo bài công khai; báo cáo lưu `OPEN`, xác thực và chống trùng ở Backend, migration V9 đồng bộ trạng thái/mã lý do với SRS. Luồng bổ sung thông tin thuộc FR-30 chưa có trong Issue này.
@@ -106,7 +107,7 @@ Các biến môi trường cho FR-03 (giá trị dùng chung lấy từ kho mậ
 | `MAMXANH_JWT_SECRET` | **bắt buộc** | Khóa ký HS256 cho access token, tối thiểu 32 byte; thiếu hoặc ngắn hơn thì Backend không khởi động. Sinh bằng lệnh ghi trong `.env.example`. Test tích hợp tự dùng secret riêng, không cần biến này. |
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | trống (port `587`) | SMTP Brevo. Khi `SPRING_MAIL_HOST` trống, Backend vẫn chạy nhưng bỏ qua việc gửi email và ghi cảnh báo. |
 | `MAMXANH_MAIL_FROM` | trống | Địa chỉ người gửi đã xác minh trên Brevo; trống thì cũng bỏ qua việc gửi email. |
-| `MAMXANH_FRONTEND_BASE_URL` | `http://localhost:5173` | Origin dùng để tạo liên kết trong email (`/xac-minh-email?token=...`). |
+| `MAMXANH_FRONTEND_BASE_URL` | `http://localhost:5173` | Origin dùng để tạo liên kết trong email (`/xac-minh-email?token=...`, `/dat-lai-mat-khau?token=...`). |
 | `MAMXANH_CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Danh sách origin được gọi API, phân tách bằng dấu phẩy, không dùng wildcard. |
 | `MAMXANH_DEMO_PASSWORD` | **bắt buộc khi dùng profile `local`** | Mật khẩu local chung cho tài khoản demo; 12–72 byte UTF-8. Backend tạo BCrypt hash khi khởi động; không đưa mật khẩu vào Git hoặc tài liệu. |
 | `MAMXANH_GOOGLE_CLIENT_ID` | trống | OAuth Client ID (công khai) mà mọi Google ID Token phải nhắm tới; cùng giá trị với `VITE_GOOGLE_CLIENT_ID` của Frontend. Trống thì Google Login từ chối mọi token (`401 GOOGLE_TOKEN_INVALID`) và Backend ghi cảnh báo khi khởi động. |
