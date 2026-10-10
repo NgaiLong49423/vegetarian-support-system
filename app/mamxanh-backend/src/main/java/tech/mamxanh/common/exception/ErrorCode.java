@@ -42,6 +42,8 @@ public enum ErrorCode {
     RECIPE_DATA_INVALID(HttpStatus.BAD_REQUEST, "Recipe data invalid", "Thông tin công thức không hợp lệ."),
     REPORT_ALREADY_OPEN(HttpStatus.CONFLICT, "Report already open",
             "Bạn đã gửi báo cáo cho công thức này. Hãy bổ sung thông tin vào báo cáo hiện có."),
+    MEMBER_PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "Member profile not found",
+            "Không tìm thấy hồ sơ thành viên."),
     NOT_FOUND(HttpStatus.NOT_FOUND, "Not found", "Không tìm thấy tài nguyên được yêu cầu."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed", "Phương thức HTTP không được hỗ trợ."),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type",
@@ -86,6 +88,7 @@ public enum ErrorCode {
             case 403 -> ACCESS_DENIED;
             case 404 -> NOT_FOUND;
             case 405 -> METHOD_NOT_ALLOWED;
+            case 413 -> FILE_TOO_LARGE;
             case 415 -> UNSUPPORTED_MEDIA_TYPE;
             default -> INTERNAL_ERROR;
         };

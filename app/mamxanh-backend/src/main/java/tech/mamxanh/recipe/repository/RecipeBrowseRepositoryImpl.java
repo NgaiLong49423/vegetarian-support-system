@@ -88,7 +88,19 @@ class RecipeBrowseRepositoryImpl implements RecipeBrowseRepository {
     public BrowsePage findPublished(String keyword, String vegetarianType, String dishCategory,
             List<Long> ingredientIds, Integer maxTotalTimeMinutes, RecipeSortMode sortMode,
             LocalDateTime viewSince, LocalDateTime now, int page, int size) {
-        FilterSql filters = filters(vegetarianType, dishCategory, ingredientIds, maxTotalTimeMinutes);
+        return find(keyword, filters(vegetarianType, dishCategory, ingredientIds, maxTotalTimeMinutes, null),
+                sortMode, viewSince, now, page, size);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BrowsePage findPublishedByAuthor(long authorId, LocalDateTime now, int page, int size) {
+        return find("", filters(null, null, List.of(), null, authorId), RecipeSortMode.NEWEST,
+                LocalDateTime.of(1, 1, 1, 0, 0), now, page, size);
+    }
+
+    private BrowsePage find(String keyword, FilterSql filters, RecipeSortMode sortMode,
+            LocalDateTime viewSince, LocalDateTime now, int page, int size) {
         String orderBy = switch (sortMode) {
             case NEWEST -> "m.published_at DESC";
             case MOST_LIKED -> "likePercentage DESC, COALESCE(rs.likes, 0) DESC";
@@ -133,9 +145,13 @@ class RecipeBrowseRepositoryImpl implements RecipeBrowseRepository {
     }
 
     private static FilterSql filters(String vegetarianType, String dishCategory, List<Long> ingredientIds,
-            Integer maxTotalTimeMinutes) {
+            Integer maxTotalTimeMinutes, Long authorId) {
         List<String> clauses = new ArrayList<>();
         java.util.Map<String, Object> parameters = new java.util.LinkedHashMap<>();
+        if (authorId != null) {
+            clauses.add("AND rp.author_id = :authorId");
+            parameters.put("authorId", authorId);
+        }
         if (vegetarianType != null) {
             clauses.add("AND rp.vegetarian_type = :vegetarianType");
             parameters.put("vegetarianType", vegetarianType);

@@ -147,6 +147,26 @@ public class RecipePostService {
         return new RecipePageResponse(items, page, size, result.totalElements(), totalPages);
     }
 
+    /** FR-23 (Q56): a member's published posts for the public profile, newest first, size 1–50. */
+    @Transactional(readOnly = true)
+    public RecipePageResponse listPublishedByAuthor(long authorId, int page, int size) {
+        if (page < 0 || size < 1 || size > 50) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED);
+        }
+        currentUserService.requirePublicMember(authorId);
+        var result = browseRepository.findPublishedByAuthor(authorId, LocalDateTime.now(clock), page, size);
+        List<Long> ids = result.rows().stream().map(BrowseRow::recipeId).toList();
+        Map<Long, RecipePostEntity> recipes = repository.findAllById(ids).stream()
+                .collect(Collectors.toMap(RecipePostEntity::getId, Function.identity()));
+        Map<Long, BrowseRow> metrics = result.rows().stream()
+                .collect(Collectors.toMap(BrowseRow::recipeId, Function.identity()));
+        List<RecipePostEntity> orderedRecipes = ids.stream().map(recipes::get)
+                .filter(java.util.Objects::nonNull).toList();
+        int totalPages = (int) Math.ceil((double) result.totalElements() / size);
+        return new RecipePageResponse(publicResponses(orderedRecipes, metrics), page, size,
+                result.totalElements(), totalPages);
+    }
+
     private static <T extends Enum<T>> String normalizeCode(String value, Class<T> enumType) {
         if (value == null || value.isBlank()) return null;
         try {

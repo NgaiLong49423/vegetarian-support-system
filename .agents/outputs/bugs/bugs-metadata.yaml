@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-10
-next_id: 17
+last_updated: 2026-10-11
+next_id: 21
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,24 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-020
+    title: Frontend đọc sai trường kết quả khi tải ảnh công thức lên
+    status: RECORDED
+    severity: High
+    area: Frontend/Recipe Media
+    file: .agents/outputs/bugs/BUG-020.md
+    created: 2026-10-11
+    updated: 2026-10-11
+    related_issue: 117
+  - id: BUG-019
+    title: Giới hạn multipart mặc định 1 MB chặn ảnh công thức từ 1 MB tới 5 MB
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Cấu hình tải tệp
+    file: .agents/outputs/bugs/BUG-019.md
+    created: 2026-10-11
+    updated: 2026-10-11
+    related_issue: 29
   - id: BUG-016
     title: API hồ sơ dinh dưỡng trả 500 thay cho lỗi nghiệp vụ 400/403
     status: RECORDED

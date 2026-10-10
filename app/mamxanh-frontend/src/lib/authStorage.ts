@@ -63,6 +63,15 @@ export function updateStoredAccountRole(role: AccountSummary['role']): StoredSes
   return updated;
 }
 
+/** FR-23: keeps the header in step after the member renames themself or changes the avatar. */
+export function updateStoredAccountProfile(displayName: string, avatarUrl: string | null): StoredSession | null {
+  const current = loadSession();
+  if (!current) return null;
+  const updated = { ...current, account: { ...current.account, displayName, avatarUrl } };
+  storage()?.setItem(STORAGE_KEY, JSON.stringify(updated));
+  return updated;
+}
+
 /** Client-side logout (AC-03.13): the backend keeps no session, so removing the token is enough. */
 export function clearSession(): void {
   storage()?.removeItem(STORAGE_KEY);

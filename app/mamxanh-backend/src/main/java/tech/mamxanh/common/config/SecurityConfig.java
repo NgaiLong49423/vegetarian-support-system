@@ -63,6 +63,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes", "/api/v1/recipes/*", "/api/v1/recipes/*/media").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/form-options",
                                 "/api/v1/recipes/ingredient-options").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/members/*", "/api/v1/members/*/recipes").permitAll()
                         .requestMatchers(API_DOCS_ENDPOINTS).permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())

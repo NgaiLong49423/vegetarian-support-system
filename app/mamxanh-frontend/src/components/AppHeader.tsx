@@ -14,6 +14,7 @@ import {
   ShoppingCart,
   Activity,
   Sliders,
+  UserCog,
   Award,
   Sparkles,
 } from 'lucide-react';
@@ -231,6 +232,21 @@ export function AppHeader() {
                           </span>
                         )}
                       </NavLink>
+                      {role !== 'ADMIN' && (
+                        <NavLink
+                          to="/ho-so/cai-dat"
+                          end
+                          onClick={() => setDrawerOpen(false)}
+                          className={({ isActive }) =>
+                            `drawer-nav-item flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                              isActive ? 'is-active bg-brand-600 text-white' : 'text-ink-soft hover:bg-brand-50 hover:text-brand-700'
+                            }`
+                          }
+                        >
+                          <UserCog className="h-4 w-4 shrink-0" />
+                          <span className="flex-1">Cài đặt hồ sơ</span>
+                        </NavLink>
+                      )}
                       <NavLink
                         to="/ho-so/dinh-duong"
                         end
@@ -559,6 +575,15 @@ export function AppHeader() {
                           >
                             Hồ sơ của tôi
                           </Link>
+                          {role !== 'ADMIN' && (
+                              <Link
+                                  to="/ho-so/cai-dat"
+                                  onClick={() => setMenuOpen(false)}
+                                  className="block px-4 py-2.5 text-sm font-medium text-ink-soft hover:bg-brand-50"
+                              >
+                                Cài đặt hồ sơ
+                              </Link>
+                          )}
 
                           {role === 'CUSTOMER' && (
                               <Link

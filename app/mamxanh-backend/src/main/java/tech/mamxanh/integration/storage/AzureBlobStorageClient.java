@@ -26,9 +26,10 @@ public class AzureBlobStorageClient implements StorageClient {
     }
 
     @Override
-    public String uploadImage(InputStream inputStream, long size, String mimeType, String originalFilename) {
+    public String uploadImage(InputStream inputStream, long size, String mimeType, String originalFilename,
+            String folder) {
         String extension = resolveExtension(mimeType, originalFilename);
-        String blobName = "recipes/" + UUID.randomUUID() + extension;
+        String blobName = folder + "/" + UUID.randomUUID() + extension;
 
         BlobClient blobClient = containerClient.getBlobClient(blobName);
         blobClient.upload(inputStream, size, true);
@@ -37,7 +38,7 @@ public class AzureBlobStorageClient implements StorageClient {
         blobClient.setHttpHeaders(headers);
 
         String blobUrl = blobClient.getBlobUrl();
-        log.info("Uploaded recipe image to Azure Blob Storage: {}", blobUrl);
+        log.info("Uploaded image to Azure Blob Storage: {}", blobUrl);
         return blobUrl;
     }
 

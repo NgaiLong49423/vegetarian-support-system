@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Clock, Search, Users, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Button, EmptyState } from '../components/ui';
+import { ApiRecipeCard } from '../components/ApiRecipeCard';
 import { recipesApi } from '../api/recipes';
 import type { Choice, IngredientOption, RecipeFormOptions, RecipePost, RecipeSearchResult } from '../api/recipes';
 
@@ -204,13 +205,7 @@ export function Explore() {
       : error ? <EmptyState title="Không tải được công thức" description="Không thể kết nối Backend. Kiểm tra Backend rồi thử lại." action={<Button variant="secondary" onClick={() => setRetry((current) => current + 1)}>Thử lại</Button>} />
       : result && result.items.length > 0 ? <>
         <p className="mb-4 text-sm text-ink-muted"><strong className="text-ink">{result.totalElements}</strong> công thức</p>
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{result.items.map((recipe: RecipePost) => {
-          const image = recipe.media.find((item) => item.cover) ?? recipe.media[0];
-          return <Link key={recipe.id} to={`/cong-thuc/id/${recipe.id}`} className="group overflow-hidden rounded-2xl border border-brand-100 bg-white transition-all hover:-translate-y-1 hover:shadow-xl">
-            <div className="aspect-[4/3] bg-brand-50">{image ? <img src={image.url} alt={recipe.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" /> : <div className="flex h-full items-center justify-center text-sm text-ink-muted">Ảnh công thức</div>}</div>
-            <div className="p-4"><div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-700"><span className="rounded-full bg-brand-50 px-2.5 py-1">{recipe.vegetarianType}</span><span className="rounded-full bg-brand-50 px-2.5 py-1">{recipe.dishCategory}</span>{filters.sort === 'MOST_LIKED' && <span aria-label="Tỷ lệ yêu thích" className="rounded-full bg-brand-50 px-2.5 py-1">{recipe.likePercentage === null ? 'Mới' : `👍 ${recipe.likePercentage}%`}</span>}</div><h2 className="mt-3 line-clamp-2 font-bold text-ink group-hover:text-brand-700">{recipe.title}</h2><p className="mt-2 flex items-center gap-4 text-xs text-ink-muted"><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{recipe.prepTimeMin + recipe.cookTimeMin} phút</span><span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />{recipe.servings} khẩu phần</span></p><p className="mt-3 border-t border-brand-50 pt-3 text-xs text-ink-soft">Tác giả: {recipe.authorName}</p></div>
-          </Link>;
-        })}</div>
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{result.items.map((recipe: RecipePost) => <ApiRecipeCard key={recipe.id} recipe={recipe} showLikePercentage={filters.sort === 'MOST_LIKED'} />)}</div>
         {result.totalPages > 1 && <div className="mt-8 flex items-center justify-center gap-4"><Button variant="outline" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>Trang trước</Button><span className="text-sm text-ink-muted">Trang {page + 1}/{result.totalPages}</span><Button variant="outline" disabled={page + 1 >= result.totalPages} onClick={() => setPage((current) => current + 1)}>Trang sau</Button></div>}
       </> : <EmptyState title="Không tìm thấy công thức phù hợp" description="Thử thay đổi từ khóa hoặc tiêu chí lọc, hoặc đặt lại bộ lọc để xem công thức khác." action={<Button variant="secondary" onClick={resetFilters}>Đặt lại bộ lọc</Button>} />}
   </PageContainer>;
