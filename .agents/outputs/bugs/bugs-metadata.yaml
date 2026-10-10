@@ -16,7 +16,7 @@ bugs:
     file: .agents/outputs/bugs/BUG-020.md
     created: 2026-10-11
     updated: 2026-10-11
-    related_issue: 20
+    related_issue: 117
   - id: BUG-019
     title: Giới hạn multipart mặc định 1 MB chặn ảnh công thức từ 1 MB tới 5 MB
     status: RESOLVED
