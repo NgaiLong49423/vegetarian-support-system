@@ -34,8 +34,9 @@ const emptyIngredient = (): IngredientRow => ({
 export function CreateRecipe() {
   const { isAuthenticated: active, account } = useAuth();
   const role = account?.role ?? 'CUSTOMER';
+  const [initialAllowed] = useState(() => active && role === 'EXPERT');
 
-  if (!active || role !== 'EXPERT') {
+  if (!initialAllowed) {
     return <RecipeCreationAccessGate active={active} role={role} />;
   }
 
@@ -137,7 +138,7 @@ function CreateRecipeForm() {
       return false;
     }
     if (files.length > 0) {
-      setMediaError('Upload ảnh thuộc FR-14 và chưa được nối vào form này. Hiện hãy đăng bài không kèm ảnh.');
+      setMediaError('Tính năng tải lên ảnh đang được hoàn thiện. Hiện hãy đăng bài không kèm ảnh.');
       return false;
     }
     if (mediaList.length > 0) {
@@ -210,7 +211,7 @@ function CreateRecipeForm() {
         setFieldErrors(Object.fromEntries(error.errors.map((item) => [item.field, item.message])));
       }
       if (error instanceof ApiError && error.status === 401) {
-        setSubmitError('Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại bằng tài khoản Chuyên gia.');
+        setSubmitError('Phiên đăng nhập không còn hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại bằng tài khoản Chuyên gia.');
       } else if (error instanceof ApiError && error.status === 403) {
         setSubmitError('Chỉ Chuyên gia đang hoạt động mới được đăng công thức.');
       } else {
@@ -231,12 +232,12 @@ function CreateRecipeForm() {
 
       <div className="mb-6">
         <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Đăng công thức món chay mới</h1>
-        <p className="mt-1 text-sm text-ink-muted">Điền thông tin và định lượng để người khác có thể làm lại món ăn.</p>
+        <p className="mt-1 text-sm text-ink-muted">Chia sẻ bí quyết nấu ăn thuần lành và định lượng chính xác để mọi người cùng thực hiện.</p>
       </div>
 
       <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <Info className="mt-0.5 h-5 w-5 shrink-0" />
-        <p><strong>Chỉ Chuyên gia được đăng.</strong> Bạn cần đăng nhập bằng tài khoản Chuyên gia đang hoạt động. Tài khoản demo chỉ dùng để xem giao diện và không được cấp quyền đăng.</p>
+        <p><strong>Dành cho Chuyên gia ẩm thực:</strong> Vui lòng kiểm tra kỹ định lượng nguyên liệu và các bước hướng dẫn trước khi xuất bản công thức.</p>
       </div>
 
       {loadingOptions && <div role="status" className="mb-5 flex items-center gap-2 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" /> Đang tải danh mục…</div>}
@@ -317,7 +318,7 @@ function CreateRecipeForm() {
           <Card className="space-y-4 p-5 sm:p-6">
             <SectionHead number="3" title="Hướng dẫn chế biến" />
             <Field label="Hướng dẫn * (10–5.000 ký tự)" error={errorFor('instructions')}>
-              <textarea aria-label="Hướng dẫn * (10–5.000 ký tự)" value={instructions} onChange={(event) => setInstructions(event.target.value)} rows={8} placeholder="Viết hướng dẫn theo cách của bạn; không bắt buộc chia thành từng bước." className={`${inputClass} resize-y`} />
+              <textarea aria-label="Hướng dẫn * (10–5.000 ký tự)" value={instructions} onChange={(event) => setInstructions(event.target.value)} rows={8} placeholder="Viết hướng dẫn theo cách của bạn, có thể chia theo từng bước hoặc cách nấu chi tiết." className={`${inputClass} resize-y`} />
               <p className="mt-1 text-right text-xs text-ink-muted">{instructions.trim().length}/5.000 ký tự</p>
             </Field>
           </Card>
@@ -335,7 +336,7 @@ function CreateRecipeForm() {
                 <UploadCloud className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-ink">Ảnh công thức (0–5 ảnh)</p>
-                  <p className="mt-1 text-xs text-ink-muted">Upload và lưu Azure thuộc FR-14. Ở đây chỉ kiểm tra số ảnh và ảnh cover; ảnh đã chọn chưa thể gửi lên khi FR-14 chưa tích hợp.</p>
+                  <p className="mt-1 text-xs text-ink-muted">Tối đa 5 ảnh minh họa cho món ăn, hãy chọn 1 ảnh làm ảnh đại diện bìa.</p>
                   <input type="file" accept="image/*" multiple onChange={(event) => handleFiles(event.target.files)} className="mt-3 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:font-semibold file:text-brand-700" aria-label="Chọn tối đa 5 ảnh" />
                 </div>
                 {files.length === 0 && <ImagePlus className="h-6 w-6 text-brand-400" />}
@@ -360,7 +361,7 @@ function CreateRecipeForm() {
                 placeholder="https://www.youtube.com/watch?v=... hoặc https://youtu.be/..."
                 className={inputClass}
               />
-              <p className="mt-1 text-xs text-ink-muted">Chỉ hỗ trợ video từ YouTube (BR-10). Tối đa 1 video cho mỗi bài công thức.</p>
+              <p className="mt-1 text-xs text-ink-muted">Hỗ trợ video từ YouTube, tối đa 1 video cho mỗi bài công thức.</p>
               {errorFor('youtubeUrl') ? (
                 <p role="alert" className={errorClass}>
                   {errorFor('youtubeUrl')}
@@ -404,7 +405,7 @@ function CreateRecipeForm() {
           </Card>
           <Card className="flex items-start gap-3 p-5 text-sm text-ink-soft">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-            <p>Số lượng phải lớn hơn 0, tối đa hai chữ số thập phân. Đơn vị như quả/củ/bó/gói chỉ được đăng khi đã có conversion theo đúng nguyên liệu; Issue #22 không tạo dữ liệu quy đổi.</p>
+            <p>Số lượng cần lớn hơn 0, tối đa hai chữ số thập phân. Các đơn vị thông dụng như quả, củ, gam, ml sẽ giúp người nấu dễ dàng thực hiện theo.</p>
           </Card>
         </aside>
       </form>

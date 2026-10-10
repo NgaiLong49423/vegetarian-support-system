@@ -46,7 +46,7 @@ test('recipe exploration shows API results only and handles empty, loading and f
   await expect(page.getByRole('heading', { name: 'Đậu hũ kho tiêu API' })).toBeVisible();
   await expect(page.getByText('Đậu hũ sốt cà chua', { exact: true })).toHaveCount(0);
   await page.getByPlaceholder('Tìm món chay hoặc nguyên liệu...').fill('empty');
-  await expect(page.getByRole('heading', { name: 'Chưa có công thức phù hợp' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();
   await page.getByPlaceholder('Tìm món chay hoặc nguyên liệu...').fill('api-error');
   await expect(page.getByRole('heading', { name: 'Không tải được công thức' })).toBeVisible();
   await page.getByRole('button', { name: 'Thử lại' }).click();

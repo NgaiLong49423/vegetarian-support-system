@@ -479,7 +479,7 @@ test('recipe exploration does not expose local-only card actions as Backend feat
     items: [], page: 0, size: 12, totalElements: 0, totalPages: 0,
   } }));
   await page.goto('/kham-pha');
-  await expect(page.getByRole('heading', { name: 'Chưa có công thức phù hợp' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();
   await expect(page.getByLabel('Lưu công thức')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Thêm vào lịch ăn' })).toHaveCount(0);
 });

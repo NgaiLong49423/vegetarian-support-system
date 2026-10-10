@@ -54,3 +54,9 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
   const { data } = await apiClient.post<AuthResponse>('/auth/login', payload);
   return data;
 }
+
+/** UC-03.5: exchanges the Google ID Token from Google Identity Services for a Mâm Xanh access token. */
+export async function googleLogin(idToken: string): Promise<AuthResponse> {
+  const { data } = await apiClient.post<AuthResponse>('/auth/google', { idToken });
+  return data;
+}

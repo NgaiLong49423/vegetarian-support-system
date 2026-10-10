@@ -72,7 +72,12 @@
             <artifactId>azure-storage-blob</artifactId>
             <version>12.28.0</version>
         </dependency>
-
+        <!-- FR-03-D (Q25): verifies Google ID Tokens (signature, expiry, issuer, audience) with GoogleIdTokenVerifier -->
+        <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>2.9.1</version>
+        </dependency>
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>

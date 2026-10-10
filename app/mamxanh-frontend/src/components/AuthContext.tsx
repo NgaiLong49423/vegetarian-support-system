@@ -21,7 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const endSession = useCallback((notice: SessionNotice) => {
     clearSession();
     setSession(null);
-    navigate('/dang-nhap', { state: { sessionNotice: notice } });
+    if (!window.location.pathname.startsWith('/dang-cong-thuc')) {
+      navigate('/dang-nhap', { state: { sessionNotice: notice } });
+    }
   }, [navigate]);
 
   useEffect(() => {
