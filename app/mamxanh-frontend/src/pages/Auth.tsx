@@ -4,8 +4,9 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, Leaf, Mail, ShieldChe
 import { Logo } from '../components/Logo';
 import { Button } from '../components/ui';
 import { useAuth, type SessionNotice } from '../components/AuthContext';
+import { GoogleSignIn } from '../components/GoogleSignIn';
 import { fieldMessages, retryAfterSeconds, toProblem, type ProblemDetails } from '../lib/problem';
-import { login, register, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
+import { googleLogin, login, register, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
 import { claimOnboardingInvitation } from '../services/dietaryPreferencesApi';
 import { passwordProblems } from '../utils/password';
 
@@ -42,6 +43,24 @@ function loginError(problem: ProblemDetails | null, retryAfter: number | null): 
       return { tone: 'error', text: SESSION_NOTICES.locked };
     case 'LOGIN_TEMPORARILY_BLOCKED':
       return { tone: 'error', text: retryAfter ? `Bạn đã nhập sai mật khẩu nhiều lần liên tiếp. Vui lòng thử lại sau ${Math.ceil(retryAfter / 60)} phút.` : problem.detail ?? NETWORK_ERROR };
+    default:
+      return { tone: 'error', text: problem?.detail ?? NETWORK_ERROR };
+  }
+}
+
+const GOOGLE_RETRY = 'Không đăng nhập được với Google. Vui lòng thử lại.';
+
+// UC-03.5: Google sign-in errors, also chosen by problem code.
+function googleLoginError(problem: ProblemDetails | null): Notice {
+  switch (problem?.code) {
+    case 'GOOGLE_TOKEN_INVALID':
+      return { tone: 'error', text: 'Không xác thực được tài khoản Google. Vui lòng thử đăng nhập Google lại.' };
+    case 'ACCOUNT_LOCKED':
+      return { tone: 'error', text: SESSION_NOTICES.locked };
+    case 'GOOGLE_ACCOUNT_CONFLICT':
+      return { tone: 'error', text: 'Email này đã được liên kết với một tài khoản Google khác. Hãy đăng nhập bằng tài khoản Google đó hoặc bằng email và mật khẩu.' };
+    case 'GOOGLE_LOGIN_UNAVAILABLE':
+      return { tone: 'error', text: 'Chưa thể đăng nhập bằng Google lúc này. Vui lòng thử lại sau hoặc đăng nhập bằng email.' };
     default:
       return { tone: 'error', text: problem?.detail ?? NETWORK_ERROR };
   }
@@ -137,6 +156,20 @@ export function AuthPage({ mode }: { mode: Mode }) {
     }
   };
 
+  const submitGoogle = async (idToken: string) => {
+    setNotice(null);
+    setSubmitting(true);
+    try {
+      const session = await googleLogin(idToken);
+      signIn(session);
+      navigate(await landingAfterLogin(session.account), { replace: true });
+    } catch (error) {
+      setNotice(googleLoginError(toProblem(error)));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const submitResend = async () => {
     setSubmitting(true);
     try {
@@ -180,9 +213,9 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const fieldClass = 'mt-2 w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100';
   const error = (field: string) => errors[field] && <p id={`${field}-error`} className="mt-1.5 text-xs text-red-700">{errors[field]}</p>;
   const showForm = !(mode === 'verify' && (verifyState === 'verifying' || verifyState === 'verified'));
-  const demoNote = mode === 'register' || mode === 'login'
-    ? `${mode === 'login' ? 'Đăng nhập' : 'Đăng ký và xác minh email'} được gửi tới máy chủ · Đăng nhập Google chưa được kết nối.`
-    : mode === 'verify' ? '' : 'Bản demo giao diện · Chưa kết nối xác thực, gửi email hoặc lưu thông tin tài khoản.';
+  const demoNote = mode === 'register' || mode === 'login' || mode === 'verify'
+    ? ''
+    : 'Bản demo giao diện · Chưa kết nối xác thực, gửi email hoặc lưu thông tin tài khoản.';
 
   return <div className="min-h-screen bg-cream">
     <header className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-6 sm:px-8">
@@ -205,7 +238,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink">{details.title}</h1>
         <p className="mt-3 text-sm leading-6 text-ink-muted">{details.subtitle}</p>
         {(mode === 'login' || mode === 'register') && <>
-          <button type="button" aria-describedby="auth-demo-note" onClick={() => setNotice({ tone: 'success', text: 'Google Login chưa được kết nối trong bản demo. Chưa có tài khoản hoặc phiên đăng nhập được tạo.' })} className="mt-6 flex w-full items-center justify-center gap-3 rounded-xl border border-brand-200 py-3 text-sm font-semibold text-ink hover:bg-brand-50"><span aria-hidden="true" className="text-lg font-bold text-blue-600">G</span>Tiếp tục với Google</button>
+          <GoogleSignIn onCredential={idToken => void submitGoogle(idToken)} onFailure={() => setNotice({ tone: 'error', text: GOOGLE_RETRY })} />
           <div className="my-5 flex items-center gap-3 text-xs text-ink-muted"><span className="h-px flex-1 bg-brand-100" />hoặc sử dụng email<span className="h-px flex-1 bg-brand-100" /></div>
         </>}
         {mode === 'verify' && verifyState === 'verifying' && <p role="status" className="mt-5 rounded-xl bg-leaf-50 p-4 text-sm leading-6 text-leaf-800">Đang xác minh email của bạn...</p>}
