@@ -14,10 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.nutrition.dto.request.ConfirmNutritionEligibilityRequest;
 import tech.mamxanh.nutrition.dto.request.SaveNutritionProfileRequest;
+import tech.mamxanh.nutrition.dto.request.UpdateNutritionEligibilityRequest;
+import tech.mamxanh.nutrition.dto.response.NutritionEligibilityResponse;
 import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse;
 import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse.Profile;
 import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse.Results;
 import tech.mamxanh.nutrition.entity.NutritionProfileEntity;
+import tech.mamxanh.nutrition.entity.NutritionEligibilityStatus;
 import tech.mamxanh.nutrition.repository.NutritionProfileRepository;
 
 @Service
@@ -40,6 +43,7 @@ public class NutritionProfileService {
     @Transactional(readOnly = true)
     public NutritionProfileResponse getOwnProfile() {
         NutritionProfileEntity user = getAuthenticatedMember();
+        requireEligible(user);
         if (!hasSavedProfile(user)) {
             return new NutritionProfileResponse(false, false, List.of(), null, null);
         }
@@ -55,6 +59,7 @@ public class NutritionProfileService {
     @Transactional(readOnly = true)
     public NutritionProfileResponse calculateOwnResults(ConfirmNutritionEligibilityRequest confirmation) {
         NutritionProfileEntity user = getAuthenticatedMember();
+        requireEligible(user);
         if (!hasSavedProfile(user)) {
             throw new NutritionProfileException(HttpStatus.CONFLICT, "NUTRITION_PROFILE_REQUIRED", "Lưu hồ sơ dinh dưỡng trước khi xem chỉ số tham khảo.");
         }
@@ -70,6 +75,7 @@ public class NutritionProfileService {
     @Transactional
     public NutritionProfileResponse saveOwnProfile(SaveNutritionProfileRequest request) {
         NutritionProfileEntity user = getAuthenticatedMember();
+        requireEligible(user);
         LocalDate today = LocalDate.now(clock);
         if (request.dateOfBirth().isBefore(LocalDate.of(1900, 1, 1)) || request.dateOfBirth().isAfter(today)) {
             throw new NutritionProfileException(HttpStatus.BAD_REQUEST, "INVALID_DATE_OF_BIRTH", "Ngày sinh phải từ 01/01/1900 đến hôm nay.");
@@ -111,6 +117,54 @@ public class NutritionProfileService {
         NutritionProfileEntity saved = repository.save(user);
         return new NutritionProfileResponse(true, false, List.of(),
                 new Profile(saved.getDateOfBirth(), saved.getBiologicalSex(), saved.getHeightCm(), saved.getWeightKg(), saved.getActivityLevel(), saved.getNutritionGoal()), null);
+    }
+
+    @Transactional(readOnly = true)
+    public NutritionEligibilityResponse getOwnEligibility() {
+        NutritionProfileEntity user = getAuthenticatedMember();
+        return eligibilityResponse(user);
+    }
+
+    @Transactional
+    public NutritionEligibilityResponse updateOwnEligibility(UpdateNutritionEligibilityRequest request) {
+        NutritionProfileEntity user = getAuthenticatedMember();
+        if (request == null || request.status() == null) {
+            throw new NutritionProfileException(HttpStatus.BAD_REQUEST, "INVALID_NUTRITION_ELIGIBILITY_STATUS",
+                    "Chỉ có thể xác nhận trạng thái đủ hoặc không đủ điều kiện dinh dưỡng.");
+        }
+        NutritionEligibilityStatus status = request.status().toEligibilityStatus();
+
+        LocalDateTime confirmedAt = LocalDateTime.now(clock.withZone(ZoneOffset.UTC));
+        user.setNutritionEligibilityStatus(status);
+        user.setNutritionEligibilityConfirmedAt(confirmedAt);
+        user.setNutritionScopeConfirmed(true);
+        user.setUpdatedAt(confirmedAt);
+        NutritionProfileEntity saved = repository.save(user);
+        return eligibilityResponse(saved);
+    }
+
+    /** Shared guard for personalized nutrition endpoints across FR-35/36/37. */
+    public void requireEligible(long userId) {
+        NutritionProfileEntity user = repository.findById(userId)
+                .orElseThrow(() -> new NutritionProfileException(HttpStatus.NOT_FOUND, "MEMBER_NOT_FOUND", "Không tìm thấy hồ sơ Member."));
+        if (!"ACTIVE".equals(user.getAccountStatus()) || !List.of("CUSTOMER", "EXPERT").contains(user.getRole())) {
+            throw new NutritionProfileException(HttpStatus.FORBIDDEN, "MEMBER_ACCESS_REQUIRED", "Chỉ Member có tài khoản hoạt động được truy cập hồ sơ dinh dưỡng.");
+        }
+        requireEligible(user);
+    }
+
+    private void requireEligible(NutritionProfileEntity user) {
+        if (user.getNutritionEligibilityStatus() == NutritionEligibilityStatus.ELIGIBLE) return;
+        if (user.getNutritionEligibilityStatus() == NutritionEligibilityStatus.INELIGIBLE) {
+            throw new NutritionProfileException(HttpStatus.FORBIDDEN, "NUTRITION_ELIGIBILITY_INELIGIBLE",
+                    "Tài khoản hiện không thuộc phạm vi hỗ trợ dinh dưỡng.");
+        }
+        throw new NutritionProfileException(HttpStatus.FORBIDDEN, "NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED",
+                "Cần xác nhận phạm vi hỗ trợ dinh dưỡng trước khi sử dụng chức năng này.");
+    }
+
+    private NutritionEligibilityResponse eligibilityResponse(NutritionProfileEntity user) {
+        return new NutritionEligibilityResponse(user.getNutritionEligibilityStatus(), user.getNutritionEligibilityConfirmedAt());
     }
 
     private NutritionProfileEntity getAuthenticatedMember() {
