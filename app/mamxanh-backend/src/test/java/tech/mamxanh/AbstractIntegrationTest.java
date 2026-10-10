@@ -9,13 +9,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import tech.mamxanh.auth.security.GoogleTokenVerifier;
 import tech.mamxanh.integration.email.EmailSender;
 
 /**
  * Base for integration tests: full application context started through the real {@code main}
- * entry point, MockMvc, SQL Server via Testcontainers and a controllable clock. Outgoing email is
- * mocked here (not per test class) so every integration test shares one cached context and one
- * container.
+ * entry point, MockMvc, SQL Server via Testcontainers and a controllable clock. Outgoing email and
+ * Google ID Token verification are mocked here (not per test class) so every integration test
+ * shares one cached context and one container, and no test calls Google.
  */
 @SpringBootTest(useMainMethod = SpringBootTest.UseMainMethod.ALWAYS,
         properties = "mamxanh.auth.jwt-secret=integration-test-only-signing-secret-0123456789")
@@ -32,6 +33,9 @@ public abstract class AbstractIntegrationTest {
 
     @MockitoBean
     protected EmailSender emailSender;
+
+    @MockitoBean
+    protected GoogleTokenVerifier googleTokenVerifier;
 
     @BeforeEach
     void resetClock() {
