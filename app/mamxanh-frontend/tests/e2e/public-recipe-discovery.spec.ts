@@ -18,6 +18,10 @@ const publicRecipe = (id: number, title: string) => ({
   status: 'PUBLISHED',
   media: [{ url: `https://example.test/${id}.jpg`, mimeType: 'image/jpeg', displayOrder: 0, cover: true }],
   ingredients: [],
+  likes: 0,
+  dislikes: 0,
+  likePercentage: null,
+  viewCount: 0,
 });
 
 const detail = {
@@ -114,4 +118,56 @@ test.describe('Issue #3 [FR-01] — Guest xem và tìm kiếm nội dung công k
     await expect(page.getByText(/Vui lòng đăng nhập để thêm món vào kế hoạch tuần/)).toBeVisible();
     await page.getByRole('button', { name: 'Để sau' }).click();
   });
+});
+
+test('FR-08 Explore applies API-backed options, ingredient AND filters, sorting and reset', async ({ page }) => {
+  const searchUrls: string[] = [];
+  const matchingRecipe = publicRecipe(919, 'Công thức có đủ nguyên liệu đã chọn');
+  await page.route((url) => url.pathname === '/api/v1/recipes/form-options', (route) => route.fulfill({ json: {
+    dishCategories: [{ code: 'SOUP', label: 'Món canh' }],
+    vegetarianTypes: [{ code: 'VEGAN', label: 'Thuần chay' }, { code: 'LACTO', label: 'Có sữa' }],
+    difficulties: [], units: [],
+  } }));
+  await page.route((url) => url.pathname === '/api/v1/recipes/ingredient-options', (route) => {
+    const query = new URL(route.request().url()).searchParams.get('query');
+    const option = query === 'Nguyên liệu A'
+      ? { ingredientId: 101, name: 'Nguyên liệu A' }
+      : { ingredientId: 202, name: 'Nguyên liệu B' };
+    return route.fulfill({ json: [option] });
+  });
+  await page.route((url) => url.pathname === '/api/v1/recipes', (route) => {
+    const url = new URL(route.request().url());
+    searchUrls.push(url.toString());
+    const items = url.searchParams.get('vegetarianType') === 'LACTO' ? [] : [matchingRecipe];
+    return route.fulfill({ json: {
+      items, page: 0, size: 12, totalElements: items.length, totalPages: items.length ? 1 : 0,
+    } });
+  });
+
+  await page.goto('/kham-pha');
+  await page.getByRole('combobox', { name: 'Trường phái ăn chay' }).selectOption('VEGAN');
+  await page.getByRole('combobox', { name: 'Thể loại món' }).selectOption('SOUP');
+  await page.getByRole('combobox', { name: 'Tổng thời gian tối đa' }).selectOption('30');
+  const ingredientSearch = page.getByRole('textbox', { name: 'Nguyên liệu (kết quả phải có đủ nguyên liệu đã chọn)' });
+  await ingredientSearch.fill('Nguyên liệu A');
+  await page.getByRole('checkbox', { name: 'Nguyên liệu A' }).check();
+  await ingredientSearch.fill('Nguyên liệu B');
+  await page.getByRole('checkbox', { name: 'Nguyên liệu B' }).check();
+  await expect(page.getByRole('heading', { name: matchingRecipe.title })).toBeVisible();
+  await expect.poll(() => {
+    const url = new URL(searchUrls.at(-1)!);
+    return [url.searchParams.get('vegetarianType'), url.searchParams.get('dishCategory'),
+      url.searchParams.get('maxTotalTimeMinutes'), ...url.searchParams.getAll('ingredientIds')].join('|');
+  }).toBe('VEGAN|SOUP|30|101|202');
+
+  await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_LIKED');
+  await expect(page.getByText('Mới', { exact: true })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_VIEWED');
+  await page.getByRole('combobox', { name: 'Khung thời gian lượt xem' }).selectOption('LAST_7_DAYS');
+  await expect.poll(() => new URL(searchUrls.at(-1)!).searchParams.get('viewPeriod')).toBe('LAST_7_DAYS');
+
+  await page.getByRole('combobox', { name: 'Trường phái ăn chay' }).selectOption('LACTO');
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();
+  await page.getByRole('button', { name: 'Đặt lại bộ lọc' }).last().click();
+  await expect(page.getByRole('heading', { name: matchingRecipe.title })).toBeVisible();
 });

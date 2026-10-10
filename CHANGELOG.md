@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.56.0
+> **Version:** v2.58.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-10
 > **Status:** Active
@@ -52,6 +52,19 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 None.
+
+## 2026-10-08 — Add Public Recipe Search Filters and Explore Controls (Issue #14) ([PR #108](https://github.com/NgaiLong49423/vegetarian-support-system/pull/108))
+
+**Status:** Committed — `60a3788`.
+
+**Scope:** Complete the public recipe discovery flow for FR-08 with database-backed filters and sorting controls.
+
+### Added
+
+- Add parameterized Backend filters for vegetarian type, dish category, all selected ingredients, and maximum total preparation-plus-cooking time.
+- Connect Explore filter options, ingredient lookup, pagination and six sorting modes to the public Backend API; add real SQL Server integration coverage.
+- Document FR-08 filter semantics and the runtime API integration contract.
+
 ## 2026-10-07 — Add Recipe Detail and Saved Recipe Read Projections (Issue #89)
 
 **Status:** Committed — `3ca211f`.

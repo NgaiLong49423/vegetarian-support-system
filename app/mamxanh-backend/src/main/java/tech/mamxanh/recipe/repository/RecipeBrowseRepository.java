@@ -5,8 +5,9 @@ import java.util.List;
 import tech.mamxanh.recipe.service.RecipeSortMode;
 
 public interface RecipeBrowseRepository {
-    BrowsePage findPublished(String keyword, RecipeSortMode sortMode, LocalDateTime viewSince,
-            LocalDateTime now, int page, int size);
+    BrowsePage findPublished(String keyword, String vegetarianType, String dishCategory,
+            List<Long> ingredientIds, Integer maxTotalTimeMinutes, RecipeSortMode sortMode,
+            LocalDateTime viewSince, LocalDateTime now, int page, int size);
 
     record BrowsePage(List<BrowseRow> rows, long totalElements) { }
 

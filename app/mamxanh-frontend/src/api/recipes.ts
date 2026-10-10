@@ -109,6 +109,30 @@ export interface RecipePost {
   status: 'PUBLISHED' | 'HIDDEN' | 'DELETED';
   media: RecipeMedia[];
   ingredients: RecipeIngredient[];
+  likes: number;
+  dislikes: number;
+  likePercentage: number | null;
+  viewCount: number;
+}
+
+export interface RecipeSearchResult {
+  items: RecipePost[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface RecipeSearchParams {
+  keyword: string;
+  page: number;
+  size: number;
+  sort: 'NEWEST' | 'MOST_LIKED' | 'MOST_VIEWED' | 'MOST_COMMENTED' | 'MOST_ACTIVE' | 'TRENDING';
+  viewPeriod: 'ALL_TIME' | 'LAST_24_HOURS' | 'LAST_7_DAYS' | 'LAST_30_DAYS';
+  vegetarianType?: string;
+  dishCategory?: string;
+  ingredientIds?: number[];
+  maxTotalTimeMinutes?: number;
 }
 
 export interface MealPlanWeek {
@@ -165,6 +189,20 @@ export const recipesApi = {
   getPublished: (recipeId: number) => request(
     () => apiClient.get<RecipeDetail>(`/recipes/${recipeId}`),
   ),
+  searchPublic: (filters: RecipeSearchParams) => {
+    const params = new URLSearchParams({
+      keyword: filters.keyword,
+      page: String(filters.page),
+      size: String(filters.size),
+      sort: filters.sort,
+      viewPeriod: filters.viewPeriod,
+    });
+    if (filters.vegetarianType) params.set('vegetarianType', filters.vegetarianType);
+    if (filters.dishCategory) params.set('dishCategory', filters.dishCategory);
+    if (filters.maxTotalTimeMinutes) params.set('maxTotalTimeMinutes', String(filters.maxTotalTimeMinutes));
+    filters.ingredientIds?.forEach((ingredientId) => params.append('ingredientIds', String(ingredientId)));
+    return request(() => apiClient.get<RecipeSearchResult>('/recipes', { params }));
+  },
 };
 
 export const recipeApi = {

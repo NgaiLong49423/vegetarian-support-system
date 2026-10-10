@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { AlertCircle, ImagePlus, Info, LoaderCircle, Plus, Sparkles, Trash2, UploadCloud } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AlertCircle, ImagePlus, Info, LoaderCircle, Plus, Trash2, UploadCloud } from 'lucide-react';
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
 import { ApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
@@ -8,7 +9,7 @@ import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { validateYouTubeUrl } from '../utils/youtube';
 import { Button, Card } from '../components/ui';
 import type { UserRole } from '../types';
-import { Link, useNavigate } from 'react-router-dom';
+import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
 
 type IngredientRow = {
   key: string;
@@ -99,6 +100,7 @@ function CreateRecipeForm() {
   const [ingredients, setIngredients] = useState<IngredientRow[]>(() => [emptyIngredient()]);
   const [files, setFiles] = useState<File[]>([]);
   const [coverIndex, setCoverIndex] = useState<number | null>(null);
+  const [mediaList, setMediaList] = useState<ImageItem[]>([]);
   const [mediaError, setMediaError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
@@ -138,6 +140,13 @@ function CreateRecipeForm() {
     if (files.length > 0) {
       setMediaError('Tính năng tải lên ảnh đang được hoàn thiện. Hiện hãy đăng bài không kèm ảnh.');
       return false;
+    }
+    if (mediaList.length > 0) {
+      const coverCount = mediaList.filter((m) => m.isCover).length;
+      if (coverCount !== 1) {
+        setMediaError('Vui lòng chỉ định chính xác 1 ảnh đại diện (ảnh bìa) cho bài viết (FR-14, BR-19).');
+        return false;
+      }
     }
     setMediaError('');
     return true;
@@ -186,7 +195,11 @@ function CreateRecipeForm() {
         unitId: row.unitId ?? 0,
         quantity: Number(row.quantity),
       })),
-      media: [],
+      media: mediaList.map((m) => ({
+        blobUrl: m.url,
+        mimeType: m.mimeType,
+        cover: m.isCover,
+      })),
     };
 
     setSubmitting(true);
@@ -311,7 +324,13 @@ function CreateRecipeForm() {
           </Card>
 
           <Card className="space-y-4 p-5 sm:p-6">
-            <SectionHead number="4" title="Ảnh và video" />
+            <SectionHead number="4" title="Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)" />
+            <RecipeImageUploader
+              images={mediaList}
+              onChange={setMediaList}
+              maxImages={5}
+            />
+
             <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/50 p-4">
               <div className="flex items-start gap-3">
                 <UploadCloud className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />

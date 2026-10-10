@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.11.0
+> **Version:** v0.12.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-10
 > **Status:** Active
@@ -11,7 +11,7 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
 
-Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và bằng Google (FR-03), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML chỉ giữ password recovery chưa có trong runtime.
+Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML chỉ giữ password recovery chưa có trong runtime.
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 8 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
@@ -156,13 +156,17 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #36). Các mã của đặt lạ
 - Google ID token phải được Backend xác minh chữ ký, issuer, audience và expiry trước khi phát hành token; tài khoản được định danh bằng `google_subject`, không bằng email hay tên do client gửi.
 - Liên kết Google vào tài khoản mật khẩu chưa xác minh sẽ xóa mật khẩu đó, vì mật khẩu có thể do người không sở hữu hộp thư đặt trước (Q26).
 
-## 6. Nutrition Profile — FR-35
+## 6. Nutrition eligibility — FR-38 và Nutrition Profile — FR-35
 
-Ba endpoint runtime trong generated OpenAPI thao tác hồ sơ của Member hiện tại; client không truyền `userId`. Chúng yêu cầu authenticated Member principal. Tích hợp JWT thật phụ thuộc authentication contract chung; không dùng fake authentication trong production. Kết quả không được lưu thành lịch sử theo dõi.
+Eligibility và hồ sơ dinh dưỡng là hai thao tác Backend riêng. Client không truyền `userId`; các endpoint yêu cầu authenticated Member principal. Tích hợp JWT thật phụ thuộc authentication contract chung; không dùng fake authentication trong production.
 
-- `GET /nutrition/profile` chỉ trả dữ liệu hồ sơ đã lưu; không trả BMI hoặc các chỉ tiêu.
-- `PUT /nutrition/profile` nhận câu trả lời phạm vi hiện tại cùng ngày sinh, giới tính sinh học, chiều cao, cân nặng, mức vận động, mục tiêu chung và đồng thuận. Backend từ chối lưu nếu ngày sinh không hợp lệ, tuổi dưới 18/trên 120 hoặc có điều kiện loại trừ. Câu trả lời loại trừ chỉ dùng để kiểm tra yêu cầu và không được lưu lên hồ sơ.
-- `POST /nutrition/profile/calculate` nhận xác nhận phạm vi hiện tại. Chỉ khi cả ba cờ đều `false` và hồ sơ lưu hợp lệ mới trả BMI cùng 8 thành phần dinh dưỡng (9 chỉ tiêu khi tính cả năng lượng). Phản hồi tính toán không được lưu và giao diện xóa kết quả khi đóng/tải lại trang hoặc thay đổi xác nhận.
+- `GET /nutrition/profile/eligibility` trả trạng thái hiện tại (`NOT_CONFIRMED`, `ELIGIBLE`, `INELIGIBLE`) và `confirmedAt`. Trạng thái ban đầu là `NOT_CONFIRMED`, timestamp `null`.
+- `PUT /nutrition/profile/eligibility` nhận trạng thái xác nhận `ELIGIBLE` hoặc `INELIGIBLE`. Chỉ request xác nhận chủ động mới cập nhật Database; Backend ghi trạng thái và thời điểm xác nhận thành công gần nhất trong cùng giao dịch. `NOT_CONFIRMED` không phải trạng thái được gửi để xác nhận. Lỗi validation/Backend không cập nhật giá trị cũ. Endpoint này tách biệt với lưu hồ sơ và `health_data_consent_at`; không có draft/autosave hoặc lịch sử xác nhận.
+- `GET /nutrition/profile`, `PUT /nutrition/profile` và `POST /nutrition/profile/calculate` yêu cầu `ELIGIBLE`. `NOT_CONFIRMED` và `INELIGIBLE` bị chặn ở Backend trước khi đọc, lưu hay tính hồ sơ cá nhân; `INELIGIBLE` vẫn được gọi API eligibility để xác nhận lại. Khi trở lại `ELIGIBLE`, quyền truy cập được khôi phục theo phân quyền hiện hành, không tự động tính lại dữ liệu cũ.
+- Guard trả `403 NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED` cho `NOT_CONFIRMED` và `403 NUTRITION_ELIGIBILITY_INELIGIBLE` cho `INELIGIBLE`.
+- `PUT /nutrition/profile` lưu hồ sơ FR-35 và đồng thuận xử lý dữ liệu sức khỏe theo hợp đồng FR-35. Việc này không tự xác nhận hoặc đổi trạng thái eligibility.
+- `POST /nutrition/profile/calculate` trả BMI cùng 8 thành phần dinh dưỡng (9 chỉ tiêu khi tính cả năng lượng) khi hồ sơ lưu hợp lệ. Phản hồi tính toán không được lưu thành lịch sử theo dõi.
+- Guard dùng chung cho endpoint dinh dưỡng cá nhân FR-36/FR-37 cần được tích hợp tại các API do các FR đó sở hữu; chỉ endpoint đã tồn tại và được bảo vệ mới có bằng chứng nghiệm thu.
 - Response hiển thị số dạng xấp xỉ. Đây là tham khảo, không phải chẩn đoán/điều trị/kê đơn, tư vấn y tế, chứng nhận hay giám sát liên tục.
 - Lỗi dùng `application/problem+json` và mã ổn định; trường hợp ngoài phạm vi trả `422 NUTRITION_PROFILE_OUT_OF_SCOPE`.
 
@@ -216,3 +220,15 @@ Năm endpoint runtime thao tác hồ sơ của Member đang đăng nhập; clien
 Luồng Onboarding (AC-31.10): sau mỗi lần đăng nhập thành công của Member, Frontend gọi `POST .../onboarding/invitation` và chỉ chuyển tới trang Onboarding khi `show = true`. Vì vậy lời mời chỉ hiện một lần, kể cả khi Member rời questionnaire mà chưa "Hoàn tất" hay "Bỏ qua" (trạng thái vẫn `NOT_STARTED`). Trang Onboarding và trang Sở thích ăn uống trong Cài đặt vẫn mở thủ công được. Tài khoản tồn tại trước migration V7 được ghi `onboarding_invited_at` nên không bị hỏi và giữ nguyên `onboardingStatus`; tài khoản tạo sau đó bắt đầu ở `NOT_STARTED` với `onboarding_invited_at = NULL`. Luồng đăng nhập khác (ví dụ Google Login, Issue #8) cần gọi endpoint này sau khi đăng nhập thành công.
 
 Cổng AI cá nhân hóa (AC-31.4–AC-31.6): endpoint AI gợi ý món hoặc tạo thực đơn tuần phải gọi `DietaryPreferenceService.requirePersonalizedAiEligible(userId)` trước mọi xử lý khác. Khi thiếu thông tin, request dừng với `409 DIETARY_PROFILE_INCOMPLETE` kèm `missing`; không gọi Gemini và không ghi Meal Plan. Cổng chỉ kiểm tra dữ liệu hồ sơ, không dựa vào `onboardingStatus`.
+
+## 10. Tìm kiếm công thức công khai — FR-08
+
+`GET /api/v1/recipes` là API đọc công khai có phân trang. Generated OpenAPI runtime là contract chi tiết. Endpoint nhận `keyword`, `page` (bắt đầu từ 0), `size` (1–50), `sort` (`NEWEST`, `MOST_LIKED`, `MOST_VIEWED`, `MOST_COMMENTED`, `MOST_ACTIVE` hoặc `TRENDING`) và `viewPeriod` (`ALL_TIME`, `LAST_24_HOURS`, `LAST_7_DAYS` hoặc `LAST_30_DAYS`).
+
+Bộ lọc tùy chọn gồm `vegetarianType` (`VEGAN`, `LACTO`, `OVO`, `LACTO_OVO`), `dishCategory` (mã do API form-options trả về), `ingredientIds` lặp lại (tối đa 20 ID dương) và `maxTotalTimeMinutes` (số nguyên dương). Mọi tiêu chí đã gửi kết hợp theo AND. Nhiều `ingredientIds` cũng kết hợp theo AND: mỗi công thức phải chứa đủ mọi nguyên liệu chuẩn đã chọn. Tổng thời gian bằng thời gian chuẩn bị cộng thời gian nấu. Chỉ bài công thức công khai được trả về.
+
+```http
+GET /api/v1/recipes?keyword=canh&vegetarianType=VEGAN&dishCategory=SOUP&ingredientIds=12&ingredientIds=29&maxTotalTimeMinutes=30&sort=TRENDING&page=0&size=12
+```
+
+Dùng `GET /api/v1/recipes/form-options` để lấy mã/nhãn loại ăn chay và thể loại món hiện hành; dùng `GET /api/v1/recipes/ingredient-options?query=...` để tìm trong danh mục nguyên liệu đang hoạt động. Frontend không hard-code danh mục tùy chọn. Bộ lọc hoặc tham số phân trang ngoài giới hạn runtime trả `400` theo ProblemDetail chuẩn với `code` ổn định và lỗi field nếu có. Response danh sách giữ cấu trúc `items`, `page`, `size`, `totalElements`, `totalPages` hiện tại, đồng thời có `likes`, `dislikes`, `likePercentage` (`null` khi chưa có lượt bình chọn) và `viewCount` để hiển thị theo sort.
