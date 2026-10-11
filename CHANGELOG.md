@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-11 — Add AI Assistance to Recipe Authoring
+## 2026-10-11 — Add AI Assistance to Recipe Authoring ([PR #122](https://github.com/NgaiLong49423/vegetarian-support-system/pull/122))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `cfad92c`.
 
 **Scope:** Let eligible Experts generate editable recipe descriptions and instructions without saving a server-side draft.
 
