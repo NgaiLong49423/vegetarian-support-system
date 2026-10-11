@@ -588,9 +588,9 @@ button:not(:disabled), a { cursor: pointer; }
   white-space: nowrap;
   border-radius: 9999px;
   cursor: pointer;
-  border: 1.5px solid var(--color-brand-400, #fb923c);
-  background: #ffffff;
-  color: var(--color-brand-600, #ea580c);
+  border: 1.5px solid var(--color-brand-400, #e78522);
+  background: var(--color-brand-50, #242424);
+  color: var(--color-brand-600, #ff9b30);
   font-weight: 600;
   isolation: isolate;
   user-select: none;
@@ -601,7 +601,7 @@ button:not(:disabled), a { cursor: pointer; }
     border-color var(--transition),
     color var(--transition);
   box-shadow:
-    0 2px 8px rgba(234, 88, 12, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.35),
     0 0 calc(var(--active, 0) * 2.5em) calc(var(--active, 0) * 0.8em) rgba(249, 115, 22, 0.65),
     0 0 calc(var(--active, 0) * 1em) rgba(234, 88, 12, 0.45);
 }
@@ -652,12 +652,12 @@ button:not(:disabled), a { cursor: pointer; }
   box-shadow: none !important;
 }
 
-/* Backdrop: Lúc đầu màu trắng, khi lia chuột vào thì cam sáng lên full */
+/* Backdrop: Nền tối hài hòa với dark theme, khi lia chuột vào thì cam sáng lên full */
 .sparkle-button .backdrop {
   position: absolute;
   inset: var(--cut);
   border-radius: 9999px;
-  background: #ffffff;
+  background: var(--color-brand-50, #242424);
   z-index: 1;
   transition: background var(--transition);
 }

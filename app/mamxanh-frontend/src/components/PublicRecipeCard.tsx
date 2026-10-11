@@ -25,7 +25,7 @@ export function PublicRecipeCard({
         to={`/cong-thuc/id/${recipe.id}`}
         className="group block rounded-xl focus-visible:outline-offset-4"
       >
-        <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-raised">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-raised">
           {cover ? (
             <img
               src={cover.url}
@@ -68,16 +68,16 @@ export function PublicRecipeCard({
             <span className="truncate">{recipe.authorName}</span>
           </div>
         </div>
-        <h2 className="mt-2 line-clamp-2 text-[13px] font-semibold leading-5 text-ink group-hover:text-brand-600">
+        <h2 className="mt-2.5 line-clamp-2 text-sm font-semibold leading-5 text-ink group-hover:text-brand-600">
           {recipe.title}
         </h2>
-        <p className="mt-1 text-[11px] text-ink-muted">
+        <p className="mt-1 text-xs text-ink-muted">
           {recipe.ingredients.length} nguyên liệu ·{" "}
           {recipe.prepTimeMin + recipe.cookTimeMin} phút · {recipe.servings}{" "}
           phần
         </p>
         <p
-          className="mt-1 truncate text-[11px] text-leaf-700"
+          className="mt-1 truncate text-xs text-leaf-700"
           title={`${vegetarian} · ${category}`}
         >
           {vegetarian} · {category}
@@ -90,12 +90,12 @@ export function PublicRecipeCard({
   )
 }
 
-export function PublicRecipeSkeleton({ count = 6 }: { count?: number }) {
+export function PublicRecipeSkeleton({ count = 4 }: { count?: number }) {
   return (
     <>
       {Array.from({ length: count }, (_, index) => (
         <div key={index} aria-hidden="true" className="min-w-0">
-          <div className="aspect-[4/5] rounded-xl bg-raised motion-safe:animate-pulse" />
+          <div className="aspect-[4/3] rounded-xl bg-raised motion-safe:animate-pulse" />
           <div className="mt-3 h-3 w-4/5 rounded bg-raised motion-safe:animate-pulse" />
           <div className="mt-2 h-3 w-3/5 rounded bg-raised motion-safe:animate-pulse" />
         </div>
