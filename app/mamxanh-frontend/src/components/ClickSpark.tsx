@@ -4,7 +4,6 @@ import {
   useCallback,
   type FC,
   type ReactNode,
-  type MouseEvent as ReactMouseEvent,
   type CSSProperties,
 } from 'react';
 
@@ -153,24 +152,27 @@ export const ClickSpark: FC<ClickSparkProps> = (props) => {
     }
   }, [sparkColor, sparkSize, sparkRadius, duration, easeFunc, extraScale]);
 
-  const handleClick = (e: ReactMouseEvent<HTMLDivElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (!canvasRef.current) return;
 
-    const x = e.clientX;
-    const y = e.clientY;
+      const x = e.clientX;
+      const y = e.clientY;
+      const now = performance.now();
+      const newSparks: Spark[] = Array.from({ length: sparkCount }, (_, i) => ({
+        x,
+        y,
+        angle: (2 * Math.PI * i) / sparkCount,
+        startTime: now,
+      }));
 
-    const now = performance.now();
-    const newSparks: Spark[] = Array.from({ length: sparkCount }, (_, i) => ({
-      x,
-      y,
-      angle: (2 * Math.PI * i) / sparkCount,
-      startTime: now,
-    }));
+      sparksRef.current.push(...newSparks);
+      runAnimation();
+    };
 
-    sparksRef.current.push(...newSparks);
-    runAnimation();
-  };
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [sparkCount, runAnimation]);
 
   return (
     <div
@@ -181,7 +183,6 @@ export const ClickSpark: FC<ClickSparkProps> = (props) => {
         minHeight: '100%',
         ...style,
       }}
-      onClick={handleClick}
     >
       <canvas
         ref={canvasRef}

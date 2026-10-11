@@ -310,7 +310,7 @@ export function AiRecipeAssistantModal({
 
   const handleCopyJson = () => {
     if (!jsonExportData) return;
-    navigator.clipboard.writeText(JSON.stringify(jsonExportData, null, 2));
+    void navigator.clipboard.writeText(JSON.stringify(jsonExportData, null, 2));
     setCopiedJson(true);
     setTimeout(() => setCopiedJson(false), 2500);
   };
@@ -336,10 +336,11 @@ export function AiRecipeAssistantModal({
         {/* Form nhập liệu nhanh */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <label className="mb-1 block text-xs font-bold text-ink">
+            <label htmlFor="ai-dish-idea" className="mb-1 block text-xs font-bold text-ink">
               1. Tên món ăn hoặc ý tưởng bạn muốn thực hiện
             </label>
             <input
+              id="ai-dish-idea"
               type="text"
               value={dishIdea}
               onChange={(e) => setDishIdea(e.target.value)}
@@ -349,10 +350,11 @@ export function AiRecipeAssistantModal({
           </div>
 
           <div className="sm:col-span-2">
-            <label className="mb-1 block text-xs font-bold text-ink">
+            <label htmlFor="ai-raw-ingredients" className="mb-1 block text-xs font-bold text-ink">
               2. Danh sách nguyên liệu sẵn có (ngăn cách bằng dấu phẩy)
             </label>
             <textarea
+              id="ai-raw-ingredients"
               rows={2}
               value={rawIngredients}
               onChange={(e) => setRawIngredients(e.target.value)}
@@ -362,11 +364,12 @@ export function AiRecipeAssistantModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-bold text-ink flex items-center gap-1.5">
+            <label htmlFor="ai-target-calories" className="mb-1 block text-xs font-bold text-ink flex items-center gap-1.5">
               <Flame className="h-3.5 w-3.5 text-amber-500" /> 3. Ràng buộc mức Calo mục tiêu / phần ăn
             </label>
             <div className="flex items-center gap-2">
               <input
+                id="ai-target-calories"
                 type="number"
                 min={150}
                 max={1200}
@@ -380,10 +383,11 @@ export function AiRecipeAssistantModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-bold text-ink flex items-center gap-1.5">
+            <label htmlFor="ai-servings" className="mb-1 block text-xs font-bold text-ink flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5 text-brand-600" /> 4. Số khẩu phần ăn
             </label>
             <select
+              id="ai-servings"
               value={servings}
               onChange={(e) => setServings(Number(e.target.value))}
               className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-ink outline-none focus:border-brand-500"

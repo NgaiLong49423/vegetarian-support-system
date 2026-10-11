@@ -228,10 +228,11 @@ export function MealPlanner() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-bold text-ink flex items-center gap-1.5">
+              <label htmlFor="ai-meal-calorie-goal" className="mb-1 block text-xs font-bold text-ink flex items-center gap-1.5">
                 <Flame className="h-3.5 w-3.5 text-amber-500" /> Mục tiêu năng lượng mỗi ngày
               </label>
               <select
+                id="ai-meal-calorie-goal"
                 value={calorieGoal}
                 onChange={(e) => setCalorieGoal(Number(e.target.value))}
                 className="w-full rounded-xl border border-brand-200 bg-white p-2.5 text-sm font-semibold text-ink outline-none focus:border-brand-500"
@@ -243,10 +244,11 @@ export function MealPlanner() {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-bold text-ink">
+              <label htmlFor="ai-meal-diet-style" className="mb-1 block text-xs font-bold text-ink">
                 Trường phái ăn chay mong muốn
               </label>
               <select
+                id="ai-meal-diet-style"
                 value={dietStyle}
                 onChange={(e) => setDietStyle(e.target.value)}
                 className="w-full rounded-xl border border-brand-200 bg-white p-2.5 text-sm font-semibold text-ink outline-none focus:border-brand-500"

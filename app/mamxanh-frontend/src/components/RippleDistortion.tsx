@@ -131,7 +131,7 @@ void main() {
 `;
 
 const hexToRGB = (hex: string): [number, number, number] => {
-  const n = parseInt(hex.replace('#', ''), 16);
+  const n = Number.parseInt(hex.replace('#', ''), 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 };
 

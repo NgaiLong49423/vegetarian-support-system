@@ -102,7 +102,8 @@ test('interactive StarRating and voting on recipe detail', async ({ page }) => {
   await seedDemoSession(page, 'CUSTOMER');
   await page.goto('/cong-thuc/canh-chua-chay-nam-dau-bap');
 
-  const star4 = page.getByLabel('4 sao');
+  const star4 = page.locator('input[type="radio"][aria-label="4 sao"]');
+  await expect(star4).toBeAttached();
   if (await star4.isVisible()) {
     await star4.check();
   }
