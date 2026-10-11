@@ -61,8 +61,26 @@ export interface RecipeDetail {
   cookTimeMinutes: number;
   youtubeUrl: string | null;
   publishedAt: string;
+  author: {
+    userId: number;
+    displayName: string;
+    avatarUrl: string | null;
+  };
   nutritionComplete: boolean;
   ingredientsWithoutNutrition: string[];
+  nutrition: {
+    complete: boolean;
+    ingredientsMissingData: string[];
+    total: Record<string, number | null>;
+    perServing: Record<string, number | null>;
+  };
+  statistics: {
+    likes: number;
+    dislikes: number;
+    reactionCount: number;
+    likePercentage: number | null;
+    viewCount: number;
+  };
   ingredients: Array<{
     ingredientId: number;
     name: string;

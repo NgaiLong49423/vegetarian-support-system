@@ -120,19 +120,30 @@ test('a new member is invited after the first sign-in and completes onboarding w
   expect(claims).toEqual(['Bearer header.payload.signature']);
   await expect(page.getByRole('heading', { name: 'Cho Mâm Xanh biết khẩu vị của bạn' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Hoàn tất' }).click();
+  await expect(page.getByRole('progressbar', { name: 'Tiến độ bảng câu hỏi' })).toHaveAttribute('value', '1');
+  await expect(page.getByLabel('Tôi không có dị ứng/kiêng cử')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await expect(page.getByText('Chọn một loại ăn chay.')).toBeVisible();
-  await expect(page.getByText('Chọn ít nhất một nguyên liệu cần tránh hoặc xác nhận không có dị ứng/kiêng cử.')).toBeVisible();
-  await expect(page.getByText('Chọn ít nhất một món hoặc nguyên liệu không thích hoặc xác nhận không có.')).toBeVisible();
   expect(saved).toHaveLength(0);
 
   await page.getByRole('radio', { name: /Thuần chay \(Vegan\)/ }).check();
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await expect(page.getByText('Chọn ít nhất một nguyên liệu cần tránh hoặc xác nhận không có dị ứng/kiêng cử.')).toBeVisible();
   await page.getByLabel('Thêm vào danh sách 2. nguyên liệu cần tránh (dị ứng/kiêng)', { exact: true }).fill('phộng');
   await page.getByRole('button', { name: '+ Đậu phộng' }).click();
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await expect(page.getByText('Chọn ít nhất một món hoặc nguyên liệu không thích hoặc xác nhận không có.')).toBeVisible();
   await page.getByLabel('Thêm vào danh sách 3. món hoặc nguyên liệu không thích', { exact: true }).fill('  Mướp   đắng ');
   await page.getByRole('button', { name: 'Thêm mục vào 3. món hoặc nguyên liệu không thích' }).click();
   await expect(page.getByRole('list', { name: '3. Món hoặc nguyên liệu không thích' })).toContainText('Mướp đắng');
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await expect(page.getByLabel('Thời gian nấu tối đa (phút)')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await page.getByLabel('Thời gian nấu tối đa (phút)').fill('30');
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await page.getByLabel('Độ khó mong muốn').selectOption('EASY');
   await page.getByRole('button', { name: 'Hoàn tất' }).click();
 
@@ -153,16 +164,92 @@ test('confirming "none" for both lists completes onboarding (AC-31.2, mock API)'
   await page.goto('/khoi-tao-so-thich');
 
   await page.getByRole('radio', { name: /Lacto-Ovo/ }).check();
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await page.getByLabel('Thêm vào danh sách 2. nguyên liệu cần tránh (dị ứng/kiêng)', { exact: true }).fill('Gluten');
   await page.keyboard.press('Enter');
   await page.getByLabel('Tôi không có dị ứng/kiêng cử').check();
   await expect(page.getByRole('list', { name: '2. Nguyên liệu cần tránh (dị ứng/kiêng)' })).toHaveCount(0);
   await expect(page.getByLabel('Thêm vào danh sách 2. nguyên liệu cần tránh (dị ứng/kiêng)', { exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await page.getByLabel('Tôi không có món không thích').check();
+  for (let step = 0; step < 3; step++) await page.getByRole('button', { name: 'Tiếp tục' }).click();
   await page.getByRole('button', { name: 'Hoàn tất' }).click();
 
   await expect(page).toHaveURL(/\/kham-pha$/);
   expect(saved[0]).toMatchObject({ vegetarianType: 'LACTO_OVO', avoid: { noneConfirmed: true, items: [] }, dislike: { noneConfirmed: true, items: [] } });
+});
+
+test('questions appear individually, Back preserves answers, and Enter advances without saving early (mock API)', async ({ page }, testInfo) => {
+  await seedSession(page);
+  const saved = await stubPreferences(page, emptyProfile('NOT_STARTED'));
+  await page.goto('/khoi-tao-so-thich');
+  await expect(page.getByRole('button', { name: 'Quay lại' })).toBeDisabled();
+  await page.getByRole('radio', { name: /Vegan/ }).check();
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await expect(page.getByRole('heading', { name: 'Bạn cần tránh nguyên liệu nào?' })).toBeFocused();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.screenshot({ path: testInfo.outputPath('onboarding-desktop.png') });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(page.getByRole('button', { name: 'Bỏ qua', exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('onboarding-mobile.png') });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByRole('button', { name: '+ Nấm', exact: true }).click();
+  await page.getByRole('button', { name: 'Quay lại' }).click();
+  await expect(page.getByRole('radio', { name: /Vegan/ })).toBeChecked();
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await expect(page.getByRole('list', { name: '2. Nguyên liệu cần tránh (dị ứng/kiêng)' })).toContainText('Nấm');
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await page.getByLabel('Tôi không có món không thích').check();
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await page.getByLabel('Khẩu vị ẩm thực').fill('Món Việt');
+  await page.getByLabel('Khẩu vị ẩm thực').press('Enter');
+  await expect(page.getByRole('progressbar')).toHaveAttribute('value', '5');
+  await page.getByRole('button', { name: 'Quay lại' }).click();
+  await expect(page.getByLabel('Khẩu vị ẩm thực')).toHaveValue('Món Việt');
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await page.getByLabel('Thời gian nấu tối đa (phút)').fill('0');
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await expect(page.getByRole('alert')).toHaveText('Nhập số phút từ 1 đến 1440.');
+  expect(saved).toHaveLength(0);
+  await page.getByLabel('Thời gian nấu tối đa (phút)').fill('30');
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await page.getByRole('button', { name: 'Hoàn tất' }).click();
+  await expect(page).toHaveURL(/\/kham-pha$/);
+  expect(saved[0]).toMatchObject({ cuisinePreference: 'Món Việt', maxCookingTimeMinutes: 30, preferredDifficulty: null });
+});
+
+for (const stepToSkip of [2, 5, 6]) {
+  test(`skip at question ${stepToSkip} sends only skip and preserves the existing profile (mock API)`, async ({ page }) => {
+    await seedSession(page);
+    const saved = await stubPreferences(page, completedProfile);
+    let skips = 0;
+    await stubApi(page, `${PREFERENCES}/onboarding/skip`, async route => {
+      skips++;
+      return route.fulfill({ status: 204, headers: corsHeaders });
+    });
+    await page.goto('/khoi-tao-so-thich');
+    for (let step = 1; step < stepToSkip; step++) await page.getByRole('button', { name: 'Tiếp tục' }).click();
+    await expect(page.getByRole('progressbar')).toHaveAttribute('value', String(stepToSkip));
+    await page.getByRole('button', { name: 'Bỏ qua', exact: true }).click();
+    await expect(page).toHaveURL(/\/kham-pha$/);
+    expect(skips).toBe(1);
+    expect(saved).toHaveLength(0);
+  });
+}
+
+test('server field errors return to the affected question while retaining the draft (mock API)', async ({ page }) => {
+  await seedSession(page);
+  const saved = await stubPreferences(page, completedProfile, () => problem(400, 'VALIDATION_FAILED', { errors: [{ field: 'avoid.items', message: 'Kiểm tra lại nguyên liệu cần tránh.' }] }));
+  await page.goto('/khoi-tao-so-thich');
+  for (let step = 1; step < 6; step++) await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await page.getByRole('button', { name: 'Hoàn tất' }).click();
+  await expect(page.getByRole('progressbar')).toHaveAttribute('value', '2');
+  await expect(page.getByRole('alert')).toHaveText('Kiểm tra lại nguyên liệu cần tránh.');
+  await expect(page.getByRole('list', { name: '2. Nguyên liệu cần tránh (dị ứng/kiêng)' })).toContainText('Nấm');
+  expect(saved).toHaveLength(1);
+  await page.getByRole('button', { name: 'Quay lại' }).click();
+  await expect(page.getByRole('radio', { name: /Vegan/ })).toBeChecked();
 });
 
 test('skip closes the invitation and the next sign-in goes straight home (AC-31.3, AC-31.10, mock API)', async ({ page }) => {
@@ -204,14 +291,14 @@ test('leaving the questionnaire unanswered is not invited again but stays open f
   expect(claims).toHaveLength(2);
 
   await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('link', { name: 'Sở thích ăn uống' }).click();
+  await page.getByRole('dialog', { name: 'Menu Mâm Xanh' }).getByRole('link', { name: 'Sở thích ăn uống', exact: true }).click();
   await expect(page).toHaveURL(/\/ho-so\/so-thich-an-uong$/);
   await expect(page.getByRole('form', { name: 'Sở thích ăn uống' })).toBeVisible();
   await expect(page.getByRole('note', { name: 'Thông tin còn thiếu cho AI cá nhân hóa' })).toBeVisible();
 
   await page.goto('/khoi-tao-so-thich');
   await expect(page.getByRole('heading', { name: 'Cho Mâm Xanh biết khẩu vị của bạn' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Hoàn tất' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Tiếp tục' })).toBeEnabled();
   expect(claims).toHaveLength(2);
 });
 
@@ -263,7 +350,7 @@ test('settings explain which minimum information personalized AI still needs (AC
   await stubPreferences(page, { ...emptyProfile('SKIPPED'), vegetarianType: 'LACTO', aiPersonalization: { eligible: false, missing: ['AVOID_INGREDIENTS', 'DISLIKED_INGREDIENTS'] } });
   await page.goto('/');
   await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('link', { name: 'Sở thích ăn uống' }).click();
+  await page.getByRole('dialog', { name: 'Menu Mâm Xanh' }).getByRole('link', { name: 'Sở thích ăn uống', exact: true }).click();
 
   await expect(page).toHaveURL(/\/ho-so\/so-thich-an-uong$/);
   const note = page.getByRole('note', { name: 'Thông tin còn thiếu cho AI cá nhân hóa' });
