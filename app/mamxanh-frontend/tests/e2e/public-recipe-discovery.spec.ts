@@ -37,6 +37,8 @@ const detail = {
   youtubeUrl: null,
   publishedAt: '2026-10-01T08:00:00',
   nutritionComplete: true,
+  author: { userId: 22, displayName: "Lan", avatarUrl: null },
+  statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
   ingredientsWithoutNutrition: [],
   ingredients: [{ ingredientId: 1, name: 'Nấm rơm tươi', quantity: 100, unitId: 1, unitCode: 'g', unitName: 'gram' }],
   media: [{ blobUrl: 'https://example.test/901.jpg', mimeType: 'image/jpeg', displayOrder: 0, cover: true }],

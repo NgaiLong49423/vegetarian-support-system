@@ -64,6 +64,8 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
           youtubeUrl: null,
           publishedAt: '2026-10-05T12:00:00',
           nutritionComplete: true,
+          author: { userId: 22, displayName: "Lan", avatarUrl: null },
+          statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
           ingredientsWithoutNutrition: [],
           ingredients: [],
           media: [],

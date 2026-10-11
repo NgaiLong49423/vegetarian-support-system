@@ -1,5 +1,6 @@
 import { expect, test } from './baseFixtures';
 import type { Page } from '@playwright/test';
+import type { RecipeDetail } from '../../src/api/recipes';
 
 const existingRecipe = {
   id: 47,
@@ -22,6 +23,29 @@ const existingRecipe = {
 };
 
 const hiddenRecipe = { ...existingRecipe, id: 48, title: 'Canh đang bị ẩn', status: 'HIDDEN' };
+const publicDetail: RecipeDetail = {
+  recipeId: existingRecipe.id,
+  title: existingRecipe.title,
+  author: { userId: existingRecipe.authorId, displayName: existingRecipe.authorName, avatarUrl: null },
+  description: existingRecipe.description,
+  instructions: existingRecipe.instructions,
+  dishCategory: existingRecipe.dishCategory,
+  dishCategoryLabel: 'Món kho',
+  vegetarianType: 'VEGAN',
+  vegetarianTypeLabel: 'Thuần chay',
+  difficulty: existingRecipe.difficulty,
+  difficultyLabel: 'Dễ',
+  servings: existingRecipe.servings,
+  prepTimeMinutes: existingRecipe.prepTimeMin,
+  cookTimeMinutes: existingRecipe.cookTimeMin,
+  youtubeUrl: null,
+  publishedAt: '2026-10-11T08:00:00',
+  nutritionComplete: true,
+  ingredientsWithoutNutrition: [],
+  ingredients: existingRecipe.ingredients,
+  media: existingRecipe.media.map(({ url, ...media }) => ({ ...media, blobUrl: url })),
+  statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
+};
 const references = {
   ingredients: [
     { ingredientId: 21, name: 'Nấm đùi gà', unitId: 1, unitCode: 'g', unitName: 'gram' },
@@ -76,7 +100,7 @@ async function assumeRole(page: Page, role: 'CUSTOMER' | 'EXPERT' | 'ADMIN') {
 
 test('public recipe page has no management action; expert manages recipes from personal profile', async ({ page }) => {
   await mockProfileApi(page);
-  await page.route('**/api/v1/recipes/47', (route) => route.fulfill({ json: existingRecipe }));
+  await page.route('**/api/v1/recipes/47', (route) => route.fulfill({ json: publicDetail }));
   await page.goto('/cong-thuc/id/47');
 
   await expect(page.getByRole('heading', { name: 'Nấm kho tiêu' })).toBeVisible();

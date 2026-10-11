@@ -19,6 +19,7 @@ import { Badge, Button, SectionHeading } from '../components/ui';
 import { categories, posts } from '../data/mockData';
 import { apiClient } from '../lib/apiClient';
 import type { RecipePost } from '../api/recipes';
+import { RecipeReactionBadge } from '../components/RecipeReactionBadge';
 
 const categoryIcons = [Salad, Leaf, Soup, UtensilsCrossed];
 
@@ -193,7 +194,7 @@ export function Home() {
           {featured.map((recipe) => {
             const image = recipe.media.find((item) => item.cover) ?? recipe.media[0];
             return <Link key={recipe.id} to={`/cong-thuc/id/${recipe.id}`} className="overflow-hidden rounded-2xl border border-brand-100 bg-white hover:shadow-lg">
-              <div className="aspect-[4/3] bg-brand-50">{image ? <img src={image.url} alt={recipe.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-sm text-ink-muted">Ảnh công thức</div>}</div>
+              <div className="relative aspect-[4/3] bg-brand-50">{image ? <img src={image.url} alt={recipe.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-sm text-ink-muted">Ảnh công thức</div>}<div className="absolute left-3 top-3"><RecipeReactionBadge percentage={recipe.likePercentage} /></div></div>
               <div className="p-4"><p className="text-xs font-semibold text-brand-700">{recipe.vegetarianType} · {recipe.dishCategory}</p><h3 className="mt-2 font-bold text-ink">{recipe.title}</h3><p className="mt-2 text-xs text-ink-muted">Tác giả: {recipe.authorName}</p></div>
             </Link>;
           })}

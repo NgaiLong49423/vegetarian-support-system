@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.function.Function;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -286,10 +285,7 @@ public class RecipePostService {
             List<Media> media, List<Ingredient> ingredients) {
         long likes = stats == null ? 0 : stats.likes();
         long dislikes = stats == null ? 0 : stats.dislikes();
-        long reactionCount = likes + dislikes;
-        BigDecimal likePercentage = reactionCount == 0 ? null
-                : BigDecimal.valueOf(likes).multiply(BigDecimal.valueOf(100))
-                        .divide(BigDecimal.valueOf(reactionCount), 2, RoundingMode.HALF_UP);
+        BigDecimal likePercentage = RecipeReactionStatistics.likePercentage(likes, dislikes);
         return new RecipePostResponse(recipe.getId(), recipe.getAuthorId(), author.displayName(), author.avatarUrl(),
                 recipe.getTitle(), recipe.getDescription(), recipe.getInstructions(), recipe.getDishCategory(),
                 recipe.getVegetarianType(), recipe.getDifficulty(), recipe.getServings(), recipe.getPrepTimeMinutes(),

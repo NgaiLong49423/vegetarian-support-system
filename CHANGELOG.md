@@ -1,13 +1,108 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.55.0
+> **Version:** v2.60.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-07
+> **Last Updated:** 2026-10-11
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Verify Recipe Reactions on Docker Compose (Issue #56)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Complete the previously blocked local Backend and shared-stack verification for FR-57. Remote CI, Sonar, CodeQL and post-merge acceptance remain unverified.
+
+### Changed
+
+- Pass all 319 Backend tests, including ten SQL Server reaction integration tests, with no failures, errors or skipped tests. Pass the strict JaCoCo BUNDLE gate: Lines 93.8%, Branches 82.3%, Methods 90.5%, Instructions 94.1%.
+- Build and start the canonical root Compose stack using isolated project `mamxanh-fr57`; verify Frontend, Backend and SQL Server healthy and database initialization exit code 0. Verify HTTP 200 for Frontend, generated OpenAPI and the Scalar route, and generated GET/PUT/DELETE reaction operations. Scalar route smoke is not browser-rendering evidence.
+- Pass 13 real browser/HTTP/SQL reaction checks on Compose, covering all five FR-57 acceptance criteria, and the existing real-stack login/throttle browser test. Clean reaction fixtures and stop the stack without removing its named volumes.
+- Align the Backend environment template with existing local variable names using empty placeholders; no real configuration values are copied into tracked files.
+
+## 2026-10-11 — Verify Recipe Reaction Acceptance and Input Validation (Issue #56)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Verify FR-57 local functional acceptance and required quality gates. Full integration acceptance remains pending.
+
+### Added
+
+- Add seven Controller regression cases covering invalid IDs/payloads, successful response mapping and private cache policy.
+
+### Changed
+
+- Verify 51 focused Backend tests, 45 real local HTTP/SQL checks and 13 real browser/HTTP/SQL checks after the validation fix, including all five FR-57 acceptance criteria. Clean up disposable fixtures.
+- Attempt full Backend verification: 175 of 312 tests pass, while 137 Testcontainers tests fail to initialize without Docker. Supplemental partial coverage remains below every strict Backend gate: Lines 62.9%, Branches 60.1%, Methods 59.2%, Instructions 67.0%.
+- Correct a management-page test fixture to use the public detail API shape. Record the workflow's outdated coverage guidance separately as BUG-016; preserve the current strict gates.
+- Pass all 104 Frontend browser tests and the strict coverage gate on the final rerun: Lines 92.35%, Statements 89.13%, Functions 84.71%, Branches 83.91%. The first run failed one test because of the incorrect fixture. Compose, Sonar and CodeQL verification for these uncommitted changes remain pending.
+
+### Fixed
+
+- Return 400 instead of 500 for nonpositive recipe IDs on all three reaction operations by using MVC parameter validation; verify the resolution in BUG-017.
+
+## 2026-10-11 — Integrate Recipe Reaction Frontend (Issue #56)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Complete the FR-57 Frontend stage on API-backed recipe detail, discovery and home cards. Final integration acceptance remains pending.
+
+### Added
+
+- Add Like/Dislike controls with authenticated choice loading, server-confirmed counts, percentage bar and selected-button cancellation through DELETE.
+- Add an upper-left percentage badge on public recipe cards, displaying New for no votes and zero percent for all Dislikes.
+- Add browser tests for adding, switching, cancelling and restoring reactions; guest login, author/Admin restrictions, failed requests, pending-write locking, keyboard operation and responsive layout.
+
+### Changed
+
+- Model author and statistics fields from generated OpenAPI and reuse the existing authenticated API client for reaction operations.
+- Update workspace guides and API fixtures; preserve current counts on write failure and offer retry when the current choice cannot be loaded.
+- Verify 27 browser/regression checks, followed by 14 focused checks on the final implementation, and a real local Guest discovery/detail browser smoke. Member browser writes against the real Backend, Compose integration and full coverage gates remain unverified.
+
+### Fixed
+
+None.
+
+## 2026-10-11 — Align Recipe Reaction Statistics (Issue #56)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Complete FR-57 Backend statistics consistency across reaction, public browse and recipe detail responses. Frontend integration remains pending.
+
+### Added
+
+- Add a shared BR-69 percentage calculation and regression checks for rounding, no votes and all-dislike cases.
+
+### Changed
+
+- Use the same whole-number percentage in all three response paths while preserving response field types and the existing ranking algorithm.
+- Verify 44 unit/regression tests and 45 real local HTTP/SQL checks, including hidden/deleted exclusion from public rankings. Docker-backed integration and full coverage gates remain unverified.
+
+### Fixed
+
+- Correct browse/detail responses that returned 90.91 instead of the required 91 for ten Likes and one Dislike; record the resolution in BUG-015.
+
+## 2026-10-09 — Add Recipe Reaction Backend (Issue #56)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Implement the Backend stage of FR-57 using the existing reaction schema. This checkpoint preceded the statistics alignment recorded on October 11; Frontend integration remains pending.
+
+### Added
+
+- Add authenticated GET, PUT and DELETE operations for the current Member's recipe reaction, with aggregate counts, rounded percentages, private cache policy and generated OpenAPI documentation.
+- Enforce author self-vote rejection and published-recipe checks; serialize reaction mutations through the existing recipe lock, preserving idempotent set/remove behavior.
+- Add focused unit and SQL Server integration tests. Local verification passed 35 unit/regression tests and 25 HTTP/SQL checks; the Testcontainers run could not start without Docker.
+
+### Changed
+
+- Document the reaction contract, verification limits and pending Frontend/read-statistics work in the Backend workspace guide.
+
+### Fixed
+
+None.
 
 ## 2026-10-07 — Add Recipe Detail and Saved Recipe Read Projections (Issue #89)
 
