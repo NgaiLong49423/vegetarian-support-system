@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-11 — Complete API-Driven Recipe Detail and Stitch MCP Guidance
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `189b327`.
 
 **Scope:** Complete the Frontend recipe detail experience using the existing Backend API and document the project-local Google Stitch MCP setup for agents.
 
