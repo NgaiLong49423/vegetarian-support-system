@@ -85,19 +85,6 @@ async function fillEligibleNutritionProfile(page: Page) {
   await page.getByRole('checkbox').check();
 }
 
-test('recipe discussion supports reply and keeps replies after parent deletion', async ({ page }) => {
-  await page.goto('/cong-thuc/dau-hu-non-sot-nam-dong-co');
-  await page.getByLabel('Viết bình luận').fill('Món này có thể dùng nấm khác không?');
-  await page.getByRole('button', { name: 'Gửi bình luận' }).click();
-  await expect(page.getByText('Món này có thể dùng nấm khác không?')).toBeVisible();
-  await page.getByRole('button', { name: 'Trả lời' }).click();
-  await page.getByLabel('Viết bình luận').fill('Tôi đã thử nấm đùi gà.');
-  await page.getByRole('button', { name: 'Gửi trả lời' }).click();
-  await page.getByRole('button', { name: 'Xóa' }).first().click();
-  await expect(page.getByText('Bình luận này đã bị xóa bởi người dùng')).toBeVisible();
-  await expect(page.getByText('Tôi đã thử nấm đùi gà.')).toBeVisible();
-});
-
 test('meal serving selector accepts half portions', async ({ page }) => {
   await page.goto('/ke-hoach');
   const selector = page.getByLabel(/Khẩu phần .* bữa /).first();

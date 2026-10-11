@@ -60,7 +60,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, PUBLIC_AUTH_POST_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/mine").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/*/manage").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/recipes", "/api/v1/recipes/*", "/api/v1/recipes/*/media").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/recipes", "/api/v1/recipes/*", "/api/v1/recipes/*/media",
+                                "/api/v1/recipes/*/comments").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/form-options",
                                 "/api/v1/recipes/ingredient-options").permitAll()
                         .requestMatchers(API_DOCS_ENDPOINTS).permitAll()
