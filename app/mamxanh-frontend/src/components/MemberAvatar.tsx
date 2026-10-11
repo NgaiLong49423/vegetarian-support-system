@@ -17,7 +17,7 @@ export function MemberAvatar({ name, url, size = 'md' }: { name: string; url: st
     return <img src={url} alt={`Ảnh đại diện của ${name}`} onError={() => setFailedUrl(url)} className={`${classes} object-cover`} />;
   }
   return (
-    <span role="img" aria-label={`Ảnh đại diện mặc định của ${name}`} className={`${classes} flex items-center justify-center bg-brand-600 font-bold text-white`}>
+    <span role="img" aria-label={`Ảnh đại diện mặc định của ${name}`} className={`${classes} flex items-center justify-center bg-brand-600 font-bold text-on-brand`}>
       {name.trim().charAt(0).toUpperCase() || '?'}
     </span>
   );

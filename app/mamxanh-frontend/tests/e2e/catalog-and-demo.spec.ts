@@ -12,7 +12,7 @@ test('recipe exploration uses only API search and reports an empty result honest
     items: [], page: 0, size: 12, totalElements: 0, totalPages: 0,
   } }));
   await page.goto('/kham-pha');
-  const search = page.getByPlaceholder('Tìm món chay hoặc nguyên liệu...');
+  const search = page.getByRole('textbox', { name: 'Từ khóa', exact: true });
   await search.fill('không có món này');
   await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();
   await expect(page.getByText('Phở chay', { exact: true })).toHaveCount(0);
@@ -20,27 +20,27 @@ test('recipe exploration uses only API search and reports an empty result honest
 
 test('shopping demo adds an item, filters purchased items and clears them', async ({ page }) => {
   await page.goto('/di-cho');
-  const input = page.getByPlaceholder('Thêm thủ công nguyên liệu...');
+  const input = page.getByRole('textbox', { name: 'Thêm nguyên liệu vào danh sách' });
   await input.fill('Nấm bào ngư cho bữa tối');
   await input.press('Enter');
-  const item = page.locator('div.group').filter({ has: page.getByText('Nấm bào ngư cho bữa tối', { exact: true }) });
+  const item = page.getByRole('button', { name: 'Đánh dấu Nấm bào ngư cho bữa tối', exact: true });
   await expect(item).toBeVisible();
   await expect(input).toHaveValue('');
-  await item.getByRole('button').first().click();
+  await item.click();
   await page.getByRole('button', { name: /Cần mua/ }).click();
   await expect(item).toHaveCount(0);
-  await page.getByRole('button', { name: /Đã xong/ }).click();
+  await page.getByRole('button', { name: /Đã mua/ }).click();
   await expect(item).toBeVisible();
   await page.getByRole('button', { name: /Xoá .* mục đã mua/ }).click();
-  await expect(page.getByText('Không có mục nào trong danh mục này.')).toBeVisible();
+  await expect(page.getByText('Không có nguyên liệu trong mục này.')).toBeVisible();
 });
 
 test('shopping export contains the newly added item', async ({ page }) => {
   await page.goto('/di-cho');
-  await page.getByPlaceholder('Thêm thủ công nguyên liệu...').fill('Rau cải cho ngày mai');
+  await page.getByRole('textbox', { name: 'Thêm nguyên liệu vào danh sách' }).fill('Rau cải cho ngày mai');
   await page.getByRole('button', { name: 'Thêm', exact: true }).click();
   const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Xuất file .TXT' }).click();
+  await page.getByRole('button', { name: 'TXT', exact: true }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe('danh-sach-di-cho.txt');
   const downloadedPath = await download.path();
@@ -110,19 +110,15 @@ test('community topics lead to article content and demo rating updates only once
   await expect(page.getByRole('heading', { name: 'Đánh giá bài viết (37)' })).toBeVisible();
 });
 
-test('profile demo switches tabs and toggles notification preference in the current page', async ({ page }) => {
+test('Member profile links to actual nutrition and preferences screens', async ({ page }) => {
+  await seedDemoSession(page, 'CUSTOMER');
   await page.goto('/ho-so');
-  await page.getByRole('button', { name: 'Món yêu thích', exact: true }).click();
-  await expect(page.locator('main a[href^="/cong-thuc/"]')).toHaveCount(3);
-  await page.getByRole('button', { name: 'Sở thích ăn chay', exact: true }).click();
-  await expect(page.getByText('Đậu phộng', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Tùy chọn', exact: true }).click();
-  const toggle = page.locator('label').filter({ hasText: 'Nhận bản tin cộng đồng Mâm Xanh' }).getByRole('button');
-  await expect(toggle).toHaveClass(/bg-brand-200/);
-  await toggle.click();
-  await expect(toggle).toHaveClass(/bg-brand-600/);
+  await page.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Mở hồ sơ dinh dưỡng' })).toHaveAttribute('href', '/ho-so/dinh-duong');
+  await expect(page.getByRole('main').getByRole('link', { name: 'Mở sở thích ăn uống' })).toHaveAttribute('href', '/ho-so/so-thich-an-uong');
+  await page.getByRole('button', { name: 'Công thức đã lưu', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Chưa có công thức đã lưu' })).toBeVisible();
 });
-
 test('nutrition day selection updates the displayed day and opens a recipe', async ({ page }) => {
   await page.goto('/dinh-duong');
   const day = page.getByRole('button', { name: /Thứ Hai/ }).first();

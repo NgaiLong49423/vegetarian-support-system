@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.18.0
+> **Version:** v1.21.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-10
+> **Last Updated:** 2026-10-11
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -15,8 +15,19 @@ Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy v
 
 Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-frontend.vercel.app/) vẫn là bản UI cũ dùng dữ liệu mẫu và chưa có đăng nhập/phân quyền thật. Bản chạy local dưới đây dùng Backend và SQL Server thật cho các luồng đã tích hợp; thay đổi hiện tại chưa được deploy lên Vercel.
 
+### Giao diện sáng/tối và các luồng đã kết nối
+
+- Bố cục nền tối mặc định tham khảo các ảnh Samsung Food qua Google Stitch, sau đó chuyển thủ công sang component React của Mâm Xanh: header gọn, tab gạch chân, thẻ ảnh dọc, Home ba cột, lịch tháng chọn tuần và danh sách đi chợ dạng checklist. Mục Cài đặt giao diện trong menu cho phép đổi sang nền sáng hoặc tối; lựa chọn được lưu trên trình duyệt. Cả hai chủ đề dùng chung token màu để áp dụng nhất quán trên các trang và thành phần native. Giữ logo, route, quyền và API của dự án; không nhập dữ liệu tài khoản hoặc công thức mẫu từ code Stitch.
+- Home tải hai nhóm `NEWEST` và `MOST_LIKED` từ `GET /recipes`; loại ăn chay lấy từ `form-options`. Liên kết từ Home mở Explore với query tương ứng. Explore giữ lọc AND, tìm kiếm, sáu chế độ sắp xếp và phân trang từ API, có bộ lọc thu gọn trên điện thoại.
+- Nút lưu trên thẻ công thức công khai và trang chi tiết gọi `PUT /saved-recipes/{recipeId}`; bỏ lưu gọi `DELETE` cùng đường dẫn. Guest được mời đăng nhập, Administrator không truy vấn danh sách riêng của Member. Trạng thái nút chỉ đổi sau khi Backend xác nhận; lỗi có thể thử lại.
+- `/ho-so` hiển thị tài khoản đang đăng nhập và danh sách `GET /saved-recipes` riêng, tìm kiếm và phân trang qua Backend. Response dùng `content` theo generated OpenAPI. Recipe không khả dụng vẫn có mục bỏ lưu an toàn, không lộ nội dung hoặc liên kết chi tiết. Cache dùng ID tham chiếu và được xóa khi đổi tài khoản; không dùng danh sách yêu thích hard-code hoặc localStorage làm nguồn dữ liệu.
+- Member chọn tuần qua lịch tháng hoặc nút trước/sau trên `/ke-hoach`; mỗi tuần đọc `GET /meal-plans?weekStartDate=...`. Đây vẫn là luồng chỉ đọc. Mục bị xóa/ẩn hiển thị thông báo trung tính “Công thức không còn khả dụng”.
+- Đi chợ, Cộng đồng, lịch ăn Guest và các màn hình chưa tích hợp vẫn là prototype; banner nêu rõ thao tác chưa lưu vào tài khoản. Nền tối không bổ sung API ghi lịch ăn, Shopping List hoặc tính năng theo dõi tác giả/nhóm của Samsung Food.
+- Kiểm tra local bằng trình duyệt với API thật đã đối chiếu bộ lọc, Home, chuyển tuần; lưu/bỏ lưu được đối chiếu trực tiếp với SQL Server và khôi phục mục kiểm thử. Bằng chứng này dành cho các luồng được nêu, không xác nhận nghiệm thu toàn bộ FR hoặc gate GitHub Actions.
+
 ### Đăng ký, đăng nhập và khôi phục tài khoản (UI FR-03)
 
+- **Bảng hỏi Onboarding từng bước:** `/khoi-tao-so-thich` hiển thị lần lượt 6 câu (loại ăn chay, nguyên liệu cần tránh, món không thích, khẩu vị, thời gian nấu, độ khó), có tiến độ và Quay lại/Tiếp tục. Câu trả lời được giữ trong state khi đổi bước; chỉ gửi `PUT /nutrition/dietary-preferences` khi nhấn Hoàn tất ở bước cuối. Ba câu đầu vẫn phải xác nhận để lưu, ba câu sau có thể để trống. Bỏ qua luôn kết thúc toàn bộ bảng hỏi qua API skip và mở Explore; không gửi bản nháp hoặc tự xác nhận “không có”. Sau này bổ sung trong Sở thích ăn uống; trang chỉnh sửa này vẫn dùng biểu mẫu đầy đủ. Lỗi trường từ Backend đưa về đúng câu để sửa, không xóa câu trả lời đang nhập.
 - Header mặc định dành cho Guest có Đăng nhập/Đăng ký. Các trang `/dang-nhap`, `/dang-ky`, `/quen-mat-khau`, `/xac-minh-email`, `/dat-lai-mat-khau` dùng bố cục responsive riêng cùng nhận diện dự án.
 - **Đăng ký và xác minh email đã gọi Backend thật (Issue #5):** form đăng ký kiểm tra tên 3–50 ký tự, email và mật khẩu 8–64 ký tự (tối đa 72 byte UTF-8) có chữ in hoa, chữ thường, chữ số, rồi gửi `POST /auth/register`. Liên kết trong email mở `/xac-minh-email?token=...`; trang gửi mã một lần, xóa mã khỏi thanh địa chỉ và báo kết quả. Mã sai/hết hạn cho phép yêu cầu gửi lại email; gửi lại trong 60 giây hiển thị số giây chờ từ header `Retry-After`.
 - **Đăng nhập bằng email/mật khẩu đã gọi Backend thật (Issue #6):** gửi `POST /auth/login`; thành công thì lưu phiên (access token, thời điểm hết hạn, `account`) trong `sessionStorage` key `mamxanh.auth` của tab hiện tại và hiển thị tên tài khoản thật ở header. Lỗi hiển thị theo `code`: sai email/mật khẩu (thông báo trung tính), email chưa xác minh (kèm liên kết gửi lại email), tài khoản bị khóa, và khóa đăng nhập tạm 10 phút (số phút lấy từ `Retry-After`). Mật khẩu luôn được xóa khỏi state sau mỗi lần gửi.
@@ -34,13 +45,13 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 
 | Khu vực | Người dùng có thể thử | Giới hạn hiện tại |
 |---|---|---|
-| Trang chủ và thanh điều hướng | Logo dự án, menu desktop trên một hàng, tiêu đề hai dòng; menu thu gọn trên màn hình nhỏ | Danh mục, bài cộng đồng và banner AI vẫn là nội dung UI mẫu; công thức nổi bật lấy từ Backend |
+| Trang chủ và thanh điều hướng | Nền tối, header gọn, hai nhóm công thức API và menu responsive | Preview cộng đồng vẫn được ghi nhãn mẫu; không có API nhóm hoặc theo dõi tác giả |
 | Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Chỉ giữ trong bộ nhớ khi trang còn mở, chưa gửi Backend |
 | Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu | Làm tròn tối đa 2 chữ số thập phân; lượng không đọc được thành số giữ nguyên; chưa đồng bộ Shopping List |
-| Kế hoạch bữa ăn | Chọn 0,5–10 phần cho từng món, bước 0,5 | Chỉ cập nhật trạng thái UI; chưa lưu hoặc tổng hợp dinh dưỡng thật |
+| Kế hoạch bữa ăn Guest | Chọn 0,5–10 phần cho từng món, bước 0,5 | Chỉ cập nhật trạng thái UI; Member dùng lịch tuần API chỉ đọc |
 | Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |
-| Dinh dưỡng công thức | Đọc rõ số liệu minh họa cho **1 khẩu phần** | 8 chỉ tiêu tĩnh, chưa tính từ nguyên liệu; còn thiếu so với FR-39, xem BUG-002 |
-| Theo dõi dinh dưỡng, danh sách mua sắm, bài cộng đồng/bình luận/báo cáo, lưu/yêu thích công thức, gói AI và giao dịch | Tương tác UI minh họa theo từng màn hình | Các chức năng này chưa có API tương ứng; không ghi hoặc trình bày như dữ liệu Backend |
+| Dinh dưỡng công thức prototype tại `/cong-thuc/:slug` | Đọc số liệu minh họa cho **1 khẩu phần** | 8 chỉ tiêu tĩnh, xem BUG-002; trang thật `/cong-thuc/id/:id` dùng 9 chỉ tiêu và trạng thái dữ liệu từ Backend |
+| Theo dõi dinh dưỡng, danh sách mua sắm, bài cộng đồng/bình luận/báo cáo, gói AI và giao dịch | Tương tác UI minh họa theo từng màn hình | Các màn hình này chưa tích hợp API ghi tương ứng; danh sách đã lưu Member đã dùng API thật như trên |
 
 Các trang chưa có API được giữ làm prototype để minh họa phạm vi giao diện; chúng được ghi nhãn demo và không đại diện cho dữ liệu đã lưu trên Backend.
 

@@ -8,7 +8,7 @@ import { useAuth } from '../components/AuthContext';
 import { avatarFileError, AVATAR_TYPES, membersApi, type MemberProfile } from '../api/members';
 import { asApiError } from '../lib/apiClient';
 
-const inputClass = 'w-full rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
+const inputClass = 'w-full rounded-xl border border-brand-200 bg-paper px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 const errorClass = 'mt-1 text-xs font-medium text-red-700';
 const BIO_MAX = 500;
 

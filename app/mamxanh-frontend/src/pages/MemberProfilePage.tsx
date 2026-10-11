@@ -4,7 +4,7 @@ import { ArrowLeft, CalendarDays } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Button, Card, EmptyState } from '../components/ui';
 import { MemberAvatar } from '../components/MemberAvatar';
-import { ApiRecipeCard } from '../components/ApiRecipeCard';
+import { PublicRecipeCard } from '../components/PublicRecipeCard';
 import { joinedMonthLabel, membersApi, type MemberProfile } from '../api/members';
 import type { RecipeSearchResult } from '../api/recipes';
 import { asApiError } from '../lib/apiClient';
@@ -68,10 +68,10 @@ export function MemberProfilePage() {
     <section className="mt-8" aria-labelledby="member-recipes">
       <h2 id="member-recipes" className="text-xl font-extrabold text-ink">Công thức đã đăng</h2>
       {recipes.items.length === 0
-        ? <p className="mt-4 rounded-2xl border border-brand-100 bg-white p-6 text-sm text-ink-muted">Thành viên chưa có công thức công khai nào.</p>
+        ? <p className="mt-4 rounded-2xl border border-brand-100 bg-paper p-6 text-sm text-ink-muted">Thành viên chưa có công thức công khai nào.</p>
         : <>
           <p className="mt-1 text-sm text-ink-muted"><strong className="text-ink">{recipes.totalElements}</strong> công thức</p>
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{recipes.items.map((recipe) => <ApiRecipeCard key={recipe.id} recipe={recipe} showAuthor={false} />)}</div>
+          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 xl:grid-cols-4">{recipes.items.map((recipe) => <PublicRecipeCard key={recipe.id} recipe={recipe} />)}</div>
           {recipes.totalPages > 1 && <div className="mt-8 flex items-center justify-center gap-4"><Button variant="outline" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>Trang trước</Button><span className="text-sm text-ink-muted">Trang {page + 1}/{recipes.totalPages}</span><Button variant="outline" disabled={page + 1 >= recipes.totalPages} onClick={() => setPage((current) => current + 1)}>Trang sau</Button></div>}
         </>}
     </section>

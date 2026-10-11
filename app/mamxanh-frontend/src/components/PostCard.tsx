@@ -7,7 +7,7 @@ export function PostCard({ post, horizontal = false }: { post: Post; horizontal?
   return (
     <Link
       to={`/bai-viet/${post.slug}`}
-      className={`group flex overflow-hidden rounded-2xl border border-brand-100 bg-white transition-all hover:-translate-y-1 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-900/5 ${
+      className={`group flex overflow-hidden rounded-2xl border border-brand-100 bg-paper transition-all hover:-translate-y-1 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-900/5 ${
         horizontal ? 'flex-col sm:flex-row' : 'flex-col'
       }`}
     >
