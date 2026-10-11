@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.68.0
+> **Version:** v2.69.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-11
 > **Status:** Active
@@ -23,7 +23,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
-- None.
+- Pass the optional `GEMINI_API_KEY` from the local environment into the Backend container at runtime and document the Docker configuration.
 
 ### Fixed
 
