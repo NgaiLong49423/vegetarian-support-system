@@ -1,7 +1,12 @@
 import { expect, test } from '@playwright/test'
 
 test('theme can be changed from the menu and persists after reload', async ({ page }) => {
-  await page.addInitScript(() => localStorage.removeItem('mamxanh.theme'))
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('theme-test-initialized') !== 'true') {
+      localStorage.removeItem('mamxanh.theme')
+      sessionStorage.setItem('theme-test-initialized', 'true')
+    }
+  })
   await page.goto('/')
 
   const root = page.locator('html')
