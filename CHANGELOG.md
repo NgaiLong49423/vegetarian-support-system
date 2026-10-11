@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.66.0
+> **Version:** v2.67.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-11
 > **Status:** Active
@@ -8,6 +8,24 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Preserve Theme During Browser Reload Verification
+
+**Status:** Committed — `20b3a16`.
+
+**Scope:** Keep the theme persistence browser test's setup from clearing its saved value during reload.
+
+### Added
+
+- None.
+
+### Changed
+
+- Initialize the browser test's theme storage only once per test page session.
+
+### Fixed
+
+- Allow the theme persistence test to verify the saved light theme after reload.
 
 ## 2026-10-11 — Add Persistent Light and Dark Themes
 
