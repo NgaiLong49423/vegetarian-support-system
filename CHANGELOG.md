@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.65.0
+> **Version:** v2.66.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-11
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Add Persistent Light and Dark Themes
+
+**Status:** Committed — `cbef32a`.
+
+**Scope:** Let users switch the application appearance and keep the selected theme between visits.
+
+### Added
+
+- Add light and dark theme controls to the main menu and persist the selection in browser storage.
+- Add browser coverage for switching themes, applying light color tokens and restoring the selection after reload.
+
+### Changed
+
+- Apply the selected semantic color palette and native form control scheme throughout the application.
+- Update the Frontend guide to describe both themes and the appearance setting.
+
+### Fixed
+
+- None.
 
 ## 2026-10-11 — Resolve Sonar Reliability Findings ([#118](https://github.com/NgaiLong49423/vegetarian-support-system/pull/118))
 
