@@ -21,10 +21,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /**
      * Lookup with a row lock held until the transaction ends, for read-check-write flows on one
-     * account (resend cooldown): concurrent requests run one after another and the later ones see
-     * the state written by the earlier ones.
+     * account: concurrent requests run one after another and the later ones see the state written
+     * by the earlier ones. Used by the resend cooldown and by password login, where it keeps
+     * parallel attempts from bypassing the failed-login counter and temporary block (NFR-07).
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from User u where u.email = :email")
     Optional<User> findByEmailForUpdate(@Param("email") String email);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.id = :id")
+    Optional<User> findByIdForUpdate(@Param("id") Long id);
+
+    /** Google login looks an account up by its Google ID before its email (FR-03-D), with a row lock. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.googleSubject = :googleSubject")
+    Optional<User> findByGoogleSubjectForUpdate(@Param("googleSubject") String googleSubject);
 }

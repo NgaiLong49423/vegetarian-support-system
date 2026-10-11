@@ -1,8 +1,8 @@
 > **Document:** Backend Package Structure Specification
 > **File:** `docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md`
-> **Version:** v1.2.0
+> **Version:** v1.3.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-04
 > **Status:** Active
 > **Related Docs:** `docs/architecture/ARCHITECTURE.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `app/mamxanh-backend/README.md`
 
@@ -69,6 +69,12 @@ src/main/java/tech/mamxanh/
 │   └── dto/
 │       ├── request/
 │       └── response/
+├── expertapplication/
+│   ├── controller/
+│   ├── service/
+│   └── dto/
+├── notification/
+│   └── service/
 ├── nutrition/
 │   ├── controller/
 │   ├── service/
@@ -156,6 +162,8 @@ src/test/java/tech/mamxanh/
 ├── recipe/
 ├── mealplan/
 ├── shopping/
+├── expertapplication/      # Expert application lifecycle and Admin review
+├── notification/           # Public write service; inbox/read belongs to FR-49
 ├── nutrition/
 ├── subscription/
 └── integration/

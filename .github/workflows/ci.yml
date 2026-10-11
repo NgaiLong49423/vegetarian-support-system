@@ -44,15 +44,37 @@ jobs:
       - name: Install Playwright Chromium and Linux dependencies
         run: npx playwright install --with-deps chromium
 
+      - name: Test strict frontend coverage gate
+        run: npm run test:e2e:coverage:gate-tests
+
       - name: Run Playwright E2E coverage gate
         run: npm run test:e2e:coverage
 
+      - name: Summarize Frontend E2E coverage
+        if: always()
+        run: |
+          if [[ -s coverage/strict-summary.md ]]; then
+            cat coverage/strict-summary.md | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## Frontend — Playwright E2E coverage' | tee -a "$GITHUB_STEP_SUMMARY"
+            echo 'Coverage report unavailable: instrumented build, browser tests, or NYC report did not produce a complete summary.' | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Upload frontend LCOV report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: frontend-lcov
           path: app/mamxanh-frontend/coverage/lcov.info
-          if-no-files-found: error
+          if-no-files-found: warn
+
+      - name: Upload Frontend HTML coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-e2e-coverage-html
+          path: app/mamxanh-frontend/coverage/
+          if-no-files-found: warn
 
   backend:
     name: Backend
@@ -75,18 +97,48 @@ jobs:
           java-version: 21
           cache: maven
 
+      - name: Test strict backend coverage gate
+        run: bash ./mvnw --batch-mode -Dtest=JaCoCoCoverageGateTest test
+
       - name: Test and package
         run: bash ./mvnw --batch-mode clean verify
 
+      - name: Summarize Backend JaCoCo coverage
+        if: always()
+        run: |
+          if [[ ! -s target/site/jacoco/strict-coverage-summary.md && -s target/site/jacoco/jacoco.xml ]]; then
+            set +e
+            bash ./mvnw --batch-mode -DskipTests test-compile exec:java@strict-jacoco-coverage-gate > "$RUNNER_TEMP/backend-coverage-gate.log" 2>&1
+            set -e
+          fi
+          if [[ -s target/site/jacoco/strict-coverage-summary.md ]]; then
+            cat target/site/jacoco/strict-coverage-summary.md | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## Backend — JaCoCo coverage' | tee -a "$GITHUB_STEP_SUMMARY"
+            echo 'Coverage summary unavailable: Maven tests, JaCoCo report generation, or the summary checker did not complete.' | tee -a "$GITHUB_STEP_SUMMARY"
+            if [[ -s "$RUNNER_TEMP/backend-coverage-gate.log" ]]; then
+              tail -n 30 "$RUNNER_TEMP/backend-coverage-gate.log" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
       - name: Upload backend coverage and bytecode
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: backend-analysis
           path: |
             app/mamxanh-backend/target/site/jacoco/jacoco.xml
             app/mamxanh-backend/target/classes/
             app/mamxanh-backend/target/test-classes/
-          if-no-files-found: error
+          if-no-files-found: warn
+
+      - name: Upload Backend JaCoCo HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-jacoco-html
+          path: app/mamxanh-backend/target/site/jacoco/
+          if-no-files-found: warn
 
   docker-development:
     name: Docker Development
@@ -102,10 +154,19 @@ jobs:
         with:
           node-version: 24.21.0
 
+      - name: Install Frontend dependencies and Chromium
+        working-directory: app/mamxanh-frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
       - name: Build and smoke-test the shared development stack
         run: |
           set -euo pipefail
           export MSSQL_SA_PASSWORD="$(openssl rand -hex 20)Aa1!"
+          export MAMXANH_JWT_SECRET="$(openssl rand -hex 32)"
+          export MAMXANH_DEMO_PASSWORD="$(openssl rand -hex 24)Aa1!"
+          export MAMXANX_E2E_COMPOSE_PROJECT=mamxanh-ci
           cleanup() {
             status=$?
             if [ "$status" -ne 0 ]; then
@@ -118,6 +179,7 @@ jobs:
           trap cleanup EXIT
 
           docker compose -p mamxanh-ci up --build --detach --wait --wait-timeout 600
+          npm --prefix app/mamxanh-frontend run test:e2e:integration
           curl --fail --silent --show-error http://localhost:5173/
           curl --fail --silent --show-error http://localhost:8080/v3/api-docs \
             --output "$RUNNER_TEMP/openapi-runtime.json"

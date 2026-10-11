@@ -1,5 +1,7 @@
+import { Buffer } from 'node:buffer';
 import type { Page } from '@playwright/test';
 import { expect, test } from './baseFixtures';
+import { seedDemoSession } from './demo-session';
 
 declare global {
   interface Window {
@@ -103,6 +105,30 @@ test('meal serving selector accepts half portions', async ({ page }) => {
   await expect(selector).toHaveValue('1.5');
 });
 
+test('meal planner adds, changes serving count and removes a recipe from a meal slot', async ({ page }) => {
+  await page.goto('/ke-hoach', { waitUntil: 'domcontentloaded' });
+
+  const addSlot = page.getByRole('button', { name: /Thêm món/ }).first();
+  const slot = (await addSlot.innerText()).replace('Thêm món', '').trim();
+  const dayCard = addSlot.locator('xpath=../../..');
+  await addSlot.click();
+  const picker = page.getByRole('dialog');
+  await expect(picker.getByRole('heading', { name: `Chọn món ${slot}` })).toBeVisible();
+  await expect(picker).toBeVisible();
+  const recipeButton = picker.locator('button:has(p)').first();
+  const recipeName = (await recipeButton.locator('p').first().textContent())?.trim();
+  await recipeButton.click();
+
+  expect(recipeName).toBeTruthy();
+  const servings = dayCard.getByLabel(/Khẩu phần/).last();
+  await expect(servings).toHaveValue('1');
+  await servings.selectOption('1.5');
+  await expect(servings).toHaveValue('1.5');
+
+  await dayCard.getByRole('button', { name: 'Xoá món' }).last().click();
+  await expect(addSlot).toBeVisible();
+});
+
 test('recipe ingredients scale from the author serving count', async ({ page }) => {
   await page.goto('/cong-thuc/pho-chay-nam-huong-rung');
   await expect(page.getByRole('heading', { name: 'Dinh dưỡng cho 1 khẩu phần (8 chỉ tiêu minh họa)' })).toBeVisible();
@@ -114,24 +140,36 @@ test('recipe ingredients scale from the author serving count', async ({ page }) 
   await expect(page.getByText('2 gói', { exact: true })).toBeVisible();
 });
 
-test('avatar menu shows the demo plan and links to account features', async ({ page }) => {
-  await page.goto('/dang-nhap');
-  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
-  await page.getByRole('button', { name: 'Tài khoản Lan Anh, gói AI FREE demo' }).click();
-  await page.getByRole('link', { name: 'Hồ sơ của tôi', exact: true }).click();
-  await expect(page.getByRole('link', { name: 'Hồ sơ dinh dưỡng & BMI' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Tài khoản Lan Anh, gói AI FREE demo' }).click();
-  await expect(page.getByText('Gói AI hiện tại: FREE (dữ liệu demo)')).toBeVisible();
+test('avatar menu displays the authenticated Backend identity and opens the API-backed subscription', async ({ page }) => {
+  await seedDemoSession(page, 'CUSTOMER');
+  await page.route('**/api/v1/subscriptions/plans', (route) => route.fulfill({ json: [
+    { tier: 'FREE', name: 'FREE', priceVnd: 0, description: '', features: [], billingPeriod: 'Không thời hạn' },
+    { tier: 'PLUS', name: 'PLUS', priceVnd: 49000, description: '', features: [], billingPeriod: 'Tháng' },
+    { tier: 'PRO', name: 'PRO', priceVnd: 99000, description: '', features: [], billingPeriod: 'Tháng' },
+  ] }));
+  await page.route('**/api/v1/subscriptions/my-subscription', (route) => {
+    expect(route.request().headers().authorization).toBe('Bearer header.payload.signature');
+    return route.fulfill({ json: {
+      tier: 'PLUS', status: 'ACTIVE', active: true, startsAt: '2026-10-04T12:00:00',
+      endsAt: '2026-11-04T12:00:00', unlockedFeatures: [],
+    } });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Tài khoản Demo CUSTOMER' }).click();
+  await expect(page.getByText('demo-customer@mamxanh.local')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Chuyển vai trò demo/ })).toHaveCount(0);
   await page.getByRole('link', { name: 'Nâng cấp gói AI' }).click();
-  await expect(page).toHaveURL(/\/goi-ai$/);
   await expect(page.getByRole('heading', { name: 'Nâng cấp gói AI' })).toBeVisible();
-  await expect(page.getByText('Gói hiện tại: FREE (demo)')).toBeVisible();
+  await expect(page.getByText('Gói PLUS', { exact: true })).toBeVisible();
+  await expect(page.getByText('Hết hạn ngày: 04/11/2026')).toBeVisible();
+  await expect(page.getByText('Gói hiện tại của bạn', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nâng cấp lên PRO' })).toBeEnabled();
 });
 
 test('mobile account links remain reachable from the menu', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/dang-nhap');
-  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
+  await seedDemoSession(page, 'CUSTOMER');
+  await page.goto('/');
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('link', { name: 'Lịch sử giao dịch' }).click();
   await expect(page).toHaveURL(/\/giao-dich$/);
@@ -152,6 +190,53 @@ test('recipe report form validates the six reason groups without claiming a serv
   await expect(page.getByText('Đã kiểm tra biểu mẫu. Chưa gửi báo cáo tới quản trị viên.')).toBeVisible();
 });
 
+test('recipe report form accepts an empty optional description for each standard reason', async ({ page }) => {
+  const optionalReasons = [
+    'Không phải món chay',
+    'Nguy cơ an toàn thực phẩm',
+    'Nội dung phản cảm / Bạo lực',
+    'Vi phạm bản quyền / Sao chép',
+    'Spam / Quảng cáo thương mại',
+  ];
+
+  for (const reason of optionalReasons) {
+    await page.goto('/cong-thuc/pho-chay-nam-huong-rung');
+    await page.getByRole('button', { name: 'Báo cáo công thức' }).click();
+    await page.getByRole('radio', { name: reason }).check();
+    await expect(page.getByRole('radio', { checked: true })).toHaveCount(1);
+    await expect(page.getByLabel('Mô tả bổ sung')).toHaveValue('');
+    await page.getByRole('button', { name: 'Kiểm tra biểu mẫu' }).click();
+    await expect(page.getByText('Đã kiểm tra biểu mẫu. Chưa gửi báo cáo tới quản trị viên.')).toBeVisible();
+  }
+});
+
+test('recipe report form enforces trimmed OTHER boundaries and the 500 character limit', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/cong-thuc/pho-chay-nam-huong-rung');
+  await page.getByRole('button', { name: 'Báo cáo công thức' }).click();
+  await page.getByRole('radio', { name: 'Khác' }).check();
+  await page.getByLabel('Mô tả bổ sung').fill('         ');
+  await page.getByRole('button', { name: 'Kiểm tra biểu mẫu' }).click();
+  await expect(page.getByRole('alert')).toContainText('10 đến 500');
+  await page.getByLabel('Mô tả bổ sung').fill('123456789');
+  await page.getByRole('button', { name: 'Kiểm tra biểu mẫu' }).click();
+  await expect(page.getByRole('alert')).toContainText('10 đến 500');
+  await page.getByLabel('Mô tả bổ sung').fill('1234567890');
+  await page.getByRole('button', { name: 'Kiểm tra biểu mẫu' }).click();
+  await expect(page.getByText('Đã kiểm tra biểu mẫu. Chưa gửi báo cáo tới quản trị viên.')).toBeVisible();
+
+  await page.reload();
+  await page.getByRole('button', { name: 'Báo cáo công thức' }).click();
+  await page.getByRole('radio', { name: 'Khác' }).check();
+  const longDescription = 'x'.repeat(501);
+  await page.getByLabel('Mô tả bổ sung').fill(longDescription);
+  await expect(page.getByLabel('Mô tả bổ sung')).toHaveValue('x'.repeat(500));
+  await expect(page.getByText('500/500 ký tự')).toBeVisible();
+  await page.getByRole('button', { name: 'Kiểm tra biểu mẫu' }).click();
+  await expect(page.getByText('Đã kiểm tra biểu mẫu. Chưa gửi báo cáo tới quản trị viên.')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
 test('nutrition profile requires real authentication and plan/history pages do not simulate payment', async ({ page }) => {
   await page.goto('/ho-so/dinh-duong');
   await expect(page.getByText('Đăng nhập tài khoản thật để khai báo và lưu hồ sơ.')).toBeVisible();
@@ -160,15 +245,6 @@ test('nutrition profile requires real authentication and plan/history pages do n
   await expect(page.getByLabel('Ngày sinh *')).toBeDisabled();
   await expect(page.getByLabel('Chiều cao *')).toBeDisabled();
   await expect(page.getByLabel('Cân nặng *')).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toBeDisabled();
-  await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
-
-  await page.goto('/dang-nhap');
-  await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
-  await page.getByRole('button', { name: 'Tài khoản Lan Anh, gói AI FREE demo' }).click();
-  await page.getByRole('link', { name: 'Hồ sơ dinh dưỡng & BMI' }).click();
-  await expect(page.getByText('Đăng nhập tài khoản thật để khai báo và lưu hồ sơ.')).toBeVisible();
-  await expect(page.getByLabel('Ngày sinh *')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toBeDisabled();
   await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
 
@@ -258,3 +334,219 @@ test('nutrition profile maps backend validation errors to their fields', async (
   await expect(page.getByText('Chiều cao phải từ 100 đến 250 cm.')).toBeVisible();
   await expect(page.getByLabel('Chiều cao *')).toHaveAttribute('aria-invalid', 'true');
 });
+
+test('recipe comparison shows two recipes side-by-side without health score (FR-60)', async ({ page }) => {
+  await page.goto('/so-sanh');
+  await expect(page.getByRole('heading', { name: /So sánh hai công thức/i })).toBeVisible();
+  await expect(page.locator('#compare-recipe-left')).toBeVisible();
+  await expect(page.locator('#compare-recipe-right')).toBeVisible();
+  await expect(page.getByText('Năng lượng').first()).toBeVisible();
+  await expect(page.getByText('Chưa đủ dữ liệu').first()).toBeVisible();
+  await expect(page.getByText(/không tính toán điểm Health Score/i)).toBeVisible();
+
+  // Change right dropdown to exercise select handler
+  await page.locator('#compare-recipe-right').selectOption({ index: 2 });
+  await expect(page.locator('#compare-recipe-right')).toBeVisible();
+});
+
+test('nutrition tracker opens overall 9-indicator analysis modal (FR-37)', async ({ page }) => {
+  await page.goto('/dinh-duong');
+
+  // Exercise simulated PDF alert
+  await page.getByRole('button', { name: 'Xuất báo cáo PDF' }).click();
+  await expect(page.getByText(/Tính năng xuất PDF đang ở chế độ mô phỏng/i)).toBeVisible();
+  await page.getByRole('button', { name: 'Đóng' }).first().click();
+
+  await page.getByRole('button', { name: 'Phân tích tổng thể' }).click();
+  const modal = page.getByRole('dialog');
+  await expect(modal.getByRole('heading', { name: /Phân tích dinh dưỡng tổng thể/i })).toBeVisible();
+  await modal.getByRole('button', { name: /Tuần qua/i }).click();
+  await expect(modal.getByRole('cell', { name: 'Tổng năng lượng' })).toBeVisible();
+  await expect(modal.getByText('12,194 kcal')).toBeVisible();
+
+  // Test state simulation selector
+  await modal.getByRole('combobox').selectOption('error');
+  await expect(modal.getByText('Không thể tải dữ liệu dinh dưỡng')).toBeVisible();
+  await modal.getByRole('button', { name: 'Thử lại' }).click();
+
+  await modal.getByRole('combobox').selectOption('empty');
+  await expect(modal.getByText('Chưa có thực đơn để phân tích')).toBeVisible();
+
+  await modal.getByRole('button', { name: /Hôm nay/i }).click();
+  await page.keyboard.press('Escape');
+  await expect(modal).toBeHidden();
+});
+
+test('expert application customer and admin workflows use the API and recover from stale decisions (FR-05)', async ({ page }) => {
+  await page.goto('/dang-ky-chuyen-gia');
+  await expect(page.getByRole('heading', { name: 'Đăng nhập để tiếp tục' })).toBeVisible();
+  await page.evaluate(() => sessionStorage.setItem('mamxanh.auth', JSON.stringify({
+    accessToken: 'test-only-token', expiresAt: Date.now() + 3600000,
+    account: { id: 41, displayName: 'Nguyễn An', email: 'an@example.org', role: 'CUSTOMER', accountStatus: 'ACTIVE', emailVerified: true },
+  })));
+
+  let status: 'PENDING' | 'REJECTED' | 'APPROVED' | null = null;
+  let adminNote = '';
+  let conflictOnce = true;
+  let posted: Record<string, unknown> | null = null;
+  await page.route('**/api/v1/**expert-applications**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    const application = { id: 501, userId: 41, displayName: 'Nguyễn An', email: 'an@example.org', experience: 'Hơn 5 năm kinh nghiệm nấu ăn thuần chay thực dưỡng.', vegetarianType: 'VEGAN', sampleRecipeSummary: 'Đậu hũ sốt nấm hương tiêu xanh hấp dẫn và thơm lừng.', portfolioUrl: null, status, adminNote, submittedAt: new Date().toISOString(), reviewedAt: status && status !== 'PENDING' ? new Date().toISOString() : null };
+    if (path.endsWith('/admin/expert-applications') && request.method() === 'GET') {
+      return route.fulfill({ json: { content: status ? [application] : [], page: 0, size: 20, totalElements: Number(!!status), totalPages: Number(!!status) } });
+    }
+    if (path.endsWith('/admin/expert-applications/501') && request.method() === 'GET') {
+      return route.fulfill({ json: application });
+    }
+    if (path.endsWith('/reject') && request.method() === 'POST') {
+      adminNote = request.postDataJSON().reason;
+      status = 'REJECTED';
+      if (conflictOnce) {
+        conflictOnce = false;
+        return route.fulfill({ status: 409, contentType: 'application/problem+json', body: JSON.stringify({ status: 409, detail: 'Đơn đã được xử lý bởi một yêu cầu khác.', code: 'EXPERT_APPLICATION_STALE' }) });
+      }
+    }
+    if (path.endsWith('/approve') && request.method() === 'POST') {
+      status = 'APPROVED';
+      return route.fulfill({ json: { ...application, status, adminNote: null } });
+    }
+    if (request.method() === 'POST' && path.endsWith('/expert-applications')) {
+      posted = request.postDataJSON();
+      status = 'PENDING';
+      adminNote = '';
+      return route.fulfill({ status: 201, json: { ...application, status, adminNote: null } });
+    }
+    if (path.endsWith('/me') && request.method() === 'GET') {
+      return route.fulfill({ json: { content: status ? [application] : [], page: 0, size: 20, totalElements: Number(!!status), totalPages: Number(!!status) } });
+    }
+    return route.fulfill({ json: application });
+  });
+  await page.reload();
+  await page.getByLabel(/Kinh nghiệm ẩm thực chay/).fill('Hơn 5 năm kinh nghiệm nấu ăn thuần chay thực dưỡng.');
+  await page.getByLabel(/Tóm tắt công thức sở trường/).fill('Đậu hũ sốt nấm hương tiêu xanh hấp dẫn và thơm lừng.');
+  await page.getByLabel(/Tôi cam kết/).check();
+  await page.getByRole('button', { name: 'Gửi đơn đăng ký' }).click();
+  await expect(page.getByRole('status')).toContainText('Đơn đã được gửi');
+  expect(posted).toMatchObject({ vegetarianType: 'VEGAN' });
+
+  await page.evaluate(() => {
+    const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'ADMIN'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session));
+    window.location.assign('/admin/xet-duyet-chuyen-gia');
+  });
+  await expect(page.getByRole('heading', { name: 'Xét duyệt Chuyên gia' })).toBeVisible();
+  await page.getByRole('button', { name: 'Xem chi tiết' }).click();
+  await page.getByLabel(/Lý do từ chối/).fill('Cần bổ sung thêm kinh nghiệm cụ thể.');
+  await page.getByRole('button', { name: 'Từ chối', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Đơn đã được xử lý');
+  await expect(page.getByText('REJECTED', { exact: true })).toBeVisible();
+
+  await page.evaluate(() => {
+    const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'CUSTOMER'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session));
+    window.location.assign('/dang-ky-chuyen-gia');
+  });
+  await expect(page.getByText('Cần bổ sung thêm kinh nghiệm cụ thể.')).toBeVisible();
+  await page.getByLabel(/Kinh nghiệm ẩm thực chay/).fill('Tôi đã bổ sung kinh nghiệm chế biến món chay trong nhiều năm.');
+  await page.getByLabel(/Tóm tắt công thức sở trường/).fill('Công thức đậu hũ và nấm được hướng dẫn đầy đủ, dễ thực hiện.');
+  await page.getByLabel(/Tôi cam kết/).check();
+  await expect(page.getByRole('button', { name: 'Gửi đơn đăng ký' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Gửi đơn đăng ký' }).click();
+  await expect(page.getByText(/#501 · PENDING/)).toBeVisible();
+
+  await page.evaluate(() => {
+    const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'ADMIN'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session));
+    window.location.assign('/admin/xet-duyet-chuyen-gia');
+  });
+  await page.getByRole('button', { name: 'Xem chi tiết' }).click();
+  await page.getByRole('button', { name: 'Phê duyệt' }).click();
+  await expect(page.getByRole('status')).toContainText('Đã phê duyệt đơn');
+
+  await page.evaluate(() => {
+    const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'CUSTOMER'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session));
+    window.location.assign('/dang-ky-chuyen-gia');
+  });
+  await expect(page.getByText('Tài khoản đã được phê duyệt Chuyên gia.')).toBeVisible();
+});
+
+test('recipe like and dislike reactions update state without rating stars (FR-57)', async ({ page }) => {
+  await seedDemoSession(page, 'CUSTOMER');
+  await page.goto('/cong-thuc/pho-chay-nam-huong-rung');
+  await expect(page.getByRole('heading', { name: /Mức độ yêu thích từ cộng đồng/i })).toBeVisible();
+
+  // Vote Like
+  await page.locator('#btnLike').click();
+  await expect(page.getByText(/Đã cập nhật bình chọn thành công/i)).toBeVisible();
+
+  // Cancel vote
+  await page.getByRole('button', { name: 'Hủy bình chọn' }).click();
+
+  // Vote Dislike
+  await page.locator('#btnDislike').click();
+  await expect(page.getByText(/Đã cập nhật bình chọn thành công/i)).toBeVisible();
+
+  // Simulate error
+  await page.locator('#btnSimulateError').click();
+  await expect(page.getByText(/Không thể gửi bình chọn/i)).toBeVisible();
+});
+
+test('recipe exploration does not expose local-only card actions as Backend features', async ({ page }) => {
+  await page.route('**/api/v1/recipes?**', (route) => route.fulfill({ json: {
+    items: [], page: 0, size: 12, totalElements: 0, totalPages: 0,
+  } }));
+  await page.goto('/kham-pha');
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();
+  await expect(page.getByLabel('Lưu công thức')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Thêm vào lịch ăn' })).toHaveCount(0);
+});
+
+test('recipe creation route uses authenticated account role (FR-05)', async ({ page }) => {
+  await page.goto('/dang-cong-thuc');
+  await expect(page.getByRole('heading', { name: 'Đăng công thức chỉ dành cho Chuyên gia' })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
+
+  await seedDemoSession(page, 'CUSTOMER');
+  await page.goto('/dang-cong-thuc');
+  await expect(page.getByText('Bạn cần được phê duyệt đơn đăng ký Chuyên gia trước khi đăng công thức.')).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Đăng ký trở thành Chuyên gia' })).toHaveAttribute('href', '/dang-ky-chuyen-gia');
+
+  await seedDemoSession(page, 'EXPERT');
+  await page.goto('/dang-cong-thuc');
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay' })).toBeVisible();
+
+  await seedDemoSession(page, 'ADMIN');
+  await page.goto('/dang-cong-thuc');
+  await expect(page.getByText('Vai trò hiện tại không có quyền đăng công thức.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toHaveCount(0);
+});
+
+test('profile labels locally saved recipe prototype as not connected to Backend', async ({ page }) => {
+  await page.goto('/ho-so');
+  await expect(page.getByText(/API lưu công thức chưa được kết nối/)).toBeVisible();
+});
+
+test('recipe image upload and gallery management complies with FR-14 rules', async ({ page }) => {
+  // 1. Log in as Expert
+  await seedDemoSession(page, 'EXPERT');
+  await page.goto('/dang-cong-thuc');
+
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
+  await expect(page.getByText('Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)')).toBeVisible();
+
+  // 2. Upload test image
+  const fileInput = page.locator('#recipe-media-upload-input');
+  await fileInput.setInputFiles({
+    name: 'test-dish.jpg',
+    mimeType: 'image/jpeg',
+    buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]),
+  });
+
+  // Verify thumbnail, cover badge and order
+  await expect(page.getByText('Đã tải 1/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
+  await expect(page.getByText('Ảnh bìa').first()).toBeVisible();
+
+  // 3. View recipe detail to check gallery & cover
+  await page.goto('/cong-thuc/dau-hu-non-sot-nam-dong-co');
+  await expect(page.getByRole('heading', { name: /Đậu hũ non/i })).toBeVisible();
+  await expect(page.getByText('Ảnh bìa chính')).toBeVisible();
+});
+

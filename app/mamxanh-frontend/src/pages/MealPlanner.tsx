@@ -18,6 +18,8 @@ import { Badge, Button } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { weekPlan as initialPlan, recipes } from '../data/mockData';
 import type { DayPlan, MealSlot } from '../types';
+import { useAuth } from '../components/AuthContext';
+import { MealPlanReadOnly } from './MealPlanReadOnly';
 
 const slotMeta: Record<MealSlot, { icon: typeof Sun; label: string; color: string }> = {
   Sáng: { icon: Coffee, label: 'Sáng', color: 'text-amber-500' },
@@ -27,9 +29,13 @@ const slotMeta: Record<MealSlot, { icon: typeof Sun; label: string; color: strin
 const allSlots: MealSlot[] = ['Sáng', 'Trưa', 'Tối'];
 
 export function MealPlanner() {
+  const { account } = useAuth();
   const [week, setWeek] = useState<DayPlan[]>(() => initialPlan.map((d) => ({ ...d, meals: [...d.meals] })));
   const [weekNum, setWeekNum] = useState(42);
   const [picker, setPicker] = useState<{ dayIdx: number; slot: MealSlot } | null>(null);
+
+  if (account && account.role !== 'ADMIN') return <MealPlanReadOnly />;
+  if (account?.role === 'ADMIN') return <PageContainer className="py-12"><div role="alert" className="mx-auto max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">Tài khoản Quản trị viên không có quyền xem Lịch ăn của thành viên.</div></PageContainer>;
 
   const setMeal = (dayIdx: number, slot: MealSlot, recipeId: string) => {
     setWeek((prev) =>

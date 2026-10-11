@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './baseFixtures';
+import { seedDemoSession } from './demo-session';
 
 const mockPlans = [
   {
@@ -71,9 +72,7 @@ const mockTransactions = [
 ];
 
 async function setupMockSubscriptionApis(page: Page, subscriptionData = mockFreeSubscription) {
-  await page.addInitScript(() => {
-    window.__mamxanhAccessToken = 'test-e2e-token';
-  });
+  await seedDemoSession(page);
 
   await page.route('**/api/v1/subscriptions/plans', async (route) => {
     await route.fulfill({
@@ -84,6 +83,7 @@ async function setupMockSubscriptionApis(page: Page, subscriptionData = mockFree
   });
 
   await page.route('**/api/v1/subscriptions/my-subscription', async (route) => {
+    expect(route.request().headers().authorization).toBe('Bearer header.payload.signature');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -143,6 +143,7 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
 
     let checkoutPayload: unknown = null;
     await page.route('**/api/v1/subscriptions/checkout', async (route) => {
+      expect(route.request().headers().authorization).toBe('Bearer header.payload.signature');
       checkoutPayload = JSON.parse(route.request().postData() || '{}');
       await route.fulfill({
         status: 200,

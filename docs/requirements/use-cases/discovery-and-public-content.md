@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M01
 > **File:** `docs/requirements/use-cases/discovery-and-public-content.md`
-> **Version:** v2.1.1
+> **Version:** v2.2.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -656,7 +656,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-60).
 
 1. Hệ thống hiển thị song song tên món, ảnh bìa, tác giả Chuyên gia, loại ăn chay, `dish_category`, khẩu phần gốc, thời gian chuẩn bị/nấu và tỷ lệ Like của mỗi công thức.
 2. Hệ thống hiển thị danh sách nguyên liệu hai bên với số lượng và đơn vị nguyên bản.
-3. Nguyên liệu liên kết cùng một `ingredient_id` có thể được đặt cùng hàng để đối chiếu. Nguyên liệu tự do hoặc chỉ giống tên không bị tự động hợp nhất.
+3. Nguyên liệu có cùng `ingredient_id` có thể được đặt cùng hàng để đối chiếu; nguyên liệu có ID khác nhau không bị tự động hợp nhất dù tên hiển thị giống nhau.
 4. Nếu đơn vị khác nhau và không có quy tắc quy đổi được duyệt, hệ thống giữ nguyên đơn vị và ghi rõ không thể đối chiếu định lượng trực tiếp.
 
 ##### C. So sánh dinh dưỡng trên một khẩu phần

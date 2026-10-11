@@ -1,20 +1,21 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from './baseFixtures';
+import { seedDemoSession } from './demo-session';
 
-test('recipe search and filters show matching recipes and recover from an empty result', async ({ page }) => {
+async function openRecipeFormAsDemoExpert(page: import('@playwright/test').Page) {
+  await seedDemoSession(page, 'EXPERT');
+  await page.goto('/dang-cong-thuc');
+}
+
+test('recipe exploration uses only API search and reports an empty result honestly', async ({ page }) => {
+  await page.route('**/api/v1/recipes?**', (route) => route.fulfill({ json: {
+    items: [], page: 0, size: 12, totalElements: 0, totalPages: 0,
+  } }));
   await page.goto('/kham-pha');
   const search = page.getByPlaceholder('Tìm món chay hoặc nguyên liệu...');
   await search.fill('không có món này');
-  await expect(page.getByText('Không tìm thấy công thức')).toBeVisible();
-  await search.fill('');
-  await page.getByRole('button', { name: 'Món nước', exact: true }).click();
-  await expect(page.getByRole('button', { name: /Xoá lọc/ })).toBeVisible();
-  await page.getByRole('button', { name: /Xoá lọc/ }).click();
-  await expect(page.getByRole('button', { name: /Xoá lọc/ })).toHaveCount(0);
-  await page.getByRole('combobox').selectOption('time');
-  await expect(page.getByRole('combobox')).toHaveValue('time');
-  await search.fill('Phở');
-  await expect(page.getByRole('heading', { name: /Phở chay/i }).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();
+  await expect(page.getByText('Phở chay', { exact: true })).toHaveCount(0);
 });
 
 test('shopping demo adds an item, filters purchased items and clears them', async ({ page }) => {
@@ -47,21 +48,52 @@ test('shopping export contains the newly added item', async ({ page }) => {
   expect(await readFile(downloadedPath!, 'utf8')).toContain('[ ] Rau cải cho ngày mai — vừa đủ');
 });
 
-test('recipe draft edits ingredient rows and updates completion in the demo UI', async ({ page }) => {
-  await page.goto('/dang-cong-thuc');
-  await page.getByPlaceholder('VD: Đậu hũ non sốt nấm đông cô tiêu xanh').fill('Đậu hũ kho nấm');
-  await page.getByPlaceholder('Chia sẻ nguồn cảm hứng, hương vị đặc trưng và bí quyết của món ăn...').fill('Công thức bữa tối thuần chay với đậu hũ và nấm.');
-  await page.getByRole('button', { name: /Chay Có Sữa/ }).click();
-  await page.getByRole('button', { name: 'Thêm nguyên liệu', exact: true }).click();
-  await expect(page.getByPlaceholder('Tên nguyên liệu')).toHaveCount(4);
-  await page.getByPlaceholder('Tên nguyên liệu').last().fill('Cà rốt');
-  await page.getByPlaceholder('SL', { exact: true }).last().fill('2');
-  const row = page.getByPlaceholder('Tên nguyên liệu').last().locator('..');
-  await row.getByRole('combobox').selectOption('củ');
-  await expect(row.getByRole('combobox')).toHaveValue('củ');
-  await row.getByRole('button').click();
-  await expect(page.getByPlaceholder('Tên nguyên liệu')).toHaveCount(3);
-  await expect(page.getByText('100%', { exact: true }).first()).toBeVisible();
+test('recipe form uses catalog choices and reports that real login is still required', async ({ page }) => {
+  await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: {
+    dishCategories: [{ code: 'BRAISED', label: 'Món kho' }],
+    vegetarianTypes: [{ code: 'VEGAN', label: 'Thuần chay' }],
+    difficulties: [{ code: 'EASY', label: 'Dễ' }],
+    units: [{ unitId: 1, code: 'g', name: 'gram', dimension: 'MASS' }],
+  } }));
+  await page.route('**/api/v1/recipes/ingredient-options**', (route) => route.fulfill({ json: [
+    { ingredientId: 1, name: 'Đậu hũ' },
+  ] }));
+  await page.route('**/api/v1/recipes', (route) => route.fulfill({ status: 401, contentType: 'application/problem+json', json: {
+    status: 401, code: 'UNAUTHENTICATED', title: 'Unauthenticated', detail: 'Bạn cần đăng nhập.',
+  } }));
+
+  await openRecipeFormAsDemoExpert(page);
+  await page.getByLabel('Tên món *').fill('Đậu hũ kho cà chua');
+  await page.getByLabel('Thể loại món').selectOption('BRAISED');
+  await page.getByLabel('Loại ăn chay').selectOption('VEGAN');
+  await page.getByLabel('Độ khó').selectOption('EASY');
+  await page.getByLabel('Khẩu phần').fill('2');
+  await page.getByLabel('Thời gian chuẩn bị').fill('10');
+  await page.getByLabel('Thời gian nấu').fill('0');
+  await page.getByLabel('Chọn nguyên liệu 1').fill('Đậu');
+  await page.getByRole('button', { name: 'Đậu hũ', exact: true }).click();
+  await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
+  await page.getByLabel('Đơn vị nguyên liệu 1').selectOption('1');
+  await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Cắt đậu hũ, rim với cà chua đến khi thấm vị.');
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+
+  await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không');
+});
+
+test('recipe image list requires one cover and blocks publishing until FR-14 upload is connected', async ({ page }) => {
+  await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: {
+    dishCategories: [], vegetarianTypes: [], difficulties: [], units: [],
+  } }));
+  await openRecipeFormAsDemoExpert(page);
+  await page.getByLabel('Chọn tối đa 5 ảnh').setInputFiles([
+    { name: 'one.png', mimeType: 'image/png', buffer: Buffer.from('one') },
+    { name: 'two.png', mimeType: 'image/png', buffer: Buffer.from('two') },
+  ]);
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+  await expect(page.getByRole('alert')).toContainText('hãy chọn đúng 1 ảnh bìa');
+  await page.getByLabel('Chọn one.png làm ảnh cover').check();
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+  await expect(page.getByRole('alert')).toContainText('đang được hoàn thiện');
 });
 
 test('community topics lead to article content and demo rating updates only once', async ({ page }) => {

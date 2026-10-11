@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BadgeCheck, Bookmark, Heart, Leaf, Settings, Sparkles, UtensilsCrossed } from 'lucide-react';
+import { Award, BadgeCheck, Bookmark, Heart, Leaf, Plus, Settings, Sparkles, UtensilsCrossed } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { RecipeCard } from '../components/RecipeCard';
 import { Badge, Button, Card, EmptyState } from '../components/ui';
-import { currentUser, demoAiPlan, recipes } from '../data/mockData';
+import { recipes } from '../data/mockData';
+import { getSavedRecipeSlugs, subscribeSaved } from '../lib/savedRecipes';
+import { useAuth } from '../components/AuthContext';
 import { subscriptionApi, type MySubscriptionResponse } from '../api/subscription';
 import { formatDate } from '../utils/date';
-import { hasAccessToken } from '../lib/apiClient';
 
 const tabs = ['Công thức đã lưu', 'Món yêu thích', 'Sở thích ăn chay', 'Tùy chọn'] as const;
 type Tab = (typeof tabs)[number];
@@ -27,15 +28,18 @@ const toggles = [
 ];
 
 export function Profile() {
+  const { account, isAuthenticated } = useAuth();
+  const role = account?.role;
   const [tab, setTab] = useState<Tab>('Công thức đã lưu');
-  const saved = recipes.slice(0, 4);
+  const [savedSlugs, setSavedSlugs] = useState(getSavedRecipeSlugs);
   const favorites = recipes.slice(2, 5);
   const [switches, setSwitches] = useState(toggles);
   const [subscription, setSubscription] = useState<MySubscriptionResponse | null>(null);
 
   useEffect(() => {
     let active = true;
-    if (hasAccessToken()) {
+    setSubscription(null);
+    if (isAuthenticated) {
       subscriptionApi
         .getMySubscription()
         .then((res) => {
@@ -46,10 +50,14 @@ export function Profile() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isAuthenticated, account?.id]);
 
   const activeTier = subscription?.status === 'ACTIVE' ? subscription.tier : null;
   const isFree = !activeTier || activeTier === 'FREE';
+
+  useEffect(() => subscribeSaved((list) => setSavedSlugs(list.map((recipe) => recipe.slug))), []);
+
+  const saved = recipes.filter((recipe) => savedSlugs.includes(recipe.slug));
 
   return (
     <PageContainer className="py-8">
@@ -57,14 +65,18 @@ export function Profile() {
       <Card className="mb-6 overflow-hidden">
         <div className="h-28 bg-gradient-to-r from-brand-500 via-brand-400 to-amber-400" />
         <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end">
-          <img src={currentUser.avatar} alt="" className="-mt-16 h-24 w-24 rounded-2xl object-cover ring-4 ring-white" />
+          <div className="-mt-16 flex h-24 w-24 items-center justify-center rounded-2xl bg-brand-600 text-3xl font-bold text-white ring-4 ring-white">{account?.displayName.charAt(0).toUpperCase() ?? '?'}</div>
           <div className="flex-1">
             <h1 className="flex items-center gap-2 text-2xl font-extrabold text-ink">
-              {currentUser.name} <BadgeCheck className="h-5 w-5 text-brand-600" />
+              {account?.displayName ?? 'Khách'} <BadgeCheck className="h-5 w-5 text-brand-600" />
             </h1>
-            <p className="text-sm text-ink-muted">{currentUser.bio}</p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="text-sm text-ink-muted">{account?.email ?? 'Đăng nhập để xem hồ sơ của bạn'}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
               <Badge tone="leaf"><Leaf className="h-3 w-3" /> Thuần Chay</Badge>
+              {role && <Badge tone={role === 'EXPERT' ? 'leaf' : role === 'ADMIN' ? 'brand' : 'neutral'}>
+                {role === 'EXPERT' ? 'Chuyên gia ẩm thực' : role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên'}
+              </Badge>}
+              {account && <Badge tone="neutral">Tài khoản Backend · {account.role}</Badge>}
               {isFree ? (
                 <Badge tone="neutral">Gói AI: Miễn phí</Badge>
               ) : (
@@ -81,18 +93,50 @@ export function Profile() {
               </Link>
             </div>
           </div>
-          <div className="flex gap-2">
-            <div className="rounded-xl border border-brand-100 px-4 py-2 text-center">
-              <p className="text-lg font-extrabold text-ink">28</p>
-              <p className="text-xs text-ink-muted">Đã lưu</p>
-            </div>
-            <div className="rounded-xl border border-brand-100 px-4 py-2 text-center">
-              <p className="text-lg font-extrabold text-ink">12</p>
-              <p className="text-xs text-ink-muted">Đã đăng</p>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {role === 'EXPERT' && (
+              <Link to="/dang-cong-thuc" className="inline-flex items-center gap-1.5 rounded-xl bg-leaf-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-leaf-700">
+                <Plus className="h-4 w-4" /> Đăng công thức
+              </Link>
+            )}
+            {account?.role === 'EXPERT' && (
+              <Link to="/ho-so/chuyen-gia" className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50">
+                Bài công thức của tôi
+              </Link>
+            )}
+            {role === 'ADMIN' && (
+              <Link to="/admin/xet-duyet-chuyen-gia" className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-amber-700">
+                Xét duyệt Chuyên gia
+              </Link>
+            )}
+            {role === 'CUSTOMER' && (
+              <Link to="/dang-ky-chuyen-gia" className="inline-flex items-center gap-1.5 rounded-xl border border-leaf-300 bg-leaf-50 px-4 py-2 text-sm font-bold text-leaf-800 hover:bg-leaf-100">
+                <Award className="h-4 w-4 text-leaf-600" /> Đăng ký Chuyên gia
+              </Link>
+            )}
             <Button variant="outline"><Settings className="h-4 w-4" /> Chỉnh sửa</Button>
           </div>
         </div>
+
+        {/* Customer CTA Banner if not expert */}
+        {role === 'CUSTOMER' && (
+          <div className="border-t border-brand-50 bg-leaf-50/50 p-4 sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-ink">Bạn có đam mê và bí quyết nấu món chay ngon?</p>
+                <p className="text-xs text-ink-muted">
+                  Đăng ký trở thành Chuyên gia ẩm thực để chia sẻ công thức độc quyền với cộng đồng Mâm Xanh. Không yêu cầu bằng cấp hay giấy tờ vật lý.
+                </p>
+              </div>
+              <Link
+                to="/dang-ky-chuyen-gia"
+                className="rounded-xl bg-leaf-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-leaf-700"
+              >
+                Nộp đơn xét duyệt
+              </Link>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* tabs */}
@@ -111,9 +155,13 @@ export function Profile() {
       </div>
 
       {tab === 'Công thức đã lưu' && (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {saved.map((r) => <RecipeCard key={r.id} recipe={r} />)}
-        </div>
+        saved.length ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {saved.map((r) => <RecipeCard key={r.id} recipe={r} />)}
+          </div>
+        ) : (
+          <EmptyState icon="🔖" title="Chức năng lưu đang ở chế độ demo UI" description="API lưu công thức chưa được kết nối trong phiên bản này." />
+        )
       )}
 
       {tab === 'Món yêu thích' && (
@@ -137,6 +185,14 @@ export function Profile() {
               </div>
             ))}
           </dl>
+          <div className="mt-5 border-t border-brand-50 pt-4">
+            <Link
+              to="/ho-so/so-thich-an-uong"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
+            >
+              Cập nhật sở thích ăn uống
+            </Link>
+          </div>
         </Card>
       )}
 
@@ -161,7 +217,7 @@ export function Profile() {
       )}
 
       <div className="mt-8 flex items-center gap-2 text-sm text-ink-muted">
-        <Bookmark className="h-4 w-4" /> Dữ liệu được lưu cục bộ trên thiết bị cho phiên bản demo.
+        <Bookmark className="h-4 w-4" /> Bạn có thể quản lý hồ sơ dinh dưỡng và khẩu vị chi tiết tại thanh điều hướng cá nhân.
       </div>
     </PageContainer>
   );

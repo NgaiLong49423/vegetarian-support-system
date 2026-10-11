@@ -4,94 +4,18 @@
 openapi: 3.1.1
 info:
   title: Mâm Xanh API
-  version: 0.6.0
+  version: 0.7.0
   summary: REST API contract for the Mâm Xanh application
   description: >-
-    Planned reference for FR-03 Authentication endpoints that are not implemented in the runtime API.
+    Planned reference for password recovery endpoints not implemented in runtime.
     Implemented endpoints are documented by generated Springdoc OpenAPI.
 servers:
   - url: /api/v1
     description: Version 1 relative base path
 tags:
   - name: Authentication
-    description: Registration, verification, login, and password recovery.
+    description: Password recovery.
 paths:
-  /auth/login:
-    post:
-      tags: [Authentication]
-      summary: Log in with email and password
-      description: >-
-        On success, returns a Stateless JWT Access Token. Five consecutive failures trigger a ten-minute
-        temporary block on the account without changing the account to LOCKED.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-      responses:
-        '200':
-          description: Login successful. Returns a Stateless JWT Access Token.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
-          $ref: '#/components/responses/ValidationProblem'
-        '401':
-          description: Email or password is incorrect.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Account email is not verified or the account is administratively locked.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '429':
-          $ref: '#/components/responses/RateLimitProblem'
-  /auth/google:
-    post:
-      tags: [Authentication]
-      summary: Log in with a Google ID token
-      description: >-
-        Verifies the Google token signature, issuer, audience, and expiry. A first-time user receives
-        an ACTIVE Member account. The stable Google subject is used as the external identity key.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GoogleLoginRequest'
-      responses:
-        '200':
-          description: Google login successful. Returns a Stateless JWT Access Token.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
-          $ref: '#/components/responses/ValidationProblem'
-        '401':
-          description: Google ID token is invalid or expired.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Account is administratively locked (ACCOUNT_LOCKED).
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '409':
-          description: Email is already linked to a different Google account (GOOGLE_ACCOUNT_CONFLICT).
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
   /auth/password-resets:
     post:
       tags: [Authentication]
@@ -134,27 +58,6 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
 components:
   schemas:
-    LoginRequest:
-      type: object
-      additionalProperties: false
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-          writeOnly: true
-    GoogleLoginRequest:
-      type: object
-      additionalProperties: false
-      required: [idToken]
-      properties:
-        idToken:
-          type: string
-          writeOnly: true
-          description: Google ID token returned by Google Identity Services.
     EmailRequest:
       type: object
       additionalProperties: false
@@ -186,51 +89,6 @@ components:
           maxLength: 64
           writeOnly: true
           description: Must match newPassword.
-    AuthResponse:
-      type: object
-      additionalProperties: false
-      required: [accessToken, tokenType, expiresInSeconds, account]
-      properties:
-        accessToken:
-          type: string
-          readOnly: true
-          description: Short-lived JWT access token.
-        tokenType:
-          type: string
-          const: Bearer
-        expiresInSeconds:
-          type: integer
-          format: int64
-          minimum: 1
-          description: Runtime access-token lifetime; the configured value is TBD for FR-03 implementation.
-        account:
-          $ref: '#/components/schemas/AccountSummary'
-    AccountSummary:
-      type: object
-      additionalProperties: false
-      required: [id, displayName, email, role, accountStatus, emailVerified]
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 101
-        displayName:
-          type: string
-        email:
-          type: string
-          format: email
-        avatarUrl:
-          type: [string, 'null']
-          format: uri
-        role:
-          type: string
-          enum: [CUSTOMER, EXPERT, ADMIN]
-        accountStatus:
-          type: string
-          const: ACTIVE
-        emailVerified:
-          type: boolean
-          const: true
     MessageResponse:
       type: object
       additionalProperties: false

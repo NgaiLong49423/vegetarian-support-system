@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M05
 > **File:** `docs/requirements/use-cases/meal-planning-and-shopping.md`
-> **Version:** v2.3.0
+> **Version:** v2.4.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-10-05
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -271,7 +271,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-54).
 1. Hệ thống tiếp nhận các dòng nguyên liệu nguồn có định danh/nguyên liệu, số lượng và đơn vị.
 2. Hệ thống chỉ gộp các dòng có cùng `ingredientId`; quy đổi an toàn `g/kg`, `ml/l`, cùng đơn vị đếm, hoặc khác chiều đo khi có quy tắc chính thức trong `INGREDIENT_UNIT_CONVERSION` cho nguyên liệu đó.
 3. Nếu không có quy tắc quy đổi tương thích, hệ thống giữ các dòng riêng biệt, không tự suy diễn hệ số; các dòng sau xử lý được phân nhóm theo danh mục thực phẩm.
-4. **AF-54.1 — Nguyên liệu tự do không có `ingredientId`:** Chỉ gộp khi tên hiển thị giống nhau không phân biệt hoa thường và cùng đơn vị; khác đơn vị thì giữ riêng.
+4. **AF-54.1 — Mặt hàng Shopping List do Member tự nhập không có `ingredientId`:** Chỉ gộp các mặt hàng thủ công khi tên hiển thị giống nhau không phân biệt hoa thường và cùng đơn vị; khác đơn vị thì giữ riêng. Quy tắc này không áp dụng cho dòng nguyên liệu Recipe Post, vốn bắt buộc tham chiếu catalog theo FR-19/BR-12.
 5. **EF-54.1 — Định lượng không hợp lệ:** Dòng nguồn có số lượng không hợp lệ (`<= 0`) được bỏ qua và ghi nhận cảnh báo.
 6. **SF-54.1 — Đảm bảo chính xác định lượng:** Phép tính dùng kiểu số có độ chính xác phù hợp để tránh sai số quy đổi.
 

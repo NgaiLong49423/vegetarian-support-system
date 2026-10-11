@@ -3,6 +3,7 @@ package tech.mamxanh.common.exception;
 import java.net.URI;
 import java.util.List;
 
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -31,15 +33,31 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public record FieldErrorDetail(String field, String message) {
     }
 
+    @ExceptionHandler(ApiException.class)
+    ResponseEntity<Object> handleApiException(ApiException ex, WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getMessage());
+        problem.setTitle(ex.getStatus().getReasonPhrase());
+        problem.setInstance(URI.create(requestPath(request)));
+        problem.setProperty("code", ex.getCode());
+        return ResponseEntity.status(ex.getStatus()).body(problem);
+    }
+
     @ExceptionHandler(AppException.class)
     ResponseEntity<Object> handleAppException(AppException ex, WebRequest request) {
         ProblemDetail problem = problem(ex.errorCode(), ex.getMessage(), request);
+        ex.properties().forEach(problem::setProperty);
         HttpHeaders headers = new HttpHeaders();
         if (ex.retryAfter() != null) {
             long seconds = Math.max(1, (ex.retryAfter().toMillis() + 999) / 1000);
             headers.set(HttpHeaders.RETRY_AFTER, Long.toString(seconds));
         }
         return ResponseEntity.status(ex.errorCode().status()).headers(headers).body(problem);
+    }
+
+    /** Valid token, but {@code USER.account_status = LOCKED} (decision Q20, NFR-09). */
+    @ExceptionHandler(LockedException.class)
+    ResponseEntity<Object> handleLocked(LockedException ex, WebRequest request) {
+        return build(ErrorCode.ACCOUNT_LOCKED, request);
     }
 
     @ExceptionHandler(AuthenticationException.class)
@@ -68,6 +86,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 request);
         problem.setProperty("errors", errors);
         return ResponseEntity.status(ErrorCode.VALIDATION_FAILED.status()).headers(headers).body(problem);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex, WebRequest request) {
+        List<FieldErrorDetail> errors = ex.getConstraintViolations().stream()
+                .map(violation -> new FieldErrorDetail(violation.getPropertyPath().toString(), violation.getMessage()))
+                .toList();
+        ProblemDetail problem = problem(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultDetail(),
+                request);
+        problem.setProperty("errors", errors);
+        return ResponseEntity.status(ErrorCode.VALIDATION_FAILED.status()).body(problem);
     }
 
     /**

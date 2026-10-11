@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.11.0
+> **Version:** v3.13.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-03
+> **Last Updated:** 2026-10-05
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -141,7 +141,7 @@ merge theo gates hiện hành
 - Dockerfile tại `app/mamxanh-frontend/` và `app/mamxanh-backend/` vẫn thuộc từng component, định nghĩa cách build component đó; chúng không phải hai môi trường tích hợp độc lập và không thay thế Compose.
 - Không yêu cầu hoặc tạo hai CI gate build riêng cho FE và BE chỉ để lặp lại việc build đã được `Docker Development` thực hiện. Có thể chạy riêng một Dockerfile để debug component; kiểm tra riêng không thay thế Compose gate khi PR ảnh hưởng stack hoặc tích hợp.
 - Mọi thay đổi source FE/BE, Dockerfile, dependency/lockfile, cấu hình runtime được Compose sử dụng, database initialization hoặc `docker-compose.yml` phải được đánh giá theo toàn stack. Trước khi Ready for Review, chạy Compose local nếu Docker khả dụng; PR sau đó phải pass `Docker Development` trên commit mới nhất.
-- Compose publish các port development chỉ trên loopback `127.0.0.1`; SQL host port `1433` được giữ để hỗ trợ Backend chạy trực tiếp trên máy. `name: mamxanh-dev` là project mặc định. Nếu dùng `-p <project>` để cô lập worktree, dùng chính project name đó cho mọi lệnh lifecycle của stack: `config`, `up`, `ps`, `run`, `down` và volume reset. Tên project không tránh xung đột host ports khi chạy nhiều stack song song.
+- Compose publish các port development chỉ trên loopback `127.0.0.1`; SQL dùng host port `1434` để tránh xung đột với SQL Server trên máy ở port `1433`. Backend chạy trực tiếp trên máy muốn dùng SQL của Compose phải kết nối `localhost:1434`; Backend trong Compose vẫn kết nối `sqlserver:1433`. `name: mamxanh-dev` là project mặc định. Nếu dùng `-p <project>` để cô lập worktree, dùng chính project name đó cho mọi lệnh lifecycle của stack: `config`, `up`, `ps`, `run`, `down` và volume reset. Tên project không tránh xung đột host ports khi chạy nhiều stack song song.
 - Docker chỉ phục vụ development và verification. Không suy ra thay đổi deployment/production từ Docker Compose; production baseline vẫn là Vercel cho Frontend, Azure App Service cho Backend và Azure SQL theo tài liệu công nghệ hiện hành.
 
 **Thiết lập lần đầu (PowerShell tại repository root):**
@@ -154,7 +154,7 @@ if (-not (Test-Path app/mamxanh-backend/.env)) {
 }
 ```
 
-Mở `app/mamxanh-backend/.env`, thay `MSSQL_SA_PASSWORD` bằng mật khẩu local mạnh đáp ứng yêu cầu SQL Server. File `.env` bị ignore và không được commit/chia sẻ; `.env.example` chỉ là hợp đồng biến môi trường an toàn. Compose override connection URL/user/password của Backend để kết nối service `sqlserver`; SMTP để trống thì không gửi email thật. Không đưa secret vào command line, workflow YAML, PR log hay tài liệu.
+Mở `app/mamxanh-backend/.env`, thay `MSSQL_SA_PASSWORD` bằng mật khẩu local mạnh đáp ứng yêu cầu SQL Server và tạo `MAMXANH_JWT_SECRET` theo hướng dẫn trong `.env.example`; Backend cần secret JWT để khởi động. File `.env` bị ignore và không được commit/chia sẻ; `.env.example` chỉ là hợp đồng biến môi trường an toàn. Compose override connection URL/user/password của Backend để kết nối service `sqlserver`; SMTP để trống thì không gửi email thật. Không đưa secret vào command line, workflow YAML, PR log hay tài liệu.
 
 **Khởi động và xác minh:**
 
@@ -172,6 +172,8 @@ docker compose -p $composeProject --env-file app/mamxanh-backend/.env ps
 ```powershell
 docker compose -p $composeProject --env-file app/mamxanh-backend/.env down
 ```
+
+**IntelliJ từ repository root:** các cấu hình project trong `.run/` gồm `MamXanh Docker Compose` (chạy toàn bộ stack), `MamXanh Backend`, `MamXanh Frontend` và `MamXanh Full Stack` (BE/FE chạy trực tiếp trên máy). Với Compose, bật Docker Desktop Linux containers, tạo connection tên `Docker` trong Settings → Docker, rồi chọn `MamXanh Docker Compose` → Run; cấu hình dùng env file của Backend và build images trước khi chạy. Không chạy Full Stack cùng Compose vì dùng chung cổng FE/BE. Nút Stop trong Services của Docker plugin `262.10315.125` đã được quan sát không truyền env file (`BUG-011`); tạm dừng stack bằng `docker compose -p mamxanh-dev --env-file app/mamxanh-backend/.env stop` tại root. Lệnh này giữ container và volumes để chạy lại.
 
 Lệnh `down` giữ named volumes, bao gồm dữ liệu SQL local và Frontend dependencies. Sửa `MSSQL_SA_PASSWORD` trong `.env` không tự đổi password đã khởi tạo trong SQL Server volume; volume còn giữ database state/credential cũ. Nếu cần reset database development nhưng giữ dependency Frontend, dừng project rồi xóa riêng SQL volume, sau đó khởi động lại:
 
@@ -198,7 +200,7 @@ Mọi lệnh sau đó (`up`, `down`, `run`, reset volume) phải tiếp tục d�
 
 **PR và GitHub gate:**
 
-- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job setup Node.js `24.21.0` (exact pin, đáp ứng yêu cầu Node `>=24` của Scalar CLI `2.5.2`), dùng project `mamxanh-ci` thống nhất cho `up`/cleanup, build Compose, đợi health checks, capture `/v3/api-docs`, validate bằng Scalar CLI `2.5.2`, upload OpenAPI artifact riêng theo PR/run, rồi smoke-test route `/scalar`; CI dùng password tạm, dọn volume trên runner disposable sau job. HTTP `curl /scalar` chỉ chứng minh route/HTML shell trả về, không chứng minh Scalar JavaScript đã render contract hoặc request API chạy được.
+- Workflow `.github/workflows/ci.yml` chạy `Docker Development` trên PR hướng vào `develop`/`main` và push vào hai branch đó. Job setup Node.js `24.21.0` (exact pin, đáp ứng yêu cầu Node `>=24` của Scalar CLI `2.5.2`), dùng project `mamxanh-ci` thống nhất cho `up`/cleanup, build Compose, đợi health checks, capture `/v3/api-docs`, validate bằng Scalar CLI `2.5.2`, upload OpenAPI artifact riêng theo PR/run, smoke-test route `/scalar`, rồi chạy Playwright qua Frontend thật tới Backend và xác minh trạng thái throttle trực tiếp trong SQL Server. CI tạo secret JWT/SQL tạm và dọn volume trên runner disposable sau job. HTTP `curl /scalar` chỉ chứng minh route/HTML shell trả về, không chứng minh Scalar JavaScript đã render contract hoặc request API chạy được.
 - Scalar tại `http://localhost:8080/scalar` là giao diện chính thức để team đọc và manual-test API. Browser acceptance phải xác nhận JavaScript tải/render generated `/v3/api-docs`, kiểm tra operation và gửi request phù hợp trong giao diện; đây là bằng chứng riêng với CI route smoke và không thay automated regression/authorization tests.
 - Ruleset `protect-develop` yêu cầu status context `Docker Development` và strict up-to-date. PR vào `develop` phải sync baseline theo phần trên; sau lần sync cuối có ảnh hưởng, chạy lại kiểm tra liên quan và đợi CI trên commit cập nhật.
 - Nếu Docker không chạy được local, ghi rõ nguyên nhân và kết quả nào chưa xác minh trong PR; không ghi “Docker test passed”. Required CI check vẫn phải pass trước khi merge. Việc Docker daemon của máy cá nhân unavailable không tự cho phép bỏ qua gate.
@@ -207,7 +209,7 @@ Mọi lệnh sau đó (`up`, `down`, `run`, reset volume) phải tiếp tục d�
 <a id="develop-required-checks"></a>
 #### Required checks và technical enforcement cho `develop`
 
-Project Owner chốt hard gates: Frontend Playwright/Istanbul/NYC đạt **≥60% cho cả Lines, Statements, Functions và Branches**; Backend JaCoCo đạt **overall BUNDLE LINE ≥80%**. Command/check fail không được coi là pass. Xem [Test Strategy](docs/testing/TEST-STRATEGY.md#8-cách-hiểu-coverage) và app README cho lệnh, metric và report paths.
+Project Owner chốt hard gates: Frontend Playwright/Istanbul/NYC phải đạt **>80% cho Lines, Statements, Functions và Branches**; Backend JaCoCo phải đạt **>80% cho BUNDLE Lines, Branches, Methods và Instructions**. Đúng 80% vẫn fail; gate dùng số đếm covered/total thay vì tỷ lệ đã làm tròn. JaCoCo không đo Statements. Command/check fail không được coi là pass. Summary và report artifacts được thu thập dù coverage gate fail khi report đã được sinh. Xem [Test Strategy](docs/testing/TEST-STRATEGY.md#8-cách-hiểu-coverage) và app README cho lệnh, metric và report paths.
 
 | Required check context | Phạm vi |
 |---|---|

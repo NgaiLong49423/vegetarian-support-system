@@ -3,9 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Calendar, Check, CreditCard, Loader2, Sparkles } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card } from '../components/ui';
-import { useDemoAccount } from '../components/DemoAccount';
-import { demoAiPlan } from '../data/mockData';
-import { hasAccessToken } from '../lib/apiClient';
+import { useAuth } from '../components/AuthContext';
 import {
   subscriptionApi,
   type MySubscriptionResponse,
@@ -50,8 +48,7 @@ const DEFAULT_PLANS: PlanResponse[] = [
 
 export function AiPlans() {
   const navigate = useNavigate();
-  const { active: isDemoActive } = useDemoAccount();
-  const isLoggedIn = hasAccessToken();
+  const { isAuthenticated: isLoggedIn } = useAuth();
 
   const [plans, setPlans] = useState<PlanResponse[]>(DEFAULT_PLANS);
   const [subscription, setSubscription] = useState<MySubscriptionResponse | null>(null);
@@ -72,7 +69,7 @@ export function AiPlans() {
         // Fall back to DEFAULT_PLANS if API is unreachable
       }
 
-      if (isLoggedIn && !isDemoActive) {
+      if (isLoggedIn) {
         try {
           const sub = await subscriptionApi.getMySubscription();
           if (active) {
@@ -93,7 +90,7 @@ export function AiPlans() {
     return () => {
       active = false;
     };
-  }, [isLoggedIn, isDemoActive]);
+  }, [isLoggedIn]);
 
   const currentTier: SubscriptionTier =
     isLoggedIn && subscription?.status === 'ACTIVE' ? subscription.tier : 'FREE';
@@ -142,9 +139,9 @@ export function AiPlans() {
       <div className="mb-8 text-center">
         <Sparkles className="mx-auto mb-3 h-8 w-8 text-brand-600" />
         <h1 className="text-3xl font-extrabold text-ink">Nâng cấp gói AI</h1>
-        {!isLoggedIn || isDemoActive ? (
+        {!isLoggedIn ? (
           <p className="mt-2 text-sm font-semibold text-brand-700">
-            Gói hiện tại: {demoAiPlan} (demo)
+            Đăng nhập để xem gói hiện tại của bạn
           </p>
         ) : (
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm">
@@ -220,15 +217,15 @@ export function AiPlans() {
                 </ul>
 
                 <div className="pt-2">
-                  {!isLoggedIn || isDemoActive ? (
-                    plan.name === demoAiPlan ? (
+                  {!isLoggedIn ? (
+                    plan.tier === 'FREE' ? (
                       <p className="rounded-xl bg-brand-50 px-4 py-3 text-center text-sm font-semibold text-brand-700">
-                        Gói hiện tại (demo)
+                        Gói cơ bản miễn phí
                       </p>
                     ) : (
                       <button
                         disabled
-                        title="Chưa kết nối cổng thanh toán"
+                        title="Đăng nhập để nâng cấp gói"
                         className="w-full cursor-not-allowed rounded-xl bg-brand-200 px-4 py-3 text-sm font-semibold text-ink-muted"
                       >
                         Thanh toán chưa khả dụng

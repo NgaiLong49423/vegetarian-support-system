@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import { CreditCard, Loader2, AlertCircle, ArrowLeft, RefreshCw, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card, EmptyState } from '../components/ui';
-import { useDemoAccount } from '../components/DemoAccount';
+import { useAuth } from '../components/AuthContext';
 import { subscriptionApi, type TransactionHistoryResponse, type PaymentStatus } from '../api/subscription';
-import { hasAccessToken } from '../lib/apiClient';
 import { formatDateTime, formatVnd } from '../utils/date';
 
 function renderStatusBadge(status: PaymentStatus) {
@@ -40,8 +39,7 @@ function renderStatusBadge(status: PaymentStatus) {
 }
 
 export function TransactionHistory() {
-  const { active: isDemoActive } = useDemoAccount();
-  const isLoggedIn = hasAccessToken();
+  const { isAuthenticated: isLoggedIn } = useAuth();
   const [transactions, setTransactions] = useState<TransactionHistoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -98,7 +96,7 @@ export function TransactionHistory() {
         </div>
       </div>
 
-      {!isLoggedIn || isDemoActive ? (
+      {!isLoggedIn ? (
         <Card className="mt-8 p-10 text-center">
           <CreditCard className="mx-auto h-10 w-10 text-brand-500" />
           <h2 className="mt-4 text-lg font-bold text-ink">Chưa có dữ liệu giao dịch</h2>
