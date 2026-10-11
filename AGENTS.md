@@ -1,8 +1,8 @@
 > **Document:** Agent Instructions
 > **File:** `AGENTS.md`
-> **Version:** v3.21.0
+> **Version:** v3.22.0
 > **Created:** 2026-06-29
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-10
 > **Status:** Active
 
 # Agent Entry Point
@@ -166,6 +166,15 @@ This policy does not authorize an unrelated runtime-configuration refactor, appl
 - `.env` MUST NOT be committed. `.env.example` MAY be committed only with variable names and safe empty placeholders.
 - Agents MUST NOT create persistent Windows User/System environment variables for project secrets unless the user explicitly requests it.
 - When the project needs Codex MCP credentials, contributors should start Codex with `./scripts/codex.ps1` so credentials are limited to that process and its child processes.
+
+#### Google Stitch MCP
+
+- The project-local Stitch server is configured as `mcp_servers.stitch` in `.codex/config.toml`; its endpoint and header name are owned by that file. `env_http_headers` maps an HTTP header to the **name** of an environment variable, not to the secret value.
+- The Stitch credential name is `STITCH_API_KEY`. Its local value belongs only in the ignored repository-root `.env`; `.env.example` keeps an empty safe placeholder. Never print, paste, include in a command argument, log, screenshot, or report the key or the full contents of `.env`.
+- `scripts/codex.ps1` reads `.env`, sets the values for the launched Codex process and its children, and starts Codex from the repository root. Do not assume a running desktop Codex process, shell, or separately installed MCP connector inherits this `.env` value. Project MCP configuration is loaded only for a trusted project and a new/restarted Codex process that loads this configuration.
+- Before calling Stitch, identify which tool connection is being used. For the repository-local `stitch` MCP, check only whether `.env` exists and whether `STITCH_API_KEY` is present/non-empty, inspect `.codex/config.toml` without exposing credentials, and confirm the project is trusted and Codex was started through `scripts/codex.ps1`. If the variable was added after startup, restart through the launcher before retrying.
+- If a platform-provided Stitch connector reports `Authentication required`, treat that connector's account authentication as separate from `.env` and `.codex/config.toml`; do not claim the project key was used or keep retrying with that connector. Report the distinction and use the repository-local MCP only when it is actually available in the current session.
+- Use read-only Stitch calls to confirm connectivity when the task is only a connection check. A successful project listing confirms access only; it does not authorize design creation or edits.
 
 ## Context and authority boundaries
 

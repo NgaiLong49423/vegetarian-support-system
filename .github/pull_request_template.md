@@ -1,8 +1,8 @@
 > **Document:** Pull Request Template  
 > **File:** `.github/pull_request_template.md`  
-> **Version:** v2.5.0
+> **Version:** v2.6.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-03
+> **Last Updated:** 2026-10-11
 > **Status:** Template  
 
 # Pull Request
@@ -14,15 +14,15 @@ Quy tắc áp dụng: [CONTRIBUTING.md](../CONTRIBUTING.md#workflow-làm-việc-
 ## Tóm tắt và phạm vi
 
 - Thay đổi và lý do:
-- FR/Issue liên quan: `Refs #<issue-number>` (bắt buộc cho implementation work item)
-- Reason / Tech Lead authorization nếu dùng ngoại lệ `Refs: N/A`:
+- FR/Issue liên quan: `Refs #<issue-number>` nếu PR triển khai Issue; nếu không, ghi `Refs: N/A`
+- Reason nếu dùng `Refs: N/A` (nêu rõ không có Issue chịu trách nhiệm và scope):
 - Dependency/blocker hoặc phần chưa kiểm tra:
 
-Dùng `Refs` cho cả hai nhánh; đóng Issue sau nghiệm thu local trên `main`, không dùng closing keywords để đóng ngay khi merge.
+Dùng `Refs` cho cả hai nhánh nếu PR triển khai Issue; công việc độc lập không thuộc Issue nào dùng `Refs: N/A` kèm lý do. Đóng Issue sau nghiệm thu local trên `main`, không dùng closing keywords để đóng ngay khi merge.
 
-Tuân thủ [1 implementation Issue = 1 implementation PR](../CONTRIBUTING.md#implementation-issue-pr). Feature/FR, bug fix/refactor có work item, business behavior và implementation task khác phải có Issue. `Refs: N/A` chỉ dành cho repository setup/internal agent tooling/governance-configuration chore được Tech Lead cho phép; ghi `Reason` và căn cứ authorization. Đây không phải tùy chọn chung.
+Tuân thủ [1 implementation Issue = 1 implementation PR](../CONTRIBUTING.md#implementation-issue-pr). Khi nhánh thực hiện một Issue đã được giao, PR phải liên kết Issue đó. Với công việc độc lập không được giao dưới Issue (ví dụ setup hoặc UI/design polish), ghi `Refs: N/A` và giải thích scope; không tạo Issue chỉ để đáp ứng mẫu PR. Không dùng `N/A` để né hoặc chia nhỏ một Issue hiện có.
 
-Ví dụ hợp lệ: `Refs: N/A` cùng `Reason: Repository internal agent tooling setup approved by Tech Lead.` Ví dụ không hợp lệ: “Implement Meal Planner — Refs: N/A”; feature này phải có Issue.
+Ví dụ: `Refs: N/A` cùng `Reason: Standalone Frontend design refinement; no GitHub Issue is assigned to this work.`
 
 ## Bằng chứng kiểm tra
 
@@ -37,7 +37,7 @@ Thêm screenshot/video khi có thay đổi UI. Không ghi test pass nếu chưa 
 
 ## Checklist chung
 
-- [ ] Thay đổi truy về đúng FR/Issue và scope đã thống nhất; nếu là ngoại lệ repository-level chore, đã ghi Reason và Tech Lead authorization
+- [ ] Nếu triển khai Issue, PR liên kết đúng Issue và scope đã thống nhất; nếu không thuộc Issue nào, đã ghi `Refs: N/A` cùng lý do
 - [ ] Đã ghi kết quả tự kiểm tra và phần còn chưa kiểm tra
 - [ ] Không có secret, `.env`, credential, file build/cá nhân
 - [ ] Tài liệu/contract/migration liên quan được cập nhật khi áp dụng

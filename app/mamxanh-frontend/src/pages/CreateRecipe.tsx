@@ -58,7 +58,7 @@ function RecipeCreationAccessGate({ role }: { role: UserRole }) {
             : 'Vai trò hiện tại không có quyền đăng công thức.'}
         </p>
         {isCustomer && (
-          <Link to="/dang-ky-chuyen-gia" className="mt-5 inline-flex rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-700">
+          <Link to="/dang-ky-chuyen-gia" className="mt-5 inline-flex rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-on-brand hover:bg-brand-700">
             Đăng ký trở thành Chuyên gia
           </Link>
         )}
@@ -440,7 +440,7 @@ function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, ro
     <div className="relative">
       <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`ingredient-${rowNumber}`}>Nguyên liệu *</label>
       <input id={`ingredient-${rowNumber}`} value={value} onFocus={() => setOpen(true)} onChange={(event) => onTextChange(event.target.value)} onBlur={() => window.setTimeout(() => setOpen(false), 120)} placeholder="Tìm nguyên liệu có sẵn" autoComplete="off" className={inputClass} aria-label={`Chọn nguyên liệu ${rowNumber}`} aria-expanded={open} />
-      {open && <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-brand-200 bg-white p-1 shadow-lg">
+      {open && <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-brand-200 bg-paper p-1 shadow-lg">
         {searchError && <p className="px-3 py-2 text-xs text-red-700">{searchError}</p>}
         {!searchError && suggestions.length === 0 && <p className="px-3 py-2 text-xs text-ink-muted">Nguyên liệu này hiện chưa được hỗ trợ.</p>}
         {suggestions.map((item) => <button key={item.ingredientId} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(item); setOpen(false); }} className={`block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-brand-50 ${selectedId === item.ingredientId ? 'bg-brand-50 font-semibold' : ''}`}>{item.name}</button>)}
@@ -469,10 +469,10 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 }
 
 function SectionHead({ number, title }: { number: string; title: string }) {
-  return <div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">{number}</span><h2 className="text-lg font-extrabold text-ink">{title}</h2></div>;
+  return <div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on-brand">{number}</span><h2 className="text-lg font-extrabold text-ink">{title}</h2></div>;
 }
 
-const inputClass = 'w-full rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
+const inputClass = 'w-full rounded-xl border border-brand-200 bg-paper px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 const errorClass = 'mt-1 text-xs font-medium text-red-700';
 
 function quantityError(rawQuantity: string): string | null {
