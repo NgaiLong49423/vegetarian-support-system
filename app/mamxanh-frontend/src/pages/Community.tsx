@@ -55,7 +55,7 @@ export function Community() {
             <div className="space-y-4">
               {trending.map((p, i) => (
                 <Link key={p.id} to={`/bai-viet/${p.slug}`} className="group flex gap-3">
-                  <span className="text-2xl font-extrabold text-brand-200">{i + 1}</span>
+                  <span className="text-2xl font-extrabold text-brand-700">{i + 1}</span>
                   <div>
                     <p className="line-clamp-2 text-sm font-semibold text-ink group-hover:text-brand-700">{p.title}</p>
                     <p className="mt-1 flex items-center gap-1 text-xs text-ink-muted">

@@ -26,6 +26,7 @@ import { EditRecipe } from './pages/EditRecipe';
 import { ApiRecipeDetail } from './pages/ApiRecipeDetail';
 import { ExpertRecipeProfile } from './pages/ExpertRecipeProfile';
 import { ClickSpark } from './components/ClickSpark';
+import { ThemeProvider } from './components/ThemeContext';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -37,7 +38,7 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <BrowserRouter><AuthProvider><SavedRecipesProvider>
+    <ThemeProvider><BrowserRouter><AuthProvider><SavedRecipesProvider>
       <ScrollToTop />
       <ClickSpark sparkColor="#ea580c" sparkSize={11} sparkRadius={20} sparkCount={8} duration={420}>
         <Layout>
@@ -73,6 +74,6 @@ export default function App() {
         </Routes>
         </Layout>
       </ClickSpark>
-    </SavedRecipesProvider></AuthProvider></BrowserRouter>
+    </SavedRecipesProvider></AuthProvider></BrowserRouter></ThemeProvider>
   );
 }

@@ -1,6 +1,6 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.20.0
+> **Version:** v1.21.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-10-11
 > **Status:** Active  
@@ -15,9 +15,9 @@ Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy v
 
 Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-frontend.vercel.app/) vẫn là bản UI cũ dùng dữ liệu mẫu và chưa có đăng nhập/phân quyền thật. Bản chạy local dưới đây dùng Backend và SQL Server thật cho các luồng đã tích hợp; thay đổi hiện tại chưa được deploy lên Vercel.
 
-### Giao diện nền tối và các luồng đã kết nối
+### Giao diện sáng/tối và các luồng đã kết nối
 
-- Bố cục nền tối tham khảo các ảnh Samsung Food qua Google Stitch, sau đó chuyển thủ công sang component React của Mâm Xanh: header gọn, tab gạch chân, thẻ ảnh dọc, Home ba cột, lịch tháng chọn tuần và danh sách đi chợ dạng checklist. Giữ logo, route, quyền và API của dự án; không nhập dữ liệu tài khoản hoặc công thức mẫu từ code Stitch.
+- Bố cục nền tối mặc định tham khảo các ảnh Samsung Food qua Google Stitch, sau đó chuyển thủ công sang component React của Mâm Xanh: header gọn, tab gạch chân, thẻ ảnh dọc, Home ba cột, lịch tháng chọn tuần và danh sách đi chợ dạng checklist. Mục Cài đặt giao diện trong menu cho phép đổi sang nền sáng hoặc tối; lựa chọn được lưu trên trình duyệt. Cả hai chủ đề dùng chung token màu để áp dụng nhất quán trên các trang và thành phần native. Giữ logo, route, quyền và API của dự án; không nhập dữ liệu tài khoản hoặc công thức mẫu từ code Stitch.
 - Home tải hai nhóm `NEWEST` và `MOST_LIKED` từ `GET /recipes`; loại ăn chay lấy từ `form-options`. Liên kết từ Home mở Explore với query tương ứng. Explore giữ lọc AND, tìm kiếm, sáu chế độ sắp xếp và phân trang từ API, có bộ lọc thu gọn trên điện thoại.
 - Nút lưu trên thẻ công thức công khai và trang chi tiết gọi `PUT /saved-recipes/{recipeId}`; bỏ lưu gọi `DELETE` cùng đường dẫn. Guest được mời đăng nhập, Administrator không truy vấn danh sách riêng của Member. Trạng thái nút chỉ đổi sau khi Backend xác nhận; lỗi có thể thử lại.
 - `/ho-so` hiển thị tài khoản đang đăng nhập và danh sách `GET /saved-recipes` riêng, tìm kiếm và phân trang qua Backend. Response dùng `content` theo generated OpenAPI. Recipe không khả dụng vẫn có mục bỏ lưu an toàn, không lộ nội dung hoặc liên kết chi tiết. Cache dùng ID tham chiếu và được xóa khi đổi tài khoản; không dùng danh sách yêu thích hard-code hoặc localStorage làm nguồn dữ liệu.
