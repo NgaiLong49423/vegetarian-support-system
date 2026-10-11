@@ -94,10 +94,6 @@ export interface RecipeMedia {
 }
 
 export interface RecipePost {
-  likes: number;
-  dislikes: number;
-  likePercentage: number | null;
-  viewCount: number;
   id: number;
   authorId: number;
   authorName: string;
