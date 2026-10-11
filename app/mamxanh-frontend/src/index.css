@@ -51,6 +51,43 @@ html {
   color-scheme: dark;
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --color-cream: #f7f5f0;
+  --color-cream-soft: #fffefa;
+  --color-paper: #ffffff;
+  --color-raised: #f0eee8;
+  --color-ink: #242720;
+  --color-ink-soft: #454a40;
+  --color-ink-muted: #73786f;
+  --color-on-brand: #ffffff;
+
+  --color-brand-50: #fff3e8;
+  --color-brand-100: #ffe4ce;
+  --color-brand-200: #ffd0a6;
+  --color-brand-300: #c94f0a;
+  --color-brand-400: #bd4608;
+  --color-brand-500: #b84808;
+  --color-brand-600: #aa4008;
+  --color-brand-700: #963808;
+  --color-brand-800: #732d0b;
+  --color-brand-900: #57230a;
+
+  --color-leaf-50: #e9f7ed;
+  --color-leaf-100: #d5f0dd;
+  --color-leaf-300: #8fcea0;
+  --color-leaf-400: #5eb677;
+  --color-leaf-500: #32924f;
+  --color-leaf-600: #267b40;
+  --color-leaf-700: #206537;
+  --color-leaf-800: #1b512d;
+}
+
 body {
   font-family: var(--font-sans);
   background: var(--color-cream);
@@ -70,7 +107,7 @@ button:focus-visible, a:focus-visible {
 button:not(:disabled), a { cursor: pointer; }
 
 .food-app select, .food-app input, .food-app textarea {
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 
 .food-app select option {

@@ -25,6 +25,7 @@ import { RecipeComparePage } from './pages/RecipeCompare';
 import { EditRecipe } from './pages/EditRecipe';
 import { ApiRecipeDetail } from './pages/ApiRecipeDetail';
 import { ExpertRecipeProfile } from './pages/ExpertRecipeProfile';
+import { ThemeProvider } from './components/ThemeContext';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -36,7 +37,7 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <BrowserRouter><AuthProvider><SavedRecipesProvider>
+    <ThemeProvider><BrowserRouter><AuthProvider><SavedRecipesProvider>
       <ScrollToTop />
       <Layout>
         <Routes>
@@ -70,6 +71,6 @@ export default function App() {
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>
-    </SavedRecipesProvider></AuthProvider></BrowserRouter>
+    </SavedRecipesProvider></AuthProvider></BrowserRouter></ThemeProvider>
   );
 }

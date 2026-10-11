@@ -14,11 +14,14 @@ import {
   ShoppingBasket,
   SlidersHorizontal,
   Sparkles,
+  Sun,
+  Moon,
   Users,
   X,
 } from "lucide-react"
 import { useAuth } from "./AuthContext"
 import { Logo } from "./Logo"
+import { useTheme } from "./ThemeContext"
 
 const navigation = [
   { to: "/", label: "Trang chủ", icon: LayoutGrid },
@@ -31,6 +34,7 @@ const navigation = [
 
 export function AppHeader() {
   const { account, isAuthenticated, signOut } = useAuth()
+  const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -364,6 +368,46 @@ export function AppHeader() {
                 {item.label}
               </Link>
             ))}
+            <section
+              aria-label="Cài đặt giao diện"
+              className="mx-2 my-3 rounded-xl border border-brand-100 bg-cream p-3"
+            >
+              <h2 className="mb-2 px-1 text-xs font-semibold text-ink-muted">
+                Cài đặt giao diện
+              </h2>
+              <div
+                role="group"
+                aria-label="Chủ đề màu"
+                className="grid grid-cols-2 gap-2"
+              >
+                <button
+                  type="button"
+                  aria-pressed={theme === "light"}
+                  onClick={() => setTheme("light")}
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                    theme === "light"
+                      ? "border-brand-600 bg-brand-600 text-on-brand"
+                      : "border-brand-100 text-ink-soft hover:bg-paper"
+                  }`}
+                >
+                  <Sun className="h-4 w-4" aria-hidden="true" />
+                  Sáng
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={theme === "dark"}
+                  onClick={() => setTheme("dark")}
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                    theme === "dark"
+                      ? "border-brand-600 bg-brand-600 text-on-brand"
+                      : "border-brand-100 text-ink-soft hover:bg-paper"
+                  }`}
+                >
+                  <Moon className="h-4 w-4" aria-hidden="true" />
+                  Tối
+                </button>
+              </div>
+            </section>
           </nav>
           <div className="border-t border-brand-100 p-4">
             {isAuthenticated ? (
