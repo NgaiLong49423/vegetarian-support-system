@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-10
-next_id: 17
+last_updated: 2026-10-11
+next_id: 18
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-017
+    title: Lịch ăn dùng thông báo bài bị tác giả xóa thay cho trạng thái không khả dụng
+    status: RECORDED
+    severity: Low
+    area: Frontend/Lịch ăn
+    file: .agents/outputs/bugs/BUG-017.md
+    created: 2026-10-11
+    updated: 2026-10-11
+    related_issue: 26
   - id: BUG-016
     title: API hồ sơ dinh dưỡng trả 500 thay cho lỗi nghiệp vụ 400/403
     status: RECORDED

@@ -259,7 +259,7 @@ test('mock-authenticated nutrition profile saves consent and shows approximate r
   await page.goto('/ho-so/dinh-duong');
   await fillEligibleNutritionProfile(page);
   await page.getByRole('button', { name: 'Lưu hồ sơ' }).click();
-  await expect(page.getByText('Đã lưu', { exact: true })).toBeVisible();
+  await expect(page.getByRole('main').getByText('Đã lưu', { exact: true })).toBeVisible();
   expect(requestHeaders).toContain('Bearer test-only-token');
   expect(JSON.parse(savedBodies[0])).toMatchObject({
     ...exampleProfile,
@@ -504,9 +504,10 @@ test('recipe creation route uses authenticated account role (FR-05)', async ({ p
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toHaveCount(0);
 });
 
-test('profile labels locally saved recipe prototype as not connected to Backend', async ({ page }) => {
+test('Guest profile invites sign-in instead of displaying fake saved recipes', async ({ page }) => {
   await page.goto('/ho-so');
-  await expect(page.getByText(/API lưu công thức chưa được kết nối/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Góc bếp riêng của bạn' })).toBeVisible();
+  await expect(page.getByRole('article')).toHaveCount(0);
 });
 
 test('recipe image upload and gallery management complies with FR-14 rules', async ({ page }) => {

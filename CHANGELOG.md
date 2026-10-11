@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.59.0
+> **Version:** v2.61.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-11
 > **Status:** Active
@@ -8,6 +8,46 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Show Onboarding Questions One at a Time
+
+**Status:** Working tree — not committed.
+
+**Scope:** Present the existing dietary-preference questionnaire as six sequential questions without changing Backend validation or persistence rules.
+
+### Added
+
+- Add question progress, Back/Continue navigation, retained draft answers and field-error navigation to the affected question.
+
+### Changed
+
+- Show one Onboarding question at a time, save only after final completion, and allow skipping the entire questionnaire from every step without sending a partial preference profile.
+- Keep the full Settings form and explicit allergy/dislike confirmations, and document the new UI flow.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Add Dark Food Workspace and Saved Recipe Integration
+
+**Status:** Working tree — not committed.
+
+**Scope:** Adapt the Google Stitch layout to existing Mâm Xanh routes using a dark theme and connect saved recipes to the implemented Backend contract.
+
+### Added
+
+- Add public recipe save/unsave controls and a private, searchable, paginated saved-recipe page using the existing API, with Guest sign-in prompts and safe unavailable entries.
+- Add a month calendar and week navigation to the existing read-only Meal Plan API.
+
+### Changed
+
+- Replace the oversized navigation and warm Explore layout with a compact dark header, photo cards, responsive filter rail, three-column Home, profile tabs and shopping checklist.
+- Load Home collections and filter shortcuts from Backend data, preserve existing role controls, and label prototype screens explicitly.
+- Synchronize the Frontend guide and browser regression checks with the implemented UI and API behavior.
+
+### Fixed
+
+- Use the neutral unavailable-recipe message required by AC-20.3 instead of asserting an author deletion in Meal Plan slots.
 
 ## 2026-10-11 — Complete API-Driven Recipe Detail and Stitch MCP Guidance
 

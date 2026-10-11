@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { AuthPage } from './pages/Auth';
 import { AuthProvider } from './components/AuthContext';
+import { SavedRecipesProvider } from './components/SavedRecipesContext';
 import { Home } from './pages/Home';
 import { Explore } from './pages/Explore';
 import { RecipeDetail } from './pages/RecipeDetail';
@@ -35,7 +36,7 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <BrowserRouter><AuthProvider>
+    <BrowserRouter><AuthProvider><SavedRecipesProvider>
       <ScrollToTop />
       <Layout>
         <Routes>
@@ -69,6 +70,6 @@ export default function App() {
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>
-    </AuthProvider></BrowserRouter>
+    </SavedRecipesProvider></AuthProvider></BrowserRouter>
   );
 }

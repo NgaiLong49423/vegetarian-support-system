@@ -42,6 +42,9 @@ const detail = {
   publishedAt: '2026-10-01T08:00:00',
   nutritionComplete: true,
   ingredientsWithoutNutrition: [],
+  author: { userId: 22, displayName: 'Bếp Chay Lan', avatarUrl: null },
+  nutrition: { complete: true, ingredientsMissingData: [], total: {}, perServing: {} },
+  statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
   ingredients: [{ ingredientId: 1, name: 'Nấm rơm tươi', quantity: 100, unitId: 1, unitCode: 'g', unitName: 'gram' }],
   media: [{ blobUrl: 'https://example.test/901.jpg', mimeType: 'image/jpeg', displayOrder: 0, cover: true }],
 };
@@ -78,7 +81,7 @@ test.describe('Issue #3 [FR-01] — Guest xem và tìm kiếm nội dung công k
     });
 
     await page.goto('/kham-pha');
-    const searchInput = page.getByPlaceholder(/Tìm món chay/);
+    const searchInput = page.getByRole('textbox', { name: 'Từ khóa' });
     await searchInput.fill('canh chua');
     await expect(page.getByText('Canh chua chay nấm đậu bắp thanh nhiệt')).toBeVisible();
     await expect(page.getByText('Đậu hũ non sốt nấm đông cô tiêu xanh')).toHaveCount(0);

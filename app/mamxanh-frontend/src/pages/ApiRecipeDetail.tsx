@@ -21,6 +21,7 @@ import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card } from '../components/ui';
 import { asApiError } from '../lib/apiClient';
 import { recipesApi, type RecipeDetail } from '../api/recipes';
+import { SaveRecipeButton } from '../components/SaveRecipeButton';
 
 const NUTRIENTS = [
   { key: 'ENERGY_KCAL', label: 'Năng lượng', unit: 'kcal' },
@@ -155,10 +156,11 @@ export function ApiRecipeDetail() {
     <div className="recipe-detail-no-print mb-5 flex flex-wrap items-center justify-between gap-3">
       <Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-900"><ArrowLeft className="h-4 w-4" />Khám phá</Link>
       <div className="flex flex-wrap items-center gap-2">
+        <SaveRecipeButton recipeId={recipe.recipeId} />
         <Button variant="outline" size="sm" onClick={shareRecipe}><Share2 className="h-4 w-4" />Chia sẻ</Button>
         <div className="relative">
           <Button variant="primary" size="sm" aria-expanded={exportOpen} onClick={() => setExportOpen((open) => !open)}><Download className="h-4 w-4" />Xuất công thức<ChevronDown className="h-4 w-4" /></Button>
-          {exportOpen && <div className="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-brand-100 bg-white p-1.5 shadow-lg">
+          {exportOpen && <div className="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-brand-100 bg-paper p-1.5 shadow-lg">
             <button type="button" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-brand-50" onClick={() => { downloadText(recipe); setExportOpen(false); }}><Download className="h-4 w-4 text-brand-600" />Tải tệp TXT</button>
             <button type="button" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-brand-50" onClick={() => { setExportOpen(false); printRecipe(); }}><Printer className="h-4 w-4 text-brand-600" />In / lưu PDF A4</button>
           </div>}
@@ -223,9 +225,9 @@ export function ApiRecipeDetail() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Chuẩn bị vào bếp</p><h2 className="mt-1 text-xl font-extrabold text-ink">Nguyên liệu</h2></div>
             <div className="recipe-detail-no-print flex items-center gap-2 rounded-xl bg-brand-50 p-1">
-              <button type="button" aria-label="Giảm khẩu phần" disabled={servings <= 1} onClick={() => setServings((value) => Math.max(1, value - 1))} className="rounded-lg p-2 text-brand-700 hover:bg-white disabled:opacity-40"><Minus className="h-4 w-4" /></button>
+              <button type="button" aria-label="Giảm khẩu phần" disabled={servings <= 1} onClick={() => setServings((value) => Math.max(1, value - 1))} className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"><Minus className="h-4 w-4" /></button>
               <span className="min-w-20 text-center text-sm font-bold text-ink">{servings} phần</span>
-              <button type="button" aria-label="Tăng khẩu phần" disabled={servings >= 50} onClick={() => setServings((value) => Math.min(50, value + 1))} className="rounded-lg p-2 text-brand-700 hover:bg-white disabled:opacity-40"><Plus className="h-4 w-4" /></button>
+              <button type="button" aria-label="Tăng khẩu phần" disabled={servings >= 50} onClick={() => setServings((value) => Math.min(50, value + 1))} className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"><Plus className="h-4 w-4" /></button>
             </div>
           </div>
           <p className="mt-2 text-sm text-ink-muted">Định lượng được tính theo {servings} phần ăn.</p>
@@ -234,7 +236,7 @@ export function ApiRecipeDetail() {
               const isChecked = checkedIngredients.includes(index);
               const scaled = recipe.servings > 0 ? item.quantity * servings / recipe.servings : item.quantity;
               return <li key={`${item.ingredientId ?? item.name}-${index}`} className="flex items-center gap-3 py-3">
-                <button type="button" aria-label={`${isChecked ? 'Bỏ chọn' : 'Đánh dấu'} ${item.name}`} aria-pressed={isChecked} onClick={() => setCheckedIngredients((current) => isChecked ? current.filter((checked) => checked !== index) : [...current, index])} className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${isChecked ? 'border-leaf-600 bg-leaf-600 text-white' : 'border-brand-300 bg-white'}`}>{isChecked && <Check className="h-3.5 w-3.5" />}</button>
+                <button type="button" aria-label={`${isChecked ? 'Bỏ chọn' : 'Đánh dấu'} ${item.name}`} aria-pressed={isChecked} onClick={() => setCheckedIngredients((current) => isChecked ? current.filter((checked) => checked !== index) : [...current, index])} className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${isChecked ? 'border-leaf-600 bg-leaf-600 text-white' : 'border-brand-300 bg-paper'}`}>{isChecked && <Check className="h-3.5 w-3.5" />}</button>
                 <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-ink-muted line-through' : 'text-ink-soft'}`}>{item.name}</span>
                 <strong className="shrink-0 text-right text-sm text-ink">{formatNumber(scaled)} {item.unitName}</strong>
               </li>;
@@ -251,7 +253,7 @@ export function ApiRecipeDetail() {
 
         {recipe.youtubeUrl && <Card className="overflow-hidden">
           <div className="flex items-center gap-2 px-5 pt-5 sm:px-7"><Video className="h-5 w-5 text-brand-600" /><h2 className="text-lg font-extrabold text-ink">Video hướng dẫn</h2></div>
-          {youtubeEmbedUrl ? <div className="mt-4 aspect-video bg-ink"><iframe src={youtubeEmbedUrl} title={`Video hướng dẫn ${recipe.title}`} className="h-full w-full" loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : <a href={recipe.youtubeUrl} target="_blank" rel="noreferrer" className="m-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700">Mở video trên YouTube<Share2 className="h-4 w-4" /></a>}
+          {youtubeEmbedUrl ? <div className="mt-4 aspect-video bg-raised"><iframe src={youtubeEmbedUrl} title={`Video hướng dẫn ${recipe.title}`} className="h-full w-full" loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : <a href={recipe.youtubeUrl} target="_blank" rel="noreferrer" className="m-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700">Mở video trên YouTube<Share2 className="h-4 w-4" /></a>}
         </Card>}
       </div>
 

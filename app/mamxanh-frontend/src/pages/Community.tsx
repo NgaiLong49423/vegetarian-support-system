@@ -11,7 +11,7 @@ const topics = ['Tất cả', 'Dinh dưỡng', 'Đạm thực vật', 'Lối s�
 export function Community() {
   const [topic, setTopic] = useState('Tất cả');
   const filtered = topic === 'Tất cả' ? posts : posts.filter((p) => p.tags.includes(topic));
-  const feed = [...filtered, ...filtered].slice(0, 6);
+  const feed = filtered;
   const trending = [...posts].sort((a, b) => b.likes - a.likes);
 
   return (
@@ -22,8 +22,8 @@ export function Community() {
 
       <div className="mb-6">
         <p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-brand-600">Cộng đồng Mâm Xanh</p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink">Bài viết & Kiến thức ẩm thực chay</h1>
-        <p className="mt-1 text-ink-muted">Chia sẻ kinh nghiệm, bí quyết và kiến thức dinh dưỡng từ cộng đồng ăn chay Việt.</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">Bài viết & Kiến thức ẩm thực chay</h1>
+        <p className="mt-2 text-xs leading-5 text-ink-muted">Chia sẻ kinh nghiệm, bí quyết và kiến thức dinh dưỡng từ cộng đồng ăn chay Việt.</p>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -32,7 +32,7 @@ export function Community() {
             key={t}
             onClick={() => setTopic(t)}
             className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              topic === t ? 'border-brand-600 bg-brand-600 text-white' : 'border-brand-200 bg-white text-ink-soft hover:border-brand-300 hover:text-brand-700'
+              topic === t ? 'border-brand-600 bg-brand-600 text-on-brand' : 'border-brand-200 bg-paper text-ink-soft hover:border-brand-300 hover:text-brand-700'
             }`}
           >
             {t}
@@ -40,15 +40,15 @@ export function Community() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_240px]">
         <div className="space-y-5">
           {feed.map((p, i) => (
-            <PostCard key={`${p.id}-${i}`} post={p} horizontal />
+            <PostCard key={`${p.id}-${i}`} post={p} />
           ))}
         </div>
 
-        <aside className="space-y-4">
-          <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <aside className="space-y-4 lg:sticky lg:top-20">
+          <div className="rounded-2xl border border-brand-100 bg-paper p-5">
             <h3 className="mb-4 flex items-center gap-2 font-bold text-ink">
               <TrendingUp className="h-[18px] w-[18px] text-brand-600" /> Bài viết nổi bật
             </h3>
@@ -67,7 +67,7 @@ export function Community() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-5">
+          <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-paper p-5">
             <h3 className="mb-2 font-bold text-ink">Chủ đề thịnh hành</h3>
             <div className="flex flex-wrap gap-2">
               {topics.slice(1).map((t) => (

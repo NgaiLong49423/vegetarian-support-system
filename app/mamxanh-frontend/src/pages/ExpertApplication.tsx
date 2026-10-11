@@ -87,7 +87,7 @@ export function ExpertApplicationPage() {
 
   if (!account) return <PageContainer className="py-10"><Card className="mx-auto max-w-xl p-8 text-center">
     <h1 className="text-2xl font-bold">Đăng nhập để tiếp tục</h1><p className="mt-2 text-ink-muted">Đơn đăng ký Chuyên gia gắn với tài khoản của bạn.</p>
-    <Link className="mt-5 inline-block rounded-xl bg-brand-600 px-5 py-2.5 font-bold text-white" to="/dang-nhap">Đăng nhập</Link>
+    <Link className="mt-5 inline-block rounded-xl bg-brand-600 px-5 py-2.5 font-bold text-on-brand" to="/dang-nhap">Đăng nhập</Link>
   </Card></PageContainer>;
 
   if (adminView && account.role !== 'ADMIN') return <PageContainer className="py-10"><Card className="p-6">Bạn không có quyền xem hàng đợi xét duyệt.</Card></PageContainer>;
@@ -103,7 +103,7 @@ export function ExpertApplicationPage() {
 
     {adminView ? <section>
       <div className="mb-4 flex flex-wrap gap-2" aria-label="Lọc trạng thái">
-        {statuses.map((status) => <button key={status || 'ALL'} onClick={() => { setPage(0); setFilter(status); }} className={`rounded-lg border px-3 py-2 text-sm ${filter === status ? 'border-brand-700 bg-brand-700 text-white' : 'border-brand-200 bg-white'}`}>{status || 'Tất cả'}</button>)}
+        {statuses.map((status) => <button key={status || 'ALL'} onClick={() => { setPage(0); setFilter(status); }} className={`rounded-lg border px-3 py-2 text-sm ${filter === status ? 'border-brand-700 bg-brand-700 text-white' : 'border-brand-200 bg-paper'}`}>{status || 'Tất cả'}</button>)}
         <Button variant="outline" onClick={() => void load()}>Làm mới</Button>
       </div>
       <div className="grid gap-3">{loading ? <Card className="p-8 text-center text-ink-muted">Đang tải danh sách hồ sơ…</Card> : applications.map((app) => <Card key={app.id} className="flex flex-col justify-between gap-4 p-4 sm:flex-row sm:items-center">
