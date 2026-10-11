@@ -106,3 +106,46 @@ test('a Free plan error leaves the recipe fields available for manual entry', as
   await expect(page.getByRole('textbox', { name: 'Mô tả' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Xuất bản công thức' })).toBeEnabled();
 });
+
+test('AI request validates missing required recipe data before calling the API', async ({ page }) => {
+  await seedDemoSession(page, 'EXPERT');
+  await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: options }));
+  let assistanceRequests = 0;
+  await page.route('**/api/v1/recipes/ai-assistance', (route) => {
+    assistanceRequests += 1;
+    return route.fulfill({ json: { contentType: 'DESCRIPTION', content: 'unexpected' } });
+  });
+
+  await page.goto('/dang-cong-thuc');
+  await page.getByRole('button', { name: 'AI gợi ý viết mô tả' }).click();
+  await expect(page.getByRole('alert')).toContainText('hoàn tất nguyên liệu');
+  expect(assistanceRequests).toBe(0);
+});
+
+test('edit page reports an invalid recipe id without making API requests', async ({ page }) => {
+  await seedDemoSession(page, 'EXPERT');
+  let apiRequests = 0;
+  await page.route('**/api/v1/recipes/**', (route) => {
+    apiRequests += 1;
+    return route.fulfill({ status: 500 });
+  });
+
+  await page.goto('/cong-thuc/not-a-number/chinh-sua');
+  await expect(page.getByRole('alert')).toContainText('ID công thức hợp lệ');
+  expect(apiRequests).toBe(0);
+});
+
+test('hidden recipe is viewable in edit route but does not load editable references', async ({ page }) => {
+  await seedDemoSession(page, 'EXPERT');
+  let referenceRequests = 0;
+  await page.route('**/api/v1/recipes/527/manage', (route) => route.fulfill({ json: { ...recipe, status: 'HIDDEN' } }));
+  await page.route('**/api/v1/recipes/reference-data', (route) => {
+    referenceRequests += 1;
+    return route.fulfill({ json: { ingredients: [] } });
+  });
+
+  await page.goto('/cong-thuc/527/chinh-sua');
+  await expect(page.getByRole('status')).toContainText('Đã bị Admin ẩn');
+  await expect(page.getByText('Đậu hũ kho', { exact: true }).first()).toBeVisible();
+  expect(referenceRequests).toBe(0);
+});

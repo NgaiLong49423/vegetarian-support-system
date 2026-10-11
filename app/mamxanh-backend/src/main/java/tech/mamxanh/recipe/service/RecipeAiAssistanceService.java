@@ -25,7 +25,7 @@ import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 @Service
 public class RecipeAiAssistanceService {
     private static final Logger log = LoggerFactory.getLogger(RecipeAiAssistanceService.class);
-    private static final String TOKEN_EDGE = "(?<![\\p{L}\\p{N}])%s(?![\\p{L}\\p{N}])";
+    private static final String WORD_BOUNDARY_PATTERN = "(?<![\\p{L}\\p{N}])%s(?![\\p{L}\\p{N}])";
 
     private final CurrentUserService currentUserService;
     private final SubscriptionEntitlementService entitlementService;
@@ -146,7 +146,7 @@ public class RecipeAiAssistanceService {
                 .filter(item -> !selected.contains(item.id()))
                 .map(IngredientResponse::name)
                 .filter(name -> !selectedNames.contains(name.toLowerCase(Locale.ROOT)))
-                .filter(name -> Pattern.compile(TOKEN_EDGE.formatted(Pattern.quote(name.toLowerCase(Locale.ROOT))))
+                .filter(name -> Pattern.compile(WORD_BOUNDARY_PATTERN.formatted(Pattern.quote(name.toLowerCase(Locale.ROOT))))
                         .matcher(normalized).find())
                 .findAny().ifPresent(ignored -> { throw new AppException(ErrorCode.AI_RESPONSE_INVALID); });
     }

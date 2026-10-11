@@ -23,6 +23,7 @@ import tech.mamxanh.auth.service.CurrentUserService.CurrentUser;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
+import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
 import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;
@@ -114,6 +115,56 @@ class RecipeAiAssistanceServiceTest {
                         new RecipeAiAssistanceRequest.Ingredient(1L, 1, BigDecimal.ONE)));
 
         assertThatThrownBy(() -> service.generate(duplicate)).isInstanceOf(AppException.class);
+        verify(aiClient, never()).generateRecipeText(anyString(), anyList());
+    }
+
+    @Test
+    void translatesProviderFailuresWithoutExposingProviderDetails() {
+        when(aiClient.generateRecipeText(anyString(), anyList())).thenThrow(new AiProviderException("provider detail"));
+
+        assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
+                .isInstanceOf(AppException.class)
+                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_PROVIDER_UNAVAILABLE);
+    }
+
+    @Test
+    void translatesUnexpectedProviderRuntimeFailures() {
+        when(aiClient.generateRecipeText(anyString(), anyList())).thenThrow(new IllegalStateException("internal detail"));
+
+        assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
+                .isInstanceOf(AppException.class)
+                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_PROVIDER_UNAVAILABLE);
+    }
+
+    @Test
+    void rejectsMalformedProviderJson() {
+        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("not-json");
+
+        assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
+                .isInstanceOf(AppException.class)
+                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+    }
+
+    @Test
+    void rejectsEmptyOrOversizedCookingInstructions() {
+        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("{\"description\":\"Ok\",\"steps\":[]}");
+        assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
+                .isInstanceOf(AppException.class);
+
+        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("{\"description\":\"Ok\",\"steps\":["
+                + "{\"text\":\"" + "x".repeat(5000) + "\",\"ingredientIds\":[]}]}");
+        assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
+                .isInstanceOf(AppException.class)
+                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+    }
+
+    @Test
+    void rejectsUnavailableIngredientsBeforeCallingProvider() {
+        when(ingredientCatalog.findActiveIngredientsByIds(List.of(1L, 2L))).thenReturn(List.of(TOFU));
+
+        assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
+                .isInstanceOf(AppException.class)
+                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.RECIPE_DATA_INVALID);
         verify(aiClient, never()).generateRecipeText(anyString(), anyList());
     }
 
