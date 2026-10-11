@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.63.0
+> **Version:** v2.64.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-11
 > **Status:** Active
@@ -26,6 +26,24 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Keep selected Explore filters in the recipe search request when several filters are changed in succession.
+
+## 2026-10-11 — Cover API Recipe Detail Actions in Playwright
+
+**Status:** Committed — `a97bb58`.
+
+**Scope:** Exercise the live API recipe-detail page's key guest interactions in the Frontend coverage suite.
+
+### Added
+
+- Cover serving adjustments, ingredient check-off, image selection, YouTube embedding, link sharing, TXT download, print/PDF handoff, and total nutrition display in a browser regression test.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- None.
 
 ## 2026-10-11 — Allow Standalone Pull Requests Without an Issue ([#118](https://github.com/NgaiLong49423/vegetarian-support-system/pull/118))
 
