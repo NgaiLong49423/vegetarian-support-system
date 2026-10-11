@@ -1,0 +1,156 @@
+package tech.mamxanh.recipe.service;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Pattern;
+import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tech.mamxanh.auth.service.CurrentUserService;
+import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ErrorCode;
+import tech.mamxanh.integration.ai.AiClient;
+import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
+import tech.mamxanh.nutrition.dto.response.IngredientResponse;
+import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
+import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;
+import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest.ContentType;
+import tech.mamxanh.recipe.dto.response.RecipeAiAssistanceResponse;
+import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+
+@Service
+public class RecipeAiAssistanceService {
+    private static final Logger log = LoggerFactory.getLogger(RecipeAiAssistanceService.class);
+    private static final String TOKEN_EDGE = "(?<![\\p{L}\\p{N}])%s(?![\\p{L}\\p{N}])";
+
+    private final CurrentUserService currentUserService;
+    private final SubscriptionEntitlementService entitlementService;
+    private final IngredientCatalogLookupService ingredientCatalog;
+    private final AiClient aiClient;
+    private final ObjectMapper objectMapper;
+
+    public RecipeAiAssistanceService(CurrentUserService currentUserService,
+            SubscriptionEntitlementService entitlementService, IngredientCatalogLookupService ingredientCatalog,
+            AiClient aiClient, ObjectMapper objectMapper) {
+        this.currentUserService = currentUserService;
+        this.entitlementService = entitlementService;
+        this.ingredientCatalog = ingredientCatalog;
+        this.aiClient = aiClient;
+        this.objectMapper = objectMapper;
+    }
+
+    public RecipeAiAssistanceResponse generate(RecipeAiAssistanceRequest request) {
+        var expert = currentUserService.requireActiveExpert();
+        entitlementService.requirePlusOrPro(expert.id());
+
+        List<Long> ingredientIds = request.ingredients().stream().map(RecipeAiAssistanceRequest.Ingredient::ingredientId).toList();
+        if (new HashSet<>(ingredientIds).size() != ingredientIds.size()) {
+            throw new AppException(ErrorCode.RECIPE_DATA_INVALID, "Mỗi nguyên liệu chỉ được xuất hiện một lần.");
+        }
+        List<IngredientResponse> ingredients = ingredientCatalog.findActiveIngredientsByIds(ingredientIds);
+        if (ingredients.size() != ingredientIds.size()) {
+            throw new AppException(ErrorCode.RECIPE_DATA_INVALID, "Hãy chọn nguyên liệu còn hoạt động trong danh mục.");
+        }
+
+        String prompt = prompt(request, ingredients);
+        String raw;
+        try {
+            raw = aiClient.generateRecipeText(prompt, ingredientIds);
+        } catch (AiProviderException exception) {
+            log.warn("Recipe AI provider is unavailable: {}", exception.getClass().getSimpleName());
+            throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
+        } catch (RuntimeException exception) {
+            log.warn("Recipe AI provider failed: {}", exception.getClass().getSimpleName());
+            throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
+        }
+
+        GeneratedContent generated = parse(raw);
+        validateIngredientReferences(generated.steps(), ingredientIds);
+        String content = request.contentType() == ContentType.DESCRIPTION
+                ? validateDescription(generated.description())
+                : validateInstructions(generated.steps(), ingredientIds, ingredients);
+        rejectUnselectedCatalogIngredients(content, ingredientIds, ingredients);
+        return new RecipeAiAssistanceResponse(request.contentType(), content);
+    }
+
+    private String prompt(RecipeAiAssistanceRequest request, List<IngredientResponse> ingredients) {
+        String lines = ingredients.stream().map(item -> {
+            var entry = request.ingredients().stream().filter(line -> line.ingredientId().equals(item.id())).findFirst().orElseThrow();
+            return "- id=%d, tên=%s, số lượng=%s, unitId=%d".formatted(item.id(), item.name(), entry.quantity(), entry.unitId());
+        }).collect(java.util.stream.Collectors.joining("\n"));
+        return "Hỗ trợ tác giả viết nội dung công thức bằng tiếng Việt. Không được thêm, suy diễn hoặc nhắc đến nguyên liệu ngoài danh sách cho phép. "
+                + "Với hướng dẫn, chỉ đưa tên nguyên liệu qua ingredientIds; phần text mô tả thao tác nấu. "
+                + "Trả JSON theo schema: description là phần giới thiệu; steps là các bước {text, ingredientIds}. "
+                + "Không tạo bản nháp hoặc nội dung đăng tự động.\n"
+                + "Loại nội dung: " + request.contentType() + "\nTên món: " + request.title()
+                + "\nLoại ăn chay: " + request.vegetarianType() + "\nDanh mục: " + request.dishCategory()
+                + "\nKhẩu phần: " + request.servings() + "\nNguyên liệu được phép:\n" + lines;
+    }
+
+    private GeneratedContent parse(String raw) {
+        try {
+            GeneratedContent content = objectMapper.readValue(raw, GeneratedContent.class);
+            if (content == null) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+            return content;
+        } catch (JacksonException exception) {
+            throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        }
+    }
+
+    private String validateDescription(String description) {
+        String content = description == null ? "" : description.strip();
+        if (content.isBlank() || content.length() > 2000) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        return content;
+    }
+
+    private String validateInstructions(List<GeneratedStep> steps, List<Long> allowedIds,
+            List<IngredientResponse> ingredients) {
+        if (steps == null || steps.isEmpty()) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        Set<Long> allowed = Set.copyOf(allowedIds);
+        var names = ingredients.stream().collect(java.util.stream.Collectors.toMap(IngredientResponse::id,
+                IngredientResponse::name));
+        String content = java.util.stream.IntStream.range(0, steps.size()).mapToObj(index -> {
+            GeneratedStep step = steps.get(index);
+            if (step == null || step.text() == null || step.text().isBlank() || step.ingredientIds() == null
+                    || step.ingredientIds().stream().anyMatch(id -> id == null || !allowed.contains(id))) {
+                throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+            }
+            String used = step.ingredientIds().stream().distinct().map(names::get)
+                    .filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.joining(", "));
+            return (index + 1) + ". " + step.text().strip() + (used.isBlank() ? "" : " (" + used + ")");
+        }).collect(java.util.stream.Collectors.joining("\n"));
+        if (content.length() < 10 || content.length() > 5000) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        return content;
+    }
+
+    private void validateIngredientReferences(List<GeneratedStep> steps, List<Long> allowedIds) {
+        if (steps == null) return;
+        Set<Long> allowed = Set.copyOf(allowedIds);
+        if (steps.stream().anyMatch(step -> step == null || step.ingredientIds() == null
+                || step.ingredientIds().stream().anyMatch(id -> id == null || !allowed.contains(id)))) {
+            throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        }
+    }
+
+    private void rejectUnselectedCatalogIngredients(String content, List<Long> selectedIds,
+            List<IngredientResponse> selectedIngredients) {
+        Set<Long> selected = Set.copyOf(selectedIds);
+        Set<String> selectedNames = selectedIngredients.stream().map(IngredientResponse::name)
+                .map(name -> name.toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.toSet());
+        String normalized = content.toLowerCase(Locale.ROOT);
+        ingredientCatalog.findActiveIngredients("").stream()
+                .filter(item -> !selected.contains(item.id()))
+                .map(IngredientResponse::name)
+                .filter(name -> !selectedNames.contains(name.toLowerCase(Locale.ROOT)))
+                .filter(name -> Pattern.compile(TOKEN_EDGE.formatted(Pattern.quote(name.toLowerCase(Locale.ROOT))))
+                        .matcher(normalized).find())
+                .findAny().ifPresent(ignored -> { throw new AppException(ErrorCode.AI_RESPONSE_INVALID); });
+    }
+
+    private record GeneratedContent(String description, List<GeneratedStep> steps) { }
+    private record GeneratedStep(String text, List<Long> ingredientIds) { }
+}

@@ -1,8 +1,8 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.16.0<br>
+> **Version:** v0.17.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-06<br>
+> **Last Updated:** 2026-10-11<br>
 > **Status:** Active  
 
 # Database Workspace
@@ -13,7 +13,7 @@ Database chính đã chốt là Microsoft SQL Server 2019. Sau khi đồng bộ,
 
 - Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Baseline hiện gồm V1–V9, bao gồm V7 cho lời mời Onboarding, V8 cho notification target/index của Expert Application và V9 đồng bộ taxonomy/trạng thái REPORT với FR-26/27. `database/schema.sql` phải phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
-- Flyway repeatable migration `app/mamxanh-backend/src/main/resources/db/demo/R__demo_sample_data.sql` nạp fixture demo khi profile `local` chạy (IntelliJ hoặc Docker Compose). Năm tài khoản đã xác minh phục vụ demo Auth, onboarding, hồ sơ/sở thích, công thức, lịch ăn và duyệt Chuyên gia/Admin. `MAMXANH_DEMO_PASSWORD` được lấy từ `.env` local và BCrypt hóa lúc Backend khởi động; không lưu password/hash trong SQL migration hoặc Git.
+- Flyway repeatable migration `app/mamxanh-backend/src/main/resources/db/demo/R__demo_sample_data.sql` nạp fixture demo khi profile `local` chạy (IntelliJ hoặc Docker Compose). Năm tài khoản đã xác minh phục vụ demo Auth, onboarding, hồ sơ/sở thích, công thức, lịch ăn và duyệt Chuyên gia/Admin; tài khoản `demo-expert@mamxanh.local` có subscription Pro local hiệu lực một năm để thử tính năng AI. `MAMXANH_DEMO_PASSWORD` được lấy từ `.env` local và BCrypt hóa lúc Backend khởi động; không lưu password/hash trong SQL migration hoặc Git.
 - Profile `local` dùng thêm location `classpath:db/demo`; các profile `test` và production chỉ chạy location migration schema `classpath:db/migration`. Seed dùng khóa xác định/kiểm tra tồn tại trước khi thêm nên Flyway chạy lại không nhân bản fixture.
 - `database/queries.sql` chứa kịch bản kiểm tra đối tượng, bộ test tự động xác minh các ràng buộc nghiệp vụ (positive/negative) có cơ chế rollback, và các truy vấn mẫu cho tầng ứng dụng; không thay thế automated integration tests.
 

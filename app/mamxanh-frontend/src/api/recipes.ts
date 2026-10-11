@@ -184,6 +184,20 @@ export interface UpdateRecipePost {
   ingredients: Array<Pick<RecipeIngredient, 'ingredientId' | 'unitId' | 'quantity'>>;
 }
 
+export type RecipeAiContentType = 'DESCRIPTION' | 'INSTRUCTIONS';
+export interface RecipeAiAssistanceRequest {
+  contentType: RecipeAiContentType;
+  title: string;
+  dishCategory: string;
+  vegetarianType: string;
+  servings: number;
+  ingredients: RecipeIngredientInput[];
+}
+export interface RecipeAiAssistanceResponse {
+  contentType: RecipeAiContentType;
+  content: string;
+}
+
 export interface RecipeReferenceData {
   ingredients: Array<{ ingredientId: number; name: string; unitId: number; unitCode: string; unitName: string }>;
 }
@@ -203,6 +217,10 @@ export const recipesApi = {
   ),
   publish: (payload: CreateRecipeRequest) => request(
     () => apiClient.post<CreateRecipeResponse>('/recipes', payload),
+  ),
+  suggestText: (payload: RecipeAiAssistanceRequest) => request(
+    // Gemini may take up to 45 seconds; allow time for the Backend request and response too.
+    () => apiClient.post<RecipeAiAssistanceResponse>('/recipes/ai-assistance', payload, { timeout: 60_000 }),
   ),
   getPublished: (recipeId: number) => request(
     () => apiClient.get<RecipeDetail>(`/recipes/${recipeId}`),

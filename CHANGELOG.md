@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.67.0
+> **Version:** v2.68.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-11
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Add AI Assistance to Recipe Authoring
+
+**Status:** Working tree — not committed.
+
+**Scope:** Let eligible Experts generate editable recipe descriptions and instructions without saving a server-side draft.
+
+### Added
+
+- Add a subscription-gated recipe-writing API backed by Gemini and integrate editable suggestions into the create and edit forms.
+- Document the FR-21 API integration flow and its authorization and failure responses.
+- Seed an active one-year Pro subscription for the local demo Expert so the AI authoring flow can be exercised.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Reject generated recipe instructions that reference unselected catalog ingredients or invalid ingredient IDs.
 
 ## 2026-10-11 — Preserve Theme During Browser Reload Verification
 

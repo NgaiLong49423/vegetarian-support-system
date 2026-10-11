@@ -61,6 +61,16 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<IngredientResponse> findActiveIngredientsByIds(java.util.Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return ingredientRepository.findByIdInAndStatus(ids, CatalogStatus.ACTIVE).stream()
+                .sorted(Comparator.comparing(IngredientEntity::getName))
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Transactional
     public IngredientResponse createIngredient(IngredientSaveRequest request) {
         String name = request.name().trim();

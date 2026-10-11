@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.23.0
+> **Version:** v0.24.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-10<br>
+> **Last Updated:** 2026-10-11<br>
 > **Status:** Active  
 
 # Backend Workspace
@@ -113,7 +113,7 @@ Các biến môi trường cho FR-03 (giá trị dùng chung lấy từ kho mậ
 
 ### Tài khoản demo local
 
-Khi Flyway nạp seed trong profile `local`, Backend tạo năm tài khoản đã xác minh email: `demo-customer@mamxanh.local` (Member có hồ sơ, sở thích, lịch ăn và đơn Expert đang chờ), `demo-new-member@mamxanh.local` (Member mới để thử onboarding), `demo-applicant@mamxanh.local` (Member chưa nộp đơn), `demo-expert@mamxanh.local` (quản lý công thức) và `demo-admin@mamxanh.local` (quản trị/xét duyệt). Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả năm tài khoản.
+Khi Flyway nạp seed trong profile `local`, Backend tạo năm tài khoản đã xác minh email: `demo-customer@mamxanh.local` (Member có hồ sơ, sở thích, lịch ăn và đơn Expert đang chờ), `demo-new-member@mamxanh.local` (Member mới để thử onboarding), `demo-applicant@mamxanh.local` (Member chưa nộp đơn), `demo-expert@mamxanh.local` (quản lý công thức và có gói Pro demo để thử AI) và `demo-admin@mamxanh.local` (quản trị/xét duyệt). Gói Pro demo có hiệu lực một năm tính từ lần seed thiết lập subscription. Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả năm tài khoản.
 
 Seed repeatable chỉ dùng với profile `local`. Trong IntelliJ/Maven, profile `local,local-reset` mặc định xóa và dựng lại `MamXanhDB` trước khi chạy migration; Docker Compose giữ volume/database khi `down`/`up`, và chạy lại seed an toàn. Reset SQL volume Compose sẽ dựng lại toàn bộ schema và fixture. Không dùng tài khoản hoặc mật khẩu demo ngoài máy local.
 

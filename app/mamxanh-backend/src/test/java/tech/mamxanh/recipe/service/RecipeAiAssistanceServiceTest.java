@@ -1,0 +1,129 @@
+package tech.mamxanh.recipe.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
+
+import java.math.BigDecimal;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import tech.mamxanh.auth.entity.Role;
+import tech.mamxanh.auth.service.CurrentUserService;
+import tech.mamxanh.auth.service.CurrentUserService.CurrentUser;
+import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ErrorCode;
+import tech.mamxanh.integration.ai.AiClient;
+import tech.mamxanh.nutrition.dto.response.IngredientResponse;
+import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
+import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;
+import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest.ContentType;
+import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
+import tools.jackson.databind.json.JsonMapper;
+
+@ExtendWith(MockitoExtension.class)
+class RecipeAiAssistanceServiceTest {
+    private static final IngredientResponse TOFU = ingredient(1L, "Đậu phụ");
+    private static final IngredientResponse TOMATO = ingredient(2L, "Cà chua");
+
+    @Mock private CurrentUserService currentUserService;
+    @Mock private SubscriptionEntitlementService entitlementService;
+    @Mock private IngredientCatalogLookupService ingredientCatalog;
+    @Mock private AiClient aiClient;
+
+    private RecipeAiAssistanceService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new RecipeAiAssistanceService(currentUserService, entitlementService, ingredientCatalog,
+                aiClient, new JsonMapper());
+        when(currentUserService.requireActiveExpert()).thenReturn(new CurrentUser(7L, Role.EXPERT));
+        lenient().when(ingredientCatalog.findActiveIngredientsByIds(List.of(1L, 2L))).thenReturn(List.of(TOFU, TOMATO));
+        lenient().when(ingredientCatalog.findActiveIngredients("")).thenReturn(List.of(TOFU, TOMATO));
+    }
+
+    @Test
+    void generatedStepsUseOnlyAllowedIdsAndResolveNamesFromCatalog() {
+        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("""
+                {"description":"Món đậu phụ cà chua thanh vị.","steps":[
+                  {"text":"Đun nóng chảo rồi đảo đều đến khi mềm.","ingredientIds":[1,2]}]}
+                """);
+
+        var result = service.generate(request(ContentType.INSTRUCTIONS));
+
+        assertThat(result.content()).isEqualTo("1. Đun nóng chảo rồi đảo đều đến khi mềm. (Đậu phụ, Cà chua)");
+        verify(entitlementService).requirePlusOrPro(7L);
+    }
+
+    @Test
+    void rejectsIngredientIdNotSuppliedByAuthor() {
+        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("""
+                {"description":"Món ngon.","steps":[{"text":"Nấu thật ngon món ăn này.","ingredientIds":[99]}]}
+                """);
+
+        assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
+                .isInstanceOf(AppException.class)
+                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+    }
+
+    @Test
+    void rejectsUnselectedCatalogIngredientMentionedInGeneratedText() {
+        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("""
+                {"description":"Nấm được nấu cùng món.","steps":[{"text":"Thêm nấm và đảo đều.","ingredientIds":[1]}]}
+                """);
+        when(ingredientCatalog.findActiveIngredients("")).thenReturn(List.of(TOFU, TOMATO, ingredient(3L, "Nấm")));
+
+        assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
+                .isInstanceOf(AppException.class)
+                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+    }
+
+    @Test
+    void blocksProviderWhenEntitlementIsDenied() {
+        org.mockito.Mockito.doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED))
+                .when(entitlementService).requirePlusOrPro(anyLong());
+
+        assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
+                .isInstanceOf(AppException.class);
+        verify(aiClient, never()).generateRecipeText(anyString(), anyList());
+    }
+
+    @Test
+    void rejectsDescriptionLongerThanAcceptanceLimit() {
+        when(aiClient.generateRecipeText(anyString(), anyList()))
+                .thenReturn("{\"description\":\"" + "x".repeat(2001) + "\",\"steps\":[]}");
+
+        assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
+                .isInstanceOf(AppException.class)
+                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+    }
+
+    @Test
+    void rejectsDuplicateOrInactiveIngredientsBeforeCallingProvider() {
+        var duplicate = new RecipeAiAssistanceRequest(ContentType.INSTRUCTIONS, "Đậu phụ sốt", "BRAISED", "VEGAN", 2,
+                List.of(new RecipeAiAssistanceRequest.Ingredient(1L, 1, BigDecimal.ONE),
+                        new RecipeAiAssistanceRequest.Ingredient(1L, 1, BigDecimal.ONE)));
+
+        assertThatThrownBy(() -> service.generate(duplicate)).isInstanceOf(AppException.class);
+        verify(aiClient, never()).generateRecipeText(anyString(), anyList());
+    }
+
+    private static RecipeAiAssistanceRequest request(ContentType type) {
+        return new RecipeAiAssistanceRequest(type, "Đậu phụ sốt cà", "BRAISED", "VEGAN", 2,
+                List.of(new RecipeAiAssistanceRequest.Ingredient(1L, 1, new BigDecimal("200")),
+                        new RecipeAiAssistanceRequest.Ingredient(2L, 1, new BigDecimal("100"))));
+    }
+
+    private static IngredientResponse ingredient(Long id, String name) {
+        return new IngredientResponse(id, name, "Test", "Test", null, java.time.LocalDate.now(), false, true);
+    }
+}
