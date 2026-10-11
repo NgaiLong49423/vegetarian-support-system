@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-11 — Allow Standalone Pull Requests Without an Issue
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `94bae2f`.
 
 **Scope:** Clarify that Issue references are required for PRs implementing an assigned GitHub Issue, while independent work can explain why it has no Issue.
 
