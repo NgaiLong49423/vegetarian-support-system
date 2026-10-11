@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.61.0
+> **Version:** v2.62.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-11
 > **Status:** Active
@@ -8,6 +8,24 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Allow Standalone Pull Requests Without an Issue
+
+**Status:** Working tree — not committed.
+
+**Scope:** Clarify that Issue references are required for PRs implementing an assigned GitHub Issue, while independent work can explain why it has no Issue.
+
+### Added
+
+- Document `Refs: N/A` with a scope reason for standalone work and align the branch naming guidance and PR template.
+
+### Changed
+
+- Keep one implementation PR per assigned Issue and prohibit using `N/A` to bypass or split an existing Issue.
+
+### Fixed
+
+- None.
 
 ## 2026-10-11 — Show Onboarding Questions One at a Time
 
