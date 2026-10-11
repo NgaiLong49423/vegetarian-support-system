@@ -9,7 +9,7 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-11 — Allow Standalone Pull Requests Without an Issue
+## 2026-10-11 — Allow Standalone Pull Requests Without an Issue ([#118](https://github.com/NgaiLong49423/vegetarian-support-system/pull/118))
 
 **Status:** Committed — `94bae2f`.
 
