@@ -110,7 +110,7 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
       </div>
 
       {/* User voting block */}
-      <div className="mb-8 rounded-2xl border border-brand-200 bg-white p-6 shadow-sm">
+      <div className="mb-8 rounded-2xl border border-brand-200 bg-paper p-6 shadow-sm">
         <h3 className="text-base font-bold text-ink">Bình chọn của bạn về công thức này</h3>
 
         {!active ? (
@@ -121,7 +121,7 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
             </p>
             <Link
               to="/dang-nhap"
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-700"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-on-brand shadow-sm hover:bg-brand-700"
             >
               Đăng nhập để bình chọn
             </Link>
@@ -159,8 +159,8 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
                 onClick={() => handleVote(userVote === 'like' ? null : 'like')}
                 className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition ${
                   userVote === 'like'
-                    ? 'bg-leaf-600 text-white shadow-md shadow-leaf-600/20 hover:bg-leaf-700'
-                    : 'border border-brand-200 bg-white text-ink-soft hover:border-leaf-300 hover:bg-leaf-50 hover:text-leaf-700'
+                    ? 'bg-leaf-600 text-white shadow-md shadow-leaf-600/20 hover:bg-leaf-500'
+                    : 'border border-brand-200 bg-paper text-ink-soft hover:border-leaf-300 hover:bg-leaf-50 hover:text-leaf-700'
                 } disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 <ThumbsUp className={`h-4 w-4 ${userVote === 'like' ? 'fill-current' : ''}`} />
@@ -175,7 +175,7 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
                 className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition ${
                   userVote === 'dislike'
                     ? 'bg-rose-600 text-white shadow-md shadow-rose-600/20 hover:bg-rose-700'
-                    : 'border border-brand-200 bg-white text-ink-soft hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700'
+                    : 'border border-brand-200 bg-paper text-ink-soft hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700'
                 } disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 <ThumbsDown className={`h-4 w-4 ${userVote === 'dislike' ? 'fill-current' : ''}`} />

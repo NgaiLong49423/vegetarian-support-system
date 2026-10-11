@@ -14,6 +14,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tech.mamxanh.nutrition.dto.request.ConfirmNutritionEligibilityRequest;
 import tech.mamxanh.nutrition.dto.request.SaveNutritionProfileRequest;
+import tech.mamxanh.nutrition.dto.request.UpdateNutritionEligibilityRequest;
+import tech.mamxanh.nutrition.dto.request.NutritionEligibilityConfirmationStatus;
+import tech.mamxanh.nutrition.dto.response.NutritionEligibilityResponse;
+import tech.mamxanh.nutrition.entity.NutritionEligibilityStatus;
 import tech.mamxanh.nutrition.dto.response.NutritionProfileResponse;
 import tech.mamxanh.nutrition.service.NutritionProfileService;
 
@@ -51,6 +55,19 @@ class NutritionControllerTest {
 
         assertSame(expected, controller.calculateOwnResults(request));
         verify(service).calculateOwnResults(request);
+    }
+
+    @Test
+    void delegatesEligibilityReadAndExplicitUpdate() {
+        var expected = new NutritionEligibilityResponse(NutritionEligibilityStatus.NOT_CONFIRMED, null);
+        when(service.getOwnEligibility()).thenReturn(expected);
+        assertSame(expected, controller.getOwnEligibility());
+        verify(service).getOwnEligibility();
+
+        var request = new UpdateNutritionEligibilityRequest(NutritionEligibilityConfirmationStatus.INELIGIBLE);
+        when(service.updateOwnEligibility(request)).thenReturn(expected);
+        assertSame(expected, controller.updateOwnEligibility(request));
+        verify(service).updateOwnEligibility(request);
     }
 
     private static NutritionProfileResponse emptyResponse() {

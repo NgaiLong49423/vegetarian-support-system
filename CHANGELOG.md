@@ -1,13 +1,200 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.55.0
+> **Version:** v2.65.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-07
+> **Last Updated:** 2026-10-11
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Resolve Sonar Reliability Findings ([#118](https://github.com/NgaiLong49423/vegetarian-support-system/pull/118))
+
+**Status:** Committed — `93e3172`.
+
+**Scope:** Address Frontend reliability and accessibility findings reported by SonarCloud for the pull request.
+
+### Added
+
+- Cover native expert-application dialog visibility and Escape dismissal in the Playwright workflow.
+
+### Changed
+
+- Use the browser's native modal dialog behavior for expert-application details and keep keyboard focus on recipe links instead of their scroll container.
+
+### Fixed
+
+- Explicitly mark the handled Home data-loading promise chain as intentionally asynchronous.
+
+## 2026-10-11 — Preserve Explore Filters During URL Synchronization
+
+**Status:** Committed — `2664eea`.
+
+**Scope:** Prevent URL synchronization from overwriting newer Explore filter selections while keeping browser navigation synchronized.
+
+### Added
+
+- None.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Keep selected Explore filters in the recipe search request when several filters are changed in succession.
+
+## 2026-10-11 — Cover API Recipe Detail Actions in Playwright
+
+**Status:** Committed — `a97bb58`.
+
+**Scope:** Exercise the live API recipe-detail page's key guest interactions in the Frontend coverage suite.
+
+### Added
+
+- Cover serving adjustments, ingredient check-off, image selection, YouTube embedding, link sharing, TXT download, print/PDF handoff, and total nutrition display in a browser regression test.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Allow Standalone Pull Requests Without an Issue ([#118](https://github.com/NgaiLong49423/vegetarian-support-system/pull/118))
+
+**Status:** Committed — `94bae2f`.
+
+**Scope:** Clarify that Issue references are required for PRs implementing an assigned GitHub Issue, while independent work can explain why it has no Issue.
+
+### Added
+
+- Document `Refs: N/A` with a scope reason for standalone work and align the branch naming guidance and PR template.
+
+### Changed
+
+- Keep one implementation PR per assigned Issue and prohibit using `N/A` to bypass or split an existing Issue.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Show Onboarding Questions One at a Time
+
+**Status:** Committed — `6ad21e5`.
+
+**Scope:** Present the existing dietary-preference questionnaire as six sequential questions without changing Backend validation or persistence rules.
+
+### Added
+
+- Add question progress, Back/Continue navigation, retained draft answers and field-error navigation to the affected question.
+
+### Changed
+
+- Show one Onboarding question at a time, save only after final completion, and allow skipping the entire questionnaire from every step without sending a partial preference profile.
+- Keep the full Settings form and explicit allergy/dislike confirmations, and document the new UI flow.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Add Dark Food Workspace and Saved Recipe Integration
+
+**Status:** Committed — `6ad21e5`.
+
+**Scope:** Adapt the Google Stitch layout to existing Mâm Xanh routes using a dark theme and connect saved recipes to the implemented Backend contract.
+
+### Added
+
+- Add public recipe save/unsave controls and a private, searchable, paginated saved-recipe page using the existing API, with Guest sign-in prompts and safe unavailable entries.
+- Add a month calendar and week navigation to the existing read-only Meal Plan API.
+
+### Changed
+
+- Replace the oversized navigation and warm Explore layout with a compact dark header, photo cards, responsive filter rail, three-column Home, profile tabs and shopping checklist.
+- Load Home collections and filter shortcuts from Backend data, preserve existing role controls, and label prototype screens explicitly.
+- Synchronize the Frontend guide and browser regression checks with the implemented UI and API behavior.
+
+### Fixed
+
+- Use the neutral unavailable-recipe message required by AC-20.3 instead of asserting an author deletion in Meal Plan slots.
+
+## 2026-10-11 — Complete API-Driven Recipe Detail and Stitch MCP Guidance
+
+**Status:** Committed — `189b327`.
+
+**Scope:** Complete the Frontend recipe detail experience using the existing Backend API and document the project-local Google Stitch MCP setup for agents.
+
+### Added
+
+- Build the recipe detail page from live API data, including ordered images, author and statistics, scaled ingredient quantities, nutrition, safe YouTube embedding, TXT download, and A4 print/PDF output.
+- Document the repository-local Stitch MCP credential and startup diagnostics without exposing the local key.
+
+### Changed
+
+- Expand the Frontend recipe detail API type to match the Backend response.
+
+### Fixed
+
+- None.
+
+## 2026-10-10 — Add Google Login and Account Linking (Issue #8) ([PR #111](https://github.com/NgaiLong49423/vegetarian-support-system/pull/111))
+
+**Status:** Committed — `519ecbb`.
+
+**Scope:** Implement UC-03.5 so members can sign in with Google Identity Services, following decisions Q25, Q26 and Q39–Q42.
+
+### Added
+
+- Add `POST /api/v1/auth/google`, which verifies the Google ID Token with Google API Client's `GoogleIdTokenVerifier` (signature, expiry, issuer and the `MAMXANH_GOOGLE_CLIENT_ID` audience) and returns the same stateless `AuthResponse` as password login.
+- Find accounts by Google ID before email; create an active, verified customer from the Google profile, link verified password accounts while keeping their password, and link unverified password accounts while removing their password.
+- Reject unverified Google emails and invalid tokens with `GOOGLE_TOKEN_INVALID` (401), locked accounts with `ACCOUNT_LOCKED` (403), emails linked to another Google ID with `GOOGLE_ACCOUNT_CONFLICT` (409) and unavailable Google certificates with `GOOGLE_LOGIN_UNAVAILABLE` (503).
+- Add the Google Identity Services button (`@react-oauth/google`) to the login and registration pages, with the post-login Onboarding invitation and code-based error messages.
+- Add `MAMXANH_GOOGLE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID` to the environment templates and Docker Compose.
+- Add unit, SQL Server integration and Playwright tests that never call Google: a self-signed certificate checks the verifier, and a stub script replaces Google Identity Services.
+
+### Changed
+
+- Let a temporary password-login block not stop Google login, without resetting the failed-attempt counter.
+- Remove the implemented Google endpoint and its schemas from the planned `openapi.yaml`, and document the flow, linking rules and new error codes in `API.md`.
+
+### Fixed
+
+- None.
+
+## 2026-10-09 — Manage Saved Recipes in Backend (Issue #37) ([PR #110](https://github.com/NgaiLong49423/vegetarian-support-system/pull/110))
+
+**Status:** Committed — `6f155e4`.
+
+**Scope:** Implement the Backend portion of FR-32 without changing Frontend source.
+
+### Added
+
+- Add authenticated idempotent save and unsave operations for public recipes.
+- Add saved-recipe search by title or description while preserving private ownership, stable pagination, and safe unavailable tombstones.
+- Add SQL Server integration coverage for persistence, authorization, search, pagination, tombstones, validation, and generated OpenAPI.
+
+### Changed
+
+- Update the API integration guide to describe the runtime Saved Recipes read and write operations.
+
+### Fixed
+
+None.
+
+## 2026-10-08 — Add Public Recipe Search Filters and Explore Controls (Issue #14) ([PR #108](https://github.com/NgaiLong49423/vegetarian-support-system/pull/108))
+
+**Status:** Committed — `60a3788`.
+
+**Scope:** Complete the public recipe discovery flow for FR-08 with database-backed filters and sorting controls.
+
+### Added
+
+- Add parameterized Backend filters for vegetarian type, dish category, all selected ingredients, and maximum total preparation-plus-cooking time.
+- Connect Explore filter options, ingredient lookup, pagination and six sorting modes to the public Backend API; add real SQL Server integration coverage.
+- Document FR-08 filter semantics and the runtime API integration contract.
 
 ## 2026-10-07 — Add Recipe Detail and Saved Recipe Read Projections (Issue #89)
 

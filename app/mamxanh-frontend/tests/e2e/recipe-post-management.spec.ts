@@ -21,6 +21,14 @@ const existingRecipe = {
   ingredients: [{ ingredientId: 21, name: 'Nấm đùi gà', customName: null, unitId: 1, unitCode: 'g', unitName: 'gram', quantity: 200 }],
 };
 
+const publicDetail = {
+  ...existingRecipe, recipeId: existingRecipe.id,
+  author: { id: existingRecipe.authorId, displayName: existingRecipe.authorName, avatarUrl: null },
+  media: existingRecipe.media.map((media, index) => ({ ...media, id: index + 1, blobUrl: media.url })),
+  nutrition: { complete: true, ingredientsMissingData: [], perServing: {}, total: {} },
+  ingredientsWithoutNutrition: [],
+  statistics: { likes: 0, dislikes: 0, likePercentage: null, reactionCount: 0, viewCount: 0 },
+};
 const hiddenRecipe = { ...existingRecipe, id: 48, title: 'Canh đang bị ẩn', status: 'HIDDEN' };
 const references = {
   ingredients: [
@@ -76,7 +84,7 @@ async function assumeRole(page: Page, role: 'CUSTOMER' | 'EXPERT' | 'ADMIN') {
 
 test('public recipe page has no management action; expert manages recipes from personal profile', async ({ page }) => {
   await mockProfileApi(page);
-  await page.route('**/api/v1/recipes/47', (route) => route.fulfill({ json: existingRecipe }));
+  await page.route('**/api/v1/recipes/47', (route) => route.fulfill({ json: publicDetail }));
   await page.goto('/cong-thuc/id/47');
 
   await expect(page.getByRole('heading', { name: 'Nấm kho tiêu' })).toBeVisible();
@@ -135,7 +143,7 @@ test('expert edits recipe, saves, and sees success on the expert profile', async
   await page.getByRole('button', { name: 'Lưu thay đổi' }).first().click();
 
   await expect(page).toHaveURL(/\/ho-so\/chuyen-gia$/);
-  await expect(page.getByText('Lưu thay đổi thành công.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Lưu thay đổi thành công' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Nấm kho tiêu xanh' })).toBeVisible();
   expect(savedPayload?.title).toBe('Nấm kho tiêu xanh');
   expect(savedPayload?.instructions).toBe('Kho nấm với nước dừa và tiêu xanh trong 20 phút.');

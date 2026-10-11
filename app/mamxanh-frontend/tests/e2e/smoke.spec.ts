@@ -6,7 +6,7 @@ test('loads the application shell and navigates to Explore', async ({ page }) =>
   page.on('pageerror', (error) => pageErrors.push(error.message));
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Sống Xanh An Lành/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hôm nay bạn muốn nấu gì?' })).toBeVisible();
 
   await page.getByRole('link', { name: 'Khám phá món chay' }).click();
 

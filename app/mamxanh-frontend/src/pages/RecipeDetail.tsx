@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeftRight,
@@ -84,7 +84,7 @@ function PublishedRecipeDetail({ recipeId }: { recipeId: number }) {
   return (
     <PageContainer className="py-8">
       <Link to="/kham-pha" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeftRight className="h-4 w-4" />Khám phá công thức</Link>
-      <article className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-brand-100 bg-white shadow-sm">
+      <article className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-brand-100 bg-paper shadow-sm">
         <div className="h-56 sm:h-80">
           {cover
             ? <img src={cover.blobUrl} alt={recipe.title} className="h-full w-full object-cover" />
@@ -143,6 +143,12 @@ function MockRecipeDetail() {
   });
 
   const recipe = matchedRecipe ?? recipes[0];
+  const mediaList = useMemo(() => {
+    return recipe.media && recipe.media.length > 0
+      ? recipe.media
+      : [{ url: recipe.image, isCover: true, displayOrder: 1 }];
+  }, [recipe.id, recipe.image, recipe.media]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [saved, setSaved] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
@@ -165,12 +171,14 @@ function MockRecipeDetail() {
   useEffect(() => {
     if (!isAvailable) return;
     setDesiredServings(recipe.servings);
+    const coverIdx = mediaList.findIndex((m) => m.isCover);
+    setSelectedImageIndex(coverIdx >= 0 ? coverIdx : 0);
     setReportOpen(false);
     setReportReason('');
     setReportDescription('');
     setReportError('');
     setDemoReportSubmitted(false);
-  }, [recipe.id, recipe.servings, isAvailable]);
+  }, [recipe.id, recipe.servings, mediaList, isAvailable]);
 
   if (!matchedRecipe || !isAvailable) {
     return (
@@ -186,7 +194,7 @@ function MockRecipeDetail() {
           <div className="mt-6 flex justify-center gap-3">
             <Link
               to="/kham-pha"
-              className="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-700"
+              className="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-on-brand shadow-sm hover:bg-brand-700"
             >
               Khám phá món chay khác
             </Link>
@@ -316,7 +324,7 @@ function MockRecipeDetail() {
           <div className="flex flex-wrap items-center gap-2">
             <Link
                 to={`/so-sanh?left=${recipe.slug}`}
-                className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-300"
+                className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-paper px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-300"
                 title="So sánh với công thức khác"
             >
               <ArrowLeftRight className="h-4 w-4 text-brand-600" />
@@ -326,7 +334,7 @@ function MockRecipeDetail() {
                 onClick={() => setReportOpen(true)}
                 aria-label="Báo cáo công thức"
                 title="Báo cáo công thức"
-                className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-300"
+                className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-paper px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-300"
             >
               <Flag className="h-5 w-5" />
               <span className="hidden sm:inline">Báo cáo</span>
@@ -340,10 +348,10 @@ function MockRecipeDetail() {
               className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-all ${
                 saved
                   ? 'border-rose-200 bg-rose-50/70 shadow-2xs'
-                  : 'border-brand-200 bg-white hover:border-brand-300'
+                  : 'border-brand-200 bg-paper hover:border-brand-300'
               }`}
             />
-            <button className="flex h-11 w-11 items-center justify-center rounded-xl border border-brand-200 bg-white text-ink-soft transition-colors hover:border-brand-300">
+            <button className="flex h-11 w-11 items-center justify-center rounded-xl border border-brand-200 bg-paper text-ink-soft transition-colors hover:border-brand-300">
               <Share2 className="h-5 w-5" />
             </button>
             <Button onClick={handleOpenPlan}>
@@ -367,7 +375,7 @@ function MockRecipeDetail() {
           ].map((s) => (
               <div
                   key={s.label}
-                  className="flex items-center gap-3 rounded-2xl border border-brand-100 bg-white p-4"
+                  className="flex items-center gap-3 rounded-2xl border border-brand-100 bg-paper p-4"
               >
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
               <s.icon className="h-5 w-5" />
@@ -380,10 +388,50 @@ function MockRecipeDetail() {
           ))}
         </div>
 
-        {/* image + description */}
+        {/* image gallery + description (FR-14) */}
         <div className="mb-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-          <div className="overflow-hidden rounded-2xl border border-brand-100">
-            <img src={recipe.image} alt={recipe.name} className="h-full w-full object-cover" />
+          <div className="flex flex-col gap-3">
+            <div className="relative overflow-hidden rounded-2xl border border-brand-100 bg-brand-50 aspect-[4/3] sm:aspect-[16/10]">
+              <img
+                src={mediaList[selectedImageIndex]?.url ?? recipe.image}
+                alt={recipe.name}
+                className="h-full w-full object-cover transition-all duration-300"
+              />
+              {mediaList[selectedImageIndex]?.isCover && (
+                <span className="absolute top-3 left-3 flex items-center gap-1 rounded-full bg-brand-600/90 px-3 py-1 text-xs font-bold text-on-brand shadow backdrop-blur-sm">
+                  Ảnh bìa chính
+                </span>
+              )}
+            </div>
+
+            {/* Thumbnail selector when multiple images exist */}
+            {mediaList.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {mediaList.map((m, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedImageIndex(idx)}
+                    className={`relative h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                      selectedImageIndex === idx
+                        ? 'border-brand-600 ring-2 ring-brand-400 scale-[1.02]'
+                        : 'border-brand-200 opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={m.url}
+                      alt={`Thumbnail ${idx + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    {m.isCover && (
+                      <span className="absolute bottom-0 inset-x-0 bg-brand-600/80 py-0.5 text-center text-[9px] font-bold text-on-brand">
+                        Bìa
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <Card className="flex flex-col p-6">
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-brand-600">
@@ -435,7 +483,7 @@ function MockRecipeDetail() {
                     const value = Number(event.target.value);
                     if (Number.isInteger(value) && value >= 1 && value <= 50) setDesiredServings(value);
                   }}
-                  className="w-20 rounded-xl border border-brand-200 bg-white px-3 py-2 text-center outline-none focus:border-brand-500"
+                  className="w-20 rounded-xl border border-brand-200 bg-paper px-3 py-2 text-center outline-none focus:border-brand-500"
               />
             </label>
             <Button onClick={() => showToast('Đã thêm nguyên liệu vào Danh sách đi chợ!')}>
@@ -556,7 +604,7 @@ function MockRecipeDetail() {
           <ol className="space-y-4">
             {recipe.steps.map((step, i) => (
                 <li key={i} className="flex gap-4">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on-brand">
                 {i + 1}
               </span>
                   <p className="pt-1 leading-relaxed text-ink-soft">{step}</p>
@@ -603,12 +651,12 @@ function MockRecipeDetail() {
             Chọn ngày và buổi để thêm <strong className="text-ink">{recipe.name}</strong> vào thực đơn tuần của bạn.
           </p>
           <div className="mb-4 grid grid-cols-2 gap-3">
-            <select className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400">
+            <select className="rounded-xl border border-brand-200 bg-paper px-3 py-2.5 text-sm outline-none focus:border-brand-400">
               {['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'].map((d) => (
                   <option key={d}>{d}</option>
               ))}
             </select>
-            <select className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400">
+            <select className="rounded-xl border border-brand-200 bg-paper px-3 py-2.5 text-sm outline-none focus:border-brand-400">
               {['Bữa sáng', 'Bữa trưa', 'Bữa tối'].map((d) => (
                   <option key={d}>{d}</option>
               ))}
@@ -628,7 +676,7 @@ function MockRecipeDetail() {
         </Modal>
 
         {toast && (
-            <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white shadow-xl">
+            <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-raised px-5 py-3 text-sm font-semibold text-white shadow-xl">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-leaf-500">
             <Check className="h-3.5 w-3.5" />
           </span>
@@ -653,7 +701,7 @@ function MockRecipeDetail() {
               </Button>
               <Link
                 to="/dang-nhap"
-                className="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-700"
+                className="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-on-brand shadow-sm hover:bg-brand-700"
               >
                 Đăng nhập ngay
               </Link>

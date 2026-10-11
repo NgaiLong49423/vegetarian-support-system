@@ -69,7 +69,7 @@ export function RecipeCard({ recipe }: { recipe: Recipe }) {
   return (
       <Link
           to={`/cong-thuc/${recipe.slug}`}
-          className="group flex flex-col overflow-hidden rounded-2xl border border-brand-100 bg-white transition-all hover:-translate-y-1 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-900/5"
+          className="group flex flex-col overflow-hidden rounded-2xl border border-brand-100 bg-paper transition-all hover:-translate-y-1 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-900/5"
       >
         <div className="relative aspect-[4/3] overflow-hidden">
           <img
@@ -92,7 +92,7 @@ export function RecipeCard({ recipe }: { recipe: Recipe }) {
             size={32}
             aria-label={saved ? 'Bỏ lưu công thức' : 'Lưu công thức'}
             title={saved ? 'Bỏ lưu' : 'Lưu công thức'}
-            className="absolute right-2.5 top-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-all hover:scale-105 hover:bg-white"
+            className="absolute right-2.5 top-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-paper/90 shadow-sm backdrop-blur transition-all hover:scale-105 hover:bg-paper"
           />
         </div>
 

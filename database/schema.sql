@@ -157,6 +157,10 @@ CREATE TABLE [USER] (
         CONSTRAINT DF_USER_therapeutic DEFAULT 0,
     nutrition_scope_confirmed  BIT            NOT NULL
         CONSTRAINT DF_USER_nutrition_scope DEFAULT 0,
+    -- V10 (FR-38): eligibility state is separate from FR-35 health-data consent
+    nutrition_eligibility_status VARCHAR(20) NOT NULL
+        CONSTRAINT DF_USER_nutrition_eligibility_status DEFAULT 'NOT_CONFIRMED',
+    nutrition_eligibility_confirmed_at DATETIME2(7) NULL,
     -- V4 (FR-35): explicit consent before storing self-reported health data
     health_data_consent        BIT            NOT NULL
         CONSTRAINT DF_USER_health_data_consent DEFAULT 0,
@@ -210,6 +214,13 @@ CREATE TABLE [USER] (
     CONSTRAINT CK_USER_health_data_consent_timestamp CHECK (
         (health_data_consent = 0 AND health_data_consent_at IS NULL)
         OR (health_data_consent = 1 AND health_data_consent_at IS NOT NULL)
+    ),
+    CONSTRAINT CK_USER_nutrition_eligibility_status CHECK (
+        nutrition_eligibility_status IN ('NOT_CONFIRMED', 'ELIGIBLE', 'INELIGIBLE')
+    ),
+    CONSTRAINT CK_USER_nutrition_eligibility_timestamp CHECK (
+        (nutrition_eligibility_status = 'NOT_CONFIRMED' AND nutrition_eligibility_confirmed_at IS NULL)
+        OR (nutrition_eligibility_status IN ('ELIGIBLE', 'INELIGIBLE') AND nutrition_eligibility_confirmed_at IS NOT NULL)
     ),
     CONSTRAINT CK_USER_onboarding_status CHECK (
         onboarding_status IN ('NOT_STARTED', 'SKIPPED', 'COMPLETED')

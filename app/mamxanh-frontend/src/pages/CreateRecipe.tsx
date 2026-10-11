@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, ImagePlus, Info, LoaderCircle, Plus, Sparkles, Trash2, UploadCloud } from 'lucide-react';
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
 import { ApiError } from '../lib/apiClient';
@@ -10,7 +11,7 @@ import { Button, Card } from '../components/ui';
 import { BinButton } from '../components/BinButton';
 import { AiRecipeAssistantModal, type GeneratedRecipeData } from '../components/AiRecipeAssistantModal';
 import type { UserRole } from '../types';
-import { Link, useNavigate } from 'react-router-dom';
+import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
 
 type IngredientRow = {
   key: string;
@@ -61,7 +62,7 @@ function RecipeCreationAccessGate({ active, role }: { active: boolean; role: Use
               : 'Vai trò hiện tại không có quyền đăng công thức.'}
         </p>
         {destination && (
-          <Link to={destination} className="mt-5 inline-flex rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-700">
+          <Link to={destination} className="mt-5 inline-flex rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-on-brand hover:bg-brand-700">
             {action}
           </Link>
         )}
@@ -101,6 +102,7 @@ function CreateRecipeForm() {
   const [ingredients, setIngredients] = useState<IngredientRow[]>(() => [emptyIngredient()]);
   const [files, setFiles] = useState<File[]>([]);
   const [coverIndex, setCoverIndex] = useState<number | null>(null);
+  const [mediaList, setMediaList] = useState<ImageItem[]>([]);
   const [mediaError, setMediaError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
@@ -177,6 +179,13 @@ function CreateRecipeForm() {
       setMediaError('Tính năng tải lên ảnh đang được hoàn thiện. Hiện hãy đăng bài không kèm ảnh.');
       return false;
     }
+    if (mediaList.length > 0) {
+      const coverCount = mediaList.filter((m) => m.isCover).length;
+      if (coverCount !== 1) {
+        setMediaError('Vui lòng chỉ định chính xác 1 ảnh đại diện (ảnh bìa) cho bài viết (FR-14, BR-19).');
+        return false;
+      }
+    }
     setMediaError('');
     return true;
   };
@@ -224,7 +233,11 @@ function CreateRecipeForm() {
         unitId: row.unitId ?? 0,
         quantity: Number(row.quantity),
       })),
-      media: [],
+      media: mediaList.map((m) => ({
+        blobUrl: m.url,
+        mimeType: m.mimeType,
+        cover: m.isCover,
+      })),
     };
 
     setSubmitting(true);
@@ -385,7 +398,13 @@ function CreateRecipeForm() {
           </Card>
 
           <Card className="space-y-4 p-5 sm:p-6">
-            <SectionHead number="4" title="Ảnh và video" />
+            <SectionHead number="4" title="Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)" />
+            <RecipeImageUploader
+              images={mediaList}
+              onChange={setMediaList}
+              maxImages={5}
+            />
+
             <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/50 p-4">
               <div className="flex items-start gap-3">
                 <UploadCloud className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
@@ -504,7 +523,7 @@ function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, ro
     <div className="relative">
       <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`ingredient-${rowNumber}`}>Nguyên liệu *</label>
       <input id={`ingredient-${rowNumber}`} value={value} onFocus={() => setOpen(true)} onChange={(event) => onTextChange(event.target.value)} onBlur={() => window.setTimeout(() => setOpen(false), 120)} placeholder="Tìm nguyên liệu có sẵn" autoComplete="off" className={inputClass} aria-label={`Chọn nguyên liệu ${rowNumber}`} aria-expanded={open} />
-      {open && <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-brand-200 bg-white p-1 shadow-lg">
+      {open && <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-brand-200 bg-paper p-1 shadow-lg">
         {searchError && <p className="px-3 py-2 text-xs text-red-700">{searchError}</p>}
         {!searchError && suggestions.length === 0 && <p className="px-3 py-2 text-xs text-ink-muted">Nguyên liệu này hiện chưa được hỗ trợ.</p>}
         {suggestions.map((item) => <button key={item.ingredientId} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(item); setOpen(false); }} className={`block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-brand-50 ${selectedId === item.ingredientId ? 'bg-brand-50 font-semibold' : ''}`}>{item.name}</button>)}
@@ -533,10 +552,10 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 }
 
 function SectionHead({ number, title }: { number: string; title: string }) {
-  return <div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">{number}</span><h2 className="text-lg font-extrabold text-ink">{title}</h2></div>;
+  return <div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on-brand">{number}</span><h2 className="text-lg font-extrabold text-ink">{title}</h2></div>;
 }
 
-const inputClass = 'w-full rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
+const inputClass = 'w-full rounded-xl border border-brand-200 bg-paper px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 const errorClass = 'mt-1 text-xs font-medium text-red-700';
 
 function quantityError(rawQuantity: string): string | null {
