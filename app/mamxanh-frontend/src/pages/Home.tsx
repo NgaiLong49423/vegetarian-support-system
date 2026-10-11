@@ -54,7 +54,7 @@ export function Home() {
       size: 8,
       viewPeriod: "ALL_TIME" as const,
     }
-    Promise.allSettled([
+    void Promise.allSettled([
       recipesApi.searchPublic({ ...base, sort: "NEWEST" }),
       recipesApi.searchPublic({ ...base, sort: "MOST_LIKED" }),
       recipesApi.getFormOptions(),
@@ -336,7 +336,6 @@ function RecipeCollection({
       ) : recipes.length ? (
         <div
           aria-label={title}
-          tabIndex={0}
           className="scrollbar-thin grid auto-cols-[160px] grid-flow-col gap-3 overflow-x-auto pb-2 sm:auto-cols-[170px]"
         >
           {recipes.map((recipe) => (

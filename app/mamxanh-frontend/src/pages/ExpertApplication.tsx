@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { PageContainer } from '../components/Layout';
 import { Button, Card } from '../components/ui';
@@ -23,6 +23,7 @@ export function ExpertApplicationPage() {
   const [history, setHistory] = useState<ExpertApplication[]>([]);
   const [applications, setApplications] = useState<ExpertApplication[]>([]);
   const [selected, setSelected] = useState<ExpertApplication | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [filter, setFilter] = useState('PENDING');
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -57,6 +58,7 @@ export function ExpertApplicationPage() {
   }, [adminView, filter, page, updateAccountRole]);
 
   useEffect(() => { if (account) void load(); }, [account, load]);
+  useEffect(() => { if (selected && !dialogRef.current?.open) dialogRef.current?.showModal(); }, [selected]);
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(''); setNotice('');
@@ -111,8 +113,8 @@ export function ExpertApplicationPage() {
         <Button variant="outline" onClick={async () => { setBusy(true); try { setSelected(await expertApplicationsApi.detail(app.id)); setReason(''); } catch (e) { setError(errorText(e)); } finally { setBusy(false); } }}>Xem chi tiết</Button>
       </Card>)}{!loading && applications.length === 0 && <Card className="p-8 text-center text-ink-muted">Không có đơn phù hợp.</Card>}</div>
       {!loading && totalPages > 1 && <div className="mt-4 flex items-center justify-center gap-3"><Button variant="outline" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>Trang trước</Button><span className="text-sm">Trang {page + 1}/{totalPages}</span><Button variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage((value) => value + 1)}>Trang sau</Button></div>}
-      {selected && <div role="dialog" aria-modal="true" aria-labelledby="application-title" className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4" onClick={() => setSelected(null)}>
-        <div className="mx-auto my-8 max-w-2xl" onClick={(event) => event.stopPropagation()}><Card className="space-y-4 p-5 sm:p-7">
+      {selected && <dialog ref={dialogRef} aria-labelledby="application-title" className="fixed inset-0 m-0 h-dvh w-screen max-h-none max-w-none overflow-y-auto border-0 bg-transparent p-4 backdrop:bg-black/40" onClose={() => setSelected(null)} onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
+        <div className="mx-auto my-8 max-w-2xl"><Card className="space-y-4 p-5 sm:p-7">
           <h2 id="application-title" className="text-xl font-bold">Hồ sơ #{selected.id} · {selected.displayName}</h2><p className="text-sm text-ink-muted">{selected.email} · {selected.status}</p>
           <div><h3 className="font-semibold">Kinh nghiệm</h3><p className="whitespace-pre-wrap text-sm">{selected.experience}</p></div>
           <div><h3 className="font-semibold">Trường phái</h3><p>{types.find(([key]) => key === selected.vegetarianType)?.[1] ?? selected.vegetarianType}</p></div>
@@ -124,7 +126,7 @@ export function ExpertApplicationPage() {
             <div className="flex flex-wrap justify-end gap-2"><Button variant="outline" onClick={() => setSelected(null)}>Đóng</Button><Button variant="outline" disabled={busy || reason.trim().length < 10} onClick={() => void review('reject')}>Từ chối</Button><Button disabled={busy} onClick={() => void review('approve')}>Phê duyệt</Button></div></>}
           {selected.status !== 'PENDING' && <Button variant="outline" onClick={() => setSelected(null)}>Đóng</Button>}
         </Card></div>
-      </div>}
+      </dialog>}
     </section> : <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <Card className="p-5 sm:p-7"><h2 className="text-xl font-bold">Hồ sơ của bạn</h2>
         {account.role === 'EXPERT' && <p className="mt-3 rounded-xl bg-leaf-50 p-3 text-sm text-leaf-800">Tài khoản đã được phê duyệt Chuyên gia.</p>}

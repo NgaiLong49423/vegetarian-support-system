@@ -421,6 +421,10 @@ test('expert application customer and admin workflows use the API and recover fr
   });
   await expect(page.getByRole('heading', { name: 'Xét duyệt Chuyên gia' })).toBeVisible();
   await page.getByRole('button', { name: 'Xem chi tiết' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Xem chi tiết' }).click();
   await page.getByLabel(/Lý do từ chối/).fill('Cần bổ sung thêm kinh nghiệm cụ thể.');
   await page.getByRole('button', { name: 'Từ chối', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Đơn đã được xử lý');
