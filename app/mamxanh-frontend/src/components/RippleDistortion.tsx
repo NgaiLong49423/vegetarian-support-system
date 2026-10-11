@@ -131,16 +131,7 @@ void main() {
 `;
 
 const hexToRGB = (hex: string): [number, number, number] => {
-  const clean = hex.replace('#', '');
-  const full =
-    clean.length === 3
-      ? clean
-          .split('')
-          .map((c) => c + c)
-          .join('')
-      : clean;
-  const n = parseInt(full, 16);
-  if (Number.isNaN(n)) return [1, 1, 1];
+  const n = parseInt(hex.replace('#', ''), 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 };
 
@@ -167,28 +158,51 @@ export interface RippleDistortionProps {
   style?: CSSProperties;
 }
 
-export function RippleDistortion({
-  src = 'https://images.unsplash.com/photo-1782977389500-dd7adad33ebe?q=80&w=3416&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  brushSize = 150,
-  strength = 0.2,
-  swirl = 1,
-  rings = 4,
-  spread = 5,
-  fade = 3,
-  spacing = 15,
-  dispersion = 0,
-  glint = 0,
-  tint = '#a855f7',
-  tintAmount = 0.1,
-  grayscale = true,
-  highlightColor = '#ffffff',
-  trigger = 'hover',
-  clickStrength = 2,
-  quality = 'low',
-  enabled = true,
-  className = '',
-  style,
-}: RippleDistortionProps) {
+const RIPPLE_DEFAULTS = {
+  src: '/hero-art.jpg',
+  brushSize: 150,
+  strength: 0.2,
+  swirl: 1,
+  rings: 4,
+  spread: 5,
+  fade: 3,
+  spacing: 15,
+  dispersion: 0,
+  glint: 0,
+  tint: '#a855f7',
+  tintAmount: 0.1,
+  grayscale: true,
+  highlightColor: '#ffffff',
+  trigger: 'hover' as const,
+  clickStrength: 2,
+  quality: 'low' as const,
+  enabled: true,
+  className: '',
+};
+
+export function RippleDistortion(props: RippleDistortionProps) {
+  const {
+    src,
+    brushSize,
+    strength,
+    swirl,
+    rings,
+    spread,
+    fade,
+    spacing,
+    dispersion,
+    glint,
+    tint,
+    tintAmount,
+    grayscale,
+    highlightColor,
+    trigger,
+    clickStrength,
+    quality,
+    enabled,
+    className,
+    style,
+  } = { ...RIPPLE_DEFAULTS, ...props };
   const mountRef = useRef<HTMLDivElement>(null);
   const configRef = useRef<{
     brushSize: number;

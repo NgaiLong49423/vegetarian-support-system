@@ -12,17 +12,25 @@ export interface HeartCheckboxProps {
   disabled?: boolean;
 }
 
-export function HeartCheckbox({
-  checked,
-  onChange,
-  onClick,
-  size = 40,
-  className = '',
-  title = 'Yêu thích',
-  id,
-  'aria-label': ariaLabel,
-  disabled = false,
-}: HeartCheckboxProps) {
+const HEART_DEFAULTS = {
+  size: 40,
+  className: '',
+  title: 'Yêu thích',
+  disabled: false,
+};
+
+export function HeartCheckbox(props: HeartCheckboxProps) {
+  const {
+    checked,
+    onChange,
+    onClick,
+    size,
+    className,
+    title,
+    id,
+    'aria-label': ariaLabel,
+    disabled,
+  } = { ...HEART_DEFAULTS, ...props };
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     onClick?.(e);

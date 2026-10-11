@@ -234,7 +234,7 @@ export function Home() {
                       to="/dang-nhap"
                       className="mt-2.5 inline-block rounded-full bg-brand-600 px-4 py-1.5 text-xs font-semibold text-on-brand hover:bg-brand-500"
                     >
-                      Đăng nhập
+                      Đăng nhập tài khoản
                     </Link>
                   )}
                 </div>

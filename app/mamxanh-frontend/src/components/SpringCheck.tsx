@@ -54,27 +54,44 @@ export interface SpringCheckProps {
   style?: CSSProperties;
 }
 
-export default function SpringCheck({
-  label,
-  checked,
-  defaultChecked = false,
-  onChange,
-  disabled = false,
-  color = '#ea580c',
-  fillColor = '#ea580c',
-  checkColor = '#ffffff',
-  textColor,
-  boxSize = 22,
-  boxRadius = 7,
-  fontSize = 15,
-  bounce = 0.2,
-  strikeLag = 0.12,
-  doneOpacity = 0.45,
-  strike = 'left',
-  ariaLabel,
-  className = '',
-  style,
-}: SpringCheckProps) {
+const SPRING_CHECK_DEFAULTS = {
+  defaultChecked: false,
+  disabled: false,
+  color: '#ea580c',
+  fillColor: '#ea580c',
+  checkColor: '#ffffff',
+  boxSize: 22,
+  boxRadius: 7,
+  fontSize: 15,
+  bounce: 0.2,
+  strikeLag: 0.12,
+  doneOpacity: 0.45,
+  strike: 'left' as const,
+  className: '',
+};
+
+export default function SpringCheck(props: SpringCheckProps) {
+  const {
+    label,
+    checked,
+    defaultChecked,
+    onChange,
+    disabled,
+    color,
+    fillColor,
+    checkColor,
+    textColor,
+    boxSize,
+    boxRadius,
+    fontSize,
+    bounce,
+    strikeLag,
+    doneOpacity,
+    strike,
+    ariaLabel,
+    className,
+    style,
+  } = { ...SPRING_CHECK_DEFAULTS, ...props };
   const controlled = checked !== undefined;
   const [inner, setInner] = useState(defaultChecked);
   const on = controlled ? !!checked : inner;
@@ -94,11 +111,11 @@ export default function SpringCheck({
 
   const write = (value: number) => {
     const r = readings(value, cfg.current.doneOpacity, cfg.current.strikeLag);
-    if (fillRef.current) fillRef.current.style.transform = r.fill;
-    if (boxRef.current) boxRef.current.style.transform = r.box;
-    if (tickRef.current) tickRef.current.style.strokeDashoffset = String(r.tick);
-    if (wordRef.current) wordRef.current.style.opacity = String(r.word);
-    if (ruleRef.current) ruleRef.current.style.transform = r.rule;
+    fillRef.current?.style.setProperty('transform', r.fill);
+    boxRef.current?.style.setProperty('transform', r.box);
+    tickRef.current?.style.setProperty('stroke-dashoffset', String(r.tick));
+    wordRef.current?.style.setProperty('opacity', String(r.word));
+    ruleRef.current?.style.setProperty('transform', r.rule);
   };
 
   useMotionValueEvent(t, 'change', write);

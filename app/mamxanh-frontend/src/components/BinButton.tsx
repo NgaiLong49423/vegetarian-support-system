@@ -11,20 +11,29 @@ export interface BinButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> 
 
 const SIZE_MAP = { sm: 28, md: 38, lg: 55 } as const;
 
-export function BinButton({
-  size = 40,
-  label,
-  title = 'Xóa',
-  className = '',
-  style,
-  type = 'button',
-  disabled = false,
-  ...props
-}: BinButtonProps) {
+const BIN_DEFAULTS = {
+  size: 40 as number | 'sm' | 'md' | 'lg',
+  title: 'Xóa',
+  className: '',
+  type: 'button' as const,
+  disabled: false,
+};
+
+export function BinButton(rawProps: BinButtonProps) {
+  const {
+    size,
+    label,
+    title,
+    className,
+    style,
+    type,
+    disabled,
+    ...props
+  } = { ...BIN_DEFAULTS, ...rawProps };
   const rawId = useId();
   const maskId = `bin-mask-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
-  const pixelSize = typeof size === 'number' ? size : (SIZE_MAP[size] ?? 38);
+  const pixelSize = typeof size === 'number' ? size : SIZE_MAP[size];
 
   const svgs = (
     <>

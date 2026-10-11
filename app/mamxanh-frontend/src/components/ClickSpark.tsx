@@ -33,17 +33,28 @@ interface Spark {
   startTime: number;
 }
 
-export const ClickSpark: FC<ClickSparkProps> = ({
-  sparkColor = '#ea580c',
-  sparkSize = 10,
-  sparkRadius = 18,
-  sparkCount = 8,
-  duration = 400,
-  extraScale = 1.0,
-  className = '',
-  style,
-  children,
-}) => {
+const CLICK_SPARK_DEFAULTS = {
+  sparkColor: '#ea580c',
+  sparkSize: 10,
+  sparkRadius: 18,
+  sparkCount: 8,
+  duration: 400,
+  extraScale: 1.0,
+  className: '',
+};
+
+export const ClickSpark: FC<ClickSparkProps> = (props) => {
+  const {
+    sparkColor,
+    sparkSize,
+    sparkRadius,
+    sparkCount,
+    duration,
+    extraScale,
+    className,
+    style,
+    children,
+  } = { ...CLICK_SPARK_DEFAULTS, ...props };
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sparksRef = useRef<Spark[]>([]);
   const animationIdRef = useRef<number | null>(null);

@@ -10,15 +10,24 @@ export interface BorderGlowProps extends React.HTMLAttributes<HTMLDivElement> {
   style?: CSSProperties;
 }
 
-export function BorderGlow({
-  children,
-  className = '',
-  backgroundColor = 'rgba(41, 41, 41, 0.92)',
-  borderRadius = 24,
-  orbitSpeed = 8,
-  style = {},
-  ...props
-}: BorderGlowProps) {
+const BORDER_GLOW_DEFAULTS = {
+  className: '',
+  backgroundColor: 'rgba(41, 41, 41, 0.92)',
+  borderRadius: 24,
+  orbitSpeed: 8,
+  style: {} as CSSProperties,
+};
+
+export function BorderGlow(rawProps: BorderGlowProps) {
+  const {
+    children,
+    className,
+    backgroundColor,
+    borderRadius,
+    orbitSpeed,
+    style,
+    ...props
+  } = { ...BORDER_GLOW_DEFAULTS, ...rawProps };
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
