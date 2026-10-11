@@ -20,6 +20,8 @@ let failure;
 const build = run('vite build (coverage instrumentation)', [executable('vite/bin/vite.js'), 'build'], {
   ...process.env,
   VITE_COVERAGE: 'true',
+  // Google sign-in renders only with a client ID; the E2E tests replace Google Identity Services with a stub.
+  VITE_GOOGLE_CLIENT_ID: process.env.VITE_GOOGLE_CLIENT_ID || 'mamxanh-e2e.apps.googleusercontent.com',
 });
 failure = preserveFailure(failure, 'Instrumented frontend build', build);
 if (!failure) {

@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-05
-next_id: 12
+last_updated: 2026-10-11
+next_id: 19
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,60 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-018
+    title: Luồng đăng công thức có thể lưu ảnh xem trước thay cho ảnh đã upload
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Recipe media/Direct publishing
+    file: .agents/outputs/bugs/BUG-018.md
+    created: 2026-10-11
+    updated: 2026-10-11
+    related_issue: 30
+  - id: BUG-016
+    title: API hồ sơ dinh dưỡng trả 500 thay cho lỗi nghiệp vụ 400/403
+    status: RECORDED
+    severity: Medium
+    area: Backend/Nutrition Profile
+    file: .agents/outputs/bugs/BUG-016.md
+    created: 2026-10-06
+    updated: 2026-10-10
+    related_issue: 78
+  - id: BUG-015
+    title: Bộ kiểm thử trong database/queries.sql dừng ở mã lý do báo cáo cũ
+    status: RECORDED
+    severity: Medium
+    area: Cơ sở dữ liệu/Kịch bản kiểm thử SQL
+    file: .agents/outputs/bugs/BUG-015.md
+    created: 2026-10-10
+    updated: 2026-10-10
+    related_issue: 31
+  - id: BUG-014
+    title: Integration test gửi báo cáo để sót Recipe Post trong SQL Server
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Test cleanup
+    file: .agents/outputs/bugs/BUG-014.md
+    created: 2026-10-06
+    updated: 2026-10-06
+    related_issue: 31
+  - id: BUG-013
+    title: Backend chấp nhận link YouTube thiếu mã video
+    status: RECORDED
+    severity: Medium
+    area: Backend/Recipe validation
+    file: .agents/outputs/bugs/BUG-013.md
+    created: 2026-10-06
+    updated: 2026-10-06
+    related_issue: Unknown
+  - id: BUG-012
+    title: Schema báo cáo lưu trạng thái và mã lý do lỗi thời
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Cơ sở dữ liệu báo cáo
+    file: .agents/outputs/bugs/BUG-012.md
+    created: 2026-10-06
+    updated: 2026-10-06
+    related_issue: 31
   - id: BUG-011
     title: Nút Stop của IntelliJ không truyền env file cho Docker Compose
     status: RECORDED

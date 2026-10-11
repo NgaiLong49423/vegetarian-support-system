@@ -1,6 +1,9 @@
 package tech.mamxanh.recipe.controller;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +38,11 @@ public class RecipeController {
     }
 
     @GetMapping("/{recipeId}")
+    @Operation(summary = "Get a published recipe detail", description = "Returns the current RecipePost projection, including public author, ingredients, ordered media, nutrition estimates, and read statistics.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Published recipe detail returned."),
+            @ApiResponse(responseCode = "404", description = "Recipe does not exist or is not public.")
+    })
     public RecipeDetailResponse recipeDetail(@PathVariable Long recipeId) {
         return service.getPublishedRecipe(recipeId);
     }

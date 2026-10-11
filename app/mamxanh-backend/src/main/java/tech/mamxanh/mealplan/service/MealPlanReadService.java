@@ -51,8 +51,7 @@ public class MealPlanReadService {
                     entry.getPlannedServings(), entry.getRecipeId(), available ? recipe.title() : null,
                     available ? recipe.coverUrl() : null, available ? recipe.dishCategory() : null,
                     available ? recipe.totalTimeMinutes() : null, deleted,
-                    deleted ? "Công thức này đã bị xóa bởi tác giả"
-                            : available ? null : "Công thức này hiện không còn khả dụng.");
+                    available ? null : "Công thức không còn khả dụng");
         }).toList();
         return new MealPlanWeekResponse(weekStartDate, response);
     }

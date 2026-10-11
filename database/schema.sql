@@ -157,6 +157,10 @@ CREATE TABLE [USER] (
         CONSTRAINT DF_USER_therapeutic DEFAULT 0,
     nutrition_scope_confirmed  BIT            NOT NULL
         CONSTRAINT DF_USER_nutrition_scope DEFAULT 0,
+    -- V10 (FR-38): eligibility state is separate from FR-35 health-data consent
+    nutrition_eligibility_status VARCHAR(20) NOT NULL
+        CONSTRAINT DF_USER_nutrition_eligibility_status DEFAULT 'NOT_CONFIRMED',
+    nutrition_eligibility_confirmed_at DATETIME2(7) NULL,
     -- V4 (FR-35): explicit consent before storing self-reported health data
     health_data_consent        BIT            NOT NULL
         CONSTRAINT DF_USER_health_data_consent DEFAULT 0,
@@ -210,6 +214,13 @@ CREATE TABLE [USER] (
     CONSTRAINT CK_USER_health_data_consent_timestamp CHECK (
         (health_data_consent = 0 AND health_data_consent_at IS NULL)
         OR (health_data_consent = 1 AND health_data_consent_at IS NOT NULL)
+    ),
+    CONSTRAINT CK_USER_nutrition_eligibility_status CHECK (
+        nutrition_eligibility_status IN ('NOT_CONFIRMED', 'ELIGIBLE', 'INELIGIBLE')
+    ),
+    CONSTRAINT CK_USER_nutrition_eligibility_timestamp CHECK (
+        (nutrition_eligibility_status = 'NOT_CONFIRMED' AND nutrition_eligibility_confirmed_at IS NULL)
+        OR (nutrition_eligibility_status IN ('ELIGIBLE', 'INELIGIBLE') AND nutrition_eligibility_confirmed_at IS NOT NULL)
     ),
     CONSTRAINT CK_USER_onboarding_status CHECK (
         onboarding_status IN ('NOT_STARTED', 'SKIPPED', 'COMPLETED')
@@ -566,7 +577,7 @@ CREATE TABLE [REPORT] (
     reason_code      VARCHAR(30)     NOT NULL,
     description      NVARCHAR(500)   NULL,
     status           VARCHAR(20)     NOT NULL
-        CONSTRAINT DF_REPORT_status DEFAULT 'PENDING',
+        CONSTRAINT DF_REPORT_status DEFAULT 'OPEN',
     decision         VARCHAR(30)     NULL,
     decision_reason  NVARCHAR(1000)  NULL,
     created_at       DATETIME2(7)    NOT NULL
@@ -587,12 +598,12 @@ CREATE TABLE [REPORT] (
         OR (recipe_id IS NULL AND comment_id IS NOT NULL)
     ),
     CONSTRAINT CK_REPORT_reason_code CHECK (
-        reason_code IN ('NON_VEGAN', 'FOOD_SAFETY_HAZARD',
-                        'INAPPROPRIATE_CONTENT', 'COPYRIGHT_VIOLATION',
-                        'SPAM_ADVERTISING', 'OTHER')
+        reason_code IN ('RECIPE_INFO_OR_DIET_LABEL', 'FOOD_SAFETY_HAZARD',
+                        'SPAM_ADVERTISING', 'INAPPROPRIATE_CONTENT',
+                        'COPYRIGHT_VIOLATION', 'OTHER')
     ),
     CONSTRAINT CK_REPORT_status CHECK (
-        status IN ('PENDING', 'PROCESSING', 'RESOLVED', 'REJECTED')
+        status IN ('OPEN', 'IN_REVIEW', 'RESOLVED')
     )
 );
 GO
@@ -842,14 +853,14 @@ GO
 CREATE UNIQUE NONCLUSTERED INDEX UQ_REPORT_open_recipe
     ON [REPORT](reporter_id, recipe_id)
     WHERE recipe_id IS NOT NULL
-      AND status IN ('PENDING', 'PROCESSING');
+      AND status IN ('OPEN', 'IN_REVIEW');
 GO
 
 -- Constraint #15: Prevent duplicate open reports on same comment by same reporter (BR-29)
 CREATE UNIQUE NONCLUSTERED INDEX UQ_REPORT_open_comment
     ON [REPORT](reporter_id, comment_id)
     WHERE comment_id IS NOT NULL
-      AND status IN ('PENDING', 'PROCESSING');
+      AND status IN ('OPEN', 'IN_REVIEW');
 GO
 
 -- Constraint #26: At most one preference type per standard ingredient per user (Q11b)

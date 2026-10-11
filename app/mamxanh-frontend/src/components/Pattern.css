@@ -1,0 +1,71 @@
+/* ---- Pattern.css ----
+ * Ambient aurora background in the Mâm Xanh palette.
+ *
+ * Performance notes:
+ * - No `filter: blur()` on huge layers: softness comes from radial-gradient
+ *   falloff, so each blob is rasterized once and never repainted.
+ * - Only `transform` is animated, which runs on the compositor thread.
+ * - Animations pause when the section is off-screen (see Pattern.tsx).
+ */
+.pattern-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  contain: paint;
+  background: linear-gradient(
+    160deg,
+    #f0fdf4 0%,   /* Soft leaf green */
+    #fffbeb 45%,  /* Warm cream */
+    #fff7ed 100%  /* Soft peach */
+  );
+}
+
+.pattern-blob {
+  position: absolute;
+  width: clamp(420px, 55vw, 900px);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at center, var(--blob-color) 0%, transparent 68%);
+  opacity: var(--blob-opacity, 0.75);
+  will-change: transform;
+  backface-visibility: hidden;
+  animation: var(--blob-anim) var(--blob-duration, 40s) ease-in-out infinite alternate;
+}
+
+.pattern-blob--1 { --blob-color: #86efac; --blob-anim: pattern-drift-a; --blob-duration: 38s; top: -12%; left: -12%; }
+.pattern-blob--2 { --blob-color: #fde68a; --blob-anim: pattern-drift-b; --blob-duration: 46s; top: 8%;  right: -16%; }
+.pattern-blob--3 { --blob-color: #fdba74; --blob-anim: pattern-drift-c; --blob-duration: 52s; top: 38%; left: 18%; --blob-opacity: 0.55; }
+.pattern-blob--4 { --blob-color: #a7f3d0; --blob-anim: pattern-drift-b; --blob-duration: 44s; top: 58%; right: -8%; }
+.pattern-blob--5 { --blob-color: #fed7aa; --blob-anim: pattern-drift-a; --blob-duration: 42s; bottom: -14%; left: -14%; }
+
+/* Slow, gentle drifting (compositor-only transforms) */
+@keyframes pattern-drift-a {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(10vw, 6vh, 0) scale(1.12); }
+  100% { transform: translate3d(-4vw, 12vh, 0) scale(0.95); }
+}
+
+@keyframes pattern-drift-b {
+  0%   { transform: translate3d(0, 0, 0) scale(1.05); }
+  50%  { transform: translate3d(-12vw, 8vh, 0) scale(0.92); }
+  100% { transform: translate3d(-4vw, -6vh, 0) scale(1.1); }
+}
+
+@keyframes pattern-drift-c {
+  0%   { transform: translate3d(0, 0, 0) scale(0.95); }
+  50%  { transform: translate3d(14vw, -8vh, 0) scale(1.15); }
+  100% { transform: translate3d(-10vw, 6vh, 0) scale(1); }
+}
+
+/* Paused while off-screen to free the GPU */
+.pattern-wrapper.is-paused .pattern-blob {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pattern-blob {
+    animation: none;
+  }
+}

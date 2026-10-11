@@ -45,6 +45,13 @@ export interface Recipe {
   ingredients: Ingredient[];
   steps: string[];
   author: Author;
+  /** Thư viện ảnh minh họa theo FR-14 (tối đa 5 ảnh, đúng 1 ảnh bìa) */
+  media?: Array<{
+    url: string;
+    mimeType?: string;
+    isCover: boolean;
+    displayOrder: number;
+  }>;
   /** Tổng số lượt xem — theo BR-70 (RECIPE_VIEW) */
   viewCount: number;
   likes: number;
@@ -52,6 +59,8 @@ export interface Recipe {
   likePercentage?: number;
   /** Liên kết YouTube tùy chọn (FR-15 / BR-10) */
   youtubeUrl?: string;
+  /** Trạng thái bài viết: PUBLISHED (mặc định), HIDDEN, DELETED (BR-05) */
+  status?: 'PUBLISHED' | 'HIDDEN' | 'DELETED';
 }
 
 export interface Post {

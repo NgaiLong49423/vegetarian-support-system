@@ -3,7 +3,9 @@ package tech.mamxanh.common.exception;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Set;
 
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ProblemDetail;
@@ -52,5 +54,18 @@ class GlobalExceptionHandlerTest {
         assertThat(ErrorCode.fromStatus(405)).isEqualTo(ErrorCode.METHOD_NOT_ALLOWED);
         assertThat(ErrorCode.fromStatus(415)).isEqualTo(ErrorCode.UNSUPPORTED_MEDIA_TYPE);
         assertThat(ErrorCode.fromStatus(500)).isEqualTo(ErrorCode.INTERNAL_ERROR);
+    }
+
+    @Test
+    void constraintViolationsUseTheValidationProblemResponse() {
+        ResponseEntity<Object> response = handler.handleConstraintViolation(
+                new ConstraintViolationException("invalid request parameter", Set.of()),
+                new ServletWebRequest(new MockHttpServletRequest("GET", "/api/v1/recipes")));
+
+        ProblemDetail problem = (ProblemDetail) response.getBody();
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(problem.getProperties()).containsEntry("code", "VALIDATION_FAILED");
+        assertThat(problem.getInstance()).hasToString("/api/v1/recipes");
+        assertThat(problem.getProperties()).containsKey("errors");
     }
 }

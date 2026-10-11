@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, ShieldAlert, ThumbsDown, ThumbsUp, User } from 'lucide-react';
 import { Button, Card, ProgressBar } from './ui';
 import { useAuth } from './AuthContext';
-import { currentUser } from '../data/mockData';
 import type { Recipe } from '../types';
 
 export function RecipeRating({ recipe }: { recipe: Recipe }) {
-  const { memberView: active, demoActive } = useAuth();
-  const isAuthor = demoActive && recipe.author.name === currentUser.name;
+  const { isAuthenticated: active, account } = useAuth();
+  const isAuthor = !!account && recipe.author.name === account.displayName;
 
   // FR-57 Vote State
   const [userVote, setUserVote] = useState<'like' | 'dislike' | null>(null);
@@ -60,7 +59,7 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
             Mức độ yêu thích từ cộng đồng (FR-57)
           </h2>
           <p className="mt-1 text-xs text-ink-muted">
-            Đánh giá theo tỷ lệ Like / Dislike thực tế từ thành viên đã trải nghiệm công thức.
+            Bản minh họa UI; API bình chọn công thức chưa được kết nối.
           </p>
         </div>
       </div>

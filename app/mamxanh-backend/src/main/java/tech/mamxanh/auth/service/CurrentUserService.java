@@ -1,6 +1,10 @@
 package tech.mamxanh.auth.service;
 
 import java.util.List;
+import java.util.Collection;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,6 +41,13 @@ public class CurrentUserService {
     public PublicProfile getPublicProfile(long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
         return new PublicProfile(user.getId(), user.getDisplayName(), user.getAvatarUrl());
+    }
+
+    public Map<Long, PublicProfile> getPublicProfiles(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) return Map.of();
+        return userRepository.findAllById(userIds).stream()
+                .map(user -> new PublicProfile(user.getId(), user.getDisplayName(), user.getAvatarUrl()))
+                .collect(Collectors.toMap(PublicProfile::id, Function.identity()));
     }
 
     private User requireActiveUser() {

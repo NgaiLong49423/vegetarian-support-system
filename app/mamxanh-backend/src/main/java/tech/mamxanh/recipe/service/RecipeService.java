@@ -8,12 +8,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.recipe.dto.request.CreateRecipeRequest;
@@ -41,8 +44,10 @@ import tech.mamxanh.recipe.repository.RecipeIngredientReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeIngredientRepository;
 import tech.mamxanh.recipe.repository.RecipeMediaRepository;
 import tech.mamxanh.recipe.repository.RecipePostRepository;
+import tech.mamxanh.recipe.repository.RecipeStatisticsRepository;
 import tech.mamxanh.recipe.repository.RecipeUnitReferenceRepository;
 import tech.mamxanh.recipe.service.RecipeValidationException.FieldError;
+import tech.mamxanh.nutrition.service.RecipeNutritionService;
 
 @Service
 public class RecipeService {
@@ -54,6 +59,9 @@ public class RecipeService {
     private final RecipeAuthorReferenceRepository authorRepository;
     private final RecipeMediaRepository mediaRepository;
     private final Clock clock;
+    private final CurrentUserService currentUserService;
+    private final RecipeNutritionService nutritionService;
+    private final RecipeStatisticsRepository statisticsRepository;
 
     @Autowired
     public RecipeService(RecipePostRepository recipeRepository,
@@ -61,8 +69,9 @@ public class RecipeService {
             RecipeIngredientReferenceRepository ingredientReferenceRepository,
             RecipeUnitReferenceRepository unitReferenceRepository,
             RecipeConversionRepository conversionRepository,
-            RecipeAuthorReferenceRepository authorRepository,
-            RecipeMediaRepository mediaRepository, Clock clock) {
+            RecipeAuthorReferenceRepository authorRepository, Clock clock,
+            CurrentUserService currentUserService, RecipeMediaRepository mediaRepository,
+            RecipeNutritionService nutritionService, RecipeStatisticsRepository statisticsRepository) {
         this.recipeRepository = recipeRepository;
         this.ingredientRepository = ingredientRepository;
         this.ingredientReferenceRepository = ingredientReferenceRepository;
@@ -71,6 +80,9 @@ public class RecipeService {
         this.authorRepository = authorRepository;
         this.mediaRepository = mediaRepository;
         this.clock = clock;
+        this.currentUserService = currentUserService;
+        this.nutritionService = nutritionService;
+        this.statisticsRepository = statisticsRepository;
     }
 
     @Transactional
@@ -160,7 +172,8 @@ public class RecipeService {
         List<RecipeIngredientEntity> recipeIngredients = ingredientRepository
                 .findAllByRecipeIdOrderByIdAsc(recipeId);
         Map<Long, RecipeIngredientReferenceEntity> ingredientReferences = ingredientReferenceRepository
-                .findAllById(recipeIngredients.stream().map(RecipeIngredientEntity::getIngredientId).distinct().toList())
+                .findAllById(recipeIngredients.stream().map(RecipeIngredientEntity::getIngredientId)
+                        .filter(java.util.Objects::nonNull).distinct().toList())
                 .stream().collect(Collectors.toMap(RecipeIngredientReferenceEntity::getId, Function.identity()));
         Map<Integer, RecipeUnitReferenceEntity> unitReferences = unitReferenceRepository
                 .findAllById(recipeIngredients.stream().map(RecipeIngredientEntity::getUnitId).distinct().toList())
@@ -170,25 +183,39 @@ public class RecipeService {
         VegetarianType vegetarianType = VegetarianType.valueOf(recipe.getVegetarianType());
         Difficulty difficulty = Difficulty.valueOf(recipe.getDifficulty());
         List<RecipeDetailResponse.Ingredient> ingredients = recipeIngredients.stream().map(line -> {
-            RecipeIngredientReferenceEntity ingredient = ingredientReferences.get(line.getIngredientId());
+            RecipeIngredientReferenceEntity ingredient = line.getIngredientId() == null
+                    ? null : ingredientReferences.get(line.getIngredientId());
             RecipeUnitReferenceEntity unit = unitReferences.get(line.getUnitId());
-            return new RecipeDetailResponse.Ingredient(line.getIngredientId(), ingredient.getName(), line.getQuantity(),
+            String name = ingredient == null ? line.getCustomIngredientName() : ingredient.getName();
+            return new RecipeDetailResponse.Ingredient(line.getIngredientId(), name, line.getQuantity(),
                     line.getUnitId(), unit.getCode(), unit.getName());
         }).toList();
-        List<String> ingredientsWithoutNutrition = recipeIngredients.stream()
-                .map(line -> ingredientReferences.get(line.getIngredientId()))
-                .filter(ingredient -> !ingredient.isNutritionSupported())
-                .map(RecipeIngredientReferenceEntity::getName)
-                .distinct()
-                .toList();
-        List<RecipeDetailResponse.Media> media = mediaRepository.findAllByRecipeIdOrderByDisplayOrderAsc(recipeId).stream()
-                .map(m -> new RecipeDetailResponse.Media(m.getBlobUrl(), m.getMimeType(), m.getDisplayOrder(), m.isCover()))
-                .toList();
+        var nutrition = nutritionService.calculate(recipeIngredients.stream().map(line -> {
+            RecipeUnitReferenceEntity unit = unitReferences.get(line.getUnitId());
+            RecipeIngredientReferenceEntity ingredient = line.getIngredientId() == null
+                    ? null : ingredientReferences.get(line.getIngredientId());
+            return new RecipeNutritionService.RecipeIngredient(line.getIngredientId(), line.getUnitId(),
+                    unit.getDimension(), unit.getBaseFactor(), line.getQuantity(),
+                    ingredient == null ? line.getCustomIngredientName() : ingredient.getName());
+        }).toList(), recipe.getServings());
+        var author = currentUserService.getPublicProfile(recipe.getAuthorId());
+        var stats = statisticsRepository.findStatistics(recipeId).orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
+        BigDecimal likePercentage = stats.getReactionCount() == 0 ? null
+                : BigDecimal.valueOf(stats.getLikes()).multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(stats.getReactionCount()), 2, RoundingMode.HALF_UP);
+        List<RecipeDetailResponse.Media> media = mediaRepository.findAllByRecipeIdOrderByDisplayOrderAsc(recipeId)
+                .stream().map(item -> new RecipeDetailResponse.Media(item.getBlobUrl(), item.getMimeType(),
+                        item.getDisplayOrder(), item.isCover())).toList();
         return new RecipeDetailResponse(recipe.getId(), recipe.getTitle(), recipe.getDescription(),
                 recipe.getInstructions(), category.name(), category.label(), vegetarianType.name(), vegetarianType.label(),
                 difficulty.name(), difficulty.label(), recipe.getServings(), recipe.getPrepTimeMinutes(),
-                recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getPublishedAt(), ingredients,
-                ingredientsWithoutNutrition.isEmpty(), ingredientsWithoutNutrition, media);
+                recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getPublishedAt(),
+                new RecipeDetailResponse.Author(author.id(), author.displayName(), author.avatarUrl()), ingredients,
+                nutrition.complete(), nutrition.ingredientsMissingData(),
+                new RecipeDetailResponse.Nutrition(nutrition.complete(), nutrition.ingredientsMissingData(),
+                        nutrition.total(), nutrition.perServing()),
+                new RecipeDetailResponse.Statistics(stats.getLikes(), stats.getDislikes(), stats.getReactionCount(),
+                        likePercentage, stats.getViewCount()), media);
     }
 
     @Transactional(readOnly = true)
@@ -285,12 +312,16 @@ public class RecipeService {
 
     private static void validateMedia(List<RecipeMediaInput> media, List<FieldError> errors) {
         if (media == null || media.isEmpty()) return;
+        if (media.size() > 5) errors.add(new FieldError("media", "Mỗi công thức được có tối đa 5 ảnh."));
         long covers = media.stream().filter(RecipeMediaInput::cover).count();
         if (covers != 1) errors.add(new FieldError("media", "Nếu có ảnh, hãy chọn đúng 1 ảnh bìa."));
         for (int index = 0; index < media.size(); index++) {
             RecipeMediaInput item = media.get(index);
-            if (!MediaType.accepts(item.mimeType().trim())) {
+            if (item.mimeType() == null || !MediaType.accepts(item.mimeType().trim())) {
                 errors.add(new FieldError("media[" + index + "].mimeType", "Ảnh phải có định dạng JPEG, PNG hoặc WebP."));
+            }
+            if (item.blobUrl() == null || item.blobUrl().isBlank()) {
+                errors.add(new FieldError("media[" + index + "].blobUrl", "Thiếu tham chiếu ảnh đã được upload."));
             }
         }
     }

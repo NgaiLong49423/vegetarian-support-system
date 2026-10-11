@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.3.0
+> **Version:** v2.4.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-06
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -203,24 +203,22 @@ Báo cáo do người dùng gửi và cờ do AI tạo cần phân biệt nguồ
 
 **Biểu mẫu báo cáo đã chốt 12/09/2026:** mỗi báo cáo chọn một lý do trong sáu nhóm sau:
 
-1. Sai thông tin công thức hoặc nhãn ăn chay.
-2. Nội dung có dấu hiệu nguy hiểm.
-3. Spam, quảng cáo không phù hợp.
-4. Nội dung xúc phạm hoặc không phù hợp.
-5. Sao chép, nghi vi phạm bản quyền.
-6. Khác.
+1. Sai thông tin công thức hoặc nhãn ăn chay (`RECIPE_INFO_OR_DIET_LABEL`).
+2. Nguy cơ an toàn thực phẩm (`FOOD_SAFETY_HAZARD`).
+3. Spam hoặc quảng cáo không phù hợp (`SPAM_ADVERTISING`).
+4. Nội dung xúc phạm hoặc không phù hợp (`INAPPROPRIATE_CONTENT`).
+5. Sao chép hoặc nghi vi phạm bản quyền (`COPYRIGHT_VIOLATION`).
+6. Khác (`OTHER`).
 
-Mô tả bổ sung là tùy chọn với năm nhóm đầu; chọn “Khác” phải có mô tả không rỗng (không chỉ gồm khoảng trắng). Hệ thống kiểm tra lý do hợp lệ và điều kiện mô tả trước khi tiếp nhận; nếu không đạt, chỉ rõ lỗi và không tạo báo cáo. Lý do do người dùng chọn là phản ánh cần xem xét, không phải kết luận vi phạm.
-
-Giới hạn độ dài mô tả và biện pháp chống lạm dụng bổ sung cần được xác định khi triển khai theo các tài liệu có thẩm quyền. Notification tuân theo DEC-010. Không mở rộng báo cáo sang tài khoản; báo cáo bình luận/reply thuộc FR-48. Luồng xử lý đã chốt tại 3.12, quyền xem tại 3.13.
+Mô tả bổ sung tùy chọn với năm nhóm đầu, tối đa 500 ký tự; khi chọn “Khác”, mô tả bắt buộc từ 10 đến 500 ký tự sau khi loại khoảng trắng đầu/cuối. Hệ thống kiểm tra lý do hợp lệ và điều kiện mô tả trước khi tiếp nhận; nếu không đạt, chỉ rõ lỗi và không tạo báo cáo. Lý do do người dùng chọn là phản ánh cần xem xét, không phải kết luận vi phạm. Notification tuân theo DEC-010. Không mở rộng báo cáo sang tài khoản; báo cáo bình luận/reply thuộc FR-48. Luồng xử lý đã chốt tại 3.12, quyền xem tại 3.13.
 
 ### 3.12 Xử lý báo cáo và ẩn bài công thức — đã chốt 12/09/2026
 
 | Trạng thái báo cáo | Ý nghĩa |
 | --- | --- |
-| Chờ xử lý | Báo cáo mới được gửi, chờ Administrator tiếp nhận. |
-| Đang xem xét | Admin đã tiếp nhận và đang kiểm tra nội dung. |
-| Đã giải quyết | Admin đã ghi kết luận và lý do xử lý: có vi phạm hoặc không đủ căn cứ. |
+| Chờ xử lý (`OPEN`) | Báo cáo mới được gửi, chờ Administrator tiếp nhận. |
+| Đang xem xét (`IN_REVIEW`) | Admin đã tiếp nhận và đang kiểm tra nội dung. |
+| Đã giải quyết (`RESOLVED`) | Admin đã ghi kết luận và lý do xử lý: có vi phạm hoặc không đủ căn cứ. |
 
 - Trạng thái báo cáo độc lập với trạng thái bài công thức. Gửi báo cáo hoặc có nhiều báo cáo không tự động ẩn bài.
 - Nếu xác định có vấn đề, Admin có thể cảnh báo, ẩn hoặc xóa bài công thức, hoặc khóa/mở khóa tài khoản theo mức độ vi phạm và phải ghi lý do. Đây là quyết định thủ công của Administrator, độc lập với quyền tác giả tự xóa bài của mình. MVP không dùng ma trận chế tài số tự động; số lượng báo cáo không tự động tạo chế tài.

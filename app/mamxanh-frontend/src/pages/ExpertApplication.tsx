@@ -94,9 +94,9 @@ export function ExpertApplicationPage() {
   if (!adminView && account.role !== 'CUSTOMER' && account.role !== 'EXPERT') return <PageContainer className="py-10"><Card className="p-6">Tài khoản này không thể nộp đơn đăng ký Chuyên gia.</Card></PageContainer>;
 
   return <PageContainer className="max-w-5xl py-8">
-    <header className="mb-6"><p className="text-sm font-bold text-leaf-700">CỘNG ĐỒNG MÂM XANH · FR-05</p>
+    <header className="mb-6"><p className="text-sm font-bold text-leaf-700">CỘNG ĐỒNG MÂM XANH</p>
       <h1 className="mt-1 text-3xl font-extrabold text-ink">{adminView ? 'Xét duyệt Chuyên gia' : 'Đăng ký Chuyên gia'}</h1>
-      <p className="mt-2 max-w-3xl text-sm text-ink-muted">{adminView ? 'Thẩm định hồ sơ của thành viên. Mỗi quyết định chỉ được áp dụng một lần.' : 'Chia sẻ kinh nghiệm và công thức chay; không yêu cầu bằng cấp hoặc giấy tờ.'}</p>
+      <p className="mt-2 max-w-3xl text-sm text-ink-muted">{adminView ? 'Thẩm định hồ sơ của thành viên, mỗi quyết định được ghi nhận một lần.' : 'Chia sẻ kinh nghiệm và công thức chay, kết nối cùng cộng đồng yêu ẩm thực thuần lành.'}</p>
     </header>
     {error && <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error} <button className="ml-2 font-bold underline" onClick={() => void load()}>Tải lại</button></div>}
     {notice && <div role="status" className="mb-4 rounded-xl bg-leaf-50 p-3 text-sm text-leaf-800">{notice}</div>}

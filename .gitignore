@@ -53,6 +53,10 @@ promptfoo-output*
 # Pinned evaluation dependencies
 node_modules/
 
+# Test and coverage artifacts
+test-results/
+playwright-report/
+
 # Draw.io temporary and backup files
 .$*.bkp
 .$*.dtmp

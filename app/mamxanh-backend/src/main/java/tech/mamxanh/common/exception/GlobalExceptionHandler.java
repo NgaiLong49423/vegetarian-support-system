@@ -3,6 +3,7 @@ package tech.mamxanh.common.exception;
 import java.net.URI;
 import java.util.List;
 
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -85,6 +86,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 request);
         problem.setProperty("errors", errors);
         return ResponseEntity.status(ErrorCode.VALIDATION_FAILED.status()).headers(headers).body(problem);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex, WebRequest request) {
+        List<FieldErrorDetail> errors = ex.getConstraintViolations().stream()
+                .map(violation -> new FieldErrorDetail(violation.getPropertyPath().toString(), violation.getMessage()))
+                .toList();
+        ProblemDetail problem = problem(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultDetail(),
+                request);
+        problem.setProperty("errors", errors);
+        return ResponseEntity.status(ErrorCode.VALIDATION_FAILED.status()).body(problem);
     }
 
     /**

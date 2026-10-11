@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.4.0
+> **Version:** v2.5.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-09
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -28,7 +28,7 @@ Lưu các thông số sức khỏe do Member khai báo để hỗ trợ các ph�
 Member mở biểu mẫu hồ sơ dinh dưỡng hoặc chọn cập nhật thông số đã lưu.
 
 #### Preconditions
-Member đã đăng nhập và đã xác nhận thuộc phạm vi hỗ trợ dinh dưỡng theo FR-38.
+Member đã đăng nhập và có trạng thái eligibility `ELIGIBLE` theo FR-38.
 
 #### Main Flow
 1. Member mở hoặc chỉnh sửa hồ sơ dinh dưỡng.
@@ -44,7 +44,7 @@ Member đã đăng nhập và đã xác nhận thuộc phạm vi hỗ trợ dinh
 #### Exception/Security Flows
 - Ngày sinh sai định dạng/ngoài giới hạn hoặc chiều cao, cân nặng ngoài ngưỡng: từ chối lưu và chỉ rõ trường cần sửa.
 - Dữ liệu hồ sơ chỉ được chính Member sở hữu xem hoặc cập nhật; không hiển thị trên hồ sơ công khai (NFR-08, NFR-09, NFR-20).
-- Nếu Member thuộc nhóm loại trừ, xử lý theo [FR-38](#fr-38) và không thực hiện cá nhân hóa dinh dưỡng.
+- Nếu Member có trạng thái `NOT_CONFIRMED` hoặc `INELIGIBLE`, xử lý theo [FR-38](#fr-38) và không thực hiện cá nhân hóa dinh dưỡng.
 
 #### Postconditions
 Hồ sơ hợp lệ được lưu với `date_of_birth`; tuổi không được lưu thành thuộc tính cố định.
@@ -120,7 +120,7 @@ Member đã xác nhận đủ điều kiện và đã lưu các thông số hồ
 3. Hệ thống hiển thị 9 chỉ tiêu cùng đơn vị đo và disclaimer y tế.
 
 #### Exception Flows
-- Nếu hồ sơ thiếu hoặc không còn đủ điều kiện, hệ thống không tính nhu cầu cá nhân hóa và hướng dẫn Member cập nhật hồ sơ hoặc xác nhận phạm vi hỗ trợ theo FR-38.
+- Nếu hồ sơ thiếu hoặc trạng thái eligibility không phải `ELIGIBLE`, hệ thống không tính nhu cầu cá nhân hóa và hướng dẫn Member cập nhật hồ sơ hoặc xác nhận phạm vi hỗ trợ theo FR-38.
 
 #### Postconditions
 Bảng 9 chỉ tiêu được hiển thị cho Member để tham khảo khi xem dinh dưỡng thực đơn hoặc yêu cầu gợi ý AI.
@@ -158,7 +158,7 @@ Google Gemini; hệ thống kiểm tra entitlement và kho công thức nội b�
 Member chọn yêu cầu tạo thực đơn dinh dưỡng từ Lịch ăn tuần hoặc khu vực dinh dưỡng.
 
 #### Preconditions
-- Member có hồ sơ dinh dưỡng hợp lệ (FR-35), đã xác nhận phạm vi hỗ trợ (FR-38), và có thông tin ăn chay/dị ứng cần thiết (FR-31).
+- Member có hồ sơ dinh dưỡng hợp lệ (FR-35), trạng thái eligibility `ELIGIBLE` (FR-38), và có thông tin ăn chay/dị ứng cần thiết (FR-31).
 - Member có gói Pro còn hiệu lực cho tính năng này (FR-10).
 
 #### Main Flow
@@ -327,12 +327,12 @@ Chỉ các món được Member xác nhận mới được áp dụng; Meal Plan
 - **Traceability / Acceptance Coverage:** FR-37; NFR-08; [AC-37.7–AC-37.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-37).
 
 <a id="uc-38-1"></a>
-### UC-38.1 — Xác nhận điều kiện và consent dinh dưỡng
+### UC-38.1 — Xác nhận điều kiện và phạm vi dinh dưỡng
 - **Goal / Primary Actor:** Member xác nhận mình thuộc phạm vi hỗ trợ và đồng ý disclaimer.
 - **Trigger / Preconditions:** Actor truy cập capability dinh dưỡng lần đầu/chưa consent.
-- **Main Flow:** Hệ thống trình bày phạm vi; Member xác nhận eligibility/consent và Backend lưu trạng thái.
-- **Alternative / Security:** Không đủ điều kiện hoặc từ chối thì capability dinh dưỡng bị chặn, tính năng khác giữ nguyên.
-- **Postconditions:** Trạng thái consent/eligibility được lưu cho server-side gate.
+- **Main Flow:** Hệ thống trình bày ba tiêu chí và ranh giới y tế. Member chọn một checkbox cam kết đủ điều kiện, chủ động nhấn xác nhận; Backend lưu `ELIGIBLE` cùng timestamp gần nhất trong cùng giao dịch và trả kết quả. Giao diện sau đó chuyển sang Hồ sơ dinh dưỡng FR-35. Eligibility confirmation độc lập với `health_data_consent_at` của FR-35.
+- **Alternative / Security:** Member chủ động xác nhận không đủ điều kiện thì Backend lưu `INELIGIBLE` cùng timestamp; Backend chặn mọi chức năng dinh dưỡng cá nhân, kể cả đọc lịch sử, nhưng giữ dữ liệu trong Database. Member có thể xác nhận lại bất cứ lúc nào. Hủy, quay lại, đóng/thoát trước khi xác nhận hoặc lỗi/validation không hợp lệ không lưu thay đổi; không có draft/autosave.
+- **Postconditions:** `NOT_CONFIRMED` ban đầu có timestamp `NULL`; sau xác nhận thành công trạng thái là `ELIGIBLE` hoặc `INELIGIBLE` với timestamp lần xác nhận thành công gần nhất. Không lưu lịch sử xác nhận.
 - **Traceability / Acceptance Coverage:** FR-38; BR-41; [AC-38.1–AC-38.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-38).
 
 <a id="uc-38-2"></a>
@@ -348,9 +348,9 @@ Chỉ các món được Member xác nhận mới được áp dụng; Meal Plan
 ### UC-38.3 — Cập nhật điều kiện sức khỏe dinh dưỡng
 - **Goal / Primary Actor:** Member cập nhật eligibility khi hoàn cảnh thay đổi.
 - **Trigger / Preconditions:** Actor đăng nhập và mở nutrition settings.
-- **Main Flow:** Member cập nhật; Backend validate/ghi trạng thái mới.
-- **Alternative / Security:** Chuyển sang không đủ điều kiện lập tức chặn capability dinh dưỡng nhưng không xóa dữ liệu khác.
-- **Postconditions:** Server-side gate dùng trạng thái mới cho request sau.
+- **Main Flow:** Member chọn trạng thái mới và chủ động xác nhận lưu; Backend cập nhật trạng thái cùng timestamp trong một giao dịch. Nếu trạng thái mới là `ELIGIBLE`, Backend khôi phục quyền truy cập theo phân quyền hiện hành.
+- **Alternative / Security:** Chuyển sang `INELIGIBLE` lập tức chặn mọi truy cập/xử lý dinh dưỡng cá nhân, kể cả đọc dữ liệu lịch sử, sau khi Database cập nhật thành công; dữ liệu lịch sử không bị xóa. Không tự động tính lại khi xác nhận lại. Hủy/thoát, validation thất bại hoặc lỗi Backend giữ nguyên trạng thái và timestamp trước đó. Không có lưu nháp/tự lưu/lịch sử xác nhận.
+- **Postconditions:** Backend dùng trạng thái hiện tại để kiểm soát request tiếp theo; xác nhận `ELIGIBLE` thành công chuyển giao diện tới FR-35.
 - **Traceability / Acceptance Coverage:** FR-38; [AC-38.4–AC-38.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-38).
 
 <a id="uc-39-1"></a>
@@ -538,7 +538,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-38).
 ##### A. Luồng Xác nhận đủ điều kiện sử dụng chức năng dinh dưỡng (UC-38.1)
 1. **Main Flow (Xác nhận đủ điều kiện thành công):**
    - Bước 1: Member nhấp vào tính năng dinh dưỡng (ví dụ: "Hồ sơ dinh dưỡng").
-   - Bước 2: Hệ thống kiểm tra trạng thái xác nhận dinh dưỡng của Member. Nếu chưa xác nhận, hệ thống yêu cầu hiển thị màn hình xác nhận.
+   - Bước 2: Backend kiểm tra trạng thái eligibility. Chỉ `ELIGIBLE` được đi tiếp; `NOT_CONFIRMED` và `INELIGIBLE` bị từ chối truy cập dữ liệu dinh dưỡng cá nhân. API eligibility vẫn cho phép Member `INELIGIBLE` xác nhận lại.
    - Bước 3: Giao diện hiển thị màn hình "Xác nhận phạm vi hỗ trợ dinh dưỡng".
    - Bước 4: Màn hình trình bày rõ ràng:
      - Khối 1: Ba điều kiện bắt buộc (Từ đủ 18 tuổi; Không mang thai hoặc đang cho con bú; Không có bệnh lý yêu cầu chế độ ăn điều trị riêng) theo BR-42.
@@ -546,17 +546,22 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-38).
      - Khối 3: Hộp kiểm cam kết: *"Tôi xác nhận tôi từ đủ 18 tuổi trở lên, không mang thai/cho con bú, không có nhu cầu ăn kiêng điều trị bệnh, và hiểu rằng các khuyến nghị dinh dưỡng chỉ mang tính chất tham khảo."*
    - Bước 5: Member tích chọn hộp kiểm và nhấn nút "Xác nhận và tiếp tục".
    - Bước 6: Ứng dụng gửi yêu cầu xác nhận lên máy chủ hệ thống.
-   - Bước 7: Hệ thống xác thực yêu cầu, lưu trạng thái xác nhận đủ điều kiện kèm mốc thời gian xác nhận vào hồ sơ tài khoản của Member.
+   - Bước 7: Backend chỉ khi nhận request xác nhận hợp lệ mới lưu `ELIGIBLE` và timestamp xác nhận thành công gần nhất trong cùng một giao dịch.
    - Bước 8: Hệ thống phản hồi xác nhận thành công.
    - Bước 9: Giao diện chuyển hướng Member sang màn hình Khai báo Hồ sơ dinh dưỡng cá nhân (`FR-35`) để nhập các chỉ số tuổi, giới tính, chiều cao, cân nặng, mức vận động.
-2. **Alternative Flow (Người dùng không thuộc đối tượng hỗ trợ hoặc từ chối cam kết):**
-   - Bước 1: Tại màn hình xác nhận, Member tích chọn: *"Tôi không thuộc nhóm đối tượng trên"* (hoặc chọn "Hủy bỏ / Quay lại").
-   - Bước 2: Hệ thống ghi nhận trạng thái chưa đủ điều kiện dinh dưỡng đối với tài khoản.
+2. **Alternative Flow (Member xác nhận không đủ điều kiện):**
+   - Bước 1: Member chủ động chọn "Tôi không thuộc nhóm đối tượng trên" và xác nhận lựa chọn.
+   - Bước 2: Backend lưu `INELIGIBLE` và timestamp xác nhận thành công gần nhất trong cùng giao dịch.
    - Bước 3: Hệ thống hiển thị thông báo giải thích rõ ràng và lịch sự:
      - *"Rất tiếc! Hệ thống Vegetarian Support Application hiện chỉ cung cấp tính toán dinh dưỡng mẫu cho người trưởng thành khỏe mạnh bình thường. Đối với người dưới 18 tuổi, phụ nữ mang thai/cho con bú hoặc người có bệnh lý nền, nhu cầu dinh dưỡng đòi hỏi phác đồ chuyên biệt từ bác sĩ chuyên khoa hoặc chuyên gia dinh dưỡng lâm sàng. Để đảm bảo an toàn tuyệt đối cho sức khỏe của bạn, hệ thống xin phép tạm dừng chức năng dinh dưỡng đối với tài khoản này."*
    - Bước 4: Hệ thống khóa quyền truy cập các chức năng dinh dưỡng (FR-35, FR-36, FR-37) đối với tài khoản.
    - Bước 5: Hệ thống điều hướng Member về trang Khám phá bài viết.
    - Bước 6: **Bảo toàn chức năng thông thường (BR-42):** Member VẪN SỬ DỤNG HOÀN TOÀN BÌNH THƯỜNG toàn bộ các chức năng khác của hệ thống: xem bài công thức, tìm kiếm, lọc theo nguyên liệu/loại ăn chay, lưu bài viết vào `Saved Recipes`, xếp lịch ăn 3 bữa thủ công trong `Meal Planner`, bình luận và hỏi đáp Chatbot AI kiến thức chay chung (FR-51); riêng Chuyên gia được tạo và công khai Recipe Post.
+3. **Alternative Flow (Hủy hoặc rời màn hình trước khi xác nhận):**
+   - Member chọn Hủy/quay lại, đóng màn hình/thoát trang hoặc mới chọn dữ liệu nhưng chưa nhấn xác nhận.
+   - Ứng dụng không gửi request cập nhật; Backend không lưu thay đổi. Trạng thái/timestamp trước đó được giữ nguyên. Không có lưu nháp hoặc tự động lưu.
+4. **Alternative Flow (Validation hoặc Backend lỗi):**
+   - Request không hợp lệ hoặc xử lý Backend thất bại thì không cập nhật trạng thái/timestamp; trả lỗi để Member có thể thử lại.
 
 ##### B. Luồng Xem lại tuyên bố miễn trừ y tế và phạm vi hỗ trợ (UC-38.2)
 1. **Main Flow:**
@@ -567,18 +572,21 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-38).
 1. **Main Flow:**
    - Bước 1: Member đã từng xác nhận đủ điều kiện trước đây, nay tình trạng sức khỏe thay đổi (ví dụ: đang mang thai hoặc phát hiện bệnh lý cần ăn kiêng).
    - Bước 2: Member vào mục "Cài đặt dinh dưỡng", chọn "Cập nhật điều kiện sức khỏe".
-   - Bước 3: Member chuyển trạng thái sang không đủ điều kiện và xác nhận lưu.
-   - Bước 4: Hệ thống ghi nhận trạng thái không đủ điều kiện dinh dưỡng đối với tài khoản.
-   - Bước 5: Toàn bộ tính năng AI lập menu theo dinh dưỡng (FR-36) và kiểm tra 9 chỉ tiêu menu ngày (FR-37) lập tức dừng cung cấp cho tài khoản này; dữ liệu dinh dưỡng trước đó không bị xóa mất nhưng được đặt ở trạng thái không đánh giá; các chức năng không-dinh-dưỡng tiếp tục hoạt động bình thường.
+   - Bước 3: Member chọn `INELIGIBLE` và chủ động xác nhận lưu.
+   - Bước 4: Backend cập nhật trạng thái cùng timestamp thành công gần nhất trong một giao dịch; nếu validation/lỗi xử lý xảy ra, giữ nguyên trạng thái và timestamp cũ.
+   - Bước 5: Sau khi Database cập nhật thành công, Backend chặn toàn bộ đọc/xử lý dữ liệu dinh dưỡng cá nhân (FR-35, FR-36, FR-37), bao gồm đọc lịch sử. Dữ liệu lịch sử được giữ nguyên; các chức năng không-dinh-dưỡng hoạt động bình thường.
+   - Bước 6: Khi Member chủ động xác nhận lại `ELIGIBLE`, Backend khôi phục quyền theo phân quyền hiện hành; không tự động tính lại dữ liệu cũ.
 
 ##### D. Luồng An ninh — Kiểm soát truy cập chức năng dinh dưỡng ở tầng máy chủ
 1. **Main Flow (Kiểm soát chặt chẽ phía máy chủ):**
-   - Đối với mọi yêu cầu liên quan đến tính toán, phân tích hay lập kế hoạch dinh dưỡng, máy chủ bắt buộc kiểm tra cờ xác nhận đủ điều kiện của tài khoản.
-   - Nếu cờ xác nhận chưa được thiết lập hoặc có giá trị không đủ điều kiện: máy chủ lập tức từ chối xử lý yêu cầu và phản hồi yêu cầu xác nhận điều kiện dinh dưỡng trước.
+   - Đối với mọi request đọc/ghi/xử lý dữ liệu dinh dưỡng cá nhân thuộc FR-35/36/37, Backend kiểm tra trạng thái eligibility trước khi truy xuất dữ liệu.
+   - Chỉ `ELIGIBLE` được đi tiếp; `NOT_CONFIRMED` và `INELIGIBLE` bị từ chối, kể cả khi gọi API trực tiếp. Endpoint xác nhận vẫn mở để `INELIGIBLE` xác nhận lại. Guard cho FR-36/37 chỉ được nghiệm thu sau khi endpoint do các FR đó sở hữu tồn tại và đã tích hợp.
 
 #### 8. Hậu điều kiện (Postconditions)
-- Khi xác nhận đủ điều kiện thành công: Trạng thái xác nhận đủ điều kiện dinh dưỡng được lưu trữ gắn liền với tài khoản Member; mở khóa quyền truy cập vào màn hình khai báo Hồ sơ dinh dưỡng (`FR-35`).
-- Khi từ chối hoặc không đủ điều kiện: Ghi nhận trạng thái chưa đủ điều kiện; khóa toàn bộ chức năng thuộc Module M10; toàn bộ các tính năng không-dinh-dưỡng (M01–M06, M08–M09) vẫn hoạt động nguyên vẹn.
+- Khi xác nhận đủ điều kiện thành công: `ELIGIBLE` và timestamp được lưu gắn với Member; quyền truy cập cá nhân được mở và giao diện chuyển đến FR-35.
+- Khi Member xác nhận không đủ điều kiện: lưu `INELIGIBLE` và timestamp; khóa đọc/xử lý dữ liệu dinh dưỡng cá nhân, bao gồm lịch sử, nhưng giữ nguyên dữ liệu. Member được xác nhận lại bất cứ lúc nào.
+- Khi chưa xác nhận: giữ `NOT_CONFIRMED`, timestamp `NULL`; Hủy/thoát không tương đương với `INELIGIBLE` và không lưu.
+- FR-35 sở hữu hồ sơ/BMI/tính toán; FR-36 sở hữu AI menu; FR-37 sở hữu kiểm tra menu/lịch sử. FR-38 sở hữu trạng thái eligibility và hợp đồng guard, không thay đổi dữ liệu/thuật toán của các FR này. Các chức năng không-dinh-dưỡng vẫn hoạt động theo phân quyền hiện hành.
 
 ---
 

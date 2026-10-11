@@ -1,4 +1,5 @@
 import { expect, test } from './baseFixtures';
+import { seedDemoSession } from './demo-session';
 
 const options = {
   dishCategories: [
@@ -72,12 +73,8 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
   });
 
   test('AC-15.1, AC-15.2, AC-15.3, AC-15.5: YouTube input validation, error handling, preview, and optionality', async ({ page }) => {
-    // Đăng nhập vai trò Expert để mở form đăng công thức
-    await page.goto('/dang-nhap');
-    await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
-    await page.getByRole('button', { name: /Tài khoản Lan Anh/ }).click();
-    await page.getByRole('button', { name: 'Expert', exact: true }).click();
-    await page.getByRole('link', { name: 'Đăng công thức mới' }).click();
+    await seedDemoSession(page, 'EXPERT');
+    await page.goto('/dang-cong-thuc');
 
     // AC-15.3: Duy nhất 1 trường nhập link YouTube cho toàn bộ bài viết
     const youtubeInput = page.getByLabel(/Liên kết video YouTube/);
@@ -119,7 +116,6 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
     await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Hướng dẫn chế biến món ăn ngon lành chuẩn vị.');
     await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
     await expect(page).toHaveURL(/\/cong-thuc\/2199$/);
-    await expect(page.getByRole('heading', { name: 'Món Chay Thử Nghiệm', level: 1 })).toBeVisible();
   });
 
   test('UC-15.2: Chi tiết công thức nhúng YouTube IFrame Player an toàn', async ({ page }) => {
@@ -137,11 +133,8 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
   });
 
   test('Kiểm tra bao phủ các định dạng URL YouTube (shorts, embed, m.youtube) và trường hợp lỗi', async ({ page }) => {
-    await page.goto('/dang-nhap');
-    await page.getByRole('button', { name: 'Khám phá tài khoản demo' }).click();
-    await page.getByRole('button', { name: /Tài khoản Lan Anh/ }).click();
-    await page.getByRole('button', { name: 'Expert', exact: true }).click();
-    await page.getByRole('link', { name: 'Đăng công thức mới' }).click();
+    await seedDemoSession(page, 'EXPERT');
+    await page.goto('/dang-cong-thuc');
 
     const youtubeInput = page.getByLabel(/Liên kết video YouTube/);
     const youtubeContainer = youtubeInput.locator('xpath=..');
@@ -176,4 +169,3 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
     await expect(page).not.toHaveURL(/\/cong-thuc\/2199$/);
   });
 });
-

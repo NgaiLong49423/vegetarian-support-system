@@ -139,3 +139,63 @@ test('administrator can manage units and conversion rules and sees duplicate-pai
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
+
+test('administrator creates, edits and toggles an ingredient unit conversion', async ({ page }) => {
+  const unit = { id: 3, code: 'quả', name: 'Quả', dimension: 'COUNT' as const, baseFactor: 1, active: true };
+  const conversions: Array<{ ingredientId: number; unitId: number; gramsPerUnit: number; approximate: boolean; active: boolean }> = [];
+  await page.route('**/api/v1/admin/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const method = request.method();
+    if (url.pathname.endsWith('/ingredients') && method === 'GET') {
+      return route.fulfill({ json: { success: true, data: [banana] } });
+    }
+    if (url.pathname.endsWith('/units') && method === 'GET') {
+      return route.fulfill({ json: { success: true, data: [unit] } });
+    }
+    if (url.pathname.endsWith('/ingredient-unit-conversions') && method === 'GET') {
+      return route.fulfill({ json: { success: true, data: conversions } });
+    }
+    if (/\/ingredients\/7\/unit-conversions\/3$/.test(url.pathname) && method === 'POST') {
+      const body = request.postDataJSON();
+      const created = { ingredientId: 7, unitId: 3, ...body, active: true };
+      conversions.push(created);
+      return route.fulfill({ status: 201, json: { success: true, data: created } });
+    }
+    if (/\/ingredients\/7\/unit-conversions\/3$/.test(url.pathname) && method === 'PUT') {
+      Object.assign(conversions[0], request.postDataJSON());
+      return route.fulfill({ json: { success: true, data: conversions[0] } });
+    }
+    if (/\/ingredients\/7\/unit-conversions\/3\/status$/.test(url.pathname) && method === 'PATCH') {
+      conversions[0].active = request.postDataJSON().active;
+      return route.fulfill({ json: { success: true, data: conversions[0] } });
+    }
+    return route.fulfill({ status: 404, json: { detail: 'Not found' } });
+  });
+
+  await page.goto('/quan-tri/danh-muc');
+  await page.getByRole('tab', { name: /Bảng quy đổi/ }).click();
+  await page.getByLabel('Nguyên liệu').selectOption('7');
+  await page.getByLabel('Đơn vị đo').selectOption('3');
+  await page.getByLabel('Gam trên mỗi đơn vị').fill('120');
+  await expect(page.getByLabel('Đây là tỷ lệ ước lượng')).toBeChecked();
+  await page.getByRole('button', { name: 'Thêm quy đổi' }).click();
+  await expect(page.getByRole('status')).toContainText('Đã thêm tỷ lệ quy đổi');
+  await expect(page.getByText('1 Quả = 120 g')).toBeVisible();
+  await expect(page.getByText('≈ Xấp xỉ')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Sửa quy đổi Chuối tây' }).click();
+  await expect(page.getByRole('heading', { name: 'Sửa tỷ lệ quy đổi' })).toBeVisible();
+  await expect(page.getByLabel('Nguyên liệu')).toBeDisabled();
+  await page.getByLabel('Gam trên mỗi đơn vị').fill('130');
+  await page.getByLabel('Đây là tỷ lệ ước lượng').uncheck();
+  await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
+  await expect(page.getByRole('status')).toContainText('Đã cập nhật tỷ lệ quy đổi');
+  await expect(page.getByText('1 Quả = 130 g')).toBeVisible();
+  await expect(page.getByText('✓ Chính xác')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Ngừng dùng', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Bật lại', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Bật lại', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Ngừng dùng', exact: true })).toBeVisible();
+});

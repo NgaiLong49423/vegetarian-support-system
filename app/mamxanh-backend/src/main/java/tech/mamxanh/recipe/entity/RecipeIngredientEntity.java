@@ -25,8 +25,11 @@ public class RecipeIngredientEntity {
     @Column(name = "recipe_id", nullable = false)
     private Long recipeId;
 
-    @Column(name = "ingredient_id", nullable = false)
+    @Column(name = "ingredient_id")
     private Long ingredientId;
+
+    @Column(name = "custom_ingredient_name", length = 200)
+    private String customIngredientName;
 
     @Column(name = "unit_id", nullable = false)
     private Integer unitId;

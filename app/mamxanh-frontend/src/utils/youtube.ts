@@ -87,7 +87,7 @@ export function validateYouTubeUrl(rawUrl: string): YouTubeValidationResult {
       return {
         valid: false,
         videoId: null,
-        error: 'Hệ thống chỉ hỗ trợ video từ YouTube (BR-10). Vui lòng không sử dụng nền tảng khác.',
+        error: 'Hệ thống chỉ hỗ trợ video từ YouTube. Vui lòng không sử dụng nền tảng khác.',
       };
     }
 

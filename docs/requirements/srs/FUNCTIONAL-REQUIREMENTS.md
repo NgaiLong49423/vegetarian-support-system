@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.8.0
+> **Version:** v2.10.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-09
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -519,6 +519,11 @@ Cung cấp trung tâm điều hành hậu kiểm nội dung toàn diện cho Qu�
 
 #### Mục đích
 Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù hợp với nhu cầu ăn uống cụ thể, sở thích cá nhân, nguyên liệu sẵn có trong gia đình hoặc quỹ thời gian nấu nướng; tối ưu hóa trải nghiệm khám phá ẩm thực chay trên nền tảng qua các tiêu chí lọc chính xác và bảng xếp hạng đa dạng.
+
+#### Ngữ nghĩa lọc
+- Từ khóa, loại ăn chay, thể loại món, nguyên liệu và giới hạn thời gian được áp dụng đồng thời theo điều kiện AND.
+- Khi chọn nhiều nguyên liệu, một Recipe Post chỉ khớp nếu có đủ tất cả nguyên liệu chuẩn đã chọn.
+- Tổng thời gian dùng để so sánh với giới hạn là thời gian chuẩn bị cộng thời gian nấu (`prep_time_min + cook_time_min`). Bộ lọc chỉ trả Recipe Post công khai và không làm thay đổi chế độ sắp xếp đã chọn.
 
 #### Danh mục Use Cases & User Stories
 - **Các Use Case con:**
@@ -1758,8 +1763,8 @@ Thiết lập cơ chế giám sát cộng đồng (crowdsourced moderation) nh�
   - **When:** Member chọn lý do báo cáo hợp lệ và nhấn "Gửi báo cáo".
   - **Then:** Hệ thống lưu báo cáo ở trạng thái `OPEN` và phản hồi thông báo đã tiếp nhận thành công.
 
-- **AC-26.2 — Ngăn chặn tạo báo cáo mới trùng lặp từ cùng tài khoản:**
-  - **Given:** Member đã có một báo cáo ở trạng thái `OPEN` đối với bài viết A.
+- **AC-26.2 — Ngăn chặn tạo báo cáo mới trùng lặp từ cùng tài khoản (FR-30):**
+  - **Given:** Member đã có một báo cáo ở trạng thái `OPEN` hoặc `IN_REVIEW` đối với bài viết A.
   - **When:** Member cố tình gửi thêm một báo cáo mới cho bài viết A.
   - **Then:** Hệ thống chặn tạo mới và thông báo tài khoản đã có báo cáo đang chờ xử lý (FR-30).
 
@@ -1782,7 +1787,7 @@ Thiết lập cơ chế giám sát cộng đồng (crowdsourced moderation) nh�
 
 - **Mã yêu cầu:** FR-27
 - **Module:** M03 (Community Recipes & Social)
-- **Tóm tắt yêu cầu:** Biểu mẫu báo cáo bài công thức cho phép chọn đúng một trong sáu nhóm lý do chuẩn hóa tại SRS 3.11 và nhập mô tả bổ sung; mô tả bổ sung là bắt buộc khi chọn nhóm lý do "Khác" (10–500 ký tự) và là tùy chọn đối với các nhóm lý do còn lại.
+- **Tóm tắt yêu cầu:** Biểu mẫu báo cáo bài công thức cho phép chọn đúng một trong sáu nhóm lý do chuẩn hóa tại SRS 3.11 và nhập mô tả bổ sung; mô tả bổ sung là bắt buộc khi chọn nhóm lý do "Khác" (10–500 ký tự sau khi trim) và là tùy chọn, tối đa 500 ký tự, đối với các nhóm lý do còn lại.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-contribution-and-community.md#fr-27).
 
@@ -1793,17 +1798,17 @@ Chuẩn hóa dữ liệu đầu vào của các báo cáo vi phạm nội dung; 
 - **Các Use Case con:**
   - `UC-27.1`: Chọn lý do và gửi biểu mẫu báo cáo bài công thức (Submit recipe report form).
 - **User Stories:**
-  - `US-27.1`: Là một người báo cáo, tôi muốn chọn đúng lý do "Không phải món chay" từ danh sách có sẵn để Ban quản trị hiểu ngay vấn đề mà tôi không cần phải gõ giải thích dài dòng nếu không cần thiết.
+  - `US-27.1`: Là một người báo cáo, tôi muốn chọn đúng lý do "Sai thông tin công thức hoặc nhãn ăn chay" từ danh sách có sẵn để Ban quản trị hiểu ngay vấn đề mà tôi không cần phải gõ giải thích dài dòng nếu không cần thiết.
 
 #### Cấu trúc 6 nhóm lý do báo cáo chuẩn hóa (SRS 3.11)
 
 | Nhóm lý do | Mã phân loại | Tính chất mô tả bổ sung | Mô tả chi tiết phạm vi vi phạm |
 |---|---|---|---|
-| **1. Không phải món chay** | `NON_VEGAN` | Tùy chọn (Optional) | Công thức chứa thịt, cá, hải sản, mỡ động vật hoặc các thành phần không thuần chay. |
+| **1. Sai thông tin công thức hoặc nhãn ăn chay** | `RECIPE_INFO_OR_DIET_LABEL` | Tùy chọn (Optional) | Thông tin công thức sai hoặc nhãn/chỉ dẫn chế độ ăn chay không chính xác. |
 | **2. Nguy cơ an toàn thực phẩm** | `FOOD_SAFETY_HAZARD` | Tùy chọn (Optional) | Hướng dẫn kết hợp nguyên liệu gây ngộ độc, liều lượng nguy hiểm hoặc phương pháp nấu có hại cho sức khỏe. |
-| **3. Nội dung phản cảm / Bạo lực** | `INAPPROPRIATE_CONTENT` | Tùy chọn (Optional) | Hình ảnh ghê rợn, phản cảm, ngôn từ bạo lực hoặc vi phạm thuần phong mỹ tục. |
-| **4. Vi phạm bản quyền / Sao chép** | `COPYRIGHT_VIOLATION` | Tùy chọn (Optional) | Sao chép nguyên văn công thức, ảnh hoặc nội dung thuộc quyền sở hữu của người khác mà không xin phép. |
-| **5. Spam / Quảng cáo thương mại** | `SPAM_ADVERTISING` | Tùy chọn (Optional) | Chèn liên kết bán hàng, quảng cáo thương mại không liên quan, nội dung rác hoặc lừa đảo. |
+| **3. Spam / Quảng cáo không phù hợp** | `SPAM_ADVERTISING` | Tùy chọn (Optional) | Chèn nội dung spam, quảng cáo không phù hợp hoặc thương mại không liên quan. |
+| **4. Nội dung xúc phạm / Không phù hợp** | `INAPPROPRIATE_CONTENT` | Tùy chọn (Optional) | Nội dung xúc phạm hoặc không phù hợp. |
+| **5. Sao chép / Nghi vi phạm bản quyền** | `COPYRIGHT_VIOLATION` | Tùy chọn (Optional) | Sao chép công thức, hình ảnh hoặc nội dung có dấu hiệu vi phạm bản quyền. |
 | **6. Khác** | `OTHER` | **Bắt buộc (Mandatory)** | Các vấn đề khác; **bắt buộc nhập từ 10 đến 500 ký tự** để giải thích rõ lý do báo cáo. |
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
@@ -1825,7 +1830,7 @@ Chuẩn hóa dữ liệu đầu vào của các báo cáo vi phạm nội dung; 
   - **Then:** Giao diện hiển thị đúng và đủ 6 nhóm lý do theo quy định tại SRS 3.11.
 
 - **AC-27.2 — Gửi thành công báo cáo với mô tả để trống cho 5 nhóm lý do đầu:**
-  - **Given:** Member chọn nhóm lý do "Không phải món chay".
+  - **Given:** Member chọn nhóm lý do "Sai thông tin công thức hoặc nhãn ăn chay".
   - **When:** Member để trống ô mô tả bổ sung và nhấn "Gửi báo cáo".
   - **Then:** Hệ thống xác nhận hợp lệ và gửi báo cáo thành công.
 
@@ -1838,6 +1843,11 @@ Chuẩn hóa dữ liệu đầu vào của các báo cáo vi phạm nội dung; 
   - **Given:** Member chọn nhóm lý do "Khác".
   - **When:** Member nhập mô tả "Sai món" (7 ký tự) hoặc để trống và nhấn gửi.
   - **Then:** Hệ thống từ chối và hiển thị thông báo lỗi yêu cầu mô tả tối thiểu 10 ký tự.
+
+- **AC-27.5 — Giới hạn mô tả bổ sung:**
+  - **Given:** Member chọn một lý do hợp lệ.
+  - **When:** Mô tả sau khi trim vượt quá 500 ký tự.
+  - **Then:** Hệ thống từ chối và không tạo báo cáo; mô tả của năm lý do đầu vẫn có thể để trống.
 
 ---
 
@@ -2635,12 +2645,12 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 
 - **Mã yêu cầu:** FR-38
 - **Module:** M02, M10
-- **Tóm tắt yêu cầu:** Trước khi truy cập hoặc sử dụng các chức năng dinh dưỡng (hồ sơ dinh dưỡng cá nhân, AI menu theo dinh dưỡng, kiểm tra menu ngày), hệ thống bắt buộc Member xác nhận thuộc phạm vi đối tượng được hỗ trợ trong MVP (từ đủ 18 tuổi, không mang thai/cho con bú, không cần chế độ ăn điều trị bệnh); người không đủ điều kiện được giải thích rõ ranh giới an toàn y tế, bị từ chối chức năng dinh dưỡng nhưng vẫn được sử dụng bình thường toàn bộ các chức năng không-dinh-dưỡng khác.
+- **Tóm tắt yêu cầu:** Trước khi truy cập hoặc sử dụng các chức năng dinh dưỡng cá nhân (hồ sơ dinh dưỡng, AI menu theo dinh dưỡng, kiểm tra menu ngày), hệ thống bắt buộc Member xác nhận thuộc phạm vi đối tượng được hỗ trợ trong MVP (từ đủ 18 tuổi, không mang thai/cho con bú, không cần chế độ ăn điều trị bệnh); người không đủ điều kiện được giải thích rõ ranh giới an toàn y tế, bị từ chối chức năng dinh dưỡng cá nhân nhưng vẫn được sử dụng bình thường toàn bộ các chức năng không-dinh-dưỡng khác. Eligibility confirmation tách biệt với đồng thuận lưu/xử lý dữ liệu hồ sơ do FR-35 quản lý.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-38).
 
 #### Mục đích
-Thiết lập cổng kiểm soát an toàn y tế và sức khỏe bắt buộc trước khi cung cấp các chức năng liên quan đến dữ liệu dinh dưỡng; yêu cầu Member chủ động xác nhận (consent) mình thuộc nhóm đối tượng áp dụng an toàn của MVP; giải thích minh bạch bản chất thông tin dinh dưỡng là ước tính tham khảo lập kế hoạch; đồng thời đảm bảo việc không đủ điều kiện dinh dưỡng không gây phân biệt đối xử hoặc khóa các chức năng thông thường của người dùng.
+Thiết lập cổng kiểm soát an toàn y tế và sức khỏe bắt buộc trước khi cung cấp các chức năng liên quan đến dữ liệu dinh dưỡng cá nhân; yêu cầu Member chủ động xác nhận mình thuộc nhóm đối tượng áp dụng an toàn của MVP; giải thích minh bạch bản chất thông tin dinh dưỡng là ước tính tham khảo lập kế hoạch; đồng thời đảm bảo việc không đủ điều kiện dinh dưỡng không gây phân biệt đối xử hoặc khóa các chức năng thông thường của người dùng.
 
 #### Tiêu chí đối tượng hỗ trợ hợp lệ trong MVP (Eligible Target Audience)
 Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng dinh dưỡng MVP **CHỈ ÁP DỤNG** cho người dùng đồng thời thỏa mãn cả ba điều kiện:
@@ -2654,12 +2664,12 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 #### Danh mục Use Cases & User Stories
 - **Các Use Case con:**
-  - `UC-38.1`: Xác nhận đủ điều kiện và đồng ý sử dụng chức năng dinh dưỡng (Confirm nutrition eligibility and consent). *(Bao gồm luồng rẽ nhánh xử lý khi người dùng không thuộc đối tượng hỗ trợ hoặc từ chối cam kết)*
+  - `UC-38.1`: Xác nhận đủ điều kiện và phạm vi sử dụng chức năng dinh dưỡng (Confirm nutrition eligibility and scope). *(Bao gồm nhánh xác nhận INELIGIBLE; Hủy/rời màn hình không phải xác nhận)*
   - `UC-38.2`: Xem lại tuyên bố miễn trừ y tế và phạm vi hỗ trợ dinh dưỡng (View nutrition disclaimer and eligibility scope).
   - `UC-38.3`: Cập nhật lại trạng thái điều kiện sức khỏe dinh dưỡng (Update nutrition eligibility status).
   *(Ghi chú: Xử lý trường hợp người dùng không thuộc đối tượng hỗ trợ không còn là Use Case độc lập vì đây không phải là mục tiêu chủ động của Actor mà là Luồng rẽ nhánh an toàn thuộc UC-38.1).*
 - **User Stories:**
-  - `US-38.1`: Là một thành viên muốn theo dõi dinh dưỡng món ăn, tôi muốn thấy rõ điều kiện sử dụng và ranh giới y tế trước khi khai báo dữ liệu sức khỏe để có thể đưa ra quyết định đồng ý phù hợp.
+  - `US-38.1`: Là một thành viên muốn theo dõi dinh dưỡng món ăn, tôi muốn thấy rõ điều kiện sử dụng và ranh giới y tế trước khi khai báo dữ liệu sức khỏe để có thể đưa ra quyết định phù hợp.
   - `US-38.2`: Là một thành viên đủ điều kiện (từ 18 tuổi, không mang thai/cho con bú, không ăn kiêng bệnh lý), tôi muốn xác nhận nhanh chóng để bắt đầu thiết lập hồ sơ dinh dưỡng và nhận phân tích thực đơn.
   - `US-38.3`: Là một thành viên không thuộc nhóm hỗ trợ (dưới 18 tuổi, đang mang thai, hoặc có bệnh lý điều trị), tôi muốn hệ thống giải thích rõ lý do an toàn sức khỏe và vẫn cho phép tôi sử dụng bình thường các tính năng khác của ứng dụng.
   - `US-38.4`: Là một thành viên có tình trạng sức khỏe thay đổi (ví dụ: bắt đầu mang thai), tôi muốn có thể cập nhật lại xác nhận này để hệ thống tạm dừng các khuyến nghị dinh dưỡng không còn an toàn.
@@ -2667,7 +2677,10 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Khách chưa đăng nhập (Guest) không có quyền truy cập chức năng dinh dưỡng (BR-05).
 - Việc xác nhận đủ điều kiện là bắt buộc đối với mọi Member trước khi hệ thống lưu trữ hoặc xử lý bất kỳ dữ liệu nhân trắc học hay phân tích dinh dưỡng nào (NFR-20).
-- Máy chủ bắt buộc kiểm tra điều kiện xác nhận dinh dưỡng ở tầng nghiệp vụ đối với toàn bộ các chức năng thuộc Module M10. Nếu chưa xác nhận, từ chối xử lý và yêu cầu hoàn thành xác nhận.
+- Trạng thái hiện tại gồm `NOT_CONFIRMED`, `ELIGIBLE`, `INELIGIBLE`. Ban đầu là `NOT_CONFIRMED`, thời điểm xác nhận là `NULL`. Chỉ `ELIGIBLE` được truy cập dữ liệu dinh dưỡng cá nhân; `NOT_CONFIRMED` và `INELIGIBLE` bị chặn ở Backend, kể cả khi gọi API trực tiếp. Endpoint xác nhận vẫn cho phép Member `INELIGIBLE` xác nhận lại; không cần Admin phê duyệt.
+- Máy chủ bắt buộc kiểm tra trạng thái `ELIGIBLE` trước khi xử lý các chức năng dinh dưỡng cá nhân thuộc FR-35, FR-36 và FR-37. Khi `INELIGIBLE`, cả quyền đọc dữ liệu/lịch sử dinh dưỡng cá nhân cũng bị khóa; dữ liệu trong Database được giữ nguyên. Khi xác nhận lại thành `ELIGIBLE`, chỉ khôi phục quyền theo phân quyền hiện hành, không tự động tính lại dữ liệu cũ.
+- Member chỉ cập nhật trạng thái qua thao tác xác nhận chủ động. Backend lưu trạng thái và thời điểm xác nhận thành công gần nhất trong cùng giao dịch. Hủy, quay lại, đóng trang/thoát mà chưa xác nhận, dữ liệu không hợp lệ hoặc lỗi xử lý không được thay đổi Database hay timestamp trước đó. Không lưu nháp, tự động lưu hoặc lịch sử xác nhận. Timestamp eligibility độc lập với `health_data_consent_at` của FR-35.
+- Xác nhận eligibility là hợp đồng riêng với thao tác lưu hồ sơ FR-35; dữ liệu hồ sơ và đồng thuận xử lý dữ liệu sức khỏe tiếp tục theo FR-35.
 - Ràng buộc kỹ thuật được phê duyệt: Dữ liệu dinh dưỡng dựa trên cơ sở dữ liệu tham chiếu nội bộ chuẩn bị từ nguồn USDA FoodData Central và NIH DRI; tuyệt đối không gọi runtime API bên thứ ba khi tính toán dinh dưỡng (BR-49).
 
 #### Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
@@ -2683,19 +2696,20 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 #### Tiêu chí nghiệm thu chi tiết (Acceptance Criteria)
 
 - **AC-38.1 — Bắt buộc hiển thị xác nhận khi truy cập chức năng dinh dưỡng lần đầu:**
-  - **Given:** Member đã đăng nhập nhưng chưa từng thực hiện xác nhận phạm vi hỗ trợ dinh dưỡng.
+  - **Given:** Member đã đăng nhập và có trạng thái `NOT_CONFIRMED`.
   - **When:** Member nhấn vào tính năng "Hồ sơ dinh dưỡng" hoặc "Kiểm tra dinh dưỡng thực đơn ngày".
-  - **Then:** Hệ thống không cho phép truy cập trực tiếp vào màn hình chỉ số, mà bắt buộc hiển thị màn hình "Xác nhận phạm vi hỗ trợ dinh dưỡng" với đầy đủ 3 điều kiện loại trừ và tuyên bố ranh giới y tế tham khảo (BR-41, BR-42).
+  - **Then:** Backend từ chối truy xuất hoặc xử lý dữ liệu dinh dưỡng cá nhân; giao diện bắt buộc hiển thị màn hình "Xác nhận phạm vi hỗ trợ dinh dưỡng" với ba điều kiện và tuyên bố ranh giới y tế tham khảo (BR-41, BR-42).
 
 - **AC-38.2 — Xác nhận đủ điều kiện thành công mở khóa tính năng dinh dưỡng:**
   - **Given:** Member đang ở màn hình xác nhận phạm vi hỗ trợ dinh dưỡng.
-  - **When:** Member tích chọn ô cam kết đáp ứng đủ 3 tiêu chí (từ 18 tuổi, không mang thai/cho con bú, không ăn kiêng bệnh lý) và nhấn "Xác nhận và tiếp tục".
-  - **Then:** Hệ thống lưu trạng thái xác nhận đủ điều kiện thành công kèm thời điểm xác nhận, phản hồi thành công, và giao diện chuyển tiếp Member sang màn hình Khai báo Hồ sơ dinh dưỡng cá nhân (FR-35).
+  - **When:** Member tích chọn một ô cam kết đáp ứng đủ ba tiêu chí (từ 18 tuổi, không mang thai/cho con bú, không cần chế độ ăn điều trị) và nhấn "Xác nhận và tiếp tục".
+  - **Then:** Backend lưu `ELIGIBLE` và thời điểm xác nhận gần nhất trong cùng giao dịch, trả thành công; giao diện chuyển Member sang màn hình Khai báo Hồ sơ dinh dưỡng cá nhân (FR-35). Thao tác này độc lập với lần lưu hồ sơ và `health_data_consent_at`.
+  - **Quy tắc không lưu:** Chỉ gửi yêu cầu cập nhật khi Member chủ động nhấn xác nhận. Hủy, quay lại, đóng màn hình/thoát trang hoặc chỉ tick mà chưa xác nhận không lưu trạng thái nào; không có lưu nháp hay tự lưu. Validation thất bại hoặc Backend lỗi phải giữ nguyên trạng thái và timestamp cũ.
 
 - **AC-38.3 — Xử lý an toàn khi người dùng xác nhận không đủ điều kiện:**
   - **Given:** Member đang ở màn hình xác nhận phạm vi hỗ trợ dinh dưỡng.
-  - **When:** Member chọn "Tôi không thuộc nhóm đối tượng trên" hoặc từ chối cam kết.
-  - **Then:** Hệ thống hiển thị thông báo từ chối lịch sự nêu rõ lý do an toàn y tế, khóa quyền truy cập chức năng dinh dưỡng, và điều hướng Member về trang Khám phá bài viết.
+  - **When:** Member chủ động xác nhận lựa chọn không thuộc nhóm hỗ trợ.
+  - **Then:** Backend lưu `INELIGIBLE` và thời điểm xác nhận trong cùng giao dịch; hệ thống giải thích lý do an toàn và chặn dinh dưỡng. Đây là trạng thái đã xác nhận, khác với Hủy/quay lại/đóng trang (không lưu). Member được xác nhận lại bất cứ lúc nào, không cần Admin; chức năng không-dinh-dưỡng vẫn dùng bình thường.
 
 - **AC-38.4 — Bảo toàn 100% tính năng không-dinh-dưỡng cho người không đủ điều kiện:**
   - **Given:** Member đã được ghi nhận trạng thái không đủ điều kiện dinh dưỡng.
@@ -2703,19 +2717,19 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - **Then:** Toàn bộ các thao tác trên được hệ thống xử lý thành công 100% mà không gặp bất kỳ thông báo lỗi hay sự hạn chế nào liên quan đến dinh dưỡng (BR-42).
 
 - **AC-38.5 — Chặn ở tầng kiểm soát máy chủ đối với các chức năng dinh dưỡng khi chưa xác nhận:**
-  - **Given:** Member chưa thực hiện xác nhận phạm vi hỗ trợ dinh dưỡng.
-  - **When:** Ứng dụng của Member (hoặc công cụ gửi yêu cầu trực tiếp) gửi yêu cầu truy xuất hồ sơ dinh dưỡng hoặc kiểm tra dinh dưỡng thực đơn ngày.
-  - **Then:** Máy chủ kiểm tra điều kiện, từ chối xử lý yêu cầu và phản hồi thông báo yêu cầu xác nhận điều kiện dinh dưỡng trước.
+  - **Given:** Member có trạng thái `NOT_CONFIRMED` hoặc `INELIGIBLE`.
+  - **When:** Ứng dụng hoặc client gọi trực tiếp API đọc/ghi/tính toán dữ liệu dinh dưỡng cá nhân thuộc FR-35, FR-36 hoặc FR-37.
+  - **Then:** Backend từ chối trước khi trả hoặc xử lý dữ liệu cá nhân; chỉ `ELIGIBLE` được đi tiếp theo phân quyền/nghiệp vụ của FR sở hữu endpoint. API xác nhận eligibility vẫn truy cập được để Member `INELIGIBLE` xác nhận lại. Chỉ nghiệm thu guard cho endpoint đã tồn tại và được tích hợp; endpoint FR-36/FR-37 chưa có phải ghi dependency, chưa xác minh.
 
 - **AC-38.6 — Cập nhật điều kiện sức khỏe sang không đủ điều kiện tạm dừng tính năng dinh dưỡng:**
-  - **Given:** Member đã từng xác nhận đủ điều kiện dinh dưỡng trước đây.
-  - **When:** Member vào Cài đặt dinh dưỡng cập nhật trạng thái sức khỏe sang không đủ điều kiện (ví dụ: đang mang thai) và lưu thay đổi.
-  - **Then:** Hệ thống ghi nhận trạng thái mới, lập tức tạm dừng các tính năng gợi ý thực đơn dinh dưỡng và kiểm tra 9 chỉ tiêu ngày đối với tài khoản, đồng thời bảo toàn nguyên vẹn dữ liệu lịch sử đã lưu trước đó.
+  - **Given:** Member có trạng thái `ELIGIBLE`.
+  - **When:** Member chủ động xác nhận cập nhật thành `INELIGIBLE` (ví dụ tình trạng sức khỏe thay đổi) và Backend xử lý thành công.
+  - **Then:** Backend cập nhật trạng thái và timestamp gần nhất nguyên tử; mọi chức năng dinh dưỡng cá nhân bị khóa ngay, kể cả đọc hồ sơ/lịch sử. Dữ liệu lịch sử được giữ nguyên trong Database. Khi xác nhận lại thành `ELIGIBLE`, quyền đọc được khôi phục nhưng không tự động tính lại dữ liệu cũ. Nếu hủy, dữ liệu không hợp lệ hoặc xử lý lỗi, trạng thái và timestamp cũ không đổi.
 
-- **AC-38.7 — Khẳng định ranh giới tham khảo và không tự kê đơn y tế từ BMI:**
-  - **Given:** Member đã hoàn tất xác nhận FR-38 và nhập chiều cao, cân nặng tại FR-35 có kết quả BMI tương ứng mức thừa cân.
-  - **When:** Hệ thống tính toán và hiển thị kết quả.
-  - **Then:** Giao diện hiển thị chỉ số BMI kèm nhãn tham khảo; hệ thống tuyệt đối KHÔNG tự động đưa ra các con số calorie hay macro mang tính áp đặt/kê đơn điều trị y tế (BR-39).
+- **AC-38.7 — Kiểm soát truy cập và xác minh ranh giới BMI khi tích hợp FR-35:**
+  - **Given:** Member truy cập Hồ sơ dinh dưỡng FR-35 thông qua luồng FR-38.
+  - **When:** Member `NOT_CONFIRMED`/`INELIGIBLE` gọi FR-35, Member xác nhận `ELIGIBLE`, hoặc Member `ELIGIBLE` truy cập theo phân quyền hiện hành.
+  - **Then:** `NOT_CONFIRMED` và `INELIGIBLE` bị Backend chặn; `INELIGIBLE` vẫn được xác nhận lại; xác nhận `ELIGIBLE` thành công lưu trạng thái/timestamp và giao diện chuyển sang FR-35; `ELIGIBLE` được qua guard. Khi FR-35 sẵn sàng, kiểm thử tích hợp phải xác minh BMI có nhãn tham khảo và không tự sinh chỉ định calorie/macro điều trị chỉ từ BMI (BR-39). FR-38 không triển khai hoặc sửa UI, thuật toán BMI, công thức năng lượng hay macro của FR-35. Nếu chưa có bằng chứng FR-35, phần BMI ghi dependency/chưa xác minh, không đánh dấu AC-38.7 hoàn tất.
 
 ---
 
