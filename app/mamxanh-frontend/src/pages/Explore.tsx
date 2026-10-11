@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ArrowDownUp,
@@ -52,6 +52,7 @@ const controlClass = 'mt-1.5 w-full rounded-xl border border-brand-100 bg-paper 
 
 export function Explore() {
   const [params, setParams] = useSearchParams();
+  const expectedSearchRef = useRef(params.toString());
   const query = params.get('q') ?? '';
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<ExploreFilters>(() => ({ ...initialFilters, vegetarianType: params.get('vegetarianType') ?? '', dishCategory: params.get('dishCategory') ?? '', sort: sortOptions.some((item) => item.code === params.get('sort')) ? params.get('sort') as SortMode : 'NEWEST' }));
@@ -67,6 +68,10 @@ export function Explore() {
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
+    const currentSearch = params.toString();
+    if (currentSearch === expectedSearchRef.current) return;
+
+    expectedSearchRef.current = currentSearch;
     const vegetarianType = params.get('vegetarianType') ?? '';
     const dishCategory = params.get('dishCategory') ?? '';
     const sort = sortOptions.some((item) => item.code === params.get('sort')) ? params.get('sort') as SortMode : 'NEWEST';
@@ -119,14 +124,20 @@ export function Explore() {
 
   const updateQuery = (value: string) => {
     setPage(0);
-    setParams((current) => { const next = new URLSearchParams(current); if (value) next.set('q', value); else next.delete('q'); return next; }, { replace: true });
+    const next = new URLSearchParams(params);
+    if (value) next.set('q', value); else next.delete('q');
+    expectedSearchRef.current = next.toString();
+    setParams(next, { replace: true });
   };
 
   const updateFilter = <K extends keyof ExploreFilters>(key: K, value: ExploreFilters[K]) => {
     setFilters((current) => ({ ...current, [key]: value }));
     setPage(0);
     if (key === 'vegetarianType' || key === 'dishCategory' || key === 'sort') {
-      setParams((current) => { const next = new URLSearchParams(current); if (value) next.set(key, String(value)); else next.delete(key); return next; }, { replace: true });
+      const next = new URLSearchParams(params);
+      if (value) next.set(key, String(value)); else next.delete(key);
+      expectedSearchRef.current = next.toString();
+      setParams(next, { replace: true });
     }
   };
 
@@ -140,6 +151,7 @@ export function Explore() {
   const resetFilters = () => {
     setFilters(initialFilters);
     setPage(0);
+    expectedSearchRef.current = '';
     setParams({}, { replace: true });
     setIngredientQuery('');
     setIngredientOptions([]);
