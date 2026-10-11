@@ -3,6 +3,7 @@ package tech.mamxanh.auth.service;
 import java.util.List;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -43,6 +44,30 @@ public class CurrentUserService {
         return new PublicProfile(user.getId(), user.getDisplayName(), user.getAvatarUrl());
     }
 
+    /**
+     * FR-23 (Q55): a public profile exists for every Member account, including a LOCKED one; an
+     * Administrator account or an unknown id has none.
+     */
+    public void requirePublicMember(long userId) {
+        userRepository.findById(userId)
+                .filter(user -> user.getRole() != Role.ADMIN)
+                .orElseThrow(() -> new AppException(ErrorCode.MEMBER_PROFILE_NOT_FOUND));
+    }
+
+    /** The account id carried by the authenticated session; never taken from the request. */
+    public long requireAuthenticatedUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+        try {
+            return Long.parseLong(authentication.getName());
+        } catch (NumberFormatException exception) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+    }
+
     public Map<Long, PublicProfile> getPublicProfiles(Collection<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) return Map.of();
         return userRepository.findAllById(userIds).stream()
@@ -51,22 +76,21 @@ public class CurrentUserService {
     }
 
     private User requireActiveUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        }
-        long userId;
-        try {
-            userId = Long.parseLong(authentication.getName());
-        } catch (NumberFormatException exception) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        }
+        long userId = requireAuthenticatedUserId();
         User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
         if (user.getAccountStatus() != AccountStatus.ACTIVE || !List.of(Role.CUSTOMER, Role.EXPERT).contains(user.getRole())) {
             throw new AppException(ErrorCode.RECIPE_EDIT_NOT_ALLOWED);
         }
         return user;
+    }
+
+    /** The session account id on a public endpoint, or empty for a Guest request. */
+    public Optional<Long> findAuthenticatedUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+            return Optional.empty();
+        }
+        return Optional.of(requireAuthenticatedUserId());
     }
 
     public record CurrentUser(long id, Role role) { }
