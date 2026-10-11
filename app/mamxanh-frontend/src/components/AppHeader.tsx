@@ -217,42 +217,44 @@ export function AppHeader() {
             </div>
           </button>
           <Logo />
-          <nav
-            aria-label="Điều hướng chính"
-            onMouseLeave={() => setHoveredNavIndex(null)}
-            className="glass-nav-group ml-3 hidden items-center xl:flex"
-          >
-            <div
-              className="glass-nav-glider"
-              style={{
-                transform: `translateX(${gliderStyle.left}px)`,
-                width: `${gliderStyle.width}px`,
-                opacity: gliderStyle.opacity,
-                pointerEvents: "none",
-              }}
-            />
-            {navigation.map((item, idx) => {
-              const isCurrent = targetNavIndex === idx
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  ref={(el) => {
-                    tabRefs.current[idx] = el
-                  }}
-                  onMouseEnter={() => setHoveredNavIndex(idx)}
-                  aria-label={
-                    item.to === "/kham-pha" ? "Khám phá món chay" : item.label
-                  }
-                  end={item.to === "/"}
-                  className={`glass-nav-link ${isCurrent ? "is-active" : ""}`}
-                >
-                  {item.label}
-                </NavLink>
-              )
-            })}
-          </nav>
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <div className="hidden flex-1 items-center justify-center px-2 xl:flex">
+            <nav
+              aria-label="Điều hướng chính"
+              onMouseLeave={() => setHoveredNavIndex(null)}
+              className="glass-nav-group flex items-center"
+            >
+              <div
+                className="glass-nav-glider"
+                style={{
+                  transform: `translateX(${gliderStyle.left}px)`,
+                  width: `${gliderStyle.width}px`,
+                  opacity: gliderStyle.opacity,
+                  pointerEvents: "none",
+                }}
+              />
+              {navigation.map((item, idx) => {
+                const isCurrent = targetNavIndex === idx
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    ref={(el) => {
+                      tabRefs.current[idx] = el
+                    }}
+                    onMouseEnter={() => setHoveredNavIndex(idx)}
+                    aria-label={
+                      item.to === "/kham-pha" ? "Khám phá món chay" : item.label
+                    }
+                    end={item.to === "/"}
+                    className={`glass-nav-link ${isCurrent ? "is-active" : ""}`}
+                  >
+                    {item.label}
+                  </NavLink>
+                )
+              })}
+            </nav>
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3 xl:ml-0">
             <form
               onSubmit={(event) => {
                 event.preventDefault()
