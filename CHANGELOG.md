@@ -1,13 +1,32 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.58.0
+> **Version:** v2.59.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-10
+> **Last Updated:** 2026-10-11
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Complete API-Driven Recipe Detail and Stitch MCP Guidance
+
+**Status:** Working tree — not committed.
+
+**Scope:** Complete the Frontend recipe detail experience using the existing Backend API and document the project-local Google Stitch MCP setup for agents.
+
+### Added
+
+- Build the recipe detail page from live API data, including ordered images, author and statistics, scaled ingredient quantities, nutrition, safe YouTube embedding, TXT download, and A4 print/PDF output.
+- Document the repository-local Stitch MCP credential and startup diagnostics without exposing the local key.
+
+### Changed
+
+- Expand the Frontend recipe detail API type to match the Backend response.
+
+### Fixed
+
+- None.
 
 ## 2026-10-10 — Add Google Login and Account Linking (Issue #8) ([PR #111](https://github.com/NgaiLong49423/vegetarian-support-system/pull/111))
 

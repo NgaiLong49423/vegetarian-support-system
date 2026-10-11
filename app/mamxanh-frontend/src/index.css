@@ -97,6 +97,52 @@ body {
   opacity: 0;
 }
 
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .recipe-detail-page,
+  .recipe-detail-page * {
+    visibility: visible !important;
+  }
+
+  .recipe-detail-page {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .recipe-detail-no-print {
+    display: none !important;
+  }
+
+  .recipe-detail-page .rounded-2xl {
+    border-color: #e5e7eb !important;
+    box-shadow: none !important;
+  }
+
+  .recipe-detail-page h1,
+  .recipe-detail-page h2,
+  .recipe-detail-page li {
+    break-after: avoid;
+  }
+
+  .recipe-detail-page img {
+    max-height: 95mm;
+    object-fit: contain;
+  }
+}
+
 /* Khi di chuột vào 1 item trong menu: các item còn lại sẽ mờ nhẹ và co lại */
 .drawer-nav-menu:has(.drawer-nav-item:hover) .drawer-nav-item:not(:hover) {
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
