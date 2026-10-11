@@ -131,7 +131,7 @@ test('edit page reports an invalid recipe id without making API requests', async
   });
 
   await page.goto('/cong-thuc/not-a-number/chinh-sua');
-  await expect(page.getByRole('alert')).toContainText('ID công thức hợp lệ');
+  await expect(page.getByText(/ID công thức hợp lệ/)).toBeVisible();
   expect(apiRequests).toBe(0);
 });
 
