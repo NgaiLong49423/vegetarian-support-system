@@ -32,6 +32,7 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     private static final String ADMIN_EMAIL = "issue22-admin@test.local";
     private static final String INACTIVE_EXPERT_EMAIL = "issue22-inactive-expert@test.local";
     private static final String INGREDIENT_NAME = "Issue22 Ingredient";
+    private static final String INGREDIENT_WITHOUT_NUTRITION_NAME = "Issue44 Ingredient Without Nutrition";
 
     @Autowired private JdbcTemplate jdbcTemplate;
     @Autowired private JsonMapper jsonMapper;
@@ -41,6 +42,7 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     private long adminId;
     private long inactiveExpertId;
     private long ingredientId;
+    private long ingredientWithoutNutritionId;
     private int gramUnitId;
     private int kilogramUnitId;
     private int countUnitId;
@@ -50,7 +52,9 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     void prepareCatalogAndAccounts() {
         jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue22-%@test.local')");
         jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_NAME);
+        jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_WITHOUT_NUTRITION_NAME);
         jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", INGREDIENT_NAME);
+        jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", INGREDIENT_WITHOUT_NUTRITION_NAME);
         jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue22-%@test.local'");
 
         expertId = insertUser(EXPERT_EMAIL, "EXPERT", "ACTIVE");
@@ -62,6 +66,12 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
                 INGREDIENT_NAME, "Issue #22 integration fixture");
         ingredientId = jdbcTemplate.queryForObject("SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?", Long.class, INGREDIENT_NAME);
         jdbcTemplate.update("UPDATE [INGREDIENT] SET nutrition_supported = 0 WHERE ingredient_id = ?", ingredientId);
+        jdbcTemplate.update("INSERT INTO [INGREDIENT] (name, source_name, reference_date) VALUES (?, ?, '2026-10-04')",
+                INGREDIENT_WITHOUT_NUTRITION_NAME, "Issue #44 integration fixture");
+        ingredientWithoutNutritionId = jdbcTemplate.queryForObject(
+                "SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?", Long.class, INGREDIENT_WITHOUT_NUTRITION_NAME);
+        jdbcTemplate.update("UPDATE [INGREDIENT] SET nutrition_supported = 0 WHERE ingredient_id = ?",
+                ingredientWithoutNutritionId);
         gramUnitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'g'", Integer.class);
         kilogramUnitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'kg'", Integer.class);
         countUnitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'quả'", Integer.class);
@@ -245,6 +255,86 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.ingredientsWithoutNutrition", hasItem(INGREDIENT_NAME)))
                 .andExpect(jsonPath("$.ingredients[0].name").value(INGREDIENT_NAME))
                 .andExpect(jsonPath("$.ingredients[0].quantity").value(80));
+    }
+
+    @Test
+    void calculatesAllNineNutrientsFromDatabaseCatalogAndIngredientConversion() throws Exception {
+        setSupportedNutritionFixture();
+        jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 150)",
+                ingredientId, blockUnitId);
+
+        var created = mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(List.of(ingredient(blockUnitId, "2")), null))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        long recipeId = jsonMapper.readTree(created.getResponse().getContentAsString()).path("recipeId").asLong();
+
+        mockMvc.perform(get("/api/v1/recipes/{recipeId}", recipeId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nutrition.complete").value(true))
+                .andExpect(jsonPath("$.nutrition.ingredientsMissingData").isEmpty())
+                .andExpect(jsonPath("$.nutrition.total.ENERGY_KCAL").value(300.0))
+                .andExpect(jsonPath("$.nutrition.total.PROTEIN_G").value(24.0))
+                .andExpect(jsonPath("$.nutrition.total.CARBOHYDRATE_G").value(90.0))
+                .andExpect(jsonPath("$.nutrition.total.TOTAL_FAT_G").value(15.0))
+                .andExpect(jsonPath("$.nutrition.total.FIBER_G").value(9.0))
+                .andExpect(jsonPath("$.nutrition.total.CALCIUM_MG").value(120.0))
+                .andExpect(jsonPath("$.nutrition.total.IRON_MG").value(6.0))
+                .andExpect(jsonPath("$.nutrition.total.VITAMIN_B12_MCG").value(1.5))
+                .andExpect(jsonPath("$.nutrition.total.ZINC_MG").value(3.0))
+                .andExpect(jsonPath("$.nutrition.perServing.ENERGY_KCAL").value(150.0))
+                .andExpect(jsonPath("$.nutrition.perServing.PROTEIN_G").value(12.0))
+                .andExpect(jsonPath("$.nutrition.perServing.CARBOHYDRATE_G").value(45.0))
+                .andExpect(jsonPath("$.nutrition.perServing.TOTAL_FAT_G").value(7.5))
+                .andExpect(jsonPath("$.nutrition.perServing.FIBER_G").value(4.5))
+                .andExpect(jsonPath("$.nutrition.perServing.CALCIUM_MG").value(60.0))
+                .andExpect(jsonPath("$.nutrition.perServing.IRON_MG").value(3.0))
+                .andExpect(jsonPath("$.nutrition.perServing.VITAMIN_B12_MCG").value(0.75))
+                .andExpect(jsonPath("$.nutrition.perServing.ZINC_MG").value(1.5));
+    }
+
+    @Test
+    void returnsPartialNutritionAndMissingCatalogIngredientNames() throws Exception {
+        setSupportedNutritionFixture();
+        jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 150)",
+                ingredientId, blockUnitId);
+        var recipeIngredients = List.of(ingredient(blockUnitId, "2"),
+                new RecipeIngredientInput(ingredientWithoutNutritionId, gramUnitId, new BigDecimal("80")));
+
+        var created = mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(recipeIngredients, null))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        long recipeId = jsonMapper.readTree(created.getResponse().getContentAsString()).path("recipeId").asLong();
+
+        mockMvc.perform(get("/api/v1/recipes/{recipeId}", recipeId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nutrition.complete").value(false))
+                .andExpect(jsonPath("$.ingredientsWithoutNutrition", hasItem(INGREDIENT_WITHOUT_NUTRITION_NAME)))
+                .andExpect(jsonPath("$.nutrition.total.PROTEIN_G").value(24.0))
+                .andExpect(jsonPath("$.nutrition.perServing.PROTEIN_G").value(12.0));
+    }
+
+    private void setSupportedNutritionFixture() {
+        jdbcTemplate.update("""
+                UPDATE [INGREDIENT]
+                SET energy_kcal_100g = 100,
+                    protein_g_100g = 8,
+                    carbohydrate_g_100g = 30,
+                    total_fat_g_100g = 5,
+                    fiber_g_100g = 3,
+                    calcium_mg_100g = 40,
+                    iron_mg_100g = 2,
+                    vitamin_b12_mcg_100g = 0.5,
+                    zinc_mg_100g = 1,
+                    source_url = 'https://example.test/fixture',
+                    nutrition_supported = 1
+                WHERE ingredient_id = ?
+                """, ingredientId);
     }
 
     @Test
