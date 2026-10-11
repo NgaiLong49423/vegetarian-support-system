@@ -7,6 +7,7 @@ import com.google.genai.types.Schema;
 import com.google.genai.types.Type;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -15,10 +16,15 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     private static final String MODEL = "gemini-3.8-flash";
     private final Client client;
 
+    @Autowired
     public GeminiAiClient(@Value("${GEMINI_API_KEY:}") String apiKey) {
+        this(apiKey, HttpOptions.builder().timeout(45_000).build());
+    }
+
+    GeminiAiClient(String apiKey, HttpOptions httpOptions) {
         this.client = apiKey == null || apiKey.isBlank() ? null : Client.builder()
                 .apiKey(apiKey.strip())
-                .httpOptions(HttpOptions.builder().timeout(45_000).build())
+                .httpOptions(httpOptions)
                 .build();
     }
 
