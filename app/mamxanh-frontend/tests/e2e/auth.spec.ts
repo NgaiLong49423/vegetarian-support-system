@@ -146,12 +146,12 @@ test('login keeps the session in this tab and logout clears it without calling t
   await expect(page.getByText('an@example.com')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Đăng nhập', exact: true })).toHaveCount(0);
 
-  expect(serverCalls).toEqual([
+  expect(serverCalls.filter((call) => !call.startsWith('GET '))).toEqual([
     'POST /api/v1/auth/login',
     'POST /api/v1/nutrition/dietary-preferences/onboarding/invitation',
-    'GET /api/v1/recipes',
-    'GET /api/v1/recipes',
   ]);
+  expect(serverCalls).toContain('GET /api/v1/saved-recipes');
+  expect(serverCalls.filter((call) => call === 'GET /api/v1/recipes')).toHaveLength(4);
   const callsBeforeLogout = serverCalls.length;
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
   await expect(page).toHaveURL(/\/dang-nhap$/);
@@ -193,7 +193,7 @@ test('an expired stored session is dropped and a live session ends when its toke
     }
   }, ['mamxanh.auth', JSON.stringify({ accessToken: 'old.token.value', expiresAt: 1, account })]);
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Đăng nhập', exact: true })).toBeVisible();
+  await expect(page.getByRole('banner').getByRole('link', { name: 'Đăng nhập', exact: true })).toBeVisible();
   expect(await storedSession(page)).toBeNull();
 
   await stubApi(page, '/auth/login', async route => route.fulfill(authResponse(2)));

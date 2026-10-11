@@ -256,7 +256,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
     if (mode === 'forgot') return void submitForgot();
     void submitReset();
   };
-  const fieldClass = 'mt-2 w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100';
+  const fieldClass = 'mt-2 w-full rounded-xl border border-brand-200 bg-paper px-4 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100';
   const error = (field: string) => errors[field] && <p id={`${field}-error`} className="mt-1.5 text-xs text-red-700">{errors[field]}</p>;
   const showForm = !(mode === 'verify' && (verifyState === 'verifying' || verifyState === 'verified')) && !(mode === 'reset' && resetState !== 'ready');
 
@@ -266,17 +266,17 @@ export function AuthPage({ mode }: { mode: Mode }) {
       <Link to="/" aria-label="Về trang chủ" className="inline-flex items-center gap-2 text-sm font-semibold text-ink-soft hover:text-leaf-700"><ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">Về trang chủ</span></Link>
     </header>
     <main className="mx-auto grid max-w-6xl gap-8 px-5 pb-12 pt-3 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-16 lg:py-10">
-      <section className="relative hidden overflow-hidden rounded-[2rem] bg-leaf-700 px-9 py-12 text-white lg:block">
-        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full border-[40px] border-white/5" />
-        <span className="relative inline-flex items-center gap-2 rounded-full border border-white/25 px-3 py-1.5 text-xs font-semibold"><Leaf className="h-4 w-4" /> ĂN CHAY THEO CÁCH CỦA BẠN</span>
-        <h2 className="relative mt-8 text-4xl font-extrabold leading-tight">Một bữa ăn xanh.<br /><span className="text-brand-200">Một ngày an lành.</span></h2>
-        <p className="mt-5 max-w-sm text-sm leading-7 text-white/80">Từ công thức yêu thích đến thực đơn mỗi ngày, Mâm Xanh đồng hành cùng bạn trên hành trình ăn chay.</p>
+      <section className="relative hidden overflow-hidden rounded-[2rem] border border-brand-100 bg-cream-soft px-9 py-12 text-ink lg:block">
+        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full border-[40px] border-paper/5" />
+        <span className="relative inline-flex items-center gap-2 rounded-full border border-brand-200 px-3 py-1.5 text-xs font-semibold"><Leaf className="h-4 w-4" /> ĂN CHAY THEO CÁCH CỦA BẠN</span>
+        <h2 className="relative mt-8 text-4xl font-extrabold leading-tight">Một bữa ăn xanh.<br /><span className="text-brand-600">Một ngày an lành.</span></h2>
+        <p className="mt-5 max-w-sm text-sm leading-7 text-ink-muted">Từ công thức yêu thích đến thực đơn mỗi ngày, Mâm Xanh đồng hành cùng bạn trên hành trình ăn chay.</p>
         <div className="mt-10 space-y-5">
-          {[{ Icon: Utensils, title: 'Món ngon luôn ở gần', text: 'Khám phá và lưu công thức chay bạn yêu thích.' }, { Icon: Leaf, title: 'Bữa ăn có kế hoạch', text: 'Sắp xếp thực đơn và chuẩn bị nguyên liệu dễ dàng.' }, { Icon: ShieldCheck, title: 'Hiểu thêm về bản thân', text: 'Theo dõi hồ sơ dinh dưỡng và chỉ số tham khảo.' }].map(({ Icon, title, text }) => <div key={title} className="flex gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10"><Icon className="h-5 w-5" /></span><div><h3 className="text-sm font-bold">{title}</h3><p className="mt-1 text-xs leading-5 text-white/75">{text}</p></div></div>)}
+          {[{ Icon: Utensils, title: 'Món ngon luôn ở gần', text: 'Khám phá và lưu công thức chay bạn yêu thích.' }, { Icon: Leaf, title: 'Bữa ăn có kế hoạch', text: 'Sắp xếp thực đơn và chuẩn bị nguyên liệu dễ dàng.' }, { Icon: ShieldCheck, title: 'Hiểu thêm về bản thân', text: 'Theo dõi hồ sơ dinh dưỡng và chỉ số tham khảo.' }].map(({ Icon, title, text }) => <div key={title} className="flex gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-paper/10"><Icon className="h-5 w-5" /></span><div><h3 className="text-sm font-bold">{title}</h3><p className="mt-1 text-xs leading-5 text-ink-muted">{text}</p></div></div>)}
         </div>
-        <p className="mt-12 border-t border-white/15 pt-5 text-xs text-white/65">Mâm Xanh · Ẩm thực thuần lành</p>
+        <p className="mt-12 border-t border-paper/15 pt-5 text-xs text-ink-muted">Mâm Xanh · Ẩm thực thuần lành</p>
       </section>
-      <section className="min-w-0 rounded-3xl border border-brand-100 bg-white p-6 shadow-xl shadow-brand-900/5 sm:p-9">
+      <section className="min-w-0 rounded-3xl border border-brand-100 bg-paper p-6 shadow-xl shadow-brand-900/5 sm:p-9">
         <span className="text-xs font-bold uppercase tracking-widest text-leaf-700">{mode === 'register' ? 'Gia nhập cộng đồng' : 'Tài khoản Mâm Xanh'}</span>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink">{details.title}</h1>
         <p className="mt-3 text-sm leading-6 text-ink-muted">{details.subtitle}</p>

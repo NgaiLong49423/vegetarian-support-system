@@ -53,10 +53,10 @@ export function PostDetail() {
           {post.body.map((para, i) => <p key={i}>{para}</p>)}
         </div>
 
-        <div className="mt-8 flex items-center gap-3 rounded-2xl border border-brand-100 bg-white p-3">
+        <div className="mt-8 flex items-center gap-3 rounded-2xl border border-brand-100 bg-paper p-3">
           <button
             onClick={() => setLiked((v) => !v)}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${liked ? 'bg-brand-600 text-white' : 'bg-brand-100 text-brand-700 hover:bg-brand-200'}`}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${liked ? 'bg-brand-600 text-on-brand' : 'bg-brand-100 text-brand-700 hover:bg-brand-200'}`}
           >
             <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} /> {post.likes + (liked ? 1 : 0)}
           </button>
@@ -123,7 +123,7 @@ export function PostDetail() {
       </article>
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white shadow-xl">
+        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-raised px-5 py-3 text-sm font-semibold text-white shadow-xl">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-leaf-500">
             <Check className="h-3.5 w-3.5" />
           </span>

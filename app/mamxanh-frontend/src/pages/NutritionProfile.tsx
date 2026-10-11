@@ -204,7 +204,7 @@ export function NutritionProfile() {
     }
   };
 
-  const fieldClass = 'mt-2 w-full rounded-xl border border-leaf-200 bg-white px-3.5 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100 disabled:bg-stone-50';
+  const fieldClass = 'mt-2 w-full rounded-xl border border-leaf-200 bg-paper px-3.5 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100 disabled:bg-raised';
   const miniLabelClass = 'block text-sm font-semibold text-ink';
 
   return <PageContainer className="py-8 md:py-10">
@@ -218,11 +218,11 @@ export function NutritionProfile() {
         <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">Hồ sơ dinh dưỡng cá nhân</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">Khai báo thông tin để xem các chỉ số dinh dưỡng tham khảo theo dữ liệu của bạn.</p>
       </div>
-      <div className="inline-flex items-center gap-2 rounded-full border border-leaf-100 bg-white px-3 py-2 text-xs font-semibold text-ink-soft"><LockKeyhole className="h-4 w-4 text-leaf-700" /> Hồ sơ riêng tư</div>
+      <div className="inline-flex items-center gap-2 rounded-full border border-leaf-100 bg-paper px-3 py-2 text-xs font-semibold text-ink-soft"><LockKeyhole className="h-4 w-4 text-leaf-700" /> Hồ sơ riêng tư</div>
     </div>
 
-    <aside role="note" className="mt-6 flex gap-3 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 text-sm leading-6 text-ink-soft md:p-5">
-      <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-teal-700" />
+    <aside role="note" className="mt-6 flex gap-3 rounded-2xl border border-leaf-100 bg-leaf-50 p-4 text-sm leading-6 text-ink-soft md:p-5">
+      <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-leaf-700" />
       <p><strong className="text-ink">Lưu ý:</strong> Đây là ứng dụng hỗ trợ tham khảo dinh dưỡng, không phải công cụ theo dõi sức khỏe lâm sàng. Thông tin do bạn tự khai báo và kết quả chỉ mang tính xấp xỉ tham khảo, dựa trên DRI/EER và nguồn NIH ODS. Lượng dinh dưỡng thực tế còn thay đổi theo loại thực phẩm, khẩu phần, bảo quản và cách chế biến. Các kết quả không phải chẩn đoán, điều trị hay kê đơn, không thay thế tư vấn của bác sĩ hoặc chuyên gia dinh dưỡng và không có giá trị pháp lý hay chứng nhận y tế. Hệ thống không giám sát liên tục tình trạng sức khỏe.</p>
     </aside>
 
@@ -245,7 +245,7 @@ export function NutritionProfile() {
             <fieldset className="sm:col-span-2">
               <legend className={miniLabelClass}>Giới tính sinh học *</legend>
               <div className="mt-2 grid grid-cols-2 gap-3">
-                {([{ value: 'FEMALE', label: 'Nữ' }, { value: 'MALE', label: 'Nam' }] as const).map((item) => <label key={item.value} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition focus-within:ring-2 focus-within:ring-leaf-200 ${form.biologicalSex === item.value ? 'border-leaf-600 bg-leaf-50 text-leaf-800' : 'border-leaf-100 bg-white text-ink-soft'}`}>
+                {([{ value: 'FEMALE', label: 'Nữ' }, { value: 'MALE', label: 'Nam' }] as const).map((item) => <label key={item.value} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition focus-within:ring-2 focus-within:ring-leaf-200 ${form.biologicalSex === item.value ? 'border-leaf-600 bg-leaf-50 text-leaf-800' : 'border-leaf-100 bg-paper text-ink-soft'}`}>
                   <input className="accent-leaf-700" type="radio" name="biologicalSex" required checked={form.biologicalSex === item.value} onChange={() => setField('biologicalSex', item.value)} />{item.label}
                 </label>)}
               </div>
@@ -293,16 +293,16 @@ export function NutritionProfile() {
             {excluded && <p role="alert" className="mt-2 rounded-xl bg-amber-100 p-3 text-sm font-medium text-amber-950">Vui lòng tham khảo bác sĩ hoặc chuyên gia dinh dưỡng. Ứng dụng không lưu hồ sơ, tính BMI hoặc hiển thị 9 chỉ tiêu cho trường hợp này.</p>}
           </fieldset>
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-leaf-100 bg-white p-4 text-sm leading-6 text-ink-soft">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-leaf-100 bg-paper p-4 text-sm leading-6 text-ink-soft">
             <input className="mt-1 h-4 w-4 shrink-0 accent-leaf-700" type="checkbox" required checked={form.consentAccepted} onChange={(event) => setField('consentAccepted', event.target.checked)} />
             <span>Tôi đồng ý lưu thông tin sức khỏe do mình tự khai báo để phục vụ các phép tính tham khảo trong hồ sơ dinh dưỡng. *</span>
           </label>
 
           {submitError && <p role="alert" className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm leading-5 text-red-800"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{submitError}</p>}
-          <button type="submit" disabled={saving || !eligible} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-leaf-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-leaf-800 focus:outline-none focus:ring-2 focus:ring-leaf-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-stone-300 sm:w-auto">
+          <button type="submit" disabled={saving || !eligible} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-leaf-500 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-leaf-600 focus:outline-none focus:ring-2 focus:ring-leaf-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-raised sm:w-auto">
             {saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{saving ? 'Đang lưu…' : 'Lưu hồ sơ'}
           </button>
-          {savedResponse?.hasProfile && <button type="button" onClick={handleCalculate} disabled={calculating || saving || !eligible || hasUnsavedProfileChanges} className="ml-0 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-leaf-300 bg-white px-5 py-3 text-sm font-bold text-leaf-800 transition hover:bg-leaf-50 focus:outline-none focus:ring-2 focus:ring-leaf-200 disabled:cursor-not-allowed disabled:border-stone-200 disabled:text-stone-400 sm:ml-2 sm:w-auto">
+          {savedResponse?.hasProfile && <button type="button" onClick={handleCalculate} disabled={calculating || saving || !eligible || hasUnsavedProfileChanges} className="ml-0 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-leaf-300 bg-paper px-5 py-3 text-sm font-bold text-leaf-800 transition hover:bg-leaf-50 focus:outline-none focus:ring-2 focus:ring-leaf-200 disabled:cursor-not-allowed disabled:border-stone-200 disabled:text-stone-400 sm:ml-2 sm:w-auto">
             {calculating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Calculator className="h-4 w-4" />}{calculating ? 'Đang tính…' : 'Tính chỉ số tham khảo'}
           </button>}
           {hasUnsavedProfileChanges && <p className="text-xs leading-5 text-amber-900">Lưu các thay đổi hồ sơ trước khi tính lại chỉ số tham khảo.</p>}
@@ -314,9 +314,9 @@ export function NutritionProfile() {
         <div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-bold text-ink">Chỉ số tham khảo</h2><p className="mt-1 text-sm text-ink-muted">Dựa trên hồ sơ đã lưu của bạn.</p></div><span className="rounded-full bg-leaf-50 px-3 py-1 text-xs font-bold text-leaf-700">Xấp xỉ</span></div>
         {loading ? <div className="flex items-center gap-2 py-16 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" /> Đang tải kết quả…</div>
           : result ? <div className="mt-5">
-            <div className="rounded-2xl bg-gradient-to-br from-leaf-50 to-white p-5 ring-1 ring-leaf-100">
+            <div className="rounded-2xl bg-gradient-to-br from-leaf-50 to-paper p-5 ring-1 ring-leaf-100">
               <p className="text-xs font-bold uppercase tracking-wide text-leaf-700">Chỉ số BMI tham khảo</p>
-              <div className="mt-2 flex flex-wrap items-end justify-between gap-2"><p className="text-4xl font-extrabold tracking-tight text-leaf-800">{formatApprox(result.bmi)}</p><span className="mb-1 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-leaf-800 ring-1 ring-leaf-200">{result.bmiCategory} · tham khảo</span></div>
+              <div className="mt-2 flex flex-wrap items-end justify-between gap-2"><p className="text-4xl font-extrabold tracking-tight text-leaf-800">{formatApprox(result.bmi)}</p><span className="mb-1 rounded-full bg-paper px-3 py-1.5 text-xs font-bold text-leaf-800 ring-1 ring-leaf-200">{result.bmiCategory} · tham khảo</span></div>
               <p className="mt-2 text-xs leading-5 text-ink-muted">Chỉ số sàng lọc tham khảo từ chiều cao và cân nặng tự khai báo.</p>
             </div>
             <div className="mt-4 rounded-2xl border border-leaf-100 p-4">
@@ -335,7 +335,7 @@ export function NutritionProfile() {
             </div>
           </div>
           : showOutOfScope || savedResponse?.outOfScopeReasons.length ? <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950"><div className="flex gap-3"><AlertCircle className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-bold">Chưa thể hiển thị hồ sơ dinh dưỡng</p><p className="mt-1">Các chỉ số BMI và 9 chỉ tiêu bị ẩn đối với trường hợp ngoài phạm vi hỗ trợ. Vui lòng tham khảo bác sĩ hoặc chuyên gia dinh dưỡng.</p></div></div></div>
-            : <div className="mt-5 rounded-2xl border border-dashed border-leaf-200 bg-leaf-50/30 px-5 py-12 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white text-leaf-700 ring-1 ring-leaf-100"><Activity className="h-6 w-6" /></div><p className="mt-4 font-bold text-ink">{savedResponse?.hasProfile ? 'Xác nhận để xem chỉ số' : 'Chưa có kết quả'}</p><p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-ink-muted">{savedResponse?.hasProfile ? 'Trả lời “Không” cho cả ba câu hỏi về phạm vi hỗ trợ, sau đó chọn “Tính chỉ số tham khảo”.' : 'Hoàn thành hồ sơ và đồng ý lưu dữ liệu để xem BMI cùng các chỉ tiêu dinh dưỡng tham khảo.'}</p></div>}
+            : <div className="mt-5 rounded-2xl border border-dashed border-leaf-200 bg-leaf-50/30 px-5 py-12 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-paper text-leaf-700 ring-1 ring-leaf-100"><Activity className="h-6 w-6" /></div><p className="mt-4 font-bold text-ink">{savedResponse?.hasProfile ? 'Xác nhận để xem chỉ số' : 'Chưa có kết quả'}</p><p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-ink-muted">{savedResponse?.hasProfile ? 'Trả lời “Không” cho cả ba câu hỏi về phạm vi hỗ trợ, sau đó chọn “Tính chỉ số tham khảo”.' : 'Hoàn thành hồ sơ và đồng ý lưu dữ liệu để xem BMI cùng các chỉ tiêu dinh dưỡng tham khảo.'}</p></div>}
         {calculationResponse?.eligible && result && <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-ink-muted"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-leaf-700" />Giá trị chưa làm tròn được dùng để phân loại, hệ thống định dạng số để bạn dễ theo dõi.</p>}
         {!savedResponse && !loading && !loadError && <p className="mt-4 text-xs leading-5 text-ink-muted">Đăng nhập để đọc và lưu hồ sơ riêng tư của bạn.</p>}
       </Card>

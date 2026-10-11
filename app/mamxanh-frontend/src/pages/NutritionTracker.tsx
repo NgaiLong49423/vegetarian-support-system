@@ -121,7 +121,7 @@ export function NutritionTracker() {
       <div className="mb-6 flex items-center gap-2">
         <button
           onClick={() => setActiveDay((d) => Math.max(0, d - 1))}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-white text-ink-soft hover:bg-brand-50"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-paper text-ink-soft hover:bg-brand-50"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -131,7 +131,7 @@ export function NutritionTracker() {
               key={d.date}
               onClick={() => setActiveDay(i)}
               className={`flex min-w-[104px] flex-col items-center rounded-xl border px-3 py-2.5 transition-colors ${
-                activeDay === i ? 'border-brand-600 bg-brand-600 text-white' : 'border-brand-100 bg-white text-ink-soft hover:border-brand-300'
+                activeDay === i ? 'border-brand-600 bg-brand-600 text-on-brand' : 'border-brand-100 bg-paper text-ink-soft hover:border-brand-300'
               }`}
             >
               <span className="whitespace-nowrap text-xs font-semibold">{d.weekday}{d.today ? ' • Hôm nay' : ''}</span>
@@ -142,7 +142,7 @@ export function NutritionTracker() {
         </div>
         <button
           onClick={() => setActiveDay((d) => Math.min(days.length - 1, d + 1))}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-white text-ink-soft hover:bg-brand-50"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-paper text-ink-soft hover:bg-brand-50"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -218,7 +218,7 @@ export function NutritionTracker() {
                 type="button"
                 onClick={() => setPeriod('day')}
                 className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                  period === 'day' ? 'bg-white text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
+                  period === 'day' ? 'bg-paper text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
                 }`}
               >
                 Hôm nay (1 ngày)
@@ -227,7 +227,7 @@ export function NutritionTracker() {
                 type="button"
                 onClick={() => setPeriod('week')}
                 className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                  period === 'week' ? 'bg-white text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
+                  period === 'week' ? 'bg-paper text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
                 }`}
               >
                 Tuần qua (7 ngày)
@@ -240,7 +240,7 @@ export function NutritionTracker() {
               <select
                 value={analysisState}
                 onChange={(e) => setAnalysisState(e.target.value as typeof analysisState)}
-                className="rounded-lg border border-brand-200 bg-white p-1 text-xs text-ink outline-none"
+                className="rounded-lg border border-brand-200 bg-paper p-1 text-xs text-ink outline-none"
               >
                 <option value="success">Success</option>
                 <option value="incomplete">Incomplete data</option>

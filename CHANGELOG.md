@@ -1,14 +1,178 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.59.0
+> **Version:** v2.68.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-10
+> **Last Updated:** 2026-10-11
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-11 — Preserve Theme During Browser Reload Verification
+
+**Status:** Committed — `20b3a16`.
+
+**Scope:** Keep the theme persistence browser test's setup from clearing its saved value during reload.
+
+### Added
+
+- None.
+
+### Changed
+
+- Initialize the browser test's theme storage only once per test page session.
+
+### Fixed
+
+- Allow the theme persistence test to verify the saved light theme after reload.
+
+## 2026-10-11 — Add Persistent Light and Dark Themes
+
+**Status:** Committed — `cbef32a`.
+
+**Scope:** Let users switch the application appearance and keep the selected theme between visits.
+
+### Added
+
+- Add light and dark theme controls to the main menu and persist the selection in browser storage.
+- Add browser coverage for switching themes, applying light color tokens and restoring the selection after reload.
+
+### Changed
+
+- Apply the selected semantic color palette and native form control scheme throughout the application.
+- Update the Frontend guide to describe both themes and the appearance setting.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Resolve Sonar Reliability Findings ([#118](https://github.com/NgaiLong49423/vegetarian-support-system/pull/118))
+
+**Status:** Committed — `93e3172`.
+
+**Scope:** Address Frontend reliability and accessibility findings reported by SonarCloud for the pull request.
+
+### Added
+
+- Cover native expert-application dialog visibility and Escape dismissal in the Playwright workflow.
+
+### Changed
+
+- Use the browser's native modal dialog behavior for expert-application details and keep keyboard focus on recipe links instead of their scroll container.
+
+### Fixed
+
+- Explicitly mark the handled Home data-loading promise chain as intentionally asynchronous.
+
+## 2026-10-11 — Preserve Explore Filters During URL Synchronization
+
+**Status:** Committed — `2664eea`.
+
+**Scope:** Prevent URL synchronization from overwriting newer Explore filter selections while keeping browser navigation synchronized.
+
+### Added
+
+- None.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Keep selected Explore filters in the recipe search request when several filters are changed in succession.
+
+## 2026-10-11 — Cover API Recipe Detail Actions in Playwright
+
+**Status:** Committed — `a97bb58`.
+
+**Scope:** Exercise the live API recipe-detail page's key guest interactions in the Frontend coverage suite.
+
+### Added
+
+- Cover serving adjustments, ingredient check-off, image selection, YouTube embedding, link sharing, TXT download, print/PDF handoff, and total nutrition display in a browser regression test.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Allow Standalone Pull Requests Without an Issue ([#118](https://github.com/NgaiLong49423/vegetarian-support-system/pull/118))
+
+**Status:** Committed — `94bae2f`.
+
+**Scope:** Clarify that Issue references are required for PRs implementing an assigned GitHub Issue, while independent work can explain why it has no Issue.
+
+### Added
+
+- Document `Refs: N/A` with a scope reason for standalone work and align the branch naming guidance and PR template.
+
+### Changed
+
+- Keep one implementation PR per assigned Issue and prohibit using `N/A` to bypass or split an existing Issue.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Show Onboarding Questions One at a Time
+
+**Status:** Committed — `6ad21e5`.
+
+**Scope:** Present the existing dietary-preference questionnaire as six sequential questions without changing Backend validation or persistence rules.
+
+### Added
+
+- Add question progress, Back/Continue navigation, retained draft answers and field-error navigation to the affected question.
+
+### Changed
+
+- Show one Onboarding question at a time, save only after final completion, and allow skipping the entire questionnaire from every step without sending a partial preference profile.
+- Keep the full Settings form and explicit allergy/dislike confirmations, and document the new UI flow.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Add Dark Food Workspace and Saved Recipe Integration
+
+**Status:** Committed — `6ad21e5`.
+
+**Scope:** Adapt the Google Stitch layout to existing Mâm Xanh routes using a dark theme and connect saved recipes to the implemented Backend contract.
+
+### Added
+
+- Add public recipe save/unsave controls and a private, searchable, paginated saved-recipe page using the existing API, with Guest sign-in prompts and safe unavailable entries.
+- Add a month calendar and week navigation to the existing read-only Meal Plan API.
+
+### Changed
+
+- Replace the oversized navigation and warm Explore layout with a compact dark header, photo cards, responsive filter rail, three-column Home, profile tabs and shopping checklist.
+- Load Home collections and filter shortcuts from Backend data, preserve existing role controls, and label prototype screens explicitly.
+- Synchronize the Frontend guide and browser regression checks with the implemented UI and API behavior.
+
+### Fixed
+
+- Use the neutral unavailable-recipe message required by AC-20.3 instead of asserting an author deletion in Meal Plan slots.
+
+## 2026-10-11 — Complete API-Driven Recipe Detail and Stitch MCP Guidance
+
+**Status:** Committed — `189b327`.
+
+**Scope:** Complete the Frontend recipe detail experience using the existing Backend API and document the project-local Google Stitch MCP setup for agents.
+
+### Added
+
+- Build the recipe detail page from live API data, including ordered images, author and statistics, scaled ingredient quantities, nutrition, safe YouTube embedding, TXT download, and A4 print/PDF output.
+- Document the repository-local Stitch MCP credential and startup diagnostics without exposing the local key.
+
+### Changed
+
+- Expand the Frontend recipe detail API type to match the Backend response.
 ## 2026-10-10 — Add Password Reset (Issue #9) ([PR #113](https://github.com/NgaiLong49423/vegetarian-support-system/pull/113))
 
 **Status:** Committed — `8794862`.
