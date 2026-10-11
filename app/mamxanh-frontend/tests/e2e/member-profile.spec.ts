@@ -121,6 +121,7 @@ test('recipe detail shows the author with avatar, publish date and a link to the
     publishedAt: '2026-09-30T20:00:00',
     author: { userId: 22, displayName: 'Bếp Chay Lan', avatarUrl: 'https://example.test/author.png' },
     nutritionComplete: true, ingredientsWithoutNutrition: [], ingredients: [], media: [],
+    statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
   } }));
   await page.goto('/cong-thuc/id/901');
 
