@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-11 — Show Onboarding Questions One at a Time
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `6ad21e5`.
 
 **Scope:** Present the existing dietary-preference questionnaire as six sequential questions without changing Backend validation or persistence rules.
 
@@ -30,7 +30,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-11 — Add Dark Food Workspace and Saved Recipe Integration
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `6ad21e5`.
 
 **Scope:** Adapt the Google Stitch layout to existing Mâm Xanh routes using a dark theme and connect saved recipes to the implemented Backend contract.
 
