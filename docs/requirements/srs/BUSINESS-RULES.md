@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.5.0
+> **Version:** v2.6.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-06
+> **Last Updated:** 2026-10-09
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -328,10 +328,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-42"></a>
-### BR-42 — Đối tượng loại trừ khỏi tính toán nhu cầu dinh dưỡng MVP
+### BR-42 — Đối tượng loại trừ khỏi tính năng dinh dưỡng cá nhân MVP
 
 - **Mã quy tắc:** BR-42
-- **Nội dung:** MVP không cung cấp tính nhu cầu, AI menu dinh dưỡng hoặc kiểm tra menu ngày cho người dưới 18 tuổi, người mang thai/cho con bú hoặc người cần chế độ ăn điều trị; giới hạn này không được khóa chức năng thông thường của họ.
+- **Nội dung:** MVP chỉ cho phép Member có trạng thái `ELIGIBLE` truy cập hoặc xử lý dữ liệu dinh dưỡng cá nhân. Người `NOT_CONFIRMED` hoặc `INELIGIBLE`, bao gồm người dưới 18 tuổi, mang thai/cho con bú hoặc cần chế độ ăn điều trị, bị chặn các chức năng dinh dưỡng cá nhân kể cả đọc lịch sử; dữ liệu lịch sử được giữ nguyên trong Database. Khi xác nhận lại thành `ELIGIBLE`, quyền được khôi phục theo phân quyền hiện hành và không tự động tính lại dữ liệu cũ. Giới hạn này không khóa chức năng không-dinh-dưỡng của Member.
 
 ---
 

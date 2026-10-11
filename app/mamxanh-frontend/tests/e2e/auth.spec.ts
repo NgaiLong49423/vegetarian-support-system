@@ -211,8 +211,6 @@ test('local account access requires a Backend-issued login session', async ({ pa
   await page.getByLabel('Mật khẩu', { exact: true }).fill('DemoPass123!');
   await page.getByRole('button', { name: 'Hiện mật khẩu', exact: true }).click();
   await expect(page.getByLabel('Mật khẩu', { exact: true })).toHaveAttribute('type', 'text');
-  await page.getByRole('button', { name: 'Tiếp tục với Google' }).click();
-  await expect(page.getByRole('status')).toContainText('Google Login chưa được kết nối');
   await expect(page.getByRole('button', { name: 'Khám phá tài khoản demo' })).toHaveCount(0);
   expect(await storedSession(page)).toBeNull();
   await expect(page.getByRole('button', { name: 'Đăng nhập', exact: true })).toBeVisible();

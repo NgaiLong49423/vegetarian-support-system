@@ -3,6 +3,7 @@ package tech.mamxanh.recipe.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -50,9 +51,22 @@ public class RecipePostController {
             @RequestParam(defaultValue = "NEWEST") String sort,
             @Parameter(description = "Khung thời gian cho MOST_VIEWED; mặc định ALL_TIME.")
             @Schema(allowableValues = {"ALL_TIME", "LAST_24_HOURS", "LAST_7_DAYS", "LAST_30_DAYS"})
-            @RequestParam(defaultValue = "ALL_TIME") String viewPeriod) {
+            @RequestParam(defaultValue = "ALL_TIME") String viewPeriod,
+            @Parameter(description = "Loại ăn chay chuẩn.")
+            @Schema(allowableValues = {"VEGAN", "LACTO", "OVO", "LACTO_OVO"})
+            @RequestParam(required = false) String vegetarianType,
+            @Parameter(description = "Mã thể loại món chuẩn hóa.")
+            @Schema(allowableValues = {"NOODLE_SOUP", "STIR_FRY", "HOT_POT", "BRAISED", "SOUP", "FRIED", "STEAMED", "SALAD", "ROLL", "GRILLED", "DESSERT"})
+            @RequestParam(required = false) String dishCategory,
+            @Parameter(description = "ID nguyên liệu; có thể lặp lại. Công thức phải chứa tất cả ID đã chọn.")
+            @Size(max = 20)
+            @RequestParam(required = false) java.util.List<@Min(1) Long> ingredientIds,
+            @Parameter(description = "Tổng thời gian chuẩn bị và nấu tối đa, tính bằng phút.")
+            @Min(1)
+            @RequestParam(required = false) Integer maxTotalTimeMinutes) {
         return service.searchPublished(keyword, page, size,
-                RecipeSortMode.from(sort), RecipeViewPeriod.from(viewPeriod));
+                RecipeSortMode.from(sort), RecipeViewPeriod.from(viewPeriod), vegetarianType,
+                dishCategory, ingredientIds, maxTotalTimeMinutes);
     }
 
     @GetMapping("/reference-data")

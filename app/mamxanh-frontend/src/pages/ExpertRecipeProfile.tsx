@@ -113,7 +113,7 @@ export function ExpertRecipeProfile() {
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
         <h2 className="text-xl font-extrabold text-ink">Công thức của tôi</h2>
-        <p className="mt-1 text-sm text-ink-muted">Bài bị Admin ẩn vẫn nằm trong danh sách để bạn xem; không thể sửa hoặc tự công khai lại.</p>
+        <p className="mt-1 text-sm text-ink-muted">Bài viết bị tạm ẩn vẫn nằm trong danh sách để bạn xem, vui lòng liên hệ Ban quản trị để được hỗ trợ mở lại.</p>
       </div>
       <span className="rounded-full bg-brand-50 px-3 py-1 text-sm font-semibold text-brand-700">{recipes.length} bài</span>
     </div>

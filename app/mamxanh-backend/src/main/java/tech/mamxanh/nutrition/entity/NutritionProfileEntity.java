@@ -1,7 +1,9 @@
 package tech.mamxanh.nutrition.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
@@ -48,6 +50,16 @@ public class NutritionProfileEntity {
 
     @Column(name = "therapeutic_diet_required", nullable = false)
     private boolean therapeuticDietRequired;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "nutrition_eligibility_status", nullable = false, length = 20)
+    private NutritionEligibilityStatus nutritionEligibilityStatus;
+
+    @Column(name = "nutrition_eligibility_confirmed_at")
+    private LocalDateTime nutritionEligibilityConfirmedAt;
+
+    @Column(name = "nutrition_scope_confirmed", nullable = false)
+    private boolean nutritionScopeConfirmed;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;

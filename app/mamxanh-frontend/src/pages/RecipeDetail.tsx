@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeftRight,
@@ -142,6 +142,12 @@ function MockRecipeDetail() {
   });
 
   const recipe = matchedRecipe ?? recipes[0];
+  const mediaList = useMemo(() => {
+    return recipe.media && recipe.media.length > 0
+      ? recipe.media
+      : [{ url: recipe.image, isCover: true, displayOrder: 1 }];
+  }, [recipe.id, recipe.image, recipe.media]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [saved, setSaved] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
@@ -164,12 +170,14 @@ function MockRecipeDetail() {
   useEffect(() => {
     if (!isAvailable) return;
     setDesiredServings(recipe.servings);
+    const coverIdx = mediaList.findIndex((m) => m.isCover);
+    setSelectedImageIndex(coverIdx >= 0 ? coverIdx : 0);
     setReportOpen(false);
     setReportReason('');
     setReportDescription('');
     setReportError('');
     setDemoReportSubmitted(false);
-  }, [recipe.id, recipe.servings, isAvailable]);
+  }, [recipe.id, recipe.servings, mediaList, isAvailable]);
 
   if (!matchedRecipe || !isAvailable) {
     return (
@@ -316,7 +324,7 @@ function MockRecipeDetail() {
             <Link
                 to={`/so-sanh?left=${recipe.slug}`}
                 className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-300"
-                title="So sánh với công thức khác (FR-60)"
+                title="So sánh với công thức khác"
             >
               <ArrowLeftRight className="h-4 w-4 text-brand-600" />
               <span className="hidden sm:inline">So sánh món</span>
@@ -331,6 +339,7 @@ function MockRecipeDetail() {
               <span className="hidden sm:inline">Báo cáo</span>
             </button>
             <button
+                type="button"
                 onClick={handleToggleSave}
                 className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${
                     saved
@@ -338,8 +347,9 @@ function MockRecipeDetail() {
                         : 'border-brand-200 bg-white text-ink-soft hover:border-brand-300'
                 }`}
                 aria-label={saved ? 'Bỏ lưu' : 'Lưu'}
+                title={saved ? 'Bỏ lưu' : 'Lưu'}
             >
-              <Heart className={`h-5 w-5 ${saved ? 'fill-current' : ''}`} />
+              <Heart className={`h-5 w-5 ${saved ? 'fill-current text-white' : ''}`} />
             </button>
             <button className="flex h-11 w-11 items-center justify-center rounded-xl border border-brand-200 bg-white text-ink-soft transition-colors hover:border-brand-300">
               <Share2 className="h-5 w-5" />
@@ -378,10 +388,50 @@ function MockRecipeDetail() {
           ))}
         </div>
 
-        {/* image + description */}
+        {/* image gallery + description (FR-14) */}
         <div className="mb-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-          <div className="overflow-hidden rounded-2xl border border-brand-100">
-            <img src={recipe.image} alt={recipe.name} className="h-full w-full object-cover" />
+          <div className="flex flex-col gap-3">
+            <div className="relative overflow-hidden rounded-2xl border border-brand-100 bg-brand-50 aspect-[4/3] sm:aspect-[16/10]">
+              <img
+                src={mediaList[selectedImageIndex]?.url ?? recipe.image}
+                alt={recipe.name}
+                className="h-full w-full object-cover transition-all duration-300"
+              />
+              {mediaList[selectedImageIndex]?.isCover && (
+                <span className="absolute top-3 left-3 flex items-center gap-1 rounded-full bg-brand-600/90 px-3 py-1 text-xs font-bold text-white shadow backdrop-blur-sm">
+                  Ảnh bìa chính
+                </span>
+              )}
+            </div>
+
+            {/* Thumbnail selector when multiple images exist */}
+            {mediaList.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {mediaList.map((m, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedImageIndex(idx)}
+                    className={`relative h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                      selectedImageIndex === idx
+                        ? 'border-brand-600 ring-2 ring-brand-400 scale-[1.02]'
+                        : 'border-brand-200 opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={m.url}
+                      alt={`Thumbnail ${idx + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    {m.isCover && (
+                      <span className="absolute bottom-0 inset-x-0 bg-brand-600/80 py-0.5 text-center text-[9px] font-bold text-white">
+                        Bìa
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <Card className="flex flex-col p-6">
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-brand-600">
@@ -464,9 +514,9 @@ function MockRecipeDetail() {
                                 checked[ing.id] ? 'text-ink-muted line-through' : 'text-ink-soft'
                             }`}
                         >
-                    {ing.name}
+                          {ing.name}
                           {ing.note && <span className="ml-1 text-xs text-ink-muted">· {ing.note}</span>}
-                  </span>
+                        </span>
                         <Badge tone="neutral">
                           {scaleQuantity(ing.quantity, recipe.servings, desiredServings)}
                         </Badge>
@@ -518,7 +568,7 @@ function MockRecipeDetail() {
           <p className="text-right text-xs text-ink-muted">{reportDescription.length}/500 ký tự</p>
           {reportError && <p role="alert" className="mt-2 text-sm text-red-600">{reportError}</p>}
           <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-ink-soft">
-            Bản demo FE: biểu mẫu chưa được kết nối Backend, nên chưa gửi báo cáo tới quản trị viên.
+            Biểu mẫu đang ở chế độ xem trước, hệ thống chưa gửi báo cáo tới quản trị viên.
           </p>
           <div className="mt-4 flex justify-end gap-2">
             <Button variant="outline" onClick={() => setReportOpen(false)}>Hủy</Button>
@@ -528,14 +578,14 @@ function MockRecipeDetail() {
           </div>
         </Modal>
 
-        {/* YouTube Video Section - FR-15 / UC-15.2 */}
+        {/* YouTube Video Section */}
         {recipe.youtubeUrl && (
           <Card className="mb-8 p-6" data-testid="recipe-youtube-section">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink">
                 <span className="text-red-600">▶</span> Video hướng dẫn thực hiện (YouTube)
               </h2>
-              <span className="text-xs text-ink-muted">Trình phát nhúng YouTube (BR-10)</span>
+              <span className="text-xs text-ink-muted">Video hướng dẫn từ YouTube</span>
             </div>
             <div className="mx-auto max-w-3xl">
               <YouTubeEmbed

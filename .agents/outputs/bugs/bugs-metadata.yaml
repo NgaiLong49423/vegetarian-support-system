@@ -1,6 +1,6 @@
 schema_version: 1
 last_updated: 2026-10-11
-next_id: 18
+next_id: 20
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -17,24 +17,42 @@ bugs:
     created: 2026-10-11
     updated: 2026-10-11
     related_issue: 56
-  - id: BUG-016
+  - id: BUG-019
     title: Workflow triển khai FR còn ghi ngưỡng coverage cũ
     status: RECORDED
     severity: Medium
     area: Quy trình agent/Quality gate
-    file: .agents/outputs/bugs/BUG-016.md
+    file: .agents/outputs/bugs/BUG-019.md
     created: 2026-10-11
     updated: 2026-10-11
     related_issue: Unknown
-  - id: BUG-015
+  - id: BUG-018
     title: API danh sách và chi tiết công thức trả tỷ lệ Like chưa làm tròn theo FR-57
     status: RESOLVED
     severity: Medium
     area: Backend/Thống kê bình chọn công thức
-    file: .agents/outputs/bugs/BUG-015.md
+    file: .agents/outputs/bugs/BUG-018.md
     created: 2026-10-11
     updated: 2026-10-11
     related_issue: 56
+  - id: BUG-016
+    title: API hồ sơ dinh dưỡng trả 500 thay cho lỗi nghiệp vụ 400/403
+    status: RECORDED
+    severity: Medium
+    area: Backend/Nutrition Profile
+    file: .agents/outputs/bugs/BUG-016.md
+    created: 2026-10-06
+    updated: 2026-10-10
+    related_issue: 78
+  - id: BUG-015
+    title: Bộ kiểm thử trong database/queries.sql dừng ở mã lý do báo cáo cũ
+    status: RECORDED
+    severity: Medium
+    area: Cơ sở dữ liệu/Kịch bản kiểm thử SQL
+    file: .agents/outputs/bugs/BUG-015.md
+    created: 2026-10-10
+    updated: 2026-10-10
+    related_issue: 31
   - id: BUG-014
     title: Integration test gửi báo cáo để sót Recipe Post trong SQL Server
     status: RESOLVED

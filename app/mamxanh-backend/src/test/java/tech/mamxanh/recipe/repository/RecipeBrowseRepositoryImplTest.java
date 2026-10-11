@@ -44,7 +44,8 @@ class RecipeBrowseRepositoryImplTest {
     void mapsBrowseRowsAndUsesAnAllowlistedOrderWithStableTieBreakersForEveryMode() {
         LocalDateTime now = LocalDateTime.of(2026, 10, 8, 0, 0);
         for (RecipeSortMode mode : RecipeSortMode.values()) {
-            var result = repository.findPublished("canh", mode, now.minusHours(24), now, 0, 12);
+            var result = repository.findPublished("canh", null, null, List.of(), null,
+                    mode, now.minusHours(24), now, 0, 12);
             assertThat(result.totalElements()).isEqualTo(1);
             assertThat(result.rows()).containsExactly(new RecipeBrowseRepository.BrowseRow(41, 3, 1, 9, 4, 2));
         }
@@ -64,9 +65,31 @@ class RecipeBrowseRepositoryImplTest {
     @Test
     void usesOnlyBoundSearchValuesAndTheAllTimeCutoffAsAValue() {
         LocalDateTime now = LocalDateTime.of(2026, 10, 8, 0, 0);
-        repository.findPublished("%' OR 1=1 --", RecipeSortMode.NEWEST,
+        repository.findPublished("%' OR 1=1 --", null, null, List.of(), null, RecipeSortMode.NEWEST,
                 LocalDateTime.of(1, 1, 1, 0, 0), now, 1, 12);
         verify(pageQuery).setParameter("keyword", "%' OR 1=1 --");
         verify(pageQuery).setParameter("viewSince", LocalDateTime.of(1, 1, 1, 0, 0));
+    }
+
+    @Test
+    void buildsParameterizedPredicatesForAllFiltersAndEverySelectedIngredient() {
+        LocalDateTime now = LocalDateTime.of(2026, 10, 8, 0, 0);
+        repository.findPublished("canh", "VEGAN", "SOUP", List.of(11L, 22L), 30,
+                RecipeSortMode.NEWEST, now.minusDays(7), now, 0, 12);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(entityManager, org.mockito.Mockito.times(2)).createNativeQuery(sqlCaptor.capture());
+        assertThat(sqlCaptor.getAllValues()).allSatisfy(sql -> {
+            assertThat(sql).contains("rp.vegetarian_type = :vegetarianType")
+                    .contains("rp.dish_category = :dishCategory")
+                    .contains("rp.prep_time_min + rp.cook_time_min <= :maxTotalTimeMinutes")
+                    .contains("ri.ingredient_id = :ingredientId0")
+                    .contains("ri.ingredient_id = :ingredientId1");
+        });
+        verify(pageQuery).setParameter("vegetarianType", "VEGAN");
+        verify(pageQuery).setParameter("dishCategory", "SOUP");
+        verify(pageQuery).setParameter("maxTotalTimeMinutes", 30);
+        verify(pageQuery).setParameter("ingredientId0", 11L);
+        verify(pageQuery).setParameter("ingredientId1", 22L);
     }
 }

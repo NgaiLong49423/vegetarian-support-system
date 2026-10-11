@@ -148,7 +148,7 @@ export function EditRecipe() {
           <label className={label}>Hướng dẫn nấu *<textarea className={input} rows={8} minLength={10} maxLength={5000} required value={form.instructions} onChange={(e) => setField('instructions', e.target.value)} /><span className="mt-1 block text-right text-xs font-normal text-ink-muted">{form.instructions.length}/5000</span>{fieldError('instructions')}</label>
           <label className={label}>Video YouTube (không bắt buộc)<input className={input} type="url" value={form.youtubeUrl} onChange={(e) => setField('youtubeUrl', e.target.value)} placeholder="https://youtu.be/..." /></label>
         </Card>
-        <Card className="p-5 sm:p-6"><div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-bold text-ink">Nguyên liệu</h2><p className="text-xs text-ink-muted">Giữ nguyên mã nguyên liệu và đơn vị hiện tại; chỉnh tên hiển thị, số lượng.</p></div></div>
+        <Card className="p-5 sm:p-6"><div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-bold text-ink">Nguyên liệu</h2><p className="text-xs text-ink-muted">Giữ nguyên mã nguyên liệu và đơn vị hiện tại, chỉnh tên hiển thị và số lượng.</p></div></div>
           <div className="space-y-3">{form.ingredients.map((ingredient, index) => {
             const matchingOptions = references.ingredients.filter((item) => item.ingredientId === ingredient.ingredientId);
             const allowedUnits = matchingOptions.map((item) => ({ unitId: item.unitId, code: item.unitCode, name: item.unitName }));

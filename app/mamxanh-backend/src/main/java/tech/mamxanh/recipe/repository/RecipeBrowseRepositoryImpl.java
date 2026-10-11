@@ -2,6 +2,8 @@ package tech.mamxanh.recipe.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Locale;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
@@ -17,6 +19,7 @@ class RecipeBrowseRepositoryImpl implements RecipeBrowseRepository {
               FROM RECIPE_POST rp
               WHERE rp.status = 'PUBLISHED'
                 AND (:keyword = '' OR LOWER(rp.title) LIKE :pattern OR LOWER(COALESCE(rp.description, '')) LIKE :pattern)
+                %s
             ),
             reaction_stats AS (
               SELECT rr.recipe_id,
@@ -75,14 +78,17 @@ class RecipeBrowseRepositoryImpl implements RecipeBrowseRepository {
             SELECT COUNT_BIG(*) FROM RECIPE_POST rp
             WHERE rp.status = 'PUBLISHED'
               AND (:keyword = '' OR LOWER(rp.title) LIKE :pattern OR LOWER(COALESCE(rp.description, '')) LIKE :pattern)
+              %s
             """;
 
     @PersistenceContext private EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
-    public BrowsePage findPublished(String keyword, RecipeSortMode sortMode, LocalDateTime viewSince,
-            LocalDateTime now, int page, int size) {
+    public BrowsePage findPublished(String keyword, String vegetarianType, String dishCategory,
+            List<Long> ingredientIds, Integer maxTotalTimeMinutes, RecipeSortMode sortMode,
+            LocalDateTime viewSince, LocalDateTime now, int page, int size) {
+        FilterSql filters = filters(vegetarianType, dishCategory, ingredientIds, maxTotalTimeMinutes);
         String orderBy = switch (sortMode) {
             case NEWEST -> "m.published_at DESC";
             case MOST_LIKED -> "likePercentage DESC, COALESCE(rs.likes, 0) DESC";
@@ -93,9 +99,11 @@ class RecipeBrowseRepositoryImpl implements RecipeBrowseRepository {
         };
         String tieBreak = sortMode == RecipeSortMode.NEWEST
                 ? ", m.recipe_id ASC" : ", m.published_at DESC, m.recipe_id ASC";
-        var query = entityManager.createNativeQuery(PAGE_SELECT + " ORDER BY " + orderBy
+        var query = entityManager.createNativeQuery(PAGE_SELECT.formatted(filters.predicate()) + " ORDER BY " + orderBy
                 + tieBreak + " OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY");
-        bind(query, keyword, viewSince, now);
+        bindSearchFilters(query, keyword, filters.parameters());
+        query.setParameter("viewSince", viewSince);
+        query.setParameter("now", now);
         query.setParameter("since7d", now.minusDays(7));
         query.setParameter("since3d", now.minusDays(3));
         query.setParameter("viewWeight", RecipeRankingPolicy.VIEW_WEIGHT);
@@ -111,17 +119,42 @@ class RecipeBrowseRepositoryImpl implements RecipeBrowseRepository {
         List<BrowseRow> items = rows.stream().map(row -> new BrowseRow(
                 ((Number) row[0]).longValue(), ((Number) row[1]).longValue(), ((Number) row[2]).longValue(),
                 ((Number) row[3]).longValue(), ((Number) row[4]).longValue(), ((Number) row[5]).longValue())).toList();
-        var count = entityManager.createNativeQuery(COUNT_SELECT);
-        count.setParameter("keyword", keyword);
-        count.setParameter("pattern", "%" + keyword.toLowerCase(java.util.Locale.ROOT) + "%");
+        var count = entityManager.createNativeQuery(COUNT_SELECT.formatted(filters.predicate()));
+        bindSearchFilters(count, keyword, filters.parameters());
         long total = ((Number) count.getSingleResult()).longValue();
         return new BrowsePage(items, total);
     }
 
-    private static void bind(jakarta.persistence.Query query, String keyword, LocalDateTime viewSince, LocalDateTime now) {
+    private static void bindSearchFilters(jakarta.persistence.Query query, String keyword,
+            java.util.Map<String, Object> filterParameters) {
         query.setParameter("keyword", keyword);
-        query.setParameter("pattern", "%" + keyword.toLowerCase(java.util.Locale.ROOT) + "%");
-        query.setParameter("viewSince", viewSince);
-        query.setParameter("now", now);
+        query.setParameter("pattern", "%" + keyword.toLowerCase(Locale.ROOT) + "%");
+        filterParameters.forEach(query::setParameter);
     }
+
+    private static FilterSql filters(String vegetarianType, String dishCategory, List<Long> ingredientIds,
+            Integer maxTotalTimeMinutes) {
+        List<String> clauses = new ArrayList<>();
+        java.util.Map<String, Object> parameters = new java.util.LinkedHashMap<>();
+        if (vegetarianType != null) {
+            clauses.add("AND rp.vegetarian_type = :vegetarianType");
+            parameters.put("vegetarianType", vegetarianType);
+        }
+        if (dishCategory != null) {
+            clauses.add("AND rp.dish_category = :dishCategory");
+            parameters.put("dishCategory", dishCategory);
+        }
+        if (maxTotalTimeMinutes != null) {
+            clauses.add("AND rp.prep_time_min + rp.cook_time_min <= :maxTotalTimeMinutes");
+            parameters.put("maxTotalTimeMinutes", maxTotalTimeMinutes);
+        }
+        for (int index = 0; index < ingredientIds.size(); index++) {
+            String parameter = "ingredientId" + index;
+            clauses.add("AND EXISTS (SELECT 1 FROM RECIPE_INGREDIENT ri WHERE ri.recipe_id = rp.recipe_id AND ri.ingredient_id = :" + parameter + ")");
+            parameters.put(parameter, ingredientIds.get(index));
+        }
+        return new FilterSql(clauses.isEmpty() ? "" : "\n" + String.join("\n", clauses), parameters);
+    }
+
+    private record FilterSql(String predicate, java.util.Map<String, Object> parameters) { }
 }

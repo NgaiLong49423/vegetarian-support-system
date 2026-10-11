@@ -132,10 +132,12 @@ export function ShoppingList() {
                     </div>
                     <div className="space-y-1.5">
                       {list.map((it) => (
-                        <div key={it.id} className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-brand-50/60">
+                        <div key={it.id} className="group flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-brand-50/60">
                           <button
+                            type="button"
                             onClick={() => toggle(it.id)}
-                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${it.checked ? 'border-brand-600 bg-brand-600 text-white' : 'border-brand-300 bg-white'}`}
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${it.checked ? 'border-brand-600 bg-brand-600 text-white' : 'border-brand-300 bg-white hover:border-brand-500'}`}
+                            aria-label={`Đánh dấu ${it.name}`}
                           >
                             {it.checked && <Check className="h-3.5 w-3.5" />}
                           </button>
@@ -143,10 +145,18 @@ export function ShoppingList() {
                             <p className={`text-sm font-medium ${it.checked ? 'text-ink-muted line-through' : 'text-ink'}`}>{it.name}</p>
                             {it.note && <p className="truncate text-xs text-ink-muted">{it.note}</p>}
                           </div>
-                          <Badge tone="neutral">{it.quantity}</Badge>
-                          <button onClick={() => remove(it.id)} className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted opacity-0 transition-all hover:bg-white hover:text-red-500 group-hover:opacity-100">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <Badge tone="neutral">{it.quantity}</Badge>
+                            <button
+                              type="button"
+                              onClick={() => remove(it.id)}
+                              className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted opacity-0 transition-all hover:bg-white hover:text-red-500 group-hover:opacity-100"
+                              title={`Xoá ${it.name}`}
+                              aria-label={`Xoá ${it.name}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -158,7 +168,9 @@ export function ShoppingList() {
 
           {counts.done > 0 && (
             <div className="mt-4 flex justify-end">
-              <Button variant="ghost" onClick={clearDone}><Trash2 className="h-4 w-4" /> Xoá {counts.done} mục đã mua</Button>
+              <Button variant="ghost" onClick={clearDone}>
+                <Trash2 className="h-4 w-4" /> Xoá {counts.done} mục đã mua
+              </Button>
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.60.0
+> **Version:** v2.61.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-11
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-11 — Verify Recipe Reactions on Docker Compose (Issue #56)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b9d8455`.
 
 **Scope:** Complete the previously blocked local Backend and shared-stack verification for FR-57. Remote CI, Sonar, CodeQL and post-merge acceptance remain unverified.
 
@@ -24,7 +24,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-11 — Verify Recipe Reaction Acceptance and Input Validation (Issue #56)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b9d8455`.
 
 **Scope:** Verify FR-57 local functional acceptance and required quality gates. Full integration acceptance remains pending.
 
@@ -36,7 +36,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Verify 51 focused Backend tests, 45 real local HTTP/SQL checks and 13 real browser/HTTP/SQL checks after the validation fix, including all five FR-57 acceptance criteria. Clean up disposable fixtures.
 - Attempt full Backend verification: 175 of 312 tests pass, while 137 Testcontainers tests fail to initialize without Docker. Supplemental partial coverage remains below every strict Backend gate: Lines 62.9%, Branches 60.1%, Methods 59.2%, Instructions 67.0%.
-- Correct a management-page test fixture to use the public detail API shape. Record the workflow's outdated coverage guidance separately as BUG-016; preserve the current strict gates.
+- Correct a management-page test fixture to use the public detail API shape. Record the workflow's outdated coverage guidance separately as BUG-019; preserve the current strict gates.
 - Pass all 104 Frontend browser tests and the strict coverage gate on the final rerun: Lines 92.35%, Statements 89.13%, Functions 84.71%, Branches 83.91%. The first run failed one test because of the incorrect fixture. Compose, Sonar and CodeQL verification for these uncommitted changes remain pending.
 
 ### Fixed
@@ -45,7 +45,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-11 — Integrate Recipe Reaction Frontend (Issue #56)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b9d8455`.
 
 **Scope:** Complete the FR-57 Frontend stage on API-backed recipe detail, discovery and home cards. Final integration acceptance remains pending.
 
@@ -67,7 +67,7 @@ None.
 
 ## 2026-10-11 — Align Recipe Reaction Statistics (Issue #56)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b9d8455`.
 
 **Scope:** Complete FR-57 Backend statistics consistency across reaction, public browse and recipe detail responses. Frontend integration remains pending.
 
@@ -82,11 +82,11 @@ None.
 
 ### Fixed
 
-- Correct browse/detail responses that returned 90.91 instead of the required 91 for ten Likes and one Dislike; record the resolution in BUG-015.
+- Correct browse/detail responses that returned 90.91 instead of the required 91 for ten Likes and one Dislike; record the resolution in BUG-018.
 
 ## 2026-10-09 — Add Recipe Reaction Backend (Issue #56)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b9d8455`.
 
 **Scope:** Implement the Backend stage of FR-57 using the existing reaction schema. This checkpoint preceded the statistics alignment recorded on October 11; Frontend integration remains pending.
 
@@ -103,6 +103,62 @@ None.
 ### Fixed
 
 None.
+
+## 2026-10-10 — Add Google Login and Account Linking (Issue #8) ([PR #111](https://github.com/NgaiLong49423/vegetarian-support-system/pull/111))
+
+**Status:** Committed — `519ecbb`.
+
+**Scope:** Implement UC-03.5 so members can sign in with Google Identity Services, following decisions Q25, Q26 and Q39–Q42.
+
+### Added
+
+- Add `POST /api/v1/auth/google`, which verifies the Google ID Token with Google API Client's `GoogleIdTokenVerifier` (signature, expiry, issuer and the `MAMXANH_GOOGLE_CLIENT_ID` audience) and returns the same stateless `AuthResponse` as password login.
+- Find accounts by Google ID before email; create an active, verified customer from the Google profile, link verified password accounts while keeping their password, and link unverified password accounts while removing their password.
+- Reject unverified Google emails and invalid tokens with `GOOGLE_TOKEN_INVALID` (401), locked accounts with `ACCOUNT_LOCKED` (403), emails linked to another Google ID with `GOOGLE_ACCOUNT_CONFLICT` (409) and unavailable Google certificates with `GOOGLE_LOGIN_UNAVAILABLE` (503).
+- Add the Google Identity Services button (`@react-oauth/google`) to the login and registration pages, with the post-login Onboarding invitation and code-based error messages.
+- Add `MAMXANH_GOOGLE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID` to the environment templates and Docker Compose.
+- Add unit, SQL Server integration and Playwright tests that never call Google: a self-signed certificate checks the verifier, and a stub script replaces Google Identity Services.
+
+### Changed
+
+- Let a temporary password-login block not stop Google login, without resetting the failed-attempt counter.
+- Remove the implemented Google endpoint and its schemas from the planned `openapi.yaml`, and document the flow, linking rules and new error codes in `API.md`.
+
+### Fixed
+
+- None.
+
+## 2026-10-09 — Manage Saved Recipes in Backend (Issue #37) ([PR #110](https://github.com/NgaiLong49423/vegetarian-support-system/pull/110))
+
+**Status:** Committed — `6f155e4`.
+
+**Scope:** Implement the Backend portion of FR-32 without changing Frontend source.
+
+### Added
+
+- Add authenticated idempotent save and unsave operations for public recipes.
+- Add saved-recipe search by title or description while preserving private ownership, stable pagination, and safe unavailable tombstones.
+- Add SQL Server integration coverage for persistence, authorization, search, pagination, tombstones, validation, and generated OpenAPI.
+
+### Changed
+
+- Update the API integration guide to describe the runtime Saved Recipes read and write operations.
+
+### Fixed
+
+None.
+
+## 2026-10-08 — Add Public Recipe Search Filters and Explore Controls (Issue #14) ([PR #108](https://github.com/NgaiLong49423/vegetarian-support-system/pull/108))
+
+**Status:** Committed — `60a3788`.
+
+**Scope:** Complete the public recipe discovery flow for FR-08 with database-backed filters and sorting controls.
+
+### Added
+
+- Add parameterized Backend filters for vegetarian type, dish category, all selected ingredients, and maximum total preparation-plus-cooking time.
+- Connect Explore filter options, ingredient lookup, pagination and six sorting modes to the public Backend API; add real SQL Server integration coverage.
+- Document FR-08 filter semantics and the runtime API integration contract.
 
 ## 2026-10-07 — Add Recipe Detail and Saved Recipe Read Projections (Issue #89)
 

@@ -22,15 +22,18 @@ public class SavedRecipeReadService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<SavedRecipeResponse> list(int page, int size) {
-        if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "page phải >= 0 và size phải trong khoảng 1 đến 50.");
+    public PageResponse<SavedRecipeResponse> list(String keyword, int page, int size) {
+        String query = keyword == null ? "" : keyword.trim();
+        if (query.length() > 120 || page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED,
+                    "keyword tối đa 120 ký tự, page phải >= 0 và size phải trong khoảng 1 đến 50.");
         }
         long userId = currentUserService.requireActiveMember().id();
-        var results = repository.findSavedRecipeProjections(userId, PageRequest.of(page, size));
+        var results = repository.findSavedRecipeProjections(userId, query, PageRequest.of(page, size));
         return PageResponse.of(results.getContent().stream().map(item -> {
             boolean available = Boolean.TRUE.equals(item.getAvailable());
-            return new SavedRecipeResponse(item.getRecipeId(), item.getTitle(), item.getCoverUrl(), item.getAuthorName(),
+            return new SavedRecipeResponse(item.getRecipeId(), item.getTitle(), item.getDescription(),
+                    item.getCoverUrl(), item.getAuthorName(),
                     available, available ? null : "Công thức không còn khả dụng", item.getSavedAt());
         }).toList(), page, size, results.getTotalElements());
     }

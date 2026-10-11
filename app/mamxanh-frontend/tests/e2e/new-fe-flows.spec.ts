@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import type { Page } from '@playwright/test';
 import { expect, test } from './baseFixtures';
 import { seedDemoSession } from './demo-session';
@@ -478,7 +479,7 @@ test('recipe exploration does not expose local-only card actions as Backend feat
     items: [], page: 0, size: 12, totalElements: 0, totalPages: 0,
   } }));
   await page.goto('/kham-pha');
-  await expect(page.getByRole('heading', { name: 'Chưa có công thức phù hợp' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();
   await expect(page.getByLabel('Lưu công thức')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Thêm vào lịch ăn' })).toHaveCount(0);
 });
@@ -507,3 +508,30 @@ test('profile labels locally saved recipe prototype as not connected to Backend'
   await page.goto('/ho-so');
   await expect(page.getByText(/API lưu công thức chưa được kết nối/)).toBeVisible();
 });
+
+test('recipe image upload and gallery management complies with FR-14 rules', async ({ page }) => {
+  // 1. Log in as Expert
+  await seedDemoSession(page, 'EXPERT');
+  await page.goto('/dang-cong-thuc');
+
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
+  await expect(page.getByText('Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)')).toBeVisible();
+
+  // 2. Upload test image
+  const fileInput = page.locator('#recipe-media-upload-input');
+  await fileInput.setInputFiles({
+    name: 'test-dish.jpg',
+    mimeType: 'image/jpeg',
+    buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]),
+  });
+
+  // Verify thumbnail, cover badge and order
+  await expect(page.getByText('Đã tải 1/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
+  await expect(page.getByText('Ảnh bìa').first()).toBeVisible();
+
+  // 3. View recipe detail to check gallery & cover
+  await page.goto('/cong-thuc/dau-hu-non-sot-nam-dong-co');
+  await expect(page.getByRole('heading', { name: /Đậu hũ non/i })).toBeVisible();
+  await expect(page.getByText('Ảnh bìa chính')).toBeVisible();
+});
+
