@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.62.0
+> **Version:** v2.63.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-11
 > **Status:** Active
@@ -8,6 +8,24 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Preserve Explore Filters During URL Synchronization
+
+**Status:** Committed — `2664eea`.
+
+**Scope:** Prevent URL synchronization from overwriting newer Explore filter selections while keeping browser navigation synchronized.
+
+### Added
+
+- None.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Keep selected Explore filters in the recipe search request when several filters are changed in succession.
 
 ## 2026-10-11 — Allow Standalone Pull Requests Without an Issue ([#118](https://github.com/NgaiLong49423/vegetarian-support-system/pull/118))
 
