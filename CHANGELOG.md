@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.64.0
+> **Version:** v2.65.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-11
 > **Status:** Active
@@ -8,6 +8,24 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Resolve Sonar Reliability Findings ([#118](https://github.com/NgaiLong49423/vegetarian-support-system/pull/118))
+
+**Status:** Committed — `93e3172`.
+
+**Scope:** Address Frontend reliability and accessibility findings reported by SonarCloud for the pull request.
+
+### Added
+
+- Cover native expert-application dialog visibility and Escape dismissal in the Playwright workflow.
+
+### Changed
+
+- Use the browser's native modal dialog behavior for expert-application details and keep keyboard focus on recipe links instead of their scroll container.
+
+### Fixed
+
+- Explicitly mark the handled Home data-loading promise chain as intentionally asynchronous.
 
 ## 2026-10-11 — Preserve Explore Filters During URL Synchronization
 
