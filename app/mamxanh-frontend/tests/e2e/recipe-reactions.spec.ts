@@ -165,10 +165,16 @@ test('Card trang chủ và Khám phá đặt Mới ở góc trên trái ảnh', 
     await page.goto(path);
     const badge = page.getByLabel('Chưa có bình chọn');
     await expect(badge).toHaveText('Mới');
-    const bounds = await badge.boundingBox();
-    const image = await badge.locator('..').locator('..').boundingBox();
-    expect(bounds!.x - image!.x).toBeLessThan(20);
-    expect(bounds!.y - image!.y).toBeLessThan(20);
+    const offset = await badge.evaluate((element) => {
+      // Read both rectangles in one frame so card entrance motion cannot skew the offset.
+      const bounds = element.getBoundingClientRect();
+      const image = element.parentElement!.parentElement!.getBoundingClientRect();
+      return { x: bounds.x - image.x, y: bounds.y - image.y };
+    });
+    expect(offset.x).toBeGreaterThanOrEqual(0);
+    expect(offset.y).toBeGreaterThanOrEqual(0);
+    expect(offset.x).toBeLessThan(20);
+    expect(offset.y).toBeLessThan(20);
   }
 });
 
