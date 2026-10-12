@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-12 — Complete Ingredient Catalog Management Experience ([PR #124](https://github.com/NgaiLong49423/vegetarian-support-system/pull/124))
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — `4a8bc0e`.
 
 **Scope:** Complete the remaining Issue #46 catalog workflows and keep the administration page focused on nutrition ingredients.
 
