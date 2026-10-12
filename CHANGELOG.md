@@ -11,18 +11,18 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-11 — Add Recipe Views and Interaction Analytics (Issue #57) ([PR #123](https://github.com/NgaiLong49423/vegetarian-support-system/pull/123))
 
-**Status:** Committed — `6a20c24`.
+**Status:** Committed — `4a90766`.
 
-**Scope:** Implement FR-58 recording, analytics and Frontend view counts; full Compose gate, performance and acceptance remain pending.
+**Scope:** Implement FR-58 recording, analytics and Frontend view counts; performance and human acceptance remain pending.
 
 ### Added
 
 - Add `POST /api/v1/recipes/{recipeId}/views` with optional Bearer authentication, hashed anonymous UUIDs, a 30-minute last-counted-event window, and a direct `counted`/`viewCount` response.
 - Serialize recording for each viewer/recipe pair with a transaction-owned SQL Server application lock; update the existing counter and insert the view event in one transaction.
 - Record views after public detail content renders on both numeric detail routes; preserve guest UUIDs in a first-party session cookie and use the existing Bearer session for members. Display server-provided totals on detail, Home and Explore, with non-blocking recording errors and identity-preserving retry.
-- Add service, HTTP contract and SQL Server integration tests for deduplication, validation, concurrency, authorization, rollback and rolling-window analytics. Validation on October 12 passes all 251 tests that do not require SQL Server; the 13 recipe-view SQL Server integration tests compile but are not yet executed because the local Docker daemon is unavailable. Full Backend coverage remains unverified.
-- Add a real Compose browser/API/SQL test for first-view persistence, hashed guest identity, reload deduplication and totals across all four Most Viewed periods. Type checking and test discovery pass; runtime execution remains pending. Compose configuration validation passes with the component environment file; startup, detail latency and 50-user load verification remain pending.
-- Add 14 Playwright checks for guest/member identity, reload, retry, rejected sessions, late requests, all four Most Viewed periods and responsive counts at 360/768/1440 pixels. Before develop synchronization, validation on October 12 passes the full 119-test Frontend suite using two workers, plus all five strict-checker tests; coverage passes every unchanged >80% gate: Lines 91.92%, Statements 89.12%, Functions 84.69% and Branches 82.74%. After synchronization with `41d1b98`, TypeScript, production build and 22 focused view/discovery/theme checks pass; full checks on the synchronized branch remain pending. Browser API mocks do not establish real-stack acceptance.
+- Add service, HTTP contract and SQL Server integration tests for deduplication, validation, concurrency, authorization, rollback and rolling-window analytics. Local validation passes 251 tests without SQL Server; subsequent Backend CI validates all 425 tests, including the 13 recipe-view SQL Server integration cases, and the full JaCoCo gate.
+- Add a real Compose browser/API/SQL test for first-view persistence, hashed guest identity, reload deduplication and totals across all four Most Viewed periods. Docker Development passes at `4a90766` in [CI run 38192573667](https://github.com/NgaiLong49423/vegetarian-support-system/actions/runs/38192573667), including all three real-stack browser tests, service startup and generated OpenAPI validation. The runtime view operation's optional Bearer security, JSON schema and statuses match the implementation. Detail latency and 50-user load verification remain pending.
+- Add 14 Playwright checks for guest/member identity, reload, retry, rejected sessions, late requests, all four Most Viewed periods and responsive counts at 360/768/1440 pixels. Before develop synchronization, validation on October 12 passes the full 119-test Frontend suite using two workers, plus all five strict-checker tests; coverage passes every unchanged >80% gate: Lines 91.92%, Statements 89.12%, Functions 84.69% and Branches 82.74%. After synchronization with `41d1b98`, TypeScript, production build and 22 focused view/discovery/theme checks pass. Full Frontend checks remain enforced by CI on each PR head; browser API mocks do not establish real-stack acceptance.
 
 ### Changed
 
@@ -30,7 +30,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Document anonymous viewer integration and retry behavior in the API guide while retaining the stateless JWT authentication model.
 - Scope the nutrition-status regression assertion to its nutrition region so new view-status feedback does not make its locator ambiguous.
 - Integrate with the merged Frontend design: use the shared public recipe card for Home/Explore totals and the existing detail statistics tile for the recorded count, preserving themes, gallery, serving controls, sharing and export behavior. Publish responsive view screenshots through the existing Frontend CI job.
-- Validate the recording fix on SQL Server in CI at `6a20c24`: all 425 Backend tests pass, including the 13 recipe-view integration cases, with BUNDLE Lines 95.3%, Branches 85.0%, Methods 92.3% and Instructions 95.3%. Adapt the Compose browser test to the merged search field's accessible name; full Compose gate verification remains pending.
+- Validate the recording fix on SQL Server in CI at `6a20c24`: all 425 Backend tests pass, including the 13 recipe-view integration cases, with BUNDLE Lines 95.3%, Branches 85.0%, Methods 92.3% and Instructions 95.3%. Adapt the Compose browser test to the merged search field's accessible name; the subsequent full Compose gate passes at `4a90766`.
 
 ### Fixed
 
