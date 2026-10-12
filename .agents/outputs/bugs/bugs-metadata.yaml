@@ -1,6 +1,6 @@
 schema_version: 1
 last_updated: 2026-10-12
-next_id: 23
+next_id: 24
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-023
+    title: CI không tải ảnh Git LFS làm kiểm thử landing thất bại
+    status: RECORDED
+    severity: Unknown
+    area: Frontend/CI/Git LFS
+    file: .agents/outputs/bugs/BUG-023.md
+    created: 2026-10-12
+    updated: 2026-10-12
+    related_issue: Unknown
   - id: BUG-022
     title: Contract thanh toán FR-13 chưa khớp giữa Backend, OpenAPI và Frontend
     status: RECORDED
