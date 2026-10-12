@@ -638,7 +638,7 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
 
   // 3. Fill form fields
   await page.getByLabel('Tên món *').fill('Nấm đùi gà kho tiêu xanh');
-  await page.getByLabel('Mô tả', { exact: true }).fill('Món kho thơm lừng đậm đà.');
+  await page.getByRole('textbox', { name: 'Mô tả', exact: true }).fill('Món kho thơm lừng đậm đà.');
   await page.getByLabel('Thể loại món').selectOption('BRAISED');
   await page.getByLabel('Loại ăn chay').selectOption('VEGAN');
   await page.getByLabel('Độ khó').selectOption('EASY');
@@ -674,7 +674,7 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
 
   // Form input preservation (AC-25.3)
   expect(await page.getByLabel('Tên món *').inputValue()).toBe('Nấm đùi gà kho tiêu xanh');
-  expect(await page.getByLabel('Mô tả', { exact: true }).inputValue()).toBe('Món kho thơm lừng đậm đà.');
+  expect(await page.getByRole('textbox', { name: 'Mô tả', exact: true }).inputValue()).toBe('Món kho thơm lừng đậm đà.');
   expect(await page.getByLabel('Khẩu phần').inputValue()).toBe('4');
   expect(await page.getByLabel('Thời gian chuẩn bị').inputValue()).toBe('15');
   expect(await page.getByLabel('Thời gian nấu').inputValue()).toBe('20');

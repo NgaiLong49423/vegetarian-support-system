@@ -208,6 +208,12 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
 }
 
 export const recipesApi = {
+  related: (recipeId: number) => request(
+    () => apiClient.get<{ items: RecipePost[] }>(`/recipes/${recipeId}/related`),
+  ),
+  recommendRelated: (recipeId: number) => request(
+    () => apiClient.post<{ items: RecipePost[] }>(`/recipes/${recipeId}/related/ai`, undefined, { timeout: 60_000 }),
+  ),
   getFormOptions: () => request(() => apiClient.get<RecipeFormOptions>('/recipes/form-options')),
   searchIngredients: (query: string) => request(
     () => apiClient.get<IngredientOption[]>('/recipes/ingredient-options', { params: { query } }),

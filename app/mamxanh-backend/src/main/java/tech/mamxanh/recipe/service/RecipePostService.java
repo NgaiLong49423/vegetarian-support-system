@@ -167,6 +167,22 @@ public class RecipePostService {
                 result.totalElements(), totalPages);
     }
 
+    /** Hydrates a bounded ordered selection with current public content and batch-loaded card data. */
+    @Transactional(readOnly = true)
+    public List<RecipePostResponse> getPublishedCards(List<Long> recipeIds) {
+        if (recipeIds.isEmpty()) return List.of();
+        Map<Long, RecipePostEntity> byId = repository.findAllById(recipeIds).stream()
+                .filter(recipe -> "PUBLISHED".equals(recipe.getStatus()))
+                .collect(Collectors.toMap(RecipePostEntity::getId, Function.identity()));
+        List<RecipePostEntity> ordered = recipeIds.stream().map(byId::get)
+                .filter(java.util.Objects::nonNull).toList();
+        if (ordered.isEmpty()) return List.of();
+        Map<Long, BrowseRow> metrics = statisticsRepository.findAllStatistics(byId.keySet()).stream()
+                .collect(Collectors.toMap(stat -> stat.getRecipeId(), stat -> new BrowseRow(
+                        stat.getRecipeId(), stat.getLikes(), stat.getDislikes(), stat.getViewCount(), 0, stat.getViewCount())));
+        return publicResponses(ordered, metrics);
+    }
+
     private static <T extends Enum<T>> String normalizeCode(String value, Class<T> enumType) {
         if (value == null || value.isBlank()) return null;
         try {

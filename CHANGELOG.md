@@ -1,13 +1,35 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.69.0<br>
+> **Version:** v2.70.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-12<br>
+> **Last Updated:** 2026-10-12
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-12 — Add Related Recipe Recommendations ([PR #125](https://github.com/NgaiLong49423/vegetarian-support-system/pull/125))
+
+**Status:** Committed — `81a3b5e`.
+
+**Scope:** Issue #49 / FR-47, public related recipes and explicit subscription-gated Gemini selection.
+
+### Added
+
+- Add bounded SQL Server similarity ranking and public related-recipe APIs, with an optional Gemini selection restricted to current public recipe IDs.
+- Show database-backed recipe cards and an explicit AI action on the recipe detail page, with retry, empty and upgrade states.
+- Expose provider token metadata through an FR-11 handoff event without recording prompts or generated content.
+
+### Changed
+
+- Define principal ingredients by the largest converted gram weight and clarify partial attribute matching and deterministic ordering in FR-47 and UC-47.
+- Document the runtime integration contract, role checks and remaining telemetry-consumer responsibility.
+
+### Fixed
+
+- Disambiguate the existing publish-flow test's description textbox from its AI action by using an exact textbox locator.
+- Align the gallery publishing test's upload fixture with the current runtime API envelope.
 
 ## 2026-10-12 — Complete Ingredient Catalog Management Experience ([PR #124](https://github.com/NgaiLong49423/vegetarian-support-system/pull/124))
 
