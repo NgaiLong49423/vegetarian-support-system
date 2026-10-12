@@ -171,4 +171,3 @@ class DefaultPayOsClientTest {
         assertThat(nullData.getCode()).isEqualTo("00");
     }
 }
-

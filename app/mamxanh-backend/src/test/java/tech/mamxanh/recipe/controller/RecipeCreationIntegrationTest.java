@@ -89,6 +89,21 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void ignoresAForgedAuthorAndBindsTheRecipeToTheSessionAccount() throws Exception {
+        // AC-23.9: author identity comes only from the authenticated session.
+        String forged = json(request(List.of(ingredient(gramUnitId, "200")), null))
+                .replaceFirst("\\{", "{\"authorId\":" + customerId + ",\"author\":{\"userId\":" + customerId + "},");
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON).content(forged))
+                .andExpect(status().isCreated());
+
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForList(
+                "SELECT author_id FROM [RECIPE_POST] WHERE title = ? AND author_id IN (?, ?)", Long.class,
+                "Đậu hũ kho cà chua", expertId, customerId)).containsExactly(expertId);
+    }
+
+    @Test
     void rejectsGuestCustomerAdminAndInactiveExpertWithoutCreatingRecipe() throws Exception {
         String payload = json(request(List.of(ingredient(gramUnitId, "200")), null));
         mockMvc.perform(post("/api/v1/recipes").contentType(MediaType.APPLICATION_JSON).content(payload))
