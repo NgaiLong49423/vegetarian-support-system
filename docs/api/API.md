@@ -2,7 +2,7 @@
 > **File:** `docs/api/API.md`
 > **Version:** v0.13.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-11
+> **Last Updated:** 2026-10-12
 > **Status:** Active
 
 # API Integration Guide

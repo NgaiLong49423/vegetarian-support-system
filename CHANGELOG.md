@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-11 — Add Recipe Views and Interaction Analytics (Issue #57)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b1abddc`.
 
 **Scope:** Implement FR-58 recording, analytics and Frontend view counts; real-stack integration, full Backend coverage, performance and acceptance remain pending.
 
@@ -22,13 +22,14 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Record views after public detail content renders on both numeric detail routes; preserve guest UUIDs in a first-party session cookie and use the existing Bearer session for members. Display server-provided totals on detail, Home and Explore, with non-blocking recording errors and identity-preserving retry.
 - Add service, HTTP contract and SQL Server integration tests for deduplication, validation, concurrency, authorization, rollback and rolling-window analytics. Validation on October 12 passes all 251 tests that do not require SQL Server; the 13 recipe-view SQL Server integration tests compile but are not yet executed because the local Docker daemon is unavailable. Full Backend coverage remains unverified.
 - Add a real Compose browser/API/SQL test for first-view persistence, hashed guest identity, reload deduplication and totals across all four Most Viewed periods. Type checking and test discovery pass; runtime execution remains pending. Compose configuration validation passes with the component environment file; startup, detail latency and 50-user load verification remain pending.
-- Add 14 Playwright checks for guest/member identity, reload, retry, rejected sessions, late requests, all four Most Viewed periods and responsive counts at 360/768/1440 pixels. Validation on October 12 passes the full 119-test Frontend suite using two workers, plus all five strict-checker tests. Coverage passes every unchanged >80% gate: Lines 91.92%, Statements 89.12%, Functions 84.69% and Branches 82.74%. TypeScript and build checks pass; browser API mocks do not establish real-stack acceptance.
+- Add 14 Playwright checks for guest/member identity, reload, retry, rejected sessions, late requests, all four Most Viewed periods and responsive counts at 360/768/1440 pixels. Before develop synchronization, validation on October 12 passes the full 119-test Frontend suite using two workers, plus all five strict-checker tests; coverage passes every unchanged >80% gate: Lines 91.92%, Statements 89.12%, Functions 84.69% and Branches 82.74%. After synchronization with `41d1b98`, TypeScript, production build and 22 focused view/discovery/theme checks pass; full checks on the synchronized branch remain pending. Browser API mocks do not establish real-stack acceptance.
 
 ### Changed
 
 - Add append-only migration `V11__recipe_view_deduplication.sql` for member/guest last-event lookup indexes and reconciliation of existing view counters; align the schema snapshot.
 - Document anonymous viewer integration and retry behavior in the API guide while retaining the stateless JWT authentication model.
 - Scope the nutrition-status regression assertion to its nutrition region so new view-status feedback does not make its locator ambiguous.
+- Integrate with the merged Frontend design: use the shared public recipe card for Home/Explore totals and the existing detail statistics tile for the recorded count, preserving themes, gallery, serving controls, sharing and export behavior. Publish responsive view screenshots through the existing Frontend CI job.
 
 ### Fixed
 
