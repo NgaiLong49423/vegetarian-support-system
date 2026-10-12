@@ -1,6 +1,5 @@
 schema_version: 1
-last_updated: 2026-10-11
-# ID 017–019 đã được cấp trên feature/56-recipe-like-dislike (PR #119).
+last_updated: 2026-10-12
 next_id: 21
 
 status_definitions:
@@ -18,6 +17,15 @@ bugs:
     created: 2026-10-11
     updated: 2026-10-11
     related_issue: 57
+  - id: BUG-017
+    title: Lịch ăn dùng thông báo bài bị tác giả xóa thay cho trạng thái không khả dụng
+    status: RECORDED
+    severity: Low
+    area: Frontend/Lịch ăn
+    file: .agents/outputs/bugs/BUG-017.md
+    created: 2026-10-11
+    updated: 2026-10-11
+    related_issue: 26
   - id: BUG-016
     title: API hồ sơ dinh dưỡng trả 500 thay cho lỗi nghiệp vụ 400/403
     status: RECORDED

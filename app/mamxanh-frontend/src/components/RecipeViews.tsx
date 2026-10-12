@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { RecipeViewCount } from './RecipeViewCount';
 import { recipesApi, type RecipeDetail } from '../api/recipes';
 import { anonymousRecipeViewer } from '../lib/recipeViewer';
 
-export function RecipeViews({ recipe }: { recipe: RecipeDetail }) {
+export function RecipeViews({ recipe, renderCount }: { recipe: RecipeDetail; renderCount?: (count: number | undefined) => ReactNode }) {
   const recipeId = recipe.recipeId;
   const { account } = useAuth();
   // Keep the identity of this visit through retries and session rejection.
@@ -33,11 +33,11 @@ export function RecipeViews({ recipe }: { recipe: RecipeDetail }) {
 
   return (
     <>
-      <div className="mt-3 text-sm text-ink-muted" aria-live="polite" aria-atomic="true">
-        <RecipeViewCount count={viewCount} />
+      <div className={renderCount ? 'min-w-0' : 'mt-3 text-sm text-ink-muted'} aria-live="polite" aria-atomic="true">
+        {renderCount ? renderCount(viewCount) : <RecipeViewCount count={viewCount} />}
       </div>
       {viewError && (
-        <div className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+        <div className="col-span-full mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           <p role="status">Chưa ghi nhận được lượt xem. {viewError}</p>
           <button type="button" disabled={recordingView} onClick={() => setViewAttempt((attempt) => attempt + 1)}
             className="mt-2 rounded-lg border border-amber-300 px-3 py-1.5 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 disabled:opacity-50">
