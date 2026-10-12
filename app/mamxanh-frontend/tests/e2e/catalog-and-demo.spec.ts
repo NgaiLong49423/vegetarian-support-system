@@ -94,8 +94,8 @@ test('recipe creation uploads images, selects one cover and publishes the galler
   await page.route('**/api/v1/recipes/media/upload', async (route) => {
     uploadIndex += 1;
     const fileName = uploadIndex === 1 ? 'one.png' : 'two.png';
-    return route.fulfill({ json: { result: {
-      url: `https://images.example.test/${fileName}`, fileName, contentType: 'image/png', size: 3,
+    return route.fulfill({ json: { success: true, data: {
+      blobUrl: `https://images.example.test/${fileName}`, mimeType: 'image/png', sizeBytes: 3,
     } } });
   });
   let publishedMedia: Array<{ blobUrl: string; mimeType: string; cover: boolean }> | undefined;

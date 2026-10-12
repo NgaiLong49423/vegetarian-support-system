@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.11.0
+> **Version:** v2.12.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-11
+> **Last Updated:** 2026-10-12
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -3099,6 +3099,13 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Phân loại Actor:**
   - Primary Actor: `Guest / Member` (xem gợi ý thông thường), `Member` (chủ động yêu cầu AI gợi ý).
   - Supporting Actor: `Hệ thống truy vấn công thức nội bộ`, `Google Gemini AI` (khi được gọi).
+
+#### Quy tắc gợi ý và nguyên liệu chính
+- Gợi ý thông thường cho phép khớp một phần: cùng `dish_category`, cùng `vegetarian_type` hoặc trùng ít nhất một nguyên liệu chính; chỉ cần một tiêu chí khớp để là ứng viên. Mỗi tiêu chí được một điểm; xếp tổng điểm giảm dần, tiếp theo là số nguyên liệu chuẩn trùng nhau giảm dần, thời điểm công khai mới nhất và ID tăng dần để ổn định kết quả.
+- Nguyên liệu chính là nguyên liệu có khối lượng lớn nhất sau khi quy đổi định lượng về gram. g/kg dùng hệ số của đơn vị MASS; ml/quả và các đơn vị khác dùng bảng quy đổi gram hiện hành theo nguyên liệu/đơn vị. Nếu nhiều nguyên liệu cùng khối lượng lớn nhất, tất cả đều là nguyên liệu chính.
+- Nếu một dòng thiếu khả năng quy đổi hoặc chỉ có nguyên liệu tùy chỉnh không có ID chuẩn, không suy đoán nguyên liệu chính của công thức đó; các tiêu chí thể loại và loại chay vẫn dùng được. Không so trực tiếp các số định lượng khác đơn vị và không mặc định thiếu dữ liệu bằng 0.
+- Luôn loại bài nguồn, bài ẩn/xóa và kết quả trùng. Mặc định hiển thị tối đa 6 công thức; ít ứng viên thì trả số lượng thực tế, không điền món giả.
+- Với tùy chọn AI, Backend chỉ gửi tập ứng viên công khai có giới hạn và cùng loại chay với bài nguồn. Gemini chọn ID trong tập này; Backend xác minh ID và đọc lại trạng thái/nội dung hiện tại trước khi hiển thị. Không có lựa chọn phù hợp thì hiển thị trạng thái rỗng.
 
 #### Use Cases & User Stories
 - **Danh sách Use Cases:**

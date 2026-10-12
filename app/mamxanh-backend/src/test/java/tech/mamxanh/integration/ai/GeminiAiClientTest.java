@@ -75,6 +75,53 @@ class GeminiAiClientTest {
         return new GeminiAiClient("test-key", options);
     }
 
+    @Test
+    void recommendationSchemaReturnsProviderTokenMetadata() throws IOException {
+        startServer(200, """
+                {"candidates":[{"content":{"parts":[{"text":"{\\"recipeIds\\":[2]}"}],"role":"model"}}],
+                 "usageMetadata":{"promptTokenCount":40,"candidatesTokenCount":8,"totalTokenCount":48}}
+                """);
+        try (var client = configuredClient()) {
+            var result = client.recommendRecipes("Choose a pairing", List.of(2L, 3L), 6);
+            assertThat(result.json()).isEqualTo("{\"recipeIds\":[2]}");
+            assertThat(result.promptTokens()).isEqualTo(40);
+            assertThat(result.responseTokens()).isEqualTo(8);
+            assertThat(result.totalTokens()).isEqualTo(48);
+        }
+    }
+
+    @Test
+    void truncatedRecommendationIsNotAcceptedAsSuccessfulGeneration() throws IOException {
+        startServer(200, """
+                {"candidates":[{"content":{"parts":[{"text":"{\\"recipeIds\\":[2]"}],"role":"model"},
+                  "finishReason":"MAX_TOKENS"}]}
+                """);
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.recommendRecipes("pairing", List.of(2L), 6))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class)
+                    .hasMessage("Gemini recommendation output is incomplete");
+        }
+    }
+
+    @Test
+    void recommendationHandlesMissingConfigurationEmptyOutputAndProviderFailure() throws IOException {
+        try (var client = new GeminiAiClient(null)) {
+            assertThatThrownBy(() -> client.recommendRecipes("pairing", List.of(2L), 6))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class);
+        }
+        startServer(200, "{\"candidates\":[{\"content\":{\"parts\":[],\"role\":\"model\"}}]}");
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.recommendRecipes("pairing", List.of(2L), 6))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class);
+        }
+        server.stop(0);
+        startServer(503, "{\"error\":{\"code\":503,\"message\":\"unavailable\",\"status\":\"UNAVAILABLE\"}}");
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.recommendRecipes("pairing", List.of(2L), 6))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class);
+        }
+    }
+
     private void startServer(int status, String body) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
