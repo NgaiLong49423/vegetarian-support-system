@@ -11,9 +11,9 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-11 — Add Recipe Views and Interaction Analytics (Issue #57) ([PR #123](https://github.com/NgaiLong49423/vegetarian-support-system/pull/123))
 
-**Status:** Committed — `b1abddc`.
+**Status:** Committed — `6a20c24`.
 
-**Scope:** Implement FR-58 recording, analytics and Frontend view counts; real-stack integration, full Backend coverage, performance and acceptance remain pending.
+**Scope:** Implement FR-58 recording, analytics and Frontend view counts; full Compose gate, performance and acceptance remain pending.
 
 ### Added
 
@@ -30,11 +30,12 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Document anonymous viewer integration and retry behavior in the API guide while retaining the stateless JWT authentication model.
 - Scope the nutrition-status regression assertion to its nutrition region so new view-status feedback does not make its locator ambiguous.
 - Integrate with the merged Frontend design: use the shared public recipe card for Home/Explore totals and the existing detail statistics tile for the recorded count, preserving themes, gallery, serving controls, sharing and export behavior. Publish responsive view screenshots through the existing Frontend CI job.
+- Validate the recording fix on SQL Server in CI at `6a20c24`: all 425 Backend tests pass, including the 13 recipe-view integration cases, with BUNDLE Lines 95.3%, Branches 85.0%, Methods 92.3% and Instructions 95.3%. Adapt the Compose browser test to the merged search field's accessible name; full Compose gate verification remains pending.
 
 ### Fixed
 
-- Bound Most Viewed aggregation by the current time so future-dated events do not raise the ranking score (BUG-020); SQL Server regression verification remains pending.
-- Start the SQL Server implicit transaction with a published-recipe read before obtaining the transaction-owned application lock, and refresh the count under that lock (BUG-021). The first CI run exposed 503 recording failures; the fix passes 19 local service/HTTP checks and awaits new SQL Server/Compose verification.
+- Bound Most Viewed aggregation by the current time so future-dated events do not raise the ranking score (BUG-020); the SQL Server regression passes in the Backend CI run above.
+- Start the SQL Server implicit transaction with a published-recipe read before obtaining the transaction-owned application lock, and refresh the count under that lock (BUG-021). The first CI run exposed 503 recording failures; the fix passes 19 local service/HTTP checks and the SQL Server integration suite above.
 
 ## 2026-10-11 — Preserve Theme During Browser Reload Verification
 

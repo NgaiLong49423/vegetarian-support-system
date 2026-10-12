@@ -10,7 +10,7 @@ status_definitions:
 bugs:
   - id: BUG-021
     title: Ghi nhận lượt xem trả 503 vì lấy khóa trước khi transaction SQL được kích hoạt
-    status: RECORDED
+    status: RESOLVED
     severity: High
     area: Backend/Ghi nhận lượt xem
     file: .agents/outputs/bugs/BUG-021.md
@@ -19,12 +19,12 @@ bugs:
     related_issue: 57
   - id: BUG-020
     title: Sắp xếp Xem nhiều nhất tính cả lượt xem có thời gian tương lai
-    status: RECORDED
+    status: RESOLVED
     severity: Medium
     area: Backend/Thống kê lượt xem
     file: .agents/outputs/bugs/BUG-020.md
     created: 2026-10-11
-    updated: 2026-10-11
+    updated: 2026-10-12
     related_issue: 57
   - id: BUG-017
     title: Lịch ăn dùng thông báo bài bị tác giả xóa thay cho trạng thái không khả dụng
