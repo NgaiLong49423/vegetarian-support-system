@@ -16,6 +16,7 @@ import {
   Sparkles,
   Sun,
   Moon,
+  UserCog,
   Users,
   X,
 } from "lucide-react"
@@ -46,6 +47,9 @@ export function AppHeader() {
   const role = account?.role
   const personalLinks = [
     { to: "/ho-so", label: "Hồ sơ của tôi", icon: Bookmark },
+    ...(role !== "ADMIN"
+      ? [{ to: "/ho-so/cai-dat", label: "Cài đặt hồ sơ", icon: UserCog }]
+      : []),
     {
       to: "/ho-so/dinh-duong",
       label: "Hồ sơ dinh dưỡng & BMI",

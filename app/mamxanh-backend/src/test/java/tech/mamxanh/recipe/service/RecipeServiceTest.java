@@ -180,6 +180,38 @@ class RecipeServiceTest {
     }
 
     @Test
+    void publishesAndPersistsUploadedMediaWithOrderCoverAndRecipeIdentity() {
+        prepareCatalog();
+        authenticate("7");
+        when(clock.instant()).thenReturn(java.time.Instant.parse("2026-10-11T00:00:00Z"));
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+        when(recipeRepository.save(any(RecipePostEntity.class))).thenAnswer(invocation -> {
+            RecipePostEntity recipe = invocation.getArgument(0);
+            recipe.setId(99L);
+            return recipe;
+        });
+
+        var response = service.publish(withMedia(List.of(
+                new RecipeMediaInput(" https://example.test/first.png ", " image/png ", false),
+                new RecipeMediaInput("https://example.test/cover.jpg", "image/jpeg", true))));
+
+        assertThat(response.status()).isEqualTo("PUBLISHED");
+        verify(mediaRepository).saveAll(org.mockito.ArgumentMatchers.argThat(items -> {
+            var media = java.util.stream.StreamSupport.stream(items.spliterator(), false).toList();
+            assertThat(media).hasSize(2);
+            assertThat(media).extracting(tech.mamxanh.recipe.entity.RecipeMediaEntity::getRecipeId)
+                    .containsExactly(99L, 99L);
+            assertThat(media).extracting(tech.mamxanh.recipe.entity.RecipeMediaEntity::getDisplayOrder)
+                    .containsExactly(1, 2);
+            assertThat(media).extracting(tech.mamxanh.recipe.entity.RecipeMediaEntity::isCover)
+                    .containsExactly(false, true);
+            assertThat(media.getFirst().getBlobUrl()).isEqualTo("https://example.test/first.png");
+            assertThat(media.getFirst().getMimeType()).isEqualTo("image/png");
+            return true;
+        }));
+    }
+
+    @Test
     void collectsAllTextAndTimeValidationErrorsAfterCheckingCatalog() {
         prepareCatalog();
         authenticate("7");

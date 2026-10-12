@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.10.0
+> **Version:** v2.11.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-09
+> **Last Updated:** 2026-10-11
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -298,7 +298,7 @@ Thiết lập Mâm Xanh thành sân chơi ẩm thực chay chuyên nghiệp, nơ
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Guest và Customer tuyệt đối không có quyền tạo, chỉnh sửa hoặc xóa bài công thức (BR-05, BR-07).
-- Chỉ tài khoản có vai trò `Role = EXPERT` (hoặc `Role = ADMIN`) mới có quyền tạo bài viết mới.
+- Chỉ tài khoản có vai trò `Role = EXPERT` mới có quyền tạo bài viết mới; Administrator không phải tác giả và chỉ xử lý Recipe Post qua thao tác quản trị/hậu kiểm (AC-04.7, FR-06).
 - Chuyên gia tác giả chỉ có quyền chỉnh sửa hoặc xóa các bài viết do chính mình làm tác giả (BR-64, NFR-09).
 - Không áp dụng cơ chế phê duyệt trước (pre-moderation) từng bài viết của Chuyên gia; chất lượng bài được bảo đảm thông qua quy trình tiền kiểm cấp quyền Chuyên gia (FR-05) và cơ chế hậu kiểm dựa trên báo cáo vi phạm cộng đồng (FR-06).
 
@@ -1079,7 +1079,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     | **Thư viện ảnh (`RECIPE_MEDIA`)** | **0 – 5 ảnh**, JPEG/PNG/WebP, $\le 5$ MB/ảnh; khi có $\ge 1$ ảnh thì **bắt buộc đúng 1 ảnh bìa** (`is_cover = true`) | Tùy chọn (BR-19, BR-20, FR-14) |
     | **Video YouTube** | **0 – 1 link YouTube** hợp lệ | Tùy chọn (BR-10, BR-20, FR-15) |
 - **Phân loại Actor:**
-  - Primary Actor: `Chuyên gia (Role = EXPERT)`, `Administrator` (tác giả bài viết).
+  - Primary Actor: `Chuyên gia (Role = EXPERT)` (tác giả bài viết).
   - Supporting Actor: `Hệ thống kiểm tra tính hợp lệ dữ liệu (Validation Subsystem)`.
 
 #### Use Cases & User Stories
@@ -1090,7 +1090,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Là một người nấu ăn*, tôi muốn nhập hướng dẫn chế biến linh hoạt và rõ ràng để người đọc dễ dàng làm theo, chọn thể loại món phù hợp, đồng thời hệ thống kiểm tra các đơn vị đo lường có quy đổi được không để tính toán dinh dưỡng chính xác.
 
 #### Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Áp dụng bình đẳng cho mọi bài viết do Chuyên gia hoặc Administrator tạo.
+- **Quyền hạn:** Áp dụng bình đẳng cho mọi bài viết do Chuyên gia tạo; Administrator không phải tác giả (AC-04.7).
 - **Ràng buộc nghiệp vụ:** Đúng bộ tham số đã phê duyệt; bắt buộc có hướng dẫn chế biến (`instructions` từ 10 đến 5.000 ký tự); thể loại món `dish_category` hợp lệ; nguyên liệu có tỷ lệ quy đổi hợp lệ sang gam (BR-73); thư viện ảnh tối đa 5 ảnh với đúng 1 ảnh bìa (BR-19, BR-20).
 
 #### Ma trận truy vết (Traceability Matrix)

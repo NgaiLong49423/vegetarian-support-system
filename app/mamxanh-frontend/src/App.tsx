@@ -17,6 +17,8 @@ import { Profile } from './pages/Profile';
 import { AiPlans } from './pages/AiPlans';
 import { TransactionHistory } from './pages/TransactionHistory';
 import { NutritionProfile } from './pages/NutritionProfile';
+import { PaymentResult } from './pages/PaymentResult';
+
 import { DietaryPreferencesPage } from './pages/DietaryPreferencesPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { AdminCatalogPage } from './pages/AdminCatalogPage';
@@ -25,6 +27,8 @@ import { RecipeComparePage } from './pages/RecipeCompare';
 import { EditRecipe } from './pages/EditRecipe';
 import { ApiRecipeDetail } from './pages/ApiRecipeDetail';
 import { ExpertRecipeProfile } from './pages/ExpertRecipeProfile';
+import { MemberProfilePage } from './pages/MemberProfilePage';
+import { ProfileSettingsPage } from './pages/ProfileSettingsPage';
 import { ThemeProvider } from './components/ThemeContext';
 
 function ScrollToTop() {
@@ -59,7 +63,11 @@ export default function App() {
           <Route path="/bai-viet/:slug" element={<PostDetail />} />
           <Route path="/ho-so" element={<Profile />} />
           <Route path="/ho-so/chuyen-gia" element={<ExpertRecipeProfile />} />
+          <Route path="/ho-so/cai-dat" element={<ProfileSettingsPage />} />
+          <Route path="/thanh-vien/:userId" element={<MemberProfilePage />} />
           <Route path="/goi-ai" element={<AiPlans />} />
+          <Route path="/payment/success" element={<PaymentResult mode="success" />} />
+          <Route path="/payment/cancel" element={<PaymentResult mode="cancel" />} />
           <Route path="/giao-dich" element={<TransactionHistory />} />
           <Route path="/ho-so/dinh-duong" element={<NutritionProfile />} />
           <Route path="/ho-so/so-thich-an-uong" element={<DietaryPreferencesPage />} />

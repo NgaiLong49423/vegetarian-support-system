@@ -79,8 +79,8 @@ export function RecipeImageUploader({
         const uploadResult = await recipeMediaApi.uploadImage(file);
         newItems.push({
           id: tempId,
-          url: uploadResult.url,
-          mimeType: uploadResult.contentType,
+          url: uploadResult.blobUrl,
+          mimeType: uploadResult.mimeType,
           displayOrder: images.length + newItems.length + 1,
           isCover: images.length === 0 && newItems.length === 0, // default first to cover
         });
