@@ -15,6 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import tech.mamxanh.common.exception.ApiException;
@@ -96,6 +98,60 @@ class IngredientCatalogServiceTest {
                 BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE));
         var enabled = service.setNutritionSupport(4L, new NutritionSupportUpdateRequest(true));
         assertThat(enabled.nutritionSupported()).isTrue();
+    }
+
+    @Test void requiresEveryNutritionValueBeforeAllowingSupportedDataToBeCleared() {
+        BigDecimal[] completeValues = {BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE};
+
+        for (int missingIndex = 0; missingIndex < completeValues.length; missingIndex++) {
+            IngredientEntity ingredient = new IngredientEntity("Đậu xanh", "Đậu hạt", "USDA FoodData Central",
+                    "https://fdc.nal.usda.gov/", LocalDate.now());
+            ingredient.updateNutrition(completeValues[0], completeValues[1], completeValues[2], completeValues[3],
+                    completeValues[4], completeValues[5], completeValues[6], completeValues[7], completeValues[8]);
+            ingredient.setNutritionSupported(true);
+            BigDecimal[] partialValues = completeValues.clone();
+            partialValues[missingIndex] = null;
+            long ingredientId = 100L + missingIndex;
+            when(ingredientRepository.findById(ingredientId)).thenReturn(Optional.of(ingredient));
+
+            assertThatThrownBy(() -> service.updateNutrition(ingredientId, new IngredientNutritionRequest(
+                    partialValues[0], partialValues[1], partialValues[2], partialValues[3], partialValues[4],
+                    partialValues[5], partialValues[6], partialValues[7], partialValues[8])))
+                    .isInstanceOfSatisfying(ApiException.class, error ->
+                            assertThat(error.getCode()).isEqualTo("NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED"));
+            assertThat(ingredient.getEnergyKcalPer100g()).isEqualByComparingTo(BigDecimal.TEN);
+        }
+    }
+
+    @Test void reportsAllMissingSourceFieldsBeforeEnablingNutritionSupport() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu xanh", "Đậu hạt", null, null, null);
+        ingredient.updateNutrition(BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE);
+        when(ingredientRepository.findById(8L)).thenReturn(Optional.of(ingredient));
+
+        assertThatThrownBy(() -> service.setNutritionSupport(8L, new NutritionSupportUpdateRequest(true)))
+                .isInstanceOfSatisfying(ApiException.class, error -> {
+                    assertThat(error.getCode()).isEqualTo("NUTRITION_SOURCE_INCOMPLETE");
+                    assertThat(error).hasMessageContaining("sourceName")
+                            .hasMessageContaining("sourceUrl")
+                            .hasMessageContaining("referenceDate");
+                });
+    }
+
+    @Test void searchesWithNoActiveStatusFilterAndNormalizesBlankFilters() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA FoodData Central",
+                "https://fdc.nal.usda.gov/", LocalDate.now());
+        when(ingredientRepository.search(org.mockito.ArgumentMatchers.isNull(String.class),
+                org.mockito.ArgumentMatchers.isNull(String.class),
+                org.mockito.ArgumentMatchers.isNull(tech.mamxanh.nutrition.entity.CatalogStatus.class),
+                org.mockito.ArgumentMatchers.isNull(Boolean.class),
+                org.mockito.ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(ingredient)));
+
+        var result = service.searchIngredients("  ", "   ", null, null, 0, 20);
+
+        assertThat(result.content()).extracting(response -> response.name()).containsExactly("Đậu phụ");
     }
 
     @Test void identifiesMissingSourceFieldsWhenNutritionValuesAreComplete() {

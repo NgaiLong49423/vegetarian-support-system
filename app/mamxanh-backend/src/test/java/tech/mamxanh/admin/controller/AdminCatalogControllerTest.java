@@ -179,4 +179,43 @@ class AdminCatalogControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.active").value(false));
     }
+
+    @Test void administratorCanUseIngredientDetailAndExistingUnitAndConversionOperations() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/ingredients/1")
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/admin/ingredients/1/recipes")
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/admin/ingredients/1").with(user("admin").roles("ADMIN")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Đậu phụ\",\"ingredientGroup\":\"Đậu hạt\",\"sourceName\":\"USDA FoodData Central\",\"referenceDate\":\"2026-09-01\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/v1/admin/ingredients/1").with(user("admin").roles("ADMIN")).with(csrf()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/admin/units").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/admin/units/2").with(user("admin").roles("ADMIN")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"g\",\"name\":\"gam\",\"dimension\":\"MASS\",\"baseFactor\":1}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/v1/admin/units/2/status").with(user("admin").roles("ADMIN")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"active\":false}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/v1/admin/units/2").with(user("admin").roles("ADMIN")).with(csrf()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/admin/ingredient-unit-conversions").param("ingredientId", "1")
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/admin/ingredients/1/unit-conversions/2")
+                        .with(user("admin").roles("ADMIN")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"gramsPerUnit\":120,\"approximate\":false}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/v1/admin/ingredients/1/unit-conversions/2/status")
+                        .with(user("admin").roles("ADMIN")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"active\":false}"))
+                .andExpect(status().isOk());
+    }
 }
