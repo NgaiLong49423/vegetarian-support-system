@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-12 — Introduce the Public Product Landing Page
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `2f21e04`.
 
 **Scope:** Introduce the agreed product story at the public root while preserving the existing application and authentication flow.
 
