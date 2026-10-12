@@ -17,7 +17,7 @@ export function Community() {
   return (
     <PageContainer className="py-8">
       <nav className="mb-4 text-sm text-ink-muted">
-        <Link to="/" className="hover:text-brand-600">Trang chủ</Link> / <span className="font-medium text-brand-600">Cộng đồng</span>
+        <Link to="/trang-chu" className="hover:text-brand-600">Trang chủ</Link> / <span className="font-medium text-brand-600">Cộng đồng</span>
       </nav>
 
       <div className="mb-6">

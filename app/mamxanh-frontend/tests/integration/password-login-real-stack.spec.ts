@@ -39,7 +39,12 @@ function accountState(): { attempts: number; status: string; blockedUntil: strin
   return { attempts: Number(attempts), status, blockedUntil };
 }
 
-test('real browser login updates throttle data in the Compose SQL Server', async ({ page, request }) => {
+test('real browser login updates throttle data in the Compose SQL Server', async ({ page, request }, testInfo) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Ăn chay theo');
+  await page.screenshot({ path: testInfo.outputPath('landing-real-stack.png'), fullPage: true });
+  await page.getByRole('link', { name: 'Đăng nhập', exact: true }).first().click();
+  await expect(page).toHaveURL(/\/dang-nhap$/);
   const registration = await request.post(`${backendUrl}/auth/register`, {
     data: { displayName: 'CI Login Test', email, password, confirmPassword: password },
   });
@@ -57,13 +62,18 @@ test('real browser login updates throttle data in the Compose SQL Server', async
   const successResponse = page.waitForResponse(response => response.url().endsWith('/auth/login'));
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   expect((await successResponse).status()).toBe(200);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trang-chu$/);
   const session = await page.evaluate(() => ({
     session: window.sessionStorage.getItem('mamxanh.auth'),
     local: window.localStorage.getItem('mamxanh.auth'),
   }));
   expect(session.session).toBeTruthy();
   expect(session.local).toBeNull();
+
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Ăn chay theo');
+  await page.getByRole('link', { name: 'Vào ứng dụng', exact: true }).first().click();
+  await expect(page).toHaveURL(/\/trang-chu$/);
 
   await page.getByRole('button', { name: 'Tài khoản CI Login Test' }).click();
   await page.getByRole('button', { name: 'Đăng xuất' }).click();
@@ -97,6 +107,6 @@ test('real browser login updates throttle data in the Compose SQL Server', async
   const retryResponsePromise = page.waitForResponse(item => item.url().endsWith('/auth/login'));
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   expect((await retryResponsePromise).status()).toBe(200);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trang-chu$/);
   expect(accountState()).toMatchObject({ attempts: 0, status: 'ACTIVE', blockedUntil: 'NULL' });
 });

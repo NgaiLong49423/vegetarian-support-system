@@ -69,7 +69,7 @@ export function NutritionTracker() {
   return (
     <PageContainer className="py-8">
       <nav className="mb-4 text-sm text-ink-muted">
-        <Link to="/" className="hover:text-brand-600">Trang chủ</Link> / <span className="font-medium text-brand-600">Theo dõi dinh dưỡng</span>
+        <Link to="/trang-chu" className="hover:text-brand-600">Trang chủ</Link> / <span className="font-medium text-brand-600">Theo dõi dinh dưỡng</span>
       </nav>
 
       <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-end">

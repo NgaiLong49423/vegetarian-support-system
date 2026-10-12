@@ -36,7 +36,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           <ShieldCheck className="mx-auto h-10 w-10 text-amber-700" aria-hidden="true" />
           <h1 className="mt-4 text-2xl font-extrabold text-ink">Không có quyền truy cập</h1>
           <p className="mt-2 text-sm leading-6 text-ink-muted">Khu vực quản trị chỉ dành cho tài khoản Administrator.</p>
-          <Link to="/" className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl border border-brand-200 px-5 font-semibold text-ink-soft hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
+          <Link to="/trang-chu" className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl border border-brand-200 px-5 font-semibold text-ink-soft hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
             Về trang chủ
           </Link>
         </section>

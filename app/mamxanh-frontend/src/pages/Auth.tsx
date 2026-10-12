@@ -72,11 +72,11 @@ function googleLoginError(problem: ProblemDetails | null): Notice {
  * everyone else lands on the home page. Failing to check the invitation never blocks the sign-in.
  */
 async function landingAfterLogin(account: AccountSummary): Promise<string> {
-  if (account.role === 'ADMIN') return '/';
+  if (account.role === 'ADMIN') return '/trang-chu';
   try {
-    return (await claimOnboardingInvitation()) ? '/khoi-tao-so-thich' : '/';
+    return (await claimOnboardingInvitation()) ? '/khoi-tao-so-thich' : '/trang-chu';
   } catch {
-    return '/';
+    return '/trang-chu';
   }
 }
 

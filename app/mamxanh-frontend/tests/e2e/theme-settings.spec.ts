@@ -7,7 +7,7 @@ test('theme can be changed from the menu and persists after reload', async ({ pa
       sessionStorage.setItem('theme-test-initialized', 'true')
     }
   })
-  await page.goto('/')
+  await page.goto('/trang-chu')
 
   const root = page.locator('html')
   await expect(root).toHaveAttribute('data-theme', 'dark')

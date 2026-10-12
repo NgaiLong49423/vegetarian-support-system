@@ -1,13 +1,37 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.67.0
+> **Version:** v2.68.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-11
+> **Last Updated:** 2026-10-12
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-12 — Introduce the Public Product Landing Page
+
+**Status:** Working tree — not committed.
+
+**Scope:** Introduce the agreed product story at the public root while preserving the existing application and authentication flow.
+
+### Added
+
+- Add a responsive, fixed-palette Landing Page for recipe discovery, saved recipes, meal planning, shopping, reference nutrition, AI assistance and expert contributions.
+- Adapt reviewed Google Stitch desktop and mobile proposals into repository-native React and CSS, with actual application screenshots and accessible section navigation.
+- Add browser coverage for public and authenticated visitors, mobile navigation, keyboard access, fixed appearance and Backend-independent rendering.
+
+### Changed
+
+- Move the existing application Home to `/trang-chu` and update application navigation, login destinations and affected regression tests.
+- Open the public application Home from the primary Landing start actions so Guest visitors can enter without signing in or registering.
+- Replace recreated preview controls with compressed screenshots captured from the application and its Compose demo data, including a dedicated mobile Home image.
+- Load application routes, theme and saved-recipe state separately from the Landing Page.
+- Align public metadata and the Frontend guide with the product story and route separation; preserve the existing preview indexing policy.
+
+### Fixed
+
+- None.
 
 ## 2026-10-11 — Preserve Theme During Browser Reload Verification
 

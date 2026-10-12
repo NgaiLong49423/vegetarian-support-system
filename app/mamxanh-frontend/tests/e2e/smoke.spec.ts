@@ -5,7 +5,7 @@ test('loads the application shell and navigates to Explore', async ({ page }) =>
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
 
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await expect(page.getByRole('heading', { name: 'Hôm nay bạn muốn nấu gì?' })).toBeVisible();
 
   await page.getByRole('link', { name: 'Khám phá món chay' }).click();
@@ -17,7 +17,7 @@ test('loads the application shell and navigates to Explore', async ({ page }) =>
 
 test('interactive UI components: ClickSpark, BorderGlow, RippleDistortion, InteractiveLamp, and BinButton work smoothly', async ({ page }) => {
   // 1. ClickSpark, RippleDistortion and BorderGlow on home page
-  await page.goto('/');
+  await page.goto('/trang-chu');
   const borderGlow = page.getByTestId('border-glow-card');
   await expect(borderGlow).toBeVisible();
   await borderGlow.hover();

@@ -23,7 +23,7 @@ import { Logo } from "./Logo"
 import { useTheme } from "./ThemeContext"
 
 const navigation = [
-  { to: "/", label: "Trang chủ", icon: LayoutGrid },
+  { to: "/trang-chu", label: "Trang chủ", icon: LayoutGrid },
   { to: "/kham-pha", label: "Khám phá", icon: Search },
   { to: "/ho-so", label: "Đã lưu", icon: Bookmark },
   { to: "/ke-hoach", label: "Lịch ăn", icon: CalendarDays },
@@ -144,8 +144,8 @@ export function AppHeader() {
   })
 
   const activeNavIndex = navigation.findIndex((item) =>
-    item.to === "/"
-      ? location.pathname === "/"
+    item.to === "/trang-chu"
+      ? location.pathname === "/trang-chu"
       : location.pathname === item.to ||
         location.pathname.startsWith(`${item.to}/`),
   )
@@ -220,7 +220,7 @@ export function AppHeader() {
               <span className="menu-btn-line block h-0.5 w-4.5 rounded-full bg-current group-hover:w-5 group-hover:translate-x-0.5" />
             </div>
           </button>
-          <Logo />
+          <Logo to="/trang-chu" />
           <div className="hidden flex-1 items-center justify-center px-2 xl:flex">
             <nav
               aria-label="Điều hướng chính"
@@ -249,7 +249,7 @@ export function AppHeader() {
                     aria-label={
                       item.to === "/kham-pha" ? "Khám phá món chay" : item.label
                     }
-                    end={item.to === "/"}
+                    end={item.to === "/trang-chu"}
                     className={`glass-nav-link ${isCurrent ? "is-active" : ""}`}
                   >
                     {item.label}
@@ -390,7 +390,7 @@ export function AppHeader() {
         />
         <div className="drawer-panel relative flex h-full w-80 max-w-[90vw] flex-col border-r border-brand-100 bg-cream-soft shadow-2xl">
           <div className="flex h-16 items-center justify-between border-b border-brand-100 px-5">
-            <Logo />
+            <Logo to="/trang-chu" />
             <button
               type="button"
               aria-label="Đóng"
@@ -411,7 +411,7 @@ export function AppHeader() {
                 aria-label={
                   item.to === "/kham-pha" ? "Khám phá món chay" : item.label
                 }
-                end={item.to === "/"}
+                end={item.to === "/trang-chu"}
                 className={({ isActive }) =>
                   `drawer-nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
                     isActive

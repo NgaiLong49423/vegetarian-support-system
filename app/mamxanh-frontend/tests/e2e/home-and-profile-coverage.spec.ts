@@ -14,21 +14,21 @@ test('home renders Backend featured recipes and routes both search actions to ex
     }], page: 0, size: 4, totalElements: 1, totalPages: 1,
   } }));
 
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await expect(page.getByRole('heading', { name: 'Canh rau củ từ Backend' })).toHaveCount(2);
   await expect(page.locator('img[alt="Canh rau củ từ Backend"]').first()).toHaveAttribute('src', 'https://example.test/first-photo.jpg');
   await page.getByRole('textbox', { name: 'Tìm công thức trang chủ' }).fill('đậu & nấm');
   await page.getByRole('button', { name: 'Tìm', exact: true }).click();
   await expect(page).toHaveURL(/\/kham-pha\?q=%C4%91%E1%BA%ADu%20%26%20n%E1%BA%A5m$/);
 
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('link', { name: 'Xem tất cả', exact: true }).last().click();
   await expect(page).toHaveURL(/\/kham-pha\?sort=MOST_LIKED$/);
 
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('link', { name: 'Khám phá công thức', exact: true }).click();
   await expect(page).toHaveURL(/\/kham-pha$/);
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('link', { name: 'Mở lịch ăn' }).click();
   await expect(page).toHaveURL(/\/ke-hoach$/);
 });
@@ -76,7 +76,7 @@ test('home explains when Backend has no published recipes', async ({ page }) => 
     items: [], page: 0, size: 4, totalElements: 0, totalPages: 0,
   } }));
 
-  await page.goto('/');
+  await page.goto('/trang-chu');
 
   await expect(page.getByText('Chưa có công thức công khai trong bộ sưu tập này.')).toHaveCount(2);
 });

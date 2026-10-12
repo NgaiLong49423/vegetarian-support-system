@@ -142,7 +142,7 @@ test('recipe ingredients scale from the author serving count', async ({ page }) 
 
 test('avatar menu displays the authenticated Backend identity and UI-only plan remains labeled demo', async ({ page }) => {
   await seedDemoSession(page, 'CUSTOMER');
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Tài khoản Demo CUSTOMER' }).click();
   await expect(page.getByText('demo-customer@mamxanh.local')).toBeVisible();
   await expect(page.getByRole('button', { name: /Chuyển vai trò demo/ })).toHaveCount(0);
@@ -154,7 +154,7 @@ test('avatar menu displays the authenticated Backend identity and UI-only plan r
 test('mobile account links remain reachable from the menu', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await seedDemoSession(page, 'CUSTOMER');
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('link', { name: 'Lịch sử giao dịch' }).click();
   await expect(page).toHaveURL(/\/giao-dich$/);
