@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { AlertCircle, ImagePlus, Info, LoaderCircle, Plus, Trash2, UploadCloud } from 'lucide-react';
+import { AlertCircle, Info, LoaderCircle, Plus, Trash2 } from 'lucide-react';
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
-import { ApiError } from '../lib/apiClient';
+import { ApiError, asApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
 import { useAuth } from '../components/AuthContext';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
@@ -10,6 +10,8 @@ import { validateYouTubeUrl } from '../utils/youtube';
 import { Button, Card } from '../components/ui';
 import type { UserRole } from '../types';
 import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
+import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
+import type { RecipeAiContentType } from '../api/recipes';
 
 type IngredientRow = {
   key: string;
@@ -96,13 +98,13 @@ function CreateRecipeForm() {
     }
   };
   const [ingredients, setIngredients] = useState<IngredientRow[]>(() => [emptyIngredient()]);
-  const [files, setFiles] = useState<File[]>([]);
-  const [coverIndex, setCoverIndex] = useState<number | null>(null);
   const [mediaList, setMediaList] = useState<ImageItem[]>([]);
   const [mediaError, setMediaError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [aiLoading, setAiLoading] = useState<RecipeAiContentType | null>(null);
+  const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -120,25 +122,43 @@ function CreateRecipeForm() {
     setIngredients((current) => current.map((row) => row.key === key ? { ...row, ...patch } : row));
   };
 
-  const handleFiles = (selected: FileList | null) => {
-    setFiles(selected ? Array.from(selected) : []);
-    setCoverIndex(null);
-    setMediaError('');
+  const generateWithAi = async (contentType: RecipeAiContentType) => {
+    setAiError(null);
+    if (title.trim().length < 3 || !dishCategory || !vegetarianType || Number(servings) < 1
+        || ingredients.some((row) => row.ingredientId === null || row.unitId === null
+          || !row.quantity || Number(row.quantity) <= 0)) {
+      setAiError({ contentType, message: 'Hãy nhập tên món, loại chay, danh mục, khẩu phần và hoàn tất nguyên liệu trước khi yêu cầu AI.' });
+      return;
+    }
+    setAiLoading(contentType);
+    try {
+      const result = await recipesApi.suggestText({
+        contentType,
+        title,
+        dishCategory,
+        vegetarianType,
+        servings: Number(servings),
+        ingredients: ingredients.map((row) => ({
+          ingredientId: row.ingredientId!,
+          unitId: row.unitId!,
+          quantity: Number(row.quantity),
+        })),
+      });
+      if (contentType === 'DESCRIPTION') setDescription(result.content);
+      else setInstructions(result.content);
+    } catch (cause) {
+      const error = asApiError(cause);
+      setAiError({ contentType, message: error.code === 'AI_SUBSCRIPTION_REQUIRED'
+        ? 'Tính năng AI dành cho gói Plus/Pro. Bạn vẫn có thể tự viết và đăng công thức.'
+        : error.code === 'AI_PROVIDER_UNAVAILABLE' || error.code === 'AI_RESPONSE_INVALID'
+          ? 'AI hiện không tạo được nội dung hợp lệ. Bạn vẫn có thể tự viết và đăng công thức.'
+          : error.message });
+    } finally {
+      setAiLoading(null);
+    }
   };
 
   const validateMediaSelection = () => {
-    if (files.length > 5) {
-      setMediaError('Mỗi công thức được chọn tối đa 5 ảnh.');
-      return false;
-    }
-    if (files.length > 0 && (coverIndex === null || coverIndex >= files.length)) {
-      setMediaError('Nếu chọn ảnh, hãy chọn đúng 1 ảnh bìa.');
-      return false;
-    }
-    if (files.length > 0) {
-      setMediaError('Tính năng tải lên ảnh đang được hoàn thiện. Hiện hãy đăng bài không kèm ảnh.');
-      return false;
-    }
     if (mediaList.length > 0) {
       if (mediaList.some((image) => image.url.startsWith('blob:'))) {
         setMediaError('Một số ảnh chưa tải lên thành công. Vui lòng xóa ảnh xem trước và tải lại trước khi xuất bản.');
@@ -146,7 +166,7 @@ function CreateRecipeForm() {
       }
       const coverCount = mediaList.filter((m) => m.isCover).length;
       if (coverCount !== 1) {
-        setMediaError('Vui lòng chỉ định chính xác 1 ảnh đại diện (ảnh bìa) cho bài viết (FR-14, BR-19).');
+        setMediaError('Vui lòng chọn đúng 1 ảnh làm ảnh bìa.');
         return false;
       }
     }
@@ -254,6 +274,7 @@ function CreateRecipeForm() {
             </Field>
             <Field label="Mô tả (không bắt buộc, tối đa 2.000 ký tự)" error={errorFor('description')}>
               <textarea aria-label="Mô tả" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={2000} rows={3} placeholder="Giới thiệu ngắn về món ăn" className={`${inputClass} resize-y`} />
+              <RecipeAiAssistance contentType="DESCRIPTION" loading={aiLoading} error={aiError?.contentType === 'DESCRIPTION' ? aiError.message : ''} onGenerate={generateWithAi} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Thể loại món *" error={errorFor('dishCategory')}>
@@ -322,37 +343,19 @@ function CreateRecipeForm() {
             <Field label="Hướng dẫn * (10–5.000 ký tự)" error={errorFor('instructions')}>
               <textarea aria-label="Hướng dẫn * (10–5.000 ký tự)" value={instructions} onChange={(event) => setInstructions(event.target.value)} rows={8} placeholder="Viết hướng dẫn theo cách của bạn, có thể chia theo từng bước hoặc cách nấu chi tiết." className={`${inputClass} resize-y`} />
               <p className="mt-1 text-right text-xs text-ink-muted">{instructions.trim().length}/5.000 ký tự</p>
+              <RecipeAiAssistance contentType="INSTRUCTIONS" loading={aiLoading} error={aiError?.contentType === 'INSTRUCTIONS' ? aiError.message : ''} onGenerate={generateWithAi} />
             </Field>
           </Card>
 
           <Card className="space-y-4 p-5 sm:p-6">
-            <SectionHead number="4" title="Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)" />
+            <SectionHead number="4" title="Hình ảnh bài công thức" />
             <RecipeImageUploader
               images={mediaList}
               onChange={setMediaList}
               maxImages={5}
             />
-
-            <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/50 p-4">
-              <div className="flex items-start gap-3">
-                <UploadCloud className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-ink">Ảnh công thức (0–5 ảnh)</p>
-                  <p className="mt-1 text-xs text-ink-muted">Tối đa 5 ảnh minh họa cho món ăn, hãy chọn 1 ảnh làm ảnh đại diện bìa.</p>
-                  <input type="file" accept="image/*" multiple onChange={(event) => handleFiles(event.target.files)} className="mt-3 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:font-semibold file:text-brand-700" aria-label="Chọn tối đa 5 ảnh" />
-                </div>
-                {files.length === 0 && <ImagePlus className="h-6 w-6 text-brand-400" />}
-              </div>
-              {files.length > 0 && <ul className="mt-3 space-y-2 border-t border-brand-100 pt-3">{files.map((file, index) => (
-                <li key={`${file.name}-${index}`} className="flex items-center gap-2 text-sm">
-                  <input type="radio" name="cover-image" checked={coverIndex === index} onChange={() => { setCoverIndex(index); setMediaError(''); }} aria-label={`Chọn ${file.name} làm ảnh cover`} />
-                  <span className="min-w-0 flex-1 truncate">{file.name}</span>
-                  <span className="text-xs text-ink-muted">{coverIndex === index ? 'Cover' : ''}</span>
-                </li>
-              ))}</ul>}
-              {mediaError && <p role="alert" className={errorClass}>{mediaError}</p>}
-              {errorFor('media') && <p role="alert" className={errorClass}>{errorFor('media')}</p>}
-            </div>
+            {mediaError && <p role="alert" className={errorClass}>{mediaError}</p>}
+            {errorFor('media') && <p role="alert" className={errorClass}>{errorFor('media')}</p>}
             <Field label="Link YouTube / Liên kết video YouTube (không bắt buộc)">
               <input
                 type="url"

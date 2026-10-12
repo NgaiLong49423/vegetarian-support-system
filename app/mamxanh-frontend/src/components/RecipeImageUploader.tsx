@@ -34,6 +34,7 @@ export function RecipeImageUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
 
   const recomputeOrdersAndCover = (list: ImageItem[]): ImageItem[] => {
     if (list.length === 0) return [];
@@ -51,7 +52,7 @@ export function RecipeImageUploader({
 
     const availableSlots = maxImages - images.length;
     if (availableSlots <= 0) {
-      setErrorMessage(`Bạn chỉ có thể tải lên tối đa ${maxImages} hình ảnh cho bài công thức (FR-14).`);
+      setErrorMessage(`Bạn chỉ có thể tải lên tối đa ${maxImages} hình ảnh cho bài công thức.`);
       return;
     }
 
@@ -106,6 +107,12 @@ export function RecipeImageUploader({
     }
   };
 
+  const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragActive(false);
+    void handleFiles(event.dataTransfer.files);
+  };
+
   const handleSetCover = (index: number) => {
     const updated = images.map((img, i) => ({
       ...img,
@@ -150,9 +157,14 @@ export function RecipeImageUploader({
         {images.length < maxImages ? (
           <label
             htmlFor="recipe-media-upload-input"
+            onDragOver={(event) => { event.preventDefault(); setIsDragActive(true); }}
+            onDragLeave={() => setIsDragActive(false)}
+            onDrop={handleDrop}
             className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
               isUploading
                 ? 'border-brand-300 bg-brand-50/50 cursor-wait'
+                : isDragActive
+                  ? 'border-brand-500 bg-brand-50'
                 : 'border-brand-200 bg-brand-50/30 hover:border-brand-400 hover:bg-brand-50'
             }`}
           >
@@ -167,7 +179,7 @@ export function RecipeImageUploader({
                 : 'Kéo thả hoặc nhấp để chọn ảnh món ăn'}
             </p>
             <p className="mt-1 text-xs text-ink-muted">
-              Định dạng JPEG, PNG, WebP • Tối đa 5 MB/ảnh • Tối đa {maxImages} ảnh (FR-14)
+              Định dạng JPEG, PNG, WebP • Tối đa 5 MB/ảnh • Tối đa {maxImages} ảnh
             </p>
           </label>
         ) : (

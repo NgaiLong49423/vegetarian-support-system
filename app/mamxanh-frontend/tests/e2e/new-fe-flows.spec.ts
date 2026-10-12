@@ -707,7 +707,7 @@ test('recipe image upload and gallery management complies with FR-14 rules', asy
   await page.goto('/dang-cong-thuc');
 
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
-  await expect(page.getByText('Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hình ảnh bài công thức' })).toBeVisible();
 
   // 2. Upload test image
   const fileInput = page.locator('#recipe-media-upload-input');
