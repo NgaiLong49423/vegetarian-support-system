@@ -369,6 +369,24 @@ public class RecipePostService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public tech.mamxanh.common.response.PageResponse<RecipeUsage> searchRecipesUsingIngredient(
+            long ingredientId, int page, int size) {
+        Page<RecipePostEntity> result = repository.findAllUsingIngredient(ingredientId,
+                PageRequest.of(page, size, Sort.by(Sort.Order.asc("title"), Sort.Order.asc("id"))));
+        return tech.mamxanh.common.response.PageResponse.of(result.getContent().stream()
+                .map(recipe -> new RecipeUsage(recipe.getId(), recipe.getTitle(), recipe.getStatus(), recipe.getPublishedAt()))
+                .toList(), result.getNumber(), result.getSize(), result.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Map<Long, Long> countRecipesUsingIngredients(java.util.Collection<Long> ingredientIds) {
+        if (ingredientIds.isEmpty()) return java.util.Map.of();
+        return ingredientRepository.countDistinctRecipesByIngredientIds(ingredientIds).stream()
+                .collect(java.util.stream.Collectors.toMap(row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).longValue()));
+    }
+
     public record RecipeUsage(long recipeId, String title, String status, LocalDateTime publishedAt) { }
 
     private static void requireOwner(RecipePostEntity recipe, CurrentUser author) {

@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import tech.mamxanh.admin.dto.IngredientRecipeReferenceResponse;
+import tech.mamxanh.admin.dto.IngredientCatalogOptionsResponse;
+import tech.mamxanh.admin.dto.AdminIngredientResponse;
 import tech.mamxanh.admin.service.AdminCatalogService;
 import tech.mamxanh.common.response.ApiResponse;
 import tech.mamxanh.common.response.PageResponse;
@@ -50,7 +52,7 @@ public class AdminCatalogController {
     }
 
     @GetMapping("/ingredients/search")
-    public ApiResponse<PageResponse<IngredientResponse>> searchIngredients(
+    public ApiResponse<PageResponse<AdminIngredientResponse>> searchIngredients(
             @RequestParam(required = false) @Size(max = 200) String query,
             @RequestParam(required = false) @Size(max = 100) String ingredientGroup,
             @RequestParam(required = false) Boolean active,
@@ -62,8 +64,13 @@ public class AdminCatalogController {
     }
 
     @GetMapping("/ingredients/{ingredientId}")
-    public ApiResponse<IngredientResponse> getIngredient(@PathVariable @Min(1) long ingredientId) {
+    public ApiResponse<AdminIngredientResponse> getIngredient(@PathVariable @Min(1) long ingredientId) {
         return ApiResponse.success("Lấy chi tiết nguyên liệu thành công.", service.getIngredient(ingredientId));
+    }
+
+    @GetMapping("/ingredients/options")
+    public ApiResponse<IngredientCatalogOptionsResponse> ingredientOptions() {
+        return ApiResponse.success("Lấy lựa chọn danh mục nguyên liệu thành công.", service.ingredientOptions());
     }
 
     @GetMapping("/ingredients/{ingredientId}/recipes")
@@ -71,6 +78,15 @@ public class AdminCatalogController {
             @PathVariable @Min(1) long ingredientId) {
         return ApiResponse.success("Lấy công thức đang sử dụng nguyên liệu thành công.",
                 service.listRecipesUsingIngredient(ingredientId));
+    }
+
+    @GetMapping("/ingredients/{ingredientId}/recipes/search")
+    public ApiResponse<PageResponse<IngredientRecipeReferenceResponse>> searchRecipesUsingIngredient(
+            @PathVariable @Min(1) long ingredientId,
+            @RequestParam(defaultValue = "0") @Min(0) @Max(1_000_000) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        return ApiResponse.success("Lấy công thức đang sử dụng nguyên liệu thành công.",
+                service.searchRecipesUsingIngredient(ingredientId, page, size));
     }
 
     @PostMapping("/ingredients")

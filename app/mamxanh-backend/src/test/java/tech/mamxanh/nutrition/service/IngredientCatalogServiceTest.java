@@ -27,6 +27,7 @@ import tech.mamxanh.nutrition.dto.request.IngredientNutritionRequest;
 import tech.mamxanh.nutrition.dto.request.NutritionSupportUpdateRequest;
 import tech.mamxanh.nutrition.dto.request.UnitSaveRequest;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
+import tech.mamxanh.nutrition.entity.CatalogStatus;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionEntity;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionId;
 import tech.mamxanh.nutrition.entity.MeasurementDimension;
@@ -50,7 +51,7 @@ class IngredientCatalogServiceTest {
 
     @Test void createsVietnameseIngredientWithNutritionDisabledUntilDataIsComplete() {
         IngredientSaveRequest request = new IngredientSaveRequest("Chuối tây", "Trái cây", "USDA FoodData Central", null, LocalDate.of(2026, 9, 1));
-        when(ingredientRepository.existsByNameIgnoreCase("Chuối tây")).thenReturn(false);
+        when(ingredientRepository.existsByNameIgnoreCaseAndStatus("Chuối tây", CatalogStatus.ACTIVE)).thenReturn(false);
         when(ingredientRepository.save(org.mockito.ArgumentMatchers.any(IngredientEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = service.createIngredient(request);
@@ -62,13 +63,13 @@ class IngredientCatalogServiceTest {
 
     @Test void rejectsDuplicateIngredientName() {
         IngredientSaveRequest request = new IngredientSaveRequest("Đậu phụ", "Đậu hạt", "USDA FoodData Central", null, LocalDate.now());
-        when(ingredientRepository.existsByNameIgnoreCase("Đậu phụ")).thenReturn(true);
+        when(ingredientRepository.existsByNameIgnoreCaseAndStatus("Đậu phụ", CatalogStatus.ACTIVE)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.createIngredient(request)).isInstanceOf(ApiException.class).hasMessage("Tên nguyên liệu đã tồn tại.");
+        assertThatThrownBy(() -> service.createIngredient(request)).isInstanceOf(ApiException.class).hasMessage("Tên nguyên liệu đã tồn tại trong danh mục đang hoạt động.");
     }
 
     @Test void storesUnknownNutritionAsNullAndDoesNotEnableSupportOnCreate() {
-        when(ingredientRepository.existsByNameIgnoreCase("Rau mới")).thenReturn(false);
+        when(ingredientRepository.existsByNameIgnoreCaseAndStatus("Rau mới", CatalogStatus.ACTIVE)).thenReturn(false);
         when(ingredientRepository.save(org.mockito.ArgumentMatchers.any(IngredientEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -98,6 +99,22 @@ class IngredientCatalogServiceTest {
                 BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE));
         var enabled = service.setNutritionSupport(4L, new NutritionSupportUpdateRequest(true));
         assertThat(enabled.nutritionSupported()).isTrue();
+    }
+
+    @Test void rejectsReactivatingAnIngredientWhenAnotherActiveRecordHasTheSameName() {
+        IngredientEntity inactiveIngredient = new IngredientEntity("Đậu xanh", "Đậu hạt",
+                "USDA FoodData Central", null, LocalDate.now());
+        inactiveIngredient.setActive(false);
+        when(ingredientRepository.findById(41L)).thenReturn(Optional.of(inactiveIngredient));
+        when(ingredientRepository.existsByNameIgnoreCaseAndStatusAndIdNot(
+                "Đậu xanh", CatalogStatus.ACTIVE, 41L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.setIngredientStatus(41L, new CatalogStatusUpdateRequest(true)))
+                .isInstanceOfSatisfying(ApiException.class, error -> {
+                    assertThat(error.getCode()).isEqualTo("INGREDIENT_NAME_EXISTS");
+                    assertThat(error.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                });
+        assertThat(inactiveIngredient.getStatus()).isEqualTo(CatalogStatus.INACTIVE);
     }
 
     @Test void requiresEveryNutritionValueBeforeAllowingSupportedDataToBeCleared() {
@@ -367,10 +384,11 @@ class IngredientCatalogServiceTest {
 
         assertThat(updated.name()).isEqualTo("Đậu hũ");
         assertThat(updated.sourceUrl()).isEqualTo("https://example.com/source");
-        when(ingredientRepository.existsByNameIgnoreCase("Chuối")).thenReturn(true);
+        when(ingredientRepository.existsByNameIgnoreCaseAndStatusAndIdNot(
+                "Chuối", CatalogStatus.ACTIVE, 1L)).thenReturn(true);
         assertThatThrownBy(() -> service.updateIngredient(1L,
                 new IngredientSaveRequest("Chuối", "Trái cây", "USDA FoodData Central", null, LocalDate.now())))
-                .isInstanceOf(ApiException.class).hasMessage("Tên nguyên liệu đã tồn tại.");
+                .isInstanceOf(ApiException.class).hasMessage("Tên nguyên liệu đã tồn tại trong danh mục đang hoạt động.");
         assertThat(ingredient.getName()).isEqualTo("Đậu hũ");
     }
 

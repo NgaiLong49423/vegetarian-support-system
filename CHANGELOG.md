@@ -1,13 +1,33 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.68.0
+> **Version:** v2.69.0<br>
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-11
+> **Last Updated:** 2026-10-12<br>
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-12 — Complete Ingredient Catalog Management Experience ([PR #124](https://github.com/NgaiLong49423/vegetarian-support-system/pull/124))
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Complete the remaining Issue #46 catalog workflows and keep the administration page focused on nutrition ingredients.
+
+### Added
+
+- Add configured ingredient group and source choices, detailed nutrition viewing, recipe usage counts, and paginated recipe references.
+- Search ingredients as the administrator types and show key nutrition values in the catalog list.
+
+### Changed
+
+- Remove unrelated unit and conversion management screens from the Issue #46 page while retaining their existing Backend endpoints.
+- Allow an ingredient name to be reused after its previous catalog record becomes inactive.
+
+### Fixed
+
+- None.
 
 ## 2026-10-12 — Manage Ingredient Nutrition Catalog ([PR #124](https://github.com/NgaiLong49423/vegetarian-support-system/pull/124))
 

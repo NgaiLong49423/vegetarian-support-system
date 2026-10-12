@@ -1,7 +1,6 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   AlertCircle,
-  ArrowRightLeft,
   Check,
   CirclePlus,
   ExternalLink,
@@ -9,7 +8,6 @@ import {
   Pencil,
   RefreshCw,
   Salad,
-  Scale,
   Search,
   ShieldAlert,
   ShieldCheck,
@@ -19,15 +17,11 @@ import { Button, Card, EmptyState } from '../components/ui';
 import {
   AdminCatalogApiError,
   adminCatalogApi,
-  type CatalogConversion,
   type CatalogIngredient,
   type IngredientRecipeReference,
   type IngredientSearch,
-  type CatalogUnit,
   type IngredientNutrition,
 } from '../services/adminCatalogApi';
-
-type Tab = 'ingredients' | 'units' | 'conversions';
 
 const today = () => {
   const date = new Date();
@@ -73,11 +67,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 export function AdminCatalogPage() {
-  const [tab, setTab] = useState<Tab>('ingredients');
   const [ingredients, setIngredients] = useState<CatalogIngredient[]>([]);
-  const [catalogIngredients, setCatalogIngredients] = useState<CatalogIngredient[]>([]);
-  const [units, setUnits] = useState<CatalogUnit[]>([]);
-  const [conversions, setConversions] = useState<CatalogConversion[]>([]);
   const [query, setQuery] = useState('');
   const [groupFilter, setGroupFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
@@ -89,14 +79,17 @@ export function AdminCatalogPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [referencesTarget, setReferencesTarget] = useState<CatalogIngredient | null>(null);
   const [recipeReferences, setRecipeReferences] = useState<IngredientRecipeReference[]>([]);
+  const [recipeReferencePage, setRecipeReferencePage] = useState(0);
+  const [recipeReferencePages, setRecipeReferencePages] = useState(0);
+  const [recipeReferenceTotal, setRecipeReferenceTotal] = useState(0);
   const [referencesLoading, setReferencesLoading] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<CatalogIngredient | null>(null);
+  const [catalogOptions, setCatalogOptions] = useState({ groups: [] as string[], sources: [] as string[] });
   const [ingredientId, setIngredientId] = useState<number | null>(null);
   const [ingredientEditorOpen, setIngredientEditorOpen] = useState(false);
   const [nutritionTarget, setNutritionTarget] = useState<CatalogIngredient | null>(null);
   const [nutritionEnabled, setNutritionEnabled] = useState(false);
   const [nutritionForm, setNutritionForm] = useState<NutritionDraft>(emptyNutritionDraft);
-  const [unitId, setUnitId] = useState<number | null>(null);
-  const [conversionEditing, setConversionEditing] = useState(false);
   const [ingredientForm, setIngredientForm] = useState({
     name: '',
     ingredientGroup: '',
@@ -104,41 +97,26 @@ export function AdminCatalogPage() {
     sourceUrl: '',
     referenceDate: today(),
   });
-  const [unitForm, setUnitForm] = useState({
-    code: '',
-    name: '',
-    dimension: 'MASS' as CatalogUnit['dimension'],
-    baseFactor: '1',
-  });
-  const [conversionForm, setConversionForm] = useState({
-    ingredientId: '',
-    unitId: '',
-    gramsPerUnit: '',
-    approximate: true,
-  });
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const searchTimer = useRef<number | undefined>(undefined);
 
   const refresh = async (filters = ingredientFilters) => {
     setLoading(true);
     setError('');
     setAccessDenied(false);
     try {
-      const [ingredientPage, nextCatalogIngredients, nextUnits, nextConversions] = await Promise.all([
+      const [ingredientPage, options] = await Promise.all([
         adminCatalogApi.searchIngredients(filters),
-        adminCatalogApi.ingredients(''),
-        adminCatalogApi.units(),
-        adminCatalogApi.conversions(),
+        adminCatalogApi.ingredientOptions(),
       ]);
       setIngredients(ingredientPage.content);
       setTotalElements(ingredientPage.totalElements);
       setTotalPages(ingredientPage.totalPages);
-      setCatalogIngredients(nextCatalogIngredients);
-      setUnits(nextUnits);
-      setConversions(nextConversions);
+      setCatalogOptions(options);
     } catch (cause) {
       setAccessDenied(
         cause instanceof AdminCatalogApiError &&
@@ -210,6 +188,7 @@ export function AdminCatalogPage() {
   };
 
   const editIngredient = (ingredient: CatalogIngredient) => {
+    setDetailTarget(null);
     setNutritionTarget(null);
     setReferencesTarget(null);
     setIngredientEditorOpen(true);
@@ -226,6 +205,7 @@ export function AdminCatalogPage() {
   };
 
   const editNutrition = (ingredient: CatalogIngredient) => {
+    setDetailTarget(null);
     setReferencesTarget(null);
     setIngredientEditorOpen(false);
     setIngredientId(null);
@@ -241,15 +221,50 @@ export function AdminCatalogPage() {
     setIngredientEditorOpen(false);
     setReferencesTarget(ingredient);
     setRecipeReferences([]);
+    setRecipeReferencePage(0);
+    setRecipeReferencePages(0);
+    setRecipeReferenceTotal(0);
     setReferencesLoading(true);
     setError('');
     setNotice('');
     try {
-      setRecipeReferences(await adminCatalogApi.ingredientRecipes(ingredient.id));
+      const result = await adminCatalogApi.searchIngredientRecipes(ingredient.id, 0, 10);
+      setRecipeReferences(result.content);
+      setRecipeReferencePages(result.totalPages);
+      setRecipeReferenceTotal(result.totalElements);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không tải được công thức đang dùng nguyên liệu này.');
     } finally {
       setReferencesLoading(false);
+    }
+  };
+
+  const changeRecipeReferencePage = async (page: number) => {
+    if (!referencesTarget) return;
+    setReferencesLoading(true);
+    setError('');
+    try {
+      const result = await adminCatalogApi.searchIngredientRecipes(referencesTarget.id, page, 10);
+      setRecipeReferences(result.content);
+      setRecipeReferencePage(result.page);
+      setRecipeReferencePages(result.totalPages);
+      setRecipeReferenceTotal(result.totalElements);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Không tải được công thức đang dùng nguyên liệu này.');
+    } finally {
+      setReferencesLoading(false);
+    }
+  };
+
+  const showIngredientDetails = async (ingredient: CatalogIngredient) => {
+    setReferencesTarget(null);
+    setNutritionTarget(null);
+    setIngredientEditorOpen(false);
+    setError('');
+    try {
+      setDetailTarget(await adminCatalogApi.ingredient(ingredient.id));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Không tải được chi tiết nguyên liệu.');
     }
   };
 
@@ -277,82 +292,6 @@ export function AdminCatalogPage() {
     );
   };
 
-  const submitUnit = (event: FormEvent) => {
-    event.preventDefault();
-    const body = {
-      ...unitForm,
-      code: unitForm.code.trim(),
-      name: unitForm.name.trim(),
-      baseFactor: Number(unitForm.baseFactor),
-    };
-    void perform(
-      () =>
-        unitId === null
-          ? adminCatalogApi.createUnit(body)
-          : adminCatalogApi.updateUnit(unitId, body),
-      unitId === null ? 'Đã thêm đơn vị.' : 'Đã cập nhật đơn vị.',
-      () => {
-        setUnitId(null);
-        setUnitForm({
-          code: '',
-          name: '',
-          dimension: 'MASS',
-          baseFactor: '1',
-        });
-      },
-    );
-  };
-
-  const editUnit = (unit: CatalogUnit) => {
-    setUnitId(unit.id);
-    setUnitForm({
-      code: unit.code,
-      name: unit.name,
-      dimension: unit.dimension,
-      baseFactor: String(unit.baseFactor),
-    });
-    setError('');
-    setNotice('');
-  };
-
-  const submitConversion = (event: FormEvent) => {
-    event.preventDefault();
-    const item: CatalogConversion = {
-      ingredientId: Number(conversionForm.ingredientId),
-      unitId: Number(conversionForm.unitId),
-      gramsPerUnit: Number(conversionForm.gramsPerUnit),
-      approximate: conversionForm.approximate,
-      active: true,
-    };
-    void perform(
-      () => adminCatalogApi.saveConversion(item, !conversionEditing),
-      conversionEditing
-        ? 'Đã cập nhật tỷ lệ quy đổi.'
-        : 'Đã thêm tỷ lệ quy đổi.',
-      () => {
-        setConversionEditing(false);
-        setConversionForm({
-          ingredientId: '',
-          unitId: '',
-          gramsPerUnit: '',
-          approximate: true,
-        });
-      },
-    );
-  };
-
-  const editConversion = (item: CatalogConversion) => {
-    setConversionEditing(true);
-    setConversionForm({
-      ingredientId: String(item.ingredientId),
-      unitId: String(item.unitId),
-      gramsPerUnit: String(item.gramsPerUnit),
-      approximate: item.approximate,
-    });
-    setError('');
-    setNotice('');
-  };
-
   const toggleIngredient = (item: CatalogIngredient) =>
     void perform(
       () => adminCatalogApi.setIngredientActive(item.id, !item.active),
@@ -361,24 +300,9 @@ export function AdminCatalogPage() {
         : 'Đã bật lại nguyên liệu.',
     );
 
-  const toggleUnit = (item: CatalogUnit) =>
-    void perform(
-      () => adminCatalogApi.setUnitActive(item.id, !item.active),
-      item.active
-        ? 'Đã ngừng sử dụng đơn vị; liên kết cũ được giữ nguyên.'
-        : 'Đã bật lại đơn vị.',
-    );
-
-  const toggleConversion = (item: CatalogConversion) =>
-    void perform(
-      () => adminCatalogApi.setConversionActive(item, !item.active),
-      item.active
-        ? 'Đã ngừng sử dụng tỷ lệ quy đổi.'
-        : 'Đã bật lại tỷ lệ quy đổi.',
-    );
-
   const searchIngredients = (event: FormEvent) => {
     event.preventDefault();
+    window.clearTimeout(searchTimer.current);
     const filters: IngredientSearch = {
       query: query.trim(),
       ingredientGroup: groupFilter.trim(),
@@ -391,6 +315,15 @@ export function AdminCatalogPage() {
     void refresh(filters);
   };
 
+  const scheduleIngredientSearch = (value: string) => {
+    window.clearTimeout(searchTimer.current);
+    searchTimer.current = window.setTimeout(() => {
+      const filters = { ...ingredientFilters, query: value.trim(), page: 0 };
+      setIngredientFilters(filters);
+      void refresh(filters);
+    }, 300);
+  };
+
   const changeIngredientPage = (page: number) => {
     const filters = { ...ingredientFilters, page };
     setIngredientFilters(filters);
@@ -398,6 +331,7 @@ export function AdminCatalogPage() {
   };
 
   const openNewIngredient = () => {
+    setDetailTarget(null);
     setReferencesTarget(null);
     setNutritionTarget(null);
     setIngredientId(null);
@@ -412,27 +346,6 @@ export function AdminCatalogPage() {
     setNotice('');
     setIngredientEditorOpen(true);
   };
-
-  const tabs: Array<{ id: Tab; label: string; count: number; icon: ReactNode }> = [
-    {
-      id: 'ingredients',
-      label: 'Nguyên liệu',
-      count: ingredients.length,
-      icon: <Salad className="h-4 w-4" />,
-    },
-    {
-      id: 'units',
-      label: 'Đơn vị',
-      count: units.length,
-      icon: <Scale className="h-4 w-4" />,
-    },
-    {
-      id: 'conversions',
-      label: 'Bảng quy đổi',
-      count: conversions.length,
-      icon: <ArrowRightLeft className="h-4 w-4" />,
-    },
-  ];
 
   return (
     <PageContainer className="py-8 sm:py-10">
@@ -508,50 +421,13 @@ export function AdminCatalogPage() {
         </Card>
       )}
 
-      {/* Tabs */}
-      {!accessDenied && (
-        <div
-          role="tablist"
-          aria-label="Danh mục quản trị"
-          className="mb-6 flex gap-2 overflow-x-auto border-b border-brand-200/60 pb-3"
-        >
-          {tabs.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === item.id}
-              onClick={() => setTab(item.id)}
-              className={`shrink-0 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
-                tab === item.id
-                  ? 'bg-brand-600 text-on-brand shadow-sm shadow-brand-600/25'
-                  : 'text-ink-soft hover:bg-brand-100/70 hover:text-brand-900'
-              }`}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                  tab === item.id
-                    ? 'bg-paper/20 text-white'
-                    : 'bg-brand-100 text-brand-800'
-                }`}
-              >
-                {item.count}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
       {accessDenied ? null : loading ? (
         <Card className="flex items-center justify-center gap-3 p-12 text-sm text-ink-muted">
           <LoaderCircle className="h-5 w-5 animate-spin text-brand-600" /> Đang tải danh mục…
         </Card>
       ) : (
         <>
-          {tab === 'ingredients' && (
-            <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,.85fr)]">
+          <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,.85fr)]">
               <div>
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -570,13 +446,19 @@ export function AdminCatalogPage() {
                     <input
                       className={`${fieldClass} mt-0 pl-10 pr-4`}
                       value={query}
-                      onChange={(event) => setQuery(event.target.value)}
+                      onChange={(event) => {
+                        setQuery(event.target.value);
+                        scheduleIngredientSearch(event.target.value);
+                      }}
                       placeholder="Tìm tên nguyên liệu"
                     />
                   </label>
                   <label className="text-xs font-semibold text-ink-soft">
                     Nhóm nguyên liệu
-                    <input className={fieldClass} value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)} placeholder="Tất cả nhóm" />
+                    <select className={fieldClass} value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)}>
+                      <option value="">Tất cả nhóm</option>
+                      {catalogOptions.groups.map((group) => <option key={group} value={group}>{group}</option>)}
+                    </select>
                   </label>
                   <label className="text-xs font-semibold text-ink-soft">
                     Trạng thái danh mục
@@ -649,6 +531,8 @@ export function AdminCatalogPage() {
                             <span>Nguồn: <strong className="font-medium text-ink-soft">{item.sourceName}</strong></span>
                             <span>·</span>
                             <span>Ngày tham khảo: {item.referenceDate}</span>
+                            <span>·</span>
+                            <span>{item.recipeUsageCount ?? 0} công thức đang dùng</span>
                             {item.sourceUrl && (
                               <>
                                 <span>·</span>
@@ -663,8 +547,17 @@ export function AdminCatalogPage() {
                               </>
                             )}
                           </p>
+                          <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-soft" aria-label={`Tóm tắt dinh dưỡng ${item.name}`}>
+                            <span>{item.nutrition.energyKcalPer100g ?? '—'} kcal</span>
+                            <span>Đạm {item.nutrition.proteinGramsPer100g ?? '—'} g</span>
+                            <span>Carb {item.nutrition.carbohydrateGramsPer100g ?? '—'} g</span>
+                            <span>Béo {item.nutrition.totalFatGramsPer100g ?? '—'} g</span>
+                          </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => void showIngredientDetails(item)} aria-label={`Xem chi tiết ${item.name}`}>
+                            Chi tiết
+                          </Button>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -713,7 +606,33 @@ export function AdminCatalogPage() {
                   )}
                 </div>
               </div>
-              {referencesTarget ? (
+              {detailTarget ? (
+                <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-paper shadow-xs">
+                  <div className="flex items-start justify-between gap-3 border-b border-brand-100 pb-3">
+                    <div>
+                      <h2 className="text-lg font-extrabold text-ink">Chi tiết · {detailTarget.name}</h2>
+                      <p className="mt-1 text-xs text-ink-muted">Thông tin dinh dưỡng trên 100 g và nguồn tham khảo.</p>
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setDetailTarget(null)}>Đóng</Button>
+                  </div>
+                  <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    {nutritionFields.map(({ key, label, unit }) => (
+                      <div key={key} className="rounded-xl bg-brand-50/70 p-3">
+                        <dt className="text-xs text-ink-muted">{label}</dt>
+                        <dd className="mt-1 font-semibold text-ink">{detailTarget.nutrition[key] ?? 'Chưa có'}{detailTarget.nutrition[key] === null ? '' : ` ${unit}`}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <div className="mt-4 space-y-2 border-t border-brand-100 pt-4 text-sm">
+                    <p><span className="text-ink-muted">Nhóm:</span> {detailTarget.ingredientGroup}</p>
+                    <p><span className="text-ink-muted">Nguồn:</span> {detailTarget.sourceName}</p>
+                    <p><span className="text-ink-muted">Ngày đối chiếu:</span> {detailTarget.referenceDate}</p>
+                    <p><span className="text-ink-muted">Trạng thái:</span> {detailTarget.active ? 'ACTIVE' : 'INACTIVE'} · {detailTarget.nutritionSupported ? 'Có hỗ trợ tính' : 'Chưa hỗ trợ tính'}</p>
+                    <p><span className="text-ink-muted">Công thức đang tham chiếu:</span> {detailTarget.recipeUsageCount ?? 0}</p>
+                    {detailTarget.sourceUrl && <a href={detailTarget.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-700 hover:underline">Mở nguồn tham khảo <ExternalLink className="h-3 w-3" /></a>}
+                  </div>
+                </Card>
+              ) : referencesTarget ? (
                 <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-paper shadow-xs">
                   <div className="flex items-start justify-between gap-3 border-b border-brand-100 pb-3">
                     <div>
@@ -730,12 +649,13 @@ export function AdminCatalogPage() {
                     <ul className="mt-4 space-y-2">
                       {recipeReferences.map((recipe) => (
                         <li key={recipe.recipeId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-100 p-3">
-                          <span className="font-semibold text-ink">{recipe.title}</span>
+                          <span><span className="font-semibold text-ink">{recipe.title}</span><span className="mt-1 block text-xs text-ink-muted">{recipe.publishedAt ? new Date(recipe.publishedAt).toLocaleDateString('vi-VN') : 'Chưa công khai'}</span></span>
                           <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-800">{recipeStatusLabel(recipe.status)}</span>
                         </li>
                       ))}
                     </ul>
                   )}
+                  {recipeReferenceTotal > 0 && <div className="mt-4 flex items-center justify-between border-t border-brand-100 pt-3 text-xs text-ink-muted"><span>{recipeReferenceTotal} công thức · Trang {recipeReferencePage + 1}/{recipeReferencePages}</span><div className="flex gap-2"><Button size="sm" variant="outline" disabled={referencesLoading || recipeReferencePage === 0} onClick={() => void changeRecipeReferencePage(recipeReferencePage - 1)}>Trang trước</Button><Button size="sm" variant="outline" disabled={referencesLoading || recipeReferencePage + 1 >= recipeReferencePages} onClick={() => void changeRecipeReferencePage(recipeReferencePage + 1)}>Trang sau</Button></div></div>}
                 </Card>
               ) : nutritionTarget ? (
                 <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-paper shadow-xs">
@@ -808,10 +728,9 @@ export function AdminCatalogPage() {
                     />
                   </Field>
                   <Field label="Nhóm nguyên liệu">
-                    <input
+                    <select
                       className={fieldClass}
                       required
-                      maxLength={100}
                       value={ingredientForm.ingredientGroup}
                       onChange={(event) =>
                         setIngredientForm({
@@ -819,14 +738,15 @@ export function AdminCatalogPage() {
                           ingredientGroup: event.target.value,
                         })
                       }
-                      placeholder="Ví dụ: Rau củ, Nấm, Đậu hạt"
-                    />
+                    >
+                      <option value="" disabled>Chọn nhóm nguyên liệu</option>
+                      {catalogOptions.groups.map((group) => <option key={group} value={group}>{group}</option>)}
+                    </select>
                   </Field>
                   <Field label="Tên nguồn dữ liệu">
-                    <input
+                    <select
                       className={fieldClass}
                       required
-                      maxLength={200}
                       value={ingredientForm.sourceName}
                       onChange={(event) =>
                         setIngredientForm({
@@ -834,8 +754,10 @@ export function AdminCatalogPage() {
                           sourceName: event.target.value,
                         })
                       }
-                      placeholder="Ví dụ: Bảng Thành phần Thực phẩm Việt Nam"
-                    />
+                    >
+                      <option value="" disabled>Chọn nguồn dữ liệu</option>
+                      {catalogOptions.sources.map((source) => <option key={source} value={source}>{source}</option>)}
+                    </select>
                   </Field>
                   <Field label="Đường dẫn nguồn (không bắt buộc)">
                     <input
@@ -903,374 +825,8 @@ export function AdminCatalogPage() {
                   Chọn <strong className="text-ink">Sửa thông tin</strong> hoặc <strong className="text-ink">Dinh dưỡng</strong> trên một dòng để cập nhật. Trước khi ngừng sử dụng, xem các công thức đang tham chiếu để giữ nguyên liên kết cũ.
                 </p>
               </Card>}
-            </section>
-          )}
+          </section>
 
-          {tab === 'units' && (
-            <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,.8fr)]">
-              <div className="space-y-3">
-                {units.length === 0 ? (
-                  <EmptyState
-                    icon="⚖️"
-                    title="Chưa có đơn vị đo"
-                    description="Thêm đơn vị chuẩn để dùng trong quy đổi nguyên liệu."
-                  />
-                ) : (
-                  units.map((item) => (
-                    <Card
-                      key={item.id}
-                      className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between transition-all ${
-                        item.active
-                          ? 'border-brand-100 bg-paper hover:border-brand-200 shadow-2xs'
-                          : 'border-dashed border-brand-200 bg-brand-50/30 opacity-80'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="font-bold text-ink">{item.name}</h2>
-                          <code className="rounded-md bg-brand-100/80 px-2 py-0.5 text-xs font-bold text-brand-900 border border-brand-200/60 font-mono">
-                            {item.code}
-                          </code>
-                          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-800 border border-brand-200/60">
-                            {item.dimension === 'MASS'
-                              ? 'Khối lượng (MASS)'
-                              : item.dimension === 'VOLUME'
-                              ? 'Thể tích (VOLUME)'
-                              : 'Đếm (COUNT)'}
-                          </span>
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
-                              item.active
-                                ? 'bg-leaf-50 text-leaf-700 border-leaf-200/60'
-                                : 'bg-brand-100 text-ink-muted border-brand-200/60'
-                            }`}
-                          >
-                            {item.active && (
-                              <span className="size-1.5 rounded-full bg-leaf-500"></span>
-                            )}
-                            {item.active ? 'Đang dùng' : 'Ngừng dùng'}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs text-ink-muted">
-                          Hệ số cơ sở: <strong className="font-semibold text-ink-soft">{item.baseFactor}</strong>
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => editUnit(item)}
-                          aria-label={`Sửa ${item.name}`}
-                        >
-                          <Pencil className="h-3.5 w-3.5" /> Sửa
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => toggleUnit(item)}
-                          disabled={saving}
-                          aria-label={`${item.active ? 'Ngừng sử dụng' : 'Bật lại'} ${item.name}`}
-                        >
-                          {item.active ? 'Ngừng dùng' : 'Bật lại'}
-                        </Button>
-                      </div>
-                    </Card>
-                  ))
-                )}
-              </div>
-              <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-paper shadow-xs">
-                <div className="flex items-center justify-between pb-3 border-b border-brand-100">
-                  <h2 className="text-lg font-extrabold text-ink">
-                    {unitId === null ? 'Thêm đơn vị' : 'Sửa đơn vị'}
-                  </h2>
-                  <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded-full border border-brand-200/60">
-                    {unitId === null ? 'Thêm mới' : 'Chỉnh sửa'}
-                  </span>
-                </div>
-                <form onSubmit={submitUnit} className="mt-4 space-y-4">
-                  <Field label="Ký hiệu">
-                    <input
-                      className={fieldClass}
-                      required
-                      maxLength={20}
-                      value={unitForm.code}
-                      onChange={(event) =>
-                        setUnitForm({ ...unitForm, code: event.target.value })
-                      }
-                      placeholder="g, ml, quả, thìa"
-                    />
-                  </Field>
-                  <Field label="Tên đơn vị">
-                    <input
-                      className={fieldClass}
-                      required
-                      maxLength={50}
-                      value={unitForm.name}
-                      onChange={(event) =>
-                        setUnitForm({ ...unitForm, name: event.target.value })
-                      }
-                      placeholder="Gam, Mi-li-lít, Quả"
-                    />
-                  </Field>
-                  <Field label="Thứ nguyên">
-                    <select
-                      className={fieldClass}
-                      value={unitForm.dimension}
-                      onChange={(event) =>
-                        setUnitForm({
-                          ...unitForm,
-                          dimension: event.target.value as CatalogUnit['dimension'],
-                        })
-                      }
-                    >
-                      <option value="MASS">Khối lượng (MASS)</option>
-                      <option value="VOLUME">Thể tích (VOLUME)</option>
-                      <option value="COUNT">Đếm (COUNT)</option>
-                    </select>
-                  </Field>
-                  <Field label="Hệ số cơ sở">
-                    <input
-                      className={fieldClass}
-                      type="number"
-                      min="0.000001"
-                      max="999999999999.999999"
-                      step="0.000001"
-                      required
-                      value={unitForm.baseFactor}
-                      onChange={(event) =>
-                        setUnitForm({ ...unitForm, baseFactor: event.target.value })
-                      }
-                    />
-                  </Field>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <Button type="submit" disabled={saving}>
-                      {saving ? 'Đang lưu…' : unitId === null ? 'Thêm đơn vị' : 'Lưu thay đổi'}
-                    </Button>
-                    {unitId !== null && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => {
-                          setUnitId(null);
-                          setUnitForm({
-                            code: '',
-                            name: '',
-                            dimension: 'MASS',
-                            baseFactor: '1',
-                          });
-                        }}
-                      >
-                        Hủy sửa
-                      </Button>
-                    )}
-                  </div>
-                </form>
-              </Card>
-            </section>
-          )}
-
-          {tab === 'conversions' && (
-            <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,.8fr)]">
-              <div className="space-y-3">
-                {conversions.length === 0 ? (
-                  <EmptyState
-                    icon="🔄"
-                    title="Chưa có tỷ lệ quy đổi"
-                    description="Tạo quy đổi riêng cho từng cặp nguyên liệu và đơn vị."
-                  />
-                ) : (
-                  conversions.map((item) => {
-                    const ingredient = catalogIngredients.find(
-                      (candidate) => candidate.id === item.ingredientId,
-                    );
-                    const unit = units.find(
-                      (candidate) => candidate.id === item.unitId,
-                    );
-                    return (
-                      <Card
-                        key={`${item.ingredientId}-${item.unitId}`}
-                        className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between transition-all ${
-                          item.active
-                            ? 'border-brand-100 bg-paper hover:border-brand-200 shadow-2xs'
-                            : 'border-dashed border-brand-200 bg-brand-50/30 opacity-80'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="font-bold text-ink">
-                              {ingredient?.name ?? `Nguyên liệu #${item.ingredientId}`}
-                            </h2>
-                            <span className="text-ink-muted">·</span>
-                            <span className="font-semibold text-brand-800">
-                              {unit?.name ?? `Đơn vị #${item.unitId}`}
-                            </span>
-                            <span
-                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
-                                item.active
-                                  ? 'bg-leaf-50 text-leaf-700 border-leaf-200/60'
-                                  : 'bg-brand-100 text-ink-muted border-brand-200/60'
-                              }`}
-                            >
-                              {item.active && (
-                                <span className="size-1.5 rounded-full bg-leaf-500"></span>
-                              )}
-                              {item.active ? 'Đang dùng' : 'Ngừng dùng'}
-                            </span>
-                          </div>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                            <span className="rounded-md bg-brand-50 px-2 py-0.5 font-bold text-brand-900 border border-brand-200/60">
-                              1 {unit?.code ?? 'đơn vị'} = {item.gramsPerUnit} g
-                            </span>
-                            <span
-                              className={`rounded-full px-2 py-0.5 font-semibold text-[11px] border ${
-                                item.approximate
-                                  ? 'bg-amber-50 text-amber-800 border-amber-200/60'
-                                  : 'bg-leaf-50 text-leaf-800 border-leaf-200/60'
-                              }`}
-                            >
-                              {item.approximate ? '≈ Xấp xỉ' : '✓ Chính xác'}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => editConversion(item)}
-                            aria-label={`Sửa quy đổi ${ingredient?.name ?? item.ingredientId}`}
-                          >
-                            <Pencil className="h-3.5 w-3.5" /> Sửa
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => toggleConversion(item)}
-                            disabled={saving}
-                          >
-                            {item.active ? 'Ngừng dùng' : 'Bật lại'}
-                          </Button>
-                        </div>
-                      </Card>
-                    );
-                  })
-                )}
-              </div>
-              <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-paper shadow-xs">
-                <div className="flex items-center justify-between pb-3 border-b border-brand-100">
-                  <h2 className="text-lg font-extrabold text-ink">
-                    {conversionEditing ? 'Sửa tỷ lệ quy đổi' : 'Thêm tỷ lệ quy đổi'}
-                  </h2>
-                  <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded-full border border-brand-200/60">
-                    {conversionEditing ? 'Chỉnh sửa' : 'Thêm mới'}
-                  </span>
-                </div>
-                <form onSubmit={submitConversion} className="mt-4 space-y-4">
-                  <Field label="Nguyên liệu">
-                    <select
-                      className={fieldClass}
-                      required
-                      disabled={conversionEditing}
-                      value={conversionForm.ingredientId}
-                      onChange={(event) =>
-                        setConversionForm({
-                          ...conversionForm,
-                          ingredientId: event.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Chọn nguyên liệu</option>
-                      {catalogIngredients.map((item) => (
-                        <option key={item.id} value={item.id} disabled={!item.active}>
-                          {item.name}
-                          {item.active ? '' : ' (ngừng dùng)'}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Đơn vị đo">
-                    <select
-                      className={fieldClass}
-                      required
-                      disabled={conversionEditing}
-                      value={conversionForm.unitId}
-                      onChange={(event) =>
-                        setConversionForm({
-                          ...conversionForm,
-                          unitId: event.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Chọn đơn vị</option>
-                      {units.filter((item) => item.dimension !== 'MASS').map((item) => (
-                        <option key={item.id} value={item.id} disabled={!item.active}>
-                          {item.name} ({item.code})
-                          {item.active ? '' : ' (ngừng dùng)'}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Gam trên mỗi đơn vị">
-                    <input
-                      className={fieldClass}
-                      type="number"
-                      min="0.01"
-                      max="99999999.99"
-                      step="0.01"
-                      required
-                      value={conversionForm.gramsPerUnit}
-                      onChange={(event) =>
-                        setConversionForm({
-                          ...conversionForm,
-                          gramsPerUnit: event.target.value,
-                        })
-                      }
-                      placeholder="Ví dụ: 120"
-                    />
-                  </Field>
-                  <label className="flex items-center gap-2 text-sm font-medium text-ink-soft cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="size-4 rounded text-brand-600 focus:ring-brand-500 border-brand-300"
-                      checked={conversionForm.approximate}
-                      onChange={(event) =>
-                        setConversionForm({
-                          ...conversionForm,
-                          approximate: event.target.checked,
-                        })
-                      }
-                    />{' '}
-                    Đây là tỷ lệ ước lượng
-                  </label>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <Button type="submit" disabled={saving}>
-                      {saving
-                        ? 'Đang lưu…'
-                        : conversionEditing
-                        ? 'Lưu thay đổi'
-                        : 'Thêm quy đổi'}
-                    </Button>
-                    {conversionEditing && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => {
-                          setConversionEditing(false);
-                          setConversionForm({
-                            ingredientId: '',
-                            unitId: '',
-                            gramsPerUnit: '',
-                            approximate: true,
-                          });
-                        }}
-                      >
-                        Hủy sửa
-                      </Button>
-                    )}
-                  </div>
-                </form>
-              </Card>
-            </section>
-          )}
         </>
       )}
     </PageContainer>

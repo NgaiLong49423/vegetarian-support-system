@@ -24,4 +24,9 @@ public interface RecipePostRepository extends JpaRepository<RecipePostEntity, Lo
     Page<RecipePostEntity> findAllByAuthorIdAndStatusInOrderByUpdatedAtDesc(
             Long authorId, List<String> statuses, Pageable pageable);
 
+    @Query("select recipe from RecipePostEntity recipe where exists "
+            + "(select ingredient.id from RecipeIngredientEntity ingredient "
+            + "where ingredient.recipeId = recipe.id and ingredient.ingredientId = :ingredientId)")
+    Page<RecipePostEntity> findAllUsingIngredient(@Param("ingredientId") long ingredientId, Pageable pageable);
+
 }

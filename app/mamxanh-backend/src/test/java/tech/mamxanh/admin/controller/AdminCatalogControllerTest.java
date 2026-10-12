@@ -117,6 +117,30 @@ class AdminCatalogControllerTest {
                 .andExpect(jsonPath("$.data.totalElements").value(0));
     }
 
+    @Test void exposesConfiguredIngredientOptionsToAdministrator() throws Exception {
+        when(catalogService.ingredientOptions()).thenReturn(
+                new tech.mamxanh.admin.dto.IngredientCatalogOptionsResponse(
+                        List.of("Rau củ"), List.of("USDA FoodData Central")));
+
+        mockMvc.perform(get("/api/v1/admin/ingredients/options").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.groups[0]").value("Rau củ"))
+                .andExpect(jsonPath("$.data.sources[0]").value("USDA FoodData Central"));
+    }
+
+    @Test void exposesPagedRecipeReferencesForAdministrator() throws Exception {
+        when(catalogService.searchRecipesUsingIngredient(1L, 0, 10)).thenReturn(PageResponse.of(List.of(
+                new tech.mamxanh.admin.dto.IngredientRecipeReferenceResponse(
+                        30, "Canh nấm", "PUBLISHED", null)), 0, 10, 11));
+
+        mockMvc.perform(get("/api/v1/admin/ingredients/1/recipes/search")
+                        .param("page", "0").param("size", "10").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content[0].title").value("Canh nấm"))
+                .andExpect(jsonPath("$.data.totalElements").value(11))
+                .andExpect(jsonPath("$.data.totalPages").value(2));
+    }
+
     @Test void returnsBadRequestWhenIngredientSearchPageSizeIsOutsideBounds() throws Exception {
         mockMvc.perform(get("/api/v1/admin/ingredients/search").param("size", "101")
                         .with(user("admin").roles("ADMIN")))

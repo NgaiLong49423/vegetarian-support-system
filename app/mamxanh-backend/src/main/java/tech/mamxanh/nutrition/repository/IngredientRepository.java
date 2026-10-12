@@ -10,9 +10,13 @@ import tech.mamxanh.nutrition.entity.CatalogStatus;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
 
 public interface IngredientRepository extends JpaRepository<IngredientEntity, Long> {
-    boolean existsByNameIgnoreCase(String name);
+    boolean existsByNameIgnoreCaseAndStatus(String name, CatalogStatus status);
+    boolean existsByNameIgnoreCaseAndStatusAndIdNot(String name, CatalogStatus status, Long id);
     List<IngredientEntity> findByStatus(CatalogStatus status);
     List<IngredientEntity> findByNameContainingIgnoreCaseOrIngredientGroupContainingIgnoreCase(String name, String group);
+
+    @Query("select distinct ingredient.ingredientGroup from IngredientEntity ingredient order by ingredient.ingredientGroup")
+    List<String> findDistinctIngredientGroups();
 
     @Query("""
             select ingredient from IngredientEntity ingredient

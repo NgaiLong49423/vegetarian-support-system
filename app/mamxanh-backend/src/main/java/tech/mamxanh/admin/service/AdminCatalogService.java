@@ -1,9 +1,13 @@
 package tech.mamxanh.admin.service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.admin.dto.IngredientRecipeReferenceResponse;
+import tech.mamxanh.admin.dto.IngredientCatalogOptionsResponse;
+import tech.mamxanh.admin.dto.AdminIngredientResponse;
 import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.nutrition.dto.request.CatalogStatusUpdateRequest;
 import tech.mamxanh.nutrition.dto.request.ConversionSaveRequest;
@@ -32,13 +36,30 @@ public class AdminCatalogService {
     public List<IngredientResponse> listIngredients(String query) { return catalog.listIngredients(query); }
 
     @Transactional(readOnly = true)
-    public PageResponse<IngredientResponse> searchIngredients(String query, String group, Boolean active,
+    public PageResponse<AdminIngredientResponse> searchIngredients(String query, String group, Boolean active,
             Boolean nutritionSupported, int page, int size) {
-        return catalog.searchIngredients(query, group, active, nutritionSupported, page, size);
+        PageResponse<IngredientResponse> results = catalog.searchIngredients(query, group, active,
+                nutritionSupported, page, size);
+        Map<Long, Long> usageCounts = recipes.countRecipesUsingIngredients(
+                results.content().stream().map(IngredientResponse::id).toList());
+        return new PageResponse<>(results.content().stream()
+                .map(ingredient -> AdminIngredientResponse.from(ingredient,
+                        usageCounts.getOrDefault(ingredient.id(), 0L)))
+                .toList(), results.page(), results.size(), results.totalElements(), results.totalPages());
     }
 
     @Transactional(readOnly = true)
-    public IngredientResponse getIngredient(long id) { return catalog.getIngredient(id); }
+    public AdminIngredientResponse getIngredient(long id) {
+        IngredientResponse ingredient = catalog.getIngredient(id);
+        Map<Long, Long> usageCounts = recipes.countRecipesUsingIngredients(List.of(id));
+        return AdminIngredientResponse.from(ingredient,
+                usageCounts == null ? 0 : usageCounts.getOrDefault(id, 0L));
+    }
+
+    @Transactional(readOnly = true)
+    public IngredientCatalogOptionsResponse ingredientOptions() {
+        return new IngredientCatalogOptionsResponse(catalog.getAllowedGroups(), catalog.getAllowedSources());
+    }
 
     @Transactional
     public IngredientResponse createIngredient(IngredientSaveRequest request) { return catalog.createIngredient(request); }
@@ -69,6 +90,20 @@ public class AdminCatalogService {
                 .map(recipe -> new IngredientRecipeReferenceResponse(recipe.recipeId(), recipe.title(),
                         recipe.status(), recipe.publishedAt()))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<IngredientRecipeReferenceResponse> searchRecipesUsingIngredient(
+            long ingredientId, int page, int size) {
+        catalog.getIngredient(ingredientId);
+        PageResponse<RecipePostService.RecipeUsage> recipesPage = recipes.searchRecipesUsingIngredient(
+                ingredientId, page, size);
+        List<IngredientRecipeReferenceResponse> content = recipesPage.content().stream()
+                .map(recipe -> new IngredientRecipeReferenceResponse(recipe.recipeId(), recipe.title(),
+                        recipe.status(), recipe.publishedAt()))
+                .collect(Collectors.toList());
+        return new PageResponse<>(content, recipesPage.page(), recipesPage.size(),
+                recipesPage.totalElements(), recipesPage.totalPages());
     }
 
     @Transactional(readOnly = true)

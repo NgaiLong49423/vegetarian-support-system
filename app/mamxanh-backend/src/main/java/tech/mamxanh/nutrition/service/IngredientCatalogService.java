@@ -75,6 +75,16 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         return toResponse(requireIngredient(id));
     }
 
+    public List<String> getAllowedSources() { return properties.allowedSources(); }
+
+    public List<String> getAllowedGroups() {
+        java.util.TreeSet<String> groups = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        groups.addAll(properties.allowedGroups());
+        List<String> existingGroups = ingredientRepository.findDistinctIngredientGroups();
+        if (existingGroups != null) groups.addAll(existingGroups);
+        return List.copyOf(groups);
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<IngredientResponse> findActiveIngredients(String query) {
@@ -91,7 +101,10 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     @Transactional
     public IngredientResponse createIngredient(IngredientSaveRequest request) {
         String name = request.name().trim();
-        if (ingredientRepository.existsByNameIgnoreCase(name)) throw conflict("INGREDIENT_NAME_EXISTS", "Tên nguyên liệu đã tồn tại.");
+        if (ingredientRepository.existsByNameIgnoreCaseAndStatus(name, CatalogStatus.ACTIVE)) {
+            throw conflict("INGREDIENT_NAME_EXISTS", "Tên nguyên liệu đã tồn tại trong danh mục đang hoạt động.");
+        }
+        validateGroup(request.ingredientGroup());
         validateSource(request.sourceName());
         IngredientEntity ingredient = new IngredientEntity(name, request.ingredientGroup().trim(),
                 request.sourceName().trim(), normalizeFilter(request.sourceUrl()), request.referenceDate());
@@ -103,7 +116,12 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     public IngredientResponse updateIngredient(long id, IngredientSaveRequest request) {
         IngredientEntity ingredient = requireIngredient(id);
         String name = request.name().trim();
-        if (!ingredient.getName().equalsIgnoreCase(name) && ingredientRepository.existsByNameIgnoreCase(name)) throw conflict("INGREDIENT_NAME_EXISTS", "Tên nguyên liệu đã tồn tại.");
+        if (ingredient.getStatus() == CatalogStatus.ACTIVE
+                && !ingredient.getName().equalsIgnoreCase(name)
+                && ingredientRepository.existsByNameIgnoreCaseAndStatusAndIdNot(name, CatalogStatus.ACTIVE, id)) {
+            throw conflict("INGREDIENT_NAME_EXISTS", "Tên nguyên liệu đã tồn tại trong danh mục đang hoạt động.");
+        }
+        validateGroup(request.ingredientGroup());
         validateSource(request.sourceName());
         if (ingredient.isNutritionSupported() && (request.sourceUrl() == null || request.sourceUrl().isBlank())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "SOURCE_REQUIRED_WHEN_NUTRITION_SUPPORTED",
@@ -161,7 +179,14 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
 
     @Transactional
     public IngredientResponse setIngredientStatus(long id, CatalogStatusUpdateRequest request) {
-        IngredientEntity ingredient = requireIngredient(id); ingredient.setActive(request.active()); return toResponse(ingredient);
+        IngredientEntity ingredient = requireIngredient(id);
+        if (request.active() && ingredient.getStatus() != CatalogStatus.ACTIVE
+                && ingredientRepository.existsByNameIgnoreCaseAndStatusAndIdNot(
+                        ingredient.getName(), CatalogStatus.ACTIVE, id)) {
+            throw conflict("INGREDIENT_NAME_EXISTS", "Tên nguyên liệu đã tồn tại trong danh mục đang hoạt động.");
+        }
+        ingredient.setActive(request.active());
+        return toResponse(ingredient);
     }
 
     @Transactional(readOnly = true)
@@ -318,6 +343,17 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         if (!allowed) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "UNSUPPORTED_NUTRITION_SOURCE",
                     "Nguồn dữ liệu phải thuộc danh sách nguồn dinh dưỡng được hỗ trợ.");
+        }
+    }
+
+    private void validateGroup(String ingredientGroup) {
+        if (properties.allowedGroups().isEmpty()) return;
+        String candidate = ingredientGroup == null ? "" : ingredientGroup.trim();
+        boolean allowed = getAllowedGroups().stream().filter(java.util.Objects::nonNull)
+                .map(String::trim).anyMatch(group -> group.equalsIgnoreCase(candidate));
+        if (!allowed) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "UNSUPPORTED_INGREDIENT_GROUP",
+                    "Nhóm nguyên liệu phải thuộc danh sách nhóm được hỗ trợ.");
         }
     }
 

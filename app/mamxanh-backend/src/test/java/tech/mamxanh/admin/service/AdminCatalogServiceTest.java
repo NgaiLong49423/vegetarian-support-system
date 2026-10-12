@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -71,8 +72,12 @@ class AdminCatalogServiceTest {
         when(catalog.setConversionStatus(7L, 2, statusRequest)).thenReturn(conversion);
 
         assertThat(service.listIngredients("đậu")).containsExactly(ingredient);
-        assertThat(service.searchIngredients("đậu", "Đậu hạt", true, false, 0, 10)).isSameAs(page);
-        assertThat(service.getIngredient(7L)).isSameAs(ingredient);
+        when(recipes.countRecipesUsingIngredients(List.of(7L))).thenReturn(Map.of(7L, 2L));
+        var searchedIngredients = service.searchIngredients("đậu", "Đậu hạt", true, false, 0, 10);
+        assertThat(searchedIngredients.content()).hasSize(1);
+        assertThat(searchedIngredients.content().getFirst().recipeUsageCount()).isEqualTo(2);
+        assertThat(searchedIngredients.totalElements()).isEqualTo(1);
+        assertThat(service.getIngredient(7L).id()).isEqualTo(ingredient.id());
         assertThat(service.createIngredient(ingredientRequest)).isSameAs(ingredient);
         assertThat(service.updateIngredient(7L, ingredientRequest)).isSameAs(ingredient);
         assertThat(service.updateNutrition(7L, nutritionRequest)).isSameAs(ingredient);
@@ -95,5 +100,16 @@ class AdminCatalogServiceTest {
 
         verify(catalog).rejectHardDelete("nguyên liệu");
         verify(catalog).deleteUnit(2);
+    }
+
+    @Test
+    void returnsConfiguredIngredientOptions() {
+        when(catalog.getAllowedGroups()).thenReturn(List.of("Rau củ", "Trái cây"));
+        when(catalog.getAllowedSources()).thenReturn(List.of("USDA FoodData Central"));
+
+        var options = service.ingredientOptions();
+
+        assertThat(options.groups()).containsExactly("Rau củ", "Trái cây");
+        assertThat(options.sources()).containsExactly("USDA FoodData Central");
     }
 }
