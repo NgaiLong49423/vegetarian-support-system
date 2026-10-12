@@ -1,20 +1,27 @@
 package tech.mamxanh.nutrition.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.sql.SQLException;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.common.exception.ApiException;
+import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.nutrition.dto.request.CatalogStatusUpdateRequest;
 import tech.mamxanh.nutrition.dto.request.ConversionSaveRequest;
+import tech.mamxanh.nutrition.dto.request.IngredientNutritionRequest;
 import tech.mamxanh.nutrition.dto.request.IngredientSaveRequest;
+import tech.mamxanh.nutrition.dto.request.NutritionSupportUpdateRequest;
 import tech.mamxanh.nutrition.dto.request.UnitSaveRequest;
 import tech.mamxanh.nutrition.dto.response.ConversionResponse;
+import tech.mamxanh.nutrition.dto.response.IngredientNutritionResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
@@ -23,6 +30,7 @@ import tech.mamxanh.nutrition.entity.IngredientUnitConversionId;
 import tech.mamxanh.nutrition.entity.MeasurementDimension;
 import tech.mamxanh.nutrition.entity.CatalogStatus;
 import tech.mamxanh.nutrition.entity.UnitEntity;
+import tech.mamxanh.nutrition.config.NutritionCatalogProperties;
 import tech.mamxanh.nutrition.repository.IngredientRepository;
 import tech.mamxanh.nutrition.repository.IngredientUnitConversionRepository;
 import tech.mamxanh.nutrition.repository.UnitRepository;
@@ -32,12 +40,15 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     private final IngredientRepository ingredientRepository;
     private final UnitRepository unitRepository;
     private final IngredientUnitConversionRepository conversionRepository;
+    private final NutritionCatalogProperties properties;
 
     public IngredientCatalogService(IngredientRepository ingredientRepository, UnitRepository unitRepository,
-                                    IngredientUnitConversionRepository conversionRepository) {
+                                    IngredientUnitConversionRepository conversionRepository,
+                                    NutritionCatalogProperties properties) {
         this.ingredientRepository = ingredientRepository;
         this.unitRepository = unitRepository;
         this.conversionRepository = conversionRepository;
+        this.properties = properties;
     }
 
     @Transactional(readOnly = true)
@@ -46,6 +57,32 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
                 ? ingredientRepository.findAll()
                 : ingredientRepository.findByNameContainingIgnoreCaseOrIngredientGroupContainingIgnoreCase(query.trim(), query.trim());
         return ingredients.stream().sorted(Comparator.comparing(IngredientEntity::getName)).map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<IngredientResponse> searchIngredients(String query, String ingredientGroup,
+            Boolean active, Boolean nutritionSupported, int page, int size) {
+        CatalogStatus status = active == null ? null : active ? CatalogStatus.ACTIVE : CatalogStatus.INACTIVE;
+        var results = ingredientRepository.search(normalizeFilter(query), normalizeFilter(ingredientGroup),
+                status, nutritionSupported,
+                PageRequest.of(page, size, Sort.by(Sort.Order.asc("name"), Sort.Order.asc("id"))));
+        return PageResponse.of(results.getContent().stream().map(this::toResponse).toList(),
+                results.getNumber(), results.getSize(), results.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public IngredientResponse getIngredient(long id) {
+        return toResponse(requireIngredient(id));
+    }
+
+    public List<String> getAllowedSources() { return properties.allowedSources(); }
+
+    public List<String> getAllowedGroups() {
+        java.util.TreeSet<String> groups = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        groups.addAll(properties.allowedGroups());
+        List<String> existingGroups = ingredientRepository.findDistinctIngredientGroups();
+        if (existingGroups != null) groups.addAll(existingGroups);
+        return List.copyOf(groups);
     }
 
     @Override
@@ -74,26 +111,92 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     @Transactional
     public IngredientResponse createIngredient(IngredientSaveRequest request) {
         String name = request.name().trim();
-        if (ingredientRepository.existsByNameIgnoreCase(name)) throw conflict("INGREDIENT_NAME_EXISTS", "Tên nguyên liệu đã tồn tại.");
-        return toResponse(ingredientRepository.save(new IngredientEntity(name, request.ingredientGroup().trim(), request.sourceName().trim(), request.sourceUrl(), request.referenceDate())));
+        if (ingredientRepository.existsByNameIgnoreCaseAndStatus(name, CatalogStatus.ACTIVE)) {
+            throw conflict("INGREDIENT_NAME_EXISTS", "Tên nguyên liệu đã tồn tại trong danh mục đang hoạt động.");
+        }
+        validateGroup(request.ingredientGroup());
+        validateSource(request.sourceName());
+        IngredientEntity ingredient = new IngredientEntity(name, request.ingredientGroup().trim(),
+                request.sourceName().trim(), normalizeFilter(request.sourceUrl()), request.referenceDate());
+        if (request.nutrition() != null) applyNutrition(ingredient, request.nutrition());
+        return toResponse(ingredientRepository.save(ingredient));
     }
 
     @Transactional
     public IngredientResponse updateIngredient(long id, IngredientSaveRequest request) {
         IngredientEntity ingredient = requireIngredient(id);
         String name = request.name().trim();
-        if (!ingredient.getName().equalsIgnoreCase(name) && ingredientRepository.existsByNameIgnoreCase(name)) throw conflict("INGREDIENT_NAME_EXISTS", "Tên nguyên liệu đã tồn tại.");
+        if (ingredient.getStatus() == CatalogStatus.ACTIVE
+                && !ingredient.getName().equalsIgnoreCase(name)
+                && ingredientRepository.existsByNameIgnoreCaseAndStatusAndIdNot(name, CatalogStatus.ACTIVE, id)) {
+            throw conflict("INGREDIENT_NAME_EXISTS", "Tên nguyên liệu đã tồn tại trong danh mục đang hoạt động.");
+        }
+        validateGroup(request.ingredientGroup());
+        validateSource(request.sourceName());
         if (ingredient.isNutritionSupported() && (request.sourceUrl() == null || request.sourceUrl().isBlank())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "SOURCE_REQUIRED_WHEN_NUTRITION_SUPPORTED",
                     "Cần cung cấp nguồn tham khảo cho nguyên liệu đang hỗ trợ dinh dưỡng.");
         }
-        ingredient.update(name, request.ingredientGroup().trim(), request.sourceName().trim(), request.sourceUrl(), request.referenceDate());
+        if (ingredient.isNutritionSupported() && request.nutrition() != null && !isComplete(request.nutrition())) {
+            throw new ApiException(HttpStatus.CONFLICT, "NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED",
+                    "Hãy tắt hỗ trợ tính dinh dưỡng trước khi xóa hoặc để trống chỉ tiêu.");
+        }
+        ingredient.update(name, request.ingredientGroup().trim(), request.sourceName().trim(),
+                normalizeFilter(request.sourceUrl()), request.referenceDate());
+        if (request.nutrition() != null) applyNutrition(ingredient, request.nutrition());
+        return toResponse(ingredient);
+    }
+
+    @Transactional
+    public IngredientResponse updateNutrition(long id, IngredientNutritionRequest request) {
+        IngredientEntity ingredient = requireIngredient(id);
+        if (ingredient.isNutritionSupported() && !isComplete(request)) {
+            throw new ApiException(HttpStatus.CONFLICT, "NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED",
+                    "Hãy tắt hỗ trợ tính dinh dưỡng trước khi xóa hoặc để trống chỉ tiêu.");
+        }
+        applyNutrition(ingredient, request);
+        return toResponse(ingredient);
+    }
+
+    @Transactional
+    public IngredientResponse setNutritionSupport(long id, NutritionSupportUpdateRequest request) {
+        IngredientEntity ingredient = requireIngredient(id);
+        if (request.enabled()) {
+            List<String> missingNutrition = missingNutritionFields(ingredient);
+            if (!missingNutrition.isEmpty()) {
+                throw new ApiException(HttpStatus.CONFLICT, "NUTRITION_VALUES_INCOMPLETE",
+                        "Còn thiếu chỉ tiêu dinh dưỡng: " + String.join(", ", missingNutrition) + ".");
+            }
+            List<String> missingSource = new ArrayList<>();
+            if (ingredient.getSourceName() == null || ingredient.getSourceName().isBlank()) {
+                missingSource.add("sourceName");
+            }
+            if (ingredient.getSourceUrl() == null || ingredient.getSourceUrl().isBlank()) {
+                missingSource.add("sourceUrl");
+            }
+            if (ingredient.getReferenceDate() == null) {
+                missingSource.add("referenceDate");
+            }
+            if (!missingSource.isEmpty()) {
+                throw new ApiException(HttpStatus.CONFLICT, "NUTRITION_SOURCE_INCOMPLETE",
+                        "Còn thiếu thông tin nguồn: " + String.join(", ", missingSource) + ".");
+            }
+            validateSource(ingredient.getSourceName());
+        }
+        ingredient.setNutritionSupported(request.enabled());
         return toResponse(ingredient);
     }
 
     @Transactional
     public IngredientResponse setIngredientStatus(long id, CatalogStatusUpdateRequest request) {
-        IngredientEntity ingredient = requireIngredient(id); ingredient.setActive(request.active()); return toResponse(ingredient);
+        IngredientEntity ingredient = requireIngredient(id);
+        if (request.active() && ingredient.getStatus() != CatalogStatus.ACTIVE
+                && ingredientRepository.existsByNameIgnoreCaseAndStatusAndIdNot(
+                        ingredient.getName(), CatalogStatus.ACTIVE, id)) {
+            throw conflict("INGREDIENT_NAME_EXISTS", "Tên nguyên liệu đã tồn tại trong danh mục đang hoạt động.");
+        }
+        ingredient.setActive(request.active());
+        return toResponse(ingredient);
     }
 
     @Transactional(readOnly = true)
@@ -120,6 +223,12 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
             throw conflict("UNIT_HAS_INGREDIENT_CONVERSIONS", "Không thể đổi thứ nguyên khi đơn vị đã có tỷ lệ quy đổi theo nguyên liệu.");
         }
         unit.update(code, request.name().trim(), request.dimension(), request.baseFactor()); return toResponse(unit);
+    }
+
+    @Transactional
+    public void deleteUnit(int id) {
+        requireUnit(id);
+        rejectHardDelete("đơn vị");
     }
 
     @Transactional
@@ -198,7 +307,69 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         }
     }
     private IngredientUnitConversionEntity requireConversion(long ingredientId, int unitId) { return conversionRepository.findById(new IngredientUnitConversionId(ingredientId, unitId)).orElseThrow(() -> notFound("CONVERSION_NOT_FOUND", "Không tìm thấy tỷ lệ quy đổi.")); }
-    private IngredientResponse toResponse(IngredientEntity entity) { return new IngredientResponse(entity.getId(), entity.getName(), entity.getIngredientGroup(), entity.getSourceName(), entity.getSourceUrl(), entity.getReferenceDate(), entity.isNutritionSupported(), entity.getStatus() == CatalogStatus.ACTIVE); }
+    private IngredientResponse toResponse(IngredientEntity entity) {
+        IngredientNutritionResponse nutrition = new IngredientNutritionResponse(entity.getEnergyKcalPer100g(),
+                entity.getProteinGramsPer100g(), entity.getCarbohydrateGramsPer100g(),
+                entity.getTotalFatGramsPer100g(), entity.getFiberGramsPer100g(), entity.getCalciumMgPer100g(),
+                entity.getIronMgPer100g(), entity.getVitaminB12MicrogramsPer100g(), entity.getZincMgPer100g());
+        return new IngredientResponse(entity.getId(), entity.getName(), entity.getIngredientGroup(),
+                entity.getSourceName(), entity.getSourceUrl(), entity.getReferenceDate(),
+                entity.isNutritionSupported(), entity.getStatus() == CatalogStatus.ACTIVE, nutrition);
+    }
+
+    private void applyNutrition(IngredientEntity ingredient, IngredientNutritionRequest nutrition) {
+        ingredient.updateNutrition(nutrition.energyKcalPer100g(), nutrition.proteinGramsPer100g(),
+                nutrition.carbohydrateGramsPer100g(), nutrition.totalFatGramsPer100g(),
+                nutrition.fiberGramsPer100g(), nutrition.calciumMgPer100g(), nutrition.ironMgPer100g(),
+                nutrition.vitaminB12MicrogramsPer100g(), nutrition.zincMgPer100g());
+    }
+
+    private boolean isComplete(IngredientNutritionRequest nutrition) {
+        return nutrition.energyKcalPer100g() != null && nutrition.proteinGramsPer100g() != null
+                && nutrition.carbohydrateGramsPer100g() != null && nutrition.totalFatGramsPer100g() != null
+                && nutrition.fiberGramsPer100g() != null && nutrition.calciumMgPer100g() != null
+                && nutrition.ironMgPer100g() != null && nutrition.vitaminB12MicrogramsPer100g() != null
+                && nutrition.zincMgPer100g() != null;
+    }
+
+    private List<String> missingNutritionFields(IngredientEntity ingredient) {
+        List<String> missing = new ArrayList<>();
+        if (ingredient.getEnergyKcalPer100g() == null) missing.add("energyKcalPer100g");
+        if (ingredient.getProteinGramsPer100g() == null) missing.add("proteinGramsPer100g");
+        if (ingredient.getCarbohydrateGramsPer100g() == null) missing.add("carbohydrateGramsPer100g");
+        if (ingredient.getTotalFatGramsPer100g() == null) missing.add("totalFatGramsPer100g");
+        if (ingredient.getFiberGramsPer100g() == null) missing.add("fiberGramsPer100g");
+        if (ingredient.getCalciumMgPer100g() == null) missing.add("calciumMgPer100g");
+        if (ingredient.getIronMgPer100g() == null) missing.add("ironMgPer100g");
+        if (ingredient.getVitaminB12MicrogramsPer100g() == null) missing.add("vitaminB12MicrogramsPer100g");
+        if (ingredient.getZincMgPer100g() == null) missing.add("zincMgPer100g");
+        return missing;
+    }
+
+    private void validateSource(String sourceName) {
+        String candidate = sourceName == null ? "" : sourceName.trim();
+        boolean allowed = properties.allowedSources().stream().filter(java.util.Objects::nonNull)
+                .map(String::trim).anyMatch(source -> source.equalsIgnoreCase(candidate));
+        if (!allowed) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "UNSUPPORTED_NUTRITION_SOURCE",
+                    "Nguồn dữ liệu phải thuộc danh sách nguồn dinh dưỡng được hỗ trợ.");
+        }
+    }
+
+    private void validateGroup(String ingredientGroup) {
+        if (properties.allowedGroups().isEmpty()) return;
+        String candidate = ingredientGroup == null ? "" : ingredientGroup.trim();
+        boolean allowed = getAllowedGroups().stream().filter(java.util.Objects::nonNull)
+                .map(String::trim).anyMatch(group -> group.equalsIgnoreCase(candidate));
+        if (!allowed) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "UNSUPPORTED_INGREDIENT_GROUP",
+                    "Nhóm nguyên liệu phải thuộc danh sách nhóm được hỗ trợ.");
+        }
+    }
+
+    private String normalizeFilter(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
     private UnitResponse toResponse(UnitEntity entity) { return new UnitResponse(entity.getId(), entity.getCode(), entity.getName(), entity.getDimension(), entity.getBaseFactor(), entity.isActive()); }
     private ConversionResponse toResponse(IngredientUnitConversionEntity entity) { return new ConversionResponse(entity.getId().getIngredientId(), entity.getId().getUnitId(), entity.getGramsPerUnit(), entity.isApproximate(), entity.isActive()); }
     private boolean isDuplicateKeyViolation(Throwable exception) {
