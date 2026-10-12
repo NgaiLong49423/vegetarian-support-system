@@ -80,20 +80,61 @@ test('recipe form uses catalog choices and reports that real login is still requ
   await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không');
 });
 
-test('recipe image list requires one cover and blocks publishing until FR-14 upload is connected', async ({ page }) => {
+test('recipe creation uploads images, selects one cover and publishes the gallery', async ({ page }) => {
   await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: {
-    dishCategories: [], vegetarianTypes: [], difficulties: [], units: [],
+    dishCategories: [{ code: 'BRAISED', label: 'Món kho' }],
+    vegetarianTypes: [{ code: 'VEGAN', label: 'Thuần chay' }],
+    difficulties: [{ code: 'EASY', label: 'Dễ' }],
+    units: [{ unitId: 1, code: 'g', name: 'gram', dimension: 'MASS' }],
   } }));
+  await page.route('**/api/v1/recipes/ingredient-options**', (route) => route.fulfill({ json: [
+    { ingredientId: 1, name: 'Đậu hũ' },
+  ] }));
+  let uploadIndex = 0;
+  await page.route('**/api/v1/recipes/media/upload', async (route) => {
+    uploadIndex += 1;
+    const fileName = uploadIndex === 1 ? 'one.png' : 'two.png';
+    return route.fulfill({ json: { success: true, data: {
+      blobUrl: `https://images.example.test/${fileName}`, mimeType: 'image/png', sizeBytes: 3,
+    } } });
+  });
+  let publishedMedia: Array<{ blobUrl: string; mimeType: string; cover: boolean }> | undefined;
+  await page.route('**/api/v1/recipes', async (route) => {
+    if (route.request().method() === 'POST') {
+      publishedMedia = (route.request().postDataJSON() as { media: typeof publishedMedia }).media;
+      return route.fulfill({ status: 201, json: {
+        recipeId: 620, title: 'Đậu hũ kho cà chua', status: 'PUBLISHED', publishedAt: '2026-10-11T10:00:00',
+      } });
+    }
+    return route.fallback();
+  });
+
   await openRecipeFormAsDemoExpert(page);
-  await page.getByLabel('Chọn tối đa 5 ảnh').setInputFiles([
+  await page.getByLabel('Tên món *').fill('Đậu hũ kho cà chua');
+  await page.getByLabel('Thể loại món').selectOption('BRAISED');
+  await page.getByLabel('Loại ăn chay').selectOption('VEGAN');
+  await page.getByLabel('Độ khó').selectOption('EASY');
+  await page.getByLabel('Khẩu phần').fill('2');
+  await page.getByLabel('Thời gian chuẩn bị').fill('10');
+  await page.getByLabel('Thời gian nấu').fill('15');
+  await page.getByLabel('Chọn nguyên liệu 1').fill('Đậu');
+  await page.getByRole('button', { name: 'Đậu hũ', exact: true }).click();
+  await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
+  await page.getByLabel('Đơn vị nguyên liệu 1').selectOption('1');
+  await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Cắt đậu hũ rồi kho cùng cà chua đến khi mềm.');
+  await page.locator('#recipe-media-upload-input').setInputFiles([
     { name: 'one.png', mimeType: 'image/png', buffer: Buffer.from('one') },
     { name: 'two.png', mimeType: 'image/png', buffer: Buffer.from('two') },
   ]);
+  await expect(page.getByTitle('Đang là ảnh bìa')).toHaveCount(1);
+  await page.getByTitle('Đặt làm ảnh bìa').click();
+  await expect(page.getByTitle('Đang là ảnh bìa')).toHaveCount(1);
   await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
-  await expect(page.getByRole('alert')).toContainText('hãy chọn đúng 1 ảnh bìa');
-  await page.getByLabel('Chọn one.png làm ảnh cover').check();
-  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
-  await expect(page.getByRole('alert')).toContainText('đang được hoàn thiện');
+  await expect.poll(() => publishedMedia).toHaveLength(2);
+  expect(publishedMedia?.filter((media) => media.cover)).toHaveLength(1);
+  expect(publishedMedia?.map((media) => media.blobUrl)).toEqual([
+    'https://images.example.test/one.png', 'https://images.example.test/two.png',
+  ]);
 });
 
 test('community topics lead to article content and demo rating updates only once', async ({ page }) => {

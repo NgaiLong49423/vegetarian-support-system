@@ -638,7 +638,7 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
 
   // 3. Fill form fields
   await page.getByLabel('Tên món *').fill('Nấm đùi gà kho tiêu xanh');
-  await page.getByLabel('Mô tả').fill('Món kho thơm lừng đậm đà.');
+  await page.getByRole('textbox', { name: 'Mô tả', exact: true }).fill('Món kho thơm lừng đậm đà.');
   await page.getByLabel('Thể loại món').selectOption('BRAISED');
   await page.getByLabel('Loại ăn chay').selectOption('VEGAN');
   await page.getByLabel('Độ khó').selectOption('EASY');
@@ -674,7 +674,7 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
 
   // Form input preservation (AC-25.3)
   expect(await page.getByLabel('Tên món *').inputValue()).toBe('Nấm đùi gà kho tiêu xanh');
-  expect(await page.getByLabel('Mô tả').inputValue()).toBe('Món kho thơm lừng đậm đà.');
+  expect(await page.getByRole('textbox', { name: 'Mô tả', exact: true }).inputValue()).toBe('Món kho thơm lừng đậm đà.');
   expect(await page.getByLabel('Khẩu phần').inputValue()).toBe('4');
   expect(await page.getByLabel('Thời gian chuẩn bị').inputValue()).toBe('15');
   expect(await page.getByLabel('Thời gian nấu').inputValue()).toBe('20');
@@ -707,7 +707,7 @@ test('recipe image upload and gallery management complies with FR-14 rules', asy
   await page.goto('/dang-cong-thuc');
 
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
-  await expect(page.getByText('Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hình ảnh bài công thức' })).toBeVisible();
 
   // 2. Upload test image
   const fileInput = page.locator('#recipe-media-upload-input');

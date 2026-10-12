@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.13.0
+> **Version:** v0.14.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-11
+> **Last Updated:** 2026-10-12
 > **Status:** Active
 
 # API Integration Guide
@@ -250,7 +250,17 @@ GET /api/v1/recipes?keyword=canh&vegetarianType=VEGAN&dishCategory=SOUP&ingredie
 
 Dùng `GET /api/v1/recipes/form-options` để lấy mã/nhãn loại ăn chay và thể loại món hiện hành; dùng `GET /api/v1/recipes/ingredient-options?query=...` để tìm trong danh mục nguyên liệu đang hoạt động. Frontend không hard-code danh mục tùy chọn. Bộ lọc hoặc tham số phân trang ngoài giới hạn runtime trả `400` theo ProblemDetail chuẩn với `code` ổn định và lỗi field nếu có. Response danh sách giữ cấu trúc `items`, `page`, `size`, `totalElements`, `totalPages` hiện tại, đồng thời có `likes`, `dislikes`, `likePercentage` (`null` khi chưa có lượt bình chọn) và `viewCount` để hiển thị theo sort.
 
-## 11. Hồ sơ thành viên — FR-23
+## 11. AI hỗ trợ soạn Recipe Post — FR-21
+
+`POST /api/v1/recipes/ai-assistance` yêu cầu Bearer token của Expert đang hoạt động và gói Plus/Pro còn hiệu lực. Backend xác thực entitlement trước khi gọi Gemini. Generated OpenAPI runtime là hợp đồng chi tiết cho request/response và các lỗi.
+
+Request chọn `contentType` là `DESCRIPTION` hoặc `INSTRUCTIONS`, gửi tiêu đề, mã danh mục, loại ăn chay, khẩu phần và các dòng nguyên liệu gồm `ingredientId`, `unitId`, `quantity`. Backend đối chiếu ingredient ID với danh mục đang hoạt động, yêu cầu Gemini trả các bước có cấu trúc và chỉ chấp nhận ingredient ID trong request. Nội dung không hợp lệ hoặc nhắc tên nguyên liệu có trong danh mục nhưng không được chọn bị từ chối.
+
+Response trả `contentType` và `content` để Frontend điền trực tiếp vào trường có thể chỉnh sửa. API không tạo RecipePost hoặc bản nháp; chỉ thao tác đăng/lưu hiện có mới ghi công thức sau khi tác giả chủ động xác nhận. Free, hết hạn hoặc thiếu subscription nhận `403 AI_SUBSCRIPTION_REQUIRED` trước khi provider được gọi. Gemini thiếu cấu hình/lỗi nhận `503 AI_PROVIDER_UNAVAILABLE`; kết quả sai định dạng/giới hạn nhận `502 AI_RESPONSE_INVALID`. Các lỗi không ngăn tác giả tự nhập và đăng theo validation hiện hành.
+
+Backend gọi model cố định `gemini-3.8-flash` qua Google Gen AI Java SDK; khóa chỉ được đọc từ `GEMINI_API_KEY` ở Backend. Không gửi API key xuống Frontend. Không ghi prompt thô vào log.
+
+## 12. Hồ sơ thành viên — FR-23
 
 Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung (quyết định Q54–Q58).
 
@@ -260,3 +270,14 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 - `POST /api/v1/me/profile/avatar` (cần Bearer token, `multipart/form-data`, trường `file`) nhận JPEG, PNG hoặc WebP tối đa 2 MB; Backend đọc chữ ký đầu tệp và yêu cầu khớp `Content-Type` (AC-23.5, AC-23.7). Ảnh lưu qua `StorageClient` của FR-14 trong thư mục `avatars/` (Q54); ảnh đại diện cũ do hệ thống lưu bị xóa sau khi lưu thành công. Response là `MemberProfileResponse` mới.
 - Administrator gọi `/me/profile` hoặc `/me/profile/avatar` nhận `403 MEMBER_ACCESS_REQUIRED`.
 - Giới hạn multipart của máy chủ là 5 MB/tệp và 6 MB/request để ảnh công thức (≤ 5 MB) và ảnh đại diện (≤ 2 MB) tới được bước kiểm của service; tệp vượt giới hạn này trả `413 FILE_TOO_LARGE`.
+
+## 13. Công thức liên quan — FR-47
+
+Generated OpenAPI runtime là contract chi tiết. Hai API đều trả `{ "items": [...] }`, trong đó mỗi item dùng cùng DTO công thức công khai với `GET /api/v1/recipes`; thứ tự đã được Backend xác định, Frontend không xếp lại hoặc thay bằng dữ liệu mẫu.
+
+- `GET /api/v1/recipes/{recipeId}/related?limit=6` công khai, không kiểm tra subscription và không gọi Gemini. `recipeId` dương; `limit` mặc định 6, từ 1 đến 12. Bài nguồn phải `PUBLISHED`; nguồn không khả dụng trả `404 RECIPE_NOT_FOUND`. Danh sách không chứa bài nguồn, bài ẩn/xóa hoặc ID trùng; ít ứng viên thì trả ít item, không có ứng viên trả `200` với `items: []`.
+- Xếp hạng theo [FR-47](../requirements/srs/FUNCTIONAL-REQUIREMENTS.md#fr-47): khớp một phần, một điểm cho mỗi tiêu chí cùng thể loại/cùng loại chay/trùng nguyên liệu chính; tiếp theo là số nguyên liệu chuẩn trùng, ngày công khai và ID. Nguyên liệu chính có khối lượng gram lớn nhất; thiếu quy đổi hoặc nguyên liệu tùy chỉnh không có ID chuẩn thì bỏ tiêu chí nguyên liệu chính của công thức đó.
+- `POST /api/v1/recipes/{recipeId}/related/ai?limit=6` không cần body; yêu cầu Bearer token của Customer/Expert đang hoạt động với Plus/Pro còn hiệu lực. Backend kiểm tra quyền trước khi gọi provider. Guest nhận `401`; Free/hết hạn nhận `403 AI_SUBSCRIPTION_REQUIRED`; Administrator không có quyền Member. Không áp quota lượt/ngày.
+- Gemini nhận tối đa 50 ứng viên công khai cùng loại chay với nguồn, phân bổ theo thể loại, và chỉ trả ID. Backend từ chối cấu trúc sai, quá giới hạn hoặc ID ngoài tập bằng `502 AI_RESPONSE_INVALID`; loại ID trùng và đọc lại trạng thái/nội dung hiện tại sau khi provider trả về. Bài bị ẩn/xóa hoặc đổi sang loại chay khác không được gửi xuống FE. Không có ứng viên thì trả rỗng và không gọi Gemini.
+- Lỗi cấu hình/provider/timeout trả `503 AI_PROVIDER_UNAVAILABLE`; API chỉ đọc, không tạo RecipePost hoặc ghi Lịch ăn. FE chỉ gọi POST sau thao tác chủ động, giữ gợi ý thường khi AI lỗi và bỏ phản hồi cũ khi chuyển bài. Khóa vẫn dùng `GEMINI_API_KEY` ở Backend và cơ chế Compose hiện có.
+- Tích hợp FR-11: `AiUsageEvent` mang `userId`, `feature=FR-47`, `occurredAt` và các token count thực tế từ provider; thiếu metadata giữ `null`, không suy đoán bằng 0. Event chỉ phát sau khi phản hồi hợp lệ. Consumer lưu trữ tối đa 90 ngày/báo cáo do Issue #17 triển khai; FR-47 chưa cung cấp consumer lưu trữ. Không đưa prompt, nội dung công thức hoặc API key vào event/log.

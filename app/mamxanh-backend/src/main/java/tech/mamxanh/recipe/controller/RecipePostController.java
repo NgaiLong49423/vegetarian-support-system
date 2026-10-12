@@ -8,8 +8,13 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,8 +24,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.recipe.dto.request.UpdateRecipePostRequest;
+import tech.mamxanh.recipe.dto.request.RecipeAiAssistanceRequest;
+import tech.mamxanh.recipe.dto.response.RecipeAiAssistanceResponse;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
 import tech.mamxanh.recipe.service.RecipePostService;
+import tech.mamxanh.recipe.service.RecipeAiAssistanceService;
 import tech.mamxanh.recipe.service.RecipePostService.RecipePageResponse;
 import tech.mamxanh.recipe.service.RecipePostService.RecipeReferenceData;
 import tech.mamxanh.recipe.service.RecipeSortMode;
@@ -31,9 +39,11 @@ import tech.mamxanh.recipe.service.RecipeViewPeriod;
 @Validated
 public class RecipePostController {
     private final RecipePostService service;
+    private final RecipeAiAssistanceService aiAssistanceService;
 
-    public RecipePostController(RecipePostService service) {
+    public RecipePostController(RecipePostService service, RecipeAiAssistanceService aiAssistanceService) {
         this.service = service;
+        this.aiAssistanceService = aiAssistanceService;
     }
 
     @GetMapping
@@ -85,6 +95,20 @@ public class RecipePostController {
     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     public RecipePostResponse getForAuthor(@PathVariable @Min(1) long recipeId) {
         return service.getForAuthor(recipeId);
+    }
+
+    @PostMapping(path = "/ai-assistance", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @Operation(summary = "Generate editable AI-assisted recipe text",
+            description = "Requires an active Expert account with an active Plus or Pro subscription. Does not create or publish a recipe draft.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Editable recipe text generated."),
+            @ApiResponse(responseCode = "403", description = "Expert role or Plus/Pro entitlement is required."),
+            @ApiResponse(responseCode = "502", description = "AI response did not satisfy the recipe output constraints."),
+            @ApiResponse(responseCode = "503", description = "Gemini is not configured or unavailable.")
+    })
+    public RecipeAiAssistanceResponse generateAiAssistance(@Valid @RequestBody RecipeAiAssistanceRequest request) {
+        return aiAssistanceService.generate(request);
     }
 
     @PutMapping("/{recipeId}")
