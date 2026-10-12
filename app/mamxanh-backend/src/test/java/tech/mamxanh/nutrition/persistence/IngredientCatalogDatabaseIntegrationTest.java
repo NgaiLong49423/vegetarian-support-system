@@ -105,7 +105,7 @@ class IngredientCatalogDatabaseIntegrationTest extends AbstractIntegrationTest {
         entityManager.clear();
 
         assertThatThrownBy(() -> catalogService.updateIngredient(ingredient.getId(),
-                new IngredientSaveRequest(name, "Gia vị", "Nguồn kiểm thử", null, LocalDate.now())))
+                new IngredientSaveRequest(name, "Gia vị", "USDA FoodData Central", null, LocalDate.now())))
                 .isInstanceOfSatisfying(ApiException.class, exception -> {
                     assertThat(exception.getStatus()).isEqualTo(org.springframework.http.HttpStatus.BAD_REQUEST);
                     assertThat(exception.getCode()).isEqualTo("SOURCE_REQUIRED_WHEN_NUTRITION_SUPPORTED");

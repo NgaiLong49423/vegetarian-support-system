@@ -103,7 +103,6 @@ CREATE TABLE [INGREDIENT] (
         CONSTRAINT DF_INGREDIENT_updated_at DEFAULT SYSUTCDATETIME(),
 
     CONSTRAINT PK_INGREDIENT PRIMARY KEY (ingredient_id),
-    CONSTRAINT UQ_INGREDIENT_name UNIQUE (name),
     CONSTRAINT CK_INGREDIENT_status CHECK (status IN ('ACTIVE', 'INACTIVE')),
     CONSTRAINT CK_INGREDIENT_nutrition_supported CHECK (
         nutrition_supported = 0 OR (
@@ -120,6 +119,10 @@ CREATE TABLE [INGREDIENT] (
         )
     )
 );
+GO
+CREATE UNIQUE INDEX [UX_INGREDIENT_name_active]
+    ON [INGREDIENT] ([name])
+    WHERE [status] = 'ACTIVE';
 GO
 
 

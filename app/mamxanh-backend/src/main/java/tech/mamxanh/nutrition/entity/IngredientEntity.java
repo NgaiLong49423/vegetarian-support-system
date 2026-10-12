@@ -65,5 +65,20 @@ public class IngredientEntity {
         this.name = name; this.ingredientGroup = group; this.sourceName = sourceName;
         this.sourceUrl = sourceUrl; this.referenceDate = referenceDate;
     }
+    public void updateNutrition(BigDecimal energyKcalPer100g, BigDecimal proteinGramsPer100g,
+            BigDecimal carbohydrateGramsPer100g, BigDecimal totalFatGramsPer100g,
+            BigDecimal fiberGramsPer100g, BigDecimal calciumMgPer100g, BigDecimal ironMgPer100g,
+            BigDecimal vitaminB12MicrogramsPer100g, BigDecimal zincMgPer100g) {
+        this.energyKcalPer100g = energyKcalPer100g;
+        this.proteinGramsPer100g = proteinGramsPer100g;
+        this.carbohydrateGramsPer100g = carbohydrateGramsPer100g;
+        this.totalFatGramsPer100g = totalFatGramsPer100g;
+        this.fiberGramsPer100g = fiberGramsPer100g;
+        this.calciumMgPer100g = calciumMgPer100g;
+        this.ironMgPer100g = ironMgPer100g;
+        this.vitaminB12MicrogramsPer100g = vitaminB12MicrogramsPer100g;
+        this.zincMgPer100g = zincMgPer100g;
+    }
+    public void setNutritionSupported(boolean nutritionSupported) { this.nutritionSupported = nutritionSupported; }
     public void setActive(boolean active) { this.status = active ? CatalogStatus.ACTIVE : CatalogStatus.INACTIVE; }
 }
