@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Check,
-  ChefHat,
   ChevronDown,
   Clock3,
   Download,
@@ -22,6 +21,7 @@ import { Badge, Button, Card } from '../components/ui';
 import { asApiError } from '../lib/apiClient';
 import { recipesApi, type RecipeDetail } from '../api/recipes';
 import { SaveRecipeButton } from '../components/SaveRecipeButton';
+import { MemberAvatar } from '../components/MemberAvatar';
 
 const NUTRIENTS = [
   { key: 'ENERGY_KCAL', label: 'Năng lượng', unit: 'kcal' },
@@ -34,6 +34,11 @@ const NUTRIENTS = [
   { key: 'VITAMIN_B12_MCG', label: 'Vitamin B12', unit: 'mcg' },
   { key: 'ZINC_MG', label: 'Kẽm', unit: 'mg' },
 ] as const;
+
+/** `publishedAt` is UTC without an offset; show the date in Vietnam time (FR-23). */
+function publishedDate(value: string) {
+  return new Date(`${value}Z`).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+}
 
 function formatNumber(value: number | null | undefined, maximumFractionDigits = 2) {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'Chưa có dữ liệu';
@@ -180,12 +185,12 @@ export function ApiRecipeDetail() {
         {recipe.description && <p className="mt-3 max-w-3xl leading-7 text-ink-muted">{recipe.description}</p>}
         <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-ink-muted">
           <div className="flex items-center gap-3">
-            {recipe.author.avatarUrl ? <img src={recipe.author.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" /> : <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-100 text-brand-700"><ChefHat className="h-5 w-5" /></div>}
-            <div><p className="text-xs">Tác giả</p><p className="font-bold text-ink">{recipe.author.displayName}</p></div>
+            <MemberAvatar name={recipe.author.displayName} url={recipe.author.avatarUrl} />
+            <div><p className="text-xs">Tác giả</p><Link to={`/thanh-vien/${recipe.author.userId}`} className="font-bold text-ink hover:text-brand-700">{recipe.author.displayName}</Link></div>
           </div>
           <span className="inline-flex items-center gap-1.5"><Clock3 className="h-4 w-4 text-brand-600" />{recipe.prepTimeMinutes + recipe.cookTimeMinutes} phút tổng cộng</span>
           <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4 text-brand-600" />{recipe.servings} khẩu phần gốc</span>
-          {recipe.publishedAt && <time dateTime={recipe.publishedAt}>{new Date(recipe.publishedAt).toLocaleDateString('vi-VN')}</time>}
+          {recipe.publishedAt && <time dateTime={recipe.publishedAt}>Đăng ngày {publishedDate(recipe.publishedAt)}</time>}
         </div>
       </div>
       <Card className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-2">

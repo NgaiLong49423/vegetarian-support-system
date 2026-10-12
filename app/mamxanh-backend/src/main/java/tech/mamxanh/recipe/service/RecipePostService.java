@@ -147,6 +147,26 @@ public class RecipePostService {
         return new RecipePageResponse(items, page, size, result.totalElements(), totalPages);
     }
 
+    /** FR-23 (Q56): a member's published posts for the public profile, newest first, size 1–50. */
+    @Transactional(readOnly = true)
+    public RecipePageResponse listPublishedByAuthor(long authorId, int page, int size) {
+        if (page < 0 || size < 1 || size > 50) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED);
+        }
+        currentUserService.requirePublicMember(authorId);
+        var result = browseRepository.findPublishedByAuthor(authorId, LocalDateTime.now(clock), page, size);
+        List<Long> ids = result.rows().stream().map(BrowseRow::recipeId).toList();
+        Map<Long, RecipePostEntity> recipes = repository.findAllById(ids).stream()
+                .collect(Collectors.toMap(RecipePostEntity::getId, Function.identity()));
+        Map<Long, BrowseRow> metrics = result.rows().stream()
+                .collect(Collectors.toMap(BrowseRow::recipeId, Function.identity()));
+        List<RecipePostEntity> orderedRecipes = ids.stream().map(recipes::get)
+                .filter(java.util.Objects::nonNull).toList();
+        int totalPages = (int) Math.ceil((double) result.totalElements() / size);
+        return new RecipePageResponse(publicResponses(orderedRecipes, metrics), page, size,
+                result.totalElements(), totalPages);
+    }
+
     private static <T extends Enum<T>> String normalizeCode(String value, Class<T> enumType) {
         if (value == null || value.isBlank()) return null;
         try {
@@ -178,16 +198,7 @@ public class RecipePostService {
 
     @Transactional
     public RecipePostResponse update(long recipeId, UpdateRecipePostRequest request) {
-        CurrentUser author = currentUserService.requireActiveExpert();
-        RecipePostEntity recipe = repository.lockById(recipeId)
-                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
-        requireOwner(recipe, author);
-        if ("HIDDEN".equals(recipe.getStatus())) {
-            throw new AppException(ErrorCode.RECIPE_HIDDEN);
-        }
-        if (!"PUBLISHED".equals(recipe.getStatus())) {
-            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
-        }
+        RecipePostEntity recipe = lockOwnEditableRecipe(recipeId);
 
         validateProfile(request);
         recipe.setTitle(request.title().trim());
@@ -321,6 +332,26 @@ public class RecipePostService {
                 recipe.getVegetarianType(), recipe.getDifficulty(), recipe.getServings(), recipe.getPrepTimeMinutes(),
                 recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getStatus(), media, ingredients,
                 likes, dislikes, likePercentage, stats == null ? 0 : stats.views());
+    }
+
+    /**
+     * Locks a published Recipe Post that the current active Expert may change (BR-64, AC-04.4, AC-04.7):
+     * another author or an Administrator gets {@code RECIPE_EDIT_NOT_ALLOWED}, a hidden post
+     * {@code RECIPE_HIDDEN} and a missing or deleted post {@code RECIPE_NOT_FOUND}.
+     */
+    @Transactional
+    public RecipePostEntity lockOwnEditableRecipe(long recipeId) {
+        CurrentUser author = currentUserService.requireActiveExpert();
+        RecipePostEntity recipe = repository.lockById(recipeId)
+                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
+        requireOwner(recipe, author);
+        if ("HIDDEN".equals(recipe.getStatus())) {
+            throw new AppException(ErrorCode.RECIPE_HIDDEN);
+        }
+        if (!"PUBLISHED".equals(recipe.getStatus())) {
+            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
+        }
+        return recipe;
     }
 
     private RecipePostEntity findById(long recipeId) {

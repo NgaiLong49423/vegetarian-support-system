@@ -1,25 +1,28 @@
 package tech.mamxanh.subscription.repository;
 
 import java.time.LocalDateTime;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import tech.mamxanh.subscription.entity.SubscriptionEntity;
+import tech.mamxanh.subscription.entity.SubscriptionStatus;
 
-@Repository
-public class SubscriptionRepository {
-    private final JdbcTemplate jdbcTemplate;
+public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity, Long> {
 
-    public SubscriptionRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
+    Optional<SubscriptionEntity> findByUserIdAndStatus(Long userId, SubscriptionStatus status);
 
-    public boolean hasActivePaidSubscription(long userId, LocalDateTime now) {
-        Integer match = jdbcTemplate.queryForObject("""
-                SELECT CASE WHEN EXISTS (
-                    SELECT 1 FROM [SUBSCRIPTION]
-                    WHERE user_id = ? AND status = 'ACTIVE' AND tier IN ('PLUS', 'PRO')
-                      AND starts_at <= ? AND ends_at > ?
-                ) THEN 1 ELSE 0 END
-                """, Integer.class, userId, now, now);
-        return Integer.valueOf(1).equals(match);
-    }
+    List<SubscriptionEntity> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+
+    Optional<SubscriptionEntity> findFirstByUserIdOrderByEndsAtDesc(Long userId);
+
+    @Query(value = """
+            SELECT CAST(CASE WHEN EXISTS (
+                SELECT 1 FROM [SUBSCRIPTION]
+                WHERE user_id = :userId AND status = 'ACTIVE' AND tier IN ('PLUS', 'PRO')
+                  AND starts_at <= :now AND ends_at > :now
+            ) THEN 1 ELSE 0 END AS bit)
+            """, nativeQuery = true)
+    boolean hasActivePaidSubscription(@Param("userId") long userId, @Param("now") LocalDateTime now);
 }
