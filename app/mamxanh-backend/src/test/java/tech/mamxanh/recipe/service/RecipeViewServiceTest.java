@@ -84,10 +84,21 @@ class RecipeViewServiceTest {
     }
 
     @Test void lockFailureIsRetryableAndNeverWrites() {
+        when(repository.publishedCount(1)).thenReturn(Optional.of(0L));
         when(repository.lockViewer(anyString())).thenReturn(-1);
         assertThatThrownBy(() -> service.record(1, 7L, null)).isInstanceOfSatisfying(AppException.class,
                 ex -> assertThat(ex.errorCode()).isEqualTo(ErrorCode.RECIPE_VIEW_UNAVAILABLE));
-        verify(repository, never()).publishedCount(anyLong());
+        verify(repository, never()).incrementPublishedCount(anyLong());
+        verify(repository, never()).insert(anyLong(), any(), any(), any());
+    }
+
+    @Test void duplicateReturnsCounterRefreshedAfterWaitingForViewerLock() {
+        when(repository.publishedCount(1)).thenReturn(Optional.of(0L), Optional.of(1L));
+        when(repository.latest(1, 7L, null)).thenReturn(Optional.of(LocalDateTime.now(clock)));
+        var result = service.record(1, 7L, null);
+        assertThat(result.counted()).isFalse();
+        assertThat(result.viewCount()).isEqualTo(1);
+        verify(repository, never()).incrementPublishedCount(anyLong());
     }
 
     @Test void nonPublicRecipeDoesNotWriteEvents() {

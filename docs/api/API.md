@@ -85,7 +85,7 @@ Sau khi Google Login thành công, Frontend gọi `POST /nutrition/dietary-prefe
 
 ### 3.5 Định danh lượt xem công thức — FR-58
 
-Source trong nhánh triển khai Issue #57 bổ sung `POST /api/v1/recipes/{recipeId}/views`. Gửi sự kiện sau khi nội dung chi tiết công thức công khai tải thành công; GET chi tiết và GET danh sách không tự tạo sự kiện. Schema/status chi tiết lấy từ generated OpenAPI; chưa có bằng chứng SQL Server/Compose cho slice này khi Docker local không khả dụng.
+Luồng FR-58 dùng `POST /api/v1/recipes/{recipeId}/views`. Gửi sự kiện sau khi nội dung chi tiết công thức công khai tải thành công; GET chi tiết và GET danh sách không tự tạo sự kiện. Schema/status chi tiết lấy từ generated OpenAPI. Transaction/Flyway và persistence phải được kiểm chứng bằng test SQL Server/Compose; kiểm thử với mock không thay bằng chứng này.
 
 - Member gửi Bearer như các API hiện có; Backend lấy `user_id` từ JWT đã xác minh, không nhận danh tính tài khoản hoặc thời gian từ body. Guest không gửi Bearer và phải gửi `anonymousViewerId` dạng UUID chuẩn; Backend lưu SHA-256 của UUID đã chuẩn hóa chữ thường.
 - Frontend giữ UUID của Guest qua reload bằng session cookie `mamxanh.recipe-viewer` trên chính origin Frontend (`Path=/`, `SameSite=Lax`, `Secure` khi HTTPS), rồi gửi trong JSON body. Đây là định danh ẩn danh, không phải auth cookie; không cần bật credentials xuyên origin hoặc sửa mô hình đăng nhập JWT. Khi cookie bị chặn, client báo lỗi và không gửi sự kiện bằng UUID tạm thay đổi qua reload.
@@ -240,7 +240,7 @@ Cổng AI cá nhân hóa (AC-31.4–AC-31.6): endpoint AI gợi ý món hoặc t
 
 Các khoảng là khoảng trượt theo Clock UTC của Backend, không phải ngày/tuần/tháng lịch: 24 giờ, 168 giờ, 720 giờ, hoặc lịch sử tới hiện tại. Mốc bắt đầu và kết thúc đều được tính; sự kiện sau hiện tại không tăng điểm Most Viewed. Nếu bằng số lượt trong khoảng, ưu tiên `published_at` mới hơn rồi `recipe_id` tăng dần để phân trang ổn định.
 
-Most Active dùng tương tác 7 ngày; Trending dùng tương tác 72 giờ và suy giảm theo tuổi bài cùng bonus 48 giờ theo policy hiện có. Các truy vấn này dùng sự kiện `RECIPE_VIEW` của luồng ghi nhận mới, không lấy số do Frontend gửi. Test SQL Server về thứ tự, ranh giới thời gian và liên kết với luồng ghi nhận đã có nhưng chưa chạy khi Docker local không khả dụng.
+Most Active dùng tương tác 7 ngày; Trending dùng tương tác 72 giờ và suy giảm theo tuổi bài cùng bonus 48 giờ theo policy hiện có. Các truy vấn này dùng sự kiện `RECIPE_VIEW` của luồng ghi nhận mới, không lấy số do Frontend gửi. Kiểm chứng thứ tự, ranh giới thời gian và liên kết với luồng ghi nhận dùng các test SQL Server; test mapping với mock không chứng minh thứ tự truy vấn thực tế.
 
 `GET /api/v1/recipes` là API đọc công khai có phân trang. Generated OpenAPI runtime là contract chi tiết. Endpoint nhận `keyword`, `page` (bắt đầu từ 0), `size` (1–50), `sort` (`NEWEST`, `MOST_LIKED`, `MOST_VIEWED`, `MOST_COMMENTED`, `MOST_ACTIVE` hoặc `TRENDING`) và `viewPeriod` (`ALL_TIME`, `LAST_24_HOURS`, `LAST_7_DAYS` hoặc `LAST_30_DAYS`).
 

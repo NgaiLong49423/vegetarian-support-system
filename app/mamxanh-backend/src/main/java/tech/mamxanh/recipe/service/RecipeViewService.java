@@ -31,6 +31,11 @@ public class RecipeViewService {
         if (recipeId <= 0) throw new AppException(ErrorCode.VALIDATION_FAILED);
         String hash = userId == null ? hashAnonymous(anonymousViewerId) : null;
         String viewer = userId == null ? "guest:" + hash : "user:" + userId;
+        // SQL Server begins the JDBC implicit transaction on the first table statement.
+        // sp_getapplock alone cannot start it. Read before locking, then read again
+        // under the lock so a concurrent counted event cannot return a stale counter.
+        repository.publishedCount(recipeId)
+                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
         if (repository.lockViewer("recipe-view:" + recipeId + ":" + viewer) < 0) {
             throw new AppException(ErrorCode.RECIPE_VIEW_UNAVAILABLE);
         }

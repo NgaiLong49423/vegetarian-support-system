@@ -9,7 +9,7 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-11 — Add Recipe Views and Interaction Analytics (Issue #57)
+## 2026-10-11 — Add Recipe Views and Interaction Analytics (Issue #57) ([PR #123](https://github.com/NgaiLong49423/vegetarian-support-system/pull/123))
 
 **Status:** Committed — `b1abddc`.
 
@@ -34,6 +34,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Bound Most Viewed aggregation by the current time so future-dated events do not raise the ranking score (BUG-020); SQL Server regression verification remains pending.
+- Start the SQL Server implicit transaction with a published-recipe read before obtaining the transaction-owned application lock, and refresh the count under that lock (BUG-021). The first CI run exposed 503 recording failures; the fix passes 19 local service/HTTP checks and awaits new SQL Server/Compose verification.
 
 ## 2026-10-11 — Preserve Theme During Browser Reload Verification
 
