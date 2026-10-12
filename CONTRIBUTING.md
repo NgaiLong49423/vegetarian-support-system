@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.13.0
+> **Version:** v3.14.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-11
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -82,26 +82,26 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
 
 ### PR vào `develop`
 
-- PR implementation dùng `Refs #<issue-number>` theo quy tắc bên dưới, ghi scope, thay đổi và kết quả tự kiểm tra; không chứa secret, `.env`, credential hoặc file build/cá nhân.
+- PR triển khai một GitHub Issue dùng `Refs #<issue-number>` theo quy tắc bên dưới. PR cho công việc không được giao dưới Issue ghi `Refs: N/A` và lý do; mọi PR vẫn phải nêu scope, thay đổi và kết quả tự kiểm tra, không chứa secret, `.env`, credential hoặc file build/cá nhân.
 - Required validation checks phải pass trước merge; xem [Required checks và technical enforcement](#develop-required-checks). Ruleset hiện có yêu cầu một approval; giữ gate review hiện hành, không coi AI review là approval của thành viên.
 - Owner tự kiểm tra phần thay đổi và ghi trung thực phần chưa kiểm tra/blocker. Merge vào `develop` là tích hợp, chưa xác nhận FR đã hoàn thành.
 
 <a id="implementation-issue-pr"></a>
 #### Một implementation Issue — một implementation PR
 
-- **1 implementation Issue = 1 implementation PR.** Feature/FR implementation, bug fix hoặc refactor có work item, thay đổi business behavior và implementation task khác được quản lý bằng Issue phải có `Refs #<issue-number>`. Hoàn tất scope/AC của work item trong PR đó; review fixes/rebuttals tiếp tục trên cùng PR.
+- **1 implementation Issue = 1 implementation PR.** Khi một nhánh thực hiện work item đã được ghi nhận/giao qua GitHub Issue, PR phải dùng `Refs #<issue-number>` và hoàn tất scope/AC của Issue đó; review fixes/rebuttals tiếp tục trên cùng PR.
 - Sub-issue triển khai đã được Tech Lead duyệt áp dụng quy tắc trên cho từng work item; Issue cha chỉ tổng hợp phạm vi, không tạo implementation trùng. Release PR `develop -> main` tổng hợp các Issue đã tích hợp và dùng `Refs` để trace, không phải implementation PR thứ hai của chúng.
 - Sau khi Issue gốc đã hoàn thành, bug fix, refactor hoặc thay đổi bổ sung cần Issue mới và PR mới tương ứng; liên kết lịch sử khi phù hợp. Không mở lại work item đã nghiệm thu chỉ để tránh tạo Issue mới.
-- **Ngoại lệ hẹp:** chỉ repository setup, internal agent tooling hoặc governance/configuration chore ở cấp repository mới có thể không cần Issue, và phải được Tech Lead cho phép. Khi đó dùng `Refs: N/A` kèm `Reason` nêu scope và authorization; branch có thể dùng `chore/<short-name>`. Không tạo Issue chỉ để thỏa hình thức cho ngoại lệ đã duyệt.
-- `Refs: N/A` không phải lựa chọn chung cho mọi PR; không mở rộng ngoại lệ sang feature/bug/refactor thông thường để tránh Issue. Ví dụ “Implement Meal Planner” phải có Issue, kể cả khi đặt tên branch là chore.
+- Công việc được khởi tạo và thực hiện độc lập, không thuộc một GitHub Issue hiện có (ví dụ setup, UI/design polish hoặc thử nghiệm giao diện) có thể dùng `Refs: N/A`; ghi `Reason` nêu rõ không có Issue chịu trách nhiệm và mô tả scope. Không cần tạo Issue chỉ để đáp ứng mẫu PR.
+- Không dùng `Refs: N/A` để né một Issue đã được giao, tách scope của một Issue sang nhiều PR, hoặc bỏ qua Issue cần thiết theo quyết định của nhóm. Nếu công việc được giao vào Issue trong quá trình thực hiện, PR phải chuyển sang `Refs #<issue-number>` và tuân thủ quy tắc một Issue — một PR.
 
-Ví dụ hợp lệ cho tooling setup đã được duyệt:
+Ví dụ cho công việc độc lập chưa có Issue:
 
 ```text
 Refs: N/A
 
 Reason:
-Repository internal agent tooling setup approved by Tech Lead.
+Standalone Frontend design refinement; no GitHub Issue is assigned to this work.
 ```
 
 <a id="develop-integration-baseline"></a>
@@ -336,10 +336,10 @@ Chính sách Tự chủ Kỹ thuật (Engineering Autonomy Policy) phân định
 
 **Branch** (nhánh) là một nhánh mã nguồn độc lập được tách ra từ nhánh chính (như `main` hoặc `master`) để phát triển tính năng hoặc sửa lỗi mà không làm ảnh hưởng trực tiếp đến mã nguồn hiện tại của dự án.
 
-Khi làm việc, tạo nhánh từ `develop` và đặt tên theo cấu trúc:
+Khi làm việc, tạo nhánh từ `develop`. Nếu nhánh triển khai Issue, đặt tên theo cấu trúc:
 `[loại-nhánh]/[issue-number]-[tên-ngắn-gọn]`
 
-Repository-level chore không cần Issue chỉ được dùng `chore/<tên-ngắn-gọn>` theo [ngoại lệ đã được Tech Lead duyệt](#implementation-issue-pr).
+Nếu công việc không thuộc Issue nào, bỏ số Issue và dùng `[loại-nhánh]/[tên-ngắn-gọn]` (ví dụ `feature/frontend-polish` hoặc `chore/dev-environment`). Trong PR, ghi `Refs: N/A` cùng lý do theo [quy tắc Issue/PR](#implementation-issue-pr).
 
 ### Các tiền tố nhánh thông dụng:
 * **`feature/`**: Sử dụng khi phát triển một tính năng mới.
@@ -520,7 +520,7 @@ chore: update .gitignore
 Để gửi một pull request thành công:
 1. **Đặt tiêu đề rõ ràng:** Tiêu đề PR nên tuân theo định dạng tương tự commit message và dùng tiếng Anh (ví dụ: `feat(auth): add login page`).
 2. **Mô tả chi tiết nội dung:** Điền đầy đủ thông tin vào mẫu PR, mô tả rõ các thay đổi bạn đã thực hiện và lý do thay đổi.
-3. **Liên kết Issue:** PR vào `develop` và `main` dùng `Refs #123`; chỉ repository-level chore được Tech Lead cho phép mới dùng `Refs: N/A` kèm lý do theo [quy tắc Issue/PR](#implementation-issue-pr). Tech Lead xác nhận và đóng Issue sau khi kiểm tra demo local trên `main` đạt; không dùng closing keywords để đóng trước nghiệm thu.
+3. **Liên kết Issue:** Nếu PR triển khai một GitHub Issue, dùng `Refs #123`. Công việc độc lập không thuộc Issue nào dùng `Refs: N/A` và ghi lý do theo [quy tắc Issue/PR](#implementation-issue-pr). Tech Lead xác nhận và đóng Issue sau khi kiểm tra demo local trên `main` đạt; không dùng closing keywords để đóng trước nghiệm thu.
 4. **Kiểm tra hoạt động:** Chắc chắn rằng dự án của bạn vẫn chạy được và không làm hỏng các tính năng cũ.
 5. **Dọn dẹp code:** Đảm bảo không có code thừa, comment nháp hay các file rác trước khi gửi PR.
 

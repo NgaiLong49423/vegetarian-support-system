@@ -178,16 +178,7 @@ public class RecipePostService {
 
     @Transactional
     public RecipePostResponse update(long recipeId, UpdateRecipePostRequest request) {
-        CurrentUser author = currentUserService.requireActiveExpert();
-        RecipePostEntity recipe = repository.lockById(recipeId)
-                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
-        requireOwner(recipe, author);
-        if ("HIDDEN".equals(recipe.getStatus())) {
-            throw new AppException(ErrorCode.RECIPE_HIDDEN);
-        }
-        if (!"PUBLISHED".equals(recipe.getStatus())) {
-            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
-        }
+        RecipePostEntity recipe = lockOwnEditableRecipe(recipeId);
 
         validateProfile(request);
         recipe.setTitle(request.title().trim());
@@ -321,6 +312,26 @@ public class RecipePostService {
                 recipe.getVegetarianType(), recipe.getDifficulty(), recipe.getServings(), recipe.getPrepTimeMinutes(),
                 recipe.getCookTimeMinutes(), recipe.getYoutubeUrl(), recipe.getStatus(), media, ingredients,
                 likes, dislikes, likePercentage, stats == null ? 0 : stats.views());
+    }
+
+    /**
+     * Locks a published Recipe Post that the current active Expert may change (BR-64, AC-04.4, AC-04.7):
+     * another author or an Administrator gets {@code RECIPE_EDIT_NOT_ALLOWED}, a hidden post
+     * {@code RECIPE_HIDDEN} and a missing or deleted post {@code RECIPE_NOT_FOUND}.
+     */
+    @Transactional
+    public RecipePostEntity lockOwnEditableRecipe(long recipeId) {
+        CurrentUser author = currentUserService.requireActiveExpert();
+        RecipePostEntity recipe = repository.lockById(recipeId)
+                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
+        requireOwner(recipe, author);
+        if ("HIDDEN".equals(recipe.getStatus())) {
+            throw new AppException(ErrorCode.RECIPE_HIDDEN);
+        }
+        if (!"PUBLISHED".equals(recipe.getStatus())) {
+            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
+        }
+        return recipe;
     }
 
     private RecipePostEntity findById(long recipeId) {

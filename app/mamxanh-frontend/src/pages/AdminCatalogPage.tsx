@@ -33,7 +33,7 @@ const today = () => {
   return date.getFullYear() + '-' + month + '-' + day;
 };
 const fieldClass =
-  'mt-1.5 w-full rounded-xl border border-brand-200/80 bg-white px-3.5 py-2.5 text-sm text-ink outline-none transition-all placeholder:text-ink-muted/50 focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
+  'mt-1.5 w-full rounded-xl border border-brand-200/80 bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition-all placeholder:text-ink-muted/50 focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 const labelClass = 'block text-sm font-semibold text-ink';
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -370,7 +370,7 @@ export function AdminCatalogPage() {
 
       {/* 403 Forbidden State */}
       {accessDenied && (
-        <Card className="flex flex-col items-center justify-center p-10 sm:p-14 text-center border-red-200 bg-white shadow-xs">
+        <Card className="flex flex-col items-center justify-center p-10 sm:p-14 text-center border-red-200 bg-paper shadow-xs">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-600 shadow-2xs">
             <ShieldAlert className="h-7 w-7" />
           </div>
@@ -397,7 +397,7 @@ export function AdminCatalogPage() {
               onClick={() => setTab(item.id)}
               className={`shrink-0 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
                 tab === item.id
-                  ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/25'
+                  ? 'bg-brand-600 text-on-brand shadow-sm shadow-brand-600/25'
                   : 'text-ink-soft hover:bg-brand-100/70 hover:text-brand-900'
               }`}
             >
@@ -406,7 +406,7 @@ export function AdminCatalogPage() {
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                   tab === item.id
-                    ? 'bg-white/20 text-white'
+                    ? 'bg-paper/20 text-white'
                     : 'bg-brand-100 text-brand-800'
                 }`}
               >
@@ -454,7 +454,7 @@ export function AdminCatalogPage() {
                         key={item.id}
                         className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between transition-all ${
                           item.active
-                            ? 'border-brand-100 bg-white hover:border-brand-200 shadow-2xs'
+                            ? 'border-brand-100 bg-paper hover:border-brand-200 shadow-2xs'
                             : 'border-dashed border-brand-200 bg-brand-50/30 opacity-80'
                         }`}
                       >
@@ -520,7 +520,7 @@ export function AdminCatalogPage() {
                   )}
                 </div>
               </div>
-              <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-white shadow-xs">
+              <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-paper shadow-xs">
                 <div className="flex items-center justify-between pb-3 border-b border-brand-100">
                   <h2 className="text-lg font-extrabold text-ink">
                     {ingredientId === null ? 'Thêm nguyên liệu' : 'Sửa nguyên liệu'}
@@ -656,7 +656,7 @@ export function AdminCatalogPage() {
                       key={item.id}
                       className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between transition-all ${
                         item.active
-                          ? 'border-brand-100 bg-white hover:border-brand-200 shadow-2xs'
+                          ? 'border-brand-100 bg-paper hover:border-brand-200 shadow-2xs'
                           : 'border-dashed border-brand-200 bg-brand-50/30 opacity-80'
                       }`}
                     >
@@ -713,7 +713,7 @@ export function AdminCatalogPage() {
                   ))
                 )}
               </div>
-              <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-white shadow-xs">
+              <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-paper shadow-xs">
                 <div className="flex items-center justify-between pb-3 border-b border-brand-100">
                   <h2 className="text-lg font-extrabold text-ink">
                     {unitId === null ? 'Thêm đơn vị' : 'Sửa đơn vị'}
@@ -826,7 +826,7 @@ export function AdminCatalogPage() {
                         key={`${item.ingredientId}-${item.unitId}`}
                         className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between transition-all ${
                           item.active
-                            ? 'border-brand-100 bg-white hover:border-brand-200 shadow-2xs'
+                            ? 'border-brand-100 bg-paper hover:border-brand-200 shadow-2xs'
                             : 'border-dashed border-brand-200 bg-brand-50/30 opacity-80'
                         }`}
                       >
@@ -890,7 +890,7 @@ export function AdminCatalogPage() {
                   })
                 )}
               </div>
-              <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-white shadow-xs">
+              <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-paper shadow-xs">
                 <div className="flex items-center justify-between pb-3 border-b border-brand-100">
                   <h2 className="text-lg font-extrabold text-ink">
                     {conversionEditing ? 'Sửa tỷ lệ quy đổi' : 'Thêm tỷ lệ quy đổi'}

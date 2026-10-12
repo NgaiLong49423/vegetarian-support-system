@@ -203,7 +203,7 @@ export function RecipeImageUploader({
                 className={`group relative flex flex-col overflow-hidden rounded-xl border transition-all ${
                   item.isCover
                     ? 'border-brand-500 ring-2 ring-brand-400 bg-brand-50/20'
-                    : 'border-brand-200 bg-white hover:border-brand-300'
+                    : 'border-brand-200 bg-paper hover:border-brand-300'
                 }`}
               >
                 {/* Image Thumbnail */}
@@ -216,7 +216,7 @@ export function RecipeImageUploader({
 
                   {/* Cover Badge */}
                   {item.isCover && (
-                    <span className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold text-white shadow">
+                    <span className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold text-on-brand shadow">
                       <Star className="h-2.5 w-2.5 fill-current" /> Ảnh bìa
                     </span>
                   )}
