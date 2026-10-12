@@ -9,7 +9,23 @@ const banana = {
   referenceDate: '2026-09-01',
   nutritionSupported: false,
   active: true,
+  nutrition: {
+    energyKcalPer100g: null,
+    proteinGramsPer100g: null,
+    carbohydrateGramsPer100g: null,
+    totalFatGramsPer100g: null,
+    fiberGramsPer100g: null,
+    calciumMgPer100g: null,
+    ironMgPer100g: null,
+    vitaminB12MicrogramsPer100g: null,
+    zincMgPer100g: null,
+  },
 };
+
+const ingredientPage = (content: typeof banana[]) => ({
+  success: true,
+  data: { content, page: 0, size: 20, totalElements: content.length, totalPages: content.length ? 1 : 0 },
+});
 
 test('catalog management reports backend authorization denial without exposing edit forms as authorized', async ({ page }) => {
   await page.route('**/api/v1/admin/**', (route) => route.fulfill({
@@ -30,6 +46,10 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
     const request = route.request();
     const url = new URL(request.url());
     const method = request.method();
+    if (url.pathname.endsWith('/ingredients/search') && method === 'GET') {
+      const query = (url.searchParams.get('query') ?? '').toLocaleLowerCase('vi');
+      return route.fulfill({ json: ingredientPage(data.filter((item) => !query || `${item.name} ${item.ingredientGroup}`.toLocaleLowerCase('vi').includes(query))) });
+    }
     if (url.pathname.endsWith('/ingredients') && method === 'GET') {
       const query = (url.searchParams.get('query') ?? '').toLocaleLowerCase('vi');
       return route.fulfill({ json: { success: true, data: data.filter((item) => !query || `${item.name} ${item.ingredientGroup}`.toLocaleLowerCase('vi').includes(query)) } });
@@ -65,8 +85,8 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
   await page.getByRole('button', { name: 'Thêm nguyên liệu' }).click();
   await expect(page.getByRole('status')).toContainText('Đã thêm nguyên liệu');
 
-  await page.getByPlaceholder('Tìm tên hoặc nhóm nguyên liệu').fill('Nấm');
-  await page.getByRole('button', { name: 'Tìm', exact: true }).click();
+  await page.getByPlaceholder('Tìm tên nguyên liệu').fill('Nấm');
+  await page.getByRole('button', { name: 'Tìm và lọc', exact: true }).click();
   await expect(page.getByText('Nấm đùi gà', { exact: true })).toBeVisible();
   await expect(page.getByText('Chuối tây', { exact: true })).toHaveCount(0);
 
@@ -87,6 +107,7 @@ test('administrator can manage units and conversion rules and sees duplicate-pai
     const request = route.request();
     const url = new URL(request.url());
     const method = request.method();
+    if (url.pathname.endsWith('/ingredients/search') && method === 'GET') return route.fulfill({ json: ingredientPage([banana]) });
     if (url.pathname.endsWith('/ingredients') && method === 'GET') return route.fulfill({ json: { success: true, data: [banana] } });
     if (url.pathname.endsWith('/units') && method === 'GET') return route.fulfill({ json: { success: true, data: units } });
     if (url.pathname.endsWith('/units') && method === 'POST') {
@@ -147,6 +168,7 @@ test('administrator creates, edits and toggles an ingredient unit conversion', a
     const request = route.request();
     const url = new URL(request.url());
     const method = request.method();
+    if (url.pathname.endsWith('/ingredients/search') && method === 'GET') return route.fulfill({ json: ingredientPage([banana]) });
     if (url.pathname.endsWith('/ingredients') && method === 'GET') {
       return route.fulfill({ json: { success: true, data: [banana] } });
     }
@@ -198,4 +220,114 @@ test('administrator creates, edits and toggles an ingredient unit conversion', a
   await expect(page.getByRole('button', { name: 'Bật lại', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Bật lại', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Ngừng dùng', exact: true })).toBeVisible();
+});
+
+test('administrator saves nutrition values and backend validates enabling calculation support', async ({ page }) => {
+  const data = [{ ...banana, nutrition: { ...banana.nutrition } }];
+  await page.route('**/api/v1/admin/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const method = request.method();
+    if (url.pathname.endsWith('/ingredients/search') && method === 'GET') return route.fulfill({ json: ingredientPage(data) });
+    if (url.pathname.endsWith('/ingredients') && method === 'GET') {
+      return route.fulfill({ json: { success: true, data } });
+    }
+    if (url.pathname.endsWith('/units')) return route.fulfill({ json: { success: true, data: [] } });
+    if (url.pathname.endsWith('/ingredient-unit-conversions')) return route.fulfill({ json: { success: true, data: [] } });
+    if (/\/ingredients\/7\/nutrition$/.test(url.pathname) && method === 'PUT') {
+      data[0].nutrition = request.postDataJSON();
+      return route.fulfill({ json: { success: true, data: data[0] } });
+    }
+    if (/\/ingredients\/7\/nutrition-support$/.test(url.pathname) && method === 'PATCH') {
+      const { enabled } = request.postDataJSON();
+      if (enabled && Object.values(data[0].nutrition).some((value) => value === null)) {
+        return route.fulfill({ status: 409, contentType: 'application/problem+json', json: {
+          title: 'Conflict', status: 409, code: 'NUTRITION_VALUES_INCOMPLETE', detail: 'Còn thiếu chỉ tiêu dinh dưỡng: proteinGramsPer100g.',
+        } });
+      }
+      data[0].nutritionSupported = enabled;
+      return route.fulfill({ json: { success: true, data: data[0] } });
+    }
+    return route.fulfill({ status: 404, json: { detail: 'Not found' } });
+  });
+
+  await page.goto('/quan-tri/danh-muc');
+  await page.getByRole('button', { name: 'Sửa dinh dưỡng Chuối tây' }).click();
+  await expect(page.getByLabel('Năng lượng trên 100 g')).toHaveValue('');
+  await page.getByLabel('Năng lượng trên 100 g').fill('100');
+  const saveResponse = page.waitForResponse((response) => response.request().method() === 'PUT' && response.url().endsWith('/admin/ingredients/7/nutrition'));
+  await page.getByRole('button', { name: 'Lưu chỉ tiêu' }).click();
+  expect((await saveResponse).ok()).toBeTruthy();
+  expect(data[0].nutrition.energyKcalPer100g).toBe(100);
+  expect(data[0].nutrition.proteinGramsPer100g).toBeNull();
+  await expect(page.getByRole('status')).toContainText('Đã lưu chỉ tiêu dinh dưỡng');
+
+  await page.getByRole('button', { name: 'Bật hỗ trợ tính' }).click();
+  await expect(page.getByRole('alert')).toContainText('Còn thiếu chỉ tiêu dinh dưỡng');
+
+  const values: Record<string, string> = {
+    'Chất đạm trên 100 g': '10',
+    'Carbohydrate trên 100 g': '20',
+    'Chất béo trên 100 g': '3',
+    'Chất xơ trên 100 g': '4',
+    'Canxi trên 100 g': '20',
+    'Sắt trên 100 g': '2',
+    'Vitamin B12 trên 100 g': '0.1',
+    'Kẽm trên 100 g': '1.3',
+  };
+  for (const [label, value] of Object.entries(values)) await page.getByLabel(label).fill(value);
+  await page.getByRole('button', { name: 'Lưu chỉ tiêu' }).click();
+  await expect(page.getByRole('status')).toContainText('Đã lưu chỉ tiêu dinh dưỡng');
+  const enableResponse = page.waitForResponse((response) => response.request().method() === 'PATCH' && response.url().endsWith('/admin/ingredients/7/nutrition-support'));
+  await page.getByRole('button', { name: 'Bật hỗ trợ tính' }).click();
+  expect((await enableResponse).ok()).toBeTruthy();
+  await expect(page.getByText('Đang hỗ trợ tính', { exact: true })).toBeVisible();
+  await expect(page.getByText('Có dữ liệu tính toán', { exact: true })).toBeVisible();
+});
+
+test('administrator filters the catalog through the paginated endpoint and reads linked recipes', async ({ page }) => {
+  const filtered = { ...banana, id: 9, name: 'Nấm bào ngư' };
+  let lastSearchUrl = '';
+  await page.route('**/api/v1/admin/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.pathname.endsWith('/ingredients/search') && request.method() === 'GET') {
+      lastSearchUrl = url.toString();
+      return route.fulfill({ json: {
+        success: true,
+        data: { content: [filtered], page: Number(url.searchParams.get('page')), size: 20, totalElements: 21, totalPages: 2 },
+      } });
+    }
+    if (url.pathname.endsWith('/ingredients') && request.method() === 'GET') return route.fulfill({ json: { success: true, data: [banana, filtered] } });
+    if (url.pathname.endsWith('/units')) return route.fulfill({ json: { success: true, data: [] } });
+    if (url.pathname.endsWith('/ingredient-unit-conversions')) return route.fulfill({ json: { success: true, data: [] } });
+    if (/\/ingredients\/9\/recipes$/.test(url.pathname)) return route.fulfill({ json: { success: true, data: [
+      { recipeId: 30, title: 'Canh nấm rau củ', status: 'PUBLISHED', publishedAt: '2026-10-10T10:00:00' },
+    ] } });
+    return route.fulfill({ status: 404, json: { detail: 'Not found' } });
+  });
+
+  await page.goto('/quan-tri/danh-muc');
+  await page.getByLabel('Nhóm nguyên liệu').fill('Nấm');
+  await page.getByLabel('Trạng thái danh mục').selectOption('true');
+  await page.getByLabel('Hỗ trợ tính dinh dưỡng').selectOption('false');
+  const filterResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.endsWith('/admin/ingredients/search') && url.searchParams.get('ingredientGroup') === 'Nấm';
+  });
+  await page.getByRole('button', { name: 'Tìm và lọc' }).click();
+  await filterResponse;
+  await expect(page.getByText('Nấm bào ngư', { exact: true })).toBeVisible();
+  expect(new URL(lastSearchUrl).searchParams.get('ingredientGroup')).toBe('Nấm');
+  expect(new URL(lastSearchUrl).searchParams.get('active')).toBe('true');
+  expect(new URL(lastSearchUrl).searchParams.get('nutritionSupported')).toBe('false');
+  const nextPageResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.endsWith('/admin/ingredients/search') && url.searchParams.get('page') === '1';
+  });
+  await page.getByRole('button', { name: 'Trang sau' }).click();
+  await nextPageResponse;
+  expect(new URL(lastSearchUrl).searchParams.get('page')).toBe('1');
+  await page.getByRole('button', { name: 'Xem công thức dùng Nấm bào ngư' }).click();
+  await expect(page.getByText('Canh nấm rau củ', { exact: true })).toBeVisible();
 });
