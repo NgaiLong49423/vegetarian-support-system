@@ -674,7 +674,7 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
 
   // Form input preservation (AC-25.3)
   expect(await page.getByLabel('Tên món *').inputValue()).toBe('Nấm đùi gà kho tiêu xanh');
-  expect(await page.getByLabel('Mô tả').inputValue()).toBe('Món kho thơm lừng đậm đà.');
+  expect(await page.getByLabel('Mô tả', { exact: true }).inputValue()).toBe('Món kho thơm lừng đậm đà.');
   expect(await page.getByLabel('Khẩu phần').inputValue()).toBe('4');
   expect(await page.getByLabel('Thời gian chuẩn bị').inputValue()).toBe('15');
   expect(await page.getByLabel('Thời gian nấu').inputValue()).toBe('20');
