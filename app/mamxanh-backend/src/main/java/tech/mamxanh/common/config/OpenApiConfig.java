@@ -1,6 +1,8 @@
 package tech.mamxanh.common.config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Bean;
+import org.springdoc.core.customizers.OpenApiCustomizer;
 
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
@@ -17,4 +19,17 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 public class OpenApiConfig {
 
     public static final String BEARER_AUTH = "bearerAuth";
+
+    /** OpenAPI explicitly distinguishes optional Bearer from required authentication. */
+    @Bean
+    OpenApiCustomizer recipeViewOptionalAuthentication() {
+        return api -> {
+            var path = api.getPaths().get("/api/v1/recipes/{recipeId}/views");
+            if (path != null && path.getPost() != null) {
+                path.getPost().setSecurity(java.util.List.of(
+                        new io.swagger.v3.oas.models.security.SecurityRequirement(),
+                        new io.swagger.v3.oas.models.security.SecurityRequirement().addList(BEARER_AUTH)));
+            }
+        };
+    }
 }

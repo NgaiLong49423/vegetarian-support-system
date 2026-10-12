@@ -54,6 +54,8 @@ public enum ErrorCode {
             "Mỗi bài công thức chỉ được có tối đa 5 ảnh minh họa."),
     INVALID_COVER_IMAGE_CONFIGURATION(HttpStatus.BAD_REQUEST, "Invalid cover image configuration",
             "Bài công thức có ảnh bắt buộc phải có đúng một ảnh được chọn làm ảnh bìa."),
+    RECIPE_VIEW_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Recipe view unavailable",
+            "Chưa thể ghi nhận lượt xem. Vui lòng thử lại sau."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error", "Hệ thống gặp lỗi. Vui lòng thử lại sau.");
 
     private final HttpStatus status;

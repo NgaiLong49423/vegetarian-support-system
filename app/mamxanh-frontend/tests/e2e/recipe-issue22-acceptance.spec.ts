@@ -176,7 +176,7 @@ test('Issue 25: recipe detail flags catalog ingredients without nutrition data',
   await page.goto(`/cong-thuc/${detail.recipeId}`, { waitUntil: 'commit' });
 
   await expect(page.getByRole('heading', { name: 'Chưa đủ dữ liệu dinh dưỡng' })).toBeVisible();
-  await expect(page.getByRole('status')).toContainText('Ước tính dinh dưỡng chưa đầy đủ');
+  await expect(page.getByRole('region', { name: 'Chưa đủ dữ liệu dinh dưỡng' }).getByRole('status')).toContainText('Ước tính dinh dưỡng chưa đầy đủ');
   await expect(page.locator('[aria-labelledby="nutrition-status-heading"] li')).toHaveText('Cà chua');
 });
 

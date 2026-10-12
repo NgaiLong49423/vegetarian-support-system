@@ -1,13 +1,38 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.58.0
+> **Version:** v2.59.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-10
+> **Last Updated:** 2026-10-12
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Add Recipe Views and Interaction Analytics (Issue #57)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Implement FR-58 recording, analytics and Frontend view counts; real-stack integration, full Backend coverage, performance and acceptance remain pending.
+
+### Added
+
+- Add `POST /api/v1/recipes/{recipeId}/views` with optional Bearer authentication, hashed anonymous UUIDs, a 30-minute last-counted-event window, and a direct `counted`/`viewCount` response.
+- Serialize recording for each viewer/recipe pair with a transaction-owned SQL Server application lock; update the existing counter and insert the view event in one transaction.
+- Record views after public detail content renders on both numeric detail routes; preserve guest UUIDs in a first-party session cookie and use the existing Bearer session for members. Display server-provided totals on detail, Home and Explore, with non-blocking recording errors and identity-preserving retry.
+- Add service, HTTP contract and SQL Server integration tests for deduplication, validation, concurrency, authorization, rollback and rolling-window analytics. Validation on October 12 passes all 251 tests that do not require SQL Server; the 13 recipe-view SQL Server integration tests compile but are not yet executed because the local Docker daemon is unavailable. Full Backend coverage remains unverified.
+- Add a real Compose browser/API/SQL test for first-view persistence, hashed guest identity, reload deduplication and totals across all four Most Viewed periods. Type checking and test discovery pass; runtime execution remains pending. Compose configuration validation passes with the component environment file; startup, detail latency and 50-user load verification remain pending.
+- Add 14 Playwright checks for guest/member identity, reload, retry, rejected sessions, late requests, all four Most Viewed periods and responsive counts at 360/768/1440 pixels. Validation on October 12 passes the full 119-test Frontend suite using two workers, plus all five strict-checker tests. Coverage passes every unchanged >80% gate: Lines 91.92%, Statements 89.12%, Functions 84.69% and Branches 82.74%. TypeScript and build checks pass; browser API mocks do not establish real-stack acceptance.
+
+### Changed
+
+- Add append-only migration `V11__recipe_view_deduplication.sql` for member/guest last-event lookup indexes and reconciliation of existing view counters; align the schema snapshot.
+- Document anonymous viewer integration and retry behavior in the API guide while retaining the stateless JWT authentication model.
+- Scope the nutrition-status regression assertion to its nutrition region so new view-status feedback does not make its locator ambiguous.
+
+### Fixed
+
+- Bound Most Viewed aggregation by the current time so future-dated events do not raise the ranking score (BUG-020); SQL Server regression verification remains pending.
 
 ## 2026-10-10 — Add Google Login and Account Linking (Issue #8) ([PR #111](https://github.com/NgaiLong49423/vegetarian-support-system/pull/111))
 

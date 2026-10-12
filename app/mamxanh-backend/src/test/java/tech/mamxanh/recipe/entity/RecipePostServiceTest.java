@@ -209,17 +209,23 @@ class RecipePostServiceTest {
                 LocalDateTime.of(2026, 10, 8, 0, 0), 0, 12);
     }
 
-    @Test
-    void publicBrowseMapsReadStatisticsAndUsesTheSelectedViewWindow() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(tech.mamxanh.recipe.service.RecipeViewPeriod.class)
+    void publicBrowseMapsReadStatisticsAndUsesTheSelectedViewWindow(tech.mamxanh.recipe.service.RecipeViewPeriod period) {
         LocalDateTime now = LocalDateTime.of(2026, 10, 8, 0, 0);
         when(clock.instant()).thenReturn(now.toInstant(ZoneOffset.UTC));
         when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         recipe.setStatus("PUBLISHED");
         recipe.setTitle("Canh chua");
         var mode = tech.mamxanh.recipe.service.RecipeSortMode.MOST_VIEWED;
-        var period = tech.mamxanh.recipe.service.RecipeViewPeriod.LAST_24_HOURS;
+        LocalDateTime since = switch (period) {
+            case ALL_TIME -> LocalDateTime.of(1, 1, 1, 0, 0);
+            case LAST_24_HOURS -> now.minusDays(1);
+            case LAST_7_DAYS -> now.minusDays(7);
+            case LAST_30_DAYS -> now.minusDays(30);
+        };
         var row = new RecipeBrowseRepository.BrowseRow(47L, 3, 1, 19, 2, 5);
-        when(browseRepository.findPublished("canh", null, null, List.of(), null, mode, now.minusHours(24), now, 0, 12))
+        when(browseRepository.findPublished("canh", null, null, List.of(), null, mode, since, now, 0, 12))
                 .thenReturn(new RecipeBrowseRepository.BrowsePage(List.of(row), 1));
         when(repository.findAllById(List.of(47L))).thenReturn(List.of(recipe));
         when(currentUserService.getPublicProfiles(List.of(7L))).thenReturn(Map.of(7L,
@@ -238,7 +244,7 @@ class RecipePostServiceTest {
         assertThat(result.items().getFirst().dislikes()).isEqualTo(1);
         assertThat(result.items().getFirst().likePercentage()).isEqualByComparingTo("75.00");
         assertThat(result.items().getFirst().viewCount()).isEqualTo(19);
-        verify(browseRepository).findPublished("canh", null, null, List.of(), null, mode, now.minusHours(24), now, 0, 12);
+        verify(browseRepository).findPublished("canh", null, null, List.of(), null, mode, since, now, 0, 12);
     }
 
     @Test

@@ -62,6 +62,7 @@ export interface RecipeDetail {
   youtubeUrl: string | null;
   publishedAt: string;
   nutritionComplete: boolean;
+  statistics: { likes: number; dislikes: number; reactionCount: number; likePercentage: number | null; viewCount: number };
   ingredientsWithoutNutrition: string[];
   ingredients: Array<{
     ingredientId: number;
@@ -82,6 +83,12 @@ export interface RecipeIngredient {
   unitCode: string;
   unitName: string;
   quantity: number;
+}
+
+export interface RecipeViewResponse {
+  recipeId: number;
+  counted: boolean;
+  viewCount: number;
 }
 
 export interface RecipeMedia {
@@ -188,6 +195,9 @@ export const recipesApi = {
   ),
   getPublished: (recipeId: number) => request(
     () => apiClient.get<RecipeDetail>(`/recipes/${recipeId}`),
+  ),
+  recordView: (recipeId: number, anonymousViewerId?: string) => request(
+    () => apiClient.post<RecipeViewResponse>(`/recipes/${recipeId}/views`, anonymousViewerId ? { anonymousViewerId } : {}),
   ),
   searchPublic: (filters: RecipeSearchParams) => {
     const params = new URLSearchParams({

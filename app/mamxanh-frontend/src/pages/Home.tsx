@@ -1,3 +1,4 @@
+import { RecipeViewCount } from '../components/RecipeViewCount';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -217,7 +218,7 @@ export function Home() {
                 const image = recipe.media.find((item) => item.cover) ?? recipe.media[0];
                 return <Link key={recipe.id} to={`/cong-thuc/id/${recipe.id}`} className="overflow-hidden rounded-2xl border border-white/80 bg-white/90 hover:bg-white hover:shadow-lg transition-all">
                   <div className="aspect-[4/3] bg-brand-50">{image ? <img src={image.url} alt={recipe.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-sm text-ink-muted">Ảnh công thức</div>}</div>
-                  <div className="p-4"><p className="text-xs font-semibold text-brand-700">{recipe.vegetarianType} · {recipe.dishCategory}</p><h3 className="mt-2 font-bold text-ink">{recipe.title}</h3><p className="mt-2 text-xs text-ink-muted">Tác giả: {recipe.authorName}</p></div>
+                  <div className="p-4"><p className="text-xs font-semibold text-brand-700">{recipe.vegetarianType} · {recipe.dishCategory}</p><h3 className="mt-2 font-bold text-ink">{recipe.title}</h3><p className="mt-2 text-xs text-ink-muted">Tác giả: {recipe.authorName}</p><div className="mt-2 text-xs text-ink-muted"><RecipeViewCount count={recipe.viewCount} /></div></div>
                 </Link>;
               })}
             </div>
