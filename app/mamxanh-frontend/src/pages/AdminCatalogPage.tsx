@@ -91,6 +91,7 @@ export function AdminCatalogPage() {
   const [recipeReferences, setRecipeReferences] = useState<IngredientRecipeReference[]>([]);
   const [referencesLoading, setReferencesLoading] = useState(false);
   const [ingredientId, setIngredientId] = useState<number | null>(null);
+  const [ingredientEditorOpen, setIngredientEditorOpen] = useState(false);
   const [nutritionTarget, setNutritionTarget] = useState<CatalogIngredient | null>(null);
   const [nutritionEnabled, setNutritionEnabled] = useState(false);
   const [nutritionForm, setNutritionForm] = useState<NutritionDraft>(emptyNutritionDraft);
@@ -195,6 +196,7 @@ export function AdminCatalogPage() {
         ? 'Đã thêm nguyên liệu.'
         : 'Đã cập nhật nguyên liệu.',
       () => {
+        setIngredientEditorOpen(false);
         setIngredientId(null);
         setIngredientForm({
           name: '',
@@ -210,6 +212,7 @@ export function AdminCatalogPage() {
   const editIngredient = (ingredient: CatalogIngredient) => {
     setNutritionTarget(null);
     setReferencesTarget(null);
+    setIngredientEditorOpen(true);
     setIngredientId(ingredient.id);
     setIngredientForm({
       name: ingredient.name,
@@ -224,6 +227,7 @@ export function AdminCatalogPage() {
 
   const editNutrition = (ingredient: CatalogIngredient) => {
     setReferencesTarget(null);
+    setIngredientEditorOpen(false);
     setIngredientId(null);
     setNutritionTarget(ingredient);
     setNutritionEnabled(ingredient.nutritionSupported);
@@ -234,6 +238,7 @@ export function AdminCatalogPage() {
 
   const showRecipeReferences = async (ingredient: CatalogIngredient) => {
     setNutritionTarget(null);
+    setIngredientEditorOpen(false);
     setReferencesTarget(ingredient);
     setRecipeReferences([]);
     setReferencesLoading(true);
@@ -392,6 +397,22 @@ export function AdminCatalogPage() {
     void refresh(filters);
   };
 
+  const openNewIngredient = () => {
+    setReferencesTarget(null);
+    setNutritionTarget(null);
+    setIngredientId(null);
+    setIngredientForm({
+      name: '',
+      ingredientGroup: '',
+      sourceName: '',
+      sourceUrl: '',
+      referenceDate: today(),
+    });
+    setError('');
+    setNotice('');
+    setIngredientEditorOpen(true);
+  };
+
   const tabs: Array<{ id: Tab; label: string; count: number; icon: ReactNode }> = [
     {
       id: 'ingredients',
@@ -421,7 +442,7 @@ export function AdminCatalogPage() {
         <span className="text-brand-300">/</span>
         <span>Quản trị hệ thống</span>
         <span className="text-brand-300">/</span>
-        <span className="font-bold text-brand-700">Danh mục nguyên liệu</span>
+        <span className="font-bold text-brand-700">Danh mục nguyên liệu dinh dưỡng</span>
       </nav>
 
       {/* Admin Header */}
@@ -431,10 +452,10 @@ export function AdminCatalogPage() {
             <ShieldCheck className="h-4 w-4" /> Khu vực Administrator
           </p>
           <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Danh mục nguyên liệu
+            Danh mục nguyên liệu dinh dưỡng
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">
-            Quản lý nguyên liệu chuẩn, đơn vị đo và quy đổi về gam. Dữ liệu đã được dùng vẫn được giữ lại khi ngừng sử dụng.
+            Quản lý tên chuẩn, nguồn tham khảo và dữ liệu dinh dưỡng. Nguyên liệu đã được dùng chỉ có thể ngừng sử dụng; công thức cũ vẫn giữ liên kết.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -530,9 +551,19 @@ export function AdminCatalogPage() {
       ) : (
         <>
           {tab === 'ingredients' && (
-            <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,.8fr)]">
+            <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,.85fr)]">
               <div>
-                <form onSubmit={searchIngredients} className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-bold text-ink">Danh sách nguyên liệu</h2>
+                    <p className="mt-1 text-sm text-ink-muted">Tìm, lọc và quản lý dữ liệu dinh dưỡng cùng trạng thái sử dụng.</p>
+                  </div>
+                  <Button type="button" onClick={openNewIngredient} aria-label="Mở biểu mẫu thêm nguyên liệu">
+                    <CirclePlus className="h-4 w-4" /> Thêm mới
+                  </Button>
+                </div>
+                <Card className="mb-4 p-4 sm:p-5">
+                <form onSubmit={searchIngredients} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   <label className="relative min-w-0">
                     <span className="sr-only">Tìm tên nguyên liệu</span>
                     <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
@@ -567,6 +598,10 @@ export function AdminCatalogPage() {
                     Tìm và lọc
                   </Button>
                 </form>
+                <p className="mt-3 border-t border-brand-100 pt-3 text-xs leading-5 text-ink-muted">
+                  “Đang dùng” quyết định nguyên liệu có thể được chọn cho công thức mới. “Hỗ trợ tính dinh dưỡng” là trạng thái riêng và chỉ bật khi đủ 9 chỉ tiêu cùng nguồn tham khảo.
+                </p>
+                </Card>
                 <div className="space-y-3">
                   {ingredients.length === 0 ? (
                     <EmptyState
@@ -636,7 +671,7 @@ export function AdminCatalogPage() {
                             onClick={() => void showRecipeReferences(item)}
                             aria-label={`Xem công thức dùng ${item.name}`}
                           >
-                            Công thức dùng
+                            Xem công thức
                           </Button>
                           <Button
                             size="sm"
@@ -644,7 +679,7 @@ export function AdminCatalogPage() {
                             onClick={() => editNutrition(item)}
                             aria-label={`Sửa dinh dưỡng ${item.name}`}
                           >
-                            Dinh dưỡng
+                            Sửa dinh dưỡng
                           </Button>
                           <Button
                             size="sm"
@@ -652,7 +687,7 @@ export function AdminCatalogPage() {
                             onClick={() => editIngredient(item)}
                             aria-label={`Sửa ${item.name}`}
                           >
-                            <Pencil className="h-3.5 w-3.5" /> Sửa
+                            <Pencil className="h-3.5 w-3.5" /> Sửa thông tin
                           </Button>
                           <Button
                             size="sm"
@@ -661,7 +696,7 @@ export function AdminCatalogPage() {
                             disabled={saving}
                             aria-label={`${item.active ? 'Ngừng sử dụng' : 'Bật lại'} ${item.name}`}
                           >
-                            {item.active ? 'Ngừng dùng' : 'Bật lại'}
+                            {item.active ? 'Ngừng sử dụng' : 'Kích hoạt lại'}
                           </Button>
                         </div>
                       </Card>
@@ -747,7 +782,7 @@ export function AdminCatalogPage() {
                     </div>
                   </form>
                 </Card>
-              ) : <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-paper shadow-xs">
+              ) : ingredientEditorOpen ? <Card className="h-fit p-5 sm:p-6 border-brand-200/80 bg-paper shadow-xs">
                 <div className="flex items-center justify-between pb-3 border-b border-brand-100">
                   <h2 className="text-lg font-extrabold text-ink">
                     {ingredientId === null ? 'Thêm nguyên liệu' : 'Sửa nguyên liệu'}
@@ -817,6 +852,9 @@ export function AdminCatalogPage() {
                       placeholder="https://..."
                     />
                   </Field>
+                  <p className="-mt-2 text-xs leading-5 text-ink-muted">
+                    Có thể để trống đường dẫn khi chưa bật hỗ trợ tính. Để bật tính dinh dưỡng chính thức, cần có đủ chỉ tiêu và đường dẫn nguồn hợp lệ.
+                  </p>
                   <Field label="Ngày tham khảo">
                     <input
                       className={fieldClass}
@@ -844,26 +882,26 @@ export function AdminCatalogPage() {
                         'Lưu thay đổi'
                       )}
                     </Button>
-                    {ingredientId !== null && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => {
-                          setIngredientId(null);
-                          setIngredientForm({
-                            name: '',
-                            ingredientGroup: '',
-                            sourceName: '',
-                            sourceUrl: '',
-                            referenceDate: today(),
-                          });
-                        }}
-                      >
-                        Hủy sửa
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setIngredientEditorOpen(false);
+                        setIngredientId(null);
+                      }}
+                    >
+                      Hủy
+                    </Button>
                   </div>
                 </form>
+              </Card> : <Card className="h-fit border-dashed border-brand-200 bg-brand-50/30 p-6 sm:p-7">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-paper text-brand-700 shadow-2xs">
+                  <Salad className="h-5 w-5" />
+                </div>
+                <h2 className="mt-4 text-lg font-bold text-ink">Quản lý một nguyên liệu</h2>
+                <p className="mt-2 text-sm leading-6 text-ink-muted">
+                  Chọn <strong className="text-ink">Sửa thông tin</strong> hoặc <strong className="text-ink">Dinh dưỡng</strong> trên một dòng để cập nhật. Trước khi ngừng sử dụng, xem các công thức đang tham chiếu để giữ nguyên liên kết cũ.
+                </p>
               </Card>}
             </section>
           )}

@@ -35,7 +35,7 @@ test('catalog management reports backend authorization denial without exposing e
   }));
 
   await page.goto('/quan-tri/danh-muc');
-  await expect(page.getByRole('heading', { name: 'Danh mục nguyên liệu' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Danh mục nguyên liệu dinh dưỡng' })).toBeVisible();
   await expect(page.getByRole('alert')).toContainText('403 Forbidden');
   await expect(page.getByRole('button', { name: 'Thêm nguyên liệu' })).toHaveCount(0);
 });
@@ -79,10 +79,11 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
 
   await page.goto('/quan-tri/danh-muc');
   await expect(page.getByText('Chuối tây', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Mở biểu mẫu thêm nguyên liệu' }).click();
   await page.getByLabel('Tên chuẩn tiếng Việt').fill('Nấm đùi gà');
-  await page.getByLabel('Nhóm nguyên liệu', { exact: true }).fill('Nấm');
+  await page.getByPlaceholder('Ví dụ: Rau củ, Nấm, Đậu hạt').fill('Nấm');
   await page.getByLabel('Tên nguồn dữ liệu').fill('Nguồn kiểm thử');
-  await page.getByRole('button', { name: 'Thêm nguyên liệu' }).click();
+  await page.getByRole('button', { name: 'Thêm nguyên liệu', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Đã thêm nguyên liệu');
 
   await page.getByPlaceholder('Tìm tên nguyên liệu').fill('Nấm');
@@ -92,11 +93,17 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
 
   await page.getByRole('button', { name: 'Sửa Nấm đùi gà' }).click();
   await page.getByLabel('Tên chuẩn tiếng Việt').fill('Nấm đùi gà tươi');
+  await page.getByLabel('Tên nguồn dữ liệu').fill('Nguồn tham khảo cập nhật');
+  await page.getByLabel('Đường dẫn nguồn (không bắt buộc)').fill('https://example.org/ingredient');
   await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
   await expect(page.getByText('Nấm đùi gà tươi', { exact: true })).toBeVisible();
+  await expect(page.getByText('Nguồn tham khảo cập nhật', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Ngừng sử dụng Nấm đùi gà tươi' }).click();
   await expect(page.getByRole('status')).toContainText('liên kết cũ được giữ nguyên');
   await expect(page.getByRole('button', { name: 'Bật lại Nấm đùi gà tươi' })).toBeVisible();
+  await page.getByRole('button', { name: 'Bật lại Nấm đùi gà tươi' }).click();
+  await expect(page.getByRole('status')).toContainText('Đã bật lại nguyên liệu');
+  await expect(page.getByRole('button', { name: 'Ngừng sử dụng Nấm đùi gà tươi' })).toBeVisible();
 });
 
 test('administrator can manage units and conversion rules and sees duplicate-pair errors', async ({ page }) => {
@@ -308,7 +315,7 @@ test('administrator filters the catalog through the paginated endpoint and reads
   });
 
   await page.goto('/quan-tri/danh-muc');
-  await page.getByLabel('Nhóm nguyên liệu').fill('Nấm');
+  await page.getByPlaceholder('Tất cả nhóm').fill('Nấm');
   await page.getByLabel('Trạng thái danh mục').selectOption('true');
   await page.getByLabel('Hỗ trợ tính dinh dưỡng').selectOption('false');
   const filterResponse = page.waitForResponse((response) => {

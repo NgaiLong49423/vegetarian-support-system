@@ -35,13 +35,14 @@ test('Administrator manages ingredient nutrition through the real Frontend, Back
     expect((await loginResponse).status()).toBe(200);
 
     await page.goto('/quan-tri/danh-muc');
-    await expect(page.getByRole('heading', { name: 'Danh mục nguyên liệu' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Danh mục nguyên liệu dinh dưỡng' })).toBeVisible();
+    await page.getByRole('button', { name: 'Mở biểu mẫu thêm nguyên liệu' }).click();
     await page.getByLabel('Tên chuẩn tiếng Việt').fill(ingredientName);
-    await page.getByLabel('Nhóm nguyên liệu', { exact: true }).fill('Kiểm thử tích hợp');
+    await page.getByPlaceholder('Ví dụ: Rau củ, Nấm, Đậu hạt').fill('Kiểm thử tích hợp');
     await page.getByLabel('Tên nguồn dữ liệu').fill('USDA FoodData Central');
     await page.getByLabel('Đường dẫn nguồn (không bắt buộc)').fill('https://fdc.nal.usda.gov/');
     const createResponse = page.waitForResponse((response) => response.request().method() === 'POST' && response.url().endsWith('/admin/ingredients'));
-    await page.getByRole('button', { name: 'Thêm nguyên liệu' }).click();
+    await page.getByRole('button', { name: 'Thêm nguyên liệu', exact: true }).click();
     expect((await createResponse).status()).toBe(201);
 
     await page.getByRole('button', { name: `Sửa dinh dưỡng ${ingredientName}` }).click();
