@@ -9,6 +9,27 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-12 — Manage Ingredient Nutrition Catalog
+
+**Status:** Working tree — not committed.
+
+**Scope:** Implement Backend support for administrator-managed ingredient nutrition data and expose supported nutrient details with public recipe data.
+
+### Added
+
+- Add paginated and filtered administrator ingredient search, ingredient detail and recipe-reference endpoints, nutrition-value updates, and nutrition-support controls.
+- Include ingredient group and supported per-100-gram nutrient values in public recipe details without exposing source metadata.
+- Validate nutrition sources against application configuration and require complete values and source metadata before enabling nutrition calculations.
+
+### Changed
+
+- Keep catalog writes restricted to administrators and preserve existing ingredient, unit, and conversion endpoints.
+- Reject hard-delete requests and retain soft status changes for catalog records.
+
+### Fixed
+
+- None.
+
 ## 2026-10-11 — Preserve Theme During Browser Reload Verification
 
 **Status:** Committed — `20b3a16`.

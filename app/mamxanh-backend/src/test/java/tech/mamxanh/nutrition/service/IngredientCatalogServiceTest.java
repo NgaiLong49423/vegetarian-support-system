@@ -21,12 +21,15 @@ import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.nutrition.dto.request.ConversionSaveRequest;
 import tech.mamxanh.nutrition.dto.request.CatalogStatusUpdateRequest;
 import tech.mamxanh.nutrition.dto.request.IngredientSaveRequest;
+import tech.mamxanh.nutrition.dto.request.IngredientNutritionRequest;
+import tech.mamxanh.nutrition.dto.request.NutritionSupportUpdateRequest;
 import tech.mamxanh.nutrition.dto.request.UnitSaveRequest;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionEntity;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionId;
 import tech.mamxanh.nutrition.entity.MeasurementDimension;
 import tech.mamxanh.nutrition.entity.UnitEntity;
+import tech.mamxanh.nutrition.config.NutritionCatalogProperties;
 import tech.mamxanh.nutrition.repository.IngredientRepository;
 import tech.mamxanh.nutrition.repository.IngredientUnitConversionRepository;
 import tech.mamxanh.nutrition.repository.UnitRepository;
@@ -38,10 +41,13 @@ class IngredientCatalogServiceTest {
     @Mock private IngredientUnitConversionRepository conversionRepository;
     private IngredientCatalogService service;
 
-    @BeforeEach void setUp() { service = new IngredientCatalogService(ingredientRepository, unitRepository, conversionRepository); }
+    @BeforeEach void setUp() {
+        service = new IngredientCatalogService(ingredientRepository, unitRepository, conversionRepository,
+                new NutritionCatalogProperties(List.of("USDA FoodData Central", "NIH/Viện Dinh dưỡng")));
+    }
 
     @Test void createsVietnameseIngredientWithNutritionDisabledUntilDataIsComplete() {
-        IngredientSaveRequest request = new IngredientSaveRequest("Chuối tây", "Trái cây", "USDA", null, LocalDate.of(2026, 9, 1));
+        IngredientSaveRequest request = new IngredientSaveRequest("Chuối tây", "Trái cây", "USDA FoodData Central", null, LocalDate.of(2026, 9, 1));
         when(ingredientRepository.existsByNameIgnoreCase("Chuối tây")).thenReturn(false);
         when(ingredientRepository.save(org.mockito.ArgumentMatchers.any(IngredientEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -53,10 +59,100 @@ class IngredientCatalogServiceTest {
     }
 
     @Test void rejectsDuplicateIngredientName() {
-        IngredientSaveRequest request = new IngredientSaveRequest("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
+        IngredientSaveRequest request = new IngredientSaveRequest("Đậu phụ", "Đậu hạt", "USDA FoodData Central", null, LocalDate.now());
         when(ingredientRepository.existsByNameIgnoreCase("Đậu phụ")).thenReturn(true);
 
         assertThatThrownBy(() -> service.createIngredient(request)).isInstanceOf(ApiException.class).hasMessage("Tên nguyên liệu đã tồn tại.");
+    }
+
+    @Test void storesUnknownNutritionAsNullAndDoesNotEnableSupportOnCreate() {
+        when(ingredientRepository.existsByNameIgnoreCase("Rau mới")).thenReturn(false);
+        when(ingredientRepository.save(org.mockito.ArgumentMatchers.any(IngredientEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var created = service.createIngredient(new IngredientSaveRequest("Rau mới", "Rau củ",
+                "USDA FoodData Central", null, LocalDate.now()));
+
+        assertThat(created.nutritionSupported()).isFalse();
+        assertThat(created.nutrition().energyKcalPer100g()).isNull();
+        assertThat(created.nutrition().vitaminB12MicrogramsPer100g()).isNull();
+    }
+
+    @Test void requiresAllNutritionAndSourceMetadataBeforeEnablingSupport() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu xanh", "Đậu hạt", "USDA FoodData Central",
+                "https://fdc.nal.usda.gov/", LocalDate.now());
+        when(ingredientRepository.findById(4L)).thenReturn(Optional.of(ingredient));
+
+        assertThatThrownBy(() -> service.setNutritionSupport(4L, new NutritionSupportUpdateRequest(true)))
+                .isInstanceOfSatisfying(ApiException.class, error -> {
+                    assertThat(error.getCode()).isEqualTo("NUTRITION_VALUES_INCOMPLETE");
+                    assertThat(error.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(error).hasMessageContaining("energyKcalPer100g")
+                            .hasMessageContaining("zincMgPer100g");
+                });
+
+        service.updateNutrition(4L, new IngredientNutritionRequest(
+                BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE));
+        var enabled = service.setNutritionSupport(4L, new NutritionSupportUpdateRequest(true));
+        assertThat(enabled.nutritionSupported()).isTrue();
+    }
+
+    @Test void identifiesMissingSourceFieldsWhenNutritionValuesAreComplete() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu xanh", "Đậu hạt", "USDA FoodData Central",
+                null, LocalDate.now());
+        ingredient.updateNutrition(BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE);
+        when(ingredientRepository.findById(7L)).thenReturn(Optional.of(ingredient));
+
+        assertThatThrownBy(() -> service.setNutritionSupport(7L, new NutritionSupportUpdateRequest(true)))
+                .isInstanceOfSatisfying(ApiException.class, error -> {
+                    assertThat(error.getCode()).isEqualTo("NUTRITION_SOURCE_INCOMPLETE");
+                    assertThat(error).hasMessageContaining("sourceUrl");
+                });
+        assertThat(ingredient.isNutritionSupported()).isFalse();
+    }
+
+    @Test void doesNotAllowClearingNutritionWhileOfficialCalculationIsEnabled() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu đỏ", "Đậu hạt", "USDA FoodData Central",
+                "https://fdc.nal.usda.gov/", LocalDate.now());
+        ingredient.updateNutrition(BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE);
+        ingredient.setNutritionSupported(true);
+        when(ingredientRepository.findById(5L)).thenReturn(Optional.of(ingredient));
+
+        assertThatThrownBy(() -> service.updateNutrition(5L, new IngredientNutritionRequest(
+                null, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE)))
+                .isInstanceOfSatisfying(ApiException.class, error ->
+                        assertThat(error.getCode()).isEqualTo("NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED"));
+        assertThat(ingredient.getEnergyKcalPer100g()).isEqualByComparingTo(BigDecimal.ONE);
+    }
+
+    @Test void doesNotAllowPartialNutritionThroughIngredientUpdateWhileSupportIsEnabled() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu đỏ", "Đậu hạt", "USDA FoodData Central",
+                "https://fdc.nal.usda.gov/", LocalDate.now());
+        ingredient.updateNutrition(BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE);
+        ingredient.setNutritionSupported(true);
+        when(ingredientRepository.findById(6L)).thenReturn(Optional.of(ingredient));
+
+        assertThatThrownBy(() -> service.updateIngredient(6L, new IngredientSaveRequest("Đậu đỏ",
+                "Đậu hạt", "USDA FoodData Central", "https://fdc.nal.usda.gov/", LocalDate.now(),
+                new IngredientNutritionRequest(null, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                        BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE))))
+                .isInstanceOfSatisfying(ApiException.class, error ->
+                        assertThat(error.getCode()).isEqualTo("NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED"));
+        assertThat(ingredient.getEnergyKcalPer100g()).isEqualByComparingTo(BigDecimal.ONE);
+    }
+
+    @Test void rejectsUnapprovedNutritionSourceWithoutPersistingIngredient() {
+        assertThatThrownBy(() -> service.createIngredient(new IngredientSaveRequest("Rau không rõ nguồn",
+                "Rau củ", "Nguồn khác", null, LocalDate.now())))
+                .isInstanceOfSatisfying(ApiException.class, error ->
+                        assertThat(error.getCode()).isEqualTo("UNSUPPORTED_NUTRITION_SOURCE"));
+        org.mockito.Mockito.verify(ingredientRepository, org.mockito.Mockito.never())
+                .save(org.mockito.ArgumentMatchers.any(IngredientEntity.class));
     }
 
     @Test void rejectsDuplicateConversionPair() {
@@ -209,7 +305,7 @@ class IngredientCatalogServiceTest {
     @Test void updatesIngredientMetadataAndRejectsRenamingToAnExistingName() {
         IngredientEntity ingredient = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
         when(ingredientRepository.findById(1L)).thenReturn(Optional.of(ingredient));
-        var request = new IngredientSaveRequest(" Đậu hũ ", " Đậu hạt ", " USDA ", "https://example.com/source", LocalDate.of(2026, 9, 1));
+        var request = new IngredientSaveRequest(" Đậu hũ ", " Đậu hạt ", " USDA FoodData Central ", "https://example.com/source", LocalDate.of(2026, 9, 1));
 
         var updated = service.updateIngredient(1L, request);
 
@@ -217,7 +313,7 @@ class IngredientCatalogServiceTest {
         assertThat(updated.sourceUrl()).isEqualTo("https://example.com/source");
         when(ingredientRepository.existsByNameIgnoreCase("Chuối")).thenReturn(true);
         assertThatThrownBy(() -> service.updateIngredient(1L,
-                new IngredientSaveRequest("Chuối", "Trái cây", "USDA", null, LocalDate.now())))
+                new IngredientSaveRequest("Chuối", "Trái cây", "USDA FoodData Central", null, LocalDate.now())))
                 .isInstanceOf(ApiException.class).hasMessage("Tên nguyên liệu đã tồn tại.");
         assertThat(ingredient.getName()).isEqualTo("Đậu hũ");
     }

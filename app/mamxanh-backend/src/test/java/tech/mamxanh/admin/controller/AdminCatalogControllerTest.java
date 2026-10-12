@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -26,17 +27,19 @@ import tech.mamxanh.common.config.MethodSecurityConfiguration;
 import tech.mamxanh.common.exception.GlobalExceptionHandler;
 import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
+import tech.mamxanh.nutrition.dto.response.IngredientNutritionResponse;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
+import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.nutrition.entity.MeasurementDimension;
 import org.springframework.http.HttpStatus;
-import tech.mamxanh.nutrition.service.IngredientCatalogService;
+import tech.mamxanh.admin.service.AdminCatalogService;
 import tech.mamxanh.auth.repository.UserRepository;
 
 @WebMvcTest(AdminCatalogController.class)
 @Import({MethodSecurityConfiguration.class, GlobalExceptionHandler.class})
 class AdminCatalogControllerTest {
     @Autowired private MockMvc mockMvc;
-    @MockitoBean private IngredientCatalogService catalogService;
+    @MockitoBean private AdminCatalogService catalogService;
     @MockitoBean private UserRepository userRepository;
 
     @Test void rejectsCustomerFromAdminCatalog() throws Exception {
@@ -48,12 +51,18 @@ class AdminCatalogControllerTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(delete("/api/v1/admin/units/1").with(user("member").roles("CUSTOMER")).with(csrf()))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/v1/admin/ingredients/1/nutrition").with(user("member").roles("CUSTOMER"))
+                        .with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(patch("/api/v1/admin/ingredients/1/nutrition-support").with(user("member").roles("CUSTOMER"))
+                        .with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":true}"))
+                .andExpect(status().isForbidden());
     }
 
     @Test void createsIngredientForAdministrator() throws Exception {
-        when(catalogService.createIngredient(any())).thenReturn(new IngredientResponse(1L, "Chuối tây", "Trái cây", "USDA", null, LocalDate.of(2026, 9, 1), false, true));
+        when(catalogService.createIngredient(any())).thenReturn(new IngredientResponse(1L, "Chuối tây", "Trái cây", "USDA FoodData Central", null, LocalDate.of(2026, 9, 1), false, true));
         String request = """
-                {"name":"Chuối tây","ingredientGroup":"Trái cây","sourceName":"USDA","referenceDate":"2026-09-01"}
+                {"name":"Chuối tây","ingredientGroup":"Trái cây","sourceName":"USDA FoodData Central","referenceDate":"2026-09-01"}
                 """;
         mockMvc.perform(post("/api/v1/admin/ingredients").with(user("admin").roles("ADMIN")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content(request))
@@ -95,6 +104,52 @@ class AdminCatalogControllerTest {
                 .andExpect(jsonPath("$.data[0].name").value("Đậu phụ"));
     }
 
+    @Test void supportsPagedCatalogSearchAndFiltersForAdministrator() throws Exception {
+        when(catalogService.searchIngredients("đậu", "Đậu hạt", true, false, 0, 20))
+                .thenReturn(PageResponse.of(List.of(), 0, 20, 0));
+
+        mockMvc.perform(get("/api/v1/admin/ingredients/search").param("query", "đậu")
+                        .param("ingredientGroup", "Đậu hạt").param("active", "true")
+                        .param("nutritionSupported", "false").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.page").value(0))
+                .andExpect(jsonPath("$.data.size").value(20))
+                .andExpect(jsonPath("$.data.totalElements").value(0));
+    }
+
+    @Test void returnsBadRequestWhenIngredientSearchPageSizeIsOutsideBounds() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/ingredients/search").param("size", "101")
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test void administratorCanUpdateNutritionAndToggleSupportThroughSeparateOperations() throws Exception {
+        var nutrition = new IngredientNutritionResponse(BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE);
+        when(catalogService.updateNutrition(org.mockito.ArgumentMatchers.eq(1L), any()))
+                .thenReturn(new IngredientResponse(1L, "Đậu phụ", "Đậu hạt", "USDA FoodData Central",
+                        "https://fdc.nal.usda.gov/", LocalDate.of(2026, 9, 1), false, true, nutrition));
+        when(catalogService.setNutritionSupport(org.mockito.ArgumentMatchers.eq(1L), any()))
+                .thenReturn(new IngredientResponse(1L, "Đậu phụ", "Đậu hạt", "USDA FoodData Central",
+                        "https://fdc.nal.usda.gov/", LocalDate.of(2026, 9, 1), true, true, nutrition));
+
+        String values = """
+                {"energyKcalPer100g":10,"proteinGramsPer100g":1,"carbohydrateGramsPer100g":1,
+                 "totalFatGramsPer100g":1,"fiberGramsPer100g":1,"calciumMgPer100g":1,
+                 "ironMgPer100g":1,"vitaminB12MicrogramsPer100g":1,"zincMgPer100g":1}
+                """;
+        mockMvc.perform(put("/api/v1/admin/ingredients/1/nutrition").with(user("admin").roles("ADMIN")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(values))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.nutrition.energyKcalPer100g").value(10))
+                .andExpect(jsonPath("$.data.nutritionSupported").value(false));
+
+        mockMvc.perform(patch("/api/v1/admin/ingredients/1/nutrition-support").with(user("admin").roles("ADMIN")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.nutritionSupported").value(true));
+    }
+
     @Test void createsUnitForAdministrator() throws Exception {
         when(catalogService.createUnit(any())).thenReturn(
                 new UnitResponse(1, "g", "gam", MeasurementDimension.MASS, BigDecimal.ONE, true));
@@ -108,7 +163,7 @@ class AdminCatalogControllerTest {
 
     @Test void rejectsHardDeleteAndRequiresSoftDisableInstead() throws Exception {
         doThrow(new ApiException(HttpStatus.CONFLICT, "HARD_DELETE_NOT_SUPPORTED", "Không hỗ trợ xóa vĩnh viễn nguyên liệu; hãy chuyển sang trạng thái ngừng sử dụng."))
-                .when(catalogService).rejectHardDelete("nguyên liệu");
+                .when(catalogService).deleteIngredient(1L);
 
         mockMvc.perform(delete("/api/v1/admin/ingredients/1").with(user("admin").roles("ADMIN")).with(csrf()))
                 .andExpect(status().isConflict())

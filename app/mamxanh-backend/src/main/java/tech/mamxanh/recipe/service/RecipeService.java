@@ -171,8 +171,17 @@ public class RecipeService {
                     ? null : ingredientReferences.get(line.getIngredientId());
             RecipeUnitReferenceEntity unit = unitReferences.get(line.getUnitId());
             String name = ingredient == null ? line.getCustomIngredientName() : ingredient.getName();
-            return new RecipeDetailResponse.Ingredient(line.getIngredientId(), name, line.getQuantity(),
-                    line.getUnitId(), unit.getCode(), unit.getName());
+            boolean nutritionSupported = ingredient != null && ingredient.isNutritionSupported();
+            RecipeDetailResponse.IngredientNutrition nutrition = nutritionSupported
+                    ? new RecipeDetailResponse.IngredientNutrition(ingredient.getEnergyKcalPer100g(),
+                            ingredient.getProteinGramsPer100g(), ingredient.getCarbohydrateGramsPer100g(),
+                            ingredient.getTotalFatGramsPer100g(), ingredient.getFiberGramsPer100g(),
+                            ingredient.getCalciumMgPer100g(), ingredient.getIronMgPer100g(),
+                            ingredient.getVitaminB12MicrogramsPer100g(), ingredient.getZincMgPer100g())
+                    : null;
+            return new RecipeDetailResponse.Ingredient(line.getIngredientId(), name,
+                    ingredient == null ? null : ingredient.getIngredientGroup(), line.getQuantity(),
+                    line.getUnitId(), unit.getCode(), unit.getName(), nutritionSupported, nutrition);
         }).toList();
         var nutrition = nutritionService.calculate(recipeIngredients.stream().map(line -> {
             RecipeUnitReferenceEntity unit = unitReferences.get(line.getUnitId());

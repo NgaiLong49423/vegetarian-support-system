@@ -89,6 +89,54 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void guestCanReadSupportedIngredientGroupAndNutritionInPublicRecipeDetail() throws Exception {
+        jdbcTemplate.update("""
+                UPDATE [INGREDIENT]
+                SET ingredient_group = N'Đậu hạt',
+                    energy_kcal_100g = 145, protein_g_100g = 8.0, carbohydrate_g_100g = 24.0,
+                    total_fat_g_100g = 2.0, fiber_g_100g = 7.0, calcium_mg_100g = 25.0,
+                    iron_mg_100g = 2.0, vitamin_b12_mcg_100g = 0.0000, zinc_mg_100g = 1.0,
+                    source_url = 'https://fdc.nal.usda.gov/', nutrition_supported = 1
+                WHERE ingredient_id = ?
+                """, ingredientId);
+
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(List.of(ingredient(gramUnitId, "200")), null))))
+                .andExpect(status().isCreated());
+        Long recipeId = jdbcTemplate.queryForObject("SELECT recipe_id FROM [RECIPE_POST] WHERE author_id = ? AND title = ?",
+                Long.class, expertId, "Đậu hũ kho cà chua");
+
+        mockMvc.perform(get("/api/v1/recipes/{recipeId}", recipeId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ingredients[0].name").value(INGREDIENT_NAME))
+                .andExpect(jsonPath("$.ingredients[0].ingredientGroup").value("Đậu hạt"))
+                .andExpect(jsonPath("$.ingredients[0].nutritionSupported").value(true))
+                .andExpect(jsonPath("$.ingredients[0].nutrition.energyKcalPer100g").value(145))
+                .andExpect(jsonPath("$.ingredients[0].sourceName").doesNotExist())
+                .andExpect(jsonPath("$.ingredients[0].nutrition.sourceUrl").doesNotExist());
+    }
+
+    @Test
+    void administratorCanSeePublishedRecipesThatReferenceAnIngredient() throws Exception {
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(List.of(ingredient(gramUnitId, "200")), null))))
+                .andExpect(status().isCreated());
+        Long recipeId = jdbcTemplate.queryForObject("SELECT recipe_id FROM [RECIPE_POST] WHERE author_id = ? AND title = ?",
+                Long.class, expertId, "Đậu hũ kho cà chua");
+
+        mockMvc.perform(get("/api/v1/admin/ingredients/{ingredientId}/recipes", ingredientId)
+                        .with(user(Long.toString(adminId)).authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].recipeId").value(recipeId))
+                .andExpect(jsonPath("$.data[0].title").value("Đậu hũ kho cà chua"))
+                .andExpect(jsonPath("$.data[0].status").value("PUBLISHED"));
+    }
+
+    @Test
     void rejectsGuestCustomerAdminAndInactiveExpertWithoutCreatingRecipe() throws Exception {
         String payload = json(request(List.of(ingredient(gramUnitId, "200")), null));
         mockMvc.perform(post("/api/v1/recipes").contentType(MediaType.APPLICATION_JSON).content(payload))

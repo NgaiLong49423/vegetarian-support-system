@@ -327,6 +327,19 @@ public class RecipePostService {
         return repository.findById(recipeId).orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
     }
 
+    @Transactional(readOnly = true)
+    public List<RecipeUsage> listRecipesUsingIngredient(long ingredientId) {
+        List<Long> recipeIds = ingredientRepository.findDistinctRecipeIdsByIngredientId(ingredientId);
+        if (recipeIds.isEmpty()) return List.of();
+        return repository.findAllById(recipeIds).stream()
+                .sorted(java.util.Comparator.comparing(RecipePostEntity::getTitle, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(RecipePostEntity::getId))
+                .map(recipe -> new RecipeUsage(recipe.getId(), recipe.getTitle(), recipe.getStatus(), recipe.getPublishedAt()))
+                .toList();
+    }
+
+    public record RecipeUsage(long recipeId, String title, String status, LocalDateTime publishedAt) { }
+
     private static void requireOwner(RecipePostEntity recipe, CurrentUser author) {
         if (!recipe.getAuthorId().equals(author.id())) {
             throw new AppException(ErrorCode.RECIPE_EDIT_NOT_ALLOWED);

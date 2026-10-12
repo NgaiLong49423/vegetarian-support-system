@@ -23,4 +23,5 @@ public interface RecipePostRepository extends JpaRepository<RecipePostEntity, Lo
 
     Page<RecipePostEntity> findAllByAuthorIdAndStatusInOrderByUpdatedAtDesc(
             Long authorId, List<String> statuses, Pageable pageable);
+
 }

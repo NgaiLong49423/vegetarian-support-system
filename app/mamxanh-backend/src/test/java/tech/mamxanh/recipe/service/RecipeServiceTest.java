@@ -321,7 +321,9 @@ class RecipeServiceTest {
         RecipeIngredientReferenceEntity supported = new RecipeIngredientReferenceEntity();
         ReflectionTestUtils.setField(supported, "id", 10L);
         ReflectionTestUtils.setField(supported, "name", "Nấm");
+        ReflectionTestUtils.setField(supported, "ingredientGroup", "Rau củ");
         ReflectionTestUtils.setField(supported, "nutritionSupported", true);
+        ReflectionTestUtils.setField(supported, "energyKcalPer100g", new BigDecimal("42.50"));
         RecipeIngredientReferenceEntity unsupported = new RecipeIngredientReferenceEntity();
         ReflectionTestUtils.setField(unsupported, "id", 11L);
         ReflectionTestUtils.setField(unsupported, "name", "Lá");
@@ -351,6 +353,10 @@ class RecipeServiceTest {
         assertThat(response.nutritionComplete()).isFalse();
         assertThat(response.ingredientsWithoutNutrition()).containsExactly("Lá");
         assertThat(response.ingredients()).hasSize(2);
+        assertThat(response.ingredients().getFirst().ingredientGroup()).isEqualTo("Rau củ");
+        assertThat(response.ingredients().getFirst().nutritionSupported()).isTrue();
+        assertThat(response.ingredients().getFirst().nutrition().energyKcalPer100g()).isEqualByComparingTo("42.50");
+        assertThat(response.ingredients().get(1).nutrition()).isNull();
     }
 
     private void prepareCatalog() {
