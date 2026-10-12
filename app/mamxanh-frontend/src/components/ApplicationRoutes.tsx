@@ -14,6 +14,7 @@ import { PostDetail } from "../pages/PostDetail"
 import { Profile } from "../pages/Profile"
 import { AiPlans } from "../pages/AiPlans"
 import { TransactionHistory } from "../pages/TransactionHistory"
+import { PaymentResult } from "../pages/PaymentResult"
 import { NutritionProfile } from "../pages/NutritionProfile"
 import { DietaryPreferencesPage } from "../pages/DietaryPreferencesPage"
 import { OnboardingPage } from "../pages/OnboardingPage"
@@ -82,6 +83,8 @@ export default function ApplicationRoutes() {
                 element={<ExpertRecipeProfile />}
               />
               <Route path="/goi-ai" element={<AiPlans />} />
+              <Route path="/payment/success" element={<PaymentResult mode="success" />} />
+              <Route path="/payment/cancel" element={<PaymentResult mode="cancel" />} />
               <Route path="/giao-dich" element={<TransactionHistory />} />
               <Route path="/ho-so/dinh-duong" element={<NutritionProfile />} />
               <Route

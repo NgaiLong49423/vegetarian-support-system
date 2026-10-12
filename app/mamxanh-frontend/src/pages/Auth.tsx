@@ -7,13 +7,14 @@ import { InteractiveLamp } from '../components/InteractiveLamp';
 import { useAuth, type SessionNotice } from '../components/AuthContext';
 import { GoogleSignIn } from '../components/GoogleSignIn';
 import { fieldMessages, retryAfterSeconds, toProblem, type ProblemDetails } from '../lib/problem';
-import { googleLogin, login, register, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
+import { confirmPasswordReset, googleLogin, login, register, requestPasswordReset, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
 import { claimOnboardingInvitation } from '../services/dietaryPreferencesApi';
 import { passwordProblems } from '../utils/password';
 
 type Mode = 'login' | 'register' | 'forgot' | 'verify' | 'reset';
 type Notice = { tone: 'success' | 'error'; text: string; link?: { to: string; label: string } };
 type VerifyState = 'idle' | 'verifying' | 'verified' | 'failed';
+type ResetState = 'ready' | 'unusable' | 'done';
 
 const copy = {
   login: { title: 'Chào mừng bạn trở lại', subtitle: 'Tiếp tục hành trình ăn chay theo cách của bạn.', action: 'Đăng nhập' },
@@ -24,9 +25,14 @@ const copy = {
 };
 
 // API field names follow the generated Backend runtime contract -> form field keys.
-const apiFieldToForm: Record<string, string> = { displayName: 'name', email: 'email', password: 'password', confirmPassword: 'confirm' };
+const apiFieldToForm: Record<string, string> = { displayName: 'name', email: 'email', password: 'password', newPassword: 'password', confirmPassword: 'confirm' };
 const NETWORK_ERROR = 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.';
 const INVALID_LINK = 'Liên kết xác minh không hợp lệ hoặc đã hết hạn. Nhập email bên dưới để nhận liên kết mới.';
+const INVALID_RESET_LINK: Notice = {
+  tone: 'error',
+  text: 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu liên kết mới.',
+  link: { to: '/quen-mat-khau', label: 'Yêu cầu liên kết mới' },
+};
 const SESSION_NOTICES: Record<SessionNotice, string> = {
   timeout: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
   expired: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.',
@@ -96,9 +102,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const location = useLocation();
   const sessionNotice = mode === 'login' ? (location.state as { sessionNotice?: SessionNotice } | null)?.sessionNotice : undefined;
-  const [notice, setNotice] = useState<Notice | null>(() => sessionNotice ? { tone: 'error', text: SESSION_NOTICES[sessionNotice] } : null);
+  // UC-03.7: the reset token from the email link is kept in memory only; the effect below removes it from the URL.
+  const [resetToken] = useState(() => mode === 'reset' ? new URLSearchParams(location.search).get('token') : null);
+  const [notice, setNotice] = useState<Notice | null>(() => sessionNotice ? { tone: 'error', text: SESSION_NOTICES[sessionNotice] } : mode === 'reset' && !resetToken ? INVALID_RESET_LINK : null);
   const [submitting, setSubmitting] = useState(false);
   const [verifyState, setVerifyState] = useState<VerifyState>('idle');
+  const [resetState, setResetState] = useState<ResetState>(resetToken ? 'ready' : 'unusable');
   const [searchParams, setSearchParams] = useSearchParams();
   const handledToken = useRef<string | null>(null);
   const { signIn } = useAuth();
@@ -123,6 +132,10 @@ export function AuthPage({ mode }: { mode: Mode }) {
         setVerifyState('failed');
         setNotice({ tone: 'error', text: problem?.code === 'VERIFICATION_TOKEN_INVALID' ? INVALID_LINK : problem?.detail ?? NETWORK_ERROR });
       });
+  }, [mode, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (mode === 'reset' && searchParams.has('token')) setSearchParams({}, { replace: true });
   }, [mode, searchParams, setSearchParams]);
 
   const submitRegistration = async () => {
@@ -188,6 +201,43 @@ export function AuthPage({ mode }: { mode: Mode }) {
     }
   };
 
+  // UC-03.6: the API answers every valid email with the same neutral message.
+  const submitForgot = async () => {
+    setSubmitting(true);
+    try {
+      const result = await requestPasswordReset(email.trim());
+      setNotice({ tone: 'success', text: result.message });
+    } catch (error) {
+      const problem = toProblem(error);
+      if (problem?.code === 'VALIDATION_FAILED' && problem.errors?.length) setErrors(formErrors(problem));
+      else setNotice({ tone: 'error', text: problem?.detail ?? NETWORK_ERROR });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const submitReset = async () => {
+    if (!resetToken) return;
+    setSubmitting(true);
+    try {
+      await confirmPasswordReset({ token: resetToken, newPassword: password, confirmPassword: confirm });
+      setResetState('done');
+    } catch (error) {
+      const problem = toProblem(error);
+      const badToken = problem?.code === 'PASSWORD_RESET_TOKEN_INVALID' || problem?.errors?.some(item => item.field === 'token');
+      if (badToken || problem?.code === 'ACCOUNT_LOCKED') {
+        setResetState('unusable');
+        setNotice(badToken ? INVALID_RESET_LINK : { tone: 'error', text: SESSION_NOTICES.locked });
+      } else if (problem?.code === 'NEW_PASSWORD_SAME_AS_CURRENT') setErrors({ password: 'Mật khẩu mới phải khác mật khẩu hiện tại.' });
+      else if (problem?.code === 'VALIDATION_FAILED' && problem.errors?.length) setErrors(formErrors(problem));
+      else setNotice({ tone: 'error', text: problem?.detail ?? NETWORK_ERROR });
+    } finally {
+      setPassword('');
+      setConfirm('');
+      setSubmitting(false);
+    }
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const next: Record<string, string> = {};
@@ -205,23 +255,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
     if (mode === 'register') return void submitRegistration();
     if (mode === 'verify') return void submitResend();
     if (mode === 'login') return void submitLogin();
-    // Forgot/reset password (#9) are not connected to the backend yet.
-    setPassword('');
-    setConfirm('');
-    setNotice({
-      tone: 'success',
-      text:
-        mode === 'reset'
-          ? 'Đã kiểm tra biểu mẫu. Chưa xác minh liên kết hoặc thay đổi mật khẩu tài khoản.'
-          : 'Đã kiểm tra định dạng email. Để bảo mật thông tin, hệ thống không kiểm tra địa chỉ này có tài khoản hay chưa.',
-    });
+    if (mode === 'forgot') return void submitForgot();
+    void submitReset();
   };
   const fieldClass = 'mt-2 w-full rounded-xl border border-brand-200 bg-paper px-4 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100';
   const error = (field: string) => errors[field] && <p id={`${field}-error`} className="mt-1.5 text-xs text-red-700">{errors[field]}</p>;
-  const showForm = !(mode === 'verify' && (verifyState === 'verifying' || verifyState === 'verified'));
-  const demoNote = mode === 'register' || mode === 'login' || mode === 'verify'
-    ? ''
-    : 'Bản demo giao diện · Chưa kết nối xác thực, gửi email hoặc lưu thông tin tài khoản.';
+  const showForm = !(mode === 'verify' && (verifyState === 'verifying' || verifyState === 'verified')) && !(mode === 'reset' && resetState !== 'ready');
 
   return (
     <div
@@ -321,14 +360,21 @@ export function AuthPage({ mode }: { mode: Mode }) {
                 </Link>
               </div>
             )}
-            {((mode === 'verify' && verifyState === 'idle') || mode === 'reset') && (
+            {((mode === 'verify' && verifyState === 'idle') || (mode === 'reset' && resetState === 'ready')) && (
               <div className="mt-5 flex gap-3 rounded-xl bg-leaf-50 p-4 text-sm leading-6 text-leaf-800">
                 <Mail className="mt-1 h-5 w-5 shrink-0" />
                 <p>
                   {mode === 'verify'
                     ? 'Liên kết xác minh có hiệu lực 24 giờ. Bạn có thể yêu cầu gửi lại nếu liên kết hết hạn.'
-                    : 'Cần liên kết đặt lại mật khẩu hợp lệ từ email (hiệu lực 15 phút). Bản demo chỉ cho xem biểu mẫu, chưa xác minh liên kết.'}
+                    : 'Liên kết đặt lại mật khẩu có hiệu lực 15 phút và chỉ dùng được một lần.'}
                 </p>
+              </div>
+            )}
+            {mode === 'reset' && resetState === 'done' && (
+              <div role="status" className="mt-5 rounded-xl border border-leaf-100 bg-leaf-50 p-4 text-sm leading-6 text-leaf-800">
+                <p className="flex items-center gap-2 font-semibold"><CheckCircle2 className="h-5 w-5 shrink-0" />Mật khẩu của bạn đã được cập nhật.</p>
+                <p className="mt-1">Bạn có thể đăng nhập bằng email và mật khẩu mới.</p>
+                <Link to="/dang-nhap" className="mt-3 inline-flex items-center gap-2 font-semibold text-brand-700 hover:underline">Đến trang đăng nhập<ArrowRight className="h-4 w-4" /></Link>
               </div>
             )}
             {showForm && (
@@ -473,11 +519,6 @@ export function AuthPage({ mode }: { mode: Mode }) {
                   </Link>
                 )}
               </div>
-            )}
-            {demoNote && (
-              <p id="auth-demo-note" className="mt-5 text-xs leading-5 text-ink-muted">
-                {demoNote}
-              </p>
             )}
             <div className="mt-6 border-t border-brand-100 pt-5 text-center text-sm text-ink-soft">
               {mode === 'login' ? (

@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-11
-next_id: 18
+last_updated: 2026-10-12
+next_id: 23
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,33 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-022
+    title: Contract thanh toán FR-13 chưa khớp giữa Backend, OpenAPI và Frontend
+    status: RECORDED
+    severity: Unknown
+    area: Backend/Frontend/Subscription
+    file: .agents/outputs/bugs/BUG-022.md
+    created: 2026-10-11
+    updated: 2026-10-12
+    related_issue: 19
+  - id: BUG-021
+    title: Expert khác hoặc Administrator thay, xóa được ảnh của Recipe Post không thuộc mình
+    status: RESOLVED
+    severity: High
+    area: Backend/Recipe Media
+    file: .agents/outputs/bugs/BUG-021.md
+    created: 2026-10-10
+    updated: 2026-10-11
+    related_issue: 11
+  - id: BUG-018
+    title: Thay danh sách ảnh của Recipe Post đã có ảnh luôn trả 500
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Recipe Media
+    file: .agents/outputs/bugs/BUG-018.md
+    created: 2026-10-11
+    updated: 2026-10-11
+    related_issue: 11
   - id: BUG-017
     title: Lịch ăn dùng thông báo bài bị tác giả xóa thay cho trạng thái không khả dụng
     status: RECORDED

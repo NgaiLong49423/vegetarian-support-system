@@ -38,11 +38,14 @@ class RecipeMediaServiceTest {
     @Mock
     private RecipeMediaRepository recipeMediaRepository;
 
+    @Mock
+    private RecipePostService recipePostService;
+
     private RecipeMediaService recipeMediaService;
 
     @BeforeEach
     void setUp() {
-        recipeMediaService = new RecipeMediaService(storageClient, recipeMediaRepository);
+        recipeMediaService = new RecipeMediaService(storageClient, recipeMediaRepository, recipePostService);
     }
 
     @Test

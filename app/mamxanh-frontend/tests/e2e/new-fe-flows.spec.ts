@@ -140,15 +140,30 @@ test('recipe ingredients scale from the author serving count', async ({ page }) 
   await expect(page.getByText('2 gói', { exact: true })).toBeVisible();
 });
 
-test('avatar menu displays the authenticated Backend identity and UI-only plan remains labeled demo', async ({ page }) => {
+test('avatar menu displays the authenticated Backend identity and opens the API-backed subscription', async ({ page }) => {
   await seedDemoSession(page, 'CUSTOMER');
+  await page.route('**/api/v1/subscriptions/plans', (route) => route.fulfill({ json: [
+    { tier: 'FREE', name: 'FREE', priceVnd: 0, description: '', features: [], billingPeriod: 'Không thời hạn' },
+    { tier: 'PLUS', name: 'PLUS', priceVnd: 49000, description: '', features: [], billingPeriod: 'Tháng' },
+    { tier: 'PRO', name: 'PRO', priceVnd: 99000, description: '', features: [], billingPeriod: 'Tháng' },
+  ] }));
+  await page.route('**/api/v1/subscriptions/my-subscription', (route) => {
+    expect(route.request().headers().authorization).toBe('Bearer header.payload.signature');
+    return route.fulfill({ json: {
+      tier: 'PLUS', status: 'ACTIVE', active: true, startsAt: '2026-10-04T12:00:00',
+      endsAt: '2026-11-04T12:00:00', unlockedFeatures: [],
+    } });
+  });
   await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Tài khoản Demo CUSTOMER' }).click();
   await expect(page.getByText('demo-customer@mamxanh.local')).toBeVisible();
   await expect(page.getByRole('button', { name: /Chuyển vai trò demo/ })).toHaveCount(0);
   await page.getByRole('link', { name: 'Nâng cấp gói AI' }).click();
   await expect(page.getByRole('heading', { name: 'Nâng cấp gói AI' })).toBeVisible();
-  await expect(page.getByText('Gói hiện tại: FREE (demo)')).toBeVisible();
+  await expect(page.getByText('Gói PLUS', { exact: true })).toBeVisible();
+  await expect(page.getByText('Hết hạn ngày: 04/11/2026')).toBeVisible();
+  await expect(page.getByText('Gói hiện tại của bạn', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nâng cấp lên PRO' })).toBeEnabled();
 });
 
 test('mobile account links remain reachable from the menu', async ({ page }) => {
@@ -489,9 +504,10 @@ test('recipe exploration does not expose local-only card actions as Backend feat
 });
 
 test('recipe creation route uses authenticated account role (FR-05)', async ({ page }) => {
+  // AC-04.5: a Guest is sent to the login page and never sees the recipe form.
   await page.goto('/dang-cong-thuc');
-  await expect(page.getByRole('heading', { name: 'Đăng công thức chỉ dành cho Chuyên gia' })).toBeVisible();
-  await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
+  await expect(page).toHaveURL(/\/dang-nhap$/);
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toHaveCount(0);
 
   await seedDemoSession(page, 'CUSTOMER');
   await page.goto('/dang-cong-thuc');
