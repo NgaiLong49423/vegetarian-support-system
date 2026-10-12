@@ -899,14 +899,225 @@ button:not(:disabled), a { cursor: pointer; }
   .sparkle-button .backdrop,
   .sparkle-button .spark:before,
   .sparkle-button .sparkle path,
-  .particle {
+  .particle,
+  .ai-plan-card,
+  .ai-plan-card::before,
+  .ai-plan-card::after,
+  .ai-plan-cta {
     animation: none !important;
     transition: none !important;
     transform: none !important;
   }
 }
 
+/* ==========================================================================
+   AI Subscription Plan Cards — Animated Glowing Border & Multi-Layer Depth
+   ========================================================================== */
+@keyframes ai-plan-border-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
 
+.ai-plan-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1rem;
+  background-color: var(--color-paper);
+  transition:
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 300ms ease;
+}
 
+.ai-plan-card > * {
+  position: relative;
+  z-index: 1;
+}
 
+/* Inner multi-layer radial gradient surface (::after) */
+.ai-plan-card::after {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  border-radius: calc(1rem - 1.5px);
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease, background 300ms ease;
+}
 
+/* Outer animated linear-gradient border ring (::before) */
+.ai-plan-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  z-index: 0;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  transition: opacity 300ms ease, filter 300ms ease;
+}
+
+/* --- FREE TIER: Calm dark surface, static border, subtle hover --- */
+.ai-plan-card--free {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.ai-plan-card--free::after {
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(234, 88, 12, 0.05) 0%, transparent 60%),
+    var(--color-paper);
+}
+
+.ai-plan-card--free::before {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(234, 88, 12, 0.18) 50%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  opacity: 0.35;
+}
+
+.ai-plan-card--free:hover {
+  transform: translateY(-2px);
+  border-color: rgba(234, 88, 12, 0.25);
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.55);
+}
+
+.ai-plan-card--free:hover::before {
+  opacity: 0.7;
+}
+
+/* --- PLUS TIER: Warm orange gradient border + animated border glow on hover --- */
+.ai-plan-card--plus {
+  border-color: rgba(234, 88, 12, 0.28);
+  box-shadow: 0 8px 24px -12px rgba(234, 88, 12, 0.12);
+}
+
+.ai-plan-card--plus::after {
+  background:
+    radial-gradient(90% 70% at 100% 0%, rgba(249, 115, 22, 0.10) 0%, transparent 60%),
+    radial-gradient(80% 70% at 0% 100%, rgba(234, 88, 12, 0.07) 0%, transparent 60%),
+    var(--color-paper);
+}
+
+.ai-plan-card--plus::before {
+  background: linear-gradient(
+    120deg,
+    rgba(234, 88, 12, 0.35) 0%,
+    rgba(251, 146, 60, 0.85) 35%,
+    rgba(255, 247, 237, 0.75) 50%,
+    rgba(249, 115, 22, 0.85) 65%,
+    rgba(234, 88, 12, 0.35) 100%
+  );
+  background-size: 260% 260%;
+  opacity: 0.55;
+}
+
+.ai-plan-card--plus:hover {
+  transform: translateY(-4px);
+  border-color: rgba(249, 115, 22, 0.55);
+  box-shadow:
+    0 14px 32px -10px rgba(234, 88, 12, 0.24),
+    0 0 18px -6px rgba(249, 115, 22, 0.18);
+}
+
+.ai-plan-card--plus:hover::before {
+  opacity: 1;
+  animation: ai-plan-border-flow 3.6s ease infinite;
+}
+
+.ai-plan-card--plus:hover::after {
+  background:
+    radial-gradient(95% 75% at 100% 0%, rgba(249, 115, 22, 0.15) 0%, transparent 62%),
+    radial-gradient(85% 75% at 0% 100%, rgba(234, 88, 12, 0.10) 0%, transparent 62%),
+    var(--color-paper);
+}
+
+/* --- PRO TIER: Continuous animated glowing border + layered radial depth --- */
+.ai-plan-card--pro {
+  border-color: rgba(249, 115, 22, 0.55);
+  box-shadow:
+    0 12px 34px -10px rgba(234, 88, 12, 0.26),
+    0 0 22px -6px rgba(249, 115, 22, 0.18);
+}
+
+.ai-plan-card--pro::after {
+  background:
+    radial-gradient(95% 75% at 0% 0%, rgba(249, 115, 22, 0.16) 0%, transparent 58%),
+    radial-gradient(90% 70% at 100% 0%, rgba(251, 146, 60, 0.12) 0%, transparent 55%),
+    radial-gradient(100% 80% at 100% 100%, rgba(234, 88, 12, 0.12) 0%, transparent 62%),
+    var(--color-paper);
+}
+
+.ai-plan-card--pro::before {
+  padding: 2px;
+  background: linear-gradient(
+    115deg,
+    #ea580c 0%,
+    #f97316 25%,
+    #fff7ed 48%,
+    #fb923c 68%,
+    #c2410c 85%,
+    #ea580c 100%
+  );
+  background-size: 280% 280%;
+  opacity: 0.9;
+  animation: ai-plan-border-flow 4.2s linear infinite;
+}
+
+.ai-plan-card--pro:hover {
+  transform: translateY(-5px);
+  border-color: rgba(251, 146, 60, 0.8);
+  box-shadow:
+    0 18px 42px -10px rgba(234, 88, 12, 0.36),
+    0 0 28px -4px rgba(249, 115, 22, 0.26);
+}
+
+.ai-plan-card--pro:hover::before {
+  opacity: 1;
+  filter: brightness(1.12);
+}
+
+.ai-plan-card--pro:hover::after {
+  background:
+    radial-gradient(100% 80% at 0% 0%, rgba(249, 115, 22, 0.21) 0%, transparent 60%),
+    radial-gradient(95% 75% at 100% 0%, rgba(251, 146, 60, 0.16) 0%, transparent 58%),
+    radial-gradient(105% 85% at 100% 100%, rgba(234, 88, 12, 0.16) 0%, transparent 65%),
+    var(--color-paper);
+}
+
+/* CTA button hover & focus feedback */
+.ai-plan-cta {
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 220ms ease,
+    border-color 220ms ease;
+}
+
+.ai-plan-cta:hover:not(:disabled) {
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 20px -6px rgba(234, 88, 12, 0.4);
+}
+
+.ai-plan-cta:focus-visible {
+  outline: 2px solid var(--color-brand-400);
+  outline-offset: 2px;
+}

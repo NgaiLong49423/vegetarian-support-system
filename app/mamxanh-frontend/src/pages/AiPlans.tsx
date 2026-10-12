@@ -186,12 +186,14 @@ export function AiPlans() {
             const isCurrent = plan.tier === currentTier;
             const isProcessing = subscribingTier === plan.tier;
             const isPro = plan.tier === 'PRO';
+            const tierClass = `ai-plan-card ai-plan-card--${plan.tier.toLowerCase()}`;
 
             return (
               <Card
                 key={plan.tier}
-                className={`flex flex-col p-6 transition-all ${
-                  isPro ? 'border-brand-500 shadow-md ring-2 ring-brand-300' : ''
+                data-tier={plan.tier}
+                className={`${tierClass} flex flex-col p-6 ${
+                  isPro ? 'border-brand-500/60 shadow-md' : ''
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -242,7 +244,7 @@ export function AiPlans() {
                   ) : (
                     <Button
                       variant={isPro ? 'primary' : 'outline'}
-                      className="w-full py-3"
+                      className="ai-plan-cta w-full py-3"
                       disabled={subscribingTier !== null}
                       onClick={() => handleSubscribe(plan.tier as 'PLUS' | 'PRO')}
                     >
