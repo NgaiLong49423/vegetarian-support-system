@@ -19,6 +19,8 @@ export type MessageResponse = { message: string };
 
 export type LoginPayload = { email: string; password: string };
 
+export type PasswordResetConfirmPayload = { token: string; newPassword: string; confirmPassword: string };
+
 export type AccountSummary = {
   id: number;
   displayName: string;
@@ -48,6 +50,15 @@ export async function verifyEmail(token: string): Promise<void> {
 export async function resendVerificationEmail(email: string): Promise<MessageResponse> {
   const { data } = await apiClient.post<MessageResponse>('/auth/email-verifications/resend', { email });
   return data;
+}
+
+export async function requestPasswordReset(email: string): Promise<MessageResponse> {
+  const { data } = await apiClient.post<MessageResponse>('/auth/password-resets', { email });
+  return data;
+}
+
+export async function confirmPasswordReset(payload: PasswordResetConfirmPayload): Promise<void> {
+  await apiClient.post('/auth/password-resets/confirm', payload);
 }
 
 export async function login(payload: LoginPayload): Promise<AuthResponse> {

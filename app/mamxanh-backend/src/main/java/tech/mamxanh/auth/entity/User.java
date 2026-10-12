@@ -75,6 +75,24 @@ public class User {
     @Column(name = "login_blocked_until")
     private LocalDateTime loginBlockedUntil;
 
+    /** SHA-256 hex digest of the current password-reset token; never the raw token (FR-03-E). */
+    @Column(name = "password_reset_token", length = 64)
+    private String passwordResetToken;
+
+    @Column(name = "reset_token_expires_at")
+    private LocalDateTime resetTokenExpiresAt;
+
+    /** Time of the last password-reset email, for the 60-second cooldown (Q27). */
+    @Column(name = "password_reset_sent_at")
+    private LocalDateTime passwordResetSentAt;
+
+    /** Start of the current one-hour window that limits reset emails per account (Q27). */
+    @Column(name = "password_reset_window_started_at")
+    private LocalDateTime passwordResetWindowStartedAt;
+
+    @Column(name = "password_reset_window_count", nullable = false)
+    private int passwordResetWindowCount;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -145,6 +163,58 @@ public class User {
         this.emailVerificationToken = null;
         this.verificationTokenExpiresAt = null;
         this.updatedAt = now;
+    }
+
+    /**
+     * Q27: a reset email may be sent when the previous one is at least {@code cooldown} old and fewer
+     * than {@code maxPerHour} were sent in the current one-hour window. A window that started an hour
+     * ago or earlier no longer counts.
+     */
+    public boolean passwordResetEmailAllowed(LocalDateTime now, Duration cooldown, int maxPerHour) {
+        if (passwordResetSentAt != null && now.isBefore(passwordResetSentAt.plus(cooldown))) {
+            return false;
+        }
+        return isNewPasswordResetWindow(now) || passwordResetWindowCount < maxPerHour;
+    }
+
+    /**
+     * Stores a new reset token (overwriting any previous one, so only the newest link works) and
+     * counts the email that will carry it.
+     */
+    public void assignPasswordResetToken(String tokenHash, LocalDateTime expiresAt, LocalDateTime now) {
+        if (isNewPasswordResetWindow(now)) {
+            passwordResetWindowStartedAt = now;
+            passwordResetWindowCount = 0;
+        }
+        passwordResetWindowCount++;
+        passwordResetSentAt = now;
+        passwordResetToken = tokenHash;
+        resetTokenExpiresAt = expiresAt;
+        updatedAt = now;
+    }
+
+    /**
+     * UC-03.7: stores the new BCrypt hash and consumes the reset token. Opening the reset link proves
+     * ownership of the mailbox, so an unverified email becomes verified (Q27), and a temporary login
+     * block from wrong passwords ends so the new password works at once. The rate-limit window is
+     * kept so that resets cannot be used to send more emails.
+     */
+    public void resetPassword(String newPasswordHash, LocalDateTime now) {
+        passwordHash = newPasswordHash;
+        passwordResetToken = null;
+        resetTokenExpiresAt = null;
+        failedLoginAttempts = 0;
+        loginBlockedUntil = null;
+        if (!emailVerified) {
+            emailVerified = true;
+            emailVerificationToken = null;
+            verificationTokenExpiresAt = null;
+        }
+        updatedAt = now;
+    }
+
+    private boolean isNewPasswordResetWindow(LocalDateTime now) {
+        return passwordResetWindowStartedAt == null || !now.isBefore(passwordResetWindowStartedAt.plusHours(1));
     }
 
     public boolean isLoginBlocked(LocalDateTime now) {

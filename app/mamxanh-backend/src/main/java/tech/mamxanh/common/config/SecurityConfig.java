@@ -33,6 +33,8 @@ public class SecurityConfig {
             "/api/v1/auth/email-verifications/resend",
             "/api/v1/auth/login",
             "/api/v1/auth/google",
+            "/api/v1/auth/password-resets",
+            "/api/v1/auth/password-resets/confirm",
     };
 
     private static final String[] API_DOCS_ENDPOINTS = {
