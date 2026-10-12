@@ -1,13 +1,223 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.58.0
+> **Version:** v2.68.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-10
+> **Last Updated:** 2026-10-11
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-11 — Preserve Theme During Browser Reload Verification
+
+**Status:** Committed — `20b3a16`.
+
+**Scope:** Keep the theme persistence browser test's setup from clearing its saved value during reload.
+
+### Added
+
+- None.
+
+### Changed
+
+- Initialize the browser test's theme storage only once per test page session.
+
+### Fixed
+
+- Allow the theme persistence test to verify the saved light theme after reload.
+
+## 2026-10-11 — Add Persistent Light and Dark Themes
+
+**Status:** Committed — `cbef32a`.
+
+**Scope:** Let users switch the application appearance and keep the selected theme between visits.
+
+### Added
+
+- Add light and dark theme controls to the main menu and persist the selection in browser storage.
+- Add browser coverage for switching themes, applying light color tokens and restoring the selection after reload.
+
+### Changed
+
+- Apply the selected semantic color palette and native form control scheme throughout the application.
+- Update the Frontend guide to describe both themes and the appearance setting.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Resolve Sonar Reliability Findings ([#118](https://github.com/NgaiLong49423/vegetarian-support-system/pull/118))
+
+**Status:** Committed — `93e3172`.
+
+**Scope:** Address Frontend reliability and accessibility findings reported by SonarCloud for the pull request.
+
+### Added
+
+- Cover native expert-application dialog visibility and Escape dismissal in the Playwright workflow.
+
+### Changed
+
+- Use the browser's native modal dialog behavior for expert-application details and keep keyboard focus on recipe links instead of their scroll container.
+
+### Fixed
+
+- Explicitly mark the handled Home data-loading promise chain as intentionally asynchronous.
+
+## 2026-10-11 — Preserve Explore Filters During URL Synchronization
+
+**Status:** Committed — `2664eea`.
+
+**Scope:** Prevent URL synchronization from overwriting newer Explore filter selections while keeping browser navigation synchronized.
+
+### Added
+
+- None.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Keep selected Explore filters in the recipe search request when several filters are changed in succession.
+
+## 2026-10-11 — Cover API Recipe Detail Actions in Playwright
+
+**Status:** Committed — `a97bb58`.
+
+**Scope:** Exercise the live API recipe-detail page's key guest interactions in the Frontend coverage suite.
+
+### Added
+
+- Cover serving adjustments, ingredient check-off, image selection, YouTube embedding, link sharing, TXT download, print/PDF handoff, and total nutrition display in a browser regression test.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Allow Standalone Pull Requests Without an Issue ([#118](https://github.com/NgaiLong49423/vegetarian-support-system/pull/118))
+
+**Status:** Committed — `94bae2f`.
+
+**Scope:** Clarify that Issue references are required for PRs implementing an assigned GitHub Issue, while independent work can explain why it has no Issue.
+
+### Added
+
+- Document `Refs: N/A` with a scope reason for standalone work and align the branch naming guidance and PR template.
+
+### Changed
+
+- Keep one implementation PR per assigned Issue and prohibit using `N/A` to bypass or split an existing Issue.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Show Onboarding Questions One at a Time
+
+**Status:** Committed — `6ad21e5`.
+
+**Scope:** Present the existing dietary-preference questionnaire as six sequential questions without changing Backend validation or persistence rules.
+
+### Added
+
+- Add question progress, Back/Continue navigation, retained draft answers and field-error navigation to the affected question.
+
+### Changed
+
+- Show one Onboarding question at a time, save only after final completion, and allow skipping the entire questionnaire from every step without sending a partial preference profile.
+- Keep the full Settings form and explicit allergy/dislike confirmations, and document the new UI flow.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Add Dark Food Workspace and Saved Recipe Integration
+
+**Status:** Committed — `6ad21e5`.
+
+**Scope:** Adapt the Google Stitch layout to existing Mâm Xanh routes using a dark theme and connect saved recipes to the implemented Backend contract.
+
+### Added
+
+- Add public recipe save/unsave controls and a private, searchable, paginated saved-recipe page using the existing API, with Guest sign-in prompts and safe unavailable entries.
+- Add a month calendar and week navigation to the existing read-only Meal Plan API.
+
+### Changed
+
+- Replace the oversized navigation and warm Explore layout with a compact dark header, photo cards, responsive filter rail, three-column Home, profile tabs and shopping checklist.
+- Load Home collections and filter shortcuts from Backend data, preserve existing role controls, and label prototype screens explicitly.
+- Synchronize the Frontend guide and browser regression checks with the implemented UI and API behavior.
+
+### Fixed
+
+- Use the neutral unavailable-recipe message required by AC-20.3 instead of asserting an author deletion in Meal Plan slots.
+
+## 2026-10-11 — Complete API-Driven Recipe Detail and Stitch MCP Guidance
+
+**Status:** Committed — `189b327`.
+
+**Scope:** Complete the Frontend recipe detail experience using the existing Backend API and document the project-local Google Stitch MCP setup for agents.
+
+### Added
+
+- Build the recipe detail page from live API data, including ordered images, author and statistics, scaled ingredient quantities, nutrition, safe YouTube embedding, TXT download, and A4 print/PDF output.
+- Document the repository-local Stitch MCP credential and startup diagnostics without exposing the local key.
+
+### Changed
+
+- Expand the Frontend recipe detail API type to match the Backend response.
+## 2026-10-10 — Add Password Reset (Issue #9) ([PR #113](https://github.com/NgaiLong49423/vegetarian-support-system/pull/113))
+
+**Status:** Committed — `8794862`.
+
+**Scope:** Implement UC-03.6 and UC-03.7 so members can request a reset link by email and set a new password, following AC-03.14 and decisions Q13, Q27, Q47 and Q48.
+
+### Added
+
+- Add `POST /api/v1/auth/password-resets`, which always returns the same neutral `202` message and emails a 15-minute single-use link only to an existing active account outside the 60-second cooldown and under five emails per hour; unknown emails, locked accounts and rate-limited requests get no email and no `429`.
+- Add `POST /api/v1/auth/password-resets/confirm`, which stores the new BCrypt hash, consumes the token and returns `204`; it also verifies an unverified email, ends a temporary login block and lets a Google-only account set a password.
+- Add `PASSWORD_RESET_TOKEN_INVALID` (400) for unknown, used, replaced or expired tokens and `NEW_PASSWORD_SAME_AS_CURRENT` (400), and return `ACCOUNT_LOCKED` (403) when the account was locked after the email was sent.
+- Add Flyway migration `V11__user_password_reset.sql` with the token digest, its expiry and the reset-email rate-limit columns on `USER`, plus two checks, one default and a filtered unique index on the token digest.
+- Connect the forgot-password and reset-password pages to the API; the reset page keeps the token in memory and removes it from the address bar.
+- Add unit, SQL Server integration (cooldown, hourly limit, token replacement and expiry, parallel requests, 72-byte passwords, log redaction) and Playwright tests.
+
+### Changed
+
+- Remove the implemented password-reset endpoints and their schemas from the planned `openapi.yaml`, and document the flow and new error codes in `API.md`.
+- Synchronize `database/schema.sql`, the `database/queries.sql` expected counts and `database/README.md` with V11.
+
+### Fixed
+
+- None.
+## 2026-10-11 — Close Expert Recipe Publishing Gaps (Issue #11) ([PR #115](https://github.com/NgaiLong49423/vegetarian-support-system/pull/115))
+
+**Status:** Committed — `3e20875`.
+
+**Scope:** Complete the FR-04 acceptance gaps found while reviewing Issue #11 as the FR-04 coordination Issue (decisions Q49 and Q50): only the Expert author may change a Recipe Post's images, an Administrator is not an author, and a Guest who opens the create page is sent to the login page.
+
+### Added
+
+- Add `RecipeMediaAuthorizationIntegrationTest` (SQL Server Testcontainers) for image upload, replacement and removal by the author, another Expert, an Administrator, a missing recipe and a hidden recipe.
+- Record BUG-021 and BUG-018 under `.agents/outputs/bugs/`.
+
+### Changed
+
+- Restrict `POST /api/v1/recipes/media/upload`, `PUT /api/v1/recipes/{recipeId}/media` and `DELETE /api/v1/recipes/{recipeId}/media` to `ROLE_EXPERT`; an Administrator now gets `403` (AC-04.7).
+- Make the image replacement and removal endpoints use the same author check as Recipe Post editing (`RecipePostService.lockOwnEditableRecipe`): another Expert gets `403 RECIPE_EDIT_NOT_ALLOWED`, a hidden post `403 RECIPE_HIDDEN` and a missing post `404 RECIPE_NOT_FOUND`.
+- Send a Guest who opens `/dang-cong-thuc` straight to `/dang-nhap` (AC-04.5); Customers and Administrators still see the access notice.
+- Remove the Administrator-as-author wording from FR-04 and FR-16 in `FUNCTIONAL-REQUIREMENTS.md` so they match AC-04.7 and decision Q50.
+
+### Fixed
+
+- Fix BUG-021: another Expert or an Administrator could replace or delete the images of a Recipe Post they did not write, including the stored blobs.
+- Fix BUG-018: replacing the images of a Recipe Post that already had images always failed with `500` because the new rows were inserted before the old ones were deleted.
 
 ## 2026-10-10 — Add Google Login and Account Linking (Issue #8) ([PR #111](https://github.com/NgaiLong49423/vegetarian-support-system/pull/111))
 
