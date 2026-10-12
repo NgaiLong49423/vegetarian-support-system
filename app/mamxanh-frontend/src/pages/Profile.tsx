@@ -9,21 +9,25 @@ import {
   Search,
   Settings,
   SlidersHorizontal,
+  Sparkles,
   X,
 } from "lucide-react"
 import { PageContainer } from "../components/Layout"
 import { Button, Card, EmptyState } from "../components/ui"
 import { useAuth } from "../components/AuthContext"
+import { subscriptionApi, type MySubscriptionResponse } from "../api/subscription"
 import { useSavedRecipes } from "../components/SavedRecipesContext"
 import {
   savedRecipesApi,
   type SavedRecipePage,
 } from "../services/savedRecipesApi"
 import { asApiError } from "../lib/apiClient"
+import { formatDate } from "../utils/date"
 
 export function Profile() {
   const { account } = useAuth()
   const { setSaved, pending, revision } = useSavedRecipes()
+  const [subscription, setSubscription] = useState<MySubscriptionResponse | null>(null)
   const [tab, setTab] = useState<"saved" | "profile">("saved")
   const [keyword, setKeyword] = useState("")
   const [page, setPage] = useState(0)
@@ -32,6 +36,26 @@ export function Profile() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [retry, setRetry] = useState(0)
+
+  useEffect(() => {
+    let active = true
+    setSubscription(null)
+    if (account) {
+      subscriptionApi
+        .getMySubscription()
+        .then((value) => {
+          if (active) setSubscription(value)
+        })
+        .catch(() => {})
+    }
+    return () => {
+      active = false
+    }
+  }, [account?.id])
+
+  const activeTier =
+    subscription?.status === "ACTIVE" ? subscription.tier : null
+  const isFree = !activeTier || activeTier === "FREE"
 
   useEffect(() => {
     let active = true
@@ -128,6 +152,27 @@ export function Profile() {
                   ? "Quản trị viên"
                   : "Thành viên Mâm Xanh"}
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+              <span className="inline-flex items-center gap-1.5 text-ink-muted">
+                <Sparkles className="h-3.5 w-3.5" />
+                {isFree ? "Gói AI: Miễn phí" : `Gói AI: ${activeTier}`}
+                {!isFree && subscription?.endsAt
+                  ? ` · Hết hạn ${formatDate(subscription.endsAt)}`
+                  : ""}
+              </span>
+              <Link
+                to="/goi-ai"
+                className="font-semibold text-brand-600 underline hover:text-brand-700"
+              >
+                {isFree ? "Nâng cấp gói" : "Đổi gói"}
+              </Link>
+              <Link
+                to="/giao-dich"
+                className="text-ink-muted hover:text-ink-soft"
+              >
+                Lịch sử giao dịch
+              </Link>
+            </div>
           </div>
           <Link
             to="/ho-so/so-thich-an-uong"
