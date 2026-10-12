@@ -250,7 +250,17 @@ GET /api/v1/recipes?keyword=canh&vegetarianType=VEGAN&dishCategory=SOUP&ingredie
 
 Dùng `GET /api/v1/recipes/form-options` để lấy mã/nhãn loại ăn chay và thể loại món hiện hành; dùng `GET /api/v1/recipes/ingredient-options?query=...` để tìm trong danh mục nguyên liệu đang hoạt động. Frontend không hard-code danh mục tùy chọn. Bộ lọc hoặc tham số phân trang ngoài giới hạn runtime trả `400` theo ProblemDetail chuẩn với `code` ổn định và lỗi field nếu có. Response danh sách giữ cấu trúc `items`, `page`, `size`, `totalElements`, `totalPages` hiện tại, đồng thời có `likes`, `dislikes`, `likePercentage` (`null` khi chưa có lượt bình chọn) và `viewCount` để hiển thị theo sort.
 
-## 11. Hồ sơ thành viên — FR-23
+## 11. AI hỗ trợ soạn Recipe Post — FR-21
+
+`POST /api/v1/recipes/ai-assistance` yêu cầu Bearer token của Expert đang hoạt động và gói Plus/Pro còn hiệu lực. Backend xác thực entitlement trước khi gọi Gemini. Generated OpenAPI runtime là hợp đồng chi tiết cho request/response và các lỗi.
+
+Request chọn `contentType` là `DESCRIPTION` hoặc `INSTRUCTIONS`, gửi tiêu đề, mã danh mục, loại ăn chay, khẩu phần và các dòng nguyên liệu gồm `ingredientId`, `unitId`, `quantity`. Backend đối chiếu ingredient ID với danh mục đang hoạt động, yêu cầu Gemini trả các bước có cấu trúc và chỉ chấp nhận ingredient ID trong request. Nội dung không hợp lệ hoặc nhắc tên nguyên liệu có trong danh mục nhưng không được chọn bị từ chối.
+
+Response trả `contentType` và `content` để Frontend điền trực tiếp vào trường có thể chỉnh sửa. API không tạo RecipePost hoặc bản nháp; chỉ thao tác đăng/lưu hiện có mới ghi công thức sau khi tác giả chủ động xác nhận. Free, hết hạn hoặc thiếu subscription nhận `403 AI_SUBSCRIPTION_REQUIRED` trước khi provider được gọi. Gemini thiếu cấu hình/lỗi nhận `503 AI_PROVIDER_UNAVAILABLE`; kết quả sai định dạng/giới hạn nhận `502 AI_RESPONSE_INVALID`. Các lỗi không ngăn tác giả tự nhập và đăng theo validation hiện hành.
+
+Backend gọi model cố định `gemini-3.8-flash` qua Google Gen AI Java SDK; khóa chỉ được đọc từ `GEMINI_API_KEY` ở Backend. Không gửi API key xuống Frontend. Không ghi prompt thô vào log.
+
+## 12. Hồ sơ thành viên — FR-23
 
 Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung (quyết định Q54–Q58).
 

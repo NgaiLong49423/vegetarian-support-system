@@ -1,6 +1,12 @@
 -- Repeatable demo fixtures for local development only. Password hashes are
 -- initialized at runtime from MAMXANH_DEMO_PASSWORD and are never stored here.
+SET ANSI_NULLS ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
 SET QUOTED_IDENTIFIER ON;
+SET NUMERIC_ROUNDABORT OFF;
 SET XACT_ABORT ON;
 BEGIN TRANSACTION;
 
@@ -131,6 +137,25 @@ SET email_verified = 1, account_status = 'ACTIVE', updated_at = SYSUTCDATETIME()
 WHERE email IN ('demo-expert@mamxanh.local', 'demo-customer@mamxanh.local',
                 'demo-new-member@mamxanh.local', 'demo-applicant@mamxanh.local',
                 'demo-admin@mamxanh.local');
+
+-- Keep the local Expert eligible to demonstrate FR-21; this fixture is never loaded outside profile local.
+IF NOT EXISTS (
+    SELECT 1 FROM [SUBSCRIPTION]
+    WHERE user_id = @author_id AND tier = 'PRO' AND status = 'ACTIVE'
+      AND starts_at <= SYSUTCDATETIME() AND ends_at > SYSUTCDATETIME()
+)
+BEGIN
+    DECLARE @demo_subscription_start DATETIME2(7) = SYSUTCDATETIME();
+    UPDATE [SUBSCRIPTION]
+    SET tier = 'PRO', starts_at = @demo_subscription_start,
+        ends_at = DATEADD(YEAR, 1, @demo_subscription_start), updated_at = @demo_subscription_start
+    WHERE user_id = @author_id AND status = 'ACTIVE';
+
+    IF @@ROWCOUNT = 0
+        INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at)
+        VALUES (@author_id, 'PRO', 'ACTIVE', @demo_subscription_start,
+                DATEADD(YEAR, 1, @demo_subscription_start));
+END;
 
 DECLARE @customer_id BIGINT;
 DECLARE @sample_week_start DATE = CONVERT(DATE, SYSUTCDATETIME());

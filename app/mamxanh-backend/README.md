@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.24.0
+> **Version:** v0.25.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-10<br>
+> **Last Updated:** 2026-10-11<br>
 > **Status:** Active  
 
 # Backend Workspace
@@ -101,7 +101,7 @@ SPRING_DATASOURCE_PASSWORD=YOUR_LOCAL_DB_PASSWORD
 
 Trước khi chạy profile `local`, đặt `MAMXANH_DEMO_PASSWORD` trong `.env` theo mục [Tài khoản demo local](#tài-khoản-demo-local). Các giá trị trong `.env.example` chỉ là placeholder, không phải credential dùng được.
 
-Các biến môi trường cho FR-03 (giá trị dùng chung lấy từ kho mật khẩu của nhóm, không dán vào Issue/PR):
+Các biến môi trường cho xác thực, email và tích hợp AI (giá trị dùng chung lấy từ kho mật khẩu của nhóm, không dán vào Issue/PR):
 
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
@@ -112,10 +112,11 @@ Các biến môi trường cho FR-03 (giá trị dùng chung lấy từ kho mậ
 | `MAMXANH_CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Danh sách origin được gọi API, phân tách bằng dấu phẩy, không dùng wildcard. |
 | `MAMXANH_DEMO_PASSWORD` | **bắt buộc khi dùng profile `local`** | Mật khẩu local chung cho tài khoản demo; 12–72 byte UTF-8. Backend tạo BCrypt hash khi khởi động; không đưa mật khẩu vào Git hoặc tài liệu. |
 | `MAMXANH_GOOGLE_CLIENT_ID` | trống | OAuth Client ID (công khai) mà mọi Google ID Token phải nhắm tới; cùng giá trị với `VITE_GOOGLE_CLIENT_ID` của Frontend. Trống thì Google Login từ chối mọi token (`401 GOOGLE_TOKEN_INVALID`) và Backend ghi cảnh báo khi khởi động. |
+| `GEMINI_API_KEY` | trống | Khóa Gemini dùng lúc chạy Backend cho FR-21. Để trống thì Backend vẫn khởi động nhưng không thể gọi AI. Compose chuyển biến này từ `.env` vào container; không đưa khóa vào Docker image hoặc Git. |
 
 ### Tài khoản demo local
 
-Khi Flyway nạp seed trong profile `local`, Backend tạo năm tài khoản đã xác minh email: `demo-customer@mamxanh.local` (Member có hồ sơ, sở thích, lịch ăn và đơn Expert đang chờ), `demo-new-member@mamxanh.local` (Member mới để thử onboarding), `demo-applicant@mamxanh.local` (Member chưa nộp đơn), `demo-expert@mamxanh.local` (quản lý công thức) và `demo-admin@mamxanh.local` (quản trị/xét duyệt). Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả năm tài khoản.
+Khi Flyway nạp seed trong profile `local`, Backend tạo năm tài khoản đã xác minh email: `demo-customer@mamxanh.local` (Member có hồ sơ, sở thích, lịch ăn và đơn Expert đang chờ), `demo-new-member@mamxanh.local` (Member mới để thử onboarding), `demo-applicant@mamxanh.local` (Member chưa nộp đơn), `demo-expert@mamxanh.local` (quản lý công thức và có gói Pro demo để thử AI) và `demo-admin@mamxanh.local` (quản trị/xét duyệt). Gói Pro demo có hiệu lực một năm tính từ lần seed thiết lập subscription. Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả năm tài khoản.
 
 Seed repeatable chỉ dùng với profile `local`. Trong IntelliJ/Maven, profile `local,local-reset` mặc định xóa và dựng lại `MamXanhDB` trước khi chạy migration; Docker Compose giữ volume/database khi `down`/`up`, và chạy lại seed an toàn. Reset SQL volume Compose sẽ dựng lại toàn bộ schema và fixture. Không dùng tài khoản hoặc mật khẩu demo ngoài máy local.
 
