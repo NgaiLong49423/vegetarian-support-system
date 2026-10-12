@@ -220,6 +220,31 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+## 2026-10-11 — Add Public Author Profiles (Issue #29) ([PR #116](https://github.com/NgaiLong49423/vegetarian-support-system/pull/116))
+
+**Status:** Committed — `20399b3`.
+
+**Scope:** Implement UC-23.1–UC-23.3 so readers see who wrote a Recipe Post and can open the author's public profile, and members can edit their name, short bio and avatar, following AC-23.1–AC-23.10 and decisions Q54–Q58.
+
+### Added
+
+- Add `GET /api/v1/members/{userId}` (public profile: name, avatar, bio and the join month in Vietnam time, without email, role or private data) and `GET /api/v1/members/{userId}/recipes` (the member's published posts, newest first, size 1–50). A locked member keeps a public profile; an unknown id or an Administrator returns `404 MEMBER_PROFILE_NOT_FOUND`.
+- Add `GET`/`PUT /api/v1/me/profile` for the signed-in member (name trimmed, 3–50 characters, no control characters; bio trimmed, at most 500 characters, empty stored as `NULL`) and `POST /api/v1/me/profile/avatar` (JPEG, PNG or WebP up to 2 MB, checked by file signature, stored through the FR-14 `StorageClient` under `avatars/`); an Administrator gets `403 MEMBER_ACCESS_REQUIRED`.
+- Add the author block (avatar, linked name, publish date) to the recipe detail page, the public profile page `/thanh-vien/:userId`, the profile settings page `/ho-so/cai-dat` and a header link to it.
+- Add SQL Server integration tests for the profile API, owner-only private data (AC-23.8), session-bound authorship (AC-23.9) and Administrator edit refusal (AC-23.10), plus Playwright tests for the new pages.
+- Record BUG-019 and BUG-020 under `.agents/outputs/bugs/`.
+
+### Changed
+
+- Map the `USER` profile columns through a separate `MemberProfileEntity` in the `auth` module, keeping `User` as the identity view.
+- Let `StorageClient` upload into a named folder; recipe images still go to `recipes/`.
+- Show the member's published recipes on the profile page with the shared `PublicRecipeCard` used by Explore.
+- Document the profile API and the `MEMBER_PROFILE_NOT_FOUND`, `FILE_TOO_LARGE` and `UNSUPPORTED_IMAGE_TYPE` codes in `API.md`.
+
+### Fixed
+
+- Fix BUG-019: set the servlet multipart limit to 5 MB per file and 6 MB per request (the 1 MB default rejected recipe images allowed by AC-14.1), and return `FILE_TOO_LARGE` instead of `INTERNAL_ERROR` for `413`.
+
 ## 2026-10-11 — Close Expert Recipe Publishing Gaps (Issue #11) ([PR #115](https://github.com/NgaiLong49423/vegetarian-support-system/pull/115))
 
 **Status:** Committed — `3e20875`.
