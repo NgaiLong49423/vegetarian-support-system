@@ -50,6 +50,26 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
+## 2026-10-11 — Add AI Assistance to Recipe Authoring ([PR #122](https://github.com/NgaiLong49423/vegetarian-support-system/pull/122))
+
+**Status:** Committed — `cfad92c`.
+
+**Scope:** Let eligible Experts generate editable recipe descriptions and instructions without saving a server-side draft.
+
+### Added
+
+- Add a subscription-gated recipe-writing API backed by Gemini and integrate editable suggestions into the create and edit forms.
+- Document the FR-21 API integration flow and its authorization and failure responses.
+- Seed an active one-year Pro subscription for the local demo Expert so the AI authoring flow can be exercised.
+
+### Changed
+
+- Pass the optional `GEMINI_API_KEY` from the local environment into the Backend container at runtime and document the Docker configuration.
+
+### Fixed
+
+- Reject generated recipe instructions that reference unselected catalog ingredients or invalid ingredient IDs.
+
 ## 2026-10-11 — Preserve Theme During Browser Reload Verification
 
 **Status:** Committed — `20b3a16`.

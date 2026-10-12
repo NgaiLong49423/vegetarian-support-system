@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const previewUrl = 'http://127.0.0.1:4173';
+const previewPort = Number(process.env.PLAYWRIGHT_PREVIEW_PORT ?? 4173);
+const previewUrl = `http://127.0.0.1:${previewPort}`;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -12,7 +13,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
+    command: `npm run preview -- --host 127.0.0.1 --port ${previewPort} --strictPort`,
     url: previewUrl,
     reuseExistingServer: false,
   },

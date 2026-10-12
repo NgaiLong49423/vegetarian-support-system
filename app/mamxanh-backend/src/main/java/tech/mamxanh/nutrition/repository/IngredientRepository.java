@@ -1,5 +1,6 @@
 package tech.mamxanh.nutrition.repository;
 
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +14,7 @@ public interface IngredientRepository extends JpaRepository<IngredientEntity, Lo
     boolean existsByNameIgnoreCaseAndStatus(String name, CatalogStatus status);
     boolean existsByNameIgnoreCaseAndStatusAndIdNot(String name, CatalogStatus status, Long id);
     List<IngredientEntity> findByStatus(CatalogStatus status);
+    List<IngredientEntity> findByIdInAndStatus(Collection<Long> ids, CatalogStatus status);
     List<IngredientEntity> findByNameContainingIgnoreCaseOrIngredientGroupContainingIgnoreCase(String name, String group);
 
     @Query("select distinct ingredient.ingredientGroup from IngredientEntity ingredient order by ingredient.ingredientGroup")
