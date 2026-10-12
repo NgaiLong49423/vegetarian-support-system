@@ -140,6 +140,10 @@ function CreateRecipeForm() {
       return false;
     }
     if (mediaList.length > 0) {
+      if (mediaList.some((image) => image.url.startsWith('blob:'))) {
+        setMediaError('Một số ảnh chưa tải lên thành công. Vui lòng xóa ảnh xem trước và tải lại trước khi xuất bản.');
+        return false;
+      }
       const coverCount = mediaList.filter((m) => m.isCover).length;
       if (coverCount !== 1) {
         setMediaError('Vui lòng chỉ định chính xác 1 ảnh đại diện (ảnh bìa) cho bài viết (FR-14, BR-19).');
@@ -241,7 +245,7 @@ function CreateRecipeForm() {
       {loadingOptions && <div role="status" className="mb-5 flex items-center gap-2 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" /> Đang tải danh mục…</div>}
       {optionsError && <div role="alert" className="mb-5 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{optionsError}</div>}
 
-      <form onSubmit={handlePublish} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <form noValidate onSubmit={handlePublish} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-5">
           <Card className="space-y-4 p-5 sm:p-6">
             <SectionHead number="1" title="Thông tin món ăn" />
