@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-12 — Manage Ingredient Nutrition Catalog
+## 2026-10-12 — Manage Ingredient Nutrition Catalog ([PR #124](https://github.com/NgaiLong49423/vegetarian-support-system/pull/124))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `6be47a6`.
 
 **Scope:** Implement Backend support for administrator-managed ingredient nutrition data and expose supported nutrient details with public recipe data.
 
