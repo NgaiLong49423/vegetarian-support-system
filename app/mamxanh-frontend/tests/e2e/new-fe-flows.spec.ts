@@ -638,7 +638,7 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
 
   // 3. Fill form fields
   await page.getByLabel('Tên món *').fill('Nấm đùi gà kho tiêu xanh');
-  await page.getByLabel('Mô tả').fill('Món kho thơm lừng đậm đà.');
+  await page.getByLabel('Mô tả', { exact: true }).fill('Món kho thơm lừng đậm đà.');
   await page.getByLabel('Thể loại món').selectOption('BRAISED');
   await page.getByLabel('Loại ăn chay').selectOption('VEGAN');
   await page.getByLabel('Độ khó').selectOption('EASY');
