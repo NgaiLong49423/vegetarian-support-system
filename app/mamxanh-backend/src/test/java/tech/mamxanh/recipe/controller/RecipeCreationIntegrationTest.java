@@ -248,26 +248,73 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void rejectsForgedExternalMediaUrlEvenWhenMimeAndCoverAreValid() throws Exception {
+    void publishesValidRecipeWithMediaAndPersistsToRecipeMediaTable() throws Exception {
         jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 80)",
                 ingredientId, countUnitId);
         List<RecipeMediaInput> media = List.of(
-                new RecipeMediaInput("https://blob.test/issue22/a.png", "image/png", false),
-                new RecipeMediaInput("https://blob.test/issue22/b.webp", "image/webp", true),
-                new RecipeMediaInput("https://blob.test/issue22/c.jpg", "image/jpeg", false));
+                new RecipeMediaInput("https://blob.test/fr25/a.png", "image/png", false),
+                new RecipeMediaInput("https://blob.test/fr25/b.webp", "image/webp", true),
+                new RecipeMediaInput("https://blob.test/fr25/c.jpg", "image/jpeg", false));
 
-        Integer mediaCountBefore = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM [RECIPE_MEDIA]", Integer.class);
-        mockMvc.perform(post("/api/v1/recipes")
+        var result = mockMvc.perform(post("/api/v1/recipes")
                         .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(request(List.of(ingredient(countUnitId, "2")), media))))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[*].field", hasItem("media")))
-                .andExpect(jsonPath("$.errors[*].message", hasItem(
-                        "Đăng công thức kèm ảnh chưa được hỗ trợ. Hãy bỏ ảnh; upload ảnh sẽ được tích hợp sau FR-14.")));
-        assertNoRecipe();
-        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM [RECIPE_MEDIA]", Integer.class)).isEqualTo(mediaCountBefore);
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.recipeId").isNumber())
+                .andReturn();
+
+        long recipeId = jsonMapper.readTree(result.getResponse().getContentAsString()).path("recipeId").asLong();
+
+        Integer mediaCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM [RECIPE_MEDIA] WHERE recipe_id = ?", Integer.class, recipeId);
+        org.assertj.core.api.Assertions.assertThat(mediaCount).isEqualTo(3);
+
+        Integer coverCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM [RECIPE_MEDIA] WHERE recipe_id = ? AND is_cover = 1", Integer.class, recipeId);
+        org.assertj.core.api.Assertions.assertThat(coverCount).isEqualTo(1);
+
+        String coverUrl = jdbcTemplate.queryForObject(
+                "SELECT blob_url FROM [RECIPE_MEDIA] WHERE recipe_id = ? AND is_cover = 1", String.class, recipeId);
+        org.assertj.core.api.Assertions.assertThat(coverUrl).isEqualTo("https://blob.test/fr25/b.webp");
+
+        mockMvc.perform(get("/api/v1/recipes/{recipeId}", recipeId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.media.length()").value(3))
+                .andExpect(jsonPath("$.media[1].blobUrl").value("https://blob.test/fr25/b.webp"))
+                .andExpect(jsonPath("$.media[1].cover").value(true));
+    }
+
+    @Test
+    void publishedRecipeAppearsImmediatelyWithPublishedStatusAndPublicDetail() throws Exception {
+        String uniqueTitle = "Nấm đùi gà kho tiêu FR25";
+        CreateRecipeRequest request = new CreateRecipeRequest(uniqueTitle, "Món ngon đậm vị",
+                "Kho nấm với tiêu cho đến khi cạn nước.", DishCategory.BRAISED,
+                VegetarianType.VEGAN, Difficulty.EASY, 4, 15, 20, null,
+                List.of(ingredient(gramUnitId, "300")), List.of());
+
+        var result = mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.recipeId").isNumber())
+                .andReturn();
+
+        long recipeId = jsonMapper.readTree(result.getResponse().getContentAsString()).path("recipeId").asLong();
+
+        // AC-25.2: Trạng thái trong DB phải là PUBLISHED ngay lập tức, không qua PENDING
+        String dbStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM [RECIPE_POST] WHERE recipe_id = ?", String.class, recipeId);
+        org.assertj.core.api.Assertions.assertThat(dbStatus).isEqualTo("PUBLISHED");
+
+        // AC-25.2: Hiển thị công khai ngay lập tức không cần đăng nhập
+        mockMvc.perform(get("/api/v1/recipes/{recipeId}", recipeId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value(uniqueTitle))
+                .andExpect(jsonPath("$.recipeId").value(recipeId));
     }
 
     @Test
@@ -286,6 +333,39 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(request(List.of(ingredient(gramUnitId, "200")), List.of()))))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void rejectsMoreThanFiveMediaItems() throws Exception {
+        List<RecipeMediaInput> sixImages = List.of(
+                new RecipeMediaInput("https://blob.test/1.png", "image/png", true),
+                new RecipeMediaInput("https://blob.test/2.png", "image/png", false),
+                new RecipeMediaInput("https://blob.test/3.png", "image/png", false),
+                new RecipeMediaInput("https://blob.test/4.png", "image/png", false),
+                new RecipeMediaInput("https://blob.test/5.png", "image/png", false),
+                new RecipeMediaInput("https://blob.test/6.png", "image/png", false));
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(List.of(ingredient(gramUnitId, "200")), sixImages))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[*].field", hasItem("media")))
+                .andExpect(jsonPath("$.errors[*].message", hasItem("Mỗi công thức được có tối đa 5 ảnh.")));
+        assertNoRecipe();
+    }
+
+    @Test
+    void rejectsUnsupportedMediaType() throws Exception {
+        List<RecipeMediaInput> invalidMime = List.of(
+                new RecipeMediaInput("https://blob.test/fr25/a.gif", "image/gif", true));
+        mockMvc.perform(post("/api/v1/recipes")
+                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(request(List.of(ingredient(gramUnitId, "200")), invalidMime))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[*].field", hasItem("media[0].mimeType")))
+                .andExpect(jsonPath("$.errors[*].message", hasItem("Ảnh phải có định dạng JPEG, PNG hoặc WebP.")));
+        assertNoRecipe();
     }
 
     @Test
