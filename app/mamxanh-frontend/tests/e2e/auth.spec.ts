@@ -216,25 +216,15 @@ test('local account access requires a Backend-issued login session', async ({ pa
   await expect(page.getByRole('button', { name: 'Đăng nhập', exact: true })).toBeVisible();
 });
 
-test('recovery and mobile layouts remain usable without claiming email delivery', async ({ page }) => {
+test('recovery and mobile layouts remain usable on a phone screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await page.getByRole('link', { name: 'Đăng nhập', exact: true }).click();
   await page.getByRole('link', { name: 'Quên mật khẩu?' }).click();
   await expect(page.getByRole('heading', { name: 'Quên mật khẩu?' })).toBeVisible();
-  await page.getByLabel('Email', { exact: true }).fill('unknown@example.com');
-  await page.getByRole('button', { name: 'Yêu cầu đặt lại mật khẩu' }).click();
-  await expect(page.getByRole('status')).toContainText('không kiểm tra địa chỉ này có tài khoản');
-  for (const path of ['/dang-nhap', '/dang-ky', '/xac-minh-email', '/dat-lai-mat-khau']) {
+  for (const path of ['/dang-nhap', '/dang-ky', '/quen-mat-khau', '/xac-minh-email', '/dat-lai-mat-khau?token=abc123']) {
     await page.goto(path);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
-  await page.getByLabel('Mật khẩu mới', { exact: true }).fill('short');
-  await page.getByLabel('Xác nhận mật khẩu').fill('short');
-  await page.getByRole('button', { name: 'Lưu mật khẩu mới' }).click();
-  await expect(page.getByText('Mật khẩu cần ít nhất 8 ký tự.')).toBeVisible();
-  await page.getByLabel('Mật khẩu mới', { exact: true }).fill('NewPass123!');
-  await page.getByLabel('Xác nhận mật khẩu').fill('NewPass123!');
-  await page.getByRole('button', { name: 'Lưu mật khẩu mới' }).click();
-  await expect(page.getByRole('status')).toContainText('Chưa xác minh liên kết hoặc thay đổi mật khẩu');
+  await expect(page.getByLabel('Mật khẩu mới', { exact: true })).toBeVisible();
 });

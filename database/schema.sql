@@ -14,6 +14,9 @@
 --                   + V6__user_login_throttle.sql
 --                   + V7__user_onboarding_invitation.sql
 --                   + V8__expert_application_notifications.sql
+--                   + V9__align_recipe_report_contract.sql
+--                   + V10__nutrition_eligibility_status.sql
+--                   + V11__user_password_reset.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -188,6 +191,14 @@ CREATE TABLE [USER] (
     login_blocked_until            DATETIME2(7)   NULL,
     -- V7 (Issue #36): when the FR-31 Onboarding invitation was shown; NULL = not shown yet (AC-31.10)
     onboarding_invited_at          DATETIME2(7)   NULL,
+    -- V11 (Issue #9): SHA-256 hex digest of the current password-reset token (15 minutes) and
+    -- reset-email rate-limit metadata: last email time (60 s cooldown), one-hour window and its count (Q27)
+    password_reset_token              VARCHAR(64)    NULL,
+    reset_token_expires_at            DATETIME2(7)   NULL,
+    password_reset_sent_at            DATETIME2(7)   NULL,
+    password_reset_window_started_at  DATETIME2(7)   NULL,
+    password_reset_window_count       INT            NOT NULL
+        CONSTRAINT DF_USER_password_reset_window_count DEFAULT 0,
 
     CONSTRAINT PK_USER PRIMARY KEY (user_id),
     CONSTRAINT UQ_USER_email UNIQUE (email),
@@ -229,7 +240,12 @@ CREATE TABLE [USER] (
         (email_verification_token IS NULL AND verification_token_expires_at IS NULL)
         OR (email_verification_token IS NOT NULL AND verification_token_expires_at IS NOT NULL)
     ),
-    CONSTRAINT CK_USER_failed_login_attempts_non_negative CHECK (failed_login_attempts >= 0)
+    CONSTRAINT CK_USER_failed_login_attempts_non_negative CHECK (failed_login_attempts >= 0),
+    CONSTRAINT CK_USER_password_reset_token_pair CHECK (
+        (password_reset_token IS NULL AND reset_token_expires_at IS NULL)
+        OR (password_reset_token IS NOT NULL AND reset_token_expires_at IS NOT NULL)
+    ),
+    CONSTRAINT CK_USER_password_reset_window_count_non_negative CHECK (password_reset_window_count >= 0)
 );
 GO
 
@@ -243,6 +259,12 @@ GO
 CREATE UNIQUE NONCLUSTERED INDEX UQ_USER_email_verification_token
     ON [USER](email_verification_token)
     WHERE email_verification_token IS NOT NULL;
+GO
+
+-- password_reset_token (V11): lookup by token digest; most accounts have no reset token
+CREATE UNIQUE NONCLUSTERED INDEX UQ_USER_password_reset_token
+    ON [USER](password_reset_token)
+    WHERE password_reset_token IS NOT NULL;
 GO
 
 

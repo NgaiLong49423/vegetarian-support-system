@@ -27,12 +27,22 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 @Configuration
 public class SecurityConfig {
 
-    private static final String[] PUBLIC_AUTH_POST_ENDPOINTS = {
+    private static final String[] PUBLIC_POST_ENDPOINTS = {
             "/api/v1/auth/register",
             "/api/v1/auth/email-verifications",
             "/api/v1/auth/email-verifications/resend",
             "/api/v1/auth/login",
             "/api/v1/auth/google",
+            "/api/v1/auth/password-resets",
+            "/api/v1/auth/password-resets/confirm",
+    };
+
+    private static final String[] PUBLIC_PAYMENT_POST_ENDPOINTS = {
+            "/api/v1/payments/webhook",
+    };
+
+    private static final String[] PUBLIC_GET_ENDPOINTS = {
+            "/api/v1/subscriptions/plans",
     };
 
     private static final String[] API_DOCS_ENDPOINTS = {
@@ -57,13 +67,15 @@ public class SecurityConfig {
                 .logout(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.POST, PUBLIC_AUTH_POST_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.POST, PUBLIC_PAYMENT_POST_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/mine").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/*/manage").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes", "/api/v1/recipes/*", "/api/v1/recipes/*/media").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/form-options",
                                 "/api/v1/recipes/ingredient-options").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/members/*", "/api/v1/members/*/recipes").permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                         .requestMatchers(API_DOCS_ENDPOINTS).permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())

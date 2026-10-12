@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { AlertCircle, ImagePlus, Info, LoaderCircle, Plus, Trash2, UploadCloud } from 'lucide-react';
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
 import { ApiError } from '../lib/apiClient';
@@ -37,31 +37,29 @@ export function CreateRecipe() {
   const [initialAllowed] = useState(() => active && role === 'EXPERT');
 
   if (!initialAllowed) {
-    return <RecipeCreationAccessGate active={active} role={role} />;
+    // AC-04.5: a Guest goes straight to the login page.
+    if (!active) return <Navigate to="/dang-nhap" replace />;
+    return <RecipeCreationAccessGate role={role} />;
   }
 
   return <CreateRecipeForm />;
 }
 
-function RecipeCreationAccessGate({ active, role }: { active: boolean; role: UserRole }) {
-  const isGuest = !active;
-  const destination = isGuest ? '/dang-nhap' : role === 'CUSTOMER' ? '/dang-ky-chuyen-gia' : undefined;
-  const action = isGuest ? 'Đăng nhập' : 'Đăng ký trở thành Chuyên gia';
+function RecipeCreationAccessGate({ role }: { role: UserRole }) {
+  const isCustomer = role === 'CUSTOMER';
 
   return (
     <PageContainer className="py-12">
       <Card className="mx-auto max-w-xl p-8 text-center">
         <h1 className="text-2xl font-extrabold text-ink">Đăng công thức chỉ dành cho Chuyên gia</h1>
         <p className="mt-3 text-sm text-ink-muted">
-          {isGuest
-            ? 'Đăng nhập và được phê duyệt trở thành Chuyên gia để đăng công thức.'
-            : role === 'CUSTOMER'
-              ? 'Bạn cần được phê duyệt đơn đăng ký Chuyên gia trước khi đăng công thức.'
-              : 'Vai trò hiện tại không có quyền đăng công thức.'}
+          {isCustomer
+            ? 'Bạn cần được phê duyệt đơn đăng ký Chuyên gia trước khi đăng công thức.'
+            : 'Vai trò hiện tại không có quyền đăng công thức.'}
         </p>
-        {destination && (
-          <Link to={destination} className="mt-5 inline-flex rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-on-brand hover:bg-brand-700">
-            {action}
+        {isCustomer && (
+          <Link to="/dang-ky-chuyen-gia" className="mt-5 inline-flex rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-on-brand hover:bg-brand-700">
+            Đăng ký trở thành Chuyên gia
           </Link>
         )}
       </Card>
@@ -142,6 +140,10 @@ function CreateRecipeForm() {
       return false;
     }
     if (mediaList.length > 0) {
+      if (mediaList.some((image) => image.url.startsWith('blob:'))) {
+        setMediaError('Một số ảnh chưa tải lên thành công. Vui lòng xóa ảnh xem trước và tải lại trước khi xuất bản.');
+        return false;
+      }
       const coverCount = mediaList.filter((m) => m.isCover).length;
       if (coverCount !== 1) {
         setMediaError('Vui lòng chỉ định chính xác 1 ảnh đại diện (ảnh bìa) cho bài viết (FR-14, BR-19).');
@@ -243,7 +245,7 @@ function CreateRecipeForm() {
       {loadingOptions && <div role="status" className="mb-5 flex items-center gap-2 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" /> Đang tải danh mục…</div>}
       {optionsError && <div role="alert" className="mb-5 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{optionsError}</div>}
 
-      <form onSubmit={handlePublish} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <form noValidate onSubmit={handlePublish} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-5">
           <Card className="space-y-4 p-5 sm:p-6">
             <SectionHead number="1" title="Thông tin món ăn" />

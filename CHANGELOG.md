@@ -173,6 +173,25 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Expand the Frontend recipe detail API type to match the Backend response.
+## 2026-10-10 — Add Password Reset (Issue #9) ([PR #113](https://github.com/NgaiLong49423/vegetarian-support-system/pull/113))
+
+**Status:** Committed — `8794862`.
+
+**Scope:** Implement UC-03.6 and UC-03.7 so members can request a reset link by email and set a new password, following AC-03.14 and decisions Q13, Q27, Q47 and Q48.
+
+### Added
+
+- Add `POST /api/v1/auth/password-resets`, which always returns the same neutral `202` message and emails a 15-minute single-use link only to an existing active account outside the 60-second cooldown and under five emails per hour; unknown emails, locked accounts and rate-limited requests get no email and no `429`.
+- Add `POST /api/v1/auth/password-resets/confirm`, which stores the new BCrypt hash, consumes the token and returns `204`; it also verifies an unverified email, ends a temporary login block and lets a Google-only account set a password.
+- Add `PASSWORD_RESET_TOKEN_INVALID` (400) for unknown, used, replaced or expired tokens and `NEW_PASSWORD_SAME_AS_CURRENT` (400), and return `ACCOUNT_LOCKED` (403) when the account was locked after the email was sent.
+- Add Flyway migration `V11__user_password_reset.sql` with the token digest, its expiry and the reset-email rate-limit columns on `USER`, plus two checks, one default and a filtered unique index on the token digest.
+- Connect the forgot-password and reset-password pages to the API; the reset page keeps the token in memory and removes it from the address bar.
+- Add unit, SQL Server integration (cooldown, hourly limit, token replacement and expiry, parallel requests, 72-byte passwords, log redaction) and Playwright tests.
+
+### Changed
+
+- Remove the implemented password-reset endpoints and their schemas from the planned `openapi.yaml`, and document the flow and new error codes in `API.md`.
+- Synchronize `database/schema.sql`, the `database/queries.sql` expected counts and `database/README.md` with V11.
 
 ### Fixed
 
@@ -201,6 +220,29 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Fix BUG-019: set the servlet multipart limit to 5 MB per file and 6 MB per request (the 1 MB default rejected recipe images allowed by AC-14.1), and return `FILE_TOO_LARGE` instead of `INTERNAL_ERROR` for `413`.
+
+## 2026-10-11 — Close Expert Recipe Publishing Gaps (Issue #11) ([PR #115](https://github.com/NgaiLong49423/vegetarian-support-system/pull/115))
+
+**Status:** Committed — `3e20875`.
+
+**Scope:** Complete the FR-04 acceptance gaps found while reviewing Issue #11 as the FR-04 coordination Issue (decisions Q49 and Q50): only the Expert author may change a Recipe Post's images, an Administrator is not an author, and a Guest who opens the create page is sent to the login page.
+
+### Added
+
+- Add `RecipeMediaAuthorizationIntegrationTest` (SQL Server Testcontainers) for image upload, replacement and removal by the author, another Expert, an Administrator, a missing recipe and a hidden recipe.
+- Record BUG-021 and BUG-018 under `.agents/outputs/bugs/`.
+
+### Changed
+
+- Restrict `POST /api/v1/recipes/media/upload`, `PUT /api/v1/recipes/{recipeId}/media` and `DELETE /api/v1/recipes/{recipeId}/media` to `ROLE_EXPERT`; an Administrator now gets `403` (AC-04.7).
+- Make the image replacement and removal endpoints use the same author check as Recipe Post editing (`RecipePostService.lockOwnEditableRecipe`): another Expert gets `403 RECIPE_EDIT_NOT_ALLOWED`, a hidden post `403 RECIPE_HIDDEN` and a missing post `404 RECIPE_NOT_FOUND`.
+- Send a Guest who opens `/dang-cong-thuc` straight to `/dang-nhap` (AC-04.5); Customers and Administrators still see the access notice.
+- Remove the Administrator-as-author wording from FR-04 and FR-16 in `FUNCTIONAL-REQUIREMENTS.md` so they match AC-04.7 and decision Q50.
+
+### Fixed
+
+- Fix BUG-021: another Expert or an Administrator could replace or delete the images of a Recipe Post they did not write, including the stored blobs.
+- Fix BUG-018: replacing the images of a Recipe Post that already had images always failed with `500` because the new rows were inserted before the old ones were deleted.
 
 ## 2026-10-10 — Add Google Login and Account Linking (Issue #8) ([PR #111](https://github.com/NgaiLong49423/vegetarian-support-system/pull/111))
 
