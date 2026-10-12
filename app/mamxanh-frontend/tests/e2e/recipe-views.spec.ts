@@ -7,6 +7,8 @@ const detail = (recipeId = 901) => ({
   vegetarianType: 'VEGAN', vegetarianTypeLabel: 'Thuần chay', difficulty: 'EASY', difficultyLabel: 'Dễ',
   servings: 2, prepTimeMinutes: 10, cookTimeMinutes: 15, youtubeUrl: null,
   publishedAt: '2026-10-01T08:00:00', nutritionComplete: true, ingredientsWithoutNutrition: [],
+  author: { userId: 22, displayName: 'Bếp Chay', avatarUrl: null },
+  nutrition: { complete: true, ingredientsMissingData: [], total: {}, perServing: {} },
   ingredients: [{ ingredientId: 1, name: 'Nấm rơm', quantity: 100, unitId: 1, unitCode: 'g', unitName: 'gram' }],
   media: [], statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
 });
@@ -218,6 +220,9 @@ for (const width of [360, 768, 1440]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`explore-${width}.png`), fullPage: true });
     await page.goto('/');
-    await expect(page.getByText('12.500 lượt xem', { exact: true })).toHaveCount(2);
+    for (const collection of ['Mới từ cộng đồng', 'Được yêu thích']) {
+      await expect(page.locator(`[aria-label="${collection}"]`).getByText('12.500 lượt xem', { exact: true })).toHaveCount(2);
+    }
+    await page.screenshot({ path: testInfo.outputPath(`home-${width}.png`), fullPage: true });
   });
 }

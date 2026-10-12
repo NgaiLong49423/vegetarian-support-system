@@ -76,6 +76,17 @@ jobs:
           path: app/mamxanh-frontend/coverage/
           if-no-files-found: warn
 
+      - name: Upload recipe view UI evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recipe-view-ui-${{ github.event.pull_request.number || github.run_id }}-${{ github.run_attempt }}
+          path: |
+            app/mamxanh-frontend/test-results/**/detail-*.png
+            app/mamxanh-frontend/test-results/**/explore-*.png
+            app/mamxanh-frontend/test-results/**/home-*.png
+          if-no-files-found: warn
+
   backend:
     name: Backend
     runs-on: ubuntu-latest
