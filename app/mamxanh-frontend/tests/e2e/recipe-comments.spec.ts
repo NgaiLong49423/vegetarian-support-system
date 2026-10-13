@@ -27,6 +27,8 @@ const recipeDetail = {
   ingredientsWithoutNutrition: [],
   ingredients: [],
   media: [],
+  statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
+  author: { userId: 902, displayName: 'Lan Chay', avatarUrl: null },
 };
 
 type Author = { userId: number; displayName: string; avatarUrl: string | null };
@@ -131,6 +133,18 @@ const commentItem = (page: Page, text: string) =>
   page.getByRole('article').filter({ has: page.getByText(text, { exact: true }) }).last();
 
 test.describe('Issue #48 [FR-46] — Bình luận và reply lồng nhiều cấp', () => {
+  test('UC-46.1: the canonical recipe page /cong-thuc/id/:id shows the comment threads', async ({ page }) => {
+    const server = new CommentServer();
+    server.add(OTHER, 'Bình luận trên trang chuẩn');
+    await server.install(page);
+
+    await page.goto(`/cong-thuc/id/${RECIPE_ID}`);
+    await expect(page.getByRole('heading', { name: 'Canh nấm chay' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Bình luận (1)' })).toBeVisible();
+    await expect(page.getByText('Bình luận trên trang chuẩn')).toBeVisible();
+  });
+
+
   test('UC-46.1: Guest reads nested threads, tombstones and edit marks but must sign in to write', async ({ page }) => {
     const server = new CommentServer();
     const root = server.add(OTHER, 'Nấm rơm thay được không?');
