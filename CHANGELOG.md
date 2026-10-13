@@ -29,6 +29,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Fix Scalar and generated clients not sending the access token for the 31 operations above.
+- Fix `/v3/api-docs.yaml` answering `401`: `API.md` publishes it next to `/v3/api-docs`, but the public pattern `/v3/api-docs/**` did not match it.
 
 ## 2026-10-13 — Expand Local Recipe Demo Fixtures ([PR #127](https://github.com/NgaiLong49423/vegetarian-support-system/pull/127))
 

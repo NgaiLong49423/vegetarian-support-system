@@ -57,6 +57,13 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
         assertThat(mismatches).isEmpty();
     }
 
+    /** docs/api/API.md section 2 publishes the contract as JSON and YAML; both must be public like Scalar. */
+    @Test
+    void theYamlContractIsPublicLikeTheJsonContract() throws Exception {
+        int status = mockMvc.perform(get("/v3/api-docs.yaml")).andReturn().getResponse().getStatus();
+        assertThat(status).isEqualTo(200);
+    }
+
     @Test
     void everyProtectedOperationDeclaresUnauthenticatedAndForbiddenAsProblemDetails() {
         List<String> missing = new ArrayList<>();
