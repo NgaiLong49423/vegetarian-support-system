@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.15.0
+> **Version:** v0.16.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -126,12 +126,12 @@ Quy ước status chính:
 | `204 No Content` | Thao tác thành công và không cần response body. |
 | `400 Bad Request` | Payload, token xác minh hoặc token đặt lại mật khẩu không hợp lệ. |
 | `401 Unauthorized` | Credential, access token hoặc Google ID Token không hợp lệ hay đã hết hạn. |
-| `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`), bị Administrator khóa (`ACCOUNT_LOCKED`) hoặc không phải Member khi dùng hồ sơ sở thích hay hồ sơ cá nhân (`MEMBER_ACCESS_REQUIRED`). |
-| `409 Conflict` | Email đã được sử dụng, đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`), hoặc hồ sơ sở thích chưa đủ để gọi AI cá nhân hóa (`DIETARY_PROFILE_INCOMPLETE`). |
+| `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`), bị Administrator khóa (`ACCOUNT_LOCKED`) không phải Member khi dùng hồ sơ sở thích, hồ sơ cá nhân hay theo dõi thành viên (`MEMBER_ACCESS_REQUIRED`), hoặc tự theo dõi chính mình (`FOLLOW_SELF_NOT_ALLOWED`). |
+| `409 Conflict` | Email đã được sử dụng, đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`), hồ sơ sở thích chưa đủ để gọi AI cá nhân hóa (`DIETARY_PROFILE_INCOMPLETE`), hoặc theo dõi tài khoản đang bị khóa (`FOLLOW_TARGET_INACTIVE`). |
 | `429 Too Many Requests` | Chỉ áp dụng khi contract của endpoint quy định `429` (ví dụ login, resend verification hoặc AI rate limiting); client đọc `Retry-After` khi có. Password-reset request không trả `429`. |
 | `503 Service Unavailable` | Dịch vụ phụ thuộc tạm thời không dùng được, ví dụ không tải được chứng chỉ Google (`GOOGLE_LOGIN_UNAVAILABLE`). |
 
-Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
+Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36, #69).
 
 | `code` | Status | Khi nào |
 |---|---|---|
@@ -148,8 +148,10 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
 | `GOOGLE_TOKEN_INVALID` | 401 | `POST /auth/google` với ID Token sai định dạng, sai chữ ký, hết hạn, sai issuer/audience, thiếu `sub`/email, email Google chưa xác minh hoặc không lưu được; cũng trả khi Backend chưa cấu hình `MAMXANH_GOOGLE_CLIENT_ID`. |
 | `GOOGLE_ACCOUNT_CONFLICT` | 409 | `POST /auth/google` khi email đã liên kết với một tài khoản Google khác. |
 | `GOOGLE_LOGIN_UNAVAILABLE` | 503 | `POST /auth/google` khi Backend không tải được chứng chỉ ký của Google. |
-| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31) hoặc hồ sơ cá nhân `/me/profile` (FR-23); chỉ Member (`CUSTOMER`, `EXPERT`) có các hồ sơ này. |
-| `MEMBER_PROFILE_NOT_FOUND` | 404 | `GET /members/{userId}` hoặc `/members/{userId}/recipes` với ID không tồn tại hoặc thuộc tài khoản Administrator (FR-23, Q55). |
+| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31) hồ sơ cá nhân `/me/profile` (FR-23), hoặc theo dõi/bỏ theo dõi (FR-59); chỉ Member (`CUSTOMER`, `EXPERT`) đang hoạt động có các chức năng này. |
+| `MEMBER_PROFILE_NOT_FOUND` | 404 | `/members/{userId}`, `/members/{userId}/recipes`, `/members/{userId}/follow`, `/followers` hoặc `/following` với ID không tồn tại hoặc thuộc tài khoản Administrator (FR-23, FR-59, Q55). |
+| `FOLLOW_SELF_NOT_ALLOWED` | 403 | `PUT` hoặc `DELETE /members/{userId}/follow` với chính tài khoản trong phiên (AC-59.3); không ghi bản ghi nào. |
+| `FOLLOW_TARGET_INACTIVE` | 409 | `PUT /members/{userId}/follow` tới Member đang `LOCKED` (AC-59.7); vẫn bỏ theo dõi được tài khoản này. |
 | `FILE_TOO_LARGE` | 413 | Ảnh đại diện vượt 2 MB, hoặc tệp tải lên vượt giới hạn 5 MB của máy chủ. |
 | `UNSUPPORTED_IMAGE_TYPE` | 400 | Tệp ảnh không phải JPEG, PNG hoặc WebP; với ảnh đại diện, nội dung tệp (chữ ký đầu tệp) phải khớp `Content-Type`. |
 | `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |
@@ -304,3 +306,11 @@ Generated OpenAPI runtime là contract chi tiết. Hai API đều trả `{ "item
 - Gemini nhận tối đa 50 ứng viên công khai cùng loại chay với nguồn, phân bổ theo thể loại, và chỉ trả ID. Backend từ chối cấu trúc sai, quá giới hạn hoặc ID ngoài tập bằng `502 AI_RESPONSE_INVALID`; loại ID trùng và đọc lại trạng thái/nội dung hiện tại sau khi provider trả về. Bài bị ẩn/xóa hoặc đổi sang loại chay khác không được gửi xuống FE. Không có ứng viên thì trả rỗng và không gọi Gemini.
 - Lỗi cấu hình/provider/timeout trả `503 AI_PROVIDER_UNAVAILABLE`; API chỉ đọc, không tạo RecipePost hoặc ghi Lịch ăn. FE chỉ gọi POST sau thao tác chủ động, giữ gợi ý thường khi AI lỗi và bỏ phản hồi cũ khi chuyển bài. Khóa vẫn dùng `GEMINI_API_KEY` ở Backend và cơ chế Compose hiện có.
 - Tích hợp FR-11: `AiUsageEvent` mang `userId`, `feature=FR-47`, `occurredAt` và các token count thực tế từ provider; thiếu metadata giữ `null`, không suy đoán bằng 0. Event chỉ phát sau khi phản hồi hợp lệ. Consumer lưu trữ tối đa 90 ngày/báo cáo do Issue #17 triển khai; FR-47 chưa cung cấp consumer lưu trữ. Không đưa prompt, nội dung công thức hoặc API key vào event/log.
+
+## 14. Theo dõi thành viên — FR-59
+
+Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Quan hệ có hướng lưu trong `USER_FOLLOW` (có từ V1), người theo dõi luôn là tài khoản trong phiên (BR-75).
+
+- `GET /api/v1/members/{userId}/follow` (công khai) trả `FollowStatusResponse`: `userId`, `following` (người xem có đang theo dõi không; Guest luôn `false`), `followerCount`, `followingCount`. Hai bộ đếm chỉ tính tài khoản `ACTIVE` (AC-59.7). Hồ sơ Member bị `LOCKED` vẫn đọc được (Q55).
+- `PUT /api/v1/members/{userId}/follow` và `DELETE /api/v1/members/{userId}/follow` (cần Bearer token) đều idempotent và trả `FollowStatusResponse` mới: gọi lặp không tạo bản ghi trùng hay làm sai bộ đếm (AC-59.4, AC-59.5). Chỉ Customer/Expert đang hoạt động được gọi; Administrator nhận `403 MEMBER_ACCESS_REQUIRED`, tự theo dõi nhận `403 FOLLOW_SELF_NOT_ALLOWED`, theo dõi Member `LOCKED` nhận `409 FOLLOW_TARGET_INACTIVE`.
+- `GET /api/v1/members/{userId}/followers` và `GET /api/v1/members/{userId}/following` (cần Bearer token) trả `PageResponse` gồm `userId`, `displayName`, `avatarUrl`; không có email hay dữ liệu đăng nhập (AC-59.6). Chỉ gồm tài khoản `ACTIVE`, mới theo dõi gần đây trước; `page` từ 0, `size` 1–50 (mặc định 20).
