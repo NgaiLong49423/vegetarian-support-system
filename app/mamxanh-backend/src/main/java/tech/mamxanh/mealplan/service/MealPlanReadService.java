@@ -34,9 +34,7 @@ public class MealPlanReadService {
     @Transactional(readOnly = true)
     public MealPlanWeekResponse getWeek(LocalDate weekStartDate) {
         var currentUser = currentUserService.requireActiveMember();
-        if (weekStartDate == null || !weekStartDate.getDayOfWeek().equals(DayOfWeek.MONDAY)) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "Ngày bắt đầu tuần phải là thứ Hai.");
-        }
+        validateWeekStart(weekStartDate);
         var plan = mealPlanRepository.findByUserIdAndWeekStartDate(currentUser.id(), weekStartDate);
         if (plan.isEmpty()) return new MealPlanWeekResponse(weekStartDate, List.of());
 
@@ -54,5 +52,15 @@ public class MealPlanReadService {
                     available ? null : "Công thức không còn khả dụng");
         }).toList();
         return new MealPlanWeekResponse(weekStartDate, response);
+    }
+
+    static void validateWeekStart(LocalDate weekStartDate) {
+        if (weekStartDate != null && (weekStartDate.getYear() < 1
+                || weekStartDate.isAfter(LocalDate.of(9999, 12, 31).minusDays(6)))) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Ngày bắt đầu tuần nằm ngoài phạm vi ngày được hỗ trợ.");
+        }
+        if (weekStartDate == null || weekStartDate.getDayOfWeek() != DayOfWeek.MONDAY) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Ngày bắt đầu tuần phải là thứ Hai.");
+        }
     }
 }

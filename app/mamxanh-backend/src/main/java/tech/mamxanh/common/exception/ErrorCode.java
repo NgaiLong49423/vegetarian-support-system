@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "Validation failed", "Dữ liệu gửi lên không hợp lệ."),
+    MEAL_PLAN_RECIPE_DUPLICATE(HttpStatus.CONFLICT, "Duplicate recipe in meal",
+            "Công thức đã có trong bữa ăn này."),
     EMAIL_ALREADY_USED(HttpStatus.CONFLICT, "Email already used", "Email này đã được sử dụng."),
     VERIFICATION_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "Verification token invalid",
             "Liên kết xác minh không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu gửi lại email xác minh."),
