@@ -59,7 +59,7 @@ public class MealPlanReadService {
                 || weekStartDate.isAfter(LocalDate.of(9999, 12, 31).minusDays(6)))) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Ngày bắt đầu tuần nằm ngoài phạm vi ngày được hỗ trợ.");
         }
-        if (weekStartDate == null || weekStartDate.getDayOfWeek() != DayOfWeek.MONDAY) {
+        if (weekStartDate == null || !weekStartDate.getDayOfWeek().equals(DayOfWeek.MONDAY)) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Ngày bắt đầu tuần phải là thứ Hai.");
         }
     }

@@ -1,5 +1,6 @@
 package tech.mamxanh.mealplan.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -170,5 +171,24 @@ class MealPlanControllerTest {
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}'].put.responses['403']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}'].delete.responses['204']").exists())
                 .andExpect(jsonPath("$.components.schemas.AddMealPlanEntryRequest.properties.recipeId.minimum").value(1));
+    }
+
+    @Test
+    void tombstoneNullFieldsAreRepresentedByTheGeneratedContract() throws Exception {
+        var monday = LocalDate.of(2026, 10, 12);
+        var tombstone = new MealPlanWeekResponse.Entry(31, monday, "LUNCH", java.math.BigDecimal.ONE,
+                1, null, null, null, null, true, "Công thức không còn khả dụng");
+        when(reads.getWeek(monday)).thenReturn(new MealPlanWeekResponse(monday, java.util.List.of(tombstone)));
+        mvc.perform(get("/api/v1/meal-plans").param("weekStartDate", monday.toString()).with(user("17")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("\"recipeTitle\":null")))
+                .andExpect(jsonPath("$.entries[0].recipeTitle").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.entries[0].recipeDeleted").value(true));
+        var spec = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
+        var json = tools.jackson.databind.json.JsonMapper.builder().build().readTree(spec.getResponse().getContentAsString());
+        for (String field : java.util.List.of("recipeTitle", "recipeCoverUrl", "dishCategory", "totalTimeMinutes", "unavailableMessage")) {
+            var schema = json.at("/components/schemas/Entry/properties/" + field);
+            assertThat(schema.path("type").toString()).contains("\"null\"");
+        }
     }
 }

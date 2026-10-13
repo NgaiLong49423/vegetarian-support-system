@@ -30,6 +30,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Align SQL integration fixtures with the existing recipe status constraint and remove fixture Saved records before deleting their referenced recipes.
+- Describe nullable meal-plan response fields in generated OpenAPI so unavailable recipe references and optional metadata match runtime JSON.
 
 ## 2026-10-12 — Add Related Recipe Recommendations ([PR #125](https://github.com/NgaiLong49423/vegetarian-support-system/pull/125))
 
