@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.69.0
+> **Version:** v2.70.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-12
 > **Status:** Active
@@ -9,7 +9,7 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-12 — Introduce the Public Product Landing Page
+## 2026-10-12 — Introduce the Public Product Landing Page ([PR #120](https://github.com/NgaiLong49423/vegetarian-support-system/pull/120))
 
 **Status:** Committed — `2f21e04`.
 
@@ -28,6 +28,69 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Replace recreated preview controls with compressed screenshots captured from the application and its Compose demo data, including a dedicated mobile Home image.
 - Load application routes, theme and saved-recipe state separately from the Landing Page.
 - Align public metadata and the Frontend guide with the product story and route separation; preserve the existing preview indexing policy.
+
+### Fixed
+
+- None.
+
+## 2026-10-12 — Add Related Recipe Recommendations ([PR #125](https://github.com/NgaiLong49423/vegetarian-support-system/pull/125))
+
+**Status:** Committed — `81a3b5e`.
+
+**Scope:** Issue #49 / FR-47, public related recipes and explicit subscription-gated Gemini selection.
+
+### Added
+
+- Add bounded SQL Server similarity ranking and public related-recipe APIs, with an optional Gemini selection restricted to current public recipe IDs.
+- Show database-backed recipe cards and an explicit AI action on the recipe detail page, with retry, empty and upgrade states.
+- Expose provider token metadata through an FR-11 handoff event without recording prompts or generated content.
+
+### Changed
+
+- Define principal ingredients by the largest converted gram weight and clarify partial attribute matching and deterministic ordering in FR-47 and UC-47.
+- Document the runtime integration contract, role checks and remaining telemetry-consumer responsibility.
+
+### Fixed
+
+- Disambiguate the existing publish-flow test's description textbox from its AI action by using an exact textbox locator.
+- Align the gallery publishing test's upload fixture with the current runtime API envelope.
+
+## 2026-10-12 — Complete Ingredient Catalog Management Experience ([PR #124](https://github.com/NgaiLong49423/vegetarian-support-system/pull/124))
+
+**Status:** Committed — `4a8bc0e`.
+
+**Scope:** Complete the remaining Issue #46 catalog workflows and keep the administration page focused on nutrition ingredients.
+
+### Added
+
+- Add configured ingredient group and source choices, detailed nutrition viewing, recipe usage counts, and paginated recipe references.
+- Search ingredients as the administrator types and show key nutrition values in the catalog list.
+
+### Changed
+
+- Remove unrelated unit and conversion management screens from the Issue #46 page while retaining their existing Backend endpoints.
+- Allow an ingredient name to be reused after its previous catalog record becomes inactive.
+
+### Fixed
+
+- None.
+
+## 2026-10-12 — Manage Ingredient Nutrition Catalog ([PR #124](https://github.com/NgaiLong49423/vegetarian-support-system/pull/124))
+
+**Status:** Committed — `6be47a6`.
+
+**Scope:** Implement Backend support for administrator-managed ingredient nutrition data and expose supported nutrient details with public recipe data.
+
+### Added
+
+- Add paginated and filtered administrator ingredient search, ingredient detail and recipe-reference endpoints, nutrition-value updates, and nutrition-support controls.
+- Include ingredient group and supported per-100-gram nutrient values in public recipe details without exposing source metadata.
+- Validate nutrition sources against application configuration and require complete values and source metadata before enabling nutrition calculations.
+
+### Changed
+
+- Keep catalog writes restricted to administrators and preserve existing ingredient, unit, and conversion endpoints.
+- Reject hard-delete requests and retain soft status changes for catalog records.
 
 ### Fixed
 
