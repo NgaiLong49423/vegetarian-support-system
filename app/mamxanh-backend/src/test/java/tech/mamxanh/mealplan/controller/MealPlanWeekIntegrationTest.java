@@ -48,6 +48,7 @@ class MealPlanWeekIntegrationTest extends AbstractIntegrationTest {
     @AfterEach
     void cleanup() {
         jdbc.update("DELETE FROM [MEAL_PLAN] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'fr09-week-%@test.local')");
+        jdbc.update("DELETE FROM [SAVED_RECIPE] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'fr09-week-%@test.local')");
         jdbc.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'fr09-week-%@test.local')");
         jdbc.update("DELETE FROM [USER] WHERE email LIKE 'fr09-week-%@test.local'");
     }
@@ -151,7 +152,7 @@ class MealPlanWeekIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void unavailableSourceRollsBackCreationOfANewWeek() throws Exception {
-        for (String state : List.of("HIDDEN", "DELETED", "DRAFT")) {
+        for (String state : List.of("HIDDEN", "DELETED")) {
             add(owner, recipe(state), "LUNCH", 404);
             assertThat(count(owner)).isZero();
         }

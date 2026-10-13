@@ -9,7 +9,7 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-13 — Add Weekly Meal Planning
+## 2026-10-13 — Add Weekly Meal Planning ([PR #126](https://github.com/NgaiLong49423/vegetarian-support-system/pull/126))
 
 **Status:** Committed — `ed72a4f`.
 
@@ -25,12 +25,12 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Replace the Member's read-only page with a responsive seven-day, three-meal editor while preserving the existing Guest demonstration.
 - Document generated API contracts and add an optional Playwright worker limit for memory-constrained local verification without changing coverage gates.
-- Keep SQL Server, full Backend coverage and Compose execution pending while local Docker is unavailable; mocked browser and non-database Backend results do not establish persistence acceptance.
+- Verify the real browser add, replace and remove flow with SQL assertions in the root Compose CI stack on `302cfc8`; inspect its generated runtime OpenAPI. Full Backend verification remains pending after the first CI run exposed test-fixture setup and cleanup errors.
 - Verify 387 non-database Backend tests and all four Frontend coverage metrics above 80%. The full browser run has 162 passes and one mobile authentication timeout that passes in isolation; the full Frontend check remains unconfirmed until a successful complete run or same-commit CI result.
 
 ### Fixed
 
-- None.
+- Align SQL integration fixtures with the existing recipe status constraint and remove fixture Saved records before deleting their referenced recipes.
 
 ## 2026-10-12 — Add Related Recipe Recommendations ([PR #125](https://github.com/NgaiLong49423/vegetarian-support-system/pull/125))
 
