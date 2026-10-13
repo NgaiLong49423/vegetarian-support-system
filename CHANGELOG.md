@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-13 — Add Weekly Meal Planning
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `ed72a4f`.
 
 **Scope:** Issue #15 / FR-09, private weekly plans and recipe entries across three daily meals.
 
