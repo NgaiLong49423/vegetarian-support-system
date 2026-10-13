@@ -10,23 +10,53 @@ export type CatalogIngredient = {
   referenceDate: string;
   nutritionSupported: boolean;
   active: boolean;
+  nutrition: IngredientNutrition;
+  recipeUsageCount?: number;
 };
 
-export type CatalogUnit = {
-  id: number;
-  code: string;
-  name: string;
-  dimension: 'MASS' | 'VOLUME' | 'COUNT';
-  baseFactor: number;
-  active: boolean;
+export type IngredientNutrition = {
+  energyKcalPer100g: number | null;
+  proteinGramsPer100g: number | null;
+  carbohydrateGramsPer100g: number | null;
+  totalFatGramsPer100g: number | null;
+  fiberGramsPer100g: number | null;
+  calciumMgPer100g: number | null;
+  ironMgPer100g: number | null;
+  vitaminB12MicrogramsPer100g: number | null;
+  zincMgPer100g: number | null;
 };
 
-export type CatalogConversion = {
-  ingredientId: number;
-  unitId: number;
-  gramsPerUnit: number;
-  approximate: boolean;
-  active: boolean;
+export type IngredientSearch = {
+  query: string;
+  ingredientGroup: string;
+  active: boolean | null;
+  nutritionSupported: boolean | null;
+  page: number;
+  size: number;
+};
+
+export type CatalogIngredientPage = {
+  content: CatalogIngredient[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
+export type IngredientCatalogOptions = { groups: string[]; sources: string[] };
+export type IngredientRecipePage = {
+  content: IngredientRecipeReference[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
+export type IngredientRecipeReference = {
+  recipeId: number;
+  title: string;
+  status: string;
+  publishedAt: string | null;
 };
 
 type ApiResponse<T> = { success: boolean; data: T; message?: string };
@@ -74,27 +104,27 @@ const json = (method: string, body?: unknown): RequestInit => ({
 
 export const adminCatalogApi = {
   ingredients: (query = '') => request<CatalogIngredient[]>('/admin/ingredients' + (query ? '?query=' + encodeURIComponent(query) : '')),
-  createIngredient: (body: Omit<CatalogIngredient, 'id' | 'nutritionSupported' | 'active'>) =>
+  searchIngredients: (filters: IngredientSearch) => {
+    const query = new URLSearchParams({ page: String(filters.page), size: String(filters.size) });
+    if (filters.query) query.set('query', filters.query);
+    if (filters.ingredientGroup) query.set('ingredientGroup', filters.ingredientGroup);
+    if (filters.active !== null) query.set('active', String(filters.active));
+    if (filters.nutritionSupported !== null) query.set('nutritionSupported', String(filters.nutritionSupported));
+    return request<CatalogIngredientPage>('/admin/ingredients/search?' + query.toString());
+  },
+  ingredientOptions: () => request<IngredientCatalogOptions>('/admin/ingredients/options'),
+  ingredient: (id: number) => request<CatalogIngredient>('/admin/ingredients/' + id),
+  ingredientRecipes: (id: number) => request<IngredientRecipeReference[]>('/admin/ingredients/' + id + '/recipes'),
+  searchIngredientRecipes: (id: number, page: number, size: number) =>
+    request<IngredientRecipePage>('/admin/ingredients/' + id + '/recipes/search?' + new URLSearchParams({ page: String(page), size: String(size) })),
+  createIngredient: (body: Omit<CatalogIngredient, 'id' | 'nutritionSupported' | 'active' | 'nutrition'>) =>
     request<CatalogIngredient>('/admin/ingredients', json('POST', body)),
-  updateIngredient: (id: number, body: Omit<CatalogIngredient, 'id' | 'nutritionSupported' | 'active'>) =>
+  updateIngredient: (id: number, body: Omit<CatalogIngredient, 'id' | 'nutritionSupported' | 'active' | 'nutrition'>) =>
     request<CatalogIngredient>('/admin/ingredients/' + id, json('PUT', body)),
+  updateNutrition: (id: number, body: IngredientNutrition) =>
+    request<CatalogIngredient>('/admin/ingredients/' + id + '/nutrition', json('PUT', body)),
+  setNutritionSupported: (id: number, enabled: boolean) =>
+    request<CatalogIngredient>('/admin/ingredients/' + id + '/nutrition-support', json('PATCH', { enabled })),
   setIngredientActive: (id: number, active: boolean) =>
     request<CatalogIngredient>('/admin/ingredients/' + id + '/status', json('PATCH', { active })),
-  units: () => request<CatalogUnit[]>('/admin/units'),
-  createUnit: (body: Omit<CatalogUnit, 'id' | 'active'>) =>
-    request<CatalogUnit>('/admin/units', json('POST', body)),
-  updateUnit: (id: number, body: Omit<CatalogUnit, 'id' | 'active'>) =>
-    request<CatalogUnit>('/admin/units/' + id, json('PUT', body)),
-  setUnitActive: (id: number, active: boolean) =>
-    request<CatalogUnit>('/admin/units/' + id + '/status', json('PATCH', { active })),
-  conversions: () => request<CatalogConversion[]>('/admin/ingredient-unit-conversions'),
-  saveConversion: (item: CatalogConversion, create: boolean) => {
-    const path = '/admin/ingredients/' + item.ingredientId + '/unit-conversions/' + item.unitId;
-    return request<CatalogConversion>(path, json(create ? 'POST' : 'PUT', {
-      gramsPerUnit: item.gramsPerUnit,
-      approximate: item.approximate,
-    }));
-  },
-  setConversionActive: (item: CatalogConversion, active: boolean) =>
-    request<CatalogConversion>('/admin/ingredients/' + item.ingredientId + '/unit-conversions/' + item.unitId + '/status', json('PATCH', { active })),
 };

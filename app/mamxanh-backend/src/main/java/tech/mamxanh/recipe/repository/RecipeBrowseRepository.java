@@ -9,6 +9,9 @@ public interface RecipeBrowseRepository {
             List<Long> ingredientIds, Integer maxTotalTimeMinutes, RecipeSortMode sortMode,
             LocalDateTime viewSince, LocalDateTime now, int page, int size);
 
+    /** FR-23 (Q56): one author's published posts, newest first, with the same public metrics. */
+    BrowsePage findPublishedByAuthor(long authorId, LocalDateTime now, int page, int size);
+
     record BrowsePage(List<BrowseRow> rows, long totalElements) { }
 
     record BrowseRow(long recipeId, long likes, long dislikes, long views, long comments,

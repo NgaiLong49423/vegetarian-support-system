@@ -15,21 +15,21 @@ test('home renders Backend featured recipes and routes both search actions to ex
   } }));
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Canh rau củ từ Backend' })).toBeVisible();
-  await expect(page.locator('img[alt="Canh rau củ từ Backend"]')).toHaveAttribute('src', 'https://example.test/first-photo.jpg');
-  await page.getByPlaceholder('Nhập nguyên liệu sẵn có hoặc món chay bạn đang tìm kiếm...').fill('đậu & nấm');
-  await page.getByRole('button', { name: 'Tìm công thức' }).click();
+  await expect(page.getByRole('heading', { name: 'Canh rau củ từ Backend' })).toHaveCount(2);
+  await expect(page.locator('img[alt="Canh rau củ từ Backend"]').first()).toHaveAttribute('src', 'https://example.test/first-photo.jpg');
+  await page.getByRole('textbox', { name: 'Tìm công thức trang chủ' }).fill('đậu & nấm');
+  await page.getByRole('button', { name: 'Tìm', exact: true }).click();
   await expect(page).toHaveURL(/\/kham-pha\?q=%C4%91%E1%BA%ADu%20%26%20n%E1%BA%A5m$/);
 
   await page.goto('/');
-  await page.getByRole('button', { name: 'Phở chay' }).click();
-  await expect(page).toHaveURL(/\/kham-pha\?q=Ph%E1%BB%9F%20chay$/);
+  await page.getByRole('link', { name: 'Xem tất cả', exact: true }).last().click();
+  await expect(page).toHaveURL(/\/kham-pha\?sort=MOST_LIKED$/);
 
   await page.goto('/');
-  await page.getByRole('button', { name: 'Khám phá ngay' }).click();
+  await page.getByRole('link', { name: 'Khám phá công thức', exact: true }).click();
   await expect(page).toHaveURL(/\/kham-pha$/);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Gợi ý thực đơn của tôi' }).click();
+  await page.getByRole('link', { name: 'Mở lịch ăn' }).click();
   await expect(page).toHaveURL(/\/ke-hoach$/);
 });
 
@@ -55,18 +55,18 @@ test('explore paginates API results, handles image variants and clears its searc
 
   await page.goto('/kham-pha?q=tofu');
   await expect(page.getByRole('heading', { name: 'Công thức trang 1' })).toBeVisible();
-  await expect(page.getByText('Ảnh công thức')).toBeVisible();
-  await expect(page.getByText('Trang 1/2')).toBeVisible();
+  await expect(page.getByText('Chưa có ảnh công thức')).toBeVisible();
+  await expect(page.getByText('Trang 1 / 2')).toBeVisible();
   await page.getByRole('button', { name: 'Trang sau' }).click();
   await expect(page.getByRole('heading', { name: 'Công thức trang 2' })).toBeVisible();
   await expect(page.locator('img[alt="Công thức trang 2"]')).toHaveAttribute('src', 'https://example.test/cover.jpg');
-  await expect(page.getByText('Trang 2/2')).toBeVisible();
+  await expect(page.getByText('Trang 2 / 2')).toBeVisible();
 
-  await page.getByPlaceholder('Tìm món chay hoặc nguyên liệu...').fill('other');
+  await page.getByRole('textbox', { name: 'Từ khóa', exact: true }).fill('other');
   await expect(page).toHaveURL(/\/kham-pha\?q=other$/);
   await expect(page.getByRole('heading', { name: 'Công thức trang 1' })).toBeVisible();
   await page.getByRole('button', { name: 'Xóa từ khóa' }).click();
-  await expect(page.getByPlaceholder('Tìm món chay hoặc nguyên liệu...')).toHaveValue('');
+  await expect(page.getByRole('textbox', { name: 'Từ khóa', exact: true })).toHaveValue('');
   await expect(page).toHaveURL(/\/kham-pha$/);
   expect(requestedPages).toContain(1);
 });
@@ -78,42 +78,28 @@ test('home explains when Backend has no published recipes', async ({ page }) => 
 
   await page.goto('/');
 
-  await expect(page.getByText('Backend chưa có công thức công khai hoặc chưa thể kết nối.')).toBeVisible();
+  await expect(page.getByText('Chưa có công thức công khai trong bộ sưu tập này.')).toHaveCount(2);
 });
 
-test('saved-recipe demo handles corrupt storage, toggle events and meal-plan button state', async ({ page }) => {
+test('Member profile ignores stale local prototype data and reads its private API list', async ({ page }) => {
   await seedDemoSession(page, 'CUSTOMER');
   await page.addInitScript(() => localStorage.setItem('mamxanh_saved_recipes', '{invalid-json'));
   await page.goto('/ho-so');
-  await expect(page.getByText('Chức năng lưu đang ở chế độ demo UI')).toBeVisible();
-
-  await page.getByRole('button', { name: 'Món yêu thích' }).click();
-  const recipeCards = page.locator('a[href^="/cong-thuc/"]').filter({ has: page.getByRole('button', { name: 'Lưu công thức' }) });
-  const firstCard = recipeCards.first();
-  await expect(firstCard).toBeVisible();
-  await firstCard.getByRole('button', { name: 'Lưu công thức' }).click();
-  await expect(firstCard.getByRole('button', { name: 'Bỏ lưu công thức' })).toBeVisible();
-  await firstCard.getByRole('button', { name: 'Thêm vào lịch ăn' }).click();
-  await expect(firstCard.getByRole('button', { name: 'Đã thêm vào lịch ăn' })).toBeVisible();
-
-  await page.getByRole('button', { name: 'Công thức đã lưu' }).click();
-  const savedCard = page.locator('a[href^="/cong-thuc/"]').filter({ has: page.getByRole('button', { name: 'Bỏ lưu công thức' }) }).first();
-  await expect(savedCard).toBeVisible();
-  await savedCard.getByRole('button', { name: 'Bỏ lưu công thức' }).click();
-  await expect(page.getByText('Chức năng lưu đang ở chế độ demo UI')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Chưa có công thức đã lưu' })).toBeVisible();
+  await expect(page.getByRole('article')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Mở sở thích ăn uống' })).toHaveAttribute('href', '/ho-so/so-thich-an-uong');
 });
 
-test('guest recipe-card actions explain the login requirement and link to sign-in', async ({ page }) => {
+test('Guest profile links to sign-in without reading member data', async ({ page }) => {
+  let reads = 0;
+  page.on('request', (request) => { if (new URL(request.url()).pathname === '/api/v1/saved-recipes') reads++; });
   await page.goto('/ho-so');
-  await page.getByRole('button', { name: 'Món yêu thích' }).click();
-  const firstCard = page.locator('a[href^="/cong-thuc/"]').first();
-
-  await firstCard.getByRole('button', { name: 'Lưu công thức' }).click();
-  await expect(firstCard.getByRole('alert')).toContainText('Vui lòng đăng nhập để lưu công thức.');
-  await firstCard.getByRole('alert').click();
+  await expect(page.getByRole('heading', { name: 'Góc bếp riêng của bạn' })).toBeVisible();
+  await page.getByRole('main').getByRole('link', { name: 'Đăng nhập', exact: true }).click();
   await expect(page).toHaveURL(/\/dang-nhap$/);
+  expect(reads).toBe(0);
 });
-
 test('guest admin routes explain that an administrator session is required', async ({ page }) => {
   await page.addInitScript(() => sessionStorage.removeItem('mamxanh.auth'));
   await page.goto('/admin/xet-duyet-chuyen-gia');

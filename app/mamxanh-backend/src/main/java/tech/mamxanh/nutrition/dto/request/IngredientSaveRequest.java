@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.Valid;
 import java.time.LocalDate;
 
 public record IngredientSaveRequest(
@@ -11,4 +12,10 @@ public record IngredientSaveRequest(
         @NotBlank @Size(max = 100) String ingredientGroup,
         @NotBlank @Size(max = 200) String sourceName,
         @Size(max = 2048) String sourceUrl,
-        @NotNull @PastOrPresent LocalDate referenceDate) { }
+        @NotNull @PastOrPresent LocalDate referenceDate,
+        @Valid IngredientNutritionRequest nutrition) {
+    public IngredientSaveRequest(String name, String ingredientGroup, String sourceName,
+            String sourceUrl, LocalDate referenceDate) {
+        this(name, ingredientGroup, sourceName, sourceUrl, referenceDate, null);
+    }
+}

@@ -34,6 +34,7 @@ export function RecipeImageUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
 
   const recomputeOrdersAndCover = (list: ImageItem[]): ImageItem[] => {
     if (list.length === 0) return [];
@@ -51,7 +52,7 @@ export function RecipeImageUploader({
 
     const availableSlots = maxImages - images.length;
     if (availableSlots <= 0) {
-      setErrorMessage(`Bạn chỉ có thể tải lên tối đa ${maxImages} hình ảnh cho bài công thức (FR-14).`);
+      setErrorMessage(`Bạn chỉ có thể tải lên tối đa ${maxImages} hình ảnh cho bài công thức.`);
       return;
     }
 
@@ -79,8 +80,8 @@ export function RecipeImageUploader({
         const uploadResult = await recipeMediaApi.uploadImage(file);
         newItems.push({
           id: tempId,
-          url: uploadResult.url,
-          mimeType: uploadResult.contentType,
+          url: uploadResult.blobUrl,
+          mimeType: uploadResult.mimeType,
           displayOrder: images.length + newItems.length + 1,
           isCover: images.length === 0 && newItems.length === 0, // default first to cover
         });
@@ -104,6 +105,12 @@ export function RecipeImageUploader({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragActive(false);
+    void handleFiles(event.dataTransfer.files);
   };
 
   const handleSetCover = (index: number) => {
@@ -150,9 +157,14 @@ export function RecipeImageUploader({
         {images.length < maxImages ? (
           <label
             htmlFor="recipe-media-upload-input"
+            onDragOver={(event) => { event.preventDefault(); setIsDragActive(true); }}
+            onDragLeave={() => setIsDragActive(false)}
+            onDrop={handleDrop}
             className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
               isUploading
                 ? 'border-brand-300 bg-brand-50/50 cursor-wait'
+                : isDragActive
+                  ? 'border-brand-500 bg-brand-50'
                 : 'border-brand-200 bg-brand-50/30 hover:border-brand-400 hover:bg-brand-50'
             }`}
           >
@@ -167,7 +179,7 @@ export function RecipeImageUploader({
                 : 'Kéo thả hoặc nhấp để chọn ảnh món ăn'}
             </p>
             <p className="mt-1 text-xs text-ink-muted">
-              Định dạng JPEG, PNG, WebP • Tối đa 5 MB/ảnh • Tối đa {maxImages} ảnh (FR-14)
+              Định dạng JPEG, PNG, WebP • Tối đa 5 MB/ảnh • Tối đa {maxImages} ảnh
             </p>
           </label>
         ) : (
@@ -203,7 +215,7 @@ export function RecipeImageUploader({
                 className={`group relative flex flex-col overflow-hidden rounded-xl border transition-all ${
                   item.isCover
                     ? 'border-brand-500 ring-2 ring-brand-400 bg-brand-50/20'
-                    : 'border-brand-200 bg-white hover:border-brand-300'
+                    : 'border-brand-200 bg-paper hover:border-brand-300'
                 }`}
               >
                 {/* Image Thumbnail */}
@@ -216,7 +228,7 @@ export function RecipeImageUploader({
 
                   {/* Cover Badge */}
                   {item.isCover && (
-                    <span className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold text-white shadow">
+                    <span className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold text-on-brand shadow">
                       <Star className="h-2.5 w-2.5 fill-current" /> Ảnh bìa
                     </span>
                   )}

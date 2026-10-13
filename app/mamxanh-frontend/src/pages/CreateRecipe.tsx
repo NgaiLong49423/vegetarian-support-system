@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, ImagePlus, Info, LoaderCircle, Plus, Trash2, UploadCloud } from 'lucide-react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { AlertCircle, Info, LoaderCircle, Plus, Trash2 } from 'lucide-react';
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
-import { ApiError } from '../lib/apiClient';
+import { ApiError, asApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
 import { useAuth } from '../components/AuthContext';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
@@ -10,6 +10,8 @@ import { validateYouTubeUrl } from '../utils/youtube';
 import { Button, Card } from '../components/ui';
 import type { UserRole } from '../types';
 import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
+import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
+import type { RecipeAiContentType } from '../api/recipes';
 
 type IngredientRow = {
   key: string;
@@ -37,31 +39,29 @@ export function CreateRecipe() {
   const [initialAllowed] = useState(() => active && role === 'EXPERT');
 
   if (!initialAllowed) {
-    return <RecipeCreationAccessGate active={active} role={role} />;
+    // AC-04.5: a Guest goes straight to the login page.
+    if (!active) return <Navigate to="/dang-nhap" replace />;
+    return <RecipeCreationAccessGate role={role} />;
   }
 
   return <CreateRecipeForm />;
 }
 
-function RecipeCreationAccessGate({ active, role }: { active: boolean; role: UserRole }) {
-  const isGuest = !active;
-  const destination = isGuest ? '/dang-nhap' : role === 'CUSTOMER' ? '/dang-ky-chuyen-gia' : undefined;
-  const action = isGuest ? 'Đăng nhập' : 'Đăng ký trở thành Chuyên gia';
+function RecipeCreationAccessGate({ role }: { role: UserRole }) {
+  const isCustomer = role === 'CUSTOMER';
 
   return (
     <PageContainer className="py-12">
       <Card className="mx-auto max-w-xl p-8 text-center">
         <h1 className="text-2xl font-extrabold text-ink">Đăng công thức chỉ dành cho Chuyên gia</h1>
         <p className="mt-3 text-sm text-ink-muted">
-          {isGuest
-            ? 'Đăng nhập và được phê duyệt trở thành Chuyên gia để đăng công thức.'
-            : role === 'CUSTOMER'
-              ? 'Bạn cần được phê duyệt đơn đăng ký Chuyên gia trước khi đăng công thức.'
-              : 'Vai trò hiện tại không có quyền đăng công thức.'}
+          {isCustomer
+            ? 'Bạn cần được phê duyệt đơn đăng ký Chuyên gia trước khi đăng công thức.'
+            : 'Vai trò hiện tại không có quyền đăng công thức.'}
         </p>
-        {destination && (
-          <Link to={destination} className="mt-5 inline-flex rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-700">
-            {action}
+        {isCustomer && (
+          <Link to="/dang-ky-chuyen-gia" className="mt-5 inline-flex rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-on-brand hover:bg-brand-700">
+            Đăng ký trở thành Chuyên gia
           </Link>
         )}
       </Card>
@@ -98,13 +98,13 @@ function CreateRecipeForm() {
     }
   };
   const [ingredients, setIngredients] = useState<IngredientRow[]>(() => [emptyIngredient()]);
-  const [files, setFiles] = useState<File[]>([]);
-  const [coverIndex, setCoverIndex] = useState<number | null>(null);
   const [mediaList, setMediaList] = useState<ImageItem[]>([]);
   const [mediaError, setMediaError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [aiLoading, setAiLoading] = useState<RecipeAiContentType | null>(null);
+  const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -122,29 +122,51 @@ function CreateRecipeForm() {
     setIngredients((current) => current.map((row) => row.key === key ? { ...row, ...patch } : row));
   };
 
-  const handleFiles = (selected: FileList | null) => {
-    setFiles(selected ? Array.from(selected) : []);
-    setCoverIndex(null);
-    setMediaError('');
+  const generateWithAi = async (contentType: RecipeAiContentType) => {
+    setAiError(null);
+    if (title.trim().length < 3 || !dishCategory || !vegetarianType || Number(servings) < 1
+        || ingredients.some((row) => row.ingredientId === null || row.unitId === null
+          || !row.quantity || Number(row.quantity) <= 0)) {
+      setAiError({ contentType, message: 'Hãy nhập tên món, loại chay, danh mục, khẩu phần và hoàn tất nguyên liệu trước khi yêu cầu AI.' });
+      return;
+    }
+    setAiLoading(contentType);
+    try {
+      const result = await recipesApi.suggestText({
+        contentType,
+        title,
+        dishCategory,
+        vegetarianType,
+        servings: Number(servings),
+        ingredients: ingredients.map((row) => ({
+          ingredientId: row.ingredientId!,
+          unitId: row.unitId!,
+          quantity: Number(row.quantity),
+        })),
+      });
+      if (contentType === 'DESCRIPTION') setDescription(result.content);
+      else setInstructions(result.content);
+    } catch (cause) {
+      const error = asApiError(cause);
+      setAiError({ contentType, message: error.code === 'AI_SUBSCRIPTION_REQUIRED'
+        ? 'Tính năng AI dành cho gói Plus/Pro. Bạn vẫn có thể tự viết và đăng công thức.'
+        : error.code === 'AI_PROVIDER_UNAVAILABLE' || error.code === 'AI_RESPONSE_INVALID'
+          ? 'AI hiện không tạo được nội dung hợp lệ. Bạn vẫn có thể tự viết và đăng công thức.'
+          : error.message });
+    } finally {
+      setAiLoading(null);
+    }
   };
 
   const validateMediaSelection = () => {
-    if (files.length > 5) {
-      setMediaError('Mỗi công thức được chọn tối đa 5 ảnh.');
-      return false;
-    }
-    if (files.length > 0 && (coverIndex === null || coverIndex >= files.length)) {
-      setMediaError('Nếu chọn ảnh, hãy chọn đúng 1 ảnh bìa.');
-      return false;
-    }
-    if (files.length > 0) {
-      setMediaError('Tính năng tải lên ảnh đang được hoàn thiện. Hiện hãy đăng bài không kèm ảnh.');
-      return false;
-    }
     if (mediaList.length > 0) {
+      if (mediaList.some((image) => image.url.startsWith('blob:'))) {
+        setMediaError('Một số ảnh chưa tải lên thành công. Vui lòng xóa ảnh xem trước và tải lại trước khi xuất bản.');
+        return false;
+      }
       const coverCount = mediaList.filter((m) => m.isCover).length;
       if (coverCount !== 1) {
-        setMediaError('Vui lòng chỉ định chính xác 1 ảnh đại diện (ảnh bìa) cho bài viết (FR-14, BR-19).');
+        setMediaError('Vui lòng chọn đúng 1 ảnh làm ảnh bìa.');
         return false;
       }
     }
@@ -243,7 +265,7 @@ function CreateRecipeForm() {
       {loadingOptions && <div role="status" className="mb-5 flex items-center gap-2 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" /> Đang tải danh mục…</div>}
       {optionsError && <div role="alert" className="mb-5 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{optionsError}</div>}
 
-      <form onSubmit={handlePublish} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <form noValidate onSubmit={handlePublish} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-5">
           <Card className="space-y-4 p-5 sm:p-6">
             <SectionHead number="1" title="Thông tin món ăn" />
@@ -252,6 +274,7 @@ function CreateRecipeForm() {
             </Field>
             <Field label="Mô tả (không bắt buộc, tối đa 2.000 ký tự)" error={errorFor('description')}>
               <textarea aria-label="Mô tả" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={2000} rows={3} placeholder="Giới thiệu ngắn về món ăn" className={`${inputClass} resize-y`} />
+              <RecipeAiAssistance contentType="DESCRIPTION" loading={aiLoading} error={aiError?.contentType === 'DESCRIPTION' ? aiError.message : ''} onGenerate={generateWithAi} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Thể loại món *" error={errorFor('dishCategory')}>
@@ -320,37 +343,19 @@ function CreateRecipeForm() {
             <Field label="Hướng dẫn * (10–5.000 ký tự)" error={errorFor('instructions')}>
               <textarea aria-label="Hướng dẫn * (10–5.000 ký tự)" value={instructions} onChange={(event) => setInstructions(event.target.value)} rows={8} placeholder="Viết hướng dẫn theo cách của bạn, có thể chia theo từng bước hoặc cách nấu chi tiết." className={`${inputClass} resize-y`} />
               <p className="mt-1 text-right text-xs text-ink-muted">{instructions.trim().length}/5.000 ký tự</p>
+              <RecipeAiAssistance contentType="INSTRUCTIONS" loading={aiLoading} error={aiError?.contentType === 'INSTRUCTIONS' ? aiError.message : ''} onGenerate={generateWithAi} />
             </Field>
           </Card>
 
           <Card className="space-y-4 p-5 sm:p-6">
-            <SectionHead number="4" title="Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)" />
+            <SectionHead number="4" title="Hình ảnh bài công thức" />
             <RecipeImageUploader
               images={mediaList}
               onChange={setMediaList}
               maxImages={5}
             />
-
-            <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/50 p-4">
-              <div className="flex items-start gap-3">
-                <UploadCloud className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-ink">Ảnh công thức (0–5 ảnh)</p>
-                  <p className="mt-1 text-xs text-ink-muted">Tối đa 5 ảnh minh họa cho món ăn, hãy chọn 1 ảnh làm ảnh đại diện bìa.</p>
-                  <input type="file" accept="image/*" multiple onChange={(event) => handleFiles(event.target.files)} className="mt-3 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:font-semibold file:text-brand-700" aria-label="Chọn tối đa 5 ảnh" />
-                </div>
-                {files.length === 0 && <ImagePlus className="h-6 w-6 text-brand-400" />}
-              </div>
-              {files.length > 0 && <ul className="mt-3 space-y-2 border-t border-brand-100 pt-3">{files.map((file, index) => (
-                <li key={`${file.name}-${index}`} className="flex items-center gap-2 text-sm">
-                  <input type="radio" name="cover-image" checked={coverIndex === index} onChange={() => { setCoverIndex(index); setMediaError(''); }} aria-label={`Chọn ${file.name} làm ảnh cover`} />
-                  <span className="min-w-0 flex-1 truncate">{file.name}</span>
-                  <span className="text-xs text-ink-muted">{coverIndex === index ? 'Cover' : ''}</span>
-                </li>
-              ))}</ul>}
-              {mediaError && <p role="alert" className={errorClass}>{mediaError}</p>}
-              {errorFor('media') && <p role="alert" className={errorClass}>{errorFor('media')}</p>}
-            </div>
+            {mediaError && <p role="alert" className={errorClass}>{mediaError}</p>}
+            {errorFor('media') && <p role="alert" className={errorClass}>{errorFor('media')}</p>}
             <Field label="Link YouTube / Liên kết video YouTube (không bắt buộc)">
               <input
                 type="url"
@@ -442,7 +447,7 @@ function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, ro
     <div className="relative">
       <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`ingredient-${rowNumber}`}>Nguyên liệu *</label>
       <input id={`ingredient-${rowNumber}`} value={value} onFocus={() => setOpen(true)} onChange={(event) => onTextChange(event.target.value)} onBlur={() => window.setTimeout(() => setOpen(false), 120)} placeholder="Tìm nguyên liệu có sẵn" autoComplete="off" className={inputClass} aria-label={`Chọn nguyên liệu ${rowNumber}`} aria-expanded={open} />
-      {open && <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-brand-200 bg-white p-1 shadow-lg">
+      {open && <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-brand-200 bg-paper p-1 shadow-lg">
         {searchError && <p className="px-3 py-2 text-xs text-red-700">{searchError}</p>}
         {!searchError && suggestions.length === 0 && <p className="px-3 py-2 text-xs text-ink-muted">Nguyên liệu này hiện chưa được hỗ trợ.</p>}
         {suggestions.map((item) => <button key={item.ingredientId} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(item); setOpen(false); }} className={`block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-brand-50 ${selectedId === item.ingredientId ? 'bg-brand-50 font-semibold' : ''}`}>{item.name}</button>)}
@@ -471,10 +476,10 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 }
 
 function SectionHead({ number, title }: { number: string; title: string }) {
-  return <div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">{number}</span><h2 className="text-lg font-extrabold text-ink">{title}</h2></div>;
+  return <div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on-brand">{number}</span><h2 className="text-lg font-extrabold text-ink">{title}</h2></div>;
 }
 
-const inputClass = 'w-full rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
+const inputClass = 'w-full rounded-xl border border-brand-200 bg-paper px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 const errorClass = 'mt-1 text-xs font-medium text-red-700';
 
 function quantityError(rawQuantity: string): string | null {

@@ -141,7 +141,7 @@ export function RecipeComparePage() {
                   id="compare-recipe-left"
                   value={leftRecipe.slug}
                   onChange={(e) => handleLeftChange(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-brand-200 bg-white p-3 text-sm font-bold text-ink outline-none focus:border-brand-500"
+                  className="mt-1.5 w-full rounded-xl border border-brand-200 bg-paper p-3 text-sm font-bold text-ink outline-none focus:border-brand-500"
               >
                 {recipes.map((r) => (
                     <option key={r.id} value={r.slug} disabled={r.slug === rightRecipe.slug}>
@@ -167,7 +167,7 @@ export function RecipeComparePage() {
                   id="compare-recipe-right"
                   value={rightRecipe.slug}
                   onChange={(e) => handleRightChange(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-brand-200 bg-white p-3 text-sm font-bold text-ink outline-none focus:border-brand-500"
+                  className="mt-1.5 w-full rounded-xl border border-brand-200 bg-paper p-3 text-sm font-bold text-ink outline-none focus:border-brand-500"
               >
                 {recipes.map((r) => (
                     <option key={r.id} value={r.slug} disabled={r.slug === leftRecipe.slug}>
