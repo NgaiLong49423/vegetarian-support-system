@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.72.0
+> **Version:** v2.73.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -26,6 +26,20 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Document the follow API and error codes in `API.md` section 14 and the Backend/Frontend READMEs.
+## 2026-10-13 — Expand Local Recipe Demo Fixtures ([PR #127](https://github.com/NgaiLong49423/vegetarian-support-system/pull/127))
+
+**Status:** Committed — `c5ac7d0`.
+
+**Scope:** Enrich the IntelliJ `local` profile with recipe, ingredient and nutrition examples for classroom demonstrations.
+
+### Added
+
+- Add 40 catalog ingredients and 16 illustrated recipe posts to the repeatable local seed.
+- Seed per-100-gram nutrition values for all 51 demo ingredients, labeling synthetic examples as internal demo data and retaining USDA FoodData Central identifiers for sourced rows.
+
+### Changed
+
+- Add cover images to the seven existing local recipe examples so every seeded recipe has a cover.
 
 ### Fixed
 

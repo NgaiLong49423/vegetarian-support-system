@@ -257,4 +257,168 @@ FROM @plan_recipes seed JOIN [RECIPE_POST] p ON p.author_id = @author_id AND p.t
 WHERE NOT EXISTS (SELECT 1 FROM [MEAL_PLAN_ENTRY] e WHERE e.meal_plan_id = @sample_meal_plan_id
     AND e.recipe_id = p.recipe_id AND e.meal_date = DATEADD(DAY, seed.day_offset, @sample_week_start) AND e.meal_type = seed.meal_type);
 
+-- Additional catalog items for the local lecturer demo.
+DECLARE @showcase_ingredients TABLE (name NVARCHAR(200) PRIMARY KEY);
+INSERT INTO @showcase_ingredients (name) VALUES
+ (N'Mì Ý'), (N'Bánh phở'), (N'Bánh mì nguyên cám'), (N'Bột gạo'), (N'Bột nghệ'),
+ (N'Nấm kim châm'), (N'Nấm bào ngư'), (N'Nấm mỡ'), (N'Đậu bắp'), (N'Dứa'),
+ (N'Bắp cải'), (N'Giá đỗ'), (N'Hành lá'), (N'Hành tím'), (N'Gừng'),
+ (N'Me chua'), (N'Đậu phộng'), (N'Mè trắng'), (N'Rong biển'), (N'Hạt chia'),
+ (N'Xoài'), (N'Sữa đậu nành'), (N'Chả giò chay'), (N'Khoai môn'), (N'Rau cải thìa'),
+ (N'Ngò rí'), (N'Nước tương'), (N'Chanh'), (N'Bột mì'), (N'Đậu xanh'),
+ (N'Bí đỏ'), (N'Cà tím'), (N'Ớt đỏ'), (N'Đậu Hà Lan'), (N'Ngô hạt'),
+ (N'Mì udon'), (N'Riềng'), (N'Bột năng'), (N'Rau ngót'), (N'Cải thảo');
+
+INSERT INTO [INGREDIENT] (name, source_name, reference_date)
+SELECT seed.name, N'Dữ liệu demo nội bộ', CONVERT(DATE, SYSUTCDATETIME())
+FROM @showcase_ingredients seed
+WHERE NOT EXISTS (SELECT 1 FROM [INGREDIENT] i WHERE i.name = seed.name);
+
+-- Values are per 100 g. USDA-backed rows use their FoodData Central IDs;
+-- rows marked DEMO are illustrative and must not be treated as nutrition guidance.
+DECLARE @demo_nutrition TABLE (
+    ingredient_name NVARCHAR(200), energy_kcal DECIMAL(10,2), protein_g DECIMAL(10,2),
+    carbohydrate_g DECIMAL(10,2), total_fat_g DECIMAL(10,2), fiber_g DECIMAL(10,2),
+    calcium_mg DECIMAL(10,2), iron_mg DECIMAL(10,2), vitamin_b12_mcg DECIMAL(10,4),
+    zinc_mg DECIMAL(10,2), fdc_id BIGINT, source_type VARCHAR(10)
+);
+INSERT INTO @demo_nutrition VALUES
+ (N'Đậu hũ', 78, 9.04, 2.85, 4.17, 0.9, 201, 1.61, 0, 0.83, 172448, 'SR'),
+ (N'Cà chua', 18, 0.88, 3.89, 0.2, 1.2, 10, 0.27, 0, 0.17, 170457, 'SR'),
+ (N'Tỏi', 149, 6.36, 33.06, 0.5, 2.1, 181, 1.7, 0, 1.16, 169230, 'SR'),
+ (N'Tiêu đen', 251, 10.39, 63.95, 3.26, 25.3, 443, 9.71, 0, 1.19, 170931, 'SR'),
+ (N'Cà rốt', 41, 0.93, 9.58, 0.24, 2.8, 33, 0.3, 0, 0.24, 170393, 'SR'),
+ (N'Khoai lang', 86, 1.57, 20.12, 0.05, 3, 30, 0.61, 0, 0.3, 168482, 'SR'),
+ (N'Bông cải xanh', 34, 2.82, 6.64, 0.37, 2.6, 47, 0.73, 0, 0.41, 170379, 'SR'),
+ (N'Đậu lăng', 352, 24.63, 63.35, 1.06, 10.7, 35, 6.51, 0, 3.27, 172420, 'SR'),
+ (N'Mì Ý', 371, 13.04, 74.67, 1.51, 3.2, 21, 3.3, 0, 1.41, 169736, 'SR'),
+ (N'Bánh phở', 364, 5.95, 80.18, 0.56, 1.6, 18, 0.7, 0, 0.74, 169742, 'SR'),
+ (N'Bánh mì nguyên cám', 252, 12.45, 42.71, 3.5, 6, 161, 2.47, 0, 1.77, 172688, 'SR'),
+ (N'Bột gạo', 366, 5.95, 80.13, 1.42, 2.4, 10, 0.35, 0, 0.8, 169714, 'SR'),
+ (N'Bột nghệ', 312, 9.68, 67.14, 3.25, 22.7, 168, 55, 0, 4.5, 172231, 'SR'),
+ (N'Nấm kim châm', 37, 2.66, 7.81, 0.29, 2.7, 0, 1.15, 0, 0.65, 169382, 'SR'),
+ (N'Nấm bào ngư', 33, 3.31, 6.09, 0.41, 2.3, 3, 1.33, 0, 0.77, 168580, 'SR'),
+ (N'Nấm mỡ', 22, 3.09, 3.26, 0.34, 1, 3, 0.5, 0.04, 0.52, 169251, 'SR'),
+ (N'Đậu bắp', 33, 1.93, 7.45, 0.19, 3.2, 82, 0.62, 0, 0.58, 169260, 'SR'),
+ (N'Dứa', 50, 0.54, 13.12, 0.12, 1.4, 13, 0.29, 0, 0.12, 169124, 'SR'),
+ (N'Bắp cải', 25, 1.28, 5.8, 0.1, 2.5, 40, 0.47, 0, 0.18, 169975, 'SR'),
+ (N'Giá đỗ', 30, 3.04, 5.94, 0.18, 1.8, 13, 0.91, 0, 0.41, 169957, 'SR'),
+ (N'Hành lá', 32, 1.83, 7.34, 0.19, 2.6, 72, 1.48, 0, 0.39, 170005, 'SR'),
+ (N'Hành tím', 72, 2.5, 16.8, 0.1, 3.2, 37, 1.2, 0, 0.4, 170499, 'SR'),
+ (N'Gừng', 80, 1.82, 17.77, 0.75, 2, 16, 0.6, 0, 0.34, 169231, 'SR'),
+ (N'Me chua', 239, 2.8, 62.5, 0.6, 5.1, 74, 2.8, 0, 0.1, 167763, 'SR'),
+ (N'Đậu phộng', 567, 25.8, 16.13, 49.24, 8.5, 92, 4.58, 0, 3.27, 172430, 'SR'),
+ (N'Mè trắng', 573, 17.73, 23.45, 49.67, 11.8, 975, 14.55, 0, 7.75, 170150, 'SR'),
+ (N'Rong biển', 298, 31.8, 52.4, 4.01, 5.6, 372, 25, 0, 3.9, 2709988, 'FNDDS'),
+ (N'Hạt chia', 486, 16.54, 42.12, 30.74, 34.4, 631, 7.72, 0, 4.58, 170554, 'SR'),
+ (N'Xoài', 60, 0.82, 14.98, 0.38, 1.6, 11, 0.16, 0, 0.09, 169910, 'SR'),
+ (N'Sữa đậu nành', 54, 3.27, 6.28, 1.75, 0.6, 25, 0.64, 0, 0.12, 172446, 'SR'),
+ (N'Chả giò chay', 270, 5.62, 30, 14.1, 2.3, 47, 1.86, 0, 0.42, 2708700, 'FNDDS'),
+ (N'Khoai môn', 112, 1.5, 26.46, 0.2, 4.1, 43, 0.55, 0, 0.23, 169308, 'SR'),
+ (N'Rau cải thìa', 13, 1.5, 2.18, 0.2, 1, 105, 0.8, 0, 0.19, 170390, 'SR'),
+ (N'Ngò rí', 23, 2.13, 3.67, 0.52, 2.8, 67, 1.77, 0, 0.5, 169997, 'SR'),
+ (N'Nước tương', 53, 8.14, 4.93, 0.57, 0.8, 33, 1.45, 0, 0.87, 174277, 'SR'),
+ (N'Chanh', 29, 1.1, 9.32, 0.3, 2.8, 26, 0.6, 0, 0.06, 167746, 'SR'),
+ (N'Bột mì', 364, 10.33, 76.31, 0.98, 2.7, 15, 4.64, 0, 0.7, 168894, 'SR'),
+ (N'Đậu xanh', 347, 23.86, 62.62, 1.15, 16.3, 132, 6.74, 0, 2.68, 174256, 'SR'),
+ (N'Bí đỏ', 26, 1, 6.5, 0.1, 0.5, 21, 0.8, 0, 0.32, 168448, 'SR'),
+ (N'Cà tím', 25, 0.98, 5.88, 0.18, 3, 9, 0.23, 0, 0.16, 169228, 'SR'),
+ (N'Ớt đỏ', 40, 1.87, 8.81, 0.44, 1.5, 14, 1.03, 0, 0.26, 170106, 'SR'),
+ (N'Đậu Hà Lan', 81, 5.42, 14.45, 0.4, 5.7, 25, 1.47, 0, 1.24, 170419, 'SR'),
+ (N'Ngô hạt', 86, 3.27, 18.7, 1.35, 2, 2, 0.52, 0, 0.46, 169998, 'SR'),
+ (N'Rau muống', 19, 2.6, 3.1, 0.2, 2.1, 77, 1.7, 0, 0.4, NULL, 'DEMO'),
+ (N'Nấm đùi gà', 35, 3.3, 6.2, 0.4, 2.3, 3, 1.3, 0, 0.8, NULL, 'DEMO'),
+ (N'Nấm hương', 34, 2.2, 6.8, 0.5, 2.5, 2, 0.4, 0, 1.0, NULL, 'DEMO'),
+ (N'Mì udon', 127, 3.4, 25.2, 0.6, 1.0, 10, 0.6, 0, 0.5, NULL, 'DEMO'),
+ (N'Riềng', 71, 1.5, 15.0, 0.9, 2.0, 34, 0.9, 0, 0.3, NULL, 'DEMO'),
+ (N'Bột năng', 358, 0.2, 88.7, 0.0, 0.9, 20, 1.6, 0, 0.1, NULL, 'DEMO'),
+ (N'Rau ngót', 35, 5.0, 6.0, 0.4, 2.5, 230, 3.0, 0, 1.0, NULL, 'DEMO'),
+ (N'Cải thảo', 16, 1.2, 3.2, 0.2, 1.2, 40, 0.5, 0, 0.2, NULL, 'DEMO');
+
+UPDATE i
+SET energy_kcal_100g = seed.energy_kcal, protein_g_100g = seed.protein_g,
+    carbohydrate_g_100g = seed.carbohydrate_g, total_fat_g_100g = seed.total_fat_g,
+    fiber_g_100g = seed.fiber_g, calcium_mg_100g = seed.calcium_mg,
+    iron_mg_100g = seed.iron_mg, vitamin_b12_mcg_100g = seed.vitamin_b12_mcg,
+    zinc_mg_100g = seed.zinc_mg,
+    source_name = CASE WHEN seed.source_type = 'DEMO' THEN N'Dữ liệu demo nội bộ' ELSE N'USDA FoodData Central' END,
+    source_url = CASE WHEN seed.source_type = 'DEMO'
+        THEN 'https://example.com/demo-nutrition-data'
+        ELSE CONCAT('https://fdc.nal.usda.gov/food-details/', seed.fdc_id, '/nutrients') END,
+    reference_date = '2026-10-13', nutrition_supported = 1, updated_at = SYSUTCDATETIME()
+FROM [INGREDIENT] i
+JOIN @demo_nutrition seed ON seed.ingredient_name = i.name
+WHERE i.source_name = N'Dữ liệu demo nội bộ';
+
+DECLARE @showcase_recipes TABLE (
+    title NVARCHAR(120), description NVARCHAR(2000), instructions NVARCHAR(MAX),
+    category VARCHAR(20), difficulty VARCHAR(10), prep INT, cook INT, image_url VARCHAR(2048));
+INSERT INTO @showcase_recipes VALUES
+ (N'Mì udon xào rau củ kiểu Nhật', N'Mì udon dai mềm xào nấm, cải thìa và đậu Hà Lan trong sốt tương gừng.', N'Luộc mì udon rồi để ráo. Xào thơm gừng, cho nấm và rau củ vào đảo nhanh. Thêm mì cùng nước tương, đảo đều trên lửa lớn rồi rắc hành lá.', 'STIR_FRY', 'EASY', 15, 12, 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=1200'),
+ (N'Cơm chiên dứa đậu phộng', N'Cơm chiên vàng thơm với dứa chua ngọt, đậu phộng rang và rau củ.', N'Xào hành tím, thêm đậu Hà Lan và ngô hạt. Cho cơm nguội vào đảo tơi, nêm nước tương. Trộn dứa và đậu phộng rang ở cuối để giữ độ giòn.', 'STIR_FRY', 'EASY', 15, 15, 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200'),
+ (N'Phở cuốn nấm bào ngư', N'Bánh phở cuốn mềm ôm nấm bào ngư áp chảo và rau sống tươi mát.', N'Xé nấm bào ngư, áp chảo với nước tương và gừng. Trải bánh phở, thêm cải thìa, giá đỗ và nấm rồi cuốn chắc tay. Dùng với nước chấm chanh ớt.', 'ROLL', 'MEDIUM', 20, 12, 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1200'),
+ (N'Bánh xèo nấm và giá đỗ', N'Bánh xèo vỏ mỏng giòn, nhân nấm, giá đỗ và cải bắp.', N'Pha bột gạo với nước và bột nghệ. Xào thơm nấm, đổ bột vào chảo nóng rồi thêm giá đỗ và bắp cải. Đậy nắp đến khi viền bánh giòn rồi gập đôi.', 'FRIED', 'MEDIUM', 20, 20, 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1200'),
+ (N'Cháo bí đỏ đậu xanh', N'Cháo bí đỏ sánh mịn nấu cùng đậu xanh bùi, thơm nhẹ gừng.', N'Nấu đậu xanh cùng gạo đến khi mềm. Thêm bí đỏ cắt khối và gừng, nấu nhỏ lửa đến khi bí mềm. Khuấy đều, nêm vừa ăn và rắc hành lá.', 'SOUP', 'EASY', 10, 35, 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=1200'),
+ (N'Đậu hũ sốt nấm mỡ', N'Đậu hũ mềm phủ sốt nấm mỡ sánh nhẹ và hành lá.', N'Xào thơm hành tím, cho nấm và nước tương vào. Hòa bột năng với nước lạnh rồi khuấy vào sốt cho sánh. Áp chảo đậu hũ, rưới sốt nấm và dùng nóng.', 'BRAISED', 'EASY', 12, 12, 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200'),
+ (N'Bánh mì nấm áp chảo', N'Bánh mì nguyên cám kẹp nấm nướng, cà tím và rau xanh.', N'Ướp nấm và cà tím với nước tương, tiêu và ít dầu. Áp chảo đến khi vàng thơm. Nướng nóng bánh mì, kẹp cùng cải thìa và vắt chút chanh trước khi ăn.', 'GRILLED', 'EASY', 12, 12, 'https://images.unsplash.com/photo-1547592180-85f173990554?w=1200'),
+ (N'Bún chả giò chay rau thơm', N'Tô bún tươi ăn cùng chả giò chay giòn và rau xanh mát.', N'Chiên hoặc nướng chả giò đến khi vàng giòn. Xếp bánh phở, cải thìa, giá đỗ và rau thơm vào tô. Thêm chả giò cắt khúc, rắc đậu phộng và chan nước chấm chanh.', 'NOODLE_SOUP', 'MEDIUM', 20, 15, 'https://images.unsplash.com/photo-1555126634-323283e090fa?w=1200'),
+ (N'Lẩu nấm cải thảo', N'Nồi lẩu thanh ngọt với nấm kim châm, nấm bào ngư và cải thảo.', N'Đun sôi nước dùng rau củ với gừng và riềng. Nêm vừa ăn, lần lượt cho cải thảo, nấm và đậu hũ vào nồi. Dùng nóng cùng bánh phở.', 'HOT_POT', 'EASY', 15, 25, 'https://images.unsplash.com/photo-1570368336224-455084c1fb31?w=1200'),
+ (N'Chả giò khoai môn đậu xanh', N'Chả giò vàng giòn với nhân khoai môn, đậu xanh và nấm.', N'Ngâm mềm đậu xanh và nấm. Trộn với khoai môn bào và bắp cải thái sợi. Cuốn nhân trong bánh tráng, áp chảo hoặc chiên ít dầu đến khi vàng đều.', 'FRIED', 'MEDIUM', 25, 20, 'https://images.unsplash.com/photo-1589442305595-62647c1514f9?w=1200'),
+ (N'Cơm nắm rong biển mè trắng', N'Cơm nắm nhỏ gọn trộn rong biển, mè trắng và đậu Hà Lan.', N'Nấu chín đậu Hà Lan. Trộn cơm nóng với rong biển vụn, mè rang và chút nước tương. Nắm thành viên nhỏ khi cơm còn ấm, dùng kèm dưa leo.', 'STEAMED', 'EASY', 15, 20, 'https://images.unsplash.com/photo-1651629993507-d20a811a746d?w=1200'),
+ (N'Canh chua nấm đậu bắp', N'Canh chua thanh nhẹ nấu nấm, đậu bắp và me chua.', N'Đun nước với me chua rồi lọc bỏ hạt. Thêm cà chua, nấm và đậu bắp, nấu vừa chín tới. Nêm cân vị, rắc ngò rí trước khi dùng.', 'SOUP', 'EASY', 12, 18, 'https://images.unsplash.com/photo-1675092789086-4bd2b93ffc69?w=1200'),
+ (N'Mì Ý sốt cà tím nấm', N'Mì Ý phủ sốt cà tím, nấm và cà chua nấu thơm.', N'Luộc mì Ý đến độ dai vừa. Áp chảo cà tím và nấm, thêm cà chua cùng ít nước luộc mì rồi nấu thành sốt. Trộn mì vào chảo, nêm tiêu và nước tương.', 'STIR_FRY', 'MEDIUM', 15, 20, 'https://images.unsplash.com/photo-1758293121435-396ed31ebcf4?w=1200'),
+ (N'Pudding hạt chia xoài', N'Món tráng miệng mát lạnh với hạt chia, xoài chín và sữa đậu nành.', N'Khuấy hạt chia vào sữa đậu nành, để lạnh ít nhất 3 giờ cho nở. Cắt xoài thành hạt lựu, xếp lên pudding trước khi dùng.', 'DESSERT', 'EASY', 10, 0, 'https://images.unsplash.com/photo-1505576633757-0ac1084af824?w=1200'),
+ (N'Rau ngót nấu nấm kim châm', N'Canh rau ngót xanh mềm nấu cùng nấm kim châm và đậu hũ.', N'Vò nhẹ rau ngót, cắt bỏ gốc nấm. Đun nước sôi, cho đậu hũ vào trước, thêm rau ngót và nấm. Nấu vừa chín, nêm nước tương và tiêu.', 'SOUP', 'EASY', 10, 12, 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200'),
+ (N'Bí đỏ nướng mè trắng', N'Bí đỏ nướng mềm ngọt phủ mè trắng rang và sốt chanh gừng.', N'Cắt bí đỏ thành miếng vừa ăn, trộn với gừng băm và chút dầu. Nướng đến khi mềm cạnh vàng. Rắc mè rang, thêm nước cốt chanh và dùng nóng.', 'GRILLED', 'EASY', 10, 25, 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1200');
+
+INSERT INTO [RECIPE_POST] (author_id, title, description, instructions, dish_category, vegetarian_type, difficulty, servings, prep_time_min, cook_time_min, published_at)
+SELECT @author_id, r.title, r.description, r.instructions, r.category, 'VEGAN', r.difficulty, 2, r.prep, r.cook, SYSUTCDATETIME()
+FROM @showcase_recipes r
+WHERE NOT EXISTS (SELECT 1 FROM [RECIPE_POST] p WHERE p.author_id = @author_id AND p.title = r.title);
+
+DECLARE @showcase_recipe_ingredients TABLE (title NVARCHAR(120), ingredient_name NVARCHAR(200), quantity DECIMAL(10,2));
+INSERT INTO @showcase_recipe_ingredients VALUES
+ (N'Mì udon xào rau củ kiểu Nhật', N'Mì udon', 200), (N'Mì udon xào rau củ kiểu Nhật', N'Nấm kim châm', 100), (N'Mì udon xào rau củ kiểu Nhật', N'Rau cải thìa', 120), (N'Mì udon xào rau củ kiểu Nhật', N'Đậu Hà Lan', 60),
+ (N'Cơm chiên dứa đậu phộng', N'Dứa', 120), (N'Cơm chiên dứa đậu phộng', N'Đậu phộng', 30), (N'Cơm chiên dứa đậu phộng', N'Đậu Hà Lan', 60), (N'Cơm chiên dứa đậu phộng', N'Ngô hạt', 60),
+ (N'Phở cuốn nấm bào ngư', N'Bánh phở', 200), (N'Phở cuốn nấm bào ngư', N'Nấm bào ngư', 150), (N'Phở cuốn nấm bào ngư', N'Giá đỗ', 80), (N'Phở cuốn nấm bào ngư', N'Rau cải thìa', 80),
+ (N'Bánh xèo nấm và giá đỗ', N'Bột gạo', 150), (N'Bánh xèo nấm và giá đỗ', N'Bột nghệ', 3), (N'Bánh xèo nấm và giá đỗ', N'Nấm mỡ', 100), (N'Bánh xèo nấm và giá đỗ', N'Giá đỗ', 80),
+ (N'Cháo bí đỏ đậu xanh', N'Bí đỏ', 200), (N'Cháo bí đỏ đậu xanh', N'Đậu xanh', 80), (N'Cháo bí đỏ đậu xanh', N'Gừng', 5), (N'Cháo bí đỏ đậu xanh', N'Hành lá', 10),
+ (N'Đậu hũ sốt nấm mỡ', N'Đậu hũ', 200), (N'Đậu hũ sốt nấm mỡ', N'Nấm mỡ', 120), (N'Đậu hũ sốt nấm mỡ', N'Bột năng', 8), (N'Đậu hũ sốt nấm mỡ', N'Hành tím', 15),
+ (N'Bánh mì nấm áp chảo', N'Bánh mì nguyên cám', 120), (N'Bánh mì nấm áp chảo', N'Nấm kim châm', 100), (N'Bánh mì nấm áp chảo', N'Cà tím', 100), (N'Bánh mì nấm áp chảo', N'Chanh', 10),
+ (N'Bún chả giò chay rau thơm', N'Bánh phở', 200), (N'Bún chả giò chay rau thơm', N'Chả giò chay', 150), (N'Bún chả giò chay rau thơm', N'Rau cải thìa', 80), (N'Bún chả giò chay rau thơm', N'Đậu phộng', 20),
+ (N'Lẩu nấm cải thảo', N'Nấm kim châm', 100), (N'Lẩu nấm cải thảo', N'Nấm bào ngư', 150), (N'Lẩu nấm cải thảo', N'Cải thảo', 150), (N'Lẩu nấm cải thảo', N'Riềng', 10),
+ (N'Chả giò khoai môn đậu xanh', N'Khoai môn', 150), (N'Chả giò khoai môn đậu xanh', N'Đậu xanh', 60), (N'Chả giò khoai môn đậu xanh', N'Bắp cải', 80), (N'Chả giò khoai môn đậu xanh', N'Bột gạo', 30),
+ (N'Cơm nắm rong biển mè trắng', N'Rong biển', 5), (N'Cơm nắm rong biển mè trắng', N'Mè trắng', 10), (N'Cơm nắm rong biển mè trắng', N'Đậu Hà Lan', 50), (N'Cơm nắm rong biển mè trắng', N'Nước tương', 10),
+ (N'Canh chua nấm đậu bắp', N'Đậu bắp', 100), (N'Canh chua nấm đậu bắp', N'Me chua', 15), (N'Canh chua nấm đậu bắp', N'Nấm mỡ', 100), (N'Canh chua nấm đậu bắp', N'Ngò rí', 10),
+ (N'Mì Ý sốt cà tím nấm', N'Mì Ý', 180), (N'Mì Ý sốt cà tím nấm', N'Cà tím', 120), (N'Mì Ý sốt cà tím nấm', N'Nấm mỡ', 100), (N'Mì Ý sốt cà tím nấm', N'Cà chua', 150),
+ (N'Pudding hạt chia xoài', N'Hạt chia', 25), (N'Pudding hạt chia xoài', N'Xoài', 150), (N'Pudding hạt chia xoài', N'Sữa đậu nành', 200), (N'Pudding hạt chia xoài', N'Chanh', 5),
+ (N'Rau ngót nấu nấm kim châm', N'Rau ngót', 150), (N'Rau ngót nấu nấm kim châm', N'Nấm kim châm', 100), (N'Rau ngót nấu nấm kim châm', N'Đậu hũ', 100), (N'Rau ngót nấu nấm kim châm', N'Nước tương', 10),
+ (N'Bí đỏ nướng mè trắng', N'Bí đỏ', 250), (N'Bí đỏ nướng mè trắng', N'Mè trắng', 10), (N'Bí đỏ nướng mè trắng', N'Gừng', 5), (N'Bí đỏ nướng mè trắng', N'Chanh', 10);
+INSERT INTO [RECIPE_INGREDIENT] (recipe_id, ingredient_id, unit_id, quantity)
+SELECT p.recipe_id, i.ingredient_id, @gram, seed.quantity
+FROM @showcase_recipe_ingredients seed
+JOIN [RECIPE_POST] p ON p.author_id = @author_id AND p.title = seed.title
+JOIN [INGREDIENT] i ON i.name = seed.ingredient_name
+WHERE NOT EXISTS (SELECT 1 FROM [RECIPE_INGREDIENT] ri WHERE ri.recipe_id = p.recipe_id);
+
+-- Add a cover image to every pre-existing and newly added demo recipe.
+INSERT INTO [RECIPE_MEDIA] (recipe_id, blob_url, mime_type, display_order, is_cover)
+SELECT p.recipe_id, seed.image_url, 'image/jpeg', 1, 1
+FROM (VALUES
+    (N'Đậu hũ sốt cà chua', 'https://images.unsplash.com/photo-1589442305595-62647c1514f9?w=1200'),
+    (N'Rau muống xào tỏi', 'https://images.unsplash.com/photo-1505576633757-0ac1084af824?w=1200'),
+    (N'Nấm đùi gà kho tiêu', 'https://images.unsplash.com/photo-1555126634-323283e090fa?w=1200'),
+    (N'Canh nấm hương cà rốt', 'https://images.unsplash.com/photo-1675092789086-4bd2b93ffc69?w=1200'),
+    (N'Khoai lang hấp', 'https://images.unsplash.com/photo-1570368336224-455084c1fb31?w=1200'),
+    (N'Bông cải xanh xào nấm', 'https://images.unsplash.com/photo-1651629993507-d20a811a746d?w=1200'),
+    (N'Súp đậu lăng rau củ', 'https://images.unsplash.com/photo-1547592180-85f173990554?w=1200')
+) seed(title, image_url)
+JOIN [RECIPE_POST] p ON p.author_id = @author_id AND p.title = seed.title
+WHERE NOT EXISTS (SELECT 1 FROM [RECIPE_MEDIA] m WHERE m.recipe_id = p.recipe_id);
+INSERT INTO [RECIPE_MEDIA] (recipe_id, blob_url, mime_type, display_order, is_cover)
+SELECT p.recipe_id, seed.image_url, 'image/jpeg', 1, 1
+FROM @showcase_recipes seed
+JOIN [RECIPE_POST] p ON p.author_id = @author_id AND p.title = seed.title
+WHERE NOT EXISTS (SELECT 1 FROM [RECIPE_MEDIA] m WHERE m.recipe_id = p.recipe_id);
+
 COMMIT TRANSACTION;
