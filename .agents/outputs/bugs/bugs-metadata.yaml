@@ -1,6 +1,6 @@
 schema_version: 1
 last_updated: 2026-10-13
-next_id: 25
+next_id: 27
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-026
+    title: Schema OpenAPI của nguyên liệu và media trong công thức bị trùng tên, mô tả sai response thật
+    status: RECORDED
+    severity: Medium
+    area: Backend/Recipe/API
+    file: .agents/outputs/bugs/BUG-026.md
+    created: 2026-10-13
+    updated: 2026-10-13
+    related_issue: 45
   - id: BUG-024
     title: Schema OpenAPI của mục lịch ăn không cho phép các giá trị null thực tế
     status: RESOLVED

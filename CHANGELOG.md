@@ -20,6 +20,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Add `RecipeNutritionCandidateService.retainNutritionComplete`, which keeps only published recipes with complete nutrition for the nutrition AI menu (FR-36) and uses the same calculation as the recipe detail.
 - Add the "Chưa hỗ trợ tính dinh dưỡng" label next to each ingredient without nutrition data on both recipe detail pages.
 - Add an SQL Server integration test for the candidate filter and Playwright tests for the label.
+- Record BUG-026: generated OpenAPI merges same-named nested recipe DTOs, so recipe `ingredients[]`/`media[]` schemas differ from the real responses.
 
 ### Changed
 
