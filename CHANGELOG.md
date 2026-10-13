@@ -1,13 +1,36 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.70.0
+> **Version:** v2.71.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-12
+> **Last Updated:** 2026-10-13
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-13 — Add Weekly Meal Planning ([PR #126](https://github.com/NgaiLong49423/vegetarian-support-system/pull/126))
+
+**Status:** Committed — `ed72a4f`.
+
+**Scope:** Issue #15 / FR-09, private weekly plans and recipe entries across three daily meals.
+
+### Added
+
+- Add idempotent week creation and authenticated add, replace and remove operations with owner checks, default servings of one, date validation and duplicate-recipe conflicts.
+- Support multiple recipes per meal, published-recipe selection from public and saved lists, and replacement or removal of unavailable recipe references.
+- Add service, MVC/OpenAPI, SQL Server concurrency and rollback tests, plus a real Compose browser flow with scoped fixtures and SQL assertions.
+
+### Changed
+
+- Replace the Member's read-only page with a responsive seven-day, three-meal editor while preserving the existing Guest demonstration.
+- Document generated API contracts and add an optional Playwright worker limit for memory-constrained local verification without changing coverage gates.
+- Publish responsive meal-planner screenshots as a CI artifact for review.
+
+### Fixed
+
+- Align SQL integration fixtures with the existing recipe status constraint and remove fixture Saved records before deleting their referenced recipes.
+- Describe nullable meal-plan response fields in generated OpenAPI so unavailable recipe references and optional metadata match runtime JSON.
 
 ## 2026-10-12 — Add Related Recipe Recommendations ([PR #125](https://github.com/NgaiLong49423/vegetarian-support-system/pull/125))
 

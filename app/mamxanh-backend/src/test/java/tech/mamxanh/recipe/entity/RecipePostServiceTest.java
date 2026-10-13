@@ -64,6 +64,30 @@ class RecipePostServiceTest {
 
     private RecipePostEntity recipe;
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"DRAFT", "HIDDEN", "DELETED"})
+    void mealPlanCannotReferenceANonPublishedRecipe(String status) {
+        recipe.setStatus(status);
+        when(repository.lockById(1L)).thenReturn(Optional.of(recipe));
+        assertThatThrownBy(() -> service.requirePublishedMealPlanRecipe(1L))
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RECIPE_NOT_FOUND);
+    }
+
+    @Test
+    void mealPlanCannotReferenceAMissingRecipe() {
+        when(repository.lockById(1L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.requirePublishedMealPlanRecipe(1L))
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RECIPE_NOT_FOUND);
+    }
+
+    @Test
+    void mealPlanMayReferenceALockedPublishedRecipe() {
+        recipe.setStatus("PUBLISHED");
+        when(repository.lockById(1L)).thenReturn(Optional.of(recipe));
+        service.requirePublishedMealPlanRecipe(1L);
+        verify(repository).lockById(1L);
+    }
+
     @BeforeEach
     void setUp() {
         recipe = new RecipePostEntity();

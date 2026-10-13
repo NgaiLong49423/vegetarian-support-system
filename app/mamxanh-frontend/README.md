@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.23.0
+> **Version:** v1.24.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-12
+> **Last Updated:** 2026-10-13
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -21,7 +21,8 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - Home tải hai nhóm `NEWEST` và `MOST_LIKED` từ `GET /recipes`; loại ăn chay lấy từ `form-options`. Liên kết từ Home mở Explore với query tương ứng. Explore giữ lọc AND, tìm kiếm, sáu chế độ sắp xếp và phân trang từ API, có bộ lọc thu gọn trên điện thoại.
 - Nút lưu trên thẻ công thức công khai và trang chi tiết gọi `PUT /saved-recipes/{recipeId}`; bỏ lưu gọi `DELETE` cùng đường dẫn. Guest được mời đăng nhập, Administrator không truy vấn danh sách riêng của Member. Trạng thái nút chỉ đổi sau khi Backend xác nhận; lỗi có thể thử lại.
 - `/ho-so` hiển thị tài khoản đang đăng nhập và danh sách `GET /saved-recipes` riêng, tìm kiếm và phân trang qua Backend. Response dùng `content` theo generated OpenAPI. Recipe không khả dụng vẫn có mục bỏ lưu an toàn, không lộ nội dung hoặc liên kết chi tiết. Cache dùng ID tham chiếu và được xóa khi đổi tài khoản; không dùng danh sách yêu thích hard-code hoặc localStorage làm nguồn dữ liệu.
-- Member chọn tuần qua lịch tháng hoặc nút trước/sau trên `/ke-hoach`; mỗi tuần đọc `GET /meal-plans?weekStartDate=...`. Đây vẫn là luồng chỉ đọc. Mục bị xóa/ẩn hiển thị thông báo trung tính “Công thức không còn khả dụng”.
+- Member chọn tuần qua lịch tháng hoặc nút trước/sau trên `/ke-hoach`; mỗi tuần đọc `GET /meal-plans?weekStartDate=...` và luôn hiển thị 7 ngày × 3 bữa. `MealPlanWeekEditor` hỗ trợ lưu tuần trống, thêm nhiều món trong mỗi bữa từ kho công thức hoặc danh sách đã lưu, thay và gỡ món theo các API FR-09 trong [API Guide](../../docs/api/API.md#72-thêm-thay-và-gỡ-món--fr-09). Chỉ cập nhật lịch sau response thành công; lỗi giữ dữ liệu hiện tại, request đến muộn khi đổi tuần bị bỏ qua.
+- Mục bị xóa/ẩn hiển thị thông báo trung tính “Công thức không còn khả dụng”, không có link mở chi tiết và vẫn cho thay/gỡ. Hộp chọn món hỗ trợ tìm kiếm, phân trang, thao tác bàn phím và chặn lựa chọn đã có trong bữa hoặc không còn khả dụng; Backend vẫn kiểm tra lại quyền sở hữu và trùng lặp. Kiểm thử Playwright của màn này dùng API giả lập, không chứng minh tính bền vững hoặc transaction trên SQL Server thật.
 - Đi chợ, Cộng đồng, lịch ăn Guest và các màn hình chưa tích hợp vẫn là prototype; banner nêu rõ thao tác chưa lưu vào tài khoản. Nền tối không bổ sung API ghi lịch ăn, Shopping List hoặc tính năng theo dõi tác giả/nhóm của Samsung Food.
 - Kiểm tra local bằng trình duyệt với API thật đã đối chiếu bộ lọc, Home, chuyển tuần; lưu/bỏ lưu được đối chiếu trực tiếp với SQL Server và khôi phục mục kiểm thử. Bằng chứng này dành cho các luồng được nêu, không xác nhận nghiệm thu toàn bộ FR hoặc gate GitHub Actions.
 
@@ -49,7 +50,7 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 | Trang chủ và thanh điều hướng | Nền tối, header gọn, hai nhóm công thức API và menu responsive | Preview cộng đồng vẫn được ghi nhãn mẫu; không có API nhóm hoặc theo dõi tác giả |
 | Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Chỉ giữ trong bộ nhớ khi trang còn mở, chưa gửi Backend |
 | Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu | Làm tròn tối đa 2 chữ số thập phân; lượng không đọc được thành số giữ nguyên; chưa đồng bộ Shopping List |
-| Kế hoạch bữa ăn Guest | Chọn 0,5–10 phần cho từng món, bước 0,5 | Chỉ cập nhật trạng thái UI; Member dùng lịch tuần API chỉ đọc |
+| Kế hoạch bữa ăn Guest | Chọn 0,5–10 phần cho từng món, bước 0,5 | Guest chỉ cập nhật UI mẫu; Member dùng API lịch tuần, thêm món với khẩu phần mặc định 1 |
 | Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |
 | Dinh dưỡng công thức prototype tại `/cong-thuc/:slug` | Đọc số liệu minh họa cho **1 khẩu phần** | 8 chỉ tiêu tĩnh, xem BUG-002; trang thật `/cong-thuc/id/:id` dùng 9 chỉ tiêu và trạng thái dữ liệu từ Backend |
 | Theo dõi dinh dưỡng, danh sách mua sắm, bài cộng đồng/bình luận/báo cáo, gói AI và giao dịch | Tương tác UI minh họa theo từng màn hình | Các màn hình này chưa tích hợp API ghi tương ứng; danh sách đã lưu Member đã dùng API thật như trên |
@@ -297,4 +298,8 @@ Job `Sonar` chỉ đọc LCOV/JaCoCo XML sau khi tải artifacts từ Frontend/B
 
 HTML report được tạo trong `playwright-report/`; screenshot và trace lỗi nằm trong `test-results/`. Hai thư mục này là generated evidence và không được commit mặc định.
 
+Trên máy ít RAM, có thể giới hạn số Playwright workers bằng biến môi trường của tiến trình `PLAYWRIGHT_WORKERS`, ví dụ đặt `$env:PLAYWRIGHT_WORKERS = '2'` rồi chạy `npm.cmd run test:e2e:coverage` trong PowerShell. Khi không đặt biến, Playwright giữ mức mặc định. Tùy chọn này chỉ điều chỉnh số test chạy đồng thời, không đổi timeout, danh sách test hay coverage hard gate.
+
 Playwright hiện kiểm tra các tương tác UI prototype bằng API giả, các luồng API-backed với response được intercept, và tích hợp đăng nhập thật qua Docker Development trên Compose. Test file `backend-demo-flows.spec.ts` dùng `page.route` để kiểm tra session, dữ liệu công thức, loading, lỗi và empty state; đây là kiểm thử Frontend, không chứng minh SQL seed hoặc xác thực Backend. Chỉ Docker Development chạy trình duyệt qua Backend/SQL Server thật và có thể làm bằng chứng tích hợp FE–BE.
+
+`tests/integration/meal-plan-real-stack.spec.ts` bổ sung luồng FR-09 trên cùng stack Compose: đăng nhập, thêm, reload, chặn trùng, chặn sửa/gỡ mục của tài khoản khác, thay/gỡ tombstone và đối chiếu SQL rằng công thức nguồn cùng mục đã lưu vẫn còn. Test tự tạo dữ liệu có ID/email riêng và dọn đúng dữ liệu của mình. File được suite `test:e2e:integration` nhận diện; sự hiện diện hoặc việc liệt kê test không chứng minh test đã pass. Cần chạy Docker Development trên commit của nhánh để có bằng chứng thực thi.

@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-12
-next_id: 23
+last_updated: 2026-10-13
+next_id: 25
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,24 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-024
+    title: Schema OpenAPI của mục lịch ăn không cho phép các giá trị null thực tế
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Meal Plan/API
+    file: .agents/outputs/bugs/BUG-024.md
+    created: 2026-10-13
+    updated: 2026-10-13
+    related_issue: 15
+  - id: BUG-023
+    title: Formatter oxfmt làm mất dấu phân cách trong type TypeScript viết một dòng
+    status: RECORDED
+    severity: Medium
+    area: Frontend/Tooling
+    file: .agents/outputs/bugs/BUG-023.md
+    created: 2026-10-13
+    updated: 2026-10-13
+    related_issue: 15
   - id: BUG-022
     title: Contract thanh toán FR-13 chưa khớp giữa Backend, OpenAPI và Frontend
     status: RECORDED

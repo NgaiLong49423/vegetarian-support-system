@@ -259,4 +259,14 @@ export const recipeApi = {
 export const mealPlanApi = {
   getWeek: async (weekStartDate: string) =>
     (await apiClient.get<MealPlanWeek>('/meal-plans', { params: { weekStartDate } })).data,
+  openWeek: async (weekStartDate: string) =>
+    (await apiClient.put<MealPlanWeek>('/meal-plans', undefined, { params: { weekStartDate } })).data,
+  addEntry: async (weekStartDate: string, payload: {
+    mealDate: string; mealType: MealPlanWeek['entries'][number]['mealType']; recipeId: number;
+  }) => (await apiClient.post<MealPlanWeek['entries'][number]>(`/meal-plans/${weekStartDate}/entries`, payload)).data,
+  replaceEntry: async (weekStartDate: string, entryId: number, recipeId: number) =>
+    (await apiClient.put<MealPlanWeek['entries'][number]>(`/meal-plans/${weekStartDate}/entries/${entryId}`, { recipeId })).data,
+  removeEntry: async (weekStartDate: string, entryId: number) => {
+    await apiClient.delete<void>(`/meal-plans/${weekStartDate}/entries/${entryId}`);
+  },
 };
