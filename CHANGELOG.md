@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-13 — Publish Recipes With Incomplete Nutrition (Issue #45)
+## 2026-10-13 — Publish Recipes With Incomplete Nutrition ([PR #131](https://github.com/NgaiLong49423/vegetarian-support-system/pull/131))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `db03caf`, `1bfb109`.
 
 **Scope:** Complete FR-40 (AC-40.1–AC-40.3, BR-40, BR-50): recipes that use catalog ingredients without nutrition data stay publishable, each such ingredient is labelled on the recipe page, and such recipes are kept out of the nutrition AI menu candidate pool.
 
