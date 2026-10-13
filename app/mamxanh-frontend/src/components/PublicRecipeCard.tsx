@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { Leaf, ThumbsUp } from "lucide-react"
+import { ArrowLeftRight, Leaf, ThumbsUp } from "lucide-react"
 import type { RecipeFormOptions, RecipePost } from "../api/recipes"
 import { SaveRecipeButton } from "./SaveRecipeButton"
 
@@ -82,6 +82,14 @@ export function PublicRecipeCard({
         >
           {vegetarian} · {category}
         </p>
+      </Link>
+      <Link
+        to={`/so-sanh?a=${recipe.id}`}
+        aria-label={`So sánh ${recipe.title}`}
+        className="mt-1.5 inline-flex items-center gap-1 rounded text-[11px] font-semibold text-brand-600 hover:text-brand-700"
+      >
+        <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
+        So sánh
       </Link>
       <div className="absolute right-2 top-2">
         <SaveRecipeButton recipeId={recipe.id} compact />

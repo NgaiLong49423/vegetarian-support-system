@@ -8,7 +8,7 @@ import { Info } from 'lucide-react';
 export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const { account } = useAuth();
-  const prototype = ['/di-cho', '/cong-dong', '/dinh-duong', '/goi-ai', '/giao-dich', '/so-sanh'].includes(pathname)
+  const prototype = ['/di-cho', '/cong-dong', '/dinh-duong', '/goi-ai', '/giao-dich'].includes(pathname)
     || pathname.startsWith('/bai-viet/')
     || (pathname === '/ke-hoach' && !account);
   if (['/dang-nhap', '/dang-ky', '/quen-mat-khau', '/xac-minh-email', '/dat-lai-mat-khau'].includes(pathname)) return <>{children}</>;

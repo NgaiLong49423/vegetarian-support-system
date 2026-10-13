@@ -1,6 +1,6 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.24.0
+> **Version:** v1.25.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-10-13
 > **Status:** Active  
@@ -41,6 +41,7 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - **Quên và đặt lại mật khẩu đã gọi Backend thật (Issue #9):** `/quen-mat-khau` gửi `POST /auth/password-resets` và hiển thị nguyên văn thông báo trung tính của Backend. Liên kết trong email mở `/dat-lai-mat-khau?token=...`; Frontend giữ token trong bộ nhớ, xóa nó khỏi thanh địa chỉ, kiểm tra quy tắc mật khẩu rồi gửi `POST /auth/password-resets/confirm`. Liên kết hỏng, đã dùng hoặc hết hạn (`PASSWORD_RESET_TOKEN_INVALID`) ẩn biểu mẫu và dẫn tới yêu cầu liên kết mới; mật khẩu trùng mật khẩu hiện tại (`NEW_PASSWORD_SAME_AS_CURRENT`) báo ngay dưới ô mật khẩu.
 - Không còn chế độ đổi vai trò/tài khoản giả trên Frontend. Dùng tài khoản local do Backend seed tạo sẵn; danh sách email và cách đặt chung mật khẩu nằm trong [Backend Workspace Guide](../mamxanh-backend/README.md#tài-khoản-demo-local). Mỗi vai trò phải đăng nhập bằng tài khoản riêng; quyền được Backend xác thực.
 - Các luồng Backend hiện hiển thị từ API/SQL thật: khám phá và chi tiết công thức; tạo/sửa/quản lý công thức; lịch ăn tuần; hồ sơ dinh dưỡng; sở thích/onboarding; nộp và duyệt đơn Chuyên gia; quản lý danh mục Ingredient dinh dưỡng Admin gồm tìm/lọc, xem chi tiết, thêm/sửa nguồn và chỉ tiêu, đổi trạng thái, xem Recipe Post tham chiếu. Trang khám phá gửi từ khóa, bộ lọc loại ăn chay/thể loại/nguyên liệu/tổng thời gian, phân trang và chế độ sắp xếp tới API công khai; tùy chọn chuẩn và nguyên liệu được tải từ Backend, mọi điều kiện lọc kết hợp bằng AND.
+- **So sánh hai công thức (Issue #70):** `/so-sanh?a={recipeId}&b={recipeId}` đối chiếu hai công thức công khai khác nhau: thông tin tổng quan, nguyên liệu (chỉ đặt cùng hàng khi cùng nguyên liệu trong danh mục, giữ nguyên số lượng và đơn vị) và chín chỉ tiêu dinh dưỡng trên một khẩu phần kèm chênh lệch A − B. Bắt đầu từ nút "So sánh" trên thẻ công thức, trang chi tiết hoặc danh sách đã lưu; tìm và thay từng vị trí ngay trên trang. Dữ liệu đọc từ `GET /recipes/{recipeId}` và `GET /recipes`; công thức thiếu dữ liệu dinh dưỡng hiện "Chưa đủ dữ liệu", không tính chênh lệch. Trang không ghi dữ liệu, không lưu lịch sử và không xuất PDF.
 - Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
 
 ### Các chức năng demo khác

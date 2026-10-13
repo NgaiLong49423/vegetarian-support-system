@@ -335,20 +335,6 @@ test('nutrition profile maps backend validation errors to their fields', async (
   await expect(page.getByLabel('Chiều cao *')).toHaveAttribute('aria-invalid', 'true');
 });
 
-test('recipe comparison shows two recipes side-by-side without health score (FR-60)', async ({ page }) => {
-  await page.goto('/so-sanh');
-  await expect(page.getByRole('heading', { name: /So sánh hai công thức/i })).toBeVisible();
-  await expect(page.locator('#compare-recipe-left')).toBeVisible();
-  await expect(page.locator('#compare-recipe-right')).toBeVisible();
-  await expect(page.getByText('Năng lượng').first()).toBeVisible();
-  await expect(page.getByText('Chưa đủ dữ liệu').first()).toBeVisible();
-  await expect(page.getByText(/không tính toán điểm Health Score/i)).toBeVisible();
-
-  // Change right dropdown to exercise select handler
-  await page.locator('#compare-recipe-right').selectOption({ index: 2 });
-  await expect(page.locator('#compare-recipe-right')).toBeVisible();
-});
-
 test('nutrition tracker opens overall 9-indicator analysis modal (FR-37)', async ({ page }) => {
   await page.goto('/dinh-duong');
 

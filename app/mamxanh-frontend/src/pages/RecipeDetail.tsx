@@ -82,7 +82,10 @@ function PublishedRecipeDetail({ recipeId }: { recipeId: number }) {
   const cover = recipe.media.find((item) => item.cover) ?? recipe.media[0];
   return (
     <PageContainer className="py-8">
-      <Link to="/kham-pha" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeftRight className="h-4 w-4" />Khám phá công thức</Link>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeftRight className="h-4 w-4" />Khám phá công thức</Link>
+        <Link to={`/so-sanh?a=${recipe.recipeId}`} aria-label="So sánh với công thức khác" className="rounded-full"><Button as="span" variant="outline" size="sm"><ArrowLeftRight className="h-4 w-4" />So sánh</Button></Link>
+      </div>
       <article className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-brand-100 bg-paper shadow-sm">
         <div className="h-56 sm:h-80">
           {cover
@@ -322,7 +325,7 @@ function MockRecipeDetail() {
 
           <div className="flex flex-wrap items-center gap-2">
             <Link
-                to={`/so-sanh?left=${recipe.slug}`}
+                to="/so-sanh"
                 className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-paper px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-300"
                 title="So sánh với công thức khác"
             >

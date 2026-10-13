@@ -67,12 +67,12 @@ test('public member profile shows only public fields, the default avatar and pub
   await expect(page.getByRole('img', { name: 'Ảnh đại diện mặc định của Bếp Chay Lan' })).toBeVisible();
   await expect(page.getByText(/@|Chuyên gia|Bác sĩ|Đã xác minh/)).toHaveCount(0);
   await expect(page.getByText('13 công thức')).toBeVisible();
-  await expect(page.getByRole('link', { name: /Món chay số 1\b/ })).toHaveAttribute('href', '/cong-thuc/id/1');
+  await expect(page.getByRole('link').filter({ has: page.getByRole('heading', { name: 'Món chay số 1', exact: true }) })).toHaveAttribute('href', '/cong-thuc/id/1');
   await expect(page.getByText('Tác giả: Bếp Chay Lan')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Trang sau' }).click();
   await expect(page.getByText('Trang 2/2')).toBeVisible();
-  await expect(page.getByRole('link', { name: /Món chay số 13/ })).toBeVisible();
+  await expect(page.getByRole('link').filter({ has: page.getByRole('heading', { name: 'Món chay số 13', exact: true }) })).toBeVisible();
   await page.getByRole('button', { name: 'Trang trước' }).click();
   await expect(page.getByText('Trang 1/2')).toBeVisible();
 });
