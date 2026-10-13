@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.15.0
+> **Version:** v0.16.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -131,7 +131,7 @@ Quy ước status chính:
 | `429 Too Many Requests` | Chỉ áp dụng khi contract của endpoint quy định `429` (ví dụ login, resend verification hoặc AI rate limiting); client đọc `Retry-After` khi có. Password-reset request không trả `429`. |
 | `503 Service Unavailable` | Dịch vụ phụ thuộc tạm thời không dùng được, ví dụ không tải được chứng chỉ Google (`GOOGLE_LOGIN_UNAVAILABLE`). |
 
-Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
+Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36, #48).
 
 | `code` | Status | Khi nào |
 |---|---|---|
@@ -148,8 +148,10 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
 | `GOOGLE_TOKEN_INVALID` | 401 | `POST /auth/google` với ID Token sai định dạng, sai chữ ký, hết hạn, sai issuer/audience, thiếu `sub`/email, email Google chưa xác minh hoặc không lưu được; cũng trả khi Backend chưa cấu hình `MAMXANH_GOOGLE_CLIENT_ID`. |
 | `GOOGLE_ACCOUNT_CONFLICT` | 409 | `POST /auth/google` khi email đã liên kết với một tài khoản Google khác. |
 | `GOOGLE_LOGIN_UNAVAILABLE` | 503 | `POST /auth/google` khi Backend không tải được chứng chỉ ký của Google. |
-| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31) hoặc hồ sơ cá nhân `/me/profile` (FR-23); chỉ Member (`CUSTOMER`, `EXPERT`) có các hồ sơ này. |
+| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31) hồ sơ cá nhân `/me/profile` (FR-23), hoặc viết bình luận (FR-46); chỉ Member (`CUSTOMER`, `EXPERT`) đang hoạt động có các chức năng này. |
 | `MEMBER_PROFILE_NOT_FOUND` | 404 | `GET /members/{userId}` hoặc `/members/{userId}/recipes` với ID không tồn tại hoặc thuộc tài khoản Administrator (FR-23, Q55). |
+| `COMMENT_NOT_FOUND` | 404 | Bình luận không tồn tại, đã bị xóa hoặc thuộc bài không còn công khai; cũng trả khi `parentCommentId` của reply không còn hoặc thuộc bài khác (FR-46). |
+| `COMMENT_EDIT_NOT_ALLOWED` | 403 | `PUT`/`DELETE /comments/{commentId}` với bình luận của người khác (AC-46.4); nội dung giữ nguyên. |
 | `FILE_TOO_LARGE` | 413 | Ảnh đại diện vượt 2 MB, hoặc tệp tải lên vượt giới hạn 5 MB của máy chủ. |
 | `UNSUPPORTED_IMAGE_TYPE` | 400 | Tệp ảnh không phải JPEG, PNG hoặc WebP; với ảnh đại diện, nội dung tệp (chữ ký đầu tệp) phải khớp `Content-Type`. |
 | `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |
@@ -304,3 +306,13 @@ Generated OpenAPI runtime là contract chi tiết. Hai API đều trả `{ "item
 - Gemini nhận tối đa 50 ứng viên công khai cùng loại chay với nguồn, phân bổ theo thể loại, và chỉ trả ID. Backend từ chối cấu trúc sai, quá giới hạn hoặc ID ngoài tập bằng `502 AI_RESPONSE_INVALID`; loại ID trùng và đọc lại trạng thái/nội dung hiện tại sau khi provider trả về. Bài bị ẩn/xóa hoặc đổi sang loại chay khác không được gửi xuống FE. Không có ứng viên thì trả rỗng và không gọi Gemini.
 - Lỗi cấu hình/provider/timeout trả `503 AI_PROVIDER_UNAVAILABLE`; API chỉ đọc, không tạo RecipePost hoặc ghi Lịch ăn. FE chỉ gọi POST sau thao tác chủ động, giữ gợi ý thường khi AI lỗi và bỏ phản hồi cũ khi chuyển bài. Khóa vẫn dùng `GEMINI_API_KEY` ở Backend và cơ chế Compose hiện có.
 - Tích hợp FR-11: `AiUsageEvent` mang `userId`, `feature=FR-47`, `occurredAt` và các token count thực tế từ provider; thiếu metadata giữ `null`, không suy đoán bằng 0. Event chỉ phát sau khi phản hồi hợp lệ. Consumer lưu trữ tối đa 90 ngày/báo cáo do Issue #17 triển khai; FR-47 chưa cung cấp consumer lưu trữ. Không đưa prompt, nội dung công thức hoặc API key vào event/log.
+
+## 14. Bình luận và reply lồng nhiều cấp — FR-46
+
+Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Dữ liệu lưu trong `COMMENT` (có từ V1); `CK_COMMENT_depth` và `FK_COMMENT_PARENT` giữ cây tối đa 5 cấp và reply cùng bài với cha (BR-66).
+
+- `GET /api/v1/recipes/{recipeId}/comments?page=0&size=10` (công khai) chỉ cho bài `PUBLISHED` (khác thì `404 RECIPE_NOT_FOUND`). Trả `RecipeCommentPageResponse`: `content` là các luồng gốc, mới nhất trước; mỗi `CommentResponse` có `commentId`, `parentCommentId`, `depth`, `content`, `author` (`userId`, `displayName`, `avatarUrl`), `deleted`, `edited`, `createdAt` và `replies` (cũ trước, đúng thứ tự hội thoại). `totalElements` đếm luồng gốc còn hiển thị, `commentCount` đếm bình luận và reply chưa xóa; `size` 1–50.
+- Bình luận đã xóa còn reply hiển thị được trả về với `deleted = true`, `content` và `author` là `null` (tombstone, AC-46.2); đã xóa và không còn reply nào hiển thị thì không trả về (AF-46.3).
+- `POST /api/v1/recipes/{recipeId}/comments` (cần Bearer token) body `{ "content", "parentCommentId"? }`, trả `201` với bình luận mới. Chỉ Customer/Expert đang hoạt động; Administrator nhận `403 MEMBER_ACCESS_REQUIRED`. `content` bỏ khoảng trắng đầu cuối, 1–1.000 ký tự, sai thì `400 VALIDATION_FAILED` với `errors[].field = content`. Trả lời bình luận cấp 5 được gắn vào cha cấp 4 nên vẫn ở cấp 5 (AC-46.1); Frontend chèn `@Tên` vào đầu nội dung.
+- `PUT /api/v1/comments/{commentId}` body `{ "content" }` và `DELETE /api/v1/comments/{commentId}` (cần Bearer token): chỉ chủ bình luận; người khác nhận `403 COMMENT_EDIT_NOT_ALLOWED`. Sửa thì `edited = true`. Xóa trả `204`, gọi lặp an toàn, luôn là xóa mềm (`is_deleted`) vì `REPORT`/`NOTIFICATION` có thể tham chiếu bình luận.
+- Nội dung là văn bản thuần: Backend lưu nguyên văn, Frontend hiển thị như text nên mã HTML/JavaScript không được thực thi (AC-46.3).
