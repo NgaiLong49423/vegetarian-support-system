@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-13 — Align Generated OpenAPI Security and Error Responses (Issue #114)
+## 2026-10-13 — Align Generated OpenAPI Security and Error Responses (Issue #114) ([PR #130](https://github.com/NgaiLong49423/vegetarian-support-system/pull/130))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `a504714`, `fa04b45`.
 
 **Scope:** Make the generated `/v3/api-docs` match what the Backend enforces and returns (Q43, Q53): every operation that needs a session declares `bearerAuth`, error responses are declared as problem details, and the empty planned `openapi.yaml` is removed.
 
