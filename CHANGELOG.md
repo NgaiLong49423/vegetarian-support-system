@@ -9,6 +9,25 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-13 — Expand Local Recipe Demo Fixtures
+
+**Status:** Working tree — not committed.
+
+**Scope:** Enrich the IntelliJ `local` profile with recipe, ingredient and nutrition examples for classroom demonstrations.
+
+### Added
+
+- Add 40 catalog ingredients and 16 illustrated recipe posts to the repeatable local seed.
+- Seed per-100-gram nutrition values for all 51 demo ingredients, labeling synthetic examples as internal demo data and retaining USDA FoodData Central identifiers for sourced rows.
+
+### Changed
+
+- Add cover images to the seven existing local recipe examples so every seeded recipe has a cover.
+
+### Fixed
+
+- None.
+
 ## 2026-10-13 — Add Weekly Meal Planning ([PR #126](https://github.com/NgaiLong49423/vegetarian-support-system/pull/126))
 
 **Status:** Committed — `ed72a4f`.
