@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 
 import {
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -11,6 +12,7 @@ import {
   Plus,
   RefreshCw,
   Trash2,
+  Utensils,
 } from "lucide-react"
 
 import { PageContainer } from "../components/Layout"
@@ -26,11 +28,13 @@ import {
   shiftWeek,
 } from "../components/WeekCalendar"
 
-import { mealPlanApi, recipesApi, type MealPlanWeek } from "../api/recipes"
+import { mealPlanApi, type MealPlanWeek } from "../api/recipes"
 
 import { savedRecipesApi } from "../services/savedRecipesApi"
 
 import { asApiError } from "../lib/apiClient"
+
+import { MealPlanNutrition } from "./MealPlanNutrition"
 
 type Entry = MealPlanWeek["entries"][number]
 
@@ -38,14 +42,19 @@ type MealType = Entry["mealType"]
 
 type Target = {
   mealDate: string
+
   mealType: MealType
+
   entry?: Entry
 }
 
 type Choice = {
   id: number
+
   title: string
+
   image: string | null
+
   available: boolean
 }
 
@@ -53,12 +62,60 @@ const meals: MealType[] = ["BREAKFAST", "LUNCH", "DINNER"]
 
 const mealLabels: Record<MealType, string> = {
   BREAKFAST: "Bữa sáng",
+
   LUNCH: "Bữa trưa",
+
   DINNER: "Bữa tối",
 }
 
 export function MealPlanWeekEditor() {
-  const [week, setWeek] = useState(() => mondayOf(new Date()))
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const [week, setWeek] = useState(() => {
+    const requested = searchParams.get("weekStartDate") ?? ""
+
+    return /^\d{4}-\d{2}-\d{2}$/.test(requested) &&
+      mondayOf(new Date(`${requested}T12:00:00`)) === requested
+      ? requested
+      : mondayOf(new Date())
+  })
+
+  const [calendarOpen, setCalendarOpen] = useState(false)
+
+  const [selectedDay, setSelectedDay] = useState<string | null>(() => {
+    const requested = searchParams.get("mealDate") ?? ""
+
+    if (
+      /^\d{4}-\d{2}-\d{2}$/.test(requested) &&
+      mondayOf(new Date(`${requested}T12:00:00`)) === week
+    )
+      return requested
+
+    return week === mondayOf(new Date()) ? localDateKey(new Date()) : week
+  })
+
+  useEffect(() => {
+    if (
+      searchParams.get("weekStartDate") !== week ||
+      searchParams.get("mealDate") !== selectedDay
+    ) {
+      setSearchParams(
+        {
+          weekStartDate: week,
+          ...(selectedDay ? { mealDate: selectedDay } : {}),
+        },
+        { replace: true },
+      )
+    }
+  }, [week, selectedDay, searchParams, setSearchParams])
+
+  function changeWeek(value: string) {
+    setWeek(value)
+
+    setSelectedDay(
+      value === mondayOf(new Date()) ? localDateKey(new Date()) : value,
+    )
+  }
 
   const end = new Date(`${week}T12:00:00`)
 
@@ -68,20 +125,38 @@ export function MealPlanWeekEditor() {
     <PageContainer className="py-6">
       <div className="grid items-start gap-5 md:grid-cols-[225px_minmax(0,1fr)]">
         <aside className="space-y-4">
-          <WeekCalendar weekStart={week} onChange={setWeek} />
-          <Card className="p-4">
-            <p className="text-sm font-semibold text-ink">
-              Chuẩn bị cho tuần mới
-            </p>
+          <Button
+            variant="outline"
+            className="w-full md:hidden"
+            aria-expanded={calendarOpen}
+            aria-controls="planner-calendar"
+            onClick={() => setCalendarOpen((value) => !value)}
+          >
+            <CalendarDays className="h-4 w-4" />
+            Chọn ngày trong lịch
+          </Button>
+          <div
+            id="planner-calendar"
+            className={calendarOpen ? "block" : "hidden md:block"}
+          >
+            <WeekCalendar
+              weekStart={week}
+              onChange={changeWeek}
+              selectedDay={selectedDay}
+              onSelectDay={setSelectedDay}
+            />
+          </div>
+          <Card className="hidden p-4 md:block">
+            <p className="text-sm font-semibold text-ink">Lên lịch từng ngày</p>
             <p className="mt-2 text-xs leading-5 text-ink-muted">
-              Thêm nhiều món cho mỗi bữa từ kho công thức hoặc danh sách đã lưu.
-              Lịch ăn được lưu riêng theo tài khoản của bạn.
+              Chọn một ngày, rồi thêm món từ công thức bạn đã lưu. Bạn có thể
+              lên lịch từng bữa và bổ sung các ngày còn lại sau.
             </p>
             <Link
-              to="/kham-pha"
+              to="/ho-so"
               className="mt-3 inline-block text-xs font-semibold text-brand-600"
             >
-              Khám phá công thức →
+              Xem công thức đã lưu →
             </Link>
           </Card>
         </aside>
@@ -99,7 +174,7 @@ export function MealPlanWeekEditor() {
                 variant="ghost"
                 size="sm"
                 aria-label="Tuần trước"
-                onClick={() => setWeek((value) => shiftWeek(value, -1))}
+                onClick={() => changeWeek(shiftWeek(week, -1))}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -111,7 +186,7 @@ export function MealPlanWeekEditor() {
                 variant="ghost"
                 size="sm"
                 aria-label="Tuần sau"
-                onClick={() => setWeek((value) => shiftWeek(value, 1))}
+                onClick={() => changeWeek(shiftWeek(week, 1))}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -119,19 +194,36 @@ export function MealPlanWeekEditor() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setWeek(mondayOf(new Date()))}
+              onClick={() => changeWeek(mondayOf(new Date()))}
             >
               Về tuần hiện tại
             </Button>
           </header>
-          <WeekContents key={week} week={week} />
+          <WeekContents
+            key={week}
+            week={week}
+            selectedDay={selectedDay}
+            onSelectDay={setSelectedDay}
+          />
         </Card>
       </div>
     </PageContainer>
   )
 }
 
-function WeekContents({ week }: { week: string }) {
+function WeekContents({
+  week,
+
+  selectedDay,
+
+  onSelectDay,
+}: {
+  week: string
+
+  selectedDay: string | null
+
+  onSelectDay: (day: string | null) => void
+}) {
   const [plan, setPlan] = useState<MealPlanWeek | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -149,6 +241,12 @@ function WeekContents({ week }: { week: string }) {
   const [picker, setPicker] = useState<Target | null>(null)
 
   const [removal, setRemoval] = useState<Entry | null>(null)
+
+  const [nutrition, setNutrition] = useState<{
+    day: string
+
+    scope: "day" | "week"
+  } | null>(null)
 
   const alive = useRef(true)
 
@@ -172,13 +270,17 @@ function WeekContents({ week }: { week: string }) {
     setLoadError("")
 
     mealPlanApi
+
       .getWeek(week)
+
       .then((value) => {
         if (active) setPlan(value)
       })
+
       .catch((cause) => {
         if (active) setLoadError(asApiError(cause).message)
       })
+
       .finally(() => {
         if (active) setLoading(false)
       })
@@ -201,6 +303,8 @@ function WeekContents({ week }: { week: string }) {
     setPicker(null)
 
     setRemoval(null)
+
+    setNutrition(null)
 
     setActionError("")
 
@@ -258,7 +362,9 @@ function WeekContents({ week }: { week: string }) {
           ? await mealPlanApi.replaceEntry(week, target.entry.entryId, recipeId)
           : await mealPlanApi.addEntry(week, {
               mealDate: target.mealDate,
+
               mealType: target.mealType,
+
               recipeId,
             })
 
@@ -267,15 +373,18 @@ function WeekContents({ week }: { week: string }) {
             (current) =>
               current && {
                 ...current,
+
                 entries: [
                   ...current.entries.filter(
                     (item) => item.entryId !== entry.entryId,
                   ),
+
                   entry,
                 ],
               },
           )
       },
+
       target.entry
         ? "Đã thay công thức trong lịch ăn."
         : "Đã thêm món vào lịch ăn.",
@@ -356,154 +465,257 @@ function WeekContents({ week }: { week: string }) {
           </Button>
         </div>
       )}
-      {Array.from({ length: 7 }, (_, offset) => {
-        const date = new Date(`${week}T12:00:00`)
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-ink-muted">Chọn ngày để lên lịch từng bữa</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            returnFocus.current = (document.activeElement as HTMLElement)
 
-        date.setDate(date.getDate() + offset)
+            setNutrition({ day: selectedDay ?? week, scope: "week" })
+          }}
+        >
+          <Utensils className="h-4 w-4" />
+          Dinh dưỡng cả tuần
+        </Button>
+      </div>
+      <div className="divide-y divide-brand-100">
+        {Array.from({ length: 7 }, (_, offset) => {
+          const date = new Date(`${week}T12:00:00`)
 
-        const day = localDateKey(date)
+          date.setDate(date.getDate() + offset)
 
-        const label = date.toLocaleDateString("vi-VN", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-        })
+          const day = localDateKey(date)
 
-        return (
-          <section key={day} aria-label={date.toLocaleDateString("vi-VN")}>
-            <h2
-              className={`mb-3 text-sm font-semibold capitalize ${
-                day === localDateKey(new Date()) ? "text-brand-600" : "text-ink"
-              }`}
+          const label = date.toLocaleDateString("vi-VN", {
+            weekday: "long",
+
+            day: "numeric",
+
+            month: "long",
+          })
+
+          const entries = plan.entries.filter((entry) => entry.mealDate === day)
+
+          const expanded = selectedDay === day
+
+          const today = day === localDateKey(new Date())
+
+          return (
+            <section
+              key={day}
+              aria-label={date.toLocaleDateString("vi-VN")}
+              className="py-3"
             >
-              {label}
-            </h2>
-            {!plan.entries.some((entry) => entry.mealDate === day) && (
-              <p className="mb-2 text-xs text-ink-muted">
-                Chưa có món trong ngày này.
-              </p>
-            )}
-            <div className="grid gap-3 xl:grid-cols-3">
-              {meals.map((meal) => (
-                <section
-                  key={meal}
-                  aria-label={`${mealLabels[meal]} ${label}`}
-                  className="min-w-0 rounded-xl border border-brand-100 p-3"
+              <div className="flex items-center gap-2">
+                <h2 className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    aria-label={`Xem ngày ${date.toLocaleDateString("vi-VN")}`}
+                    aria-expanded={expanded}
+                    aria-controls={`meals-${day}`}
+                    onClick={() => onSelectDay(expanded ? null : day)}
+                    className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-raised focus-visible:outline-2 focus-visible:outline-brand-600"
+                  >
+                    {expanded ? (
+                      <ChevronDown className="h-4 w-4 shrink-0" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 shrink-0" />
+                    )}
+                    <span className="min-w-0">
+                      <span
+                        className={`block text-sm font-semibold capitalize ${
+                          today ? "text-brand-600" : "text-ink"
+                        }`}
+                      >
+                        {today ? `Hôm nay · ${label}` : label}
+                      </span>
+                      <span className="mt-1 block text-xs font-normal text-ink-muted">
+                        {entries.length
+                          ? `${entries.length} món đã lên lịch`
+                          : "Chưa lên lịch · thêm món khi bạn sẵn sàng"}
+                      </span>
+                    </span>
+                  </button>
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  aria-label={`Lên lịch ngày ${date.toLocaleDateString("vi-VN")}`}
+                  onClick={() => onSelectDay(day)}
                 >
-                  <h3 className="mb-3 text-xs font-semibold text-brand-600">
-                    {mealLabels[meal]}
-                  </h3>
-                  <div className="space-y-3">
-                    {plan.entries
-                      .filter(
-                        (entry) =>
-                          entry.mealDate === day && entry.mealType === meal,
-                      )
-                      .map((entry) => {
-                        const unavailable =
-                          entry.recipeDeleted ||
-                          Boolean(entry.unavailableMessage) ||
-                          !entry.recipeTitle
-
-                        const name = unavailable
-                          ? "Công thức không còn khả dụng"
-                          : entry.recipeTitle!
-
-                        return (
-                          <article
-                            key={entry.entryId}
-                            aria-label={name}
-                            className="min-w-0 rounded-lg bg-raised p-3"
-                          >
-                            <div className="flex min-w-0 gap-2">
-                              {!unavailable && entry.recipeCoverUrl && (
-                                <img
-                                  src={entry.recipeCoverUrl}
-                                  alt=""
-                                  loading="lazy"
-                                  className="h-12 w-12 shrink-0 rounded-lg object-cover"
-                                />
-                              )}
-                              <div className="min-w-0 flex-1">
-                                {unavailable ? (
-                                  <p className="text-xs leading-5 text-ink-muted">
-                                    {name}
-                                  </p>
-                                ) : (
-                                  <Link
-                                    to={`/cong-thuc/id/${entry.recipeId}`}
-                                    className="block break-words text-xs font-semibold leading-5 text-ink hover:text-brand-600"
-                                  >
-                                    {name}
-                                  </Link>
-                                )}
-                                <p className="mt-1 flex items-center gap-1 text-[10px] text-ink-muted">
-                                  <Clock3 className="h-3 w-3" />
-                                  {entry.totalTimeMinutes === null
-                                    ? ""
-                                    : `${entry.totalTimeMinutes} phút · `}
-                                  {entry.plannedServings} phần
-                                </p>
-                              </div>
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                disabled={busy}
-                                aria-label={`Thay món ${name}`}
-                                onClick={() =>
-                                  openPicker({
-                                    mealDate: day,
-                                    mealType: meal,
-                                    entry,
-                                  })
-                                }
-                              >
-                                <RefreshCw className="h-3 w-3" />
-                                Thay
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                disabled={busy}
-                                aria-label={`Gỡ món ${name}`}
-                                onClick={() => {
-                                  returnFocus.current =
-                                    (document.activeElement as HTMLElement)
-
-                                  setActionError("")
-
-                                  setRemoval(entry)
-                                }}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                                Gỡ
-                              </Button>
-                            </div>
-                          </article>
-                        )
-                      })}
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {expanded && (
+                <div
+                  id={`meals-${day}`}
+                  className="mt-3 space-y-5 pl-2 sm:pl-9"
+                >
+                  <div className="flex justify-end">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="w-full"
-                      disabled={busy}
-                      aria-label={`Thêm món ${mealLabels[meal]} ${label}`}
-                      onClick={() =>
-                        openPicker({ mealDate: day, mealType: meal })
-                      }
+                      onClick={() => {
+                        returnFocus.current =
+                          (document.activeElement as HTMLElement)
+
+                        setNutrition({ day, scope: "day" })
+                      }}
                     >
-                      <Plus className="h-4 w-4" />
-                      Thêm món
+                      <Utensils className="h-4 w-4" />
+                      Xem dinh dưỡng ngày
                     </Button>
                   </div>
-                </section>
-              ))}
-            </div>
-          </section>
-        )
-      })}
+                  {meals.map((meal) => (
+                    <section
+                      key={meal}
+                      aria-label={`${mealLabels[meal]} ${label}`}
+                      className="min-w-0"
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-2 border-b border-brand-100 pb-2">
+                        <h3 className="text-sm font-semibold text-ink">
+                          {mealLabels[meal]}
+                        </h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busy}
+                          aria-label={`Thêm món ${mealLabels[meal]} ${label}`}
+                          onClick={() =>
+                            openPicker({ mealDate: day, mealType: meal })
+                          }
+                        >
+                          <Plus className="h-4 w-4" />
+                          Thêm món
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {entries
+
+                          .filter((entry) => entry.mealType === meal)
+
+                          .map((entry) => {
+                            const unavailable =
+                              entry.recipeDeleted ||
+                              Boolean(entry.unavailableMessage) ||
+                              !entry.recipeTitle
+
+                            const name = unavailable
+                              ? "Công thức không còn khả dụng"
+                              : entry.recipeTitle!
+
+                            return (
+                              <article
+                                key={entry.entryId}
+                                aria-label={name}
+                                className="flex min-w-0 flex-wrap items-center gap-3 rounded-xl p-2 hover:bg-raised sm:flex-nowrap"
+                              >
+                                {!unavailable && entry.recipeCoverUrl ? (
+                                  <img
+                                    src={entry.recipeCoverUrl}
+                                    alt=""
+                                    loading="lazy"
+                                    className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-raised text-ink-muted">
+                                    <Utensils className="h-5 w-5" />
+                                  </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  {unavailable ? (
+                                    <p className="text-sm text-ink-muted">
+                                      {name}
+                                    </p>
+                                  ) : (
+                                    <Link
+                                      to={`/cong-thuc/id/${entry.recipeId}?mealPlanWeek=${week}&mealPlanEntryId=${entry.entryId}&mealDate=${day}`}
+                                      className="block break-words text-sm font-semibold text-ink hover:text-brand-600"
+                                    >
+                                      {name}
+                                    </Link>
+                                  )}
+                                  <p className="mt-1 flex items-center gap-1 text-xs text-ink-muted">
+                                    <Clock3 className="h-3 w-3" />
+                                    {entry.totalTimeMinutes === null
+                                      ? ""
+                                      : `${entry.totalTimeMinutes} phút · `}
+                                    {entry.plannedServings} phần
+                                  </p>
+                                </div>
+                                <div className="flex w-full gap-1 pl-[76px] sm:ml-auto sm:w-auto sm:pl-0">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={busy}
+                                    aria-label={`Thay món ${name}`}
+                                    onClick={() =>
+                                      openPicker({
+                                        mealDate: day,
+
+                                        mealType: meal,
+
+                                        entry,
+                                      })
+                                    }
+                                  >
+                                    <RefreshCw className="h-3 w-3" />
+                                    Thay
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={busy}
+                                    aria-label={`Gỡ món ${name}`}
+                                    onClick={() => {
+                                      returnFocus.current =
+                                        (document.activeElement as HTMLElement)
+
+                                      setActionError("")
+
+                                      setRemoval(entry)
+                                    }}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    Gỡ
+                                  </Button>
+                                </div>
+                              </article>
+                            )
+                          })}
+                        {!entries.some((entry) => entry.mealType === meal) && (
+                          <p className="py-3 text-xs text-ink-muted">
+                            Chưa chọn món cho bữa này.
+                          </p>
+                        )}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              )}
+            </section>
+          )
+        })}
+      </div>
+      <Modal
+        open={Boolean(nutrition)}
+        onClose={closeDialog}
+        title="Dinh dưỡng theo lịch ăn"
+        size="lg"
+      >
+        {nutrition && (
+          <DialogFocus>
+            <MealPlanNutrition
+              plan={plan}
+              initialDay={nutrition.day}
+              initialScope={nutrition.scope}
+            />
+          </DialogFocus>
+        )}
+      </Modal>
       <Modal
         open={Boolean(picker)}
         onClose={closeDialog}
@@ -552,6 +764,7 @@ function WeekContents({ week }: { week: string }) {
                         (current) =>
                           current && {
                             ...current,
+
                             entries: current.entries.filter(
                               (entry) => entry.entryId !== removal.entryId,
                             ),
@@ -575,19 +788,25 @@ function WeekContents({ week }: { week: string }) {
 
 function RecipePicker({
   target,
+
   existing,
+
   busy,
+
   error,
+
   onChoose,
 }: {
   target: Target
+
   existing: Entry[]
+
   busy: boolean
+
   error: string
+
   onChoose: (id: number) => void
 }) {
-  const [source, setSource] = useState<"public" | "saved">("public")
-
   const [text, setText] = useState("")
 
   const [keyword, setKeyword] = useState("")
@@ -613,41 +832,26 @@ function RecipePicker({
 
     setChoices([])
 
-    const request =
-      source === "saved"
-        ? savedRecipesApi
-            .list(keyword, page, 12)
-            .then((result) => ({
-              choices: result.content.map((recipe) => ({
-                id: recipe.recipeId,
-                title: recipe.title ?? "Công thức không còn khả dụng",
-                image: recipe.coverUrl,
-                available: recipe.available,
-              })),
-              totalPages: result.totalPages,
-            }))
-        : recipesApi
-            .searchPublic({
-              keyword,
-              page,
-              size: 12,
-              sort: "NEWEST",
-              viewPeriod: "ALL_TIME",
-            })
-            .then((result) => ({
-              choices: result.items.map((recipe) => ({
-                id: recipe.id,
-                title: recipe.title,
-                image: recipe.media.find((media) => media.cover)?.url ?? null,
-                available: recipe.status === "PUBLISHED",
-              })),
-              totalPages: result.totalPages,
-            }))
+    const request = savedRecipesApi.list(keyword, page, 12).then((result) => ({
+      choices: result.content.map((recipe) => ({
+        id: recipe.recipeId,
+
+        title: recipe.title ?? "Công thức không còn khả dụng",
+
+        image: recipe.coverUrl,
+
+        available: recipe.available,
+      })),
+
+      totalPages: result.totalPages,
+    }))
 
     request
+
       .then((result) => {
         if (active) {
           setChoices(result.choices)
+
           setTotalPages(result.totalPages)
         }
       })
@@ -663,7 +867,7 @@ function RecipePicker({
     return () => {
       active = false
     }
-  }, [source, keyword, page, retry])
+  }, [keyword, page, retry])
 
   return (
     <DialogFocus>
@@ -671,37 +875,14 @@ function RecipePicker({
         {mealLabels[target.mealType]} ·{" "}
         {new Date(`${target.mealDate}T12:00:00`).toLocaleDateString("vi-VN")}
       </p>
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          variant={source === "public" ? "secondary" : "ghost"}
-          aria-pressed={source === "public"}
-          disabled={busy}
-          onClick={() => {
-            setSource("public")
-            setPage(0)
-          }}
-        >
-          Kho công thức
-        </Button>
-        <Button
-          size="sm"
-          variant={source === "saved" ? "secondary" : "ghost"}
-          aria-pressed={source === "saved"}
-          disabled={busy}
-          onClick={() => {
-            setSource("saved")
-            setPage(0)
-          }}
-        >
-          Đã lưu
-        </Button>
-      </div>
+      <p className="mb-4 text-sm font-semibold text-ink">Công thức đã lưu</p>
       <form
         className="mb-4 flex gap-2"
         onSubmit={(event) => {
           event.preventDefault()
+
           setKeyword(text.trim())
+
           setPage(0)
         }}
       >
@@ -711,7 +892,7 @@ function RecipePicker({
           value={text}
           disabled={busy}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Tên hoặc mô tả món…"
+          placeholder="Tìm trong công thức đã lưu…"
           className="min-w-0 flex-1 rounded-lg border border-brand-200 bg-paper px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-600"
         />
         <Button size="sm" type="submit" disabled={busy}>
@@ -749,11 +930,19 @@ function RecipePicker({
       ) : (
         <>
           {!choices.length && (
-            <p className="py-8 text-center text-sm text-ink-muted">
-              {source === "saved"
-                ? "Chưa có công thức đã lưu phù hợp."
-                : "Không tìm thấy công thức phù hợp."}
-            </p>
+            <div className="py-8 text-center text-sm text-ink-muted">
+              <p>
+                {keyword
+                  ? "Không có công thức đã lưu phù hợp với tìm kiếm."
+                  : "Bạn chưa lưu công thức nào."}
+              </p>
+              <Link
+                to="/kham-pha"
+                className="mt-3 inline-block font-semibold text-brand-600"
+              >
+                Khám phá và lưu công thức →
+              </Link>
+            </div>
           )}
           <div className="grid gap-2 sm:grid-cols-2">
             {choices.map((choice) => {
@@ -835,10 +1024,9 @@ function DialogFocus({ children }: { children: ReactNode }) {
     const focusable = () =>
       Array.from(
         dialog.querySelectorAll<HTMLElement>(
-          "button:not(:disabled), input:not(:disabled), a[href]",
+          "button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href]",
         ),
       ).filter((element) => element.offsetParent !== null)
-
     ;(dialog.querySelector<HTMLElement>("input") ?? focusable()[0])?.focus()
 
     const trap = (event: KeyboardEvent) => {
@@ -855,9 +1043,11 @@ function DialogFocus({ children }: { children: ReactNode }) {
         ;(event.shiftKey ? last : first)?.focus()
       } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault()
+
         last?.focus()
       } else if (!event.shiftKey && document.activeElement === last) {
         event.preventDefault()
+
         first?.focus()
       }
     }
