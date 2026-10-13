@@ -132,8 +132,20 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
     expect(readResponse.status()).toBe(200)
     const selectedWeek = (await readResponse.json()).weekStartDate as string
     await expect(
-      page.getByRole("button", { name: /^Thêm món Bữa/ }),
-    ).toHaveCount(21)
+      page.getByRole("heading", { name: "Lịch ăn của bạn" }),
+    ).toBeVisible()
+    await page.waitForLoadState("networkidle")
+    const addButtons = page.getByRole("button", { name: /^Thêm món Bữa/ })
+    try {
+      await expect(addButtons).toHaveCount(21, { timeout: 15_000 })
+    } catch (error) {
+      console.error(`Expected 21 add buttons, found ${await addButtons.count()}`)
+      await page.screenshot({
+        path: `test-results/debug-add-button-count-${fixture}.png`,
+        fullPage: true,
+      })
+      throw error
+    }
     expect(
       Number(
         sql(`SELECT COUNT(*) FROM [MEAL_PLAN] WHERE user_id = ${ownerId}`),
