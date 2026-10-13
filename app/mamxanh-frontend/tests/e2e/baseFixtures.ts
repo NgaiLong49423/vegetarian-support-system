@@ -13,6 +13,11 @@ declare global {
 
 export const test = base.extend({
   context: async ({ context }, use, testInfo) => {
+    // Isolated Frontend tests mock account sessions. Prevent the shared saved-status read
+    // from escaping to a live Backend; page-specific saved recipe fixtures override this.
+    await context.route((url) => url.pathname === '/api/v1/saved-recipes', (route) => route.fulfill({ json: {
+      content: [], page: 0, size: 50, totalElements: 0, totalPages: 0,
+    } }));
     let snapshot = 0;
     const pendingWrites = new Set<Promise<void>>();
     const coverageDirectory = path.join(process.cwd(), '.nyc_output');

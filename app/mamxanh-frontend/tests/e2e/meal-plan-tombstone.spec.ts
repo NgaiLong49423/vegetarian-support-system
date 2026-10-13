@@ -41,7 +41,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test('meal plan retains a deleted recipe slot and displays the author tombstone', async ({ page }) => {
+test('meal plan retains a deleted recipe slot and displays the neutral unavailable state', async ({ page }) => {
   await page.route('**/api/v1/meal-plans**', (route) => {
     const url = new URL(route.request().url());
     const weekStartDate = url.searchParams.get('weekStartDate') ?? '2026-10-05';
@@ -66,8 +66,9 @@ test('meal plan retains a deleted recipe slot and displays the author tombstone'
   await page.goto('/ke-hoach');
 
   await expect(page.getByText('Lịch ăn của bạn')).toBeVisible();
-  await expect(page.getByText('Bữa trưa')).toBeVisible();
-  await expect(page.getByText('Công thức này đã bị xóa bởi tác giả')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bữa trưa', exact: true })).toHaveCount(7);
+  await expect(page.getByText('Công thức không còn khả dụng', { exact: true })).toBeVisible();
+  await expect(page.getByText('Công thức này đã bị xóa bởi tác giả')).toHaveCount(0);
   await expect(page.locator('a[href="/cong-thuc/id/47"]')).toHaveCount(0);
 });
 
@@ -94,9 +95,9 @@ test('meal plan links an available recipe and renders an empty week without mock
   await signInAsCustomer(page);
   await page.goto('/ke-hoach');
   await expect(page.getByRole('link', { name: 'Canh nấm mới' })).toHaveAttribute('href', '/cong-thuc/id/48');
-  await expect(page.getByText('Bữa tối')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bữa tối', exact: true })).toHaveCount(7);
   await expect(page.getByText('25 phút · 2 phần')).toBeVisible();
-  await expect(page.getByText('Chưa có món.').first()).toBeVisible();
+  await expect(page.getByText('Chưa có món trong ngày này.').first()).toBeVisible();
 });
 
 test('empty meal plan and server errors show recoverable states', async ({ page }) => {

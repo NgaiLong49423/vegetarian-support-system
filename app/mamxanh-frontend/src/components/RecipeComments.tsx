@@ -240,7 +240,7 @@ export function RecipeComments({ recipeId }: { recipeId: number }) {
               maxLength={1000}
               rows={3}
               placeholder="Chia sẻ câu hỏi hoặc kinh nghiệm nấu món này..."
-              className="mt-2 w-full rounded-xl border border-brand-200 bg-white p-3 text-sm outline-none focus:border-brand-500"
+              className="mt-2 w-full rounded-xl border border-brand-200 bg-paper p-3 text-sm outline-none focus:border-brand-500"
             />
             <div className="mt-2 flex items-center justify-between gap-3">
               <span className="text-xs text-ink-muted">{body.length}/1.000 ký tự</span>

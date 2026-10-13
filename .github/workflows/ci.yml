@@ -76,6 +76,14 @@ jobs:
           path: app/mamxanh-frontend/coverage/
           if-no-files-found: warn
 
+      - name: Upload weekly meal planner UI evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weekly-meal-planner-ui
+          path: .agents/outputs/fr09-stage4/ui/*.png
+          if-no-files-found: warn
+
   backend:
     name: Backend
     runs-on: ubuntu-latest

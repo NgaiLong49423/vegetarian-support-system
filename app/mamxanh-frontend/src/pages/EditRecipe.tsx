@@ -5,7 +5,8 @@ import { AlertTriangle, ArrowLeft, ImagePlus, LoaderCircle, Save, Trash2 } from 
 import { PageContainer } from '../components/Layout';
 import { Button, Card } from '../components/ui';
 import { ApiError, asApiError } from '../lib/apiClient';
-import { recipeApi, type RecipePost, type RecipeReferenceData, type UpdateRecipePost } from '../api/recipes';
+import { recipeApi, recipesApi, type RecipeAiContentType, type RecipePost, type RecipeReferenceData, type UpdateRecipePost } from '../api/recipes';
+import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
 
 const categories = [
   ['NOODLE_SOUP', 'Món nước'], ['STIR_FRY', 'Món xào'], ['HOT_POT', 'Lẩu'], ['BRAISED', 'Món kho'],
@@ -32,6 +33,8 @@ export function EditRecipe() {
   const [form, setForm] = useState<UpdateRecipePost | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState<RecipeAiContentType | null>(null);
+  const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string } | null>(null);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -73,6 +76,38 @@ export function EditRecipe() {
     setError('');
   };
 
+  const generateWithAi = async (contentType: RecipeAiContentType) => {
+    if (!form) return;
+    setAiError(null);
+    if (form.title.trim().length < 3 || !form.dishCategory || !form.vegetarianType || form.servings < 1
+        || form.ingredients.length === 0 || form.ingredients.some((item) => item.ingredientId < 1
+          || item.unitId < 1 || item.quantity <= 0)) {
+      setAiError({ contentType, message: 'Hãy hoàn tất thông tin món ăn và nguyên liệu trước khi yêu cầu AI.' });
+      return;
+    }
+    setAiLoading(contentType);
+    try {
+      const result = await recipesApi.suggestText({
+        contentType,
+        title: form.title,
+        dishCategory: form.dishCategory,
+        vegetarianType: form.vegetarianType,
+        servings: form.servings,
+        ingredients: form.ingredients,
+      });
+      setField(contentType === 'DESCRIPTION' ? 'description' : 'instructions', result.content);
+    } catch (cause) {
+      const apiError = asApiError(cause);
+      setAiError({ contentType, message: apiError.code === 'AI_SUBSCRIPTION_REQUIRED'
+        ? 'Tính năng AI dành cho gói Plus/Pro. Bạn vẫn có thể tự sửa và lưu công thức.'
+        : apiError.code === 'AI_PROVIDER_UNAVAILABLE' || apiError.code === 'AI_RESPONSE_INVALID'
+          ? 'AI hiện không tạo được nội dung hợp lệ. Bạn vẫn có thể tự sửa và lưu công thức.'
+          : apiError.message });
+    } finally {
+      setAiLoading(null);
+    }
+  };
+
   const save = async (event: FormEvent) => {
     event.preventDefault();
     if (!form) return;
@@ -112,7 +147,7 @@ export function EditRecipe() {
     <Link className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700" to="/kham-pha"><ArrowLeft className="h-4 w-4" />Quay lại khám phá</Link>
   </Card></PageContainer>;
 
-  const input = 'mt-1 w-full rounded-xl border border-brand-200 bg-white px-3.5 py-3 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
+  const input = 'mt-1 w-full rounded-xl border border-brand-200 bg-paper px-3.5 py-3 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
   const label = 'block text-sm font-semibold text-ink-soft';
   const fieldError = (key: string) => fieldErrors[key] && <p className="mt-1 text-xs text-red-700">{fieldErrors[key]}</p>;
   const fieldLabels: Record<string, string> = {
@@ -136,7 +171,7 @@ export function EditRecipe() {
         <Card className="space-y-4 p-5 sm:p-6">
           <h2 className="text-lg font-bold text-ink">Thông tin công thức</h2>
           <label className={label}>Tên món *<input className={input} required minLength={3} maxLength={120} value={form.title} onChange={(e) => setField('title', e.target.value)} />{fieldError('title')}</label>
-          <label className={label}>Mô tả<textarea className={input} rows={3} maxLength={2000} value={form.description} onChange={(e) => setField('description', e.target.value)} /></label>
+          <div><label className={label}>Mô tả<textarea className={input} rows={3} maxLength={2000} value={form.description} onChange={(e) => setField('description', e.target.value)} /></label><RecipeAiAssistance contentType="DESCRIPTION" loading={aiLoading} error={aiError?.contentType === 'DESCRIPTION' ? aiError.message : ''} onGenerate={generateWithAi} /></div>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={label}>Loại món<select className={input} value={form.dishCategory} onChange={(e) => setField('dishCategory', e.target.value)}>{categories.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
             <label className={label}>Chế độ chay<select className={input} value={form.vegetarianType} onChange={(e) => setField('vegetarianType', e.target.value)}>{diets.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
@@ -145,7 +180,7 @@ export function EditRecipe() {
             <label className={label}>Thời gian chuẩn bị (phút)<input className={input} type="number" min={0} max={1440} required value={form.prepTimeMin} onChange={(e) => setField('prepTimeMin', Number(e.target.value))} /></label>
             <label className={label}>Thời gian nấu (phút)<input className={input} type="number" min={0} max={1440} required value={form.cookTimeMin} onChange={(e) => setField('cookTimeMin', Number(e.target.value))} /></label>
           </div>
-          <label className={label}>Hướng dẫn nấu *<textarea className={input} rows={8} minLength={10} maxLength={5000} required value={form.instructions} onChange={(e) => setField('instructions', e.target.value)} /><span className="mt-1 block text-right text-xs font-normal text-ink-muted">{form.instructions.length}/5000</span>{fieldError('instructions')}</label>
+          <div><label className={label}>Hướng dẫn nấu *<textarea className={input} rows={8} minLength={10} maxLength={5000} required value={form.instructions} onChange={(e) => setField('instructions', e.target.value)} /><span className="mt-1 block text-right text-xs font-normal text-ink-muted">{form.instructions.length}/5000</span>{fieldError('instructions')}</label><RecipeAiAssistance contentType="INSTRUCTIONS" loading={aiLoading} error={aiError?.contentType === 'INSTRUCTIONS' ? aiError.message : ''} onGenerate={generateWithAi} /></div>
           <label className={label}>Video YouTube (không bắt buộc)<input className={input} type="url" value={form.youtubeUrl} onChange={(e) => setField('youtubeUrl', e.target.value)} placeholder="https://youtu.be/..." /></label>
         </Card>
         <Card className="p-5 sm:p-6"><div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-bold text-ink">Nguyên liệu</h2><p className="text-xs text-ink-muted">Giữ nguyên mã nguyên liệu và đơn vị hiện tại, chỉnh tên hiển thị và số lượng.</p></div></div>
@@ -162,7 +197,7 @@ export function EditRecipe() {
           <button type="button" disabled={!references.ingredients.length} className="mt-4 text-sm font-semibold text-brand-700 disabled:cursor-not-allowed disabled:text-ink-muted" onClick={() => { const first = references.ingredients[0]; if (first) setField('ingredients', [...form.ingredients, { ingredientId: first.ingredientId, unitId: first.unitId, quantity: 1 }]); }}>+ Thêm dòng nguyên liệu</button>
           {fieldError('ingredients')}
         </Card>
-        {recipe.media.length > 0 && <Card className="p-5 sm:p-6"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-lg font-bold text-ink">Hình ảnh</h2><p className="text-xs text-ink-muted">Ảnh được giữ nguyên khi lưu nội dung. Quản lý ảnh chưa hỗ trợ.</p></div><ImagePlus className="h-5 w-5 text-brand-600" /></div><div className="flex flex-wrap gap-3">{recipe.media.map((image) => <div className="relative" key={image.displayOrder}><img src={image.url} alt="Ảnh công thức" className="h-20 w-20 rounded-lg object-cover" />{image.cover && <span className="absolute bottom-1 left-1 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold">Ảnh bìa</span>}</div>)}</div></Card>}
+        {recipe.media.length > 0 && <Card className="p-5 sm:p-6"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-lg font-bold text-ink">Hình ảnh</h2><p className="text-xs text-ink-muted">Ảnh được giữ nguyên khi lưu nội dung. Quản lý ảnh chưa hỗ trợ.</p></div><ImagePlus className="h-5 w-5 text-brand-600" /></div><div className="flex flex-wrap gap-3">{recipe.media.map((image) => <div className="relative" key={image.displayOrder}><img src={image.url} alt="Ảnh công thức" className="h-20 w-20 rounded-lg object-cover" />{image.cover && <span className="absolute bottom-1 left-1 rounded bg-paper/90 px-1.5 py-0.5 text-[10px] font-semibold">Ảnh bìa</span>}</div>)}</div></Card>}
       </div>
       <aside className="space-y-4 lg:sticky lg:top-6"><Card className="p-5"><p className="mb-1 text-xs font-bold uppercase tracking-wide text-brand-600">Đang chỉnh sửa</p><h2 className="text-lg font-bold text-ink">{recipe.title}</h2><p className="mt-2 text-sm text-ink-muted">Bài đang công khai. Khi lưu hợp lệ, nội dung mới được cập nhật ngay.</p><Button type="submit" disabled={saving} className="mt-5 w-full">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Lưu thay đổi</Button><Button type="button" variant="outline" className="mt-3 w-full" onClick={() => navigate('/ho-so/chuyen-gia')}>Hủy</Button></Card><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-950"><strong>Lưu ý:</strong> Bài bị quản trị viên ẩn sẽ bị chặn mọi thao tác sửa. Chỉ quản trị viên mới có thể phục hồi.</div></aside>
     </form>

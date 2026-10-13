@@ -28,8 +28,14 @@ public record RecipeDetailResponse(
         Statistics statistics,
         List<Media> media) {
 
-    public record Ingredient(Long ingredientId, String name, BigDecimal quantity, Integer unitId,
-            String unitCode, String unitName) {}
+    public record Ingredient(Long ingredientId, String name, String ingredientGroup,
+            BigDecimal quantity, Integer unitId, String unitCode, String unitName,
+            boolean nutritionSupported, IngredientNutrition nutrition) {}
+
+    public record IngredientNutrition(BigDecimal energyKcalPer100g, BigDecimal proteinGramsPer100g,
+            BigDecimal carbohydrateGramsPer100g, BigDecimal totalFatGramsPer100g,
+            BigDecimal fiberGramsPer100g, BigDecimal calciumMgPer100g, BigDecimal ironMgPer100g,
+            BigDecimal vitaminB12MicrogramsPer100g, BigDecimal zincMgPer100g) {}
 
     public record Author(Long userId, String displayName, String avatarUrl) { }
 

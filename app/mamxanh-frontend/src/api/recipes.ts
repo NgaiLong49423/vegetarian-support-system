@@ -61,8 +61,23 @@ export interface RecipeDetail {
   cookTimeMinutes: number;
   youtubeUrl: string | null;
   publishedAt: string;
+  /** FR-23 (AC-23.1): current public data of the author's account. */
+  author: { userId: number; displayName: string; avatarUrl: string | null };
   nutritionComplete: boolean;
   ingredientsWithoutNutrition: string[];
+  nutrition: {
+    complete: boolean;
+    ingredientsMissingData: string[];
+    total: Record<string, number | null>;
+    perServing: Record<string, number | null>;
+  };
+  statistics: {
+    likes: number;
+    dislikes: number;
+    reactionCount: number;
+    likePercentage: number | null;
+    viewCount: number;
+  };
   ingredients: Array<{
     ingredientId: number;
     name: string;
@@ -166,6 +181,20 @@ export interface UpdateRecipePost {
   ingredients: Array<Pick<RecipeIngredient, 'ingredientId' | 'unitId' | 'quantity'>>;
 }
 
+export type RecipeAiContentType = 'DESCRIPTION' | 'INSTRUCTIONS';
+export interface RecipeAiAssistanceRequest {
+  contentType: RecipeAiContentType;
+  title: string;
+  dishCategory: string;
+  vegetarianType: string;
+  servings: number;
+  ingredients: RecipeIngredientInput[];
+}
+export interface RecipeAiAssistanceResponse {
+  contentType: RecipeAiContentType;
+  content: string;
+}
+
 export interface RecipeReferenceData {
   ingredients: Array<{ ingredientId: number; name: string; unitId: number; unitCode: string; unitName: string }>;
 }
@@ -179,12 +208,22 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
 }
 
 export const recipesApi = {
+  related: (recipeId: number) => request(
+    () => apiClient.get<{ items: RecipePost[] }>(`/recipes/${recipeId}/related`),
+  ),
+  recommendRelated: (recipeId: number) => request(
+    () => apiClient.post<{ items: RecipePost[] }>(`/recipes/${recipeId}/related/ai`, undefined, { timeout: 60_000 }),
+  ),
   getFormOptions: () => request(() => apiClient.get<RecipeFormOptions>('/recipes/form-options')),
   searchIngredients: (query: string) => request(
     () => apiClient.get<IngredientOption[]>('/recipes/ingredient-options', { params: { query } }),
   ),
   publish: (payload: CreateRecipeRequest) => request(
     () => apiClient.post<CreateRecipeResponse>('/recipes', payload),
+  ),
+  suggestText: (payload: RecipeAiAssistanceRequest) => request(
+    // Gemini may take up to 45 seconds; allow time for the Backend request and response too.
+    () => apiClient.post<RecipeAiAssistanceResponse>('/recipes/ai-assistance', payload, { timeout: 60_000 }),
   ),
   getPublished: (recipeId: number) => request(
     () => apiClient.get<RecipeDetail>(`/recipes/${recipeId}`),
@@ -220,4 +259,14 @@ export const recipeApi = {
 export const mealPlanApi = {
   getWeek: async (weekStartDate: string) =>
     (await apiClient.get<MealPlanWeek>('/meal-plans', { params: { weekStartDate } })).data,
+  openWeek: async (weekStartDate: string) =>
+    (await apiClient.put<MealPlanWeek>('/meal-plans', undefined, { params: { weekStartDate } })).data,
+  addEntry: async (weekStartDate: string, payload: {
+    mealDate: string; mealType: MealPlanWeek['entries'][number]['mealType']; recipeId: number;
+  }) => (await apiClient.post<MealPlanWeek['entries'][number]>(`/meal-plans/${weekStartDate}/entries`, payload)).data,
+  replaceEntry: async (weekStartDate: string, entryId: number, recipeId: number) =>
+    (await apiClient.put<MealPlanWeek['entries'][number]>(`/meal-plans/${weekStartDate}/entries/${entryId}`, { recipeId })).data,
+  removeEntry: async (weekStartDate: string, entryId: number) => {
+    await apiClient.delete<void>(`/meal-plans/${weekStartDate}/entries/${entryId}`);
+  },
 };

@@ -1,6 +1,7 @@
 package tech.mamxanh.nutrition.service;
 
 import java.util.List;
+import java.util.Collection;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
 
@@ -10,6 +11,8 @@ import tech.mamxanh.nutrition.dto.response.UnitResponse;
  */
 public interface IngredientCatalogLookupService {
     List<IngredientResponse> findActiveIngredients(String query);
+
+    List<IngredientResponse> findActiveIngredientsByIds(Collection<Long> ids);
 
     List<UnitResponse> findActiveUnits();
 }

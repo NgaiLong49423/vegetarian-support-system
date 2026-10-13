@@ -69,7 +69,7 @@ export function RecipeCard({ recipe }: { recipe: Recipe }) {
   return (
       <Link
           to={`/cong-thuc/${recipe.slug}`}
-          className="group flex flex-col overflow-hidden rounded-2xl border border-brand-100 bg-white transition-all hover:-translate-y-1 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-900/5"
+          className="group flex flex-col overflow-hidden rounded-2xl border border-brand-100 bg-paper transition-all hover:-translate-y-1 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-900/5"
       >
         <div className="relative aspect-[4/3] overflow-hidden">
           <img
@@ -91,8 +91,8 @@ export function RecipeCard({ recipe }: { recipe: Recipe }) {
               onClick={handleToggleSave}
               className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full shadow-sm backdrop-blur transition-all hover:scale-105 ${
                   saved
-                      ? 'bg-brand-600 text-white'
-                      : 'bg-white/90 text-ink-soft hover:text-brand-600'
+                      ? 'bg-brand-600 text-on-brand'
+                      : 'bg-paper/90 text-ink-soft hover:text-brand-600'
               }`}
               aria-label={saved ? 'Bỏ lưu công thức' : 'Lưu công thức'}
               title={saved ? 'Bỏ lưu' : 'Lưu công thức'}

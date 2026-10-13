@@ -77,7 +77,7 @@ export function ExpertRecipeProfile() {
   if (!isAuthenticated) return <PageContainer className="py-12"><Card className="mx-auto max-w-xl p-6 text-center sm:p-8">
     <h1 className="text-xl font-extrabold text-ink">Đăng nhập để quản lý công thức</h1>
     <p className="mt-2 text-sm text-ink-muted">Chỉ tài khoản Chuyên gia đang hoạt động mới xem và quản lý được bài của mình.</p>
-    <Link to="/dang-nhap" className="mt-5 inline-flex rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white">Đăng nhập</Link>
+    <Link to="/dang-nhap" className="mt-5 inline-flex rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-on-brand">Đăng nhập</Link>
   </Card></PageContainer>;
 
   if (account?.role !== 'EXPERT') return <PageContainer className="py-12"><Card className="mx-auto max-w-xl p-6 text-center sm:p-8">
@@ -93,14 +93,13 @@ export function ExpertRecipeProfile() {
     </div>
 
     <Card className="mb-6 overflow-hidden">
-      <div className="h-28 bg-gradient-to-r from-brand-600 via-brand-400 to-amber-300" />
-      <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end">
-        <div className="-mt-16 flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl bg-white text-brand-700 ring-4 ring-white shadow-sm">
+      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-raised text-brand-700">
           {account.avatarUrl ? <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" /> : <ChefHat className="h-12 w-12" aria-hidden="true" />}
         </div>
         <div className="min-w-0 flex-1">
           <p className="mb-1 text-xs font-bold uppercase tracking-wider text-brand-700">Bài công thức cá nhân</p>
-          <h1 className="flex items-center gap-2 text-2xl font-extrabold text-ink">
+          <h1 className="flex items-center gap-2 text-xl font-semibold text-ink">
             {account.displayName} <BadgeCheck className="h-5 w-5 text-brand-600" aria-label="Tài khoản Chuyên gia" />
           </h1>
           <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
@@ -120,7 +119,7 @@ export function ExpertRecipeProfile() {
 
     {notice && <p role="status" className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{notice}</p>}
     {error && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"><p>{error}</p><Button variant="outline" size="sm" className="mt-3" onClick={() => void loadRecipes()}>Thử tải lại</Button></div>}
-    {loading && <div role="status" className="py-10 text-center text-sm text-ink-muted"><LoaderCircle className="mx-auto mb-2 h-6 w-6 animate-spin" />Đang tải bài công thức…</div>}
+    {loading && <div aria-live="polite" className="py-10 text-center text-sm text-ink-muted"><LoaderCircle className="mx-auto mb-2 h-6 w-6 animate-spin" />Đang tải bài công thức…</div>}
 
     {!loading && !error && recipes.length === 0 && <Card className="p-6 text-center text-sm text-ink-muted">Bạn chưa có công thức nào.</Card>}
     {!loading && recipes.length > 0 && <div className="space-y-3">
@@ -159,6 +158,6 @@ export function ExpertRecipeProfile() {
       })}
     </div>}
 
-    {confirmDelete !== null && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="presentation"><div role="dialog" aria-modal="true" aria-labelledby="profile-delete-heading" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"><h2 id="profile-delete-heading" className="text-xl font-extrabold text-ink">Bạn chắc chắn muốn xóa bài này?</h2><p className="mt-2 text-sm leading-6 text-ink-muted">Bài sẽ không còn xuất hiện công khai. Nếu bài đang nằm trong Meal Plan của người khác, vị trí bữa ăn vẫn được giữ và sẽ hiện thông báo đã xóa.</p><div className="mt-5 flex justify-end gap-3"><Button variant="outline" disabled={deleting} onClick={() => setConfirmDelete(null)}>Hủy</Button><Button disabled={deleting} className="bg-red-700 hover:bg-red-800" onClick={() => void removeRecipe()}>{deleting ? 'Đang xóa…' : 'Xác nhận xóa'}</Button></div></div></div>}
+    {confirmDelete !== null && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="presentation"><div role="dialog" aria-modal="true" aria-labelledby="profile-delete-heading" className="w-full max-w-md rounded-2xl bg-paper p-6 shadow-xl"><h2 id="profile-delete-heading" className="text-xl font-extrabold text-ink">Bạn chắc chắn muốn xóa bài này?</h2><p className="mt-2 text-sm leading-6 text-ink-muted">Bài sẽ không còn xuất hiện công khai. Nếu bài đang nằm trong Meal Plan của người khác, vị trí bữa ăn vẫn được giữ và sẽ hiện thông báo đã xóa.</p><div className="mt-5 flex justify-end gap-3"><Button variant="outline" disabled={deleting} onClick={() => setConfirmDelete(null)}>Hủy</Button><Button disabled={deleting} className="bg-red-700 hover:bg-red-800" onClick={() => void removeRecipe()}>{deleting ? 'Đang xóa…' : 'Xác nhận xóa'}</Button></div></div></div>}
   </PageContainer>;
 }

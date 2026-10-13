@@ -122,6 +122,25 @@ environment_configuration_policy:
     report_fields: [credential_type, affected_file_or_location, reason]
     never_reproduce_secret_value: true
     prohibited_without_explicit_authorization: [revoke_credential, rotate_credential, rewrite_git_history, force_push, purge_repository_history]
+repository_local_codex_mcp:
+  config_path: .codex/config.toml
+  launcher: scripts/codex.ps1
+  local_env_file: .env
+  credentials:
+    stitch:
+      environment_variable: STITCH_API_KEY
+      header_name: X-Goog-Api-Key
+      secret_value_must_not_be_printed_or_logged: true
+  startup:
+    project_must_be_trusted: true
+    launcher_loads_env_for_codex_process_and_children: true
+    existing_desktop_or_connector_session_inherits_project_env: false
+    restart_through_launcher_after_env_or_config_changes: true
+  authentication_diagnostics:
+    distinguish_repository_local_mcp_from_platform_connector: true
+    platform_connector_auth_uses_repository_env_file: false
+    successful_read_only_project_list_confirms_access_only: true
+
 engineering_autonomy:
   policy_reference: "CONTRIBUTING.md#engineering-autonomy-policy"
   overrides_diagram_protection: false

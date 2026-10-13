@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M04
 > **File:** `docs/requirements/use-cases/recipe-discovery-and-classification.md`
-> **Version:** v2.5.0
+> **Version:** v2.6.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-08
+> **Last Updated:** 2026-10-12
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -515,8 +515,8 @@ Người dùng mở trang chi tiết một Recipe Post công khai.
 Recipe Post đang xem công khai; hệ thống có thể truy vấn kho công thức nội bộ.
 
 #### Main Flow
-1. Hệ thống tìm các Recipe Post công khai khác cùng danh mục hoặc có ít nhất một nguyên liệu chính trùng, ưu tiên cùng trường phái ăn chay.
-2. Hệ thống hiển thị 4–6 công thức liên quan ở cuối trang chi tiết.
+1. Hệ thống tìm các Recipe Post công khai khác khớp ít nhất một tiêu chí: cùng danh mục, cùng loại chay hoặc trùng nguyên liệu chính. Xếp hạng và xác định nguyên liệu chính theo [quy tắc FR-47](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-47), trong đó khối lượng được quy đổi về gram trước khi so sánh.
+2. Hệ thống hiển thị tối đa 6 công thức liên quan ở cuối trang chi tiết; thiếu ứng viên thì trả số lượng thực tế. Không có ứng viên thì thông báo chưa có công thức liên quan.
 3. Luồng này không gọi API bên ngoài và không yêu cầu gói nâng cao.
 
 #### Postconditions
@@ -551,9 +551,9 @@ Member đang xem Recipe Post công khai và có quyền AI tương ứng theo FR
 
 #### Main Flow — AF-47.1 (Member yêu cầu AI gợi ý kết hợp món)
 1. Hệ thống kiểm tra Feature Entitlement trước khi gọi Gemini.
-2. Hệ thống lấy các Recipe Post công khai có thuộc tính phù hợp làm món ăn kèm/biến tấu.
+2. Hệ thống lấy tập ứng viên Recipe Post công khai có giới hạn, cùng loại chay với bài nguồn; phân bổ ứng viên giữa các thể loại món để hỗ trợ cả món ăn kèm và biến tấu.
 3. Hệ thống gửi metadata bài hiện tại cùng danh sách ứng viên cho Gemini.
-4. Hệ thống hiển thị kết quả gợi ý kèm giải thích ngắn trong khung chuyên biệt và ghi telemetry nếu có theo FR-11.
+4. Gemini chọn ID trong tập ứng viên. Backend xác minh cấu trúc, loại ID trùng, đọc lại trạng thái công khai và loại chay; hệ thống hiển thị thẻ công thức thật trong khung riêng cùng giải thích rằng các món cùng loại chay được AI chọn để ăn kèm/đổi món. Metadata token thực tế được bàn giao cho FR-11; không lưu raw prompt.
 
 #### Exception Flows
 - **EF-47.1 — Guest yêu cầu AI:** Hệ thống yêu cầu đăng nhập.
