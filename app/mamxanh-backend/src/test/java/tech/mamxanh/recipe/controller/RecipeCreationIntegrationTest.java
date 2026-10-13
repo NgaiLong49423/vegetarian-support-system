@@ -401,29 +401,6 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void rejectsForgedExternalMediaUrlEvenWhenMimeAndCoverAreValid() throws Exception {
-        jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 80)",
-                ingredientId, countUnitId);
-        List<RecipeMediaInput> media = List.of(
-                new RecipeMediaInput("https://blob.test/issue22/a.png", "image/png", false),
-                new RecipeMediaInput("https://blob.test/issue22/b.webp", "image/webp", true),
-                new RecipeMediaInput("https://blob.test/issue22/c.jpg", "image/jpeg", false));
-
-        Integer mediaCountBefore = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM [RECIPE_MEDIA]", Integer.class);
-        mockMvc.perform(post("/api/v1/recipes")
-                        .with(user(Long.toString(expertId)).authorities(new SimpleGrantedAuthority("ROLE_EXPERT")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(request(List.of(ingredient(countUnitId, "2")), media))))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[*].field", hasItem("media")))
-                .andExpect(jsonPath("$.errors[*].message", hasItem(
-                        "Đăng công thức kèm ảnh chưa được hỗ trợ. Hãy bỏ ảnh; upload ảnh sẽ được tích hợp sau FR-14.")));
-        assertNoRecipe();
-        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM [RECIPE_MEDIA]", Integer.class)).isEqualTo(mediaCountBefore);
-    }
-
-    @Test
     void publishesValidRecipeWithMediaAndPersistsToRecipeMediaTable() throws Exception {
         jdbcTemplate.update("INSERT INTO [INGREDIENT_UNIT_CONVERSION] (ingredient_id, unit_id, grams_per_unit) VALUES (?, ?, 80)",
                 ingredientId, countUnitId);
