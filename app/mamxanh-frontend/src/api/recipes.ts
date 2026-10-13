@@ -85,6 +85,8 @@ export interface RecipeDetail {
     unitId: number;
     unitCode: string;
     unitName: string;
+    /** FR-40: false when the catalog ingredient has no nutrition data (AC-40.2). */
+    nutritionSupported: boolean;
   }>;
   media: Array<{ blobUrl: string; mimeType: string; displayOrder: number; cover: boolean }>;
 }

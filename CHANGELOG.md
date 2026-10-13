@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.71.0
+> **Version:** v2.72.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-13 — Publish Recipes With Incomplete Nutrition (Issue #45)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Complete FR-40 (AC-40.1–AC-40.3, BR-40, BR-50): recipes that use catalog ingredients without nutrition data stay publishable, each such ingredient is labelled on the recipe page, and such recipes are kept out of the nutrition AI menu candidate pool.
+
+### Added
+
+- Add `RecipeNutritionCandidateService.retainNutritionComplete`, which keeps only published recipes with complete nutrition for the nutrition AI menu (FR-36) and uses the same calculation as the recipe detail.
+- Add the "Chưa hỗ trợ tính dinh dưỡng" label next to each ingredient without nutrition data on both recipe detail pages.
+- Add an SQL Server integration test for the candidate filter and Playwright tests for the label.
+
+### Changed
+
+- Document FR-40 in `API.md` section 7 and the Backend/Frontend READMEs; type `nutritionSupported` on recipe detail ingredients in the Frontend API client.
+
+### Fixed
+
+- None.
 
 ## 2026-10-13 — Expand Local Recipe Demo Fixtures ([PR #127](https://github.com/NgaiLong49423/vegetarian-support-system/pull/127))
 
