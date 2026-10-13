@@ -42,10 +42,13 @@ public class RecipeMediaService {
 
     private final StorageClient storageClient;
     private final RecipeMediaRepository recipeMediaRepository;
+    private final RecipePostService recipePostService;
 
-    public RecipeMediaService(StorageClient storageClient, RecipeMediaRepository recipeMediaRepository) {
+    public RecipeMediaService(StorageClient storageClient, RecipeMediaRepository recipeMediaRepository,
+            RecipePostService recipePostService) {
         this.storageClient = storageClient;
         this.recipeMediaRepository = recipeMediaRepository;
+        this.recipePostService = recipePostService;
     }
 
     /**
@@ -88,9 +91,11 @@ public class RecipeMediaService {
 
     /**
      * Associate or update the recipe's media library (UC-14.2, AC-14.2, AC-14.3, BR-19).
+     * Only the active Expert author of a published recipe may change it (BR-64, AC-04.4, AC-04.7).
      */
     @Transactional
     public List<RecipeMediaResponse> setRecipeMedia(Long recipeId, UpdateRecipeMediaRequest request) {
+        recipePostService.lockOwnEditableRecipe(recipeId);
         List<RecipeMediaItemRequest> items = request.mediaItems();
 
         if (items.size() > MAX_MEDIA_ITEMS) {
@@ -118,8 +123,10 @@ public class RecipeMediaService {
             }
         }
 
-        // Delete previous media entities for this recipe
+        // Delete previous media entities for this recipe. Flush first: Hibernate runs inserts before
+        // deletes, so the new rows would otherwise collide with UQ_RECIPE_MEDIA_order.
         recipeMediaRepository.deleteByRecipeId(recipeId);
+        recipeMediaRepository.flush();
 
         if (items.isEmpty()) {
             return List.of();
@@ -145,9 +152,11 @@ public class RecipeMediaService {
 
     /**
      * Delete all media of a recipe and release resources on Azure Blob Storage.
+     * Only the active Expert author of a published recipe may do this (BR-64, AC-04.4, AC-04.7).
      */
     @Transactional
     public void deleteRecipeMedia(Long recipeId) {
+        recipePostService.lockOwnEditableRecipe(recipeId);
         List<RecipeMediaEntity> mediaList = recipeMediaRepository.findByRecipeIdOrderByDisplayOrderAsc(recipeId);
         for (RecipeMediaEntity media : mediaList) {
             storageClient.deleteImage(media.getBlobUrl());

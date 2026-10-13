@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Check,
-  ChefHat,
   ChevronDown,
   Clock3,
   Download,
@@ -22,6 +21,8 @@ import { Badge, Button, Card } from '../components/ui';
 import { asApiError } from '../lib/apiClient';
 import { recipesApi, type RecipeDetail } from '../api/recipes';
 import { SaveRecipeButton } from '../components/SaveRecipeButton';
+import { MemberAvatar } from '../components/MemberAvatar';
+import { RelatedRecipes } from '../components/RelatedRecipes';
 
 const NUTRIENTS = [
   { key: 'ENERGY_KCAL', label: 'Năng lượng', unit: 'kcal' },
@@ -34,6 +35,11 @@ const NUTRIENTS = [
   { key: 'VITAMIN_B12_MCG', label: 'Vitamin B12', unit: 'mcg' },
   { key: 'ZINC_MG', label: 'Kẽm', unit: 'mg' },
 ] as const;
+
+/** `publishedAt` is UTC without an offset; show the date in Vietnam time (FR-23). */
+function publishedDate(value: string) {
+  return new Date(`${value}Z`).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+}
 
 function formatNumber(value: number | null | undefined, maximumFractionDigits = 2) {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'Chưa có dữ liệu';
@@ -180,12 +186,12 @@ export function ApiRecipeDetail() {
         {recipe.description && <p className="mt-3 max-w-3xl leading-7 text-ink-muted">{recipe.description}</p>}
         <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-ink-muted">
           <div className="flex items-center gap-3">
-            {recipe.author.avatarUrl ? <img src={recipe.author.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" /> : <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-100 text-brand-700"><ChefHat className="h-5 w-5" /></div>}
-            <div><p className="text-xs">Tác giả</p><p className="font-bold text-ink">{recipe.author.displayName}</p></div>
+            <MemberAvatar name={recipe.author.displayName} url={recipe.author.avatarUrl} />
+            <div><p className="text-xs">Tác giả</p><Link to={`/thanh-vien/${recipe.author.userId}`} className="font-bold text-ink hover:text-brand-700">{recipe.author.displayName}</Link></div>
           </div>
           <span className="inline-flex items-center gap-1.5"><Clock3 className="h-4 w-4 text-brand-600" />{recipe.prepTimeMinutes + recipe.cookTimeMinutes} phút tổng cộng</span>
           <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4 text-brand-600" />{recipe.servings} khẩu phần gốc</span>
-          {recipe.publishedAt && <time dateTime={recipe.publishedAt}>{new Date(recipe.publishedAt).toLocaleDateString('vi-VN')}</time>}
+          {recipe.publishedAt && <time dateTime={recipe.publishedAt}>Đăng ngày {publishedDate(recipe.publishedAt)}</time>}
         </div>
       </div>
       <Card className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-2">
@@ -269,6 +275,7 @@ export function ApiRecipeDetail() {
         {recipe.nutrition?.total && <Card className="p-5 sm:p-6"><details><summary className="cursor-pointer list-none text-sm font-bold text-ink">Xem tổng dinh dưỡng toàn công thức</summary><dl className="mt-3 grid grid-cols-2 gap-2">{NUTRIENTS.map((nutrient) => { const value = recipe.nutrition.total[nutrient.key]; return <div key={nutrient.key} className="rounded-lg bg-brand-50 px-3 py-2"><dt className="text-xs text-ink-muted">{nutrient.label}</dt><dd className="mt-1 text-sm font-semibold text-ink">{formatNumber(value)}{value == null ? '' : ` ${nutrient.unit}`}</dd></div>; })}</dl></details></Card>}
       </aside>
     </div>
+    <RelatedRecipes key={recipeId} recipeId={recipeId} />
     <div className="recipe-detail-no-print mt-8"><Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeft className="h-4 w-4" />Trở lại khám phá</Link></div>
   </PageContainer>;
 }

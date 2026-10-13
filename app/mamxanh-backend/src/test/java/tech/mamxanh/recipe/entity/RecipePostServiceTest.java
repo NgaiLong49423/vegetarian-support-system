@@ -18,6 +18,8 @@ import java.util.Optional;
 import java.util.Map;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +64,30 @@ class RecipePostServiceTest {
 
     private RecipePostEntity recipe;
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"DRAFT", "HIDDEN", "DELETED"})
+    void mealPlanCannotReferenceANonPublishedRecipe(String status) {
+        recipe.setStatus(status);
+        when(repository.lockById(1L)).thenReturn(Optional.of(recipe));
+        assertThatThrownBy(() -> service.requirePublishedMealPlanRecipe(1L))
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RECIPE_NOT_FOUND);
+    }
+
+    @Test
+    void mealPlanCannotReferenceAMissingRecipe() {
+        when(repository.lockById(1L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.requirePublishedMealPlanRecipe(1L))
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RECIPE_NOT_FOUND);
+    }
+
+    @Test
+    void mealPlanMayReferenceALockedPublishedRecipe() {
+        recipe.setStatus("PUBLISHED");
+        when(repository.lockById(1L)).thenReturn(Optional.of(recipe));
+        service.requirePublishedMealPlanRecipe(1L);
+        verify(repository).lockById(1L);
+    }
+
     @BeforeEach
     void setUp() {
         recipe = new RecipePostEntity();
@@ -79,6 +105,38 @@ class RecipePostServiceTest {
         recipe.setStatus("PUBLISHED");
         recipe.setUpdatedAt(LocalDateTime.now());
         lenient().when(currentUserService.requireActiveExpert()).thenReturn(new CurrentUser(7L, Role.EXPERT));
+    }
+
+    @Test
+    void paginatesRecipeReferencesForAnIngredientInStableTitleOrder() {
+        PageRequest expectedPage = PageRequest.of(1, 10,
+                Sort.by(Sort.Order.asc("title"), Sort.Order.asc("id")));
+        when(repository.findAllUsingIngredient(org.mockito.ArgumentMatchers.eq(9L),
+                org.mockito.ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(recipe), expectedPage, 21));
+
+        var result = service.searchRecipesUsingIngredient(9L, 1, 10);
+
+        assertThat(result.content()).singleElement().satisfies(reference -> {
+            assertThat(reference.recipeId()).isEqualTo(47L);
+            assertThat(reference.title()).isEqualTo("Món cũ của tôi");
+        });
+        assertThat(result.page()).isEqualTo(1);
+        assertThat(result.size()).isEqualTo(10);
+        assertThat(result.totalElements()).isEqualTo(21);
+        assertThat(result.totalPages()).isEqualTo(3);
+        verify(repository).findAllUsingIngredient(9L, expectedPage);
+    }
+
+    @Test
+    void returnsDistinctRecipeUsageCountsForIngredientPageAndSkipsEmptyPages() {
+        when(ingredientRepository.countDistinctRecipesByIngredientIds(List.of(9L, 10L)))
+                .thenReturn(List.<Object[]>of(new Object[] {9L, 3L}, new Object[] {10L, 1L}));
+
+        assertThat(service.countRecipesUsingIngredients(List.of(9L, 10L)))
+                .containsEntry(9L, 3L).containsEntry(10L, 1L);
+        assertThat(service.countRecipesUsingIngredients(List.of())).isEmpty();
+        verify(ingredientRepository, never()).countDistinctRecipesByIngredientIds(List.of());
     }
 
     @Test

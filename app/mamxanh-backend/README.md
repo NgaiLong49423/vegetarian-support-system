@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.24.0
+> **Version:** v0.25.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-10<br>
+> **Last Updated:** 2026-10-11<br>
 > **Status:** Active  
 
 # Backend Workspace
@@ -32,6 +32,7 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 - FR-05 (Issue #68) triển khai luồng nộp/xem lịch sử đơn Chuyên gia và Admin xét duyệt qua Backend API; phê duyệt đổi `CUSTOMER` thành `EXPERT` và ghi notification trong cùng transaction. Migration `V8__expert_application_notifications.sql` bổ sung internal target path cùng index truy vấn. Chi tiết API được tạo từ runtime OpenAPI.
 - Đã có FR-31 (Issue #36) trong module `nutrition`: `GET`/`PUT /api/v1/nutrition/dietary-preferences`, `POST /api/v1/nutrition/dietary-preferences/onboarding/skip`, `POST /api/v1/nutrition/dietary-preferences/onboarding/invitation` (lời mời Onboarding chỉ hiện một lần, AC-31.10) và `GET /api/v1/nutrition/dietary-preferences/ingredient-suggestions`; entity riêng ánh xạ các cột sở thích của `USER` (quyết định Q18) và bảng `USER_INGREDIENT_PREFERENCE`; migration `V7__user_onboarding_invitation.sql` thêm cột `USER.onboarding_invited_at`. Generated OpenAPI khai báo security scheme `bearerAuth` (`common/config/OpenApiConfig`); controller cần đăng nhập gắn `@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)`. Endpoint AI cá nhân hóa sau này phải gọi `DietaryPreferenceService.requirePersonalizedAiEligible(userId)` trước khi gọi Gemini (BR-31).
 - FR-26/27 thêm `POST /api/v1/recipes/{recipeId}/reports` cho Member gửi báo cáo bài công khai; báo cáo lưu `OPEN`, xác thực và chống trùng ở Backend, migration V9 đồng bộ trạng thái/mã lý do với SRS. Luồng bổ sung thông tin thuộc FR-30 chưa có trong Issue này.
+- Đã có FR-23 (Issue #29): `GET /api/v1/members/{userId}` và `GET /api/v1/members/{userId}/recipes` công khai; `GET`/`PUT /api/v1/me/profile` và `POST /api/v1/me/profile/avatar` cho Member sửa tên, giới thiệu ngắn và ảnh đại diện (JPEG/PNG/WebP ≤ 2 MB, kiểm chữ ký tệp, lưu qua `StorageClient` trong thư mục `avatars/`). Không có migration: `USER.bio`, `display_name`, `avatar_url` có từ V1. Quy tắc chi tiết ở [API Guide mục 11](../../docs/api/API.md). Giới hạn multipart `spring.servlet.multipart.*` là 5 MB/tệp, 6 MB/request.
 
 ### Lệnh chạy và kiểm tra xác minh
 
@@ -100,7 +101,7 @@ SPRING_DATASOURCE_PASSWORD=YOUR_LOCAL_DB_PASSWORD
 
 Trước khi chạy profile `local`, đặt `MAMXANH_DEMO_PASSWORD` trong `.env` theo mục [Tài khoản demo local](#tài-khoản-demo-local). Các giá trị trong `.env.example` chỉ là placeholder, không phải credential dùng được.
 
-Các biến môi trường cho FR-03 (giá trị dùng chung lấy từ kho mật khẩu của nhóm, không dán vào Issue/PR):
+Các biến môi trường cho xác thực, email và tích hợp AI (giá trị dùng chung lấy từ kho mật khẩu của nhóm, không dán vào Issue/PR):
 
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
@@ -111,10 +112,11 @@ Các biến môi trường cho FR-03 (giá trị dùng chung lấy từ kho mậ
 | `MAMXANH_CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Danh sách origin được gọi API, phân tách bằng dấu phẩy, không dùng wildcard. |
 | `MAMXANH_DEMO_PASSWORD` | **bắt buộc khi dùng profile `local`** | Mật khẩu local chung cho tài khoản demo; 12–72 byte UTF-8. Backend tạo BCrypt hash khi khởi động; không đưa mật khẩu vào Git hoặc tài liệu. |
 | `MAMXANH_GOOGLE_CLIENT_ID` | trống | OAuth Client ID (công khai) mà mọi Google ID Token phải nhắm tới; cùng giá trị với `VITE_GOOGLE_CLIENT_ID` của Frontend. Trống thì Google Login từ chối mọi token (`401 GOOGLE_TOKEN_INVALID`) và Backend ghi cảnh báo khi khởi động. |
+| `GEMINI_API_KEY` | trống | Khóa Gemini dùng lúc chạy Backend cho FR-21. Để trống thì Backend vẫn khởi động nhưng không thể gọi AI. Compose chuyển biến này từ `.env` vào container; không đưa khóa vào Docker image hoặc Git. |
 
 ### Tài khoản demo local
 
-Khi Flyway nạp seed trong profile `local`, Backend tạo năm tài khoản đã xác minh email: `demo-customer@mamxanh.local` (Member có hồ sơ, sở thích, lịch ăn và đơn Expert đang chờ), `demo-new-member@mamxanh.local` (Member mới để thử onboarding), `demo-applicant@mamxanh.local` (Member chưa nộp đơn), `demo-expert@mamxanh.local` (quản lý công thức) và `demo-admin@mamxanh.local` (quản trị/xét duyệt). Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả năm tài khoản.
+Khi Flyway nạp seed trong profile `local`, Backend tạo năm tài khoản đã xác minh email: `demo-customer@mamxanh.local` (Member có hồ sơ, sở thích, lịch ăn và đơn Expert đang chờ), `demo-new-member@mamxanh.local` (Member mới để thử onboarding), `demo-applicant@mamxanh.local` (Member chưa nộp đơn), `demo-expert@mamxanh.local` (quản lý công thức và có gói Pro demo để thử AI) và `demo-admin@mamxanh.local` (quản trị/xét duyệt). Gói Pro demo có hiệu lực một năm tính từ lần seed thiết lập subscription. Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả năm tài khoản.
 
 Seed repeatable chỉ dùng với profile `local`. Trong IntelliJ/Maven, profile `local,local-reset` mặc định xóa và dựng lại `MamXanhDB` trước khi chạy migration; Docker Compose giữ volume/database khi `down`/`up`, và chạy lại seed an toàn. Reset SQL volume Compose sẽ dựng lại toàn bộ schema và fixture. Không dùng tài khoản hoặc mật khẩu demo ngoài máy local.
 

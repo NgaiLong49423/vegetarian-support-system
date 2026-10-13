@@ -140,15 +140,30 @@ test('recipe ingredients scale from the author serving count', async ({ page }) 
   await expect(page.getByText('2 gói', { exact: true })).toBeVisible();
 });
 
-test('avatar menu displays the authenticated Backend identity and UI-only plan remains labeled demo', async ({ page }) => {
+test('avatar menu displays the authenticated Backend identity and opens the API-backed subscription', async ({ page }) => {
   await seedDemoSession(page, 'CUSTOMER');
+  await page.route('**/api/v1/subscriptions/plans', (route) => route.fulfill({ json: [
+    { tier: 'FREE', name: 'FREE', priceVnd: 0, description: '', features: [], billingPeriod: 'Không thời hạn' },
+    { tier: 'PLUS', name: 'PLUS', priceVnd: 49000, description: '', features: [], billingPeriod: 'Tháng' },
+    { tier: 'PRO', name: 'PRO', priceVnd: 99000, description: '', features: [], billingPeriod: 'Tháng' },
+  ] }));
+  await page.route('**/api/v1/subscriptions/my-subscription', (route) => {
+    expect(route.request().headers().authorization).toBe('Bearer header.payload.signature');
+    return route.fulfill({ json: {
+      tier: 'PLUS', status: 'ACTIVE', active: true, startsAt: '2026-10-04T12:00:00',
+      endsAt: '2026-11-04T12:00:00', unlockedFeatures: [],
+    } });
+  });
   await page.goto('/');
   await page.getByRole('button', { name: 'Tài khoản Demo CUSTOMER' }).click();
   await expect(page.getByText('demo-customer@mamxanh.local')).toBeVisible();
   await expect(page.getByRole('button', { name: /Chuyển vai trò demo/ })).toHaveCount(0);
   await page.getByRole('link', { name: 'Nâng cấp gói AI' }).click();
   await expect(page.getByRole('heading', { name: 'Nâng cấp gói AI' })).toBeVisible();
-  await expect(page.getByText('Gói hiện tại: FREE (demo)')).toBeVisible();
+  await expect(page.getByText('Gói PLUS', { exact: true })).toBeVisible();
+  await expect(page.getByText('Hết hạn ngày: 04/11/2026')).toBeVisible();
+  await expect(page.getByText('Gói hiện tại của bạn', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nâng cấp lên PRO' })).toBeEnabled();
 });
 
 test('mobile account links remain reachable from the menu', async ({ page }) => {
@@ -489,9 +504,10 @@ test('recipe exploration does not expose local-only card actions as Backend feat
 });
 
 test('recipe creation route uses authenticated account role (FR-05)', async ({ page }) => {
+  // AC-04.5: a Guest is sent to the login page and never sees the recipe form.
   await page.goto('/dang-cong-thuc');
-  await expect(page.getByRole('heading', { name: 'Đăng công thức chỉ dành cho Chuyên gia' })).toBeVisible();
-  await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
+  await expect(page).toHaveURL(/\/dang-nhap$/);
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toHaveCount(0);
 
   await seedDemoSession(page, 'CUSTOMER');
   await page.goto('/dang-cong-thuc');
@@ -514,13 +530,184 @@ test('Guest profile invites sign-in instead of displaying fake saved recipes', a
   await expect(page.getByRole('article')).toHaveCount(0);
 });
 
+test('FR-25: Direct Recipe Publishing with validation error preservation and successful publish flow', async ({ page }) => {
+  await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({
+    json: {
+      dishCategories: [{ code: 'BRAISED', label: 'Món kho' }],
+      vegetarianTypes: [{ code: 'VEGAN', label: 'Thuần chay' }],
+      difficulties: [{ code: 'EASY', label: 'Dễ' }],
+      units: [{ unitId: 1, code: 'g', name: 'gram', dimension: 'MASS' }],
+    },
+  }));
+  await page.route('**/api/v1/recipes/ingredient-options**', (route) => route.fulfill({
+    json: [{ ingredientId: 1, name: 'Đậu hũ' }],
+  }));
+
+  // Control recipes publish route: first fail validation, then succeed
+  let publishAttempts = 0;
+  let receivedPayload: any = null;
+  await page.route('**/api/v1/recipes', async (route) => {
+    if (route.request().method() !== 'POST') {
+      return route.continue();
+    }
+    publishAttempts++;
+    receivedPayload = route.request().postDataJSON();
+    expect(route.request().headers().authorization).toBe('Bearer header.payload.signature');
+
+    if (publishAttempts === 1) {
+      // AC-25.3: Server validation failure
+      return route.fulfill({
+        status: 400,
+        contentType: 'application/problem+json',
+        json: {
+          status: 400,
+          code: 'VALIDATION_FAILED',
+          title: 'Validation Failed',
+          detail: 'Dữ liệu không hợp lệ',
+          errors: [
+            { field: 'title', message: 'Tên món ăn đã tồn tại hoặc không hợp lệ' },
+          ],
+        },
+      });
+    }
+
+    // AC-25.1: Success response
+    return route.fulfill({
+      status: 201,
+      json: {
+        recipeId: 999,
+        title: receivedPayload.title,
+        status: 'PUBLISHED',
+      },
+    });
+  });
+
+  // Mock recipe detail page route after redirect
+  await page.route('**/api/v1/recipes/999', (route) => route.fulfill({
+    json: {
+      id: 999,
+      recipeId: 999,
+      title: 'Nấm đùi gà kho tiêu xanh',
+      description: 'Món kho thơm lừng đậm đà.',
+      instructions: 'Cắt nấm thành từng lát vừa ăn, ướp gia vị chay và kho liu riu cho thấm.',
+      dishCategory: 'BRAISED',
+      dishCategoryLabel: 'Món kho',
+      vegetarianType: 'VEGAN',
+      vegetarianTypeLabel: 'Thuần chay',
+      difficulty: 'EASY',
+      difficultyLabel: 'Dễ',
+      servings: 4,
+      prepTimeMinutes: 15,
+      cookTimeMinutes: 20,
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      status: 'PUBLISHED',
+      publishedAt: '2026-10-06T10:00:00',
+      authorId: 42,
+      authorName: 'Trần Thị Chuyên Gia',
+      nutritionComplete: false,
+      ingredientsWithoutNutrition: ['Đậu hũ'],
+      media: [],
+      ingredients: [
+        {
+          ingredientId: 1,
+          name: 'Đậu hũ',
+          quantity: 200,
+          unitId: 1,
+          unitCode: 'g',
+          unitName: 'gram',
+        },
+      ],
+    },
+  }));
+
+  // Use the current Backend-session boundary; the production demo account switch was removed.
+  await seedDemoSession(page, 'EXPERT');
+  await page.route('**/api/v1/recipes/media/upload', (route) => route.fulfill({ json: {
+    success: true, data: { blobUrl: 'https://example.test/cover-candidate.png', mimeType: 'image/png', sizeBytes: 5 },
+  } }));
+  await page.goto('/dang-cong-thuc');
+
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
+
+  // The current uploader selects the first uploaded image as the cover (AC-25.6).
+  const imageInput = page.locator('#recipe-media-upload-input');
+  await imageInput.setInputFiles([
+    { name: 'cover-candidate.png', mimeType: 'image/png', buffer: Buffer.from('cover') },
+  ]);
+  await expect(page.getByText('Đã tải 1/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
+
+  // 3. Fill form fields
+  await page.getByLabel('Tên món *').fill('Nấm đùi gà kho tiêu xanh');
+  await page.getByRole('textbox', { name: 'Mô tả', exact: true }).fill('Món kho thơm lừng đậm đà.');
+  await page.getByLabel('Thể loại món').selectOption('BRAISED');
+  await page.getByLabel('Loại ăn chay').selectOption('VEGAN');
+  await page.getByLabel('Độ khó').selectOption('EASY');
+  await page.getByLabel('Khẩu phần').fill('4');
+  await page.getByLabel('Thời gian chuẩn bị').fill('15');
+  await page.getByLabel('Thời gian nấu').fill('20');
+
+  // Fill ingredient
+  await page.getByLabel('Chọn nguyên liệu 1').fill('Đậu');
+  await page.getByRole('button', { name: 'Đậu hũ', exact: true }).click();
+  await page.getByLabel('Đơn vị nguyên liệu 1').selectOption('1');
+
+  // Exercise quantity error branch
+  await page.getByLabel('Số lượng nguyên liệu 1').fill('-5');
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+  await expect(page.getByText('Định lượng phải là số dương, tối đa hai chữ số thập phân.')).toBeVisible();
+  await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
+
+  // Exercise YouTube validation branch
+  const ytInput = page.getByLabel(/Link YouTube/);
+  await ytInput.fill('https://not-youtube.com/video');
+  await expect(page.getByText('Hệ thống chỉ hỗ trợ video từ YouTube. Vui lòng không sử dụng nền tảng khác.')).toBeVisible();
+  await ytInput.fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+
+  // Fill instructions
+  await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Cắt nấm thành từng lát vừa ăn, ướp gia vị chay và kho liu riu cho thấm.');
+
+  // 4. Submit once: trigger validation failure from server (AC-25.3)
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+
+  // Field error from API response should be rendered
+  await expect(page.getByText('Tên món ăn đã tồn tại hoặc không hợp lệ')).toBeVisible();
+
+  // Form input preservation (AC-25.3)
+  expect(await page.getByLabel('Tên món *').inputValue()).toBe('Nấm đùi gà kho tiêu xanh');
+  expect(await page.getByRole('textbox', { name: 'Mô tả', exact: true }).inputValue()).toBe('Món kho thơm lừng đậm đà.');
+  expect(await page.getByLabel('Khẩu phần').inputValue()).toBe('4');
+  expect(await page.getByLabel('Thời gian chuẩn bị').inputValue()).toBe('15');
+  expect(await page.getByLabel('Thời gian nấu').inputValue()).toBe('20');
+  expect(await page.getByLabel('Số lượng nguyên liệu 1').inputValue()).toBe('200');
+  expect(await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').inputValue()).toContain('Cắt nấm thành từng lát');
+  await expect(page.getByText('Đã tải 1/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
+  expect(receivedPayload.media).toEqual([
+    { blobUrl: 'https://example.test/cover-candidate.png', mimeType: 'image/png', cover: true },
+  ]);
+
+  // 5. Submit again: validation passes, direct publish succeeds (AC-25.1)
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+
+  // Verify server payload
+  expect(receivedPayload).toBeTruthy();
+  expect(receivedPayload.title).toBe('Nấm đùi gà kho tiêu xanh');
+  expect(receivedPayload).not.toHaveProperty('status');
+  expect(receivedPayload).not.toHaveProperty('authorId');
+
+  // Navigates directly to published recipe detail
+  await page.waitForURL('**/cong-thuc/999');
+  await expect(page.getByRole('heading', { name: 'Nấm đùi gà kho tiêu xanh', level: 1 })).toBeVisible();
+  await expect(page.getByText('Chưa đủ dữ liệu dinh dưỡng')).toBeVisible();
+  await expect(page.getByTestId('recipe-youtube-section')).toBeVisible();
+});
+
 test('recipe image upload and gallery management complies with FR-14 rules', async ({ page }) => {
   // 1. Log in as Expert
   await seedDemoSession(page, 'EXPERT');
   await page.goto('/dang-cong-thuc');
 
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
-  await expect(page.getByText('Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hình ảnh bài công thức' })).toBeVisible();
 
   // 2. Upload test image
   const fileInput = page.locator('#recipe-media-upload-input');
