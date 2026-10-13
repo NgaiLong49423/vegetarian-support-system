@@ -1,42 +1,68 @@
 import { useEffect, useState } from "react"
+
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 export function localDateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 }
+
 export function mondayOf(date: Date) {
   const monday = new Date(date)
+
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7))
+
   return localDateKey(monday)
 }
+
 export function shiftWeek(weekStart: string, offset: number) {
   const date = new Date(`${weekStart}T12:00:00`)
+
   date.setDate(date.getDate() + offset * 7)
+
   return localDateKey(date)
 }
 
 export function WeekCalendar({
   weekStart,
+
   onChange,
+
+  selectedDay,
+
+  onSelectDay,
 }: {
   weekStart: string
+
   onChange: (date: string) => void
+
+  selectedDay?: string | null
+
+  onSelectDay?: (date: string) => void
 }) {
   const [month, setMonth] = useState(() => new Date(`${weekStart}T12:00:00`))
+
   useEffect(() => {
     setMonth(new Date(`${weekStart}T12:00:00`))
   }, [weekStart])
+
   const first = new Date(month.getFullYear(), month.getMonth(), 1, 12)
+
   const gridStart = new Date(`${mondayOf(first)}T12:00:00`)
+
   const selectedStart = new Date(`${weekStart}T12:00:00`)
+
   const selectedEnd = new Date(selectedStart)
+
   selectedEnd.setDate(selectedEnd.getDate() + 7)
+
   const today = localDateKey(new Date())
+
   const moveMonth = (offset: number) =>
     setMonth(
       (current) =>
         new Date(current.getFullYear(), current.getMonth() + offset, 1, 12),
     )
+
   return (
     <section
       aria-label="Chọn tuần trong lịch"
@@ -54,6 +80,7 @@ export function WeekCalendar({
         <h2 className="text-xs font-semibold capitalize text-ink">
           {month.toLocaleDateString("vi-VN", {
             month: "long",
+
             year: "numeric",
           })}
         </h2>
@@ -74,25 +101,41 @@ export function WeekCalendar({
         ))}
         {Array.from({ length: 42 }, (_, index) => {
           const date = new Date(gridStart)
+
           date.setDate(date.getDate() + index)
+
           const key = localDateKey(date)
+
           const selected = date >= selectedStart && date < selectedEnd
+
           return (
             <button
               key={key}
               type="button"
-              aria-label={`Tuần chứa ${date.toLocaleDateString("vi-VN")}`}
-              aria-pressed={selected}
+              aria-label={`${
+                onSelectDay ? "Chọn ngày" : "Tuần chứa"
+              } ${date.toLocaleDateString("vi-VN")}`}
+              aria-pressed={onSelectDay ? selectedDay === key : selected}
               aria-current={key === today ? "date" : undefined}
-              onClick={() => onChange(mondayOf(date))}
+              onClick={() => {
+                onChange(mondayOf(date))
+
+                onSelectDay?.(key)
+              }}
               className={`h-7 rounded-md transition-colors ${
-                selected ? "bg-raised" : "hover:bg-raised"
+                selectedDay === key
+                  ? "bg-brand-600 text-on-brand font-semibold"
+                  : selected
+                    ? "bg-raised"
+                    : "hover:bg-raised"
               } ${
-                key === today
-                  ? "font-bold text-brand-600"
-                  : date.getMonth() === month.getMonth()
-                    ? "text-ink-soft"
-                    : "text-ink-muted/60"
+                selectedDay === key
+                  ? ""
+                  : key === today
+                    ? "font-bold text-brand-600"
+                    : date.getMonth() === month.getMonth()
+                      ? "text-ink-soft"
+                      : "text-ink-muted/60"
               }`}
             >
               {date.getDate()}
