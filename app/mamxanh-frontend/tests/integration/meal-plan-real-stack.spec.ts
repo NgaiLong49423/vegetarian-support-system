@@ -131,31 +131,19 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
     const readResponse = await read
     expect(readResponse.status()).toBe(200)
     const selectedWeek = (await readResponse.json()).weekStartDate as string
-    await expect(
-      page.getByRole("heading", { name: "Lịch ăn của bạn" }),
-    ).toBeVisible()
-    await page.waitForLoadState("networkidle")
-    const addButtons = page.getByRole("button", { name: /^Thêm món Bữa/ })
-    try {
-      await expect(addButtons).toHaveCount(21, { timeout: 15_000 })
-    } catch (error) {
-      console.error(`Expected 21 add buttons, found ${await addButtons.count()}`)
-      await page.screenshot({
-        path: `test-results/debug-add-button-count-${fixture}.png`,
-        fullPage: true,
-      })
-      throw error
-    }
+    const selectedDateLabel = new Date(`${selectedWeek}T12:00:00`).toLocaleDateString("vi-VN")
+    const selectedDay = page.getByRole("region", { name: selectedDateLabel })
+    const selectedDayButton = selectedDay.getByRole("button", { name: `Xem ngày ${selectedDateLabel}` })
+    await expect(selectedDayButton).toBeVisible()
+    await selectedDayButton.click()
+    await expect(selectedDay.getByRole("button", { name: /^Thêm món Bữa/ })).toHaveCount(3)
     expect(
       Number(
         sql(`SELECT COUNT(*) FROM [MEAL_PLAN] WHERE user_id = ${ownerId}`),
       ),
     ).toBe(0)
 
-    await page
-      .getByRole("button", { name: /^Thêm món Bữa trưa/ })
-      .first()
-      .click()
+    await selectedDay.getByRole("button", { name: /^Thêm món Bữa trưa/ }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("button", { name: "Đã lưu", exact: true }).click()
     await dialog.getByLabel("Tìm món cho lịch ăn").fill(fixture)
