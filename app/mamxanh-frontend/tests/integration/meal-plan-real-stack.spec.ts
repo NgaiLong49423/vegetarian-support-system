@@ -105,9 +105,8 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
         `SELECT recipe_id FROM [RECIPE_POST] WHERE title = ${literal(secondTitle)}`,
       ),
     )
-    sql(
-      `INSERT INTO [SAVED_RECIPE] (user_id, recipe_id) VALUES (${ownerId}, ${firstId});`,
-    )
+    sql(`INSERT INTO [SAVED_RECIPE] (user_id, recipe_id)
+      VALUES (${ownerId}, ${firstId}), (${ownerId}, ${secondId});`)
 
     await page.goto("/dang-nhap")
     await page.getByLabel("Email").fill(ownerEmail)
