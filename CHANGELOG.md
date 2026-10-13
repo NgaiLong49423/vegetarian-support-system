@@ -25,8 +25,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Replace the Member's read-only page with a responsive seven-day, three-meal editor while preserving the existing Guest demonstration.
 - Document generated API contracts and add an optional Playwright worker limit for memory-constrained local verification without changing coverage gates.
-- Verify the real browser add, replace and remove flow with SQL assertions in the root Compose CI stack on `302cfc8`; inspect its generated runtime OpenAPI. Full Backend verification remains pending after the first CI run exposed test-fixture setup and cleanup errors.
-- Verify 387 non-database Backend tests and all four Frontend coverage metrics above 80%. The full browser run has 162 passes and one mobile authentication timeout that passes in isolation; the full Frontend check remains unconfirmed until a successful complete run or same-commit CI result.
+- Publish responsive meal-planner screenshots as a CI artifact for review.
 
 ### Fixed
 
