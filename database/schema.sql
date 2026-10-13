@@ -223,7 +223,7 @@ CREATE TABLE [USER] (
         date_of_birth >= '1900-01-01' AND date_of_birth <= CAST(GETDATE() AS DATE)
     ),
     CONSTRAINT CK_USER_nutrition_goal CHECK (
-        nutrition_goal IN ('MAINTAIN_WEIGHT', 'IMPROVE_HEALTH', 'SUPPORT_TRAINING')
+        nutrition_goal IS NULL OR nutrition_goal IN ('MAINTAIN_WEIGHT', 'LOSE_WEIGHT', 'GAIN_WEIGHT', 'BUILD_MUSCLE', 'IMPROVE_HEALTH', 'SUPPORT_TRAINING')
     ),
     CONSTRAINT CK_USER_health_data_consent_timestamp CHECK (
         (health_data_consent = 0 AND health_data_consent_at IS NULL)

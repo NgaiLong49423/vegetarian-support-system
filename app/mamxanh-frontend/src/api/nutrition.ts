@@ -2,7 +2,7 @@ import { apiClient, asApiError } from '../lib/apiClient';
 
 export type ActivityLevel = 'SEDENTARY' | 'LIGHTLY_ACTIVE' | 'MODERATELY_ACTIVE' | 'VERY_ACTIVE';
 export type BiologicalSex = 'FEMALE' | 'MALE';
-export type NutritionGoal = 'MAINTAIN_WEIGHT' | 'IMPROVE_HEALTH' | 'SUPPORT_TRAINING';
+export type NutritionGoal = 'MAINTAIN_WEIGHT' | 'LOSE_WEIGHT' | 'GAIN_WEIGHT' | 'BUILD_MUSCLE' | 'IMPROVE_HEALTH' | 'SUPPORT_TRAINING';
 
 export interface NutritionProfileRequest {
   dateOfBirth: string;
@@ -10,7 +10,7 @@ export interface NutritionProfileRequest {
   heightCm: number;
   weightKg: number;
   activityLevel: ActivityLevel;
-  nutritionGoal: NutritionGoal;
+  nutritionGoal: NutritionGoal | null;
   pregnant: boolean;
   breastfeeding: boolean;
   therapeuticDietRequired: boolean;

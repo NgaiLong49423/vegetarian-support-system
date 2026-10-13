@@ -173,7 +173,7 @@ export function NutritionProfile() {
       heightCm: Number(form.heightCm),
       weightKg: Number(form.weightKg),
       activityLevel: form.activityLevel as ActivityLevel,
-      nutritionGoal: form.nutritionGoal as NutritionGoal,
+      nutritionGoal: form.nutritionGoal || null,
       pregnant: form.pregnant === 'yes',
       breastfeeding: form.breastfeeding === 'yes',
       therapeuticDietRequired: form.therapeuticDietRequired === 'yes',
@@ -264,14 +264,17 @@ export function NutritionProfile() {
                 {activities.map((item) => <option key={item.value} value={item.value}>{item.label} — {item.description}</option>)}
               </select>
             </label>
-            <label className={`${miniLabelClass} sm:col-span-2`} htmlFor="nutrition-goal">Mục tiêu dinh dưỡng chung *
-              <select id="nutrition-goal" className={fieldClass} required value={form.nutritionGoal} onChange={(event) => setField('nutritionGoal', event.target.value as NutritionGoal)}>
-                <option value="" disabled>Chọn mục tiêu</option>
+            <label className={`${miniLabelClass} sm:col-span-2`} htmlFor="nutrition-goal">Mục tiêu dinh dưỡng chung (không bắt buộc)
+              <select id="nutrition-goal" className={fieldClass} value={form.nutritionGoal} onChange={(event) => setField('nutritionGoal', event.target.value as NutritionGoal | '')}>
+                <option value="">Chưa chọn mục tiêu</option>
                 <option value="MAINTAIN_WEIGHT">Duy trì cân nặng</option>
+                <option value="LOSE_WEIGHT">Giảm cân</option>
+                <option value="GAIN_WEIGHT">Tăng cân</option>
+                <option value="BUILD_MUSCLE">Tăng cơ</option>
                 <option value="IMPROVE_HEALTH">Cải thiện sức khỏe chung</option>
                 <option value="SUPPORT_TRAINING">Hỗ trợ tập luyện</option>
               </select>
-              <span className="mt-1 block text-xs font-normal text-ink-muted">Mục tiêu này không làm thay đổi các con số EER/DRI trong phiên bản hiện tại.</span>
+              <span className="mt-1 block text-xs font-normal text-ink-muted">Mục tiêu này dùng cho gợi ý thực đơn theo hồ sơ. Bạn có thể để trống và chọn mục tiêu riêng khi lập lịch cho một tuần.</span>
             </label>
           </div>
 

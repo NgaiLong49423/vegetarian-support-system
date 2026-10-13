@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.5.0
+> **Version:** v2.6.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-09
+> **Last Updated:** 2026-10-13
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -33,7 +33,7 @@ Member đã đăng nhập và có trạng thái eligibility `ELIGIBLE` theo FR-3
 #### Main Flow
 1. Member mở hoặc chỉnh sửa hồ sơ dinh dưỡng.
 2. Hệ thống hiển thị thông báo từ chối trách nhiệm y tế.
-3. Member nhập/cập nhật `date_of_birth`, giới tính sinh học, chiều cao, cân nặng, mức độ hoạt động và mục tiêu dinh dưỡng chung.
+3. Member nhập/cập nhật `date_of_birth`, giới tính sinh học, chiều cao, cân nặng, mức độ hoạt động và có thể chọn mục tiêu dinh dưỡng chung; để trống mục tiêu vẫn lưu được hồ sơ.
 4. Member gửi biểu mẫu lưu.
 5. Hệ thống kiểm tra ngày sinh hợp lệ; service tính tuổi từ `date_of_birth` để xác minh giới hạn 18–120, không lưu tuổi cố định. Hệ thống kiểm tra chiều cao và cân nặng trong các ngưỡng được FR-35 quy định.
 6. Hệ thống lưu hồ sơ hợp lệ gắn với tài khoản Member.
@@ -158,22 +158,24 @@ Google Gemini; hệ thống kiểm tra entitlement và kho công thức nội b�
 Member chọn yêu cầu tạo thực đơn dinh dưỡng từ Lịch ăn tuần hoặc khu vực dinh dưỡng.
 
 #### Preconditions
-- Member có hồ sơ dinh dưỡng hợp lệ (FR-35), trạng thái eligibility `ELIGIBLE` (FR-38), và có thông tin ăn chay/dị ứng cần thiết (FR-31).
+- Member có hồ sơ dinh dưỡng hợp lệ (FR-35), trạng thái eligibility `ELIGIBLE` (FR-38). Hồ sơ sở thích FR-31, mục tiêu và nguyên liệu muốn có/cần tránh đều có thể chưa khai báo; ràng buộc nào đã khai báo thì được áp dụng.
 - Member có gói Pro còn hiệu lực cho tính năng này (FR-10).
 
 #### Main Flow
-1. Member chọn tạo thực đơn và phạm vi ngày/tuần được FR-36 hỗ trợ.
-2. Backend xác minh entitlement Pro trước khi gọi Gemini.
-3. Hệ thống lấy các Recipe Post công khai có dữ liệu dinh dưỡng đáng tin cậy, phù hợp với loại ăn chay và dị ứng của Member.
-4. Hệ thống gửi cho Gemini các ứng viên nội bộ cùng dữ liệu hồ sơ cần thiết để đề xuất thực đơn; yêu cầu chỉ chọn ID công thức có sẵn.
-5. Hệ thống nhận kết quả để tiếp tục UC-36.2.
+1. Member chọn tab gợi ý trong trang Lịch ăn, chọn tuần đích và một trong hai chế độ: “Dựa trên hồ sơ” hoặc “Theo mong muốn tuần này”.
+2. Với “Dựa trên hồ sơ”, hệ thống đọc mục tiêu chung đã lưu nếu có; nếu mục tiêu null, hệ thống chỉ dùng các dữ liệu hồ sơ và ràng buộc hiện có để tạo menu cân bằng, không hỏi thêm mục tiêu.
+3. Với “Theo mong muốn tuần này”, Member chọn mục tiêu của lần tạo hiện tại và tùy chọn nguyên liệu muốn có/cần tránh. Câu trả lời chỉ dùng trong request này, không được ghi vào FR-35 hoặc tự động tái sử dụng cho tuần khác.
+4. Backend xác minh entitlement Pro, eligibility FR-38 và hồ sơ dinh dưỡng hợp lệ trước khi gọi Gemini.
+5. Hệ thống lấy các Recipe Post công khai có dữ liệu dinh dưỡng đáng tin cậy, phù hợp với loại ăn chay và dị ứng/cần tránh của Member; nguyên liệu muốn có chỉ là ưu tiên.
+6. Hệ thống gửi cho Gemini các ứng viên nội bộ và chỉ phần dữ liệu cần thiết để đề xuất thực đơn; yêu cầu chỉ chọn ID công thức có sẵn. Gemini không được tính hoặc phát minh chỉ tiêu dinh dưỡng.
+7. Hệ thống nhận kết quả để tiếp tục UC-36.2.
 
 #### Alternative Flows
 - Nếu kho công thức không đủ cho phạm vi đã chọn, hệ thống thông báo giới hạn dữ liệu và cho phép đề xuất phạm vi ngắn hơn hoặc lặp món ở ngày khác theo FR-36.
 
 #### Exception/Security Flows
 - Nếu entitlement không hợp lệ, Backend từ chối trước khi gọi Gemini và hướng dẫn nâng cấp.
-- Nếu thiếu hồ sơ hoặc ràng buộc bắt buộc, không gọi Gemini và hướng dẫn Member hoàn thiện dữ liệu theo BR-31.
+- Nếu thiếu hồ sơ nhân trắc học hoặc eligibility chưa hợp lệ, không gọi Gemini và hướng dẫn Member hoàn thiện dữ liệu theo FR-35/FR-38. Mục tiêu FR-35, hồ sơ FR-31 và câu hỏi tuần này có thể chưa khai báo; giá trị chưa có là null, không phải xác nhận “không có”. Ràng buộc đã khai báo vẫn được kiểm tra.
 - Nếu provider lỗi hoặc vượt thời gian phản hồi theo NFR-04, hệ thống thông báo lỗi; entitlement không bị thay đổi.
 - Candidate pool loại bỏ công thức không công khai, không phù hợp dị ứng/loại ăn chay hoặc thiếu dữ liệu dinh dưỡng đáng tin cậy.
 
@@ -210,9 +212,9 @@ Kết quả tạo thực đơn từ UC-36.1 đã sẵn sàng.
 Hệ thống đã nhận được phản hồi AI cho yêu cầu hợp lệ.
 
 #### Main Flow
-1. Hệ thống kiểm tra mỗi món được đề xuất khớp với Recipe Post đang công khai trong candidate pool.
+1. Hệ thống kiểm tra mỗi món được đề xuất khớp với Recipe Post đang công khai trong candidate pool và phù hợp các ràng buộc cứng.
 2. Hệ thống loại bỏ mục không hợp lệ.
-3. Hệ thống trình bày danh sách món, giải trình ngắn và bảng tổng hợp dinh dưỡng tham khảo cùng disclaimer y tế.
+3. Hệ thống trình bày danh sách món theo từng ngày/bữa, giải trình ngắn và tổng hợp 9 chỉ tiêu dinh dưỡng tham khảo được Backend tính từ dữ liệu có nguồn. Mục tiêu tuần chỉ giải thích ưu tiên lựa chọn món; không hứa hẹn thay đổi cân nặng và không thay đổi mức mục tiêu FR-35.
 4. Member xem, giữ lại hoặc bỏ từng món; nếu muốn lưu, Member tiếp tục UC-36.3.
 
 #### Alternative Flows

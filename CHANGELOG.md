@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.72.0
+> **Version:** v2.73.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-13 — Define Profile and Week-Scoped Nutrition Goals
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Clarify how saved nutrition goals and one-time weekly meal-plan preferences affect FR-36 while keeping numerical targets reference-based.
+
+### Added
+
+- Allow a Member to leave the general nutrition goal unset and add saved goal choices for weight loss, weight gain and muscle gain.
+- Specify profile-based and week-scoped AI meal-plan modes, including that week-specific answers are not persisted or reused for a later week.
+
+### Changed
+
+- Clarify that goals guide recipe selection but do not create calorie deficits/surpluses, medical prescriptions or weight-change promises; existing FR-35 numerical references remain unchanged.
+
+### Fixed
+
+- None.
 
 ## 2026-10-13 — Focus Meal Planning on Individual Days ([PR #133](https://github.com/NgaiLong49423/vegetarian-support-system/pull/133))
 

@@ -95,7 +95,8 @@ public class NutritionProfileService {
         if (!List.of("SEDENTARY", "LIGHTLY_ACTIVE", "MODERATELY_ACTIVE", "VERY_ACTIVE").contains(request.activityLevel())) {
             throw new NutritionProfileException(HttpStatus.BAD_REQUEST, "INVALID_ACTIVITY_LEVEL", "Mức vận động không hợp lệ.");
         }
-        if (!List.of("MAINTAIN_WEIGHT", "IMPROVE_HEALTH", "SUPPORT_TRAINING").contains(request.nutritionGoal())) {
+        if (request.nutritionGoal() != null && !List.of("MAINTAIN_WEIGHT", "LOSE_WEIGHT", "GAIN_WEIGHT",
+                "BUILD_MUSCLE", "IMPROVE_HEALTH", "SUPPORT_TRAINING").contains(request.nutritionGoal())) {
             throw new NutritionProfileException(HttpStatus.BAD_REQUEST, "INVALID_NUTRITION_GOAL", "Mục tiêu dinh dưỡng không hợp lệ.");
         }
         int age = calculations.ageOn(request.dateOfBirth(), today);
@@ -197,8 +198,7 @@ public class NutritionProfileService {
 
     private boolean hasSavedProfile(NutritionProfileEntity user) {
         return user.getDateOfBirth() != null && user.getBiologicalSex() != null && user.getHeightCm() != null
-                && user.getWeightKg() != null && user.getActivityLevel() != null && user.getNutritionGoal() != null
-                && user.isHealthDataConsent();
+                && user.getWeightKg() != null && user.getActivityLevel() != null && user.isHealthDataConsent();
     }
 
     private List<String> outOfScopeReasons(int age, boolean pregnant, boolean breastfeeding, boolean therapeuticDietRequired) {
