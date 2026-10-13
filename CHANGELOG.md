@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-13 — Add Threaded Recipe Comments (Issue #48)
+## 2026-10-13 — Add Threaded Recipe Comments (Issue #48) ([PR #129](https://github.com/NgaiLong49423/vegetarian-support-system/pull/129))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `ede6d10` (comments), `ecc5a58` (canonical recipe page), `e2f8be8` (documentation).
 
 **Scope:** Implement UC-46.1–UC-46.5 so guests read the comment threads of a published recipe and members comment, reply up to five levels, and edit or delete their own comments, following AC-46.1–AC-46.4 and BR-66. Administrator moderation (UC-46.6) and the banned-word filter wait for decisions Q60 and Q61.
 
