@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.72.0
+> **Version:** v2.73.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-13 — Add AI Recipe Suggestions and Weekly Menu Preview
+
+**Status:** Working tree — uncommitted changes.
+
+**Scope:** Implement FR-34 recipe recommendations and an explicitly confirmed weekly menu flow using existing published recipes.
+
+### Added
+
+- Add authenticated APIs for ingredient-based recipe suggestions, a 21-slot weekly menu preview, and atomic application to the current Member's Meal Plan.
+- Add a separate Frontend page for AI suggestions and weekly menu previews; keep manual Meal Plan editing separate.
+- Filter recipe candidates by the Member's vegetarian profile and avoided ingredients, and emit FR-34 provider token usage events without prompt or profile content.
+
+### Changed
+
+- Extend the API integration guide with the FR-34 request, response, entitlement, preview and atomic-apply contracts.
+
+### Fixed
+
+- None.
 
 ## 2026-10-13 — Focus Meal Planning on Individual Days ([PR #133](https://github.com/NgaiLong49423/vegetarian-support-system/pull/133))
 

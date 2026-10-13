@@ -48,6 +48,15 @@ class MealPlanControllerTest {
     @MockitoBean private AccountStatusJwtAuthenticationConverter jwtAuthenticationConverter;
 
     @Test
+    void generatedOpenApiDocumentsAtomicAiMenuApply() throws Exception {
+        mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/ai-menu'].post.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/ai-menu'].post.responses['409']").exists())
+                .andExpect(jsonPath("$.components.schemas.ApplyAiWeeklyMenuRequest.properties.slots.minItems").value(21))
+                .andExpect(jsonPath("$.components.schemas.ApplyAiWeeklyMenuRequest.properties.slots.maxItems").value(21));
+    }
+
+    @Test
     void savesServingsAndPublishesTheGeneratedContract() throws Exception {
         var week = LocalDate.of(2026, 10, 12);
         var quantity = new java.math.BigDecimal("4");

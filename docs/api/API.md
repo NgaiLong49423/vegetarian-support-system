@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.16.0
+> **Version:** v0.17.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -11,7 +11,7 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
 
-Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML không còn endpoint nào chưa có trong runtime.
+Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), danh sách RecipePost đã lưu (FR-20/FR-32), gợi ý công thức và menu AI (FR-34), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML không còn endpoint nào chưa có trong runtime.
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 8 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
@@ -307,3 +307,17 @@ Generated OpenAPI runtime là contract chi tiết. Hai API đều trả `{ "item
 - Gemini nhận tối đa 50 ứng viên công khai cùng loại chay với nguồn, phân bổ theo thể loại, và chỉ trả ID. Backend từ chối cấu trúc sai, quá giới hạn hoặc ID ngoài tập bằng `502 AI_RESPONSE_INVALID`; loại ID trùng và đọc lại trạng thái/nội dung hiện tại sau khi provider trả về. Bài bị ẩn/xóa hoặc đổi sang loại chay khác không được gửi xuống FE. Không có ứng viên thì trả rỗng và không gọi Gemini.
 - Lỗi cấu hình/provider/timeout trả `503 AI_PROVIDER_UNAVAILABLE`; API chỉ đọc, không tạo RecipePost hoặc ghi Lịch ăn. FE chỉ gọi POST sau thao tác chủ động, giữ gợi ý thường khi AI lỗi và bỏ phản hồi cũ khi chuyển bài. Khóa vẫn dùng `GEMINI_API_KEY` ở Backend và cơ chế Compose hiện có.
 - Tích hợp FR-11: `AiUsageEvent` mang `userId`, `feature=FR-47`, `occurredAt` và các token count thực tế từ provider; thiếu metadata giữ `null`, không suy đoán bằng 0. Event chỉ phát sau khi phản hồi hợp lệ. Consumer lưu trữ tối đa 90 ngày/báo cáo do Issue #17 triển khai; FR-47 chưa cung cấp consumer lưu trữ. Không đưa prompt, nội dung công thức hoặc API key vào event/log.
+
+## 14. Gợi ý món và menu tuần AI — FR-34
+
+Các API yêu cầu Bearer token của Member đang hoạt động và hồ sơ FR-31 đủ ba nhóm thông tin. Backend lọc ứng viên công khai theo loại ăn chay trong hồ sơ và nguyên liệu cần tránh trước khi gửi catalog rút gọn tới Gemini. Lựa chọn Gemini phải thuộc ID trong catalog; Backend tải lại các bài công khai hiện hành trước khi trả dữ liệu. Không gửi nội dung hồ sơ riêng tư hoặc prompt người dùng vào telemetry/log.
+
+| Thao tác | API | Quyền và kết quả |
+|---|---|---|
+| Gợi ý 3–5 món theo nguyên liệu | `POST /api/v1/recipes/ai/recommendations` | Body `{ "ingredientIds": [12, 29] }`; nguyên liệu được lấy từ `GET /api/v1/recipes/ingredient-options?query=...`. Trả `{ "items": [{ "recipe": RecipePostResponse, "reason": "..." }] }`. Công thức khớp nhiều nguyên liệu đã chọn được ưu tiên. Free Member được gọi theo FR-10. |
+| Tạo menu tuần xem trước | `POST /api/v1/recipes/ai/weekly-menu` | Cùng body `ingredientIds`; yêu cầu Pro còn hiệu lực. Trả 21 `slots`, theo thứ tự ngày 0–6 và sáng/trưa/tối; mỗi mục gồm `dayOffset`, `mealType`, `recipeId`, thông tin thẻ món và lý do. Có thể lặp công thức nếu catalog ít, nhưng hai vị trí liên tiếp không dùng cùng ID. API chỉ tạo preview trong response, không lưu Meal Plan. |
+| Xác nhận thêm menu vào Lịch ăn | `POST /api/v1/meal-plans/{weekStartDate}/ai-menu` | Yêu cầu Pro còn hiệu lực, Bearer token và ngày Thứ Hai. Body gồm đúng 21 mục `slots`, mỗi mục `{ "dayOffset": 0, "mealType": "BREAKFAST", "recipeId": 123 }`. Backend giữ các mục hiện có và thêm menu trong một transaction. Trả tuần đã cập nhật. |
+
+API gợi ý và preview trả `409 DIETARY_PROFILE_INCOMPLETE` khi hồ sơ chưa đủ; weekly preview và thao tác xác nhận trả `403 AI_SUBSCRIPTION_REQUIRED` nếu tài khoản không có Pro còn hiệu lực. Không đủ ứng viên để tạo menu trả `409 AI_MENU_UNAVAILABLE`; lỗi provider trả `503 AI_PROVIDER_UNAVAILABLE`; phản hồi AI sai hoặc chứa ID ngoài catalog trả `502 AI_RESPONSE_INVALID`. Khi xác nhận, công thức đã ẩn/xóa trả `404 RECIPE_NOT_FOUND`; nếu cùng recipe đã có trong đúng ngày/bữa thì trả `409 MEAL_PLAN_RECIPE_DUPLICATE`. Hai trường hợp đều rollback toàn bộ, không ghi một phần. Chỉ gọi API xác nhận sau khi Member chủ động bấm áp dụng.
+
+Mỗi phản hồi AI hợp lệ phát `AiUsageEvent` với `feature=FR-34` và token count thực tế do Gemini cung cấp. Issue #17 tiếp tục sở hữu consumer lưu trữ/báo cáo telemetry. Không có bảng preview mới và không tạo công thức mới.

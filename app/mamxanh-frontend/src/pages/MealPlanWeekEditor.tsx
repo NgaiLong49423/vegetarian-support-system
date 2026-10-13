@@ -35,6 +35,7 @@ import { savedRecipesApi } from "../services/savedRecipesApi"
 import { asApiError } from "../lib/apiClient"
 
 import { MealPlanNutrition } from "./MealPlanNutrition"
+import { AiRecipePlanner } from "./AiRecipePlanner"
 
 type Entry = MealPlanWeek["entries"][number]
 
@@ -80,6 +81,10 @@ export function MealPlanWeekEditor() {
       : mondayOf(new Date())
   })
 
+  const [view, setView] = useState<"plan" | "for-you">(() =>
+    searchParams.get("view") === "for-you" ? "for-you" : "plan",
+  )
+
   const [calendarOpen, setCalendarOpen] = useState(false)
 
   const [selectedDay, setSelectedDay] = useState<string | null>(() => {
@@ -97,17 +102,19 @@ export function MealPlanWeekEditor() {
   useEffect(() => {
     if (
       searchParams.get("weekStartDate") !== week ||
-      searchParams.get("mealDate") !== selectedDay
+      searchParams.get("mealDate") !== selectedDay ||
+      searchParams.get("view") !== (view === "for-you" ? "for-you" : null)
     ) {
       setSearchParams(
         {
           weekStartDate: week,
           ...(selectedDay ? { mealDate: selectedDay } : {}),
+          ...(view === "for-you" ? { view: "for-you" } : {}),
         },
         { replace: true },
       )
     }
-  }, [week, selectedDay, searchParams, setSearchParams])
+  }, [week, selectedDay, view, searchParams, setSearchParams])
 
   function changeWeek(value: string) {
     setWeek(value)
@@ -198,13 +205,37 @@ export function MealPlanWeekEditor() {
             >
               Về tuần hiện tại
             </Button>
+            <div className="mt-5 flex gap-2 border-b border-brand-100" role="tablist" aria-label="Chế độ Lịch ăn">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={view === "plan"}
+                onClick={() => setView("plan")}
+                className={`border-b-2 px-3 py-2 text-sm font-semibold ${view === "plan" ? "border-brand-600 text-brand-800" : "border-transparent text-ink-muted hover:text-ink"}`}
+              >
+                Lịch của tôi
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={view === "for-you"}
+                onClick={() => setView("for-you")}
+                className={`border-b-2 px-3 py-2 text-sm font-semibold ${view === "for-you" ? "border-brand-600 text-brand-800" : "border-transparent text-ink-muted hover:text-ink"}`}
+              >
+                Dành cho bạn
+              </button>
+            </div>
           </header>
-          <WeekContents
-            key={week}
-            week={week}
-            selectedDay={selectedDay}
-            onSelectDay={setSelectedDay}
-          />
+          {view === "plan" ? (
+            <WeekContents
+              key={week}
+              week={week}
+              selectedDay={selectedDay}
+              onSelectDay={setSelectedDay}
+            />
+          ) : (
+            <AiRecipePlanner weekStartDate={week} embedded />
+          )}
         </Card>
       </div>
     </PageContainer>

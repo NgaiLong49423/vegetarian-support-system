@@ -167,6 +167,23 @@ export interface MealPlanWeek {
   }>;
 }
 
+export interface AiRecipeSuggestion {
+  items: Array<{ recipe: RecipePost; reason: string }>;
+}
+
+export interface AiWeeklyMenuPreview {
+  slots: Array<{
+    dayOffset: number;
+    mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER';
+    recipeId: number;
+    recipeTitle: string;
+    coverUrl: string | null;
+    dishCategory: string;
+    vegetarianType: string;
+    reason: string;
+  }>;
+}
+
 export interface UpdateRecipePost {
   title: string;
   description: string;
@@ -208,6 +225,12 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
 }
 
 export const recipesApi = {
+  recommendByIngredients: (ingredientIds: number[]) => request(
+    () => apiClient.post<AiRecipeSuggestion>('/recipes/ai/recommendations', { ingredientIds }, { timeout: 60_000 }),
+  ),
+  createWeeklyMenuPreview: (ingredientIds: number[]) => request(
+    () => apiClient.post<AiWeeklyMenuPreview>('/recipes/ai/weekly-menu', { ingredientIds }, { timeout: 60_000 }),
+  ),
   related: (recipeId: number) => request(
     () => apiClient.get<{ items: RecipePost[] }>(`/recipes/${recipeId}/related`),
   ),
@@ -261,6 +284,9 @@ export const mealPlanApi = {
     (await apiClient.get<MealPlanWeek>('/meal-plans', { params: { weekStartDate } })).data,
   openWeek: async (weekStartDate: string) =>
     (await apiClient.put<MealPlanWeek>('/meal-plans', undefined, { params: { weekStartDate } })).data,
+  applyAiWeeklyMenu: async (weekStartDate: string, slots: Array<{
+    dayOffset: number; mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER'; recipeId: number;
+  }>) => (await apiClient.post<MealPlanWeek>(`/meal-plans/${weekStartDate}/ai-menu`, { slots })).data,
   addEntry: async (weekStartDate: string, payload: {
     mealDate: string; mealType: MealPlanWeek['entries'][number]['mealType']; recipeId: number;
   }) => (await apiClient.post<MealPlanWeek['entries'][number]>(`/meal-plans/${weekStartDate}/entries`, payload)).data,
