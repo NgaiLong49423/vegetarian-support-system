@@ -26,7 +26,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Remove the prototype banner, mock data and prototype Playwright test of `/so-sanh`; the prototype detail page links to the empty comparison page.
-- Target member profile recipe card links by their heading in Playwright, since each card now also has a "So sánh" link with the recipe title.
+- Target recipe card links by their heading in the member profile Playwright test and the Explore real-stack test, since each card now also has a "So sánh" link with the recipe title.
 - Document FR-60 in `API.md` section 7 and the Frontend README.
 
 ### Fixed
