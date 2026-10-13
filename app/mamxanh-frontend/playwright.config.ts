@@ -4,6 +4,7 @@ const previewPort = Number(process.env.PLAYWRIGHT_PREVIEW_PORT ?? 4173);
 const previewUrl = `http://127.0.0.1:${previewPort}`;
 
 export default defineConfig({
+  workers: process.env.PLAYWRIGHT_WORKERS ? Number(process.env.PLAYWRIGHT_WORKERS) : undefined,
   testDir: './tests/e2e',
   retries: 0,
   reporter: [['html', { open: 'never' }]],

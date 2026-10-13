@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.14.0
+> **Version:** v0.15.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-12
+> **Last Updated:** 2026-10-13
 > **Status:** Active
 
 # API Integration Guide
@@ -204,6 +204,29 @@ Các endpoint detail và Meal Plan dưới đây trả projection đọc từ `R
 Các key trong `nutrition.total` và `nutrition.perServing` lần lượt là `ENERGY_KCAL` (kcal), `PROTEIN_G` (g), `CARBOHYDRATE_G` (g), `TOTAL_FAT_G` (g), `FIBER_G` (g), `CALCIUM_MG` (mg), `IRON_MG` (mg), `VITAMIN_B12_MCG` (mcg) và `ZINC_MG` (mg). Nếu chưa có lượt bình chọn, `statistics.reactionCount` bằng `0` và `statistics.likePercentage` là `null`; Frontend hiển thị nhãn “Mới” theo BR-69.
 
 Nutrition chỉ dùng danh mục nội bộ và quy đổi gram hiện có. `nutrition.complete=false` cùng `ingredientsMissingData` chỉ rõ nguyên liệu tùy chỉnh/thiếu dữ liệu hoặc thiếu quy đổi; không ngầm coi dữ liệu chưa biết là giá trị đo bằng không. Đây là số liệu tham khảo, không phải tư vấn y tế. Không gọi dịch vụ dinh dưỡng ngoài.
+
+### 7.1. Tạo hoặc mở lịch tuần — FR-09
+
+- `GET /api/v1/meal-plans?weekStartDate=YYYY-MM-DD` chỉ đọc lịch của Member hiện tại. Khi chưa có lịch, trả tuần với `entries=[]` và không tạo bản ghi.
+- `PUT /api/v1/meal-plans?weekStartDate=YYYY-MM-DD` tạo lịch nếu chưa có, hoặc mở lại lịch đã có, trả `200` cùng `MealPlanWeekResponse`. Không cần request body. Gọi lặp giữ nguyên lịch và các món đã lưu.
+- Cả hai thao tác yêu cầu JWT Bearer và `weekStartDate` theo định dạng ISO, là ngày Thứ Hai. Chủ lịch được lấy từ tài khoản đã xác thực; client không được chọn chủ lịch bằng `userId`. Guest/token không hợp lệ trả `401`; Admin hoặc tài khoản bị khóa trả `403`; ngày thiếu, sai định dạng hoặc không phải Thứ Hai trả `400 VALIDATION_FAILED`.
+- Mỗi Member chỉ có một lịch cho mỗi tuần theo unique constraint hiện có. Thao tác tạo dùng transaction và khóa phạm vi khóa SQL Server để xử lý yêu cầu tạo đồng thời. Không gọi Gemini, không tạo món mặc định và không thay đổi danh sách công thức đã lưu.
+- Contract chi tiết lấy từ generated `/v3/api-docs`; kiểm thử SQL Server và Compose cần được xác minh riêng với kiểm thử MVC dùng mock service.
+
+### 7.2. Thêm, thay và gỡ món — FR-09
+
+| Thao tác | API | Request và kết quả |
+|---|---|---|
+| Thêm món | `POST /api/v1/meal-plans/{weekStartDate}/entries` | JSON gồm `mealDate`, `mealType` (`BREAKFAST`, `LUNCH`, `DINNER`) và `recipeId` (số nguyên ≥1). Trả `201` cùng projection `MealPlanWeekResponse.Entry`; khẩu phần mặc định 1. Tạo tuần nếu chưa có. |
+| Thay công thức | `PUT /api/v1/meal-plans/{weekStartDate}/entries/{entryId}` | JSON gồm `recipeId` thay thế. Trả `200` cùng projection của mục món; giữ `entryId`, ngày, loại bữa và khẩu phần hiện tại. |
+| Gỡ món | `DELETE /api/v1/meal-plans/{weekStartDate}/entries/{entryId}` | Trả `204`, không có response body. Chỉ xóa mục lịch; công thức nguồn và mục đã lưu không bị thay đổi. |
+
+- `weekStartDate` phải là Thứ Hai; toàn bộ tuần phải nằm trong phạm vi ngày SQL Server (năm 1–9999). Ngày ăn phải nằm trong bảy ngày của tuần đã chọn; dữ liệu không hợp lệ trả `400 VALIDATION_FAILED`.
+- Backend xác định chủ lịch từ tài khoản đã xác thực. Mục không tồn tại trong tuần của chủ tài khoản, kể cả ID thuộc người khác hoặc tuần khác, trả `403 ACCESS_DENIED`; không truy xuất hoặc sửa mục theo ID đơn lẻ.
+- Một bữa chứa nhiều công thức khác nhau. Thêm hoặc thay thành công thức đã có trong cùng ngày/bữa trả `409 MEAL_PLAN_RECIPE_DUPLICATE`; thay lại cùng công thức của chính mục đó không bị xem là trùng mục khác.
+- Chỉ công thức `PUBLISHED` được thêm hoặc dùng để thay thế; nguồn thiếu/ẩn/xóa/nháp trả `404 RECIPE_NOT_FOUND`. Kiểm tra trạng thái nguồn và ghi lịch nằm trong cùng transaction; các thay đổi của cùng lịch tuần được tuần tự hóa bằng khóa ở database và vẫn có unique constraint bảo vệ.
+- Tombstone hiện có được thay hoặc gỡ như mục thông thường. Gỡ không yêu cầu công thức nguồn còn công khai; đọc lịch vẫn trả nhãn chung `Công thức không còn khả dụng` và lược bỏ nội dung bài không công khai.
+- Frontend dùng dữ liệu response sau thêm/thay và bỏ mục sau `204`; khi request thất bại cần giữ dữ liệu đang hiển thị và cho phép tải lại lịch để đối chiếu với máy chủ. Các API này không chuyển món giữa ngày/bữa, không xuất lịch và không gọi Gemini.
 
 ## 8. Thông số cần chốt trước khi triển khai phần phụ thuộc
 

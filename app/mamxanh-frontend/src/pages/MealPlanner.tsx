@@ -20,7 +20,7 @@ import { Modal } from '../components/Modal';
 import { weekPlan as initialPlan, recipes } from '../data/mockData';
 import type { DayPlan, MealSlot } from '../types';
 import { useAuth } from '../components/AuthContext';
-import { MealPlanReadOnly } from './MealPlanReadOnly';
+import { MealPlanWeekEditor } from './MealPlanWeekEditor';
 import { WeekCalendar, localDateKey, mondayOf, shiftWeek } from '../components/WeekCalendar';
 
 const slotMeta: Record<MealSlot, { icon: typeof Sun; label: string; color: string }> = {
@@ -62,7 +62,7 @@ export function MealPlanner() {
     setTimeout(() => setAiSuccessToast(false), 4000);
   };
 
-  if (account && account.role !== 'ADMIN') return <MealPlanReadOnly />;
+  if (account && account.role !== 'ADMIN') return <MealPlanWeekEditor key={account.id} />;
   if (account?.role === 'ADMIN') return <PageContainer className="py-12"><div role="alert" className="mx-auto max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">Tài khoản Quản trị viên không có quyền xem Lịch ăn của thành viên.</div></PageContainer>;
 
   const setMeal = (dayIdx: number, slot: MealSlot, recipeId: string) => {

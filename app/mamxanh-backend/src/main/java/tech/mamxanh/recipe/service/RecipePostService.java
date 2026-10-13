@@ -212,6 +212,14 @@ public class RecipePostService {
         }, (first, ignored) -> first));
     }
 
+    /** Hold the source status stable until the meal-plan transaction commits. */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void requirePublishedMealPlanRecipe(long recipeId) {
+        repository.lockById(recipeId)
+                .filter(item -> "PUBLISHED".equals(item.getStatus()))
+                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
+    }
+
     @Transactional
     public RecipePostResponse update(long recipeId, UpdateRecipePostRequest request) {
         RecipePostEntity recipe = lockOwnEditableRecipe(recipeId);
