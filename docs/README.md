@@ -1,8 +1,8 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v4.1.0
+> **Version:** v4.2.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-13
 > **Status:** Active  
 
 # Repository Layout and Document Register
@@ -41,7 +41,7 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 | docs/requirements/ | Maintained product and software requirements | PRD owns high-level product intent; root SRS owns current scope, context and stable-ID registries; docs/requirements/srs/ owns detailed FR, BR, and NFR specifications |
 | docs/architecture/ | Current high-level system structure and selected technology baseline | ARCHITECTURE owns runtime boundaries; TECHNOLOGY-STACK owns technology purpose, rationale, trade-offs and TBD choices |
 | docs/testing/ | Project-level verification strategy | Strategy and quality evidence policy, not a test-case catalog or claim that tests exist |
-| docs/api/ | Maintained API integration guide and OpenAPI contract | Generated OpenAPI owns runtime endpoint contract; `openapi.yaml` is planned/reference only during migration; API.md owns shared integration conventions |
+| docs/api/ | Maintained API integration guide and OpenAPI contract | Generated OpenAPI (`/v3/api-docs`) owns the runtime endpoint contract; API.md owns shared integration conventions |
 | docs/decisions/ | Durable project/workflow decisions and rationale | Numbered ADR with context, decision, consequences and unresolved points |
 | docs/diagrams/Activity/ | Maintained activity diagram source and exports | Name by feature; link to the relevant SRS identifiers |
 | docs/diagrams/UseCase/ | Maintained use-case diagram source and exports | Name by module; do not invent a second requirement source |
@@ -82,7 +82,6 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | architecture/TECHNOLOGY-STACK.md | Selected technologies, purpose, rationale, benefits, trade-offs and unresolved choices | Dependency or technology decisions |
 | testing/TEST-STRATEGY.md | Project-level test levels, evidence boundaries, traceability, coverage interpretation and completion relationship | Test planning, quality gates or verification design |
 | api/API.md | Cross-team API integration guide, generated runtime contract and planned-contract migration rules, Scalar usage, shared conventions and authentication flow, Active | Frontend/Backend integration, API contract or manual API testing |
-| api/openapi.yaml | Temporary machine-readable planned/reference contract during migration; endpoints absent from runtime are not implemented evidence | Checking planned endpoints not yet present in generated runtime OpenAPI |
 | decisions/001-team-workflow.md | Branch/release decision and rationale | Workflow changes |
 | decisions/002-five-member-team-operating-agreement.md | Team responsibilities and coordination | Team process |
 | decisions/WORKFLOW-SOURCES.md | Evidence behind workflow conventions | Reconsidering a workflow decision |

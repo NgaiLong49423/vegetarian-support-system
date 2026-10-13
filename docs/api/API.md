@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.15.0
+> **Version:** v0.16.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -9,7 +9,7 @@
 
 ## 1. Mục đích và phạm vi
 
-Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
+Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là contract duy nhất cho endpoint đã triển khai; endpoint chưa triển khai được mô tả trong SRS và Issue, không có bản OpenAPI viết tay. Tài liệu này không lặp lại schema chi tiết.
 
 Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML không còn endpoint nào chưa có trong runtime.
 
@@ -18,7 +18,7 @@ Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn b�
 ## 2. Contract và công cụ
 
 - Runtime OpenAPI được sinh từ Controller/DTO/annotations bằng springdoc: `/v3/api-docs` (JSON) và `/v3/api-docs.yaml` (YAML).
-- Planned/reference contract trong migration: [`openapi.yaml`](openapi.yaml); các endpoint chỉ có tại đây chưa được xem là runtime API.
+- Operation cần đăng nhập khai báo `security: bearerAuth`; operation công khai thì không. Mọi response lỗi có kiểu `application/problem+json` với schema `ProblemDetail` (mục 4); operation nhận dữ liệu khai báo `400`, operation cần đăng nhập khai báo `401` và `403`, các lỗi riêng của từng operation khai báo trên Controller. `OpenApiContractIntegrationTest` khóa các quy tắc này.
 - Base path: `/api/v1`.
 - Giao diện chính thức để team xem và thử API: `/scalar` trên cùng Backend host/port. Scalar tải generated contract từ `/v3/api-docs`.
 - Swagger UI vẫn được giữ như giao diện tương thích trong giai đoạn đầu; Scalar là UI được khuyến nghị cho team.

@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.71.0
+> **Version:** v2.72.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -8,6 +8,27 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-13 — Align Generated OpenAPI Security and Error Responses (Issue #114)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Make the generated `/v3/api-docs` match what the Backend enforces and returns (Q43, Q53): every operation that needs a session declares `bearerAuth`, error responses are declared as problem details, and the empty planned `openapi.yaml` is removed.
+
+### Added
+
+- Add `OpenApiContractIntegrationTest`: it calls every documented operation without a token and requires `bearerAuth` exactly where the security filter answers `401`, and it requires `400`/`401`/`403` problem-detail responses where they apply.
+- Add a shared `ProblemDetail` schema and an OpenAPI customizer that declares `400` for operations taking input, `401` and `403` for operations needing a session, and the `application/problem+json` body for every error response.
+
+### Changed
+
+- Declare `bearerAuth` on the 31 operations that lacked it: the administrator ingredient and unit catalog, Expert applications, subscription checkout/status/transactions, and recipe publishing.
+- Declare the operation-specific errors of those operations and of the seven public auth endpoints, following the codes their services return.
+- Remove `docs/api/openapi.yaml` (no planned endpoints remained) and update `API.md`, `README.md`, the document register and the Backend package structure guide; agent governance files still mention it pending the Tech Lead's approval.
+
+### Fixed
+
+- Fix Scalar and generated clients not sending the access token for the 31 operations above.
 
 ## 2026-10-13 — Expand Local Recipe Demo Fixtures ([PR #127](https://github.com/NgaiLong49423/vegetarian-support-system/pull/127))
 
