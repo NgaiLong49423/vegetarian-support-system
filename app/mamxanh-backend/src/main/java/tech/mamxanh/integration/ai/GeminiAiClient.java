@@ -3,6 +3,8 @@ package tech.mamxanh.integration.ai;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.HttpOptions;
+import com.google.genai.types.Content;
+import com.google.genai.types.Part;
 import com.google.genai.types.Schema;
 import com.google.genai.types.Type;
 import com.google.genai.types.ThinkingConfig;
@@ -20,7 +22,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
 
     @Autowired
     public GeminiAiClient(@Value("${GEMINI_API_KEY:}") String apiKey) {
-        this(apiKey, HttpOptions.builder().timeout(45_000).build());
+        this(apiKey, HttpOptions.builder().timeout(10_000).build());
     }
 
     GeminiAiClient(String apiKey, HttpOptions httpOptions) {
@@ -72,6 +74,35 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     @Override
     public RecommendationResult recommendRecipes(String prompt, List<Long> allowedRecipeIds, int limit) {
         return recommendSequence(prompt, allowedRecipeIds, limit);
+    }
+
+    @Override
+    public ChatResult answerChat(String systemInstruction, String prompt) {
+        if (client == null) throw new AiProviderException("Gemini is not configured");
+        GenerateContentConfig config = GenerateContentConfig.builder()
+                .systemInstruction(Content.fromParts(Part.fromText(systemInstruction)))
+                .candidateCount(1)
+                .maxOutputTokens(1024)
+                .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
+                .build();
+        try {
+            var response = client.models.generateContent(MODEL, prompt, config);
+            String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
+                    .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
+            String text = response.text();
+            if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
+                throw new AiProviderException("Gemini returned an incomplete chat response");
+            }
+            var usage = response.usageMetadata();
+            return new ChatResult(text.strip(),
+                    usage.flatMap(value -> value.promptTokenCount()).orElse(null),
+                    usage.flatMap(value -> value.candidatesTokenCount()).orElse(null),
+                    usage.flatMap(value -> value.totalTokenCount()).orElse(null));
+        } catch (AiProviderException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw new AiProviderException("Gemini chat request failed", exception);
+        }
     }
 
     @Override

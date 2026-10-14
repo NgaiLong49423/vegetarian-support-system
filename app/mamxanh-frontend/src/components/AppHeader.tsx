@@ -55,6 +55,7 @@ export function AppHeader() {
       label: "Hồ sơ dinh dưỡng & BMI",
       icon: Activity,
     },
+    { to: "/hoi-dap-ai", label: "Hỏi đáp ẩm thực chay", icon: Sparkles },
     {
       to: "/ho-so/so-thich-an-uong",
       label: "Sở thích ăn uống",

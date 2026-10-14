@@ -18,6 +18,7 @@ import { AiPlans } from './pages/AiPlans';
 import { TransactionHistory } from './pages/TransactionHistory';
 import { NutritionProfile } from './pages/NutritionProfile';
 import { PaymentResult } from './pages/PaymentResult';
+import { AiChatPage } from './pages/AiChatPage';
 
 import { DietaryPreferencesPage } from './pages/DietaryPreferencesPage';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/cong-thuc/:slug" element={<RecipeDetail />} />
           <Route path="/ke-hoach" element={<MealPlanner />} />
           <Route path="/goi-y-ai" element={<Navigate to="/ke-hoach?view=for-you" replace />} />
+          <Route path="/hoi-dap-ai" element={<AiChatPage />} />
           <Route path="/di-cho" element={<ShoppingList />} />
           <Route path="/dinh-duong" element={<NutritionTracker />} />
           <Route path="/dang-cong-thuc" element={<CreateRecipe />} />
