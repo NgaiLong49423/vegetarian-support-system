@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.73.0
+> **Version:** v2.73.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-14
 > **Status:** Active
@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-14 — Move and Export Weekly Meal Plans (FR-33)
+## 2026-10-14 — Move and Export Weekly Meal Plans (FR-33) ([PR #135](https://github.com/NgaiLong49423/vegetarian-support-system/pull/135))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f4eeb26`.
 
 **Scope:** Complete local meal-plan management for Issue #38 using the existing weekly plan and recipe references.
 
