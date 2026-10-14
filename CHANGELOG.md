@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.72.0
+> **Version:** v2.73.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -30,6 +30,28 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Fix Scalar and generated clients not sending the access token for the 31 operations above.
 - Fix `/v3/api-docs.yaml` answering `401`: `API.md` publishes it next to `/v3/api-docs`, but the public pattern `/v3/api-docs/**` did not match it.
+
+## 2026-10-13 — Focus Meal Planning on Individual Days ([PR #133](https://github.com/NgaiLong49423/vegetarian-support-system/pull/133))
+
+**Status:** Committed — `2f85f34`.
+
+**Scope:** Make the Member meal planner easier to use one day at a time while retaining weekly persistence.
+
+### Added
+
+- Show day and week nutrition summaries for all nine supported indicators, for one person eating one serving of each scheduled dish, independently of family cooking portions, with per-day energy totals and explicit missing-data states.
+- Let Members open a planned recipe and save integer cooking servings from its detail page to the exact day/meal entry through an authenticated ownership-checked PATCH endpoint; keep the week view read-only for quantities and preserve existing database data.
+- Add browser checks for saved-recipe pagination, day selection, single-serving nutrition despite family cooking portions, missing nutrition, and retry behavior.
+
+### Changed
+
+- Display seven collapsible day rows and three vertically stacked meals for the selected day, with a compact calendar on mobile.
+- Limit the recipe picker to the Member's saved recipes with server-side search and pagination.
+- Adapt the existing visual theme using a Google Stitch reference inspired by Samsung Food.
+
+### Fixed
+
+- None.
 
 ## 2026-10-13 — Expand Local Recipe Demo Fixtures ([PR #127](https://github.com/NgaiLong49423/vegetarian-support-system/pull/127))
 

@@ -150,4 +150,54 @@ class MealPlanEntryServiceTest {
         entry.setPlannedServings(new BigDecimal("2.5"));
         return entry;
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "4", "9999"})
+    void savesServingsWithoutChangingTheRecipeOrMeal(String quantity) {
+        var entry = entry();
+        when(entries.findByIdAndMealPlanId(31, 12)).thenReturn(Optional.of(entry));
+        var result = service.updateServings(WEEK, 31, new BigDecimal(quantity));
+        assertThat(result.plannedServings()).isEqualByComparingTo(quantity);
+        assertThat(result.entryId()).isEqualTo(31);
+        assertThat(result.recipeId()).isEqualTo(1);
+        assertThat(result.mealDate()).isEqualTo(WEEK);
+        assertThat(result.mealType()).isEqualTo("LUNCH");
+        verify(entries).saveAndFlush(entry);
+        verify(plans).touchWeek(12);
+        verify(recipes, never()).requirePublishedMealPlanRecipe(anyLong());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0", "-1", "0.01", "10000", "1.1", "1.25", "9999.9"})
+    void rejectsInvalidServingsBeforeChangingTheEntry(String quantity) {
+        var entry = entry();
+        when(entries.findByIdAndMealPlanId(31, 12)).thenReturn(Optional.of(entry));
+        assertThatThrownBy(() -> service.updateServings(WEEK, 31, new BigDecimal(quantity)))
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
+        assertThat(entry.getPlannedServings()).isEqualByComparingTo("2.5");
+        verify(entries, never()).saveAndFlush(any());
+        verify(plans, never()).touchWeek(anyLong());
+        verifyNoInteractions(recipes);
+    }
+
+    @Test
+    void cannotChangeServingsOfAnotherMembersEntry() {
+        assertThatThrownBy(() -> service.updateServings(WEEK, 900, BigDecimal.ONE))
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+        verify(entries, never()).saveAndFlush(any());
+        verifyNoInteractions(recipes);
+    }
+
+    @Test
+    void updatingServingsDoesNotExposeHiddenRecipeContent() {
+        when(entries.findByIdAndMealPlanId(31, 12)).thenReturn(Optional.of(entry()));
+        doReturn(Map.of(1L,
+                new RecipePostService.MealPlanRecipeReference(1, "Hidden title", "HIDDEN", "private-image", "SOUP", 25)))
+                .when(recipes).findMealPlanReferences(anyList());
+        var result = service.updateServings(WEEK, 31, new BigDecimal("4"));
+        assertThat(result.plannedServings()).isEqualByComparingTo("4");
+        assertThat(result.recipeTitle()).isNull();
+        assertThat(result.recipeCoverUrl()).isNull();
+        assertThat(result.unavailableMessage()).isEqualTo("Công thức không còn khả dụng");
+    }
 }
