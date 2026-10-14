@@ -33,6 +33,27 @@ test('general chat keeps session history in the page and labels the answer as AI
   expect(requests[0]).toMatchObject({ contextType: 'GENERAL', question: 'Có thể thay sữa bò bằng gì?' });
 });
 
+test('chat window can be resized with its accessible keyboard handle', async ({ page }) => {
+  await signInAsMember(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+
+  const dialog = page.getByRole('dialog');
+  const resizeHandle = page.getByRole('button', { name: 'Thay đổi kích thước khung chat' });
+  const initialSize = await dialog.evaluate((element) => ({
+    width: Number.parseFloat(getComputedStyle(element).width),
+    height: Number.parseFloat(getComputedStyle(element).height),
+  }));
+
+  await resizeHandle.press('ArrowLeft');
+  await resizeHandle.press('ArrowUp');
+
+  await expect.poll(() => dialog.evaluate((element) => Number.parseFloat(getComputedStyle(element).width)))
+    .toBe(initialSize.width + 24);
+  await expect.poll(() => dialog.evaluate((element) => Number.parseFloat(getComputedStyle(element).height)))
+    .toBe(initialSize.height + 24);
+});
+
 test('recipe detail opens the same chat with recipe ID context', async ({ page }) => {
   await signInAsMember(page);
   let chatRequest: Record<string, unknown> | null = null;
