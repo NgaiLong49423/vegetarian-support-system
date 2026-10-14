@@ -271,4 +271,8 @@ export const mealPlanApi = {
   removeEntry: async (weekStartDate: string, entryId: number) => {
     await apiClient.delete<void>(`/meal-plans/${weekStartDate}/entries/${entryId}`);
   },
+  updateServings: async (weekStartDate: string, entryId: number, plannedServings: number) =>
+    (await apiClient.patch<MealPlanWeek['entries'][number]>(
+      `/meal-plans/${weekStartDate}/entries/${entryId}/servings`, { plannedServings },
+    )).data,
 };

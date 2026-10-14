@@ -48,6 +48,43 @@ class MealPlanControllerTest {
     @MockitoBean private AccountStatusJwtAuthenticationConverter jwtAuthenticationConverter;
 
     @Test
+    void savesServingsAndPublishesTheGeneratedContract() throws Exception {
+        var week = LocalDate.of(2026, 10, 12);
+        var quantity = new java.math.BigDecimal("4");
+        when(service.updateServings(week, 31, quantity)).thenReturn(new MealPlanWeekResponse.Entry(31, week, "LUNCH",
+                quantity, 1, "Món thử", null, "SOUP", 25, false, null));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/meal-plans/2026-10-12/entries/31/servings")
+                        .with(user("17").roles("CUSTOMER")).contentType(MediaType.APPLICATION_JSON).content("{\"plannedServings\":4}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.plannedServings").value(4));
+        mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/servings'].patch.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/servings'].patch.responses['200']").exists())
+                .andExpect(jsonPath("$.components.schemas.UpdateMealPlanServingsRequest.properties.plannedServings.minimum").value(1))
+                .andExpect(jsonPath("$.components.schemas.UpdateMealPlanServingsRequest.properties.plannedServings.maximum").value(9999));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"plannedServings\":null}", "{\"plannedServings\":0}", "{\"plannedServings\":-1}", "{\"plannedServings\":0.01}", "{\"plannedServings\":1.1}", "{\"plannedServings\":1.25}", "{\"plannedServings\":10000}"})
+    void rejectsInvalidServingsPayload(String json) throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/meal-plans/2026-10-12/entries/31/servings")
+                        .with(user("17")).contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void servingsUpdateRejectsGuestsAndForeignEntries() throws Exception {
+        var path = "/api/v1/meal-plans/2026-10-12/entries/31/servings";
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(path)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"plannedServings\":4}"))
+                .andExpect(status().isUnauthorized());
+        doThrow(new AppException(ErrorCode.ACCESS_DENIED)).when(service).updateServings(LocalDate.of(2026, 10, 12), 31, new java.math.BigDecimal("4"));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(path).with(user("18"))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"plannedServings\":4}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void opensAWeekWithoutARequestBody() throws Exception {
         var monday = LocalDate.of(2026, 10, 12);
         when(service.openWeek(monday)).thenReturn(new MealPlanWeekResponse(monday, List.of()));
