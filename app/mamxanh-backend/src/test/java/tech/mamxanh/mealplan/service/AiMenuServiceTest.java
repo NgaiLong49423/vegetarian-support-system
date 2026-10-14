@@ -7,7 +7,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 import org.mockito.ArgumentCaptor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -53,7 +53,7 @@ class AiMenuServiceTest {
     private final MealPlanEntryRepository entries = mock(MealPlanEntryRepository.class);
     private final MealPlanReadService reads = mock(MealPlanReadService.class);
     private final AiMenuService service = new AiMenuService(users, entitlements, profiles, dietary, recipes,
-            nutrition, ingredients, conversions, ai, events, Clock.systemUTC(), new ObjectMapper(), plans, entries, reads);
+            nutrition, ingredients, conversions, ai, events, Clock.systemUTC(), new JsonMapper(), plans, entries, reads);
 
     @BeforeEach
     void member() {

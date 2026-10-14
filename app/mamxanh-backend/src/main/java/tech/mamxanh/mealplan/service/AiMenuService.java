@@ -1,6 +1,6 @@
 package tech.mamxanh.mealplan.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.Clock;
 import java.util.ArrayList;
