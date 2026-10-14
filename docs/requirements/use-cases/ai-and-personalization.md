@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M06
 > **File:** `docs/requirements/use-cases/ai-and-personalization.md`
-> **Version:** v2.3.0
+> **Version:** v2.4.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -258,17 +258,19 @@ Người dùng mở Chatbot từ giao diện chung của hệ thống.
 #### Main Flow
 1. Người dùng mở ngữ cảnh chung và nhập câu hỏi về ăn chay, kiến thức ẩm thực hoặc kỹ thuật chế biến.
 2. Hệ thống xử lý theo quy trình chatbot dùng chung ở cấp FR-51; nếu câu hỏi liên quan tới BMI/calorie cá nhân, hệ thống chỉ dùng thông tin hồ sơ phù hợp khi Member yêu cầu.
-3. Chatbot trả lời theo dữ liệu ngữ cảnh chung và các ranh giới an toàn; nội dung AI được gắn nhãn riêng.
+3. Nếu câu hỏi là tìm món/công thức, Backend tải các Recipe Post công khai, loại bài không phù hợp trường phái ăn chay hoặc nguyên liệu cần tránh đã khai báo, rồi gửi danh sách có giới hạn cho Gemini chỉ chọn ID trong danh sách; giao diện hiển thị các thẻ dẫn tới bài thật cùng lý do gợi ý. Các câu hỏi khác nhận câu trả lời theo ngữ cảnh chung.
+4. Chỉ khi câu hỏi yêu cầu rõ viết công thức mới, AI mới trả nội dung công thức dạng bản nháp trong hội thoại; hệ thống không lưu hoặc đăng nội dung đó.
 
 #### Alternative Flows
 - **AF-51.4 — Member hỏi BMI nhưng chưa khai báo hồ sơ:** Giải thích công thức BMI ở mức tham khảo và cung cấp liên kết tới Hồ sơ dinh dưỡng theo FR-35; không suy diễn hồ sơ cá nhân chưa có.
+- **AF-51.5 — Không tìm thấy Recipe Post phù hợp:** Nêu rõ không có bài công khai phù hợp; không bịa bài hoặc thay bằng công thức tự tạo.
 
 #### Postconditions
-Người dùng nhận được phản hồi cho câu hỏi chung; không có dữ liệu nghiệp vụ nào bị chatbot tự sửa.
+Người dùng nhận được câu trả lời, thẻ công thức công khai thật hoặc bản nháp được yêu cầu rõ; không có dữ liệu nghiệp vụ nào bị chatbot tự sửa hoặc ghi.
 
 #### Traceability
 - **Parent FR:** [FR-51](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51).
-- **Relevant BR:** [BR-09](../srs/BUSINESS-RULES.md#br-09) (ranh giới y tế); [BR-39](../srs/BUSINESS-RULES.md#br-39) (BMI chỉ mang tính tham khảo); [BR-41](../srs/BUSINESS-RULES.md#br-41) (thông tin dinh dưỡng không thay thế chuyên gia).
+- **Relevant BR:** [BR-09](../srs/BUSINESS-RULES.md#br-09) (ranh giới y tế); [BR-38](../srs/BUSINESS-RULES.md#br-38) (nguồn công thức chatbot); [BR-39](../srs/BUSINESS-RULES.md#br-39) (BMI chỉ mang tính tham khảo); [BR-41](../srs/BUSINESS-RULES.md#br-41) (thông tin dinh dưỡng không thay thế chuyên gia).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03), [NFR-12](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-12), [NFR-20](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-20), [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
 
 #### Acceptance Coverage
@@ -303,16 +305,18 @@ Bài Recipe Post đang công khai (`PUBLISHED`) và người dùng có quyền x
 2. Người dùng nhập câu hỏi về công đoạn chế biến, nguyên liệu thay thế phù hợp hoặc thông tin có sẵn trong bài.
 3. Hệ thống chuẩn bị context gồm dữ liệu công thức, trường phái ăn chay, khẩu phần, thời gian, nguyên liệu/định lượng, `instructions` và dữ liệu dinh dưỡng hiện có; sau đó xử lý theo quy trình chatbot dùng chung.
 4. Chatbot trả lời dựa trên context bài; nếu công thức không ghi một chi tiết, câu trả lời phải phân biệt rõ phần gợi ý ước tính của AI với dữ kiện gốc.
+5. Nếu người dùng yêu cầu rõ biến tấu công thức, AI trả bản nháp trong chat dựa trên bài đang mở, tôn trọng trường phái ăn chay và nguyên liệu cần tránh; bài gốc không đổi.
 
 #### Alternative Flows
 - **AF-51.1 — Đóng hoặc chuyển ngữ cảnh:** Người dùng có thể đóng context công thức để về hội thoại chung hoặc chuyển sang Recipe Post khác; Chatbot cập nhật context theo bài mới.
+- **AF-51.6 — Muốn biến tấu nhưng chưa chọn bài:** Chatbot hướng dẫn người dùng mở bài công thức trên Mâm Xanh rồi hỏi từ ngữ cảnh bài đó; không tự đoán hoặc nhận nội dung bài do client gửi.
 
 #### Postconditions
 Người dùng nhận được câu trả lời gắn với Recipe Post đã chọn; nội dung gốc và dữ liệu nghiệp vụ không bị chatbot thay đổi.
 
 #### Traceability
 - **Parent FR:** [FR-51](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-51).
-- **Relevant BR:** [BR-09](../srs/BUSINESS-RULES.md#br-09) (ranh giới y tế); [BR-41](../srs/BUSINESS-RULES.md#br-41) (ranh giới tư vấn dinh dưỡng); [BR-51](../srs/BUSINESS-RULES.md#br-51) (AI không quản lý danh mục dinh dưỡng).
+- **Relevant BR:** [BR-09](../srs/BUSINESS-RULES.md#br-09) (ranh giới y tế); [BR-38](../srs/BUSINESS-RULES.md#br-38) (nguồn công thức và bản nháp trong chat); [BR-41](../srs/BUSINESS-RULES.md#br-41) (ranh giới tư vấn dinh dưỡng); [BR-51](../srs/BUSINESS-RULES.md#br-51) (AI không quản lý danh mục dinh dưỡng).
 - **Relevant NFR:** [NFR-03](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-03), [NFR-10](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10), [NFR-12](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-12), [NFR-18](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-18), [NFR-22](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-22), [NFR-25](../srs/NON-FUNCTIONAL-REQUIREMENTS.md#nfr-25).
 
 #### Acceptance Coverage

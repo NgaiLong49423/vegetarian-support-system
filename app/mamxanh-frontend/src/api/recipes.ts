@@ -259,6 +259,15 @@ export interface AiChatResponse {
   contextType: AiChatContext;
   recipeId: number | null;
   answer: string;
+  recommendations: Array<{
+    id: number;
+    title: string;
+    description: string | null;
+    coverUrl: string | null;
+    totalTimeMinutes: number;
+    difficulty: string;
+    reason: string;
+  }>;
 }
 
 async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {

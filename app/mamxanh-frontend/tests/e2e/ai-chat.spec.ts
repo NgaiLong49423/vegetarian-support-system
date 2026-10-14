@@ -16,7 +16,9 @@ test('general chat keeps session history in the page and labels the answer as AI
     await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null, answer: 'Có thể dùng sữa đậu nành.' } });
   });
 
-  await page.goto('/hoi-dap-ai');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await expect(page.getByRole('heading', { name: 'Bạn cần AI hỗ trợ gì?' })).toBeVisible();
   await page.getByLabel('Câu hỏi của bạn').fill('Có thể thay sữa bò bằng gì?');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.getByText('Có thể dùng sữa đậu nành.')).toBeVisible();
@@ -48,8 +50,9 @@ test('recipe detail opens the same chat with recipe ID context', async ({ page }
   });
 
   await page.goto('/cong-thuc/id/42');
-  await page.getByRole('link', { name: 'Hỏi AI về công thức này' }).click();
-  await expect(page.getByRole('heading', { name: 'Hỏi về công thức' })).toBeVisible();
+  await page.getByRole('button', { name: 'Hỏi AI về công thức này' }).click();
+  await expect(page).toHaveURL('/cong-thuc/id/42');
+  await expect(page.getByText('Đang hỗ trợ theo công thức #42')).toBeVisible();
   await page.getByLabel('Câu hỏi của bạn').fill('Bài viết ghi cách nấu thế nào?');
   await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
   await expect(page.getByText('Bài viết hướng dẫn kho đậu hũ.')).toBeVisible();

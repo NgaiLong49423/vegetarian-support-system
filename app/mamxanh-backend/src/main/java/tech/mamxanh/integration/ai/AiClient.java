@@ -15,5 +15,10 @@ public interface AiClient {
     }
 
     record RecommendationResult(String json, Integer promptTokens, Integer responseTokens, Integer totalTokens) { }
-    record ChatResult(String answer, Integer promptTokens, Integer responseTokens, Integer totalTokens) { }
+    record ChatResult(String answer, String structuredJson, Integer promptTokens,
+            Integer responseTokens, Integer totalTokens) {
+        public ChatResult(String answer, Integer promptTokens, Integer responseTokens, Integer totalTokens) {
+            this(answer, null, promptTokens, responseTokens, totalTokens);
+        }
+    }
 }

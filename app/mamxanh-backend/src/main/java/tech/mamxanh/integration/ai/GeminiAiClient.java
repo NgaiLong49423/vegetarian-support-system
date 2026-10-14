@@ -79,10 +79,22 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     @Override
     public ChatResult answerChat(String systemInstruction, String prompt) {
         if (client == null) throw new AiProviderException("Gemini is not configured");
+        Schema recommendationSchema = Schema.builder().type(Type.Known.OBJECT)
+                .properties(Map.of("recipeId", Schema.builder().type(Type.Known.INTEGER).build(),
+                        "reason", Schema.builder().type(Type.Known.STRING).build()))
+                .required(List.of("recipeId", "reason")).build();
+        Schema schema = Schema.builder().type(Type.Known.OBJECT)
+                .properties(Map.of("action", Schema.builder().type(Type.Known.STRING).build(),
+                        "answer", Schema.builder().type(Type.Known.STRING).build(),
+                        "recommendations", Schema.builder().type(Type.Known.ARRAY)
+                                .maxItems(4L).items(recommendationSchema).build()))
+                .required(List.of("action", "answer", "recommendations")).build();
         GenerateContentConfig config = GenerateContentConfig.builder()
                 .systemInstruction(Content.fromParts(Part.fromText(systemInstruction)))
+                .responseMimeType("application/json")
+                .responseSchema(schema)
                 .candidateCount(1)
-                .maxOutputTokens(1024)
+                .maxOutputTokens(2048)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
                 .build();
         try {
@@ -94,7 +106,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 throw new AiProviderException("Gemini returned an incomplete chat response");
             }
             var usage = response.usageMetadata();
-            return new ChatResult(text.strip(),
+            return new ChatResult(null, text.strip(),
                     usage.flatMap(value -> value.promptTokenCount()).orElse(null),
                     usage.flatMap(value -> value.candidatesTokenCount()).orElse(null),
                     usage.flatMap(value -> value.totalTokenCount()).orElse(null));

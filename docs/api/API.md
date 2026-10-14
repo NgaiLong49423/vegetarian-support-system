@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.23.0
+> **Version:** v0.24.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-14
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 
 # API Integration Guide
@@ -358,6 +358,29 @@ Ví dụ body cho ngữ cảnh công thức:
 
 Backend tải RecipePost hiện hành theo ID và chỉ dùng bài đang công khai; không nhận nội dung công thức do Frontend gửi. Context gồm nội dung công thức, nguyên liệu/định lượng, dinh dưỡng hiện có và ràng buộc ăn chay/nguyên liệu cần tránh của Member nếu đã khai báo. Khi câu hỏi yêu cầu dữ liệu cá nhân về BMI hoặc năng lượng, chatbot không tự tải hồ sơ sức khỏe vào prompt; Member cần dùng luồng hồ sơ dinh dưỡng đã có.
 
-Response gồm `contextType`, `recipeId` (null với ngữ cảnh chung) và `answer`. Gemini phải phân biệt dữ kiện ghi trong RecipePost với gợi ý/ước tính của AI, không bịa thông tin còn thiếu, tôn trọng loại ăn chay và không chẩn đoán hoặc kê phác đồ điều trị. API chỉ đọc; không lưu lịch sử hội thoại hay thay đổi dữ liệu nghiệp vụ. Frontend giữ tối đa lịch sử cần gửi trong state của phiên hiện tại. Backend chỉ phát telemetry token `AiUsageEvent` sau phản hồi hợp lệ; không đưa câu hỏi, lịch sử, context công thức hoặc câu trả lời vào telemetry/log.
+Response gồm `contextType`, `recipeId` (null với ngữ cảnh chung), `answer` và `recommendations` (mảng rỗng nếu không tìm công thức). Khi người dùng tìm món/công thức, Backend tải tối đa 50 Recipe Post công khai, lọc trường phái ăn chay và nguyên liệu cần tránh đã khai báo rồi gửi danh sách giới hạn cho Gemini; Gemini chỉ được chọn tối đa 4 ID trong danh sách. Backend xác minh ID và trạng thái công khai lần nữa trước khi trả các thẻ bài viết gồm `id`, `title`, `description`, `coverUrl`, `totalTimeMinutes`, `difficulty` và `reason`. FE dùng `id` để mở trang `/cong-thuc/id/{id}`; không dùng URL do Gemini tạo. Nếu không tìm được bài phù hợp, `recommendations` rỗng và `answer` nói rõ không có kết quả. Nội dung công thức mới hoặc biến tấu chỉ được trả trong `answer` khi người dùng yêu cầu rõ; đây là bản nháp AI trong hội thoại, không lưu hoặc đăng.
+
+Ví dụ phần response cho yêu cầu tìm món:
+
+```json
+{
+  "contextType": "GENERAL",
+  "recipeId": null,
+  "answer": "Mình tìm được một số bài công thức phù hợp:",
+  "recommendations": [
+    {
+      "id": 123,
+      "title": "Đậu hũ sốt cà chua",
+      "description": "Món chay dễ làm cho bữa cơm gia đình.",
+      "coverUrl": "https://storage.example/recipe-cover.jpg",
+      "totalTimeMinutes": 25,
+      "difficulty": "EASY",
+      "reason": "Cách làm đơn giản và thời gian chuẩn bị ngắn."
+    }
+  ]
+}
+```
+
+Gemini phải phân biệt dữ kiện ghi trong RecipePost với gợi ý/ước tính của AI, không bịa thông tin còn thiếu, tôn trọng loại ăn chay và không chẩn đoán hoặc kê phác đồ điều trị. API chỉ đọc; không lưu lịch sử hội thoại hay thay đổi dữ liệu nghiệp vụ. Frontend giữ tối đa lịch sử cần gửi trong state của phiên hiện tại. Backend chỉ phát telemetry token `AiUsageEvent` sau phản hồi hợp lệ; không đưa câu hỏi, lịch sử, context công thức hoặc câu trả lời vào telemetry/log.
 
 Lỗi request trả `400`; bài không tồn tại hoặc không còn công khai trả `404`; phản hồi Gemini sai/thiếu trả `502 AI_RESPONSE_INVALID`; Gemini lỗi hoặc timeout trả `503 AI_PROVIDER_UNAVAILABLE`. Backend giới hạn thời gian chờ Gemini theo NFR-18. Guest chưa được bật trên endpoint này; chỉ mở khi giới hạn tần suất Guest thuộc FR-02 có mặt trên baseline tích hợp. Generated `/v3/api-docs` là contract chi tiết cho request, response, validation và security.

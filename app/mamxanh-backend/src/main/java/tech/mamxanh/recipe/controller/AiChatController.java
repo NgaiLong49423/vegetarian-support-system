@@ -26,8 +26,9 @@ public class AiChatController {
     @PostMapping
     @Operation(summary = "Ask the vegetarian cooking assistant",
             description = "Requires an active Member. General context or the latest public RecipePost is loaded server-side. "
+                    + "Recipe discovery selects only current public RecipePosts from the Backend catalog; explicitly requested recipe drafts remain chat text only. "
                     + "Conversation history is request-scoped and is not persisted. Guest access will be enabled with FR-02 rate limiting.")
-    @ApiResponse(responseCode = "200", description = "AI answer generated.")
+    @ApiResponse(responseCode = "200", description = "AI answer and, when relevant, selected public recipe cards generated.")
     @ApiResponse(responseCode = "400", description = "Invalid question, history, or context fields.")
     @ApiResponse(responseCode = "401", description = "An authenticated Member session is required.")
     @ApiResponse(responseCode = "404", description = "The recipe does not exist or is not public.")

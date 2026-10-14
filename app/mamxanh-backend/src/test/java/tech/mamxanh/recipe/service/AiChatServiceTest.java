@@ -24,6 +24,7 @@ import tools.jackson.databind.json.JsonMapper;
 class AiChatServiceTest {
     private CurrentUserService users;
     private RecipeService recipes;
+    private RecipePostService recipePosts;
     private DietaryPreferenceService preferences;
     private AiClient ai;
     private ApplicationEventPublisher events;
@@ -33,13 +34,16 @@ class AiChatServiceTest {
     void setup() {
         users = mock(CurrentUserService.class);
         recipes = mock(RecipeService.class);
+        recipePosts = mock(RecipePostService.class);
         preferences = mock(DietaryPreferenceService.class);
         ai = mock(AiClient.class);
         events = mock(ApplicationEventPublisher.class);
-        service = new AiChatService(users, recipes, preferences, ai, new JsonMapper(), events, Clock.systemUTC());
+        service = new AiChatService(users, recipes, recipePosts, preferences, ai, new JsonMapper(), events, Clock.systemUTC());
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, Role.CUSTOMER));
         when(preferences.menuConstraints(7)).thenReturn(new DietaryPreferenceService.MenuDietaryConstraints(
                 "VEGAN", List.of(8L), List.of("Sữa")));
+        when(recipePosts.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
+                List.of(), 0, 50, 0, 0));
     }
 
     @Test
