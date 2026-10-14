@@ -17,14 +17,14 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Added
 
-- Add `RecipeNutritionCandidateService.retainNutritionComplete`, which keeps only published recipes with complete nutrition for the nutrition AI menu (FR-36) and uses the same calculation as the recipe detail.
 - Add the "Chưa hỗ trợ tính dinh dưỡng" label next to each ingredient without nutrition data on both recipe detail pages.
-- Add an SQL Server integration test for the candidate filter and Playwright tests for the label.
+- Add an SQL Server integration test showing that applying a nutrition AI menu (`PUT /api/v1/meal-plans/ai-menu`, FR-36) with a published recipe that uses an ingredient without nutrition data returns `404 RECIPE_NOT_FOUND` and leaves the meal plan untouched (AC-40.3), and Playwright tests for the label.
 - Record BUG-026: generated OpenAPI merges same-named nested recipe DTOs, so recipe `ingredients[]`/`media[]` schemas differ from the real responses.
 
 ### Changed
 
 - Document FR-40 in `API.md` section 7 and the Backend/Frontend READMEs; type `nutritionSupported` on recipe detail ingredients in the Frontend API client.
+- Rely on the FR-36 candidate filter merged in PR #134 (`AiMenuService` keeps only published recipes whose nutrition calculation is complete) for AC-40.3 instead of adding a second candidate service.
 
 ### Fixed
 
