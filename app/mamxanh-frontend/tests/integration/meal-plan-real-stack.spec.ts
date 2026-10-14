@@ -105,9 +105,8 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
         `SELECT recipe_id FROM [RECIPE_POST] WHERE title = ${literal(secondTitle)}`,
       ),
     )
-    sql(
-      `INSERT INTO [SAVED_RECIPE] (user_id, recipe_id) VALUES (${ownerId}, ${firstId});`,
-    )
+    sql(`INSERT INTO [SAVED_RECIPE] (user_id, recipe_id)
+      VALUES (${ownerId}, ${firstId}), (${ownerId}, ${secondId});`)
 
     await page.goto("/dang-nhap")
     await page.getByLabel("Email").fill(ownerEmail)
@@ -131,9 +130,12 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
     const readResponse = await read
     expect(readResponse.status()).toBe(200)
     const selectedWeek = (await readResponse.json()).weekStartDate as string
+    const firstDay = page.getByRole("button", { name: /^Xem ngày / }).first()
+    if ((await firstDay.getAttribute("aria-expanded")) !== "true")
+      await firstDay.click()
     await expect(
       page.getByRole("button", { name: /^Thêm món Bữa/ }),
-    ).toHaveCount(21)
+    ).toHaveCount(3)
     expect(
       Number(
         sql(`SELECT COUNT(*) FROM [MEAL_PLAN] WHERE user_id = ${ownerId}`),
@@ -145,7 +147,6 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
       .first()
       .click()
     const dialog = page.getByRole("dialog")
-    await dialog.getByRole("button", { name: "Đã lưu", exact: true }).click()
     await dialog.getByLabel("Tìm món cho lịch ăn").fill(fixture)
     await dialog.getByRole("button", { name: "Tìm", exact: true }).click()
     const add = page.waitForResponse(
