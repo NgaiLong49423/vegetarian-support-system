@@ -56,6 +56,20 @@ const calculatedNutritionResponse = {
   },
 };
 
+async function mockNutritionEligibility(page: Page, initial: 'NOT_CONFIRMED' | 'ELIGIBLE' = 'ELIGIBLE') {
+  let status: string = initial;
+  const confirmations: string[] = [];
+  await page.route('**/api/v1/nutrition/profile/eligibility', async (route) => {
+    expect(route.request().headers().authorization).toBe('Bearer test-only-token');
+    if (route.request().method() === 'PUT') {
+      status = route.request().postDataJSON().status;
+      confirmations.push(status);
+    }
+    await route.fulfill({ json: { status, confirmedAt: status === 'NOT_CONFIRMED' ? null : '2026-10-14T00:00:00Z' } });
+  });
+  return confirmations;
+}
+
 async function prepareMockAuthenticatedNutritionPage(page: Page) {
   await page.addInitScript(() => { window.__nutritionE2eAccessToken = 'test-only-token'; });
   await page.route('**/api/v1/nutrition/profile**', async (route) => {
@@ -69,7 +83,9 @@ async function prepareMockAuthenticatedNutritionPage(page: Page) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(emptyNutritionResponse) });
     }
   });
+  const confirmations = await mockNutritionEligibility(page);
   await page.goto('/ho-so/dinh-duong');
+  return confirmations;
 }
 
 async function fillEligibleNutritionProfile(page: Page) {
@@ -79,9 +95,6 @@ async function fillEligibleNutritionProfile(page: Page) {
   await page.getByLabel('Cân nặng *').fill(String(exampleProfile.weightKg));
   await page.getByLabel('Mức độ vận động *').selectOption(exampleProfile.activityLevel);
   await page.getByLabel('Mục tiêu dinh dưỡng chung (không bắt buộc)').selectOption(exampleProfile.nutritionGoal);
-  for (const name of ['pregnant', 'breastfeeding', 'therapeuticDietRequired']) {
-    await page.locator(`input[name="${name}"]`).nth(0).check();
-  }
   await page.getByRole('checkbox').check();
 }
 
@@ -239,13 +252,13 @@ test('recipe report form enforces trimmed OTHER boundaries and the 500 character
 
 test('nutrition profile requires real authentication and plan/history pages do not simulate payment', async ({ page }) => {
   await page.goto('/ho-so/dinh-duong');
-  await expect(page.getByText('Đăng nhập tài khoản thật để khai báo và lưu hồ sơ.')).toBeVisible();
+  await expect(page.getByText('Đăng nhập để xác nhận và sử dụng tính năng dinh dưỡng.')).toBeVisible();
   await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
   await expect(page.getByRole('alert')).toContainText('cần phiên đăng nhập đã được xác thực');
-  await expect(page.getByLabel('Ngày sinh *')).toBeDisabled();
-  await expect(page.getByLabel('Chiều cao *')).toBeDisabled();
-  await expect(page.getByLabel('Cân nặng *')).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toBeDisabled();
+  await expect(page.getByLabel('Ngày sinh *')).toHaveCount(0);
+  await expect(page.getByLabel('Chiều cao *')).toHaveCount(0);
+  await expect(page.getByLabel('Cân nặng *')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toHaveCount(0);
   await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
 
   await page.goto('/goi-ai');
@@ -271,7 +284,13 @@ test('mock-authenticated nutrition profile saves consent and shows approximate r
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(response) });
   });
 
+  const confirmations = await mockNutritionEligibility(page, 'NOT_CONFIRMED');
   await page.goto('/ho-so/dinh-duong');
+  await expect(page.getByLabel('Ngày sinh *')).toHaveCount(0);
+  await page.getByRole('radio', { name: /Tôi xác nhận mình từ đủ 18 tuổi/ }).check();
+  await page.getByRole('checkbox', { name: /Tôi đã đọc và xác nhận/ }).check();
+  await page.getByRole('button', { name: 'Xác nhận và tiếp tục' }).click();
+  await expect.poll(() => confirmations).toEqual(['ELIGIBLE']);
   await fillEligibleNutritionProfile(page);
   await page.getByRole('button', { name: 'Lưu hồ sơ' }).click();
   await expect(page.getByRole('main').getByText('Đã lưu', { exact: true })).toBeVisible();
@@ -298,21 +317,27 @@ test('mock-authenticated nutrition profile saves consent and shows approximate r
 });
 
 test('nutrition profile hides all metrics for underage and excluded declarations', async ({ page }) => {
-  await prepareMockAuthenticatedNutritionPage(page);
+  const confirmations = await prepareMockAuthenticatedNutritionPage(page);
   await page.getByLabel('Ngày sinh *').fill('2011-01-01');
   await page.getByRole('radio', { name: 'Nữ' }).check();
   await page.getByLabel('Chiều cao *').fill('160');
   await page.getByLabel('Cân nặng *').fill('55');
   await page.getByLabel('Mức độ vận động *').selectOption('SEDENTARY');
   await page.getByLabel('Mục tiêu dinh dưỡng chung (không bắt buộc)').selectOption('MAINTAIN_WEIGHT');
-  await page.locator('input[name="pregnant"]').nth(1).check();
-  await page.locator('input[name="breastfeeding"]').nth(0).check();
-  await page.locator('input[name="therapeuticDietRequired"]').nth(0).check();
   await page.getByRole('checkbox').check();
 
   await expect(page.getByText('Ứng dụng hiện không hỗ trợ hồ sơ dinh dưỡng cho người dưới 18 tuổi.')).toBeVisible();
-  await expect(page.getByText('Vui lòng tham khảo bác sĩ hoặc chuyên gia dinh dưỡng. Ứng dụng không lưu hồ sơ, tính BMI hoặc hiển thị 9 chỉ tiêu cho trường hợp này.')).toBeVisible();
+  await expect(page.getByText('Các chỉ số BMI và 9 chỉ tiêu bị ẩn đối với trường hợp ngoài phạm vi hỗ trợ. Vui lòng tham khảo bác sĩ hoặc chuyên gia dinh dưỡng.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toBeDisabled();
+  await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Cập nhật xác nhận phạm vi' }).click();
+  await page.getByRole('radio', { name: 'Tôi hiện không thuộc phạm vi hỗ trợ dinh dưỡng này.' }).check();
+  await page.getByRole('button', { name: 'Xác nhận', exact: true }).click();
+  await expect(page.getByText('Hồ sơ và gợi ý dinh dưỡng sẽ tiếp tục bị khóa.', { exact: false })).toBeVisible();
+  expect(confirmations).toEqual(['INELIGIBLE']);
+  await expect(page.getByLabel('Ngày sinh *')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toHaveCount(0);
   await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
 });
 
@@ -328,6 +353,7 @@ test('nutrition profile maps backend validation errors to their fields', async (
     }
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(emptyNutritionResponse) });
   });
+  await mockNutritionEligibility(page);
   await page.goto('/ho-so/dinh-duong');
   await fillEligibleNutritionProfile(page);
   await page.getByRole('button', { name: 'Lưu hồ sơ' }).click();

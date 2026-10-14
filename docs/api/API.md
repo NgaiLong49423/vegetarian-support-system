@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.22.0
+> **Version:** v0.23.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-14
 > **Status:** Active
@@ -216,7 +216,7 @@ So sánh hai công thức (FR-60) không có API riêng: trang `/so-sanh?a={reci
 - Mỗi Member chỉ có một lịch cho mỗi tuần theo unique constraint hiện có. Thao tác tạo dùng transaction và khóa phạm vi khóa SQL Server để xử lý yêu cầu tạo đồng thời. Không gọi Gemini, không tạo món mặc định và không thay đổi danh sách công thức đã lưu.
 - Contract chi tiết lấy từ generated `/v3/api-docs`; kiểm thử SQL Server và Compose cần được xác minh riêng với kiểm thử MVC dùng mock service.
 
-### 7.2. Thêm, thay và gỡ món — FR-09
+### 7.2. Thêm, thay, chuyển và gỡ món — FR-09/FR-33
 
 | Thao tác | API | Request và kết quả |
 |---|---|---|
@@ -224,6 +224,7 @@ So sánh hai công thức (FR-60) không có API riêng: trang `/so-sanh?a={reci
 | Thay công thức | `PUT /api/v1/meal-plans/{weekStartDate}/entries/{entryId}` | JSON gồm `recipeId` thay thế. Trả `200` cùng projection của mục món; giữ `entryId`, ngày, loại bữa và khẩu phần hiện tại. |
 | Chỉnh số phần cần nấu | `PATCH /api/v1/meal-plans/{weekStartDate}/entries/{entryId}/servings` | JSON gồm `plannedServings` (số nguyên 1–9.999). Trả `200` cùng projection đã lưu; giữ nguyên công thức, ngày và bữa. |
 | Gỡ món | `DELETE /api/v1/meal-plans/{weekStartDate}/entries/{entryId}` | Trả `204`, không có response body. Chỉ xóa mục lịch; công thức nguồn và mục đã lưu không bị thay đổi. |
+| Chuyển món | `PATCH /api/v1/meal-plans/{weekStartDate}/entries/{entryId}/position` | JSON gồm `mealDate` và `mealType` đích. Trả `200` cùng projection đã chuyển; giữ ID, công thức và khẩu phần, kể cả giá trị lẻ cũ. Chỉ chuyển trong cùng tuần; ngoài tuần trả `400`, trùng công thức ở bữa đích trả `409 MEAL_PLAN_RECIPE_DUPLICATE`. |
 
 - `weekStartDate` phải là Thứ Hai; toàn bộ tuần phải nằm trong phạm vi ngày SQL Server (năm 1–9999). Ngày ăn phải nằm trong bảy ngày của tuần đã chọn; dữ liệu không hợp lệ trả `400 VALIDATION_FAILED`.
 - Backend xác định chủ lịch từ tài khoản đã xác thực. Mục không tồn tại trong tuần của chủ tài khoản, kể cả ID thuộc người khác hoặc tuần khác, trả `403 ACCESS_DENIED`; không truy xuất hoặc sửa mục theo ID đơn lẻ.
@@ -232,7 +233,14 @@ So sánh hai công thức (FR-60) không có API riêng: trang `/so-sanh?a={reci
 - Một bữa chứa nhiều công thức khác nhau. Thêm hoặc thay thành công thức đã có trong cùng ngày/bữa trả `409 MEAL_PLAN_RECIPE_DUPLICATE`; thay lại cùng công thức của chính mục đó không bị xem là trùng mục khác.
 - Chỉ công thức `PUBLISHED` được thêm hoặc dùng để thay thế; nguồn thiếu/ẩn/xóa/nháp trả `404 RECIPE_NOT_FOUND`. Kiểm tra trạng thái nguồn và ghi lịch nằm trong cùng transaction; các thay đổi của cùng lịch tuần được tuần tự hóa bằng khóa ở database và vẫn có unique constraint bảo vệ.
 - Tombstone hiện có được thay hoặc gỡ như mục thông thường. Gỡ không yêu cầu công thức nguồn còn công khai; đọc lịch vẫn trả nhãn chung `Công thức không còn khả dụng` và lược bỏ nội dung bài không công khai.
-- Frontend dùng dữ liệu response sau thêm/thay và bỏ mục sau `204`; khi request thất bại cần giữ dữ liệu đang hiển thị và cho phép tải lại lịch để đối chiếu với máy chủ. Các API này không chuyển món giữa ngày/bữa, không xuất lịch và không gọi Gemini.
+- Frontend dùng dữ liệu response sau thêm/thay/chuyển và bỏ mục sau `204`; khi request thất bại giữ dữ liệu đang hiển thị và cho phép thử lại. Chuyển món khóa lịch tuần trước kiểm tra đích và cập nhật cùng một mục trong transaction; không xóa rồi thêm lại. Các thao tác này không gọi Gemini.
+
+### 7.3. Xuất lịch tuần — FR-33
+
+- `GET /api/v1/meal-plans/{weekStartDate}/export` trả snapshot JSON riêng cho tài khoản Member đang xác thực, kèm `Cache-Control: no-store`. Không nhận ID chủ lịch. Guest nhận `401`, Admin hoặc tài khoản khóa nhận `403`; ngày sai định dạng/không phải Thứ Hai nhận `400`. Tuần chưa tạo trả danh sách trống và không ghi database.
+- Snapshot gồm `weekStartDate` và các mục `mealDate`, `mealType`, `title`, `plannedServings`, `energyKcal`, `available`; generated OpenAPI là contract chi tiết. Năng lượng lấy từ Backend tính theo nguyên liệu/quy đổi nội bộ, bằng kcal mỗi phần × khẩu phần đã lưu. Đây là lượng của các phần trong lịch, không phải bảng dinh dưỡng một người hoặc so sánh DRI. Dữ liệu thiếu giữ `energyKcal=null`, không thay bằng 0.
+- Công thức không khả dụng chỉ có ngày/bữa và nhãn trung tính; khẩu phần/năng lượng là `null`, không trả ID, ảnh hoặc nội dung bài nguồn. Công thức bị ẩn giữa lúc đọc lịch và lấy chi tiết cũng được chuyển sang nhãn không khả dụng. Lỗi khác làm request thất bại để người dùng thử lại, không tải file có dữ liệu suy đoán.
+- Frontend tạo file từ snapshot mới lấy khi người dùng chủ động xuất: đủ bảy ngày, ba bữa mỗi ngày, mọi món trong bữa và trạng thái bữa trống. TXT là UTF-8; PDF tải trực tiếp, khổ A4 và phân trang khi nhiều món, dùng Noto Sans đi kèm để hiển thị tiếng Việt. Không xuất bảng chín chỉ tiêu, DRI hoặc Shopping List.
 
 ## 8. Thông số cần chốt trước khi triển khai phần phụ thuộc
 
