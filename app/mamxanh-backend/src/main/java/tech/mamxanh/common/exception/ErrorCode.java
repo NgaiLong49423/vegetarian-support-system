@@ -49,6 +49,7 @@ public enum ErrorCode {
     AI_SUBSCRIPTION_REQUIRED(HttpStatus.FORBIDDEN, "AI subscription required", "Tính năng hỗ trợ AI yêu cầu gói Plus hoặc Pro còn hiệu lực."),
     AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI provider unavailable", "Dịch vụ AI hiện không khả dụng. Bạn có thể tiếp tục tự soạn nội dung."),
     AI_RESPONSE_INVALID(HttpStatus.BAD_GATEWAY, "AI response invalid", "AI trả về nội dung không hợp lệ. Vui lòng thử lại hoặc tự soạn nội dung."),
+    AI_MENU_UNAVAILABLE(HttpStatus.CONFLICT, "AI menu unavailable", "Chưa có đủ công thức phù hợp để tạo thực đơn tuần. Hãy thử lại sau."),
     REPORT_ALREADY_OPEN(HttpStatus.CONFLICT, "Report already open",
             "Bạn đã gửi báo cáo cho công thức này. Hãy bổ sung thông tin vào báo cáo hiện có."),
     MEMBER_PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "Member profile not found",
