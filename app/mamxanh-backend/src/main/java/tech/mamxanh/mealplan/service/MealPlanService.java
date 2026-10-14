@@ -76,6 +76,21 @@ public class MealPlanService {
     }
 
     @Transactional
+    public MealPlanWeekResponse.Entry updateServings(LocalDate weekStartDate, long entryId, BigDecimal plannedServings) {
+        var plan = ownedWeek(weekStartDate);
+        var entry = requireEntry(plan.getId(), entryId);
+        if (plannedServings == null || plannedServings.compareTo(BigDecimal.ONE) < 0
+                || plannedServings.compareTo(new BigDecimal("9999")) > 0
+                || plannedServings.stripTrailingZeros().scale() > 0) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Số phần cần nấu phải là số nguyên từ 1 đến 9.999.");
+        }
+        entry.setPlannedServings(plannedServings);
+        var saved = entries.saveAndFlush(entry);
+        repository.touchWeek(plan.getId());
+        return response(saved);
+    }
+
+    @Transactional
     public void removeEntry(LocalDate weekStartDate, long entryId) {
         var plan = ownedWeek(weekStartDate);
         entries.delete(requireEntry(plan.getId(), entryId));
@@ -107,8 +122,11 @@ public class MealPlanService {
 
     private MealPlanWeekResponse.Entry response(MealPlanEntryEntity entry) {
         var recipe = recipes.findMealPlanReferences(List.of(entry.getRecipeId())).get(entry.getRecipeId());
+        boolean available = recipe != null && "PUBLISHED".equals(recipe.status());
+        boolean deleted = recipe != null && "DELETED".equals(recipe.status());
         return new MealPlanWeekResponse.Entry(entry.getId(), entry.getMealDate(), entry.getMealType(),
-                entry.getPlannedServings(), entry.getRecipeId(), recipe.title(), recipe.coverUrl(),
-                recipe.dishCategory(), recipe.totalTimeMinutes(), false, null);
+                entry.getPlannedServings(), entry.getRecipeId(), available ? recipe.title() : null, available ? recipe.coverUrl() : null,
+                available ? recipe.dishCategory() : null, available ? recipe.totalTimeMinutes() : null, deleted,
+                available ? null : "Công thức không còn khả dụng");
     }
 }
