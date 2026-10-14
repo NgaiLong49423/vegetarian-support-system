@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import java.time.LocalDate;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import tech.mamxanh.mealplan.entity.MealPlanEntryEntity;
 
 public interface MealPlanEntryRepository extends JpaRepository<MealPlanEntryEntity, Long> {
@@ -15,4 +18,7 @@ public interface MealPlanEntryRepository extends JpaRepository<MealPlanEntryEnti
     @org.springframework.data.jpa.repository.Query(value = "SELECT TOP (20) r.recipe_id FROM [RECIPE_POST] r "
             + "WHERE r.status = 'PUBLISHED' AND r.recipe_id <> :excludedRecipeId ORDER BY r.published_at DESC, r.recipe_id DESC", nativeQuery = true)
     List<Long> findPublishedCandidateIds(long excludedRecipeId);
+    @Modifying
+    @Query("delete from MealPlanEntryEntity entry where entry.mealPlanId = :mealPlanId")
+    int deleteAllByMealPlanId(@Param("mealPlanId") long mealPlanId);
 }

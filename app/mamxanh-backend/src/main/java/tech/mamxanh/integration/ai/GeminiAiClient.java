@@ -71,6 +71,15 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
 
     @Override
     public RecommendationResult recommendRecipes(String prompt, List<Long> allowedRecipeIds, int limit) {
+        return recommendSequence(prompt, allowedRecipeIds, limit);
+    }
+
+    @Override
+    public RecommendationResult recommendRecipeSequence(String prompt, List<Long> allowedRecipeIds, int slots) {
+        return recommendSequence(prompt, allowedRecipeIds, slots);
+    }
+
+    private RecommendationResult recommendSequence(String prompt, List<Long> allowedRecipeIds, int limit) {
         if (client == null) throw new AiProviderException("Gemini is not configured");
         Schema schema = Schema.builder().type(Type.Known.OBJECT)
                 .properties(Map.of("recipeIds", Schema.builder().type(Type.Known.ARRAY)
