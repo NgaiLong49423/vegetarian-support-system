@@ -4,12 +4,17 @@ import {
   Copy,
   Check,
   ArrowDownToLine,
-  SlidersHorizontal,
   Flame,
   Users,
   Utensils,
   BookOpen,
   Info,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  AlertTriangle,
+  Lightbulb,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { Button } from './ui';
@@ -25,6 +30,7 @@ export interface GeneratedRecipeData {
   servings: number;
   prepTimeMinutes: number;
   cookTimeMinutes: number;
+  mealType: string;
   targetCaloriesPerServing: number;
   totalCalories: number;
   ingredients: Array<{
@@ -43,150 +49,331 @@ interface AiRecipeAssistantModalProps {
   onApplyRecipe: (recipe: GeneratedRecipeData) => void;
 }
 
-// Database kiến thức dinh dưỡng tiêu chuẩn (kcal / đơn vị)
+// Bảng phân bổ 3 buổi ăn chính + bữa phụ theo khuyến nghị dinh dưỡng (chuẩn 2.000 kcal/ngày)
+export type MealSession = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK' | 'CUSTOM';
+
+interface MealSessionConfig {
+  session: MealSession;
+  label: string;
+  badgeText: string;
+  defaultCalories: number;
+  minCalories: number;
+  maxCalories: number;
+  percentageRatio: string;
+  recommendedCategory: string;
+  description: string;
+}
+
+const MEAL_SESSIONS: MealSessionConfig[] = [
+  {
+    session: 'BREAKFAST',
+    label: 'Bữa sáng',
+    badgeText: '🌅 20–25% Calo ngày',
+    defaultCalories: 350,
+    minCalories: 250,
+    maxCalories: 500,
+    percentageRatio: '20% - 25%',
+    recommendedCategory: 'MAIN',
+    description: 'Nạp năng lượng mở đầu ngày mới, ưu tiên protein dễ hấp thu, tinh bột lành và ít dầu mỡ.',
+  },
+  {
+    session: 'LUNCH',
+    label: 'Bữa trưa',
+    badgeText: '☀️ 35–40% Calo ngày',
+    defaultCalories: 600,
+    minCalories: 450,
+    maxCalories: 750,
+    percentageRatio: '35% - 40%',
+    recommendedCategory: 'MAIN',
+    description: 'Bữa ăn chính duy trì hoạt động trong ngày, cân đối đạm thực vật, chất xơ và món mặn/xào đậm vị.',
+  },
+  {
+    session: 'DINNER',
+    label: 'Bữa tối',
+    badgeText: '🌙 30–35% Calo ngày',
+    defaultCalories: 450,
+    minCalories: 350,
+    maxCalories: 600,
+    percentageRatio: '30% - 35%',
+    recommendedCategory: 'SOUP',
+    description: 'Bữa ăn phục hồi thanh nhẹ, giàu khoáng chất, hạn chế chiên rán nhiều dầu để ngủ ngon.',
+  },
+  {
+    session: 'SNACK',
+    label: 'Bữa phụ / Ăn nhẹ',
+    badgeText: '🥪 5–10% Calo ngày',
+    defaultCalories: 200,
+    minCalories: 100,
+    maxCalories: 300,
+    percentageRatio: '5% - 10%',
+    recommendedCategory: 'DESSERT',
+    description: 'Bổ sung năng lượng giữa buổi, nhanh gọn, mát lành và thanh đạm.',
+  },
+  {
+    session: 'CUSTOM',
+    label: 'Tùy chỉnh tự do',
+    badgeText: '⚙️ Chuyên gia định lượng',
+    defaultCalories: 400,
+    minCalories: 100,
+    maxCalories: 1500,
+    percentageRatio: 'Tùy ý',
+    recommendedCategory: 'MAIN',
+    description: 'Chuyên gia ẩm thực tự do thiết lập chỉ tiêu calo theo mục tiêu riêng.',
+  },
+];
+
+// Cơ sở tri thức dinh dưỡng nguyên liệu chay tiêu chuẩn (Viện Dinh dưỡng & USDA)
 interface IngredientNutrientInfo {
   keywords: string[];
   unitCode: string;
   unitName: string;
-  standardPortion: number; // định lượng cơ sở cho 1 phần ăn
   caloriesPerUnit: number;
-  isMainProtein?: boolean;
+  defaultPortionPerServing: number;
+  minPortion: number;
+  maxPortion: number;
+  category: 'PROTEIN' | 'VEG' | 'FAT' | 'SEASONING' | 'CARB';
+  isCountUnit?: boolean;
 }
 
 const NUTRITION_KNOWLEDGE_BASE: IngredientNutrientInfo[] = [
+  // Nhóm Protein
   {
-    keywords: ['trứng', 'trứng gà', 'trứng vịt', 'trung'],
+    keywords: ['trứng', 'trứng gà', 'trứng vịt', 'trung', 'trung ga', 'lòng đỏ', 'lòng trắng'],
     unitCode: 'qua',
     unitName: 'Quả',
-    standardPortion: 1.5,
     caloriesPerUnit: 72,
-    isMainProtein: true,
+    defaultPortionPerServing: 1.5,
+    minPortion: 1,
+    maxPortion: 4,
+    category: 'PROTEIN',
+    isCountUnit: true,
   },
+  {
+    keywords: ['đậu hũ', 'dau hu', 'đậu phụ', 'tau hu', 'đậu hũ trắng', 'đậu hũ non', 'đậu hũ chiên'],
+    unitCode: 'g',
+    unitName: 'Gam',
+    caloriesPerUnit: 0.82,
+    defaultPortionPerServing: 120,
+    minPortion: 50,
+    maxPortion: 300,
+    category: 'PROTEIN',
+  },
+  {
+    keywords: ['nấm', 'nam', 'nấm rơm', 'nấm hương', 'nấm bào ngư', 'nấm đùi gà', 'nấm kim châm', 'nấm đông cô', 'nấm mỡ'],
+    unitCode: 'g',
+    unitName: 'Gam',
+    caloriesPerUnit: 0.35,
+    defaultPortionPerServing: 80,
+    minPortion: 30,
+    maxPortion: 200,
+    category: 'PROTEIN',
+  },
+  // Nhóm Rau củ & Chất xơ
   {
     keywords: ['cà chua', 'ca chua', 'cà chua bi'],
     unitCode: 'g',
     unitName: 'Gam',
-    standardPortion: 100,
-    caloriesPerUnit: 0.18, // 18 kcal / 100g
-  },
-  {
-    keywords: ['đậu hũ', 'dau hu', 'đậu phụ', 'tau hu'],
-    unitCode: 'g',
-    unitName: 'Gam',
-    standardPortion: 120,
-    caloriesPerUnit: 0.82,
-    isMainProtein: true,
-  },
-  {
-    keywords: ['nấm', 'nam', 'nấm rơm', 'nấm hương', 'nấm đùi gà', 'nấm bào ngư'],
-    unitCode: 'g',
-    unitName: 'Gam',
-    standardPortion: 80,
-    caloriesPerUnit: 0.35,
+    caloriesPerUnit: 0.18,
+    defaultPortionPerServing: 120,
+    minPortion: 50,
+    maxPortion: 300,
+    category: 'VEG',
   },
   {
     keywords: ['cà rốt', 'ca rot'],
     unitCode: 'g',
     unitName: 'Gam',
-    standardPortion: 60,
     caloriesPerUnit: 0.41,
+    defaultPortionPerServing: 60,
+    minPortion: 20,
+    maxPortion: 150,
+    category: 'VEG',
   },
   {
-    keywords: ['dầu ăn', 'dau an', 'dầu thực vật', 'dầu mè', 'dầu hào chay'],
+    keywords: ['ớt chuông', 'ot chuong', 'ớt ngọt'],
+    unitCode: 'g',
+    unitName: 'Gam',
+    caloriesPerUnit: 0.26,
+    defaultPortionPerServing: 60,
+    minPortion: 20,
+    maxPortion: 150,
+    category: 'VEG',
+  },
+  {
+    keywords: ['bông cải', 'súp lơ', 'bong cai', 'bông cải xanh', 'bông cải trắng'],
+    unitCode: 'g',
+    unitName: 'Gam',
+    caloriesPerUnit: 0.34,
+    defaultPortionPerServing: 80,
+    minPortion: 40,
+    maxPortion: 200,
+    category: 'VEG',
+  },
+  {
+    keywords: ['cải thìa', 'cải ngọt', 'rau bina', 'rau muống', 'mồng tơi', 'cải bó xôi'],
+    unitCode: 'g',
+    unitName: 'Gam',
+    caloriesPerUnit: 0.24,
+    defaultPortionPerServing: 100,
+    minPortion: 40,
+    maxPortion: 250,
+    category: 'VEG',
+  },
+  {
+    keywords: ['đậu bắp', 'dau bap', 'đậu que', 'đậu cô ve'],
+    unitCode: 'g',
+    unitName: 'Gam',
+    caloriesPerUnit: 0.31,
+    defaultPortionPerServing: 70,
+    minPortion: 30,
+    maxPortion: 180,
+    category: 'VEG',
+  },
+  {
+    keywords: ['bắp ngọt', 'ngô ngọt', 'ngô'],
+    unitCode: 'g',
+    unitName: 'Gam',
+    caloriesPerUnit: 0.86,
+    defaultPortionPerServing: 50,
+    minPortion: 20,
+    maxPortion: 120,
+    category: 'CARB',
+  },
+  {
+    keywords: ['hành lá', 'hanh la', 'hành boaro', 'ngò rí', 'hành tây', 'mùi tàu', 'hành'],
+    unitCode: 'g',
+    unitName: 'Gam',
+    caloriesPerUnit: 0.32,
+    defaultPortionPerServing: 15,
+    minPortion: 5,
+    maxPortion: 40,
+    category: 'VEG',
+  },
+  // Nhóm Dầu ăn & Chất béo
+  {
+    keywords: ['dầu ăn', 'dau an', 'dầu thực vật', 'dầu đậu nành', 'dầu mè', 'dầu olive'],
     unitCode: 'ml',
     unitName: 'Mililit',
-    standardPortion: 7,
-    caloriesPerUnit: 8.84, // ~88.4 kcal / 10ml
+    caloriesPerUnit: 8.84,
+    defaultPortionPerServing: 10,
+    minPortion: 5,
+    maxPortion: 30,
+    category: 'FAT',
   },
+  // Nhóm Gia vị
   {
-    keywords: ['hành lá', 'hanh la', 'hành boaro', 'ngò rí', 'hành'],
+    keywords: ['hạt nêm chay', 'muối', 'gia vị', 'nước tương', 'tiêu', 'hạt nêm', 'duong', 'đường'],
     unitCode: 'g',
     unitName: 'Gam',
-    standardPortion: 10,
-    caloriesPerUnit: 0.32,
-  },
-  {
-    keywords: ['ớt chuông', 'ot chuong'],
-    unitCode: 'g',
-    unitName: 'Gam',
-    standardPortion: 60,
-    caloriesPerUnit: 0.26,
-  },
-  {
-    keywords: ['bông cải', 'súp lơ', 'bong cai'],
-    unitCode: 'g',
-    unitName: 'Gam',
-    standardPortion: 80,
-    caloriesPerUnit: 0.34,
-  },
-  {
-    keywords: ['hạt nêm chay', 'muối', 'gia vị', 'duong', 'tiêu', 'nuoc tuong'],
-    unitCode: 'g',
-    unitName: 'Gam',
-    standardPortion: 5,
     caloriesPerUnit: 1.2,
+    defaultPortionPerServing: 6,
+    minPortion: 2,
+    maxPortion: 15,
+    category: 'SEASONING',
+  },
+];
+
+// Mẫu công thức điền nhanh để rút ngắn thao tác cho chuyên gia
+const QUICK_TEMPLATES = [
+  {
+    name: 'Xào cà chua với trứng',
+    meal: 'BREAKFAST' as MealSession,
+    cal: 350,
+    ingredients: 'cà chua, trứng gà, hành lá, dầu thực vật, gia vị chay',
+  },
+  {
+    name: 'Đậu hũ sốt cà chua',
+    meal: 'LUNCH' as MealSession,
+    cal: 550,
+    ingredients: 'đậu hũ, cà chua, hành boaro, dầu ăn, hạt nêm chay, nước tương',
+  },
+  {
+    name: 'Canh chua nấm đậu bắp',
+    meal: 'DINNER' as MealSession,
+    cal: 420,
+    ingredients: 'đậu hũ, nấm rơm, cà chua, đậu bắp, ngò rí, hạt nêm chay',
+  },
+  {
+    name: 'Nấm xào súp lơ ớt chuông',
+    meal: 'LUNCH' as MealSession,
+    cal: 580,
+    ingredients: 'nấm đùi gà, súp lơ, ớt chuông, cà rốt, dầu mè, hạt nêm chay',
   },
 ];
 
 export function AiRecipeAssistantModal({
   open,
   onClose,
-  options,
+  options: _options,
   onApplyRecipe,
 }: AiRecipeAssistantModalProps) {
+  const [selectedMeal, setSelectedMeal] = useState<MealSession>('BREAKFAST');
   const [dishIdea, setDishIdea] = useState('Xào cà chua với trứng');
   const [rawIngredients, setRawIngredients] = useState('cà chua, trứng gà, hành lá, dầu thực vật, gia vị chay');
   const [targetCalories, setTargetCalories] = useState(350);
   const [servings, setServings] = useState(2);
-  const [vegType, setVegType] = useState('OVO'); // OVO, VEGAN, LACTO, LACTO_OVO
+  const [cookingMethod, setCookingMethod] = useState('STIR_FRY');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<GeneratedRecipeData | null>(null);
   const [copiedJson, setCopiedJson] = useState(false);
   const [jsonViewOpen, setJsonViewOpen] = useState(false);
 
+  // Khi chọn buổi ăn, tự động đề xuất mức calo khuyến nghị tương ứng
+  const handleSelectMeal = (session: MealSession) => {
+    setSelectedMeal(session);
+    const config = MEAL_SESSIONS.find((s) => s.session === session);
+    if (config && session !== 'CUSTOM') {
+      setTargetCalories(config.defaultCalories);
+    }
+  };
+
+  // Chọn mẫu món nhanh
+  const handleApplyTemplate = (tmpl: typeof QUICK_TEMPLATES[number]) => {
+    setDishIdea(tmpl.name);
+    setRawIngredients(tmpl.ingredients);
+    setSelectedMeal(tmpl.meal);
+    setTargetCalories(tmpl.cal);
+  };
+
+  // Thuật toán AI phân giải nguyên liệu & tối ưu hóa calo chuẩn xác cao
   const generateRecipe = () => {
     setIsGenerating(true);
     setCopiedJson(false);
 
     setTimeout(() => {
-      // 1. Phân tích nguyên liệu người dùng nhập
+      // 1. Phân tách danh sách nguyên liệu đầu vào
       const inputItems = rawIngredients
         .split(/[,;\n+]+/)
         .map((s) => s.trim().toLowerCase())
         .filter(Boolean);
 
-      const resolvedIngredients: GeneratedRecipeData['ingredients'] = [];
-      const totalTargetCal = targetCalories * servings;
+      const targetTotalCal = targetCalories * servings;
 
-      // Nhận diện kiểu món và tên món chuẩn hóa
-      let calculatedTitle = dishIdea.trim() || 'Món chay bổ dưỡng';
-      let cleanDishCategory = 'MAIN';
-      if (/xào|kho|rim|chiên|sốt/i.test(calculatedTitle)) {
-        cleanDishCategory = 'MAIN';
-      } else if (/canh|súp/i.test(calculatedTitle)) {
-        cleanDishCategory = 'SOUP';
-      } else if (/gỏi|nộm|salad/i.test(calculatedTitle)) {
-        cleanDishCategory = 'SALAD';
+      // 2. Nhận diện thể loại món
+      let calculatedCategory = 'MAIN';
+      if (/canh|súp|soup/i.test(dishIdea) || cookingMethod === 'SOUP') {
+        calculatedCategory = 'SOUP';
+      } else if (/gỏi|nộm|salad/i.test(dishIdea) || cookingMethod === 'SALAD') {
+        calculatedCategory = 'SALAD';
+      } else if (/chè|bánh|sinh tố|tráng miệng/i.test(dishIdea)) {
+        calculatedCategory = 'DESSERT';
       }
 
-      // Xác định loại ăn chay dựa trên nguyên liệu
-      let detectedVegType = vegType;
+      // 3. Nhận diện trường phái ăn chay
+      let detectedVegType = 'VEGAN';
       const hasEgg = inputItems.some((item) => /trứng|trung/i.test(item)) || /trứng/i.test(dishIdea);
-      const hasMilk = inputItems.some((item) => /sữa|pho mai|bơ/i.test(item));
+      const hasMilk = inputItems.some((item) => /sữa|pho mai|bơ|cream/i.test(item));
       if (hasEgg && hasMilk) detectedVegType = 'LACTO_OVO';
       else if (hasEgg) detectedVegType = 'OVO';
       else if (hasMilk) detectedVegType = 'LACTO';
       else detectedVegType = 'VEGAN';
 
-      // 2. Cân chỉnh định lượng chính xác theo tổng calo mục tiêu
-      // Dành ~60% calo cho nguyên liệu protein chính, ~25% cho dầu/nước sốt, ~15% cho rau củ & gia vị
-      let currentAllocatedCal = 0;
-
-      // Danh sách nguyên liệu cần có
-      const matchedInfos: Array<{
-        name: string;
+      // 4. Ánh xạ nguyên liệu với Cơ sở tri thức dinh dưỡng
+      interface MatchedItem {
+        rawName: string;
         info: IngredientNutrientInfo;
-      }> = [];
+      }
+      const matchedItems: MatchedItem[] = [];
 
       inputItems.forEach((raw) => {
         const found = NUTRITION_KNOWLEDGE_BASE.find((k) =>
@@ -194,110 +381,242 @@ export function AiRecipeAssistantModal({
         );
         if (found) {
           const capitalized = raw.charAt(0).toUpperCase() + raw.slice(1);
-          matchedInfos.push({ name: capitalized, info: found });
+          matchedItems.push({ rawName: capitalized, info: found });
         } else {
-          // Nguyên liệu chưa có trong danh mục kiến thức -> gán định lượng mặc định rau củ
+          // Nguyên liệu tùy biến từ người dùng: xếp loại rau củ chuẩn
           const capitalized = raw.charAt(0).toUpperCase() + raw.slice(1);
-          matchedInfos.push({
-            name: capitalized,
+          matchedItems.push({
+            rawName: capitalized,
             info: {
               keywords: [raw],
               unitCode: 'g',
               unitName: 'Gam',
-              standardPortion: 50,
-              caloriesPerUnit: 0.4,
+              caloriesPerUnit: 0.38,
+              defaultPortionPerServing: 60,
+              minPortion: 20,
+              maxPortion: 180,
+              category: 'VEG',
             },
           });
         }
       });
 
-      // Nếu thiếu dầu ăn hoặc gia vị khi nấu món xào, bổ sung nhẹ để tính calo chính xác
-      if (!matchedInfos.some((m) => m.info.unitCode === 'ml') && /xào|chiên|rim/i.test(dishIdea)) {
-        const oilInfo = NUTRITION_KNOWLEDGE_BASE.find((k) => k.keywords.includes('dầu ăn'))!;
-        matchedInfos.push({ name: 'Dầu thực vật', info: oilInfo });
+      // Tự động bổ sung dầu thực vật và gia vị cơ bản nếu món xào/kho cần chất béo để hòa tan dưỡng chất
+      const hasOil = matchedItems.some((m) => m.info.category === 'FAT');
+      if (!hasOil && (cookingMethod === 'STIR_FRY' || /xào|chiên|rim|kho/i.test(dishIdea))) {
+        const oilInfo = NUTRITION_KNOWLEDGE_BASE.find((k) => k.category === 'FAT')!;
+        matchedItems.push({ rawName: 'Dầu thực vật', info: oilInfo });
       }
-      if (!matchedInfos.some((m) => m.name.toLowerCase().includes('gia vị') || m.name.toLowerCase().includes('nêm'))) {
-        const spiceInfo = NUTRITION_KNOWLEDGE_BASE.find((k) => k.keywords.includes('hạt nêm chay'))!;
-        matchedInfos.push({ name: 'Gia vị chay (hạt nêm, muối)', info: spiceInfo });
+      const hasSeasoning = matchedItems.some((m) => m.info.category === 'SEASONING');
+      if (!hasSeasoning) {
+        const spiceInfo = NUTRITION_KNOWLEDGE_BASE.find((k) => k.category === 'SEASONING')!;
+        matchedItems.push({ rawName: 'Gia vị chay (hạt nêm, muối, tiêu)', info: spiceInfo });
       }
 
-      // Tính tỷ lệ cân chỉnh calo
-      const baseCal = matchedInfos.reduce((sum, item) => {
-        return sum + item.info.standardPortion * servings * item.info.caloriesPerUnit;
-      }, 0);
+      // 5. THUẬT TOÁN GIẢI TOÁN TỐI ƯU HÓA CALO (Error Minimization Solver)
+      // Tách các nhóm: COUNT (Trứng), FAT (Dầu), PROTEIN (Đậu hũ), VEG (Cà chua/Rau), SEASONING (Gia vị)
+      const countItems = matchedItems.filter((m) => m.info.isCountUnit);
+      const fatItems = matchedItems.filter((m) => m.info.category === 'FAT');
+      const proteinItems = matchedItems.filter((m) => m.info.category === 'PROTEIN' && !m.info.isCountUnit);
+      const vegItems = matchedItems.filter((m) => m.info.category === 'VEG');
+      const seasoningItems = matchedItems.filter((m) => m.info.category === 'SEASONING');
 
-      const ratio = baseCal > 0 ? totalTargetCal / baseCal : 1;
+      // Kết quả tính toán nguyên liệu
+      const computedQuantities: Map<string, number> = new Map();
 
-      // Xuất danh sách nguyên liệu và định lượng đã cân chỉnh
-      matchedInfos.forEach(({ name, info }) => {
-        let rawQty = info.standardPortion * servings * ratio;
-        if (info.unitCode === 'qua') {
-          rawQty = Math.max(1, Math.round(rawQty));
-        } else if (info.unitCode === 'ml' || info.unitCode === 'g') {
-          rawQty = Math.max(5, Math.round(rawQty / 5) * 5); // làm tròn bậc 5g/5ml cho tự nhiên
+      // Bước 5.1: Xử lý số lượng nguyên liệu đếm hạt/quả (VD: trứng gà)
+      // Mỗi khẩu phần thường dùng 1 - 2 quả trứng
+      let fixedCalCount = 0;
+      countItems.forEach((c) => {
+        // Cân đối số quả hợp lý theo tổng calo và số người
+        let eggsCount = Math.round(servings * 1.5);
+        if (targetCalories < 300) eggsCount = servings;
+        else if (targetCalories > 500) eggsCount = servings * 2;
+        eggsCount = Math.max(1, eggsCount);
+        computedQuantities.set(c.rawName, eggsCount);
+        fixedCalCount += eggsCount * c.info.caloriesPerUnit;
+      });
+
+      // Bước 5.2: Phân bổ gia vị cơ bản (muối, hạt nêm: ~5g/khẩu phần)
+      let fixedCalSeasoning = 0;
+      seasoningItems.forEach((s) => {
+        const qty = Math.max(5, servings * 5);
+        computedQuantities.set(s.rawName, qty);
+        fixedCalSeasoning += qty * s.info.caloriesPerUnit;
+      });
+
+      // Lượng calo còn lại cần bù trừ
+      const remainingCal = Math.max(50, targetTotalCal - fixedCalCount - fixedCalSeasoning);
+
+      // Bước 5.3: Cân chỉnh chất béo (Dầu ăn) và Rau củ/Đậu hũ
+      // Dầu ăn đóng vai trò cung cấp năng lượng và độ bóng mềm cho món ăn
+      let idealOilMl = Math.round(servings * 8); // mặc định ~8ml/người
+      if (cookingMethod === 'STIR_FRY' || /xào/i.test(dishIdea)) idealOilMl = Math.round(servings * 12);
+      if (cookingMethod === 'SOUP') idealOilMl = Math.round(servings * 4);
+
+      // Thử nghiệm các mức dầu ăn hợp lý (bội số 5ml) để tối thiểu sai số
+      let bestDiff = Infinity;
+      let bestOil = idealOilMl;
+      let bestVegScale = 1;
+
+      // Tính tổng năng lượng cơ sở của nhóm rau và đậu hũ
+      const flexBaseCal =
+        vegItems.reduce((acc, v) => acc + v.info.defaultPortionPerServing * servings * v.info.caloriesPerUnit, 0) +
+        proteinItems.reduce((acc, p) => acc + p.info.defaultPortionPerServing * servings * p.info.caloriesPerUnit, 0);
+
+      const baseVal = flexBaseCal > 0 ? flexBaseCal : 100;
+
+      // Quét các mức dầu ăn khả dĩ (từ 5ml đến 40ml) để tìm tỷ lệ sai số thấp nhất
+      for (let testOil = Math.max(5, servings * 5); testOil <= Math.min(60, servings * 25); testOil += 5) {
+        const oilCal = fatItems.length > 0 ? testOil * fatItems[0].info.caloriesPerUnit : 0;
+        const calForFlex = remainingCal - oilCal;
+        if (calForFlex <= 0) continue;
+
+        const scale = calForFlex / baseVal;
+        // Kiểm tra xem tỉ lệ scale có trong ngưỡng tự nhiên (0.5x - 2.5x)
+        if (scale >= 0.4 && scale <= 3.0) {
+          // Tính tổng calo thực tế sau khi làm tròn bước 5g
+          let simulatedCal = fixedCalCount + fixedCalSeasoning + oilCal;
+          vegItems.forEach((v) => {
+            const rawG = Math.max(10, Math.round((v.info.defaultPortionPerServing * servings * scale) / 5) * 5);
+            simulatedCal += Math.round(rawG * v.info.caloriesPerUnit);
+          });
+          proteinItems.forEach((p) => {
+            const rawG = Math.max(20, Math.round((p.info.defaultPortionPerServing * servings * scale) / 5) * 5);
+            simulatedCal += Math.round(rawG * p.info.caloriesPerUnit);
+          });
+
+          const diff = Math.abs(simulatedCal - targetTotalCal);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            bestOil = testOil;
+            bestVegScale = scale;
+          }
         }
-        const itemCal = Math.round(rawQty * info.caloriesPerUnit);
-        currentAllocatedCal += itemCal;
+      }
 
-        resolvedIngredients.push({
-          name,
-          quantity: rawQty,
+      // Bước 5.4: Gán định lượng chính xác
+      fatItems.forEach((f) => {
+        computedQuantities.set(f.rawName, bestOil);
+      });
+
+      vegItems.forEach((v) => {
+        const g = Math.max(15, Math.round((v.info.defaultPortionPerServing * servings * bestVegScale) / 5) * 5);
+        computedQuantities.set(v.rawName, g);
+      });
+
+      proteinItems.forEach((p) => {
+        const g = Math.max(30, Math.round((p.info.defaultPortionPerServing * servings * bestVegScale) / 5) * 5);
+        computedQuantities.set(p.rawName, g);
+      });
+
+      // Bước 5.5: Tổng hợp danh sách nguyên liệu và định lượng
+      let finalTotalCal = 0;
+      const finalIngredients: GeneratedRecipeData['ingredients'] = [];
+
+      matchedItems.forEach(({ rawName, info }) => {
+        const qty = computedQuantities.get(rawName) || 10;
+        const cal = Math.round(qty * info.caloriesPerUnit);
+        finalTotalCal += cal;
+
+        finalIngredients.push({
+          name: rawName,
+          quantity: qty,
           unitCode: info.unitCode,
           unitName: info.unitName,
-          calories: itemCal,
+          calories: cal,
         });
       });
 
-      const actualCalPerServing = Math.round(currentAllocatedCal / servings);
-
-      // Soạn thảo mô tả và các bước hướng dẫn nấu ăn tự nhiên, chân thực
-      const isEggDish = hasEgg;
+      // 6. Soạn nội dung hướng dẫn chế biến mạch lạc, thiết thực
       let naturalDescription = '';
       let naturalInstructions = '';
 
-      if (isEggDish && /cà chua/i.test(dishIdea)) {
-        naturalDescription = `Món ${calculatedTitle} mang vị chua thanh tự nhiên của cà chua hòa quyện với vị bùi béo của trứng, màu sắc bắt mắt và giàu năng lượng lành mạnh cho bữa cơm gia đình.`;
-        naturalInstructions = `1. Sơ chế: Cà chua rửa sạch, bổ múi cau nhỏ. Hành lá rửa sạch, cắt nhỏ. Trứng gà đập ra bát, đánh tan đều cùng một chút tiêu xay và 1/2 muỗng cà phê hạt nêm chay.
-2. Xào trứng: Đun nóng chảo với 1/2 lượng dầu ăn, cho trứng vào đảo nhanh tay ở lửa vừa cho trứng vừa chín tới, còn độ mềm xốp thì trút ra đĩa riêng.
-3. Làm sốt cà chua: Dùng chảo cũ, thêm phần dầu ăn còn lại, cho đầu hành vào phi thơm rồi trút cà chua vào xào. Nêm hạt nêm chay và một chút nước ấm, đậy nắp khoảng 2-3 phút cho cà chua mềm nhuyễn tạo thành sốt sánh mịn.
-4. Hòa quyện: Trút phần trứng đã xào trở lại chảo sốt cà chua, đảo nhẹ tay khoảng 1 phút ở lửa nhỏ để trứng thấm đều vị sốt.
-5. Hoàn thiện: Rắc hành lá thái nhỏ và tiêu lên trên, tắt bếp và thưởng thức ngay khi còn nóng cùng cơm trắng.`;
+      if (hasEgg && /cà chua/i.test(dishIdea)) {
+        naturalDescription = `Món ${dishIdea.trim()} thanh tao và giàu năng lượng, kết hợp hoàn hảo giữa vị chua dịu của cà chua và vị béo ngậy mềm mịn của trứng gà. Món ăn bổ sung protein dồi dào, cân đối calo lý tưởng cho bữa ăn gia đình.`;
+        naturalInstructions = `1. Sơ chế nguyên liệu:
+- Cà chua rửa sạch, cắt múi cau vừa ăn. Hành lá rửa sạch, phần gốc trắng đập dập băm nhỏ, phần lá xanh thái nhỏ.
+- Đập trứng gà ra bát, nêm 1/2 muỗng cà phê hạt nêm chay và một ít tiêu xay, dùng đũa đánh tan đều cho sủi bọt nhẹ.
+
+2. Chiên xào trứng lòng đào mềm xốp:
+- Đặt chảo lên bếp, cho 1/2 lượng dầu thực vật vào đun nóng vừa.
+- Đổ trứng vào chảo, chờ viền trứng hơi se lại thì dùng phới đảo nhẹ tay thành những mảng trứng lớn, vừa chín tới còn độ ẩm mềm xốp thì trút ra đĩa riêng (không đảo quá khô).
+
+3. Làm sốt cà chua sền sệt:
+- Dùng lại chảo, thêm lượng dầu ăn còn lại vào phi thơm gốc hành trắng.
+- Cho toàn bộ cà chua vào xào đều tay ở lửa vừa. Nêm hạt nêm chay, nước tương và thêm khoảng 2-3 muỗng canh nước ấm.
+- Đậy nắp chảo đun 2–3 phút cho cà chua chín mềm rục, dùng thìa dầm nhẹ để sốt sánh mịn tự nhiên.
+
+4. Hòa quyện hương vị:
+- Trút toàn bộ phần trứng đã xào vào chảo sốt cà chua, đảo nhẹ tay ở lửa nhỏ trong khoảng 1 phút để trứng ngấm đều nước sốt mà không bị nát.
+- Rắc hành lá thái nhỏ và một chút tiêu xay lên trên rồi tắt bếp.
+
+5. Thưởng thức:
+- Dọn món ra đĩa sâu lòng, dùng nóng kèm cơm trắng dẻo hoặc bánh mì.`;
       } else {
-        naturalDescription = `Món ${calculatedTitle} thơm ngon thanh đạm, kết hợp hài hòa giữa các nguyên liệu thực vật tươi sạch, cung cấp năng lượng cân đối và giàu chất xơ cho cơ thể.`;
-        naturalInstructions = `1. Sơ chế: Rửa sạch các nguyên liệu dưới vòi nước. Thái miếng vừa ăn phù hợp với từng loại rau củ và nấm.
-2. Nấu chín: Làm nóng chảo với dầu thực vật, phi thơm hành boaro hoặc gia vị nền. Cho nguyên liệu chính vào xào đều tay ở lửa vừa cho chín tới.
-3. Nêm nếm: Nêm hạt nêm chay, nước tương và điều chỉnh vừa khẩu vị gia đình.
-4. Hoàn thiện: Tắt bếp, rắc tiêu và rau thơm lên trên. Thưởng thức khi món ăn còn ấm nóng.`;
+        naturalDescription = `Món ${dishIdea.trim()} thanh nhẹ, kết hợp hài hòa các loại nguyên liệu thực vật tươi ngon, cung cấp lượng calo cân đối và dồi dào chất xơ tự nhiên cho cơ thể.`;
+        naturalInstructions = `1. Sơ chế:
+- Rửa sạch tất cả nguyên liệu dưới vòi nước chảy. Thái miếng vừa ăn phù hợp với từng loại rau củ và đậu nấm.
+
+2. Chế biến:
+- Làm nóng chảo với dầu thực vật, phi thơm hành boaro hoặc gia vị nền.
+- Cho nguyên liệu chín chậm vào trước, đảo đều tay ở lửa vừa. Tiếp tục cho các nguyên liệu còn lại vào xào/nấu chín tới.
+
+3. Nêm nếm:
+- Nêm hạt nêm chay, nước tương vừa khẩu vị gia đình.
+
+4. Hoàn thiện:
+- Tắt bếp, rắc tiêu và rau thơm lên trên. Thưởng thức ngay khi món ăn còn nóng sốt.`;
       }
 
       setGeneratedResult({
-        title: calculatedTitle,
+        title: dishIdea.trim() || 'Món chay bổ dưỡng',
         description: naturalDescription,
         instructions: naturalInstructions,
-        dishCategory: cleanDishCategory,
+        dishCategory: calculatedCategory,
         vegetarianType: detectedVegType,
         difficulty: 'EASY',
         servings,
         prepTimeMinutes: 10,
         cookTimeMinutes: 15,
+        mealType: selectedMeal,
         targetCaloriesPerServing: targetCalories,
-        totalCalories: currentAllocatedCal,
-        ingredients: resolvedIngredients,
+        totalCalories: finalTotalCal,
+        ingredients: finalIngredients,
       });
 
       setIsGenerating(false);
     }, 450);
   };
 
+  // Cấu trúc JSON chuẩn hóa để chuyên gia có thể sao chép hoặc kiểm tra
   const jsonExportData = generatedResult
     ? {
         mon_an: generatedResult.title,
+        buoi_an: MEAL_SESSIONS.find((s) => s.session === generatedResult.mealType)?.label ?? 'Bữa chính',
         khau_phan: generatedResult.servings,
         muc_tieu_calo_moi_phan: generatedResult.targetCaloriesPerServing,
+        tong_calo_muc_tieu: generatedResult.targetCaloriesPerServing * generatedResult.servings,
         tong_calo_thuc_te: generatedResult.totalCalories,
         calo_trung_binh_moi_phan: Math.round(
           generatedResult.totalCalories / generatedResult.servings,
         ),
+        do_lech_calo: Math.abs(
+          generatedResult.totalCalories -
+            generatedResult.targetCaloriesPerServing * generatedResult.servings,
+        ),
+        do_khop_calo_phan_tram: `${(
+          100 -
+          Math.min(
+            100,
+            (Math.abs(
+              generatedResult.totalCalories -
+                generatedResult.targetCaloriesPerServing * generatedResult.servings,
+            ) /
+              (generatedResult.targetCaloriesPerServing * generatedResult.servings)) *
+              100,
+          )
+        ).toFixed(1)}%`,
         kieu_an_chay: generatedResult.vegetarianType,
         nguyen_lieu: generatedResult.ingredients.map((item) => ({
           ten: item.name,
@@ -325,33 +644,96 @@ export function AiRecipeAssistantModal({
   return (
     <Modal open={open} onClose={onClose} title="Trợ lý AI đồng hành cùng Chuyên gia ẩm thực" size="lg">
       <div className="space-y-5">
-        {/* Lời dẫn mở đầu tự nhiên, không khẳng định 100% đúng */}
-        <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-3.5 text-xs text-ink-soft leading-relaxed flex items-start gap-2.5">
-          <Info className="h-4 w-4 shrink-0 text-brand-600 mt-0.5" />
-          <p>
-            Trợ lý AI hỗ trợ bạn phân tích nguyên liệu, tính toán định lượng sát với mức năng lượng mong muốn và soạn thảo nhanh cấu trúc công thức. Dữ liệu mang tính tham khảo kỹ thuật, bạn luôn có toàn quyền tinh chỉnh lại hương vị và các bước nấu theo phong cách riêng của mình.
+        {/* Lời dẫn & Tuyên bố miễn trừ chuyên môn: Không khẳng định AI luôn đúng, tôn trọng chuyên môn chuyên gia */}
+        <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-950 leading-relaxed flex items-start gap-2.5">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-bold text-amber-900">
+              Khuyến nghị tham khảo dinh dưỡng — Chuyên gia ẩm thực giữ quyền quyết định
+            </p>
+            <p className="text-amber-800/90">
+              Trợ lý AI ước tính calo và đề xuất định lượng nguyên liệu dựa trên dữ liệu thành phần thực phẩm tiêu chuẩn (Viện Dinh dưỡng & USDA). AI không khẳng định công thức luôn chính xác 100% hay thay thế chỉ định y tế. Bạn luôn có toàn quyền điều chỉnh định lượng, gia vị và phương pháp chế biến theo phong cách và kinh nghiệm chuyên môn của mình.
+            </p>
+          </div>
+        </div>
+
+        {/* Mẫu gợi ý nhanh 1-click để rút ngắn thao tác */}
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-xs font-bold text-ink-soft flex items-center gap-1.5">
+              <Lightbulb className="h-3.5 w-3.5 text-amber-500" /> Gợi ý nhanh 1-click (Rút ngắn thao tác):
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {QUICK_TEMPLATES.map((tmpl, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleApplyTemplate(tmpl)}
+                className={`rounded-lg border px-2.5 py-1 text-xs transition-all ${
+                  dishIdea === tmpl.name
+                    ? 'border-brand-500 bg-brand-50 font-bold text-brand-800'
+                    : 'border-slate-200 bg-white text-ink-muted hover:border-brand-300 hover:text-ink'
+                }`}
+              >
+                {tmpl.name} ({tmpl.cal} kcal)
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Khối ràng buộc 1: Phân bổ theo 3 Buổi ăn chính trong ngày */}
+        <div className="rounded-xl border border-brand-100 bg-slate-50/70 p-3.5 space-y-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-ink flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-brand-600" /> Phân bổ món ăn theo buổi trong ngày
+          </label>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {MEAL_SESSIONS.map((sessionItem) => {
+              const active = selectedMeal === sessionItem.session;
+              return (
+                <button
+                  key={sessionItem.session}
+                  type="button"
+                  onClick={() => handleSelectMeal(sessionItem.session)}
+                  className={`flex flex-col items-center justify-center rounded-xl border p-2.5 text-center transition-all ${
+                    active
+                      ? 'border-brand-500 bg-white shadow-sm ring-2 ring-brand-200 font-bold text-brand-900'
+                      : 'border-slate-200 bg-white/70 hover:bg-white text-ink-soft hover:border-slate-300'
+                  }`}
+                >
+                  <span className="text-xs">{sessionItem.badgeText.split(' ')[0]}</span>
+                  <span className="mt-0.5 text-xs font-bold">{sessionItem.label}</span>
+                  <span className="text-[10px] text-ink-muted">
+                    {sessionItem.session === 'CUSTOM' ? 'Tự do' : `~${sessionItem.defaultCalories} kcal`}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-ink-muted italic">
+            * {MEAL_SESSIONS.find((s) => s.session === selectedMeal)?.description}
           </p>
         </div>
 
-        {/* Form nhập liệu nhanh */}
-        <div className="grid gap-4 sm:grid-cols-2">
+        {/* Khối ràng buộc 2: Thông tin món ăn & Nguyên liệu */}
+        <div className="grid gap-3.5 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label htmlFor="ai-dish-idea" className="mb-1 block text-xs font-bold text-ink">
-              1. Tên món ăn hoặc ý tưởng bạn muốn thực hiện
+              Tên món ăn hoặc ý tưởng chế biến *
             </label>
             <input
               id="ai-dish-idea"
               type="text"
               value={dishIdea}
               onChange={(e) => setDishIdea(e.target.value)}
-              placeholder="VD: Xào cà chua với trứng, Đậu hũ sốt chua ngọt..."
-              className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+              placeholder="VD: Xào cà chua với trứng, Đậu hũ sốt cà chua..."
+              className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             />
           </div>
 
           <div className="sm:col-span-2">
             <label htmlFor="ai-raw-ingredients" className="mb-1 block text-xs font-bold text-ink">
-              2. Danh sách nguyên liệu sẵn có (ngăn cách bằng dấu phẩy)
+              Nguyên liệu sẵn có (Quăng danh sách vào, ngăn cách bằng dấu phẩy) *
             </label>
             <textarea
               id="ai-raw-ingredients"
@@ -359,38 +741,43 @@ export function AiRecipeAssistantModal({
               value={rawIngredients}
               onChange={(e) => setRawIngredients(e.target.value)}
               placeholder="VD: cà chua, trứng gà, hành lá, dầu thực vật, gia vị..."
-              className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 resize-y"
+              className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 resize-y"
             />
           </div>
 
+          {/* Ràng buộc Calo mục tiêu */}
           <div>
             <label htmlFor="ai-target-calories" className="mb-1 block text-xs font-bold text-ink flex items-center gap-1.5">
-              <Flame className="h-3.5 w-3.5 text-amber-500" /> 3. Ràng buộc mức Calo mục tiêu / phần ăn
+              <Flame className="h-3.5 w-3.5 text-amber-500" /> Ràng buộc Calo mục tiêu / phần ăn
             </label>
             <div className="flex items-center gap-2">
               <input
                 id="ai-target-calories"
                 type="number"
-                min={150}
-                max={1200}
+                min={100}
+                max={1500}
                 step={25}
                 value={targetCalories}
-                onChange={(e) => setTargetCalories(Number(e.target.value))}
-                className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-ink outline-none focus:border-brand-500"
+                onChange={(e) => {
+                  setTargetCalories(Number(e.target.value));
+                  setSelectedMeal('CUSTOM');
+                }}
+                className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm font-semibold text-ink outline-none focus:border-brand-500"
               />
               <span className="text-xs text-ink-muted shrink-0 font-medium">kcal / người</span>
             </div>
           </div>
 
+          {/* Ràng buộc Khẩu phần ăn */}
           <div>
             <label htmlFor="ai-servings" className="mb-1 block text-xs font-bold text-ink flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5 text-brand-600" /> 4. Số khẩu phần ăn
+              <Users className="h-3.5 w-3.5 text-brand-600" /> Ràng buộc Số khẩu phần ăn
             </label>
             <select
               id="ai-servings"
               value={servings}
               onChange={(e) => setServings(Number(e.target.value))}
-              className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-ink outline-none focus:border-brand-500"
+              className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm font-semibold text-ink outline-none focus:border-brand-500"
             >
               <option value={1}>1 người (Khẩu phần đơn)</option>
               <option value={2}>2 người (Gia đình nhỏ)</option>
@@ -399,24 +786,44 @@ export function AiRecipeAssistantModal({
               <option value={6}>6 người</option>
             </select>
           </div>
+
+          {/* Ràng buộc Phương pháp chế biến */}
+          <div>
+            <label htmlFor="ai-cooking-method" className="mb-1 block text-xs font-bold text-ink">
+              Phương pháp chế biến chính
+            </label>
+            <select
+              id="ai-cooking-method"
+              value={cookingMethod}
+              onChange={(e) => setCookingMethod(e.target.value)}
+              className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm font-semibold text-ink outline-none focus:border-brand-500"
+            >
+              <option value="STIR_FRY">Xào / Áp chảo (cần dầu ăn nhẹ)</option>
+              <option value="SOUP">Canh / Súp (ít chất béo)</option>
+              <option value="BRAISED">Kho / Rim đậm vị</option>
+              <option value="BOILED">Luộc / Hấp thanh đạm</option>
+              <option value="SALAD">Salad / Gỏi thanh mát</option>
+            </select>
+          </div>
         </div>
 
-        {/* Nút kích hoạt AI */}
+        {/* Nút kích hoạt AI phân tích & tối ưu calo */}
         <div className="flex justify-end pt-1">
           <Button
             type="button"
             onClick={generateRecipe}
             disabled={isGenerating || !rawIngredients.trim()}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-gradient-to-r from-brand-600 to-amber-600 hover:from-brand-700 hover:to-amber-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm"
           >
             <Sparkles className="h-4 w-4" />
-            {isGenerating ? 'Đang tính toán định lượng...' : 'Phân tích nguyên liệu & gợi ý định lượng'}
+            {isGenerating ? 'Đang giải bài toán định lượng calo...' : 'Phân tích nguyên liệu & gợi ý định lượng'}
           </Button>
         </div>
 
-        {/* Kết quả gợi ý từ AI */}
+        {/* KẾT QUẢ GỢI Ý TỪ AI: Đảm bảo tỷ lệ đúng cao và làm nổi bật 2 thứ: Nguyên liệu & Định lượng */}
         {generatedResult && (
-          <div className="space-y-4 rounded-2xl border border-brand-200 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="space-y-4 rounded-2xl border border-brand-200 bg-white p-4 sm:p-5 shadow-sm animate-fade-in">
+            {/* Header kết quả */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brand-100 pb-3">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-brand-600">
@@ -424,69 +831,96 @@ export function AiRecipeAssistantModal({
                 </span>
                 <h3 className="text-base font-extrabold text-ink">{generatedResult.title}</h3>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-bold text-emerald-800 flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                  Độ khớp calo: {jsonExportData?.do_khop_calo_phan_tram}
+                </span>
                 <span className="rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
                   {Math.round(generatedResult.totalCalories / generatedResult.servings)} kcal / phần
                 </span>
                 <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">
-                  Khẩu phần {generatedResult.servings} người
+                  {generatedResult.servings} người
                 </span>
               </div>
             </div>
 
-            {/* Bảng nguyên liệu và định lượng */}
+            {/* BẢNG 2 THỨ CỐT LÕI: NGUYÊN LIỆU & ĐỊNH LƯỢNG */}
             <div>
-              <h4 className="mb-2 text-xs font-bold uppercase text-ink flex items-center gap-1.5">
-                <Utensils className="h-3.5 w-3.5 text-brand-600" /> Bảng nguyên liệu & định lượng chính xác
-              </h4>
-              <div className="overflow-hidden rounded-xl border border-brand-100">
+              <div className="mb-2 flex items-center justify-between">
+                <h4 className="text-xs font-extrabold uppercase text-ink flex items-center gap-1.5">
+                  <Utensils className="h-4 w-4 text-brand-600" /> 2 Yếu tố cốt lõi: Nguyên liệu & Định lượng chuẩn xác
+                </h4>
+                <span className="text-[11px] text-ink-muted">
+                  Tổng calo: <strong className="text-brand-700 font-bold">{generatedResult.totalCalories} kcal</strong> / Mục tiêu: {generatedResult.targetCaloriesPerServing * generatedResult.servings} kcal
+                </span>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-brand-200">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-brand-50/70 text-ink-muted">
+                  <thead className="bg-brand-50/80 text-ink">
                     <tr>
-                      <th className="p-2.5">Nguyên liệu</th>
-                      <th className="p-2.5 text-right">Định lượng</th>
-                      <th className="p-2.5 text-right">Đơn vị</th>
-                      <th className="p-2.5 text-right">Năng lượng ước tính</th>
+                      <th className="p-3 font-bold">1. Nguyên liệu</th>
+                      <th className="p-3 text-right font-bold text-brand-800">2. Định lượng</th>
+                      <th className="p-3 text-right font-medium text-ink-soft">Đơn vị</th>
+                      <th className="p-3 text-right font-medium text-ink-soft">Năng lượng ước tính</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-brand-50">
+                  <tbody className="divide-y divide-brand-100 bg-white">
                     {generatedResult.ingredients.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-brand-50/30">
-                        <td className="p-2.5 font-semibold text-ink">{item.name}</td>
-                        <td className="p-2.5 text-right font-bold text-brand-700">{item.quantity}</td>
-                        <td className="p-2.5 text-right text-ink-soft">{item.unitName} ({item.unitCode})</td>
-                        <td className="p-2.5 text-right font-medium text-amber-700">{item.calories} kcal</td>
+                      <tr key={idx} className="hover:bg-brand-50/30 transition-colors">
+                        <td className="p-3 font-bold text-ink flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
+                          {item.name}
+                        </td>
+                        <td className="p-3 text-right text-sm font-extrabold text-brand-700">
+                          {item.quantity}
+                        </td>
+                        <td className="p-3 text-right font-medium text-ink-soft">
+                          {item.unitName} ({item.unitCode})
+                        </td>
+                        <td className="p-3 text-right font-semibold text-amber-700">
+                          {item.calories} kcal
+                        </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="border-t border-brand-100 bg-brand-50/40 font-bold text-ink">
+                  <tfoot className="border-t-2 border-brand-200 bg-brand-50/50 font-bold text-ink">
                     <tr>
-                      <td colSpan={3} className="p-2.5">Tổng năng lượng thực đơn:</td>
-                      <td className="p-2.5 text-right text-brand-800">{generatedResult.totalCalories} kcal</td>
+                      <td colSpan={2} className="p-3">
+                        Tổng năng lượng khẩu phần ({generatedResult.servings} người):
+                      </td>
+                      <td colSpan={2} className="p-3 text-right text-brand-800 font-extrabold text-sm">
+                        {generatedResult.totalCalories} kcal ({Math.round(generatedResult.totalCalories / generatedResult.servings)} kcal / phần)
+                      </td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
             </div>
 
-            {/* Hướng dẫn nấu ăn tóm lược */}
+            {/* Hướng dẫn chế biến chi tiết */}
             <div>
               <h4 className="mb-1.5 text-xs font-bold uppercase text-ink flex items-center gap-1.5">
-                <BookOpen className="h-3.5 w-3.5 text-brand-600" /> Hướng dẫn chế biến
+                <BookOpen className="h-3.5 w-3.5 text-brand-600" /> Hướng dẫn chế biến từng bước
               </h4>
-              <div className="rounded-xl bg-brand-50/40 p-3 text-xs text-ink-soft whitespace-pre-line leading-relaxed">
+              <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3.5 text-xs text-ink-soft whitespace-pre-line leading-relaxed font-sans">
                 {generatedResult.instructions}
               </div>
             </div>
 
-            {/* Các tùy chọn xuất JSON & nạp vào công thức */}
+            {/* Các tùy chọn: Xem/Sao chép JSON & Nạp 1-click vào biểu mẫu */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-100 pt-3">
               <button
                 type="button"
                 onClick={() => setJsonViewOpen(!jsonViewOpen)}
-                className="text-xs font-bold text-brand-700 hover:text-brand-800 underline"
+                className="text-xs font-bold text-brand-700 hover:text-brand-800 underline flex items-center gap-1"
               >
-                {jsonViewOpen ? 'Ẩn mã JSON nguyên liệu' : 'Xem cấu trúc JSON nguyên liệu'}
+                {jsonViewOpen ? (
+                  <>Ẩn mã JSON nguyên liệu <ChevronUp className="h-3.5 w-3.5" /></>
+                ) : (
+                  <>Xem cấu trúc JSON nguyên liệu <ChevronDown className="h-3.5 w-3.5" /></>
+                )}
               </button>
 
               <div className="flex items-center gap-2">
@@ -499,7 +933,7 @@ export function AiRecipeAssistantModal({
                 >
                   {copiedJson ? (
                     <>
-                      <Check className="h-3.5 w-3.5 text-green-600" /> Đã sao chép JSON
+                      <Check className="h-3.5 w-3.5 text-emerald-600" /> Đã sao chép JSON
                     </>
                   ) : (
                     <>
@@ -512,16 +946,16 @@ export function AiRecipeAssistantModal({
                   type="button"
                   size="sm"
                   onClick={handleApply}
-                  className="flex items-center gap-1.5 bg-brand-700 hover:bg-brand-800 text-white font-bold"
+                  className="flex items-center gap-1.5 bg-brand-700 hover:bg-brand-800 text-white font-bold shadow-sm"
                 >
                   <ArrowDownToLine className="h-3.5 w-3.5" /> Nạp vào biểu mẫu công thức
                 </Button>
               </div>
             </div>
 
-            {/* Hộp xem JSON */}
+            {/* Hộp xem cấu trúc JSON */}
             {jsonViewOpen && jsonExportData && (
-              <div className="relative mt-2 rounded-xl bg-slate-900 p-3 text-xs text-slate-100 font-mono overflow-x-auto max-h-56">
+              <div className="relative mt-2 rounded-xl bg-slate-900 p-3.5 text-xs text-slate-100 font-mono overflow-x-auto max-h-60 border border-slate-800">
                 <pre>{JSON.stringify(jsonExportData, null, 2)}</pre>
               </div>
             )}

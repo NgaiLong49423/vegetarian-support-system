@@ -66,7 +66,7 @@ export function Button({
     md: 'px-5 py-2.5 text-sm gap-2',
     lg: 'px-6 py-3 text-base gap-2',
   };
-  const cls = `inline-flex items-center justify-center rounded-full font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none ${variants[variant]} ${sizes[size]} ${className}`;
+  const cls = `inline-flex items-center justify-center rounded-full font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70 disabled:opacity-50 disabled:pointer-events-none ${variants[variant]} ${sizes[size]} ${className}`;
   if (as === 'span') return <span className={cls}>{children}</span>;
   return (
     <button className={cls} {...rest}>

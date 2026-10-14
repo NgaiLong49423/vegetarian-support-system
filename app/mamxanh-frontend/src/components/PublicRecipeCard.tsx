@@ -20,7 +20,7 @@ export function PublicRecipeCard({
     options?.vegetarianTypes.find((item) => item.code === recipe.vegetarianType)
       ?.label ?? recipe.vegetarianType
   return (
-    <article className="relative min-w-0">
+    <article className="relative min-w-0 transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
       <Link
         to={`/cong-thuc/id/${recipe.id}`}
         className="group block rounded-xl focus-visible:outline-offset-4"
@@ -68,7 +68,7 @@ export function PublicRecipeCard({
             <span className="truncate">{recipe.authorName}</span>
           </div>
         </div>
-        <h2 className="mt-2.5 line-clamp-2 text-sm font-semibold leading-5 text-ink group-hover:text-brand-600">
+        <h2 className="mt-2.5 line-clamp-2 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
           {recipe.title}
         </h2>
         <p className="mt-1 text-xs text-ink-muted">

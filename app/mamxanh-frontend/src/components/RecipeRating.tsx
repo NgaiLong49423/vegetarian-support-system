@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, ShieldAlert, ThumbsDown, ThumbsUp, User } from 'lucide-react';
 import { Button, Card, ProgressBar } from './ui';
 import { useAuth } from './AuthContext';
-import { StarRating } from './StarRating';
 import type { Recipe } from '../types';
 
 export function RecipeRating({ recipe }: { recipe: Recipe }) {
@@ -12,7 +11,6 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
 
   // FR-57 Vote State
   const [userVote, setUserVote] = useState<'like' | 'dislike' | null>(null);
-  const [starScore, setStarScore] = useState<number | null>(5);
   const [submitting, setSubmitting] = useState(false);
   const [feedbackState, setFeedbackState] = useState<'idle' | 'success' | 'error'>('idle');
 
@@ -135,22 +133,6 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
           </div>
         ) : (
           <div className="mt-4 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-brand-50/50 p-3.5">
-              <span className="text-xs sm:text-sm font-semibold text-ink">Đánh giá chất lượng món ăn:</span>
-              <div className="flex items-center gap-2.5">
-                <StarRating
-                  value={starScore}
-                  onChange={(s) => setStarScore(s)}
-                  name={`recipe-rating-${recipe.id}`}
-                />
-                {starScore && (
-                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
-                    {starScore}/5 ★
-                  </span>
-                )}
-              </div>
-            </div>
-
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"

@@ -265,7 +265,7 @@ export function Home() {
 
           {/* Row 2: 3 Equal Feature Cards across full width */}
           <div className="grid gap-6 md:grid-cols-3">
-            <Card className="flex flex-col justify-between p-6">
+            <Card hover className="flex flex-col justify-between p-6">
               <div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
                   <CalendarDays className="h-5 w-5" />
@@ -286,7 +286,7 @@ export function Home() {
               </Link>
             </Card>
 
-            <Card className="flex flex-col justify-between p-6">
+            <Card hover className="flex flex-col justify-between p-6">
               <div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-leaf-100 text-leaf-700">
                   <Activity className="h-5 w-5" />
@@ -306,7 +306,7 @@ export function Home() {
               </Link>
             </Card>
 
-            <Card className="flex flex-col justify-between p-6">
+            <Card hover className="flex flex-col justify-between p-6">
               <div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-raised text-ink-soft">
                   <SlidersHorizontal className="h-5 w-5" />

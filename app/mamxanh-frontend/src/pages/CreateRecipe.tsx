@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { AlertCircle, Info, LoaderCircle, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Check, Info, LoaderCircle, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
 import { ApiError, asApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
@@ -12,6 +12,7 @@ import type { UserRole } from '../types';
 import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
 import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
 import type { RecipeAiContentType } from '../api/recipes';
+import { AiRecipeAssistantModal, type GeneratedRecipeData } from '../components/AiRecipeAssistantModal';
 
 type IngredientRow = {
   key: string;
@@ -105,7 +106,77 @@ function CreateRecipeForm() {
   const [submitting, setSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState<RecipeAiContentType | null>(null);
   const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string } | null>(null);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const handleApplyAiRecipe = async (aiRecipe: GeneratedRecipeData) => {
+    setTitle(aiRecipe.title);
+    setDescription(aiRecipe.description);
+    setInstructions(aiRecipe.instructions);
+    if (aiRecipe.dishCategory) setDishCategory(aiRecipe.dishCategory);
+    if (aiRecipe.vegetarianType) setVegetarianType(aiRecipe.vegetarianType);
+    if (aiRecipe.difficulty) setDifficulty(aiRecipe.difficulty);
+    setServings(String(aiRecipe.servings));
+    setPrepTimeMinutes(String(aiRecipe.prepTimeMinutes));
+    setCookTimeMinutes(String(aiRecipe.cookTimeMinutes));
+
+    if (aiRecipe.ingredients && aiRecipe.ingredients.length > 0) {
+      const mappedRows: IngredientRow[] = await Promise.all(
+        aiRecipe.ingredients.map(async (item) => {
+          const matchedUnit = options?.units.find((u) => {
+            const uCode = u.code.toLowerCase();
+            const uName = u.name.toLowerCase();
+            const itemCode = item.unitCode.toLowerCase();
+            const itemName = item.unitName.toLowerCase();
+            return (
+              uCode === itemCode ||
+              uName === itemName ||
+              uCode.includes(itemCode) ||
+              itemCode.includes(uCode) ||
+              (itemCode === 'qua' && (uCode === 'quả' || uCode === 'qua' || uCode === 'trái')) ||
+              (itemCode === 'g' && (uCode === 'g' || uCode === 'gram')) ||
+              (itemCode === 'ml' && (uCode === 'ml' || uCode === 'mililit'))
+            );
+          });
+
+          let foundIngredientId: number | null = null;
+          let foundName = item.name;
+          try {
+            const searchResults = await recipesApi.searchIngredients(item.name);
+            if (searchResults && searchResults.length > 0) {
+              const exact = searchResults.find(
+                (r) => r.name.toLowerCase() === item.name.toLowerCase(),
+              );
+              if (exact) {
+                foundIngredientId = exact.ingredientId;
+                foundName = exact.name;
+              } else {
+                foundIngredientId = searchResults[0].ingredientId;
+                foundName = searchResults[0].name;
+              }
+            }
+          } catch {
+            // bỏ qua lỗi nếu search catalog tạm thời không khả dụng
+          }
+
+          return {
+            key: `ingredient-${Date.now()}-${Math.random()}`,
+            ingredientId: foundIngredientId,
+            ingredientName: foundName,
+            search: foundName,
+            quantity: String(item.quantity),
+            unitId: matchedUnit?.unitId ?? (options?.units[0]?.unitId ?? null),
+          };
+        }),
+      );
+      setIngredients(mappedRows);
+    }
+
+    setAiNotice(
+      `Đã nạp thành công thông tin món "${aiRecipe.title}" kèm định lượng nguyên liệu vào biểu mẫu!`,
+    );
+  };
 
   useEffect(() => {
     let active = true;
@@ -252,10 +323,31 @@ function CreateRecipeForm() {
         <span>Trang chủ</span> / <span className="font-medium text-brand-600">Đăng công thức</span>
       </nav>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Đăng công thức món chay mới</h1>
-        <p className="mt-1 text-sm text-ink-muted">Chia sẻ bí quyết nấu ăn thuần lành và định lượng chính xác để mọi người cùng thực hiện.</p>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Đăng công thức món chay mới</h1>
+          <p className="mt-1 text-sm text-ink-muted">Chia sẻ bí quyết nấu ăn thuần lành và định lượng chính xác để mọi người cùng thực hiện.</p>
+        </div>
+        <Button
+          type="button"
+          onClick={() => setAiModalOpen(true)}
+          className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md font-bold px-4 py-2.5 rounded-xl shrink-0"
+        >
+          <Sparkles className="h-4 w-4" /> Soạn với Trợ lý AI
+        </Button>
       </div>
+
+      {aiNotice && (
+        <div role="status" className="mb-5 flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-900 shadow-sm animate-fade-in">
+          <Check className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+          <div className="flex-1">
+            <p className="font-semibold">{aiNotice}</p>
+          </div>
+          <button type="button" onClick={() => setAiNotice(null)} className="text-green-700 hover:text-green-900 text-xs font-bold">
+            Đóng
+          </button>
+        </div>
+      )}
 
       <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <Info className="mt-0.5 h-5 w-5 shrink-0" />
@@ -414,6 +506,13 @@ function CreateRecipeForm() {
           </Card>
         </aside>
       </form>
+
+      <AiRecipeAssistantModal
+        open={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        options={options}
+        onApplyRecipe={handleApplyAiRecipe}
+      />
     </PageContainer>
   );
 }

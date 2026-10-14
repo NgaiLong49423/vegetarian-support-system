@@ -483,125 +483,6 @@ button:not(:disabled), a { cursor: pointer; }
 }
 
 /* ==========================================================================
-   Animated Star Rating Component
-   ========================================================================== */
-.animated-rating {
-  display: inline-flex;
-  flex-direction: row-reverse;
-  align-items: center;
-  gap: 0.35rem;
-  --stroke: #a8a29e;
-  --fill: #f59e0b;
-}
-
-.animated-rating input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-
-.animated-rating label {
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px;
-  border-radius: 8px;
-  transition: transform 0.2s ease;
-}
-
-.animated-rating label:hover {
-  transform: scale(1.15);
-}
-
-.animated-rating svg {
-  width: 1.85rem;
-  height: 1.85rem;
-  overflow: visible;
-  fill: transparent;
-  stroke: var(--stroke);
-  stroke-linejoin: bevel;
-  stroke-dasharray: 12;
-  animation: star-idle 4s linear infinite;
-  transition: stroke 0.2s, fill 0.4s, transform 0.2s;
-}
-
-@keyframes star-idle {
-  from {
-    stroke-dashoffset: 24;
-  }
-}
-
-/* Hover effect */
-.animated-rating label:hover svg,
-.animated-rating label:hover ~ label svg {
-  stroke: var(--fill);
-  fill: rgba(245, 158, 11, 0.2);
-}
-
-/* Checked & Selected animation */
-.animated-rating input:checked ~ label svg {
-  transition: 0s;
-  animation: star-idle 4s linear infinite, star-yippee 0.75s backwards;
-  fill: var(--fill);
-  stroke: var(--fill);
-  stroke-opacity: 0;
-  stroke-dasharray: 0;
-  stroke-linejoin: miter;
-  stroke-width: 8px;
-}
-
-@keyframes star-yippee {
-  0% {
-    transform: scale(1);
-    fill: var(--fill);
-    fill-opacity: 0;
-    stroke-opacity: 1;
-    stroke: var(--stroke);
-    stroke-dasharray: 10;
-    stroke-width: 1px;
-    stroke-linejoin: bevel;
-  }
-
-  30% {
-    transform: scale(0);
-    fill: var(--fill);
-    fill-opacity: 0;
-    stroke-opacity: 1;
-    stroke: var(--stroke);
-    stroke-dasharray: 10;
-    stroke-width: 1px;
-    stroke-linejoin: bevel;
-  }
-
-  30.1% {
-    stroke: var(--fill);
-    stroke-dasharray: 0;
-    stroke-linejoin: miter;
-    stroke-width: 8px;
-  }
-
-  60% {
-    transform: scale(1.25);
-    fill: var(--fill);
-  }
-
-  100% {
-    transform: scale(1);
-    fill: var(--fill);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animated-rating svg,
-  .animated-rating input:checked ~ label svg {
-    animation: none !important;
-  }
-}
-
-/* ==========================================================================
    AI Sparkle Button - Glow & Particles Effect
    ========================================================================== */
 .sp {
@@ -901,8 +782,7 @@ button:not(:disabled), a { cursor: pointer; }
   .sparkle-button .sparkle path,
   .particle,
   .ai-plan-card,
-  .ai-plan-card::before,
-  .ai-plan-card::after,
+  .ai-plan-card__border::before,
   .ai-plan-cta {
     animation: none !important;
     transition: none !important;
@@ -911,213 +791,555 @@ button:not(:disabled), a { cursor: pointer; }
 }
 
 /* ==========================================================================
-   AI Subscription Plan Cards — Animated Glowing Border & Multi-Layer Depth
+   AI Subscription Plan Cards — Rotating Border Beam & 6-Point Radial Glow
+   (FREE: không sáng | PLUS: sáng nhẹ | PRO: sáng mạnh đen-cam)
    ========================================================================== */
-@keyframes ai-plan-border-flow {
+@keyframes ai-card-rotate {
   0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
+    transform: translate(0%, -50%) rotate(0deg);
   }
   100% {
-    background-position: 0% 50%;
+    transform: translate(0%, -50%) rotate(360deg);
   }
 }
 
 .ai-plan-card {
+  --card-black: hsl(24, 15%, 9%);
+  --card-line: hsl(24, 10%, 20%);
+  --card-primary: hsl(24, 95%, 53%);
+
   position: relative;
   isolation: isolate;
   overflow: hidden;
   border-radius: 1rem;
-  background-color: var(--color-paper);
+  border: 0 !important;
+  background: transparent !important;
   transition:
     transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 300ms ease;
+    box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.ai-plan-card > * {
+.ai-plan-card > *:not(.ai-plan-card__border):not(.ai-plan-card__surface) {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
-/* Inner multi-layer radial gradient surface (::after) */
-.ai-plan-card::after {
-  content: "";
+/* Border container behind the inner surface */
+.ai-plan-card__border {
+  overflow: hidden;
+  pointer-events: none;
   position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: 1rem;
+  background-image: linear-gradient(
+    0deg,
+    hsl(24, 30%, 45%) -50%,
+    hsl(24, 10%, 22%) 100%
+  );
+}
+
+/* Inner card surface (leaves a 1.5px / 2px glowing border around the perimeter) */
+.ai-plan-card__surface {
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
   inset: 1.5px;
   border-radius: calc(1rem - 1.5px);
-  z-index: 0;
-  pointer-events: none;
-  transition: opacity 300ms ease, background 300ms ease;
+  background-color: var(--card-black);
+  transition: box-shadow 300ms ease, background-image 300ms ease;
 }
 
-/* Outer animated linear-gradient border ring (::before) */
-.ai-plan-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1.5px;
-  z-index: 0;
-  pointer-events: none;
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  transition: opacity 300ms ease, filter 300ms ease;
+.ai-plan-card__line {
+  width: 100%;
+  height: 1px;
+  background-color: var(--card-line);
+  border: none;
 }
 
-/* --- FREE TIER: Calm dark surface, static border, subtle hover --- */
-.ai-plan-card--free {
-  border-color: rgba(255, 255, 255, 0.08);
+.ai-plan-card__check {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  background-color: var(--card-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.35);
 }
 
-.ai-plan-card--free::after {
-  background:
-    radial-gradient(120% 80% at 0% 0%, rgba(234, 88, 12, 0.05) 0%, transparent 60%),
-    var(--color-paper);
+.ai-plan-card__check-svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: var(--card-black);
+  stroke-width: 3;
 }
 
-.ai-plan-card--free::before {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.14) 0%,
-    rgba(234, 88, 12, 0.18) 50%,
-    rgba(255, 255, 255, 0.06) 100%
+/* --- 1. Gói FREE: Không sáng (Dark matte, static subtle border) --- */
+.ai-plan-card--free .ai-plan-card__border {
+  background-image: linear-gradient(
+    0deg,
+    hsl(0, 0%, 26%) 0%,
+    hsl(0, 0%, 16%) 100%
   );
-  opacity: 0.35;
+}
+
+.ai-plan-card--free .ai-plan-card__surface {
+  background-color: hsl(24, 10%, 10%);
+  background-image: none;
+  box-shadow: none;
+}
+
+.ai-plan-card--free .ai-plan-card__check {
+  background-color: hsl(24, 20%, 28%);
+  box-shadow: none;
+}
+
+.ai-plan-card--free .ai-plan-card__check-svg {
+  color: #f4f4f5;
 }
 
 .ai-plan-card--free:hover {
   transform: translateY(-2px);
-  border-color: rgba(234, 88, 12, 0.25);
-  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.55);
 }
 
-.ai-plan-card--free:hover::before {
-  opacity: 0.7;
-}
-
-/* --- PLUS TIER: Warm orange gradient border + animated border glow on hover --- */
-.ai-plan-card--plus {
-  border-color: rgba(234, 88, 12, 0.28);
-  box-shadow: 0 8px 24px -12px rgba(234, 88, 12, 0.12);
-}
-
-.ai-plan-card--plus::after {
-  background:
-    radial-gradient(90% 70% at 100% 0%, rgba(249, 115, 22, 0.10) 0%, transparent 60%),
-    radial-gradient(80% 70% at 0% 100%, rgba(234, 88, 12, 0.07) 0%, transparent 60%),
-    var(--color-paper);
-}
-
-.ai-plan-card--plus::before {
-  background: linear-gradient(
-    120deg,
-    rgba(234, 88, 12, 0.35) 0%,
-    rgba(251, 146, 60, 0.85) 35%,
-    rgba(255, 247, 237, 0.75) 50%,
-    rgba(249, 115, 22, 0.85) 65%,
-    rgba(234, 88, 12, 0.35) 100%
+/* --- 2. Gói PLUS: Sáng nhẹ (Soft orange radial depth + gentle rotating border beam) --- */
+.ai-plan-card--plus .ai-plan-card__border {
+  background-image: linear-gradient(
+    0deg,
+    hsla(24, 90%, 65%, 0.55) -50%,
+    hsl(24, 12%, 22%) 100%
   );
-  background-size: 260% 260%;
-  opacity: 0.55;
+}
+
+.ai-plan-card--plus .ai-plan-card__border::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 9rem;
+  transform-origin: left center;
+  background-image: linear-gradient(
+    0deg,
+    hsla(0, 0%, 100%, 0) 0%,
+    hsla(24, 95%, 54%, 0.55) 40%,
+    hsla(28, 95%, 58%, 0.55) 60%,
+    hsla(0, 0%, 40%, 0) 100%
+  );
+  animation: ai-card-rotate 10s linear infinite;
+}
+
+.ai-plan-card--plus .ai-plan-card__surface {
+  background-color: hsla(24, 15%, 9%, 1);
+  background-image:
+    radial-gradient(at 88% 40%, hsla(24, 15%, 9%, 1) 0px, transparent 85%),
+    radial-gradient(at 49% 30%, hsla(24, 15%, 9%, 1) 0px, transparent 85%),
+    radial-gradient(at 14% 26%, hsla(24, 15%, 9%, 1) 0px, transparent 85%),
+    radial-gradient(at 0% 64%, hsla(24, 95%, 24%, 0.45) 0px, transparent 85%),
+    radial-gradient(at 41% 94%, hsla(24, 95%, 32%, 0.42) 0px, transparent 85%),
+    radial-gradient(at 100% 99%, hsla(20, 90%, 14%, 0.5) 0px, transparent 85%);
+  box-shadow: 0px -12px 20px 0px rgba(251, 146, 60, 0.12) inset;
 }
 
 .ai-plan-card--plus:hover {
   transform: translateY(-4px);
-  border-color: rgba(249, 115, 22, 0.55);
-  box-shadow:
-    0 14px 32px -10px rgba(234, 88, 12, 0.24),
-    0 0 18px -6px rgba(249, 115, 22, 0.18);
+  box-shadow: 0 14px 30px -10px rgba(234, 88, 12, 0.22);
 }
 
-.ai-plan-card--plus:hover::before {
-  opacity: 1;
-  animation: ai-plan-border-flow 3.6s ease infinite;
+.ai-plan-card--plus:hover .ai-plan-card__surface {
+  box-shadow: 0px -14px 22px 0px rgba(251, 146, 60, 0.18) inset;
 }
 
-.ai-plan-card--plus:hover::after {
-  background:
-    radial-gradient(95% 75% at 100% 0%, rgba(249, 115, 22, 0.15) 0%, transparent 62%),
-    radial-gradient(85% 75% at 0% 100%, rgba(234, 88, 12, 0.10) 0%, transparent 62%),
-    var(--color-paper);
-}
-
-/* --- PRO TIER: Continuous animated glowing border + layered radial depth --- */
+/* --- 3. Gói PRO: Sáng mạnh như code mẫu với tông Đen - Cam chủ đạo --- */
 .ai-plan-card--pro {
-  border-color: rgba(249, 115, 22, 0.55);
   box-shadow:
-    0 12px 34px -10px rgba(234, 88, 12, 0.26),
-    0 0 22px -6px rgba(249, 115, 22, 0.18);
+    0 14px 36px -10px rgba(234, 88, 12, 0.34),
+    0 0 24px -6px rgba(249, 115, 22, 0.22);
 }
 
-.ai-plan-card--pro::after {
-  background:
-    radial-gradient(95% 75% at 0% 0%, rgba(249, 115, 22, 0.16) 0%, transparent 58%),
-    radial-gradient(90% 70% at 100% 0%, rgba(251, 146, 60, 0.12) 0%, transparent 55%),
-    radial-gradient(100% 80% at 100% 100%, rgba(234, 88, 12, 0.12) 0%, transparent 62%),
-    var(--color-paper);
-}
-
-.ai-plan-card--pro::before {
-  padding: 2px;
-  background: linear-gradient(
-    115deg,
-    #ea580c 0%,
-    #f97316 25%,
-    #fff7ed 48%,
-    #fb923c 68%,
-    #c2410c 85%,
-    #ea580c 100%
+.ai-plan-card--pro .ai-plan-card__border {
+  background-image: linear-gradient(
+    0deg,
+    hsl(28, 100%, 86%) -50%,
+    hsl(24, 20%, 32%) 100%
   );
-  background-size: 280% 280%;
-  opacity: 0.9;
-  animation: ai-plan-border-flow 4.2s linear infinite;
+}
+
+.ai-plan-card--pro .ai-plan-card__border::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 11rem;
+  transform-origin: left center;
+  background-image: linear-gradient(
+    0deg,
+    hsla(0, 0%, 100%, 0) 0%,
+    hsl(24, 100%, 54%) 40%,
+    hsl(30, 100%, 60%) 60%,
+    hsla(0, 0%, 40%, 0) 100%
+  );
+  animation: ai-card-rotate 8s linear infinite;
+}
+
+.ai-plan-card--pro .ai-plan-card__surface {
+  inset: 2px;
+  border-radius: calc(1rem - 2px);
+  background-color: hsla(24, 15%, 9%, 1);
+  background-image:
+    radial-gradient(at 88% 40%, hsla(24, 15%, 9%, 1) 0px, transparent 85%),
+    radial-gradient(at 49% 30%, hsla(24, 15%, 9%, 1) 0px, transparent 85%),
+    radial-gradient(at 14% 26%, hsla(24, 15%, 9%, 1) 0px, transparent 85%),
+    radial-gradient(at 0% 64%, hsl(24, 99%, 26%) 0px, transparent 85%),
+    radial-gradient(at 41% 94%, hsl(24, 97%, 36%) 0px, transparent 85%),
+    radial-gradient(at 100% 99%, hsl(20, 94%, 13%) 0px, transparent 85%);
+  box-shadow: 0px -16px 24px 0px rgba(255, 237, 213, 0.25) inset;
 }
 
 .ai-plan-card--pro:hover {
   transform: translateY(-5px);
-  border-color: rgba(251, 146, 60, 0.8);
   box-shadow:
-    0 18px 42px -10px rgba(234, 88, 12, 0.36),
-    0 0 28px -4px rgba(249, 115, 22, 0.26);
+    0 20px 44px -10px rgba(234, 88, 12, 0.45),
+    0 0 30px -4px rgba(249, 115, 22, 0.32);
 }
 
-.ai-plan-card--pro:hover::before {
-  opacity: 1;
-  filter: brightness(1.12);
-}
-
-.ai-plan-card--pro:hover::after {
-  background:
-    radial-gradient(100% 80% at 0% 0%, rgba(249, 115, 22, 0.21) 0%, transparent 60%),
-    radial-gradient(95% 75% at 100% 0%, rgba(251, 146, 60, 0.16) 0%, transparent 58%),
-    radial-gradient(105% 85% at 100% 100%, rgba(234, 88, 12, 0.16) 0%, transparent 65%),
-    var(--color-paper);
-}
-
-/* CTA button hover & focus feedback */
+/* CTA button styling matching the reference pill button with inset glow */
 .ai-plan-cta {
+  border-radius: 9999px !important;
   transition:
     transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 220ms ease,
-    border-color 220ms ease;
+    filter 220ms ease;
+}
+
+.ai-plan-cta--plus {
+  background-image: linear-gradient(
+    0deg,
+    hsla(24, 90%, 45%, 0.25),
+    hsla(24, 95%, 22%, 0.45) 100%
+  ) !important;
+  border: 1px solid rgba(251, 146, 60, 0.45) !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 -2px 18px -6px rgba(251, 146, 60, 0.45);
+}
+
+.ai-plan-cta--pro {
+  background-image: linear-gradient(
+    0deg,
+    hsl(24, 95%, 54%),
+    hsl(20, 98%, 28%) 100%
+  ) !important;
+  border: 0 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 -2px 25px -4px rgba(255, 255, 255, 0.75);
 }
 
 .ai-plan-cta:hover:not(:disabled) {
   transform: translateY(-1.5px);
-  box-shadow: 0 8px 20px -6px rgba(234, 88, 12, 0.4);
+  filter: brightness(1.08);
 }
 
 .ai-plan-cta:focus-visible {
   outline: 2px solid var(--color-brand-400);
   outline-offset: 2px;
 }
+
+/* ==========================================================================
+   Animated Transaction History POS Card Button (Dark & Brand Orange Theme)
+   ========================================================================== */
+.tx-history-card {
+  background-color: var(--color-raised);
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  display: flex;
+  width: 292px;
+  max-width: 100%;
+  height: 74px;
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: 0.3s ease-in-out;
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.45);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.tx-history-card:hover,
+.tx-history-card:focus-visible {
+  transform: scale(1.03);
+  width: 150px;
+  border-color: rgba(251, 146, 60, 0.65);
+  box-shadow: 0 12px 28px -8px rgba(234, 88, 12, 0.38);
+}
+
+.tx-history-card:hover .tx-left-side,
+.tx-history-card:focus-visible .tx-left-side {
+  width: 100%;
+}
+
+.tx-left-side {
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+  width: 84px;
+  height: 100%;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: 0.3s;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.tx-stage {
+  width: 130px;
+  height: 120px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: scale(0.6);
+  transform-origin: center center;
+  flex-shrink: 0;
+}
+
+.tx-right-side {
+  width: calc(100% - 84px);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  justify-content: space-between;
+  white-space: nowrap;
+  transition: 0.3s;
+}
+
+.tx-right-side:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.tx-arrow {
+  width: 15px;
+  height: 15px;
+  margin-right: 14px;
+  flex-shrink: 0;
+  color: var(--color-brand-400);
+}
+
+.tx-new {
+  font-size: 14px;
+  font-weight: 700;
+  margin-left: 14px;
+  color: var(--color-ink);
+}
+
+.tx-card {
+  width: 70px;
+  height: 46px;
+  background-color: #ffedd5;
+  border-radius: 6px;
+  position: absolute;
+  display: flex;
+  z-index: 10;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 9px 9px 9px -2px rgba(124, 45, 18, 0.55);
+}
+
+.tx-card-line {
+  width: 65px;
+  height: 13px;
+  background-color: #fb923c;
+  border-radius: 2px;
+  margin-top: 7px;
+}
+
+.tx-buttons {
+  width: 8px;
+  height: 8px;
+  background-color: #c2410c;
+  box-shadow: 0 -10px 0 0 #9a3412, 0 10px 0 0 #ea580c;
+  border-radius: 50%;
+  transform: rotate(90deg);
+  margin: 10px 0 0 -30px;
+}
+
+.tx-history-card:hover .tx-card,
+.tx-history-card:focus-visible .tx-card {
+  animation: tx-slide-top 1.2s cubic-bezier(0.645, 0.045, 0.355, 1) both;
+}
+
+.tx-history-card:hover .tx-post,
+.tx-history-card:focus-visible .tx-post {
+  animation: tx-slide-post 1s cubic-bezier(0.165, 0.84, 0.44, 1) both;
+}
+
+@keyframes tx-slide-top {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-70px) rotate(90deg);
+  }
+  60% {
+    transform: translateY(-70px) rotate(90deg);
+  }
+  100% {
+    transform: translateY(-8px) rotate(90deg);
+  }
+}
+
+.tx-post {
+  width: 63px;
+  height: 75px;
+  background-color: #27272a;
+  border: 1px solid #3f3f46;
+  position: absolute;
+  z-index: 11;
+  bottom: 10px;
+  top: 120px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.tx-post-line {
+  width: 47px;
+  height: 9px;
+  background-color: #18181b;
+  position: absolute;
+  border-radius: 0 0 3px 3px;
+  right: 8px;
+  top: 8px;
+}
+
+.tx-post-line::before {
+  content: "";
+  position: absolute;
+  width: 47px;
+  height: 9px;
+  background-color: #3f3f46;
+  top: -8px;
+  left: 0;
+}
+
+.tx-screen {
+  width: 47px;
+  height: 23px;
+  background-color: #101010;
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  position: absolute;
+  top: 22px;
+  right: 8px;
+  border-radius: 3px;
+}
+
+.tx-numbers {
+  width: 12px;
+  height: 12px;
+  background-color: #71717a;
+  box-shadow: 0 -18px 0 0 #71717a, 0 18px 0 0 #71717a;
+  border-radius: 2px;
+  position: absolute;
+  transform: rotate(90deg);
+  left: 25px;
+  top: 52px;
+}
+
+.tx-numbers-line2 {
+  width: 12px;
+  height: 12px;
+  background-color: #a1a1aa;
+  box-shadow: 0 -18px 0 0 #a1a1aa, 0 18px 0 0 #a1a1aa;
+  border-radius: 2px;
+  position: absolute;
+  transform: rotate(90deg);
+  left: 25px;
+  top: 68px;
+}
+
+@keyframes tx-slide-post {
+  50% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-70px);
+  }
+}
+
+.tx-dollar {
+  position: absolute;
+  font-size: 15px;
+  font-weight: 800;
+  width: 100%;
+  left: 0;
+  top: 1px;
+  color: #fb923c;
+  text-align: center;
+}
+
+.tx-history-card:hover .tx-dollar,
+.tx-history-card:focus-visible .tx-dollar {
+  animation: tx-fade-in-fwd 0.3s 1s backwards;
+}
+
+@keyframes tx-fade-in-fwd {
+  0% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tx-history-card,
+  .tx-left-side,
+  .tx-right-side,
+  .tx-card,
+  .tx-post,
+  .tx-dollar,
+  .modal-backdrop-enter,
+  .modal-panel-enter {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ==========================================================================
+   Subtle Modal Backdrop & Panel Entrance Micro-Animation
+   ========================================================================== */
+@keyframes modal-backdrop-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-backdrop-enter {
+  animation: modal-backdrop-fade 180ms ease-out both;
+}
+
+.modal-panel-enter {
+  animation: modal-panel-rise 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+

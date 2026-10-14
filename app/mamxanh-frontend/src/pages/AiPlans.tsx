@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, Calendar, Check, CreditCard, Loader2, Sparkles } from 'lucide-react';
+import { AlertCircle, Calendar, Check, Loader2, Sparkles } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card } from '../components/ui';
 import { useAuth } from '../components/AuthContext';
@@ -192,27 +192,32 @@ export function AiPlans() {
               <Card
                 key={plan.tier}
                 data-tier={plan.tier}
-                className={`${tierClass} flex flex-col p-6 ${
-                  isPro ? 'border-brand-500/60 shadow-md' : ''
-                }`}
+                className={`${tierClass} flex flex-col p-6`}
               >
+                <div className="ai-plan-card__border" aria-hidden="true" />
+                <div className="ai-plan-card__surface" aria-hidden="true" />
+
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-extrabold text-brand-700">{plan.name}</h2>
+                  <h2 className="text-xl font-extrabold text-brand-400">{plan.name}</h2>
                   {isCurrent && <Badge tone="leaf">Đang sử dụng</Badge>}
                   {!isCurrent && isPro && <Badge tone="brand">Khuyên dùng</Badge>}
                 </div>
 
-                <p className="mt-4 text-3xl font-extrabold text-ink">
+                <p className="mt-4 text-3xl font-extrabold text-white">
                   {formatVnd(plan.priceVnd)}{' '}
-                  <span className="text-sm font-medium text-ink-muted">VNĐ / tháng</span>
+                  <span className="text-sm font-medium text-zinc-400">VNĐ / tháng</span>
                 </p>
 
-                <p className="mt-2 text-xs text-ink-muted">{plan.description}</p>
+                <p className="mt-2 text-xs text-zinc-300">{plan.description}</p>
 
-                <ul className="my-6 flex-1 space-y-3">
+                <hr className="ai-plan-card__line my-5" />
+
+                <ul className="mb-6 flex-1 space-y-3">
                   {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex gap-2 text-sm text-ink-soft">
-                      <Check className="h-4 w-4 shrink-0 text-leaf-600" />
+                    <li key={idx} className="flex items-center gap-2.5 text-sm text-zinc-100">
+                      <span className="ai-plan-card__check shrink-0">
+                        <Check className="ai-plan-card__check-svg" />
+                      </span>
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -221,30 +226,30 @@ export function AiPlans() {
                 <div className="pt-2">
                   {!isLoggedIn ? (
                     plan.tier === 'FREE' ? (
-                      <p className="rounded-xl bg-brand-50 px-4 py-3 text-center text-sm font-semibold text-brand-700">
+                      <p className="rounded-full bg-white/5 border border-white/10 px-4 py-3 text-center text-sm font-semibold text-zinc-300">
                         Gói cơ bản miễn phí
                       </p>
                     ) : (
                       <button
                         disabled
                         title="Đăng nhập để nâng cấp gói"
-                        className="w-full cursor-not-allowed rounded-xl bg-brand-200 px-4 py-3 text-sm font-semibold text-ink-muted"
+                        className="w-full cursor-not-allowed rounded-full bg-white/10 px-4 py-3 text-sm font-semibold text-zinc-400"
                       >
                         Thanh toán chưa khả dụng
                       </button>
                     )
                   ) : isCurrent ? (
-                    <div className="rounded-xl bg-brand-50 px-4 py-3 text-center text-sm font-semibold text-brand-700">
+                    <div className="rounded-full bg-white/5 border border-white/10 px-4 py-3 text-center text-sm font-semibold text-brand-400">
                       Gói hiện tại của bạn
                     </div>
                   ) : plan.tier === 'FREE' ? (
-                    <div className="rounded-xl bg-brand-50 px-4 py-3 text-center text-sm font-medium text-ink-muted">
+                    <div className="rounded-full bg-white/5 border border-white/10 px-4 py-3 text-center text-sm font-medium text-zinc-400">
                       Gói cơ bản mặc định
                     </div>
                   ) : (
                     <Button
                       variant={isPro ? 'primary' : 'outline'}
-                      className="ai-plan-cta w-full py-3"
+                      className={`ai-plan-cta w-full py-3 ${isPro ? 'ai-plan-cta--pro' : 'ai-plan-cta--plus'}`}
                       disabled={subscribingTier !== null}
                       onClick={() => handleSubscribe(plan.tier as 'PLUS' | 'PRO')}
                     >
@@ -267,7 +272,7 @@ export function AiPlans() {
         </div>
       )}
 
-      <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-xl border border-brand-100 bg-brand-50/50 p-4 sm:flex-row">
+      <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-2xl border border-brand-100 bg-paper/90 p-4 sm:flex-row sm:px-6">
         <div className="text-sm text-ink-soft">
           <p className="font-semibold text-ink">Thanh toán an toàn qua cổng VietQR payOS</p>
           <p className="text-xs text-ink-muted">
@@ -276,9 +281,40 @@ export function AiPlans() {
         </div>
         <Link
           to="/giao-dich"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700"
+          className="tx-history-card"
         >
-          <CreditCard className="h-4 w-4" /> Xem lịch sử giao dịch
+          <div className="tx-left-side" aria-hidden="true">
+            <div className="tx-stage">
+              <div className="tx-card">
+                <div className="tx-card-line" />
+                <div className="tx-buttons" />
+              </div>
+              <div className="tx-post">
+                <div className="tx-post-line" />
+                <div className="tx-screen">
+                  <div className="tx-dollar">$</div>
+                </div>
+                <div className="tx-numbers" />
+                <div className="tx-numbers-line2" />
+              </div>
+            </div>
+          </div>
+          <div className="tx-right-side">
+            <span className="tx-new">Xem lịch sử giao dịch</span>
+            <svg
+              viewBox="0 0 451.846 451.847"
+              height={18}
+              width={18}
+              xmlns="http://www.w3.org/2000/svg"
+              className="tx-arrow"
+              aria-hidden="true"
+            >
+              <path
+                fill="currentColor"
+                d="M345.441 248.292L151.154 442.573c-12.359 12.365-32.397 12.365-44.75 0-12.354-12.354-12.354-32.391 0-44.744L278.318 225.92 106.409 54.017c-12.354-12.359-12.354-32.394 0-44.748 12.354-12.359 32.391-12.359 44.75 0l194.287 194.284c6.177 6.18 9.262 14.271 9.262 22.366 0 8.099-3.091 16.196-9.267 22.373z"
+              />
+            </svg>
+          </div>
         </Link>
       </div>
     </PageContainer>

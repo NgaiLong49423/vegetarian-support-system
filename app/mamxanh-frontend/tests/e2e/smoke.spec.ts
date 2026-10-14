@@ -98,17 +98,12 @@ test('AI Recipe Assistant modal generates, previews JSON, copies and applies rec
   await expect(page.getByText(/Đã nạp thành công thông tin món/)).toBeVisible();
 });
 
-test('interactive StarRating and voting on recipe detail', async ({ page }) => {
+test('interactive voting on recipe detail', async ({ page }) => {
   await seedDemoSession(page, 'CUSTOMER');
   await page.goto('/cong-thuc/canh-chua-chay-nam-dau-bap');
 
-  const star4 = page.locator('input[type="radio"][aria-label="4 sao"]');
-  await expect(star4).toBeAttached();
-  if (await star4.isVisible()) {
-    await star4.check();
-  }
   const likeBtn = page.locator('#btnLike');
-  if (await likeBtn.isVisible()) {
-    await likeBtn.click();
-  }
+  await expect(likeBtn).toBeVisible();
+  await likeBtn.click();
 });
+
