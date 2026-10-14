@@ -313,9 +313,11 @@ test("weekly AI request can use one-time goals and ingredient preferences withou
   await page.goto("/ke-hoach?view=for-you")
   await page.getByRole("tab", { name: "Theo nhu cầu dinh dưỡng" }).click()
   await page.getByRole("button", { name: "Theo mong muốn tuần này" }).click()
-  await page.getByLabel("Mục tiêu tuần này (không bắt buộc)").selectOption("LOSE_WEIGHT")
-  await page.getByRole("button", { name: "Ưu tiên Nấm" }).click()
-  await page.getByRole("button", { name: "Tránh Đậu phụ" }).click()
+  await page.getByLabel("Mục tiêu kế hoạch ăn của tuần này (không bắt buộc)").selectOption("LOSE_WEIGHT")
+  await page.getByLabel("Bạn muốn lịch ăn có những nguyên liệu nào", { exact: true }).fill("Nấm")
+  await page.getByRole("button", { name: "+ Nấm", exact: true }).click()
+  await page.getByLabel("Bạn muốn lịch ăn không có nguyên liệu nào", { exact: true }).fill("Đậu")
+  await page.getByRole("button", { name: "+ Đậu phụ", exact: true }).click()
   await page.getByRole("button", { name: "Tạo thực đơn tuần" }).click()
   await expect(page.getByText("Bản xem trước · 21 món được chọn")).toBeVisible()
 
@@ -326,9 +328,9 @@ test("weekly AI request can use one-time goals and ingredient preferences withou
     preferredIngredientIds: [1],
     avoidedIngredientIds: [2],
   }])
-  await expect(page.getByLabel("Mục tiêu tuần này (không bắt buộc)")).toHaveValue("")
-  await expect(page.getByRole("button", { name: "Ưu tiên Nấm" })).toHaveAttribute("aria-pressed", "false")
-  await expect(page.getByRole("button", { name: "Tránh Đậu phụ" })).toHaveAttribute("aria-pressed", "false")
+  await expect(page.getByLabel("Mục tiêu kế hoạch ăn của tuần này (không bắt buộc)")).toHaveValue("")
+  await expect(page.getByRole("button", { name: "Xóa Nấm", exact: true })).toHaveCount(0)
+  await expect(page.getByRole("button", { name: "Xóa Đậu phụ", exact: true })).toHaveCount(0)
   expect(state.aiApplies).toBe(0)
   expect(state.entries).toEqual([])
 })

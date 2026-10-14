@@ -167,6 +167,18 @@ export interface MealPlanWeek {
   }>;
 }
 
+export interface MealPlanExport {
+  weekStartDate: string;
+  entries: Array<{
+    mealDate: string;
+    mealType: MealPlanWeek['entries'][number]['mealType'];
+    title: string;
+    plannedServings: number | null;
+    energyKcal: number | null;
+    available: boolean;
+  }>;
+}
+
 export interface AiRecipeSuggestion {
   items: Array<{ recipe: RecipePost; reason: string }>;
 }
@@ -299,6 +311,13 @@ export const recipeApi = {
 };
 
 export const mealPlanApi = {
+  getExport: async (weekStartDate: string) =>
+    (await apiClient.get<MealPlanExport>(`/meal-plans/${weekStartDate}/export`)).data,
+  moveEntry: async (weekStartDate: string, entryId: number, payload: {
+    mealDate: string; mealType: MealPlanWeek['entries'][number]['mealType'];
+  }) => (await apiClient.patch<MealPlanWeek['entries'][number]>(
+    `/meal-plans/${weekStartDate}/entries/${entryId}/position`, payload,
+  )).data,
   getWeek: async (weekStartDate: string) =>
     (await apiClient.get<MealPlanWeek>('/meal-plans', { params: { weekStartDate } })).data,
   openWeek: async (weekStartDate: string) =>
