@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.16.0
+> **Version:** v0.17.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -221,10 +221,13 @@ So sánh hai công thức (FR-60) không có API riêng: trang `/so-sanh?a={reci
 |---|---|---|
 | Thêm món | `POST /api/v1/meal-plans/{weekStartDate}/entries` | JSON gồm `mealDate`, `mealType` (`BREAKFAST`, `LUNCH`, `DINNER`) và `recipeId` (số nguyên ≥1). Trả `201` cùng projection `MealPlanWeekResponse.Entry`; khẩu phần mặc định 1. Tạo tuần nếu chưa có. |
 | Thay công thức | `PUT /api/v1/meal-plans/{weekStartDate}/entries/{entryId}` | JSON gồm `recipeId` thay thế. Trả `200` cùng projection của mục món; giữ `entryId`, ngày, loại bữa và khẩu phần hiện tại. |
+| Chỉnh số phần cần nấu | `PATCH /api/v1/meal-plans/{weekStartDate}/entries/{entryId}/servings` | JSON gồm `plannedServings` (số nguyên 1–9.999). Trả `200` cùng projection đã lưu; giữ nguyên công thức, ngày và bữa. |
 | Gỡ món | `DELETE /api/v1/meal-plans/{weekStartDate}/entries/{entryId}` | Trả `204`, không có response body. Chỉ xóa mục lịch; công thức nguồn và mục đã lưu không bị thay đổi. |
 
 - `weekStartDate` phải là Thứ Hai; toàn bộ tuần phải nằm trong phạm vi ngày SQL Server (năm 1–9999). Ngày ăn phải nằm trong bảy ngày của tuần đã chọn; dữ liệu không hợp lệ trả `400 VALIDATION_FAILED`.
 - Backend xác định chủ lịch từ tài khoản đã xác thực. Mục không tồn tại trong tuần của chủ tài khoản, kể cả ID thuộc người khác hoặc tuần khác, trả `403 ACCESS_DENIED`; không truy xuất hoặc sửa mục theo ID đơn lẻ.
+- Chỉnh số phần dùng cùng transaction/khóa tuần và kiểm tra chủ sở hữu như thao tác thay món. Thiếu giá trị, số nhỏ hơn 1 hoặc lớn hơn 9.999, hay có phần thập phân khác 0 trả `400 VALIDATION_FAILED`; cột database vẫn là `DECIMAL(5,1)` để giữ dữ liệu cũ, không thay đổi schema. API ghi khẩu phần mới chỉ nhận số nguyên. Mục có công thức không còn khả dụng vẫn sửa được số phần, nhưng response giữ nhãn trung tính và không trả nội dung recipe bị ẩn/xóa.
+- Trong luồng lập lịch hiện tại theo yêu cầu người dùng, `plannedServings` là số phần cần nấu (có thể cho cả gia đình). Dữ liệu này phục vụ tỷ lệ nguyên liệu đi chợ: lượng gốc × `plannedServings` ÷ số phần gốc của công thức. Bảng dinh dưỡng ngày/tuần trên Frontend thống kê riêng **1 người, mỗi món 1 phần**, không nhân theo lượng nấu cho gia đình. BR-47 hiện vẫn mô tả khẩu phần dự định ăn; hai ý nghĩa cần được nhóm phân biệt khi triển khai thống kê lượng đã ăn. Việc có API chỉnh số phần không xác nhận chức năng tổng hợp danh sách đi chợ đã triển khai.
 - Một bữa chứa nhiều công thức khác nhau. Thêm hoặc thay thành công thức đã có trong cùng ngày/bữa trả `409 MEAL_PLAN_RECIPE_DUPLICATE`; thay lại cùng công thức của chính mục đó không bị xem là trùng mục khác.
 - Chỉ công thức `PUBLISHED` được thêm hoặc dùng để thay thế; nguồn thiếu/ẩn/xóa/nháp trả `404 RECIPE_NOT_FOUND`. Kiểm tra trạng thái nguồn và ghi lịch nằm trong cùng transaction; các thay đổi của cùng lịch tuần được tuần tự hóa bằng khóa ở database và vẫn có unique constraint bảo vệ.
 - Tombstone hiện có được thay hoặc gỡ như mục thông thường. Gỡ không yêu cầu công thức nguồn còn công khai; đọc lịch vẫn trả nhãn chung `Công thức không còn khả dụng` và lược bỏ nội dung bài không công khai.
