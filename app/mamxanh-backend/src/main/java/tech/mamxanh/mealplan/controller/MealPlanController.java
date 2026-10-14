@@ -12,12 +12,16 @@ import org.springframework.http.HttpStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import tech.mamxanh.mealplan.dto.request.AddMealPlanEntryRequest;
 import tech.mamxanh.mealplan.dto.request.ReplaceMealPlanEntryRequest;
+import tech.mamxanh.mealplan.dto.request.UpdateMealPlanServingsRequest;
+import tech.mamxanh.mealplan.dto.request.MoveMealPlanEntryRequest;
+import tech.mamxanh.mealplan.dto.request.ApplyAiWeeklyMenuRequest;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,6 +44,25 @@ public class MealPlanController {
 
     public MealPlanController(MealPlanService service) {
         this.service = service;
+    }
+
+    @Operation(summary = "Apply a confirmed AI weekly menu to the member's plan",
+            description = "Requires an active Pro Member. Atomically adds exactly one recipe to each of 21 day/meal positions and preserves existing "
+                    + "entries. If any recipe is no longer public or collides with the same recipe in an existing "
+                    + "day/meal, the request fails without writing any entries.")
+    @ApiResponse(responseCode = "200", description = "The updated weekly plan.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = MealPlanWeekResponse.class)))
+    @ApiResponse(responseCode = "404", description = "A selected recipe is no longer published.",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "409", description = "The selected recipe already exists in a target day/meal.",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "403", description = "An active Pro subscription is required.",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @PostMapping("/{weekStartDate}/ai-menu")
+    public MealPlanWeekResponse applyAiMenu(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStartDate,
+            @Valid @RequestBody ApplyAiWeeklyMenuRequest request) {
+        return service.applyAiMenu(weekStartDate, request);
     }
 
     @Operation(summary = "Create or open the current member's weekly meal plan",
@@ -87,6 +110,31 @@ public class MealPlanController {
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStartDate,
             @PathVariable @Min(1) long entryId, @Valid @RequestBody ReplaceMealPlanEntryRequest request) {
         return service.replaceEntry(weekStartDate, entryId, request.recipeId());
+    }
+
+    @Operation(summary = "Update the number of servings to prepare for an owned meal-plan entry",
+            description = "Accepts integer servings from 1 to 9999. "
+                    + "Preserves the recipe, date and meal type. Hidden or deleted recipes retain neutral unavailable fields.")
+    @ApiResponse(responseCode = "200", description = "The entry with the saved plannedServings.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = MealPlanWeekResponse.Entry.class)))
+    @PatchMapping("/{weekStartDate}/entries/{entryId}/servings")
+    public MealPlanWeekResponse.Entry updateServings(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStartDate,
+            @PathVariable @Min(1) long entryId, @Valid @RequestBody UpdateMealPlanServingsRequest request) {
+        return service.updateServings(weekStartDate, entryId, request.plannedServings());
+    }
+
+    @Operation(summary = "Move an owned entry within the same week",
+            description = "Preserves identity, recipe and planned servings. Rejects a duplicate destination atomically.")
+    @ApiResponse(responseCode = "200", description = "The moved entry.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = MealPlanWeekResponse.Entry.class)))
+    @ApiResponse(responseCode = "409", description = "MEAL_PLAN_RECIPE_DUPLICATE: destination already contains this recipe.",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @PatchMapping("/{weekStartDate}/entries/{entryId}/position")
+    public MealPlanWeekResponse.Entry moveEntry(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStartDate,
+            @PathVariable @Min(1) long entryId, @Valid @RequestBody MoveMealPlanEntryRequest request) {
+        return service.moveEntry(weekStartDate, entryId, request);
     }
 
     @Operation(summary = "Remove an owned entry, including an unavailable recipe reference",

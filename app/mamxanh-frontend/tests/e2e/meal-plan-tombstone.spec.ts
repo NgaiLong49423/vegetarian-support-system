@@ -64,9 +64,14 @@ test('meal plan retains a deleted recipe slot and displays the neutral unavailab
   });
   await signInAsCustomer(page);
   await page.goto('/ke-hoach');
+  const date = new Date();
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7) + 1);
+  const dayButton = page.getByRole('button', { name: `Xem ngày ${date.toLocaleDateString('vi-VN')}` });
+  await expect(dayButton).toBeVisible();
+  if (await dayButton.getAttribute('aria-expanded') === 'false') await dayButton.click();
 
   await expect(page.getByText('Lịch ăn của bạn')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Bữa trưa', exact: true })).toHaveCount(7);
+  await expect(page.getByRole('heading', { name: 'Bữa trưa', exact: true })).toHaveCount(1);
   await expect(page.getByText('Công thức không còn khả dụng', { exact: true })).toBeVisible();
   await expect(page.getByText('Công thức này đã bị xóa bởi tác giả')).toHaveCount(0);
   await expect(page.locator('a[href="/cong-thuc/id/47"]')).toHaveCount(0);
@@ -94,10 +99,15 @@ test('meal plan links an available recipe and renders an empty week without mock
   });
   await signInAsCustomer(page);
   await page.goto('/ke-hoach');
-  await expect(page.getByRole('link', { name: 'Canh nấm mới' })).toHaveAttribute('href', '/cong-thuc/id/48');
-  await expect(page.getByRole('heading', { name: 'Bữa tối', exact: true })).toHaveCount(7);
+  const date = new Date();
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7) + 1);
+  const dayButton = page.getByRole('button', { name: `Xem ngày ${date.toLocaleDateString('vi-VN')}` });
+  await expect(dayButton).toBeVisible();
+  if (await dayButton.getAttribute('aria-expanded') === 'false') await dayButton.click();
+  await expect(page.getByRole('link', { name: 'Canh nấm mới' })).toHaveAttribute('href', /^\/cong-thuc\/id\/48\?mealPlanWeek=/);
+  await expect(page.getByRole('heading', { name: 'Bữa tối', exact: true })).toHaveCount(1);
   await expect(page.getByText('25 phút · 2 phần')).toBeVisible();
-  await expect(page.getByText('Chưa có món trong ngày này.').first()).toBeVisible();
+  await expect(page.getByText('Chưa chọn món cho bữa này.').first()).toBeVisible();
 });
 
 test('empty meal plan and server errors show recoverable states', async ({ page }) => {
@@ -109,6 +119,11 @@ test('empty meal plan and server errors show recoverable states', async ({ page 
   });
   await signInAsCustomer(page);
   await page.goto('/ke-hoach');
+  const date = new Date();
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7) + 1);
+  const dayButton = page.getByRole('button', { name: `Xem ngày ${date.toLocaleDateString('vi-VN')}` });
+  await expect(dayButton).toBeVisible();
+  if (await dayButton.getAttribute('aria-expanded') === 'false') await dayButton.click();
   await expect(page.getByText('Tuần này chưa có công thức trong Lịch ăn.')).toBeVisible();
 
   fail = true;

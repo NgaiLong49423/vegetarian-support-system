@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Check,
@@ -23,6 +23,7 @@ import { recipesApi, type RecipeDetail } from '../api/recipes';
 import { SaveRecipeButton } from '../components/SaveRecipeButton';
 import { MemberAvatar } from '../components/MemberAvatar';
 import { RelatedRecipes } from '../components/RelatedRecipes';
+import { MealPlanRecipeServings } from './MealPlanRecipeServings';
 
 const NUTRIENTS = [
   { key: 'ENERGY_KCAL', label: 'Năng lượng', unit: 'kcal' },
@@ -95,6 +96,10 @@ function downloadText(recipe: RecipeDetail) {
 export function ApiRecipeDetail() {
   const { recipeId: rawId } = useParams();
   const recipeId = Number(rawId);
+  const [searchParams] = useSearchParams();
+  const fromMealPlan = searchParams.has('mealPlanWeek') || searchParams.has('mealPlanEntryId');
+  const planContextKey = `${recipeId}:${searchParams.get('mealPlanWeek')}:${searchParams.get('mealPlanEntryId')}`;
+  const backTarget = fromMealPlan ? `/ke-hoach?weekStartDate=${encodeURIComponent(searchParams.get('mealPlanWeek') ?? '')}&mealDate=${encodeURIComponent(searchParams.get('mealDate') ?? '')}` : '/kham-pha';
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [error, setError] = useState('');
   const [selectedMedia, setSelectedMedia] = useState(0);
@@ -135,7 +140,7 @@ export function ApiRecipeDetail() {
 
   async function shareRecipe() {
     if (!recipe) return;
-    const url = window.location.href;
+    const url = new URL(`/cong-thuc/id/${recipe.recipeId}`, window.location.origin).href;
     try {
       if (navigator.share) await navigator.share({ title: recipe.title, url });
       else if (navigator.clipboard) {
@@ -160,7 +165,7 @@ export function ApiRecipeDetail() {
 
   return <PageContainer className="recipe-detail-page py-6 sm:py-8">
     <div className="recipe-detail-no-print mb-5 flex flex-wrap items-center justify-between gap-3">
-      <Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-900"><ArrowLeft className="h-4 w-4" />Khám phá</Link>
+      <Link to={backTarget} className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-900"><ArrowLeft className="h-4 w-4" />{fromMealPlan ? 'Về lịch ăn' : 'Khám phá'}</Link>
       <div className="flex flex-wrap items-center gap-2">
         <SaveRecipeButton recipeId={recipe.recipeId} />
         <Button variant="outline" size="sm" onClick={shareRecipe}><Share2 className="h-4 w-4" />Chia sẻ</Button>
@@ -230,11 +235,11 @@ export function ApiRecipeDetail() {
         <Card className="p-5 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Chuẩn bị vào bếp</p><h2 className="mt-1 text-xl font-extrabold text-ink">Nguyên liệu</h2></div>
-            <div className="recipe-detail-no-print flex items-center gap-2 rounded-xl bg-brand-50 p-1">
+            {fromMealPlan ? <MealPlanRecipeServings key={planContextKey} recipeId={recipeId} servings={servings} onChange={setServings} /> : <div className="recipe-detail-no-print flex items-center gap-2 rounded-xl bg-brand-50 p-1">
               <button type="button" aria-label="Giảm khẩu phần" disabled={servings <= 1} onClick={() => setServings((value) => Math.max(1, value - 1))} className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"><Minus className="h-4 w-4" /></button>
               <span className="min-w-20 text-center text-sm font-bold text-ink">{servings} phần</span>
               <button type="button" aria-label="Tăng khẩu phần" disabled={servings >= 50} onClick={() => setServings((value) => Math.min(50, value + 1))} className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"><Plus className="h-4 w-4" /></button>
-            </div>
+            </div>}
           </div>
           <p className="mt-2 text-sm text-ink-muted">Định lượng được tính theo {servings} phần ăn.</p>
           <ul className="mt-4 divide-y divide-brand-100">
@@ -269,8 +274,8 @@ export function ApiRecipeDetail() {
           <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             {NUTRIENTS.map((nutrient) => <div key={nutrient.key} className="rounded-xl bg-brand-50 px-3 py-2.5"><dt className="text-xs text-ink-muted">{nutrient.label}</dt><dd className="mt-1 text-sm font-bold text-ink">{formatNumber(recipe.nutrition?.perServing?.[nutrient.key])} {recipe.nutrition?.perServing?.[nutrient.key] == null ? '' : nutrient.unit}</dd></div>)}
           </dl>
-          {!nutritionComplete && <div role="note" className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><p className="font-bold">Một số dữ liệu dinh dưỡng chưa đầy đủ</p><p className="mt-1">Các giá trị hiện có chỉ mang tính tham khảo; hệ thống không xem dữ liệu thiếu là 0.</p>{missingNutrition.length > 0 && <ul className="mt-2 list-inside list-disc text-xs">{missingNutrition.map((name) => <li key={name}>{name}</li>)}</ul>}</div>}
-          <p className="mt-3 text-xs leading-5 text-ink-muted">Ước tính theo danh mục nguyên liệu hiện có, không thay thế tư vấn y tế.</p>
+          {!nutritionComplete && <div role="note" aria-live="polite" className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><p className="font-bold">Ước tính chưa đầy đủ</p><p className="mt-1">Các giá trị chỉ gồm phần tính được từ danh mục. Nguyên liệu thiếu dữ liệu không được tính bằng 0.</p>{missingNutrition.length > 0 && <><p className="mt-2 text-xs font-semibold">Nguyên liệu chưa hỗ trợ tính dinh dưỡng:</p><ul className="mt-1 list-inside list-disc text-xs">{missingNutrition.map((name) => <li key={name}>{name}</li>)}</ul></>}</div>}
+          <p className="mt-3 text-xs leading-5 text-ink-muted">Nguồn tham khảo: danh mục dinh dưỡng nội bộ theo USDA/NIH. Số liệu chỉ mang tính ước tính, không thay thế tư vấn y tế.</p>
         </Card>
         {recipe.nutrition?.total && <Card className="p-5 sm:p-6"><details><summary className="cursor-pointer list-none text-sm font-bold text-ink">Xem tổng dinh dưỡng toàn công thức</summary><dl className="mt-3 grid grid-cols-2 gap-2">{NUTRIENTS.map((nutrient) => { const value = recipe.nutrition.total[nutrient.key]; return <div key={nutrient.key} className="rounded-lg bg-brand-50 px-3 py-2"><dt className="text-xs text-ink-muted">{nutrient.label}</dt><dd className="mt-1 text-sm font-semibold text-ink">{formatNumber(value)}{value == null ? '' : ` ${nutrient.unit}`}</dd></div>; })}</dl></details></Card>}
       </aside>

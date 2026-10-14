@@ -17,6 +17,8 @@ import tech.mamxanh.auth.service.CurrentUserService;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.mealplan.dto.request.AddMealPlanEntryRequest;
+import tech.mamxanh.mealplan.dto.request.MoveMealPlanEntryRequest;
+import tech.mamxanh.mealplan.dto.request.ApplyAiWeeklyMenuRequest;
 import tech.mamxanh.mealplan.entity.MealPlanEntity;
 import tech.mamxanh.mealplan.entity.MealPlanEntryEntity;
 import tech.mamxanh.mealplan.repository.MealPlanRepository;
@@ -29,7 +31,10 @@ class MealPlanEntryServiceTest {
     private final MealPlanEntryRepository entries = mock(MealPlanEntryRepository.class);
     private final CurrentUserService users = mock(CurrentUserService.class);
     private final RecipePostService recipes = mock(RecipePostService.class);
-    private final MealPlanService service = new MealPlanService(plans, users, mock(MealPlanReadService.class), entries, recipes);
+    private final MealPlanReadService reads = mock(MealPlanReadService.class);
+    private final tech.mamxanh.recipe.service.AiRecipeRecommendationService aiRecommendations =
+            mock(tech.mamxanh.recipe.service.AiRecipeRecommendationService.class);
+    private final MealPlanService service = new MealPlanService(plans, users, reads, entries, recipes, aiRecommendations);
 
     @BeforeEach
     void setup() {
@@ -59,6 +64,42 @@ class MealPlanEntryServiceTest {
         verify(plans).createWeekIfAbsent(17L, WEEK);
         verify(plans).touchWeek(12L);
         verify(recipes).requirePublishedMealPlanRecipe(1L);
+    }
+
+    @Test
+    void aiMenuCollisionRejectsBeforeAnyEntryIsWritten() {
+        var request = aiMenu();
+        when(entries.existsByMealPlanIdAndMealDateAndMealTypeAndRecipeIdAndIdNot(
+                anyLong(), any(), anyString(), anyLong(), anyLong())).thenReturn(false, true);
+
+        assertThatThrownBy(() -> service.applyAiMenu(WEEK, request))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEAL_PLAN_RECIPE_DUPLICATE);
+        verify(entries, never()).saveAllAndFlush(anyList());
+        verify(plans, never()).touchWeek(anyLong());
+        verify(aiRecommendations).requireWeeklyApplyEligible(17L, request.slots().stream()
+                .map(ApplyAiWeeklyMenuRequest.Slot::recipeId).toList());
+    }
+
+    @Test
+    void aiMenuAppliesAllTwentyOneSlotsTogether() {
+        var request = aiMenu();
+        var response = new tech.mamxanh.mealplan.dto.response.MealPlanWeekResponse(WEEK, List.of());
+        when(reads.getWeek(WEEK)).thenReturn(response);
+        when(entries.saveAllAndFlush(anyList())).thenAnswer(call -> call.getArgument(0));
+
+        assertThat(service.applyAiMenu(WEEK, request)).isSameAs(response);
+        var inserted = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(entries).saveAllAndFlush(inserted.capture());
+        assertThat(inserted.getValue()).hasSize(21);
+        verify(plans).touchWeek(12L);
+    }
+
+    private static ApplyAiWeeklyMenuRequest aiMenu() {
+        List<ApplyAiWeeklyMenuRequest.Slot> slots = java.util.stream.IntStream.range(0, 21)
+                .mapToObj(index -> new ApplyAiWeeklyMenuRequest.Slot(index / 3,
+                        List.of("BREAKFAST", "LUNCH", "DINNER").get(index % 3), index % 2 == 0 ? 1L : 2L))
+                .toList();
+        return new ApplyAiWeeklyMenuRequest(slots);
     }
 
     @ParameterizedTest
@@ -149,5 +190,114 @@ class MealPlanEntryServiceTest {
         entry.setRecipeId(1L);
         entry.setPlannedServings(new BigDecimal("2.5"));
         return entry;
+    }
+
+    @Test
+    void ac334MovesTheSameEntryAndPreservesFractionalServings() {
+        var source = entry();
+        when(entries.findByIdAndMealPlanId(31, 12)).thenReturn(Optional.of(source));
+        var result = service.moveEntry(WEEK, 31, new MoveMealPlanEntryRequest(WEEK.plusDays(6), "DINNER"));
+        assertThat(result.entryId()).isEqualTo(31);
+        assertThat(result.recipeId()).isEqualTo(1);
+        assertThat(result.mealDate()).isEqualTo(WEEK.plusDays(6));
+        assertThat(result.mealType()).isEqualTo("DINNER");
+        assertThat(result.plannedServings()).isEqualByComparingTo("2.5");
+        verify(plans).lockWeek(17, WEEK);
+        verify(plans).touchWeek(12);
+        verify(recipes, never()).requirePublishedMealPlanRecipe(anyLong());
+    }
+
+    @Test
+    void ac334DuplicateDestinationLeavesTheSourceUntouched() {
+        var source = entry();
+        when(entries.findByIdAndMealPlanId(31, 12)).thenReturn(Optional.of(source));
+        when(entries.existsByMealPlanIdAndMealDateAndMealTypeAndRecipeIdAndIdNot(12, WEEK, "DINNER", 1, 31)).thenReturn(true);
+        assertThatThrownBy(() -> service.moveEntry(WEEK, 31, new MoveMealPlanEntryRequest(WEEK, "DINNER")))
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEAL_PLAN_RECIPE_DUPLICATE);
+        assertThat(source.getMealType()).isEqualTo("LUNCH");
+        assertThat(source.getMealDate()).isEqualTo(WEEK);
+        assertThat(source.getPlannedServings()).isEqualByComparingTo("2.5");
+        verify(entries, never()).saveAndFlush(any());
+        verify(plans, never()).touchWeek(anyLong());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 7})
+    void ac334CannotMoveOutsideTheWeek(int offset) {
+        var source = entry();
+        when(entries.findByIdAndMealPlanId(31, 12)).thenReturn(Optional.of(source));
+        assertThatThrownBy(() -> service.moveEntry(WEEK, 31, new MoveMealPlanEntryRequest(WEEK.plusDays(offset), "DINNER")))
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
+        assertThat(source.getMealDate()).isEqualTo(WEEK);
+        verify(entries, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void cannotMoveAForeignEntry() {
+        assertThatThrownBy(() -> service.moveEntry(WEEK, 999, new MoveMealPlanEntryRequest(WEEK, "DINNER")))
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+        verify(entries, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void movingATombstoneKeepsItsContentPrivate() {
+        when(entries.findByIdAndMealPlanId(31, 12)).thenReturn(Optional.of(entry()));
+        doReturn(Map.of(1L,
+                new RecipePostService.MealPlanRecipeReference(1, "Hidden title", "HIDDEN", "private-image", "SOUP", 25)))
+                .when(recipes).findMealPlanReferences(anyList());
+        var result = service.moveEntry(WEEK, 31, new MoveMealPlanEntryRequest(WEEK, "DINNER"));
+        assertThat(result.recipeTitle()).isNull();
+        assertThat(result.recipeCoverUrl()).isNull();
+        assertThat(result.unavailableMessage()).isEqualTo("Công thức không còn khả dụng");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "4", "9999"})
+    void savesServingsWithoutChangingTheRecipeOrMeal(String quantity) {
+        var entry = entry();
+        when(entries.findByIdAndMealPlanId(31, 12)).thenReturn(Optional.of(entry));
+        var result = service.updateServings(WEEK, 31, new BigDecimal(quantity));
+        assertThat(result.plannedServings()).isEqualByComparingTo(quantity);
+        assertThat(result.entryId()).isEqualTo(31);
+        assertThat(result.recipeId()).isEqualTo(1);
+        assertThat(result.mealDate()).isEqualTo(WEEK);
+        assertThat(result.mealType()).isEqualTo("LUNCH");
+        verify(entries).saveAndFlush(entry);
+        verify(plans).touchWeek(12);
+        verify(recipes, never()).requirePublishedMealPlanRecipe(anyLong());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0", "-1", "0.01", "10000", "1.1", "1.25", "9999.9"})
+    void rejectsInvalidServingsBeforeChangingTheEntry(String quantity) {
+        var entry = entry();
+        when(entries.findByIdAndMealPlanId(31, 12)).thenReturn(Optional.of(entry));
+        assertThatThrownBy(() -> service.updateServings(WEEK, 31, new BigDecimal(quantity)))
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
+        assertThat(entry.getPlannedServings()).isEqualByComparingTo("2.5");
+        verify(entries, never()).saveAndFlush(any());
+        verify(plans, never()).touchWeek(anyLong());
+        verifyNoInteractions(recipes);
+    }
+
+    @Test
+    void cannotChangeServingsOfAnotherMembersEntry() {
+        assertThatThrownBy(() -> service.updateServings(WEEK, 900, BigDecimal.ONE))
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+        verify(entries, never()).saveAndFlush(any());
+        verifyNoInteractions(recipes);
+    }
+
+    @Test
+    void updatingServingsDoesNotExposeHiddenRecipeContent() {
+        when(entries.findByIdAndMealPlanId(31, 12)).thenReturn(Optional.of(entry()));
+        doReturn(Map.of(1L,
+                new RecipePostService.MealPlanRecipeReference(1, "Hidden title", "HIDDEN", "private-image", "SOUP", 25)))
+                .when(recipes).findMealPlanReferences(anyList());
+        var result = service.updateServings(WEEK, 31, new BigDecimal("4"));
+        assertThat(result.plannedServings()).isEqualByComparingTo("4");
+        assertThat(result.recipeTitle()).isNull();
+        assertThat(result.recipeCoverUrl()).isNull();
+        assertThat(result.unavailableMessage()).isEqualTo("Công thức không còn khả dụng");
     }
 }

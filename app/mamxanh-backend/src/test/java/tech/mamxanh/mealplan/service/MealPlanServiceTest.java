@@ -24,7 +24,8 @@ class MealPlanServiceTest {
     private final MealPlanReadService reads = mock(MealPlanReadService.class);
     private final MealPlanService service = new MealPlanService(repository, users, reads,
             mock(tech.mamxanh.mealplan.repository.MealPlanEntryRepository.class),
-            mock(tech.mamxanh.recipe.service.RecipePostService.class));
+            mock(tech.mamxanh.recipe.service.RecipePostService.class),
+            mock(tech.mamxanh.recipe.service.AiRecipeRecommendationService.class));
 
     @BeforeEach
     void member() {

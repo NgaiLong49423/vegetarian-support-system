@@ -1,13 +1,155 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.71.0
+> **Version:** v2.76.1
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-13
+> **Last Updated:** 2026-10-14
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-14 — Synchronize FR-33 with the AI Menu Integration Baseline ([PR #135](https://github.com/NgaiLong49423/vegetarian-support-system/pull/135))
+
+**Status:** Committed — `5b553ab`.
+
+**Scope:** Synchronize Issue #38 with develop after the AI menu implementation was integrated.
+
+### Added
+
+- None.
+
+### Changed
+
+- Preserve both manual entry movement/export and the integrated AI menu controllers, DTOs, UI modes and regression tests when resolving overlapping edits.
+
+### Fixed
+
+- Download Git LFS assets in Frontend and Docker Development CI checkouts so PDF export receives the bundled Vietnamese font rather than an LFS pointer (BUG-025).
+- Update existing browser fixtures for the integrated nutrition eligibility confirmation, ingredient search and goal label while retaining authorization, payload and out-of-scope assertions.
+
+## 2026-10-14 — Move and Export Weekly Meal Plans (FR-33) ([PR #135](https://github.com/NgaiLong49423/vegetarian-support-system/pull/135))
+
+**Status:** Committed — `f4eeb26`.
+
+**Scope:** Complete local meal-plan management for Issue #38 using the existing weekly plan and recipe references.
+
+### Added
+
+- Move an owned meal-plan entry between days and meals within the same week while retaining its identity and saved servings; reject duplicate destinations without changing the source.
+- Export the authenticated Member's current schedule to UTF-8 TXT and paginated A4 PDF with embedded Vietnamese font, seven days, three meals, saved servings and calculated energy. Keep missing nutrition explicit and unavailable recipes neutral.
+- Add controller/generated OpenAPI, service, browser and SQL integration checks for movement, export, ownership and unavailable content.
+
+### Changed
+
+- Extend the existing meal planner with destination selection and downloadable exports; calculate export energy from Backend per-serving nutrition and the saved serving quantity.
+- Document the private export snapshot and movement contract in the API integration guide.
+- Exclude generated Frontend coverage artifacts from development image build contexts.
+
+### Fixed
+
+- Adapt the Compose meal-plan browser test to the existing collapsed day layout and saved-recipe picker.
+
+## 2026-10-14 — Refine Weekly Nutrition Menu Preferences
+
+**Status:** Committed — `876a08e`.
+
+**Scope:** Clarify weekly menu preference inputs and make excluded ingredients take precedence over preferred ingredients.
+
+### Added
+
+- Provide separate ingredient search and selection fields for ingredients to include and ingredients to exclude.
+
+### Changed
+
+- Rename the weekly goal prompt and remove the balancing and training goals from the weekly menu selector.
+- Specify excluded weekly ingredients as hard candidate filters; preferred ingredients only influence selection among recipes that pass those filters.
+- Synchronize FR-36, UC-36.1, and the API integration guide with the exclusion precedence.
+
+### Fixed
+
+- None.
+
+## 2026-10-14 — Handle Nutrition Eligibility for AI Menus
+
+**Status:** Committed — `876a08e`.
+
+**Scope:** Return the correct eligibility response from AI menu endpoints and guide Members to the required confirmation.
+
+### Added
+
+- Show a link to the nutrition profile when menu generation is blocked because eligibility has not been confirmed.
+
+### Changed
+
+- Route nutrition-profile exceptions from Meal Plan endpoints through the shared ProblemDetail handler with their original status and error code.
+- Document the eligibility response and confirmation endpoint for FR-36.
+
+### Fixed
+
+- Prevent an unconfirmed eligibility state from being reported as an internal server error.
+
+## 2026-10-14 — Integrate AI Recipe Planning and Nutrition Menus
+
+**Status:** Implementation complete; local checks recorded, Docker and GitHub gates pending.
+
+**Scope:** Combine FR-34 recipe recommendations and weekly menu planning with FR-36 nutrition-aware weekly menus in the Meal Plan experience.
+
+### Added
+
+- Keep ingredient-based recommendations and standard weekly menus sourced from public Recipe Posts, alongside nutrition-aware weekly previews based on complete nutrition data.
+- Add profile-based and one-time weekly preference modes for nutrition menus, with editable previews and explicit confirmation before replacing the target week.
+- Preserve separate authorization, dietary constraints, candidate pools, and apply semantics for FR-34 and FR-36.
+
+### Changed
+
+- Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
+- Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Focus Meal Planning on Individual Days ([PR #133](https://github.com/NgaiLong49423/vegetarian-support-system/pull/133))
+
+**Status:** Committed — `2f85f34`.
+
+**Scope:** Make the Member meal planner easier to use one day at a time while retaining weekly persistence.
+
+### Added
+
+- Show day and week nutrition summaries for all nine supported indicators, for one person eating one serving of each scheduled dish, independently of family cooking portions, with per-day energy totals and explicit missing-data states.
+- Let Members open a planned recipe and save integer cooking servings from its detail page to the exact day/meal entry through an authenticated ownership-checked PATCH endpoint; keep the week view read-only for quantities and preserve existing database data.
+- Add browser checks for saved-recipe pagination, day selection, single-serving nutrition despite family cooking portions, missing nutrition, and retry behavior.
+
+### Changed
+
+- Display seven collapsible day rows and three vertically stacked meals for the selected day, with a compact calendar on mobile.
+- Limit the recipe picker to the Member's saved recipes with server-side search and pagination.
+- Adapt the existing visual theme using a Google Stitch reference inspired by Samsung Food.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Expand Local Recipe Demo Fixtures ([PR #127](https://github.com/NgaiLong49423/vegetarian-support-system/pull/127))
+
+**Status:** Committed — `c5ac7d0`.
+
+**Scope:** Enrich the IntelliJ `local` profile with recipe, ingredient and nutrition examples for classroom demonstrations.
+
+### Added
+
+- Add 40 catalog ingredients and 16 illustrated recipe posts to the repeatable local seed.
+- Seed per-100-gram nutrition values for all 51 demo ingredients, labeling synthetic examples as internal demo data and retaining USDA FoodData Central identifiers for sourced rows.
+
+### Changed
+
+- Add cover images to the seven existing local recipe examples so every seeded recipe has a cover.
+
+### Fixed
+
+- None.
 
 ## 2026-10-13 — Add Weekly Meal Planning ([PR #126](https://github.com/NgaiLong49423/vegetarian-support-system/pull/126))
 

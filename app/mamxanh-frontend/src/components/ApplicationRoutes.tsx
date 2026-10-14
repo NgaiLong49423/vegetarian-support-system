@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom"
+import { Navigate, Route, Routes } from "react-router-dom"
 import { Layout } from "./Layout"
 import { AuthPage } from "../pages/Auth"
 import { SavedRecipesProvider } from "./SavedRecipesContext"
@@ -74,6 +74,7 @@ export default function ApplicationRoutes() {
               />
               <Route path="/cong-thuc/:slug" element={<RecipeDetail />} />
               <Route path="/ke-hoach" element={<MealPlanner />} />
+              <Route path="/goi-y-ai" element={<Navigate to="/ke-hoach?view=for-you" replace />} />
               <Route path="/di-cho" element={<ShoppingList />} />
               <Route path="/dinh-duong" element={<NutritionTracker />} />
               <Route path="/dang-cong-thuc" element={<CreateRecipe />} />

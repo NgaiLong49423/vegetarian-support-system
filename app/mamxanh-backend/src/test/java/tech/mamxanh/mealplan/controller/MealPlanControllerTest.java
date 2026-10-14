@@ -34,18 +34,69 @@ import tech.mamxanh.common.exception.GlobalExceptionHandler;
 import tech.mamxanh.mealplan.dto.response.MealPlanWeekResponse;
 import tech.mamxanh.mealplan.service.MealPlanReadService;
 import tech.mamxanh.mealplan.service.MealPlanService;
+import tech.mamxanh.mealplan.service.MealPlanExportService;
+import tech.mamxanh.mealplan.dto.response.MealPlanExportResponse;
+import tech.mamxanh.mealplan.dto.request.MoveMealPlanEntryRequest;
 
-@WebMvcTest({MealPlanController.class, MealPlanReadController.class})
+@WebMvcTest({MealPlanController.class, MealPlanReadController.class, MealPlanExportController.class, AiMenuController.class})
 @ActiveProfiles("test")
 @EnableConfigurationProperties(SpringDocConfigProperties.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class, OpenApiConfig.class,
         SpringDocConfiguration.class, SpringDocSpecPropertiesConfiguration.class, SpringDocWebMvcConfiguration.class})
 class MealPlanControllerTest {
     @Autowired private MockMvc mvc;
+    @MockitoBean private MealPlanExportService exports;
     @MockitoBean private MealPlanService service;
     @MockitoBean private MealPlanReadService reads;
+    @MockitoBean private tech.mamxanh.mealplan.service.AiMenuService aiMenus;
     @MockitoBean private JwtDecoder jwtDecoder;
     @MockitoBean private AccountStatusJwtAuthenticationConverter jwtAuthenticationConverter;
+
+    @Test
+    void generatedOpenApiDocumentsAtomicAiMenuApply() throws Exception {
+        mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/ai-menu'].post.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/ai-menu'].post.responses['409']").exists())
+                .andExpect(jsonPath("$.components.schemas.ApplyAiWeeklyMenuRequest.properties.slots.minItems").value(21))
+                .andExpect(jsonPath("$.components.schemas.ApplyAiWeeklyMenuRequest.properties.slots.maxItems").value(21));
+    }
+
+    @Test
+    void savesServingsAndPublishesTheGeneratedContract() throws Exception {
+        var week = LocalDate.of(2026, 10, 12);
+        var quantity = new java.math.BigDecimal("4");
+        when(service.updateServings(week, 31, quantity)).thenReturn(new MealPlanWeekResponse.Entry(31, week, "LUNCH",
+                quantity, 1, "Món thử", null, "SOUP", 25, false, null));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/meal-plans/2026-10-12/entries/31/servings")
+                        .with(user("17").roles("CUSTOMER")).contentType(MediaType.APPLICATION_JSON).content("{\"plannedServings\":4}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.plannedServings").value(4));
+        mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/servings'].patch.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/servings'].patch.responses['200']").exists())
+                .andExpect(jsonPath("$.components.schemas.UpdateMealPlanServingsRequest.properties.plannedServings.minimum").value(1))
+                .andExpect(jsonPath("$.components.schemas.UpdateMealPlanServingsRequest.properties.plannedServings.maximum").value(9999));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"plannedServings\":null}", "{\"plannedServings\":0}", "{\"plannedServings\":-1}", "{\"plannedServings\":0.01}", "{\"plannedServings\":1.1}", "{\"plannedServings\":1.25}", "{\"plannedServings\":10000}"})
+    void rejectsInvalidServingsPayload(String json) throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/meal-plans/2026-10-12/entries/31/servings")
+                        .with(user("17")).contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void servingsUpdateRejectsGuestsAndForeignEntries() throws Exception {
+        var path = "/api/v1/meal-plans/2026-10-12/entries/31/servings";
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(path)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"plannedServings\":4}"))
+                .andExpect(status().isUnauthorized());
+        doThrow(new AppException(ErrorCode.ACCESS_DENIED)).when(service).updateServings(LocalDate.of(2026, 10, 12), 31, new java.math.BigDecimal("4"));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(path).with(user("18"))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"plannedServings\":4}"))
+                .andExpect(status().isForbidden());
+    }
 
     @Test
     void opensAWeekWithoutARequestBody() throws Exception {
@@ -63,6 +114,28 @@ class MealPlanControllerTest {
         mvc.perform(get("/api/v1/meal-plans").param("weekStartDate", monday.toString()).with(user("17")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.entries").isEmpty());
         verifyNoInteractions(service);
+    }
+
+    @Test
+    void aiMenuRequiresAuthenticationAndRejectsInvalidModeBeforeCallingService() throws Exception {
+        var path = "/api/v1/meal-plans/ai-menu/previews";
+        mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"weekStartDate\":\"2026-10-12\",\"mode\":\"PROFILE\"}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post(path).with(user("17")).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"weekStartDate\":\"2026-10-12\",\"mode\":\"UNSUPPORTED\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(aiMenus);
+    }
+
+    @Test
+    void generatedOpenApiPublishesBothAiMenuOperationsAndSecurity() throws Exception {
+        mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/ai-menu/previews'].post.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/ai-menu/previews'].post.responses['200']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/ai-menu'].put.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.components.schemas.AiMenuPreviewResponse.properties.meals").exists())
+                .andExpect(jsonPath("$.components.schemas.ApplyAiMenuRequest.properties.meals.maxItems").value(21));
     }
 
     @ParameterizedTest
@@ -90,6 +163,15 @@ class MealPlanControllerTest {
 
     @Test
     void publishesTheGeneratedContract() throws Exception {
+        var artifact = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("target"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target/generated-mealplan-openapi.json"),
+                artifact.getResponse().getContentAsString());
+        mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/position'].patch.responses['409']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/position'].patch.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/export'].get.responses['403']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/export'].get.security[0].bearerAuth").isArray());
         mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans'].put.parameters[0].name").value("weekStartDate"))
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans'].put.requestBody").doesNotExist())
@@ -171,6 +253,50 @@ class MealPlanControllerTest {
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}'].put.responses['403']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}'].delete.responses['204']").exists())
                 .andExpect(jsonPath("$.components.schemas.AddMealPlanEntryRequest.properties.recipeId.minimum").value(1));
+    }
+
+    @Test
+    void movesEntriesAndReturnsDuplicateConflicts() throws Exception {
+        var week = LocalDate.of(2026, 10, 12);
+        var target = new MoveMealPlanEntryRequest(week.plusDays(1), "DINNER");
+        when(service.moveEntry(week, 31, target)).thenReturn(new MealPlanWeekResponse.Entry(31,
+                target.mealDate(), target.mealType(), new java.math.BigDecimal("2.5"), 1, "Món thử", null, "SOUP", 25, false, null));
+        var body = "{\"mealDate\":\"2026-10-13\",\"mealType\":\"DINNER\"}";
+        mvc.perform(patch("/api/v1/meal-plans/2026-10-12/entries/31/position").with(user("17"))
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.mealDate").value("2026-10-13"))
+                .andExpect(jsonPath("$.plannedServings").value(2.5));
+        when(service.moveEntry(week, 31, target)).thenThrow(new AppException(ErrorCode.MEAL_PLAN_RECIPE_DUPLICATE));
+        mvc.perform(patch("/api/v1/meal-plans/2026-10-12/entries/31/position").with(user("17"))
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("MEAL_PLAN_RECIPE_DUPLICATE"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"mealDate\":\"2026-10-13\",\"mealType\":\"SNACK\"}",
+            "{\"mealDate\":\"bad\",\"mealType\":\"DINNER\"}"})
+    void rejectsInvalidMoveBeforeService(String body) throws Exception {
+        mvc.perform(patch("/api/v1/meal-plans/2026-10-12/entries/31/position").with(user("17"))
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void exportsPrivateSnapshotWithoutCaching() throws Exception {
+        var week = LocalDate.of(2026, 10, 12);
+        when(exports.getExport(week)).thenReturn(new MealPlanExportResponse(week, List.of()));
+        mvc.perform(get("/api/v1/meal-plans/2026-10-12/export").with(user("17")))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.entries").isEmpty());
+    }
+
+    @Test
+    void guestCannotMoveOrExport() throws Exception {
+        mvc.perform(patch("/api/v1/meal-plans/2026-10-12/entries/31/position")
+                .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/meal-plans/2026-10-12/export")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(service, exports);
     }
 
     @Test
