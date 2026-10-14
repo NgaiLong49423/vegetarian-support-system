@@ -131,9 +131,12 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
     const readResponse = await read
     expect(readResponse.status()).toBe(200)
     const selectedWeek = (await readResponse.json()).weekStartDate as string
+    const firstDay = page.getByRole("button", { name: /^Xem ngày / }).first()
+    if ((await firstDay.getAttribute("aria-expanded")) !== "true")
+      await firstDay.click()
     await expect(
       page.getByRole("button", { name: /^Thêm món Bữa/ }),
-    ).toHaveCount(21)
+    ).toHaveCount(3)
     expect(
       Number(
         sql(`SELECT COUNT(*) FROM [MEAL_PLAN] WHERE user_id = ${ownerId}`),
