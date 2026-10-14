@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.73.0
+> **Version:** v2.74.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-13 — Add AI Nutrition Menu to Meal Planning
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Add a profile-based or week-scoped AI menu preview and a confirmed, atomic whole-week replacement flow.
+
+### Added
+
+- Add Backend preview and apply APIs that select only public recipes with complete nutrition data, calculate nutrition from catalog sources, and require Pro entitlement plus nutrition eligibility.
+- Add a “Dành cho bạn” section to the weekly Meal Plan with profile and one-time weekly preference modes, editable recipe selection, nutrition values, and a clear replacement warning.
+- Specify 21 weekly meal slots, controlled repeats, and rollback behavior for full-week replacement in FR-36 and UC-36.
+
+### Changed
+
+- Document the FR-36 runtime API contract and clarify that confirmation replaces all entries in the target week with selected preview slots; preview itself is never persisted.
+
+### Fixed
+
+- None.
 
 ## 2026-10-13 — Define Profile and Week-Scoped Nutrition Goals
 

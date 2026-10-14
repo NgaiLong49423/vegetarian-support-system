@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.14.0
+> **Version:** v2.15.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -2527,7 +2527,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **AC-36.4 (Xác nhận của Member trước khi ghi đè/lưu Lịch ăn):**
   - *Given* AI đã sinh bản xem trước thực đơn thành công,
   - *When* Member chưa nhấn nút "Lưu vào Lịch ăn",
-  - *Then* hệ thống không tự động thay đổi bất kỳ mục nào trong Lịch ăn tuần hiện tại của Member.
+  - *Then* hệ thống không tự động thay đổi bất kỳ mục nào trong Lịch ăn tuần hiện tại của Member; khi Member xác nhận, hệ thống thay toàn bộ các mục của tuần đích bằng các ô được chọn trong preview trong một giao dịch nguyên tử. Nếu bất kỳ món nào không còn hợp lệ, toàn bộ thao tác rollback và lịch cũ được giữ nguyên.
 - **AC-36.5 (Kiểm tra quyền gói Pro trước khi gọi AI):**
   - *Given* Member chỉ có gói Free hoặc Plus,
   - *When* gửi yêu cầu tạo thực đơn dinh dưỡng bằng AI,
@@ -2541,6 +2541,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **AC-36.9 (Câu trả lời tuần này chỉ có hiệu lực một lần):** Chế độ tuần này dùng mục tiêu cùng nguyên liệu muốn có/cần tránh chỉ cho request hiện tại; không ghi vào hồ sơ hoặc áp dụng sang tuần sau nếu Member không chọn lại. Ràng buộc an toàn đã khai báo từ FR-31 vẫn luôn được áp dụng.
 - **AC-36.10 (Không suy diễn mục tiêu định lượng hoặc hứa kết quả):** Mục tiêu giảm/tăng cân hoặc tăng cơ chỉ điều hướng lựa chọn công thức; năng lượng và 9 chỉ tiêu vẫn là dữ liệu tính được từ hồ sơ/RecipePost có nguồn, không tự thêm thâm hụt/thặng dư calorie hay cam kết cân nặng.
 - **AC-36.11 (Không ép hoàn tất hồ sơ sở thích):** Member đủ điều kiện FR-35/FR-38 và Pro nhưng chưa hoàn tất một hoặc nhiều câu hỏi FR-31 vẫn có thể tạo menu; dữ liệu chưa khai báo là `null`, mọi ràng buộc đã biết được áp dụng và UI giải thích rằng mức cá nhân hóa phụ thuộc thông tin đã cung cấp.
+- **AC-36.12 (Đủ 21 vị trí và lặp món có kiểm soát):** Preview thành công có 7 ngày × 3 bữa; nếu pool tin cậy không đủ 21 công thức khác nhau, hệ thống được lặp công thức nhưng không xếp cùng một công thức ở hai bữa liên tiếp. Member có thể bỏ chọn một số vị trí trước khi xác nhận; chỉ các vị trí được chọn được ghi vào lịch sau khi toàn bộ tuần cũ bị thay.
 
 ---
 

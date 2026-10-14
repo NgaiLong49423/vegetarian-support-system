@@ -35,7 +35,7 @@ import tech.mamxanh.mealplan.dto.response.MealPlanWeekResponse;
 import tech.mamxanh.mealplan.service.MealPlanReadService;
 import tech.mamxanh.mealplan.service.MealPlanService;
 
-@WebMvcTest({MealPlanController.class, MealPlanReadController.class})
+@WebMvcTest({MealPlanController.class, MealPlanReadController.class, AiMenuController.class})
 @ActiveProfiles("test")
 @EnableConfigurationProperties(SpringDocConfigProperties.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class, OpenApiConfig.class,
@@ -44,6 +44,7 @@ class MealPlanControllerTest {
     @Autowired private MockMvc mvc;
     @MockitoBean private MealPlanService service;
     @MockitoBean private MealPlanReadService reads;
+    @MockitoBean private tech.mamxanh.mealplan.service.AiMenuService aiMenus;
     @MockitoBean private JwtDecoder jwtDecoder;
     @MockitoBean private AccountStatusJwtAuthenticationConverter jwtAuthenticationConverter;
 
@@ -100,6 +101,28 @@ class MealPlanControllerTest {
         mvc.perform(get("/api/v1/meal-plans").param("weekStartDate", monday.toString()).with(user("17")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.entries").isEmpty());
         verifyNoInteractions(service);
+    }
+
+    @Test
+    void aiMenuRequiresAuthenticationAndRejectsInvalidModeBeforeCallingService() throws Exception {
+        var path = "/api/v1/meal-plans/ai-menu/previews";
+        mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"weekStartDate\":\"2026-10-12\",\"mode\":\"PROFILE\"}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post(path).with(user("17")).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"weekStartDate\":\"2026-10-12\",\"mode\":\"UNSUPPORTED\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(aiMenus);
+    }
+
+    @Test
+    void generatedOpenApiPublishesBothAiMenuOperationsAndSecurity() throws Exception {
+        mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/ai-menu/previews'].post.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/ai-menu/previews'].post.responses['200']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/ai-menu'].put.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.components.schemas.AiMenuPreviewResponse.properties.meals").exists())
+                .andExpect(jsonPath("$.components.schemas.ApplyAiMenuRequest.properties.meals.maxItems").value(21));
     }
 
     @ParameterizedTest

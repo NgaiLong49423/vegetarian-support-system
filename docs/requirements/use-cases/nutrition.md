@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.6.0
+> **Version:** v2.7.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-10-13
 > **Status:** Active
@@ -162,16 +162,16 @@ Member chọn yêu cầu tạo thực đơn dinh dưỡng từ Lịch ăn tuần
 - Member có gói Pro còn hiệu lực cho tính năng này (FR-10).
 
 #### Main Flow
-1. Member chọn tab gợi ý trong trang Lịch ăn, chọn tuần đích và một trong hai chế độ: “Dựa trên hồ sơ” hoặc “Theo mong muốn tuần này”.
+1. Member chọn khu vực “Dành cho bạn” trong trang Lịch ăn, chọn tuần đích và một trong hai chế độ: “Dựa trên hồ sơ” hoặc “Theo mong muốn tuần này”.
 2. Với “Dựa trên hồ sơ”, hệ thống đọc mục tiêu chung đã lưu nếu có; nếu mục tiêu null, hệ thống chỉ dùng các dữ liệu hồ sơ và ràng buộc hiện có để tạo menu cân bằng, không hỏi thêm mục tiêu.
 3. Với “Theo mong muốn tuần này”, Member chọn mục tiêu của lần tạo hiện tại và tùy chọn nguyên liệu muốn có/cần tránh. Câu trả lời chỉ dùng trong request này, không được ghi vào FR-35 hoặc tự động tái sử dụng cho tuần khác.
 4. Backend xác minh entitlement Pro, eligibility FR-38 và hồ sơ dinh dưỡng hợp lệ trước khi gọi Gemini.
 5. Hệ thống lấy các Recipe Post công khai có dữ liệu dinh dưỡng đáng tin cậy, phù hợp với loại ăn chay và dị ứng/cần tránh của Member; nguyên liệu muốn có chỉ là ưu tiên.
 6. Hệ thống gửi cho Gemini các ứng viên nội bộ và chỉ phần dữ liệu cần thiết để đề xuất thực đơn; yêu cầu chỉ chọn ID công thức có sẵn. Gemini không được tính hoặc phát minh chỉ tiêu dinh dưỡng.
-7. Hệ thống nhận kết quả để tiếp tục UC-36.2.
+7. Gemini trả đúng 21 ID theo thứ tự ngày/bữa. Nếu thiếu công thức khác nhau, có thể lặp nhưng không lặp cùng món ở hai bữa liền kề. Backend kiểm tra lại toàn bộ ID, trạng thái công khai, ràng buộc và dinh dưỡng trước khi trả preview để tiếp tục UC-36.2.
 
 #### Alternative Flows
-- Nếu kho công thức không đủ cho phạm vi đã chọn, hệ thống thông báo giới hạn dữ liệu và cho phép đề xuất phạm vi ngắn hơn hoặc lặp món ở ngày khác theo FR-36.
+- Nếu pool không có công thức phù hợp, hệ thống báo không thể tạo menu và không gọi bước ghi lịch. Nếu pool có ít hơn 21 công thức, hệ thống được lặp món nhưng tránh lặp ở hai bữa liền kề.
 
 #### Exception/Security Flows
 - Nếu entitlement không hợp lệ, Backend từ chối trước khi gọi Gemini và hướng dẫn nâng cấp.
@@ -214,7 +214,7 @@ Hệ thống đã nhận được phản hồi AI cho yêu cầu hợp lệ.
 #### Main Flow
 1. Hệ thống kiểm tra mỗi món được đề xuất khớp với Recipe Post đang công khai trong candidate pool và phù hợp các ràng buộc cứng.
 2. Hệ thống loại bỏ mục không hợp lệ.
-3. Hệ thống trình bày danh sách món theo từng ngày/bữa, giải trình ngắn và tổng hợp 9 chỉ tiêu dinh dưỡng tham khảo được Backend tính từ dữ liệu có nguồn. Mục tiêu tuần chỉ giải thích ưu tiên lựa chọn món; không hứa hẹn thay đổi cân nặng và không thay đổi mức mục tiêu FR-35.
+3. Hệ thống trình bày đủ 21 vị trí theo ngày/bữa, hình ảnh, tên công thức, dinh dưỡng mỗi khẩu phần và tổng hợp do Backend tính từ dữ liệu có nguồn. Mục tiêu tuần chỉ giải thích ưu tiên lựa chọn món; không hứa hẹn thay đổi cân nặng và không thay đổi mức mục tiêu FR-35.
 4. Member xem, giữ lại hoặc bỏ từng món; nếu muốn lưu, Member tiếp tục UC-36.3.
 
 #### Alternative Flows
@@ -251,16 +251,17 @@ Member xác nhận lưu các món trong bản xem trước.
 Member đang xem kết quả hợp lệ từ UC-36.2 và có quyền cập nhật Meal Plan của chính mình.
 
 #### Main Flow
-1. Member xác nhận áp dụng các món đã chọn.
-2. Hệ thống chuyển các món đã xác nhận qua cùng ranh giới cập nhật Meal Plan tuần mà FR-09 sở hữu.
-3. Hệ thống cập nhật các vị trí bữa tương ứng theo quy tắc hiện hành; không tạo pipeline ghi Meal Plan riêng cho FR-36.
-4. Hệ thống thông báo việc áp dụng hoàn tất.
+1. Member xem cảnh báo rằng xác nhận sẽ thay toàn bộ món trong tuần đích, rồi xác nhận các vị trí đã chọn.
+2. Hệ thống chuyển các vị trí đã xác nhận qua ranh giới cập nhật Meal Plan tuần mà FR-09 sở hữu.
+3. Trong một giao dịch, Backend kiểm tra lại entitlement, eligibility, ràng buộc an toàn và trạng thái công khai/dữ liệu dinh dưỡng của từng công thức; sau đó thay toàn bộ entries của tuần bằng các vị trí được chọn.
+4. Nếu kiểm tra hoặc ghi bất kỳ vị trí nào thất bại, giao dịch rollback, giữ nguyên lịch cũ và trả lỗi. Nếu thành công, hệ thống thông báo việc thay lịch hoàn tất.
 
 #### Alternative Flows
 - Member chưa xác nhận hoặc hủy thao tác: không ghi hoặc thay đổi Meal Plan.
+- Member bỏ chọn một số ô: chỉ các ô còn chọn được ghi; không còn món cũ nào của tuần đích được giữ lại.
 
 #### Postconditions
-Chỉ các món được Member xác nhận mới được áp dụng; Meal Plan được cập nhật theo luồng chung FR-09.
+Chỉ các món được Member xác nhận mới được áp dụng; entries cũ của toàn tuần được thay nguyên tử theo luồng chung FR-09. Thất bại không để lại cập nhật một phần.
 
 #### Traceability
 - **Parent FR:** [FR-36](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-36).

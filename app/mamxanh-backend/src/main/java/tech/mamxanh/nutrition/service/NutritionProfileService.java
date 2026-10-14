@@ -154,6 +154,29 @@ public class NutritionProfileService {
         requireEligible(user);
     }
 
+    /** FR-36 context. Requires eligibility and a complete, consented anthropometric profile. */
+    @Transactional(readOnly = true)
+    public MenuNutritionContext requireMenuNutritionContext(long userId) {
+        NutritionProfileEntity user = repository.findById(userId)
+                .orElseThrow(() -> new NutritionProfileException(HttpStatus.NOT_FOUND, "MEMBER_NOT_FOUND", "Không tìm thấy hồ sơ Member."));
+        requireEligible(user);
+        if (!hasSavedProfile(user)) {
+            throw new NutritionProfileException(HttpStatus.CONFLICT, "NUTRITION_PROFILE_REQUIRED",
+                    "Lưu hồ sơ nhân trắc học và đồng ý sử dụng dữ liệu trước khi lập thực đơn.");
+        }
+        int age = calculations.ageOn(user.getDateOfBirth(), LocalDate.now(clock));
+        List<String> reasons = outOfScopeReasons(age, user.isPregnant(), user.isBreastfeeding(), user.isTherapeuticDietRequired());
+        if (!reasons.isEmpty()) {
+            throw new NutritionProfileException(HttpStatus.UNPROCESSABLE_ENTITY, "NUTRITION_PROFILE_OUT_OF_SCOPE",
+                    "Hồ sơ hiện nằm ngoài phạm vi hỗ trợ dinh dưỡng.");
+        }
+        return new MenuNutritionContext(user.getNutritionGoal(), user.getBiologicalSex(), user.getHeightCm(),
+                user.getWeightKg(), user.getActivityLevel(), age);
+    }
+
+    public record MenuNutritionContext(String nutritionGoal, String biologicalSex, java.math.BigDecimal heightCm,
+            java.math.BigDecimal weightKg, String activityLevel, int age) { }
+
     private void requireEligible(NutritionProfileEntity user) {
         if (user.getNutritionEligibilityStatus() == NutritionEligibilityStatus.ELIGIBLE) return;
         if (user.getNutritionEligibilityStatus() == NutritionEligibilityStatus.INELIGIBLE) {

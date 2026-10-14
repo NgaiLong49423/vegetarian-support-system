@@ -24,4 +24,12 @@ public class SubscriptionEntitlementService {
             throw new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED);
         }
     }
+
+    @Transactional(readOnly = true)
+    public void requirePro(long userId) {
+        if (!repository.hasActiveProSubscription(userId, LocalDateTime.now(clock))) {
+            throw new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED,
+                    "Lập thực đơn theo dinh dưỡng yêu cầu gói Pro còn hiệu lực.");
+        }
+    }
 }

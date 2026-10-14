@@ -67,7 +67,7 @@ function applyResponse(response: NutritionProfileResponse): FormState {
     heightCm: String(response.profile.heightCm),
     weightKg: String(response.profile.weightKg),
     activityLevel: response.profile.activityLevel,
-    nutritionGoal: response.profile.nutritionGoal,
+    nutritionGoal: response.profile.nutritionGoal ?? '',
   };
 }
 

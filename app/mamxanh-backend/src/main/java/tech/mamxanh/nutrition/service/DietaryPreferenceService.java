@@ -133,6 +133,23 @@ public class DietaryPreferenceService {
         }
     }
 
+    /** FR-36 allows unanswered FR-31 fields to remain null while retaining declared hard constraints. */
+    @Transactional(readOnly = true)
+    public MenuDietaryConstraints menuConstraints(long userId) {
+        DietaryPreferenceEntity profile = profiles.findById(userId).orElse(null);
+        List<UserIngredientPreferenceEntity> rows = profile == null
+                ? List.of() : preferences.findByUserIdOrderByIdAsc(userId);
+        List<Long> avoidIds = rows.stream().filter(row -> row.getPreferenceType() == PreferenceType.AVOID)
+                .map(UserIngredientPreferenceEntity::getIngredientId).filter(java.util.Objects::nonNull).distinct().toList();
+        List<String> avoidNames = rows.stream().filter(row -> row.getPreferenceType() == PreferenceType.AVOID)
+                .map(UserIngredientPreferenceEntity::getName).filter(java.util.Objects::nonNull).toList();
+        return new MenuDietaryConstraints(profile == null || profile.getVegetarianType() == null
+                ? null : profile.getVegetarianType().name(), avoidIds, avoidNames);
+    }
+
+    public record MenuDietaryConstraints(String vegetarianType, List<Long> avoidedIngredientIds,
+            List<String> avoidedIngredientNames) { }
+
     private DietaryPreferenceEntity currentMember() {
         return currentMember(profiles::findById);
     }
