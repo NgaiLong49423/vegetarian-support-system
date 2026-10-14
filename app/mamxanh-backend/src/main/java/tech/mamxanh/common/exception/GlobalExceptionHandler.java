@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import tech.mamxanh.nutrition.service.NutritionProfileException;
 
 /**
  * Converts every error into {@code application/problem+json} with a stable {@code code}
@@ -52,6 +53,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             headers.set(HttpHeaders.RETRY_AFTER, Long.toString(seconds));
         }
         return ResponseEntity.status(ex.errorCode().status()).headers(headers).body(problem);
+    }
+
+    @ExceptionHandler(NutritionProfileException.class)
+    ResponseEntity<Object> handleNutritionProfileException(NutritionProfileException ex, WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getMessage());
+        problem.setTitle(ex.getStatus().getReasonPhrase());
+        problem.setInstance(URI.create(requestPath(request)));
+        problem.setProperty("code", ex.getCode());
+        return ResponseEntity.status(ex.getStatus()).body(problem);
     }
 
     /** Valid token, but {@code USER.account_status = LOCKED} (decision Q20, NFR-09). */

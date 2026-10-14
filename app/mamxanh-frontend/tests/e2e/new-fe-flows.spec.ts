@@ -78,7 +78,7 @@ async function fillEligibleNutritionProfile(page: Page) {
   await page.getByLabel('Chiều cao *').fill(String(exampleProfile.heightCm));
   await page.getByLabel('Cân nặng *').fill(String(exampleProfile.weightKg));
   await page.getByLabel('Mức độ vận động *').selectOption(exampleProfile.activityLevel);
-  await page.getByLabel('Mục tiêu dinh dưỡng chung *').selectOption(exampleProfile.nutritionGoal);
+  await page.getByLabel('Mục tiêu dinh dưỡng chung (không bắt buộc)').selectOption(exampleProfile.nutritionGoal);
   for (const name of ['pregnant', 'breastfeeding', 'therapeuticDietRequired']) {
     await page.locator(`input[name="${name}"]`).nth(0).check();
   }
@@ -291,7 +291,7 @@ test('nutrition profile hides all metrics for underage and excluded declarations
   await page.getByLabel('Chiều cao *').fill('160');
   await page.getByLabel('Cân nặng *').fill('55');
   await page.getByLabel('Mức độ vận động *').selectOption('SEDENTARY');
-  await page.getByLabel('Mục tiêu dinh dưỡng chung *').selectOption('MAINTAIN_WEIGHT');
+  await page.getByLabel('Mục tiêu dinh dưỡng chung (không bắt buộc)').selectOption('MAINTAIN_WEIGHT');
   await page.locator('input[name="pregnant"]').nth(1).check();
   await page.locator('input[name="breastfeeding"]').nth(0).check();
   await page.locator('input[name="therapeuticDietRequired"]').nth(0).check();
