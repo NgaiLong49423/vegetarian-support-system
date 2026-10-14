@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-14 — Refine Weekly Nutrition Menu Preferences
 
-**Status:** Working tree — uncommitted changes.
+**Status:** Committed — `876a08e`.
 
 **Scope:** Clarify weekly menu preference inputs and make excluded ingredients take precedence over preferred ingredients.
 
@@ -31,7 +31,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-14 — Handle Nutrition Eligibility for AI Menus
 
-**Status:** Working tree — uncommitted changes.
+**Status:** Committed — `876a08e`.
 
 **Scope:** Return the correct eligibility response from AI menu endpoints and guide Members to the required confirmation.
 
