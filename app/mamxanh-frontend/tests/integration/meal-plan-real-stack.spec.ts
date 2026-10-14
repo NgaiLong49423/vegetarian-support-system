@@ -148,7 +148,6 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
       .first()
       .click()
     const dialog = page.getByRole("dialog")
-    await dialog.getByRole("button", { name: "Đã lưu", exact: true }).click()
     await dialog.getByLabel("Tìm món cho lịch ăn").fill(fixture)
     await dialog.getByRole("button", { name: "Tìm", exact: true }).click()
     const add = page.waitForResponse(
