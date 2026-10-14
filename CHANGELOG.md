@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-15 — Recommend Published Recipes in AI Chat
+## 2026-10-15 — Recommend Published Recipes in AI Chat ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — 701cf19d8cd59d1aea57f0255953f47366143f15.
 
 **Scope:** Extend FR-51 chat with real public recipe recommendations and explicitly requested, non-persistent recipe drafts.
 
@@ -29,9 +29,9 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
-## 2026-10-14 — Add Contextual AI Chat for Members
+## 2026-10-14 — Add Contextual AI Chat for Members ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — f984505f64662bb1ae77aedbd5f9a8d47dc537df.
 
 **Scope:** Add the Member chatbot slice for Issue #52 while keeping public Guest access closed until FR-02 rate limiting is integrated.
 
