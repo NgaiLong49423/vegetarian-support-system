@@ -195,6 +195,59 @@ class AiMenuServiceTest {
         verifyNoInteractions(ai, events);
     }
 
+    @Test
+    void rejectsOutOfCatalogAndAdjacentRecipesReturnedByAi() {
+        prepareCandidates();
+        String unknown = java.util.stream.IntStream.range(0, 21).mapToObj(index -> index == 4 ? "999" : "11")
+                .collect(java.util.stream.Collectors.joining(",", "[", "]"));
+        when(ai.recommendRecipes(any(), anyList(), eq(21)))
+                .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":" + unknown + "}", 1, 1, 2));
+        assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
+        verifyNoInteractions(events);
+
+        reset(ai);
+        String adjacent = "[" + "11,".repeat(20) + "11]";
+        when(ai.recommendRecipes(any(), anyList(), eq(21)))
+                .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":" + adjacent + "}", 1, 1, 2));
+        assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
+    }
+
+    @Test
+    void filtersRecipesWithUnresolvableUnitsAndIncompleteNutrition() {
+        prepareCandidates();
+        var unresolvedUnit = new RecipePostResponse.Ingredient(21L, "unknown unit", null, 99, "x", "unknown",
+                BigDecimal.ONE);
+        var incompleteRecipe = recipe(13, "Incomplete", 3);
+        when(recipes.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
+                List.of(recipe(11, "Allowed", 1), recipeWithIngredient(12, "Unresolved", "VEGAN", unresolvedUnit), incompleteRecipe),
+                0, 50, 3, 1));
+        when(nutrition.calculate(anyList(), eq(2))).thenReturn(new RecipeNutritionService.NutritionSummary(false,
+                List.of(), Map.of(), Map.of()));
+
+        assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
+        verifyNoInteractions(ai, events);
+    }
+
+    @Test
+    void rejectsApplySelectionsOutsideTheWeekAndDuplicateMealPositions() {
+        prepareCandidates();
+        var outsideWeek = new ApplyAiMenuRequest(MONDAY, "PROFILE", null, null,
+                List.of(new ApplyAiMenuRequest.SelectedMeal(MONDAY.plusDays(7), "BREAKFAST", 11L)));
+        assertThatThrownBy(() -> service.apply(outsideWeek)).isInstanceOf(AppException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RECIPE_NOT_FOUND);
+
+        var duplicatePosition = new ApplyAiMenuRequest(MONDAY, "PROFILE", null, null, List.of(
+                new ApplyAiMenuRequest.SelectedMeal(MONDAY, "BREAKFAST", 11L),
+                new ApplyAiMenuRequest.SelectedMeal(MONDAY, "BREAKFAST", 12L)));
+        assertThatThrownBy(() -> service.apply(duplicatePosition)).isInstanceOf(AppException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
+        verifyNoInteractions(plans, entries, reads);
+        verify(recipes, never()).requirePublishedMealPlanRecipe(anyLong());
+    }
+
     private void prepareCandidates() {
         when(profiles.requireMenuNutritionContext(17L)).thenReturn(
                 new NutritionProfileService.MenuNutritionContext(null, "FEMALE", BigDecimal.valueOf(160), BigDecimal.valueOf(55), "LIGHTLY_ACTIVE", 25));
@@ -210,6 +263,12 @@ class AiMenuServiceTest {
         return new RecipePostResponse(id, 3, "Author", null, title, null, "Instructions", "SOUP", "VEGAN", "EASY", 2,
                 10, 10, null, "PUBLISHED", List.of(), List.of(new RecipePostResponse.Ingredient(ingredientId,
                         "ingredient", null, 1, "g", "gram", BigDecimal.valueOf(100))), 0, 0, null, 0);
+    }
+
+    private static RecipePostResponse recipeWithIngredient(long id, String title, String vegetarianType,
+            RecipePostResponse.Ingredient ingredient) {
+        return new RecipePostResponse(id, 3, "Author", null, title, null, "Instructions", "SOUP", vegetarianType,
+                "EASY", 2, 10, 10, null, "PUBLISHED", List.of(), List.of(ingredient), 0, 0, null, 0);
     }
 
     private static String alternatingIds() {
