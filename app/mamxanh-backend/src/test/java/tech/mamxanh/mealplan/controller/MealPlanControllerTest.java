@@ -34,14 +34,18 @@ import tech.mamxanh.common.exception.GlobalExceptionHandler;
 import tech.mamxanh.mealplan.dto.response.MealPlanWeekResponse;
 import tech.mamxanh.mealplan.service.MealPlanReadService;
 import tech.mamxanh.mealplan.service.MealPlanService;
+import tech.mamxanh.mealplan.service.MealPlanExportService;
+import tech.mamxanh.mealplan.dto.response.MealPlanExportResponse;
+import tech.mamxanh.mealplan.dto.request.MoveMealPlanEntryRequest;
 
-@WebMvcTest({MealPlanController.class, MealPlanReadController.class, AiMenuController.class})
+@WebMvcTest({MealPlanController.class, MealPlanReadController.class, MealPlanExportController.class, AiMenuController.class})
 @ActiveProfiles("test")
 @EnableConfigurationProperties(SpringDocConfigProperties.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class, OpenApiConfig.class,
         SpringDocConfiguration.class, SpringDocSpecPropertiesConfiguration.class, SpringDocWebMvcConfiguration.class})
 class MealPlanControllerTest {
     @Autowired private MockMvc mvc;
+    @MockitoBean private MealPlanExportService exports;
     @MockitoBean private MealPlanService service;
     @MockitoBean private MealPlanReadService reads;
     @MockitoBean private tech.mamxanh.mealplan.service.AiMenuService aiMenus;
@@ -159,6 +163,15 @@ class MealPlanControllerTest {
 
     @Test
     void publishesTheGeneratedContract() throws Exception {
+        var artifact = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("target"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target/generated-mealplan-openapi.json"),
+                artifact.getResponse().getContentAsString());
+        mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/position'].patch.responses['409']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/position'].patch.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/export'].get.responses['403']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/export'].get.security[0].bearerAuth").isArray());
         mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans'].put.parameters[0].name").value("weekStartDate"))
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans'].put.requestBody").doesNotExist())
@@ -240,6 +253,50 @@ class MealPlanControllerTest {
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}'].put.responses['403']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}'].delete.responses['204']").exists())
                 .andExpect(jsonPath("$.components.schemas.AddMealPlanEntryRequest.properties.recipeId.minimum").value(1));
+    }
+
+    @Test
+    void movesEntriesAndReturnsDuplicateConflicts() throws Exception {
+        var week = LocalDate.of(2026, 10, 12);
+        var target = new MoveMealPlanEntryRequest(week.plusDays(1), "DINNER");
+        when(service.moveEntry(week, 31, target)).thenReturn(new MealPlanWeekResponse.Entry(31,
+                target.mealDate(), target.mealType(), new java.math.BigDecimal("2.5"), 1, "Món thử", null, "SOUP", 25, false, null));
+        var body = "{\"mealDate\":\"2026-10-13\",\"mealType\":\"DINNER\"}";
+        mvc.perform(patch("/api/v1/meal-plans/2026-10-12/entries/31/position").with(user("17"))
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.mealDate").value("2026-10-13"))
+                .andExpect(jsonPath("$.plannedServings").value(2.5));
+        when(service.moveEntry(week, 31, target)).thenThrow(new AppException(ErrorCode.MEAL_PLAN_RECIPE_DUPLICATE));
+        mvc.perform(patch("/api/v1/meal-plans/2026-10-12/entries/31/position").with(user("17"))
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("MEAL_PLAN_RECIPE_DUPLICATE"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"mealDate\":\"2026-10-13\",\"mealType\":\"SNACK\"}",
+            "{\"mealDate\":\"bad\",\"mealType\":\"DINNER\"}"})
+    void rejectsInvalidMoveBeforeService(String body) throws Exception {
+        mvc.perform(patch("/api/v1/meal-plans/2026-10-12/entries/31/position").with(user("17"))
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void exportsPrivateSnapshotWithoutCaching() throws Exception {
+        var week = LocalDate.of(2026, 10, 12);
+        when(exports.getExport(week)).thenReturn(new MealPlanExportResponse(week, List.of()));
+        mvc.perform(get("/api/v1/meal-plans/2026-10-12/export").with(user("17")))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.entries").isEmpty());
+    }
+
+    @Test
+    void guestCannotMoveOrExport() throws Exception {
+        mvc.perform(patch("/api/v1/meal-plans/2026-10-12/entries/31/position")
+                .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/meal-plans/2026-10-12/export")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(service, exports);
     }
 
     @Test

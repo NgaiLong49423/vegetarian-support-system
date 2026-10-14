@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-13
-next_id: 26
+last_updated: 2026-10-14
+next_id: 28
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,15 +8,24 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
-  - id: BUG-025
+  - id: BUG-027
     title: Administrator dùng chức năng chỉ dành cho Member nhận mã lỗi chỉnh sửa công thức
     status: RECORDED
     severity: Low
     area: Backend/Auth
-    file: .agents/outputs/bugs/BUG-025.md
+    file: .agents/outputs/bugs/BUG-027.md
     created: 2026-10-11
     updated: 2026-10-13
     related_issue: Unknown
+  - id: BUG-025
+    title: CI không tải font Git LFS cho chức năng xuất lịch PDF
+    status: RECORDED
+    severity: Medium
+    area: Frontend/CI/PDF
+    file: .agents/outputs/bugs/BUG-025.md
+    created: 2026-10-14
+    updated: 2026-10-14
+    related_issue: 38
   - id: BUG-024
     title: Schema OpenAPI của mục lịch ăn không cho phép các giá trị null thực tế
     status: RESOLVED

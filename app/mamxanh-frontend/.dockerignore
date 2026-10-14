@@ -5,6 +5,8 @@ dist/
 .vite/
 playwright-report/
 test-results/
+.nyc_output/
+coverage/
 *.log
 .idea/
 .vscode/
