@@ -27,7 +27,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Fixed
 
-- None.
+- Match Vietnamese recipe creation and adaptation requests against the same accent-normalized phrases used by the chat intent detector.
 
 ## 2026-10-14 — Add Contextual AI Chat for Members ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
 

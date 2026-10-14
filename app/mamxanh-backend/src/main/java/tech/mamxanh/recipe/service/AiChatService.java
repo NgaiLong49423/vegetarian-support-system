@@ -250,14 +250,14 @@ public class AiChatService {
 
     private static boolean explicitlyRequestsCreation(String question) {
         String value = normalize(question);
-        return containsAny(value, "tạo công thức", "viết công thức", "sáng tạo công thức", "công thức mới",
-                "tự nghĩ công thức", "cho tôi công thức mới", "create a recipe", "write a new recipe", "invent a recipe");
+        return containsAny(value, "tao cong thuc", "viet cong thuc", "sang tao cong thuc", "cong thuc moi",
+                "tu nghi cong thuc", "cho toi cong thuc moi", "create a recipe", "write a new recipe", "invent a recipe");
     }
 
     private static boolean explicitlyRequestsAdaptation(String question) {
         String value = normalize(question);
-        return containsAny(value, "biến tấu", "cải biến", "chỉnh sửa công thức", "thay đổi công thức",
-                "điều chỉnh công thức", "adapt this recipe", "modify this recipe", "change this recipe");
+        return containsAny(value, "bien tau", "cai bien", "chinh sua cong thuc", "thay doi cong thuc",
+                "dieu chinh cong thuc", "adapt this recipe", "modify this recipe", "change this recipe");
     }
 
     private static boolean containsAny(String value, String... terms) {
