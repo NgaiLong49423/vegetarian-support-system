@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { AuthPage } from './pages/Auth';
 import { AuthProvider } from './components/AuthContext';
@@ -56,6 +56,7 @@ export default function App() {
           <Route path="/cong-thuc/id/:recipeId" element={<ApiRecipeDetail />} />
           <Route path="/cong-thuc/:slug" element={<RecipeDetail />} />
           <Route path="/ke-hoach" element={<MealPlanner />} />
+          <Route path="/goi-y-ai" element={<Navigate to="/ke-hoach?view=for-you" replace />} />
           <Route path="/di-cho" element={<ShoppingList />} />
           <Route path="/dinh-duong" element={<NutritionTracker />} />
           <Route path="/dang-cong-thuc" element={<CreateRecipe />} />

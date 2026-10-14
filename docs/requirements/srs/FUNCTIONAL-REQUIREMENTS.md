@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.12.0
+> **Version:** v2.17.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-12
+> **Last Updated:** 2026-10-14
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -2394,7 +2394,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-35).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cho phép Member đã đăng nhập và đủ điều kiện sức khỏe khai báo/cập nhật thông số nhân trắc học (`date_of_birth`, giới tính, chiều cao, cân nặng, mức độ vận động, mục tiêu dinh dưỡng cá nhân); service tính tuổi từ ngày sinh để kiểm tra điều kiện 18–120, không lưu tuổi cố định; tính toán chỉ số BMI tham khảo và hiển thị nhu cầu năng lượng/dinh dưỡng ước tính dựa trên dữ liệu chuẩn USDA/NIH; bắt buộc hiển thị tuyên bố từ chối trách nhiệm y tế (Medical Safety Disclaimer); hệ thống tuyệt đối không tự chẩn đoán, kê đơn hay áp đặt chế độ ăn điều trị.
+- **Tóm tắt yêu cầu:** Cho phép Member đã đăng nhập và đủ điều kiện sức khỏe khai báo/cập nhật thông số nhân trắc học (`date_of_birth`, giới tính, chiều cao, cân nặng, mức độ vận động) cùng mục tiêu dinh dưỡng chung tùy chọn (`MAINTAIN_WEIGHT`, `LOSE_WEIGHT`, `GAIN_WEIGHT`, `BUILD_MUSCLE`, `IMPROVE_HEALTH`, `SUPPORT_TRAINING`); service tính tuổi từ ngày sinh để kiểm tra điều kiện 18–120, không lưu tuổi cố định; tính toán chỉ số BMI tham khảo và hiển thị nhu cầu năng lượng/dinh dưỡng ước tính dựa trên dữ liệu chuẩn USDA/NIH. Mục tiêu dinh dưỡng chung không bắt buộc và không tự thay đổi các con số FR-35; nó được dùng làm mục tiêu đã lưu cho chế độ AI dựa trên hồ sơ của FR-36. Bắt buộc hiển thị tuyên bố từ chối trách nhiệm y tế (Medical Safety Disclaimer); hệ thống tuyệt đối không tự chẩn đoán, kê đơn hay áp đặt chế độ ăn điều trị.
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Member đã đăng nhập, từ đủ 18 tuổi, không mang thai, không cho con bú và không có bệnh lý mạn tính cần chế độ ăn điều trị đặc biệt (SRS 3.18, BR-41, BR-42).
   - Không áp dụng: Guest (BR-05), người dùng dưới 18 tuổi, phụ nữ có thai/cho con bú, người cần can thiệp y tế (BR-42).
@@ -2467,9 +2467,9 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-36).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tạo thực đơn gợi ý theo tuần hoặc theo ngày dựa trên hồ sơ dinh dưỡng tham khảo cá nhân và các ràng buộc ăn uống của Member; AI chỉ được phép lựa chọn từ các bài Recipe Post đang công khai trong hệ thống có dữ liệu định lượng dinh dưỡng tin cậy (100% nguyên liệu đã được ánh xạ gram và có số liệu dinh dưỡng); AI không được tự bịa công thức mới ngoài cơ sở dữ liệu; người dùng phải xác nhận trước khi lưu các món được gợi ý vào Lịch ăn tuần.
+- **Tóm tắt yêu cầu:** Cung cấp trong trang Lịch ăn hai chế độ tạo thực đơn tuần tham khảo bằng AI. Chế độ “Dựa trên hồ sơ” đọc mục tiêu chung đã lưu trong FR-35 cùng dữ liệu nhân trắc học/dinh dưỡng và các ràng buộc ăn uống đã khai báo; nếu mục tiêu hoặc câu trả lời sở thích chưa có, giữ là `null`, không bắt hoàn tất onboarding và không suy đoán mục tiêu cân nặng. Chế độ “Theo mong muốn tuần này” nhận mục tiêu riêng cho lần tạo lịch hiện tại cùng nguyên liệu muốn có/cần tránh; mọi câu trả lời đều tùy chọn, chỉ có hiệu lực cho lần tạo tuần đó, không lưu vào hồ sơ và không tự động áp dụng cho tuần sau. Nguyên liệu muốn có chỉ là ưu tiên mềm trong tập công thức hợp lệ; mọi công thức chứa nguyên liệu người dùng chọn tránh bị loại khỏi tập ứng viên và không thể được ưu tiên hoặc chọn, kể cả khi có nguyên liệu người dùng muốn có. Với cả hai chế độ, AI chỉ được lựa chọn từ các Recipe Post đang công khai trong hệ thống có dữ liệu định lượng dinh dưỡng tin cậy (100% nguyên liệu ánh xạ gram và có số liệu đầy đủ); AI không được tự tạo món ngoài cơ sở dữ liệu; Member phải xem trước và xác nhận trước khi áp dụng vào Lịch ăn tuần. Mục tiêu tăng/giảm cân trong yêu cầu menu là ưu tiên lựa chọn món, không phải cam kết thay đổi cân nặng hay mục tiêu y tế; các mốc số FR-35 vẫn được trình bày như mức tham khảo hiện hành, không tự suy ra mức thâm hụt/thặng dư calorie.
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Member đã đăng nhập, đã hoàn tất hồ sơ dinh dưỡng (FR-35), đã hoàn thành onboarding sở thích/ràng buộc ăn chay (FR-31) và có gói Pro hợp lệ cho AI lập thực đơn dinh dưỡng (FR-10).
+  - Áp dụng cho: Member đã đăng nhập, có hồ sơ nhân trắc học hợp lệ và xác nhận đủ điều kiện (FR-35/FR-38), và có gói Pro hợp lệ cho AI lập thực đơn dinh dưỡng (FR-10). Onboarding sở thích FR-31 và mục tiêu chung là tùy chọn cho FR-36; câu trả lời chưa khai báo là `null`, không đồng nghĩa xác nhận “không có”. Nếu đã khai báo trường phái ăn chay hoặc nguyên liệu dị ứng/cần tránh, các dữ liệu đó là ràng buộc an toàn bắt buộc. Câu trả lời của “Theo mong muốn tuần này” chỉ có trong request hiện tại.
   - Giới hạn: Quá trình tạo thực đơn chỉ mang tính tham khảo và hỗ trợ lên kế hoạch ăn uống; việc tối ưu hóa vi chất chuyên sâu theo bệnh lý nằm ngoài phạm vi MVP.
 - **Phân loại Actor:**
   - Primary Actor: `Member` (đã đăng nhập và đủ điều kiện).
@@ -2477,7 +2477,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 
 #### Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-36.1`: Yêu cầu AI tạo thực đơn tham khảo theo hồ sơ dinh dưỡng và ràng buộc ăn chay.
+  - `UC-36.1`: Yêu cầu AI tạo thực đơn tham khảo theo hồ sơ đã lưu hoặc theo mong muốn riêng của tuần hiện tại.
   - `UC-36.2`: Xem danh sách món được đề xuất kèm giải trình dinh dưỡng và cảnh báo tham khảo.
   - `UC-36.3`: Xác nhận áp dụng thực đơn gợi ý vào các bữa ăn trong Lịch ăn tuần.
 - **User Stories:**
@@ -2486,6 +2486,8 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Member đã đăng nhập có gói Pro còn hiệu lực mới có quyền yêu cầu AI lập thực đơn dinh dưỡng. Guest, Free và Plus không có quyền này (FR-10, BR-02, BR-03).
 - **Ràng buộc nghiệp vụ:** AI chỉ đóng vai trò ghép nối công thức có sẵn; hệ thống cấm tuyệt đối việc tạo công thức ảo hoặc ghi đè số liệu dinh dưỡng không qua kiểm chứng (BR-38, BR-40, BR-41).
+- **Hai chế độ yêu cầu:** `PROFILE` dùng mục tiêu dinh dưỡng chung trong FR-35 nếu có; `THIS_WEEK` nhận `goal`, `preferredIngredientIds` và `avoidedIngredientIds` chỉ trong request hiện tại. Nguyên liệu dị ứng/cần tránh từ FR-31 và mọi nguyên liệu trong `avoidedIngredientIds` là hard exclusion; nguyên liệu trong `preferredIngredientIds` chỉ là ưu tiên mềm trong số công thức còn hợp lệ. Nếu cùng một nguyên liệu nằm trong cả hai danh sách, điều kiện tránh luôn thắng. Giá trị của chế độ `THIS_WEEK` không được lưu hoặc tái sử dụng cho request khác.
+- **Mức cá nhân hóa:** Mục tiêu được chuyển thành tiêu chí ưu tiên chọn công thức trong pool tin cậy. Tổng năng lượng và 9 chỉ tiêu của món/menu được tính từ dữ liệu RecipePost đã xác thực; mục tiêu tuần không làm thay đổi công thức mục tiêu FR-35, không yêu cầu cân nặng/thời hạn mục tiêu và không phải cam kết kết quả cân nặng.
 
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
@@ -2525,7 +2527,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **AC-36.4 (Xác nhận của Member trước khi ghi đè/lưu Lịch ăn):**
   - *Given* AI đã sinh bản xem trước thực đơn thành công,
   - *When* Member chưa nhấn nút "Lưu vào Lịch ăn",
-  - *Then* hệ thống không tự động thay đổi bất kỳ mục nào trong Lịch ăn tuần hiện tại của Member.
+  - *Then* hệ thống không tự động thay đổi bất kỳ mục nào trong Lịch ăn tuần hiện tại của Member; khi Member xác nhận, hệ thống thay toàn bộ các mục của tuần đích bằng các ô được chọn trong preview trong một giao dịch nguyên tử. Nếu bất kỳ món nào không còn hợp lệ, toàn bộ thao tác rollback và lịch cũ được giữ nguyên.
 - **AC-36.5 (Kiểm tra quyền gói Pro trước khi gọi AI):**
   - *Given* Member chỉ có gói Free hoặc Plus,
   - *When* gửi yêu cầu tạo thực đơn dinh dưỡng bằng AI,
@@ -2534,6 +2536,12 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - *Given* Member có gói Pro hợp lệ gửi yêu cầu tạo thực đơn AI,
   - *When* dịch vụ AI gặp lỗi kết nối hoặc thời gian phản hồi vượt quá 8 giây,
   - *Then* hệ thống thông báo lỗi tới người dùng và quyền gói Pro không đổi.
+- **AC-36.7 (Hai chế độ gợi ý trên trang Lịch ăn):** Member đủ điều kiện và có Pro chọn được “Dựa trên hồ sơ” hoặc “Theo mong muốn tuần này”; cả hai đều hiển thị bản xem trước trước khi áp dụng.
+- **AC-36.8 (Mục tiêu hồ sơ có thể để trống):** Ở chế độ hồ sơ, mục tiêu đã lưu được dùng làm tiêu chí ưu tiên; nếu null, hệ thống vẫn tạo menu cân bằng theo dữ liệu hợp lệ khác, không buộc trả lời mục tiêu và không tự gán mục tiêu cân nặng.
+- **AC-36.9 (Câu trả lời tuần này chỉ có hiệu lực một lần):** Chế độ tuần này dùng mục tiêu cùng nguyên liệu muốn có/cần tránh chỉ cho request hiện tại; không ghi vào hồ sơ hoặc áp dụng sang tuần sau nếu Member không chọn lại. Ràng buộc an toàn đã khai báo từ FR-31 vẫn luôn được áp dụng. Mọi công thức có chứa nguyên liệu trong danh sách cần tránh của tuần bị loại khỏi candidate pool; quy tắc này luôn thắng nguyên liệu muốn có. Nguyên liệu muốn có chỉ xếp ưu tiên mềm trong các công thức còn lại.
+- **AC-36.10 (Không suy diễn mục tiêu định lượng hoặc hứa kết quả):** Mục tiêu giảm/tăng cân hoặc tăng cơ chỉ điều hướng lựa chọn công thức; năng lượng và 9 chỉ tiêu vẫn là dữ liệu tính được từ hồ sơ/RecipePost có nguồn, không tự thêm thâm hụt/thặng dư calorie hay cam kết cân nặng.
+- **AC-36.11 (Không ép hoàn tất hồ sơ sở thích):** Member đủ điều kiện FR-35/FR-38 và Pro nhưng chưa hoàn tất một hoặc nhiều câu hỏi FR-31 vẫn có thể tạo menu; dữ liệu chưa khai báo là `null`, mọi ràng buộc đã biết được áp dụng và UI giải thích rằng mức cá nhân hóa phụ thuộc thông tin đã cung cấp.
+- **AC-36.12 (Đủ 21 vị trí và lặp món có kiểm soát):** Preview thành công có 7 ngày × 3 bữa; nếu pool tin cậy không đủ 21 công thức khác nhau, hệ thống được lặp công thức nhưng không xếp cùng một công thức ở hai bữa liên tiếp. Member có thể bỏ chọn một số vị trí trước khi xác nhận; chỉ các vị trí được chọn được ghi vào lịch sau khi toàn bộ tuần cũ bị thay.
 
 ---
 
