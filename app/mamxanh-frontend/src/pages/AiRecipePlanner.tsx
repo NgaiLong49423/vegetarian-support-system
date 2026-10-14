@@ -36,7 +36,11 @@ function failureMessage(error: unknown, action: 'recommend' | 'weekly' | 'apply'
   return 'Không kết nối được máy chủ. Vui lòng thử lại.';
 }
 
-export function AiRecipePlanner({ weekStartDate, embedded = false }: { weekStartDate?: string; embedded?: boolean }) {
+export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode = 'ingredients' }: {
+  weekStartDate?: string;
+  embedded?: boolean;
+  plannerMode?: 'ingredients' | 'weekly';
+}) {
   const { account, isAuthenticated } = useAuth();
   const [profile, setProfile] = useState<DietaryPreferences | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -167,18 +171,18 @@ export function AiRecipePlanner({ weekStartDate, embedded = false }: { weekStart
         {!selected.length && <p className="text-sm text-ink-muted">Chọn ít nhất một nguyên liệu.</p>}
       </div>
       <div className="mt-5 flex flex-wrap gap-3">
-        <Button type="button" disabled={!profileReady || selected.length === 0 || busy !== null} onClick={() => runRecommendation('recommend')}>
+        {plannerMode === 'ingredients' && <Button type="button" disabled={!profileReady || selected.length === 0 || busy !== null} onClick={() => runRecommendation('recommend')}>
           {busy === 'recommend' ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Tìm món phù hợp
-        </Button>
-        <Button type="button" variant="secondary" disabled={!profileReady || selected.length === 0 || busy !== null} onClick={() => runRecommendation('weekly')}>
-          {busy === 'weekly' ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CalendarDays className="h-4 w-4" />} Xem thực đơn tuần
-        </Button>
+        </Button>}
+        {plannerMode === 'weekly' && <Button type="button" variant="secondary" disabled={!profileReady || selected.length === 0 || busy !== null} onClick={() => runRecommendation('weekly')}>
+          {busy === 'weekly' ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CalendarDays className="h-4 w-4" />} Tạo thực đơn tuần
+        </Button>}
       </div>
     </section>
 
     {error && <div role="alert" className="mt-5 flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><div>{error.message}{error.code === 'AI_SUBSCRIPTION_REQUIRED' && <Link to="/goi-ai" className="ml-1 font-semibold underline">Xem các gói</Link>}{error.code === 'DIETARY_PROFILE_INCOMPLETE' && <Link to="/ho-so/so-thich-an-uong" className="ml-1 font-semibold underline">Cập nhật hồ sơ</Link>}</div></div>}
 
-    {suggestions && <section className="mt-7" aria-labelledby="suggestions-title">
+    {plannerMode === 'ingredients' && suggestions && <section className="mt-7" aria-labelledby="suggestions-title">
       <h2 id="suggestions-title" className="mb-4 text-xl font-bold text-ink">Công thức phù hợp</h2>
       {suggestions.items.length === 0 ? <p className="rounded-2xl border border-brand-100 bg-paper p-5 text-sm text-ink-muted">Chưa tìm thấy công thức phù hợp với nguyên liệu và hồ sơ hiện tại.</p> : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {suggestions.items.map(({ recipe, reason }) => {
@@ -194,7 +198,7 @@ export function AiRecipePlanner({ weekStartDate, embedded = false }: { weekStart
       </div>}
     </section>}
 
-    {preview && <section className="mt-8" aria-labelledby="preview-title">
+    {plannerMode === 'weekly' && preview && <section className="mt-8" aria-labelledby="preview-title">
       <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-brand-100 bg-paper p-4 sm:flex-row sm:items-center sm:justify-between">
         <div><h2 id="preview-title" className="text-xl font-bold text-ink">Thực đơn tuần dành cho bạn</h2><p className="mt-1 text-sm text-ink-muted">Xem lại thực đơn theo từng ngày. Thực đơn chỉ được thêm vào Lịch ăn sau khi bạn xác nhận.</p></div>
         <p className="text-sm font-medium text-ink">Tuần bắt đầu {new Date(`${weekStart}T12:00:00`).toLocaleDateString('vi-VN')}</p>

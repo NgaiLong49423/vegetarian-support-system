@@ -1,29 +1,30 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.73.0
+> **Version:** v2.75.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-13
+> **Last Updated:** 2026-10-14
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-13 — Add AI Recipe Suggestions and Weekly Menu Preview
+## 2026-10-14 — Integrate AI Recipe Planning and Nutrition Menus
 
-**Status:** Working tree — uncommitted changes.
+**Status:** Implementation complete; local checks recorded, Docker and GitHub gates pending.
 
-**Scope:** Implement FR-34 recipe recommendations and an explicitly confirmed weekly menu flow using existing published recipes.
+**Scope:** Combine FR-34 recipe recommendations and weekly menu planning with FR-36 nutrition-aware weekly menus in the Meal Plan experience.
 
 ### Added
 
-- Add authenticated APIs for ingredient-based recipe suggestions, a 21-slot weekly menu preview, and atomic application to the current Member's Meal Plan.
-- Add a separate Frontend page for AI suggestions and weekly menu previews; keep manual Meal Plan editing separate.
-- Filter recipe candidates by the Member's vegetarian profile and avoided ingredients, and emit FR-34 provider token usage events without prompt or profile content.
+- Keep ingredient-based recommendations and standard weekly menus sourced from public Recipe Posts, alongside nutrition-aware weekly previews based on complete nutrition data.
+- Add profile-based and one-time weekly preference modes for nutrition menus, with editable previews and explicit confirmation before replacing the target week.
+- Preserve separate authorization, dietary constraints, candidate pools, and apply semantics for FR-34 and FR-36.
 
 ### Changed
 
-- Extend the API integration guide with the FR-34 request, response, entitlement, preview and atomic-apply contracts.
+- Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
+- Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
 
 ### Fixed
 

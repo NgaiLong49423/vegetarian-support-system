@@ -11,6 +11,7 @@ import {
   LoaderCircle,
   Plus,
   RefreshCw,
+  Sparkles,
   Trash2,
   Utensils,
 } from "lucide-react"
@@ -28,7 +29,7 @@ import {
   shiftWeek,
 } from "../components/WeekCalendar"
 
-import { mealPlanApi, type MealPlanWeek } from "../api/recipes"
+import { mealPlanApi, recipesApi, type AiMenuGoal, type AiMenuMode, type AiMenuPreview, type MealPlanWeek } from "../api/recipes"
 
 import { savedRecipesApi } from "../services/savedRecipesApi"
 
@@ -84,6 +85,7 @@ export function MealPlanWeekEditor() {
   const [view, setView] = useState<"plan" | "for-you">(() =>
     searchParams.get("view") === "for-you" ? "for-you" : "plan",
   )
+  const [aiMode, setAiMode] = useState<"ingredients" | "recipe-week" | "nutrition-week">("nutrition-week")
 
   const [calendarOpen, setCalendarOpen] = useState(false)
 
@@ -234,7 +236,24 @@ export function MealPlanWeekEditor() {
               onSelectDay={setSelectedDay}
             />
           ) : (
-            <AiRecipePlanner weekStartDate={week} embedded />
+            <div>
+              <div className="mb-5 flex flex-wrap gap-2 border-b border-brand-100" role="tablist" aria-label="Cách chọn thực đơn">
+                <button id="ai-mode-ingredients" type="button" role="tab" aria-controls="ai-mode-panel" aria-selected={aiMode === "ingredients"} onClick={() => setAiMode("ingredients")} className={`border-b-2 px-3 py-2 text-sm font-semibold ${aiMode === "ingredients" ? "border-brand-600 text-brand-800" : "border-transparent text-ink-muted hover:text-ink"}`}>
+                  Món theo nguyên liệu
+                </button>
+                <button id="ai-mode-recipe-week" type="button" role="tab" aria-controls="ai-mode-panel" aria-selected={aiMode === "recipe-week"} onClick={() => setAiMode("recipe-week")} className={`border-b-2 px-3 py-2 text-sm font-semibold ${aiMode === "recipe-week" ? "border-brand-600 text-brand-800" : "border-transparent text-ink-muted hover:text-ink"}`}>
+                  Thực đơn tuần
+                </button>
+                <button id="ai-mode-nutrition-week" type="button" role="tab" aria-controls="ai-mode-panel" aria-selected={aiMode === "nutrition-week"} onClick={() => setAiMode("nutrition-week")} className={`border-b-2 px-3 py-2 text-sm font-semibold ${aiMode === "nutrition-week" ? "border-brand-600 text-brand-800" : "border-transparent text-ink-muted hover:text-ink"}`}>
+                  Theo nhu cầu dinh dưỡng
+                </button>
+              </div>
+              <div id="ai-mode-panel" role="tabpanel" aria-labelledby={`ai-mode-${aiMode}`}>
+                {aiMode === "ingredients" && <AiRecipePlanner key={`${week}-ingredients`} weekStartDate={week} embedded plannerMode="ingredients" />}
+                {aiMode === "recipe-week" && <AiRecipePlanner key={`${week}-recipe-week`} weekStartDate={week} embedded plannerMode="weekly" />}
+                {aiMode === "nutrition-week" && <AiWeeklyMenu key={`${week}-nutrition-week`} week={week} />}
+              </div>
+            </div>
           )}
         </Card>
       </div>
@@ -1041,6 +1060,146 @@ function RecipePicker({
         </>
       )}
     </DialogFocus>
+  )
+}
+
+const goalOptions: Array<{ value: AiMenuGoal; label: string }> = [
+  { value: "MAINTAIN_WEIGHT", label: "Duy trì cân nặng" },
+  { value: "LOSE_WEIGHT", label: "Giảm cân" },
+  { value: "GAIN_WEIGHT", label: "Tăng cân" },
+  { value: "BUILD_MUSCLE", label: "Tăng cơ" },
+  { value: "IMPROVE_HEALTH", label: "Ăn uống cân bằng hơn" },
+  { value: "SUPPORT_TRAINING", label: "Hỗ trợ tập luyện" },
+]
+const nutritionLabels: Record<string, string> = {
+  ENERGY_KCAL: "Năng lượng (kcal)", PROTEIN_G: "Chất đạm (g)",
+  CARBOHYDRATE_G: "Carbohydrate (g)", TOTAL_FAT_G: "Chất béo (g)",
+  FIBER_G: "Chất xơ (g)", CALCIUM_MG: "Canxi (mg)", IRON_MG: "Sắt (mg)",
+  VITAMIN_B12_MCG: "Vitamin B12 (mcg)", ZINC_MG: "Kẽm (mg)",
+}
+
+function AiWeeklyMenu({ week }: { week: string }) {
+  const [mode, setMode] = useState<AiMenuMode>("PROFILE")
+  const [goal, setGoal] = useState<AiMenuGoal | "">("")
+  const [query, setQuery] = useState("")
+  const [ingredientOptions, setIngredientOptions] = useState<Array<{ ingredientId: number; name: string }>>([])
+  const [preferred, setPreferred] = useState<number[]>([])
+  const [avoided, setAvoided] = useState<number[]>([])
+  const [preview, setPreview] = useState<AiMenuPreview | null>(null)
+  const [previewCriteria, setPreviewCriteria] = useState<{ mode: AiMenuMode; goal: AiMenuGoal | ""; preferred: number[]; avoided: number[] } | null>(null)
+  const [selected, setSelected] = useState<number[]>([])
+  const [loading, setLoading] = useState(false)
+  const [applying, setApplying] = useState(false)
+  const [confirmArmed, setConfirmArmed] = useState(false)
+  const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
+
+  useEffect(() => {
+    let active = true
+    const timer = window.setTimeout(() => {
+      recipesApi.searchIngredients(query).then((items) => {
+        if (active) setIngredientOptions(items)
+      }).catch((cause) => {
+        if (active) setError(asApiError(cause).message)
+      })
+    }, 250)
+    return () => { active = false; window.clearTimeout(timer) }
+  }, [query])
+
+  function clearPreview() { setPreview(null); setPreviewCriteria(null); setSelected([]); setConfirmArmed(false) }
+  function toggle(id: number, list: number[], setList: (ids: number[]) => void, other: number[], setOther: (ids: number[]) => void) {
+    setList(list.includes(id) ? list.filter((value) => value !== id) : [...list, id])
+    setOther(other.filter((value) => value !== id))
+    clearPreview()
+  }
+  async function generate() {
+    setLoading(true); setError(""); setSuccessMessage(""); setConfirmArmed(false)
+    const criteria = { mode, goal, preferred: [...preferred], avoided: [...avoided] }
+    try {
+      const result = await mealPlanApi.createAiMenuPreview({
+        weekStartDate: week, mode: criteria.mode, goal: criteria.mode === "THIS_WEEK" ? criteria.goal || null : undefined,
+        preferredIngredientIds: criteria.mode === "THIS_WEEK" ? criteria.preferred : [],
+        avoidedIngredientIds: criteria.mode === "THIS_WEEK" ? criteria.avoided : [],
+      })
+      setPreview(result); setPreviewCriteria(criteria); setSelected(result.meals.map((_, index) => index))
+      if (criteria.mode === "THIS_WEEK") { setGoal(""); setPreferred([]); setAvoided([]) }
+    } catch (cause) { setError(asApiError(cause).message) }
+    finally { setLoading(false) }
+  }
+  async function apply() {
+    if (!preview || !selected.length) return
+    if (!confirmArmed) { setConfirmArmed(true); return }
+    setApplying(true); setError("")
+    const criteria = previewCriteria ?? { mode, goal, preferred, avoided }
+    try {
+      const result = await mealPlanApi.applyAiMenu({
+        weekStartDate: week, mode: criteria.mode, goal: criteria.mode === "THIS_WEEK" ? criteria.goal || null : undefined,
+        avoidedIngredientIds: criteria.mode === "THIS_WEEK" ? criteria.avoided : [],
+        meals: selected.map((index) => preview.meals[index]).filter(Boolean),
+      })
+      setSuccessMessage("Đã thay toàn bộ lịch ăn của tuần này bằng các món đã chọn.")
+      setPreview(null); setPreviewCriteria(null); setSelected([]); setConfirmArmed(false)
+    } catch (cause) { setError(asApiError(cause).message); setConfirmArmed(false) }
+    finally { setApplying(false) }
+  }
+  const grouped = preview?.meals.reduce<Record<string, AiMenuPreview["meals"]>>((acc, meal) => {
+    (acc[meal.mealDate] ??= []).push(meal)
+    return acc
+  }, {})
+  const totals = preview?.meals.reduce<Record<string, number>>((acc, meal, index) => {
+    if (selected.includes(index)) Object.entries(meal.nutritionPerServing).forEach(([key, value]) => { acc[key] = (acc[key] ?? 0) + value })
+    return acc
+  }, {})
+
+  return (
+    <section aria-labelledby="ai-menu-title" className="rounded-2xl border border-brand-200 bg-surface p-4 shadow-sm sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id="ai-menu-title" className="flex items-center gap-2 text-base font-semibold text-ink"><Sparkles className="h-4 w-4 text-brand-600" /> Dành cho bạn</h2>
+          <p className="mt-1 text-sm text-ink-muted">Tạo thực đơn cho tuần đang xem rồi chọn món trước khi thay lịch.</p>
+        </div>
+        <div className="flex gap-2" role="group" aria-label="Cách tạo thực đơn">
+          <Button variant={mode === "PROFILE" ? "primary" : "outline"} size="sm" onClick={() => { setMode("PROFILE"); clearPreview() }}>Dựa trên hồ sơ</Button>
+          <Button variant={mode === "THIS_WEEK" ? "primary" : "outline"} size="sm" onClick={() => { setMode("THIS_WEEK"); clearPreview() }}>Theo mong muốn tuần này</Button>
+        </div>
+      </div>
+      {mode === "THIS_WEEK" && <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <label className="block text-sm font-medium text-ink">Mục tiêu tuần này <span className="font-normal text-ink-muted">(không bắt buộc)</span>
+          <select value={goal} onChange={(event) => { setGoal(event.target.value as AiMenuGoal | ""); clearPreview() }} className="mt-1 w-full rounded-lg border border-brand-200 bg-surface px-3 py-2 text-sm">
+            <option value="">Để AI chọn theo hoàn cảnh</option>{goalOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+        </label>
+        <label className="block text-sm font-medium text-ink">Tìm nguyên liệu muốn có hoặc cần tránh
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm trong danh mục nguyên liệu" className="mt-1 w-full rounded-lg border border-brand-200 bg-surface px-3 py-2 text-sm" />
+        </label>
+        <div className="md:col-span-2 flex flex-wrap gap-2" aria-label="Nguyên liệu tuần này">
+          {ingredientOptions.map((item) => <span key={item.ingredientId} className="inline-flex items-center gap-1 rounded-full border border-brand-100 px-2 py-1 text-xs text-ink">
+            <span>{item.name}</span>
+            <button type="button" aria-label={`Ưu tiên ${item.name}`} aria-pressed={preferred.includes(item.ingredientId)} onClick={() => toggle(item.ingredientId, preferred, setPreferred, avoided, setAvoided)} className={preferred.includes(item.ingredientId) ? "font-bold text-brand-700" : "text-ink-muted"}>Muốn có</button>
+            <button type="button" aria-label={`Tránh ${item.name}`} aria-pressed={avoided.includes(item.ingredientId)} onClick={() => toggle(item.ingredientId, avoided, setAvoided, preferred, setPreferred)} className={avoided.includes(item.ingredientId) ? "font-bold text-red-700" : "text-ink-muted"}>Tránh</button>
+          </span>)}
+        </div>
+        <p className="text-xs text-ink-muted md:col-span-2">Thông tin ở đây chỉ dùng cho lần tạo này. Mục tiêu chỉ giúp chọn món, không làm thay đổi chỉ số dinh dưỡng tham khảo trong hồ sơ.</p>
+      </div>}
+      {mode === "PROFILE" && <p className="mt-3 text-sm text-ink-muted">Dùng mục tiêu và ràng buộc đã lưu. Nếu chưa đặt mục tiêu, thực đơn được tạo theo hướng cân bằng; hồ sơ sở thích chưa khai báo không bắt buộc phải bổ sung.</p>}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button disabled={loading || applying} onClick={() => void generate()}>{loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{preview ? "Tạo thực đơn khác" : "Tạo thực đơn tuần"}</Button>
+      </div>
+      {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      {successMessage && <p role="status" className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">{successMessage}</p>}
+      {preview && <div className="mt-5 space-y-4 border-t border-brand-100 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold text-ink">Bản xem trước · {selected.length} món được chọn</p><Button variant="ghost" size="sm" onClick={() => { setSelected(selected.length === preview.meals.length ? [] : preview.meals.map((_, i) => i)); setConfirmArmed(false) }}>{selected.length === preview.meals.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}</Button></div>
+        <div className="rounded-xl bg-raised p-3"><p className="mb-2 text-xs font-semibold text-ink">Tổng dinh dưỡng dự kiến theo các món đã chọn trong tuần</p><div className="grid grid-cols-2 gap-2 text-xs text-ink-muted sm:grid-cols-3 lg:grid-cols-5">{Object.entries(nutritionLabels).map(([key, label]) => <span key={key}>{label}: {Number(totals?.[key] ?? 0).toFixed(1)}</span>)}</div></div>
+        <div className="space-y-3">{Object.entries(grouped ?? {}).map(([day, dayMeals]) => <section key={day} className="rounded-xl bg-raised p-3"><h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3><div className="mt-2 grid gap-2 sm:grid-cols-3">{dayMeals.map((meal) => {
+          const index = preview.meals.findIndex((item) => item.mealDate === meal.mealDate && item.mealType === meal.mealType)
+          const label = meal.mealType === "BREAKFAST" ? "Sáng" : meal.mealType === "LUNCH" ? "Trưa" : "Tối"
+          return <label key={`${meal.mealDate}-${meal.mealType}`} className="flex min-w-0 gap-2 rounded-lg border border-brand-100 bg-surface p-2 text-sm"><input type="checkbox" checked={selected.includes(index)} onChange={() => { setSelected(selected.includes(index) ? selected.filter((value) => value !== index) : [...selected, index]); setConfirmArmed(false) }} /><span className="min-w-0"><span className="block text-xs text-ink-muted">{label}</span><Link to={`/cong-thuc/id/${meal.recipeId}`} className="font-semibold text-ink hover:text-brand-600">{meal.recipeTitle}</Link><span className="mt-1 block text-xs text-ink-muted">{meal.nutritionPerServing.ENERGY_KCAL ?? "—"} kcal · {meal.nutritionPerServing.PROTEIN_G ?? "—"} g đạm</span></span></label>
+        })}</div></section>)}</div>
+        <p className="text-xs text-ink-muted">{preview.nutritionDisclaimer} Món có thể được lặp nếu nguồn phù hợp chưa đủ đa dạng; cùng món không xuất hiện ở hai bữa liền nhau.</p>
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Khi xác nhận, toàn bộ món đã có trong lịch của tuần này sẽ bị thay bằng các món đang được chọn.</div>
+        <div className="flex flex-wrap gap-2"><Button disabled={applying || selected.length === 0} onClick={() => void apply()}>{applying ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}{confirmArmed ? "Xác nhận thay toàn bộ lịch" : "Áp dụng vào Lịch ăn"}</Button>{confirmArmed && <Button variant="outline" onClick={() => setConfirmArmed(false)}>Quay lại</Button>}</div>
+      </div>}
+    </section>
   )
 }
 

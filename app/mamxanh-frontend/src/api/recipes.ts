@@ -184,6 +184,25 @@ export interface AiWeeklyMenuPreview {
   }>;
 }
 
+export type AiMenuMode = 'PROFILE' | 'THIS_WEEK';
+export type AiMenuGoal = 'MAINTAIN_WEIGHT' | 'LOSE_WEIGHT' | 'GAIN_WEIGHT' | 'BUILD_MUSCLE' | 'IMPROVE_HEALTH' | 'SUPPORT_TRAINING';
+export interface AiMenuMeal {
+  mealDate: string;
+  mealType: MealPlanWeek['entries'][number]['mealType'];
+  recipeId: number;
+  recipeTitle: string;
+  coverUrl: string | null;
+  nutritionPerServing: Record<string, number>;
+  reason: string;
+}
+export interface AiMenuPreview {
+  weekStartDate: string;
+  mode: AiMenuMode;
+  goal: AiMenuGoal | null;
+  meals: AiMenuMeal[];
+  nutritionDisclaimer: string;
+}
+
 export interface UpdateRecipePost {
   title: string;
   description: string;
@@ -299,4 +318,12 @@ export const mealPlanApi = {
     (await apiClient.patch<MealPlanWeek['entries'][number]>(
       `/meal-plans/${weekStartDate}/entries/${entryId}/servings`, { plannedServings },
     )).data,
+  createAiMenuPreview: async (payload: {
+    weekStartDate: string; mode: AiMenuMode; goal?: AiMenuGoal | null;
+    preferredIngredientIds?: number[]; avoidedIngredientIds?: number[];
+  }) => (await apiClient.post<AiMenuPreview>('/meal-plans/ai-menu/previews', payload, { timeout: 60_000 })).data,
+  applyAiMenu: async (payload: {
+    weekStartDate: string; mode: AiMenuMode; goal?: AiMenuGoal | null;
+    avoidedIngredientIds?: number[]; meals: Array<Pick<AiMenuMeal, 'mealDate' | 'mealType' | 'recipeId'>>;
+  }) => (await apiClient.put<MealPlanWeek>('/meal-plans/ai-menu', payload)).data,
 };
