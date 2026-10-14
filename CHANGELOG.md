@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-15 — Recommend Published Recipes in AI Chat ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
 
-**Status:** Committed — 701cf19d8cd59d1aea57f0255953f47366143f15.
+**Status:** Committed — c3e3ed30827c9c9f260e8eaf45950817c91bbd19.
 
 **Scope:** Extend FR-51 chat with real public recipe recommendations and explicitly requested, non-persistent recipe drafts.
 
