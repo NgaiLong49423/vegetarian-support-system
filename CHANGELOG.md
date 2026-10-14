@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.76.0
+> **Version:** v2.76.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-14
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-14 — Synchronize FR-33 with the AI Menu Integration Baseline ([PR #135](https://github.com/NgaiLong49423/vegetarian-support-system/pull/135))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `5b553ab`.
 
 **Scope:** Synchronize Issue #38 with develop after the AI menu implementation was integrated.
 
