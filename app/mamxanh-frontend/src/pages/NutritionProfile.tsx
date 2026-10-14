@@ -4,9 +4,8 @@ import { Activity, AlertCircle, CheckCircle2, Info, LoaderCircle, LockKeyhole, S
 import { PageContainer } from '../components/Layout';
 import { Card } from '../components/ui';
 import { ApiError, hasAccessToken } from '../lib/apiClient';
-import { nutritionApi, type ActivityLevel, type BiologicalSex, type NutritionGoal, type NutritionProfileRequest, type NutritionProfileResponse } from '../api/nutrition';
+import { nutritionApi, type ActivityLevel, type BiologicalSex, type NutritionEligibilityStatus, type NutritionGoal, type NutritionProfileRequest, type NutritionProfileResponse } from '../api/nutrition';
 
-type YesNo = '' | 'yes' | 'no';
 type FormState = {
   dateOfBirth: string;
   biologicalSex: BiologicalSex | '';
@@ -14,15 +13,12 @@ type FormState = {
   weightKg: string;
   activityLevel: ActivityLevel | '';
   nutritionGoal: NutritionGoal | '';
-  pregnant: YesNo;
-  breastfeeding: YesNo;
-  therapeuticDietRequired: YesNo;
   consentAccepted: boolean;
 };
 
 const emptyForm: FormState = {
   dateOfBirth: '', biologicalSex: '', heightCm: '', weightKg: '', activityLevel: '', nutritionGoal: '',
-  pregnant: '', breastfeeding: '', therapeuticDietRequired: '', consentAccepted: false,
+  consentAccepted: false,
 };
 
 const activities: { value: ActivityLevel; label: string; description: string }[] = [
@@ -67,7 +63,7 @@ function applyResponse(response: NutritionProfileResponse): FormState {
     heightCm: String(response.profile.heightCm),
     weightKg: String(response.profile.weightKg),
     activityLevel: response.profile.activityLevel,
-    nutritionGoal: response.profile.nutritionGoal,
+    nutritionGoal: response.profile.nutritionGoal ?? '',
   };
 }
 
@@ -78,6 +74,12 @@ function sourceLink(source: string) {
 
 export function NutritionProfile() {
   const authenticated = hasAccessToken();
+  const [eligibility, setEligibility] = useState<NutritionEligibilityStatus | null>(null);
+  const [eligibilityChoice, setEligibilityChoice] = useState<Exclude<NutritionEligibilityStatus, 'NOT_CONFIRMED'>>('ELIGIBLE');
+  const [eligibilityCommitment, setEligibilityCommitment] = useState(false);
+  const [editingEligibility, setEditingEligibility] = useState(false);
+  const [confirmingEligibility, setConfirmingEligibility] = useState(false);
+  const [eligibilityError, setEligibilityError] = useState('');
   const [form, setForm] = useState<FormState>(emptyForm);
   const [savedResponse, setSavedResponse] = useState<NutritionProfileResponse | null>(null);
   const [calculationResponse, setCalculationResponse] = useState<NutritionProfileResponse | null>(null);
@@ -96,17 +98,22 @@ export function NutritionProfile() {
     }
 
     let active = true;
-    nutritionApi.getProfile()
-      .then((response) => { if (active) { setSavedResponse(response); setForm(applyResponse(response)); } })
+    nutritionApi.getEligibility()
+      .then(async (response) => {
+        if (!active) return;
+        setEligibility(response.status);
+        if (response.status === 'ELIGIBLE') {
+          const profile = await nutritionApi.getProfile();
+          if (active) { setSavedResponse(profile); setForm(applyResponse(profile)); }
+        }
+      })
       .catch((error: unknown) => { if (active) setLoadError(loadErrorMessage(error)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [authenticated]);
 
   const age = useMemo(() => ageFromDate(form.dateOfBirth), [form.dateOfBirth]);
-  const excluded = [form.pregnant, form.breastfeeding, form.therapeuticDietRequired].includes('yes');
-  const answersComplete = form.pregnant !== '' && form.breastfeeding !== '' && form.therapeuticDietRequired !== '';
-  const eligible = age !== null && age >= 18 && age <= 120 && answersComplete && !excluded;
+  const eligible = eligibility === 'ELIGIBLE' && age !== null && age >= 18 && age <= 120;
   const result = calculationResponse?.eligible && eligible ? calculationResponse.results : null;
   const savedProfile = savedResponse?.profile;
   const hasUnsavedProfileChanges = Boolean(savedProfile && (
@@ -117,7 +124,7 @@ export function NutritionProfile() {
     || form.activityLevel !== savedProfile.activityLevel
     || form.nutritionGoal !== savedProfile.nutritionGoal
   ));
-  const showOutOfScope = age !== null && (age < 18 || age > 120) || excluded;
+  const showOutOfScope = age !== null && (age < 18 || age > 120);
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -154,13 +161,37 @@ export function NutritionProfile() {
     }
   };
 
+  const handleEligibilitySubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setEligibilityError('');
+    setConfirmingEligibility(true);
+    try {
+      const response = await nutritionApi.updateEligibility(eligibilityChoice);
+      setEligibility(response.status);
+      setEditingEligibility(false);
+      setSavedResponse(null);
+      setCalculationResponse(null);
+      if (response.status === 'ELIGIBLE') {
+        const profile = await nutritionApi.getProfile();
+        setSavedResponse(profile);
+        setForm(applyResponse(profile));
+      } else {
+        setForm(emptyForm);
+      }
+    } catch (error) {
+      setEligibilityError(loadErrorMessage(error));
+    } finally {
+      setConfirmingEligibility(false);
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitError('');
     if (!eligible) {
       setSubmitError(showOutOfScope
         ? 'Trường hợp này ngoài phạm vi hỗ trợ. Ứng dụng không lưu hồ sơ và không hiển thị BMI hoặc các chỉ tiêu.'
-        : 'Vui lòng trả lời đầy đủ các câu hỏi về phạm vi hỗ trợ trước khi lưu.');
+        : 'Hãy xác nhận phạm vi hỗ trợ trước khi lưu hồ sơ dinh dưỡng.');
       return;
     }
     if (!form.consentAccepted) {
@@ -173,10 +204,10 @@ export function NutritionProfile() {
       heightCm: Number(form.heightCm),
       weightKg: Number(form.weightKg),
       activityLevel: form.activityLevel as ActivityLevel,
-      nutritionGoal: form.nutritionGoal as NutritionGoal,
-      pregnant: form.pregnant === 'yes',
-      breastfeeding: form.breastfeeding === 'yes',
-      therapeuticDietRequired: form.therapeuticDietRequired === 'yes',
+      nutritionGoal: form.nutritionGoal || null,
+      pregnant: false,
+      breastfeeding: false,
+      therapeuticDietRequired: false,
       consentAccepted: true,
     };
     setSaving(true);
@@ -184,7 +215,7 @@ export function NutritionProfile() {
       const response = await nutritionApi.saveProfile(payload);
       setSavedResponse(response);
       setCalculationResponse(null);
-      setForm((current) => ({ ...current, pregnant: 'no', breastfeeding: 'no', therapeuticDietRequired: 'no', consentAccepted: false }));
+      setForm((current) => ({ ...current, consentAccepted: false }));
       setCalculating(true);
       await handleCalculateAfterSave();
       setCalculating(false);
@@ -228,7 +259,43 @@ export function NutritionProfile() {
 
     {loadError && <div role="alert" className="mt-5 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950"><AlertCircle className="mt-0.5 h-5 w-5 shrink-0" /><p>{loadError}</p></div>}
 
-    <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,.95fr)]">
+    {(!authenticated || !eligibility || eligibility !== 'ELIGIBLE' || editingEligibility) ? <Card className="mt-6 max-w-3xl border-leaf-100 p-5 shadow-sm shadow-leaf-900/5 md:p-7">
+      <h2 className="text-xl font-bold text-ink">Xác nhận phạm vi hỗ trợ dinh dưỡng</h2>
+      <p className="mt-2 text-sm leading-6 text-ink-muted">Các tính năng dinh dưỡng chỉ hỗ trợ người từ đủ 18 tuổi, không mang thai hoặc cho con bú, và không cần chế độ ăn điều trị theo hướng dẫn y tế.</p>
+      <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+        Thông tin và kết quả trong ứng dụng chỉ mang tính tham khảo để lập kế hoạch ăn uống. Đây không phải chẩn đoán, điều trị hay chỉ định y tế, và không thay thế tư vấn của bác sĩ hoặc chuyên gia dinh dưỡng.
+      </div>
+      {loading ? <div className="flex items-center gap-2 py-8 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" /> Đang kiểm tra trạng thái…</div>
+        : !authenticated ? <p className="mt-4 text-sm">Đăng nhập để xác nhận và sử dụng tính năng dinh dưỡng. <Link to="/dang-nhap" className="font-bold text-leaf-700 underline">Đăng nhập</Link></p>
+          : <form onSubmit={handleEligibilitySubmit} className="mt-5 space-y-4">
+            <fieldset className="space-y-3" disabled={confirmingEligibility}>
+              <legend className="mb-2 text-sm font-bold text-ink">Chọn xác nhận hiện tại của bạn</legend>
+              <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${eligibilityChoice === 'ELIGIBLE' ? 'border-leaf-500 bg-leaf-50' : 'border-leaf-100'}`}>
+                <input className="mt-1 accent-leaf-700" type="radio" name="nutrition-eligibility" value="ELIGIBLE" checked={eligibilityChoice === 'ELIGIBLE'} onChange={() => { setEligibilityChoice('ELIGIBLE'); setEligibilityCommitment(false); }} />
+                <span>Tôi xác nhận mình từ đủ 18 tuổi, không mang thai/cho con bú và không cần chế độ ăn điều trị theo hướng dẫn y tế.</span>
+              </label>
+              <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${eligibilityChoice === 'INELIGIBLE' ? 'border-amber-400 bg-amber-50' : 'border-leaf-100'}`}>
+                <input className="mt-1 accent-amber-700" type="radio" name="nutrition-eligibility" value="INELIGIBLE" checked={eligibilityChoice === 'INELIGIBLE'} onChange={() => { setEligibilityChoice('INELIGIBLE'); setEligibilityCommitment(false); }} />
+                <span>Tôi hiện không thuộc phạm vi hỗ trợ dinh dưỡng này.</span>
+              </label>
+            </fieldset>
+            {eligibilityChoice === 'ELIGIBLE' && <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-leaf-100 p-4 text-sm leading-6 text-ink-soft">
+              <input className="mt-1 h-4 w-4 accent-leaf-700" type="checkbox" required checked={eligibilityCommitment} onChange={(event) => setEligibilityCommitment(event.target.checked)} />
+              <span>Tôi đã đọc và xác nhận đáp ứng đủ cả ba điều kiện hỗ trợ.</span>
+            </label>}
+            {eligibilityChoice === 'INELIGIBLE' && <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">Hồ sơ, chỉ số và gợi ý dinh dưỡng cá nhân sẽ bị khóa để bảo vệ an toàn sức khỏe. Bạn vẫn sử dụng bình thường các tính năng khác và có thể cập nhật xác nhận nếu tình trạng thay đổi.</p>}
+            {eligibilityError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{eligibilityError}</p>}
+            {eligibility === 'INELIGIBLE' && <p className="text-sm leading-6 text-amber-900">Hồ sơ và gợi ý dinh dưỡng sẽ tiếp tục bị khóa. Bạn vẫn có thể sử dụng các tính năng khác và xác nhận lại nếu tình trạng thay đổi.</p>}
+            <div className="flex flex-wrap gap-3">
+              <button type="submit" disabled={confirmingEligibility || (eligibilityChoice === 'ELIGIBLE' && !eligibilityCommitment)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-leaf-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-60">
+                {confirmingEligibility && <LoaderCircle className="h-4 w-4 animate-spin" />}{eligibilityChoice === 'ELIGIBLE' ? 'Xác nhận và tiếp tục' : 'Xác nhận'}
+              </button>
+              {eligibility === 'ELIGIBLE' && <button type="button" onClick={() => { setEditingEligibility(false); setEligibilityChoice('ELIGIBLE'); }} className="min-h-11 rounded-xl border border-leaf-200 px-5 py-3 text-sm font-semibold text-ink-soft">Hủy</button>}
+            </div>
+          </form>}
+    </Card> : <>
+    <div className="mb-4 flex justify-end"><button type="button" onClick={() => { setEligibilityChoice('ELIGIBLE'); setEligibilityCommitment(false); setEligibilityError(''); setEditingEligibility(true); }} className="text-sm font-semibold text-leaf-700 underline underline-offset-2">Cập nhật xác nhận phạm vi</button></div>
+    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,.95fr)]">
       <Card className="border-leaf-100 p-5 shadow-sm shadow-leaf-900/5 md:p-7">
         <div className="flex items-start justify-between gap-3">
           <div><h2 className="text-xl font-bold text-ink">Thông tin hồ sơ</h2><p className="mt-1 text-sm text-ink-muted">Các trường có dấu * là bắt buộc.</p></div>
@@ -264,34 +331,25 @@ export function NutritionProfile() {
                 {activities.map((item) => <option key={item.value} value={item.value}>{item.label} — {item.description}</option>)}
               </select>
             </label>
-            <label className={`${miniLabelClass} sm:col-span-2`} htmlFor="nutrition-goal">Mục tiêu dinh dưỡng chung *
-              <select id="nutrition-goal" className={fieldClass} required value={form.nutritionGoal} onChange={(event) => setField('nutritionGoal', event.target.value as NutritionGoal)}>
-                <option value="" disabled>Chọn mục tiêu</option>
+            <label className={`${miniLabelClass} sm:col-span-2`} htmlFor="nutrition-goal">Mục tiêu dinh dưỡng chung (không bắt buộc)
+              <select id="nutrition-goal" className={fieldClass} value={form.nutritionGoal} onChange={(event) => setField('nutritionGoal', event.target.value as NutritionGoal | '')}>
+                <option value="">Chưa chọn mục tiêu</option>
                 <option value="MAINTAIN_WEIGHT">Duy trì cân nặng</option>
+                <option value="LOSE_WEIGHT">Giảm cân</option>
+                <option value="GAIN_WEIGHT">Tăng cân</option>
+                <option value="BUILD_MUSCLE">Tăng cơ</option>
                 <option value="IMPROVE_HEALTH">Cải thiện sức khỏe chung</option>
                 <option value="SUPPORT_TRAINING">Hỗ trợ tập luyện</option>
               </select>
-              <span className="mt-1 block text-xs font-normal text-ink-muted">Mục tiêu này không làm thay đổi các con số EER/DRI trong phiên bản hiện tại.</span>
+              <span className="mt-1 block text-xs font-normal text-ink-muted">Mục tiêu này dùng cho gợi ý thực đơn theo hồ sơ. Bạn có thể để trống và chọn mục tiêu riêng khi lập lịch cho một tuần.</span>
             </label>
           </div>
 
-          <fieldset className="rounded-2xl border border-leaf-100 bg-leaf-50/40 p-4">
-            <legend className="px-1 text-sm font-bold text-ink">Xác nhận phạm vi hỗ trợ *</legend>
-            <p className="mb-3 text-xs leading-5 text-ink-muted">Trả lời từng câu. Nếu có câu trả lời “Có”, ứng dụng sẽ chặn toàn bộ hồ sơ dinh dưỡng.</p>
-            {([
-              { key: 'pregnant', label: 'Bạn đang mang thai?' },
-              { key: 'breastfeeding', label: 'Bạn đang cho con bú?' },
-              { key: 'therapeuticDietRequired', label: 'Bạn cần chế độ ăn điều trị theo hướng dẫn y tế?' },
-            ] as const).map((question) => <div key={question.key} className="flex flex-wrap items-center justify-between gap-3 border-t border-leaf-100 py-3 first:border-0">
-              <span className="text-sm text-ink-soft">{question.label}</span>
-              <div className="flex gap-4 text-sm">
-                {([{ value: 'no', label: 'Không' }, { value: 'yes', label: 'Có' }] as const).map((option) => <label key={option.value} className="inline-flex cursor-pointer items-center gap-1.5"><input className="accent-leaf-700" type="radio" name={question.key} required checked={form[question.key] === option.value} onChange={() => setField(question.key, option.value)} />{option.label}</label>)}
-              </div>
-            </div>)}
+          <div className="rounded-xl border border-leaf-100 bg-leaf-50/40 p-4 text-sm leading-6 text-ink-muted">
+            Phạm vi hỗ trợ dinh dưỡng đã được bạn xác nhận riêng. Nếu tình trạng thay đổi, hãy cập nhật xác nhận trước khi tiếp tục sử dụng các tính năng này.
             {age !== null && age < 18 && <p role="alert" className="mt-2 rounded-xl bg-amber-100 p-3 text-sm font-medium text-amber-950">Ứng dụng hiện không hỗ trợ hồ sơ dinh dưỡng cho người dưới 18 tuổi.</p>}
             {age !== null && age > 120 && <p role="alert" className="mt-2 rounded-xl bg-amber-100 p-3 text-sm font-medium text-amber-950">Ứng dụng hiện chỉ hỗ trợ độ tuổi từ 18 đến 120.</p>}
-            {excluded && <p role="alert" className="mt-2 rounded-xl bg-amber-100 p-3 text-sm font-medium text-amber-950">Vui lòng tham khảo bác sĩ hoặc chuyên gia dinh dưỡng. Ứng dụng không lưu hồ sơ, tính BMI hoặc hiển thị 9 chỉ tiêu cho trường hợp này.</p>}
-          </fieldset>
+          </div>
 
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-leaf-100 bg-paper p-4 text-sm leading-6 text-ink-soft">
             <input className="mt-1 h-4 w-4 shrink-0 accent-leaf-700" type="checkbox" required checked={form.consentAccepted} onChange={(event) => setField('consentAccepted', event.target.checked)} />
@@ -340,5 +398,6 @@ export function NutritionProfile() {
         {!savedResponse && !loading && !loadError && <p className="mt-4 text-xs leading-5 text-ink-muted">Đăng nhập để đọc và lưu hồ sơ riêng tư của bạn.</p>}
       </Card>
     </div>
+    </>}
   </PageContainer>;
 }

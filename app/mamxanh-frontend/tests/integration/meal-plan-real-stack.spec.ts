@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { existsSync } from "node:fs"
+import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { expect, test } from "@playwright/test"
@@ -61,7 +62,7 @@ function cleanup() {
     DELETE FROM [USER] WHERE email IN (${literal(ownerEmail)}, ${literal(otherEmail)});`)
 }
 
-test("FR-09 browser mutations persist in Compose SQL and preserve private recipe references", async ({
+test("FR-09/FR-33 move, export and mutations persist in Compose SQL and preserve private recipe references", async ({
   page,
   request,
 }) => {
@@ -105,8 +106,13 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
         `SELECT recipe_id FROM [RECIPE_POST] WHERE title = ${literal(secondTitle)}`,
       ),
     )
-    sql(`INSERT INTO [SAVED_RECIPE] (user_id, recipe_id)
-      VALUES (${ownerId}, ${firstId}), (${ownerId}, ${secondId});`)
+    sql(`INSERT INTO [RECIPE_INGREDIENT] (recipe_id, ingredient_id, unit_id, quantity)
+      VALUES (${firstId}, (SELECT TOP 1 ingredient_id FROM [INGREDIENT] WHERE status = 'ACTIVE'
+        AND nutrition_supported = 1 AND energy_kcal_100g > 0 ORDER BY ingredient_id),
+        (SELECT unit_id FROM [UNIT] WHERE code = N'g'), 100);`)
+    sql(
+      `INSERT INTO [SAVED_RECIPE] (user_id, recipe_id) VALUES (${ownerId}, ${firstId}), (${ownerId}, ${secondId});`,
+    )
 
     await page.goto("/dang-nhap")
     await page.getByLabel("Email").fill(ownerEmail)
@@ -130,12 +136,14 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
     const readResponse = await read
     expect(readResponse.status()).toBe(200)
     const selectedWeek = (await readResponse.json()).weekStartDate as string
+    await page.goto(
+      `/ke-hoach?weekStartDate=${selectedWeek}&mealDate=${selectedWeek}`,
+    )
     const selectedDateLabel = new Date(`${selectedWeek}T12:00:00`).toLocaleDateString("vi-VN")
     const selectedDay = page.getByRole("region", { name: selectedDateLabel })
-    const selectedDayButton = selectedDay.getByRole("button", { name: `Xem ngày ${selectedDateLabel}` })
-    await expect(selectedDayButton).toBeVisible()
-    await selectedDayButton.click()
-    await expect(selectedDay.getByRole("button", { name: /^Thêm món Bữa/ })).toHaveCount(3)
+    await expect(
+      selectedDay.getByRole("button", { name: /^Thêm món Bữa/ }),
+    ).toHaveCount(3)
     expect(
       Number(
         sql(`SELECT COUNT(*) FROM [MEAL_PLAN] WHERE user_id = ${ownerId}`),
@@ -177,6 +185,57 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
     )
     expect(duplicate.status()).toBe(409)
     expect((await duplicate.json()).code).toBe("MEAL_PLAN_RECIPE_DUPLICATE")
+    // FR-33: move through the UI, persist the same row/servings, and reject cross-week or foreign moves.
+    sql(
+      `UPDATE [MEAL_PLAN_ENTRY] SET planned_servings = 2.5 WHERE meal_plan_entry_id = ${entryId}`,
+    )
+    await page.reload()
+    await page
+      .getByRole("button", { name: `Chuyển món ${firstTitle}`, exact: true })
+      .click()
+    await page.getByLabel("Bữa đích").selectOption("DINNER")
+    const moved = page.waitForResponse(
+      (response) =>
+        response.request().method() === "PATCH" &&
+        response.url().endsWith("/position"),
+    )
+    await page
+      .getByRole("button", { name: "Xác nhận chuyển", exact: true })
+      .click()
+    expect((await moved).status()).toBe(200)
+    expect(
+      Number(
+        sql(
+          `SELECT COUNT(*) FROM [MEAL_PLAN_ENTRY] WHERE meal_plan_entry_id = ${entryId} AND meal_type = 'DINNER' AND planned_servings = 2.5`,
+        ),
+      ),
+    ).toBe(1)
+    const foreignMove = await request.patch(`${entryUrl}/position`, {
+      headers: { Authorization: `Bearer ${otherToken}` },
+      data: { mealDate: selectedWeek, mealType: "BREAKFAST" },
+    })
+    expect(foreignMove.status()).toBe(403)
+    const publicDetail = await request.get(`${backend}/recipes/${firstId}`)
+    expect(publicDetail.status()).toBe(200)
+    const nutrition = (await publicDetail.json()).nutrition
+    expect(nutrition.complete).toBe(true)
+    expect(nutrition.perServing.ENERGY_KCAL).toBeGreaterThan(0)
+    const currentExport = await request.get(`${backend}/meal-plans/${selectedWeek}/export`, { headers })
+    expect(currentExport.status()).toBe(200)
+    const exportedEntry = (await currentExport.json()).entries[0]
+    expect(exportedEntry.title).toBe(firstTitle)
+    expect(exportedEntry.energyKcal).toBeCloseTo(nutrition.perServing.ENERGY_KCAL * 2.5, 4)
+    const outside = new Date(`${selectedWeek}T12:00:00`)
+    outside.setDate(outside.getDate() + 7)
+    const outsideDate = `${outside.getFullYear()}-${String(outside.getMonth() + 1).padStart(2, "0")}-${String(outside.getDate()).padStart(2, "0")}`
+    expect(
+      (
+        await request.patch(`${entryUrl}/position`, {
+          headers,
+          data: { mealDate: outsideDate, mealType: "BREAKFAST" },
+        })
+      ).status(),
+    ).toBe(400)
     for (const method of ["put", "delete"] as const) {
       const denied = await request[method](entryUrl, {
         headers: { Authorization: `Bearer ${otherToken}` },
@@ -200,8 +259,46 @@ test("FR-09 browser mutations persist in Compose SQL and preserve private recipe
     await expect(
       page.getByRole("article", { name: "Công thức không còn khả dụng" }),
     ).toBeVisible()
+    const hiddenExport = await request.get(
+      `${backend}/meal-plans/${selectedWeek}/export`,
+      { headers },
+    )
+    expect(hiddenExport.status()).toBe(200)
+    expect(hiddenExport.headers()["cache-control"]).toBe("no-store")
+    const snapshot = await hiddenExport.json()
+    expect(snapshot.entries[0]).toMatchObject({
+      title: "Công thức không còn khả dụng",
+      available: false,
+      plannedServings: null,
+      energyKcal: null,
+    })
+    expect(JSON.stringify(snapshot)).not.toContain(firstTitle)
+    const otherExport = await request.get(
+      `${backend}/meal-plans/${selectedWeek}/export`,
+      { headers: { Authorization: `Bearer ${otherToken}` } },
+    )
+    expect((await otherExport.json()).entries).toEqual([])
+    await page
+      .getByRole("button", { name: "Xuất lịch ăn", exact: true })
+      .click()
+    const textDownload = page.waitForEvent("download")
+    await page.getByRole("button", { name: "Tải TXT", exact: true }).click()
+    const text = await readFile((await (await textDownload).path())!, "utf8")
+    expect(text).toContain("Công thức không còn khả dụng")
+    expect(text).not.toContain(firstTitle)
+    expect(text.split("Bữa sáng")).toHaveLength(8)
+    await page
+      .getByRole("button", { name: "Xuất lịch ăn", exact: true })
+      .click()
+    const pdfDownload = page.waitForEvent("download")
+    await page.getByRole("button", { name: "Tải PDF A4", exact: true }).click()
+    expect(
+      (await readFile((await (await pdfDownload).path())!))
+        .subarray(0, 5)
+        .toString(),
+    ).toBe("%PDF-")
     await expect(
-      page.locator(`a[href="/cong-thuc/id/${firstId}"]`),
+      page.locator(`a[href^="/cong-thuc/id/${firstId}"]`),
     ).toHaveCount(0)
     await page
       .getByRole("button", { name: "Thay món Công thức không còn khả dụng" })
