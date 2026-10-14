@@ -7,5 +7,10 @@ public interface AiClient {
 
     RecommendationResult recommendRecipes(String prompt, List<Long> allowedRecipeIds, int limit);
 
+    /** Selects an ordered sequence; IDs may repeat when the caller explicitly permits it. */
+    default RecommendationResult recommendRecipeSequence(String prompt, List<Long> allowedRecipeIds, int slots) {
+        return recommendRecipes(prompt, allowedRecipeIds, slots);
+    }
+
     record RecommendationResult(String json, Integer promptTokens, Integer responseTokens, Integer totalTokens) { }
 }
