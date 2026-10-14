@@ -18,7 +18,7 @@ public record SaveNutritionProfileRequest(
         @DecimalMin(value = "30.0", message = "Cân nặng tối thiểu là 30 kg.")
         @DecimalMax(value = "300.0", message = "Cân nặng tối đa là 300 kg.") BigDecimal weightKg,
         @NotBlank String activityLevel,
-        @NotBlank String nutritionGoal,
+        String nutritionGoal,
         @NotNull Boolean pregnant,
         @NotNull Boolean breastfeeding,
         @NotNull Boolean therapeuticDietRequired,
