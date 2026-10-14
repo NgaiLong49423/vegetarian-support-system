@@ -3,6 +3,12 @@ import { apiClient, asApiError } from '../lib/apiClient';
 export type ActivityLevel = 'SEDENTARY' | 'LIGHTLY_ACTIVE' | 'MODERATELY_ACTIVE' | 'VERY_ACTIVE';
 export type BiologicalSex = 'FEMALE' | 'MALE';
 export type NutritionGoal = 'MAINTAIN_WEIGHT' | 'LOSE_WEIGHT' | 'GAIN_WEIGHT' | 'BUILD_MUSCLE' | 'IMPROVE_HEALTH' | 'SUPPORT_TRAINING';
+export type NutritionEligibilityStatus = 'NOT_CONFIRMED' | 'ELIGIBLE' | 'INELIGIBLE';
+
+export interface NutritionEligibilityResponse {
+  status: NutritionEligibilityStatus;
+  confirmedAt: string | null;
+}
 
 export interface NutritionProfileRequest {
   dateOfBirth: string;
@@ -57,6 +63,10 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
 }
 
 export const nutritionApi = {
+  getEligibility: () => request(() => apiClient.get<NutritionEligibilityResponse>('/nutrition/profile/eligibility')),
+  updateEligibility: (status: Exclude<NutritionEligibilityStatus, 'NOT_CONFIRMED'>) => request(
+    () => apiClient.put<NutritionEligibilityResponse>('/nutrition/profile/eligibility', { status }),
+  ),
   getProfile: () => request(() => apiClient.get<NutritionProfileResponse>('/nutrition/profile')),
   saveProfile: (payload: NutritionProfileRequest) => request(
     () => apiClient.put<NutritionProfileResponse>('/nutrition/profile', payload),

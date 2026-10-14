@@ -14,6 +14,7 @@ import {
   Sparkles,
   Trash2,
   Utensils,
+  X,
 } from "lucide-react"
 
 import { PageContainer } from "../components/Layout"
@@ -1068,8 +1069,6 @@ const goalOptions: Array<{ value: AiMenuGoal; label: string }> = [
   { value: "LOSE_WEIGHT", label: "Giảm cân" },
   { value: "GAIN_WEIGHT", label: "Tăng cân" },
   { value: "BUILD_MUSCLE", label: "Tăng cơ" },
-  { value: "IMPROVE_HEALTH", label: "Ăn uống cân bằng hơn" },
-  { value: "SUPPORT_TRAINING", label: "Hỗ trợ tập luyện" },
 ]
 const nutritionLabels: Record<string, string> = {
   ENERGY_KCAL: "Năng lượng (kcal)", PROTEIN_G: "Chất đạm (g)",
@@ -1081,8 +1080,11 @@ const nutritionLabels: Record<string, string> = {
 function AiWeeklyMenu({ week }: { week: string }) {
   const [mode, setMode] = useState<AiMenuMode>("PROFILE")
   const [goal, setGoal] = useState<AiMenuGoal | "">("")
-  const [query, setQuery] = useState("")
-  const [ingredientOptions, setIngredientOptions] = useState<Array<{ ingredientId: number; name: string }>>([])
+  const [preferredQuery, setPreferredQuery] = useState("")
+  const [avoidedQuery, setAvoidedQuery] = useState("")
+  const [preferredOptions, setPreferredOptions] = useState<Array<{ ingredientId: number; name: string }>>([])
+  const [avoidedOptions, setAvoidedOptions] = useState<Array<{ ingredientId: number; name: string }>>([])
+  const [ingredientNames, setIngredientNames] = useState<Record<number, string>>({})
   const [preferred, setPreferred] = useState<number[]>([])
   const [avoided, setAvoided] = useState<number[]>([])
   const [preview, setPreview] = useState<AiMenuPreview | null>(null)
@@ -1091,29 +1093,61 @@ function AiWeeklyMenu({ week }: { week: string }) {
   const [loading, setLoading] = useState(false)
   const [applying, setApplying] = useState(false)
   const [confirmArmed, setConfirmArmed] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState<{ message: string; code?: string } | null>(null)
   const [successMessage, setSuccessMessage] = useState("")
 
   useEffect(() => {
     let active = true
+    if (!preferredQuery.trim()) { setPreferredOptions([]); return () => { active = false } }
     const timer = window.setTimeout(() => {
-      recipesApi.searchIngredients(query).then((items) => {
-        if (active) setIngredientOptions(items)
+      recipesApi.searchIngredients(preferredQuery).then((items) => {
+        if (active) {
+          setPreferredOptions(items)
+          setIngredientNames((current) => ({ ...current, ...Object.fromEntries(items.map((item) => [item.ingredientId, item.name])) }))
+        }
       }).catch((cause) => {
-        if (active) setError(asApiError(cause).message)
+        if (active) {
+          const apiError = asApiError(cause)
+          setError({ message: apiError.message, code: apiError.code })
+        }
       })
     }, 250)
     return () => { active = false; window.clearTimeout(timer) }
-  }, [query])
+  }, [preferredQuery])
+
+  useEffect(() => {
+    let active = true
+    if (!avoidedQuery.trim()) { setAvoidedOptions([]); return () => { active = false } }
+    const timer = window.setTimeout(() => {
+      recipesApi.searchIngredients(avoidedQuery).then((items) => {
+        if (active) {
+          setAvoidedOptions(items)
+          setIngredientNames((current) => ({ ...current, ...Object.fromEntries(items.map((item) => [item.ingredientId, item.name])) }))
+        }
+      }).catch((cause) => {
+        if (active) {
+          const apiError = asApiError(cause)
+          setError({ message: apiError.message, code: apiError.code })
+        }
+      })
+    }, 250)
+    return () => { active = false; window.clearTimeout(timer) }
+  }, [avoidedQuery])
 
   function clearPreview() { setPreview(null); setPreviewCriteria(null); setSelected([]); setConfirmArmed(false) }
-  function toggle(id: number, list: number[], setList: (ids: number[]) => void, other: number[], setOther: (ids: number[]) => void) {
-    setList(list.includes(id) ? list.filter((value) => value !== id) : [...list, id])
-    setOther(other.filter((value) => value !== id))
+  function addIngredient(item: { ingredientId: number; name: string }, setList: (update: (ids: number[]) => number[]) => void, clearSearch: () => void, clearOptions: () => void) {
+    setList((ids) => ids.includes(item.ingredientId) ? ids : [...ids, item.ingredientId])
+    setIngredientNames((current) => ({ ...current, [item.ingredientId]: item.name }))
+    clearSearch()
+    clearOptions()
+    clearPreview()
+  }
+  function removeIngredient(id: number, setList: (update: (ids: number[]) => number[]) => void) {
+    setList((ids) => ids.filter((value) => value !== id))
     clearPreview()
   }
   async function generate() {
-    setLoading(true); setError(""); setSuccessMessage(""); setConfirmArmed(false)
+    setLoading(true); setError(null); setSuccessMessage(""); setConfirmArmed(false)
     const criteria = { mode, goal, preferred: [...preferred], avoided: [...avoided] }
     try {
       const result = await mealPlanApi.createAiMenuPreview({
@@ -1123,13 +1157,16 @@ function AiWeeklyMenu({ week }: { week: string }) {
       })
       setPreview(result); setPreviewCriteria(criteria); setSelected(result.meals.map((_, index) => index))
       if (criteria.mode === "THIS_WEEK") { setGoal(""); setPreferred([]); setAvoided([]) }
-    } catch (cause) { setError(asApiError(cause).message) }
+    } catch (cause) {
+      const apiError = asApiError(cause)
+      setError({ message: apiError.message, code: apiError.code })
+    }
     finally { setLoading(false) }
   }
   async function apply() {
     if (!preview || !selected.length) return
     if (!confirmArmed) { setConfirmArmed(true); return }
-    setApplying(true); setError("")
+    setApplying(true); setError(null)
     const criteria = previewCriteria ?? { mode, goal, preferred, avoided }
     try {
       const result = await mealPlanApi.applyAiMenu({
@@ -1139,7 +1176,11 @@ function AiWeeklyMenu({ week }: { week: string }) {
       })
       setSuccessMessage("Đã thay toàn bộ lịch ăn của tuần này bằng các món đã chọn.")
       setPreview(null); setPreviewCriteria(null); setSelected([]); setConfirmArmed(false)
-    } catch (cause) { setError(asApiError(cause).message); setConfirmArmed(false) }
+    } catch (cause) {
+      const apiError = asApiError(cause)
+      setError({ message: apiError.message, code: apiError.code })
+      setConfirmArmed(false)
+    }
     finally { setApplying(false) }
   }
   const grouped = preview?.meals.reduce<Record<string, AiMenuPreview["meals"]>>((acc, meal) => {
@@ -1150,6 +1191,27 @@ function AiWeeklyMenu({ week }: { week: string }) {
     if (selected.includes(index)) Object.entries(meal.nutritionPerServing).forEach(([key, value]) => { acc[key] = (acc[key] ?? 0) + value })
     return acc
   }, {})
+
+  function ingredientPicker(title: string, queryValue: string, setQueryValue: (value: string) => void,
+    options: Array<{ ingredientId: number; name: string }>, selectedIds: number[],
+    setIds: (update: (ids: number[]) => number[]) => void, clearOptions: () => void) {
+    return <div className="space-y-2">
+      <label className="block text-sm font-medium text-ink">{title}
+        <input value={queryValue} onChange={(event) => setQueryValue(event.target.value)} placeholder="Tìm trong danh mục nguyên liệu" className="mt-1 w-full rounded-lg border border-brand-200 bg-surface px-3 py-2 text-sm" />
+      </label>
+      {options.filter((item) => !selectedIds.includes(item.ingredientId)).length > 0 && <ul className="max-h-36 space-y-1 overflow-y-auto rounded-lg border border-brand-100 bg-surface p-2">
+        {options.filter((item) => !selectedIds.includes(item.ingredientId)).map((item) => <li key={item.ingredientId}>
+          <button type="button" onClick={() => addIngredient(item, setIds, () => setQueryValue(""), clearOptions)} className="w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">+ {item.name}</button>
+        </li>)}
+      </ul>}
+      {selectedIds.length > 0 && <ul className="flex flex-wrap gap-2" aria-label={`${title} đã chọn`}>
+        {selectedIds.map((id) => <li key={id} className="inline-flex items-center gap-1 rounded-full border border-brand-100 bg-surface px-3 py-1 text-xs text-ink">
+          {ingredientNames[id] ?? `Nguyên liệu #${id}`}
+          <button type="button" aria-label={`Xóa ${ingredientNames[id] ?? "nguyên liệu"}`} onClick={() => removeIngredient(id, setIds)} className="rounded-full p-0.5 text-ink-muted hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><X className="h-3.5 w-3.5" /></button>
+        </li>)}
+      </ul>}
+    </div>
+  }
 
   return (
     <section aria-labelledby="ai-menu-title" className="rounded-2xl border border-brand-200 bg-surface p-4 shadow-sm sm:p-5">
@@ -1164,28 +1226,20 @@ function AiWeeklyMenu({ week }: { week: string }) {
         </div>
       </div>
       {mode === "THIS_WEEK" && <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <label className="block text-sm font-medium text-ink">Mục tiêu tuần này <span className="font-normal text-ink-muted">(không bắt buộc)</span>
+        <label className="block text-sm font-medium text-ink">Mục tiêu kế hoạch ăn của tuần này <span className="font-normal text-ink-muted">(không bắt buộc)</span>
           <select value={goal} onChange={(event) => { setGoal(event.target.value as AiMenuGoal | ""); clearPreview() }} className="mt-1 w-full rounded-lg border border-brand-200 bg-surface px-3 py-2 text-sm">
-            <option value="">Để AI chọn theo hoàn cảnh</option>{goalOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            <option value="">Không chọn mục tiêu</option>{goalOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </label>
-        <label className="block text-sm font-medium text-ink">Tìm nguyên liệu muốn có hoặc cần tránh
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm trong danh mục nguyên liệu" className="mt-1 w-full rounded-lg border border-brand-200 bg-surface px-3 py-2 text-sm" />
-        </label>
-        <div className="md:col-span-2 flex flex-wrap gap-2" aria-label="Nguyên liệu tuần này">
-          {ingredientOptions.map((item) => <span key={item.ingredientId} className="inline-flex items-center gap-1 rounded-full border border-brand-100 px-2 py-1 text-xs text-ink">
-            <span>{item.name}</span>
-            <button type="button" aria-label={`Ưu tiên ${item.name}`} aria-pressed={preferred.includes(item.ingredientId)} onClick={() => toggle(item.ingredientId, preferred, setPreferred, avoided, setAvoided)} className={preferred.includes(item.ingredientId) ? "font-bold text-brand-700" : "text-ink-muted"}>Muốn có</button>
-            <button type="button" aria-label={`Tránh ${item.name}`} aria-pressed={avoided.includes(item.ingredientId)} onClick={() => toggle(item.ingredientId, avoided, setAvoided, preferred, setPreferred)} className={avoided.includes(item.ingredientId) ? "font-bold text-red-700" : "text-ink-muted"}>Tránh</button>
-          </span>)}
-        </div>
-        <p className="text-xs text-ink-muted md:col-span-2">Thông tin ở đây chỉ dùng cho lần tạo này. Mục tiêu chỉ giúp chọn món, không làm thay đổi chỉ số dinh dưỡng tham khảo trong hồ sơ.</p>
+        {ingredientPicker("Bạn muốn lịch ăn có những nguyên liệu nào", preferredQuery, setPreferredQuery, preferredOptions, preferred, setPreferred, () => setPreferredOptions([]))}
+        {ingredientPicker("Bạn muốn lịch ăn không có nguyên liệu nào", avoidedQuery, setAvoidedQuery, avoidedOptions, avoided, setAvoided, () => setAvoidedOptions([]))}
+        <p className="text-xs text-ink-muted md:col-span-2">Nguyên liệu cần tránh là điều kiện bắt buộc: món có chứa bất kỳ nguyên liệu nào trong danh sách này sẽ bị loại, kể cả khi có nguyên liệu bạn muốn ưu tiên. Thông tin chỉ dùng cho lần tạo lịch này.</p>
       </div>}
       {mode === "PROFILE" && <p className="mt-3 text-sm text-ink-muted">Dùng mục tiêu và ràng buộc đã lưu. Nếu chưa đặt mục tiêu, thực đơn được tạo theo hướng cân bằng; hồ sơ sở thích chưa khai báo không bắt buộc phải bổ sung.</p>}
       <div className="mt-4 flex flex-wrap gap-2">
         <Button disabled={loading || applying} onClick={() => void generate()}>{loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{preview ? "Tạo thực đơn khác" : "Tạo thực đơn tuần"}</Button>
       </div>
-      {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800"><p>{error.message}</p>{error.code === "NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED" && <p className="mt-1">Để tiếp tục, hãy <Link to="/ho-so/dinh-duong" className="font-semibold underline underline-offset-2">xác nhận phạm vi hỗ trợ trong Hồ sơ dinh dưỡng</Link>.</p>}</div>}
       {successMessage && <p role="status" className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">{successMessage}</p>}
       {preview && <div className="mt-5 space-y-4 border-t border-brand-100 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold text-ink">Bản xem trước · {selected.length} món được chọn</p><Button variant="ghost" size="sm" onClick={() => { setSelected(selected.length === preview.meals.length ? [] : preview.meals.map((_, i) => i)); setConfirmArmed(false) }}>{selected.length === preview.meals.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}</Button></div>
@@ -1193,7 +1247,24 @@ function AiWeeklyMenu({ week }: { week: string }) {
         <div className="space-y-3">{Object.entries(grouped ?? {}).map(([day, dayMeals]) => <section key={day} className="rounded-xl bg-raised p-3"><h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3><div className="mt-2 grid gap-2 sm:grid-cols-3">{dayMeals.map((meal) => {
           const index = preview.meals.findIndex((item) => item.mealDate === meal.mealDate && item.mealType === meal.mealType)
           const label = meal.mealType === "BREAKFAST" ? "Sáng" : meal.mealType === "LUNCH" ? "Trưa" : "Tối"
-          return <label key={`${meal.mealDate}-${meal.mealType}`} className="flex min-w-0 gap-2 rounded-lg border border-brand-100 bg-surface p-2 text-sm"><input type="checkbox" checked={selected.includes(index)} onChange={() => { setSelected(selected.includes(index) ? selected.filter((value) => value !== index) : [...selected, index]); setConfirmArmed(false) }} /><span className="min-w-0"><span className="block text-xs text-ink-muted">{label}</span><Link to={`/cong-thuc/id/${meal.recipeId}`} className="font-semibold text-ink hover:text-brand-600">{meal.recipeTitle}</Link><span className="mt-1 block text-xs text-ink-muted">{meal.nutritionPerServing.ENERGY_KCAL ?? "—"} kcal · {meal.nutritionPerServing.PROTEIN_G ?? "—"} g đạm</span></span></label>
+          const isSelected = selected.includes(index)
+          return <article key={`${meal.mealDate}-${meal.mealType}`} className={`min-w-0 overflow-hidden rounded-lg border bg-surface text-sm ${isSelected ? "border-brand-200" : "border-brand-100 opacity-70"}`}>
+            <div className="flex items-center justify-between gap-2 border-b border-brand-100 px-3 py-2">
+              <span className="text-xs font-medium text-ink-muted">Bữa {label.toLowerCase()}</span>
+              <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
+                <input type="checkbox" checked={isSelected} aria-label={`Đưa ${meal.recipeTitle} vào lịch`} onChange={() => { setSelected(isSelected ? selected.filter((value) => value !== index) : [...selected, index]); setConfirmArmed(false) }} />
+                {isSelected ? "Đưa vào lịch" : "Bỏ qua món này"}
+              </label>
+            </div>
+            <Link to={`/cong-thuc/id/${meal.recipeId}`} aria-label={`Xem công thức ${meal.recipeTitle}`} className="group flex min-w-0 items-center gap-3 p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600">
+              {meal.coverUrl ? <img src={meal.coverUrl} alt="" loading="lazy" className="h-16 w-16 shrink-0 rounded-lg object-cover" /> : <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-raised text-ink-muted"><Utensils className="h-5 w-5" /></span>}
+              <span className="min-w-0">
+                <span className="block break-words font-semibold text-ink group-hover:text-brand-600">{meal.recipeTitle}</span>
+                <span className="mt-1 block text-xs text-ink-muted">{meal.nutritionPerServing.ENERGY_KCAL ?? "—"} kcal · {meal.nutritionPerServing.PROTEIN_G ?? "—"} g đạm</span>
+                <span className="mt-1 block text-xs font-medium text-brand-700">Xem công thức</span>
+              </span>
+            </Link>
+          </article>
         })}</div></section>)}</div>
         <p className="text-xs text-ink-muted">{preview.nutritionDisclaimer} Món có thể được lặp nếu nguồn phù hợp chưa đủ đa dạng; cùng món không xuất hiện ở hai bữa liền nhau.</p>
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Khi xác nhận, toàn bộ món đã có trong lịch của tuần này sẽ bị thay bằng các món đang được chọn.</div>

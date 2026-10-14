@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.8.0
+> **Version:** v2.9.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-10-14
 > **Status:** Active
@@ -164,9 +164,9 @@ Member chọn yêu cầu tạo thực đơn dinh dưỡng từ Lịch ăn tuần
 #### Main Flow
 1. Member chọn khu vực “Dành cho bạn” trong trang Lịch ăn, chọn tuần đích và một trong hai chế độ: “Dựa trên hồ sơ” hoặc “Theo mong muốn tuần này”.
 2. Với “Dựa trên hồ sơ”, hệ thống đọc mục tiêu chung đã lưu nếu có; nếu mục tiêu null, hệ thống chỉ dùng các dữ liệu hồ sơ và ràng buộc hiện có để tạo menu cân bằng, không hỏi thêm mục tiêu.
-3. Với “Theo mong muốn tuần này”, Member chọn mục tiêu của lần tạo hiện tại và tùy chọn nguyên liệu muốn có/cần tránh. Câu trả lời chỉ dùng trong request này, không được ghi vào FR-35 hoặc tự động tái sử dụng cho tuần khác.
+3. Với “Theo mong muốn tuần này”, Member chọn mục tiêu kế hoạch ăn và tùy chọn nguyên liệu muốn có/cần tránh. Câu trả lời chỉ dùng trong request này, không được ghi vào FR-35 hoặc tự động tái sử dụng cho tuần khác.
 4. Backend xác minh entitlement Pro, eligibility FR-38 và hồ sơ dinh dưỡng hợp lệ trước khi gọi Gemini.
-5. Hệ thống lấy các Recipe Post công khai có dữ liệu dinh dưỡng đáng tin cậy, phù hợp với loại ăn chay và dị ứng/cần tránh của Member; nguyên liệu muốn có chỉ là ưu tiên.
+5. Hệ thống lấy các Recipe Post công khai có dữ liệu dinh dưỡng đáng tin cậy, phù hợp với loại ăn chay và dị ứng/cần tránh của Member. Trong chế độ tuần này, công thức chứa bất kỳ nguyên liệu nào trong danh sách cần tránh bị loại khỏi pool trước khi gọi Gemini; nguyên liệu muốn có chỉ được ưu tiên mềm trong pool còn lại. Nếu một công thức có cả nguyên liệu muốn có và nguyên liệu cần tránh, công thức đó vẫn bị loại.
 6. Hệ thống gửi cho Gemini các ứng viên nội bộ và chỉ phần dữ liệu cần thiết để đề xuất thực đơn; yêu cầu chỉ chọn ID công thức có sẵn. Gemini không được tính hoặc phát minh chỉ tiêu dinh dưỡng.
 7. Gemini trả đúng 21 ID theo thứ tự ngày/bữa. Nếu thiếu công thức khác nhau, có thể lặp nhưng không lặp cùng món ở hai bữa liền kề. Backend kiểm tra lại toàn bộ ID, trạng thái công khai, ràng buộc và dinh dưỡng trước khi trả preview để tiếp tục UC-36.2.
 
