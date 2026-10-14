@@ -1,13 +1,35 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.72.0
+> **Version:** v2.73.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-13
+> **Last Updated:** 2026-10-14
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-14 — Add Meal Plan Nutrition Reports
+
+**Status:** Working tree — not committed.
+
+**Scope:** Issue #42 / FR-37, catalog-based meal-plan nutrition analysis, AI recommendations and PDF export.
+
+### Added
+
+- Add day and seven-day nutrition APIs, FDA Daily Value references, Pro recipe suggestions and on-demand A4 PDF reports.
+- Show catalog-based nutrient summaries, missing-data warnings, saved planned servings and the medical information disclaimer in the Member meal planner.
+- Add coverage for fractional servings, PDF routes and nutrition-reference migration behavior.
+
+### Changed
+
+- Allow planned servings from 0.5 to 10 in half-serving increments and calculate nutrients from the saved quantity.
+- Keep AI provider errors separate from nutrition results and require Member confirmation before applying a suggested recipe.
+- Upgrade Apache PDFBox to 3.0.8 for PDF generation.
+
+### Fixed
+
+- Count empty days as zero in weekly nutrition averages and divide by all seven days.
 
 ## 2026-10-13 — Focus Meal Planning on Individual Days ([PR #133](https://github.com/NgaiLong49423/vegetarian-support-system/pull/133))
 

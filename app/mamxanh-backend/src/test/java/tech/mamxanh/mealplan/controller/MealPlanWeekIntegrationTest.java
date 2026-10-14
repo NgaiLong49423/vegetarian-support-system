@@ -61,6 +61,15 @@ class MealPlanWeekIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void flywaySeedsCurrentSharedNutritionReferenceValues() {
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM [NUTRITION_DAILY_VALUE]", Integer.class)).isEqualTo(9);
+        assertThat(jdbc.queryForObject("SELECT reference_value FROM [NUTRITION_DAILY_VALUE] WHERE nutrient_key = 'IRON_MG'", java.math.BigDecimal.class))
+                .isEqualByComparingTo("18");
+        assertThat(jdbc.queryForObject("SELECT source_url FROM [NUTRITION_DAILY_VALUE] WHERE nutrient_key = 'IRON_MG'", String.class))
+                .contains("fda.gov");
+    }
+
+    @Test
     void reopeningAWeekKeepsItsIdentityAndEntries() throws Exception {
         open(owner, MONDAY);
         long plan = jdbc.queryForObject("SELECT meal_plan_id FROM [MEAL_PLAN] WHERE user_id = ?", Long.class, owner);

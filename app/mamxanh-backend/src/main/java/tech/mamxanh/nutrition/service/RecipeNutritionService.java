@@ -71,6 +71,17 @@ public class RecipeNutritionService {
         return new NutritionSummary(complete, missing.stream().distinct().toList(), values(totals), values(perServing));
     }
 
+    /** Calculate an existing published recipe for the planned cooking quantity. */
+    @Transactional(readOnly = true)
+    public NutritionSummary calculatePlanned(List<RecipeIngredient> recipeIngredients, int recipeServings,
+            BigDecimal plannedServings) {
+        NutritionSummary base = calculate(recipeIngredients, recipeServings);
+        Map<String, BigDecimal> scaled = base.perServing().entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> entry.getValue().multiply(plannedServings).setScale(2, RoundingMode.HALF_UP)));
+        return new NutritionSummary(base.complete(), base.ingredientsMissingData(), scaled, scaled);
+    }
+
     private BigDecimal grams(RecipeIngredient line, long ingredientId,
             Map<IngredientUnitConversionId, IngredientUnitConversionEntity> conversions) {
         BigDecimal gramsPerUnit;

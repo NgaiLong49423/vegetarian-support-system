@@ -7,5 +7,7 @@ public interface AiClient {
 
     RecommendationResult recommendRecipes(String prompt, List<Long> allowedRecipeIds, int limit);
 
+    RecommendationResult analyzeNutritionRecommendations(String prompt, List<Long> allowedRecipeIds, int limit);
+
     record RecommendationResult(String json, Integer promptTokens, Integer responseTokens, Integer totalTokens) { }
 }

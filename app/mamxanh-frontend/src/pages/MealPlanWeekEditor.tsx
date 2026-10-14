@@ -712,6 +712,10 @@ function WeekContents({
               plan={plan}
               initialDay={nutrition.day}
               initialScope={nutrition.scope}
+              onEntryReplaced={(entry) => setPlan((current) => current && ({
+                ...current,
+                entries: [...current.entries.filter((item) => item.entryId !== entry.entryId), entry],
+              }))}
             />
           </DialogFocus>
         )}

@@ -71,8 +71,7 @@ export function MealPlanRecipeServings({
           return
         }
         setEntry(found)
-        // Legacy fractional quantities remain stored until the user explicitly saves an integer.
-        onChange(Math.max(1, Math.min(9999, Math.floor(found.plannedServings))))
+        onChange(found.plannedServings)
       })
       .catch((cause) => {
         if (active) setError(asApiError(cause).message)
@@ -89,9 +88,10 @@ export function MealPlanRecipeServings({
     if (
       !entry ||
       pending.current ||
-      !Number.isInteger(servings) ||
-      servings < 1 ||
-      servings > 9999
+      !Number.isFinite(servings) ||
+      servings < 0.5 ||
+      servings > 10 ||
+      !Number.isInteger(servings * 2)
     )
       return
     pending.current = true
@@ -116,6 +116,8 @@ export function MealPlanRecipeServings({
     }
   }
 
+  const validServings = Number.isFinite(servings) && servings >= 0.5 && servings <= 10 && Number.isInteger(servings * 2)
+
   return (
     <div
       className="recipe-detail-no-print min-w-0 space-y-2"
@@ -127,9 +129,9 @@ export function MealPlanRecipeServings({
           <button
             type="button"
             aria-label="Giảm khẩu phần"
-            disabled={!entry || loading || saving || servings <= 1}
+            disabled={!entry || loading || saving || servings <= 0.5}
             onClick={() => {
-              onChange(Math.max(1, servings - 1))
+              onChange(Math.max(0.5, servings - 0.5))
               setNotice("")
             }}
             className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"
@@ -137,14 +139,14 @@ export function MealPlanRecipeServings({
             <Minus className="h-4 w-4" />
           </button>
           <span className="min-w-20 text-center text-sm font-bold text-ink">
-            {entry ? `${servings} phần` : "—"}
+            {entry ? `${servings.toLocaleString("vi-VN")} phần` : "—"}
           </span>
           <button
             type="button"
             aria-label="Tăng khẩu phần"
-            disabled={!entry || loading || saving || servings >= 9999}
+            disabled={!entry || loading || saving || servings >= 10}
             onClick={() => {
-              onChange(Math.min(9999, servings + 1))
+              onChange(Math.min(10, servings + 0.5))
               setNotice("")
             }}
             className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"
@@ -155,7 +157,7 @@ export function MealPlanRecipeServings({
         <Button
           size="sm"
           disabled={
-            !entry || loading || saving || servings === entry.plannedServings
+            !entry || loading || saving || !validServings || servings === entry.plannedServings
           }
           onClick={() => void save()}
         >
@@ -175,11 +177,24 @@ export function MealPlanRecipeServings({
           Thay đổi chỉ áp dụng cho món trong bữa này.
         </p>
       )}
-      {entry && !Number.isInteger(entry.plannedServings) && (
-        <p className="text-xs leading-5 text-brand-700">
-          Lịch trước đang lưu số phần lẻ. Chọn số phần nguyên và bấm Lưu để cập
-          nhật.
-        </p>
+      {entry && (
+        <label className="flex max-w-56 flex-col gap-1 text-xs text-ink-muted">
+          Số khẩu phần cần nấu
+          <input
+            type="number"
+            min={0.5}
+            max={10}
+            step={0.5}
+            value={servings}
+            onChange={(event) => {
+              const value = Number(event.target.value)
+              if (Number.isFinite(value)) onChange(value)
+              setNotice("")
+            }}
+            disabled={loading || saving}
+            className="rounded-lg border border-brand-200 bg-paper px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-600"
+          />
+        </label>
       )}
       {notice && (
         <p role="status" className="text-sm text-leaf-700">

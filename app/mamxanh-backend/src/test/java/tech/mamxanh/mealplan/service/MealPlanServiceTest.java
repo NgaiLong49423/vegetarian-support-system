@@ -22,9 +22,10 @@ class MealPlanServiceTest {
     private final MealPlanRepository repository = mock(MealPlanRepository.class);
     private final CurrentUserService users = mock(CurrentUserService.class);
     private final MealPlanReadService reads = mock(MealPlanReadService.class);
+    private final tech.mamxanh.recipe.service.RecipePostService recipes = mock(tech.mamxanh.recipe.service.RecipePostService.class);
     private final MealPlanService service = new MealPlanService(repository, users, reads,
             mock(tech.mamxanh.mealplan.repository.MealPlanEntryRepository.class),
-            mock(tech.mamxanh.recipe.service.RecipePostService.class));
+            recipes);
 
     @BeforeEach
     void member() {
@@ -55,5 +56,41 @@ class MealPlanServiceTest {
         when(users.requireActiveMember()).thenThrow(new AppException(ErrorCode.ACCESS_DENIED));
         assertThatThrownBy(() -> service.openWeek(LocalDate.of(2026, 10, 12))).isInstanceOf(AppException.class);
         verifyNoInteractions(repository, reads);
+    }
+
+    @Test
+    void acceptsHalfServingInTheApprovedRange() {
+        var week = LocalDate.of(2026, 10, 12);
+        var plan = new tech.mamxanh.mealplan.entity.MealPlanEntity();
+        plan.setId(3L);
+        var entry = new tech.mamxanh.mealplan.entity.MealPlanEntryEntity();
+        entry.setId(5L); entry.setMealPlanId(3L); entry.setRecipeId(9L); entry.setMealDate(week);
+        entry.setMealType("LUNCH"); entry.setPlannedServings(new java.math.BigDecimal("1"));
+        when(repository.lockWeek(17L, week)).thenReturn(java.util.Optional.of(plan));
+        var entryRepository = org.mockito.Mockito.mock(tech.mamxanh.mealplan.repository.MealPlanEntryRepository.class);
+        when(entryRepository.findByIdAndMealPlanId(5L, 3L)).thenReturn(java.util.Optional.of(entry));
+        when(recipes.findMealPlanReferences(List.of(9L))).thenReturn(java.util.Map.of(9L,
+                new tech.mamxanh.recipe.service.RecipePostService.MealPlanRecipeReference(9L, "Soup", "PUBLISHED", null, "SOUP", 20)));
+        var service = new MealPlanService(repository, users, reads, entryRepository, recipes);
+        var result = service.updateServings(week, 5L, new java.math.BigDecimal("1.5"));
+        assertThat(result.plannedServings()).isEqualByComparingTo("1.5");
+        verify(repository).touchWeek(3L);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0.4", "0.6", "10.5", "11"})
+    void rejectsOutOfRangeOrInvalidStepServing(String value) {
+        var week = LocalDate.of(2026, 10, 12);
+        var plan = new tech.mamxanh.mealplan.entity.MealPlanEntity();
+        plan.setId(3L);
+        var entry = new tech.mamxanh.mealplan.entity.MealPlanEntryEntity();
+        entry.setId(5L); entry.setMealPlanId(3L); entry.setRecipeId(9L); entry.setMealDate(week);
+        entry.setMealType("LUNCH"); entry.setPlannedServings(java.math.BigDecimal.ONE);
+        when(repository.lockWeek(17L, week)).thenReturn(java.util.Optional.of(plan));
+        var entryRepository = org.mockito.Mockito.mock(tech.mamxanh.mealplan.repository.MealPlanEntryRepository.class);
+        when(entryRepository.findByIdAndMealPlanId(5L, 3L)).thenReturn(java.util.Optional.of(entry));
+        var subject = new MealPlanService(repository, users, reads, entryRepository, recipes);
+        assertThatThrownBy(() -> subject.updateServings(week, 5L, new java.math.BigDecimal(value)))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
     }
 }

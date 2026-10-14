@@ -40,6 +40,9 @@ async function setup(page: Page, initial: ReturnType<typeof entry>[] = []) {
     writes: 0,
     fail: "",
     searchFail: false,
+    nutritionFail: false,
+    nutritionIncomplete: false,
+    aiFail: false,
     hold: null as null | Promise<void>,
   }
   await page.addInitScript(() =>
@@ -100,6 +103,31 @@ async function setup(page: Page, initial: ReturnType<typeof entry>[] = []) {
     const selectedWeek =
       url.searchParams.get("weekStartDate") ?? url.pathname.split("/")[4]
     if (request.method() === "GET") {
+      if (url.pathname.includes("/nutrition/report"))
+        return route.fulfill({ status: 200, contentType: "application/pdf", body: "%PDF-1.4 fixture" })
+      if (url.pathname.includes("/nutrition")) {
+        if (state.nutritionFail)
+          return route.fulfill({ status: 503, contentType: "application/problem+json", body: JSON.stringify({ code: "SERVICE_UNAVAILABLE", detail: "Chưa tải được bảng dinh dưỡng." }) })
+        const selectedDate = url.searchParams.get("date")
+        const end = new Date(`${selectedWeek}T12:00:00`)
+        end.setDate(end.getDate() + 6)
+        const lastDay = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`
+        const days = Array.from({ length: selectedDate ? 1 : 7 }, (_, offset) => {
+          const date = new Date(`${selectedDate ?? selectedWeek}T12:00:00`)
+          date.setDate(date.getDate() + offset)
+          const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+          const dayEntries = state.entries.filter((item) => item.mealDate === dateKey && item.mealDate >= selectedWeek && item.mealDate <= lastDay)
+          const keys = ["ENERGY_KCAL", "PROTEIN_G", "CARBOHYDRATE_G", "TOTAL_FAT_G", "FIBER_G", "CALCIUM_MG", "IRON_MG", "VITAMIN_B12_MCG", "ZINC_MG"]
+          const base: Record<string, number> = { ENERGY_KCAL: 100, PROTEIN_G: 2, CARBOHYDRATE_G: 10, TOTAL_FAT_G: 1, FIBER_G: 3, CALCIUM_MG: 20, IRON_MG: 0.5, VITAMIN_B12_MCG: 0, ZINC_MG: 1 }
+          const complete = !state.nutritionIncomplete
+          const nutrients = Object.fromEntries(keys.map((key) => [key, complete ? dayEntries.reduce((sum, item) => sum + base[key] * item.plannedServings, 0) : null]))
+          return { date: dateKey, nutrients, entries: dayEntries.map((item) => ({ entryId: item.entryId, date: dateKey, mealType: item.mealType, recipeId: item.recipeId, recipeTitle: item.recipeTitle ?? "Công thức không còn khả dụng", plannedServings: item.plannedServings, complete, ingredientsMissingData: complete ? [] : ["Nấm"], nutrients: Object.fromEntries(keys.map((key) => [key, base[key] * item.plannedServings])) })) }
+        })
+        const keys = ["ENERGY_KCAL", "PROTEIN_G", "CARBOHYDRATE_G", "TOTAL_FAT_G", "FIBER_G", "CALCIUM_MG", "IRON_MG", "VITAMIN_B12_MCG", "ZINC_MG"]
+        const targets = keys.map((key, index) => ({ key, label: ["Năng lượng", "Chất đạm", "Carbohydrate", "Tổng chất béo", "Chất xơ", "Canxi", "Sắt", "Vitamin B12", "Kẽm"][index], minimum: 50, maximum: 100, unit: key === "ENERGY_KCAL" ? "kcal" : "g", referenceType: "FDA_DV", source: "FDA Daily Values", sourceUrl: "https://www.fda.gov", version: "current" }))
+        const weeklyAverage = Object.fromEntries(keys.map((key) => { const values = days.map((item) => item.nutrients[key]); return [key, values.some((value) => value == null) ? null : values.reduce((sum, value) => sum + (value as number), 0) / 7] }))
+        return route.fulfill({ json: { weekStartDate: selectedWeek, scope: selectedDate ? "DAY" : "WEEK", selectedDate, referenceBasis: "FDA Daily Values", source: "U.S. FDA", sourceUrl: "https://www.fda.gov", disclaimer: "Thông tin dinh dưỡng trong báo cáo chỉ mang tính tham khảo, được ước tính từ thực đơn dự kiến; không phải kết quả khám, chẩn đoán hay điều trị y tế, và không thay thế tư vấn của bác sĩ hoặc chuyên gia dinh dưỡng. Kết quả không có giá trị pháp lý hoặc y tế.", targets, days, weeklyAverage, attainmentDays: Object.fromEntries(keys.map((key) => [key, 0])), incompleteEntries: days.flatMap((day) => day.entries.filter((item) => !item.complete).map((item) => ({ entryId: item.entryId, date: item.date, mealType: item.mealType, recipeTitle: item.recipeTitle, ingredientsMissingData: item.ingredientsMissingData }))) } })
+      }
       const end = new Date(`${selectedWeek}T12:00:00`)
       end.setDate(end.getDate() + 6)
       const lastDay = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`
@@ -111,6 +139,10 @@ async function setup(page: Page, initial: ReturnType<typeof entry>[] = []) {
           ),
         },
       })
+    }
+    if (request.method() === "POST" && url.pathname.includes("/nutrition/recommendations/")) {
+      if (state.aiFail) return route.fulfill({ status: 503, contentType: "application/problem+json", body: JSON.stringify({ code: "AI_PROVIDER_UNAVAILABLE", detail: "Dịch vụ AI hiện không khả dụng." }) })
+      return route.fulfill({ json: { entryId: Number(url.pathname.split("/").pop()), analysis: "Thực đơn có thể điều chỉnh bằng các công thức được gợi ý.", recommendations: [{ recipeId: 12, title: "Đậu phụ kho", complete: true, ingredientsMissingData: [] }] } })
     }
     state.writes++
     expect(request.headers().authorization).toBe(
@@ -251,7 +283,7 @@ test("only one day expands, and adding meals queries saved recipes with paginati
   expect(publicSearches).toBe(0)
 })
 
-test("nutrition counts one serving per person despite family portions and switches day/week", async ({
+test("nutrition uses planned servings and divides weekly averages across all seven days", async ({
   page,
 }) => {
   const tomorrow = new Date(`${week}T12:00:00`)
@@ -306,49 +338,47 @@ test("nutrition counts one serving per person despite family portions and switch
 
   const dialog = page.getByRole("dialog")
 
-  await expect(dialog.getByText("200 kcal", { exact: true })).toBeVisible()
-  await expect(dialog.getByText("Dinh dưỡng cho 1 người · mỗi món 1 phần ăn", { exact: true })).toBeVisible()
+  await expect(dialog.getByText("350 kcal", { exact: true })).toBeVisible()
+  await expect(dialog.getByText("7 g", { exact: true })).toBeVisible()
 
-  await expect(dialog.getByText("4 g", { exact: true })).toBeVisible()
+  expect(requests).toBe(0)
 
-  expect(requests).toBe(1)
+  await dialog.getByRole("button", { name: "So sánh & Thống kê 7 ngày" }).click()
 
-  await dialog.getByRole("button", { name: "Cả tuần", exact: true }).click()
+  await expect(dialog.getByText("107,14 kcal", { exact: true })).toBeVisible()
+  await expect(dialog.getByRole("table").locator("tbody tr")).toHaveCount(9)
 
-  await expect(dialog.getByText("300 kcal", { exact: true })).toBeVisible()
-  await expect(dialog.getByText(/không phải trung bình mỗi ngày/)).toBeVisible()
-
-  expect(requests).toBe(1)
-
-  await expect(dialog.locator("dl").first().locator("dt")).toHaveCount(9)
+  expect(requests).toBe(0)
 
   await dialog.getByRole("button", { name: "Theo ngày" }).click()
 
   await dialog.getByLabel("Ngày xem").selectOption(next)
 
-  await expect(dialog.getByText("100 kcal", { exact: true })).toBeVisible()
+  await expect(dialog.getByText("400 kcal", { exact: true })).toBeVisible()
+
+  state.aiFail = true
+  await dialog.getByRole("button", { name: "Phân tích và gợi ý món" }).first().click()
+  await expect(dialog.getByRole("alert")).toContainText("Dịch vụ AI hiện không khả dụng")
+  await expect(dialog.getByText("400 kcal", { exact: true })).toBeVisible()
+  state.aiFail = false
+  await dialog.getByRole("button", { name: "Phân tích và gợi ý món" }).first().click()
+  await expect(dialog.getByRole("heading", { name: "Phân tích của AI" })).toBeVisible()
+  await expect(dialog.getByText("Thực đơn có thể điều chỉnh bằng các công thức được gợi ý.")).toBeVisible()
+  await expect(dialog.getByText("Đậu phụ kho", { exact: true })).toBeVisible()
+  await dialog.getByRole("button", { name: "Thay món này" }).click()
+  await expect(dialog.getByRole("button", { name: "Phân tích và gợi ý món" })).toHaveCount(1)
+  expect(state.entries.find((item) => item.entryId === 3)?.recipeId).toBe(12)
+
+  const downloadPromise = page.waitForEvent("download")
+  await dialog.getByRole("button", { name: "Xuất báo cáo PDF" }).click()
+  expect((await downloadPromise).suggestedFilename()).toContain("bao-cao-dinh-duong")
 })
 
 test("nutrition discloses missing data and supports retry without false zero totals", async ({
   page,
 }) => {
-  await setup(page, [entry()])
-
-  let fail = true
-
-  await page.route("**/api/v1/recipes/11", (route) =>
-    fail
-      ? route.fulfill({ status: 503, json: { detail: "Chưa tải được" } })
-      : route.fulfill({
-          json: {
-            nutrition: {
-              complete: false,
-              ingredientsMissingData: ["Nấm"],
-              perServing: { ENERGY_KCAL: 0 },
-            },
-          },
-        }),
-  )
+  const state = await setup(page, [entry()])
+  state.nutritionFail = true
 
   await page.goto("/ke-hoach")
 
@@ -358,18 +388,19 @@ test("nutrition discloses missing data and supports retry without false zero tot
 
   const dialog = page.getByRole("dialog")
 
-  await expect(dialog.getByRole("alert")).toContainText("Chưa tải được")
+  await expect(dialog.getByRole("alert")).toContainText("Chưa tải được bảng dinh dưỡng")
 
-  fail = false
+  state.nutritionFail = false
+  state.nutritionIncomplete = true
 
   await dialog.getByRole("button", { name: "Thử lại" }).click()
 
-  await expect(dialog.getByText("Thiếu dữ liệu: Nấm.")).toBeVisible()
+  await expect(dialog.getByText("Nấm", { exact: false }).first()).toBeVisible()
 
   await expect(dialog.getByText("0 kcal", { exact: true })).toHaveCount(0)
 
   await expect(
-    dialog.locator("dd").filter({ hasText: "Chưa đủ dữ liệu" }),
+    dialog.getByRole("table").getByText("Chưa đủ dữ liệu"),
   ).toHaveCount(9)
 
   await page.keyboard.press("Escape")
@@ -394,7 +425,7 @@ test("empty week opens one day with three meals and requests creation only after
   expect(state.writes).toBe(1)
 })
 
-test("recipe detail saves integer servings and the calendar displays them after return", async ({ page }) => {
+test("recipe detail saves half servings and the calendar recalculates nutrition", async ({ page }) => {
   const state = await setup(page, [entry(), { ...entry(2), mealType: "DINNER", plannedServings: 3 }])
   await page.goto("/ke-hoach")
   await openMonday(page)
@@ -405,19 +436,19 @@ test("recipe detail saves integer servings and the calendar displays them after 
   await expect(page.getByText("1 phần", { exact: true })).toBeVisible()
   await expect(page.getByText("100 g", { exact: true })).toBeVisible()
   await page.getByRole("button", { name: "Tăng khẩu phần" }).click()
-  await expect(page.getByText("2 phần", { exact: true })).toBeVisible()
-  await expect(page.getByText("200 g", { exact: true })).toBeVisible()
+  await expect(page.getByText("1,5 phần", { exact: true })).toBeVisible()
+  await expect(page.getByText("150 g", { exact: true })).toBeVisible()
   expect(state.writes).toBe(0)
   await page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" }).click()
-  await expect(page.getByRole("status")).toContainText("Đã lưu 2 phần")
-  expect(state.entries[0].plannedServings).toBe(2)
+  await expect(page.getByRole("status")).toContainText("Đã lưu 1,5 phần")
+  expect(state.entries[0].plannedServings).toBe(1.5)
   expect(state.entries[1].plannedServings).toBe(3)
   await page.getByRole("link", { name: "Về lịch ăn", exact: true }).click()
-  await expect(page.getByRole("article", { name: "Canh nấm" }).first()).toContainText("25 phút · 2 phần")
+  await expect(page.getByRole("article", { name: "Canh nấm" }).first()).toContainText("25 phút · 1,5 phần")
   await page.reload()
-  await expect(page.getByRole("article", { name: "Canh nấm" }).first()).toContainText("25 phút · 2 phần")
+  await expect(page.getByRole("article", { name: "Canh nấm" }).first()).toContainText("25 phút · 1,5 phần")
   await page.getByRole("button", { name: "Xem dinh dưỡng ngày" }).click()
-  await expect(page.getByRole("dialog").getByText("200 kcal", { exact: true })).toBeVisible()
+  await expect(page.getByRole("dialog").getByText("150 kcal", { exact: true })).toBeVisible()
 })
 
 test("failed serving save retains the old calendar value and can be retried in detail", async ({ page }) => {
@@ -433,7 +464,8 @@ test("failed serving save retains the old calendar value and can be retried in d
   expect(state.entries[0].plannedServings).toBe(1)
   state.fail = ""
   await page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" }).click()
-  await expect(page.getByRole("status")).toContainText("Đã lưu 2 phần")
+  await expect(page.getByRole("status")).toContainText("Đã lưu 1,5 phần")
+  expect(state.entries[0].plannedServings).toBe(1.5)
 })
 
 test("a mismatched plan entry cannot be edited and ordinary recipe viewing does not write a plan", async ({ page }) => {
@@ -449,16 +481,17 @@ test("a mismatched plan entry cannot be edited and ordinary recipe viewing does 
   expect(state.writes).toBe(0)
 })
 
-test("legacy fractional servings are only changed when an integer is explicitly saved", async ({ page }) => {
+test("invalid legacy serving values need correction before saving", async ({ page }) => {
   const state = await setup(page, [{ ...entry(), plannedServings: 1.1 }])
   await page.goto(`/cong-thuc/id/11?mealPlanWeek=${week}&mealPlanEntryId=1`)
-  await expect(page.getByText(/Lịch trước đang lưu số phần lẻ/)).toBeVisible()
+  const input = page.getByRole("spinbutton", { name: "Số khẩu phần cần nấu" })
+  await expect(input).toHaveValue("1.1")
+  await expect(page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" })).toBeDisabled()
   expect(state.writes).toBe(0)
-  await page.getByRole("button", { name: "Tăng khẩu phần" }).click()
-  await expect(page.getByText("2 phần", { exact: true })).toBeVisible()
+  await input.fill("1.5")
   await page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" }).click()
-  await expect(page.getByRole("status")).toContainText("Đã lưu 2 phần")
-  expect(state.entries[0].plannedServings).toBe(2)
+  await expect(page.getByRole("status")).toContainText("Đã lưu 1,5 phần")
+  expect(state.entries[0].plannedServings).toBe(1.5)
 })
 
 test("empty saved collection and empty nutrition explain the next step", async ({ page }) => {

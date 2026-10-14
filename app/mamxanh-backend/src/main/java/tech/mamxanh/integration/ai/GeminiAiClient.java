@@ -99,6 +99,37 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
         }
     }
 
+    @Override
+    public RecommendationResult analyzeNutritionRecommendations(String prompt, List<Long> allowedRecipeIds, int limit) {
+        if (client == null) throw new AiProviderException("Gemini is not configured");
+        Schema schema = Schema.builder().type(Type.Known.OBJECT)
+                .properties(Map.of(
+                        "analysis", Schema.builder().type(Type.Known.STRING).build(),
+                        "recipeIds", Schema.builder().type(Type.Known.ARRAY).maxItems((long) limit)
+                                .items(Schema.builder().type(Type.Known.INTEGER).build()).build()))
+                .required(List.of("analysis", "recipeIds")).build();
+        GenerateContentConfig config = GenerateContentConfig.builder().responseMimeType("application/json")
+                .responseSchema(schema).candidateCount(1).maxOutputTokens(2048)
+                .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build()).build();
+        try {
+            var response = client.models.generateContent(MODEL, prompt + "\nChoose at most " + limit
+                    + " IDs from " + allowedRecipeIds, config);
+            String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
+                    .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
+            if (!"STOP".equals(finishReason)) throw new AiProviderException("Gemini nutrition analysis is incomplete");
+            String text = response.text();
+            if (text == null || text.isBlank()) throw new AiProviderException("Gemini returned an empty nutrition analysis");
+            var usage = response.usageMetadata();
+            return new RecommendationResult(text, usage.flatMap(value -> value.promptTokenCount()).orElse(null),
+                    usage.flatMap(value -> value.candidatesTokenCount()).orElse(null),
+                    usage.flatMap(value -> value.totalTokenCount()).orElse(null));
+        } catch (AiProviderException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw new AiProviderException("Gemini nutrition analysis failed", exception);
+        }
+    }
+
     public static final class AiProviderException extends RuntimeException {
         public AiProviderException(String message) { super(message); }
         public AiProviderException(String message, Throwable cause) { super(message, cause); }

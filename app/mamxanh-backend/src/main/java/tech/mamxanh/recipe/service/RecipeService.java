@@ -228,6 +228,70 @@ public class RecipeService {
     }
 
     @Transactional(readOnly = true)
+    public Map<Long, PlannedNutrition> calculatePlannedNutrition(Map<Long, BigDecimal> plannedServings) {
+        if (plannedServings == null || plannedServings.isEmpty()) return Map.of();
+        List<Long> ids = plannedServings.keySet().stream().sorted().toList();
+        Map<Long, RecipePostEntity> published = recipeRepository.findAllById(ids).stream()
+                .filter(recipe -> "PUBLISHED".equals(recipe.getStatus()))
+                .collect(Collectors.toMap(RecipePostEntity::getId, Function.identity()));
+        List<RecipeIngredientEntity> lines = ingredientRepository.findAllByRecipeIdInOrderByRecipeIdAscIdAsc(ids);
+        Map<Long, RecipeIngredientReferenceEntity> ingredients = ingredientReferenceRepository
+                .findAllById(lines.stream().map(RecipeIngredientEntity::getIngredientId).filter(java.util.Objects::nonNull).distinct().toList())
+                .stream().collect(Collectors.toMap(RecipeIngredientReferenceEntity::getId, Function.identity()));
+        Map<Integer, RecipeUnitReferenceEntity> units = unitReferenceRepository
+                .findAllById(lines.stream().map(RecipeIngredientEntity::getUnitId).distinct().toList())
+                .stream().collect(Collectors.toMap(RecipeUnitReferenceEntity::getId, Function.identity()));
+        Map<Long, List<RecipeIngredientEntity>> byRecipe = lines.stream()
+                .collect(Collectors.groupingBy(RecipeIngredientEntity::getRecipeId));
+        Map<Long, PlannedNutrition> result = new java.util.LinkedHashMap<>();
+        for (Long id : ids) {
+            RecipePostEntity recipe = published.get(id);
+            if (recipe == null) continue;
+            List<RecipeNutritionService.RecipeIngredient> recipeLines = byRecipe.getOrDefault(id, List.of()).stream().map(line -> {
+                RecipeUnitReferenceEntity unit = units.get(line.getUnitId());
+                RecipeIngredientReferenceEntity ingredient = line.getIngredientId() == null ? null : ingredients.get(line.getIngredientId());
+                return new RecipeNutritionService.RecipeIngredient(line.getIngredientId(), line.getUnitId(), unit.getDimension(),
+                        unit.getBaseFactor(), line.getQuantity(), ingredient == null ? line.getCustomIngredientName() : ingredient.getName());
+            }).toList();
+            var nutrition = nutritionService.calculatePlanned(recipeLines, recipe.getServings(), plannedServings.get(id));
+            result.put(id, new PlannedNutrition(id, recipe.getTitle(), nutrition.complete(),
+                    nutrition.ingredientsMissingData(), nutrition.total()));
+        }
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public PlannedNutrition calculatePlannedNutrition(long recipeId, BigDecimal plannedServings) {
+        return calculatePlannedNutrition(Map.of(recipeId, plannedServings)).get(recipeId);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, PlannedNutrition> calculatePlannedNutritionByEntry(Map<Long, Long> recipeByEntry,
+            Map<Long, BigDecimal> servingsByEntry) {
+        if (recipeByEntry == null || recipeByEntry.isEmpty()) return Map.of();
+        Map<Long, BigDecimal> servingsByRecipe = new java.util.LinkedHashMap<>();
+        recipeByEntry.forEach((entryId, recipeId) -> servingsByRecipe.merge(recipeId,
+                servingsByEntry.get(entryId), BigDecimal::max));
+        Map<Long, PlannedNutrition> byRecipe = calculatePlannedNutrition(servingsByRecipe);
+        Map<Long, PlannedNutrition> byEntry = new java.util.LinkedHashMap<>();
+        recipeByEntry.forEach((entryId, recipeId) -> {
+            BigDecimal servings = servingsByEntry.get(entryId);
+            PlannedNutrition base = byRecipe.get(recipeId);
+            if (base == null) return;
+            Map<String, BigDecimal> scaled = base.nutrients().entrySet().stream().collect(Collectors.toMap(
+                    Map.Entry::getKey, entry -> entry.getValue().multiply(servings)
+                            .divide(servingsByRecipe.get(recipeId), 4, RoundingMode.HALF_UP)
+                            .setScale(2, RoundingMode.HALF_UP)));
+            byEntry.put(entryId, new PlannedNutrition(base.recipeId(), base.title(), base.complete(),
+                    base.ingredientsMissingData(), scaled));
+        });
+        return byEntry;
+    }
+
+    public record PlannedNutrition(Long recipeId, String title, boolean complete,
+            List<String> ingredientsMissingData, Map<String, BigDecimal> nutrients) { }
+
+    @Transactional(readOnly = true)
     public RecipeFormOptionsResponse formOptions() {
         List<Choice> categories = java.util.Arrays.stream(DishCategory.values())
                 .map(value -> new Choice(value.name(), value.label())).toList();

@@ -79,10 +79,10 @@ public class MealPlanService {
     public MealPlanWeekResponse.Entry updateServings(LocalDate weekStartDate, long entryId, BigDecimal plannedServings) {
         var plan = ownedWeek(weekStartDate);
         var entry = requireEntry(plan.getId(), entryId);
-        if (plannedServings == null || plannedServings.compareTo(BigDecimal.ONE) < 0
-                || plannedServings.compareTo(new BigDecimal("9999")) > 0
-                || plannedServings.stripTrailingZeros().scale() > 0) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "Số phần cần nấu phải là số nguyên từ 1 đến 9.999.");
+        if (plannedServings == null || plannedServings.compareTo(new BigDecimal("0.5")) < 0
+                || plannedServings.compareTo(new BigDecimal("10")) > 0
+                || plannedServings.multiply(BigDecimal.valueOf(2)).stripTrailingZeros().scale() > 0) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Khẩu phần dự kiến phải từ 0,5 đến 10, theo bước 0,5.");
         }
         entry.setPlannedServings(plannedServings);
         var saved = entries.saveAndFlush(entry);

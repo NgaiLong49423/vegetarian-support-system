@@ -25,4 +25,9 @@ public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity
             ) THEN 1 ELSE 0 END AS bit)
             """, nativeQuery = true)
     boolean hasActivePaidSubscription(@Param("userId") long userId, @Param("now") LocalDateTime now);
+
+    @Query(value = "SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM [SUBSCRIPTION] WHERE user_id = :userId "
+            + "AND status = 'ACTIVE' AND tier = 'PRO' AND starts_at <= :now AND ends_at > :now) "
+            + "THEN 1 ELSE 0 END AS bit)", nativeQuery = true)
+    boolean hasActiveProSubscription(@Param("userId") long userId, @Param("now") LocalDateTime now);
 }
