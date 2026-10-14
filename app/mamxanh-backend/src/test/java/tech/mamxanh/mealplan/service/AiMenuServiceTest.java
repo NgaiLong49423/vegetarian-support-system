@@ -24,6 +24,7 @@ import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.mealplan.dto.request.ApplyAiMenuRequest;
 import tech.mamxanh.mealplan.dto.request.CreateAiMenuPreviewRequest;
+import tech.mamxanh.mealplan.entity.MealPlanEntity;
 import tech.mamxanh.mealplan.repository.MealPlanEntryRepository;
 import tech.mamxanh.mealplan.repository.MealPlanRepository;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
@@ -124,6 +125,74 @@ class AiMenuServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
         verifyNoInteractions(plans, entries);
         verify(recipes, never()).requirePublishedMealPlanRecipe(anyLong());
+    }
+
+    @Test
+    void appliesSelectedPreviewByReplacingTheWeekOnlyAfterRevalidatingRecipes() {
+        prepareCandidates();
+        MealPlanEntity week = new MealPlanEntity();
+        week.setId(31L);
+        when(plans.lockWeek(17L, MONDAY)).thenReturn(java.util.Optional.of(week));
+        var request = new ApplyAiMenuRequest(MONDAY, "THIS_WEEK", null, null, List.of(
+                new ApplyAiMenuRequest.SelectedMeal(MONDAY, "BREAKFAST", 11L),
+                new ApplyAiMenuRequest.SelectedMeal(MONDAY, "LUNCH", 12L)));
+
+        service.apply(request);
+
+        var inOrder = inOrder(recipes, plans, entries, reads);
+        inOrder.verify(recipes).requirePublishedMealPlanRecipe(11L);
+        inOrder.verify(recipes).requirePublishedMealPlanRecipe(12L);
+        inOrder.verify(plans).createWeekIfAbsent(17L, MONDAY);
+        inOrder.verify(plans).lockWeek(17L, MONDAY);
+        inOrder.verify(entries).deleteAllByMealPlanId(31L);
+        inOrder.verify(entries).flush();
+        inOrder.verify(entries, times(2)).save(any());
+        inOrder.verify(plans).touchWeek(31L);
+        inOrder.verify(reads).getWeek(MONDAY);
+    }
+
+    @Test
+    void missingLockedWeekDoesNotDeleteAnyExistingEntries() {
+        prepareCandidates();
+        when(plans.lockWeek(17L, MONDAY)).thenReturn(java.util.Optional.empty());
+        var request = new ApplyAiMenuRequest(MONDAY, "PROFILE", null, null,
+                List.of(new ApplyAiMenuRequest.SelectedMeal(MONDAY, "BREAKFAST", 11L)));
+
+        assertThatThrownBy(() -> service.apply(request)).isInstanceOf(AppException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_FOUND);
+
+        verify(recipes).requirePublishedMealPlanRecipe(11L);
+        verify(entries, never()).deleteAllByMealPlanId(anyLong());
+        verify(entries, never()).save(any());
+        verifyNoInteractions(reads);
+    }
+
+    @Test
+    void rejectsProviderFailureAndMalformedAiOutputWithoutPublishingUsage() {
+        prepareCandidates();
+        when(ai.recommendRecipes(any(), anyList(), eq(21)))
+                .thenThrow(new tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException("unavailable"));
+        assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_PROVIDER_UNAVAILABLE);
+        verifyNoInteractions(events);
+
+        reset(ai);
+        when(ai.recommendRecipes(any(), anyList(), eq(21)))
+                .thenReturn(new AiClient.RecommendationResult("not-json", 1, 1, 2));
+        assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
+        verifyNoInteractions(events);
+    }
+
+    @Test
+    void rejectsEmptySafeCandidatePoolBeforeCallingAi() {
+        prepareCandidates();
+        when(recipes.searchPublished("", 0, 50)).thenReturn(
+                new RecipePostService.RecipePageResponse(List.of(), 0, 50, 0, 0));
+
+        assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
+        verifyNoInteractions(ai, events);
     }
 
     private void prepareCandidates() {

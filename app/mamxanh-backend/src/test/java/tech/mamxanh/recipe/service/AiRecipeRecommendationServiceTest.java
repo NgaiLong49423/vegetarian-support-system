@@ -113,6 +113,49 @@ class AiRecipeRecommendationServiceTest {
         verifyNoInteractions(events);
     }
 
+    @Test
+    void rejectsEmptyIngredientSelectionAndSkipsGeminiWhenCatalogHasNoMatches() {
+        assertThatThrownBy(() -> service.recommend(List.of()))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
+        verifyNoInteractions(recipes, ai, events);
+
+        when(recipes.searchPublished("", 0, 50)).thenReturn(
+                new RecipePostService.RecipePageResponse(List.of(), 0, 50, 0, 0));
+        var result = service.recommend(List.of(1L));
+        assertThat(result.items()).isEmpty();
+        verifyNoInteractions(ai, events);
+    }
+
+    @Test
+    void mapsProviderAndMalformedResponseFailuresWithoutRecordingUsage() {
+        when(recipes.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
+                List.of(recipe(1, "VEGAN", 1L), recipe(2, "VEGAN", 1L), recipe(3, "VEGAN", 1L)), 0, 50, 3, 1));
+        when(ai.recommendRecipes(anyString(), anyList(), eq(5)))
+                .thenThrow(new tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException("unavailable"));
+        assertThatThrownBy(() -> service.recommend(List.of(1L)))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_PROVIDER_UNAVAILABLE);
+        verifyNoInteractions(events);
+
+        reset(ai);
+        when(ai.recommendRecipes(anyString(), anyList(), eq(5)))
+                .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":[1,1,2]}", 1, 1, 2));
+        assertThatThrownBy(() -> service.recommend(List.of(1L)))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
+        verifyNoInteractions(events);
+    }
+
+    @Test
+    void rechecksCurrentPublicationAndDietarySafetyBeforeApplyingWeeklyPreview() {
+        var forbidden = recipe(9, "VEGAN", 99L);
+        when(recipes.getPublishedCards(List.of(1L, 9L))).thenReturn(List.of(recipe(1, "VEGAN", 1L), forbidden));
+        assertThatThrownBy(() -> service.requireWeeklyApplyEligible(7L, List.of(1L, 9L)))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.RECIPE_NOT_FOUND);
+
+        when(recipes.getPublishedCards(List.of(1L))).thenReturn(List.of(recipe(1, "VEGAN", 1L)));
+        service.requireWeeklyApplyEligible(7L, List.of(1L, 1L));
+        verify(recipes).getPublishedCards(List.of(1L));
+    }
+
     private static DietaryPreferencesResponse profile() {
         return new DietaryPreferencesResponse(VegetarianType.VEGAN,
                 new DietaryPreferencesResponse.IngredientPreferences(false,
