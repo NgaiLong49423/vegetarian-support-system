@@ -13,6 +13,7 @@ import tech.mamxanh.mealplan.repository.MealPlanEntryRepository;
 import tech.mamxanh.mealplan.entity.MealPlanEntryEntity;
 import tech.mamxanh.mealplan.entity.MealPlanEntity;
 import tech.mamxanh.mealplan.dto.request.AddMealPlanEntryRequest;
+import tech.mamxanh.mealplan.dto.request.MoveMealPlanEntryRequest;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.recipe.service.RecipePostService;
@@ -131,6 +132,24 @@ public class MealPlanService {
         rejectDuplicate(plan.getId(), entry.getMealDate(), entry.getMealType(), recipeId, entryId);
         recipes.requirePublishedMealPlanRecipe(recipeId);
         entry.setRecipeId(recipeId);
+        var saved = entries.saveAndFlush(entry);
+        repository.touchWeek(plan.getId());
+        return response(saved);
+    }
+
+    @Transactional
+    public MealPlanWeekResponse.Entry moveEntry(LocalDate weekStartDate, long entryId, MoveMealPlanEntryRequest request) {
+        var plan = ownedWeek(weekStartDate);
+        var entry = requireEntry(plan.getId(), entryId);
+        if (request.mealDate() == null || request.mealDate().isBefore(weekStartDate)
+                || request.mealDate().isAfter(weekStartDate.plusDays(6))
+                || request.mealType() == null
+                || !List.of("BREAKFAST", "LUNCH", "DINNER").contains(request.mealType())) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Chỉ chuyển món giữa ba bữa trong cùng tuần.");
+        }
+        rejectDuplicate(plan.getId(), request.mealDate(), request.mealType(), entry.getRecipeId(), entryId);
+        entry.setMealDate(request.mealDate());
+        entry.setMealType(request.mealType());
         var saved = entries.saveAndFlush(entry);
         repository.touchWeek(plan.getId());
         return response(saved);
