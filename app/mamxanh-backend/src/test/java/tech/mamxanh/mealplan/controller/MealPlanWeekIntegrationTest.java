@@ -237,6 +237,52 @@ class MealPlanWeekIntegrationTest extends AbstractIntegrationTest {
         }
     }
 
+    @Test
+    void ac334MovePersistsAndDuplicateOrOutOfWeekOrForeignMoveLeavesSqlUnchanged() throws Exception {
+        long recipe = recipe("PUBLISHED");
+        add(owner, recipe, "LUNCH", 201);
+        add(owner, recipe, "DINNER", 201);
+        long entry = jdbc.queryForObject("SELECT meal_plan_entry_id FROM [MEAL_PLAN_ENTRY] WHERE recipe_id = ? AND meal_type = 'LUNCH'", Long.class, recipe);
+        jdbc.update("UPDATE [MEAL_PLAN_ENTRY] SET planned_servings = 2.5 WHERE meal_plan_entry_id = ?", entry);
+        for (long member : List.of(other, admin, locked)) {
+            mockMvc.perform(patch(entryPath(entry) + "/position").with(user(Long.toString(member)))
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"mealDate\":\"2026-10-13\",\"mealType\":\"DINNER\"}"))
+                    .andExpect(status().isForbidden());
+        }
+        mockMvc.perform(patch(entryPath(entry) + "/position").with(user(Long.toString(owner)))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"mealDate\":\"2026-10-12\",\"mealType\":\"DINNER\"}"))
+                .andExpect(status().isConflict());
+        mockMvc.perform(patch(entryPath(entry) + "/position").with(user(Long.toString(owner)))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"mealDate\":\"2026-10-19\",\"mealType\":\"DINNER\"}"))
+                .andExpect(status().isBadRequest());
+        assertThat(jdbc.queryForObject("SELECT meal_type FROM [MEAL_PLAN_ENTRY] WHERE meal_plan_entry_id = ?", String.class, entry)).isEqualTo("LUNCH");
+        mockMvc.perform(patch(entryPath(entry) + "/position").with(user(Long.toString(owner)))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"mealDate\":\"2026-10-13\",\"mealType\":\"DINNER\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.entryId").value(entry))
+                .andExpect(jsonPath("$.plannedServings").value(2.5));
+        assertThat(jdbc.queryForObject("SELECT meal_date FROM [MEAL_PLAN_ENTRY] WHERE meal_plan_entry_id = ?", LocalDate.class, entry)).isEqualTo(MONDAY.plusDays(1));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM [MEAL_PLAN_ENTRY] WHERE recipe_id = ?", Integer.class, recipe)).isEqualTo(2);
+    }
+
+    @Test
+    void ac337ExportIsOwnerOnlyAndOmitsHiddenContentAndEnergy() throws Exception {
+        long recipe = recipe("PUBLISHED");
+        add(owner, recipe, "LUNCH", 201);
+        jdbc.update("UPDATE [RECIPE_POST] SET status = 'HIDDEN', title = N'Private hidden title' WHERE recipe_id = ?", recipe);
+        mockMvc.perform(get("/api/v1/meal-plans/" + MONDAY + "/export").with(user(Long.toString(owner))))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.entries[0].title").value("Công thức không còn khả dụng"))
+                .andExpect(jsonPath("$.entries[0].energyKcal").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.entries[0].plannedServings").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Private hidden title"))));
+        mockMvc.perform(get("/api/v1/meal-plans/" + MONDAY + "/export").with(user(Long.toString(other))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.entries").isEmpty());
+        for (long member : List.of(admin, locked)) {
+            mockMvc.perform(get("/api/v1/meal-plans/" + MONDAY + "/export").with(user(Long.toString(member))))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
     private String entryPath(long entry) {
         return "/api/v1/meal-plans/" + MONDAY + "/entries/" + entry;
     }

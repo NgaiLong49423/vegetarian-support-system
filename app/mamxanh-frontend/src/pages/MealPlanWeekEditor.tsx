@@ -14,6 +14,8 @@ import {
   Sparkles,
   Trash2,
   Utensils,
+  ArrowRightLeft,
+  Download,
   X,
 } from "lucide-react"
 
@@ -37,6 +39,7 @@ import { savedRecipesApi } from "../services/savedRecipesApi"
 import { asApiError } from "../lib/apiClient"
 
 import { MealPlanNutrition } from "./MealPlanNutrition"
+import { mealPlanFile, downloadMealPlan } from "../lib/mealPlanExport"
 import { AiRecipePlanner } from "./AiRecipePlanner"
 
 type Entry = MealPlanWeek["entries"][number]
@@ -293,6 +296,8 @@ function WeekContents({
 
   const [removal, setRemoval] = useState<Entry | null>(null)
 
+  const [moving, setMoving] = useState<Entry | null>(null)
+  const [exportOpen, setExportOpen] = useState(false)
   const [nutrition, setNutrition] = useState<{
     day: string
 
@@ -357,6 +362,8 @@ function WeekContents({
 
     setNutrition(null)
 
+    setMoving(null)
+    setExportOpen(false)
     setActionError("")
 
     restoreDialogFocus()
@@ -391,6 +398,8 @@ function WeekContents({
       setPicker(null)
 
       setRemoval(null)
+      setMoving(null)
+      setExportOpen(false)
 
       restoreDialogFocus()
     } catch (cause) {
@@ -442,6 +451,36 @@ function WeekContents({
     )
   }
 
+  function move(mealDate: string, mealType: MealType) {
+    if (!moving) return
+    const id = moving.entryId
+    void mutate(async () => {
+      const entry = await mealPlanApi.moveEntry(week, id, {
+        mealDate,
+        mealType,
+      })
+      if (alive.current) {
+        setPlan(
+          (current) =>
+            current && {
+              ...current,
+              entries: current.entries.map((item) =>
+                item.entryId === id ? entry : item,
+              ),
+            },
+        )
+        onSelectDay(mealDate)
+      }
+    }, "Đã chuyển món sang bữa được chọn.")
+  }
+  function exportWeek(format: "pdf" | "txt") {
+    void mutate(async () => {
+      const snapshot = await mealPlanApi.getExport(week)
+      if (!alive.current) return
+      const file = await mealPlanFile(snapshot, format)
+      if (alive.current) downloadMealPlan(file, week, format)
+    }, `Đã tải lịch ăn ${format.toUpperCase()}.`)
+  }
   if (loading)
     return (
       <p
@@ -482,12 +521,12 @@ function WeekContents({
           {notice}
         </p>
       )}
-      {busy && !picker && !removal && (
+      {busy && !picker && !removal && !moving && !exportOpen && (
         <p role="status" className="text-sm text-ink-muted">
           Đang lưu lịch ăn…
         </p>
       )}
-      {actionError && !picker && !removal && (
+      {actionError && !picker && !removal && !moving && !exportOpen && (
         <p
           role="alert"
           className="rounded-xl bg-raised p-3 text-sm text-ink-muted"
@@ -518,6 +557,19 @@ function WeekContents({
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-ink-muted">Chọn ngày để lên lịch từng bữa</p>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={busy}
+          onClick={() => {
+            returnFocus.current = (document.activeElement as HTMLElement)
+            setActionError("")
+            setExportOpen(true)
+          }}
+        >
+          <Download className="h-4 w-4" />
+          Xuất lịch ăn
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -702,6 +754,21 @@ function WeekContents({
                                     variant="ghost"
                                     size="sm"
                                     disabled={busy}
+                                    aria-label={`Chuyển món ${name}`}
+                                    onClick={() => {
+                                      returnFocus.current =
+                                        (document.activeElement as HTMLElement)
+                                      setActionError("")
+                                      setMoving(entry)
+                                    }}
+                                  >
+                                    <ArrowRightLeft className="h-3 w-3" />
+                                    Chuyển
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={busy}
                                     aria-label={`Thay món ${name}`}
                                     onClick={() =>
                                       openPicker({
@@ -766,6 +833,57 @@ function WeekContents({
             />
           </DialogFocus>
         )}
+      </Modal>
+      <Modal
+        open={Boolean(moving)}
+        onClose={closeDialog}
+        title="Chuyển món trong tuần"
+      >
+        {moving && (
+          <MoveDialog
+            key={moving.entryId}
+            week={week}
+            entry={moving}
+            entries={plan.entries}
+            busy={busy}
+            error={actionError}
+            onMove={move}
+            onClose={closeDialog}
+          />
+        )}
+      </Modal>
+      <Modal open={exportOpen} onClose={closeDialog} title="Xuất lịch ăn tuần">
+        <DialogFocus>
+          <p className="text-sm text-ink-soft">
+            Tải lịch đủ bảy ngày và ba bữa mỗi ngày. Năng lượng ước tính theo
+            khẩu phần đã lưu; món thiếu dữ liệu được ghi rõ.
+          </p>
+          {actionError && (
+            <p role="alert" className="mt-3 text-sm text-ink-muted">
+              {actionError}
+            </p>
+          )}
+          {busy && (
+            <p role="status" className="mt-3 text-sm text-ink-muted">
+              Đang tạo tệp lịch ăn…
+            </p>
+          )}
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Button disabled={busy} onClick={() => exportWeek("pdf")}>
+              Tải PDF A4
+            </Button>
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => exportWeek("txt")}
+            >
+              Tải TXT
+            </Button>
+            <Button variant="ghost" disabled={busy} onClick={closeDialog}>
+              Hủy
+            </Button>
+          </div>
+        </DialogFocus>
       </Modal>
       <Modal
         open={Boolean(picker)}
@@ -834,6 +952,114 @@ function WeekContents({
         )}
       </Modal>
     </div>
+  )
+}
+function MoveDialog({
+  week,
+  entry,
+  entries,
+  busy,
+  error,
+  onMove,
+  onClose,
+}: {
+  week: string
+  entry: Entry
+  entries: Entry[]
+  busy: boolean
+  error: string
+  onMove: (date: string, meal: MealType) => void
+  onClose: () => void
+}) {
+  const [date, setDate] = useState(entry.mealDate)
+  const [meal, setMeal] = useState(entry.mealType)
+  const duplicate = entries.some(
+    (item) =>
+      item.entryId !== entry.entryId &&
+      item.recipeId === entry.recipeId &&
+      item.mealDate === date &&
+      item.mealType === meal,
+  )
+  const unchanged = date === entry.mealDate && meal === entry.mealType
+  const dates = Array.from({ length: 7 }, (_, offset) => {
+    const day = new Date(`${week}T12:00:00`)
+    day.setDate(day.getDate() + offset)
+    return {
+      key: localDateKey(day),
+      label: day.toLocaleDateString("vi-VN", {
+        weekday: "long",
+        day: "2-digit",
+        month: "2-digit",
+      }),
+    }
+  })
+  return (
+    <DialogFocus>
+      <p className="text-sm text-ink-soft">
+        {entry.recipeTitle ?? "Công thức không còn khả dụng"} · Giữ nguyên{" "}
+        {entry.plannedServings} phần.
+      </p>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (!busy && !duplicate && !unchanged) onMove(date, meal)
+        }}
+      >
+        <label className="mt-4 block text-sm text-ink">
+          Ngày đích
+          <select
+            value={date}
+            disabled={busy}
+            onChange={(event) => setDate(event.target.value)}
+            className="mt-1 w-full rounded-lg border border-brand-200 bg-paper p-2 focus-visible:outline-2 focus-visible:outline-brand-600"
+          >
+            {dates.map((day) => (
+              <option key={day.key} value={day.key}>
+                {day.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="mt-3 block text-sm text-ink">
+          Bữa đích
+          <select
+            value={meal}
+            disabled={busy}
+            onChange={(event) => setMeal(event.target.value as MealType)}
+            className="mt-1 w-full rounded-lg border border-brand-200 bg-paper p-2 focus-visible:outline-2 focus-visible:outline-brand-600"
+          >
+            {meals.map((value) => (
+              <option key={value} value={value}>
+                {mealLabels[value]}
+              </option>
+            ))}
+          </select>
+        </label>
+        {duplicate && (
+          <p role="alert" className="mt-3 text-sm text-ink-muted">
+            Món này đã có trong bữa đích. Chọn ngày hoặc bữa khác.
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="mt-3 text-sm text-ink-muted">
+            {error}
+          </p>
+        )}
+        <div className="mt-5 flex gap-2">
+          <Button type="submit" disabled={busy || duplicate || unchanged}>
+            {busy ? "Đang chuyển…" : "Xác nhận chuyển"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={busy}
+            onClick={onClose}
+          >
+            Hủy
+          </Button>
+        </div>
+      </form>
+    </DialogFocus>
   )
 }
 
@@ -1288,7 +1514,11 @@ function DialogFocus({ children }: { children: ReactNode }) {
           "button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href]",
         ),
       ).filter((element) => element.offsetParent !== null)
-    ;(dialog.querySelector<HTMLElement>("input") ?? focusable()[0])?.focus()
+    ;(
+      root.current?.querySelector<HTMLElement>(
+        "input, select, button:not(:disabled)",
+      ) ?? focusable()[0]
+    )?.focus()
 
     const trap = (event: KeyboardEvent) => {
       if (event.key !== "Tab") return
