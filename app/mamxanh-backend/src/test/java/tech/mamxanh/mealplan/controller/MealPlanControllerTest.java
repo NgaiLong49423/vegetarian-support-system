@@ -98,7 +98,7 @@ class MealPlanControllerTest {
     }
 
     @Test
-    void exportsAOnePageDailyAndTwoPageWeeklyUnicodePdf() throws Exception {
+    void exportsUnifiedDailyAndWeeklyNutritionTables() throws Exception {
         var monday = LocalDate.of(2026, 10, 12);
         when(nutrition.analyze(monday, monday)).thenReturn(report(monday, "DAY", monday, List.of(day(monday))));
         when(nutrition.analyze(monday, null)).thenReturn(report(monday, "WEEK", null,
@@ -110,17 +110,66 @@ class MealPlanControllerTest {
                 .andReturn().getResponse().getContentAsByteArray();
         try (var pdf = org.apache.pdfbox.Loader.loadPDF(daily)) {
             assertThat(pdf.getNumberOfPages()).isEqualTo(1);
+            assertThat(pdf.getPage(0).getMediaBox().getWidth())
+                    .isLessThan(pdf.getPage(0).getMediaBox().getHeight());
             String extracted = new org.apache.pdfbox.text.PDFTextStripper().getText(pdf);
-            assertThat(extracted).contains("BÁO CÁO DINH DƯỠNG NGÀY", "không thay thế tư vấn");
+            assertThat(extracted).contains("BÁO CÁO DINH DƯỠNG NGÀY", "Chỉ tiêu / bữa", "Kế hoạch / món",
+                    "Mức tham khảo", "Chênh lệch / ghi chú", "THỰC ĐƠN DỰ KIẾN VÀ CẢNH BÁO",
+                    "Bữa sáng", "Bữa trưa", "Bữa tối", "Nấu thử", "Chưa xếp món", "Tạo lúc:");
         }
 
         byte[] weekly = mvc.perform(get("/api/v1/meal-plans/2026-10-12/nutrition/report")
                         .with(user("17").roles("CUSTOMER")))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
         try (var pdf = org.apache.pdfbox.Loader.loadPDF(weekly)) {
-            assertThat(pdf.getNumberOfPages()).isEqualTo(2);
-            String extracted = new org.apache.pdfbox.text.PDFTextStripper().getText(pdf);
-            assertThat(extracted).contains("THỰC ĐƠN DỰ KIẾN VÀ CẢNH BÁO", "Nấu thử");
+            assertThat(pdf.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            var stripper = new org.apache.pdfbox.text.PDFTextStripper();
+            for (int page = 1; page <= pdf.getNumberOfPages(); page++) {
+                assertThat(pdf.getPage(page - 1).getMediaBox().getWidth())
+                        .isGreaterThan(pdf.getPage(page - 1).getMediaBox().getHeight());
+                stripper.setStartPage(page);
+                stripper.setEndPage(page);
+                assertThat(stripper.getText(pdf)).contains("Chỉ tiêu / bữa", "Trung bình", "Ngày đạt");
+            }
+            stripper.setStartPage(1);
+            stripper.setEndPage(pdf.getNumberOfPages());
+            assertThat(stripper.getText(pdf)).contains("BÁO CÁO DINH DƯỠNG TUẦN", "12/10", "18/10",
+                    "THỰC ĐƠN DỰ KIẾN VÀ CẢNH BÁO", "Bữa sáng", "Bữa trưa", "Bữa tối",
+                    "Chưa xếp món", "Nấu thử", "Tạo lúc:");
+        }
+    }
+
+    @Test
+    void continuesLongWeeklyMealRowsWithoutLosingRecipesOrWarnings() throws Exception {
+        var monday = LocalDate.of(2026, 10, 12);
+        var days = java.util.stream.IntStream.range(0, 7).mapToObj(dayIndex -> {
+            var date = monday.plusDays(dayIndex);
+            var entries = java.util.stream.IntStream.range(0, 12).mapToObj(entryIndex ->
+                    new Entry(entryIndex + 1, date, "LUNCH", entryIndex + 10,
+                            "Món " + dayIndex + "-" + entryIndex + " với tên dài để kiểm tra xuống dòng trong bảng",
+                            java.math.BigDecimal.TWO, entryIndex != 0,
+                            entryIndex == 0 ? List.of("nguyên liệu thiếu dữ liệu") : List.of(),
+                            java.util.Map.of())).toList();
+            return new Day(date, java.util.Map.of(), entries);
+        }).toList();
+        when(nutrition.analyze(monday, null)).thenReturn(report(monday, "WEEK", null, days));
+
+        byte[] bytes = mvc.perform(get("/api/v1/meal-plans/2026-10-12/nutrition/report")
+                        .with(user("17").roles("CUSTOMER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+        try (var pdf = org.apache.pdfbox.Loader.loadPDF(bytes)) {
+            assertThat(pdf.getNumberOfPages()).isGreaterThan(2);
+            var stripper = new org.apache.pdfbox.text.PDFTextStripper();
+            for (int page = 1; page <= pdf.getNumberOfPages(); page++) {
+                stripper.setStartPage(page);
+                stripper.setEndPage(page);
+                assertThat(stripper.getText(pdf)).contains("Chỉ tiêu / bữa", "T2", "CN");
+            }
+            stripper.setStartPage(1);
+            stripper.setEndPage(pdf.getNumberOfPages());
+            String extracted = stripper.getText(pdf);
+            assertThat(extracted).contains("Món 0-0", "Món 6-11", "Chưa xếp món", "Tạo lúc:");
+            assertThat(extracted.replaceAll("\\s+", "")).contains("nguyênliệuthiếudữliệu");
         }
     }
 

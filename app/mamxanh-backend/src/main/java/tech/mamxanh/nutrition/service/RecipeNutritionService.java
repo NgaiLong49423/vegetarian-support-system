@@ -43,7 +43,11 @@ public class RecipeNutritionService {
                 : conversionRepository.findByIdIngredientIdInAndActiveTrue(convertedIngredientIds).stream()
                         .collect(Collectors.toMap(IngredientUnitConversionEntity::getId, conversion -> conversion));
         EnumMap<Nutrient, BigDecimal> totals = new EnumMap<>(Nutrient.class);
-        for (Nutrient nutrient : Nutrient.values()) totals.put(nutrient, BigDecimal.ZERO);
+        EnumMap<Nutrient, Boolean> computable = new EnumMap<>(Nutrient.class);
+        for (Nutrient nutrient : Nutrient.values()) {
+            totals.put(nutrient, BigDecimal.ZERO);
+            computable.put(nutrient, recipeIngredients.isEmpty());
+        }
         List<String> missing = new ArrayList<>();
         for (RecipeIngredient line : recipeIngredients) {
             IngredientEntity ingredient = line.ingredientId() == null ? null : ingredients.get(line.ingredientId());
@@ -57,18 +61,24 @@ public class RecipeNutritionService {
                 continue;
             }
             Map<Nutrient, BigDecimal> values = nutrientValues(ingredient);
-            if (values.values().stream().anyMatch(Objects::isNull)) {
-                missing.add(line.displayName());
-                continue;
-            }
             BigDecimal factor = grams.divide(ONE_HUNDRED, 8, RoundingMode.HALF_UP);
-            values.forEach((nutrient, value) -> totals.merge(nutrient, value.multiply(factor), BigDecimal::add));
+            boolean lineIncomplete = false;
+            for (Nutrient nutrient : Nutrient.values()) {
+                BigDecimal value = values.get(nutrient);
+                if (value == null) {
+                    lineIncomplete = true;
+                    continue;
+                }
+                computable.put(nutrient, true);
+                totals.merge(nutrient, value.multiply(factor), BigDecimal::add);
+            }
+            if (lineIncomplete) missing.add(line.displayName());
         }
         boolean complete = missing.isEmpty();
         Map<Nutrient, BigDecimal> perServing = new EnumMap<>(Nutrient.class);
-        totals.forEach((nutrient, total) -> perServing.put(nutrient,
-                total.divide(BigDecimal.valueOf(servings), 4, RoundingMode.HALF_UP)));
-        return new NutritionSummary(complete, missing.stream().distinct().toList(), values(totals), values(perServing));
+        totals.forEach((nutrient, total) -> perServing.put(nutrient, computable.get(nutrient)
+                ? total.divide(BigDecimal.valueOf(servings), 4, RoundingMode.HALF_UP) : null));
+        return new NutritionSummary(complete, missing.stream().distinct().toList(), values(totals, computable), values(perServing, computable));
     }
 
     /** Calculate an existing published recipe for the planned cooking quantity. */
@@ -76,9 +86,9 @@ public class RecipeNutritionService {
     public NutritionSummary calculatePlanned(List<RecipeIngredient> recipeIngredients, int recipeServings,
             BigDecimal plannedServings) {
         NutritionSummary base = calculate(recipeIngredients, recipeServings);
-        Map<String, BigDecimal> scaled = base.perServing().entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> entry.getValue().multiply(plannedServings).setScale(2, RoundingMode.HALF_UP)));
+        Map<String, BigDecimal> scaled = new java.util.LinkedHashMap<>();
+        base.perServing().forEach((key, value) -> scaled.put(key,
+                value == null ? null : value.multiply(plannedServings).setScale(2, RoundingMode.HALF_UP)));
         return new NutritionSummary(base.complete(), base.ingredientsMissingData(), scaled, scaled);
     }
 
@@ -108,9 +118,11 @@ public class RecipeNutritionService {
         return values;
     }
 
-    private static Map<String, BigDecimal> values(Map<Nutrient, BigDecimal> source) {
-        return source.entrySet().stream().collect(Collectors.toMap(entry -> entry.getKey().name(),
-                entry -> entry.getValue().setScale(2, RoundingMode.HALF_UP)));
+    private static Map<String, BigDecimal> values(Map<Nutrient, BigDecimal> source, Map<Nutrient, Boolean> computable) {
+        Map<String, BigDecimal> result = new java.util.LinkedHashMap<>();
+        source.forEach((nutrient, value) -> result.put(nutrient.name(), computable.get(nutrient) && value != null
+                ? value.setScale(2, RoundingMode.HALF_UP) : null));
+        return result;
     }
 
     public record RecipeIngredient(Long ingredientId, Integer unitId, String unitDimension,

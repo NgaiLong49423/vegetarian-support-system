@@ -129,9 +129,16 @@ public class MealPlanNutritionService {
 
     private static Map<String, BigDecimal> sum(List<Entry> entries) {
         Map<String, BigDecimal> totals = new LinkedHashMap<>();
-        boolean complete = entries.stream().allMatch(Entry::complete);
-        for (String key : KEYS) totals.put(key, complete ? BigDecimal.ZERO.setScale(2) : null);
-        if (complete) for (Entry entry : entries) entry.nutrients().forEach((key, value) -> totals.merge(key, value, BigDecimal::add));
+        for (String key : KEYS) {
+            if (entries.isEmpty()) {
+                totals.put(key, BigDecimal.ZERO.setScale(2));
+                continue;
+            }
+            List<BigDecimal> knownValues = entries.stream().map(entry -> entry.nutrients().get(key))
+                    .filter(java.util.Objects::nonNull).toList();
+            totals.put(key, knownValues.isEmpty() ? null : knownValues.stream()
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+        }
         return totals;
     }
     private static Map<String, BigDecimal> average(List<Day> days) {

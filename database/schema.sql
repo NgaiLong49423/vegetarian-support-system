@@ -18,7 +18,8 @@
 --                   + V10__nutrition_eligibility_status.sql
 --                   + V11__user_password_reset.sql
 --                   + V12__ingredient_name_unique_for_active_catalog.sql
---                   + V13__nutrition_daily_value_reference.sql
+--                   + V13__expand_nutrition_goal_options.sql
+--                   + V14__nutrition_daily_value_reference.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -1020,7 +1021,7 @@ GO
 
 
 -- ============================================================================
--- FR-37 shared FDA reference values; maintained by Flyway V13.
+-- FR-37 shared FDA reference values; maintained by Flyway V14.
 CREATE TABLE [NUTRITION_DAILY_VALUE] (
     nutrient_key VARCHAR(32) NOT NULL,
     label NVARCHAR(80) NOT NULL,

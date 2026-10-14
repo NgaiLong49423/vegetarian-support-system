@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
+import { Link } from "react-router-dom"
 import { Button } from "../components/ui"
 import { mealPlanApi, type MealPlanNutrition as NutritionData, type MealPlanNutritionRecommendations, type MealPlanWeek } from "../api/recipes"
-import { asApiError } from "../lib/apiClient"
+import { asApiError, asApiErrorAsync, type ApiError } from "../lib/apiClient"
 
 const disclaimer = "Thông tin dinh dưỡng trong báo cáo chỉ mang tính tham khảo, được ước tính từ thực đơn dự kiến; không phải kết quả khám, chẩn đoán hay điều trị y tế, và không thay thế tư vấn của bác sĩ hoặc chuyên gia dinh dưỡng. Kết quả không có giá trị pháp lý hoặc y tế."
 const mealLabels = { BREAKFAST: "Sáng", LUNCH: "Trưa", DINNER: "Tối" }
@@ -17,7 +18,9 @@ export function MealPlanNutrition({ plan, initialDay, initialScope, onEntryRepla
   const [day, setDay] = useState(initialDay)
   const [data, setData] = useState<NutritionData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [error, setError] = useState<ApiError | null>(null)
+  const [exportError, setExportError] = useState<ApiError | null>(null)
+  const [exporting, setExporting] = useState(false)
   const [aiError, setAiError] = useState("")
   const [aiLoading, setAiLoading] = useState<number | null>(null)
   const [recommendations, setRecommendations] = useState<MealPlanNutritionRecommendations | null>(null)
@@ -32,22 +35,25 @@ export function MealPlanNutrition({ plan, initialDay, initialScope, onEntryRepla
 
   useEffect(() => {
     let active = true
-    setLoading(true); setError(""); setAiError(""); setRecommendations(null)
+    setLoading(true); setError(null); setExportError(null); setAiError(""); setRecommendations(null)
     mealPlanApi.nutrition(plan.weekStartDate, scope === "day" ? day : undefined)
       .then((result) => { if (active) setData(result) })
-      .catch((cause) => { if (active) setError(asApiError(cause).message) })
+      .catch((cause) => { if (active) setError(asApiError(cause)) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [plan.weekStartDate, scope, day, retry])
 
   async function exportPdf() {
+    setExporting(true); setExportError(null)
     try {
       const blob = await mealPlanApi.nutritionPdf(plan.weekStartDate, scope === "day" ? day : undefined)
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url; link.download = `bao-cao-dinh-duong-${scope === "day" ? day : plan.weekStartDate}.pdf`
-      link.click(); URL.revokeObjectURL(url)
-    } catch (cause) { setError(asApiError(cause).message) }
+      document.body.appendChild(link); link.click(); link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (cause) { setExportError(await asApiErrorAsync(cause)) }
+    finally { setExporting(false) }
   }
 
   async function askAi(entryId: number) {
@@ -73,18 +79,21 @@ export function MealPlanNutrition({ plan, initialDay, initialScope, onEntryRepla
   }
   const targetMap = new Map((data?.targets ?? []).map((target) => [target.key, target]))
   const metrics = data?.targets ?? []
+  const canExport = !loading && !error && entries.length > 0
 
   return <div className="space-y-4">
     <div className="flex flex-wrap items-center gap-2" aria-label="Phạm vi dinh dưỡng">
       <Button size="sm" variant={scope === "day" ? "secondary" : "ghost"} aria-pressed={scope === "day"} onClick={() => setScope("day")}>Theo ngày</Button>
       <Button size="sm" variant={scope === "week" ? "secondary" : "ghost"} aria-pressed={scope === "week"} onClick={() => setScope("week")}>So sánh &amp; Thống kê 7 ngày</Button>
-      <Button size="sm" variant="ghost" onClick={() => void exportPdf()}>Xuất báo cáo PDF</Button>
+      <Button size="sm" variant="ghost" disabled={!canExport || exporting} onClick={() => void exportPdf()}>{exporting ? "Đang tạo PDF…" : "Xuất báo cáo PDF"}</Button>
     </div>
     {scope === "day" && <label className="block text-sm text-ink-soft">Ngày xem<select value={day} onChange={(event) => setDay(event.target.value)} className="mt-2 block w-full rounded-lg border border-brand-200 bg-paper p-2 text-ink">{days.map((date) => <option key={date} value={date}>{new Date(`${date}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</option>)}</select></label>}
     <p className="rounded-xl bg-raised p-3 text-xs leading-5 text-ink-muted">{data?.referenceBasis ?? "Mức tham khảo sẽ hiện cùng bảng dinh dưỡng."} · Dữ liệu tính từ số khẩu phần dự kiến đã lưu. Không phải lượng thực tế đã ăn.</p>
     {loading && <p role="status" className="py-6 text-center text-sm text-ink-muted">Đang tính dinh dưỡng…</p>}
-    {error && <div role="alert" className="space-y-2 text-sm text-ink-muted"><p>{error}</p><Button size="sm" variant="ghost" onClick={() => setRetry((value) => value + 1)}>Thử lại</Button></div>}
+    {error && <div role="alert" className="space-y-2 text-sm text-ink-muted"><p>{error.message}</p>{error.code === "NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED" && <p>Hãy <Link to="/ho-so/dinh-duong" className="font-semibold underline">xác nhận phạm vi hỗ trợ dinh dưỡng</Link> trước khi sử dụng.</p>}<Button size="sm" variant="ghost" onClick={() => setRetry((value) => value + 1)}>Thử lại</Button></div>}
+    {exportError && <div role="alert" className="space-y-2 text-sm text-ink-muted"><p>{exportError.message}</p>{exportError.code === "NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED" && <p>Hãy <Link to="/ho-so/dinh-duong" className="font-semibold underline">xác nhận phạm vi hỗ trợ dinh dưỡng</Link> trước khi xuất báo cáo.</p>}<Button size="sm" variant="ghost" onClick={() => void exportPdf()}>Thử xuất lại</Button></div>}
     {!loading && data && scope === "day" && entries.length === 0 && <p className="rounded-xl bg-raised p-3 text-sm text-ink-muted">Ngày này chưa có món để tính dinh dưỡng.</p>}
+    {!loading && data && scope === "week" && entries.length === 0 && <p className="rounded-xl bg-raised p-3 text-sm text-ink-muted">Tuần này chưa có món để tính dinh dưỡng. Hãy thêm món vào lịch ăn trước khi xuất báo cáo.</p>}
     {!loading && data && <>
       {data.incompleteEntries.length > 0 && <div role="status" className="rounded-xl border border-brand-200 bg-raised p-3 text-sm text-ink-soft"><strong>Dữ liệu dinh dưỡng chưa đầy đủ.</strong><ul className="mt-2 list-disc pl-5">{data.incompleteEntries.map((entry) => <li key={entry.entryId}>{entry.recipeTitle}: {entry.ingredientsMissingData.join(", ") || "chưa có dữ liệu công thức"}</li>)}</ul></div>}
       <div className="overflow-x-auto rounded-xl border border-brand-100">

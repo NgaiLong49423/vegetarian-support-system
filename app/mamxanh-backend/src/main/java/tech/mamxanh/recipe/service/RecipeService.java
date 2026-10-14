@@ -278,10 +278,10 @@ public class RecipeService {
             BigDecimal servings = servingsByEntry.get(entryId);
             PlannedNutrition base = byRecipe.get(recipeId);
             if (base == null) return;
-            Map<String, BigDecimal> scaled = base.nutrients().entrySet().stream().collect(Collectors.toMap(
-                    Map.Entry::getKey, entry -> entry.getValue().multiply(servings)
-                            .divide(servingsByRecipe.get(recipeId), 4, RoundingMode.HALF_UP)
-                            .setScale(2, RoundingMode.HALF_UP)));
+            Map<String, BigDecimal> scaled = new java.util.LinkedHashMap<>();
+            base.nutrients().forEach((key, value) -> scaled.put(key, value == null ? null : value.multiply(servings)
+                    .divide(servingsByRecipe.get(recipeId), 4, RoundingMode.HALF_UP)
+                    .setScale(2, RoundingMode.HALF_UP)));
             byEntry.put(entryId, new PlannedNutrition(base.recipeId(), base.title(), base.complete(),
                     base.ingredientsMissingData(), scaled));
         });

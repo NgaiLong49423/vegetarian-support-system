@@ -341,7 +341,9 @@ export const mealPlanApi = {
     (await apiClient.get<MealPlanNutrition>(`/meal-plans/${weekStartDate}/nutrition`, { params: date ? { date } : {} })).data,
   nutritionPdf: async (weekStartDate: string, date?: string) =>
     (await apiClient.get<Blob>(`/meal-plans/${weekStartDate}/nutrition/report`, {
-      params: date ? { date } : {}, responseType: 'blob',
+      params: date ? { date } : {},
+      responseType: 'blob',
+      headers: { Accept: 'application/pdf, application/problem+json' },
     })).data,
   nutritionRecommendations: async (weekStartDate: string, entryId: number) =>
     (await apiClient.post<MealPlanNutritionRecommendations>(`/meal-plans/${weekStartDate}/nutrition/recommendations/${entryId}`)).data,
@@ -364,7 +366,7 @@ export interface MealPlanNutrition {
   sourceUrl: string;
   disclaimer: string;
   targets: Array<{key: string; label: string; minimum: number | null; maximum: number | null; unit: string; referenceType: string; source: string; sourceUrl: string; version: string}>;
-  days: Array<{date: string; nutrients: Record<string, number | null>; entries: Array<{entryId: number; date: string; mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER'; recipeId: number; recipeTitle: string; plannedServings: number; complete: boolean; ingredientsMissingData: string[]; nutrients: Record<string, number>}>}>;
+  days: Array<{date: string; nutrients: Record<string, number | null>; entries: Array<{entryId: number; date: string; mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER'; recipeId: number; recipeTitle: string; plannedServings: number; complete: boolean; ingredientsMissingData: string[]; nutrients: Record<string, number | null>}>}>;
   weeklyAverage: Record<string, number | null>;
   attainmentDays: Record<string, number>;
   incompleteEntries: Array<{entryId: number; date: string; mealType: string; recipeTitle: string; ingredientsMissingData: string[]}>;

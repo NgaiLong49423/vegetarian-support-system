@@ -1,13 +1,34 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.76.1
+> **Version:** v2.77.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-14
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-15 — Connect Nutrition Tracking and Improve PDF Reports
+
+**Status:** Working tree — not committed.
+
+**Scope:** Continue Issue #42 / FR-37 by using real meal-plan data in both nutrition views and making daily and weekly PDF reports readable for longer menus.
+
+### Added
+
+- Connect the standalone nutrition tracker to the Member's selected meal-plan day or week, including partial nutrient values and missing-data warnings.
+- Render daily and weekly reports as structured tables, with landscape weekly pages and repeated headers when content continues onto additional pages.
+
+### Changed
+
+- Use the same meal-plan analysis and PDF endpoints in the tracker and meal-plan nutrition dialog.
+- Preserve Backend problem details returned by binary PDF requests so the interface can show the actual failure reason.
+
+### Fixed
+
+- Request PDF media explicitly, preventing the API client's JSON `Accept` header from causing HTTP 406.
+- Disable report export for an empty selected day or week and guide the Member to add a meal.
 
 ## 2026-10-14 — Add Meal Plan Nutrition Reports
 
