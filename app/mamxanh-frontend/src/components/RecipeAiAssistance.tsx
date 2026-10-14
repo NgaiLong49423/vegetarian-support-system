@@ -27,7 +27,7 @@ export function RecipeAiAssistance({ contentType, loading, error, onGenerate }: 
         {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Sparkles className="h-4 w-4" aria-hidden="true" />}
         {isLoading ? loadingLabel : label}
       </button>
-      {isLoading && <p role="status" aria-live="polite" className="text-sm text-ink-muted">Đang tạo nội dung, có thể mất đến 45 giây.</p>}
+      {isLoading && <p role="status" aria-live="polite" className="text-sm text-ink-muted">Đang chuẩn bị gợi ý nội dung, có thể mất vài giây...</p>}
       {error && <p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm leading-5 text-amber-950">{error}</p>}
     </div>
   );

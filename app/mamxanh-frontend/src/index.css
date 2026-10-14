@@ -9,13 +9,15 @@
 }
 
 @theme {
-  --font-sans: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: 'Be Vietnam Pro', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Dark workspace neutrals */
   --color-cream: #101010;
   --color-cream-soft: #1b1b1b;
   --color-paper: #292929;
   --color-raised: #353535;
+  --color-surface: #242424;
+  --color-elevated: #353535;
   --color-ink: #f4f4f4;
   --color-ink-soft: #dedede;
   --color-ink-muted: #b0b0b0;
@@ -62,6 +64,8 @@ html {
   --color-cream-soft: #fffefa;
   --color-paper: #ffffff;
   --color-raised: #f0eee8;
+  --color-surface: #ffffff;
+  --color-elevated: #ffffff;
   --color-ink: #242720;
   --color-ink-soft: #454a40;
   --color-ink-muted: #73786f;
@@ -110,9 +114,20 @@ button:not(:disabled), a { cursor: pointer; }
   color-scheme: inherit;
 }
 
+.food-app input::placeholder,
+.food-app textarea::placeholder {
+  color: var(--color-ink-muted);
+  opacity: 0.85;
+}
+
 .food-app select option {
   background: var(--color-paper);
   color: var(--color-ink);
+}
+
+::selection {
+  background-color: var(--color-brand-600);
+  color: var(--color-on-brand);
 }
 
 /* Thin scrollbars for planner horizontal areas */
@@ -1046,6 +1061,87 @@ button:not(:disabled), a { cursor: pointer; }
 .ai-plan-cta:focus-visible {
   outline: 2px solid var(--color-brand-400);
   outline-offset: 2px;
+}
+
+/* ==========================================================================
+   AI Plan Card & CTA - Light Mode Overrides
+   ========================================================================== */
+:root[data-theme="light"] .ai-plan-card {
+  --card-black: var(--color-paper);
+  --card-line: var(--color-brand-100);
+  --card-primary: var(--color-brand-600);
+}
+
+:root[data-theme="light"] .ai-plan-card__border {
+  background-image: linear-gradient(
+    0deg,
+    var(--color-brand-200) 0%,
+    var(--color-brand-100) 100%
+  );
+}
+
+:root[data-theme="light"] .ai-plan-card--free .ai-plan-card__border {
+  background-image: linear-gradient(
+    0deg,
+    #e2e8f0 0%,
+    #cbd5e1 100%
+  );
+}
+
+:root[data-theme="light"] .ai-plan-card--free .ai-plan-card__surface {
+  background-color: var(--color-paper);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="light"] .ai-plan-card--free .ai-plan-card__check {
+  background-color: var(--color-brand-100);
+  box-shadow: none;
+}
+
+:root[data-theme="light"] .ai-plan-card--free .ai-plan-card__check-svg {
+  color: var(--color-brand-700);
+}
+
+:root[data-theme="light"] .ai-plan-card--plus .ai-plan-card__surface {
+  background-color: var(--color-paper);
+  box-shadow: 0 6px 20px rgba(234, 88, 12, 0.08);
+}
+
+:root[data-theme="light"] .ai-plan-card--pro .ai-plan-card__surface {
+  background-color: var(--color-paper);
+  box-shadow: 0 8px 28px rgba(234, 88, 12, 0.12);
+}
+
+:root[data-theme="light"] .ai-plan-cta--plus {
+  background-image: none !important;
+  background-color: var(--color-brand-50) !important;
+  border: 1.5px solid var(--color-brand-600) !important;
+  color: var(--color-brand-700) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="light"] .ai-plan-cta--plus:hover {
+  background-color: var(--color-brand-100) !important;
+}
+
+:root[data-theme="light"] .ai-plan-cta--pro {
+  background-image: linear-gradient(
+    135deg,
+    #ea580c 0%,
+    #c2410c 100%
+  ) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35) !important;
+}
+
+:root[data-theme="light"] .tx-history-card {
+  background-color: var(--color-paper);
+  border-color: rgba(234, 88, 12, 0.25);
+  box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="light"] .tx-right-side:hover {
+  background-color: rgba(234, 88, 12, 0.04);
 }
 
 /* ==========================================================================

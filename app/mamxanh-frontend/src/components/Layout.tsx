@@ -22,5 +22,10 @@ export function Layout({ children }: { children: ReactNode }) {
 }
 
 export function PageContainer({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto w-full max-w-[1344px] px-4 sm:px-6 lg:px-8 ${className}`}>{children}</div>;
+  const hasCustomMaxW = /\bmax-w-/.test(className);
+  return (
+    <div className={`mx-auto w-full ${hasCustomMaxW ? '' : 'max-w-[1344px]'} px-4 sm:px-6 lg:px-8 ${className}`}>
+      {children}
+    </div>
+  );
 }

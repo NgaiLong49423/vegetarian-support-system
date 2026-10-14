@@ -78,7 +78,7 @@ export function Home() {
   return (
     <>
       {/* Hero with interactive water ripple distortion & grey tone */}
-      <section className="relative overflow-hidden border-b border-zinc-700/80 bg-zinc-800 shadow-md">
+      <section className="relative overflow-hidden border-b border-brand-100 bg-zinc-900 shadow-md">
         <div className="absolute inset-0 z-0">
           <RippleDistortion
             src="/hero-art.jpg"
@@ -178,7 +178,7 @@ export function Home() {
               <BorderGlow
                 data-testid="border-glow-card"
                 borderRadius={20}
-                backgroundColor="rgba(41, 41, 41, 0.92)"
+                backgroundColor="var(--color-paper)"
                 orbitSpeed={8}
                 className="p-6"
               >

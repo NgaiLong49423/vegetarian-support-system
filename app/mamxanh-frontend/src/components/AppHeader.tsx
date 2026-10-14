@@ -297,6 +297,19 @@ export function AppHeader() {
             >
               <Search className="h-4 w-4" />
             </button>
+            <button
+              type="button"
+              aria-label={theme === "light" ? "Chuyển sang chế độ tối" : "Chuyển sang chế độ sáng"}
+              title={theme === "light" ? "Chuyển sang chế độ tối" : "Chuyển sang chế độ sáng"}
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-paper hover:text-brand-600 transition-colors"
+            >
+              {theme === "light" ? (
+                <Moon className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Sun className="h-4 w-4" aria-hidden="true" />
+              )}
+            </button>
             {role === "EXPERT" && (
               <Link
                 to="/dang-cong-thuc"

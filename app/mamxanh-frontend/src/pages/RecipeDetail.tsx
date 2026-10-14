@@ -212,7 +212,7 @@ function MockRecipeDetail() {
     }
     if (description.length > 500 || (reportReason === 'OTHER' && description.length < 10)) {
       setReportError(
-        'Mô tả cần từ 10 đến 500 ký tự khi chọn lý do Khác; tối đa 500 ký tự với các lý do khác.',
+        'Mô tả cần từ 10 đến 500 ký tự khi chọn lý do Khác, hoặc tối đa 500 ký tự với các lý do khác.',
       );
       return;
     }
@@ -468,7 +468,7 @@ function MockRecipeDetail() {
                 Công thức gốc: {recipe.servings} phần · Chọn số phần để tính lại nguyên liệu.
               </p>
               <p className="text-xs text-ink-muted">
-                Định lượng được nhân theo tỷ lệ, làm tròn tối đa 2 chữ số thập phân; đơn vị được giữ nguyên.
+                Định lượng được nhân theo tỷ lệ, làm tròn tối đa 2 chữ số thập phân, đơn vị được giữ nguyên.
               </p>
             </div>
             <label className="flex items-center gap-2 text-sm font-semibold text-ink">
@@ -514,7 +514,7 @@ function MockRecipeDetail() {
                           color="#ea580c"
                           fillColor="#ea580c"
                           checkColor="#ffffff"
-                          textColor="#2d2b28"
+                          textColor="var(--color-ink)"
                           className="flex-1 min-w-0"
                         />
                         <Badge tone="neutral">
@@ -632,7 +632,7 @@ function MockRecipeDetail() {
           </div>
           <p className="mt-4 text-xs leading-relaxed text-ink-muted">
             Số liệu đang là mẫu giao diện cho một khẩu phần, chưa được tính từ nguyên liệu của công thức này.
-            Thay đổi số khẩu phần ở trên chỉ tính lại định lượng nguyên liệu; không nhân bảng dinh dưỡng mỗi khẩu phần.
+            Thay đổi số khẩu phần ở trên chỉ tính lại định lượng nguyên liệu, không nhân bảng dinh dưỡng mỗi khẩu phần.
           </p>
         </Card>
 

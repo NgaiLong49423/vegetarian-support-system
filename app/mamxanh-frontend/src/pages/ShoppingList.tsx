@@ -219,7 +219,7 @@ export function ShoppingList() {
                           color="#ea580c"
                           fillColor="#ea580c"
                           checkColor="#ffffff"
-                          textColor="#2d2b28"
+                          textColor="var(--color-ink)"
                           className="min-w-0 flex-1"
                         />
                         <span

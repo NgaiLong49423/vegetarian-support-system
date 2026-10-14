@@ -60,6 +60,7 @@ const SPRING_CHECK_DEFAULTS = {
   color: '#ea580c',
   fillColor: '#ea580c',
   checkColor: '#ffffff',
+  textColor: 'var(--color-ink)',
   boxSize: 22,
   boxRadius: 7,
   fontSize: 15,

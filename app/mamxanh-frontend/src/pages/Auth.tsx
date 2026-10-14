@@ -453,7 +453,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
                     {error('password')}
                     {newPassword && (
                       <p id="password-hint" className="mt-2 text-xs text-ink-muted">
-                        Dùng 8–64 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường và 1 chữ số; ký tự đặc biệt là tùy chọn.
+                        Dùng 8–64 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường và 1 chữ số, ký tự đặc biệt là tùy chọn.
                       </p>
                     )}
                   </div>

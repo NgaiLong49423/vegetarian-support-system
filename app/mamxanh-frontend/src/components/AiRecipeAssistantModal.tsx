@@ -589,6 +589,36 @@ export function AiRecipeAssistantModal({
     }, 450);
   };
 
+  const handleUpdateQuantity = (index: number, newQty: number) => {
+    if (!generatedResult) return;
+    const safeQty = Math.max(1, Math.min(2000, isNaN(newQty) ? 1 : newQty));
+    const nextIngredients = [...generatedResult.ingredients];
+    const targetItem = nextIngredients[index];
+    if (!targetItem) return;
+
+    const matched = NUTRITION_KNOWLEDGE_BASE.find((info) =>
+      info.keywords.some((kw) => targetItem.name.toLowerCase().includes(kw)),
+    );
+    const calPerUnit = matched
+      ? matched.caloriesPerUnit
+      : targetItem.calories / (targetItem.quantity || 1);
+    const newCal = Math.round(safeQty * calPerUnit);
+
+    nextIngredients[index] = {
+      ...targetItem,
+      quantity: safeQty,
+      calories: newCal,
+    };
+
+    const newTotal = nextIngredients.reduce((sum, item) => sum + item.calories, 0);
+
+    setGeneratedResult({
+      ...generatedResult,
+      ingredients: nextIngredients,
+      totalCalories: newTotal,
+    });
+  };
+
   // Cấu trúc JSON chuẩn hóa để chuyên gia có thể sao chép hoặc kiểm tra
   const jsonExportData = generatedResult
     ? {
@@ -618,6 +648,12 @@ export function AiRecipeAssistantModal({
           )
         ).toFixed(1)}%`,
         kieu_an_chay: generatedResult.vegetarianType,
+        ingredients: generatedResult.ingredients.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unitCode,
+          calories: item.calories,
+        })),
         nguyen_lieu: generatedResult.ingredients.map((item) => ({
           ten: item.name,
           dinh_luong: item.quantity,
@@ -673,7 +709,7 @@ export function AiRecipeAssistantModal({
                 className={`rounded-lg border px-2.5 py-1 text-xs transition-all ${
                   dishIdea === tmpl.name
                     ? 'border-brand-500 bg-brand-50 font-bold text-brand-800'
-                    : 'border-slate-200 bg-white text-ink-muted hover:border-brand-300 hover:text-ink'
+                    : 'border-brand-200 bg-paper text-ink-muted hover:border-brand-300 hover:text-ink'
                 }`}
               >
                 {tmpl.name} ({tmpl.cal} kcal)
@@ -683,7 +719,7 @@ export function AiRecipeAssistantModal({
         </div>
 
         {/* Khối ràng buộc 1: Phân bổ theo 3 Buổi ăn chính trong ngày */}
-        <div className="rounded-xl border border-brand-100 bg-slate-50/70 p-3.5 space-y-2">
+        <div className="rounded-xl border border-brand-100 bg-raised/70 p-3.5 space-y-2">
           <label className="block text-xs font-bold uppercase tracking-wider text-ink flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5 text-brand-600" /> Phân bổ món ăn theo buổi trong ngày
           </label>
@@ -697,8 +733,8 @@ export function AiRecipeAssistantModal({
                   onClick={() => handleSelectMeal(sessionItem.session)}
                   className={`flex flex-col items-center justify-center rounded-xl border p-2.5 text-center transition-all ${
                     active
-                      ? 'border-brand-500 bg-white shadow-sm ring-2 ring-brand-200 font-bold text-brand-900'
-                      : 'border-slate-200 bg-white/70 hover:bg-white text-ink-soft hover:border-slate-300'
+                      ? 'border-brand-500 bg-paper shadow-sm ring-2 ring-brand-200 font-bold text-brand-900'
+                      : 'border-brand-200 bg-paper/70 hover:bg-paper text-ink-soft hover:border-brand-300'
                   }`}
                 >
                   <span className="text-xs">{sessionItem.badgeText.split(' ')[0]}</span>
@@ -727,7 +763,7 @@ export function AiRecipeAssistantModal({
               value={dishIdea}
               onChange={(e) => setDishIdea(e.target.value)}
               placeholder="VD: Xào cà chua với trứng, Đậu hũ sốt cà chua..."
-              className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+              className="w-full rounded-xl border border-brand-200 bg-paper px-3.5 py-2 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             />
           </div>
 
@@ -741,7 +777,7 @@ export function AiRecipeAssistantModal({
               value={rawIngredients}
               onChange={(e) => setRawIngredients(e.target.value)}
               placeholder="VD: cà chua, trứng gà, hành lá, dầu thực vật, gia vị..."
-              className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 resize-y"
+              className="w-full rounded-xl border border-brand-200 bg-paper px-3.5 py-2 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 resize-y"
             />
           </div>
 
@@ -762,7 +798,7 @@ export function AiRecipeAssistantModal({
                   setTargetCalories(Number(e.target.value));
                   setSelectedMeal('CUSTOM');
                 }}
-                className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm font-semibold text-ink outline-none focus:border-brand-500"
+                className="w-full rounded-xl border border-brand-200 bg-paper px-3.5 py-2 text-sm font-semibold text-ink outline-none focus:border-brand-500"
               />
               <span className="text-xs text-ink-muted shrink-0 font-medium">kcal / người</span>
             </div>
@@ -777,7 +813,7 @@ export function AiRecipeAssistantModal({
               id="ai-servings"
               value={servings}
               onChange={(e) => setServings(Number(e.target.value))}
-              className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm font-semibold text-ink outline-none focus:border-brand-500"
+              className="w-full rounded-xl border border-brand-200 bg-paper px-3.5 py-2 text-sm font-semibold text-ink outline-none focus:border-brand-500"
             >
               <option value={1}>1 người (Khẩu phần đơn)</option>
               <option value={2}>2 người (Gia đình nhỏ)</option>
@@ -796,7 +832,7 @@ export function AiRecipeAssistantModal({
               id="ai-cooking-method"
               value={cookingMethod}
               onChange={(e) => setCookingMethod(e.target.value)}
-              className="w-full rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm font-semibold text-ink outline-none focus:border-brand-500"
+              className="w-full rounded-xl border border-brand-200 bg-paper px-3.5 py-2 text-sm font-semibold text-ink outline-none focus:border-brand-500"
             >
               <option value="STIR_FRY">Xào / Áp chảo (cần dầu ăn nhẹ)</option>
               <option value="SOUP">Canh / Súp (ít chất béo)</option>
@@ -822,7 +858,7 @@ export function AiRecipeAssistantModal({
 
         {/* KẾT QUẢ GỢI Ý TỪ AI: Đảm bảo tỷ lệ đúng cao và làm nổi bật 2 thứ: Nguyên liệu & Định lượng */}
         {generatedResult && (
-          <div className="space-y-4 rounded-2xl border border-brand-200 bg-white p-4 sm:p-5 shadow-sm animate-fade-in">
+          <div className="space-y-4 rounded-2xl border border-brand-200 bg-paper p-4 sm:p-5 shadow-sm animate-fade-in">
             {/* Header kết quả */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brand-100 pb-3">
               <div>
@@ -845,6 +881,19 @@ export function AiRecipeAssistantModal({
               </div>
             </div>
 
+            {/* Trạng thái xác thực & phân định rõ ràng giữa AI và Chuyên gia */}
+            <div className="flex flex-wrap items-center gap-2 rounded-xl bg-raised border border-brand-200/80 p-2.5 text-xs">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 border border-blue-200 px-2.5 py-1 font-semibold text-blue-700">
+                <Sparkles className="h-3.5 w-3.5 text-blue-600" /> Gợi ý đề xuất bởi AI (Tham khảo)
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-1 font-semibold text-amber-700">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600" /> Chưa xác minh dinh dưỡng y khoa
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 font-semibold text-emerald-800">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Chờ chuyên gia xác nhận & nạp
+              </span>
+            </div>
+
             {/* BẢNG 2 THỨ CỐT LÕI: NGUYÊN LIỆU & ĐỊNH LƯỢNG */}
             <div>
               <div className="mb-2 flex items-center justify-between">
@@ -861,23 +910,34 @@ export function AiRecipeAssistantModal({
                   <thead className="bg-brand-50/80 text-ink">
                     <tr>
                       <th className="p-3 font-bold">1. Nguyên liệu</th>
-                      <th className="p-3 text-right font-bold text-brand-800">2. Định lượng</th>
+                      <th className="p-3 text-right font-bold text-brand-800">2. Định lượng (Điều chỉnh được)</th>
                       <th className="p-3 text-right font-medium text-ink-soft">Đơn vị</th>
                       <th className="p-3 text-right font-medium text-ink-soft">Năng lượng ước tính</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-brand-100 bg-white">
+                  <tbody className="divide-y divide-brand-100 bg-paper">
                     {generatedResult.ingredients.map((item, idx) => (
                       <tr key={idx} className="hover:bg-brand-50/30 transition-colors">
                         <td className="p-3 font-bold text-ink flex items-center gap-1.5">
                           <span className="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
                           {item.name}
                         </td>
-                        <td className="p-3 text-right text-sm font-extrabold text-brand-700">
-                          {item.quantity}
+                        <td className="p-3 text-right font-extrabold text-brand-700">
+                          <div className="inline-flex items-center justify-end gap-1.5">
+                            <input
+                              type="number"
+                              min={1}
+                              max={2000}
+                              value={item.quantity}
+                              onChange={(e) => handleUpdateQuantity(idx, Number(e.target.value))}
+                              aria-label={`Định lượng ${item.name}`}
+                              className="w-20 rounded-lg border border-brand-300 bg-paper px-2 py-1 text-right text-xs font-bold text-brand-800 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-200"
+                            />
+                            <span className="text-[11px] font-medium text-ink-muted">{item.unitCode}</span>
+                          </div>
                         </td>
                         <td className="p-3 text-right font-medium text-ink-soft">
-                          {item.unitName} ({item.unitCode})
+                          {item.unitName}
                         </td>
                         <td className="p-3 text-right font-semibold text-amber-700">
                           {item.calories} kcal
@@ -904,7 +964,7 @@ export function AiRecipeAssistantModal({
               <h4 className="mb-1.5 text-xs font-bold uppercase text-ink flex items-center gap-1.5">
                 <BookOpen className="h-3.5 w-3.5 text-brand-600" /> Hướng dẫn chế biến từng bước
               </h4>
-              <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3.5 text-xs text-ink-soft whitespace-pre-line leading-relaxed font-sans">
+              <div className="rounded-xl bg-raised border border-brand-200/80 p-3.5 text-xs text-ink-soft whitespace-pre-line leading-relaxed font-sans">
                 {generatedResult.instructions}
               </div>
             </div>

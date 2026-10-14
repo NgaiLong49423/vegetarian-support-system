@@ -203,18 +203,18 @@ export function AiPlans() {
                   {!isCurrent && isPro && <Badge tone="brand">Khuyên dùng</Badge>}
                 </div>
 
-                <p className="mt-4 text-3xl font-extrabold text-white">
+                <p className="mt-4 text-3xl font-extrabold text-ink">
                   {formatVnd(plan.priceVnd)}{' '}
-                  <span className="text-sm font-medium text-zinc-400">VNĐ / tháng</span>
+                  <span className="text-sm font-medium text-ink-muted">VNĐ / tháng</span>
                 </p>
 
-                <p className="mt-2 text-xs text-zinc-300">{plan.description}</p>
+                <p className="mt-2 text-xs text-ink-muted">{plan.description}</p>
 
                 <hr className="ai-plan-card__line my-5" />
 
                 <ul className="mb-6 flex-1 space-y-3">
                   {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-2.5 text-sm text-zinc-100">
+                    <li key={idx} className="flex items-center gap-2.5 text-sm text-ink-soft">
                       <span className="ai-plan-card__check shrink-0">
                         <Check className="ai-plan-card__check-svg" />
                       </span>
@@ -226,24 +226,24 @@ export function AiPlans() {
                 <div className="pt-2">
                   {!isLoggedIn ? (
                     plan.tier === 'FREE' ? (
-                      <p className="rounded-full bg-white/5 border border-white/10 px-4 py-3 text-center text-sm font-semibold text-zinc-300">
+                      <p className="rounded-full bg-brand-50 border border-brand-200 px-4 py-3 text-center text-sm font-semibold text-ink-muted">
                         Gói cơ bản miễn phí
                       </p>
                     ) : (
                       <button
                         disabled
                         title="Đăng nhập để nâng cấp gói"
-                        className="w-full cursor-not-allowed rounded-full bg-white/10 px-4 py-3 text-sm font-semibold text-zinc-400"
+                        className="w-full cursor-not-allowed rounded-full bg-brand-100 px-4 py-3 text-sm font-semibold text-ink-muted"
                       >
                         Thanh toán chưa khả dụng
                       </button>
                     )
                   ) : isCurrent ? (
-                    <div className="rounded-full bg-white/5 border border-white/10 px-4 py-3 text-center text-sm font-semibold text-brand-400">
+                    <div className="rounded-full bg-brand-50 border border-brand-200 px-4 py-3 text-center text-sm font-semibold text-brand-600">
                       Gói hiện tại của bạn
                     </div>
                   ) : plan.tier === 'FREE' ? (
-                    <div className="rounded-full bg-white/5 border border-white/10 px-4 py-3 text-center text-sm font-medium text-zinc-400">
+                    <div className="rounded-full bg-brand-50 border border-brand-200 px-4 py-3 text-center text-sm font-medium text-ink-muted">
                       Gói cơ bản mặc định
                     </div>
                   ) : (

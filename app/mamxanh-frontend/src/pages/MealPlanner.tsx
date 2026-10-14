@@ -235,7 +235,7 @@ export function MealPlanner() {
                 id="ai-meal-calorie-goal"
                 value={calorieGoal}
                 onChange={(e) => setCalorieGoal(Number(e.target.value))}
-                className="w-full rounded-xl border border-brand-200 bg-white p-2.5 text-sm font-semibold text-ink outline-none focus:border-brand-500"
+                className="w-full rounded-xl border border-brand-200 bg-paper p-2.5 text-sm font-semibold text-ink outline-none focus:border-brand-500"
               >
                 <option value={1600}>1.600 kcal / ngày (Thanh lọc, nhẹ nhàng)</option>
                 <option value={1800}>1.800 kcal / ngày (Cân bằng, duy trì sức khỏe)</option>
@@ -251,7 +251,7 @@ export function MealPlanner() {
                 id="ai-meal-diet-style"
                 value={dietStyle}
                 onChange={(e) => setDietStyle(e.target.value)}
-                className="w-full rounded-xl border border-brand-200 bg-white p-2.5 text-sm font-semibold text-ink outline-none focus:border-brand-500"
+                className="w-full rounded-xl border border-brand-200 bg-paper p-2.5 text-sm font-semibold text-ink outline-none focus:border-brand-500"
               >
                 <option value="VEGAN">Thuần chay (100% nguồn gốc thực vật)</option>
                 <option value="LACTO_OVO">Chay có trứng và sữa (Lacto-Ovo)</option>
@@ -260,7 +260,7 @@ export function MealPlanner() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-brand-100 bg-white p-4 space-y-3">
+          <div className="rounded-xl border border-brand-100 bg-paper p-4 space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-brand-700">
               Nguyên tắc phân bổ 3 bữa trong ngày
             </h4>

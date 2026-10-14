@@ -27,12 +27,10 @@ import { ExpertRecipeProfile } from "../pages/ExpertRecipeProfile"
 import { MemberProfilePage } from "../pages/MemberProfilePage"
 import { ProfileSettingsPage } from "../pages/ProfileSettingsPage"
 import { ClickSpark } from "./ClickSpark"
-import { ThemeProvider } from "./ThemeContext"
 
 export default function ApplicationRoutes() {
   return (
-    <ThemeProvider>
-      <SavedRecipesProvider>
+    <SavedRecipesProvider>
         <ClickSpark
           sparkColor="#ea580c"
           sparkSize={11}
@@ -112,6 +110,5 @@ export default function ApplicationRoutes() {
           </Layout>
         </ClickSpark>
       </SavedRecipesProvider>
-    </ThemeProvider>
   )
 }

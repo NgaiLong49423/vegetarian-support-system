@@ -12,7 +12,7 @@ export interface BorderGlowProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const BORDER_GLOW_DEFAULTS = {
   className: '',
-  backgroundColor: 'rgba(41, 41, 41, 0.92)',
+  backgroundColor: 'var(--color-paper)',
   borderRadius: 24,
   orbitSpeed: 8,
   style: {} as CSSProperties,
