@@ -56,6 +56,7 @@ test('Administrator manages ingredient nutrition through the real Frontend, Back
     await page.getByRole('button', { name: 'Thêm nguyên liệu', exact: true }).click();
     expect((await createResponse).status()).toBe(201);
 
+    await page.getByPlaceholder('Tìm tên nguyên liệu').fill(ingredientName);
     await page.getByRole('button', { name: `Sửa dinh dưỡng ${ingredientName}` }).click();
     const values: Record<string, string> = {
       'Năng lượng trên 100 g': '100',
@@ -79,6 +80,7 @@ test('Administrator manages ingredient nutrition through the real Frontend, Back
     await expect(page.getByText('Đang hỗ trợ tính', { exact: true })).toBeVisible();
 
     await page.reload();
+    await page.getByPlaceholder('Tìm tên nguyên liệu').fill(ingredientName);
     await expect(page.getByText(ingredientName, { exact: true })).toBeVisible();
     await expect(page.getByText('Có dữ liệu tính toán', { exact: true })).toBeVisible();
     expect(sql(`SELECT CONCAT(CONVERT(varchar(20), energy_kcal_100g), '|', CONVERT(varchar(1), nutrition_supported)) FROM INGREDIENT WHERE name = ${ingredientSqlName}`)).toBe('100.00|1');

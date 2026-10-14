@@ -1,8 +1,8 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.73.0
+> **Version:** v2.76.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-13
+> **Last Updated:** 2026-10-14
 > **Status:** Active
 
 # Changelog
@@ -30,6 +30,66 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Fix Scalar and generated clients not sending the access token for the 31 operations above.
 - Fix `/v3/api-docs.yaml` answering `401`: `API.md` publishes it next to `/v3/api-docs`, but the public pattern `/v3/api-docs/**` did not match it.
+
+## 2026-10-14 — Refine Weekly Nutrition Menu Preferences
+
+**Status:** Committed — `876a08e`.
+
+**Scope:** Clarify weekly menu preference inputs and make excluded ingredients take precedence over preferred ingredients.
+
+### Added
+
+- Provide separate ingredient search and selection fields for ingredients to include and ingredients to exclude.
+
+### Changed
+
+- Rename the weekly goal prompt and remove the balancing and training goals from the weekly menu selector.
+- Specify excluded weekly ingredients as hard candidate filters; preferred ingredients only influence selection among recipes that pass those filters.
+- Synchronize FR-36, UC-36.1, and the API integration guide with the exclusion precedence.
+
+### Fixed
+
+- None.
+
+## 2026-10-14 — Handle Nutrition Eligibility for AI Menus
+
+**Status:** Committed — `876a08e`.
+
+**Scope:** Return the correct eligibility response from AI menu endpoints and guide Members to the required confirmation.
+
+### Added
+
+- Show a link to the nutrition profile when menu generation is blocked because eligibility has not been confirmed.
+
+### Changed
+
+- Route nutrition-profile exceptions from Meal Plan endpoints through the shared ProblemDetail handler with their original status and error code.
+- Document the eligibility response and confirmation endpoint for FR-36.
+
+### Fixed
+
+- Prevent an unconfirmed eligibility state from being reported as an internal server error.
+
+## 2026-10-14 — Integrate AI Recipe Planning and Nutrition Menus
+
+**Status:** Implementation complete; local checks recorded, Docker and GitHub gates pending.
+
+**Scope:** Combine FR-34 recipe recommendations and weekly menu planning with FR-36 nutrition-aware weekly menus in the Meal Plan experience.
+
+### Added
+
+- Keep ingredient-based recommendations and standard weekly menus sourced from public Recipe Posts, alongside nutrition-aware weekly previews based on complete nutrition data.
+- Add profile-based and one-time weekly preference modes for nutrition menus, with editable previews and explicit confirmation before replacing the target week.
+- Preserve separate authorization, dietary constraints, candidate pools, and apply semantics for FR-34 and FR-36.
+
+### Changed
+
+- Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
+- Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
+
+### Fixed
+
+- None.
 
 ## 2026-10-13 — Focus Meal Planning on Individual Days ([PR #133](https://github.com/NgaiLong49423/vegetarian-support-system/pull/133))
 
