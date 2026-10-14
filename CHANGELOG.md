@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-14 — Add Meal Plan Nutrition Reports
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `46b6945`.
 
 **Scope:** Issue #42 / FR-37, catalog-based meal-plan nutrition analysis, AI recommendations and PDF export.
 
