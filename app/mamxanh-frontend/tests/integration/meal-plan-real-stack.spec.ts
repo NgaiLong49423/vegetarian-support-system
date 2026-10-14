@@ -139,22 +139,19 @@ test("FR-09/FR-33 move, export and mutations persist in Compose SQL and preserve
     await page.goto(
       `/ke-hoach?weekStartDate=${selectedWeek}&mealDate=${selectedWeek}`,
     )
+    const selectedDateLabel = new Date(`${selectedWeek}T12:00:00`).toLocaleDateString("vi-VN")
+    const selectedDay = page.getByRole("region", { name: selectedDateLabel })
     await expect(
-      page.getByRole("button", { name: /^Thêm món Bữa/ }),
+      selectedDay.getByRole("button", { name: /^Thêm món Bữa/ }),
     ).toHaveCount(3)
-
     expect(
       Number(
         sql(`SELECT COUNT(*) FROM [MEAL_PLAN] WHERE user_id = ${ownerId}`),
       ),
     ).toBe(0)
 
-    await page
-      .getByRole("button", { name: /^Thêm món Bữa trưa/ })
-      .first()
-      .click()
+    await selectedDay.getByRole("button", { name: /^Thêm món Bữa trưa/ }).click()
     const dialog = page.getByRole("dialog")
-
     await dialog.getByLabel("Tìm món cho lịch ăn").fill(fixture)
     await dialog.getByRole("button", { name: "Tìm", exact: true }).click()
     const add = page.waitForResponse(
