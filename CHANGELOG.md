@@ -1,13 +1,35 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.72.0
+> **Version:** v2.73.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-13
+> **Last Updated:** 2026-10-14
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-14 — Move and Export Weekly Meal Plans (FR-33)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Complete local meal-plan management for Issue #38 using the existing weekly plan and recipe references.
+
+### Added
+
+- Move an owned meal-plan entry between days and meals within the same week while retaining its identity and saved servings; reject duplicate destinations without changing the source.
+- Export the authenticated Member's current schedule to UTF-8 TXT and paginated A4 PDF with embedded Vietnamese font, seven days, three meals, saved servings and calculated energy. Keep missing nutrition explicit and unavailable recipes neutral.
+- Add controller/generated OpenAPI, service, browser and SQL integration checks for movement, export, ownership and unavailable content.
+
+### Changed
+
+- Extend the existing meal planner with destination selection and downloadable exports; calculate export energy from Backend per-serving nutrition and the saved serving quantity.
+- Document the private export snapshot and movement contract in the API integration guide.
+- Exclude generated Frontend coverage artifacts from development image build contexts.
+
+### Fixed
+
+- Adapt the Compose meal-plan browser test to the existing collapsed day layout and saved-recipe picker.
 
 ## 2026-10-13 — Focus Meal Planning on Individual Days ([PR #133](https://github.com/NgaiLong49423/vegetarian-support-system/pull/133))
 

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import tech.mamxanh.mealplan.dto.request.AddMealPlanEntryRequest;
 import tech.mamxanh.mealplan.dto.request.ReplaceMealPlanEntryRequest;
 import tech.mamxanh.mealplan.dto.request.UpdateMealPlanServingsRequest;
+import tech.mamxanh.mealplan.dto.request.MoveMealPlanEntryRequest;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -101,6 +102,19 @@ public class MealPlanController {
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStartDate,
             @PathVariable @Min(1) long entryId, @Valid @RequestBody UpdateMealPlanServingsRequest request) {
         return service.updateServings(weekStartDate, entryId, request.plannedServings());
+    }
+
+    @Operation(summary = "Move an owned entry within the same week",
+            description = "Preserves identity, recipe and planned servings. Rejects a duplicate destination atomically.")
+    @ApiResponse(responseCode = "200", description = "The moved entry.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = MealPlanWeekResponse.Entry.class)))
+    @ApiResponse(responseCode = "409", description = "MEAL_PLAN_RECIPE_DUPLICATE: destination already contains this recipe.",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @PatchMapping("/{weekStartDate}/entries/{entryId}/position")
+    public MealPlanWeekResponse.Entry moveEntry(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStartDate,
+            @PathVariable @Min(1) long entryId, @Valid @RequestBody MoveMealPlanEntryRequest request) {
+        return service.moveEntry(weekStartDate, entryId, request);
     }
 
     @Operation(summary = "Remove an owned entry, including an unavailable recipe reference",
