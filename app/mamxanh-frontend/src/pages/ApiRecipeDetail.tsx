@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Check,
@@ -24,6 +24,7 @@ import { SaveRecipeButton } from '../components/SaveRecipeButton';
 import { MemberAvatar } from '../components/MemberAvatar';
 import { RelatedRecipes } from '../components/RelatedRecipes';
 import { RecipeComments } from '../components/RecipeComments';
+import { MealPlanRecipeServings } from './MealPlanRecipeServings';
 
 const NUTRIENTS = [
   { key: 'ENERGY_KCAL', label: 'Năng lượng', unit: 'kcal' },
@@ -96,6 +97,10 @@ function downloadText(recipe: RecipeDetail) {
 export function ApiRecipeDetail() {
   const { recipeId: rawId } = useParams();
   const recipeId = Number(rawId);
+  const [searchParams] = useSearchParams();
+  const fromMealPlan = searchParams.has('mealPlanWeek') || searchParams.has('mealPlanEntryId');
+  const planContextKey = `${recipeId}:${searchParams.get('mealPlanWeek')}:${searchParams.get('mealPlanEntryId')}`;
+  const backTarget = fromMealPlan ? `/ke-hoach?weekStartDate=${encodeURIComponent(searchParams.get('mealPlanWeek') ?? '')}&mealDate=${encodeURIComponent(searchParams.get('mealDate') ?? '')}` : '/kham-pha';
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [error, setError] = useState('');
   const [selectedMedia, setSelectedMedia] = useState(0);
@@ -136,7 +141,7 @@ export function ApiRecipeDetail() {
 
   async function shareRecipe() {
     if (!recipe) return;
-    const url = window.location.href;
+    const url = new URL(`/cong-thuc/id/${recipe.recipeId}`, window.location.origin).href;
     try {
       if (navigator.share) await navigator.share({ title: recipe.title, url });
       else if (navigator.clipboard) {
@@ -161,7 +166,7 @@ export function ApiRecipeDetail() {
 
   return <PageContainer className="recipe-detail-page py-6 sm:py-8">
     <div className="recipe-detail-no-print mb-5 flex flex-wrap items-center justify-between gap-3">
-      <Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-900"><ArrowLeft className="h-4 w-4" />Khám phá</Link>
+      <Link to={backTarget} className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-900"><ArrowLeft className="h-4 w-4" />{fromMealPlan ? 'Về lịch ăn' : 'Khám phá'}</Link>
       <div className="flex flex-wrap items-center gap-2">
         <SaveRecipeButton recipeId={recipe.recipeId} />
         <Button variant="outline" size="sm" onClick={shareRecipe}><Share2 className="h-4 w-4" />Chia sẻ</Button>
@@ -231,11 +236,11 @@ export function ApiRecipeDetail() {
         <Card className="p-5 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Chuẩn bị vào bếp</p><h2 className="mt-1 text-xl font-extrabold text-ink">Nguyên liệu</h2></div>
-            <div className="recipe-detail-no-print flex items-center gap-2 rounded-xl bg-brand-50 p-1">
+            {fromMealPlan ? <MealPlanRecipeServings key={planContextKey} recipeId={recipeId} servings={servings} onChange={setServings} /> : <div className="recipe-detail-no-print flex items-center gap-2 rounded-xl bg-brand-50 p-1">
               <button type="button" aria-label="Giảm khẩu phần" disabled={servings <= 1} onClick={() => setServings((value) => Math.max(1, value - 1))} className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"><Minus className="h-4 w-4" /></button>
               <span className="min-w-20 text-center text-sm font-bold text-ink">{servings} phần</span>
               <button type="button" aria-label="Tăng khẩu phần" disabled={servings >= 50} onClick={() => setServings((value) => Math.min(50, value + 1))} className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"><Plus className="h-4 w-4" /></button>
-            </div>
+            </div>}
           </div>
           <p className="mt-2 text-sm text-ink-muted">Định lượng được tính theo {servings} phần ăn.</p>
           <ul className="mt-4 divide-y divide-brand-100">
