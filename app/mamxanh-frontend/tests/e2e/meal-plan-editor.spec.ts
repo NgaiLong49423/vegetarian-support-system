@@ -61,6 +61,7 @@ async function setup(page: Page, initial: ReturnType<typeof entry>[] = []) {
   )
   await page.route("**/api/v1/recipes/11", (route) => route.fulfill({ json: { recipeId: 11, title: "Canh nấm", instructions: "Nấu canh nấm trong 15 phút.", description: "Canh nấm", dishCategory: "SOUP", dishCategoryLabel: "Món canh", vegetarianType: "VEGAN", vegetarianTypeLabel: "Thuần chay", difficulty: "EASY", difficultyLabel: "Dễ", servings: 2, prepTimeMinutes: 10, cookTimeMinutes: 15, youtubeUrl: null, publishedAt: null, author: { userId: 17, displayName: "Tác giả", avatarUrl: null }, media: [], ingredients: [{ ingredientId: 1, name: "Nấm", quantity: 200, unitId: 1, unitCode: "g", unitName: "g", nutritionSupported: true }], statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 }, nutritionComplete: true, ingredientsWithoutNutrition: [], nutrition: { complete: true, ingredientsMissingData: [], perServing: { ENERGY_KCAL: 100, PROTEIN_G: 2, CARBOHYDRATE_G: 10, TOTAL_FAT_G: 1, FIBER_G: 3, CALCIUM_MG: 20, IRON_MG: 0.5, VITAMIN_B12_MCG: 0, ZINC_MG: 1 } } } }))
   await page.route("**/api/v1/recipes/11/related", (route) => route.fulfill({ json: { items: [] } }))
+  await page.route("**/api/v1/recipes/11/comments**", (route) => route.fulfill({ json: { content: [], page: 0, size: 10, totalElements: 0, totalPages: 0, commentCount: 0 } }))
   await page.route("**/api/v1/recipes?**", (route) => {
     if (state.searchFail)
       return route.fulfill({
