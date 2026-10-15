@@ -122,6 +122,56 @@ class GeminiAiClientTest {
         }
     }
 
+    @Test
+    void chatReturnsAnswerAndTokenMetadata() throws IOException {
+        startServer(200, """
+                {"candidates":[{"content":{"parts":[{"text":"{\\"action\\":\\"ANSWER\\",\\"answer\\":\\"Dùng sữa đậu nành.\\",\\"recommendations\\":[]}"}],"role":"model"},"finishReason":"STOP"}],
+                 "usageMetadata":{"promptTokenCount":24,"candidatesTokenCount":9,"totalTokenCount":33}}
+                """);
+
+        try (var client = configuredClient()) {
+            var result = client.answerChat("Trả lời về món chay", "Có thể thay sữa bò bằng gì?");
+            assertThat(result.structuredJson()).contains("Dùng sữa đậu nành.");
+            assertThat(result.promptTokens()).isEqualTo(24);
+            assertThat(result.responseTokens()).isEqualTo(9);
+            assertThat(result.totalTokens()).isEqualTo(33);
+        }
+    }
+
+    @Test
+    void chatRejectsIncompleteOrEmptyResponsesAndWrapsProviderErrors() throws IOException {
+        try (var client = new GeminiAiClient(null)) {
+            assertThatThrownBy(() -> client.answerChat("system", "question"))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class)
+                    .hasMessage("Gemini is not configured");
+        }
+
+        startServer(200, """
+                {"candidates":[{"content":{"parts":[{"text":"partial"}],"role":"model"},"finishReason":"MAX_TOKENS"}]}
+                """);
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.answerChat("system", "question"))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class)
+                    .hasMessage("Gemini returned an incomplete chat response");
+        }
+
+        server.stop(0);
+        startServer(200, "{\"candidates\":[{\"content\":{\"parts\":[],\"role\":\"model\"},\"finishReason\":\"STOP\"}]}");
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.answerChat("system", "question"))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class)
+                    .hasMessage("Gemini returned an incomplete chat response");
+        }
+
+        server.stop(0);
+        startServer(503, "{\"error\":{\"code\":503,\"message\":\"unavailable\",\"status\":\"UNAVAILABLE\"}}");
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.answerChat("system", "question"))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class)
+                    .hasMessage("Gemini chat request failed");
+        }
+    }
+
     private void startServer(int status, String body) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {

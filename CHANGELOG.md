@@ -1,35 +1,117 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.77.0
+> **Version:** v2.81.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-14
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-13 — Align Generated OpenAPI Security and Error Responses (Issue #114) ([PR #130](https://github.com/NgaiLong49423/vegetarian-support-system/pull/130))
+## 2026-10-15 — Generate and Verify the OpenAPI Snapshot
 
-**Status:** Committed — `a504714`, `fa04b45`.
+**Status:** Committed — `188c3c03b3f5b021e4d7ff337bb5c54432a59126`.
 
-**Scope:** Make the generated `/v3/api-docs` match what the Backend enforces and returns (Q43, Q53): every operation that needs a session declares `bearerAuth`, error responses are declared as problem details, and the empty planned `openapi.yaml` is removed.
+**Scope:** Keep the committed OpenAPI YAML aligned with the Springdoc contract served by the Backend.
 
 ### Added
 
-- Add `OpenApiContractIntegrationTest`: it calls every documented operation without a token and requires `bearerAuth` exactly where the security filter answers `401`, and it requires `400`/`401`/`403` problem-detail responses where they apply.
-- Add a shared `ProblemDetail` schema and an OpenAPI customizer that declares `400` for operations taking input, `401` and `403` for operations needing a session, and the `application/problem+json` body for every error response.
+- Add a PowerShell command to export `/v3/api-docs.yaml` into `docs/api/openapi.yaml`.
+- Make Docker Development CI validate and compare the generated runtime YAML with the committed snapshot.
 
 ### Changed
 
-- Declare `bearerAuth` on the 31 operations that lacked it: the administrator ingredient and unit catalog, Expert applications, subscription checkout/status/transactions, and recipe publishing.
-- Declare the operation-specific errors of those operations and of the seven public auth endpoints, following the codes their services return.
-- Remove `docs/api/openapi.yaml` (no planned endpoints remained) and update `API.md`, `README.md`, the document register and the Backend package structure guide; agent governance files still mention it pending the Tech Lead's approval.
+- Treat Springdoc as the API contract authority and the repository YAML as its generated, checked-in snapshot.
+- Update API documentation and agent guidance with the export and synchronization workflow.
 
 ### Fixed
 
-- Fix Scalar and generated clients not sending the access token for the 31 operations above.
-- Fix `/v3/api-docs.yaml` answering `401`: `API.md` publishes it next to `/v3/api-docs`, but the public pattern `/v3/api-docs/**` did not match it.
+- Permit unauthenticated access to Springdoc's `/v3/api-docs.yaml` endpoint so the export script and Docker Development CI can retrieve the generated YAML.
+
+## 2026-10-15 — Connect Nutrition Tracking and Improve PDF Reports
+
+**Status:** Committed — `6c576ae`.
+
+**Scope:** Continue Issue #42 / FR-37 by using real meal-plan data in both nutrition views and making daily and weekly PDF reports readable for longer menus.
+
+### Added
+
+- Connect the standalone nutrition tracker to the Member's selected meal-plan day or week, including partial nutrient values and missing-data warnings.
+- Render daily and weekly reports as structured tables, with landscape weekly pages and repeated headers when content continues onto additional pages.
+
+### Changed
+
+- Use the same meal-plan analysis and PDF endpoints in the tracker and meal-plan nutrition dialog.
+- Preserve Backend problem details returned by binary PDF requests so the interface can show the actual failure reason.
+
+### Fixed
+
+- Request PDF media explicitly, preventing the API client's JSON `Accept` header from causing HTTP 406.
+- Disable report export for an empty selected day or week and guide the Member to add a meal.
+
+## 2026-10-15 — Recommend Published Recipes in AI Chat ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
+
+**Status:** Committed — c3e3ed30827c9c9f260e8eaf45950817c91bbd19.
+
+**Scope:** Extend FR-51 chat with real public recipe recommendations and explicitly requested, non-persistent recipe drafts.
+
+### Added
+
+- Return recipe cards selected from current public Backend posts when users ask to find or recommend recipes; link each card to its real recipe page.
+- Allow recipe creation or adaptation text only after an explicit request, without saving or publishing it.
+
+### Changed
+
+- Filter recipe candidates by the Member's declared vegetarian type and avoided ingredients before asking Gemini to select public post IDs.
+- Synchronize the FR-51, BR-38, UC-51 and chat response documentation with the catalog-first behavior.
+
+### Fixed
+
+- Match Vietnamese recipe creation and adaptation requests against the same accent-normalized phrases used by the chat intent detector.
+
+## 2026-10-14 — Add Contextual AI Chat for Members ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
+
+**Status:** Committed — f984505f64662bb1ae77aedbd5f9a8d47dc537df.
+
+**Scope:** Add the Member chatbot slice for Issue #52 while keeping public Guest access closed until FR-02 rate limiting is integrated.
+
+### Added
+
+- Add a Backend chat endpoint for general vegetarian-cooking questions and current public RecipePost context, with ephemeral request history and token-only usage telemetry.
+- Add a shared Frontend chat page with general and recipe-specific entry points, loading/error states, AI labeling and privacy guidance.
+- Document the FR-51 request and response contract in the API integration guide.
+
+### Changed
+
+- Limit Gemini request timeouts to 10 seconds to follow NFR-18.
+- Require an active Member session for chatbot requests until the FR-02 Guest rate limiter is available.
+
+### Fixed
+
+- None.
+
+## 2026-10-14 — Add Meal Plan Nutrition Reports
+
+**Status:** Committed — `46b6945`.
+
+**Scope:** Issue #42 / FR-37, catalog-based meal-plan nutrition analysis, AI recommendations and PDF export.
+
+### Added
+
+- Add day and seven-day nutrition APIs, FDA Daily Value references, Pro recipe suggestions and on-demand A4 PDF reports.
+- Show catalog-based nutrient summaries, missing-data warnings, saved planned servings and the medical information disclaimer in the Member meal planner.
+- Add coverage for fractional servings, PDF routes and nutrition-reference migration behavior.
+
+### Changed
+
+- Allow planned servings from 0.5 to 10 in half-serving increments and calculate nutrients from the saved quantity.
+- Keep AI provider errors separate from nutrition results and require Member confirmation before applying a suggested recipe.
+- Upgrade Apache PDFBox to 3.0.8 for PDF generation.
+
+### Fixed
+
+- Count empty days as zero in weekly nutrition averages and divide by all seven days.
 
 ## 2026-10-14 — Synchronize FR-33 with the AI Menu Integration Baseline ([PR #135](https://github.com/NgaiLong49423/vegetarian-support-system/pull/135))
 
@@ -127,6 +209,48 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
 - Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Align Generated OpenAPI Security and Error Responses (Issue #114) ([PR #130](https://github.com/NgaiLong49423/vegetarian-support-system/pull/130))
+
+**Status:** Committed — `a504714`, `fa04b45`.
+
+**Scope:** Make generated `/v3/api-docs` match Backend security and error behavior, and keep API guidance aligned with the current generated-contract workflow.
+
+### Added
+
+- Add `OpenApiContractIntegrationTest` to verify documented security and error responses against runtime behavior.
+- Add a shared `ProblemDetail` schema and document `400`, `401`, `403`, and operation-specific error responses where applicable.
+
+### Changed
+
+- Declare `bearerAuth` on the 31 protected operations that were missing it while keeping public operations unauthenticated.
+- Declare operation-specific errors for the affected catalog, Expert application, subscription, recipe publishing, and authentication operations.
+- Document the generated OpenAPI snapshot and its CI validation alongside the API contract rules.
+
+### Fixed
+
+- Fix `/v3/api-docs.yaml` returning `401` so the snapshot exporter and API consumers can retrieve it without authentication.
+
+## 2026-10-13 — Publish Recipes With Incomplete Nutrition ([PR #131](https://github.com/NgaiLong49423/vegetarian-support-system/pull/131))
+
+**Status:** Committed — `db03caf`, `1bfb109`, `1525b12`.
+
+**Scope:** Complete FR-40 (AC-40.1–AC-40.3, BR-40, BR-50): recipes that use catalog ingredients without nutrition data stay publishable, each such ingredient is labelled on the recipe page, and such recipes are kept out of the nutrition AI menu candidate pool.
+
+### Added
+
+- Add the "Chưa hỗ trợ tính dinh dưỡng" label next to each ingredient without nutrition data on both recipe detail pages.
+- Add an SQL Server integration test showing that applying a nutrition AI menu (`PUT /api/v1/meal-plans/ai-menu`, FR-36) with a published recipe that uses an ingredient without nutrition data returns `404 RECIPE_NOT_FOUND` and leaves the meal plan untouched (AC-40.3), and Playwright tests for the label.
+- Record BUG-026: generated OpenAPI merges same-named nested recipe DTOs, so recipe `ingredients[]`/`media[]` schemas differ from the real responses.
+
+### Changed
+
+- Document FR-40 in `API.md` section 7 and the Backend/Frontend READMEs; type `nutritionSupported` on recipe detail ingredients in the Frontend API client.
+- Rely on the FR-36 candidate filter merged in PR #134 (`AiMenuService` keeps only published recipes whose nutrition calculation is complete) for AC-40.3 instead of adding a second candidate service.
 
 ### Fixed
 

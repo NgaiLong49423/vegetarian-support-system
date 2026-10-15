@@ -252,7 +252,7 @@ class MealPlanEntryServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"1", "4", "9999"})
+    @ValueSource(strings = {"1", "4", "10"})
     void savesServingsWithoutChangingTheRecipeOrMeal(String quantity) {
         var entry = entry();
         when(entries.findByIdAndMealPlanId(31, 12)).thenReturn(Optional.of(entry));

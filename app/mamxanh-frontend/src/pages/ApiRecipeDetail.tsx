@@ -8,6 +8,7 @@ import {
   Download,
   Eye,
   Heart,
+  MessageCircle,
   Minus,
   Plus,
   Printer,
@@ -24,6 +25,7 @@ import { SaveRecipeButton } from '../components/SaveRecipeButton';
 import { MemberAvatar } from '../components/MemberAvatar';
 import { RelatedRecipes } from '../components/RelatedRecipes';
 import { MealPlanRecipeServings } from './MealPlanRecipeServings';
+import { useAiChat } from '../components/AiChatContext';
 
 const NUTRIENTS = [
   { key: 'ENERGY_KCAL', label: 'Năng lượng', unit: 'kcal' },
@@ -94,6 +96,7 @@ function downloadText(recipe: RecipeDetail) {
 }
 
 export function ApiRecipeDetail() {
+  const { openChat } = useAiChat();
   const { recipeId: rawId } = useParams();
   const recipeId = Number(rawId);
   const [searchParams] = useSearchParams();
@@ -168,6 +171,7 @@ export function ApiRecipeDetail() {
       <Link to={backTarget} className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-900"><ArrowLeft className="h-4 w-4" />{fromMealPlan ? 'Về lịch ăn' : 'Khám phá'}</Link>
       <div className="flex flex-wrap items-center gap-2">
         <SaveRecipeButton recipeId={recipe.recipeId} />
+        <button type="button" onClick={() => openChat(recipe.recipeId)} className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-50"><MessageCircle className="h-4 w-4" aria-hidden="true" />Hỏi AI về công thức này</button>
         <Button variant="outline" size="sm" onClick={shareRecipe}><Share2 className="h-4 w-4" />Chia sẻ</Button>
         <div className="relative">
           <Button variant="primary" size="sm" aria-expanded={exportOpen} onClick={() => setExportOpen((open) => !open)}><Download className="h-4 w-4" />Xuất công thức<ChevronDown className="h-4 w-4" /></Button>
@@ -248,7 +252,7 @@ export function ApiRecipeDetail() {
               const scaled = recipe.servings > 0 ? item.quantity * servings / recipe.servings : item.quantity;
               return <li key={`${item.ingredientId ?? item.name}-${index}`} className="flex items-center gap-3 py-3">
                 <button type="button" aria-label={`${isChecked ? 'Bỏ chọn' : 'Đánh dấu'} ${item.name}`} aria-pressed={isChecked} onClick={() => setCheckedIngredients((current) => isChecked ? current.filter((checked) => checked !== index) : [...current, index])} className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${isChecked ? 'border-leaf-600 bg-leaf-600 text-white' : 'border-brand-300 bg-paper'}`}>{isChecked && <Check className="h-3.5 w-3.5" />}</button>
-                <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-ink-muted line-through' : 'text-ink-soft'}`}>{item.name}</span>
+                <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-ink-muted line-through' : 'text-ink-soft'}`}>{item.name}{item.nutritionSupported === false && <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Chưa hỗ trợ tính dinh dưỡng</span>}</span>
                 <strong className="shrink-0 text-right text-sm text-ink">{formatNumber(scaled)} {item.unitName}</strong>
               </li>;
             })}
@@ -274,8 +278,8 @@ export function ApiRecipeDetail() {
           <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             {NUTRIENTS.map((nutrient) => <div key={nutrient.key} className="rounded-xl bg-brand-50 px-3 py-2.5"><dt className="text-xs text-ink-muted">{nutrient.label}</dt><dd className="mt-1 text-sm font-bold text-ink">{formatNumber(recipe.nutrition?.perServing?.[nutrient.key])} {recipe.nutrition?.perServing?.[nutrient.key] == null ? '' : nutrient.unit}</dd></div>)}
           </dl>
-          {!nutritionComplete && <div role="note" className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><p className="font-bold">Một số dữ liệu dinh dưỡng chưa đầy đủ</p><p className="mt-1">Các giá trị hiện có chỉ mang tính tham khảo; hệ thống không xem dữ liệu thiếu là 0.</p>{missingNutrition.length > 0 && <ul className="mt-2 list-inside list-disc text-xs">{missingNutrition.map((name) => <li key={name}>{name}</li>)}</ul>}</div>}
-          <p className="mt-3 text-xs leading-5 text-ink-muted">Ước tính theo danh mục nguyên liệu hiện có, không thay thế tư vấn y tế.</p>
+          {!nutritionComplete && <div role="note" aria-live="polite" className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><p className="font-bold">Ước tính chưa đầy đủ</p><p className="mt-1">Các giá trị chỉ gồm phần tính được từ danh mục. Nguyên liệu thiếu dữ liệu không được tính bằng 0.</p>{missingNutrition.length > 0 && <><p className="mt-2 text-xs font-semibold">Nguyên liệu chưa hỗ trợ tính dinh dưỡng:</p><ul className="mt-1 list-inside list-disc text-xs">{missingNutrition.map((name) => <li key={name}>{name}</li>)}</ul></>}</div>}
+          <p className="mt-3 text-xs leading-5 text-ink-muted">Nguồn tham khảo: danh mục dinh dưỡng nội bộ theo USDA/NIH. Số liệu chỉ mang tính ước tính, không thay thế tư vấn y tế.</p>
         </Card>
         {recipe.nutrition?.total && <Card className="p-5 sm:p-6"><details><summary className="cursor-pointer list-none text-sm font-bold text-ink">Xem tổng dinh dưỡng toàn công thức</summary><dl className="mt-3 grid grid-cols-2 gap-2">{NUTRIENTS.map((nutrient) => { const value = recipe.nutrition.total[nutrient.key]; return <div key={nutrient.key} className="rounded-lg bg-brand-50 px-3 py-2"><dt className="text-xs text-ink-muted">{nutrient.label}</dt><dd className="mt-1 text-sm font-semibold text-ink">{formatNumber(value)}{value == null ? '' : ` ${nutrient.unit}`}</dd></div>; })}</dl></details></Card>}
       </aside>
