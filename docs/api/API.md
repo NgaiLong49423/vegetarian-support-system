@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.24.0
+> **Version:** v0.25.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -9,16 +9,17 @@
 
 ## 1. Mục đích và phạm vi
 
-Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
+Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract. File [`openapi.yaml`](openapi.yaml) là bản xuất được commit từ Springdoc để tiện tra cứu và phải khớp với runtime; không sửa contract endpoint thủ công trong file này.
 
-Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), AI gợi ý và menu tuần công thức (FR-34), AI preview/thay tuần Meal Plan theo dinh dưỡng (FR-36), chatbot Member theo ngữ cảnh chung hoặc RecipePost công khai (FR-51), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML không còn endpoint nào chưa có trong runtime.
+Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), AI gợi ý và menu tuần công thức (FR-34), AI preview/thay tuần Meal Plan theo dinh dưỡng (FR-36), chatbot Member theo ngữ cảnh chung hoặc RecipePost công khai (FR-51), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Runtime spec là nguồn contract; YAML trong repo được sinh từ cùng runtime endpoint.
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 8 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
 ## 2. Contract và công cụ
 
 - Runtime OpenAPI được sinh từ Controller/DTO/annotations bằng springdoc: `/v3/api-docs` (JSON) và `/v3/api-docs.yaml` (YAML).
-- Planned/reference contract trong migration: [`openapi.yaml`](openapi.yaml); các endpoint chỉ có tại đây chưa được xem là runtime API.
+- Bản OpenAPI YAML được commit tại [`openapi.yaml`](openapi.yaml) để tra cứu và tích hợp; CI so sánh file này với YAML runtime.
+- Khi Backend đang chạy tại `http://localhost:8080`, tạo/cập nhật snapshot bằng `./scripts/export-openapi.ps1`. Script tải trực tiếp `/v3/api-docs.yaml` và thay file chỉ sau khi nhận được tài liệu OpenAPI hợp lệ.
 - Base path: `/api/v1`.
 - Giao diện chính thức để team xem và thử API: `/scalar` trên cùng Backend host/port. Scalar tải generated contract từ `/v3/api-docs`.
 - Swagger UI vẫn được giữ như giao diện tương thích trong giai đoạn đầu; Scalar là UI được khuyến nghị cho team.
@@ -26,9 +27,7 @@ Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn b�
 - Timestamp biểu diễn instant dùng ISO-8601 UTC; calendar date dùng `YYYY-MM-DD` và không timezone-shift.
 - Response lỗi dùng `application/problem+json` theo `ProblemDetail`, bổ sung `code` ổn định và `errors` cho lỗi theo field khi cần.
 
-Trong migration, generated OpenAPI là bằng chứng runtime cho endpoint đã implement. Endpoint chưa xuất hiện trong spec runtime nhưng còn trong YAML chỉ là planned contract, không chứng minh endpoint đã tồn tại hoặc hoạt động. Khi migration hoàn tất, generated OpenAPI sẽ là nguồn contract duy nhất; YAML thủ công sẽ không tiếp tục làm authority song song.
-
-Khi triển khai một endpoint đang có trong planned YAML, reviewer đối chiếu ý nghĩa contract của path/method, request/response, status và security với runtime spec và implementation. Docker Development hiện validate cấu trúc generated OpenAPI, không tự thực hiện semantic comparison giữa runtime JSON và YAML tham chiếu.
+Sau khi thay đổi Controller, DTO hoặc OpenAPI annotations, chạy script xuất YAML rồi đưa bản cập nhật vào cùng thay đổi. Docker Development tải YAML runtime, validate bằng Scalar CLI, so sánh với file được commit và báo lỗi nếu snapshot chưa cập nhật. Artifact của CI vẫn cung cấp runtime spec của lần chạy để kiểm tra khi cần.
 
 ### 2.1 Scalar dành cho thành viên và tester
 

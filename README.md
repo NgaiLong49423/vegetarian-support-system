@@ -1,8 +1,8 @@
 > **Document:** Mâm Xanh — Vegetarian Support System Project Overview
 > **File:** `README.md`
-> **Version:** v0.14.0
+> **Version:** v0.15.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 
 # Mâm Xanh — Vegetarian Support System
@@ -90,7 +90,7 @@ Xem chi tiết trong [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) v
 | Yêu cầu sản phẩm cấp cao | [PRD](docs/requirements/PRD.md) | Requirements / Implementation Baseline v2.0.0 — Current |
 | Kiến trúc cấp cao | [System Architecture](docs/architecture/ARCHITECTURE.md) | Active; chưa phải bằng chứng implementation |
 | Công nghệ | [Technology Stack](docs/architecture/TECHNOLOGY-STACK.md) | Active baseline |
-| API integration | [API Guide](docs/api/API.md), runtime `/v3/api-docs`, [planned OpenAPI reference](docs/api/openapi.yaml) | Generated spec là runtime evidence; YAML còn planned endpoints trong migration; chưa phải bằng chứng các endpoint planned đã implement |
+| API integration | [API Guide](docs/api/API.md), runtime `/v3/api-docs`, [generated OpenAPI snapshot](docs/api/openapi.yaml) | Springdoc runtime là nguồn contract; CI kiểm tra snapshot YAML được sinh trong repo khớp với Backend |
 | Đề xuất package Backend | [Backend Package Structure Proposal](docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md) | Draft; chỉ dùng để định hướng vertical slice |
 | Chiến lược kiểm thử | [Test Strategy](docs/testing/TEST-STRATEGY.md) | Active; Frontend đã có Playwright smoke test, phạm vi khác theo bằng chứng triển khai |
 | Quy trình Git/PR/release | [CONTRIBUTING.md](CONTRIBUTING.md) | Active |

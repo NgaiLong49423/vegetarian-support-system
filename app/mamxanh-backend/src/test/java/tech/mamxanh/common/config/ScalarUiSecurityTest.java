@@ -35,6 +35,7 @@ class ScalarUiSecurityTest {
         String test() {
             return "ok";
         }
+
     }
 
     @Test
@@ -53,5 +54,13 @@ class ScalarUiSecurityTest {
         mockMvc.perform(get("/scalar/index.html"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("/v3/api-docs")));
+    }
+
+    @Test
+    void yamlOpenApiPathDoesNotRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/v3/api-docs.yaml"))
+                // Springdoc's YAML handler is outside this MVC slice. 404 proves that the request
+                // passed the security chain; a protected path would return 401 before MVC routing.
+                .andExpect(status().isNotFound());
     }
 }
