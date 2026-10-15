@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.80.0
+> **Version:** v2.81.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -213,6 +213,27 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+
+## 2026-10-13 — Align Generated OpenAPI Security and Error Responses (Issue #114) ([PR #130](https://github.com/NgaiLong49423/vegetarian-support-system/pull/130))
+
+**Status:** Committed — `a504714`, `fa04b45`.
+
+**Scope:** Make generated `/v3/api-docs` match Backend security and error behavior, and keep API guidance aligned with the current generated-contract workflow.
+
+### Added
+
+- Add `OpenApiContractIntegrationTest` to verify documented security and error responses against runtime behavior.
+- Add a shared `ProblemDetail` schema and document `400`, `401`, `403`, and operation-specific error responses where applicable.
+
+### Changed
+
+- Declare `bearerAuth` on the 31 protected operations that were missing it while keeping public operations unauthenticated.
+- Declare operation-specific errors for the affected catalog, Expert application, subscription, recipe publishing, and authentication operations.
+- Document the generated OpenAPI snapshot and its CI validation alongside the API contract rules.
+
+### Fixed
+
+- Fix `/v3/api-docs.yaml` returning `401` so the snapshot exporter and API consumers can retrieve it without authentication.
 
 ## 2026-10-13 — Publish Recipes With Incomplete Nutrition ([PR #131](https://github.com/NgaiLong49423/vegetarian-support-system/pull/131))
 

@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.26.0
+> **Version:** v0.27.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -20,6 +20,8 @@ Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn b�
 - Runtime OpenAPI được sinh từ Controller/DTO/annotations bằng springdoc: `/v3/api-docs` (JSON) và `/v3/api-docs.yaml` (YAML).
 - Bản OpenAPI YAML được commit tại [`openapi.yaml`](openapi.yaml) để tra cứu và tích hợp; CI so sánh file này với YAML runtime.
 - Khi Backend đang chạy tại `http://localhost:8080`, tạo/cập nhật snapshot bằng `./scripts/export-openapi.ps1`. Script tải trực tiếp `/v3/api-docs.yaml` và thay file chỉ sau khi nhận được tài liệu OpenAPI hợp lệ.
+- Operation cần đăng nhập khai báo `bearerAuth`; operation công khai thì không. Response lỗi dùng `application/problem+json` theo `ProblemDetail`; operation nhận dữ liệu khai báo `400`, operation cần đăng nhập khai báo `401`/`403`, và lỗi riêng được khai báo theo mã Backend thực sự trả về.
+- `OpenApiContractIntegrationTest` kiểm tra security và response lỗi trong generated contract so với quy tắc runtime.
 - Base path: `/api/v1`.
 - Giao diện chính thức để team xem và thử API: `/scalar` trên cùng Backend host/port. Scalar tải generated contract từ `/v3/api-docs`.
 - Swagger UI vẫn được giữ như giao diện tương thích trong giai đoạn đầu; Scalar là UI được khuyến nghị cho team.
