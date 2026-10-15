@@ -426,7 +426,7 @@ class MealPlanControllerTest {
         var json = tools.jackson.databind.json.JsonMapper.builder().build().readTree(spec.getResponse().getContentAsString());
         for (String field : java.util.List.of("recipeTitle", "recipeCoverUrl", "dishCategory", "totalTimeMinutes", "unavailableMessage")) {
             var schema = json.at("/components/schemas/Entry/properties/" + field);
-            assertThat(schema.path("type").toString()).contains("\"null\"");
+            assertThat(schema.path("nullable").asBoolean()).isTrue();
         }
     }
 }

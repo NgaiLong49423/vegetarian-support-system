@@ -107,7 +107,7 @@ export function MealPlanRecipeServings({
       if (!alive.current) return
       setEntry(saved)
       onChange(saved.plannedServings)
-      setNotice(`Đã lưu ${saved.plannedServings} phần cần nấu vào lịch ăn.`)
+      setNotice(`Đã lưu ${saved.plannedServings.toLocaleString("vi-VN")} phần cần nấu vào lịch ăn.`)
     } catch (cause) {
       if (alive.current) setError(asApiError(cause).message)
     } finally {

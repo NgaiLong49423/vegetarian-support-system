@@ -375,7 +375,7 @@ test("nutrition uses planned servings and divides weekly averages across all sev
 
   const next = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`
 
-  await setup(page, [
+  const state = await setup(page, [
     { ...entry(1), plannedServings: 2.5 },
 
     { ...entry(2), mealType: "DINNER", plannedServings: 1 },
@@ -785,7 +785,7 @@ for (const width of [360, 768, 1440]) {
     await page.keyboard.press("Escape")
     await page.getByRole("button", { name: "Xem dinh dưỡng ngày" }).click()
     await expect(page.getByRole("dialog").getByText("100 kcal", { exact: true })).toBeVisible()
-    await expect(page.getByRole("dialog").locator("dt")).toHaveCount(9)
+    await expect(page.getByRole("dialog").getByRole("table").locator("tbody tr")).toHaveCount(9)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: path.join(directory, `nutrition-${width}.png`) })
     await page.evaluate(() => localStorage.setItem("mamxanh.theme", "light"))
