@@ -34,6 +34,12 @@ import tech.mamxanh.common.exception.GlobalExceptionHandler;
 import tech.mamxanh.mealplan.dto.response.MealPlanWeekResponse;
 import tech.mamxanh.mealplan.service.MealPlanReadService;
 import tech.mamxanh.mealplan.service.MealPlanService;
+import tech.mamxanh.mealplan.service.MealPlanNutritionService;
+import tech.mamxanh.mealplan.service.MealPlanNutritionAiService;
+import tech.mamxanh.mealplan.dto.response.MealPlanNutritionResponse;
+import tech.mamxanh.mealplan.dto.response.MealPlanNutritionResponse.Day;
+import tech.mamxanh.mealplan.dto.response.MealPlanNutritionResponse.Target;
+import tech.mamxanh.mealplan.dto.response.MealPlanNutritionResponse.Entry;
 import tech.mamxanh.mealplan.service.MealPlanExportService;
 import tech.mamxanh.mealplan.dto.response.MealPlanExportResponse;
 import tech.mamxanh.mealplan.dto.request.MoveMealPlanEntryRequest;
@@ -48,6 +54,8 @@ class MealPlanControllerTest {
     @MockitoBean private MealPlanExportService exports;
     @MockitoBean private MealPlanService service;
     @MockitoBean private MealPlanReadService reads;
+    @MockitoBean private MealPlanNutritionService nutrition;
+    @MockitoBean private MealPlanNutritionAiService nutritionAi;
     @MockitoBean private tech.mamxanh.mealplan.service.AiMenuService aiMenus;
     @MockitoBean private JwtDecoder jwtDecoder;
     @MockitoBean private AccountStatusJwtAuthenticationConverter jwtAuthenticationConverter;
@@ -64,21 +72,125 @@ class MealPlanControllerTest {
     @Test
     void savesServingsAndPublishesTheGeneratedContract() throws Exception {
         var week = LocalDate.of(2026, 10, 12);
-        var quantity = new java.math.BigDecimal("4");
+        var quantity = new java.math.BigDecimal("1.5");
         when(service.updateServings(week, 31, quantity)).thenReturn(new MealPlanWeekResponse.Entry(31, week, "LUNCH",
                 quantity, 1, "Món thử", null, "SOUP", 25, false, null));
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/meal-plans/2026-10-12/entries/31/servings")
-                        .with(user("17").roles("CUSTOMER")).contentType(MediaType.APPLICATION_JSON).content("{\"plannedServings\":4}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.plannedServings").value(4));
+                        .with(user("17").roles("CUSTOMER")).contentType(MediaType.APPLICATION_JSON).content("{\"plannedServings\":1.5}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.plannedServings").value(1.5));
         mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/servings'].patch.security[0].bearerAuth").isArray())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/servings'].patch.responses['200']").exists())
-                .andExpect(jsonPath("$.components.schemas.UpdateMealPlanServingsRequest.properties.plannedServings.minimum").value(1))
-                .andExpect(jsonPath("$.components.schemas.UpdateMealPlanServingsRequest.properties.plannedServings.maximum").value(9999));
+                .andExpect(jsonPath("$.components.schemas.UpdateMealPlanServingsRequest.properties.plannedServings.minimum").value(0.5))
+                .andExpect(jsonPath("$.components.schemas.UpdateMealPlanServingsRequest.properties.plannedServings.maximum").value(10))
+                .andExpect(jsonPath("$.components.schemas.UpdateMealPlanServingsRequest.properties.plannedServings.multipleOf").value(0.5));
+    }
+
+    @Test
+    void publishesNutritionAndPdfRoutesAndRequiresAuthentication() throws Exception {
+        mvc.perform(get("/api/v1/meal-plans/2026-10-12/nutrition").param("date", "2026-10-12"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/v3/api-docs").with(user("17").roles("CUSTOMER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/nutrition'].get.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/nutrition/report'].get.responses['200'].content['application/pdf']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/nutrition/recommendations/{entryId}'].post.responses['200']").exists());
+    }
+
+    @Test
+    void exportsUnifiedDailyAndWeeklyNutritionTables() throws Exception {
+        var monday = LocalDate.of(2026, 10, 12);
+        when(nutrition.analyze(monday, monday)).thenReturn(report(monday, "DAY", monday, List.of(day(monday))));
+        when(nutrition.analyze(monday, null)).thenReturn(report(monday, "WEEK", null,
+                java.util.stream.IntStream.range(0, 7).mapToObj(monday::plusDays).map(MealPlanControllerTest::day).toList()));
+
+        byte[] daily = mvc.perform(get("/api/v1/meal-plans/2026-10-12/nutrition/report").param("date", "2026-10-12")
+                        .with(user("17").roles("CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PDF))
+                .andReturn().getResponse().getContentAsByteArray();
+        try (var pdf = org.apache.pdfbox.Loader.loadPDF(daily)) {
+            assertThat(pdf.getNumberOfPages()).isEqualTo(1);
+            assertThat(pdf.getPage(0).getMediaBox().getWidth())
+                    .isLessThan(pdf.getPage(0).getMediaBox().getHeight());
+            String extracted = new org.apache.pdfbox.text.PDFTextStripper().getText(pdf);
+            assertThat(extracted).contains("BÁO CÁO DINH DƯỠNG NGÀY", "Chỉ tiêu / bữa", "Kế hoạch / món",
+                    "Mức tham khảo", "Chênh lệch / ghi chú", "THỰC ĐƠN DỰ KIẾN VÀ CẢNH BÁO",
+                    "Bữa sáng", "Bữa trưa", "Bữa tối", "Nấu thử", "Chưa xếp món", "Tạo lúc:");
+        }
+
+        byte[] weekly = mvc.perform(get("/api/v1/meal-plans/2026-10-12/nutrition/report")
+                        .with(user("17").roles("CUSTOMER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+        try (var pdf = org.apache.pdfbox.Loader.loadPDF(weekly)) {
+            assertThat(pdf.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            var stripper = new org.apache.pdfbox.text.PDFTextStripper();
+            for (int page = 1; page <= pdf.getNumberOfPages(); page++) {
+                assertThat(pdf.getPage(page - 1).getMediaBox().getWidth())
+                        .isGreaterThan(pdf.getPage(page - 1).getMediaBox().getHeight());
+                stripper.setStartPage(page);
+                stripper.setEndPage(page);
+                assertThat(stripper.getText(pdf)).contains("Chỉ tiêu / bữa", "Trung bình", "Ngày đạt");
+            }
+            stripper.setStartPage(1);
+            stripper.setEndPage(pdf.getNumberOfPages());
+            assertThat(stripper.getText(pdf)).contains("BÁO CÁO DINH DƯỠNG TUẦN", "12/10", "18/10",
+                    "THỰC ĐƠN DỰ KIẾN VÀ CẢNH BÁO", "Bữa sáng", "Bữa trưa", "Bữa tối",
+                    "Chưa xếp món", "Nấu thử", "Tạo lúc:");
+        }
+    }
+
+    @Test
+    void continuesLongWeeklyMealRowsWithoutLosingRecipesOrWarnings() throws Exception {
+        var monday = LocalDate.of(2026, 10, 12);
+        var days = java.util.stream.IntStream.range(0, 7).mapToObj(dayIndex -> {
+            var date = monday.plusDays(dayIndex);
+            var entries = java.util.stream.IntStream.range(0, 12).mapToObj(entryIndex ->
+                    new Entry(entryIndex + 1, date, "LUNCH", entryIndex + 10,
+                            "Món " + dayIndex + "-" + entryIndex + " với tên dài để kiểm tra xuống dòng trong bảng",
+                            java.math.BigDecimal.TWO, entryIndex != 0,
+                            entryIndex == 0 ? List.of("nguyên liệu thiếu dữ liệu") : List.of(),
+                            java.util.Map.of())).toList();
+            return new Day(date, java.util.Map.of(), entries);
+        }).toList();
+        when(nutrition.analyze(monday, null)).thenReturn(report(monday, "WEEK", null, days));
+
+        byte[] bytes = mvc.perform(get("/api/v1/meal-plans/2026-10-12/nutrition/report")
+                        .with(user("17").roles("CUSTOMER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+        try (var pdf = org.apache.pdfbox.Loader.loadPDF(bytes)) {
+            assertThat(pdf.getNumberOfPages()).isGreaterThan(2);
+            var stripper = new org.apache.pdfbox.text.PDFTextStripper();
+            for (int page = 1; page <= pdf.getNumberOfPages(); page++) {
+                stripper.setStartPage(page);
+                stripper.setEndPage(page);
+                assertThat(stripper.getText(pdf)).contains("Chỉ tiêu / bữa", "T2", "CN");
+            }
+            stripper.setStartPage(1);
+            stripper.setEndPage(pdf.getNumberOfPages());
+            String extracted = stripper.getText(pdf);
+            assertThat(extracted).contains("Món 0-0", "Món 6-11", "Chưa xếp món", "Tạo lúc:");
+            assertThat(extracted.replaceAll("\\s+", "")).contains("nguyênliệuthiếudữliệu");
+        }
+    }
+
+    private static MealPlanNutritionResponse report(LocalDate monday, String scope, LocalDate selected, List<Day> days) {
+        var keys = List.of("ENERGY_KCAL", "PROTEIN_G", "CARBOHYDRATE_G", "TOTAL_FAT_G", "FIBER_G", "CALCIUM_MG", "IRON_MG", "VITAMIN_B12_MCG", "ZINC_MG");
+        var targets = keys.stream().map(key -> new Target(key, key, java.math.BigDecimal.TEN, java.math.BigDecimal.TEN,
+                "g", "FDA_DV", "FDA", "https://www.fda.gov", "current")).toList();
+        var avg = keys.stream().collect(java.util.stream.Collectors.toMap(key -> key, key -> java.math.BigDecimal.ZERO));
+        var attainment = keys.stream().collect(java.util.stream.Collectors.toMap(key -> key, key -> 0));
+        return new MealPlanNutritionResponse(monday, scope, selected, "FDA Daily Values", "FDA", "https://www.fda.gov",
+                tech.mamxanh.mealplan.service.MealPlanNutritionService.DISCLAIMER, targets, days, avg, attainment, List.of());
+    }
+
+    private static Day day(LocalDate date) {
+        var nutrients = java.util.Map.of("ENERGY_KCAL", java.math.BigDecimal.valueOf(100));
+        var entry = new Entry(1, date, "LUNCH", 12, "Nấu thử", java.math.BigDecimal.ONE, true, List.of(), nutrients);
+        return new Day(date, nutrients, List.of(entry));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"{}", "{\"plannedServings\":null}", "{\"plannedServings\":0}", "{\"plannedServings\":-1}", "{\"plannedServings\":0.01}", "{\"plannedServings\":1.1}", "{\"plannedServings\":1.25}", "{\"plannedServings\":10000}"})
+    @ValueSource(strings = {"{}", "{\"plannedServings\":null}", "{\"plannedServings\":0}", "{\"plannedServings\":-1}", "{\"plannedServings\":0.49}", "{\"plannedServings\":1.25}", "{\"plannedServings\":10.5}"})
     void rejectsInvalidServingsPayload(String json) throws Exception {
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/meal-plans/2026-10-12/entries/31/servings")
                         .with(user("17")).contentType(MediaType.APPLICATION_JSON).content(json))
@@ -300,7 +412,7 @@ class MealPlanControllerTest {
     }
 
     @Test
-    void tombstoneNullFieldsAreRepresentedByTheGeneratedContract() throws Exception {
+    void tombstoneNullFieldsAreSerializedAndTheirPropertiesArePublished() throws Exception {
         var monday = LocalDate.of(2026, 10, 12);
         var tombstone = new MealPlanWeekResponse.Entry(31, monday, "LUNCH", java.math.BigDecimal.ONE,
                 1, null, null, null, null, true, "Công thức không còn khả dụng");
@@ -312,9 +424,11 @@ class MealPlanControllerTest {
                 .andExpect(jsonPath("$.entries[0].recipeDeleted").value(true));
         var spec = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
         var json = tools.jackson.databind.json.JsonMapper.builder().build().readTree(spec.getResponse().getContentAsString());
-        for (String field : java.util.List.of("recipeTitle", "recipeCoverUrl", "dishCategory", "totalTimeMinutes", "unavailableMessage")) {
-            var schema = json.at("/components/schemas/Entry/properties/" + field);
-            assertThat(schema.path("type").toString()).contains("\"null\"");
+        var fieldTypes = java.util.Map.of("recipeTitle", "string", "recipeCoverUrl", "string",
+                "dishCategory", "string", "totalTimeMinutes", "integer", "unavailableMessage", "string");
+        for (var field : fieldTypes.entrySet()) {
+            var schema = json.at("/components/schemas/MealPlanWeekEntry/properties/" + field.getKey());
+            assertThat(schema.path("type").toString()).contains("\"" + field.getValue() + "\"");
         }
     }
 }

@@ -56,7 +56,9 @@ test('Administrator manages ingredient nutrition through the real Frontend, Back
     await page.getByRole('button', { name: 'Thêm nguyên liệu', exact: true }).click();
     expect((await createResponse).status()).toBe(201);
 
+    // The catalog is paginated and sorted by name; filter to the new row before editing it.
     await page.getByPlaceholder('Tìm tên nguyên liệu').fill(ingredientName);
+    await expect(page.getByText(ingredientName, { exact: true })).toBeVisible({ timeout: 30_000 });
     await page.getByRole('button', { name: `Sửa dinh dưỡng ${ingredientName}` }).click();
     const values: Record<string, string> = {
       'Năng lượng trên 100 g': '100',

@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.27.0
+> **Version:** v1.28.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-14
+> **Last Updated:** 2026-10-15
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -58,9 +58,9 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 | Kế hoạch bữa ăn Guest | Chọn 0,5–10 phần cho từng món, bước 0,5 | Guest chỉ cập nhật UI mẫu; Member dùng API lịch tuần, thêm món với khẩu phần mặc định 1 |
 | Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |
 | Dinh dưỡng công thức prototype tại `/cong-thuc/:slug` | Đọc số liệu minh họa cho **1 khẩu phần** | 8 chỉ tiêu tĩnh, xem BUG-002; trang thật `/cong-thuc/id/:id` dùng 9 chỉ tiêu và trạng thái dữ liệu từ Backend |
-| Theo dõi dinh dưỡng, danh sách mua sắm, bài cộng đồng/bình luận/báo cáo, gói AI và giao dịch | Tương tác UI minh họa theo từng màn hình | Các màn hình này chưa tích hợp API ghi tương ứng; danh sách đã lưu Member đã dùng API thật như trên |
+| Theo dõi dinh dưỡng (`/dinh-duong`) | Đọc lịch ăn Member qua `GET /meal-plans/{weekStartDate}/nutrition`; đổi ngày/tuần cập nhật số liệu; xuất báo cáo PDF theo đúng phạm vi qua `/nutrition/report` | Cần đăng nhập Member và xác nhận phạm vi hỗ trợ dinh dưỡng; số liệu là khẩu phần dự kiến. Danh sách mua sắm, cộng đồng/bình luận/báo cáo, gói AI và giao dịch vẫn là các màn hình minh họa nếu không được liệt kê riêng là đã nối API |
 
-Các trang chưa có API được giữ làm prototype để minh họa phạm vi giao diện; chúng được ghi nhãn demo và không đại diện cho dữ liệu đã lưu trên Backend.
+Các trang chưa có API được giữ làm prototype để minh họa phạm vi giao diện; chúng được ghi nhãn demo và không đại diện cho dữ liệu đã lưu trên Backend. Theo dõi dinh dưỡng là trang đọc API thật và dùng cùng phân tích/xuất PDF với Lịch ăn.
 
 Các màn hình này chuẩn bị trải nghiệm cho FR-13, FR-20, FR-26/27, FR-35/38, FR-37/39 và FR-46; không xác nhận đã hoàn thành toàn bộ Acceptance Criteria của các FR. SRS vẫn là nguồn yêu cầu chính thức.
 

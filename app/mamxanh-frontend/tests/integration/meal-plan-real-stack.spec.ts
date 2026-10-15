@@ -127,6 +127,11 @@ test("FR-09/FR-33 move, export and mutations persist in Compose SQL and preserve
       JSON.parse(sessionStorage.getItem("mamxanh.auth")!),
     )
     const headers = { Authorization: `Bearer ${session.accessToken}` }
+    const eligibility = await request.put(`${backend}/nutrition/profile/eligibility`, {
+      headers,
+      data: { status: "ELIGIBLE" },
+    })
+    expect(eligibility.status()).toBe(200)
     const read = page.waitForResponse(
       (response) =>
         response.request().method() === "GET" &&
@@ -139,22 +144,19 @@ test("FR-09/FR-33 move, export and mutations persist in Compose SQL and preserve
     await page.goto(
       `/ke-hoach?weekStartDate=${selectedWeek}&mealDate=${selectedWeek}`,
     )
+    const selectedDateLabel = new Date(`${selectedWeek}T12:00:00`).toLocaleDateString("vi-VN")
+    const selectedDay = page.getByRole("region", { name: selectedDateLabel })
     await expect(
-      page.getByRole("button", { name: /^Thêm món Bữa/ }),
+      selectedDay.getByRole("button", { name: /^Thêm món Bữa/ }),
     ).toHaveCount(3)
-
     expect(
       Number(
         sql(`SELECT COUNT(*) FROM [MEAL_PLAN] WHERE user_id = ${ownerId}`),
       ),
     ).toBe(0)
 
-    await page
-      .getByRole("button", { name: /^Thêm món Bữa trưa/ })
-      .first()
-      .click()
+    await selectedDay.getByRole("button", { name: /^Thêm món Bữa trưa/ }).click()
     const dialog = page.getByRole("dialog")
-
     await dialog.getByLabel("Tìm món cho lịch ăn").fill(fixture)
     await dialog.getByRole("button", { name: "Tìm", exact: true }).click()
     const add = page.waitForResponse(
@@ -177,6 +179,65 @@ test("FR-09/FR-33 move, export and mutations persist in Compose SQL and preserve
       ),
     ).toBe(1)
     await page.reload()
+    await expect(page.getByRole("article", { name: firstTitle })).toBeVisible()
+
+    await page.getByRole("button", { name: "Dinh dưỡng cả tuần", exact: true }).click()
+    const nutritionDialog = page.getByRole("dialog", { name: "Dinh dưỡng theo lịch ăn" })
+    await expect(nutritionDialog).toBeVisible()
+    const modalWeekPdf = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return url.pathname.endsWith("/nutrition/report") && !url.searchParams.has("date")
+    })
+    const modalWeekDownload = page.waitForEvent("download")
+    await nutritionDialog.getByRole("button", { name: "Xuất báo cáo PDF" }).click()
+    expect((await modalWeekPdf).status()).toBe(200)
+    const modalWeekFile = await modalWeekDownload
+    expect(modalWeekFile.suggestedFilename()).toBe(`bao-cao-dinh-duong-${selectedWeek}.pdf`)
+    expect((await readFile((await modalWeekFile.path())!)).subarray(0, 5).toString()).toBe("%PDF-")
+
+    await nutritionDialog.getByRole("button", { name: "Theo ngày" }).click()
+    await nutritionDialog.getByLabel("Ngày xem").selectOption(selectedWeek)
+    const modalDayPdf = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return url.pathname.endsWith("/nutrition/report") && url.searchParams.get("date") === selectedWeek
+    })
+    const modalDayDownload = page.waitForEvent("download")
+    await nutritionDialog.getByRole("button", { name: "Xuất báo cáo PDF" }).click()
+    expect((await modalDayPdf).status()).toBe(200)
+    const modalDayFile = await modalDayDownload
+    expect(modalDayFile.suggestedFilename()).toBe(`bao-cao-dinh-duong-${selectedWeek}.pdf`)
+    expect((await readFile((await modalDayFile.path())!)).subarray(0, 5).toString()).toBe("%PDF-")
+
+    await page.keyboard.press("Escape")
+    await page.goto("/dinh-duong")
+    const nutritionDayLabel = new Date(`${selectedWeek}T12:00:00`).toLocaleDateString("vi-VN", {
+      weekday: "long", day: "numeric", month: "numeric",
+    })
+    await page.getByRole("button", { name: `Ngày ${nutritionDayLabel}` }).click()
+    await expect(page.getByText(firstTitle)).toBeVisible()
+    await page.getByRole("button", { name: "So sánh & thống kê 7 ngày" }).click()
+    const trackerWeekPdf = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return url.pathname.endsWith("/nutrition/report") && !url.searchParams.has("date")
+    })
+    const trackerWeekDownload = page.waitForEvent("download")
+    await page.getByRole("button", { name: "Xuất báo cáo PDF" }).click()
+    expect((await trackerWeekPdf).status()).toBe(200)
+    const trackerWeekFile = await trackerWeekDownload
+    expect(trackerWeekFile.suggestedFilename()).toBe(`bao-cao-dinh-duong-${selectedWeek}.pdf`)
+    expect((await readFile((await trackerWeekFile.path())!)).subarray(0, 5).toString()).toBe("%PDF-")
+    await page.getByRole("button", { name: "Theo ngày" }).click()
+    const trackerDayPdf = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return url.pathname.endsWith("/nutrition/report") && url.searchParams.get("date") === selectedWeek
+    })
+    const trackerDayDownload = page.waitForEvent("download")
+    await page.getByRole("button", { name: "Xuất báo cáo PDF" }).click()
+    expect((await trackerDayPdf).status()).toBe(200)
+    const trackerDayFile = await trackerDayDownload
+    expect(trackerDayFile.suggestedFilename()).toBe(`bao-cao-dinh-duong-${selectedWeek}.pdf`)
+    expect((await readFile((await trackerDayFile.path())!)).subarray(0, 5).toString()).toBe("%PDF-")
+    await page.goto(`/ke-hoach?weekStartDate=${selectedWeek}&mealDate=${selectedWeek}`)
     await expect(page.getByRole("article", { name: firstTitle })).toBeVisible()
 
     const duplicate = await request.post(
