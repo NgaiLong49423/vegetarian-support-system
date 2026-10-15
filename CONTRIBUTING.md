@@ -1,8 +1,8 @@
 > **Document:** Contribution Guide  
 > **File:** `CONTRIBUTING.md`  
-> **Version:** v3.14.0
+> **Version:** v3.15.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-11
+> **Last Updated:** 2026-10-15
 > **Status:** Active  
 
 # Hướng Dẫn Đóng Góp
@@ -69,7 +69,7 @@ branch làm việc -> PR vào develop -> kiểm tra tích hợp
 
 - Owner chịu trách nhiệm toàn bộ luồng FR, gồm cả FE do AI tạo/sửa. Không mặc định chia sub-issue FE/BE; dùng checklist trong Issue. Không bắt buộc có thành viên FE riêng.
 - Phân rã FR theo SRS trước khi triển khai. Theo [Engineering Autonomy Policy](#engineering-autonomy-policy), người thực hiện (developer hoặc AI coding agent) có quyền tự chủ thiết kế các endpoint, request/response DTOs, validation và error codes trong phạm vi Issue được giao.
-- **Quy tắc contract API:** Generated OpenAPI tại `/v3/api-docs` từ source Spring Boot là runtime contract cho endpoint đã implement và là contract agent/CI phải tra cứu. Trong migration, `docs/api/openapi.yaml` chỉ giữ planned/reference contract cho endpoint chưa implement; reviewer đối chiếu semantic contract với runtime cho phần đã implement, không duy trì hai nguồn chuẩn song song. Cập nhật `docs/api/API.md` trong cùng work item khi thay đổi convention tích hợp chung; không yêu cầu sao chép mọi endpoint runtime vào YAML thủ công. FE và BE không được tự quyết contract khác nhau; conflict phải được nêu rõ trước merge.
+- **Quy tắc contract API:** Generated OpenAPI tại `/v3/api-docs` từ source Spring Boot là runtime contract. `docs/api/openapi.yaml` là snapshot được sinh từ `/v3/api-docs.yaml`, được commit để FE, BE và agent tra cứu; không chỉnh endpoint/schema/security thủ công trong snapshot. Sau khi thay đổi API, chạy `./scripts/export-openapi.ps1` khi Backend hoạt động rồi commit snapshot cùng thay đổi. CI validate runtime YAML và so sánh nội dung contract với snapshot. Cập nhật `docs/api/API.md` khi thay đổi quy ước tích hợp dùng chung. FE và BE không được tự quyết contract khác nhau; conflict phải được nêu rõ trước merge.
 - Không tạo các breaking API changes (xóa endpoint, đổi path/method, xóa/đổi tên trường response, đổi auth model) mà không có sự phối hợp, thống nhất trước với các bên tiêu thụ (consumer).
 - Owner ghi nhận phần AI hỗ trợ và bằng chứng người thực hiện đã xác minh: kiểm tra API, thao tác từ UI, các test đã chạy và kết quả. AI báo hoàn thành không phải bằng chứng nghiệm thu.
 
@@ -314,7 +314,7 @@ Chính sách Tự chủ Kỹ thuật (Engineering Autonomy Policy) phân định
 ### 3. API Design Autonomy (Tự chủ Thiết kế API và Đồng bộ Hợp đồng)
 
 - **Quyền tự chủ (Non-breaking API Additions):** Developer và coding agent có quyền tự chủ thiết kế các REST endpoint mới, request/response DTOs, cơ chế validation, và các stable business error codes cần thiết để hoàn thành nghiệp vụ của Issue.
-  - *Quy tắc contract trong migration:* API implementation và OpenAPI annotations/DTOs phải làm generated `/v3/api-docs` phản ánh runtime contract. `docs/api/openapi.yaml` chỉ là planned/reference cho endpoint chưa implement; semantic đối chiếu endpoint đã implement thuộc review cho tới khi migration comparison tự động được thiết lập. Cập nhật `docs/api/API.md` khi convention tích hợp chung thay đổi. Không yêu cầu đồng bộ bản sao endpoint runtime vào manual YAML.
+  - *Quy tắc đồng bộ OpenAPI:* API implementation và OpenAPI annotations/DTOs phải làm generated `/v3/api-docs` phản ánh runtime contract. `docs/api/openapi.yaml` là snapshot do script xuất từ `/v3/api-docs.yaml`; CI validate và so sánh nội dung contract của snapshot với runtime. Cập nhật `docs/api/API.md` khi convention tích hợp chung thay đổi.
 - **Ngưỡng yêu cầu phối hợp và phê duyệt (Breaking API Changes):**
   - Xóa bỏ một endpoint đang hoạt động.
   - Thay đổi URI path hoặc HTTP method của endpoint hiện có.
