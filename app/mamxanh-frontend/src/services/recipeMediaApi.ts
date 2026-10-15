@@ -2,24 +2,23 @@ import axios from 'axios';
 import { apiClient } from '../lib/apiClient';
 
 export interface UploadedImage {
-  url: string;
-  fileName: string;
-  contentType: string;
-  size: number;
+  blobUrl: string;
+  mimeType: string;
+  sizeBytes: number;
 }
 
 export interface RecipeMediaItem {
-  id?: number;
+  mediaId?: number;
   recipeId?: number;
-  mediaUrl: string;
+  blobUrl: string;
   mimeType: string;
   displayOrder: number;
   isCover: boolean;
 }
 
 export interface UpdateRecipeMediaPayload {
-  items: Array<{
-    mediaUrl: string;
+  mediaItems: Array<{
+    blobUrl: string;
     mimeType: string;
     displayOrder: number;
     isCover: boolean;
@@ -27,9 +26,9 @@ export interface UpdateRecipeMediaPayload {
 }
 
 type ApiResponse<T> = {
-  code?: number;
+  success: boolean;
   message?: string;
-  result: T;
+  data: T;
 };
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -65,14 +64,14 @@ export const recipeMediaApi = {
       },
     );
 
-    return response.data.result;
+    return response.data.data;
   },
 
   async getRecipeMedia(recipeId: number): Promise<RecipeMediaItem[]> {
     const response = await apiClient.get<ApiResponse<RecipeMediaItem[]>>(
       `/recipes/${recipeId}/media`,
     );
-    return response.data.result;
+    return response.data.data;
   },
 
   async updateRecipeMedia(
@@ -83,7 +82,7 @@ export const recipeMediaApi = {
       `/recipes/${recipeId}/media`,
       payload,
     );
-    return response.data.result;
+    return response.data.data;
   },
 
   async deleteRecipeMedia(recipeId: number): Promise<void> {

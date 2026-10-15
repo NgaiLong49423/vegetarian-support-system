@@ -91,12 +91,17 @@ class RecipeViewControllerTest {
     }
 
     @Test void generatedOpenApiDeclaresOptionalBearerAndViewResponse() throws Exception {
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/v3/api-docs"))
+        var result = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/{recipeId}/views'].post.security[0]").isEmpty())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/{recipeId}/views'].post.security[1].bearerAuth").isArray())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/{recipeId}/views'].post.responses['200']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/{recipeId}/views'].post.responses['503']").exists())
                 .andExpect(jsonPath("$.components.schemas.RecipeViewResponse.properties.counted.type").value("boolean"));
+        for (int status : new int[]{400, 401, 403, 404, 503}) {
+            String path = "$.paths['/api/v1/recipes/{recipeId}/views'].post.responses['" + status + "'].content";
+            result.andExpect(jsonPath(path + "['application/problem+json'].schema['$ref']").value("#/components/schemas/ProblemDetail"))
+                    .andExpect(jsonPath(path + "['application/json']").doesNotExist());
+        }
     }
 }

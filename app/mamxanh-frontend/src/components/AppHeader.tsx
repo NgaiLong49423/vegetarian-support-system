@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   LogOut,
   Menu,
+  MessageCircle,
   Plus,
   Search,
   ShoppingBasket,
@@ -16,12 +17,14 @@ import {
   Sparkles,
   Sun,
   Moon,
+  UserCog,
   Users,
   X,
 } from "lucide-react"
 import { useAuth } from "./AuthContext"
 import { Logo } from "./Logo"
 import { useTheme } from "./ThemeContext"
+import { useAiChat } from "./AiChatContext"
 
 const navigation = [
   { to: "/", label: "Trang chủ", icon: LayoutGrid },
@@ -34,6 +37,7 @@ const navigation = [
 
 export function AppHeader() {
   const { account, isAuthenticated, signOut } = useAuth()
+  const { openChat } = useAiChat()
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
@@ -46,6 +50,9 @@ export function AppHeader() {
   const role = account?.role
   const personalLinks = [
     { to: "/ho-so", label: "Hồ sơ của tôi", icon: Bookmark },
+    ...(role !== "ADMIN"
+      ? [{ to: "/ho-so/cai-dat", label: "Cài đặt hồ sơ", icon: UserCog }]
+      : []),
     {
       to: "/ho-so/dinh-duong",
       label: "Hồ sơ dinh dưỡng & BMI",
@@ -435,6 +442,18 @@ export function AppHeader() {
           </div>
         </div>
       </dialog>
+      {isAuthenticated && role !== "ADMIN" && (
+        <button
+          type="button"
+          onClick={() => openChat()}
+          aria-label="Mở khung chat hỗ trợ AI"
+          title="Bạn cần AI hỗ trợ gì?"
+          className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2.5 rounded-full bg-brand-600 px-4 py-3 text-sm font-semibold text-on-brand shadow-xl shadow-brand-900/20 transition-transform hover:-translate-y-0.5 hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+        >
+          <MessageCircle className="h-5 w-5" aria-hidden="true" />
+          <span>Bạn cần AI hỗ trợ?</span>
+        </button>
+      )}
     </>
   )
 }

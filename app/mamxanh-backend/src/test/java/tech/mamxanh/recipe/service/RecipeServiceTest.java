@@ -180,6 +180,38 @@ class RecipeServiceTest {
     }
 
     @Test
+    void publishesAndPersistsUploadedMediaWithOrderCoverAndRecipeIdentity() {
+        prepareCatalog();
+        authenticate("7");
+        when(clock.instant()).thenReturn(java.time.Instant.parse("2026-10-11T00:00:00Z"));
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+        when(recipeRepository.save(any(RecipePostEntity.class))).thenAnswer(invocation -> {
+            RecipePostEntity recipe = invocation.getArgument(0);
+            recipe.setId(99L);
+            return recipe;
+        });
+
+        var response = service.publish(withMedia(List.of(
+                new RecipeMediaInput(" https://example.test/first.png ", " image/png ", false),
+                new RecipeMediaInput("https://example.test/cover.jpg", "image/jpeg", true))));
+
+        assertThat(response.status()).isEqualTo("PUBLISHED");
+        verify(mediaRepository).saveAll(org.mockito.ArgumentMatchers.argThat(items -> {
+            var media = java.util.stream.StreamSupport.stream(items.spliterator(), false).toList();
+            assertThat(media).hasSize(2);
+            assertThat(media).extracting(tech.mamxanh.recipe.entity.RecipeMediaEntity::getRecipeId)
+                    .containsExactly(99L, 99L);
+            assertThat(media).extracting(tech.mamxanh.recipe.entity.RecipeMediaEntity::getDisplayOrder)
+                    .containsExactly(1, 2);
+            assertThat(media).extracting(tech.mamxanh.recipe.entity.RecipeMediaEntity::isCover)
+                    .containsExactly(false, true);
+            assertThat(media.getFirst().getBlobUrl()).isEqualTo("https://example.test/first.png");
+            assertThat(media.getFirst().getMimeType()).isEqualTo("image/png");
+            return true;
+        }));
+    }
+
+    @Test
     void collectsAllTextAndTimeValidationErrorsAfterCheckingCatalog() {
         prepareCatalog();
         authenticate("7");
@@ -321,7 +353,9 @@ class RecipeServiceTest {
         RecipeIngredientReferenceEntity supported = new RecipeIngredientReferenceEntity();
         ReflectionTestUtils.setField(supported, "id", 10L);
         ReflectionTestUtils.setField(supported, "name", "Nấm");
+        ReflectionTestUtils.setField(supported, "ingredientGroup", "Rau củ");
         ReflectionTestUtils.setField(supported, "nutritionSupported", true);
+        ReflectionTestUtils.setField(supported, "energyKcalPer100g", new BigDecimal("42.50"));
         RecipeIngredientReferenceEntity unsupported = new RecipeIngredientReferenceEntity();
         ReflectionTestUtils.setField(unsupported, "id", 11L);
         ReflectionTestUtils.setField(unsupported, "name", "Lá");
@@ -351,6 +385,10 @@ class RecipeServiceTest {
         assertThat(response.nutritionComplete()).isFalse();
         assertThat(response.ingredientsWithoutNutrition()).containsExactly("Lá");
         assertThat(response.ingredients()).hasSize(2);
+        assertThat(response.ingredients().getFirst().ingredientGroup()).isEqualTo("Rau củ");
+        assertThat(response.ingredients().getFirst().nutritionSupported()).isTrue();
+        assertThat(response.ingredients().getFirst().nutrition().energyKcalPer100g()).isEqualByComparingTo("42.50");
+        assertThat(response.ingredients().get(1).nutrition()).isNull();
     }
 
     private void prepareCatalog() {

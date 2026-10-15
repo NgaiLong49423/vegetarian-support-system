@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -85,6 +87,14 @@ jobs:
             app/mamxanh-frontend/test-results/**/detail-*.png
             app/mamxanh-frontend/test-results/**/explore-*.png
             app/mamxanh-frontend/test-results/**/home-*.png
+          if-no-files-found: warn
+
+      - name: Upload weekly meal planner UI evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weekly-meal-planner-ui
+          path: .agents/outputs/fr09-stage4/ui/*.png
           if-no-files-found: warn
 
   backend:
@@ -159,6 +169,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Set up Node.js for pinned Scalar CLI
         uses: actions/setup-node@v4
@@ -192,9 +204,25 @@ jobs:
           docker compose -p mamxanh-ci up --build --detach --wait --wait-timeout 600
           npm --prefix app/mamxanh-frontend run test:e2e:integration
           curl --fail --silent --show-error http://localhost:5173/
-          curl --fail --silent --show-error http://localhost:8080/v3/api-docs \
-            --output "$RUNNER_TEMP/openapi-runtime.json"
-          npx --yes @scalar/cli@2.5.2 document validate "$RUNNER_TEMP/openapi-runtime.json"
+          curl --fail --silent --show-error http://localhost:8080/v3/api-docs.yaml \
+            --output "$RUNNER_TEMP/openapi-runtime.yaml"
+          npx --yes @scalar/cli@2.5.2 document validate "$RUNNER_TEMP/openapi-runtime.yaml"
+          python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2'
+          python - "$RUNNER_TEMP/openapi-runtime.yaml" docs/api/openapi.yaml <<'PY'
+          import sys
+          import yaml
+
+          runtime_path, snapshot_path = sys.argv[1:]
+          with open(runtime_path, encoding="utf-8") as runtime_file:
+              runtime_spec = yaml.safe_load(runtime_file)
+          with open(snapshot_path, encoding="utf-8") as snapshot_file:
+              snapshot_spec = yaml.safe_load(snapshot_file)
+
+          if runtime_spec != snapshot_spec:
+              print("docs/api/openapi.yaml differs from the generated Backend OpenAPI contract.")
+              print("With the Backend running, execute: ./scripts/export-openapi.ps1")
+              raise SystemExit(1)
+          PY
           curl --fail --silent --show-error http://localhost:8080/scalar \
             --output "$RUNNER_TEMP/scalar-route.html"
           grep --fixed-strings 'API Reference' "$RUNNER_TEMP/scalar-route.html"
@@ -204,7 +232,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: openapi-runtime-${{ github.event.pull_request.number || github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/openapi-runtime.json
+          path: ${{ runner.temp }}/openapi-runtime.yaml
           if-no-files-found: error
 
   sonar:

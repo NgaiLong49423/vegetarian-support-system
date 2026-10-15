@@ -174,6 +174,22 @@ class RecipePostManagementIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void administratorCannotEditOrDeleteAnExpertRecipeThroughTheAuthorFlow() throws Exception {
+        // AC-23.10, AC-04.7: an Administrator is not an author; moderation has its own flow.
+        long adminId = insertUser("issue47-admin@test.local", "ADMIN", "ACTIVE");
+        mockMvc.perform(put("/api/v1/recipes/{recipeId}", publishedRecipeId)
+                        .with(principal(adminId, "ROLE_ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON).content(validUpdate("Admin sửa bài")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/v1/recipes/{recipeId}", publishedRecipeId)
+                        .with(principal(adminId, "ROLE_ADMIN")))
+                .andExpect(status().isForbidden());
+        org.assertj.core.api.Assertions.assertThat(title(publishedRecipeId)).isEqualTo("Đậu hũ sốt cà");
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT status FROM [RECIPE_POST] WHERE recipe_id = ?", String.class, publishedRecipeId)).isEqualTo("PUBLISHED");
+    }
+
+    @Test
     void invalidUpdateDoesNotChangeRecipeOrIngredients() throws Exception {
         mockMvc.perform(put("/api/v1/recipes/{recipeId}", publishedRecipeId)
                         .with(principal(ownerId, "ROLE_EXPERT"))

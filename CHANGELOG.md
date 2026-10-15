@@ -1,13 +1,386 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.68.0
+> **Version:** v2.80.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-12
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-15 — Synchronize Recipe Views with Develop
+
+**Status:** Working tree — not committed.
+
+**Scope:** Reconcile FR-58 / Issue #57 / PR #123 with the current integration baseline.
+
+### Added
+
+- None.
+
+### Changed
+
+- Preserve shared detail, meal-plan, authentication and CI behavior while integrating view recording.
+- Renumber the unmerged view migration to V15 and preserve distinct bug records as BUG-030 and BUG-031; IDs 026–029 are already allocated in PR #119.
+- Regenerate the committed OpenAPI snapshot from the synchronized Backend runtime before verification.
+
+### Fixed
+
+- Resolve Git and migration-version conflicts with develop at `7ae8d2a`.
+- Declare ProblemDetail error schemas for view-recording responses instead of the success DTO (BUG-032).
+
+## 2026-10-15 — Generate and Verify the OpenAPI Snapshot
+
+**Status:** Committed — `188c3c03b3f5b021e4d7ff337bb5c54432a59126`.
+
+**Scope:** Keep the committed OpenAPI YAML aligned with the Springdoc contract served by the Backend.
+
+### Added
+
+- Add a PowerShell command to export `/v3/api-docs.yaml` into `docs/api/openapi.yaml`.
+- Make Docker Development CI validate and compare the generated runtime YAML with the committed snapshot.
+
+### Changed
+
+- Treat Springdoc as the API contract authority and the repository YAML as its generated, checked-in snapshot.
+- Update API documentation and agent guidance with the export and synchronization workflow.
+
+### Fixed
+
+- Permit unauthenticated access to Springdoc's `/v3/api-docs.yaml` endpoint so the export script and Docker Development CI can retrieve the generated YAML.
+
+## 2026-10-15 — Connect Nutrition Tracking and Improve PDF Reports
+
+**Status:** Committed — `6c576ae`.
+
+**Scope:** Continue Issue #42 / FR-37 by using real meal-plan data in both nutrition views and making daily and weekly PDF reports readable for longer menus.
+
+### Added
+
+- Connect the standalone nutrition tracker to the Member's selected meal-plan day or week, including partial nutrient values and missing-data warnings.
+- Render daily and weekly reports as structured tables, with landscape weekly pages and repeated headers when content continues onto additional pages.
+
+### Changed
+
+- Use the same meal-plan analysis and PDF endpoints in the tracker and meal-plan nutrition dialog.
+- Preserve Backend problem details returned by binary PDF requests so the interface can show the actual failure reason.
+
+### Fixed
+
+- Request PDF media explicitly, preventing the API client's JSON `Accept` header from causing HTTP 406.
+- Disable report export for an empty selected day or week and guide the Member to add a meal.
+
+## 2026-10-15 — Recommend Published Recipes in AI Chat ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
+
+**Status:** Committed — c3e3ed30827c9c9f260e8eaf45950817c91bbd19.
+
+**Scope:** Extend FR-51 chat with real public recipe recommendations and explicitly requested, non-persistent recipe drafts.
+
+### Added
+
+- Return recipe cards selected from current public Backend posts when users ask to find or recommend recipes; link each card to its real recipe page.
+- Allow recipe creation or adaptation text only after an explicit request, without saving or publishing it.
+
+### Changed
+
+- Filter recipe candidates by the Member's declared vegetarian type and avoided ingredients before asking Gemini to select public post IDs.
+- Synchronize the FR-51, BR-38, UC-51 and chat response documentation with the catalog-first behavior.
+
+### Fixed
+
+- Match Vietnamese recipe creation and adaptation requests against the same accent-normalized phrases used by the chat intent detector.
+
+## 2026-10-14 — Add Contextual AI Chat for Members ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
+
+**Status:** Committed — f984505f64662bb1ae77aedbd5f9a8d47dc537df.
+
+**Scope:** Add the Member chatbot slice for Issue #52 while keeping public Guest access closed until FR-02 rate limiting is integrated.
+
+### Added
+
+- Add a Backend chat endpoint for general vegetarian-cooking questions and current public RecipePost context, with ephemeral request history and token-only usage telemetry.
+- Add a shared Frontend chat page with general and recipe-specific entry points, loading/error states, AI labeling and privacy guidance.
+- Document the FR-51 request and response contract in the API integration guide.
+
+### Changed
+
+- Limit Gemini request timeouts to 10 seconds to follow NFR-18.
+- Require an active Member session for chatbot requests until the FR-02 Guest rate limiter is available.
+
+### Fixed
+
+- None.
+
+## 2026-10-14 — Add Meal Plan Nutrition Reports
+
+**Status:** Committed — `46b6945`.
+
+**Scope:** Issue #42 / FR-37, catalog-based meal-plan nutrition analysis, AI recommendations and PDF export.
+
+### Added
+
+- Add day and seven-day nutrition APIs, FDA Daily Value references, Pro recipe suggestions and on-demand A4 PDF reports.
+- Show catalog-based nutrient summaries, missing-data warnings, saved planned servings and the medical information disclaimer in the Member meal planner.
+- Add coverage for fractional servings, PDF routes and nutrition-reference migration behavior.
+
+### Changed
+
+- Allow planned servings from 0.5 to 10 in half-serving increments and calculate nutrients from the saved quantity.
+- Keep AI provider errors separate from nutrition results and require Member confirmation before applying a suggested recipe.
+- Upgrade Apache PDFBox to 3.0.8 for PDF generation.
+
+### Fixed
+
+- Count empty days as zero in weekly nutrition averages and divide by all seven days.
+
+## 2026-10-14 — Synchronize FR-33 with the AI Menu Integration Baseline ([PR #135](https://github.com/NgaiLong49423/vegetarian-support-system/pull/135))
+
+**Status:** Committed — `5b553ab`.
+
+**Scope:** Synchronize Issue #38 with develop after the AI menu implementation was integrated.
+
+### Added
+
+- None.
+
+### Changed
+
+- Preserve both manual entry movement/export and the integrated AI menu controllers, DTOs, UI modes and regression tests when resolving overlapping edits.
+
+### Fixed
+
+- Download Git LFS assets in Frontend and Docker Development CI checkouts so PDF export receives the bundled Vietnamese font rather than an LFS pointer (BUG-025).
+- Update existing browser fixtures for the integrated nutrition eligibility confirmation, ingredient search and goal label while retaining authorization, payload and out-of-scope assertions.
+
+## 2026-10-14 — Move and Export Weekly Meal Plans (FR-33) ([PR #135](https://github.com/NgaiLong49423/vegetarian-support-system/pull/135))
+
+**Status:** Committed — `f4eeb26`.
+
+**Scope:** Complete local meal-plan management for Issue #38 using the existing weekly plan and recipe references.
+
+### Added
+
+- Move an owned meal-plan entry between days and meals within the same week while retaining its identity and saved servings; reject duplicate destinations without changing the source.
+- Export the authenticated Member's current schedule to UTF-8 TXT and paginated A4 PDF with embedded Vietnamese font, seven days, three meals, saved servings and calculated energy. Keep missing nutrition explicit and unavailable recipes neutral.
+- Add controller/generated OpenAPI, service, browser and SQL integration checks for movement, export, ownership and unavailable content.
+
+### Changed
+
+- Extend the existing meal planner with destination selection and downloadable exports; calculate export energy from Backend per-serving nutrition and the saved serving quantity.
+- Document the private export snapshot and movement contract in the API integration guide.
+- Exclude generated Frontend coverage artifacts from development image build contexts.
+
+### Fixed
+
+- Adapt the Compose meal-plan browser test to the existing collapsed day layout and saved-recipe picker.
+
+## 2026-10-14 — Refine Weekly Nutrition Menu Preferences
+
+**Status:** Committed — `876a08e`.
+
+**Scope:** Clarify weekly menu preference inputs and make excluded ingredients take precedence over preferred ingredients.
+
+### Added
+
+- Provide separate ingredient search and selection fields for ingredients to include and ingredients to exclude.
+
+### Changed
+
+- Rename the weekly goal prompt and remove the balancing and training goals from the weekly menu selector.
+- Specify excluded weekly ingredients as hard candidate filters; preferred ingredients only influence selection among recipes that pass those filters.
+- Synchronize FR-36, UC-36.1, and the API integration guide with the exclusion precedence.
+
+### Fixed
+
+- None.
+
+## 2026-10-14 — Handle Nutrition Eligibility for AI Menus
+
+**Status:** Committed — `876a08e`.
+
+**Scope:** Return the correct eligibility response from AI menu endpoints and guide Members to the required confirmation.
+
+### Added
+
+- Show a link to the nutrition profile when menu generation is blocked because eligibility has not been confirmed.
+
+### Changed
+
+- Route nutrition-profile exceptions from Meal Plan endpoints through the shared ProblemDetail handler with their original status and error code.
+- Document the eligibility response and confirmation endpoint for FR-36.
+
+### Fixed
+
+- Prevent an unconfirmed eligibility state from being reported as an internal server error.
+
+## 2026-10-14 — Integrate AI Recipe Planning and Nutrition Menus
+
+**Status:** Implementation complete; local checks recorded, Docker and GitHub gates pending.
+
+**Scope:** Combine FR-34 recipe recommendations and weekly menu planning with FR-36 nutrition-aware weekly menus in the Meal Plan experience.
+
+### Added
+
+- Keep ingredient-based recommendations and standard weekly menus sourced from public Recipe Posts, alongside nutrition-aware weekly previews based on complete nutrition data.
+- Add profile-based and one-time weekly preference modes for nutrition menus, with editable previews and explicit confirmation before replacing the target week.
+- Preserve separate authorization, dietary constraints, candidate pools, and apply semantics for FR-34 and FR-36.
+
+### Changed
+
+- Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
+- Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Focus Meal Planning on Individual Days ([PR #133](https://github.com/NgaiLong49423/vegetarian-support-system/pull/133))
+
+**Status:** Committed — `2f85f34`.
+
+**Scope:** Make the Member meal planner easier to use one day at a time while retaining weekly persistence.
+
+### Added
+
+- Show day and week nutrition summaries for all nine supported indicators, for one person eating one serving of each scheduled dish, independently of family cooking portions, with per-day energy totals and explicit missing-data states.
+- Let Members open a planned recipe and save integer cooking servings from its detail page to the exact day/meal entry through an authenticated ownership-checked PATCH endpoint; keep the week view read-only for quantities and preserve existing database data.
+- Add browser checks for saved-recipe pagination, day selection, single-serving nutrition despite family cooking portions, missing nutrition, and retry behavior.
+
+### Changed
+
+- Display seven collapsible day rows and three vertically stacked meals for the selected day, with a compact calendar on mobile.
+- Limit the recipe picker to the Member's saved recipes with server-side search and pagination.
+- Adapt the existing visual theme using a Google Stitch reference inspired by Samsung Food.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Expand Local Recipe Demo Fixtures ([PR #127](https://github.com/NgaiLong49423/vegetarian-support-system/pull/127))
+
+**Status:** Committed — `c5ac7d0`.
+
+**Scope:** Enrich the IntelliJ `local` profile with recipe, ingredient and nutrition examples for classroom demonstrations.
+
+### Added
+
+- Add 40 catalog ingredients and 16 illustrated recipe posts to the repeatable local seed.
+- Seed per-100-gram nutrition values for all 51 demo ingredients, labeling synthetic examples as internal demo data and retaining USDA FoodData Central identifiers for sourced rows.
+
+### Changed
+
+- Add cover images to the seven existing local recipe examples so every seeded recipe has a cover.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Add Weekly Meal Planning ([PR #126](https://github.com/NgaiLong49423/vegetarian-support-system/pull/126))
+
+**Status:** Committed — `ed72a4f`.
+
+**Scope:** Issue #15 / FR-09, private weekly plans and recipe entries across three daily meals.
+
+### Added
+
+- Add idempotent week creation and authenticated add, replace and remove operations with owner checks, default servings of one, date validation and duplicate-recipe conflicts.
+- Support multiple recipes per meal, published-recipe selection from public and saved lists, and replacement or removal of unavailable recipe references.
+- Add service, MVC/OpenAPI, SQL Server concurrency and rollback tests, plus a real Compose browser flow with scoped fixtures and SQL assertions.
+
+### Changed
+
+- Replace the Member's read-only page with a responsive seven-day, three-meal editor while preserving the existing Guest demonstration.
+- Document generated API contracts and add an optional Playwright worker limit for memory-constrained local verification without changing coverage gates.
+- Publish responsive meal-planner screenshots as a CI artifact for review.
+
+### Fixed
+
+- Align SQL integration fixtures with the existing recipe status constraint and remove fixture Saved records before deleting their referenced recipes.
+- Describe nullable meal-plan response fields in generated OpenAPI so unavailable recipe references and optional metadata match runtime JSON.
+
+## 2026-10-12 — Add Related Recipe Recommendations ([PR #125](https://github.com/NgaiLong49423/vegetarian-support-system/pull/125))
+
+**Status:** Committed — `81a3b5e`.
+
+**Scope:** Issue #49 / FR-47, public related recipes and explicit subscription-gated Gemini selection.
+
+### Added
+
+- Add bounded SQL Server similarity ranking and public related-recipe APIs, with an optional Gemini selection restricted to current public recipe IDs.
+- Show database-backed recipe cards and an explicit AI action on the recipe detail page, with retry, empty and upgrade states.
+- Expose provider token metadata through an FR-11 handoff event without recording prompts or generated content.
+
+### Changed
+
+- Define principal ingredients by the largest converted gram weight and clarify partial attribute matching and deterministic ordering in FR-47 and UC-47.
+- Document the runtime integration contract, role checks and remaining telemetry-consumer responsibility.
+
+### Fixed
+
+- Disambiguate the existing publish-flow test's description textbox from its AI action by using an exact textbox locator.
+- Align the gallery publishing test's upload fixture with the current runtime API envelope.
+
+## 2026-10-12 — Complete Ingredient Catalog Management Experience ([PR #124](https://github.com/NgaiLong49423/vegetarian-support-system/pull/124))
+
+**Status:** Committed — `4a8bc0e`.
+
+**Scope:** Complete the remaining Issue #46 catalog workflows and keep the administration page focused on nutrition ingredients.
+
+### Added
+
+- Add configured ingredient group and source choices, detailed nutrition viewing, recipe usage counts, and paginated recipe references.
+- Search ingredients as the administrator types and show key nutrition values in the catalog list.
+
+### Changed
+
+- Remove unrelated unit and conversion management screens from the Issue #46 page while retaining their existing Backend endpoints.
+- Allow an ingredient name to be reused after its previous catalog record becomes inactive.
+
+### Fixed
+
+- None.
+
+## 2026-10-12 — Manage Ingredient Nutrition Catalog ([PR #124](https://github.com/NgaiLong49423/vegetarian-support-system/pull/124))
+
+**Status:** Committed — `6be47a6`.
+
+**Scope:** Implement Backend support for administrator-managed ingredient nutrition data and expose supported nutrient details with public recipe data.
+
+### Added
+
+- Add paginated and filtered administrator ingredient search, ingredient detail and recipe-reference endpoints, nutrition-value updates, and nutrition-support controls.
+- Include ingredient group and supported per-100-gram nutrient values in public recipe details without exposing source metadata.
+- Validate nutrition sources against application configuration and require complete values and source metadata before enabling nutrition calculations.
+
+### Changed
+
+- Keep catalog writes restricted to administrators and preserve existing ingredient, unit, and conversion endpoints.
+- Reject hard-delete requests and retain soft status changes for catalog records.
+
+### Fixed
+
+- None.
+
+## 2026-10-11 — Add AI Assistance to Recipe Authoring ([PR #122](https://github.com/NgaiLong49423/vegetarian-support-system/pull/122))
+
+**Status:** Committed — `cfad92c`.
+
+**Scope:** Let eligible Experts generate editable recipe descriptions and instructions without saving a server-side draft.
+
+### Added
+
+- Add a subscription-gated recipe-writing API backed by Gemini and integrate editable suggestions into the create and edit forms.
+- Document the FR-21 API integration flow and its authorization and failure responses.
+- Seed an active one-year Pro subscription for the local demo Expert so the AI authoring flow can be exercised.
+
+### Changed
+
+- Pass the optional `GEMINI_API_KEY` from the local environment into the Backend container at runtime and document the Docker configuration.
+
+### Fixed
+
+- Reject generated recipe instructions that reference unselected catalog ingredients or invalid ingredient IDs.
 
 ## 2026-10-11 — Add Recipe Views and Interaction Analytics (Issue #57) ([PR #123](https://github.com/NgaiLong49423/vegetarian-support-system/pull/123))
 
@@ -26,7 +399,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
-- Add append-only migration `V11__recipe_view_deduplication.sql` for member/guest last-event lookup indexes and reconciliation of existing view counters; align the schema snapshot.
+- Add append-only migration `V15__recipe_view_deduplication.sql` for member/guest last-event lookup indexes and reconciliation of existing view counters; align the schema snapshot.
 - Document anonymous viewer integration and retry behavior in the API guide while retaining the stateless JWT authentication model.
 - Scope the nutrition-status regression assertion to its nutrition region so new view-status feedback does not make its locator ambiguous.
 - Integrate with the merged Frontend design: use the shared public recipe card for Home/Explore totals and the existing detail statistics tile for the recorded count, preserving themes, gallery, serving controls, sharing and export behavior. Publish responsive view screenshots through the existing Frontend CI job.
@@ -34,8 +407,9 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Fixed
 
-- Bound Most Viewed aggregation by the current time so future-dated events do not raise the ranking score (BUG-020); the SQL Server regression passes in the Backend CI run above.
-- Start the SQL Server implicit transaction with a published-recipe read before obtaining the transaction-owned application lock, and refresh the count under that lock (BUG-021). The first CI run exposed 503 recording failures; the fix passes 19 local service/HTTP checks and the SQL Server integration suite above.
+- Bound Most Viewed aggregation by the current time so future-dated events do not raise the ranking score (BUG-030); the SQL Server regression passes in the Backend CI run above.
+- Start the SQL Server implicit transaction with a published-recipe read before obtaining the transaction-owned application lock, and refresh the count under that lock (BUG-031). The first CI run exposed 503 recording failures; the fix passes 19 local service/HTTP checks and the SQL Server integration suite above.
+
 
 ## 2026-10-11 — Preserve Theme During Browser Reload Verification
 
@@ -201,10 +575,76 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Expand the Frontend recipe detail API type to match the Backend response.
+## 2026-10-10 — Add Password Reset (Issue #9) ([PR #113](https://github.com/NgaiLong49423/vegetarian-support-system/pull/113))
+
+**Status:** Committed — `8794862`.
+
+**Scope:** Implement UC-03.6 and UC-03.7 so members can request a reset link by email and set a new password, following AC-03.14 and decisions Q13, Q27, Q47 and Q48.
+
+### Added
+
+- Add `POST /api/v1/auth/password-resets`, which always returns the same neutral `202` message and emails a 15-minute single-use link only to an existing active account outside the 60-second cooldown and under five emails per hour; unknown emails, locked accounts and rate-limited requests get no email and no `429`.
+- Add `POST /api/v1/auth/password-resets/confirm`, which stores the new BCrypt hash, consumes the token and returns `204`; it also verifies an unverified email, ends a temporary login block and lets a Google-only account set a password.
+- Add `PASSWORD_RESET_TOKEN_INVALID` (400) for unknown, used, replaced or expired tokens and `NEW_PASSWORD_SAME_AS_CURRENT` (400), and return `ACCOUNT_LOCKED` (403) when the account was locked after the email was sent.
+- Add Flyway migration `V11__user_password_reset.sql` with the token digest, its expiry and the reset-email rate-limit columns on `USER`, plus two checks, one default and a filtered unique index on the token digest.
+- Connect the forgot-password and reset-password pages to the API; the reset page keeps the token in memory and removes it from the address bar.
+- Add unit, SQL Server integration (cooldown, hourly limit, token replacement and expiry, parallel requests, 72-byte passwords, log redaction) and Playwright tests.
+
+### Changed
+
+- Remove the implemented password-reset endpoints and their schemas from the planned `openapi.yaml`, and document the flow and new error codes in `API.md`.
+- Synchronize `database/schema.sql`, the `database/queries.sql` expected counts and `database/README.md` with V11.
 
 ### Fixed
 
 - None.
+## 2026-10-11 — Add Public Author Profiles (Issue #29) ([PR #116](https://github.com/NgaiLong49423/vegetarian-support-system/pull/116))
+
+**Status:** Committed — `20399b3`.
+
+**Scope:** Implement UC-23.1–UC-23.3 so readers see who wrote a Recipe Post and can open the author's public profile, and members can edit their name, short bio and avatar, following AC-23.1–AC-23.10 and decisions Q54–Q58.
+
+### Added
+
+- Add `GET /api/v1/members/{userId}` (public profile: name, avatar, bio and the join month in Vietnam time, without email, role or private data) and `GET /api/v1/members/{userId}/recipes` (the member's published posts, newest first, size 1–50). A locked member keeps a public profile; an unknown id or an Administrator returns `404 MEMBER_PROFILE_NOT_FOUND`.
+- Add `GET`/`PUT /api/v1/me/profile` for the signed-in member (name trimmed, 3–50 characters, no control characters; bio trimmed, at most 500 characters, empty stored as `NULL`) and `POST /api/v1/me/profile/avatar` (JPEG, PNG or WebP up to 2 MB, checked by file signature, stored through the FR-14 `StorageClient` under `avatars/`); an Administrator gets `403 MEMBER_ACCESS_REQUIRED`.
+- Add the author block (avatar, linked name, publish date) to the recipe detail page, the public profile page `/thanh-vien/:userId`, the profile settings page `/ho-so/cai-dat` and a header link to it.
+- Add SQL Server integration tests for the profile API, owner-only private data (AC-23.8), session-bound authorship (AC-23.9) and Administrator edit refusal (AC-23.10), plus Playwright tests for the new pages.
+- Record BUG-019 and BUG-020 under `.agents/outputs/bugs/`.
+
+### Changed
+
+- Map the `USER` profile columns through a separate `MemberProfileEntity` in the `auth` module, keeping `User` as the identity view.
+- Let `StorageClient` upload into a named folder; recipe images still go to `recipes/`.
+- Show the member's published recipes on the profile page with the shared `PublicRecipeCard` used by Explore.
+- Document the profile API and the `MEMBER_PROFILE_NOT_FOUND`, `FILE_TOO_LARGE` and `UNSUPPORTED_IMAGE_TYPE` codes in `API.md`.
+
+### Fixed
+
+- Fix BUG-019: set the servlet multipart limit to 5 MB per file and 6 MB per request (the 1 MB default rejected recipe images allowed by AC-14.1), and return `FILE_TOO_LARGE` instead of `INTERNAL_ERROR` for `413`.
+
+## 2026-10-11 — Close Expert Recipe Publishing Gaps (Issue #11) ([PR #115](https://github.com/NgaiLong49423/vegetarian-support-system/pull/115))
+
+**Status:** Committed — `3e20875`.
+
+**Scope:** Complete the FR-04 acceptance gaps found while reviewing Issue #11 as the FR-04 coordination Issue (decisions Q49 and Q50): only the Expert author may change a Recipe Post's images, an Administrator is not an author, and a Guest who opens the create page is sent to the login page.
+
+### Added
+
+- Add `RecipeMediaAuthorizationIntegrationTest` (SQL Server Testcontainers) for image upload, replacement and removal by the author, another Expert, an Administrator, a missing recipe and a hidden recipe.
+- Record BUG-021 and BUG-018 under `.agents/outputs/bugs/`.
+
+### Changed
+
+- Restrict `POST /api/v1/recipes/media/upload`, `PUT /api/v1/recipes/{recipeId}/media` and `DELETE /api/v1/recipes/{recipeId}/media` to `ROLE_EXPERT`; an Administrator now gets `403` (AC-04.7).
+- Make the image replacement and removal endpoints use the same author check as Recipe Post editing (`RecipePostService.lockOwnEditableRecipe`): another Expert gets `403 RECIPE_EDIT_NOT_ALLOWED`, a hidden post `403 RECIPE_HIDDEN` and a missing post `404 RECIPE_NOT_FOUND`.
+- Send a Guest who opens `/dang-cong-thuc` straight to `/dang-nhap` (AC-04.5); Customers and Administrators still see the access notice.
+- Remove the Administrator-as-author wording from FR-04 and FR-16 in `FUNCTIONAL-REQUIREMENTS.md` so they match AC-04.7 and decision Q50.
+
+### Fixed
+
+- Fix BUG-021: another Expert or an Administrator could replace or delete the images of a Recipe Post they did not write, including the stored blobs.
+- Fix BUG-018: replacing the images of a Recipe Post that already had images always failed with `500` because the new rows were inserted before the old ones were deleted.
 
 ## 2026-10-10 — Add Google Login and Account Linking (Issue #8) ([PR #111](https://github.com/NgaiLong49423/vegetarian-support-system/pull/111))
 

@@ -1,8 +1,8 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v4.1.0
+> **Version:** v4.2.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-02
+> **Last Updated:** 2026-10-15
 > **Status:** Active  
 
 # Repository Layout and Document Register
@@ -81,8 +81,8 @@ Only entries below are maintained documentation. Read entries by task, not as a 
 | architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md | Approved Backend package structure specification; mandatory architectural standard for all Backend source code and package placement | Planning, implementing or reviewing any Backend package, class or vertical slice |
 | architecture/TECHNOLOGY-STACK.md | Selected technologies, purpose, rationale, benefits, trade-offs and unresolved choices | Dependency or technology decisions |
 | testing/TEST-STRATEGY.md | Project-level test levels, evidence boundaries, traceability, coverage interpretation and completion relationship | Test planning, quality gates or verification design |
-| api/API.md | Cross-team API integration guide, generated runtime contract and planned-contract migration rules, Scalar usage, shared conventions and authentication flow, Active | Frontend/Backend integration, API contract or manual API testing |
-| api/openapi.yaml | Temporary machine-readable planned/reference contract during migration; endpoints absent from runtime are not implemented evidence | Checking planned endpoints not yet present in generated runtime OpenAPI |
+| api/API.md | Cross-team API integration guide, Springdoc runtime authority, YAML export and CI snapshot-validation workflow, Scalar usage, shared conventions and authentication flow, Active | Frontend/Backend integration, API contract or manual API testing |
+| api/openapi.yaml | Generated and committed Springdoc runtime OpenAPI snapshot; CI checks it against the running Backend | Inspecting or integrating with the current API contract |
 | decisions/001-team-workflow.md | Branch/release decision and rationale | Workflow changes |
 | decisions/002-five-member-team-operating-agreement.md | Team responsibilities and coordination | Team process |
 | decisions/WORKFLOW-SOURCES.md | Evidence behind workflow conventions | Reconsidering a workflow decision |

@@ -8,10 +8,13 @@ import java.util.Set;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import tech.mamxanh.nutrition.service.NutritionProfileException;
 
 class GlobalExceptionHandlerTest {
 
@@ -43,6 +46,42 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(403);
         assertThat(problem.getProperties()).containsOnlyKeys("code");
         assertThat(problem.getInstance()).hasToString("/api/v1/nutrition/dietary-preferences");
+    }
+
+    @Test
+    void nutritionEligibilityErrorsKeepTheirBusinessStatusAndCodeOutsideNutritionController() {
+        ResponseEntity<Object> response = handler.handleNutritionProfileException(
+                new NutritionProfileException(HttpStatus.FORBIDDEN,
+                        "NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED",
+                        "Cần xác nhận phạm vi hỗ trợ dinh dưỡng trước khi sử dụng chức năng này."),
+                new ServletWebRequest(new MockHttpServletRequest("POST", "/api/v1/meal-plans/ai-menu/previews")));
+
+        ProblemDetail problem = (ProblemDetail) response.getBody();
+        assertThat(response.getStatusCode().value()).isEqualTo(403);
+        assertThat(problem.getProperties()).containsEntry("code", "NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED");
+        assertThat(problem.getDetail()).isEqualTo("Cần xác nhận phạm vi hỗ trợ dinh dưỡng trước khi sử dụng chức năng này.");
+        assertThat(problem.getInstance()).hasToString("/api/v1/meal-plans/ai-menu/previews");
+    }
+
+    @Test
+    void uploadsAboveTheServletMultipartLimitGetTheFileTooLargeCode() throws Exception {
+        ResponseEntity<Object> response = handler.handleException(new MaxUploadSizeExceededException(5L * 1024 * 1024),
+                new ServletWebRequest(new MockHttpServletRequest("POST", "/api/v1/me/profile/avatar")));
+
+        ProblemDetail problem = (ProblemDetail) response.getBody();
+        assertThat(response.getStatusCode().value()).isEqualTo(413);
+        assertThat(problem.getProperties()).containsEntry("code", "FILE_TOO_LARGE");
+    }
+
+    @Test
+    void errorCodeMapsHttpStatusToDeterministicErrorCodes() {
+        assertThat(ErrorCode.fromStatus(400)).isEqualTo(ErrorCode.VALIDATION_FAILED);
+        assertThat(ErrorCode.fromStatus(401)).isEqualTo(ErrorCode.UNAUTHENTICATED);
+        assertThat(ErrorCode.fromStatus(403)).isEqualTo(ErrorCode.ACCESS_DENIED);
+        assertThat(ErrorCode.fromStatus(404)).isEqualTo(ErrorCode.NOT_FOUND);
+        assertThat(ErrorCode.fromStatus(405)).isEqualTo(ErrorCode.METHOD_NOT_ALLOWED);
+        assertThat(ErrorCode.fromStatus(415)).isEqualTo(ErrorCode.UNSUPPORTED_MEDIA_TYPE);
+        assertThat(ErrorCode.fromStatus(500)).isEqualTo(ErrorCode.INTERNAL_ERROR);
     }
 
     @Test

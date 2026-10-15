@@ -35,14 +35,15 @@ import tech.mamxanh.recipe.entity.RecipeCodes.MediaType;
 import tech.mamxanh.recipe.entity.RecipeCodes.VegetarianType;
 import tech.mamxanh.recipe.entity.RecipeIngredientEntity;
 import tech.mamxanh.recipe.entity.RecipeIngredientReferenceEntity;
+import tech.mamxanh.recipe.entity.RecipeMediaEntity;
 import tech.mamxanh.recipe.entity.RecipePostEntity;
 import tech.mamxanh.recipe.entity.RecipeUnitReferenceEntity;
 import tech.mamxanh.recipe.repository.RecipeAuthorReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeConversionRepository;
 import tech.mamxanh.recipe.repository.RecipeIngredientReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeIngredientRepository;
-import tech.mamxanh.recipe.repository.RecipePostRepository;
 import tech.mamxanh.recipe.repository.RecipeMediaRepository;
+import tech.mamxanh.recipe.repository.RecipePostRepository;
 import tech.mamxanh.recipe.repository.RecipeStatisticsRepository;
 import tech.mamxanh.recipe.repository.RecipeUnitReferenceRepository;
 import tech.mamxanh.recipe.service.RecipeValidationException.FieldError;
@@ -56,9 +57,9 @@ public class RecipeService {
     private final RecipeUnitReferenceRepository unitReferenceRepository;
     private final RecipeConversionRepository conversionRepository;
     private final RecipeAuthorReferenceRepository authorRepository;
+    private final RecipeMediaRepository mediaRepository;
     private final Clock clock;
     private final CurrentUserService currentUserService;
-    private final RecipeMediaRepository mediaRepository;
     private final RecipeNutritionService nutritionService;
     private final RecipeStatisticsRepository statisticsRepository;
 
@@ -77,9 +78,9 @@ public class RecipeService {
         this.unitReferenceRepository = unitReferenceRepository;
         this.conversionRepository = conversionRepository;
         this.authorRepository = authorRepository;
+        this.mediaRepository = mediaRepository;
         this.clock = clock;
         this.currentUserService = currentUserService;
-        this.mediaRepository = mediaRepository;
         this.nutritionService = nutritionService;
         this.statisticsRepository = statisticsRepository;
     }
@@ -146,6 +147,21 @@ public class RecipeService {
         }).toList();
         ingredientRepository.saveAll(recipeIngredients);
 
+        if (request.media() != null && !request.media().isEmpty()) {
+            List<RecipeMediaEntity> mediaEntities = new ArrayList<>();
+            for (int index = 0; index < request.media().size(); index++) {
+                RecipeMediaInput input = request.media().get(index);
+                RecipeMediaEntity media = new RecipeMediaEntity();
+                media.setRecipeId(saved.getId());
+                media.setBlobUrl(input.blobUrl().trim());
+                media.setMimeType(input.mimeType().trim());
+                media.setDisplayOrder(index + 1);
+                media.setCover(input.cover());
+                mediaEntities.add(media);
+            }
+            mediaRepository.saveAll(mediaEntities);
+        }
+
         return new CreateRecipeResponse(saved.getId(), saved.getTitle(), saved.getStatus(), publishedAt);
     }
 
@@ -171,8 +187,17 @@ public class RecipeService {
                     ? null : ingredientReferences.get(line.getIngredientId());
             RecipeUnitReferenceEntity unit = unitReferences.get(line.getUnitId());
             String name = ingredient == null ? line.getCustomIngredientName() : ingredient.getName();
-            return new RecipeDetailResponse.Ingredient(line.getIngredientId(), name, line.getQuantity(),
-                    line.getUnitId(), unit.getCode(), unit.getName());
+            boolean nutritionSupported = ingredient != null && ingredient.isNutritionSupported();
+            RecipeDetailResponse.IngredientNutrition nutrition = nutritionSupported
+                    ? new RecipeDetailResponse.IngredientNutrition(ingredient.getEnergyKcalPer100g(),
+                            ingredient.getProteinGramsPer100g(), ingredient.getCarbohydrateGramsPer100g(),
+                            ingredient.getTotalFatGramsPer100g(), ingredient.getFiberGramsPer100g(),
+                            ingredient.getCalciumMgPer100g(), ingredient.getIronMgPer100g(),
+                            ingredient.getVitaminB12MicrogramsPer100g(), ingredient.getZincMgPer100g())
+                    : null;
+            return new RecipeDetailResponse.Ingredient(line.getIngredientId(), name,
+                    ingredient == null ? null : ingredient.getIngredientGroup(), line.getQuantity(),
+                    line.getUnitId(), unit.getCode(), unit.getName(), nutritionSupported, nutrition);
         }).toList();
         var nutrition = nutritionService.calculate(recipeIngredients.stream().map(line -> {
             RecipeUnitReferenceEntity unit = unitReferences.get(line.getUnitId());
@@ -201,6 +226,70 @@ public class RecipeService {
                 new RecipeDetailResponse.Statistics(stats.getLikes(), stats.getDislikes(), stats.getReactionCount(),
                         likePercentage, stats.getViewCount()), media);
     }
+
+    @Transactional(readOnly = true)
+    public Map<Long, PlannedNutrition> calculatePlannedNutrition(Map<Long, BigDecimal> plannedServings) {
+        if (plannedServings == null || plannedServings.isEmpty()) return Map.of();
+        List<Long> ids = plannedServings.keySet().stream().sorted().toList();
+        Map<Long, RecipePostEntity> published = recipeRepository.findAllById(ids).stream()
+                .filter(recipe -> "PUBLISHED".equals(recipe.getStatus()))
+                .collect(Collectors.toMap(RecipePostEntity::getId, Function.identity()));
+        List<RecipeIngredientEntity> lines = ingredientRepository.findAllByRecipeIdInOrderByRecipeIdAscIdAsc(ids);
+        Map<Long, RecipeIngredientReferenceEntity> ingredients = ingredientReferenceRepository
+                .findAllById(lines.stream().map(RecipeIngredientEntity::getIngredientId).filter(java.util.Objects::nonNull).distinct().toList())
+                .stream().collect(Collectors.toMap(RecipeIngredientReferenceEntity::getId, Function.identity()));
+        Map<Integer, RecipeUnitReferenceEntity> units = unitReferenceRepository
+                .findAllById(lines.stream().map(RecipeIngredientEntity::getUnitId).distinct().toList())
+                .stream().collect(Collectors.toMap(RecipeUnitReferenceEntity::getId, Function.identity()));
+        Map<Long, List<RecipeIngredientEntity>> byRecipe = lines.stream()
+                .collect(Collectors.groupingBy(RecipeIngredientEntity::getRecipeId));
+        Map<Long, PlannedNutrition> result = new java.util.LinkedHashMap<>();
+        for (Long id : ids) {
+            RecipePostEntity recipe = published.get(id);
+            if (recipe == null) continue;
+            List<RecipeNutritionService.RecipeIngredient> recipeLines = byRecipe.getOrDefault(id, List.of()).stream().map(line -> {
+                RecipeUnitReferenceEntity unit = units.get(line.getUnitId());
+                RecipeIngredientReferenceEntity ingredient = line.getIngredientId() == null ? null : ingredients.get(line.getIngredientId());
+                return new RecipeNutritionService.RecipeIngredient(line.getIngredientId(), line.getUnitId(), unit.getDimension(),
+                        unit.getBaseFactor(), line.getQuantity(), ingredient == null ? line.getCustomIngredientName() : ingredient.getName());
+            }).toList();
+            var nutrition = nutritionService.calculatePlanned(recipeLines, recipe.getServings(), plannedServings.get(id));
+            result.put(id, new PlannedNutrition(id, recipe.getTitle(), nutrition.complete(),
+                    nutrition.ingredientsMissingData(), nutrition.total()));
+        }
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public PlannedNutrition calculatePlannedNutrition(long recipeId, BigDecimal plannedServings) {
+        return calculatePlannedNutrition(Map.of(recipeId, plannedServings)).get(recipeId);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, PlannedNutrition> calculatePlannedNutritionByEntry(Map<Long, Long> recipeByEntry,
+            Map<Long, BigDecimal> servingsByEntry) {
+        if (recipeByEntry == null || recipeByEntry.isEmpty()) return Map.of();
+        Map<Long, BigDecimal> servingsByRecipe = new java.util.LinkedHashMap<>();
+        recipeByEntry.forEach((entryId, recipeId) -> servingsByRecipe.merge(recipeId,
+                servingsByEntry.get(entryId), BigDecimal::max));
+        Map<Long, PlannedNutrition> byRecipe = calculatePlannedNutrition(servingsByRecipe);
+        Map<Long, PlannedNutrition> byEntry = new java.util.LinkedHashMap<>();
+        recipeByEntry.forEach((entryId, recipeId) -> {
+            BigDecimal servings = servingsByEntry.get(entryId);
+            PlannedNutrition base = byRecipe.get(recipeId);
+            if (base == null) return;
+            Map<String, BigDecimal> scaled = new java.util.LinkedHashMap<>();
+            base.nutrients().forEach((key, value) -> scaled.put(key, value == null ? null : value.multiply(servings)
+                    .divide(servingsByRecipe.get(recipeId), 4, RoundingMode.HALF_UP)
+                    .setScale(2, RoundingMode.HALF_UP)));
+            byEntry.put(entryId, new PlannedNutrition(base.recipeId(), base.title(), base.complete(),
+                    base.ingredientsMissingData(), scaled));
+        });
+        return byEntry;
+    }
+
+    public record PlannedNutrition(Long recipeId, String title, boolean complete,
+            List<String> ingredientsMissingData, Map<String, BigDecimal> nutrients) { }
 
     @Transactional(readOnly = true)
     public RecipeFormOptionsResponse formOptions() {
@@ -299,7 +388,6 @@ public class RecipeService {
         if (media.size() > 5) errors.add(new FieldError("media", "Mỗi công thức được có tối đa 5 ảnh."));
         long covers = media.stream().filter(RecipeMediaInput::cover).count();
         if (covers != 1) errors.add(new FieldError("media", "Nếu có ảnh, hãy chọn đúng 1 ảnh bìa."));
-        errors.add(new FieldError("media", "Đăng công thức kèm ảnh chưa được hỗ trợ. Hãy bỏ ảnh; upload ảnh sẽ được tích hợp sau FR-14."));
         for (int index = 0; index < media.size(); index++) {
             RecipeMediaInput item = media.get(index);
             if (item.mimeType() == null || !MediaType.accepts(item.mimeType().trim())) {

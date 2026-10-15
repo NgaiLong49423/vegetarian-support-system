@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { AuthPage } from './pages/Auth';
 import { AuthProvider } from './components/AuthContext';
@@ -17,6 +17,8 @@ import { Profile } from './pages/Profile';
 import { AiPlans } from './pages/AiPlans';
 import { TransactionHistory } from './pages/TransactionHistory';
 import { NutritionProfile } from './pages/NutritionProfile';
+import { PaymentResult } from './pages/PaymentResult';
+
 import { DietaryPreferencesPage } from './pages/DietaryPreferencesPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { AdminCatalogPage } from './pages/AdminCatalogPage';
@@ -25,6 +27,8 @@ import { RecipeComparePage } from './pages/RecipeCompare';
 import { EditRecipe } from './pages/EditRecipe';
 import { ApiRecipeDetail } from './pages/ApiRecipeDetail';
 import { ExpertRecipeProfile } from './pages/ExpertRecipeProfile';
+import { MemberProfilePage } from './pages/MemberProfilePage';
+import { ProfileSettingsPage } from './pages/ProfileSettingsPage';
 import { ThemeProvider } from './components/ThemeContext';
 
 function ScrollToTop() {
@@ -52,6 +56,7 @@ export default function App() {
           <Route path="/cong-thuc/id/:recipeId" element={<ApiRecipeDetail />} />
           <Route path="/cong-thuc/:slug" element={<RecipeDetail />} />
           <Route path="/ke-hoach" element={<MealPlanner />} />
+          <Route path="/goi-y-ai" element={<Navigate to="/ke-hoach?view=for-you" replace />} />
           <Route path="/di-cho" element={<ShoppingList />} />
           <Route path="/dinh-duong" element={<NutritionTracker />} />
           <Route path="/dang-cong-thuc" element={<CreateRecipe />} />
@@ -59,7 +64,11 @@ export default function App() {
           <Route path="/bai-viet/:slug" element={<PostDetail />} />
           <Route path="/ho-so" element={<Profile />} />
           <Route path="/ho-so/chuyen-gia" element={<ExpertRecipeProfile />} />
+          <Route path="/ho-so/cai-dat" element={<ProfileSettingsPage />} />
+          <Route path="/thanh-vien/:userId" element={<MemberProfilePage />} />
           <Route path="/goi-ai" element={<AiPlans />} />
+          <Route path="/payment/success" element={<PaymentResult mode="success" />} />
+          <Route path="/payment/cancel" element={<PaymentResult mode="cancel" />} />
           <Route path="/giao-dich" element={<TransactionHistory />} />
           <Route path="/ho-so/dinh-duong" element={<NutritionProfile />} />
           <Route path="/ho-so/so-thich-an-uong" element={<DietaryPreferencesPage />} />

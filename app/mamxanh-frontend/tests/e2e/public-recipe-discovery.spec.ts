@@ -99,6 +99,33 @@ test.describe('Issue #3 [FR-01] — Guest xem và tìm kiếm nội dung công k
     await expect(page.getByText(detail.instructions)).toBeVisible();
   });
 
+  test('Guest sees calculated nutrition with a warning when catalog data is incomplete', async ({ page }) => {
+    const partialNutritionDetail = {
+      ...detail,
+      recipeId: 903,
+      nutritionComplete: false,
+      ingredientsWithoutNutrition: ['Đậu hũ non'],
+      nutrition: {
+        complete: false,
+        ingredientsMissingData: ['Đậu hũ non'],
+        total: { ENERGY_KCAL: 240 },
+        perServing: { ENERGY_KCAL: 120 },
+      },
+    };
+    await page.route('**/api/v1/recipes/903', (route) => route.fulfill({ json: partialNutritionDetail }));
+
+    await page.goto('/cong-thuc/id/903');
+
+    const warning = page.getByRole('note');
+    await expect(warning).toHaveAttribute('aria-live', 'polite');
+    await expect(warning).toContainText('Ước tính chưa đầy đủ');
+    await expect(warning).toContainText('Các giá trị chỉ gồm phần tính được từ danh mục.');
+    await expect(warning).toContainText('Nguyên liệu chưa hỗ trợ tính dinh dưỡng:');
+    await expect(warning.getByRole('listitem')).toHaveText('Đậu hũ non');
+    await expect(page.getByText('120 kcal')).toBeVisible();
+    await expect(page.getByText(/Nguồn tham khảo: danh mục dinh dưỡng nội bộ/)).toBeVisible();
+  });
+
   test('AC-01.4: Không hiển thị bài viết vi phạm hoặc không tồn tại cho Guest', async ({ page }) => {
     await page.goto('/cong-thuc/mon-chay-vi-pham-tieu-chuan');
     await expect(page.getByTestId('recipe-not-available')).toBeVisible();

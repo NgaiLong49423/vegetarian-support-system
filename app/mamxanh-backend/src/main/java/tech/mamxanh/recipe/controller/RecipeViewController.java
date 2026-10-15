@@ -1,6 +1,9 @@
 package tech.mamxanh.recipe.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.http.ProblemDetail;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -35,11 +38,16 @@ public class RecipeViewController {
             security = {@SecurityRequirement, @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)})
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lượt xem đã ghi nhận hoặc đã khử trùng lặp."),
-            @ApiResponse(responseCode = "400", description = "ID hoặc định danh Guest không hợp lệ."),
-            @ApiResponse(responseCode = "401", description = "Bearer token không hợp lệ hoặc hết hạn."),
-            @ApiResponse(responseCode = "403", description = "Tài khoản mang Bearer token bị khóa."),
-            @ApiResponse(responseCode = "404", description = "Công thức không tồn tại hoặc không công khai."),
-            @ApiResponse(responseCode = "503", description = "Chưa lấy được khóa ghi nhận lượt xem; có thể thử lại.")
+            @ApiResponse(responseCode = "400", description = "ID hoặc định danh Guest không hợp lệ.",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "401", description = "Bearer token không hợp lệ hoặc hết hạn.",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "403", description = "Tài khoản mang Bearer token bị khóa.",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "404", description = "Công thức không tồn tại hoặc không công khai.",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "503", description = "Chưa lấy được khóa ghi nhận lượt xem; có thể thử lại.",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     })
     public ResponseEntity<RecipeViewResponse> record(@PathVariable @Min(1) long recipeId,
             @Valid @RequestBody RecipeViewRequest request, @AuthenticationPrincipal Jwt jwt) {
