@@ -216,7 +216,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-13 — Compare Two Public Recipes ([PR #132](https://github.com/NgaiLong49423/vegetarian-support-system/pull/132))
 
-**Status:** Committed — `5749ba8`, `c11e882`; picker page changes from the PR review are in the working tree, not committed.
+**Status:** Committed — `5749ba8`, `c11e882`, `8dc7f2f`, `ffb3eae`.
 
 **Scope:** Complete FR-60 (AC-60.1–AC-60.8, BR-76) in the Frontend: compare two different published recipes by overview, ingredients and the nine nutrients per serving, using the existing public recipe detail and search APIs only.
 
