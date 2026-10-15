@@ -161,11 +161,42 @@ test('Member profile links to actual nutrition and preferences screens', async (
   await expect(page.getByRole('heading', { name: 'Chưa có công thức đã lưu' })).toBeVisible();
 });
 test('nutrition day selection updates the displayed day and opens a recipe', async ({ page }) => {
+  await seedDemoSession(page, 'CUSTOMER');
+  await page.route('**/api/v1/meal-plans/*/nutrition', async (route) => {
+    const match = new URL(route.request().url()).pathname.match(/meal-plans\/(\d{4}-\d{2}-\d{2})\/nutrition$/);
+    if (!match) return route.fulfill({ status: 404 });
+    const weekStartDate = match[1];
+    const monday = new Date(`${weekStartDate}T12:00:00`);
+    const days = Array.from({ length: 7 }, (_, offset) => {
+      const date = new Date(monday);
+      date.setDate(date.getDate() + offset);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const entries = offset === 0 ? [{
+        entryId: 11, date: key, mealType: 'BREAKFAST', recipeId: 11,
+        recipeTitle: 'Canh rau', plannedServings: 1, complete: true,
+        ingredientsMissingData: [], nutrients: { ENERGY_KCAL: 150 },
+      }] : [];
+      return { date: key, nutrients: { ENERGY_KCAL: entries.length ? 150 : 0 }, entries };
+    });
+    return route.fulfill({ json: {
+      weekStartDate, scope: 'WEEK', selectedDate: null,
+      referenceBasis: 'Mức tham khảo kiểm thử', source: 'Catalog', sourceUrl: '',
+      disclaimer: 'Thông tin tham khảo.',
+      targets: [{ key: 'ENERGY_KCAL', label: 'Năng lượng', minimum: 2000,
+        maximum: 2000, unit: 'kcal', referenceType: 'RDA', source: 'Catalog',
+        sourceUrl: '', version: '1' }],
+      days, weeklyAverage: { ENERGY_KCAL: 150 }, attainmentDays: { ENERGY_KCAL: 0 },
+      incompleteEntries: [],
+    } });
+  });
   await page.goto('/dinh-duong');
   const day = page.getByRole('button', { name: /Thứ Hai/ }).first();
+  await expect(day).toBeVisible();
   await day.click();
-  await expect(day).toHaveClass(/bg-brand-600/);
-  await expect(page.getByRole('heading', { name: /Thực đơn 3 Bữa Ngày/ })).toBeVisible();
-  await page.getByRole('link', { name: 'Chi tiết công thức →' }).first().click();
-  await expect(page).toHaveURL(/\/cong-thuc\//);
+  await expect(day).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('heading', { name: /Thực đơn ngày/ })).toBeVisible();
+  const recipeLink = page.getByRole('link', { name: 'Chi tiết công thức →' }).first();
+  await expect(recipeLink).toHaveAttribute('href', '/cong-thuc/id/11');
+  await recipeLink.click();
+  await expect(page).toHaveURL(/\/cong-thuc\/id\/11/);
 });

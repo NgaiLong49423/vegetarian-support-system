@@ -9,6 +9,27 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-15 — Connect Nutrition Tracking and Improve PDF Reports
+
+**Status:** Committed — `6c576ae`.
+
+**Scope:** Continue Issue #42 / FR-37 by using real meal-plan data in both nutrition views and making daily and weekly PDF reports readable for longer menus.
+
+### Added
+
+- Connect the standalone nutrition tracker to the Member's selected meal-plan day or week, including partial nutrient values and missing-data warnings.
+- Render daily and weekly reports as structured tables, with landscape weekly pages and repeated headers when content continues onto additional pages.
+
+### Changed
+
+- Use the same meal-plan analysis and PDF endpoints in the tracker and meal-plan nutrition dialog.
+- Preserve Backend problem details returned by binary PDF requests so the interface can show the actual failure reason.
+
+### Fixed
+
+- Request PDF media explicitly, preventing the API client's JSON `Accept` header from causing HTTP 406.
+- Disable report export for an empty selected day or week and guide the Member to add a meal.
+
 ## 2026-10-15 — Recommend Published Recipes in AI Chat ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
 
 **Status:** Committed — c3e3ed30827c9c9f260e8eaf45950817c91bbd19.
@@ -49,6 +70,28 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+
+## 2026-10-14 — Add Meal Plan Nutrition Reports
+
+**Status:** Committed — `46b6945`.
+
+**Scope:** Issue #42 / FR-37, catalog-based meal-plan nutrition analysis, AI recommendations and PDF export.
+
+### Added
+
+- Add day and seven-day nutrition APIs, FDA Daily Value references, Pro recipe suggestions and on-demand A4 PDF reports.
+- Show catalog-based nutrient summaries, missing-data warnings, saved planned servings and the medical information disclaimer in the Member meal planner.
+- Add coverage for fractional servings, PDF routes and nutrition-reference migration behavior.
+
+### Changed
+
+- Allow planned servings from 0.5 to 10 in half-serving increments and calculate nutrients from the saved quantity.
+- Keep AI provider errors separate from nutrition results and require Member confirmation before applying a suggested recipe.
+- Upgrade Apache PDFBox to 3.0.8 for PDF generation.
+
+### Fixed
+
+- Count empty days as zero in weekly nutrition averages and divide by all seven days.
 
 ## 2026-10-14 — Synchronize FR-33 with the AI Menu Integration Baseline ([PR #135](https://github.com/NgaiLong49423/vegetarian-support-system/pull/135))
 

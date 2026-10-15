@@ -765,7 +765,7 @@ function WeekContents({
                                           {entry.totalTimeMinutes === null
                                             ? ""
                                             : `${entry.totalTimeMinutes} phút · `}
-                                          {entry.plannedServings} phần
+                                          {entry.plannedServings.toLocaleString("vi-VN")} phần
                                         </p>
                                       </div>
                                     </div>
@@ -851,6 +851,10 @@ function WeekContents({
               plan={plan}
               initialDay={nutrition.day}
               initialScope={nutrition.scope}
+              onEntryReplaced={(entry) => setPlan((current) => current && ({
+                ...current,
+                entries: [...current.entries.filter((item) => item.entryId !== entry.entryId), entry],
+              }))}
             />
           </DialogFocus>
         )}
@@ -1018,7 +1022,7 @@ function MoveDialog({
     <DialogFocus>
       <p className="text-sm text-ink-soft">
         {entry.recipeTitle ?? "Công thức không còn khả dụng"} · Giữ nguyên{" "}
-        {entry.plannedServings} phần.
+        {entry.plannedServings.toLocaleString("vi-VN")} phần.
       </p>
       <form
         onSubmit={(event) => {
