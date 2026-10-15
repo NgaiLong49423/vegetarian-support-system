@@ -154,6 +154,21 @@ public class NutritionProfileService {
         requireEligible(user);
     }
 
+    /** Return saved personalized targets for an eligible owner, or empty when no complete profile exists. */
+    @Transactional(readOnly = true)
+    public java.util.Optional<NutritionProfileResponse.Results> targetsIfProfileExists(long userId) {
+        NutritionProfileEntity user = repository.findById(userId)
+                .orElseThrow(() -> new NutritionProfileException(HttpStatus.NOT_FOUND, "MEMBER_NOT_FOUND", "Không tìm thấy hồ sơ Member."));
+        requireEligible(user);
+        if (!hasSavedProfile(user)) return java.util.Optional.empty();
+        int age = calculations.ageOn(user.getDateOfBirth(), LocalDate.now(clock));
+        if (!outOfScopeReasons(age, user.isPregnant(), user.isBreastfeeding(), user.isTherapeuticDietRequired()).isEmpty()) {
+            throw new NutritionProfileException(HttpStatus.UNPROCESSABLE_ENTITY, "NUTRITION_PROFILE_OUT_OF_SCOPE",
+                    "Không thể hiển thị mức tham khảo cho hồ sơ ngoài phạm vi hỗ trợ.");
+        }
+        return java.util.Optional.of(response(user, age).results());
+    }
+
     /** FR-36 context. Requires eligibility and a complete, consented anthropometric profile. */
     @Transactional(readOnly = true)
     public MenuNutritionContext requireMenuNutritionContext(long userId) {

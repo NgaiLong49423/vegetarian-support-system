@@ -7,8 +7,9 @@ public interface AiClient {
 
     RecommendationResult recommendRecipes(String prompt, List<Long> allowedRecipeIds, int limit);
 
-    ChatResult answerChat(String systemInstruction, String prompt);
+    RecommendationResult analyzeNutritionRecommendations(String prompt, List<Long> allowedRecipeIds, int limit);
 
+    ChatResult answerChat(String systemInstruction, String prompt);
     /** Selects an ordered sequence; IDs may repeat when the caller explicitly permits it. */
     default RecommendationResult recommendRecipeSequence(String prompt, List<Long> allowedRecipeIds, int slots) {
         return recommendRecipes(prompt, allowedRecipeIds, slots);

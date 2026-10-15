@@ -746,7 +746,7 @@ function WeekContents({
                                     {entry.totalTimeMinutes === null
                                       ? ""
                                       : `${entry.totalTimeMinutes} phút · `}
-                                    {entry.plannedServings} phần
+                                    {entry.plannedServings.toLocaleString("vi-VN")} phần
                                   </p>
                                 </div>
                                 <div className="flex w-full gap-1 pl-[76px] sm:ml-auto sm:w-auto sm:pl-0">
@@ -830,6 +830,10 @@ function WeekContents({
               plan={plan}
               initialDay={nutrition.day}
               initialScope={nutrition.scope}
+              onEntryReplaced={(entry) => setPlan((current) => current && ({
+                ...current,
+                entries: [...current.entries.filter((item) => item.entryId !== entry.entryId), entry],
+              }))}
             />
           </DialogFocus>
         )}
