@@ -193,9 +193,25 @@ jobs:
           docker compose -p mamxanh-ci up --build --detach --wait --wait-timeout 600
           npm --prefix app/mamxanh-frontend run test:e2e:integration
           curl --fail --silent --show-error http://localhost:5173/
-          curl --fail --silent --show-error http://localhost:8080/v3/api-docs \
-            --output "$RUNNER_TEMP/openapi-runtime.json"
-          npx --yes @scalar/cli@2.5.2 document validate "$RUNNER_TEMP/openapi-runtime.json"
+          curl --fail --silent --show-error http://localhost:8080/v3/api-docs.yaml \
+            --output "$RUNNER_TEMP/openapi-runtime.yaml"
+          npx --yes @scalar/cli@2.5.2 document validate "$RUNNER_TEMP/openapi-runtime.yaml"
+          python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2'
+          python - "$RUNNER_TEMP/openapi-runtime.yaml" docs/api/openapi.yaml <<'PY'
+          import sys
+          import yaml
+
+          runtime_path, snapshot_path = sys.argv[1:]
+          with open(runtime_path, encoding="utf-8") as runtime_file:
+              runtime_spec = yaml.safe_load(runtime_file)
+          with open(snapshot_path, encoding="utf-8") as snapshot_file:
+              snapshot_spec = yaml.safe_load(snapshot_file)
+
+          if runtime_spec != snapshot_spec:
+              print("docs/api/openapi.yaml differs from the generated Backend OpenAPI contract.")
+              print("With the Backend running, execute: ./scripts/export-openapi.ps1")
+              raise SystemExit(1)
+          PY
           curl --fail --silent --show-error http://localhost:8080/scalar \
             --output "$RUNNER_TEMP/scalar-route.html"
           grep --fixed-strings 'API Reference' "$RUNNER_TEMP/scalar-route.html"
@@ -205,7 +221,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: openapi-runtime-${{ github.event.pull_request.number || github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/openapi-runtime.json
+          path: ${{ runner.temp }}/openapi-runtime.yaml
           if-no-files-found: error
 
   sonar:

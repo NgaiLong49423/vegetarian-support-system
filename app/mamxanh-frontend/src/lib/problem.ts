@@ -19,6 +19,23 @@ export function toProblem(error: unknown): ProblemDetails | null {
   return { ...data, status: error.response.status, code: data.code };
 }
 
+/** Reads JSON problem details returned as a Blob by binary endpoints such as PDF export. */
+export async function toProblemAsync(error: unknown): Promise<ProblemDetails | null> {
+  if (!isAxiosError(error) || !error.response) return null;
+  const data: unknown = error.response.data;
+  if (data instanceof Blob) {
+    try {
+      const parsed: unknown = JSON.parse(await data.text());
+      if (!parsed || typeof parsed !== 'object' || typeof (parsed as { code?: unknown }).code !== 'string') return null;
+      const problem = parsed as Partial<ProblemDetails>;
+      return { ...problem, status: error.response.status, code: problem.code! };
+    } catch {
+      return null;
+    }
+  }
+  return toProblem(error);
+}
+
 /** Seconds from the `Retry-After` header of a 429 response, or null when absent. */
 export function retryAfterSeconds(error: unknown): number | null {
   if (!isAxiosError(error)) return null;

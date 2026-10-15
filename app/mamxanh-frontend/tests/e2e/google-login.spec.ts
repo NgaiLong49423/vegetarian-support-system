@@ -77,7 +77,7 @@ test('Google sign-in from the registration page lands on the home page when Onbo
   await page.goto('/dang-ky');
   await googleButton(page).click();
 
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trang-chu$/);
   await expect(page.getByRole('button', { name: 'Tài khoản Nguyễn Văn An' })).toBeVisible();
 });
 

@@ -1,24 +1,27 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.23.0
+> **Version:** v0.28.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-14
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 
 # API Integration Guide
 
 ## 1. Mục đích và phạm vi
 
-Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract cho endpoint đã triển khai; trong giai đoạn migration, [OpenAPI YAML](openapi.yaml) là planned/reference contract cho endpoint chưa implement. Tài liệu này không lặp lại schema chi tiết.
+Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract. File [`openapi.yaml`](openapi.yaml) là bản xuất được commit từ Springdoc để tiện tra cứu và phải khớp với runtime; không sửa contract endpoint thủ công trong file này.
 
-Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), AI gợi ý và menu tuần công thức (FR-34), AI preview/thay tuần Meal Plan theo dinh dưỡng (FR-36), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Generated OpenAPI runtime là contract cho các endpoint đã triển khai; planned/reference YAML không còn endpoint nào chưa có trong runtime.
+Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), AI gợi ý và menu tuần công thức (FR-34), AI preview/thay tuần Meal Plan theo dinh dưỡng (FR-36), chatbot Member theo ngữ cảnh chung hoặc RecipePost công khai (FR-51), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Runtime spec là nguồn contract; YAML trong repo được sinh từ cùng runtime endpoint.
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 8 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
 ## 2. Contract và công cụ
 
 - Runtime OpenAPI được sinh từ Controller/DTO/annotations bằng springdoc: `/v3/api-docs` (JSON) và `/v3/api-docs.yaml` (YAML).
-- Planned/reference contract trong migration: [`openapi.yaml`](openapi.yaml); các endpoint chỉ có tại đây chưa được xem là runtime API.
+- Bản OpenAPI YAML được commit tại [`openapi.yaml`](openapi.yaml) để tra cứu và tích hợp; CI so sánh file này với YAML runtime.
+- Khi Backend đang chạy tại `http://localhost:8080`, tạo/cập nhật snapshot bằng `./scripts/export-openapi.ps1`. Script tải trực tiếp `/v3/api-docs.yaml` và thay file chỉ sau khi nhận được tài liệu OpenAPI hợp lệ.
+- Operation cần đăng nhập khai báo `bearerAuth`; operation công khai thì không. Response lỗi dùng `application/problem+json` theo `ProblemDetail`; operation nhận dữ liệu khai báo `400`, operation cần đăng nhập khai báo `401`/`403`, và lỗi riêng được khai báo theo mã Backend thực sự trả về.
+- `OpenApiContractIntegrationTest` kiểm tra security và response lỗi trong generated contract so với quy tắc runtime.
 - Base path: `/api/v1`.
 - Giao diện chính thức để team xem và thử API: `/scalar` trên cùng Backend host/port. Scalar tải generated contract từ `/v3/api-docs`.
 - Swagger UI vẫn được giữ như giao diện tương thích trong giai đoạn đầu; Scalar là UI được khuyến nghị cho team.
@@ -26,9 +29,7 @@ Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn b�
 - Timestamp biểu diễn instant dùng ISO-8601 UTC; calendar date dùng `YYYY-MM-DD` và không timezone-shift.
 - Response lỗi dùng `application/problem+json` theo `ProblemDetail`, bổ sung `code` ổn định và `errors` cho lỗi theo field khi cần.
 
-Trong migration, generated OpenAPI là bằng chứng runtime cho endpoint đã implement. Endpoint chưa xuất hiện trong spec runtime nhưng còn trong YAML chỉ là planned contract, không chứng minh endpoint đã tồn tại hoặc hoạt động. Khi migration hoàn tất, generated OpenAPI sẽ là nguồn contract duy nhất; YAML thủ công sẽ không tiếp tục làm authority song song.
-
-Khi triển khai một endpoint đang có trong planned YAML, reviewer đối chiếu ý nghĩa contract của path/method, request/response, status và security với runtime spec và implementation. Docker Development hiện validate cấu trúc generated OpenAPI, không tự thực hiện semantic comparison giữa runtime JSON và YAML tham chiếu.
+Sau khi thay đổi Controller, DTO hoặc OpenAPI annotations, chạy script xuất YAML rồi đưa bản cập nhật vào cùng thay đổi. Docker Development tải YAML runtime, validate bằng Scalar CLI, so sánh với file được commit và báo lỗi nếu snapshot chưa cập nhật. Artifact của CI vẫn cung cấp runtime spec của lần chạy để kiểm tra khi cần.
 
 ### 2.1 Scalar dành cho thành viên và tester
 
@@ -126,12 +127,12 @@ Quy ước status chính:
 | `204 No Content` | Thao tác thành công và không cần response body. |
 | `400 Bad Request` | Payload, token xác minh hoặc token đặt lại mật khẩu không hợp lệ. |
 | `401 Unauthorized` | Credential, access token hoặc Google ID Token không hợp lệ hay đã hết hạn. |
-| `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`), bị Administrator khóa (`ACCOUNT_LOCKED`) không phải Member khi dùng hồ sơ sở thích, hồ sơ cá nhân hay theo dõi thành viên (`MEMBER_ACCESS_REQUIRED`), hoặc tự theo dõi chính mình (`FOLLOW_SELF_NOT_ALLOWED`). |
-| `409 Conflict` | Email đã được sử dụng, đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`), hồ sơ sở thích chưa đủ để gọi AI cá nhân hóa (`DIETARY_PROFILE_INCOMPLETE`), hoặc theo dõi tài khoản đang bị khóa (`FOLLOW_TARGET_INACTIVE`). |
+| `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`), bị Administrator khóa (`ACCOUNT_LOCKED`) hoặc không phải Member khi dùng hồ sơ sở thích hay hồ sơ cá nhân (`MEMBER_ACCESS_REQUIRED`). |
+| `409 Conflict` | Email đã được sử dụng, đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`), hoặc hồ sơ sở thích chưa đủ để gọi AI cá nhân hóa (`DIETARY_PROFILE_INCOMPLETE`). |
 | `429 Too Many Requests` | Chỉ áp dụng khi contract của endpoint quy định `429` (ví dụ login, resend verification hoặc AI rate limiting); client đọc `Retry-After` khi có. Password-reset request không trả `429`. |
 | `503 Service Unavailable` | Dịch vụ phụ thuộc tạm thời không dùng được, ví dụ không tải được chứng chỉ Google (`GOOGLE_LOGIN_UNAVAILABLE`). |
 
-Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36, #69).
+Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
 
 | `code` | Status | Khi nào |
 |---|---|---|
@@ -148,10 +149,8 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36, #69).
 | `GOOGLE_TOKEN_INVALID` | 401 | `POST /auth/google` với ID Token sai định dạng, sai chữ ký, hết hạn, sai issuer/audience, thiếu `sub`/email, email Google chưa xác minh hoặc không lưu được; cũng trả khi Backend chưa cấu hình `MAMXANH_GOOGLE_CLIENT_ID`. |
 | `GOOGLE_ACCOUNT_CONFLICT` | 409 | `POST /auth/google` khi email đã liên kết với một tài khoản Google khác. |
 | `GOOGLE_LOGIN_UNAVAILABLE` | 503 | `POST /auth/google` khi Backend không tải được chứng chỉ ký của Google. |
-| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31) hồ sơ cá nhân `/me/profile` (FR-23), hoặc theo dõi/bỏ theo dõi (FR-59); chỉ Member (`CUSTOMER`, `EXPERT`) đang hoạt động có các chức năng này. |
-| `MEMBER_PROFILE_NOT_FOUND` | 404 | `/members/{userId}`, `/members/{userId}/recipes`, `/members/{userId}/follow`, `/followers` hoặc `/following` với ID không tồn tại hoặc thuộc tài khoản Administrator (FR-23, FR-59, Q55). |
-| `FOLLOW_SELF_NOT_ALLOWED` | 403 | `PUT` hoặc `DELETE /members/{userId}/follow` với chính tài khoản trong phiên (AC-59.3); không ghi bản ghi nào. |
-| `FOLLOW_TARGET_INACTIVE` | 409 | `PUT /members/{userId}/follow` tới Member đang `LOCKED` (AC-59.7); vẫn bỏ theo dõi được tài khoản này. |
+| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31) hoặc hồ sơ cá nhân `/me/profile` (FR-23); chỉ Member (`CUSTOMER`, `EXPERT`) có các hồ sơ này. |
+| `MEMBER_PROFILE_NOT_FOUND` | 404 | `GET /members/{userId}` hoặc `/members/{userId}/recipes` với ID không tồn tại hoặc thuộc tài khoản Administrator (FR-23, Q55). |
 | `FILE_TOO_LARGE` | 413 | Ảnh đại diện vượt 2 MB, hoặc tệp tải lên vượt giới hạn 5 MB của máy chủ. |
 | `UNSUPPORTED_IMAGE_TYPE` | 400 | Tệp ảnh không phải JPEG, PNG hoặc WebP; với ảnh đại diện, nội dung tệp (chữ ký đầu tệp) phải khớp `Content-Type`. |
 | `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |
@@ -203,6 +202,8 @@ Các endpoint detail và Meal Plan dưới đây trả projection đọc từ `R
 | UC-32.3 — danh sách, tìm kiếm và phân trang công thức đã lưu | `GET /api/v1/saved-recipes?keyword=&page=0&size=20` (có xác thực) | Chỉ trả tham chiếu của tài khoản hiện tại, sắp xếp mới lưu gần đây trước. `size` giới hạn 1–50; `keyword` tối đa 120 ký tự, tìm trong tên và mô tả. Mục không khả dụng vẫn được giữ an toàn với `available=false`, thông báo chung và không có nội dung recipe, tác giả hay media. |
 | AC-20.4 — export PDF/TXT | Frontend | Backend trả dữ liệu detail cần cho export. Frontend tạo TXT và PDF khổ A4; API này không tạo file. |
 | AC-20.5 — tải toàn trang trong hai giây | Frontend xác minh acceptance | Backend trả đủ instructions trong cùng response detail. Frontend cần đo thời gian tải và render toàn trang trên môi trường mục tiêu. |
+| AC-40.1/40.2 — công khai khi thiếu dữ liệu dinh dưỡng (FR-40, BR-50) | `POST /api/v1/recipes`, `GET /api/v1/recipes/{recipeId}` | Nguyên liệu trong catalog nhưng chưa có hồ sơ dinh dưỡng không chặn công khai (nguyên liệu ngoài catalog vẫn bị từ chối theo BR-12). Detail trả `ingredients[].nutritionSupported`, `nutritionComplete` và `ingredientsWithoutNutrition`; Frontend gắn nhãn "Chưa hỗ trợ tính dinh dưỡng" cạnh từng nguyên liệu có `nutritionSupported = false`. |
+| AC-40.3 — loại khỏi ứng viên AI menu dinh dưỡng (BR-40, BR-50) | `POST /api/v1/meal-plans/ai-menu/previews`, `PUT /api/v1/meal-plans/ai-menu` | Pool ứng viên FR-36 (dùng cho prompt Gemini và cho bước kiểm lại khi áp dụng) chỉ gồm Recipe Post `PUBLISHED` có dinh dưỡng đầy đủ, cùng phép tính với detail. Áp dụng menu chứa bài thiếu dữ liệu trả `404 RECIPE_NOT_FOUND`, Lịch ăn giữ nguyên. Không có endpoint mới. |
 
 Các key trong `nutrition.total` và `nutrition.perServing` lần lượt là `ENERGY_KCAL` (kcal), `PROTEIN_G` (g), `CARBOHYDRATE_G` (g), `TOTAL_FAT_G` (g), `FIBER_G` (g), `CALCIUM_MG` (mg), `IRON_MG` (mg), `VITAMIN_B12_MCG` (mcg) và `ZINC_MG` (mg). Nếu chưa có lượt bình chọn, `statistics.reactionCount` bằng `0` và `statistics.likePercentage` là `null`; Frontend hiển thị nhãn “Mới” theo BR-69.
 
@@ -343,7 +344,51 @@ Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint d
 - Mục tiêu chỉ điều hướng lựa chọn món, không làm thay đổi mục tiêu số FR-35, không tự suy ra thâm hụt/thặng dư năng lượng và không đảm bảo kết quả sức khỏe. Dữ liệu câu trả lời tuần không được lưu/tái sử dụng. Không gửi số đo nhân trắc học hoặc mục tiêu cá nhân chi tiết vào telemetry; không ghi prompt hay câu trả lời cá nhân vào log.
 - Nếu chưa xác nhận trạng thái dinh dưỡng, API trả `403 NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED`; nếu người dùng đã xác nhận không đủ điều kiện, trả `403 NUTRITION_ELIGIBILITY_INELIGIBLE`. Hồ sơ nhân trắc học chưa lưu trả `409 NUTRITION_PROFILE_REQUIRED`.
 
-## 16. Theo dõi thành viên — FR-59
+## 16. Chatbot hỏi đáp theo ngữ cảnh — FR-51
+
+`POST /api/v1/recipes/ai/chat` yêu cầu Bearer token của Member đang hoạt động. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` hoặc `ASSISTANT`, mỗi nội dung tối đa 1.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
+
+Ví dụ body cho ngữ cảnh công thức:
+
+```json
+{
+  "contextType": "RECIPE",
+  "recipeId": 123,
+  "question": "Có thể thay nấm bằng nguyên liệu nào?",
+  "history": []
+}
+```
+
+Backend tải RecipePost hiện hành theo ID và chỉ dùng bài đang công khai; không nhận nội dung công thức do Frontend gửi. Context gồm nội dung công thức, nguyên liệu/định lượng, dinh dưỡng hiện có và ràng buộc ăn chay/nguyên liệu cần tránh của Member nếu đã khai báo. Khi câu hỏi yêu cầu dữ liệu cá nhân về BMI hoặc năng lượng, chatbot không tự tải hồ sơ sức khỏe vào prompt; Member cần dùng luồng hồ sơ dinh dưỡng đã có.
+
+Response gồm `contextType`, `recipeId` (null với ngữ cảnh chung), `answer` và `recommendations` (mảng rỗng nếu không tìm công thức). Khi người dùng tìm món/công thức, Backend tải tối đa 50 Recipe Post công khai, lọc trường phái ăn chay và nguyên liệu cần tránh đã khai báo rồi gửi danh sách giới hạn cho Gemini; Gemini chỉ được chọn tối đa 4 ID trong danh sách. Backend xác minh ID và trạng thái công khai lần nữa trước khi trả các thẻ bài viết gồm `id`, `title`, `description`, `coverUrl`, `totalTimeMinutes`, `difficulty` và `reason`. FE dùng `id` để mở trang `/cong-thuc/id/{id}`; không dùng URL do Gemini tạo. Nếu không tìm được bài phù hợp, `recommendations` rỗng và `answer` nói rõ không có kết quả. Nội dung công thức mới hoặc biến tấu chỉ được trả trong `answer` khi người dùng yêu cầu rõ; đây là bản nháp AI trong hội thoại, không lưu hoặc đăng.
+
+Ví dụ phần response cho yêu cầu tìm món:
+
+```json
+{
+  "contextType": "GENERAL",
+  "recipeId": null,
+  "answer": "Mình tìm được một số bài công thức phù hợp:",
+  "recommendations": [
+    {
+      "id": 123,
+      "title": "Đậu hũ sốt cà chua",
+      "description": "Món chay dễ làm cho bữa cơm gia đình.",
+      "coverUrl": "https://storage.example/recipe-cover.jpg",
+      "totalTimeMinutes": 25,
+      "difficulty": "EASY",
+      "reason": "Cách làm đơn giản và thời gian chuẩn bị ngắn."
+    }
+  ]
+}
+```
+
+Gemini phải phân biệt dữ kiện ghi trong RecipePost với gợi ý/ước tính của AI, không bịa thông tin còn thiếu, tôn trọng loại ăn chay và không chẩn đoán hoặc kê phác đồ điều trị. API chỉ đọc; không lưu lịch sử hội thoại hay thay đổi dữ liệu nghiệp vụ. Frontend giữ tối đa lịch sử cần gửi trong state của phiên hiện tại. Backend chỉ phát telemetry token `AiUsageEvent` sau phản hồi hợp lệ; không đưa câu hỏi, lịch sử, context công thức hoặc câu trả lời vào telemetry/log.
+
+Lỗi request trả `400`; bài không tồn tại hoặc không còn công khai trả `404`; phản hồi Gemini sai/thiếu trả `502 AI_RESPONSE_INVALID`; Gemini lỗi hoặc timeout trả `503 AI_PROVIDER_UNAVAILABLE`. Backend giới hạn thời gian chờ Gemini theo NFR-18. Guest chưa được bật trên endpoint này; chỉ mở khi giới hạn tần suất Guest thuộc FR-02 có mặt trên baseline tích hợp. Generated `/v3/api-docs` là contract chi tiết cho request, response, validation và security.
+
+## 17. Theo dõi thành viên — FR-59
 
 Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Quan hệ có hướng lưu trong `USER_FOLLOW` (có từ V1), người theo dõi luôn là tài khoản trong phiên (BR-75).
 

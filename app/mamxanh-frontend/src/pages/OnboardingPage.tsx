@@ -33,7 +33,7 @@ export function OnboardingPage() {
       .finally(() => setLoading(false))
   }, [isAuthenticated, account?.role])
   if (!isAuthenticated) return <Navigate to="/dang-nhap" replace />
-  if (account?.role === "ADMIN") return <Navigate to="/" replace />
+  if (account?.role === "ADMIN") return <Navigate to="/trang-chu" replace />
   const complete = async (
     payload: Parameters<typeof saveDietaryPreferences>[0],
   ) => {

@@ -190,10 +190,10 @@ export function Profile() {
             type="button"
             aria-pressed={tab === "saved"}
             onClick={() => setTab("saved")}
-            className={`border-b-2 pb-3 text-sm font-semibold ${
+            className={`border-b-2 pb-3 text-sm font-semibold transition-colors duration-200 ${
               tab === "saved"
                 ? "border-brand-600 text-brand-600"
-                : "border-transparent text-ink-muted"
+                : "border-transparent text-ink-muted hover:text-brand-500"
             }`}
           >
             Công thức đã lưu
@@ -201,7 +201,7 @@ export function Profile() {
           {account.role === "EXPERT" && (
             <Link
               to="/ho-so/chuyen-gia"
-              className="pb-3 text-sm font-medium text-ink-muted hover:text-brand-600"
+              className="pb-3 text-sm font-medium text-ink-muted transition-colors duration-200 hover:text-brand-600"
             >
               Đã tạo
             </Link>
@@ -210,10 +210,10 @@ export function Profile() {
             type="button"
             aria-pressed={tab === "profile"}
             onClick={() => setTab("profile")}
-            className={`border-b-2 pb-3 text-sm font-semibold ${
+            className={`border-b-2 pb-3 text-sm font-semibold transition-colors duration-200 ${
               tab === "profile"
                 ? "border-brand-600 text-brand-600"
-                : "border-transparent text-ink-muted"
+                : "border-transparent text-ink-muted hover:text-brand-500"
             }`}
           >
             Hồ sơ của tôi
@@ -222,7 +222,7 @@ export function Profile() {
 
         {tab === "profile" ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Card className="p-5">
+            <Card hover className="p-5">
               <Activity className="h-6 w-6 text-brand-600" />
               <h2 className="mt-3 font-semibold text-ink">Hồ sơ dinh dưỡng</h2>
               <p className="mt-2 text-xs leading-5 text-ink-muted">
@@ -230,12 +230,12 @@ export function Profile() {
               </p>
               <Link
                 to="/ho-so/dinh-duong"
-                className="mt-4 inline-block text-xs font-semibold text-brand-600"
+                className="mt-4 inline-block text-xs font-semibold text-brand-600 transition-colors hover:text-brand-500"
               >
                 Mở hồ sơ dinh dưỡng →
               </Link>
             </Card>
-            <Card className="p-5">
+            <Card hover className="p-5">
               <SlidersHorizontal className="h-6 w-6 text-leaf-700" />
               <h2 className="mt-3 font-semibold text-ink">Sở thích ăn uống</h2>
               <p className="mt-2 text-xs leading-5 text-ink-muted">
@@ -243,7 +243,7 @@ export function Profile() {
               </p>
               <Link
                 to="/ho-so/so-thich-an-uong"
-                className="mt-4 inline-block text-xs font-semibold text-brand-600"
+                className="mt-4 inline-block text-xs font-semibold text-brand-600 transition-colors hover:text-brand-500"
               >
                 Mở sở thích ăn uống →
               </Link>
@@ -257,7 +257,7 @@ export function Profile() {
           />
         ) : (
           <>
-            <div className="mb-5 flex items-center gap-2 rounded-full border border-brand-200 bg-paper px-4">
+            <div className="mb-5 flex items-center gap-2 rounded-full border border-brand-200 bg-paper px-4 transition-all duration-200 focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-500/20">
               <Search className="h-4 w-4 text-ink-muted" />
               <input
                 aria-label="Tìm trong công thức đã lưu"
@@ -318,7 +318,7 @@ export function Profile() {
             ) : ownResult?.content.length ? (
               <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
                 {ownResult.content.map((item) => (
-                  <article key={item.recipeId} className="relative min-w-0">
+                  <article key={item.recipeId} className="relative min-w-0 transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
                     {item.available ? (
                       <Link
                         to={`/cong-thuc/id/${item.recipeId}`}
@@ -338,7 +338,7 @@ export function Profile() {
                             </div>
                           )}
                         </div>
-                        <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-ink group-hover:text-brand-600">
+                        <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-ink transition-colors duration-200 group-hover:text-brand-600">
                           {item.title}
                         </h3>
                         <p className="mt-1 truncate text-xs text-ink-muted">
@@ -365,7 +365,7 @@ export function Profile() {
                       }`}
                       disabled={pending.has(item.recipeId)}
                       onClick={() => remove(item.recipeId)}
-                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-on-brand disabled:opacity-50"
+                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-on-brand transition-transform duration-150 hover:scale-105 active:scale-95 disabled:opacity-50"
                     >
                       {pending.has(item.recipeId) ? (
                         <LoaderCircle className="h-4 w-4 animate-spin" />

@@ -3,6 +3,8 @@ package tech.mamxanh.integration.ai;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.HttpOptions;
+import com.google.genai.types.Content;
+import com.google.genai.types.Part;
 import com.google.genai.types.Schema;
 import com.google.genai.types.Type;
 import com.google.genai.types.ThinkingConfig;
@@ -20,7 +22,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
 
     @Autowired
     public GeminiAiClient(@Value("${GEMINI_API_KEY:}") String apiKey) {
-        this(apiKey, HttpOptions.builder().timeout(45_000).build());
+        this(apiKey, HttpOptions.builder().timeout(10_000).build());
     }
 
     GeminiAiClient(String apiKey, HttpOptions httpOptions) {
@@ -75,6 +77,47 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     }
 
     @Override
+    public ChatResult answerChat(String systemInstruction, String prompt) {
+        if (client == null) throw new AiProviderException("Gemini is not configured");
+        Schema recommendationSchema = Schema.builder().type(Type.Known.OBJECT)
+                .properties(Map.of("recipeId", Schema.builder().type(Type.Known.INTEGER).build(),
+                        "reason", Schema.builder().type(Type.Known.STRING).build()))
+                .required(List.of("recipeId", "reason")).build();
+        Schema schema = Schema.builder().type(Type.Known.OBJECT)
+                .properties(Map.of("action", Schema.builder().type(Type.Known.STRING).build(),
+                        "answer", Schema.builder().type(Type.Known.STRING).build(),
+                        "recommendations", Schema.builder().type(Type.Known.ARRAY)
+                                .maxItems(4L).items(recommendationSchema).build()))
+                .required(List.of("action", "answer", "recommendations")).build();
+        GenerateContentConfig config = GenerateContentConfig.builder()
+                .systemInstruction(Content.fromParts(Part.fromText(systemInstruction)))
+                .responseMimeType("application/json")
+                .responseSchema(schema)
+                .candidateCount(1)
+                .maxOutputTokens(2048)
+                .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
+                .build();
+        try {
+            var response = client.models.generateContent(MODEL, prompt, config);
+            String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
+                    .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
+            String text = response.text();
+            if (!"STOP".equals(finishReason) || text == null || text.isBlank()) {
+                throw new AiProviderException("Gemini returned an incomplete chat response");
+            }
+            var usage = response.usageMetadata();
+            return new ChatResult(null, text.strip(),
+                    usage.flatMap(value -> value.promptTokenCount()).orElse(null),
+                    usage.flatMap(value -> value.candidatesTokenCount()).orElse(null),
+                    usage.flatMap(value -> value.totalTokenCount()).orElse(null));
+        } catch (AiProviderException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw new AiProviderException("Gemini chat request failed", exception);
+        }
+    }
+
+    @Override
     public RecommendationResult recommendRecipeSequence(String prompt, List<Long> allowedRecipeIds, int slots) {
         return recommendSequence(prompt, allowedRecipeIds, slots);
     }
@@ -105,6 +148,37 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
             throw exception;
         } catch (RuntimeException exception) {
             throw new AiProviderException("Gemini recommendation request failed", exception);
+        }
+    }
+
+    @Override
+    public RecommendationResult analyzeNutritionRecommendations(String prompt, List<Long> allowedRecipeIds, int limit) {
+        if (client == null) throw new AiProviderException("Gemini is not configured");
+        Schema schema = Schema.builder().type(Type.Known.OBJECT)
+                .properties(Map.of(
+                        "analysis", Schema.builder().type(Type.Known.STRING).build(),
+                        "recipeIds", Schema.builder().type(Type.Known.ARRAY).maxItems((long) limit)
+                                .items(Schema.builder().type(Type.Known.INTEGER).build()).build()))
+                .required(List.of("analysis", "recipeIds")).build();
+        GenerateContentConfig config = GenerateContentConfig.builder().responseMimeType("application/json")
+                .responseSchema(schema).candidateCount(1).maxOutputTokens(2048)
+                .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build()).build();
+        try {
+            var response = client.models.generateContent(MODEL, prompt + "\nChoose at most " + limit
+                    + " IDs from " + allowedRecipeIds, config);
+            String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
+                    .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
+            if (!"STOP".equals(finishReason)) throw new AiProviderException("Gemini nutrition analysis is incomplete");
+            String text = response.text();
+            if (text == null || text.isBlank()) throw new AiProviderException("Gemini returned an empty nutrition analysis");
+            var usage = response.usageMetadata();
+            return new RecommendationResult(text, usage.flatMap(value -> value.promptTokenCount()).orElse(null),
+                    usage.flatMap(value -> value.candidatesTokenCount()).orElse(null),
+                    usage.flatMap(value -> value.totalTokenCount()).orElse(null));
+        } catch (AiProviderException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw new AiProviderException("Gemini nutrition analysis failed", exception);
         }
     }
 

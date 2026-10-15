@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.26.0
+> **Version:** v0.28.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-13<br>
+> **Last Updated:** 2026-10-15<br>
 > **Status:** Active  
 
 # Backend Workspace
@@ -11,6 +11,19 @@ Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và
 
 > [!IMPORTANT]
 > **Quy chuẩn kiến trúc bắt buộc:** Mọi thành viên và AI agent khi triển khai mã nguồn Backend **bắt buộc phải tuân thủ nghiêm ngặt** cấu trúc package Modular Monolith, phân tầng MVC và ranh giới liên module được quy định tại [Backend Package Structure Specification](../../docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md). Cấm inject chéo Repository giữa các module và không trả JPA Entity trực tiếp ra REST API.
+
+### Backend bình chọn công thức — FR-57 / Issue #56
+
+- Module `recipe` bổ sung `GET`, `PUT`, `DELETE /api/v1/recipes/{recipeId}/reaction`, yêu cầu Bearer token của Customer/Expert đang hoạt động. Response trả `recipeId`, `currentReaction`, `likes`, `dislikes`, `reactionCount`, `likePercentage` và header `Cache-Control: no-store`; generated OpenAPI tại `/v3/api-docs` là contract chi tiết.
+- PUT nhận `{"reactionType":"LIKE"}` hoặc `DISLIKE`, đặt/chuyển lựa chọn; gửi lại cùng lựa chọn không hủy vote và không thay `updated_at`. DELETE hủy lựa chọn, trả thống kê mới; gửi DELETE lặp không thay đổi dữ liệu. Frontend cần dùng DELETE khi Member bấm lại nút đang chọn để đáp ứng toggle off.
+- Tái sử dụng `RECIPE_REACTION`, không thêm bảng/migration. Mutation khóa bản ghi Recipe Post trong transaction trước khi đọc/ghi reaction; mỗi Member chỉ có một phản hồi trên một bài. Tác giả tự bình chọn trả `403 RECIPE_SELF_REACTION_NOT_ALLOWED`; bài không công khai trả `404 RECIPE_NOT_FOUND`. Guest không được dùng API phản hồi cá nhân, nhưng vẫn xem thống kê qua API công thức công khai.
+- API phản hồi, danh sách và chi tiết dùng chung `RecipeReactionStatistics`: tỷ lệ Like làm tròn thành số nguyên (10 Like/1 Dislike → 91%), `null` khi chưa có vote, `0` khi có vote nhưng toàn Dislike. Kiểu dữ liệu response và cách xếp hạng hiện có được giữ nguyên. Giai đoạn 4 đã tích hợp UI phản hồi tại trang chi tiết API và huy hiệu tại thẻ Trang chủ/Khám phá; xem [Frontend Workspace Guide](../mamxanh-frontend/README.md). Chưa xác nhận toàn bộ FR-57 đã nghiệm thu.
+- Kiểm tra giai đoạn 2: 35 unit/regression tests pass; 25 kiểm tra HTTP/SQL Server local thật pass. Integration test `RecipeReactionIntegrationTest` đã được bổ sung nhưng lượt chạy Testcontainers không khởi động được vì máy chưa có Docker. Chưa xác minh full Compose, toàn bộ coverage gate hoặc UI/browser.
+- Kiểm tra giai đoạn 3 (11/10/2026): 44 unit/regression tests và 45 kiểm tra HTTP/SQL Server local thật pass, gồm thống kê nhất quán giữa ba API và loại bài HIDDEN/DELETED khỏi MOST_LIKED/MOST_ACTIVE/TRENDING. Fixture riêng được dọn sau kiểm tra. Testcontainers/Compose vẫn chưa có bằng chứng pass do Docker chưa khả dụng.
+- Kiểm tra giai đoạn 5 (11/10/2026): sau sửa validation ID, 51 kiểm thử Backend liên quan pass, 45 kiểm tra HTTP/SQL và 13 kiểm tra trình duyệt–HTTP–SQL thật pass; đáp ứng AC-57.1–AC-57.5 ở môi trường local. Sửa `recipeId` 0/-1 trả 500 thành `400 VALIDATION_FAILED` bằng validation MVC hiện hành, thêm 7 test Controller (BUG-030). Fixture riêng được dọn, không bật `local-reset`.
+- Lượt full `clean verify` đầu tiên: 312 test, 175 pass, 137 lỗi khởi tạo Testcontainers do không có Docker; không được coi là build pass. Báo cáo JaCoCo sau các lượt kiểm tra bổ sung: Lines 62,9%, Branches 60,1%, Methods 59,2%, Instructions 67,0%; strict gate >80% fail trên coverage từng phần. Không hạ threshold hoặc loại production source.
+- Xác minh tiếp giai đoạn 5 (11/10/2026), sau khi Docker khả dụng: `clean verify` đạt 319/319 test, không failure/error/skipped, gồm 10 test `RecipeReactionIntegrationTest` trên SQL Server container. Strict JaCoCo BUNDLE gate >80% pass: Lines 93,8%, Branches 82,3%, Methods 90,5%, Instructions 94,1%.
+- Root Compose với project riêng `mamxanh-fr57` build/chạy thành công; FE/BE/SQL đều healthy và database-init thoát 0. FE, generated OpenAPI và route Scalar trả HTTP 200; OpenAPI có đủ GET/PUT/DELETE phản hồi. 13 kiểm tra trình duyệt–HTTP–SQL FR-57 và 1 test đăng nhập/throttle thật trên Compose pass. Fixture phản hồi được dọn; `down` giữ named volumes. Route smoke chưa chứng minh Scalar render/gửi request trong trình duyệt. CI, Sonar/CodeQL trên thay đổi này và nghiệm thu sau merge vẫn chưa xác minh.
 
 ## Trạng thái hiện tại
 
@@ -33,7 +46,8 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 - Đã có FR-31 (Issue #36) trong module `nutrition`: `GET`/`PUT /api/v1/nutrition/dietary-preferences`, `POST /api/v1/nutrition/dietary-preferences/onboarding/skip`, `POST /api/v1/nutrition/dietary-preferences/onboarding/invitation` (lời mời Onboarding chỉ hiện một lần, AC-31.10) và `GET /api/v1/nutrition/dietary-preferences/ingredient-suggestions`; entity riêng ánh xạ các cột sở thích của `USER` (quyết định Q18) và bảng `USER_INGREDIENT_PREFERENCE`; migration `V7__user_onboarding_invitation.sql` thêm cột `USER.onboarding_invited_at`. Generated OpenAPI khai báo security scheme `bearerAuth` (`common/config/OpenApiConfig`); controller cần đăng nhập gắn `@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)`. Endpoint AI cá nhân hóa sau này phải gọi `DietaryPreferenceService.requirePersonalizedAiEligible(userId)` trước khi gọi Gemini (BR-31).
 - FR-26/27 thêm `POST /api/v1/recipes/{recipeId}/reports` cho Member gửi báo cáo bài công khai; báo cáo lưu `OPEN`, xác thực và chống trùng ở Backend, migration V9 đồng bộ trạng thái/mã lý do với SRS. Luồng bổ sung thông tin thuộc FR-30 chưa có trong Issue này.
 - Đã có FR-23 (Issue #29): `GET /api/v1/members/{userId}` và `GET /api/v1/members/{userId}/recipes` công khai; `GET`/`PUT /api/v1/me/profile` và `POST /api/v1/me/profile/avatar` cho Member sửa tên, giới thiệu ngắn và ảnh đại diện (JPEG/PNG/WebP ≤ 2 MB, kiểm chữ ký tệp, lưu qua `StorageClient` trong thư mục `avatars/`). Không có migration: `USER.bio`, `display_name`, `avatar_url` có từ V1. Quy tắc chi tiết ở [API Guide mục 11](../../docs/api/API.md). Giới hạn multipart `spring.servlet.multipart.*` là 5 MB/tệp, 6 MB/request.
-- Đã có FR-59 (Issue #69) trong module `auth`: `GET /api/v1/members/{userId}/follow` công khai (bộ đếm và trạng thái theo dõi của người xem), `PUT`/`DELETE` cùng đường dẫn để theo dõi/bỏ theo dõi (idempotent, khóa phạm vi chống ghi trùng khi gọi song song) và `GET /api/v1/members/{userId}/followers`, `/following` có phân trang cho tài khoản đã đăng nhập. Không có migration: `USER_FOLLOW` có từ V1. Quy tắc chi tiết ở [API Guide mục 16](../../docs/api/API.md).
+- FR-40 (Issue #45): Recipe Post dùng nguyên liệu catalog chưa có hồ sơ dinh dưỡng vẫn công khai được (BR-50); AI menu dinh dưỡng (FR-36, `AiMenuService`) chỉ lấy ứng viên `PUBLISHED` có dinh dưỡng đầy đủ, nên bài loại này không vào pool và áp dụng menu chứa bài đó bị từ chối (AC-40.3, BR-40; test `IncompleteNutritionAiMenuIntegrationTest`).
+- Đã có FR-59 (Issue #69) trong module `auth`: `GET /api/v1/members/{userId}/follow` công khai (bộ đếm và trạng thái theo dõi của người xem), `PUT`/`DELETE` cùng đường dẫn để theo dõi/bỏ theo dõi (idempotent, khóa phạm vi chống ghi trùng khi gọi song song) và `GET /api/v1/members/{userId}/followers`, `/following` có phân trang cho tài khoản đã đăng nhập. Không có migration: `USER_FOLLOW` có từ V1. Quy tắc chi tiết ở [API Guide mục 17](../../docs/api/API.md).
 
 ### Lệnh chạy và kiểm tra xác minh
 

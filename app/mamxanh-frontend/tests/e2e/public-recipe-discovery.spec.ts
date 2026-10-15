@@ -41,6 +41,8 @@ const detail = {
   youtubeUrl: null,
   publishedAt: '2026-10-01T08:00:00',
   nutritionComplete: true,
+  author: { userId: 22, displayName: "Lan", avatarUrl: null },
+  statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
   ingredientsWithoutNutrition: [],
   author: { userId: 22, displayName: 'Bếp Chay Lan', avatarUrl: null },
   nutrition: { complete: true, ingredientsMissingData: [], total: {}, perServing: {} },
@@ -97,6 +99,33 @@ test.describe('Issue #3 [FR-01] — Guest xem và tìm kiếm nội dung công k
     await expect(page.getByRole('heading', { level: 1, name: detail.title })).toBeVisible();
     await expect(page.getByText('Nấm rơm tươi')).toBeVisible();
     await expect(page.getByText(detail.instructions)).toBeVisible();
+  });
+
+  test('Guest sees calculated nutrition with a warning when catalog data is incomplete', async ({ page }) => {
+    const partialNutritionDetail = {
+      ...detail,
+      recipeId: 903,
+      nutritionComplete: false,
+      ingredientsWithoutNutrition: ['Đậu hũ non'],
+      nutrition: {
+        complete: false,
+        ingredientsMissingData: ['Đậu hũ non'],
+        total: { ENERGY_KCAL: 240 },
+        perServing: { ENERGY_KCAL: 120 },
+      },
+    };
+    await page.route('**/api/v1/recipes/903', (route) => route.fulfill({ json: partialNutritionDetail }));
+
+    await page.goto('/cong-thuc/id/903');
+
+    const warning = page.getByRole('note');
+    await expect(warning).toHaveAttribute('aria-live', 'polite');
+    await expect(warning).toContainText('Ước tính chưa đầy đủ');
+    await expect(warning).toContainText('Các giá trị chỉ gồm phần tính được từ danh mục.');
+    await expect(warning).toContainText('Nguyên liệu chưa hỗ trợ tính dinh dưỡng:');
+    await expect(warning.getByRole('listitem')).toHaveText('Đậu hũ non');
+    await expect(page.getByText('120 kcal')).toBeVisible();
+    await expect(page.getByText(/Nguồn tham khảo: danh mục dinh dưỡng nội bộ/)).toBeVisible();
   });
 
   test('AC-01.4: Không hiển thị bài viết vi phạm hoặc không tồn tại cho Guest', async ({ page }) => {
@@ -232,7 +261,7 @@ test('API recipe detail supports serving controls, image gallery, sharing and ex
   await expect(page.getByRole('img', { name: recipe.title })).toHaveAttribute('src', recipe.media[1].blobUrl);
 
   await page.getByRole('button', { name: 'Chia sẻ' }).click();
-  await expect(page.getByRole('status')).toHaveText('Đã sao chép liên kết công thức.');
+  await expect(page.getByRole('status').filter({ hasText: 'Đã sao chép liên kết công thức.' })).toHaveText('Đã sao chép liên kết công thức.');
   expect(await page.evaluate(() => sessionStorage.getItem('shared-url'))).toContain('/cong-thuc/id/920');
 
   await page.getByRole('button', { name: 'Xuất công thức' }).click();

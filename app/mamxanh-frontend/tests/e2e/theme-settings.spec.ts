@@ -7,7 +7,7 @@ test('theme can be changed from the menu and persists after reload', async ({ pa
       sessionStorage.setItem('theme-test-initialized', 'true')
     }
   })
-  await page.goto('/')
+  await page.goto('/trang-chu')
 
   const root = page.locator('html')
   await expect(root).toHaveAttribute('data-theme', 'dark')
@@ -19,6 +19,8 @@ test('theme can be changed from the menu and persists after reload', async ({ pa
   await expect(root).toHaveAttribute('data-theme', 'light')
   await expect(themeOptions.getByRole('button', { name: 'Sáng' })).toHaveAttribute('aria-pressed', 'true')
   expect(await root.evaluate((element) => getComputedStyle(element).getPropertyValue('--color-cream').trim())).toBe('#f7f5f0')
+  const glassNavBg = await page.locator('.glass-nav-group').evaluate((el) => getComputedStyle(el).backgroundColor)
+  expect(glassNavBg).toContain('255, 255, 255')
 
   await page.reload()
   await expect(root).toHaveAttribute('data-theme', 'light')
@@ -27,4 +29,6 @@ test('theme can be changed from the menu and persists after reload', async ({ pa
   await reloadedOptions.getByRole('button', { name: 'Tối' }).click()
   await expect(root).toHaveAttribute('data-theme', 'dark')
   await expect(reloadedOptions.getByRole('button', { name: 'Tối' })).toHaveAttribute('aria-pressed', 'true')
+  const darkGlassNavBg = await page.locator('.glass-nav-group').evaluate((el) => getComputedStyle(el).backgroundColor)
+  expect(darkGlassNavBg).toContain('36, 36, 36')
 })

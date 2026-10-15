@@ -57,7 +57,7 @@ export function DietaryPreferencesPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">Sở thích ăn uống</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">Cập nhật loại ăn chay, nguyên liệu cần tránh và món không thích. Thay đổi áp dụng cho các yêu cầu AI tiếp theo, không sửa thực đơn đã lưu.</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-muted">Cập nhật loại ăn chay, nguyên liệu cần tránh và món không thích. Thay đổi áp dụng cho các yêu cầu AI tiếp theo, không sửa thực đơn đã lưu.</p>
         </div>
         <div className="inline-flex items-center gap-2 rounded-full border border-leaf-100 bg-paper px-3 py-2 text-xs font-semibold text-ink-soft"><LockKeyhole aria-hidden="true" className="h-4 w-4 text-leaf-700" /> Chỉ bạn xem được</div>
       </div>
@@ -88,7 +88,7 @@ export function DietaryPreferencesPage() {
       )}
 
       {isAuthenticated && !isAdmin && (
-        <Card className="mt-6 max-w-3xl border-leaf-100 p-5 shadow-sm shadow-leaf-900/5 md:p-7">
+        <Card className="mx-auto mt-6 w-full border-leaf-100 p-5 shadow-sm shadow-leaf-900/5 md:p-8">
           {loading ? (
             <div className="flex items-center gap-2 py-12 text-sm text-ink-muted"><LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" /> Đang tải sở thích…</div>
           ) : (
@@ -100,7 +100,7 @@ export function DietaryPreferencesPage() {
         </Card>
       )}
 
-      <p className="mt-6 flex max-w-3xl gap-2 text-xs leading-5 text-ink-muted"><Info aria-hidden="true" className="h-4 w-4 shrink-0" /> Khai báo dị ứng giúp cá nhân hóa món ăn, không thay thế tư vấn y tế hay kiểm tra an toàn thực phẩm thực tế.</p>
+      <p className="mt-6 flex w-full gap-2 text-xs leading-5 text-ink-muted"><Info aria-hidden="true" className="h-4 w-4 shrink-0" /> Khai báo dị ứng giúp cá nhân hóa món ăn, không thay thế tư vấn y tế hay kiểm tra an toàn thực phẩm thực tế.</p>
     </PageContainer>
   );
 }
