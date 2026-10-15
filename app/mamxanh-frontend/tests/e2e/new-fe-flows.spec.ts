@@ -169,7 +169,7 @@ test('avatar menu displays the authenticated Backend identity and opens the API-
       endsAt: '2026-11-04T12:00:00', unlockedFeatures: [],
     } });
   });
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Tài khoản Demo CUSTOMER' }).click();
   await expect(page.getByText('demo-customer@mamxanh.local')).toBeVisible();
   await expect(page.getByRole('button', { name: /Chuyển vai trò demo/ })).toHaveCount(0);
@@ -184,7 +184,7 @@ test('avatar menu displays the authenticated Backend identity and opens the API-
 test('mobile account links remain reachable from the menu', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await seedDemoSession(page, 'CUSTOMER');
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('link', { name: 'Lịch sử giao dịch' }).click();
   await expect(page).toHaveURL(/\/giao-dich$/);
@@ -306,15 +306,15 @@ test('mock-authenticated nutrition profile saves consent and shows approximate r
   });
 
   await page.getByRole('button', { name: 'Tính chỉ số tham khảo' }).click();
-  await expect(page.getByText('Xấp xỉ 22,5')).toBeVisible();
-  await expect(page.getByText('Xấp xỉ 2.200')).toBeVisible();
+  await expect(page.getByText('≈ 22,5')).toBeVisible();
+  await expect(page.getByText('≈ 2.200')).toBeVisible();
   await expect(page.getByText('9 chỉ tiêu tham khảo mỗi ngày')).toBeVisible();
-  await expect(page.getByText('Chất xơ').locator('..').locator('..').getByText('Xấp xỉ 25,0')).toBeVisible();
+  await expect(page.getByText('Chất xơ').locator('..').locator('..').getByText('≈ 25,0')).toBeVisible();
   await expect(page.getByRole('link', { name: /Nguồn tham khảo: NASEM EER/ })).toHaveAttribute('href', 'https://example.org/energy');
 
   await page.getByLabel('Chiều cao *').fill('171');
   await expect(page.getByText('Lưu các thay đổi hồ sơ trước khi tính lại chỉ số tham khảo.')).toBeVisible();
-  await expect(page.getByText('Xấp xỉ 22,5')).toHaveCount(0);
+  await expect(page.getByText('≈ 22,5')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Tính chỉ số tham khảo' })).toBeDisabled();
 });
 

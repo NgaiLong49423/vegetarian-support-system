@@ -2,7 +2,7 @@ import { expect, test } from './baseFixtures';
 import type { Page } from '@playwright/test';
 
 async function signInAsCustomer(page: Page) {
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.evaluate(() => sessionStorage.setItem('mamxanh.auth', JSON.stringify({
     accessToken: 'playwright-only-token',
     expiresAt: Date.now() + 60 * 60 * 1000,

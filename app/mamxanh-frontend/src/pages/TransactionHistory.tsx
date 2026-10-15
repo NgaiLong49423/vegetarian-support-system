@@ -145,7 +145,7 @@ export function TransactionHistory() {
           </Link>
         </Card>
       ) : (
-        <div className="mt-8 overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm">
+        <div className="mt-8 overflow-hidden rounded-2xl border border-brand-100 bg-paper shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-brand-100 bg-brand-50/70 text-xs font-bold text-ink-muted uppercase">

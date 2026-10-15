@@ -8,6 +8,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-027
+    title: CI không tải ảnh Git LFS làm kiểm thử landing thất bại
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/CI/Git LFS
+    file: .agents/outputs/bugs/BUG-027.md
+    created: 2026-10-12
+    updated: 2026-10-14
+    related_issue: Unknown
   - id: BUG-026
     title: Schema OpenAPI của nguyên liệu và media trong công thức bị trùng tên, mô tả sai response thật
     status: RECORDED

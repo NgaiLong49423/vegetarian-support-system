@@ -26,7 +26,7 @@ test('registration validates password rules, submits to the API and links to ema
     submitted = route.request().postDataJSON();
     await route.fulfill({ status: 201, contentType: 'application/json', headers: corsHeaders, body: JSON.stringify({ accountStatus: 'ACTIVE', emailVerified: false, message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác minh tài khoản.' }) });
   });
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('link', { name: 'Đăng ký', exact: true }).click();
   await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
   await expect(page.getByText('Tên hiển thị cần từ 3 đến 50 ký tự.')).toBeVisible();
@@ -133,7 +133,7 @@ test('login keeps the session in this tab and logout clears it without calling t
   await page.goto('/dang-nhap');
   await submitLogin(page, '  An@Example.com ');
 
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trang-chu$/);
   expect(submitted).toEqual({ email: 'An@Example.com', password: 'MatKhau123' });
   expect(loginAuthorization).toBeNull();
   const stored = JSON.parse((await storedSession(page)) ?? 'null');
@@ -192,7 +192,7 @@ test('an expired stored session is dropped and a live session ends when its toke
       sessionStorage.setItem('seeded', '1');
     }
   }, ['mamxanh.auth', JSON.stringify({ accessToken: 'old.token.value', expiresAt: 1, account })]);
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await expect(page.getByRole('banner').getByRole('link', { name: 'Đăng nhập', exact: true })).toBeVisible();
   expect(await storedSession(page)).toBeNull();
 
@@ -218,7 +218,7 @@ test('local account access requires a Backend-issued login session', async ({ pa
 
 test('recovery and mobile layouts remain usable on a phone screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('link', { name: 'Đăng nhập', exact: true }).click();
   await page.getByRole('link', { name: 'Quên mật khẩu?' }).click();
   await expect(page.getByRole('heading', { name: 'Quên mật khẩu?' })).toBeVisible();
