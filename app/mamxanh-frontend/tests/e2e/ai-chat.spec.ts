@@ -16,7 +16,7 @@ test('general chat keeps session history in the page and labels the answer as AI
     await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null, answer: 'Có thể dùng sữa đậu nành.' } });
   });
 
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
   await expect(page.getByRole('heading', { name: 'Bạn cần AI hỗ trợ gì?' })).toBeVisible();
   await page.getByLabel('Câu hỏi của bạn').fill('Có thể thay sữa bò bằng gì?');
@@ -35,7 +35,7 @@ test('general chat keeps session history in the page and labels the answer as AI
 
 test('chat window can be resized with its accessible keyboard handle', async ({ page }) => {
   await signInAsMember(page);
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
 
   const dialog = page.getByRole('dialog');

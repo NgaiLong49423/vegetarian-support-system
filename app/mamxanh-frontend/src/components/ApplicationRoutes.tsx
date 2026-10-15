@@ -26,6 +26,7 @@ import { ApiRecipeDetail } from "../pages/ApiRecipeDetail"
 import { ExpertRecipeProfile } from "../pages/ExpertRecipeProfile"
 import { MemberProfilePage } from "../pages/MemberProfilePage"
 import { ProfileSettingsPage } from "../pages/ProfileSettingsPage"
+import { AiChatPage } from "../pages/AiChatPage"
 import { ClickSpark } from "./ClickSpark"
 
 export default function ApplicationRoutes() {
@@ -73,6 +74,7 @@ export default function ApplicationRoutes() {
               <Route path="/cong-thuc/:slug" element={<RecipeDetail />} />
               <Route path="/ke-hoach" element={<MealPlanner />} />
               <Route path="/goi-y-ai" element={<Navigate to="/ke-hoach?view=for-you" replace />} />
+              <Route path="/hoi-dap-ai" element={<AiChatPage />} />
               <Route path="/di-cho" element={<ShoppingList />} />
               <Route path="/dinh-duong" element={<NutritionTracker />} />
               <Route path="/dang-cong-thuc" element={<CreateRecipe />} />
