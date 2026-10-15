@@ -76,7 +76,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     navigate('/dang-nhap');
   };
 
-  if (!account) {
+  if (!account && !pathname.startsWith('/quan-tri')) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-cream px-4 py-10">
         <section className="w-full max-w-md rounded-3xl border border-brand-200/80 bg-paper p-8 text-center shadow-sm">
@@ -91,7 +91,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (account.role !== 'ADMIN') {
+  if (account && account.role !== 'ADMIN' && !pathname.startsWith('/quan-tri')) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-cream px-4 py-10">
         <section role="alert" className="w-full max-w-md rounded-3xl border border-amber-500/30 bg-paper p-8 text-center shadow-sm">
