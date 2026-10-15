@@ -247,6 +247,29 @@ export interface RecipeReferenceData {
   ingredients: Array<{ ingredientId: number; name: string; unitId: number; unitCode: string; unitName: string }>;
 }
 
+export type AiChatContext = 'GENERAL' | 'RECIPE';
+export interface AiChatTurn { speaker: 'USER' | 'ASSISTANT'; content: string }
+export interface AiChatRequest {
+  contextType: AiChatContext;
+  recipeId?: number;
+  question: string;
+  history: AiChatTurn[];
+}
+export interface AiChatResponse {
+  contextType: AiChatContext;
+  recipeId: number | null;
+  answer: string;
+  recommendations: Array<{
+    id: number;
+    title: string;
+    description: string | null;
+    coverUrl: string | null;
+    totalTimeMinutes: number;
+    difficulty: string;
+    reason: string;
+  }>;
+}
+
 async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
   try {
     return (await operation()).data;
@@ -256,6 +279,9 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
 }
 
 export const recipesApi = {
+  chat: (payload: AiChatRequest) => request(
+    () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, { timeout: 12_000 }),
+  ),
   recommendByIngredients: (ingredientIds: number[]) => request(
     () => apiClient.post<AiRecipeSuggestion>('/recipes/ai/recommendations', { ingredientIds }, { timeout: 60_000 }),
   ),

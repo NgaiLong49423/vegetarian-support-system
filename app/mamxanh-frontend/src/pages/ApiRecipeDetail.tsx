@@ -8,6 +8,7 @@ import {
   Download,
   Eye,
   Heart,
+  MessageCircle,
   Minus,
   Plus,
   Printer,
@@ -24,6 +25,7 @@ import { SaveRecipeButton } from '../components/SaveRecipeButton';
 import { MemberAvatar } from '../components/MemberAvatar';
 import { RelatedRecipes } from '../components/RelatedRecipes';
 import { MealPlanRecipeServings } from './MealPlanRecipeServings';
+import { useAiChat } from '../components/AiChatContext';
 
 const NUTRIENTS = [
   { key: 'ENERGY_KCAL', label: 'Năng lượng', unit: 'kcal' },
@@ -94,6 +96,7 @@ function downloadText(recipe: RecipeDetail) {
 }
 
 export function ApiRecipeDetail() {
+  const { openChat } = useAiChat();
   const { recipeId: rawId } = useParams();
   const recipeId = Number(rawId);
   const [searchParams] = useSearchParams();
@@ -168,6 +171,7 @@ export function ApiRecipeDetail() {
       <Link to={backTarget} className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-900"><ArrowLeft className="h-4 w-4" />{fromMealPlan ? 'Về lịch ăn' : 'Khám phá'}</Link>
       <div className="flex flex-wrap items-center gap-2">
         <SaveRecipeButton recipeId={recipe.recipeId} />
+        <button type="button" onClick={() => openChat(recipe.recipeId)} className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-50"><MessageCircle className="h-4 w-4" aria-hidden="true" />Hỏi AI về công thức này</button>
         <Button variant="outline" size="sm" onClick={shareRecipe}><Share2 className="h-4 w-4" />Chia sẻ</Button>
         <div className="relative">
           <Button variant="primary" size="sm" aria-expanded={exportOpen} onClick={() => setExportOpen((open) => !open)}><Download className="h-4 w-4" />Xuất công thức<ChevronDown className="h-4 w-4" /></Button>

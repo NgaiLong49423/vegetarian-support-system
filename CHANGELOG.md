@@ -1,13 +1,54 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.76.1
+> **Version:** v2.78.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-14
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-15 — Recommend Published Recipes in AI Chat ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
+
+**Status:** Committed — c3e3ed30827c9c9f260e8eaf45950817c91bbd19.
+
+**Scope:** Extend FR-51 chat with real public recipe recommendations and explicitly requested, non-persistent recipe drafts.
+
+### Added
+
+- Return recipe cards selected from current public Backend posts when users ask to find or recommend recipes; link each card to its real recipe page.
+- Allow recipe creation or adaptation text only after an explicit request, without saving or publishing it.
+
+### Changed
+
+- Filter recipe candidates by the Member's declared vegetarian type and avoided ingredients before asking Gemini to select public post IDs.
+- Synchronize the FR-51, BR-38, UC-51 and chat response documentation with the catalog-first behavior.
+
+### Fixed
+
+- Match Vietnamese recipe creation and adaptation requests against the same accent-normalized phrases used by the chat intent detector.
+
+## 2026-10-14 — Add Contextual AI Chat for Members ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
+
+**Status:** Committed — f984505f64662bb1ae77aedbd5f9a8d47dc537df.
+
+**Scope:** Add the Member chatbot slice for Issue #52 while keeping public Guest access closed until FR-02 rate limiting is integrated.
+
+### Added
+
+- Add a Backend chat endpoint for general vegetarian-cooking questions and current public RecipePost context, with ephemeral request history and token-only usage telemetry.
+- Add a shared Frontend chat page with general and recipe-specific entry points, loading/error states, AI labeling and privacy guidance.
+- Document the FR-51 request and response contract in the API integration guide.
+
+### Changed
+
+- Limit Gemini request timeouts to 10 seconds to follow NFR-18.
+- Require an active Member session for chatbot requests until the FR-02 Guest rate limiter is available.
+
+### Fixed
+
+- None.
 
 ## 2026-10-14 — Synchronize FR-33 with the AI Menu Integration Baseline ([PR #135](https://github.com/NgaiLong49423/vegetarian-support-system/pull/135))
 
