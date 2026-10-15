@@ -14,6 +14,12 @@
 --                   + V6__user_login_throttle.sql
 --                   + V7__user_onboarding_invitation.sql
 --                   + V8__expert_application_notifications.sql
+--                   + V9__align_recipe_report_contract.sql
+--                   + V10__nutrition_eligibility_status.sql
+--                   + V11__user_password_reset.sql
+--                   + V12__ingredient_name_unique_for_active_catalog.sql
+--                   + V13__expand_nutrition_goal_options.sql
+--                   + V14__nutrition_daily_value_reference.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -100,7 +106,6 @@ CREATE TABLE [INGREDIENT] (
         CONSTRAINT DF_INGREDIENT_updated_at DEFAULT SYSUTCDATETIME(),
 
     CONSTRAINT PK_INGREDIENT PRIMARY KEY (ingredient_id),
-    CONSTRAINT UQ_INGREDIENT_name UNIQUE (name),
     CONSTRAINT CK_INGREDIENT_status CHECK (status IN ('ACTIVE', 'INACTIVE')),
     CONSTRAINT CK_INGREDIENT_nutrition_supported CHECK (
         nutrition_supported = 0 OR (
@@ -117,6 +122,10 @@ CREATE TABLE [INGREDIENT] (
         )
     )
 );
+GO
+CREATE UNIQUE INDEX [UX_INGREDIENT_name_active]
+    ON [INGREDIENT] ([name])
+    WHERE [status] = 'ACTIVE';
 GO
 
 
@@ -188,6 +197,14 @@ CREATE TABLE [USER] (
     login_blocked_until            DATETIME2(7)   NULL,
     -- V7 (Issue #36): when the FR-31 Onboarding invitation was shown; NULL = not shown yet (AC-31.10)
     onboarding_invited_at          DATETIME2(7)   NULL,
+    -- V11 (Issue #9): SHA-256 hex digest of the current password-reset token (15 minutes) and
+    -- reset-email rate-limit metadata: last email time (60 s cooldown), one-hour window and its count (Q27)
+    password_reset_token              VARCHAR(64)    NULL,
+    reset_token_expires_at            DATETIME2(7)   NULL,
+    password_reset_sent_at            DATETIME2(7)   NULL,
+    password_reset_window_started_at  DATETIME2(7)   NULL,
+    password_reset_window_count       INT            NOT NULL
+        CONSTRAINT DF_USER_password_reset_window_count DEFAULT 0,
 
     CONSTRAINT PK_USER PRIMARY KEY (user_id),
     CONSTRAINT UQ_USER_email UNIQUE (email),
@@ -209,7 +226,7 @@ CREATE TABLE [USER] (
         date_of_birth >= '1900-01-01' AND date_of_birth <= CAST(GETDATE() AS DATE)
     ),
     CONSTRAINT CK_USER_nutrition_goal CHECK (
-        nutrition_goal IN ('MAINTAIN_WEIGHT', 'IMPROVE_HEALTH', 'SUPPORT_TRAINING')
+        nutrition_goal IS NULL OR nutrition_goal IN ('MAINTAIN_WEIGHT', 'LOSE_WEIGHT', 'GAIN_WEIGHT', 'BUILD_MUSCLE', 'IMPROVE_HEALTH', 'SUPPORT_TRAINING')
     ),
     CONSTRAINT CK_USER_health_data_consent_timestamp CHECK (
         (health_data_consent = 0 AND health_data_consent_at IS NULL)
@@ -229,7 +246,12 @@ CREATE TABLE [USER] (
         (email_verification_token IS NULL AND verification_token_expires_at IS NULL)
         OR (email_verification_token IS NOT NULL AND verification_token_expires_at IS NOT NULL)
     ),
-    CONSTRAINT CK_USER_failed_login_attempts_non_negative CHECK (failed_login_attempts >= 0)
+    CONSTRAINT CK_USER_failed_login_attempts_non_negative CHECK (failed_login_attempts >= 0),
+    CONSTRAINT CK_USER_password_reset_token_pair CHECK (
+        (password_reset_token IS NULL AND reset_token_expires_at IS NULL)
+        OR (password_reset_token IS NOT NULL AND reset_token_expires_at IS NOT NULL)
+    ),
+    CONSTRAINT CK_USER_password_reset_window_count_non_negative CHECK (password_reset_window_count >= 0)
 );
 GO
 
@@ -243,6 +265,12 @@ GO
 CREATE UNIQUE NONCLUSTERED INDEX UQ_USER_email_verification_token
     ON [USER](email_verification_token)
     WHERE email_verification_token IS NOT NULL;
+GO
+
+-- password_reset_token (V11): lookup by token digest; most accounts have no reset token
+CREATE UNIQUE NONCLUSTERED INDEX UQ_USER_password_reset_token
+    ON [USER](password_reset_token)
+    WHERE password_reset_token IS NOT NULL;
 GO
 
 
@@ -993,10 +1021,38 @@ GO
 
 
 -- ============================================================================
+-- FR-37 shared FDA reference values; maintained by Flyway V14.
+CREATE TABLE [NUTRITION_DAILY_VALUE] (
+    nutrient_key VARCHAR(32) NOT NULL,
+    label NVARCHAR(80) NOT NULL,
+    reference_value DECIMAL(12,3) NOT NULL,
+    unit VARCHAR(12) NOT NULL,
+    reference_type VARCHAR(24) NOT NULL,
+    source_name NVARCHAR(200) NOT NULL,
+    source_url VARCHAR(500) NOT NULL,
+    version_label VARCHAR(80) NOT NULL,
+    effective_date DATE NOT NULL,
+    CONSTRAINT PK_NUTRITION_DAILY_VALUE PRIMARY KEY (nutrient_key),
+    CONSTRAINT CK_NUTRITION_DAILY_VALUE_positive CHECK (reference_value > 0)
+);
+
+INSERT INTO [NUTRITION_DAILY_VALUE]
+    (nutrient_key, label, reference_value, unit, reference_type, source_name, source_url, version_label, effective_date)
+VALUES
+    ('ENERGY_KCAL', N'Năng lượng', 2000, 'kcal', 'GENERAL_GUIDE', N'FDA — Using the Nutrition Facts Label', 'https://www.fda.gov/food/nutrition-facts-label/using-nutrition-facts-label-older-adults', 'FDA Daily Values current at implementation', '2026-10-13'),
+    ('PROTEIN_G', N'Chất đạm', 50, 'g', 'FDA_DV', N'FDA — Daily Value on the Nutrition and Supplement Facts Labels', 'https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels', 'FDA Daily Values current at implementation', '2026-10-13'),
+    ('CARBOHYDRATE_G', N'Carbohydrate', 275, 'g', 'FDA_DV', N'FDA — Daily Value on the Nutrition and Supplement Facts Labels', 'https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels', 'FDA Daily Values current at implementation', '2026-10-13'),
+    ('TOTAL_FAT_G', N'Tổng chất béo', 78, 'g', 'FDA_DV', N'FDA — Daily Value on the Nutrition and Supplement Facts Labels', 'https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels', 'FDA Daily Values current at implementation', '2026-10-13'),
+    ('FIBER_G', N'Chất xơ', 28, 'g', 'FDA_DV', N'FDA — Daily Value on the Nutrition and Supplement Facts Labels', 'https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels', 'FDA Daily Values current at implementation', '2026-10-13'),
+    ('CALCIUM_MG', N'Canxi', 1300, 'mg', 'FDA_DV', N'FDA — Daily Value on the Nutrition and Supplement Facts Labels', 'https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels', 'FDA Daily Values current at implementation', '2026-10-13'),
+    ('IRON_MG', N'Sắt', 18, 'mg', 'FDA_DV', N'FDA — Daily Value on the Nutrition and Supplement Facts Labels', 'https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels', 'FDA Daily Values current at implementation', '2026-10-13'),
+    ('VITAMIN_B12_MCG', N'Vitamin B12', 2.4, 'mcg', 'FDA_DV', N'FDA — Daily Value on the Nutrition and Supplement Facts Labels', 'https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels', 'FDA Daily Values current at implementation', '2026-10-13'),
+    ('ZINC_MG', N'Kẽm', 11, 'mg', 'FDA_DV', N'FDA — Daily Value on the Nutrition and Supplement Facts Labels', 'https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels', 'FDA Daily Values current at implementation', '2026-10-13');
+GO
 -- END OF SCHEMA SNAPSHOT
 -- ============================================================================
 -- Summary:
---   22 tables created
+--   23 tables created
 --   38 foreign keys defined (including 2 composite FKs: COMMENT, MEAL_PLAN_ENTRY)
 --    4 composite primary keys (USER_FOLLOW, RECIPE_REACTION, SAVED_RECIPE,
 --      INGREDIENT_UNIT_CONVERSION)

@@ -19,6 +19,20 @@ public interface RecipeStatisticsRepository extends Repository<RecipePostEntity,
             """, nativeQuery = true)
     Optional<StatisticsProjection> findStatistics(@Param("recipeId") long recipeId);
 
+    @Query(value = """
+            SELECT rp.recipe_id AS recipeId,
+              (SELECT COUNT_BIG(*) FROM RECIPE_REACTION rr WHERE rr.recipe_id = rp.recipe_id AND rr.reaction_type = 'LIKE') AS likes,
+              (SELECT COUNT_BIG(*) FROM RECIPE_REACTION rr WHERE rr.recipe_id = rp.recipe_id AND rr.reaction_type = 'DISLIKE') AS dislikes,
+              (SELECT COUNT_BIG(*) FROM RECIPE_VIEW rv WHERE rv.recipe_id = rp.recipe_id) AS viewCount,
+              (SELECT COUNT_BIG(*) FROM RECIPE_REACTION rr WHERE rr.recipe_id = rp.recipe_id) AS reactionCount
+            FROM RECIPE_POST rp WHERE rp.recipe_id IN (:recipeIds)
+            """, nativeQuery = true)
+    java.util.List<RecipeStatisticsProjection> findAllStatistics(@Param("recipeIds") java.util.Collection<Long> recipeIds);
+
+    interface RecipeStatisticsProjection extends StatisticsProjection {
+        Long getRecipeId();
+    }
+
     interface StatisticsProjection {
         Long getLikes();
         Long getDislikes();

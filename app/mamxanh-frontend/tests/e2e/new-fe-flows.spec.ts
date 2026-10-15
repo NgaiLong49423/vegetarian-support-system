@@ -18,6 +18,8 @@ const exampleProfile = {
   nutritionGoal: 'MAINTAIN_WEIGHT',
 };
 
+const dateKeyForTest = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
 const emptyNutritionResponse = {
   hasProfile: false,
   eligible: false,
@@ -56,6 +58,20 @@ const calculatedNutritionResponse = {
   },
 };
 
+async function mockNutritionEligibility(page: Page, initial: 'NOT_CONFIRMED' | 'ELIGIBLE' = 'ELIGIBLE') {
+  let status: string = initial;
+  const confirmations: string[] = [];
+  await page.route('**/api/v1/nutrition/profile/eligibility', async (route) => {
+    expect(route.request().headers().authorization).toBe('Bearer test-only-token');
+    if (route.request().method() === 'PUT') {
+      status = route.request().postDataJSON().status;
+      confirmations.push(status);
+    }
+    await route.fulfill({ json: { status, confirmedAt: status === 'NOT_CONFIRMED' ? null : '2026-10-14T00:00:00Z' } });
+  });
+  return confirmations;
+}
+
 async function prepareMockAuthenticatedNutritionPage(page: Page) {
   await page.addInitScript(() => { window.__nutritionE2eAccessToken = 'test-only-token'; });
   await page.route('**/api/v1/nutrition/profile**', async (route) => {
@@ -69,7 +85,9 @@ async function prepareMockAuthenticatedNutritionPage(page: Page) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(emptyNutritionResponse) });
     }
   });
+  const confirmations = await mockNutritionEligibility(page);
   await page.goto('/ho-so/dinh-duong');
+  return confirmations;
 }
 
 async function fillEligibleNutritionProfile(page: Page) {
@@ -78,10 +96,7 @@ async function fillEligibleNutritionProfile(page: Page) {
   await page.getByLabel('Chiều cao *').fill(String(exampleProfile.heightCm));
   await page.getByLabel('Cân nặng *').fill(String(exampleProfile.weightKg));
   await page.getByLabel('Mức độ vận động *').selectOption(exampleProfile.activityLevel);
-  await page.getByLabel('Mục tiêu dinh dưỡng chung *').selectOption(exampleProfile.nutritionGoal);
-  for (const name of ['pregnant', 'breastfeeding', 'therapeuticDietRequired']) {
-    await page.locator(`input[name="${name}"]`).nth(0).check();
-  }
+  await page.getByLabel('Mục tiêu dinh dưỡng chung (không bắt buộc)').selectOption(exampleProfile.nutritionGoal);
   await page.getByRole('checkbox').check();
 }
 
@@ -140,15 +155,30 @@ test('recipe ingredients scale from the author serving count', async ({ page }) 
   await expect(page.getByText('2 gói', { exact: true })).toBeVisible();
 });
 
-test('avatar menu displays the authenticated Backend identity and UI-only plan remains labeled demo', async ({ page }) => {
+test('avatar menu displays the authenticated Backend identity and opens the API-backed subscription', async ({ page }) => {
   await seedDemoSession(page, 'CUSTOMER');
+  await page.route('**/api/v1/subscriptions/plans', (route) => route.fulfill({ json: [
+    { tier: 'FREE', name: 'FREE', priceVnd: 0, description: '', features: [], billingPeriod: 'Không thời hạn' },
+    { tier: 'PLUS', name: 'PLUS', priceVnd: 49000, description: '', features: [], billingPeriod: 'Tháng' },
+    { tier: 'PRO', name: 'PRO', priceVnd: 99000, description: '', features: [], billingPeriod: 'Tháng' },
+  ] }));
+  await page.route('**/api/v1/subscriptions/my-subscription', (route) => {
+    expect(route.request().headers().authorization).toBe('Bearer header.payload.signature');
+    return route.fulfill({ json: {
+      tier: 'PLUS', status: 'ACTIVE', active: true, startsAt: '2026-10-04T12:00:00',
+      endsAt: '2026-11-04T12:00:00', unlockedFeatures: [],
+    } });
+  });
   await page.goto('/');
   await page.getByRole('button', { name: 'Tài khoản Demo CUSTOMER' }).click();
   await expect(page.getByText('demo-customer@mamxanh.local')).toBeVisible();
   await expect(page.getByRole('button', { name: /Chuyển vai trò demo/ })).toHaveCount(0);
   await page.getByRole('link', { name: 'Nâng cấp gói AI' }).click();
   await expect(page.getByRole('heading', { name: 'Nâng cấp gói AI' })).toBeVisible();
-  await expect(page.getByText('Gói hiện tại: FREE (demo)')).toBeVisible();
+  await expect(page.getByText('Gói PLUS', { exact: true })).toBeVisible();
+  await expect(page.getByText('Hết hạn ngày: 04/11/2026')).toBeVisible();
+  await expect(page.getByText('Gói hiện tại của bạn', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nâng cấp lên PRO' })).toBeEnabled();
 });
 
 test('mobile account links remain reachable from the menu', async ({ page }) => {
@@ -224,13 +254,13 @@ test('recipe report form enforces trimmed OTHER boundaries and the 500 character
 
 test('nutrition profile requires real authentication and plan/history pages do not simulate payment', async ({ page }) => {
   await page.goto('/ho-so/dinh-duong');
-  await expect(page.getByText('Đăng nhập tài khoản thật để khai báo và lưu hồ sơ.')).toBeVisible();
+  await expect(page.getByText('Đăng nhập để xác nhận và sử dụng tính năng dinh dưỡng.')).toBeVisible();
   await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
   await expect(page.getByRole('alert')).toContainText('cần phiên đăng nhập đã được xác thực');
-  await expect(page.getByLabel('Ngày sinh *')).toBeDisabled();
-  await expect(page.getByLabel('Chiều cao *')).toBeDisabled();
-  await expect(page.getByLabel('Cân nặng *')).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toBeDisabled();
+  await expect(page.getByLabel('Ngày sinh *')).toHaveCount(0);
+  await expect(page.getByLabel('Chiều cao *')).toHaveCount(0);
+  await expect(page.getByLabel('Cân nặng *')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toHaveCount(0);
   await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
 
   await page.goto('/goi-ai');
@@ -256,10 +286,16 @@ test('mock-authenticated nutrition profile saves consent and shows approximate r
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(response) });
   });
 
+  const confirmations = await mockNutritionEligibility(page, 'NOT_CONFIRMED');
   await page.goto('/ho-so/dinh-duong');
+  await expect(page.getByLabel('Ngày sinh *')).toHaveCount(0);
+  await page.getByRole('radio', { name: /Tôi xác nhận mình từ đủ 18 tuổi/ }).check();
+  await page.getByRole('checkbox', { name: /Tôi đã đọc và xác nhận/ }).check();
+  await page.getByRole('button', { name: 'Xác nhận và tiếp tục' }).click();
+  await expect.poll(() => confirmations).toEqual(['ELIGIBLE']);
   await fillEligibleNutritionProfile(page);
   await page.getByRole('button', { name: 'Lưu hồ sơ' }).click();
-  await expect(page.getByText('Đã lưu', { exact: true })).toBeVisible();
+  await expect(page.getByRole('main').getByText('Đã lưu', { exact: true })).toBeVisible();
   expect(requestHeaders).toContain('Bearer test-only-token');
   expect(JSON.parse(savedBodies[0])).toMatchObject({
     ...exampleProfile,
@@ -283,21 +319,27 @@ test('mock-authenticated nutrition profile saves consent and shows approximate r
 });
 
 test('nutrition profile hides all metrics for underage and excluded declarations', async ({ page }) => {
-  await prepareMockAuthenticatedNutritionPage(page);
+  const confirmations = await prepareMockAuthenticatedNutritionPage(page);
   await page.getByLabel('Ngày sinh *').fill('2011-01-01');
   await page.getByRole('radio', { name: 'Nữ' }).check();
   await page.getByLabel('Chiều cao *').fill('160');
   await page.getByLabel('Cân nặng *').fill('55');
   await page.getByLabel('Mức độ vận động *').selectOption('SEDENTARY');
-  await page.getByLabel('Mục tiêu dinh dưỡng chung *').selectOption('MAINTAIN_WEIGHT');
-  await page.locator('input[name="pregnant"]').nth(1).check();
-  await page.locator('input[name="breastfeeding"]').nth(0).check();
-  await page.locator('input[name="therapeuticDietRequired"]').nth(0).check();
+  await page.getByLabel('Mục tiêu dinh dưỡng chung (không bắt buộc)').selectOption('MAINTAIN_WEIGHT');
   await page.getByRole('checkbox').check();
 
   await expect(page.getByText('Ứng dụng hiện không hỗ trợ hồ sơ dinh dưỡng cho người dưới 18 tuổi.')).toBeVisible();
-  await expect(page.getByText('Vui lòng tham khảo bác sĩ hoặc chuyên gia dinh dưỡng. Ứng dụng không lưu hồ sơ, tính BMI hoặc hiển thị 9 chỉ tiêu cho trường hợp này.')).toBeVisible();
+  await expect(page.getByText('Các chỉ số BMI và 9 chỉ tiêu bị ẩn đối với trường hợp ngoài phạm vi hỗ trợ. Vui lòng tham khảo bác sĩ hoặc chuyên gia dinh dưỡng.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toBeDisabled();
+  await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Cập nhật xác nhận phạm vi' }).click();
+  await page.getByRole('radio', { name: 'Tôi hiện không thuộc phạm vi hỗ trợ dinh dưỡng này.' }).check();
+  await page.getByRole('button', { name: 'Xác nhận', exact: true }).click();
+  await expect(page.getByText('Hồ sơ và gợi ý dinh dưỡng sẽ tiếp tục bị khóa.', { exact: false })).toBeVisible();
+  expect(confirmations).toEqual(['INELIGIBLE']);
+  await expect(page.getByLabel('Ngày sinh *')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Lưu hồ sơ' })).toHaveCount(0);
   await expect(page.getByText('Chỉ số BMI tham khảo')).toHaveCount(0);
 });
 
@@ -313,6 +355,7 @@ test('nutrition profile maps backend validation errors to their fields', async (
     }
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(emptyNutritionResponse) });
   });
+  await mockNutritionEligibility(page);
   await page.goto('/ho-so/dinh-duong');
   await fillEligibleNutritionProfile(page);
   await page.getByRole('button', { name: 'Lưu hồ sơ' }).click();
@@ -334,32 +377,86 @@ test('recipe comparison shows two recipes side-by-side without health score (FR-
   await expect(page.locator('#compare-recipe-right')).toBeVisible();
 });
 
-test('nutrition tracker opens overall 9-indicator analysis modal (FR-37)', async ({ page }) => {
+test('nutrition tracker uses the member meal plan for analysis and daily/weekly PDF exports (FR-37)', async ({ page }) => {
+  await seedDemoSession(page, 'CUSTOMER');
+  const today = new Date();
+  const currentDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const offset = (today.getDay() + 6) % 7;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - offset);
+  const weekStart = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+  const keys = ['ENERGY_KCAL', 'PROTEIN_G', 'CARBOHYDRATE_G', 'TOTAL_FAT_G', 'FIBER_G', 'CALCIUM_MG', 'IRON_MG', 'VITAMIN_B12_MCG', 'ZINC_MG'];
+  const labels = ['Năng lượng', 'Chất đạm', 'Carbohydrate', 'Chất béo', 'Chất xơ', 'Canxi', 'Sắt', 'Vitamin B12', 'Kẽm'];
+  const units = ['kcal', 'g', 'g', 'g', 'g', 'mg', 'mg', 'mcg', 'mg'];
+  const requestUrls: string[] = [];
+  let failNextPdf = false;
+  await page.route('**/api/v1/meal-plans/*/nutrition**', async (route) => {
+    const url = new URL(route.request().url());
+    requestUrls.push(`${url.pathname}${url.search}`);
+    if (url.pathname.endsWith('/report')) {
+      if (failNextPdf) {
+        failNextPdf = false;
+        await route.fulfill({ status: 403, contentType: 'application/problem+json', body: Buffer.from(JSON.stringify({
+          status: 403, code: 'NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED', detail: 'Cần xác nhận phạm vi dinh dưỡng.',
+        })) });
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'application/pdf', body: Buffer.from('%PDF-1.4 mock report') });
+      return;
+    }
+    const firstDate = new Date(`${weekStart}T12:00:00`);
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(firstDate);
+      date.setDate(date.getDate() + index);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const todaysEntries = key === currentDate ? [{
+        entryId: 73, date: key, mealType: 'LUNCH', recipeId: 42, recipeTitle: 'Đậu hũ sốt cà chua', plannedServings: 2,
+        complete: false, ingredientsMissingData: ['Rau gia vị tự chọn'], nutrients: Object.fromEntries(keys.map((nutrient, nutrientIndex) => [nutrient, nutrientIndex === 0 ? 420 : nutrientIndex === 7 ? null : 12])),
+      }] : [];
+      return { date: key, nutrients: Object.fromEntries(keys.map((nutrient, nutrientIndex) => [nutrient, todaysEntries.length ? (nutrientIndex === 0 ? 420 : nutrientIndex === 7 ? null : 12) : 0])), entries: todaysEntries };
+    });
+    await route.fulfill({ json: {
+      weekStartDate: weekStart, scope: 'WEEK', selectedDate: null, referenceBasis: 'Mức tham khảo chung', source: 'Catalog', sourceUrl: '',
+      disclaimer: 'Thông tin tham khảo.',
+      targets: keys.map((key, index) => ({ key, label: labels[index], minimum: index === 0 ? 2000 : 20, maximum: index === 0 ? 2000 : 40, unit: units[index], referenceType: 'RDA', source: 'Catalog', sourceUrl: '', version: '1' })),
+      days, weeklyAverage: Object.fromEntries(keys.map((key, index) => [key, index === 0 ? 60 : 1.7])),
+      attainmentDays: Object.fromEntries(keys.map((key) => [key, 0])), incompleteEntries: [{ entryId: 73, date: currentDate, mealType: 'LUNCH', recipeTitle: 'Đậu hũ sốt cà chua', ingredientsMissingData: ['Rau gia vị tự chọn'] }],
+    } });
+  });
+
   await page.goto('/dinh-duong');
-
-  // Exercise simulated PDF alert
-  await page.getByRole('button', { name: 'Xuất báo cáo PDF' }).click();
-  await expect(page.getByText(/Tính năng xuất PDF đang ở chế độ mô phỏng/i)).toBeVisible();
-  await page.getByRole('button', { name: 'Đóng' }).first().click();
-
+  await expect(page.getByRole('heading', { name: 'Theo dõi Dinh dưỡng Thực đơn' })).toBeVisible();
+  await expect(page.getByText('Đậu hũ sốt cà chua')).toBeVisible();
+  await expect(page.getByText(/Thực đơn mẫu/)).toHaveCount(0);
+  await expect(page.getByRole('status')).toContainText('số liệu tính được vẫn được hiển thị');
   await page.getByRole('button', { name: 'Phân tích tổng thể' }).click();
   const modal = page.getByRole('dialog');
-  await expect(modal.getByRole('heading', { name: /Phân tích dinh dưỡng tổng thể/i })).toBeVisible();
-  await modal.getByRole('button', { name: /Tuần qua/i }).click();
-  await expect(modal.getByRole('cell', { name: 'Tổng năng lượng' })).toBeVisible();
-  await expect(modal.getByText('12,194 kcal')).toBeVisible();
-
-  // Test state simulation selector
-  await modal.getByRole('combobox').selectOption('error');
-  await expect(modal.getByText('Không thể tải dữ liệu dinh dưỡng')).toBeVisible();
-  await modal.getByRole('button', { name: 'Thử lại' }).click();
-
-  await modal.getByRole('combobox').selectOption('empty');
-  await expect(modal.getByText('Chưa có thực đơn để phân tích')).toBeVisible();
-
-  await modal.getByRole('button', { name: /Hôm nay/i }).click();
+  await expect(modal.getByRole('row')).toHaveCount(10);
+  await expect(modal.getByText('Năng lượng', { exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
-  await expect(modal).toBeHidden();
+
+  await page.getByRole('button', { name: 'So sánh & thống kê 7 ngày' }).click();
+  const weeklyDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Xuất báo cáo PDF' }).click();
+  expect((await weeklyDownload).suggestedFilename()).toBe(`bao-cao-dinh-duong-${weekStart}.pdf`);
+  expect(requestUrls.some((url) => url.endsWith('/nutrition/report'))).toBeTruthy();
+
+  await page.getByRole('button', { name: 'Theo ngày' }).click();
+  const emptyDate = new Date(`${weekStart}T12:00:00`);
+  if (dateKeyForTest(emptyDate) === currentDate) emptyDate.setDate(emptyDate.getDate() + 1);
+  const emptyDateKey = dateKeyForTest(emptyDate);
+  await page.getByRole('button', { name: new RegExp(`Ngày .*${Number(emptyDateKey.slice(-2))}\\/${Number(emptyDateKey.slice(5, 7))}`) }).click();
+  await expect(page.getByRole('button', { name: 'Xuất báo cáo PDF' })).toBeDisabled();
+  await page.getByRole('button', { name: new RegExp(`Ngày .*${Number(currentDate.slice(-2))}\\/${Number(currentDate.slice(5, 7))}`) }).click();
+  const dailyDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Xuất báo cáo PDF' }).click();
+  expect((await dailyDownload).suggestedFilename()).toBe(`bao-cao-dinh-duong-${currentDate}.pdf`);
+  expect(requestUrls.some((url) => url.endsWith(`/nutrition/report?date=${currentDate}`))).toBeTruthy();
+
+  failNextPdf = true;
+  await page.getByRole('button', { name: 'Xuất báo cáo PDF' }).click();
+  await expect(page.getByRole('alert')).toContainText('Cần xác nhận phạm vi dinh dưỡng.');
+  await expect(page.getByRole('alert').getByRole('link', { name: /xác nhận phạm vi hỗ trợ dinh dưỡng/i })).toHaveAttribute('href', '/ho-so/dinh-duong');
 });
 
 test('expert application customer and admin workflows use the API and recover from stale decisions (FR-05)', async ({ page }) => {
@@ -420,6 +517,10 @@ test('expert application customer and admin workflows use the API and recover fr
     window.location.assign('/admin/xet-duyet-chuyen-gia');
   });
   await expect(page.getByRole('heading', { name: 'Xét duyệt Chuyên gia' })).toBeVisible();
+  await page.getByRole('button', { name: 'Xem chi tiết' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Xem chi tiết' }).click();
   await page.getByLabel(/Lý do từ chối/).fill('Cần bổ sung thêm kinh nghiệm cụ thể.');
   await page.getByRole('button', { name: 'Từ chối', exact: true }).click();
@@ -485,9 +586,10 @@ test('recipe exploration does not expose local-only card actions as Backend feat
 });
 
 test('recipe creation route uses authenticated account role (FR-05)', async ({ page }) => {
+  // AC-04.5: a Guest is sent to the login page and never sees the recipe form.
   await page.goto('/dang-cong-thuc');
-  await expect(page.getByRole('heading', { name: 'Đăng công thức chỉ dành cho Chuyên gia' })).toBeVisible();
-  await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toHaveAttribute('href', '/dang-nhap');
+  await expect(page).toHaveURL(/\/dang-nhap$/);
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toHaveCount(0);
 
   await seedDemoSession(page, 'CUSTOMER');
   await page.goto('/dang-cong-thuc');
@@ -504,9 +606,181 @@ test('recipe creation route uses authenticated account role (FR-05)', async ({ p
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toHaveCount(0);
 });
 
-test('profile labels locally saved recipe prototype as not connected to Backend', async ({ page }) => {
+test('Guest profile invites sign-in instead of displaying fake saved recipes', async ({ page }) => {
   await page.goto('/ho-so');
-  await expect(page.getByText(/API lưu công thức chưa được kết nối/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Góc bếp riêng của bạn' })).toBeVisible();
+  await expect(page.getByRole('article')).toHaveCount(0);
+});
+
+test('FR-25: Direct Recipe Publishing with validation error preservation and successful publish flow', async ({ page }) => {
+  await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({
+    json: {
+      dishCategories: [{ code: 'BRAISED', label: 'Món kho' }],
+      vegetarianTypes: [{ code: 'VEGAN', label: 'Thuần chay' }],
+      difficulties: [{ code: 'EASY', label: 'Dễ' }],
+      units: [{ unitId: 1, code: 'g', name: 'gram', dimension: 'MASS' }],
+    },
+  }));
+  await page.route('**/api/v1/recipes/ingredient-options**', (route) => route.fulfill({
+    json: [{ ingredientId: 1, name: 'Đậu hũ' }],
+  }));
+
+  // Control recipes publish route: first fail validation, then succeed
+  let publishAttempts = 0;
+  let receivedPayload: any = null;
+  await page.route('**/api/v1/recipes', async (route) => {
+    if (route.request().method() !== 'POST') {
+      return route.continue();
+    }
+    publishAttempts++;
+    receivedPayload = route.request().postDataJSON();
+    expect(route.request().headers().authorization).toBe('Bearer header.payload.signature');
+
+    if (publishAttempts === 1) {
+      // AC-25.3: Server validation failure
+      return route.fulfill({
+        status: 400,
+        contentType: 'application/problem+json',
+        json: {
+          status: 400,
+          code: 'VALIDATION_FAILED',
+          title: 'Validation Failed',
+          detail: 'Dữ liệu không hợp lệ',
+          errors: [
+            { field: 'title', message: 'Tên món ăn đã tồn tại hoặc không hợp lệ' },
+          ],
+        },
+      });
+    }
+
+    // AC-25.1: Success response
+    return route.fulfill({
+      status: 201,
+      json: {
+        recipeId: 999,
+        title: receivedPayload.title,
+        status: 'PUBLISHED',
+      },
+    });
+  });
+
+  // Mock recipe detail page route after redirect
+  await page.route('**/api/v1/recipes/999', (route) => route.fulfill({
+    json: {
+      id: 999,
+      recipeId: 999,
+      title: 'Nấm đùi gà kho tiêu xanh',
+      description: 'Món kho thơm lừng đậm đà.',
+      instructions: 'Cắt nấm thành từng lát vừa ăn, ướp gia vị chay và kho liu riu cho thấm.',
+      dishCategory: 'BRAISED',
+      dishCategoryLabel: 'Món kho',
+      vegetarianType: 'VEGAN',
+      vegetarianTypeLabel: 'Thuần chay',
+      difficulty: 'EASY',
+      difficultyLabel: 'Dễ',
+      servings: 4,
+      prepTimeMinutes: 15,
+      cookTimeMinutes: 20,
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      status: 'PUBLISHED',
+      publishedAt: '2026-10-06T10:00:00',
+      authorId: 42,
+      authorName: 'Trần Thị Chuyên Gia',
+      nutritionComplete: false,
+      ingredientsWithoutNutrition: ['Đậu hũ'],
+      media: [],
+      ingredients: [
+        {
+          ingredientId: 1,
+          name: 'Đậu hũ',
+          quantity: 200,
+          unitId: 1,
+          unitCode: 'g',
+          unitName: 'gram',
+        },
+      ],
+    },
+  }));
+
+  // Use the current Backend-session boundary; the production demo account switch was removed.
+  await seedDemoSession(page, 'EXPERT');
+  await page.route('**/api/v1/recipes/media/upload', (route) => route.fulfill({ json: {
+    success: true, data: { blobUrl: 'https://example.test/cover-candidate.png', mimeType: 'image/png', sizeBytes: 5 },
+  } }));
+  await page.goto('/dang-cong-thuc');
+
+  await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
+
+  // The current uploader selects the first uploaded image as the cover (AC-25.6).
+  const imageInput = page.locator('#recipe-media-upload-input');
+  await imageInput.setInputFiles([
+    { name: 'cover-candidate.png', mimeType: 'image/png', buffer: Buffer.from('cover') },
+  ]);
+  await expect(page.getByText('Đã tải 1/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
+
+  // 3. Fill form fields
+  await page.getByLabel('Tên món *').fill('Nấm đùi gà kho tiêu xanh');
+  await page.getByRole('textbox', { name: 'Mô tả', exact: true }).fill('Món kho thơm lừng đậm đà.');
+  await page.getByLabel('Thể loại món').selectOption('BRAISED');
+  await page.getByLabel('Loại ăn chay').selectOption('VEGAN');
+  await page.getByLabel('Độ khó').selectOption('EASY');
+  await page.getByLabel('Khẩu phần').fill('4');
+  await page.getByLabel('Thời gian chuẩn bị').fill('15');
+  await page.getByLabel('Thời gian nấu').fill('20');
+
+  // Fill ingredient
+  await page.getByLabel('Chọn nguyên liệu 1').fill('Đậu');
+  await page.getByRole('button', { name: 'Đậu hũ', exact: true }).click();
+  await page.getByLabel('Đơn vị nguyên liệu 1').selectOption('1');
+
+  // Exercise quantity error branch
+  await page.getByLabel('Số lượng nguyên liệu 1').fill('-5');
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+  await expect(page.getByText('Định lượng phải là số dương, tối đa hai chữ số thập phân.')).toBeVisible();
+  await page.getByLabel('Số lượng nguyên liệu 1').fill('200');
+
+  // Exercise YouTube validation branch
+  const ytInput = page.getByLabel(/Link YouTube/);
+  await ytInput.fill('https://not-youtube.com/video');
+  await expect(page.getByText('Hệ thống chỉ hỗ trợ video từ YouTube. Vui lòng không sử dụng nền tảng khác.')).toBeVisible();
+  await ytInput.fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+
+  // Fill instructions
+  await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Cắt nấm thành từng lát vừa ăn, ướp gia vị chay và kho liu riu cho thấm.');
+
+  // 4. Submit once: trigger validation failure from server (AC-25.3)
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+
+  // Field error from API response should be rendered
+  await expect(page.getByText('Tên món ăn đã tồn tại hoặc không hợp lệ')).toBeVisible();
+
+  // Form input preservation (AC-25.3)
+  expect(await page.getByLabel('Tên món *').inputValue()).toBe('Nấm đùi gà kho tiêu xanh');
+  expect(await page.getByRole('textbox', { name: 'Mô tả', exact: true }).inputValue()).toBe('Món kho thơm lừng đậm đà.');
+  expect(await page.getByLabel('Khẩu phần').inputValue()).toBe('4');
+  expect(await page.getByLabel('Thời gian chuẩn bị').inputValue()).toBe('15');
+  expect(await page.getByLabel('Thời gian nấu').inputValue()).toBe('20');
+  expect(await page.getByLabel('Số lượng nguyên liệu 1').inputValue()).toBe('200');
+  expect(await page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').inputValue()).toContain('Cắt nấm thành từng lát');
+  await expect(page.getByText('Đã tải 1/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
+  expect(receivedPayload.media).toEqual([
+    { blobUrl: 'https://example.test/cover-candidate.png', mimeType: 'image/png', cover: true },
+  ]);
+
+  // 5. Submit again: validation passes, direct publish succeeds (AC-25.1)
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
+
+  // Verify server payload
+  expect(receivedPayload).toBeTruthy();
+  expect(receivedPayload.title).toBe('Nấm đùi gà kho tiêu xanh');
+  expect(receivedPayload).not.toHaveProperty('status');
+  expect(receivedPayload).not.toHaveProperty('authorId');
+
+  // Navigates directly to published recipe detail
+  await page.waitForURL('**/cong-thuc/999');
+  await expect(page.getByRole('heading', { name: 'Nấm đùi gà kho tiêu xanh', level: 1 })).toBeVisible();
+  await expect(page.getByText('Chưa đủ dữ liệu dinh dưỡng')).toBeVisible();
+  await expect(page.getByTestId('recipe-youtube-section')).toBeVisible();
 });
 
 test('recipe image upload and gallery management complies with FR-14 rules', async ({ page }) => {
@@ -515,7 +789,7 @@ test('recipe image upload and gallery management complies with FR-14 rules', asy
   await page.goto('/dang-cong-thuc');
 
   await expect(page.getByRole('heading', { name: 'Đăng công thức món chay mới' })).toBeVisible();
-  await expect(page.getByText('Hình ảnh bài công thức (Tối đa 5 ảnh, đúng 1 ảnh bìa - FR-14)')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hình ảnh bài công thức' })).toBeVisible();
 
   // 2. Upload test image
   const fileInput = page.locator('#recipe-media-upload-input');

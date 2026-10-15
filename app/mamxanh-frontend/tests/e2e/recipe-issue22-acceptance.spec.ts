@@ -285,7 +285,7 @@ test('Issue 22: biên số khẩu phần, thời gian, lượng nguyên liệu v
   await installApi(page, () => ({ status: 201, body: { recipeId: 2250, title: 'Giới hạn công thức', status: 'PUBLISHED', publishedAt: '2026-10-04T08:00:00' } }));
   await openForm(page);
   await expect(page.getByLabel('Tên món *')).toHaveAttribute('maxLength', '120');
-  await expect(page.getByLabel('Mô tả')).toHaveAttribute('maxLength', '2000');
+  await expect(page.getByRole('textbox', { name: 'Mô tả' })).toHaveAttribute('maxLength', '2000');
 
   const servings = page.getByLabel('Khẩu phần');
   await action(page, 'Nhập khẩu phần dưới mức nhỏ nhất', () => servings.fill('0'));
@@ -351,26 +351,21 @@ test('Issue 22: g/kg đi trực tiếp; đơn vị đếm chỉ qua khi API xác
   await expect(page).toHaveURL(/\/cong-thuc\/2202$/);
 });
 
-test('Issue 22: 0 ảnh được đăng; giới hạn tối đa 5 và yêu cầu cover đúng một ảnh', async ({ page }) => {
+test('Issue 22: cho phép đăng không ảnh; giới hạn năm ảnh và tự đặt ảnh đầu tiên làm cover', async ({ page }) => {
   await installApi(page, (body) => ({ status: 201, body: { recipeId: 2203, title: body.title, status: 'PUBLISHED', publishedAt: '2026-10-04T08:00:00' } }));
   await openForm(page);
   await fillValidRecipe(page);
-  const chooser = page.getByLabel('Chọn tối đa 5 ảnh');
-  await action(page, 'Chọn một ảnh nhưng chưa chọn cover', () => chooser.setInputFiles([{ name: 'cover.png', mimeType: 'image/png', buffer: Buffer.from('cover') }]));
-  await action(page, 'Thử xuất bản khi chưa chọn cover', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByRole('alert')).toContainText('hãy chọn đúng 1 ảnh bìa');
-  await action(page, 'Chọn cover cho ảnh', () => page.getByLabel('Chọn cover.png làm ảnh cover').check());
-  await action(page, 'Thử đăng ảnh đã có cover', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByRole('alert')).toContainText('đang được hoàn thiện');
-  await action(page, 'Chọn sáu ảnh để kiểm tra giới hạn', () => chooser.setInputFiles(Array.from({ length: 6 }, (_, index) => ({ name: `photo-${index + 1}.png`, mimeType: 'image/png', buffer: Buffer.from(`photo-${index + 1}`) }))));
-  await action(page, 'Thử xuất bản quá năm ảnh', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByRole('alert')).toContainText('tối đa 5 ảnh');
-  await action(page, 'Chọn đúng năm ảnh', () => chooser.setInputFiles(Array.from({ length: 5 }, (_, index) => ({ name: `five-${index + 1}.png`, mimeType: 'image/png', buffer: Buffer.from(`five-${index + 1}`) }))));
-  await action(page, 'Chọn một cover trong năm ảnh', () => page.getByLabel('Chọn five-1.png làm ảnh cover').check());
-  await action(page, 'Xác nhận năm ảnh và một cover qua validation của form', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByRole('alert')).toContainText('đang được hoàn thiện');
-  await action(page, 'Bỏ các ảnh đã chọn', () => chooser.setInputFiles([]));
-  await action(page, 'Để trống ảnh và xuất bản', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
+  const chooser = page.locator('#recipe-media-upload-input');
+  await chooser.setInputFiles(Array.from({ length: 6 }, (_, index) => ({ name: `photo-${index + 1}.png`, mimeType: 'image/png', buffer: Buffer.from(`photo-${index + 1}`) })));
+  await expect(page.getByText('Đã tải 5/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
+  await expect(page.getByText(/Chỉ tải lên tối đa 5 ảnh còn lại/)).toBeVisible();
+  await expect(page.getByTitle('Đang là ảnh bìa')).toHaveCount(1);
+  await expect(page.getByAltText(/^Ảnh công thức/)).toHaveCount(5);
+  for (let image = 0; image < 5; image += 1) {
+    await page.getByTitle('Xóa ảnh này').last().click();
+  }
+  await expect(page.getByAltText(/^Ảnh công thức/)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Xuất bản công thức' }).click();
   await expect(page).toHaveURL(/\/cong-thuc\/2203$/);
   await expect(page.getByRole('img', { name: 'Ảnh mặc định cho món Thuần chay' })).toBeVisible();
   await expect(page.getByText('Cắt đậu hũ, rim với cà chua đến khi thấm vị.')).toBeVisible();
@@ -388,14 +383,14 @@ test('Issue 22: YouTube/mô tả tùy chọn; API từ chối phiên Chuyên gia
   });
   await openForm(page);
   await fillValidRecipe(page);
-  await action(page, 'Để trống mô tả (trường tùy chọn)', () => page.getByLabel('Mô tả').fill(''));
+  await action(page, 'Để trống mô tả (trường tùy chọn)', () => page.getByRole('textbox', { name: 'Mô tả' }).fill(''));
   await action(page, 'Để trống link YouTube (trường tùy chọn)', () => page.getByLabel('Link YouTube').fill(''));
   await action(page, 'Gửi khi chưa đăng nhập', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
   await expect(page.getByRole('alert')).toContainText('Phiên đăng nhập không còn hợp lệ');
   await seedDemoSession(page, 'EXPERT');
   await page.goto('/dang-cong-thuc');
   await fillValidRecipe(page);
-  await action(page, 'Để trống mô tả (trường tùy chọn)', () => page.getByLabel('Mô tả').fill(''));
+  await action(page, 'Để trống mô tả (trường tùy chọn)', () => page.getByRole('textbox', { name: 'Mô tả' }).fill(''));
   await action(page, 'Để trống link YouTube (trường tùy chọn)', () => page.getByLabel('Link YouTube').fill(''));
   postStatus = 403;
   await action(page, 'Gửi lại bằng vai trò không phải EXPERT', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());

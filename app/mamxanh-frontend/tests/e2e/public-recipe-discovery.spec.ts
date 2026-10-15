@@ -44,6 +44,9 @@ const detail = {
   author: { userId: 22, displayName: "Lan", avatarUrl: null },
   statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
   ingredientsWithoutNutrition: [],
+  author: { userId: 22, displayName: 'Bếp Chay Lan', avatarUrl: null },
+  nutrition: { complete: true, ingredientsMissingData: [], total: {}, perServing: {} },
+  statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
   ingredients: [{ ingredientId: 1, name: 'Nấm rơm tươi', quantity: 100, unitId: 1, unitCode: 'g', unitName: 'gram' }],
   media: [{ blobUrl: 'https://example.test/901.jpg', mimeType: 'image/jpeg', displayOrder: 0, cover: true }],
 };
@@ -80,7 +83,7 @@ test.describe('Issue #3 [FR-01] — Guest xem và tìm kiếm nội dung công k
     });
 
     await page.goto('/kham-pha');
-    const searchInput = page.getByPlaceholder(/Tìm món chay/);
+    const searchInput = page.getByRole('textbox', { name: 'Từ khóa' });
     await searchInput.fill('canh chua');
     await expect(page.getByText('Canh chua chay nấm đậu bắp thanh nhiệt')).toBeVisible();
     await expect(page.getByText('Đậu hũ non sốt nấm đông cô tiêu xanh')).toHaveCount(0);
@@ -96,6 +99,33 @@ test.describe('Issue #3 [FR-01] — Guest xem và tìm kiếm nội dung công k
     await expect(page.getByRole('heading', { level: 1, name: detail.title })).toBeVisible();
     await expect(page.getByText('Nấm rơm tươi')).toBeVisible();
     await expect(page.getByText(detail.instructions)).toBeVisible();
+  });
+
+  test('Guest sees calculated nutrition with a warning when catalog data is incomplete', async ({ page }) => {
+    const partialNutritionDetail = {
+      ...detail,
+      recipeId: 903,
+      nutritionComplete: false,
+      ingredientsWithoutNutrition: ['Đậu hũ non'],
+      nutrition: {
+        complete: false,
+        ingredientsMissingData: ['Đậu hũ non'],
+        total: { ENERGY_KCAL: 240 },
+        perServing: { ENERGY_KCAL: 120 },
+      },
+    };
+    await page.route('**/api/v1/recipes/903', (route) => route.fulfill({ json: partialNutritionDetail }));
+
+    await page.goto('/cong-thuc/id/903');
+
+    const warning = page.getByRole('note');
+    await expect(warning).toHaveAttribute('aria-live', 'polite');
+    await expect(warning).toContainText('Ước tính chưa đầy đủ');
+    await expect(warning).toContainText('Các giá trị chỉ gồm phần tính được từ danh mục.');
+    await expect(warning).toContainText('Nguyên liệu chưa hỗ trợ tính dinh dưỡng:');
+    await expect(warning.getByRole('listitem')).toHaveText('Đậu hũ non');
+    await expect(page.getByText('120 kcal')).toBeVisible();
+    await expect(page.getByText(/Nguồn tham khảo: danh mục dinh dưỡng nội bộ/)).toBeVisible();
   });
 
   test('AC-01.4: Không hiển thị bài viết vi phạm hoặc không tồn tại cho Guest', async ({ page }) => {
@@ -172,4 +202,78 @@ test('FR-08 Explore applies API-backed options, ingredient AND filters, sorting 
   await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();
   await page.getByRole('button', { name: 'Đặt lại bộ lọc' }).last().click();
   await expect(page.getByRole('heading', { name: matchingRecipe.title })).toBeVisible();
+});
+
+test('API recipe detail supports serving controls, image gallery, sharing and exports', async ({ page }) => {
+  const recipe = {
+    ...detail,
+    recipeId: 920,
+    title: 'Canh nấm đậu hũ',
+    servings: 2,
+    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    nutrition: {
+      complete: true,
+      ingredientsMissingData: [],
+      total: { ENERGY_KCAL: 240 },
+      perServing: { ENERGY_KCAL: 120 },
+    },
+    ingredients: [
+      { ingredientId: 1, name: 'Nấm rơm tươi', quantity: 100, unitId: 1, unitCode: 'g', unitName: 'gram' },
+      { ingredientId: 2, name: 'Đậu hũ', quantity: 200, unitId: 1, unitCode: 'g', unitName: 'gram' },
+    ],
+    media: [
+      { blobUrl: 'https://example.test/920-cover.jpg', mimeType: 'image/jpeg', displayOrder: 0, cover: true },
+      { blobUrl: 'https://example.test/920-step.jpg', mimeType: 'image/jpeg', displayOrder: 1, cover: false },
+    ],
+  };
+
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async (value: string) => sessionStorage.setItem('shared-url', value) },
+    });
+    Object.defineProperty(window, 'print', {
+      configurable: true,
+      value: () => sessionStorage.setItem('print-called', 'true'),
+    });
+  });
+  await page.route('**/api/v1/recipes/920', (route) => route.fulfill({ json: recipe }));
+
+  await page.goto('/cong-thuc/id/920');
+  await expect(page.getByRole('heading', { name: recipe.title, level: 1 })).toBeVisible();
+  await expect(page.getByTitle(`Video hướng dẫn ${recipe.title}`)).toHaveAttribute(
+    'src', 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+  );
+
+  await page.getByRole('button', { name: 'Giảm khẩu phần' }).click();
+  await expect(page.getByText('50 gram', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Giảm khẩu phần' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Tăng khẩu phần' }).click();
+  await page.getByRole('button', { name: 'Tăng khẩu phần' }).click();
+  await expect(page.getByText('150 gram', { exact: true })).toBeVisible();
+  const ingredientToggle = page.getByRole('button', { name: 'Đánh dấu Nấm rơm tươi' });
+  await ingredientToggle.click();
+  await expect(page.getByRole('button', { name: 'Bỏ chọn Nấm rơm tươi' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Bỏ chọn Nấm rơm tươi' }).click();
+  await expect(page.getByRole('button', { name: 'Đánh dấu Nấm rơm tươi' })).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: 'Xem ảnh 2' }).click();
+  await expect(page.getByRole('img', { name: recipe.title })).toHaveAttribute('src', recipe.media[1].blobUrl);
+
+  await page.getByRole('button', { name: 'Chia sẻ' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Đã sao chép liên kết công thức.' })).toHaveText('Đã sao chép liên kết công thức.');
+  expect(await page.evaluate(() => sessionStorage.getItem('shared-url'))).toContain('/cong-thuc/id/920');
+
+  await page.getByRole('button', { name: 'Xuất công thức' }).click();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Tải tệp TXT' }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('Canh-nấm-đậu-hũ.txt');
+
+  await page.getByRole('button', { name: 'Xuất công thức' }).click();
+  await page.getByRole('button', { name: 'In / lưu PDF A4' }).click();
+  expect(await page.evaluate(() => sessionStorage.getItem('print-called'))).toBe('true');
+  await page.getByText('Xem tổng dinh dưỡng toàn công thức').click();
+  await expect(page.getByText('240 kcal')).toBeVisible();
 });

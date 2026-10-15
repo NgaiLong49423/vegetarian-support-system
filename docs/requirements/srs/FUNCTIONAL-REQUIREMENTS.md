@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.10.0
+> **Version:** v2.18.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-09
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -298,7 +298,7 @@ Thiết lập Mâm Xanh thành sân chơi ẩm thực chay chuyên nghiệp, nơ
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Guest và Customer tuyệt đối không có quyền tạo, chỉnh sửa hoặc xóa bài công thức (BR-05, BR-07).
-- Chỉ tài khoản có vai trò `Role = EXPERT` (hoặc `Role = ADMIN`) mới có quyền tạo bài viết mới.
+- Chỉ tài khoản có vai trò `Role = EXPERT` mới có quyền tạo bài viết mới; Administrator không phải tác giả và chỉ xử lý Recipe Post qua thao tác quản trị/hậu kiểm (AC-04.7, FR-06).
 - Chuyên gia tác giả chỉ có quyền chỉnh sửa hoặc xóa các bài viết do chính mình làm tác giả (BR-64, NFR-09).
 - Không áp dụng cơ chế phê duyệt trước (pre-moderation) từng bài viết của Chuyên gia; chất lượng bài được bảo đảm thông qua quy trình tiền kiểm cấp quyền Chuyên gia (FR-05) và cơ chế hậu kiểm dựa trên báo cáo vi phạm cộng đồng (FR-06).
 
@@ -1079,7 +1079,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
     | **Thư viện ảnh (`RECIPE_MEDIA`)** | **0 – 5 ảnh**, JPEG/PNG/WebP, $\le 5$ MB/ảnh; khi có $\ge 1$ ảnh thì **bắt buộc đúng 1 ảnh bìa** (`is_cover = true`) | Tùy chọn (BR-19, BR-20, FR-14) |
     | **Video YouTube** | **0 – 1 link YouTube** hợp lệ | Tùy chọn (BR-10, BR-20, FR-15) |
 - **Phân loại Actor:**
-  - Primary Actor: `Chuyên gia (Role = EXPERT)`, `Administrator` (tác giả bài viết).
+  - Primary Actor: `Chuyên gia (Role = EXPERT)` (tác giả bài viết).
   - Supporting Actor: `Hệ thống kiểm tra tính hợp lệ dữ liệu (Validation Subsystem)`.
 
 #### Use Cases & User Stories
@@ -1090,7 +1090,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Là một người nấu ăn*, tôi muốn nhập hướng dẫn chế biến linh hoạt và rõ ràng để người đọc dễ dàng làm theo, chọn thể loại món phù hợp, đồng thời hệ thống kiểm tra các đơn vị đo lường có quy đổi được không để tính toán dinh dưỡng chính xác.
 
 #### Phân quyền & Ràng buộc phê duyệt
-- **Quyền hạn:** Áp dụng bình đẳng cho mọi bài viết do Chuyên gia hoặc Administrator tạo.
+- **Quyền hạn:** Áp dụng bình đẳng cho mọi bài viết do Chuyên gia tạo; Administrator không phải tác giả (AC-04.7).
 - **Ràng buộc nghiệp vụ:** Đúng bộ tham số đã phê duyệt; bắt buộc có hướng dẫn chế biến (`instructions` từ 10 đến 5.000 ký tự); thể loại món `dish_category` hợp lệ; nguyên liệu có tỷ lệ quy đổi hợp lệ sang gam (BR-73); thư viện ảnh tối đa 5 ảnh với đúng 1 ảnh bìa (BR-19, BR-20).
 
 #### Ma trận truy vết (Traceability Matrix)
@@ -2394,7 +2394,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-35).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cho phép Member đã đăng nhập và đủ điều kiện sức khỏe khai báo/cập nhật thông số nhân trắc học (`date_of_birth`, giới tính, chiều cao, cân nặng, mức độ vận động, mục tiêu dinh dưỡng cá nhân); service tính tuổi từ ngày sinh để kiểm tra điều kiện 18–120, không lưu tuổi cố định; tính toán chỉ số BMI tham khảo và hiển thị nhu cầu năng lượng/dinh dưỡng ước tính dựa trên dữ liệu chuẩn USDA/NIH; bắt buộc hiển thị tuyên bố từ chối trách nhiệm y tế (Medical Safety Disclaimer); hệ thống tuyệt đối không tự chẩn đoán, kê đơn hay áp đặt chế độ ăn điều trị.
+- **Tóm tắt yêu cầu:** Cho phép Member đã đăng nhập và đủ điều kiện sức khỏe khai báo/cập nhật thông số nhân trắc học (`date_of_birth`, giới tính, chiều cao, cân nặng, mức độ vận động) cùng mục tiêu dinh dưỡng chung tùy chọn (`MAINTAIN_WEIGHT`, `LOSE_WEIGHT`, `GAIN_WEIGHT`, `BUILD_MUSCLE`, `IMPROVE_HEALTH`, `SUPPORT_TRAINING`); service tính tuổi từ ngày sinh để kiểm tra điều kiện 18–120, không lưu tuổi cố định; tính toán chỉ số BMI tham khảo và hiển thị nhu cầu năng lượng/dinh dưỡng ước tính dựa trên dữ liệu chuẩn USDA/NIH. Mục tiêu dinh dưỡng chung không bắt buộc và không tự thay đổi các con số FR-35; nó được dùng làm mục tiêu đã lưu cho chế độ AI dựa trên hồ sơ của FR-36. Bắt buộc hiển thị tuyên bố từ chối trách nhiệm y tế (Medical Safety Disclaimer); hệ thống tuyệt đối không tự chẩn đoán, kê đơn hay áp đặt chế độ ăn điều trị.
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Member đã đăng nhập, từ đủ 18 tuổi, không mang thai, không cho con bú và không có bệnh lý mạn tính cần chế độ ăn điều trị đặc biệt (SRS 3.18, BR-41, BR-42).
   - Không áp dụng: Guest (BR-05), người dùng dưới 18 tuổi, phụ nữ có thai/cho con bú, người cần can thiệp y tế (BR-42).
@@ -2467,9 +2467,9 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-36).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tạo thực đơn gợi ý theo tuần hoặc theo ngày dựa trên hồ sơ dinh dưỡng tham khảo cá nhân và các ràng buộc ăn uống của Member; AI chỉ được phép lựa chọn từ các bài Recipe Post đang công khai trong hệ thống có dữ liệu định lượng dinh dưỡng tin cậy (100% nguyên liệu đã được ánh xạ gram và có số liệu dinh dưỡng); AI không được tự bịa công thức mới ngoài cơ sở dữ liệu; người dùng phải xác nhận trước khi lưu các món được gợi ý vào Lịch ăn tuần.
+- **Tóm tắt yêu cầu:** Cung cấp trong trang Lịch ăn hai chế độ tạo thực đơn tuần tham khảo bằng AI. Chế độ “Dựa trên hồ sơ” đọc mục tiêu chung đã lưu trong FR-35 cùng dữ liệu nhân trắc học/dinh dưỡng và các ràng buộc ăn uống đã khai báo; nếu mục tiêu hoặc câu trả lời sở thích chưa có, giữ là `null`, không bắt hoàn tất onboarding và không suy đoán mục tiêu cân nặng. Chế độ “Theo mong muốn tuần này” nhận mục tiêu riêng cho lần tạo lịch hiện tại cùng nguyên liệu muốn có/cần tránh; mọi câu trả lời đều tùy chọn, chỉ có hiệu lực cho lần tạo tuần đó, không lưu vào hồ sơ và không tự động áp dụng cho tuần sau. Nguyên liệu muốn có chỉ là ưu tiên mềm trong tập công thức hợp lệ; mọi công thức chứa nguyên liệu người dùng chọn tránh bị loại khỏi tập ứng viên và không thể được ưu tiên hoặc chọn, kể cả khi có nguyên liệu người dùng muốn có. Với cả hai chế độ, AI chỉ được lựa chọn từ các Recipe Post đang công khai trong hệ thống có dữ liệu định lượng dinh dưỡng tin cậy (100% nguyên liệu ánh xạ gram và có số liệu đầy đủ); AI không được tự tạo món ngoài cơ sở dữ liệu; Member phải xem trước và xác nhận trước khi áp dụng vào Lịch ăn tuần. Mục tiêu tăng/giảm cân trong yêu cầu menu là ưu tiên lựa chọn món, không phải cam kết thay đổi cân nặng hay mục tiêu y tế; các mốc số FR-35 vẫn được trình bày như mức tham khảo hiện hành, không tự suy ra mức thâm hụt/thặng dư calorie.
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Member đã đăng nhập, đã hoàn tất hồ sơ dinh dưỡng (FR-35), đã hoàn thành onboarding sở thích/ràng buộc ăn chay (FR-31) và có gói Pro hợp lệ cho AI lập thực đơn dinh dưỡng (FR-10).
+  - Áp dụng cho: Member đã đăng nhập, có hồ sơ nhân trắc học hợp lệ và xác nhận đủ điều kiện (FR-35/FR-38), và có gói Pro hợp lệ cho AI lập thực đơn dinh dưỡng (FR-10). Onboarding sở thích FR-31 và mục tiêu chung là tùy chọn cho FR-36; câu trả lời chưa khai báo là `null`, không đồng nghĩa xác nhận “không có”. Nếu đã khai báo trường phái ăn chay hoặc nguyên liệu dị ứng/cần tránh, các dữ liệu đó là ràng buộc an toàn bắt buộc. Câu trả lời của “Theo mong muốn tuần này” chỉ có trong request hiện tại.
   - Giới hạn: Quá trình tạo thực đơn chỉ mang tính tham khảo và hỗ trợ lên kế hoạch ăn uống; việc tối ưu hóa vi chất chuyên sâu theo bệnh lý nằm ngoài phạm vi MVP.
 - **Phân loại Actor:**
   - Primary Actor: `Member` (đã đăng nhập và đủ điều kiện).
@@ -2477,7 +2477,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 
 #### Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-36.1`: Yêu cầu AI tạo thực đơn tham khảo theo hồ sơ dinh dưỡng và ràng buộc ăn chay.
+  - `UC-36.1`: Yêu cầu AI tạo thực đơn tham khảo theo hồ sơ đã lưu hoặc theo mong muốn riêng của tuần hiện tại.
   - `UC-36.2`: Xem danh sách món được đề xuất kèm giải trình dinh dưỡng và cảnh báo tham khảo.
   - `UC-36.3`: Xác nhận áp dụng thực đơn gợi ý vào các bữa ăn trong Lịch ăn tuần.
 - **User Stories:**
@@ -2486,6 +2486,8 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Member đã đăng nhập có gói Pro còn hiệu lực mới có quyền yêu cầu AI lập thực đơn dinh dưỡng. Guest, Free và Plus không có quyền này (FR-10, BR-02, BR-03).
 - **Ràng buộc nghiệp vụ:** AI chỉ đóng vai trò ghép nối công thức có sẵn; hệ thống cấm tuyệt đối việc tạo công thức ảo hoặc ghi đè số liệu dinh dưỡng không qua kiểm chứng (BR-38, BR-40, BR-41).
+- **Hai chế độ yêu cầu:** `PROFILE` dùng mục tiêu dinh dưỡng chung trong FR-35 nếu có; `THIS_WEEK` nhận `goal`, `preferredIngredientIds` và `avoidedIngredientIds` chỉ trong request hiện tại. Nguyên liệu dị ứng/cần tránh từ FR-31 và mọi nguyên liệu trong `avoidedIngredientIds` là hard exclusion; nguyên liệu trong `preferredIngredientIds` chỉ là ưu tiên mềm trong số công thức còn hợp lệ. Nếu cùng một nguyên liệu nằm trong cả hai danh sách, điều kiện tránh luôn thắng. Giá trị của chế độ `THIS_WEEK` không được lưu hoặc tái sử dụng cho request khác.
+- **Mức cá nhân hóa:** Mục tiêu được chuyển thành tiêu chí ưu tiên chọn công thức trong pool tin cậy. Tổng năng lượng và 9 chỉ tiêu của món/menu được tính từ dữ liệu RecipePost đã xác thực; mục tiêu tuần không làm thay đổi công thức mục tiêu FR-35, không yêu cầu cân nặng/thời hạn mục tiêu và không phải cam kết kết quả cân nặng.
 
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
@@ -2525,7 +2527,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **AC-36.4 (Xác nhận của Member trước khi ghi đè/lưu Lịch ăn):**
   - *Given* AI đã sinh bản xem trước thực đơn thành công,
   - *When* Member chưa nhấn nút "Lưu vào Lịch ăn",
-  - *Then* hệ thống không tự động thay đổi bất kỳ mục nào trong Lịch ăn tuần hiện tại của Member.
+  - *Then* hệ thống không tự động thay đổi bất kỳ mục nào trong Lịch ăn tuần hiện tại của Member; khi Member xác nhận, hệ thống thay toàn bộ các mục của tuần đích bằng các ô được chọn trong preview trong một giao dịch nguyên tử. Nếu bất kỳ món nào không còn hợp lệ, toàn bộ thao tác rollback và lịch cũ được giữ nguyên.
 - **AC-36.5 (Kiểm tra quyền gói Pro trước khi gọi AI):**
   - *Given* Member chỉ có gói Free hoặc Plus,
   - *When* gửi yêu cầu tạo thực đơn dinh dưỡng bằng AI,
@@ -2534,6 +2536,12 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - *Given* Member có gói Pro hợp lệ gửi yêu cầu tạo thực đơn AI,
   - *When* dịch vụ AI gặp lỗi kết nối hoặc thời gian phản hồi vượt quá 8 giây,
   - *Then* hệ thống thông báo lỗi tới người dùng và quyền gói Pro không đổi.
+- **AC-36.7 (Hai chế độ gợi ý trên trang Lịch ăn):** Member đủ điều kiện và có Pro chọn được “Dựa trên hồ sơ” hoặc “Theo mong muốn tuần này”; cả hai đều hiển thị bản xem trước trước khi áp dụng.
+- **AC-36.8 (Mục tiêu hồ sơ có thể để trống):** Ở chế độ hồ sơ, mục tiêu đã lưu được dùng làm tiêu chí ưu tiên; nếu null, hệ thống vẫn tạo menu cân bằng theo dữ liệu hợp lệ khác, không buộc trả lời mục tiêu và không tự gán mục tiêu cân nặng.
+- **AC-36.9 (Câu trả lời tuần này chỉ có hiệu lực một lần):** Chế độ tuần này dùng mục tiêu cùng nguyên liệu muốn có/cần tránh chỉ cho request hiện tại; không ghi vào hồ sơ hoặc áp dụng sang tuần sau nếu Member không chọn lại. Ràng buộc an toàn đã khai báo từ FR-31 vẫn luôn được áp dụng. Mọi công thức có chứa nguyên liệu trong danh sách cần tránh của tuần bị loại khỏi candidate pool; quy tắc này luôn thắng nguyên liệu muốn có. Nguyên liệu muốn có chỉ xếp ưu tiên mềm trong các công thức còn lại.
+- **AC-36.10 (Không suy diễn mục tiêu định lượng hoặc hứa kết quả):** Mục tiêu giảm/tăng cân hoặc tăng cơ chỉ điều hướng lựa chọn công thức; năng lượng và 9 chỉ tiêu vẫn là dữ liệu tính được từ hồ sơ/RecipePost có nguồn, không tự thêm thâm hụt/thặng dư calorie hay cam kết cân nặng.
+- **AC-36.11 (Không ép hoàn tất hồ sơ sở thích):** Member đủ điều kiện FR-35/FR-38 và Pro nhưng chưa hoàn tất một hoặc nhiều câu hỏi FR-31 vẫn có thể tạo menu; dữ liệu chưa khai báo là `null`, mọi ràng buộc đã biết được áp dụng và UI giải thích rằng mức cá nhân hóa phụ thuộc thông tin đã cung cấp.
+- **AC-36.12 (Đủ 21 vị trí và lặp món có kiểm soát):** Preview thành công có 7 ngày × 3 bữa; nếu pool tin cậy không đủ 21 công thức khác nhau, hệ thống được lặp công thức nhưng không xếp cùng một công thức ở hai bữa liên tiếp. Member có thể bỏ chọn một số vị trí trước khi xác nhận; chỉ các vị trí được chọn được ghi vào lịch sau khi toàn bộ tuần cũ bị thay.
 
 ---
 
@@ -3100,6 +3108,13 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - Primary Actor: `Guest / Member` (xem gợi ý thông thường), `Member` (chủ động yêu cầu AI gợi ý).
   - Supporting Actor: `Hệ thống truy vấn công thức nội bộ`, `Google Gemini AI` (khi được gọi).
 
+#### Quy tắc gợi ý và nguyên liệu chính
+- Gợi ý thông thường cho phép khớp một phần: cùng `dish_category`, cùng `vegetarian_type` hoặc trùng ít nhất một nguyên liệu chính; chỉ cần một tiêu chí khớp để là ứng viên. Mỗi tiêu chí được một điểm; xếp tổng điểm giảm dần, tiếp theo là số nguyên liệu chuẩn trùng nhau giảm dần, thời điểm công khai mới nhất và ID tăng dần để ổn định kết quả.
+- Nguyên liệu chính là nguyên liệu có khối lượng lớn nhất sau khi quy đổi định lượng về gram. g/kg dùng hệ số của đơn vị MASS; ml/quả và các đơn vị khác dùng bảng quy đổi gram hiện hành theo nguyên liệu/đơn vị. Nếu nhiều nguyên liệu cùng khối lượng lớn nhất, tất cả đều là nguyên liệu chính.
+- Nếu một dòng thiếu khả năng quy đổi hoặc chỉ có nguyên liệu tùy chỉnh không có ID chuẩn, không suy đoán nguyên liệu chính của công thức đó; các tiêu chí thể loại và loại chay vẫn dùng được. Không so trực tiếp các số định lượng khác đơn vị và không mặc định thiếu dữ liệu bằng 0.
+- Luôn loại bài nguồn, bài ẩn/xóa và kết quả trùng. Mặc định hiển thị tối đa 6 công thức; ít ứng viên thì trả số lượng thực tế, không điền món giả.
+- Với tùy chọn AI, Backend chỉ gửi tập ứng viên công khai có giới hạn và cùng loại chay với bài nguồn. Gemini chọn ID trong tập này; Backend xác minh ID và đọc lại trạng thái/nội dung hiện tại trước khi hiển thị. Không có lựa chọn phù hợp thì hiển thị trạng thái rỗng.
+
 #### Use Cases & User Stories
 - **Danh sách Use Cases:**
   - `UC-47.1`: Xem danh sách các bài công thức liên quan thông thường dựa trên danh mục và nguyên liệu.
@@ -3294,8 +3309,8 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 #### Mục đích & Phạm vi
 - **Tóm tắt yêu cầu:** Cung cấp **MỘT AI Chatbot duy nhất dành cho người dùng cuối** (Unified End-User AI Chatbot), tích hợp Google Gemini AI, hỗ trợ đa năng lực/hỏi đáp tùy theo câu hỏi và ngữ cảnh người dùng đang tương tác. Hệ thống không tạo nhiều chatbot riêng biệt (như Cooking Bot, Recipe Bot, Nutrition Bot, Ingredient Bot, BMI Bot); thay vào đó, cùng một AI Chatbot sẽ hỗ trợ linh hoạt dựa trên hai ngữ cảnh hoạt động chính:
-  1. *Ngữ cảnh chung (General Context):* Người dùng mở chatbot từ giao diện chung của hệ thống để hỏi đáp về lối sống ăn chay, kỹ thuật nấu ăn và chế biến món chay, gợi ý nguyên liệu thay thế phù hợp với trường phái ăn chay, giải thích kiến thức dinh dưỡng thực vật, và giải thích ý nghĩa tham khảo của chỉ số BMI cùng mức năng lượng calorie (dựa trên hồ sơ dinh dưỡng nếu Member đã khai báo tại FR-35).
-  2. *Ngữ cảnh bài công thức (Recipe Context):* Khi người dùng đang xem một bài công thức nấu ăn cụ thể (trang Recipe Detail theo FR-20) và chủ động chọn chức năng "Hỏi AI về công thức này", hệ thống chuyển dữ liệu bài công thức hiện tại làm ngữ cảnh trực tiếp cho Chatbot FR-51. Ngữ cảnh bao gồm các dữ liệu Recipe hợp lệ: tiêu đề, thể loại món (`dish_category`), loại ăn chay, khẩu phần, thời gian chuẩn bị và nấu, danh sách nguyên liệu và định lượng (FR-19), nội dung hướng dẫn thực hiện trong trường `instructions` (10–5.000 ký tự theo FR-16), và dữ liệu dinh dưỡng khả dụng (FR-39). Người dùng có thể đặt các câu hỏi gắn liền với món ăn đó, ví dụ: *"Công đoạn xào nấm cần lưu ý gì và xào khoảng bao lâu?"*, *"Không có dầu mè thì thay bằng gì trong món này?"*, *"Giải thích cách làm món này chi tiết hơn cho người mới nấu"*, *"Món này có bao nhiêu calorie theo dữ liệu hiện có?"*.
+  1. *Ngữ cảnh chung (General Context):* Người dùng mở chatbot từ giao diện chung của hệ thống để hỏi đáp về lối sống ăn chay, kỹ thuật nấu ăn và chế biến món chay, gợi ý nguyên liệu thay thế phù hợp với trường phái ăn chay, giải thích kiến thức dinh dưỡng thực vật, và giải thích ý nghĩa tham khảo của chỉ số BMI cùng mức năng lượng calorie (dựa trên hồ sơ dinh dưỡng nếu Member đã khai báo tại FR-35). Khi người dùng muốn tìm món hoặc công thức, chatbot ưu tiên chọn bài Recipe Post đang công khai trong danh mục và hiển thị thẻ dẫn tới bài thật; không bịa bài viết để thay kết quả tìm kiếm. Chỉ khi người dùng yêu cầu rõ ràng, chatbot mới có thể viết công thức mới hoặc biến tấu công thức.
+  2. *Ngữ cảnh bài công thức (Recipe Context):* Khi người dùng đang xem một bài công thức nấu ăn cụ thể (trang Recipe Detail theo FR-20) và chủ động chọn chức năng "Hỏi AI về công thức này", hệ thống chuyển dữ liệu bài công thức hiện tại làm ngữ cảnh trực tiếp cho Chatbot FR-51. Ngữ cảnh bao gồm các dữ liệu Recipe hợp lệ: tiêu đề, thể loại món (`dish_category`), loại ăn chay, khẩu phần, thời gian chuẩn bị và nấu, danh sách nguyên liệu và định lượng (FR-19), nội dung hướng dẫn thực hiện trong trường `instructions` (10–5.000 ký tự theo FR-16), và dữ liệu dinh dưỡng khả dụng (FR-39). Người dùng có thể hỏi về bài hoặc yêu cầu rõ ràng để AI biến tấu công thức đó; nội dung biến tấu chỉ là bản nháp trong chat, không sửa bài gốc hoặc tạo bài đã đăng.
 - **Người dùng và Quyền truy cập:**
   - Cả `Guest` và `Member` sử dụng **CÙNG MỘT AI Chatbot** này; không tạo bot riêng biệt theo phân quyền người dùng.
   - Sự khác biệt nằm ở cơ chế xác thực, giới hạn tần suất kỹ thuật và mức độ cá nhân hóa:
@@ -3314,7 +3329,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
     - AI hỗ trợ tác giả soạn bài công thức (gợi ý mô tả, gợi ý bước làm, kết quả editable, người dùng chủ động xác nhận, không tự publish) -> thuộc [FR-21](FUNCTIONAL-REQUIREMENTS.md#fr-21).
     - AI gợi ý món và lập thực đơn tuần -> thuộc [FR-34](FUNCTIONAL-REQUIREMENTS.md#fr-34) và [FR-36](FUNCTIONAL-REQUIREMENTS.md#fr-36).
     - AI rà soát và gắn cờ nội dung vi phạm nằm ngoài phạm vi baseline hiện tại của Chatbot.
-    - Gợi ý bài viết liên quan thông thường hoặc tùy chọn Gemini -> thuộc [FR-47](FUNCTIONAL-REQUIREMENTS.md#fr-47).
+    - Gợi ý bài viết liên quan trên trang chi tiết Recipe Post -> thuộc [FR-47](FUNCTIONAL-REQUIREMENTS.md#fr-47); tìm công thức trực tiếp trong hội thoại và trả thẻ bài viết thật thuộc FR-51.
 - **Phân loại Actor:**
   - Primary Actor: `Guest` (người dùng chưa xác thực trải nghiệm theo FR-02), `Member` (người dùng đã đăng nhập theo FR-10).
   - Supporting Actor: `Google Gemini AI` (mô hình ngôn ngữ lớn hỗ trợ xử lý ngôn ngữ tự nhiên), `Hệ thống xác thực quyền tính năng và bảo mật rate limit`.
@@ -3323,12 +3338,14 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Danh sách Use Cases:**
   - `UC-51.1 — Hỏi đáp AI trong ngữ cảnh chung`: Người dùng đặt câu hỏi với AI Chatbot từ giao diện chung của hệ thống. Các năng lực (capabilities) được hỗ trợ bao gồm:
     - Hỏi đáp về lối sống ăn chay, kiến thức ẩm thực và kỹ thuật chế biến món chay căn bản.
+    - Khi người dùng muốn tìm món/công thức, ưu tiên truy vấn Recipe Post công khai và trả các thẻ bài viết thật từ Backend; không tạo nội dung mới để giả làm bài trong hệ thống. Nếu người dùng yêu cầu rõ viết công thức mới, AI có thể trả bản nháp trong hội thoại.
     - Giải thích ý nghĩa tham khảo của chỉ số BMI và mức phân bổ calorie theo ranh giới an toàn (kết hợp hồ sơ dinh dưỡng nếu Member đã khai báo tại FR-35).
-    - Giải thích cách sử dụng, xử lý hoặc thay thế nguyên liệu mà người dùng chủ động hỏi trong phạm vi tư vấn ẩm thực; không tạo Recipe mới ngoài phạm vi đã chốt.
+    - Giải thích cách sử dụng, xử lý hoặc thay thế nguyên liệu mà người dùng chủ động hỏi trong phạm vi tư vấn ẩm thực; chỉ viết công thức mới khi người dùng yêu cầu rõ và nội dung chỉ là bản nháp trong chat.
   - `UC-51.2 — Hỏi đáp AI theo Recipe Post đang xem`: Người dùng đang xem một bài công thức cụ thể và chọn "Hỏi AI về công thức này". Các năng lực (capabilities) được hỗ trợ bao gồm:
     - Giải thích chi tiết các công đoạn chuẩn bị/chế biến trong nội dung hướng dẫn đang xem (kỹ thuật nấu, lưu ý khi làm, ước tính tham khảo khi công thức chưa nêu rõ).
     - Gợi ý thay thế nguyên liệu phù hợp với trường phái ăn chay của món ăn hoặc theo yêu cầu của người dùng (Vegan, Lacto, Ovo, Lacto-Ovo).
     - Giải thích thành phần nguyên liệu, thuật ngữ nấu ăn và dữ liệu dinh dưỡng sẵn có trong bài viết.
+    - Chỉ biến tấu công thức khi người dùng yêu cầu rõ; nội dung biến tấu là bản nháp được gắn nhãn AI, không thay đổi Recipe Post gốc.
 - **User Stories:**
   - `US-51.1` *(Hỏi đáp chung)*: Là một người tìm hiểu hoặc thực hành ăn chay, tôi muốn hỏi Chatbot về kỹ thuật nấu ăn và kiến thức dinh dưỡng thực vật căn bản để có chế độ ăn lành mạnh và tự tin vào bếp.
   - `US-51.2` *(Ngữ cảnh công thức)*: Là người đang xem một bài công thức nấu ăn cụ thể, tôi muốn chọn "Hỏi AI về công thức này" để được AI giải đáp nhanh các thắc mắc về món ăn đó (giải thích công đoạn làm, gợi ý thay thế nguyên liệu) dựa trên đúng nguyên liệu và dữ liệu của bài viết mà không phải tự gõ lại thông tin.
@@ -3347,6 +3364,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - [BR-05](BUSINESS-RULES.md#br-05): Giới hạn tính năng đối với Guest (không lưu lịch sử theo tài khoản).
   - [BR-06](BUSINESS-RULES.md#br-06): Bảo mật Gemini API Key.
   - [BR-09](BUSINESS-RULES.md#br-09): Ranh giới y tế và sức khỏe của câu trả lời AI.
+  - [BR-38](BUSINESS-RULES.md#br-38): Ưu tiên Recipe Post công khai trong chatbot; chỉ soạn mới/biến tấu khi người dùng yêu cầu rõ.
   - [BR-39](BUSINESS-RULES.md#br-39): Vai trò tham khảo của chỉ số BMI.
   - [BR-41](BUSINESS-RULES.md#br-41): Ranh giới thông tin dinh dưỡng và không thay thế chuyên gia.
   - [BR-51](BUSINESS-RULES.md#br-51): Thẩm quyền quản lý danh mục nguyên liệu dinh dưỡng (AI không được tạo/sửa giá trị dinh dưỡng chính thức).
@@ -3395,6 +3413,14 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* Guest hoặc Member hỏi Chatbot về ăn chay, kiến thức ẩm thực hoặc kỹ thuật chế biến trong ngữ cảnh chung,
   - *When* câu hỏi hợp lệ được xử lý thành công,
   - *Then* giao diện hiển thị phản hồi AI không rỗng cùng nhãn AI. Chất lượng ngữ nghĩa và độ chính xác của nội dung được đánh giá theo NFR-25; thời gian phản hồi được đo theo NFR-03.
+- **AC-51.9 (Ưu tiên bài công thức thật khi người dùng tìm món):**
+  - *Given* người dùng yêu cầu tìm hoặc gợi ý công thức, chẳng hạn món chay dễ nấu,
+  - *When* hệ thống tạo phản hồi,
+  - *Then* Backend chỉ trả về các Recipe Post đang công khai, đã lọc theo trường phái ăn chay và nguyên liệu cần tránh đã khai báo; mỗi kết quả là thẻ bài viết thật có thể mở trang công thức. Nếu không có bài phù hợp, chatbot nói rõ không tìm thấy thay vì bịa bài hoặc tự viết công thức.
+- **AC-51.10 (Chỉ viết mới hoặc biến tấu khi người dùng yêu cầu rõ):**
+  - *Given* người dùng hỏi tìm/gợi ý công thức mà không yêu cầu viết mới hoặc biến tấu,
+  - *When* Gemini phản hồi,
+  - *Then* chatbot ưu tiên bài công thức công khai; nội dung công thức mới hoặc biến tấu chỉ xuất hiện khi người dùng yêu cầu rõ, được gắn nhãn là nội dung AI và chỉ tồn tại trong hội thoại, không lưu, đăng hoặc sửa Recipe Post.
 
 ---
 

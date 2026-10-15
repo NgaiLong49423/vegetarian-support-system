@@ -146,6 +146,42 @@ public class RecipePostService {
         return new RecipePageResponse(items, page, size, result.totalElements(), totalPages);
     }
 
+    /** FR-23 (Q56): a member's published posts for the public profile, newest first, size 1–50. */
+    @Transactional(readOnly = true)
+    public RecipePageResponse listPublishedByAuthor(long authorId, int page, int size) {
+        if (page < 0 || size < 1 || size > 50) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED);
+        }
+        currentUserService.requirePublicMember(authorId);
+        var result = browseRepository.findPublishedByAuthor(authorId, LocalDateTime.now(clock), page, size);
+        List<Long> ids = result.rows().stream().map(BrowseRow::recipeId).toList();
+        Map<Long, RecipePostEntity> recipes = repository.findAllById(ids).stream()
+                .collect(Collectors.toMap(RecipePostEntity::getId, Function.identity()));
+        Map<Long, BrowseRow> metrics = result.rows().stream()
+                .collect(Collectors.toMap(BrowseRow::recipeId, Function.identity()));
+        List<RecipePostEntity> orderedRecipes = ids.stream().map(recipes::get)
+                .filter(java.util.Objects::nonNull).toList();
+        int totalPages = (int) Math.ceil((double) result.totalElements() / size);
+        return new RecipePageResponse(publicResponses(orderedRecipes, metrics), page, size,
+                result.totalElements(), totalPages);
+    }
+
+    /** Hydrates a bounded ordered selection with current public content and batch-loaded card data. */
+    @Transactional(readOnly = true)
+    public List<RecipePostResponse> getPublishedCards(List<Long> recipeIds) {
+        if (recipeIds.isEmpty()) return List.of();
+        Map<Long, RecipePostEntity> byId = repository.findAllById(recipeIds).stream()
+                .filter(recipe -> "PUBLISHED".equals(recipe.getStatus()))
+                .collect(Collectors.toMap(RecipePostEntity::getId, Function.identity()));
+        List<RecipePostEntity> ordered = recipeIds.stream().map(byId::get)
+                .filter(java.util.Objects::nonNull).toList();
+        if (ordered.isEmpty()) return List.of();
+        Map<Long, BrowseRow> metrics = statisticsRepository.findAllStatistics(byId.keySet()).stream()
+                .collect(Collectors.toMap(stat -> stat.getRecipeId(), stat -> new BrowseRow(
+                        stat.getRecipeId(), stat.getLikes(), stat.getDislikes(), stat.getViewCount(), 0, stat.getViewCount())));
+        return publicResponses(ordered, metrics);
+    }
+
     private static <T extends Enum<T>> String normalizeCode(String value, Class<T> enumType) {
         if (value == null || value.isBlank()) return null;
         try {
@@ -175,18 +211,17 @@ public class RecipePostService {
         }, (first, ignored) -> first));
     }
 
+    /** Hold the source status stable until the meal-plan transaction commits. */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void requirePublishedMealPlanRecipe(long recipeId) {
+        repository.lockById(recipeId)
+                .filter(item -> "PUBLISHED".equals(item.getStatus()))
+                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
+    }
+
     @Transactional
     public RecipePostResponse update(long recipeId, UpdateRecipePostRequest request) {
-        CurrentUser author = currentUserService.requireActiveExpert();
-        RecipePostEntity recipe = repository.lockById(recipeId)
-                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
-        requireOwner(recipe, author);
-        if ("HIDDEN".equals(recipe.getStatus())) {
-            throw new AppException(ErrorCode.RECIPE_HIDDEN);
-        }
-        if (!"PUBLISHED".equals(recipe.getStatus())) {
-            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
-        }
+        RecipePostEntity recipe = lockOwnEditableRecipe(recipeId);
 
         validateProfile(request);
         recipe.setTitle(request.title().trim());
@@ -319,9 +354,60 @@ public class RecipePostService {
                 likes, dislikes, likePercentage, stats == null ? 0 : stats.views());
     }
 
+    /**
+     * Locks a published Recipe Post that the current active Expert may change (BR-64, AC-04.4, AC-04.7):
+     * another author or an Administrator gets {@code RECIPE_EDIT_NOT_ALLOWED}, a hidden post
+     * {@code RECIPE_HIDDEN} and a missing or deleted post {@code RECIPE_NOT_FOUND}.
+     */
+    @Transactional
+    public RecipePostEntity lockOwnEditableRecipe(long recipeId) {
+        CurrentUser author = currentUserService.requireActiveExpert();
+        RecipePostEntity recipe = repository.lockById(recipeId)
+                .orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
+        requireOwner(recipe, author);
+        if ("HIDDEN".equals(recipe.getStatus())) {
+            throw new AppException(ErrorCode.RECIPE_HIDDEN);
+        }
+        if (!"PUBLISHED".equals(recipe.getStatus())) {
+            throw new AppException(ErrorCode.RECIPE_NOT_FOUND);
+        }
+        return recipe;
+    }
+
     private RecipePostEntity findById(long recipeId) {
         return repository.findById(recipeId).orElseThrow(() -> new AppException(ErrorCode.RECIPE_NOT_FOUND));
     }
+
+    @Transactional(readOnly = true)
+    public List<RecipeUsage> listRecipesUsingIngredient(long ingredientId) {
+        List<Long> recipeIds = ingredientRepository.findDistinctRecipeIdsByIngredientId(ingredientId);
+        if (recipeIds.isEmpty()) return List.of();
+        return repository.findAllById(recipeIds).stream()
+                .sorted(java.util.Comparator.comparing(RecipePostEntity::getTitle, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(RecipePostEntity::getId))
+                .map(recipe -> new RecipeUsage(recipe.getId(), recipe.getTitle(), recipe.getStatus(), recipe.getPublishedAt()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public tech.mamxanh.common.response.PageResponse<RecipeUsage> searchRecipesUsingIngredient(
+            long ingredientId, int page, int size) {
+        Page<RecipePostEntity> result = repository.findAllUsingIngredient(ingredientId,
+                PageRequest.of(page, size, Sort.by(Sort.Order.asc("title"), Sort.Order.asc("id"))));
+        return tech.mamxanh.common.response.PageResponse.of(result.getContent().stream()
+                .map(recipe -> new RecipeUsage(recipe.getId(), recipe.getTitle(), recipe.getStatus(), recipe.getPublishedAt()))
+                .toList(), result.getNumber(), result.getSize(), result.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Map<Long, Long> countRecipesUsingIngredients(java.util.Collection<Long> ingredientIds) {
+        if (ingredientIds.isEmpty()) return java.util.Map.of();
+        return ingredientRepository.countDistinctRecipesByIngredientIds(ingredientIds).stream()
+                .collect(java.util.stream.Collectors.toMap(row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).longValue()));
+    }
+
+    public record RecipeUsage(long recipeId, String title, String status, LocalDateTime publishedAt) { }
 
     private static void requireOwner(RecipePostEntity recipe, CurrentUser author) {
         if (!recipe.getAuthorId().equals(author.id())) {

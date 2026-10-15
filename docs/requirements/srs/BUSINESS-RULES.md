@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.6.0
+> **Version:** v2.10.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-09
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -240,10 +240,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-31"></a>
-### BR-31 — Không gọi AI khi thiếu hồ sơ
+### BR-31 — Không gọi AI khi thiếu dữ liệu bắt buộc
 
 - **Mã quy tắc:** BR-31
-- **Nội dung:** Khi chặn AI cá nhân hóa vì thiếu hồ sơ sở thích hoặc dữ liệu dinh dưỡng/sức khỏe tối thiểu bắt buộc cho tính năng đó, backend không gửi yêu cầu tới Gemini. Giá trị để trống không được tự hiểu là người dùng xác nhận “Không có”.
+- **Nội dung:** Backend không gửi yêu cầu Gemini khi thiếu dữ liệu được requirement của chức năng đó xác định là bắt buộc. Các FR có câu trả lời tùy chọn phải giữ giá trị chưa khai báo là `null`, không hiểu là xác nhận “Không có”. FR-36 không bắt buộc Member hoàn tất onboarding FR-31 hoặc trả lời mục tiêu/nguyên liệu tuần này; chỉ các ràng buộc đã khai báo mới được áp dụng và hệ thống phải giải thích giới hạn cá nhân hóa khi dữ liệu còn thiếu. Hồ sơ dinh dưỡng/eligibility FR-35/38 và Pro vẫn là điều kiện bắt buộc của FR-36.
 
 ---
 
@@ -296,10 +296,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-38"></a>
-### BR-38 — AI không tự tạo công thức mới ngoài hệ thống
+### BR-38 — Ưu tiên công thức công khai và chỉ soạn mới khi được yêu cầu
 
 - **Mã quy tắc:** BR-38
-- **Nội dung:** AI không tạo công thức mới để phục vụ gợi ý hoặc menu và chỉ dùng Recipe Post đang công khai, không hidden/deleted/unavailable. Nếu không có lựa chọn phù hợp, hệ thống phải nói rõ thay vì tạo nội dung không tồn tại.
+- **Nội dung:** Khi chatbot FR-51 được yêu cầu tìm hoặc gợi ý món, hệ thống ưu tiên chọn Recipe Post đang công khai, không hidden/deleted/unavailable; thẻ kết quả phải trỏ tới bài thật do Backend tải và xác minh. Không dùng nội dung do Gemini tự tạo để giả làm bài đăng. Nếu không có lựa chọn phù hợp, hệ thống phải nói rõ. Gemini chỉ được soạn công thức mới hoặc biến tấu công thức dưới dạng nội dung AI trong phiên chat khi người dùng yêu cầu rõ; nội dung này không được lưu, đăng hoặc sửa dữ liệu nghiệp vụ. Các AI menu/gợi ý khác tiếp tục tuân thủ nguồn dữ liệu và phạm vi FR sở hữu chúng.
 
 ---
 
@@ -307,7 +307,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-39 — Vai trò tham khảo của chỉ số BMI
 
 - **Mã quy tắc:** BR-39
-- **Nội dung:** BMI hoặc mục tiêu cân nặng không được dùng một mình để tự kê calorie/macro target, đánh giá sức khỏe hoặc quyết định món phù hợp; BMI chỉ là chỉ số tham khảo trong hồ sơ rộng hơn. Goal-adjusted behavior nâng cao là stretch, không phải MVP acceptance.
+- **Nội dung:** BMI hoặc mục tiêu cân nặng không được dùng một mình để tự kê calorie/macro target hay đánh giá sức khỏe; BMI chỉ là chỉ số tham khảo trong hồ sơ rộng hơn. FR-36 được phép dùng mục tiêu hồ sơ hoặc mục tiêu riêng cho tuần hiện tại để ưu tiên lựa chọn món trong pool công thức tin cậy. Mục tiêu đó không tự thay đổi các mức năng lượng/dưỡng chất FR-35, không được Gemini tự chuyển thành thâm hụt/thặng dư calorie, và không phải chỉ định hay cam kết kết quả cân nặng.
 
 ---
 

@@ -104,7 +104,7 @@ test.describe('Issue #21 [FR-15] — Nhúng trình phát YouTube trong bài côn
 
     // Điền thông tin hợp lệ theo backend schema và nhấn xuất bản
     await page.getByLabel('Tên món *').fill('Món Chay Thử Nghiệm');
-    await page.getByLabel('Mô tả').fill('Mô tả hương vị thanh đạm hấp dẫn.');
+    await page.getByRole('textbox', { name: 'Mô tả' }).fill('Mô tả hương vị thanh đạm hấp dẫn.');
     await page.getByLabel('Thể loại món').selectOption('BRAISED');
     await page.getByLabel('Loại ăn chay').selectOption('VEGAN');
     await page.getByLabel('Độ khó').selectOption('EASY');

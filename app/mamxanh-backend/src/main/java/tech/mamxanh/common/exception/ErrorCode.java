@@ -10,11 +10,17 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "Validation failed", "Dữ liệu gửi lên không hợp lệ."),
+    MEAL_PLAN_RECIPE_DUPLICATE(HttpStatus.CONFLICT, "Duplicate recipe in meal",
+            "Công thức đã có trong bữa ăn này."),
     EMAIL_ALREADY_USED(HttpStatus.CONFLICT, "Email already used", "Email này đã được sử dụng."),
     VERIFICATION_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "Verification token invalid",
             "Liên kết xác minh không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu gửi lại email xác minh."),
     RESEND_TOO_SOON(HttpStatus.TOO_MANY_REQUESTS, "Resend too soon",
             "Bạn vừa yêu cầu gửi email xác minh. Vui lòng thử lại sau ít phút."),
+    PASSWORD_RESET_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "Password reset token invalid",
+            "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu liên kết mới."),
+    NEW_PASSWORD_SAME_AS_CURRENT(HttpStatus.BAD_REQUEST, "New password same as current",
+            "Mật khẩu mới phải khác mật khẩu hiện tại."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "Invalid credentials", "Email hoặc mật khẩu không chính xác."),
     EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN, "Email not verified",
             "Tài khoản chưa xác minh email. Vui lòng mở liên kết xác minh trong hộp thư."),
@@ -42,12 +48,23 @@ public enum ErrorCode {
     RECIPE_EDIT_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Recipe edit not allowed", "Bạn không có quyền chỉnh sửa công thức này."),
     RECIPE_HIDDEN(HttpStatus.FORBIDDEN, "Recipe hidden", "Công thức đang bị quản trị viên ẩn. Vui lòng liên hệ quản trị viên để được phục hồi trước khi chỉnh sửa."),
     RECIPE_DATA_INVALID(HttpStatus.BAD_REQUEST, "Recipe data invalid", "Thông tin công thức không hợp lệ."),
+    AI_SUBSCRIPTION_REQUIRED(HttpStatus.FORBIDDEN, "AI subscription required", "Tính năng hỗ trợ AI yêu cầu gói Plus hoặc Pro còn hiệu lực."),
+    AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI provider unavailable", "Dịch vụ AI hiện không khả dụng. Bạn có thể tiếp tục tự soạn nội dung."),
+    AI_RESPONSE_INVALID(HttpStatus.BAD_GATEWAY, "AI response invalid", "AI trả về nội dung không hợp lệ. Vui lòng thử lại hoặc tự soạn nội dung."),
+    AI_MENU_UNAVAILABLE(HttpStatus.CONFLICT, "AI menu unavailable", "Chưa có đủ công thức phù hợp để tạo thực đơn tuần. Hãy thử lại sau."),
     REPORT_ALREADY_OPEN(HttpStatus.CONFLICT, "Report already open",
             "Bạn đã gửi báo cáo cho công thức này. Hãy bổ sung thông tin vào báo cáo hiện có."),
+    MEMBER_PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "Member profile not found",
+            "Không tìm thấy hồ sơ thành viên."),
     NOT_FOUND(HttpStatus.NOT_FOUND, "Not found", "Không tìm thấy tài nguyên được yêu cầu."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed", "Phương thức HTTP không được hỗ trợ."),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type",
             "Định dạng nội dung không được hỗ trợ."),
+    PAYMENT_SIGNATURE_INVALID(HttpStatus.BAD_REQUEST, "Payment signature invalid",
+            "Chữ ký số xác thực giao dịch không hợp lệ hoặc dữ liệu đã bị can thiệp."),
+    PAYMENT_TRANSACTION_NOT_FOUND(HttpStatus.NOT_FOUND, "Payment transaction not found",
+            "Không tìm thấy thông tin giao dịch thanh toán tương ứng."),
+
     FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "File too large",
             "Dung lượng tệp vượt quá 5 MB cho phép."),
     UNSUPPORTED_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "Unsupported image type",
@@ -88,6 +105,7 @@ public enum ErrorCode {
             case 403 -> ACCESS_DENIED;
             case 404 -> NOT_FOUND;
             case 405 -> METHOD_NOT_ALLOWED;
+            case 413 -> FILE_TOO_LARGE;
             case 415 -> UNSUPPORTED_MEDIA_TYPE;
             default -> INTERNAL_ERROR;
         };

@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-11
-next_id: 20
+last_updated: 2026-10-15
+next_id: 29
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,33 +8,114 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
-  - id: BUG-017
+  - id: BUG-026
     title: API bình chọn trả 500 khi recipeId không dương
     status: RESOLVED
     severity: Medium
     area: Backend/Validation API bình chọn
-    file: .agents/outputs/bugs/BUG-017.md
+    file: .agents/outputs/bugs/BUG-026.md
     created: 2026-10-11
-    updated: 2026-10-11
+    updated: 2026-10-15
     related_issue: 56
-  - id: BUG-019
-    title: Workflow triển khai FR còn ghi ngưỡng coverage cũ
-    status: RECORDED
-    severity: Medium
-    area: Quy trình agent/Quality gate
-    file: .agents/outputs/bugs/BUG-019.md
-    created: 2026-10-11
-    updated: 2026-10-11
-    related_issue: Unknown
-  - id: BUG-018
+  - id: BUG-027
     title: API danh sách và chi tiết công thức trả tỷ lệ Like chưa làm tròn theo FR-57
     status: RESOLVED
     severity: Medium
     area: Backend/Thống kê bình chọn công thức
+    file: .agents/outputs/bugs/BUG-027.md
+    created: 2026-10-11
+    updated: 2026-10-15
+    related_issue: 56
+  - id: BUG-028
+    title: Workflow triển khai FR còn ghi ngưỡng coverage cũ
+    status: RECORDED
+    severity: Medium
+    area: Quy trình agent/Quality gate
+    file: .agents/outputs/bugs/BUG-028.md
+    created: 2026-10-11
+    updated: 2026-10-15
+    related_issue: Unknown
+  - id: BUG-025
+    title: CI không tải font Git LFS cho chức năng xuất lịch PDF
+    status: RECORDED
+    severity: Medium
+    area: Frontend/CI/PDF
+    file: .agents/outputs/bugs/BUG-025.md
+    created: 2026-10-14
+    updated: 2026-10-14
+    related_issue: 38
+  - id: BUG-024
+    title: Schema OpenAPI của mục lịch ăn không cho phép các giá trị null thực tế
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Meal Plan/API
+    file: .agents/outputs/bugs/BUG-024.md
+    created: 2026-10-13
+    updated: 2026-10-13
+    related_issue: 15
+  - id: BUG-023
+    title: Formatter oxfmt làm mất dấu phân cách trong type TypeScript viết một dòng
+    status: RECORDED
+    severity: Medium
+    area: Frontend/Tooling
+    file: .agents/outputs/bugs/BUG-023.md
+    created: 2026-10-13
+    updated: 2026-10-13
+    related_issue: 15
+  - id: BUG-022
+    title: Contract thanh toán FR-13 chưa khớp giữa Backend, OpenAPI và Frontend
+    status: RECORDED
+    severity: Unknown
+    area: Backend/Frontend/Subscription
+    file: .agents/outputs/bugs/BUG-022.md
+    created: 2026-10-11
+    updated: 2026-10-12
+    related_issue: 19
+  - id: BUG-021
+    title: Expert khác hoặc Administrator thay, xóa được ảnh của Recipe Post không thuộc mình
+    status: RESOLVED
+    severity: High
+    area: Backend/Recipe Media
+    file: .agents/outputs/bugs/BUG-021.md
+    created: 2026-10-10
+    updated: 2026-10-11
+    related_issue: 11
+  - id: BUG-020
+    title: Frontend đọc sai trường kết quả khi tải ảnh công thức lên
+    status: RECORDED
+    severity: High
+    area: Frontend/Recipe Media
+    file: .agents/outputs/bugs/BUG-020.md
+    created: 2026-10-11
+    updated: 2026-10-11
+    related_issue: 117
+  - id: BUG-019
+    title: Giới hạn multipart mặc định 1 MB chặn ảnh công thức từ 1 MB tới 5 MB
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Cấu hình tải tệp
+    file: .agents/outputs/bugs/BUG-019.md
+    created: 2026-10-11
+    updated: 2026-10-11
+    related_issue: 29
+  - id: BUG-018
+    title: Thay danh sách ảnh của Recipe Post đã có ảnh luôn trả 500
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Recipe Media
     file: .agents/outputs/bugs/BUG-018.md
     created: 2026-10-11
     updated: 2026-10-11
-    related_issue: 56
+    related_issue: 11
+  - id: BUG-017
+    title: Lịch ăn dùng thông báo bài bị tác giả xóa thay cho trạng thái không khả dụng
+    status: RECORDED
+    severity: Low
+    area: Frontend/Lịch ăn
+    file: .agents/outputs/bugs/BUG-017.md
+    created: 2026-10-11
+    updated: 2026-10-11
+    related_issue: 26
   - id: BUG-016
     title: API hồ sơ dinh dưỡng trả 500 thay cho lỗi nghiệp vụ 400/403
     status: RECORDED

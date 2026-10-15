@@ -24,8 +24,9 @@ async function api(page: Page, initialLikes = 9, initialDislikes = 1) {
   const mutations: string[] = [];
   const stats = () => ({ likes, dislikes, reactionCount: likes + dislikes, likePercentage: likes + dislikes ? Math.round(likes / (likes + dislikes) * 100) : null, viewCount: 0 });
   await page.route('**/api/v1/recipes/901', (route) => route.fulfill({ json: { ...detail, statistics: stats() } }));
+  await page.route('**/api/v1/recipes/901/related**', (route) => route.fulfill({ json: { items: [] } }));
   await page.route('**/api/v1/recipes?**', (route) => route.fulfill({ json: {
-    items: [{ id: 901, authorId: 22, authorName: detail.author.displayName, title: detail.title, vegetarianType: 'VEGAN', dishCategory: 'SOUP', prepTimeMin: 10, cookTimeMin: 15, servings: 2, media: [], ...stats() }],
+    items: [{ id: 901, authorId: 22, authorName: detail.author.displayName, title: detail.title, vegetarianType: 'VEGAN', dishCategory: 'SOUP', prepTimeMin: 10, cookTimeMin: 15, servings: 2, media: [], ingredients: [], ...stats() }],
     page: 0, size: 12, totalElements: 1, totalPages: 1,
   } }));
   await page.route('**/api/v1/recipes/901/reaction', (route) => {
@@ -109,11 +110,11 @@ test('Lỗi đọc lựa chọn có tải lại; lỗi ghi giữ nguyên dữ li
   await page.getByRole('button', { name: 'Tải lại bình chọn' }).click();
   await expect(like).toBeEnabled();
   await like.click();
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Bình chọn công thức' }).getByRole('alert')).toBeVisible();
   await expect(like).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '90');
   await like.click();
-  await expect(page.getByRole('alert')).toContainText('Tác giả không được tự bình chọn');
+  await expect(page.getByRole('region', { name: 'Bình chọn công thức' }).getByRole('alert')).toContainText('Tác giả không được tự bình chọn');
   await expect(like).toBeDisabled();
 });
 
@@ -163,7 +164,9 @@ test('Card trang chủ và Khám phá đặt Mới ở góc trên trái ảnh', 
   await api(page, 0, 0);
   for (const path of ['/', '/kham-pha']) {
     await page.goto(path);
-    const badge = page.getByLabel('Chưa có bình chọn');
+    const badges = page.getByLabel('Chưa có bình chọn');
+    await expect(badges).toHaveCount(path === '/' ? 2 : 1);
+    const badge = badges.first();
     await expect(badge).toHaveText('Mới');
     const offset = await badge.evaluate((element) => {
       // Read both rectangles in one frame so card entrance motion cannot skew the offset.
@@ -187,7 +190,7 @@ test('Bài bị ẩn trong lúc bình chọn không cập nhật số và chặn
   const like = page.getByRole('button', { name: 'Thích', exact: true });
   await expect(like).toBeEnabled();
   await like.click();
-  await expect(page.getByRole('alert')).toHaveText('Công thức không còn công khai hoặc đã bị xóa.');
+  await expect(page.getByRole('region', { name: 'Bình chọn công thức' }).getByRole('alert')).toHaveText('Công thức không còn công khai hoặc đã bị xóa.');
   await expect(like).toBeDisabled();
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '90');
 });

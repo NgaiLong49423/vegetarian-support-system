@@ -25,7 +25,8 @@ public class MockStorageClient implements StorageClient {
     }
 
     @Override
-    public String uploadImage(InputStream inputStream, long size, String mimeType, String originalFilename) {
+    public String uploadImage(InputStream inputStream, long size, String mimeType, String originalFilename,
+            String folder) {
         String ext = ".jpg";
         if ("image/png".equalsIgnoreCase(mimeType)) {
             ext = ".png";
@@ -33,7 +34,7 @@ public class MockStorageClient implements StorageClient {
             ext = ".webp";
         }
         String filename = UUID.randomUUID() + ext;
-        String mockBlobUrl = "https://mamxanh.blob.core.windows.net/" + containerName + "/recipes/" + filename;
+        String mockBlobUrl = "https://mamxanh.blob.core.windows.net/" + containerName + "/" + folder + "/" + filename;
         uploadedBlobs.put(mockBlobUrl, mimeType);
         log.info("[MockStorage] Stored mock blob (size: {} bytes, mime: {}): {}", size, mimeType, mockBlobUrl);
         return mockBlobUrl;

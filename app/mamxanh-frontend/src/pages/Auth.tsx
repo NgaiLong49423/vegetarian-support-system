@@ -6,13 +6,14 @@ import { Button } from '../components/ui';
 import { useAuth, type SessionNotice } from '../components/AuthContext';
 import { GoogleSignIn } from '../components/GoogleSignIn';
 import { fieldMessages, retryAfterSeconds, toProblem, type ProblemDetails } from '../lib/problem';
-import { googleLogin, login, register, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
+import { confirmPasswordReset, googleLogin, login, register, requestPasswordReset, resendVerificationEmail, verifyEmail, type AccountSummary } from '../services/authApi';
 import { claimOnboardingInvitation } from '../services/dietaryPreferencesApi';
 import { passwordProblems } from '../utils/password';
 
 type Mode = 'login' | 'register' | 'forgot' | 'verify' | 'reset';
 type Notice = { tone: 'success' | 'error'; text: string; link?: { to: string; label: string } };
 type VerifyState = 'idle' | 'verifying' | 'verified' | 'failed';
+type ResetState = 'ready' | 'unusable' | 'done';
 
 const copy = {
   login: { title: 'Chào mừng bạn trở lại', subtitle: 'Tiếp tục hành trình ăn chay theo cách của bạn.', action: 'Đăng nhập' },
@@ -23,9 +24,14 @@ const copy = {
 };
 
 // API field names follow the generated Backend runtime contract -> form field keys.
-const apiFieldToForm: Record<string, string> = { displayName: 'name', email: 'email', password: 'password', confirmPassword: 'confirm' };
+const apiFieldToForm: Record<string, string> = { displayName: 'name', email: 'email', password: 'password', newPassword: 'password', confirmPassword: 'confirm' };
 const NETWORK_ERROR = 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.';
 const INVALID_LINK = 'Liên kết xác minh không hợp lệ hoặc đã hết hạn. Nhập email bên dưới để nhận liên kết mới.';
+const INVALID_RESET_LINK: Notice = {
+  tone: 'error',
+  text: 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu liên kết mới.',
+  link: { to: '/quen-mat-khau', label: 'Yêu cầu liên kết mới' },
+};
 const SESSION_NOTICES: Record<SessionNotice, string> = {
   timeout: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
   expired: 'Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.',
@@ -94,9 +100,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const location = useLocation();
   const sessionNotice = mode === 'login' ? (location.state as { sessionNotice?: SessionNotice } | null)?.sessionNotice : undefined;
-  const [notice, setNotice] = useState<Notice | null>(() => sessionNotice ? { tone: 'error', text: SESSION_NOTICES[sessionNotice] } : null);
+  // UC-03.7: the reset token from the email link is kept in memory only; the effect below removes it from the URL.
+  const [resetToken] = useState(() => mode === 'reset' ? new URLSearchParams(location.search).get('token') : null);
+  const [notice, setNotice] = useState<Notice | null>(() => sessionNotice ? { tone: 'error', text: SESSION_NOTICES[sessionNotice] } : mode === 'reset' && !resetToken ? INVALID_RESET_LINK : null);
   const [submitting, setSubmitting] = useState(false);
   const [verifyState, setVerifyState] = useState<VerifyState>('idle');
+  const [resetState, setResetState] = useState<ResetState>(resetToken ? 'ready' : 'unusable');
   const [searchParams, setSearchParams] = useSearchParams();
   const handledToken = useRef<string | null>(null);
   const { signIn } = useAuth();
@@ -121,6 +130,10 @@ export function AuthPage({ mode }: { mode: Mode }) {
         setVerifyState('failed');
         setNotice({ tone: 'error', text: problem?.code === 'VERIFICATION_TOKEN_INVALID' ? INVALID_LINK : problem?.detail ?? NETWORK_ERROR });
       });
+  }, [mode, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (mode === 'reset' && searchParams.has('token')) setSearchParams({}, { replace: true });
   }, [mode, searchParams, setSearchParams]);
 
   const submitRegistration = async () => {
@@ -186,6 +199,43 @@ export function AuthPage({ mode }: { mode: Mode }) {
     }
   };
 
+  // UC-03.6: the API answers every valid email with the same neutral message.
+  const submitForgot = async () => {
+    setSubmitting(true);
+    try {
+      const result = await requestPasswordReset(email.trim());
+      setNotice({ tone: 'success', text: result.message });
+    } catch (error) {
+      const problem = toProblem(error);
+      if (problem?.code === 'VALIDATION_FAILED' && problem.errors?.length) setErrors(formErrors(problem));
+      else setNotice({ tone: 'error', text: problem?.detail ?? NETWORK_ERROR });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const submitReset = async () => {
+    if (!resetToken) return;
+    setSubmitting(true);
+    try {
+      await confirmPasswordReset({ token: resetToken, newPassword: password, confirmPassword: confirm });
+      setResetState('done');
+    } catch (error) {
+      const problem = toProblem(error);
+      const badToken = problem?.code === 'PASSWORD_RESET_TOKEN_INVALID' || problem?.errors?.some(item => item.field === 'token');
+      if (badToken || problem?.code === 'ACCOUNT_LOCKED') {
+        setResetState('unusable');
+        setNotice(badToken ? INVALID_RESET_LINK : { tone: 'error', text: SESSION_NOTICES.locked });
+      } else if (problem?.code === 'NEW_PASSWORD_SAME_AS_CURRENT') setErrors({ password: 'Mật khẩu mới phải khác mật khẩu hiện tại.' });
+      else if (problem?.code === 'VALIDATION_FAILED' && problem.errors?.length) setErrors(formErrors(problem));
+      else setNotice({ tone: 'error', text: problem?.detail ?? NETWORK_ERROR });
+    } finally {
+      setPassword('');
+      setConfirm('');
+      setSubmitting(false);
+    }
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const next: Record<string, string> = {};
@@ -203,19 +253,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
     if (mode === 'register') return void submitRegistration();
     if (mode === 'verify') return void submitResend();
     if (mode === 'login') return void submitLogin();
-    // Forgot/reset password (#9) are not connected to the backend yet.
-    setPassword('');
-    setConfirm('');
-    setNotice({ tone: 'success', text: mode === 'reset'
-        ? 'Đã kiểm tra biểu mẫu. Chưa xác minh liên kết hoặc thay đổi mật khẩu tài khoản.'
-        : 'Đã kiểm tra định dạng email. Bản demo chưa gửi email và không kiểm tra địa chỉ này có tài khoản hay chưa.' });
+    if (mode === 'forgot') return void submitForgot();
+    void submitReset();
   };
-  const fieldClass = 'mt-2 w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100';
+  const fieldClass = 'mt-2 w-full rounded-xl border border-brand-200 bg-paper px-4 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100';
   const error = (field: string) => errors[field] && <p id={`${field}-error`} className="mt-1.5 text-xs text-red-700">{errors[field]}</p>;
-  const showForm = !(mode === 'verify' && (verifyState === 'verifying' || verifyState === 'verified'));
-  const demoNote = mode === 'register' || mode === 'login' || mode === 'verify'
-    ? ''
-    : 'Bản demo giao diện · Chưa kết nối xác thực, gửi email hoặc lưu thông tin tài khoản.';
+  const showForm = !(mode === 'verify' && (verifyState === 'verifying' || verifyState === 'verified')) && !(mode === 'reset' && resetState !== 'ready');
 
   return <div className="min-h-screen bg-cream">
     <header className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-6 sm:px-8">
@@ -223,17 +266,17 @@ export function AuthPage({ mode }: { mode: Mode }) {
       <Link to="/" aria-label="Về trang chủ" className="inline-flex items-center gap-2 text-sm font-semibold text-ink-soft hover:text-leaf-700"><ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">Về trang chủ</span></Link>
     </header>
     <main className="mx-auto grid max-w-6xl gap-8 px-5 pb-12 pt-3 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-16 lg:py-10">
-      <section className="relative hidden overflow-hidden rounded-[2rem] bg-leaf-700 px-9 py-12 text-white lg:block">
-        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full border-[40px] border-white/5" />
-        <span className="relative inline-flex items-center gap-2 rounded-full border border-white/25 px-3 py-1.5 text-xs font-semibold"><Leaf className="h-4 w-4" /> ĂN CHAY THEO CÁCH CỦA BẠN</span>
-        <h2 className="relative mt-8 text-4xl font-extrabold leading-tight">Một bữa ăn xanh.<br /><span className="text-brand-200">Một ngày an lành.</span></h2>
-        <p className="mt-5 max-w-sm text-sm leading-7 text-white/80">Từ công thức yêu thích đến thực đơn mỗi ngày, Mâm Xanh đồng hành cùng bạn trên hành trình ăn chay.</p>
+      <section className="relative hidden overflow-hidden rounded-[2rem] border border-brand-100 bg-cream-soft px-9 py-12 text-ink lg:block">
+        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full border-[40px] border-paper/5" />
+        <span className="relative inline-flex items-center gap-2 rounded-full border border-brand-200 px-3 py-1.5 text-xs font-semibold"><Leaf className="h-4 w-4" /> ĂN CHAY THEO CÁCH CỦA BẠN</span>
+        <h2 className="relative mt-8 text-4xl font-extrabold leading-tight">Một bữa ăn xanh.<br /><span className="text-brand-600">Một ngày an lành.</span></h2>
+        <p className="mt-5 max-w-sm text-sm leading-7 text-ink-muted">Từ công thức yêu thích đến thực đơn mỗi ngày, Mâm Xanh đồng hành cùng bạn trên hành trình ăn chay.</p>
         <div className="mt-10 space-y-5">
-          {[{ Icon: Utensils, title: 'Món ngon luôn ở gần', text: 'Khám phá và lưu công thức chay bạn yêu thích.' }, { Icon: Leaf, title: 'Bữa ăn có kế hoạch', text: 'Sắp xếp thực đơn và chuẩn bị nguyên liệu dễ dàng.' }, { Icon: ShieldCheck, title: 'Hiểu thêm về bản thân', text: 'Theo dõi hồ sơ dinh dưỡng và chỉ số tham khảo.' }].map(({ Icon, title, text }) => <div key={title} className="flex gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10"><Icon className="h-5 w-5" /></span><div><h3 className="text-sm font-bold">{title}</h3><p className="mt-1 text-xs leading-5 text-white/75">{text}</p></div></div>)}
+          {[{ Icon: Utensils, title: 'Món ngon luôn ở gần', text: 'Khám phá và lưu công thức chay bạn yêu thích.' }, { Icon: Leaf, title: 'Bữa ăn có kế hoạch', text: 'Sắp xếp thực đơn và chuẩn bị nguyên liệu dễ dàng.' }, { Icon: ShieldCheck, title: 'Hiểu thêm về bản thân', text: 'Theo dõi hồ sơ dinh dưỡng và chỉ số tham khảo.' }].map(({ Icon, title, text }) => <div key={title} className="flex gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-paper/10"><Icon className="h-5 w-5" /></span><div><h3 className="text-sm font-bold">{title}</h3><p className="mt-1 text-xs leading-5 text-ink-muted">{text}</p></div></div>)}
         </div>
-        <p className="mt-12 border-t border-white/15 pt-5 text-xs text-white/65">Mâm Xanh · Ẩm thực thuần lành</p>
+        <p className="mt-12 border-t border-paper/15 pt-5 text-xs text-ink-muted">Mâm Xanh · Ẩm thực thuần lành</p>
       </section>
-      <section className="min-w-0 rounded-3xl border border-brand-100 bg-white p-6 shadow-xl shadow-brand-900/5 sm:p-9">
+      <section className="min-w-0 rounded-3xl border border-brand-100 bg-paper p-6 shadow-xl shadow-brand-900/5 sm:p-9">
         <span className="text-xs font-bold uppercase tracking-widest text-leaf-700">{mode === 'register' ? 'Gia nhập cộng đồng' : 'Tài khoản Mâm Xanh'}</span>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink">{details.title}</h1>
         <p className="mt-3 text-sm leading-6 text-ink-muted">{details.subtitle}</p>
@@ -247,7 +290,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
           <p className="mt-1">Bạn có thể đăng nhập bằng email và mật khẩu đã đăng ký.</p>
           <Link to="/dang-nhap" className="mt-3 inline-flex items-center gap-2 font-semibold text-brand-700 hover:underline">Đến trang đăng nhập<ArrowRight className="h-4 w-4" /></Link>
         </div>}
-        {((mode === 'verify' && verifyState === 'idle') || mode === 'reset') && <div className="mt-5 flex gap-3 rounded-xl bg-leaf-50 p-4 text-sm leading-6 text-leaf-800"><Mail className="mt-1 h-5 w-5 shrink-0" /><p>{mode === 'verify' ? 'Liên kết xác minh có hiệu lực 24 giờ. Bạn có thể yêu cầu gửi lại nếu liên kết hết hạn.' : 'Cần liên kết đặt lại mật khẩu hợp lệ từ email (hiệu lực 15 phút). Bản demo chỉ cho xem biểu mẫu, chưa xác minh liên kết.'}</p></div>}
+        {mode === 'reset' && resetState === 'done' && <div role="status" className="mt-5 rounded-xl border border-leaf-100 bg-leaf-50 p-4 text-sm leading-6 text-leaf-800">
+          <p className="flex items-center gap-2 font-semibold"><CheckCircle2 className="h-5 w-5 shrink-0" />Mật khẩu của bạn đã được cập nhật.</p>
+          <p className="mt-1">Bạn có thể đăng nhập bằng email và mật khẩu mới.</p>
+          <Link to="/dang-nhap" className="mt-3 inline-flex items-center gap-2 font-semibold text-brand-700 hover:underline">Đến trang đăng nhập<ArrowRight className="h-4 w-4" /></Link>
+        </div>}
+        {((mode === 'verify' && verifyState === 'idle') || (mode === 'reset' && resetState === 'ready')) && <div className="mt-5 flex gap-3 rounded-xl bg-leaf-50 p-4 text-sm leading-6 text-leaf-800"><Mail className="mt-1 h-5 w-5 shrink-0" /><p>{mode === 'verify' ? 'Liên kết xác minh có hiệu lực 24 giờ. Bạn có thể yêu cầu gửi lại nếu liên kết hết hạn.' : 'Liên kết đặt lại mật khẩu có hiệu lực 15 phút và chỉ dùng được một lần.'}</p></div>}
         {showForm && <form noValidate onSubmit={submit} className="mt-5 space-y-4">
           {mode === 'register' && <div><label htmlFor="auth-name" className="text-sm font-semibold text-ink">Tên hiển thị</label><input id="auth-name" autoComplete="nickname" value={name} maxLength={50} onChange={e => setName(e.target.value)} aria-invalid={!!errors.name} aria-describedby={errors.name ? 'name-error' : undefined} placeholder="Tên bạn muốn mọi người gọi" className={fieldClass} />{error('name')}</div>}
           {mode !== 'reset' && <div><label htmlFor="auth-email" className="text-sm font-semibold text-ink">Email</label><input id="auth-email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} aria-invalid={!!errors.email} aria-describedby={errors.email ? 'email-error' : undefined} placeholder="ban@example.com" className={fieldClass} />{error('email')}</div>}
@@ -258,7 +306,6 @@ export function AuthPage({ mode }: { mode: Mode }) {
           <Button type="submit" disabled={submitting} className="w-full py-3">{submitting ? 'Đang gửi...' : details.action}<ArrowRight className="h-4 w-4" /></Button>
         </form>}
         {notice && <div role={notice.tone === 'error' ? 'alert' : 'status'} className={`mt-4 rounded-xl border p-4 text-sm leading-6 ${notice.tone === 'error' ? 'border-red-200 bg-red-50 text-red-800' : 'border-leaf-100 bg-leaf-50 text-leaf-800'}`}>{notice.text}{mode === 'register' && notice.tone === 'success' && <Link to="/xac-minh-email" className="mt-2 block font-semibold underline">Chưa nhận được email? Gửi lại email xác minh</Link>}{notice.link && <Link to={notice.link.to} className="mt-2 block font-semibold underline">{notice.link.label}</Link>}</div>}
-        {demoNote && <p id="auth-demo-note" className="mt-5 text-xs leading-5 text-ink-muted">{demoNote}</p>}
         <div className="mt-6 border-t border-brand-100 pt-5 text-center text-sm text-ink-soft">
           {mode === 'login' ? <>Chưa có tài khoản? <Link to="/dang-ky" className="font-bold text-brand-700 hover:underline">Đăng ký ngay</Link><Link to="/xac-minh-email" className="mt-3 block text-xs text-ink-muted hover:underline">Chưa nhận được email xác minh?</Link></> : mode === 'register' ? <>Đã có tài khoản? <Link to="/dang-nhap" className="font-bold text-brand-700 hover:underline">Đăng nhập</Link></> : <Link to="/dang-nhap" className="font-semibold text-brand-700 hover:underline">Quay lại đăng nhập</Link>}
         </div>

@@ -1,70 +1,106 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AlertCircle,
-  AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  FileText,
-  Info,
-  RefreshCw,
+  AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Download,
+  FileText, Info, RefreshCw, Utensils,
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card, ProgressBar } from '../components/ui';
 import { Modal } from '../components/Modal';
-import { nutrientsDay, nutrientsWeek, weekPlan } from '../data/mockData';
-import type { NutrientComparisonItem } from '../types';
+import { mealPlanApi, type MealPlanNutrition as NutritionData } from '../api/recipes';
+import { asApiError, asApiErrorAsync, type ApiError } from '../lib/apiClient';
+import { mondayOf } from '../components/WeekCalendar';
+import { useAuth } from '../components/AuthContext';
 
-const days = weekPlan.map((d) => ({ weekday: d.weekday, date: d.date, today: d.today }));
-
-const macros = [
-  { label: 'Tổng Năng lượng (Energy)', value: '1,290', unit: 'kcal', target: '1,850 kcal', pct: 70, tone: 'brand' as const, sub: 'Còn thiếu 560 kcal so với mức dự kiến' },
-  { label: 'Đạm thực vật (Protein)', value: '56.4', unit: 'g/60 g', target: '', pct: 94, tone: 'leaf' as const, sub: 'Đạt mức dự kiến cho thực đơn ngày' },
-  { label: 'Carbohydrate phức hợp', value: '182', unit: 'g/220 g', target: '', pct: 83, tone: 'brand' as const, sub: 'Mức tiêu thụ carbohydrate cân đối' },
-  { label: 'Chất béo tốt (Lipid)', value: '34', unit: 'g/45 g', target: '', pct: 76, tone: 'leaf' as const, sub: 'Chất béo không bão hòa từ hạt và dầu thực vật' },
-];
-
-const meals = [
-  { slot: 'Bữa sáng', time: '07:00 – 08:30', name: 'Bánh mì ngũ cốc & Sinh tố bơ chuối', kcal: 320, recipe: weekPlan[4].meals[0].recipe },
-  { slot: 'Bữa trưa', time: '11:30 – 13:00', name: 'Miến xào nấm đậu hũ & Canh rong biển hạt sen', kcal: 470, recipe: weekPlan[4].meals[1].recipe },
-  { slot: 'Bữa tối', time: '18:30 – 20:00', name: 'Cà ri đậu gà cốt dừa & Salad bơ chanh dây', kcal: 500, recipe: weekPlan[1].meals[2].recipe },
-];
+type Scope = 'day' | 'week';
+const mealNames = { BREAKFAST: 'Bữa sáng', LUNCH: 'Bữa trưa', DINNER: 'Bữa tối' } as const;
+const numberFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
+const todayKey = () => {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+};
+const dateAtNoon = (key: string) => new Date(`${key}T12:00:00`);
+const dateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+const formatDate = (key: string, options: Intl.DateTimeFormatOptions) => dateAtNoon(key).toLocaleDateString('vi-VN', options);
+const displayValue = (value: number | null | undefined, unit: string) => value == null ? 'Chưa đủ dữ liệu' : `${numberFormat.format(value)} ${unit}`;
 
 export function NutritionTracker() {
-  const [activeDay, setActiveDay] = useState(4);
-  const [pdfAlert, setPdfAlert] = useState(false);
-
-  // Analysis modal & state
+  const { account, isAuthenticated } = useAuth();
+  const [selectedDate, setSelectedDate] = useState(todayKey);
+  const [scope, setScope] = useState<Scope>('day');
+  const [data, setData] = useState<NutritionData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<ApiError | null>(null);
+  const [retry, setRetry] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<ApiError | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
-  const [period, setPeriod] = useState<'day' | 'week'>('day');
-  const [analysisState, setAnalysisState] = useState<'success' | 'empty' | 'error' | 'incomplete'>('success');
-  const [loading, setLoading] = useState(false);
+  const weekStart = useMemo(() => mondayOf(dateAtNoon(selectedDate)), [selectedDate]);
 
-  const triggerAnalyze = () => {
-    setLoading(true);
-    setAnalysisOpen(true);
-    setTimeout(() => {
+  useEffect(() => {
+    let active = true;
+    if (!isAuthenticated || account?.role === 'ADMIN') {
       setLoading(false);
-    }, 350);
-  };
-
-  const currentNutrients: NutrientComparisonItem[] = period === 'day' ? nutrientsDay : nutrientsWeek;
-
-  const renderStatusBadge = (status: NutrientComparisonItem['status']) => {
-    switch (status) {
-      case 'good':
-        return <span className="inline-flex rounded-full bg-leaf-100 px-2.5 py-0.5 text-xs font-semibold text-leaf-800">Trong khoảng tham khảo</span>;
-      case 'low':
-        return <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Thấp hơn tham khảo</span>;
-      case 'high':
-        return <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-800">Cao hơn tham khảo</span>;
-      case 'missing':
-        return <span className="inline-flex rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-800">Chưa đủ dữ liệu</span>;
+      setError(null);
+      setData(null);
+      return () => { active = false; };
     }
-  };
+    setLoading(true);
+    setError(null);
+    setData(null);
+    mealPlanApi.nutrition(weekStart)
+      .then((result) => { if (active) setData(result); })
+      .catch((cause) => { if (active) setError(asApiError(cause)); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [account?.role, isAuthenticated, weekStart, retry]);
+
+  const selectedDay = data?.days.find((day) => day.date === selectedDate) ?? null;
+  const weekHasMeals = Boolean(data?.days.some((day) => day.entries.length > 0));
+  const dayHasMeals = Boolean(selectedDay?.entries.length);
+  const canExport = !loading && !error && (scope === 'day' ? dayHasMeals : weekHasMeals);
+
+  async function exportPdf() {
+    if (!canExport) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      const blob = await mealPlanApi.nutritionPdf(weekStart, scope === 'day' ? selectedDate : undefined);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bao-cao-dinh-duong-${scope === 'day' ? selectedDate : weekStart}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (cause) {
+      setExportError(await asApiErrorAsync(cause));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  function shiftWeek(offset: number) {
+    const date = dateAtNoon(selectedDate);
+    date.setDate(date.getDate() + offset * 7);
+    setSelectedDate(dateKey(date));
+  }
+
+  const targets = data?.targets ?? [];
+  const dailyNutrients = selectedDay?.nutrients ?? {};
+  const values = scope === 'day' ? dailyNutrients : data?.weeklyAverage ?? {};
+  const macroKeys = ['ENERGY_KCAL', 'PROTEIN_G', 'CARBOHYDRATE_G', 'TOTAL_FAT_G'];
+  const toneFor = (index: number) => index % 2 === 0 ? 'brand' as const : 'leaf' as const;
+  const meals = selectedDay?.entries ?? [];
+  const energyByMeal = Object.fromEntries(Object.keys(mealNames).map((mealType) => [
+    mealType,
+    meals.filter((entry) => entry.mealType === mealType)
+      .map((entry) => entry.nutrients.ENERGY_KCAL)
+      .filter((value): value is number => value != null)
+      .reduce((sum, value) => sum + value, 0),
+  ])) as Record<keyof typeof mealNames, number>;
+  const knownMealEnergy = Object.values(energyByMeal).reduce((sum, value) => sum + value, 0);
 
   return (
     <PageContainer className="py-8">
@@ -79,252 +115,102 @@ export function NutritionTracker() {
             <Badge tone="leaf">Khoa học</Badge>
           </div>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Theo dõi Dinh dưỡng Thực đơn</h1>
-          <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-            Tổng hợp 9 chỉ tiêu tham khảo từ thực đơn dự kiến của bạn. Số liệu tính theo khẩu phần dự kiến, không ngầm hiểu món đã lên lịch là món đã ăn.
-          </p>
+          <p className="mt-1 max-w-2xl text-sm text-ink-muted">Tổng hợp chỉ tiêu từ lịch ăn đã lưu. Đây là khẩu phần dự kiến, không ngầm hiểu món đã lên lịch là món đã ăn.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setPdfAlert(true)}>
-            <Download className="h-4 w-4" /> Xuất báo cáo PDF
+          <Button variant="outline" disabled={!canExport || exporting} onClick={() => void exportPdf()}>
+            <Download className="h-4 w-4" /> {exporting ? 'Đang tạo PDF…' : 'Xuất báo cáo PDF'}
           </Button>
-          <Button onClick={triggerAnalyze}>
+          <Button onClick={() => setAnalysisOpen(true)} disabled={!data || loading || !!error}>
             <FileText className="h-4 w-4" /> Phân tích tổng thể
           </Button>
         </div>
       </div>
 
-      {/* PDF simulated alert */}
-      {pdfAlert && (
-        <div className="mb-6 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
-            <span>Tính năng xuất PDF đang ở chế độ mô phỏng giao diện và chưa kết nối dịch vụ tạo tệp PDF thật.</span>
-          </div>
-          <button type="button" onClick={() => setPdfAlert(false)} className="text-xs font-bold text-amber-900 underline hover:no-underline">
-            Đóng
-          </button>
-        </div>
-      )}
+      <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Phạm vi báo cáo">
+        <Button variant={scope === 'day' ? 'secondary' : 'ghost'} aria-pressed={scope === 'day'} onClick={() => setScope('day')}>Theo ngày</Button>
+        <Button variant={scope === 'week' ? 'secondary' : 'ghost'} aria-pressed={scope === 'week'} onClick={() => setScope('week')}>So sánh &amp; thống kê 7 ngày</Button>
+        <span className="text-sm text-ink-muted">{scope === 'day' ? `Ngày ${formatDate(selectedDate, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}` : `Tuần ${formatDate(weekStart, { day: 'numeric', month: 'numeric' })} – ${formatDate(dateKey(new Date(dateAtNoon(weekStart).setDate(dateAtNoon(weekStart).getDate() + 6))), { day: 'numeric', month: 'numeric', year: 'numeric' })}`}</span>
+      </div>
 
-      {/* Uniform Nutrition Disclaimer Banner */}
+      {exportError && <div role="alert" className="mb-5 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+        <div className="flex-1"><p>{exportError.message}</p>{exportError.code === 'NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED' && <p className="mt-1">Hãy <Link to="/ho-so/dinh-duong" className="font-semibold underline">xác nhận phạm vi hỗ trợ dinh dưỡng</Link> trước khi xuất báo cáo.</p>}</div>
+        <Button size="sm" variant="ghost" onClick={() => void exportPdf()}>Thử lại</Button>
+      </div>}
+
       <div className="mb-6 flex items-start gap-3 rounded-2xl border border-leaf-200 bg-leaf-50/60 p-4 text-xs leading-relaxed text-ink-soft">
-        <Info className="h-4 w-4 shrink-0 text-leaf-600 mt-0.5" />
-        <div>
-          <strong className="text-leaf-800">Lưu ý về dinh dưỡng:</strong>
-          <p className="mt-0.5 text-ink-muted">
-            Thông tin chỉ mang tính tham khảo, không phải theo dõi sức khỏe lâm sàng, không có giá trị pháp lý/y tế và không thay thế chuyên gia y tế. Mâm Xanh không cung cấp Health Score, không đưa ra chẩn đoán hay phác đồ điều trị bệnh.
-          </p>
-        </div>
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-leaf-600" />
+        <div><strong className="text-leaf-800">Lưu ý về dinh dưỡng:</strong><p className="mt-0.5 text-ink-muted">{data?.disclaimer ?? 'Thông tin chỉ mang tính tham khảo, không thay thế tư vấn y tế.'}</p></div>
       </div>
 
-      {/* Day Selector */}
-      <div className="mb-6 flex items-center gap-2">
-        <button
-          onClick={() => setActiveDay((d) => Math.max(0, d - 1))}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-white text-ink-soft hover:bg-brand-50"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <div className="flex flex-1 gap-2 overflow-x-auto scrollbar-thin">
-          {days.map((d, i) => (
-            <button
-              key={d.date}
-              onClick={() => setActiveDay(i)}
-              className={`flex min-w-[104px] flex-col items-center rounded-xl border px-3 py-2.5 transition-colors ${
-                activeDay === i ? 'border-brand-600 bg-brand-600 text-white' : 'border-brand-100 bg-white text-ink-soft hover:border-brand-300'
-              }`}
-            >
-              <span className="whitespace-nowrap text-xs font-semibold">{d.weekday}{d.today ? ' • Hôm nay' : ''}</span>
-              <span className="text-lg font-extrabold">{d.date}</span>
-              <span className={`text-[10px] ${activeDay === i ? 'text-white/80' : 'text-ink-muted'}`}>1,290 kcal</span>
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={() => setActiveDay((d) => Math.min(days.length - 1, d + 1))}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-white text-ink-soft hover:bg-brand-50"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
+      {!isAuthenticated && <div role="alert" className="mb-6 rounded-xl border border-brand-200 bg-paper p-5 text-sm text-ink-soft">Đăng nhập để xem dinh dưỡng từ lịch ăn của bạn. <Link to="/dang-nhap" className="font-semibold text-brand-700 underline">Đăng nhập</Link></div>}
+      {account?.role === 'ADMIN' && <div role="alert" className="mb-6 rounded-xl border border-brand-200 bg-paper p-5 text-sm text-ink-soft">Chức năng này dành cho Member. Hãy đăng nhập bằng tài khoản Member để xem lịch ăn cá nhân.</div>}
+      {loading && isAuthenticated && <p role="status" className="mb-6 rounded-xl bg-paper p-8 text-center text-sm text-ink-muted"><RefreshCw className="mx-auto mb-2 h-5 w-5 animate-spin" />Đang tải dinh dưỡng từ lịch ăn…</p>}
+      {error && isAuthenticated && account?.role !== 'ADMIN' && <div role="alert" className="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-900">
+        <p>{error.message}</p>
+        {error.code === 'NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED' && <p className="mt-2">Để dùng tính năng, hãy <Link to="/ho-so/dinh-duong" className="font-semibold underline">xác nhận phạm vi hỗ trợ trong Hồ sơ dinh dưỡng</Link>.</p>}
+        {error.code === 'NUTRITION_ELIGIBILITY_INELIGIBLE' && <p className="mt-2">Tính năng không áp dụng theo phạm vi dinh dưỡng đã xác nhận. Có thể xem lại <Link to="/ho-so/dinh-duong" className="font-semibold underline">Hồ sơ dinh dưỡng</Link>.</p>}
+        <Button size="sm" variant="outline" className="mt-3" onClick={() => setRetry((value) => value + 1)}>Thử tải lại</Button>
+      </div>}
 
-      {/* Macro Cards */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {macros.map((m) => (
-          <Card key={m.label} className="p-5">
-            <div className="mb-2 flex items-start justify-between gap-2">
-              <p className="text-sm font-semibold text-ink-soft">{m.label}</p>
-              <Badge tone={m.tone === 'leaf' ? 'leaf' : 'brand'}>{m.pct}%</Badge>
-            </div>
-            <p className="text-2xl font-extrabold text-ink">
-              {m.value} <span className="text-sm font-semibold text-ink-muted">{m.unit}</span>
-            </p>
-            <div className="my-3"><ProgressBar pct={m.pct} tone={m.tone} /></div>
-            <p className="text-xs text-ink-muted">{m.sub}</p>
-          </Card>
-        ))}
-      </div>
-
-      {/* Calorie distribution */}
-      <Card className="mb-6 p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-bold text-ink">Phân bố Calorie theo 3 bữa ăn</h3>
-          <span className="text-sm text-ink-muted">Tổng hợp thực đơn: <strong className="text-ink">1,290 kcal</strong></span>
-        </div>
-        <div className="flex h-4 overflow-hidden rounded-full">
-          <div className="bg-amber-400" style={{ width: '25%' }} />
-          <div className="bg-brand-500" style={{ width: '35%' }} />
-          <div className="bg-brand-700" style={{ width: '40%' }} />
-        </div>
-        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-ink-muted">
-          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-amber-400" /> Bữa sáng · 320 kcal (25%)</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-brand-500" /> Bữa trưa · 470 kcal (35%)</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-brand-700" /> Bữa tối · 500 kcal (40%)</span>
-        </div>
-      </Card>
-
-      {/* Meals of the day */}
-      <h3 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
-        🍽️ Thực đơn 3 Bữa Ngày {days[activeDay].date}
-      </h3>
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
-        {meals.map((meal) => (
-          <Card key={meal.slot} hover className="overflow-hidden">
-            <div className="relative">
-              <img src={meal.recipe.image} alt="" className="h-36 w-full object-cover" />
-              <div className="absolute left-3 top-3"><Badge tone="brand" soft={false}>{meal.slot}</Badge></div>
-              <div className="absolute right-3 top-3"><Badge tone="neutral">Thực đơn mẫu</Badge></div>
-            </div>
-            <div className="p-4">
-              <p className="text-xs text-ink-muted">{meal.time}</p>
-              <p className="mt-1 line-clamp-2 font-bold text-ink">{meal.name}</p>
-              <div className="mt-3 flex items-center justify-between border-t border-brand-50 pt-3">
-                <span className="text-sm font-extrabold text-brand-600">{meal.kcal} kcal</span>
-                <Link to={`/cong-thuc/${meal.recipe.slug}`} className="text-sm font-semibold text-brand-600 hover:underline">Chi tiết công thức →</Link>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {/* MODAL PHÂN TÍCH TỔNG THỂ */}
-      <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="Phân tích dinh dưỡng tổng thể" size="lg">
-        <div className="space-y-5">
-          {/* Header row in modal */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-100 pb-3">
-            {/* Period tabs */}
-            <div className="flex rounded-xl bg-brand-100/60 p-1">
-              <button
-                type="button"
-                onClick={() => setPeriod('day')}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                  period === 'day' ? 'bg-white text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
-                }`}
-              >
-                Hôm nay (1 ngày)
-              </button>
-              <button
-                type="button"
-                onClick={() => setPeriod('week')}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                  period === 'week' ? 'bg-white text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
-                }`}
-              >
-                Tuần qua (7 ngày)
-              </button>
-            </div>
-
-            {/* Test Simulation selector */}
-            <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-              <span>Mô phỏng state:</span>
-              <select
-                value={analysisState}
-                onChange={(e) => setAnalysisState(e.target.value as typeof analysisState)}
-                className="rounded-lg border border-brand-200 bg-white p-1 text-xs text-ink outline-none"
-              >
-                <option value="success">Success</option>
-                <option value="incomplete">Incomplete data</option>
-                <option value="empty">Empty</option>
-                <option value="error">Error</option>
-              </select>
-            </div>
+      {data && !loading && !error && <>
+        <div className="mb-6 flex items-center gap-2">
+          <button type="button" aria-label="Tuần trước" onClick={() => shiftWeek(-1)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-paper text-ink-soft hover:bg-brand-50"><ChevronLeft className="h-4 w-4" /></button>
+          <div className="flex flex-1 gap-2 overflow-x-auto scrollbar-thin">
+            {data.days.map((day) => {
+              const today = day.date === todayKey();
+              const selected = day.date === selectedDate;
+              return <button key={day.date} type="button" aria-label={`Ngày ${formatDate(day.date, { weekday: 'long', day: 'numeric', month: 'numeric' })}`} onClick={() => setSelectedDate(day.date)} aria-pressed={selected} className={`flex min-w-[104px] flex-col items-center rounded-xl border px-3 py-2.5 transition-colors ${selected ? 'border-brand-600 bg-brand-600 text-on-brand' : 'border-brand-100 bg-paper text-ink-soft hover:border-brand-300'}`}>
+                <span className="whitespace-nowrap text-xs font-semibold">{formatDate(day.date, { weekday: 'long' })}{today ? ' • Hôm nay' : ''}</span>
+                <span className="text-lg font-extrabold">{formatDate(day.date, { day: 'numeric', month: 'numeric' })}</span>
+                <span className={`text-[10px] ${selected ? 'text-white/80' : 'text-ink-muted'}`}>{displayValue(day.nutrients.ENERGY_KCAL, 'kcal')}</span>
+              </button>;
+            })}
           </div>
-
-          {loading ? (
-            <div className="py-12 text-center">
-              <RefreshCw className="mx-auto h-8 w-8 animate-spin text-brand-600" />
-              <p className="mt-3 text-sm font-bold text-ink">Đang tổng hợp 9 chỉ tiêu dinh dưỡng...</p>
-              <p className="text-xs text-ink-muted">Dữ liệu được tính theo khẩu phần dự kiến của thực đơn.</p>
-            </div>
-          ) : analysisState === 'empty' ? (
-            <div className="py-10 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600">
-                <FileText className="h-6 w-6" />
-              </div>
-              <h4 className="mt-3 font-bold text-ink">Chưa có thực đơn để phân tích</h4>
-              <p className="mt-1 text-xs text-ink-muted">Hãy thêm món vào kế hoạch ngày trước khi thực hiện phân tích tổng thể.</p>
-            </div>
-          ) : analysisState === 'error' ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-center">
-              <AlertCircle className="mx-auto h-8 w-8 text-rose-600" />
-              <h4 className="mt-2 font-bold text-rose-900">Không thể tải dữ liệu dinh dưỡng</h4>
-              <p className="mt-1 text-xs text-rose-700">Dữ liệu bạn đã chọn vẫn được giữ nguyên. Vui lòng thử lại.</p>
-              <Button size="sm" variant="outline" className="mt-4" onClick={() => setAnalysisState('success')}>
-                Thử lại
-              </Button>
-            </div>
-          ) : (
-            <>
-              {/* Incomplete warning if state is incomplete */}
-              {analysisState === 'incomplete' && (
-                <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
-                  <span>Cảnh báo: Một số công thức hoặc nguyên liệu trong thực đơn chưa có đầy đủ số liệu dinh dưỡng chuẩn hóa.</span>
-                </div>
-              )}
-
-              {/* 9 Nutrients Table */}
-              <div className="overflow-x-auto rounded-xl border border-brand-100">
-                <table className="w-full text-left text-xs sm:text-sm">
-                  <thead>
-                    <tr className="border-b border-brand-100 bg-brand-50/50 text-[11px] font-bold uppercase text-ink-muted">
-                      <th className="p-3">Chỉ tiêu</th>
-                      <th className="p-3">Thực đơn</th>
-                      <th className="p-3">Khuyến nghị</th>
-                      <th className="p-3">% Đạt</th>
-                      <th className="p-3">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-brand-50">
-                    {currentNutrients.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-brand-50/30">
-                        <td className="p-3 font-semibold text-ink">{item.name}</td>
-                        <td className="p-3 font-bold text-ink">{item.actual}</td>
-                        <td className="p-3 text-ink-muted">{item.target}</td>
-                        <td className="p-3 font-semibold text-ink">{item.percentage}</td>
-                        <td className="p-3">{renderStatusBadge(item.status)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* PDF note and disclaimer */}
-              <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-3 text-xs text-ink-muted leading-relaxed">
-                <p>
-                  <strong>Lưu ý:</strong> Dữ liệu mỗi món được tính theo khẩu phần dự định, không tạo điểm đánh giá sức khỏe hay lời khuyên y tế nhằm đảm bảo tính khách quan và khoa học.
-                </p>
-              </div>
-
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-xs text-ink-muted">Mâm Xanh · Báo cáo dinh dưỡng tham khảo</span>
-                <Button variant="outline" onClick={() => setAnalysisOpen(false)}>
-                  Đóng
-                </Button>
-              </div>
-            </>
-          )}
+          <button type="button" aria-label="Tuần sau" onClick={() => shiftWeek(1)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-paper text-ink-soft hover:bg-brand-50"><ChevronRight className="h-4 w-4" /></button>
         </div>
+
+        {((scope === 'day' && !dayHasMeals) || (scope === 'week' && !weekHasMeals)) && <div className="mb-6 rounded-xl border border-brand-200 bg-paper p-5 text-sm text-ink-soft">
+          <p>{scope === 'day' ? 'Ngày này chưa có món trong lịch ăn.' : 'Tuần này chưa có món trong lịch ăn.'} Thêm món vào <Link to={`/ke-hoach?weekStartDate=${weekStart}${scope === 'day' ? `&mealDate=${selectedDate}` : ''}`} className="font-semibold text-brand-700 underline">Lịch ăn</Link> để xem số liệu và xuất PDF.</p>
+        </div>}
+
+        {data.incompleteEntries.length > 0 && <div role="status" className="mb-6 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><div><strong>Một phần dữ liệu dinh dưỡng còn thiếu.</strong><p className="mt-1">Các số liệu tính được vẫn được hiển thị và đưa vào báo cáo; xem danh sách món thiếu dữ liệu trong phần phân tích.</p></div>
+        </div>}
+
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {macroKeys.map((key, index) => {
+            const metric = targets.find((target) => target.key === key);
+            if (!metric) return null;
+            const actual = values[key];
+            const goal = metric.minimum;
+            const pct = actual == null || goal == null || goal <= 0 ? 0 : Math.min(100, Math.round(actual / goal * 100));
+            return <Card key={key} className="p-5"><div className="mb-2 flex items-start justify-between gap-2"><p className="text-sm font-semibold text-ink-soft">{metric.label}</p>{goal != null && <Badge tone={toneFor(index)}>{pct}%</Badge>}</div>
+              <p className="text-2xl font-extrabold text-ink">{displayValue(actual, metric.unit)}{goal != null && <span className="text-sm font-semibold text-ink-muted"> / {numberFormat.format(goal)} {metric.unit}</span>}</p>
+              {goal != null && <div className="my-3"><ProgressBar pct={pct} tone={toneFor(index)} /></div>}
+              <p className="text-xs text-ink-muted">{actual == null ? 'Chưa đủ dữ liệu để tổng hợp chỉ tiêu này.' : scope === 'week' ? 'Trung bình mỗi ngày trong 7 ngày.' : 'Tổng từ khẩu phần đã lên lịch trong ngày.'}</p>
+            </Card>;
+          })}
+        </div>
+
+        <Card className="mb-6 p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h3 className="font-bold text-ink">Phân bố năng lượng theo bữa ăn</h3><span className="text-sm text-ink-muted">{displayValue(knownMealEnergy || null, 'kcal')}</span></div>
+          {knownMealEnergy > 0 ? <><div className="flex h-4 overflow-hidden rounded-full">{Object.entries(energyByMeal).map(([mealType, amount], index) => <div key={mealType} className={index === 0 ? 'bg-amber-400' : index === 1 ? 'bg-brand-500' : 'bg-brand-700'} style={{ width: `${amount / knownMealEnergy * 100}%` }} />)}</div>
+            <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-ink-muted">{Object.entries(mealNames).map(([type, label]) => <span key={type}>{label} · {displayValue(energyByMeal[type as keyof typeof mealNames] || null, 'kcal')} ({Math.round(energyByMeal[type as keyof typeof mealNames] / knownMealEnergy * 100)}%)</span>)}</div></> : <p className="text-sm text-ink-muted">Chưa đủ dữ liệu năng lượng để chia theo bữa.</p>}
+        </Card>
+
+        <h3 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink"><Utensils className="h-5 w-5" />Thực đơn ngày {formatDate(selectedDate, { day: 'numeric', month: 'numeric' })}</h3>
+        {meals.length ? <div className="mb-6 grid gap-4 md:grid-cols-3">{meals.map((meal) => <Card key={meal.entryId} hover className="overflow-hidden"><div className="flex h-36 items-center justify-center bg-raised text-ink-muted"><Utensils className="h-8 w-8" /></div><div className="p-4"><div className="mb-2"><Badge tone="brand" soft={false}>{mealNames[meal.mealType]}</Badge></div><p className="line-clamp-2 font-bold text-ink">{meal.recipeTitle}</p><p className="mt-2 text-sm text-ink-muted">{numberFormat.format(meal.plannedServings)} phần dự kiến</p><div className="mt-3 flex items-center justify-between gap-2 border-t border-brand-50 pt-3"><span className="text-sm font-extrabold text-brand-600">{displayValue(meal.nutrients.ENERGY_KCAL, 'kcal')}</span><Link to={`/cong-thuc/id/${meal.recipeId}`} className="text-sm font-semibold text-brand-600 hover:underline">Chi tiết công thức →</Link></div>{!meal.complete && <p className="mt-2 text-xs text-amber-800">Một số chỉ tiêu còn thiếu; số liệu hiện có vẫn được dùng.</p>}</div></Card>)}</div> : <div className="mb-6 rounded-xl bg-paper p-6 text-center text-sm text-ink-muted">Ngày này chưa có món lên lịch.</div>}
+      </>}
+
+      <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="Phân tích dinh dưỡng tổng thể" size="lg">
+        {!data ? <p className="text-sm text-ink-muted">Chưa có dữ liệu để phân tích.</p> : <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2"><div className="flex rounded-xl bg-brand-100/60 p-1"><button type="button" onClick={() => setScope('day')} aria-pressed={scope === 'day'} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${scope === 'day' ? 'bg-paper text-ink shadow-sm' : 'text-ink-soft'}`}>Theo ngày</button><button type="button" onClick={() => setScope('week')} aria-pressed={scope === 'week'} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${scope === 'week' ? 'bg-paper text-ink shadow-sm' : 'text-ink-soft'}`}>7 ngày</button></div><p className="text-xs text-ink-muted">{scope === 'day' ? formatDate(selectedDate, { weekday: 'long', day: 'numeric', month: 'long' }) : `Tuần bắt đầu ${formatDate(weekStart, { day: 'numeric', month: 'long' })}`}</p></div>
+          <div className="overflow-x-auto rounded-xl border border-brand-100"><table className="w-full text-left text-xs sm:text-sm"><thead><tr className="border-b border-brand-100 bg-brand-50/50 text-[11px] font-bold uppercase text-ink-muted"><th className="p-3">Chỉ tiêu</th><th className="p-3">Thực đơn</th><th className="p-3">Mức tham khảo</th><th className="p-3">Tình trạng</th></tr></thead><tbody className="divide-y divide-brand-50">{targets.map((target) => { const actual = (scope === 'day' ? selectedDay?.nutrients : data.weeklyAverage)?.[target.key]; const hasValue = actual != null; const within = hasValue && target.minimum != null && actual >= target.minimum && (target.referenceType !== 'AMDR' || target.maximum == null || actual <= target.maximum); const reference = target.minimum == null ? 'Chưa có mức tham khảo' : target.referenceType === 'AMDR' && target.maximum != null ? `${numberFormat.format(target.minimum)}–${numberFormat.format(target.maximum)} ${target.unit}` : `${numberFormat.format(target.minimum)} ${target.unit}`; return <tr key={target.key}><td className="p-3 font-semibold text-ink">{target.label}</td><td className="p-3 font-bold text-ink">{displayValue(actual, target.unit)}</td><td className="p-3 text-ink-muted">{reference}</td><td className="p-3">{!hasValue ? <Badge tone="neutral">Chưa đủ dữ liệu</Badge> : within ? <Badge tone="leaf"><CheckCircle2 className="h-3 w-3" />Trong khoảng tham khảo</Badge> : <Badge tone="brand">Ngoài mức tham khảo</Badge>}</td></tr>; })}</tbody></table></div>
+          {data.incompleteEntries.length > 0 && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><strong>Món còn thiếu dữ liệu dinh dưỡng</strong><ul className="mt-2 list-disc pl-5">{data.incompleteEntries.filter((entry) => scope === 'week' || entry.date === selectedDate).map((entry) => <li key={entry.entryId}>{entry.recipeTitle}: {entry.ingredientsMissingData.join(', ') || 'chưa đủ dữ liệu công thức'}</li>)}</ul></div>}
+          <p className="text-xs text-ink-muted">{data.referenceBasis}. {data.disclaimer}</p>
+        </div>}
       </Modal>
     </PageContainer>
   );

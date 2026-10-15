@@ -1,188 +1,433 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Award, BadgeCheck, Bookmark, Heart, Leaf, Plus, Settings, UtensilsCrossed } from 'lucide-react';
-import { PageContainer } from '../components/Layout';
-import { RecipeCard } from '../components/RecipeCard';
-import { Badge, Button, Card, EmptyState } from '../components/ui';
-import { recipes } from '../data/mockData';
-import { getSavedRecipeSlugs, subscribeSaved } from '../lib/savedRecipes';
-import { useAuth } from '../components/AuthContext';
-
-const tabs = ['Công thức đã lưu', 'Món yêu thích', 'Sở thích ăn chay', 'Tùy chọn'] as const;
-type Tab = (typeof tabs)[number];
-
-const preferences = [
-  { label: 'Chế độ ăn chay', value: 'Thuần Chay (Vegan)' },
-  { label: 'Dị ứng thực phẩm', value: 'Đậu phộng' },
-  { label: 'Mục tiêu năng lượng', value: '1.850 kcal / ngày' },
-  { label: 'Khẩu phần mặc định', value: '4 người ăn' },
-];
-
-const toggles = [
-  { label: 'Nhắc nhở lên kế hoạch bữa ăn hàng tuần', on: true },
-  { label: 'Gợi ý món chay theo mùa từ Gemini AI', on: true },
-  { label: 'Cảnh báo khi thiếu hụt vi chất (B12, Sắt)', on: true },
-  { label: 'Nhận bản tin cộng đồng Mâm Xanh', on: false },
-];
+import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
+import {
+  Activity,
+  Bookmark,
+  Leaf,
+  LoaderCircle,
+  Lock,
+  Search,
+  Settings,
+  SlidersHorizontal,
+  Sparkles,
+  X,
+} from "lucide-react"
+import { PageContainer } from "../components/Layout"
+import { Button, Card, EmptyState } from "../components/ui"
+import { useAuth } from "../components/AuthContext"
+import { subscriptionApi, type MySubscriptionResponse } from "../api/subscription"
+import { useSavedRecipes } from "../components/SavedRecipesContext"
+import {
+  savedRecipesApi,
+  type SavedRecipePage,
+} from "../services/savedRecipesApi"
+import { asApiError } from "../lib/apiClient"
+import { formatDate } from "../utils/date"
 
 export function Profile() {
-  const { account } = useAuth();
-  const role = account?.role;
-  const [tab, setTab] = useState<Tab>('Công thức đã lưu');
-  const [savedSlugs, setSavedSlugs] = useState(getSavedRecipeSlugs);
-  const favorites = recipes.slice(2, 5);
-  const [switches, setSwitches] = useState(toggles);
+  const { account } = useAuth()
+  const { setSaved, pending, revision } = useSavedRecipes()
+  const [subscription, setSubscription] = useState<MySubscriptionResponse | null>(null)
+  const [tab, setTab] = useState<"saved" | "profile">("saved")
+  const [keyword, setKeyword] = useState("")
+  const [page, setPage] = useState(0)
+  const [result, setResult] = useState<SavedRecipePage | null>(null)
+  const [ownerId, setOwnerId] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [retry, setRetry] = useState(0)
 
-  useEffect(() => subscribeSaved((list) => setSavedSlugs(list.map((recipe) => recipe.slug))), []);
+  useEffect(() => {
+    let active = true
+    setSubscription(null)
+    if (account) {
+      subscriptionApi
+        .getMySubscription()
+        .then((value) => {
+          if (active) setSubscription(value)
+        })
+        .catch(() => {})
+    }
+    return () => {
+      active = false
+    }
+  }, [account?.id])
 
-  const saved = recipes.filter((recipe) => savedSlugs.includes(recipe.slug));
+  const activeTier =
+    subscription?.status === "ACTIVE" ? subscription.tier : null
+  const isFree = !activeTier || activeTier === "FREE"
+
+  useEffect(() => {
+    let active = true
+    setResult(null)
+    setError("")
+    setOwnerId(account?.id ?? null)
+    if (!account || account.role === "ADMIN") {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    const timer = window.setTimeout(
+      () => {
+        savedRecipesApi
+          .list(keyword.trim(), page, 20)
+          .then((value) => {
+            if (active) setResult(value)
+          })
+          .catch((cause) => {
+            if (active) setError(asApiError(cause).message)
+          })
+          .finally(() => {
+            if (active) setLoading(false)
+          })
+      },
+      keyword.trim() ? 200 : 0,
+    )
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
+  }, [account?.id, account?.role, keyword, page, retry, revision])
+
+  const remove = async (recipeId: number) => {
+    setError("")
+    try {
+      await setSaved(recipeId, false)
+      if (result?.content.length === 1 && page > 0)
+        setPage((current) => current - 1)
+    } catch (cause) {
+      setError(asApiError(cause).message)
+    }
+  }
+
+  if (!account)
+    return (
+      <PageContainer className="py-10">
+        <EmptyState
+          icon="🔖"
+          title="Góc bếp riêng của bạn"
+          description="Đăng nhập để xem hồ sơ và những công thức đã lưu trên tài khoản."
+          action={
+            <Link
+              to="/dang-nhap"
+              className="rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-on-brand"
+            >
+              Đăng nhập
+            </Link>
+          }
+        />
+      </PageContainer>
+    )
+  const ownResult = ownerId === account.id ? result : null
 
   return (
-    <PageContainer className="py-8">
-      {/* header banner */}
-      <Card className="mb-6 overflow-hidden">
-        <div className="h-28 bg-gradient-to-r from-brand-500 via-brand-400 to-amber-400" />
-        <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end">
-          <div className="-mt-16 flex h-24 w-24 items-center justify-center rounded-2xl bg-brand-600 text-3xl font-bold text-white ring-4 ring-white">{account?.displayName.charAt(0).toUpperCase() ?? '?'}</div>
-          <div className="flex-1">
-            <h1 className="flex items-center gap-2 text-2xl font-extrabold text-ink">
-              {account?.displayName ?? 'Khách'} <BadgeCheck className="h-5 w-5 text-brand-600" />
+    <PageContainer className="py-7">
+      <div className="mx-auto max-w-4xl">
+        <header className="flex flex-wrap items-center gap-4 py-3 sm:gap-5">
+          {account.avatarUrl ? (
+            <img
+              src={account.avatarUrl}
+              alt=""
+              className="h-20 w-20 rounded-full object-cover"
+            />
+          ) : (
+            <span
+              aria-hidden="true"
+              className="flex h-20 w-20 items-center justify-center rounded-full bg-paper text-2xl font-semibold text-brand-600"
+            >
+              {account.displayName.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-semibold text-ink">
+              {account.displayName}
             </h1>
-            <p className="text-sm text-ink-muted">{account?.email ?? 'Đăng nhập để xem hồ sơ của bạn'}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Badge tone="leaf"><Leaf className="h-3 w-3" /> Thuần Chay</Badge>
-              {role && <Badge tone={role === 'EXPERT' ? 'leaf' : role === 'ADMIN' ? 'brand' : 'neutral'}>
-                {role === 'EXPERT' ? 'Chuyên gia ẩm thực' : role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên'}
-              </Badge>}
-              {account && <Badge tone="neutral">Tài khoản Backend · {account.role}</Badge>}
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {role === 'EXPERT' && (
-              <Link to="/dang-cong-thuc" className="inline-flex items-center gap-1.5 rounded-xl bg-leaf-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-leaf-700">
-                <Plus className="h-4 w-4" /> Đăng công thức
-              </Link>
-            )}
-            {account?.role === 'EXPERT' && (
-              <Link to="/ho-so/chuyen-gia" className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50">
-                Bài công thức của tôi
-              </Link>
-            )}
-            {role === 'ADMIN' && (
-              <Link to="/admin/xet-duyet-chuyen-gia" className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-amber-700">
-                Xét duyệt Chuyên gia
-              </Link>
-            )}
-            {role === 'CUSTOMER' && (
-              <Link to="/dang-ky-chuyen-gia" className="inline-flex items-center gap-1.5 rounded-xl border border-leaf-300 bg-leaf-50 px-4 py-2 text-sm font-bold text-leaf-800 hover:bg-leaf-100">
-                <Award className="h-4 w-4 text-leaf-600" /> Đăng ký Chuyên gia
-              </Link>
-            )}
-            <Button variant="outline"><Settings className="h-4 w-4" /> Chỉnh sửa</Button>
-          </div>
-        </div>
-
-        {/* Customer CTA Banner if not expert */}
-        {role === 'CUSTOMER' && (
-          <div className="border-t border-brand-50 bg-leaf-50/50 p-4 sm:px-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-bold text-ink">Bạn có đam mê và bí quyết nấu món chay ngon?</p>
-                <p className="text-xs text-ink-muted">
-                  Đăng ký trở thành Chuyên gia ẩm thực để chia sẻ công thức độc quyền với cộng đồng Mâm Xanh. Không yêu cầu bằng cấp hay giấy tờ vật lý.
-                </p>
-              </div>
+            <p className="mt-1 truncate text-xs text-ink-muted">
+              {account.email}
+            </p>
+            <p className="mt-2 text-xs text-leaf-700">
+              {account.role === "EXPERT"
+                ? "Chuyên gia ẩm thực"
+                : account.role === "ADMIN"
+                  ? "Quản trị viên"
+                  : "Thành viên Mâm Xanh"}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+              <span className="inline-flex items-center gap-1.5 text-ink-muted">
+                <Sparkles className="h-3.5 w-3.5" />
+                {isFree ? "Gói AI: Miễn phí" : `Gói AI: ${activeTier}`}
+                {!isFree && subscription?.endsAt
+                  ? ` · Hết hạn ${formatDate(subscription.endsAt)}`
+                  : ""}
+              </span>
               <Link
-                to="/dang-ky-chuyen-gia"
-                className="rounded-xl bg-leaf-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-leaf-700"
+                to="/goi-ai"
+                className="font-semibold text-brand-600 underline hover:text-brand-700"
               >
-                Nộp đơn xét duyệt
+                {isFree ? "Nâng cấp gói" : "Đổi gói"}
+              </Link>
+              <Link
+                to="/giao-dich"
+                className="text-ink-muted hover:text-ink-soft"
+              >
+                Lịch sử giao dịch
               </Link>
             </div>
           </div>
-        )}
-      </Card>
-
-      {/* tabs */}
-      <div className="mb-6 flex flex-wrap gap-2 border-b border-brand-100">
-        {tabs.map((t) => (
+          <Link
+            to="/ho-so/so-thich-an-uong"
+            className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-xs text-ink-soft hover:bg-paper"
+          >
+            <Settings className="h-3.5 w-3.5" />
+            Sở thích & hồ sơ
+          </Link>
+        </header>
+        <nav
+          aria-label="Nội dung hồ sơ"
+          className="mb-6 mt-5 flex gap-6 border-b border-brand-100"
+        >
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
-              tab === t ? 'border-brand-600 text-brand-600' : 'border-transparent text-ink-muted hover:text-ink-soft'
+            type="button"
+            aria-pressed={tab === "saved"}
+            onClick={() => setTab("saved")}
+            className={`border-b-2 pb-3 text-sm font-semibold ${
+              tab === "saved"
+                ? "border-brand-600 text-brand-600"
+                : "border-transparent text-ink-muted"
             }`}
           >
-            {t}
+            Công thức đã lưu
           </button>
-        ))}
-      </div>
-
-      {tab === 'Công thức đã lưu' && (
-        saved.length ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {saved.map((r) => <RecipeCard key={r.id} recipe={r} />)}
-          </div>
-        ) : (
-          <EmptyState icon="🔖" title="Chức năng lưu đang ở chế độ demo UI" description="API lưu công thức chưa được kết nối trong phiên bản này." />
-        )
-      )}
-
-      {tab === 'Món yêu thích' && (
-        favorites.length ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {favorites.map((r) => <RecipeCard key={r.id} recipe={r} />)}
-          </div>
-        ) : (
-          <EmptyState icon="❤️" title="Chưa có món yêu thích" description="Nhấn biểu tượng trái tim trên các công thức để lưu vào đây." />
-        )
-      )}
-
-      {tab === 'Sở thích ăn chay' && (
-        <Card className="max-w-2xl p-6">
-          <h3 className="mb-4 flex items-center gap-2 font-bold text-ink"><UtensilsCrossed className="h-5 w-5 text-brand-600" /> Thông tin cá nhân & sở thích</h3>
-          <dl className="divide-y divide-brand-50">
-            {preferences.map((p) => (
-              <div key={p.label} className="flex items-center justify-between py-3">
-                <dt className="text-sm text-ink-muted">{p.label}</dt>
-                <dd className="text-sm font-semibold text-ink">{p.value}</dd>
-              </div>
-            ))}
-          </dl>
-          <div className="mt-5 border-t border-brand-50 pt-4">
+          {account.role === "EXPERT" && (
             <Link
-              to="/ho-so/so-thich-an-uong"
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
+              to="/ho-so/chuyen-gia"
+              className="pb-3 text-sm font-medium text-ink-muted hover:text-brand-600"
             >
-              Cập nhật sở thích ăn uống
+              Đã tạo
             </Link>
-          </div>
-        </Card>
-      )}
+          )}
+          <button
+            type="button"
+            aria-pressed={tab === "profile"}
+            onClick={() => setTab("profile")}
+            className={`border-b-2 pb-3 text-sm font-semibold ${
+              tab === "profile"
+                ? "border-brand-600 text-brand-600"
+                : "border-transparent text-ink-muted"
+            }`}
+          >
+            Hồ sơ của tôi
+          </button>
+        </nav>
 
-      {tab === 'Tùy chọn' && (
-        <Card className="max-w-2xl p-6">
-          <h3 className="mb-4 font-bold text-ink">Tùy chọn thông báo cơ bản</h3>
-          <div className="space-y-1">
-            {switches.map((s, i) => (
-              <label key={s.label} className="flex cursor-pointer items-center justify-between rounded-xl px-2 py-3 hover:bg-brand-50/60">
-                <span className="text-sm text-ink-soft">{s.label}</span>
+        {tab === "profile" ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card className="p-5">
+              <Activity className="h-6 w-6 text-brand-600" />
+              <h2 className="mt-3 font-semibold text-ink">Hồ sơ dinh dưỡng</h2>
+              <p className="mt-2 text-xs leading-5 text-ink-muted">
+                Xem và cập nhật thông tin để tính các chỉ số cá nhân.
+              </p>
+              <Link
+                to="/ho-so/dinh-duong"
+                className="mt-4 inline-block text-xs font-semibold text-brand-600"
+              >
+                Mở hồ sơ dinh dưỡng →
+              </Link>
+            </Card>
+            <Card className="p-5">
+              <SlidersHorizontal className="h-6 w-6 text-leaf-700" />
+              <h2 className="mt-3 font-semibold text-ink">Sở thích ăn uống</h2>
+              <p className="mt-2 text-xs leading-5 text-ink-muted">
+                Quản lý trường phái ăn chay, nguyên liệu cần tránh và khẩu vị.
+              </p>
+              <Link
+                to="/ho-so/so-thich-an-uong"
+                className="mt-4 inline-block text-xs font-semibold text-brand-600"
+              >
+                Mở sở thích ăn uống →
+              </Link>
+            </Card>
+          </div>
+        ) : account.role === "ADMIN" ? (
+          <EmptyState
+            icon="🔒"
+            title="Danh sách riêng dành cho thành viên"
+            description="Tài khoản quản trị viên không có quyền truy cập danh sách đã lưu của thành viên."
+          />
+        ) : (
+          <>
+            <div className="mb-5 flex items-center gap-2 rounded-full border border-brand-200 bg-paper px-4">
+              <Search className="h-4 w-4 text-ink-muted" />
+              <input
+                aria-label="Tìm trong công thức đã lưu"
+                maxLength={120}
+                value={keyword}
+                onChange={(event) => {
+                  setKeyword(event.target.value)
+                  setPage(0)
+                }}
+                placeholder="Tìm trong công thức đã lưu..."
+                className="min-w-0 flex-1 bg-transparent py-3 text-sm text-ink outline-none"
+              />
+              {keyword && (
                 <button
                   type="button"
-                  onClick={() => setSwitches((prev) => prev.map((x, j) => (j === i ? { ...x, on: !x.on } : x)))}
-                  className={`relative h-6 w-11 rounded-full transition-colors ${s.on ? 'bg-brand-600' : 'bg-brand-200'}`}
+                  aria-label="Xóa tìm kiếm đã lưu"
+                  onClick={() => {
+                    setKeyword("")
+                    setPage(0)
+                  }}
+                  className="p-1 text-ink-muted"
                 >
-                  <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${s.on ? 'left-[22px]' : 'left-0.5'}`} />
+                  <X className="h-4 w-4" />
                 </button>
-              </label>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      <div className="mt-8 flex items-center gap-2 text-sm text-ink-muted">
-        <Bookmark className="h-4 w-4" /> Bạn có thể quản lý hồ sơ dinh dưỡng và khẩu vị chi tiết tại thanh điều hướng cá nhân.
+              )}
+            </div>
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-ink">Công thức</h2>
+              <span className="text-xs text-ink-muted">
+                {ownResult
+                  ? `${ownResult.totalElements} đã lưu · Mới lưu trước`
+                  : "Danh sách riêng của bạn"}
+              </span>
+            </div>
+            {error && (
+              <div
+                role="alert"
+                className="mb-4 rounded-xl border border-brand-200 bg-paper p-4 text-sm text-ink-muted"
+              >
+                <p>{error}</p>
+                <button
+                  type="button"
+                  onClick={() => setRetry((value) => value + 1)}
+                  className="mt-2 font-semibold text-brand-600"
+                >
+                  Thử lại
+                </button>
+              </div>
+            )}
+            {loading ? (
+              <div
+                role="status"
+                className="flex items-center justify-center gap-2 py-16 text-sm text-ink-muted"
+              >
+                <LoaderCircle className="h-5 w-5 animate-spin" />
+                Đang tải danh sách đã lưu…
+              </div>
+            ) : ownResult?.content.length ? (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+                {ownResult.content.map((item) => (
+                  <article key={item.recipeId} className="relative min-w-0">
+                    {item.available ? (
+                      <Link
+                        to={`/cong-thuc/id/${item.recipeId}`}
+                        className="group block"
+                      >
+                        <div className="aspect-[4/5] overflow-hidden rounded-xl bg-paper">
+                          {item.coverUrl ? (
+                            <img
+                              src={item.coverUrl}
+                              alt={item.title ?? ""}
+                              loading="lazy"
+                              className="h-full w-full object-cover transition-transform motion-safe:group-hover:scale-[1.03]"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-ink-muted">
+                              <Leaf className="h-7 w-7" />
+                            </div>
+                          )}
+                        </div>
+                        <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-ink group-hover:text-brand-600">
+                          {item.title}
+                        </h3>
+                        <p className="mt-1 truncate text-xs text-ink-muted">
+                          {item.authorName}
+                        </p>
+                      </Link>
+                    ) : (
+                      <div>
+                        <div className="flex aspect-[4/5] items-center justify-center rounded-xl border border-brand-100 bg-paper">
+                          <Lock className="h-7 w-7 text-ink-muted" />
+                        </div>
+                        <p className="mt-2 text-sm font-medium text-ink-muted">
+                          {item.unavailableMessage ??
+                            "Công thức không còn khả dụng"}
+                        </p>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={`Bỏ lưu ${
+                        item.available
+                          ? item.title
+                          : "công thức không còn khả dụng"
+                      }`}
+                      disabled={pending.has(item.recipeId)}
+                      onClick={() => remove(item.recipeId)}
+                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-on-brand disabled:opacity-50"
+                    >
+                      {pending.has(item.recipeId) ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Bookmark className="h-4 w-4 fill-current" />
+                      )}
+                    </button>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              !error && (
+                <EmptyState
+                  icon="🔖"
+                  title={
+                    keyword
+                      ? "Không tìm thấy công thức đã lưu"
+                      : "Chưa có công thức đã lưu"
+                  }
+                  description={
+                    keyword
+                      ? "Thử một từ khóa khác trong danh sách của bạn."
+                      : "Nhấn biểu tượng lưu trên thẻ món hoặc trang chi tiết để giữ công thức ở đây."
+                  }
+                  action={
+                    <Link
+                      to="/kham-pha"
+                      className="text-sm font-semibold text-brand-600"
+                    >
+                      Khám phá công thức →
+                    </Link>
+                  }
+                />
+              )
+            )}
+            {ownResult && ownResult.totalPages > 1 && (
+              <nav
+                aria-label="Phân trang công thức đã lưu"
+                className="mt-7 flex items-center justify-center gap-3"
+              >
+                <Button
+                  variant="outline"
+                  disabled={page === 0 || loading}
+                  onClick={() => setPage((value) => value - 1)}
+                >
+                  Trang trước
+                </Button>
+                <span className="text-xs text-ink-muted">
+                  {page + 1} / {ownResult.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  disabled={page + 1 >= ownResult.totalPages || loading}
+                  onClick={() => setPage((value) => value + 1)}
+                >
+                  Trang sau
+                </Button>
+              </nav>
+            )}
+          </>
+        )}
       </div>
     </PageContainer>
-  );
+  )
 }
