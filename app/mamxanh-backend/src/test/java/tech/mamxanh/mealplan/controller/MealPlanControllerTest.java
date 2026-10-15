@@ -427,7 +427,7 @@ class MealPlanControllerTest {
         var fieldTypes = java.util.Map.of("recipeTitle", "string", "recipeCoverUrl", "string",
                 "dishCategory", "string", "totalTimeMinutes", "integer", "unavailableMessage", "string");
         for (var field : fieldTypes.entrySet()) {
-            var schema = json.at("/components/schemas/Entry/properties/" + field.getKey());
+            var schema = json.at("/components/schemas/MealPlanWeekEntry/properties/" + field.getKey());
             assertThat(schema.path("type").asText()).isEqualTo(field.getValue());
         }
     }
