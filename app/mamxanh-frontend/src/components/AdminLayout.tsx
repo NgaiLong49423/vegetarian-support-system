@@ -76,6 +76,36 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     navigate('/dang-nhap');
   };
 
+  if (!account) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-cream px-4 py-10">
+        <section className="w-full max-w-md rounded-3xl border border-brand-200/80 bg-paper p-8 text-center shadow-sm">
+          <ShieldAlert className="mx-auto h-10 w-10 text-brand-600" aria-hidden="true" />
+          <h1 className="mt-4 text-2xl font-extrabold text-ink">Đăng nhập để tiếp tục</h1>
+          <p className="mt-2 text-sm leading-6 text-ink-muted">Bạn cần đăng nhập bằng tài khoản Quản trị viên để tiếp tục.</p>
+          <Link to="/dang-nhap" className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-brand-600 px-5 font-semibold text-white transition hover:bg-brand-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
+            Đăng nhập
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  if (account.role !== 'ADMIN') {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-cream px-4 py-10">
+        <section role="alert" className="w-full max-w-md rounded-3xl border border-amber-500/30 bg-paper p-8 text-center shadow-sm">
+          <ShieldAlert className="mx-auto h-10 w-10 text-amber-500" aria-hidden="true" />
+          <h1 className="mt-4 text-2xl font-extrabold text-ink">Không có quyền truy cập</h1>
+          <p className="mt-2 text-sm leading-6 text-ink-muted">Khu vực quản trị chỉ dành cho tài khoản Administrator.</p>
+          <Link to="/" className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl border border-brand-200 px-5 font-semibold text-ink-soft hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
+            Về trang chủ
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-cream text-ink lg:grid lg:grid-cols-[280px_minmax(0,1fr)] items-start">
       {/* =========================================================================
