@@ -35,6 +35,11 @@ class ScalarUiSecurityTest {
         String test() {
             return "ok";
         }
+
+        @GetMapping(value = "/v3/api-docs.yaml", produces = "application/yaml")
+        String yamlApiDocs() {
+            return "openapi: 3.1.0\n";
+        }
     }
 
     @Test
@@ -53,5 +58,12 @@ class ScalarUiSecurityTest {
         mockMvc.perform(get("/scalar/index.html"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("/v3/api-docs")));
+    }
+
+    @Test
+    void yamlOpenApiEndpointIsPublic() throws Exception {
+        mockMvc.perform(get("/v3/api-docs.yaml"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("openapi: 3.1.0")));
     }
 }

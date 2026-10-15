@@ -27,7 +27,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Fixed
 
-- None.
+- Permit unauthenticated access to Springdoc's `/v3/api-docs.yaml` endpoint so the export script and Docker Development CI can retrieve the generated YAML.
 
 ## 2026-10-15 — Connect Nutrition Tracking and Improve PDF Reports
 

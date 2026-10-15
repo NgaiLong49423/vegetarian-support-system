@@ -21,13 +21,13 @@ paths:
           type: integer
           format: int64
       responses:
-        '204':
+        "204":
           description: The recipe is saved or was already saved.
-        '401':
+        "401":
           description: Authentication is required.
-        '403':
+        "403":
           description: An active Member account is required.
-        '404':
+        "404":
           description: The recipe is not public and available.
       security:
       - bearerAuth: []
@@ -35,7 +35,8 @@ paths:
       tags:
       - saved-recipe-controller
       summary: Remove a recipe from the current member's saved list
-      description: Idempotent. Removes only the current member's reference, including an unavailable recipe.
+      description: "Idempotent. Removes only the current member's reference, including\
+        \ an unavailable recipe."
       operationId: unsave
       parameters:
       - name: recipeId
@@ -45,11 +46,11 @@ paths:
           type: integer
           format: int64
       responses:
-        '204':
+        "204":
           description: The saved reference is removed or did not exist.
-        '401':
+        "401":
           description: Authentication is required.
-        '403':
+        "403":
           description: An active Member account is required.
       security:
       - bearerAuth: []
@@ -58,8 +59,8 @@ paths:
       tags:
       - recipe-controller
       summary: Get a published recipe detail
-      description: Returns the current RecipePost projection, including public author, ingredients, ordered media, nutrition
-        estimates, and read statistics.
+      description: "Returns the current RecipePost projection, including public author,\
+        \ ingredients, ordered media, nutrition estimates, and read statistics."
       operationId: recipeDetail
       parameters:
       - name: recipeId
@@ -69,18 +70,18 @@ paths:
           type: integer
           format: int64
       responses:
-        '200':
+        "200":
           description: Published recipe detail returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RecipeDetailResponse'
-        '404':
+                $ref: "#/components/schemas/RecipeDetailResponse"
+        "404":
           description: Recipe does not exist or is not public.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RecipeDetailResponse'
+                $ref: "#/components/schemas/RecipeDetailResponse"
     put:
       tags:
       - recipe-post-controller
@@ -97,15 +98,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateRecipePostRequest'
+              $ref: "#/components/schemas/UpdateRecipePostRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RecipePostResponse'
+                $ref: "#/components/schemas/RecipePostResponse"
       security:
       - bearerAuth: []
     delete:
@@ -121,7 +122,7 @@ paths:
           format: int64
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
       security:
       - bearerAuth: []
@@ -138,12 +139,12 @@ paths:
           type: integer
           format: int64
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseListRecipeMediaResponse'
+                $ref: "#/components/schemas/ApiResponseListRecipeMediaResponse"
     put:
       tags:
       - recipe-media-controller
@@ -159,15 +160,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateRecipeMediaRequest'
+              $ref: "#/components/schemas/UpdateRecipeMediaRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseListRecipeMediaResponse'
+                $ref: "#/components/schemas/ApiResponseListRecipeMediaResponse"
       security:
       - bearerAuth: []
     delete:
@@ -182,12 +183,12 @@ paths:
           type: integer
           format: int64
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseVoid'
+                $ref: "#/components/schemas/ApiResponseVoid"
       security:
       - bearerAuth: []
   /api/v1/nutrition/profile:
@@ -196,24 +197,24 @@ paths:
       - nutrition-controller
       operationId: getOwnProfile
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NutritionProfileResponse'
-        '401':
+                $ref: "#/components/schemas/NutritionProfileResponse"
+        "401":
           description: Authentication required
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: Eligibility confirmation required or nutrition access disabled
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
     put:
@@ -224,39 +225,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveNutritionProfileRequest'
+              $ref: "#/components/schemas/SaveNutritionProfileRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NutritionProfileResponse'
-        '400':
+                $ref: "#/components/schemas/NutritionProfileResponse"
+        "400":
           description: Invalid profile or consent
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication required
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: Eligibility confirmation required or nutrition access disabled
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '422':
+                $ref: "#/components/schemas/ProblemDetail"
+        "422":
           description: Profile outside the FR-35 support range
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/nutrition/profile/eligibility:
@@ -266,24 +267,24 @@ paths:
       summary: Read current nutrition eligibility
       operationId: getOwnEligibility
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NutritionEligibilityResponse'
-        '401':
+                $ref: "#/components/schemas/NutritionEligibilityResponse"
+        "401":
           description: Authentication required
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: Active Member account required
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
     put:
@@ -295,33 +296,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateNutritionEligibilityRequest'
+              $ref: "#/components/schemas/UpdateNutritionEligibilityRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NutritionEligibilityResponse'
-        '400':
+                $ref: "#/components/schemas/NutritionEligibilityResponse"
+        "400":
           description: Invalid confirmation status
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication required
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: Active Member account required
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/nutrition/dietary-preferences:
@@ -330,12 +331,12 @@ paths:
       - dietary-preference-controller
       operationId: getOwnPreferences
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DietaryPreferencesResponse'
+                $ref: "#/components/schemas/DietaryPreferencesResponse"
       security:
       - bearerAuth: []
     put:
@@ -346,15 +347,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveDietaryPreferencesRequest'
+              $ref: "#/components/schemas/SaveDietaryPreferencesRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DietaryPreferencesResponse'
+                $ref: "#/components/schemas/DietaryPreferencesResponse"
       security:
       - bearerAuth: []
   /api/v1/meal-plans:
@@ -362,8 +363,8 @@ paths:
       tags:
       - meal-plan-read-controller
       summary: Read the current member's weekly meal plan
-      description: Read-only. Returns an empty week when no plan exists. The date must be Monday; the owner is always derived
-        from the authenticated principal.
+      description: Read-only. Returns an empty week when no plan exists. The date
+        must be Monday; the owner is always derived from the authenticated principal.
       operationId: getWeek
       parameters:
       - name: weekStartDate
@@ -373,38 +374,39 @@ paths:
           type: string
           format: date
       responses:
-        '200':
-          description: The member's week, including unavailable recipe references.
+        "200":
+          description: "The member's week, including unavailable recipe references."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealPlanWeekResponse'
-        '400':
-          description: The date is missing, malformed or is not Monday.
+                $ref: "#/components/schemas/MealPlanWeekResponse"
+        "400":
+          description: "The date is missing, malformed or is not Monday."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: An active Member account is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
     put:
       tags:
       - meal-plan-controller
       summary: Create or open the current member's weekly meal plan
-      description: Idempotent for the authenticated member and Monday weekStartDate. Preserves existing entries. No request
-        body is required; the owner is derived from authentication.
+      description: Idempotent for the authenticated member and Monday weekStartDate.
+        Preserves existing entries. No request body is required; the owner is derived
+        from authentication.
       operationId: openWeek
       parameters:
       - name: weekStartDate
@@ -414,30 +416,30 @@ paths:
           type: string
           format: date
       responses:
-        '200':
+        "200":
           description: The existing or newly created week.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealPlanWeekResponse'
-        '400':
-          description: Invalid date, meal type or request fields.
+                $ref: "#/components/schemas/MealPlanWeekResponse"
+        "400":
+          description: "Invalid date, meal type or request fields."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: An active Member and ownership of the entry are required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/meal-plans/{weekStartDate}/entries/{entryId}:
@@ -445,7 +447,8 @@ paths:
       tags:
       - meal-plan-controller
       summary: Replace the recipe in an owned meal-plan entry
-      description: Preserves the entry's day, meal type and planned servings. Also supports replacing a tombstone.
+      description: "Preserves the entry's day, meal type and planned servings. Also\
+        \ supports replacing a tombstone."
       operationId: replaceEntry
       parameters:
       - name: weekStartDate
@@ -465,52 +468,54 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReplaceMealPlanEntryRequest'
+              $ref: "#/components/schemas/ReplaceMealPlanEntryRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: The updated entry.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealPlanWeekEntry'
-        '404':
+                $ref: "#/components/schemas/MealPlanWeekEntry"
+        "404":
           description: The replacement recipe is unavailable.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '409':
-          description: 'MEAL_PLAN_RECIPE_DUPLICATE: recipe already belongs to this day/meal.'
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "MEAL_PLAN_RECIPE_DUPLICATE: recipe already belongs to this\
+            \ day/meal."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '400':
-          description: Invalid date, meal type or request fields.
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "Invalid date, meal type or request fields."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: An active Member and ownership of the entry are required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
     delete:
       tags:
       - meal-plan-controller
-      summary: Remove an owned entry, including an unavailable recipe reference
-      description: Removes only the meal-plan entry. Does not delete the recipe or unsave it.
+      summary: "Remove an owned entry, including an unavailable recipe reference"
+      description: Removes only the meal-plan entry. Does not delete the recipe or
+        unsave it.
       operationId: removeEntry
       parameters:
       - name: weekStartDate
@@ -527,25 +532,25 @@ paths:
           format: int64
           minimum: 1
       responses:
-        '400':
-          description: Invalid date, meal type or request fields.
+        "400":
+          description: "Invalid date, meal type or request fields."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: An active Member and ownership of the entry are required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '204':
+                $ref: "#/components/schemas/ProblemDetail"
+        "204":
           description: Entry removed.
       security:
       - bearerAuth: []
@@ -554,40 +559,40 @@ paths:
       tags:
       - ai-menu-controller
       summary: Replace a member's entire week with selected AI preview meals
-      description: Revalidates Pro, eligibility and every selected published nutrition-complete recipe. The operation is atomic;
-        any invalid entry preserves the old week.
+      description: "Revalidates Pro, eligibility and every selected published nutrition-complete\
+        \ recipe. The operation is atomic; any invalid entry preserves the old week."
       operationId: apply
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApplyAiMenuRequest'
+              $ref: "#/components/schemas/ApplyAiMenuRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: The replaced week.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealPlanWeekResponse'
-        '400':
+                $ref: "#/components/schemas/MealPlanWeekResponse"
+        "400":
           description: The selected positions or recipes are invalid.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: Pro entitlement or nutrition eligibility is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '404':
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
           description: A selected recipe is no longer available.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/me/profile:
@@ -596,12 +601,12 @@ paths:
       - member-profile-controller
       operationId: ownProfile
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/MemberProfileResponse'
+                $ref: "#/components/schemas/MemberProfileResponse"
       security:
       - bearerAuth: []
     put:
@@ -612,15 +617,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateProfileRequest'
+              $ref: "#/components/schemas/UpdateProfileRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/MemberProfileResponse'
+                $ref: "#/components/schemas/MemberProfileResponse"
       security:
       - bearerAuth: []
   /api/v1/admin/units/{unitId}:
@@ -639,15 +644,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UnitSaveRequest'
+              $ref: "#/components/schemas/UnitSaveRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseUnitResponse'
+                $ref: "#/components/schemas/ApiResponseUnitResponse"
     delete:
       tags:
       - admin-catalog-controller
@@ -660,7 +665,7 @@ paths:
           type: integer
           format: int32
       responses:
-        '200':
+        "200":
           description: OK
   /api/v1/admin/ingredients/{ingredientId}:
     get:
@@ -676,12 +681,12 @@ paths:
           format: int64
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseAdminIngredientResponse'
+                $ref: "#/components/schemas/ApiResponseAdminIngredientResponse"
     put:
       tags:
       - admin-catalog-controller
@@ -698,15 +703,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IngredientSaveRequest'
+              $ref: "#/components/schemas/IngredientSaveRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseIngredientResponse'
+                $ref: "#/components/schemas/ApiResponseIngredientResponse"
     delete:
       tags:
       - admin-catalog-controller
@@ -720,7 +725,7 @@ paths:
           format: int64
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
   /api/v1/admin/ingredients/{ingredientId}/unit-conversions/{unitId}:
     put:
@@ -744,15 +749,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConversionSaveRequest'
+              $ref: "#/components/schemas/ConversionSaveRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseConversionResponse'
+                $ref: "#/components/schemas/ApiResponseConversionResponse"
     post:
       tags:
       - admin-catalog-controller
@@ -774,15 +779,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConversionSaveRequest'
+              $ref: "#/components/schemas/ConversionSaveRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseConversionResponse'
+                $ref: "#/components/schemas/ApiResponseConversionResponse"
   /api/v1/admin/ingredients/{ingredientId}/nutrition:
     put:
       tags:
@@ -800,15 +805,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IngredientNutritionRequest'
+              $ref: "#/components/schemas/IngredientNutritionRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseIngredientResponse'
+                $ref: "#/components/schemas/ApiResponseIngredientResponse"
   /api/v1/subscriptions/checkout:
     post:
       tags:
@@ -818,15 +823,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CheckoutRequest'
+              $ref: "#/components/schemas/CheckoutRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckoutResponse'
+                $ref: "#/components/schemas/CheckoutResponse"
   /api/v1/recipes:
     get:
       tags:
@@ -839,7 +844,7 @@ paths:
         required: false
         schema:
           type: string
-          default: ''
+          default: ""
       - name: page
         in: query
         description: Số trang bắt đầu từ 0.
@@ -916,7 +921,8 @@ paths:
           - DESSERT
       - name: ingredientIds
         in: query
-        description: ID nguyên liệu; có thể lặp lại. Công thức phải chứa tất cả ID đã chọn.
+        description: ID nguyên liệu; có thể lặp lại. Công thức phải chứa tất cả ID
+          đã chọn.
         required: false
         schema:
           type: array
@@ -928,19 +934,19 @@ paths:
           minItems: 0
       - name: maxTotalTimeMinutes
         in: query
-        description: Tổng thời gian chuẩn bị và nấu tối đa, tính bằng phút.
+        description: "Tổng thời gian chuẩn bị và nấu tối đa, tính bằng phút."
         required: false
         schema:
           type: integer
           format: int32
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RecipePageResponse'
+                $ref: "#/components/schemas/RecipePageResponse"
     post:
       tags:
       - recipe-controller
@@ -949,15 +955,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateRecipeRequest'
+              $ref: "#/components/schemas/CreateRecipeRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateRecipeResponse'
+                $ref: "#/components/schemas/CreateRecipeResponse"
   /api/v1/recipes/{recipeId}/reports:
     post:
       tags:
@@ -975,15 +981,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RecipeReportRequest'
+              $ref: "#/components/schemas/RecipeReportRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RecipeReportResponse'
+                $ref: "#/components/schemas/RecipeReportResponse"
       security:
       - bearerAuth: []
   /api/v1/recipes/{recipeId}/related/ai:
@@ -991,7 +997,8 @@ paths:
       tags:
       - related-recipe-controller
       summary: Ask Gemini to select existing pairing or variation recipes
-      description: Active Customer/Expert with Plus/Pro required before calling Gemini. No recipe or meal plan is written.
+      description: Active Customer/Expert with Plus/Pro required before calling Gemini.
+        No recipe or meal plan is written.
       operationId: recommend
       parameters:
       - name: recipeId
@@ -1011,48 +1018,48 @@ paths:
           maximum: 12
           minimum: 1
       responses:
-        '200':
-          description: Validated public recipes, possibly empty.
+        "200":
+          description: "Validated public recipes, possibly empty."
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RelatedRecipesResponse'
-        '400':
+                $ref: "#/components/schemas/RelatedRecipesResponse"
+        "400":
           description: Invalid ID or limit.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RelatedRecipesResponse'
-        '401':
+                $ref: "#/components/schemas/RelatedRecipesResponse"
+        "401":
           description: Authentication required.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RelatedRecipesResponse'
-        '403':
+                $ref: "#/components/schemas/RelatedRecipesResponse"
+        "403":
           description: Member role and active Plus/Pro required.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RelatedRecipesResponse'
-        '404':
+                $ref: "#/components/schemas/RelatedRecipesResponse"
+        "404":
           description: Source recipe is unavailable.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RelatedRecipesResponse'
-        '502':
+                $ref: "#/components/schemas/RelatedRecipesResponse"
+        "502":
           description: Invalid Gemini selection.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RelatedRecipesResponse'
-        '503':
+                $ref: "#/components/schemas/RelatedRecipesResponse"
+        "503":
           description: Gemini unavailable.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RelatedRecipesResponse'
+                $ref: "#/components/schemas/RelatedRecipesResponse"
       security:
       - bearerAuth: []
   /api/v1/recipes/media/upload:
@@ -1072,12 +1079,12 @@ paths:
               required:
               - file
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseUploadImageResponse'
+                $ref: "#/components/schemas/ApiResponseUploadImageResponse"
       security:
       - bearerAuth: []
   /api/v1/recipes/ai/weekly-menu:
@@ -1085,40 +1092,41 @@ paths:
       tags:
       - ai-recipe-controller
       summary: Generate a 7-day AI meal-plan preview
-      description: Requires an active Pro Member and complete FR-31 profile. Returns 21 slots without writing the member's
-        Meal Plan. Recipe IDs may repeat, but adjacent slots cannot.
+      description: "Requires an active Pro Member and complete FR-31 profile. Returns\
+        \ 21 slots without writing the member's Meal Plan. Recipe IDs may repeat,\
+        \ but adjacent slots cannot."
       operationId: weeklyMenu
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AiRecipeRecommendationRequest'
+              $ref: "#/components/schemas/AiRecipeRecommendationRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: The generated 21-slot preview.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AiWeeklyMenuPreviewResponse'
-        '403':
+                $ref: "#/components/schemas/AiWeeklyMenuPreviewResponse"
+        "403":
           description: An active Pro subscription is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '409':
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
           description: Profile incomplete or not enough suitable recipes.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '503':
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
           description: Gemini is unavailable.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/ai/recommendations:
@@ -1126,34 +1134,36 @@ paths:
       tags:
       - ai-recipe-controller
       summary: Recommend public recipes from available ingredients
-      description: Requires an active Member and a complete FR-31 profile. Returns 3–5 currently published recipes selected
-        from a safety-filtered catalog; more ingredient matches rank higher.
+      description: Requires an active Member and a complete FR-31 profile. Returns
+        3–5 currently published recipes selected from a safety-filtered catalog; more
+        ingredient matches rank higher.
       operationId: recommend_1
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AiRecipeRecommendationRequest'
+              $ref: "#/components/schemas/AiRecipeRecommendationRequest"
         required: true
       responses:
-        '200':
-          description: Recipe suggestions, possibly empty when no suitable recipe exists.
+        "200":
+          description: "Recipe suggestions, possibly empty when no suitable recipe\
+            \ exists."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AiRecipeRecommendationResponse'
-        '409':
+                $ref: "#/components/schemas/AiRecipeRecommendationResponse"
+        "409":
           description: The FR-31 profile is incomplete.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '503':
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
           description: Gemini is unavailable.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/ai/chat:
@@ -1161,54 +1171,56 @@ paths:
       tags:
       - ai-chat-controller
       summary: Ask the vegetarian cooking assistant
-      description: Requires an active Member. General context or the latest public RecipePost is loaded server-side. Recipe
-        discovery selects only current public RecipePosts from the Backend catalog; explicitly requested recipe drafts remain
-        chat text only. Conversation history is request-scoped and is not persisted. Guest access will be enabled with FR-02
-        rate limiting.
+      description: Requires an active Member. General context or the latest public
+        RecipePost is loaded server-side. Recipe discovery selects only current public
+        RecipePosts from the Backend catalog; explicitly requested recipe drafts remain
+        chat text only. Conversation history is request-scoped and is not persisted.
+        Guest access will be enabled with FR-02 rate limiting.
       operationId: answer
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AiChatRequest'
+              $ref: "#/components/schemas/AiChatRequest"
         required: true
       responses:
-        '200':
-          description: AI answer and, when relevant, selected public recipe cards generated.
+        "200":
+          description: "AI answer and, when relevant, selected public recipe cards\
+            \ generated."
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/AiChatResponse'
-        '400':
-          description: Invalid question, history, or context fields.
+                $ref: "#/components/schemas/AiChatResponse"
+        "400":
+          description: "Invalid question, history, or context fields."
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/AiChatResponse'
-        '401':
+                $ref: "#/components/schemas/AiChatResponse"
+        "401":
           description: An authenticated Member session is required.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/AiChatResponse'
-        '404':
+                $ref: "#/components/schemas/AiChatResponse"
+        "404":
           description: The recipe does not exist or is not public.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/AiChatResponse'
-        '502':
+                $ref: "#/components/schemas/AiChatResponse"
+        "502":
           description: Gemini returned an incomplete or invalid answer.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/AiChatResponse'
-        '503':
+                $ref: "#/components/schemas/AiChatResponse"
+        "503":
           description: Gemini is unavailable or timed out.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/AiChatResponse'
+                $ref: "#/components/schemas/AiChatResponse"
       security:
       - bearerAuth: []
   /api/v1/recipes/ai-assistance:
@@ -1216,40 +1228,40 @@ paths:
       tags:
       - recipe-post-controller
       summary: Generate editable AI-assisted recipe text
-      description: Requires an active Expert account with an active Plus or Pro subscription. Does not create or publish a
-        recipe draft.
+      description: Requires an active Expert account with an active Plus or Pro subscription.
+        Does not create or publish a recipe draft.
       operationId: generateAiAssistance
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RecipeAiAssistanceRequest'
+              $ref: "#/components/schemas/RecipeAiAssistanceRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: Editable recipe text generated.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RecipeAiAssistanceResponse'
-        '403':
+                $ref: "#/components/schemas/RecipeAiAssistanceResponse"
+        "403":
           description: Expert role or Plus/Pro entitlement is required.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RecipeAiAssistanceResponse'
-        '502':
+                $ref: "#/components/schemas/RecipeAiAssistanceResponse"
+        "502":
           description: AI response did not satisfy the recipe output constraints.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RecipeAiAssistanceResponse'
-        '503':
+                $ref: "#/components/schemas/RecipeAiAssistanceResponse"
+        "503":
           description: Gemini is not configured or unavailable.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RecipeAiAssistanceResponse'
+                $ref: "#/components/schemas/RecipeAiAssistanceResponse"
       security:
       - bearerAuth: []
   /api/v1/payments/webhook:
@@ -1261,10 +1273,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PayOsWebhookPayload'
+              $ref: "#/components/schemas/PayOsWebhookPayload"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1281,45 +1293,45 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConfirmNutritionEligibilityRequest'
+              $ref: "#/components/schemas/ConfirmNutritionEligibilityRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NutritionProfileResponse'
-        '400':
+                $ref: "#/components/schemas/NutritionProfileResponse"
+        "400":
           description: Invalid calculation confirmation
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication required
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: Eligibility confirmation required or nutrition access disabled
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '409':
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
           description: Nutrition profile is required before calculation
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '422':
+                $ref: "#/components/schemas/ProblemDetail"
+        "422":
           description: Profile outside the FR-35 support range
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/nutrition/dietary-preferences/onboarding/skip:
@@ -1328,7 +1340,7 @@ paths:
       - dietary-preference-controller
       operationId: skipOnboarding
       responses:
-        '204':
+        "204":
           description: No Content
       security:
       - bearerAuth: []
@@ -1338,12 +1350,12 @@ paths:
       - dietary-preference-controller
       operationId: claimOnboardingInvitation
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OnboardingInvitationResponse'
+                $ref: "#/components/schemas/OnboardingInvitationResponse"
       security:
       - bearerAuth: []
   /api/v1/meal-plans/{weekStartDate}/nutrition/recommendations/{entryId}:
@@ -1351,8 +1363,8 @@ paths:
       tags:
       - meal-plan-controller
       summary: Request Pro nutrition analysis recommendations from existing recipes
-      description: The server supplies catalog-computed nutrition and validates all selected IDs. Applying a suggestion requires
-        a separate member confirmation.
+      description: The server supplies catalog-computed nutrition and validates all
+        selected IDs. Applying a suggestion requires a separate member confirmation.
       operationId: nutritionRecommendations
       parameters:
       - name: weekStartDate
@@ -1369,30 +1381,30 @@ paths:
           format: int64
           minimum: 1
       responses:
-        '400':
-          description: Invalid date, meal type or request fields.
+        "400":
+          description: "Invalid date, meal type or request fields."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: An active Member and ownership of the entry are required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '200':
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
           description: AI recipe suggestions.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealPlanNutritionRecommendationsResponse'
+                $ref: "#/components/schemas/MealPlanNutritionRecommendationsResponse"
       security:
       - bearerAuth: []
   /api/v1/meal-plans/{weekStartDate}/entries:
@@ -1400,7 +1412,8 @@ paths:
       tags:
       - meal-plan-controller
       summary: Add a published recipe to the member's meal
-      description: Creates the week if needed. Default plannedServings is 1. Different recipes may share a meal.
+      description: Creates the week if needed. Default plannedServings is 1. Different
+        recipes may share a meal.
       operationId: addEntry
       parameters:
       - name: weekStartDate
@@ -1413,45 +1426,46 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddMealPlanEntryRequest'
+              $ref: "#/components/schemas/AddMealPlanEntryRequest"
         required: true
       responses:
-        '201':
+        "201":
           description: The new meal-plan entry.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealPlanWeekEntry'
-        '404':
+                $ref: "#/components/schemas/MealPlanWeekEntry"
+        "404":
           description: The recipe is unavailable.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '409':
-          description: 'MEAL_PLAN_RECIPE_DUPLICATE: recipe already belongs to this day/meal.'
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "MEAL_PLAN_RECIPE_DUPLICATE: recipe already belongs to this\
+            \ day/meal."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '400':
-          description: Invalid date, meal type or request fields.
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "Invalid date, meal type or request fields."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: An active Member and ownership of the entry are required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/meal-plans/{weekStartDate}/ai-menu:
@@ -1459,9 +1473,10 @@ paths:
       tags:
       - meal-plan-controller
       summary: Apply a confirmed AI weekly menu to the member's plan
-      description: Requires an active Pro Member. Atomically adds exactly one recipe to each of 21 day/meal positions and
-        preserves existing entries. If any recipe is no longer public or collides with the same recipe in an existing day/meal,
-        the request fails without writing any entries.
+      description: "Requires an active Pro Member. Atomically adds exactly one recipe\
+        \ to each of 21 day/meal positions and preserves existing entries. If any\
+        \ recipe is no longer public or collides with the same recipe in an existing\
+        \ day/meal, the request fails without writing any entries."
       operationId: applyAiMenu
       parameters:
       - name: weekStartDate
@@ -1474,45 +1489,45 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApplyAiWeeklyMenuRequest'
+              $ref: "#/components/schemas/ApplyAiWeeklyMenuRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: The updated weekly plan.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealPlanWeekResponse'
-        '404':
+                $ref: "#/components/schemas/MealPlanWeekResponse"
+        "404":
           description: A selected recipe is no longer published.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '409':
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
           description: The selected recipe already exists in a target day/meal.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: An active Member and ownership of the entry are required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '400':
-          description: Invalid date, meal type or request fields.
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "Invalid date, meal type or request fields."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/meal-plans/ai-menu/previews:
@@ -1520,47 +1535,49 @@ paths:
       tags:
       - ai-menu-controller
       summary: Generate a nutrition-aware weekly meal-plan preview
-      description: Requires an active Member, Pro entitlement, FR-38 eligibility and a valid FR-35 profile. PROFILE uses the
-        saved goal; THIS_WEEK uses optional request-only preferences. Does not write Meal Plan entries.
+      description: "Requires an active Member, Pro entitlement, FR-38 eligibility\
+        \ and a valid FR-35 profile. PROFILE uses the saved goal; THIS_WEEK uses optional\
+        \ request-only preferences. Does not write Meal Plan entries."
       operationId: preview
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAiMenuPreviewRequest'
+              $ref: "#/components/schemas/CreateAiMenuPreviewRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: A 21-slot weekly preview with trusted recipe nutrition.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AiMenuPreviewResponse'
-        '401':
+                $ref: "#/components/schemas/AiMenuPreviewResponse"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
-          description: Pro entitlement is required; nutrition eligibility must be confirmed (NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED)
-            and the account must be eligible (NUTRITION_ELIGIBILITY_INELIGIBLE).
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Pro entitlement is required; nutrition eligibility must be
+            confirmed (NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED) and the account
+            must be eligible (NUTRITION_ELIGIBILITY_INELIGIBLE).
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '409':
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
           description: A valid anthropometric profile is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '503':
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
           description: The AI provider is unavailable.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/me/profile/avatar:
@@ -1580,12 +1597,12 @@ paths:
               required:
               - file
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/MemberProfileResponse'
+                $ref: "#/components/schemas/MemberProfileResponse"
       security:
       - bearerAuth: []
   /api/v1/expert-applications:
@@ -1597,15 +1614,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExpertApplicationRequest'
+              $ref: "#/components/schemas/ExpertApplicationRequest"
         required: true
       responses:
-        '201':
+        "201":
           description: Created
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ExpertApplicationResponse'
+                $ref: "#/components/schemas/ExpertApplicationResponse"
   /api/v1/auth/register:
     post:
       tags:
@@ -1615,15 +1632,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              $ref: "#/components/schemas/RegisterRequest"
         required: true
       responses:
-        '201':
+        "201":
           description: Created
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RegistrationResponse'
+                $ref: "#/components/schemas/RegistrationResponse"
   /api/v1/auth/password-resets:
     post:
       tags:
@@ -1633,15 +1650,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EmailRequest'
+              $ref: "#/components/schemas/EmailRequest"
         required: true
       responses:
-        '202':
+        "202":
           description: Accepted
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: "#/components/schemas/MessageResponse"
   /api/v1/auth/password-resets/confirm:
     post:
       tags:
@@ -1651,10 +1668,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+              $ref: "#/components/schemas/PasswordResetConfirmRequest"
         required: true
       responses:
-        '204':
+        "204":
           description: No Content
   /api/v1/auth/login:
     post:
@@ -1665,15 +1682,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: "#/components/schemas/LoginRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: "#/components/schemas/AuthResponse"
   /api/v1/auth/google:
     post:
       tags:
@@ -1683,15 +1700,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GoogleLoginRequest'
+              $ref: "#/components/schemas/GoogleLoginRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: "#/components/schemas/AuthResponse"
   /api/v1/auth/email-verifications:
     post:
       tags:
@@ -1701,10 +1718,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenRequest'
+              $ref: "#/components/schemas/TokenRequest"
         required: true
       responses:
-        '204':
+        "204":
           description: No Content
   /api/v1/auth/email-verifications/resend:
     post:
@@ -1715,27 +1732,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EmailRequest'
+              $ref: "#/components/schemas/EmailRequest"
         required: true
       responses:
-        '202':
+        "202":
           description: Accepted
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: "#/components/schemas/MessageResponse"
   /api/v1/admin/units:
     get:
       tags:
       - admin-catalog-controller
       operationId: listUnits
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseListUnitResponse'
+                $ref: "#/components/schemas/ApiResponseListUnitResponse"
     post:
       tags:
       - admin-catalog-controller
@@ -1744,15 +1761,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UnitSaveRequest'
+              $ref: "#/components/schemas/UnitSaveRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseUnitResponse'
+                $ref: "#/components/schemas/ApiResponseUnitResponse"
   /api/v1/admin/ingredients:
     get:
       tags:
@@ -1767,12 +1784,12 @@ paths:
           maxLength: 200
           minLength: 0
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseListIngredientResponse'
+                $ref: "#/components/schemas/ApiResponseListIngredientResponse"
     post:
       tags:
       - admin-catalog-controller
@@ -1781,15 +1798,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IngredientSaveRequest'
+              $ref: "#/components/schemas/IngredientSaveRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseIngredientResponse'
+                $ref: "#/components/schemas/ApiResponseIngredientResponse"
   /api/v1/admin/expert-applications/{id}/reject:
     post:
       tags:
@@ -1806,15 +1823,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReviewRequest'
+              $ref: "#/components/schemas/ReviewRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ExpertApplicationResponse'
+                $ref: "#/components/schemas/ExpertApplicationResponse"
   /api/v1/admin/expert-applications/{id}/approve:
     post:
       tags:
@@ -1831,21 +1848,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApproveRequest'
+              $ref: "#/components/schemas/ApproveRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ExpertApplicationResponse'
+                $ref: "#/components/schemas/ExpertApplicationResponse"
   /api/v1/meal-plans/{weekStartDate}/entries/{entryId}/servings:
     patch:
       tags:
       - meal-plan-controller
       summary: Update the number of servings to prepare for an owned meal-plan entry
-      description: Accepts planned servings from 0.5 to 10 in increments of 0.5. Preserves the recipe, date and meal type.
-        Hidden or deleted recipes retain neutral unavailable fields.
+      description: "Accepts planned servings from 0.5 to 10 in increments of 0.5.\
+        \ Preserves the recipe, date and meal type. Hidden or deleted recipes retain\
+        \ neutral unavailable fields."
       operationId: updateServings
       parameters:
       - name: weekStartDate
@@ -1865,33 +1883,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateMealPlanServingsRequest'
+              $ref: "#/components/schemas/UpdateMealPlanServingsRequest"
         required: true
       responses:
-        '400':
-          description: Invalid date, meal type or request fields.
+        "400":
+          description: "Invalid date, meal type or request fields."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: An active Member and ownership of the entry are required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '200':
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
           description: The entry with the saved plannedServings.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealPlanWeekEntry'
+                $ref: "#/components/schemas/MealPlanWeekEntry"
       security:
       - bearerAuth: []
   /api/v1/meal-plans/{weekStartDate}/entries/{entryId}/position:
@@ -1899,7 +1917,8 @@ paths:
       tags:
       - meal-plan-controller
       summary: Move an owned entry within the same week
-      description: Preserves identity, recipe and planned servings. Rejects a duplicate destination atomically.
+      description: "Preserves identity, recipe and planned servings. Rejects a duplicate\
+        \ destination atomically."
       operationId: moveEntry
       parameters:
       - name: weekStartDate
@@ -1919,39 +1938,40 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MoveMealPlanEntryRequest'
+              $ref: "#/components/schemas/MoveMealPlanEntryRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: The moved entry.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealPlanWeekEntry'
-        '409':
-          description: 'MEAL_PLAN_RECIPE_DUPLICATE: destination already contains this recipe.'
+                $ref: "#/components/schemas/MealPlanWeekEntry"
+        "409":
+          description: "MEAL_PLAN_RECIPE_DUPLICATE: destination already contains this\
+            \ recipe."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '400':
-          description: Invalid date, meal type or request fields.
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "Invalid date, meal type or request fields."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: An active Member and ownership of the entry are required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/admin/units/{unitId}/status:
@@ -1970,15 +1990,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CatalogStatusUpdateRequest'
+              $ref: "#/components/schemas/CatalogStatusUpdateRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseUnitResponse'
+                $ref: "#/components/schemas/ApiResponseUnitResponse"
   /api/v1/admin/ingredients/{ingredientId}/unit-conversions/{unitId}/status:
     patch:
       tags:
@@ -2001,15 +2021,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CatalogStatusUpdateRequest'
+              $ref: "#/components/schemas/CatalogStatusUpdateRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseConversionResponse'
+                $ref: "#/components/schemas/ApiResponseConversionResponse"
   /api/v1/admin/ingredients/{ingredientId}/status:
     patch:
       tags:
@@ -2027,15 +2047,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CatalogStatusUpdateRequest'
+              $ref: "#/components/schemas/CatalogStatusUpdateRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseIngredientResponse'
+                $ref: "#/components/schemas/ApiResponseIngredientResponse"
   /api/v1/admin/ingredients/{ingredientId}/nutrition-support:
     patch:
       tags:
@@ -2053,22 +2073,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NutritionSupportUpdateRequest'
+              $ref: "#/components/schemas/NutritionSupportUpdateRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseIngredientResponse'
+                $ref: "#/components/schemas/ApiResponseIngredientResponse"
   /scalar:
     get:
       tags:
       - scalar-ui-controller
       operationId: scalarReference
       responses:
-        '200':
+        "200":
           description: OK
           content:
             text/html:
@@ -2081,55 +2101,57 @@ paths:
       - subscription-controller
       operationId: getTransactions
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TransactionHistoryResponse'
+                  $ref: "#/components/schemas/TransactionHistoryResponse"
   /api/v1/subscriptions/plans:
     get:
       tags:
       - subscription-controller
       operationId: getPlans
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PlanResponse'
+                  $ref: "#/components/schemas/PlanResponse"
   /api/v1/subscriptions/my-subscription:
     get:
       tags:
       - subscription-controller
       operationId: getMySubscription
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MySubscriptionResponse'
+                $ref: "#/components/schemas/MySubscriptionResponse"
   /api/v1/saved-recipes:
     get:
       tags:
       - saved-recipe-controller
       summary: List the current member's saved recipes
-      description: Returns a private, paginated list ordered by most recently saved. Unavailable recipes are safe tombstones.
+      description: "Returns a private, paginated list ordered by most recently saved.\
+        \ Unavailable recipes are safe tombstones."
       operationId: list
       parameters:
       - name: keyword
         in: query
-        description: Search available saved recipes by title or description; maximum 120 characters.
+        description: Search available saved recipes by title or description; maximum
+          120 characters.
         required: false
         schema:
           type: string
-          default: ''
+          default: ""
       - name: page
         in: query
         description: Zero-based page index.
@@ -2139,31 +2161,31 @@ paths:
           minimum: 0
       - name: size
         in: query
-        description: Page size, from 1 through 50.
+        description: "Page size, from 1 through 50."
         required: false
         schema:
           type: string
           maximum: 50
           minimum: 1
       responses:
-        '200':
+        "200":
           description: The current member's saved recipe page.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PageResponseSavedRecipeResponse'
-        '401':
+                $ref: "#/components/schemas/PageResponseSavedRecipeResponse"
+        "401":
           description: Authentication is required.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PageResponseSavedRecipeResponse'
-        '400':
-          description: Keyword, page or size is outside its supported range.
+                $ref: "#/components/schemas/PageResponseSavedRecipeResponse"
+        "400":
+          description: "Keyword, page or size is outside its supported range."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PageResponseSavedRecipeResponse'
+                $ref: "#/components/schemas/PageResponseSavedRecipeResponse"
       security:
       - bearerAuth: []
   /api/v1/recipes/{recipeId}/related:
@@ -2171,7 +2193,8 @@ paths:
       tags:
       - related-recipe-controller
       summary: Find related public recipes without AI
-      description: Partial attribute matches ranked by similarity; main ingredients have the largest converted gram weight.
+      description: Partial attribute matches ranked by similarity; main ingredients
+        have the largest converted gram weight.
       operationId: related
       parameters:
       - name: recipeId
@@ -2191,24 +2214,24 @@ paths:
           maximum: 12
           minimum: 1
       responses:
-        '200':
-          description: Related recipes, possibly empty.
+        "200":
+          description: "Related recipes, possibly empty."
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RelatedRecipesResponse'
-        '400':
+                $ref: "#/components/schemas/RelatedRecipesResponse"
+        "400":
           description: Invalid ID or limit.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RelatedRecipesResponse'
-        '404':
+                $ref: "#/components/schemas/RelatedRecipesResponse"
+        "404":
           description: Source recipe is unavailable.
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RelatedRecipesResponse'
+                $ref: "#/components/schemas/RelatedRecipesResponse"
   /api/v1/recipes/{recipeId}/manage:
     get:
       tags:
@@ -2223,12 +2246,12 @@ paths:
           format: int64
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RecipePostResponse'
+                $ref: "#/components/schemas/RecipePostResponse"
       security:
       - bearerAuth: []
   /api/v1/recipes/reference-data:
@@ -2242,14 +2265,14 @@ paths:
         required: false
         schema:
           type: string
-          default: ''
+          default: ""
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RecipeReferenceData'
+                $ref: "#/components/schemas/RecipeReferenceData"
   /api/v1/recipes/mine:
     get:
       tags:
@@ -2274,12 +2297,12 @@ paths:
           maximum: 50
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RecipePageResponse'
+                $ref: "#/components/schemas/RecipePageResponse"
       security:
       - bearerAuth: []
   /api/v1/recipes/ingredient-options:
@@ -2293,28 +2316,28 @@ paths:
         required: false
         schema:
           type: string
-          default: ''
+          default: ""
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/IngredientOptionResponse'
+                  $ref: "#/components/schemas/IngredientOptionResponse"
   /api/v1/recipes/form-options:
     get:
       tags:
       - recipe-controller
       operationId: formOptions
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RecipeFormOptionsResponse'
+                $ref: "#/components/schemas/RecipeFormOptionsResponse"
   /api/v1/nutrition/dietary-preferences/ingredient-suggestions:
     get:
       tags:
@@ -2326,16 +2349,16 @@ paths:
         required: false
         schema:
           type: string
-          default: ''
+          default: ""
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/IngredientSuggestionResponse'
+                  $ref: "#/components/schemas/IngredientSuggestionResponse"
       security:
       - bearerAuth: []
   /api/v1/members/{userId}:
@@ -2352,12 +2375,12 @@ paths:
           format: int64
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/MemberProfileResponse'
+                $ref: "#/components/schemas/MemberProfileResponse"
   /api/v1/members/{userId}/recipes:
     get:
       tags:
@@ -2391,19 +2414,19 @@ paths:
           maximum: 50
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/RecipePageResponse'
+                $ref: "#/components/schemas/RecipePageResponse"
   /api/v1/meal-plans/{weekStartDate}/nutrition:
     get:
       tags:
       - meal-plan-controller
       summary: Analyze nutrition for the authenticated member's meal plan
-      description: Returns 9 catalog-based nutrient values for one day or the complete 7-day week, with reference targets
-        and missing-data warnings.
+      description: "Returns 9 catalog-based nutrient values for one day or the complete\
+        \ 7-day week, with reference targets and missing-data warnings."
       operationId: analyzeNutrition
       parameters:
       - name: weekStartDate
@@ -2419,38 +2442,40 @@ paths:
           type: string
           format: date
       responses:
-        '400':
-          description: Invalid date, meal type or request fields.
+        "400":
+          description: "Invalid date, meal type or request fields."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: An active Member and ownership of the entry are required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '200':
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
           description: Nutrition analysis.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealPlanNutritionResponse'
+                $ref: "#/components/schemas/MealPlanNutritionResponse"
       security:
       - bearerAuth: []
   /api/v1/meal-plans/{weekStartDate}/nutrition/report:
     get:
       tags:
       - meal-plan-controller
-      summary: Export the authenticated member's daily or weekly nutrition report as PDF
-      description: Generates a current-plan A4 report on demand. The report table continues on additional pages when needed.
+      summary: Export the authenticated member's daily or weekly nutrition report
+        as PDF
+      description: Generates a current-plan A4 report on demand. The report table
+        continues on additional pages when needed.
       operationId: exportNutritionReport
       parameters:
       - name: weekStartDate
@@ -2466,25 +2491,25 @@ paths:
           type: string
           format: date
       responses:
-        '400':
-          description: Invalid date, meal type or request fields.
+        "400":
+          description: "Invalid date, meal type or request fields."
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication is required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
           description: An active Member and ownership of the entry are required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '200':
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
           description: PDF report.
           content:
             application/pdf: {}
@@ -2495,8 +2520,8 @@ paths:
       tags:
       - meal-plan-export-controller
       summary: Read the authenticated member's weekly export snapshot
-      description: For PDF/TXT generation. No owner parameter. Missing nutrition remains null; unavailable sources disclose
-        no content.
+      description: For PDF/TXT generation. No owner parameter. Missing nutrition remains
+        null; unavailable sources disclose no content.
       operationId: getExport
       parameters:
       - name: weekStartDate
@@ -2506,30 +2531,31 @@ paths:
           type: string
           format: date
       responses:
-        '200':
-          description: 'Private export snapshot; Cache-Control: no-store.'
+        "200":
+          description: "Private export snapshot; Cache-Control: no-store."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealPlanExportResponse'
-        '400':
+                $ref: "#/components/schemas/MealPlanExportResponse"
+        "400":
           description: Invalid Monday week start.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '401':
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
           description: Authentication required.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-        '403':
-          description: Active Member required; Administrator cannot export private schedules.
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Active Member required; Administrator cannot export private
+            schedules.
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/expert-applications/me:
@@ -2557,12 +2583,12 @@ paths:
           maximum: 100
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/PageResponseExpertApplicationResponse'
+                $ref: "#/components/schemas/PageResponseExpertApplicationResponse"
   /api/v1/admin/ingredients/{ingredientId}/recipes:
     get:
       tags:
@@ -2577,12 +2603,12 @@ paths:
           format: int64
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseListIngredientRecipeReferenceResponse'
+                $ref: "#/components/schemas/ApiResponseListIngredientRecipeReferenceResponse"
   /api/v1/admin/ingredients/{ingredientId}/recipes/search:
     get:
       tags:
@@ -2615,12 +2641,12 @@ paths:
           maximum: 100
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponsePageResponseIngredientRecipeReferenceResponse'
+                $ref: "#/components/schemas/ApiResponsePageResponseIngredientRecipeReferenceResponse"
   /api/v1/admin/ingredients/search:
     get:
       tags:
@@ -2670,24 +2696,24 @@ paths:
           maximum: 100
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponsePageResponseAdminIngredientResponse'
+                $ref: "#/components/schemas/ApiResponsePageResponseAdminIngredientResponse"
   /api/v1/admin/ingredients/options:
     get:
       tags:
       - admin-catalog-controller
       operationId: ingredientOptions_1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseIngredientCatalogOptionsResponse'
+                $ref: "#/components/schemas/ApiResponseIngredientCatalogOptionsResponse"
   /api/v1/admin/ingredient-unit-conversions:
     get:
       tags:
@@ -2701,12 +2727,12 @@ paths:
           type: integer
           format: int64
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ApiResponseListConversionResponse'
+                $ref: "#/components/schemas/ApiResponseListConversionResponse"
   /api/v1/admin/expert-applications:
     get:
       tags:
@@ -2737,12 +2763,12 @@ paths:
           maximum: 100
           minimum: 1
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/PageResponseExpertApplicationResponse'
+                $ref: "#/components/schemas/PageResponseExpertApplicationResponse"
   /api/v1/admin/expert-applications/{id}:
     get:
       tags:
@@ -2756,12 +2782,12 @@ paths:
           type: integer
           format: int64
       responses:
-        '200':
+        "200":
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ExpertApplicationResponse'
+                $ref: "#/components/schemas/ExpertApplicationResponse"
 components:
   schemas:
     Ingredient:
@@ -2833,7 +2859,7 @@ components:
         ingredients:
           type: array
           items:
-            $ref: '#/components/schemas/Ingredient'
+            $ref: "#/components/schemas/Ingredient"
           maxItems: 50
           minItems: 1
       required:
@@ -2899,11 +2925,11 @@ components:
         media:
           type: array
           items:
-            $ref: '#/components/schemas/Media'
+            $ref: "#/components/schemas/Media"
         ingredients:
           type: array
           items:
-            $ref: '#/components/schemas/Ingredient'
+            $ref: "#/components/schemas/Ingredient"
         likes:
           type: integer
           format: int64
@@ -2943,7 +2969,7 @@ components:
         mediaItems:
           type: array
           items:
-            $ref: '#/components/schemas/RecipeMediaItemRequest'
+            $ref: "#/components/schemas/RecipeMediaItemRequest"
           maxItems: 5
           minItems: 0
     ApiResponseListRecipeMediaResponse:
@@ -2956,7 +2982,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/RecipeMediaResponse'
+            $ref: "#/components/schemas/RecipeMediaResponse"
         timestamp:
           type: string
           format: date-time
@@ -3049,9 +3075,9 @@ components:
           items:
             type: string
         profile:
-          $ref: '#/components/schemas/Profile'
+          $ref: "#/components/schemas/Profile"
         results:
-          $ref: '#/components/schemas/Results'
+          $ref: "#/components/schemas/Results"
     Profile:
       type: object
       properties:
@@ -3080,7 +3106,7 @@ components:
         dailyTargets:
           type: array
           items:
-            $ref: '#/components/schemas/Target'
+            $ref: "#/components/schemas/Target"
         energySource:
           type: string
         nutrientSource:
@@ -3152,9 +3178,9 @@ components:
           - OVO
           - LACTO_OVO
         avoid:
-          $ref: '#/components/schemas/IngredientPreferenceListRequest'
+          $ref: "#/components/schemas/IngredientPreferenceListRequest"
         dislike:
-          $ref: '#/components/schemas/IngredientPreferenceListRequest'
+          $ref: "#/components/schemas/IngredientPreferenceListRequest"
         cuisinePreference:
           type: string
           maxLength: 200
@@ -3198,9 +3224,9 @@ components:
           - OVO
           - LACTO_OVO
         avoid:
-          $ref: '#/components/schemas/IngredientPreferences'
+          $ref: "#/components/schemas/IngredientPreferences"
         dislike:
-          $ref: '#/components/schemas/IngredientPreferences'
+          $ref: "#/components/schemas/IngredientPreferences"
         cuisinePreference:
           type: string
         maxCookingTimeMinutes:
@@ -3219,7 +3245,7 @@ components:
           - SKIPPED
           - COMPLETED
         aiPersonalization:
-          $ref: '#/components/schemas/AiPersonalization'
+          $ref: "#/components/schemas/AiPersonalization"
     IngredientPreferences:
       type: object
       properties:
@@ -3228,7 +3254,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/PreferenceItem'
+            $ref: "#/components/schemas/PreferenceItem"
     PreferenceItem:
       type: object
       properties:
@@ -3256,26 +3282,26 @@ components:
         recipeTitle:
           type:
           - string
-          - 'null'
+          - "null"
         recipeCoverUrl:
           type:
           - string
-          - 'null'
+          - "null"
         dishCategory:
           type:
           - string
-          - 'null'
+          - "null"
         totalTimeMinutes:
           type:
           - integer
-          - 'null'
+          - "null"
           format: int32
         recipeDeleted:
           type: boolean
         unavailableMessage:
           type:
           - string
-          - 'null'
+          - "null"
     MealPlanWeekResponse:
       type: object
       properties:
@@ -3285,7 +3311,7 @@ components:
         entries:
           type: array
           items:
-            $ref: '#/components/schemas/MealPlanWeekEntry'
+            $ref: "#/components/schemas/MealPlanWeekEntry"
     ReplaceMealPlanEntryRequest:
       type: object
       properties:
@@ -3317,7 +3343,7 @@ components:
         meals:
           type: array
           items:
-            $ref: '#/components/schemas/SelectedMeal'
+            $ref: "#/components/schemas/SelectedMeal"
           maxItems: 21
           minItems: 0
       required:
@@ -3347,7 +3373,7 @@ components:
           type: string
           maxLength: 50
           minLength: 3
-          pattern: '[^\p{Cntrl}]*'
+          pattern: "[^\\p{Cntrl}]*"
         bio:
           type: string
           maxLength: 500
@@ -3367,10 +3393,10 @@ components:
           description: Ảnh đại diện; null thì Frontend hiển thị ảnh mặc định (AC-23.3).
         bio:
           type: string
-          description: Giới thiệu ngắn, tối đa 500 ký tự; null khi để trống.
+          description: "Giới thiệu ngắn, tối đa 500 ký tự; null khi để trống."
         joinedMonth:
           type: string
-          description: Tháng tham gia theo giờ Việt Nam, dạng yyyy-MM.
+          description: "Tháng tham gia theo giờ Việt Nam, dạng yyyy-MM."
           example: 2026-09
     UnitSaveRequest:
       type: object
@@ -3391,7 +3417,7 @@ components:
           - COUNT
         baseFactor:
           type: number
-          minimum: 1.0e-06
+          minimum: 0.000001
       required:
       - baseFactor
       - code
@@ -3405,7 +3431,7 @@ components:
         message:
           type: string
         data:
-          $ref: '#/components/schemas/UnitResponse'
+          $ref: "#/components/schemas/UnitResponse"
         timestamp:
           type: string
           format: date-time
@@ -3482,7 +3508,7 @@ components:
           type: string
           format: date
         nutrition:
-          $ref: '#/components/schemas/IngredientNutritionRequest'
+          $ref: "#/components/schemas/IngredientNutritionRequest"
       required:
       - ingredientGroup
       - name
@@ -3496,7 +3522,7 @@ components:
         message:
           type: string
         data:
-          $ref: '#/components/schemas/IngredientResponse'
+          $ref: "#/components/schemas/IngredientResponse"
         timestamp:
           type: string
           format: date-time
@@ -3543,7 +3569,7 @@ components:
         active:
           type: boolean
         nutrition:
-          $ref: '#/components/schemas/IngredientNutritionResponse'
+          $ref: "#/components/schemas/IngredientNutritionResponse"
     ConversionSaveRequest:
       type: object
       properties:
@@ -3562,7 +3588,7 @@ components:
         message:
           type: string
         data:
-          $ref: '#/components/schemas/ConversionResponse'
+          $ref: "#/components/schemas/ConversionResponse"
         timestamp:
           type: string
           format: date-time
@@ -3668,13 +3694,13 @@ components:
         ingredients:
           type: array
           items:
-            $ref: '#/components/schemas/RecipeIngredientInput'
+            $ref: "#/components/schemas/RecipeIngredientInput"
           maxItems: 50
           minItems: 1
         media:
           type: array
           items:
-            $ref: '#/components/schemas/RecipeMediaInput'
+            $ref: "#/components/schemas/RecipeMediaInput"
           maxItems: 5
           minItems: 0
       required:
@@ -3759,7 +3785,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/RecipePostResponse'
+            $ref: "#/components/schemas/RecipePostResponse"
     ApiResponseUploadImageResponse:
       type: object
       properties:
@@ -3768,7 +3794,7 @@ components:
         message:
           type: string
         data:
-          $ref: '#/components/schemas/UploadImageResponse'
+          $ref: "#/components/schemas/UploadImageResponse"
         timestamp:
           type: string
           format: date-time
@@ -3800,7 +3826,7 @@ components:
         slots:
           type: array
           items:
-            $ref: '#/components/schemas/Slot'
+            $ref: "#/components/schemas/Slot"
     Slot:
       type: object
       properties:
@@ -3817,7 +3843,7 @@ components:
         coverUrl:
           type:
           - string
-          - 'null'
+          - "null"
         dishCategory:
           type: string
         vegetarianType:
@@ -3830,12 +3856,12 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/Item'
+            $ref: "#/components/schemas/Item"
     Item:
       type: object
       properties:
         recipe:
-          $ref: '#/components/schemas/RecipePostResponse'
+          $ref: "#/components/schemas/RecipePostResponse"
         reason:
           type: string
     AiChatRequest:
@@ -3843,7 +3869,8 @@ components:
       properties:
         contextType:
           type: string
-          description: GENERAL for cooking questions; RECIPE for a server-loaded public RecipePost.
+          description: GENERAL for cooking questions; RECIPE for a server-loaded public
+            RecipePost.
           enum:
           - GENERAL
           - RECIPE
@@ -3858,9 +3885,10 @@ components:
           minLength: 0
         history:
           type: array
-          description: Most recent conversation turns, up to eight items, kept only for this request.
+          description: "Most recent conversation turns, up to eight items, kept only\
+            \ for this request."
           items:
-            $ref: '#/components/schemas/Turn'
+            $ref: "#/components/schemas/Turn"
           maxItems: 8
           minItems: 0
       required:
@@ -3895,13 +3923,14 @@ components:
           description: Null for GENERAL context.
         answer:
           type: string
-          description: AI answer or explicitly requested draft. Treat as reference information.
+          description: AI answer or explicitly requested draft. Treat as reference
+            information.
         recommendations:
           type: array
-          description: Real public RecipePosts selected from the Backend catalog; empty when the user did not ask to find
-            recipes.
+          description: Real public RecipePosts selected from the Backend catalog;
+            empty when the user did not ask to find recipes.
           items:
-            $ref: '#/components/schemas/RecipeRecommendation'
+            $ref: "#/components/schemas/RecipeRecommendation"
     RecipeRecommendation:
       type: object
       properties:
@@ -3949,7 +3978,7 @@ components:
         ingredients:
           type: array
           items:
-            $ref: '#/components/schemas/Ingredient'
+            $ref: "#/components/schemas/Ingredient"
           maxItems: 50
           minItems: 0
       required:
@@ -4020,7 +4049,7 @@ components:
         recommendations:
           type: array
           items:
-            $ref: '#/components/schemas/Recommendation'
+            $ref: "#/components/schemas/Recommendation"
     Recommendation:
       type: object
       properties:
@@ -4058,7 +4087,7 @@ components:
         slots:
           type: array
           items:
-            $ref: '#/components/schemas/Slot'
+            $ref: "#/components/schemas/Slot"
           maxItems: 21
           minItems: 21
       required:
@@ -4105,7 +4134,7 @@ components:
         meals:
           type: array
           items:
-            $ref: '#/components/schemas/Meal'
+            $ref: "#/components/schemas/Meal"
         nutritionDisclaimer:
           type: string
     Meal:
@@ -4148,7 +4177,7 @@ components:
           type: string
           maxLength: 500
           minLength: 0
-          pattern: ^$|https?://[^\s]+
+          pattern: "^$|https?://[^\\s]+"
       required:
       - experience
       - sampleRecipeSummary
@@ -4195,7 +4224,7 @@ components:
           type: string
           maxLength: 255
           minLength: 0
-          pattern: ^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$
+          pattern: "^[a-z0-9._%+-]+@[a-z0-9-]+(\\.[a-z0-9-]+)*\\.[a-z]{2,}$"
         password:
           type: string
         confirmPassword:
@@ -4223,7 +4252,7 @@ components:
           type: string
           maxLength: 255
           minLength: 0
-          pattern: ^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$
+          pattern: "^[a-z0-9._%+-]+@[a-z0-9-]+(\\.[a-z0-9-]+)*\\.[a-z]{2,}$"
       required:
       - email
     MessageResponse:
@@ -4252,7 +4281,7 @@ components:
           type: string
           maxLength: 255
           minLength: 0
-          pattern: ^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$
+          pattern: "^[a-z0-9._%+-]+@[a-z0-9-]+(\\.[a-z0-9-]+)*\\.[a-z]{2,}$"
         password:
           type: string
           maxLength: 64
@@ -4296,7 +4325,7 @@ components:
           type: integer
           format: int64
         account:
-          $ref: '#/components/schemas/AccountSummary'
+          $ref: "#/components/schemas/AccountSummary"
     GoogleLoginRequest:
       type: object
       properties:
@@ -4431,7 +4460,7 @@ components:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/SavedRecipeResponse'
+            $ref: "#/components/schemas/SavedRecipeResponse"
         page:
           type: integer
           format: int32
@@ -4471,7 +4500,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/RecipePostResponse'
+            $ref: "#/components/schemas/RecipePostResponse"
         page:
           type: integer
           format: int32
@@ -4550,11 +4579,11 @@ components:
           type: string
           format: date-time
         author:
-          $ref: '#/components/schemas/Author'
+          $ref: "#/components/schemas/Author"
         ingredients:
           type: array
           items:
-            $ref: '#/components/schemas/Ingredient'
+            $ref: "#/components/schemas/Ingredient"
         nutritionComplete:
           type: boolean
         ingredientsWithoutNutrition:
@@ -4562,13 +4591,13 @@ components:
           items:
             type: string
         nutrition:
-          $ref: '#/components/schemas/Nutrition'
+          $ref: "#/components/schemas/Nutrition"
         statistics:
-          $ref: '#/components/schemas/Statistics'
+          $ref: "#/components/schemas/Statistics"
         media:
           type: array
           items:
-            $ref: '#/components/schemas/Media'
+            $ref: "#/components/schemas/Media"
     Statistics:
       type: object
       properties:
@@ -4607,7 +4636,7 @@ components:
         ingredients:
           type: array
           items:
-            $ref: '#/components/schemas/IngredientOption'
+            $ref: "#/components/schemas/IngredientOption"
     IngredientOptionResponse:
       type: object
       properties:
@@ -4629,19 +4658,19 @@ components:
         dishCategories:
           type: array
           items:
-            $ref: '#/components/schemas/Choice'
+            $ref: "#/components/schemas/Choice"
         vegetarianTypes:
           type: array
           items:
-            $ref: '#/components/schemas/Choice'
+            $ref: "#/components/schemas/Choice"
         difficulties:
           type: array
           items:
-            $ref: '#/components/schemas/Choice'
+            $ref: "#/components/schemas/Choice"
         units:
           type: array
           items:
-            $ref: '#/components/schemas/UnitOption'
+            $ref: "#/components/schemas/UnitOption"
     UnitOption:
       type: object
       properties:
@@ -4677,7 +4706,7 @@ components:
         entries:
           type: array
           items:
-            $ref: '#/components/schemas/Entry'
+            $ref: "#/components/schemas/Entry"
     Entry:
       type: object
       properties:
@@ -4728,11 +4757,11 @@ components:
         targets:
           type: array
           items:
-            $ref: '#/components/schemas/Target'
+            $ref: "#/components/schemas/Target"
         days:
           type: array
           items:
-            $ref: '#/components/schemas/Day'
+            $ref: "#/components/schemas/Day"
         weeklyAverage:
           type: object
           additionalProperties:
@@ -4745,7 +4774,7 @@ components:
         incompleteEntries:
           type: array
           items:
-            $ref: '#/components/schemas/MissingEntry'
+            $ref: "#/components/schemas/MissingEntry"
     MissingEntry:
       type: object
       properties:
@@ -4776,12 +4805,13 @@ components:
         plannedServings:
           type:
           - number
-          - 'null'
+          - "null"
         energyKcal:
           type:
           - number
-          - 'null'
-          description: Per-serving energy multiplied by saved planned servings; null when incomplete.
+          - "null"
+          description: Per-serving energy multiplied by saved planned servings; null
+            when incomplete.
         available:
           type: boolean
     MealPlanExportResponse:
@@ -4793,14 +4823,14 @@ components:
         entries:
           type: array
           items:
-            $ref: '#/components/schemas/ExportEntry'
+            $ref: "#/components/schemas/ExportEntry"
     PageResponseExpertApplicationResponse:
       type: object
       properties:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/ExpertApplicationResponse'
+            $ref: "#/components/schemas/ExpertApplicationResponse"
         page:
           type: integer
           format: int32
@@ -4823,7 +4853,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/UnitResponse'
+            $ref: "#/components/schemas/UnitResponse"
         timestamp:
           type: string
           format: date-time
@@ -4837,7 +4867,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/IngredientResponse'
+            $ref: "#/components/schemas/IngredientResponse"
         timestamp:
           type: string
           format: date-time
@@ -4863,7 +4893,7 @@ components:
         active:
           type: boolean
         nutrition:
-          $ref: '#/components/schemas/IngredientNutritionResponse'
+          $ref: "#/components/schemas/IngredientNutritionResponse"
         recipeUsageCount:
           type: integer
           format: int64
@@ -4875,7 +4905,7 @@ components:
         message:
           type: string
         data:
-          $ref: '#/components/schemas/AdminIngredientResponse'
+          $ref: "#/components/schemas/AdminIngredientResponse"
         timestamp:
           type: string
           format: date-time
@@ -4889,7 +4919,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/IngredientRecipeReferenceResponse'
+            $ref: "#/components/schemas/IngredientRecipeReferenceResponse"
         timestamp:
           type: string
           format: date-time
@@ -4914,7 +4944,7 @@ components:
         message:
           type: string
         data:
-          $ref: '#/components/schemas/PageResponseIngredientRecipeReferenceResponse'
+          $ref: "#/components/schemas/PageResponseIngredientRecipeReferenceResponse"
         timestamp:
           type: string
           format: date-time
@@ -4924,7 +4954,7 @@ components:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/IngredientRecipeReferenceResponse'
+            $ref: "#/components/schemas/IngredientRecipeReferenceResponse"
         page:
           type: integer
           format: int32
@@ -4945,7 +4975,7 @@ components:
         message:
           type: string
         data:
-          $ref: '#/components/schemas/PageResponseAdminIngredientResponse'
+          $ref: "#/components/schemas/PageResponseAdminIngredientResponse"
         timestamp:
           type: string
           format: date-time
@@ -4955,7 +4985,7 @@ components:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/AdminIngredientResponse'
+            $ref: "#/components/schemas/AdminIngredientResponse"
         page:
           type: integer
           format: int32
@@ -4976,7 +5006,7 @@ components:
         message:
           type: string
         data:
-          $ref: '#/components/schemas/IngredientCatalogOptionsResponse'
+          $ref: "#/components/schemas/IngredientCatalogOptionsResponse"
         timestamp:
           type: string
           format: date-time
@@ -5001,7 +5031,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/ConversionResponse'
+            $ref: "#/components/schemas/ConversionResponse"
         timestamp:
           type: string
           format: date-time
