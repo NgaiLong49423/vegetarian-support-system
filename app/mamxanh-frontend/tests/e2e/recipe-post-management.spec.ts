@@ -67,7 +67,7 @@ async function mockEditorApi(page: Page, recipe = existingRecipe) {
 }
 
 async function assumeRole(page: Page, role: 'CUSTOMER' | 'EXPERT' | 'ADMIN') {
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.evaluate((nextRole) => sessionStorage.setItem('mamxanh.auth', JSON.stringify({
     accessToken: 'playwright-only-token',
     expiresAt: Date.now() + 60 * 60 * 1000,

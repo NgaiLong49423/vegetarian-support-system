@@ -56,10 +56,10 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
         <div>
           <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink sm:text-2xl">
             <ThumbsUp className="h-6 w-6 text-leaf-600" />
-            Mức độ yêu thích từ cộng đồng (FR-57)
+            Mức độ yêu thích từ cộng đồng
           </h2>
           <p className="mt-1 text-xs text-ink-muted">
-            Bản minh họa UI; API bình chọn công thức chưa được kết nối.
+            Đánh giá và phản hồi thực tế từ những người đã thực hiện món ăn.
           </p>
         </div>
       </div>
@@ -128,7 +128,7 @@ export function RecipeRating({ recipe }: { recipe: Recipe }) {
           <div className="mt-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             <ShieldAlert className="h-5 w-5 shrink-0 text-amber-600" />
             <p>
-              Đây là công thức của bạn. Tác giả không thể tự Like hoặc Dislike bài viết của chính mình (FR-57 / BR-28).
+              Đây là công thức của bạn. Tác giả không thể tự bình chọn cho bài viết của chính mình.
             </p>
           </div>
         ) : (

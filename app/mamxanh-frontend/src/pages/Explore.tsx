@@ -24,7 +24,7 @@ export function Explore() {
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink">Khám phá công thức chay</h1>
         <p className="mt-1 text-xs leading-5 text-ink-muted">Tìm món phù hợp với nguyên liệu và thời gian bạn có.</p>
 
-        <div className="mt-4 flex max-w-3xl items-center gap-2 rounded-full border border-brand-200 bg-paper px-4 py-1 focus-within:border-brand-600">
+        <div className="mt-4 flex max-w-3xl items-center gap-2 rounded-full border border-brand-200 bg-paper px-4 py-1 transition-all duration-200 focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-500/20">
           <Search aria-hidden="true" className="h-5 w-5 shrink-0 text-brand-600" />
           <input
             aria-label="Từ khóa"
@@ -33,7 +33,7 @@ export function Explore() {
             placeholder="Tìm tên món hoặc nguyên liệu..."
             className="min-w-0 flex-1 bg-transparent py-2 text-sm text-ink outline-none placeholder:text-ink-muted"
           />
-          {query && <button type="button" onClick={() => updateQuery('')} aria-label="Xóa từ khóa" className="rounded-full p-1.5 text-ink-muted hover:bg-brand-100 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><X className="h-4 w-4" /></button>}
+          {query && <button type="button" onClick={() => updateQuery('')} aria-label="Xóa từ khóa" className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-brand-100 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><X className="h-4 w-4" /></button>}
         </div>
       </header>
 
