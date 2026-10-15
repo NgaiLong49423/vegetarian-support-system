@@ -11,6 +11,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.subscription.dto.request.CheckoutRequest;
@@ -41,6 +45,14 @@ public class SubscriptionController {
     /**
      * Initializes payment request and returns checkout URL.
      */
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "payOS checkout link for the chosen plan."),
+            @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: the tier is not PLUS or PRO."),
+            @ApiResponse(responseCode = "403", description = "ACCESS_DENIED: the account is not an active Customer or Expert, or ACCOUNT_LOCKED."),
+            @ApiResponse(responseCode = "404", description = "NOT_FOUND: the session account no longer exists."),
+            @ApiResponse(responseCode = "500", description = "INTERNAL_ERROR: the payOS payment link could not be created.")
+    })
     @PostMapping("/checkout")
     public ResponseEntity<CheckoutResponse> createCheckout(
             Authentication authentication,
@@ -53,6 +65,12 @@ public class SubscriptionController {
     /**
      * AC-13.4 & AC-13.7: Returns active subscription status and expiration date.
      */
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Current subscription and its expiry."),
+            @ApiResponse(responseCode = "403", description = "ACCESS_DENIED: the account is not an active Customer or Expert, or ACCOUNT_LOCKED."),
+            @ApiResponse(responseCode = "404", description = "NOT_FOUND: the session account no longer exists.")
+    })
     @GetMapping("/my-subscription")
     public ResponseEntity<MySubscriptionResponse> getMySubscription(Authentication authentication) {
         Long userId = extractUserId(authentication);
@@ -62,6 +80,12 @@ public class SubscriptionController {
     /**
      * Returns payment transaction history for current member.
      */
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Payment transactions of the caller."),
+            @ApiResponse(responseCode = "403", description = "ACCESS_DENIED: the account is not an active Customer or Expert, or ACCOUNT_LOCKED."),
+            @ApiResponse(responseCode = "404", description = "NOT_FOUND: the session account no longer exists.")
+    })
     @GetMapping("/transactions")
     public ResponseEntity<List<TransactionHistoryResponse>> getTransactions(Authentication authentication) {
         Long userId = extractUserId(authentication);

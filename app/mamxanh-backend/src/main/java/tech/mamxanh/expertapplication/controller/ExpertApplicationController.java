@@ -6,6 +6,10 @@ import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import tech.mamxanh.common.config.OpenApiConfig;
 import org.springframework.validation.annotation.Validated;
 import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.expertapplication.dto.ExpertApplicationRequest;
@@ -16,20 +20,32 @@ import tech.mamxanh.expertapplication.service.ExpertApplicationService;
 
 @RestController
 @Validated
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
 public class ExpertApplicationController {
     private final ExpertApplicationService service;
     public ExpertApplicationController(ExpertApplicationService service) { this.service = service; }
 
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "The submitted application, PENDING."),
+            @ApiResponse(responseCode = "409", description = "EXPERT_APPLICATION_PENDING_EXISTS: the customer already has a pending application.")
+    })
     @PostMapping("/api/v1/expert-applications")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('CUSTOMER')")
     public ExpertApplicationResponse submit(@Valid @RequestBody ExpertApplicationRequest request) { return service.submit(request); }
 
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "The caller's applications, newest first.")
+    })
     @GetMapping("/api/v1/expert-applications/me")
     @PreAuthorize("hasAnyRole('CUSTOMER','EXPERT')")
     public PageResponse<ExpertApplicationResponse> history(@RequestParam(defaultValue="0") @Min(0) @Max(1000000) int page,
             @RequestParam(defaultValue="20") @Min(1) @Max(100) int size) { return service.ownHistory(page, size); }
 
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "A page of applications."),
+            @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: unknown status, or page/size outside its range.")
+    })
     @GetMapping("/api/v1/admin/expert-applications")
     @PreAuthorize("hasRole('ADMIN')")
     public PageResponse<ExpertApplicationResponse> list(@RequestParam(required=false) String status,
@@ -38,12 +54,24 @@ public class ExpertApplicationController {
         return service.adminList(status, page, size);
     }
 
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Application detail."),
+            @ApiResponse(responseCode = "404", description = "NOT_FOUND: no application has this id.")
+    })
     @GetMapping("/api/v1/admin/expert-applications/{id}") @PreAuthorize("hasRole('ADMIN')")
     public ExpertApplicationResponse detail(@PathVariable long id) { return service.adminDetail(id); }
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "The approved application; the account becomes EXPERT."),
+            @ApiResponse(responseCode = "409", description = "EXPERT_APPLICATION_STALE: the application is no longer pending, or the account is not an active customer.")
+    })
     @PostMapping("/api/v1/admin/expert-applications/{id}/approve") @PreAuthorize("hasRole('ADMIN')")
     public ExpertApplicationResponse approve(@PathVariable long id, @Valid @RequestBody(required = false) ApproveRequest request) {
         return service.approve(id, request == null ? null : request.note());
     }
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "The rejected application."),
+            @ApiResponse(responseCode = "409", description = "EXPERT_APPLICATION_STALE: the application is no longer pending.")
+    })
     @PostMapping("/api/v1/admin/expert-applications/{id}/reject") @PreAuthorize("hasRole('ADMIN')")
     public ExpertApplicationResponse reject(@PathVariable long id, @Valid @RequestBody ReviewRequest request) { return service.reject(id, request.reason()); }
 }
