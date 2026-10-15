@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import tech.mamxanh.common.validation.EmailAddress;
 
 /**
- * {@code POST /api/v1/auth/login} (openapi.yaml LoginRequest). Only the shape is validated here;
+ * {@code POST /api/v1/auth/login} (OpenAPI schema `LoginRequest`). Only the shape is validated here;
  * the password strength rules apply at registration, and a wrong password is reported with the
  * neutral {@code INVALID_CREDENTIALS} answer instead of a validation error.
  */

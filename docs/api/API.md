@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.26.0
+> **Version:** v0.28.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -20,6 +20,8 @@ Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn b�
 - Runtime OpenAPI được sinh từ Controller/DTO/annotations bằng springdoc: `/v3/api-docs` (JSON) và `/v3/api-docs.yaml` (YAML).
 - Bản OpenAPI YAML được commit tại [`openapi.yaml`](openapi.yaml) để tra cứu và tích hợp; CI so sánh file này với YAML runtime.
 - Khi Backend đang chạy tại `http://localhost:8080`, tạo/cập nhật snapshot bằng `./scripts/export-openapi.ps1`. Script tải trực tiếp `/v3/api-docs.yaml` và thay file chỉ sau khi nhận được tài liệu OpenAPI hợp lệ.
+- Operation cần đăng nhập khai báo `bearerAuth`; operation công khai thì không. Response lỗi dùng `application/problem+json` theo `ProblemDetail`; operation nhận dữ liệu khai báo `400`, operation cần đăng nhập khai báo `401`/`403`, và lỗi riêng được khai báo theo mã Backend thực sự trả về.
+- `OpenApiContractIntegrationTest` kiểm tra security và response lỗi trong generated contract so với quy tắc runtime.
 - Base path: `/api/v1`.
 - Giao diện chính thức để team xem và thử API: `/scalar` trên cùng Backend host/port. Scalar tải generated contract từ `/v3/api-docs`.
 - Swagger UI vẫn được giữ như giao diện tương thích trong giai đoạn đầu; Scalar là UI được khuyến nghị cho team.
@@ -200,6 +202,8 @@ Các endpoint detail và Meal Plan dưới đây trả projection đọc từ `R
 | UC-32.3 — danh sách, tìm kiếm và phân trang công thức đã lưu | `GET /api/v1/saved-recipes?keyword=&page=0&size=20` (có xác thực) | Chỉ trả tham chiếu của tài khoản hiện tại, sắp xếp mới lưu gần đây trước. `size` giới hạn 1–50; `keyword` tối đa 120 ký tự, tìm trong tên và mô tả. Mục không khả dụng vẫn được giữ an toàn với `available=false`, thông báo chung và không có nội dung recipe, tác giả hay media. |
 | AC-20.4 — export PDF/TXT | Frontend | Backend trả dữ liệu detail cần cho export. Frontend tạo TXT và PDF khổ A4; API này không tạo file. |
 | AC-20.5 — tải toàn trang trong hai giây | Frontend xác minh acceptance | Backend trả đủ instructions trong cùng response detail. Frontend cần đo thời gian tải và render toàn trang trên môi trường mục tiêu. |
+| AC-40.1/40.2 — công khai khi thiếu dữ liệu dinh dưỡng (FR-40, BR-50) | `POST /api/v1/recipes`, `GET /api/v1/recipes/{recipeId}` | Nguyên liệu trong catalog nhưng chưa có hồ sơ dinh dưỡng không chặn công khai (nguyên liệu ngoài catalog vẫn bị từ chối theo BR-12). Detail trả `ingredients[].nutritionSupported`, `nutritionComplete` và `ingredientsWithoutNutrition`; Frontend gắn nhãn "Chưa hỗ trợ tính dinh dưỡng" cạnh từng nguyên liệu có `nutritionSupported = false`. |
+| AC-40.3 — loại khỏi ứng viên AI menu dinh dưỡng (BR-40, BR-50) | `POST /api/v1/meal-plans/ai-menu/previews`, `PUT /api/v1/meal-plans/ai-menu` | Pool ứng viên FR-36 (dùng cho prompt Gemini và cho bước kiểm lại khi áp dụng) chỉ gồm Recipe Post `PUBLISHED` có dinh dưỡng đầy đủ, cùng phép tính với detail. Áp dụng menu chứa bài thiếu dữ liệu trả `404 RECIPE_NOT_FOUND`, Lịch ăn giữ nguyên. Không có endpoint mới. |
 
 Các key trong `nutrition.total` và `nutrition.perServing` lần lượt là `ENERGY_KCAL` (kcal), `PROTEIN_G` (g), `CARBOHYDRATE_G` (g), `TOTAL_FAT_G` (g), `FIBER_G` (g), `CALCIUM_MG` (mg), `IRON_MG` (mg), `VITAMIN_B12_MCG` (mcg) và `ZINC_MG` (mg). Nếu chưa có lượt bình chọn, `statistics.reactionCount` bằng `0` và `statistics.likePercentage` là `null`; Frontend hiển thị nhãn “Mới” theo BR-69.
 
