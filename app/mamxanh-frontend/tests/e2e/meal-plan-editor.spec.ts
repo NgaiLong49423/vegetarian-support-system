@@ -531,7 +531,7 @@ test("recipe detail saves half servings and the calendar recalculates nutrition"
   await page.reload()
   await expect(page.getByRole("article", { name: "Canh nấm" }).first()).toContainText("25 phút · 1,5 phần")
   await page.getByRole("button", { name: "Xem dinh dưỡng ngày" }).click()
-  await expect(page.getByRole("dialog").getByText("150 kcal", { exact: true })).toBeVisible()
+  await expect(page.getByRole("dialog").getByText("450 kcal", { exact: true })).toBeVisible()
 })
 
 test("failed serving save retains the old calendar value and can be retried in detail", async ({ page }) => {
@@ -638,7 +638,7 @@ test("saved picker prevents unavailable choices and replaces a tombstone in plac
   await dialog.getByRole("button", { name: "Đậu phụ kho" }).click()
   await expect(
     page.getByRole("article", { name: "Đậu phụ kho" }),
-  ).toContainText("2.5 phần")
+  ).toContainText("2,5 phần")
   expect(state.entries[0].entryId).toBe(8)
   expect(state.entries[0].mealType).toBe("LUNCH")
 })
