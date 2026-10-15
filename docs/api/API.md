@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.28.0
+> **Version:** v0.29.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-10-16
 > **Status:** Active
 
 # API Integration Guide
@@ -395,3 +395,12 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 - `GET /api/v1/members/{userId}/follow` (công khai) trả `FollowStatusResponse`: `userId`, `following` (người xem có đang theo dõi không; Guest luôn `false`), `followerCount`, `followingCount`. Hai bộ đếm chỉ tính tài khoản `ACTIVE` (AC-59.7). Hồ sơ Member bị `LOCKED` vẫn đọc được (Q55).
 - `PUT /api/v1/members/{userId}/follow` và `DELETE /api/v1/members/{userId}/follow` (cần Bearer token) đều idempotent và trả `FollowStatusResponse` mới: gọi lặp không tạo bản ghi trùng hay làm sai bộ đếm (AC-59.4, AC-59.5). Chỉ Customer/Expert đang hoạt động được gọi; Administrator nhận `403 MEMBER_ACCESS_REQUIRED`, tự theo dõi nhận `403 FOLLOW_SELF_NOT_ALLOWED`, theo dõi Member `LOCKED` nhận `409 FOLLOW_TARGET_INACTIVE`.
 - `GET /api/v1/members/{userId}/followers` và `GET /api/v1/members/{userId}/following` (cần Bearer token) trả `PageResponse` gồm `userId`, `displayName`, `avatarUrl`; không có email hay dữ liệu đăng nhập (AC-59.6). Chỉ gồm tài khoản `ACTIVE`, mới theo dõi gần đây trước; `page` từ 0, `size` 1–50 (mặc định 20).
+## 18. Bình luận và reply lồng nhiều cấp — FR-46
+
+Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Dữ liệu lưu trong `COMMENT` (có từ V1); `CK_COMMENT_depth` và `FK_COMMENT_PARENT` giữ cây tối đa 5 cấp và reply cùng bài với cha (BR-66).
+
+- `GET /api/v1/recipes/{recipeId}/comments?page=0&size=10` (công khai) chỉ cho bài `PUBLISHED` (khác thì `404 RECIPE_NOT_FOUND`). Trả `RecipeCommentPageResponse`: `content` là các luồng gốc, mới nhất trước; mỗi `CommentResponse` có `commentId`, `parentCommentId`, `depth`, `content`, `author` (`userId`, `displayName`, `avatarUrl`), `deleted`, `edited`, `createdAt` và `replies` (cũ trước, đúng thứ tự hội thoại). `totalElements` đếm luồng gốc còn hiển thị, `commentCount` đếm bình luận và reply chưa xóa; `size` 1–50.
+- Bình luận đã xóa còn reply hiển thị được trả về với `deleted = true`, `content` và `author` là `null` (tombstone, AC-46.2); đã xóa và không còn reply nào hiển thị thì không trả về (AF-46.3).
+- `POST /api/v1/recipes/{recipeId}/comments` (cần Bearer token) body `{ "content", "parentCommentId"? }`, trả `201` với bình luận mới. Chỉ Customer/Expert đang hoạt động; Administrator nhận `403 MEMBER_ACCESS_REQUIRED`. `content` bỏ khoảng trắng đầu cuối, 1–1.000 ký tự, sai thì `400 VALIDATION_FAILED` với `errors[].field = content`. Trả lời bình luận cấp 5 được gắn vào cha cấp 4 nên vẫn ở cấp 5 (AC-46.1); Frontend chèn `@Tên` vào đầu nội dung.
+- `PUT /api/v1/comments/{commentId}` body `{ "content" }` và `DELETE /api/v1/comments/{commentId}` (cần Bearer token): chỉ chủ bình luận; người khác nhận `403 COMMENT_EDIT_NOT_ALLOWED`. Sửa thì `edited = true`. Xóa trả `204`, gọi lặp an toàn, luôn là xóa mềm (`is_deleted`) vì `REPORT`/`NOTIFICATION` có thể tham chiếu bình luận.
+- Nội dung là văn bản thuần: Backend lưu nguyên văn, Frontend hiển thị như text nên mã HTML/JavaScript không được thực thi (AC-46.3).

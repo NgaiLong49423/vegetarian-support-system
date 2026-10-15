@@ -1118,6 +1118,107 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/comments/{commentId}:
+    put:
+      tags:
+      - recipe-comment-controller
+      summary: Edit the caller's own comment
+      operationId: update_1
+      parameters:
+      - name: commentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: "The edited comment, marked as edited."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentResponse"
+        "400":
+          description: "VALIDATION_FAILED: content must have 1–1,000 characters."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: COMMENT_EDIT_NOT_ALLOWED for someone else's comment; MEMBER_ACCESS_REQUIRED
+            for a non-member.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "COMMENT_NOT_FOUND: the comment is deleted or its recipe is\
+            \ not published."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - recipe-comment-controller
+      summary: Delete the caller's own comment
+      description: Idempotent. Replies stay visible under a tombstone.
+      operationId: delete_1
+      parameters:
+      - name: commentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "204":
+          description: The comment is deleted.
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: COMMENT_EDIT_NOT_ALLOWED for someone else's comment; MEMBER_ACCESS_REQUIRED
+            for a non-member.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "COMMENT_NOT_FOUND: no comment on a published recipe has this\
+            \ id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/units/{unitId}:
     put:
       tags:
@@ -1891,6 +1992,117 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "503":
           description: Gemini unavailable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/recipes/{recipeId}/comments:
+    get:
+      tags:
+      - recipe-comment-controller
+      summary: List the comment threads of a published recipe
+      description: "Public. Root threads newest first, each with its visible replies\
+        \ oldest first. A deleted comment that still has replies is returned with\
+        \ `deleted = true` and no content or author."
+      operationId: list
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - name: page
+        in: query
+        description: Zero-based page index.
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: "Root threads per page, from 1 through 50."
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+          maximum: 50
+          minimum: 1
+      responses:
+        "200":
+          description: A page of comment threads.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeCommentPageResponse"
+        "400":
+          description: Page or size is outside its supported range.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "RECIPE_NOT_FOUND: the recipe is not published."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    post:
+      tags:
+      - recipe-comment-controller
+      summary: Comment on a published recipe or reply to a comment
+      description: Published immediately. A reply to a level-5 comment is attached
+        to its level-4 parent.
+      operationId: create
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentCreateRequest"
+        required: true
+      responses:
+        "201":
+          description: The new comment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentResponse"
+        "400":
+          description: "VALIDATION_FAILED: content must have 1–1,000 characters."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "MEMBER_ACCESS_REQUIRED: only an active Customer or Expert\
+            \ comments."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "RECIPE_NOT_FOUND, or COMMENT_NOT_FOUND for a reply target\
+            \ that is gone or on another recipe."
           content:
             application/problem+json:
               schema:
@@ -3570,7 +3782,7 @@ paths:
       summary: List the current member's saved recipes
       description: "Returns a private, paginated list ordered by most recently saved.\
         \ Unavailable recipes are safe tombstones."
-      operationId: list
+      operationId: list_1
       parameters:
       - name: keyword
         in: query
@@ -4535,7 +4747,7 @@ paths:
     get:
       tags:
       - expert-application-controller
-      operationId: list_1
+      operationId: list_2
       parameters:
       - name: status
         in: query
@@ -5314,6 +5526,60 @@ components:
           type: string
           description: "Tháng tham gia theo giờ Việt Nam, dạng yyyy-MM."
           example: 2026-09
+    CommentUpdateRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          description: "Văn bản thuần, 1–1.000 ký tự sau khi bỏ khoảng trắng đầu cuố\
+            i."
+          maxLength: 1000
+          minLength: 0
+      required:
+      - content
+    Author:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+    CommentResponse:
+      type: object
+      properties:
+        commentId:
+          type: integer
+          format: int64
+        parentCommentId:
+          type: integer
+          format: int64
+        depth:
+          type: integer
+          format: int32
+          description: "Cấp lồng, từ 1 đến 5."
+        content:
+          type: string
+          description: "Văn bản thuần; Frontend hiển thị như text, không render HTML.\
+            \ Null khi đã xóa."
+        author:
+          $ref: "#/components/schemas/Author"
+          description: Null khi bình luận đã xóa (tombstone).
+        deleted:
+          type: boolean
+          description: Đã bị tác giả xóa nhưng còn reply nên vẫn giữ vị trí (AC-46.2).
+        edited:
+          type: boolean
+          description: Nội dung đã được sửa sau khi đăng.
+        createdAt:
+          type: string
+          format: date-time
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommentResponse"
     UnitSaveRequest:
       type: object
       properties:
@@ -5702,6 +5968,23 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RecipePostResponse"
+    CommentCreateRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          description: "Văn bản thuần, 1–1.000 ký tự sau khi bỏ khoảng trắng đầu cuố\
+            i."
+          maxLength: 1000
+          minLength: 0
+        parentCommentId:
+          type: integer
+          format: int64
+          description: Bình luận được trả lời; trả lời bình luận cấp 5 được gắn vào
+            cha cấp 4 (AC-46.1).
+          minimum: 0
+      required:
+      - content
     ApiResponseUploadImageResponse:
       type: object
       properties:
@@ -6429,16 +6712,6 @@ components:
         totalPages:
           type: integer
           format: int32
-    Author:
-      type: object
-      properties:
-        userId:
-          type: integer
-          format: int64
-        displayName:
-          type: string
-        avatarUrl:
-          type: string
     Nutrition:
       type: object
       properties:
@@ -6531,6 +6804,29 @@ components:
         viewCount:
           type: integer
           format: int64
+    RecipeCommentPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommentResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        commentCount:
+          type: integer
+          format: int64
+          description: Số bình luận và reply chưa bị xóa của bài công thức.
     IngredientOption:
       type: object
       properties:
