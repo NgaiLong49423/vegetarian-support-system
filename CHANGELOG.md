@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.79.0
+> **Version:** v2.79.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-15 — Synchronize Recipe Reactions with the Integration Baseline ([PR #119](https://github.com/NgaiLong49423/vegetarian-support-system/pull/119))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `ef1fb5a`.
 
 **Scope:** Integrate Issue #56 with develop while preserving recipe discovery, saving, nutrition and meal-plan flows.
 
