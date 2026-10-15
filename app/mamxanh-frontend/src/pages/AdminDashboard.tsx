@@ -67,7 +67,7 @@ export function AdminDashboard() {
         setIngredientTotal(ingRes.value.totalElements || 0);
         setRecentIngredients(ingRes.value.content || []);
       }
-      if (optRes.status === 'fulfilled') {
+      if (optRes.status === 'fulfilled' && optRes.value?.groups) {
         setCatalogOptions(optRes.value);
       }
 
@@ -194,7 +194,7 @@ export function AdminDashboard() {
                 Nhóm thực phẩm
               </p>
               <p className="mt-2 text-3xl font-black text-ink">
-                {loading ? <LoaderCircle className="h-8 w-8 animate-spin text-brand-600" /> : catalogOptions.groups.length}
+                {loading ? <LoaderCircle className="h-8 w-8 animate-spin text-brand-600" /> : (catalogOptions?.groups?.length ?? 0)}
               </p>
             </div>
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-raised text-ink-soft">
@@ -203,7 +203,7 @@ export function AdminDashboard() {
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-brand-100/70 pt-3">
             <span className="text-xs text-ink-muted">
-              {catalogOptions.sources.length} nguồn kiểm định
+              {catalogOptions?.sources?.length ?? 0} nguồn kiểm định
             </span>
             <span className="text-xs font-semibold text-ink-soft">Danh mục chuẩn</span>
           </div>

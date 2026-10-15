@@ -18,92 +18,34 @@ export const STANDARD_DATA_SOURCES = [
   'NIH/Viện Dinh dưỡng',
 ] as const;
 
+const RE_DAU_CHE_PHAM = /đậu|chế phẩm|che pham|cháº¿|pháº©m|áº­u|ä|ch\?\s*ph\?m|\?u\s*&/i;
+const RE_CAC_LOAI_HAT = /hạt|háº¡t|loại hạt|loáº¡i|cã¡c|lo\?\s*i\s*h\?t/i;
+const RE_NGU_COC = /ngũ cốc|ngũ|ngu coc|ngå©|cá»|ng\?\s*c\?c/i;
+const RE_TRAI_CAY = /trái cây|trái|trã¡i|cã¢y|hoa quả|tri cy/i;
+const RE_GIA_VI = /gia vị|gia vá|gia vi|gia v\?/i;
+const RE_RAU_CU = /rau|củ|cá»§|rau\s*c\?/i;
+const RE_KHAC = /khác|khc/i;
+
 /**
  * Normalizes an ingredient group string, repairing mojibake and encoding corruptions.
  */
 export function normalizeIngredientGroup(group: string | null | undefined): string {
   if (!group) return 'Rau củ';
   const trimmed = group.trim().normalize('NFC');
-  const lower = trimmed.toLowerCase();
 
-  // Đậu & Chế phẩm
-  if (
-    lower.includes('đậu') ||
-    lower.includes('chế phẩm') ||
-    lower.includes('che pham') ||
-    lower.includes('cháº¿') ||
-    lower.includes('pháº©m') ||
-    lower.includes('áº­u') ||
-    lower.includes('ä') ||
-    lower.includes('ch? ph?m') ||
-    lower.includes('?u &')
-  ) {
-    return 'Đậu & Chế phẩm';
-  }
-
-  // Các loại hạt
-  if (
-    lower.includes('hạt') ||
-    lower.includes('háº¡t') ||
-    lower.includes('loại hạt') ||
-    lower.includes('loáº¡i') ||
-    lower.includes('cã¡c') ||
-    lower.includes('lo?i h?t')
-  ) {
-    return 'Các loại hạt';
-  }
-
-  // Ngũ cốc
-  if (
-    lower.includes('ngũ cốc') ||
-    lower.includes('ngũ') ||
-    lower.includes('ngu coc') ||
-    lower.includes('ngå©') ||
-    lower.includes('cá»') ||
-    lower.includes('ng? c?c')
-  ) {
-    return 'Ngũ cốc';
-  }
-
-  // Trái cây
-  if (
-    lower.includes('trái cây') ||
-    lower.includes('trái') ||
-    lower.includes('trã¡i') ||
-    lower.includes('cã¢y') ||
-    lower.includes('hoa quả') ||
-    lower.includes('tri cy')
-  ) {
-    return 'Trái cây';
-  }
-
-  // Gia vị chay
-  if (
-    lower.includes('gia vị') ||
-    lower.includes('gia vá') ||
-    lower.includes('gia vi') ||
-    lower.includes('gia v?')
-  ) {
-    return 'Gia vị chay';
-  }
-
-  // Rau củ
-  if (
-    lower.includes('rau') ||
-    lower.includes('củ') ||
-    lower.includes('cá»§') ||
-    lower.includes('rau c?')
-  ) {
-    return 'Rau củ';
-  }
-
-  // Khác
-  if (lower.includes('khác') || lower.includes('khc')) {
-    return 'Khác';
-  }
+  if (RE_DAU_CHE_PHAM.test(trimmed)) return 'Đậu & Chế phẩm';
+  if (RE_CAC_LOAI_HAT.test(trimmed)) return 'Các loại hạt';
+  if (RE_NGU_COC.test(trimmed)) return 'Ngũ cốc';
+  if (RE_TRAI_CAY.test(trimmed)) return 'Trái cây';
+  if (RE_GIA_VI.test(trimmed)) return 'Gia vị chay';
+  if (RE_RAU_CU.test(trimmed)) return 'Rau củ';
+  if (RE_KHAC.test(trimmed)) return 'Khác';
 
   return trimmed;
 }
+
+const RE_NIH = /nih|viện dinh dưỡng|viá»‡n|dæ°á»¡ng|dinh dưỡng|dinh duong|vi\?n/i;
+const RE_USDA = /usda|fooddata/i;
 
 /**
  * Normalizes a nutrition data source name, repairing mojibake and encoding corruptions.
@@ -111,25 +53,9 @@ export function normalizeIngredientGroup(group: string | null | undefined): stri
 export function normalizeSourceName(source: string | null | undefined): string {
   if (!source) return 'USDA FoodData Central';
   const trimmed = source.trim().normalize('NFC');
-  const lower = trimmed.toLowerCase();
 
-  // NIH/Viện Dinh dưỡng
-  if (
-    lower.includes('nih') ||
-    lower.includes('viện dinh dưỡng') ||
-    lower.includes('viá»‡n') ||
-    lower.includes('dæ°á»¡ng') ||
-    lower.includes('dinh dưỡng') ||
-    lower.includes('dinh duong') ||
-    lower.includes('vi?n')
-  ) {
-    return 'NIH/Viện Dinh dưỡng';
-  }
-
-  // USDA FoodData Central
-  if (lower.includes('usda') || lower.includes('fooddata')) {
-    return 'USDA FoodData Central';
-  }
+  if (RE_NIH.test(trimmed)) return 'NIH/Viện Dinh dưỡng';
+  if (RE_USDA.test(trimmed)) return 'USDA FoodData Central';
 
   return trimmed;
 }
