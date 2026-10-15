@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.79.1
+> **Version:** v2.80.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -8,6 +8,24 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-15 — Align Recipe Reactions with Generated OpenAPI Verification ([PR #119](https://github.com/NgaiLong49423/vegetarian-support-system/pull/119))
+
+**Status:** Working tree — not committed.
+
+**Scope:** Synchronize FR-57 after the generated OpenAPI snapshot policy was integrated into develop.
+
+### Added
+
+- None.
+
+### Changed
+
+- Regenerate the OpenAPI YAML from the current Backend runtime, including the recipe reaction endpoints, for the shared-stack contract comparison gate.
+
+### Fixed
+
+- Reconcile the shared recipe detail fixture and scope browser status/error assertions to the relevant feature after reaction controls were integrated.
 
 ## 2026-10-15 — Synchronize Recipe Reactions with the Integration Baseline ([PR #119](https://github.com/NgaiLong49423/vegetarian-support-system/pull/119))
 
@@ -28,6 +46,26 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Resolve overlapping recipe UI and documentation changes without restoring outdated pages or duplicating reaction totals.
+
+## 2026-10-15 — Generate and Verify the OpenAPI Snapshot
+
+**Status:** Committed — `188c3c03b3f5b021e4d7ff337bb5c54432a59126`.
+
+**Scope:** Keep the committed OpenAPI YAML aligned with the Springdoc contract served by the Backend.
+
+### Added
+
+- Add a PowerShell command to export `/v3/api-docs.yaml` into `docs/api/openapi.yaml`.
+- Make Docker Development CI validate and compare the generated runtime YAML with the committed snapshot.
+
+### Changed
+
+- Treat Springdoc as the API contract authority and the repository YAML as its generated, checked-in snapshot.
+- Update API documentation and agent guidance with the export and synchronization workflow.
+
+### Fixed
+
+- Permit unauthenticated access to Springdoc's `/v3/api-docs.yaml` endpoint so the export script and Docker Development CI can retrieve the generated YAML.
 
 ## 2026-10-15 — Connect Nutrition Tracking and Improve PDF Reports
 
