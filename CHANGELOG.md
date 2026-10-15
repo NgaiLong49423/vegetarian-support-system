@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.80.1
+> **Version:** v2.81.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -11,9 +11,9 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-15 — Synchronize Recipe Views with Develop
 
-**Status:** Committed — `5568571`.
+**Status:** Working tree — not committed.
 
-**Scope:** Reconcile FR-58 / Issue #57 / PR #123 with the current integration baseline.
+**Scope:** Reconcile FR-58 / Issue #57 / PR #123 with the current integration baseline, including the merged incomplete-nutrition UI.
 
 ### Added
 
@@ -27,8 +27,10 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Fixed
 
-- Resolve Git and migration-version conflicts with develop at `7ae8d2a`.
+- Resolve Git and migration-version conflicts with develop at `7ae8d2a` and the subsequent `e22b5db` baseline.
 - Declare ProblemDetail error schemas for view-recording responses instead of the success DTO (BUG-032).
+
+- Adapt meal-plan browser fixtures and scope feedback assertions for concurrent view-recording messages.
 
 ## 2026-10-15 — Generate and Verify the OpenAPI Snapshot
 
@@ -230,6 +232,27 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
 - Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Publish Recipes With Incomplete Nutrition ([PR #131](https://github.com/NgaiLong49423/vegetarian-support-system/pull/131))
+
+**Status:** Committed — `db03caf`, `1bfb109`, `1525b12`.
+
+**Scope:** Complete FR-40 (AC-40.1–AC-40.3, BR-40, BR-50): recipes that use catalog ingredients without nutrition data stay publishable, each such ingredient is labelled on the recipe page, and such recipes are kept out of the nutrition AI menu candidate pool.
+
+### Added
+
+- Add the "Chưa hỗ trợ tính dinh dưỡng" label next to each ingredient without nutrition data on both recipe detail pages.
+- Add an SQL Server integration test showing that applying a nutrition AI menu (`PUT /api/v1/meal-plans/ai-menu`, FR-36) with a published recipe that uses an ingredient without nutrition data returns `404 RECIPE_NOT_FOUND` and leaves the meal plan untouched (AC-40.3), and Playwright tests for the label.
+- Record BUG-026: generated OpenAPI merges same-named nested recipe DTOs, so recipe `ingredients[]`/`media[]` schemas differ from the real responses.
+
+### Changed
+
+- Document FR-40 in `API.md` section 7 and the Backend/Frontend READMEs; type `nutritionSupported` on recipe detail ingredients in the Frontend API client.
+- Rely on the FR-36 candidate filter merged in PR #134 (`AiMenuService` keeps only published recipes whose nutrition calculation is complete) for AC-40.3 instead of adding a second candidate service.
 
 ### Fixed
 

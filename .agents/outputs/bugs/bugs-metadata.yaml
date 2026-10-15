@@ -35,6 +35,15 @@ bugs:
     created: 2026-10-12
     updated: 2026-10-15
     related_issue: 57
+  - id: BUG-026
+    title: Schema OpenAPI của nguyên liệu và media trong công thức bị trùng tên, mô tả sai response thật
+    status: RECORDED
+    severity: Medium
+    area: Backend/Recipe/API
+    file: .agents/outputs/bugs/BUG-026.md
+    created: 2026-10-13
+    updated: 2026-10-13
+    related_issue: 45
   - id: BUG-025
     title: CI không tải font Git LFS cho chức năng xuất lịch PDF
     status: RECORDED
