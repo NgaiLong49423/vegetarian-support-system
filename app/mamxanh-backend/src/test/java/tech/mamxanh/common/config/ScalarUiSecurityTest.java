@@ -36,10 +36,6 @@ class ScalarUiSecurityTest {
             return "ok";
         }
 
-        @GetMapping(value = "/v3/api-docs.yaml", produces = "application/yaml")
-        String yamlApiDocs() {
-            return "openapi: 3.1.0\n";
-        }
     }
 
     @Test
@@ -61,9 +57,10 @@ class ScalarUiSecurityTest {
     }
 
     @Test
-    void yamlOpenApiEndpointIsPublic() throws Exception {
+    void yamlOpenApiPathDoesNotRequireAuthentication() throws Exception {
         mockMvc.perform(get("/v3/api-docs.yaml"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("openapi: 3.1.0")));
+                // Springdoc's YAML handler is outside this MVC slice. 404 proves that the request
+                // passed the security chain; a protected path would return 401 before MVC routing.
+                .andExpect(status().isNotFound());
     }
 }
