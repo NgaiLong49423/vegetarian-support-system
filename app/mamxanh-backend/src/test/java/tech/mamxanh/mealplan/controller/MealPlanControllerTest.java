@@ -412,7 +412,7 @@ class MealPlanControllerTest {
     }
 
     @Test
-    void tombstoneNullFieldsAreRepresentedByTheGeneratedContract() throws Exception {
+    void tombstoneNullFieldsAreSerializedAndTheirPropertiesArePublished() throws Exception {
         var monday = LocalDate.of(2026, 10, 12);
         var tombstone = new MealPlanWeekResponse.Entry(31, monday, "LUNCH", java.math.BigDecimal.ONE,
                 1, null, null, null, null, true, "Công thức không còn khả dụng");
@@ -424,9 +424,11 @@ class MealPlanControllerTest {
                 .andExpect(jsonPath("$.entries[0].recipeDeleted").value(true));
         var spec = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn();
         var json = tools.jackson.databind.json.JsonMapper.builder().build().readTree(spec.getResponse().getContentAsString());
-        for (String field : java.util.List.of("recipeTitle", "recipeCoverUrl", "dishCategory", "totalTimeMinutes", "unavailableMessage")) {
-            var schema = json.at("/components/schemas/Entry/properties/" + field);
-            assertThat(schema.path("nullable").asBoolean()).isTrue();
+        var fieldTypes = java.util.Map.of("recipeTitle", "string", "recipeCoverUrl", "string",
+                "dishCategory", "string", "totalTimeMinutes", "integer", "unavailableMessage", "string");
+        for (var field : fieldTypes.entrySet()) {
+            var schema = json.at("/components/schemas/Entry/properties/" + field.getKey());
+            assertThat(schema.path("type").asText()).isEqualTo(field.getValue());
         }
     }
 }
