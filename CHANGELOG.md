@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-15 — Generate and Verify the OpenAPI Snapshot
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — `188c3c03b3f5b021e4d7ff337bb5c54432a59126`.
 
 **Scope:** Keep the committed OpenAPI YAML aligned with the Springdoc contract served by the Backend.
 
