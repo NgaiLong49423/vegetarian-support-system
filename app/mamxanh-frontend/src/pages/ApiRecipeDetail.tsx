@@ -252,7 +252,7 @@ export function ApiRecipeDetail() {
               const scaled = recipe.servings > 0 ? item.quantity * servings / recipe.servings : item.quantity;
               return <li key={`${item.ingredientId ?? item.name}-${index}`} className="flex items-center gap-3 py-3">
                 <button type="button" aria-label={`${isChecked ? 'Bỏ chọn' : 'Đánh dấu'} ${item.name}`} aria-pressed={isChecked} onClick={() => setCheckedIngredients((current) => isChecked ? current.filter((checked) => checked !== index) : [...current, index])} className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${isChecked ? 'border-leaf-600 bg-leaf-600 text-white' : 'border-brand-300 bg-paper'}`}>{isChecked && <Check className="h-3.5 w-3.5" />}</button>
-                <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-ink-muted line-through' : 'text-ink-soft'}`}>{item.name}</span>
+                <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-ink-muted line-through' : 'text-ink-soft'}`}>{item.name}{item.nutritionSupported === false && <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Chưa hỗ trợ tính dinh dưỡng</span>}</span>
                 <strong className="shrink-0 text-right text-sm text-ink">{formatNumber(scaled)} {item.unitName}</strong>
               </li>;
             })}
