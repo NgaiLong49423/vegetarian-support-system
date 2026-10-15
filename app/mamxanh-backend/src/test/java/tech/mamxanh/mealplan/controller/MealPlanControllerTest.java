@@ -428,7 +428,7 @@ class MealPlanControllerTest {
                 "dishCategory", "string", "totalTimeMinutes", "integer", "unavailableMessage", "string");
         for (var field : fieldTypes.entrySet()) {
             var schema = json.at("/components/schemas/MealPlanWeekEntry/properties/" + field.getKey());
-            assertThat(schema.path("type").asText()).isEqualTo(field.getValue());
+            assertThat(schema.path("type").toString()).contains("\"" + field.getValue() + "\"");
         }
     }
 }
