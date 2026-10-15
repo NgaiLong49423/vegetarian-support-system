@@ -2,6 +2,7 @@ package tech.mamxanh.nutrition.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -40,7 +41,7 @@ class RecipeNutritionServiceTest {
     }
 
     @Test
-    void doesNotTreatMissingConversionOrCustomIngredientAsZeroData() {
+    void keepsValuesUnavailableWhenNoIngredientCanBeCalculated() {
         IngredientEntity tofu = supportedIngredient(4L, "Đậu phụ mơ", "8");
         when(ingredients.findAllById(List.of(4L))).thenReturn(List.of(tofu));
         var missingConversion = service.calculate(List.of(new RecipeNutritionService.RecipeIngredient(4L, 9, "COUNT",
@@ -50,9 +51,48 @@ class RecipeNutritionServiceTest {
 
         assertFalse(missingConversion.complete());
         assertEquals(List.of("Đậu phụ mơ"), missingConversion.ingredientsMissingData());
-        assertEquals(BigDecimal.ZERO.setScale(2), missingConversion.total().get("PROTEIN_G"));
+        assertNull(missingConversion.total().get("PROTEIN_G"));
         assertFalse(customIngredient.complete());
         assertEquals(List.of("Rau gia vị tự chọn"), customIngredient.ingredientsMissingData());
+        assertNull(customIngredient.total().get("PROTEIN_G"));
+    }
+
+    @Test
+    void returnsComputableNutrientsAndLeavesOnlyMissingNutrientsUnknown() {
+        IngredientEntity tofu = supportedIngredient(4L, "Đậu phụ mơ", "8");
+        ReflectionTestUtils.setField(tofu, "vitaminB12MicrogramsPer100g", null);
+        when(ingredients.findAllById(List.of(4L))).thenReturn(List.of(tofu));
+
+        var result = service.calculate(List.of(new RecipeNutritionService.RecipeIngredient(4L, 1, "MASS",
+                BigDecimal.ONE, new BigDecimal("100"), "Đậu phụ mơ")), 1);
+
+        assertFalse(result.complete());
+        assertEquals(List.of("Đậu phụ mơ"), result.ingredientsMissingData());
+        assertEquals(new BigDecimal("8.00"), result.total().get("PROTEIN_G"));
+        assertEquals(new BigDecimal("80.00"), result.total().get("ENERGY_KCAL"));
+        assertNull(result.total().get("VITAMIN_B12_MCG"));
+
+        var planned = service.calculatePlanned(List.of(new RecipeNutritionService.RecipeIngredient(4L, 1, "MASS",
+                BigDecimal.ONE, new BigDecimal("100"), "Đậu phụ mơ")), 1, new BigDecimal("2"));
+        assertEquals(new BigDecimal("16.00"), planned.perServing().get("PROTEIN_G"));
+        assertNull(planned.perServing().get("VITAMIN_B12_MCG"));
+    }
+
+    @Test
+    void preservesKnownIngredientTotalsWhenAnotherIngredientIsMissing() {
+        IngredientEntity tofu = supportedIngredient(4L, "Đậu phụ mơ", "8");
+        when(ingredients.findAllById(List.of(4L))).thenReturn(List.of(tofu));
+
+        var result = service.calculate(List.of(
+                new RecipeNutritionService.RecipeIngredient(4L, 1, "MASS", BigDecimal.ONE,
+                        new BigDecimal("100"), "Đậu phụ mơ"),
+                new RecipeNutritionService.RecipeIngredient(null, 1, "MASS", BigDecimal.ONE,
+                        new BigDecimal("20"), "Rau gia vị tự chọn")), 1);
+
+        assertFalse(result.complete());
+        assertEquals(new BigDecimal("8.00"), result.total().get("PROTEIN_G"));
+        assertEquals(new BigDecimal("80.00"), result.total().get("ENERGY_KCAL"));
+        assertTrue(result.ingredientsMissingData().contains("Rau gia vị tự chọn"));
     }
 
     private IngredientEntity supportedIngredient(long id, String name, String protein) {

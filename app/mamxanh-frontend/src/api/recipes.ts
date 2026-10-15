@@ -247,6 +247,29 @@ export interface RecipeReferenceData {
   ingredients: Array<{ ingredientId: number; name: string; unitId: number; unitCode: string; unitName: string }>;
 }
 
+export type AiChatContext = 'GENERAL' | 'RECIPE';
+export interface AiChatTurn { speaker: 'USER' | 'ASSISTANT'; content: string }
+export interface AiChatRequest {
+  contextType: AiChatContext;
+  recipeId?: number;
+  question: string;
+  history: AiChatTurn[];
+}
+export interface AiChatResponse {
+  contextType: AiChatContext;
+  recipeId: number | null;
+  answer: string;
+  recommendations: Array<{
+    id: number;
+    title: string;
+    description: string | null;
+    coverUrl: string | null;
+    totalTimeMinutes: number;
+    difficulty: string;
+    reason: string;
+  }>;
+}
+
 async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
   try {
     return (await operation()).data;
@@ -256,6 +279,9 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
 }
 
 export const recipesApi = {
+  chat: (payload: AiChatRequest) => request(
+    () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, { timeout: 12_000 }),
+  ),
   recommendByIngredients: (ingredientIds: number[]) => request(
     () => apiClient.post<AiRecipeSuggestion>('/recipes/ai/recommendations', { ingredientIds }, { timeout: 60_000 }),
   ),
@@ -337,6 +363,16 @@ export const mealPlanApi = {
     (await apiClient.patch<MealPlanWeek['entries'][number]>(
       `/meal-plans/${weekStartDate}/entries/${entryId}/servings`, { plannedServings },
     )).data,
+  nutrition: async (weekStartDate: string, date?: string) =>
+    (await apiClient.get<MealPlanNutrition>(`/meal-plans/${weekStartDate}/nutrition`, { params: date ? { date } : {} })).data,
+  nutritionPdf: async (weekStartDate: string, date?: string) =>
+    (await apiClient.get<Blob>(`/meal-plans/${weekStartDate}/nutrition/report`, {
+      params: date ? { date } : {},
+      responseType: 'blob',
+      headers: { Accept: 'application/pdf, application/problem+json' },
+    })).data,
+  nutritionRecommendations: async (weekStartDate: string, entryId: number) =>
+    (await apiClient.post<MealPlanNutritionRecommendations>(`/meal-plans/${weekStartDate}/nutrition/recommendations/${entryId}`)).data,
   createAiMenuPreview: async (payload: {
     weekStartDate: string; mode: AiMenuMode; goal?: AiMenuGoal | null;
     preferredIngredientIds?: number[]; avoidedIngredientIds?: number[];
@@ -346,3 +382,24 @@ export const mealPlanApi = {
     avoidedIngredientIds?: number[]; meals: Array<Pick<AiMenuMeal, 'mealDate' | 'mealType' | 'recipeId'>>;
   }) => (await apiClient.put<MealPlanWeek>('/meal-plans/ai-menu', payload)).data,
 };
+
+export interface MealPlanNutrition {
+  weekStartDate: string;
+  scope: 'DAY' | 'WEEK';
+  selectedDate: string | null;
+  referenceBasis: string;
+  source: string;
+  sourceUrl: string;
+  disclaimer: string;
+  targets: Array<{key: string; label: string; minimum: number | null; maximum: number | null; unit: string; referenceType: string; source: string; sourceUrl: string; version: string}>;
+  days: Array<{date: string; nutrients: Record<string, number | null>; entries: Array<{entryId: number; date: string; mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER'; recipeId: number; recipeTitle: string; plannedServings: number; complete: boolean; ingredientsMissingData: string[]; nutrients: Record<string, number | null>}>}>;
+  weeklyAverage: Record<string, number | null>;
+  attainmentDays: Record<string, number>;
+  incompleteEntries: Array<{entryId: number; date: string; mealType: string; recipeTitle: string; ingredientsMissingData: string[]}>;
+}
+
+export interface MealPlanNutritionRecommendations {
+  entryId: number;
+  analysis: string;
+  recommendations: Array<{recipeId: number; title: string; complete: boolean; ingredientsMissingData: string[]}>;
+}

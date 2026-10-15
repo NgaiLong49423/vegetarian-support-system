@@ -141,7 +141,7 @@ test("AC-33.4 moves across days, preserves servings, survives reload and restore
   })
   await expect(
     page.getByRole("article", { name: "Đậu phụ kho sả" }),
-  ).toContainText("2.5 phần")
+  ).toContainText("2,5 phần")
   await expect(
     page.getByRole("heading", { name: "Lịch ăn của bạn" }),
   ).toBeFocused()

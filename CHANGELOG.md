@@ -1,37 +1,117 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.77.0
+> **Version:** v2.80.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-14
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-13 — Compare Two Public Recipes ([PR #132](https://github.com/NgaiLong49423/vegetarian-support-system/pull/132))
+## 2026-10-15 — Generate and Verify the OpenAPI Snapshot
 
-**Status:** Committed — `5749ba8`, `c11e882`.
+**Status:** Committed — `188c3c03b3f5b021e4d7ff337bb5c54432a59126`.
 
-**Scope:** Complete FR-60 (AC-60.1–AC-60.8, BR-76) in the Frontend: compare two different published recipes by overview, ingredients and the nine nutrients per serving, using the existing public recipe detail and search APIs only.
+**Scope:** Keep the committed OpenAPI YAML aligned with the Springdoc contract served by the Backend.
 
 ### Added
 
-- Add the real `/so-sanh?a={recipeId}&b={recipeId}` comparison page with a search picker per slot, replacement of either slot, removal of recipes that are no longer public, and retry on load errors.
-- Line up ingredients only by `ingredient_id`, keep each recipe's original quantity and unit, and flag rows whose units differ instead of converting them.
-- Show the nine nutrients per serving with the original servings of each recipe and the absolute difference A − B; a recipe with incomplete nutrition shows "Chưa đủ dữ liệu" and no difference.
-- Add "So sánh" entry points on recipe cards, both recipe detail routes and the Member saved recipe list.
-- Add Playwright tests for every acceptance criterion and a real-stack test that checks the per-serving values against the Backend and that comparing only sends `GET` requests.
+- Add a PowerShell command to export `/v3/api-docs.yaml` into `docs/api/openapi.yaml`.
+- Make Docker Development CI validate and compare the generated runtime YAML with the committed snapshot.
 
 ### Changed
 
-- Remove the prototype banner, mock data and prototype Playwright test of `/so-sanh`; the prototype detail page links to the empty comparison page.
-- Target recipe card links by their heading in the member profile Playwright test and the Explore real-stack test, since each card now also has a "So sánh" link with the recipe title.
-- Document FR-60 in `API.md` section 7 and the Frontend README.
+- Treat Springdoc as the API contract authority and the repository YAML as its generated, checked-in snapshot.
+- Update API documentation and agent guidance with the export and synchronization workflow.
+
+### Fixed
+
+- Permit unauthenticated access to Springdoc's `/v3/api-docs.yaml` endpoint so the export script and Docker Development CI can retrieve the generated YAML.
+
+## 2026-10-15 — Connect Nutrition Tracking and Improve PDF Reports
+
+**Status:** Committed — `6c576ae`.
+
+**Scope:** Continue Issue #42 / FR-37 by using real meal-plan data in both nutrition views and making daily and weekly PDF reports readable for longer menus.
+
+### Added
+
+- Connect the standalone nutrition tracker to the Member's selected meal-plan day or week, including partial nutrient values and missing-data warnings.
+- Render daily and weekly reports as structured tables, with landscape weekly pages and repeated headers when content continues onto additional pages.
+
+### Changed
+
+- Use the same meal-plan analysis and PDF endpoints in the tracker and meal-plan nutrition dialog.
+- Preserve Backend problem details returned by binary PDF requests so the interface can show the actual failure reason.
+
+### Fixed
+
+- Request PDF media explicitly, preventing the API client's JSON `Accept` header from causing HTTP 406.
+- Disable report export for an empty selected day or week and guide the Member to add a meal.
+
+## 2026-10-15 — Recommend Published Recipes in AI Chat ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
+
+**Status:** Committed — c3e3ed30827c9c9f260e8eaf45950817c91bbd19.
+
+**Scope:** Extend FR-51 chat with real public recipe recommendations and explicitly requested, non-persistent recipe drafts.
+
+### Added
+
+- Return recipe cards selected from current public Backend posts when users ask to find or recommend recipes; link each card to its real recipe page.
+- Allow recipe creation or adaptation text only after an explicit request, without saving or publishing it.
+
+### Changed
+
+- Filter recipe candidates by the Member's declared vegetarian type and avoided ingredients before asking Gemini to select public post IDs.
+- Synchronize the FR-51, BR-38, UC-51 and chat response documentation with the catalog-first behavior.
+
+### Fixed
+
+- Match Vietnamese recipe creation and adaptation requests against the same accent-normalized phrases used by the chat intent detector.
+
+## 2026-10-14 — Add Contextual AI Chat for Members ([PR #137](https://github.com/NgaiLong49423/vegetarian-support-system/pull/137))
+
+**Status:** Committed — f984505f64662bb1ae77aedbd5f9a8d47dc537df.
+
+**Scope:** Add the Member chatbot slice for Issue #52 while keeping public Guest access closed until FR-02 rate limiting is integrated.
+
+### Added
+
+- Add a Backend chat endpoint for general vegetarian-cooking questions and current public RecipePost context, with ephemeral request history and token-only usage telemetry.
+- Add a shared Frontend chat page with general and recipe-specific entry points, loading/error states, AI labeling and privacy guidance.
+- Document the FR-51 request and response contract in the API integration guide.
+
+### Changed
+
+- Limit Gemini request timeouts to 10 seconds to follow NFR-18.
+- Require an active Member session for chatbot requests until the FR-02 Guest rate limiter is available.
 
 ### Fixed
 
 - None.
+
+## 2026-10-14 — Add Meal Plan Nutrition Reports
+
+**Status:** Committed — `46b6945`.
+
+**Scope:** Issue #42 / FR-37, catalog-based meal-plan nutrition analysis, AI recommendations and PDF export.
+
+### Added
+
+- Add day and seven-day nutrition APIs, FDA Daily Value references, Pro recipe suggestions and on-demand A4 PDF reports.
+- Show catalog-based nutrient summaries, missing-data warnings, saved planned servings and the medical information disclaimer in the Member meal planner.
+- Add coverage for fractional servings, PDF routes and nutrition-reference migration behavior.
+
+### Changed
+
+- Allow planned servings from 0.5 to 10 in half-serving increments and calculate nutrients from the saved quantity.
+- Keep AI provider errors separate from nutrition results and require Member confirmation before applying a suggested recipe.
+- Upgrade Apache PDFBox to 3.0.8 for PDF generation.
+
+### Fixed
+
+- Count empty days as zero in weekly nutrition averages and divide by all seven days.
 
 ## 2026-10-14 — Synchronize FR-33 with the AI Menu Integration Baseline ([PR #135](https://github.com/NgaiLong49423/vegetarian-support-system/pull/135))
 
@@ -129,6 +209,30 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
 - Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Compare Two Public Recipes ([PR #132](https://github.com/NgaiLong49423/vegetarian-support-system/pull/132))
+
+**Status:** Committed — `5749ba8`, `c11e882`.
+
+**Scope:** Complete FR-60 (AC-60.1–AC-60.8, BR-76) in the Frontend: compare two different published recipes by overview, ingredients and the nine nutrients per serving, using the existing public recipe detail and search APIs only.
+
+### Added
+
+- Add the real `/so-sanh?a={recipeId}&b={recipeId}` comparison page with a search picker per slot, replacement of either slot, removal of recipes that are no longer public, and retry on load errors.
+- Line up ingredients only by `ingredient_id`, keep each recipe's original quantity and unit, and flag rows whose units differ instead of converting them.
+- Show the nine nutrients per serving with the original servings of each recipe and the absolute difference A − B; a recipe with incomplete nutrition shows "Chưa đủ dữ liệu" and no difference.
+- Add "So sánh" entry points on recipe cards, both recipe detail routes and the Member saved recipe list.
+- Add Playwright tests for every acceptance criterion and a real-stack test that checks the per-serving values against the Backend and that comparing only sends `GET` requests.
+
+### Changed
+
+- Remove the prototype banner, mock data and prototype Playwright test of `/so-sanh`; the prototype detail page links to the empty comparison page.
+- Target recipe card links by their heading in the member profile Playwright test and the Explore real-stack test, since each card now also has a "So sánh" link with the recipe title.
+- Document FR-60 in `API.md` section 7 and the Frontend README.
 
 ### Fixed
 

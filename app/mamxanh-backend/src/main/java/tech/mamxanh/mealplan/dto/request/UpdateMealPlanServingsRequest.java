@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record UpdateMealPlanServingsRequest(
-        @NotNull @DecimalMin("1") @DecimalMax("9999") @Digits(integer = 4, fraction = 0)
-        @Schema(description = "Number of servings to prepare; independent of the one-person nutrition summary.",
-                type = "integer", example = "4", minimum = "1", maximum = "9999", multipleOf = 1)
+        @NotNull @DecimalMin("0.5") @DecimalMax("10") @Digits(integer = 2, fraction = 1)
+        @Schema(description = "Planned servings to eat; from 0.5 to 10 in increments of 0.5.",
+                type = "number", example = "1.5", minimum = "0.5", maximum = "10", multipleOf = 0.5)
         BigDecimal plannedServings) { }
