@@ -1,6 +1,6 @@
 schema_version: 1
 last_updated: 2026-10-15
-next_id: 32
+next_id: 33
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-032
+    title: Administrator dùng chức năng chỉ dành cho Member nhận mã lỗi chỉnh sửa công thức
+    status: RECORDED
+    severity: Low
+    area: Backend/Auth
+    file: .agents/outputs/bugs/BUG-032.md
+    created: 2026-10-11
+    updated: 2026-10-15
+    related_issue: Unknown
   - id: BUG-029
     title: Schema bình chọn không chấp nhận currentReaction null dù API trả giá trị này
     status: RECORDED
