@@ -16,6 +16,7 @@ const NUTRIENTS = [
 
 type Detail = {
   recipeId: number;
+  title: string;
   servings: number;
   nutrition: { complete: boolean; perServing: Record<string, number> };
 };
@@ -32,13 +33,17 @@ const amount = (value: number, sign = false) => new Intl.NumberFormat('vi-VN', {
 }).format(value);
 
 test('FR-60 compares two published SQL Server recipes per serving using only read requests', async ({ page, request }) => {
-  const catalog = await request.get(`${backendUrl}/recipes?size=2&sort=NEWEST`);
-  expect(catalog.ok()).toBeTruthy();
-  const { items } = await catalog.json() as { items: Array<{ id: number }> };
-  expect(items.length, 'Compose local demo data must include two published recipes').toBeGreaterThanOrEqual(2);
-  const [a, b] = await Promise.all(items.slice(0, 2).map(async (item) =>
-    (await request.get(`${backendUrl}/recipes/${item.id}`)).json() as Promise<Detail>));
-  expect(sql(`SELECT COUNT(*) FROM [RECIPE_POST] WHERE status = 'PUBLISHED' AND recipe_id IN (${a.recipeId}, ${b.recipeId})`)).toBe('2');
+  // Use the two oldest published recipes of the seeded demo Expert. The newest recipes may belong to a
+  // real-stack spec running in another worker (FR-09, FR-08) that hides or deletes them mid-test.
+  const ids = sql(`SELECT TOP 2 p.recipe_id FROM [RECIPE_POST] p JOIN [USER] u ON u.user_id = p.author_id
+    WHERE u.email = 'demo-expert@mamxanh.local' AND p.status = 'PUBLISHED' ORDER BY p.recipe_id`)
+    .split(/\s+/).map(Number);
+  expect(ids, 'Compose local demo data must include two published demo Expert recipes').toHaveLength(2);
+  const [a, b] = await Promise.all(ids.map(async (recipeId) => {
+    const response = await request.get(`${backendUrl}/recipes/${recipeId}`);
+    expect(response.status(), `GET /recipes/${recipeId}`).toBe(200);
+    return response.json() as Promise<Detail>;
+  }));
   const views = () => sql(`SELECT COUNT_BIG(*) FROM [RECIPE_VIEW] WHERE recipe_id IN (${a.recipeId}, ${b.recipeId})`);
   const viewsBefore = views();
   const writes: string[] = [];
@@ -46,10 +51,24 @@ test('FR-60 compares two published SQL Server recipes per serving using only rea
     if (sent.url().includes('/api/v1/') && sent.method() !== 'GET') writes.push(`${sent.method()} ${sent.url()}`);
   });
 
-  await page.goto(`/so-sanh?a=${a.recipeId}&b=${b.recipeId}`);
+  // Choose the second recipe on the separate picker page through the real FR-08 search.
+  await page.goto(`/so-sanh?a=${a.recipeId}`);
+  await page.getByRole('region', { name: 'Công thức thứ hai' }).getByRole('link', { name: 'Chọn công thức thứ hai' }).click();
+  await expect(page).toHaveURL(new RegExp(`/so-sanh/chon-mon\\?a=${a.recipeId}$`));
+  await expect(page.getByText(`Món bạn chọn sẽ được so sánh với ${a.title}.`)).toBeVisible();
+  const searched = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.endsWith('/api/v1/recipes') && url.searchParams.get('keyword') === b.title;
+  });
+  await page.getByRole('searchbox', { name: 'Tìm công thức' }).fill(b.title);
+  expect((await searched).status()).toBe(200);
+  const choices = page.getByRole('list', { name: 'Công thức có thể chọn' });
+  await choices.getByRole('button', { name: `Chọn ${b.title}`, exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/so-sanh\\?a=${a.recipeId}&b=${b.recipeId}$`));
+
   const table = page.getByRole('table', { name: 'Dinh dưỡng trên một khẩu phần' });
   await expect(table).toBeVisible();
-  await expect(page.getByText(`A có ${a.servings} khẩu phần gốc, B có ${b.servings} khẩu phần gốc.`)).toBeVisible();
+  await expect(page.getByText(`${a.title} có ${a.servings} khẩu phần gốc, ${b.title} có ${b.servings} khẩu phần gốc.`)).toBeVisible();
   for (const [key, label, unit] of NUTRIENTS) {
     const cells = table.getByRole('row', { name: new RegExp(label) }).getByRole('cell');
     const valueA = a.nutrition.complete ? a.nutrition.perServing[key] : null;
@@ -60,7 +79,7 @@ test('FR-60 compares two published SQL Server recipes per serving using only rea
   }
 
   await page.goto(`/so-sanh?a=${a.recipeId}&b=999999999999999`);
-  await expect(page.getByRole('alert')).toContainText('Công thức ở vị trí B không còn công khai. Hãy chọn công thức khác.');
+  await expect(page.getByRole('alert')).toContainText('Công thức thứ hai không còn công khai. Hãy chọn công thức khác.');
   expect(writes).toEqual([]);
   expect(views()).toBe(viewsBefore);
 });
