@@ -244,7 +244,7 @@ export function Explore() {
             : error ? <EmptyState title="Không tải được công thức" description="Kiểm tra kết nối rồi thử tải lại danh sách công thức." action={<Button variant="secondary" onClick={() => setRetry((current) => current + 1)}>Thử lại</Button>} />
               : result && result.items.length > 0 ? <>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 xl:grid-cols-4">
-                  {result.items.map((recipe: RecipePost) => <PublicRecipeCard key={recipe.id} recipe={recipe} options={options} showLikes={filters.sort === 'MOST_LIKED'} />)}
+                  {result.items.map((recipe: RecipePost) => <PublicRecipeCard key={recipe.id} recipe={recipe} options={options} />)}
                 </div>
                 {result.totalPages > 1 && <nav aria-label="Phân trang công thức" className="mt-7 flex flex-wrap items-center justify-center gap-3">
                   <Button variant="outline" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>Trang trước</Button>

@@ -41,6 +41,8 @@ const detail = {
   youtubeUrl: null,
   publishedAt: '2026-10-01T08:00:00',
   nutritionComplete: true,
+  author: { userId: 22, displayName: "Lan", avatarUrl: null },
+  statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
   ingredientsWithoutNutrition: [],
   author: { userId: 22, displayName: 'Bếp Chay Lan', avatarUrl: null },
   nutrition: { complete: true, ingredientsMissingData: [], total: {}, perServing: {} },
@@ -259,7 +261,7 @@ test('API recipe detail supports serving controls, image gallery, sharing and ex
   await expect(page.getByRole('img', { name: recipe.title })).toHaveAttribute('src', recipe.media[1].blobUrl);
 
   await page.getByRole('button', { name: 'Chia sẻ' }).click();
-  await expect(page.getByRole('status')).toHaveText('Đã sao chép liên kết công thức.');
+  await expect(page.getByRole('status').filter({ hasText: 'Đã sao chép liên kết công thức.' })).toHaveText('Đã sao chép liên kết công thức.');
   expect(await page.evaluate(() => sessionStorage.getItem('shared-url'))).toContain('/cong-thuc/id/920');
 
   await page.getByRole('button', { name: 'Xuất công thức' }).click();
