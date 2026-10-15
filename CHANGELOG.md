@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.82.0
+> **Version:** v2.83.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -247,6 +247,27 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
 - Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Add Threaded Recipe Comments (Issue #48) ([PR #129](https://github.com/NgaiLong49423/vegetarian-support-system/pull/129))
+
+**Status:** Committed — `ede6d10` (comments), `ecc5a58` (canonical recipe page), `e2f8be8` (documentation).
+
+**Scope:** Implement UC-46.1–UC-46.5 so guests read the comment threads of a published recipe and members comment, reply up to five levels, and edit or delete their own comments, following AC-46.1–AC-46.4 and BR-66. Administrator moderation (UC-46.6) and the banned-word filter wait for decisions Q60 and Q61.
+
+### Added
+
+- Add `GET /api/v1/recipes/{recipeId}/comments` (public, paginated root threads with nested replies and a comment count), `POST` on the same path to comment or reply, and `PUT`/`DELETE /api/v1/comments/{commentId}` for the owner. A reply to a level-5 comment joins its level-4 parent; a deleted comment with visible replies stays as a tombstone.
+- Add the `COMMENT_NOT_FOUND` (404) and `COMMENT_EDIT_NOT_ALLOWED` (403) error codes.
+- Add SQL Server integration tests and Playwright tests for the comment flows.
+
+### Changed
+
+- Replace the session-only comment preview with the API-backed comment section on both recipe detail pages; the slug-based demo recipe pages no longer show comments.
+- Document the comment API and error codes in `API.md` section 17 and the Backend/Frontend READMEs.
 
 ### Fixed
 

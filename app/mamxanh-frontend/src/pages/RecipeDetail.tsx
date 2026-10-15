@@ -117,6 +117,7 @@ function PublishedRecipeDetail({ recipeId }: { recipeId: number }) {
           )}
         </div>
       </article>
+      <RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} />
     </PageContainer>
   );
 }
@@ -637,7 +638,6 @@ function MockRecipeDetail() {
         </Card>
 
         <RecipeRating key={`rating-${recipe.id}`} recipe={recipe} />
-        <RecipeComments key={recipe.id} />
         <SectionHeading eyebrow="Có thể bạn thích" title="Công thức tương tự" />
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {related.map((r) => (

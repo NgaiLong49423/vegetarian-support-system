@@ -1,6 +1,6 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.29.0
+> **Version:** v1.30.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-10-15
 > **Status:** Active  
@@ -65,6 +65,7 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - **Đăng nhập Google đã gọi Backend thật (Issue #8):** trang Đăng nhập và Đăng ký hiện nút "Tiếp tục với Google" của Google Identity Services (`@react-oauth/google`) khi có `VITE_GOOGLE_CLIENT_ID`; script Google chỉ được tải trên hai trang này. Google trả ID Token, Frontend gửi `POST /auth/google` rồi lưu phiên và kiểm tra lời mời Onboarding như khi đăng nhập bằng mật khẩu. Lỗi hiển thị theo `code`: token Google không hợp lệ (`GOOGLE_TOKEN_INVALID`), tài khoản bị khóa (`ACCOUNT_LOCKED`), email đã liên kết Google khác (`GOOGLE_ACCOUNT_CONFLICT`) và Google tạm không khả dụng (`GOOGLE_LOGIN_UNAVAILABLE`). Thiếu Client ID thì thay nút bằng thông báo; script Google không tải được thì vẫn đăng nhập bằng email được.
 - **Hồ sơ tác giả đã gọi Backend thật (Issue #29):** trang chi tiết `/cong-thuc/id/:recipeId` hiện ảnh đại diện, tên tác giả (liên kết tới `/thanh-vien/:userId`) và ngày đăng; `/thanh-vien/:userId` là hồ sơ công khai (tên, ảnh, giới thiệu, tháng tham gia, bài đã đăng có phân trang); `/ho-so/cai-dat` cho Member sửa tên, giới thiệu ngắn và ảnh đại diện. Không có ảnh hoặc ảnh lỗi thì hiện ảnh mặc định chữ cái đầu như header.
 - **Nguyên liệu chưa có dữ liệu dinh dưỡng (Issue #45):** trang chi tiết công thức gắn nhãn "Chưa hỗ trợ tính dinh dưỡng" cạnh từng nguyên liệu Backend trả `nutritionSupported = false`, cùng thông báo dinh dưỡng chưa đầy đủ đã có.
+- **Bình luận đã gọi Backend thật (Issue #48):** trang chi tiết `/cong-thuc/id/:recipeId` (và `/cong-thuc/:id`) hiện các luồng bình luận lồng tối đa 5 cấp, "Xem thêm bình luận" theo trang. Member viết, trả lời, sửa, xóa bình luận của mình (xác nhận trước khi xóa); trả lời bình luận cấp 5 tự chèn `@Tên`. Bình luận đã xóa còn reply hiện "Bình luận này đã bị xóa bởi người dùng". Guest được mời đăng nhập; Administrator chỉ xem. Nội dung hiển thị như văn bản, không render HTML.
 - **Đăng xuất** chỉ xóa token và trạng thái đăng nhập trên thiết bị, không gọi Backend (AC-03.13).
 - **Quên và đặt lại mật khẩu đã gọi Backend thật (Issue #9):** `/quen-mat-khau` gửi `POST /auth/password-resets` và hiển thị nguyên văn thông báo trung tính của Backend. Liên kết trong email mở `/dat-lai-mat-khau?token=...`; Frontend giữ token trong bộ nhớ, xóa nó khỏi thanh địa chỉ, kiểm tra quy tắc mật khẩu rồi gửi `POST /auth/password-resets/confirm`. Liên kết hỏng, đã dùng hoặc hết hạn (`PASSWORD_RESET_TOKEN_INVALID`) ẩn biểu mẫu và dẫn tới yêu cầu liên kết mới; mật khẩu trùng mật khẩu hiện tại (`NEW_PASSWORD_SAME_AS_CURRENT`) báo ngay dưới ô mật khẩu.
 - Không còn chế độ đổi vai trò/tài khoản giả trên Frontend. Dùng tài khoản local do Backend seed tạo sẵn; danh sách email và cách đặt chung mật khẩu nằm trong [Backend Workspace Guide](../mamxanh-backend/README.md#tài-khoản-demo-local). Mỗi vai trò phải đăng nhập bằng tài khoản riêng; quyền được Backend xác thực.

@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.27.0
+> **Version:** v0.28.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-15<br>
 > **Status:** Active  
@@ -47,6 +47,7 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 - FR-26/27 thêm `POST /api/v1/recipes/{recipeId}/reports` cho Member gửi báo cáo bài công khai; báo cáo lưu `OPEN`, xác thực và chống trùng ở Backend, migration V9 đồng bộ trạng thái/mã lý do với SRS. Luồng bổ sung thông tin thuộc FR-30 chưa có trong Issue này.
 - Đã có FR-23 (Issue #29): `GET /api/v1/members/{userId}` và `GET /api/v1/members/{userId}/recipes` công khai; `GET`/`PUT /api/v1/me/profile` và `POST /api/v1/me/profile/avatar` cho Member sửa tên, giới thiệu ngắn và ảnh đại diện (JPEG/PNG/WebP ≤ 2 MB, kiểm chữ ký tệp, lưu qua `StorageClient` trong thư mục `avatars/`). Không có migration: `USER.bio`, `display_name`, `avatar_url` có từ V1. Quy tắc chi tiết ở [API Guide mục 11](../../docs/api/API.md). Giới hạn multipart `spring.servlet.multipart.*` là 5 MB/tệp, 6 MB/request.
 - FR-40 (Issue #45): Recipe Post dùng nguyên liệu catalog chưa có hồ sơ dinh dưỡng vẫn công khai được (BR-50); AI menu dinh dưỡng (FR-36, `AiMenuService`) chỉ lấy ứng viên `PUBLISHED` có dinh dưỡng đầy đủ, nên bài loại này không vào pool và áp dụng menu chứa bài đó bị từ chối (AC-40.3, BR-40; test `IncompleteNutritionAiMenuIntegrationTest`).
+- Đã có FR-46 (Issue #48) trong module `recipe`: `GET /api/v1/recipes/{recipeId}/comments` công khai (luồng gốc phân trang, reply lồng tối đa 5 cấp, tombstone), `POST` cùng đường dẫn để bình luận/trả lời, `PUT`/`DELETE /api/v1/comments/{commentId}` cho chủ bình luận. Không có migration: `COMMENT` có từ V1. Quy tắc chi tiết ở [API Guide mục 17](../../docs/api/API.md).
 
 ### Lệnh chạy và kiểm tra xác minh
 
