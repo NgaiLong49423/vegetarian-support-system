@@ -591,7 +591,7 @@ export function AiRecipeAssistantModal({
 
   const handleUpdateQuantity = (index: number, newQty: number) => {
     if (!generatedResult) return;
-    const safeQty = Math.max(1, Math.min(2000, isNaN(newQty) ? 1 : newQty));
+    const safeQty = Math.max(1, Math.min(2000, Number.isNaN(newQty) ? 1 : newQty));
     const nextIngredients = [...generatedResult.ingredients];
     const targetItem = nextIngredients[index];
     if (!targetItem) return;

@@ -123,7 +123,7 @@ function CreateRecipeForm() {
 
     if (aiRecipe.ingredients && aiRecipe.ingredients.length > 0) {
       const mappedRows: IngredientRow[] = await Promise.all(
-        aiRecipe.ingredients.map(async (item) => {
+        aiRecipe.ingredients.map(async (item, idx) => {
           const matchedUnit = options?.units.find((u) => {
             const uCode = u.code.toLowerCase();
             const uName = u.name.toLowerCase();
@@ -161,7 +161,7 @@ function CreateRecipeForm() {
           }
 
           return {
-            key: `ingredient-${Date.now()}-${Math.random()}`,
+            key: `ingredient-${Date.now()}-${idx}`,
             ingredientId: foundIngredientId,
             ingredientName: foundName,
             search: foundName,

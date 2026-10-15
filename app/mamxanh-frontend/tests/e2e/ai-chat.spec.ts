@@ -39,11 +39,14 @@ test('chat window can be resized with its accessible keyboard handle', async ({ 
   await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
 
   const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
   const resizeHandle = page.getByRole('button', { name: 'Thay đổi kích thước khung chat' });
+  await expect(resizeHandle).toBeVisible();
   const initialSize = await dialog.evaluate((element) => ({
     width: Number.parseFloat(getComputedStyle(element).width),
     height: Number.parseFloat(getComputedStyle(element).height),
   }));
+  expect(initialSize.width).toBeGreaterThan(0);
 
   await resizeHandle.press('ArrowLeft');
   await resizeHandle.press('ArrowUp');
