@@ -57,7 +57,8 @@ class MealPlanNutritionServiceTest {
     void emptyWeekUsesCatalogTargetsAndReturnsZeroTotalsAndAttainment() {
         when(plans.findByUserIdAndWeekStartDate(OWNER, MONDAY)).thenReturn(Optional.empty());
         when(recipes.calculatePlannedNutritionByEntry(Map.of(), Map.of())).thenReturn(Map.of());
-        when(dailyValues.findAllById(anyIterable())).thenReturn(List.of(dailyValue("ENERGY_KCAL", "AMDR", "10")));
+        var energyTarget = dailyValue("ENERGY_KCAL", "AMDR", "10");
+        when(dailyValues.findAllById(anyIterable())).thenReturn(List.of(energyTarget));
 
         var result = service.analyze(MONDAY, null);
 

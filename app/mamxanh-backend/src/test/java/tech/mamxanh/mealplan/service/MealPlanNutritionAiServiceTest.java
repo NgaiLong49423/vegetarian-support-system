@@ -65,7 +65,7 @@ class MealPlanNutritionAiServiceTest {
         var result = service.recommend(MONDAY, 101L);
 
         assertThat(result.recommendations()).isEmpty();
-        assertThat(result.analysis()).contains("chưa có công thức");
+        assertThat(result.analysis()).contains("Chưa có công thức");
         verifyNoInteractions(nutrition, analysis, recipePosts, ai, events);
     }
 
