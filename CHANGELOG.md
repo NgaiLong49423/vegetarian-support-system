@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-15 — Restore Comment Error Codes in the API Guide
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `8f34482`.
 
 **Scope:** Restore the FR-46 error-code documentation that PR #129 added to `docs/api/API.md` and that was dropped while resolving the PR #129 sync conflict (`b2802ea`); the Backend already returns these codes.
 
