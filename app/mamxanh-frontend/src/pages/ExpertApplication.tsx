@@ -1,5 +1,19 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import {
+  AlertCircle,
+  Award,
+  CheckCircle2,
+  Clock,
+  Database,
+  ExternalLink,
+  FileText,
+  Filter,
+  Leaf,
+  RefreshCw,
+  ShieldCheck,
+  UserCheck,
+} from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Button, Card } from '../components/ui';
 import { useAuth } from '../components/AuthContext';
@@ -96,37 +110,297 @@ export function ExpertApplicationPage() {
   if (!adminView && account.role !== 'CUSTOMER' && account.role !== 'EXPERT') return <PageContainer className="py-10"><Card className="p-6">Tài khoản này không thể nộp đơn đăng ký Chuyên gia.</Card></PageContainer>;
 
   return <PageContainer className="max-w-5xl py-8">
-    <header className="mb-6"><p className="text-sm font-bold text-leaf-700">CỘNG ĐỒNG MÂM XANH</p>
-      <h1 className="mt-1 text-3xl font-extrabold text-ink">{adminView ? 'Xét duyệt Chuyên gia' : 'Đăng ký Chuyên gia'}</h1>
-      <p className="mt-2 max-w-3xl text-sm text-ink-muted">{adminView ? 'Thẩm định hồ sơ của thành viên, mỗi quyết định được ghi nhận một lần.' : 'Chia sẻ kinh nghiệm và công thức chay, kết nối cùng cộng đồng yêu ẩm thực thuần lành.'}</p>
-    </header>
-    {error && <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error} <button className="ml-2 font-bold underline" onClick={() => void load()}>Tải lại</button></div>}
-    {notice && <div role="status" className="mb-4 rounded-xl bg-leaf-50 p-3 text-sm text-leaf-800">{notice}</div>}
+    {adminView ? (
+      <header className="relative mb-7 overflow-hidden rounded-3xl border border-brand-200/80 bg-gradient-to-br from-paper via-paper to-brand-50/40 p-6 shadow-sm sm:p-8">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand-500/10 blur-3xl"
+        />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-leaf-200/80 bg-leaf-50/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-leaf-700">
+              <ShieldCheck className="h-3.5 w-3.5" /> Khu vực Administrator
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">Xét duyệt Chuyên gia</h1>
+            <p className="mt-2.5 text-sm leading-6 text-ink-muted">
+              Thẩm định hồ sơ của thành viên, mỗi quyết định được ghi nhận một lần.
+            </p>
+          </div>
+          <div className="inline-flex items-center self-start rounded-full border border-brand-200/80 bg-cream-soft/80 p-1">
+            <Link
+              to="/quan-tri/danh-muc"
+              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:text-brand-600"
+            >
+              <Database className="h-3.5 w-3.5" /> Danh mục nguyên liệu
+            </Link>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-3.5 py-1.5 text-xs font-bold text-on-brand shadow-xs">
+              <Award className="h-3.5 w-3.5" /> Xét duyệt Chuyên gia
+            </span>
+          </div>
+        </div>
+
+        <div className="relative mt-6 grid grid-cols-1 gap-3 border-t border-brand-100/80 pt-5 sm:grid-cols-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-brand-100/80 bg-cream-soft/60 px-4 py-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Hồ sơ trên trang</p>
+              <p className="truncate text-lg font-extrabold text-ink">{applications.length}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-brand-100/80 bg-cream-soft/60 px-4 py-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-leaf-100 text-leaf-700">
+              <Filter className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Bộ lọc hiện tại</p>
+              <p className="truncate text-lg font-extrabold text-ink">
+                {filter === 'PENDING' ? 'Chờ duyệt' : filter === 'APPROVED' ? 'Đã duyệt' : filter === 'REJECTED' ? 'Đã từ chối' : 'Tất cả'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-brand-100/80 bg-cream-soft/60 px-4 py-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-raised text-ink-soft">
+              <UserCheck className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Trang hiển thị</p>
+              <p className="truncate text-lg font-extrabold text-ink">{page + 1}/{Math.max(1, totalPages)}</p>
+            </div>
+          </div>
+        </div>
+      </header>
+    ) : (
+      <header className="mb-6">
+        <p className="text-sm font-bold text-leaf-700">CỘNG ĐỒNG MÂM XANH</p>
+        <h1 className="mt-1 text-3xl font-extrabold text-ink">Đăng ký Chuyên gia</h1>
+        <p className="mt-2 max-w-3xl text-sm text-ink-muted">
+          Chia sẻ kinh nghiệm và công thức chay, kết nối cùng cộng đồng yêu ẩm thực thuần lành.
+        </p>
+      </header>
+    )}
+
+    {error && (
+      <div role="alert" className="mb-5 flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-sm text-rose-800 shadow-2xs">
+        <AlertCircle className="h-5 w-5 shrink-0 text-rose-600" />
+        <div className="flex-1 font-medium">
+          {error} <button className="ml-2 font-bold underline" onClick={() => void load()}>Tải lại</button>
+        </div>
+      </div>
+    )}
+    {notice && (
+      <div role="status" className="mb-5 flex items-center gap-3 rounded-2xl border border-leaf-200 bg-leaf-50/90 p-4 text-sm text-leaf-800 shadow-2xs">
+        <CheckCircle2 className="h-5 w-5 shrink-0 text-leaf-600" />
+        <div className="flex-1 font-medium">{notice}</div>
+      </div>
+    )}
 
     {adminView ? <section>
-      <div className="mb-4 flex flex-wrap gap-2" aria-label="Lọc trạng thái">
-        {statuses.map((status) => <button key={status || 'ALL'} onClick={() => { setPage(0); setFilter(status); }} className={`rounded-lg border px-3 py-2 text-sm ${filter === status ? 'border-brand-700 bg-brand-700 text-white' : 'border-brand-200 bg-paper'}`}>{status || 'Tất cả'}</button>)}
-        <Button variant="outline" onClick={() => void load()}>Làm mới</Button>
+      <Card className="mb-5 flex flex-wrap items-center justify-between gap-3 border-brand-200/70 p-3.5 shadow-2xs sm:px-5">
+        <div className="flex flex-wrap items-center gap-2" aria-label="Lọc trạng thái">
+          {statuses.map((status) => (
+            <button
+              key={status || 'ALL'}
+              onClick={() => { setPage(0); setFilter(status); }}
+              className={`rounded-xl border px-3.5 py-2 text-xs font-bold transition-all duration-200 sm:text-sm ${
+                filter === status
+                  ? 'border-brand-600 bg-brand-600 text-on-brand shadow-sm shadow-brand-600/20'
+                  : 'border-brand-200 bg-paper text-ink-soft hover:border-brand-300 hover:text-brand-600'
+              }`}
+            >
+              {status || 'Tất cả'}
+            </button>
+          ))}
+        </div>
+        <Button variant="outline" size="sm" onClick={() => void load()}>
+          <RefreshCw className="h-3.5 w-3.5" /> Làm mới
+        </Button>
+      </Card>
+
+      <div className="grid gap-3.5">
+        {loading ? (
+          <Card className="p-10 text-center text-sm text-ink-muted">Đang tải danh sách hồ sơ…</Card>
+        ) : (
+          applications.map((app) => {
+            const schoolLabel = types.find(([key]) => key === app.vegetarianType)?.[1] ?? app.vegetarianType;
+            const statusBorder =
+              app.status === 'APPROVED'
+                ? 'border-l-leaf-500'
+                : app.status === 'REJECTED'
+                  ? 'border-l-rose-500'
+                  : 'border-l-brand-500';
+            return (
+              <Card
+                key={app.id}
+                className={`group flex flex-col justify-between gap-4 border-l-4 ${statusBorder} p-5 shadow-2xs transition-all duration-200 motion-safe:hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md sm:flex-row sm:items-center`}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span
+                      aria-hidden="true"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-extrabold text-brand-700"
+                    >
+                      {app.displayName.trim().charAt(0).toUpperCase()}
+                    </span>
+                    <div>
+                      <p className="font-bold text-ink">
+                        {app.displayName} <span className="font-normal text-ink-muted">· {app.email}</span>
+                      </p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+                        <Clock className="h-3.5 w-3.5 text-brand-600" />
+                        <span>#{app.id} · {app.status} · {new Date(app.submittedAt).toLocaleString('vi-VN')}</span>
+                      </p>
+                    </div>
+                    <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-leaf-200/70 bg-leaf-50 px-2.5 py-0.5 text-xs font-semibold text-leaf-700 sm:ml-2">
+                      <Leaf className="h-3 w-3" /> {schoolLabel}
+                    </span>
+                  </div>
+                  <p className="mt-3 line-clamp-2 rounded-xl border border-brand-100/70 bg-cream-soft/60 px-3.5 py-2.5 text-sm text-ink-soft">
+                    {app.experience}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      setSelected(await expertApplicationsApi.detail(app.id));
+                      setReason('');
+                    } catch (e) {
+                      setError(errorText(e));
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Xem chi tiết
+                </Button>
+              </Card>
+            );
+          })
+        )}
+        {!loading && applications.length === 0 && (
+          <Card className="border-dashed border-brand-200 p-10 text-center text-sm text-ink-muted">
+            Không có đơn phù hợp.
+          </Card>
+        )}
       </div>
-      <div className="grid gap-3">{loading ? <Card className="p-8 text-center text-ink-muted">Đang tải danh sách hồ sơ…</Card> : applications.map((app) => <Card key={app.id} className="flex flex-col justify-between gap-4 p-4 sm:flex-row sm:items-center">
-        <div><p className="font-bold text-ink">{app.displayName} <span className="font-normal text-ink-muted">· {app.email}</span></p><p className="mt-1 text-sm text-ink-muted">#{app.id} · {app.status} · {new Date(app.submittedAt).toLocaleString('vi-VN')}</p><p className="mt-2 line-clamp-2 text-sm">{app.experience}</p></div>
-        <Button variant="outline" onClick={async () => { setBusy(true); try { setSelected(await expertApplicationsApi.detail(app.id)); setReason(''); } catch (e) { setError(errorText(e)); } finally { setBusy(false); } }}>Xem chi tiết</Button>
-      </Card>)}{!loading && applications.length === 0 && <Card className="p-8 text-center text-ink-muted">Không có đơn phù hợp.</Card>}</div>
-      {!loading && totalPages > 1 && <div className="mt-4 flex items-center justify-center gap-3"><Button variant="outline" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>Trang trước</Button><span className="text-sm">Trang {page + 1}/{totalPages}</span><Button variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage((value) => value + 1)}>Trang sau</Button></div>}
-      {selected && <dialog ref={dialogRef} aria-labelledby="application-title" className="fixed inset-0 m-0 h-dvh w-screen max-h-none max-w-none overflow-y-auto border-0 bg-transparent p-4 backdrop:bg-black/40" onClose={() => setSelected(null)} onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
-        <div className="mx-auto my-8 max-w-2xl"><Card className="space-y-4 p-5 sm:p-7">
-          <h2 id="application-title" className="text-xl font-bold">Hồ sơ #{selected.id} · {selected.displayName}</h2><p className="text-sm text-ink-muted">{selected.email} · {selected.status}</p>
-          <div><h3 className="font-semibold">Kinh nghiệm</h3><p className="whitespace-pre-wrap text-sm">{selected.experience}</p></div>
-          <div><h3 className="font-semibold">Trường phái</h3><p>{types.find(([key]) => key === selected.vegetarianType)?.[1] ?? selected.vegetarianType}</p></div>
-          <div><h3 className="font-semibold">Tóm tắt công thức</h3><p className="whitespace-pre-wrap text-sm">{selected.sampleRecipeSummary}</p></div>
-          {selected.portfolioUrl && <p><a className="text-brand-700 underline" href={selected.portfolioUrl} target="_blank" rel="noreferrer">Portfolio tham khảo</a></p>}
-          {selected.adminNote && <p className="rounded-lg bg-brand-50 p-3 text-sm"><strong>Ghi chú xử lý:</strong> {selected.adminNote}</p>}
-          {selected.status === 'PENDING' && <><label className="block text-sm font-semibold" htmlFor="approval-note">Lời nhắn khi phê duyệt (không bắt buộc)</label><textarea id="approval-note" maxLength={1000} value={approvalNote} onChange={(e) => setApprovalNote(e.target.value)} className="w-full rounded-xl border border-brand-200 p-3" rows={2} />
-            <label className="block text-sm font-semibold" htmlFor="reject-reason">Lý do từ chối (10–500 ký tự)</label><textarea id="reject-reason" minLength={10} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} className="w-full rounded-xl border border-brand-200 p-3" rows={3} />
-            <div className="flex flex-wrap justify-end gap-2"><Button variant="outline" onClick={() => setSelected(null)}>Đóng</Button><Button variant="outline" disabled={busy || reason.trim().length < 10} onClick={() => void review('reject')}>Từ chối</Button><Button disabled={busy} onClick={() => void review('approve')}>Phê duyệt</Button></div></>}
-          {selected.status !== 'PENDING' && <Button variant="outline" onClick={() => setSelected(null)}>Đóng</Button>}
-        </Card></div>
-      </dialog>}
+
+      {!loading && totalPages > 1 && (
+        <div className="mt-5 flex items-center justify-center gap-3 rounded-2xl border border-brand-100 bg-paper px-4 py-3">
+          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>Trang trước</Button>
+          <span className="text-sm font-medium text-ink-muted">Trang {page + 1}/{totalPages}</span>
+          <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage((value) => value + 1)}>Trang sau</Button>
+        </div>
+      )}
+
+      {selected && (
+        <dialog
+          ref={dialogRef}
+          aria-labelledby="application-title"
+          className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-y-auto border-0 bg-transparent p-4 backdrop:bg-black/65 backdrop:backdrop-blur-xs"
+          onClose={() => setSelected(null)}
+          onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}
+        >
+          <div className="mx-auto my-8 max-w-2xl">
+            <Card className="modal-panel-enter space-y-5 border-brand-200 bg-paper p-6 shadow-2xl sm:p-8">
+              <div className="flex items-start justify-between gap-4 border-b border-brand-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-base font-extrabold text-brand-700"
+                  >
+                    {selected.displayName.trim().charAt(0).toUpperCase()}
+                  </span>
+                  <div>
+                    <h2 id="application-title" className="text-xl font-extrabold text-ink">
+                      Hồ sơ #{selected.id} · {selected.displayName}
+                    </h2>
+                    <p className="mt-0.5 text-sm text-ink-muted">{selected.email} · {selected.status}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3.5 sm:grid-cols-2">
+                <div className="rounded-2xl border border-brand-100/80 bg-cream-soft/70 p-4 sm:col-span-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">Kinh nghiệm</h3>
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-6 text-ink">{selected.experience}</p>
+                </div>
+                <div className="rounded-2xl border border-brand-100/80 bg-cream-soft/70 p-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">Trường phái</h3>
+                  <p className="mt-1.5 font-semibold text-ink">
+                    {types.find(([key]) => key === selected.vegetarianType)?.[1] ?? selected.vegetarianType}
+                  </p>
+                </div>
+                {selected.portfolioUrl && (
+                  <div className="rounded-2xl border border-brand-100/80 bg-cream-soft/70 p-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">Liên kết hồ sơ</h3>
+                    <p className="mt-1.5">
+                      <a className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 underline hover:text-brand-500" href={selected.portfolioUrl} target="_blank" rel="noreferrer">
+                        Portfolio tham khảo <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </p>
+                  </div>
+                )}
+                <div className="rounded-2xl border border-brand-100/80 bg-cream-soft/70 p-4 sm:col-span-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">Tóm tắt công thức</h3>
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-6 text-ink">{selected.sampleRecipeSummary}</p>
+                </div>
+              </div>
+
+              {selected.adminNote && (
+                <p className="rounded-xl border border-brand-200/70 bg-brand-50/70 p-3.5 text-sm text-ink">
+                  <strong>Ghi chú xử lý:</strong> {selected.adminNote}
+                </p>
+              )}
+
+              {selected.status === 'PENDING' && (
+                <div className="space-y-4 border-t border-brand-100 pt-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-ink" htmlFor="approval-note">
+                      Lời nhắn khi phê duyệt (không bắt buộc)
+                    </label>
+                    <textarea
+                      id="approval-note"
+                      maxLength={1000}
+                      value={approvalNote}
+                      onChange={(e) => setApprovalNote(e.target.value)}
+                      className="mt-1.5 w-full rounded-xl border border-brand-200 bg-paper p-3 text-sm text-ink outline-none transition-all focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                      rows={2}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-ink" htmlFor="reject-reason">
+                      Lý do từ chối (10–500 ký tự)
+                    </label>
+                    <textarea
+                      id="reject-reason"
+                      minLength={10}
+                      maxLength={500}
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      className="mt-1.5 w-full rounded-xl border border-brand-200 bg-paper p-3 text-sm text-ink outline-none transition-all focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex flex-wrap justify-end gap-2.5 pt-1">
+                    <Button variant="outline" onClick={() => setSelected(null)}>Đóng</Button>
+                    <Button variant="outline" disabled={busy || reason.trim().length < 10} onClick={() => void review('reject')}>Từ chối</Button>
+                    <Button disabled={busy} onClick={() => void review('approve')}>Phê duyệt</Button>
+                  </div>
+                </div>
+              )}
+              {selected.status !== 'PENDING' && (
+                <div className="flex justify-end border-t border-brand-100 pt-4">
+                  <Button variant="outline" onClick={() => setSelected(null)}>Đóng</Button>
+                </div>
+              )}
+            </Card>
+          </div>
+        </dialog>
+      )}
     </section> : <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <Card className="p-5 sm:p-7"><h2 className="text-xl font-bold">Hồ sơ của bạn</h2>
         {account.role === 'EXPERT' && <p className="mt-3 rounded-xl bg-leaf-50 p-3 text-sm text-leaf-800">Tài khoản đã được phê duyệt Chuyên gia.</p>}

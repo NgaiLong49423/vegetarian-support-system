@@ -276,7 +276,7 @@ class RecipePostServiceTest {
         recipe.setTitle("Canh chua");
         var mode = tech.mamxanh.recipe.service.RecipeSortMode.MOST_VIEWED;
         var period = tech.mamxanh.recipe.service.RecipeViewPeriod.LAST_24_HOURS;
-        var row = new RecipeBrowseRepository.BrowseRow(47L, 3, 1, 19, 2, 5);
+        var row = new RecipeBrowseRepository.BrowseRow(47L, 10, 1, 19, 2, 5);
         when(browseRepository.findPublished("canh", null, null, List.of(), null, mode, now.minusHours(24), now, 0, 12))
                 .thenReturn(new RecipeBrowseRepository.BrowsePage(List.of(row), 1));
         when(repository.findAllById(List.of(47L))).thenReturn(List.of(recipe));
@@ -292,9 +292,9 @@ class RecipePostServiceTest {
         assertThat(result.items()).hasSize(1);
         assertThat(result.items().getFirst().authorName()).isEqualTo("Tác giả");
         assertThat(result.items().getFirst().authorAvatarUrl()).isEqualTo("https://img.test/avatar.png");
-        assertThat(result.items().getFirst().likes()).isEqualTo(3);
+        assertThat(result.items().getFirst().likes()).isEqualTo(10);
+        assertThat(result.items().getFirst().likePercentage()).isEqualByComparingTo("91");
         assertThat(result.items().getFirst().dislikes()).isEqualTo(1);
-        assertThat(result.items().getFirst().likePercentage()).isEqualByComparingTo("75.00");
         assertThat(result.items().getFirst().viewCount()).isEqualTo(19);
         verify(browseRepository).findPublished("canh", null, null, List.of(), null, mode, now.minusHours(24), now, 0, 12);
     }

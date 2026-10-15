@@ -43,6 +43,8 @@ public enum ErrorCode {
     UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "Unauthenticated", "Bạn cần đăng nhập để thực hiện thao tác này."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "Access denied", "Bạn không có quyền thực hiện thao tác này."),
     RECIPE_NOT_FOUND(HttpStatus.NOT_FOUND, "Recipe not found", "Không tìm thấy công thức công khai."),
+    RECIPE_SELF_REACTION_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Self reaction not allowed",
+            "Tác giả không được tự bình chọn bài viết của chính mình"),
     RECIPE_EDIT_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Recipe edit not allowed", "Bạn không có quyền chỉnh sửa công thức này."),
     RECIPE_HIDDEN(HttpStatus.FORBIDDEN, "Recipe hidden", "Công thức đang bị quản trị viên ẩn. Vui lòng liên hệ quản trị viên để được phục hồi trước khi chỉnh sửa."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "Comment not found", "Không tìm thấy bình luận hoặc bình luận đã bị xóa."),

@@ -224,3 +224,36 @@ test('administrator filters the catalog through the paginated endpoint and reads
   await page.getByRole('button', { name: 'Xem công thức dùng Nấm bào ngư' }).click();
   await expect(page.getByText('Canh nấm rau củ', { exact: true })).toBeVisible();
 });
+
+test('ingredient image and group resolver handles all vegetarian groups and fallbacks', async ({ page }) => {
+  const diverseIngredients = [
+    { ...banana, id: 10, name: 'Đậu hũ non', ingredientGroup: 'Đậu & Chế phẩm' },
+    { ...banana, id: 11, name: 'Gạo tẻ', ingredientGroup: 'Ngũ cốc' },
+    { ...banana, id: 12, name: 'Hạt điều rang', ingredientGroup: 'Các loại hạt' },
+    { ...banana, id: 13, name: 'Tiêu đen', ingredientGroup: 'Gia vị chay' },
+    { ...banana, id: 14, name: 'Rau muống', ingredientGroup: 'Rau củ' },
+    { ...banana, id: 15, name: 'Nguyên liệu tùy chỉnh không hình', ingredientGroup: 'Khác' },
+  ];
+  await page.route('**/api/v1/admin/**', async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/ingredients/options')) {
+      return route.fulfill({ json: { success: true, data: { groups: ['Rau củ', 'Đậu & Chế phẩm', 'Ngũ cốc', 'Các loại hạt', 'Trái cây', 'Gia vị chay', 'Khác'], sources: ['USDA FoodData Central'] } } });
+    }
+    if (url.pathname.endsWith('/ingredients/search')) {
+      return route.fulfill({ json: ingredientPage(diverseIngredients) });
+    }
+    if (url.pathname.endsWith('/ingredients')) {
+      return route.fulfill({ json: { success: true, data: diverseIngredients } });
+    }
+    return route.fulfill({ status: 404 });
+  });
+
+  await page.goto('/quan-tri/danh-muc');
+  await expect(page.getByText('Đậu hũ non')).toBeVisible();
+  await expect(page.getByText('Gạo tẻ')).toBeVisible();
+  await expect(page.getByText('Hạt điều rang')).toBeVisible();
+  await expect(page.getByText('Tiêu đen')).toBeVisible();
+  await expect(page.getByText('Rau muống')).toBeVisible();
+  await expect(page.getByText('Nguyên liệu tùy chỉnh không hình')).toBeVisible();
+});
+

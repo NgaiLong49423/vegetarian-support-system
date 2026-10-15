@@ -42,6 +42,8 @@ async function action(page: Page, label: string, operation: () => Promise<unknow
 }
 
 type PublishedDetail = {
+  author: { userId: number; displayName: string; avatarUrl: string | null };
+  statistics: { likes: number; dislikes: number; reactionCount: number; likePercentage: number | null; viewCount: number };
   recipeId: number;
   title: string;
   description: string | null;
@@ -80,6 +82,8 @@ const detailFixture = (overrides: Partial<PublishedDetail> = {}): PublishedDetai
   youtubeUrl: 'https://www.youtube.com/watch?v=recipe-1',
   publishedAt: '2026-10-04T08:00:00',
   nutritionComplete: true,
+  author: { userId: 22, displayName: "Lan", avatarUrl: null },
+  statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
   ingredientsWithoutNutrition: [],
   ingredients: [{ ingredientId: 12, name: 'Cà chua', quantity: 2, unitId: 1, unitCode: 'quả', unitName: 'quả' }],
   media: [],
@@ -128,6 +132,8 @@ async function installApi(
         youtubeUrl: body.youtubeUrl || null,
         publishedAt: response.body.publishedAt,
         nutritionComplete: true,
+        author: { userId: 22, displayName: "Lan", avatarUrl: null },
+        statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
         ingredientsWithoutNutrition: [],
         ingredients: body.ingredients.map((item: Record<string, number>) => ({
           ingredientId: item.ingredientId,

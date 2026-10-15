@@ -18,6 +18,8 @@ const exampleProfile = {
   nutritionGoal: 'MAINTAIN_WEIGHT',
 };
 
+const dateKeyForTest = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
 const emptyNutritionResponse = {
   hasProfile: false,
   eligible: false,
@@ -154,7 +156,7 @@ test('avatar menu displays the authenticated Backend identity and opens the API-
       endsAt: '2026-11-04T12:00:00', unlockedFeatures: [],
     } });
   });
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Tài khoản Demo CUSTOMER' }).click();
   await expect(page.getByText('demo-customer@mamxanh.local')).toBeVisible();
   await expect(page.getByRole('button', { name: /Chuyển vai trò demo/ })).toHaveCount(0);
@@ -169,7 +171,7 @@ test('avatar menu displays the authenticated Backend identity and opens the API-
 test('mobile account links remain reachable from the menu', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await seedDemoSession(page, 'CUSTOMER');
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('link', { name: 'Lịch sử giao dịch' }).click();
   await expect(page).toHaveURL(/\/giao-dich$/);
@@ -291,15 +293,15 @@ test('mock-authenticated nutrition profile saves consent and shows approximate r
   });
 
   await page.getByRole('button', { name: 'Tính chỉ số tham khảo' }).click();
-  await expect(page.getByText('Xấp xỉ 22,5')).toBeVisible();
-  await expect(page.getByText('Xấp xỉ 2.200')).toBeVisible();
+  await expect(page.getByText('≈ 22,5')).toBeVisible();
+  await expect(page.getByText('≈ 2.200')).toBeVisible();
   await expect(page.getByText('9 chỉ tiêu tham khảo mỗi ngày')).toBeVisible();
-  await expect(page.getByText('Chất xơ').locator('..').locator('..').getByText('Xấp xỉ 25,0')).toBeVisible();
+  await expect(page.getByText('Chất xơ').locator('..').locator('..').getByText('≈ 25,0')).toBeVisible();
   await expect(page.getByRole('link', { name: /Nguồn tham khảo: NASEM EER/ })).toHaveAttribute('href', 'https://example.org/energy');
 
   await page.getByLabel('Chiều cao *').fill('171');
   await expect(page.getByText('Lưu các thay đổi hồ sơ trước khi tính lại chỉ số tham khảo.')).toBeVisible();
-  await expect(page.getByText('Xấp xỉ 22,5')).toHaveCount(0);
+  await expect(page.getByText('≈ 22,5')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Tính chỉ số tham khảo' })).toBeDisabled();
 });
 
@@ -362,32 +364,86 @@ test('recipe comparison shows two recipes side-by-side without health score (FR-
   await expect(page.locator('#compare-recipe-right')).toBeVisible();
 });
 
-test('nutrition tracker opens overall 9-indicator analysis modal (FR-37)', async ({ page }) => {
+test('nutrition tracker uses the member meal plan for analysis and daily/weekly PDF exports (FR-37)', async ({ page }) => {
+  await seedDemoSession(page, 'CUSTOMER');
+  const today = new Date();
+  const currentDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const offset = (today.getDay() + 6) % 7;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - offset);
+  const weekStart = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+  const keys = ['ENERGY_KCAL', 'PROTEIN_G', 'CARBOHYDRATE_G', 'TOTAL_FAT_G', 'FIBER_G', 'CALCIUM_MG', 'IRON_MG', 'VITAMIN_B12_MCG', 'ZINC_MG'];
+  const labels = ['Năng lượng', 'Chất đạm', 'Carbohydrate', 'Chất béo', 'Chất xơ', 'Canxi', 'Sắt', 'Vitamin B12', 'Kẽm'];
+  const units = ['kcal', 'g', 'g', 'g', 'g', 'mg', 'mg', 'mcg', 'mg'];
+  const requestUrls: string[] = [];
+  let failNextPdf = false;
+  await page.route('**/api/v1/meal-plans/*/nutrition**', async (route) => {
+    const url = new URL(route.request().url());
+    requestUrls.push(`${url.pathname}${url.search}`);
+    if (url.pathname.endsWith('/report')) {
+      if (failNextPdf) {
+        failNextPdf = false;
+        await route.fulfill({ status: 403, contentType: 'application/problem+json', body: Buffer.from(JSON.stringify({
+          status: 403, code: 'NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED', detail: 'Cần xác nhận phạm vi dinh dưỡng.',
+        })) });
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'application/pdf', body: Buffer.from('%PDF-1.4 mock report') });
+      return;
+    }
+    const firstDate = new Date(`${weekStart}T12:00:00`);
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(firstDate);
+      date.setDate(date.getDate() + index);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const todaysEntries = key === currentDate ? [{
+        entryId: 73, date: key, mealType: 'LUNCH', recipeId: 42, recipeTitle: 'Đậu hũ sốt cà chua', plannedServings: 2,
+        complete: false, ingredientsMissingData: ['Rau gia vị tự chọn'], nutrients: Object.fromEntries(keys.map((nutrient, nutrientIndex) => [nutrient, nutrientIndex === 0 ? 420 : nutrientIndex === 7 ? null : 12])),
+      }] : [];
+      return { date: key, nutrients: Object.fromEntries(keys.map((nutrient, nutrientIndex) => [nutrient, todaysEntries.length ? (nutrientIndex === 0 ? 420 : nutrientIndex === 7 ? null : 12) : 0])), entries: todaysEntries };
+    });
+    await route.fulfill({ json: {
+      weekStartDate: weekStart, scope: 'WEEK', selectedDate: null, referenceBasis: 'Mức tham khảo chung', source: 'Catalog', sourceUrl: '',
+      disclaimer: 'Thông tin tham khảo.',
+      targets: keys.map((key, index) => ({ key, label: labels[index], minimum: index === 0 ? 2000 : 20, maximum: index === 0 ? 2000 : 40, unit: units[index], referenceType: 'RDA', source: 'Catalog', sourceUrl: '', version: '1' })),
+      days, weeklyAverage: Object.fromEntries(keys.map((key, index) => [key, index === 0 ? 60 : 1.7])),
+      attainmentDays: Object.fromEntries(keys.map((key) => [key, 0])), incompleteEntries: [{ entryId: 73, date: currentDate, mealType: 'LUNCH', recipeTitle: 'Đậu hũ sốt cà chua', ingredientsMissingData: ['Rau gia vị tự chọn'] }],
+    } });
+  });
+
   await page.goto('/dinh-duong');
-
-  // Exercise simulated PDF alert
-  await page.getByRole('button', { name: 'Xuất báo cáo PDF' }).click();
-  await expect(page.getByText(/Tính năng xuất PDF đang ở chế độ mô phỏng/i)).toBeVisible();
-  await page.getByRole('button', { name: 'Đóng' }).first().click();
-
+  await expect(page.getByRole('heading', { name: 'Theo dõi Dinh dưỡng Thực đơn' })).toBeVisible();
+  await expect(page.getByText('Đậu hũ sốt cà chua')).toBeVisible();
+  await expect(page.getByText(/Thực đơn mẫu/)).toHaveCount(0);
+  await expect(page.getByRole('status')).toContainText('số liệu tính được vẫn được hiển thị');
   await page.getByRole('button', { name: 'Phân tích tổng thể' }).click();
   const modal = page.getByRole('dialog');
-  await expect(modal.getByRole('heading', { name: /Phân tích dinh dưỡng tổng thể/i })).toBeVisible();
-  await modal.getByRole('button', { name: /Tuần qua/i }).click();
-  await expect(modal.getByRole('cell', { name: 'Tổng năng lượng' })).toBeVisible();
-  await expect(modal.getByText('12,194 kcal')).toBeVisible();
-
-  // Test state simulation selector
-  await modal.getByRole('combobox').selectOption('error');
-  await expect(modal.getByText('Không thể tải dữ liệu dinh dưỡng')).toBeVisible();
-  await modal.getByRole('button', { name: 'Thử lại' }).click();
-
-  await modal.getByRole('combobox').selectOption('empty');
-  await expect(modal.getByText('Chưa có thực đơn để phân tích')).toBeVisible();
-
-  await modal.getByRole('button', { name: /Hôm nay/i }).click();
+  await expect(modal.getByRole('row')).toHaveCount(10);
+  await expect(modal.getByText('Năng lượng', { exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
-  await expect(modal).toBeHidden();
+
+  await page.getByRole('button', { name: 'So sánh & thống kê 7 ngày' }).click();
+  const weeklyDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Xuất báo cáo PDF' }).click();
+  expect((await weeklyDownload).suggestedFilename()).toBe(`bao-cao-dinh-duong-${weekStart}.pdf`);
+  expect(requestUrls.some((url) => url.endsWith('/nutrition/report'))).toBeTruthy();
+
+  await page.getByRole('button', { name: 'Theo ngày' }).click();
+  const emptyDate = new Date(`${weekStart}T12:00:00`);
+  if (dateKeyForTest(emptyDate) === currentDate) emptyDate.setDate(emptyDate.getDate() + 1);
+  const emptyDateKey = dateKeyForTest(emptyDate);
+  await page.getByRole('button', { name: new RegExp(`Ngày .*${Number(emptyDateKey.slice(-2))}\\/${Number(emptyDateKey.slice(5, 7))}`) }).click();
+  await expect(page.getByRole('button', { name: 'Xuất báo cáo PDF' })).toBeDisabled();
+  await page.getByRole('button', { name: new RegExp(`Ngày .*${Number(currentDate.slice(-2))}\\/${Number(currentDate.slice(5, 7))}`) }).click();
+  const dailyDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Xuất báo cáo PDF' }).click();
+  expect((await dailyDownload).suggestedFilename()).toBe(`bao-cao-dinh-duong-${currentDate}.pdf`);
+  expect(requestUrls.some((url) => url.endsWith(`/nutrition/report?date=${currentDate}`))).toBeTruthy();
+
+  failNextPdf = true;
+  await page.getByRole('button', { name: 'Xuất báo cáo PDF' }).click();
+  await expect(page.getByRole('alert')).toContainText('Cần xác nhận phạm vi dinh dưỡng.');
+  await expect(page.getByRole('alert').getByRole('link', { name: /xác nhận phạm vi hỗ trợ dinh dưỡng/i })).toHaveAttribute('href', '/ho-so/dinh-duong');
 });
 
 test('expert application customer and admin workflows use the API and recover from stale decisions (FR-05)', async ({ page }) => {

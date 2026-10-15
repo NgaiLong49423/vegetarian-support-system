@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "format": "oxfmt",
-    "pretest:e2e": "cross-env VITE_COVERAGE=true vite build",
+    "pretest:e2e": "cross-env VITE_COVERAGE=true VITE_GOOGLE_CLIENT_ID=mamxanh-e2e.apps.googleusercontent.com vite build",
     "test:e2e": "playwright test",
     "test:e2e:integration": "playwright test --config playwright.integration.config.ts",
     "test:e2e:coverage": "node ./scripts/run-e2e-coverage.mjs",
@@ -25,6 +25,7 @@
     "jspdf": "4.2.1",
     "lucide-react": "^1.47.0",
     "motion": "^14.0.0",
+    "ogl": "^1.0.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.18.4"

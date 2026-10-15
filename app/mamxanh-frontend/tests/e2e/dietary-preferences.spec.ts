@@ -271,7 +271,7 @@ test('skip closes the invitation and the next sign-in goes straight home (AC-31.
 
   await signOut(page);
   await signInAs(page);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trang-chu$/);
   expect(claims).toHaveLength(2);
   expect(skips).toHaveLength(1);
 });
@@ -287,7 +287,7 @@ test('leaving the questionnaire unanswered is not invited again but stays open f
 
   await signOut(page);
   await signInAs(page);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trang-chu$/);
   expect(claims).toHaveLength(2);
 
   await page.getByRole('button', { name: 'Menu' }).click();
@@ -307,7 +307,7 @@ test('a failed invitation check never blocks the sign-in (mock API)', async ({ p
 
   await signInAs(page);
 
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trang-chu$/);
   await expect(page.getByRole('button', { name: 'Tài khoản Trần Bình' })).toBeVisible();
 });
 
@@ -321,7 +321,7 @@ test('an administrator signs in without being asked about dietary preferences (m
 
   await signInAs(page, { ...member, id: 1, displayName: 'Quản trị', email: 'admin@example.com', role: 'ADMIN' });
 
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trang-chu$/);
   expect(calls).toEqual([]);
   expect(claims).toEqual([]);
 });
@@ -348,7 +348,7 @@ test('settings refuse an empty allergy list until "none" is confirmed (AC-31.7, 
 test('settings explain which minimum information personalized AI still needs (AC-31.4–AC-31.6, mock API)', async ({ page }) => {
   await seedSession(page);
   await stubPreferences(page, { ...emptyProfile('SKIPPED'), vegetarianType: 'LACTO', aiPersonalization: { eligible: false, missing: ['AVOID_INGREDIENTS', 'DISLIKED_INGREDIENTS'] } });
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('dialog', { name: 'Menu Mâm Xanh' }).getByRole('link', { name: 'Sở thích ăn uống', exact: true }).click();
 

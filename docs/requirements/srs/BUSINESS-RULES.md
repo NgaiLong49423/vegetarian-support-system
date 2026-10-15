@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.9.0
+> **Version:** v2.10.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-14
+> **Last Updated:** 2026-10-15
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -296,10 +296,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-38"></a>
-### BR-38 — AI không tự tạo công thức mới ngoài hệ thống
+### BR-38 — Ưu tiên công thức công khai và chỉ soạn mới khi được yêu cầu
 
 - **Mã quy tắc:** BR-38
-- **Nội dung:** AI không tạo công thức mới để phục vụ gợi ý hoặc menu và chỉ dùng Recipe Post đang công khai, không hidden/deleted/unavailable. Nếu không có lựa chọn phù hợp, hệ thống phải nói rõ thay vì tạo nội dung không tồn tại.
+- **Nội dung:** Khi chatbot FR-51 được yêu cầu tìm hoặc gợi ý món, hệ thống ưu tiên chọn Recipe Post đang công khai, không hidden/deleted/unavailable; thẻ kết quả phải trỏ tới bài thật do Backend tải và xác minh. Không dùng nội dung do Gemini tự tạo để giả làm bài đăng. Nếu không có lựa chọn phù hợp, hệ thống phải nói rõ. Gemini chỉ được soạn công thức mới hoặc biến tấu công thức dưới dạng nội dung AI trong phiên chat khi người dùng yêu cầu rõ; nội dung này không được lưu, đăng hoặc sửa dữ liệu nghiệp vụ. Các AI menu/gợi ý khác tiếp tục tuân thủ nguồn dữ liệu và phạm vi FR sở hữu chúng.
 
 ---
 
