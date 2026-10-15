@@ -25,10 +25,29 @@ paths:
           description: The recipe is saved or was already saved.
         "401":
           description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "404":
           description: The recipe is not public and available.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
     delete:
@@ -50,8 +69,23 @@ paths:
           description: The saved reference is removed or did not exist.
         "401":
           description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/{recipeId}:
@@ -79,9 +113,16 @@ paths:
         "404":
           description: Recipe does not exist or is not public.
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RecipeDetailResponse"
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
     put:
       tags:
       - recipe-post-controller
@@ -107,6 +148,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/RecipePostResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
     delete:
@@ -124,6 +185,26 @@ paths:
       responses:
         "200":
           description: OK
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/{recipeId}/media:
@@ -145,6 +226,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseListRecipeMediaResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
     put:
       tags:
       - recipe-media-controller
@@ -169,6 +257,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseListRecipeMediaResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
     delete:
@@ -189,6 +297,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/nutrition/profile:
@@ -337,6 +465,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DietaryPreferencesResponse"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
     put:
@@ -356,6 +497,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DietaryPreferencesResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/meal-plans:
@@ -593,6 +754,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/me/profile:
@@ -607,6 +774,19 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MemberProfileResponse"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
     put:
@@ -626,6 +806,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MemberProfileResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/admin/units/{unitId}:
@@ -648,11 +848,45 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: The updated unit.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseUnitResponse"
+        "404":
+          description: "UNIT_NOT_FOUND: no unit has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: UNIT_CODE_EXISTS or UNIT_HAS_INGREDIENT_CONVERSIONS.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
     delete:
       tags:
       - admin-catalog-controller
@@ -665,8 +899,40 @@ paths:
           type: integer
           format: int32
       responses:
-        "200":
-          description: OK
+        "404":
+          description: "UNIT_NOT_FOUND: no unit has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "HARD_DELETE_NOT_SUPPORTED: deactivate the unit instead."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients/{ingredientId}:
     get:
       tags:
@@ -682,11 +948,39 @@ paths:
           minimum: 1
       responses:
         "200":
-          description: OK
+          description: Ingredient detail.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseAdminIngredientResponse"
+        "404":
+          description: "INGREDIENT_NOT_FOUND: no ingredient has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
     put:
       tags:
       - admin-catalog-controller
@@ -707,11 +1001,45 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: The updated ingredient.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseIngredientResponse"
+        "400":
+          description: "VALIDATION_FAILED, UNSUPPORTED_INGREDIENT_GROUP, UNSUPPORTED_NUTRITION_SOURCE\
+            \ or SOURCE_REQUIRED_WHEN_NUTRITION_SUPPORTED."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "INGREDIENT_NOT_FOUND: no ingredient has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: INGREDIENT_NAME_EXISTS or NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
     delete:
       tags:
       - admin-catalog-controller
@@ -725,8 +1053,40 @@ paths:
           format: int64
           minimum: 1
       responses:
-        "200":
-          description: OK
+        "404":
+          description: "INGREDIENT_NOT_FOUND: no ingredient has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "HARD_DELETE_NOT_SUPPORTED: deactivate the ingredient instead."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients/{ingredientId}/unit-conversions/{unitId}:
     put:
       tags:
@@ -753,11 +1113,45 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: The updated conversion.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseConversionResponse"
+        "404":
+          description: CONVERSION_NOT_FOUND or UNIT_NOT_FOUND.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "MASS_CONVERSION_NOT_ALLOWED: mass units use their fixed factor."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
     post:
       tags:
       - admin-catalog-controller
@@ -782,12 +1176,46 @@ paths:
               $ref: "#/components/schemas/ConversionSaveRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: The new conversion.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseConversionResponse"
+        "404":
+          description: INGREDIENT_NOT_FOUND or UNIT_NOT_FOUND.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "CONVERSION_EXISTS, INGREDIENT_INACTIVE, UNIT_INACTIVE or MASS_CONVERSION_NOT_ALLOWED."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients/{ingredientId}/nutrition:
     put:
       tags:
@@ -809,11 +1237,46 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: The ingredient with its new nutrition values.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseIngredientResponse"
+        "404":
+          description: "INGREDIENT_NOT_FOUND: no ingredient has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED: a supported ingredient\
+            \ needs all nine values."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/subscriptions/checkout:
     post:
       tags:
@@ -826,12 +1289,45 @@ paths:
               $ref: "#/components/schemas/CheckoutRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: payOS checkout link for the chosen plan.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CheckoutResponse"
+        "400":
+          description: "VALIDATION_FAILED: the tier is not PLUS or PRO."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCESS_DENIED: the account is not an active Customer or Expert,\
+            \ or ACCOUNT_LOCKED."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "NOT_FOUND: the session account no longer exists."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "INTERNAL_ERROR: the payOS payment link could not be created."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/recipes:
     get:
       tags:
@@ -947,6 +1443,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/RecipePageResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
     post:
       tags:
       - recipe-controller
@@ -958,12 +1461,34 @@ paths:
               $ref: "#/components/schemas/CreateRecipeRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: The published Recipe Post.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CreateRecipeResponse"
+        "400":
+          description: "VALIDATION_FAILED: the recipe breaks the validation profile;\
+            \ field errors in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCESS_DENIED: only an active Expert publishes recipes, or\
+            \ ACCOUNT_LOCKED."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/recipes/{recipeId}/reports:
     post:
       tags:
@@ -990,6 +1515,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/RecipeReportResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/{recipeId}/related/ai:
@@ -1027,39 +1572,39 @@ paths:
         "400":
           description: Invalid ID or limit.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RelatedRecipesResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "401":
           description: Authentication required.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RelatedRecipesResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: Member role and active Plus/Pro required.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RelatedRecipesResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "404":
           description: Source recipe is unavailable.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RelatedRecipesResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "502":
           description: Invalid Gemini selection.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RelatedRecipesResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "503":
           description: Gemini unavailable.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RelatedRecipesResponse"
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/media/upload:
@@ -1085,6 +1630,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseUploadImageResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/ai/weekly-menu:
@@ -1127,6 +1692,19 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/ai/recommendations:
@@ -1164,6 +1742,26 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/ai/chat:
@@ -1194,33 +1792,40 @@ paths:
         "400":
           description: "Invalid question, history, or context fields."
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/AiChatResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "401":
           description: An authenticated Member session is required.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/AiChatResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "404":
           description: The recipe does not exist or is not public.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/AiChatResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "502":
           description: Gemini returned an incomplete or invalid answer.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/AiChatResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "503":
           description: Gemini is unavailable or timed out.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/AiChatResponse"
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/ai-assistance:
@@ -1247,21 +1852,34 @@ paths:
         "403":
           description: Expert role or Plus/Pro entitlement is required.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RecipeAiAssistanceResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "502":
           description: AI response did not satisfy the recipe output constraints.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RecipeAiAssistanceResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "503":
           description: Gemini is not configured or unavailable.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RecipeAiAssistanceResponse"
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/payments/webhook:
@@ -1284,6 +1902,13 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/nutrition/profile/calculate:
     post:
       tags:
@@ -1342,6 +1967,19 @@ paths:
       responses:
         "204":
           description: No Content
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/nutrition/dietary-preferences/onboarding/invitation:
@@ -1356,6 +1994,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OnboardingInvitationResponse"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/meal-plans/{weekStartDate}/nutrition/recommendations/{entryId}:
@@ -1578,6 +2229,13 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/me/profile/avatar:
@@ -1603,6 +2261,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MemberProfileResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/expert-applications:
@@ -1618,11 +2296,40 @@ paths:
         required: true
       responses:
         "201":
-          description: Created
+          description: "The submitted application, PENDING."
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ExpertApplicationResponse"
+        "409":
+          description: "EXPERT_APPLICATION_PENDING_EXISTS: the customer already has\
+            \ a pending application."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/auth/register:
     post:
       tags:
@@ -1636,11 +2343,23 @@ paths:
         required: true
       responses:
         "201":
-          description: Created
+          description: Account created; a verification email is sent.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/RegistrationResponse"
+        "400":
+          description: "VALIDATION_FAILED: field errors in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "EMAIL_ALREADY_USED: an account already uses this email."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/auth/password-resets:
     post:
       tags:
@@ -1654,11 +2373,17 @@ paths:
         required: true
       responses:
         "202":
-          description: Accepted
+          description: Same neutral answer whether or not the email has an account.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: "VALIDATION_FAILED: field errors in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/auth/password-resets/confirm:
     post:
       tags:
@@ -1672,7 +2397,20 @@ paths:
         required: true
       responses:
         "204":
-          description: No Content
+          description: Password changed.
+        "400":
+          description: "VALIDATION_FAILED, PASSWORD_RESET_TOKEN_INVALID or NEW_PASSWORD_SAME_AS_CURRENT."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED: the account was locked after the email was\
+            \ sent."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/auth/login:
     post:
       tags:
@@ -1686,11 +2424,37 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: Access token and account summary.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: "VALIDATION_FAILED: field errors in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "INVALID_CREDENTIALS: wrong email or password, or a Google-only\
+            \ account."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: EMAIL_NOT_VERIFIED or ACCOUNT_LOCKED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "429":
+          description: "LOGIN_TEMPORARILY_BLOCKED: five wrong passwords in a row;\
+            \ see Retry-After."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/auth/google:
     post:
       tags:
@@ -1704,11 +2468,42 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: Access token and account summary.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: "VALIDATION_FAILED: field errors in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "GOOGLE_TOKEN_INVALID: the Google ID token cannot be verified."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: ACCOUNT_LOCKED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "GOOGLE_ACCOUNT_CONFLICT: the email is linked to another Google\
+            \ account."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: "GOOGLE_LOGIN_UNAVAILABLE: Google signing keys cannot be loaded."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/auth/email-verifications:
     post:
       tags:
@@ -1722,7 +2517,14 @@ paths:
         required: true
       responses:
         "204":
-          description: No Content
+          description: Email verified.
+        "400":
+          description: "VALIDATION_FAILED, or VERIFICATION_TOKEN_INVALID for an unknown,\
+            \ used, replaced or expired token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/auth/email-verifications/resend:
     post:
       tags:
@@ -1736,11 +2538,25 @@ paths:
         required: true
       responses:
         "202":
-          description: Accepted
+          description: Same neutral answer whether or not the email has an unverified
+            account.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: "VALIDATION_FAILED: field errors in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "429":
+          description: "RESEND_TOO_SOON: within 60 seconds of the previous email;\
+            \ see Retry-After."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/admin/units:
     get:
       tags:
@@ -1748,11 +2564,26 @@ paths:
       operationId: listUnits
       responses:
         "200":
-          description: OK
+          description: Unit catalog.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseListUnitResponse"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
     post:
       tags:
       - admin-catalog-controller
@@ -1764,12 +2595,40 @@ paths:
               $ref: "#/components/schemas/UnitSaveRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: The new unit.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseUnitResponse"
+        "409":
+          description: "UNIT_CODE_EXISTS: the unit code is already used."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients:
     get:
       tags:
@@ -1785,11 +2644,33 @@ paths:
           minLength: 0
       responses:
         "200":
-          description: OK
+          description: Ingredient catalog in the `ApiResponse` envelope.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseListIngredientResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
     post:
       tags:
       - admin-catalog-controller
@@ -1801,12 +2682,40 @@ paths:
               $ref: "#/components/schemas/IngredientSaveRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: The new ingredient.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseIngredientResponse"
+        "400":
+          description: "VALIDATION_FAILED, UNSUPPORTED_INGREDIENT_GROUP or UNSUPPORTED_NUTRITION_SOURCE."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "INGREDIENT_NAME_EXISTS: an active ingredient already has this\
+            \ name."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/expert-applications/{id}/reject:
     post:
       tags:
@@ -1827,11 +2736,39 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: The rejected application.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ExpertApplicationResponse"
+        "409":
+          description: "EXPERT_APPLICATION_STALE: the application is no longer pending."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/expert-applications/{id}/approve:
     post:
       tags:
@@ -1851,11 +2788,40 @@ paths:
               $ref: "#/components/schemas/ApproveRequest"
       responses:
         "200":
-          description: OK
+          description: The approved application; the account becomes EXPERT.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ExpertApplicationResponse"
+        "409":
+          description: "EXPERT_APPLICATION_STALE: the application is no longer pending,\
+            \ or the account is not an active customer."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/meal-plans/{weekStartDate}/entries/{entryId}/servings:
     patch:
       tags:
@@ -1994,11 +2960,39 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: The unit with its new status.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseUnitResponse"
+        "404":
+          description: "UNIT_NOT_FOUND: no unit has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients/{ingredientId}/unit-conversions/{unitId}/status:
     patch:
       tags:
@@ -2025,11 +3019,45 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: The conversion with its new status.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseConversionResponse"
+        "404":
+          description: CONVERSION_NOT_FOUND or UNIT_NOT_FOUND.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "MASS_CONVERSION_NOT_ALLOWED: mass units use their fixed factor."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients/{ingredientId}/status:
     patch:
       tags:
@@ -2051,11 +3079,46 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: The ingredient with its new status.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseIngredientResponse"
+        "404":
+          description: "INGREDIENT_NOT_FOUND: no ingredient has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "INGREDIENT_NAME_EXISTS: reactivating would duplicate an active\
+            \ name."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients/{ingredientId}/nutrition-support:
     patch:
       tags:
@@ -2077,11 +3140,44 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: The ingredient with its new nutrition support state.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseIngredientResponse"
+        "400":
+          description: VALIDATION_FAILED or UNSUPPORTED_NUTRITION_SOURCE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "INGREDIENT_NOT_FOUND: no ingredient has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: NUTRITION_VALUES_INCOMPLETE or NUTRITION_SOURCE_INCOMPLETE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /scalar:
     get:
       tags:
@@ -2102,13 +3198,34 @@ paths:
       operationId: getTransactions
       responses:
         "200":
-          description: OK
+          description: Payment transactions of the caller.
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/TransactionHistoryResponse"
+        "403":
+          description: "ACCESS_DENIED: the account is not an active Customer or Expert,\
+            \ or ACCOUNT_LOCKED."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "NOT_FOUND: the session account no longer exists."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/subscriptions/plans:
     get:
       tags:
@@ -2130,11 +3247,32 @@ paths:
       operationId: getMySubscription
       responses:
         "200":
-          description: OK
+          description: Current subscription and its expiry.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MySubscriptionResponse"
+        "403":
+          description: "ACCESS_DENIED: the account is not an active Customer or Expert,\
+            \ or ACCOUNT_LOCKED."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "NOT_FOUND: the session account no longer exists."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/saved-recipes:
     get:
       tags:
@@ -2177,15 +3315,22 @@ paths:
         "401":
           description: Authentication is required.
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/PageResponseSavedRecipeResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "400":
           description: "Keyword, page or size is outside its supported range."
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/PageResponseSavedRecipeResponse"
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/{recipeId}/related:
@@ -2223,15 +3368,15 @@ paths:
         "400":
           description: Invalid ID or limit.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RelatedRecipesResponse"
+                $ref: "#/components/schemas/ProblemDetail"
         "404":
           description: Source recipe is unavailable.
           content:
-            '*/*':
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/RelatedRecipesResponse"
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/recipes/{recipeId}/manage:
     get:
       tags:
@@ -2252,6 +3397,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/RecipePostResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/reference-data:
@@ -2273,6 +3438,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/RecipeReferenceData"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/recipes/mine:
     get:
       tags:
@@ -2303,6 +3475,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/RecipePageResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/recipes/ingredient-options:
@@ -2326,6 +3518,13 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/IngredientOptionResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/recipes/form-options:
     get:
       tags:
@@ -2359,6 +3558,26 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/IngredientSuggestionResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/members/{userId}:
@@ -2381,6 +3600,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MemberProfileResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/members/{userId}/recipes:
     get:
       tags:
@@ -2420,6 +3646,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/RecipePageResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/meal-plans/{weekStartDate}/nutrition:
     get:
       tags:
@@ -2584,11 +3817,33 @@ paths:
           minimum: 1
       responses:
         "200":
-          description: OK
+          description: "The caller's applications, newest first."
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageResponseExpertApplicationResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients/{ingredientId}/recipes:
     get:
       tags:
@@ -2604,11 +3859,39 @@ paths:
           minimum: 1
       responses:
         "200":
-          description: OK
+          description: Recipe Posts that use the ingredient.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseListIngredientRecipeReferenceResponse"
+        "404":
+          description: "INGREDIENT_NOT_FOUND: no ingredient has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients/{ingredientId}/recipes/search:
     get:
       tags:
@@ -2642,11 +3925,39 @@ paths:
           minimum: 1
       responses:
         "200":
-          description: OK
+          description: A page of Recipe Posts that use the ingredient.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponsePageResponseIngredientRecipeReferenceResponse"
+        "404":
+          description: "INGREDIENT_NOT_FOUND: no ingredient has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients/search:
     get:
       tags:
@@ -2697,11 +4008,33 @@ paths:
           minimum: 1
       responses:
         "200":
-          description: OK
+          description: A page of ingredients in the `ApiResponse` envelope.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponsePageResponseAdminIngredientResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients/options:
     get:
       tags:
@@ -2709,11 +4042,26 @@ paths:
       operationId: ingredientOptions_1
       responses:
         "200":
-          description: OK
+          description: Allowed ingredient groups and nutrition sources.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseIngredientCatalogOptionsResponse"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredient-unit-conversions:
     get:
       tags:
@@ -2728,11 +4076,33 @@ paths:
           format: int64
       responses:
         "200":
-          description: OK
+          description: Ingredient unit conversions.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseListConversionResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/expert-applications:
     get:
       tags:
@@ -2764,11 +4134,33 @@ paths:
           minimum: 1
       responses:
         "200":
-          description: OK
+          description: A page of applications.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageResponseExpertApplicationResponse"
+        "400":
+          description: "VALIDATION_FAILED: unknown status, or page/size outside its\
+            \ range."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/expert-applications/{id}:
     get:
       tags:
@@ -2783,11 +4175,39 @@ paths:
           format: int64
       responses:
         "200":
-          description: OK
+          description: Application detail.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ExpertApplicationResponse"
+        "404":
+          description: "NOT_FOUND: no application has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
 components:
   schemas:
     Ingredient:
@@ -3046,10 +4466,11 @@ components:
       - weightKg
     ProblemDetail:
       type: object
+      description: "RFC 9457 problem detail; clients branch on `status` and `code`,\
+        \ never on `detail` text."
       properties:
         type:
           type: string
-          format: uri
         title:
           type: string
         status:
@@ -3059,10 +4480,18 @@ components:
           type: string
         instance:
           type: string
-          format: uri
-        properties:
-          type: object
-          additionalProperties: {}
+        code:
+          type: string
+          description: Stable `ErrorCode` value.
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
     NutritionProfileResponse:
       type: object
       properties:
