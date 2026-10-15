@@ -1,16 +1,15 @@
 import { Link } from "react-router-dom"
-import { ArrowLeftRight, Leaf, ThumbsUp } from "lucide-react"
+import { ArrowLeftRight, Leaf } from "lucide-react"
 import type { RecipeFormOptions, RecipePost } from "../api/recipes"
 import { SaveRecipeButton } from "./SaveRecipeButton"
+import { RecipeReactionBadge } from "./RecipeReactionBadge"
 
 export function PublicRecipeCard({
   recipe,
   options,
-  showLikes = false,
 }: {
   recipe: RecipePost
   options?: RecipeFormOptions | null
-  showLikes?: boolean
 }) {
   const cover = recipe.media.find((media) => media.cover) ?? recipe.media[0]
   const category =
@@ -39,17 +38,9 @@ export function PublicRecipeCard({
               Chưa có ảnh công thức
             </div>
           )}
-          {showLikes && (
-            <span
-              aria-label="Tỷ lệ yêu thích"
-              className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-1 text-[11px] font-semibold text-white"
-            >
-              <ThumbsUp className="h-3 w-3" />
-              {recipe.likePercentage === null
-                ? "Mới"
-                : `${recipe.likePercentage}%`}
-            </span>
-          )}
+          <div className="absolute left-2 top-2">
+            <RecipeReactionBadge percentage={recipe.likePercentage} />
+          </div>
           <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-black/60 px-2.5 py-2 text-[11px] text-white">
             {recipe.authorAvatarUrl ? (
               <img

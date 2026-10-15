@@ -67,6 +67,10 @@ async function setup(page: Page, initial: ReturnType<typeof entry>[] = []) {
   )
   await page.route("**/api/v1/recipes/11", (route) => route.fulfill({ json: { recipeId: 11, title: "Canh nấm", instructions: "Nấu canh nấm trong 15 phút.", description: "Canh nấm", dishCategory: "SOUP", dishCategoryLabel: "Món canh", vegetarianType: "VEGAN", vegetarianTypeLabel: "Thuần chay", difficulty: "EASY", difficultyLabel: "Dễ", servings: 2, prepTimeMinutes: 10, cookTimeMinutes: 15, youtubeUrl: null, publishedAt: null, author: { userId: 17, displayName: "Tác giả", avatarUrl: null }, media: [], ingredients: [{ ingredientId: 1, name: "Nấm", quantity: 200, unitId: 1, unitCode: "g", unitName: "g", nutritionSupported: true }], statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 }, nutritionComplete: true, ingredientsWithoutNutrition: [], nutrition: { complete: true, ingredientsMissingData: [], perServing: { ENERGY_KCAL: 100, PROTEIN_G: 2, CARBOHYDRATE_G: 10, TOTAL_FAT_G: 1, FIBER_G: 3, CALCIUM_MG: 20, IRON_MG: 0.5, VITAMIN_B12_MCG: 0, ZINC_MG: 1 } } } }))
   await page.route("**/api/v1/recipes/11/related", (route) => route.fulfill({ json: { items: [] } }))
+  await page.route("**/api/v1/recipes/11/reaction", (route) => {
+    expect(route.request().method()).toBe("GET")
+    return route.fulfill({ json: { recipeId: 11, currentReaction: null, likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null } })
+  })
   await page.route("**/api/v1/recipes?**", (route) => {
     if (state.searchFail)
       return route.fulfill({
@@ -504,7 +508,7 @@ test("empty week opens one day with three meals and requests creation only after
   )
   expect(state.writes).toBe(0)
   await page.getByRole("button", { name: "Lưu lịch tuần trống" }).click()
-  await expect(page.getByRole("status")).toContainText("Đã lưu lịch tuần")
+  await expect(page.getByRole("status").filter({ hasText: "Đã lưu lịch tuần" })).toContainText("Đã lưu lịch tuần")
   expect(state.writes).toBe(1)
 })
 
@@ -523,7 +527,7 @@ test("recipe detail saves half servings and the calendar recalculates nutrition"
   await expect(page.getByText("150 g", { exact: true })).toBeVisible()
   expect(state.writes).toBe(0)
   await page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" }).click()
-  await expect(page.getByRole("status")).toContainText("Đã lưu 1,5 phần")
+  await expect(page.getByRole("status").filter({ hasText: "Đã lưu 1,5 phần" })).toContainText("Đã lưu 1,5 phần")
   expect(state.entries[0].plannedServings).toBe(1.5)
   expect(state.entries[1].plannedServings).toBe(3)
   await page.getByRole("link", { name: "Về lịch ăn", exact: true }).click()
@@ -543,18 +547,18 @@ test("failed serving save retains the old calendar value and can be retried in d
   await page.getByRole("button", { name: "Tăng khẩu phần" }).click()
   state.fail = "network"
   await page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" }).click()
-  await expect(page.getByRole("alert")).toContainText("Chưa lưu được")
+  await expect(page.getByRole("alert").filter({ hasText: "Chưa lưu được" })).toContainText("Chưa lưu được")
   expect(state.entries[0].plannedServings).toBe(1)
   state.fail = ""
   await page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" }).click()
-  await expect(page.getByRole("status")).toContainText("Đã lưu 1,5 phần")
+  await expect(page.getByRole("status").filter({ hasText: "Đã lưu 1,5 phần" })).toContainText("Đã lưu 1,5 phần")
   expect(state.entries[0].plannedServings).toBe(1.5)
 })
 
 test("a mismatched plan entry cannot be edited and ordinary recipe viewing does not write a plan", async ({ page }) => {
   const state = await setup(page, [entry()])
   await page.goto(`/cong-thuc/id/11?mealPlanWeek=${week}&mealPlanEntryId=999`)
-  await expect(page.getByRole("alert")).toContainText("không còn thuộc lịch ăn")
+  await expect(page.getByRole("alert").filter({ hasText: "không còn thuộc lịch ăn" })).toContainText("không còn thuộc lịch ăn")
   await expect(page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" })).toBeDisabled()
   expect(state.writes).toBe(0)
   await page.goto("/cong-thuc/id/11")
@@ -573,7 +577,7 @@ test("invalid legacy serving values need correction before saving", async ({ pag
   expect(state.writes).toBe(0)
   await input.fill("1.5")
   await page.getByRole("button", { name: "Lưu khẩu phần vào lịch ăn" }).click()
-  await expect(page.getByRole("status")).toContainText("Đã lưu 1,5 phần")
+  await expect(page.getByRole("status").filter({ hasText: "Đã lưu 1,5 phần" })).toContainText("Đã lưu 1,5 phần")
   expect(state.entries[0].plannedServings).toBe(1.5)
 })
 

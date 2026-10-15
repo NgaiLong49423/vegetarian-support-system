@@ -1,5 +1,6 @@
 import { expect, test } from './baseFixtures';
 import type { Page } from '@playwright/test';
+import type { RecipeDetail } from '../../src/api/recipes';
 
 const existingRecipe = {
   id: 47,
@@ -21,15 +22,31 @@ const existingRecipe = {
   ingredients: [{ ingredientId: 21, name: 'Nấm đùi gà', customName: null, unitId: 1, unitCode: 'g', unitName: 'gram', quantity: 200 }],
 };
 
-const publicDetail = {
-  ...existingRecipe, recipeId: existingRecipe.id,
-  author: { id: existingRecipe.authorId, displayName: existingRecipe.authorName, avatarUrl: null },
-  media: existingRecipe.media.map((media, index) => ({ ...media, id: index + 1, blobUrl: media.url })),
+const hiddenRecipe = { ...existingRecipe, id: 48, title: 'Canh đang bị ẩn', status: 'HIDDEN' };
+const publicDetail: RecipeDetail = {
+  recipeId: existingRecipe.id,
+  title: existingRecipe.title,
+  author: { userId: existingRecipe.authorId, displayName: existingRecipe.authorName, avatarUrl: null },
+  description: existingRecipe.description,
+  instructions: existingRecipe.instructions,
+  dishCategory: existingRecipe.dishCategory,
+  dishCategoryLabel: 'Món kho',
+  vegetarianType: 'VEGAN',
+  vegetarianTypeLabel: 'Thuần chay',
+  difficulty: existingRecipe.difficulty,
+  difficultyLabel: 'Dễ',
+  servings: existingRecipe.servings,
+  prepTimeMinutes: existingRecipe.prepTimeMin,
+  cookTimeMinutes: existingRecipe.cookTimeMin,
+  youtubeUrl: null,
+  publishedAt: '2026-10-11T08:00:00',
+  nutritionComplete: true,
   nutrition: { complete: true, ingredientsMissingData: [], perServing: {}, total: {} },
   ingredientsWithoutNutrition: [],
-  statistics: { likes: 0, dislikes: 0, likePercentage: null, reactionCount: 0, viewCount: 0 },
+  ingredients: existingRecipe.ingredients,
+  media: existingRecipe.media.map(({ url, ...media }) => ({ ...media, blobUrl: url })),
+  statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
 };
-const hiddenRecipe = { ...existingRecipe, id: 48, title: 'Canh đang bị ẩn', status: 'HIDDEN' };
 const references = {
   ingredients: [
     { ingredientId: 21, name: 'Nấm đùi gà', unitId: 1, unitCode: 'g', unitName: 'gram' },

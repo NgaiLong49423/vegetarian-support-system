@@ -1,6 +1,6 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.29.0
+> **Version:** v1.30.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-10-15
 > **Status:** Active  
@@ -10,6 +10,17 @@
 Thư mục mã nguồn giao diện ứng dụng Mâm Xanh được xây dựng bằng **React 19**, **TypeScript**, **Vite 8**, **Tailwind CSS v4** và xuất phát từ thiết kế Figma Make.
 
 Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy và gỡ lỗi trực tiếp trên **IntelliJ IDEA** (hoặc WebStorm/VS Code).
+
+### Bình chọn công thức — FR-57 / Issue #56
+
+- Trang chi tiết API `/cong-thuc/id/:recipeId` gọi API phản hồi cá nhân để tải lựa chọn hiện tại; dùng PUT để thêm/đổi Like hoặc Dislike và DELETE khi bấm lại nút đã chọn. Số lượt, thanh tỷ lệ và phần trăm được cập nhật từ response thành công của Backend. Lỗi ghi giữ nguyên dữ liệu, quá trình tải/ghi khóa thao tác để tránh gửi trùng.
+- Guest xem thống kê công khai và được yêu cầu đăng nhập khi bình chọn; tác giả và Admin không được thao tác. Backend vẫn quyết định quyền cuối cùng. Lỗi đọc lựa chọn có nút tải lại; bài không còn công khai hoặc Backend từ chối quyền sẽ chặn thao tác tiếp.
+- Thẻ công thức API trên Trang chủ và Khám phá hiển thị huy hiệu ở góc trên trái ảnh: `Mới` khi tỷ lệ là `null`, `0%` khi toàn Dislike, số nguyên do Backend trả khi có bình chọn. Quay lại Khám phá hoặc tải lại trang sẽ lấy thống kê mới.
+- Kiểm thử Playwright của tính năng sử dụng API mô phỏng để xác minh hành vi trình duyệt; chưa thay thế bằng chứng tích hợp Frontend–Backend–SQL Server trong Compose. Các route công thức demo dùng slug vẫn là luồng minh họa riêng.
+- Xác minh giai đoạn 4 (11/10/2026): TypeScript và production build pass; 27 kiểm thử trình duyệt/hồi quy pass và lượt xác nhận cuối 14 kiểm thử pass (9 bình chọn, 5 khám phá công khai). Đã mở luồng Guest với Backend/SQL local thật, kiểm tra yêu cầu đăng nhập không ghi bình chọn và xem ảnh desktop/mobile. Chưa xác minh thao tác ghi của Member qua trình duyệt với Backend thật, Compose hoặc toàn bộ coverage gate.
+- Xác minh giai đoạn 5 (11/10/2026): 13 kiểm tra trình duyệt–HTTP–SQL local thật pass, gồm Member thêm/đổi/hủy, lưu lựa chọn qua tải lại, huy hiệu 91% và 0%, Guest không ghi dữ liệu, tác giả/Admin bị chặn, 401 và hết phiên client, bài bị ẩn/xóa. Các context dùng token do Backend cấp thật; fixture riêng đã được dọn. Bằng chứng này bổ sung cho UI mock, không thay cổng tích hợp Compose khi Docker chưa khả dụng.
+- Lượt cuối `npm run test:e2e:coverage` đạt 104/104 kiểm thử và strict gate >80% cho cả bốn metric: Lines 92,35%, Statements 89,13%, Functions 84,71%, Branches 83,91%. Lượt đầu có một kiểm thử lỗi do fixture dùng nhầm shape API quản lý cho API chi tiết công khai; đã sửa fixture và chạy lại toàn bộ. Tại thời điểm lượt này, Backend/Compose còn bị chặn bởi Docker.
+- Xác minh tiếp giai đoạn 5 (11/10/2026): canonical root Compose project `mamxanh-fr57` build/chạy thành công với FE/BE/SQL healthy. 13 kiểm tra FR-57 bằng trình duyệt/API/SQL thật trên Compose và 1 kiểm thử đăng nhập/throttle thật pass; fixture phản hồi được dọn. Backend đạt 319/319 test và cả bốn JaCoCo metric >80%. Stack được dừng bằng `down`, giữ named volumes; CI/Sonar/CodeQL và nghiệm thu sau merge chưa xác minh.
 
 ## Giao diện demo và giới hạn hiện tại
 

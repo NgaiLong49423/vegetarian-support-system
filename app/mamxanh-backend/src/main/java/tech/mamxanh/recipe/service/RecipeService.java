@@ -209,9 +209,7 @@ public class RecipeService {
         }).toList(), recipe.getServings());
         var author = currentUserService.getPublicProfile(recipe.getAuthorId());
         var stats = statisticsRepository.findStatistics(recipeId).orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
-        BigDecimal likePercentage = stats.getReactionCount() == 0 ? null
-                : BigDecimal.valueOf(stats.getLikes()).multiply(BigDecimal.valueOf(100))
-                        .divide(BigDecimal.valueOf(stats.getReactionCount()), 2, RoundingMode.HALF_UP);
+        BigDecimal likePercentage = RecipeReactionStatistics.likePercentage(stats.getLikes(), stats.getDislikes());
         List<RecipeDetailResponse.Media> media = mediaRepository.findAllByRecipeIdOrderByDisplayOrderAsc(recipeId)
                 .stream().map(item -> new RecipeDetailResponse.Media(item.getBlobUrl(), item.getMimeType(),
                         item.getDisplayOrder(), item.isCover())).toList();

@@ -207,6 +207,154 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/recipes/{recipeId}/reaction:
+    get:
+      tags:
+      - recipe-reaction-controller
+      summary: Đọc phản hồi của Member hiện tại và thống kê bình chọn
+      operationId: get
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: Lựa chọn hiện tại và thống kê bình chọn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeReactionResponse"
+        "400":
+          description: ID hoặc loại phản hồi không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Chưa đăng nhập hoặc token không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Không đủ quyền; tài khoản khóa hoặc tác giả tự bình chọn
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Công thức không tồn tại hoặc không còn công khai
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - recipe-reaction-controller
+      summary: Đặt hoặc chuyển Like/Dislike
+      description: PUT cùng lựa chọn giữ nguyên phản hồi; bấm lại nút đang chọn trên
+        UI gọi DELETE để hủy.
+      operationId: set
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetRecipeReactionRequest"
+        required: true
+      responses:
+        "200":
+          description: Lựa chọn hiện tại và thống kê bình chọn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeReactionResponse"
+        "400":
+          description: ID hoặc loại phản hồi không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Chưa đăng nhập hoặc token không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Không đủ quyền; tài khoản khóa hoặc tác giả tự bình chọn
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Công thức không tồn tại hoặc không còn công khai
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - recipe-reaction-controller
+      summary: Hủy phản hồi của Member hiện tại
+      description: Trả lựa chọn null và thống kê mới; hủy lặp không thay đổi dữ liệu.
+      operationId: remove
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: Lựa chọn hiện tại và thống kê bình chọn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeReactionResponse"
+        "400":
+          description: ID hoặc loại phản hồi không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Chưa đăng nhập hoặc token không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Không đủ quyền; tài khoản khóa hoặc tác giả tự bình chọn
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Công thức không tồn tại hoặc không còn công khai
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/recipes/{recipeId}/media:
     get:
       tags:
@@ -4361,6 +4509,73 @@ components:
         viewCount:
           type: integer
           format: int64
+    SetRecipeReactionRequest:
+      type: object
+      properties:
+        reactionType:
+          type: string
+          enum:
+          - LIKE
+          - DISLIKE
+      required:
+      - reactionType
+    RecipeReactionResponse:
+      type: object
+      properties:
+        recipeId:
+          type: integer
+          format: int64
+        currentReaction:
+          type:
+          - string
+          - "null"
+          description: Lựa chọn của Member hiện tại; null khi chưa bình chọn.
+          enum:
+          - LIKE
+          - DISLIKE
+        likes:
+          type: integer
+          format: int64
+        dislikes:
+          type: integer
+          format: int64
+        reactionCount:
+          type: integer
+          format: int64
+        likePercentage:
+          type:
+          - number
+          - "null"
+          description: Tỷ lệ Like làm tròn thành số nguyên; null khi chưa có bình
+            chọn.
+    ProblemDetail:
+      type: object
+      description: "RFC 9457 problem detail; clients branch on `status` and `code`,\
+        \ never on `detail` text."
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          description: Stable `ErrorCode` value.
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
     RecipeMediaItemRequest:
       type: object
       properties:
@@ -4464,34 +4679,6 @@ components:
       - pregnant
       - therapeuticDietRequired
       - weightKg
-    ProblemDetail:
-      type: object
-      description: "RFC 9457 problem detail; clients branch on `status` and `code`,\
-        \ never on `detail` text."
-      properties:
-        type:
-          type: string
-        title:
-          type: string
-        status:
-          type: integer
-          format: int32
-        detail:
-          type: string
-        instance:
-          type: string
-        code:
-          type: string
-          description: Stable `ErrorCode` value.
-        errors:
-          type: array
-          items:
-            type: object
-            properties:
-              field:
-                type: string
-              message:
-                type: string
     NutritionProfileResponse:
       type: object
       properties:
@@ -5441,11 +5628,11 @@ components:
           type: string
         paymentLinkId:
           type: string
-        paymentSuccess:
-          type: boolean
         orderCode:
           type: integer
           format: int64
+        paymentSuccess:
+          type: boolean
         amount:
           type: integer
           format: int32

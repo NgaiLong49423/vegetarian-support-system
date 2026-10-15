@@ -1,3 +1,4 @@
+import { RecipeReactions } from '../components/RecipeReactions';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -8,7 +9,6 @@ import {
   Clock3,
   Download,
   Eye,
-  Heart,
   MessageCircle,
   Minus,
   Plus,
@@ -205,12 +205,9 @@ export function ApiRecipeDetail() {
           {recipe.publishedAt && <time dateTime={recipe.publishedAt}>Đăng ngày {publishedDate(recipe.publishedAt)}</time>}
         </div>
       </div>
-      <Card className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-2">
+      <Card className="p-4">
         <StatTile icon={<Eye className="h-4 w-4" />} label="Lượt xem" value={formatNumber(recipe.statistics.viewCount, 0)} />
-        <StatTile icon={<Heart className="h-4 w-4" />} label="Lượt thích" value={formatNumber(recipe.statistics.likes, 0)} />
-        <StatTile icon={<Utensils className="h-4 w-4" />} label="Lượt không thích" value={formatNumber(recipe.statistics.dislikes, 0)} />
-        <StatTile icon={<Heart className="h-4 w-4" />} label="Tỷ lệ thích" value={recipe.statistics.likePercentage === null ? 'Mới' : `${formatNumber(recipe.statistics.likePercentage)}%`} />
-        <p className="col-span-2 text-xs text-ink-muted sm:col-span-4 lg:col-span-2">{formatNumber(recipe.statistics.reactionCount, 0)} lượt bình chọn</p>
+        <RecipeReactions recipeId={recipe.recipeId} authorId={recipe.author.userId} statistics={recipe.statistics} />
       </Card>
     </div>
 
