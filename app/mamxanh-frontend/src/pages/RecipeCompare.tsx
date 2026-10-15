@@ -1,15 +1,20 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Info, Leaf, LoaderCircle, Search } from 'lucide-react';
+import { ArrowLeftRight, Info, Leaf, LoaderCircle, Plus } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
-import { asApiError } from '../lib/apiClient';
-import { recipesApi, type RecipeDetail, type RecipePost } from '../api/recipes';
+import { Button } from '../components/ui';
+import type { RecipeDetail } from '../api/recipes';
+import {
+  parseRecipeId, pickerHref, usePublishedRecipe, type ComparisonSide, type PublishedRecipeState,
+} from '../lib/recipeComparison';
 
 // FR-60 / BR-76: compare exactly two different PUBLISHED recipes per serving. The page only reads
 // public data (FR-20 detail with FR-39 nutrition); the selection lives in the URL, nothing is stored.
+// Recipes are chosen on the separate picker page (/so-sanh/chon-mon), never in a list on this page.
 
-type Slot = 'A' | 'B';
-const OTHER: Record<Slot, Slot> = { A: 'B', B: 'A' };
+const SIDE_LABEL: Record<ComparisonSide, string> = { first: 'Công thức đầu tiên', second: 'Công thức thứ hai' };
+const SIDE_NAME: Record<ComparisonSide, string> = { first: 'công thức đầu tiên', second: 'công thức thứ hai' };
+const DIFFERENCE = 'Chênh lệch';
 
 // BR-76: the nine MVP nutrients; sodium/salt is never part of the comparison.
 const NUTRIENTS = [
@@ -28,20 +33,7 @@ const MISSING = 'Chưa đủ dữ liệu';
 const ROW_3 = 'grid grid-cols-2 gap-x-3 gap-y-1 border-b border-brand-50 py-3 last:border-b-0 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_minmax(0,1fr)] sm:gap-x-4';
 const ROW_4 = 'grid grid-cols-3 gap-x-3 gap-y-1 border-b border-brand-50 py-3 last:border-b-0 sm:grid-cols-[minmax(0,10rem)_repeat(3,minmax(0,1fr))] sm:gap-x-4';
 
-type SlotState =
-  | { status: 'empty' }
-  | { status: 'loading' }
-  | { status: 'ready'; recipe: RecipeDetail }
-  | { status: 'unavailable' }
-  | { status: 'error'; message: string };
-
 type IngredientLine = RecipeDetail['ingredients'][number];
-
-function parseId(value: string | null) {
-  if (!value || !/^\d{1,15}$/.test(value)) return null;
-  const id = Number(value);
-  return id > 0 ? id : null;
-}
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(value);
@@ -58,52 +50,20 @@ function perServing(recipe: RecipeDetail, key: string) {
   return complete && typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
-function usePublishedRecipe(recipeId: number | null) {
-  const [state, setState] = useState<SlotState>({ status: recipeId === null ? 'empty' : 'loading' });
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    if (recipeId === null) {
-      setState({ status: 'empty' });
-      return;
-    }
-    let active = true;
-    setState({ status: 'loading' });
-    recipesApi.getPublished(recipeId)
-      .then((recipe) => { if (active) setState({ status: 'ready', recipe }); })
-      .catch((cause: unknown) => {
-        if (!active) return;
-        const error = asApiError(cause);
-        setState(error.status === 404 ? { status: 'unavailable' } : { status: 'error', message: error.message });
-      });
-    return () => { active = false; };
-  }, [recipeId, attempt]);
-  return { state, retry: () => setAttempt((value) => value + 1) };
-}
-
 export function RecipeComparePage() {
-  const [params, setParams] = useSearchParams();
-  const aId = parseId(params.get('a'));
-  const requestedB = parseId(params.get('b'));
-  const sameRecipe = aId !== null && aId === requestedB;
-  const bId = sameRecipe ? null : requestedB;
-  const a = usePublishedRecipe(aId);
-  const b = usePublishedRecipe(bId);
-  const [picking, setPicking] = useState<Slot | null>(null);
+  const [params] = useSearchParams();
+  const firstId = parseRecipeId(params.get('a'));
+  const requestedSecond = parseRecipeId(params.get('b'));
+  const sameRecipe = firstId !== null && firstId === requestedSecond;
+  const secondId = sameRecipe ? null : requestedSecond;
+  const first = usePublishedRecipe(firstId);
+  const second = usePublishedRecipe(secondId);
 
-  const select = (slot: Slot, recipeId: number) => {
-    const next = new URLSearchParams();
-    const nextA = slot === 'A' ? recipeId : aId;
-    const nextB = slot === 'B' ? recipeId : bId;
-    if (nextA !== null) next.set('a', String(nextA));
-    if (nextB !== null) next.set('b', String(nextB));
-    setPicking(null);
-    setParams(next);
-  };
-
-  const ids: Record<Slot, number | null> = { A: aId, B: bId };
-  const states: Record<Slot, ReturnType<typeof usePublishedRecipe>> = { A: a, B: b };
-  const both = a.state.status === 'ready' && b.state.status === 'ready' ? [a.state.recipe, b.state.recipe] as const : null;
-  const selectedCount = [a.state, b.state].filter((state) => state.status === 'ready').length;
+  // An unavailable recipe is dropped from the picker link so the user chooses a replacement for it.
+  const keptFirst = first.state.status === 'unavailable' ? null : firstId;
+  const keptSecond = second.state.status === 'unavailable' ? null : secondId;
+  const both = first.state.status === 'ready' && second.state.status === 'ready' ? [first.state.recipe, second.state.recipe] as const : null;
+  const selectedCount = [first.state, second.state].filter((state) => state.status === 'ready').length;
 
   return (
     <PageContainer className="py-6 sm:py-8">
@@ -117,28 +77,29 @@ export function RecipeComparePage() {
 
       {sameRecipe && (
         <p role="alert" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          Hai vị trí phải là hai công thức khác nhau. Hãy chọn một công thức khác cho vị trí B.
+          Hai công thức phải khác nhau. Hãy chọn một công thức thứ hai khác.
         </p>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {(['A', 'B'] as const).map((slot) => (
-          <SlotPanel
-            key={slot}
-            slot={slot}
-            state={states[slot].state}
-            otherId={ids[OTHER[slot]]}
-            picking={picking === slot}
-            onPick={(recipeId) => select(slot, recipeId)}
-            onReplace={() => setPicking(slot)}
-            onKeep={() => setPicking(null)}
-            onRetry={states[slot].retry}
-          />
-        ))}
+        <SlotPanel side="first" state={first.state} onRetry={first.retry} pickHref={pickerHref('first', keptFirst, keptSecond)}>
+          <p className="mt-3 text-sm text-ink-muted">Chưa chọn công thức nào.</p>
+          <PickLink href={pickerHref('first', keptFirst, keptSecond)} label="Chọn công thức đầu tiên" />
+        </SlotPanel>
+        <SlotPanel side="second" state={second.state} onRetry={second.retry} pickHref={pickerHref('second', keptFirst, keptSecond)}>
+          {firstId === null ? (
+            <p className="mt-3 text-sm text-ink-muted">Hãy chọn công thức đầu tiên trước, sau đó chọn món thứ hai để so sánh.</p>
+          ) : (
+            <>
+              <p className="mt-3 text-sm text-ink-muted">Tìm và chọn món bạn muốn đặt cạnh công thức đầu tiên.</p>
+              <PickLink href={pickerHref('second', keptFirst, keptSecond)} label="Chọn công thức thứ hai" />
+            </>
+          )}
+        </SlotPanel>
       </div>
 
       {both ? (
-        <Comparison a={both[0]} b={both[1]} />
+        <Comparison first={both[0]} second={both[1]} />
       ) : (
         <p className="mt-6 text-center text-sm text-ink-muted">
           {selectedCount === 0
@@ -150,53 +111,55 @@ export function RecipeComparePage() {
   );
 }
 
-function SlotPanel({ slot, state, otherId, picking, onPick, onReplace, onKeep, onRetry }: {
-  slot: Slot;
-  state: SlotState;
-  otherId: number | null;
-  picking: boolean;
-  onPick: (recipeId: number) => void;
-  onReplace: () => void;
-  onKeep: () => void;
+function PickLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link to={href} className="mt-3 inline-block rounded-xl">
+      <Button as="span" size="sm"><Plus className="h-4 w-4" aria-hidden="true" />{label}</Button>
+    </Link>
+  );
+}
+
+/** One side of the comparison; `children` is what an empty side shows. */
+function SlotPanel({ side, state, onRetry, pickHref, children }: {
+  side: ComparisonSide;
+  state: PublishedRecipeState;
   onRetry: () => void;
+  pickHref: string;
+  children: ReactNode;
 }) {
-  const headingId = `compare-slot-${slot}`;
-  const showPicker = picking || state.status === 'empty' || state.status === 'unavailable';
+  const headingId = `compare-slot-${side}`;
   return (
     <section aria-labelledby={headingId} className="min-w-0 rounded-2xl border border-brand-100 bg-paper p-4 sm:p-5">
-      <h2 id={headingId} className="text-xs font-bold uppercase tracking-wider text-ink-muted">Công thức {slot}</h2>
+      <h2 id={headingId} className="text-xs font-bold uppercase tracking-wider text-ink-muted">{SIDE_LABEL[side]}</h2>
+      {state.status === 'empty' && children}
       {state.status === 'loading' && (
         <p role="status" className="mt-3 flex items-center gap-2 text-sm text-ink-muted">
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />Đang tải công thức…
         </p>
       )}
       {state.status === 'unavailable' && (
-        <p role="alert" className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          Công thức ở vị trí {slot} không còn công khai. Hãy chọn công thức khác.
-        </p>
+        <>
+          <p role="alert" className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            {SIDE_LABEL[side]} không còn công khai. Hãy chọn công thức khác.
+          </p>
+          <PickLink href={pickHref} label="Chọn công thức khác" />
+        </>
       )}
       {state.status === 'error' && (
         <div role="alert" className="mt-3 rounded-xl border border-brand-200 bg-cream p-3 text-sm text-ink-muted">
           <p>{state.message}</p>
-          <button type="button" onClick={onRetry} aria-label={`Thử tải lại công thức ${slot}`} className="mt-2 font-semibold text-brand-600 hover:text-brand-700">
-            Thử lại
+          <button type="button" onClick={onRetry} className="mt-2 font-semibold text-brand-600 hover:text-brand-700">
+            Thử tải lại<span className="sr-only"> {SIDE_NAME[side]}</span>
           </button>
         </div>
       )}
       {state.status === 'ready' && (
         <RecipeSummary recipe={state.recipe}>
-          {picking ? (
-            <button type="button" onClick={onKeep} className="text-xs font-semibold text-ink-muted hover:text-ink">
-              Giữ công thức hiện tại
-            </button>
-          ) : (
-            <button type="button" onClick={onReplace} className="text-xs font-semibold text-brand-600 hover:text-brand-700">
-              Thay công thức {slot}
-            </button>
-          )}
+          <Link to={pickHref} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700">
+            <ArrowLeftRight className="h-3.5 w-3.5" aria-hidden="true" />Đổi công thức<span className="sr-only"> {side === 'first' ? 'đầu tiên' : 'thứ hai'}</span>
+          </Link>
         </RecipeSummary>
       )}
-      {showPicker && <RecipePicker slot={slot} otherId={otherId} onPick={onPick} />}
     </section>
   );
 }
@@ -221,97 +184,12 @@ function RecipeSummary({ recipe, children }: { recipe: RecipeDetail; children: R
   );
 }
 
-type SearchState = { status: 'loading' } | { status: 'ready'; items: RecipePost[] } | { status: 'error'; message: string };
-
-function RecipePicker({ slot, otherId, onPick }: { slot: Slot; otherId: number | null; onPick: (recipeId: number) => void }) {
-  const [keyword, setKeyword] = useState('');
-  const [search, setSearch] = useState<SearchState>({ status: 'loading' });
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    let active = true;
-    setSearch({ status: 'loading' });
-    const query = keyword.trim();
-    const timer = window.setTimeout(() => {
-      recipesApi.searchPublic({ keyword: query, page: 0, size: 8, sort: 'NEWEST', viewPeriod: 'ALL_TIME' })
-        .then((result) => { if (active) setSearch({ status: 'ready', items: result.items }); })
-        .catch((cause: unknown) => { if (active) setSearch({ status: 'error', message: asApiError(cause).message }); });
-    }, query ? 250 : 0);
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
-  }, [keyword, attempt]);
-
-  const items = search.status === 'ready' ? search.items : [];
-  const hasChoice = items.some((item) => item.id !== otherId);
-  return (
-    <div className="mt-3">
-      <div className="flex items-center gap-2 rounded-full border border-brand-200 bg-cream px-3 focus-within:border-brand-500">
-        <Search className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
-        <input
-          type="search"
-          aria-label={`Tìm công thức cho vị trí ${slot}`}
-          placeholder="Tìm theo tên món…"
-          maxLength={120}
-          value={keyword}
-          onChange={(event) => setKeyword(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-ink outline-none"
-        />
-      </div>
-      {search.status === 'loading' && (
-        <p role="status" className="mt-3 flex items-center gap-2 text-sm text-ink-muted">
-          <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />Đang tìm công thức…
-        </p>
-      )}
-      {search.status === 'error' && (
-        <div role="alert" className="mt-3 text-sm text-ink-muted">
-          <p>{search.message}</p>
-          <button type="button" onClick={() => setAttempt((value) => value + 1)} className="mt-1 font-semibold text-brand-600 hover:text-brand-700">
-            Thử tìm lại
-          </button>
-        </div>
-      )}
-      {items.length > 0 && (
-        <ul aria-label={`Kết quả tìm cho vị trí ${slot}`} className="mt-3 divide-y divide-brand-50">
-          {items.map((item) => {
-            const taken = item.id === otherId;
-            return (
-              <li key={item.id} className="flex items-center justify-between gap-3 py-2">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-ink">{item.title}</p>
-                  <p className="truncate text-xs text-ink-muted">{item.authorName}</p>
-                </div>
-                <button
-                  type="button"
-                  disabled={taken}
-                  aria-label={`Chọn ${item.title} cho vị trí ${slot}`}
-                  onClick={() => onPick(item.id)}
-                  className="shrink-0 rounded-full border border-brand-200 px-3 py-1 text-xs font-semibold text-brand-700 hover:border-brand-400 disabled:border-transparent disabled:text-ink-muted"
-                >
-                  {taken ? `Đang ở vị trí ${OTHER[slot]}` : 'Chọn'}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {search.status === 'ready' && !hasChoice && (
-        <div className="mt-3 text-sm text-ink-muted">
-          <p>Không còn công thức công khai khác phù hợp.</p>
-          <Link to="/kham-pha" className="mt-1 inline-block font-semibold text-brand-600 hover:text-brand-700">Quay lại khám phá</Link>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Comparison({ a, b }: { a: RecipeDetail; b: RecipeDetail }) {
+function Comparison({ first, second }: { first: RecipeDetail; second: RecipeDetail }) {
   return (
     <div className="mt-8 space-y-6">
-      <OverviewTable a={a} b={b} />
-      <IngredientTable a={a} b={b} />
-      <NutritionTable a={a} b={b} />
+      <OverviewTable first={first} second={second} />
+      <IngredientTable first={first} second={second} />
+      <NutritionTable first={first} second={second} />
     </div>
   );
 }
@@ -325,13 +203,13 @@ function SectionCard({ id, title, children }: { id: string; title: string; child
   );
 }
 
-function HeaderRow({ className, first, a, b, extra }: { className: string; first: string; a: RecipeDetail; b: RecipeDetail; extra?: string }) {
+function HeaderRow({ className, label, first, second, extra }: { className: string; label: string; first: RecipeDetail; second: RecipeDetail; extra?: string }) {
   return (
     <div role="rowgroup" className="hidden sm:block">
       <div role="row" className={`${className} text-xs font-bold uppercase tracking-wide text-ink-muted`}>
-        <span role="columnheader">{first}</span>
-        <span role="columnheader" className="min-w-0 break-words">A · {a.title}</span>
-        <span role="columnheader" className="min-w-0 break-words">B · {b.title}</span>
+        <span role="columnheader">{label}</span>
+        <span role="columnheader" className="min-w-0 break-words">{first.title}</span>
+        <span role="columnheader" className="min-w-0 break-words">{second.title}</span>
         {extra && <span role="columnheader">{extra}</span>}
       </div>
     </div>
@@ -348,7 +226,7 @@ function Value({ tag, children }: { tag: string; children: ReactNode }) {
   );
 }
 
-function OverviewTable({ a, b }: { a: RecipeDetail; b: RecipeDetail }) {
+function OverviewTable({ first, second }: { first: RecipeDetail; second: RecipeDetail }) {
   const likes = (recipe: RecipeDetail) => recipe.statistics.likePercentage === null
     ? 'Chưa có đánh giá'
     : `${formatNumber(recipe.statistics.likePercentage)}%`;
@@ -363,13 +241,13 @@ function OverviewTable({ a, b }: { a: RecipeDetail; b: RecipeDetail }) {
   return (
     <SectionCard id="compare-overview-heading" title="Thông tin tổng quan">
       <div role="table" aria-label="Thông tin tổng quan" className="mt-3">
-        <HeaderRow className={ROW_3} first="Thông tin" a={a} b={b} />
+        <HeaderRow className={ROW_3} label="Thông tin" first={first} second={second} />
         <div role="rowgroup">
           {rows.map(([label, value]) => (
             <div role="row" key={label} className={ROW_3}>
               <span role="rowheader" className="col-span-2 text-sm font-semibold text-ink-soft sm:col-span-1">{label}</span>
-              <Value tag="A">{value(a)}</Value>
-              <Value tag="B">{value(b)}</Value>
+              <Value tag={SIDE_LABEL.first}>{value(first)}</Value>
+              <Value tag={SIDE_LABEL.second}>{value(second)}</Value>
             </div>
           ))}
         </div>
@@ -379,14 +257,14 @@ function OverviewTable({ a, b }: { a: RecipeDetail; b: RecipeDetail }) {
 }
 
 /** Lines up ingredients only by ingredient_id (BR-76); names alone never merge rows. */
-function ingredientRows(a: RecipeDetail, b: RecipeDetail) {
-  const rows: Array<{ ingredientId: number; name: string; a: IngredientLine[]; b: IngredientLine[] }> = [];
+function ingredientRows(first: RecipeDetail, second: RecipeDetail) {
+  const rows: Array<{ ingredientId: number; name: string; first: IngredientLine[]; second: IngredientLine[] }> = [];
   const byId = new Map<number, (typeof rows)[number]>();
-  for (const [side, recipe] of [['a', a], ['b', b]] as const) {
+  for (const [side, recipe] of [['first', first], ['second', second]] as const) {
     for (const line of recipe.ingredients) {
       let row = byId.get(line.ingredientId);
       if (!row) {
-        row = { ingredientId: line.ingredientId, name: line.name, a: [], b: [] };
+        row = { ingredientId: line.ingredientId, name: line.name, first: [], second: [] };
         byId.set(line.ingredientId, row);
         rows.push(row);
       }
@@ -401,7 +279,7 @@ function Quantities({ lines }: { lines: IngredientLine[] }) {
   return <>{lines.map((line, index) => <span key={index} className="block">{formatNumber(line.quantity)} {line.unitName}</span>)}</>;
 }
 
-function IngredientTable({ a, b }: { a: RecipeDetail; b: RecipeDetail }) {
+function IngredientTable({ first, second }: { first: RecipeDetail; second: RecipeDetail }) {
   return (
     <SectionCard id="compare-ingredients-heading" title="Đối chiếu nguyên liệu">
       <p className="mt-1 text-xs leading-5 text-ink-muted">
@@ -409,19 +287,19 @@ function IngredientTable({ a, b }: { a: RecipeDetail; b: RecipeDetail }) {
         hệ thống không tự quy đổi đơn vị.
       </p>
       <div role="table" aria-label="Đối chiếu nguyên liệu" className="mt-3">
-        <HeaderRow className={ROW_3} first="Nguyên liệu" a={a} b={b} />
+        <HeaderRow className={ROW_3} label="Nguyên liệu" first={first} second={second} />
         <div role="rowgroup">
-          {ingredientRows(a, b).map((row) => {
-            const differentUnits = row.a.length > 0 && row.b.length > 0
-              && new Set([...row.a, ...row.b].map((line) => line.unitId)).size > 1;
+          {ingredientRows(first, second).map((row) => {
+            const differentUnits = row.first.length > 0 && row.second.length > 0
+              && new Set([...row.first, ...row.second].map((line) => line.unitId)).size > 1;
             return (
               <div role="row" key={row.ingredientId} className={ROW_3}>
                 <span role="rowheader" className="col-span-2 text-sm font-semibold text-ink-soft sm:col-span-1">
                   {row.name}
                   {differentUnits && <span className="block text-xs font-normal text-amber-800">Khác đơn vị, không so trực tiếp số lượng</span>}
                 </span>
-                <Value tag="A"><Quantities lines={row.a} /></Value>
-                <Value tag="B"><Quantities lines={row.b} /></Value>
+                <Value tag={SIDE_LABEL.first}><Quantities lines={row.first} /></Value>
+                <Value tag={SIDE_LABEL.second}><Quantities lines={row.second} /></Value>
               </div>
             );
           })}
@@ -431,37 +309,43 @@ function IngredientTable({ a, b }: { a: RecipeDetail; b: RecipeDetail }) {
   );
 }
 
-function NutritionTable({ a, b }: { a: RecipeDetail; b: RecipeDetail }) {
-  const incomplete = ([['A', a], ['B', b]] as const).filter(([, recipe]) => !(recipe.nutrition?.complete ?? recipe.nutritionComplete));
+function NutritionTable({ first, second }: { first: RecipeDetail; second: RecipeDetail }) {
+  const incomplete = [first, second].filter((recipe) => !(recipe.nutrition?.complete ?? recipe.nutritionComplete));
   return (
     <SectionCard id="compare-nutrition-heading" title="Dinh dưỡng trên một khẩu phần">
       <div className="mt-1 space-y-1 text-xs leading-5 text-ink-muted">
-        <p>Mỗi cột tính trên một khẩu phần của công thức đó: A có {a.servings} khẩu phần gốc, B có {b.servings} khẩu phần gốc.</p>
-        <p>Chênh lệch là A − B theo cùng đơn vị; khẩu phần của hai món có thể không có cùng khối lượng thành phẩm.</p>
+        <p>
+          Mỗi cột tính trên một khẩu phần của công thức đó: {first.title} có {first.servings} khẩu phần gốc,
+          {' '}{second.title} có {second.servings} khẩu phần gốc.
+        </p>
+        <p>
+          Chênh lệch = công thức đầu tiên − công thức thứ hai, theo cùng đơn vị; khẩu phần của hai món có thể không có cùng
+          khối lượng thành phẩm.
+        </p>
       </div>
       <div role="table" aria-label="Dinh dưỡng trên một khẩu phần" className="mt-3">
-        <HeaderRow className={ROW_4} first="Chỉ tiêu" a={a} b={b} extra="A − B" />
+        <HeaderRow className={ROW_4} label="Chỉ tiêu" first={first} second={second} extra={DIFFERENCE} />
         <div role="rowgroup">
           {NUTRIENTS.map((nutrient) => {
-            const valueA = perServing(a, nutrient.key);
-            const valueB = perServing(b, nutrient.key);
+            const valueFirst = perServing(first, nutrient.key);
+            const valueSecond = perServing(second, nutrient.key);
             const show = (value: number | null) => (value === null ? MISSING : `${formatNumber(value)} ${nutrient.unit}`);
             return (
               <div role="row" key={nutrient.key} className={ROW_4}>
                 <span role="rowheader" className="col-span-3 text-sm font-semibold text-ink-soft sm:col-span-1">{nutrient.label}</span>
-                <Value tag="A">{show(valueA)}</Value>
-                <Value tag="B">{show(valueB)}</Value>
-                <Value tag="A − B">
-                  {valueA === null || valueB === null ? '—' : `${formatDifference(valueA - valueB)} ${nutrient.unit}`}
+                <Value tag={SIDE_LABEL.first}>{show(valueFirst)}</Value>
+                <Value tag={SIDE_LABEL.second}>{show(valueSecond)}</Value>
+                <Value tag={DIFFERENCE}>
+                  {valueFirst === null || valueSecond === null ? '—' : `${formatDifference(valueFirst - valueSecond)} ${nutrient.unit}`}
                 </Value>
               </div>
             );
           })}
         </div>
       </div>
-      {incomplete.map(([slot, recipe]) => (
-        <div key={slot} role="note" className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          <p className="font-semibold">Công thức {slot} chưa đủ dữ liệu dinh dưỡng</p>
+      {incomplete.map((recipe) => (
+        <div key={recipe.recipeId} role="note" className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="font-semibold">{recipe.title} chưa đủ dữ liệu dinh dưỡng</p>
           {(recipe.nutrition?.ingredientsMissingData ?? recipe.ingredientsWithoutNutrition).length > 0 && (
             <p className="mt-1 text-xs">
               Thiếu số liệu cho: {(recipe.nutrition?.ingredientsMissingData ?? recipe.ingredientsWithoutNutrition).join(', ')}.

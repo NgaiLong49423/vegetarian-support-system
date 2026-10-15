@@ -1,7 +1,8 @@
 import type { Page, Request } from '@playwright/test';
 import { expect, test } from './baseFixtures';
 
-// FR-60 (Issue #70): compare two different PUBLISHED recipes per serving (BR-76).
+// FR-60 (Issue #70): compare two different PUBLISHED recipes per serving (BR-76). The second recipe
+// is chosen on a separate picker page that reuses the Explore search and filters (PR #132 review).
 
 const nutrition = (perServing: Record<string, number>, complete = true, missing: string[] = []) => ({
   complete,
@@ -86,9 +87,10 @@ const mushroom = detail(703, {
   }, false, ['Nấm tràm Phú Quốc']),
 });
 
-const details: Record<number, ReturnType<typeof detail>> = { 701: tofu, 702: soup, 703: mushroom };
+type Detail = ReturnType<typeof detail>;
+const details: Record<number, Detail> = { 701: tofu, 702: soup, 703: mushroom };
 
-const card = (recipe: ReturnType<typeof detail>) => ({
+const card = (recipe: Detail) => ({
   id: recipe.recipeId,
   authorId: 22,
   authorName: (recipe.author as { displayName: string }).displayName,
@@ -104,15 +106,25 @@ const card = (recipe: ReturnType<typeof detail>) => ({
   cookTimeMin: recipe.cookTimeMinutes,
   youtubeUrl: null,
   status: 'PUBLISHED',
-  media: [],
-  ingredients: [],
+  media: (recipe.media as Array<{ blobUrl: string; cover: boolean }>)
+    .map((item) => ({ url: item.blobUrl, mimeType: 'image/jpeg', displayOrder: 0, cover: item.cover })),
+  ingredients: recipe.ingredients,
   likes: 0,
   dislikes: 0,
   likePercentage: null,
   viewCount: 0,
 });
 
-async function publicApi(page: Page, search: (keyword: string) => Array<ReturnType<typeof detail>> = () => [tofu, soup]) {
+const formOptions = {
+  dishCategories: [{ code: 'MAIN', label: 'Món chính' }, { code: 'SOUP', label: 'Món canh' }],
+  vegetarianTypes: [{ code: 'VEGAN', label: 'Thuần chay' }, { code: 'LACTO_OVO', label: 'Chay trứng sữa' }],
+  difficulties: [],
+  units: [],
+};
+
+type SearchResult = Detail[] | { items: Detail[]; totalPages: number };
+
+async function publicApi(page: Page, search: (params: URLSearchParams) => SearchResult = () => [tofu, soup]) {
   await page.route(/\/api\/v1\/recipes\/(\d+)$/, (route) => {
     const id = Number(new URL(route.request().url()).pathname.split('/').pop());
     const recipe = details[id];
@@ -122,18 +134,30 @@ async function publicApi(page: Page, search: (keyword: string) => Array<ReturnTy
         status: 404, code: 'RECIPE_NOT_FOUND', detail: 'Không tìm thấy công thức công khai.',
       } });
   });
+  await page.route((url) => url.pathname === '/api/v1/recipes/form-options', (route) => route.fulfill({ json: formOptions }));
+  await page.route((url) => url.pathname === '/api/v1/recipes/ingredient-options', (route) => route.fulfill({ json: [
+    { ingredientId: 11, name: 'Nấm rơm' },
+  ] }));
   await page.route((url) => url.pathname === '/api/v1/recipes', (route) => {
-    const keyword = new URL(route.request().url()).searchParams.get('keyword') ?? '';
-    const items = search(keyword).map(card);
-    return route.fulfill({ json: { items, page: 0, size: 8, totalElements: items.length, totalPages: 1 } });
+    const params = new URL(route.request().url()).searchParams;
+    const found = search(params);
+    const { items, totalPages } = Array.isArray(found) ? { items: found, totalPages: 1 } : found;
+    return route.fulfill({ json: {
+      items: items.map(card), page: Number(params.get('page') ?? 0), size: 12, totalElements: items.length, totalPages,
+    } });
   });
 }
 
 const nutritionTable = (page: Page) => page.getByRole('table', { name: 'Dinh dưỡng trên một khẩu phần' });
 const ingredientTable = (page: Page) => page.getByRole('table', { name: 'Đối chiếu nguyên liệu' });
 const overviewTable = (page: Page) => page.getByRole('table', { name: 'Thông tin tổng quan' });
+const firstSlot = (page: Page) => page.getByRole('region', { name: 'Công thức đầu tiên' });
+const secondSlot = (page: Page) => page.getByRole('region', { name: 'Công thức thứ hai' });
+const choices = (page: Page) => page.getByRole('list', { name: 'Công thức có thể chọn' });
+// Technical position labels the review asked to remove from the interface.
+const POSITION_WORDING = /Công thức [AB](?![\p{L}\p{N}])|vị trí [AB](?![\p{L}\p{N}])|A − B/u;
 
-test('AC-60.1, AC-60.3: Guest compares two published recipes per serving with A − B differences', async ({ page }) => {
+test('AC-60.1, AC-60.3: Guest compares two published recipes per serving with differences', async ({ page }) => {
   const authHeaders: Array<string | undefined> = [];
   page.on('request', (request) => {
     if (request.url().includes('/api/v1/')) authHeaders.push(request.headers().authorization);
@@ -143,6 +167,8 @@ test('AC-60.1, AC-60.3: Guest compares two published recipes per serving with A 
 
   await expect(page.getByRole('heading', { level: 1, name: 'So sánh hai công thức' })).toBeVisible();
   await expect(page.getByRole('note').filter({ hasText: 'Bản xem thử giao diện' })).toHaveCount(0);
+  await expect(firstSlot(page)).toContainText('Đậu hũ sốt cà chua');
+  await expect(secondSlot(page)).toContainText('Canh cà chua nấm rơm');
 
   const overview = overviewTable(page);
   await expect(overview.getByRole('row', { name: /Tác giả/ })).toContainText('Bếp Chay Lan');
@@ -159,6 +185,7 @@ test('AC-60.1, AC-60.3: Guest compares two published recipes per serving with A 
 
   const table = nutritionTable(page);
   await expect(table.getByRole('row')).toHaveCount(10);
+  await expect(table.getByRole('columnheader', { name: 'Chênh lệch' })).toHaveCount(1);
   const energy = table.getByRole('row', { name: /Năng lượng/ }).getByRole('cell');
   await expect(energy.nth(0)).toHaveText('210,5 kcal');
   await expect(energy.nth(1)).toHaveText('120 kcal');
@@ -168,8 +195,10 @@ test('AC-60.1, AC-60.3: Guest compares two published recipes per serving with A 
   const b12 = table.getByRole('row', { name: /Vitamin B12/ }).getByRole('cell');
   await expect(b12.nth(0)).toHaveText('0 mcg');
   await expect(b12.nth(2)).toHaveText(/^[-−]0,4 mcg$/);
-  await expect(page.getByText('Mỗi cột tính trên một khẩu phần của công thức đó: A có 2 khẩu phần gốc, B có 4 khẩu phần gốc.')).toBeVisible();
+  await expect(page.getByText('Mỗi cột tính trên một khẩu phần của công thức đó: Đậu hũ sốt cà chua có 2 khẩu phần gốc, Canh cà chua nấm rơm có 4 khẩu phần gốc.')).toBeVisible();
+  await expect(page.getByText(/Chênh lệch = công thức đầu tiên − công thức thứ hai/)).toBeVisible();
   await expect(page.getByText(/khẩu phần của hai món có thể không có cùng khối lượng thành phẩm/)).toBeVisible();
+  await expect(page.getByRole('main')).not.toContainText(POSITION_WORDING);
   expect(authHeaders.every((header) => header === undefined)).toBeTruthy();
 });
 
@@ -205,7 +234,7 @@ test('AC-60.5: a recipe with missing nutrition data shows "Chưa đủ dữ li�
     await expect(cells.nth(2)).toHaveText('—');
   }
   await expect(table.getByRole('row', { name: /Năng lượng/ }).getByRole('cell').nth(0)).toHaveText('210,5 kcal');
-  await expect(page.getByRole('note').filter({ hasText: 'Công thức B chưa đủ dữ liệu dinh dưỡng' })).toContainText('Nấm tràm Phú Quốc');
+  await expect(page.getByRole('note').filter({ hasText: 'Nấm tràm xào sả chưa đủ dữ liệu dinh dưỡng' })).toContainText('Nấm tràm Phú Quốc');
 });
 
 test('AC-60.6: the comparison has no sodium, health score, percentage difference or verdict', async ({ page }) => {
@@ -217,62 +246,128 @@ test('AC-60.6: the comparison has no sodium, health score, percentage difference
   await expect(nutritionTable(page)).not.toContainText('%');
 });
 
-test('AC-60.2: the recipe in one slot cannot be chosen for the other slot', async ({ page }) => {
+test('PR #132 review: the second recipe is chosen on a separate picker page and both recipes then show side by side', async ({ page }) => {
   await publicApi(page);
   await page.goto('/so-sanh?a=701');
 
+  await expect(firstSlot(page)).toContainText('Đậu hũ sốt cà chua');
   await expect(page.getByText('Chọn thêm một công thức để bắt đầu so sánh.')).toBeVisible();
   await expect(nutritionTable(page)).toHaveCount(0);
-  const results = page.getByRole('list', { name: 'Kết quả tìm cho vị trí B' });
-  const same = results.getByRole('button', { name: 'Chọn Đậu hũ sốt cà chua cho vị trí B' });
-  await expect(same).toBeDisabled();
-  await expect(results.getByRole('listitem').filter({ hasText: 'Đậu hũ sốt cà chua' })).toContainText('Đang ở vị trí A');
-  await results.getByRole('button', { name: 'Chọn Canh cà chua nấm rơm cho vị trí B' }).click();
-  await expect(page).toHaveURL(/\/so-sanh\?a=701&b=702$/);
-  await expect(nutritionTable(page)).toBeVisible();
+  // No recipe list or search box is shown inside the comparison page itself.
+  await expect(page.getByRole('searchbox')).toHaveCount(0);
+  await expect(choices(page)).toHaveCount(0);
+  await expect(page.getByRole('main')).not.toContainText(POSITION_WORDING);
 
-  await page.goto('/so-sanh?a=701&b=701');
-  await expect(page.getByRole('alert')).toContainText('Hai vị trí phải là hai công thức khác nhau. Hãy chọn một công thức khác cho vị trí B.');
-  await expect(nutritionTable(page)).toHaveCount(0);
+  await secondSlot(page).getByRole('link', { name: 'Chọn công thức thứ hai' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\/chon-mon\?a=701$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Chọn công thức thứ hai' })).toBeVisible();
+  await expect(page.getByText('Món bạn chọn sẽ được so sánh với Đậu hũ sốt cà chua.')).toBeVisible();
+  await expect(choices(page).getByRole('listitem')).toHaveCount(1);
+  await expect(choices(page)).not.toContainText('Đậu hũ sốt cà chua');
+  await expect(choices(page).getByRole('listitem')).toContainText('Bếp Nhà Mây');
+  await expect(page.getByRole('main')).not.toContainText(POSITION_WORDING);
+
+  await choices(page).getByRole('button', { name: 'Chọn Canh cà chua nấm rơm' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\?a=701&b=702$/);
+  await expect(secondSlot(page)).toContainText('Canh cà chua nấm rơm');
+  await expect(nutritionTable(page)).toBeVisible();
 });
 
-test('UC-60.2: replacing one recipe recalculates the whole comparison', async ({ page }) => {
-  const keywords: string[] = [];
-  await publicApi(page, (keyword) => {
-    keywords.push(keyword);
-    return keyword === 'nấm tràm' ? [mushroom] : [tofu, soup];
+test('FR-08 on the picker: keyword, filters, ingredients and sort are sent as GET search parameters', async ({ page }) => {
+  const searches: URLSearchParams[] = [];
+  await publicApi(page, (params) => {
+    searches.push(params);
+    return params.get('keyword') === 'nấm' ? [mushroom, soup] : [tofu, soup, mushroom];
   });
+  const lastSearch = () => searches.at(-1);
+  await page.goto('/so-sanh/chon-mon?a=701');
+  await expect(choices(page).getByRole('listitem')).toHaveCount(2);
+
+  await page.getByRole('searchbox', { name: 'Tìm công thức' }).fill('nấm');
+  await expect.poll(() => lastSearch()?.get('keyword')).toBe('nấm');
+  await expect(choices(page).getByRole('listitem').first()).toContainText('Nấm tràm xào sả');
+
+  await page.getByRole('combobox', { name: 'Thể loại món' }).selectOption('SOUP');
+  await expect.poll(() => lastSearch()?.get('dishCategory')).toBe('SOUP');
+  await page.getByRole('combobox', { name: 'Trường phái ăn chay' }).selectOption('LACTO_OVO');
+  await expect.poll(() => lastSearch()?.get('vegetarianType')).toBe('LACTO_OVO');
+  await page.getByRole('combobox', { name: 'Tổng thời gian tối đa' }).selectOption('30');
+  await expect.poll(() => lastSearch()?.get('maxTotalTimeMinutes')).toBe('30');
+  await page.getByRole('textbox', { name: 'Nguyên liệu (kết quả phải có đủ nguyên liệu đã chọn)' }).fill('nấm');
+  await page.getByRole('checkbox', { name: 'Nấm rơm' }).check();
+  await expect.poll(() => lastSearch()?.getAll('ingredientIds')).toEqual(['11']);
+  await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_LIKED');
+  await expect.poll(() => lastSearch()?.get('sort')).toBe('MOST_LIKED');
+  await expect(page).toHaveURL(/[?&]a=701(&|$)/);
+
+  const active = page.getByLabel('Bộ lọc đang áp dụng');
+  await active.getByRole('button', { name: 'Món canh' }).click();
+  await expect.poll(() => lastSearch()?.get('dishCategory')).toBeNull();
+  await active.getByRole('button', { name: 'Xóa tất cả' }).click();
+  await expect.poll(() => lastSearch()?.get('vegetarianType')).toBeNull();
+  await expect.poll(() => lastSearch()?.getAll('ingredientIds')).toEqual([]);
+  await expect(page).toHaveURL(/\/so-sanh\/chon-mon\?a=701$/);
+
+  await choices(page).getByRole('button', { name: 'Chọn Nấm tràm xào sả' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\?a=701&b=703$/);
+});
+
+test('AC-60.2: the first recipe cannot be chosen again and, when nothing else matches, the user can go back to explore', async ({ page }) => {
+  await publicApi(page, () => [tofu]);
+  await page.goto('/so-sanh?a=701&b=701');
+
+  await expect(page.getByRole('alert')).toContainText('Hai công thức phải khác nhau. Hãy chọn một công thức thứ hai khác.');
+  await expect(nutritionTable(page)).toHaveCount(0);
+  await secondSlot(page).getByRole('link', { name: 'Chọn công thức thứ hai' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\/chon-mon\?a=701$/);
+
+  await expect(page.getByText('Không còn công thức công khai khác để so sánh.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Chọn Đậu hũ sốt cà chua' })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Quay lại khám phá' }).click();
+  await expect(page).toHaveURL(/\/kham-pha$/);
+});
+
+test('UC-60.2: either recipe can be replaced, the whole comparison is recalculated and going back keeps the pair', async ({ page }) => {
+  await publicApi(page, (params) => (params.get('keyword') === 'nấm tràm' ? [mushroom] : [tofu, soup]));
   await page.goto('/so-sanh?a=701&b=702');
   await expect(nutritionTable(page)).toBeVisible();
 
-  await page.getByRole('button', { name: 'Thay công thức A' }).click();
-  await page.getByRole('searchbox', { name: 'Tìm công thức cho vị trí A' }).fill('nấm tràm');
-  await page.getByRole('button', { name: 'Chọn Nấm tràm xào sả cho vị trí A' }).click();
+  await firstSlot(page).getByRole('link', { name: 'Đổi công thức đầu tiên' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\/chon-mon\?a=701&b=702&doi=dau-tien$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Chọn công thức đầu tiên' })).toBeVisible();
+  await expect(page.getByText('Món bạn chọn sẽ được so sánh với Canh cà chua nấm rơm.')).toBeVisible();
+  await expect(choices(page)).not.toContainText('Canh cà chua nấm rơm');
+  await page.getByRole('searchbox', { name: 'Tìm công thức' }).fill('nấm tràm');
+  await choices(page).getByRole('button', { name: 'Chọn Nấm tràm xào sả' }).click();
 
   await expect(page).toHaveURL(/\/so-sanh\?a=703&b=702$/);
   const energy = nutritionTable(page).getByRole('row', { name: /Năng lượng/ }).getByRole('cell');
   await expect(energy.nth(0)).toHaveText('Chưa đủ dữ liệu');
   await expect(energy.nth(1)).toHaveText('120 kcal');
   await expect(energy.nth(2)).toHaveText('—');
-  expect(keywords).toContain('nấm tràm');
+
+  await secondSlot(page).getByRole('link', { name: 'Đổi công thức thứ hai' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\/chon-mon\?a=703&b=702$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Chọn công thức thứ hai' })).toBeVisible();
+  await page.getByRole('link', { name: 'Quay lại so sánh' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\?a=703&b=702$/);
+  await expect(nutritionTable(page)).toBeVisible();
 });
 
 test('UC-60.5: a recipe that is no longer public is removed and the user is asked to choose another', async ({ page }) => {
   await publicApi(page);
   await page.goto('/so-sanh?a=701&b=799');
 
-  await expect(page.getByRole('alert')).toContainText('Công thức ở vị trí B không còn công khai. Hãy chọn công thức khác.');
+  await expect(page.getByRole('alert')).toContainText('Công thức thứ hai không còn công khai. Hãy chọn công thức khác.');
   await expect(nutritionTable(page)).toHaveCount(0);
-  await expect(page.getByRole('list', { name: 'Kết quả tìm cho vị trí B' })).toBeVisible();
-});
+  await secondSlot(page).getByRole('link', { name: 'Chọn công thức khác' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\/chon-mon\?a=701$/);
 
-test('UC-60.2: when no other public recipe matches, the user can go back to explore', async ({ page }) => {
-  await publicApi(page, () => [tofu]);
-  await page.goto('/so-sanh?a=701');
-
-  await expect(page.getByText('Không còn công thức công khai khác phù hợp.')).toBeVisible();
-  await page.getByRole('link', { name: 'Quay lại khám phá' }).click();
-  await expect(page).toHaveURL(/\/kham-pha$/);
+  await page.goto('/so-sanh?a=799&b=702');
+  await expect(page.getByRole('alert')).toContainText('Công thức đầu tiên không còn công khai. Hãy chọn công thức khác.');
+  await firstSlot(page).getByRole('link', { name: 'Chọn công thức khác' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\/chon-mon\?b=702$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Chọn công thức đầu tiên' })).toBeVisible();
 });
 
 test('A failed recipe load can be retried', async ({ page }) => {
@@ -285,11 +380,11 @@ test('A failed recipe load can be retried', async ({ page }) => {
   await page.goto('/so-sanh?a=701&b=702');
 
   await expect(page.getByRole('alert')).toContainText('Hệ thống gặp lỗi. Vui lòng thử lại sau.');
-  await page.getByRole('button', { name: 'Thử tải lại công thức B' }).click();
+  await page.getByRole('button', { name: 'Thử tải lại công thức thứ hai' }).click();
   await expect(nutritionTable(page)).toBeVisible();
 });
 
-test('AC-60.7: comparing only reads public data, keeps no history and offers no PDF export', async ({ page }) => {
+test('AC-60.7: comparing and picking only read public data, keep no history and offer no PDF export', async ({ page }) => {
   const writes: Request[] = [];
   page.on('request', (request) => {
     if (request.url().includes('/api/v1/') && request.method() !== 'GET') writes.push(request);
@@ -306,22 +401,36 @@ test('AC-60.7: comparing only reads public data, keeps no history and offers no 
   await page.goto('/kham-pha');
   await page.goto('/so-sanh');
   await expect(page.getByText('Chọn hai công thức công khai khác nhau để xem bảng so sánh.')).toBeVisible();
-  await expect(page.getByRole('list', { name: 'Kết quả tìm cho vị trí A' })).toBeVisible();
+  await expect(secondSlot(page).getByRole('link')).toHaveCount(0);
+  await firstSlot(page).getByRole('link', { name: 'Chọn công thức đầu tiên' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\/chon-mon$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Chọn công thức đầu tiên' })).toBeVisible();
+  await expect(page.getByText('Tìm và chọn một công thức công khai để bắt đầu so sánh.')).toBeVisible();
+  await choices(page).getByRole('button', { name: 'Chọn Đậu hũ sốt cà chua' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\?a=701$/);
+  await expect(firstSlot(page)).toContainText('Đậu hũ sốt cà chua');
   expect(writes).toEqual([]);
 });
 
-test('AC-60.8: on a phone the comparison is grouped without horizontal page scroll', async ({ page }) => {
+test('AC-60.8: on a phone the comparison and the picker are grouped without horizontal page scroll', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
   await publicApi(page);
   await page.goto('/so-sanh?a=701&b=702');
 
   const energy = nutritionTable(page).getByRole('row', { name: /Năng lượng/ });
   await expect(energy).toBeVisible();
-  await expect(energy.getByText('A', { exact: true })).toBeVisible();
-  await expect(energy.getByText('B', { exact: true })).toBeVisible();
-  await expect(energy.getByText('A − B', { exact: true })).toBeVisible();
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(0);
+  await expect(energy.getByText('Công thức đầu tiên', { exact: true })).toBeVisible();
+  await expect(energy.getByText('Công thức thứ hai', { exact: true })).toBeVisible();
+  await expect(energy.getByText('Chênh lệch', { exact: true })).toBeVisible();
+  const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(await overflow()).toBeLessThanOrEqual(0);
+
+  await page.goto('/so-sanh/chon-mon?a=701');
+  await expect(choices(page).getByRole('listitem')).toHaveCount(1);
+  await expect(page.getByRole('combobox', { name: 'Thể loại món' })).toBeHidden();
+  await page.getByText('Bộ lọc', { exact: true }).click();
+  await expect(page.getByRole('combobox', { name: 'Thể loại món' })).toBeVisible();
+  expect(await overflow()).toBeLessThanOrEqual(0);
 });
 
 test('UC-60.1: comparison starts from a Recipe Card and from both recipe detail routes', async ({ page }) => {
@@ -329,14 +438,11 @@ test('UC-60.1: comparison starts from a Recipe Card and from both recipe detail 
   await page.route(/\/api\/v1\/recipes\/701\/(comments|related)/, (route) => route.fulfill({ json: {
     items: [], content: [], page: 0, size: 10, totalElements: 0, totalPages: 0, commentCount: 0,
   } }));
-  await page.route((url) => url.pathname === '/api/v1/recipes/form-options', (route) => route.fulfill({ json: {
-    dishCategories: [], vegetarianTypes: [], difficulties: [], units: [],
-  } }));
 
   await page.goto('/kham-pha');
   await page.getByRole('link', { name: 'So sánh Đậu hũ sốt cà chua' }).click();
   await expect(page).toHaveURL(/\/so-sanh\?a=701$/);
-  await expect(page.getByRole('region', { name: 'Công thức A' })).toContainText('Đậu hũ sốt cà chua');
+  await expect(firstSlot(page)).toContainText('Đậu hũ sốt cà chua');
 
   for (const path of ['/cong-thuc/id/701', '/cong-thuc/701']) {
     await page.goto(path);
@@ -363,30 +469,51 @@ test('UC-60.1: a Member starts a comparison from the saved recipe list', async (
   await page.goto('/ho-so');
   await page.getByRole('link', { name: 'So sánh Canh cà chua nấm rơm' }).click();
   await expect(page).toHaveURL(/\/so-sanh\?a=702$/);
-  await expect(page.getByRole('region', { name: 'Công thức A' })).toContainText('Canh cà chua nấm rơm');
+  await expect(firstSlot(page)).toContainText('Canh cà chua nấm rơm');
 });
 
-test('picker search errors can be retried, a replacement can be cancelled and invalid IDs are ignored', async ({ page }) => {
-  await publicApi(page);
+test('picker search errors can be retried, result pages can be browsed and invalid IDs are ignored', async ({ page }) => {
+  const pages: string[] = [];
   let searchFailures = 1;
-  await page.route((url) => url.pathname === '/api/v1/recipes', (route) => {
+  await publicApi(page, (params) => {
+    pages.push(params.get('page') ?? '');
+    return params.get('page') === '1' ? { items: [mushroom], totalPages: 2 } : { items: [tofu, soup], totalPages: 2 };
+  });
+  await page.route((url) => url.pathname === '/api/v1/recipes', async (route) => {
     if (searchFailures-- > 0) return route.fulfill({ status: 503, contentType: 'application/problem+json', json: {
       status: 503, code: 'SERVICE_UNAVAILABLE', detail: 'Dịch vụ tạm thời gián đoạn.',
     } });
-    return route.fulfill({ json: { items: [card(tofu), card(soup), card(mushroom)], page: 0, size: 8, totalElements: 3, totalPages: 1 } });
+    return route.fallback();
   });
-  await page.goto('/so-sanh?a=701&b=702');
-  await expect(nutritionTable(page)).toBeVisible();
+  await page.goto('/so-sanh/chon-mon?a=701&b=702');
 
-  await page.getByRole('button', { name: 'Thay công thức B' }).click();
-  await expect(page.getByRole('alert')).toContainText('Dịch vụ tạm thời gián đoạn.');
-  await page.getByRole('button', { name: 'Thử tìm lại' }).click();
-  await expect(page.getByRole('list', { name: 'Kết quả tìm cho vị trí B' }).getByRole('listitem')).toHaveCount(3);
-  await page.getByRole('button', { name: 'Giữ công thức hiện tại' }).click();
-  await expect(page.getByRole('list', { name: 'Kết quả tìm cho vị trí B' })).toHaveCount(0);
-  await expect(nutritionTable(page).getByRole('row', { name: /Năng lượng/ }).getByRole('cell').nth(1)).toHaveText('120 kcal');
+  await expect(page.getByText('Không tải được công thức')).toBeVisible();
+  await page.getByRole('button', { name: 'Thử lại' }).click();
+  // The first recipe (701) is kept, so only the current second recipe remains on page 1.
+  await expect(choices(page).getByRole('listitem')).toHaveText([/Canh cà chua nấm rơm/]);
+  await expect(page.getByText('Trang 1 / 2')).toBeVisible();
+  await page.getByRole('button', { name: 'Trang sau' }).click();
+  await expect(page.getByText('Trang 2 / 2')).toBeVisible();
+  await expect(choices(page).getByRole('listitem')).toHaveText([/Nấm tràm xào sả/]);
+  expect(pages).toContain('1');
+  await page.getByRole('button', { name: 'Trang trước' }).click();
+  await expect(page.getByText('Trang 1 / 2')).toBeVisible();
 
   await page.goto('/so-sanh?a=abc&b=0');
   await expect(page.getByText('Chọn hai công thức công khai khác nhau để xem bảng so sánh.')).toBeVisible();
   await expect(nutritionTable(page)).toHaveCount(0);
+  await page.goto('/so-sanh/chon-mon?a=abc');
+  await expect(page.getByRole('heading', { level: 1, name: 'Chọn công thức đầu tiên' })).toBeVisible();
+});
+
+test('the picker explains when filters match nothing and lets the user reset them', async ({ page }) => {
+  await publicApi(page, (params) => (params.get('keyword') ? [] : [tofu, soup]));
+  await page.goto('/so-sanh/chon-mon?a=701');
+  await page.getByRole('searchbox', { name: 'Tìm công thức' }).fill('không có món này');
+
+  await expect(page.getByText('Không tìm thấy công thức phù hợp')).toBeVisible();
+  await page.getByRole('button', { name: 'Đặt lại tìm kiếm' }).click();
+  await expect(page.getByRole('searchbox', { name: 'Tìm công thức' })).toHaveValue('');
+  await expect(choices(page).getByRole('listitem')).toHaveCount(1);
+  await expect(page).toHaveURL(/\/so-sanh\/chon-mon\?a=701$/);
 });

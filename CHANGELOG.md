@@ -216,21 +216,24 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-13 — Compare Two Public Recipes ([PR #132](https://github.com/NgaiLong49423/vegetarian-support-system/pull/132))
 
-**Status:** Committed — `5749ba8`, `c11e882`.
+**Status:** Committed — `5749ba8`, `c11e882`; picker page changes from the PR review are in the working tree, not committed.
 
 **Scope:** Complete FR-60 (AC-60.1–AC-60.8, BR-76) in the Frontend: compare two different published recipes by overview, ingredients and the nine nutrients per serving, using the existing public recipe detail and search APIs only.
 
 ### Added
 
-- Add the real `/so-sanh?a={recipeId}&b={recipeId}` comparison page with a search picker per slot, replacement of either slot, removal of recipes that are no longer public, and retry on load errors.
+- Add the real `/so-sanh?a={recipeId}&b={recipeId}` comparison page showing the first and second recipe side by side, replacement of either recipe, removal of recipes that are no longer public, and retry on load errors.
+- Add the separate `/so-sanh/chon-mon` picker page: "Chọn công thức thứ hai" (or "Chọn công thức đầu tiên") opens it with the Explore keyword search, filters, sort and paging, leaves out the recipe already chosen on the other side, and returns to the comparison with both recipes.
 - Line up ingredients only by `ingredient_id`, keep each recipe's original quantity and unit, and flag rows whose units differ instead of converting them.
-- Show the nine nutrients per serving with the original servings of each recipe and the absolute difference A − B; a recipe with incomplete nutrition shows "Chưa đủ dữ liệu" and no difference.
+- Show the nine nutrients per serving with the original servings of each recipe and the absolute difference (first recipe − second recipe); a recipe with incomplete nutrition shows "Chưa đủ dữ liệu" and no difference.
 - Add "So sánh" entry points on recipe cards, both recipe detail routes and the Member saved recipe list.
-- Add Playwright tests for every acceptance criterion and a real-stack test that checks the per-serving values against the Backend and that comparing only sends `GET` requests.
+- Add Playwright tests for every acceptance criterion and the picker, and a real-stack test that uses the two seeded demo Expert recipes, chooses the second one on the picker page, checks the per-serving values against the Backend and checks that comparing only sends `GET` requests.
 
 ### Changed
 
 - Remove the prototype banner, mock data and prototype Playwright test of `/so-sanh`; the prototype detail page links to the empty comparison page.
+- Move the Explore search and filter state, filter panel, sort, active filter chips and paging into a shared `RecipeSearch` module so the picker reuses them; Explore behaves as before.
+- Name the two sides "Công thức đầu tiên" and "Công thức thứ hai" instead of positions A and B, as requested in the PR #132 review.
 - Target recipe card links by their heading in the member profile Playwright test and the Explore real-stack test, since each card now also has a "So sánh" link with the recipe title.
 - Document FR-60 in `API.md` section 7 and the Frontend README.
 
