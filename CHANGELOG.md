@@ -266,6 +266,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Show the nine nutrients per serving with the original servings of each recipe and the absolute difference (first recipe − second recipe); a recipe with incomplete nutrition shows "Chưa đủ dữ liệu" and no difference.
 - Add "So sánh" entry points on recipe cards, both recipe detail routes and the Member saved recipe list.
 - Add Playwright tests for every acceptance criterion and the picker, and a real-stack test that uses the two seeded demo Expert recipes, chooses the second one on the picker page, checks the per-serving values against the Backend and checks that comparing only sends `GET` requests.
+- Record BUG-032: adding an ingredient between 00:00 and 06:59 Vietnam time is rejected because the default reference date is checked against the Backend's UTC clock; found by the admin catalog real-stack test and not fixed in this PR.
 
 ### Changed
 
