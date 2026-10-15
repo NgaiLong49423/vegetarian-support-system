@@ -25,6 +25,7 @@ import { recipesApi, type RecipeDetail } from '../api/recipes';
 import { SaveRecipeButton } from '../components/SaveRecipeButton';
 import { MemberAvatar } from '../components/MemberAvatar';
 import { RelatedRecipes } from '../components/RelatedRecipes';
+import { RecipeComments } from '../components/RecipeComments';
 import { MealPlanRecipeServings } from './MealPlanRecipeServings';
 import { useAiChat } from '../components/AiChatContext';
 
@@ -283,6 +284,7 @@ export function ApiRecipeDetail() {
         {recipe.nutrition?.total && <Card className="p-5 sm:p-6"><details><summary className="cursor-pointer list-none text-sm font-bold text-ink">Xem tổng dinh dưỡng toàn công thức</summary><dl className="mt-3 grid grid-cols-2 gap-2">{NUTRIENTS.map((nutrient) => { const value = recipe.nutrition.total[nutrient.key]; return <div key={nutrient.key} className="rounded-lg bg-brand-50 px-3 py-2"><dt className="text-xs text-ink-muted">{nutrient.label}</dt><dd className="mt-1 text-sm font-semibold text-ink">{value == null ? 'Chưa có dữ liệu' : `≈ ${formatNumber(value)} ${nutrient.unit}`}</dd></div>; })}</dl></details></Card>}
       </aside>
     </div>
+    <div className="recipe-detail-no-print"><RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} /></div>
     <RelatedRecipes key={recipeId} recipeId={recipeId} />
     <div className="recipe-detail-no-print mt-8"><Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeft className="h-4 w-4" />Trở lại khám phá</Link></div>
   </PageContainer>;
