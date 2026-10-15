@@ -491,6 +491,33 @@ button:not(:disabled), a { cursor: pointer; }
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
 }
 
+:root[data-theme="light"] .glass-nav-group {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1.5px solid rgba(220, 214, 204, 0.9);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.95),
+    0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .glass-nav-link {
+  color: var(--color-ink-soft, #454a40);
+}
+
+:root[data-theme="light"] .glass-nav-link:hover {
+  color: var(--color-brand-600, #aa4008);
+}
+
+:root[data-theme="light"] .glass-nav-link.is-active {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme="light"] #account-navigation {
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.08),
+    0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .glass-nav-glider {
     transition: none !important;
