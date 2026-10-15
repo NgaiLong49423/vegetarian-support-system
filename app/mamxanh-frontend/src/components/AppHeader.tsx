@@ -6,6 +6,7 @@ import {
   Bookmark,
   CalendarDays,
   ChevronDown,
+  LayoutDashboard,
   LayoutGrid,
   LogOut,
   MessageCircle,
@@ -48,44 +49,13 @@ export function AppHeader() {
   const accountTrigger = useRef<HTMLButtonElement>(null)
   const role = account?.role
   const personalLinks = [
-    { to: "/ho-so", label: "Hồ sơ của tôi", icon: Bookmark },
-    ...(role !== "ADMIN"
-      ? [{ to: "/ho-so/cai-dat", label: "Cài đặt hồ sơ", icon: UserCog }]
-      : []),
-    {
-      to: "/ho-so/dinh-duong",
-      label: "Hồ sơ dinh dưỡng & BMI",
-      icon: Activity,
-    },
-    {
-      to: "/ho-so/so-thich-an-uong",
-      label: "Sở thích ăn uống",
-      icon: SlidersHorizontal,
-    },
-    { to: "/dinh-duong", label: "Theo dõi dinh dưỡng", icon: Activity },
-    { to: "/goi-ai", label: "Nâng cấp gói AI", icon: Sparkles },
-    { to: "/giao-dich", label: "Lịch sử giao dịch", icon: Award },
-    ...(role === "EXPERT"
-      ? [
-          {
-            to: "/ho-so/chuyen-gia",
-            label: "Bài công thức của tôi",
-            icon: LayoutGrid,
-          },
-          { to: "/dang-cong-thuc", label: "Đăng công thức mới", icon: Plus },
-        ]
-      : []),
-    ...(role === "CUSTOMER"
-      ? [
-          {
-            to: "/dang-ky-chuyen-gia",
-            label: "Đăng ký trở thành Chuyên gia",
-            icon: Award,
-          },
-        ]
-      : []),
     ...(role === "ADMIN"
       ? [
+          {
+            to: "/admin",
+            label: "Trung tâm quản trị (Dashboard)",
+            icon: LayoutDashboard,
+          },
           {
             to: "/admin/xet-duyet-chuyen-gia",
             label: "Xét duyệt Chuyên gia",
@@ -97,7 +67,39 @@ export function AppHeader() {
             icon: LayoutGrid,
           },
         ]
-      : []),
+      : role === "EXPERT"
+        ? [
+            { to: "/ho-so", label: "Hồ sơ của tôi", icon: Bookmark },
+            { to: "/ho-so/cai-dat", label: "Cài đặt hồ sơ", icon: UserCog },
+            {
+              to: "/ho-so/chuyen-gia",
+              label: "Bài công thức của tôi",
+              icon: LayoutGrid,
+            },
+            { to: "/dang-cong-thuc", label: "Đăng công thức mới", icon: Plus },
+          ]
+        : [
+            { to: "/ho-so", label: "Hồ sơ của tôi", icon: Bookmark },
+            { to: "/ho-so/cai-dat", label: "Cài đặt hồ sơ", icon: UserCog },
+            {
+              to: "/ho-so/dinh-duong",
+              label: "Hồ sơ dinh dưỡng & BMI",
+              icon: Activity,
+            },
+            {
+              to: "/ho-so/so-thich-an-uong",
+              label: "Sở thích ăn uống",
+              icon: SlidersHorizontal,
+            },
+            { to: "/dinh-duong", label: "Theo dõi dinh dưỡng", icon: Activity },
+            { to: "/goi-ai", label: "Nâng cấp gói AI", icon: Sparkles },
+            { to: "/giao-dich", label: "Lịch sử giao dịch", icon: Award },
+            {
+              to: "/dang-ky-chuyen-gia",
+              label: "Đăng ký trở thành Chuyên gia",
+              icon: Award,
+            },
+          ]),
   ]
 
   useEffect(() => {

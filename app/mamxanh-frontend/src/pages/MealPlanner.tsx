@@ -210,7 +210,7 @@ export function MealPlanner() {
               <img src={r.image} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-ink">{r.name}</p>
-                <p className="text-xs text-ink-muted">{r.calories} kcal · {r.prepTime + r.cookTime} phút</p>
+                <p className="text-xs text-ink-muted">≈ {r.calories} kcal · {r.prepTime + r.cookTime} phút</p>
               </div>
             </button>
           ))}
@@ -270,7 +270,7 @@ export function MealPlanner() {
                   <Coffee className="h-3.5 w-3.5" /> Bữa sáng (~25%)
                 </p>
                 <p className="mt-1 font-semibold text-ink">
-                  {Math.round(calorieGoal * 0.25)} kcal
+                  ≈ {Math.round(calorieGoal * 0.25)} kcal
                 </p>
                 <p className="mt-1 text-[11px] text-ink-muted">
                   Món nhẹ nhàng, ấm bụng, thanh lọc cơ thể để khởi đầu ngày mới.
@@ -282,7 +282,7 @@ export function MealPlanner() {
                   <Sun className="h-3.5 w-3.5" /> Bữa trưa (~45%)
                 </p>
                 <p className="mt-1 font-semibold text-ink">
-                  {Math.round(calorieGoal * 0.45)} kcal
+                  ≈ {Math.round(calorieGoal * 0.45)} kcal
                 </p>
                 <p className="mt-1 text-[11px] text-ink-muted">
                   Bữa chính giàu năng lượng, kết hợp đậu hũ, các loại hạt và rau củ cung cấp đạm thực vật bền bỉ.
@@ -294,7 +294,7 @@ export function MealPlanner() {
                   <Moon className="h-3.5 w-3.5" /> Bữa tối (~30%)
                 </p>
                 <p className="mt-1 font-semibold text-ink">
-                  {Math.round(calorieGoal * 0.30)} kcal
+                  ≈ {Math.round(calorieGoal * 0.30)} kcal
                 </p>
                 <p className="mt-1 text-[11px] text-ink-muted">
                   Thanh đạm, giàu chất xơ và vitamin giúp nhẹ bụng và hỗ trợ giấc ngủ ngon.

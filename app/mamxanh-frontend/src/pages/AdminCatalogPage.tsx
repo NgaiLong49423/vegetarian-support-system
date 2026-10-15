@@ -26,6 +26,12 @@ import { PageContainer } from '../components/Layout';
 import { Button, Card, EmptyState } from '../components/ui';
 import { getIngredientImageUrl, getIngredientGroupVisual } from '../utils/ingredientImage';
 import {
+  normalizeIngredientGroup,
+  normalizeSourceName,
+  STANDARD_INGREDIENT_GROUPS,
+  STANDARD_DATA_SOURCES,
+} from '../utils/vietnameseText';
+import {
   AdminCatalogApiError,
   adminCatalogApi,
   type CatalogIngredient,
@@ -41,7 +47,7 @@ const today = () => {
   return date.getFullYear() + '-' + month + '-' + day;
 };
 const fieldClass =
-  'mt-1.5 w-full rounded-xl border border-brand-200/80 bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition-all placeholder:text-ink-muted/50 focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
+  'mt-1.5 w-full rounded-xl border border-brand-200/80 bg-paper px-3.5 py-2.5 text-sm font-sans text-ink outline-none transition-all placeholder:text-ink-muted/50 focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 const labelClass = 'block text-sm font-semibold text-ink';
 const nutritionFields = [
   { key: 'energyKcalPer100g', label: 'Năng lượng', unit: 'kcal', step: '0.01' },
@@ -137,7 +143,7 @@ function IngredientCard({
         {/* Top Floating Badges */}
         <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between gap-1.5 pointer-events-none">
           <span className={`rounded-lg border px-2.5 py-0.5 text-xs font-semibold backdrop-blur-xs shadow-2xs ${groupVisual.badgeClass}`}>
-            {item.ingredientGroup}
+            {normalizeIngredientGroup(item.ingredientGroup)}
           </span>
           <span
             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold backdrop-blur-xs shadow-2xs ${
@@ -178,7 +184,7 @@ function IngredientCard({
           {/* D. Source Metadata & E. Recipe Usage */}
           <div className="mt-2 space-y-1 text-xs text-ink-muted">
             <div className="flex items-center justify-between gap-2">
-              <span className="truncate">Nguồn: <strong className="font-semibold text-ink-soft">{item.sourceName}</strong></span>
+              <span className="truncate">Nguồn: <strong className="font-semibold text-ink-soft">{normalizeSourceName(item.sourceName)}</strong></span>
               {item.sourceUrl && (
                 <a
                   href={item.sourceUrl}
@@ -206,19 +212,19 @@ function IngredientCard({
           >
             <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Calo</div>
-              <div className="font-bold text-ink truncate">{item.nutrition.energyKcalPer100g ?? '—'} <span className="text-[9px] font-normal text-ink-muted">kcal</span></div>
+              <div className="font-bold text-ink truncate">{item.nutrition.energyKcalPer100g != null ? `≈ ${item.nutrition.energyKcalPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">kcal</span></div>
             </div>
             <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Đạm</div>
-              <div className="font-semibold text-ink truncate">{item.nutrition.proteinGramsPer100g ?? '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
+              <div className="font-semibold text-ink truncate">{item.nutrition.proteinGramsPer100g != null ? `≈ ${item.nutrition.proteinGramsPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
             </div>
             <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Carb</div>
-              <div className="font-semibold text-ink truncate">{item.nutrition.carbohydrateGramsPer100g ?? '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
+              <div className="font-semibold text-ink truncate">{item.nutrition.carbohydrateGramsPer100g != null ? `≈ ${item.nutrition.carbohydrateGramsPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
             </div>
             <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Béo</div>
-              <div className="font-semibold text-ink truncate">{item.nutrition.totalFatGramsPer100g ?? '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
+              <div className="font-semibold text-ink truncate">{item.nutrition.totalFatGramsPer100g != null ? `≈ ${item.nutrition.totalFatGramsPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
             </div>
           </div>
 
@@ -227,17 +233,17 @@ function IngredientCard({
             <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-ink-muted">
               {item.nutrition.fiberGramsPer100g !== null && item.nutrition.fiberGramsPer100g !== undefined && (
                 <span className="rounded-md border border-brand-100/70 bg-cream-soft/50 px-2 py-0.5">
-                  Xơ {item.nutrition.fiberGramsPer100g} g
+                  Xơ ≈ {item.nutrition.fiberGramsPer100g} g
                 </span>
               )}
               {item.nutrition.calciumMgPer100g !== null && item.nutrition.calciumMgPer100g !== undefined && (
                 <span className="rounded-md border border-brand-100/70 bg-cream-soft/50 px-2 py-0.5">
-                  Canxi {item.nutrition.calciumMgPer100g} mg
+                  Canxi ≈ {item.nutrition.calciumMgPer100g} mg
                 </span>
               )}
               {item.nutrition.ironMgPer100g !== null && item.nutrition.ironMgPer100g !== undefined && (
                 <span className="rounded-md border border-brand-100/70 bg-cream-soft/50 px-2 py-0.5">
-                  Sắt {item.nutrition.ironMgPer100g} mg
+                  Sắt ≈ {item.nutrition.ironMgPer100g} mg
                 </span>
               )}
             </div>
@@ -324,7 +330,10 @@ export function AdminCatalogPage() {
   const [recipeReferenceTotal, setRecipeReferenceTotal] = useState(0);
   const [referencesLoading, setReferencesLoading] = useState(false);
   const [detailTarget, setDetailTarget] = useState<CatalogIngredient | null>(null);
-  const [catalogOptions, setCatalogOptions] = useState({ groups: [] as string[], sources: [] as string[] });
+  const [catalogOptions, setCatalogOptions] = useState<{ groups: string[]; sources: string[] }>({
+    groups: [...STANDARD_INGREDIENT_GROUPS],
+    sources: [...STANDARD_DATA_SOURCES],
+  });
   const [ingredientId, setIngredientId] = useState<number | null>(null);
   const [ingredientEditorOpen, setIngredientEditorOpen] = useState(false);
   const [nutritionTarget, setNutritionTarget] = useState<CatalogIngredient | null>(null);
@@ -357,7 +366,18 @@ export function AdminCatalogPage() {
       setIngredients(ingredientPage.content);
       setTotalElements(ingredientPage.totalElements);
       setTotalPages(ingredientPage.totalPages);
-      setCatalogOptions(options);
+
+      const rawGroups = options?.groups && options.groups.length > 0
+        ? options.groups
+        : [...STANDARD_INGREDIENT_GROUPS];
+      const rawSources = options?.sources && options.sources.length > 0
+        ? options.sources
+        : [...STANDARD_DATA_SOURCES];
+
+      const cleanGroups = Array.from(new Set(rawGroups.map((g) => normalizeIngredientGroup(g))));
+      const cleanSources = Array.from(new Set(rawSources.map((s) => normalizeSourceName(s))));
+
+      setCatalogOptions({ groups: cleanGroups, sources: cleanSources });
     } catch (cause) {
       setAccessDenied(
         cause instanceof AdminCatalogApiError &&
@@ -402,8 +422,8 @@ export function AdminCatalogPage() {
     const body = {
       ...ingredientForm,
       name: ingredientForm.name.trim(),
-      ingredientGroup: ingredientForm.ingredientGroup.trim(),
-      sourceName: ingredientForm.sourceName.trim(),
+      ingredientGroup: normalizeIngredientGroup(ingredientForm.ingredientGroup).trim(),
+      sourceName: normalizeSourceName(ingredientForm.sourceName).trim(),
       sourceUrl: ingredientForm.sourceUrl.trim() || null,
     };
     void perform(
@@ -436,8 +456,8 @@ export function AdminCatalogPage() {
     setIngredientId(ingredient.id);
     setIngredientForm({
       name: ingredient.name,
-      ingredientGroup: ingredient.ingredientGroup,
-      sourceName: ingredient.sourceName,
+      ingredientGroup: normalizeIngredientGroup(ingredient.ingredientGroup),
+      sourceName: normalizeSourceName(ingredient.sourceName),
       sourceUrl: ingredient.sourceUrl ?? '',
       referenceDate: ingredient.referenceDate,
     });
@@ -792,7 +812,11 @@ export function AdminCatalogPage() {
                   Nhóm nguyên liệu
                   <select className={fieldClass} value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)}>
                     <option value="">Tất cả nhóm</option>
-                    {catalogOptions.groups.map((group) => <option key={group} value={group}>{group}</option>)}
+                    {catalogOptions.groups.map((group) => (
+                      <option key={group} value={group} className="font-sans">
+                        {normalizeIngredientGroup(group)}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <label className="text-xs font-semibold text-ink-soft">
@@ -866,7 +890,7 @@ export function AdminCatalogPage() {
 
           {/* Sticky Right-hand Inspector / Editor Panel */}
           {(hasActivePanel || guideOpen) && (
-            <div className="xl:sticky xl:top-20">
+            <div className="xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto pr-1">
             {detailTarget ? (
               <Card className="modal-panel-enter h-fit border-brand-200/80 bg-paper p-5 shadow-md sm:p-6">
                 <div className="flex items-start justify-between gap-3 border-b border-brand-100 pb-4">
@@ -889,8 +913,8 @@ export function AdminCatalogPage() {
                   ))}
                 </dl>
                 <div className="mt-4 space-y-2 rounded-2xl border border-brand-100/80 bg-brand-50/40 p-4 text-sm">
-                  <p><span className="font-medium text-ink-muted">Nhóm:</span> <strong className="text-ink">{detailTarget.ingredientGroup}</strong></p>
-                  <p><span className="font-medium text-ink-muted">Nguồn:</span> <strong className="text-ink">{detailTarget.sourceName}</strong></p>
+                  <p><span className="font-medium text-ink-muted">Nhóm:</span> <strong className="text-ink">{normalizeIngredientGroup(detailTarget.ingredientGroup)}</strong></p>
+                  <p><span className="font-medium text-ink-muted">Nguồn:</span> <strong className="text-ink">{normalizeSourceName(detailTarget.sourceName)}</strong></p>
                   <p><span className="font-medium text-ink-muted">Ngày đối chiếu:</span> {detailTarget.referenceDate}</p>
                   <p><span className="font-medium text-ink-muted">Trạng thái:</span> {detailTarget.active ? 'ACTIVE' : 'INACTIVE'} · {detailTarget.nutritionSupported ? 'Có hỗ trợ tính' : 'Chưa hỗ trợ tính'}</p>
                   <p><span className="font-medium text-ink-muted">Công thức đang tham chiếu:</span> {detailTarget.recipeUsageCount ?? 0}</p>
@@ -1034,7 +1058,11 @@ export function AdminCatalogPage() {
                       }
                     >
                       <option value="" disabled>Chọn nhóm nguyên liệu</option>
-                      {catalogOptions.groups.map((group) => <option key={group} value={group}>{group}</option>)}
+                      {catalogOptions.groups.map((group) => (
+                        <option key={group} value={group} className="font-sans">
+                          {normalizeIngredientGroup(group)}
+                        </option>
+                      ))}
                     </select>
                   </Field>
                   <Field label="Tên nguồn dữ liệu">
@@ -1050,7 +1078,11 @@ export function AdminCatalogPage() {
                       }
                     >
                       <option value="" disabled>Chọn nguồn dữ liệu</option>
-                      {catalogOptions.sources.map((source) => <option key={source} value={source}>{source}</option>)}
+                      {catalogOptions.sources.map((source) => (
+                        <option key={source} value={source} className="font-sans">
+                          {normalizeSourceName(source)}
+                        </option>
+                      ))}
                     </select>
                   </Field>
                   <Field label="Đường dẫn nguồn (không bắt buộc)">

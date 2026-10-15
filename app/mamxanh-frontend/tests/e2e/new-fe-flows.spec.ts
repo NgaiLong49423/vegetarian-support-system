@@ -306,15 +306,15 @@ test('mock-authenticated nutrition profile saves consent and shows approximate r
   });
 
   await page.getByRole('button', { name: 'Tính chỉ số tham khảo' }).click();
-  await expect(page.getByText('Xấp xỉ 22,5')).toBeVisible();
-  await expect(page.getByText('Xấp xỉ 2.200')).toBeVisible();
+  await expect(page.getByText('≈ 22,5')).toBeVisible();
+  await expect(page.getByText('≈ 2.200')).toBeVisible();
   await expect(page.getByText('9 chỉ tiêu tham khảo mỗi ngày')).toBeVisible();
-  await expect(page.getByText('Chất xơ').locator('..').locator('..').getByText('Xấp xỉ 25,0')).toBeVisible();
+  await expect(page.getByText('Chất xơ').locator('..').locator('..').getByText('≈ 25,0')).toBeVisible();
   await expect(page.getByRole('link', { name: /Nguồn tham khảo: NASEM EER/ })).toHaveAttribute('href', 'https://example.org/energy');
 
   await page.getByLabel('Chiều cao *').fill('171');
   await expect(page.getByText('Lưu các thay đổi hồ sơ trước khi tính lại chỉ số tham khảo.')).toBeVisible();
-  await expect(page.getByText('Xấp xỉ 22,5')).toHaveCount(0);
+  await expect(page.getByText('≈ 22,5')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Tính chỉ số tham khảo' })).toBeDisabled();
 });
 

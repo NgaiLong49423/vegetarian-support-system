@@ -4,6 +4,8 @@
  * and recipe imagery from mockData.
  */
 
+import { normalizeIngredientGroup } from './vietnameseText';
+
 export interface IngredientVisualInfo {
   imageUrl: string | null;
   groupIcon: 'apple' | 'salad' | 'layers' | 'wheat' | 'nut' | 'sparkles' | 'carrot' | 'leaf';
@@ -94,7 +96,8 @@ export function getIngredientImageUrl(name: string): string | null {
  * Determines appropriate icon and visual styling for an ingredient group.
  */
 export function getIngredientGroupVisual(group: string) {
-  const g = (group || '').toLowerCase();
+  const normalized = normalizeIngredientGroup(group);
+  const g = normalized.toLowerCase();
   if (g.includes('trái cây') || g.includes('hoa quả')) {
     return { icon: 'apple' as const, label: 'Trái cây', badgeClass: 'bg-amber-100/80 text-amber-900 border-amber-200/70' };
   }
@@ -108,7 +111,7 @@ export function getIngredientGroupVisual(group: string) {
     return { icon: 'layers' as const, label: 'Đậu & Chế phẩm', badgeClass: 'bg-emerald-100/80 text-emerald-900 border-emerald-200/70' };
   }
   if (g.includes('gia vị')) {
-    return { icon: 'sparkles' as const, label: 'Gia vị', badgeClass: 'bg-purple-100/80 text-purple-900 border-purple-200/70' };
+    return { icon: 'sparkles' as const, label: 'Gia vị chay', badgeClass: 'bg-purple-100/80 text-purple-900 border-purple-200/70' };
   }
-  return { icon: 'salad' as const, label: group || 'Rau củ', badgeClass: 'bg-brand-100/80 text-brand-900 border-brand-200/70' };
+  return { icon: 'salad' as const, label: normalized || 'Rau củ', badgeClass: 'bg-brand-100/80 text-brand-900 border-brand-200/70' };
 }

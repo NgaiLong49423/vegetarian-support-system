@@ -27,6 +27,8 @@ import { ExpertRecipeProfile } from "../pages/ExpertRecipeProfile"
 import { MemberProfilePage } from "../pages/MemberProfilePage"
 import { ProfileSettingsPage } from "../pages/ProfileSettingsPage"
 import { AiChatPage } from "../pages/AiChatPage"
+import { AdminDashboard } from "../pages/AdminDashboard"
+import { AdminPendingModule } from "../pages/AdminPendingModule"
 import { ClickSpark } from "./ClickSpark"
 
 export default function ApplicationRoutes() {
@@ -105,6 +107,20 @@ export default function ApplicationRoutes() {
               <Route
                 path="/admin/xet-duyet-chuyen-gia"
                 element={<ExpertApplicationPage />}
+              />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/tong-quan" element={<AdminDashboard />} />
+              <Route
+                path="/admin/bao-cao"
+                element={<AdminPendingModule module="reports" />}
+              />
+              <Route
+                path="/admin/nguoi-dung"
+                element={<AdminPendingModule module="users" />}
+              />
+              <Route
+                path="/admin/giao-dich"
+                element={<AdminPendingModule module="transactions" />}
               />
               <Route path="/so-sanh" element={<RecipeComparePage />} />
               <Route path="*" element={<Home />} />

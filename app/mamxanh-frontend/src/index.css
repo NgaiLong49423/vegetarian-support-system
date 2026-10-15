@@ -101,6 +101,16 @@ body {
 
 button, a, input, select, textarea {
   -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+}
+
+select, option, optgroup {
+  font-family: inherit;
+}
+
+select option {
+  background: var(--color-paper);
+  color: var(--color-ink);
 }
 
 button:focus-visible, a:focus-visible {
@@ -118,11 +128,6 @@ button:not(:disabled), a { cursor: pointer; }
 .food-app textarea::placeholder {
   color: var(--color-ink-muted);
   opacity: 0.85;
-}
-
-.food-app select option {
-  background: var(--color-paper);
-  color: var(--color-ink);
 }
 
 ::selection {
