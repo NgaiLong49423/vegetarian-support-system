@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.80.0
+> **Version:** v2.80.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-15 — Align Recipe Reactions with Generated OpenAPI Verification ([PR #119](https://github.com/NgaiLong49423/vegetarian-support-system/pull/119))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b715b9b`.
 
 **Scope:** Synchronize FR-57 after the generated OpenAPI snapshot policy was integrated into develop.
 
