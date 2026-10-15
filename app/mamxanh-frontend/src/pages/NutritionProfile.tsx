@@ -44,7 +44,7 @@ function todayLocalString() {
 }
 
 function formatApprox(value: number, fractionDigits = 1) {
-  return `Xấp xỉ ${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: fractionDigits, minimumFractionDigits: fractionDigits }).format(value)}`;
+  return `≈ ${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: fractionDigits, minimumFractionDigits: fractionDigits }).format(value)}`;
 }
 
 function loadErrorMessage(error: unknown) {
@@ -369,7 +369,7 @@ export function NutritionProfile() {
       </Card>
 
       <Card className="border-leaf-100 p-5 shadow-sm shadow-leaf-900/5 md:p-7">
-        <div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-bold text-ink">Chỉ số tham khảo</h2><p className="mt-1 text-sm text-ink-muted">Dựa trên hồ sơ đã lưu của bạn.</p></div><span className="rounded-full bg-leaf-50 px-3 py-1 text-xs font-bold text-leaf-700">Xấp xỉ</span></div>
+        <div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-bold text-ink">Chỉ số tham khảo</h2><p className="mt-1 text-sm text-ink-muted">Dựa trên hồ sơ đã lưu của bạn.</p></div><span className="rounded-full bg-leaf-50 px-3 py-1 text-xs font-bold text-leaf-700">≈ Tham khảo</span></div>
         {loading ? <div className="flex items-center gap-2 py-16 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" /> Đang tải kết quả…</div>
           : result ? <div className="mt-5">
             <div className="rounded-2xl bg-gradient-to-br from-leaf-50 to-paper p-5 ring-1 ring-leaf-100">

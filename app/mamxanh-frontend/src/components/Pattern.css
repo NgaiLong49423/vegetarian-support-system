@@ -13,12 +13,7 @@
   height: 100%;
   overflow: hidden;
   contain: paint;
-  background: linear-gradient(
-    160deg,
-    #f0fdf4 0%,   /* Soft leaf green */
-    #fffbeb 45%,  /* Warm cream */
-    #fff7ed 100%  /* Soft peach */
-  );
+  background: var(--color-cream);
 }
 
 .pattern-blob {
@@ -28,17 +23,21 @@
   border-radius: 50%;
   pointer-events: none;
   background: radial-gradient(circle at center, var(--blob-color) 0%, transparent 68%);
-  opacity: var(--blob-opacity, 0.75);
+  opacity: var(--blob-opacity, 0.14);
   will-change: transform;
   backface-visibility: hidden;
   animation: var(--blob-anim) var(--blob-duration, 40s) ease-in-out infinite alternate;
 }
 
-.pattern-blob--1 { --blob-color: #86efac; --blob-anim: pattern-drift-a; --blob-duration: 38s; top: -12%; left: -12%; }
-.pattern-blob--2 { --blob-color: #fde68a; --blob-anim: pattern-drift-b; --blob-duration: 46s; top: 8%;  right: -16%; }
-.pattern-blob--3 { --blob-color: #fdba74; --blob-anim: pattern-drift-c; --blob-duration: 52s; top: 38%; left: 18%; --blob-opacity: 0.55; }
-.pattern-blob--4 { --blob-color: #a7f3d0; --blob-anim: pattern-drift-b; --blob-duration: 44s; top: 58%; right: -8%; }
-.pattern-blob--5 { --blob-color: #fed7aa; --blob-anim: pattern-drift-a; --blob-duration: 42s; bottom: -14%; left: -14%; }
+:root[data-theme="light"] .pattern-blob {
+  opacity: 0.07;
+}
+
+.pattern-blob--1 { --blob-color: #22c55e; --blob-anim: pattern-drift-a; --blob-duration: 38s; top: -12%; left: -12%; --blob-opacity: 0.14; }
+.pattern-blob--2 { --blob-color: #f59e0b; --blob-anim: pattern-drift-b; --blob-duration: 46s; top: 8%;  right: -16%; --blob-opacity: 0.12; }
+.pattern-blob--3 { --blob-color: #ea580c; --blob-anim: pattern-drift-c; --blob-duration: 52s; top: 38%; left: 18%; --blob-opacity: 0.12; }
+.pattern-blob--4 { --blob-color: #10b981; --blob-anim: pattern-drift-b; --blob-duration: 44s; top: 58%; right: -8%; --blob-opacity: 0.12; }
+.pattern-blob--5 { --blob-color: #f97316; --blob-anim: pattern-drift-a; --blob-duration: 42s; bottom: -14%; left: -14%; --blob-opacity: 0.14; }
 
 /* Slow, gentle drifting (compositor-only transforms) */
 @keyframes pattern-drift-a {

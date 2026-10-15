@@ -19,7 +19,7 @@ export function PostDetail() {
   return (
     <PageContainer className="py-8">
       <nav className="mb-5 flex items-center gap-1.5 text-sm text-ink-muted">
-        <Link to="/" className="hover:text-brand-600">Trang chủ</Link>
+        <Link to="/trang-chu" className="hover:text-brand-600">Trang chủ</Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <Link to="/cong-dong" className="hover:text-brand-600">Cộng đồng</Link>
         <ChevronRight className="h-3.5 w-3.5" />

@@ -1,15 +1,15 @@
 import { useMemo, useState } from "react"
 import {
-  Check,
   ClipboardCopy,
   Download,
   ListChecks,
   Plus,
   ShoppingBasket,
-  Trash2,
   X,
 } from "lucide-react"
 import { PageContainer } from "../components/Layout"
+import { BinButton } from "../components/BinButton"
+import SpringCheck from "../components/SpringCheck"
 import { Button, Card, ProgressBar } from "../components/ui"
 import { shoppingList as initialList, nutritionTargets } from "../data/mockData"
 import type { ShoppingListItem } from "../types"
@@ -190,41 +190,38 @@ export function ShoppingList() {
                     {list.map((item) => (
                       <div
                         key={item.id}
-                        className={`flex items-center gap-3 rounded-lg px-2 py-3 ${
+                        className={`flex items-center gap-3 rounded-lg px-2 py-2.5 ${
                           item.checked
                             ? "bg-cream-soft/50"
                             : "hover:bg-raised/50"
                         }`}
                       >
-                        <button
-                          type="button"
-                          aria-label={`Đánh dấu ${item.name}`}
-                          aria-pressed={item.checked}
-                          onClick={() => toggle(item.id)}
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
-                            item.checked
-                              ? "border-brand-600 bg-brand-600 text-on-brand"
-                              : "border-brand-300 text-ink-muted"
-                          }`}
-                        >
-                          {item.checked && <Check className="h-3.5 w-3.5" />}
-                        </button>
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className={`text-xs font-medium ${
-                              item.checked
-                                ? "text-ink-muted line-through"
-                                : "text-ink"
-                            }`}
-                          >
-                            {item.name}
-                          </p>
-                          {item.note && (
-                            <p className="mt-0.5 truncate text-[11px] text-ink-muted">
-                              {item.note}
-                            </p>
-                          )}
-                        </div>
+                        <SpringCheck
+                          checked={item.checked}
+                          onChange={() => toggle(item.id)}
+                          ariaLabel={`Đánh dấu ${item.name}`}
+                          label={
+                            <span className="min-w-0 flex-1">
+                              <span className="text-xs font-medium text-ink">
+                                {item.name}
+                              </span>
+                              {item.note && (
+                                <span className="ml-1.5 text-[11px] font-normal text-ink-muted">
+                                  · {item.note}
+                                </span>
+                              )}
+                            </span>
+                          }
+                          strike="left"
+                          boxSize={20}
+                          boxRadius={6}
+                          fontSize={13}
+                          color="#ea580c"
+                          fillColor="#ea580c"
+                          checkColor="#ffffff"
+                          textColor="var(--color-ink)"
+                          className="min-w-0 flex-1"
+                        />
                         <span
                           className={`text-xs ${
                             item.checked
@@ -234,14 +231,12 @@ export function ShoppingList() {
                         >
                           {item.quantity}
                         </span>
-                        <button
-                          type="button"
+                        <BinButton
+                          size={28}
                           onClick={() => remove(item.id)}
+                          title={`Xoá ${item.name}`}
                           aria-label={`Xoá ${item.name}`}
-                          className="rounded-lg p-1.5 text-ink-muted hover:bg-raised hover:text-brand-600"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        />
                       </div>
                     ))}
                   </div>
@@ -254,17 +249,15 @@ export function ShoppingList() {
             </p>
           )}
           {counts.done > 0 && (
-            <div className="mt-5 border-t border-brand-100 pt-4 text-right">
-              <Button
-                variant="ghost"
-                size="sm"
+            <div className="mt-5 flex justify-end border-t border-brand-100 pt-4">
+              <BinButton
+                size={38}
+                label={`Xoá ${counts.done} mục đã mua`}
                 onClick={() =>
                   setItems((current) => current.filter((item) => !item.checked))
                 }
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Xoá {counts.done} mục đã mua
-              </Button>
+                title="Xoá tất cả mục đã mua"
+              />
             </div>
           )}
         </Card>

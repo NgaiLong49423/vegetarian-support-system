@@ -41,7 +41,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Display the FR-57 satisfaction badge through the shared PublicRecipeCard used by Home and Explore, preserving the current card layout and save controls.
 - Integrate live reaction controls into the current recipe detail layout alongside existing recipe, nutrition and export actions.
-- Preserve colliding historical bug records by remapping unmerged FR-57 BUG-017/018/019 to BUG-030/027/028 with explicit provenance.
+- Preserve colliding historical bug records by remapping unmerged FR-57 BUG-017/018/019 to BUG-030/031/028 with explicit provenance.
 
 ### Fixed
 
@@ -357,6 +357,30 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Align SQL integration fixtures with the existing recipe status constraint and remove fixture Saved records before deleting their referenced recipes.
 - Describe nullable meal-plan response fields in generated OpenAPI so unavailable recipe references and optional metadata match runtime JSON.
+
+## 2026-10-12 — Introduce the Public Product Landing Page ([PR #120](https://github.com/NgaiLong49423/vegetarian-support-system/pull/120))
+
+**Status:** Committed — `2f21e04`.
+
+**Scope:** Introduce the agreed product story at the public root while preserving the existing application and authentication flow.
+
+### Added
+
+- Add a responsive, fixed-palette Landing Page for recipe discovery, saved recipes, meal planning, shopping, reference nutrition, AI assistance and expert contributions.
+- Adapt reviewed Google Stitch desktop and mobile proposals into repository-native React and CSS, with actual application screenshots and accessible section navigation.
+- Add browser coverage for public and authenticated visitors, mobile navigation, keyboard access, fixed appearance and Backend-independent rendering.
+
+### Changed
+
+- Move the existing application Home to `/trang-chu` and update application navigation, login destinations and affected regression tests.
+- Open the public application Home from the primary Landing start actions so Guest visitors can enter without signing in or registering.
+- Replace recreated preview controls with compressed screenshots captured from the application and its Compose demo data, including a dedicated mobile Home image.
+- Load application routes, theme and saved-recipe state separately from the Landing Page.
+- Align public metadata and the Frontend guide with the product story and route separation; preserve the existing preview indexing policy.
+
+### Fixed
+
+- None.
 
 ## 2026-10-12 — Add Related Recipe Recommendations ([PR #125](https://github.com/NgaiLong49423/vegetarian-support-system/pull/125))
 
@@ -678,7 +702,7 @@ None.
 
 ### Fixed
 
-- Correct browse/detail responses that returned 90.91 instead of the required 91 for ten Likes and one Dislike; record the resolution in BUG-027.
+- Correct browse/detail responses that returned 90.91 instead of the required 91 for ten Likes and one Dislike; record the resolution in BUG-031.
 
 ## 2026-10-09 — Add Recipe Reaction Backend (Issue #56)
 

@@ -1,6 +1,6 @@
 schema_version: 1
 last_updated: 2026-10-15
-next_id: 31
+next_id: 32
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -26,15 +26,6 @@ bugs:
     created: 2026-10-11
     updated: 2026-10-15
     related_issue: 56
-  - id: BUG-027
-    title: API danh sách và chi tiết công thức trả tỷ lệ Like chưa làm tròn theo FR-57
-    status: RESOLVED
-    severity: Medium
-    area: Backend/Thống kê bình chọn công thức
-    file: .agents/outputs/bugs/BUG-027.md
-    created: 2026-10-11
-    updated: 2026-10-15
-    related_issue: 56
   - id: BUG-028
     title: Workflow triển khai FR còn ghi ngưỡng coverage cũ
     status: RECORDED
@@ -43,6 +34,24 @@ bugs:
     file: .agents/outputs/bugs/BUG-028.md
     created: 2026-10-11
     updated: 2026-10-15
+    related_issue: Unknown
+  - id: BUG-031
+    title: API danh sách và chi tiết công thức trả tỷ lệ Like chưa làm tròn theo FR-57
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Thống kê bình chọn công thức
+    file: .agents/outputs/bugs/BUG-031.md
+    created: 2026-10-11
+    updated: 2026-10-15
+    related_issue: 56
+  - id: BUG-027
+    title: CI không tải ảnh Git LFS làm kiểm thử landing thất bại
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/CI/Git LFS
+    file: .agents/outputs/bugs/BUG-027.md
+    created: 2026-10-12
+    updated: 2026-10-14
     related_issue: Unknown
   - id: BUG-026
     title: Schema OpenAPI của nguyên liệu và media trong công thức bị trùng tên, mô tả sai response thật
