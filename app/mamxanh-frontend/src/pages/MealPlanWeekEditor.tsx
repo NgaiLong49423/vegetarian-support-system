@@ -746,7 +746,7 @@ function WeekContents({
                                     {entry.totalTimeMinutes === null
                                       ? ""
                                       : `${entry.totalTimeMinutes} phút · `}
-                                    {entry.plannedServings} phần
+                                    {entry.plannedServings.toLocaleString("vi-VN")} phần
                                   </p>
                                 </div>
                                 <div className="flex w-full gap-1 pl-[76px] sm:ml-auto sm:w-auto sm:pl-0">
