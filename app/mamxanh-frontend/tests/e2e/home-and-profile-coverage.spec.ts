@@ -14,21 +14,21 @@ test('home renders Backend featured recipes and routes both search actions to ex
     }], page: 0, size: 4, totalElements: 1, totalPages: 1,
   } }));
 
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await expect(page.getByRole('heading', { name: 'Canh rau củ từ Backend' })).toHaveCount(2);
   await expect(page.locator('img[alt="Canh rau củ từ Backend"]').first()).toHaveAttribute('src', 'https://example.test/first-photo.jpg');
   await page.getByRole('textbox', { name: 'Tìm công thức trang chủ' }).fill('đậu & nấm');
   await page.getByRole('button', { name: 'Tìm', exact: true }).click();
   await expect(page).toHaveURL(/\/kham-pha\?q=%C4%91%E1%BA%ADu%20%26%20n%E1%BA%A5m$/);
 
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('link', { name: 'Xem tất cả', exact: true }).last().click();
   await expect(page).toHaveURL(/\/kham-pha\?sort=MOST_LIKED$/);
 
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('link', { name: 'Khám phá công thức', exact: true }).click();
   await expect(page).toHaveURL(/\/kham-pha$/);
-  await page.goto('/');
+  await page.goto('/trang-chu');
   await page.getByRole('link', { name: 'Mở lịch ăn' }).click();
   await expect(page).toHaveURL(/\/ke-hoach$/);
 });
@@ -76,7 +76,7 @@ test('home explains when Backend has no published recipes', async ({ page }) => 
     items: [], page: 0, size: 4, totalElements: 0, totalPages: 0,
   } }));
 
-  await page.goto('/');
+  await page.goto('/trang-chu');
 
   await expect(page.getByText('Chưa có công thức công khai trong bộ sưu tập này.')).toHaveCount(2);
 });
@@ -120,4 +120,60 @@ test('guest dietary preferences explain that sign-in is required before loading 
 
   await expect(page.getByRole('alert')).toContainText('Đăng nhập tài khoản thật để xem và cập nhật sở thích ăn uống.');
   await expect.poll(() => requestCount).toBe(0);
+});
+
+test('administrator can view admin dashboard and pending modules', async ({ page }) => {
+  await seedDemoSession(page, 'ADMIN');
+
+  await page.route('**/api/v1/admin/expert-applications**', (route) => route.fulfill({
+    json: { content: [], totalElements: 0, totalPages: 0, page: 0, size: 20 },
+  }));
+  await page.route('**/api/v1/admin/ingredients/options', (route) => route.fulfill({
+    json: { success: true, data: { groups: ['Rau củ'], sources: ['USDA'] } },
+  }));
+  await page.route('**/api/v1/admin/ingredients/search**', (route) => route.fulfill({
+    json: { success: true, data: { content: [], totalElements: 0, totalPages: 0, page: 0, size: 5 } },
+  }));
+  await page.route('**/api/v1/admin/ingredients**', (route) => route.fulfill({
+    json: { success: true, data: { content: [], totalElements: 0, totalPages: 0, page: 0, size: 5 } },
+  }));
+
+  await page.goto('/admin');
+  await expect(page.getByRole('heading', { name: 'Bảng điều phối hệ thống' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Điều hướng quản trị' })).toBeVisible();
+  await page.getByRole('button', { name: 'Tải lại số liệu' }).click();
+  await page.getByRole('button', { name: 'Chuyển sang chế độ' }).click();
+
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.getByRole('button', { name: 'Mở menu quản trị' }).click();
+  await expect(page.getByRole('navigation', { name: 'Điều hướng quản trị' })).toBeVisible();
+  await page.getByRole('button', { name: 'Đóng menu' }).click();
+
+  await page.goto('/admin/bao-cao');
+  await expect(page.getByRole('heading', { name: 'Hậu kiểm nội dung & Xử lý báo cáo vi phạm' })).toBeVisible();
+
+  await page.goto('/admin/nguoi-dung');
+  await expect(page.getByRole('heading', { name: 'Quản lý tài khoản & Phân quyền người dùng' })).toBeVisible();
+
+  await page.goto('/admin/giao-dich');
+  await expect(page.getByRole('heading', { name: 'Giám sát giao dịch thanh toán gói AI hệ thống' })).toBeVisible();
+});
+
+test('non-admin member accessing admin route is denied access', async ({ page }) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem('mamxanh.auth', JSON.stringify({
+      accessToken: 'test-user-token',
+      expiresAt: Date.now() + 3600000,
+      account: {
+        id: 2,
+        displayName: 'Khách hàng',
+        email: 'user@mamxanh.local',
+        role: 'CUSTOMER',
+      },
+    }));
+  });
+
+  await page.goto('/admin');
+  await expect(page.getByRole('alert')).toContainText('Không có quyền truy cập');
+  await expect(page.getByRole('heading', { name: 'Không có quyền truy cập' })).toBeVisible();
 });

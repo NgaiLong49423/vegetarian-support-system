@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.28.0
+> **Version:** v1.31.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-10-16
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -11,7 +11,30 @@ Thư mục mã nguồn giao diện ứng dụng Mâm Xanh được xây dựng b
 
 Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy và gỡ lỗi trực tiếp trên **IntelliJ IDEA** (hoặc WebStorm/VS Code).
 
+### Bình chọn công thức — FR-57 / Issue #56
+
+- Trang chi tiết API `/cong-thuc/id/:recipeId` gọi API phản hồi cá nhân để tải lựa chọn hiện tại; dùng PUT để thêm/đổi Like hoặc Dislike và DELETE khi bấm lại nút đã chọn. Số lượt, thanh tỷ lệ và phần trăm được cập nhật từ response thành công của Backend. Lỗi ghi giữ nguyên dữ liệu, quá trình tải/ghi khóa thao tác để tránh gửi trùng.
+- Guest xem thống kê công khai và được yêu cầu đăng nhập khi bình chọn; tác giả và Admin không được thao tác. Backend vẫn quyết định quyền cuối cùng. Lỗi đọc lựa chọn có nút tải lại; bài không còn công khai hoặc Backend từ chối quyền sẽ chặn thao tác tiếp.
+- Thẻ công thức API trên Trang chủ và Khám phá hiển thị huy hiệu ở góc trên trái ảnh: `Mới` khi tỷ lệ là `null`, `0%` khi toàn Dislike, số nguyên do Backend trả khi có bình chọn. Quay lại Khám phá hoặc tải lại trang sẽ lấy thống kê mới.
+- Kiểm thử Playwright của tính năng sử dụng API mô phỏng để xác minh hành vi trình duyệt; chưa thay thế bằng chứng tích hợp Frontend–Backend–SQL Server trong Compose. Các route công thức demo dùng slug vẫn là luồng minh họa riêng.
+- Xác minh giai đoạn 4 (11/10/2026): TypeScript và production build pass; 27 kiểm thử trình duyệt/hồi quy pass và lượt xác nhận cuối 14 kiểm thử pass (9 bình chọn, 5 khám phá công khai). Đã mở luồng Guest với Backend/SQL local thật, kiểm tra yêu cầu đăng nhập không ghi bình chọn và xem ảnh desktop/mobile. Chưa xác minh thao tác ghi của Member qua trình duyệt với Backend thật, Compose hoặc toàn bộ coverage gate.
+- Xác minh giai đoạn 5 (11/10/2026): 13 kiểm tra trình duyệt–HTTP–SQL local thật pass, gồm Member thêm/đổi/hủy, lưu lựa chọn qua tải lại, huy hiệu 91% và 0%, Guest không ghi dữ liệu, tác giả/Admin bị chặn, 401 và hết phiên client, bài bị ẩn/xóa. Các context dùng token do Backend cấp thật; fixture riêng đã được dọn. Bằng chứng này bổ sung cho UI mock, không thay cổng tích hợp Compose khi Docker chưa khả dụng.
+- Lượt cuối `npm run test:e2e:coverage` đạt 104/104 kiểm thử và strict gate >80% cho cả bốn metric: Lines 92,35%, Statements 89,13%, Functions 84,71%, Branches 83,91%. Lượt đầu có một kiểm thử lỗi do fixture dùng nhầm shape API quản lý cho API chi tiết công khai; đã sửa fixture và chạy lại toàn bộ. Tại thời điểm lượt này, Backend/Compose còn bị chặn bởi Docker.
+- Xác minh tiếp giai đoạn 5 (11/10/2026): canonical root Compose project `mamxanh-fr57` build/chạy thành công với FE/BE/SQL healthy. 13 kiểm tra FR-57 bằng trình duyệt/API/SQL thật trên Compose và 1 kiểm thử đăng nhập/throttle thật pass; fixture phản hồi được dọn. Backend đạt 319/319 test và cả bốn JaCoCo metric >80%. Stack được dừng bằng `down`, giữ named volumes; CI/Sonar/CodeQL và nghiệm thu sau merge chưa xác minh.
+
 ## Giao diện demo và giới hạn hiện tại
+
+### Landing công khai và Home ứng dụng
+
+- `/` là Landing giới thiệu sản phẩm và tầm nhìn Mâm Xanh cho cả Guest và người đã đăng nhập. Trang dùng palette kem/xanh cố định, không có thao tác đổi theme và không tải dữ liệu công thức hoặc dữ liệu cá nhân từ Backend để render.
+- `/trang-chu` giữ Home ứng dụng hiện có. Logo và mục Trang chủ trong ứng dụng dẫn về route này; đăng nhập email/Google thành công cũng mở `/trang-chu`, trừ trường hợp Backend mời onboarding. Hoàn tất hoặc bỏ qua onboarding vẫn mở `/kham-pha`. Các deep link chức năng và phân quyền giữ nguyên.
+- Nút Bắt đầu ở header và Bắt đầu khám phá trong Hero/cuối Landing mở `/trang-chu` cho Guest mà không yêu cầu đăng nhập hoặc đăng ký. Đăng nhập là lựa chọn riêng; việc tạo tài khoản chỉ được đề xuất tại chức năng lưu công thức theo tài khoản.
+- Landing giới thiệu công thức, lưu món, lịch ăn, Shopping List, dinh dưỡng, hỗ trợ AI và nội dung từ Chuyên gia theo phạm vi sản phẩm đã chốt. Theo quyết định nội dung của nhóm, không gắn nhãn tiến độ trên Landing; các đoạn giới thiệu không phải bằng chứng nghiệm thu những chức năng chưa kết nối. Giới hạn implementation tiếp tục được mô tả trong các mục dưới đây.
+- Preview trên Landing là ảnh chụp giao diện Mâm Xanh thực tế, được lưu tĩnh trong `public/landing/`, gồm Home Guest, Khám phá, Công thức đã lưu, Lịch ăn, Đi chợ, dinh dưỡng công thức và form hỗ trợ AI. Ảnh được chụp từ root Docker Compose ở theme tối, không dựng lại control bằng icon. Các luồng đã nối API sử dụng SQL Server demo; lưu công thức qua API thật trước khi chụp. Đi chợ và form AI phản ánh giao diện hiện tại, không chứng minh tính năng Backend đã hoàn tất hoặc Gemini đã sinh kết quả. Landing không tải dữ liệu cá nhân để render; CTA không chạy thao tác AI, tạo lịch ăn hoặc Shopping List.
+- Hero dùng ảnh riêng ở mobile; ảnh JPEG được nén khi chụp, khai báo đúng kích thước và lazy-load các preview dưới màn hình đầu. Không thay palette cố định của Landing theo màu trong ảnh ứng dụng.
+- Google Stitch hỗ trợ proposal desktop/mobile trong project `4319306096093270564`. Bố cục và palette được chuyển thủ công sang React/CSS của repo; bỏ script CDN, font/icon phụ, asset logo mới và các khả năng ngoài SRS mà generator tự thêm. Samsung Food chỉ được dùng làm tham khảo cách kể câu chuyện sản phẩm.
+- Application routes được tải theo chunk riêng, gồm theme, danh sách đã lưu và các hiệu ứng của ứng dụng. Landing không tải toàn bộ màn hình ứng dụng ngay từ đầu; khi vào ứng dụng, lựa chọn theme đã lưu vẫn được áp dụng.
+- Metadata mô tả/OG được sinh từ `.figma/make/site.json`, ngôn ngữ HTML là `vi`, title Landing được quản lý bằng React. Cấu hình preview `noindex` hiện có vẫn được giữ; bổ sung metadata không đồng nghĩa trang đã được deploy hoặc mở indexing.
 
 Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-frontend.vercel.app/) vẫn là bản UI cũ dùng dữ liệu mẫu và chưa có đăng nhập/phân quyền thật. Bản chạy local dưới đây dùng Backend và SQL Server thật cho các luồng đã tích hợp; thay đổi hiện tại chưa được deploy lên Vercel.
 
@@ -42,6 +65,8 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - **Đăng nhập Google đã gọi Backend thật (Issue #8):** trang Đăng nhập và Đăng ký hiện nút "Tiếp tục với Google" của Google Identity Services (`@react-oauth/google`) khi có `VITE_GOOGLE_CLIENT_ID`; script Google chỉ được tải trên hai trang này. Google trả ID Token, Frontend gửi `POST /auth/google` rồi lưu phiên và kiểm tra lời mời Onboarding như khi đăng nhập bằng mật khẩu. Lỗi hiển thị theo `code`: token Google không hợp lệ (`GOOGLE_TOKEN_INVALID`), tài khoản bị khóa (`ACCOUNT_LOCKED`), email đã liên kết Google khác (`GOOGLE_ACCOUNT_CONFLICT`) và Google tạm không khả dụng (`GOOGLE_LOGIN_UNAVAILABLE`). Thiếu Client ID thì thay nút bằng thông báo; script Google không tải được thì vẫn đăng nhập bằng email được.
 - **Hồ sơ tác giả đã gọi Backend thật (Issue #29):** trang chi tiết `/cong-thuc/id/:recipeId` hiện ảnh đại diện, tên tác giả (liên kết tới `/thanh-vien/:userId`) và ngày đăng; `/thanh-vien/:userId` là hồ sơ công khai (tên, ảnh, giới thiệu, tháng tham gia, bài đã đăng có phân trang); `/ho-so/cai-dat` cho Member sửa tên, giới thiệu ngắn và ảnh đại diện. Không có ảnh hoặc ảnh lỗi thì hiện ảnh mặc định chữ cái đầu như header.
 - **Nguyên liệu chưa có dữ liệu dinh dưỡng (Issue #45):** trang chi tiết công thức gắn nhãn "Chưa hỗ trợ tính dinh dưỡng" cạnh từng nguyên liệu Backend trả `nutritionSupported = false`, cùng thông báo dinh dưỡng chưa đầy đủ đã có.
+- **Theo dõi thành viên đã gọi Backend thật (Issue #69):** trang `/thanh-vien/:userId` hiện số người theo dõi và số tài khoản đang theo dõi; Member bấm "Theo dõi"/"Đang theo dõi" để theo dõi hoặc bỏ theo dõi, bộ đếm lấy từ phản hồi của Backend. Guest được dẫn tới đăng nhập; hồ sơ của chính mình và tài khoản Administrator không có nút. Bấm vào bộ đếm để xem danh sách (cần đăng nhập, "Xem thêm" theo trang). Lỗi như theo dõi tài khoản đang bị khóa hiện nguyên văn thông báo của Backend.
+- **Bình luận đã gọi Backend thật (Issue #48):** trang chi tiết `/cong-thuc/id/:recipeId` (và `/cong-thuc/:id`) hiện các luồng bình luận lồng tối đa 5 cấp, "Xem thêm bình luận" theo trang. Member viết, trả lời, sửa, xóa bình luận của mình (xác nhận trước khi xóa); trả lời bình luận cấp 5 tự chèn `@Tên`. Bình luận đã xóa còn reply hiện "Bình luận này đã bị xóa bởi người dùng". Guest được mời đăng nhập; Administrator chỉ xem. Nội dung hiển thị như văn bản, không render HTML.
 - **Đăng xuất** chỉ xóa token và trạng thái đăng nhập trên thiết bị, không gọi Backend (AC-03.13).
 - **Quên và đặt lại mật khẩu đã gọi Backend thật (Issue #9):** `/quen-mat-khau` gửi `POST /auth/password-resets` và hiển thị nguyên văn thông báo trung tính của Backend. Liên kết trong email mở `/dat-lai-mat-khau?token=...`; Frontend giữ token trong bộ nhớ, xóa nó khỏi thanh địa chỉ, kiểm tra quy tắc mật khẩu rồi gửi `POST /auth/password-resets/confirm`. Liên kết hỏng, đã dùng hoặc hết hạn (`PASSWORD_RESET_TOKEN_INVALID`) ẩn biểu mẫu và dẫn tới yêu cầu liên kết mới; mật khẩu trùng mật khẩu hiện tại (`NEW_PASSWORD_SAME_AS_CURRENT`) báo ngay dưới ô mật khẩu.
 - Không còn chế độ đổi vai trò/tài khoản giả trên Frontend. Dùng tài khoản local do Backend seed tạo sẵn; danh sách email và cách đặt chung mật khẩu nằm trong [Backend Workspace Guide](../mamxanh-backend/README.md#tài-khoản-demo-local). Mỗi vai trò phải đăng nhập bằng tài khoản riêng; quyền được Backend xác thực.
@@ -53,7 +78,7 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 | Khu vực | Người dùng có thể thử | Giới hạn hiện tại |
 |---|---|---|
 | Trang chủ và thanh điều hướng | Nền tối, header gọn, hai nhóm công thức API và menu responsive | Preview cộng đồng vẫn được ghi nhãn mẫu; không có API nhóm hoặc theo dõi tác giả |
-| Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Chỉ giữ trong bộ nhớ khi trang còn mở, chưa gửi Backend |
+| Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Guest đọc công khai; Customer/Expert đăng nhập mới được thao tác; Backend lưu bình luận và trả lời |
 | Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu | Làm tròn tối đa 2 chữ số thập phân; lượng không đọc được thành số giữ nguyên; chưa đồng bộ Shopping List |
 | Kế hoạch bữa ăn Guest | Chọn 0,5–10 phần cho từng món, bước 0,5 | Guest chỉ cập nhật UI mẫu; Member dùng API lịch tuần, thêm món với khẩu phần mặc định 1 |
 | Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |

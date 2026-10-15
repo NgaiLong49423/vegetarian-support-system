@@ -71,6 +71,11 @@ async function setup(page: Page, initial: ReturnType<typeof entry>[] = []) {
     return route.fulfill({ json: { recipeId: 11, counted: false, viewCount: 0 } })
   })
   await page.route("**/api/v1/recipes/11/related", (route) => route.fulfill({ json: { items: [] } }))
+  await page.route("**/api/v1/recipes/11/reaction", (route) => {
+    expect(route.request().method()).toBe("GET")
+    return route.fulfill({ json: { recipeId: 11, currentReaction: null, likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null } })
+  })
+  await page.route("**/api/v1/recipes/11/comments**", (route) => route.fulfill({ json: { content: [], page: 0, size: 10, totalElements: 0, totalPages: 0, commentCount: 0 } }))
   await page.route("**/api/v1/recipes?**", (route) => {
     if (state.searchFail)
       return route.fulfill({

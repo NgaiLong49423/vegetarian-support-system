@@ -3,6 +3,7 @@ package tech.mamxanh.auth.service;
 import java.util.List;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -81,6 +82,15 @@ public class CurrentUserService {
             throw new AppException(ErrorCode.RECIPE_EDIT_NOT_ALLOWED);
         }
         return user;
+    }
+
+    /** The session account id on a public endpoint, or empty for a Guest request. */
+    public Optional<Long> findAuthenticatedUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+            return Optional.empty();
+        }
+        return Optional.of(requireAuthenticatedUserId());
     }
 
     public record CurrentUser(long id, Role role) { }

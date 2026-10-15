@@ -1,6 +1,6 @@
 > **Document:** Repository Layout and Document Register  
 > **File:** `docs/README.md`  
-> **Version:** v4.2.0
+> **Version:** v4.3.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-15
 > **Status:** Active  
@@ -41,7 +41,7 @@ Phần này là Source of Truth cho ngôn ngữ tài liệu, `CHANGELOG.md` và 
 | docs/requirements/ | Maintained product and software requirements | PRD owns high-level product intent; root SRS owns current scope, context and stable-ID registries; docs/requirements/srs/ owns detailed FR, BR, and NFR specifications |
 | docs/architecture/ | Current high-level system structure and selected technology baseline | ARCHITECTURE owns runtime boundaries; TECHNOLOGY-STACK owns technology purpose, rationale, trade-offs and TBD choices |
 | docs/testing/ | Project-level verification strategy | Strategy and quality evidence policy, not a test-case catalog or claim that tests exist |
-| docs/api/ | Maintained API integration guide and OpenAPI contract | Generated OpenAPI owns runtime endpoint contract; `openapi.yaml` is planned/reference only during migration; API.md owns shared integration conventions |
+| docs/api/ | Maintained API integration guide and OpenAPI contract | Generated OpenAPI owns runtime endpoint contract; committed `openapi.yaml` is the generated snapshot validated against runtime in CI; API.md owns shared integration conventions |
 | docs/decisions/ | Durable project/workflow decisions and rationale | Numbered ADR with context, decision, consequences and unresolved points |
 | docs/diagrams/Activity/ | Maintained activity diagram source and exports | Name by feature; link to the relevant SRS identifiers |
 | docs/diagrams/UseCase/ | Maintained use-case diagram source and exports | Name by module; do not invent a second requirement source |

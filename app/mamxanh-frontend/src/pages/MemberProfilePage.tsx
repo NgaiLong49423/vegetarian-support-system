@@ -4,6 +4,7 @@ import { ArrowLeft, CalendarDays } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Button, Card, EmptyState } from '../components/ui';
 import { MemberAvatar } from '../components/MemberAvatar';
+import { MemberFollowPanel } from '../components/MemberFollowPanel';
 import { PublicRecipeCard } from '../components/PublicRecipeCard';
 import { joinedMonthLabel, membersApi, type MemberProfile } from '../api/members';
 import type { RecipeSearchResult } from '../api/recipes';
@@ -11,7 +12,8 @@ import { asApiError } from '../lib/apiClient';
 
 /**
  * UC-23.2 public member profile (`/thanh-vien/:userId`): name, avatar, bio, join month and the
- * member's published Recipe Posts. No email, role label or private data (AC-23.2, BR-18).
+ * member's published Recipe Posts, plus follow counts, the follow button and lists (FR-59). No
+ * email, role label or private data (AC-23.2, BR-18).
  */
 export function MemberProfilePage() {
   const { userId: rawId } = useParams();
@@ -61,6 +63,7 @@ export function MemberProfilePage() {
           <h1 className="break-words text-2xl font-extrabold text-ink sm:text-3xl">{profile.displayName}</h1>
           <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-ink-muted"><CalendarDays className="h-4 w-4" />Tham gia {joinedMonthLabel(profile.joinedMonth)}</p>
           {profile.bio && <p className="mt-3 whitespace-pre-line break-words leading-7 text-ink-soft">{profile.bio}</p>}
+          <MemberFollowPanel key={profile.userId} userId={profile.userId} />
         </div>
       </div>
     </Card>

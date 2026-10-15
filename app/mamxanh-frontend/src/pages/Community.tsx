@@ -17,7 +17,7 @@ export function Community() {
   return (
     <PageContainer className="py-8">
       <nav className="mb-4 text-sm text-ink-muted">
-        <Link to="/" className="hover:text-brand-600">Trang chủ</Link> / <span className="font-medium text-brand-600">Cộng đồng</span>
+        <Link to="/trang-chu" className="hover:text-brand-600">Trang chủ</Link> / <span className="font-medium text-brand-600">Cộng đồng</span>
       </nav>
 
       <div className="mb-6">
@@ -31,8 +31,8 @@ export function Community() {
           <button
             key={t}
             onClick={() => setTopic(t)}
-            className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              topic === t ? 'border-brand-600 bg-brand-600 text-on-brand' : 'border-brand-200 bg-paper text-ink-soft hover:border-brand-300 hover:text-brand-700'
+            className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95 ${
+              topic === t ? 'border-brand-600 bg-brand-600 text-on-brand shadow-sm shadow-brand-600/20' : 'border-brand-200 bg-paper text-ink-soft hover:border-brand-300 hover:text-brand-700'
             }`}
           >
             {t}
@@ -54,10 +54,10 @@ export function Community() {
             </h3>
             <div className="space-y-4">
               {trending.map((p, i) => (
-                <Link key={p.id} to={`/bai-viet/${p.slug}`} className="group flex gap-3">
+                <Link key={p.id} to={`/bai-viet/${p.slug}`} className="group -mx-2 flex gap-3 rounded-xl p-2 transition-colors duration-200 hover:bg-raised/60">
                   <span className="text-2xl font-extrabold text-brand-700">{i + 1}</span>
                   <div>
-                    <p className="line-clamp-2 text-sm font-semibold text-ink group-hover:text-brand-700">{p.title}</p>
+                    <p className="line-clamp-2 text-sm font-semibold text-ink transition-colors duration-200 group-hover:text-brand-600">{p.title}</p>
                     <p className="mt-1 flex items-center gap-1 text-xs text-ink-muted">
                       <Flame className="h-3 w-3 text-brand-500" /> {p.likes} lượt thích
                     </p>

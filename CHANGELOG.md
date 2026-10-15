@@ -1,19 +1,18 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.81.1
+> **Version:** v2.84.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-10-16
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
-
 ## 2026-10-15 — Synchronize Recipe Views with Develop
 
 **Status:** Committed — `e532d43`.
 
-**Scope:** Reconcile FR-58 / Issue #57 / PR #123 with the current integration baseline, including the merged incomplete-nutrition UI.
+**Scope:** Reconcile FR-58 / Issue #57 / PR #123 with the integration baseline, preserving shared recipe, meal-plan, authentication and CI behavior.
 
 ### Added
 
@@ -21,16 +20,75 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
-- Preserve shared detail, meal-plan, authentication and CI behavior while integrating view recording.
-- Renumber the unmerged view migration to V15 and preserve distinct bug records as BUG-030 and BUG-031; IDs 026–029 are already allocated in PR #119.
-- Regenerate the committed OpenAPI snapshot from the synchronized Backend runtime before verification.
+- Preserve the multi-window Most Viewed filters and record Guest/Member views without changing recipe detail or browse contracts.
+- Keep migration V15 and preserve the FR-58 bug records as BUG-033, BUG-034 and BUG-035; BUG-030–032 are already assigned on develop.
+- Regenerate the committed OpenAPI snapshot from the synchronized Backend runtime.
 
 ### Fixed
 
-- Resolve Git and migration-version conflicts with develop at `7ae8d2a` and the subsequent `e22b5db` baseline.
-- Declare ProblemDetail error schemas for view-recording responses instead of the success DTO (BUG-032).
-
+- Resolve Git, migration and contract conflicts against the current develop baseline, including commit `9114dcf`.
+- Document ProblemDetail error schemas for view-recording responses instead of the success DTO (BUG-035).
 - Adapt meal-plan browser fixtures and scope feedback assertions for concurrent view-recording messages.
+
+## 2026-10-13 — Add Member Following (Issue #69) ([PR #128](https://github.com/NgaiLong49423/vegetarian-support-system/pull/128))
+
+**Status:** Committed — `81ea5ec` (Backend), `8cd7bfc` (Frontend and documentation).
+
+**Scope:** Implement UC-59.1–UC-59.4 so members can follow and unfollow other members from the public profile, see follower and following counts, and browse both lists, following AC-59.1–AC-59.7 and BR-75.
+
+### Added
+
+- Add `GET /api/v1/members/{userId}/follow` (public follow summary with the viewer's state), idempotent `PUT`/`DELETE` on the same path, and paginated `GET /api/v1/members/{userId}/followers` and `/following` for signed-in users. The follower always comes from the session; only active customers and experts may follow; counts and lists include only active accounts.
+- Add the `FOLLOW_SELF_NOT_ALLOWED` (403) and `FOLLOW_TARGET_INACTIVE` (409) error codes.
+- Add follow counts, the follow button and the follower/following lists to the public profile page `/thanh-vien/:userId`.
+- Add SQL Server integration tests (including parallel follow requests) and Playwright tests for the follow flows.
+- Record BUG-032 under `.agents/outputs/bugs/`.
+
+### Changed
+
+- Document the follow API and error codes in `API.md` section 17 and the Backend/Frontend READMEs.
+
+### Fixed
+
+- None.
+
+## 2026-10-15 — Align Recipe Reactions with Generated OpenAPI Verification ([PR #119](https://github.com/NgaiLong49423/vegetarian-support-system/pull/119))
+
+**Status:** Committed — `b715b9b`.
+
+**Scope:** Synchronize FR-57 after the generated OpenAPI snapshot policy was integrated into develop.
+
+### Added
+
+- None.
+
+### Changed
+
+- Regenerate the OpenAPI YAML from the current Backend runtime, including the recipe reaction endpoints, for the shared-stack contract comparison gate.
+
+### Fixed
+
+- Reconcile the shared recipe detail fixture and scope browser status/error assertions to the relevant feature after reaction controls were integrated.
+
+## 2026-10-15 — Synchronize Recipe Reactions with the Integration Baseline ([PR #119](https://github.com/NgaiLong49423/vegetarian-support-system/pull/119))
+
+**Status:** Committed — `ef1fb5a`.
+
+**Scope:** Integrate Issue #56 with develop while preserving recipe discovery, saving, nutrition and meal-plan flows.
+
+### Added
+
+- None.
+
+### Changed
+
+- Display the FR-57 satisfaction badge through the shared PublicRecipeCard used by Home and Explore, preserving the current card layout and save controls.
+- Integrate live reaction controls into the current recipe detail layout alongside existing recipe, nutrition and export actions.
+- Preserve colliding historical bug records by remapping unmerged FR-57 BUG-017/018/019 to BUG-030/031/028 with explicit provenance.
+
+### Fixed
+
+- Resolve overlapping recipe UI and documentation changes without restoring outdated pages or duplicating reaction totals.
 
 ## 2026-10-15 — Generate and Verify the OpenAPI Snapshot
 
@@ -237,6 +295,48 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
+## 2026-10-13 — Add Threaded Recipe Comments (Issue #48) ([PR #129](https://github.com/NgaiLong49423/vegetarian-support-system/pull/129))
+
+**Status:** Committed — `ede6d10` (comments), `ecc5a58` (canonical recipe page), `e2f8be8` (documentation).
+
+**Scope:** Implement UC-46.1–UC-46.5 so guests read the comment threads of a published recipe and members comment, reply up to five levels, and edit or delete their own comments, following AC-46.1–AC-46.4 and BR-66. Administrator moderation (UC-46.6) and the banned-word filter wait for decisions Q60 and Q61.
+
+### Added
+
+- Add `GET /api/v1/recipes/{recipeId}/comments` (public, paginated root threads with nested replies and a comment count), `POST` on the same path to comment or reply, and `PUT`/`DELETE /api/v1/comments/{commentId}` for the owner. A reply to a level-5 comment joins its level-4 parent; a deleted comment with visible replies stays as a tombstone.
+- Add the `COMMENT_NOT_FOUND` (404) and `COMMENT_EDIT_NOT_ALLOWED` (403) error codes.
+- Add SQL Server integration tests and Playwright tests for the comment flows.
+
+### Changed
+
+- Replace the session-only comment preview with the API-backed comment section on both recipe detail pages; the slug-based demo recipe pages no longer show comments.
+- Document the comment API and error codes in `API.md` section 18 and the Backend/Frontend READMEs.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Align Generated OpenAPI Security and Error Responses (Issue #114) ([PR #130](https://github.com/NgaiLong49423/vegetarian-support-system/pull/130))
+
+**Status:** Committed — `a504714`, `fa04b45`.
+
+**Scope:** Make generated `/v3/api-docs` match Backend security and error behavior, and keep API guidance aligned with the current generated-contract workflow.
+
+### Added
+
+- Add `OpenApiContractIntegrationTest` to verify documented security and error responses against runtime behavior.
+- Add a shared `ProblemDetail` schema and document `400`, `401`, `403`, and operation-specific error responses where applicable.
+
+### Changed
+
+- Declare `bearerAuth` on the 31 protected operations that were missing it while keeping public operations unauthenticated.
+- Declare operation-specific errors for the affected catalog, Expert application, subscription, recipe publishing, and authentication operations.
+- Document the generated OpenAPI snapshot and its CI validation alongside the API contract rules.
+
+### Fixed
+
+- Fix `/v3/api-docs.yaml` returning `401` so the snapshot exporter and API consumers can retrieve it without authentication.
+
 ## 2026-10-13 — Publish Recipes With Incomplete Nutrition ([PR #131](https://github.com/NgaiLong49423/vegetarian-support-system/pull/131))
 
 **Status:** Committed — `db03caf`, `1bfb109`, `1525b12`.
@@ -322,6 +422,30 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Align SQL integration fixtures with the existing recipe status constraint and remove fixture Saved records before deleting their referenced recipes.
 - Describe nullable meal-plan response fields in generated OpenAPI so unavailable recipe references and optional metadata match runtime JSON.
 
+## 2026-10-12 — Introduce the Public Product Landing Page ([PR #120](https://github.com/NgaiLong49423/vegetarian-support-system/pull/120))
+
+**Status:** Committed — `2f21e04`.
+
+**Scope:** Introduce the agreed product story at the public root while preserving the existing application and authentication flow.
+
+### Added
+
+- Add a responsive, fixed-palette Landing Page for recipe discovery, saved recipes, meal planning, shopping, reference nutrition, AI assistance and expert contributions.
+- Adapt reviewed Google Stitch desktop and mobile proposals into repository-native React and CSS, with actual application screenshots and accessible section navigation.
+- Add browser coverage for public and authenticated visitors, mobile navigation, keyboard access, fixed appearance and Backend-independent rendering.
+
+### Changed
+
+- Move the existing application Home to `/trang-chu` and update application navigation, login destinations and affected regression tests.
+- Open the public application Home from the primary Landing start actions so Guest visitors can enter without signing in or registering.
+- Replace recreated preview controls with compressed screenshots captured from the application and its Compose demo data, including a dedicated mobile Home image.
+- Load application routes, theme and saved-recipe state separately from the Landing Page.
+- Align public metadata and the Frontend guide with the product story and route separation; preserve the existing preview indexing policy.
+
+### Fixed
+
+- None.
+
 ## 2026-10-12 — Add Related Recipe Recommendations ([PR #125](https://github.com/NgaiLong49423/vegetarian-support-system/pull/125))
 
 **Status:** Committed — `81a3b5e`.
@@ -404,35 +528,6 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Reject generated recipe instructions that reference unselected catalog ingredients or invalid ingredient IDs.
-
-## 2026-10-11 — Add Recipe Views and Interaction Analytics (Issue #57) ([PR #123](https://github.com/NgaiLong49423/vegetarian-support-system/pull/123))
-
-**Status:** Committed — `4a90766`.
-
-**Scope:** Implement FR-58 recording, analytics and Frontend view counts; performance and human acceptance remain pending.
-
-### Added
-
-- Add `POST /api/v1/recipes/{recipeId}/views` with optional Bearer authentication, hashed anonymous UUIDs, a 30-minute last-counted-event window, and a direct `counted`/`viewCount` response.
-- Serialize recording for each viewer/recipe pair with a transaction-owned SQL Server application lock; update the existing counter and insert the view event in one transaction.
-- Record views after public detail content renders on both numeric detail routes; preserve guest UUIDs in a first-party session cookie and use the existing Bearer session for members. Display server-provided totals on detail, Home and Explore, with non-blocking recording errors and identity-preserving retry.
-- Add service, HTTP contract and SQL Server integration tests for deduplication, validation, concurrency, authorization, rollback and rolling-window analytics. Local validation passes 251 tests without SQL Server; subsequent Backend CI validates all 425 tests, including the 13 recipe-view SQL Server integration cases, and the full JaCoCo gate.
-- Add a real Compose browser/API/SQL test for first-view persistence, hashed guest identity, reload deduplication and totals across all four Most Viewed periods. Docker Development passes at `4a90766` in [CI run 38192573667](https://github.com/NgaiLong49423/vegetarian-support-system/actions/runs/38192573667), including all three real-stack browser tests, service startup and generated OpenAPI validation. The runtime view operation's optional Bearer security, JSON schema and statuses match the implementation. Detail latency and 50-user load verification remain pending.
-- Add 14 Playwright checks for guest/member identity, reload, retry, rejected sessions, late requests, all four Most Viewed periods and responsive counts at 360/768/1440 pixels. Before develop synchronization, validation on October 12 passes the full 119-test Frontend suite using two workers, plus all five strict-checker tests; coverage passes every unchanged >80% gate: Lines 91.92%, Statements 89.12%, Functions 84.69% and Branches 82.74%. After synchronization with `41d1b98`, TypeScript, production build and 22 focused view/discovery/theme checks pass. Full Frontend checks remain enforced by CI on each PR head; browser API mocks do not establish real-stack acceptance.
-
-### Changed
-
-- Add append-only migration `V15__recipe_view_deduplication.sql` for member/guest last-event lookup indexes and reconciliation of existing view counters; align the schema snapshot.
-- Document anonymous viewer integration and retry behavior in the API guide while retaining the stateless JWT authentication model.
-- Scope the nutrition-status regression assertion to its nutrition region so new view-status feedback does not make its locator ambiguous.
-- Integrate with the merged Frontend design: use the shared public recipe card for Home/Explore totals and the existing detail statistics tile for the recorded count, preserving themes, gallery, serving controls, sharing and export behavior. Publish responsive view screenshots through the existing Frontend CI job.
-- Validate the recording fix on SQL Server in CI at `6a20c24`: all 425 Backend tests pass, including the 13 recipe-view integration cases, with BUNDLE Lines 95.3%, Branches 85.0%, Methods 92.3% and Instructions 95.3%. Adapt the Compose browser test to the merged search field's accessible name; the subsequent full Compose gate passes at `4a90766`.
-
-### Fixed
-
-- Bound Most Viewed aggregation by the current time so future-dated events do not raise the ranking score (BUG-030); the SQL Server regression passes in the Backend CI run above.
-- Start the SQL Server implicit transaction with a published-recipe read before obtaining the transaction-owned application lock, and refresh the count under that lock (BUG-031). The first CI run exposed 503 recording failures; the fix passes 19 local service/HTTP checks and the SQL Server integration suite above.
-
 
 ## 2026-10-11 — Preserve Theme During Browser Reload Verification
 
@@ -598,6 +693,101 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Expand the Frontend recipe detail API type to match the Backend response.
+## 2026-10-11 — Verify Recipe Reactions on Docker Compose (Issue #56)
+
+**Status:** Committed — `b9d8455`.
+
+**Scope:** Complete the previously blocked local Backend and shared-stack verification for FR-57. Remote CI, Sonar, CodeQL and post-merge acceptance remain unverified.
+
+### Changed
+
+- Pass all 319 Backend tests, including ten SQL Server reaction integration tests, with no failures, errors or skipped tests. Pass the strict JaCoCo BUNDLE gate: Lines 93.8%, Branches 82.3%, Methods 90.5%, Instructions 94.1%.
+- Build and start the canonical root Compose stack using isolated project `mamxanh-fr57`; verify Frontend, Backend and SQL Server healthy and database initialization exit code 0. Verify HTTP 200 for Frontend, generated OpenAPI and the Scalar route, and generated GET/PUT/DELETE reaction operations. Scalar route smoke is not browser-rendering evidence.
+- Pass 13 real browser/HTTP/SQL reaction checks on Compose, covering all five FR-57 acceptance criteria, and the existing real-stack login/throttle browser test. Clean reaction fixtures and stop the stack without removing its named volumes.
+- Align the Backend environment template with existing local variable names using empty placeholders; no real configuration values are copied into tracked files.
+
+## 2026-10-11 — Verify Recipe Reaction Acceptance and Input Validation (Issue #56)
+
+**Status:** Committed — `b9d8455`.
+
+**Scope:** Verify FR-57 local functional acceptance and required quality gates. Full integration acceptance remains pending.
+
+### Added
+
+- Add seven Controller regression cases covering invalid IDs/payloads, successful response mapping and private cache policy.
+
+### Changed
+
+- Verify 51 focused Backend tests, 45 real local HTTP/SQL checks and 13 real browser/HTTP/SQL checks after the validation fix, including all five FR-57 acceptance criteria. Clean up disposable fixtures.
+- Attempt full Backend verification: 175 of 312 tests pass, while 137 Testcontainers tests fail to initialize without Docker. Supplemental partial coverage remains below every strict Backend gate: Lines 62.9%, Branches 60.1%, Methods 59.2%, Instructions 67.0%.
+- Correct a management-page test fixture to use the public detail API shape. Record the workflow's outdated coverage guidance separately as BUG-028; preserve the current strict gates.
+- Pass all 104 Frontend browser tests and the strict coverage gate on the final rerun: Lines 92.35%, Statements 89.13%, Functions 84.71%, Branches 83.91%. The first run failed one test because of the incorrect fixture. Compose, Sonar and CodeQL verification for these uncommitted changes remain pending.
+
+### Fixed
+
+- Return 400 instead of 500 for nonpositive recipe IDs on all three reaction operations by using MVC parameter validation; verify the resolution in BUG-030.
+
+## 2026-10-11 — Integrate Recipe Reaction Frontend (Issue #56)
+
+**Status:** Committed — `b9d8455`.
+
+**Scope:** Complete the FR-57 Frontend stage on API-backed recipe detail, discovery and home cards. Final integration acceptance remains pending.
+
+### Added
+
+- Add Like/Dislike controls with authenticated choice loading, server-confirmed counts, percentage bar and selected-button cancellation through DELETE.
+- Add an upper-left percentage badge on public recipe cards, displaying New for no votes and zero percent for all Dislikes.
+- Add browser tests for adding, switching, cancelling and restoring reactions; guest login, author/Admin restrictions, failed requests, pending-write locking, keyboard operation and responsive layout.
+
+### Changed
+
+- Model author and statistics fields from generated OpenAPI and reuse the existing authenticated API client for reaction operations.
+- Update workspace guides and API fixtures; preserve current counts on write failure and offer retry when the current choice cannot be loaded.
+- Verify 27 browser/regression checks, followed by 14 focused checks on the final implementation, and a real local Guest discovery/detail browser smoke. Member browser writes against the real Backend, Compose integration and full coverage gates remain unverified.
+
+### Fixed
+
+None.
+
+## 2026-10-11 — Align Recipe Reaction Statistics (Issue #56)
+
+**Status:** Committed — `b9d8455`.
+
+**Scope:** Complete FR-57 Backend statistics consistency across reaction, public browse and recipe detail responses. Frontend integration remains pending.
+
+### Added
+
+- Add a shared BR-69 percentage calculation and regression checks for rounding, no votes and all-dislike cases.
+
+### Changed
+
+- Use the same whole-number percentage in all three response paths while preserving response field types and the existing ranking algorithm.
+- Verify 44 unit/regression tests and 45 real local HTTP/SQL checks, including hidden/deleted exclusion from public rankings. Docker-backed integration and full coverage gates remain unverified.
+
+### Fixed
+
+- Correct browse/detail responses that returned 90.91 instead of the required 91 for ten Likes and one Dislike; record the resolution in BUG-031.
+
+## 2026-10-09 — Add Recipe Reaction Backend (Issue #56)
+
+**Status:** Committed — `b9d8455`.
+
+**Scope:** Implement the Backend stage of FR-57 using the existing reaction schema. This checkpoint preceded the statistics alignment recorded on October 11; Frontend integration remains pending.
+
+### Added
+
+- Add authenticated GET, PUT and DELETE operations for the current Member's recipe reaction, with aggregate counts, rounded percentages, private cache policy and generated OpenAPI documentation.
+- Enforce author self-vote rejection and published-recipe checks; serialize reaction mutations through the existing recipe lock, preserving idempotent set/remove behavior.
+- Add focused unit and SQL Server integration tests. Local verification passed 35 unit/regression tests and 25 HTTP/SQL checks; the Testcontainers run could not start without Docker.
+
+### Changed
+
+- Document the reaction contract, verification limits and pending Frontend/read-statistics work in the Backend workspace guide.
+
+### Fixed
+
+None.
+
 ## 2026-10-10 — Add Password Reset (Issue #9) ([PR #113](https://github.com/NgaiLong49423/vegetarian-support-system/pull/113))
 
 **Status:** Committed — `8794862`.

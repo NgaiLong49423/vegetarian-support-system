@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.27.0
+> **Version:** v0.30.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-10-16
 > **Status:** Active
 
 # API Integration Guide
@@ -11,7 +11,7 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract. File [`openapi.yaml`](openapi.yaml) là bản xuất được commit từ Springdoc để tiện tra cứu và phải khớp với runtime; không sửa contract endpoint thủ công trong file này.
 
-Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), AI gợi ý và menu tuần công thức (FR-34), AI preview/thay tuần Meal Plan theo dinh dưỡng (FR-36), chatbot Member theo ngữ cảnh chung hoặc RecipePost công khai (FR-51), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Runtime spec là nguồn contract; YAML trong repo được sinh từ cùng runtime endpoint.
+Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), AI gợi ý và menu tuần công thức (FR-34), AI preview/thay tuần Meal Plan theo dinh dưỡng (FR-36), chatbot Member theo ngữ cảnh chung hoặc RecipePost công khai (FR-51), danh sách RecipePost đã lưu (FR-20/FR-32), nộp báo cáo Recipe Post (FR-26/27), bình chọn (FR-57), lượt xem và thống kê (FR-58), theo dõi thành viên (FR-59), và bình luận lồng nhiều cấp (FR-46). Runtime spec là nguồn contract; YAML trong repo được sinh từ cùng runtime endpoint.
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 8 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
@@ -20,6 +20,8 @@ Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn b�
 - Runtime OpenAPI được sinh từ Controller/DTO/annotations bằng springdoc: `/v3/api-docs` (JSON) và `/v3/api-docs.yaml` (YAML).
 - Bản OpenAPI YAML được commit tại [`openapi.yaml`](openapi.yaml) để tra cứu và tích hợp; CI so sánh file này với YAML runtime.
 - Khi Backend đang chạy tại `http://localhost:8080`, tạo/cập nhật snapshot bằng `./scripts/export-openapi.ps1`. Script tải trực tiếp `/v3/api-docs.yaml` và thay file chỉ sau khi nhận được tài liệu OpenAPI hợp lệ.
+- Operation cần đăng nhập khai báo `bearerAuth`; operation công khai thì không. Response lỗi dùng `application/problem+json` theo `ProblemDetail`; operation nhận dữ liệu khai báo `400`, operation cần đăng nhập khai báo `401`/`403`, và lỗi riêng được khai báo theo mã Backend thực sự trả về.
+- `OpenApiContractIntegrationTest` kiểm tra security và response lỗi trong generated contract so với quy tắc runtime.
 - Base path: `/api/v1`.
 - Giao diện chính thức để team xem và thử API: `/scalar` trên cùng Backend host/port. Scalar tải generated contract từ `/v3/api-docs`.
 - Swagger UI vẫn được giữ như giao diện tương thích trong giai đoạn đầu; Scalar là UI được khuyến nghị cho team.
@@ -404,3 +406,20 @@ Ví dụ phần response cho yêu cầu tìm món:
 Gemini phải phân biệt dữ kiện ghi trong RecipePost với gợi ý/ước tính của AI, không bịa thông tin còn thiếu, tôn trọng loại ăn chay và không chẩn đoán hoặc kê phác đồ điều trị. API chỉ đọc; không lưu lịch sử hội thoại hay thay đổi dữ liệu nghiệp vụ. Frontend giữ tối đa lịch sử cần gửi trong state của phiên hiện tại. Backend chỉ phát telemetry token `AiUsageEvent` sau phản hồi hợp lệ; không đưa câu hỏi, lịch sử, context công thức hoặc câu trả lời vào telemetry/log.
 
 Lỗi request trả `400`; bài không tồn tại hoặc không còn công khai trả `404`; phản hồi Gemini sai/thiếu trả `502 AI_RESPONSE_INVALID`; Gemini lỗi hoặc timeout trả `503 AI_PROVIDER_UNAVAILABLE`. Backend giới hạn thời gian chờ Gemini theo NFR-18. Guest chưa được bật trên endpoint này; chỉ mở khi giới hạn tần suất Guest thuộc FR-02 có mặt trên baseline tích hợp. Generated `/v3/api-docs` là contract chi tiết cho request, response, validation và security.
+
+## 17. Theo dõi thành viên — FR-59
+
+Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Quan hệ có hướng lưu trong `USER_FOLLOW` (có từ V1), người theo dõi luôn là tài khoản trong phiên (BR-75).
+
+- `GET /api/v1/members/{userId}/follow` (công khai) trả `FollowStatusResponse`: `userId`, `following` (người xem có đang theo dõi không; Guest luôn `false`), `followerCount`, `followingCount`. Hai bộ đếm chỉ tính tài khoản `ACTIVE` (AC-59.7). Hồ sơ Member bị `LOCKED` vẫn đọc được (Q55).
+- `PUT /api/v1/members/{userId}/follow` và `DELETE /api/v1/members/{userId}/follow` (cần Bearer token) đều idempotent và trả `FollowStatusResponse` mới: gọi lặp không tạo bản ghi trùng hay làm sai bộ đếm (AC-59.4, AC-59.5). Chỉ Customer/Expert đang hoạt động được gọi; Administrator nhận `403 MEMBER_ACCESS_REQUIRED`, tự theo dõi nhận `403 FOLLOW_SELF_NOT_ALLOWED`, theo dõi Member `LOCKED` nhận `409 FOLLOW_TARGET_INACTIVE`.
+- `GET /api/v1/members/{userId}/followers` và `GET /api/v1/members/{userId}/following` (cần Bearer token) trả `PageResponse` gồm `userId`, `displayName`, `avatarUrl`; không có email hay dữ liệu đăng nhập (AC-59.6). Chỉ gồm tài khoản `ACTIVE`, mới theo dõi gần đây trước; `page` từ 0, `size` 1–50 (mặc định 20).
+## 18. Bình luận và reply lồng nhiều cấp — FR-46
+
+Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Dữ liệu lưu trong `COMMENT` (có từ V1); `CK_COMMENT_depth` và `FK_COMMENT_PARENT` giữ cây tối đa 5 cấp và reply cùng bài với cha (BR-66).
+
+- `GET /api/v1/recipes/{recipeId}/comments?page=0&size=10` (công khai) chỉ cho bài `PUBLISHED` (khác thì `404 RECIPE_NOT_FOUND`). Trả `RecipeCommentPageResponse`: `content` là các luồng gốc, mới nhất trước; mỗi `CommentResponse` có `commentId`, `parentCommentId`, `depth`, `content`, `author` (`userId`, `displayName`, `avatarUrl`), `deleted`, `edited`, `createdAt` và `replies` (cũ trước, đúng thứ tự hội thoại). `totalElements` đếm luồng gốc còn hiển thị, `commentCount` đếm bình luận và reply chưa xóa; `size` 1–50.
+- Bình luận đã xóa còn reply hiển thị được trả về với `deleted = true`, `content` và `author` là `null` (tombstone, AC-46.2); đã xóa và không còn reply nào hiển thị thì không trả về (AF-46.3).
+- `POST /api/v1/recipes/{recipeId}/comments` (cần Bearer token) body `{ "content", "parentCommentId"? }`, trả `201` với bình luận mới. Chỉ Customer/Expert đang hoạt động; Administrator nhận `403 MEMBER_ACCESS_REQUIRED`. `content` bỏ khoảng trắng đầu cuối, 1–1.000 ký tự, sai thì `400 VALIDATION_FAILED` với `errors[].field = content`. Trả lời bình luận cấp 5 được gắn vào cha cấp 4 nên vẫn ở cấp 5 (AC-46.1); Frontend chèn `@Tên` vào đầu nội dung.
+- `PUT /api/v1/comments/{commentId}` body `{ "content" }` và `DELETE /api/v1/comments/{commentId}` (cần Bearer token): chỉ chủ bình luận; người khác nhận `403 COMMENT_EDIT_NOT_ALLOWED`. Sửa thì `edited = true`. Xóa trả `204`, gọi lặp an toàn, luôn là xóa mềm (`is_deleted`) vì `REPORT`/`NOTIFICATION` có thể tham chiếu bình luận.
+- Nội dung là văn bản thuần: Backend lưu nguyên văn, Frontend hiển thị như text nên mã HTML/JavaScript không được thực thi (AC-46.3).

@@ -149,3 +149,45 @@ test('hidden recipe is viewable in edit route but does not load editable referen
   await expect(page.getByText('Đậu hũ kho', { exact: true }).first()).toBeVisible();
   expect(referenceRequests).toBe(0);
 });
+
+test('expert can use AI Recipe Assistant modal to generate and apply a complete recipe', async ({ page }) => {
+  await seedDemoSession(page, 'EXPERT');
+  await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: options }));
+  await page.route('**/api/v1/recipes/ingredient-options**', (route) => route.fulfill({
+    json: [
+      { ingredientId: 11, name: 'Cà chua' },
+      { ingredientId: 12, name: 'Trứng gà' },
+    ],
+  }));
+
+  await page.goto('/dang-cong-thuc');
+  await page.getByRole('button', { name: 'Soạn với Trợ lý AI' }).click();
+  await expect(page.getByText('Trợ lý AI đồng hành cùng Chuyên gia ẩm thực')).toBeVisible();
+
+  // Test selecting meal sessions
+  await page.getByRole('button', { name: /Bữa trưa/ }).click();
+  await page.getByRole('button', { name: /Bữa tối/ }).click();
+  await page.getByRole('button', { name: /Bữa sáng/ }).click();
+
+  // Pick quick template
+  await page.getByRole('button', { name: /Xào cà chua với trứng/ }).click();
+
+  // Generate recipe
+  await page.getByRole('button', { name: 'Phân tích nguyên liệu & gợi ý định lượng' }).click();
+
+  // Verify proposed result appears
+  await expect(page.getByText('Công thức đề xuất')).toBeVisible();
+
+  // Test toggle JSON view
+  await page.getByRole('button', { name: /Xem cấu trúc JSON nguyên liệu/ }).click();
+  await expect(page.getByText('"mon_an"')).toBeVisible();
+  await page.getByRole('button', { name: /Ẩn mã JSON nguyên liệu/ }).click();
+
+  // Apply to form
+  await page.getByRole('button', { name: 'Nạp vào biểu mẫu công thức' }).click();
+
+  // Modal closes and form receives AI values
+  await expect(page.getByText('Trợ lý AI đồng hành cùng Chuyên gia ẩm thực')).toHaveCount(0);
+  await expect(page.getByLabel('Tên món *')).toHaveValue('Xào cà chua với trứng');
+});
+

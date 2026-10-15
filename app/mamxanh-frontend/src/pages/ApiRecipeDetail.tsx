@@ -1,3 +1,4 @@
+import { RecipeReactions } from '../components/RecipeReactions';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -7,7 +8,6 @@ import {
   Clock3,
   Download,
   Eye,
-  Heart,
   MessageCircle,
   Minus,
   Plus,
@@ -25,6 +25,7 @@ import { SaveRecipeButton } from '../components/SaveRecipeButton';
 import { RecipeViews } from '../components/RecipeViews';
 import { MemberAvatar } from '../components/MemberAvatar';
 import { RelatedRecipes } from '../components/RelatedRecipes';
+import { RecipeComments } from '../components/RecipeComments';
 import { MealPlanRecipeServings } from './MealPlanRecipeServings';
 import { useAiChat } from '../components/AiChatContext';
 
@@ -207,12 +208,9 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
           {recipe.publishedAt && <time dateTime={recipe.publishedAt}>Đăng ngày {publishedDate(recipe.publishedAt)}</time>}
         </div>
       </div>
-      <Card className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-2">
+      <Card className="p-4">
         <RecipeViews key={recipeId} recipe={recipe} renderCount={(count) => <StatTile icon={<Eye className="h-4 w-4" />} label="Lượt xem" value={<>{formatNumber(count, 0)}<span className="sr-only"> lượt xem</span></>} />} />
-        <StatTile icon={<Heart className="h-4 w-4" />} label="Lượt thích" value={formatNumber(recipe.statistics.likes, 0)} />
-        <StatTile icon={<Utensils className="h-4 w-4" />} label="Lượt không thích" value={formatNumber(recipe.statistics.dislikes, 0)} />
-        <StatTile icon={<Heart className="h-4 w-4" />} label="Tỷ lệ thích" value={recipe.statistics.likePercentage === null ? 'Mới' : `${formatNumber(recipe.statistics.likePercentage)}%`} />
-        <p className="col-span-2 text-xs text-ink-muted sm:col-span-4 lg:col-span-2">{formatNumber(recipe.statistics.reactionCount, 0)} lượt bình chọn</p>
+        <RecipeReactions recipeId={recipe.recipeId} authorId={recipe.author.userId} statistics={recipe.statistics} />
       </Card>
     </div>
 
@@ -280,14 +278,15 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         <Card className="p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-leaf-700">Tham khảo</p><h2 className="mt-1 text-lg font-extrabold text-ink">Dinh dưỡng mỗi khẩu phần</h2></div><Utensils className="h-5 w-5 text-leaf-600" /></div>
           <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            {NUTRIENTS.map((nutrient) => <div key={nutrient.key} className="rounded-xl bg-brand-50 px-3 py-2.5"><dt className="text-xs text-ink-muted">{nutrient.label}</dt><dd className="mt-1 text-sm font-bold text-ink">{formatNumber(recipe.nutrition?.perServing?.[nutrient.key])} {recipe.nutrition?.perServing?.[nutrient.key] == null ? '' : nutrient.unit}</dd></div>)}
+            {NUTRIENTS.map((nutrient) => <div key={nutrient.key} className="rounded-xl bg-brand-50 px-3 py-2.5"><dt className="text-xs text-ink-muted">{nutrient.label}</dt><dd className="mt-1 text-sm font-bold text-ink">{recipe.nutrition?.perServing?.[nutrient.key] == null ? 'Chưa có dữ liệu' : `≈ ${formatNumber(recipe.nutrition.perServing[nutrient.key])} ${nutrient.unit}`}</dd></div>)}
           </dl>
           {!nutritionComplete && <div role="note" aria-live="polite" className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><p className="font-bold">Ước tính chưa đầy đủ</p><p className="mt-1">Các giá trị chỉ gồm phần tính được từ danh mục. Nguyên liệu thiếu dữ liệu không được tính bằng 0.</p>{missingNutrition.length > 0 && <><p className="mt-2 text-xs font-semibold">Nguyên liệu chưa hỗ trợ tính dinh dưỡng:</p><ul className="mt-1 list-inside list-disc text-xs">{missingNutrition.map((name) => <li key={name}>{name}</li>)}</ul></>}</div>}
           <p className="mt-3 text-xs leading-5 text-ink-muted">Nguồn tham khảo: danh mục dinh dưỡng nội bộ theo USDA/NIH. Số liệu chỉ mang tính ước tính, không thay thế tư vấn y tế.</p>
         </Card>
-        {recipe.nutrition?.total && <Card className="p-5 sm:p-6"><details><summary className="cursor-pointer list-none text-sm font-bold text-ink">Xem tổng dinh dưỡng toàn công thức</summary><dl className="mt-3 grid grid-cols-2 gap-2">{NUTRIENTS.map((nutrient) => { const value = recipe.nutrition.total[nutrient.key]; return <div key={nutrient.key} className="rounded-lg bg-brand-50 px-3 py-2"><dt className="text-xs text-ink-muted">{nutrient.label}</dt><dd className="mt-1 text-sm font-semibold text-ink">{formatNumber(value)}{value == null ? '' : ` ${nutrient.unit}`}</dd></div>; })}</dl></details></Card>}
+        {recipe.nutrition?.total && <Card className="p-5 sm:p-6"><details><summary className="cursor-pointer list-none text-sm font-bold text-ink">Xem tổng dinh dưỡng toàn công thức</summary><dl className="mt-3 grid grid-cols-2 gap-2">{NUTRIENTS.map((nutrient) => { const value = recipe.nutrition.total[nutrient.key]; return <div key={nutrient.key} className="rounded-lg bg-brand-50 px-3 py-2"><dt className="text-xs text-ink-muted">{nutrient.label}</dt><dd className="mt-1 text-sm font-semibold text-ink">{value == null ? 'Chưa có dữ liệu' : `≈ ${formatNumber(value)} ${nutrient.unit}`}</dd></div>; })}</dl></details></Card>}
       </aside>
     </div>
+    <div className="recipe-detail-no-print"><RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} /></div>
     <RelatedRecipes key={recipeId} recipeId={recipeId} />
     <div className="recipe-detail-no-print mt-8"><Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeft className="h-4 w-4" />Trở lại khám phá</Link></div>
   </PageContainer>;

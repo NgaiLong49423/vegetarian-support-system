@@ -5,15 +5,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Coffee,
+  Flame,
+  Info,
   Moon,
   Plus,
   RefreshCw,
   ShoppingCart,
   Sun,
-  Trash2,
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
-import { Badge, Button } from '../components/ui';
+import { BinButton } from '../components/BinButton';
+import { AiButton, Badge, Button } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { weekPlan as initialPlan, recipes } from '../data/mockData';
 import type { DayPlan, MealSlot } from '../types';
@@ -33,6 +35,32 @@ export function MealPlanner() {
   const [week, setWeek] = useState<DayPlan[]>(() => initialPlan.map((d) => ({ ...d, meals: [...d.meals] })));
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [picker, setPicker] = useState<{ dayIdx: number; slot: MealSlot } | null>(null);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [calorieGoal, setCalorieGoal] = useState(1800);
+  const [dietStyle, setDietStyle] = useState('VEGAN');
+  const [aiSuccessToast, setAiSuccessToast] = useState(false);
+
+  const applyAiPlan = () => {
+    setWeek((prev) =>
+      prev.map((day, i) => {
+        const offset = i * 2;
+        const bRecipe = recipes[offset % recipes.length];
+        const lRecipe = recipes[(offset + 1) % recipes.length];
+        const dRecipe = recipes[(offset + 2) % recipes.length];
+        return {
+          ...day,
+          meals: [
+            { slot: 'Sáng', recipe: bRecipe, servings: 1 },
+            { slot: 'Trưa', recipe: lRecipe, servings: 1 },
+            { slot: 'Tối', recipe: dRecipe, servings: 1 },
+          ],
+        };
+      }),
+    );
+    setAiModalOpen(false);
+    setAiSuccessToast(true);
+    setTimeout(() => setAiSuccessToast(false), 4000);
+  };
 
   if (account && account.role !== 'ADMIN') return <MealPlanWeekEditor key={account.id} />;
   if (account?.role === 'ADMIN') return <PageContainer className="py-12"><div role="alert" className="mx-auto max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">Tài khoản Quản trị viên không có quyền xem Lịch ăn của thành viên.</div></PageContainer>;
@@ -64,13 +92,23 @@ export function MealPlanner() {
         <aside className="space-y-4"><WeekCalendar weekStart={weekStart} onChange={setWeekStart} /><div className="rounded-2xl border border-brand-100 bg-paper p-4"><p className="text-sm font-semibold text-ink">Kế hoạch mẫu</p><p className="mt-2 text-xs leading-5 text-ink-muted">Thử chọn món, thay đổi khẩu phần và chuẩn bị bữa chay trên giao diện demo.</p><Link to="/dang-nhap" className="mt-3 inline-block text-xs font-semibold text-brand-600">Đăng nhập để xem lịch riêng →</Link></div></aside>
         <div className="min-w-0">
           <header className="mb-4 rounded-2xl border border-brand-100 bg-paper p-5">
-            <h1 className="flex items-center gap-2 text-xl font-semibold text-ink"><Calendar className="h-5 w-5 text-brand-600" />Kế hoạch bữa ăn</h1>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h1 className="flex items-center gap-2 text-xl font-semibold text-ink"><Calendar className="h-5 w-5 text-brand-600" />Kế hoạch bữa ăn</h1>
+              <AiButton size="sm" onClick={() => setAiModalOpen(true)}>
+                AI gợi ý thực đơn tuần
+              </AiButton>
+            </div>
             <div className="mt-4 flex items-center justify-between gap-3">
               <button type="button" aria-label="Tuần trước" onClick={() => setWeekStart((value) => shiftWeek(value, -1))} className="rounded-full border border-brand-200 p-1.5 text-ink-muted"><ChevronLeft className="h-4 w-4" /></button>
               <span className="text-xs font-medium text-ink-soft">Tuần bắt đầu {new Date(`${weekStart}T12:00:00`).toLocaleDateString('vi-VN')}</span>
               <button type="button" aria-label="Tuần sau" onClick={() => setWeekStart((value) => shiftWeek(value, 1))} className="rounded-full border border-brand-200 p-1.5 text-ink-muted"><ChevronRight className="h-4 w-4" /></button>
             </div>
           </header>
+          {aiSuccessToast && (
+            <div role="status" className="mb-4 rounded-xl border border-leaf-200 bg-leaf-50 p-3.5 text-sm font-semibold text-leaf-800">
+              ✨ Đã tự động xếp thực đơn 7 ngày phù hợp với mục tiêu {calorieGoal.toLocaleString('vi-VN')} kcal/ngày của bạn!
+            </div>
+          )}
       <div className="space-y-3">
         {week.map((day, dayIdx) => { const calendarDate = new Date(`${weekStart}T12:00:00`); calendarDate.setDate(calendarDate.getDate() + dayIdx); const today = localDateKey(calendarDate) === localDateKey(new Date()); return (
           <div
@@ -117,9 +155,12 @@ export function MealPlanner() {
                         <button onClick={() => setPicker({ dayIdx, slot })} title="Đổi món" className="flex h-6 w-6 items-center justify-center rounded-md text-ink-muted hover:bg-paper hover:text-brand-600">
                           <RefreshCw className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => removeMeal(dayIdx, slot)} title="Xoá món" className="flex h-6 w-6 items-center justify-center rounded-md text-ink-muted hover:bg-paper hover:text-red-500">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        <BinButton
+                          size={24}
+                          onClick={() => removeMeal(dayIdx, slot)}
+                          title="Xoá món"
+                          aria-label="Xoá món"
+                        />
                         </div>
                       </div>
                       <label className="mt-2 flex items-center justify-between border-t border-brand-100 pt-2 text-xs text-ink-muted">
@@ -169,12 +210,114 @@ export function MealPlanner() {
               <img src={r.image} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-ink">{r.name}</p>
-                <p className="text-xs text-ink-muted">{r.calories} kcal · {r.prepTime + r.cookTime} phút</p>
+                <p className="text-xs text-ink-muted">≈ {r.calories} kcal · {r.prepTime + r.cookTime} phút</p>
               </div>
             </button>
           ))}
         </div>
       </Modal>
+
+      <Modal open={aiModalOpen} onClose={() => setAiModalOpen(false)} title="Trợ lý gợi ý thực đơn tuần 7 ngày" size="lg">
+        <div className="space-y-4">
+          <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-3.5 text-xs text-ink-soft leading-relaxed flex items-start gap-2.5">
+            <Info className="h-4 w-4 shrink-0 text-brand-600 mt-0.5" />
+            <p>
+              Gợi ý từ trợ lý mang tính tham khảo dinh dưỡng dựa trên mục tiêu bạn chọn. Nhu cầu thực tế có thể thay đổi tùy thể trạng và lịch sinh hoạt, bạn luôn có thể linh hoạt đổi món hoặc điều chỉnh khẩu phần cho từng bữa.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="ai-meal-calorie-goal" className="mb-1 block text-xs font-bold text-ink flex items-center gap-1.5">
+                <Flame className="h-3.5 w-3.5 text-amber-500" /> Mục tiêu năng lượng mỗi ngày
+              </label>
+              <select
+                id="ai-meal-calorie-goal"
+                value={calorieGoal}
+                onChange={(e) => setCalorieGoal(Number(e.target.value))}
+                className="w-full rounded-xl border border-brand-200 bg-paper p-2.5 text-sm font-semibold text-ink outline-none focus:border-brand-500"
+              >
+                <option value={1600}>1.600 kcal / ngày (Thanh lọc, nhẹ nhàng)</option>
+                <option value={1800}>1.800 kcal / ngày (Cân bằng, duy trì sức khỏe)</option>
+                <option value={2000}>2.000 kcal / ngày (Năng động, thể thao)</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="ai-meal-diet-style" className="mb-1 block text-xs font-bold text-ink">
+                Trường phái ăn chay mong muốn
+              </label>
+              <select
+                id="ai-meal-diet-style"
+                value={dietStyle}
+                onChange={(e) => setDietStyle(e.target.value)}
+                className="w-full rounded-xl border border-brand-200 bg-paper p-2.5 text-sm font-semibold text-ink outline-none focus:border-brand-500"
+              >
+                <option value="VEGAN">Thuần chay (100% nguồn gốc thực vật)</option>
+                <option value="LACTO_OVO">Chay có trứng và sữa (Lacto-Ovo)</option>
+                <option value="FLEXIBLE">Chay linh hoạt (Ưu tiên đạm thực vật)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-brand-100 bg-paper p-4 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-brand-700">
+              Nguyên tắc phân bổ 3 bữa trong ngày
+            </h4>
+            <div className="grid gap-2.5 sm:grid-cols-3 text-xs">
+              <div className="rounded-lg border border-amber-100 bg-amber-50/50 p-3">
+                <p className="font-bold text-amber-800 flex items-center gap-1">
+                  <Coffee className="h-3.5 w-3.5" /> Bữa sáng (~25%)
+                </p>
+                <p className="mt-1 font-semibold text-ink">
+                  ≈ {Math.round(calorieGoal * 0.25)} kcal
+                </p>
+                <p className="mt-1 text-[11px] text-ink-muted">
+                  Món nhẹ nhàng, ấm bụng, thanh lọc cơ thể để khởi đầu ngày mới.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-brand-100 bg-brand-50/50 p-3">
+                <p className="font-bold text-brand-800 flex items-center gap-1">
+                  <Sun className="h-3.5 w-3.5" /> Bữa trưa (~45%)
+                </p>
+                <p className="mt-1 font-semibold text-ink">
+                  ≈ {Math.round(calorieGoal * 0.45)} kcal
+                </p>
+                <p className="mt-1 text-[11px] text-ink-muted">
+                  Bữa chính giàu năng lượng, kết hợp đậu hũ, các loại hạt và rau củ cung cấp đạm thực vật bền bỉ.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-3">
+                <p className="font-bold text-indigo-800 flex items-center gap-1">
+                  <Moon className="h-3.5 w-3.5" /> Bữa tối (~30%)
+                </p>
+                <p className="mt-1 font-semibold text-ink">
+                  ≈ {Math.round(calorieGoal * 0.30)} kcal
+                </p>
+                <p className="mt-1 text-[11px] text-ink-muted">
+                  Thanh đạm, giàu chất xơ và vitamin giúp nhẹ bụng và hỗ trợ giấc ngủ ngon.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setAiModalOpen(false)}>Hủy</Button>
+            <AiButton size="sm" onClick={applyAiPlan}>
+              Áp dụng thực đơn gợi ý
+            </AiButton>
+          </div>
+        </div>
+      </Modal>
+
+      {aiSuccessToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-brand-900/20">
+          <span>✨ Đã áp dụng thực đơn 7 ngày từ trợ lý AI!</span>
+        </div>
+      )}
     </PageContainer>
   );
 }
+

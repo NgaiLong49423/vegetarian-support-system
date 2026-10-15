@@ -33,11 +33,11 @@ export function Modal({
       <button
         type="button"
         aria-label="Đóng nền"
-        className="absolute inset-0 h-full w-full bg-black/70 backdrop-blur-sm cursor-default"
+        className="modal-backdrop-enter absolute inset-0 h-full w-full bg-black/70 backdrop-blur-sm cursor-default"
         onClick={onClose}
       />
       <div
-        className={`relative w-full ${size === 'lg' ? 'max-w-2xl' : 'max-w-md'} max-h-[90vh] overflow-y-auto rounded-2xl border border-brand-100 bg-paper p-6 shadow-2xl`}
+        className={`modal-panel-enter relative w-full ${size === 'lg' ? 'max-w-2xl' : 'max-w-md'} max-h-[90vh] overflow-y-auto rounded-2xl border border-brand-100 bg-paper p-6 shadow-2xl`}
         role="dialog"
         aria-modal="true"
         aria-label={title}

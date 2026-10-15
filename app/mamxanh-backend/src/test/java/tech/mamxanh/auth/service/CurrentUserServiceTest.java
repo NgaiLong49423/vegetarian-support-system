@@ -7,11 +7,16 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 import tech.mamxanh.auth.entity.User;
 import tech.mamxanh.auth.repository.UserRepository;
@@ -42,5 +47,29 @@ class CurrentUserServiceTest {
         assertThat(service.getPublicProfiles(List.of())).isEmpty();
         assertThat(service.getPublicProfiles(null)).isEmpty();
         verify(userRepository, never()).findAllById(org.mockito.ArgumentMatchers.anyIterable());
+    }
+
+    @Test
+    void optionalViewerIsEmptyForAGuestOnAPublicEndpoint() {
+        SecurityContextHolder.getContext().setAuthentication(new AnonymousAuthenticationToken("key", "anonymousUser",
+                AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+
+        assertThat(service.findAuthenticatedUserId()).isEmpty();
+
+        SecurityContextHolder.clearContext();
+        assertThat(service.findAuthenticatedUserId()).isEmpty();
+    }
+
+    @Test
+    void optionalViewerIsTheSessionAccountWhenATokenIsPresent() {
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
+                "42", null, AuthorityUtils.createAuthorityList("ROLE_CUSTOMER")));
+
+        assertThat(service.findAuthenticatedUserId()).contains(42L);
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 }

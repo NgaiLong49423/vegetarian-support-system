@@ -672,146 +672,167 @@ function WeekContents({
                       Xem dinh dưỡng ngày
                     </Button>
                   </div>
-                  {meals.map((meal) => (
-                    <section
-                      key={meal}
-                      aria-label={`${mealLabels[meal]} ${label}`}
-                      className="min-w-0"
-                    >
-                      <div className="mb-2 flex items-center justify-between gap-2 border-b border-brand-100 pb-2">
-                        <h3 className="text-sm font-semibold text-ink">
-                          {mealLabels[meal]}
-                        </h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={busy}
-                          aria-label={`Thêm món ${mealLabels[meal]} ${label}`}
-                          onClick={() =>
-                            openPicker({ mealDate: day, mealType: meal })
-                          }
-                        >
-                          <Plus className="h-4 w-4" />
-                          Thêm món
-                        </Button>
-                      </div>
-                      <div className="space-y-2">
-                        {entries
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-stretch">
+                      {meals.map((meal) => {
+                        const mealEntries = entries.filter((entry) => entry.mealType === meal);
+                        const isBreakfast = meal === 'BREAKFAST';
+                        const isLunch = meal === 'LUNCH';
+                        const mealIcon = isBreakfast ? '🌅' : isLunch ? '☀️' : '🌙';
 
-                          .filter((entry) => entry.mealType === meal)
-
-                          .map((entry) => {
-                            const unavailable =
-                              entry.recipeDeleted ||
-                              Boolean(entry.unavailableMessage) ||
-                              !entry.recipeTitle
-
-                            const name = unavailable
-                              ? "Công thức không còn khả dụng"
-                              : entry.recipeTitle!
-
-                            return (
-                              <article
-                                key={entry.entryId}
-                                aria-label={name}
-                                className="flex min-w-0 flex-wrap items-center gap-3 rounded-xl p-2 hover:bg-raised sm:flex-nowrap"
+                        return (
+                          <section
+                            key={meal}
+                            aria-label={`${mealLabels[meal]} ${label}`}
+                            className={`min-w-0 flex flex-col rounded-2xl border p-3.5 transition-all ${
+                              isBreakfast
+                                ? 'border-amber-200/80 bg-amber-50/15 hover:border-amber-300'
+                                : isLunch
+                                  ? 'border-brand-200/80 bg-brand-50/15 hover:border-brand-300'
+                                  : 'border-indigo-200/80 bg-indigo-50/15 hover:border-indigo-300'
+                            }`}
+                          >
+                            <div className="mb-2.5 flex items-center justify-between gap-2 border-b border-brand-100/70 pb-2">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-sm select-none">{mealIcon}</span>
+                                <h3 className="text-sm font-bold text-ink truncate">
+                                  {mealLabels[meal]}
+                                </h3>
+                                <span className="rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold text-ink-muted border border-brand-100 shrink-0">
+                                  {mealEntries.length} món
+                                </span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={busy}
+                                aria-label={`Thêm món ${mealLabels[meal]} ${label}`}
+                                onClick={() =>
+                                  openPicker({ mealDate: day, mealType: meal })
+                                }
+                                className="h-7 px-2 text-xs shrink-0"
                               >
-                                {!unavailable && entry.recipeCoverUrl ? (
-                                  <img
-                                    src={entry.recipeCoverUrl}
-                                    alt=""
-                                    loading="lazy"
-                                    className="h-16 w-16 shrink-0 rounded-lg object-cover"
-                                  />
-                                ) : (
-                                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-raised text-ink-muted">
-                                    <Utensils className="h-5 w-5" />
-                                  </div>
-                                )}
-                                <div className="min-w-0 flex-1">
-                                  {unavailable ? (
-                                    <p className="text-sm text-ink-muted">
-                                      {name}
-                                    </p>
-                                  ) : (
-                                    <Link
-                                      to={`/cong-thuc/id/${entry.recipeId}?mealPlanWeek=${week}&mealPlanEntryId=${entry.entryId}&mealDate=${day}`}
-                                      className="block break-words text-sm font-semibold text-ink hover:text-brand-600"
-                                    >
-                                      {name}
-                                    </Link>
-                                  )}
-                                  <p className="mt-1 flex items-center gap-1 text-xs text-ink-muted">
-                                    <Clock3 className="h-3 w-3" />
-                                    {entry.totalTimeMinutes === null
-                                      ? ""
-                                      : `${entry.totalTimeMinutes} phút · `}
-                                    {entry.plannedServings.toLocaleString("vi-VN")} phần
-                                  </p>
-                                </div>
-                                <div className="flex w-full gap-1 pl-[76px] sm:ml-auto sm:w-auto sm:pl-0">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={busy}
-                                    aria-label={`Chuyển món ${name}`}
-                                    onClick={() => {
-                                      returnFocus.current =
-                                        (document.activeElement as HTMLElement)
-                                      setActionError("")
-                                      setMoving(entry)
-                                    }}
+                                <Plus className="h-3.5 w-3.5" />
+                                Thêm món
+                              </Button>
+                            </div>
+
+                            <div className="flex-1 space-y-2">
+                              {mealEntries.map((entry) => {
+                                const unavailable =
+                                  entry.recipeDeleted ||
+                                  Boolean(entry.unavailableMessage) ||
+                                  !entry.recipeTitle
+
+                                const name = unavailable
+                                  ? "Công thức không còn khả dụng"
+                                  : entry.recipeTitle!
+
+                                return (
+                                  <article
+                                    key={entry.entryId}
+                                    aria-label={name}
+                                    className="flex min-w-0 flex-col gap-2 rounded-xl bg-paper p-2.5 shadow-2xs border border-brand-100/70 hover:border-brand-200 transition-colors"
                                   >
-                                    <ArrowRightLeft className="h-3 w-3" />
-                                    Chuyển
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={busy}
-                                    aria-label={`Thay món ${name}`}
-                                    onClick={() =>
-                                      openPicker({
-                                        mealDate: day,
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      {!unavailable && entry.recipeCoverUrl ? (
+                                        <img
+                                          src={entry.recipeCoverUrl}
+                                          alt=""
+                                          loading="lazy"
+                                          className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                                        />
+                                      ) : (
+                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-raised text-ink-muted">
+                                          <Utensils className="h-4 w-4" />
+                                        </div>
+                                      )}
+                                      <div className="min-w-0 flex-1">
+                                        {unavailable ? (
+                                          <p className="text-xs text-ink-muted">
+                                            {name}
+                                          </p>
+                                        ) : (
+                                          <Link
+                                            to={`/cong-thuc/id/${entry.recipeId}?mealPlanWeek=${week}&mealPlanEntryId=${entry.entryId}&mealDate=${day}`}
+                                            className="block truncate text-xs font-bold text-ink hover:text-brand-600"
+                                            title={name}
+                                          >
+                                            {name}
+                                          </Link>
+                                        )}
+                                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-muted">
+                                          <Clock3 className="h-3 w-3" />
+                                          {entry.totalTimeMinutes === null
+                                            ? ""
+                                            : `${entry.totalTimeMinutes} phút · `}
+                                          {entry.plannedServings.toLocaleString("vi-VN")} phần
+                                        </p>
+                                      </div>
+                                    </div>
 
-                                        mealType: meal,
-
-                                        entry,
-                                      })
-                                    }
-                                  >
-                                    <RefreshCw className="h-3 w-3" />
-                                    Thay
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={busy}
-                                    aria-label={`Gỡ món ${name}`}
-                                    onClick={() => {
-                                      returnFocus.current =
-                                        (document.activeElement as HTMLElement)
-
-                                      setActionError("")
-
-                                      setRemoval(entry)
-                                    }}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                    Gỡ
-                                  </Button>
-                                </div>
-                              </article>
-                            )
-                          })}
-                        {!entries.some((entry) => entry.mealType === meal) && (
-                          <p className="py-3 text-xs text-ink-muted">
-                            Chưa chọn món cho bữa này.
-                          </p>
-                        )}
-                      </div>
-                    </section>
-                  ))}
+                                    <div className="flex items-center justify-end gap-1 border-t border-brand-100/50 pt-1.5">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled={busy}
+                                        aria-label={`Chuyển món ${name}`}
+                                        onClick={() => {
+                                          returnFocus.current =
+                                            (document.activeElement as HTMLElement)
+                                          setActionError("")
+                                          setMoving(entry)
+                                        }}
+                                        className="h-6 px-1.5 text-[11px]"
+                                      >
+                                        <ArrowRightLeft className="h-3 w-3 mr-0.5" />
+                                        Chuyển
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled={busy}
+                                        aria-label={`Thay món ${name}`}
+                                        onClick={() =>
+                                          openPicker({
+                                            mealDate: day,
+                                            mealType: meal,
+                                            entry,
+                                          })
+                                        }
+                                        className="h-6 px-1.5 text-[11px]"
+                                      >
+                                        <RefreshCw className="h-3 w-3 mr-0.5" />
+                                        Thay
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled={busy}
+                                        aria-label={`Gỡ món ${name}`}
+                                        onClick={() => {
+                                          returnFocus.current =
+                                            (document.activeElement as HTMLElement)
+                                          setActionError("")
+                                          setRemoval(entry)
+                                        }}
+                                        className="h-6 px-1.5 text-[11px] text-ink-muted hover:text-red-600"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </article>
+                                )
+                              })}
+                              {mealEntries.length === 0 && (
+                                <p className="py-3 text-xs text-ink-muted text-center rounded-xl border border-dashed border-brand-200/60 bg-paper/50">
+                                  Chưa chọn món cho bữa này.
+                                </p>
+                              )}
+                            </div>
+                          </section>
+                        )
+                      })}
+                    </div>
                 </div>
               )}
             </section>
@@ -860,7 +881,7 @@ function WeekContents({
         <DialogFocus>
           <p className="text-sm text-ink-soft">
             Tải lịch đủ bảy ngày và ba bữa mỗi ngày. Năng lượng ước tính theo
-            khẩu phần đã lưu; món thiếu dữ liệu được ghi rõ.
+            khẩu phần đã lưu, món thiếu dữ liệu được ghi rõ.
           </p>
           {actionError && (
             <p role="alert" className="mt-3 text-sm text-ink-muted">
@@ -1001,7 +1022,7 @@ function MoveDialog({
     <DialogFocus>
       <p className="text-sm text-ink-soft">
         {entry.recipeTitle ?? "Công thức không còn khả dụng"} · Giữ nguyên{" "}
-        {entry.plannedServings} phần.
+        {entry.plannedServings.toLocaleString("vi-VN")} phần.
       </p>
       <form
         onSubmit={(event) => {
@@ -1465,7 +1486,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
         {ingredientPicker("Bạn muốn lịch ăn không có nguyên liệu nào", avoidedQuery, setAvoidedQuery, avoidedOptions, avoided, setAvoided, () => setAvoidedOptions([]))}
         <p className="text-xs text-ink-muted md:col-span-2">Nguyên liệu cần tránh là điều kiện bắt buộc: món có chứa bất kỳ nguyên liệu nào trong danh sách này sẽ bị loại, kể cả khi có nguyên liệu bạn muốn ưu tiên. Thông tin chỉ dùng cho lần tạo lịch này.</p>
       </div>}
-      {mode === "PROFILE" && <p className="mt-3 text-sm text-ink-muted">Dùng mục tiêu và ràng buộc đã lưu. Nếu chưa đặt mục tiêu, thực đơn được tạo theo hướng cân bằng; hồ sơ sở thích chưa khai báo không bắt buộc phải bổ sung.</p>}
+      {mode === "PROFILE" && <p className="mt-3 text-sm text-ink-muted">Dùng mục tiêu và ràng buộc đã lưu. Nếu chưa đặt mục tiêu, thực đơn được tạo theo hướng cân bằng. Hồ sơ sở thích chưa khai báo không bắt buộc phải bổ sung.</p>}
       <div className="mt-4 flex flex-wrap gap-2">
         <Button disabled={loading || applying} onClick={() => void generate()}>{loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{preview ? "Tạo thực đơn khác" : "Tạo thực đơn tuần"}</Button>
       </div>
@@ -1473,7 +1494,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
       {successMessage && <p role="status" className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">{successMessage}</p>}
       {preview && <div className="mt-5 space-y-4 border-t border-brand-100 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold text-ink">Bản xem trước · {selected.length} món được chọn</p><Button variant="ghost" size="sm" onClick={() => { setSelected(selected.length === preview.meals.length ? [] : preview.meals.map((_, i) => i)); setConfirmArmed(false) }}>{selected.length === preview.meals.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}</Button></div>
-        <div className="rounded-xl bg-raised p-3"><p className="mb-2 text-xs font-semibold text-ink">Tổng dinh dưỡng dự kiến theo các món đã chọn trong tuần</p><div className="grid grid-cols-2 gap-2 text-xs text-ink-muted sm:grid-cols-3 lg:grid-cols-5">{Object.entries(nutritionLabels).map(([key, label]) => <span key={key}>{label}: {Number(totals?.[key] ?? 0).toFixed(1)}</span>)}</div></div>
+        <div className="rounded-xl bg-raised p-3"><p className="mb-2 text-xs font-semibold text-ink">Tổng dinh dưỡng dự kiến theo các món đã chọn trong tuần</p><div className="grid grid-cols-2 gap-2 text-xs text-ink-muted sm:grid-cols-3 lg:grid-cols-5">{Object.entries(nutritionLabels).map(([key, label]) => <span key={key}>{label}: ≈ {Number(totals?.[key] ?? 0).toFixed(1)}</span>)}</div></div>
         <div className="space-y-3">{Object.entries(grouped ?? {}).map(([day, dayMeals]) => <section key={day} className="rounded-xl bg-raised p-3"><h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3><div className="mt-2 grid gap-2 sm:grid-cols-3">{dayMeals.map((meal) => {
           const index = preview.meals.findIndex((item) => item.mealDate === meal.mealDate && item.mealType === meal.mealType)
           const label = meal.mealType === "BREAKFAST" ? "Sáng" : meal.mealType === "LUNCH" ? "Trưa" : "Tối"
@@ -1490,13 +1511,13 @@ function AiWeeklyMenu({ week }: { week: string }) {
               {meal.coverUrl ? <img src={meal.coverUrl} alt="" loading="lazy" className="h-16 w-16 shrink-0 rounded-lg object-cover" /> : <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-raised text-ink-muted"><Utensils className="h-5 w-5" /></span>}
               <span className="min-w-0">
                 <span className="block break-words font-semibold text-ink group-hover:text-brand-600">{meal.recipeTitle}</span>
-                <span className="mt-1 block text-xs text-ink-muted">{meal.nutritionPerServing.ENERGY_KCAL ?? "—"} kcal · {meal.nutritionPerServing.PROTEIN_G ?? "—"} g đạm</span>
+                <span className="mt-1 block text-xs text-ink-muted">{meal.nutritionPerServing.ENERGY_KCAL != null ? `≈ ${meal.nutritionPerServing.ENERGY_KCAL}` : "—"} kcal · {meal.nutritionPerServing.PROTEIN_G != null ? `≈ ${meal.nutritionPerServing.PROTEIN_G}` : "—"} g đạm</span>
                 <span className="mt-1 block text-xs font-medium text-brand-700">Xem công thức</span>
               </span>
             </Link>
           </article>
         })}</div></section>)}</div>
-        <p className="text-xs text-ink-muted">{preview.nutritionDisclaimer} Món có thể được lặp nếu nguồn phù hợp chưa đủ đa dạng; cùng món không xuất hiện ở hai bữa liền nhau.</p>
+        <p className="text-xs text-ink-muted">{preview.nutritionDisclaimer} Món có thể được lặp nếu nguồn phù hợp chưa đủ đa dạng, cùng món không xuất hiện ở hai bữa liền nhau.</p>
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Khi xác nhận, toàn bộ món đã có trong lịch của tuần này sẽ bị thay bằng các món đang được chọn.</div>
         <div className="flex flex-wrap gap-2"><Button disabled={applying || selected.length === 0} onClick={() => void apply()}>{applying ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}{confirmArmed ? "Xác nhận thay toàn bộ lịch" : "Áp dụng vào Lịch ăn"}</Button>{confirmArmed && <Button variant="outline" onClick={() => setConfirmArmed(false)}>Quay lại</Button>}</div>
       </div>}

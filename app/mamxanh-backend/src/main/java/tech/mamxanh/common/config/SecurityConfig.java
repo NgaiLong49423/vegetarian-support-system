@@ -74,10 +74,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/mine").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/*/manage").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/*/related").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/recipes", "/api/v1/recipes/*", "/api/v1/recipes/*/media").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/recipes", "/api/v1/recipes/*", "/api/v1/recipes/*/media",
+                                "/api/v1/recipes/*/comments").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/form-options",
                                 "/api/v1/recipes/ingredient-options").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/members/*", "/api/v1/members/*/recipes").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/members/*", "/api/v1/members/*/recipes",
+                                "/api/v1/members/*/follow").permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                         .requestMatchers(API_DOCS_ENDPOINTS).permitAll()
                         .requestMatchers("/error").permitAll()

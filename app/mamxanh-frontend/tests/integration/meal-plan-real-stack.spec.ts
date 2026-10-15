@@ -122,7 +122,7 @@ test("FR-09/FR-33 move, export and mutations persist in Compose SQL and preserve
     )
     await page.getByRole("button", { name: "Đăng nhập", exact: true }).click()
     expect((await login).status()).toBe(200)
-    await expect(page).toHaveURL(/\/$/)
+    await expect(page).toHaveURL(/\/trang-chu$/)
     const session = await page.evaluate(() =>
       JSON.parse(sessionStorage.getItem("mamxanh.auth")!),
     )

@@ -126,18 +126,18 @@ class RecipeServiceTest {
         when(nutritionService.calculate(List.of(), 2)).thenReturn(
                 new RecipeNutritionService.NutritionSummary(true, List.of(), java.util.Map.of(), java.util.Map.of()));
         var projection = org.mockito.Mockito.mock(RecipeStatisticsRepository.StatisticsProjection.class);
-        when(projection.getLikes()).thenReturn(3L);
+        when(projection.getLikes()).thenReturn(10L);
         when(projection.getDislikes()).thenReturn(1L);
-        when(projection.getReactionCount()).thenReturn(4L);
+        when(projection.getReactionCount()).thenReturn(11L);
         when(projection.getViewCount()).thenReturn(21L);
         when(statisticsRepository.findStatistics(44L)).thenReturn(Optional.of(projection));
 
         var result = service.getPublishedRecipe(44L);
 
         assertThat(result.author().displayName()).isEqualTo("Bếp xanh");
-        assertThat(result.statistics().likes()).isEqualTo(3);
+        assertThat(result.statistics().likes()).isEqualTo(10);
         assertThat(result.statistics().viewCount()).isEqualTo(21);
-        assertThat(result.statistics().likePercentage()).isEqualByComparingTo("75.00");
+        assertThat(result.statistics().likePercentage()).isEqualByComparingTo("91");
         assertThat(result.nutrition().complete()).isTrue();
         assertThat(result.instructions()).isEqualTo("Kho đến khi thấm gia vị");
     }

@@ -41,6 +41,8 @@ const detail = {
   youtubeUrl: null,
   publishedAt: '2026-10-01T08:00:00',
   nutritionComplete: true,
+  author: { userId: 22, displayName: "Lan", avatarUrl: null },
+  statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
   ingredientsWithoutNutrition: [],
   author: { userId: 22, displayName: 'Bếp Chay Lan', avatarUrl: null },
   nutrition: { complete: true, ingredientsMissingData: [], total: {}, perServing: {} },
