@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.28.0
+> **Version:** v0.29.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -132,7 +132,7 @@ Quy ước status chính:
 | `429 Too Many Requests` | Chỉ áp dụng khi contract của endpoint quy định `429` (ví dụ login, resend verification hoặc AI rate limiting); client đọc `Retry-After` khi có. Password-reset request không trả `429`. |
 | `503 Service Unavailable` | Dịch vụ phụ thuộc tạm thời không dùng được, ví dụ không tải được chứng chỉ Google (`GOOGLE_LOGIN_UNAVAILABLE`). |
 
-Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
+Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36, #48).
 
 | `code` | Status | Khi nào |
 |---|---|---|
@@ -149,8 +149,10 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
 | `GOOGLE_TOKEN_INVALID` | 401 | `POST /auth/google` với ID Token sai định dạng, sai chữ ký, hết hạn, sai issuer/audience, thiếu `sub`/email, email Google chưa xác minh hoặc không lưu được; cũng trả khi Backend chưa cấu hình `MAMXANH_GOOGLE_CLIENT_ID`. |
 | `GOOGLE_ACCOUNT_CONFLICT` | 409 | `POST /auth/google` khi email đã liên kết với một tài khoản Google khác. |
 | `GOOGLE_LOGIN_UNAVAILABLE` | 503 | `POST /auth/google` khi Backend không tải được chứng chỉ ký của Google. |
-| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31) hoặc hồ sơ cá nhân `/me/profile` (FR-23); chỉ Member (`CUSTOMER`, `EXPERT`) có các hồ sơ này. |
+| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31), hồ sơ cá nhân `/me/profile` (FR-23) hoặc viết bình luận (FR-46); chỉ Member (`CUSTOMER`, `EXPERT`) đang hoạt động có các chức năng này. |
 | `MEMBER_PROFILE_NOT_FOUND` | 404 | `GET /members/{userId}` hoặc `/members/{userId}/recipes` với ID không tồn tại hoặc thuộc tài khoản Administrator (FR-23, Q55). |
+| `COMMENT_NOT_FOUND` | 404 | Bình luận không tồn tại, đã bị xóa hoặc thuộc bài không còn công khai; cũng trả khi `parentCommentId` của reply không còn hoặc thuộc bài khác (FR-46). |
+| `COMMENT_EDIT_NOT_ALLOWED` | 403 | `PUT`/`DELETE /comments/{commentId}` với bình luận của người khác (AC-46.4); nội dung giữ nguyên. |
 | `FILE_TOO_LARGE` | 413 | Ảnh đại diện vượt 2 MB, hoặc tệp tải lên vượt giới hạn 5 MB của máy chủ. |
 | `UNSUPPORTED_IMAGE_TYPE` | 400 | Tệp ảnh không phải JPEG, PNG hoặc WebP; với ảnh đại diện, nội dung tệp (chữ ký đầu tệp) phải khớp `Content-Type`. |
 | `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |

@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.83.0
+> **Version:** v2.84.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -8,6 +8,24 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-15 — Restore Comment Error Codes in the API Guide
+
+**Status:** Working tree — not committed.
+
+**Scope:** Restore the FR-46 error-code documentation that PR #129 added to `docs/api/API.md` and that was dropped while resolving the PR #129 sync conflict (`b2802ea`); the Backend already returns these codes.
+
+### Added
+
+- None.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Restore the `COMMENT_NOT_FOUND` and `COMMENT_EDIT_NOT_ALLOWED` rows, the FR-46 comment case of `MEMBER_ACCESS_REQUIRED`, and Issue #48 in the list of implemented error codes in `API.md`.
 
 ## 2026-10-15 — Align Recipe Reactions with Generated OpenAPI Verification ([PR #119](https://github.com/NgaiLong49423/vegetarian-support-system/pull/119))
 
