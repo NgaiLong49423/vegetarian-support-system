@@ -4,7 +4,7 @@ import tech.mamxanh.auth.entity.AccountStatus;
 import tech.mamxanh.auth.entity.Role;
 import tech.mamxanh.auth.entity.User;
 
-/** openapi.yaml AccountSummary: the signed-in account, never the password hash or tokens. */
+/** OpenAPI schema AccountSummary: the signed-in account, never the password hash or tokens. */
 public record AccountSummary(
         Long id,
         String displayName,

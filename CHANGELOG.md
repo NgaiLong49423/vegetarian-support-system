@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.80.1
+> **Version:** v2.82.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -41,7 +41,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Display the FR-57 satisfaction badge through the shared PublicRecipeCard used by Home and Explore, preserving the current card layout and save controls.
 - Integrate live reaction controls into the current recipe detail layout alongside existing recipe, nutrition and export actions.
-- Preserve colliding historical bug records by remapping unmerged FR-57 BUG-017/018/019 to BUG-026/027/028 with explicit provenance.
+- Preserve colliding historical bug records by remapping unmerged FR-57 BUG-017/018/019 to BUG-030/027/028 with explicit provenance.
 
 ### Fixed
 
@@ -247,6 +247,48 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
 - Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Align Generated OpenAPI Security and Error Responses (Issue #114) ([PR #130](https://github.com/NgaiLong49423/vegetarian-support-system/pull/130))
+
+**Status:** Committed — `a504714`, `fa04b45`.
+
+**Scope:** Make generated `/v3/api-docs` match Backend security and error behavior, and keep API guidance aligned with the current generated-contract workflow.
+
+### Added
+
+- Add `OpenApiContractIntegrationTest` to verify documented security and error responses against runtime behavior.
+- Add a shared `ProblemDetail` schema and document `400`, `401`, `403`, and operation-specific error responses where applicable.
+
+### Changed
+
+- Declare `bearerAuth` on the 31 protected operations that were missing it while keeping public operations unauthenticated.
+- Declare operation-specific errors for the affected catalog, Expert application, subscription, recipe publishing, and authentication operations.
+- Document the generated OpenAPI snapshot and its CI validation alongside the API contract rules.
+
+### Fixed
+
+- Fix `/v3/api-docs.yaml` returning `401` so the snapshot exporter and API consumers can retrieve it without authentication.
+
+## 2026-10-13 — Publish Recipes With Incomplete Nutrition ([PR #131](https://github.com/NgaiLong49423/vegetarian-support-system/pull/131))
+
+**Status:** Committed — `db03caf`, `1bfb109`, `1525b12`.
+
+**Scope:** Complete FR-40 (AC-40.1–AC-40.3, BR-40, BR-50): recipes that use catalog ingredients without nutrition data stay publishable, each such ingredient is labelled on the recipe page, and such recipes are kept out of the nutrition AI menu candidate pool.
+
+### Added
+
+- Add the "Chưa hỗ trợ tính dinh dưỡng" label next to each ingredient without nutrition data on both recipe detail pages.
+- Add an SQL Server integration test showing that applying a nutrition AI menu (`PUT /api/v1/meal-plans/ai-menu`, FR-36) with a published recipe that uses an ingredient without nutrition data returns `404 RECIPE_NOT_FOUND` and leaves the meal plan untouched (AC-40.3), and Playwright tests for the label.
+- Record BUG-026: generated OpenAPI merges same-named nested recipe DTOs, so recipe `ingredients[]`/`media[]` schemas differ from the real responses.
+
+### Changed
+
+- Document FR-40 in `API.md` section 7 and the Backend/Frontend READMEs; type `nutritionSupported` on recipe detail ingredients in the Frontend API client.
+- Rely on the FR-36 candidate filter merged in PR #134 (`AiMenuService` keeps only published recipes whose nutrition calculation is complete) for AC-40.3 instead of adding a second candidate service.
 
 ### Fixed
 
@@ -595,7 +637,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Fixed
 
-- Return 400 instead of 500 for nonpositive recipe IDs on all three reaction operations by using MVC parameter validation; verify the resolution in BUG-026.
+- Return 400 instead of 500 for nonpositive recipe IDs on all three reaction operations by using MVC parameter validation; verify the resolution in BUG-030.
 
 ## 2026-10-11 — Integrate Recipe Reaction Frontend (Issue #56)
 

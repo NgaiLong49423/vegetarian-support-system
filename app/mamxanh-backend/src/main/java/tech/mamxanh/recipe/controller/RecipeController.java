@@ -4,6 +4,8 @@ import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import tech.mamxanh.common.config.OpenApiConfig;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +49,12 @@ public class RecipeController {
         return service.getPublishedRecipe(recipeId);
     }
 
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "The published Recipe Post."),
+            @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: the recipe breaks the validation profile; field errors in `errors`."),
+            @ApiResponse(responseCode = "403", description = "ACCESS_DENIED: only an active Expert publishes recipes, or ACCOUNT_LOCKED.")
+    })
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CreateRecipeResponse> publish(@Valid @RequestBody CreateRecipeRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.publish(request));
