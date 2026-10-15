@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.81.0
+> **Version:** v2.81.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-15
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-15 — Synchronize Recipe Views with Develop
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `e532d43`.
 
 **Scope:** Reconcile FR-58 / Issue #57 / PR #123 with the current integration baseline, including the merged incomplete-nutrition UI.
 
