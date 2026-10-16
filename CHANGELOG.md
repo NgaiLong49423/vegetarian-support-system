@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.85.0
+> **Version:** v2.86.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-16
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-16 — Restore Recipe Reaction Card Checks on the Home Route
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f2d6e7c`.
 
 **Scope:** Keep the recipe reaction badge regression test aligned with the current Frontend routing.
 
@@ -26,6 +26,28 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Open `/trang-chu` in the Home card badge test and apply its two-card expectation there; `/` now renders the landing page. Keep the Explore badge check on `/kham-pha`.
+
+## 2026-10-15 — Synchronize Recipe Views with Develop
+
+**Status:** Committed — `e532d43`.
+
+**Scope:** Reconcile FR-58 / Issue #57 / PR #123 with the integration baseline, preserving shared recipe, meal-plan, authentication and CI behavior.
+
+### Added
+
+- None.
+
+### Changed
+
+- Preserve the multi-window Most Viewed filters and record Guest/Member views without changing recipe detail or browse contracts.
+- Keep migration V15 and preserve the FR-58 bug records as BUG-033, BUG-034 and BUG-035; BUG-030–032 are already assigned on develop.
+- Regenerate the committed OpenAPI snapshot from the synchronized Backend runtime.
+
+### Fixed
+
+- Resolve Git, migration and contract conflicts against the current develop baseline, including commit `9114dcf`.
+- Document ProblemDetail error schemas for view-recording responses instead of the success DTO (BUG-035).
+- Adapt meal-plan browser fixtures and scope feedback assertions for concurrent view-recording messages.
 
 ## 2026-10-13 — Add Member Following (Issue #69) ([PR #128](https://github.com/NgaiLong49423/vegetarian-support-system/pull/128))
 
@@ -306,7 +328,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Show the nine nutrients per serving with the original servings of each recipe and the absolute difference (first recipe − second recipe); a recipe with incomplete nutrition shows "Chưa đủ dữ liệu" and no difference.
 - Add "So sánh" entry points on recipe cards, both recipe detail routes and the Member saved recipe list.
 - Add Playwright tests for every acceptance criterion and the picker, and a real-stack test that uses the two seeded demo Expert recipes, chooses the second one on the picker page, checks the per-serving values against the Backend and checks that comparing only sends `GET` requests.
-- Record BUG-033: adding an ingredient between 00:00 and 06:59 Vietnam time is rejected because the default reference date is checked against the Backend's UTC clock; found by the admin catalog real-stack test and not fixed in this PR.
+- Record BUG-036: adding an ingredient between 00:00 and 06:59 Vietnam time is rejected because the default reference date is checked against the Backend's UTC clock; found by the admin catalog real-stack test and not fixed in this PR.
 
 ### Changed
 

@@ -1,6 +1,6 @@
 schema_version: 1
 last_updated: 2026-10-16
-next_id: 34
+next_id: 37
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,15 +8,42 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
-  - id: BUG-033
+  - id: BUG-036
     title: Thêm nguyên liệu từ 0 giờ đến 7 giờ sáng (giờ Việt Nam) bị từ chối vì ngày tham khảo mặc định "ở tương lai"
     status: RECORDED
     severity: Medium
     area: Frontend/Backend Quản trị danh mục nguyên liệu
-    file: .agents/outputs/bugs/BUG-033.md
+    file: .agents/outputs/bugs/BUG-036.md
     created: 2026-10-16
     updated: 2026-10-16
     related_issue: 46
+  - id: BUG-035
+    title: OpenAPI lượt xem mô tả sai schema phản hồi lỗi
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Recipe Views/OpenAPI
+    file: .agents/outputs/bugs/BUG-035.md
+    created: 2026-10-15
+    updated: 2026-10-16
+    related_issue: 57
+  - id: BUG-034
+    title: Ghi nhận lượt xem trả 503 vì lấy khóa trước khi transaction SQL được kích hoạt
+    status: RESOLVED
+    severity: High
+    area: Backend/Ghi nhận lượt xem
+    file: .agents/outputs/bugs/BUG-034.md
+    created: 2026-10-12
+    updated: 2026-10-16
+    related_issue: 57
+  - id: BUG-033
+    title: Sắp xếp Xem nhiều nhất tính cả lượt xem có thời gian tương lai
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Thống kê lượt xem
+    file: .agents/outputs/bugs/BUG-033.md
+    created: 2026-10-11
+    updated: 2026-10-16
+    related_issue: 57
   - id: BUG-032
     title: Administrator dùng chức năng chỉ dành cho Member nhận mã lỗi chỉnh sửa công thức
     status: RECORDED

@@ -35,7 +35,7 @@ class RecipeBrowseRepositoryImpl implements RecipeBrowseRepository {
                 COUNT_BIG(*) AS views,
                 SUM(CASE WHEN rv.viewed_at >= :since7d AND rv.viewed_at <= :now THEN 1 ELSE 0 END) AS views7d,
                 SUM(CASE WHEN rv.viewed_at >= :since3d AND rv.viewed_at <= :now THEN 1 ELSE 0 END) AS views3d,
-                SUM(CASE WHEN rv.viewed_at >= :viewSince THEN 1 ELSE 0 END) AS periodViews
+                SUM(CASE WHEN rv.viewed_at >= :viewSince AND rv.viewed_at <= :now THEN 1 ELSE 0 END) AS periodViews
               FROM RECIPE_VIEW rv JOIN matched m ON m.recipe_id = rv.recipe_id
               GROUP BY rv.recipe_id
             ),

@@ -33,6 +33,7 @@ import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { recipes } from '../data/mockData';
 import { recipesApi, type RecipeDetail as RecipeDetailData } from '../api/recipes';
 import { scaleQuantity } from '../utils/servings';
+import { RecipeViews } from '../components/RecipeViews';
 import { isSaved, toggleSaved, subscribeSaved } from '../lib/savedRecipes';
 
 const reportReasons = [
@@ -57,7 +58,7 @@ const nutritionRows = [
 
 export function RecipeDetail() {
   const { slug } = useParams();
-  if (slug && /^\d+$/.test(slug)) return <PublishedRecipeDetail recipeId={Number(slug)} />;
+  if (slug && /^\d+$/.test(slug)) return <PublishedRecipeDetail key={slug} recipeId={Number(slug)} />;
   return <MockRecipeDetail />;
 }
 
@@ -96,6 +97,7 @@ function PublishedRecipeDetail({ recipeId }: { recipeId: number }) {
         <div className="p-5 sm:p-8">
           <div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-800"><span className="rounded-full bg-brand-50 px-3 py-1">{recipe.dishCategoryLabel}</span><span className="rounded-full bg-leaf-50 px-3 py-1">{recipe.vegetarianTypeLabel}</span><span className="rounded-full bg-stone-100 px-3 py-1">Độ khó: {recipe.difficultyLabel}</span></div>
           <h1 className="mt-4 text-3xl font-extrabold text-ink">{recipe.title}</h1>
+          <RecipeViews key={recipeId} recipe={recipe} />
           {recipe.description && <p className="mt-3 text-base leading-7 text-ink-soft">{recipe.description}</p>}
           <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-muted"><span>{recipe.servings} khẩu phần</span><span>Chuẩn bị {recipe.prepTimeMinutes} phút</span><span>Nấu {recipe.cookTimeMinutes} phút</span></div>
           <section className="mt-8"><h2 className="text-xl font-extrabold text-ink">Nguyên liệu</h2><ul className="mt-3 space-y-2">{recipe.ingredients.map((item, index) => <li key={`${item.ingredientId}-${item.unitId}-${index}`} className="flex justify-between gap-4 border-b border-brand-50 py-2 text-sm"><span>{item.name}{item.nutritionSupported === false && <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Chưa hỗ trợ tính dinh dưỡng</span>}</span><span className="shrink-0 font-semibold text-ink">{item.quantity} {item.unitCode}</span></li>)}</ul></section>

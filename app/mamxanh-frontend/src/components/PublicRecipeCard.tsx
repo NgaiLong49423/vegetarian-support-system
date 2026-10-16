@@ -2,6 +2,7 @@ import { Link } from "react-router-dom"
 import { ArrowLeftRight, Leaf } from "lucide-react"
 import type { RecipeFormOptions, RecipePost } from "../api/recipes"
 import { SaveRecipeButton } from "./SaveRecipeButton"
+import { RecipeViewCount } from "./RecipeViewCount"
 import { RecipeReactionBadge } from "./RecipeReactionBadge"
 
 export function PublicRecipeCard({
@@ -73,6 +74,7 @@ export function PublicRecipeCard({
         >
           {vegetarian} · {category}
         </p>
+        <div className="mt-1 text-[11px] text-ink-muted"><RecipeViewCount count={recipe.viewCount} /></div>
       </Link>
       <Link
         to={`/so-sanh?a=${recipe.id}`}

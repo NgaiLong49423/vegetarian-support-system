@@ -20,6 +20,7 @@
 --                   + V12__ingredient_name_unique_for_active_catalog.sql
 --                   + V13__expand_nutrition_goal_options.sql
 --                   + V14__nutrition_daily_value_reference.sql
+--                   + V15__recipe_view_deduplication.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -946,6 +947,16 @@ GO
 CREATE NONCLUSTERED INDEX IX_RECIPE_VIEW_user
     ON [RECIPE_VIEW](user_id)
     WHERE user_id IS NOT NULL;
+GO
+
+-- FR-58: most recent counted view by member or anonymous browser.
+CREATE NONCLUSTERED INDEX IX_RECIPE_VIEW_member_recipe_time
+    ON [RECIPE_VIEW](recipe_id, user_id, viewed_at DESC)
+    WHERE user_id IS NOT NULL;
+GO
+CREATE NONCLUSTERED INDEX IX_RECIPE_VIEW_guest_recipe_time
+    ON [RECIPE_VIEW](recipe_id, anonymous_viewer_hash, viewed_at DESC)
+    WHERE user_id IS NULL AND anonymous_viewer_hash IS NOT NULL;
 GO
 
 -- Reaction lookup by recipe
