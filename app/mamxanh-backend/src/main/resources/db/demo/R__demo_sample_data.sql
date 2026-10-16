@@ -132,11 +132,48 @@ IF NOT EXISTS (SELECT 1 FROM [USER] WHERE email = 'demo-admin@mamxanh.local')
     INSERT INTO [USER] (email, display_name, role, email_verified)
     VALUES ('demo-admin@mamxanh.local', N'Lê Hoàng Nam', 'ADMIN', 1);
 
+-- Additional fixed local demo identities; credentials are injected at runtime.
+INSERT INTO [USER] (email, display_name, role, email_verified)
+SELECT seed.email, seed.display_name, seed.role, 1
+FROM (VALUES
+    ('demo-customer-04@mamxanh.local', N'Phạm Gia Hân', 'CUSTOMER'),
+    ('demo-customer-05@mamxanh.local', N'Võ Minh Khang', 'CUSTOMER'),
+    ('demo-customer-06@mamxanh.local', N'Đặng Ngọc Mai', 'CUSTOMER'),
+    ('demo-customer-07@mamxanh.local', N'Bùi Quốc Bảo', 'CUSTOMER'),
+    ('demo-customer-08@mamxanh.local', N'Ngô Thảo Vy', 'CUSTOMER'),
+    ('demo-customer-09@mamxanh.local', N'Đỗ Nhật Minh', 'CUSTOMER'),
+    ('demo-customer-10@mamxanh.local', N'Hoàng Khánh Linh', 'CUSTOMER'),
+    ('demo-customer-11@mamxanh.local', N'Phan Anh Tuấn', 'CUSTOMER'),
+    ('demo-customer-12@mamxanh.local', N'Vũ Hải Yến', 'CUSTOMER'),
+    ('demo-customer-13@mamxanh.local', N'Đinh Đức Anh', 'CUSTOMER'),
+    ('demo-customer-14@mamxanh.local', N'Đoàn Mỹ Duyên', 'CUSTOMER'),
+    ('demo-customer-15@mamxanh.local', N'Phạm Hoàng Long', 'CUSTOMER'),
+    ('demo-customer-16@mamxanh.local', N'Trịnh Bảo Ngọc', 'CUSTOMER'),
+    ('demo-customer-17@mamxanh.local', N'Lý Thành Đạt', 'CUSTOMER'),
+    ('demo-customer-18@mamxanh.local', N'Nguyễn Hà My', 'CUSTOMER'),
+    ('demo-customer-19@mamxanh.local', N'Trần Gia Bảo', 'CUSTOMER'),
+    ('demo-customer-20@mamxanh.local', N'Phan Ngọc Trâm', 'CUSTOMER'),
+    ('demo-expert-02@mamxanh.local', N'Võ Thanh Trúc', 'EXPERT'),
+    ('demo-expert-03@mamxanh.local', N'Nguyễn Hoàng Phúc', 'EXPERT'),
+    ('demo-expert-04@mamxanh.local', N'Lê Bảo Châu', 'EXPERT')
+) seed(email, display_name, role)
+WHERE NOT EXISTS (SELECT 1 FROM [USER] existing WHERE existing.email = seed.email);
+
 UPDATE [USER]
 SET email_verified = 1, account_status = 'ACTIVE', updated_at = SYSUTCDATETIME()
 WHERE email IN ('demo-expert@mamxanh.local', 'demo-customer@mamxanh.local',
                 'demo-new-member@mamxanh.local', 'demo-applicant@mamxanh.local',
-                'demo-admin@mamxanh.local');
+                'demo-admin@mamxanh.local', 'demo-customer-04@mamxanh.local',
+                'demo-customer-05@mamxanh.local', 'demo-customer-06@mamxanh.local',
+                'demo-customer-07@mamxanh.local', 'demo-customer-08@mamxanh.local',
+                'demo-customer-09@mamxanh.local', 'demo-customer-10@mamxanh.local',
+                'demo-customer-11@mamxanh.local', 'demo-customer-12@mamxanh.local',
+                'demo-customer-13@mamxanh.local', 'demo-customer-14@mamxanh.local',
+                'demo-customer-15@mamxanh.local', 'demo-customer-16@mamxanh.local',
+                'demo-customer-17@mamxanh.local', 'demo-customer-18@mamxanh.local',
+                'demo-customer-19@mamxanh.local', 'demo-customer-20@mamxanh.local',
+                'demo-expert-02@mamxanh.local', 'demo-expert-03@mamxanh.local',
+                'demo-expert-04@mamxanh.local');
 
 -- Keep the local Expert eligible to demonstrate FR-21; this fixture is never loaded outside profile local.
 IF NOT EXISTS (
@@ -435,10 +472,237 @@ FROM (VALUES
 ) seed(title, image_url)
 JOIN [RECIPE_POST] p ON p.author_id = @author_id AND p.title = seed.title
 WHERE NOT EXISTS (SELECT 1 FROM [RECIPE_MEDIA] m WHERE m.recipe_id = p.recipe_id);
+
+-- 20 additional recipes and 30 unique catalogue ingredients for local demos.
+DECLARE @extra_ingredients TABLE (name NVARCHAR(200) PRIMARY KEY);
+INSERT INTO @extra_ingredients (name) VALUES
+    (N'Gạo lứt'), (N'Yến mạch cán'), (N'Hạt quinoa'), (N'Hạt điều'), (N'Hạnh nhân'),
+    (N'Óc chó'), (N'Hạt bí'), (N'Hạt hướng dương'), (N'Đậu nành hạt'), (N'Đậu đỏ'),
+    (N'Đậu gà'), (N'Đậu trắng'), (N'Tempeh'), (N'Seitan'), (N'Tảo bẹ kombu'),
+    (N'Nấm mộc nhĩ'), (N'Măng tây'), (N'Bí ngòi'), (N'Súp lơ trắng'), (N'Cải xoăn'),
+    (N'Xà lách romaine'), (N'Dưa leo'), (N'Ớt chuông'), (N'Bơ'), (N'Lựu'),
+    (N'Táo'), (N'Chuối'), (N'Dâu tây'), (N'Cam'), (N'Khoai tây');
+
+INSERT INTO [INGREDIENT] (name, source_name, reference_date, nutrition_supported)
+SELECT seed.name, N'Dữ liệu demo nội bộ - chưa xác minh dinh dưỡng', CONVERT(DATE, SYSUTCDATETIME()), 0
+FROM @extra_ingredients seed
+WHERE NOT EXISTS (SELECT 1 FROM [INGREDIENT] i WHERE i.name = seed.name);
+
+DECLARE @extra_recipes TABLE (
+    title NVARCHAR(120) PRIMARY KEY, description NVARCHAR(2000), instructions NVARCHAR(MAX),
+    category VARCHAR(20), difficulty VARCHAR(10), prep INT, cook INT, image_url VARCHAR(2048));
+INSERT INTO @extra_recipes VALUES
+ (N'Cơm gạo lứt đậu gà rau củ',N'Cơm gạo lứt ăn cùng đậu gà và rau củ áp chảo.',N'Nấu chín gạo lứt và đậu gà đã ngâm mềm. Áp chảo ớt chuông cùng bí ngòi, nêm nước tương. Xếp cơm, đậu và rau củ ra đĩa, rắc hạt hướng dương.','STIR_FRY','EASY',15,30,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200'),
+ (N'Cháo yến mạch nấm mộc nhĩ',N'Cháo yến mạch nóng với nấm mộc nhĩ và cà rốt.',N'Ngâm nấm mộc nhĩ rồi thái sợi. Đun yến mạch với nước đến khi sánh, thêm nấm và cà rốt thái nhỏ. Nấu chín mềm, nêm vừa ăn và dùng nóng.','SOUP','EASY',10,15,'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=1200'),
+ (N'Salad quinoa bơ lựu',N'Salad quinoa trộn bơ, lựu và xà lách romaine.',N'Nấu chín quinoa rồi để nguội. Cắt bơ và dưa leo, tách hạt lựu. Trộn cùng xà lách romaine, nước cốt cam và chút muối ngay trước khi dùng.','SALAD','EASY',15,20,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200'),
+ (N'Đậu hũ áp chảo sốt hạt điều',N'Đậu hũ vàng nhẹ phủ sốt hạt điều béo mịn.',N'Ngâm hạt điều rồi xay với nước thành sốt. Áp chảo đậu hũ đến vàng các mặt, đun sốt với tỏi và nước tương. Rưới sốt lên đậu hũ và rắc hạnh nhân lát.','BRAISED','MEDIUM',15,15,'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200'),
+ (N'Bún tempeh rau sống',N'Bánh phở ăn kèm tempeh áp chảo và rau sống tươi.',N'Cắt tempeh thành lát, ướp nước tương rồi áp chảo vàng. Xếp bánh phở, xà lách romaine, dưa leo và tempeh vào tô. Rắc đậu phộng và dùng cùng nước chấm chanh.','NOODLE_SOUP','EASY',15,12,'https://images.unsplash.com/photo-1555126634-323283e090fa?w=1200'),
+ (N'Khoai tây nướng hạt bí',N'Khoai tây nướng thơm với hạt bí rang.',N'Cắt khoai tây thành miếng vừa, trộn với dầu và tiêu. Nướng đến khi mềm ruột và vàng cạnh. Rang hạt bí riêng rồi rắc lên khoai trước khi dùng.','GRILLED','EASY',10,30,'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1200'),
+ (N'Súp đậu trắng cải xoăn',N'Súp đậu trắng nấu cùng cải xoăn và cà chua.',N'Ngâm và nấu mềm đậu trắng. Thêm cà chua cùng nước dùng rau củ, nấu liu riu. Cho cải xoăn vào cuối, nấu vừa mềm rồi nêm gia vị.','SOUP','MEDIUM',15,35,'https://images.unsplash.com/photo-1547592180-85f173990554?w=1200'),
+ (N'Bánh quinoa chuối dâu tây',N'Bánh áp chảo từ quinoa, chuối và dâu tây.',N'Nghiền chuối, trộn với quinoa đã nấu và yến mạch cán. Áp chảo từng phần nhỏ đến khi hai mặt vàng. Dùng cùng dâu tây cắt lát.','FRIED','MEDIUM',15,15,'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1200'),
+ (N'Ớt chuông nhồi gạo lứt',N'Ớt chuông nướng với nhân gạo lứt và đậu đỏ.',N'Nấu chín gạo lứt và đậu đỏ. Trộn cùng cà chua thái hạt lựu, cho vào ớt chuông bỏ hạt. Nướng đến khi ớt mềm và phần nhân nóng đều.','GRILLED','MEDIUM',20,30,'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1200'),
+ (N'Mì seitan xào măng tây',N'Mì xào seitan và măng tây giòn nhẹ.',N'Luộc mì vừa chín. Cắt seitan và măng tây thành miếng, xào nhanh với tỏi. Thêm mì, nước tương và chút nước luộc mì, đảo đều rồi dùng nóng.','STIR_FRY','MEDIUM',15,15,'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=1200'),
+ (N'Canh kombu đậu hũ',N'Canh thanh vị nấu từ kombu, đậu hũ và nấm.',N'Ngâm kombu trong nước lạnh rồi đun nhỏ lửa để lấy nước dùng, vớt kombu ra. Thêm nấm và đậu hũ, nấu sôi nhẹ, nêm nước tương trước khi dùng.','SOUP','EASY',10,20,'https://images.unsplash.com/photo-1675092789086-4bd2b93ffc69?w=1200'),
+ (N'Bí ngòi cuộn hạt điều',N'Bí ngòi cuộn sốt hạt điều và cà chua.',N'Thái bí ngòi thành lát mỏng và áp chảo nhanh. Xay hạt điều đã ngâm cùng nước và tỏi thành sốt. Phết sốt lên lát bí, cuộn lại và dùng với cà chua.','ROLL','MEDIUM',20,10,'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1200'),
+ (N'Súp lơ trắng nghiền hạnh nhân',N'Súp lơ trắng hấp mềm nghiền cùng hạnh nhân.',N'Hấp súp lơ trắng đến khi mềm. Xay hoặc nghiền cùng hạnh nhân ngâm và nước ấm đến độ mịn mong muốn. Nêm tiêu, dùng nóng với hạt bí rang.','STEAMED','EASY',10,15,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200'),
+ (N'Đậu đỏ hầm cà chua',N'Đậu đỏ hầm mềm với cà chua và khoai tây.',N'Ngâm đậu đỏ qua đêm rồi nấu mềm. Thêm khoai tây và cà chua cắt miếng, hầm đến khi rau củ chín. Nêm gia vị và rắc hành lá.','BRAISED','MEDIUM',15,45,'https://images.unsplash.com/photo-1547592180-85f173990554?w=1200'),
+ (N'Yến mạch qua đêm táo',N'Yến mạch ngâm lạnh với táo và hạnh nhân.',N'Trộn yến mạch với sữa đậu nành, đậy kín và để lạnh qua đêm. Cắt táo nhỏ, rắc hạnh nhân lên trên ngay trước khi ăn.','DESSERT','EASY',10,5,'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1200'),
+ (N'Gỏi romaine dưa leo cam',N'Gỏi rau giòn với dưa leo và cam tươi.',N'Rửa và xé xà lách romaine. Cắt dưa leo, tách múi cam rồi trộn nhẹ. Rắc hạt hướng dương và dùng ngay.', 'SALAD','EASY',15,5,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200'),
+ (N'Đậu nành hạt sốt cà tím',N'Đậu nành hạt nấu mềm trong sốt cà tím.',N'Ngâm và nấu mềm đậu nành hạt. Áp chảo cà tím với tỏi, thêm cà chua và đun thành sốt. Trộn đậu vào, nấu thêm vài phút rồi nêm vừa ăn.','BRAISED','MEDIUM',15,35,'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200'),
+ (N'Bánh khoai lang hạt óc chó',N'Bánh khoai lang nghiền trộn óc chó và yến mạch.',N'Hấp khoai lang rồi nghiền nhuyễn. Trộn với yến mạch và óc chó băm, tạo miếng dẹt. Áp chảo lửa nhỏ đến khi hai mặt vàng và bánh nóng đều.','FRIED','MEDIUM',15,20,'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1200'),
+ (N'Đậu gà nghiền bánh mì',N'Bánh mì nguyên cám kẹp đậu gà nghiền và rau xanh.',N'Nghiền đậu gà đã nấu chín với nước cốt chanh và tiêu. Phết lên bánh mì, thêm xà lách romaine, dưa leo và cà chua. Dùng ngay sau khi kẹp.','ROLL','EASY',15,5,'https://images.unsplash.com/photo-1547592180-85f173990554?w=1200'),
+ (N'Salad trái cây hạt chia',N'Trái cây tươi trộn hạt chia và hạnh nhân.',N'Cắt chuối, táo, dâu tây và cam thành miếng vừa ăn. Trộn nhẹ với hạt chia đã ngâm nở, rắc hạnh nhân lát và dùng lạnh.','DESSERT','EASY',15,5,'https://images.unsplash.com/photo-1505576633757-0ac1084af824?w=1200');
+
+INSERT INTO [RECIPE_POST] (author_id, title, description, instructions, dish_category, vegetarian_type, difficulty, servings, prep_time_min, cook_time_min, published_at)
+SELECT @author_id, seed.title, seed.description, seed.instructions, seed.category, 'VEGAN', seed.difficulty, 2, seed.prep, seed.cook, SYSUTCDATETIME()
+FROM @extra_recipes seed
+WHERE NOT EXISTS (SELECT 1 FROM [RECIPE_POST] p WHERE p.author_id = @author_id AND p.title = seed.title);
+
+DECLARE @extra_recipe_ingredients TABLE (title NVARCHAR(120), ingredient_name NVARCHAR(200), quantity DECIMAL(10,2));
+INSERT INTO @extra_recipe_ingredients VALUES
+ (N'Cơm gạo lứt đậu gà rau củ',N'Gạo lứt',180),(N'Cơm gạo lứt đậu gà rau củ',N'Đậu gà',100),(N'Cơm gạo lứt đậu gà rau củ',N'Ớt chuông',80),(N'Cơm gạo lứt đậu gà rau củ',N'Bí ngòi',80),(N'Cơm gạo lứt đậu gà rau củ',N'Hạt hướng dương',10),
+ (N'Cháo yến mạch nấm mộc nhĩ',N'Yến mạch cán',80),(N'Cháo yến mạch nấm mộc nhĩ',N'Nấm mộc nhĩ',25),(N'Cháo yến mạch nấm mộc nhĩ',N'Cà rốt',60),
+ (N'Salad quinoa bơ lựu',N'Hạt quinoa',100),(N'Salad quinoa bơ lựu',N'Bơ',80),(N'Salad quinoa bơ lựu',N'Lựu',50),(N'Salad quinoa bơ lựu',N'Xà lách romaine',80),(N'Salad quinoa bơ lựu',N'Dưa leo',50),(N'Salad quinoa bơ lựu',N'Cam',20),
+ (N'Đậu hũ áp chảo sốt hạt điều',N'Đậu hũ',200),(N'Đậu hũ áp chảo sốt hạt điều',N'Hạt điều',35),(N'Đậu hũ áp chảo sốt hạt điều',N'Hạnh nhân',10),
+ (N'Bún tempeh rau sống',N'Tempeh',150),(N'Bún tempeh rau sống',N'Bánh phở',150),(N'Bún tempeh rau sống',N'Dưa leo',80),(N'Bún tempeh rau sống',N'Xà lách romaine',70),(N'Bún tempeh rau sống',N'Đậu phộng',15),
+ (N'Khoai tây nướng hạt bí',N'Khoai tây',250),(N'Khoai tây nướng hạt bí',N'Hạt bí',15),
+ (N'Súp đậu trắng cải xoăn',N'Đậu trắng',100),(N'Súp đậu trắng cải xoăn',N'Cải xoăn',80),(N'Súp đậu trắng cải xoăn',N'Cà chua',100),
+ (N'Bánh quinoa chuối dâu tây',N'Hạt quinoa',80),(N'Bánh quinoa chuối dâu tây',N'Chuối',100),(N'Bánh quinoa chuối dâu tây',N'Dâu tây',80),(N'Bánh quinoa chuối dâu tây',N'Yến mạch cán',40),
+ (N'Ớt chuông nhồi gạo lứt',N'Ớt chuông',160),(N'Ớt chuông nhồi gạo lứt',N'Gạo lứt',100),(N'Ớt chuông nhồi gạo lứt',N'Đậu đỏ',80),(N'Ớt chuông nhồi gạo lứt',N'Cà chua',60),
+ (N'Mì seitan xào măng tây',N'Seitan',120),(N'Mì seitan xào măng tây',N'Măng tây',100),(N'Mì seitan xào măng tây',N'Mì Ý',120),
+ (N'Canh kombu đậu hũ',N'Tảo bẹ kombu',5),(N'Canh kombu đậu hũ',N'Đậu hũ',120),(N'Canh kombu đậu hũ',N'Nấm hương',20),
+ (N'Bí ngòi cuộn hạt điều',N'Bí ngòi',160),(N'Bí ngòi cuộn hạt điều',N'Hạt điều',30),(N'Bí ngòi cuộn hạt điều',N'Cà chua',80),
+ (N'Súp lơ trắng nghiền hạnh nhân',N'Súp lơ trắng',200),(N'Súp lơ trắng nghiền hạnh nhân',N'Hạnh nhân',20),(N'Súp lơ trắng nghiền hạnh nhân',N'Hạt bí',10),
+ (N'Đậu đỏ hầm cà chua',N'Đậu đỏ',100),(N'Đậu đỏ hầm cà chua',N'Khoai tây',100),(N'Đậu đỏ hầm cà chua',N'Cà chua',120),
+ (N'Yến mạch qua đêm táo',N'Yến mạch cán',60),(N'Yến mạch qua đêm táo',N'Táo',100),(N'Yến mạch qua đêm táo',N'Hạnh nhân',10),(N'Yến mạch qua đêm táo',N'Sữa đậu nành',150),
+ (N'Gỏi romaine dưa leo cam',N'Xà lách romaine',100),(N'Gỏi romaine dưa leo cam',N'Dưa leo',80),(N'Gỏi romaine dưa leo cam',N'Cam',80),(N'Gỏi romaine dưa leo cam',N'Hạt hướng dương',10),
+ (N'Đậu nành hạt sốt cà tím',N'Đậu nành hạt',100),(N'Đậu nành hạt sốt cà tím',N'Cà tím',120),(N'Đậu nành hạt sốt cà tím',N'Cà chua',100),
+ (N'Bánh khoai lang hạt óc chó',N'Khoai lang',180),(N'Bánh khoai lang hạt óc chó',N'Óc chó',20),(N'Bánh khoai lang hạt óc chó',N'Yến mạch cán',30),
+ (N'Đậu gà nghiền bánh mì',N'Đậu gà',100),(N'Đậu gà nghiền bánh mì',N'Bánh mì nguyên cám',100),(N'Đậu gà nghiền bánh mì',N'Xà lách romaine',50),(N'Đậu gà nghiền bánh mì',N'Dưa leo',50),(N'Đậu gà nghiền bánh mì',N'Cà chua',30),
+ (N'Salad trái cây hạt chia',N'Chuối',60),(N'Salad trái cây hạt chia',N'Táo',60),(N'Salad trái cây hạt chia',N'Dâu tây',60),(N'Salad trái cây hạt chia',N'Cam',60),(N'Salad trái cây hạt chia',N'Hạt chia',10),(N'Salad trái cây hạt chia',N'Hạnh nhân',10);
+
+INSERT INTO [RECIPE_INGREDIENT] (recipe_id, ingredient_id, unit_id, quantity)
+SELECT p.recipe_id, i.ingredient_id, @gram, seed.quantity
+FROM @extra_recipe_ingredients seed
+JOIN [RECIPE_POST] p ON p.author_id = @author_id AND p.title = seed.title
+JOIN [INGREDIENT] i ON i.name = seed.ingredient_name
+WHERE NOT EXISTS (SELECT 1 FROM [RECIPE_INGREDIENT] ri WHERE ri.recipe_id = p.recipe_id AND ri.ingredient_id = i.ingredient_id);
+
+INSERT INTO [RECIPE_MEDIA] (recipe_id, blob_url, mime_type, display_order, is_cover)
+SELECT p.recipe_id, seed.image_url, 'image/jpeg', 1, 1
+FROM @extra_recipes seed JOIN [RECIPE_POST] p ON p.author_id = @author_id AND p.title = seed.title
+WHERE NOT EXISTS (SELECT 1 FROM [RECIPE_MEDIA] m WHERE m.recipe_id = p.recipe_id);
 INSERT INTO [RECIPE_MEDIA] (recipe_id, blob_url, mime_type, display_order, is_cover)
 SELECT p.recipe_id, seed.image_url, 'image/jpeg', 1, 1
 FROM @showcase_recipes seed
 JOIN [RECIPE_POST] p ON p.author_id = @author_id AND p.title = seed.title
 WHERE NOT EXISTS (SELECT 1 FROM [RECIPE_MEDIA] m WHERE m.recipe_id = p.recipe_id);
+
+DECLARE @demo_customers TABLE (user_id BIGINT PRIMARY KEY, ordinal INT);
+INSERT INTO @demo_customers (user_id, ordinal)
+SELECT user_id, CONVERT(INT, ROW_NUMBER() OVER (ORDER BY email))
+FROM [USER] WHERE role = 'CUSTOMER' AND email IN (
+    'demo-customer@mamxanh.local','demo-new-member@mamxanh.local','demo-applicant@mamxanh.local',
+    'demo-customer-04@mamxanh.local','demo-customer-05@mamxanh.local','demo-customer-06@mamxanh.local',
+    'demo-customer-07@mamxanh.local','demo-customer-08@mamxanh.local','demo-customer-09@mamxanh.local',
+    'demo-customer-10@mamxanh.local','demo-customer-11@mamxanh.local','demo-customer-12@mamxanh.local',
+    'demo-customer-13@mamxanh.local','demo-customer-14@mamxanh.local','demo-customer-15@mamxanh.local',
+    'demo-customer-16@mamxanh.local','demo-customer-17@mamxanh.local','demo-customer-18@mamxanh.local',
+    'demo-customer-19@mamxanh.local','demo-customer-20@mamxanh.local');
+
+UPDATE u SET vegetarian_type = CASE WHEN c.ordinal % 4 = 0 THEN 'LACTO_OVO' ELSE 'VEGAN' END,
+    cuisine_preference = CASE c.ordinal % 4 WHEN 0 THEN N'Món Việt, món Nhật' WHEN 1 THEN N'Món Việt'
+        WHEN 2 THEN N'Món Việt, món Thái' ELSE N'Món Việt, món Hàn' END,
+    preferred_difficulty = CASE WHEN c.ordinal % 3 = 0 THEN 'MEDIUM' ELSE 'EASY' END,
+    max_cooking_time_min = CASE WHEN c.ordinal % 2 = 0 THEN 45 ELSE 30 END,
+    date_of_birth = DATEADD(YEAR, -(20 + c.ordinal % 25), CONVERT(DATE, GETDATE())),
+    biological_sex = CASE WHEN c.ordinal % 2 = 0 THEN 'FEMALE' ELSE 'MALE' END,
+    height_cm = 150 + (c.ordinal % 21), weight_kg = 48 + (c.ordinal % 26),
+    activity_level = CASE c.ordinal % 4 WHEN 0 THEN 'VERY_ACTIVE' WHEN 1 THEN 'LIGHTLY_ACTIVE'
+        WHEN 2 THEN 'MODERATELY_ACTIVE' ELSE 'SEDENTARY' END,
+    nutrition_goal = CASE c.ordinal % 3 WHEN 0 THEN 'MAINTAIN_WEIGHT' WHEN 1 THEN 'IMPROVE_HEALTH'
+        ELSE 'SUPPORT_TRAINING' END,
+    nutrition_scope_confirmed = 1, onboarding_status = 'COMPLETED',
+    avoid_none_confirmed = CASE WHEN u.email = 'demo-customer@mamxanh.local' THEN 0 ELSE 1 END,
+    dislike_none_confirmed = 1, health_data_consent = 1,
+    health_data_consent_at = COALESCE(u.health_data_consent_at, SYSUTCDATETIME()), updated_at = SYSUTCDATETIME()
+FROM [USER] u JOIN @demo_customers c ON c.user_id = u.user_id;
+
+DECLARE @current_monday DATE = DATEADD(DAY,
+    -(DATEDIFF(DAY, CONVERT(DATE, '19000101', 112), CONVERT(DATE, GETDATE())) % 7), CONVERT(DATE, GETDATE()));
+DECLARE @week_offsets TABLE (week_offset INT PRIMARY KEY);
+INSERT INTO @week_offsets VALUES (0),(1),(2),(3);
+INSERT INTO [MEAL_PLAN] (user_id, week_start_date)
+SELECT c.user_id, DATEADD(DAY, -7 * w.week_offset, @current_monday)
+FROM @demo_customers c CROSS JOIN @week_offsets w
+WHERE NOT EXISTS (SELECT 1 FROM [MEAL_PLAN] mp WHERE mp.user_id = c.user_id
+    AND mp.week_start_date = DATEADD(DAY, -7 * w.week_offset, @current_monday));
+
+-- Rebuild only fixture-owned entries for these demo users and four weeks.
+DELETE entry FROM [MEAL_PLAN_ENTRY] entry
+JOIN [MEAL_PLAN] mp ON mp.meal_plan_id = entry.meal_plan_id
+JOIN @demo_customers c ON c.user_id = mp.user_id
+WHERE mp.week_start_date BETWEEN DATEADD(DAY, -21, @current_monday) AND @current_monday;
+
+DECLARE @recipe_roster TABLE (recipe_id BIGINT PRIMARY KEY, ordinal INT);
+DECLARE @recipe_titles TABLE (title NVARCHAR(120) PRIMARY KEY);
+INSERT INTO @recipe_titles VALUES (N'Đậu hũ sốt cà chua'), (N'Rau muống xào tỏi');
+INSERT INTO @recipe_titles SELECT title FROM @recipe_seed;
+INSERT INTO @recipe_titles SELECT title FROM @showcase_recipes;
+INSERT INTO @recipe_titles SELECT title FROM @extra_recipes;
+UPDATE [RECIPE_POST] SET status = 'PUBLISHED',
+    published_at = COALESCE(published_at, SYSUTCDATETIME()), updated_at = SYSUTCDATETIME()
+WHERE author_id = @author_id AND title IN (SELECT title FROM @recipe_titles);
+INSERT INTO @recipe_roster (recipe_id, ordinal)
+SELECT recipe_id, CONVERT(INT, ROW_NUMBER() OVER (ORDER BY recipe_id))
+FROM [RECIPE_POST] WHERE author_id = @author_id AND status = 'PUBLISHED'
+  AND title IN (SELECT title FROM @recipe_titles);
+DECLARE @recipe_total INT = (SELECT COUNT(*) FROM @recipe_roster);
+
+;WITH slots AS (
+    SELECT day_no, meal_type FROM (VALUES (0,'BREAKFAST'),(0,'LUNCH'),(0,'DINNER'),
+        (1,'BREAKFAST'),(1,'LUNCH'),(1,'DINNER'),(2,'BREAKFAST'),(2,'LUNCH'),(2,'DINNER'),
+        (3,'BREAKFAST'),(3,'LUNCH'),(3,'DINNER'),(4,'BREAKFAST'),(4,'LUNCH'),(4,'DINNER'),
+        (5,'BREAKFAST'),(5,'LUNCH'),(5,'DINNER'),(6,'BREAKFAST'),(6,'LUNCH'),(6,'DINNER')) v(day_no,meal_type)
+), plans AS (
+    SELECT mp.meal_plan_id, c.ordinal customer_no, w.week_offset, mp.week_start_date
+    FROM @demo_customers c JOIN [MEAL_PLAN] mp ON mp.user_id = c.user_id
+    JOIN @week_offsets w ON mp.week_start_date = DATEADD(DAY, -7 * w.week_offset, @current_monday)
+), assignments AS (
+    SELECT p.meal_plan_id, p.week_start_date, s.day_no, s.meal_type,
+        ((p.customer_no * 7 + p.week_offset * 21 + s.day_no * 3
+            + CASE s.meal_type WHEN 'BREAKFAST' THEN 0 WHEN 'LUNCH' THEN 1 ELSE 2 END - 1) % @recipe_total) + 1 recipe_ordinal
+    FROM plans p CROSS JOIN slots s
+)
+INSERT INTO [MEAL_PLAN_ENTRY] (meal_plan_id, recipe_id, meal_date, meal_type, planned_servings)
+SELECT a.meal_plan_id, r.recipe_id, DATEADD(DAY, a.day_no, a.week_start_date), a.meal_type, 2
+FROM assignments a JOIN @recipe_roster r ON r.ordinal = a.recipe_ordinal;
+
+DECLARE @reaction_targets TABLE (recipe_id BIGINT PRIMARY KEY, reaction_count INT, likes INT,
+    dislikes INT, view_count INT);
+INSERT INTO @reaction_targets
+SELECT recipe_id,
+    CASE WHEN ordinal <= 9 THEN 20 WHEN ordinal <= 22 THEN 15 ELSE 12 END,
+    CASE WHEN ordinal <= 9 THEN 18 WHEN ordinal <= 22 THEN 12 ELSE 8 END,
+    CASE WHEN ordinal <= 9 THEN 2 WHEN ordinal <= 22 THEN 3 ELSE 4 END,
+    CASE WHEN ordinal <= 9 THEN 60 WHEN ordinal <= 22 THEN 35 ELSE 15 END
+FROM @recipe_roster;
+
+DELETE reaction FROM [RECIPE_REACTION] reaction
+JOIN [USER] demo ON demo.user_id = reaction.user_id AND demo.email LIKE 'demo-%@mamxanh.local'
+JOIN @reaction_targets target ON target.recipe_id = reaction.recipe_id;
+;WITH demo_voters AS (
+    SELECT user_id, CONVERT(INT, ROW_NUMBER() OVER (ORDER BY email)) ordinal
+    FROM [USER] WHERE role IN ('CUSTOMER','EXPERT') AND account_status = 'ACTIVE'
+      AND email LIKE 'demo-%@mamxanh.local' AND user_id <> @author_id
+)
+INSERT INTO [RECIPE_REACTION] (user_id, recipe_id, reaction_type)
+SELECT voter.user_id, target.recipe_id,
+    CASE WHEN voter.ordinal <= target.likes THEN 'LIKE' ELSE 'DISLIKE' END
+FROM @reaction_targets target JOIN demo_voters voter ON voter.ordinal <= target.reaction_count;
+
+DELETE follows FROM [USER_FOLLOW] follows
+WHERE follower_user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'demo-%@mamxanh.local')
+   OR followed_user_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'demo-%@mamxanh.local');
+;WITH members AS (
+    SELECT user_id, CONVERT(INT, ROW_NUMBER() OVER (ORDER BY email)) ordinal, COUNT(*) OVER () member_count
+    FROM [USER] WHERE role IN ('CUSTOMER','EXPERT') AND account_status = 'ACTIVE'
+      AND email LIKE 'demo-%@mamxanh.local'
+), desired AS (
+    SELECT follower.user_id follower_user_id,
+        ((follower.ordinal - 1 + step.follow_offset) % follower.member_count) + 1 followed_ordinal
+    FROM members follower CROSS JOIN (VALUES (1),(5),(9),(13)) step(follow_offset)
+), resolved AS (
+    SELECT d.follower_user_id, followed.user_id followed_user_id
+    FROM desired d JOIN members followed ON followed.ordinal = d.followed_ordinal
+)
+INSERT INTO [USER_FOLLOW] (follower_user_id, followed_user_id)
+SELECT r.follower_user_id, r.followed_user_id FROM resolved r
+WHERE r.follower_user_id <> r.followed_user_id
+AND NOT EXISTS (SELECT 1 FROM [USER_FOLLOW] f WHERE f.follower_user_id = r.follower_user_id
+    AND f.followed_user_id = r.followed_user_id);
+
+DELETE FROM [RECIPE_VIEW] WHERE anonymous_viewer_hash LIKE 'demo-fixture-%';
+;WITH numbers AS (
+    SELECT TOP (60) CONVERT(INT, ROW_NUMBER() OVER (ORDER BY (SELECT NULL))) ordinal
+    FROM sys.all_objects a CROSS JOIN sys.all_objects b
+)
+INSERT INTO [RECIPE_VIEW] (recipe_id, anonymous_viewer_hash, viewed_at)
+SELECT target.recipe_id, CONCAT('demo-fixture-', target.recipe_id, '-', number.ordinal),
+    DATEADD(MINUTE, -(CASE number.ordinal % 4 WHEN 0 THEN number.ordinal % 60
+        WHEN 1 THEN 1440 + number.ordinal % 10080 WHEN 2 THEN 10080 + number.ordinal % 43200
+        ELSE 43200 + number.ordinal * 120 END), SYSUTCDATETIME())
+FROM @reaction_targets target JOIN numbers number ON number.ordinal <= target.view_count;
+
+UPDATE post SET like_count = totals.likes, dislike_count = totals.dislikes,
+    view_count = COALESCE(views.total_views, 0), updated_at = SYSUTCDATETIME()
+FROM [RECIPE_POST] post
+JOIN (SELECT reaction.recipe_id,
+    SUM(CASE WHEN reaction.reaction_type = 'LIKE' THEN 1 ELSE 0 END) likes,
+    SUM(CASE WHEN reaction.reaction_type = 'DISLIKE' THEN 1 ELSE 0 END) dislikes
+    FROM [RECIPE_REACTION] reaction GROUP BY reaction.recipe_id) totals ON totals.recipe_id = post.recipe_id
+LEFT JOIN (SELECT recipe_id, COUNT(*) total_views FROM [RECIPE_VIEW] GROUP BY recipe_id) views
+    ON views.recipe_id = post.recipe_id
+WHERE post.author_id = @author_id AND post.title IN (SELECT title FROM @recipe_titles);
 
 COMMIT TRANSACTION;
