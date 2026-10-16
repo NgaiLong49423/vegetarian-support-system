@@ -22,6 +22,7 @@ import { Badge, Button, Card } from '../components/ui';
 import { asApiError } from '../lib/apiClient';
 import { recipesApi, type RecipeDetail } from '../api/recipes';
 import { SaveRecipeButton } from '../components/SaveRecipeButton';
+import { RecipeViews } from '../components/RecipeViews';
 import { MemberAvatar } from '../components/MemberAvatar';
 import { RelatedRecipes } from '../components/RelatedRecipes';
 import { RecipeComments } from '../components/RecipeComments';
@@ -97,9 +98,12 @@ function downloadText(recipe: RecipeDetail) {
 }
 
 export function ApiRecipeDetail() {
-  const { openChat } = useAiChat();
   const { recipeId: rawId } = useParams();
-  const recipeId = Number(rawId);
+  return <PublishedApiRecipeDetail key={rawId} recipeId={Number(rawId)} />;
+}
+
+function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
+  const { openChat } = useAiChat();
   const [searchParams] = useSearchParams();
   const fromMealPlan = searchParams.has('mealPlanWeek') || searchParams.has('mealPlanEntryId');
   const planContextKey = `${recipeId}:${searchParams.get('mealPlanWeek')}:${searchParams.get('mealPlanEntryId')}`;
@@ -205,7 +209,7 @@ export function ApiRecipeDetail() {
         </div>
       </div>
       <Card className="p-4">
-        <StatTile icon={<Eye className="h-4 w-4" />} label="Lượt xem" value={formatNumber(recipe.statistics.viewCount, 0)} />
+        <RecipeViews key={recipeId} recipe={recipe} renderCount={(count) => <StatTile icon={<Eye className="h-4 w-4" />} label="Lượt xem" value={<>{formatNumber(count, 0)}<span className="sr-only"> lượt xem</span></>} />} />
         <RecipeReactions recipeId={recipe.recipeId} authorId={recipe.author.userId} statistics={recipe.statistics} />
       </Card>
     </div>
@@ -288,7 +292,7 @@ export function ApiRecipeDetail() {
   </PageContainer>;
 }
 
-function StatTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+function StatTile({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {
   return <div className="min-w-0"><div className="flex items-center gap-1.5 text-xs text-ink-muted">{icon}{label}</div><p className="mt-1 truncate text-lg font-extrabold text-ink">{value}</p></div>;
 }
 

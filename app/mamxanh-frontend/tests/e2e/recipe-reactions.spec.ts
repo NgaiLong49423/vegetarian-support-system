@@ -162,10 +162,10 @@ test('Bố cục 360/768/1440px và bình chọn bằng bàn phím', async ({ pa
 
 test('Card trang chủ và Khám phá đặt Mới ở góc trên trái ảnh', async ({ page }) => {
   await api(page, 0, 0);
-  for (const path of ['/', '/kham-pha']) {
+  for (const path of ['/trang-chu', '/kham-pha']) {
     await page.goto(path);
     const badges = page.getByLabel('Chưa có bình chọn');
-    await expect(badges).toHaveCount(path === '/' ? 2 : 1);
+    await expect(badges).toHaveCount(path === '/trang-chu' ? 2 : 1);
     const badge = badges.first();
     await expect(badge).toHaveText('Mới');
     const offset = await badge.evaluate((element) => {

@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.29.0
+> **Version:** v0.30.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-16
 > **Status:** Active
@@ -11,7 +11,7 @@
 
 Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract. File [`openapi.yaml`](openapi.yaml) là bản xuất được commit từ Springdoc để tiện tra cứu và phải khớp với runtime; không sửa contract endpoint thủ công trong file này.
 
-Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), AI gợi ý và menu tuần công thức (FR-34), AI preview/thay tuần Meal Plan theo dinh dưỡng (FR-36), chatbot Member theo ngữ cảnh chung hoặc RecipePost công khai (FR-51), danh sách RecipePost đã lưu (FR-20/FR-32), và nộp báo cáo Recipe Post (FR-26/27). Runtime spec là nguồn contract; YAML trong repo được sinh từ cùng runtime endpoint.
+Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), AI gợi ý và menu tuần công thức (FR-34), AI preview/thay tuần Meal Plan theo dinh dưỡng (FR-36), chatbot Member theo ngữ cảnh chung hoặc RecipePost công khai (FR-51), danh sách RecipePost đã lưu (FR-20/FR-32), nộp báo cáo Recipe Post (FR-26/27), bình chọn (FR-57), lượt xem và thống kê (FR-58), theo dõi thành viên (FR-59), và bình luận lồng nhiều cấp (FR-46). Runtime spec là nguồn contract; YAML trong repo được sinh từ cùng runtime endpoint.
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 8 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
@@ -95,6 +95,19 @@ Hai endpoint công khai, không cần Bearer token (UC-03.6, UC-03.7, AC-03.14, 
 - Hệ thống không có session máy chủ nên không có phiên nào cần thu hồi; access token đã phát trước đó vẫn hợp lệ đến khi hết hạn (tối đa 60 phút, Q30).
 
 Frontend: `/quen-mat-khau` gửi email và hiển thị nguyên văn `message` trung tính; `/dat-lai-mat-khau` đọc `token` từ URL, giữ trong bộ nhớ và xóa khỏi thanh địa chỉ trước khi người dùng nhập mật khẩu mới.
+
+### 3.6 Định danh lượt xem công thức — FR-58
+
+Luồng FR-58 dùng `POST /api/v1/recipes/{recipeId}/views`. Gửi sự kiện sau khi nội dung chi tiết công thức công khai tải thành công; GET chi tiết và GET danh sách không tự tạo sự kiện. Schema/status chi tiết lấy từ generated OpenAPI. Transaction/Flyway và persistence phải được kiểm chứng bằng test SQL Server/Compose; kiểm thử với mock không thay bằng chứng này.
+
+- Member gửi Bearer như các API hiện có; Backend lấy `user_id` từ JWT đã xác minh, không nhận danh tính tài khoản hoặc thời gian từ body. Guest không gửi Bearer và phải gửi `anonymousViewerId` dạng UUID chuẩn; Backend lưu SHA-256 của UUID đã chuẩn hóa chữ thường.
+- Frontend giữ UUID của Guest qua reload bằng session cookie `mamxanh.recipe-viewer` trên chính origin Frontend (`Path=/`, `SameSite=Lax`, `Secure` khi HTTPS), rồi gửi trong JSON body. Đây là định danh ẩn danh, không phải auth cookie; không cần bật credentials xuyên origin hoặc sửa mô hình đăng nhập JWT. Khi cookie bị chặn, client báo lỗi và không gửi sự kiện bằng UUID tạm thay đổi qua reload.
+- Trang chi tiết ở cả `/cong-thuc/id/:recipeId` và đường dẫn ID số `/cong-thuc/:slug` gửi sự kiện sau khi GET thành công và nội dung đã render. Lỗi GET hoặc phản hồi GET đến sau khi rời trang không ghi nhận lượt xem. Frontend dùng `statistics.viewCount` làm số ban đầu và `viewCount` trong response ghi nhận làm số mới, kể cả `counted=false`; không tự cộng số. Trang chủ và Khám phá dùng tổng `viewCount` từ danh sách. Lỗi ghi nhận vẫn cho phép đọc công thức và thử lại với cùng định danh; phản hồi muộn của trang trước không cập nhật trang hiện tại. Các luồng này đã được nối trong source; kiểm thử trình duyệt dùng API giả lập, chưa thay thế bằng chứng tích hợp SQL Server/Compose.
+- Bearer sai/hết hạn không được hạ xuống Guest; tài khoản bị khóa giữ lỗi xác thực hiện hành. Không có loại trừ lượt xem của tác giả như quy tắc Like/Dislike.
+- Response trực tiếp gồm `recipeId`, `counted`, `viewCount`, có `Cache-Control: no-store`. Request trùng vẫn thành công với `counted=false`; retry cùng định danh không làm tăng lượt đếm trong cửa sổ.
+- Cửa sổ dựa trên lượt hợp lệ gần nhất: không quá 30 phút (kể cả đúng mốc 30 phút) thì bỏ qua; hơn 30 phút thì ghi mới. Request bị bỏ qua không cập nhật timestamp. Thời gian dùng Clock UTC của Backend.
+- Sự kiện và bộ đếm được ghi trong cùng transaction. Khi lấy khóa người xem–công thức thất bại, API trả `503 RECIPE_VIEW_UNAVAILABLE`; client có thể thử lại cùng định danh. Không tăng số trên UI nếu chưa có phản hồi thành công; lỗi ghi nhận lượt xem không nên ngăn đọc nội dung công thức.
+- Tổng công khai không tiết lộ định danh hoặc lịch sử người xem. Xóa cookie/đổi phiên tạo định danh Guest khác; khử trùng lặp theo phiên không phải cơ chế chống bot hoàn chỉnh.
 
 ## 4. Error convention
 
@@ -277,6 +290,12 @@ Luồng Onboarding (AC-31.10): sau mỗi lần đăng nhập thành công của 
 Cổng AI cá nhân hóa (AC-31.4–AC-31.6): endpoint AI gợi ý món hoặc tạo thực đơn tuần phải gọi `DietaryPreferenceService.requirePersonalizedAiEligible(userId)` trước mọi xử lý khác. Khi thiếu thông tin, request dừng với `409 DIETARY_PROFILE_INCOMPLETE` kèm `missing`; không gọi Gemini và không ghi Meal Plan. Cổng chỉ kiểm tra dữ liệu hồ sơ, không dựa vào `onboardingStatus`.
 
 ## 10. Tìm kiếm công thức công khai — FR-08
+
+**Tích hợp thống kê FR-58:** `viewCount` trên danh sách và `statistics.viewCount` trên chi tiết là tổng số sự kiện xem đã lưu, không đổi ý nghĩa theo `viewPeriod`. Tham số `viewPeriod` chỉ chọn số lượt dùng để xếp hạng Most Viewed; card vẫn hiển thị tổng toàn thời gian.
+
+Các khoảng là khoảng trượt theo Clock UTC của Backend, không phải ngày/tuần/tháng lịch: 24 giờ, 168 giờ, 720 giờ, hoặc lịch sử tới hiện tại. Mốc bắt đầu và kết thúc đều được tính; sự kiện sau hiện tại không tăng điểm Most Viewed. Nếu bằng số lượt trong khoảng, ưu tiên `published_at` mới hơn rồi `recipe_id` tăng dần để phân trang ổn định.
+
+Most Active dùng tương tác 7 ngày; Trending dùng tương tác 72 giờ và suy giảm theo tuổi bài cùng bonus 48 giờ theo policy hiện có. Các truy vấn này dùng sự kiện `RECIPE_VIEW` của luồng ghi nhận mới, không lấy số do Frontend gửi. Kiểm chứng thứ tự, ranh giới thời gian và liên kết với luồng ghi nhận dùng các test SQL Server; test mapping với mock không chứng minh thứ tự truy vấn thực tế.
 
 `GET /api/v1/recipes` là API đọc công khai có phân trang. Generated OpenAPI runtime là contract chi tiết. Endpoint nhận `keyword`, `page` (bắt đầu từ 0), `size` (1–50), `sort` (`NEWEST`, `MOST_LIKED`, `MOST_VIEWED`, `MOST_COMMENTED`, `MOST_ACTIVE` hoặc `TRENDING`) và `viewPeriod` (`ALL_TIME`, `LAST_24_HOURS`, `LAST_7_DAYS` hoặc `LAST_30_DAYS`).
 

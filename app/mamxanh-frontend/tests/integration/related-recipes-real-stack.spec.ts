@@ -29,6 +29,7 @@ test('real recipe detail recommendations match current SQL Server data without c
   const relatedResponsePromise = page.waitForResponse((response) =>
     response.url().endsWith(`/recipes/${sourceId}/related`) && response.request().method() === 'GET');
   await page.goto(`/cong-thuc/id/${sourceId}`);
+  await expect(page.getByRole('heading', { name: catalog.items[0].title, exact: true })).toBeVisible();
   const response = await relatedResponsePromise;
   expect(response.ok()).toBeTruthy();
   const payload = await response.json() as { items: Array<{ id: number; title: string }> };

@@ -1,13 +1,34 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.83.0
+> **Version:** v2.84.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-10-16
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+## 2026-10-15 — Synchronize Recipe Views with Develop
+
+**Status:** Committed — `e532d43`.
+
+**Scope:** Reconcile FR-58 / Issue #57 / PR #123 with the integration baseline, preserving shared recipe, meal-plan, authentication and CI behavior.
+
+### Added
+
+- None.
+
+### Changed
+
+- Preserve the multi-window Most Viewed filters and record Guest/Member views without changing recipe detail or browse contracts.
+- Keep migration V15 and preserve the FR-58 bug records as BUG-033, BUG-034 and BUG-035; BUG-030–032 are already assigned on develop.
+- Regenerate the committed OpenAPI snapshot from the synchronized Backend runtime.
+
+### Fixed
+
+- Resolve Git, migration and contract conflicts against the current develop baseline, including commit `9114dcf`.
+- Document ProblemDetail error schemas for view-recording responses instead of the success DTO (BUG-035).
+- Adapt meal-plan browser fixtures and scope feedback assertions for concurrent view-recording messages.
 
 ## 2026-10-13 — Add Member Following (Issue #69) ([PR #128](https://github.com/NgaiLong49423/vegetarian-support-system/pull/128))
 

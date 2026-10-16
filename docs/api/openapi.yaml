@@ -1880,6 +1880,69 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/recipes/{recipeId}/views:
+    post:
+      tags:
+      - recipe-view-controller
+      summary: Ghi nhận lượt xem công thức công khai
+      description: "Guest gửi anonymousViewerId dạng UUID; Member gửi {} và dùng danh\
+        \ tính từ Bearer. Lượt lặp trong 30 phút (kể cả đúng mốc 30 phút) trả counted=false,\
+        \ không kéo dài cửa sổ."
+      operationId: record
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecipeViewRequest"
+        required: true
+      responses:
+        "200":
+          description: Lượt xem đã ghi nhận hoặc đã khử trùng lặp.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeViewResponse"
+        "400":
+          description: ID hoặc định danh Guest không hợp lệ.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Bearer token không hợp lệ hoặc hết hạn.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Tài khoản mang Bearer token bị khóa.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Công thức không tồn tại hoặc không công khai.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: Chưa lấy được khóa ghi nhận lượt xem; có thể thử lại.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - {}
+      - bearerAuth: []
   /api/v1/recipes/{recipeId}/reports:
     post:
       tags:
@@ -5940,6 +6003,23 @@ components:
         publishedAt:
           type: string
           format: date-time
+    RecipeViewRequest:
+      type: object
+      properties:
+        anonymousViewerId:
+          type: string
+          pattern: "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    RecipeViewResponse:
+      type: object
+      properties:
+        recipeId:
+          type: integer
+          format: int64
+        counted:
+          type: boolean
+        viewCount:
+          type: integer
+          format: int64
     RecipeReportRequest:
       type: object
       properties:
@@ -6211,14 +6291,14 @@ components:
           type: string
         paymentLinkId:
           type: string
+        paymentSuccess:
+          type: boolean
         orderCode:
           type: integer
           format: int64
         amount:
           type: integer
           format: int32
-        paymentSuccess:
-          type: boolean
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
