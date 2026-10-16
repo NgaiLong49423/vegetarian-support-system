@@ -8,7 +8,7 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
-## 2026-10-17 — Keep Meal Plan Days Open Independently
+## 2026-10-17 — Keep Meal Plan Days Open Independently ([PR #147](https://github.com/NgaiLong49423/vegetarian-support-system/pull/147))
 
 **Status:** Committed — `b63cecf10037368e126d4536e6f31a3d3940f4b5`.
 
