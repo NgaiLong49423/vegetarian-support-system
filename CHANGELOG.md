@@ -8,9 +8,9 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
-## 2026-10-16 — Expand Local Demo Fixtures
+## 2026-10-16 — Expand Local Demo Fixtures ([PR #141](https://github.com/NgaiLong49423/vegetarian-support-system/pull/141))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `9b6c1fe`.
 
 **Scope:** Expand the local demo experience across accounts, meal plans, recipe content and community activity.
 
