@@ -667,6 +667,148 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/members/{userId}/follow:
+    get:
+      tags:
+      - member-follow-controller
+      summary: Read a member's follow summary
+      description: "Public. Counts include only active accounts. With an access token,\
+        \ `following` tells whether the viewer follows this member."
+      operationId: status
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: Follow summary of the member profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowStatusResponse"
+        "404":
+          description: "MEMBER_PROFILE_NOT_FOUND: no member profile has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    put:
+      tags:
+      - member-follow-controller
+      summary: Follow a member
+      description: Idempotent. The follower is the authenticated account; a repeated
+        request keeps one relation.
+      operationId: follow
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: The current account follows the member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowStatusResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: MEMBER_ACCESS_REQUIRED for a non-member account; FOLLOW_SELF_NOT_ALLOWED
+            on the own profile.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "MEMBER_PROFILE_NOT_FOUND: no member profile has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "FOLLOW_TARGET_INACTIVE: the member account is locked."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - member-follow-controller
+      summary: Unfollow a member
+      description: "Idempotent. Removes only the authenticated account's relation,\
+        \ also when the member is locked."
+      operationId: unfollow
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: The current account does not follow the member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowStatusResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: MEMBER_ACCESS_REQUIRED for a non-member account; FOLLOW_SELF_NOT_ALLOWED
+            on the own profile.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "MEMBER_PROFILE_NOT_FOUND: no member profile has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/meal-plans:
     get:
       tags:
@@ -4013,6 +4155,144 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /api/v1/members/{userId}/following:
+    get:
+      tags:
+      - member-follow-controller
+      summary: List the members a member follows
+      description: "Active accounts only, most recently followed first, with public\
+        \ profile fields only."
+      operationId: following
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - name: page
+        in: query
+        description: Zero-based page index.
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: "Page size, from 1 through 50."
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 50
+          minimum: 1
+      responses:
+        "200":
+          description: A page of followed members.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseFollowMemberResponse"
+        "400":
+          description: Page or size is outside its supported range.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "MEMBER_PROFILE_NOT_FOUND: no member profile has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/members/{userId}/followers:
+    get:
+      tags:
+      - member-follow-controller
+      summary: List a member's followers
+      description: "Active accounts only, most recently followed first, with public\
+        \ profile fields only."
+      operationId: followers
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - name: page
+        in: query
+        description: Zero-based page index.
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: "Page size, from 1 through 50."
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 50
+          minimum: 1
+      responses:
+        "200":
+          description: A page of followers.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseFollowMemberResponse"
+        "400":
+          description: Page or size is outside its supported range.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "MEMBER_PROFILE_NOT_FOUND: no member profile has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/meal-plans/{weekStartDate}/nutrition:
     get:
       tags:
@@ -5091,6 +5371,26 @@ components:
           format: int64
         name:
           type: string
+    FollowStatusResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Member có hồ sơ đang xem.
+        following:
+          type: boolean
+          description: Người xem đang theo dõi Member này; luôn false với Guest.
+        followerCount:
+          type: integer
+          format: int64
+          description: "Số người theo dõi Member này, chỉ tính tài khoản đang hoạ\
+            t động."
+        followingCount:
+          type: integer
+          format: int64
+          description: "Số tài khoản Member này đang theo dõi, chỉ tính tài khoản\
+            \ đang hoạt động."
     MealPlanWeekEntry:
       type: object
       properties:
@@ -6605,6 +6905,36 @@ components:
           type: string
         ingredientGroup:
           type: string
+    FollowMemberResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+          description: Ảnh đại diện; null thì Frontend hiển thị ảnh mặc định.
+    PageResponseFollowMemberResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/FollowMemberResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
     Day:
       type: object
       properties:
