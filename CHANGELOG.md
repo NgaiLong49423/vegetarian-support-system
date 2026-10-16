@@ -8,24 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+## 2026-10-16 — Expand Local Demo Fixtures ([PR #141](https://github.com/NgaiLong49423/vegetarian-support-system/pull/141))
 
-## 2026-10-16 — Restore Recipe Reaction Card Checks on the Home Route
+**Status:** Committed — `9b6c1fe`.
 
-**Status:** Committed — `f2d6e7c`.
-
-**Scope:** Keep the recipe reaction badge regression test aligned with the current Frontend routing.
+**Scope:** Expand the local demo experience across accounts, meal plans, recipe content and community activity.
 
 ### Added
 
-- None.
+- Add 17 Customer accounts, 3 Expert accounts, 20 recipes, 30 catalogue ingredients, four weeks of meals for every Customer, and repeatable reaction, view and follow fixtures.
+- Assign the shared local demo password to all 25 seeded accounts through the local-only credential initializer.
 
 ### Changed
 
-- None.
+- Complete the profiles of all 20 demo Customers, including current BMI inputs and nutrition consent; convert the two former onboarding personas into full demo Customers.
+- Update Backend and Database guides with the expanded local fixture and its account roles.
 
 ### Fixed
 
-- Open `/trang-chu` in the Home card badge test and apply its two-card expectation there; `/` now renders the landing page. Keep the Explore badge check on `/kham-pha`.
+- Keep recipe counters synchronized with seeded reactions and views while rerunning the local seed without duplicating its fixtures.
 
 ## 2026-10-15 — Synchronize Recipe Views with Develop
 
