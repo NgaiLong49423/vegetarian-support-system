@@ -1,13 +1,32 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.85.0
+> **Version:** v2.86.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-16
+> **Last Updated:** 2026-10-17
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+## 2026-10-17 — Keep Meal Plan Days Open Independently
+
+**Status:** Committed — `b63cecf10037368e126d4536e6f31a3d3940f4b5`.
+
+**Scope:** FR-09 / Issue #146: allow members to compare multiple days in the weekly meal planner.
+
+### Added
+
+- Browser regression scenarios for independent day expansion, calendar selection, week changes and meal actions at mobile, tablet and desktop widths.
+
+### Changed
+
+- Track expanded days separately from the selected calendar date and reset expansion when changing weeks.
+- Update the Frontend guide to describe opening and closing days independently.
+
+### Fixed
+
+- Opening another day through its heading, the calendar or its planning button no longer collapses days already open in the same week.
+
 ## 2026-10-16 — Expand Local Demo Fixtures ([PR #141](https://github.com/NgaiLong49423/vegetarian-support-system/pull/141))
 
 **Status:** Committed — `9b6c1fe`.
