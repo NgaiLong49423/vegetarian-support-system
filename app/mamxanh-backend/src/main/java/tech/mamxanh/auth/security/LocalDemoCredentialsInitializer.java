@@ -11,7 +11,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-/** Creates local-only BCrypt credentials for Flyway demo accounts after seed data is loaded. */
+/** Creates local-only BCrypt credentials for all 25 Flyway demo accounts after seed data is loaded. */
 @Component
 @Profile("local")
 class LocalDemoCredentialsInitializer implements ApplicationRunner {
@@ -20,7 +20,27 @@ class LocalDemoCredentialsInitializer implements ApplicationRunner {
             "demo-new-member@mamxanh.local",
             "demo-applicant@mamxanh.local",
             "demo-expert@mamxanh.local",
-            "demo-admin@mamxanh.local");
+            "demo-admin@mamxanh.local",
+            "demo-customer-04@mamxanh.local",
+            "demo-customer-05@mamxanh.local",
+            "demo-customer-06@mamxanh.local",
+            "demo-customer-07@mamxanh.local",
+            "demo-customer-08@mamxanh.local",
+            "demo-customer-09@mamxanh.local",
+            "demo-customer-10@mamxanh.local",
+            "demo-customer-11@mamxanh.local",
+            "demo-customer-12@mamxanh.local",
+            "demo-customer-13@mamxanh.local",
+            "demo-customer-14@mamxanh.local",
+            "demo-customer-15@mamxanh.local",
+            "demo-customer-16@mamxanh.local",
+            "demo-customer-17@mamxanh.local",
+            "demo-customer-18@mamxanh.local",
+            "demo-customer-19@mamxanh.local",
+            "demo-customer-20@mamxanh.local",
+            "demo-expert-02@mamxanh.local",
+            "demo-expert-03@mamxanh.local",
+            "demo-expert-04@mamxanh.local");
 
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;

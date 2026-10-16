@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.84.0
+> **Version:** v2.85.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-16
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+## 2026-10-16 — Expand Local Demo Fixtures
+
+**Status:** Working tree — not committed.
+
+**Scope:** Expand the local demo experience across accounts, meal plans, recipe content and community activity.
+
+### Added
+
+- Add 17 Customer accounts, 3 Expert accounts, 20 recipes, 30 catalogue ingredients, four weeks of meals for every Customer, and repeatable reaction, view and follow fixtures.
+- Assign the shared local demo password to all 25 seeded accounts through the local-only credential initializer.
+
+### Changed
+
+- Complete the profiles of all 20 demo Customers, including current BMI inputs and nutrition consent; convert the two former onboarding personas into full demo Customers.
+- Update Backend and Database guides with the expanded local fixture and its account roles.
+
+### Fixed
+
+- Keep recipe counters synchronized with seeded reactions and views while rerunning the local seed without duplicating its fixtures.
+
 ## 2026-10-15 — Synchronize Recipe Views with Develop
 
 **Status:** Committed — `e532d43`.
