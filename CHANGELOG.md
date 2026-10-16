@@ -50,6 +50,24 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Document ProblemDetail error schemas for view-recording responses instead of the success DTO (BUG-035).
 - Adapt meal-plan browser fixtures and scope feedback assertions for concurrent view-recording messages.
 
+## 2026-10-15 — Restore Comment Error Codes in the API Guide ([PR #140](https://github.com/NgaiLong49423/vegetarian-support-system/pull/140))
+
+**Status:** Committed — `8f34482`.
+
+**Scope:** Restore the FR-46 error-code documentation that PR #129 added to `docs/api/API.md` and that was dropped while resolving the PR #129 sync conflict (`b2802ea`); the Backend already returns these codes.
+
+### Added
+
+- None.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Restore the `COMMENT_NOT_FOUND` and `COMMENT_EDIT_NOT_ALLOWED` rows, the FR-46 comment case of `MEMBER_ACCESS_REQUIRED`, and Issue #48 in the list of implemented error codes in `API.md`.
+
 ## 2026-10-13 — Add Member Following (Issue #69) ([PR #128](https://github.com/NgaiLong49423/vegetarian-support-system/pull/128))
 
 **Status:** Committed — `81ea5ec` (Backend), `8cd7bfc` (Frontend and documentation).
