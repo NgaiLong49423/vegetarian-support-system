@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.30.0
+> **Version:** v1.31.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-10-16
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -65,6 +65,7 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - **Đăng nhập Google đã gọi Backend thật (Issue #8):** trang Đăng nhập và Đăng ký hiện nút "Tiếp tục với Google" của Google Identity Services (`@react-oauth/google`) khi có `VITE_GOOGLE_CLIENT_ID`; script Google chỉ được tải trên hai trang này. Google trả ID Token, Frontend gửi `POST /auth/google` rồi lưu phiên và kiểm tra lời mời Onboarding như khi đăng nhập bằng mật khẩu. Lỗi hiển thị theo `code`: token Google không hợp lệ (`GOOGLE_TOKEN_INVALID`), tài khoản bị khóa (`ACCOUNT_LOCKED`), email đã liên kết Google khác (`GOOGLE_ACCOUNT_CONFLICT`) và Google tạm không khả dụng (`GOOGLE_LOGIN_UNAVAILABLE`). Thiếu Client ID thì thay nút bằng thông báo; script Google không tải được thì vẫn đăng nhập bằng email được.
 - **Hồ sơ tác giả đã gọi Backend thật (Issue #29):** trang chi tiết `/cong-thuc/id/:recipeId` hiện ảnh đại diện, tên tác giả (liên kết tới `/thanh-vien/:userId`) và ngày đăng; `/thanh-vien/:userId` là hồ sơ công khai (tên, ảnh, giới thiệu, tháng tham gia, bài đã đăng có phân trang); `/ho-so/cai-dat` cho Member sửa tên, giới thiệu ngắn và ảnh đại diện. Không có ảnh hoặc ảnh lỗi thì hiện ảnh mặc định chữ cái đầu như header.
 - **Nguyên liệu chưa có dữ liệu dinh dưỡng (Issue #45):** trang chi tiết công thức gắn nhãn "Chưa hỗ trợ tính dinh dưỡng" cạnh từng nguyên liệu Backend trả `nutritionSupported = false`, cùng thông báo dinh dưỡng chưa đầy đủ đã có.
+- **Theo dõi thành viên đã gọi Backend thật (Issue #69):** trang `/thanh-vien/:userId` hiện số người theo dõi và số tài khoản đang theo dõi; Member bấm "Theo dõi"/"Đang theo dõi" để theo dõi hoặc bỏ theo dõi, bộ đếm lấy từ phản hồi của Backend. Guest được dẫn tới đăng nhập; hồ sơ của chính mình và tài khoản Administrator không có nút. Bấm vào bộ đếm để xem danh sách (cần đăng nhập, "Xem thêm" theo trang). Lỗi như theo dõi tài khoản đang bị khóa hiện nguyên văn thông báo của Backend.
 - **Bình luận đã gọi Backend thật (Issue #48):** trang chi tiết `/cong-thuc/id/:recipeId` (và `/cong-thuc/:id`) hiện các luồng bình luận lồng tối đa 5 cấp, "Xem thêm bình luận" theo trang. Member viết, trả lời, sửa, xóa bình luận của mình (xác nhận trước khi xóa); trả lời bình luận cấp 5 tự chèn `@Tên`. Bình luận đã xóa còn reply hiện "Bình luận này đã bị xóa bởi người dùng". Guest được mời đăng nhập; Administrator chỉ xem. Nội dung hiển thị như văn bản, không render HTML.
 - **Đăng xuất** chỉ xóa token và trạng thái đăng nhập trên thiết bị, không gọi Backend (AC-03.13).
 - **Quên và đặt lại mật khẩu đã gọi Backend thật (Issue #9):** `/quen-mat-khau` gửi `POST /auth/password-resets` và hiển thị nguyên văn thông báo trung tính của Backend. Liên kết trong email mở `/dat-lai-mat-khau?token=...`; Frontend giữ token trong bộ nhớ, xóa nó khỏi thanh địa chỉ, kiểm tra quy tắc mật khẩu rồi gửi `POST /auth/password-resets/confirm`. Liên kết hỏng, đã dùng hoặc hết hạn (`PASSWORD_RESET_TOKEN_INVALID`) ẩn biểu mẫu và dẫn tới yêu cầu liên kết mới; mật khẩu trùng mật khẩu hiện tại (`NEW_PASSWORD_SAME_AS_CURRENT`) báo ngay dưới ô mật khẩu.
@@ -77,7 +78,7 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 | Khu vực | Người dùng có thể thử | Giới hạn hiện tại |
 |---|---|---|
 | Trang chủ và thanh điều hướng | Nền tối, header gọn, hai nhóm công thức API và menu responsive | Preview cộng đồng vẫn được ghi nhãn mẫu; không có API nhóm hoặc theo dõi tác giả |
-| Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Chỉ giữ trong bộ nhớ khi trang còn mở, chưa gửi Backend |
+| Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Guest đọc công khai; Customer/Expert đăng nhập mới được thao tác; Backend lưu bình luận và trả lời |
 | Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu | Làm tròn tối đa 2 chữ số thập phân; lượng không đọc được thành số giữ nguyên; chưa đồng bộ Shopping List |
 | Kế hoạch bữa ăn Guest | Chọn 0,5–10 phần cho từng món, bước 0,5 | Guest chỉ cập nhật UI mẫu; Member dùng API lịch tuần, thêm món với khẩu phần mặc định 1 |
 | Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |

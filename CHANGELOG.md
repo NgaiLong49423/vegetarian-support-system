@@ -2,14 +2,14 @@
 > **File:** `CHANGELOG.md`
 > **Version:** v2.84.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-10-16
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-15 — Restore Comment Error Codes in the API Guide
+## 2026-10-15 — Restore Comment Error Codes in the API Guide ([PR #140](https://github.com/NgaiLong49423/vegetarian-support-system/pull/140))
 
 **Status:** Committed — `8f34482`.
 
@@ -26,6 +26,28 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Restore the `COMMENT_NOT_FOUND` and `COMMENT_EDIT_NOT_ALLOWED` rows, the FR-46 comment case of `MEMBER_ACCESS_REQUIRED`, and Issue #48 in the list of implemented error codes in `API.md`.
+
+## 2026-10-13 — Add Member Following (Issue #69) ([PR #128](https://github.com/NgaiLong49423/vegetarian-support-system/pull/128))
+
+**Status:** Committed — `81ea5ec` (Backend), `8cd7bfc` (Frontend and documentation).
+
+**Scope:** Implement UC-59.1–UC-59.4 so members can follow and unfollow other members from the public profile, see follower and following counts, and browse both lists, following AC-59.1–AC-59.7 and BR-75.
+
+### Added
+
+- Add `GET /api/v1/members/{userId}/follow` (public follow summary with the viewer's state), idempotent `PUT`/`DELETE` on the same path, and paginated `GET /api/v1/members/{userId}/followers` and `/following` for signed-in users. The follower always comes from the session; only active customers and experts may follow; counts and lists include only active accounts.
+- Add the `FOLLOW_SELF_NOT_ALLOWED` (403) and `FOLLOW_TARGET_INACTIVE` (409) error codes.
+- Add follow counts, the follow button and the follower/following lists to the public profile page `/thanh-vien/:userId`.
+- Add SQL Server integration tests (including parallel follow requests) and Playwright tests for the follow flows.
+- Record BUG-032 under `.agents/outputs/bugs/`.
+
+### Changed
+
+- Document the follow API and error codes in `API.md` section 17 and the Backend/Frontend READMEs.
+
+### Fixed
+
+- None.
 
 ## 2026-10-15 — Align Recipe Reactions with Generated OpenAPI Verification ([PR #119](https://github.com/NgaiLong49423/vegetarian-support-system/pull/119))
 
@@ -285,7 +307,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Replace the session-only comment preview with the API-backed comment section on both recipe detail pages; the slug-based demo recipe pages no longer show comments.
-- Document the comment API and error codes in `API.md` section 17 and the Backend/Frontend READMEs.
+- Document the comment API and error codes in `API.md` section 18 and the Backend/Frontend READMEs.
 
 ### Fixed
 
