@@ -35,18 +35,24 @@ import io.swagger.v3.oas.models.responses.ApiResponses;
 public class OpenApiConfig {
 
     public static final String BEARER_AUTH = "bearerAuth";
-    static final String PROBLEM_DETAIL = "ProblemDetail";
-    private static final String PROBLEM_JSON = "application/problem+json";
-
     @Bean
-    OpenApiCustomizer problemDetailResponses() {
+    OpenApiCustomizer apiContractResponsesAndSecurity() {
         return openApi -> {
             if (openApi.getComponents() == null) openApi.setComponents(new Components());
             openApi.getComponents().addSchemas(PROBLEM_DETAIL, problemDetailSchema());
             if (openApi.getPaths() == null) return;
+            var recipeViews = openApi.getPaths().get("/api/v1/recipes/{recipeId}/views");
+            if (recipeViews != null && recipeViews.getPost() != null) {
+                recipeViews.getPost().setSecurity(java.util.List.of(
+                        new io.swagger.v3.oas.models.security.SecurityRequirement(),
+                        new io.swagger.v3.oas.models.security.SecurityRequirement().addList(BEARER_AUTH)));
+            }
             openApi.getPaths().values().forEach(path -> path.readOperations().forEach(OpenApiConfig::addErrorResponses));
         };
     }
+
+    static final String PROBLEM_DETAIL = "ProblemDetail";
+    private static final String PROBLEM_JSON = "application/problem+json";
 
     private static void addErrorResponses(Operation operation) {
         ApiResponses responses = operation.getResponses();

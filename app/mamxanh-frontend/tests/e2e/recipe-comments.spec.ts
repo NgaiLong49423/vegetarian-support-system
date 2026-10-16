@@ -298,7 +298,7 @@ test.describe('Issue #48 [FR-46] — Bình luận và reply lồng nhiều cấp
 
     await openRecipe(page);
     await expect(page.getByRole('alert')).toContainText('Không tải được bình luận.');
-    await page.getByRole('button', { name: 'Thử lại' }).click();
+    await page.getByRole('button', { name: 'Thử lại', exact: true }).click();
     await expect(page.getByText('Luồng số 12', { exact: true })).toBeVisible();
     await expect(page.getByText('Luồng số 2', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Xem thêm bình luận' }).click();

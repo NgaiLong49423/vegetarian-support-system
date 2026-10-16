@@ -95,6 +95,12 @@ export interface RecipeIngredient {
   quantity: number;
 }
 
+export interface RecipeViewResponse {
+  recipeId: number;
+  counted: boolean;
+  viewCount: number;
+}
+
 export interface RecipeMedia {
   url: string;
   mimeType: string;
@@ -323,6 +329,9 @@ export const recipesApi = {
   ),
   getPublished: (recipeId: number) => request(
     () => apiClient.get<RecipeDetail>(`/recipes/${recipeId}`),
+  ),
+  recordView: (recipeId: number, anonymousViewerId?: string) => request(
+    () => apiClient.post<RecipeViewResponse>(`/recipes/${recipeId}/views`, anonymousViewerId ? { anonymousViewerId } : {}),
   ),
   searchPublic: (filters: RecipeSearchParams) => {
     const params = new URLSearchParams({
