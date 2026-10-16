@@ -105,6 +105,10 @@ export function MealPlanWeekEditor() {
     return week === mondayOf(new Date()) ? localDateKey(new Date()) : week
   })
 
+  const [expandedDays, setExpandedDays] = useState(() =>
+    new Set(selectedDay ? [selectedDay] : []),
+  )
+
   useEffect(() => {
     if (
       searchParams.get("weekStartDate") !== week ||
@@ -123,11 +127,35 @@ export function MealPlanWeekEditor() {
   }, [week, selectedDay, view, searchParams, setSearchParams])
 
   function changeWeek(value: string) {
-    setWeek(value)
+    if (value === week) return
 
-    setSelectedDay(
-      value === mondayOf(new Date()) ? localDateKey(new Date()) : value,
+    const day = value === mondayOf(new Date()) ? localDateKey(new Date()) : value
+    setWeek(value)
+    setSelectedDay(day)
+    setExpandedDays(new Set([day]))
+  }
+
+  function openDay(day: string | null) {
+    if (!day) return
+
+    setSelectedDay(day)
+    setExpandedDays((current) =>
+      mondayOf(new Date(`${day}T12:00:00`)) === week
+        ? new Set([...current, day])
+        : new Set([day]),
     )
+  }
+
+  function toggleDay(day: string) {
+    if (expandedDays.has(day)) {
+      setExpandedDays((current) => {
+        const next = new Set(current)
+        next.delete(day)
+        return next
+      })
+    } else {
+      openDay(day)
+    }
   }
 
   const end = new Date(`${week}T12:00:00`)
@@ -156,7 +184,7 @@ export function MealPlanWeekEditor() {
               weekStart={week}
               onChange={changeWeek}
               selectedDay={selectedDay}
-              onSelectDay={setSelectedDay}
+              onSelectDay={openDay}
             />
           </div>
           <Card className="hidden p-4 md:block">
@@ -237,7 +265,9 @@ export function MealPlanWeekEditor() {
               key={week}
               week={week}
               selectedDay={selectedDay}
-              onSelectDay={setSelectedDay}
+              expandedDays={expandedDays}
+              onSelectDay={openDay}
+              onToggleDay={toggleDay}
             />
           ) : (
             <div>
@@ -270,13 +300,21 @@ function WeekContents({
 
   selectedDay,
 
+  expandedDays,
+
   onSelectDay,
+
+  onToggleDay,
 }: {
   week: string
 
   selectedDay: string | null
 
+  expandedDays: ReadonlySet<string>
+
   onSelectDay: (day: string | null) => void
+
+  onToggleDay: (day: string) => void
 }) {
   const [plan, setPlan] = useState<MealPlanWeek | null>(null)
 
@@ -601,7 +639,7 @@ function WeekContents({
 
           const entries = plan.entries.filter((entry) => entry.mealDate === day)
 
-          const expanded = selectedDay === day
+          const expanded = expandedDays.has(day)
 
           const today = day === localDateKey(new Date())
 
@@ -618,7 +656,7 @@ function WeekContents({
                     aria-label={`Xem ngày ${date.toLocaleDateString("vi-VN")}`}
                     aria-expanded={expanded}
                     aria-controls={`meals-${day}`}
-                    onClick={() => onSelectDay(expanded ? null : day)}
+                    onClick={() => onToggleDay(day)}
                     className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-raised focus-visible:outline-2 focus-visible:outline-brand-600"
                   >
                     {expanded ? (

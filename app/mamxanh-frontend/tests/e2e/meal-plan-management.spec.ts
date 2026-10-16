@@ -133,6 +133,12 @@ test("AC-33.4 moves across days, preserves servings, survives reload and restore
   await dialog.getByLabel("Bữa đích").selectOption("DINNER")
   await dialog.getByRole("button", { name: "Xác nhận chuyển" }).click()
   await expect(dialog).not.toBeVisible()
+  // Issue #146: moving opens the destination without collapsing the source day.
+  for (const day of [week, "2026-10-13"]) {
+    await expect(page.getByRole("button", {
+      name: `Xem ngày ${new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN")}`, exact: true,
+    })).toHaveAttribute("aria-expanded", "true")
+  }
   expect(state.entries[0]).toMatchObject({
     entryId: 1,
     mealDate: "2026-10-13",

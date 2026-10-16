@@ -257,7 +257,7 @@ async function openMonday(page: Page) {
 const lunch = (page: Page) =>
   page.getByRole("button", { name: /^Thêm món Bữa trưa/ }).first()
 
-test("only one day expands, and adding meals queries saved recipes with pagination", async ({
+test("initially one day opens, and adding meals queries saved recipes with pagination", async ({
   page,
 }) => {
   await setup(page)
@@ -291,7 +291,7 @@ test("only one day expands, and adding meals queries saved recipes with paginati
     })
   })
 
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
 
   await expect(page.getByRole("button", { name: /^Xem ngày/ })).toHaveCount(7)
 
@@ -322,6 +322,95 @@ test("only one day expands, and adding meals queries saved recipes with paginati
   ).toBeVisible()
 
   expect(publicSearches).toBe(0)
+})
+
+// Issue #146: each day stays open independently, including calendar selection.
+for (const width of [360, 768, 1440]) {
+  test(`FR-09 / #146 keeps days open independently at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 })
+    const state = await setup(page)
+    const dateAt = (offset: number) => {
+      const date = new Date(`${week}T12:00:00`)
+      date.setDate(date.getDate() + offset)
+      return date
+    }
+    const keyAt = (offset: number) => {
+      const date = dateAt(offset)
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+    }
+    const dayButton = (offset: number) => page.getByRole("button", {
+      name: `Xem ngày ${dateAt(offset).toLocaleDateString("vi-VN")}`, exact: true,
+    })
+    const daySection = (offset: number) => page.getByRole("region", {
+      name: dateAt(offset).toLocaleDateString("vi-VN"), exact: true,
+    })
+    await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
+    await dayButton(1).click()
+    await dayButton(2).focus()
+    await page.keyboard.press("Enter")
+    for (const offset of [0, 1, 2]) {
+      await expect(dayButton(offset)).toHaveAttribute("aria-expanded", "true")
+      await expect(daySection(offset).getByRole("button", { name: /^Thêm món Bữa/ })).toHaveCount(3)
+    }
+    await dayButton(1).click()
+    await expect(dayButton(1)).toHaveAttribute("aria-expanded", "false")
+    await expect(dayButton(2)).toHaveAttribute("aria-expanded", "true")
+    await expect(page).toHaveURL(new RegExp(`mealDate=${keyAt(2)}`))
+
+    if (width < 768) await page.getByRole("button", { name: "Chọn ngày trong lịch", exact: true }).click()
+    await page.getByRole("button", { name: `Chọn ngày ${dateAt(1).toLocaleDateString("vi-VN")}`, exact: true }).click()
+    for (const offset of [0, 1, 2]) await expect(dayButton(offset)).toHaveAttribute("aria-expanded", "true")
+    await page.getByRole("button", { name: `Lên lịch ngày ${dateAt(3).toLocaleDateString("vi-VN")}`, exact: true }).click()
+    await expect(dayButton(3)).toHaveAttribute("aria-expanded", "true")
+    await expect(dayButton(1)).toHaveAttribute("aria-expanded", "true")
+    await expect(dayButton(2)).toHaveAttribute("aria-expanded", "true")
+
+    // Verify that multiple open days do not redirect writes or nutrition to another day.
+    await daySection(2).getByRole("button", { name: /^Thêm món Bữa trưa/ }).click()
+    await page.getByRole("dialog").getByRole("button", { name: "Canh nấm", exact: true }).click()
+    await expect(daySection(2).getByRole("article", { name: "Canh nấm", exact: true })).toBeVisible()
+    expect(state.entries).toEqual([expect.objectContaining({ mealDate: keyAt(2), mealType: "LUNCH", recipeId: 11 })])
+    await expect(daySection(1).getByRole("article")).toHaveCount(0)
+    await daySection(2).getByRole("button", { name: "Xem dinh dưỡng ngày", exact: true }).click()
+    await expect(page.getByRole("dialog").getByLabel("Ngày xem")).toHaveValue(keyAt(2))
+    await page.keyboard.press("Escape")
+    await expect(daySection(2).getByRole("button", { name: "Xem dinh dưỡng ngày", exact: true })).toBeFocused()
+    await expect(dayButton(1)).toHaveAttribute("aria-expanded", "true")
+    await daySection(2).getByRole("button", { name: "Thay món Canh nấm", exact: true }).click()
+    await page.getByRole("dialog").getByRole("button", { name: "Đậu phụ kho", exact: true }).click()
+    await expect(daySection(2).getByRole("article", { name: "Đậu phụ kho", exact: true })).toBeVisible()
+    expect(state.entries[0]).toMatchObject({ mealDate: keyAt(2), mealType: "LUNCH", recipeId: 12 })
+    await daySection(2).getByRole("button", { name: "Gỡ món Đậu phụ kho", exact: true }).click()
+    await page.getByRole("dialog").getByRole("button", { name: "Xác nhận gỡ", exact: true }).click()
+    await expect(daySection(2).getByRole("article")).toHaveCount(0)
+    expect(state.entries).toHaveLength(0)
+    await expect(dayButton(1)).toHaveAttribute("aria-expanded", "true")
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+
+    await page.getByRole("button", { name: "Tuần sau", exact: true }).click()
+    const nextMonday = dateAt(7).toLocaleDateString("vi-VN")
+    await expect(page.getByRole("button", { name: `Xem ngày ${nextMonday}`, exact: true })).toHaveAttribute("aria-expanded", "true")
+    await expect(page.locator('button[aria-expanded="true"][aria-controls^="meals-"]')).toHaveCount(1)
+    await page.getByRole("button", { name: "Về tuần hiện tại", exact: true }).click()
+    const today = new Date().toLocaleDateString("vi-VN")
+    await expect(page.getByRole("button", { name: `Xem ngày ${today}`, exact: true })).toHaveAttribute("aria-expanded", "true")
+    await expect(page.locator('button[aria-expanded="true"][aria-controls^="meals-"]')).toHaveCount(1)
+  })
+}
+
+test("FR-09 / #146 selecting a calendar date in another week opens that date only", async ({ page }) => {
+  await setup(page)
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
+  const date = new Date(`${week}T12:00:00`)
+  date.setDate(date.getDate() + 8)
+  const calendar = page.getByRole("region", { name: "Chọn tuần trong lịch", exact: true })
+  await expect(calendar).toBeVisible()
+  // The next week can be in the following month.
+  const target = calendar.getByRole("button", { name: `Chọn ngày ${date.toLocaleDateString("vi-VN")}`, exact: true })
+  if (await target.count() === 0) await calendar.getByRole("button", { name: "Tháng sau", exact: true }).click()
+  await target.click()
+  await expect(page.getByRole("button", { name: `Xem ngày ${date.toLocaleDateString("vi-VN")}`, exact: true })).toHaveAttribute("aria-expanded", "true")
+  await expect(page.locator('button[aria-expanded="true"][aria-controls^="meals-"]')).toHaveCount(1)
 })
 
 test("weekly AI preview leaves the plan unchanged until the member confirms whole-week replacement", async ({ page }) => {
@@ -420,7 +509,7 @@ test("nutrition uses planned servings and divides weekly averages across all sev
     })
   })
 
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
 
   await openMonday(page)
 
@@ -472,7 +561,7 @@ test("nutrition discloses missing data and supports retry without false zero tot
   const state = await setup(page, [entry()])
   state.nutritionFail = true
 
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
 
   await openMonday(page)
 
@@ -506,7 +595,7 @@ test("empty week opens one day with three meals and requests creation only after
   page,
 }) => {
   const state = await setup(page)
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
   await expect(page.getByRole("button", { name: /^Thêm món Bữa/ })).toHaveCount(
     3,
@@ -519,7 +608,7 @@ test("empty week opens one day with three meals and requests creation only after
 
 test("recipe detail saves half servings and the calendar recalculates nutrition", async ({ page }) => {
   const state = await setup(page, [entry(), { ...entry(2), mealType: "DINNER", plannedServings: 3 }])
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
   await expect(page.getByRole("spinbutton")).toHaveCount(0)
   await expect(page.getByRole("button", { name: /^Lưu khẩu phần/ })).toHaveCount(0)
@@ -545,7 +634,7 @@ test("recipe detail saves half servings and the calendar recalculates nutrition"
 
 test("failed serving save retains the old calendar value and can be retried in detail", async ({ page }) => {
   const state = await setup(page, [entry()])
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
   await page.getByRole("link", { name: "Canh nấm", exact: true }).click()
   await expect(page.getByRole("button", { name: "Tăng khẩu phần" })).toBeEnabled()
@@ -589,7 +678,7 @@ test("invalid legacy serving values need correction before saving", async ({ pag
 test("empty saved collection and empty nutrition explain the next step", async ({ page }) => {
   const state = await setup(page)
   await page.route("**/api/v1/saved-recipes**", (route) => route.fulfill({ json: { content: [], page: 0, size: 12, totalElements: 0, totalPages: 0 } }))
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
   await lunch(page).click()
   const dialog = page.getByRole("dialog")
@@ -605,7 +694,7 @@ test("adds two different recipes to the same meal and retains them after reload"
   page,
 }) => {
   const state = await setup(page)
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
   await lunch(page).click()
   await page
@@ -633,7 +722,7 @@ test("saved picker prevents unavailable choices and replaces a tombstone in plac
   const state = await setup(page, [
     { ...entry(8, 11, true), plannedServings: 2.5 },
   ])
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
   await expect(page.locator('a[href^="/cong-thuc/id/11"]')).toHaveCount(0)
   await page
@@ -656,7 +745,7 @@ test("failed removal preserves the item and retry removes only its reference", a
   page,
 }) => {
   const state = await setup(page, [entry(8, 11, true)])
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
   await page
     .getByRole("button", { name: "Gỡ món Công thức không còn khả dụng" })
@@ -677,7 +766,7 @@ test("server conflict stays visible without optimistic insertion", async ({
 }) => {
   const state = await setup(page)
   state.fail = "conflict"
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
   await lunch(page).click()
   await page
@@ -695,7 +784,7 @@ test("picker search, retry and keyboard focus remain usable", async ({
 }) => {
   const state = await setup(page)
   state.searchFail = true
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
   await lunch(page).click()
   const dialog = page.getByRole("dialog")
@@ -725,7 +814,7 @@ test("late mutation cannot insert an old recipe into a newly selected week", asy
     release = resolve
   })
   const response = page.waitForResponse(value => value.request().method() === "POST" && value.url().includes("/meal-plans/"))
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
   await lunch(page).click()
   await page
@@ -749,7 +838,7 @@ test("authentication rejection leaves the editor and does not write as guest", a
 }) => {
   const state = await setup(page)
   state.fail = "auth"
-  await page.goto("/ke-hoach")
+  await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
   await lunch(page).click()
   await page
@@ -764,7 +853,7 @@ for (const width of [360, 768, 1440]) {
   test(`meal editor and picker fit ${width}px`, async ({ page }) => {
     await setup(page, [entry()])
     await page.setViewportSize({ width, height: 900 })
-    await page.goto("/ke-hoach")
+    await page.goto(`/ke-hoach?weekStartDate=${week}&mealDate=${week}`)
   await openMonday(page)
     await expect(page.getByRole("article", { name: "Canh nấm" })).toBeVisible()
     expect(
