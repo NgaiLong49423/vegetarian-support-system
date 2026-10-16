@@ -10,7 +10,7 @@
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 ## 2026-10-16 — Expand Local Demo Fixtures ([PR #141](https://github.com/NgaiLong49423/vegetarian-support-system/pull/141))
 
-**Status:** Committed — `9b6c1fe`.
+**Status:** Working tree — not committed.
 
 **Scope:** Expand the local demo experience across accounts, meal plans, recipe content and community activity.
 
@@ -27,6 +27,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Keep recipe counters synchronized with seeded reactions and views while rerunning the local seed without duplicating its fixtures.
+- Wait for the real-stack `MOST_VIEWED` response before changing its period filter, removing the race that timed out the Docker Development check.
 
 ## 2026-10-15 — Synchronize Recipe Views with Develop
 
