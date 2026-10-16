@@ -1,0 +1,53 @@
+TAI KHOAN DEMO LOCAL - MAM XANH
+
+Các tài khoản bên dưới được tạo bởi Flyway seed khi Backend chạy với profile local.
+Mật khẩu dùng chung được lấy từ biến MAMXANH_DEMO_PASSWORD trong
+app/mamxanh-backend/.env; Backend tạo BCrypt hash cho cả 25 tài khoản khi khởi động.
+Không ghi mật khẩu hoặc password hash vào file này hay Git.
+
+## Customer (20 tài khoản)
+
+Tất cả Customer có hồ sơ hoàn chỉnh, BMI hiện tại được tính từ chiều cao/cân nặng,
+sở thích ăn uống và bốn tuần lịch ăn (mỗi tuần 7 ngày, 3 bữa mỗi ngày).
+Hai tài khoản trước đây dùng thử onboarding cũng đã được chuyển thành Customer đầy đủ.
+
+1. demo-customer@mamxanh.local
+2. demo-new-member@mamxanh.local
+3. demo-applicant@mamxanh.local
+4. demo-customer-04@mamxanh.local
+5. demo-customer-05@mamxanh.local
+6. demo-customer-06@mamxanh.local
+7. demo-customer-07@mamxanh.local
+8. demo-customer-08@mamxanh.local
+9. demo-customer-09@mamxanh.local
+10. demo-customer-10@mamxanh.local
+11. demo-customer-11@mamxanh.local
+12. demo-customer-12@mamxanh.local
+13. demo-customer-13@mamxanh.local
+14. demo-customer-14@mamxanh.local
+15. demo-customer-15@mamxanh.local
+16. demo-customer-16@mamxanh.local
+17. demo-customer-17@mamxanh.local
+18. demo-customer-18@mamxanh.local
+19. demo-customer-19@mamxanh.local
+20. demo-customer-20@mamxanh.local
+
+## Expert (4 tài khoản)
+
+- demo-expert@mamxanh.local — sở hữu bộ công thức demo và gói Pro local hiệu lực một năm.
+- demo-expert-02@mamxanh.local
+- demo-expert-03@mamxanh.local
+- demo-expert-04@mamxanh.local
+
+## Admin (1 tài khoản)
+
+- demo-admin@mamxanh.local — dùng thử chức năng quản trị và xét duyệt.
+
+## Dữ liệu demo
+
+- 43 bài công thức chay và danh mục nguyên liệu mở rộng.
+- Like/Dislike, lượt xem theo nhiều khoảng thời gian và lượt Follow để trình diễn hoạt động cộng đồng, xếp hạng.
+- Mỗi Customer có bốn tuần lịch ăn. BMI chỉ dựa trên hồ sơ hiện tại; không có lịch sử BMI.
+- Nguyên liệu mới chưa được xác minh dinh dưỡng không được đánh dấu hỗ trợ tính toán dinh dưỡng.
+
+Lưu ý: chỉ dùng các tài khoản này trên môi trường local, không dùng cho production.

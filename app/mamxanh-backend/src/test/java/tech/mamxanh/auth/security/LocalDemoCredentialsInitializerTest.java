@@ -21,14 +21,14 @@ class LocalDemoCredentialsInitializerTest {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
         when(passwordEncoder.encode("Valid-local-Password-123")).thenReturn("$2a$12$encoded");
-        when(jdbcTemplate.update(anyString(), any(PreparedStatementSetter.class))).thenReturn(5);
+        when(jdbcTemplate.update(anyString(), any(PreparedStatementSetter.class))).thenReturn(25);
 
         new LocalDemoCredentialsInitializer(jdbcTemplate, passwordEncoder, "Valid-local-Password-123")
                 .run(null);
 
         var setter = org.mockito.ArgumentCaptor.forClass(PreparedStatementSetter.class);
         verify(jdbcTemplate).update(eq("UPDATE [USER] SET password_hash = ?, email_verified = 1 "
-                + "WHERE email IN (?,?,?,?,?)"), setter.capture());
+                + "WHERE email IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"), setter.capture());
         PreparedStatement statement = mock(PreparedStatement.class);
         setter.getValue().setValues(statement);
         verify(statement).setString(1, "$2a$12$encoded");
@@ -37,6 +37,11 @@ class LocalDemoCredentialsInitializerTest {
         verify(statement).setString(4, "demo-applicant@mamxanh.local");
         verify(statement).setString(5, "demo-expert@mamxanh.local");
         verify(statement).setString(6, "demo-admin@mamxanh.local");
+        verify(statement).setString(7, "demo-customer-04@mamxanh.local");
+        verify(statement).setString(23, "demo-customer-20@mamxanh.local");
+        verify(statement).setString(24, "demo-expert-02@mamxanh.local");
+        verify(statement).setString(25, "demo-expert-03@mamxanh.local");
+        verify(statement).setString(26, "demo-expert-04@mamxanh.local");
     }
 
     @Test
