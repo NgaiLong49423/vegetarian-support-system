@@ -219,7 +219,7 @@ for (const width of [360, 768, 1440]) {
     await expect(page.getByText('12.500 lượt xem', { exact: true })).toHaveCount(2);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`explore-${width}.png`), fullPage: true });
-    await page.goto('/');
+    await page.goto('/trang-chu');
     for (const collection of ['Mới từ cộng đồng', 'Được yêu thích']) {
       await expect(page.locator(`[aria-label="${collection}"]`).getByText('12.500 lượt xem', { exact: true })).toHaveCount(2);
     }
