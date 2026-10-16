@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.30.0
+> **Version:** v0.31.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-16
 > **Status:** Active
@@ -221,6 +221,8 @@ Các endpoint detail và Meal Plan dưới đây trả projection đọc từ `R
 Các key trong `nutrition.total` và `nutrition.perServing` lần lượt là `ENERGY_KCAL` (kcal), `PROTEIN_G` (g), `CARBOHYDRATE_G` (g), `TOTAL_FAT_G` (g), `FIBER_G` (g), `CALCIUM_MG` (mg), `IRON_MG` (mg), `VITAMIN_B12_MCG` (mcg) và `ZINC_MG` (mg). Nếu chưa có lượt bình chọn, `statistics.reactionCount` bằng `0` và `statistics.likePercentage` là `null`; Frontend hiển thị nhãn “Mới” theo BR-69.
 
 Nutrition chỉ dùng danh mục nội bộ và quy đổi gram hiện có. `nutrition.complete=false` cùng `ingredientsMissingData` chỉ rõ nguyên liệu tùy chỉnh/thiếu dữ liệu hoặc thiếu quy đổi; không ngầm coi dữ liệu chưa biết là giá trị đo bằng không. Đây là số liệu tham khảo, không phải tư vấn y tế. Không gọi dịch vụ dinh dưỡng ngoài.
+
+So sánh hai công thức (FR-60) không có API riêng: trang `/so-sanh?a={recipeId}&b={recipeId}` đọc `GET /api/v1/recipes/{recipeId}` cho từng bài; trang chọn món `/so-sanh/chon-mon` dùng `GET /api/v1/recipes` với cùng tham số tìm kiếm và lọc của trang Khám phá (`keyword`, `vegetarianType`, `dishCategory`, `ingredientIds`, `maxTotalTimeMinutes`, `sort`, `viewPeriod`, `page`, `size`) và loại bài đang ở bên còn lại ở phía Frontend. Bài trả `404` được gỡ khỏi so sánh và người dùng chọn bài khác. Bảng dinh dưỡng chỉ dùng `nutrition.perServing` khi `nutrition.complete=true`; nếu không, cả chín chỉ tiêu của bên đó hiển thị `Chưa đủ dữ liệu` và không tính chênh lệch. Trang chỉ gửi request `GET`, không lưu lịch sử so sánh (BR-76).
 
 ### 7.1. Tạo hoặc mở lịch tuần — FR-09
 

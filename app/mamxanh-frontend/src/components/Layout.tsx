@@ -35,7 +35,7 @@ export function Layout({ children }: { children: ReactNode }) {
     return <AdminLayout>{children}</AdminLayout>;
   }
 
-  const prototype = ['/di-cho', '/cong-dong', '/dinh-duong', '/goi-ai', '/giao-dich', '/so-sanh'].includes(pathname)
+  const prototype = ['/di-cho', '/cong-dong', '/dinh-duong', '/goi-ai', '/giao-dich'].includes(pathname)
     || pathname.startsWith('/bai-viet/')
     || (pathname === '/ke-hoach' && !account);
 

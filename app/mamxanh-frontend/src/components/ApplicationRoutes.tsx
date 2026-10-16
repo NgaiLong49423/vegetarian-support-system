@@ -21,6 +21,7 @@ import { OnboardingPage } from "../pages/OnboardingPage"
 import { AdminCatalogPage } from "../pages/AdminCatalogPage"
 import { ExpertApplicationPage } from "../pages/ExpertApplication"
 import { RecipeComparePage } from "../pages/RecipeCompare"
+import { RecipeComparePickerPage } from "../pages/RecipeComparePicker"
 import { EditRecipe } from "../pages/EditRecipe"
 import { ApiRecipeDetail } from "../pages/ApiRecipeDetail"
 import { ExpertRecipeProfile } from "../pages/ExpertRecipeProfile"
@@ -123,6 +124,7 @@ export default function ApplicationRoutes() {
                 element={<AdminPendingModule module="transactions" />}
               />
               <Route path="/so-sanh" element={<RecipeComparePage />} />
+              <Route path="/so-sanh/chon-mon" element={<RecipeComparePickerPage />} />
               <Route path="*" element={<Home />} />
             </Routes>
           </Layout>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import {
   Activity,
+  ArrowLeftRight,
   Bookmark,
   Leaf,
   LoaderCircle,
@@ -320,31 +321,41 @@ export function Profile() {
                 {ownResult.content.map((item) => (
                   <article key={item.recipeId} className="relative min-w-0 transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
                     {item.available ? (
-                      <Link
-                        to={`/cong-thuc/id/${item.recipeId}`}
-                        className="group block"
-                      >
-                        <div className="aspect-[4/5] overflow-hidden rounded-xl bg-paper">
-                          {item.coverUrl ? (
-                            <img
-                              src={item.coverUrl}
-                              alt={item.title ?? ""}
-                              loading="lazy"
-                              className="h-full w-full object-cover transition-transform motion-safe:group-hover:scale-[1.03]"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-ink-muted">
-                              <Leaf className="h-7 w-7" />
-                            </div>
-                          )}
-                        </div>
-                        <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-ink transition-colors duration-200 group-hover:text-brand-600">
-                          {item.title}
-                        </h3>
-                        <p className="mt-1 truncate text-xs text-ink-muted">
-                          {item.authorName}
-                        </p>
-                      </Link>
+                      <>
+                        <Link
+                          to={`/cong-thuc/id/${item.recipeId}`}
+                          className="group block"
+                        >
+                          <div className="aspect-[4/5] overflow-hidden rounded-xl bg-paper">
+                            {item.coverUrl ? (
+                              <img
+                                src={item.coverUrl}
+                                alt={item.title ?? ""}
+                                loading="lazy"
+                                className="h-full w-full object-cover transition-transform motion-safe:group-hover:scale-[1.03]"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-ink-muted">
+                                <Leaf className="h-7 w-7" />
+                              </div>
+                            )}
+                          </div>
+                          <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-ink transition-colors duration-200 group-hover:text-brand-600">
+                            {item.title}
+                          </h3>
+                          <p className="mt-1 truncate text-xs text-ink-muted">
+                            {item.authorName}
+                          </p>
+                        </Link>
+                        <Link
+                          to={`/so-sanh?a=${item.recipeId}`}
+                          aria-label={`So sánh ${item.title}`}
+                          className="mt-1 inline-flex items-center gap-1 rounded text-xs font-semibold text-brand-600 hover:text-brand-700"
+                        >
+                          <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
+                          So sánh
+                        </Link>
+                      </>
                     ) : (
                       <div>
                         <div className="flex aspect-[4/5] items-center justify-center rounded-xl border border-brand-100 bg-paper">
