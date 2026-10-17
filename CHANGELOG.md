@@ -1,17 +1,53 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.86.0
+> **Version:** v2.88.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-17
+> **Last Updated:** 2026-10-18
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-18 — Send Chatbot Questions with Enter
+
+**Status:** Committed — `aad73a1`.
+
+**Scope:** Fix keyboard submission in the AI Chatbot so users can send questions without leaving the keyboard.
+
+### Added
+
+- Add browser regression coverage for Enter submission, Shift+Enter multiline input and empty questions.
+
+### Changed
+
+- Use Enter to submit a Chatbot question while preserving Shift+Enter for a newline.
+
+### Fixed
+
+- Prevent Enter from leaving a non-empty Chatbot question unsent.
+
+## 2026-10-17 — Add Multiweek Meal Plan Actions (Issue #23) ([PR #151](https://github.com/NgaiLong49423/vegetarian-support-system/pull/151))
+
+**Status:** Committed — `02bf185`.
+
+**Scope:** Improve recipe-card actions and let users schedule a recipe across multiple meal slots and weeks.
+
+### Added
+
+- Add recipe-card actions and a multi-select meal-plan dialog that retains selections while navigating between weeks.
+
+### Changed
+
+- Submit selected meal slots to their corresponding calendar weeks and retain failed selections for retry.
+
+### Fixed
+
+- None.
+
 ## 2026-10-17 — Add Safe Shopping Ingredient Aggregation ([PR #150](https://github.com/NgaiLong49423/vegetarian-support-system/pull/150), Issue #54)
 
-**Status:** Committed — `748947f` (implementation); PR #150 is Draft and has not been merged or accepted.
+**Status:** Committed — `748947f` (implementation); PR #150 is closed and has not been merged or accepted.
 
 **Scope:** Implement and test the internal FR-54 aggregation engine independently of the unmerged FR-53 checklist work. Creating/persisting lists, Frontend integration and main acceptance remain outstanding.
 
