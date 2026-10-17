@@ -8,9 +8,9 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
-## 2026-10-17 — Verify Paid Subscription Activation
+## 2026-10-17 — Verify Paid Subscription Activation ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `3fe3b56`.
 
 **Scope:** FR-13 / Issue #142: replace false payment success with verified payOS checkout, order reconciliation and subscription activation.
 
