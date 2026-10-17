@@ -24,6 +24,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Pass Backend payOS configuration through the canonical Compose stack and document checkout/webhook setup.
 - Generate the OpenAPI snapshot from the updated Backend runtime and align subscription types with its responses.
 - Serialize verified settlement by account and order, preserving atomic activation and idempotent webhook processing.
+- Run shared-SQL integration tests sequentially, synchronize recipe-view checks with completed search responses, and use the canonical Backend host for the OpenAPI healthcheck.
 
 ### Fixed
 
