@@ -15,11 +15,11 @@ const detail = (recipeId = 901) => ({
 
 async function mockReads(page: Page, viewCount = 0) {
   await page.route(/\/api\/v1\/recipes\/90[12]$/, (route) => route.fulfill({ json: detail(Number(route.request().url().split('/').pop())) }));
-  await page.route('**/api/v1/recipes?**', (route) => route.fulfill({ json: {
+  await page.route('**/api/v1/recipes/discovery?**', (route) => route.fulfill({ json: {
     items: [901, 902].map((id) => ({ ...detail(id), id, authorId: 22, authorName: 'Bếp Chay',
       authorAvatarUrl: null, prepTimeMin: 10, cookTimeMin: 15, status: 'PUBLISHED',
       likes: 0, dislikes: 0, likePercentage: null, viewCount })),
-    page: 0, size: 12, totalElements: 2, totalPages: 1,
+    page: 0, size: 12, hasNext: false,
   } }));
   await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: {
     dishCategories: [], vegetarianTypes: [], difficulties: [], units: [],
