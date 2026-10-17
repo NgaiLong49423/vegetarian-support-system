@@ -28,7 +28,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-18 — Send Chatbot Questions with Enter
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `17e75d1`.
 
 **Scope:** Fix keyboard submission in the AI Chatbot so users can send questions without leaving the keyboard.
 
