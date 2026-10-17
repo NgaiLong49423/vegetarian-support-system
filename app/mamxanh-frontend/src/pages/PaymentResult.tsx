@@ -1,170 +1,111 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, XCircle, ArrowRight, RefreshCw, CreditCard, Sparkles } from 'lucide-react';
+import { CheckCircle2, XCircle, RefreshCw, CreditCard, Clock3, AlertCircle } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card } from '../components/ui';
-import { subscriptionApi, type MySubscriptionResponse } from '../api/subscription';
+import { subscriptionApi, type PaymentResultResponse } from '../api/subscription';
+import { useAuth } from '../components/AuthContext';
 import { formatDate } from '../utils/date';
-import { hasAccessToken } from '../lib/apiClient';
 
-interface PaymentResultProps {
-  mode: 'success' | 'cancel';
+const MAX_CHECKS = 10;
+const CHECK_INTERVAL_MS = 3000;
+
+type ResultState = 'checking' | 'pending' | 'unconfirmed' | 'success' | 'paid' | 'cancelled' | 'error';
+
+export function PaymentResult({ mode }: { mode: 'success' | 'cancel' }) {
+  const [params] = useSearchParams();
+  const { account } = useAuth();
+  const orderCode = params.get('orderCode') ?? '';
+  return <PaymentResultDetails key={`${account?.id ?? 'guest'}:${orderCode}:${mode}`} orderCode={orderCode} signedIn={!!account} />;
 }
 
-export function PaymentResult({ mode }: PaymentResultProps) {
-  const [searchParams] = useSearchParams();
-  const orderCode = searchParams.get('orderCode');
-  const statusParam = searchParams.get('status');
-
-  const [subscription, setSubscription] = useState<MySubscriptionResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+function PaymentResultDetails({ orderCode, signedIn }: { orderCode: string; signedIn: boolean }) {
+  const validOrder = /^[1-9][0-9]{0,15}$/.test(orderCode) && Number(orderCode) <= Number.MAX_SAFE_INTEGER;
+  const [result, setResult] = useState<PaymentResultResponse | null>(null);
+  const [state, setState] = useState<ResultState>('checking');
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
-    let active = true;
-
-    async function fetchLatestSubscription() {
-      if (!hasAccessToken()) {
-        setLoading(false);
-        return;
-      }
+    if (!signedIn || !validOrder) return;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let attempts = 0;
+    setState('checking');
+    setError('');
+    async function check() {
+      attempts++;
       try {
-        const sub = await subscriptionApi.getMySubscription();
-        if (active) {
-          setSubscription(sub);
+        const response = await subscriptionApi.getPaymentResult(orderCode, controller.signal);
+        if (controller.signal.aborted) return;
+        if (response.orderCode !== orderCode) throw new Error('Không xác minh được đúng đơn thanh toán.');
+        setResult(response);
+        if (response.status === 'PAID') {
+          setState(response.activated ? 'success' : 'paid');
+        } else if (response.status === 'CANCELLED' || response.status === 'FAILED') {
+          setState('cancelled');
+        } else if (attempts >= MAX_CHECKS) {
+          setState('unconfirmed');
+        } else {
+          setState('pending');
+          timer = setTimeout(() => void check(), CHECK_INTERVAL_MS);
         }
-      } catch {
-        // Ignore error
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setError(err instanceof Error ? err.message : 'Chưa thể kiểm tra kết quả thanh toán.');
+        setState('error');
       }
     }
+    void check();
+    return () => { controller.abort(); if (timer) clearTimeout(timer); };
+  }, [orderCode, signedIn, validOrder, retry]);
 
-    void fetchLatestSubscription();
+  const success = state === 'success';
+  const busy = state === 'checking' || state === 'pending';
+  const title = !signedIn ? 'Đăng nhập để kiểm tra thanh toán'
+    : !validOrder ? 'Thiếu hoặc sai mã đơn thanh toán'
+    : success ? 'Thanh toán thành công!'
+    : state === 'paid' ? 'Giao dịch đã được thanh toán'
+    : state === 'cancelled' ? 'Giao dịch chưa hoàn tất'
+    : state === 'error' ? 'Chưa thể xác minh thanh toán'
+    : state === 'unconfirmed' ? 'Chưa nhận được xác nhận thanh toán'
+    : 'Đang xác minh thanh toán';
+  const subscription = result?.subscription;
 
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const isSuccess = mode === 'success';
-
-  return (
-    <PageContainer className="py-12">
-      <Card className="mx-auto max-w-lg p-8 text-center shadow-lg">
-        {isSuccess ? (
-          <>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-leaf-100 text-leaf-600">
-              <CheckCircle2 className="h-10 w-10" />
-            </div>
-
-            <h1 className="text-2xl font-extrabold text-ink">Thanh toán thành công!</h1>
-            <p className="mt-2 text-sm text-ink-muted">
-              Cảm ơn bạn đã đồng hành cùng Mâm Xanh. Gói dịch vụ AI của bạn đã được kích hoạt thành công.
-            </p>
-
-            {orderCode && (
-              <p className="mt-2 text-xs font-medium text-ink-soft">
-                Mã đơn hàng payOS: <span className="font-bold text-brand-700">#{orderCode}</span>
-              </p>
-            )}
-
-            {/* Display activated subscription */}
-            <div className="my-6 rounded-xl border border-brand-100 bg-brand-50/60 p-4 text-left">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-ink">Trạng thái gói AI:</span>
-                <Badge tone="leaf">
-                  <Sparkles className="mr-1 h-3 w-3" />
-                  {subscription?.tier ? `Gói ${subscription.tier}` : 'Đã kích hoạt'}
-                </Badge>
-              </div>
-
-              {subscription?.endsAt && (
-                <div className="mt-2 flex items-center justify-between text-xs text-ink-soft">
-                  <span>Hạn sử dụng đến:</span>
-                  <span className="font-bold text-brand-700">{formatDate(subscription.endsAt)}</span>
-                </div>
-              )}
-
-              {subscription?.features && subscription.features.length > 0 && (
-                <div className="mt-3 border-t border-brand-100 pt-3">
-                  <p className="text-xs font-semibold text-ink-muted">Quyền lợi đã sẵn sàng sử dụng:</p>
-                  <ul className="mt-1 space-y-1 text-xs text-ink-soft">
-                    {subscription.features.map((f, i) => (
-                      <li key={i} className="flex items-center gap-1.5">
-                        <span className="text-leaf-600">✓</span> {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link to="/ho-so" className="flex-1">
-                <Button variant="primary" className="w-full">
-                  Xem hồ sơ <ArrowRight className="ml-1.5 h-4 w-4" />
-                </Button>
-              </Link>
-              <Link to="/giao-dich" className="flex-1">
-                <Button variant="outline" className="w-full">
-                  <CreditCard className="mr-1.5 h-4 w-4" /> Lịch sử giao dịch
-                </Button>
-              </Link>
-            </div>
-          </>
-        ) : (
-          /* AC-13.6: Cancelled / Failed payment - retain existing tier */
-          <>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-              <XCircle className="h-10 w-10" />
-            </div>
-
-            <h1 className="text-2xl font-extrabold text-ink">Giao dịch chưa hoàn tất</h1>
-            <p className="mt-2 text-sm text-ink-muted">
-              Giao dịch thanh toán đã bị hủy hoặc không thành công trên cổng thanh toán payOS.
-            </p>
-
-            {orderCode && (
-              <p className="mt-2 text-xs font-medium text-ink-soft">
-                Mã đơn hàng: <span className="font-semibold text-ink">#{orderCode}</span>
-                {statusParam && <span className="ml-2 text-amber-700">({statusParam})</span>}
-              </p>
-            )}
-
-            {/* AC-13.6: Retain existing subscription */}
-            <div className="my-6 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-left">
-              <p className="text-xs font-bold text-amber-800">Quyền lợi tài khoản của bạn được bảo toàn:</p>
-              <p className="mt-1 text-xs text-amber-900">
-                Gói hiện tại của bạn không bị ảnh hưởng và vẫn giữ nguyên quyền lợi đang có.
-              </p>
-
-              {subscription && (
-                <div className="mt-3 flex items-center justify-between border-t border-amber-200/60 pt-2 text-xs">
-                  <span className="font-medium text-ink">Gói hiện tại:</span>
-                  <Badge tone={subscription.tier === 'FREE' ? 'neutral' : 'brand'}>
-                    {subscription.tier === 'FREE' ? 'Miễn phí' : `Gói ${subscription.tier}`}
-                  </Badge>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link to="/goi-ai" className="flex-1">
-                <Button variant="primary" className="w-full">
-                  <RefreshCw className="mr-1.5 h-4 w-4" /> Thử lại tại Bảng giá
-                </Button>
-              </Link>
-              <Link to="/giao-dich" className="flex-1">
-                <Button variant="outline" className="w-full">
-                  <CreditCard className="mr-1.5 h-4 w-4" /> Xem lịch sử giao dịch
-                </Button>
-              </Link>
-            </div>
-          </>
-        )}
-      </Card>
-    </PageContainer>
-  );
+  return <PageContainer className="py-12">
+    <Card className="mx-auto max-w-lg p-6 text-center sm:p-8">
+      <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${success ? 'bg-leaf-100 text-leaf-600' : 'bg-raised text-brand-600'}`} aria-hidden="true">
+        {success ? <CheckCircle2 className="h-10 w-10" /> : state === 'cancelled' ? <XCircle className="h-10 w-10" /> : state === 'error' ? <AlertCircle className="h-10 w-10" /> : <Clock3 className="h-10 w-10" />}
+      </div>
+      <div role="status" aria-live="polite" aria-busy={signedIn && validOrder && busy}>
+        <h1 className="text-2xl font-extrabold text-ink">{title}</h1>
+        <p className="mt-3 text-sm leading-6 text-ink-muted">
+          {!signedIn ? 'Vui lòng đăng nhập bằng tài khoản đã tạo đơn để xem kết quả.'
+            : !validOrder ? 'Mở lịch sử giao dịch để kiểm tra đơn của bạn. Đường dẫn này chưa xác nhận thanh toán.'
+            : success ? `Gói ${result?.tier} của đơn này đã được kích hoạt sau khi xác minh thanh toán.`
+            : state === 'paid' ? 'Thanh toán của đơn này đã được xác nhận. Gói của đơn hiện không còn hiệu lực; xem gói đang sử dụng bên dưới.'
+            : state === 'cancelled' ? 'Đơn đã bị hủy, hết hạn hoặc thất bại theo kết quả máy chủ. Quyền lợi tài khoản của bạn được bảo toàn.'
+            : state === 'error' ? error
+            : state === 'unconfirmed' ? 'Chưa có xác nhận từ cổng thanh toán. Bạn có thể bấm Kiểm tra lại sau ít phút. Nếu đã chuyển tiền, vui lòng không thanh toán lại khi chưa xác minh kết quả.'
+            : 'Hệ thống đang kiểm tra kết quả từ cổng thanh toán. Quyền lợi hiện tại được giữ nguyên. Nếu đã chuyển tiền, vui lòng không thanh toán lại khi chưa xác minh kết quả.'}
+        </p>
+      </div>
+      {signedIn && validOrder && <p className="mt-3 break-all text-xs text-ink-soft">Mã đơn hàng payOS: <strong>#{orderCode}</strong></p>}
+      {subscription && <div className="my-6 rounded-xl border border-brand-100 bg-raised p-4 text-left">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm font-semibold text-ink">Gói hiện tại:</span>
+          <Badge tone={subscription.tier === 'FREE' ? 'neutral' : 'brand'}>Gói {subscription.tier}</Badge>
+        </div>
+        {subscription.endsAt && <p className="mt-3 text-xs text-ink-soft">Hạn sử dụng đến: <strong>{formatDate(subscription.endsAt)}</strong></p>}
+        <ul className="mt-3 space-y-2 text-xs text-ink-soft">{subscription.unlockedFeatures.map(feature => <li key={feature}>✓ {feature}</li>)}</ul>
+      </div>}
+      <div className="mt-6 flex flex-col gap-3">
+        {!signedIn ? <Link to="/dang-nhap" state={{ returnTo: `/payment/success?orderCode=${encodeURIComponent(orderCode)}` }}><Button className="w-full">Đăng nhập</Button></Link>
+          : validOrder && (state === 'error' || state === 'unconfirmed') && <Button variant="outline" onClick={() => setRetry(value => value + 1)}><RefreshCw className="mr-2 h-4 w-4" />Kiểm tra lại</Button>}
+        {signedIn && <Link to="/giao-dich"><Button variant="outline" className="w-full"><CreditCard className="mr-2 h-4 w-4" />Lịch sử giao dịch</Button></Link>}
+        {signedIn && <Link to="/ho-so" className="text-sm font-semibold text-brand-600">Xem hồ sơ</Link>}
+        <Link to={success ? '/goi-ai' : '/ho-so'} className="text-sm font-semibold text-brand-600">{success ? 'Xem gói và quyền lợi' : 'Về hồ sơ'}</Link>
+      </div>
+    </Card>
+  </PageContainer>;
 }

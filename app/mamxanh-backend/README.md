@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.30.0
+> **Version:** v0.31.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-16<br>
+> **Last Updated:** 2026-10-17<br>
 > **Status:** Active  
 
 # Backend Workspace
@@ -262,6 +262,15 @@ Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc 
 - Subscription baseline dùng FREE 0, PLUS 49,000 và PRO 99,000 VND/tháng; verified activation, end-of-period expiry, no auto-renew/no partial refund và idempotent duplicate payment processing. Cổng thanh toán đã chốt là **payOS** (REST API qua Spring `RestClient` + Webhook HMAC-SHA256).
 - Gemini, Azure, Brevo SMTP và payOS credential chỉ đến từ cấu hình môi trường/secret store (local `.env`, GitHub Secrets, Azure App Service Settings); không commit giá trị thật. Maps chỉ được cấu hình nếu M11 được kích hoạt lại bằng quyết định scope mới.
 - API được mô tả bằng OpenAPI và trả lỗi nhất quán; không để frontend suy đoán business rule.
+
+## Thanh toán xác minh — FR-13 / Issue #142
+
+- `POST /api/v1/subscriptions/checkout` chỉ trả URL HTTPS thuộc `pay.payos.vn` sau khi payOS trả dữ liệu có chữ ký hợp lệ, đúng mã đơn/số tiền, trạng thái `PENDING` và có QR/link thanh toán. Thiếu cấu hình hoặc provider không khả dụng trả `503 PAYMENT_UNAVAILABLE`; dữ liệu provider không xác minh được trả `502 PAYMENT_RESPONSE_INVALID`. Không tạo checkout giả hoặc chấp nhận chữ ký thử trong runtime.
+- `GET /api/v1/subscriptions/transactions/{orderCode}` yêu cầu Member đang hoạt động, chỉ đọc đơn của chính tài khoản; đơn không tồn tại hoặc của người khác cùng trả 404. Response `Cache-Control: no-store` gồm `orderCode` dạng chuỗi, gói đã mua, số tiền, trạng thái đơn, `paidAt`, `activated` và subscription hiện tại. Đơn `PENDING` được đối soát server-to-server với payOS; không tin trạng thái trên URL trình duyệt.
+- Webhook và đối soát dùng chung `PaymentSettlementService`: khóa tài khoản rồi khóa đơn, kiểm tra số tiền, hết hiệu lực bản ghi ACTIVE cũ trước khi thêm bản ghi mới, cập nhật `PAID`/subscription trong cùng transaction. Webhook lặp không đổi thời hạn hoặc `paidAt`; probe có chữ ký hợp lệ nhưng không thuộc đơn nội bộ được ACK mà không cấp quyền. Chỉ dữ liệu webhook được ký mới quyết định kết quả; envelope hoặc query params không cấp quyền.
+- Khi chạy Compose, điền ba credential payOS trong `app/mamxanh-backend/.env`: `MAMXANH_PAYOS_CLIENT_ID`, `MAMXANH_PAYOS_API_KEY`, `MAMXANH_PAYOS_CHECKSUM_KEY`; file Compose truyền các biến này vào Backend. Không đưa credential vào Frontend hoặc Git. Để trống vẫn khởi động ứng dụng nhưng chức năng tạo/xác minh thanh toán chưa xử lý được sẽ báo 503.
+- Cấu hình webhook trên kênh payOS bằng URL HTTPS công khai kết thúc `/api/v1/payments/webhook`. Local cần HTTPS tunnel trỏ về Backend; `localhost` không phải webhook công khai. `MAMXANH_PAYOS_RETURN_URL` và `MAMXANH_PAYOS_CANCEL_URL` trỏ tới đúng origin Frontend mà người dùng đăng nhập, không thay thế webhook. Tạo lại container Backend sau khi đổi biến môi trường bằng cùng Compose project; không cần xóa SQL volume.
+- Adapter REST có thời gian chờ hữu hạn; lỗi mạng, chữ ký sai hoặc thiếu tiền không được kích hoạt gói. Kiểm thử dùng provider có kiểm soát, không thực hiện chuyển tiền thật. `PaymentVerificationIntegrationTest` kiểm tra locking, ownership, hủy/đối soát và giữ đúng một subscription ACTIVE trên SQL Server qua Testcontainers.
 
 ## Definition of Done cho thay đổi backend
 

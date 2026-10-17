@@ -10,8 +10,8 @@ public record MySubscriptionResponse(
         String tier,
         String status,
         boolean active,
-        LocalDateTime startsAt,
-        LocalDateTime endsAt,
+        @io.swagger.v3.oas.annotations.media.Schema(types = {"string", "null"}, format = "date-time") LocalDateTime startsAt,
+        @io.swagger.v3.oas.annotations.media.Schema(types = {"string", "null"}, format = "date-time") LocalDateTime endsAt,
         List<String> unlockedFeatures
 ) {
     public static MySubscriptionResponse free() {

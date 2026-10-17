@@ -165,7 +165,7 @@ export function TransactionHistory() {
                       #{tx.orderCode}
                     </td>
                     <td className="px-6 py-4 font-bold text-ink">
-                      Gói {tx.tier}
+                      {tx.tier ? `Gói ${tx.tier}` : "Không xác định"}
                     </td>
                     <td className="px-6 py-4 font-semibold text-ink">
                       {formatVnd(tx.amountVnd)} đ

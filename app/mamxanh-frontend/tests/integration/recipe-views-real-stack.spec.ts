@@ -39,7 +39,8 @@ test('FR-58: Guest detail, reload and Explore share a real persisted view count'
     const recorded = await firstResponse;
     expect(recorded.status()).toBe(200);
     expect(await recorded.json()).toEqual({ recipeId, counted: true, viewCount: 1 });
-    await expect(page.getByText('1 lượt xem', { exact: true })).toBeVisible();
+    const detailViewCount = page.getByRole('paragraph').filter({ hasText: /^1 lượt xem$/ });
+    await expect(detailViewCount).toBeVisible();
     const viewer = (await context.cookies()).find((cookie) => cookie.name === 'mamxanh.recipe-viewer')?.value;
     expect(viewer).toBeTruthy();
     const hash = createHash('sha256').update(viewer!.toLowerCase()).digest('hex');
@@ -49,27 +50,35 @@ test('FR-58: Guest detail, reload and Explore share a real persisted view count'
     const reloadResponse = page.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname === viewUrl);
     await page.reload();
     expect(await (await reloadResponse).json()).toEqual({ recipeId, counted: false, viewCount: 1 });
-    await expect(page.getByText('1 lượt xem', { exact: true })).toBeVisible();
+    await expect(detailViewCount).toBeVisible();
     expect(Number(sql(`SELECT COUNT(*) FROM [RECIPE_VIEW] WHERE recipe_id = ${recipeId}`))).toBe(1);
     expect(Number(sql(`SELECT view_count FROM [RECIPE_POST] WHERE recipe_id = ${recipeId}`))).toBe(1);
 
     await page.getByRole('link', { name: 'Khám phá', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Từ khóa', exact: true }).fill(title);
     const card = page.getByRole('link').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
-    await expect(card.getByText('1 lượt xem', { exact: true })).toBeVisible();
-    await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_VIEWED');
-    for (const period of ['LAST_24_HOURS', 'LAST_7_DAYS', 'LAST_30_DAYS', 'ALL_TIME']) {
+    async function checkSearch(sort: string, period: string, change: () => Promise<unknown>) {
       const responsePromise = page.waitForResponse((response) => {
         const url = new URL(response.url());
         return response.request().method() === 'GET' && url.pathname === '/api/v1/recipes' && url.searchParams.get('keyword') === title
-          && url.searchParams.get('sort') === 'MOST_VIEWED' && url.searchParams.get('viewPeriod') === period;
+          && url.searchParams.get('sort') === sort && url.searchParams.get('viewPeriod') === period;
       });
-      await page.getByRole('combobox', { name: 'Khung thời gian lượt xem' }).selectOption(period);
+      await change();
       const response = await responsePromise;
       expect(response.status()).toBe(200);
       const result = await response.json();
       expect(result.items.map((item: { id: number; viewCount: number }) => [item.id, item.viewCount])).toEqual([[recipeId, 1]]);
+      await expect(page).toHaveURL((url) => url.searchParams.get('q') === title);
       await expect(card.getByText('1 lượt xem', { exact: true })).toBeVisible();
+    }
+    // The fixture is already the newest recipe before filtering. Its visible card cannot
+    // establish that the keyword request (and its React Router navigation) has settled.
+    await test.step('Filter by the fixture keyword', () => checkSearch('NEWEST', 'ALL_TIME',
+      () => page.getByRole('textbox', { name: 'Từ khóa', exact: true }).fill(title)));
+    await test.step('Sort filtered recipes by total views', () => checkSearch('MOST_VIEWED', 'ALL_TIME',
+      () => page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_VIEWED')));
+    for (const period of ['LAST_24_HOURS', 'LAST_7_DAYS', 'LAST_30_DAYS', 'ALL_TIME']) {
+      await test.step(`Verify view period ${period}`, () => checkSearch('MOST_VIEWED', period,
+        () => page.getByRole('combobox', { name: 'Khung thời gian lượt xem' }).selectOption(period)));
     }
   } finally {
     sql(`DELETE FROM [RECIPE_VIEW] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST]
