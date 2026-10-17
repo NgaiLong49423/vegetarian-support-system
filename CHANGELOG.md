@@ -10,7 +10,7 @@
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 ## 2026-10-17 — Remove Recipe Counts from Explore Pagination
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — `24fd7cd`.
 
 **Scope:** Remove the total-count query and total-page display from the Explore recipe browse flow while preserving count-based responses for Home and author profiles.
 
