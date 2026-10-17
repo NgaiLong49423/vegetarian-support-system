@@ -9,6 +9,24 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
+
+**Status:** Working tree — not committed.
+
+**Scope:** Synchronize the generated Backend contract for Explore discovery and correct recipe-card E2E checks that failed in CI.
+
+### Added
+
+- None.
+
+### Changed
+
+- Regenerate `docs/api/openapi.yaml` from the running Backend OpenAPI endpoint.
+
+### Fixed
+
+- Disambiguate default-artwork accessible-name checks and click visible meal-slot labels in Playwright.
+- Expect two successful meal additions when the first of three selected slots returns a simulated conflict.
 ## 2026-10-18 — Send Chatbot Questions with Enter
 
 **Status:** Committed — `aad73a1`.
