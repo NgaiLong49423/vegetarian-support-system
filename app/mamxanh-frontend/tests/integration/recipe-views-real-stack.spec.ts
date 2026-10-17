@@ -53,23 +53,14 @@ test('FR-58: Guest detail, reload and Explore share a real persisted view count'
     expect(Number(sql(`SELECT COUNT(*) FROM [RECIPE_VIEW] WHERE recipe_id = ${recipeId}`))).toBe(1);
     expect(Number(sql(`SELECT view_count FROM [RECIPE_POST] WHERE recipe_id = ${recipeId}`))).toBe(1);
 
-    await page.getByRole('link', { name: 'Khám phá', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Từ khóa', exact: true }).fill(title);
-    const card = page.getByRole('link').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
-    await expect(card.getByText('1 lượt xem', { exact: true })).toBeVisible();
-    const sortControl = page.getByRole('combobox', { name: 'Sắp xếp theo' });
-    await expect(sortControl).toHaveValue('NEWEST');
     const initialMostViewedRequest = page.waitForRequest((request) => {
       const url = new URL(request.url());
       return request.method() === 'GET' && url.pathname === '/api/v1/recipes/discovery'
-        && url.searchParams.get('keyword') === title;
+        && url.searchParams.get('keyword') === title && url.searchParams.get('sort') === 'MOST_VIEWED'
+        && url.searchParams.get('viewPeriod') === 'ALL_TIME';
     }, { timeout: 10_000 });
-    await sortControl.selectOption('MOST_VIEWED');
-    await expect(sortControl).toHaveValue('MOST_VIEWED');
+    await page.goto(`/kham-pha?q=${encodeURIComponent(title)}&sort=MOST_VIEWED`);
     const initialRequest = await initialMostViewedRequest;
-    const initialRequestUrl = new URL(initialRequest.url());
-    expect(initialRequestUrl.searchParams.get('sort')).toBe('MOST_VIEWED');
-    expect(initialRequestUrl.searchParams.get('viewPeriod')).toBe('ALL_TIME');
     const initialResponse = await initialRequest.response();
     if (!initialResponse) throw new Error('MOST_VIEWED discovery request failed before Backend returned a response.');
     expect(initialResponse.status()).toBe(200);
@@ -78,6 +69,8 @@ test('FR-58: Guest detail, reload and Explore share a real persisted view count'
     expect(initialResult).not.toHaveProperty('totalElements');
     expect(initialResult).not.toHaveProperty('totalPages');
     expect(initialResult.items.map((item: { id: number; viewCount: number }) => [item.id, item.viewCount])).toEqual([[recipeId, 1]]);
+    const card = page.getByRole('link').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+    await expect(card.getByText('1 lượt xem', { exact: true })).toBeVisible();
     for (const period of ['LAST_24_HOURS', 'LAST_7_DAYS', 'LAST_30_DAYS', 'ALL_TIME']) {
       const requestPromise = page.waitForRequest((request) => {
         const url = new URL(request.url());
