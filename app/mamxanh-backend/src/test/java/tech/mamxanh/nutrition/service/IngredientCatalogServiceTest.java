@@ -39,6 +39,41 @@ import tech.mamxanh.nutrition.repository.UnitRepository;
 
 @ExtendWith(MockitoExtension.class)
 class IngredientCatalogServiceTest {
+    @Test void batchReferencesKeepInactiveHistoryAndHandleEmptyInput() {
+        var ingredient = new IngredientEntity("Nấm", "Nấm", "Nguồn", null, LocalDate.of(2026,10,17));
+        org.springframework.test.util.ReflectionTestUtils.setField(ingredient,"id",81L);
+        ingredient.setActive(false);
+        var unit = new UnitEntity("old","Đơn vị cũ",MeasurementDimension.COUNT,BigDecimal.ONE);
+        org.springframework.test.util.ReflectionTestUtils.setField(unit,"id",91); unit.setActive(false);
+        when(ingredientRepository.findAllById(List.of(81L))).thenReturn(List.of(ingredient));
+        when(unitRepository.findAllById(List.of(91))).thenReturn(List.of(unit));
+        assertThat(service.findIngredientReferences(List.of(81L))).singleElement().satisfies(i -> assertThat(i.active()).isFalse());
+        assertThat(service.findUnitReferences(List.of(91))).singleElement().satisfies(u -> assertThat(u.active()).isFalse());
+        assertThat(service.findIngredientReferences(null)).isEmpty();
+        assertThat(service.findUnitReferences(List.of())).isEmpty();
+    }
+
+    @Test void batchConversionLookupRequiresActiveIngredientAndUnitAsWellAsActiveRate() {
+        var ingredient = new IngredientEntity("Nấm", "Nấm", "Nguồn", null, LocalDate.of(2026,10,17));
+        org.springframework.test.util.ReflectionTestUtils.setField(ingredient,"id",1L);
+        var unit = new UnitEntity("piece","Miếng",MeasurementDimension.COUNT,BigDecimal.ONE);
+        org.springframework.test.util.ReflectionTestUtils.setField(unit,"id",2);
+        var valid = new IngredientUnitConversionEntity(new IngredientUnitConversionId(1L,2),new BigDecimal("120"),false);
+        var unavailableUnit = new IngredientUnitConversionEntity(new IngredientUnitConversionId(1L,99),new BigDecimal("200"),false);
+        when(ingredientRepository.findByIdInAndStatus(List.of(1L),CatalogStatus.ACTIVE)).thenReturn(List.of(ingredient));
+        when(unitRepository.findByActiveTrue()).thenReturn(List.of(unit));
+        when(conversionRepository.findByIdIngredientIdInAndActiveTrue(List.of(1L))).thenReturn(List.of(valid,unavailableUnit));
+        assertThat(service.findActiveConversions(List.of(1L))).singleElement().satisfies(r -> {
+            assertThat(r.unitId()).isEqualTo(2); assertThat(r.gramsPerUnit()).isEqualByComparingTo("120");
+        });
+    }
+
+    @Test void batchConversionLookupReturnsNoRatesForEmptyOrInactiveIngredients() {
+        assertThat(service.findActiveConversions(List.of())).isEmpty();
+        when(ingredientRepository.findByIdInAndStatus(List.of(1L),CatalogStatus.ACTIVE)).thenReturn(List.of());
+        assertThat(service.findActiveConversions(List.of(1L))).isEmpty();
+        org.mockito.Mockito.verifyNoInteractions(unitRepository,conversionRepository);
+    }
     @Mock private IngredientRepository ingredientRepository;
     @Mock private UnitRepository unitRepository;
     @Mock private IngredientUnitConversionRepository conversionRepository;
