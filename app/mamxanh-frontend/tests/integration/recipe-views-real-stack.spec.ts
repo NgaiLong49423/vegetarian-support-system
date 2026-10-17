@@ -54,7 +54,16 @@ test('FR-58: Guest detail, reload and Explore share a real persisted view count'
     expect(Number(sql(`SELECT view_count FROM [RECIPE_POST] WHERE recipe_id = ${recipeId}`))).toBe(1);
 
     await page.getByRole('link', { name: 'Khám phá', exact: true }).click();
+    const keywordResponsePromise = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return response.request().method() === 'GET' && url.pathname === '/api/v1/recipes'
+        && url.searchParams.get('keyword') === title;
+    });
     await page.getByRole('textbox', { name: 'Từ khóa', exact: true }).fill(title);
+    const keywordResponse = await keywordResponsePromise;
+    expect(keywordResponse.status()).toBe(200);
+    const keywordResult = await keywordResponse.json();
+    expect(keywordResult.items.map((item: { id: number }) => item.id)).toContain(recipeId);
     const card = page.getByRole('link').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
     await expect(card.getByText('1 lượt xem', { exact: true })).toBeVisible();
     const mostViewedResponsePromise = page.waitForResponse((response) => {
