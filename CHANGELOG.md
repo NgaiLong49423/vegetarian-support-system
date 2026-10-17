@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `a74f7c2`.
 
 **Scope:** Synchronize the generated Backend contract for Explore discovery and correct recipe-card E2E checks that failed in CI.
 
