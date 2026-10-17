@@ -1,13 +1,31 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.85.0
+> **Version:** v2.86.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-16
+> **Last Updated:** 2026-10-17
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+## 2026-10-17 — Add Multiweek Meal Plan Actions (Issue #23) ([PR #151](https://github.com/NgaiLong49423/vegetarian-support-system/pull/151))
+
+**Status:** Committed — `02bf185`.
+
+**Scope:** Improve recipe-card actions and let users schedule a recipe across multiple meal slots and weeks.
+
+### Added
+
+- Add recipe-card actions and a multi-select meal-plan dialog that retains selections while navigating between weeks.
+
+### Changed
+
+- Submit selected meal slots to their corresponding calendar weeks and retain failed selections for retry.
+
+### Fixed
+
+- None.
+
 ## 2026-10-17 — Remove Recipe Counts from Explore Pagination
 
 **Status:** Committed — `24fd7cd`.
