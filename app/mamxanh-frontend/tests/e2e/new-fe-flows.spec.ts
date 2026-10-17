@@ -563,8 +563,8 @@ test('recipe like and dislike reactions update state without rating stars (FR-57
 });
 
 test('recipe exploration does not expose local-only card actions as Backend features', async ({ page }) => {
-  await page.route('**/api/v1/recipes?**', (route) => route.fulfill({ json: {
-    items: [], page: 0, size: 12, totalElements: 0, totalPages: 0,
+  await page.route('**/api/v1/recipes/discovery?**', (route) => route.fulfill({ json: {
+    items: [], page: 0, size: 12, hasNext: false,
   } }));
   await page.goto('/kham-pha');
   await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();

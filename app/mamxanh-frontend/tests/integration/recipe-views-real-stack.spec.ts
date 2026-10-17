@@ -57,17 +57,33 @@ test('FR-58: Guest detail, reload and Explore share a real persisted view count'
     await page.getByRole('textbox', { name: 'Từ khóa', exact: true }).fill(title);
     const card = page.getByRole('link').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
     await expect(card.getByText('1 lượt xem', { exact: true })).toBeVisible();
+    const initialMostViewedResponse = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return response.request().method() === 'GET' && url.pathname === '/api/v1/recipes/discovery'
+        && url.searchParams.get('keyword') === title && url.searchParams.get('sort') === 'MOST_VIEWED'
+        && url.searchParams.get('viewPeriod') === 'ALL_TIME';
+    });
     await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_VIEWED');
+    const initialResponse = await initialMostViewedResponse;
+    expect(initialResponse.status()).toBe(200);
+    const initialResult = await initialResponse.json();
+    expect(initialResult.hasNext).toBe(false);
+    expect(initialResult).not.toHaveProperty('totalElements');
+    expect(initialResult).not.toHaveProperty('totalPages');
+    expect(initialResult.items.map((item: { id: number; viewCount: number }) => [item.id, item.viewCount])).toEqual([[recipeId, 1]]);
     for (const period of ['LAST_24_HOURS', 'LAST_7_DAYS', 'LAST_30_DAYS', 'ALL_TIME']) {
       const responsePromise = page.waitForResponse((response) => {
         const url = new URL(response.url());
-        return response.request().method() === 'GET' && url.pathname === '/api/v1/recipes' && url.searchParams.get('keyword') === title
+        return response.request().method() === 'GET' && url.pathname === '/api/v1/recipes/discovery' && url.searchParams.get('keyword') === title
           && url.searchParams.get('sort') === 'MOST_VIEWED' && url.searchParams.get('viewPeriod') === period;
       });
       await page.getByRole('combobox', { name: 'Khung thời gian lượt xem' }).selectOption(period);
       const response = await responsePromise;
       expect(response.status()).toBe(200);
       const result = await response.json();
+      expect(result.hasNext).toBe(false);
+      expect(result).not.toHaveProperty('totalElements');
+      expect(result).not.toHaveProperty('totalPages');
       expect(result.items.map((item: { id: number; viewCount: number }) => [item.id, item.viewCount])).toEqual([[recipeId, 1]]);
       await expect(card.getByText('1 lượt xem', { exact: true })).toBeVisible();
     }

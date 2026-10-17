@@ -26,6 +26,24 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
+## 2026-10-17 — Remove Recipe Counts from Explore Pagination
+
+**Status:** Committed — `24fd7cd`.
+
+**Scope:** Remove the total-count query and total-page display from the Explore recipe browse flow while preserving count-based responses for Home and author profiles.
+
+### Added
+
+- Add a discovery browse response with `hasNext` pagination for Explore.
+
+### Changed
+
+- Use previous/next navigation in Explore without displaying total recipe or page counts.
+
+### Fixed
+
+- Avoid running the total-count query for Explore recipe browsing.
+
 ## 2026-10-16 — Expand Local Demo Fixtures ([PR #141](https://github.com/NgaiLong49423/vegetarian-support-system/pull/141))
 
 **Status:** Committed — `9b6c1fe`.

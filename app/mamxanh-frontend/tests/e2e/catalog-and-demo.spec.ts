@@ -8,8 +8,8 @@ async function openRecipeFormAsDemoExpert(page: import('@playwright/test').Page)
 }
 
 test('recipe exploration uses only API search and reports an empty result honestly', async ({ page }) => {
-  await page.route('**/api/v1/recipes?**', (route) => route.fulfill({ json: {
-    items: [], page: 0, size: 12, totalElements: 0, totalPages: 0,
+  await page.route('**/api/v1/recipes/discovery?**', (route) => route.fulfill({ json: {
+    items: [], page: 0, size: 12, hasNext: false,
   } }));
   await page.goto('/kham-pha');
   const search = page.getByRole('textbox', { name: 'Từ khóa', exact: true });
