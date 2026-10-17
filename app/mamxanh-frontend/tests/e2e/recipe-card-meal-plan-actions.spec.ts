@@ -57,14 +57,13 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await page.route("**/api/v1/recipes/form-options", (route) =>
       route.fulfill({ json: formOptions }),
     )
-    await page.route("**/api/v1/recipes?**", (route) =>
+    await page.route("**/api/v1/recipes/discovery?**", (route) =>
       route.fulfill({
         json: {
           items: [item],
           page: 0,
           size: 12,
-          totalElements: 1,
-          totalPages: 1,
+          hasNext: false,
         },
       }),
     )
@@ -200,14 +199,13 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await page.route("**/api/v1/recipes/form-options", (route) =>
       route.fulfill({ json: formOptions }),
     )
-    await page.route("**/api/v1/recipes?**", (route) =>
+    await page.route("**/api/v1/recipes/discovery?**", (route) =>
       route.fulfill({
         json: {
           items,
           page: 0,
           size: 12,
-          totalElements: items.length,
-          totalPages: 1,
+          hasNext: false,
         },
       }),
     )
@@ -241,14 +239,13 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await page.route("**/api/v1/recipes/form-options", (route) =>
       route.fulfill({ json: formOptions }),
     )
-    await page.route("**/api/v1/recipes?**", (route) =>
+    await page.route("**/api/v1/recipes/discovery?**", (route) =>
       route.fulfill({
         json: {
           items: [item],
           page: 0,
           size: 12,
-          totalElements: 1,
-          totalPages: 1,
+          hasNext: false,
         },
       }),
     )
