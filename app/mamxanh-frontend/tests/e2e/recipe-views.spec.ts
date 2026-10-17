@@ -14,12 +14,16 @@ const detail = (recipeId = 901) => ({
 });
 
 async function mockReads(page: Page, viewCount = 0) {
+  const browseItems = [901, 902].map((id) => ({ ...detail(id), id, authorId: 22, authorName: 'Bếp Chay',
+    authorAvatarUrl: null, prepTimeMin: 10, cookTimeMin: 15, status: 'PUBLISHED',
+    likes: 0, dislikes: 0, likePercentage: null, viewCount }));
   await page.route(/\/api\/v1\/recipes\/90[12]$/, (route) => route.fulfill({ json: detail(Number(route.request().url().split('/').pop())) }));
   await page.route('**/api/v1/recipes/discovery?**', (route) => route.fulfill({ json: {
-    items: [901, 902].map((id) => ({ ...detail(id), id, authorId: 22, authorName: 'Bếp Chay',
-      authorAvatarUrl: null, prepTimeMin: 10, cookTimeMin: 15, status: 'PUBLISHED',
-      likes: 0, dislikes: 0, likePercentage: null, viewCount })),
+    items: browseItems,
     page: 0, size: 12, hasNext: false,
+  } }));
+  await page.route((url) => url.pathname === '/api/v1/recipes', (route) => route.fulfill({ json: {
+    items: browseItems, page: 0, size: 4, totalElements: browseItems.length, totalPages: 1,
   } }));
   await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({ json: {
     dishCategories: [], vegetarianTypes: [], difficulties: [], units: [],
@@ -184,7 +188,7 @@ test('Most Viewed gửi đủ bốn khoảng thời gian; số trên thẻ vẫn
   for (const period of ['LAST_24_HOURS', 'LAST_7_DAYS', 'LAST_30_DAYS', 'ALL_TIME']) {
     const requested = page.waitForRequest((request) => {
       const url = new URL(request.url());
-      return url.pathname === '/api/v1/recipes' && url.searchParams.get('sort') === 'MOST_VIEWED'
+      return url.pathname === '/api/v1/recipes/discovery' && url.searchParams.get('sort') === 'MOST_VIEWED'
         && url.searchParams.get('viewPeriod') === period;
     });
     await page.getByRole('combobox', { name: 'Khung thời gian lượt xem' }).selectOption(period);
