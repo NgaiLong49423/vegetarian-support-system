@@ -26,6 +26,23 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
+## 2026-10-18 — Send Chatbot Questions with Enter
+
+**Status:** Working tree — not committed.
+
+**Scope:** Fix keyboard submission in the AI Chatbot so users can send questions without leaving the keyboard.
+
+### Added
+
+- Add browser regression coverage for Enter submission, Shift+Enter multiline input and empty questions.
+
+### Changed
+
+- Use Enter to submit a Chatbot question while preserving Shift+Enter for a newline.
+
+### Fixed
+
+- Prevent Enter from leaving a non-empty Chatbot question unsent.
 ## 2026-10-16 — Expand Local Demo Fixtures ([PR #141](https://github.com/NgaiLong49423/vegetarian-support-system/pull/141))
 
 **Status:** Committed — `9b6c1fe`.
