@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: './tests/integration',
   testMatch: '**/*.spec.ts',
   retries: 0,
+  // Specs share one Compose database; browsing another spec's newest recipe changes its view count.
+  workers: 1,
   reporter: 'list',
   timeout: 120_000,
   use: {

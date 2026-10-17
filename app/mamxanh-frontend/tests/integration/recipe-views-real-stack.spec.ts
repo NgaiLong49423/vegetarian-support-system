@@ -57,19 +57,30 @@ test('FR-58: Guest detail, reload and Explore share a real persisted view count'
     await page.getByRole('textbox', { name: 'Từ khóa', exact: true }).fill(title);
     const card = page.getByRole('link').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
     await expect(card.getByText('1 lượt xem', { exact: true })).toBeVisible();
-    await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_VIEWED');
-    for (const period of ['LAST_24_HOURS', 'LAST_7_DAYS', 'LAST_30_DAYS', 'ALL_TIME']) {
-      const responsePromise = page.waitForResponse((response) => {
-        const url = new URL(response.url());
-        return response.request().method() === 'GET' && url.pathname === '/api/v1/recipes' && url.searchParams.get('keyword') === title
-          && url.searchParams.get('sort') === 'MOST_VIEWED' && url.searchParams.get('viewPeriod') === period;
-      });
-      await page.getByRole('combobox', { name: 'Khung thời gian lượt xem' }).selectOption(period);
-      const response = await responsePromise;
+    const waitForResults = (period: string) => page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return response.request().method() === 'GET' && url.pathname === '/api/v1/recipes' && url.searchParams.get('keyword') === title
+        && url.searchParams.get('sort') === 'MOST_VIEWED' && url.searchParams.get('viewPeriod') === period;
+    });
+    const assertResults = async (response: Awaited<ReturnType<typeof waitForResults>>) => {
       expect(response.status()).toBe(200);
       const result = await response.json();
       expect(result.items.map((item: { id: number; viewCount: number }) => [item.id, item.viewCount])).toEqual([[recipeId, 1]]);
+      await expect(page.getByRole('status', { name: 'Đang tải công thức' })).toHaveCount(0);
       await expect(card.getByText('1 lượt xem', { exact: true })).toBeVisible();
+    };
+    // Finish the sort navigation/request before changing the newly mounted period control.
+    const sortedResponse = waitForResults('ALL_TIME');
+    await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_VIEWED');
+    await assertResults(await sortedResponse);
+    for (const period of ['LAST_24_HOURS', 'LAST_7_DAYS', 'LAST_30_DAYS', 'ALL_TIME']) {
+      await test.step(`MOST_VIEWED ${period}`, async () => {
+        const responsePromise = waitForResults(period);
+        const periodControl = page.getByRole('combobox', { name: 'Khung thời gian lượt xem' });
+        await periodControl.selectOption(period);
+        await expect(periodControl).toHaveValue(period);
+        await assertResults(await responsePromise);
+      });
     }
   } finally {
     sql(`DELETE FROM [RECIPE_VIEW] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST]
