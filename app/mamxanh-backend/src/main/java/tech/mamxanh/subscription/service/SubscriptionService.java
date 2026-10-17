@@ -4,7 +4,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
+import java.security.SecureRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +34,7 @@ import tech.mamxanh.subscription.repository.SubscriptionRepository;
 @Service
 public class SubscriptionService {
 
+    private static final SecureRandom ORDER_CODES = new SecureRandom();
     private static final Logger log = LoggerFactory.getLogger(SubscriptionService.class);
 
     private final SubscriptionRepository subscriptionRepository;
@@ -41,6 +42,7 @@ public class SubscriptionService {
     private final UserRepository userRepository;
     private final PayOsClient payOsClient;
     private final Clock clock;
+    private final PaymentSettlementService settlement;
 
     @Autowired
     public SubscriptionService(
@@ -48,12 +50,13 @@ public class SubscriptionService {
             PaymentTransactionRepository paymentTransactionRepository,
             UserRepository userRepository,
             PayOsClient payOsClient,
-            Clock clock) {
+            Clock clock, PaymentSettlementService settlement) {
         this.subscriptionRepository = subscriptionRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.userRepository = userRepository;
         this.payOsClient = payOsClient;
         this.clock = clock;
+        this.settlement = settlement;
     }
 
     /**
@@ -138,76 +141,17 @@ public class SubscriptionService {
      * Handles payOS webhook IPN callback.
      * Enforces AC-13.2, AC-13.3 (idempotency), AC-13.5 (signature & amount validation), AC-13.6 (cancelled/failed).
      */
-    @Transactional
     public void handlePayOsWebhook(PayOsWebhookPayload payload) {
-        // AC-13.5: Verify signature
-        if (!payOsClient.verifyWebhook(payload)) {
-            log.warn("SECURITY ALERT: Invalid payOS webhook signature rejected");
-            throw new AppException(ErrorCode.PAYMENT_SIGNATURE_INVALID);
-        }
-
+        if (!payOsClient.verifyWebhook(payload)) throw new AppException(ErrorCode.PAYMENT_SIGNATURE_INVALID);
         Long orderCode = payload.getOrderCode();
-        if (orderCode == null) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "Dữ liệu webhook thiếu mã đơn hàng orderCode.");
+        Integer amount = payload.getAmount();
+        if (orderCode == null || orderCode <= 0 || amount == null || amount <= 0) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Dữ liệu webhook thiếu hoặc sai mã đơn hàng/số tiền.");
         }
-
-        PaymentTransactionEntity transaction = paymentTransactionRepository.findByOrderCode(String.valueOf(orderCode))
-                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_TRANSACTION_NOT_FOUND));
-
-        // AC-13.3: Idempotent processing
-        if (transaction.getStatus() == PaymentStatus.PAID) {
-            log.info("Idempotent check: orderCode {} has already been processed as PAID. No-op.", orderCode);
-            return;
-        }
-
-        // AC-13.5: Verify amount tampering
-        Integer paidAmount = payload.getAmount();
-        if (paidAmount == null || paidAmount != transaction.getAmountVnd()) {
-            log.warn("SECURITY ALERT: Order {} amount tampered! Expected: {}, Received: {}",
-                    orderCode, transaction.getAmountVnd(), paidAmount);
-            transaction.setStatus(PaymentStatus.FAILED);
-            paymentTransactionRepository.save(transaction);
-            throw new AppException(ErrorCode.PAYMENT_SIGNATURE_INVALID, "Số tiền thanh toán không khớp với đơn hàng.");
-        }
-
-        // AC-13.6: Handle cancelled or failed payment
-        if (!payload.isPaymentSuccess()) {
-            log.info("Payment for orderCode {} failed or was cancelled.", orderCode);
-            transaction.setStatus(PaymentStatus.CANCELLED);
-            paymentTransactionRepository.save(transaction);
-            return;
-        }
-
-        // AC-13.2: Activate paid subscription
-        LocalDateTime now = LocalDateTime.now(clock);
-        transaction.setStatus(PaymentStatus.PAID);
-        transaction.setPaidAt(now);
-
-        SubscriptionTier tier = (transaction.getAmountVnd() == SubscriptionTier.PRO.priceVnd())
-                ? SubscriptionTier.PRO
-                : SubscriptionTier.PLUS;
-
-        // Expire any existing active subscription to satisfy UQ_SUBSCRIPTION_active filtered index
-        Optional<SubscriptionEntity> existingActive = subscriptionRepository.findByUserIdAndStatus(
-                transaction.getUserId(), SubscriptionStatus.ACTIVE);
-        existingActive.ifPresent(sub -> {
-            sub.setStatus(SubscriptionStatus.EXPIRED);
-            sub.setUpdatedAt(now);
-            subscriptionRepository.save(sub);
-        });
-
-        // 30 days subscription period
-        SubscriptionEntity newSubscription = new SubscriptionEntity(
-                transaction.getUserId(),
-                tier,
-                now,
-                now.plusDays(30)
-        );
-        newSubscription = subscriptionRepository.save(newSubscription);
-
-        transaction.setSubscriptionId(newSubscription.getId());
-        paymentTransactionRepository.save(transaction);
-        log.info("Successfully activated subscription {} for userId {}", tier, transaction.getUserId());
+        if (!"VND".equals(payload.data().get("currency"))
+                || !(payload.data().get("code") instanceof String signedCode) || signedCode.isBlank()) throw new AppException(ErrorCode.PAYMENT_SIGNATURE_INVALID);
+        settlement.settle(String.valueOf(orderCode), amount,
+                payload.isPaymentSuccess() ? PaymentStatus.PAID : PaymentStatus.CANCELLED);
     }
 
     /**
@@ -273,7 +217,9 @@ public class SubscriptionService {
                         tx.getAmountVnd(),
                         tx.getStatus().name(),
                         tx.getCreatedAt(),
-                        tx.getPaidAt()
+                        tx.getPaidAt(),
+                        tx.getAmountVnd() == SubscriptionTier.PRO.priceVnd() ? "PRO"
+                                : tx.getAmountVnd() == SubscriptionTier.PLUS.priceVnd() ? "PLUS" : null
                 ))
                 .toList();
     }
@@ -291,9 +237,7 @@ public class SubscriptionService {
     }
 
     private long generateOrderCode() {
-        // PayOS accepts a positive integer up to 9007199254740991 (2^53 - 1)
-        long timestamp = System.currentTimeMillis() % 1_000_000_000L;
-        int random = ThreadLocalRandom.current().nextInt(100, 999);
-        return timestamp * 1000L + random;
+        // Positive, JS-safe integer; random IDs avoid collisions across instances/restarts.
+        return ORDER_CODES.nextLong(1, 9_007_199_254_740_992L);
     }
 }

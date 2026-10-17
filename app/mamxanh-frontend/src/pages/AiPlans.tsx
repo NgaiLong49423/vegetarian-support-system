@@ -17,32 +17,29 @@ const DEFAULT_PLANS: PlanResponse[] = [
     tier: 'FREE',
     name: 'FREE',
     priceVnd: 0,
-    billingCycle: 'Hàng tháng',
+    billingPeriod: 'Hàng tháng',
     description: 'Trải nghiệm các tính năng AI cơ bản',
     features: ['AI Chatbot cơ bản', 'Gợi ý món chay cơ bản'],
-    autoRenew: false,
   },
   {
     tier: 'PLUS',
     name: 'PLUS',
     priceVnd: 49000,
-    billingCycle: 'Hàng tháng',
+    billingPeriod: 'Hàng tháng',
     description: 'Dành cho người ăn chay muốn sáng tạo thực đơn',
     features: ['Toàn bộ quyền của FREE', 'AI hỗ trợ soạn bài viết và công thức', 'AI gợi ý biến tấu món chay sáng tạo'],
-    autoRenew: false,
   },
   {
     tier: 'PRO',
     name: 'PRO',
     priceVnd: 99000,
-    billingCycle: 'Hàng tháng',
+    billingPeriod: 'Hàng tháng',
     description: 'Dành cho người ăn chay chuyên sâu & tối ưu dinh dưỡng',
     features: [
       'Toàn bộ quyền của PLUS',
       'AI lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân',
       'Phân tích vi chất và tối ưu hoá calo chuyên sâu',
     ],
-    autoRenew: false,
   },
 ];
 
@@ -105,16 +102,15 @@ export function AiPlans() {
     setSubscribingTier(tier);
 
     try {
-      const returnUrl = `${window.location.origin}/payment/success`;
-      const cancelUrl = `${window.location.origin}/payment/cancel`;
+      const response = await subscriptionApi.createCheckout({ tier });
+      let validCheckout = false;
+      try {
+        const url = new URL(response.checkoutUrl);
+        validCheckout = url.protocol === 'https:' && url.hostname === 'pay.payos.vn'
+          && !url.username && !url.password && (!url.port || url.port === '443');
+      } catch { /* Invalid links must never send a member to a fake success page. */ }
 
-      const response = await subscriptionApi.createCheckout({
-        tier,
-        returnUrl,
-        cancelUrl,
-      });
-
-      if (response.checkoutUrl) {
+      if (validCheckout) {
         window.location.href = response.checkoutUrl;
       } else {
         setErrorMsg('Không thể khởi tạo liên kết thanh toán. Vui lòng thử lại sau.');
@@ -169,7 +165,7 @@ export function AiPlans() {
       </div>
 
       {errorMsg && (
-        <div className="mx-auto mb-6 flex max-w-2xl items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div role="alert" className="mx-auto mb-6 flex max-w-2xl items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
           <span>{errorMsg}</span>
         </div>

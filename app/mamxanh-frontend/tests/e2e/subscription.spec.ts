@@ -7,54 +7,54 @@ const mockPlans = [
     tier: 'FREE',
     name: 'FREE',
     priceVnd: 0,
-    billingCycle: 'Hàng tháng',
+    billingPeriod: 'Hàng tháng',
     description: 'Trải nghiệm các tính năng AI cơ bản',
     features: ['AI Chatbot cơ bản', 'Gợi ý món chay cơ bản'],
-    autoRenew: false,
   },
   {
     tier: 'PLUS',
     name: 'PLUS',
     priceVnd: 49000,
-    billingCycle: 'Hàng tháng',
+    billingPeriod: 'Hàng tháng',
     description: 'Dành cho người ăn chay muốn sáng tạo thực đơn',
     features: ['Toàn bộ quyền của FREE', 'AI hỗ trợ soạn bài viết và công thức', 'AI gợi ý biến tấu món chay sáng tạo'],
-    autoRenew: false,
   },
   {
     tier: 'PRO',
     name: 'PRO',
     priceVnd: 99000,
-    billingCycle: 'Hàng tháng',
+    billingPeriod: 'Hàng tháng',
     description: 'Dành cho người ăn chay chuyên sâu & tối ưu dinh dưỡng',
     features: [
       'Toàn bộ quyền của PLUS',
       'AI lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân',
       'Phân tích vi chất và tối ưu hoá calo chuyên sâu',
     ],
-    autoRenew: false,
   },
 ];
 
 const mockFreeSubscription = {
   tier: 'FREE',
   status: 'ACTIVE',
+  active: true,
   startsAt: null,
   endsAt: null,
-  features: ['AI Chatbot cơ bản', 'Gợi ý món chay cơ bản'],
+  unlockedFeatures: ['AI Chatbot cơ bản', 'Gợi ý món chay cơ bản'],
 };
 
 const mockPlusSubscription = {
   tier: 'PLUS',
   status: 'ACTIVE',
+  active: true,
   startsAt: '2026-10-04T12:00:00Z',
   endsAt: '2026-11-04T12:00:00Z',
-  features: ['AI Chatbot hỗ trợ ẩm thực chay', 'AI hỗ trợ soạn bài viết và công thức', 'AI gợi ý biến tấu món chay sáng tạo'],
+  unlockedFeatures: ['AI Chatbot hỗ trợ ẩm thực chay', 'AI hỗ trợ soạn bài viết và công thức', 'AI gợi ý biến tấu món chay sáng tạo'],
 };
 
 const mockTransactions = [
   {
-    orderCode: 1728038400123,
+    paymentTransactionId: 1,
+    orderCode: '1728038400123',
     tier: 'PLUS',
     amountVnd: 49000,
     status: 'PAID',
@@ -62,7 +62,8 @@ const mockTransactions = [
     paidAt: '2026-10-04T12:01:00Z',
   },
   {
-    orderCode: 1728038400999,
+    paymentTransactionId: 2,
+    orderCode: '1728038400999',
     tier: 'PRO',
     amountVnd: 99000,
     status: 'CANCELLED',
@@ -89,6 +90,14 @@ async function setupMockSubscriptionApis(page: Page, subscriptionData = mockFree
       contentType: 'application/json',
       body: JSON.stringify(subscriptionData),
     });
+  });
+
+  await page.route('**/api/v1/subscriptions/transactions/*', async route => {
+    const orderCode = new URL(route.request().url()).pathname.split('/').pop()!;
+    const cancelled = orderCode === '1728038400999';
+    return route.fulfill({ json: { orderCode, tier: 'PLUS', amountVnd: 49000,
+      status: cancelled ? 'CANCELLED' : 'PAID', activated: !cancelled,
+      paidAt: cancelled ? null : '2026-10-17T00:00:00', subscription: subscriptionData } });
   });
 
   await page.route('**/api/v1/subscriptions/transactions', async (route) => {
@@ -146,17 +155,19 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
       expect(route.request().headers().authorization).toBe('Bearer header.payload.signature');
       checkoutPayload = JSON.parse(route.request().postData() || '{}');
       await route.fulfill({
-        status: 200,
+        status: 201,
         contentType: 'application/json',
         body: JSON.stringify({
           orderCode: 1728038400123,
           checkoutUrl: 'https://pay.payos.vn/web/test-checkout-url',
           amountVnd: 49000,
           tier: 'PLUS',
-          status: 'PENDING',
+          qrCode: 'test-qr',
         }),
       });
     });
+
+    await page.route('https://pay.payos.vn/**', route => route.fulfill({ contentType: 'text/html', body: '<h1>Trang thanh toán thử có kiểm soát</h1>' }));
 
     await page.goto('/goi-ai');
 
@@ -164,6 +175,8 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
     const upgradePlusButton = page.getByRole('button', { name: /Nâng cấp lên PLUS/i });
     await expect(upgradePlusButton).toBeVisible();
     await upgradePlusButton.click();
+
+    await expect(page).toHaveURL('https://pay.payos.vn/web/test-checkout-url');
 
     // Verify request payload had tier PLUS
     expect(checkoutPayload).toMatchObject({
@@ -177,7 +190,7 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
 
     await expect(page.getByRole('heading', { name: /Thanh toán thành công/i })).toBeVisible();
     await expect(page.getByText('#1728038400123')).toBeVisible();
-    await expect(page.getByText('Gói PLUS')).toBeVisible();
+    await expect(page.getByText('Gói PLUS', { exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: /Xem hồ sơ/i })).toBeVisible();
   });
 
@@ -191,7 +204,7 @@ test.describe('[FR-13] Gói AI & Thanh toán payOS', () => {
     await expect(page.getByText('#1728038400999')).toBeVisible();
 
     // Verify user retains PLUS tier
-    await expect(page.getByText('Gói PLUS')).toBeVisible();
+    await expect(page.getByText('Gói PLUS', { exact: true })).toBeVisible();
   });
 
   test('Lịch sử giao dịch hiển thị mã đơn, số tiền, gói và trạng thái', async ({ page }) => {

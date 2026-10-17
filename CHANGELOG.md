@@ -1,13 +1,36 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.85.0
+> **Version:** v2.86.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-16
+> **Last Updated:** 2026-10-17
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+## 2026-10-17 — Verify Paid Subscription Activation
+
+**Status:** Working tree — not committed.
+
+**Scope:** FR-13 / Issue #142: replace false payment success with verified payOS checkout, order reconciliation and subscription activation.
+
+### Added
+
+- Add a private per-order result endpoint with server-side payOS reconciliation, ownership checks and non-cacheable responses.
+- Add payment settlement, signature, concurrency and browser regression tests for delayed activation, provider failures and forged success URLs.
+
+### Changed
+
+- Pass Backend payOS configuration through the canonical Compose stack and document checkout/webhook setup.
+- Generate the OpenAPI snapshot from the updated Backend runtime and align subscription types with its responses.
+- Serialize verified settlement by account and order, preserving atomic activation and idempotent webhook processing.
+
+### Fixed
+
+- Missing payOS credentials no longer create a fake success checkout or accept mock webhook signatures.
+- Payment result pages confirm the specific order before claiming activation, with bounded polling and retry on pending or failed verification.
+- Display subscription features and transaction tiers from Backend responses.
+
 ## 2026-10-16 — Expand Local Demo Fixtures ([PR #141](https://github.com/NgaiLong49423/vegetarian-support-system/pull/141))
 
 **Status:** Committed — `9b6c1fe`.

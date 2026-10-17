@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-16
-next_id: 36
+last_updated: 2026-10-17
+next_id: 39
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,24 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-038
+    title: Webhook chấp nhận chữ ký thử khi thiếu cấu hình payOS
+    status: TRACKING
+    severity: High
+    area: Backend/Payment/Security
+    file: .agents/outputs/bugs/BUG-038.md
+    created: 2026-10-17
+    updated: 2026-10-17
+    related_issue: 142
+  - id: BUG-037
+    title: Thiếu cấu hình payOS vẫn dẫn tới thông báo thanh toán thành công
+    status: TRACKING
+    severity: High
+    area: Backend/Frontend/Payment
+    file: .agents/outputs/bugs/BUG-037.md
+    created: 2026-10-17
+    updated: 2026-10-17
+    related_issue: 142
   - id: BUG-035
     title: OpenAPI lượt xem mô tả sai schema phản hồi lỗi
     status: RESOLVED
@@ -132,7 +150,7 @@ bugs:
     area: Backend/Frontend/Subscription
     file: .agents/outputs/bugs/BUG-022.md
     created: 2026-10-11
-    updated: 2026-10-12
+    updated: 2026-10-17
     related_issue: 19
   - id: BUG-021
     title: Expert khác hoặc Administrator thay, xóa được ảnh của Recipe Post không thuộc mình

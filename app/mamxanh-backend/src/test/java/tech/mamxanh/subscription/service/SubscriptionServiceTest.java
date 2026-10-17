@@ -61,6 +61,8 @@ class SubscriptionServiceTest {
     @Mock
     private PayOsClient payOsClient;
 
+    @Mock private PaymentSettlementService settlement;
+
     private Clock clock;
     private SubscriptionService subscriptionService;
 
@@ -74,7 +76,7 @@ class SubscriptionServiceTest {
                 paymentTransactionRepository,
                 userRepository,
                 payOsClient,
-                clock
+                clock, settlement
         );
     }
 
@@ -107,60 +109,6 @@ class SubscriptionServiceTest {
     }
 
     @Test
-    @DisplayName("AC-13.2: Should activate PLUS subscription when valid IPN payment webhook is received")
-    void shouldActivateSubscriptionOnValidWebhookSignatureAndAmount() {
-        long orderCode = 123456789L;
-        PaymentTransactionEntity tx = new PaymentTransactionEntity(1L, String.valueOf(orderCode), 49_000);
-        when(paymentTransactionRepository.findByOrderCode(String.valueOf(orderCode))).thenReturn(Optional.of(tx));
-
-        PayOsWebhookPayload payload = new PayOsWebhookPayload(
-                "00", "success",
-                Map.of("orderCode", orderCode, "amount", 49_000, "code", "00"),
-                "valid_signature"
-        );
-        when(payOsClient.verifyWebhook(payload)).thenReturn(true);
-
-        SubscriptionEntity savedSub = new SubscriptionEntity(1L, SubscriptionTier.PLUS,
-                LocalDateTime.now(clock), LocalDateTime.now(clock).plusDays(30));
-        when(subscriptionRepository.save(any(SubscriptionEntity.class))).thenReturn(savedSub);
-
-        subscriptionService.handlePayOsWebhook(payload);
-
-        assertThat(tx.getStatus()).isEqualTo(PaymentStatus.PAID);
-        assertThat(tx.getPaidAt()).isEqualTo(LocalDateTime.now(clock));
-
-        ArgumentCaptor<SubscriptionEntity> subCaptor = ArgumentCaptor.forClass(SubscriptionEntity.class);
-        verify(subscriptionRepository).save(subCaptor.capture());
-        SubscriptionEntity activated = subCaptor.getValue();
-        assertThat(activated.getTier()).isEqualTo(SubscriptionTier.PLUS);
-        assertThat(activated.getStatus()).isEqualTo(SubscriptionStatus.ACTIVE);
-        assertThat(activated.getEndsAt()).isEqualTo(LocalDateTime.now(clock).plusDays(30));
-    }
-
-    @Test
-    @DisplayName("AC-13.3: Should handle duplicate webhook IPN idempotently without duplicate subscription")
-    void shouldHandleDuplicateWebhookIdempotentlyWithoutExtendingPeriod() {
-        long orderCode = 123456789L;
-        PaymentTransactionEntity alreadyPaidTx = new PaymentTransactionEntity(1L, String.valueOf(orderCode), 49_000);
-        alreadyPaidTx.setStatus(PaymentStatus.PAID);
-
-        when(paymentTransactionRepository.findByOrderCode(String.valueOf(orderCode))).thenReturn(Optional.of(alreadyPaidTx));
-
-        PayOsWebhookPayload payload = new PayOsWebhookPayload(
-                "00", "success",
-                Map.of("orderCode", orderCode, "amount", 49_000),
-                "valid_signature"
-        );
-        when(payOsClient.verifyWebhook(payload)).thenReturn(true);
-
-        // Call duplicate webhook
-        subscriptionService.handlePayOsWebhook(payload);
-
-        // Verify no new subscription saved
-        verify(subscriptionRepository, never()).save(any(SubscriptionEntity.class));
-    }
-
-    @Test
     @DisplayName("AC-13.4: Should auto-downgrade to FREE when subscription validity period expires")
     void shouldDowngradeToFreeWhenSubscriptionExpires() {
         Long userId = 1L;
@@ -178,65 +126,6 @@ class SubscriptionServiceTest {
         assertThat(response.tier()).isEqualTo("FREE");
         assertThat(expiredSub.getStatus()).isEqualTo(SubscriptionStatus.EXPIRED);
         verify(subscriptionRepository).save(expiredSub);
-    }
-
-    @Test
-    @DisplayName("AC-13.5: Should reject webhook and throw exception if signature is invalid")
-    void shouldRejectWebhookWithInvalidSignature() {
-        PayOsWebhookPayload forgedPayload = new PayOsWebhookPayload(
-                "00", "success",
-                Map.of("orderCode", 99999L, "amount", 49_000),
-                "fake_signature"
-        );
-        when(payOsClient.verifyWebhook(forgedPayload)).thenReturn(false);
-
-        assertThatThrownBy(() -> subscriptionService.handlePayOsWebhook(forgedPayload))
-                .isInstanceOf(AppException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PAYMENT_SIGNATURE_INVALID);
-
-        verify(subscriptionRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("AC-13.5: Should reject webhook and set transaction to FAILED if amount is tampered")
-    void shouldRejectWebhookWithTamperedAmount() {
-        long orderCode = 123456789L;
-        PaymentTransactionEntity tx = new PaymentTransactionEntity(1L, String.valueOf(orderCode), 49_000);
-        when(paymentTransactionRepository.findByOrderCode(String.valueOf(orderCode))).thenReturn(Optional.of(tx));
-
-        PayOsWebhookPayload tamperedAmountPayload = new PayOsWebhookPayload(
-                "00", "success",
-                Map.of("orderCode", orderCode, "amount", 99_000), // amount mismatch
-                "valid_signature"
-        );
-        when(payOsClient.verifyWebhook(tamperedAmountPayload)).thenReturn(true);
-
-        assertThatThrownBy(() -> subscriptionService.handlePayOsWebhook(tamperedAmountPayload))
-                .isInstanceOf(AppException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PAYMENT_SIGNATURE_INVALID);
-
-        assertThat(tx.getStatus()).isEqualTo(PaymentStatus.FAILED);
-        verify(subscriptionRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("AC-13.6: Should retain existing subscription and mark transaction CANCELLED when payment fails")
-    void shouldRetainExistingSubscriptionWhenPaymentCancelled() {
-        long orderCode = 123456789L;
-        PaymentTransactionEntity tx = new PaymentTransactionEntity(1L, String.valueOf(orderCode), 49_000);
-        when(paymentTransactionRepository.findByOrderCode(String.valueOf(orderCode))).thenReturn(Optional.of(tx));
-
-        PayOsWebhookPayload failedPayload = new PayOsWebhookPayload(
-                "01", "cancelled",
-                Map.of("orderCode", orderCode, "amount", 49_000, "code", "01"),
-                "valid_signature"
-        );
-        when(payOsClient.verifyWebhook(failedPayload)).thenReturn(true);
-
-        subscriptionService.handlePayOsWebhook(failedPayload);
-
-        assertThat(tx.getStatus()).isEqualTo(PaymentStatus.CANCELLED);
-        verify(subscriptionRepository, never()).save(any());
     }
 
     @Test
@@ -304,22 +193,6 @@ class SubscriptionServiceTest {
                 .hasMessageContaining("Không thể khởi tạo liên kết thanh toán payOS");
 
         verify(paymentTransactionRepository, org.mockito.Mockito.atLeastOnce()).save(any(PaymentTransactionEntity.class));
-    }
-
-    @Test
-    @DisplayName("Should throw exception when webhook payload has null orderCode")
-    void shouldThrowExceptionWhenWebhookHasNullOrderCode() {
-        when(payOsClient.verifyWebhook(any())).thenReturn(true);
-
-        PayOsWebhookPayload payloadWithoutOrderCode = new PayOsWebhookPayload(
-                "00", "success",
-                Map.of("amount", 49000),
-                "sig"
-        );
-
-        assertThatThrownBy(() -> subscriptionService.handlePayOsWebhook(payloadWithoutOrderCode))
-                .isInstanceOf(AppException.class)
-                .hasMessageContaining("thiếu mã đơn hàng orderCode");
     }
 
     @Test
@@ -395,6 +268,39 @@ class SubscriptionServiceTest {
         assertThat(tx.getSubscriptionId()).isEqualTo(10L);
         assertThat(tx.getCreatedAt()).isEqualTo(now);
         assertThat(tx.getPaidAt()).isEqualTo(now);
+    }
+
+    @Test
+    void rejectsInvalidSignatureBeforeSettlement() {
+        PayOsWebhookPayload payload = new PayOsWebhookPayload("00", "ok", Map.of("orderCode", 123), "bad");
+        assertThatThrownBy(() -> subscriptionService.handlePayOsWebhook(payload))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.PAYMENT_SIGNATURE_INVALID);
+        org.mockito.Mockito.verifyNoInteractions(settlement);
+    }
+
+    @Test
+    void delegatesOnlyVerifiedVndWebhookToSettlement() {
+        PayOsWebhookPayload payload = new PayOsWebhookPayload("00", "ok",
+                Map.of("orderCode", 123, "amount", 99000, "currency", "VND", "code", "00"), "signed");
+        when(payOsClient.verifyWebhook(payload)).thenReturn(true);
+        subscriptionService.handlePayOsWebhook(payload);
+        verify(settlement).settle("123", 99000, PaymentStatus.PAID);
+    }
+
+    @Test
+    void rejectsMalformedOrForeignCurrencyWebhook() {
+        PayOsWebhookPayload missing = new PayOsWebhookPayload("00", "ok", Map.of("amount", 99000), "signed");
+        when(payOsClient.verifyWebhook(missing)).thenReturn(true);
+        assertThatThrownBy(() -> subscriptionService.handlePayOsWebhook(missing)).isInstanceOf(AppException.class);
+        PayOsWebhookPayload foreign = new PayOsWebhookPayload("00", "ok",
+                Map.of("orderCode", 123, "amount", 99000, "currency", "USD", "code", "00"), "signed");
+        when(payOsClient.verifyWebhook(foreign)).thenReturn(true);
+        assertThatThrownBy(() -> subscriptionService.handlePayOsWebhook(foreign)).isInstanceOf(AppException.class);
+        PayOsWebhookPayload missingCode = new PayOsWebhookPayload("00", "ok",
+                Map.of("orderCode", 123, "amount", 99000, "currency", "VND"), "signed");
+        when(payOsClient.verifyWebhook(missingCode)).thenReturn(true);
+        assertThatThrownBy(() -> subscriptionService.handlePayOsWebhook(missingCode)).isInstanceOf(AppException.class);
+        org.mockito.Mockito.verifyNoInteractions(settlement);
     }
 
     private void mockActiveUser(Long userId) {
