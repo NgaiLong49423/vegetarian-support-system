@@ -31,8 +31,10 @@ test('real recipe detail recommendations match current SQL Server data without c
   await page.goto(`/cong-thuc/id/${sourceId}`);
   await expect(page.getByRole('heading', { name: catalog.items[0].title, exact: true })).toBeVisible();
   const response = await relatedResponsePromise;
-  expect(response.ok()).toBeTruthy();
-  const payload = await response.json() as { items: Array<{ id: number; title: string }> };
+  const responseBody = await response.text();
+  expect(response.ok(), `GET related recipes returned HTTP ${response.status()}: ${responseBody}`)
+    .toBeTruthy();
+  const payload = JSON.parse(responseBody) as { items: Array<{ id: number; title: string }> };
   const section = page.getByRole('region', { name: 'Công thức liên quan' });
   for (const item of payload.items) {
     expect(item.id).not.toBe(sourceId);
