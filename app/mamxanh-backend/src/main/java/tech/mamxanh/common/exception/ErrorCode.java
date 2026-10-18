@@ -36,6 +36,9 @@ public enum ErrorCode {
             "Chưa thể đăng nhập bằng Google lúc này. Vui lòng thử lại sau hoặc đăng nhập bằng email."),
     MEMBER_ACCESS_REQUIRED(HttpStatus.FORBIDDEN, "Member access required",
             "Chỉ Member có tài khoản hoạt động mới dùng được hồ sơ sở thích ăn uống."),
+    FOLLOW_SELF_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Follow self not allowed", "Bạn không thể tự theo dõi chính mình."),
+    FOLLOW_TARGET_INACTIVE(HttpStatus.CONFLICT, "Follow target inactive",
+            "Tài khoản này hiện không hoạt động nên không thể theo dõi."),
     INGREDIENT_PREFERENCE_CONFLICT(HttpStatus.BAD_REQUEST, "Ingredient preference conflict",
             "Một nguyên liệu chỉ được nằm trong một danh sách: cần tránh hoặc không thích."),
     DIETARY_PROFILE_INCOMPLETE(HttpStatus.CONFLICT, "Dietary profile incomplete",
@@ -43,8 +46,13 @@ public enum ErrorCode {
     UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "Unauthenticated", "Bạn cần đăng nhập để thực hiện thao tác này."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "Access denied", "Bạn không có quyền thực hiện thao tác này."),
     RECIPE_NOT_FOUND(HttpStatus.NOT_FOUND, "Recipe not found", "Không tìm thấy công thức công khai."),
+    RECIPE_SELF_REACTION_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Self reaction not allowed",
+            "Tác giả không được tự bình chọn bài viết của chính mình"),
     RECIPE_EDIT_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Recipe edit not allowed", "Bạn không có quyền chỉnh sửa công thức này."),
     RECIPE_HIDDEN(HttpStatus.FORBIDDEN, "Recipe hidden", "Công thức đang bị quản trị viên ẩn. Vui lòng liên hệ quản trị viên để được phục hồi trước khi chỉnh sửa."),
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "Comment not found", "Không tìm thấy bình luận hoặc bình luận đã bị xóa."),
+    COMMENT_EDIT_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Comment edit not allowed",
+            "Bạn chỉ có thể sửa hoặc xóa bình luận của chính mình."),
     RECIPE_DATA_INVALID(HttpStatus.BAD_REQUEST, "Recipe data invalid", "Thông tin công thức không hợp lệ."),
     AI_SUBSCRIPTION_REQUIRED(HttpStatus.FORBIDDEN, "AI subscription required", "Tính năng hỗ trợ AI yêu cầu gói Plus hoặc Pro còn hiệu lực."),
     AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI provider unavailable", "Dịch vụ AI hiện không khả dụng. Bạn có thể tiếp tục tự soạn nội dung."),
@@ -71,6 +79,8 @@ public enum ErrorCode {
             "Mỗi bài công thức chỉ được có tối đa 5 ảnh minh họa."),
     INVALID_COVER_IMAGE_CONFIGURATION(HttpStatus.BAD_REQUEST, "Invalid cover image configuration",
             "Bài công thức có ảnh bắt buộc phải có đúng một ảnh được chọn làm ảnh bìa."),
+    RECIPE_VIEW_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Recipe view unavailable",
+            "Chưa thể ghi nhận lượt xem. Vui lòng thử lại sau."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error", "Hệ thống gặp lỗi. Vui lòng thử lại sau.");
 
     private final HttpStatus status;

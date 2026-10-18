@@ -47,7 +47,14 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
                 var builder = request(HttpMethod.valueOf(method.toUpperCase()), uri);
                 if (operation.has("requestBody")) builder.contentType(MediaType.APPLICATION_JSON).content("{}");
                 int status = mockMvc.perform(builder).andReturn().getResponse().getStatus();
-                boolean documented = operation.path("security").toString().contains("bearerAuth");
+                JsonNode security = operation.path("security");
+                // Security alternatives are OR-ed: {} permits an anonymous request even when
+                // another alternative supports Bearer (FR-58 records Guest and Member views).
+                boolean anonymousAllowed = false;
+                for (JsonNode alternative : security) {
+                    if (alternative.isObject() && alternative.size() == 0) anonymousAllowed = true;
+                }
+                boolean documented = security.toString().contains("bearerAuth") && !anonymousAllowed;
                 if ((status == 401) != documented) {
                     mismatches.add(method.toUpperCase() + " " + path.getKey() + " (no token → " + status
                             + ", bearerAuth documented: " + documented + ")");

@@ -438,7 +438,6 @@ function RecipeCollection({
               key={recipe.id}
               recipe={recipe}
               options={options}
-              showLikes={popular}
             />
           ))}
         </div>

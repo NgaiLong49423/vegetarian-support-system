@@ -1,3 +1,5 @@
+import { RecipeDefaultArtwork } from '../components/RecipeDefaultArtwork';
+import { RecipeReactions } from '../components/RecipeReactions';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -9,7 +11,6 @@ import {
   Clock3,
   Download,
   Eye,
-  Heart,
   Leaf,
   LoaderCircle,
   MessageCircle,
@@ -18,8 +19,6 @@ import {
   Printer,
   Share2,
   Sparkles,
-  ThumbsDown,
-  ThumbsUp,
   Users,
   Utensils,
   Video,
@@ -29,6 +28,7 @@ import { Badge, Button, Card } from '../components/ui';
 import { asApiError } from '../lib/apiClient';
 import { recipesApi, type RecipeDetail } from '../api/recipes';
 import { SaveRecipeButton } from '../components/SaveRecipeButton';
+import { RecipeViews } from '../components/RecipeViews';
 import { MemberAvatar } from '../components/MemberAvatar';
 import { RelatedRecipes } from '../components/RelatedRecipes';
 import { RecipeComments } from '../components/RecipeComments';
@@ -55,33 +55,6 @@ function publishedDate(value: string) {
 function formatNumber(value: number | null | undefined, maximumFractionDigits = 2) {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'Chưa có dữ liệu';
   return new Intl.NumberFormat('vi-VN', { maximumFractionDigits }).format(value);
-}
-
-export function RecipeDefaultArtwork({
-  vegetarianType,
-  label,
-}: {
-  vegetarianType?: string;
-  label?: string;
-}) {
-  const appearance = (vegetarianType && {
-    VEGAN: 'from-leaf-100 to-emerald-50 text-leaf-800',
-    LACTO: 'from-amber-100 to-orange-50 text-amber-900',
-    OVO: 'from-yellow-100 to-lime-50 text-lime-900',
-    LACTO_OVO: 'from-brand-100 to-yellow-50 text-brand-800',
-  }[vegetarianType as 'VEGAN' | 'LACTO' | 'OVO' | 'LACTO_OVO']) ?? 'from-leaf-100 to-emerald-50 text-leaf-800';
-
-  const displayLabel = label ?? 'Món chay';
-  return (
-    <div
-      role="img"
-      aria-label={`Ảnh mặc định cho món ${displayLabel}`}
-      className={`flex h-full w-full min-h-64 flex-col items-center justify-center bg-gradient-to-br ${appearance}`}
-    >
-      <Leaf className="h-14 w-14" />
-      <span className="mt-3 text-sm font-bold">Ảnh mặc định · {displayLabel}</span>
-    </div>
-  );
 }
 
 function getYoutubeEmbedUrl(rawUrl: string) {
@@ -131,9 +104,12 @@ function downloadText(recipe: RecipeDetail) {
 }
 
 export function ApiRecipeDetail() {
-  const { openChat } = useAiChat();
   const { recipeId: rawId, slug } = useParams();
-  const recipeId = Number(rawId ?? slug);
+  return <PublishedApiRecipeDetail key={rawId ?? slug} recipeId={Number(rawId ?? slug)} />;
+}
+
+function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
+  const { openChat } = useAiChat();
   const [searchParams] = useSearchParams();
   const fromMealPlan = searchParams.has('mealPlanWeek') || searchParams.has('mealPlanEntryId');
   const planContextKey = `${recipeId}:${searchParams.get('mealPlanWeek')}:${searchParams.get('mealPlanEntryId')}`;
@@ -145,13 +121,11 @@ export function ApiRecipeDetail() {
   const [checkedIngredients, setCheckedIngredients] = useState<number[]>([]);
   const [exportOpen, setExportOpen] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
-  const [userVote, setUserVote] = useState<'like' | 'dislike' | null>(null);
 
   useEffect(() => {
     let alive = true;
     setError('');
     setRecipe(null);
-    setUserVote(null);
     if (!Number.isSafeInteger(recipeId) || recipeId < 1) {
       setError('ID công thức không hợp lệ.');
       return () => { alive = false; };
@@ -200,7 +174,7 @@ export function ApiRecipeDetail() {
     return (
       <PageContainer className="py-16">
         <Card className="mx-auto max-w-xl p-8 text-center">
-          <h1 className="text-xl font-bold text-ink">Không tìm thấy công thức</h1>
+          <h1 className="text-xl font-bold text-ink">Không thể mở công thức</h1>
           <p role="alert" className="mt-2 text-sm text-ink-muted">{error}</p>
           <Link to="/kham-pha" className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-brand-700">
             <ArrowLeft className="h-4 w-4" />Quay lại khám phá
@@ -232,13 +206,6 @@ export function ApiRecipeDetail() {
     likePercentage: null,
     reactionCount: 0,
   };
-  const currentLikes = statistics.likes + (userVote === 'like' ? 1 : 0);
-  const currentDislikes = statistics.dislikes + (userVote === 'dislike' ? 1 : 0);
-  const currentReactionCount = statistics.reactionCount + (userVote ? 1 : 0);
-  const currentLikePercentage =
-    userVote !== null
-      ? Math.round((currentLikes / Math.max(1, currentLikes + currentDislikes)) * 100)
-      : statistics.likePercentage;
   const nutritionComplete = recipe.nutrition?.complete ?? recipe.nutritionComplete;
   const missingNutrition = recipe.nutrition?.ingredientsMissingData ?? recipe.ingredientsWithoutNutrition ?? [];
   const printRecipe = () => window.print();
@@ -354,7 +321,7 @@ export function ApiRecipeDetail() {
                 </span>
               </div>
               <span className="text-[11px] font-semibold text-leaf-700">
-                🌱 100% Thực vật
+                🌱 {recipe.vegetarianTypeLabel}
               </span>
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
@@ -410,7 +377,7 @@ export function ApiRecipeDetail() {
               return <li key={`${item.ingredientId ?? item.name}-${index}`} className="flex items-center gap-3 py-3">
                 <button type="button" aria-label={`${isChecked ? 'Bỏ chọn' : 'Đánh dấu'} ${item.name}`} aria-pressed={isChecked} onClick={() => setCheckedIngredients((current) => isChecked ? current.filter((checked) => checked !== index) : [...current, index])} className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${isChecked ? 'border-leaf-600 bg-leaf-600 text-white' : 'border-brand-300 bg-paper'}`}>{isChecked && <Check className="h-3.5 w-3.5" />}</button>
                 <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-ink-muted line-through' : 'text-ink-soft'}`}>{item.name}{item.nutritionSupported === false && <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Chưa hỗ trợ tính dinh dưỡng</span>}</span>
-                <strong className="shrink-0 text-right text-sm text-ink">{formatNumber(scaled)} {item.unitName || item.unitCode}</strong>
+                <strong className="shrink-0 text-right text-sm text-ink">{formatNumber(scaled)} {item.unitCode || item.unitName}</strong>
               </li>;
             })}
           </ul>
@@ -441,7 +408,7 @@ export function ApiRecipeDetail() {
               <div className="mt-4 aspect-video overflow-hidden rounded-xl bg-raised">
                 <iframe
                   src={youtubeEmbedUrl}
-                  title={`Video hướng dẫn nấu món ${recipe.title}`}
+                  title={`Video hướng dẫn ${recipe.title}`}
                   className="h-full w-full"
                   loading="lazy"
                   referrerPolicy="strict-origin-when-cross-origin"
@@ -492,6 +459,8 @@ export function ApiRecipeDetail() {
             </dl>
             {!nutritionComplete && (
               <section
+                role="note"
+                aria-live="polite"
                 className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900"
                 aria-labelledby="nutrition-status-heading"
               >
@@ -499,8 +468,9 @@ export function ApiRecipeDetail() {
                   Chưa đủ dữ liệu dinh dưỡng
                 </h2>
                 <p role="status" className="mt-1 text-sm text-amber-800">
-                  Ước tính dinh dưỡng chưa đầy đủ. Chưa hỗ trợ tính dinh dưỡng cho:
+                  Ước tính chưa đầy đủ. Các giá trị chỉ gồm phần tính được từ danh mục.
                 </p>
+                <p className="mt-1 text-sm">Nguyên liệu chưa hỗ trợ tính dinh dưỡng:</p>
                 {(missingNutrition ?? []).length > 0 && (
                   <ul className="mt-2 list-inside list-disc text-sm text-amber-900">
                     {(missingNutrition ?? []).map((name) => (
@@ -558,71 +528,23 @@ export function ApiRecipeDetail() {
         )}
       </aside>
     </div>
-
-    {/* Hàng 3 (Cuối trang): Khối Like / Bình chọn & Thống kê đi kèm Bình luận */}
-    <div className="space-y-6">
+    <div className="recipe-detail-no-print space-y-6">
       <Card className="p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-brand-100 pb-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Cảm nhận cộng đồng</p>
-            <h2 className="mt-1 text-xl font-extrabold text-ink">Đánh giá & Mức độ yêu thích</h2>
-          </div>
-          <div className="recipe-detail-no-print flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              aria-pressed={userVote === 'like'}
-              onClick={() => setUserVote((prev) => (prev === 'like' ? null : 'like'))}
-              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition ${
-                userVote === 'like'
-                  ? 'border-leaf-600 bg-leaf-600 text-white shadow-sm'
-                  : 'border-brand-200 bg-paper text-ink hover:bg-brand-50'
-              }`}
-            >
-              <ThumbsUp className="h-4 w-4" />
-              Yêu thích ({formatNumber(currentLikes, 0)})
-            </button>
-            <button
-              type="button"
-              aria-pressed={userVote === 'dislike'}
-              onClick={() => setUserVote((prev) => (prev === 'dislike' ? null : 'dislike'))}
-              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition ${
-                userVote === 'dislike'
-                  ? 'border-amber-600 bg-amber-600 text-white shadow-sm'
-                  : 'border-brand-200 bg-paper text-ink-soft hover:bg-brand-50'
-              }`}
-            >
-              <ThumbsDown className="h-4 w-4" />
-              Chưa phù hợp ({formatNumber(currentDislikes, 0)})
-            </button>
-          </div>
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Cảm nhận cộng đồng</p>
+        <h2 className="mt-1 text-xl font-extrabold text-ink">Đánh giá &amp; Mức độ yêu thích</h2>
+        <div className="mt-4">
+          <RecipeViews key={recipeId} recipe={recipe} renderCount={(count) => <StatTile icon={<Eye className="h-4 w-4 text-brand-600" />} label="Lượt xem" value={<>{formatNumber(count, 0)}<span className="sr-only"> lượt xem</span></>} />} />
         </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:divide-x sm:divide-brand-100">
-          <div className="sm:pr-4">
-            <StatTile icon={<Eye className="h-4 w-4 text-brand-600" />} label="Lượt xem" value={formatNumber(statistics.viewCount, 0)} />
-          </div>
-          <div className="sm:px-4">
-            <StatTile icon={<Heart className="h-4 w-4 text-rose-500" />} label="Lượt thích" value={formatNumber(currentLikes, 0)} />
-          </div>
-          <div className="sm:px-4">
-            <StatTile icon={<Utensils className="h-4 w-4 text-amber-600" />} label="Lượt không thích" value={formatNumber(currentDislikes, 0)} />
-          </div>
-          <div className="sm:pl-4">
-            <StatTile icon={<Heart className="h-4 w-4 text-brand-600" />} label="Tỷ lệ thích" value={currentLikePercentage === null ? 'Mới' : `${formatNumber(currentLikePercentage)}%`} />
-            <p className="mt-1 text-[11px] text-ink-muted">{formatNumber(currentReactionCount, 0)} lượt bình chọn</p>
-          </div>
-        </div>
+        <RecipeReactions recipeId={recipe.recipeId} authorId={author.userId} statistics={statistics} />
       </Card>
-
-      <RecipeComments key={`comments-${recipeId}`} />
+      <RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} />
     </div>
-
     <RelatedRecipes key={recipeId} recipeId={recipeId} />
     <div className="recipe-detail-no-print mt-8"><Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeft className="h-4 w-4" />Trở lại khám phá</Link></div>
   </PageContainer>;
 }
 
-function StatTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+function StatTile({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-1.5 text-xs text-ink-muted">{icon}{label}</div>

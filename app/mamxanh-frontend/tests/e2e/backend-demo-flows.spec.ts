@@ -31,12 +31,12 @@ test('recipe exploration shows API results only and handles empty, loading and f
   let requestCount = 0;
   let releaseInitialResponse!: () => void;
   const initialResponsePaused = new Promise<void>((resolve) => { releaseInitialResponse = resolve; });
-  await page.route('**/api/v1/recipes?**', async (route) => {
+  await page.route('**/api/v1/recipes/discovery?**', async (route) => {
     requestCount += 1;
     const keyword = new URL(route.request().url()).searchParams.get('keyword');
     if (!keyword) await initialResponsePaused;
     if (keyword === 'api-error') return route.fulfill({ status: 503, json: { title: 'Unavailable' } });
-    if (keyword === 'empty') return route.fulfill({ json: { ...recipePage, items: [], totalElements: 0, totalPages: 0 } });
+    if (keyword === 'empty') return route.fulfill({ json: { ...recipePage, items: [], hasNext: false } });
     return route.fulfill({ json: recipePage });
   });
 

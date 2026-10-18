@@ -268,16 +268,51 @@ class RecipePostServiceTest {
     }
 
     @Test
-    void publicBrowseMapsReadStatisticsAndUsesTheSelectedViewWindow() {
+    void discoveryBrowseReturnsHasNextWithoutUsingCountBackedPageMethod() {
+        LocalDateTime now = LocalDateTime.of(2026, 10, 8, 0, 0);
+        when(clock.instant()).thenReturn(now.toInstant(ZoneOffset.UTC));
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+        when(browseRepository.findPublishedSlice("canh", "VEGAN", "SOUP", List.of(44L), 30,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
+                LocalDateTime.of(1, 1, 1, 0, 0), now, 0, 12))
+                .thenReturn(new RecipeBrowseRepository.BrowseSlice(List.of(), true));
+        when(repository.findAllById(List.of())).thenReturn(List.of());
+
+        var result = service.browsePublic(" canh ", 0, 12,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
+                tech.mamxanh.recipe.service.RecipeViewPeriod.ALL_TIME,
+                " vegan ", "soup", List.of(44L, 44L), 30);
+
+        assertThat(result.items()).isEmpty();
+        assertThat(result.hasNext()).isTrue();
+        verify(browseRepository).findPublishedSlice("canh", "VEGAN", "SOUP", List.of(44L), 30,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
+                LocalDateTime.of(1, 1, 1, 0, 0), now, 0, 12);
+        verify(browseRepository, never()).findPublished(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyInt(),
+                org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(tech.mamxanh.recipe.service.RecipeViewPeriod.class)
+    void publicBrowseMapsReadStatisticsAndUsesTheSelectedViewWindow(tech.mamxanh.recipe.service.RecipeViewPeriod period) {
         LocalDateTime now = LocalDateTime.of(2026, 10, 8, 0, 0);
         when(clock.instant()).thenReturn(now.toInstant(ZoneOffset.UTC));
         when(clock.getZone()).thenReturn(ZoneOffset.UTC);
         recipe.setStatus("PUBLISHED");
         recipe.setTitle("Canh chua");
         var mode = tech.mamxanh.recipe.service.RecipeSortMode.MOST_VIEWED;
-        var period = tech.mamxanh.recipe.service.RecipeViewPeriod.LAST_24_HOURS;
-        var row = new RecipeBrowseRepository.BrowseRow(47L, 3, 1, 19, 2, 5);
-        when(browseRepository.findPublished("canh", null, null, List.of(), null, mode, now.minusHours(24), now, 0, 12))
+        LocalDateTime since = switch (period) {
+            case ALL_TIME -> LocalDateTime.of(1, 1, 1, 0, 0);
+            case LAST_24_HOURS -> now.minusDays(1);
+            case LAST_7_DAYS -> now.minusDays(7);
+            case LAST_30_DAYS -> now.minusDays(30);
+        };
+        var row = new RecipeBrowseRepository.BrowseRow(47L, 10, 1, 19, 2, 5);
+        when(browseRepository.findPublished("canh", null, null, List.of(), null, mode, since, now, 0, 12))
                 .thenReturn(new RecipeBrowseRepository.BrowsePage(List.of(row), 1));
         when(repository.findAllById(List.of(47L))).thenReturn(List.of(recipe));
         when(currentUserService.getPublicProfiles(List.of(7L))).thenReturn(Map.of(7L,
@@ -292,11 +327,11 @@ class RecipePostServiceTest {
         assertThat(result.items()).hasSize(1);
         assertThat(result.items().getFirst().authorName()).isEqualTo("Tác giả");
         assertThat(result.items().getFirst().authorAvatarUrl()).isEqualTo("https://img.test/avatar.png");
-        assertThat(result.items().getFirst().likes()).isEqualTo(3);
+        assertThat(result.items().getFirst().likes()).isEqualTo(10);
+        assertThat(result.items().getFirst().likePercentage()).isEqualByComparingTo("91");
         assertThat(result.items().getFirst().dislikes()).isEqualTo(1);
-        assertThat(result.items().getFirst().likePercentage()).isEqualByComparingTo("75.00");
         assertThat(result.items().getFirst().viewCount()).isEqualTo(19);
-        verify(browseRepository).findPublished("canh", null, null, List.of(), null, mode, now.minusHours(24), now, 0, 12);
+        verify(browseRepository).findPublished("canh", null, null, List.of(), null, mode, since, now, 0, 12);
     }
 
     @Test

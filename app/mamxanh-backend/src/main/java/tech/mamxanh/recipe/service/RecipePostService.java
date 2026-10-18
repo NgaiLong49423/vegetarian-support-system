@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.function.Function;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +36,7 @@ import tech.mamxanh.recipe.repository.RecipePostRepository;
 import tech.mamxanh.recipe.repository.RecipeUnitReferenceRepository;
 import tech.mamxanh.recipe.repository.RecipeBrowseRepository;
 import tech.mamxanh.recipe.repository.RecipeBrowseRepository.BrowseRow;
+import tech.mamxanh.recipe.repository.RecipeBrowseRepository.BrowseSlice;
 import tech.mamxanh.recipe.repository.RecipeStatisticsRepository;
 import tech.mamxanh.recipe.repository.RecipeValidationRepository;
 
@@ -145,6 +145,37 @@ public class RecipePostService {
         List<RecipePostResponse> items = publicResponses(orderedRecipes, metrics);
         int totalPages = (int) Math.ceil((double) result.totalElements() / size);
         return new RecipePageResponse(items, page, size, result.totalElements(), totalPages);
+    }
+
+    @Transactional(readOnly = true)
+    public RecipeBrowseResponse browsePublic(String keyword, int page, int size,
+            RecipeSortMode sortMode, RecipeViewPeriod viewPeriod, String vegetarianType,
+            String dishCategory, List<Long> ingredientIds, Integer maxTotalTimeMinutes) {
+        String query = keyword == null ? "" : keyword.trim();
+        String normalizedVegetarianType = normalizeCode(vegetarianType, VegetarianType.class);
+        String normalizedDishCategory = normalizeCode(dishCategory, DishCategory.class);
+        List<Long> normalizedIngredientIds = ingredientIds == null ? List.of()
+                : ingredientIds.stream().distinct().toList();
+        if (query.length() > 120 || page < 0 || size < 1 || size > 50
+                || normalizedIngredientIds.size() > 20
+                || normalizedIngredientIds.stream().anyMatch(id -> id == null || id < 1)
+                || (maxTotalTimeMinutes != null && maxTotalTimeMinutes < 1)) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED);
+        }
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime viewSince = viewPeriod.hours() == null
+                ? LocalDateTime.of(1, 1, 1, 0, 0) : now.minusHours(viewPeriod.hours());
+        BrowseSlice result = browseRepository.findPublishedSlice(query, normalizedVegetarianType,
+                normalizedDishCategory, normalizedIngredientIds, maxTotalTimeMinutes, sortMode,
+                viewSince, now, page, size);
+        List<Long> ids = result.rows().stream().map(BrowseRow::recipeId).toList();
+        Map<Long, RecipePostEntity> recipes = repository.findAllById(ids).stream()
+                .collect(Collectors.toMap(RecipePostEntity::getId, Function.identity()));
+        Map<Long, BrowseRow> metrics = result.rows().stream()
+                .collect(Collectors.toMap(BrowseRow::recipeId, Function.identity()));
+        List<RecipePostEntity> orderedRecipes = ids.stream().map(recipes::get)
+                .filter(java.util.Objects::nonNull).toList();
+        return new RecipeBrowseResponse(publicResponses(orderedRecipes, metrics), page, size, result.hasNext());
     }
 
     /** FR-23 (Q56): a member's published posts for the public profile, newest first, size 1–50. */
@@ -347,10 +378,7 @@ public class RecipePostService {
             List<Media> media, List<Ingredient> ingredients) {
         long likes = stats == null ? 0 : stats.likes();
         long dislikes = stats == null ? 0 : stats.dislikes();
-        long reactionCount = likes + dislikes;
-        BigDecimal likePercentage = reactionCount == 0 ? null
-                : BigDecimal.valueOf(likes).multiply(BigDecimal.valueOf(100))
-                        .divide(BigDecimal.valueOf(reactionCount), 2, RoundingMode.HALF_UP);
+        BigDecimal likePercentage = RecipeReactionStatistics.likePercentage(likes, dislikes);
         return new RecipePostResponse(recipe.getId(), recipe.getAuthorId(), author.displayName(), author.avatarUrl(),
                 recipe.getTitle(), recipe.getDescription(), recipe.getInstructions(), recipe.getDishCategory(),
                 recipe.getVegetarianType(), recipe.getDifficulty(), recipe.getServings(), recipe.getPrepTimeMinutes(),
@@ -425,6 +453,9 @@ public class RecipePostService {
 
     public record RecipePageResponse(List<RecipePostResponse> items, int page, int size,
             long totalElements, int totalPages) { }
+
+    public record RecipeBrowseResponse(List<RecipePostResponse> items, int page, int size,
+            boolean hasNext) { }
 
     public record RecipeReferenceData(List<RecipeValidationRepository.IngredientOption> ingredients) { }
 

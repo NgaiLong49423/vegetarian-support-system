@@ -348,7 +348,7 @@ export function AdminDashboard() {
                 <p className="text-ink-muted">Hàng đợi kiểm duyệt bài viết và bình luận vi phạm</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Hoạt động</span>
+                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Minh họa</span>
                 <Link to="/admin/bao-cao" className="font-bold text-brand-600 hover:underline">
                   Mở →
                 </Link>
@@ -362,7 +362,7 @@ export function AdminDashboard() {
                 <p className="text-ink-muted">Tra cứu thành viên, phân quyền và khóa tài khoản vi phạm</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Hoạt động</span>
+                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Minh họa</span>
                 <Link to="/admin/nguoi-dung" className="font-bold text-brand-600 hover:underline">
                   Mở →
                 </Link>
@@ -376,7 +376,7 @@ export function AdminDashboard() {
                 <p className="text-ink-muted">Nhật ký thanh toán PayOS trên toàn hệ thống</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Hoạt động</span>
+                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Minh họa</span>
                 <Link to="/admin/giao-dich" className="font-bold text-brand-600 hover:underline">
                   Mở →
                 </Link>

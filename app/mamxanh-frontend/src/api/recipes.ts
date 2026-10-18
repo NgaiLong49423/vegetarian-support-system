@@ -71,13 +71,7 @@ export interface RecipeDetail {
     total: Record<string, number | null>;
     perServing: Record<string, number | null>;
   };
-  statistics: {
-    likes: number;
-    dislikes: number;
-    reactionCount: number;
-    likePercentage: number | null;
-    viewCount: number;
-  };
+  statistics: RecipeStatistics;
   ingredients: Array<{
     ingredientId: number;
     name: string;
@@ -99,6 +93,12 @@ export interface RecipeIngredient {
   unitCode: string;
   unitName: string;
   quantity: number;
+}
+
+export interface RecipeViewResponse {
+  recipeId: number;
+  counted: boolean;
+  viewCount: number;
 }
 
 export interface RecipeMedia {
@@ -138,6 +138,13 @@ export interface RecipeSearchResult {
   size: number;
   totalElements: number;
   totalPages: number;
+}
+
+export interface RecipeBrowseResult {
+  items: RecipePost[];
+  page: number;
+  size: number;
+  hasNext: boolean;
 }
 
 export interface RecipeSearchParams {
@@ -280,6 +287,26 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
   }
 }
 
+export type RecipeReactionType = 'LIKE' | 'DISLIKE';
+export interface RecipeStatistics {
+  likes: number;
+  dislikes: number;
+  reactionCount: number;
+  likePercentage: number | null;
+  viewCount: number;
+}
+export interface RecipeReactionResponse extends Omit<RecipeStatistics, 'viewCount'> {
+  recipeId: number;
+  currentReaction: RecipeReactionType | null;
+}
+export const recipeReactionApi = {
+  get: (id: number) => request(() => apiClient.get<RecipeReactionResponse>(`/recipes/${id}/reaction`)),
+  set: (id: number, reactionType: RecipeReactionType) => request(
+    () => apiClient.put<RecipeReactionResponse>(`/recipes/${id}/reaction`, { reactionType }),
+  ),
+  remove: (id: number) => request(() => apiClient.delete<RecipeReactionResponse>(`/recipes/${id}/reaction`)),
+};
+
 export const recipesApi = {
   chat: (payload: AiChatRequest) => request(
     () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, { timeout: 12_000 }),
@@ -310,21 +337,31 @@ export const recipesApi = {
   getPublished: (recipeId: number) => request(
     () => apiClient.get<RecipeDetail>(`/recipes/${recipeId}`),
   ),
-  searchPublic: (filters: RecipeSearchParams) => {
-    const params = new URLSearchParams({
-      keyword: filters.keyword,
-      page: String(filters.page),
-      size: String(filters.size),
-      sort: filters.sort,
-      viewPeriod: filters.viewPeriod,
-    });
-    if (filters.vegetarianType) params.set('vegetarianType', filters.vegetarianType);
-    if (filters.dishCategory) params.set('dishCategory', filters.dishCategory);
-    if (filters.maxTotalTimeMinutes) params.set('maxTotalTimeMinutes', String(filters.maxTotalTimeMinutes));
-    filters.ingredientIds?.forEach((ingredientId) => params.append('ingredientIds', String(ingredientId)));
-    return request(() => apiClient.get<RecipeSearchResult>('/recipes', { params }));
-  },
+  recordView: (recipeId: number, anonymousViewerId?: string) => request(
+    () => apiClient.post<RecipeViewResponse>(`/recipes/${recipeId}/views`, anonymousViewerId ? { anonymousViewerId } : {}),
+  ),
+  searchPublic: (filters: RecipeSearchParams) => request(
+    () => apiClient.get<RecipeSearchResult>('/recipes', { params: recipeSearchParams(filters) }),
+  ),
+  discoverPublic: (filters: RecipeSearchParams) => request(
+    () => apiClient.get<RecipeBrowseResult>('/recipes/discovery', { params: recipeSearchParams(filters) }),
+  ),
 };
+
+function recipeSearchParams(filters: RecipeSearchParams) {
+  const params = new URLSearchParams({
+    keyword: filters.keyword,
+    page: String(filters.page),
+    size: String(filters.size),
+    sort: filters.sort,
+    viewPeriod: filters.viewPeriod,
+  });
+  if (filters.vegetarianType) params.set('vegetarianType', filters.vegetarianType);
+  if (filters.dishCategory) params.set('dishCategory', filters.dishCategory);
+  if (filters.maxTotalTimeMinutes) params.set('maxTotalTimeMinutes', String(filters.maxTotalTimeMinutes));
+  filters.ingredientIds?.forEach((ingredientId) => params.append('ingredientIds', String(ingredientId)));
+  return params;
+}
 
 export const recipeApi = {
   listMine: async (page = 0, size = 50) =>

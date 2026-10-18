@@ -27,13 +27,12 @@ import { Card, Badge, Button } from '../components/ui';
 type PendingModuleType = 'reports' | 'users' | 'transactions';
 
 export function AdminPendingModule({ module }: { module: PendingModuleType }) {
-  if (module === 'users') {
-    return <AdminUserManagement />;
-  }
-  if (module === 'reports') {
-    return <AdminReportModeration />;
-  }
-  return <AdminTransactionAudit />;
+  return <>
+    <div role="status" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+      Giao diện minh họa · Dữ liệu mẫu. Thao tác tại đây chỉ thay đổi bản xem thử, chưa cập nhật tài khoản, báo cáo hoặc giao dịch trên Backend.
+    </div>
+    {module === 'users' ? <AdminUserManagement /> : module === 'reports' ? <AdminReportModeration /> : <AdminTransactionAudit />}
+  </>;
 }
 
 /* ==========================================================================

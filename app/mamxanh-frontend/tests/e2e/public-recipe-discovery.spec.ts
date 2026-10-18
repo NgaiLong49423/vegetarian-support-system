@@ -41,6 +41,8 @@ const detail = {
   youtubeUrl: null,
   publishedAt: '2026-10-01T08:00:00',
   nutritionComplete: true,
+  author: { userId: 22, displayName: "Lan", avatarUrl: null },
+  statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
   ingredientsWithoutNutrition: [],
   author: { userId: 22, displayName: 'Bếp Chay Lan', avatarUrl: null },
   nutrition: { complete: true, ingredientsMissingData: [], total: {}, perServing: {} },
@@ -52,32 +54,35 @@ const detail = {
 test.describe('Issue #3 [FR-01] — Guest xem và tìm kiếm nội dung công khai', () => {
   test('AC-01.1: Guest duyệt danh sách công khai từ API và phân trang', async ({ page }) => {
     const requestedPages: number[] = [];
-    await page.route('**/api/v1/recipes?**', (route) => {
+    await page.route('**/api/v1/recipes/discovery?**', (route) => {
       const request = route.request();
       expect(request.headers().authorization).toBeUndefined();
       const pageNumber = Number(new URL(request.url()).searchParams.get('page'));
       requestedPages.push(pageNumber);
       const items = pageNumber === 0 ? [publicRecipe(901, 'Đậu hũ non sốt nấm đông cô tiêu xanh')]
         : [publicRecipe(902, 'Canh chua chay nấm đậu bắp thanh nhiệt')];
-      return route.fulfill({ json: { items, page: pageNumber, size: 12, totalElements: 2, totalPages: 2 } });
+      return route.fulfill({ json: { items, page: pageNumber, size: 12, hasNext: pageNumber === 0 } });
     });
 
     await page.goto('/kham-pha');
     await expect(page.getByRole('heading', { name: 'Khám phá công thức chay' })).toBeVisible();
+    await expect(page.getByText(/\d+ công thức|Trang \d+ \/ \d+/)).toHaveCount(0);
     await expect(page.getByText('Đậu hũ non sốt nấm đông cô tiêu xanh')).toBeVisible();
     await expect(page.locator('img[alt="Đậu hũ non sốt nấm đông cô tiêu xanh"]')).toHaveAttribute('src', 'https://example.test/901.jpg');
     await page.getByRole('button', { name: 'Trang sau' }).click();
     await expect(page.getByText('Canh chua chay nấm đậu bắp thanh nhiệt')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Trang sau' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Trang trước' })).toBeEnabled();
     expect(requestedPages).toEqual([0, 1]);
   });
 
   test('AC-01.2: Guest tìm công thức theo từ khóa qua API', async ({ page }) => {
-    await page.route('**/api/v1/recipes?**', (route) => {
+    await page.route('**/api/v1/recipes/discovery?**', (route) => {
       const keyword = new URL(route.request().url()).searchParams.get('keyword');
       const items = keyword === 'canh chua'
         ? [publicRecipe(902, 'Canh chua chay nấm đậu bắp thanh nhiệt')]
         : [publicRecipe(901, 'Đậu hũ non sốt nấm đông cô tiêu xanh')];
-      return route.fulfill({ json: { items, page: 0, size: 12, totalElements: items.length, totalPages: 1 } });
+      return route.fulfill({ json: { items, page: 0, size: 12, hasNext: false } });
     });
 
     await page.goto('/kham-pha');
@@ -165,12 +170,12 @@ test('FR-08 Explore applies API-backed options, ingredient AND filters, sorting 
       : { ingredientId: 202, name: 'Nguyên liệu B' };
     return route.fulfill({ json: [option] });
   });
-  await page.route((url) => url.pathname === '/api/v1/recipes', (route) => {
+  await page.route((url) => url.pathname === '/api/v1/recipes/discovery', (route) => {
     const url = new URL(route.request().url());
     searchUrls.push(url.toString());
     const items = url.searchParams.get('vegetarianType') === 'LACTO' ? [] : [matchingRecipe];
     return route.fulfill({ json: {
-      items, page: 0, size: 12, totalElements: items.length, totalPages: items.length ? 1 : 0,
+      items, page: 0, size: 12, hasNext: false,
     } });
   });
 
@@ -245,11 +250,11 @@ test('API recipe detail supports serving controls, image gallery, sharing and ex
   );
 
   await page.getByRole('button', { name: 'Giảm khẩu phần' }).click();
-  await expect(page.getByText('50 gram', { exact: true })).toBeVisible();
+  await expect(page.getByText('50 g', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Giảm khẩu phần' })).toBeDisabled();
   await page.getByRole('button', { name: 'Tăng khẩu phần' }).click();
   await page.getByRole('button', { name: 'Tăng khẩu phần' }).click();
-  await expect(page.getByText('150 gram', { exact: true })).toBeVisible();
+  await expect(page.getByText('150 g', { exact: true })).toBeVisible();
   const ingredientToggle = page.getByRole('button', { name: 'Đánh dấu Nấm rơm tươi' });
   await ingredientToggle.click();
   await expect(page.getByRole('button', { name: 'Bỏ chọn Nấm rơm tươi' })).toHaveAttribute('aria-pressed', 'true');
@@ -259,7 +264,7 @@ test('API recipe detail supports serving controls, image gallery, sharing and ex
   await expect(page.getByRole('img', { name: recipe.title })).toHaveAttribute('src', recipe.media[1].blobUrl);
 
   await page.getByRole('button', { name: 'Chia sẻ' }).click();
-  await expect(page.getByRole('status')).toHaveText('Đã sao chép liên kết công thức.');
+  await expect(page.getByRole('status').filter({ hasText: 'Đã sao chép liên kết công thức.' })).toHaveText('Đã sao chép liên kết công thức.');
   expect(await page.evaluate(() => sessionStorage.getItem('shared-url'))).toContain('/cong-thuc/id/920');
 
   await page.getByRole('button', { name: 'Xuất công thức' }).click();
@@ -273,5 +278,5 @@ test('API recipe detail supports serving controls, image gallery, sharing and ex
   await page.getByRole('button', { name: 'In / lưu PDF A4' }).click();
   expect(await page.evaluate(() => sessionStorage.getItem('print-called'))).toBe('true');
   await page.getByText('Xem tổng dinh dưỡng toàn công thức').click();
-  await expect(page.getByText('240 kcal')).toBeVisible();
+  await expect(page.getByText('≈ 240 kcal')).toBeVisible();
 });

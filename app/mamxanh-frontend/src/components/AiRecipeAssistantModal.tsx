@@ -311,6 +311,8 @@ export function AiRecipeAssistantModal({
   const [cookingMethod, setCookingMethod] = useState('STIR_FRY');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<GeneratedRecipeData | null>(null);
+  const [showJson, setShowJson] = useState(false);
+  const [copyStatus, setCopyStatus] = useState('');
 
   // Khi chọn buổi ăn, tự động đề xuất mức calo khuyến nghị tương ứng
   const handleSelectMeal = (session: MealSession) => {
@@ -953,6 +955,24 @@ export function AiRecipeAssistantModal({
               <div className="rounded-xl bg-raised border border-brand-200/80 p-3.5 text-xs text-ink-soft whitespace-pre-line leading-relaxed font-sans">
                 {generatedResult.instructions}
               </div>
+            </div>
+
+            <div className="space-y-3">
+              <Button type="button" variant="outline" aria-expanded={showJson} onClick={() => setShowJson((value) => !value)}>
+                {showJson ? 'Ẩn mã JSON nguyên liệu' : 'Xem cấu trúc JSON nguyên liệu'}
+              </Button>
+              {showJson && <div className="space-y-2">
+                <pre className="max-h-64 overflow-auto rounded-xl border border-brand-200 bg-raised p-3 text-xs text-ink-soft">{JSON.stringify(jsonExportData, null, 2)}</pre>
+                <Button type="button" variant="outline" onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(JSON.stringify(jsonExportData, null, 2));
+                    setCopyStatus('Đã sao chép JSON.');
+                  } catch {
+                    setCopyStatus('Chưa thể sao chép JSON. Vui lòng chọn và sao chép phần mã ở trên.');
+                  }
+                }}>Sao chép JSON</Button>
+                {copyStatus && <p role="status" className="text-xs text-ink-muted">{copyStatus}</p>}
+              </div>}
             </div>
 
             {/* Nạp 1-click vào biểu mẫu */}

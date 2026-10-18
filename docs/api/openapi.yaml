@@ -207,6 +207,154 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/recipes/{recipeId}/reaction:
+    get:
+      tags:
+      - recipe-reaction-controller
+      summary: Đọc phản hồi của Member hiện tại và thống kê bình chọn
+      operationId: get
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: Lựa chọn hiện tại và thống kê bình chọn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeReactionResponse"
+        "400":
+          description: ID hoặc loại phản hồi không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Chưa đăng nhập hoặc token không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Không đủ quyền; tài khoản khóa hoặc tác giả tự bình chọn
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Công thức không tồn tại hoặc không còn công khai
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - recipe-reaction-controller
+      summary: Đặt hoặc chuyển Like/Dislike
+      description: PUT cùng lựa chọn giữ nguyên phản hồi; bấm lại nút đang chọn trên
+        UI gọi DELETE để hủy.
+      operationId: set
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetRecipeReactionRequest"
+        required: true
+      responses:
+        "200":
+          description: Lựa chọn hiện tại và thống kê bình chọn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeReactionResponse"
+        "400":
+          description: ID hoặc loại phản hồi không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Chưa đăng nhập hoặc token không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Không đủ quyền; tài khoản khóa hoặc tác giả tự bình chọn
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Công thức không tồn tại hoặc không còn công khai
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - recipe-reaction-controller
+      summary: Hủy phản hồi của Member hiện tại
+      description: Trả lựa chọn null và thống kê mới; hủy lặp không thay đổi dữ liệu.
+      operationId: remove
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: Lựa chọn hiện tại và thống kê bình chọn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeReactionResponse"
+        "400":
+          description: ID hoặc loại phản hồi không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Chưa đăng nhập hoặc token không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Không đủ quyền; tài khoản khóa hoặc tác giả tự bình chọn
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Công thức không tồn tại hoặc không còn công khai
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/recipes/{recipeId}/media:
     get:
       tags:
@@ -519,6 +667,148 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/members/{userId}/follow:
+    get:
+      tags:
+      - member-follow-controller
+      summary: Read a member's follow summary
+      description: "Public. Counts include only active accounts. With an access token,\
+        \ `following` tells whether the viewer follows this member."
+      operationId: status
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: Follow summary of the member profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowStatusResponse"
+        "404":
+          description: "MEMBER_PROFILE_NOT_FOUND: no member profile has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    put:
+      tags:
+      - member-follow-controller
+      summary: Follow a member
+      description: Idempotent. The follower is the authenticated account; a repeated
+        request keeps one relation.
+      operationId: follow
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: The current account follows the member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowStatusResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: MEMBER_ACCESS_REQUIRED for a non-member account; FOLLOW_SELF_NOT_ALLOWED
+            on the own profile.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "MEMBER_PROFILE_NOT_FOUND: no member profile has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "FOLLOW_TARGET_INACTIVE: the member account is locked."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - member-follow-controller
+      summary: Unfollow a member
+      description: "Idempotent. Removes only the authenticated account's relation,\
+        \ also when the member is locked."
+      operationId: unfollow
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: The current account does not follow the member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowStatusResponse"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: MEMBER_ACCESS_REQUIRED for a non-member account; FOLLOW_SELF_NOT_ALLOWED
+            on the own profile.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "MEMBER_PROFILE_NOT_FOUND: no member profile has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/meal-plans:
     get:
       tags:
@@ -822,6 +1112,107 @@ paths:
         "403":
           description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
             \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/comments/{commentId}:
+    put:
+      tags:
+      - recipe-comment-controller
+      summary: Edit the caller's own comment
+      operationId: update_1
+      parameters:
+      - name: commentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: "The edited comment, marked as edited."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentResponse"
+        "400":
+          description: "VALIDATION_FAILED: content must have 1–1,000 characters."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: COMMENT_EDIT_NOT_ALLOWED for someone else's comment; MEMBER_ACCESS_REQUIRED
+            for a non-member.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "COMMENT_NOT_FOUND: the comment is deleted or its recipe is\
+            \ not published."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - recipe-comment-controller
+      summary: Delete the caller's own comment
+      description: Idempotent. Replies stay visible under a tombstone.
+      operationId: delete_1
+      parameters:
+      - name: commentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "204":
+          description: The comment is deleted.
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: COMMENT_EDIT_NOT_ALLOWED for someone else's comment; MEMBER_ACCESS_REQUIRED
+            for a non-member.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "COMMENT_NOT_FOUND: no comment on a published recipe has this\
+            \ id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
           content:
             application/problem+json:
               schema:
@@ -1489,6 +1880,69 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/recipes/{recipeId}/views:
+    post:
+      tags:
+      - recipe-view-controller
+      summary: Ghi nhận lượt xem công thức công khai
+      description: "Guest gửi anonymousViewerId dạng UUID; Member gửi {} và dùng danh\
+        \ tính từ Bearer. Lượt lặp trong 30 phút (kể cả đúng mốc 30 phút) trả counted=false,\
+        \ không kéo dài cửa sổ."
+      operationId: record
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecipeViewRequest"
+        required: true
+      responses:
+        "200":
+          description: Lượt xem đã ghi nhận hoặc đã khử trùng lặp.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeViewResponse"
+        "400":
+          description: ID hoặc định danh Guest không hợp lệ.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Bearer token không hợp lệ hoặc hết hạn.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Tài khoản mang Bearer token bị khóa.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Công thức không tồn tại hoặc không công khai.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: Chưa lấy được khóa ghi nhận lượt xem; có thể thử lại.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - {}
+      - bearerAuth: []
   /api/v1/recipes/{recipeId}/reports:
     post:
       tags:
@@ -1601,6 +2055,117 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "503":
           description: Gemini unavailable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/recipes/{recipeId}/comments:
+    get:
+      tags:
+      - recipe-comment-controller
+      summary: List the comment threads of a published recipe
+      description: "Public. Root threads newest first, each with its visible replies\
+        \ oldest first. A deleted comment that still has replies is returned with\
+        \ `deleted = true` and no content or author."
+      operationId: list
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - name: page
+        in: query
+        description: Zero-based page index.
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: "Root threads per page, from 1 through 50."
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+          maximum: 50
+          minimum: 1
+      responses:
+        "200":
+          description: A page of comment threads.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeCommentPageResponse"
+        "400":
+          description: Page or size is outside its supported range.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "RECIPE_NOT_FOUND: the recipe is not published."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    post:
+      tags:
+      - recipe-comment-controller
+      summary: Comment on a published recipe or reply to a comment
+      description: Published immediately. A reply to a level-5 comment is attached
+        to its level-4 parent.
+      operationId: create
+      parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentCreateRequest"
+        required: true
+      responses:
+        "201":
+          description: The new comment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentResponse"
+        "400":
+          description: "VALIDATION_FAILED: content must have 1–1,000 characters."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "MEMBER_ACCESS_REQUIRED: only an active Customer or Expert\
+            \ comments."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "RECIPE_NOT_FOUND, or COMMENT_NOT_FOUND for a reply target\
+            \ that is gone or on another recipe."
           content:
             application/problem+json:
               schema:
@@ -3280,7 +3845,7 @@ paths:
       summary: List the current member's saved recipes
       description: "Returns a private, paginated list ordered by most recently saved.\
         \ Unavailable recipes are safe tombstones."
-      operationId: list
+      operationId: list_1
       parameters:
       - name: keyword
         in: query
@@ -3537,6 +4102,128 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecipeFormOptionsResponse"
+  /api/v1/recipes/discovery:
+    get:
+      tags:
+      - recipe-post-controller
+      operationId: discoverPublic
+      parameters:
+      - name: keyword
+        in: query
+        description: Tìm trong tiêu đề và mô tả ngắn công thức.
+        required: false
+        schema:
+          type: string
+          default: ""
+      - name: page
+        in: query
+        description: Số trang bắt đầu từ 0.
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Số công thức mỗi trang (từ 1 đến 50).
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 12
+          maximum: 50
+          minimum: 1
+      - name: sort
+        in: query
+        description: Chế độ sắp xếp công thức công khai.
+        required: false
+        schema:
+          type: string
+          default: NEWEST
+          enum:
+          - NEWEST
+          - MOST_LIKED
+          - MOST_VIEWED
+          - MOST_COMMENTED
+          - MOST_ACTIVE
+          - TRENDING
+      - name: viewPeriod
+        in: query
+        description: Khung thời gian cho MOST_VIEWED; mặc định ALL_TIME.
+        required: false
+        schema:
+          type: string
+          default: ALL_TIME
+          enum:
+          - ALL_TIME
+          - LAST_24_HOURS
+          - LAST_7_DAYS
+          - LAST_30_DAYS
+      - name: vegetarianType
+        in: query
+        description: Loại ăn chay chuẩn.
+        required: false
+        schema:
+          type: string
+          enum:
+          - VEGAN
+          - LACTO
+          - OVO
+          - LACTO_OVO
+      - name: dishCategory
+        in: query
+        description: Mã thể loại món chuẩn hóa.
+        required: false
+        schema:
+          type: string
+          enum:
+          - NOODLE_SOUP
+          - STIR_FRY
+          - HOT_POT
+          - BRAISED
+          - SOUP
+          - FRIED
+          - STEAMED
+          - SALAD
+          - ROLL
+          - GRILLED
+          - DESSERT
+      - name: ingredientIds
+        in: query
+        description: ID nguyên liệu; có thể lặp lại. Công thức phải chứa tất cả ID
+          đã chọn.
+        required: false
+        schema:
+          type: array
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+          maxItems: 20
+          minItems: 0
+      - name: maxTotalTimeMinutes
+        in: query
+        description: "Tổng thời gian chuẩn bị và nấu tối đa, tính bằng phút."
+        required: false
+        schema:
+          type: integer
+          format: int32
+          minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RecipeBrowseResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/nutrition/dietary-preferences/ingredient-suggestions:
     get:
       tags:
@@ -3653,6 +4340,144 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /api/v1/members/{userId}/following:
+    get:
+      tags:
+      - member-follow-controller
+      summary: List the members a member follows
+      description: "Active accounts only, most recently followed first, with public\
+        \ profile fields only."
+      operationId: following
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - name: page
+        in: query
+        description: Zero-based page index.
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: "Page size, from 1 through 50."
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 50
+          minimum: 1
+      responses:
+        "200":
+          description: A page of followed members.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseFollowMemberResponse"
+        "400":
+          description: Page or size is outside its supported range.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "MEMBER_PROFILE_NOT_FOUND: no member profile has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/members/{userId}/followers:
+    get:
+      tags:
+      - member-follow-controller
+      summary: List a member's followers
+      description: "Active accounts only, most recently followed first, with public\
+        \ profile fields only."
+      operationId: followers
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - name: page
+        in: query
+        description: Zero-based page index.
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: "Page size, from 1 through 50."
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 50
+          minimum: 1
+      responses:
+        "200":
+          description: A page of followers.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseFollowMemberResponse"
+        "400":
+          description: Page or size is outside its supported range.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "MEMBER_PROFILE_NOT_FOUND: no member profile has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/meal-plans/{weekStartDate}/nutrition:
     get:
       tags:
@@ -4107,7 +4932,7 @@ paths:
     get:
       tags:
       - expert-application-controller
-      operationId: list_1
+      operationId: list_2
       parameters:
       - name: status
         in: query
@@ -4361,6 +5186,73 @@ components:
         viewCount:
           type: integer
           format: int64
+    SetRecipeReactionRequest:
+      type: object
+      properties:
+        reactionType:
+          type: string
+          enum:
+          - LIKE
+          - DISLIKE
+      required:
+      - reactionType
+    RecipeReactionResponse:
+      type: object
+      properties:
+        recipeId:
+          type: integer
+          format: int64
+        currentReaction:
+          type:
+          - string
+          - "null"
+          description: Lựa chọn của Member hiện tại; null khi chưa bình chọn.
+          enum:
+          - LIKE
+          - DISLIKE
+        likes:
+          type: integer
+          format: int64
+        dislikes:
+          type: integer
+          format: int64
+        reactionCount:
+          type: integer
+          format: int64
+        likePercentage:
+          type:
+          - number
+          - "null"
+          description: Tỷ lệ Like làm tròn thành số nguyên; null khi chưa có bình
+            chọn.
+    ProblemDetail:
+      type: object
+      description: "RFC 9457 problem detail; clients branch on `status` and `code`,\
+        \ never on `detail` text."
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          description: Stable `ErrorCode` value.
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
     RecipeMediaItemRequest:
       type: object
       properties:
@@ -4464,34 +5356,6 @@ components:
       - pregnant
       - therapeuticDietRequired
       - weightKg
-    ProblemDetail:
-      type: object
-      description: "RFC 9457 problem detail; clients branch on `status` and `code`,\
-        \ never on `detail` text."
-      properties:
-        type:
-          type: string
-        title:
-          type: string
-        status:
-          type: integer
-          format: int32
-        detail:
-          type: string
-        instance:
-          type: string
-        code:
-          type: string
-          description: Stable `ErrorCode` value.
-        errors:
-          type: array
-          items:
-            type: object
-            properties:
-              field:
-                type: string
-              message:
-                type: string
     NutritionProfileResponse:
       type: object
       properties:
@@ -4692,6 +5556,26 @@ components:
           format: int64
         name:
           type: string
+    FollowStatusResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Member có hồ sơ đang xem.
+        following:
+          type: boolean
+          description: Người xem đang theo dõi Member này; luôn false với Guest.
+        followerCount:
+          type: integer
+          format: int64
+          description: "Số người theo dõi Member này, chỉ tính tài khoản đang hoạ\
+            t động."
+        followingCount:
+          type: integer
+          format: int64
+          description: "Số tài khoản Member này đang theo dõi, chỉ tính tài khoản\
+            \ đang hoạt động."
     MealPlanWeekEntry:
       type: object
       properties:
@@ -4827,6 +5711,60 @@ components:
           type: string
           description: "Tháng tham gia theo giờ Việt Nam, dạng yyyy-MM."
           example: 2026-09
+    CommentUpdateRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          description: "Văn bản thuần, 1–1.000 ký tự sau khi bỏ khoảng trắng đầu cuố\
+            i."
+          maxLength: 1000
+          minLength: 0
+      required:
+      - content
+    Author:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+    CommentResponse:
+      type: object
+      properties:
+        commentId:
+          type: integer
+          format: int64
+        parentCommentId:
+          type: integer
+          format: int64
+        depth:
+          type: integer
+          format: int32
+          description: "Cấp lồng, từ 1 đến 5."
+        content:
+          type: string
+          description: "Văn bản thuần; Frontend hiển thị như text, không render HTML.\
+            \ Null khi đã xóa."
+        author:
+          $ref: "#/components/schemas/Author"
+          description: Null khi bình luận đã xóa (tombstone).
+        deleted:
+          type: boolean
+          description: Đã bị tác giả xóa nhưng còn reply nên vẫn giữ vị trí (AC-46.2).
+        edited:
+          type: boolean
+          description: Nội dung đã được sửa sau khi đăng.
+        createdAt:
+          type: string
+          format: date-time
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommentResponse"
     UnitSaveRequest:
       type: object
       properties:
@@ -5187,6 +6125,23 @@ components:
         publishedAt:
           type: string
           format: date-time
+    RecipeViewRequest:
+      type: object
+      properties:
+        anonymousViewerId:
+          type: string
+          pattern: "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    RecipeViewResponse:
+      type: object
+      properties:
+        recipeId:
+          type: integer
+          format: int64
+        counted:
+          type: boolean
+        viewCount:
+          type: integer
+          format: int64
     RecipeReportRequest:
       type: object
       properties:
@@ -5215,6 +6170,23 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RecipePostResponse"
+    CommentCreateRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          description: "Văn bản thuần, 1–1.000 ký tự sau khi bỏ khoảng trắng đầu cuố\
+            i."
+          maxLength: 1000
+          minLength: 0
+        parentCommentId:
+          type: integer
+          format: int64
+          description: Bình luận được trả lời; trả lời bình luận cấp 5 được gắn vào
+            cha cấp 4 (AC-46.1).
+          minimum: 0
+      required:
+      - content
     ApiResponseUploadImageResponse:
       type: object
       properties:
@@ -5439,16 +6411,16 @@ components:
           additionalProperties: {}
         signature:
           type: string
-        paymentLinkId:
-          type: string
-        paymentSuccess:
-          type: boolean
-        orderCode:
-          type: integer
-          format: int64
         amount:
           type: integer
           format: int32
+        orderCode:
+          type: integer
+          format: int64
+        paymentSuccess:
+          type: boolean
+        paymentLinkId:
+          type: string
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -5942,16 +6914,6 @@ components:
         totalPages:
           type: integer
           format: int32
-    Author:
-      type: object
-      properties:
-        userId:
-          type: integer
-          format: int64
-        displayName:
-          type: string
-        avatarUrl:
-          type: string
     Nutrition:
       type: object
       properties:
@@ -6044,6 +7006,29 @@ components:
         viewCount:
           type: integer
           format: int64
+    RecipeCommentPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommentResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        commentCount:
+          type: integer
+          format: int64
+          description: Số bình luận và reply chưa bị xóa của bài công thức.
     IngredientOption:
       type: object
       properties:
@@ -6112,6 +7097,21 @@ components:
           type: string
         dimension:
           type: string
+    RecipeBrowseResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecipePostResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        hasNext:
+          type: boolean
     IngredientSuggestionResponse:
       type: object
       properties:
@@ -6122,6 +7122,36 @@ components:
           type: string
         ingredientGroup:
           type: string
+    FollowMemberResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+          description: Ảnh đại diện; null thì Frontend hiển thị ảnh mặc định.
+    PageResponseFollowMemberResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/FollowMemberResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
     Day:
       type: object
       properties:

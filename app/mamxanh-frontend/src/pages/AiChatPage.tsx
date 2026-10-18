@@ -206,7 +206,11 @@ export function AiChatPage() {
       <form onSubmit={submit} className="border-t border-brand-100 bg-paper p-3 sm:p-4">
         <label htmlFor="ai-chat-question" className="sr-only">Câu hỏi của bạn</label>
         <div className="flex items-end gap-2 rounded-2xl border border-brand-200 bg-cream-soft p-2 focus-within:ring-2 focus-within:ring-brand-300">
-          <textarea id="ai-chat-question" value={question} onChange={(event) => setQuestion(event.target.value)} maxLength={1000} rows={2} placeholder="Nhập câu hỏi của bạn…" className="max-h-36 min-h-12 flex-1 resize-y bg-transparent px-2 py-2 text-sm text-ink outline-none placeholder:text-ink-muted" disabled={loading} />
+          <textarea id="ai-chat-question" value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => {
+            if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
+            event.preventDefault();
+            event.currentTarget.form?.requestSubmit();
+          }} maxLength={1000} rows={2} placeholder="Nhập câu hỏi của bạn…" className="max-h-36 min-h-12 flex-1 resize-y bg-transparent px-2 py-2 text-sm text-ink outline-none placeholder:text-ink-muted" disabled={loading} />
           <button type="submit" aria-label="Gửi câu hỏi" disabled={loading || !question.trim()} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-on-brand enabled:hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50"><Send className="h-4 w-4" aria-hidden="true" /></button>
         </div>
         <p className="mt-1 text-right text-[11px] text-ink-muted">{question.length}/1.000 ký tự</p>

@@ -33,6 +33,33 @@ test('general chat keeps session history in the page and labels the answer as AI
   expect(requests[0]).toMatchObject({ contextType: 'GENERAL', question: 'Có thể thay sữa bò bằng gì?' });
 });
 
+test('Enter sends a question once while Shift+Enter inserts a newline and empty input stays idle', async ({ page }) => {
+  await signInAsMember(page);
+  let requestCount = 0;
+  await page.route('**/api/v1/recipes/ai/chat', async (route) => {
+    requestCount += 1;
+    await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null, answer: 'Mình đã nhận câu hỏi.' } });
+  });
+
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  const input = page.getByLabel('Câu hỏi của bạn');
+
+  await input.press('Enter');
+  await expect.poll(() => requestCount).toBe(0);
+
+  await input.fill('Cách nấu món chay');
+  await input.press('Shift+Enter');
+  await expect(input).toHaveValue('Cách nấu món chay\n');
+  await input.press('End');
+  await input.type(' dễ nhất là gì?');
+  await input.press('Enter');
+
+  await expect(page.getByText('Mình đã nhận câu hỏi.')).toBeVisible();
+  await expect.poll(() => requestCount).toBe(1);
+  await expect(page.getByText('Cách nấu món chay\n dễ nhất là gì?')).toBeVisible();
+});
+
 test('chat window can be resized with its accessible keyboard handle', async ({ page }) => {
   await signInAsMember(page);
   await page.goto('/trang-chu');

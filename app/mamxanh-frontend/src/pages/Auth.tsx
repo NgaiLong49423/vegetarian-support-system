@@ -306,8 +306,8 @@ export function AuthPage({ mode }: { mode: Mode }) {
         </Link>
       </header>
 
-      <main className="relative z-10 flex flex-1 min-h-0 w-full items-center justify-center px-4 py-2 sm:px-6">
-        <div className="mx-auto grid w-full max-w-5xl lg:grid-cols-2 lg:items-center lg:gap-10">
+      <main className="relative z-10 flex flex-1 min-h-0 w-full items-start overflow-y-auto px-4 py-2 sm:px-6">
+        <div className="mx-auto my-auto grid w-full max-w-5xl shrink-0 lg:grid-cols-2 lg:items-center lg:gap-10">
           {/* Cột cây đèn tương tác bên trái (desktop) */}
           <section className="relative hidden flex-col items-center justify-center scale-95 lg:flex xl:scale-100">
             <InteractiveLamp isOn={isLampOn} onToggle={() => setIsLampOn((prev) => !prev)} />

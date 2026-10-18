@@ -2,24 +2,11 @@
 
 import { useEffect, useRef, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { localDateKey, mondayOf } from "../utils/date"
+
+export { localDateKey, mondayOf, shiftWeek } from "../utils/date"
 
 import "./WeekCalendar.css"
-
-export function localDateKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-}
-
-export function mondayOf(date: Date) {
-  const monday = new Date(date)
-  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7))
-  return localDateKey(monday)
-}
-
-export function shiftWeek(weekStart: string, offset: number) {
-  const date = new Date(`${weekStart}T12:00:00`)
-  date.setDate(date.getDate() + offset * 7)
-  return localDateKey(date)
-}
 
 export function WeekCalendar({
   weekStart,
@@ -128,7 +115,7 @@ export function WeekCalendar({
 
     requestAnimationFrame(() => {
       const btn = viewRef.current?.querySelector<HTMLButtonElement>(
-        `button[data-date="${targetKey}"]`,
+        `.u030-grid:not([aria-hidden="true"]) button[data-date="${targetKey}"]`,
       )
       btn?.focus()
     })

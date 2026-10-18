@@ -1,16 +1,17 @@
 import { Link } from "react-router-dom"
-import { Leaf, ThumbsUp } from "lucide-react"
 import type { RecipeFormOptions, RecipePost } from "../api/recipes"
+import { AddToMealPlanButton } from "./AddToMealPlanButton"
+import { RecipeDefaultArtwork, type VegetarianCode } from "./RecipeDefaultArtwork"
 import { SaveRecipeButton } from "./SaveRecipeButton"
+import { RecipeViewCount } from "./RecipeViewCount"
+import { RecipeReactionBadge } from "./RecipeReactionBadge"
 
 export function PublicRecipeCard({
   recipe,
   options,
-  showLikes = false,
 }: {
   recipe: RecipePost
   options?: RecipeFormOptions | null
-  showLikes?: boolean
 }) {
   const cover = recipe.media.find((media) => media.cover) ?? recipe.media[0]
   const category =
@@ -34,22 +35,15 @@ export function PublicRecipeCard({
               className="h-full w-full object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.03]"
             />
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-xs text-ink-muted">
-              <Leaf className="h-7 w-7" />
-              Chưa có ảnh công thức
-            </div>
+            <RecipeDefaultArtwork
+              vegetarianType={recipe.vegetarianType as VegetarianCode}
+              label={vegetarian}
+              compact
+            />
           )}
-          {showLikes && (
-            <span
-              aria-label="Tỷ lệ yêu thích"
-              className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-1 text-[11px] font-semibold text-white"
-            >
-              <ThumbsUp className="h-3 w-3" />
-              {recipe.likePercentage === null
-                ? "Mới"
-                : `${recipe.likePercentage}%`}
-            </span>
-          )}
+          <div className="absolute left-2 top-2">
+            <RecipeReactionBadge percentage={recipe.likePercentage} />
+          </div>
           <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-black/60 px-2.5 py-2 text-[11px] text-white">
             {recipe.authorAvatarUrl ? (
               <img
@@ -82,8 +76,10 @@ export function PublicRecipeCard({
         >
           {vegetarian} · {category}
         </p>
+        <div className="mt-1 text-[11px] text-ink-muted"><RecipeViewCount count={recipe.viewCount} /></div>
       </Link>
-      <div className="absolute right-2 top-2">
+      <div className="absolute right-2 top-2 flex items-center gap-1.5">
+        <AddToMealPlanButton recipeId={recipe.id} recipeTitle={recipe.title} />
         <SaveRecipeButton recipeId={recipe.id} compact />
       </div>
     </article>

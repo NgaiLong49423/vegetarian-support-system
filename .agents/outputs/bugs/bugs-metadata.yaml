@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-14
-next_id: 28
+last_updated: 2026-10-18
+next_id: 39
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,105 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-038
+    title: Footer che thao tác gửi lại email trên biểu mẫu đăng ký
+    status: RECORDED
+    severity: Unknown
+    area: Frontend/Auth
+    file: .agents/outputs/bugs/BUG-038.md
+    created: 2026-10-18
+    updated: 2026-10-18
+    related_issue: Unknown
+  - id: BUG-037
+    title: Nhãn thực vật hiển thị cố định cho mọi loại ăn chay
+    status: RECORDED
+    severity: Unknown
+    area: Frontend/Recipe Detail
+    file: .agents/outputs/bugs/BUG-037.md
+    created: 2026-10-18
+    updated: 2026-10-18
+    related_issue: Unknown
+  - id: BUG-036
+    title: Giao diện quản trị dùng dữ liệu mẫu nhưng hiển thị như chức năng đã hoạt động
+    status: RECORDED
+    severity: Unknown
+    area: Frontend/Admin prototype
+    file: .agents/outputs/bugs/BUG-036.md
+    created: 2026-10-18
+    updated: 2026-10-18
+    related_issue: Unknown
+  - id: BUG-035
+    title: OpenAPI lượt xem mô tả sai schema phản hồi lỗi
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Recipe Views/OpenAPI
+    file: .agents/outputs/bugs/BUG-035.md
+    created: 2026-10-15
+    updated: 2026-10-16
+    related_issue: 57
+  - id: BUG-034
+    title: Ghi nhận lượt xem trả 503 vì lấy khóa trước khi transaction SQL được kích hoạt
+    status: RESOLVED
+    severity: High
+    area: Backend/Ghi nhận lượt xem
+    file: .agents/outputs/bugs/BUG-034.md
+    created: 2026-10-12
+    updated: 2026-10-16
+    related_issue: 57
+  - id: BUG-033
+    title: Sắp xếp Xem nhiều nhất tính cả lượt xem có thời gian tương lai
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Thống kê lượt xem
+    file: .agents/outputs/bugs/BUG-033.md
+    created: 2026-10-11
+    updated: 2026-10-16
+    related_issue: 57
+  - id: BUG-032
+    title: Administrator dùng chức năng chỉ dành cho Member nhận mã lỗi chỉnh sửa công thức
+    status: RECORDED
+    severity: Low
+    area: Backend/Auth
+    file: .agents/outputs/bugs/BUG-032.md
+    created: 2026-10-11
+    updated: 2026-10-15
+    related_issue: Unknown
+  - id: BUG-029
+    title: Schema bình chọn không chấp nhận currentReaction null dù API trả giá trị này
+    status: RECORDED
+    severity: Medium
+    area: Backend/Recipe Reaction/OpenAPI
+    file: .agents/outputs/bugs/BUG-029.md
+    created: 2026-10-15
+    updated: 2026-10-15
+    related_issue: 56
+  - id: BUG-030
+    title: API bình chọn trả 500 khi recipeId không dương
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Validation API bình chọn
+    file: .agents/outputs/bugs/BUG-030.md
+    created: 2026-10-11
+    updated: 2026-10-15
+    related_issue: 56
+  - id: BUG-028
+    title: Workflow triển khai FR còn ghi ngưỡng coverage cũ
+    status: RECORDED
+    severity: Medium
+    area: Quy trình agent/Quality gate
+    file: .agents/outputs/bugs/BUG-028.md
+    created: 2026-10-11
+    updated: 2026-10-15
+    related_issue: Unknown
+  - id: BUG-031
+    title: API danh sách và chi tiết công thức trả tỷ lệ Like chưa làm tròn theo FR-57
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Thống kê bình chọn công thức
+    file: .agents/outputs/bugs/BUG-031.md
+    created: 2026-10-11
+    updated: 2026-10-15
+    related_issue: 56
   - id: BUG-027
     title: CI không tải ảnh Git LFS làm kiểm thử landing thất bại
     status: RESOLVED
