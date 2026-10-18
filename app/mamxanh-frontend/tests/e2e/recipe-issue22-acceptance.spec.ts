@@ -2,9 +2,9 @@ import { type Page } from '@playwright/test';
 import { expect, test } from './baseFixtures';
 import { seedDemoSession } from './demo-session';
 
-// The scenarios intentionally pause for two seconds after each user action so
-// they can be observed. The 50-ingredient boundary scenario therefore needs a
-// longer test budget than Playwright's 30-second default.
+// Local acceptance demos pause after each action for observation. CI uses
+// Playwright's locator waits and the same assertions without demonstration pauses.
+// Keep the longer budget for the local 50-ingredient boundary demonstration.
 test.describe.configure({ timeout: 180_000 });
 
 const options = {
@@ -38,7 +38,7 @@ type PostResponse = { status: number; body: Record<string, unknown> };
 async function action(page: Page, label: string, operation: () => Promise<unknown>) {
   console.log(`BƯỚC: ${label}`);
   await operation();
-  await page.waitForTimeout(2000);
+  if (!process.env.CI) await page.waitForTimeout(2000);
 }
 
 type PublishedDetail = {

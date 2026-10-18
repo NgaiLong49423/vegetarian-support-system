@@ -1083,74 +1083,38 @@ interface MockTransaction {
   status: 'SUCCESS' | 'PENDING' | 'FAILED';
 }
 
-const INITIAL_TRANSACTIONS: MockTransaction[] = [
-  {
-    id: 'TX-883921',
-    payOsCode: 'POS-774921',
-    customerName: 'Nguyễn Thị Lan',
-    customerEmail: 'lan.nguyen@gmail.com',
-    tier: 'PRO',
-    amountVnd: 99000,
-    paymentGateway: 'VietQR (payOS)',
-    createdAt: '16/10/2026 15:30',
-    status: 'SUCCESS',
-  },
-  {
-    id: 'TX-883915',
-    payOsCode: 'POS-774912',
-    customerName: 'Trần Minh Đức',
-    customerEmail: 'duc.tran@gmail.com',
-    tier: 'PLUS',
-    amountVnd: 49000,
-    paymentGateway: 'VietQR (payOS)',
-    createdAt: '16/10/2026 12:15',
-    status: 'SUCCESS',
-  },
-  {
-    id: 'TX-883902',
-    payOsCode: 'POS-774899',
-    customerName: 'Đặng Quốc Huy',
-    customerEmail: 'huy.dang@yahoo.com',
-    tier: 'PRO',
-    amountVnd: 99000,
-    paymentGateway: 'VietQR (payOS)',
-    createdAt: '16/10/2026 10:45',
-    status: 'PENDING',
-  },
-  {
-    id: 'TX-883890',
-    payOsCode: 'POS-774872',
-    customerName: 'Vũ Thị Mai',
-    customerEmail: 'mai.vu@outlook.com',
-    tier: 'PLUS',
-    amountVnd: 49000,
-    paymentGateway: 'VietQR (payOS)',
-    createdAt: '15/10/2026 21:10',
-    status: 'FAILED',
-  },
-  {
-    id: 'TX-883854',
-    payOsCode: 'POS-774840',
-    customerName: 'Hoàng Gia Bảo',
-    customerEmail: 'bao.chef@vegan.vn',
-    tier: 'PRO',
-    amountVnd: 99000,
-    paymentGateway: 'VietQR (payOS)',
-    createdAt: '15/10/2026 14:02',
-    status: 'SUCCESS',
-  },
-  {
-    id: 'TX-883812',
-    payOsCode: 'POS-774811',
-    customerName: 'Phạm Thanh Sơn',
-    customerEmail: 'son.pham@gmail.com',
-    tier: 'PLUS',
-    amountVnd: 49000,
-    paymentGateway: 'VietQR (payOS)',
-    createdAt: '14/10/2026 09:20',
-    status: 'SUCCESS',
-  },
+type TransactionPreviewRow = [
+  id: string,
+  payOsCode: string,
+  customerName: string,
+  customerEmail: string,
+  tier: MockTransaction['tier'],
+  createdAt: string,
+  status: MockTransaction['status'],
 ];
+
+const TRANSACTION_PREVIEW_ROWS: TransactionPreviewRow[] = [
+  ['TX-883921', 'POS-774921', 'Nguyễn Thị Lan', 'lan.nguyen@gmail.com', 'PRO', '16/10/2026 15:30', 'SUCCESS'],
+  ['TX-883915', 'POS-774912', 'Trần Minh Đức', 'duc.tran@gmail.com', 'PLUS', '16/10/2026 12:15', 'SUCCESS'],
+  ['TX-883902', 'POS-774899', 'Đặng Quốc Huy', 'huy.dang@yahoo.com', 'PRO', '16/10/2026 10:45', 'PENDING'],
+  ['TX-883890', 'POS-774872', 'Vũ Thị Mai', 'mai.vu@outlook.com', 'PLUS', '15/10/2026 21:10', 'FAILED'],
+  ['TX-883854', 'POS-774840', 'Hoàng Gia Bảo', 'bao.chef@vegan.vn', 'PRO', '15/10/2026 14:02', 'SUCCESS'],
+  ['TX-883812', 'POS-774811', 'Phạm Thanh Sơn', 'son.pham@gmail.com', 'PLUS', '14/10/2026 09:20', 'SUCCESS'],
+];
+
+const INITIAL_TRANSACTIONS: MockTransaction[] = TRANSACTION_PREVIEW_ROWS.map(
+  ([id, payOsCode, customerName, customerEmail, tier, createdAt, status]) => ({
+    id,
+    payOsCode,
+    customerName,
+    customerEmail,
+    tier,
+    amountVnd: tier === 'PRO' ? 99000 : 49000,
+    paymentGateway: 'VietQR (payOS)',
+    createdAt,
+    status,
+  }),
+);
 
 function AdminTransactionAudit() {
   const [transactions] = useState<MockTransaction[]>(INITIAL_TRANSACTIONS);
