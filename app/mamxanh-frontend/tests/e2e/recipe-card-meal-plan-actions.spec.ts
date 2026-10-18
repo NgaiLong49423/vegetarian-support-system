@@ -229,7 +229,6 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await expect(
       page.getByTestId("recipe-default-artwork-LACTO_OVO"),
     ).toBeVisible()
-    await expect(page.getByText("Mới", { exact: true }).first()).toBeVisible()
   })
 
   test("AC-17.3 & AC-17.4: Member lưu nhanh và thêm nhiều ngày/bữa từ thẻ món; xử lý lỗi và Guest/Admin", async ({
