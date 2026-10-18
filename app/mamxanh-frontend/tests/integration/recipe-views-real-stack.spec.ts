@@ -39,6 +39,7 @@ test('FR-58: Guest detail, reload and Explore share a real persisted view count'
     const recorded = await firstResponse;
     expect(recorded.status()).toBe(200);
     expect(await recorded.json()).toEqual({ recipeId, counted: true, viewCount: 1 });
+    await page.waitForLoadState('networkidle');
     await expect(page.getByText('1 lượt xem', { exact: true })).toBeVisible();
     const viewer = (await context.cookies()).find((cookie) => cookie.name === 'mamxanh.recipe-viewer')?.value;
     expect(viewer).toBeTruthy();
@@ -49,6 +50,7 @@ test('FR-58: Guest detail, reload and Explore share a real persisted view count'
     const reloadResponse = page.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname === viewUrl);
     await page.reload();
     expect(await (await reloadResponse).json()).toEqual({ recipeId, counted: false, viewCount: 1 });
+    await page.waitForLoadState('networkidle');
     await expect(page.getByText('1 lượt xem', { exact: true })).toBeVisible();
     expect(Number(sql(`SELECT COUNT(*) FROM [RECIPE_VIEW] WHERE recipe_id = ${recipeId}`))).toBe(1);
     expect(Number(sql(`SELECT view_count FROM [RECIPE_POST] WHERE recipe_id = ${recipeId}`))).toBe(1);
