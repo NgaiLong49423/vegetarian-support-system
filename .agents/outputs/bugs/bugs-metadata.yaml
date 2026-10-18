@@ -10,7 +10,7 @@ status_definitions:
 bugs:
   - id: BUG-038
     title: Footer che thao tác gửi lại email trên biểu mẫu đăng ký
-    status: RECORDED
+    status: RESOLVED
     severity: Unknown
     area: Frontend/Auth
     file: .agents/outputs/bugs/BUG-038.md
@@ -19,7 +19,7 @@ bugs:
     related_issue: Unknown
   - id: BUG-037
     title: Nhãn thực vật hiển thị cố định cho mọi loại ăn chay
-    status: RECORDED
+    status: RESOLVED
     severity: Unknown
     area: Frontend/Recipe Detail
     file: .agents/outputs/bugs/BUG-037.md
@@ -28,7 +28,7 @@ bugs:
     related_issue: Unknown
   - id: BUG-036
     title: Giao diện quản trị dùng dữ liệu mẫu nhưng hiển thị như chức năng đã hoạt động
-    status: RECORDED
+    status: RESOLVED
     severity: Unknown
     area: Frontend/Admin prototype
     file: .agents/outputs/bugs/BUG-036.md

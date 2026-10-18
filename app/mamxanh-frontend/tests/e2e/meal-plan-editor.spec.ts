@@ -586,7 +586,7 @@ test("calendar keyboard crosses month boundaries and restores the current week",
   expect(state.writes).toBe(0)
 })
 
-test('calendar month navigation keeps one keyboard entry point and honors reduced motion', async ({ page }) => {
+test('calendar month navigation keeps one keyboard entry point and honors reduced motion', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   const state = await setup(page)
   await page.goto('/ke-hoach?weekStartDate=2026-01-12&mealDate=2026-01-12')
@@ -605,6 +605,9 @@ test('calendar month navigation keeps one keyboard entry point and honors reduce
   await expect(activeGrid.locator('button[tabindex="0"]')).toHaveCount(1)
   expect(parseFloat(await activeGrid.evaluate(element => getComputedStyle(element).animationDuration))).toBeLessThanOrEqual(0.001)
   expect(state.writes).toBe(0)
+  const screenshot = testInfo.outputPath('animated-calendar.png')
+  await page.screenshot({ path: screenshot, fullPage: true })
+  await testInfo.attach('Calendar layout', { path: screenshot, contentType: 'image/png' })
 })
 
 test("a mismatched plan entry cannot be edited and ordinary recipe viewing does not write a plan", async ({ page }) => {

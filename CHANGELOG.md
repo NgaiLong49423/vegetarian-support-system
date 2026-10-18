@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-18 — Refine Account, Calendar and Admin Interfaces
+## 2026-10-18 — Refine Account, Calendar and Admin Interfaces ([PR #156](https://github.com/NgaiLong49423/vegetarian-support-system/pull/156))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `2e6ec94`.
 
 **Scope:** Refine the Frontend presentation and reconcile it with the current develop integration baseline.
 

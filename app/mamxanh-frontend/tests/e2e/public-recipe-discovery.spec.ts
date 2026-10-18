@@ -207,6 +207,20 @@ test('FR-08 Explore applies API-backed options, ingredient AND filters, sorting 
   await expect(page.getByRole('heading', { name: matchingRecipe.title })).toBeVisible();
 });
 
+for (const [vegetarianType, vegetarianTypeLabel] of [['OVO', 'Chay trứng'], ['LACTO', 'Chay sữa']] as const) {
+  test(`recipe detail labels ${vegetarianType} honestly rather than claiming entirely plant-based`, async ({ page }) => {
+    await page.route('**/api/v1/recipes/901', route => route.fulfill({ json: {
+      ...detail, vegetarianType, vegetarianTypeLabel, prepTimeMinutes: 35, cookTimeMinutes: 30, media: [],
+    } }));
+    await page.goto('/cong-thuc/id/901');
+    await expect(page.getByRole('heading', { name: detail.title, level: 1 })).toBeVisible();
+    await expect(page.getByText(vegetarianTypeLabel, { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(`🌱 ${vegetarianTypeLabel}`, { exact: true })).toBeVisible();
+    await expect(page.getByText('🌱 100% Thực vật', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Chuẩn vị nhà nấu', { exact: true })).toBeVisible();
+  });
+}
+
 test('API recipe detail supports serving controls, image gallery, sharing and exports', async ({ page }) => {
   const recipe = {
     ...detail,
