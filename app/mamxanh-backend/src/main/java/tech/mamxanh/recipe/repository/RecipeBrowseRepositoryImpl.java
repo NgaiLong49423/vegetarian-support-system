@@ -94,6 +94,17 @@ class RecipeBrowseRepositoryImpl implements RecipeBrowseRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public BrowseSlice findPublishedSlice(String keyword, String vegetarianType, String dishCategory,
+            List<Long> ingredientIds, Integer maxTotalTimeMinutes, RecipeSortMode sortMode,
+            LocalDateTime viewSince, LocalDateTime now, int page, int size) {
+        FilterSql filters = filters(vegetarianType, dishCategory, ingredientIds, maxTotalTimeMinutes, null);
+        List<BrowseRow> rows = selectRows(keyword, filters, sortMode, viewSince, now, page, size, size + 1);
+        boolean hasNext = rows.size() > size;
+        return new BrowseSlice(hasNext ? rows.subList(0, size) : rows, hasNext);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public BrowsePage findPublishedByAuthor(long authorId, LocalDateTime now, int page, int size) {
         return find("", filters(null, null, List.of(), null, authorId), RecipeSortMode.NEWEST,
                 LocalDateTime.of(1, 1, 1, 0, 0), now, page, size);
@@ -101,6 +112,15 @@ class RecipeBrowseRepositoryImpl implements RecipeBrowseRepository {
 
     private BrowsePage find(String keyword, FilterSql filters, RecipeSortMode sortMode,
             LocalDateTime viewSince, LocalDateTime now, int page, int size) {
+        List<BrowseRow> items = selectRows(keyword, filters, sortMode, viewSince, now, page, size, size);
+        var count = entityManager.createNativeQuery(COUNT_SELECT.formatted(filters.predicate()));
+        bindSearchFilters(count, keyword, filters.parameters());
+        long total = ((Number) count.getSingleResult()).longValue();
+        return new BrowsePage(items, total);
+    }
+
+    private List<BrowseRow> selectRows(String keyword, FilterSql filters, RecipeSortMode sortMode,
+            LocalDateTime viewSince, LocalDateTime now, int page, int pageSize, int fetchSize) {
         String orderBy = switch (sortMode) {
             case NEWEST -> "m.published_at DESC";
             case MOST_LIKED -> "likePercentage DESC, COALESCE(rs.likes, 0) DESC";
@@ -124,17 +144,13 @@ class RecipeBrowseRepositoryImpl implements RecipeBrowseRepository {
         query.setParameter("newRecipeHours", RecipeRankingPolicy.TRENDING_NEW_RECIPE_HOURS);
         query.setParameter("newRecipeBonus", RecipeRankingPolicy.TRENDING_NEW_RECIPE_BONUS);
         query.setParameter("freshnessExponent", RecipeRankingPolicy.TRENDING_FRESHNESS_EXPONENT);
-        query.setParameter("offset", (long) page * size);
-        query.setParameter("size", size);
+        query.setParameter("offset", (long) page * pageSize);
+        query.setParameter("size", fetchSize);
         @SuppressWarnings("unchecked")
         List<Object[]> rows = query.getResultList();
-        List<BrowseRow> items = rows.stream().map(row -> new BrowseRow(
+        return rows.stream().map(row -> new BrowseRow(
                 ((Number) row[0]).longValue(), ((Number) row[1]).longValue(), ((Number) row[2]).longValue(),
                 ((Number) row[3]).longValue(), ((Number) row[4]).longValue(), ((Number) row[5]).longValue())).toList();
-        var count = entityManager.createNativeQuery(COUNT_SELECT.formatted(filters.predicate()));
-        bindSearchFilters(count, keyword, filters.parameters());
-        long total = ((Number) count.getSingleResult()).longValue();
-        return new BrowsePage(items, total);
     }
 
     private static void bindSearchFilters(jakarta.persistence.Query query, String keyword,

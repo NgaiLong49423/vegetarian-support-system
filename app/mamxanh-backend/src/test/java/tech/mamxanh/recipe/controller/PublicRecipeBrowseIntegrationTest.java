@@ -64,10 +64,12 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void guestSearchesTitleAndDescriptionAndGetsPublicFieldsOnlyWithDefaultPageSize() throws Exception {
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", "ISSUE3-DESCRIPTION-TOKEN"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", "ISSUE3-DESCRIPTION-TOKEN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size").value(12))
-                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.hasNext").value(false))
+                .andExpect(jsonPath("$.totalElements").doesNotExist())
+                .andExpect(jsonPath("$.totalPages").doesNotExist())
                 .andExpect(jsonPath("$.items[0].id").value(recentId))
                 .andExpect(jsonPath("$.items[0].authorName").value("Tác giả công khai"))
                 .andExpect(jsonPath("$.items[0].authorAvatarUrl").value("https://img.test/avatar.png"))
@@ -76,9 +78,18 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.items[0].viewCount").value(0))
                 .andExpect(jsonPath("$.items[0].authorEmail").doesNotExist());
 
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD + " CANH CHUA"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD + " CANH CHUA"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(2));
+                .andExpect(jsonPath("$.hasNext").value(false));
+    }
+
+    @Test
+    void homeSearchKeepsTheExistingTotalCountResponse() throws Exception {
+        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.hasNext").doesNotExist());
     }
 
     @Test
@@ -89,14 +100,19 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
                     LocalDateTime.ofInstant(clock.instant(), java.time.ZoneOffset.UTC).minusMinutes(index + 2));
             if (index == 0) newestId = recipeId;
         }
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("size", "2"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD).param("size", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size").value(2))
-                .andExpect(jsonPath("$.totalElements").value(15))
+                .andExpect(jsonPath("$.hasNext").value(true))
                 .andExpect(jsonPath("$.items[0].id").value(newestId));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("size", "51"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD)
+                        .param("page", "7").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.hasNext").value(false));
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD).param("size", "51"))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/v1/recipes").param("sort", "unknown"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("sort", "unknown"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -107,16 +123,16 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
         for (int index = 0; index < 3; index++) insertView(middleId, now.minusDays(4));
         insertView(recentId, LocalDateTime.ofInstant(clock.instant(), java.time.ZoneOffset.UTC).minusHours(2));
 
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(oldId));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_24_HOURS"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_24_HOURS"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(recentId));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_7_DAYS"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_7_DAYS"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(middleId));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_30_DAYS"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_VIEWED").param("viewPeriod", "LAST_30_DAYS"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(oldId));
     }
@@ -131,18 +147,18 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
                     oldId, authorId, "Bình luận " + index, now.minusDays(1), now.minusDays(1));
         }
 
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_LIKED"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_LIKED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(oldId))
                 .andExpect(jsonPath("$.items[0].likes").value(2))
                 .andExpect(jsonPath("$.items[0].likePercentage").value(100));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_COMMENTED"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_COMMENTED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(oldId));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_ACTIVE"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "MOST_ACTIVE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(oldId));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "TRENDING"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "TRENDING"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(recentId));
     }
@@ -153,11 +169,11 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
         long futureId = insertRecipe("Issue3-browse-token Canh chua hẹn giờ", "Bài có thời điểm công khai tương lai", "PUBLISHED",
                 now.plusHours(4));
 
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(futureId));
 
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "TRENDING"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", BROWSE_TEST_KEYWORD).param("sort", "TRENDING"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(recentId));
     }
@@ -171,30 +187,30 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
         insertFilterRecipe("bài ẩn", "HIDDEN", "VEGAN", "SOUP", 5, 10, ingredientAId, ingredientBId);
         String keyword = FILTER_TOKEN;
 
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("vegetarianType", "VEGAN"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", keyword).param("vegetarianType", "VEGAN"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.hasNext").value(false))
                 .andExpect(jsonPath("$.items[*].id", org.hamcrest.Matchers.containsInAnyOrder(
                         Math.toIntExact(bothIngredients), Math.toIntExact(onlyIngredientA))));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("dishCategory", "SOUP"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("maxTotalTimeMinutes", "15"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", keyword).param("dishCategory", "SOUP"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.hasNext").value(false));
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", keyword).param("maxTotalTimeMinutes", "15"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.hasNext").value(false))
                 .andExpect(jsonPath("$.items[*].id", org.hamcrest.Matchers.containsInAnyOrder(
                         Math.toIntExact(bothIngredients), Math.toIntExact(onlyIngredientB))));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword)
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", keyword)
                         .param("ingredientIds", Long.toString(ingredientAId), Long.toString(ingredientBId)))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.hasNext").value(false))
                 .andExpect(jsonPath("$.items[0].id").value(bothIngredients));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("vegetarianType", "VEGAN")
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", keyword).param("vegetarianType", "VEGAN")
                         .param("dishCategory", "SOUP").param("maxTotalTimeMinutes", "15")
                         .param("ingredientIds", Long.toString(ingredientAId), Long.toString(ingredientBId)))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.hasNext").value(false))
                 .andExpect(jsonPath("$.items[0].id").value(bothIngredients));
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("ingredientIds", "0"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", keyword).param("ingredientIds", "0"))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("dishCategory", "NOT_A_CATEGORY"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", keyword).param("dishCategory", "NOT_A_CATEGORY"))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/v1/recipes").param("keyword", keyword).param("maxTotalTimeMinutes", "0"))
+        mockMvc.perform(get("/api/v1/recipes/discovery").param("keyword", keyword).param("maxTotalTimeMinutes", "0"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -203,6 +219,9 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes'].get.parameters[*].name", hasItems(
+                        "keyword", "page", "size", "sort", "viewPeriod", "vegetarianType",
+                        "dishCategory", "ingredientIds", "maxTotalTimeMinutes")))
+                .andExpect(jsonPath("$.paths['/api/v1/recipes/discovery'].get.parameters[*].name", hasItems(
                         "keyword", "page", "size", "sort", "viewPeriod", "vegetarianType",
                         "dishCategory", "ingredientIds", "maxTotalTimeMinutes")));
     }
