@@ -34,6 +34,7 @@ import { recipes } from '../data/mockData';
 import { recipesApi, type RecipeDetail as RecipeDetailData } from '../api/recipes';
 import { scaleQuantity } from '../utils/servings';
 import { isSaved, toggleSaved, subscribeSaved } from '../lib/savedRecipes';
+import { ApiRecipeDetail } from './ApiRecipeDetail';
 
 const reportReasons = [
   { code: 'NON_VEGAN', label: 'Không phải món chay' },
@@ -57,7 +58,7 @@ const nutritionRows = [
 
 export function RecipeDetail() {
   const { slug } = useParams();
-  if (slug && /^\d+$/.test(slug)) return <PublishedRecipeDetail recipeId={Number(slug)} />;
+  if (slug && /^\d+$/.test(slug)) return <ApiRecipeDetail />;
   return <MockRecipeDetail />;
 }
 

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, Mail } from 'lucide-react';
 import { Logo } from '../components/Logo';
-import { Button } from '../components/ui';
 import { InteractiveLamp } from '../components/InteractiveLamp';
 import { useAuth, type SessionNotice } from '../components/AuthContext';
 import { GoogleSignIn } from '../components/GoogleSignIn';
@@ -258,15 +257,22 @@ export function AuthPage({ mode }: { mode: Mode }) {
     if (mode === 'forgot') return void submitForgot();
     void submitReset();
   };
-  const fieldClass = 'mt-2 w-full rounded-xl border border-brand-200 bg-paper px-4 py-3 text-sm text-ink outline-none transition focus:border-leaf-600 focus:ring-2 focus:ring-leaf-100';
-  const error = (field: string) => errors[field] && <p id={`${field}-error`} className="mt-1.5 text-xs text-red-700">{errors[field]}</p>;
+  const fieldClass =
+    'mt-1 w-full rounded-xl border border-slate-700/80 bg-[#0c0e14]/80 px-3.5 py-2 sm:py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-400 focus:bg-[#0c0e14] focus:ring-2 focus:ring-amber-400/20';
+  const error = (field: string) =>
+    errors[field] && (
+      <p id={`${field}-error`} className="mt-1 text-xs font-medium text-rose-400">
+        {errors[field]}
+      </p>
+    );
   const showForm = !(mode === 'verify' && (verifyState === 'verifying' || verifyState === 'verified')) && !(mode === 'reset' && resetState !== 'ready');
 
   return (
     <div
-      className={`relative min-h-screen overflow-x-hidden transition-colors duration-700 ease-in-out ${
-        isLampOn ? 'bg-[#181b22]' : 'bg-[#090b0e]'
+      className={`relative h-screen h-dvh max-h-screen w-full overflow-hidden flex flex-col justify-between transition-colors duration-700 ease-in-out select-none ${
+        isLampOn ? 'bg-[#10131a]' : 'bg-[#08090d]'
       }`}
+      style={{ '--color-ink': '#f4f4f4' } as React.CSSProperties}
     >
       {/* Hiệu ứng ánh sáng vàng ấm lan tỏa khắp phòng khi đèn bật */}
       <div
@@ -275,291 +281,317 @@ export function AuthPage({ mode }: { mode: Mode }) {
         }`}
         style={{
           background:
-            'radial-gradient(ellipse 1100px 750px at 30% 42%, rgba(254, 240, 138, 0.16) 0%, rgba(245, 158, 11, 0.07) 35%, transparent 70%)',
+            'radial-gradient(ellipse 1100px 750px at 28% 46%, rgba(254, 240, 138, 0.18) 0%, rgba(245, 158, 11, 0.08) 36%, transparent 70%)',
         }}
+      />
+      <div
+        className={`pointer-events-none absolute -right-24 top-1/2 -translate-y-1/2 h-[520px] w-[520px] rounded-full blur-[110px] transition-opacity duration-700 ${
+          isLampOn ? 'bg-amber-500/[0.05]' : 'opacity-0'
+        }`}
       />
 
       <header
-        className={`relative z-10 mx-auto flex max-w-6xl items-center justify-end px-5 py-6 sm:px-8 transition-opacity duration-500 ${
+        className={`relative z-10 flex h-14 w-full shrink-0 items-center justify-between px-5 sm:px-8 transition-opacity duration-500 ${
           isLampOn ? 'opacity-100' : 'opacity-30'
         }`}
       >
+        <Logo />
         <Link
           to="/"
           aria-label="Về trang chủ"
-          className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition-all ${
-            isLampOn
-              ? 'bg-paper/95 text-ink shadow-sm hover:bg-paper hover:text-amber-700'
-              : 'text-neutral-500 hover:text-neutral-300'
-          }`}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-700/60 bg-[#161922]/70 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-slate-200 backdrop-blur-md transition-all hover:border-amber-400/50 hover:bg-[#1f2330] hover:text-amber-300"
         >
           <ArrowLeft className="h-4 w-4" />
           <span className="hidden sm:inline">Về trang chủ</span>
         </Link>
       </header>
 
-      <main className="relative z-10 mx-auto grid max-w-6xl gap-8 px-5 pb-12 pt-3 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-16 lg:py-10">
-        {/* Cây đèn tương tác thay thế hoàn toàn cho banner xanh cũ (độ lan tỏa tự do không bị hộp cắt) */}
-        <section className="relative hidden lg:flex flex-col items-center justify-center py-6 lg:py-10">
-          <InteractiveLamp isOn={isLampOn} onToggle={() => setIsLampOn((prev) => !prev)} />
-        </section>
-
-        {/* Khung form đăng nhập / đăng ký / xác thực */}
-        <div className="relative">
-          <section
-            className={`min-w-0 rounded-3xl border p-6 sm:p-9 transition-all duration-700 ease-out ${
-              isLampOn
-                ? 'border-amber-200/80 bg-paper text-ink shadow-[0_20px_50px_rgba(250,204,21,0.2),0_4px_16px_rgba(0,0,0,0.12)] opacity-100 scale-100'
-                : 'border-white/5 bg-[#14161d]/50 opacity-[0.05] brightness-[0.2] blur-[1.5px] scale-[0.98] pointer-events-none select-none shadow-none'
-            }`}
-          >
-            {/* Logo Mâm Xanh nằm trang trọng bên trong form */}
-            <div className="mb-6 flex items-center justify-between gap-3">
-              <Logo />
-              <span className="rounded-full bg-brand-50 border border-brand-200/60 px-3 py-1 text-xs font-bold uppercase tracking-wider text-leaf-700">
-                {mode === 'register' ? 'Gia nhập cộng đồng' : 'Tài khoản Mâm Xanh'}
-              </span>
-            </div>
-
-            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink">{details.title}</h1>
-            <p className="mt-3 text-sm leading-6 text-ink-muted">{details.subtitle}</p>
-            {(mode === 'login' || mode === 'register') && (
-              <>
-                <GoogleSignIn
-                  onCredential={(idToken) => void submitGoogle(idToken)}
-                  onFailure={() => setNotice({ tone: 'error', text: GOOGLE_RETRY })}
-                />
-                <div className="my-5 flex items-center gap-3 text-xs text-ink-muted">
-                  <span className="h-px flex-1 bg-brand-100" />
-                  hoặc sử dụng email
-                  <span className="h-px flex-1 bg-brand-100" />
-                </div>
-              </>
-            )}
-            {mode === 'verify' && verifyState === 'verifying' && (
-              <p role="status" className="mt-5 rounded-xl bg-leaf-50 p-4 text-sm leading-6 text-leaf-800">
-                Đang xác minh email của bạn...
-              </p>
-            )}
-            {mode === 'verify' && verifyState === 'verified' && (
-              <div
-                role="status"
-                className="mt-5 rounded-xl border border-leaf-100 bg-leaf-50 p-4 text-sm leading-6 text-leaf-800"
-              >
-                <p className="flex items-center gap-2 font-semibold">
-                  <CheckCircle2 className="h-5 w-5 shrink-0" />
-                  Email của bạn đã được xác minh.
-                </p>
-                <p className="mt-1">Bạn có thể đăng nhập bằng email và mật khẩu đã đăng ký.</p>
-                <Link
-                  to="/dang-nhap"
-                  className="mt-3 inline-flex items-center gap-2 font-semibold text-brand-700 hover:underline"
-                >
-                  Đến trang đăng nhập
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            )}
-            {((mode === 'verify' && verifyState === 'idle') || (mode === 'reset' && resetState === 'ready')) && (
-              <div className="mt-5 flex gap-3 rounded-xl bg-leaf-50 p-4 text-sm leading-6 text-leaf-800">
-                <Mail className="mt-1 h-5 w-5 shrink-0" />
-                <p>
-                  {mode === 'verify'
-                    ? 'Liên kết xác minh có hiệu lực 24 giờ. Bạn có thể yêu cầu gửi lại nếu liên kết hết hạn.'
-                    : 'Liên kết đặt lại mật khẩu có hiệu lực 15 phút và chỉ dùng được một lần.'}
-                </p>
-              </div>
-            )}
-            {mode === 'reset' && resetState === 'done' && (
-              <div role="status" className="mt-5 rounded-xl border border-leaf-100 bg-leaf-50 p-4 text-sm leading-6 text-leaf-800">
-                <p className="flex items-center gap-2 font-semibold"><CheckCircle2 className="h-5 w-5 shrink-0" />Mật khẩu của bạn đã được cập nhật.</p>
-                <p className="mt-1">Bạn có thể đăng nhập bằng email và mật khẩu mới.</p>
-                <Link to="/dang-nhap" className="mt-3 inline-flex items-center gap-2 font-semibold text-brand-700 hover:underline">Đến trang đăng nhập<ArrowRight className="h-4 w-4" /></Link>
-              </div>
-            )}
-            {showForm && (
-              <form noValidate onSubmit={submit} className="mt-5 space-y-4">
-                {mode === 'register' && (
-                  <div>
-                    <label htmlFor="auth-name" className="text-sm font-semibold text-ink">
-                      Tên hiển thị
-                    </label>
-                    <input
-                      id="auth-name"
-                      autoComplete="nickname"
-                      value={name}
-                      maxLength={50}
-                      onChange={(e) => setName(e.target.value)}
-                      aria-invalid={!!errors.name}
-                      aria-describedby={errors.name ? 'name-error' : undefined}
-                      placeholder="Tên bạn muốn mọi người gọi"
-                      className={fieldClass}
-                    />
-                    {error('name')}
-                  </div>
-                )}
-                {mode !== 'reset' && (
-                  <div>
-                    <label htmlFor="auth-email" className="text-sm font-semibold text-ink">
-                      Email
-                    </label>
-                    <input
-                      id="auth-email"
-                      type="email"
-                      autoComplete="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      aria-invalid={!!errors.email}
-                      aria-describedby={errors.email ? 'email-error' : undefined}
-                      placeholder="ban@example.com"
-                      className={fieldClass}
-                    />
-                    {error('email')}
-                  </div>
-                )}
-                {needsPassword && (
-                  <div>
-                    <label htmlFor="auth-password" className="text-sm font-semibold text-ink">
-                      {mode === 'reset' ? 'Mật khẩu mới' : 'Mật khẩu'}
-                    </label>
-                    <div className="relative">
-                      <input
-                        id="auth-password"
-                        type={visible ? 'text' : 'password'}
-                        autoComplete={newPassword ? 'new-password' : 'current-password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        aria-invalid={!!errors.password}
-                        aria-describedby={
-                          errors.password
-                            ? 'password-error'
-                            : newPassword
-                            ? 'password-hint'
-                            : undefined
-                        }
-                        placeholder={newPassword ? 'Tối thiểu 8 ký tự' : 'Nhập mật khẩu của bạn'}
-                        className={`${fieldClass} pr-12`}
-                      />
-                      <button
-                        type="button"
-                        aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                        aria-pressed={visible}
-                        onClick={() => setVisible(!visible)}
-                        className="absolute right-2 top-4 rounded-lg p-2 text-ink-muted hover:bg-brand-50"
-                      >
-                        {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    {error('password')}
-                    {newPassword && (
-                      <p id="password-hint" className="mt-2 text-xs text-ink-muted">
-                        Dùng 8–64 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường và 1 chữ số, ký tự đặc biệt là tùy chọn.
-                      </p>
-                    )}
-                  </div>
-                )}
-                {newPassword && (
-                  <div>
-                    <label htmlFor="auth-confirm" className="text-sm font-semibold text-ink">
-                      Xác nhận mật khẩu
-                    </label>
-                    <input
-                      id="auth-confirm"
-                      type={visible ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      value={confirm}
-                      onChange={(e) => setConfirm(e.target.value)}
-                      aria-invalid={!!errors.confirm}
-                      aria-describedby={errors.confirm ? 'confirm-error' : undefined}
-                      placeholder="Nhập lại mật khẩu"
-                      className={fieldClass}
-                    />
-                    {error('confirm')}
-                  </div>
-                )}
-                {mode === 'login' && (
-                  <div className="text-right">
-                    <Link
-                      to="/quen-mat-khau"
-                      className="text-sm font-semibold text-brand-700 hover:underline"
-                    >
-                      Quên mật khẩu?
-                    </Link>
-                  </div>
-                )}
-                {Object.keys(errors).length > 0 && (
-                  <p role="alert" className="text-sm text-red-700">
-                    Vui lòng kiểm tra các trường được đánh dấu.
-                  </p>
-                )}
-                <Button type="submit" disabled={submitting} className="w-full py-3">
-                  {submitting ? 'Đang gửi...' : details.action}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </form>
-            )}
-            {notice && (
-              <div
-                role={notice.tone === 'error' ? 'alert' : 'status'}
-                className={`mt-4 rounded-xl border p-4 text-sm leading-6 ${
-                  notice.tone === 'error'
-                    ? 'border-red-200 bg-red-50 text-red-800'
-                    : 'border-leaf-100 bg-leaf-50 text-leaf-800'
-                }`}
-              >
-                {notice.text}
-                {mode === 'register' && notice.tone === 'success' && (
-                  <Link to="/xac-minh-email" className="mt-2 block font-semibold underline">
-                    Chưa nhận được email? Gửi lại email xác minh
-                  </Link>
-                )}
-                {notice.link && (
-                  <Link to={notice.link.to} className="mt-2 block font-semibold underline">
-                    {notice.link.label}
-                  </Link>
-                )}
-              </div>
-            )}
-            <div className="mt-6 border-t border-brand-100 pt-5 text-center text-sm text-ink-soft">
-              {mode === 'login' ? (
-                <>
-                  Chưa có tài khoản?{' '}
-                  <Link to="/dang-ky" className="font-bold text-brand-700 hover:underline">
-                    Đăng ký ngay
-                  </Link>
-                  <Link
-                    to="/xac-minh-email"
-                    className="mt-3 block text-xs text-ink-muted hover:underline"
-                  >
-                    Chưa nhận được email xác minh?
-                  </Link>
-                </>
-              ) : mode === 'register' ? (
-                <>
-                  Đã có tài khoản?{' '}
-                  <Link to="/dang-nhap" className="font-bold text-brand-700 hover:underline">
-                    Đăng nhập
-                  </Link>
-                </>
-              ) : (
-                <Link to="/dang-nhap" className="font-semibold text-brand-700 hover:underline">
-                  Quay lại đăng nhập
-                </Link>
-              )}
-            </div>
+      <main className="relative z-10 flex flex-1 min-h-0 w-full items-center justify-center px-4 py-2 sm:px-6">
+        <div className="mx-auto grid w-full max-w-5xl lg:grid-cols-2 lg:items-center lg:gap-10">
+          {/* Cột cây đèn tương tác bên trái (desktop) */}
+          <section className="relative hidden flex-col items-center justify-center scale-95 lg:flex xl:scale-100">
+            <InteractiveLamp isOn={isLampOn} onToggle={() => setIsLampOn((prev) => !prev)} />
           </section>
 
-          {/* Lớp phủ khi đèn tắt: nhấp vào để bật đèn lại */}
-          {!isLampOn && (
-            <button
-              type="button"
-              onClick={() => setIsLampOn(true)}
-              aria-label="Bật đèn để đăng nhập"
-              className="absolute inset-0 z-20 cursor-pointer rounded-3xl bg-black/40 backdrop-blur-[2px] transition-all hover:bg-black/30"
-            />
-          )}
+          {/* Khung form đăng nhập / đăng ký / xác thực */}
+          <div className="relative mx-auto w-full max-w-[420px] select-text">
+            <section
+              className={`relative min-w-0 rounded-2xl sm:rounded-3xl border p-5 sm:p-6 transition-all duration-700 ease-out ${
+                isLampOn
+                  ? 'border-amber-400/25 bg-[#141722]/85 text-white shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_35px_rgba(251,191,36,0.08),inset_0_1px_1px_rgba(255,255,255,0.1)] backdrop-blur-xl opacity-100 scale-100'
+                  : 'border-white/5 bg-[#10121a]/70 opacity-15 brightness-50 blur-[1px] scale-[0.98] pointer-events-none select-none shadow-none'
+              }`}
+            >
+              <div className="mb-2.5 flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-amber-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  {mode === 'register' ? 'Gia nhập cộng đồng' : 'Tài khoản Mâm Xanh'}
+                </span>
+              </div>
+
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">{details.title}</h1>
+              <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-300/90">{details.subtitle}</p>
+
+              {(mode === 'login' || mode === 'register') && (
+                <>
+                  <GoogleSignIn
+                    onCredential={(idToken) => void submitGoogle(idToken)}
+                    onFailure={() => setNotice({ tone: 'error', text: GOOGLE_RETRY })}
+                  />
+                  <div className="my-2.5 sm:my-3 flex items-center gap-3 text-xs text-slate-400">
+                    <span className="h-px flex-1 bg-slate-700/60" />
+                    <span>hoặc sử dụng email</span>
+                    <span className="h-px flex-1 bg-slate-700/60" />
+                  </div>
+                </>
+              )}
+
+              {mode === 'verify' && verifyState === 'verifying' && (
+                <p role="status" className="mt-3 rounded-xl border border-amber-500/30 bg-amber-950/50 p-3 text-xs sm:text-sm leading-relaxed text-amber-200">
+                  Đang xác minh email của bạn...
+                </p>
+              )}
+              {mode === 'verify' && verifyState === 'verified' && (
+                <div
+                  role="status"
+                  className="mt-3 rounded-xl border border-emerald-500/40 bg-emerald-950/60 p-3.5 text-xs sm:text-sm leading-relaxed text-emerald-200"
+                >
+                  <p className="flex items-center gap-2 font-semibold">
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+                    Email của bạn đã được xác minh.
+                  </p>
+                  <p className="mt-1 text-slate-300">Bạn có thể đăng nhập bằng email và mật khẩu đã đăng ký.</p>
+                  <Link
+                    to="/dang-nhap"
+                    className="mt-2.5 inline-flex items-center gap-1.5 font-bold text-amber-400 hover:text-amber-300 hover:underline"
+                  >
+                    Đến trang đăng nhập
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              )}
+              {((mode === 'verify' && verifyState === 'idle') || (mode === 'reset' && resetState === 'ready')) && (
+                <div className="mt-3 flex gap-2.5 rounded-xl border border-amber-500/30 bg-amber-950/40 p-3 text-xs sm:text-sm leading-relaxed text-amber-200">
+                  <Mail className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                  <p>
+                    {mode === 'verify'
+                      ? 'Liên kết xác minh có hiệu lực 24 giờ. Bạn có thể yêu cầu gửi lại nếu liên kết hết hạn.'
+                      : 'Liên kết đặt lại mật khẩu có hiệu lực 15 phút và chỉ dùng được một lần.'}
+                  </p>
+                </div>
+              )}
+              {mode === 'reset' && resetState === 'done' && (
+                <div role="status" className="mt-3 rounded-xl border border-emerald-500/40 bg-emerald-950/60 p-3.5 text-xs sm:text-sm leading-relaxed text-emerald-200">
+                  <p className="flex items-center gap-2 font-semibold text-emerald-400">
+                    <CheckCircle2 className="h-5 w-5 shrink-0" />
+                    Mật khẩu của bạn đã được cập nhật.
+                  </p>
+                  <p className="mt-1 text-slate-300">Bạn có thể đăng nhập bằng email và mật khẩu mới.</p>
+                  <Link to="/dang-nhap" className="mt-2.5 inline-flex items-center gap-1.5 font-bold text-amber-400 hover:text-amber-300 hover:underline">
+                    Đến trang đăng nhập
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              )}
+
+              {showForm && (
+                <form noValidate onSubmit={submit} className="mt-3 space-y-2.5 sm:space-y-3">
+                  {mode === 'register' && (
+                    <div>
+                      <label htmlFor="auth-name" className="text-xs font-semibold text-slate-300">
+                        Tên hiển thị
+                      </label>
+                      <input
+                        id="auth-name"
+                        autoComplete="nickname"
+                        value={name}
+                        maxLength={50}
+                        onChange={(e) => setName(e.target.value)}
+                        aria-invalid={!!errors.name}
+                        aria-describedby={errors.name ? 'name-error' : undefined}
+                        placeholder="Tên bạn muốn mọi người gọi"
+                        className={fieldClass}
+                      />
+                      {error('name')}
+                    </div>
+                  )}
+                  {mode !== 'reset' && (
+                    <div>
+                      <label htmlFor="auth-email" className="text-xs font-semibold text-slate-300">
+                        Email
+                      </label>
+                      <input
+                        id="auth-email"
+                        type="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        aria-invalid={!!errors.email}
+                        aria-describedby={errors.email ? 'email-error' : undefined}
+                        placeholder="ban@example.com"
+                        className={fieldClass}
+                      />
+                      {error('email')}
+                    </div>
+                  )}
+                  {needsPassword && (
+                    <div>
+                      <label htmlFor="auth-password" className="text-xs font-semibold text-slate-300">
+                        {mode === 'reset' ? 'Mật khẩu mới' : 'Mật khẩu'}
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="auth-password"
+                          type={visible ? 'text' : 'password'}
+                          autoComplete={newPassword ? 'new-password' : 'current-password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          aria-invalid={!!errors.password}
+                          aria-describedby={
+                            errors.password
+                              ? 'password-error'
+                              : newPassword
+                              ? 'password-hint'
+                              : undefined
+                          }
+                          placeholder={newPassword ? 'Tối thiểu 8 ký tự' : 'Nhập mật khẩu của bạn'}
+                          className={`${fieldClass} pr-10`}
+                        />
+                        <button
+                          type="button"
+                          aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                          aria-pressed={visible}
+                          onClick={() => setVisible(!visible)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-colors"
+                        >
+                          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {error('password')}
+                      {newPassword && (
+                        <p id="password-hint" className="mt-1 text-[11px] leading-tight text-slate-400">
+                          Dùng 8–64 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường và 1 chữ số, ký tự đặc biệt là tùy chọn.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {newPassword && (
+                    <div>
+                      <label htmlFor="auth-confirm" className="text-xs font-semibold text-slate-300">
+                        Xác nhận mật khẩu
+                      </label>
+                      <input
+                        id="auth-confirm"
+                        type={visible ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        value={confirm}
+                        onChange={(e) => setConfirm(e.target.value)}
+                        aria-invalid={!!errors.confirm}
+                        aria-describedby={errors.confirm ? 'confirm-error' : undefined}
+                        placeholder="Nhập lại mật khẩu"
+                        className={fieldClass}
+                      />
+                      {error('confirm')}
+                    </div>
+                  )}
+                  {mode === 'login' && (
+                    <div className="text-right pt-0.5">
+                      <Link
+                        to="/quen-mat-khau"
+                        className="text-xs font-semibold text-amber-400 hover:text-amber-300 hover:underline transition-colors"
+                      >
+                        Quên mật khẩu?
+                      </Link>
+                    </div>
+                  )}
+                  {Object.keys(errors).length > 0 && (
+                    <p role="alert" className="text-xs font-medium text-rose-400">
+                      Vui lòng kiểm tra các trường được đánh dấu.
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 py-2.5 text-sm sm:text-base font-bold text-slate-950 shadow-[0_4px_16px_rgba(245,158,11,0.35)] transition-all hover:brightness-105 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    {submitting ? 'Đang gửi...' : details.action}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </form>
+              )}
+
+              {notice && (
+                <div
+                  role={notice.tone === 'error' ? 'alert' : 'status'}
+                  className={`mt-3 rounded-xl border p-3 text-xs sm:text-sm leading-relaxed ${
+                    notice.tone === 'error'
+                      ? 'border-red-500/40 bg-red-950/60 text-red-200'
+                      : 'border-emerald-500/40 bg-emerald-950/60 text-emerald-200'
+                  }`}
+                >
+                  <p>{notice.text}</p>
+                  {mode === 'register' && notice.tone === 'success' && (
+                    <Link to="/xac-minh-email" className="mt-1.5 block font-semibold text-amber-300 underline">
+                      Chưa nhận được email? Gửi lại email xác minh
+                    </Link>
+                  )}
+                  {notice.link && (
+                    <Link to={notice.link.to} className="mt-1.5 block font-semibold text-amber-300 underline">
+                      {notice.link.label}
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-3 border-t border-slate-700/60 pt-3 text-center text-xs sm:text-sm text-slate-300">
+                {mode === 'login' ? (
+                  <>
+                    Chưa có tài khoản?{' '}
+                    <Link to="/dang-ky" className="font-bold text-amber-400 hover:text-amber-300 hover:underline">
+                      Đăng ký ngay
+                    </Link>
+                    <Link
+                      to="/xac-minh-email"
+                      className="mt-1.5 block text-xs text-slate-400 hover:text-slate-200 hover:underline"
+                    >
+                      Chưa nhận được email xác minh?
+                    </Link>
+                  </>
+                ) : mode === 'register' ? (
+                  <>
+                    Đã có tài khoản?{' '}
+                    <Link to="/dang-nhap" className="font-bold text-amber-400 hover:text-amber-300 hover:underline">
+                      Đăng nhập
+                    </Link>
+                  </>
+                ) : (
+                  <Link to="/dang-nhap" className="font-semibold text-amber-400 hover:text-amber-300 hover:underline">
+                    Quay lại đăng nhập
+                  </Link>
+                )}
+              </div>
+            </section>
+
+            {/* Lớp phủ khi đèn tắt: nhấp vào để bật đèn lại */}
+            {!isLampOn && (
+              <button
+                type="button"
+                onClick={() => setIsLampOn(true)}
+                aria-label="Bật đèn để đăng nhập"
+                className="absolute inset-0 z-20 cursor-pointer rounded-2xl sm:rounded-3xl bg-black/50 backdrop-blur-[2px] transition-all hover:bg-black/40 flex items-center justify-center text-amber-200/90 text-sm font-medium p-4 text-center"
+              >
+                <span className="rounded-full bg-black/70 border border-amber-400/30 px-4 py-2 shadow-xl">
+                  Nhấp vào đây hoặc kéo dây để bật đèn ✨
+                </span>
+              </button>
+            )}
+          </div>
         </div>
       </main>
+
+      <footer className="relative z-10 flex h-7 shrink-0 items-center justify-center text-[11px] text-slate-500/70 select-none">
+        <span>© 2026 Mâm Xanh · Ẩm thực thuần lành</span>
+      </footer>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   RefreshCw,
   ShieldCheck,
   UserCheck,
+  XCircle,
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Button, Card } from '../components/ui';
@@ -47,6 +48,7 @@ export function ExpertApplicationPage() {
   const [portfolioUrl, setPortfolioUrl] = useState('');
   const [reason, setReason] = useState('');
   const [approvalNote, setApprovalNote] = useState('');
+  const [reviewDecision, setReviewDecision] = useState<'approve' | 'reject'>('approve');
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [commitment, setCommitment] = useState(false);
@@ -89,7 +91,7 @@ export function ExpertApplicationPage() {
     try {
       const updated = action === 'approve' ? await expertApplicationsApi.approve(selected.id, approvalNote.trim() || undefined) : await expertApplicationsApi.reject(selected.id, reason.trim());
       setApplications((items) => items.map((item) => item.id === updated.id ? updated : item));
-      setSelected(null); setReason(''); setNotice(action === 'approve' ? 'Đã phê duyệt đơn.' : 'Đã từ chối đơn.'); await load();
+      setSelected(null); setReason(''); setApprovalNote(''); setReviewDecision('approve'); setNotice(action === 'approve' ? 'Đã phê duyệt đơn.' : 'Đã từ chối đơn.'); await load();
     } catch (cause) {
       const message = errorText(cause);
       await load();
@@ -268,6 +270,8 @@ export function ExpertApplicationPage() {
                     try {
                       setSelected(await expertApplicationsApi.detail(app.id));
                       setReason('');
+                      setApprovalNote('');
+                      setReviewDecision('approve');
                     } catch (e) {
                       setError(errorText(e));
                     } finally {
@@ -359,36 +363,103 @@ export function ExpertApplicationPage() {
               {selected.status === 'PENDING' && (
                 <div className="space-y-4 border-t border-brand-100 pt-4">
                   <div>
-                    <label className="block text-sm font-semibold text-ink" htmlFor="approval-note">
-                      Lời nhắn khi phê duyệt (không bắt buộc)
-                    </label>
-                    <textarea
-                      id="approval-note"
-                      maxLength={1000}
-                      value={approvalNote}
-                      onChange={(e) => setApprovalNote(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-brand-200 bg-paper p-3 text-sm text-ink outline-none transition-all focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-                      rows={2}
-                    />
+                    <p className="text-xs font-bold uppercase tracking-wider text-ink-muted mb-2">
+                      Quyết định thẩm định hồ sơ
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setReviewDecision('approve')}
+                        className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-semibold transition-all ${
+                          reviewDecision === 'approve'
+                            ? 'border-leaf-600 bg-leaf-50 text-leaf-800 ring-2 ring-leaf-500/20 font-bold shadow-xs'
+                            : 'border-brand-200 bg-paper text-ink-muted hover:border-brand-300 hover:text-ink'
+                        }`}
+                      >
+                        <CheckCircle2 className={`h-4 w-4 ${reviewDecision === 'approve' ? 'text-leaf-600' : 'text-ink-muted'}`} />
+                        Đồng ý phê duyệt
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReviewDecision('reject')}
+                        className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-semibold transition-all ${
+                          reviewDecision === 'reject'
+                            ? 'border-rose-600 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20 font-bold shadow-xs'
+                            : 'border-brand-200 bg-paper text-ink-muted hover:border-brand-300 hover:text-ink'
+                        }`}
+                      >
+                        <XCircle className={`h-4 w-4 ${reviewDecision === 'reject' ? 'text-rose-600' : 'text-ink-muted'}`} />
+                        Từ chối hồ sơ
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-ink" htmlFor="reject-reason">
-                      Lý do từ chối (10–500 ký tự)
-                    </label>
-                    <textarea
-                      id="reject-reason"
-                      minLength={10}
-                      maxLength={500}
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-brand-200 bg-paper p-3 text-sm text-ink outline-none transition-all focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="flex flex-wrap justify-end gap-2.5 pt-1">
+
+                  {reviewDecision === 'approve' ? (
+                    <div className="rounded-2xl border border-leaf-200/80 bg-leaf-50/50 p-4">
+                      <label className="block text-sm font-semibold text-leaf-900" htmlFor="approval-note">
+                        Lời nhắn khi phê duyệt (không bắt buộc)
+                      </label>
+                      <p className="mt-0.5 text-xs text-leaf-700/80">
+                        Lời nhắn chúc mừng hoặc ghi chú chào mừng chuyên gia mới gia nhập.
+                      </p>
+                      <textarea
+                        id="approval-note"
+                        maxLength={1000}
+                        value={approvalNote}
+                        onChange={(e) => setApprovalNote(e.target.value)}
+                        placeholder="Nhập lời nhắn gửi đến thành viên (tùy chọn)..."
+                        className="mt-2 w-full rounded-xl border border-leaf-200 bg-paper p-3 text-sm text-ink outline-none transition-all focus:border-leaf-500 focus:ring-2 focus:ring-leaf-500/20"
+                        rows={2}
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-rose-200/80 bg-rose-50/50 p-4">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-rose-900" htmlFor="reject-reason">
+                          Lý do từ chối (10–500 ký tự) <span className="text-rose-600">*</span>
+                        </label>
+                        <span className={`text-xs font-semibold ${reason.trim().length >= 10 ? 'text-leaf-700' : 'text-rose-600'}`}>
+                          {reason.trim().length}/500 ký tự (tối thiểu 10)
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-rose-700/80">
+                        Nêu rõ lý do để ứng viên biết điểm cần hoàn thiện trước khi nộp lại.
+                      </p>
+                      <textarea
+                        id="reject-reason"
+                        minLength={10}
+                        maxLength={500}
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="Nêu cụ thể lý do từ chối (tối thiểu 10 ký tự)..."
+                        className="mt-2 w-full rounded-xl border border-rose-200 bg-paper p-3 text-sm text-ink outline-none transition-all focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                        rows={3}
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2">
                     <Button variant="outline" onClick={() => setSelected(null)}>Đóng</Button>
-                    <Button variant="outline" disabled={busy || reason.trim().length < 10} onClick={() => void review('reject')}>Từ chối</Button>
-                    <Button disabled={busy} onClick={() => void review('approve')}>Phê duyệt</Button>
+                    <div className="flex items-center gap-2">
+                      {reviewDecision === 'approve' ? (
+                        <Button
+                          disabled={busy}
+                          onClick={() => void review('approve')}
+                          className="font-bold"
+                        >
+                          {busy ? 'Đang xử lý...' : 'Phê duyệt'}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          disabled={busy || reason.trim().length < 10}
+                          onClick={() => void review('reject')}
+                          className="border-rose-300 bg-rose-600 text-white hover:bg-rose-700 font-bold disabled:opacity-50"
+                        >
+                          {busy ? 'Đang xử lý...' : 'Từ chối'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

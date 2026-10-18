@@ -210,27 +210,39 @@ function IngredientCard({
             className="mt-3.5 grid grid-cols-4 gap-1.5 rounded-xl border border-brand-100/80 bg-cream-soft/60 p-2 text-center text-xs"
             aria-label={`Tóm tắt dinh dưỡng ${item.name}`}
           >
-            <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
+            <div className="rounded-lg bg-paper/90 py-1.5 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Calo</div>
-              <div className="font-bold text-ink truncate">{item.nutrition.energyKcalPer100g != null ? `≈ ${item.nutrition.energyKcalPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">kcal</span></div>
+              <div className="mt-0.5 font-bold text-ink truncate">
+                {item.nutrition.energyKcalPer100g != null ? `${Number(item.nutrition.energyKcalPer100g.toFixed(0))}` : '—'}
+              </div>
+              <div className="text-[9px] text-ink-muted">kcal</div>
             </div>
-            <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
+            <div className="rounded-lg bg-paper/90 py-1.5 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Đạm</div>
-              <div className="font-semibold text-ink truncate">{item.nutrition.proteinGramsPer100g != null ? `≈ ${item.nutrition.proteinGramsPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
+              <div className="mt-0.5 font-semibold text-ink truncate">
+                {item.nutrition.proteinGramsPer100g != null ? `${Number(item.nutrition.proteinGramsPer100g.toFixed(1))}` : '—'}
+              </div>
+              <div className="text-[9px] text-ink-muted">g</div>
             </div>
-            <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
+            <div className="rounded-lg bg-paper/90 py-1.5 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Carb</div>
-              <div className="font-semibold text-ink truncate">{item.nutrition.carbohydrateGramsPer100g != null ? `≈ ${item.nutrition.carbohydrateGramsPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
+              <div className="mt-0.5 font-semibold text-ink truncate">
+                {item.nutrition.carbohydrateGramsPer100g != null ? `${Number(item.nutrition.carbohydrateGramsPer100g.toFixed(1))}` : '—'}
+              </div>
+              <div className="text-[9px] text-ink-muted">g</div>
             </div>
-            <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
+            <div className="rounded-lg bg-paper/90 py-1.5 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Béo</div>
-              <div className="font-semibold text-ink truncate">{item.nutrition.totalFatGramsPer100g != null ? `≈ ${item.nutrition.totalFatGramsPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
+              <div className="mt-0.5 font-semibold text-ink truncate">
+                {item.nutrition.totalFatGramsPer100g != null ? `${Number(item.nutrition.totalFatGramsPer100g.toFixed(1))}` : '—'}
+              </div>
+              <div className="text-[9px] text-ink-muted">g</div>
             </div>
           </div>
 
           {/* Additional Micronutrients: Xơ, Canxi, Sắt (if available) */}
           {(item.nutrition.fiberGramsPer100g !== null || item.nutrition.calciumMgPer100g !== null || item.nutrition.ironMgPer100g !== null) && (
-            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-ink-muted">
+            <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px] text-ink-muted">
               {item.nutrition.fiberGramsPer100g !== null && item.nutrition.fiberGramsPer100g !== undefined && (
                 <span className="rounded-md border border-brand-100/70 bg-cream-soft/50 px-2 py-0.5">
                   Xơ ≈ {item.nutrition.fiberGramsPer100g} g
@@ -251,14 +263,14 @@ function IngredientCard({
         </div>
 
         {/* F. Management Actions Toolbar */}
-        <div className="mt-4 border-t border-brand-100/70 pt-3">
-          <div className="grid grid-cols-2 gap-1.5">
+        <div className="mt-4 border-t border-brand-100/70 pt-3.5 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => onShowDetails(item)}
               aria-label={`Xem chi tiết ${item.name}`}
-              className="h-8 text-xs font-semibold px-2 justify-center"
+              className="min-h-8 py-1.5 px-2.5 text-xs font-semibold justify-center whitespace-nowrap rounded-xl border border-brand-100/60 bg-cream-soft/40 hover:bg-brand-50"
             >
               Chi tiết
             </Button>
@@ -267,7 +279,7 @@ function IngredientCard({
               variant="ghost"
               onClick={() => onShowRecipes(item)}
               aria-label={`Xem công thức dùng ${item.name}`}
-              className="h-8 text-xs font-semibold px-2 justify-center"
+              className="min-h-8 py-1.5 px-2.5 text-xs font-semibold justify-center whitespace-nowrap rounded-xl border border-brand-100/60 bg-cream-soft/40 hover:bg-brand-50"
             >
               Xem công thức
             </Button>
@@ -276,7 +288,7 @@ function IngredientCard({
               variant="outline"
               onClick={() => onEditNutrition(item)}
               aria-label={`Sửa dinh dưỡng ${item.name}`}
-              className="h-8 text-xs font-semibold px-2 justify-center"
+              className="min-h-9 py-1.5 px-2.5 text-xs font-semibold justify-center whitespace-nowrap"
             >
               Sửa dinh dưỡng
             </Button>
@@ -285,19 +297,19 @@ function IngredientCard({
               variant="outline"
               onClick={() => onEditInfo(item)}
               aria-label={`Sửa ${item.name}`}
-              className="h-8 text-xs font-semibold px-2 justify-center"
+              className="min-h-9 py-1.5 px-2.5 text-xs font-semibold justify-center whitespace-nowrap"
             >
-              <Pencil className="mr-1 h-3 w-3" /> Sửa thông tin
+              <Pencil className="mr-1 h-3 w-3 shrink-0" /> Sửa thông tin
             </Button>
           </div>
-          <div className="mt-1.5">
+          <div className="pt-0.5">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => onToggleActive(item)}
               disabled={saving}
               aria-label={`${item.active ? 'Ngừng sử dụng' : 'Bật lại'} ${item.name}`}
-              className={`w-full h-8 text-xs font-semibold justify-center ${
+              className={`w-full min-h-8 py-1.5 text-xs font-semibold justify-center rounded-xl ${
                 item.active
                   ? 'text-ink-muted hover:text-red-600 hover:bg-red-50/50'
                   : 'text-leaf-700 hover:text-leaf-800 hover:bg-leaf-50/60'
@@ -319,7 +331,7 @@ export function AdminCatalogPage() {
   const [activeFilter, setActiveFilter] = useState('');
   const [nutritionFilter, setNutritionFilter] = useState('');
   const [ingredientFilters, setIngredientFilters] = useState<IngredientSearch>({
-    query: '', ingredientGroup: '', active: null, nutritionSupported: null, page: 0, size: 20,
+    query: '', ingredientGroup: '', active: null, nutritionSupported: null, page: 0, size: 21,
   });
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -847,7 +859,7 @@ export function AdminCatalogPage() {
               </p>
             </Card>
 
-            <div>
+            <div className="space-y-8">
               {ingredients.length === 0 ? (
                 <EmptyState
                   icon="🥗"
@@ -859,8 +871,8 @@ export function AdminCatalogPage() {
                   className={`grid grid-cols-1 sm:grid-cols-2 ${
                     isPanelOpen
                       ? 'xl:grid-cols-2 2xl:grid-cols-3'
-                      : 'lg:grid-cols-3 2xl:grid-cols-4'
-                  } gap-4 sm:gap-5 items-stretch`}
+                      : 'lg:grid-cols-3'
+                  } gap-5 sm:gap-6 items-stretch`}
                 >
                   {ingredients.map((item) => (
                     <IngredientCard
@@ -874,12 +886,36 @@ export function AdminCatalogPage() {
                       onToggleActive={toggleIngredient}
                     />
                   ))}
+                  {ingredients.length >= 2 && ingredients.length % 3 === 2 && (
+                    <Card
+                      className={`hidden ${
+                        isPanelOpen ? '2xl:flex' : 'lg:flex'
+                      } flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-200/80 bg-brand-50/20 p-6 text-center transition-colors hover:border-brand-400 hover:bg-brand-50/40`}
+                    >
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-200/80 bg-paper text-brand-600 shadow-2xs">
+                        <CirclePlus className="h-6 w-6" />
+                      </div>
+                      <h3 className="mt-3.5 text-base font-extrabold text-ink">Bổ sung nguyên liệu mới</h3>
+                      <p className="mt-1.5 max-w-[220px] text-xs leading-5 text-ink-muted">
+                        Thêm nguyên liệu chuẩn cùng nguồn dữ liệu và 9 chỉ tiêu dinh dưỡng vào danh mục hệ thống.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={openNewIngredient}
+                        className="mt-4"
+                      >
+                        <CirclePlus className="h-4 w-4" /> Mở biểu mẫu tạo mới
+                      </Button>
+                    </Card>
+                  )}
                 </div>
               )}
               {totalElements > 0 && (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-paper px-4 py-3 text-sm text-ink-muted shadow-2xs">
+                <div className="mt-8 sm:mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-200/80 bg-paper px-5 py-4 text-sm text-ink-muted shadow-xs">
                   <span className="font-medium">{totalElements} nguyên liệu · Trang {ingredientFilters.page + 1}/{totalPages}</span>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2.5">
                     <Button type="button" variant="outline" size="sm" disabled={loading || ingredientFilters.page === 0} onClick={() => changeIngredientPage(ingredientFilters.page - 1)}>Trang trước</Button>
                     <Button type="button" variant="outline" size="sm" disabled={loading || ingredientFilters.page + 1 >= totalPages} onClick={() => changeIngredientPage(ingredientFilters.page + 1)}>Trang sau</Button>
                   </div>

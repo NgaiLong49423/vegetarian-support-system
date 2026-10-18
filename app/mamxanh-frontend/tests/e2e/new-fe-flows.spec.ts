@@ -114,14 +114,14 @@ test('recipe discussion supports reply and keeps replies after parent deletion',
 });
 
 test('meal serving selector accepts half portions', async ({ page }) => {
-  await page.goto('/ke-hoach');
+  await page.goto('/ke-hoach?demo=true');
   const selector = page.getByLabel(/Khẩu phần .* bữa /).first();
   await selector.selectOption('1.5');
   await expect(selector).toHaveValue('1.5');
 });
 
 test('meal planner adds, changes serving count and removes a recipe from a meal slot', async ({ page }) => {
-  await page.goto('/ke-hoach', { waitUntil: 'domcontentloaded' });
+  await page.goto('/ke-hoach?demo=true', { waitUntil: 'domcontentloaded' });
 
   const addSlot = page.getByRole('button', { name: /Thêm món/ }).first();
   const slot = (await addSlot.innerText()).replace('Thêm món', '').trim();
@@ -522,6 +522,7 @@ test('expert application customer and admin workflows use the API and recover fr
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Xem chi tiết' }).click();
+  await page.getByRole('button', { name: 'Từ chối hồ sơ' }).click();
   await page.getByLabel(/Lý do từ chối/).fill('Cần bổ sung thêm kinh nghiệm cụ thể.');
   await page.getByRole('button', { name: 'Từ chối', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Đơn đã được xử lý');
