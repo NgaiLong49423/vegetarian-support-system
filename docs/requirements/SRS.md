@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.4.0
+> **Version:** v2.7.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-06
+> **Last Updated:** 2026-10-19
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -44,6 +44,8 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - So sánh công thức (`FR-60`): Guest và Member có thể chọn đúng hai Recipe Post công khai khác nhau để đối chiếu thông tin tổng quan, nguyên liệu và chín chỉ tiêu dinh dưỡng trên một khẩu phần; hệ thống không lưu lịch sử, không xuất PDF và không kết luận món nào tốt hơn hoặc lành mạnh hơn.
 - Quan hệ xã hội (`FR-59`, `BR-75`): Customer và Chuyên gia đã đăng nhập có thể theo dõi hoặc bỏ theo dõi một Member khác; quan hệ có hướng được lưu bằng `USER_FOLLOW`. Chức năng này chưa bao gồm news feed cá nhân hóa, tài khoản riêng tư hay thông báo follow.
 - Khám phá đa tiêu chí: Trang khám phá hỗ trợ 6 chế độ độc lập gồm Newest (Mới nhất), Most Liked (Được yêu thích nhất theo tỷ lệ % Like), Most Viewed (Xem nhiều nhất theo 24h/7d/30d/all-time), Most Commented (Nhiều bình luận nhất), Most Active (Hoạt động sôi nổi nhất theo tương tác 7 ngày), và Trending (Thịnh hành theo tương tác gần đây + hệ số tươi mới freshness decay).
+- Khám phá thêm danh bạ Chuyên gia đang hoạt động có tìm kiếm, hồ sơ công khai và follow theo FR-59; danh mục nguyên liệu hiển thị tất cả nguyên liệu hoạt động dưới dạng nhãn chọn nhiều và mở công thức đã lọc (`FR-61`, `FR-62`).
+- Hồ sơ công khai hiển thị tổng lượt thích và lượt xem của tất cả Recipe Post đang công khai của tác giả; thống kê không phụ thuộc trang phân trang đang xem (`FR-23`).
 - Kiểm duyệt sau đăng: người dùng báo cáo nội dung có vấn đề và Administrator xử lý báo cáo. Baseline hiện tại không cung cấp AI quét hoặc gắn cờ nội dung.
 - Người dùng: tìm kiếm/lọc, xem nội dung, tương tác cộng đồng, lưu công thức (`Saved Recipe`), lập thực đơn ngày/tuần (`Meal Plan`), so sánh thống kê dinh dưỡng tuần, và **xuất file công thức (.txt/.pdf) / thực đơn (.txt/.pdf) / báo cáo phân tích dinh dưỡng tuần có thống kê và so sánh 7 ngày (PDF chuẩn A4) / danh sách mua sắm (.txt)**.
 - AI Gemini: hỏi đáp/gợi ý với Guest Free, Free, Plus và Pro theo gói tính năng (Feature-based Entitlement).
@@ -401,10 +403,10 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 
 | Mã module | Module | Giá trị | Phụ thuộc chính | Trạng thái phân rã |
 | --- | --- | --- | --- | --- |
-| M01 | Public Recipe Discovery | Khách tìm/xem bài công thức công khai, so sánh hai công thức, xem tỷ lệ % Like (Samsung Food style), lượt xem, 6 chế độ sắp xếp (gồm Most Active & Trending), video YouTube nhúng | Nội dung đã công khai | Ranh giới hành vi nằm tại các FR của M01; Use Case và AC tương ứng là tiêu chí thiết kế/kiểm thử. |
+| M01 | Public Recipe Discovery | Khách tìm/xem bài công thức công khai, so sánh hai công thức, xem tỷ lệ % Like (Samsung Food style), lượt xem, danh bạ Chuyên gia, danh mục nhãn nguyên liệu chọn nhiều, 6 chế độ sắp xếp (gồm Most Active & Trending), video YouTube nhúng | Nội dung đã công khai | Ranh giới hành vi nằm tại các FR của M01; Use Case và AC tương ứng là tiêu chí thiết kế/kiểm thử. |
 | M02 | Identity & Access | Phân biệt Guest/Customer/Expert/Admin và bảo vệ thao tác | Tài khoản, role, session | Đã chốt email/password, Google Login, xác minh email và quên mật khẩu. |
 | M03 | Recipe Contribution & Post-moderation | Chuyên gia quản lý/công khai bài trực tiếp (hướng dẫn chế biến `instructions`, thể loại món ăn `dish_category`, tối đa 5 ảnh kèm cover `RECIPE_MEDIA`, 1 link YouTube); Customer/Expert bình chọn Like / Dislike (`RECIPE_REACTION`); lưu vết lượt xem (`RECIPE_VIEW`); reply tối đa 5 cấp (chỉ công thức mới có Like/Dislike, bình luận không có); Admin hậu kiểm thủ công trên Report | M02, Azure Blob, quy trình báo cáo | Validation, tombstone, lý do và audit/history được quy định tại FR/BR; UI phải giữ đúng quyền tác giả và hậu kiểm. |
-| M04 | Recipe Classification & Discovery | Phân loại, tìm, lọc và chọn hai bài công thức chay để so sánh; Admin quản lý từ điển nguyên liệu, đơn vị `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION` | M01, M03 | Dữ liệu, profile validation và so sánh hai công thức đã chốt; các capability khác theo FR tương ứng. |
+| M04 | Recipe Classification & Discovery | Phân loại, tìm, lọc và chọn hai bài công thức chay để so sánh; chọn nhiều nguyên liệu từ danh mục công khai; Admin quản lý từ điển nguyên liệu, đơn vị `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION` | M01, M03 | Dữ liệu, profile validation và so sánh hai công thức đã chốt; các capability khác theo FR tương ứng. |
 | M05 | Saved Recipes, Meal Planning & Shopping List | Lưu công thức để xem lại, xếp món vào lịch ăn ngày/tuần ba bữa cố định, so sánh thống kê dinh dưỡng tuần, xuất file công thức/thực đơn/báo cáo PDF và tạo/quản lý danh sách mua sắm nguyên liệu cơ bản | M02, M04 | Đã chốt ranh giới Saved/Planner/Shopping List; quy tắc gom an toàn và xuất file đã xác nhận. |
 | M06 | Gemini AI Access & Usage | Guest/Free/Plus/Pro gọi AI theo gói tính năng (Feature Entitlement), rate limit kỹ thuật cho Guest và telemetry chi phí | M02 một phần, Gemini backend | Entitlement, safety, telemetry và actor-goal Use Case được quy định tại FR/BR/NFR liên quan. |
 | M08 | Subscription Administration | Hiển thị/đổi gói và phân quyền tính năng AI (Feature-based Entitlement) | M02, M06 | FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; payment provider đã chọn là payOS. |
@@ -480,6 +482,8 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | FR-58 | Ghi nhận và phân tích lịch sử lượt xem công thức (`RECIPE_VIEW`) | M01, M03, M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-58) |
 | FR-59 | Theo dõi, bỏ theo dõi và xem quan hệ theo dõi giữa các Member (`USER_FOLLOW`) | M01, M02, M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-59) |
 | FR-60 | So sánh hai Recipe Post công khai theo nguyên liệu và chín chỉ tiêu dinh dưỡng | M01, M04, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-60) |
+| FR-61 | Khám phá và theo dõi Chuyên gia ẩm thực chay | M01, M02 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-61) |
+| FR-62 | Chọn nguyên liệu và tìm công thức | M01, M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-62) |
 
 ## 8. Business Rules hiện hành
 

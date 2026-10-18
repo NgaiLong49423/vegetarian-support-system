@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -59,6 +62,35 @@ class IngredientCatalogServiceTest {
         assertThat(response.name()).isEqualTo("Chuối tây");
         assertThat(response.ingredientGroup()).isEqualTo("Trái cây");
         assertThat(response.nutritionSupported()).isFalse();
+    }
+
+    @Test void publicGroupListContainsOnlyTheRepositoryActiveGroupCounts() {
+        IngredientRepository.ActiveIngredientGroupView group = new IngredientRepository.ActiveIngredientGroupView() {
+            @Override public String getGroupName() { return "Rau củ"; }
+            @Override public Long getIngredientCount() { return 3L; }
+        };
+        when(ingredientRepository.findActiveIngredientGroups()).thenReturn(List.of(group));
+
+        var result = service.listPublicGroups();
+
+        assertThat(result).containsExactly(new tech.mamxanh.nutrition.dto.response.PublicIngredientGroupResponse("Rau củ", 3));
+    }
+
+    @Test void publicIngredientSearchReturnsOnlyActiveCatalogIdentityFields() {
+        IngredientEntity ingredient = org.mockito.Mockito.mock(IngredientEntity.class);
+        when(ingredient.getId()).thenReturn(12L);
+        when(ingredient.getName()).thenReturn("Cải thìa");
+        when(ingredient.getIngredientGroup()).thenReturn("Rau củ");
+        when(ingredientRepository.search(eq("cải"), eq("Rau củ"), eq(CatalogStatus.ACTIVE), isNull(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(ingredient), Pageable.ofSize(20), 1));
+
+        var result = service.searchPublicIngredients("cải", "Rau củ", 0, 20);
+
+        assertThat(result.content()).singleElement().satisfies(item -> {
+            assertThat(item.name()).isEqualTo("Cải thìa");
+            assertThat(item.ingredientGroup()).isEqualTo("Rau củ");
+            assertThat(item.ingredientId()).isEqualTo(12L);
+        });
     }
 
     @Test void rejectsDuplicateIngredientName() {

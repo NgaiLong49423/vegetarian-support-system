@@ -23,6 +23,8 @@ import tech.mamxanh.nutrition.dto.request.UnitSaveRequest;
 import tech.mamxanh.nutrition.dto.response.ConversionResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientNutritionResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
+import tech.mamxanh.nutrition.dto.response.PublicIngredientGroupResponse;
+import tech.mamxanh.nutrition.dto.response.PublicIngredientResponse;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionEntity;
@@ -68,6 +70,24 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
                 PageRequest.of(page, size, Sort.by(Sort.Order.asc("name"), Sort.Order.asc("id"))));
         return PageResponse.of(results.getContent().stream().map(this::toResponse).toList(),
                 results.getNumber(), results.getSize(), results.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicIngredientGroupResponse> listPublicGroups() {
+        return ingredientRepository.findActiveIngredientGroups().stream()
+                .map(group -> new PublicIngredientGroupResponse(group.getGroupName(), group.getIngredientCount()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<PublicIngredientResponse> searchPublicIngredients(String query, String ingredientGroup,
+            int page, int size) {
+        PageResponse<IngredientResponse> results = searchIngredients(query, ingredientGroup, true, null, page, size);
+        List<PublicIngredientResponse> items = results.content().stream()
+                .map(ingredient -> new PublicIngredientResponse(ingredient.id(), ingredient.name(),
+                        ingredient.ingredientGroup()))
+                .toList();
+        return PageResponse.of(items, results.page(), results.size(), results.totalElements());
     }
 
     @Transactional(readOnly = true)

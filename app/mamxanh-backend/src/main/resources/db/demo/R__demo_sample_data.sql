@@ -175,6 +175,19 @@ WHERE email IN ('demo-expert@mamxanh.local', 'demo-customer@mamxanh.local',
                 'demo-expert-02@mamxanh.local', 'demo-expert-03@mamxanh.local',
                 'demo-expert-04@mamxanh.local');
 
+-- Local Expert portraits are served by the Frontend; preserve any avatar uploaded to storage.
+UPDATE target
+SET avatar_url = seed.avatar_url, updated_at = SYSUTCDATETIME()
+FROM [USER] target
+INNER JOIN (VALUES
+    ('demo-expert@mamxanh.local', '/avatars/experts/nguyen-tue-tam.jpg'),
+    ('demo-expert-02@mamxanh.local', '/avatars/experts/vo-thanh-truc.jpg'),
+    ('demo-expert-03@mamxanh.local', '/avatars/experts/nguyen-hoang-phuc.jpg'),
+    ('demo-expert-04@mamxanh.local', '/avatars/experts/le-bao-chau.jpg')
+) seed(email, avatar_url) ON seed.email = target.email
+WHERE (target.avatar_url IS NULL OR target.avatar_url LIKE '/avatars/experts/%')
+  AND (target.avatar_url IS NULL OR target.avatar_url <> seed.avatar_url);
+
 -- Keep the local Expert eligible to demonstrate FR-21; this fixture is never loaded outside profile local.
 IF NOT EXISTS (
     SELECT 1 FROM [SUBSCRIPTION]
