@@ -72,6 +72,23 @@ class RecipeBrowseRepositoryImplTest {
     }
 
     @Test
+    void discoverySliceFetchesOneExtraRowAndDoesNotRunCountQuery() {
+        LocalDateTime now = LocalDateTime.of(2026, 10, 8, 0, 0);
+        when(pageQuery.getResultList()).thenReturn(java.util.stream.LongStream.range(1, 4)
+                .mapToObj(id -> new Object[] {id, 0L, 0L, 0L, 0L, 0L}).toList());
+
+        var result = repository.findPublishedSlice("", null, null, List.of(), null,
+                RecipeSortMode.NEWEST, LocalDateTime.of(1, 1, 1, 0, 0), now, 2, 2);
+
+        assertThat(result.rows()).extracting(RecipeBrowseRepository.BrowseRow::recipeId).containsExactly(1L, 2L);
+        assertThat(result.hasNext()).isTrue();
+        verify(pageQuery).setParameter("offset", 4L);
+        verify(pageQuery).setParameter("size", 3);
+        verify(entityManager).createNativeQuery(org.mockito.ArgumentMatchers.argThat(sql -> sql.contains("OFFSET :offset ROWS")));
+        verify(countQuery, org.mockito.Mockito.never()).getSingleResult();
+    }
+
+    @Test
     void buildsParameterizedPredicatesForAllFiltersAndEverySelectedIngredient() {
         LocalDateTime now = LocalDateTime.of(2026, 10, 8, 0, 0);
         repository.findPublished("canh", "VEGAN", "SOUP", List.of(11L, 22L), 30,

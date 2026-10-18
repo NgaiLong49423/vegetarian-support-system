@@ -14,7 +14,7 @@ import { PageContainer } from '../components/Layout';
 import { Button, EmptyState } from '../components/ui';
 import { PublicRecipeCard, PublicRecipeSkeleton } from '../components/PublicRecipeCard';
 import { recipesApi } from '../api/recipes';
-import type { Choice, IngredientOption, RecipeFormOptions, RecipePost, RecipeSearchResult } from '../api/recipes';
+import type { Choice, IngredientOption, RecipeBrowseResult, RecipeFormOptions, RecipePost } from '../api/recipes';
 
 type SortMode = 'NEWEST' | 'MOST_LIKED' | 'MOST_VIEWED' | 'MOST_COMMENTED' | 'MOST_ACTIVE' | 'TRENDING';
 type ViewPeriod = 'ALL_TIME' | 'LAST_24_HOURS' | 'LAST_7_DAYS' | 'LAST_30_DAYS';
@@ -62,7 +62,7 @@ export function Explore() {
   const [ingredientQuery, setIngredientQuery] = useState('');
   const [ingredientOptions, setIngredientOptions] = useState<IngredientOption[]>([]);
   const [ingredientError, setIngredientError] = useState(false);
-  const [result, setResult] = useState<RecipeSearchResult | null>(null);
+  const [result, setResult] = useState<RecipeBrowseResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -108,7 +108,7 @@ export function Explore() {
     const timer = window.setTimeout(() => {
       setLoading(true);
       setError(false);
-      recipesApi.searchPublic({
+      recipesApi.discoverPublic({
         keyword: query.trim(), page, size: 12, sort: filters.sort, viewPeriod: filters.viewPeriod,
         vegetarianType: filters.vegetarianType || undefined,
         dishCategory: filters.dishCategory || undefined,
@@ -217,7 +217,7 @@ export function Explore() {
         <section aria-label="Kết quả công thức" className="min-w-0">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-paper px-4 py-3 shadow-sm">
             <div>
-              <p className="text-sm font-bold text-ink">{loading ? 'Đang tìm công thức…' : `${result?.totalElements ?? 0} công thức`}</p>
+              <p className="text-sm font-bold text-ink">{loading ? 'Đang tìm công thức…' : 'Kết quả công thức'}</p>
               {activeFilterCount > 1 && <p className="mt-0.5 text-xs text-ink-muted">Công thức cần đáp ứng tất cả điều kiện đang chọn.</p>}
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -246,10 +246,10 @@ export function Explore() {
                 <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 xl:grid-cols-4">
                   {result.items.map((recipe: RecipePost) => <PublicRecipeCard key={recipe.id} recipe={recipe} options={options} />)}
                 </div>
-                {result.totalPages > 1 && <nav aria-label="Phân trang công thức" className="mt-7 flex flex-wrap items-center justify-center gap-3">
+                {(page > 0 || result.hasNext) && <nav aria-label="Phân trang công thức" className="mt-7 flex flex-wrap items-center justify-center gap-3">
                   <Button variant="outline" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>Trang trước</Button>
-                  <span aria-live="polite" className="min-w-24 text-center text-sm text-ink-muted">Trang {page + 1} / {result.totalPages}</span>
-                  <Button variant="outline" disabled={page + 1 >= result.totalPages} onClick={() => setPage((current) => current + 1)}>Trang sau</Button>
+                  <span aria-live="polite" className="min-w-24 text-center text-sm text-ink-muted">Trang {page + 1}</span>
+                  <Button variant="outline" disabled={!result.hasNext} onClick={() => setPage((current) => current + 1)}>Trang sau</Button>
                 </nav>}
               </>
                 : <EmptyState title="Không tìm thấy công thức phù hợp" description="Thử đổi từ khóa hoặc điều kiện lọc để xem thêm công thức." action={<Button variant="secondary" onClick={resetFilters}>Đặt lại tìm kiếm</Button>} />}

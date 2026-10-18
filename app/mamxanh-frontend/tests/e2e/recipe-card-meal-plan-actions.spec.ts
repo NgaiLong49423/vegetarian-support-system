@@ -57,14 +57,13 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await page.route("**/api/v1/recipes/form-options", (route) =>
       route.fulfill({ json: formOptions }),
     )
-    await page.route("**/api/v1/recipes?**", (route) =>
+    await page.route("**/api/v1/recipes/discovery?**", (route) =>
       route.fulfill({
         json: {
           items: [item],
           page: 0,
           size: 12,
-          totalElements: 1,
-          totalPages: 1,
+          hasNext: false,
         },
       }),
     )
@@ -200,14 +199,13 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await page.route("**/api/v1/recipes/form-options", (route) =>
       route.fulfill({ json: formOptions }),
     )
-    await page.route("**/api/v1/recipes?**", (route) =>
+    await page.route("**/api/v1/recipes/discovery?**", (route) =>
       route.fulfill({
         json: {
           items,
           page: 0,
           size: 12,
-          totalElements: items.length,
-          totalPages: 1,
+          hasNext: false,
         },
       }),
     )
@@ -240,14 +238,13 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await page.route("**/api/v1/recipes/form-options", (route) =>
       route.fulfill({ json: formOptions }),
     )
-    await page.route("**/api/v1/recipes?**", (route) =>
+    await page.route("**/api/v1/recipes/discovery?**", (route) =>
       route.fulfill({
         json: {
           items: [item],
           page: 0,
           size: 12,
-          totalElements: 1,
-          totalPages: 1,
+          hasNext: false,
         },
       }),
     )
@@ -381,6 +378,11 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     const planDialog = page.getByRole("dialog", {
       name: "Chọn ngày",
     })
+    const clickMealSlot = async (name: RegExp) => {
+      const checkbox = planDialog.getByRole("checkbox", { name })
+      await checkbox.locator("xpath=..").click()
+      await expect(checkbox).toBeChecked()
+    }
     await expect(planDialog).toBeVisible()
     await planDialog.getByRole("button", { name: "Đóng" }).click()
     await expect(planDialog).toHaveCount(0)
@@ -389,15 +391,10 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await page.getByRole("button", { name: `Tùy chọn cho công thức ${item.title}` }).click()
     await page.getByRole("menuitem", { name: "Thêm vào lịch ăn" }).click()
     await expect(planDialog).toBeVisible()
-    const selectMeal = async (name: RegExp) => {
-      const checkbox = planDialog.getByRole("checkbox", { name })
-      await checkbox.locator("xpath=..").click()
-      await expect(checkbox).toBeChecked()
-    }
-    await selectMeal(/Bữa tối, Thứ Tư/)
-    await selectMeal(/Bữa trưa, Thứ Năm/)
+    await clickMealSlot(/Bữa tối, Thứ Tư/)
+    await clickMealSlot(/Bữa trưa, Thứ Năm/)
     await planDialog.getByRole("button", { name: "Tuần sau" }).click()
-    await selectMeal(/Bữa sáng, Thứ Ba/)
+    await clickMealSlot(/Bữa sáng, Thứ Ba/)
     await expect(planDialog.getByRole("button", { name: "Hoàn tất · 3" })).toBeEnabled()
     await planDialog.getByRole("button", { name: "Tuần trước" }).click()
     await expect(planDialog.getByRole("checkbox", { name: /Bữa tối, Thứ Tư/ })).toBeChecked()
