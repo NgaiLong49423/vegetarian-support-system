@@ -78,7 +78,7 @@ jobs:
           path: app/mamxanh-frontend/coverage/
           if-no-files-found: warn
 
-      - name: Upload recipe view UI evidence
+      - name: Upload Frontend UI evidence
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -87,6 +87,8 @@ jobs:
             app/mamxanh-frontend/test-results/**/detail-*.png
             app/mamxanh-frontend/test-results/**/explore-*.png
             app/mamxanh-frontend/test-results/**/home-*.png
+            app/mamxanh-frontend/test-results/**/registration-scroll.png
+            app/mamxanh-frontend/test-results/**/animated-calendar.png
           if-no-files-found: warn
 
       - name: Upload weekly meal planner UI evidence

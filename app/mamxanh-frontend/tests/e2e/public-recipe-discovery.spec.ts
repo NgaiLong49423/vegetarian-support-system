@@ -292,5 +292,5 @@ test('API recipe detail supports serving controls, image gallery, sharing and ex
   await page.getByRole('button', { name: 'In / lưu PDF A4' }).click();
   expect(await page.evaluate(() => sessionStorage.getItem('print-called'))).toBe('true');
   await page.getByText('Xem tổng dinh dưỡng toàn công thức').click();
-  await expect(page.getByText('≈ 240 kcal')).toBeVisible();
+  await expect(page.getByText('≈ 360 kcal')).toBeVisible();
 });

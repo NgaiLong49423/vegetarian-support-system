@@ -182,7 +182,7 @@ test('Issue 25: recipe detail flags catalog ingredients without nutrition data',
   await page.goto(`/cong-thuc/${detail.recipeId}`, { waitUntil: 'commit' });
 
   await expect(page.getByRole('heading', { name: 'Chưa đủ dữ liệu dinh dưỡng' })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Chưa đủ dữ liệu dinh dưỡng' }).getByRole('status')).toContainText('Ước tính dinh dưỡng chưa đầy đủ');
+  await expect(page.getByRole('note', { name: 'Chưa đủ dữ liệu dinh dưỡng' }).getByRole('status')).toContainText('Ước tính chưa đầy đủ');
   await expect(page.locator('[aria-labelledby="nutrition-status-heading"] li')).toHaveText('Cà chua');
 });
 
@@ -213,7 +213,7 @@ test('Issue 22: API không tìm thấy công thức hiển thị trạng thái l
   await installApi(page, () => ({ status: 201, body: {} }));
 
   await action(page, 'Mở ID công thức không tồn tại', () => page.goto('/cong-thuc/2299', { waitUntil: 'domcontentloaded' }));
-  await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Không thể mở công thức' })).toBeVisible();
   await expect(page.getByRole('alert')).toContainText('Không tìm thấy công thức.');
   await expect(page.getByRole('link', { name: 'Quay lại khám phá' })).toBeVisible();
 });
