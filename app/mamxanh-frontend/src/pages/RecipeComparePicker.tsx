@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Filter, Leaf, LoaderCircle, Search, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Filter, Leaf, LoaderCircle, Search, SlidersHorizontal } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Button, EmptyState } from '../components/ui';
 import { ActiveFilters, FilterPanel, ResultPagination, SortControls, useRecipeSearch } from '../components/RecipeSearch';
@@ -118,8 +118,12 @@ function ChoiceCard({ recipe, options, onPick }: { recipe: RecipePost; options: 
         <p className="mt-0.5 truncate text-xs text-leaf-700">
           {labelOf(options?.vegetarianTypes, recipe.vegetarianType)} · {labelOf(options?.dishCategories, recipe.dishCategory)} · {recipe.prepTimeMin + recipe.cookTimeMin} phút
         </p>
-        <div className="mt-auto pt-2">
+        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2">
           <Button size="sm" onClick={onPick}>Chọn<span className="sr-only"> {recipe.title}</span></Button>
+          {/* Opens in a new tab so the picker keeps its keyword, filters and page (PR #132 review). */}
+          <Link to={`/cong-thuc/id/${recipe.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded text-xs font-semibold text-brand-700 hover:text-brand-800">
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />Xem chi tiết<span className="sr-only"> {recipe.title} (mở tab mới)</span>
+          </Link>
         </div>
       </div>
     </article>

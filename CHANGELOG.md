@@ -397,7 +397,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Added
 
 - Add the real `/so-sanh?a={recipeId}&b={recipeId}` comparison page showing the first and second recipe side by side, replacement of either recipe, removal of recipes that are no longer public, and retry on load errors.
-- Add the separate `/so-sanh/chon-mon` picker page: "Chọn công thức thứ hai" (or "Chọn công thức đầu tiên") opens it with the Explore keyword search, filters, sort and paging, leaves out the recipe already chosen on the other side, and returns to the comparison with both recipes.
+- Add the separate `/so-sanh/chon-mon` picker page: "Chọn công thức thứ hai" (or "Chọn công thức đầu tiên") opens it with the Explore keyword search, filters, sort and paging, leaves out the recipe already chosen on the other side, lets each candidate open its recipe detail in a new tab ("Xem chi tiết", PR #132 review) so the picker keeps its search, and returns to the comparison with both recipes.
 - Line up ingredients only by `ingredient_id`, keep each recipe's original quantity and unit, and flag rows whose units differ instead of converting them.
 - Show the nine nutrients per serving with the original servings of each recipe and the absolute difference (first recipe − second recipe); a recipe with incomplete nutrition shows "Chưa đủ dữ liệu" and no difference.
 - Add "So sánh" entry points on recipe cards, both recipe detail routes and the Member saved recipe list.

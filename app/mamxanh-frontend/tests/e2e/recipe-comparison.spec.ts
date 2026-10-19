@@ -271,6 +271,27 @@ test('PR #132 review: the second recipe is chosen on a separate picker page and 
   await expect(nutritionTable(page)).toBeVisible();
 });
 
+test('PR #132 review (Thơm): each recipe on the picker can be opened in detail in a new tab without losing the picker', async ({ page, context }) => {
+  await publicApi(page);
+  await page.goto('/so-sanh/chon-mon?a=701&q=canh');
+
+  const detailLink = choices(page).getByRole('link', { name: 'Xem chi tiết Canh cà chua nấm rơm (mở tab mới)' });
+  await expect(detailLink).toHaveAttribute('href', '/cong-thuc/id/702');
+  await expect(detailLink).toHaveAttribute('target', '_blank');
+  await expect(detailLink).toHaveAttribute('rel', /noopener/);
+
+  const opened = context.waitForEvent('page');
+  await detailLink.click();
+  const detailTab = await opened;
+  await expect(detailTab).toHaveURL(/\/cong-thuc\/id\/702$/);
+  await detailTab.close();
+
+  // The picker keeps its search and can still choose the recipe that was inspected.
+  await expect(page).toHaveURL(/\/so-sanh\/chon-mon\?a=701&q=canh$/);
+  await choices(page).getByRole('button', { name: 'Chọn Canh cà chua nấm rơm' }).click();
+  await expect(page).toHaveURL(/\/so-sanh\?a=701&b=702$/);
+});
+
 test('FR-08 on the picker: keyword, filters, ingredients and sort are sent as GET search parameters', async ({ page }) => {
   const searches: URLSearchParams[] = [];
   await publicApi(page, (params) => {
