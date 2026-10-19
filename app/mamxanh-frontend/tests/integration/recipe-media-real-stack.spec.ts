@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -50,7 +51,7 @@ function sql(query: string) {
 test('fix #158: upload Azure thật, xuất bản, tải lại và hiển thị ảnh từ SQL Server', async ({
   page,
   request,
-}) => {
+}, testInfo) => {
   test.skip(
     process.env.MAMXANH_E2E_LIVE_AZURE !== '1',
     'Opt-in: requires a real Azure container with public Blob read access.',
@@ -91,7 +92,7 @@ test('fix #158: upload Azure thật, xuất bản, tải lại và hiển thị 
     const created = await request.post(`${backend}/recipes`, {
       headers,
       data: {
-        title: `${title} cleanup`,
+        title: `Cleanup ${marker}`,
         instructions: 'Chuẩn bị nguyên liệu và nấu chín kỹ.',
         dishCategory: 'BRAISED',
         vegetarianType: 'VEGAN',
@@ -123,6 +124,7 @@ test('fix #158: upload Azure thật, xuất bản, tải lại và hiển thị 
       );
     }, session);
     await page.goto('/dang-cong-thuc');
+    const imageBytes = readFileSync(path.join(root, 'app/mamxanh-frontend/public/assets/cddd4.png'));
     const uploadResponse = page.waitForResponse((response) =>
       response.url().endsWith('/recipes/media/upload'),
     );
@@ -131,10 +133,7 @@ test('fix #158: upload Azure thật, xuất bản, tải lại và hiển thị 
       .setInputFiles({
         name: 'fix158.png',
         mimeType: 'image/png',
-        buffer: Buffer.from(
-          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a8gAAAABJRU5ErkJggg==',
-          'base64',
-        ),
+        buffer: imageBytes,
       });
     const uploaded = await uploadResponse;
     expect(uploaded.status()).toBe(201);
@@ -160,7 +159,7 @@ test('fix #158: upload Azure thật, xuất bản, tải lại và hiển thị 
     const imageResponse = await request.get(blobUrl!);
     expect(imageResponse.status()).toBe(200);
     expect(imageResponse.headers()['content-type']).toContain('image/png');
-    expect((await imageResponse.body()).length).toBeGreaterThan(0);
+    expect((await imageResponse.body()).equals(imageBytes)).toBe(true);
     await page.getByLabel('Tên món *', { exact: true }).fill(title);
     await page
       .getByLabel('Thể loại món', { exact: true })
@@ -213,6 +212,12 @@ test('fix #158: upload Azure thật, xuất bản, tải lại và hiển thị 
         cover.evaluate((image: HTMLImageElement) => image.naturalWidth),
       )
       .toBeGreaterThan(0);
+    await page.goto(`/kham-pha?q=${encodeURIComponent(title)}`);
+    await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
+    const cardCover = page.locator(`img[src="${blobUrl}"]`).first();
+    await expect(cardCover).toBeVisible();
+    await expect.poll(() => cardCover.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+    await page.screenshot({ path: testInfo.outputPath('recipe-upload-explore.png'), fullPage: true });
   } finally {
     if (publishedId) {
       expect(

@@ -4,7 +4,7 @@ import { seedDemoSession } from './demo-session';
 const imageFile = (name: string) => ({
   name,
   mimeType: 'image/png',
-  buffer: Buffer.from('test image'),
+  buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a8gAAAABJRU5ErkJggg==', 'base64'),
 });
 async function successfulUploads(page: import('@playwright/test').Page) {
   let count = 0;
@@ -213,4 +213,7 @@ test('fix #158: phản hồi upload thiếu URL không được tính là thành
     'Phản hồi tải ảnh không hợp lệ',
   );
   await expect(page.getByText(/Đã tải 0\/5 ảnh/)).toBeVisible();
+  await page.locator('#recipe-media-upload-input').locator('../..').screenshot({
+    path: 'coverage/recipe-upload-failed.png',
+  });
 });

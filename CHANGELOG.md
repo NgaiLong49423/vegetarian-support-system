@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.88.0
+> **Version:** v2.88.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-19
 > **Status:** Active
@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-19 — Store Recipe Images in Azure (Issue #158)
+## 2026-10-19 — Store Recipe Images in Azure (Issue #158) ([PR #162](https://github.com/NgaiLong49423/vegetarian-support-system/pull/162))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c3a5155`.
 
 **Scope:** Fix misleading upload success when Azure storage is missing or unavailable ([Issue #158](https://github.com/NgaiLong49423/vegetarian-support-system/issues/158)).
 
