@@ -82,7 +82,7 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     await page.getByRole('textbox', { name: 'Nguyên liệu (kết quả phải có đủ nguyên liệu đã chọn)' }).fill(ingredientBName);
     const filteredRequestPromise = page.waitForRequest((request) => {
       const url = new URL(request.url());
-      return request.method() === 'GET' && url.pathname === '/api/v1/recipes';
+      return request.method() === 'GET' && url.pathname === '/api/v1/recipes/discovery';
     });
     await page.getByRole('checkbox', { name: ingredientBName }).check();
     const filteredRequest = await filteredRequestPromise;
@@ -95,8 +95,8 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     expect(requestUrl.searchParams.get('vegetarianType')).toBe('VEGAN');
     expect(requestUrl.searchParams.get('dishCategory')).toBe('SOUP');
     expect(requestUrl.searchParams.get('maxTotalTimeMinutes')).toBe('30');
-    const payload = await filteredResponse.json() as { items: Array<{ id: number; title: string }>; totalElements: number };
-    expect(payload.totalElements).toBe(1);
+    const payload = await filteredResponse.json() as { items: Array<{ id: number; title: string }>; hasNext: boolean };
+    expect(payload.hasNext).toBe(false);
     expect(payload.items).toHaveLength(1);
     expect(payload.items[0]).toMatchObject({ id: recipeBothId, title: recipeBoth });
     await expect(page.getByRole('link').filter({ has: page.getByRole('heading', { name: recipeBoth, exact: true }) })).toBeVisible();
@@ -106,7 +106,7 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     for (const sort of ['MOST_LIKED', 'MOST_VIEWED', 'MOST_COMMENTED', 'MOST_ACTIVE', 'TRENDING']) {
       const sortRequestPromise = page.waitForRequest((request) => {
         const url = new URL(request.url());
-        return request.method() === 'GET' && url.pathname === '/api/v1/recipes'
+        return request.method() === 'GET' && url.pathname === '/api/v1/recipes/discovery'
           && url.searchParams.get('sort') === sort;
       });
       await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption(sort);
@@ -120,7 +120,7 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
       if (sort === 'MOST_VIEWED') {
         const periodRequestPromise = page.waitForRequest((request) => {
           const url = new URL(request.url());
-          return request.method() === 'GET' && url.pathname === '/api/v1/recipes'
+          return request.method() === 'GET' && url.pathname === '/api/v1/recipes/discovery'
             && url.searchParams.get('sort') === 'MOST_VIEWED' && url.searchParams.get('viewPeriod') === 'LAST_7_DAYS';
         });
         await page.getByRole('combobox', { name: 'Khung thời gian lượt xem' }).selectOption('LAST_7_DAYS');
@@ -133,7 +133,7 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
 
     const emptyRequestPromise = page.waitForRequest((request) => {
       const url = new URL(request.url());
-      return request.method() === 'GET' && url.pathname === '/api/v1/recipes'
+      return request.method() === 'GET' && url.pathname === '/api/v1/recipes/discovery'
         && url.searchParams.get('vegetarianType') === 'LACTO';
     });
     await page.getByRole('combobox', { name: 'Trường phái ăn chay' }).selectOption('LACTO');

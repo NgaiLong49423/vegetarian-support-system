@@ -58,7 +58,7 @@ test('FR-60 compares two published SQL Server recipes per serving using only rea
   await expect(page.getByText(`Món bạn chọn sẽ được so sánh với ${a.title}.`)).toBeVisible();
   const searched = page.waitForResponse((response) => {
     const url = new URL(response.url());
-    return url.pathname.endsWith('/api/v1/recipes') && url.searchParams.get('keyword') === b.title;
+    return url.pathname.endsWith('/api/v1/recipes/discovery') && url.searchParams.get('keyword') === b.title;
   });
   await page.getByRole('searchbox', { name: 'Tìm công thức' }).fill(b.title);
   expect((await searched).status()).toBe(200);

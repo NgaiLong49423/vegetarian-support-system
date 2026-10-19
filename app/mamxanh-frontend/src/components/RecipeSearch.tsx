@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ArrowDownUp, Check, RotateCcw, Search, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from './ui';
 import { recipesApi } from '../api/recipes';
-import type { Choice, IngredientOption, RecipeFormOptions, RecipeSearchParams, RecipeSearchResult } from '../api/recipes';
+import type { Choice, IngredientOption, RecipeBrowseResult, RecipeFormOptions, RecipeSearchParams } from '../api/recipes';
 
 // FR-08 public recipe search and filters, shared by the Explore page and the FR-60 comparison picker.
 // The keyword, diet, dish category and sort live in the URL; other query parameters are left untouched.
@@ -59,7 +59,7 @@ export function useRecipeSearch(pageSize: number) {
   const [ingredientQuery, setIngredientQuery] = useState('');
   const [ingredientOptions, setIngredientOptions] = useState<IngredientOption[]>([]);
   const [ingredientError, setIngredientError] = useState(false);
-  const [result, setResult] = useState<RecipeSearchResult | null>(null);
+  const [result, setResult] = useState<RecipeBrowseResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -105,7 +105,7 @@ export function useRecipeSearch(pageSize: number) {
     const timer = window.setTimeout(() => {
       setLoading(true);
       setError(false);
-      recipesApi.searchPublic({
+      recipesApi.discoverPublic({
         keyword: query.trim(), page, size: pageSize, sort: filters.sort, viewPeriod: filters.viewPeriod,
         vegetarianType: filters.vegetarianType || undefined,
         dishCategory: filters.dishCategory || undefined,
@@ -213,11 +213,11 @@ export function ActiveFilters({ search }: { search: RecipeSearch }) {
 
 export function ResultPagination({ search }: { search: RecipeSearch }) {
   const { page, setPage, result } = search;
-  if (!result || result.totalPages <= 1) return null;
+  if (!result || (page === 0 && !result.hasNext)) return null;
   return <nav aria-label="Phân trang công thức" className="mt-7 flex flex-wrap items-center justify-center gap-3">
     <Button variant="outline" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>Trang trước</Button>
-    <span aria-live="polite" className="min-w-24 text-center text-sm text-ink-muted">Trang {page + 1} / {result.totalPages}</span>
-    <Button variant="outline" disabled={page + 1 >= result.totalPages} onClick={() => setPage((current) => current + 1)}>Trang sau</Button>
+    <span aria-live="polite" className="min-w-24 text-center text-sm text-ink-muted">Trang {page + 1}</span>
+    <Button variant="outline" disabled={!result.hasNext} onClick={() => setPage((current) => current + 1)}>Trang sau</Button>
   </nav>;
 }
 

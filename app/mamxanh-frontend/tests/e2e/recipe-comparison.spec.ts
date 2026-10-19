@@ -122,7 +122,7 @@ const formOptions = {
   units: [],
 };
 
-type SearchResult = Detail[] | { items: Detail[]; totalPages: number };
+type SearchResult = Detail[] | { items: Detail[]; hasNext: boolean };
 
 async function publicApi(page: Page, search: (params: URLSearchParams) => SearchResult = () => [tofu, soup]) {
   await page.route(/\/api\/v1\/recipes\/(\d+)$/, (route) => {
@@ -138,13 +138,11 @@ async function publicApi(page: Page, search: (params: URLSearchParams) => Search
   await page.route((url) => url.pathname === '/api/v1/recipes/ingredient-options', (route) => route.fulfill({ json: [
     { ingredientId: 11, name: 'Nấm rơm' },
   ] }));
-  await page.route((url) => url.pathname === '/api/v1/recipes', (route) => {
+  await page.route((url) => url.pathname === '/api/v1/recipes/discovery', (route) => {
     const params = new URL(route.request().url()).searchParams;
     const found = search(params);
-    const { items, totalPages } = Array.isArray(found) ? { items: found, totalPages: 1 } : found;
-    return route.fulfill({ json: {
-      items: items.map(card), page: Number(params.get('page') ?? 0), size: 12, totalElements: items.length, totalPages,
-    } });
+    const { items, hasNext } = Array.isArray(found) ? { items: found, hasNext: false } : found;
+    return route.fulfill({ json: { items: items.map(card), page: Number(params.get('page') ?? 0), size: 12, hasNext } });
   });
 }
 
@@ -477,9 +475,9 @@ test('picker search errors can be retried, result pages can be browsed and inval
   let searchFailures = 1;
   await publicApi(page, (params) => {
     pages.push(params.get('page') ?? '');
-    return params.get('page') === '1' ? { items: [mushroom], totalPages: 2 } : { items: [tofu, soup], totalPages: 2 };
+    return params.get('page') === '1' ? { items: [mushroom], hasNext: false } : { items: [tofu, soup], hasNext: true };
   });
-  await page.route((url) => url.pathname === '/api/v1/recipes', async (route) => {
+  await page.route((url) => url.pathname === '/api/v1/recipes/discovery', async (route) => {
     if (searchFailures-- > 0) return route.fulfill({ status: 503, contentType: 'application/problem+json', json: {
       status: 503, code: 'SERVICE_UNAVAILABLE', detail: 'Dịch vụ tạm thời gián đoạn.',
     } });
@@ -491,13 +489,14 @@ test('picker search errors can be retried, result pages can be browsed and inval
   await page.getByRole('button', { name: 'Thử lại' }).click();
   // The first recipe (701) is kept, so only the current second recipe remains on page 1.
   await expect(choices(page).getByRole('listitem')).toHaveText([/Canh cà chua nấm rơm/]);
-  await expect(page.getByText('Trang 1 / 2')).toBeVisible();
+  await expect(page.getByText('Trang 1', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Trang sau' }).click();
-  await expect(page.getByText('Trang 2 / 2')).toBeVisible();
+  await expect(page.getByText('Trang 2', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Trang sau' })).toBeDisabled();
   await expect(choices(page).getByRole('listitem')).toHaveText([/Nấm tràm xào sả/]);
   expect(pages).toContain('1');
   await page.getByRole('button', { name: 'Trang trước' }).click();
-  await expect(page.getByText('Trang 1 / 2')).toBeVisible();
+  await expect(page.getByText('Trang 1', { exact: true })).toBeVisible();
 
   await page.goto('/so-sanh?a=abc&b=0');
   await expect(page.getByText('Chọn hai công thức công khai khác nhau để xem bảng so sánh.')).toBeVisible();

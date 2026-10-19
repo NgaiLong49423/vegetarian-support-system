@@ -140,6 +140,13 @@ export interface RecipeSearchResult {
   totalPages: number;
 }
 
+export interface RecipeBrowseResult {
+  items: RecipePost[];
+  page: number;
+  size: number;
+  hasNext: boolean;
+}
+
 export interface RecipeSearchParams {
   keyword: string;
   page: number;
@@ -333,21 +340,28 @@ export const recipesApi = {
   recordView: (recipeId: number, anonymousViewerId?: string) => request(
     () => apiClient.post<RecipeViewResponse>(`/recipes/${recipeId}/views`, anonymousViewerId ? { anonymousViewerId } : {}),
   ),
-  searchPublic: (filters: RecipeSearchParams) => {
-    const params = new URLSearchParams({
-      keyword: filters.keyword,
-      page: String(filters.page),
-      size: String(filters.size),
-      sort: filters.sort,
-      viewPeriod: filters.viewPeriod,
-    });
-    if (filters.vegetarianType) params.set('vegetarianType', filters.vegetarianType);
-    if (filters.dishCategory) params.set('dishCategory', filters.dishCategory);
-    if (filters.maxTotalTimeMinutes) params.set('maxTotalTimeMinutes', String(filters.maxTotalTimeMinutes));
-    filters.ingredientIds?.forEach((ingredientId) => params.append('ingredientIds', String(ingredientId)));
-    return request(() => apiClient.get<RecipeSearchResult>('/recipes', { params }));
-  },
+  searchPublic: (filters: RecipeSearchParams) => request(
+    () => apiClient.get<RecipeSearchResult>('/recipes', { params: recipeSearchParams(filters) }),
+  ),
+  discoverPublic: (filters: RecipeSearchParams) => request(
+    () => apiClient.get<RecipeBrowseResult>('/recipes/discovery', { params: recipeSearchParams(filters) }),
+  ),
 };
+
+function recipeSearchParams(filters: RecipeSearchParams) {
+  const params = new URLSearchParams({
+    keyword: filters.keyword,
+    page: String(filters.page),
+    size: String(filters.size),
+    sort: filters.sort,
+    viewPeriod: filters.viewPeriod,
+  });
+  if (filters.vegetarianType) params.set('vegetarianType', filters.vegetarianType);
+  if (filters.dishCategory) params.set('dishCategory', filters.dishCategory);
+  if (filters.maxTotalTimeMinutes) params.set('maxTotalTimeMinutes', String(filters.maxTotalTimeMinutes));
+  filters.ingredientIds?.forEach((ingredientId) => params.append('ingredientIds', String(ingredientId)));
+  return params;
+}
 
 export const recipeApi = {
   listMine: async (page = 0, size = 50) =>

@@ -34,6 +34,7 @@ import { recipes } from '../data/mockData';
 import { recipesApi, type RecipeDetail as RecipeDetailData } from '../api/recipes';
 import { scaleQuantity } from '../utils/servings';
 import { RecipeViews } from '../components/RecipeViews';
+import { RecipeDefaultArtwork } from '../components/RecipeDefaultArtwork';
 import { isSaved, toggleSaved, subscribeSaved } from '../lib/savedRecipes';
 
 const reportReasons = [
@@ -125,16 +126,6 @@ function PublishedRecipeDetail({ recipeId }: { recipeId: number }) {
       <RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} />
     </PageContainer>
   );
-}
-
-function RecipeDefaultArtwork({ vegetarianType, label }: { vegetarianType: RecipeDetailData['vegetarianType']; label: string }) {
-  const appearance = {
-    VEGAN: 'from-leaf-100 to-emerald-50 text-leaf-800',
-    LACTO: 'from-amber-100 to-orange-50 text-amber-900',
-    OVO: 'from-yellow-100 to-lime-50 text-lime-900',
-    LACTO_OVO: 'from-brand-100 to-yellow-50 text-brand-800',
-  }[vegetarianType];
-  return <div role="img" aria-label={`Ảnh mặc định cho món ${label}`} className={`flex h-full w-full flex-col items-center justify-center bg-gradient-to-br ${appearance}`}><Leaf className="h-14 w-14" /><span className="mt-3 text-sm font-bold">Ảnh mặc định · {label}</span></div>;
 }
 
 function MockRecipeDetail() {

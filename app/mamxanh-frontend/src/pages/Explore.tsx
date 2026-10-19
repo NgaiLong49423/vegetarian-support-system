@@ -58,7 +58,7 @@ export function Explore() {
         <section aria-label="Kết quả công thức" className="min-w-0">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-paper px-4 py-3 shadow-sm">
             <div>
-              <p className="text-sm font-bold text-ink">{loading ? 'Đang tìm công thức…' : `${result?.totalElements ?? 0} công thức`}</p>
+              <p className="text-sm font-bold text-ink">{loading ? 'Đang tìm công thức…' : 'Kết quả công thức'}</p>
               {activeFilterCount > 1 && <p className="mt-0.5 text-xs text-ink-muted">Công thức cần đáp ứng tất cả điều kiện đang chọn.</p>}
             </div>
             <SortControls search={search} />
