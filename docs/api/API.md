@@ -140,12 +140,12 @@ Quy ước status chính:
 | `204 No Content` | Thao tác thành công và không cần response body. |
 | `400 Bad Request` | Payload, token xác minh hoặc token đặt lại mật khẩu không hợp lệ. |
 | `401 Unauthorized` | Credential, access token hoặc Google ID Token không hợp lệ hay đã hết hạn. |
-| `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`), bị Administrator khóa (`ACCOUNT_LOCKED`) hoặc không phải Member khi dùng hồ sơ sở thích hay hồ sơ cá nhân (`MEMBER_ACCESS_REQUIRED`). |
-| `409 Conflict` | Email đã được sử dụng, đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`), hoặc hồ sơ sở thích chưa đủ để gọi AI cá nhân hóa (`DIETARY_PROFILE_INCOMPLETE`). |
+| `403 Forbidden` | Tài khoản chưa xác minh (`EMAIL_NOT_VERIFIED`), bị Administrator khóa (`ACCOUNT_LOCKED`), không phải Member khi dùng hồ sơ sở thích, hồ sơ cá nhân hay theo dõi thành viên (`MEMBER_ACCESS_REQUIRED`), hoặc tự theo dõi chính mình (`FOLLOW_SELF_NOT_ALLOWED`). |
+| `409 Conflict` | Email đã được sử dụng, đã liên kết với tài khoản Google khác (`GOOGLE_ACCOUNT_CONFLICT`), hồ sơ sở thích chưa đủ để gọi AI cá nhân hóa (`DIETARY_PROFILE_INCOMPLETE`), hoặc theo dõi tài khoản đang bị khóa (`FOLLOW_TARGET_INACTIVE`). |
 | `429 Too Many Requests` | Chỉ áp dụng khi contract của endpoint quy định `429` (ví dụ login, resend verification hoặc AI rate limiting); client đọc `Retry-After` khi có. Password-reset request không trả `429`. |
 | `503 Service Unavailable` | Dịch vụ phụ thuộc tạm thời không dùng được, ví dụ không tải được chứng chỉ Google (`GOOGLE_LOGIN_UNAVAILABLE`). |
 
-Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36, #48).
+Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36, #48, #69).
 
 | `code` | Status | Khi nào |
 |---|---|---|
@@ -162,8 +162,10 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36, #48).
 | `GOOGLE_TOKEN_INVALID` | 401 | `POST /auth/google` với ID Token sai định dạng, sai chữ ký, hết hạn, sai issuer/audience, thiếu `sub`/email, email Google chưa xác minh hoặc không lưu được; cũng trả khi Backend chưa cấu hình `MAMXANH_GOOGLE_CLIENT_ID`. |
 | `GOOGLE_ACCOUNT_CONFLICT` | 409 | `POST /auth/google` khi email đã liên kết với một tài khoản Google khác. |
 | `GOOGLE_LOGIN_UNAVAILABLE` | 503 | `POST /auth/google` khi Backend không tải được chứng chỉ ký của Google. |
-| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31), hồ sơ cá nhân `/me/profile` (FR-23) hoặc viết bình luận (FR-46); chỉ Member (`CUSTOMER`, `EXPERT`) đang hoạt động có các chức năng này. |
-| `MEMBER_PROFILE_NOT_FOUND` | 404 | `GET /members/{userId}` hoặc `/members/{userId}/recipes` với ID không tồn tại hoặc thuộc tài khoản Administrator (FR-23, Q55). |
+| `MEMBER_ACCESS_REQUIRED` | 403 | Tài khoản Administrator gọi endpoint hồ sơ sở thích ăn uống (FR-31), hồ sơ cá nhân `/me/profile` (FR-23), theo dõi/bỏ theo dõi (FR-59) hoặc viết bình luận (FR-46); chỉ Member (`CUSTOMER`, `EXPERT`) đang hoạt động có các chức năng này. |
+| `MEMBER_PROFILE_NOT_FOUND` | 404 | `/members/{userId}`, `/members/{userId}/recipes`, `/members/{userId}/follow`, `/followers` hoặc `/following` với ID không tồn tại hoặc thuộc tài khoản Administrator (FR-23, FR-59, Q55). |
+| `FOLLOW_SELF_NOT_ALLOWED` | 403 | `PUT` hoặc `DELETE /members/{userId}/follow` với chính tài khoản trong phiên (AC-59.3); không ghi bản ghi nào. |
+| `FOLLOW_TARGET_INACTIVE` | 409 | `PUT /members/{userId}/follow` tới Member đang `LOCKED` (AC-59.7); vẫn bỏ theo dõi được tài khoản này. |
 | `COMMENT_NOT_FOUND` | 404 | Bình luận không tồn tại, đã bị xóa hoặc thuộc bài không còn công khai; cũng trả khi `parentCommentId` của reply không còn hoặc thuộc bài khác (FR-46). |
 | `COMMENT_EDIT_NOT_ALLOWED` | 403 | `PUT`/`DELETE /comments/{commentId}` với bình luận của người khác (AC-46.4); nội dung giữ nguyên. |
 | `FILE_TOO_LARGE` | 413 | Ảnh đại diện vượt 2 MB, hoặc tệp tải lên vượt giới hạn 5 MB của máy chủ. |
