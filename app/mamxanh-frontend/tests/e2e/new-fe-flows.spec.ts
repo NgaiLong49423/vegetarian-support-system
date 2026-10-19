@@ -771,6 +771,11 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
 });
 
 test('recipe image upload and gallery management complies with FR-14 rules', async ({ page }) => {
+  // This UI test needs an explicit successful storage boundary; failed uploads are only previews.
+  await page.route('**/api/v1/recipes/media/upload', (route) => route.fulfill({
+    status: 201,
+    json: { success: true, data: { blobUrl: 'https://images.example.test/fr14.jpg', mimeType: 'image/jpeg', sizeBytes: 10 } },
+  }));
   // 1. Log in as Expert
   await seedDemoSession(page, 'EXPERT');
   await page.goto('/dang-cong-thuc');
