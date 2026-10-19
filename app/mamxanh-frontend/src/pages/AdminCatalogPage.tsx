@@ -331,7 +331,7 @@ export function AdminCatalogPage() {
   const [activeFilter, setActiveFilter] = useState('');
   const [nutritionFilter, setNutritionFilter] = useState('');
   const [ingredientFilters, setIngredientFilters] = useState<IngredientSearch>({
-    query: '', ingredientGroup: '', active: null, nutritionSupported: null, page: 0, size: 21,
+    query: '', ingredientGroup: '', active: null, nutritionSupported: null, page: 0, size: 24,
   });
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -886,10 +886,11 @@ export function AdminCatalogPage() {
                       onToggleActive={toggleIngredient}
                     />
                   ))}
-                  {ingredients.length >= 2 && ingredients.length % 3 === 2 && (
+                  {ingredientFilters.page + 1 >= totalPages &&
+                    ((isPanelOpen && ingredients.length % 2 === 1) || (!isPanelOpen && ingredients.length % 3 === 2)) && (
                     <Card
                       className={`hidden ${
-                        isPanelOpen ? '2xl:flex' : 'lg:flex'
+                        isPanelOpen ? 'xl:flex' : 'lg:flex'
                       } flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-200/80 bg-brand-50/20 p-6 text-center transition-colors hover:border-brand-400 hover:bg-brand-50/40`}
                     >
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-200/80 bg-paper text-brand-600 shadow-2xs">

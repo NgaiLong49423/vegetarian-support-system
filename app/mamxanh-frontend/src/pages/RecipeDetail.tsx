@@ -319,7 +319,7 @@ function MockRecipeDetail() {
         {/* image gallery + description (FR-14) */}
         <div className="mb-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
           <div className="flex flex-col gap-3">
-            <div className="relative overflow-hidden rounded-2xl border border-brand-100 bg-brand-50 aspect-[4/3] sm:aspect-[16/10]">
+            <div className="relative overflow-hidden rounded-2xl border border-brand-100 bg-brand-50 h-[260px] sm:h-[340px] md:h-[380px] w-full">
               <img
                 src={mediaList[selectedImageIndex]?.url ?? recipe.image}
                 alt={recipe.name}

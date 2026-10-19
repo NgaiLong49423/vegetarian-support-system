@@ -41,7 +41,7 @@ function formatTime(createdAt: string) {
   return new Date(`${createdAt}Z`).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 }
 
-export function RecipeComments({ recipeId }: { recipeId: number }) {
+export function RecipeComments({ recipeId, className = 'w-full' }: { recipeId: number; className?: string }) {
   const { account, isAuthenticated } = useAuth();
   const canWrite = isAuthenticated && account?.role !== 'ADMIN';
   const [threads, setThreads] = useState<RecipeComment[]>([]);
@@ -59,19 +59,33 @@ export function RecipeComments({ recipeId }: { recipeId: number }) {
   const composer = useRef<HTMLTextAreaElement>(null);
 
   const load = useCallback(async (nextPage: number) => {
-    const result = await commentsApi.list(recipeId, nextPage);
-    setThreads((current) => nextPage === 0 ? result.content : [
-      ...current,
-      ...result.content.filter((thread) => !current.some((item) => item.commentId === thread.commentId)),
-    ]);
-    setCommentCount(result.commentCount);
-    setPage(result.page);
-    setTotalPages(result.totalPages);
+    try {
+      const result = await commentsApi.list(recipeId, nextPage);
+      setThreads((current) => nextPage === 0 ? (result?.content ?? []) : [
+        ...current,
+        ...(result?.content ?? []).filter((thread) => !current.some((item) => item.commentId === thread.commentId)),
+      ]);
+      setCommentCount(result?.commentCount ?? result?.totalElements ?? 0);
+      setPage(result?.page ?? 0);
+      setTotalPages(result?.totalPages ?? 0);
+      setLoadState('ready');
+    } catch (err: unknown) {
+      const apiErr = asApiError(err);
+      if (apiErr.status === 404) {
+        setThreads([]);
+        setCommentCount(0);
+        setPage(0);
+        setTotalPages(0);
+        setLoadState('ready');
+      } else {
+        setLoadState('error');
+      }
+    }
   }, [recipeId]);
 
   const loadFirstPage = useCallback(() => {
     setLoadState('loading');
-    load(0).then(() => setLoadState('ready')).catch(() => setLoadState('error'));
+    void load(0);
   }, [load]);
 
   useEffect(() => { loadFirstPage(); }, [loadFirstPage]);
@@ -190,7 +204,7 @@ export function RecipeComments({ recipeId }: { recipeId: number }) {
   };
 
   return (
-    <section aria-labelledby="recipe-comments-heading" className="mx-auto mt-8 max-w-4xl">
+    <section aria-labelledby="recipe-comments-heading" className={className}>
       <Card className="p-5 sm:p-6">
         <h2 id="recipe-comments-heading" className="flex items-center gap-2 text-xl font-extrabold text-ink">
           <MessageCircle className="h-5 w-5 text-brand-600" /> Bình luận ({commentCount})

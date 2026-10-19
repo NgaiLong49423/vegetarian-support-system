@@ -258,13 +258,19 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       </div>
     </div>
 
-    {/* Hàng 1: Thư viện ảnh (7 cột) & Thông tin nhanh + Đặc trưng món (5 cột) */}
-    <div className="mb-6 grid gap-6 lg:grid-cols-12 lg:items-stretch">
+    {/* Hàng 1: Tổng quan (Ảnh món ăn & Thông tin nhanh) - Luôn cân bằng chiều cao 1:1 tuyệt đối */}
+    <div className="mb-8 grid gap-6 lg:grid-cols-12 lg:items-stretch">
+      {/* Cột trái (7 cột): Thư viện ảnh */}
       <section aria-label="Thư viện ảnh công thức" className="flex flex-col lg:col-span-7">
         <Card className="flex flex-1 flex-col overflow-hidden">
-          <div className="relative min-h-[280px] flex-1 bg-brand-50 sm:min-h-[360px]">
+          <div className="relative flex-1 min-h-[300px] sm:min-h-[360px] w-full overflow-hidden bg-brand-50">
             {activeMedia ? (
-              <img src={activeMedia.blobUrl} alt={recipe.title} className="h-full w-full object-cover" fetchPriority="high" />
+              <img
+                src={activeMedia.blobUrl}
+                alt={recipe.title}
+                className="absolute inset-0 h-full w-full object-cover object-center"
+                fetchPriority="high"
+              />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
                 <RecipeDefaultArtwork vegetarianType={recipe.vegetarianType} label={recipe.vegetarianTypeLabel} />
@@ -272,7 +278,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
             )}
           </div>
           {media.length > 1 && (
-            <div className="recipe-detail-no-print grid grid-cols-4 gap-2 border-t border-brand-100 p-3 sm:gap-3 sm:p-4">
+            <div className="recipe-detail-no-print grid grid-cols-4 gap-2 border-t border-brand-100 p-3 sm:gap-3 sm:p-4 shrink-0">
               {media.map((item, index) => (
                 <button
                   key={`${item.displayOrder}-${item.blobUrl}`}
@@ -280,9 +286,9 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                   onClick={() => setSelectedMedia(index)}
                   aria-label={`Xem ảnh ${index + 1}`}
                   aria-pressed={index === selectedMedia}
-                  className={`overflow-hidden rounded-xl border-2 bg-brand-50 ${index === selectedMedia ? 'border-brand-600' : 'border-transparent'}`}
+                  className={`h-14 sm:h-16 overflow-hidden rounded-xl border-2 bg-brand-50 transition-all ${index === selectedMedia ? 'border-brand-600 scale-[1.02]' : 'border-transparent opacity-75 hover:opacity-100'}`}
                 >
-                  <img src={item.blobUrl} alt="" loading="lazy" className="aspect-[4/3] h-full w-full object-cover" />
+                  <img src={item.blobUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>
@@ -290,8 +296,9 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         </Card>
       </section>
 
+      {/* Cột phải (5 cột): Thông tin nhanh - Cân bằng chiều cao ngang với ảnh */}
       <div className="flex flex-col lg:col-span-5">
-        <Card className="flex flex-1 flex-col justify-between gap-5 p-5 sm:p-6">
+        <Card className="flex flex-1 flex-col justify-between p-5 sm:p-6 space-y-5">
           <div>
             <div className="flex items-center justify-between gap-2">
               <div>
@@ -357,8 +364,9 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       </div>
     </div>
 
-    {/* Hàng 2: Nguyên liệu + Cách làm (7 cột) & Bảng dinh dưỡng cân đối (5 cột) */}
-    <div className="mb-8 grid gap-6 lg:grid-cols-12 lg:items-stretch">
+    {/* Hàng 2: Chi tiết thực hiện (Nguyên liệu, Cách làm) & Bảng dinh dưỡng - Xuất phát cùng một cao độ ngang hàng */}
+    <div className="mb-8 grid gap-6 lg:grid-cols-12 lg:items-start">
+      {/* Cột trái (7 cột): Nguyên liệu, Cách làm, Video */}
       <div className="flex flex-col gap-6 lg:col-span-7">
         <Card id="nguyen-lieu" className="p-5 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -384,7 +392,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
           {(recipe.ingredients ?? []).length === 0 && <p className="mt-4 text-sm text-ink-muted">Chưa có nguyên liệu cho công thức này.</p>}
         </Card>
 
-        <Card id="cach-lam" className="flex flex-1 flex-col justify-between p-5 sm:p-7">
+        <Card id="cach-lam" className="p-5 sm:p-7">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Làm theo thứ tự</p>
             <h2 className="mt-1 text-xl font-extrabold text-ink">Cách làm</h2>
@@ -432,8 +440,9 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         )}
       </div>
 
-      <aside className="flex flex-col gap-6 lg:col-span-5">
-        <Card className="flex flex-1 flex-col justify-between p-5 sm:p-6">
+      {/* Cột phải (5 cột): Dinh dưỡng đi cùng cao độ với Nguyên liệu */}
+      <aside className="flex flex-col gap-6 lg:col-span-5 lg:sticky lg:top-24">
+        <Card className="p-5 sm:p-6">
           <div>
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -442,14 +451,14 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
               </div>
               <Utensils className="h-5 w-5 text-leaf-600" />
             </div>
-            <dl className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <dl className="mt-4 grid grid-cols-2 gap-2 sm:gap-2.5">
               {NUTRIENTS.map((nutrient, index) => (
                 <div
                   key={nutrient.key}
-                  className={`rounded-xl bg-brand-50 px-3.5 py-2.5 ${index === 0 ? 'sm:col-span-2 flex items-center justify-between border border-brand-100' : ''}`}
+                  className={`rounded-xl bg-brand-50/70 p-2.5 sm:p-3 transition-colors hover:bg-brand-100/60 ${index === 0 ? 'col-span-2 flex items-center justify-between border border-brand-100 bg-brand-50' : 'flex flex-col justify-center'}`}
                 >
-                  <dt className="text-xs text-ink-muted">{nutrient.label}</dt>
-                  <dd className={`${index === 0 ? 'text-base font-extrabold text-brand-800' : 'mt-1 text-sm font-bold text-ink'}`}>
+                  <dt className="text-xs font-medium text-ink-muted">{nutrient.label}</dt>
+                  <dd className={`${index === 0 ? 'text-base font-extrabold text-brand-800' : 'mt-0.5 text-sm font-extrabold text-ink'}`}>
                     {recipe.nutrition?.perServing?.[nutrient.key] == null
                       ? 'Chưa có dữ liệu'
                       : `≈ ${formatNumber(recipe.nutrition.perServing[nutrient.key])} ${nutrient.unit}`}
@@ -461,18 +470,20 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
               <section
                 role="note"
                 aria-live="polite"
-                className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900"
+                className="mt-4 rounded-xl border border-amber-200/90 bg-amber-50/95 p-4 text-amber-950 shadow-2xs"
                 aria-labelledby="nutrition-status-heading"
               >
-                <h2 id="nutrition-status-heading" className="font-bold text-amber-900">
-                  Chưa đủ dữ liệu dinh dưỡng
+                <h2 id="nutrition-status-heading" className="text-sm font-bold text-amber-950 sm:text-base">
+                  Ước tính chưa đầy đủ
                 </h2>
-                <p role="status" className="mt-1 text-sm text-amber-800">
-                  Ước tính chưa đầy đủ. Các giá trị chỉ gồm phần tính được từ danh mục.
+                <p role="status" className="mt-1 text-xs leading-relaxed text-amber-900/90 sm:text-sm">
+                  Các giá trị chỉ gồm phần tính được từ danh mục. Nguyên liệu thiếu dữ liệu không được tính bằng 0.
                 </p>
-                <p className="mt-1 text-sm">Nguyên liệu chưa hỗ trợ tính dinh dưỡng:</p>
+                <p className="mt-2.5 text-xs font-semibold text-amber-950 sm:text-sm">
+                  Nguyên liệu chưa hỗ trợ tính dinh dưỡng:
+                </p>
                 {(missingNutrition ?? []).length > 0 && (
-                  <ul className="mt-2 list-inside list-disc text-sm text-amber-900">
+                  <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-xs text-amber-900 sm:text-sm">
                     {(missingNutrition ?? []).map((name) => (
                       <li key={name}>{name}</li>
                     ))}
@@ -537,7 +548,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         </div>
         <RecipeReactions recipeId={recipe.recipeId} authorId={author.userId} statistics={statistics} />
       </Card>
-      <RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} />
+      <RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} className="w-full" />
     </div>
     <RelatedRecipes key={recipeId} recipeId={recipeId} />
     <div className="recipe-detail-no-print mt-8"><Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeft className="h-4 w-4" />Trở lại khám phá</Link></div>
@@ -554,5 +565,5 @@ function StatTile({ icon, label, value }: { icon: ReactNode; label: string; valu
 }
 
 function QuickInfo({ label, value }: { label: string; value: string }) {
-  return <div className="flex items-center justify-between gap-4 py-3 text-sm"><dt className="text-ink-muted">{label}</dt><dd className="text-right font-bold text-ink">{value}</dd></div>;
+  return <div className="flex items-center justify-between gap-4 py-2.5 text-sm"><dt className="text-ink-muted">{label}</dt><dd className="text-right font-bold text-ink">{value}</dd></div>;
 }

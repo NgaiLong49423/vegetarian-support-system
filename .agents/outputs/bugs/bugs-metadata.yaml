@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-18
-next_id: 39
+last_updated: 2026-10-19
+next_id: 40
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-039
+    title: Bình luận coi công thức không còn công khai là danh sách rỗng
+    status: RECORDED
+    severity: Unknown
+    area: Frontend/RecipeComments
+    file: .agents/outputs/bugs/BUG-039.md
+    created: 2026-10-19
+    updated: 2026-10-19
+    related_issue: Unknown
   - id: BUG-038
     title: Footer che thao tác gửi lại email trên biểu mẫu đăng ký
     status: RESOLVED
