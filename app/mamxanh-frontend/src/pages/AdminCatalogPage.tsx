@@ -886,31 +886,6 @@ export function AdminCatalogPage() {
                       onToggleActive={toggleIngredient}
                     />
                   ))}
-                  {ingredientFilters.page + 1 >= totalPages &&
-                    ((isPanelOpen && ingredients.length % 2 === 1) || (!isPanelOpen && ingredients.length % 3 === 2)) && (
-                    <Card
-                      className={`hidden ${
-                        isPanelOpen ? 'xl:flex' : 'lg:flex'
-                      } flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-200/80 bg-brand-50/20 p-6 text-center transition-colors hover:border-brand-400 hover:bg-brand-50/40`}
-                    >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-200/80 bg-paper text-brand-600 shadow-2xs">
-                        <CirclePlus className="h-6 w-6" />
-                      </div>
-                      <h3 className="mt-3.5 text-base font-extrabold text-ink">Bổ sung nguyên liệu mới</h3>
-                      <p className="mt-1.5 max-w-[220px] text-xs leading-5 text-ink-muted">
-                        Thêm nguyên liệu chuẩn cùng nguồn dữ liệu và 9 chỉ tiêu dinh dưỡng vào danh mục hệ thống.
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={openNewIngredient}
-                        className="mt-4"
-                      >
-                        <CirclePlus className="h-4 w-4" /> Mở biểu mẫu tạo mới
-                      </Button>
-                    </Card>
-                  )}
                 </div>
               )}
               {totalElements > 0 && (

@@ -204,8 +204,8 @@ export function RecipeComments({ recipeId, className = 'w-full' }: { recipeId: n
   };
 
   return (
-    <section aria-labelledby="recipe-comments-heading" className={className}>
-      <Card className="p-5 sm:p-6">
+    <section aria-labelledby="recipe-comments-heading" className={`w-full ${className}`}>
+      <Card className="w-full p-5 sm:p-6">
         <h2 id="recipe-comments-heading" className="flex items-center gap-2 text-xl font-extrabold text-ink">
           <MessageCircle className="h-5 w-5 text-brand-600" /> Bình luận ({commentCount})
         </h2>
