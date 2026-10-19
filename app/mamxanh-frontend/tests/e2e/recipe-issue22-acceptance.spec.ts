@@ -353,11 +353,17 @@ test('Issue 22: g/kg đi trực tiếp; đơn vị đếm chỉ qua khi API xác
 
 test('Issue 22: cho phép đăng không ảnh; giới hạn năm ảnh và tự đặt ảnh đầu tiên làm cover', async ({ page }) => {
   await installApi(page, (body) => ({ status: 201, body: { recipeId: 2203, title: body.title, status: 'PUBLISHED', publishedAt: '2026-10-04T08:00:00' } }));
+  let uploaded = 0;
+  await page.route('**/api/v1/recipes/media/upload', (route) => route.fulfill({
+    status: 201,
+    json: { success: true, data: { blobUrl: `https://images.example.test/issue22-${++uploaded}.png`, mimeType: 'image/png', sizeBytes: 7 } },
+  }));
   await openForm(page);
   await fillValidRecipe(page);
   const chooser = page.locator('#recipe-media-upload-input');
   await chooser.setInputFiles(Array.from({ length: 6 }, (_, index) => ({ name: `photo-${index + 1}.png`, mimeType: 'image/png', buffer: Buffer.from(`photo-${index + 1}`) })));
   await expect(page.getByText('Đã tải 5/5 ảnh • Bắt buộc chọn đúng 1 ảnh bìa')).toBeVisible();
+  expect(uploaded).toBe(5);
   await expect(page.getByText(/Chỉ tải lên tối đa 5 ảnh còn lại/)).toBeVisible();
   await expect(page.getByTitle('Đang là ảnh bìa')).toHaveCount(1);
   await expect(page.getByAltText(/^Ảnh công thức/)).toHaveCount(5);
