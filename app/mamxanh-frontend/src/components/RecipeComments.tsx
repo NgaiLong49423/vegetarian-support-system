@@ -205,60 +205,65 @@ export function RecipeComments({ recipeId, className = 'w-full' }: { recipeId: n
 
   return (
     <section aria-labelledby="recipe-comments-heading" className={`w-full ${className}`}>
-      <Card className="w-full p-5 sm:p-6">
-        <h2 id="recipe-comments-heading" className="flex items-center gap-2 text-xl font-extrabold text-ink">
-          <MessageCircle className="h-5 w-5 text-brand-600" /> Bình luận ({commentCount})
-        </h2>
-        <div className="mt-5">
+      <Card className="w-full rounded-3xl border border-brand-200/90 bg-paper p-6 sm:p-8 lg:p-10 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-100 pb-5">
+          <h2 id="recipe-comments-heading" className="flex items-center gap-3 text-2xl font-black text-ink">
+            <MessageCircle className="h-6 w-6 text-brand-600" /> Bình luận ({commentCount})
+          </h2>
+          <span className="text-xs font-semibold text-ink-muted">Chia sẻ cảm nhận &amp; kinh nghiệm nấu nướng</span>
+        </div>
+        <div className="mt-6">
           {loadState === 'loading' && (
             <p role="status" className="flex items-center gap-2 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải bình luận…</p>
           )}
           {loadState === 'error' && (
-            <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-800">
+            <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-red-50 p-4 text-sm text-red-800">
               <span>Không tải được bình luận. Vui lòng thử lại.</span>
               <Button size="sm" variant="outline" onClick={loadFirstPage}>Thử lại</Button>
             </div>
           )}
           {loadState === 'ready' && (threads.length
             ? threads.map(renderComment)
-            : <p className="rounded-xl bg-brand-50 p-4 text-sm text-ink-muted">Chưa có bình luận. Hãy bắt đầu cuộc trò chuyện.</p>)}
+            : <p className="rounded-2xl border border-dashed border-brand-200 bg-brand-50/40 p-6 text-center text-sm font-medium text-ink-muted">Chưa có bình luận. Hãy bắt đầu cuộc trò chuyện.</p>)}
           {loadState === 'ready' && page + 1 < totalPages && (
-            <Button variant="outline" size="sm" className="mt-3" disabled={loadingMore} onClick={loadMore}>
-              {loadingMore ? 'Đang tải…' : 'Xem thêm bình luận'}
-            </Button>
+            <div className="mt-5 text-center">
+              <Button variant="outline" size="sm" disabled={loadingMore} onClick={loadMore}>
+                {loadingMore ? 'Đang tải…' : 'Xem thêm bình luận'}
+              </Button>
+            </div>
           )}
         </div>
 
         {!isAuthenticated && (
-          <p className="mt-5 text-sm text-ink-muted">
-            <Link to="/dang-nhap" className="font-bold text-brand-700">Đăng nhập để bình luận</Link> và trao đổi với cộng đồng.
+          <p className="mt-6 rounded-2xl border border-brand-100 bg-brand-50/50 p-4 text-sm text-ink-muted">
+            <Link to="/dang-nhap" className="font-bold text-brand-700 hover:underline">Đăng nhập để bình luận</Link> và cùng giao lưu với cộng đồng yêu bếp chay Mâm Xanh.
           </p>
         )}
         {isAuthenticated && !canWrite && (
-          <p className="mt-5 text-sm text-ink-muted">Tài khoản quản trị viên không đăng bình luận.</p>
+          <p className="mt-6 text-sm text-ink-muted">Tài khoản quản trị viên không đăng bình luận.</p>
         )}
         {canWrite && (
-          <div className="mt-5">
+          <div className="mt-6 border-t border-brand-100 pt-6">
             {(replyTo || editing) && (
-              <div className="mb-2 flex items-center justify-between text-sm text-brand-700">
+              <div className="mb-3 flex items-center justify-between rounded-xl bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-700">
                 <span>{editing ? 'Đang sửa bình luận' : `Đang trả lời ${replyTo?.author?.displayName ?? ''}`}</span>
-                <button type="button" onClick={resetComposer}>Hủy</button>
+                <button type="button" className="text-xs hover:underline" onClick={resetComposer}>Hủy</button>
               </div>
             )}
-            <label htmlFor="recipe-comment" className="block text-sm font-semibold text-ink">Viết bình luận</label>
+            <label htmlFor="recipe-comment" className="block text-sm font-bold text-ink">Viết bình luận</label>
             <textarea
               id="recipe-comment"
               ref={composer}
               value={body}
               onChange={(event) => { setBody(event.target.value); setError(''); }}
               maxLength={1000}
-              rows={3}
-              placeholder="Chia sẻ câu hỏi hoặc kinh nghiệm nấu món này..."
-              className="mt-2 w-full rounded-xl border border-brand-200 bg-paper p-3 text-sm outline-none focus:border-brand-500"
+              rows={4}
+              placeholder="Chia sẻ câu hỏi hoặc kinh nghiệm nấu món này với mọi người..."
+              className="mt-2.5 w-full rounded-2xl border border-brand-200/90 bg-paper p-4 text-sm sm:text-base text-ink outline-none transition-all placeholder:text-ink-muted/50 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 shadow-2xs"
             />
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="text-xs text-ink-muted">{body.length}/1.000 ký tự</span>
-              <Button onClick={() => void submit()} disabled={submitting || !body.trim()}>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <span className="text-xs font-medium text-ink-muted">{body.length}/1.000 ký tự</span>
+              <Button size="md" onClick={() => void submit()} disabled={submitting || !body.trim()}>
                 {editing ? 'Lưu chỉnh sửa' : replyTo ? 'Gửi trả lời' : 'Gửi bình luận'}
               </Button>
             </div>

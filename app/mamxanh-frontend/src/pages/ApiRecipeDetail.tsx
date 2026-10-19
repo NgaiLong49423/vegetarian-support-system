@@ -406,7 +406,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
           </div>
         </Card>
 
-        {recipe.youtubeUrl && (
+        {recipe.youtubeUrl ? (
           <Card className="overflow-hidden p-5 sm:p-7" data-testid="recipe-youtube-section">
             <div className="flex items-center gap-2">
               <Video className="h-5 w-5 text-brand-600" />
@@ -437,20 +437,47 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
               </a>
             </div>
           </Card>
+        ) : (
+          <Card className="p-5 sm:p-6 border border-brand-100/90 bg-gradient-to-br from-brand-50/40 via-paper to-brand-50/20">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-100/80 text-brand-700 shadow-2xs">
+                <ChefHat className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Gợi ý từ Mâm Xanh</p>
+                <h3 className="text-base font-extrabold text-ink">Mẹo nấu chay &amp; Giữ trọn vi chất</h3>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 text-xs leading-relaxed text-ink-soft">
+              <div className="rounded-xl border border-brand-100/70 bg-paper/90 p-3 shadow-2xs">
+                <p className="font-bold text-ink flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-leaf-600" /> Giữ trọn vitamin
+                </p>
+                <p className="mt-1 text-ink-muted">
+                  Hấp hoặc xào lửa lớn nhanh tay thay vì luộc kỹ giúp giữ lại tối đa các vitamin tan trong nước như vitamin C và nhóm B.
+                </p>
+              </div>
+              <div className="rounded-xl border border-brand-100/70 bg-paper/90 p-3 shadow-2xs">
+                <p className="font-bold text-ink flex items-center gap-1.5">
+                  <Leaf className="h-3.5 w-3.5 text-brand-600" /> Tối ưu hấp thu khoáng
+                </p>
+                <p className="mt-1 text-ink-muted">
+                  Kết hợp rau củ giàu sắt với nguồn vitamin C (chanh, cà chua, ớt chuông) để cơ thể hấp thu sắt thực vật hiệu quả hơn.
+                </p>
+              </div>
+            </div>
+          </Card>
         )}
 
-        {/* Cảm nhận cộng đồng & Bình luận được đưa lên cột trái dưới Cách làm để cân đối và không để trống khoảng trống */}
-        <div className="recipe-detail-no-print space-y-6">
-          <Card className="p-5 sm:p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Cảm nhận cộng đồng</p>
-            <h2 className="mt-1 text-xl font-extrabold text-ink">Đánh giá &amp; Mức độ yêu thích</h2>
-            <div className="mt-4">
-              <RecipeViews key={recipeId} recipe={recipe} renderCount={(count) => <StatTile icon={<Eye className="h-4 w-4 text-brand-600" />} label="Lượt xem" value={<>{formatNumber(count, 0)}<span className="sr-only"> lượt xem</span></>} />} />
-            </div>
-            <RecipeReactions recipeId={recipe.recipeId} authorId={author.userId} statistics={statistics} />
-          </Card>
-          <RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} className="w-full" />
-        </div>
+        {/* Cảm nhận cộng đồng: Đánh giá & Mức độ yêu thích */}
+        <Card className="recipe-detail-no-print p-5 sm:p-6">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Cảm nhận cộng đồng</p>
+          <h2 className="mt-1 text-xl font-extrabold text-ink">Đánh giá &amp; Mức độ yêu thích</h2>
+          <div className="mt-4">
+            <RecipeViews key={recipeId} recipe={recipe} renderCount={(count) => <StatTile icon={<Eye className="h-4 w-4 text-brand-600" />} label="Lượt xem" value={<>{formatNumber(count, 0)}<span className="sr-only"> lượt xem</span></>} />} />
+          </div>
+          <RecipeReactions recipeId={recipe.recipeId} authorId={author.userId} statistics={statistics} />
+        </Card>
       </div>
 
       {/* Cột phải (5 cột): Dinh dưỡng đi cùng cao độ với Nguyên liệu */}
@@ -552,6 +579,12 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         )}
       </aside>
     </div>
+
+    {/* Phần bình luận dạt rộng toàn trang (full-width), to rõ và bề thế như một footer section */}
+    <div className="recipe-detail-no-print my-8 sm:my-10 w-full">
+      <RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} className="w-full" />
+    </div>
+
     <RelatedRecipes key={recipeId} recipeId={recipeId} />
     <div className="recipe-detail-no-print mt-8"><Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeft className="h-4 w-4" />Trở lại khám phá</Link></div>
   </PageContainer>;
