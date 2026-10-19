@@ -767,7 +767,7 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
   // Navigates directly to published recipe detail
   await page.waitForURL('**/cong-thuc/999');
   await expect(page.getByRole('heading', { name: 'Nấm đùi gà kho tiêu xanh', level: 1 })).toBeVisible();
-  await expect(page.getByText('Chưa đủ dữ liệu dinh dưỡng')).toBeVisible();
+  await expect(page.getByRole('note', { name: 'Ước tính chưa đầy đủ' })).toBeVisible();
   await expect(page.getByTestId('recipe-youtube-section')).toBeVisible();
 });
 

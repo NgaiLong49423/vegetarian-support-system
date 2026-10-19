@@ -181,9 +181,11 @@ test('Issue 25: recipe detail flags catalog ingredients without nutrition data',
 
   await page.goto(`/cong-thuc/${detail.recipeId}`, { waitUntil: 'commit' });
 
-  await expect(page.getByRole('heading', { name: 'Chưa đủ dữ liệu dinh dưỡng' })).toBeVisible();
-  await expect(page.getByRole('note', { name: 'Chưa đủ dữ liệu dinh dưỡng' }).getByRole('status')).toContainText('Ước tính chưa đầy đủ');
-  await expect(page.locator('[aria-labelledby="nutrition-status-heading"] li')).toHaveText('Cà chua');
+  const warning = page.getByRole('note', { name: 'Ước tính chưa đầy đủ' });
+  await expect(warning.getByRole('heading', { name: 'Ước tính chưa đầy đủ' })).toBeVisible();
+  await expect(warning.getByRole('status')).toContainText('Các giá trị chỉ gồm phần tính được từ danh mục.');
+  await expect(warning.getByRole('status')).toContainText('Nguyên liệu thiếu dữ liệu không được tính bằng 0.');
+  await expect(warning.getByRole('listitem')).toHaveText('Cà chua');
 });
 
 test('Issue 22: trang chi tiết không ảnh và trường tùy chọn trống dùng placeholder theo loại ăn chay', async ({ page }) => {
