@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.32.0
+> **Version:** v1.33.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-17
+> **Last Updated:** 2026-10-19
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -37,8 +37,9 @@ Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy v
 - `/trang-chu` giữ Home ứng dụng hiện có. Logo và mục Trang chủ trong ứng dụng dẫn về route này; đăng nhập email/Google thành công cũng mở `/trang-chu`, trừ trường hợp Backend mời onboarding. Hoàn tất hoặc bỏ qua onboarding vẫn mở `/kham-pha`. Các deep link chức năng và phân quyền giữ nguyên.
 - Nút Bắt đầu ở header và Bắt đầu khám phá trong Hero/cuối Landing mở `/trang-chu` cho Guest mà không yêu cầu đăng nhập hoặc đăng ký. Đăng nhập là lựa chọn riêng; việc tạo tài khoản chỉ được đề xuất tại chức năng lưu công thức theo tài khoản.
 - Landing giới thiệu công thức, lưu món, lịch ăn, Shopping List, dinh dưỡng, hỗ trợ AI và nội dung từ Chuyên gia theo phạm vi sản phẩm đã chốt. Theo quyết định nội dung của nhóm, không gắn nhãn tiến độ trên Landing; các đoạn giới thiệu không phải bằng chứng nghiệm thu những chức năng chưa kết nối. Giới hạn implementation tiếp tục được mô tả trong các mục dưới đây.
-- Preview trên Landing là ảnh chụp giao diện Mâm Xanh thực tế, được lưu tĩnh trong `public/landing/`, gồm Home Guest, Khám phá, Công thức đã lưu, Lịch ăn, Đi chợ, dinh dưỡng công thức và form hỗ trợ AI. Ảnh được chụp từ root Docker Compose ở theme tối, không dựng lại control bằng icon. Các luồng đã nối API sử dụng SQL Server demo; lưu công thức qua API thật trước khi chụp. Đi chợ và form AI phản ánh giao diện hiện tại, không chứng minh tính năng Backend đã hoàn tất hoặc Gemini đã sinh kết quả. Landing không tải dữ liệu cá nhân để render; CTA không chạy thao tác AI, tạo lịch ăn hoặc Shopping List.
-- Hero dùng ảnh riêng ở mobile; ảnh JPEG được nén khi chụp, khai báo đúng kích thước và lazy-load các preview dưới màn hình đầu. Không thay palette cố định của Landing theo màu trong ảnh ứng dụng.
+- Preview trên Landing là minh họa tĩnh dựng bằng HTML/CSS và ảnh món ăn có sẵn trong `public/assets/`, gồm món ăn, bộ sưu tập, lịch ăn, đi chợ, dinh dưỡng và hỗ trợ AI. Các khối minh họa không có control tương tác và được ẩn khỏi cây truy cập; số liệu mẫu không phải dữ liệu cá nhân hoặc kết quả AI trực tiếp. Landing không gọi Backend để tải những preview này; CTA mở các route ứng dụng hiện có.
+- Header giữ logo, đăng nhập và nút Bắt đầu; liên kết các mục giới thiệu nằm ở footer và gợi ý cuộn sau Hero. Ảnh dưới màn hình đầu được lazy-load; bố cục đáp ứng desktop/mobile và giữ palette kem/xanh cố định.
+- Hiệu ứng xuất hiện theo cuộn dùng `IntersectionObserver`, có thể chạy lại khi quay về một mục. Thiết lập giảm chuyển động hoặc trình duyệt thiếu observer giữ nội dung hiển thị đầy đủ. Test trình duyệt xác minh ảnh tải được, điều hướng, bàn phím, ba vai trò đăng nhập và các kích thước 360/768/1440 px; đây là kiểm thử Frontend, không phải bằng chứng Backend/SQL.
 - Google Stitch hỗ trợ proposal desktop/mobile trong project `4319306096093270564`. Bố cục và palette được chuyển thủ công sang React/CSS của repo; bỏ script CDN, font/icon phụ, asset logo mới và các khả năng ngoài SRS mà generator tự thêm. Samsung Food chỉ được dùng làm tham khảo cách kể câu chuyện sản phẩm.
 - Application routes được tải theo chunk riêng, gồm theme, danh sách đã lưu và các hiệu ứng của ứng dụng. Landing không tải toàn bộ màn hình ứng dụng ngay từ đầu; khi vào ứng dụng, lựa chọn theme đã lưu vẫn được áp dụng.
 - Metadata mô tả/OG được sinh từ `.figma/make/site.json`, ngôn ngữ HTML là `vi`, title Landing được quản lý bằng React. Cấu hình preview `noindex` hiện có vẫn được giữ; bổ sung metadata không đồng nghĩa trang đã được deploy hoặc mở indexing.
