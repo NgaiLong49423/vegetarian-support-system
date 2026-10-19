@@ -2,9 +2,9 @@ import { type Page } from '@playwright/test';
 import { expect, test } from './baseFixtures';
 import { seedDemoSession } from './demo-session';
 
-// The scenarios intentionally pause for two seconds after each user action so
-// they can be observed. The 50-ingredient boundary scenario therefore needs a
-// longer test budget than Playwright's 30-second default.
+// Local acceptance demos pause after each action for observation. CI uses
+// Playwright's locator waits and the same assertions without demonstration pauses.
+// Keep the longer budget for the local 50-ingredient boundary demonstration.
 test.describe.configure({ timeout: 180_000 });
 
 const options = {
@@ -38,7 +38,7 @@ type PostResponse = { status: number; body: Record<string, unknown> };
 async function action(page: Page, label: string, operation: () => Promise<unknown>) {
   console.log(`BƯỚC: ${label}`);
   await operation();
-  await page.waitForTimeout(2000);
+  if (!process.env.CI) await page.waitForTimeout(2000);
 }
 
 type PublishedDetail = {
@@ -182,7 +182,7 @@ test('Issue 25: recipe detail flags catalog ingredients without nutrition data',
   await page.goto(`/cong-thuc/${detail.recipeId}`, { waitUntil: 'commit' });
 
   await expect(page.getByRole('heading', { name: 'Chưa đủ dữ liệu dinh dưỡng' })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Chưa đủ dữ liệu dinh dưỡng' }).getByRole('status')).toContainText('Ước tính dinh dưỡng chưa đầy đủ');
+  await expect(page.getByRole('note', { name: 'Chưa đủ dữ liệu dinh dưỡng' }).getByRole('status')).toContainText('Ước tính chưa đầy đủ');
   await expect(page.locator('[aria-labelledby="nutrition-status-heading"] li')).toHaveText('Cà chua');
 });
 
@@ -213,7 +213,7 @@ test('Issue 22: API không tìm thấy công thức hiển thị trạng thái l
   await installApi(page, () => ({ status: 201, body: {} }));
 
   await action(page, 'Mở ID công thức không tồn tại', () => page.goto('/cong-thuc/2299', { waitUntil: 'domcontentloaded' }));
-  await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Không thể mở công thức' })).toBeVisible();
   await expect(page.getByRole('alert')).toContainText('Không tìm thấy công thức.');
   await expect(page.getByRole('link', { name: 'Quay lại khám phá' })).toBeVisible();
 });

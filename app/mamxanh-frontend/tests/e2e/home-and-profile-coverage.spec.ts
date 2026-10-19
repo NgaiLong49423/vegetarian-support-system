@@ -150,13 +150,13 @@ test('administrator can view admin dashboard and pending modules', async ({ page
   await page.getByRole('button', { name: 'Đóng menu' }).click();
 
   await page.goto('/admin/bao-cao');
-  await expect(page.getByRole('heading', { name: 'Hậu kiểm nội dung & Xử lý báo cáo vi phạm' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hậu kiểm nội dung & Xử lý vi phạm' })).toBeVisible();
 
   await page.goto('/admin/nguoi-dung');
-  await expect(page.getByRole('heading', { name: 'Quản lý tài khoản & Phân quyền người dùng' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Quản lý tài khoản & Phân quyền', exact: true })).toBeVisible();
 
   await page.goto('/admin/giao-dich');
-  await expect(page.getByRole('heading', { name: 'Giám sát giao dịch thanh toán gói AI hệ thống' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Giám sát giao dịch gói AI hệ thống' })).toBeVisible();
 });
 
 test('non-admin member accessing admin route is denied access', async ({ page }) => {

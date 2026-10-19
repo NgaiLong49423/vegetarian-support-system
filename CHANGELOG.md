@@ -13,7 +13,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 **Status:** Committed — `0f1ce32`.
 
-**Scope:** Update the public Landing presentation independently of the unmerged application refinements in PR #156.
+**Scope:** Update the public Landing presentation alongside the account, calendar and application refinements retained from PR #156.
 
 ### Added
 
@@ -28,6 +28,27 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Align the Landing tests and workspace guide with the current preview and navigation design.
+
+## 2026-10-18 — Refine Account, Calendar and Admin Interfaces ([PR #156](https://github.com/NgaiLong49423/vegetarian-support-system/pull/156))
+
+**Status:** Committed — `2e6ec94`.
+
+**Scope:** Refine the Frontend presentation and reconcile it with the current develop integration baseline.
+
+### Added
+
+- Add interactive local Admin previews for account roles/locks, report moderation and transaction details, explicitly labeled as sample data without Backend writes.
+- Add browser coverage for preview interactions and calendar keyboard navigation across months.
+
+### Changed
+
+- Refresh account forms, shared navigation, recipe details, profile pages and the animated meal calendar while retaining reduced-motion support.
+- Require Guest sign-in for meal planning and shopping; keep explicit local previews behind `?demo=true`.
+
+### Fixed
+
+- Preserve API-backed recipe comments, reactions, views and meal-plan serving updates after synchronizing develop.
+- Keep tall registration forms scrollable, retain ingredient JSON preview/copy, and use the actual vegetarian-type label in recipe details.
 
 ## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
 

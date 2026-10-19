@@ -83,12 +83,16 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 
 ### Các chức năng demo khác
 
+Giao diện tài khoản dùng đèn tương tác và vùng biểu mẫu cuộn được khi nội dung cao hơn màn hình. Lịch ăn có hiệu ứng chuyển tháng, điều hướng bằng phím mũi tên và hỗ trợ thiết lập giảm chuyển động của hệ điều hành. Các trang chi tiết công thức vẫn dùng API lượt xem, bình chọn và bình luận sau khi đổi bố cục.
+
+Guest mở `/ke-hoach` hoặc `/di-cho` được mời đăng nhập; bản xem thử local chỉ mở bằng `?demo=true`. Ba module Admin tài khoản/phân quyền, báo cáo và giao dịch có nhãn “Giao diện minh họa”: tìm/lọc, xem chi tiết và thay đổi dữ liệu mẫu chỉ tồn tại trong bộ nhớ, tải lại trang sẽ khôi phục. Các thao tác này chưa ghi Backend và không chứng minh các FR quản trị đã hoàn thành.
+
 | Khu vực | Người dùng có thể thử | Giới hạn hiện tại |
 |---|---|---|
 | Trang chủ và thanh điều hướng | Nền tối, header gọn, hai nhóm công thức API và menu responsive | Preview cộng đồng vẫn được ghi nhãn mẫu; không có API nhóm hoặc theo dõi tác giả |
 | Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Guest đọc công khai; Customer/Expert đăng nhập mới được thao tác; Backend lưu bình luận và trả lời |
 | Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu | Làm tròn tối đa 2 chữ số thập phân; lượng không đọc được thành số giữ nguyên; chưa đồng bộ Shopping List |
-| Kế hoạch bữa ăn Guest | Chọn 0,5–10 phần cho từng món, bước 0,5 | Guest chỉ cập nhật UI mẫu; Member dùng API lịch tuần, thêm món với khẩu phần mặc định 1 |
+| Kế hoạch bữa ăn Guest | Đăng nhập để lưu lịch; `?demo=true` mở bản mẫu với 0,5–10 phần cho từng món, bước 0,5 | Bản mẫu chỉ cập nhật UI; Member dùng API lịch tuần, thêm món với khẩu phần mặc định 1 |
 | Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |
 | Dinh dưỡng công thức prototype tại `/cong-thuc/:slug` | Đọc số liệu minh họa cho **1 khẩu phần** | 8 chỉ tiêu tĩnh, xem BUG-002; trang thật `/cong-thuc/id/:id` dùng 9 chỉ tiêu và trạng thái dữ liệu từ Backend |
 | Theo dõi dinh dưỡng (`/dinh-duong`) | Đọc lịch ăn Member qua `GET /meal-plans/{weekStartDate}/nutrition`; đổi ngày/tuần cập nhật số liệu; xuất báo cáo PDF theo đúng phạm vi qua `/nutrition/report` | Cần đăng nhập Member và xác nhận phạm vi hỗ trợ dinh dưỡng; số liệu là khẩu phần dự kiến. Danh sách mua sắm, cộng đồng/bình luận/báo cáo, gói AI và giao dịch vẫn là các màn hình minh họa nếu không được liệt kê riêng là đã nối API |

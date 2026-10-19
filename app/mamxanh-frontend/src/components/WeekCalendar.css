@@ -1,0 +1,349 @@
+/* Lucian UX/UI Prompt #030 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#030 */
+
+.u030-wrap {
+  --ux-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ux-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+
+/* Month header vertical slider */
+.u030-month-container {
+  position: relative;
+  height: 24px;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.u030-month-title {
+  position: absolute;
+  line-height: 24px;
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--color-ink);
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
+.u030-month-title.is-static {
+  position: relative;
+}
+
+.u030-title-out-up {
+  animation: u030-title-out-up 0.45s var(--ux-ease) forwards;
+}
+
+.u030-title-out-down {
+  animation: u030-title-out-down 0.45s var(--ux-ease) forwards;
+}
+
+.u030-title-in-up {
+  animation: u030-title-in-up 0.45s var(--ux-ease) forwards;
+}
+
+.u030-title-in-down {
+  animation: u030-title-in-down 0.45s var(--ux-ease) forwards;
+}
+
+@keyframes u030-title-out-up {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes u030-title-out-down {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes u030-title-in-up {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes u030-title-in-down {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Nav buttons with spring micro-interaction */
+.u030-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  color: var(--color-ink-muted);
+  transition:
+    transform 0.35s var(--ux-spring),
+    background-color 0.2s var(--ux-ease),
+    color 0.2s;
+}
+
+.u030-nav-btn:hover {
+  background-color: var(--color-raised);
+  color: var(--color-ink);
+}
+
+.u030-nav-btn:active {
+  transform: scale(0.88);
+}
+
+.u030-nav-btn:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}
+
+/* Day labels header */
+.u030-wk {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding-bottom: 0.5rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  text-align: center;
+}
+
+/* Date grid viewport & slider */
+.u030-view {
+  position: relative;
+  height: 188px;
+  overflow: hidden;
+}
+
+.u030-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 28px);
+  row-gap: 4px;
+  text-align: center;
+  will-change: transform, opacity;
+}
+
+.u030-grid.is-static {
+  position: absolute;
+  inset: 0;
+}
+
+.u030-slide-out-left {
+  animation: u030-slide-out-left 0.45s var(--ux-ease) forwards;
+}
+
+.u030-slide-out-right {
+  animation: u030-slide-out-right 0.45s var(--ux-ease) forwards;
+}
+
+.u030-slide-in-right {
+  animation: u030-slide-in-right 0.45s var(--ux-ease) forwards;
+}
+
+.u030-slide-in-left {
+  animation: u030-slide-in-left 0.45s var(--ux-ease) forwards;
+}
+
+@keyframes u030-slide-out-left {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes u030-slide-out-right {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes u030-slide-in-right {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes u030-slide-in-left {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Cell and range band */
+.u030-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.u030-cell::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 1px;
+  bottom: 1px;
+  background: var(--color-raised);
+  opacity: 0;
+  transition: opacity 0.2s var(--ux-ease);
+  pointer-events: none;
+}
+
+.u030-cell.in::before {
+  opacity: 1;
+}
+
+.u030-cell.s::before,
+.u030-cell:nth-child(7n+1).in::before {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.u030-cell.e::before,
+.u030-cell:nth-child(7n).in::before {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* Day button */
+.u030-d {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 28px;
+  border: 0;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  background: transparent;
+  transition:
+    background-color 0.2s var(--ux-ease),
+    color 0.2s,
+    transform 0.35s var(--ux-spring);
+}
+
+.u030-d:hover {
+  background-color: var(--color-raised);
+}
+
+.u030-d:active {
+  transform: scale(0.88);
+}
+
+.u030-d:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 1px;
+}
+
+/* Selected Day pop animation */
+.u030-d.is-selected-day {
+  background-color: var(--color-brand-600) !important;
+  color: var(--color-on-brand) !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px -2px rgba(255, 155, 48, 0.35);
+  animation: u030-pick 0.4s var(--ux-spring);
+}
+
+@keyframes u030-pick {
+  from {
+    transform: scale(0.7);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Today indicator dot */
+.u030-d.is-today::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background-color: var(--color-brand-600);
+  pointer-events: none;
+}
+
+.u030-d.is-selected-day.is-today::after {
+  background-color: var(--color-on-brand);
+}
+
+/* Bottom "Tuần này" button with spring */
+.u030-today-btn {
+  transition:
+    transform 0.35s var(--ux-spring),
+    border-color 0.2s,
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.u030-today-btn:active {
+  transform: scale(0.95);
+}
+
+.u030-today-btn:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .u030-wrap,
+  .u030-wrap *,
+  .u030-wrap *::before,
+  .u030-wrap *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

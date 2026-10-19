@@ -47,6 +47,62 @@ function formatApprox(value: number, fractionDigits = 1) {
   return `≈ ${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: fractionDigits, minimumFractionDigits: fractionDigits }).format(value)}`;
 }
 
+function getBmiTheme(category?: string, bmi?: number) {
+  const isUnderweight = category?.includes('Thiếu') || (bmi !== undefined && bmi < 18.5);
+  const isOverweight = category?.includes('Thừa') || (bmi !== undefined && bmi >= 25 && bmi < 30);
+  const isObese = category?.includes('Béo phì') || (bmi !== undefined && bmi >= 30);
+
+  if (isUnderweight) {
+    // Thiếu cân -> Đỏ cảnh báo (Red)
+    return {
+      cardGradient: 'from-red-50 to-paper ring-1 ring-red-200 dark:from-red-950/40 dark:ring-red-900/60',
+      labelColor: 'text-red-700 dark:text-red-400',
+      numberColor: 'text-red-700 dark:text-red-400',
+      badgeClass: 'bg-paper text-red-800 ring-1 ring-red-300 dark:bg-red-950/60 dark:text-red-300 dark:ring-red-800',
+      dotColor: 'bg-red-500',
+      statusText: 'Cân nặng dưới chuẩn (BMI < 18.5)',
+      activeSegment: 0,
+    };
+  }
+
+  if (isOverweight) {
+    // Thừa cân -> Vàng cam cảnh báo (Amber)
+    return {
+      cardGradient: 'from-amber-50 to-paper ring-1 ring-amber-200 dark:from-amber-950/40 dark:ring-amber-900/60',
+      labelColor: 'text-amber-700 dark:text-amber-400',
+      numberColor: 'text-amber-800 dark:text-amber-400',
+      badgeClass: 'bg-paper text-amber-900 ring-1 ring-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:ring-amber-800',
+      dotColor: 'bg-amber-500',
+      statusText: 'Cân nặng trên chuẩn (25 ≤ BMI < 30)',
+      activeSegment: 2,
+    };
+  }
+
+  if (isObese) {
+    // Béo phì -> Đỏ cam / Rose cảnh báo mức cao
+    return {
+      cardGradient: 'from-rose-50 to-paper ring-1 ring-rose-300 dark:from-rose-950/50 dark:ring-rose-900/70',
+      labelColor: 'text-rose-700 dark:text-rose-400',
+      numberColor: 'text-rose-800 dark:text-rose-400',
+      badgeClass: 'bg-paper text-rose-900 ring-1 ring-rose-400 dark:bg-rose-950/60 dark:text-rose-300 dark:ring-rose-800',
+      dotColor: 'bg-rose-600',
+      statusText: 'Cảnh báo béo phì (BMI ≥ 30)',
+      activeSegment: 3,
+    };
+  }
+
+  // Bình thường (Đủ) -> Xanh lá an toàn (Leaf)
+  return {
+    cardGradient: 'from-leaf-50 to-paper ring-1 ring-leaf-100 dark:from-leaf-50 dark:ring-leaf-100',
+    labelColor: 'text-leaf-700 dark:text-leaf-400',
+    numberColor: 'text-leaf-800 dark:text-leaf-300',
+    badgeClass: 'bg-paper text-leaf-800 ring-1 ring-leaf-200 dark:bg-paper dark:text-leaf-700 dark:ring-leaf-300',
+    dotColor: 'bg-leaf-600',
+    statusText: 'Cân nặng chuẩn theo khuyến nghị (18.5 ≤ BMI < 25)',
+    activeSegment: 1,
+  };
+}
+
 function loadErrorMessage(error: unknown) {
   if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
     return 'Hồ sơ dinh dưỡng cần phiên đăng nhập đã được xác thực. Đăng nhập thật sẽ được nối khi phần xác thực sẵn sàng.';
@@ -371,27 +427,57 @@ export function NutritionProfile() {
       <Card className="border-leaf-100 p-5 shadow-sm shadow-leaf-900/5 md:p-7">
         <div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-bold text-ink">Chỉ số tham khảo</h2><p className="mt-1 text-sm text-ink-muted">Dựa trên hồ sơ đã lưu của bạn.</p></div><span className="rounded-full bg-leaf-50 px-3 py-1 text-xs font-bold text-leaf-700">≈ Tham khảo</span></div>
         {loading ? <div className="flex items-center gap-2 py-16 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" /> Đang tải kết quả…</div>
-          : result ? <div className="mt-5">
-            <div className="rounded-2xl bg-gradient-to-br from-leaf-50 to-paper p-5 ring-1 ring-leaf-100">
-              <p className="text-xs font-bold uppercase tracking-wide text-leaf-700">Chỉ số BMI tham khảo</p>
-              <div className="mt-2 flex flex-wrap items-end justify-between gap-2"><p className="text-4xl font-extrabold tracking-tight text-leaf-800">{formatApprox(result.bmi)}</p><span className="mb-1 rounded-full bg-paper px-3 py-1.5 text-xs font-bold text-leaf-800 ring-1 ring-leaf-200">{result.bmiCategory} · tham khảo</span></div>
-              <p className="mt-2 text-xs leading-5 text-ink-muted">Chỉ số sàng lọc tham khảo từ chiều cao và cân nặng tự khai báo.</p>
-            </div>
-            <div className="mt-4 rounded-2xl border border-leaf-100 p-4">
-              <div className="flex items-center justify-between gap-3"><div><p className="text-sm font-bold text-ink">Năng lượng mỗi ngày</p><p className="mt-1 text-xs text-ink-muted">Theo mức vận động và nhóm tuổi</p></div><p className="text-right text-lg font-extrabold text-leaf-800">{formatApprox(result.energyKcal, 0)} <span className="text-xs font-semibold">kcal</span></p></div>
-            </div>
-            <div className="mt-5 overflow-hidden rounded-2xl border border-leaf-100">
-              <div className="flex items-center justify-between bg-leaf-50 px-4 py-3"><h3 className="text-sm font-bold text-ink">9 chỉ tiêu tham khảo mỗi ngày</h3><span className="text-xs text-ink-muted">Định lượng ước tính</span></div>
-              <dl className="divide-y divide-leaf-50 px-4">
-                {result.dailyTargets.map((target) => <div key={target.key} className="flex items-start justify-between gap-4 py-3"><dt><span className="block text-sm font-semibold text-ink">{target.label}</span><span className="mt-0.5 block text-xs text-ink-muted">{target.referenceType}</span></dt><dd className="text-right text-sm font-bold tabular-nums text-leaf-800">{target.minimum === target.maximum ? formatApprox(target.minimum) : `${formatApprox(target.minimum)} – ${formatApprox(target.maximum)}`} <span className="text-xs font-semibold text-ink-muted">{target.unit}</span></dd></div>)}
-              </dl>
-            </div>
-            <div className="mt-4 space-y-2 rounded-xl bg-stone-50 p-4 text-xs leading-5 text-ink-muted">
-              {[sourceLink(result.energySource), ...result.dailyTargets.slice(0, 1).map((target) => sourceLink(target.source)), ...result.dailyTargets.slice(4).map((target) => sourceLink(target.source))]
-                .filter((source, index, sources) => sources.findIndex((item) => item.url === source.url) === index)
-                .map((source) => source.url ? <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="block break-words font-medium underline decoration-leaf-300 underline-offset-2 hover:text-leaf-800">Nguồn tham khảo: {source.label}</a> : <p key={source.label}>{source.label}</p>)}
-            </div>
-          </div>
+          : result ? (() => {
+            const bmiTheme = getBmiTheme(result.bmiCategory, result.bmi);
+            return (
+              <div className="mt-5">
+                <div className={`rounded-2xl bg-gradient-to-br ${bmiTheme.cardGradient} p-5 transition-colors duration-200`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className={`text-xs font-bold uppercase tracking-wide ${bmiTheme.labelColor}`}>Chỉ số BMI tham khảo</p>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold shadow-2xs ${bmiTheme.badgeClass}`}>
+                      <span className={`h-2 w-2 rounded-full ${bmiTheme.dotColor}`} aria-hidden="true" />
+                      {result.bmiCategory} · tham khảo
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-baseline gap-3">
+                    <p className={`text-4xl font-extrabold tracking-tight ${bmiTheme.numberColor}`}>{formatApprox(result.bmi)}</p>
+                    <span className="text-xs font-medium text-ink-muted">{bmiTheme.statusText}</span>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-ink-muted">Chỉ số sàng lọc tham khảo từ chiều cao và cân nặng tự khai báo.</p>
+
+                  {/* Thước đo phân vùng BMI trực quan */}
+                  <div className="mt-4 border-t border-black/5 pt-3 dark:border-white/10">
+                    <div className="mb-1.5 flex items-center justify-between text-[10.5px] font-semibold text-ink-muted">
+                      <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />Thiếu &lt;18.5</span>
+                      <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-leaf-500" />Chuẩn 18.5–24.9</span>
+                      <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />Thừa 25–29.9</span>
+                      <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-600" />Béo phì ≥30</span>
+                    </div>
+                    <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-raised">
+                      <div className={`h-full flex-1 rounded-l-full bg-red-400 transition-opacity ${bmiTheme.activeSegment === 0 ? 'opacity-100 ring-2 ring-red-500' : 'opacity-30'}`} title="Thiếu cân (<18.5)" />
+                      <div className={`h-full flex-[1.4] bg-leaf-500 transition-opacity ${bmiTheme.activeSegment === 1 ? 'opacity-100 ring-2 ring-leaf-600' : 'opacity-30'}`} title="Bình thường (18.5 - 24.9)" />
+                      <div className={`h-full flex-1 bg-amber-400 transition-opacity ${bmiTheme.activeSegment === 2 ? 'opacity-100 ring-2 ring-amber-500' : 'opacity-30'}`} title="Thừa cân (25 - 29.9)" />
+                      <div className={`h-full flex-1 rounded-r-full bg-rose-600 transition-opacity ${bmiTheme.activeSegment === 3 ? 'opacity-100 ring-2 ring-rose-700' : 'opacity-30'}`} title="Béo phì (≥30)" />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 rounded-2xl border border-leaf-100 p-4">
+                  <div className="flex items-center justify-between gap-3"><div><p className="text-sm font-bold text-ink">Năng lượng mỗi ngày</p><p className="mt-1 text-xs text-ink-muted">Theo mức vận động và nhóm tuổi</p></div><p className="text-right text-lg font-extrabold text-leaf-800">{formatApprox(result.energyKcal, 0)} <span className="text-xs font-semibold">kcal</span></p></div>
+                </div>
+                <div className="mt-5 overflow-hidden rounded-2xl border border-leaf-100">
+                  <div className="flex items-center justify-between bg-leaf-50 px-4 py-3"><h3 className="text-sm font-bold text-ink">9 chỉ tiêu tham khảo mỗi ngày</h3><span className="text-xs text-ink-muted">Định lượng ước tính</span></div>
+                  <dl className="divide-y divide-leaf-50 px-4">
+                    {result.dailyTargets.map((target) => <div key={target.key} className="flex items-start justify-between gap-4 py-3"><dt><span className="block text-sm font-semibold text-ink">{target.label}</span><span className="mt-0.5 block text-xs text-ink-muted">{target.referenceType}</span></dt><dd className="text-right text-sm font-bold tabular-nums text-leaf-800">{target.minimum === target.maximum ? formatApprox(target.minimum) : `${formatApprox(target.minimum)} – ${formatApprox(target.maximum)}`} <span className="text-xs font-semibold text-ink-muted">{target.unit}</span></dd></div>)}
+                  </dl>
+                </div>
+                <div className="mt-4 space-y-2 rounded-xl bg-stone-50 p-4 text-xs leading-5 text-ink-muted">
+                  {[sourceLink(result.energySource), ...result.dailyTargets.slice(0, 1).map((target) => sourceLink(target.source)), ...result.dailyTargets.slice(4).map((target) => sourceLink(target.source))]
+                    .filter((source, index, sources) => sources.findIndex((item) => item.url === source.url) === index)
+                    .map((source) => source.url ? <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="block break-words font-medium underline decoration-leaf-300 underline-offset-2 hover:text-leaf-800">Nguồn tham khảo: {source.label}</a> : <p key={source.label}>{source.label}</p>)}
+                </div>
+              </div>
+            );
+          })()
           : showOutOfScope || savedResponse?.outOfScopeReasons.length ? <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950"><div className="flex gap-3"><AlertCircle className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-bold">Chưa thể hiển thị hồ sơ dinh dưỡng</p><p className="mt-1">Các chỉ số BMI và 9 chỉ tiêu bị ẩn đối với trường hợp ngoài phạm vi hỗ trợ. Vui lòng tham khảo bác sĩ hoặc chuyên gia dinh dưỡng.</p></div></div></div>
             : <div className="mt-5 rounded-2xl border border-dashed border-leaf-200 bg-leaf-50/30 px-5 py-12 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-paper text-leaf-700 ring-1 ring-leaf-100"><Activity className="h-6 w-6" /></div><p className="mt-4 font-bold text-ink">{savedResponse?.hasProfile ? 'Xác nhận để xem chỉ số' : 'Chưa có kết quả'}</p><p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-ink-muted">{savedResponse?.hasProfile ? 'Trả lời “Không” cho cả ba câu hỏi về phạm vi hỗ trợ, sau đó chọn “Tính chỉ số tham khảo”.' : 'Hoàn thành hồ sơ và đồng ý lưu dữ liệu để xem BMI cùng các chỉ tiêu dinh dưỡng tham khảo.'}</p></div>}
         {calculationResponse?.eligible && result && <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-ink-muted"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-leaf-700" />Giá trị chưa làm tròn được dùng để phân loại, hệ thống định dạng số để bạn dễ theo dõi.</p>}
