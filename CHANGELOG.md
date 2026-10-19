@@ -125,7 +125,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-15 — Restore Comment and Follow Error Codes in the API Guide ([PR #140](https://github.com/NgaiLong49423/vegetarian-support-system/pull/140))
 
-**Status:** Committed — `8f34482`; the FR-59 restoration is in the working tree, not committed.
+**Status:** Committed — `8f34482`, `9466846`.
 
 **Scope:** Restore the FR-46 and FR-59 error-code documentation that PR #129 and PR #128 added to `docs/api/API.md` and that was dropped while resolving their sync conflicts (`b2802ea` for PR #129; `9de65b4` and `6251704` for PR #128); the Backend already returns these codes.
 
