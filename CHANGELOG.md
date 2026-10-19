@@ -1,13 +1,33 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.87.0
+> **Version:** v2.88.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-18
+> **Last Updated:** 2026-10-19
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-19 — Refresh Landing Previews and Scroll Motion ([PR #157](https://github.com/NgaiLong49423/vegetarian-support-system/pull/157))
+
+**Status:** Committed — `0f1ce32`.
+
+**Scope:** Update the public Landing presentation independently of the unmerged application refinements in PR #156.
+
+### Added
+
+- Add replayable scroll reveals with reduced-motion and missing-observer fallbacks.
+- Add browser checks for illustration assets, scroll effects and responsive navigation, and upload Landing screenshots with the existing CI UI evidence.
+
+### Changed
+
+- Replace captured application previews with decorative HTML/CSS illustrations using existing local food images.
+- Simplify the header and retain section navigation in the footer; preserve application destinations and account-specific collection links.
+
+### Fixed
+
+- Align the Landing tests and workspace guide with the current preview and navigation design.
 
 ## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
 
