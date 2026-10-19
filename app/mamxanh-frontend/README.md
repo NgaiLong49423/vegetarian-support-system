@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.31.0
+> **Version:** v1.32.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-16
+> **Last Updated:** 2026-10-17
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -10,6 +10,13 @@
 Thư mục mã nguồn giao diện ứng dụng Mâm Xanh được xây dựng bằng **React 19**, **TypeScript**, **Vite 8**, **Tailwind CSS v4** và xuất phát từ thiết kế Figma Make.
 
 Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy và gỡ lỗi trực tiếp trên **IntelliJ IDEA** (hoặc WebStorm/VS Code).
+
+### Thẻ công thức và thao tác lịch ăn — FR-17 / Issue #23
+
+- Thẻ công thức công khai hiển thị ảnh bìa hoặc ảnh mặc định theo loại ăn chay, thông tin tác giả, tỷ lệ Like, thời gian và lượt xem. Nút ba chấm mở thao tác thêm công thức vào lịch; nút lưu nhanh vẫn hoạt động độc lập.
+- Thành viên có thể chọn nhiều tổ hợp ngày/bữa trong cùng tuần hoặc nhiều tuần. Chuyển tuần không xóa lựa chọn; khi xác nhận, mỗi tổ hợp được gửi đến API của đúng tuần. Nếu một số lượt thêm thất bại, lựa chọn lỗi còn được giữ để thử lại.
+- Guest được dẫn tới đăng nhập trước khi thêm lịch; Administrator không có thao tác cá nhân trên thẻ.
+- Kiểm thử Playwright mô phỏng API để bao phủ thẻ, ảnh mặc định, lưu nhanh, lựa chọn qua nhiều tuần và lỗi từng lượt thêm. Kiểm thử này không xác nhận tích hợp Backend/SQL Server thật.
 
 ### Bình chọn công thức — FR-57 / Issue #56
 
