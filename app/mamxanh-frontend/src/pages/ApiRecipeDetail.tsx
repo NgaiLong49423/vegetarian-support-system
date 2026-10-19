@@ -438,6 +438,19 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
             </div>
           </Card>
         )}
+
+        {/* Cảm nhận cộng đồng & Bình luận được đưa lên cột trái dưới Cách làm để cân đối và không để trống khoảng trống */}
+        <div className="recipe-detail-no-print space-y-6">
+          <Card className="p-5 sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Cảm nhận cộng đồng</p>
+            <h2 className="mt-1 text-xl font-extrabold text-ink">Đánh giá &amp; Mức độ yêu thích</h2>
+            <div className="mt-4">
+              <RecipeViews key={recipeId} recipe={recipe} renderCount={(count) => <StatTile icon={<Eye className="h-4 w-4 text-brand-600" />} label="Lượt xem" value={<>{formatNumber(count, 0)}<span className="sr-only"> lượt xem</span></>} />} />
+            </div>
+            <RecipeReactions recipeId={recipe.recipeId} authorId={author.userId} statistics={statistics} />
+          </Card>
+          <RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} className="w-full" />
+        </div>
       </div>
 
       {/* Cột phải (5 cột): Dinh dưỡng đi cùng cao độ với Nguyên liệu */}
@@ -538,17 +551,6 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
           </Card>
         )}
       </aside>
-    </div>
-    <div className="recipe-detail-no-print space-y-6">
-      <Card className="p-5 sm:p-6">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Cảm nhận cộng đồng</p>
-        <h2 className="mt-1 text-xl font-extrabold text-ink">Đánh giá &amp; Mức độ yêu thích</h2>
-        <div className="mt-4">
-          <RecipeViews key={recipeId} recipe={recipe} renderCount={(count) => <StatTile icon={<Eye className="h-4 w-4 text-brand-600" />} label="Lượt xem" value={<>{formatNumber(count, 0)}<span className="sr-only"> lượt xem</span></>} />} />
-        </div>
-        <RecipeReactions recipeId={recipe.recipeId} authorId={author.userId} statistics={statistics} />
-      </Card>
-      <RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} className="w-full" />
     </div>
     <RelatedRecipes key={recipeId} recipeId={recipeId} />
     <div className="recipe-detail-no-print mt-8"><Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeft className="h-4 w-4" />Trở lại khám phá</Link></div>
