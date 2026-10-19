@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.30.0
+> **Version:** v0.31.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-16
+> **Last Updated:** 2026-10-19
 > **Status:** Active
 
 # API Integration Guide
@@ -168,6 +168,7 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
 | `UNSUPPORTED_IMAGE_TYPE` | 400 | Tệp ảnh không phải JPEG, PNG hoặc WebP; với ảnh đại diện, nội dung tệp (chữ ký đầu tệp) phải khớp `Content-Type`. |
 | `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |
 | `DIETARY_PROFILE_INCOMPLETE` | 409 | Cổng AI cá nhân hóa (BR-31) chặn yêu cầu vì hồ sơ thiếu nhóm thông tin tối thiểu; body có thêm `missing` (`VEGETARIAN_TYPE`, `AVOID_INGREDIENTS`, `DISLIKED_INGREDIENTS`). |
+| `REPORT_ALREADY_OPEN` | 409 | `POST /recipes/{recipeId}/reports` khi tài khoản đã có báo cáo `OPEN` hoặc `IN_REVIEW` trên bài đó, kể cả khi gửi đồng thời (SRS 3.14); body có thêm `reportId` của báo cáo đang mở (AC-30.2). Xem mục 19. |
 | `UNAUTHENTICATED` | 401 | Gọi endpoint cần đăng nhập mà không có Bearer token, hoặc token sai chữ ký, sai issuer, hết hạn hay thuộc tài khoản không còn tồn tại. |
 | `ACCESS_DENIED` | 403 | Đã xác thực nhưng không đủ quyền. |
 | `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE` | 404, 405, 415 | Lỗi định tuyến/định dạng do framework phát hiện. |
@@ -423,3 +424,12 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 - `POST /api/v1/recipes/{recipeId}/comments` (cần Bearer token) body `{ "content", "parentCommentId"? }`, trả `201` với bình luận mới. Chỉ Customer/Expert đang hoạt động; Administrator nhận `403 MEMBER_ACCESS_REQUIRED`. `content` bỏ khoảng trắng đầu cuối, 1–1.000 ký tự, sai thì `400 VALIDATION_FAILED` với `errors[].field = content`. Trả lời bình luận cấp 5 được gắn vào cha cấp 4 nên vẫn ở cấp 5 (AC-46.1); Frontend chèn `@Tên` vào đầu nội dung.
 - `PUT /api/v1/comments/{commentId}` body `{ "content" }` và `DELETE /api/v1/comments/{commentId}` (cần Bearer token): chỉ chủ bình luận; người khác nhận `403 COMMENT_EDIT_NOT_ALLOWED`. Sửa thì `edited = true`. Xóa trả `204`, gọi lặp an toàn, luôn là xóa mềm (`is_deleted`) vì `REPORT`/`NOTIFICATION` có thể tham chiếu bình luận.
 - Nội dung là văn bản thuần: Backend lưu nguyên văn, Frontend hiển thị như text nên mã HTML/JavaScript không được thực thi (AC-46.3).
+
+## 19. Báo cáo công thức — FR-26/27, FR-30
+
+Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Báo cáo lưu trong `REPORT` (V1, V9); filtered unique index `UQ_REPORT_open_recipe` giữ tối đa một báo cáo `OPEN`/`IN_REVIEW` cho mỗi cặp người gửi – bài.
+
+- `POST /api/v1/recipes/{recipeId}/reports` (cần Bearer token) body `{ "reasonCode", "description"? }`, trả `201` `RecipeReportResponse` (`reportId`, `status = OPEN`, `message`). Chỉ bài `PUBLISHED`, khác thì `404 RECIPE_NOT_FOUND`. `reasonCode` là một trong `RECIPE_INFO_OR_DIET_LABEL`, `FOOD_SAFETY_HAZARD`, `SPAM_ADVERTISING`, `INAPPROPRIATE_CONTENT`, `COPYRIGHT_VIOLATION`, `OTHER`. `description` bỏ khoảng trắng đầu cuối, tối đa 500 ký tự; với `OTHER` bắt buộc 10–500 ký tự.
+- Tài khoản đã có báo cáo `OPEN`/`IN_REVIEW` trên bài thì nhận `409 REPORT_ALREADY_OPEN`, body có `reportId` của báo cáo đó để Frontend dẫn người gửi tới báo cáo hiện có (AC-30.2). Request đồng thời của cùng tài khoản trên cùng bài được tuần tự hóa bằng khóa dòng `RECIPE_POST`: đúng một request tạo báo cáo, các request còn lại nhận `409` kèm `reportId` (SRS 3.14).
+- Báo cáo lại sau khi báo cáo trước của chính tài khoản trên bài đó đã `RESOLVED` bắt buộc có `description` 10–500 ký tự với mọi `reasonCode` (AC-30.3, SRS 3.14); thiếu hoặc quá ngắn thì `400 VALIDATION_FAILED` với `field = description` và không tạo báo cáo.
+- Bổ sung mô tả vào báo cáo đang mở (AC-30.1) và danh sách báo cáo nhóm theo bài cho Administrator (AC-30.4) chưa có API.

@@ -1,6 +1,6 @@
 schema_version: 1
-last_updated: 2026-10-16
-next_id: 36
+last_updated: 2026-10-19
+next_id: 41
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -8,6 +8,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-040
+    title: Chuyển món trong Lịch ăn đôi khi làm mất focus thay vì trả về tiêu đề "Lịch ăn của bạn"
+    status: RECORDED
+    severity: Low
+    area: Frontend/Lịch ăn
+    file: .agents/outputs/bugs/BUG-040.md
+    created: 2026-10-19
+    updated: 2026-10-19
+    related_issue: 38
   - id: BUG-035
     title: OpenAPI lượt xem mô tả sai schema phản hồi lỗi
     status: RESOLVED
