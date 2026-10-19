@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Spring configuration for Azure Blob Storage client (FR-14).
  * Creates {@link AzureBlobStorageClient} when connection string is configured,
- * or gracefully falls back to {@link MockStorageClient} for local development.
+ * or rejects uploads through {@link UnavailableStorageClient} without taking down unrelated features.
  */
 @Configuration
 @EnableConfigurationProperties(StorageProperties.class)
@@ -36,12 +36,12 @@ public class StorageConfig {
                 }
                 return new AzureBlobStorageClient(containerClient);
             } catch (Exception e) {
-                log.warn("Failed to initialize Azure Blob Storage client; falling back to MockStorageClient: {}", e.getMessage());
-                return new MockStorageClient(properties.containerName());
+                log.warn("Azure Blob Storage initialization failed ({}); uploads will be rejected.", e.getClass().getSimpleName());
+                return new UnavailableStorageClient();
             }
         }
 
-        log.info("AZURE_STORAGE_CONNECTION_STRING is not set. Using MockStorageClient for local development.");
-        return new MockStorageClient(properties.containerName());
+        log.info("AZURE_STORAGE_CONNECTION_STRING is not set; image uploads will be rejected.");
+        return new UnavailableStorageClient();
     }
 }

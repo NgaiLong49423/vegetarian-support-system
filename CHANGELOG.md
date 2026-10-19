@@ -1,13 +1,33 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.87.0
+> **Version:** v2.88.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-18
+> **Last Updated:** 2026-10-19
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-19 — Store Recipe Images in Azure (Issue #158)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Fix misleading upload success when Azure storage is missing or unavailable ([Issue #158](https://github.com/NgaiLong49423/vegetarian-support-system/issues/158)).
+
+### Added
+
+- Add unavailable-storage tests, browser upload-state regression checks, and an opt-in Azure/Compose integration test.
+
+### Changed
+
+- Forward Backend Azure configuration through the root Compose stack and document the image storage setup.
+- Regenerate OpenAPI to describe upload success as HTTP 201 and storage failure as HTTP 503.
+
+### Fixed
+
+- Reject uploads with `MEDIA_STORAGE_UNAVAILABLE` instead of returning fabricated storage URLs; sanitize storage failure diagnostics.
+- Label failed previews, count only successful uploads, and block publication while uploads are pending or failed.
 
 ## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
 

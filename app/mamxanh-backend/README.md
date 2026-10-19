@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.30.0
+> **Version:** v0.31.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-16<br>
+> **Last Updated:** 2026-10-19<br>
 > **Status:** Active  
 
 # Backend Workspace
@@ -11,6 +11,12 @@ Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và
 
 > [!IMPORTANT]
 > **Quy chuẩn kiến trúc bắt buộc:** Mọi thành viên và AI agent khi triển khai mã nguồn Backend **bắt buộc phải tuân thủ nghiêm ngặt** cấu trúc package Modular Monolith, phân tầng MVC và ranh giới liên module được quy định tại [Backend Package Structure Specification](../../docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md). Cấm inject chéo Repository giữa các module và không trả JPA Entity trực tiếp ra REST API.
+
+### Cấu hình ảnh Azure — FR-14 / fix #158
+
+- Điền `AZURE_STORAGE_CONNECTION_STRING` và `AZURE_STORAGE_CONTAINER_NAME` trong `.env` Backend đã được Git ignore. Root Compose truyền hai biến vào container; sau khi thay `.env`, chạy lại `docker compose -p <project> --env-file app/mamxanh-backend/.env up --build -d --wait` tại root với đúng tên project đang dùng. Không đưa connection string vào Frontend.
+- Ảnh công khai cần container cho phép đọc Blob. Khi thiếu cấu hình hoặc Azure không khả dụng, Backend vẫn phục vụ tính năng khác nhưng upload ảnh trả `503 MEDIA_STORAGE_UNAVAILABLE`, không tạo URL giả. URL mock của ảnh cũ không có dữ liệu để khôi phục; người dùng cần tải lại ảnh.
+- Chạy test storage/media theo lệnh Maven bên dưới; kiểm tra Azure thật qua test opt-in được mô tả trong [Frontend README](../mamxanh-frontend/README.md). Storage dùng chung cho avatar nên avatar cũng cần Azure được cấu hình đúng.
 
 ### Backend bình chọn công thức — FR-57 / Issue #56
 

@@ -3,6 +3,10 @@ package tech.mamxanh.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -20,8 +24,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.util.unit.DataSize;
 import tech.mamxanh.AbstractIntegrationTest;
+import tech.mamxanh.integration.storage.StorageClient;
+import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ErrorCode;
 
 /** FR-23 (Issue #29), decisions Q54–Q58: public member profile, own profile settings and avatar. */
 class MemberProfileIntegrationTest extends AbstractIntegrationTest {
@@ -29,6 +37,8 @@ class MemberProfileIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired private JdbcTemplate jdbcTemplate;
     @Autowired private MultipartProperties multipartProperties;
+    // This SQL integration test isolates the cloud boundary explicitly; real Azure is tested in Compose.
+    @MockitoBean private StorageClient storageClient;
 
     private long authorId;
     private long lockedMemberId;
@@ -185,6 +195,10 @@ class MemberProfileIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void ownerUploadsAValidAvatarUpToTwoMegabytes() throws Exception {
+        when(storageClient.uploadImage(any(), anyLong(), eq("image/png"), eq("avatar.png"), eq("avatars")))
+                .thenReturn("https://storage.example.test/avatars/me.png");
+        when(storageClient.uploadImage(any(), anyLong(), eq("image/webp"), eq("avatar.webp"), eq("avatars")))
+                .thenReturn("https://storage.example.test/avatars/me.webp");
         byte[] png = withSignature(new byte[1_500_000], 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A);
         mockMvc.perform(multipart("/api/v1/me/profile/avatar").file(new MockMultipartFile("file", "me.png", "image/png", png))
                         .with(principal(customerId, "ROLE_CUSTOMER")))
@@ -199,6 +213,20 @@ class MemberProfileIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.avatarUrl", containsString(".webp")));
         mockMvc.perform(get("/api/v1/members/{userId}", customerId))
                 .andExpect(jsonPath("$.avatarUrl", containsString(".webp")));
+    }
+
+    @Test
+    void unavailableStoragePreservesThePreviousAvatarAndReturns503() throws Exception {
+        jdbcTemplate.update("UPDATE [USER] SET avatar_url = 'https://cdn.test/old.png' WHERE user_id = ?", customerId);
+        when(storageClient.uploadImage(any(), anyLong(), any(), any(), eq("avatars")))
+                .thenThrow(new AppException(ErrorCode.MEDIA_STORAGE_UNAVAILABLE));
+        byte[] png = withSignature(new byte[64], 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A);
+        mockMvc.perform(multipart("/api/v1/me/profile/avatar")
+                        .file(new MockMultipartFile("file", "me.png", "image/png", png))
+                        .with(principal(customerId, "ROLE_CUSTOMER")))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("MEDIA_STORAGE_UNAVAILABLE"));
+        assertThat(column(customerId, "avatar_url")).isEqualTo("https://cdn.test/old.png");
     }
 
     @Test

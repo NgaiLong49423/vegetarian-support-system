@@ -2176,6 +2176,7 @@ paths:
     post:
       tags:
       - recipe-media-controller
+      summary: Upload a recipe image to Azure Blob Storage
       operationId: uploadImage
       requestBody:
         content:
@@ -2189,12 +2190,19 @@ paths:
               required:
               - file
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Image stored successfully; data contains the blob URL.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseUploadImageResponse"
+        "503":
+          description: "MEDIA_STORAGE_UNAVAILABLE: storage is unconfigured or unavailable;\
+            \ no successful upload URL is returned."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "400":
           description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
             \ its rules; details in `errors`."
@@ -2821,11 +2829,18 @@ paths:
               - file
       responses:
         "200":
-          description: OK
+          description: Avatar stored and profile updated.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MemberProfileResponse"
+        "503":
+          description: "MEDIA_STORAGE_UNAVAILABLE: storage is unconfigured or unavailable;\
+            \ the previous avatar is preserved."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "400":
           description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
             \ its rules; details in `errors`."
@@ -6411,16 +6426,16 @@ components:
           additionalProperties: {}
         signature:
           type: string
-        amount:
-          type: integer
-          format: int32
+        paymentLinkId:
+          type: string
+        paymentSuccess:
+          type: boolean
         orderCode:
           type: integer
           format: int64
-        paymentSuccess:
-          type: boolean
-        paymentLinkId:
-          type: string
+        amount:
+          type: integer
+          format: int32
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
