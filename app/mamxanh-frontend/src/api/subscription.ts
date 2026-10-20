@@ -42,6 +42,7 @@ export interface TransactionHistoryResponse {
   status: PaymentStatus;
   createdAt: string;
   paidAt: string | null;
+  endsAt: string | null;
 }
 
 export interface PaymentResultResponse {

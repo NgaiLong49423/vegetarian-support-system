@@ -1,11 +1,18 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.31.0
+> **Version:** v0.32.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-17
+> **Last Updated:** 2026-10-20
 > **Status:** Active
 
 # API Integration Guide
+
+### Thời gian đăng ký gói và giao dịch — FR-13
+
+- `createdAt`, `paidAt`, `startsAt`, `endsAt` trong response subscription/payment là ISO-8601 UTC có hậu tố `Z`; Frontend hiển thị theo `Asia/Ho_Chi_Minh` (UTC+7), không phụ thuộc múi giờ trình duyệt.
+- Lịch sử giao dịch có `endsAt` nullable, lấy từ Subscription được liên kết với chính giao dịch đã thanh toán. Giao dịch chưa trả tiền hoặc thiếu liên kết trả `null`; không suy ra từ gói hiện tại hay tự cộng thời hạn ở Frontend.
+- `paidAt` là thời điểm Backend xác nhận/kích hoạt giao dịch. Không thay đổi cách xác minh chữ ký, số tiền hoặc thời hạn chu kỳ.
+- Dữ liệu cũ từng được tạo bằng giờ máy Windows cần đối chiếu trước khi sửa; không cộng/trừ 7 giờ hàng loạt cho dữ liệu UTC của Docker. Bản sửa không tự ghi lại các giao dịch lịch sử.
 
 ## 1. Mục đích và phạm vi
 

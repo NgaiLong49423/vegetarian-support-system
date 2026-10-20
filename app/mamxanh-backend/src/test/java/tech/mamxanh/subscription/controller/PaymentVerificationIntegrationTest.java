@@ -30,6 +30,7 @@ class PaymentVerificationIntegrationTest extends AbstractIntegrationTest {
     @Autowired AccessTokenService tokens;
     @Autowired PaymentTransactionRepository payments;
     @Autowired PaymentSettlementService settlement;
+    @Autowired java.time.Clock clock;
     @MockitoBean PayOsClient payOs;
     long owner;
     long other;
@@ -40,7 +41,9 @@ class PaymentVerificationIntegrationTest extends AbstractIntegrationTest {
         owner = user("CUSTOMER");
         other = user("CUSTOMER");
         order = Long.toString(1 + Math.floorMod(UUID.randomUUID().getMostSignificantBits(), 8_000_000_000_000_000L));
-        payments.saveAndFlush(new PaymentTransactionEntity(owner, order, 99000));
+        var payment = new PaymentTransactionEntity(owner, order, 99000);
+        payment.setCreatedAt(java.time.LocalDateTime.now(clock));
+        payments.saveAndFlush(payment);
     }
 
     @AfterEach void cleanup() {
@@ -97,6 +100,14 @@ class PaymentVerificationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.status").value("PAID")).andExpect(jsonPath("$.activated").value(true))
                 .andExpect(jsonPath("$.subscription.tier").value("PRO"));
         assertThat(payments.findByOrderCode(order).orElseThrow().getStatus()).isEqualTo(PaymentStatus.PAID);
+        var payment = payments.findByOrderCode(order).orElseThrow();
+        assertThat(payment.getCreatedAt()).isBeforeOrEqualTo(payment.getPaidAt());
+        mockMvc.perform(get("/api/v1/subscriptions/transactions")
+                        .header("Authorization", "Bearer " + token(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].createdAt").value(org.hamcrest.Matchers.endsWith("Z")))
+                .andExpect(jsonPath("$[0].paidAt").value(org.hamcrest.Matchers.endsWith("Z")))
+                .andExpect(jsonPath("$[0].endsAt").value(org.hamcrest.Matchers.endsWith("Z")));
     }
 
     @Test void guestAdminAndLockedMemberCannotAccessResult() throws Exception {

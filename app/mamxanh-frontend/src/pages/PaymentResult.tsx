@@ -5,7 +5,7 @@ import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card } from '../components/ui';
 import { subscriptionApi, type PaymentResultResponse } from '../api/subscription';
 import { useAuth } from '../components/AuthContext';
-import { formatDate } from '../utils/date';
+import { formatSubscriptionDate as formatDate } from '../utils/subscriptionDate';
 
 const MAX_CHECKS = 10;
 const CHECK_INTERVAL_MS = 3000;

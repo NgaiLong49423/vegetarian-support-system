@@ -119,6 +119,7 @@ public class SubscriptionService {
         String description = "Nang cap " + tier.name();
 
         PaymentTransactionEntity transaction = new PaymentTransactionEntity(user.getId(), String.valueOf(orderCode), amount);
+        transaction.setCreatedAt(LocalDateTime.now(clock));
         paymentTransactionRepository.save(transaction);
 
         CreatePaymentLinkResponse payOsResponse = payOsClient.createPaymentLink(orderCode, amount, description);
@@ -210,7 +211,15 @@ public class SubscriptionService {
     @Transactional(readOnly = true)
     public List<TransactionHistoryResponse> getTransactionHistory(Long userId) {
         validateActiveMember(userId);
-        return paymentTransactionRepository.findAllByUserIdOrderByCreatedAtDesc(userId).stream()
+        var transactions = paymentTransactionRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+        var subscriptionIds = transactions.stream()
+                .filter(tx -> tx.getStatus() == PaymentStatus.PAID)
+                .map(PaymentTransactionEntity::getSubscriptionId).filter(java.util.Objects::nonNull).distinct().toList();
+        var purchasedSubscriptions = subscriptionIds.isEmpty() ? java.util.Map.<Long, SubscriptionEntity>of()
+                : subscriptionRepository.findAllById(subscriptionIds).stream()
+                        .filter(sub -> sub.getUserId().equals(userId))
+                        .collect(java.util.stream.Collectors.toMap(SubscriptionEntity::getId, sub -> sub));
+        return transactions.stream()
                 .map(tx -> new TransactionHistoryResponse(
                         tx.getId(),
                         tx.getOrderCode(),
@@ -219,7 +228,10 @@ public class SubscriptionService {
                         tx.getCreatedAt(),
                         tx.getPaidAt(),
                         tx.getAmountVnd() == SubscriptionTier.PRO.priceVnd() ? "PRO"
-                                : tx.getAmountVnd() == SubscriptionTier.PLUS.priceVnd() ? "PLUS" : null
+                                : tx.getAmountVnd() == SubscriptionTier.PLUS.priceVnd() ? "PLUS" : null,
+                        tx.getStatus() == PaymentStatus.PAID && tx.getSubscriptionId() != null
+                                && purchasedSubscriptions.containsKey(tx.getSubscriptionId())
+                                ? purchasedSubscriptions.get(tx.getSubscriptionId()).getEndsAt() : null
                 ))
                 .toList();
     }

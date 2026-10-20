@@ -60,6 +60,7 @@ const mockTransactions = [
     status: 'PAID',
     createdAt: '2026-10-04T12:00:00Z',
     paidAt: '2026-10-04T12:01:00Z',
+    endsAt: '2026-11-03T12:01:00Z',
   },
   {
     paymentTransactionId: 2,
@@ -69,6 +70,7 @@ const mockTransactions = [
     status: 'CANCELLED',
     createdAt: '2026-10-04T12:05:00Z',
     paidAt: null,
+    endsAt: null,
   },
 ];
 

@@ -2,7 +2,7 @@ schema_version: 1
 last_updated: 2026-10-20
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-next_id: 51
+next_id: 52
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -10,6 +10,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-051
+    title: Thời gian tạo đơn và thanh toán dùng hai múi giờ khác nhau
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Frontend/Subscription
+    file: .agents/outputs/bugs/BUG-051.md
+    created: 2026-10-20
+    updated: 2026-10-20
+    related_issue: 142
   - id: BUG-050
     title: Hostname của healthcheck làm lệch server URL trong OpenAPI
     status: TRACKING

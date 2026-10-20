@@ -167,7 +167,9 @@ class SubscriptionServiceTest {
         assertThat(response.amountVnd()).isEqualTo(49_000);
         assertThat(response.tier()).isEqualTo("PLUS");
         assertThat(response.checkoutUrl()).isEqualTo("https://pay.payos.vn/123");
-        verify(paymentTransactionRepository).save(any(PaymentTransactionEntity.class));
+        var captured = ArgumentCaptor.forClass(PaymentTransactionEntity.class);
+        verify(paymentTransactionRepository).save(captured.capture());
+        assertThat(captured.getValue().getCreatedAt()).isEqualTo(LocalDateTime.ofInstant(FIXED_INSTANT, ZoneOffset.UTC));
     }
 
     @Test
@@ -301,6 +303,32 @@ class SubscriptionServiceTest {
         when(payOsClient.verifyWebhook(missingCode)).thenReturn(true);
         assertThatThrownBy(() -> subscriptionService.handlePayOsWebhook(missingCode)).isInstanceOf(AppException.class);
         org.mockito.Mockito.verifyNoInteractions(settlement);
+    }
+
+    @Test
+    void historyUsesEachPurchasedSubscriptionExpiryIncludingExpiredPeriods() {
+        mockActiveUser(1L);
+        var time = LocalDateTime.ofInstant(FIXED_INSTANT, ZoneOffset.UTC);
+        var oldPayment = new PaymentTransactionEntity(1L, "old", 49000);
+        oldPayment.setStatus(PaymentStatus.PAID);
+        oldPayment.setSubscriptionId(10L);
+        var newPayment = new PaymentTransactionEntity(1L, "new", 99000);
+        newPayment.setStatus(PaymentStatus.PAID);
+        newPayment.setSubscriptionId(11L);
+        var cancelled = new PaymentTransactionEntity(1L, "cancelled", 99000);
+        cancelled.setStatus(PaymentStatus.CANCELLED);
+        var unlinked = new PaymentTransactionEntity(1L, "legacy", 49000);
+        unlinked.setStatus(PaymentStatus.PAID);
+        var oldSub = new SubscriptionEntity(1L, SubscriptionTier.PLUS, time.minusDays(60), time.minusDays(30));
+        oldSub.setId(10L);
+        oldSub.setStatus(SubscriptionStatus.EXPIRED);
+        var newSub = new SubscriptionEntity(1L, SubscriptionTier.PRO, time, time.plusDays(30));
+        newSub.setId(11L);
+        when(paymentTransactionRepository.findAllByUserIdOrderByCreatedAtDesc(1L))
+                .thenReturn(List.of(newPayment, oldPayment, cancelled, unlinked));
+        when(subscriptionRepository.findAllById(List.of(11L, 10L))).thenReturn(List.of(oldSub, newSub));
+        var history = subscriptionService.getTransactionHistory(1L);
+        assertThat(history).extracting(r -> r.endsAt()).containsExactly(time.plusDays(30), time.minusDays(30), null, null);
     }
 
     private void mockActiveUser(Long userId) {

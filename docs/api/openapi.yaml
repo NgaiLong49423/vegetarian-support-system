@@ -6899,6 +6899,13 @@ components:
           type:
           - string
           - "null"
+        endsAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+          description: "UTC expiry of the subscription purchased by this transaction,\
+            \ not the current subscription."
     MySubscriptionResponse:
       type: object
       properties:

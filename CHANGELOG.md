@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.89.0
+> **Version:** v2.90.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-20
 > **Status:** Active
@@ -8,6 +8,22 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-20 — Correct Subscription Time Display and Transaction Expiry ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
+
+**Status:** Working tree ? not committed.
+
+**Scope:** Follow-up payment verification fixes for Issue #142 / FR-13.
+
+### Fixed
+
+- Use UTC consistently for checkout creation and payment activation, and include the UTC offset in subscription API timestamps.
+- Display subscription and payment dates in Vietnam time regardless of the browser timezone.
+
+### Added
+
+- Show the expiry of the subscription purchased by each paid transaction in transaction history; cancelled or unlinked orders have no expiry.
+- Add timezone, midnight rollover, historical subscription mapping and API serialization regression checks.
 
 ## 2026-10-19 — Refresh Landing Previews and Scroll Motion ([PR #157](https://github.com/NgaiLong49423/vegetarian-support-system/pull/157))
 

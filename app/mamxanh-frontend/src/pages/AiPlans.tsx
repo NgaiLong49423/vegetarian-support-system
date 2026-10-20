@@ -10,7 +10,8 @@ import {
   type PlanResponse,
   type SubscriptionTier,
 } from '../api/subscription';
-import { formatDate, formatVnd } from '../utils/date';
+import { formatVnd } from '../utils/date';
+import { formatSubscriptionDate as formatDate } from '../utils/subscriptionDate';
 
 const DEFAULT_PLANS: PlanResponse[] = [
   {
