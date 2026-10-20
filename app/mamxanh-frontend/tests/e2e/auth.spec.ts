@@ -52,6 +52,27 @@ test('registration validates password rules, submits to the API and links to ema
   await expect(page.getByRole('heading', { name: 'Xác minh email của bạn' })).toBeVisible();
 });
 
+for (const viewport of [{ width: 360, height: 640 }, { width: 1280, height: 560 }]) {
+  test(`registration can scroll to verification actions at ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await stubApi(page, '/auth/register', route => route.fulfill({ status: 201, json: {
+      accountStatus: 'ACTIVE', emailVerified: false, message: 'Đăng ký thành công. Vui lòng kiểm tra email.',
+    } }));
+    await page.goto('/dang-ky');
+    await page.getByLabel('Tên hiển thị').fill('Người dùng kiểm thử');
+    await page.getByLabel('Email', { exact: true }).fill('scroll@example.test');
+    await page.getByLabel('Mật khẩu', { exact: true }).fill('DemoPass123!');
+    await page.getByLabel('Xác nhận mật khẩu').fill('DemoPass123!');
+    await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('Đăng ký thành công');
+    const screenshot = testInfo.outputPath('registration-scroll.png');
+    await page.screenshot({ path: screenshot });
+    await testInfo.attach('Registration layout', { path: screenshot, contentType: 'image/png' });
+    await page.getByRole('link', { name: 'Chưa nhận được email? Gửi lại email xác minh' }).click();
+    await expect(page.getByRole('heading', { name: 'Xác minh email của bạn' })).toBeVisible();
+  });
+}
+
 test('registration shows the duplicate-email error returned by the API (mock API)', async ({ page }) => {
   await stubApi(page, '/auth/register', route => route.fulfill(problem(409, 'EMAIL_ALREADY_USED', { detail: 'Email này đã được sử dụng.' })));
   await page.goto('/dang-ky');

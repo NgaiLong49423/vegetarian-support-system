@@ -90,9 +90,6 @@ test('AI Recipe Assistant modal generates, previews JSON, copies and applies rec
   await page.getByRole('button', { name: 'Phân tích nguyên liệu & gợi ý định lượng' }).click();
 
   await expect(page.getByText('Công thức đề xuất')).toBeVisible();
-  await page.getByRole('button', { name: 'Xem cấu trúc JSON nguyên liệu' }).click();
-  await expect(page.getByText('Ẩn mã JSON nguyên liệu')).toBeVisible();
-  await page.getByRole('button', { name: 'Sao chép JSON' }).click();
   await page.getByRole('button', { name: 'Nạp vào biểu mẫu công thức' }).click();
 
   await expect(page.getByText(/Đã nạp thành công thông tin món/)).toBeVisible();

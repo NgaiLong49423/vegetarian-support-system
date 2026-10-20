@@ -1,11 +1,20 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.33.0
+> **Version:** v1.37.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-10-20
 > **Status:** Active  
 
 # Mâm Xanh Frontend
+
+### Danh bạ Chuyên gia và chọn nguyên liệu — FR-61 / FR-62
+
+- Menu Khám phá mở các route Công thức, Danh mục nguyên liệu và Chuyên gia trên desktop/mobile. Cộng đồng vẫn được mở từ nút “Xem cộng đồng” trên Trang chủ; route và deep links hiện có được giữ nguyên.
+- `/chuyen-gia` đọc danh sách Expert đang hoạt động từ `GET /api/v1/experts`, hỗ trợ tìm/phân trang, mở hồ sơ hiện có và follow/unfollow qua API FR-59. Guest được chuyển tới đăng nhập; Admin chỉ duyệt.
+- `/danh-muc-nguyen-lieu` tải toàn bộ nguyên liệu đang hoạt động theo trang từ `GET /api/v1/ingredients`, hiển thị thành nhãn chọn nhiều và mở Khám phá với tất cả các ingredient ID đã chọn.
+- Bốn Expert demo trong profile `local` dùng ảnh chân dung tổng hợp được host trong `public/avatars/experts/`; avatar người dùng tải lên được giữ nguyên.
+- Màn hình dùng dữ liệu Backend, có trạng thái loading/error/empty; không dùng mock directory hay count tĩnh.
+- Hồ sơ công khai `/thanh-vien/:userId` trình bày công thức thành lưới bài viết; từng ảnh hiển thị số lượt xem và lượt thích. Phần đầu hồ sơ hiển thị tổng lượt xem/lượt thích của tất cả bài công khai qua `GET /api/v1/members/{userId}/recipe-statistics`, không chỉ trang đang xem.
 
 Thư mục mã nguồn giao diện ứng dụng Mâm Xanh được xây dựng bằng **React 19**, **TypeScript**, **Vite 8**, **Tailwind CSS v4** và xuất phát từ thiết kế Figma Make.
 
@@ -37,8 +46,9 @@ Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy v
 - `/trang-chu` giữ Home ứng dụng hiện có. Logo và mục Trang chủ trong ứng dụng dẫn về route này; đăng nhập email/Google thành công cũng mở `/trang-chu`, trừ trường hợp Backend mời onboarding. Hoàn tất hoặc bỏ qua onboarding vẫn mở `/kham-pha`. Các deep link chức năng và phân quyền giữ nguyên.
 - Nút Bắt đầu ở header và Bắt đầu khám phá trong Hero/cuối Landing mở `/trang-chu` cho Guest mà không yêu cầu đăng nhập hoặc đăng ký. Đăng nhập là lựa chọn riêng; việc tạo tài khoản chỉ được đề xuất tại chức năng lưu công thức theo tài khoản.
 - Landing giới thiệu công thức, lưu món, lịch ăn, Shopping List, dinh dưỡng, hỗ trợ AI và nội dung từ Chuyên gia theo phạm vi sản phẩm đã chốt. Theo quyết định nội dung của nhóm, không gắn nhãn tiến độ trên Landing; các đoạn giới thiệu không phải bằng chứng nghiệm thu những chức năng chưa kết nối. Giới hạn implementation tiếp tục được mô tả trong các mục dưới đây.
-- Preview trên Landing là ảnh chụp giao diện Mâm Xanh thực tế, được lưu tĩnh trong `public/landing/`, gồm Home Guest, Khám phá, Công thức đã lưu, Lịch ăn, Đi chợ, dinh dưỡng công thức và form hỗ trợ AI. Ảnh được chụp từ root Docker Compose ở theme tối, không dựng lại control bằng icon. Các luồng đã nối API sử dụng SQL Server demo; lưu công thức qua API thật trước khi chụp. Đi chợ và form AI phản ánh giao diện hiện tại, không chứng minh tính năng Backend đã hoàn tất hoặc Gemini đã sinh kết quả. Landing không tải dữ liệu cá nhân để render; CTA không chạy thao tác AI, tạo lịch ăn hoặc Shopping List.
-- Hero dùng ảnh riêng ở mobile; ảnh JPEG được nén khi chụp, khai báo đúng kích thước và lazy-load các preview dưới màn hình đầu. Không thay palette cố định của Landing theo màu trong ảnh ứng dụng.
+- Preview trên Landing là minh họa tĩnh dựng bằng HTML/CSS và ảnh món ăn có sẵn trong `public/assets/`, gồm món ăn, bộ sưu tập, lịch ăn, đi chợ, dinh dưỡng và hỗ trợ AI. Các khối minh họa không có control tương tác và được ẩn khỏi cây truy cập; số liệu mẫu không phải dữ liệu cá nhân hoặc kết quả AI trực tiếp. Landing không gọi Backend để tải những preview này; CTA mở các route ứng dụng hiện có.
+- Header giữ logo, đăng nhập và nút Bắt đầu; liên kết các mục giới thiệu nằm ở footer và gợi ý cuộn sau Hero. Ảnh dưới màn hình đầu được lazy-load; bố cục đáp ứng desktop/mobile và giữ palette kem/xanh cố định.
+- Hiệu ứng xuất hiện theo cuộn dùng `IntersectionObserver`, có thể chạy lại khi quay về một mục. Thiết lập giảm chuyển động hoặc trình duyệt thiếu observer giữ nội dung hiển thị đầy đủ. Test trình duyệt xác minh ảnh tải được, điều hướng, bàn phím, ba vai trò đăng nhập và các kích thước 360/768/1440 px; đây là kiểm thử Frontend, không phải bằng chứng Backend/SQL.
 - Google Stitch hỗ trợ proposal desktop/mobile trong project `4319306096093270564`. Bố cục và palette được chuyển thủ công sang React/CSS của repo; bỏ script CDN, font/icon phụ, asset logo mới và các khả năng ngoài SRS mà generator tự thêm. Samsung Food chỉ được dùng làm tham khảo cách kể câu chuyện sản phẩm.
 - Application routes được tải theo chunk riêng, gồm theme, danh sách đã lưu và các hiệu ứng của ứng dụng. Landing không tải toàn bộ màn hình ứng dụng ngay từ đầu; khi vào ứng dụng, lựa chọn theme đã lưu vẫn được áp dụng.
 - Metadata mô tả/OG được sinh từ `.figma/make/site.json`, ngôn ngữ HTML là `vi`, title Landing được quản lý bằng React. Cấu hình preview `noindex` hiện có vẫn được giữ; bổ sung metadata không đồng nghĩa trang đã được deploy hoặc mở indexing.
@@ -81,12 +91,16 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 
 ### Các chức năng demo khác
 
+Giao diện tài khoản dùng đèn tương tác và vùng biểu mẫu cuộn được khi nội dung cao hơn màn hình. Lịch ăn có hiệu ứng chuyển tháng, điều hướng bằng phím mũi tên và hỗ trợ thiết lập giảm chuyển động của hệ điều hành. Các trang chi tiết công thức vẫn dùng API lượt xem, bình chọn và bình luận sau khi đổi bố cục.
+
+Guest mở `/ke-hoach` hoặc `/di-cho` được mời đăng nhập; bản xem thử local chỉ mở bằng `?demo=true`. Ba module Admin tài khoản/phân quyền, báo cáo và giao dịch có nhãn “Giao diện minh họa”: tìm/lọc, xem chi tiết và thay đổi dữ liệu mẫu chỉ tồn tại trong bộ nhớ, tải lại trang sẽ khôi phục. Các thao tác này chưa ghi Backend và không chứng minh các FR quản trị đã hoàn thành.
+
 | Khu vực | Người dùng có thể thử | Giới hạn hiện tại |
 |---|---|---|
 | Trang chủ và thanh điều hướng | Nền tối, header gọn, hai nhóm công thức API và menu responsive | Preview cộng đồng vẫn được ghi nhãn mẫu; không có API nhóm hoặc theo dõi tác giả |
 | Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Guest đọc công khai; Customer/Expert đăng nhập mới được thao tác; Backend lưu bình luận và trả lời |
 | Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu | Làm tròn tối đa 2 chữ số thập phân; lượng không đọc được thành số giữ nguyên; chưa đồng bộ Shopping List |
-| Kế hoạch bữa ăn Guest | Chọn 0,5–10 phần cho từng món, bước 0,5 | Guest chỉ cập nhật UI mẫu; Member dùng API lịch tuần, thêm món với khẩu phần mặc định 1 |
+| Kế hoạch bữa ăn Guest | Đăng nhập để lưu lịch; `?demo=true` mở bản mẫu với 0,5–10 phần cho từng món, bước 0,5 | Bản mẫu chỉ cập nhật UI; Member dùng API lịch tuần, thêm món với khẩu phần mặc định 1 |
 | Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |
 | Dinh dưỡng công thức prototype tại `/cong-thuc/:slug` | Đọc số liệu minh họa cho **1 khẩu phần** | 8 chỉ tiêu tĩnh, xem BUG-002; trang thật `/cong-thuc/id/:id` dùng 9 chỉ tiêu và trạng thái dữ liệu từ Backend |
 | Theo dõi dinh dưỡng (`/dinh-duong`) | Đọc lịch ăn Member qua `GET /meal-plans/{weekStartDate}/nutrition`; đổi ngày/tuần cập nhật số liệu; xuất báo cáo PDF theo đúng phạm vi qua `/nutrition/report` | Cần đăng nhập Member và xác nhận phạm vi hỗ trợ dinh dưỡng; số liệu là khẩu phần dự kiến. Danh sách mua sắm, cộng đồng/bình luận/báo cáo, gói AI và giao dịch vẫn là các màn hình minh họa nếu không được liệt kê riêng là đã nối API |

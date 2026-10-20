@@ -1,6 +1,6 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.5.0
+> **Version:** v2.9.0
 > **Created:** 2026-09-11
 > **Last Updated:** 2026-10-20
 > **Status:** Active
@@ -44,6 +44,8 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - So sánh công thức (`FR-60`): Guest và Member có thể chọn đúng hai Recipe Post công khai khác nhau để đối chiếu thông tin tổng quan, nguyên liệu và chín chỉ tiêu dinh dưỡng trên một khẩu phần; hệ thống không lưu lịch sử, không xuất PDF và không kết luận món nào tốt hơn hoặc lành mạnh hơn.
 - Quan hệ xã hội (`FR-59`, `BR-75`): Customer và Chuyên gia đã đăng nhập có thể theo dõi hoặc bỏ theo dõi một Member khác; quan hệ có hướng được lưu bằng `USER_FOLLOW`. Chức năng này chưa bao gồm news feed cá nhân hóa, tài khoản riêng tư hay thông báo follow.
 - Khám phá đa tiêu chí: Trang khám phá hỗ trợ 6 chế độ độc lập gồm Newest (Mới nhất), Most Liked (Được yêu thích nhất theo tỷ lệ % Like), Most Viewed (Xem nhiều nhất theo 24h/7d/30d/all-time), Most Commented (Nhiều bình luận nhất), Most Active (Hoạt động sôi nổi nhất theo tương tác 7 ngày), và Trending (Thịnh hành theo tương tác gần đây + hệ số tươi mới freshness decay).
+- Khám phá thêm danh bạ Chuyên gia đang hoạt động có tìm kiếm, hồ sơ công khai và follow theo FR-59; danh mục nguyên liệu hiển thị tất cả nguyên liệu hoạt động dưới dạng nhãn chọn nhiều và mở công thức đã lọc (`FR-61`, `FR-62`).
+- Hồ sơ công khai hiển thị tổng lượt thích và lượt xem của tất cả Recipe Post đang công khai của tác giả; thống kê không phụ thuộc trang phân trang đang xem (`FR-23`).
 - Kiểm duyệt sau đăng: người dùng báo cáo nội dung có vấn đề và Administrator xử lý báo cáo. Baseline hiện tại không cung cấp AI quét hoặc gắn cờ nội dung.
 - Người dùng: tìm kiếm/lọc, xem nội dung, tương tác cộng đồng, lưu công thức (`Saved Recipe`), lập thực đơn ngày/tuần (`Meal Plan`), so sánh thống kê dinh dưỡng tuần, và **xuất file công thức (.txt/.pdf) / báo cáo dinh dưỡng ngày hoặc tuần (.pdf, gồm thực đơn dự kiến) / danh sách mua sắm (.txt)**.
 - AI Gemini: hỏi đáp/gợi ý với Guest Free, Free, Plus và Pro theo gói tính năng (Feature-based Entitlement).
@@ -323,18 +325,18 @@ Nguyên liệu “đang có” được nhập theo từng request; MVP không c
 **Chỉ tiêu dinh dưỡng MVP:**
 
 - MVP sử dụng chín chỉ tiêu: **năng lượng (kcal), protein, carbohydrate, tổng chất béo, chất xơ, canxi, sắt, vitamin B12 và kẽm**. Natri/muối không thuộc bộ chỉ tiêu dinh dưỡng MVP.
-- MVP có một **danh mục nguyên liệu được hỗ trợ tính dinh dưỡng** lưu trong database của ứng dụng. Mỗi mục có giá trị của chín chỉ tiêu theo 100 g cùng thông tin nguồn tham khảo; USDA FoodData Central là nguồn tham khảo chính để nhóm chuẩn bị và kiểm chứng dữ liệu ban đầu.
+- MVP có một **danh mục nguyên liệu dinh dưỡng** lưu trong database của ứng dụng. Mỗi mục có thể lưu bất kỳ tập con nào trong chín chỉ tiêu theo 100 g; nguồn nhập liệu là thông tin tự do, USDA/NIH chỉ là lựa chọn tham khảo. Số liệu gắn nhãn AI được chấp nhận nhưng phải được trình bày là chưa xác minh.
 - Administrator có chức năng quản lý danh mục nguyên liệu dinh dưỡng để bổ sung và duy trì dữ liệu được app hỗ trợ; đây không phải bộ dữ liệu chỉ được nhóm nạp cố định rồi không thể quản lý trong ứng dụng.
 - Trong MVP, Administrator được xem/tìm kiếm, thêm, sửa, bật lại hoặc ngừng hỗ trợ một nguyên liệu; xem các công thức đang sử dụng nguyên liệu đó; và quản lý tên nguyên liệu, chín giá trị dinh dưỡng trên 100 g, tên/đường dẫn nguồn cùng ngày tham khảo.
-- MVP không có xóa vĩnh viễn nguyên liệu dinh dưỡng, nhập dữ liệu hàng loạt, tự gọi USDA hoặc để AI tự điền số liệu. Hệ thống tính lại công thức/menu liên quan từ dữ liệu hiện hành và ghi nhận thay đổi, nguồn tham khảo.
-- App không gọi USDA API trong lúc người dùng sử dụng và không dùng Gemini để tìm, đối chiếu hoặc tạo số liệu dinh dưỡng trong MVP. Việc tính toán chỉ sử dụng dữ liệu đã có trong danh mục nội bộ.
-- Dữ liệu gốc để tính dinh dưỡng công thức là nguyên liệu đã liên kết với danh mục được hỗ trợ, định lượng và giá trị thành phần dinh dưỡng tương ứng. Hệ thống cộng dữ liệu của từng nguyên liệu để tạo tổng ước tính cho toàn bộ công thức; không lấy một bảng tổng do tác giả tự khai làm kết quả đã xác minh và AI không tự nghĩ ra số liệu còn thiếu.
+- MVP không có xóa vĩnh viễn nguyên liệu dinh dưỡng, nhập dữ liệu hàng loạt tự động hoặc cho AI trực tiếp sửa catalog. Administrator có thể nhập số liệu tự do, kể cả số liệu do AI tạo, và tự ghi rõ nguồn/cách ước tính.
+- App không gọi USDA/NIH API trong lúc người dùng sử dụng và không tự gọi AI để tạo số liệu dinh dưỡng. Việc tính toán chỉ sử dụng dữ liệu đã lưu trong danh mục nội bộ.
+- Dữ liệu gốc để tính dinh dưỡng công thức là nguyên liệu đã liên kết với danh mục, định lượng và các chỉ tiêu hiện có. Hệ thống cộng từng chỉ tiêu có giá trị; trường `NULL` bị bỏ khỏi phép tính, không được xem là `0`. Khi thiếu chỉ tiêu, giao diện phải nêu rõ kết quả chưa đầy đủ. Số liệu có nguồn AI vẫn là ước tính chưa xác minh.
 - Trang chi tiết công thức cho phép xem tổng ước tính của toàn bộ công thức và phần quy đổi theo **mỗi khẩu phần** (`Nutrition per serving`). Giá trị mỗi khẩu phần được lấy từ tổng công thức chia theo số khẩu phần tác giả đã khai báo, không phải một nguồn dinh dưỡng độc lập.
 - Mỗi chỉ tiêu hiển thị lượng, đơn vị và giải thích ngắn về ý nghĩa. Mọi tỷ lệ tham chiếu chung, nếu có, phải ghi rõ nguồn/phạm vi và không được trình bày như nhu cầu cá nhân.
 - Năng lượng thể hiện lượng năng lượng khẩu phần cung cấp; protein hỗ trợ mô/cơ; carbohydrate là nguồn năng lượng chính; tổng chất béo cung cấp năng lượng và hỗ trợ hấp thu một số vitamin nhưng không tự phân biệt chất béo tốt/xấu; chất xơ hỗ trợ tiêu hóa và cảm giác no.
 - Sắt liên quan đến tạo hemoglobin và vận chuyển oxy; canxi liên quan đến xương, răng, cơ và thần kinh; vitamin B12 liên quan đến tế bào máu, thần kinh và DNA và đặc biệt cần được chú ý trong chế độ vegan; kẽm hỗ trợ chức năng miễn dịch và nhiều quá trình chuyển hóa.
 - Chuyên gia chỉ sử dụng nguyên liệu đã có trong catalog chuẩn FR-18. Nếu mục đó chưa có hồ sơ trong danh mục dinh dưỡng FR-41, vẫn được gửi bài theo workflow chung và hiển thị cảnh báo **Chưa hỗ trợ tính dinh dưỡng**; nếu chưa có trong catalog chuẩn, Chuyên gia liên hệ Admin ngoài hệ thống.
-- Nếu nguyên liệu chuẩn thiếu định lượng, không quy đổi được đơn vị, chưa có hồ sơ trong danh mục dinh dưỡng hoặc một chỉ tiêu không có dữ liệu đáng tin cậy, giao diện hiển thị **Chưa đủ dữ liệu** và chỉ rõ phạm vi thiếu. Giá trị chưa biết không được coi là bằng 0; nguyên liệu ghi “vừa đủ” không được dùng để suy ra kết quả chính xác.
+- Nếu nguyên liệu chuẩn thiếu định lượng, không quy đổi được đơn vị, chưa có hồ sơ trong danh mục dinh dưỡng hoặc một chỉ tiêu chưa có giá trị được lưu, giao diện hiển thị **Chưa đủ dữ liệu** và chỉ rõ phạm vi thiếu. Giá trị chưa biết không được coi là bằng 0; nguyên liệu ghi “vừa đủ” không được dùng để suy ra kết quả chính xác.
 - MVP không có `Nutrition balance score`, Glycemic Index hoặc Glycemic Load. Các chỉ số này chỉ được xem xét ở Future Scope khi có nguồn dữ liệu và tiêu chí diễn giải đủ rõ.
 
 **AI lập menu theo nhu cầu dinh dưỡng:**
@@ -401,10 +403,10 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 
 | Mã module | Module | Giá trị | Phụ thuộc chính | Trạng thái phân rã |
 | --- | --- | --- | --- | --- |
-| M01 | Public Recipe Discovery | Khách tìm/xem bài công thức công khai, so sánh hai công thức, xem tỷ lệ % Like (Samsung Food style), lượt xem, 6 chế độ sắp xếp (gồm Most Active & Trending), video YouTube nhúng | Nội dung đã công khai | Ranh giới hành vi nằm tại các FR của M01; Use Case và AC tương ứng là tiêu chí thiết kế/kiểm thử. |
+| M01 | Public Recipe Discovery | Khách tìm/xem bài công thức công khai, so sánh hai công thức, xem tỷ lệ % Like (Samsung Food style), lượt xem, danh bạ Chuyên gia, danh mục nhãn nguyên liệu chọn nhiều, 6 chế độ sắp xếp (gồm Most Active & Trending), video YouTube nhúng | Nội dung đã công khai | Ranh giới hành vi nằm tại các FR của M01; Use Case và AC tương ứng là tiêu chí thiết kế/kiểm thử. |
 | M02 | Identity & Access | Phân biệt Guest/Customer/Expert/Admin và bảo vệ thao tác | Tài khoản, role, session | Đã chốt email/password, Google Login, xác minh email và quên mật khẩu. |
 | M03 | Recipe Contribution & Post-moderation | Chuyên gia quản lý/công khai bài trực tiếp (hướng dẫn chế biến `instructions`, thể loại món ăn `dish_category`, tối đa 5 ảnh kèm cover `RECIPE_MEDIA`, 1 link YouTube); Customer/Expert bình chọn Like / Dislike (`RECIPE_REACTION`); lưu vết lượt xem (`RECIPE_VIEW`); reply tối đa 5 cấp (chỉ công thức mới có Like/Dislike, bình luận không có); Admin hậu kiểm thủ công trên Report | M02, Azure Blob, quy trình báo cáo | Validation, tombstone, lý do và audit/history được quy định tại FR/BR; UI phải giữ đúng quyền tác giả và hậu kiểm. |
-| M04 | Recipe Classification & Discovery | Phân loại, tìm, lọc và chọn hai bài công thức chay để so sánh; Admin quản lý từ điển nguyên liệu, đơn vị `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION` | M01, M03 | Dữ liệu, profile validation và so sánh hai công thức đã chốt; các capability khác theo FR tương ứng. |
+| M04 | Recipe Classification & Discovery | Phân loại, tìm, lọc và chọn hai bài công thức chay để so sánh; chọn nhiều nguyên liệu từ danh mục công khai; Admin quản lý từ điển nguyên liệu, đơn vị `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION` | M01, M03 | Dữ liệu, profile validation và so sánh hai công thức đã chốt; các capability khác theo FR tương ứng. |
 | M05 | Saved Recipes, Meal Planning & Shopping List | Lưu công thức để xem lại, xếp món vào lịch ăn ngày/tuần ba bữa cố định, so sánh thống kê dinh dưỡng tuần, xuất file công thức và báo cáo PDF dinh dưỡng, tạo/quản lý và xuất danh sách mua sắm nguyên liệu cơ bản | M02, M04 | Đã chốt ranh giới Saved/Planner/Shopping List; quy tắc gom an toàn và xuất file đã xác nhận. |
 | M06 | Gemini AI Access & Usage | Guest/Free/Plus/Pro gọi AI theo gói tính năng (Feature Entitlement), rate limit kỹ thuật cho Guest và telemetry chi phí | M02 một phần, Gemini backend | Entitlement, safety, telemetry và actor-goal Use Case được quy định tại FR/BR/NFR liên quan. |
 | M08 | Subscription Administration | Hiển thị/đổi gói và phân quyền tính năng AI (Feature-based Entitlement) | M02, M06 | FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; payment provider đã chọn là payOS. |
@@ -466,7 +468,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | FR-38 | Xác nhận phạm vi hỗ trợ trước khi dùng chức năng dinh dưỡng | M02, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-38) |
 | FR-39 | Tính toán ước tính 9 chỉ tiêu dinh dưỡng cho công thức | M03, M04, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-39) |
 | FR-40 | Công khai Recipe Post chứa nguyên liệu chuẩn thiếu dữ liệu dinh dưỡng | M03, M04, M06, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-40) |
-| FR-41 | Administrator quản lý danh mục nguyên liệu dinh dưỡng | M09, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-41) |
+| FR-41 | Administrator quản lý danh mục và số liệu dinh dưỡng linh hoạt | M09, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-41) |
 | FR-44 | Chuyên gia sửa hoặc xóa Recipe Post đã công khai của chính mình | M02, M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-44) |
 | FR-46 | Hiển thị và quản lý bình luận, reply lồng nhiều cấp | M01, M02, M03, M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-46) |
 | FR-47 | Gợi ý bài công thức liên quan thông thường và tùy chọn Gemini | M04, M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-47) |
@@ -480,6 +482,8 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | FR-58 | Ghi nhận và phân tích lịch sử lượt xem công thức (`RECIPE_VIEW`) | M01, M03, M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-58) |
 | FR-59 | Theo dõi, bỏ theo dõi và xem quan hệ theo dõi giữa các Member (`USER_FOLLOW`) | M01, M02, M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-59) |
 | FR-60 | So sánh hai Recipe Post công khai theo nguyên liệu và chín chỉ tiêu dinh dưỡng | M01, M04, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-60) |
+| FR-61 | Khám phá và theo dõi Chuyên gia ẩm thực chay | M01, M02 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-61) |
+| FR-62 | Chọn nguyên liệu và tìm công thức | M01, M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-62) |
 
 ## 8. Business Rules hiện hành
 
@@ -531,13 +535,13 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại và mã ID 
 | BR-43 | Gắn số liệu dinh dưỡng với một khẩu phần | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-43) |
 | BR-44 | Quy tắc diễn giải mức tham khảo theo từng chỉ tiêu dinh dưỡng | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-44) |
 | BR-45 | Cấm hiển thị điểm tổng hợp hoặc nhãn đơn giản hóa | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-45) |
-| BR-46 | Nguồn tính toán dinh dưỡng chính thức của công thức | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-46) |
+| BR-46 | Tính dinh dưỡng từ các chỉ tiêu hiện có trong catalog | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-46) |
 | BR-47 | Phân bổ dinh dưỡng theo số khẩu phần và cộng dồn ngày | M05, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-47) |
 | BR-48 | Xử lý nguyên liệu thiếu số liệu dinh dưỡng và chặn công khai khi thiếu quy đổi đơn vị | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-48) |
-| BR-49 | Không gọi API dinh dưỡng ngoài realtime và nguồn tham khảo | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-49) |
+| BR-49 | Không gọi API dinh dưỡng ngoài khi chạy ứng dụng | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-49) |
 | BR-50 | Cho phép công khai bài thiếu dữ liệu dinh dưỡng | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-50) |
 | BR-51 | Thẩm quyền quản lý danh mục nguyên liệu dinh dưỡng | M09, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-51) |
-| BR-52 | Yêu cầu đầy đủ 9 chỉ tiêu và nguồn trước khi kích hoạt | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-52) |
+| BR-52 | Cho phép tính các chỉ tiêu có dữ liệu và cảnh báo phần còn thiếu | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-52) |
 | BR-53 | Cấm xóa vĩnh viễn nguyên liệu dinh dưỡng đã tham chiếu | M09, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-53) |
 | BR-54 | Cấm nhập hàng loạt tự động vào danh mục dinh dưỡng | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-54) |
 | BR-58 | Độc lập giữa thao tác gửi báo cáo và quyết định xử lý | M03, M09 | [Chi tiết](srs/BUSINESS-RULES.md#br-58) |

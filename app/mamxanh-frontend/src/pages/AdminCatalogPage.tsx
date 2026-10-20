@@ -210,27 +210,39 @@ function IngredientCard({
             className="mt-3.5 grid grid-cols-4 gap-1.5 rounded-xl border border-brand-100/80 bg-cream-soft/60 p-2 text-center text-xs"
             aria-label={`Tóm tắt dinh dưỡng ${item.name}`}
           >
-            <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
+            <div className="rounded-lg bg-paper/90 py-1.5 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Calo</div>
-              <div className="font-bold text-ink truncate">{item.nutrition.energyKcalPer100g != null ? `≈ ${item.nutrition.energyKcalPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">kcal</span></div>
+              <div className="mt-0.5 font-bold text-ink truncate">
+                {item.nutrition.energyKcalPer100g != null ? `${Number(item.nutrition.energyKcalPer100g.toFixed(0))}` : '—'}
+              </div>
+              <div className="text-[9px] text-ink-muted">kcal</div>
             </div>
-            <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
+            <div className="rounded-lg bg-paper/90 py-1.5 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Đạm</div>
-              <div className="font-semibold text-ink truncate">{item.nutrition.proteinGramsPer100g != null ? `≈ ${item.nutrition.proteinGramsPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
+              <div className="mt-0.5 font-semibold text-ink truncate">
+                {item.nutrition.proteinGramsPer100g != null ? `${Number(item.nutrition.proteinGramsPer100g.toFixed(1))}` : '—'}
+              </div>
+              <div className="text-[9px] text-ink-muted">g</div>
             </div>
-            <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
+            <div className="rounded-lg bg-paper/90 py-1.5 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Carb</div>
-              <div className="font-semibold text-ink truncate">{item.nutrition.carbohydrateGramsPer100g != null ? `≈ ${item.nutrition.carbohydrateGramsPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
+              <div className="mt-0.5 font-semibold text-ink truncate">
+                {item.nutrition.carbohydrateGramsPer100g != null ? `${Number(item.nutrition.carbohydrateGramsPer100g.toFixed(1))}` : '—'}
+              </div>
+              <div className="text-[9px] text-ink-muted">g</div>
             </div>
-            <div className="rounded-lg bg-paper/90 py-1 px-1 shadow-2xs border border-brand-100/50">
+            <div className="rounded-lg bg-paper/90 py-1.5 px-1 shadow-2xs border border-brand-100/50">
               <div className="text-[10px] text-ink-muted">Béo</div>
-              <div className="font-semibold text-ink truncate">{item.nutrition.totalFatGramsPer100g != null ? `≈ ${item.nutrition.totalFatGramsPer100g}` : '—'} <span className="text-[9px] font-normal text-ink-muted">g</span></div>
+              <div className="mt-0.5 font-semibold text-ink truncate">
+                {item.nutrition.totalFatGramsPer100g != null ? `${Number(item.nutrition.totalFatGramsPer100g.toFixed(1))}` : '—'}
+              </div>
+              <div className="text-[9px] text-ink-muted">g</div>
             </div>
           </div>
 
           {/* Additional Micronutrients: Xơ, Canxi, Sắt (if available) */}
           {(item.nutrition.fiberGramsPer100g !== null || item.nutrition.calciumMgPer100g !== null || item.nutrition.ironMgPer100g !== null) && (
-            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-ink-muted">
+            <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px] text-ink-muted">
               {item.nutrition.fiberGramsPer100g !== null && item.nutrition.fiberGramsPer100g !== undefined && (
                 <span className="rounded-md border border-brand-100/70 bg-cream-soft/50 px-2 py-0.5">
                   Xơ ≈ {item.nutrition.fiberGramsPer100g} g
@@ -251,14 +263,14 @@ function IngredientCard({
         </div>
 
         {/* F. Management Actions Toolbar */}
-        <div className="mt-4 border-t border-brand-100/70 pt-3">
-          <div className="grid grid-cols-2 gap-1.5">
+        <div className="mt-4 border-t border-brand-100/70 pt-3.5 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => onShowDetails(item)}
               aria-label={`Xem chi tiết ${item.name}`}
-              className="h-8 text-xs font-semibold px-2 justify-center"
+              className="min-h-8 py-1.5 px-2.5 text-xs font-semibold justify-center whitespace-nowrap rounded-xl border border-brand-100/60 bg-cream-soft/40 hover:bg-brand-50"
             >
               Chi tiết
             </Button>
@@ -267,7 +279,7 @@ function IngredientCard({
               variant="ghost"
               onClick={() => onShowRecipes(item)}
               aria-label={`Xem công thức dùng ${item.name}`}
-              className="h-8 text-xs font-semibold px-2 justify-center"
+              className="min-h-8 py-1.5 px-2.5 text-xs font-semibold justify-center whitespace-nowrap rounded-xl border border-brand-100/60 bg-cream-soft/40 hover:bg-brand-50"
             >
               Xem công thức
             </Button>
@@ -276,7 +288,7 @@ function IngredientCard({
               variant="outline"
               onClick={() => onEditNutrition(item)}
               aria-label={`Sửa dinh dưỡng ${item.name}`}
-              className="h-8 text-xs font-semibold px-2 justify-center"
+              className="min-h-9 py-1.5 px-2.5 text-xs font-semibold justify-center whitespace-nowrap"
             >
               Sửa dinh dưỡng
             </Button>
@@ -285,19 +297,19 @@ function IngredientCard({
               variant="outline"
               onClick={() => onEditInfo(item)}
               aria-label={`Sửa ${item.name}`}
-              className="h-8 text-xs font-semibold px-2 justify-center"
+              className="min-h-9 py-1.5 px-2.5 text-xs font-semibold justify-center whitespace-nowrap"
             >
-              <Pencil className="mr-1 h-3 w-3" /> Sửa thông tin
+              <Pencil className="mr-1 h-3 w-3 shrink-0" /> Sửa thông tin
             </Button>
           </div>
-          <div className="mt-1.5">
+          <div className="pt-0.5">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => onToggleActive(item)}
               disabled={saving}
               aria-label={`${item.active ? 'Ngừng sử dụng' : 'Bật lại'} ${item.name}`}
-              className={`w-full h-8 text-xs font-semibold justify-center ${
+              className={`w-full min-h-8 py-1.5 text-xs font-semibold justify-center rounded-xl ${
                 item.active
                   ? 'text-ink-muted hover:text-red-600 hover:bg-red-50/50'
                   : 'text-leaf-700 hover:text-leaf-800 hover:bg-leaf-50/60'
@@ -319,7 +331,7 @@ export function AdminCatalogPage() {
   const [activeFilter, setActiveFilter] = useState('');
   const [nutritionFilter, setNutritionFilter] = useState('');
   const [ingredientFilters, setIngredientFilters] = useState<IngredientSearch>({
-    query: '', ingredientGroup: '', active: null, nutritionSupported: null, page: 0, size: 20,
+    query: '', ingredientGroup: '', active: null, nutritionSupported: null, page: 0, size: 24,
   });
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -538,7 +550,7 @@ export function AdminCatalogPage() {
     })) as IngredientNutrition;
     void perform(
       () => adminCatalogApi.updateNutrition(nutritionTarget.id, nutrition),
-      'Đã lưu chỉ tiêu dinh dưỡng.',
+      'Đã lưu số liệu dinh dưỡng; chỉ tiêu để trống sẽ không được tính.',
       () => setNutritionForm(toNutritionDraft(nutrition)),
     );
   };
@@ -548,7 +560,7 @@ export function AdminCatalogPage() {
     const enabled = !nutritionEnabled;
     void perform(
       () => adminCatalogApi.setNutritionSupported(nutritionTarget.id, enabled),
-      enabled ? 'Đã bật hỗ trợ tính dinh dưỡng.' : 'Đã ngừng hỗ trợ tính dinh dưỡng.',
+      enabled ? 'Đã bật tính các chỉ tiêu có dữ liệu.' : 'Đã ngừng hỗ trợ tính dinh dưỡng.',
       () => setNutritionEnabled(enabled),
     );
   };
@@ -842,12 +854,12 @@ export function AdminCatalogPage() {
               <p className="mt-3.5 flex items-start gap-2 rounded-xl bg-brand-50/50 px-3.5 py-2.5 text-xs leading-5 text-ink-muted">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
                 <span>
-                  “Đang dùng” quyết định nguyên liệu có thể được chọn cho công thức mới. “Hỗ trợ tính dinh dưỡng” là trạng thái riêng và chỉ bật khi đủ 9 chỉ tiêu cùng nguồn tham khảo.
+                  “Đang dùng” quyết định nguyên liệu có thể được chọn cho công thức mới. “Hỗ trợ tính dinh dưỡng” là trạng thái riêng; chỉ cần có ít nhất một chỉ tiêu, phần còn thiếu sẽ được cảnh báo.
                 </span>
               </p>
             </Card>
 
-            <div>
+            <div className="space-y-8">
               {ingredients.length === 0 ? (
                 <EmptyState
                   icon="🥗"
@@ -859,8 +871,8 @@ export function AdminCatalogPage() {
                   className={`grid grid-cols-1 sm:grid-cols-2 ${
                     isPanelOpen
                       ? 'xl:grid-cols-2 2xl:grid-cols-3'
-                      : 'lg:grid-cols-3 2xl:grid-cols-4'
-                  } gap-4 sm:gap-5 items-stretch`}
+                      : 'lg:grid-cols-3'
+                  } gap-5 sm:gap-6 items-stretch`}
                 >
                   {ingredients.map((item) => (
                     <IngredientCard
@@ -877,9 +889,9 @@ export function AdminCatalogPage() {
                 </div>
               )}
               {totalElements > 0 && (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-paper px-4 py-3 text-sm text-ink-muted shadow-2xs">
+                <div className="mt-8 sm:mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-200/80 bg-paper px-5 py-4 text-sm text-ink-muted shadow-xs">
                   <span className="font-medium">{totalElements} nguyên liệu · Trang {ingredientFilters.page + 1}/{totalPages}</span>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2.5">
                     <Button type="button" variant="outline" size="sm" disabled={loading || ingredientFilters.page === 0} onClick={() => changeIngredientPage(ingredientFilters.page - 1)}>Trang trước</Button>
                     <Button type="button" variant="outline" size="sm" disabled={loading || ingredientFilters.page + 1 >= totalPages} onClick={() => changeIngredientPage(ingredientFilters.page + 1)}>Trang sau</Button>
                   </div>
@@ -976,14 +988,14 @@ export function AdminCatalogPage() {
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Biểu mẫu 9 chỉ tiêu</p>
                     <h2 className="mt-0.5 text-lg font-extrabold text-ink">Dinh dưỡng · {nutritionTarget.name}</h2>
-                    <p className="mt-1 text-xs text-ink-muted">Nhập số liệu trên 100 g. Để trống nếu chưa biết, không nhập 0 thay cho dữ liệu thiếu.</p>
+                    <p className="mt-1 text-xs text-ink-muted">Nhập số liệu trên 100 g. Nguồn có thể là USDA/NIH, nguồn khác hoặc AI estimate. Chỉ tiêu để trống sẽ không được tính và không bị xem là 0.</p>
                   </div>
                   <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
                     nutritionEnabled
                       ? 'border-leaf-200 bg-leaf-50 text-leaf-700'
                       : 'border-brand-200 bg-brand-50 text-ink-muted'
                   }`}>
-                    {nutritionEnabled ? 'Đang hỗ trợ tính' : 'Chưa hỗ trợ tính'}
+                    {nutritionEnabled ? 'Đang tính dữ liệu có sẵn' : 'Chưa đưa vào tính'}
                   </span>
                 </div>
                 <form onSubmit={submitNutrition} className="mt-4 space-y-3.5">
@@ -1065,10 +1077,13 @@ export function AdminCatalogPage() {
                       ))}
                     </select>
                   </Field>
-                  <Field label="Tên nguồn dữ liệu">
-                    <select
+                  <Field label="Nguồn dữ liệu hoặc cách ước tính">
+                    <input
                       className={fieldClass}
+                      type="text"
+                      list="ingredient-source-suggestions"
                       required
+                      maxLength={200}
                       value={ingredientForm.sourceName}
                       onChange={(event) =>
                         setIngredientForm({
@@ -1076,14 +1091,12 @@ export function AdminCatalogPage() {
                           sourceName: event.target.value,
                         })
                       }
-                    >
-                      <option value="" disabled>Chọn nguồn dữ liệu</option>
+                    />
+                    <datalist id="ingredient-source-suggestions">
                       {catalogOptions.sources.map((source) => (
-                        <option key={source} value={source} className="font-sans">
-                          {normalizeSourceName(source)}
-                        </option>
+                        <option key={source} value={normalizeSourceName(source)} />
                       ))}
-                    </select>
+                    </datalist>
                   </Field>
                   <Field label="Đường dẫn nguồn (không bắt buộc)">
                     <input
@@ -1101,7 +1114,7 @@ export function AdminCatalogPage() {
                     />
                   </Field>
                   <p className="-mt-2 text-xs leading-5 text-ink-muted">
-                    Có thể để trống đường dẫn khi chưa bật hỗ trợ tính. Để bật tính dinh dưỡng chính thức, cần có đủ chỉ tiêu và đường dẫn nguồn hợp lệ.
+                    USDA/NIH và đường dẫn tham khảo không bắt buộc. Ghi rõ nguồn do người nhập hoặc AI tạo; có thể bật tính khi đã có ít nhất một chỉ tiêu.
                   </p>
                   <Field label="Ngày tham khảo">
                     <input
@@ -1166,8 +1179,8 @@ export function AdminCatalogPage() {
                 </p>
                 <div className="mt-4 space-y-2 rounded-2xl border border-brand-100/80 bg-cream-soft/70 p-3.5 text-xs text-ink-muted">
                   <p className="font-bold text-ink">Quy chuẩn thẩm định dữ liệu:</p>
-                  <p>• Đầy đủ 9 chỉ tiêu dinh dưỡng trên 100 g.</p>
-                  <p>• Có nguồn dữ liệu và ngày đối chiếu rõ ràng.</p>
+                  <p>• Ghi các chỉ tiêu đã biết trên 100 g; để trống phần chưa biết.</p>
+                  <p>• USDA/NIH là nguồn tham khảo tùy chọn; ghi rõ nếu số liệu là ước tính AI chưa xác minh.</p>
                   <p>• Giữ nguyên liên kết với các công thức đã xuất bản.</p>
                 </div>
               </Card>
