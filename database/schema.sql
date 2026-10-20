@@ -79,7 +79,7 @@ GO
 -- 1.2 INGREDIENT — Standard ingredient dictionary with 9 nutrition indicators
 -- Source: Data Dictionary 4.18, FR-39/41, BR-44/49/51/52/53
 -- Nutrition indicators are NULLable: NULL = no data yet; 0 = true measured zero.
--- nutrition_supported = 1 requires all 9 indicators and source_url NOT NULL (Q5, BR-52).
+-- nutrition_supported = 1 requires at least one nutrient; sources are descriptive and unrestricted (BR-52).
 CREATE TABLE [INGREDIENT] (
     ingredient_id         BIGINT         IDENTITY(1,1)  NOT NULL,
     name                  NVARCHAR(200)  NOT NULL,
@@ -111,15 +111,14 @@ CREATE TABLE [INGREDIENT] (
     CONSTRAINT CK_INGREDIENT_nutrition_supported CHECK (
         nutrition_supported = 0 OR (
             energy_kcal_100g IS NOT NULL
-            AND protein_g_100g IS NOT NULL
-            AND carbohydrate_g_100g IS NOT NULL
-            AND total_fat_g_100g IS NOT NULL
-            AND fiber_g_100g IS NOT NULL
-            AND calcium_mg_100g IS NOT NULL
-            AND iron_mg_100g IS NOT NULL
-            AND vitamin_b12_mcg_100g IS NOT NULL
-            AND zinc_mg_100g IS NOT NULL
-            AND source_url IS NOT NULL
+            OR protein_g_100g IS NOT NULL
+            OR carbohydrate_g_100g IS NOT NULL
+            OR total_fat_g_100g IS NOT NULL
+            OR fiber_g_100g IS NOT NULL
+            OR calcium_mg_100g IS NOT NULL
+            OR iron_mg_100g IS NOT NULL
+            OR vitamin_b12_mcg_100g IS NOT NULL
+            OR zinc_mg_100g IS NOT NULL
         )
     )
 );

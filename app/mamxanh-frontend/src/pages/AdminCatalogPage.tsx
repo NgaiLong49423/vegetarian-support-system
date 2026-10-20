@@ -550,7 +550,7 @@ export function AdminCatalogPage() {
     })) as IngredientNutrition;
     void perform(
       () => adminCatalogApi.updateNutrition(nutritionTarget.id, nutrition),
-      'Đã lưu chỉ tiêu dinh dưỡng.',
+      'Đã lưu số liệu dinh dưỡng; chỉ tiêu để trống sẽ không được tính.',
       () => setNutritionForm(toNutritionDraft(nutrition)),
     );
   };
@@ -560,7 +560,7 @@ export function AdminCatalogPage() {
     const enabled = !nutritionEnabled;
     void perform(
       () => adminCatalogApi.setNutritionSupported(nutritionTarget.id, enabled),
-      enabled ? 'Đã bật hỗ trợ tính dinh dưỡng.' : 'Đã ngừng hỗ trợ tính dinh dưỡng.',
+      enabled ? 'Đã bật tính các chỉ tiêu có dữ liệu.' : 'Đã ngừng hỗ trợ tính dinh dưỡng.',
       () => setNutritionEnabled(enabled),
     );
   };
@@ -854,7 +854,7 @@ export function AdminCatalogPage() {
               <p className="mt-3.5 flex items-start gap-2 rounded-xl bg-brand-50/50 px-3.5 py-2.5 text-xs leading-5 text-ink-muted">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
                 <span>
-                  “Đang dùng” quyết định nguyên liệu có thể được chọn cho công thức mới. “Hỗ trợ tính dinh dưỡng” là trạng thái riêng và chỉ bật khi đủ 9 chỉ tiêu cùng nguồn tham khảo.
+                  “Đang dùng” quyết định nguyên liệu có thể được chọn cho công thức mới. “Hỗ trợ tính dinh dưỡng” là trạng thái riêng; chỉ cần có ít nhất một chỉ tiêu, phần còn thiếu sẽ được cảnh báo.
                 </span>
               </p>
             </Card>
@@ -988,14 +988,14 @@ export function AdminCatalogPage() {
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Biểu mẫu 9 chỉ tiêu</p>
                     <h2 className="mt-0.5 text-lg font-extrabold text-ink">Dinh dưỡng · {nutritionTarget.name}</h2>
-                    <p className="mt-1 text-xs text-ink-muted">Nhập số liệu trên 100 g. Để trống nếu chưa biết, không nhập 0 thay cho dữ liệu thiếu.</p>
+                    <p className="mt-1 text-xs text-ink-muted">Nhập số liệu trên 100 g. Nguồn có thể là USDA/NIH, nguồn khác hoặc AI estimate. Chỉ tiêu để trống sẽ không được tính và không bị xem là 0.</p>
                   </div>
                   <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
                     nutritionEnabled
                       ? 'border-leaf-200 bg-leaf-50 text-leaf-700'
                       : 'border-brand-200 bg-brand-50 text-ink-muted'
                   }`}>
-                    {nutritionEnabled ? 'Đang hỗ trợ tính' : 'Chưa hỗ trợ tính'}
+                    {nutritionEnabled ? 'Đang tính dữ liệu có sẵn' : 'Chưa đưa vào tính'}
                   </span>
                 </div>
                 <form onSubmit={submitNutrition} className="mt-4 space-y-3.5">
@@ -1077,10 +1077,13 @@ export function AdminCatalogPage() {
                       ))}
                     </select>
                   </Field>
-                  <Field label="Tên nguồn dữ liệu">
-                    <select
+                  <Field label="Nguồn dữ liệu hoặc cách ước tính">
+                    <input
                       className={fieldClass}
+                      type="text"
+                      list="ingredient-source-suggestions"
                       required
+                      maxLength={200}
                       value={ingredientForm.sourceName}
                       onChange={(event) =>
                         setIngredientForm({
@@ -1088,14 +1091,12 @@ export function AdminCatalogPage() {
                           sourceName: event.target.value,
                         })
                       }
-                    >
-                      <option value="" disabled>Chọn nguồn dữ liệu</option>
+                    />
+                    <datalist id="ingredient-source-suggestions">
                       {catalogOptions.sources.map((source) => (
-                        <option key={source} value={source} className="font-sans">
-                          {normalizeSourceName(source)}
-                        </option>
+                        <option key={source} value={normalizeSourceName(source)} />
                       ))}
-                    </select>
+                    </datalist>
                   </Field>
                   <Field label="Đường dẫn nguồn (không bắt buộc)">
                     <input
@@ -1113,7 +1114,7 @@ export function AdminCatalogPage() {
                     />
                   </Field>
                   <p className="-mt-2 text-xs leading-5 text-ink-muted">
-                    Có thể để trống đường dẫn khi chưa bật hỗ trợ tính. Để bật tính dinh dưỡng chính thức, cần có đủ chỉ tiêu và đường dẫn nguồn hợp lệ.
+                    USDA/NIH và đường dẫn tham khảo không bắt buộc. Ghi rõ nguồn do người nhập hoặc AI tạo; có thể bật tính khi đã có ít nhất một chỉ tiêu.
                   </p>
                   <Field label="Ngày tham khảo">
                     <input
@@ -1178,8 +1179,8 @@ export function AdminCatalogPage() {
                 </p>
                 <div className="mt-4 space-y-2 rounded-2xl border border-brand-100/80 bg-cream-soft/70 p-3.5 text-xs text-ink-muted">
                   <p className="font-bold text-ink">Quy chuẩn thẩm định dữ liệu:</p>
-                  <p>• Đầy đủ 9 chỉ tiêu dinh dưỡng trên 100 g.</p>
-                  <p>• Có nguồn dữ liệu và ngày đối chiếu rõ ràng.</p>
+                  <p>• Ghi các chỉ tiêu đã biết trên 100 g; để trống phần chưa biết.</p>
+                  <p>• USDA/NIH là nguồn tham khảo tùy chọn; ghi rõ nếu số liệu là ước tính AI chưa xác minh.</p>
                   <p>• Giữ nguyên liên kết với các công thức đã xuất bản.</p>
                 </div>
               </Card>

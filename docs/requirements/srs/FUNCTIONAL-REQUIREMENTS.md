@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.18.0
+> **Version:** v2.19.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-10-20
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -2596,7 +2596,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - [BR-43](BUSINESS-RULES.md#br-43): Gắn số liệu dinh dưỡng với một khẩu phần.
   - [BR-44](BUSINESS-RULES.md#br-44): Quy tắc diễn giải mức tham khảo theo từng chỉ tiêu dinh dưỡng.
   - [BR-45](BUSINESS-RULES.md#br-45): Cấm hiển thị điểm tổng hợp hoặc nhãn đơn giản hóa.
-  - [BR-46](BUSINESS-RULES.md#br-46): Nguồn tính toán dinh dưỡng chính thức của công thức.
+  - [BR-46](BUSINESS-RULES.md#br-46): Tính dinh dưỡng từ các chỉ tiêu hiện có trong catalog.
   - [BR-47](BUSINESS-RULES.md#br-47): Phân bổ dinh dưỡng theo số khẩu phần và cộng dồn ngày.
   - [BR-48](BUSINESS-RULES.md#br-48): Xử lý nguyên liệu thiếu định lượng hoặc thiếu số liệu dinh dưỡng.
 - **Yêu cầu phi chức năng liên quan:**
@@ -2689,7 +2689,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - Máy chủ bắt buộc kiểm tra trạng thái `ELIGIBLE` trước khi xử lý các chức năng dinh dưỡng cá nhân thuộc FR-35, FR-36 và FR-37. Khi `INELIGIBLE`, cả quyền đọc dữ liệu/lịch sử dinh dưỡng cá nhân cũng bị khóa; dữ liệu trong Database được giữ nguyên. Khi xác nhận lại thành `ELIGIBLE`, chỉ khôi phục quyền theo phân quyền hiện hành, không tự động tính lại dữ liệu cũ.
 - Member chỉ cập nhật trạng thái qua thao tác xác nhận chủ động. Backend lưu trạng thái và thời điểm xác nhận thành công gần nhất trong cùng giao dịch. Hủy, quay lại, đóng trang/thoát mà chưa xác nhận, dữ liệu không hợp lệ hoặc lỗi xử lý không được thay đổi Database hay timestamp trước đó. Không lưu nháp, tự động lưu hoặc lịch sử xác nhận. Timestamp eligibility độc lập với `health_data_consent_at` của FR-35.
 - Xác nhận eligibility là hợp đồng riêng với thao tác lưu hồ sơ FR-35; dữ liệu hồ sơ và đồng thuận xử lý dữ liệu sức khỏe tiếp tục theo FR-35.
-- Ràng buộc kỹ thuật được phê duyệt: Dữ liệu dinh dưỡng dựa trên cơ sở dữ liệu tham chiếu nội bộ chuẩn bị từ nguồn USDA FoodData Central và NIH DRI; tuyệt đối không gọi runtime API bên thứ ba khi tính toán dinh dưỡng (BR-49).
+- Ràng buộc kỹ thuật được phê duyệt: Dữ liệu tính toán lấy từ danh mục nội bộ; nguồn/cách ước tính được nhập tự do và có thể là AI-generated chưa xác minh. USDA FoodData Central và NIH DRI chỉ là nguồn tham khảo tùy chọn; tuyệt đối không gọi runtime API bên thứ ba khi tính toán dinh dưỡng (BR-49, BR-52).
 
 #### Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
 - **Quy tắc nghiệp vụ liên quan:**
@@ -2752,7 +2752,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-39).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Hệ thống tự động tính toán tổng ước tính của 9 chỉ tiêu dinh dưỡng cốt lõi cho một bài công thức nấu ăn bằng cách đối chiếu và cộng dồn dữ liệu từ danh mục nguyên liệu dinh dưỡng nội bộ (tham chiếu USDA/NIH) theo trọng lượng gram thực tế của từng nguyên liệu đã chọn từ catalog chuẩn FR-18; sau đó quy đổi ra định lượng trên 1 khẩu phần dựa trên số khẩu phần mà tác giả đã khai báo. Khi nguyên liệu thiếu định lượng hoặc đã có trong catalog chuẩn nhưng chưa có hồ sơ dinh dưỡng, hệ thống phải công khai rõ ràng phạm vi thiếu dữ liệu, tuyệt đối không được tự gán giá trị bằng 0 và không cho phép AI tự suy đoán số liệu; không gọi API dinh dưỡng ngoài theo thời gian thực (realtime external API).
+- **Tóm tắt yêu cầu:** Hệ thống tính chín chỉ tiêu từ các giá trị hiện có trong danh mục nguyên liệu nội bộ theo trọng lượng gram thực tế của từng nguyên liệu thuộc catalog chuẩn FR-18, rồi quy đổi ra một khẩu phần theo số khẩu phần tác giả khai báo. USDA/NIH chỉ là nguồn tham khảo tùy chọn; dữ liệu do AI ước tính được chấp nhận nếu ghi rõ chưa xác minh. Mỗi chỉ tiêu `NULL` được bỏ riêng khỏi phép tính, không đổi thành `0`; khi thiếu nguyên liệu hoặc chỉ tiêu, hệ thống công khai phạm vi thiếu và đánh dấu kết quả chưa đầy đủ. Không gọi API dinh dưỡng ngoài theo thời gian thực hoặc tự suy diễn dữ liệu lúc người dùng thao tác.
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Tất cả các bài Recipe Post được Chuyên gia tạo hoặc chỉnh sửa trong hệ thống (FR-04, FR-16, FR-19, FR-44).
   - 9 chỉ tiêu cốt lõi: Năng lượng (kcal), Chất đạm (g), Carbohydrate (g), Chất béo (g), Chất xơ (g), Canxi (mg), Sắt (mg), Vitamin B12 (mcg), Kẽm (mg) (SRS 3.18, BR-40, BR-46).
@@ -2769,7 +2769,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Mọi người dùng (Guest, Member, Admin) đều có quyền xem bảng dinh dưỡng ước tính trên các công thức công khai.
-- **Ràng buộc nghiệp vụ:** Không hiển thị điểm số tổng hợp (BR-45); luôn ghi chú rõ ràng nguồn gốc dữ liệu tham khảo USDA/NIH và từ chối trách nhiệm y tế (BR-39, BR-41).
+- **Ràng buộc nghiệp vụ:** Không hiển thị điểm số tổng hợp (BR-45); ghi rõ nguồn/cách ước tính đã lưu, gắn nhãn AI chưa xác minh khi áp dụng, và hiển thị từ chối trách nhiệm y tế (BR-39, BR-41, BR-52).
 
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
@@ -2781,9 +2781,9 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - [BR-43](BUSINESS-RULES.md#br-43): Gắn số liệu dinh dưỡng với một khẩu phần.
   - [BR-44](BUSINESS-RULES.md#br-44): Quy tắc diễn giải mức tham khảo theo từng chỉ tiêu dinh dưỡng.
   - [BR-45](BUSINESS-RULES.md#br-45): Cấm hiển thị điểm tổng hợp hoặc nhãn đơn giản hóa.
-  - [BR-46](BUSINESS-RULES.md#br-46): Nguồn tính toán dinh dưỡng chính thức của công thức.
+  - [BR-46](BUSINESS-RULES.md#br-46): Tính dinh dưỡng từ các chỉ tiêu hiện có trong catalog.
   - [BR-48](BUSINESS-RULES.md#br-48): Xử lý nguyên liệu thiếu định lượng hoặc thiếu số liệu dinh dưỡng.
-  - [BR-49](BUSINESS-RULES.md#br-49): Không gọi API dinh dưỡng ngoài realtime và nguồn tham khảo.
+  - [BR-49](BUSINESS-RULES.md#br-49): Không gọi API dinh dưỡng ngoài khi chạy ứng dụng.
   - [BR-50](BUSINESS-RULES.md#br-50): Cho phép công khai bài thiếu dữ liệu dinh dưỡng.
   - [BR-73](BUSINESS-RULES.md#br-73): Quy tắc chuẩn hóa đơn vị đo và chuyển đổi đơn vị nguyên liệu.
 - **Yêu cầu phi chức năng liên quan:**
@@ -2800,11 +2800,11 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **AC-39.2 (Đầy đủ 9 chỉ tiêu cốt lõi):**
   - *Given* công thức có các nguyên liệu đã được ánh xạ đầy đủ,
   - *When* người dùng xem bảng dinh dưỡng công thức,
-  - *Then* hệ thống hiển thị chính xác và đầy đủ 9 chỉ tiêu: Năng lượng (kcal), Chất đạm (g), Carbohydrate (g), Chất béo (g), Chất xơ (g), Canxi (mg), Sắt (mg), Vitamin B12 (mcg), Kẽm (mg).
+  - *Then* hệ thống hiển thị đủ 9 vị trí chỉ tiêu: Năng lượng (kcal), Chất đạm (g), Carbohydrate (g), Chất béo (g), Chất xơ (g), Canxi (mg), Sắt (mg), Vitamin B12 (mcg), Kẽm (mg); chỉ tiêu chưa tính được hiển thị `Chưa đủ dữ liệu`, không thay bằng `0`.
 - **AC-39.3 (Minh bạch khi có nguyên liệu thiếu số liệu):**
-  - *Given* công thức chứa một nguyên liệu đã có trong catalog chuẩn FR-18 nhưng chưa có hồ sơ trong danh mục dinh dưỡng nội bộ,
+  - *Given* công thức chứa nguyên liệu chưa có hồ sơ dinh dưỡng hoặc có một hay nhiều chỉ tiêu dinh dưỡng `NULL`,
   - *When* bảng dinh dưỡng công thức được hiển thị,
-  - *Then* hệ thống gắn nhãn cảnh báo "Ước tính chưa đầy đủ", liệt kê rõ tên nguyên liệu chưa hỗ trợ tính toán và không được gán ngầm giá trị của nguyên liệu đó bằng 0.
+  - *Then* hệ thống gắn nhãn cảnh báo "Ước tính chưa đầy đủ", liệt kê nguyên liệu và chỉ tiêu còn thiếu, cộng riêng từng chỉ tiêu có dữ liệu và không gán giá trị thiếu bằng 0.
 - **AC-39.4 (Cấm hiển thị điểm tổng hợp sức khỏe):**
   - *Given* kết quả tính toán dinh dưỡng công thức được kết xuất,
   - *When* hiển thị trên giao diện người dùng,
@@ -2852,7 +2852,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - [BR-07](BUSINESS-RULES.md#br-07): Đăng và công khai Recipe Post trực tiếp.
   - [BR-19](BUSINESS-RULES.md#br-19): Điều kiện bắt buộc để công khai Recipe Post.
   - [BR-40](BUSINESS-RULES.md#br-40): Điều kiện dữ liệu dinh dưỡng tin cậy cho AI menu.
-  - [BR-46](BUSINESS-RULES.md#br-46): Nguồn tính toán dinh dưỡng chính thức của công thức.
+  - [BR-46](BUSINESS-RULES.md#br-46): Tính dinh dưỡng từ các chỉ tiêu hiện có trong catalog.
   - [BR-48](BUSINESS-RULES.md#br-48): Xử lý nguyên liệu thiếu định lượng hoặc thiếu số liệu dinh dưỡng.
   - [BR-50](BUSINESS-RULES.md#br-50): Cho phép công khai bài thiếu dữ liệu dinh dưỡng.
   - [BR-59](BUSINESS-RULES.md#br-59): Không có hàng đợi duyệt bài trước khi công khai.
@@ -2888,7 +2888,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-41).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp giao diện quản trị chuyên biệt cho phép Administrator xem, tìm kiếm, lọc, thêm mới, cập nhật, ngừng hỗ trợ (deactivate/soft-delete) và kích hoạt lại các bản ghi trong danh mục nguyên liệu dinh dưỡng nội bộ. Mỗi Ingredient có tên chuẩn hóa, có thể có các giá trị dinh dưỡng chưa biết (`NULL`) trên 100 g khi `nutrition_supported = 0`; `NULL` không đồng nghĩa với giá trị thật bằng `0`. Theo constraint database hiện hành, `source_name` và `reference_date` vẫn bắt buộc khi lưu, còn `source_url` có thể để trống khi chưa hỗ trợ tính toán. Chỉ Ingredient đủ 9 chỉ tiêu và đủ cả `source_name`, `source_url`, `reference_date` mới được bật `nutrition_supported = 1` để tham gia tính toán chính thức; nguồn tham chiếu phải thuộc USDA FoodData Central hoặc NIH/Viện Dinh dưỡng theo lựa chọn hiện hành. Việc lưu bản ghi và bật hỗ trợ dinh dưỡng là hai thao tác/điều kiện khác nhau; trạng thái danh mục `status` không thay thế `nutrition_supported`. Các chức năng quản trị, xem công thức đang liên kết, không xóa vĩnh viễn dữ liệu đã tham chiếu, và cấm nhập hàng loạt tự động hoặc để AI sửa/xác nhận số liệu vẫn được giữ nguyên.
+- **Tóm tắt yêu cầu:** Cung cấp giao diện quản trị danh mục nguyên liệu dinh dưỡng. Mỗi Ingredient có thể thiếu bất kỳ chỉ tiêu nào (`NULL` là chưa biết, không phải `0`). `source_name` là văn bản tự do để ghi nguồn/cách ước tính, chấp nhận cả dữ liệu do AI tạo; USDA/NIH, URL nguồn và ngày tham khảo không bắt buộc để dùng dữ liệu trong phép tính. Administrator có thể bật `nutrition_supported = 1` khi có ít nhất một trong chín chỉ tiêu, để hệ thống tính phần có dữ liệu và đánh dấu kết quả chưa đầy đủ nếu còn `NULL`. Bản ghi không có chỉ tiêu nào vẫn không được bật tính. Trạng thái danh mục `status` độc lập với `nutrition_supported`. Giữ nguyên quyền quản trị, xem công thức đang liên kết, cấm xóa vĩnh viễn dữ liệu đã tham chiếu và cấm AI tự động ghi catalog.
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Người dùng có vai trò `Administrator` (M09, M10).
   - Bảo đảm tính toàn vẹn và thẩm quyền: Chỉ con người có thẩm quyền quản trị mới được điều chỉnh dữ liệu dinh dưỡng cốt lõi (BR-51, BR-52, BR-54).
@@ -2904,18 +2904,18 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - `UC-41.4`: Chuyển trạng thái danh mục (`ACTIVE`/`INACTIVE`) hoặc kích hoạt lại Ingredient; trạng thái này độc lập với `nutrition_supported`.
   - `UC-41.5`: Xem danh sách các bài công thức đang sử dụng nguyên liệu dinh dưỡng.
 - **User Stories:**
-  - *Là một Administrator*, tôi muốn duy trì và cập nhật danh mục nguyên liệu dinh dưỡng chuẩn xác từ nguồn USDA/NIH có trích dẫn nguồn minh bạch, để hệ thống có cơ sở dữ liệu dinh dưỡng tin cậy phục vụ tính toán khẩu phần cho người dùng ăn chay.
+  - *Là một Administrator*, tôi muốn tự do nhập số liệu và ghi rõ nguồn hoặc cách ước tính, kể cả dữ liệu AI chưa xác minh, để catalog linh hoạt và hệ thống vẫn tính được các chỉ tiêu hiện có.
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Độc quyền cho vai trò `Administrator` (M09, M10). Member thông thường và Guest hoàn toàn không có quyền can thiệp.
-- **Ràng buộc an toàn:** Tuyệt đối cấm AI tự động cập nhật hoặc xác thực dữ liệu dinh dưỡng; cấm xóa cứng dữ liệu đã tham chiếu (BR-51, BR-53, BR-54).
+- **Ràng buộc an toàn:** Chỉ Administrator được ghi dữ liệu; nhãn AI không được trình bày như dữ liệu đã xác minh. Cấm AI tự động cập nhật catalog và cấm xóa cứng dữ liệu đã tham chiếu (BR-51, BR-53, BR-54).
 
 #### Ma trận truy vết (Traceability Matrix)
 - **Business Rules liên quan:**
-  - [BR-46](BUSINESS-RULES.md#br-46): Nguồn tính toán dinh dưỡng chính thức của công thức.
-  - [BR-49](BUSINESS-RULES.md#br-49): Không gọi API dinh dưỡng ngoài realtime và nguồn tham khảo.
+  - [BR-46](BUSINESS-RULES.md#br-46): Tính dinh dưỡng từ các chỉ tiêu hiện có trong catalog.
+  - [BR-49](BUSINESS-RULES.md#br-49): Không gọi API dinh dưỡng ngoài khi chạy ứng dụng.
   - [BR-51](BUSINESS-RULES.md#br-51): Thẩm quyền quản lý danh mục nguyên liệu dinh dưỡng (chỉ Administrator).
-  - [BR-52](BUSINESS-RULES.md#br-52): Yêu cầu đầy đủ 9 chỉ tiêu và nguồn trước khi kích hoạt.
+  - [BR-52](BUSINESS-RULES.md#br-52): Cho phép tính các chỉ tiêu có dữ liệu và cảnh báo phần còn thiếu.
   - [BR-53](BUSINESS-RULES.md#br-53): Cấm xóa vĩnh viễn nguyên liệu dinh dưỡng đã tham chiếu.
   - [BR-54](BUSINESS-RULES.md#br-54): Cấm nhập hàng loạt tự động vào danh mục dinh dưỡng.
 - **Yêu cầu phi chức năng liên quan:**
@@ -2929,13 +2929,13 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* người dùng không có vai trò Administrator (Member hoặc Guest),
   - *When* người dùng cố gắng truy cập hoặc thực hiện thao tác trên danh mục nguyên liệu dinh dưỡng,
   - *Then* hệ thống từ chối truy cập và trả về thông báo lỗi không có quyền.
-- **AC-41.2 (Cho phép lưu dữ liệu chưa đủ và kiểm tra trước khi bật hỗ trợ dinh dưỡng):**
+- **AC-41.2 (Lưu và tính một phần dữ liệu dinh dưỡng):
   - *Given* Administrator tạo mới hoặc cập nhật Ingredient với `nutrition_supported = 0`,
   - *When* một hoặc nhiều chỉ tiêu chưa có dữ liệu,
-  - *Then* hệ thống cho phép lưu theo các ràng buộc database hiện hành (`source_name` và `reference_date` vẫn bắt buộc; `source_url` có thể `NULL`); giá trị dinh dưỡng chưa biết được lưu là `NULL`, không thay bằng `0`, và Ingredient không được dùng trong tính toán dinh dưỡng chính thức.
+  - *Then* hệ thống lưu giá trị hiện có; `NULL` không bị thay bằng `0`. Tên nguồn/cách ước tính là văn bản tự do; USDA/NIH, URL tham khảo và ngày tham khảo không bắt buộc cho phép tính; dữ liệu gắn nhãn AI được chấp nhận.
   - *Given* Ingredient đang `nutrition_supported = 0`,
   - *When* Administrator yêu cầu bật `nutrition_supported = 1`,
-  - *Then* hệ thống chỉ cho phép bật khi đủ cả 9 chỉ tiêu khác `NULL` và đủ `source_name`, `source_url`, `reference_date`; nếu thiếu, hệ thống từ chối bật hỗ trợ và nêu rõ dữ liệu còn thiếu (BR-52).
+  - *Then* hệ thống cho phép bật khi có ít nhất một chỉ tiêu khác `NULL`; chỉ tiêu có dữ liệu được tính và chỉ tiêu `NULL` hiển thị chưa có dữ liệu, không tính bằng `0`. Nếu cả chín chỉ tiêu đều `NULL`, hệ thống từ chối bật hỗ trợ (BR-52).
 - **AC-41.3 (Cấm xóa vĩnh viễn nguyên liệu đã tham chiếu):**
   - *Given* một nguyên liệu dinh dưỡng đang được liên kết trong ít nhất một bài Recipe Post,
   - *When* Administrator thực hiện thao tác xóa vĩnh viễn nguyên liệu đó,
@@ -2944,10 +2944,10 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* một nguyên liệu dinh dưỡng đang ở trạng thái hoạt động,
   - *When* Administrator xác nhận chuyển trạng thái sang "Ngừng hỗ trợ",
   - *Then* nguyên liệu không còn xuất hiện trong danh sách gợi ý nhập nguyên liệu mới cho người dùng nhưng các bài viết cũ vẫn giữ nguyên liên kết lịch sử.
-- **AC-41.5 (Cấm AI tự động tạo hoặc sửa số liệu dinh dưỡng):**
+- **AC-41.5 (Chấp nhận nhãn AI nhưng cấm AI tự ghi catalog):
   - *Given* hệ thống nhận được request từ các module AI hoặc tiến trình nền tự động,
   - *When* request cố gắng chỉnh sửa bảng dữ liệu nguyên liệu dinh dưỡng,
-  - *Then* hệ thống từ chối xử lý và ghi log cảnh báo an ninh.
+  - *Then* hệ thống từ chối xử lý và ghi log cảnh báo an ninh. Administrator vẫn có thể nhập thủ công dữ liệu AI-generated và ghi rõ nguồn/cách ước tính.
 
 ---
 
@@ -3539,7 +3539,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Business Rules liên quan:**
   - [BR-14](BUSINESS-RULES.md#br-14): Quy tắc định lượng và tổng hợp Shopping List an toàn.
   - [BR-48](BUSINESS-RULES.md#br-48): Xử lý nguyên liệu thiếu định lượng hoặc thiếu số liệu dinh dưỡng.
-  - [BR-49](BUSINESS-RULES.md#br-49): Không gọi API dinh dưỡng ngoài realtime và nguồn tham khảo.
+  - [BR-49](BUSINESS-RULES.md#br-49): Không gọi API dinh dưỡng ngoài khi chạy ứng dụng.
   - [BR-73](BUSINESS-RULES.md#br-73): Quy tắc chuẩn hóa đơn vị đo và chuyển đổi đơn vị nguyên liệu.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-08](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-08): Bảo vệ dữ liệu cá nhân.
