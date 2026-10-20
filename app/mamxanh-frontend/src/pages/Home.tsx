@@ -102,7 +102,7 @@ export function Home() {
         <PageContainer className="relative z-10 py-14 text-center sm:py-20">
           <Badge
             tone="brand"
-            className="mx-auto mb-4 border border-zinc-600/80 bg-zinc-800/90 text-brand-500 shadow-sm backdrop-blur-sm"
+            className="home-hero-badge mx-auto mb-4 shadow-sm backdrop-blur-sm"
           >
             <Leaf className="h-3.5 w-3.5" />
             Mâm Xanh · Ẩm thực thuần lành
@@ -125,7 +125,7 @@ export function Home() {
           <Pattern />
         </div>
 
-        <PageContainer className="relative z-10 space-y-7 py-8 sm:py-10">
+        <PageContainer className="relative z-10 space-y-7 py-8 sm:py-10 pb-12 sm:pb-16">
           {/* Row 1: Search + BorderGlow AI Assistant (8 cols) & User Kitchen Shortcuts (4 cols) */}
           <div className="grid items-stretch gap-6 lg:grid-cols-12">
             <div className="flex flex-col justify-between gap-6 lg:col-span-8">

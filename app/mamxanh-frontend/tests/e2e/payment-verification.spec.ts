@@ -26,6 +26,7 @@ for (const width of [360, 768, 1440]) {
     await expect(page.getByText('Hạn sử dụng đến:', { exact: false })).toBeVisible();
     expect(requests).toBe(2);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: test.info().outputPath(`detail-payment-verified-${width}.png`), fullPage: true });
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Thanh toán thành công!', exact: true })).toBeVisible();
   });

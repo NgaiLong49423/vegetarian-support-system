@@ -35,7 +35,7 @@ test('home renders Backend featured recipes and routes both search actions to ex
 
 test('explore paginates API results, handles image variants and clears its search query', async ({ page }) => {
   const requestedPages: number[] = [];
-  await page.route('**/api/v1/recipes?**', (route) => {
+  await page.route('**/api/v1/recipes/discovery?**', (route) => {
     const url = new URL(route.request().url());
     const pageNumber = Number(url.searchParams.get('page'));
     requestedPages.push(pageNumber);
@@ -49,18 +49,18 @@ test('explore paginates API results, handles image variants and clears its searc
         youtubeUrl: null, status: 'PUBLISHED',
         media: pageNumber === 0 ? [] : [{ url: 'https://example.test/cover.jpg', mimeType: 'image/jpeg', displayOrder: 0, cover: true }],
         ingredients: [],
-      }], page: pageNumber, size: 12, totalElements: 13, totalPages: 2,
+      }], page: pageNumber, size: 12, hasNext: pageNumber === 0,
     } });
   });
 
   await page.goto('/kham-pha?q=tofu');
   await expect(page.getByRole('heading', { name: 'Công thức trang 1' })).toBeVisible();
   await expect(page.getByText('Chưa có ảnh công thức')).toBeVisible();
-  await expect(page.getByText('Trang 1 / 2')).toBeVisible();
+  await expect(page.getByText('Trang 1', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Trang sau' }).click();
   await expect(page.getByRole('heading', { name: 'Công thức trang 2' })).toBeVisible();
   await expect(page.locator('img[alt="Công thức trang 2"]')).toHaveAttribute('src', 'https://example.test/cover.jpg');
-  await expect(page.getByText('Trang 2 / 2')).toBeVisible();
+  await expect(page.getByText('Trang 2', { exact: true })).toBeVisible();
 
   await page.getByRole('textbox', { name: 'Từ khóa', exact: true }).fill('other');
   await expect(page).toHaveURL(/\/kham-pha\?q=other$/);
@@ -150,13 +150,13 @@ test('administrator can view admin dashboard and pending modules', async ({ page
   await page.getByRole('button', { name: 'Đóng menu' }).click();
 
   await page.goto('/admin/bao-cao');
-  await expect(page.getByRole('heading', { name: 'Hậu kiểm nội dung & Xử lý báo cáo vi phạm' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hậu kiểm nội dung & Xử lý vi phạm' })).toBeVisible();
 
   await page.goto('/admin/nguoi-dung');
-  await expect(page.getByRole('heading', { name: 'Quản lý tài khoản & Phân quyền người dùng' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Quản lý tài khoản & Phân quyền', exact: true })).toBeVisible();
 
   await page.goto('/admin/giao-dich');
-  await expect(page.getByRole('heading', { name: 'Giám sát giao dịch thanh toán gói AI hệ thống' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Giám sát giao dịch gói AI hệ thống' })).toBeVisible();
 });
 
 test('non-admin member accessing admin route is denied access', async ({ page }) => {

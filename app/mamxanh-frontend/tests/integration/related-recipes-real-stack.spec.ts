@@ -19,20 +19,26 @@ function sql(query: string): string {
 }
 
 test('real recipe detail recommendations match current SQL Server data without calling AI', async ({ page, request }) => {
-  const catalogResponse = await request.get(`${backendUrl}/recipes?size=1`);
-  expect(catalogResponse.ok()).toBeTruthy();
-  const catalog = await catalogResponse.json();
-  expect(catalog.items.length, 'Compose local demo data must include published recipes').toBeGreaterThan(0);
-  const sourceId = catalog.items[0].id as number;
+  // Pick a stable seed recipe. The FR-58 test inserts and deletes a newest recipe in this
+  // shared database, so relying on the first catalog result races with that fixture cleanup.
+  const sourceId = Number(sql(
+    "SELECT TOP (1) recipe_id FROM [RECIPE_POST] WHERE status='PUBLISHED' ORDER BY recipe_id ASC",
+  ));
+  expect(sourceId, 'Compose local demo data must include a published recipe').toBeGreaterThan(0);
+  const sourceResponse = await request.get(`${backendUrl}/recipes/${sourceId}`);
+  expect(sourceResponse.ok(), `GET source recipe returned HTTP ${sourceResponse.status()}`).toBeTruthy();
+  const source = await sourceResponse.json() as { title: string };
   let aiRequests = 0;
   page.on('request', (request) => { if (request.url().endsWith('/related/ai')) aiRequests++; });
   const relatedResponsePromise = page.waitForResponse((response) =>
     response.url().endsWith(`/recipes/${sourceId}/related`) && response.request().method() === 'GET');
   await page.goto(`/cong-thuc/id/${sourceId}`);
-  await expect(page.getByRole('heading', { name: catalog.items[0].title, exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: source.title, exact: true })).toBeVisible();
   const response = await relatedResponsePromise;
-  expect(response.ok()).toBeTruthy();
-  const payload = await response.json() as { items: Array<{ id: number; title: string }> };
+  const responseBody = await response.text();
+  expect(response.ok(), `GET related recipes returned HTTP ${response.status()}: ${responseBody}`)
+    .toBeTruthy();
+  const payload = JSON.parse(responseBody) as { items: Array<{ id: number; title: string }> };
   const section = page.getByRole('region', { name: 'Công thức liên quan' });
   for (const item of payload.items) {
     expect(item.id).not.toBe(sourceId);

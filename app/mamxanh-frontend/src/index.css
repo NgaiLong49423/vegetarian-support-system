@@ -1134,14 +1134,63 @@ button:not(:disabled), a { cursor: pointer; }
   color: var(--color-brand-700);
 }
 
+:root[data-theme="light"] .ai-plan-card--plus {
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="light"] .ai-plan-card--plus .ai-plan-card__border {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-brand-300) 0%,
+    var(--color-brand-100) 100%
+  );
+}
+
 :root[data-theme="light"] .ai-plan-card--plus .ai-plan-card__surface {
-  background-color: var(--color-paper);
-  box-shadow: 0 6px 20px rgba(234, 88, 12, 0.08);
+  background-color: var(--color-paper) !important;
+  background-image: none !important;
+  box-shadow: 0 6px 20px rgba(234, 88, 12, 0.08) !important;
+}
+
+:root[data-theme="light"] .ai-plan-card--plus:hover .ai-plan-card__surface {
+  box-shadow: 0 10px 28px rgba(234, 88, 12, 0.14) !important;
+}
+
+:root[data-theme="light"] .ai-plan-card--pro {
+  box-shadow:
+    0 10px 30px -8px rgba(234, 88, 12, 0.18),
+    0 0 16px -4px rgba(249, 115, 22, 0.12);
+}
+
+:root[data-theme="light"] .ai-plan-card--pro .ai-plan-card__border {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-brand-500) 0%,
+    var(--color-brand-200) 100%
+  );
 }
 
 :root[data-theme="light"] .ai-plan-card--pro .ai-plan-card__surface {
-  background-color: var(--color-paper);
-  box-shadow: 0 8px 28px rgba(234, 88, 12, 0.12);
+  background-color: var(--color-paper) !important;
+  background-image: none !important;
+  box-shadow: 0 8px 28px rgba(234, 88, 12, 0.12) !important;
+}
+
+:root[data-theme="light"] .ai-plan-card--pro:hover .ai-plan-card__surface {
+  box-shadow: 0 14px 36px rgba(234, 88, 12, 0.2) !important;
+}
+
+.home-hero-badge {
+  background-color: color-mix(in srgb, var(--color-paper) 90%, transparent) !important;
+  border-color: var(--color-brand-200) !important;
+  color: var(--color-brand-700) !important;
+}
+
+:root[data-theme="light"] .home-hero-badge {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: var(--color-brand-200) !important;
+  color: var(--color-brand-700) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
 }
 
 :root[data-theme="light"] .ai-plan-cta--plus {

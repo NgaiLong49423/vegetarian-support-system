@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { Link, useSearchParams } from "react-router-dom"
 import {
   ClipboardCopy,
   Download,
@@ -10,13 +11,37 @@ import {
 import { PageContainer } from "../components/Layout"
 import { BinButton } from "../components/BinButton"
 import SpringCheck from "../components/SpringCheck"
-import { Button, Card, ProgressBar } from "../components/ui"
+import { Button, Card, EmptyState, ProgressBar } from "../components/ui"
+import { useAuth } from "../components/AuthContext"
 import { shoppingList as initialList, nutritionTargets } from "../data/mockData"
 import type { ShoppingListItem } from "../types"
 
 type Tab = "all" | "todo" | "done"
 
 export function ShoppingList() {
+  const { account } = useAuth()
+  const [params] = useSearchParams()
+
+  if (!account && !params.get("demo")) {
+    return (
+      <PageContainer className="py-10">
+        <EmptyState
+          icon="🛒"
+          title="Danh sách đi chợ của bạn"
+          description="Đăng nhập để tạo, quản lý và theo dõi danh sách mua sắm nguyên liệu cho các bữa ăn."
+          action={
+            <Link
+              to="/dang-nhap"
+              className="rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-on-brand"
+            >
+              Đăng nhập
+            </Link>
+          }
+        />
+      </PageContainer>
+    )
+  }
+
   const [items, setItems] = useState<ShoppingListItem[]>(initialList)
   const [tab, setTab] = useState<Tab>("all")
   const [adding, setAdding] = useState("")

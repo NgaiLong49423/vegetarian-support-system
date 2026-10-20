@@ -12,7 +12,6 @@ import {
   Flame,
   Flag,
   Leaf,
-  LoaderCircle,
   Lock,
   Share2,
   ShoppingBasket,
@@ -26,15 +25,13 @@ import SpringCheck from '../components/SpringCheck';
 import { Badge, Button, Card, SectionHeading } from '../components/ui';
 import { HeartCheckbox } from '../components/HeartCheckbox';
 import { Modal } from '../components/Modal';
-import { RecipeComments } from '../components/RecipeComments';
 import { RecipeRating } from '../components/RecipeRating';
 import { useAuth } from '../components/AuthContext';
 import { YouTubeEmbed } from '../components/YouTubeEmbed';
 import { recipes } from '../data/mockData';
-import { recipesApi, type RecipeDetail as RecipeDetailData } from '../api/recipes';
 import { scaleQuantity } from '../utils/servings';
-import { RecipeViews } from '../components/RecipeViews';
 import { isSaved, toggleSaved, subscribeSaved } from '../lib/savedRecipes';
+import { ApiRecipeDetail } from './ApiRecipeDetail';
 
 const reportReasons = [
   { code: 'NON_VEGAN', label: 'Không phải món chay' },
@@ -58,80 +55,8 @@ const nutritionRows = [
 
 export function RecipeDetail() {
   const { slug } = useParams();
-  if (slug && /^\d+$/.test(slug)) return <PublishedRecipeDetail key={slug} recipeId={Number(slug)} />;
+  if (slug && /^\d+$/.test(slug)) return <ApiRecipeDetail />;
   return <MockRecipeDetail />;
-}
-
-function PublishedRecipeDetail({ recipeId }: { recipeId: number }) {
-  const [recipe, setRecipe] = useState<RecipeDetailData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
-
-  useEffect(() => {
-    let active = true;
-    recipesApi.getPublished(recipeId)
-      .then((result) => { if (active) setRecipe(result); })
-      .catch((error: unknown) => {
-        if (active) setLoadError(error instanceof Error ? error.message : 'Không tải được công thức này.');
-      })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [recipeId]);
-
-  if (loading) return <PageContainer className="py-16"><p role="status" className="flex items-center justify-center gap-2 text-ink-muted"><LoaderCircle className="h-5 w-5 animate-spin" />Đang tải công thức…</p></PageContainer>;
-  if (loadError || !recipe) return <PageContainer className="py-16"><Card className="mx-auto max-w-xl p-8 text-center"><h1 className="text-xl font-bold text-ink">Không tìm thấy công thức</h1><p role="alert" className="mt-2 text-sm text-ink-muted">{loadError || 'Công thức này không tồn tại hoặc chưa được công khai.'}</p><Link to="/kham-pha" className="mt-5 inline-flex text-sm font-bold text-brand-700">Quay lại khám phá</Link></Card></PageContainer>;
-
-  const cover = recipe.media.find((item) => item.cover) ?? recipe.media[0];
-  return (
-    <PageContainer className="py-8">
-      <Link to="/kham-pha" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeftRight className="h-4 w-4" />Khám phá công thức</Link>
-      <article className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-brand-100 bg-paper shadow-sm">
-        <div className="h-56 sm:h-80">
-          {cover
-            ? <img src={cover.blobUrl} alt={recipe.title} className="h-full w-full object-cover" />
-            : <RecipeDefaultArtwork vegetarianType={recipe.vegetarianType} label={recipe.vegetarianTypeLabel} />}
-        </div>
-        <div className="p-5 sm:p-8">
-          <div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-800"><span className="rounded-full bg-brand-50 px-3 py-1">{recipe.dishCategoryLabel}</span><span className="rounded-full bg-leaf-50 px-3 py-1">{recipe.vegetarianTypeLabel}</span><span className="rounded-full bg-stone-100 px-3 py-1">Độ khó: {recipe.difficultyLabel}</span></div>
-          <h1 className="mt-4 text-3xl font-extrabold text-ink">{recipe.title}</h1>
-          <RecipeViews key={recipeId} recipe={recipe} />
-          {recipe.description && <p className="mt-3 text-base leading-7 text-ink-soft">{recipe.description}</p>}
-          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-muted"><span>{recipe.servings} khẩu phần</span><span>Chuẩn bị {recipe.prepTimeMinutes} phút</span><span>Nấu {recipe.cookTimeMinutes} phút</span></div>
-          <section className="mt-8"><h2 className="text-xl font-extrabold text-ink">Nguyên liệu</h2><ul className="mt-3 space-y-2">{recipe.ingredients.map((item, index) => <li key={`${item.ingredientId}-${item.unitId}-${index}`} className="flex justify-between gap-4 border-b border-brand-50 py-2 text-sm"><span>{item.name}{item.nutritionSupported === false && <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Chưa hỗ trợ tính dinh dưỡng</span>}</span><span className="shrink-0 font-semibold text-ink">{item.quantity} {item.unitCode}</span></li>)}</ul></section>
-          {!recipe.nutritionComplete && (recipe.ingredientsWithoutNutrition ?? []).length > 0 && (
-            <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4" aria-labelledby="nutrition-status-heading">
-              <h2 id="nutrition-status-heading" className="font-bold text-amber-900">Chưa đủ dữ liệu dinh dưỡng</h2>
-              <p role="status" className="mt-1 text-sm text-amber-800">Ước tính dinh dưỡng chưa đầy đủ. Chưa hỗ trợ tính dinh dưỡng cho:</p>
-              <ul className="mt-2 list-inside list-disc text-sm text-amber-900">
-                {(recipe.ingredientsWithoutNutrition ?? []).map((name) => <li key={name}>{name}</li>)}
-              </ul>
-            </section>
-          )}
-          <section className="mt-8"><h2 className="text-xl font-extrabold text-ink">Hướng dẫn chế biến</h2><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-ink-soft">{recipe.instructions}</p></section>
-          {recipe.youtubeUrl && (
-            <section className="mt-8" data-testid="recipe-youtube-section">
-              <h2 className="text-xl font-extrabold text-ink">Video hướng dẫn thực hiện (YouTube)</h2>
-              <div className="mt-4 max-w-2xl">
-                <YouTubeEmbed urlOrId={recipe.youtubeUrl} title={`Video hướng dẫn nấu món ${recipe.title}`} />
-              </div>
-              <a href={recipe.youtubeUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex text-sm font-bold text-brand-700">Xem video hướng dẫn</a>
-            </section>
-          )}
-        </div>
-      </article>
-      <RecipeComments key={recipe.recipeId} recipeId={recipe.recipeId} />
-    </PageContainer>
-  );
-}
-
-function RecipeDefaultArtwork({ vegetarianType, label }: { vegetarianType: RecipeDetailData['vegetarianType']; label: string }) {
-  const appearance = {
-    VEGAN: 'from-leaf-100 to-emerald-50 text-leaf-800',
-    LACTO: 'from-amber-100 to-orange-50 text-amber-900',
-    OVO: 'from-yellow-100 to-lime-50 text-lime-900',
-    LACTO_OVO: 'from-brand-100 to-yellow-50 text-brand-800',
-  }[vegetarianType];
-  return <div role="img" aria-label={`Ảnh mặc định cho món ${label}`} className={`flex h-full w-full flex-col items-center justify-center bg-gradient-to-br ${appearance}`}><Leaf className="h-14 w-14" /><span className="mt-3 text-sm font-bold">Ảnh mặc định · {label}</span></div>;
 }
 
 function MockRecipeDetail() {
@@ -394,7 +319,7 @@ function MockRecipeDetail() {
         {/* image gallery + description (FR-14) */}
         <div className="mb-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
           <div className="flex flex-col gap-3">
-            <div className="relative overflow-hidden rounded-2xl border border-brand-100 bg-brand-50 aspect-[4/3] sm:aspect-[16/10]">
+            <div className="relative overflow-hidden rounded-2xl border border-brand-100 bg-brand-50 h-[260px] sm:h-[340px] md:h-[380px] w-full">
               <img
                 src={mediaList[selectedImageIndex]?.url ?? recipe.image}
                 alt={recipe.name}
