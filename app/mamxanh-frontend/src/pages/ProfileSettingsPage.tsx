@@ -113,8 +113,8 @@ function ProfileSettingsForm() {
   return <PageContainer className="py-8">
     <div className="mx-auto max-w-2xl">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-2xl font-extrabold text-ink">Cài đặt hồ sơ</h1>
-        <Link to={`/thanh-vien/${profile.userId}`} className="text-sm font-semibold text-brand-700 hover:underline">Xem hồ sơ công khai</Link>
+        <h1 className="text-2xl font-extrabold text-ink">Chỉnh sửa hồ sơ</h1>
+        <Link to={`/thanh-vien/${profile.userId}`} className="text-sm font-semibold text-brand-700 hover:underline">Xem trang cá nhân</Link>
       </div>
       {notice && <div role="status" className="mt-4 rounded-xl bg-leaf-50 p-3 text-sm text-leaf-800">{notice}</div>}
 

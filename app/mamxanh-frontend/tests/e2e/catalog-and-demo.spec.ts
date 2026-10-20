@@ -164,7 +164,7 @@ test('community topics lead to article content and demo rating updates only once
 test('Member profile links to actual nutrition and preferences screens', async ({ page }) => {
   await seedDemoSession(page, 'CUSTOMER');
   await page.goto('/ho-so');
-  await page.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
+  await page.getByRole('button', { name: 'Sức khỏe & sở thích', exact: true }).click();
   await expect(page.getByRole('main').getByRole('link', { name: 'Mở hồ sơ dinh dưỡng' })).toHaveAttribute('href', '/ho-so/dinh-duong');
   await expect(page.getByRole('main').getByRole('link', { name: 'Mở sở thích ăn uống' })).toHaveAttribute('href', '/ho-so/so-thich-an-uong');
   await page.getByRole('button', { name: 'Công thức đã lưu', exact: true }).click();
