@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.19.0
+> **Version:** v2.22.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-10-20
 > **Status:** Active
@@ -8,7 +8,7 @@
 
 # Functional Requirements
 
-This document defines the 50 functional requirements in the current implementation baseline. Each requirement preserves its stable FR ID and acceptance criteria. Detailed actor-system flows are maintained in the linked Use Case Specifications. Related Business Rules and NFRs remain separately authoritative.
+This document defines the functional requirements in the current implementation baseline. Each requirement preserves its stable FR ID and acceptance criteria. Detailed actor-system flows are maintained in the linked Use Case Specifications. Related Business Rules and NFRs remain separately authoritative.
 
 ## Functional Requirements
 
@@ -1550,7 +1550,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 
 - **Mã yêu cầu:** FR-23
 - **Module:** M01, M02, M03
-- **Tóm tắt yêu cầu:** Hệ thống định danh tác giả gắn chặt với tài khoản đã đăng ký; hiển thị thông tin tác giả trên đầu bài công thức và trang hồ sơ công khai gồm tên, avatar, giới thiệu ngắn, bài đăng và ngày tham gia; phân định nghiêm ngặt quyền xem dữ liệu công khai và dữ liệu riêng tư; bảo vệ quyền sở hữu nội dung và ngăn chặn lộ lọt thông tin nhạy cảm.
+- **Tóm tắt yêu cầu:** Hệ thống định danh tác giả gắn chặt với tài khoản đã đăng ký; hiển thị thông tin tác giả trên đầu bài công thức và trang hồ sơ công khai gồm tên, avatar, giới thiệu ngắn, bài đăng, ngày tham gia và tổng lượt thích/lượt xem của toàn bộ bài công khai; phân định nghiêm ngặt quyền xem dữ liệu công khai và dữ liệu riêng tư; bảo vệ quyền sở hữu nội dung và ngăn chặn lộ lọt thông tin nhạy cảm.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/discovery-and-public-content.md#fr-23).
 
@@ -1607,7 +1607,7 @@ Xác lập mối liên kết định danh bất biến giữa nội dung bài c�
 - **AC-23.2 — Xem trang hồ sơ công khai chỉ chứa thông tin được phép:**
   - **Given:** Người dùng truy cập trang hồ sơ công khai của tác giả `NguyenVanA`.
   - **When:** Trang hồ sơ tải hoàn tất.
-  - **Then:** Giao diện hiển thị: tên hiển thị, ảnh đại diện, giới thiệu ngắn (nếu có), thời điểm tham gia (Tháng/Năm), và danh sách các bài công thức đang công khai của tác giả; tuyệt đối KHÔNG có email, mật khẩu/password hash, token xác thực, hồ sơ dị ứng, dữ liệu dinh dưỡng, lịch ăn hay danh sách đã lưu.
+  - **Then:** Giao diện hiển thị: tên hiển thị, ảnh đại diện, giới thiệu ngắn (nếu có), thời điểm tham gia (Tháng/Năm), danh sách các bài công thức đang công khai của tác giả, cùng tổng số lượt thích và lượt xem của tất cả bài công khai bất kể phân trang; tuyệt đối KHÔNG có email, mật khẩu/password hash, token xác thực, hồ sơ dị ứng, dữ liệu dinh dưỡng, lịch ăn hay danh sách đã lưu.
 
 - **AC-23.3 — Hiển thị ảnh đại diện mặc định khi tác giả chưa tải ảnh lên:**
   - **Given:** Thành viên `NguyenVanB` có tài khoản nhưng chưa tải ảnh đại diện cá nhân lên hệ thống.
@@ -3865,5 +3865,54 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **AC-60.6 — Không phán xét sức khỏe:** Given bảng so sánh đã được tạo, Then giao diện không có Natri/muối, Health Score, chênh lệch phần trăm hoặc nhãn kết luận công thức tốt hơn/lành mạnh hơn.
 - **AC-60.7 — Không lưu lịch sử hoặc xuất PDF:** Given người dùng đóng giao diện so sánh, Then hệ thống không tạo bản ghi lịch sử; giao diện không cung cấp thao tác xuất kết quả so sánh ra PDF.
 - **AC-60.8 — Responsive:** Given người dùng xem trên màn hình nhỏ, Then nội dung hai công thức được trình bày theo nhóm/khối dễ đối chiếu, không yêu cầu cuộn ngang toàn trang để đọc các trường bắt buộc.
+
+---
+
+<a id="fr-61"></a>
+### FR-61 — Khám phá và theo dõi Chuyên gia ẩm thực chay
+
+- **Mã yêu cầu:** FR-61
+- **Module:** M01, M02
+- **Use Case detail:** [Open interaction flows](../use-cases/discovery-and-public-content.md#fr-61).
+
+#### Mục đích và phạm vi
+
+Hệ thống cung cấp danh bạ công khai để Guest và Member tìm, xem hồ sơ và nội dung công khai của Chuyên gia. Danh sách chỉ bao gồm tài khoản có role `EXPERT` và trạng thái `ACTIVE`; hỗ trợ tìm theo tên hiển thị hoặc phần giới thiệu và phân trang. Thông tin danh bạ chỉ gồm tên hiển thị, avatar, bio, số người theo dõi đang hoạt động và trạng thái theo dõi của Member hiện tại.
+
+Customer và Expert đã đăng nhập có thể theo dõi/bỏ theo dõi qua hành vi đã quy định ở FR-59. Guest chọn theo dõi được dẫn tới đăng nhập. Administrator chỉ xem và không có thao tác follow từ danh bạ. Chức năng không xếp hạng hoặc đề xuất cá nhân hóa chuyên gia.
+
+#### Acceptance Criteria
+
+- **AC-61.1 — Chỉ hiển thị Chuyên gia hoạt động:** Given danh sách có tài khoản Expert hoạt động, Customer và tài khoản không hoạt động, When người dùng mở danh bạ, Then chỉ Expert có trạng thái `ACTIVE` xuất hiện.
+- **AC-61.2 — Tìm kiếm và phân trang:** Given danh bạ có nhiều Expert, When người dùng tìm theo chuỗi tên hiển thị/bio hoặc chuyển trang, Then kết quả được lọc, sắp xếp ổn định theo tên hiển thị và ID, đồng thời chỉ tải số bản ghi giới hạn của trang.
+- **AC-61.3 — Chỉ trả thông tin công khai:** Given API trả danh sách chuyên gia, Then response chỉ chứa ID, tên hiển thị, avatar, bio, follower count và trạng thái following; không chứa email, thông tin đăng nhập, dữ liệu dinh dưỡng hoặc trường quản trị.
+- **AC-61.4 — Theo dõi và bỏ theo dõi từ danh bạ:** Given Customer/Expert đã đăng nhập đang xem một Expert khác, When họ chọn Theo dõi hoặc Đang theo dõi, Then UI gọi API FR-59, hiển thị trạng thái và bộ đếm từ response Backend; lỗi không làm UI giả nhận thao tác thành công.
+- **AC-61.5 — Guest và Administrator:** Given Guest hoặc Administrator xem danh bạ, When họ chọn một Expert, Then Guest được yêu cầu đăng nhập và Administrator không được thực hiện follow; Backend FR-59 vẫn là quyền quyết định cuối cùng.
+- **AC-61.6 — Menu Khám phá:** Given người dùng mở điều hướng chính trên desktop hoặc mobile, Then mục Khám phá mở các lối vào Công thức, Danh mục nguyên liệu và Chuyên gia; trang Cộng đồng tiếp tục truy cập qua nút Trang chủ và URL trực tiếp.
+- **AC-61.7 — Trạng thái giao diện:** Given danh bạ đang tải, lỗi, không có kết quả hoặc có kết quả, Then giao diện hiển thị trạng thái tương ứng và có thể thử lại khi lỗi; thao tác điều hướng hỗ trợ keyboard focus.
+
+---
+
+<a id="fr-62"></a>
+### FR-62 — Chọn nguyên liệu và tìm công thức
+
+- **Mã yêu cầu:** FR-62
+- **Module:** M01, M04
+- **Use Case detail:** [Open interaction flows](../use-cases/discovery-and-public-content.md#fr-62).
+
+#### Mục đích và phạm vi
+
+Hệ thống cung cấp trang công khai hiển thị toàn bộ nguyên liệu đang hoạt động trong danh mục chuẩn FR-18 dưới dạng các nhãn có thể chọn. Guest và Member có thể tìm trong danh sách, chọn một hoặc nhiều nguyên liệu và chuyển tới trang Khám phá với các bộ lọc đã chọn. API công thức giữ nguyên quy tắc FR-08 hiện tại: kết quả phải có đủ tất cả nguyên liệu được chọn.
+
+Trang này là cách chọn trực tiếp từ điển nguyên liệu hiện có; không phân nhóm nhãn trong giao diện và không tạo taxonomy nhóm món ăn hoặc danh mục động mới. API công khai không trả trường nguồn quản trị, URL nguồn, dữ liệu dinh dưỡng hoặc trạng thái nội bộ ngoài các trường cần hiển thị.
+
+#### Acceptance Criteria
+
+- **AC-62.1 — Toàn bộ nguyên liệu đang hoạt động:** Given catalog có nguyên liệu ở trạng thái `ACTIVE` và `INACTIVE`, When Guest mở trang danh mục, Then tất cả và chỉ các nguyên liệu `ACTIVE` được tải để hiển thị thành các nhãn.
+- **AC-62.2 — Tìm và chọn nhiều nhãn:** Given danh mục nguyên liệu đã tải, When người dùng tìm theo tên và chọn hoặc bỏ chọn nhãn, Then giao diện thể hiện đúng trạng thái đã chọn và hỗ trợ chọn nhiều nguyên liệu bằng chuột hoặc bàn phím.
+- **AC-62.3 — Tìm công thức theo nhiều nguyên liệu:** Given người dùng chọn một hoặc nhiều nguyên liệu đang hoạt động, When chọn Tìm công thức, Then trang Khám phá mở với đúng các ingredient ID đã chọn; công thức phải thỏa tất cả nguyên liệu theo semantics AND của FR-08.
+- **AC-62.4 — Không phân nhóm nhãn:** Given danh mục nguyên liệu được hiển thị, Then các nguyên liệu xuất hiện trong một danh sách nhãn thống nhất, không yêu cầu người dùng duyệt `ingredient_group` hoặc taxonomy món ăn.
+- **AC-62.5 — Hạn chế dữ liệu API công khai:** Given danh sách nhóm/nguyên liệu được trả về, Then chỉ có group name/count hoặc ingredient ID/name/group; không tiết lộ trường quản trị, nguồn tham chiếu hoặc dữ liệu dinh dưỡng.
+- **AC-62.6 — Trạng thái giao diện:** Given danh mục đang tải, lỗi, rỗng hoặc có dữ liệu, Then UI hiển thị trạng thái tương ứng, có thể thử lại khi lỗi và các nhóm/nguyên liệu có thể thao tác bằng keyboard.
 
 ---

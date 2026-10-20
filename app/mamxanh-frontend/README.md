@@ -1,11 +1,20 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.34.0
+> **Version:** v1.37.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-10-20
 > **Status:** Active  
 
 # Mâm Xanh Frontend
+
+### Danh bạ Chuyên gia và chọn nguyên liệu — FR-61 / FR-62
+
+- Menu Khám phá mở các route Công thức, Danh mục nguyên liệu và Chuyên gia trên desktop/mobile. Cộng đồng vẫn được mở từ nút “Xem cộng đồng” trên Trang chủ; route và deep links hiện có được giữ nguyên.
+- `/chuyen-gia` đọc danh sách Expert đang hoạt động từ `GET /api/v1/experts`, hỗ trợ tìm/phân trang, mở hồ sơ hiện có và follow/unfollow qua API FR-59. Guest được chuyển tới đăng nhập; Admin chỉ duyệt.
+- `/danh-muc-nguyen-lieu` tải toàn bộ nguyên liệu đang hoạt động theo trang từ `GET /api/v1/ingredients`, hiển thị thành nhãn chọn nhiều và mở Khám phá với tất cả các ingredient ID đã chọn.
+- Bốn Expert demo trong profile `local` dùng ảnh chân dung tổng hợp được host trong `public/avatars/experts/`; avatar người dùng tải lên được giữ nguyên.
+- Màn hình dùng dữ liệu Backend, có trạng thái loading/error/empty; không dùng mock directory hay count tĩnh.
+- Hồ sơ công khai `/thanh-vien/:userId` trình bày công thức thành lưới bài viết; từng ảnh hiển thị số lượt xem và lượt thích. Phần đầu hồ sơ hiển thị tổng lượt xem/lượt thích của tất cả bài công khai qua `GET /api/v1/members/{userId}/recipe-statistics`, không chỉ trang đang xem.
 
 Thư mục mã nguồn giao diện ứng dụng Mâm Xanh được xây dựng bằng **React 19**, **TypeScript**, **Vite 8**, **Tailwind CSS v4** và xuất phát từ thiết kế Figma Make.
 

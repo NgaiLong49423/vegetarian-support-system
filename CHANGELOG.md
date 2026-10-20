@@ -1,11 +1,38 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.90.0
+> **Version:** v2.92.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-20
 > **Status:** Active
 
 # Changelog
+
+## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
+
+**Status:** Committed — `3106850`.
+
+**Scope:** Add public expert discovery, ingredient-group browsing, Explore entry points and per-post engagement counts on public profiles.
+
+### Added
+
+- Add a searchable, paginated active-expert directory with public profile fields and follow actions backed by existing follow APIs.
+- Add a searchable catalog of active ingredients presented as selectable labels for recipe discovery.
+- Add four generated, locally hosted portraits for the seeded Expert demo accounts.
+- Add backend read endpoints for expert directory and public ingredient catalog data without schema changes.
+- Present public profile recipes as a social-style image grid with each post's API-backed view and like counts.
+- Show profile-wide totals for views and likes across all published recipes, independent of the current recipe page.
+
+### Changed
+
+- Expand the Explore navigation menu on desktop and mobile to include recipes, ingredient groups and experts; keep community accessible through the existing Home entry point.
+- Align the Explore dropdown trigger with the shared orange navigation hover indicator.
+- Replace ingredient group cards and per-ingredient rows with a single multi-select label list that preserves the recipe filter's all-selected-ingredients rule.
+- Add FR-61 and FR-62 to the current requirements registry and detailed specifications.
+- Add a public recipe-statistics endpoint that aggregates likes and views across every published recipe by author; no database migration is required.
+
+### Fixed
+
+- None.
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 

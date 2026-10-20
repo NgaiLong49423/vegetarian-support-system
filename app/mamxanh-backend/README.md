@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.31.0
+> **Version:** v0.34.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-17<br>
+> **Last Updated:** 2026-10-20
 > **Status:** Active  
 
 # Backend Workspace
@@ -48,6 +48,8 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 - Đã có FR-23 (Issue #29): `GET /api/v1/members/{userId}` và `GET /api/v1/members/{userId}/recipes` công khai; `GET`/`PUT /api/v1/me/profile` và `POST /api/v1/me/profile/avatar` cho Member sửa tên, giới thiệu ngắn và ảnh đại diện (JPEG/PNG/WebP ≤ 2 MB, kiểm chữ ký tệp, lưu qua `StorageClient` trong thư mục `avatars/`). Không có migration: `USER.bio`, `display_name`, `avatar_url` có từ V1. Quy tắc chi tiết ở [API Guide mục 11](../../docs/api/API.md). Giới hạn multipart `spring.servlet.multipart.*` là 5 MB/tệp, 6 MB/request.
 - FR-40 (Issue #45): Recipe Post dùng nguyên liệu catalog chưa có hồ sơ dinh dưỡng vẫn công khai được (BR-50); AI menu dinh dưỡng (FR-36, `AiMenuService`) chỉ lấy ứng viên `PUBLISHED` có dinh dưỡng đầy đủ, nên bài loại này không vào pool và áp dụng menu chứa bài đó bị từ chối (AC-40.3, BR-40; test `IncompleteNutritionAiMenuIntegrationTest`).
 - Đã có FR-59 (Issue #69) trong module `auth`: `GET /api/v1/members/{userId}/follow` công khai (bộ đếm và trạng thái theo dõi của người xem), `PUT`/`DELETE` cùng đường dẫn để theo dõi/bỏ theo dõi (idempotent, khóa phạm vi chống ghi trùng khi gọi song song) và `GET /api/v1/members/{userId}/followers`, `/following` có phân trang cho tài khoản đã đăng nhập. Không có migration: `USER_FOLLOW` có từ V1. Quy tắc chi tiết ở [API Guide mục 17](../../docs/api/API.md).
+- FR-61/FR-62 bổ sung `GET /api/v1/experts` (danh bạ Expert đang hoạt động, tìm kiếm/phân trang, follower count và trạng thái following) cùng `GET /api/v1/ingredients/groups` và `GET /api/v1/ingredients` (chỉ dữ liệu công khai, catalog ACTIVE). Tái sử dụng `USER`, `USER_FOLLOW` và `INGREDIENT`; không thêm migration. OpenAPI snapshot phải được export từ runtime sau khi API thay đổi.
+- FR-23 bổ sung `GET /api/v1/members/{userId}/recipe-statistics`, tổng hợp số bài công khai, lượt LIKE và lượt xem của toàn bộ Recipe Post `PUBLISHED` của một Member; tái sử dụng `RECIPE_POST`, `RECIPE_REACTION` và `RECIPE_VIEW`, không thêm migration.
 - Đã có FR-46 (Issue #48) trong module `recipe`: `GET /api/v1/recipes/{recipeId}/comments` công khai (luồng gốc phân trang, reply lồng tối đa 5 cấp, tombstone), `POST` cùng đường dẫn để bình luận/trả lời, `PUT`/`DELETE /api/v1/comments/{commentId}` cho chủ bình luận. Không có migration: `COMMENT` có từ V1. Quy tắc chi tiết ở [API Guide mục 18](../../docs/api/API.md).
 
 ### Lệnh chạy và kiểm tra xác minh
@@ -132,7 +134,7 @@ Các biến môi trường cho xác thực, email và tích hợp AI (giá trị
 
 ### Tài khoản demo local
 
-Khi Flyway nạp seed trong profile `local`, Backend tạo 25 tài khoản đã xác minh email: 20 Customer (`demo-customer@mamxanh.local`, `demo-new-member@mamxanh.local`, `demo-applicant@mamxanh.local` và `demo-customer-04` đến `demo-customer-20`), 4 Expert (`demo-expert@mamxanh.local` và `demo-expert-02` đến `demo-expert-04`) cùng `demo-admin@mamxanh.local`. Tất cả Customer có hồ sơ hoàn chỉnh, BMI hiện tại từ chiều cao/cân nặng và bốn tuần lịch ăn; hai tài khoản onboarding cũ nay cũng là Customer hoàn chỉnh. Seed có thêm công thức, nguyên liệu chưa xác minh dinh dưỡng và hoạt động Like/Dislike/View/Follow để trình diễn các bảng xếp hạng. Tài khoản Expert đầu tiên quản lý bộ công thức hiện có và có gói Pro demo hiệu lực một năm tính từ lần seed thiết lập subscription. Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả 25 tài khoản.
+Khi Flyway nạp seed trong profile `local`, Backend tạo 25 tài khoản đã xác minh email: 20 Customer (`demo-customer@mamxanh.local`, `demo-new-member@mamxanh.local`, `demo-applicant@mamxanh.local` và `demo-customer-04` đến `demo-customer-20`), 4 Expert (`demo-expert@mamxanh.local` và `demo-expert-02` đến `demo-expert-04`) cùng `demo-admin@mamxanh.local`. Bốn Expert demo có ảnh chân dung tổng hợp do Frontend host trong `public/avatars/experts/`; seed chỉ gán avatar cục bộ khi hồ sơ chưa có avatar hoặc vẫn dùng avatar demo, không ghi đè ảnh đã tải lên storage. Tất cả Customer có hồ sơ hoàn chỉnh, BMI hiện tại từ chiều cao/cân nặng và bốn tuần lịch ăn; hai tài khoản onboarding cũ nay cũng là Customer hoàn chỉnh. Seed có thêm công thức, nguyên liệu chưa xác minh dinh dưỡng và hoạt động Like/Dislike/View/Follow để trình diễn các bảng xếp hạng. Tài khoản Expert đầu tiên quản lý bộ công thức hiện có và có gói Pro demo hiệu lực một năm tính từ lần seed thiết lập subscription. Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả 25 tài khoản.
 
 Seed repeatable chỉ dùng với profile `local`. Trong IntelliJ/Maven, profile `local,local-reset` mặc định xóa và dựng lại `MamXanhDB` trước khi chạy migration; Docker Compose giữ volume/database khi `down`/`up`, và chạy lại seed an toàn. Reset SQL volume Compose sẽ dựng lại toàn bộ schema và fixture. Không dùng tài khoản hoặc mật khẩu demo ngoài máy local.
 

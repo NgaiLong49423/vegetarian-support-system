@@ -1,6 +1,9 @@
 package tech.mamxanh.nutrition.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -55,6 +58,29 @@ class IngredientCatalogDatabaseIntegrationTest extends AbstractIntegrationTest {
                 FROM sys.check_constraints
                 WHERE name = 'CK_UNIT_base_factor_positive'
                 """, Integer.class)).isEqualTo(1);
+    }
+
+    @Test void publicIngredientBrowseListsActiveGroupsAndOmitsAdministrativeFields() throws Exception {
+        String group = "Nhóm duyệt " + UUID.randomUUID().toString().substring(0, 8);
+        String activeName = "Nguyên liệu công khai " + UUID.randomUUID();
+        IngredientEntity active = ingredientRepository.saveAndFlush(new IngredientEntity(
+                activeName, group, "Private source", "https://private.example.test", LocalDate.now()));
+        IngredientEntity inactive = new IngredientEntity("Nguyên liệu ẩn " + UUID.randomUUID(), group,
+                "Private source", "https://private.example.test", LocalDate.now());
+        inactive.setActive(false);
+        ingredientRepository.saveAndFlush(inactive);
+
+        assertThat(catalogService.listPublicGroups()).filteredOn(item -> item.ingredientGroup().equals(group))
+                .singleElement().satisfies(item -> assertThat(item.ingredientCount()).isEqualTo(1));
+        mockMvc.perform(get("/api/v1/ingredients/groups"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/ingredients").param("group", group).param("query", activeName))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].ingredientId").value(active.getId()))
+                .andExpect(jsonPath("$.content[0].name").value(activeName))
+                .andExpect(jsonPath("$.content[0].sourceName").doesNotExist())
+                .andExpect(jsonPath("$.content[0].nutrition").doesNotExist());
     }
 
     @Test void storesIngredientSpecificConversionAndExposesItToRecipeValidation() {
