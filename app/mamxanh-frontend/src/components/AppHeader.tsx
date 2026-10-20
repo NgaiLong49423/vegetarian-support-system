@@ -17,7 +17,7 @@ import {
   Sparkles,
   Sun,
   Moon,
-  UserCog,
+  UserRound,
   Users,
   X,
 } from "lucide-react"
@@ -67,10 +67,10 @@ export function AppHeader() {
             icon: LayoutGrid,
           },
         ]
-      : isAuthenticated
+      : isAuthenticated && account
         ? [
-            { to: "/ho-so", label: "Hồ sơ của tôi", icon: Bookmark },
-            { to: "/ho-so/cai-dat", label: "Cài đặt hồ sơ", icon: UserCog },
+            { to: "/ho-so", label: "Khu vực của tôi", icon: Bookmark },
+            { to: `/thanh-vien/${account.id}`, label: "Trang cá nhân", icon: UserRound },
             ...(role === "EXPERT"
               ? [
                   {

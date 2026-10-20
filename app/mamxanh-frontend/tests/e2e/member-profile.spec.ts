@@ -151,8 +151,8 @@ test('member edits name and bio with validation and the header name follows (AC-
     return route.fulfill({ json: { ...own, displayName: body.displayName, bio: body.bio.trim() || null } });
   });
   await page.goto('/ho-so/cai-dat');
-  await expect(page.getByRole('heading', { name: 'Cài đặt hồ sơ' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Xem hồ sơ công khai' })).toHaveAttribute('href', '/thanh-vien/901');
+  await expect(page.getByRole('heading', { name: 'Chỉnh sửa hồ sơ' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Xem trang cá nhân' })).toHaveAttribute('href', '/thanh-vien/901');
   await expect(page.getByLabel('Tên hiển thị')).toHaveValue('Demo CUSTOMER');
 
   await page.getByLabel('Tên hiển thị').fill('  ab ');

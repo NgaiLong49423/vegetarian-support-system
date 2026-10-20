@@ -87,7 +87,8 @@ test('Member profile ignores stale local prototype data and reads its private AP
   await page.goto('/ho-so');
   await expect(page.getByRole('heading', { name: 'Chưa có công thức đã lưu' })).toBeVisible();
   await expect(page.getByRole('article')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Trang cá nhân', exact: true })).toHaveAttribute('href', '/thanh-vien/901');
+  await page.getByRole('button', { name: 'Sức khỏe & sở thích', exact: true }).click();
   await expect(page.getByRole('main').getByRole('link', { name: 'Mở sở thích ăn uống' })).toHaveAttribute('href', '/ho-so/so-thich-an-uong');
 });
 
