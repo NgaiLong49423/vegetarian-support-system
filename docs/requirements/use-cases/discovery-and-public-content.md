@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M01
 > **File:** `docs/requirements/use-cases/discovery-and-public-content.md`
-> **Version:** v2.2.0
+> **Version:** v2.5.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-19
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -106,9 +106,9 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 ### UC-23.2 — Xem hồ sơ công khai của Member
 - **Goal / Primary Actor:** Guest/Member xem thông tin và bài công khai của một Member.
 - **Trigger / Preconditions:** Người xem chọn tên/avatar tác giả; hồ sơ còn hoạt động.
-- **Main Flow:** Hệ thống tải các trường công khai và Recipe Post công khai của hồ sơ.
+- **Main Flow:** Hệ thống tải các trường công khai, danh sách Recipe Post công khai theo trang và tổng lượt thích/lượt xem của tất cả Recipe Post công khai của hồ sơ.
 - **Alternative / Security:** Tài khoản không khả dụng trả trạng thái phù hợp; email/dữ liệu riêng không xuất hiện.
-- **Postconditions:** Chỉ dữ liệu hồ sơ công khai được trình bày.
+- **Postconditions:** Chỉ dữ liệu hồ sơ công khai được trình bày; tổng tương tác bao gồm mọi Recipe Post `PUBLISHED` và không bị giới hạn bởi trang đang hiển thị.
 - **Traceability / Acceptance Coverage:** FR-23; BR-18; NFR-08; [AC-23.2, AC-23.3, AC-23.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-23).
 
 <a id="uc-23-3"></a>
@@ -684,3 +684,55 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-60).
 - Việc so sánh không thay đổi Recipe Post, danh sách đã lưu, Meal Plan, hồ sơ dinh dưỡng hoặc dữ liệu tương tác.
 
 ---
+
+<a id="fr-61"></a>
+## FR-61 — Khám phá và theo dõi Chuyên gia ẩm thực chay
+
+Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-61).
+
+#### 1. Tác nhân và mục tiêu
+
+- Guest hoặc Member tìm Chuyên gia đang hoạt động và mở hồ sơ công khai.
+- Customer/Expert đăng nhập theo dõi hoặc bỏ theo dõi Chuyên gia qua FR-59.
+- Administrator chỉ duyệt danh bạ.
+
+#### 2. Luồng chính
+
+1. Người dùng mở `Khám phá > Chuyên gia`; hệ thống tải danh sách phân trang của Expert `ACTIVE`.
+2. Người dùng có thể nhập từ khóa; hệ thống lọc theo tên hiển thị hoặc bio và sắp xếp ổn định theo tên rồi ID.
+3. Mỗi hàng hiển thị avatar, tên, bio, số người theo dõi và trạng thái follow của người xem đã đăng nhập.
+4. Chọn tên hoặc avatar mở hồ sơ công khai hiện có. Member đủ quyền có thể follow/unfollow; trạng thái và follower count chỉ cập nhật theo response Backend.
+
+#### 3. Luồng thay thế và quyền
+
+- Guest bấm Theo dõi được đưa tới đăng nhập; API follow vẫn yêu cầu xác thực theo FR-59.
+- Administrator không có thao tác follow trong danh bạ.
+- Danh sách rỗng, lỗi tải và trạng thái tải có thông báo riêng; lỗi follow không làm đổi trạng thái hiển thị.
+
+#### 4. Dữ liệu và bảo mật
+
+- API danh bạ chỉ trả ID, display name, avatar, bio, follower count và cờ following; không trả email, dữ liệu đăng nhập, thông tin dinh dưỡng hoặc trường quản trị.
+- Chỉ tài khoản `EXPERT` có trạng thái `ACTIVE` được liệt kê; profile route hiện hữu tiếp tục áp dụng quy tắc FR-23.
+
+---
+
+<a id="fr-62"></a>
+## FR-62 — Chọn nguyên liệu và tìm công thức
+
+Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-62).
+
+#### 1. Tác nhân và mục tiêu
+
+Guest hoặc Member duyệt tất cả nguyên liệu đang hoạt động dưới dạng nhãn, chọn một hoặc nhiều nguyên liệu rồi mở Khám phá với các bộ lọc tương ứng.
+
+#### 2. Luồng chính
+
+1. Người dùng mở `Khám phá > Danh mục nguyên liệu`; hệ thống tải toàn bộ nguyên liệu đang `ACTIVE` và hiển thị mỗi nguyên liệu thành nhãn chọn được.
+2. Người dùng có thể tìm theo tên và chọn hoặc bỏ chọn một hay nhiều nhãn; số lượng và trạng thái lựa chọn được thể hiện trên trang.
+3. Chọn `Tìm công thức` mở `/kham-pha` với từng ingredient ID và tên tương ứng; trang Khám phá khôi phục các lựa chọn rồi gửi bộ lọc hiện hành.
+
+#### 3. Luồng thay thế và dữ liệu
+
+- Catalog rỗng, lỗi hoặc đang tải được thể hiện tách biệt; khi có dữ liệu, tất cả nguyên liệu `ACTIVE` xuất hiện cùng nhau mà không cần chọn nhóm.
+- Public ingredient API chỉ trả ID, tên và group; không mở rộng API quản trị catalog.
+- API Khám phá giữ nguyên quy tắc hiện hành: khi nhiều nguyên liệu được chọn, công thức phải thỏa tất cả ID.
