@@ -330,7 +330,8 @@ export function Home() {
 
           {/* Row 3 & Row 4: Full-width Recipe Collections */}
           <RecipeCollection
-            title="Mới từ cộng đồng"
+            title="Bài đăng mới từ cộng đồng"
+            ariaLabel="Mới từ cộng đồng"
             recipes={newRecipes}
             options={options}
             loading={loading}
@@ -357,9 +358,6 @@ export function Home() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="rounded-full bg-raised px-2.5 py-1 text-xs text-ink-muted">
-                  Mẫu giao diện
-                </span>
                 <Link
                   to="/cong-dong"
                   className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-500 sm:text-sm"
@@ -383,6 +381,7 @@ export function Home() {
 
 function RecipeCollection({
   title,
+  ariaLabel,
   recipes,
   options,
   loading,
@@ -391,6 +390,7 @@ function RecipeCollection({
   popular = false,
 }: {
   title: string;
+  ariaLabel?: string;
   recipes: RecipePost[];
   options: RecipeFormOptions | null;
   loading: boolean;
@@ -430,7 +430,7 @@ function RecipeCollection({
         </div>
       ) : recipes.length ? (
         <div
-          aria-label={title}
+          aria-label={ariaLabel ?? title}
           className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
         >
           {recipes.slice(0, 4).map((recipe) => (
