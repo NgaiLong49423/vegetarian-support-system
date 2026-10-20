@@ -9,7 +9,7 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-20 — Expand Local Demo Data
+## 2026-10-20 — Expand Local Demo Data ([PR #166](https://github.com/NgaiLong49423/vegetarian-support-system/pull/166))
 
 **Status:** Committed — `fa44e59`.
 
