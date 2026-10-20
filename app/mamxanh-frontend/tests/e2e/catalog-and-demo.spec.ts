@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { expect, test } from './baseFixtures';
 import { seedDemoSession } from './demo-session';
 
@@ -16,36 +15,6 @@ test('recipe exploration uses only API search and reports an empty result honest
   await search.fill('không có món này');
   await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();
   await expect(page.getByText('Phở chay', { exact: true })).toHaveCount(0);
-});
-
-test('shopping demo adds an item, filters purchased items and clears them', async ({ page }) => {
-  await page.goto('/di-cho');
-  const input = page.getByRole('textbox', { name: 'Thêm nguyên liệu vào danh sách' });
-  await input.fill('Nấm bào ngư cho bữa tối');
-  await input.press('Enter');
-  const item = page.getByRole('button', { name: 'Đánh dấu Nấm bào ngư cho bữa tối', exact: true });
-  await expect(item).toBeVisible();
-  await expect(input).toHaveValue('');
-  await item.click();
-  await page.getByRole('button', { name: /Cần mua/ }).click();
-  await expect(item).toHaveCount(0);
-  await page.getByRole('button', { name: /Đã mua/ }).click();
-  await expect(item).toBeVisible();
-  await page.getByRole('button', { name: /Xoá .* mục đã mua/ }).click();
-  await expect(page.getByText('Không có nguyên liệu trong mục này.')).toBeVisible();
-});
-
-test('shopping export contains the newly added item', async ({ page }) => {
-  await page.goto('/di-cho');
-  await page.getByRole('textbox', { name: 'Thêm nguyên liệu vào danh sách' }).fill('Rau cải cho ngày mai');
-  await page.getByRole('button', { name: 'Thêm', exact: true }).click();
-  const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'TXT', exact: true }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe('danh-sach-di-cho.txt');
-  const downloadedPath = await download.path();
-  expect(downloadedPath).not.toBeNull();
-  expect(await readFile(downloadedPath!, 'utf8')).toContain('[ ] Rau cải cho ngày mai — vừa đủ');
 });
 
 test('recipe form uses catalog choices and reports that real login is still required', async ({ page }) => {

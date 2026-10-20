@@ -10,6 +10,12 @@ public record ShoppingAggregationResult(List<Group> groups, List<Warning> warnin
         public Group { items = List.copyOf(items); }
     }
     public record Item(Long ingredientId, String name, BigDecimal quantity, int unitId,
-            String unitCode, String unitName, boolean incompatibleUnits) { }
+            String unitCode, String unitName, boolean incompatibleUnits, List<Integer> sourceIndices) {
+        public Item { sourceIndices = List.copyOf(sourceIndices); }
+        public Item(Long ingredientId, String name, BigDecimal quantity, int unitId, String unitCode,
+                String unitName, boolean incompatibleUnits) {
+            this(ingredientId, name, quantity, unitId, unitCode, unitName, incompatibleUnits, List.of());
+        }
+    }
     public record Warning(int sourceIndex, String code, String message) { }
 }

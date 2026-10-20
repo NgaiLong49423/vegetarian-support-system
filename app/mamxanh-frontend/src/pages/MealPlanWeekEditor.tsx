@@ -41,6 +41,7 @@ import { asApiError } from "../lib/apiClient"
 import { MealPlanNutrition } from "./MealPlanNutrition"
 import { mealPlanFile, downloadMealPlan } from "../lib/mealPlanExport"
 import { AiRecipePlanner } from "./AiRecipePlanner"
+import { CreateShoppingListButton } from "../components/CreateShoppingListButton"
 
 type Entry = MealPlanWeek["entries"][number]
 
@@ -556,6 +557,7 @@ function WeekContents({
         </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
+        <CreateShoppingListButton week={week} disabled={busy || plan.entries.length === 0} />
         <p className="text-sm text-ink-muted">Chọn ngày để lên lịch từng bữa</p>
         <Button
           variant="outline"

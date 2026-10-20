@@ -120,7 +120,8 @@ public class ShoppingAggregationService {
         boolean incompatible = buckets.size() > 1;
         var first = rows.getFirst();
         return buckets.values().stream().map(bucket -> new Item(first.identity().ingredientId(), first.name(),
-                bucket.quantity, bucket.unit.id(), bucket.unit.code(), bucket.unit.name(), incompatible)).toList();
+                bucket.quantity, bucket.unit.id(), bucket.unit.code(), bucket.unit.name(), incompatible,
+                bucket.rows.stream().map(Row::sourceIndex).toList())).toList();
     }
 
     private void mergeWithOfficialRates(Map<String, Bucket> buckets, Collection<UnitResponse> units,
