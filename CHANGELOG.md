@@ -1,13 +1,34 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.87.0
+> **Version:** v2.88.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-18
+> **Last Updated:** 2026-10-20
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-20 — Remove Standalone Meal Plan Export (Issue #152)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Remove the standalone weekly meal-plan export from the active requirements and implementation while preserving the FR-37 nutrition report PDF with its planned-meal list.
+
+### Added
+
+- None.
+
+### Changed
+
+- Remove the standalone meal-plan export use case and acceptance criterion from FR-33 and its linked interaction flow; remove its Frontend controls, file-generation helper, Backend endpoint, service, and response DTO.
+- Remove the standalone export dependency and obsolete UI, Backend, and SQL integration checks.
+- Remove the obsolete endpoint description from the API guide; the generated OpenAPI snapshot still requires regeneration from a running Backend.
+- Clarify that recipe exports, FR-37 nutrition report PDFs, and Shopping List text export remain in scope.
+
+### Fixed
+
+- None.
 
 ## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
 

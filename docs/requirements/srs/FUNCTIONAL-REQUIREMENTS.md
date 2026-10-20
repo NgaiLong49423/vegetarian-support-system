@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.18.0
+> **Version:** v2.19.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-10-20
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -2236,6 +2236,8 @@ Hỗ trợ thành viên lưu trữ nhanh các bài công thức yêu thích thà
 - **Module:** M02 (Identity & Access), M04 (Recipe Catalog & Search), M05 (Meal Planning & Shopping List)
 - **Tóm tắt yêu cầu:** Hệ thống cho phép Member thêm bài công thức vào ngày và một trong ba loại Bữa sáng / Bữa trưa / Bữa tối, chuyển ngày/bữa, thay công thức và xóa mục khỏi lịch ăn; mỗi bữa được có nhiều công thức nhưng không có cùng công thức trùng trong cùng ngày/bữa; tham chiếu hiện có được giữ bằng unavailable/tombstone khi bài nguồn không còn khả dụng.
 
+- **Giới hạn phạm vi:** FR-33 quản lý việc sắp xếp món trong lịch ăn, không cung cấp chức năng xuất lịch ăn riêng. Báo cáo PDF dinh dưỡng ngày/tuần kèm thực đơn dự kiến thuộc FR-37.
+
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-33).
 
 #### Mục đích
@@ -2246,12 +2248,10 @@ Cung cấp công cụ thao tác linh hoạt, chi tiết và trực quan để th
   - `UC-33.1`: Thêm bài công thức vào bữa ăn cụ thể trong lịch (Add recipe to meal slot).
   - `UC-33.2`: Chuyển món ăn sang bữa hoặc ngày khác (Move recipe to another meal slot).
   - `UC-33.3`: Xóa món ăn khỏi bữa trong Lịch ăn (Remove recipe from meal slot).
-  - `UC-33.4`: Xuất bản Lịch ăn tuần sang tệp tin PDF hoặc TXT (Export weekly meal plan).
 - **User Stories:**
   - `US-33.1`: Là một thành viên, tôi muốn thêm món Canh nấm vào Bữa trưa Thứ Ba để chuẩn bị thực đơn cho gia đình.
   - `US-33.2`: Là một thành viên, tôi muốn có thể chuyển món ăn từ Bữa trưa sang Bữa tối khi tôi bận không kịp nấu bữa trưa.
   - `US-33.3`: Là một thành viên, tôi muốn thêm cả món xào và món canh vào cùng một Bữa trưa mà không bị giới hạn chỉ 1 món.
-  - `US-33.4`: Là một thành viên, tôi muốn xuất toàn bộ thực đơn lịch ăn 7 ngày ra tệp PDF hoặc TXT để in dán lên cửa tủ lạnh hoặc chia sẻ cho các thành viên trong gia đình cùng theo dõi.
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Dữ liệu các món trong Lịch ăn là thông tin riêng tư của Member (FR-23).
@@ -2298,11 +2298,6 @@ Cung cấp công cụ thao tác linh hoạt, chi tiết và trực quan để th
   - **Given:** Bài công thức trong Lịch ăn tuần bị tác giả xóa bài gốc.
   - **When:** Member mở lại Lịch ăn tuần.
   - **Then:** Vị trí bữa ăn hiển thị nhãn "Món ăn đã bị gỡ bỏ hoặc ẩn vi phạm" kèm tùy chọn thay thế hoặc xóa bỏ (BR-33).
-
-- **AC-33.7 — Xuất bản Lịch ăn tuần sang PDF / TXT thành công:**
-  - **Given:** Member đã thiết lập thực đơn cho các ngày trong tuần trên Lịch ăn.
-  - **When:** Member nhấn nút "Xuất lịch ăn" và chọn định dạng PDF hoặc TXT.
-  - **Then:** Hệ thống tạo và tải xuống tệp tin bố cục trực quan 7 ngày đầy đủ các bữa sáng, trưa, tối với định dạng chuẩn trang in A4 đối với PDF.
 
 ---
 

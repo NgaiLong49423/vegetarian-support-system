@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.30.0
+> **Version:** v0.31.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-16
+> **Last Updated:** 2026-10-20
 > **Status:** Active
 
 # API Integration Guide
@@ -248,13 +248,6 @@ Nutrition chỉ dùng danh mục nội bộ và quy đổi gram hiện có. `nut
 - Chỉ công thức `PUBLISHED` được thêm hoặc dùng để thay thế; nguồn thiếu/ẩn/xóa/nháp trả `404 RECIPE_NOT_FOUND`. Kiểm tra trạng thái nguồn và ghi lịch nằm trong cùng transaction; các thay đổi của cùng lịch tuần được tuần tự hóa bằng khóa ở database và vẫn có unique constraint bảo vệ.
 - Tombstone hiện có được thay hoặc gỡ như mục thông thường. Gỡ không yêu cầu công thức nguồn còn công khai; đọc lịch vẫn trả nhãn chung `Công thức không còn khả dụng` và lược bỏ nội dung bài không công khai.
 - Frontend dùng dữ liệu response sau thêm/thay/chuyển và bỏ mục sau `204`; khi request thất bại giữ dữ liệu đang hiển thị và cho phép thử lại. Chuyển món khóa lịch tuần trước kiểm tra đích và cập nhật cùng một mục trong transaction; không xóa rồi thêm lại. Các thao tác này không gọi Gemini.
-
-### 7.3. Xuất lịch tuần — FR-33
-
-- `GET /api/v1/meal-plans/{weekStartDate}/export` trả snapshot JSON riêng cho tài khoản Member đang xác thực, kèm `Cache-Control: no-store`. Không nhận ID chủ lịch. Guest nhận `401`, Admin hoặc tài khoản khóa nhận `403`; ngày sai định dạng/không phải Thứ Hai nhận `400`. Tuần chưa tạo trả danh sách trống và không ghi database.
-- Snapshot gồm `weekStartDate` và các mục `mealDate`, `mealType`, `title`, `plannedServings`, `energyKcal`, `available`; generated OpenAPI là contract chi tiết. Năng lượng lấy từ Backend tính theo nguyên liệu/quy đổi nội bộ, bằng kcal mỗi phần × khẩu phần đã lưu. Đây là lượng của các phần trong lịch, không phải bảng dinh dưỡng một người hoặc so sánh DRI. Dữ liệu thiếu giữ `energyKcal=null`, không thay bằng 0.
-- Công thức không khả dụng chỉ có ngày/bữa và nhãn trung tính; khẩu phần/năng lượng là `null`, không trả ID, ảnh hoặc nội dung bài nguồn. Công thức bị ẩn giữa lúc đọc lịch và lấy chi tiết cũng được chuyển sang nhãn không khả dụng. Lỗi khác làm request thất bại để người dùng thử lại, không tải file có dữ liệu suy đoán.
-- Frontend tạo file từ snapshot mới lấy khi người dùng chủ động xuất: đủ bảy ngày, ba bữa mỗi ngày, mọi món trong bữa và trạng thái bữa trống. TXT là UTF-8; PDF tải trực tiếp, khổ A4 và phân trang khi nhiều món, dùng Noto Sans đi kèm để hiển thị tiếng Việt. Không xuất bảng chín chỉ tiêu, DRI hoặc Shopping List.
 
 ## 8. Thông số cần chốt trước khi triển khai phần phụ thuộc
 
