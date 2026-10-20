@@ -4340,6 +4340,36 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /api/v1/members/{userId}/recipe-statistics:
+    get:
+      tags:
+      - member-recipe-controller
+      summary: Get public recipe engagement totals for a member
+      description: Totals include likes and views across all of the member's currently
+        published recipes.
+      operationId: publishedRecipeStatistics
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RecipeAuthorStatisticsResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/members/{userId}/following:
     get:
       tags:
@@ -4573,49 +4603,121 @@ paths:
             application/pdf: {}
       security:
       - bearerAuth: []
-  /api/v1/meal-plans/{weekStartDate}/export:
+  /api/v1/ingredients:
     get:
       tags:
-      - meal-plan-export-controller
-      summary: Read the authenticated member's weekly export snapshot
-      description: For PDF/TXT generation. No owner parameter. Missing nutrition remains
-        null; unavailable sources disclose no content.
-      operationId: getExport
+      - public-ingredient-browse-controller
+      summary: "Search active public ingredients, optionally within a group"
+      operationId: ingredients
       parameters:
-      - name: weekStartDate
-        in: path
-        required: true
+      - name: query
+        in: query
+        required: false
         schema:
           type: string
-          format: date
+          maxLength: 100
+          minLength: 0
+      - name: group
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+          minLength: 0
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          maximum: 1000000
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 100
+          minimum: 1
       responses:
         "200":
-          description: "Private export snapshot; Cache-Control: no-store."
+          description: OK
           content:
-            application/json:
+            '*/*':
               schema:
-                $ref: "#/components/schemas/MealPlanExportResponse"
+                $ref: "#/components/schemas/PageResponsePublicIngredientResponse"
         "400":
-          description: Invalid Monday week start.
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: Authentication required.
+  /api/v1/ingredients/groups:
+    get:
+      tags:
+      - public-ingredient-browse-controller
+      summary: List active ingredient groups
+      operationId: groups
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicIngredientGroupResponse"
+  /api/v1/experts:
+    get:
+      tags:
+      - expert-directory-controller
+      summary: Search the public directory of active experts
+      operationId: search
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ""
+          maxLength: 100
+          minLength: 0
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          maximum: 1000000
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 12
+          maximum: 50
+          minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageResponseExpertDirectoryEntryResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: Active Member required; Administrator cannot export private
-            schedules.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-      security:
-      - bearerAuth: []
   /api/v1/expert-applications/me:
     get:
       tags:
@@ -6411,14 +6513,14 @@ components:
           additionalProperties: {}
         signature:
           type: string
-        amount:
-          type: integer
-          format: int32
         orderCode:
           type: integer
           format: int64
         paymentSuccess:
           type: boolean
+        amount:
+          type: integer
+          format: int32
         paymentLinkId:
           type: string
     ConfirmNutritionEligibilityRequest:
@@ -7122,6 +7224,18 @@ components:
           type: string
         ingredientGroup:
           type: string
+    RecipeAuthorStatisticsResponse:
+      type: object
+      properties:
+        recipeCount:
+          type: integer
+          format: int64
+        totalLikes:
+          type: integer
+          format: int64
+        totalViews:
+          type: integer
+          format: int64
     FollowMemberResponse:
       type: object
       properties:
@@ -7251,38 +7365,79 @@ components:
           type: array
           items:
             type: string
-    ExportEntry:
+    PageResponsePublicIngredientResponse:
       type: object
       properties:
-        mealDate:
-          type: string
-          format: date
-        mealType:
-          type: string
-        title:
-          type: string
-        plannedServings:
-          type:
-          - number
-          - "null"
-        energyKcal:
-          type:
-          - number
-          - "null"
-          description: Per-serving energy multiplied by saved planned servings; null
-            when incomplete.
-        available:
-          type: boolean
-    MealPlanExportResponse:
-      type: object
-      properties:
-        weekStartDate:
-          type: string
-          format: date
-        entries:
+        content:
           type: array
           items:
-            $ref: "#/components/schemas/ExportEntry"
+            $ref: "#/components/schemas/PublicIngredientResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PublicIngredientResponse:
+      type: object
+      properties:
+        ingredientId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        ingredientGroup:
+          type: string
+    PublicIngredientGroupResponse:
+      type: object
+      properties:
+        ingredientGroup:
+          type: string
+        ingredientCount:
+          type: integer
+          format: int64
+    ExpertDirectoryEntryResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+        bio:
+          type: string
+        followerCount:
+          type: integer
+          format: int64
+        following:
+          type: boolean
+    PageResponseExpertDirectoryEntryResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpertDirectoryEntryResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
     PageResponseExpertApplicationResponse:
       type: object
       properties:
