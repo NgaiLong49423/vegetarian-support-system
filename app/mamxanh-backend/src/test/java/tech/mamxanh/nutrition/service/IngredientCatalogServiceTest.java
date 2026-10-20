@@ -113,22 +113,19 @@ class IngredientCatalogServiceTest {
         assertThat(created.nutrition().vitaminB12MicrogramsPer100g()).isNull();
     }
 
-    @Test void requiresAllNutritionAndSourceMetadataBeforeEnablingSupport() {
-        IngredientEntity ingredient = new IngredientEntity("Đậu xanh", "Đậu hạt", "USDA FoodData Central",
-                "https://fdc.nal.usda.gov/", LocalDate.now());
+    @Test void allowsAIPartialNutritionWithoutAReferenceUrlWhenEnablingSupport() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu xanh", "Đậu hạt", "Ước tính AI chưa xác minh",
+                null, LocalDate.now());
         when(ingredientRepository.findById(4L)).thenReturn(Optional.of(ingredient));
 
         assertThatThrownBy(() -> service.setNutritionSupport(4L, new NutritionSupportUpdateRequest(true)))
                 .isInstanceOfSatisfying(ApiException.class, error -> {
-                    assertThat(error.getCode()).isEqualTo("NUTRITION_VALUES_INCOMPLETE");
+                    assertThat(error.getCode()).isEqualTo("NUTRITION_VALUES_EMPTY");
                     assertThat(error.getStatus()).isEqualTo(HttpStatus.CONFLICT);
-                    assertThat(error).hasMessageContaining("energyKcalPer100g")
-                            .hasMessageContaining("zincMgPer100g");
                 });
 
         service.updateNutrition(4L, new IngredientNutritionRequest(
-                BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
-                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE));
+                BigDecimal.TEN, null, null, null, null, null, null, null, null));
         var enabled = service.setNutritionSupport(4L, new NutritionSupportUpdateRequest(true));
         assertThat(enabled.nutritionSupported()).isTrue();
     }
@@ -149,7 +146,7 @@ class IngredientCatalogServiceTest {
         assertThat(inactiveIngredient.getStatus()).isEqualTo(CatalogStatus.INACTIVE);
     }
 
-    @Test void requiresEveryNutritionValueBeforeAllowingSupportedDataToBeCleared() {
+    @Test void allowsIndividualNutritionValuesToBeClearedWhileSupportRemainsEnabled() {
         BigDecimal[] completeValues = {BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
                 BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE};
 
@@ -164,28 +161,20 @@ class IngredientCatalogServiceTest {
             long ingredientId = 100L + missingIndex;
             when(ingredientRepository.findById(ingredientId)).thenReturn(Optional.of(ingredient));
 
-            assertThatThrownBy(() -> service.updateNutrition(ingredientId, new IngredientNutritionRequest(
+            service.updateNutrition(ingredientId, new IngredientNutritionRequest(
                     partialValues[0], partialValues[1], partialValues[2], partialValues[3], partialValues[4],
-                    partialValues[5], partialValues[6], partialValues[7], partialValues[8])))
-                    .isInstanceOfSatisfying(ApiException.class, error ->
-                            assertThat(error.getCode()).isEqualTo("NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED"));
-            assertThat(ingredient.getEnergyKcalPer100g()).isEqualByComparingTo(BigDecimal.TEN);
+                    partialValues[5], partialValues[6], partialValues[7], partialValues[8]));
+            assertThat(ingredient.isNutritionSupported()).isTrue();
+            assertThat(ingredient.getEnergyKcalPer100g()).isEqualTo(partialValues[0]);
         }
     }
 
-    @Test void reportsAllMissingSourceFieldsBeforeEnablingNutritionSupport() {
-        IngredientEntity ingredient = new IngredientEntity("Đậu xanh", "Đậu hạt", null, null, null);
-        ingredient.updateNutrition(BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
-                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE);
+    @Test void doesNotRequireReferenceMetadataBeforeEnablingNutritionSupport() {
+        IngredientEntity ingredient = new IngredientEntity("Đậu xanh", "Đậu hạt", "AI estimate", null, LocalDate.now());
+        ingredient.updateNutrition(BigDecimal.TEN, null, null, null, null, null, null, null, null);
         when(ingredientRepository.findById(8L)).thenReturn(Optional.of(ingredient));
 
-        assertThatThrownBy(() -> service.setNutritionSupport(8L, new NutritionSupportUpdateRequest(true)))
-                .isInstanceOfSatisfying(ApiException.class, error -> {
-                    assertThat(error.getCode()).isEqualTo("NUTRITION_SOURCE_INCOMPLETE");
-                    assertThat(error).hasMessageContaining("sourceName")
-                            .hasMessageContaining("sourceUrl")
-                            .hasMessageContaining("referenceDate");
-                });
+        assertThat(service.setNutritionSupport(8L, new NutritionSupportUpdateRequest(true)).nutritionSupported()).isTrue();
     }
 
     @Test void searchesWithNoActiveStatusFilterAndNormalizesBlankFilters() {
@@ -203,19 +192,14 @@ class IngredientCatalogServiceTest {
         assertThat(result.content()).extracting(response -> response.name()).containsExactly("Đậu phụ");
     }
 
-    @Test void identifiesMissingSourceFieldsWhenNutritionValuesAreComplete() {
+    @Test void allowsNutritionSupportWithoutASourceUrl() {
         IngredientEntity ingredient = new IngredientEntity("Đậu xanh", "Đậu hạt", "USDA FoodData Central",
                 null, LocalDate.now());
         ingredient.updateNutrition(BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
                 BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE);
         when(ingredientRepository.findById(7L)).thenReturn(Optional.of(ingredient));
 
-        assertThatThrownBy(() -> service.setNutritionSupport(7L, new NutritionSupportUpdateRequest(true)))
-                .isInstanceOfSatisfying(ApiException.class, error -> {
-                    assertThat(error.getCode()).isEqualTo("NUTRITION_SOURCE_INCOMPLETE");
-                    assertThat(error).hasMessageContaining("sourceUrl");
-                });
-        assertThat(ingredient.isNutritionSupported()).isFalse();
+        assertThat(service.setNutritionSupport(7L, new NutritionSupportUpdateRequest(true)).nutritionSupported()).isTrue();
     }
 
     @Test void doesNotAllowClearingNutritionWhileOfficialCalculationIsEnabled() {
@@ -230,11 +214,11 @@ class IngredientCatalogServiceTest {
                 null, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
                 BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE)))
                 .isInstanceOfSatisfying(ApiException.class, error ->
-                        assertThat(error.getCode()).isEqualTo("NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED"));
+                    assertThat(error.getCode()).isEqualTo("NUTRITION_VALUES_EMPTY"));
         assertThat(ingredient.getEnergyKcalPer100g()).isEqualByComparingTo(BigDecimal.ONE);
     }
 
-    @Test void doesNotAllowPartialNutritionThroughIngredientUpdateWhileSupportIsEnabled() {
+    @Test void allowsPartialNutritionThroughIngredientUpdateWhileSupportIsEnabled() {
         IngredientEntity ingredient = new IngredientEntity("Đậu đỏ", "Đậu hạt", "USDA FoodData Central",
                 "https://fdc.nal.usda.gov/", LocalDate.now());
         ingredient.updateNutrition(BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
@@ -242,22 +226,21 @@ class IngredientCatalogServiceTest {
         ingredient.setNutritionSupported(true);
         when(ingredientRepository.findById(6L)).thenReturn(Optional.of(ingredient));
 
-        assertThatThrownBy(() -> service.updateIngredient(6L, new IngredientSaveRequest("Đậu đỏ",
+        service.updateIngredient(6L, new IngredientSaveRequest("Đậu đỏ",
                 "Đậu hạt", "USDA FoodData Central", "https://fdc.nal.usda.gov/", LocalDate.now(),
                 new IngredientNutritionRequest(null, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
-                        BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE))))
-                .isInstanceOfSatisfying(ApiException.class, error ->
-                        assertThat(error.getCode()).isEqualTo("NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED"));
-        assertThat(ingredient.getEnergyKcalPer100g()).isEqualByComparingTo(BigDecimal.ONE);
+                        BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE)));
+        assertThat(ingredient.getEnergyKcalPer100g()).isNull();
     }
 
-    @Test void rejectsUnapprovedNutritionSourceWithoutPersistingIngredient() {
-        assertThatThrownBy(() -> service.createIngredient(new IngredientSaveRequest("Rau không rõ nguồn",
-                "Rau củ", "Nguồn khác", null, LocalDate.now())))
-                .isInstanceOfSatisfying(ApiException.class, error ->
-                        assertThat(error.getCode()).isEqualTo("UNSUPPORTED_NUTRITION_SOURCE"));
-        org.mockito.Mockito.verify(ingredientRepository, org.mockito.Mockito.never())
-                .save(org.mockito.ArgumentMatchers.any(IngredientEntity.class));
+    @Test void acceptsFreeFormNutritionSource() {
+        org.mockito.Mockito.when(ingredientRepository.save(org.mockito.ArgumentMatchers.any(IngredientEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThat(service.createIngredient(new IngredientSaveRequest("Rau không rõ nguồn",
+                "Rau củ", "Tự nhập - AI estimate", null, LocalDate.now())).sourceName())
+                .isEqualTo("Tự nhập - AI estimate");
+        org.mockito.Mockito.verify(ingredientRepository).save(org.mockito.ArgumentMatchers.any(IngredientEntity.class));
     }
 
     @Test void rejectsDuplicateConversionPair() {

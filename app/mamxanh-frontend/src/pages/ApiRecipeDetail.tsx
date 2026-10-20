@@ -517,10 +517,10 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                   Ước tính chưa đầy đủ
                 </h2>
                 <p role="status" className="mt-1 text-xs leading-relaxed text-amber-900/90 sm:text-sm">
-                  Các giá trị chỉ gồm phần tính được từ danh mục. Nguyên liệu thiếu dữ liệu không được tính bằng 0.
+                  Số liệu có thể gồm ước tính chưa xác minh. Chỉ tiêu còn thiếu không được tính bằng 0.
                 </p>
                 <p className="mt-2.5 text-xs font-semibold text-amber-950 sm:text-sm">
-                  Nguyên liệu chưa hỗ trợ tính dinh dưỡng:
+                  Nguyên liệu còn thiếu ít nhất một chỉ tiêu:
                 </p>
                 {(missingNutrition ?? []).length > 0 && (
                   <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-xs text-amber-900 sm:text-sm">
@@ -533,7 +533,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
             )}
           </div>
           <p className="mt-4 border-t border-brand-100 pt-3 text-xs leading-5 text-ink-muted">
-            Nguồn tham khảo: danh mục dinh dưỡng nội bộ theo USDA/NIH. Số liệu chỉ mang tính ước tính, không thay thế tư vấn y tế.
+            Nguồn và số liệu do quản trị viên nhập; có thể là USDA/NIH, nguồn khác hoặc AI estimate chưa xác minh. Các giá trị chỉ mang tính tham khảo, không thay thế tư vấn y tế.
           </p>
         </Card>
 

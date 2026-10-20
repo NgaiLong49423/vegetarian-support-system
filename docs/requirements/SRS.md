@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.7.0
+> **Version:** v2.8.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-19
+> **Last Updated:** 2026-10-20
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -325,18 +325,18 @@ Nguyên liệu “đang có” được nhập theo từng request; MVP không c
 **Chỉ tiêu dinh dưỡng MVP:**
 
 - MVP sử dụng chín chỉ tiêu: **năng lượng (kcal), protein, carbohydrate, tổng chất béo, chất xơ, canxi, sắt, vitamin B12 và kẽm**. Natri/muối không thuộc bộ chỉ tiêu dinh dưỡng MVP.
-- MVP có một **danh mục nguyên liệu được hỗ trợ tính dinh dưỡng** lưu trong database của ứng dụng. Mỗi mục có giá trị của chín chỉ tiêu theo 100 g cùng thông tin nguồn tham khảo; USDA FoodData Central là nguồn tham khảo chính để nhóm chuẩn bị và kiểm chứng dữ liệu ban đầu.
+- MVP có một **danh mục nguyên liệu dinh dưỡng** lưu trong database của ứng dụng. Mỗi mục có thể lưu bất kỳ tập con nào trong chín chỉ tiêu theo 100 g; nguồn nhập liệu là thông tin tự do, USDA/NIH chỉ là lựa chọn tham khảo. Số liệu gắn nhãn AI được chấp nhận nhưng phải được trình bày là chưa xác minh.
 - Administrator có chức năng quản lý danh mục nguyên liệu dinh dưỡng để bổ sung và duy trì dữ liệu được app hỗ trợ; đây không phải bộ dữ liệu chỉ được nhóm nạp cố định rồi không thể quản lý trong ứng dụng.
 - Trong MVP, Administrator được xem/tìm kiếm, thêm, sửa, bật lại hoặc ngừng hỗ trợ một nguyên liệu; xem các công thức đang sử dụng nguyên liệu đó; và quản lý tên nguyên liệu, chín giá trị dinh dưỡng trên 100 g, tên/đường dẫn nguồn cùng ngày tham khảo.
-- MVP không có xóa vĩnh viễn nguyên liệu dinh dưỡng, nhập dữ liệu hàng loạt, tự gọi USDA hoặc để AI tự điền số liệu. Hệ thống tính lại công thức/menu liên quan từ dữ liệu hiện hành và ghi nhận thay đổi, nguồn tham khảo.
-- App không gọi USDA API trong lúc người dùng sử dụng và không dùng Gemini để tìm, đối chiếu hoặc tạo số liệu dinh dưỡng trong MVP. Việc tính toán chỉ sử dụng dữ liệu đã có trong danh mục nội bộ.
-- Dữ liệu gốc để tính dinh dưỡng công thức là nguyên liệu đã liên kết với danh mục được hỗ trợ, định lượng và giá trị thành phần dinh dưỡng tương ứng. Hệ thống cộng dữ liệu của từng nguyên liệu để tạo tổng ước tính cho toàn bộ công thức; không lấy một bảng tổng do tác giả tự khai làm kết quả đã xác minh và AI không tự nghĩ ra số liệu còn thiếu.
+- MVP không có xóa vĩnh viễn nguyên liệu dinh dưỡng, nhập dữ liệu hàng loạt tự động hoặc cho AI trực tiếp sửa catalog. Administrator có thể nhập số liệu tự do, kể cả số liệu do AI tạo, và tự ghi rõ nguồn/cách ước tính.
+- App không gọi USDA/NIH API trong lúc người dùng sử dụng và không tự gọi AI để tạo số liệu dinh dưỡng. Việc tính toán chỉ sử dụng dữ liệu đã lưu trong danh mục nội bộ.
+- Dữ liệu gốc để tính dinh dưỡng công thức là nguyên liệu đã liên kết với danh mục, định lượng và các chỉ tiêu hiện có. Hệ thống cộng từng chỉ tiêu có giá trị; trường `NULL` bị bỏ khỏi phép tính, không được xem là `0`. Khi thiếu chỉ tiêu, giao diện phải nêu rõ kết quả chưa đầy đủ. Số liệu có nguồn AI vẫn là ước tính chưa xác minh.
 - Trang chi tiết công thức cho phép xem tổng ước tính của toàn bộ công thức và phần quy đổi theo **mỗi khẩu phần** (`Nutrition per serving`). Giá trị mỗi khẩu phần được lấy từ tổng công thức chia theo số khẩu phần tác giả đã khai báo, không phải một nguồn dinh dưỡng độc lập.
 - Mỗi chỉ tiêu hiển thị lượng, đơn vị và giải thích ngắn về ý nghĩa. Mọi tỷ lệ tham chiếu chung, nếu có, phải ghi rõ nguồn/phạm vi và không được trình bày như nhu cầu cá nhân.
 - Năng lượng thể hiện lượng năng lượng khẩu phần cung cấp; protein hỗ trợ mô/cơ; carbohydrate là nguồn năng lượng chính; tổng chất béo cung cấp năng lượng và hỗ trợ hấp thu một số vitamin nhưng không tự phân biệt chất béo tốt/xấu; chất xơ hỗ trợ tiêu hóa và cảm giác no.
 - Sắt liên quan đến tạo hemoglobin và vận chuyển oxy; canxi liên quan đến xương, răng, cơ và thần kinh; vitamin B12 liên quan đến tế bào máu, thần kinh và DNA và đặc biệt cần được chú ý trong chế độ vegan; kẽm hỗ trợ chức năng miễn dịch và nhiều quá trình chuyển hóa.
 - Chuyên gia chỉ sử dụng nguyên liệu đã có trong catalog chuẩn FR-18. Nếu mục đó chưa có hồ sơ trong danh mục dinh dưỡng FR-41, vẫn được gửi bài theo workflow chung và hiển thị cảnh báo **Chưa hỗ trợ tính dinh dưỡng**; nếu chưa có trong catalog chuẩn, Chuyên gia liên hệ Admin ngoài hệ thống.
-- Nếu nguyên liệu chuẩn thiếu định lượng, không quy đổi được đơn vị, chưa có hồ sơ trong danh mục dinh dưỡng hoặc một chỉ tiêu không có dữ liệu đáng tin cậy, giao diện hiển thị **Chưa đủ dữ liệu** và chỉ rõ phạm vi thiếu. Giá trị chưa biết không được coi là bằng 0; nguyên liệu ghi “vừa đủ” không được dùng để suy ra kết quả chính xác.
+- Nếu nguyên liệu chuẩn thiếu định lượng, không quy đổi được đơn vị, chưa có hồ sơ trong danh mục dinh dưỡng hoặc một chỉ tiêu chưa có giá trị được lưu, giao diện hiển thị **Chưa đủ dữ liệu** và chỉ rõ phạm vi thiếu. Giá trị chưa biết không được coi là bằng 0; nguyên liệu ghi “vừa đủ” không được dùng để suy ra kết quả chính xác.
 - MVP không có `Nutrition balance score`, Glycemic Index hoặc Glycemic Load. Các chỉ số này chỉ được xem xét ở Future Scope khi có nguồn dữ liệu và tiêu chí diễn giải đủ rõ.
 
 **AI lập menu theo nhu cầu dinh dưỡng:**
@@ -468,7 +468,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | FR-38 | Xác nhận phạm vi hỗ trợ trước khi dùng chức năng dinh dưỡng | M02, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-38) |
 | FR-39 | Tính toán ước tính 9 chỉ tiêu dinh dưỡng cho công thức | M03, M04, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-39) |
 | FR-40 | Công khai Recipe Post chứa nguyên liệu chuẩn thiếu dữ liệu dinh dưỡng | M03, M04, M06, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-40) |
-| FR-41 | Administrator quản lý danh mục nguyên liệu dinh dưỡng | M09, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-41) |
+| FR-41 | Administrator quản lý danh mục và số liệu dinh dưỡng linh hoạt | M09, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-41) |
 | FR-44 | Chuyên gia sửa hoặc xóa Recipe Post đã công khai của chính mình | M02, M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-44) |
 | FR-46 | Hiển thị và quản lý bình luận, reply lồng nhiều cấp | M01, M02, M03, M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-46) |
 | FR-47 | Gợi ý bài công thức liên quan thông thường và tùy chọn Gemini | M04, M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-47) |
@@ -535,13 +535,13 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại và mã ID 
 | BR-43 | Gắn số liệu dinh dưỡng với một khẩu phần | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-43) |
 | BR-44 | Quy tắc diễn giải mức tham khảo theo từng chỉ tiêu dinh dưỡng | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-44) |
 | BR-45 | Cấm hiển thị điểm tổng hợp hoặc nhãn đơn giản hóa | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-45) |
-| BR-46 | Nguồn tính toán dinh dưỡng chính thức của công thức | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-46) |
+| BR-46 | Tính dinh dưỡng từ các chỉ tiêu hiện có trong catalog | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-46) |
 | BR-47 | Phân bổ dinh dưỡng theo số khẩu phần và cộng dồn ngày | M05, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-47) |
 | BR-48 | Xử lý nguyên liệu thiếu số liệu dinh dưỡng và chặn công khai khi thiếu quy đổi đơn vị | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-48) |
-| BR-49 | Không gọi API dinh dưỡng ngoài realtime và nguồn tham khảo | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-49) |
+| BR-49 | Không gọi API dinh dưỡng ngoài khi chạy ứng dụng | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-49) |
 | BR-50 | Cho phép công khai bài thiếu dữ liệu dinh dưỡng | M03, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-50) |
 | BR-51 | Thẩm quyền quản lý danh mục nguyên liệu dinh dưỡng | M09, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-51) |
-| BR-52 | Yêu cầu đầy đủ 9 chỉ tiêu và nguồn trước khi kích hoạt | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-52) |
+| BR-52 | Cho phép tính các chỉ tiêu có dữ liệu và cảnh báo phần còn thiếu | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-52) |
 | BR-53 | Cấm xóa vĩnh viễn nguyên liệu dinh dưỡng đã tham chiếu | M09, M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-53) |
 | BR-54 | Cấm nhập hàng loạt tự động vào danh mục dinh dưỡng | M10 | [Chi tiết](srs/BUSINESS-RULES.md#br-54) |
 | BR-58 | Độc lập giữa thao tác gửi báo cáo và quyết định xử lý | M03, M09 | [Chi tiết](srs/BUSINESS-RULES.md#br-58) |

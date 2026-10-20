@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarDays, Eye, Heart } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Eye, Heart, Pencil } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Button, Card, EmptyState } from '../components/ui';
 import { MemberAvatar } from '../components/MemberAvatar';
@@ -9,6 +9,7 @@ import { RecipeDefaultArtwork, type VegetarianCode } from '../components/RecipeD
 import { joinedMonthLabel, membersApi, type MemberProfile, type MemberRecipeStatistics } from '../api/members';
 import type { RecipeSearchResult } from '../api/recipes';
 import { asApiError } from '../lib/apiClient';
+import { useAuth } from '../components/AuthContext';
 
 /**
  * UC-23.2 public member profile (`/thanh-vien/:userId`): name, avatar, bio, join month and the
@@ -17,6 +18,7 @@ import { asApiError } from '../lib/apiClient';
  * and likes in a social-profile grid.
  */
 export function MemberProfilePage() {
+  const { account } = useAuth();
   const { userId: rawId } = useParams();
   const userId = Number(rawId);
   const validId = Number.isSafeInteger(userId) && userId > 0;
@@ -60,16 +62,19 @@ export function MemberProfilePage() {
 
   return <PageContainer className="py-8">
     <Card className="p-6 sm:p-8">
-      <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:text-left">
-        <MemberAvatar name={profile.displayName} url={profile.avatarUrl} size="lg" />
-        <div className="min-w-0">
-          <h1 className="break-words text-2xl font-extrabold text-ink sm:text-3xl">{profile.displayName}</h1>
-          <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-ink-muted"><CalendarDays className="h-4 w-4" />Tham gia {joinedMonthLabel(profile.joinedMonth)}</p>
-          {profile.bio && <p className="mt-3 whitespace-pre-line break-words leading-7 text-ink-soft">{profile.bio}</p>}
-          <MemberFollowPanel key={profile.userId} userId={profile.userId} />
-          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-soft" aria-label="Tổng tương tác trên các công thức công khai">
-            <span className="inline-flex items-center gap-1.5"><Eye className="h-4 w-4 text-brand-700" aria-hidden="true" /><strong className="text-ink">{recipeStatistics.totalViews.toLocaleString('vi-VN')}</strong> tổng lượt xem</span>
-            <span className="inline-flex items-center gap-1.5"><Heart className="h-4 w-4 text-brand-700" aria-hidden="true" /><strong className="text-ink">{recipeStatistics.totalLikes.toLocaleString('vi-VN')}</strong> tổng lượt thích</span>
+      <div className="relative">
+        {account?.id === profile.userId && account.role !== 'ADMIN' && <Link to="/ho-so/cai-dat" className="mb-4 ml-auto inline-flex w-fit items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50 lg:absolute lg:right-0 lg:top-0 lg:mb-0"><Pencil className="h-4 w-4" />Chỉnh sửa hồ sơ</Link>}
+        <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:text-left">
+          <MemberAvatar name={profile.displayName} url={profile.avatarUrl} size="lg" />
+          <div className="min-w-0 lg:pr-44">
+            <h1 className="break-words text-2xl font-extrabold text-ink sm:text-3xl">{profile.displayName}</h1>
+            <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-ink-muted"><CalendarDays className="h-4 w-4" />Tham gia {joinedMonthLabel(profile.joinedMonth)}</p>
+            {profile.bio && <p className="mt-3 whitespace-pre-line break-words leading-7 text-ink-soft">{profile.bio}</p>}
+            <MemberFollowPanel key={profile.userId} userId={profile.userId} />
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-soft" aria-label="Tổng tương tác trên các công thức công khai">
+              <span className="inline-flex items-center gap-1.5"><Eye className="h-4 w-4 text-brand-700" aria-hidden="true" /><strong className="text-ink">{recipeStatistics.totalViews.toLocaleString('vi-VN')}</strong> tổng lượt xem</span>
+              <span className="inline-flex items-center gap-1.5"><Heart className="h-4 w-4 text-brand-700" aria-hidden="true" /><strong className="text-ink">{recipeStatistics.totalLikes.toLocaleString('vi-VN')}</strong> tổng lượt thích</span>
+            </div>
           </div>
         </div>
       </div>
