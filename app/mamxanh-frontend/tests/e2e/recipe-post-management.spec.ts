@@ -265,3 +265,16 @@ test('server validation errors stay visible and preserve edited form values', as
   await expect(page.getByRole('alert').filter({ hasText: 'Số lượng phải lớn hơn 0.' })).toBeVisible();
   await expect(page.getByLabel('Tên món *')).toHaveValue('Tên vẫn được giữ sau lỗi');
 });
+
+test('expert sees unsupported ingredient warning when recipe references obsolete catalog items', async ({ page }) => {
+  const unsupportedRecipe = {
+    ...existingRecipe,
+    id: 49,
+    title: 'Rau muống xào',
+    ingredients: [{ ingredientId: 99, name: 'Rau muống', customName: null, unitId: 1, unitCode: 'g', unitName: 'gram', quantity: 300 }],
+  };
+  await mockEditorApi(page, unsupportedRecipe);
+  await page.goto('/cong-thuc/49/chinh-sua');
+  await expect(page.getByText('Nguyên liệu này hiện không được hỗ trợ.')).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Nguyên liệu' })).toHaveValue('99');
+});
