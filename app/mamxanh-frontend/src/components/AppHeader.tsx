@@ -78,41 +78,44 @@ export function AppHeader() {
             icon: LayoutGrid,
           },
         ]
-      : role === "EXPERT"
+      : isAuthenticated
         ? [
             { to: "/ho-so", label: "Hồ sơ của tôi", icon: Bookmark },
             { to: "/ho-so/cai-dat", label: "Cài đặt hồ sơ", icon: UserCog },
+            ...(role === "EXPERT"
+              ? [
+                  {
+                    to: "/ho-so/chuyen-gia",
+                    label: "Bài công thức của tôi",
+                    icon: LayoutGrid,
+                  },
+                  { to: "/dang-cong-thuc", label: "Đăng công thức mới", icon: Plus },
+                ]
+              : []),
             {
-              to: "/ho-so/chuyen-gia",
-              label: "Bài công thức của tôi",
-              icon: LayoutGrid,
+              to: "/ho-so/dinh-duong",
+              label: "Hồ sơ dinh dưỡng & BMI",
+              icon: Activity,
             },
-            { to: "/dang-cong-thuc", label: "Đăng công thức mới", icon: Plus },
+            {
+              to: "/ho-so/so-thich-an-uong",
+              label: "Sở thích ăn uống",
+              icon: SlidersHorizontal,
+            },
+            { to: "/dinh-duong", label: "Theo dõi dinh dưỡng", icon: Activity },
+            { to: "/goi-ai", label: "Nâng cấp gói AI", icon: Sparkles },
+            { to: "/giao-dich", label: "Lịch sử giao dịch", icon: Award },
+            ...(role === "CUSTOMER"
+              ? [
+                  {
+                    to: "/dang-ky-chuyen-gia",
+                    label: "Đăng ký trở thành Chuyên gia",
+                    icon: Award,
+                  },
+                ]
+              : []),
           ]
-        : isAuthenticated
-          ? [
-              { to: "/ho-so", label: "Hồ sơ của tôi", icon: Bookmark },
-              { to: "/ho-so/cai-dat", label: "Cài đặt hồ sơ", icon: UserCog },
-              {
-                to: "/ho-so/dinh-duong",
-                label: "Hồ sơ dinh dưỡng & BMI",
-                icon: Activity,
-              },
-              {
-                to: "/ho-so/so-thich-an-uong",
-                label: "Sở thích ăn uống",
-                icon: SlidersHorizontal,
-              },
-              { to: "/dinh-duong", label: "Theo dõi dinh dưỡng", icon: Activity },
-              { to: "/goi-ai", label: "Nâng cấp gói AI", icon: Sparkles },
-              { to: "/giao-dich", label: "Lịch sử giao dịch", icon: Award },
-              {
-                to: "/dang-ky-chuyen-gia",
-                label: "Đăng ký trở thành Chuyên gia",
-                icon: Award,
-              },
-            ]
-          : []),
+        : []),
   ]
 
   useEffect(() => {
@@ -513,7 +516,7 @@ export function AppHeader() {
                 end
                 className={({ isActive }) => {
                   const activeItem = isActive && item.to !== "/ho-so"
-                  return `drawer-nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-medium transition-all ${
+                  return `drawer-nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
                     activeItem
                       ? "is-active bg-brand-600 font-bold text-on-brand shadow-md shadow-brand-600/20"
                       : "text-ink-soft hover:bg-paper hover:text-brand-600"

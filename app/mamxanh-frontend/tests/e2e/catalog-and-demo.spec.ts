@@ -8,8 +8,8 @@ async function openRecipeFormAsDemoExpert(page: import('@playwright/test').Page)
 }
 
 test('recipe exploration uses only API search and reports an empty result honestly', async ({ page }) => {
-  await page.route('**/api/v1/recipes?**', (route) => route.fulfill({ json: {
-    items: [], page: 0, size: 12, totalElements: 0, totalPages: 0,
+  await page.route('**/api/v1/recipes/discovery?**', (route) => route.fulfill({ json: {
+    items: [], page: 0, size: 12, hasNext: false,
   } }));
   await page.goto('/kham-pha');
   const search = page.getByRole('textbox', { name: 'Từ khóa', exact: true });
@@ -18,8 +18,18 @@ test('recipe exploration uses only API search and reports an empty result honest
   await expect(page.getByText('Phở chay', { exact: true })).toHaveCount(0);
 });
 
-test('shopping demo adds an item, filters purchased items and clears them', async ({ page }) => {
+test('guest is blocked with login prompt when visiting /di-cho and /ke-hoach', async ({ page }) => {
   await page.goto('/di-cho');
+  await expect(page.getByRole('heading', { name: 'Danh sách đi chợ của bạn' })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toBeVisible();
+
+  await page.goto('/ke-hoach');
+  await expect(page.getByRole('heading', { name: 'Kế hoạch bữa ăn của bạn' })).toBeVisible();
+  await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toBeVisible();
+});
+
+test('shopping demo adds an item, filters purchased items and clears them', async ({ page }) => {
+  await page.goto('/di-cho?demo=true');
   const input = page.getByRole('textbox', { name: 'Thêm nguyên liệu vào danh sách' });
   await input.fill('Nấm bào ngư cho bữa tối');
   await input.press('Enter');
@@ -36,7 +46,7 @@ test('shopping demo adds an item, filters purchased items and clears them', asyn
 });
 
 test('shopping export contains the newly added item', async ({ page }) => {
-  await page.goto('/di-cho');
+  await page.goto('/di-cho?demo=true');
   await page.getByRole('textbox', { name: 'Thêm nguyên liệu vào danh sách' }).fill('Rau cải cho ngày mai');
   await page.getByRole('button', { name: 'Thêm', exact: true }).click();
   const downloadPromise = page.waitForEvent('download');

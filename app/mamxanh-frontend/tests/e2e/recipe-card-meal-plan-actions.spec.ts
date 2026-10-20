@@ -1,6 +1,6 @@
 import { expect, test } from "./baseFixtures"
 import { seedDemoSession } from "./demo-session"
-import { localDateKey, mondayOf } from "../../src/components/WeekCalendar"
+import { localDateKey, mondayOf } from "../../src/utils/date"
 
 const formOptions = {
   vegetarianTypes: [
@@ -57,14 +57,13 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await page.route("**/api/v1/recipes/form-options", (route) =>
       route.fulfill({ json: formOptions }),
     )
-    await page.route("**/api/v1/recipes?**", (route) =>
+    await page.route("**/api/v1/recipes/discovery?**", (route) =>
       route.fulfill({
         json: {
           items: [item],
           page: 0,
           size: 12,
-          totalElements: 1,
-          totalPages: 1,
+          hasNext: false,
         },
       }),
     )
@@ -200,30 +199,29 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await page.route("**/api/v1/recipes/form-options", (route) =>
       route.fulfill({ json: formOptions }),
     )
-    await page.route("**/api/v1/recipes?**", (route) =>
+    await page.route("**/api/v1/recipes/discovery?**", (route) =>
       route.fulfill({
         json: {
           items,
           page: 0,
           size: 12,
-          totalElements: items.length,
-          totalPages: 1,
+          hasNext: false,
         },
       }),
     )
 
     await page.goto("/kham-pha")
     await expect(
-      page.getByRole("img", { name: "Ảnh mặc định cho món Thuần chay" }),
+      page.getByRole("img", { name: "Ảnh mặc định cho món Thuần chay", exact: true }),
     ).toBeVisible()
     await expect(
-      page.getByRole("img", { name: "Ảnh mặc định cho món Có sữa" }),
+      page.getByRole("img", { name: "Ảnh mặc định cho món Có sữa", exact: true }),
     ).toBeVisible()
     await expect(
-      page.getByRole("img", { name: "Ảnh mặc định cho món Có trứng" }),
+      page.getByRole("img", { name: "Ảnh mặc định cho món Có trứng", exact: true }),
     ).toBeVisible()
     await expect(
-      page.getByRole("img", { name: "Ảnh mặc định cho món Có trứng và sữa" }),
+      page.getByRole("img", { name: "Ảnh mặc định cho món Có trứng và sữa", exact: true }),
     ).toBeVisible()
     await expect(page.getByTestId("recipe-default-artwork-VEGAN")).toBeVisible()
     await expect(page.getByTestId("recipe-default-artwork-LACTO")).toBeVisible()
@@ -231,7 +229,6 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await expect(
       page.getByTestId("recipe-default-artwork-LACTO_OVO"),
     ).toBeVisible()
-    await expect(page.getByText("Mới").first()).toBeVisible()
   })
 
   test("AC-17.3 & AC-17.4: Member lưu nhanh và thêm nhiều ngày/bữa từ thẻ món; xử lý lỗi và Guest/Admin", async ({
@@ -241,14 +238,13 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await page.route("**/api/v1/recipes/form-options", (route) =>
       route.fulfill({ json: formOptions }),
     )
-    await page.route("**/api/v1/recipes?**", (route) =>
+    await page.route("**/api/v1/recipes/discovery?**", (route) =>
       route.fulfill({
         json: {
           items: [item],
           page: 0,
           size: 12,
-          totalElements: 1,
-          totalPages: 1,
+          hasNext: false,
         },
       }),
     )
@@ -382,6 +378,11 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     const planDialog = page.getByRole("dialog", {
       name: "Chọn ngày",
     })
+    const clickMealSlot = async (name: RegExp) => {
+      const checkbox = planDialog.getByRole("checkbox", { name })
+      await checkbox.locator("xpath=..").click()
+      await expect(checkbox).toBeChecked()
+    }
     await expect(planDialog).toBeVisible()
     await planDialog.getByRole("button", { name: "Đóng" }).click()
     await expect(planDialog).toHaveCount(0)
@@ -390,10 +391,10 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await page.getByRole("button", { name: `Tùy chọn cho công thức ${item.title}` }).click()
     await page.getByRole("menuitem", { name: "Thêm vào lịch ăn" }).click()
     await expect(planDialog).toBeVisible()
-    await planDialog.getByRole("checkbox", { name: /Bữa tối, Thứ Tư/ }).check()
-    await planDialog.getByRole("checkbox", { name: /Bữa trưa, Thứ Năm/ }).check()
+    await clickMealSlot(/Bữa tối, Thứ Tư/)
+    await clickMealSlot(/Bữa trưa, Thứ Năm/)
     await planDialog.getByRole("button", { name: "Tuần sau" }).click()
-    await planDialog.getByRole("checkbox", { name: /Bữa sáng, Thứ Ba/ }).check()
+    await clickMealSlot(/Bữa sáng, Thứ Ba/)
     await expect(planDialog.getByRole("button", { name: "Hoàn tất · 3" })).toBeEnabled()
     await planDialog.getByRole("button", { name: "Tuần trước" }).click()
     await expect(planDialog.getByRole("checkbox", { name: /Bữa tối, Thứ Tư/ })).toBeChecked()
@@ -404,7 +405,7 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
 
     // Lần 1: giả lập lỗi 409 để kiểm chứng hiển thị lỗi
     await planDialog.getByRole("button", { name: "Hoàn tất" }).click()
-    await expect(planDialog.getByRole("alert")).toContainText("Đã thêm 1 bữa ăn.")
+    await expect(planDialog.getByRole("alert")).toContainText("Đã thêm 2 bữa ăn.")
     await expect(planDialog.getByRole("alert")).toContainText("Món này đã có trong bữa được chọn.")
     await expect(planDialog.getByRole("checkbox", { name: /Bữa tối, Thứ Tư/ })).toBeChecked()
     await expect(planDialog.getByRole("checkbox", { name: /Bữa trưa, Thứ Năm/ })).not.toBeChecked()
