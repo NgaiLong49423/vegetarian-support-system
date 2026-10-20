@@ -101,14 +101,14 @@ async function fillEligibleNutritionProfile(page: Page) {
 }
 
 test('meal serving selector accepts half portions', async ({ page }) => {
-  await page.goto('/ke-hoach');
+  await page.goto('/ke-hoach?demo=true');
   const selector = page.getByLabel(/Khẩu phần .* bữa /).first();
   await selector.selectOption('1.5');
   await expect(selector).toHaveValue('1.5');
 });
 
 test('meal planner adds, changes serving count and removes a recipe from a meal slot', async ({ page }) => {
-  await page.goto('/ke-hoach', { waitUntil: 'domcontentloaded' });
+  await page.goto('/ke-hoach?demo=true', { waitUntil: 'domcontentloaded' });
 
   const addSlot = page.getByRole('button', { name: /Thêm món/ }).first();
   const slot = (await addSlot.innerText()).replace('Thêm món', '').trim();
@@ -509,6 +509,7 @@ test('expert application customer and admin workflows use the API and recover fr
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Xem chi tiết' }).click();
+  await page.getByRole('button', { name: 'Từ chối hồ sơ' }).click();
   await page.getByLabel(/Lý do từ chối/).fill('Cần bổ sung thêm kinh nghiệm cụ thể.');
   await page.getByRole('button', { name: 'Từ chối', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Đơn đã được xử lý');
@@ -531,7 +532,7 @@ test('expert application customer and admin workflows use the API and recover fr
     window.location.assign('/admin/xet-duyet-chuyen-gia');
   });
   await page.getByRole('button', { name: 'Xem chi tiết' }).click();
-  await page.getByRole('button', { name: 'Phê duyệt' }).click();
+  await page.getByRole('button', { name: 'Phê duyệt', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Đã phê duyệt đơn');
 
   await page.evaluate(() => {
@@ -563,8 +564,8 @@ test('recipe like and dislike reactions update state without rating stars (FR-57
 });
 
 test('recipe exploration does not expose local-only card actions as Backend features', async ({ page }) => {
-  await page.route('**/api/v1/recipes?**', (route) => route.fulfill({ json: {
-    items: [], page: 0, size: 12, totalElements: 0, totalPages: 0,
+  await page.route('**/api/v1/recipes/discovery?**', (route) => route.fulfill({ json: {
+    items: [], page: 0, size: 12, hasNext: false,
   } }));
   await page.goto('/kham-pha');
   await expect(page.getByRole('heading', { name: 'Không tìm thấy công thức phù hợp' })).toBeVisible();
@@ -766,7 +767,7 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
   // Navigates directly to published recipe detail
   await page.waitForURL('**/cong-thuc/999');
   await expect(page.getByRole('heading', { name: 'Nấm đùi gà kho tiêu xanh', level: 1 })).toBeVisible();
-  await expect(page.getByText('Chưa đủ dữ liệu dinh dưỡng')).toBeVisible();
+  await expect(page.getByRole('note', { name: 'Ước tính chưa đầy đủ' })).toBeVisible();
   await expect(page.getByTestId('recipe-youtube-section')).toBeVisible();
 });
 

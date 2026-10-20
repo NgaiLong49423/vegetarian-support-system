@@ -267,6 +267,35 @@ class RecipePostServiceTest {
                 LocalDateTime.of(2026, 10, 8, 0, 0), 0, 12);
     }
 
+    @Test
+    void discoveryBrowseReturnsHasNextWithoutUsingCountBackedPageMethod() {
+        LocalDateTime now = LocalDateTime.of(2026, 10, 8, 0, 0);
+        when(clock.instant()).thenReturn(now.toInstant(ZoneOffset.UTC));
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+        when(browseRepository.findPublishedSlice("canh", "VEGAN", "SOUP", List.of(44L), 30,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
+                LocalDateTime.of(1, 1, 1, 0, 0), now, 0, 12))
+                .thenReturn(new RecipeBrowseRepository.BrowseSlice(List.of(), true));
+        when(repository.findAllById(List.of())).thenReturn(List.of());
+
+        var result = service.browsePublic(" canh ", 0, 12,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
+                tech.mamxanh.recipe.service.RecipeViewPeriod.ALL_TIME,
+                " vegan ", "soup", List.of(44L, 44L), 30);
+
+        assertThat(result.items()).isEmpty();
+        assertThat(result.hasNext()).isTrue();
+        verify(browseRepository).findPublishedSlice("canh", "VEGAN", "SOUP", List.of(44L), 30,
+                tech.mamxanh.recipe.service.RecipeSortMode.NEWEST,
+                LocalDateTime.of(1, 1, 1, 0, 0), now, 0, 12);
+        verify(browseRepository, never()).findPublished(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyInt(),
+                org.mockito.ArgumentMatchers.anyInt());
+    }
+
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.EnumSource(tech.mamxanh.recipe.service.RecipeViewPeriod.class)
     void publicBrowseMapsReadStatisticsAndUsesTheSelectedViewWindow(tech.mamxanh.recipe.service.RecipeViewPeriod period) {

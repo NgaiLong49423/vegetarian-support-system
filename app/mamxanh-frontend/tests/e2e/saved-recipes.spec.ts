@@ -47,15 +47,14 @@ const tombstone = {
 
 async function publicApi(page: Page) {
   await page.route(
-    (url) => url.pathname === "/api/v1/recipes",
+    (url) => url.pathname === "/api/v1/recipes/discovery",
     (route) =>
       route.fulfill({
         json: {
           items: [recipe],
           page: 0,
           size: 12,
-          totalElements: 1,
-          totalPages: 1,
+          hasNext: false,
         },
       }),
   )

@@ -63,23 +63,27 @@ test("Guest can start from Home without signing in from every primary landing en
   ).toBeVisible()
 })
 
-test("Landing previews load captured application screenshots rather than recreated controls", async ({
+test("landing illustrations load local food assets without stale application screenshots or interactive controls", async ({
   page,
 }) => {
   await page.goto("/")
-  const images = page.locator(".landing-app-preview img")
-  await expect(images).toHaveCount(7)
+  const previews = page.locator('.landing-preview')
+  await expect(previews).toHaveCount(7)
+  await expect(previews.locator('a, button, input, select, textarea')).toHaveCount(0)
+  const images = previews.locator('img')
+  expect(await images.count()).toBeGreaterThan(0)
   for (const image of await images.all()) {
     await image.scrollIntoViewIfNeeded()
-    await expect(image).toHaveAttribute("src", /^\/landing\/[^/]+\.jpg$/)
+    await expect(image).toHaveAttribute("src", /^\/assets\/[^/]+\.png$/)
+    await expect(image).toHaveAttribute('alt', '')
     await expect
       .poll(() =>
         image.evaluate((element) => (element as HTMLImageElement).naturalWidth),
       )
       .toBeGreaterThan(0)
   }
-  await expect(page.locator(".landing-food-art")).toHaveCount(0)
-  await expect(page.locator(".landing-week-grid")).toHaveCount(0)
+  await expect(page.locator('.landing-app-preview')).toHaveCount(0)
+  await expect(page.locator('img[src^="/landing/"]')).toHaveCount(0)
 })
 
 for (const role of ["CUSTOMER", "EXPERT", "ADMIN"] as const) {
@@ -155,31 +159,15 @@ for (const width of [360, 768, 1440]) {
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBeLessThanOrEqual(width)
-    if (width < 961) {
-      const trigger = page.getByRole("button", {
-        name: /^(Mở|Đóng) menu giới thiệu$/,
-      })
-      await trigger.click()
-      await expect(trigger).toHaveAttribute("aria-expanded", "true")
-      await page.keyboard.press("Escape")
-      await expect(trigger).toHaveAttribute("aria-expanded", "false")
-      await expect(trigger).toBeFocused()
-      await trigger.click()
-      await page
-        .locator("#landing-mobile-nav")
-        .getByRole("link", { name: "Lịch ăn", exact: true })
-        .click()
-      await expect(page.locator("#landing-mobile-nav")).toBeHidden()
-    } else {
-      await page
-        .getByRole("navigation", { name: "Giới thiệu sản phẩm", exact: true })
-        .getByRole("link", { name: "Lịch ăn" })
-        .click()
-    }
+    await page
+      .getByRole('navigation', { name: 'Liên kết cuối trang giới thiệu' })
+      .getByRole('link', { name: 'Lịch ăn', exact: true })
+      .click()
     await expect(page).toHaveURL(/\/#lich-an$/)
     await expect(page.locator("#lich-an")).toBeInViewport()
+    await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto("/")
-    for (const image of await page.locator(".landing-app-preview img").all()) {
+    for (const image of await page.locator(".landing-preview img").all()) {
       await image.scrollIntoViewIfNeeded()
       await expect
         .poll(() =>
@@ -215,6 +203,37 @@ test("keyboard users can skip navigation and public login and collection links h
     .click()
   await expect(page).toHaveURL(/\/dang-nhap$/)
 })
+
+test('landing scroll reveals sections and replays when returning to a section', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  const root = page.locator('.landing-page')
+  await expect(root).toHaveClass(/has-scroll-motion/)
+  const target = page.locator('#dinh-duong [data-reveal]').first()
+  await expect(target).not.toHaveClass(/is-visible/)
+  await target.scrollIntoViewIfNeeded()
+  await expect(target).toHaveClass(/is-visible/)
+  await expect(target).toHaveCSS('opacity', '1')
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+  await expect(target).not.toHaveClass(/is-visible/)
+  await target.scrollIntoViewIfNeeded()
+  await expect(target).toHaveClass(/is-visible/)
+  await expect(target).toHaveCSS('opacity', '1')
+})
+
+for (const mode of ['reduced-motion', 'no-observer'] as const) {
+  test(`landing content remains readable with ${mode}`, async ({ page }) => {
+    if (mode === 'reduced-motion') await page.emulateMedia({ reducedMotion: 'reduce' })
+    else await page.addInitScript(() => { Object.defineProperty(window, 'IntersectionObserver', { value: undefined }) })
+    await page.goto('/')
+    await expect(page.locator('.landing-page')).not.toHaveClass(/has-scroll-motion/)
+    for (const section of await page.locator('[data-reveal]').all()) {
+      await expect(section).toHaveClass(/is-visible/)
+      await expect(section).toHaveCSS('opacity', '1')
+      await expect(section).toHaveCSS('transform', 'none')
+    }
+  })
+}
 
 test("unknown routes still display the original application Home", async ({
   page,

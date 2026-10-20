@@ -4102,6 +4102,128 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecipeFormOptionsResponse"
+  /api/v1/recipes/discovery:
+    get:
+      tags:
+      - recipe-post-controller
+      operationId: discoverPublic
+      parameters:
+      - name: keyword
+        in: query
+        description: Tìm trong tiêu đề và mô tả ngắn công thức.
+        required: false
+        schema:
+          type: string
+          default: ""
+      - name: page
+        in: query
+        description: Số trang bắt đầu từ 0.
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: Số công thức mỗi trang (từ 1 đến 50).
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 12
+          maximum: 50
+          minimum: 1
+      - name: sort
+        in: query
+        description: Chế độ sắp xếp công thức công khai.
+        required: false
+        schema:
+          type: string
+          default: NEWEST
+          enum:
+          - NEWEST
+          - MOST_LIKED
+          - MOST_VIEWED
+          - MOST_COMMENTED
+          - MOST_ACTIVE
+          - TRENDING
+      - name: viewPeriod
+        in: query
+        description: Khung thời gian cho MOST_VIEWED; mặc định ALL_TIME.
+        required: false
+        schema:
+          type: string
+          default: ALL_TIME
+          enum:
+          - ALL_TIME
+          - LAST_24_HOURS
+          - LAST_7_DAYS
+          - LAST_30_DAYS
+      - name: vegetarianType
+        in: query
+        description: Loại ăn chay chuẩn.
+        required: false
+        schema:
+          type: string
+          enum:
+          - VEGAN
+          - LACTO
+          - OVO
+          - LACTO_OVO
+      - name: dishCategory
+        in: query
+        description: Mã thể loại món chuẩn hóa.
+        required: false
+        schema:
+          type: string
+          enum:
+          - NOODLE_SOUP
+          - STIR_FRY
+          - HOT_POT
+          - BRAISED
+          - SOUP
+          - FRIED
+          - STEAMED
+          - SALAD
+          - ROLL
+          - GRILLED
+          - DESSERT
+      - name: ingredientIds
+        in: query
+        description: ID nguyên liệu; có thể lặp lại. Công thức phải chứa tất cả ID
+          đã chọn.
+        required: false
+        schema:
+          type: array
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+          maxItems: 20
+          minItems: 0
+      - name: maxTotalTimeMinutes
+        in: query
+        description: "Tổng thời gian chuẩn bị và nấu tối đa, tính bằng phút."
+        required: false
+        schema:
+          type: integer
+          format: int32
+          minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RecipeBrowseResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/nutrition/dietary-preferences/ingredient-suggestions:
     get:
       tags:
@@ -6289,16 +6411,16 @@ components:
           additionalProperties: {}
         signature:
           type: string
-        paymentLinkId:
-          type: string
-        paymentSuccess:
-          type: boolean
-        orderCode:
-          type: integer
-          format: int64
         amount:
           type: integer
           format: int32
+        orderCode:
+          type: integer
+          format: int64
+        paymentSuccess:
+          type: boolean
+        paymentLinkId:
+          type: string
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -6975,6 +7097,21 @@ components:
           type: string
         dimension:
           type: string
+    RecipeBrowseResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecipePostResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        hasNext:
+          type: boolean
     IngredientSuggestionResponse:
       type: object
       properties:

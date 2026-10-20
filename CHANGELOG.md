@@ -1,13 +1,126 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.86.0
+> **Version:** v2.89.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-17
+> **Last Updated:** 2026-10-20
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-19 — Refresh Landing Previews and Scroll Motion ([PR #157](https://github.com/NgaiLong49423/vegetarian-support-system/pull/157))
+
+**Status:** Committed — `0f1ce32`.
+
+**Scope:** Update the public Landing presentation alongside the account, calendar and application refinements retained from PR #156.
+
+### Added
+
+- Add replayable scroll reveals with reduced-motion and missing-observer fallbacks.
+- Add browser checks for illustration assets, scroll effects and responsive navigation, and upload Landing screenshots with the existing CI UI evidence.
+
+### Changed
+
+- Replace captured application previews with decorative HTML/CSS illustrations using existing local food images.
+- Simplify the header and retain section navigation in the footer; preserve application destinations and account-specific collection links.
+
+### Fixed
+
+- Align the Landing tests and workspace guide with the current preview and navigation design.
+
+## 2026-10-18 — Refine Account, Calendar and Admin Interfaces ([PR #156](https://github.com/NgaiLong49423/vegetarian-support-system/pull/156))
+
+**Status:** Committed — `2e6ec94`.
+
+**Scope:** Refine the Frontend presentation and reconcile it with the current develop integration baseline.
+
+### Added
+
+- Add interactive local Admin previews for account roles/locks, report moderation and transaction details, explicitly labeled as sample data without Backend writes.
+- Add browser coverage for preview interactions and calendar keyboard navigation across months.
+
+### Changed
+
+- Refresh account forms, shared navigation, recipe details, profile pages and the animated meal calendar while retaining reduced-motion support.
+- Require Guest sign-in for meal planning and shopping; keep explicit local previews behind `?demo=true`.
+
+### Fixed
+
+- Preserve API-backed recipe comments, reactions, views and meal-plan serving updates after synchronizing develop.
+- Keep tall registration forms scrollable, retain ingredient JSON preview/copy, and use the actual vegetarian-type label in recipe details.
+
+## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
+
+**Status:** Committed — `a74f7c2`.
+
+**Scope:** Synchronize the generated Backend contract for Explore discovery and correct recipe-card E2E checks that failed in CI.
+
+### Added
+
+- None.
+
+### Changed
+
+- Regenerate `docs/api/openapi.yaml` from the running Backend OpenAPI endpoint.
+
+### Fixed
+
+- Disambiguate default-artwork accessible-name checks and click visible meal-slot labels in Playwright.
+- Expect two successful meal additions when the first of three selected slots returns a simulated conflict.
+## 2026-10-18 — Send Chatbot Questions with Enter
+
+**Status:** Committed — `aad73a1`.
+
+**Scope:** Fix keyboard submission in the AI Chatbot so users can send questions without leaving the keyboard.
+
+### Added
+
+- Add browser regression coverage for Enter submission, Shift+Enter multiline input and empty questions.
+
+### Changed
+
+- Use Enter to submit a Chatbot question while preserving Shift+Enter for a newline.
+
+### Fixed
+
+- Prevent Enter from leaving a non-empty Chatbot question unsent.
+
+## 2026-10-17 — Add Multiweek Meal Plan Actions (Issue #23) ([PR #151](https://github.com/NgaiLong49423/vegetarian-support-system/pull/151))
+
+**Status:** Committed — `02bf185`.
+
+**Scope:** Improve recipe-card actions and let users schedule a recipe across multiple meal slots and weeks.
+
+### Added
+
+- Add recipe-card actions and a multi-select meal-plan dialog that retains selections while navigating between weeks.
+
+### Changed
+
+- Submit selected meal slots to their corresponding calendar weeks and retain failed selections for retry.
+
+### Fixed
+
+- None.
+
+## 2026-10-17 — Remove Recipe Counts from Explore Pagination
+
+**Status:** Committed — `24fd7cd`.
+
+**Scope:** Remove the total-count query and total-page display from the Explore recipe browse flow while preserving count-based responses for Home and author profiles.
+
+### Added
+
+- Add a discovery browse response with `hasNext` pagination for Explore.
+
+### Changed
+
+- Use previous/next navigation in Explore without displaying total recipe or page counts.
+
+### Fixed
+
+- Avoid running the total-count query for Explore recipe browsing.
 
 ## 2026-10-17 — Add Safe Shopping Ingredient Aggregation ([PR #150](https://github.com/NgaiLong49423/vegetarian-support-system/pull/150), Issue #54)
 

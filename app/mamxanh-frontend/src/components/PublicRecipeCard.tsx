@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
-import { Leaf } from "lucide-react"
 import type { RecipeFormOptions, RecipePost } from "../api/recipes"
+import { AddToMealPlanButton } from "./AddToMealPlanButton"
+import { RecipeDefaultArtwork, type VegetarianCode } from "./RecipeDefaultArtwork"
 import { SaveRecipeButton } from "./SaveRecipeButton"
 import { RecipeViewCount } from "./RecipeViewCount"
 import { RecipeReactionBadge } from "./RecipeReactionBadge"
@@ -34,10 +35,11 @@ export function PublicRecipeCard({
               className="h-full w-full object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.03]"
             />
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-xs text-ink-muted">
-              <Leaf className="h-7 w-7" />
-              Chưa có ảnh công thức
-            </div>
+            <RecipeDefaultArtwork
+              vegetarianType={recipe.vegetarianType as VegetarianCode}
+              label={vegetarian}
+              compact
+            />
           )}
           <div className="absolute left-2 top-2">
             <RecipeReactionBadge percentage={recipe.likePercentage} />
@@ -76,7 +78,8 @@ export function PublicRecipeCard({
         </p>
         <div className="mt-1 text-[11px] text-ink-muted"><RecipeViewCount count={recipe.viewCount} /></div>
       </Link>
-      <div className="absolute right-2 top-2">
+      <div className="absolute right-2 top-2 flex items-center gap-1.5">
+        <AddToMealPlanButton recipeId={recipe.id} recipeTitle={recipe.title} />
         <SaveRecipeButton recipeId={recipe.id} compact />
       </div>
     </article>
