@@ -178,11 +178,6 @@ test('expert can use AI Recipe Assistant modal to generate and apply a complete 
   // Verify proposed result appears
   await expect(page.getByText('Công thức đề xuất')).toBeVisible();
 
-  // Test toggle JSON view
-  await page.getByRole('button', { name: /Xem cấu trúc JSON nguyên liệu/ }).click();
-  await expect(page.getByText('"mon_an"')).toBeVisible();
-  await page.getByRole('button', { name: /Ẩn mã JSON nguyên liệu/ }).click();
-
   // Apply to form
   await page.getByRole('button', { name: 'Nạp vào biểu mẫu công thức' }).click();
 

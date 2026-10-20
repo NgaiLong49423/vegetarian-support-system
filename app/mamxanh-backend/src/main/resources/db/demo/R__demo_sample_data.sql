@@ -705,4 +705,19 @@ LEFT JOIN (SELECT recipe_id, COUNT(*) total_views FROM [RECIPE_VIEW] GROUP BY re
     ON views.recipe_id = post.recipe_id
 WHERE post.author_id = @author_id AND post.title IN (SELECT title FROM @recipe_titles);
 
+UPDATE post SET youtube_url = 'https://www.youtube.com/watch?v=7wtfhZwyrcc'
+FROM [RECIPE_POST] post WHERE post.title = N'Mì udon xào rau củ kiểu Nhật';
+
+UPDATE post SET youtube_url = 'https://www.youtube.com/watch?v=kXYiU_JCYtU'
+FROM [RECIPE_POST] post WHERE post.title = N'Bánh xèo nấm và giá đỗ';
+
+UPDATE post SET youtube_url = 'https://www.youtube.com/watch?v=fJ9rUzIMcZQ'
+FROM [RECIPE_POST] post WHERE post.title = N'Đậu hũ sốt nấm mỡ';
+
+UPDATE post SET youtube_url = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+FROM [RECIPE_POST] post WHERE post.title = N'Canh chua nấm đậu bắp';
+
+UPDATE post SET youtube_url = 'https://www.youtube.com/watch?v=7wtfhZwyrcc'
+FROM [RECIPE_POST] post WHERE post.title = N'Phở cuốn nấm bào ngư';
+
 COMMIT TRANSACTION;

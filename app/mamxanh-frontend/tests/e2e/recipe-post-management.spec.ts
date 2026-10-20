@@ -211,7 +211,7 @@ test('delete is separate on profile, asks confirmation, then removes recipe from
   await page.getByRole('button', { name: 'Xác nhận xóa' }).click();
 
   await expect(page.getByRole('heading', { name: 'Nấm kho tiêu' })).toHaveCount(0);
-  await expect(page.getByText('Bạn chưa có công thức nào.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bạn chưa có bài blog công thức nào' })).toBeVisible();
   await expect(page.getByRole('status')).toContainText('Đã xóa công thức');
   expect(deleteRequested).toBe(true);
   expect(deleteAttempts).toBe(2);
