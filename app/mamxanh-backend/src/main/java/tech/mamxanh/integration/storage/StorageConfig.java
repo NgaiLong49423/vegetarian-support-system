@@ -34,7 +34,19 @@ public class StorageConfig {
                     containerClient.create();
                     log.info("Created Azure Blob Storage container: {}", properties.containerName());
                 }
-                return new AzureBlobStorageClient(containerClient);
+                BlobContainerClient privateApplicationContainer = serviceClient
+                        .getBlobContainerClient(properties.expertApplicationContainerName());
+                if (!privateApplicationContainer.exists()) {
+                    privateApplicationContainer.create();
+                    log.info("Created private expert application storage container: {}",
+                            properties.expertApplicationContainerName());
+                }
+                if (privateApplicationContainer.getAccessPolicy().getBlobAccessType() != null) {
+                    throw new PrivateContainerPublicAccessException();
+                }
+                return new AzureBlobStorageClient(containerClient, privateApplicationContainer);
+            } catch (PrivateContainerPublicAccessException e) {
+                throw e;
             } catch (Exception e) {
                 log.warn("Failed to initialize Azure Blob Storage client; falling back to MockStorageClient: {}", e.getMessage());
                 return new MockStorageClient(properties.containerName());
@@ -43,5 +55,11 @@ public class StorageConfig {
 
         log.info("AZURE_STORAGE_CONNECTION_STRING is not set. Using MockStorageClient for local development.");
         return new MockStorageClient(properties.containerName());
+    }
+
+    static final class PrivateContainerPublicAccessException extends IllegalStateException {
+        PrivateContainerPublicAccessException() {
+            super("Expert application storage container must not allow public access");
+        }
     }
 }

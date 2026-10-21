@@ -3,7 +3,7 @@ package tech.mamxanh.integration.storage;
 import java.io.InputStream;
 
 /**
- * Storage client abstraction for recipe media uploads and management (FR-14).
+ * Storage client abstraction for recipe media and private expert application attachments.
  * Decouples recipe business logic from the underlying storage mechanism.
  */
 public interface StorageClient {
@@ -13,6 +13,7 @@ public interface StorageClient {
 
     /** Folder for member avatars (FR-23). */
     String AVATAR_FOLDER = "avatars";
+    String EXPERT_APPLICATION_FOLDER = "expert-applications";
 
     /**
      * Upload a recipe image stream to storage (in {@link #RECIPE_FOLDER}).
@@ -41,6 +42,21 @@ public interface StorageClient {
      * @param blobUrl public URL of the blob
      */
     void deleteImage(String blobUrl);
+
+    /** Uploads application-only data to a private container and returns its internal blob key. */
+    default String uploadPrivateApplicationFile(byte[] content, String mimeType, String extension) {
+        throw new UnsupportedOperationException("Private application file storage is unavailable");
+    }
+
+    /** Reads a private application file by its server-generated blob key. */
+    default byte[] downloadPrivateApplicationFile(String blobKey) {
+        throw new UnsupportedOperationException("Private application file storage is unavailable");
+    }
+
+    /** Deletes a private application file by its server-generated blob key. */
+    default void deletePrivateApplicationFile(String blobKey) {
+        throw new UnsupportedOperationException("Private application file storage is unavailable");
+    }
 
     /**
      * Check if storage client is backed by real cloud storage.

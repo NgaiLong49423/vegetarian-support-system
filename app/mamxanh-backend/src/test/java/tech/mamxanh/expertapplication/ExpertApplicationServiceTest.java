@@ -21,6 +21,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.mock.web.MockMultipartFile;
 import tech.mamxanh.auth.service.ExpertPromotionService;
 import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.expertapplication.dto.ExpertApplicationRequest;
@@ -28,6 +29,7 @@ import tech.mamxanh.expertapplication.dto.ExpertApplicationResponse;
 import tech.mamxanh.expertapplication.repository.ExpertApplicationRepository;
 import tech.mamxanh.expertapplication.service.ExpertApplicationService;
 import tech.mamxanh.notification.service.NotificationService;
+import tech.mamxanh.integration.storage.StorageClient;
 
 @ExtendWith(MockitoExtension.class)
 class ExpertApplicationServiceTest {
@@ -35,12 +37,13 @@ class ExpertApplicationServiceTest {
     @Mock private ExpertApplicationRepository applications;
     @Mock private ExpertPromotionService promotion;
     @Mock private NotificationService notifications;
+    @Mock private StorageClient storage;
     private ExpertApplicationService service;
 
     @BeforeEach
     void setUp() {
         service = new ExpertApplicationService(applications, promotion, notifications,
-                Clock.fixed(Instant.parse("2026-10-04T12:00:00Z"), ZoneOffset.UTC));
+                Clock.fixed(Instant.parse("2026-10-04T12:00:00Z"), ZoneOffset.UTC), storage);
         SecurityContextHolder.getContext().setAuthentication(
                 UsernamePasswordAuthenticationToken.authenticated("42", "test", List.of()));
     }
@@ -70,6 +73,62 @@ class ExpertApplicationServiceTest {
 
         assertThatThrownBy(() -> service.submit(request)).isInstanceOf(ApiException.class)
                 .satisfies(error -> assertThat(((ApiException) error).getStatus()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void submitWithAttachmentsStoresOnlyPrivateKeysOnApplication() {
+        var request = new ExpertApplicationRequest("More than twenty chars experience", "VEGAN",
+                "A sample recipe summary with enough details.", null);
+        byte[] pdf = "%PDF-1.7".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        byte[] png = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
+        var certificate = new MockMultipartFile("certificate", "credential.pdf", "application/pdf", pdf);
+        var avatar = new MockMultipartFile("avatar", "portrait.png", "image/png", png);
+        var expected = new ExpertApplicationResponse(9, 42, "Applicant", "applicant@example.org", "Experience text",
+                "VEGAN", "Sample recipe summary", null, true, true, "PENDING", null, NOW, null);
+        when(storage.uploadPrivateApplicationFile(pdf, "application/pdf", ".pdf"))
+                .thenReturn("expert-applications/certificate.pdf");
+        when(storage.uploadPrivateApplicationFile(png, "image/png", ".png"))
+                .thenReturn("expert-applications/avatar.png");
+        when(applications.insert(42, request, "expert-applications/certificate.pdf", "application/pdf",
+                "expert-applications/avatar.png", "image/png", NOW)).thenReturn(9L);
+        when(applications.findById(9L)).thenReturn(expected);
+
+        assertThat(service.submitWithAttachments(request, certificate, avatar)).isSameAs(expected);
+        verify(promotion).requireActiveCustomer(42);
+        verify(applications).insert(42, request, "expert-applications/certificate.pdf", "application/pdf",
+                "expert-applications/avatar.png", "image/png", NOW);
+    }
+
+    @Test
+    void invalidDeclaredMimeDoesNotUploadOrCreateApplication() {
+        var request = new ExpertApplicationRequest("More than twenty chars experience", "VEGAN",
+                "A sample recipe summary with enough details.", null);
+        var certificate = new MockMultipartFile("certificate", "credential.pdf", "application/pdf", "not a PDF".getBytes());
+
+        assertThatThrownBy(() -> service.submitWithAttachments(request, certificate, null))
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+
+        verify(storage, org.mockito.Mockito.never()).uploadPrivateApplicationFile(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void failedApplicationInsertDeletesPreviouslyUploadedAttachment() {
+        var request = new ExpertApplicationRequest("More than twenty chars experience", "VEGAN",
+                "A sample recipe summary with enough details.", null);
+        byte[] pdf = "%PDF-1.7".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        var certificate = new MockMultipartFile("certificate", "credential.pdf", "application/pdf", pdf);
+        when(storage.uploadPrivateApplicationFile(pdf, "application/pdf", ".pdf"))
+                .thenReturn("expert-applications/certificate.pdf");
+        when(applications.insert(42, request, "expert-applications/certificate.pdf", "application/pdf",
+                null, null, NOW)).thenThrow(new DataIntegrityViolationException("pending exists"));
+
+        assertThatThrownBy(() -> service.submitWithAttachments(request, certificate, null))
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getStatus()).isEqualTo(HttpStatus.CONFLICT));
+
+        verify(storage).deletePrivateApplicationFile("expert-applications/certificate.pdf");
     }
 
     @Test
@@ -135,6 +194,6 @@ class ExpertApplicationServiceTest {
 
     private static ExpertApplicationResponse response(String status, String note) {
         return new ExpertApplicationResponse(9, 17, "Applicant", "applicant@example.org", "Experience text",
-                "VEGAN", "Sample recipe summary", null, status, note, NOW, null);
+                "VEGAN", "Sample recipe summary", null, false, false, status, note, NOW, null);
     }
 }

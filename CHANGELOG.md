@@ -1,11 +1,61 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.91.0
+> **Version:** v2.92.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-21
 > **Status:** Active
 
 # Changelog
+
+Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-21 — Expert Application Attachments
+
+**Status:** Committed — `fbaf8e4`.
+
+**Scope:** Extend FR-05 so applicants can attach a certificate and an application-only 3:4 portrait, with private storage and Admin-only retrieval.
+
+### Added
+
+- Add optional certificate and application-only 3:4 portrait uploads with server-side type, signature, and size validation; store attachment metadata through Flyway V18.
+- Add an Admin-only attachment download endpoint backed by a private Azure Blob Storage container.
+
+### Changed
+
+- Update FR-05, BR-74, NFR-10, architecture, database guidance, and the application form to describe the approved attachment behavior.
+- Focus the first-time application view on the submission form and group optional uploads into a compact section.
+- Identify the application portrait as a 3:4 photo, add an explicit Admin download action, and improve the review dialog's hierarchy, attachment cards, status, and responsive scrolling.
+- Keep the existing JSON submission endpoint and public account avatar flow unchanged.
+
+### Fixed
+
+- Bind Azure storage configuration through its canonical constructor so the Backend can start with the new private-container property.
+
+## 2026-10-20 — Expand Local Demo Data ([PR #166](https://github.com/NgaiLong49423/vegetarian-support-system/pull/166))
+
+**Status:** Committed — `fa44e59`.
+
+**Scope:** Expand local demo coverage across ingredients, community interactions, and shopping while allowing flexible nutrition provenance and clearly labeling unverified estimates.
+
+### Added
+
+- Allow freely entered nutrition sources, including `Ước tính AI - chưa xác minh`, in the catalog.
+- Seed recipe comments and replies, saved recipes, shopping lists and checklist items, moderation reports, and reply notifications for demo accounts.
+- Add 51 local demo ingredients, including chicken egg, with all nine AI-estimated nutrition values per 100 g; keep the estimates explicitly unverified.
+- Add ten more local recipes across vegan meals and an ovo-vegetarian breakfast, using the expanded ingredient catalog.
+
+### Changed
+
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
+- Replace the seed's `DEMO` source type with `AI_ESTIMATE`, retain unverified provenance, and include saved estimates in partial nutrition calculations without treating missing fields as zero.
+- Remove the source-type and all-nine-values database restrictions for supported rows; require at least one stored nutrient and keep missing values as `NULL`.
+- Make the new community and shopping fixtures repeatable by checking their stable account, recipe, and item keys before insertion.
+
+### Fixed
+
+- Seed core recipe ingredients before applying catalog nutrition so supported entries such as sweet potato are enriched correctly.
+
+- Fill the remaining macro, fiber and B12 estimates for all AI-estimated demo ingredients so those fixtures no longer have missing nutrition metrics.
 
 ## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
 
@@ -33,34 +83,6 @@
 ### Fixed
 
 - None.
-
-Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
-
-## 2026-10-20 — Expand Local Demo Data ([PR #166](https://github.com/NgaiLong49423/vegetarian-support-system/pull/166))
-
-**Status:** Committed — `fa44e59`.
-
-**Scope:** Expand local demo coverage across ingredients, community interactions, and shopping while allowing flexible nutrition provenance and clearly labeling unverified estimates.
-
-### Added
-
-- Allow freely entered nutrition sources, including `Ước tính AI - chưa xác minh`, in the catalog.
-- Seed recipe comments and replies, saved recipes, shopping lists and checklist items, moderation reports, and reply notifications for demo accounts.
-- Add 51 local demo ingredients, including chicken egg, with all nine AI-estimated nutrition values per 100 g; keep the estimates explicitly unverified.
-- Add ten more local recipes across vegan meals and an ovo-vegetarian breakfast, using the expanded ingredient catalog.
-
-### Changed
-
-- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
-- Replace the seed's `DEMO` source type with `AI_ESTIMATE`, retain unverified provenance, and include saved estimates in partial nutrition calculations without treating missing fields as zero.
-- Remove the source-type and all-nine-values database restrictions for supported rows; require at least one stored nutrient and keep missing values as `NULL`.
-- Make the new community and shopping fixtures repeatable by checking their stable account, recipe, and item keys before insertion.
-
-### Fixed
-
-- Seed core recipe ingredients before applying catalog nutrition so supported entries such as sweet potato are enriched correctly.
-
-- Fill the remaining macro, fiber and B12 estimates for all AI-estimated demo ingredients so those fixtures no longer have missing nutrition metrics.
 ## 2026-10-19 — Refresh Landing Previews and Scroll Motion ([PR #157](https://github.com/NgaiLong49423/vegetarian-support-system/pull/157))
 
 **Status:** Committed — `0f1ce32`.
