@@ -494,7 +494,7 @@ test("shopping empty list, invalid ID, foreign list and read retry are explicit"
 
 test("shopping pagination and small viewport preserve usable checklist", async ({
   page,
-}) => {
+}, testInfo) => {
   const state = await setup(page)
   state.pages = 2
 
@@ -519,7 +519,7 @@ test("shopping pagination and small viewport preserve usable checklist", async (
   ).toBe(true)
 
   await page.screenshot({
-    path: "../../.agents/outputs/fr53-ui/mobile.png",
+    path: testInfo.outputPath("detail-shopping-mobile.png"),
     fullPage: true,
   })
 
@@ -533,7 +533,7 @@ test("shopping pagination and small viewport preserve usable checklist", async (
   await page.setViewportSize({ width: 1440, height: 1000 })
 
   await page.screenshot({
-    path: "../../.agents/outputs/fr53-ui/desktop.png",
+    path: testInfo.outputPath("detail-shopping-desktop.png"),
     fullPage: true,
   })
 })
