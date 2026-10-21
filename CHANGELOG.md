@@ -7,7 +7,7 @@
 
 # Changelog
 
-## 2026-10-21 — Integrate Shopping Checklist Management (FR-53)
+## 2026-10-21 — Integrate Shopping Checklist Management (FR-53) ([PR #171](https://github.com/NgaiLong49423/vegetarian-support-system/pull/171))
 
 **Status:** Committed — `daac445`. Original implementation: `83f1938`; develop synchronization: `34cf4e6`.
 
