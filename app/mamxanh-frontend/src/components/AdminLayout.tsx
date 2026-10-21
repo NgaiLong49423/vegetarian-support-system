@@ -3,6 +3,7 @@ import { useLocation, Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   BadgeCheck,
   Boxes,
+  CreditCard,
   ExternalLink,
   LayoutDashboard,
   Leaf,
@@ -46,10 +47,11 @@ const adminNavigationGroups: { title: string; items: AdminNavItem[] }[] = [
     ],
   },
   {
-    title: 'Hệ thống (Chờ API Backend)',
+    title: 'Quản trị hệ thống',
     items: [
-      { to: '/admin/bao-cao', label: 'Hậu kiểm báo cáo', icon: ShieldAlert, badge: 'Chờ API' },
-      { to: '/admin/nguoi-dung', label: 'Quản lý người dùng', icon: Users, badge: 'Chờ API' },
+      { to: '/admin/bao-cao', label: 'Hậu kiểm báo cáo', icon: ShieldAlert },
+      { to: '/admin/nguoi-dung', label: 'Quản lý người dùng', icon: Users },
+      { to: '/admin/giao-dich', label: 'Giám sát giao dịch', icon: CreditCard },
     ],
   },
 ];

@@ -10,6 +10,7 @@ import {
   Settings,
   SlidersHorizontal,
   Sparkles,
+  UserRound,
   X,
 } from "lucide-react"
 import { PageContainer } from "../components/Layout"
@@ -176,13 +177,24 @@ export function Profile() {
               </Link>
             </div>
           </div>
-          <Link
-            to="/ho-so/so-thich-an-uong"
-            className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-xs text-ink-soft hover:bg-paper"
-          >
-            <Settings className="h-3.5 w-3.5" />
-            Sở thích & hồ sơ
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {account.role !== "ADMIN" && (
+              <Link
+                to={`/thanh-vien/${account.id}`}
+                className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-xs font-semibold text-ink-soft hover:bg-paper"
+              >
+                <UserRound className="h-3.5 w-3.5" />
+                Trang cá nhân
+              </Link>
+            )}
+            <Link
+              to="/ho-so/so-thich-an-uong"
+              className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-xs text-ink-soft hover:bg-paper"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              Sở thích & hồ sơ
+            </Link>
+          </div>
         </header>
         <nav
           aria-label="Nội dung hồ sơ"
@@ -218,7 +230,7 @@ export function Profile() {
                 : "border-transparent text-ink-muted hover:text-brand-500"
             }`}
           >
-            Hồ sơ của tôi
+            Sức khỏe & sở thích
           </button>
         </nav>
 

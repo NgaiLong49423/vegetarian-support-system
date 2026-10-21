@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.34.0
+> **Version:** v0.35.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-18
+> **Last Updated:** 2026-10-21
 > **Status:** Active
 
 # API Integration Guide
@@ -256,7 +256,7 @@ Các endpoint detail và Meal Plan dưới đây trả projection đọc từ `R
 | UC-32.3 — danh sách, tìm kiếm và phân trang công thức đã lưu | `GET /api/v1/saved-recipes?keyword=&page=0&size=20` (có xác thực) | Chỉ trả tham chiếu của tài khoản hiện tại, sắp xếp mới lưu gần đây trước. `size` giới hạn 1–50; `keyword` tối đa 120 ký tự, tìm trong tên và mô tả. Mục không khả dụng vẫn được giữ an toàn với `available=false`, thông báo chung và không có nội dung recipe, tác giả hay media. |
 | AC-20.4 — export PDF/TXT | Frontend | Backend trả dữ liệu detail cần cho export. Frontend tạo TXT và PDF khổ A4; API này không tạo file. |
 | AC-20.5 — tải toàn trang trong hai giây | Frontend xác minh acceptance | Backend trả đủ instructions trong cùng response detail. Frontend cần đo thời gian tải và render toàn trang trên môi trường mục tiêu. |
-| AC-40.1/40.2 — công khai khi thiếu dữ liệu dinh dưỡng (FR-40, BR-50) | `POST /api/v1/recipes`, `GET /api/v1/recipes/{recipeId}` | Nguyên liệu trong catalog nhưng chưa có hồ sơ dinh dưỡng không chặn công khai (nguyên liệu ngoài catalog vẫn bị từ chối theo BR-12). Detail trả `ingredients[].nutritionSupported`, `nutritionComplete` và `ingredientsWithoutNutrition`; Frontend gắn nhãn "Chưa hỗ trợ tính dinh dưỡng" cạnh từng nguyên liệu có `nutritionSupported = false`. |
+| AC-40.1/40.2 — công khai khi thiếu dữ liệu dinh dưỡng (FR-40, BR-50) | `POST /api/v1/recipes`, `GET /api/v1/recipes/{recipeId}` | Nguyên liệu trong catalog nhưng chưa bật tính không chặn công khai (nguyên liệu ngoài catalog vẫn bị từ chối theo BR-12). `nutritionSupported` biểu thị có tham gia tính phần dữ liệu hiện có; `nutritionComplete` và `ingredientsWithoutNutrition` cảnh báo chỉ tiêu còn thiếu. Các chỉ tiêu `NULL` không được xem là 0; số liệu AI-generated được giải thích là ước tính chưa xác minh. |
 | AC-40.3 — loại khỏi ứng viên AI menu dinh dưỡng (BR-40, BR-50) | `POST /api/v1/meal-plans/ai-menu/previews`, `PUT /api/v1/meal-plans/ai-menu` | Pool ứng viên FR-36 (dùng cho prompt Gemini và cho bước kiểm lại khi áp dụng) chỉ gồm Recipe Post `PUBLISHED` có dinh dưỡng đầy đủ, cùng phép tính với detail. Áp dụng menu chứa bài thiếu dữ liệu trả `404 RECIPE_NOT_FOUND`, Lịch ăn giữ nguyên. Không có endpoint mới. |
 
 Các key trong `nutrition.total` và `nutrition.perServing` lần lượt là `ENERGY_KCAL` (kcal), `PROTEIN_G` (g), `CARBOHYDRATE_G` (g), `TOTAL_FAT_G` (g), `FIBER_G` (g), `CALCIUM_MG` (mg), `IRON_MG` (mg), `VITAMIN_B12_MCG` (mcg) và `ZINC_MG` (mg). Nếu chưa có lượt bình chọn, `statistics.reactionCount` bằng `0` và `statistics.likePercentage` là `null`; Frontend hiển thị nhãn “Mới” theo BR-69.
@@ -364,6 +364,7 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 
 - `GET /api/v1/members/{userId}` (công khai) trả `MemberProfileResponse`: `userId`, `displayName`, `avatarUrl` (null thì Frontend hiện ảnh mặc định), `bio` (null khi trống) và `joinedMonth` dạng `yyyy-MM` tính theo giờ Việt Nam từ `USER.created_at` (UTC). Không trả email, role, trạng thái tài khoản hay dữ liệu riêng tư (AC-23.2, BR-18). Hồ sơ của Member bị `LOCKED` vẫn công khai; ID không tồn tại hoặc của Administrator trả `404 MEMBER_PROFILE_NOT_FOUND` (Q55).
 - `GET /api/v1/members/{userId}/recipes?page=0&size=12` (công khai) trả cùng dạng phân trang với `GET /api/v1/recipes`, chỉ gồm bài `PUBLISHED` của thành viên, mới nhất trước; `size` 1–50 (Q56).
+- `GET /api/v1/members/{userId}/recipe-statistics` (công khai) trả `recipeCount`, `totalLikes` và `totalViews` tổng hợp trên tất cả bài `PUBLISHED` của tác giả, độc lập với phân trang. Không có bài thì các tổng bằng `0`; `totalLikes` chỉ đếm phản ứng `LIKE`.
 - `GET /api/v1/me/profile` và `PUT /api/v1/me/profile` (cần Bearer token) luôn thao tác trên tài khoản trong phiên; không nhận `userId` (AC-23.8). Body `PUT`: `displayName` (bỏ khoảng trắng đầu cuối, 3–50 ký tự, không có ký tự điều khiển) và `bio` (bỏ khoảng trắng đầu cuối, tối đa 500 ký tự, rỗng lưu `NULL`) (Q58). Lỗi validation trả `400 VALIDATION_FAILED` kèm `errors[].field`. Tên mới hiện ngay trên hồ sơ và mọi bài của tác giả vì tác giả được đọc từ tài khoản hiện tại.
 - `POST /api/v1/me/profile/avatar` (cần Bearer token, `multipart/form-data`, trường `file`) nhận JPEG, PNG hoặc WebP tối đa 2 MB; Backend đọc chữ ký đầu tệp và yêu cầu khớp `Content-Type` (AC-23.5, AC-23.7). Ảnh lưu qua `StorageClient` của FR-14 trong thư mục `avatars/` (Q54); ảnh đại diện cũ do hệ thống lưu bị xóa sau khi lưu thành công. Response là `MemberProfileResponse` mới.
 - Administrator gọi `/me/profile` hoặc `/me/profile/avatar` nhận `403 MEMBER_ACCESS_REQUIRED`.

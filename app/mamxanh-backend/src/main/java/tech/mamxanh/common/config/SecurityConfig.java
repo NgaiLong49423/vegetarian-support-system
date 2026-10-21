@@ -80,6 +80,8 @@ public class SecurityConfig {
                                 "/api/v1/recipes/ingredient-options").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/members/*", "/api/v1/members/*/recipes",
                                 "/api/v1/members/*/follow").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/experts", "/api/v1/ingredients",
+                                "/api/v1/ingredients/groups").permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                         .requestMatchers(API_DOCS_ENDPOINTS).permitAll()
                         .requestMatchers("/error").permitAll()

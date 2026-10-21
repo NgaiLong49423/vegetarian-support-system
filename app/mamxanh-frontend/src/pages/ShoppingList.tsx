@@ -20,7 +20,6 @@ import {
   type ShoppingSummary,
   type ShoppingUnit,
 } from "../api/shopping"
-import { ShoppingListExport } from "../components/ShoppingListExport"
 import { asApiError } from "../lib/apiClient"
 
 type Tab = "all" | "todo" | "done"
@@ -360,13 +359,6 @@ function ShoppingWorkspace() {
                     {counts.todo} cần mua · {counts.done} đã mua
                   </p>
                 </div>
-                <ShoppingListExport
-                  key={list.id}
-                  items={items}
-                  listName={list.name}
-                  disabled={busy || list.id !== id}
-                  onNotice={setNotice}
-                />
               </header>
               {diagnostics && diagnostics.warnings.length > 0 && (
                 <section

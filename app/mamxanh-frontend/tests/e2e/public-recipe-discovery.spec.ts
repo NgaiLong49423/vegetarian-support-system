@@ -207,6 +207,20 @@ test('FR-08 Explore applies API-backed options, ingredient AND filters, sorting 
   await expect(page.getByRole('heading', { name: matchingRecipe.title })).toBeVisible();
 });
 
+for (const [vegetarianType, vegetarianTypeLabel] of [['OVO', 'Chay trứng'], ['LACTO', 'Chay sữa']] as const) {
+  test(`recipe detail labels ${vegetarianType} honestly rather than claiming entirely plant-based`, async ({ page }) => {
+    await page.route('**/api/v1/recipes/901', route => route.fulfill({ json: {
+      ...detail, vegetarianType, vegetarianTypeLabel, prepTimeMinutes: 35, cookTimeMinutes: 30, media: [],
+    } }));
+    await page.goto('/cong-thuc/id/901');
+    await expect(page.getByRole('heading', { name: detail.title, level: 1 })).toBeVisible();
+    await expect(page.getByText(vegetarianTypeLabel, { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(`🌱 ${vegetarianTypeLabel}`, { exact: true })).toBeVisible();
+    await expect(page.getByText('🌱 100% Thực vật', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Chuẩn vị nhà nấu', { exact: true })).toBeVisible();
+  });
+}
+
 test('API recipe detail supports serving controls, image gallery, sharing and exports', async ({ page }) => {
   const recipe = {
     ...detail,
@@ -250,11 +264,11 @@ test('API recipe detail supports serving controls, image gallery, sharing and ex
   );
 
   await page.getByRole('button', { name: 'Giảm khẩu phần' }).click();
-  await expect(page.getByText('50 gram', { exact: true })).toBeVisible();
+  await expect(page.getByText('50 g', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Giảm khẩu phần' })).toBeDisabled();
   await page.getByRole('button', { name: 'Tăng khẩu phần' }).click();
   await page.getByRole('button', { name: 'Tăng khẩu phần' }).click();
-  await expect(page.getByText('150 gram', { exact: true })).toBeVisible();
+  await expect(page.getByText('150 g', { exact: true })).toBeVisible();
   const ingredientToggle = page.getByRole('button', { name: 'Đánh dấu Nấm rơm tươi' });
   await ingredientToggle.click();
   await expect(page.getByRole('button', { name: 'Bỏ chọn Nấm rơm tươi' })).toHaveAttribute('aria-pressed', 'true');
@@ -278,5 +292,5 @@ test('API recipe detail supports serving controls, image gallery, sharing and ex
   await page.getByRole('button', { name: 'In / lưu PDF A4' }).click();
   expect(await page.evaluate(() => sessionStorage.getItem('print-called'))).toBe('true');
   await page.getByText('Xem tổng dinh dưỡng toàn công thức').click();
-  await expect(page.getByText('240 kcal')).toBeVisible();
+  await expect(page.getByText('≈ 360 kcal')).toBeVisible();
 });
