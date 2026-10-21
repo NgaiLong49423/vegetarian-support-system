@@ -58,8 +58,8 @@ public class SubscriptionEntity {
         this.status = SubscriptionStatus.ACTIVE;
         this.startsAt = startsAt;
         this.endsAt = endsAt;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(java.time.Clock.systemUTC());
+        this.updatedAt = this.createdAt;
     }
 
     public boolean isActiveAt(LocalDateTime now) {

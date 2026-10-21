@@ -1,13 +1,32 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.92.0
+> **Version:** v2.94.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-21
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
+
+**Status:** Committed — `51b706b`.
+
+**Scope:** Resolve integration failures exposed while validating the payment fixes against the current develop baseline.
+
+### Added
+
+- Verify that public recipe statistics remain accessible to guests while private subscription APIs require authentication.
+
+### Changed
+
+- Align browser fixtures and navigation checks with the public statistics API and Explore dropdown; wait for both ingredient selections before checking the discovery request.
+
+### Fixed
+
+- Permit guest reads of the documented public recipe-statistics endpoint.
+- Preserve Vietnamese characters when binding ingredient search patterns on SQL Server.
 
 ## 2026-10-20 — Remove Standalone Meal Plan Export (Issue #152)
 
@@ -29,6 +48,27 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+
+## 2026-10-20 — Correct Subscription Time Display and Transaction Expiry ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
+
+**Status:** Committed — `1d81141`.
+
+**Scope:** Follow-up payment verification fixes for Issue #142 / FR-13.
+
+### Added
+
+- Show the expiry of the subscription purchased by each paid transaction in transaction history; cancelled or unlinked orders have no expiry.
+- Add timezone, midnight rollover, historical subscription mapping and API serialization regression checks.
+
+### Changed
+
+None.
+
+### Fixed
+
+- Use UTC consistently for checkout creation and payment activation, and include the UTC offset in subscription API timestamps.
+- Display subscription and payment dates in Vietnam time regardless of the browser timezone.
+
 ## 2026-10-20 — Expand Local Demo Data ([PR #166](https://github.com/NgaiLong49423/vegetarian-support-system/pull/166))
 
 **Status:** Committed — `fa44e59`.
@@ -54,6 +94,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Seed core recipe ingredients before applying catalog nutrition so supported entries such as sweet potato are enriched correctly.
 
 - Fill the remaining macro, fiber and B12 estimates for all AI-estimated demo ingredients so those fixtures no longer have missing nutrition metrics.
+
 ## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
 
 **Status:** Committed — `3106850`.
@@ -199,6 +240,30 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Avoid running the total-count query for Explore recipe browsing.
+
+## 2026-10-17 — Verify Paid Subscription Activation ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
+
+**Status:** Committed — `39ccd9d`.
+
+**Scope:** FR-13 / Issue #142: replace false payment success with verified payOS checkout, order reconciliation and subscription activation.
+
+### Added
+
+- Add a private per-order result endpoint with server-side payOS reconciliation, ownership checks and non-cacheable responses.
+- Add payment settlement, signature, concurrency and browser regression tests for delayed activation, provider failures and forged success URLs.
+
+### Changed
+
+- Pass Backend payOS configuration through the canonical Compose stack and document checkout/webhook setup.
+- Generate the OpenAPI snapshot from the updated Backend runtime and align subscription types with its responses.
+- Serialize verified settlement by account and order, preserving atomic activation and idempotent webhook processing.
+- Run shared-SQL integration tests sequentially, synchronize recipe-view checks with completed search responses, and use the canonical Backend host for the OpenAPI healthcheck.
+
+### Fixed
+
+- Missing payOS credentials no longer create a fake success checkout or accept mock webhook signatures.
+- Payment result pages confirm the specific order before claiming activation, with bounded polling and retry on pending or failed verification.
+- Display subscription features and transaction tiers from Backend responses.
 
 ## 2026-10-16 — Expand Local Demo Fixtures ([PR #141](https://github.com/NgaiLong49423/vegetarian-support-system/pull/141))
 
@@ -1390,7 +1455,7 @@ None.
 
 ## 2026-10-04 — Correct GitHub CLI Authentication Checks in Codex
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Prevent Codex from reporting a failed GitHub CLI login solely because its Windows sandbox cannot access the user's keyring or network.
 
@@ -2455,7 +2520,7 @@ None.
 
 ## 2026-09-16 — Harden Promptfoo Acceptance Checks
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Correct evaluator safety checks and evidence semantics while preserving external isolated SUT workspaces and existing business requirements.
 
@@ -2478,7 +2543,7 @@ None.
 
 ## 2026-09-16 — Standardize English for Changelog and Commit Messages
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Establish English as the mandatory language for all new or edited `CHANGELOG.md` content and all Git commit messages while retaining Vietnamese as the default prose language for other internal development documentation.
 
@@ -2498,7 +2563,7 @@ None.
 
 ## 2026-09-16 — Finalize Requirements Baseline v1.0.0
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Standardize and promote the PRD and Modular SRS document set to the active Requirements Baseline v1.0.0, including synchronized metadata, document registration, and downstream design and verification guidance.
 
@@ -2521,7 +2586,7 @@ None.
 
 ## 2026-09-16 — Remove Google Maps Restaurant Discovery from the Implementation Baseline
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Reclassify the entire M11 restaurant-discovery capability from `DEFERRED` to `OUT_OF_SCOPE` because it does not serve the core meal-planning flow and the application does not intend to manage or verify external restaurant data.
 
@@ -2541,7 +2606,7 @@ None.
 
 ## 2026-09-15 — Unified AI Chatbot Model & Recipe Instruction Step Baseline Alignment
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Unify AI Chatbot into a single multi-capability assistant under FR-51 per approved Product Decision, align AI Chatbot performance with NFR-03, expand NFR-25 AI quality and compliance evaluation, clarify BR-51 authority boundaries, enforce mandatory 1–30 cooking steps across Recipe Post requirements, and update Root SRS Draft status definition.
 
@@ -2646,7 +2711,7 @@ None.
 
 ## 2026-09-14 — NFR Decomposition & ISO/IEC 25010 Quality Categorization
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Standardize and decompose 27 non-functional requirements (`NFR-01` through `NFR-27`) into six core project quality categories based on ISO/IEC 25010, including quantitative criteria and confirmed architecture boundaries.
 
@@ -2670,7 +2735,7 @@ None.
 
 ## 2026-09-14 — Modular SRS Architecture & Field-Specific Authority Model
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Restructure the Software Requirements Specification into a multi-file Modular SRS, separating the root `SRS.md` authoritative registry from three specialized detailed specifications: `FUNCTIONAL-REQUIREMENTS.md`, `BUSINESS-RULES.md`, and `NON-FUNCTIONAL-REQUIREMENTS.md`.
 
@@ -2695,7 +2760,7 @@ None.
 
 ## 2026-09-14 — Personal Pantry & Inventory-based Recommendation Scope
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Decompose Personal Pantry/Inventory management, pantry-based recipe or post discovery, and AI-assisted recipe creation from available ingredients; classify the capability as `OUT_OF_SCOPE` for the initial MVP.
 
@@ -2715,7 +2780,7 @@ None.
 
 ## 2026-09-14 — Basic Shopping List MVP Adoption
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Move the basic Shopping List capability into the official MVP under Module M05 with three functional requirements (`FR-53`, `FR-54`, `FR-55`) and safe ingredient-aggregation rules.
 
@@ -2735,7 +2800,7 @@ None.
 
 ## 2026-09-14 — Restaurant Discovery Review and True Blog Scope
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Move vegetarian restaurant discovery to lecturer review, decompose a Samsung Food-style long-form Blog with embedded Recipe Cards, and classify the Blog capability outside the initial MVP.
 
@@ -2756,7 +2821,7 @@ None.
 
 ## 2026-09-14 — Documentation Language Policy
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Establish Vietnamese as the primary prose language for internal development documentation, preserve necessary English technical terms, and require fully English content only for documents explicitly classified as academic submissions.
 
@@ -2776,7 +2841,7 @@ None.
 
 ## 2026-09-13 — Controlled Documentation Baseline Migration
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Separate product requirements, software requirements, architecture, technology selection and verification strategy into maintained sources with explicit ownership, while preserving existing requirement meaning and holding unresolved lifecycle assignments for decision.
 
@@ -2799,7 +2864,7 @@ None.
 
 ## 2026-09-13 — Recipe Publishing and AI Scope Simplification
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Align the requirements baseline with the team's confirmed simplification of Recipe Post publishing and deferred AI features.
 
@@ -2822,7 +2887,7 @@ None.
 **Related PR:** None.
 ## 2026-09-13 — Changelog Format and Contribution Authority
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Standardize the English project history and separate shared contribution rules from AI-specific instructions.
 
@@ -2844,7 +2909,7 @@ None.
 
 ## 2026-09-12 — Repository Layout and Agent Onboarding
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Establish predictable document placement and targeted onboarding for new agents.
 
@@ -2867,7 +2932,7 @@ None.
 
 ## 2026-09-12 — Project Documentation and Five-Member Team Setup
 
-**Status:** Committed — `5ac1614`.
+**Status:** Working tree — not committed.
 
 **Scope:** Adapt repository guidance to the Vegetarian Support System and the five-member SWP391 team.
 

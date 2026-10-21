@@ -1705,6 +1705,19 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "502":
+          description: "PAYMENT_RESPONSE_INVALID: the provider response failed verification."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: "PAYMENT_UNAVAILABLE: missing configuration or provider unavailable;\
+            \ no mock checkout is created."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "500":
           description: "INTERNAL_ERROR: the payOS payment link could not be created."
           content:
@@ -2460,7 +2473,8 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: Verified webhook acknowledged; duplicates and unknown signed
+            probes never grant extra entitlement.
           content:
             application/json:
               schema:
@@ -2468,8 +2482,8 @@ paths:
                 additionalProperties:
                   type: string
         "400":
-          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
-            \ its rules; details in `errors`."
+          description: "PAYMENT_SIGNATURE_INVALID or VALIDATION_FAILED: invalid signature,\
+            \ currency, amount or payload."
           content:
             application/problem+json:
               schema:
@@ -3785,6 +3799,69 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
           description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/subscriptions/transactions/{orderCode}:
+    get:
+      tags:
+      - subscription-controller
+      operationId: getPaymentResult
+      parameters:
+      - name: orderCode
+        in: path
+        required: true
+        schema:
+          type: string
+          maximum: 9007199254740991
+          pattern: "[1-9][0-9]{0,15}"
+      responses:
+        "200":
+          description: Verified order result and current subscription of the caller.
+            Pending orders are reconciled with payOS.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResultResponse"
+        "404":
+          description: "PAYMENT_TRANSACTION_NOT_FOUND: order is missing or belongs\
+            \ to another account."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "502":
+          description: "PAYMENT_RESPONSE_INVALID: provider data cannot be verified."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: "PAYMENT_UNAVAILABLE: payment provider is not configured or\
+            \ temporarily unavailable."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
           content:
             application/problem+json:
               schema:
@@ -6513,16 +6590,16 @@ components:
           additionalProperties: {}
         signature:
           type: string
+        paymentLinkId:
+          type: string
+        paymentSuccess:
+          type: boolean
         orderCode:
           type: integer
           format: int64
-        paymentSuccess:
-          type: boolean
         amount:
           type: integer
           format: int32
-        paymentLinkId:
-          type: string
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -6920,6 +6997,61 @@ components:
         paidAt:
           type: string
           format: date-time
+        tier:
+          type:
+          - string
+          - "null"
+        endsAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+          description: "UTC expiry of the subscription purchased by this transaction,\
+            \ not the current subscription."
+    MySubscriptionResponse:
+      type: object
+      properties:
+        tier:
+          type: string
+        status:
+          type: string
+        active:
+          type: boolean
+        startsAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        endsAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        unlockedFeatures:
+          type: array
+          items:
+            type: string
+    PaymentResultResponse:
+      type: object
+      properties:
+        orderCode:
+          type: string
+        tier:
+          type: string
+        amountVnd:
+          type: integer
+          format: int32
+        status:
+          type: string
+        paidAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        activated:
+          type: boolean
+        subscription:
+          $ref: "#/components/schemas/MySubscriptionResponse"
     PlanResponse:
       type: object
       properties:
@@ -6938,25 +7070,6 @@ components:
             type: string
         billingPeriod:
           type: string
-    MySubscriptionResponse:
-      type: object
-      properties:
-        tier:
-          type: string
-        status:
-          type: string
-        active:
-          type: boolean
-        startsAt:
-          type: string
-          format: date-time
-        endsAt:
-          type: string
-          format: date-time
-        unlockedFeatures:
-          type: array
-          items:
-            type: string
     PageResponseSavedRecipeResponse:
       type: object
       properties:

@@ -23,7 +23,7 @@ import {
   type SavedRecipePage,
 } from "../services/savedRecipesApi"
 import { asApiError } from "../lib/apiClient"
-import { formatDate } from "../utils/date"
+import { formatSubscriptionDate as formatDate } from "../utils/subscriptionDate"
 
 export function Profile() {
   const { account } = useAuth()
