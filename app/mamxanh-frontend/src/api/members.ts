@@ -11,6 +11,13 @@ export interface MemberProfile {
   joinedMonth: string;
 }
 
+/** Engagement totals across all currently published recipes on a public profile. */
+export interface MemberRecipeStatistics {
+  recipeCount: number;
+  totalLikes: number;
+  totalViews: number;
+}
+
 /** FR-59 follow state of a profile; counts include only active accounts (AC-59.7). */
 export interface FollowStatus {
   userId: number;
@@ -57,6 +64,9 @@ export const membersApi = {
   getProfile: (userId: number) => request(() => apiClient.get<MemberProfile>(`/members/${userId}`)),
   getRecipes: (userId: number, page: number, size = 12) => request(
     () => apiClient.get<RecipeSearchResult>(`/members/${userId}/recipes`, { params: { page, size } }),
+  ),
+  getRecipeStatistics: (userId: number) => request(
+    () => apiClient.get<MemberRecipeStatistics>(`/members/${userId}/recipe-statistics`),
   ),
   getFollowStatus: (userId: number) => request(() => apiClient.get<FollowStatus>(`/members/${userId}/follow`)),
   follow: (userId: number) => request(() => apiClient.put<FollowStatus>(`/members/${userId}/follow`)),

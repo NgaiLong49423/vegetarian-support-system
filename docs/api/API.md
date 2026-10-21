@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.31.0
+> **Version:** v0.32.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-20
 > **Status:** Active
@@ -323,6 +323,7 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 
 - `GET /api/v1/members/{userId}` (công khai) trả `MemberProfileResponse`: `userId`, `displayName`, `avatarUrl` (null thì Frontend hiện ảnh mặc định), `bio` (null khi trống) và `joinedMonth` dạng `yyyy-MM` tính theo giờ Việt Nam từ `USER.created_at` (UTC). Không trả email, role, trạng thái tài khoản hay dữ liệu riêng tư (AC-23.2, BR-18). Hồ sơ của Member bị `LOCKED` vẫn công khai; ID không tồn tại hoặc của Administrator trả `404 MEMBER_PROFILE_NOT_FOUND` (Q55).
 - `GET /api/v1/members/{userId}/recipes?page=0&size=12` (công khai) trả cùng dạng phân trang với `GET /api/v1/recipes`, chỉ gồm bài `PUBLISHED` của thành viên, mới nhất trước; `size` 1–50 (Q56).
+- `GET /api/v1/members/{userId}/recipe-statistics` (công khai) trả `recipeCount`, `totalLikes` và `totalViews` tổng hợp trên tất cả bài `PUBLISHED` của tác giả, độc lập với phân trang. Không có bài thì các tổng bằng `0`; `totalLikes` chỉ đếm phản ứng `LIKE`.
 - `GET /api/v1/me/profile` và `PUT /api/v1/me/profile` (cần Bearer token) luôn thao tác trên tài khoản trong phiên; không nhận `userId` (AC-23.8). Body `PUT`: `displayName` (bỏ khoảng trắng đầu cuối, 3–50 ký tự, không có ký tự điều khiển) và `bio` (bỏ khoảng trắng đầu cuối, tối đa 500 ký tự, rỗng lưu `NULL`) (Q58). Lỗi validation trả `400 VALIDATION_FAILED` kèm `errors[].field`. Tên mới hiện ngay trên hồ sơ và mọi bài của tác giả vì tác giả được đọc từ tài khoản hiện tại.
 - `POST /api/v1/me/profile/avatar` (cần Bearer token, `multipart/form-data`, trường `file`) nhận JPEG, PNG hoặc WebP tối đa 2 MB; Backend đọc chữ ký đầu tệp và yêu cầu khớp `Content-Type` (AC-23.5, AC-23.7). Ảnh lưu qua `StorageClient` của FR-14 trong thư mục `avatars/` (Q54); ảnh đại diện cũ do hệ thống lưu bị xóa sau khi lưu thành công. Response là `MemberProfileResponse` mới.
 - Administrator gọi `/me/profile` hoặc `/me/profile/avatar` nhận `403 MEMBER_ACCESS_REQUIRED`.
