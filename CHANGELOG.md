@@ -1,13 +1,74 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.94.0
+> **Version:** v2.96.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-22
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-22 — Align Public Profile Recipe Cards with Discovery
+
+**Status:** Working tree — not committed.
+
+**Scope:** Unify published recipe cards on public member and expert profiles with recipe discovery.
+
+### Added
+
+- None.
+
+### Changed
+
+- Reuse the shared recipe card with landscape covers, author details, cooking metadata, reaction percentage, view counts and save/meal-plan actions.
+- Adapt profile recipe grids from one to four columns while preserving pagination and author interaction totals.
+
+### Fixed
+
+- None.
+
+## 2026-10-21 — Add Public Ingredient Details
+
+**Status:** Working tree — not committed.
+
+**Scope:** Let users inspect active ingredient details and available nutrition data.
+
+### Added
+
+- Add a public detail endpoint and a responsive ingredient detail page with per-100 g nutrition values.
+- Display published recipe articles containing the ingredient directly on its detail page, with recipe diet labels, sorting and load-more pagination.
+- Open ingredient details from directory names/images and recipe ingredient names.
+- Show missing nutrition values as unavailable and keep recipe discovery filters from the directory and detail page.
+
+### Changed
+
+- Expand FR-62 to cover public ingredient details, images and nutrition while excluding administrative provenance and status fields.
+- Synchronize the discovery use case, component guides and public API integration conventions with the ingredient detail flow.
+
+### Fixed
+
+- None.
+
+## 2026-10-21 — Add Ingredient Reference Images
+
+**Status:** Working tree — not committed.
+
+**Scope:** Let administrators attach and manage an illustrative image for each ingredient in the catalog.
+
+### Added
+
+- Upload optional JPEG, PNG or WebP ingredient images up to 2 MB and persist their URLs with ingredient records.
+- Preview selected images in the admin editor and prefer saved images on ingredient cards, with existing image mappings as fallback.
+- Add the nullable `INGREDIENT.image_url` migration and synchronize the database schema snapshot.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- None.
 
 ## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 

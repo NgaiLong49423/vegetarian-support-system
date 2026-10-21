@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.34.0
+> **Version:** v0.35.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-21
 > **Status:** Active  
 
 # Backend Workspace
@@ -48,7 +48,7 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 - Đã có FR-23 (Issue #29): `GET /api/v1/members/{userId}` và `GET /api/v1/members/{userId}/recipes` công khai; `GET`/`PUT /api/v1/me/profile` và `POST /api/v1/me/profile/avatar` cho Member sửa tên, giới thiệu ngắn và ảnh đại diện (JPEG/PNG/WebP ≤ 2 MB, kiểm chữ ký tệp, lưu qua `StorageClient` trong thư mục `avatars/`). Không có migration: `USER.bio`, `display_name`, `avatar_url` có từ V1. Quy tắc chi tiết ở [API Guide mục 11](../../docs/api/API.md). Giới hạn multipart `spring.servlet.multipart.*` là 5 MB/tệp, 6 MB/request.
 - FR-40 (Issue #45): Recipe Post dùng nguyên liệu catalog chưa có hồ sơ dinh dưỡng vẫn công khai được (BR-50); AI menu dinh dưỡng (FR-36, `AiMenuService`) chỉ lấy ứng viên `PUBLISHED` có dinh dưỡng đầy đủ, nên bài loại này không vào pool và áp dụng menu chứa bài đó bị từ chối (AC-40.3, BR-40; test `IncompleteNutritionAiMenuIntegrationTest`).
 - Đã có FR-59 (Issue #69) trong module `auth`: `GET /api/v1/members/{userId}/follow` công khai (bộ đếm và trạng thái theo dõi của người xem), `PUT`/`DELETE` cùng đường dẫn để theo dõi/bỏ theo dõi (idempotent, khóa phạm vi chống ghi trùng khi gọi song song) và `GET /api/v1/members/{userId}/followers`, `/following` có phân trang cho tài khoản đã đăng nhập. Không có migration: `USER_FOLLOW` có từ V1. Quy tắc chi tiết ở [API Guide mục 17](../../docs/api/API.md).
-- FR-61/FR-62 bổ sung `GET /api/v1/experts` (danh bạ Expert đang hoạt động, tìm kiếm/phân trang, follower count và trạng thái following) cùng `GET /api/v1/ingredients/groups` và `GET /api/v1/ingredients` (chỉ dữ liệu công khai, catalog ACTIVE). Tái sử dụng `USER`, `USER_FOLLOW` và `INGREDIENT`; không thêm migration. OpenAPI snapshot phải được export từ runtime sau khi API thay đổi.
+- FR-61/FR-62 có `GET /api/v1/experts` (danh bạ Expert đang hoạt động, tìm kiếm/phân trang, follower count và trạng thái following) cùng `GET /api/v1/ingredients/groups`, `GET /api/v1/ingredients` và `GET /api/v1/ingredients/{ingredientId}`. Chi tiết nguyên liệu `ACTIVE` trả ảnh minh họa và chín chỉ tiêu dinh dưỡng trên 100 g; `NULL` là chưa biết, không chuyển thành 0. Nguyên liệu ngừng dùng và không tồn tại đều trả `404 INGREDIENT_NOT_FOUND`; API công khai không trả nguồn tham khảo, ngày tham khảo, trạng thái hoặc cờ hỗ trợ dinh dưỡng. Tái sử dụng catalog hiện có; xem [quy ước tích hợp FR-62](../../docs/api/API.md#20-danh-mục-và-chi-tiết-nguyên-liệu-công-khai--fr-62). OpenAPI snapshot được export từ runtime sau khi API thay đổi.
 - FR-23 bổ sung `GET /api/v1/members/{userId}/recipe-statistics`, tổng hợp số bài công khai, lượt LIKE và lượt xem của toàn bộ Recipe Post `PUBLISHED` của một Member; tái sử dụng `RECIPE_POST`, `RECIPE_REACTION` và `RECIPE_VIEW`, không thêm migration.
 - Đã có FR-46 (Issue #48) trong module `recipe`: `GET /api/v1/recipes/{recipeId}/comments` công khai (luồng gốc phân trang, reply lồng tối đa 5 cấp, tombstone), `POST` cùng đường dẫn để bình luận/trả lời, `PUT`/`DELETE /api/v1/comments/{commentId}` cho chủ bình luận. Không có migration: `COMMENT` có từ V1. Quy tắc chi tiết ở [API Guide mục 18](../../docs/api/API.md).
 

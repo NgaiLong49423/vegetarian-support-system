@@ -15,6 +15,7 @@ public interface IngredientRepository extends JpaRepository<IngredientEntity, Lo
     boolean existsByNameIgnoreCaseAndStatusAndIdNot(String name, CatalogStatus status, Long id);
     List<IngredientEntity> findByStatus(CatalogStatus status);
     List<IngredientEntity> findByIdInAndStatus(Collection<Long> ids, CatalogStatus status);
+    java.util.Optional<IngredientEntity> findByIdAndStatus(Long id, CatalogStatus status);
     List<IngredientEntity> findByNameContainingIgnoreCaseOrIngredientGroupContainingIgnoreCase(String name, String group);
 
     @Query("select distinct ingredient.ingredientGroup from IngredientEntity ingredient order by ingredient.ingredientGroup")

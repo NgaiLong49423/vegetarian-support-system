@@ -196,7 +196,8 @@ public class RecipeService {
                             ingredient.getVitaminB12MicrogramsPer100g(), ingredient.getZincMgPer100g())
                     : null;
             return new RecipeDetailResponse.Ingredient(line.getIngredientId(), name,
-                    ingredient == null ? null : ingredient.getIngredientGroup(), line.getQuantity(),
+                    ingredient == null ? null : ingredient.getIngredientGroup(),
+                    ingredient == null ? null : ingredient.getImageUrl(), line.getQuantity(),
                     line.getUnitId(), unit.getCode(), unit.getName(), nutritionSupported, nutrition);
         }).toList();
         var nutrition = nutritionService.calculate(recipeIngredients.stream().map(line -> {

@@ -93,6 +93,33 @@ class IngredientCatalogServiceTest {
         });
     }
 
+    @Test void publicDetailPreservesKnownZeroUnknownAndSmallMicronutrients() {
+        IngredientEntity ingredient = new IngredientEntity("Phô mai", "Sữa", "Private source", null, LocalDate.now());
+        org.springframework.test.util.ReflectionTestUtils.setField(ingredient, "id", 42L);
+        ingredient.setImageUrl("https://example.test/cheese.png");
+        ingredient.updateNutrition(new BigDecimal("333"), BigDecimal.TEN, BigDecimal.ZERO,
+                null, null, new BigDecimal("200"), null, new BigDecimal("0.0001"), null);
+        when(ingredientRepository.findByIdAndStatus(42L, CatalogStatus.ACTIVE)).thenReturn(Optional.of(ingredient));
+
+        var response = service.getPublicIngredient(42L);
+
+        assertThat(response.ingredientId()).isEqualTo(42L);
+        assertThat(response.imageUrl()).isEqualTo("https://example.test/cheese.png");
+        assertThat(response.nutrition().carbohydrateGramsPer100g()).isEqualByComparingTo("0");
+        assertThat(response.nutrition().totalFatGramsPer100g()).isNull();
+        assertThat(response.nutrition().vitaminB12MicrogramsPer100g()).isEqualByComparingTo("0.0001");
+    }
+
+    @Test void publicDetailDoesNotFallBackToInactiveOrUnfilteredRecords() {
+        when(ingredientRepository.findByIdAndStatus(42L, CatalogStatus.ACTIVE)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getPublicIngredient(42L)).isInstanceOfSatisfying(ApiException.class, error -> {
+            assertThat(error.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(error.getCode()).isEqualTo("INGREDIENT_NOT_FOUND");
+        });
+        org.mockito.Mockito.verify(ingredientRepository, org.mockito.Mockito.never()).findById(any());
+    }
+
     @Test void rejectsDuplicateIngredientName() {
         IngredientSaveRequest request = new IngredientSaveRequest("Đậu phụ", "Đậu hạt", "USDA FoodData Central", null, LocalDate.now());
         when(ingredientRepository.existsByNameIgnoreCaseAndStatus("Đậu phụ", CatalogStatus.ACTIVE)).thenReturn(true);

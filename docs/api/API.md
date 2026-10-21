@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.35.0
+> **Version:** v0.36.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-21
 > **Status:** Active
@@ -445,3 +445,30 @@ Response kết quả đơn gồm `orderCode` (string), `tier`, `amountVnd`, `sta
 - Trang kết quả phải hỏi Backend, không suy luận thành công từ URL quay về. Frontend chờ có giới hạn và cho kiểm tra lại; tài khoản giữ quyền hiện tại khi đơn còn chờ hoặc bị hủy. Không chấp nhận mock checkout/chữ ký giả ở runtime.
 
 Nguồn kỹ thuật payOS: [Payment API](https://payos.vn/docs/api/), [xác minh chữ ký](https://payos.vn/docs/tich-hop-webhook/kiem-tra-du-lieu-voi-signature/), [Return URL](https://payos.vn/docs/du-lieu-tra-ve/return-url/).
+
+## 20. Danh mục và chi tiết nguyên liệu công khai — FR-62
+
+Generated OpenAPI là contract chi tiết. Guest và Member có thể đọc danh mục và chi tiết mà không cần đăng nhập; request đã mang Bearer token vẫn tuân theo kiểm tra token hiện hành.
+
+| Endpoint | Cách tích hợp |
+| --- | --- |
+| `GET /api/v1/ingredients` | Danh sách phân trang chỉ gồm catalog `ACTIVE`, có tìm kiếm và lọc nhóm; mỗi mục trả `ingredientId`, `name`, `ingredientGroup`, `imageUrl`. FE tải các trang để duyệt/tìm/chọn nhiều nguyên liệu. |
+| `GET /api/v1/ingredients/groups` | Tên và số nguyên liệu đang hoạt động trong từng nhóm. |
+| `GET /api/v1/ingredients/{ingredientId}` | Chi tiết nguyên liệu đang hoạt động, bổ sung `nutrition` với giá trị trên 100 g. ID không tồn tại và nguyên liệu `INACTIVE` đều trả `404 INGREDIENT_NOT_FOUND`; ID không hợp lệ trả `400 VALIDATION_FAILED`. |
+
+`nutrition` giữ các chỉ tiêu và đơn vị sau; không nhân theo khẩu phần món hoặc tự suy diễn tỷ lệ quy đổi:
+
+| Trường | Đơn vị trên 100 g |
+| --- | --- |
+| `energyKcalPer100g` | kcal |
+| `proteinGramsPer100g`, `carbohydrateGramsPer100g`, `totalFatGramsPer100g`, `fiberGramsPer100g` | g |
+| `calciumMgPer100g`, `ironMgPer100g`, `zincMgPer100g` | mg |
+| `vitaminB12MicrogramsPer100g` | µg, giữ tối đa bốn chữ số thập phân |
+
+- Từng chỉ tiêu có thể là `null`, nghĩa là chưa biết. FE ghi rõ chưa có dữ liệu; số `0` là giá trị đã có và phải hiển thị 0. Khi tất cả chỉ tiêu là `null`, hiển thị trạng thái chưa có dinh dưỡng.
+- `imageUrl` lấy từ catalog. URL trống hoặc tải lỗi dùng trạng thái chưa có ảnh minh họa, không gán ảnh nguyên liệu khác.
+- Response công khai không có tên/URL nguồn, ngày tham khảo, trạng thái catalog hoặc cờ hỗ trợ tính dinh dưỡng. Các trường đó tiếp tục thuộc API quản trị.
+- Trang `/nguyen-lieu/:ingredientId` dùng API chi tiết; từ trang này mở `/kham-pha` với một ingredient ID. Danh mục vẫn chọn nhiều ID và tìm công thức theo semantics AND của FR-08.
+- Lỗi dịch vụ/kết nối cho phép thử lại; `404` cho biết nguyên liệu không còn khả dụng và cung cấp đường về danh mục.
+- Lưới bài viết trên chi tiết gọi `GET /api/v1/recipes/discovery` với `ingredientIds` bằng đúng ID đang xem, `size=9`, `page` tăng từ 0 và `sort=MOST_LIKED` hoặc `NEWEST`; Xem thêm theo `hasNext`, không tự hiển thị tổng số bài khi response không cung cấp tổng.
+- Các nhãn loại ăn chay dùng `vegetarianTypes` của `GET /api/v1/recipes/form-options`; chọn nhãn gửi thêm `vegetarianType` nhưng vẫn giữ `ingredientIds`. Đây là nhãn của công thức; API không khai báo độ phù hợp chế độ ăn của riêng nguyên liệu.

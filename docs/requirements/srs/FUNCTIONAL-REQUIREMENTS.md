@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.23.0
+> **Version:** v2.24.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-21
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -3889,7 +3889,7 @@ Customer và Expert đã đăng nhập có thể theo dõi/bỏ theo dõi qua h�
 ---
 
 <a id="fr-62"></a>
-### FR-62 — Chọn nguyên liệu và tìm công thức
+### FR-62 — Xem chi tiết nguyên liệu và tìm công thức
 
 - **Mã yêu cầu:** FR-62
 - **Module:** M01, M04
@@ -3897,17 +3897,23 @@ Customer và Expert đã đăng nhập có thể theo dõi/bỏ theo dõi qua h�
 
 #### Mục đích và phạm vi
 
-Hệ thống cung cấp trang công khai hiển thị toàn bộ nguyên liệu đang hoạt động trong danh mục chuẩn FR-18 dưới dạng các nhãn có thể chọn. Guest và Member có thể tìm trong danh sách, chọn một hoặc nhiều nguyên liệu và chuyển tới trang Khám phá với các bộ lọc đã chọn. API công thức giữ nguyên quy tắc FR-08 hiện tại: kết quả phải có đủ tất cả nguyên liệu được chọn.
+Hệ thống cung cấp trang công khai hiển thị toàn bộ nguyên liệu đang hoạt động trong danh mục chuẩn FR-18. Guest và Member có thể tìm nguyên liệu, mở trang chi tiết, xem ảnh minh họa và các chỉ tiêu dinh dưỡng có sẵn trên mỗi 100 g. Từ danh mục, người dùng chọn một hoặc nhiều nguyên liệu và chuyển tới trang Khám phá với các bộ lọc đã chọn; từ chi tiết, người dùng có thể tìm công thức theo riêng nguyên liệu đang xem. API công thức giữ nguyên quy tắc FR-08 hiện tại: kết quả phải có đủ tất cả nguyên liệu được chọn.
 
-Trang này là cách chọn trực tiếp từ điển nguyên liệu hiện có; không phân nhóm nhãn trong giao diện và không tạo taxonomy nhóm món ăn hoặc danh mục động mới. API công khai không trả trường nguồn quản trị, URL nguồn, dữ liệu dinh dưỡng hoặc trạng thái nội bộ ngoài các trường cần hiển thị.
+Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện có; không tạo taxonomy nhóm món ăn hoặc danh mục động mới. API công khai chỉ trả thông tin danh mục cần cho giao diện: ID, tên, nhóm, ảnh minh họa và các chỉ tiêu dinh dưỡng trên mỗi 100 g ở trang chi tiết. API không trả tên/URL nguồn tham chiếu, ngày tham khảo, trạng thái danh mục, cờ hỗ trợ tính dinh dưỡng hay trường quản trị khác. Chỉ nguyên liệu đang hoạt động mới có thể được liệt kê và xem chi tiết.
 
 #### Acceptance Criteria
 
-- **AC-62.1 — Toàn bộ nguyên liệu đang hoạt động:** Given catalog có nguyên liệu ở trạng thái `ACTIVE` và `INACTIVE`, When Guest mở trang danh mục, Then tất cả và chỉ các nguyên liệu `ACTIVE` được tải để hiển thị thành các nhãn.
-- **AC-62.2 — Tìm và chọn nhiều nhãn:** Given danh mục nguyên liệu đã tải, When người dùng tìm theo tên và chọn hoặc bỏ chọn nhãn, Then giao diện thể hiện đúng trạng thái đã chọn và hỗ trợ chọn nhiều nguyên liệu bằng chuột hoặc bàn phím.
+- **AC-62.1 — Toàn bộ nguyên liệu đang hoạt động:** Given catalog có nguyên liệu ở trạng thái `ACTIVE` và `INACTIVE`, When Guest mở trang danh mục, Then tất cả và chỉ các nguyên liệu `ACTIVE` được tải để hiển thị thành thẻ nguyên liệu.
+- **AC-62.2 — Tìm và chọn nhiều nguyên liệu:** Given danh mục nguyên liệu đã tải, When người dùng tìm theo tên và chọn hoặc bỏ chọn nguyên liệu từ thẻ, Then giao diện thể hiện đúng trạng thái đã chọn và hỗ trợ chọn nhiều nguyên liệu bằng chuột hoặc bàn phím.
 - **AC-62.3 — Tìm công thức theo nhiều nguyên liệu:** Given người dùng chọn một hoặc nhiều nguyên liệu đang hoạt động, When chọn Tìm công thức, Then trang Khám phá mở với đúng các ingredient ID đã chọn; công thức phải thỏa tất cả nguyên liệu theo semantics AND của FR-08.
-- **AC-62.4 — Không phân nhóm nhãn:** Given danh mục nguyên liệu được hiển thị, Then các nguyên liệu xuất hiện trong một danh sách nhãn thống nhất, không yêu cầu người dùng duyệt `ingredient_group` hoặc taxonomy món ăn.
-- **AC-62.5 — Hạn chế dữ liệu API công khai:** Given danh sách nhóm/nguyên liệu được trả về, Then chỉ có group name/count hoặc ingredient ID/name/group; không tiết lộ trường quản trị, nguồn tham chiếu hoặc dữ liệu dinh dưỡng.
+- **AC-62.4 — Duyệt danh sách nguyên liệu:** Given danh mục nguyên liệu được hiển thị, Then giao diện có thể cho biết nhóm của từng nguyên liệu nhưng không yêu cầu người dùng duyệt taxonomy nhóm món ăn để tìm hoặc chọn.
+- **AC-62.5 — Hạn chế dữ liệu API công khai:** Given danh sách nhóm/nguyên liệu hoặc chi tiết nguyên liệu được trả về, Then API chỉ có group name/count hoặc ingredient ID/name/group/image URL và các chỉ tiêu dinh dưỡng trên mỗi 100 g ở chi tiết; không tiết lộ nguồn tham chiếu, ngày tham khảo, trạng thái nội bộ, cờ hỗ trợ tính dinh dưỡng hoặc trường quản trị khác.
 - **AC-62.6 — Trạng thái giao diện:** Given danh mục đang tải, lỗi, rỗng hoặc có dữ liệu, Then UI hiển thị trạng thái tương ứng, có thể thử lại khi lỗi và các nhóm/nguyên liệu có thể thao tác bằng keyboard.
+- **AC-62.7 — Xem chi tiết nguyên liệu hoạt động:** Given nguyên liệu đang `ACTIVE`, When Guest hoặc Member mở chi tiết từ danh mục, Then trang hiển thị tên, nhóm, ảnh minh họa nếu có và bảng dinh dưỡng trên mỗi 100 g; ảnh trống/tải lỗi được nhận biết là chưa có ảnh; nguyên liệu `INACTIVE` hoặc ID không tồn tại trả cùng phản hồi không tìm thấy.
+- **AC-62.8 — Chỉ tiêu dinh dưỡng công khai:** Given chi tiết nguyên liệu được mở, Then bảng có thể hiển thị năng lượng, protein, carbohydrate, chất béo, chất xơ, canxi, sắt, vitamin B12 và kẽm; mỗi giá trị giữ đơn vị theo định nghĩa chỉ tiêu.
+- **AC-62.9 — Dữ liệu thiếu không phải số không:** Given một hoặc nhiều chỉ tiêu dinh dưỡng là `NULL`, When bảng dinh dưỡng được hiển thị, Then từng chỉ tiêu thiếu được ghi là chưa có dữ liệu, không chuyển thành `0`; nếu tất cả đều thiếu, UI hiển thị trạng thái chưa có dữ liệu dinh dưỡng.
+- **AC-62.10 — Tiếp tục tìm công thức:** Given người dùng đang xem chi tiết nguyên liệu, When chọn Tìm công thức, Then trang Khám phá mở với đúng ID nguyên liệu đó làm bộ lọc.
+- **AC-62.11 — Bài công thức có nguyên liệu:** Given người dùng mở chi tiết nguyên liệu, Then trang tải và hiển thị ngay các bài công thức công khai có liên kết đúng ingredient ID đó, hỗ trợ Xem thêm, sắp xếp mới nhất/được yêu thích và mở từng bài; lỗi trang tiếp theo giữ các bài đã tải và cho thử lại đúng trang bị lỗi.
+- **AC-62.12 — Nhãn lọc loại món:** Given trang chi tiết hiển thị bài công thức liên quan, Then các nhãn loại ăn chay lấy từ lựa chọn chuẩn của hệ thống và lọc đồng thời với ingredient ID; nhãn mô tả loại của công thức, không tự suy ra nguyên liệu phù hợp hoặc vi phạm một chế độ ăn khi catalog chưa có dữ liệu phân loại đó.
 
 ---

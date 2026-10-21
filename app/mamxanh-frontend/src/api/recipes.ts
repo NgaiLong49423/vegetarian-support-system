@@ -75,6 +75,8 @@ export interface RecipeDetail {
   ingredients: Array<{
     ingredientId: number;
     name: string;
+    /** Reference image from the ingredient catalog; null means render an empty image slot. */
+    imageUrl: string | null;
     quantity: number;
     unitId: number;
     unitCode: string;

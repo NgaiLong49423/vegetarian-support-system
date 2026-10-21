@@ -3295,6 +3295,70 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/admin/ingredients/{ingredientId}/image:
+    post:
+      tags:
+      - admin-catalog-controller
+      operationId: uploadIngredientImage
+      parameters:
+      - name: ingredientId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "200":
+          description: The uploaded ingredient image URL.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIngredientImageResponse"
+        "400":
+          description: VALIDATION_FAILED or UNSUPPORTED_IMAGE_TYPE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: INGREDIENT_NOT_FOUND.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "413":
+          description: "FILE_TOO_LARGE: image exceeds 2 MB."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/expert-applications/{id}/reject:
     post:
       tags:
@@ -4733,6 +4797,40 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /api/v1/ingredients/{ingredientId}:
+    get:
+      tags:
+      - public-ingredient-browse-controller
+      summary: Get public details for an active ingredient
+      operationId: ingredient
+      parameters:
+      - name: ingredientId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          exclusiveMinimum: 0
+      responses:
+        "200":
+          description: Active ingredient with available per-100 g nutrition.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PublicIngredientDetailResponse"
+        "404":
+          description: "INGREDIENT_NOT_FOUND: ingredient does not exist or is inactive."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/ingredients/groups:
     get:
       tags:
@@ -6076,23 +6174,51 @@ components:
       type: object
       properties:
         energyKcalPer100g:
-          type: number
+          type:
+          - number
+          - "null"
+          description: Energy in kcal per 100 g; null means unknown.
         proteinGramsPer100g:
-          type: number
+          type:
+          - number
+          - "null"
+          description: Protein in g per 100 g; null means unknown.
         carbohydrateGramsPer100g:
-          type: number
+          type:
+          - number
+          - "null"
+          description: Carbohydrate in g per 100 g; null means unknown.
         totalFatGramsPer100g:
-          type: number
+          type:
+          - number
+          - "null"
+          description: Total fat in g per 100 g; null means unknown.
         fiberGramsPer100g:
-          type: number
+          type:
+          - number
+          - "null"
+          description: Fiber in g per 100 g; null means unknown.
         calciumMgPer100g:
-          type: number
+          type:
+          - number
+          - "null"
+          description: Calcium in mg per 100 g; null means unknown.
         ironMgPer100g:
-          type: number
+          type:
+          - number
+          - "null"
+          description: Iron in mg per 100 g; null means unknown.
         vitaminB12MicrogramsPer100g:
-          type: number
+          type:
+          - number
+          - "null"
+          description: "Vitamin B12 in micrograms per 100 g, up to four decimal places;\
+            \ null means unknown."
         zincMgPer100g:
-          type: number
+          type:
+          - number
+          - "null"
+          description: Zinc in mg per 100 g; null means unknown.
     IngredientResponse:
       type: object
       properties:
@@ -6104,6 +6230,8 @@ components:
         ingredientGroup:
           type: string
         sourceName:
+          type: string
+        imageUrl:
           type: string
         sourceUrl:
           type: string
@@ -6590,16 +6718,16 @@ components:
           additionalProperties: {}
         signature:
           type: string
-        paymentLinkId:
-          type: string
+        amount:
+          type: integer
+          format: int32
         paymentSuccess:
           type: boolean
         orderCode:
           type: integer
           format: int64
-        amount:
-          type: integer
-          format: int32
+        paymentLinkId:
+          type: string
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -6924,6 +7052,26 @@ components:
           minLength: 0
       required:
       - token
+    ApiResponseIngredientImageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/IngredientImageResponse"
+        timestamp:
+          type: string
+          format: date-time
+    IngredientImageResponse:
+      type: object
+      properties:
+        ingredientId:
+          type: integer
+          format: int64
+        imageUrl:
+          type: string
     ReviewRequest:
       type: object
       properties:
@@ -7507,6 +7655,30 @@ components:
           type: string
         ingredientGroup:
           type: string
+        imageUrl:
+          type:
+          - string
+          - "null"
+          description: Optional ingredient illustration URL.
+    PublicIngredientDetailResponse:
+      type: object
+      properties:
+        ingredientId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        ingredientGroup:
+          type: string
+        imageUrl:
+          type:
+          - string
+          - "null"
+          description: Optional ingredient illustration URL.
+        nutrition:
+          $ref: "#/components/schemas/IngredientNutritionResponse"
+          description: Nutrition per 100 g. Null means unknown; zero is a known zero
+            value.
     PublicIngredientGroupResponse:
       type: object
       properties:
@@ -7609,6 +7781,8 @@ components:
         ingredientGroup:
           type: string
         sourceName:
+          type: string
+        imageUrl:
           type: string
         sourceUrl:
           type: string

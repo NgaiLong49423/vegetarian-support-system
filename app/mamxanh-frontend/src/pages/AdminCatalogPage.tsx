@@ -103,7 +103,14 @@ function IngredientCard({
   onToggleActive,
 }: IngredientCardProps) {
   const [imageError, setImageError] = useState(false);
-  const rawImageUrl = getIngredientImageUrl(item.name);
+  const [savedImageError, setSavedImageError] = useState(false);
+  useEffect(() => {
+    setImageError(false);
+    setSavedImageError(false);
+  }, [item.imageUrl, item.name]);
+  const rawImageUrl = item.imageUrl && !savedImageError
+    ? item.imageUrl
+    : getIngredientImageUrl(item.name);
   const groupVisual = getIngredientGroupVisual(item.ingredientGroup);
   const showImage = Boolean(rawImageUrl && !imageError);
 
@@ -123,7 +130,10 @@ function IngredientCard({
             src={rawImageUrl!}
             alt={item.name}
             loading="lazy"
-            onError={() => setImageError(true)}
+            onError={() => {
+              if (item.imageUrl && !savedImageError) setSavedImageError(true);
+              else setImageError(true);
+            }}
             className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
           />
         ) : (
@@ -347,6 +357,9 @@ export function AdminCatalogPage() {
     sources: [...STANDARD_DATA_SOURCES],
   });
   const [ingredientId, setIngredientId] = useState<number | null>(null);
+  const [ingredientImageFile, setIngredientImageFile] = useState<File | null>(null);
+  const [ingredientImagePreview, setIngredientImagePreview] = useState<string | null>(null);
+  const [ingredientImageUrl, setIngredientImageUrl] = useState<string | null>(null);
   const [ingredientEditorOpen, setIngredientEditorOpen] = useState(false);
   const [nutritionTarget, setNutritionTarget] = useState<CatalogIngredient | null>(null);
   const [nutritionEnabled, setNutritionEnabled] = useState(false);
@@ -365,6 +378,16 @@ export function AdminCatalogPage() {
   const [notice, setNotice] = useState('');
   const [guideOpen, setGuideOpen] = useState(true);
   const searchTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (!ingredientImageFile) {
+      setIngredientImagePreview(ingredientImageUrl);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(ingredientImageFile);
+    setIngredientImagePreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [ingredientImageFile, ingredientImageUrl]);
 
   const refresh = async (filters = ingredientFilters) => {
     setLoading(true);
@@ -431,6 +454,14 @@ export function AdminCatalogPage() {
 
   const submitIngredient = (event: FormEvent) => {
     event.preventDefault();
+    if (ingredientImageFile && !['image/jpeg', 'image/png', 'image/webp'].includes(ingredientImageFile.type)) {
+      setError('Ảnh nguyên liệu phải là JPEG, PNG hoặc WebP.');
+      return;
+    }
+    if (ingredientImageFile && ingredientImageFile.size > 2 * 1024 * 1024) {
+      setError('Ảnh nguyên liệu tối đa 2 MB.');
+      return;
+    }
     const body = {
       ...ingredientForm,
       name: ingredientForm.name.trim(),
@@ -439,16 +470,22 @@ export function AdminCatalogPage() {
       sourceUrl: ingredientForm.sourceUrl.trim() || null,
     };
     void perform(
-      () =>
-        ingredientId === null
-          ? adminCatalogApi.createIngredient(body)
-          : adminCatalogApi.updateIngredient(ingredientId, body),
+      async () => {
+        const saved = ingredientId === null
+          ? await adminCatalogApi.createIngredient(body)
+          : await adminCatalogApi.updateIngredient(ingredientId, body);
+        // Keep the created ID if upload fails so retrying will update this ingredient instead of duplicating it.
+        setIngredientId(saved.id);
+        if (ingredientImageFile) await adminCatalogApi.uploadIngredientImage(saved.id, ingredientImageFile);
+      },
       ingredientId === null
         ? 'Đã thêm nguyên liệu.'
         : 'Đã cập nhật nguyên liệu.',
       () => {
         setIngredientEditorOpen(false);
         setIngredientId(null);
+        setIngredientImageFile(null);
+        setIngredientImageUrl(null);
         setIngredientForm({
           name: '',
           ingredientGroup: '',
@@ -466,6 +503,8 @@ export function AdminCatalogPage() {
     setReferencesTarget(null);
     setIngredientEditorOpen(true);
     setIngredientId(ingredient.id);
+    setIngredientImageFile(null);
+    setIngredientImageUrl(ingredient.imageUrl);
     setIngredientForm({
       name: ingredient.name,
       ingredientGroup: normalizeIngredientGroup(ingredient.ingredientGroup),
@@ -608,6 +647,8 @@ export function AdminCatalogPage() {
     setReferencesTarget(null);
     setNutritionTarget(null);
     setIngredientId(null);
+    setIngredientImageFile(null);
+    setIngredientImageUrl(null);
     setIngredientForm({
       name: '',
       ingredientGroup: '',
@@ -1113,6 +1154,27 @@ export function AdminCatalogPage() {
                       placeholder="https://..."
                     />
                   </Field>
+                  <div>
+                    <label className={labelClass} htmlFor="ingredient-reference-image">Ảnh minh họa nguyên liệu</label>
+                    <input
+                      id="ingredient-reference-image"
+                      className={fieldClass}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        setIngredientImageFile(file);
+                        setError('');
+                      }}
+                    />
+                    <p className="mt-1 text-xs leading-5 text-ink-muted">Không bắt buộc. JPEG, PNG hoặc WebP, tối đa 2 MB. Ảnh sẽ được dùng thay ảnh minh họa mặc định.</p>
+                    {ingredientImagePreview && (
+                      <div className="mt-3 flex items-center gap-3">
+                        <img src={ingredientImagePreview} alt="Xem trước ảnh nguyên liệu" className="h-20 w-20 rounded-xl border border-brand-200 object-cover" />
+                        <span className="text-xs text-ink-muted">{ingredientImageFile ? ingredientImageFile.name : 'Ảnh hiện tại'}</span>
+                      </div>
+                    )}
+                  </div>
                   <p className="-mt-2 text-xs leading-5 text-ink-muted">
                     USDA/NIH và đường dẫn tham khảo không bắt buộc. Ghi rõ nguồn do người nhập hoặc AI tạo; có thể bật tính khi đã có ít nhất một chỉ tiêu.
                   </p>

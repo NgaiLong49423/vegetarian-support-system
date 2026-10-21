@@ -11,6 +11,7 @@ import {
   Clock3,
   Download,
   Eye,
+  ImageOff,
   Leaf,
   LoaderCircle,
   MessageCircle,
@@ -55,6 +56,38 @@ function publishedDate(value: string) {
 function formatNumber(value: number | null | undefined, maximumFractionDigits = 2) {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'Chưa có dữ liệu';
   return new Intl.NumberFormat('vi-VN', { maximumFractionDigits }).format(value);
+}
+
+function IngredientThumbnail({ imageUrl }: { imageUrl: string | null }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(imageUrl) && !imageFailed;
+
+  return (
+    <div
+      role="img"
+      aria-label={showImage ? 'Ảnh minh họa nguyên liệu' : 'Chưa có ảnh minh họa'}
+      className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border sm:h-16 sm:w-16 ${
+        showImage
+          ? 'border-black/10 bg-white shadow-sm'
+          : 'border-dashed border-brand-200 bg-raised/70 text-ink-muted'
+      }`}
+    >
+      {showImage ? (
+        <img
+          src={imageUrl!}
+          alt=""
+          loading="lazy"
+          onError={() => setImageFailed(true)}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span className="flex flex-col items-center gap-1 px-1 text-center">
+          <ImageOff aria-hidden="true" className="h-5 w-5 text-brand-500" />
+          <span className="text-[9px] font-medium leading-tight">Chưa có ảnh</span>
+        </span>
+      )}
+    </div>
+  );
 }
 
 function getYoutubeEmbedUrl(rawUrl: string) {
@@ -368,28 +401,43 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
     <div className="mb-8 grid gap-6 lg:grid-cols-12 lg:items-start">
       {/* Cột trái (7 cột): Nguyên liệu, Cách làm, Video */}
       <div className="flex flex-col gap-6 lg:col-span-7">
-        <Card id="nguyen-lieu" className="p-5 sm:p-7">
+        <Card id="nguyen-lieu" className="overflow-hidden p-5 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Chuẩn bị vào bếp</p><h2 className="mt-1 text-xl font-extrabold text-ink">Nguyên liệu</h2></div>
-            {fromMealPlan ? <MealPlanRecipeServings key={planContextKey} recipeId={recipeId} servings={servings} onChange={setServings} /> : <div className="recipe-detail-no-print flex items-center gap-2 rounded-xl bg-brand-50 p-1">
-              <button type="button" aria-label="Giảm khẩu phần" disabled={servings <= 1} onClick={() => setServings((value) => Math.max(1, value - 1))} className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"><Minus className="h-4 w-4" /></button>
-              <span className="min-w-20 text-center text-sm font-bold text-ink">{servings} phần</span>
-              <button type="button" aria-label="Tăng khẩu phần" disabled={servings >= 50} onClick={() => setServings((value) => Math.min(50, value + 1))} className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"><Plus className="h-4 w-4" /></button>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-600">Chuẩn bị vào bếp</p>
+              <div className="mt-1 flex items-center gap-2.5">
+                <h2 className="text-xl font-extrabold text-ink sm:text-2xl">Nguyên liệu</h2>
+                <span className="rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-xs font-bold text-brand-700">
+                  {(recipe.ingredients ?? []).length} món
+                </span>
+              </div>
+            </div>
+            {fromMealPlan ? <MealPlanRecipeServings key={planContextKey} recipeId={recipeId} servings={servings} onChange={setServings} /> : <div aria-label="Điều chỉnh khẩu phần" className="recipe-detail-no-print inline-flex items-center gap-1 rounded-full border border-brand-100 bg-raised/70 p-1">
+              <button type="button" aria-label="Giảm khẩu phần" disabled={servings <= 1} onClick={() => setServings((value) => Math.max(1, value - 1))} className="flex h-9 w-9 items-center justify-center rounded-full text-brand-600 transition-colors hover:bg-paper hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"><Minus className="h-4 w-4" /></button>
+              <span className="min-w-20 text-center text-sm font-bold tabular-nums text-ink">{servings} phần</span>
+              <button type="button" aria-label="Tăng khẩu phần" disabled={servings >= 50} onClick={() => setServings((value) => Math.min(50, value + 1))} className="flex h-9 w-9 items-center justify-center rounded-full text-brand-600 transition-colors hover:bg-paper hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"><Plus className="h-4 w-4" /></button>
             </div>}
           </div>
-          <p className="mt-2 text-sm text-ink-muted">Định lượng được tính theo {servings} phần ăn.</p>
-          <ul className="mt-4 divide-y divide-brand-100">
+          <div className="mt-4 flex items-center justify-between gap-3 border-b border-brand-100 pb-3">
+            <p className="text-sm text-ink-muted">Định lượng cho {servings} phần ăn</p>
+            <p className="text-xs font-medium text-ink-muted">Đã chuẩn bị {checkedIngredients.length}/{(recipe.ingredients ?? []).length}</p>
+          </div>
+          <ul className="mt-2 divide-y divide-brand-100/80">
             {(recipe.ingredients ?? []).map((item, index) => {
               const isChecked = checkedIngredients.includes(index);
               const scaled = recipe.servings > 0 ? item.quantity * servings / recipe.servings : item.quantity;
-              return <li key={`${item.ingredientId ?? item.name}-${index}`} className="flex items-center gap-3 py-3">
-                <button type="button" aria-label={`${isChecked ? 'Bỏ chọn' : 'Đánh dấu'} ${item.name}`} aria-pressed={isChecked} onClick={() => setCheckedIngredients((current) => isChecked ? current.filter((checked) => checked !== index) : [...current, index])} className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${isChecked ? 'border-leaf-600 bg-leaf-600 text-white' : 'border-brand-300 bg-paper'}`}>{isChecked && <Check className="h-3.5 w-3.5" />}</button>
-                <span className={`min-w-0 flex-1 text-sm ${isChecked ? 'text-ink-muted line-through' : 'text-ink-soft'}`}>{item.name}{item.nutritionSupported === false && <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">Chưa hỗ trợ tính dinh dưỡng</span>}</span>
-                <strong className="shrink-0 text-right text-sm text-ink">{formatNumber(scaled)} {item.unitCode || item.unitName}</strong>
+              return <li key={`${item.ingredientId ?? item.name}-${index}`} className={`group flex min-w-0 items-center gap-3 rounded-xl px-2 py-3 transition-colors sm:gap-4 ${isChecked ? 'bg-leaf-50/60' : 'hover:bg-raised/45'}`}>
+                <IngredientThumbnail key={item.imageUrl ?? 'no-image'} imageUrl={item.imageUrl} />
+                <button type="button" aria-label={`${isChecked ? 'Bỏ chọn' : 'Đánh dấu'} ${item.name}`} aria-pressed={isChecked} onClick={() => setCheckedIngredients((current) => isChecked ? current.filter((checked) => checked !== index) : [...current, index])} className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${isChecked ? 'border-leaf-600 bg-leaf-600 text-white' : 'border-brand-300 bg-paper group-hover:border-brand-500'}`}>{isChecked && <Check className="h-3.5 w-3.5" />}</button>
+                <div className="min-w-0 flex-1">
+                  <p className={`break-words text-sm font-semibold leading-5 sm:text-base ${isChecked ? 'text-ink-muted line-through decoration-ink-muted/70' : 'text-ink'}`}><Link to={`/nguyen-lieu/${item.ingredientId}`} className="underline decoration-brand-200 underline-offset-4 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-brand-600">{item.name}</Link></p>
+                  {item.nutritionSupported === false && <span className="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">Chưa hỗ trợ tính dinh dưỡng</span>}
+                </div>
+                <strong className="shrink-0 rounded-lg bg-raised/80 px-2.5 py-1.5 text-right text-xs font-bold tabular-nums text-ink sm:px-3 sm:text-sm">{formatNumber(scaled)} {item.unitCode || item.unitName}</strong>
               </li>;
             })}
           </ul>
-          {(recipe.ingredients ?? []).length === 0 && <p className="mt-4 text-sm text-ink-muted">Chưa có nguyên liệu cho công thức này.</p>}
+          {(recipe.ingredients ?? []).length === 0 && <p className="mt-4 rounded-xl border border-dashed border-brand-200 px-4 py-6 text-center text-sm text-ink-muted">Chưa có nguyên liệu cho công thức này.</p>}
         </Card>
 
         <Card id="cach-lam" className="p-5 sm:p-7">

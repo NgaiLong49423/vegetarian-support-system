@@ -85,6 +85,7 @@ CREATE TABLE [INGREDIENT] (
     name                  NVARCHAR(200)  NOT NULL,
     ingredient_group      NVARCHAR(100)  NOT NULL
         CONSTRAINT DF_INGREDIENT_ingredient_group DEFAULT N'Khác',
+    image_url             NVARCHAR(2048) NULL,
     energy_kcal_100g      DECIMAL(10,2)  NULL,
     protein_g_100g        DECIMAL(10,2)  NULL,
     carbohydrate_g_100g   DECIMAL(10,2)  NULL,
