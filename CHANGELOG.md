@@ -1,11 +1,13 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.93.0
+> **Version:** v2.94.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-21
 > **Status:** Active
 
 # Changelog
+
+Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
 ## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
@@ -26,34 +28,26 @@
 - Permit guest reads of the documented public recipe-statistics endpoint.
 - Preserve Vietnamese characters when binding ingredient search patterns on SQL Server.
 
-## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
+## 2026-10-20 — Remove Standalone Meal Plan Export (Issue #152)
 
-**Status:** Committed — `3106850`.
+**Status:** Committed — `5ac1614`.
 
-**Scope:** Add public expert discovery, ingredient-group browsing, Explore entry points and per-post engagement counts on public profiles.
+**Scope:** Remove the standalone weekly meal-plan export from the active requirements and implementation while preserving the FR-37 nutrition report PDF with its planned-meal list.
 
 ### Added
 
-- Add a searchable, paginated active-expert directory with public profile fields and follow actions backed by existing follow APIs.
-- Add a searchable catalog of active ingredients presented as selectable labels for recipe discovery.
-- Add four generated, locally hosted portraits for the seeded Expert demo accounts.
-- Add backend read endpoints for expert directory and public ingredient catalog data without schema changes.
-- Present public profile recipes as a social-style image grid with each post's API-backed view and like counts.
-- Show profile-wide totals for views and likes across all published recipes, independent of the current recipe page.
+- None.
 
 ### Changed
 
-- Expand the Explore navigation menu on desktop and mobile to include recipes, ingredient groups and experts; keep community accessible through the existing Home entry point.
-- Align the Explore dropdown trigger with the shared orange navigation hover indicator.
-- Replace ingredient group cards and per-ingredient rows with a single multi-select label list that preserves the recipe filter's all-selected-ingredients rule.
-- Add FR-61 and FR-62 to the current requirements registry and detailed specifications.
-- Add a public recipe-statistics endpoint that aggregates likes and views across every published recipe by author; no database migration is required.
+- Remove the standalone meal-plan export use case and acceptance criterion from FR-33 and its linked interaction flow; remove its Frontend controls, file-generation helper, Backend endpoint, service, and response DTO.
+- Remove the standalone export dependency and obsolete UI, Backend, and SQL integration checks.
+- Remove the obsolete endpoint description from the API guide; the generated OpenAPI snapshot still requires regeneration from a running Backend.
+- Clarify that recipe exports, FR-37 nutrition report PDFs, and Shopping List text export remain in scope.
 
 ### Fixed
 
 - None.
-
-Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
 ## 2026-10-20 — Correct Subscription Time Display and Transaction Expiry ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
@@ -100,6 +94,33 @@ None.
 - Seed core recipe ingredients before applying catalog nutrition so supported entries such as sweet potato are enriched correctly.
 
 - Fill the remaining macro, fiber and B12 estimates for all AI-estimated demo ingredients so those fixtures no longer have missing nutrition metrics.
+
+## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
+
+**Status:** Committed — `3106850`.
+
+**Scope:** Add public expert discovery, ingredient-group browsing, Explore entry points and per-post engagement counts on public profiles.
+
+### Added
+
+- Add a searchable, paginated active-expert directory with public profile fields and follow actions backed by existing follow APIs.
+- Add a searchable catalog of active ingredients presented as selectable labels for recipe discovery.
+- Add four generated, locally hosted portraits for the seeded Expert demo accounts.
+- Add backend read endpoints for expert directory and public ingredient catalog data without schema changes.
+- Present public profile recipes as a social-style image grid with each post's API-backed view and like counts.
+- Show profile-wide totals for views and likes across all published recipes, independent of the current recipe page.
+
+### Changed
+
+- Expand the Explore navigation menu on desktop and mobile to include recipes, ingredient groups and experts; keep community accessible through the existing Home entry point.
+- Align the Explore dropdown trigger with the shared orange navigation hover indicator.
+- Replace ingredient group cards and per-ingredient rows with a single multi-select label list that preserves the recipe filter's all-selected-ingredients rule.
+- Add FR-61 and FR-62 to the current requirements registry and detailed specifications.
+- Add a public recipe-statistics endpoint that aggregates likes and views across every published recipe by author; no database migration is required.
+
+### Fixed
+
+- None.
 
 ## 2026-10-19 — Refresh Landing Previews and Scroll Motion ([PR #157](https://github.com/NgaiLong49423/vegetarian-support-system/pull/157))
 

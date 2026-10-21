@@ -4680,49 +4680,6 @@ paths:
             application/pdf: {}
       security:
       - bearerAuth: []
-  /api/v1/meal-plans/{weekStartDate}/export:
-    get:
-      tags:
-      - meal-plan-export-controller
-      summary: Read the authenticated member's weekly export snapshot
-      description: For PDF/TXT generation. No owner parameter. Missing nutrition remains
-        null; unavailable sources disclose no content.
-      operationId: getExport
-      parameters:
-      - name: weekStartDate
-        in: path
-        required: true
-        schema:
-          type: string
-          format: date
-      responses:
-        "200":
-          description: "Private export snapshot; Cache-Control: no-store."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MealPlanExportResponse"
-        "400":
-          description: Invalid Monday week start.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: Authentication required.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: Active Member required; Administrator cannot export private
-            schedules.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-      security:
-      - bearerAuth: []
   /api/v1/ingredients:
     get:
       tags:
@@ -6635,14 +6592,14 @@ components:
           type: string
         paymentLinkId:
           type: string
+        paymentSuccess:
+          type: boolean
         orderCode:
           type: integer
           format: int64
         amount:
           type: integer
           format: int32
-        paymentSuccess:
-          type: boolean
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -7521,38 +7478,6 @@ components:
           type: array
           items:
             type: string
-    ExportEntry:
-      type: object
-      properties:
-        mealDate:
-          type: string
-          format: date
-        mealType:
-          type: string
-        title:
-          type: string
-        plannedServings:
-          type:
-          - number
-          - "null"
-        energyKcal:
-          type:
-          - number
-          - "null"
-          description: Per-serving energy multiplied by saved planned servings; null
-            when incomplete.
-        available:
-          type: boolean
-    MealPlanExportResponse:
-      type: object
-      properties:
-        weekStartDate:
-          type: string
-          format: date
-        entries:
-          type: array
-          items:
-            $ref: "#/components/schemas/ExportEntry"
     PageResponsePublicIngredientResponse:
       type: object
       properties:
