@@ -9,7 +9,7 @@
 
 ## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `51b706b`.
 
 **Scope:** Resolve integration failures exposed while validating the payment fixes against the current develop baseline.
 
