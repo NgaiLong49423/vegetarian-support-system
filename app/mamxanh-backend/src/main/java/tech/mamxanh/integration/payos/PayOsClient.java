@@ -9,7 +9,8 @@ import tech.mamxanh.integration.payos.dto.PayOsWebhookPayload;
 public interface PayOsClient {
 
     /**
-     * Creates a payment link via payOS API /v2/payment-requests.
+     * Creates a payment link via payOS API /v2/payment-requests. Implementations must verify
+     * the signed provider response, order identity, amount and hosted HTTPS checkout URL.
      *
      * @param orderCode   unique numeric order code
      * @param amount      payment amount in VND
@@ -24,5 +25,8 @@ public interface PayOsClient {
      * @param payload the incoming webhook body
      * @return true if signature is valid, false otherwise
      */
+    /** Returns only authenticated, signature-verified provider data, or throws a safe provider error. */
+    tech.mamxanh.integration.payos.dto.PayOsPaymentInfo getPaymentInfo(long orderCode);
+
     boolean verifyWebhook(PayOsWebhookPayload payload);
 }

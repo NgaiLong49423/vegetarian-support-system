@@ -1,6 +1,6 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.8.0
+> **Version:** v2.9.0
 > **Created:** 2026-09-11
 > **Last Updated:** 2026-10-20
 > **Status:** Active
@@ -21,7 +21,7 @@ Baseline v2.0.0 giữ các requirement hiện hành và stable ID đã được 
 
 ## 2. Mô tả sản phẩm
 
-Định hướng cập nhật ngày 22/09/2026: **Mâm Xanh là nền tảng ẩm thực chay chuyên nghiệp, đóng vai trò là sân chơi của các Chuyên gia ẩm thực chay chia sẻ công thức chuẩn mực; người dùng thông thường (Customer) khám phá món ăn, bình chọn Like/Dislike, xem tỷ lệ % hài lòng, bình luận, lưu món vào thực đơn ngày/tuần, xuất file công thức/thực đơn và nhận gợi ý AI từ các bài viết uy tín của Chuyên gia.**
+Định hướng cập nhật ngày 22/09/2026: **Mâm Xanh là nền tảng ẩm thực chay chuyên nghiệp, đóng vai trò là sân chơi của các Chuyên gia ẩm thực chay chia sẻ công thức chuẩn mực; người dùng thông thường (Customer) khám phá món ăn, bình chọn Like/Dislike, xem tỷ lệ % hài lòng, bình luận, lưu món vào thực đơn ngày/tuần, xuất file công thức và báo cáo PDF dinh dưỡng có kèm thực đơn dự kiến, đồng thời nhận gợi ý AI từ các bài viết uy tín của Chuyên gia.**
 
 Luồng lõi: Chuyên gia chia sẻ công thức chuẩn → Người dùng khai báo sở thích → Khám phá món / nhận gợi ý AI từ công thức công khai của Chuyên gia → Chọn món → Lưu vào thực đơn ngày hoặc tuần → So sánh thống kê dinh dưỡng tuần → Xuất file công thức/thực đơn/báo cáo PDF → Chọn món thay thế khi cần. Người dùng thông thường không được tự do đăng bài nhằm đảm bảo chất lượng chuyên môn; Customer có thể nộp đơn theo format để được xét duyệt nâng cấp thành Chuyên gia.
 
@@ -47,7 +47,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - Khám phá thêm danh bạ Chuyên gia đang hoạt động có tìm kiếm, hồ sơ công khai và follow theo FR-59; danh mục nguyên liệu hiển thị tất cả nguyên liệu hoạt động dưới dạng nhãn chọn nhiều và mở công thức đã lọc (`FR-61`, `FR-62`).
 - Hồ sơ công khai hiển thị tổng lượt thích và lượt xem của tất cả Recipe Post đang công khai của tác giả; thống kê không phụ thuộc trang phân trang đang xem (`FR-23`).
 - Kiểm duyệt sau đăng: người dùng báo cáo nội dung có vấn đề và Administrator xử lý báo cáo. Baseline hiện tại không cung cấp AI quét hoặc gắn cờ nội dung.
-- Người dùng: tìm kiếm/lọc, xem nội dung, tương tác cộng đồng, lưu công thức (`Saved Recipe`), lập thực đơn ngày/tuần (`Meal Plan`), so sánh thống kê dinh dưỡng tuần, và **xuất file công thức (.txt/.pdf) / thực đơn (.txt/.pdf) / báo cáo phân tích dinh dưỡng tuần có thống kê và so sánh 7 ngày (PDF chuẩn A4) / danh sách mua sắm (.txt)**.
+- Người dùng: tìm kiếm/lọc, xem nội dung, tương tác cộng đồng, lưu công thức (`Saved Recipe`), lập thực đơn ngày/tuần (`Meal Plan`), so sánh thống kê dinh dưỡng tuần, và **xuất file công thức (.txt/.pdf) / báo cáo dinh dưỡng ngày hoặc tuần (.pdf, gồm thực đơn dự kiến) / danh sách mua sắm (.txt)**.
 - AI Gemini: hỏi đáp/gợi ý với Guest Free, Free, Plus và Pro theo gói tính năng (Feature-based Entitlement).
 - Quản trị: quản lý người dùng, từ điển nguyên liệu, đơn vị đo lường `UNIT` và bảng quy đổi nguyên liệu `INGREDIENT_UNIT_CONVERSION`, video nhúng, bình luận, nội dung bị gắn cờ và thẩm định đơn Chuyên gia. Không quản lý bảng danh mục động.
 - Danh sách mua sắm cơ bản (`Shopping List`): Tạo danh sách từ Meal Plan hoặc Recipe; nguyên liệu chuẩn hóa theo 3 chiều đo lường (`MASS`, `VOLUME`, `COUNT`), gom nguyên liệu cùng chiều an toàn; cấm hoàn toàn giá trị phi số học như “vừa đủ”. Danh sách được phân nhóm theo danh mục và cho phép thêm/sửa/xóa item thủ công, tick đã mua, copy clipboard, xuất file.
@@ -384,7 +384,7 @@ Bảng dưới là baseline cấp cao; các gói Free/Plus/Pro là quyền sử 
 | Actor | Trạng thái | Mục tiêu chính | Không được làm |
 | --- | --- | --- | --- |
 | Guest | Chưa đăng nhập | Xem bài công thức công khai, tìm kiếm và dùng Guest Free AI | Đăng/bình luận, gửi báo cáo bài, xem lịch sử, lập thực đơn cá nhân hóa. |
-| Customer (Authorized User) | Đã đăng nhập | Xem chi tiết món, bình chọn Like/Dislike bài công thức, bình luận/reply, lưu công thức (`Saved Recipe`), lập thực đơn ngày/tuần (`Meal Plan`), xuất file công thức/thực đơn, nộp đơn xin cấp quyền Chuyên gia | **Tự ý tạo hoặc công khai bài công thức**; tự duyệt nội dung hoặc quản trị người khác. |
+| Customer (Authorized User) | Đã đăng nhập | Xem chi tiết món, bình chọn Like/Dislike bài công thức, bình luận/reply, lưu công thức (`Saved Recipe`), lập thực đơn ngày/tuần (`Meal Plan`), xuất file công thức và báo cáo PDF dinh dưỡng, nộp đơn xin cấp quyền Chuyên gia | **Tự ý tạo hoặc công khai bài công thức**; tự duyệt nội dung hoặc quản trị người khác. |
 | Chuyên gia (Expert / Verified Contributor) | Đã đăng nhập & được duyệt | Biên soạn, quản lý và công khai Recipe Post của chính mình (1–30 bước nấu, ảnh media, video YouTube), quản lý hồ sơ chuyên gia, tương tác chia sẻ kinh nghiệm ẩm thực | Tự duyệt đơn xin quyền Chuyên gia của chính mình; can thiệp nội dung của chuyên gia khác. |
 | Administrator | Quản trị | Thẩm định và phê duyệt đơn đăng ký Chuyên gia (`FR-05`); xử lý báo cáo vi phạm (`FR-06`); quản lý thành viên, trạng thái hậu kiểm của bài công thức, bình luận và danh mục nguyên liệu dinh dưỡng | Không tạo/đăng hoặc sửa nội dung Recipe Post; không tự tạo số liệu dinh dưỡng sai lệch. |
 | Gemini AI | Dịch vụ ngoài hệ thống | Tạo phản hồi AI khi backend cho phép | Không có quyền hệ thống, không truy cập database trực tiếp, không tự công khai nội dung. |
@@ -407,7 +407,7 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 | M02 | Identity & Access | Phân biệt Guest/Customer/Expert/Admin và bảo vệ thao tác | Tài khoản, role, session | Đã chốt email/password, Google Login, xác minh email và quên mật khẩu. |
 | M03 | Recipe Contribution & Post-moderation | Chuyên gia quản lý/công khai bài trực tiếp (hướng dẫn chế biến `instructions`, thể loại món ăn `dish_category`, tối đa 5 ảnh kèm cover `RECIPE_MEDIA`, 1 link YouTube); Customer/Expert bình chọn Like / Dislike (`RECIPE_REACTION`); lưu vết lượt xem (`RECIPE_VIEW`); reply tối đa 5 cấp (chỉ công thức mới có Like/Dislike, bình luận không có); Admin hậu kiểm thủ công trên Report | M02, Azure Blob, quy trình báo cáo | Validation, tombstone, lý do và audit/history được quy định tại FR/BR; UI phải giữ đúng quyền tác giả và hậu kiểm. |
 | M04 | Recipe Classification & Discovery | Phân loại, tìm, lọc và chọn hai bài công thức chay để so sánh; chọn nhiều nguyên liệu từ danh mục công khai; Admin quản lý từ điển nguyên liệu, đơn vị `UNIT` và bảng quy đổi `INGREDIENT_UNIT_CONVERSION` | M01, M03 | Dữ liệu, profile validation và so sánh hai công thức đã chốt; các capability khác theo FR tương ứng. |
-| M05 | Saved Recipes, Meal Planning & Shopping List | Lưu công thức để xem lại, xếp món vào lịch ăn ngày/tuần ba bữa cố định, so sánh thống kê dinh dưỡng tuần, xuất file công thức/thực đơn/báo cáo PDF và tạo/quản lý danh sách mua sắm nguyên liệu cơ bản | M02, M04 | Đã chốt ranh giới Saved/Planner/Shopping List; quy tắc gom an toàn và xuất file đã xác nhận. |
+| M05 | Saved Recipes, Meal Planning & Shopping List | Lưu công thức để xem lại, xếp món vào lịch ăn ngày/tuần ba bữa cố định, so sánh thống kê dinh dưỡng tuần, xuất file công thức và báo cáo PDF dinh dưỡng, tạo/quản lý và xuất danh sách mua sắm nguyên liệu cơ bản | M02, M04 | Đã chốt ranh giới Saved/Planner/Shopping List; quy tắc gom an toàn và xuất file đã xác nhận. |
 | M06 | Gemini AI Access & Usage | Guest/Free/Plus/Pro gọi AI theo gói tính năng (Feature Entitlement), rate limit kỹ thuật cho Guest và telemetry chi phí | M02 một phần, Gemini backend | Entitlement, safety, telemetry và actor-goal Use Case được quy định tại FR/BR/NFR liên quan. |
 | M08 | Subscription Administration | Hiển thị/đổi gói và phân quyền tính năng AI (Feature-based Entitlement) | M02, M06 | FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; payment provider đã chọn là payOS. |
 | M09 | Administration | Xét duyệt đơn đăng ký Chuyên gia (`FR-05`), xử lý báo cáo vi phạm, quản lý user/bài công thức/bình luận và danh mục nguyên liệu dinh dưỡng | M02–M07, M10 | Quy trình xét duyệt chuyên gia theo format; quyết định hậu kiểm thủ công có lý do, giữ audit/history. Không quản lý bảng danh mục động. |

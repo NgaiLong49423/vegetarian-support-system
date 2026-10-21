@@ -8,16 +8,13 @@ export interface PlanResponse {
   tier: SubscriptionTier;
   name: string;
   priceVnd: number;
-  billingCycle: string;
+  billingPeriod: string;
   description: string;
   features: string[];
-  autoRenew: boolean;
 }
 
 export interface CheckoutRequest {
   tier: 'PLUS' | 'PRO';
-  returnUrl?: string;
-  cancelUrl?: string;
 }
 
 export interface CheckoutResponse {
@@ -25,24 +22,37 @@ export interface CheckoutResponse {
   checkoutUrl: string;
   amountVnd: number;
   tier: string;
-  status: 'PENDING';
+  qrCode: string;
 }
 
 export interface MySubscriptionResponse {
   tier: SubscriptionTier;
   status: SubscriptionStatus;
+  active: boolean;
   startsAt: string | null;
   endsAt: string | null;
-  features: string[];
+  unlockedFeatures: string[];
 }
 
 export interface TransactionHistoryResponse {
-  orderCode: number;
-  tier: 'PLUS' | 'PRO';
+  paymentTransactionId: number;
+  orderCode: string;
+  tier: 'PLUS' | 'PRO' | null;
   amountVnd: number;
   status: PaymentStatus;
   createdAt: string;
   paidAt: string | null;
+  endsAt: string | null;
+}
+
+export interface PaymentResultResponse {
+  orderCode: string;
+  tier: 'PLUS' | 'PRO';
+  amountVnd: number;
+  status: PaymentStatus;
+  paidAt: string | null;
+  activated: boolean;
+  subscription: MySubscriptionResponse;
 }
 
 async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
@@ -74,8 +84,11 @@ export const subscriptionApi = {
     request(() => apiClient.post<CheckoutResponse>('/subscriptions/checkout', payload)),
 
   /**
-   * Retrieves payment transaction history for current user (AC-13.6).
-   * Requires authenticated user.
+   * Verifies an owned order and reconciles its payment before reporting activation.
    */
+  getPaymentResult: (orderCode: string, signal?: AbortSignal) =>
+    request(() => apiClient.get<PaymentResultResponse>(`/subscriptions/transactions/${encodeURIComponent(orderCode)}`, { signal })),
+
+  /** Retrieves payment transaction history for the authenticated user (AC-13.6). */
   getTransactions: () => request(() => apiClient.get<TransactionHistoryResponse[]>('/subscriptions/transactions')),
 };
