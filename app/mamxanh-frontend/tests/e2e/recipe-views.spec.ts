@@ -151,7 +151,7 @@ test('Rời trang trước khi GET hoàn tất không ghi nhận lượt xem', a
   await page.route('**/api/v1/recipes/*/views', (route) => { views++; return route.fulfill({ json: {} }); });
   await page.goto('/cong-thuc/id/901');
   await started;
-  await page.getByRole('button', { name: 'Khám phá', exact: true }).click();
+  await page.getByRole('button', { name: 'Khám phá', exact: true }).press('Enter');
   await page.getByRole('navigation', { name: 'Khám phá', exact: true }).getByRole('link', { name: 'Công thức', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Khám phá công thức chay' })).toBeVisible();
   const response = page.waitForResponse((result) => result.url().endsWith('/recipes/901'));

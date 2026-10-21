@@ -282,7 +282,7 @@ test('leaving the questionnaire unanswered is not invited again but stays open f
 
   await signInAs(page);
   await expect(page).toHaveURL(/\/khoi-tao-so-thich$/);
-  await page.getByRole('button', { name: 'Khám phá', exact: true }).click();
+  await page.getByRole('button', { name: 'Khám phá', exact: true }).press('Enter');
   await page.getByRole('navigation', { name: 'Khám phá', exact: true }).getByRole('link', { name: 'Công thức', exact: true }).click();
   await expect(page).toHaveURL(/\/kham-pha$/);
 

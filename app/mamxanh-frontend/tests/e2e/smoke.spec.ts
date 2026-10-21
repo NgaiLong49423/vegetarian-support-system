@@ -8,7 +8,7 @@ test('loads the application shell and navigates to Explore', async ({ page }) =>
   await page.goto('/trang-chu');
   await expect(page.getByRole('heading', { name: 'Hôm nay bạn muốn nấu gì?' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Khám phá', exact: true }).click();
+  await page.getByRole('button', { name: 'Khám phá', exact: true }).press('Enter');
   await page.getByRole('navigation', { name: 'Khám phá', exact: true }).getByRole('link', { name: 'Công thức', exact: true }).click();
 
   await expect(page).toHaveURL(/\/kham-pha$/);
