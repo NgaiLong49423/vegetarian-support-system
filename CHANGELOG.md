@@ -1,11 +1,30 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.92.0
+> **Version:** v2.93.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-21
 > **Status:** Active
 
 # Changelog
+
+## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
+
+**Status:** Working tree — not committed.
+
+**Scope:** Resolve integration failures exposed while validating the payment fixes against the current develop baseline.
+
+### Added
+
+- Verify that public recipe statistics remain accessible to guests while private subscription APIs require authentication.
+
+### Changed
+
+- Align browser fixtures and navigation checks with the public statistics API and Explore dropdown; wait for both ingredient selections before checking the discovery request.
+
+### Fixed
+
+- Permit guest reads of the documented public recipe-statistics endpoint.
+- Preserve Vietnamese characters when binding ingredient search patterns on SQL Server.
 
 ## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
 

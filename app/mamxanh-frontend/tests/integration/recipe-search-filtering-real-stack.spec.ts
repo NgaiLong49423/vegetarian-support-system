@@ -82,7 +82,8 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     await page.getByRole('textbox', { name: 'Nguyên liệu (kết quả phải có đủ nguyên liệu đã chọn)' }).fill(ingredientBName);
     const filteredRequestPromise = page.waitForRequest((request) => {
       const url = new URL(request.url());
-      return request.method() === 'GET' && url.pathname === '/api/v1/recipes/discovery';
+      return request.method() === 'GET' && url.pathname === '/api/v1/recipes/discovery'
+        && new Set(url.searchParams.getAll('ingredientIds')).size === 2;
     });
     await page.getByRole('checkbox', { name: ingredientBName }).check();
     const filteredRequest = await filteredRequestPromise;

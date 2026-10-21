@@ -81,7 +81,7 @@ class IngredientCatalogServiceTest {
         when(ingredient.getId()).thenReturn(12L);
         when(ingredient.getName()).thenReturn("Cải thìa");
         when(ingredient.getIngredientGroup()).thenReturn("Rau củ");
-        when(ingredientRepository.search(eq("cải"), eq("Rau củ"), eq(CatalogStatus.ACTIVE), isNull(), any(Pageable.class)))
+        when(ingredientRepository.search(eq("%cải%"), eq("Rau củ"), eq(CatalogStatus.ACTIVE), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(ingredient), Pageable.ofSize(20), 1));
 
         var result = service.searchPublicIngredients("cải", "Rau củ", 0, 20);
