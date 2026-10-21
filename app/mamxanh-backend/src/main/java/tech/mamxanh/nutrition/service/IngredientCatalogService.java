@@ -65,7 +65,10 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     public PageResponse<IngredientResponse> searchIngredients(String query, String ingredientGroup,
             Boolean active, Boolean nutritionSupported, int page, int size) {
         CatalogStatus status = active == null ? null : active ? CatalogStatus.ACTIVE : CatalogStatus.INACTIVE;
-        var results = ingredientRepository.search(normalizeFilter(query), normalizeFilter(ingredientGroup),
+        String normalizedQuery = normalizeFilter(query);
+        // Bind the entire pattern: SQL Server CONCAT casts can lose Vietnamese characters.
+        String pattern = normalizedQuery == null ? null : "%" + normalizedQuery + "%";
+        var results = ingredientRepository.search(pattern, normalizeFilter(ingredientGroup),
                 status, nutritionSupported,
                 PageRequest.of(page, size, Sort.by(Sort.Order.asc("name"), Sort.Order.asc("id"))));
         return PageResponse.of(results.getContent().stream().map(this::toResponse).toList(),

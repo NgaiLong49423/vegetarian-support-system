@@ -7,6 +7,26 @@
 
 # Changelog
 
+## 2026-10-21 — Integrate Shopping Checklist Management (FR-53)
+
+**Status:** Working tree — not committed. Original implementation: `83f1938`; develop synchronization: `34cf4e6`.
+
+**Scope:** Prepare the owned shopping checklist and selected Recipe Post flow for a separate Issue #53 handoff; retain the explicit dependency on the unmerged FR-54 engine.
+
+### Added
+
+- Create persisted checklists from planned meal dates or selected public recipes, with manual items, editing, bought-state updates, deletion and ownership checks.
+- Preserve original recipe contributions and unavailable source links without changing saved quantities when a recipe changes.
+
+### Changed
+
+- Move unmerged shopping migrations to V18/V19 while preserving develop's nutrition V16/V17.
+- Adapt browser checks to the current discovery, profile-statistics and partial-nutrition baseline.
+
+### Fixed
+
+- Remove the unresolved dependency on the separately committed FR-55 export component so FR-53 can build independently.
+
 ## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
 
 **Status:** Committed — `3106850`.

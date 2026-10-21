@@ -17,7 +17,15 @@
 - Phép cộng/nhân/chia chuẩn dùng `BigDecimal`, không làm tròn hoặc ghi về precision của SQL ở bước tổng hợp. FR-53 phải xử lý precision khi lưu để không biến lượng nhỏ thành 0. Dòng thiếu số lượng, số lượng <= 0, nguyên liệu/đơn vị không tồn tại hoặc tên thủ công không hợp lệ được bỏ qua kèm cảnh báo; đầu vào rỗng trả kết quả rỗng, thiếu toàn bộ danh sách trả `VALIDATION_FAILED`.
 - Catalog và quy đổi được đọc theo batch qua public service của module `nutrition`; tham chiếu lịch sử ngừng sử dụng vẫn có tên/đơn vị để hiển thị, nhưng không dùng tỷ lệ đã ngừng sử dụng để gộp khác dimension.
 
-**Ranh giới tích hợp:** caller FR-53 chịu trách nhiệm đăng nhập/ownership, chỉ chọn công thức còn công khai, tính khẩu phần và lưu checklist. Chưa có endpoint hoặc Frontend mới; không đưa code checklist FR-53 chưa merge vào nhánh này. Luồng tạo/cập nhật Shopping List gọi bộ tổng hợp và nghiệm thu UI vẫn cần thực hiện trên FR-53; quan hệ nguồn Recipe Post thuộc quyết định #90. Service/test giai đoạn này không chứng minh toàn bộ FR-54 đã được nghiệm thu trên `main`.
+**Ranh giới tích hợp:** engine thuộc FR-54 / PR #150, chưa phải baseline `develop`. Nhánh FR-53 kế thừa engine để triển khai caller bên dưới; PR #150 phải được tích hợp trước khi FR-53 sẵn sàng merge. Engine không tự xử lý đăng nhập, quyền sở hữu hoặc lưu checklist.
+
+## Checklist mua sắm — FR-53 / Issue #53
+
+- `/api/v1/shopping-lists` cung cấp danh sách theo tài khoản, đọc checklist, thêm/sửa/xóa item, đặt trạng thái đã mua và xóa các item đã mua. Backend lấy chủ sở hữu từ phiên đăng nhập; Guest/Admin/tài khoản khóa và truy cập danh sách của người khác bị chặn.
+- `POST /from-meal-plan` tạo checklist độc lập từ cả tuần hoặc các ngày đã chọn, tính lượng theo khẩu phần dự kiến, tổng hợp qua FR-54 rồi lưu transaction. Tên danh sách thể hiện ngày thực đơn, không ngụ ý ngày mua nguyên liệu.
+- `POST /from-recipes` bổ sung công thức công khai từ Khám phá/Đã lưu vào danh sách `PERSONAL` duy nhất của Member, giữ đóng góp gốc và không cộng trùng công thức. Sửa/ẩn/xóa bài không tự thay đổi lượng hoặc trạng thái checklist; nguồn được đọc theo nội dung hiện hành hoặc hiển thị unavailable, theo thiết kế đã chốt trong #90.
+- Migration shopping chưa merge được chuyển sang V18 (đơn vị `cuộn`) và V19 (loại danh sách/đóng góp Recipe Post), giữ nguyên V16/V17 dinh dưỡng của develop. Không sửa Flyway history, reset database dùng chung hoặc thay đổi diagram.
+- Clipboard/TXT thuộc FR-55, được bàn giao riêng. Scalar và generated OpenAPI mô tả hợp đồng shopping hiện hành.
 
 Kiểm thử tập trung: `.\mvnw.cmd "-Dtest=ShoppingAggregationServiceTest,ShoppingAggregationIntegrationTest,IngredientCatalogServiceTest" test`. Unit tests bao phủ AC-54.1–54.5 và trường hợp biên; integration tests dùng catalog/quy đổi SQL Server Testcontainers thật, fixture rollback. Không mô tả các test này là kiểm thử UI hoặc toàn bộ luồng tạo danh sách.
 

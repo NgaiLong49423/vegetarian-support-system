@@ -116,7 +116,7 @@ class IngredientCatalogServiceTest {
         when(ingredient.getId()).thenReturn(12L);
         when(ingredient.getName()).thenReturn("Cải thìa");
         when(ingredient.getIngredientGroup()).thenReturn("Rau củ");
-        when(ingredientRepository.search(eq("cải"), eq("Rau củ"), eq(CatalogStatus.ACTIVE), isNull(), any(Pageable.class)))
+        when(ingredientRepository.search(eq("%cải%"), eq("Rau củ"), eq(CatalogStatus.ACTIVE), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(ingredient), Pageable.ofSize(20), 1));
 
         var result = service.searchPublicIngredients("cải", "Rau củ", 0, 20);
@@ -237,7 +237,7 @@ class IngredientCatalogServiceTest {
         assertThat(service.setNutritionSupport(7L, new NutritionSupportUpdateRequest(true)).nutritionSupported()).isTrue();
     }
 
-    @Test void doesNotAllowClearingNutritionWhileOfficialCalculationIsEnabled() {
+    @Test void rejectsClearingAllNutritionWhileSupportIsEnabled() {
         IngredientEntity ingredient = new IngredientEntity("Đậu đỏ", "Đậu hạt", "USDA FoodData Central",
                 "https://fdc.nal.usda.gov/", LocalDate.now());
         ingredient.updateNutrition(BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
@@ -246,11 +246,11 @@ class IngredientCatalogServiceTest {
         when(ingredientRepository.findById(5L)).thenReturn(Optional.of(ingredient));
 
         assertThatThrownBy(() -> service.updateNutrition(5L, new IngredientNutritionRequest(
-                null, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
-                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE)))
+                null, null, null, null, null, null, null, null, null)))
                 .isInstanceOfSatisfying(ApiException.class, error ->
                     assertThat(error.getCode()).isEqualTo("NUTRITION_VALUES_EMPTY"));
         assertThat(ingredient.getEnergyKcalPer100g()).isEqualByComparingTo(BigDecimal.ONE);
+        assertThat(ingredient.isNutritionSupported()).isTrue();
     }
 
     @Test void allowsPartialNutritionThroughIngredientUpdateWhileSupportIsEnabled() {

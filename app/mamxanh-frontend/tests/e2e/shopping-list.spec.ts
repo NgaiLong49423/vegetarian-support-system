@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises"
-
 import type { Page } from "@playwright/test"
 
 import { expect, test } from "./baseFixtures"
@@ -332,7 +330,7 @@ test("shopping selected days validates selection, shows creation failure, retrie
   })
 })
 
-test("shopping manual item quantity, edit, bought/unbought, filtering, deletion and TXT use saved values", async ({
+test("shopping manual item quantity, edit, bought/unbought, filtering and deletion use saved values", async ({
   page,
 }) => {
   const state = await setup(page)
@@ -378,15 +376,6 @@ test("shopping manual item quantity, edit, bought/unbought, filtering, deletion 
 
   await page.getByRole("button", { name: /Đã mua \(/ }).click()
   await expect(item).toBeVisible()
-
-  const downloadPromise = page.waitForEvent("download")
-  await page.getByRole("button", { name: "TXT", exact: true }).click()
-
-  const download = await downloadPromise
-
-  expect(await readFile((await download.path())!, "utf8")).toContain(
-    "[x] Khăn giấy lau bếp: 3,5 cuộn",
-  )
 
   await check.click()
   await page.getByRole("button", { name: /Tất cả \(/ }).click()
@@ -503,7 +492,7 @@ test("shopping empty list, invalid ID, foreign list and read retry are explicit"
   await expect(page.getByTestId("shopping-item-1")).toHaveCount(0)
 })
 
-test("shopping pagination and small viewport preserve usable checklist and copy fallback", async ({
+test("shopping pagination and small viewport preserve usable checklist", async ({
   page,
 }) => {
   const state = await setup(page)
@@ -522,17 +511,6 @@ test("shopping pagination and small viewport preserve usable checklist and copy 
   await page.getByRole("button", { name: "Trước", exact: true }).click()
 
   await expect(page.getByText("1/2", { exact: true })).toBeVisible()
-
-  await page.evaluate(() =>
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText: () => Promise.reject(new Error("denied")) },
-    }),
-  )
-
-  await page.getByRole("button", { name: "Sao chép", exact: true }).click()
-
-  await expect(page.getByRole("dialog", { name: "Sao chép danh sách đi chợ" })).toBeVisible()
 
   expect(
     await page.evaluate(

@@ -31,8 +31,8 @@ public interface IngredientRepository extends JpaRepository<IngredientEntity, Lo
 
     @Query("""
             select ingredient from IngredientEntity ingredient
-            where (:query is null or lower(ingredient.name) like lower(concat('%', :query, '%'))
-                or lower(ingredient.ingredientGroup) like lower(concat('%', :query, '%')))
+            where (:query is null or lower(ingredient.name) like lower(:query)
+                or lower(ingredient.ingredientGroup) like lower(:query))
               and (:ingredientGroup is null or lower(ingredient.ingredientGroup) = lower(:ingredientGroup))
               and (:status is null or ingredient.status = :status)
               and (:nutritionSupported is null or ingredient.nutritionSupported = :nutritionSupported)
