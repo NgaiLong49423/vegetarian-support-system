@@ -9,7 +9,7 @@
 
 ## 2026-10-21 — Integrate Shopping Checklist Management (FR-53)
 
-**Status:** Working tree — not committed. Original implementation: `83f1938`; develop synchronization: `34cf4e6`.
+**Status:** Committed — `daac445`. Original implementation: `83f1938`; develop synchronization: `34cf4e6`.
 
 **Scope:** Prepare the owned shopping checklist and selected Recipe Post flow for a separate Issue #53 handoff; retain the explicit dependency on the unmerged FR-54 engine.
 
