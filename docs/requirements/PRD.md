@@ -1,8 +1,8 @@
 > **Document:** Product Requirements Document — Mâm Xanh
 > **File:** `docs/requirements/PRD.md`
-> **Version:** v2.1.0
+> **Version:** v2.3.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-09-27
+> **Last Updated:** 2026-10-21
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `README.md`
 
@@ -39,7 +39,7 @@ Free, Plus và Pro là hạng gói dịch vụ (Subscription Tier) của Custome
 | Nhóm | Kết quả sản phẩm |
 |---|---|
 | Khám phá công thức | Tìm/lọc/xem bài công thức công khai của Chuyên gia theo 6 chế độ sắp xếp độc lập (Newest, Most Liked theo tỷ lệ % Like, Most Viewed 24h/7d/30d/all-time, Most Commented, Most Active theo tương tác gần nhất 7 ngày, Trending theo tương tác + độ tươi mới); hiển thị dữ liệu món ăn có cấu trúc (hướng dẫn chế biến chi tiết, thể loại món ăn chuẩn hóa, nguyên liệu định lượng chuẩn, thời gian, khẩu phần), bộ sưu tập tối đa 5 ảnh (`RECIPE_MEDIA`) và 1 video YouTube; hiển thị huy hiệu `👍 {like_percentage}%` nổi bật trên ảnh thẻ món ăn |
-| Thẩm định Chuyên gia | Customer nộp đơn xin cấp quyền Chuyên gia theo format văn bản (`EXPERT_APPLICATION`: kinh nghiệm ẩm thực chay, trường phái chay, tóm tắt công thức mẫu, link tham khảo); Administrator thẩm định và phê duyệt hoặc từ chối kèm lý do; tài khoản được thăng cấp `EXPERT` ngay khi duyệt (`FR-05`) |
+| Thẩm định Chuyên gia | Customer nộp đơn theo format văn bản (`EXPERT_APPLICATION`) và có thể đính kèm một tài liệu chứng chỉ/văn bằng chuyên môn cùng ảnh thẻ chân dung khung 3:4 riêng cho đơn; Administrator xem hoặc tải tệp để thẩm định và phê duyệt hoặc từ chối kèm lý do; tài khoản được thăng cấp `EXPERT` ngay khi duyệt (`FR-05`). Tệp chỉ Admin truy cập được và ảnh thẻ không cập nhật avatar hồ sơ công khai. |
 | Đăng bài Chuyên gia | Chỉ tài khoản có vai trò `Chuyên gia` đã được phê duyệt mới được tạo và công khai Recipe Post trực tiếp (hướng dẫn chế biến 10–5.000 ký tự linh hoạt, chọn 1 thể loại món ăn `dish_category`, người đăng không bắt buộc phải viết từng bước nấu ăn, tối đa 5 ảnh với đúng 1 ảnh cover, 1 YouTube URL, nguyên liệu bắt buộc số lượng > 0 và đơn vị có công thức quy đổi hợp lệ); Administrator hậu kiểm sau đăng dựa trên báo cáo vi phạm |
 | Cá nhân hóa | Thu thập sở thích/kiêng/dị ứng tối thiểu trước khi gọi AI cá nhân hóa; lưu trực tiếp trong hồ sơ User và User Ingredient Preference |
 | AI (Feature-based) | Guest dùng AI Chatbot cơ bản với technical rate limit. Free Member dùng Chatbot và gợi ý món cơ bản theo nguyên liệu (`UC-34.1`). Plus có thêm AI hỗ trợ giới thiệu/hướng dẫn (`FR-21`) và gợi ý biến tấu (`FR-47`). Pro có thêm thực đơn tuần thông thường (`UC-34.2`/`UC-34.3`) và thực đơn theo dinh dưỡng cá nhân (`FR-36`). |
@@ -54,7 +54,6 @@ Free, Plus và Pro là hạng gói dịch vụ (Subscription Tier) của Custome
 
 - Bảng quản lý danh mục động (`CATEGORY`, `RECIPE_CATEGORY`); mỗi Recipe Post chọn 1 thể loại món ăn trong danh mục chuẩn hóa (`dish_category`).
 - Hướng dẫn chế biến tách thành các bản ghi bước độc lập; hướng dẫn được lưu thành trường văn bản `instructions` trên `Recipe Post`.
-- Quản lý tệp chứng chỉ, văn bằng hoặc bằng cấp vật lý trong quy trình xét duyệt Chuyên gia (ứng dụng chỉ thẩm định dựa trên format văn bản có cấu trúc do người dùng khai báo).
 - Người dùng thông thường (Customer) tự do đăng tải bài công thức (chỉ dành riêng cho Chuyên gia đã được phê duyệt).
 - Đăng Blog độc lập nhúng Recipe Post và quản lý kho thực phẩm cá nhân.
 - Like/Dislike cho bình luận hoặc reply; Like/Dislike hiện chỉ áp dụng cho Recipe Post.

@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.19.0
+> **Version:** v2.21.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-21
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -366,7 +366,7 @@ Thiết lập Mâm Xanh thành sân chơi ẩm thực chay chuyên nghiệp, nơ
 
 - **Mã yêu cầu:** FR-05
 - **Module:** M02 (Identity & Access), M03 (Community Recipes & Social), M09 (Administration & Moderation)
-- **Tóm tắt yêu cầu:** Hệ thống cho phép người dùng thông thường (`Customer`) có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản có cấu trúc (`EXPERT_APPLICATION`); đây là quy trình xét duyệt **tư cách Chuyên gia và quyền đăng bài**, không phải xác minh danh tính/KYC. Hệ thống không yêu cầu hoặc quản lý giấy tờ tùy thân, tệp chứng chỉ hay văn bằng vật lý. Administrator xem xét đơn trong trung tâm quản trị, ghi nhận xét thẩm định và quyết định phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; khi được phê duyệt, tài khoản được thăng cấp tức thời lên vai trò `EXPERT` để có quyền tạo và công khai bài viết; nếu bị từ chối, người dùng có thể nộp lại đơn mới sau khi bổ sung thông tin.
+- **Tóm tắt yêu cầu:** Hệ thống cho phép người dùng thông thường (`Customer`) có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản có cấu trúc (`EXPERT_APPLICATION`) và tùy chọn đính kèm tối đa một tài liệu chứng chỉ/văn bằng chuyên môn cùng một ảnh thẻ chân dung khung 3:4 riêng của đơn; đây là quy trình xét duyệt **tư cách Chuyên gia và quyền đăng bài**, không phải xác minh danh tính/KYC. Hệ thống không yêu cầu giấy tờ tùy thân. Tệp đính kèm được lưu riêng tư và chỉ Administrator có quyền tải/xem khi thẩm định; ảnh không cập nhật avatar hồ sơ công khai. Administrator ghi nhận xét thẩm định và quyết định phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; khi được phê duyệt, tài khoản được thăng cấp tức thời lên vai trò `EXPERT`; nếu bị từ chối, người dùng có thể nộp lại đơn mới.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-05).
 
@@ -390,7 +390,8 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
 - Guest không được nộp đơn; hệ thống yêu cầu đăng nhập trước khi tiếp cận biểu mẫu (BR-05).
 - Customer chỉ được xem trạng thái và nội dung đơn đăng ký của chính mình (NFR-09).
 - Chỉ Administrator có quyền xem toàn bộ danh sách đơn và thực hiện phê duyệt/từ chối (NFR-09).
-- Tuyệt đối không yêu cầu người dùng tải lên tệp tin ảnh chụp văn bằng, chứng chỉ hoặc giấy tờ tùy thân nhạy cảm; việc thẩm định hoàn toàn dựa trên thông tin format văn bản có cấu trúc do người dùng tự khai báo.
+- Không yêu cầu tải lên giấy tờ tùy thân. Customer có thể tự nguyện gửi tối đa một tài liệu chứng chỉ/văn bằng chuyên môn (PDF/JPEG/PNG, tối đa 5 MB) và một ảnh thẻ chân dung khung 3:4 riêng của đơn (JPEG/PNG/WebP, tối đa 2 MB). Backend xác minh định dạng thực tế và dung lượng; từ chối tệp không hợp lệ và không tạo đơn dở dang.
+- Tệp được lưu trong vùng Azure Blob riêng tư; không phát URL công khai. Chỉ Administrator được phép xem hoặc tải nội dung tệp qua Backend trong phạm vi thẩm định. Ảnh thẻ 3:4 đính kèm thuộc đơn và không thay đổi `USER.avatar_url` hoặc hồ sơ công khai FR-23.
 - Quy trình không được mô tả là xác minh danh tính/KYC hoặc xác thực bằng cấp của Customer.
 
 #### Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
@@ -400,7 +401,7 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
   - [BR-74](BUSINESS-RULES.md#br-74): Quy trình xét duyệt đơn đăng ký Chuyên gia và chuyển đổi vai trò.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC và bảo vệ endpoint quản trị.
-  - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Validation dữ liệu văn bản đầu vào chặt chẽ ở tầng Backend.
+  - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Validation dữ liệu văn bản và tệp đính kèm chặt chẽ ở tầng Backend.
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt.
 
 #### Tiêu chí nghiệm thu chi tiết (Acceptance Criteria)
@@ -444,6 +445,19 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
   - **Given:** Đơn còn `PENDING` nhưng tài khoản nộp đã không còn `ACTIVE` hoặc không còn vai trò `CUSTOMER`.
   - **When:** Administrator cố phê duyệt đơn.
   - **Then:** Hệ thống trả `HTTP 409 Conflict`, rollback quyết định, không cấp role `EXPERT` hoặc ghi notification, và yêu cầu Administrator tải lại trạng thái hiện hành.
+
+- **AC-05.9 — Customer gửi tệp đính kèm riêng cho đơn:**
+  - **Given:** Customer đủ điều kiện nộp đơn; tài liệu và ảnh đính kèm là tùy chọn.
+- **When:** Customer gửi tối đa một tài liệu chứng chỉ/văn bằng chuyên môn dạng PDF/JPEG/PNG không quá 5 MB và một ảnh thẻ chân dung khung 3:4 dạng JPEG/PNG/WebP không quá 2 MB.
+- **Then:** Hệ thống xác minh chữ ký nội dung khớp với định dạng khai báo, lưu tệp riêng tư gắn với đúng đơn; ảnh thẻ dùng khung chân dung 3:4 và không cập nhật avatar tài khoản. Tệp thiếu, rỗng, sai định dạng hoặc quá giới hạn bị từ chối với lỗi dễ hiểu và không tạo đơn hoặc tệp mồ côi.
+
+- **AC-05.10 — Chỉ Administrator truy cập tệp của đơn để thẩm định:**
+  - **Given:** Đơn có tệp đính kèm.
+  - **When:** Administrator đã xác thực mở chi tiết đơn hoặc yêu cầu tải tệp; Customer, Expert, Guest hoặc người dùng khác thử truy cập cùng tài nguyên.
+- **Then:** Administrator có thể xem/tải tài liệu chứng chỉ và ảnh thẻ 3:4 qua endpoint có xác thực; các role khác bị chặn ở Backend. API không trả URL Blob công khai và tệp không hiển thị trong hồ sơ/avatar công khai.
+
+- **AC-05.11 — Nhãn và hướng dẫn Portfolio URL:**
+  - **Then:** Form hiển thị nhãn “Đường dẫn portfolio”; hướng dẫn “Không bắt buộc. Chấp nhận HTTP/HTTPS, tối đa 500 ký tự.” nằm riêng bên dưới, không có dấu ngoặc.
 
 ---
 

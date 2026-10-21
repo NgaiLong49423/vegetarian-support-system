@@ -461,7 +461,10 @@ test('expert application customer and admin workflows use the API and recover fr
   await page.route('**/api/v1/**expert-applications**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
-    const application = { id: 501, userId: 41, displayName: 'Nguyễn An', email: 'an@example.org', experience: 'Hơn 5 năm kinh nghiệm nấu ăn thuần chay thực dưỡng.', vegetarianType: 'VEGAN', sampleRecipeSummary: 'Đậu hũ sốt nấm hương tiêu xanh hấp dẫn và thơm lừng.', portfolioUrl: null, status, adminNote, submittedAt: new Date().toISOString(), reviewedAt: status && status !== 'PENDING' ? new Date().toISOString() : null };
+    const application = { id: 501, userId: 41, displayName: 'Nguyễn An', email: 'an@example.org', experience: 'Hơn 5 năm kinh nghiệm nấu ăn thuần chay thực dưỡng.', vegetarianType: 'VEGAN', sampleRecipeSummary: 'Đậu hũ sốt nấm hương tiêu xanh hấp dẫn và thơm lừng.', portfolioUrl: null, certificateAvailable: false, applicationAvatarAvailable: true, status, adminNote, submittedAt: new Date().toISOString(), reviewedAt: status && status !== 'PENDING' ? new Date().toISOString() : null };
+    if (request.method() === 'GET' && path.endsWith('/attachments/avatar')) {
+      return route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pN8AAAAASUVORK5CYII=', 'base64') });
+    }
     if (path.endsWith('/admin/expert-applications') && request.method() === 'GET') {
       return route.fulfill({ json: { content: status ? [application] : [], page: 0, size: 20, totalElements: Number(!!status), totalPages: Number(!!status) } });
     }
@@ -480,8 +483,14 @@ test('expert application customer and admin workflows use the API and recover fr
       status = 'APPROVED';
       return route.fulfill({ json: { ...application, status, adminNote: null } });
     }
-    if (request.method() === 'POST' && path.endsWith('/expert-applications')) {
-      posted = request.postDataJSON();
+    if (request.method() === 'POST' && path.endsWith('/expert-applications/attachments')) {
+      const body = request.postData() ?? '';
+      posted = {
+        contentType: request.headers()['content-type'],
+        hasApplicationPart: body.includes('name="application"'),
+        hasCertificatePart: body.includes('name="certificate"'),
+        hasVegetarianType: body.includes('VEGAN'),
+      };
       status = 'PENDING';
       adminNote = '';
       return route.fulfill({ status: 201, json: { ...application, status, adminNote: null } });
@@ -494,10 +503,14 @@ test('expert application customer and admin workflows use the API and recover fr
   await page.reload();
   await page.getByLabel(/Kinh nghiệm ẩm thực chay/).fill('Hơn 5 năm kinh nghiệm nấu ăn thuần chay thực dưỡng.');
   await page.getByLabel(/Tóm tắt công thức sở trường/).fill('Đậu hũ sốt nấm hương tiêu xanh hấp dẫn và thơm lừng.');
+  await page.locator('input[type="file"]').nth(0).setInputFiles({
+    name: 'certificate.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7'),
+  });
   await page.getByLabel(/Tôi cam kết/).check();
   await page.getByRole('button', { name: 'Gửi đơn đăng ký' }).click();
   await expect(page.getByRole('status')).toContainText('Đơn đã được gửi');
-  expect(posted).toMatchObject({ vegetarianType: 'VEGAN' });
+  expect(posted).toMatchObject({ hasApplicationPart: true, hasCertificatePart: true, hasVegetarianType: true });
+  expect(posted?.contentType).toContain('multipart/form-data');
 
   await page.evaluate(() => {
     const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'ADMIN'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session));
@@ -506,6 +519,9 @@ test('expert application customer and admin workflows use the API and recover fr
   await expect(page.getByRole('heading', { name: 'Xét duyệt Chuyên gia' })).toBeVisible();
   await page.getByRole('button', { name: 'Xem chi tiết' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
+  const photoDownloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Tải ảnh thẻ 3×4' }).click();
+  expect((await photoDownloadPromise).suggestedFilename()).toBe('expert-application-501-photo-3x4.png');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Xem chi tiết' }).click();

@@ -1,17 +1,17 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.21.0<br>
+> **Version:** v0.22.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-20<br>
+> **Last Updated:** 2026-10-21<br>
 > **Status:** Active  
 
 # Database Workspace
 
-Database chính đã chốt là Microsoft SQL Server 2019. Migration V13 bổ sung mục tiêu hồ sơ dinh dưỡng tùy chọn cho FR-35/FR-36; V14 thêm các giá trị tham chiếu dinh dưỡng dùng chung cho FR-37. Kết quả kiểm chứng V13 và V14 trên SQL Server chưa được xác nhận trong thay đổi hiện tại; các kết quả lịch sử ngày 10/10/2026 vẫn chỉ áp dụng cho baseline V1–V12.
+Database chính đã chốt là Microsoft SQL Server 2019. Migration V18 thêm metadata cho tệp đính kèm riêng tư của đơn đăng ký Chuyên gia; việc áp dụng migration trên SQL Server chưa được xác nhận trong thay đổi hiện tại.
 
 ## Quyền sở hữu dữ liệu
 
-- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Baseline hiện gồm V1–V17; V13 mở rộng `nutrition_goal`, V14 tạo `NUTRITION_DAILY_VALUE`, V16 cho phép hỗ trợ từng phần và V17 chấp nhận nguồn AI trong tính toán một phần. `database/schema.sql` phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng.
+- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Baseline hiện gồm V1–V18; V13 mở rộng `nutrition_goal`, V14 tạo `NUTRITION_DAILY_VALUE`, V16 cho phép hỗ trợ từng phần, V17 chấp nhận nguồn AI trong tính toán một phần và V18 thêm tham chiếu attachment riêng tư vào `EXPERT_APPLICATION`. `database/schema.sql` phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
 - Flyway repeatable migrations trong `app/mamxanh-backend/src/main/resources/db/demo/` nạp fixture demo khi profile `local` chạy (IntelliJ hoặc Docker Compose), gồm tài khoản, lịch ăn, công thức, nguyên liệu, tương tác cộng đồng và danh sách mua sắm. `MAMXANH_DEMO_PASSWORD` được lấy từ `.env` local và BCrypt hóa lúc Backend khởi động; không lưu password/hash trong SQL migration hoặc Git.
 - Profile `local` dùng thêm location `classpath:db/demo`; `test` và production chỉ chạy migration schema. Repeatable demo chạy theo thứ tự catalog, ước tính AI, recipe và hoạt động mẫu. Fixture AI estimate điền đủ chín chỉ tiêu trên 100 g bằng giá trị minh họa chưa xác minh để công thức demo không còn thiếu chỉ tiêu; số 0 cũng là ước tính (ví dụ B12 trong thực phẩm thực vật), không phải xác nhận xét nghiệm. Dữ liệu nhập khác vẫn có thể thiếu trường; khi đó giá trị `NULL` được bỏ khỏi phép tính và giao diện cảnh báo kết quả chưa đầy đủ. Seed kiểm tra tồn tại trước khi thêm nên chạy lại không nhân bản fixture.
@@ -72,9 +72,10 @@ Chính sách quản trị schema tuân thủ trực tiếp [Engineering Autonomy
 - **Logical ERD:** [logical-erd-v1.0.0.drawio](../docs/diagrams/ERD/logical-erd-v1.0.0.drawio) (22 bảng, 37 connector thể hiện 36 quan hệ; cập nhật lần cuối ở commit `827353e`).
 - **Physical ERD:** [physical-erd-v1.0.0.drawio](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio) & [physical-erd-v1.0.0.drawio.png](../docs/diagrams/ERD/physical-erd-v1.0.0.drawio.png) (22 bảng, 37 connector, 196 physical columns với đầy đủ kiểu dữ liệu, nullability, constraints, indexes).
 - **Data Dictionary:** [data-dictionary.md](../docs/diagrams/ERD/data-dictionary.md) v0.7.2 (22 bảng, 196 cột physical, hoàn thành triển khai toàn bộ 33 mục đánh dấu sau review PR #66). Theo quyết định của Tech Lead ngày 01/10/2026, các tài liệu trong `docs/diagrams/` (ERD, Data Dictionary) là baseline tham khảo và chỉ được đồng bộ ở giai đoạn viết tài liệu nộp; trạng thái schema hiện hành lấy theo Flyway migration và `database/schema.sql`.
-- **Schema & Migration:** Lịch sử hiện hành gồm V1–V17; V13 mở rộng mục tiêu FR-35, V14 thêm giá trị tham chiếu cho FR-37, V16 cho phép nutrition từng phần và V17 cho phép số liệu AI tham gia tính một phần. `database/schema.sql` là snapshot thủ công sau toàn bộ migration. Chưa chạy migration V17 trên SQL Server trong thay đổi hiện tại.
+- **Schema & Migration:** Lịch sử hiện hành gồm V1–V18; V13 mở rộng mục tiêu FR-35, V14 thêm giá trị tham chiếu cho FR-37, V16 cho phép nutrition từng phần, V17 cho phép số liệu AI tham gia tính một phần, và V18 thêm tham chiếu attachment riêng tư vào `EXPERT_APPLICATION`. `database/schema.sql` là snapshot thủ công sau toàn bộ migration. Chưa xác minh V18 trên SQL Server trong thay đổi hiện tại.
 - **Migration V7 (Issue #36, FR-31):** [V7__user_onboarding_invitation.sql](../app/mamxanh-backend/src/main/resources/db/migration/V7__user_onboarding_invitation.sql) thêm cột `USER.onboarding_invited_at DATETIME2(7) NULL`: thời điểm lời mời Onboarding đã hiển thị, `NULL` là chưa mời. Backend chỉ mời khi `onboarding_status = NOT_STARTED` và cột còn `NULL`, nên Member bỏ dở questionnaire không bị mời lại (AC-31.10). Tài khoản tồn tại trước migration được ghi thời điểm chạy migration nên không bị hỏi tự động; `onboarding_status` giữ nguyên, nên `SKIPPED` vẫn chỉ có nghĩa là Member đã bấm "Bỏ qua".
 - **Migration V8 (Issue #68, FR-05):** [V8__expert_application_notifications.sql](../app/mamxanh-backend/src/main/resources/db/migration/V8__expert_application_notifications.sql) thêm `NOTIFICATION.target_path` và hai index phục vụ truy vấn lịch sử/xét duyệt đơn Chuyên gia. Cần xác minh migration này cùng snapshot trên database sạch trước khi dùng kết quả kiểm tra V1–V7 làm bằng chứng cho baseline đã đồng bộ.
+- **Migration V18 (Issue #144, FR-05):** Thêm tham chiếu khóa blob và MIME type cho tài liệu chứng chỉ/văn bằng cùng avatar riêng của từng đơn; nội dung file nằm trong container Blob riêng tư và không được lưu trong SQL Server. Physical ERD/Data Dictionary trong `docs/diagrams/` là workspace được bảo vệ, chưa cập nhật theo thay đổi này.
 - **Migration V11 (Issue #9, FR-03-E):** [V11__user_password_reset.sql](../app/mamxanh-backend/src/main/resources/db/migration/V11__user_password_reset.sql) thêm năm cột trên `USER`: `password_reset_token`, `reset_token_expires_at`, `password_reset_sent_at`, `password_reset_window_started_at`, `password_reset_window_count`; hai CHECK (`CK_USER_password_reset_token_pair` giữ token và hạn cùng có hoặc cùng `NULL`, `CK_USER_password_reset_window_count_non_negative`), một DEFAULT và filtered unique index `UQ_USER_password_reset_token`. Token mới ghi đè token cũ; đặt lại thành công xóa token nhưng giữ khung rate limit.
 - **Verification Tests:** [database/queries.sql](queries.sql) có 41 test cases (TC01–TC41), gồm các assertion cho giới hạn đăng nhập và lời mời Onboarding. Kết quả 80/80 ngày 05/10/2026 được xác minh trên V1–V7; chưa bao gồm migration V8.
 
@@ -86,7 +87,7 @@ Kiểm tra toàn bộ schema và chạy 41 test cases (TC01–TC41) bằng `sqlc
 # 1. Khởi tạo database kiểm thử sạch
 sqlcmd -S .\SQLEXPRESS -E -Q "DROP DATABASE IF EXISTS MamXanhDB_Test; CREATE DATABASE MamXanhDB_Test;"
 
-# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V17 trong db/migration với cờ -I,
+# 2. Thực thi schema DDL (hoặc chạy lần lượt V1–V18 trong db/migration với cờ -I,
 #    vì filtered index cần QUOTED_IDENTIFIER ON)
 sqlcmd -S .\SQLEXPRESS -E -d MamXanhDB_Test -i database/schema.sql
 

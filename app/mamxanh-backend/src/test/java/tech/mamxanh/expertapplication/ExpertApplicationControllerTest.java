@@ -13,11 +13,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.expertapplication.controller.ExpertApplicationController;
 import tech.mamxanh.expertapplication.dto.ApproveRequest;
 import tech.mamxanh.expertapplication.dto.ExpertApplicationRequest;
 import tech.mamxanh.expertapplication.dto.ExpertApplicationResponse;
+import tech.mamxanh.expertapplication.dto.ApplicationAttachmentContent;
 import tech.mamxanh.expertapplication.dto.ReviewRequest;
 import tech.mamxanh.expertapplication.service.ExpertApplicationService;
 
@@ -35,6 +38,19 @@ class ExpertApplicationControllerTest {
 
         assertThat(controller.submit(request)).isSameAs(expected);
         verify(service).submit(request);
+    }
+
+    @Test
+    void multipartSubmissionDelegatesFilesSeparatelyFromProfileAvatar() {
+        var request = new ExpertApplicationRequest("Experience in vegetarian cooking", "VEGAN",
+                "A detailed example vegetarian recipe summary.", null);
+        var certificate = new MockMultipartFile("certificate", "credential.pdf", "application/pdf", "%PDF-1.7".getBytes());
+        var avatar = new MockMultipartFile("avatar", "portrait.png", "image/png", new byte[] {1});
+        var expected = response("PENDING");
+        when(service.submitWithAttachments(request, certificate, avatar)).thenReturn(expected);
+
+        assertThat(controller.submitWithAttachments(request, certificate, avatar)).isSameAs(expected);
+        verify(service).submitWithAttachments(request, certificate, avatar);
     }
 
     @Test
@@ -67,6 +83,20 @@ class ExpertApplicationControllerTest {
     }
 
     @Test
+    void attachmentResponseStreamsPrivateContentWithNoSniffHeader() {
+        byte[] content = "%PDF-1.7".getBytes();
+        when(service.downloadAttachment(9, "certificate"))
+                .thenReturn(new ApplicationAttachmentContent(content, MediaType.APPLICATION_PDF_VALUE, "certificate.pdf"));
+
+        var response = controller.attachment(9, "certificate");
+
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getHeaders().getCacheControl()).isEqualTo("no-store");
+        assertThat(response.getHeaders().getFirst("X-Content-Type-Options")).isEqualTo("nosniff");
+        assertThat(response.getBody()).containsExactly(content);
+    }
+
+    @Test
     void approvalUsesOptionalNote() {
         var expected = response("APPROVED");
         when(service.approve(9, "Reviewed")).thenReturn(expected);
@@ -87,6 +117,6 @@ class ExpertApplicationControllerTest {
 
     private static ExpertApplicationResponse response(String status) {
         return new ExpertApplicationResponse(9, 17, "Applicant", "applicant@example.org", "Experience text",
-                "VEGAN", "Sample recipe summary", null, status, null, LocalDateTime.now(), null);
+                "VEGAN", "Sample recipe summary", null, false, false, status, null, LocalDateTime.now(), null);
     }
 }

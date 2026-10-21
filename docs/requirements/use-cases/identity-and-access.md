@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M02
 > **File:** `docs/requirements/use-cases/identity-and-access.md`
-> **Version:** v2.5.0
+> **Version:** v2.7.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-21
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -121,19 +121,19 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 ### UC-05.1 — Nộp đơn đăng ký Expert
 - **Goal / Primary Actor:** Customer gửi hồ sơ xin quyền đăng bài.
 - **Trigger / Preconditions:** Customer đăng nhập với tài khoản `ACTIVE`, đã xác minh email, chưa có đơn `PENDING`.
-- **Main Flow:** Customer điền format; Backend validate và lưu đơn `PENDING`.
+- **Main Flow:** Customer điền format, có thể đính kèm tài liệu chứng chỉ và ảnh thẻ chân dung khung 3:4; Backend validate và lưu đơn `PENDING` cùng tham chiếu tệp riêng tư.
 - **Alternative / Security:** Đơn trùng đang chờ bị chặn; đơn bị từ chối trước đó không cấm nộp lại.
 - **Postconditions:** Đơn mới xuất hiện trong hàng chờ Admin.
-- **Traceability / Acceptance Coverage:** FR-05; BR-74; [AC-05.1, AC-05.2, AC-05.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
+- **Traceability / Acceptance Coverage:** FR-05; BR-74; [AC-05.1, AC-05.2, AC-05.5, AC-05.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
 
 <a id="uc-05-2"></a>
 ### UC-05.2 — Xem và thẩm định danh sách đơn Expert
 - **Goal / Primary Actor:** Administrator xem đơn đang chờ và bằng chứng do Customer nộp.
 - **Trigger / Preconditions:** Admin đăng nhập và mở hàng chờ.
-- **Main Flow:** Hệ thống tải danh sách/chi tiết đơn hợp lệ cho Admin.
+- **Main Flow:** Hệ thống tải danh sách/chi tiết đơn và cho Admin xem hoặc tải ảnh thẻ 3:4 cùng tài liệu đính kèm.
 - **Alternative / Security:** Người không phải Admin bị chặn; xử lý đồng thời được bảo vệ.
 - **Postconditions:** Chưa thay đổi role khi chỉ xem.
-- **Traceability / Acceptance Coverage:** FR-05; NFR-09; [AC-05.7, AC-05.8](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
+- **Traceability / Acceptance Coverage:** FR-05; NFR-09; [AC-05.7, AC-05.8, AC-05.10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
 
 <a id="uc-05-3"></a>
 ### UC-05.3 — Phê duyệt đơn và cấp quyền Expert
@@ -565,16 +565,20 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
      - *Trường phái chay chuyên sâu* (`vegetarian_type`): Chọn 1 trong các trường phái (Thuần chay / Vegan, Chay có sữa / Lacto, Chay có trứng / Ovo, Chay trứng sữa / Lacto-Ovo, Chay thực dưỡng dưỡng sinh).
      - *Tóm tắt công thức sở trường mẫu* (`sample_recipe_summary`): Văn bản từ 30 đến 2.000 ký tự tóm tắt 1 món chay tâm huyết (tên món, nguyên liệu chính, nét đặc sắc).
      - *Kênh ẩm thực / liên kết tham khảo* (`portfolio_url`): Tùy chọn đúng một URL HTTP/HTTPS hợp lệ, tối đa 500 ký tự (link Facebook, kênh YouTube/TikTok hoặc Blog cá nhân nếu có).
+     - *Tài liệu chứng chỉ/văn bằng chuyên môn*: Tùy chọn tối đa một tệp PDF/JPEG/PNG, tối đa 5 MB; không nhận giấy tờ tùy thân.
+     - *Ảnh đại diện của đơn*: Tùy chọn tối đa một ảnh JPEG/PNG/WebP, tối đa 2 MB; ảnh chỉ gắn với đơn, không thay đổi avatar tài khoản.
    - Bước 3: Customer tích chọn ô cam kết chia sẻ thông tin an toàn, đúng chuẩn và nhấn "Gửi đơn đăng ký".
-   - Bước 4: Hệ thống kiểm tra hợp lệ dữ liệu và kiểm tra quy tắc chống nộp đơn trùng (tài khoản không được có đơn khác đang ở trạng thái `PENDING`).
-   - Bước 5: Hệ thống lưu bản ghi mới vào thực thể `EXPERT_APPLICATION` ở trạng thái chờ duyệt (`PENDING`), ghi nhận thời điểm tạo và phản hồi thông báo nộp đơn thành công.
-   - Bước 6: Giao diện chuyển sang trạng thái hiển thị "Đơn đăng ký của bạn đang được Administrator xem xét".
+   - Bước 4: Hệ thống kiểm tra hợp lệ dữ liệu, chữ ký định dạng thực tế/kích thước từng tệp và quy tắc chống nộp đơn trùng (tài khoản không được có đơn khác đang ở trạng thái `PENDING`).
+   - Bước 5: Hệ thống lưu tệp tùy chọn vào vùng Blob riêng tư; nếu lưu tệp hoặc tạo đơn thất bại, hệ thống xóa tệp đã tải để không tạo dữ liệu mồ côi. Bản ghi `EXPERT_APPLICATION` giữ tham chiếu riêng tư tới các tệp của chính đơn.
+   - Bước 6: Hệ thống tạo đơn ở trạng thái chờ duyệt (`PENDING`), ghi nhận thời điểm tạo và phản hồi thông báo nộp đơn thành công.
+   - Bước 7: Giao diện chuyển sang trạng thái hiển thị "Đơn đăng ký của bạn đang được Administrator xem xét".
 
 ##### B. Luồng Administrator thẩm định và phê duyệt đơn (UC-05.2 & UC-05.3)
 1. **Main Flow:**
    - Bước 1: Administrator mở mục "Quản lý đơn Chuyên gia" trên trang Quản trị.
    - Bước 2: Hệ thống hiển thị danh sách các đơn đang ở trạng thái `PENDING` kèm thông tin tài khoản nộp, ngày gửi và tóm tắt nội dung.
    - Bước 3: Administrator chọn một đơn để xem chi tiết toàn bộ nội dung format do người dùng khai báo.
+   - Bước 3a: Nếu đơn có tệp đính kèm, Administrator có thể xem/tải chúng qua Backend; chỉ role `ADMIN` được cấp nội dung, không có URL Blob công khai.
    - Bước 4: Administrator đánh giá thủ công tính đầy đủ, liên quan, nhất quán và phù hợp chính sách của nội dung tự khai; hệ thống không tạo điểm Chuyên gia tự động và không khẳng định đã xác minh danh tính hoặc tính xác thực ngoài hệ thống. Nếu đạt, Administrator nhấn "Phê duyệt" (Approve).
    - Bước 5: Administrator có thể nhập lời nhắn/chúc mừng tùy chọn vào `admin_note`.
    - Bước 6: Trong một transaction, hệ thống kiểm tra lại tài khoản vẫn `ACTIVE`, vai trò vẫn là `CUSTOMER` và đơn vẫn `PENDING`; sau đó cập nhật trạng thái bản ghi `EXPERT_APPLICATION` thành `APPROVED`, ghi nhận `reviewed_by` và `reviewed_at`.
@@ -604,12 +608,17 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05).
    - Chỉ đơn còn `PENDING` mới được phê duyệt/từ chối. Nếu một Administrator khác đã xử lý đơn hoặc tài khoản không còn `ACTIVE`/`CUSTOMER`, hệ thống từ chối quyết định mới với `HTTP 409 Conflict`, rollback thay đổi quyết định, không ghi đè kết quả trước đó, không đổi role/ghi notification và yêu cầu tải lại dữ liệu.
 6. **Xem lịch sử đơn của chính mình:**
    - Customer xem danh sách các đơn đã gửi theo thứ tự mới nhất trước, gồm ngày gửi, trạng thái, thời điểm xử lý và `admin_note` khi có; không xem được đơn của tài khoản khác.
+7. **Tệp không hợp lệ:**
+   - Nếu tài liệu rỗng/sai định dạng/không khớp chữ ký hoặc quá 5 MB, hoặc ảnh rỗng/sai định dạng/không khớp chữ ký hoặc quá 2 MB, Backend từ chối request, không tạo đơn và xóa các blob đã tải trong request đó.
+8. **Ngăn truy cập tệp trái quyền:**
+   - Nếu Guest, Customer, Expert hoặc tài khoản khác yêu cầu tệp theo ID đơn, Backend trả `403 Forbidden` (hoặc `404 Not Found` khi đơn/tệp không tồn tại theo chính sách API) và không trả dữ liệu hay địa chỉ Blob.
 
 #### 6. Hậu điều kiện (Postconditions)
 - Bản ghi `EXPERT_APPLICATION` được tạo với trạng thái `PENDING` hoặc cập nhật trạng thái `APPROVED` / `REJECTED`.
 - Khi được phê duyệt: Vai trò của tài khoản trong cơ sở dữ liệu chuyển thành `EXPERT`, mở khóa toàn bộ quyền đăng bài tại FR-04.
 - Khi bị từ chối: Lý do từ chối được lưu trữ và hiển thị cho người dùng; vai trò tài khoản vẫn là `CUSTOMER`.
 - Lịch sử các lần nộp được bảo toàn; đơn mới sau khi bị từ chối không ghi đè bản ghi cũ.
+- Tệp tùy chọn gắn riêng với từng đơn được lưu trong vùng riêng tư; chỉ Administrator có thể truy xuất qua Backend. Ảnh đính kèm không đổi avatar công khai của tài khoản.
 - Sau khi phê duyệt, hệ thống làm mới trạng thái phân quyền để người dùng nhận quyền `EXPERT` trong phiên hợp lệ tiếp theo mà không phải nộp lại đơn.
 
 ---
