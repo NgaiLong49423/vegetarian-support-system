@@ -1,11 +1,18 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.32.0
+> **Version:** v0.34.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-20
 > **Status:** Active
 
 # API Integration Guide
+
+### Thời gian đăng ký gói và giao dịch — FR-13
+
+- `createdAt`, `paidAt`, `startsAt`, `endsAt` trong response subscription/payment là ISO-8601 UTC có hậu tố `Z`; Frontend hiển thị theo `Asia/Ho_Chi_Minh` (UTC+7), không phụ thuộc múi giờ trình duyệt.
+- Lịch sử giao dịch có `endsAt` nullable, lấy từ Subscription được liên kết với chính giao dịch đã thanh toán. Giao dịch chưa trả tiền hoặc thiếu liên kết trả `null`; không suy ra từ gói hiện tại hay tự cộng thời hạn ở Frontend.
+- `paidAt` là thời điểm Backend xác nhận/kích hoạt giao dịch. Không thay đổi cách xác minh chữ ký, số tiền hoặc thời hạn chu kỳ.
+- Dữ liệu cũ từng được tạo bằng giờ máy Windows cần đối chiếu trước khi sửa; không cộng/trừ 7 giờ hàng loạt cho dữ liệu UTC của Docker. Bản sửa không tự ghi lại các giao dịch lịch sử.
 
 ## 1. Mục đích và phạm vi
 
@@ -424,3 +431,24 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 - `POST /api/v1/recipes/{recipeId}/comments` (cần Bearer token) body `{ "content", "parentCommentId"? }`, trả `201` với bình luận mới. Chỉ Customer/Expert đang hoạt động; Administrator nhận `403 MEMBER_ACCESS_REQUIRED`. `content` bỏ khoảng trắng đầu cuối, 1–1.000 ký tự, sai thì `400 VALIDATION_FAILED` với `errors[].field = content`. Trả lời bình luận cấp 5 được gắn vào cha cấp 4 nên vẫn ở cấp 5 (AC-46.1); Frontend chèn `@Tên` vào đầu nội dung.
 - `PUT /api/v1/comments/{commentId}` body `{ "content" }` và `DELETE /api/v1/comments/{commentId}` (cần Bearer token): chỉ chủ bình luận; người khác nhận `403 COMMENT_EDIT_NOT_ALLOWED`. Sửa thì `edited = true`. Xóa trả `204`, gọi lặp an toàn, luôn là xóa mềm (`is_deleted`) vì `REPORT`/`NOTIFICATION` có thể tham chiếu bình luận.
 - Nội dung là văn bản thuần: Backend lưu nguyên văn, Frontend hiển thị như text nên mã HTML/JavaScript không được thực thi (AC-46.3).
+
+
+## 19. Kết quả thanh toán đã xác minh — FR-13 / Issue #142
+
+Generated OpenAPI là contract chi tiết; endpoint mới không thay đổi các route thanh toán hiện có.
+
+| Endpoint | Quyền và hành vi |
+| --- | --- |
+| `POST /api/v1/subscriptions/checkout` | Member đang hoạt động; body chỉ có `tier: PLUS` hoặc `PRO`; Backend quyết định giá. HTTP 201 trả `orderCode`, `amountVnd`, `tier`, `checkoutUrl`, `qrCode`. |
+| `GET /api/v1/subscriptions/transactions/{orderCode}` | Chỉ chủ đơn; 200 trả trạng thái đã xác minh và subscription, `Cache-Control: no-store`. Mã đơn là chuỗi số dương trong giới hạn integer an toàn của JavaScript. |
+| `POST /api/v1/payments/webhook` | Không yêu cầu Bearer; bắt buộc chữ ký HMAC hợp lệ và dữ liệu tiền tệ/số tiền hợp lệ trước khi xử lý. |
+
+Response kết quả đơn gồm `orderCode` (string), `tier`, `amountVnd`, `status`, `paidAt`, `activated`, `subscription`. `activated` chỉ đúng khi subscription liên kết với chính đơn còn hiệu lực và gói hiện tại tương ứng; `PAID` là lịch sử thanh toán, không đồng nghĩa subscription còn hiệu lực mãi. Subscription gồm `tier`, `status`, `active`, `startsAt`, `endsAt`, `unlockedFeatures`.
+
+- Đơn còn `PENDING` được Backend đối soát qua API payOS có credential server; kiểm tra chữ ký response, mã đơn, số tiền và số tiền đã trả trước khi kích hoạt. Webhook và đối soát dùng chung transaction/locking, xử lý lặp không cộng thêm kỳ.
+- `404 PAYMENT_TRANSACTION_NOT_FOUND` dùng chung cho đơn không tồn tại và đơn của người khác; `403` cho role không phù hợp hoặc tài khoản LOCKED. Guest nhận 401.
+- `503 PAYMENT_UNAVAILABLE` khi thiếu cấu hình hoặc provider lỗi; `502 PAYMENT_RESPONSE_INVALID` khi dữ liệu provider không xác minh được; webhook sai chữ ký/số tiền/currency trả 400. Các lỗi không được tạo quyền trả phí.
+- Lịch sử giao dịch giữ các trường cũ và bổ sung `tier` (nullable với giao dịch cũ có số tiền không khớp giá gói). Checkout không nhận return/cancel URL tùy ý từ trình duyệt; các URL thuộc cấu hình Backend.
+- Trang kết quả phải hỏi Backend, không suy luận thành công từ URL quay về. Frontend chờ có giới hạn và cho kiểm tra lại; tài khoản giữ quyền hiện tại khi đơn còn chờ hoặc bị hủy. Không chấp nhận mock checkout/chữ ký giả ở runtime.
+
+Nguồn kỹ thuật payOS: [Payment API](https://payos.vn/docs/api/), [xác minh chữ ký](https://payos.vn/docs/tich-hop-webhook/kiem-tra-du-lieu-voi-signature/), [Return URL](https://payos.vn/docs/du-lieu-tra-ve/return-url/).

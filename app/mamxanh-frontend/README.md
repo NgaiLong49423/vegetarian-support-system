@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.36.0
+> **Version:** v1.37.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-19
+> **Last Updated:** 2026-10-20
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -120,6 +120,14 @@ Các màn hình này chuẩn bị trải nghiệm cho FR-13, FR-20, FR-26/27, FR
 - Dockerfile Frontend dùng để đồng bộ môi trường development giữa các thành viên, không dùng để deploy Frontend lên Vercel.
 
 ---
+
+## Thanh toán xác minh — FR-13 / Issue #142
+
+- Bấm nâng cấp PLUS/PRO gửi đúng `tier` đến Backend, khóa thao tác trong lúc tạo đơn và chỉ chuyển tới checkout HTTPS của payOS. Thiếu cấu hình/lỗi tạo đơn hiển thị lỗi tại bảng giá; không tự dẫn tới trang thành công.
+- `/payment/success` và `/payment/cancel` đều đọc kết quả đơn từ API riêng tư theo `orderCode`. `status=PAID`, `cancel` hoặc `mock=true` trên URL không chứng minh giao dịch đã thành công. Chỉ báo kích hoạt khi Backend xác nhận đơn `PAID` và `activated=true`.
+- Trang kiểm tra tối đa 10 lần, cách nhau 3 giây sau mỗi response còn chờ; khi hết lượt chỉ thông báo chưa nhận xác nhận và có nút “Kiểm tra lại”, không yêu cầu trả tiền lần nữa. Lỗi API dừng polling và cho thử lại. Request/timer được hủy khi rời trang, đổi đơn hoặc đổi tài khoản.
+- Đơn hủy/thất bại giữ quyền lợi hiện tại. Đơn lịch sử đã thanh toán nhưng subscription không còn hiệu lực hiển thị đã thanh toán và gói hiện tại, không quảng cáo vừa kích hoạt. Quyền lợi đọc theo `unlockedFeatures`, cùng tên trong generated OpenAPI; lịch sử đọc gói do Backend trả.
+- Chưa đăng nhập thì mời đăng nhập; mã đơn sai/thiếu không gửi request. Kiểm thử browser API mô phỏng nằm trong `subscription.spec.ts` và `payment-verification.spec.ts`; không thay thế bằng chứng trả tiền thật hoặc tích hợp Compose.
 
 ## 1. Yêu cầu môi trường
 

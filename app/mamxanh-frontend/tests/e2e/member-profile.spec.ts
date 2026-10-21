@@ -45,6 +45,9 @@ const problem = (status: number, code: string, detail: string, errors?: Array<{ 
 });
 
 async function routeMember(page: Page, member: typeof profile, pages: Array<ReturnType<typeof recipe>[]>) {
+  await page.route(`**/api/v1/members/${member.userId}/recipe-statistics`, (route) => route.fulfill({ json: {
+    recipeCount: pages.flat().length, totalLikes: 0, totalViews: 0,
+  } }));
   await page.route(`**/api/v1/members/${member.userId}`, (route) => route.fulfill({ json: member }));
   await page.route(`**/api/v1/members/${member.userId}/recipes**`, (route) => {
     const index = Number(new URL(route.request().url()).searchParams.get('page') ?? '0');
@@ -83,7 +86,7 @@ test('a member without recipes and with a broken avatar link still shows a clean
   await page.goto('/thanh-vien/23');
 
   await expect(page.getByRole('img', { name: 'Ảnh đại diện mặc định của Bếp Chay Lan' })).toBeVisible();
-  await expect(page.getByText('Thành viên chưa có công thức công khai nào.')).toBeVisible();
+  await expect(page.getByText('Chưa có công thức công khai nào.')).toBeVisible();
   await expect(page.getByText('Nấu chay mỗi ngày')).toHaveCount(0);
 });
 
@@ -96,6 +99,9 @@ test('unknown or administrator profiles show not found, and a network failure ca
   await expect(page.getByRole('heading', { name: 'Không tìm thấy hồ sơ thành viên' })).toBeVisible();
 
   let failOnce = true;
+  await page.route('**/api/v1/members/24/recipe-statistics', (route) => route.fulfill({ json: {
+    recipeCount: 0, totalLikes: 0, totalViews: 0,
+  } }));
   await page.route('**/api/v1/members/24', (route: Route) => {
     if (failOnce) { failOnce = false; return route.abort(); }
     return route.fulfill({ json: { ...profile, userId: 24 } });

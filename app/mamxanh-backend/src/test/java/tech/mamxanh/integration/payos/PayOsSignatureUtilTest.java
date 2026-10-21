@@ -9,6 +9,15 @@ import org.junit.jupiter.api.Test;
 
 class PayOsSignatureUtilTest {
 
+    @Test
+    void canonicalizesNestedTransactionsAndNullStringsAccordingToPayOs() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("transactions", java.util.List.of(Map.of("reference", "test", "amount", 99000)));
+        data.put("optional", "undefined"); data.put("missing", "null");
+        assertThat(PayOsSignatureUtil.convertObjToQueryStr(data))
+                .isEqualTo("missing=&optional=&transactions=[{\"amount\":99000,\"reference\":\"test\"}]");
+    }
+
     private static final String TEST_CHECKSUM_KEY = "test_checksum_key_123456789";
 
     @Test

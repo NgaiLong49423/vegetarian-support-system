@@ -1,6 +1,11 @@
 package tech.mamxanh.subscription.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.http.CacheControl;
+import tech.mamxanh.subscription.service.PaymentResultService;
+import tech.mamxanh.subscription.dto.response.PaymentResultResponse;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -30,8 +35,11 @@ public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
 
-    public SubscriptionController(SubscriptionService subscriptionService) {
+    private final PaymentResultService paymentResults;
+
+    public SubscriptionController(SubscriptionService subscriptionService, PaymentResultService paymentResults) {
         this.subscriptionService = subscriptionService;
+        this.paymentResults = paymentResults;
     }
 
     /**
@@ -51,6 +59,8 @@ public class SubscriptionController {
             @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: the tier is not PLUS or PRO."),
             @ApiResponse(responseCode = "403", description = "ACCESS_DENIED: the account is not an active Customer or Expert, or ACCOUNT_LOCKED."),
             @ApiResponse(responseCode = "404", description = "NOT_FOUND: the session account no longer exists."),
+            @ApiResponse(responseCode = "502", description = "PAYMENT_RESPONSE_INVALID: the provider response failed verification."),
+            @ApiResponse(responseCode = "503", description = "PAYMENT_UNAVAILABLE: missing configuration or provider unavailable; no mock checkout is created."),
             @ApiResponse(responseCode = "500", description = "INTERNAL_ERROR: the payOS payment link could not be created.")
     })
     @PostMapping("/checkout")
@@ -90,6 +100,20 @@ public class SubscriptionController {
     public ResponseEntity<List<TransactionHistoryResponse>> getTransactions(Authentication authentication) {
         Long userId = extractUserId(authentication);
         return ResponseEntity.ok(subscriptionService.getTransactionHistory(userId));
+    }
+
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Verified order result and current subscription of the caller. Pending orders are reconciled with payOS."),
+            @ApiResponse(responseCode = "404", description = "PAYMENT_TRANSACTION_NOT_FOUND: order is missing or belongs to another account."),
+            @ApiResponse(responseCode = "502", description = "PAYMENT_RESPONSE_INVALID: provider data cannot be verified."),
+            @ApiResponse(responseCode = "503", description = "PAYMENT_UNAVAILABLE: payment provider is not configured or temporarily unavailable.")
+    })
+    @GetMapping("/transactions/{orderCode}")
+    public ResponseEntity<PaymentResultResponse> getPaymentResult(Authentication authentication,
+            @PathVariable @Pattern(regexp = "[1-9][0-9]{0,15}") @jakarta.validation.constraints.DecimalMax("9007199254740991") String orderCode) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(paymentResults.getResult(extractUserId(authentication), orderCode));
     }
 
     private Long extractUserId(Authentication authentication) {

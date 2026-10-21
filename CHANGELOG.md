@@ -1,11 +1,30 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.91.0
+> **Version:** v2.93.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-21
 > **Status:** Active
 
 # Changelog
+
+## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
+
+**Status:** Committed — `51b706b`.
+
+**Scope:** Resolve integration failures exposed while validating the payment fixes against the current develop baseline.
+
+### Added
+
+- Verify that public recipe statistics remain accessible to guests while private subscription APIs require authentication.
+
+### Changed
+
+- Align browser fixtures and navigation checks with the public statistics API and Explore dropdown; wait for both ingredient selections before checking the discovery request.
+
+### Fixed
+
+- Permit guest reads of the documented public recipe-statistics endpoint.
+- Preserve Vietnamese characters when binding ingredient search patterns on SQL Server.
 
 ## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
 
@@ -36,6 +55,26 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-20 — Correct Subscription Time Display and Transaction Expiry ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
+
+**Status:** Committed — `1d81141`.
+
+**Scope:** Follow-up payment verification fixes for Issue #142 / FR-13.
+
+### Added
+
+- Show the expiry of the subscription purchased by each paid transaction in transaction history; cancelled or unlinked orders have no expiry.
+- Add timezone, midnight rollover, historical subscription mapping and API serialization regression checks.
+
+### Changed
+
+None.
+
+### Fixed
+
+- Use UTC consistently for checkout creation and payment activation, and include the UTC offset in subscription API timestamps.
+- Display subscription and payment dates in Vietnam time regardless of the browser timezone.
+
 ## 2026-10-20 — Expand Local Demo Data ([PR #166](https://github.com/NgaiLong49423/vegetarian-support-system/pull/166))
 
 **Status:** Committed — `fa44e59`.
@@ -61,6 +100,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Seed core recipe ingredients before applying catalog nutrition so supported entries such as sweet potato are enriched correctly.
 
 - Fill the remaining macro, fiber and B12 estimates for all AI-estimated demo ingredients so those fixtures no longer have missing nutrition metrics.
+
 ## 2026-10-19 — Refresh Landing Previews and Scroll Motion ([PR #157](https://github.com/NgaiLong49423/vegetarian-support-system/pull/157))
 
 **Status:** Committed — `0f1ce32`.
@@ -179,6 +219,30 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Avoid running the total-count query for Explore recipe browsing.
+
+## 2026-10-17 — Verify Paid Subscription Activation ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
+
+**Status:** Committed — `39ccd9d`.
+
+**Scope:** FR-13 / Issue #142: replace false payment success with verified payOS checkout, order reconciliation and subscription activation.
+
+### Added
+
+- Add a private per-order result endpoint with server-side payOS reconciliation, ownership checks and non-cacheable responses.
+- Add payment settlement, signature, concurrency and browser regression tests for delayed activation, provider failures and forged success URLs.
+
+### Changed
+
+- Pass Backend payOS configuration through the canonical Compose stack and document checkout/webhook setup.
+- Generate the OpenAPI snapshot from the updated Backend runtime and align subscription types with its responses.
+- Serialize verified settlement by account and order, preserving atomic activation and idempotent webhook processing.
+- Run shared-SQL integration tests sequentially, synchronize recipe-view checks with completed search responses, and use the canonical Backend host for the OpenAPI healthcheck.
+
+### Fixed
+
+- Missing payOS credentials no longer create a fake success checkout or accept mock webhook signatures.
+- Payment result pages confirm the specific order before claiming activation, with bounded polling and retry on pending or failed verification.
+- Display subscription features and transaction tiers from Backend responses.
 
 ## 2026-10-16 — Expand Local Demo Fixtures ([PR #141](https://github.com/NgaiLong49423/vegetarian-support-system/pull/141))
 

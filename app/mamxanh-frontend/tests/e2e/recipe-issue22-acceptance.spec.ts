@@ -183,8 +183,8 @@ test('Issue 25: recipe detail flags catalog ingredients without nutrition data',
 
   const warning = page.getByRole('note', { name: 'Ước tính chưa đầy đủ' });
   await expect(warning.getByRole('heading', { name: 'Ước tính chưa đầy đủ' })).toBeVisible();
-  await expect(warning.getByRole('status')).toContainText('Các giá trị chỉ gồm phần tính được từ danh mục.');
-  await expect(warning.getByRole('status')).toContainText('Nguyên liệu thiếu dữ liệu không được tính bằng 0.');
+  await expect(warning.getByRole('status')).toContainText('Số liệu có thể gồm ước tính chưa xác minh.');
+  await expect(warning.getByRole('status')).toContainText('Chỉ tiêu còn thiếu không được tính bằng 0.');
   await expect(warning.getByRole('listitem')).toHaveText('Cà chua');
 });
 

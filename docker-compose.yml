@@ -49,6 +49,12 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in app/mamxanh-backend/.env}
       MAMXANH_JWT_SECRET: ${MAMXANH_JWT_SECRET:?Set MAMXANH_JWT_SECRET in app/mamxanh-backend/.env}
       MAMXANH_DEMO_PASSWORD: ${MAMXANH_DEMO_PASSWORD:?Set MAMXANH_DEMO_PASSWORD in app/mamxanh-backend/.env}
+      MAMXANH_PAYOS_CLIENT_ID: ${MAMXANH_PAYOS_CLIENT_ID:-}
+      MAMXANH_PAYOS_API_KEY: ${MAMXANH_PAYOS_API_KEY:-}
+      MAMXANH_PAYOS_CHECKSUM_KEY: ${MAMXANH_PAYOS_CHECKSUM_KEY:-}
+      MAMXANH_PAYOS_ENDPOINT: ${MAMXANH_PAYOS_ENDPOINT:-https://api-merchant.payos.vn}
+      MAMXANH_PAYOS_RETURN_URL: ${MAMXANH_PAYOS_RETURN_URL:-http://localhost:5173/payment/success}
+      MAMXANH_PAYOS_CANCEL_URL: ${MAMXANH_PAYOS_CANCEL_URL:-http://localhost:5173/payment/cancel}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       MAMXANH_GOOGLE_CLIENT_ID: ${MAMXANH_GOOGLE_CLIENT_ID:-}
       MAMXANH_FRONTEND_BASE_URL: http://localhost:5173
@@ -61,7 +67,7 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/v3/api-docs"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/v3/api-docs"]
       interval: 10s
       timeout: 5s
       retries: 24

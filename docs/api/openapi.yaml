@@ -1705,6 +1705,19 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "502":
+          description: "PAYMENT_RESPONSE_INVALID: the provider response failed verification."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: "PAYMENT_UNAVAILABLE: missing configuration or provider unavailable;\
+            \ no mock checkout is created."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "500":
           description: "INTERNAL_ERROR: the payOS payment link could not be created."
           content:
@@ -2460,7 +2473,8 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: Verified webhook acknowledged; duplicates and unknown signed
+            probes never grant extra entitlement.
           content:
             application/json:
               schema:
@@ -2468,8 +2482,8 @@ paths:
                 additionalProperties:
                   type: string
         "400":
-          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
-            \ its rules; details in `errors`."
+          description: "PAYMENT_SIGNATURE_INVALID or VALIDATION_FAILED: invalid signature,\
+            \ currency, amount or payload."
           content:
             application/problem+json:
               schema:
@@ -3791,6 +3805,69 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/subscriptions/transactions/{orderCode}:
+    get:
+      tags:
+      - subscription-controller
+      operationId: getPaymentResult
+      parameters:
+      - name: orderCode
+        in: path
+        required: true
+        schema:
+          type: string
+          maximum: 9007199254740991
+          pattern: "[1-9][0-9]{0,15}"
+      responses:
+        "200":
+          description: Verified order result and current subscription of the caller.
+            Pending orders are reconciled with payOS.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResultResponse"
+        "404":
+          description: "PAYMENT_TRANSACTION_NOT_FOUND: order is missing or belongs\
+            \ to another account."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "502":
+          description: "PAYMENT_RESPONSE_INVALID: provider data cannot be verified."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: "PAYMENT_UNAVAILABLE: payment provider is not configured or\
+            \ temporarily unavailable."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/subscriptions/plans:
     get:
       tags:
@@ -4340,6 +4417,36 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /api/v1/members/{userId}/recipe-statistics:
+    get:
+      tags:
+      - member-recipe-controller
+      summary: Get public recipe engagement totals for a member
+      description: Totals include likes and views across all of the member's currently
+        published recipes.
+      operationId: publishedRecipeStatistics
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RecipeAuthorStatisticsResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/members/{userId}/following:
     get:
       tags:
@@ -4616,6 +4723,121 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/ingredients:
+    get:
+      tags:
+      - public-ingredient-browse-controller
+      summary: "Search active public ingredients, optionally within a group"
+      operationId: ingredients
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+          minLength: 0
+      - name: group
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+          minLength: 0
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          maximum: 1000000
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 100
+          minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageResponsePublicIngredientResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/v1/ingredients/groups:
+    get:
+      tags:
+      - public-ingredient-browse-controller
+      summary: List active ingredient groups
+      operationId: groups
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicIngredientGroupResponse"
+  /api/v1/experts:
+    get:
+      tags:
+      - expert-directory-controller
+      summary: Search the public directory of active experts
+      operationId: search
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ""
+          maxLength: 100
+          minLength: 0
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          maximum: 1000000
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 12
+          maximum: 50
+          minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageResponseExpertDirectoryEntryResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/expert-applications/me:
     get:
       tags:
@@ -6411,16 +6633,16 @@ components:
           additionalProperties: {}
         signature:
           type: string
-        amount:
-          type: integer
-          format: int32
+        paymentLinkId:
+          type: string
         orderCode:
           type: integer
           format: int64
+        amount:
+          type: integer
+          format: int32
         paymentSuccess:
           type: boolean
-        paymentLinkId:
-          type: string
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -6818,6 +7040,61 @@ components:
         paidAt:
           type: string
           format: date-time
+        tier:
+          type:
+          - string
+          - "null"
+        endsAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+          description: "UTC expiry of the subscription purchased by this transaction,\
+            \ not the current subscription."
+    MySubscriptionResponse:
+      type: object
+      properties:
+        tier:
+          type: string
+        status:
+          type: string
+        active:
+          type: boolean
+        startsAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        endsAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        unlockedFeatures:
+          type: array
+          items:
+            type: string
+    PaymentResultResponse:
+      type: object
+      properties:
+        orderCode:
+          type: string
+        tier:
+          type: string
+        amountVnd:
+          type: integer
+          format: int32
+        status:
+          type: string
+        paidAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        activated:
+          type: boolean
+        subscription:
+          $ref: "#/components/schemas/MySubscriptionResponse"
     PlanResponse:
       type: object
       properties:
@@ -6836,25 +7113,6 @@ components:
             type: string
         billingPeriod:
           type: string
-    MySubscriptionResponse:
-      type: object
-      properties:
-        tier:
-          type: string
-        status:
-          type: string
-        active:
-          type: boolean
-        startsAt:
-          type: string
-          format: date-time
-        endsAt:
-          type: string
-          format: date-time
-        unlockedFeatures:
-          type: array
-          items:
-            type: string
     PageResponseSavedRecipeResponse:
       type: object
       properties:
@@ -7122,6 +7380,18 @@ components:
           type: string
         ingredientGroup:
           type: string
+    RecipeAuthorStatisticsResponse:
+      type: object
+      properties:
+        recipeCount:
+          type: integer
+          format: int64
+        totalLikes:
+          type: integer
+          format: int64
+        totalViews:
+          type: integer
+          format: int64
     FollowMemberResponse:
       type: object
       properties:
@@ -7283,6 +7553,79 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ExportEntry"
+    PageResponsePublicIngredientResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicIngredientResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PublicIngredientResponse:
+      type: object
+      properties:
+        ingredientId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        ingredientGroup:
+          type: string
+    PublicIngredientGroupResponse:
+      type: object
+      properties:
+        ingredientGroup:
+          type: string
+        ingredientCount:
+          type: integer
+          format: int64
+    ExpertDirectoryEntryResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+        bio:
+          type: string
+        followerCount:
+          type: integer
+          format: int64
+        following:
+          type: boolean
+    PageResponseExpertDirectoryEntryResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpertDirectoryEntryResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
     PageResponseExpertApplicationResponse:
       type: object
       properties:
