@@ -26,6 +26,7 @@
 ### Fixed
 
 - Remove the unresolved dependency on the separately committed FR-55 export component so FR-53 can build independently.
+- Use explicit calendar-value comparisons and manage shopping-dialog focus through refs while preserving keyboard access to add, edit and cancel actions.
 
 ## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
 

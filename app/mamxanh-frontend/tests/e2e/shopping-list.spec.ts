@@ -341,6 +341,7 @@ test("shopping manual item quantity, edit, bought/unbought, filtering and deleti
 
   await page.getByRole("button", { name: "Thêm mặt hàng", exact: true }).click()
 
+  await expect(page.getByLabel("Tên mặt hàng")).toBeFocused()
   await page.getByLabel("Tên mặt hàng").fill("Khăn giấy lau bếp")
 
   await page.getByLabel("Số lượng", { exact: true }).fill("2")
@@ -357,6 +358,7 @@ test("shopping manual item quantity, edit, bought/unbought, filtering and deleti
     .getByRole("button", { name: "Sửa Khăn giấy lau bếp cuộn", exact: true })
     .click()
 
+  await expect(page.getByLabel("Số lượng", { exact: true })).toBeFocused()
   await page.getByLabel("Số lượng", { exact: true }).fill("3.5")
 
   await page.getByRole("button", { name: "Lưu mặt hàng" }).click()
@@ -384,6 +386,7 @@ test("shopping manual item quantity, edit, bought/unbought, filtering and deleti
     .getByRole("button", { name: "Xoá Khăn giấy lau bếp cuộn", exact: true })
     .click()
 
+  await expect(page.getByRole("button", { name: "Hủy", exact: true })).toBeFocused()
   await page.getByRole("button", { name: "Hủy", exact: true }).click()
   await expect(item).toBeVisible()
 

@@ -90,6 +90,10 @@ function ShoppingWorkspace() {
   const selectedId = useRef(id)
   selectedId.current = id
   const dialogTrigger = useRef<HTMLElement | null>(null)
+  const removalActions = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (removal) removalActions.current?.querySelector("button")?.focus()
+  }, [removal])
   useEffect(() => {
     alive.current = true
     return () => {
@@ -608,9 +612,8 @@ function ShoppingWorkspace() {
             {error}
           </p>
         )}
-        <div className="mt-5 flex justify-end gap-2">
+        <div ref={removalActions} className="mt-5 flex justify-end gap-2">
           <Button
-            autoFocus
             variant="outline"
             disabled={busy}
             onClick={closeDialog}
@@ -660,6 +663,12 @@ function ItemForm({
   const [name, setName] = useState(item?.name ?? "")
   const [quantity, setQuantity] = useState(String(item?.quantity ?? 1))
   const [unit, setUnit] = useState(String(item?.unitId ?? units[0]?.id ?? ""))
+  const nameInput = useRef<HTMLInputElement>(null)
+  const quantityInput = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const input = item === null ? nameInput.current : quantityInput.current
+    input?.focus()
+  }, [item])
   return (
     <form
       onSubmit={(event) => {
@@ -677,7 +686,7 @@ function ItemForm({
         <label className="block text-sm text-ink">
           Tên mặt hàng
           <input
-            autoFocus={item === null}
+            ref={nameInput}
             className={`${field} mt-2 w-full`}
             required
             maxLength={200}
@@ -690,7 +699,7 @@ function ItemForm({
           <label className="text-sm text-ink">
             Số lượng
             <input
-              autoFocus={item !== null}
+              ref={quantityInput}
               className={`${field} mt-2 w-full`}
               type="number"
               required

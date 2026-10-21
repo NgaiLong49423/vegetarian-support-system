@@ -135,7 +135,7 @@ public class ShoppingListCreationService {
             return "Đi chợ · thực đơn " + dateRange(first, last);
         }
         // Compact dates only within the same month/year; never hide a month or year boundary.
-        boolean sameMonth = first.getYear() == last.getYear() && first.getMonth() == last.getMonth();
+        boolean sameMonth = first.getYear() == last.getYear() && first.getMonthValue() == last.getMonthValue();
         var labels = new ArrayList<String>();
         for (int i = 0; i < dates.size(); i++) {
             labels.add(dates.get(i).format(sameMonth && i < dates.size() - 1 ? DAY : FULL_DATE));
@@ -145,14 +145,14 @@ public class ShoppingListCreationService {
 
     private String dateRange(LocalDate first, LocalDate last) {
         DateTimeFormatter startFormat = first.getYear() != last.getYear() ? FULL_DATE
-                : first.getMonth() != last.getMonth() ? DAY_MONTH : DAY;
+                : first.getMonthValue() != last.getMonthValue() ? DAY_MONTH : DAY;
         return first.format(startFormat) + "–" + last.format(FULL_DATE);
     }
 
     private void validateDates(CreateMealPlanShoppingListRequest request) {
         if (request == null || request.weekStartDate() == null) throw invalid("Cần chọn tuần bắt đầu vào thứ Hai.");
         LocalDate start = request.weekStartDate();
-        if (start.getDayOfWeek() != java.time.DayOfWeek.MONDAY || start.getYear() < 1
+        if (!java.time.DayOfWeek.MONDAY.equals(start.getDayOfWeek()) || start.getYear() < 1
                 || start.isAfter(LocalDate.of(9999, 12, 31).minusDays(6))) throw invalid("Tuần không hợp lệ; ngày bắt đầu phải là thứ Hai.");
         var dates = request.selectedDates();
         if (dates != null && (dates.isEmpty() || dates.size() > 7 || new HashSet<>(dates).size() != dates.size()
