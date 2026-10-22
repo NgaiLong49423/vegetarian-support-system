@@ -11,6 +11,7 @@ import { PageContainer } from "../components/Layout"
 import { Button, Card } from "../components/ui"
 import { Modal } from "../components/Modal"
 import SpringCheck from "../components/SpringCheck"
+import { ShoppingListExport } from "../components/ShoppingListExport"
 import { useAuth } from "../components/AuthContext"
 import {
   shoppingApi,
@@ -415,14 +416,23 @@ function ShoppingWorkspace() {
                     </button>
                   ))}
                 </nav>
-                <Button
-                  size="sm"
-                  disabled={busy || units.length === 0}
-                  onClick={() => openDialog(() => setEditor("new"))}
-                >
-                  <Plus className="h-4 w-4" />
-                  Thêm mặt hàng
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ShoppingListExport
+                    key={list.id}
+                    items={list.items}
+                    listName={list.name}
+                    disabled={busy}
+                    onNotice={setNotice}
+                  />
+                  <Button
+                    size="sm"
+                    disabled={busy || units.length === 0}
+                    onClick={() => openDialog(() => setEditor("new"))}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Thêm mặt hàng
+                  </Button>
+                </div>
               </div>
               {Object.entries(grouped).length ? (
                 <div className="space-y-6">

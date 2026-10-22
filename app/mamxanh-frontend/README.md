@@ -7,6 +7,13 @@
 
 # Mâm Xanh Frontend
 
+### Sao chép và xuất TXT đi chợ — FR-55 / Issue #55
+
+- Toolbar `/di-cho` sao chép hoặc tải toàn bộ danh sách đang chọn, kể cả những mục bị ẩn bởi bộ lọc; giữ nhóm, số lượng, đơn vị và ký hiệu `[ ]`/`[x]` đã lưu. Không đưa thông tin tài khoản hoặc provenance công thức vào nội dung xuất.
+- Tệp UTF-8 có BOM dùng tên `Danh_sach_mua_sam_YYYYMMDD.txt` theo ngày xuất. Nội dung có riêng ngày xuất và ngày thực đơn lấy từ nhãn danh sách: một ngày, khoảng ngày hoặc các ngày đã chọn. Danh sách cá nhân từ công thức được ghi rõ không gắn ngày thực đơn; nhãn cũ thiếu ngày không tự suy diễn từ thời gian tạo.
+- Danh sách trống hoặc đang lưu vô hiệu hóa thao tác xuất. Khi clipboard không được hỗ trợ/bị từ chối, hộp thoại cho phép chọn và sao chép thủ công; lỗi tải TXT cho phép thử lại. Thao tác xuất không sửa checklist hoặc gọi AI.
+- Phụ thuộc nền tảng FR-53 / PR #171; chỉ bàn giao phần export của #55, chưa xác nhận nghiệm thu trên `main`.
+
 ### Checklist đi chợ — FR-53 / Issue #53
 
 - `/di-cho` đọc và lưu checklist thật theo tài khoản; Guest cần đăng nhập, Administrator không có thao tác cá nhân. Thêm mặt hàng thủ công, sửa lượng/đơn vị, tick/bỏ tick, xóa từng mục hoặc xóa mục đã mua đều dùng API; lỗi giữ dữ liệu để thử lại.
