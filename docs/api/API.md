@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.35.0
+> **Version:** v0.36.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-22
 > **Status:** Active
 
 # API Integration Guide
@@ -366,7 +366,7 @@ Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint d
 
 ## 16. Chatbot hỏi đáp theo ngữ cảnh — FR-51
 
-`POST /api/v1/recipes/ai/chat` yêu cầu Bearer token của Member đang hoạt động. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` hoặc `ASSISTANT`, mỗi nội dung tối đa 1.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
+`POST /api/v1/recipes/ai/chat` phục vụ cả Guest và Member đang hoạt động trên cùng một chatbot. Member gửi Bearer token; Guest gửi thêm `anonymousViewerId` dạng UUID lấy từ session cookie cùng origin Frontend (`mamxanh.recipe-viewer`, dùng chung định danh ẩn danh hiện có của FR-58). Không dùng cookie xác thực hoặc bật credentials xuyên origin. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` hoặc `ASSISTANT`, mỗi nội dung tối đa 1.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
 
 Ví dụ body cho ngữ cảnh công thức:
 
@@ -406,7 +406,13 @@ Ví dụ phần response cho yêu cầu tìm món:
 
 Gemini phải phân biệt dữ kiện ghi trong RecipePost với gợi ý/ước tính của AI, không bịa thông tin còn thiếu, tôn trọng loại ăn chay và không chẩn đoán hoặc kê phác đồ điều trị. API chỉ đọc; không lưu lịch sử hội thoại hay thay đổi dữ liệu nghiệp vụ. Frontend giữ tối đa lịch sử cần gửi trong state của phiên hiện tại. Backend chỉ phát telemetry token `AiUsageEvent` sau phản hồi hợp lệ; không đưa câu hỏi, lịch sử, context công thức hoặc câu trả lời vào telemetry/log.
 
-Lỗi request trả `400`; bài không tồn tại hoặc không còn công khai trả `404`; phản hồi Gemini sai/thiếu trả `502 AI_RESPONSE_INVALID`; Gemini lỗi hoặc timeout trả `503 AI_PROVIDER_UNAVAILABLE`. Backend giới hạn thời gian chờ Gemini theo NFR-18. Guest chưa được bật trên endpoint này; chỉ mở khi giới hạn tần suất Guest thuộc FR-02 có mặt trên baseline tích hợp. Generated `/v3/api-docs` là contract chi tiết cho request, response, validation và security.
+Lỗi request trả `400`; bài không tồn tại hoặc không còn công khai trả `404`; phản hồi Gemini sai/thiếu trả `502 AI_RESPONSE_INVALID`; Gemini lỗi hoặc timeout trả `503 AI_PROVIDER_UNAVAILABLE`. Backend giới hạn thời gian chờ Gemini theo NFR-18. Guest chịu giới hạn trượt 10 request/phút độc lập theo UUID và peer IP; đổi cookie không vượt được giới hạn IP, đổi IP không vượt được giới hạn cookie. Vượt ngưỡng trả `429 AI_GUEST_RATE_LIMITED` cùng `Retry-After` trước khi gọi chatbot/provider. Bộ đếm có giới hạn bộ nhớ, hết hiệu lực sau một phút, lưu hash SHA-256 và không tin `X-Forwarded-For`. Đây là bộ đếm trong một tiến trình cho baseline Backend hiện tại; không bảo đảm giới hạn chung khi chạy nhiều replica. Member không dùng bộ đếm Guest hoặc daily quota. Bearer sai/hết hạn trả `401`, tài khoản bị khóa trả `403`; không hạ request có Bearer lỗi thành Guest. Guest không đọc hồ sơ sở thích hoặc sức khỏe tài khoản; `AiUsageEvent.userId` là null cho Guest, chỉ chứa metadata token. Generated `/v3/api-docs` là contract chi tiết cho request, response, validation và security.
+
+Phần Guest là prerequisite được tích hợp trong FR-10/Issue #16 để đáp ứng AC-10.1; không tự xác nhận Issue FR-02 đã được nghiệm thu. Khi tiếp tục FR-02, tái sử dụng endpoint và bộ đếm này, không tạo chatbot hoặc daily quota riêng.
+
+### Quy ước lỗi entitlement — FR-10
+
+Các guard hiện có vẫn dùng `403 AI_SUBSCRIPTION_REQUIRED`. ProblemDetail bổ sung `requiredTier` (`PLUS` hoặc `PRO`) và `upgradeUrl` (`/goi-ai`); `detail` hướng dẫn đúng gói tối thiểu. Plus/Pro cho FR-21 vẫn đồng thời yêu cầu vai trò Expert; Pro cho FR-36 vẫn yêu cầu eligibility và hồ sơ hợp lệ. Frontend hiển thị thông báo và liên kết nâng cấp nhưng Backend quyết định quyền từ Subscription đang hiệu lực, không từ thông tin gói do client khai. Preview và apply menu tuần kiểm tra lại Pro ở từng bước; lỗi không đổi Subscription hoặc gọi Gemini. Nội dung tính toán dinh dưỡng/gợi ý thông thường không bị đưa vào paywall bởi thay đổi này.
 
 ## 17. Theo dõi thành viên — FR-59
 

@@ -68,9 +68,11 @@ public class AiChatService {
     }
 
     public AiChatResponse answer(AiChatRequest request) {
-        var user = users.requireActiveMember();
+        Long userId = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember().id() : null;
         validateContext(request);
-        var dietary = preferences.menuConstraints(user.id());
+        var dietary = userId == null
+                ? new DietaryPreferenceService.MenuDietaryConstraints(null, List.of(), List.of())
+                : preferences.menuConstraints(userId);
         RecipeDetailResponse recipe = request.contextType() == AiChatRequest.ContextType.RECIPE
                 ? recipes.getPublishedRecipe(request.recipeId()) : null;
         boolean catalogSearch = !explicitlyRequestsCreation(request.question())
@@ -93,7 +95,7 @@ public class AiChatService {
         List<RecipeRecommendation> recommendations = hydrateRecommendations(reply, candidates, dietary, request);
         String answer = normalizedAnswer(reply, request, catalogSearch, recommendations);
         if (answer.isBlank()) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
-        events.publishEvent(new AiUsageEvent(user.id(), "FR-51", clock.instant(),
+        events.publishEvent(new AiUsageEvent(userId, "FR-51", clock.instant(),
                 result.promptTokens(), result.responseTokens(), result.totalTokens()));
         return new AiChatResponse(request.contextType(), request.recipeId(), answer, recommendations);
     }

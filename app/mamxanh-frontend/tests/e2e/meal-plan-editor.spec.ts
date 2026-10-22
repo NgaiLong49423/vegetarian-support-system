@@ -324,6 +324,24 @@ test("only one day expands, and adding meals queries saved recipes with paginati
   expect(publicSearches).toBe(0)
 })
 
+test("FR-10: nutrition AI explains the Pro requirement and links to plans without changing meals", async ({ page }) => {
+  const original = entry(7, 11)
+  const state = await setup(page, [original])
+  await page.route("**/api/v1/meal-plans/ai-menu/previews", route => route.fulfill({
+    status: 403, contentType: "application/problem+json", json: {
+      status: 403, code: "AI_SUBSCRIPTION_REQUIRED", requiredTier: "PRO", upgradeUrl: "/goi-ai",
+      detail: "Tính năng AI này yêu cầu gói Pro còn hiệu lực. Hãy nâng cấp lên Pro để tiếp tục.",
+    },
+  }))
+  await page.goto("/ke-hoach?view=for-you")
+  await page.getByRole("tab", { name: "Theo nhu cầu dinh dưỡng" }).click()
+  await page.getByRole("button", { name: "Tạo thực đơn tuần" }).click()
+  await expect(page.getByRole("alert")).toContainText("yêu cầu gói Pro")
+  await expect(page.getByRole("alert").getByRole("link", { name: "Nâng cấp gói Pro" })).toHaveAttribute("href", "/goi-ai")
+  expect(state.entries).toEqual([original])
+  expect(state.writes).toBe(0)
+})
+
 test("weekly AI preview leaves the plan unchanged until the member confirms whole-week replacement", async ({ page }) => {
   const existing = entry(7, 11)
   const state = await setup(page, [existing])

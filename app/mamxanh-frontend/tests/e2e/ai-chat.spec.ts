@@ -7,6 +7,33 @@ async function signInAsMember(page: import('@playwright/test').Page) {
   })));
 }
 
+test('Guest uses the same chatbot with a stable session-cookie ID and can register after rate limiting', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  const identities: string[] = [];
+  await page.route('**/api/v1/recipes/ai/chat', async (route) => {
+    const body = route.request().postDataJSON();
+    expect(route.request().headers().authorization).toBeUndefined();
+    identities.push(body.anonymousViewerId);
+    await route.fulfill(identities.length === 1
+      ? { json: { contextType: 'GENERAL', recipeId: null, answer: 'Bạn có thể nấu nhỏ lửa.' } }
+      : { status: 429, json: { status: 429, code: 'AI_GUEST_RATE_LIMITED', detail: 'Thử lại sau.' } });
+  });
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  const chat = page.getByRole('dialog');
+  await expect(chat.getByText('Bạn đang trò chuyện với tư cách khách.', { exact: false })).toBeVisible();
+  await page.getByLabel('Câu hỏi của bạn').fill('Cách nấu canh?');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page.getByText('Bạn có thể nấu nhỏ lửa.')).toBeVisible();
+  await page.getByLabel('Câu hỏi của bạn').fill('Thêm gì?');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(chat.getByRole('alert')).toContainText('Bạn đã gửi nhiều câu hỏi');
+  expect(identities[0]).toMatch(/^[a-f0-9-]{36}$/i);
+  expect(identities[1]).toBe(identities[0]);
+  await expect(chat.getByRole('alert').getByRole('link', { name: 'Đăng ký', exact: true })).toHaveAttribute('href', '/dang-ky');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test('general chat keeps session history in the page and labels the answer as AI', async ({ page }) => {
   await signInAsMember(page);
   const requests: Array<Record<string, unknown>> = [];

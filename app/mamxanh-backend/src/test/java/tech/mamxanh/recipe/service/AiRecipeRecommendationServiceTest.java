@@ -145,6 +145,14 @@ class AiRecipeRecommendationServiceTest {
     }
 
     @Test
+    void expiredProCannotApplyAnEarlierWeeklyPreview() {
+        doThrow(new AppException(ErrorCode.AI_SUBSCRIPTION_REQUIRED)).when(entitlements).requirePro(7);
+        assertThatThrownBy(() -> service.requireWeeklyApplyEligible(7L, List.of(1L)))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_SUBSCRIPTION_REQUIRED);
+        verifyNoInteractions(preferences, recipes, ai, events);
+    }
+
+    @Test
     void rechecksCurrentPublicationAndDietarySafetyBeforeApplyingWeeklyPreview() {
         var forbidden = recipe(9, "VEGAN", 99L);
         when(recipes.getPublishedCards(List.of(1L, 9L))).thenReturn(List.of(recipe(1, "VEGAN", 1L), forbidden));

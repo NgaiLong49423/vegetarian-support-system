@@ -2347,11 +2347,13 @@ paths:
       tags:
       - ai-chat-controller
       summary: Ask the vegetarian cooking assistant
-      description: Requires an active Member. General context or the latest public
-        RecipePost is loaded server-side. Recipe discovery selects only current public
-        RecipePosts from the Backend catalog; explicitly requested recipe drafts remain
-        chat text only. Conversation history is request-scoped and is not persisted.
-        Guest access will be enabled with FR-02 rate limiting.
+      description: Guest and active Member use the same chatbot. Guest must supply
+        a session-cookie UUID in anonymousViewerId; a rolling limit of 10 requests
+        per minute applies independently to cookie and peer IP. No daily quota. General
+        context or the latest public RecipePost is loaded server-side. Recipe discovery
+        selects only current public RecipePosts from the Backend catalog; explicitly
+        requested recipe drafts remain chat text only. Conversation history is request-scoped
+        and is not persisted. Guest has no account dietary context.
       operationId: answer
       requestBody:
         content:
@@ -2374,7 +2376,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: An authenticated Member session is required.
+          description: A supplied Bearer token is invalid or expired; it is not downgraded
+            to Guest.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: The account is locked or the authenticated role may not use
+            chat.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "429":
+          description: Guest exceeded the cookie or peer-IP limit; Retry-After gives
+            the wait in seconds.
+          headers:
+            Retry-After:
+              description: Seconds until Guest can try again.
+              style: simple
+              schema:
+                type: integer
+                minimum: 1
           content:
             application/problem+json:
               schema:
@@ -2397,14 +2421,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
-            \ this operation."
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
       security:
+      - {}
       - bearerAuth: []
   /api/v1/recipes/ai-assistance:
     post:
@@ -5432,6 +5450,16 @@ components:
                 type: string
               message:
                 type: string
+        requiredTier:
+          type: string
+          description: Minimum paid tier for AI_SUBSCRIPTION_REQUIRED; role and other
+            feature prerequisites still apply.
+          enum:
+          - PLUS
+          - PRO
+        upgradeUrl:
+          type: string
+          description: Relative plan-information link for entitlement failures.
     RecipeMediaItemRequest:
       type: object
       properties:
@@ -6471,6 +6499,11 @@ components:
             $ref: "#/components/schemas/Turn"
           maxItems: 8
           minItems: 0
+        anonymousViewerId:
+          type: string
+          description: Session-cookie UUID required for Guest rate limiting; ignored
+            for authenticated Members.
+          pattern: "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
       required:
       - contextType
       - question
