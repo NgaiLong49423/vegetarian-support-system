@@ -207,10 +207,10 @@ export function MealPlanner() {
       </div>
 
       <div className="mt-6 flex flex-col items-center justify-between gap-4 rounded-2xl border border-brand-100 bg-brand-50/50 p-5 sm:flex-row">
-        <p className="text-sm text-ink-soft">Tiếp tục thử màn danh sách đi chợ mẫu để chuẩn bị nguyên liệu cho bữa ăn.</p>
+        <p className="text-sm text-ink-soft">Đăng nhập để tạo và lưu danh sách đi chợ từ Lịch ăn của bạn.</p>
         <Button as="span">
-          <Link to="/di-cho" className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4" /> Tạo danh sách đi chợ
+          <Link to="/dang-nhap" className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" /> Đăng nhập để tạo danh sách
           </Link>
         </Button>
       </div>

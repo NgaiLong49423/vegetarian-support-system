@@ -7,6 +7,8 @@ export default defineConfig({
   // change view counts or select a fixture that its owner is about to remove.
   workers: 1,
   retries: 0,
+  // Specs share one Compose database; browsing another spec's newest recipe changes its view count.
+  workers: 1,
   reporter: 'list',
   timeout: 120_000,
   use: {

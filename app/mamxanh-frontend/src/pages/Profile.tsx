@@ -18,6 +18,7 @@ import { Button, Card, EmptyState } from "../components/ui"
 import { useAuth } from "../components/AuthContext"
 import { subscriptionApi, type MySubscriptionResponse } from "../api/subscription"
 import { useSavedRecipes } from "../components/SavedRecipesContext"
+import { useRecipeShoppingSelection } from "../components/RecipeShoppingSelection"
 import {
   savedRecipesApi,
   type SavedRecipePage,
@@ -26,6 +27,7 @@ import { asApiError } from "../lib/apiClient"
 import { formatSubscriptionDate as formatDate } from "../utils/subscriptionDate"
 
 export function Profile() {
+  const shopping = useRecipeShoppingSelection()
   const { account } = useAuth()
   const { setSaved, pending, revision } = useSavedRecipes()
   const [subscription, setSubscription] = useState<MySubscriptionResponse | null>(null)
@@ -304,6 +306,7 @@ export function Profile() {
                   : "Danh sách riêng của bạn"}
               </span>
             </div>
+            {shopping.toolbar}
             {error && (
               <div
                 role="alert"
@@ -368,6 +371,7 @@ export function Profile() {
                         </p>
                       </div>
                     )}
+                    {item.available && shopping.checkbox(item.recipeId, item.title ?? "Công thức")}
                     <button
                       type="button"
                       aria-label={`Bỏ lưu ${

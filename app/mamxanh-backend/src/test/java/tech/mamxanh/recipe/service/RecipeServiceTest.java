@@ -89,6 +89,40 @@ class RecipeServiceTest {
     }
 
     @Test
+    void shoppingSourcesBatchOnlyPublishedRecipesWithoutNutritionOrProviderWork() {
+        var visible = new RecipePostEntity(); visible.setId(61L); visible.setStatus("PUBLISHED"); visible.setServings(3);
+        var hidden = new RecipePostEntity(); hidden.setId(62L); hidden.setStatus("HIDDEN"); hidden.setServings(2);
+        var line = new RecipeIngredientEntity(); line.setRecipeId(61L); line.setIngredientId(11L);
+        line.setUnitId(1); line.setQuantity(new BigDecimal("150"));
+        when(recipeRepository.findAllById(List.of(61L,62L))).thenReturn(List.of(visible,hidden));
+        when(ingredientRepository.findAllByRecipeIdInOrderByRecipeIdAscIdAsc(List.of(61L))).thenReturn(List.of(line));
+        var result = service.findShoppingSources(List.of(61L,62L));
+        assertThat(result).containsOnlyKeys(61L);
+        assertThat(result.get(61L).servings()).isEqualTo(3);
+        assertThat(result.get(61L).ingredients()).singleElement().satisfies(i -> {
+            assertThat(i.ingredientId()).isEqualTo(11); assertThat(i.quantity()).isEqualByComparingTo("150");
+        });
+        org.mockito.Mockito.verifyNoInteractions(nutritionService,conversionRepository,mediaRepository,statisticsRepository);
+    }
+
+    @Test
+    void shoppingSourcesDoNotQueryIngredientsForEmptyOrUnavailableSelections() {
+        assertThat(service.findShoppingSources(null)).isEmpty();
+        assertThat(service.findShoppingSources(List.of())).isEmpty();
+        when(recipeRepository.findAllById(List.of(61L))).thenReturn(List.of());
+        assertThat(service.findShoppingSources(List.of(61L))).isEmpty();
+        org.mockito.Mockito.verifyNoInteractions(ingredientRepository,nutritionService);
+    }
+
+    @Test
+    void shoppingSourceCanRepresentARecipeWithoutIngredientLinesWithoutFabricatingThem() {
+        var recipe = new RecipePostEntity();recipe.setId(61L);recipe.setStatus("PUBLISHED");recipe.setServings(2);
+        when(recipeRepository.findAllById(List.of(61L))).thenReturn(List.of(recipe));
+        when(ingredientRepository.findAllByRecipeIdInOrderByRecipeIdAscIdAsc(List.of(61L))).thenReturn(List.of());
+        assertThat(service.findShoppingSources(List.of(61L)).get(61L).ingredients()).isEmpty();
+    }
+
+    @Test
     void rejectsMissingUnauthenticatedAnonymousAndUnparseablePrincipals() {
         assertUnauthenticated();
         SecurityContextHolder.getContext().setAuthentication(

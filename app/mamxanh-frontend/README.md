@@ -7,6 +7,13 @@
 
 # Mâm Xanh Frontend
 
+### Checklist đi chợ — FR-53 / Issue #53
+
+- `/di-cho` đọc và lưu checklist thật theo tài khoản; Guest cần đăng nhập, Administrator không có thao tác cá nhân. Thêm mặt hàng thủ công, sửa lượng/đơn vị, tick/bỏ tick, xóa từng mục hoặc xóa mục đã mua đều dùng API; lỗi giữ dữ liệu để thử lại.
+- Từ Lịch ăn có thể tạo theo cả tuần hoặc các ngày chọn; nhãn danh sách thể hiện ngày thực đơn. Từ Khám phá/Đã lưu có thể chọn nhiều Recipe Post qua các trang và thêm nguyên liệu vào danh sách cá nhân, tách khỏi danh sách từ lịch ăn.
+- Nguồn công thức giữ lượng/đơn vị lúc thêm, hiển thị nội dung hiện hành hoặc unavailable khi bài không còn công khai. Thêm lại công thức không cộng trùng. Hành vi theo AC-53.6 và thiết kế nguồn đã chốt trong #90.
+- Bản dựng FR-53 không phụ thuộc component export chưa bàn giao của FR-55; clipboard/TXT sẽ được nối ở PR riêng. Backend FR-53 phụ thuộc engine FR-54 / PR #150 chưa merge.
+
 ### Danh bạ Chuyên gia và chọn nguyên liệu — FR-61 / FR-62
 
 - Menu Khám phá mở các route Công thức, Danh mục nguyên liệu và Chuyên gia trên desktop/mobile. Cộng đồng vẫn được mở từ nút “Xem cộng đồng” trên Trang chủ; route và deep links hiện có được giữ nguyên.

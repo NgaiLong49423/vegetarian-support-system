@@ -6,6 +6,115 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 paths:
+  /api/v1/shopping-lists/{listId}/items/{itemId}:
+    put:
+      tags:
+      - shopping-list-controller
+      summary: Edit a shopping item's quantity and unit
+      description: Preserves ingredient identity and bought state. An existing inactive
+        unit may be retained; a newly selected unit must be active.
+      operationId: updateShoppingItem
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateShoppingItemRequest"
+        required: true
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: The updated item.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ShoppingListItemResponse"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - shopping-list-controller
+      summary: Delete one item from an owned shopping list
+      operationId: deleteShoppingItem
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "204":
+          description: The item was deleted.
+      security:
+      - bearerAuth: []
   /api/v1/saved-recipes/{recipeId}:
     put:
       tags:
@@ -1732,6 +1841,206 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/shopping-lists/{listId}/items:
+    post:
+      tags:
+      - shopping-list-controller
+      summary: Add a manual item to an owned list
+      description: "Name is plain text. Quantity is positive, with at most 8 integer\
+        \ and 2 fractional digits; the unit must be active. New items start unbought.\
+        \ This operation does not perform FR-54 aggregation."
+      operationId: addShoppingItem
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateShoppingItemRequest"
+        required: true
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: The manual item was saved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingListItemResponse"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - shopping-list-controller
+      summary: Remove bought items from an owned list
+      description: Requires bought=true. Unbought items and other lists are preserved.
+      operationId: clearBoughtShoppingItems
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "204":
+          description: Bought items were removed; repeating cleanup is safe.
+      security:
+      - bearerAuth: []
+  /api/v1/shopping-lists/from-recipes:
+    post:
+      tags:
+      - shopping-list-controller
+      summary: Add selected public recipes to the Member's personal checklist
+      description: "One personal list per Member, independent from meal-plan lists.\
+        \ Repeated recipes add no duplicate contributions. Request is atomic; unavailable\
+        \ sources return 404. Adds original recipe quantities without portion scaling.\
+        \ Saved edits are retained as the base for future additions."
+      operationId: addRecipesToPersonalShoppingList
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddRecipeShoppingRequest"
+        required: true
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: The personal checklist and creation diagnostics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingListCreationResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/shopping-lists/from-meal-plan:
+    post:
+      tags:
+      - shopping-list-controller
+      summary: Create an owned checklist from a meal-plan week
+      description: Omit selectedDates for the whole week. Quantities are scaled to
+        planned servings and aggregated by FR-54. Unavailable recipes/invalid source
+        lines produce warnings; an empty result or a quantity that cannot be stored
+        safely returns 400 without creating a list. Creates a new independent list;
+        does not update the personal Recipe Post list.
+      operationId: createShoppingListFromMealPlan
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMealPlanShoppingListRequest"
+        required: true
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: Checklist persisted with unbought items and creation diagnostics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingListCreationResponse"
+      security:
+      - bearerAuth: []
   /api/v1/recipes:
     get:
       tags:
@@ -3401,6 +3710,67 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/shopping-lists/{listId}/items/{itemId}/bought:
+    patch:
+      tags:
+      - shopping-list-controller
+      summary: Set a shopping item's bought state
+      description: "Explicit boolean assignment, not toggle; repeating the same state\
+        \ has no effect on updatedAt."
+      operationId: setShoppingItemBought
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShoppingItemBoughtRequest"
+        required: true
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: The saved bought state.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ShoppingListItemResponse"
+      security:
+      - bearerAuth: []
   /api/v1/meal-plans/{weekStartDate}/entries/{entryId}/servings:
     patch:
       tags:
@@ -3913,6 +4283,154 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/shopping-lists:
+    get:
+      tags:
+      - shopping-list-controller
+      summary: List the current Member's shopping lists
+      description: "page >= 0; size 1–50, default 20. Ordered by updatedAt descending,\
+        \ then ID descending."
+      operationId: listShoppingLists
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: The owned shopping lists page.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageResponseShoppingListSummary"
+      security:
+      - bearerAuth: []
+  /api/v1/shopping-lists/{listId}:
+    get:
+      tags:
+      - shopping-list-controller
+      summary: Read an owned shopping checklist
+      description: Existing inactive catalog references remain readable. The account
+        is derived from authentication.
+      operationId: getShoppingList
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: The saved checklist.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ShoppingListResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/shopping-lists/options:
+    get:
+      tags:
+      - shopping-list-controller
+      summary: Read active shopping item units
+      operationId: getShoppingOptions
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: Active units for manual items.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UnitResponse"
       security:
       - bearerAuth: []
   /api/v1/saved-recipes:
@@ -5214,6 +5732,96 @@ paths:
       - bearerAuth: []
 components:
   schemas:
+    UpdateShoppingItemRequest:
+      type: object
+      properties:
+        quantity:
+          type: number
+          minimum: 0
+        unitId:
+          type: integer
+          format: int32
+          minimum: 0
+      required:
+      - quantity
+      - unitId
+    ProblemDetail:
+      type: object
+      description: "RFC 9457 problem detail; clients branch on `status` and `code`,\
+        \ never on `detail` text."
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          description: Stable `ErrorCode` value.
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+    ShoppingListItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        ingredientId:
+          type:
+          - integer
+          - "null"
+          format: int64
+        name:
+          type: string
+        ingredientGroup:
+          type: string
+        quantity:
+          type: number
+        unitId:
+          type: integer
+          format: int32
+        unitCode:
+          type: string
+        unitName:
+          type: string
+        bought:
+          type: boolean
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingRecipeSource"
+    ShoppingRecipeSource:
+      type: object
+      properties:
+        recipeId:
+          type: integer
+          format: int64
+        title:
+          type:
+          - string
+          - "null"
+        available:
+          type: boolean
+        originalQuantity:
+          type: number
+        originalUnitId:
+          type: integer
+          format: int32
+        originalUnitCode:
+          type: string
     Ingredient:
       type: object
       properties:
@@ -5404,34 +6012,6 @@ components:
           - "null"
           description: Tỷ lệ Like làm tròn thành số nguyên; null khi chưa có bình
             chọn.
-    ProblemDetail:
-      type: object
-      description: "RFC 9457 problem detail; clients branch on `status` and `code`,\
-        \ never on `detail` text."
-      properties:
-        type:
-          type: string
-        title:
-          type: string
-        status:
-          type: integer
-          format: int32
-        detail:
-          type: string
-        instance:
-          type: string
-        code:
-          type: string
-          description: Stable `ErrorCode` value.
-        errors:
-          type: array
-          items:
-            type: object
-            properties:
-              field:
-                type: string
-              message:
-                type: string
     RecipeMediaItemRequest:
       type: object
       properties:
@@ -6178,6 +6758,107 @@ components:
           type: string
         qrCode:
           type: string
+    CreateShoppingItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 0
+        quantity:
+          type: number
+          minimum: 0
+        unitId:
+          type: integer
+          format: int32
+          minimum: 0
+      required:
+      - name
+      - quantity
+      - unitId
+    AddRecipeShoppingRequest:
+      type: object
+      properties:
+        recipeIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+            minimum: 0
+          maxItems: 50
+          minItems: 0
+      required:
+      - recipeIds
+    ShoppingListCreationResponse:
+      type: object
+      properties:
+        shoppingList:
+          $ref: "#/components/schemas/ShoppingListResponse"
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingListCreationWarning"
+        incompatibleItemIds:
+          type: array
+          description: IDs of saved items that the aggregation kept in separate unit
+            buckets.
+          items:
+            type: integer
+            format: int64
+    ShoppingListCreationWarning:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        mealPlanEntryId:
+          type:
+          - integer
+          - "null"
+          format: int64
+        recipeId:
+          type:
+          - integer
+          - "null"
+          format: int64
+    ShoppingListResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingListItemResponse"
+    CreateMealPlanShoppingListRequest:
+      type: object
+      properties:
+        weekStartDate:
+          type: string
+          format: date
+        selectedDates:
+          type:
+          - array
+          - "null"
+          description: Omit or use null for the entire week; otherwise select 1–7
+            distinct dates within this week.
+          items:
+            type: string
+            format: date
+          maxItems: 7
+          minItems: 1
+      required:
+      - weekStartDate
     CreateRecipeRequest:
       type: object
       properties:
@@ -6940,6 +7621,13 @@ components:
           type: string
           maxLength: 1000
           minLength: 0
+    ShoppingItemBoughtRequest:
+      type: object
+      properties:
+        bought:
+          type: boolean
+      required:
+      - bought
     UpdateMealPlanServingsRequest:
       type: object
       properties:
@@ -7070,6 +7758,39 @@ components:
             type: string
         billingPeriod:
           type: string
+    PageResponseShoppingListSummary:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingListSummary"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    ShoppingListSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
     PageResponseSavedRecipeResponse:
       type: object
       properties:
