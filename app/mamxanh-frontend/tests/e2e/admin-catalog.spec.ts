@@ -80,6 +80,10 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
   await page.goto('/quan-tri/danh-muc');
   await expect(page.getByText('Chuối tây', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Mở biểu mẫu thêm nguyên liệu' }).click();
+  await expect(page.getByRole('heading', { name: 'Thêm nguyên liệu' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('heading', { name: 'Thêm nguyên liệu' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Mở biểu mẫu thêm nguyên liệu' }).click();
   await page.getByLabel('Tên chuẩn tiếng Việt').fill('Nấm đùi gà');
   await page.getByRole('combobox', { name: 'Nhóm nguyên liệu' }).last().selectOption('Đậu & Chế phẩm');
   await page.getByRole('combobox', { name: 'Nguồn dữ liệu hoặc cách ước tính' }).fill('USDA FoodData Central');
@@ -95,6 +99,9 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
   await expect(page.getByText('Nấm đùi gà', { exact: true })).toBeVisible();
   await expect(page.getByText('Chuối tây', { exact: true })).toHaveCount(0);
 
+  await page.getByRole('button', { name: 'Sửa Nấm đùi gà' }).click();
+  await page.getByRole('button', { name: 'Hủy' }).click();
+  await expect(page.getByRole('heading', { name: 'Sửa nguyên liệu' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Sửa Nấm đùi gà' }).click();
   await page.getByLabel('Tên chuẩn tiếng Việt').fill('Nấm đùi gà tươi');
   await page.getByLabel('Nguồn dữ liệu hoặc cách ước tính').fill('NIH/Viện Dinh dưỡng');
@@ -225,9 +232,15 @@ test('administrator filters the catalog through the paginated endpoint and reads
   await page.getByRole('button', { name: 'Xem chi tiết Nấm bào ngư' }).click();
   await expect(page.getByRole('heading', { name: 'Chi tiết · Nấm bào ngư' })).toBeVisible();
   await expect(page.getByText('Ngày đối chiếu:')).toBeVisible();
+  await page.getByRole('button', { name: 'Tắt' }).click();
+  await expect(page.getByRole('heading', { name: 'Chi tiết · Nấm bào ngư' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Xem chi tiết Nấm bào ngư' }).click();
   await page.getByRole('button', { name: 'Đóng' }).click();
+  await expect(page.getByRole('heading', { name: 'Chi tiết · Nấm bào ngư' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Xem công thức dùng Nấm bào ngư' }).click();
   await expect(page.getByText('Canh nấm rau củ', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Tắt' }).click();
+  await expect(page.getByText('Canh nấm rau củ', { exact: true })).toHaveCount(0);
 });
 
 test('ingredient image and group resolver handles all vegetarian groups and fallbacks', async ({ page }) => {

@@ -332,13 +332,17 @@ export function AdminCatalogPage() {
     void refresh();
   }, []);
 
+  const closeActiveModal = () => {
+    setNutritionTarget(null);
+    setReferencesTarget(null);
+    setIngredientEditorOpen(false);
+    setIngredientId(null);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setNutritionTarget(null);
-        setReferencesTarget(null);
-        setIngredientEditorOpen(false);
-        setIngredientId(null);
+        closeActiveModal();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -823,7 +827,7 @@ export function AdminCatalogPage() {
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
               <div
                 className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity cursor-pointer"
-                onClick={() => setNutritionTarget(null)}
+                onClick={closeActiveModal}
                 aria-hidden="true"
               />
               <div
@@ -839,7 +843,7 @@ export function AdminCatalogPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setNutritionTarget(null)}
+                    onClick={closeActiveModal}
                     className="rounded-full p-1.5 text-ink-muted hover:bg-brand-100 hover:text-ink transition-colors"
                     aria-label="Tắt"
                   >
@@ -952,7 +956,7 @@ export function AdminCatalogPage() {
                         {nutritionEnabled ? 'Ngừng hỗ trợ tính' : 'Bật hỗ trợ tính'}
                       </Button>
                     </div>
-                    <Button type="button" variant="ghost" disabled={saving} onClick={() => setNutritionTarget(null)}>
+                    <Button type="button" variant="ghost" disabled={saving} onClick={closeActiveModal}>
                       Đóng
                     </Button>
                   </div>
@@ -966,7 +970,7 @@ export function AdminCatalogPage() {
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
               <div
                 className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity cursor-pointer"
-                onClick={() => setReferencesTarget(null)}
+                onClick={closeActiveModal}
                 aria-hidden="true"
               />
               <div
@@ -982,7 +986,7 @@ export function AdminCatalogPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setReferencesTarget(null)}
+                    onClick={closeActiveModal}
                     className="rounded-full p-1.5 text-ink-muted hover:bg-brand-100 hover:text-ink transition-colors"
                     aria-label="Tắt"
                   >
@@ -1027,7 +1031,7 @@ export function AdminCatalogPage() {
                 )}
 
                 <div className="mt-6 flex justify-end border-t border-brand-100 pt-3">
-                  <Button type="button" variant="ghost" onClick={() => setReferencesTarget(null)}>
+                  <Button type="button" variant="ghost" onClick={closeActiveModal}>
                     Đóng
                   </Button>
                 </div>
@@ -1040,10 +1044,7 @@ export function AdminCatalogPage() {
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
               <div
                 className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity cursor-pointer"
-                onClick={() => {
-                  setIngredientEditorOpen(false);
-                  setIngredientId(null);
-                }}
+                onClick={closeActiveModal}
                 aria-hidden="true"
               />
               <div
@@ -1064,10 +1065,7 @@ export function AdminCatalogPage() {
                     </span>
                     <button
                       type="button"
-                      onClick={() => {
-                        setIngredientEditorOpen(false);
-                        setIngredientId(null);
-                      }}
+                      onClick={closeActiveModal}
                       className="rounded-full p-1.5 text-ink-muted hover:bg-brand-100 hover:text-ink transition-colors"
                       aria-label="Tắt"
                     >
@@ -1181,10 +1179,7 @@ export function AdminCatalogPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => {
-                        setIngredientEditorOpen(false);
-                        setIngredientId(null);
-                      }}
+                      onClick={closeActiveModal}
                     >
                       Hủy
                     </Button>
