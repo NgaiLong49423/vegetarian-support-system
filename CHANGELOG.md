@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.95.0
+> **Version:** v2.96.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-22
 > **Status:** Active
@@ -8,6 +8,28 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-22 — AI Chat Reliability and Subscription Validity Corrections
+
+**Status:** Committed — `0ba4b21`.
+
+**Scope:** Address BUG-055 through BUG-059 in the FR-10 checkpoint without changing the confirmed model, paid feature matrix or role and nutrition prerequisites; provider performance and main acceptance require separate evidence.
+
+### Added
+
+- Add regression checks for safe provider diagnostics, timeout/retry behavior, long conversation turns, error classification and subscription start/end boundaries.
+
+### Changed
+
+- Limit Gemini calls to one attempt with a nine-second deadline covering SDK preparation, HTTP and response processing, reserving application overhead within the existing timeout budget.
+- Keep technical failure metadata in logs without SDK messages, stack traces, raw prompts or credentials.
+
+### Fixed
+
+- Accept complete assistant history up to 8,000 characters while retaining the 1,000-character user limit and bounding successful answers consistently.
+- Distinguish incomplete chatbot responses from provider outages using the documented 502 and 503 error codes.
+- Preserve provider-throttling guidance without confusing Google project quotas with Guest rate limits or application plan entitlements.
+- Keep future subscription periods locked until their start time and display current Free entitlement consistently with Backend guards.
 
 ## 2026-10-22 — AI Feature Entitlement and Guest Chat Access
 
