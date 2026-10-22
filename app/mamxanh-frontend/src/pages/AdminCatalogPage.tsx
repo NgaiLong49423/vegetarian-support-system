@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Sparkles,
   Wheat,
+  X,
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Button, Card, EmptyState } from '../components/ui';
@@ -86,9 +87,8 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 interface IngredientCardProps {
   item: CatalogIngredient;
   saving: boolean;
-  onShowDetails: (item: CatalogIngredient) => void;
+  onOpenNutritionDetails: (item: CatalogIngredient) => void;
   onShowRecipes: (item: CatalogIngredient) => void;
-  onEditNutrition: (item: CatalogIngredient) => void;
   onEditInfo: (item: CatalogIngredient) => void;
   onToggleActive: (item: CatalogIngredient) => void;
 }
@@ -96,9 +96,8 @@ interface IngredientCardProps {
 function IngredientTableRow({
   item,
   saving,
-  onShowDetails,
+  onOpenNutritionDetails,
   onShowRecipes,
-  onEditNutrition,
   onEditInfo,
   onToggleActive,
 }: IngredientCardProps) {
@@ -166,46 +165,52 @@ function IngredientTableRow({
         </span>
       </td>
 
-      {/* 3. Trạng thái */}
+      {/* 3. Trạng thái (Đang hoạt động / Ngừng hoạt động) */}
       <td className="py-3 px-3 text-center align-middle whitespace-nowrap">
-        <div className="flex flex-col items-center gap-1">
-          <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-              item.active
-                ? 'border-leaf-300/80 bg-leaf-50 text-leaf-800'
-                : 'border-brand-200/80 bg-paper text-ink-muted'
-            }`}
-          >
-            {item.active && <span className="size-1.5 rounded-full bg-leaf-500" />}
-            {item.active ? 'Đang dùng' : 'Ngừng dùng'}
-          </span>
-          <span
-            className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${
-              item.nutritionSupported
-                ? 'border-leaf-300/80 bg-leaf-50/95 text-leaf-800'
-                : 'border-brand-200/80 bg-paper/95 text-ink-muted'
-            }`}
-          >
-            {item.nutritionSupported ? 'Có dữ liệu tính toán' : 'Chưa hỗ trợ tính'}
-          </span>
-        </div>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+            item.active
+              ? 'border-leaf-300/80 bg-leaf-50 text-leaf-800'
+              : 'border-brand-200/80 bg-paper text-ink-muted'
+          }`}
+        >
+          <span className={`size-1.5 rounded-full ${item.active ? 'bg-leaf-500' : 'bg-ink-muted/50'}`} />
+          {item.active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+        </span>
       </td>
 
-      {/* 4. Công thức đang dùng */}
+      {/* 4. Dinh dưỡng (Có dữ liệu tính toán / Chưa hỗ trợ tính) */}
+      <td className="py-3 px-3 text-center align-middle whitespace-nowrap">
+        <span
+          className={`inline-flex items-center rounded-lg border px-2.5 py-0.5 text-xs font-semibold ${
+            item.nutritionSupported
+              ? 'border-leaf-300/80 bg-leaf-50/95 text-leaf-800'
+              : 'border-brand-200/80 bg-paper/95 text-ink-muted'
+          }`}
+        >
+          {item.nutritionSupported ? 'Có dữ liệu tính toán' : 'Chưa hỗ trợ tính'}
+        </span>
+      </td>
+
+      {/* 5. Công thức dùng (Hiển thị số gọn gàng) */}
       <td className="py-3 px-3 text-center align-middle whitespace-nowrap">
         <button
           type="button"
           onClick={() => onShowRecipes(item)}
           aria-label={`Xem công thức dùng ${item.name}`}
-          className={`text-xs font-semibold hover:underline ${
-            item.recipeUsageCount ? 'text-brand-700 font-bold' : 'text-ink-muted'
+          className={`inline-flex items-center justify-center min-w-8 h-7 px-2.5 rounded-full text-xs font-bold transition-all shadow-2xs hover:scale-105 ${
+            item.recipeUsageCount
+              ? 'bg-brand-100 text-brand-800 border border-brand-300 hover:bg-brand-200'
+              : 'bg-cream-soft text-ink-muted border border-brand-200/60'
           }`}
+          title={`Có ${item.recipeUsageCount ?? 0} công thức đang dùng`}
         >
-          {item.recipeUsageCount ?? 0} công thức đang dùng
+          <span>{item.recipeUsageCount ?? 0}</span>
+          <span className="sr-only"> công thức đang dùng</span>
         </button>
       </td>
 
-      {/* 5. Thao tác quản trị */}
+      {/* 6. Thao tác quản trị */}
       <td className="py-3 px-4 text-center align-middle whitespace-nowrap">
         <div className="flex items-center justify-center gap-1.5">
           <Button
@@ -220,20 +225,11 @@ function IngredientTableRow({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onEditNutrition(item)}
-            aria-label={`Sửa dinh dưỡng ${item.name}`}
+            onClick={() => onOpenNutritionDetails(item)}
+            aria-label={`Xem chi tiết ${item.name} · Sửa dinh dưỡng ${item.name}`}
             className="h-8 py-1 px-2.5 text-xs font-semibold"
           >
-            Dinh dưỡng
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onShowDetails(item)}
-            aria-label={`Xem chi tiết ${item.name}`}
-            className="h-8 py-1 px-2 text-xs text-ink-muted hover:text-ink"
-          >
-            Chi tiết
+            <Activity className="h-3 w-3 mr-1 shrink-0 text-brand-600" /> Chi tiết dinh dưỡng
           </Button>
           <Button
             size="sm"
@@ -272,7 +268,6 @@ export function AdminCatalogPage() {
   const [recipeReferencePages, setRecipeReferencePages] = useState(0);
   const [recipeReferenceTotal, setRecipeReferenceTotal] = useState(0);
   const [referencesLoading, setReferencesLoading] = useState(false);
-  const [detailTarget, setDetailTarget] = useState<CatalogIngredient | null>(null);
   const [catalogOptions, setCatalogOptions] = useState<{ groups: string[]; sources: string[] }>({
     groups: [...STANDARD_INGREDIENT_GROUPS],
     sources: [...STANDARD_DATA_SOURCES],
@@ -337,6 +332,19 @@ export function AdminCatalogPage() {
     void refresh();
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setNutritionTarget(null);
+        setReferencesTarget(null);
+        setIngredientEditorOpen(false);
+        setIngredientId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const perform = async (
     action: () => Promise<unknown>,
     successMessage: string,
@@ -391,7 +399,6 @@ export function AdminCatalogPage() {
   };
 
   const editIngredient = (ingredient: CatalogIngredient) => {
-    setDetailTarget(null);
     setNutritionTarget(null);
     setReferencesTarget(null);
     setIngredientEditorOpen(true);
@@ -407,8 +414,7 @@ export function AdminCatalogPage() {
     setNotice('');
   };
 
-  const editNutrition = (ingredient: CatalogIngredient) => {
-    setDetailTarget(null);
+  const openNutritionDetails = async (ingredient: CatalogIngredient) => {
     setReferencesTarget(null);
     setIngredientEditorOpen(false);
     setIngredientId(null);
@@ -417,6 +423,14 @@ export function AdminCatalogPage() {
     setNutritionForm(toNutritionDraft(ingredient.nutrition));
     setError('');
     setNotice('');
+    try {
+      const full = await adminCatalogApi.ingredient(ingredient.id);
+      setNutritionTarget(full);
+      setNutritionEnabled(full.nutritionSupported);
+      setNutritionForm(toNutritionDraft(full.nutrition));
+    } catch {
+      // Keep loaded row data if remote detail fetch is skipped
+    }
   };
 
   const showRecipeReferences = async (ingredient: CatalogIngredient) => {
@@ -456,18 +470,6 @@ export function AdminCatalogPage() {
       setError(cause instanceof Error ? cause.message : 'Không tải được công thức đang dùng nguyên liệu này.');
     } finally {
       setReferencesLoading(false);
-    }
-  };
-
-  const showIngredientDetails = async (ingredient: CatalogIngredient) => {
-    setReferencesTarget(null);
-    setNutritionTarget(null);
-    setIngredientEditorOpen(false);
-    setError('');
-    try {
-      setDetailTarget(await adminCatalogApi.ingredient(ingredient.id));
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không tải được chi tiết nguyên liệu.');
     }
   };
 
@@ -534,7 +536,6 @@ export function AdminCatalogPage() {
   };
 
   const openNewIngredient = () => {
-    setDetailTarget(null);
     setReferencesTarget(null);
     setNutritionTarget(null);
     setIngredientId(null);
@@ -552,8 +553,6 @@ export function AdminCatalogPage() {
 
   const activeCountOnPage = ingredients.filter((item) => item.active).length;
   const nutritionReadyCountOnPage = ingredients.filter((item) => item.nutritionSupported).length;
-  const hasActivePanel = Boolean(detailTarget || referencesTarget || nutritionTarget || ingredientEditorOpen);
-  const isPanelOpen = hasActivePanel;
 
   return (
     <PageContainer className="w-full max-w-none px-0 py-2 sm:py-4">
@@ -629,7 +628,7 @@ export function AdminCatalogPage() {
                 <Check className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Đang kích hoạt</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Đang hoạt động</p>
                 <p className="truncate text-lg font-extrabold text-ink">{activeCountOnPage}/{ingredients.length || 0}</p>
               </div>
             </div>
@@ -695,13 +694,7 @@ export function AdminCatalogPage() {
           <LoaderCircle className="h-5 w-5 animate-spin text-brand-600" /> Đang tải danh mục…
         </Card>
       ) : (
-        <section
-          className={`w-full items-start gap-6 ${
-            hasActivePanel
-              ? 'grid xl:grid-cols-[minmax(0,1fr)_460px] 2xl:grid-cols-[minmax(0,1fr)_500px]'
-              : 'block'
-          }`}
-        >
+        <section className="w-full">
           <div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -709,7 +702,6 @@ export function AdminCatalogPage() {
                 <p className="mt-0.5 text-sm text-ink-muted">Tìm, lọc và quản lý dữ liệu dinh dưỡng cùng trạng thái sử dụng.</p>
               </div>
               <div className="flex items-center gap-2">
-                
                 <Button type="button" onClick={openNewIngredient} aria-label="Mở biểu mẫu thêm nguyên liệu">
                   <CirclePlus className="h-4 w-4" /> Thêm mới
                 </Button>
@@ -752,8 +744,8 @@ export function AdminCatalogPage() {
                   Trạng thái danh mục
                   <select className={fieldClass} value={activeFilter} onChange={(event) => setActiveFilter(event.target.value)}>
                     <option value="">Tất cả</option>
-                    <option value="true">Đang dùng</option>
-                    <option value="false">Ngừng dùng</option>
+                    <option value="true">Đang hoạt động</option>
+                    <option value="false">Ngừng hoạt động</option>
                   </select>
                 </label>
                 <label className="text-xs font-semibold text-ink-soft">
@@ -771,7 +763,7 @@ export function AdminCatalogPage() {
               <p className="mt-3.5 flex items-start gap-2 rounded-xl bg-brand-50/50 px-3.5 py-2.5 text-xs leading-5 text-ink-muted">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
                 <span>
-                  “Đang dùng” quyết định nguyên liệu có thể được chọn cho công thức mới. “Hỗ trợ tính dinh dưỡng” là trạng thái riêng; chỉ cần có ít nhất một chỉ tiêu, phần còn thiếu sẽ được cảnh báo.
+                  “Đang hoạt động” quyết định nguyên liệu có thể được chọn cho công thức mới. “Hỗ trợ tính dinh dưỡng” là trạng thái riêng; chỉ cần có ít nhất một chỉ tiêu, phần còn thiếu sẽ được cảnh báo.
                 </span>
               </p>
             </Card>
@@ -791,9 +783,10 @@ export function AdminCatalogPage() {
                         <tr>
                           <th scope="col" className="py-3.5 px-4 min-w-[200px]">Nguyên liệu</th>
                           <th scope="col" className="py-3.5 px-3 min-w-[120px]">Nhóm phân loại</th>
-                          <th scope="col" className="py-3.5 px-3 text-center min-w-[120px]">Trạng thái</th>
-                          <th scope="col" className="py-3.5 px-3 text-center min-w-[140px]">Công thức dùng</th>
-                          <th scope="col" className="py-3.5 px-4 text-center min-w-[260px]">Thao tác quản trị</th>
+                          <th scope="col" className="py-3.5 px-3 text-center min-w-[130px]">Trạng thái</th>
+                          <th scope="col" className="py-3.5 px-3 text-center min-w-[150px]">Dinh dưỡng</th>
+                          <th scope="col" className="py-3.5 px-3 text-center min-w-[120px]">Công thức dùng</th>
+                          <th scope="col" className="py-3.5 px-4 text-center min-w-[240px]">Thao tác quản trị</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-brand-100/80">
@@ -802,9 +795,8 @@ export function AdminCatalogPage() {
                             key={item.id}
                             item={item}
                             saving={saving}
-                            onShowDetails={(target) => void showIngredientDetails(target)}
+                            onOpenNutritionDetails={(target) => void openNutritionDetails(target)}
                             onShowRecipes={(target) => void showRecipeReferences(target)}
-                            onEditNutrition={editNutrition}
                             onEditInfo={editIngredient}
                             onToggleActive={toggleIngredient}
                           />
@@ -826,59 +818,184 @@ export function AdminCatalogPage() {
             </div>
           </div>
 
-          {/* Sticky Right-hand Inspector / Editor Panel */}
-          {hasActivePanel && (
-            <div className="xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto pr-1">
-            {detailTarget ? (
-              <Card className="modal-panel-enter h-fit border-brand-200/80 bg-paper p-5 shadow-md sm:p-6">
+          {/* Floating Modal (Bảng nổi) - Chi tiết & Sửa số liệu dinh dưỡng */}
+          {nutritionTarget && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+              <div
+                className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity cursor-pointer"
+                onClick={() => setNutritionTarget(null)}
+                aria-hidden="true"
+              />
+              <div
+                className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-brand-200/80 bg-paper p-5 sm:p-7 shadow-2xl z-10 modal-panel-enter"
+                role="dialog"
+                aria-modal="true"
+              >
                 <div className="flex items-start justify-between gap-3 border-b border-brand-100 pb-4">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Hồ sơ nguyên liệu</p>
-                    <h2 className="mt-0.5 text-lg font-extrabold text-ink">Chi tiết · {detailTarget.name}</h2>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Hồ sơ & Dinh dưỡng nguyên liệu</p>
+                    <h2 className="mt-0.5 text-lg sm:text-xl font-extrabold text-ink">Chi tiết · {nutritionTarget.name}</h2>
                     <p className="mt-1 text-xs text-ink-muted">Thông tin dinh dưỡng trên 100 g và nguồn tham khảo.</p>
                   </div>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setDetailTarget(null)}>Đóng</Button>
+                  <button
+                    type="button"
+                    onClick={() => setNutritionTarget(null)}
+                    className="rounded-full p-1.5 text-ink-muted hover:bg-brand-100 hover:text-ink transition-colors"
+                    aria-label="Tắt"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
-                <dl className="mt-4 grid grid-cols-2 gap-2.5 text-sm">
-                  {nutritionFields.map(({ key, label, unit }) => (
-                    <div key={key} className="rounded-xl border border-brand-100/80 bg-cream-soft/70 p-3">
-                      <dt className="text-xs text-ink-muted">{label}</dt>
-                      <dd className="mt-1 font-bold text-ink">
-                        {detailTarget.nutrition[key] ?? 'Chưa có'}
-                        {detailTarget.nutrition[key] === null ? '' : ` ${unit}`}
-                      </dd>
+
+                {/* Metadata section with balanced 2 rows/cards for Status */}
+                <div className="mt-4 rounded-2xl border border-brand-100/80 bg-brand-50/40 p-4 text-xs sm:text-sm space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <span className="font-medium text-ink-muted">Nhóm nguyên liệu:</span>{' '}
+                      <strong className="text-ink">{normalizeIngredientGroup(nutritionTarget.ingredientGroup)}</strong>
                     </div>
-                  ))}
-                </dl>
-                <div className="mt-4 space-y-2 rounded-2xl border border-brand-100/80 bg-brand-50/40 p-4 text-sm">
-                  <p><span className="font-medium text-ink-muted">Nhóm:</span> <strong className="text-ink">{normalizeIngredientGroup(detailTarget.ingredientGroup)}</strong></p>
-                  <p><span className="font-medium text-ink-muted">Nguồn:</span> <strong className="text-ink">{normalizeSourceName(detailTarget.sourceName)}</strong></p>
-                  <p><span className="font-medium text-ink-muted">Ngày đối chiếu:</span> {detailTarget.referenceDate}</p>
-                  <p><span className="font-medium text-ink-muted">Trạng thái:</span> {detailTarget.active ? 'ACTIVE' : 'INACTIVE'} · {detailTarget.nutritionSupported ? 'Có hỗ trợ tính' : 'Chưa hỗ trợ tính'}</p>
-                  <p><span className="font-medium text-ink-muted">Công thức đang tham chiếu:</span> {detailTarget.recipeUsageCount ?? 0}</p>
-                  {detailTarget.sourceUrl && (
-                    <a href={detailTarget.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 font-semibold text-brand-600 hover:underline">
-                      Mở nguồn tham khảo <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
+                    <div>
+                      <span className="font-medium text-ink-muted">Nguồn tham khảo:</span>{' '}
+                      <strong className="text-ink">{normalizeSourceName(nutritionTarget.sourceName)}</strong>
+                    </div>
+                    <div>
+                      <span className="font-medium text-ink-muted">Ngày đối chiếu:</span>{' '}
+                      <span className="font-semibold text-ink">{nutritionTarget.referenceDate}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-ink-muted">Công thức đang dùng:</span>{' '}
+                      <span className="font-semibold text-brand-700">{nutritionTarget.recipeUsageCount ?? 0} công thức</span>
+                    </div>
+                  </div>
+
+                  {/* Statuses balanced in 2 distinct rows/cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-brand-100/70">
+                    <div className="flex items-center justify-between rounded-xl border border-brand-100/80 bg-paper/90 px-3 py-2 shadow-2xs">
+                      <span className="text-xs font-medium text-ink-muted">Trạng thái danh mục:</span>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                          nutritionTarget.active
+                            ? 'bg-leaf-100 text-leaf-800 border border-leaf-300/80'
+                            : 'bg-brand-100 text-ink-muted border border-brand-200'
+                        }`}
+                      >
+                        <span className={`size-1.5 rounded-full ${nutritionTarget.active ? 'bg-leaf-500' : 'bg-ink-muted'}`} />
+                        {nutritionTarget.active ? 'ACTIVE' : 'INACTIVE'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl border border-brand-100/80 bg-paper/90 px-3 py-2 shadow-2xs">
+                      <span className="text-xs font-medium text-ink-muted">Dữ liệu tính toán:</span>
+                      <span
+                        className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-xs font-bold ${
+                          nutritionEnabled
+                            ? 'bg-leaf-100 text-leaf-800 border border-leaf-300/80'
+                            : 'bg-brand-100 text-ink-muted border border-brand-200'
+                        }`}
+                      >
+                        {nutritionEnabled ? 'Có dữ liệu tính toán' : 'Chưa hỗ trợ tính'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {nutritionTarget.sourceUrl && (
+                    <div className="pt-1">
+                      <a
+                        href={nutritionTarget.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-semibold text-brand-600 hover:underline"
+                      >
+                        Mở liên kết nguồn tham khảo <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
                   )}
                 </div>
-              </Card>
-            ) : referencesTarget ? (
-              <Card className="modal-panel-enter h-fit border-brand-200/80 bg-paper p-5 shadow-md sm:p-6">
+
+                {/* Nutrition editing form with 9 inputs */}
+                <form onSubmit={submitNutrition} className="mt-5 space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-brand-700">Số liệu dinh dưỡng (trên 100 g)</h3>
+                      <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                        nutritionEnabled
+                          ? 'border-leaf-200 bg-leaf-50 text-leaf-700'
+                          : 'border-brand-200 bg-brand-50 text-ink-muted'
+                      }`}>
+                        {nutritionEnabled ? 'Đang tính dữ liệu có sẵn' : 'Chưa đưa vào tính'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-ink-muted mb-3">Nhập số liệu trên 100 g. Nguồn có thể là USDA/NIH, nguồn khác hoặc AI estimate. Chỉ tiêu để trống sẽ không được tính và không bị xem là 0.</p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {nutritionFields.map(({ key, label, unit, step }) => (
+                        <Field key={key} label={`${label} (${unit}/100 g)`}>
+                          <input
+                            className={fieldClass}
+                            type="number"
+                            min="0"
+                            step={step}
+                            inputMode="decimal"
+                            aria-label={`${label} trên 100 g`}
+                            value={nutritionForm[key]}
+                            onChange={(event) => setNutritionForm({ ...nutritionForm, [key]: event.target.value })}
+                          />
+                        </Field>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-brand-100 pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="submit" disabled={saving}>
+                        {saving ? 'Đang lưu…' : 'Lưu chỉ tiêu'}
+                      </Button>
+                      <Button type="button" variant="outline" disabled={saving} onClick={toggleNutritionSupport}>
+                        {nutritionEnabled ? 'Ngừng hỗ trợ tính' : 'Bật hỗ trợ tính'}
+                      </Button>
+                    </div>
+                    <Button type="button" variant="ghost" disabled={saving} onClick={() => setNutritionTarget(null)}>
+                      Đóng
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Floating Modal (Bảng nổi) - Công thức tham chiếu */}
+          {referencesTarget && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+              <div
+                className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity cursor-pointer"
+                onClick={() => setReferencesTarget(null)}
+                aria-hidden="true"
+              />
+              <div
+                className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl border border-brand-200/80 bg-paper p-5 sm:p-7 shadow-2xl z-10 modal-panel-enter"
+                role="dialog"
+                aria-modal="true"
+              >
                 <div className="flex items-start justify-between gap-3 border-b border-brand-100 pb-4">
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Kiểm tra tham chiếu</p>
-                    <h2 className="mt-0.5 text-lg font-extrabold text-ink">Công thức dùng {referencesTarget.name}</h2>
-                    <p className="mt-1 text-xs text-ink-muted">Danh sách được tải từ Backend để kiểm tra các liên kết trước khi ngừng sử dụng nguyên liệu.</p>
+                    <h2 className="mt-0.5 text-lg sm:text-xl font-extrabold text-ink">Công thức dùng {referencesTarget.name}</h2>
+                    <p className="mt-1 text-xs text-ink-muted">Danh sách công thức đang sử dụng nguyên liệu này trong hệ thống.</p>
                   </div>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setReferencesTarget(null)}>Đóng</Button>
+                  <button
+                    type="button"
+                    onClick={() => setReferencesTarget(null)}
+                    className="rounded-full p-1.5 text-ink-muted hover:bg-brand-100 hover:text-ink transition-colors"
+                    aria-label="Tắt"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
+
                 {referencesLoading ? (
-                  <p className="mt-4 flex items-center gap-2 text-sm text-ink-muted">
-                    <LoaderCircle className="h-4 w-4 animate-spin text-brand-600" /> Đang tải công thức…
-                  </p>
+                  <div className="flex items-center justify-center gap-2 p-10 text-sm text-ink-muted">
+                    <LoaderCircle className="h-5 w-5 animate-spin text-brand-600" /> Đang tải công thức…
+                  </div>
                 ) : error ? null : recipeReferences.length === 0 ? (
-                  <p className="mt-4 rounded-xl border border-dashed border-brand-200 p-4 text-center text-sm text-ink-muted">
+                  <p className="mt-6 rounded-2xl border border-dashed border-brand-200 bg-cream-soft/40 p-6 text-center text-sm text-ink-muted">
                     Chưa có công thức nào tham chiếu nguyên liệu này.
                   </p>
                 ) : (
@@ -898,8 +1015,9 @@ export function AdminCatalogPage() {
                     ))}
                   </ul>
                 )}
+
                 {recipeReferenceTotal > 0 && (
-                  <div className="mt-4 flex items-center justify-between border-t border-brand-100 pt-3 text-xs text-ink-muted">
+                  <div className="mt-5 flex items-center justify-between border-t border-brand-100 pt-3 text-xs text-ink-muted">
                     <span>{recipeReferenceTotal} công thức · Trang {recipeReferencePage + 1}/{recipeReferencePages}</span>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" disabled={referencesLoading || recipeReferencePage === 0} onClick={() => void changeRecipeReferencePage(recipeReferencePage - 1)}>Trang trước</Button>
@@ -907,67 +1025,58 @@ export function AdminCatalogPage() {
                     </div>
                   </div>
                 )}
-              </Card>
-            ) : nutritionTarget ? (
-              <Card className="modal-panel-enter h-fit border-brand-200/80 bg-paper p-5 shadow-md sm:p-6">
-                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-brand-100 pb-4">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Biểu mẫu 9 chỉ tiêu</p>
-                    <h2 className="mt-0.5 text-lg font-extrabold text-ink">Dinh dưỡng · {nutritionTarget.name}</h2>
-                    <p className="mt-1 text-xs text-ink-muted">Nhập số liệu trên 100 g. Nguồn có thể là USDA/NIH, nguồn khác hoặc AI estimate. Chỉ tiêu để trống sẽ không được tính và không bị xem là 0.</p>
-                  </div>
-                  <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                    nutritionEnabled
-                      ? 'border-leaf-200 bg-leaf-50 text-leaf-700'
-                      : 'border-brand-200 bg-brand-50 text-ink-muted'
-                  }`}>
-                    {nutritionEnabled ? 'Đang tính dữ liệu có sẵn' : 'Chưa đưa vào tính'}
-                  </span>
+
+                <div className="mt-6 flex justify-end border-t border-brand-100 pt-3">
+                  <Button type="button" variant="ghost" onClick={() => setReferencesTarget(null)}>
+                    Đóng
+                  </Button>
                 </div>
-                <form onSubmit={submitNutrition} className="mt-4 space-y-3.5">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {nutritionFields.map(({ key, label, unit, step }) => (
-                      <Field key={key} label={`${label} (${unit}/100 g)`}>
-                        <input
-                          className={fieldClass}
-                          type="number"
-                          min="0"
-                          step={step}
-                          inputMode="decimal"
-                          aria-label={`${label} trên 100 g`}
-                          value={nutritionForm[key]}
-                          onChange={(event) => setNutritionForm({ ...nutritionForm, [key]: event.target.value })}
-                        />
-                      </Field>
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap gap-2 border-t border-brand-100 pt-3.5">
-                    <Button type="submit" disabled={saving}>
-                      {saving ? 'Đang lưu…' : 'Lưu chỉ tiêu'}
-                    </Button>
-                    <Button type="button" variant="outline" disabled={saving} onClick={toggleNutritionSupport}>
-                      {nutritionEnabled ? 'Ngừng hỗ trợ tính' : 'Bật hỗ trợ tính'}
-                    </Button>
-                    <Button type="button" variant="ghost" disabled={saving} onClick={() => setNutritionTarget(null)}>
-                      Đóng
-                    </Button>
-                  </div>
-                </form>
-              </Card>
-            ) : ingredientEditorOpen ? (
-              <Card className="modal-panel-enter h-fit border-brand-200/80 bg-paper p-5 shadow-md sm:p-6">
+              </div>
+            </div>
+          )}
+
+          {/* Floating Modal (Bảng nổi) - Thêm / Sửa nguyên liệu */}
+          {ingredientEditorOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+              <div
+                className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity cursor-pointer"
+                onClick={() => {
+                  setIngredientEditorOpen(false);
+                  setIngredientId(null);
+                }}
+                aria-hidden="true"
+              />
+              <div
+                className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl border border-brand-200/80 bg-paper p-5 sm:p-7 shadow-2xl z-10 modal-panel-enter"
+                role="dialog"
+                aria-modal="true"
+              >
                 <div className="flex items-center justify-between border-b border-brand-100 pb-4">
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Thông tin chuẩn</p>
-                    <h2 className="mt-0.5 text-lg font-extrabold text-ink">
+                    <h2 className="mt-0.5 text-lg sm:text-xl font-extrabold text-ink">
                       {ingredientId === null ? 'Thêm nguyên liệu' : 'Sửa nguyên liệu'}
                     </h2>
                   </div>
-                  <span className="rounded-full border border-brand-200/60 bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
-                    {ingredientId === null ? 'Thêm mới' : 'Chỉnh sửa'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full border border-brand-200/60 bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
+                      {ingredientId === null ? 'Thêm mới' : 'Chỉnh sửa'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIngredientEditorOpen(false);
+                        setIngredientId(null);
+                      }}
+                      className="rounded-full p-1.5 text-ink-muted hover:bg-brand-100 hover:text-ink transition-colors"
+                      aria-label="Tắt"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
-                <form onSubmit={submitIngredient} className="mt-4 space-y-4">
+
+                <form onSubmit={submitIngredient} className="mt-5 space-y-4">
                   <Field label="Tên chuẩn tiếng Việt">
                     <input
                       className={fieldClass}
@@ -1057,7 +1166,7 @@ export function AdminCatalogPage() {
                       }
                     />
                   </Field>
-                  <div className="flex flex-wrap gap-2 border-t border-brand-100 pt-3.5">
+                  <div className="flex flex-wrap gap-2 border-t border-brand-100 pt-4">
                     <Button type="submit" disabled={saving}>
                       {saving ? (
                         'Đang lưu…'
@@ -1081,10 +1190,9 @@ export function AdminCatalogPage() {
                     </Button>
                   </div>
                 </form>
-              </Card>
-            ) : null}
-          </div>
-        )}
+              </div>
+            </div>
+          )}
         </section>
       )}
     </PageContainer>
