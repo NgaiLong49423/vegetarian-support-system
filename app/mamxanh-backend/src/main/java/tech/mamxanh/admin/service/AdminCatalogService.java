@@ -3,11 +3,13 @@ package tech.mamxanh.admin.service;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.admin.dto.IngredientRecipeReferenceResponse;
 import tech.mamxanh.admin.dto.IngredientCatalogOptionsResponse;
 import tech.mamxanh.admin.dto.AdminIngredientResponse;
+import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.nutrition.dto.request.CatalogStatusUpdateRequest;
 import tech.mamxanh.nutrition.dto.request.ConversionSaveRequest;
@@ -77,6 +79,11 @@ public class AdminCatalogService {
 
     @Transactional
     public IngredientResponse setIngredientStatus(long id, CatalogStatusUpdateRequest request) {
+        IngredientResponse current = catalog.getIngredient(id);
+        if (!request.active() && current.active() && recipes.existsPublishedRecipeUsingIngredient(id)) {
+            throw new ApiException(HttpStatus.CONFLICT, "INGREDIENT_USED_BY_PUBLISHED_RECIPE",
+                    "Không thể ngừng sử dụng nguyên liệu vì đang được công thức công khai sử dụng.");
+        }
         return catalog.setIngredientStatus(id, request);
     }
 

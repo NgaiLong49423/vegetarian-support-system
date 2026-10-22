@@ -164,7 +164,7 @@ public class AdminCatalogController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "The ingredient with its new status."),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "INGREDIENT_NOT_FOUND: no ingredient has this id."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "INGREDIENT_NAME_EXISTS: reactivating would duplicate an active name.")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "INGREDIENT_NAME_EXISTS: reactivating would duplicate an active name; INGREDIENT_USED_BY_PUBLISHED_RECIPE: deactivation is blocked while a published recipe references the ingredient.")
     })
     @PatchMapping("/ingredients/{ingredientId}/status")
     public ApiResponse<IngredientResponse> setIngredientStatus(@PathVariable @Min(1) long ingredientId,
