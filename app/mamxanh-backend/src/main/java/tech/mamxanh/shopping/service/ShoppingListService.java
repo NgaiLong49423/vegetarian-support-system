@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,8 @@ import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
 import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
 import tech.mamxanh.shopping.dto.request.CreateShoppingItemRequest;
+import tech.mamxanh.shopping.dto.request.CreateEmptyShoppingListRequest;
+import tech.mamxanh.shopping.dto.request.RenameShoppingListRequest;
 import tech.mamxanh.shopping.dto.request.UpdateShoppingItemRequest;
 import tech.mamxanh.shopping.dto.response.ShoppingListResponse;
 import tech.mamxanh.shopping.dto.response.ShoppingListResponse.Item;
@@ -37,11 +40,12 @@ public class ShoppingListService {
     private final Clock clock;
     private final tech.mamxanh.shopping.repository.ShoppingRecipeContributionRepository contributions;
     private final tech.mamxanh.recipe.service.RecipeService recipes;
+    private final EntityManager entityManager;
 
     public ShoppingListService(ShoppingListRepository lists, ShoppingListItemRepository items,
             CurrentUserService users, IngredientCatalogLookupService catalog, Clock clock,
             tech.mamxanh.shopping.repository.ShoppingRecipeContributionRepository contributions,
-            tech.mamxanh.recipe.service.RecipeService recipes) {
+            tech.mamxanh.recipe.service.RecipeService recipes, EntityManager entityManager) {
         this.lists = lists;
         this.items = items;
         this.users = users;
@@ -49,6 +53,20 @@ public class ShoppingListService {
         this.clock = clock;
         this.contributions = contributions;
         this.recipes = recipes;
+        this.entityManager = entityManager;
+    }
+
+    @Transactional
+    public ShoppingListResponse createEmpty(CreateEmptyShoppingListRequest request) {
+        long owner = users.requireActiveMember().id();
+        String name = normalizeListName(request.name());
+        var list = new ShoppingListEntity();
+        list.setUserId(owner);
+        list.setKind("MANUAL");
+        list.setName(name);
+        lists.saveAndFlush(list);
+        entityManager.refresh(list);
+        return new ShoppingListResponse(list.getId(), list.getName(), list.getCreatedAt(), list.getUpdatedAt(), List.of());
     }
 
     @Transactional(readOnly = true)
@@ -66,6 +84,24 @@ public class ShoppingListService {
         var list = owned(listId, false);
         return new ShoppingListResponse(list.getId(), list.getName(), list.getCreatedAt(), list.getUpdatedAt(),
                 resolve(items.findByShoppingListIdOrderByIdAsc(listId)));
+    }
+
+    @Transactional
+    public ShoppingListResponse.Summary rename(long listId, RenameShoppingListRequest request) {
+        var list = owned(listId, true);
+        String name = normalizeListName(request.name());
+        list.setName(name);
+        touch(list);
+        return new ShoppingListResponse.Summary(list.getId(), list.getName(), list.getCreatedAt(), list.getUpdatedAt());
+    }
+
+    @Transactional
+    public void deleteList(long listId) {
+        var list = owned(listId, true);
+        // Contributions reference checklist rows with NO ACTION; remove them before
+        // the list's owned items cascade, without touching source recipes or meal plans.
+        contributions.deleteAllByShoppingListId(listId);
+        lists.delete(list);
     }
 
     @Transactional(readOnly = true)
@@ -165,6 +201,14 @@ public class ShoppingListService {
 
     private void touch(ShoppingListEntity list) { list.setUpdatedAt(LocalDateTime.now(clock)); }
 
+    private String normalizeListName(String value) {
+        String name = value == null ? "" : value.replace('\u00a0', ' ').strip();
+        if (name.isBlank() || name.length() > 200 || name.codePoints().anyMatch(Character::isISOControl)) {
+            throw invalid("Tên danh sách không được để trống và tối đa 200 ký tự.");
+        }
+        return name;
+    }
+
     private void detachSources(long listId, java.util.Set<Long> ids) {
         var rows = contributions.findByShoppingListIdOrderByIdAsc(listId);
         rows.stream().filter(c -> c.getShoppingListItemId()!=null && ids.contains(c.getShoppingListItemId())).forEach(c -> c.setShoppingListItemId(null));
@@ -187,7 +231,8 @@ public class ShoppingListService {
             var unit = units.get(row.getUnitId());
             return new Item(row.getId(), row.getIngredientId(),
                     ingredient == null ? row.getCustomIngredientName() : ingredient.name(),
-                    ingredient == null ? "Nhóm khác" : ingredient.ingredientGroup(), row.getQuantity(), row.getUnitId(),
+                    ingredient == null ? "Nhóm khác" : ingredient.ingredientGroup(),
+                    ingredient == null ? null : ingredient.imageUrl(), row.getQuantity(), row.getUnitId(),
                     unit == null ? null : unit.code(), unit == null ? null : unit.name(), row.isBought(),
                     sourceRows.stream().filter(c -> row.getId().equals(c.getShoppingListItemId())).map(c -> {
                         var recipe = sourceRecipes.get(c.getRecipeId()); var originalUnit = units.get(c.getUnitId());

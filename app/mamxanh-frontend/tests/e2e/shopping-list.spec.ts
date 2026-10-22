@@ -16,6 +16,7 @@ const row = (
   ingredientId: 5,
   name: "Nước tương",
   ingredientGroup: "Gia vị",
+  imageUrl: "/ingredients/nuoc-tuong.webp",
   quantity: 300,
   unitId: 1,
   unitCode: "g",
@@ -45,6 +46,7 @@ for (const name of [
     const saved = page.getByRole("navigation", { name: "Danh sách đã lưu" })
     await expect(heading).toBeVisible()
     await expect(saved.getByRole("button").first()).toContainText(name)
+    await expect(page.getByRole("img", { name: "Ảnh minh họa Nước tương" }).first()).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     await page.reload()
     await expect(heading).toBeVisible()
@@ -52,6 +54,13 @@ for (const name of [
     expect(state.creates).toBe(0)
   })
 }
+
+test("shopping list explains when an ingredient has no illustration", async ({ page }) => {
+  const state = await setup(page)
+  state.list.items[0].imageUrl = null
+  await page.goto("/di-cho?listId=42")
+  await expect(page.getByRole("img", { name: "Chưa có ảnh minh họa cho Nước tương" })).toBeVisible()
+})
 
 async function setup(
   page: Page,
@@ -99,7 +108,11 @@ async function setup(
       method = request.method()
 
     if (method !== "GET") {
-      state.writes.push({ method, suffix, body: request.postDataJSON() })
+      state.writes.push({
+        method,
+        suffix,
+        body: request.postData() ? request.postDataJSON() : null,
+      })
 
       if (state.fail)
         return route.fulfill({
@@ -159,6 +172,18 @@ async function setup(
 
     if (suffix === "/42" && method === "GET")
       return route.fulfill({ json: state.list })
+
+    if (suffix === "/42" && method === "PATCH") {
+      state.list.name = request.postDataJSON().name
+      return route.fulfill({
+        json: { ...summary, name: state.list.name, updatedAt: "2026-10-22T10:00:00" },
+      })
+    }
+
+    if (suffix === "/42" && method === "DELETE") {
+      state.empty = true
+      return route.fulfill({ status: 204 })
+    }
 
     if (suffix === "/999")
       return route.fulfill({
@@ -528,7 +553,11 @@ test("shopping pagination and small viewport preserve usable checklist", async (
 
   const checkBounds = await page.getByRole("button", { name: "Đánh dấu Nước tương g", exact: true }).boundingBox()
   const deleteBounds = await page.getByRole("button", { name: "Xoá Nước tương g", exact: true }).boundingBox()
-  expect(Math.abs(checkBounds!.y - deleteBounds!.y)).toBeLessThan(10)
+  expect(checkBounds).not.toBeNull()
+  expect(deleteBounds).not.toBeNull()
+  const checkCenter = checkBounds!.y + checkBounds!.height / 2
+  const deleteCenter = deleteBounds!.y + deleteBounds!.height / 2
+  expect(Math.abs(checkCenter - deleteCenter)).toBeLessThan(10)
   await page.setViewportSize({ width: 768, height: 1024 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await expect(page.getByTestId("shopping-item-1")).toBeVisible()
@@ -539,4 +568,44 @@ test("shopping pagination and small viewport preserve usable checklist", async (
     path: testInfo.outputPath("detail-shopping-desktop.png"),
     fullPage: true,
   })
+})
+
+test("shopping list can be renamed and keeps its name after reload", async ({ page }) => {
+  const state = await setup(page)
+  await page.goto("/di-cho?listId=42")
+
+  await page.getByRole("button", { name: "Đổi tên", exact: true }).click()
+  const dialog = page.getByRole("dialog", { name: "Đổi tên danh sách" })
+  await dialog.getByLabel("Tên danh sách").fill("  Đi chợ cuối tuần  ")
+  await dialog.getByRole("button", { name: "Lưu tên" }).click()
+
+  await expect(page.getByRole("heading", { name: "Đi chợ cuối tuần", exact: true })).toBeVisible()
+  await expect(page.getByRole("navigation", { name: "Danh sách đã lưu" })).toContainText("Đi chợ cuối tuần")
+  expect(state.writes).toContainEqual({
+    method: "PATCH",
+    suffix: "/42",
+    body: { name: "Đi chợ cuối tuần" },
+  })
+
+  await page.reload()
+  await expect(page.getByRole("heading", { name: "Đi chợ cuối tuần", exact: true })).toBeVisible()
+})
+
+test("shopping list deletion confirms scope and keeps the empty state usable after failure", async ({ page }) => {
+  const state = await setup(page)
+  await page.goto("/di-cho?listId=42")
+
+  await page.getByRole("button", { name: "Xóa danh sách", exact: true }).click()
+  const dialog = page.getByRole("dialog", { name: "Xóa danh sách đi chợ?" })
+  await expect(dialog).toContainText("Lịch ăn và công thức nguồn vẫn được giữ nguyên")
+  state.fail = "Chưa xóa được danh sách."
+  await dialog.getByRole("button", { name: "Xóa danh sách", exact: true }).click()
+  await expect(dialog.getByRole("alert")).toContainText(state.fail)
+  await expect(page.getByTestId("shopping-item-1")).toBeVisible()
+
+  state.fail = ""
+  await dialog.getByRole("button", { name: "Xóa danh sách", exact: true }).click()
+  await expect(page).toHaveURL(/\/di-cho$/)
+  await expect(page.getByText("Chưa có danh sách đi chợ", { exact: true })).toBeVisible()
+  expect(state.writes.filter((write) => (write as { method: string }).method === "DELETE")).toHaveLength(2)
 })

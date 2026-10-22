@@ -42,7 +42,8 @@ class ShoppingListServiceTest {
     final UnitResponse roll = new UnitResponse(7, "cuộn", "cuộn", MeasurementDimension.COUNT, BigDecimal.ONE, true);
 
     @BeforeEach void setup() {
-        service = new ShoppingListService(lists, items, users, catalog, clock, contributions, recipes);
+        service = new ShoppingListService(lists, items, users, catalog, clock, contributions, recipes,
+                org.mockito.Mockito.mock(jakarta.persistence.EntityManager.class));
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(17, Role.CUSTOMER));
         list = new ShoppingListEntity(); list.setId(10L); list.setUserId(17L); list.setName("Đi chợ");
         item = new ShoppingListItemEntity(); item.setId(3L); item.setShoppingListId(10L);
@@ -61,11 +62,13 @@ class ShoppingListServiceTest {
         item.setIngredientId(8L);
         when(items.findByShoppingListIdOrderByIdAsc(10L)).thenReturn(List.of(item));
         when(catalog.findIngredientReferences(List.of(8L))).thenReturn(List.of(
-                new IngredientResponse(8L, "Đậu phụ", "Đậu", null, null, null, false, false)));
+                new IngredientResponse(8L, "Đậu phụ", "Đậu", null, "/ingredients/dau-phu.webp", null, null,
+                        false, false, null)));
         when(catalog.findUnitReferences(List.of(7))).thenReturn(List.of(roll));
         var response = service.get(10);
         assertThat(response.items()).singleElement().satisfies(i -> {
             assertThat(i.name()).isEqualTo("Đậu phụ"); assertThat(i.ingredientGroup()).isEqualTo("Đậu");
+            assertThat(i.imageUrl()).isEqualTo("/ingredients/dau-phu.webp");
         });
     }
 
@@ -73,6 +76,30 @@ class ShoppingListServiceTest {
         when(lists.findByUserId(eq(17L), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(list)));
         assertThat(service.list(0, 20).content()).singleElement().satisfies(s -> assertThat(s.id()).isEqualTo(10));
         verify(lists).findByUserId(eq(17L), argThat(p -> p.getSort().toString().equals("updatedAt: DESC,id: DESC")));
+    }
+
+    @Test void renamesOnlyOwnedListAndTrimsName() {
+        mutation();
+        var result = service.rename(10, new RenameShoppingListRequest("  Đi chợ cuối tuần  "));
+        assertThat(result.name()).isEqualTo("Đi chợ cuối tuần");
+        assertThat(result.updatedAt()).isEqualTo(LocalDateTime.now(clock));
+        assertThat(list.getName()).isEqualTo("Đi chợ cuối tuần");
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"", "   ", "\u00a0\u00a0", "Tên\nẩn"})
+    void rejectsBlankOrControlCharactersInListName(String name) {
+        mutation();
+        assertThatThrownBy(() -> service.rename(10, new RenameShoppingListRequest(name)))
+                .isInstanceOf(AppException.class);
+        assertThat(list.getName()).isEqualTo("Đi chợ");
+    }
+
+    @Test void deleteListRemovesContributionRowsBeforeDeletingOwnedList() {
+        mutation();
+        var order = inOrder(contributions, lists);
+        service.deleteList(10);
+        order.verify(contributions).deleteAllByShoppingListId(10);
+        order.verify(lists).delete(list);
     }
 
     @Test void rejectsBadPagingBeforeQuerying() {
@@ -85,7 +112,10 @@ class ShoppingListServiceTest {
     @Test void foreignListStopsBeforeReadingOrWritingItems() {
         assertThatThrownBy(() -> service.get(10)).isInstanceOf(AppException.class);
         assertThatThrownBy(() -> service.delete(10, 3)).isInstanceOf(AppException.class);
+        assertThatThrownBy(() -> service.deleteList(10)).isInstanceOf(AppException.class);
         verifyNoInteractions(items, catalog);
+        verifyNoInteractions(contributions);
+        verify(lists, never()).delete(any(ShoppingListEntity.class));
     }
 
     @Test void authenticationFailureStopsAllDataAccess() {

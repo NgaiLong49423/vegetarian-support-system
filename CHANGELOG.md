@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.96.0
+> **Version:** v2.99.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-22
 > **Status:** Active
@@ -24,6 +24,25 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Allow deactivation once no published recipe currently references the ingredient; preserve existing inactive records and historical links.
 - Limit the rule to ingredients; measurement units remain outside Issue #176.
 
+## 2026-10-22 — Create and Manage Shopping Lists (FR-53) ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `47dc13a`.
+
+**Scope:** Let Members create and manage shopping lists, then add one recipe at a time to a selected or newly created list.
+
+### Added
+
+- Add owner-protected API operations to rename and delete a shopping list, with confirmation and fallback navigation in the Frontend.
+- Add a named empty-list flow at `/di-cho` and a `MANUAL` list kind that is independent from meal plans and recipe sources.
+- Add per-recipe shopping actions from recipe cards, with destination selection, serving adjustment and an atomic create-and-add API operation.
+- Show catalog ingredient illustrations in shopping checklist rows, with a clear missing-image state for items without an available illustration.
+- Remove multi-recipe selection and the `POST /from-recipes` API contract.
+- Delete list contribution records and checklist items while preserving meal plans and source recipes.
+
+### Changed
+
+- Extend FR-53 acceptance criteria and document standalone list creation, list-level management and per-recipe additions.
+
 ### Fixed
 
 - None.
@@ -43,6 +62,90 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Connect the export toolbar to the current owned checklist without changing its aggregation, persistence or source-recipe data.
+
+### Fixed
+
+- None.
+
+
+## 2026-10-22 — Enrich Demo Recipe Ingredients and Illustrations ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `47dc13a`.
+
+**Scope:** Improve local Flyway demo recipe data and ingredient illustrations.
+
+### Added
+
+- Add per-recipe seasonings and synchronized cooking instructions for 54 named demo recipes, with all ingredient quantities expressed in grams for two servings.
+- Add individual AI-generated ingredient illustrations and a missing-image mapping seed that preserves existing image URLs.
+- Add a Compose-based fixture verification script for repeated execution, gram quantities, nutrition completeness, asset presence and preservation of unrelated recipes and uploaded images.
+
+### Changed
+
+- Convert legacy demo units using mass factors or ingredient-specific conversions and stop when a reliable conversion is unavailable.
+- Document dry ingredient weights and retained recipe water separately from discarded preparation water.
+
+### Fixed
+
+- Persist the existing zinc estimates for 85 demo ingredients instead of leaving their zinc columns null (BUG-054).
+- Include stored demo spice estimates in nutrition calculations under the current BR-52 policy while retaining unverified AI provenance (BUG-055).
+
+## 2026-10-22 — Align Public Profile Recipe Cards with Discovery ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `47dc13a`.
+
+**Scope:** Unify published recipe cards on public member and expert profiles with recipe discovery.
+
+### Added
+
+- None.
+
+### Changed
+
+- Reuse the shared recipe card with landscape covers, author details, cooking metadata, reaction percentage, view counts and save/meal-plan actions.
+- Adapt profile recipe grids from one to four columns while preserving pagination and author interaction totals.
+
+### Fixed
+
+- None.
+
+## 2026-10-21 — Add Public Ingredient Details ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `25b113f`.
+
+**Scope:** Let users inspect active ingredient details and available nutrition data.
+
+### Added
+
+- Add a public detail endpoint and a responsive ingredient detail page with per-100 g nutrition values.
+- Display published recipe articles containing the ingredient directly on its detail page, with recipe diet labels, sorting and load-more pagination.
+- Open ingredient details from directory names/images and recipe ingredient names.
+- Show missing nutrition values as unavailable and keep recipe discovery filters from the directory and detail page.
+
+### Changed
+
+- Expand FR-62 to cover public ingredient details, images and nutrition while excluding administrative provenance and status fields.
+- Synchronize the discovery use case, component guides and public API integration conventions with the ingredient detail flow.
+
+### Fixed
+
+- None.
+
+## 2026-10-21 — Add Ingredient Reference Images ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `25b113f`.
+
+**Scope:** Let administrators attach and manage an illustrative image for each ingredient in the catalog.
+
+### Added
+
+- Upload optional JPEG, PNG or WebP ingredient images up to 2 MB and persist their URLs with ingredient records.
+- Preview selected images in the admin editor and prefer saved images on ingredient cards, with existing image mappings as fallback.
+- Add the nullable `INGREDIENT.image_url` migration as V20 after integrating the V18/V19 checklist migrations, and synchronize the database schema snapshot.
+
+### Changed
+
+- None.
 
 ### Fixed
 
@@ -87,6 +190,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Remove the requirement to leave the planner and save a recipe before selecting it for a meal; meal-plan operations do not modify the saved collection.
+
 
 ## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 

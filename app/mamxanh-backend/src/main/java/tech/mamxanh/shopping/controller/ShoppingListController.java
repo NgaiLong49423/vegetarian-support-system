@@ -41,12 +41,33 @@ public class ShoppingListController {
         this.recipeLists = recipeLists;
     }
 
-    @PostMapping(value = "/from-recipes", produces = "application/json")
-    @Operation(operationId = "addRecipesToPersonalShoppingList", summary = "Add selected public recipes to the Member's personal checklist",
-            description = "One personal list per Member, independent from meal-plan lists. Repeated recipes add no duplicate contributions. Request is atomic; unavailable sources return 404. Adds original recipe quantities without portion scaling. Saved edits are retained as the base for future additions.")
-    @ApiResponse(responseCode = "200", description = "The personal checklist and creation diagnostics.", useReturnTypeSchema = true)
-    public ShoppingListCreationResponse fromRecipes(@Valid @RequestBody AddRecipeShoppingRequest request) {
-        return recipeLists.addRecipes(request);
+    @PostMapping(consumes = "application/json", produces = "application/json")
+    @Operation(operationId = "createEmptyShoppingList", summary = "Create an empty shopping list",
+            description = "Creates a standalone MANUAL checklist for the authenticated Member. The name is trimmed and limited to 200 characters. No meal plan or recipe is changed.")
+    @ApiResponse(responseCode = "201", description = "The empty checklist was created.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ShoppingListResponse.class)))
+    public ResponseEntity<ShoppingListResponse> createEmpty(@Valid @RequestBody CreateEmptyShoppingListRequest request) {
+        var result = service.createEmpty(request);
+        return ResponseEntity.created(URI.create("/api/v1/shopping-lists/" + result.id())).body(result);
+    }
+
+    @PostMapping(value = "/from-recipe", consumes = "application/json", produces = "application/json")
+    @Operation(operationId = "createShoppingListFromRecipe", summary = "Create a named checklist from one public recipe",
+            description = "Creates a MANUAL checklist and adds one public recipe in one transaction. Optional servings scales quantities from the published serving count (1–50); omit it to use published quantities. A failed recipe addition rolls back the new list.")
+    @ApiResponse(responseCode = "201", description = "The new checklist and recipe ingredients.", useReturnTypeSchema = true)
+    public ResponseEntity<ShoppingListCreationResponse> fromRecipe(
+            @Valid @RequestBody CreateShoppingListFromRecipeRequest request) {
+        var result = recipeLists.createFromRecipe(request);
+        return ResponseEntity.created(URI.create("/api/v1/shopping-lists/" + result.shoppingList().id())).body(result);
+    }
+
+    @PostMapping(value = "/{listId}/recipes", consumes = "application/json", produces = "application/json")
+    @Operation(operationId = "addRecipeToShoppingList", summary = "Add one public recipe to an owned checklist",
+            description = "Adds one public recipe to any checklist owned by the Member. Repeated additions to the same list do not duplicate its contributions. Optional servings scales quantities from the published serving count (1–50); omit it to use published quantities. Saved edits are retained as the base for aggregation.")
+    @ApiResponse(responseCode = "200", description = "The updated checklist and recipe diagnostics.", useReturnTypeSchema = true)
+    public ShoppingListCreationResponse addRecipe(@PathVariable long listId,
+            @Valid @RequestBody AddRecipeToShoppingListRequest request) {
+        return recipeLists.addRecipe(listId, request);
     }
 
     @PostMapping("/from-meal-plan")
@@ -74,6 +95,22 @@ public class ShoppingListController {
     @ApiResponse(responseCode = "200", description = "The saved checklist.", useReturnTypeSchema = true)
     @Operation(operationId = "getShoppingList", summary = "Read an owned shopping checklist", description = "Existing inactive catalog references remain readable. The account is derived from authentication.")
     public ShoppingListResponse get(@PathVariable long listId) { return service.get(listId); }
+
+    @PatchMapping("/{listId}")
+    @ApiResponse(responseCode = "200", description = "The renamed owned shopping list.", useReturnTypeSchema = true)
+    @Operation(operationId = "renameShoppingList", summary = "Rename an owned shopping list", description = "The account is derived from authentication. Names are trimmed, non-blank and limited to 200 characters.")
+    public ShoppingListResponse.Summary rename(@PathVariable long listId,
+            @Valid @RequestBody RenameShoppingListRequest request) {
+        return service.rename(listId, request);
+    }
+
+    @DeleteMapping("/{listId}")
+    @Operation(operationId = "deleteShoppingList", summary = "Delete an owned shopping list", description = "Deletes the checklist and its recipe contribution records. Meal plans and source recipes are preserved.")
+    @ApiResponse(responseCode = "204", description = "The list was deleted.", content = @Content)
+    public ResponseEntity<Void> deleteList(@PathVariable long listId) {
+        service.deleteList(listId);
+        return ResponseEntity.noContent().build();
+    }
 
     @PostMapping("/{listId}/items")
     @Operation(operationId = "addShoppingItem", summary = "Add a manual item to an owned list", description = "Name is plain text. Quantity is positive, with at most 8 integer and 2 fractional digits; the unit must be active. New items start unbought. This operation does not perform FR-54 aggregation.")

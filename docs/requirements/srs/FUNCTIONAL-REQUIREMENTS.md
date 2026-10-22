@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.24.0
+> **Version:** v2.26.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-10-22
 > **Status:** Active
@@ -3434,12 +3434,14 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/meal-planning-and-shopping.md#fr-53).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập tạo và quản lý Danh sách mua sắm (Shopping List) phục vụ đi chợ hoặc mua sắm nguyên liệu; nguồn dữ liệu tạo danh sách có thể được sinh tự động từ Lịch ăn tuần (Meal Plan - FR-09) hoặc từ một hay nhiều bài công thức (Recipe Post) do người dùng chọn lọc; hỗ trợ người dùng tự thêm các mặt hàng mua sắm thủ công (custom items), chỉnh sửa thông tin số lượng/đơn vị hoặc xóa bớt các mục không cần thiết; hiển thị danh sách dưới dạng checklist tương tác cho phép đánh dấu (tick) đã mua hoặc bỏ đánh dấu; lưu trữ bền vững trạng thái checklist theo tài khoản người dùng (BR-32).
+  - **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập tạo và quản lý Danh sách mua sắm (Shopping List) phục vụ đi chợ hoặc mua sắm nguyên liệu; Member có thể tạo danh sách rỗng độc lập với Lịch ăn và công thức, hoặc tạo nội dung từ Lịch ăn tuần (Meal Plan - FR-09), hoặc thêm từng bài công thức (Recipe Post) công khai vào một danh sách thuộc tài khoản hay tạo danh sách mới ngay trong thao tác; Member có thể đổi tên và xóa mọi danh sách thuộc tài khoản của mình; việc xóa loại bỏ checklist và dữ liệu đóng góp công thức của danh sách, không xóa Lịch ăn hoặc Recipe Post nguồn; hỗ trợ tự thêm các mặt hàng mua sắm thủ công (custom items), chỉnh sửa số lượng/đơn vị hoặc xóa mục; hiển thị checklist tương tác cho phép đánh dấu đã mua/chưa mua; lưu bền vững trạng thái checklist theo tài khoản (BR-32).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Member đã đăng nhập tài khoản hợp lệ (FR-03, BR-05, BR-32).
   - Nguồn tạo:
-    1. Sinh từ Lịch ăn tuần (toàn bộ tuần hoặc các ngày được tích chọn trong FR-09).
-    2. Sinh từ các bài Recipe Post cụ thể được chọn trong Khám phá (FR-17) hoặc Công thức đã lưu (FR-32).
+    1. Tạo danh sách rỗng có tên do Member nhập, độc lập với Lịch ăn và Recipe Post.
+    2. Sinh từ Lịch ăn tuần (toàn bộ tuần hoặc các ngày được tích chọn trong FR-09).
+      3. Thêm nguyên liệu từ một Recipe Post công khai tại mỗi lần thao tác từ menu hành động của thẻ công thức trong Khám phá (FR-17) hoặc Công thức đã lưu (FR-32); Member chọn danh sách sở hữu hoặc tạo danh sách có tên mới cùng thao tác.
+  - Tính năng quản lý danh sách: Member được đổi tên và xóa tất cả danh sách của chính mình, gồm danh sách `MANUAL`, danh sách tạo từ Lịch ăn và danh sách cá nhân từ Recipe Post. Tên mới của danh sách từ Lịch ăn được giữ nguyên, không tự đổi theo tuần.
   - Tính năng quản lý tương tác: Thêm item thủ công ngoài công thức, sửa/xóa item, tick checklist đánh dấu đã mua/chưa mua.
 - **Phân loại Actor:**
   - Primary Actor: `Member` (người tạo và quản lý danh sách mua sắm).
@@ -3447,11 +3449,13 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 #### Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-53.1`: Tạo mới danh sách mua sắm từ Lịch ăn tuần hoặc từ các công thức được chọn.
+  - `UC-53.1`: Tạo danh sách mua sắm rỗng, từ Lịch ăn tuần hoặc từ các công thức được chọn.
   - `UC-53.2`: Thêm mục hàng hóa mua sắm thủ công ngoài công thức, chỉnh sửa hoặc xóa mục.
   - `UC-53.3`: Đánh dấu đã mua hoặc bỏ đánh dấu các mục dạng checklist tương tác trên thiết bị.
+  - `UC-53.4`: Đổi tên danh sách mua sắm thuộc tài khoản Member.
+  - `UC-53.5`: Xóa danh sách mua sắm thuộc tài khoản Member và checklist của danh sách.
 - **User Stories:**
-  - *Là một người nội trợ*, tôi muốn tạo nhanh danh sách đi chợ từ thực đơn tuần đã lên kế hoạch, có thể tự thêm các đồ gia dụng lặt vặt và tick chọn từng món đã bỏ vào giỏ hàng ngay trên điện thoại khi đi chợ.
+  - *Là một người nội trợ*, tôi muốn tạo danh sách đi chợ rỗng theo tên mình hoặc tạo từ thực đơn tuần, tự thêm các đồ cần mua và tick chọn từng món ngay trên điện thoại.
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Dành riêng cho Member đã đăng nhập (BR-05, BR-32).
@@ -3491,10 +3495,23 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* người dùng là Guest chưa đăng nhập,
   - *When* cố gắng truy cập tính năng danh sách mua sắm,
   - *Then* hệ thống chặn truy cập và hiển thị thông báo yêu cầu đăng nhập.
-- **AC-53.6 (Tạo danh sách mua sắm từ Recipe Post được chọn):**
-  - *Given* Member đã chọn một hoặc nhiều Recipe Post công khai,
-  - *When* Member xác nhận tạo Shopping List từ các bài đã chọn,
-  - *Then* hệ thống tổng hợp nguyên liệu từ các bài đó và hiển thị danh sách mua sắm.
+  - **AC-53.6 (Thêm một Recipe Post vào danh sách mua sắm được chọn):**
+    - *Given* Member mở menu hành động của một Recipe Post công khai trong Khám phá hoặc Công thức đã lưu,
+    - *When* Member chọn một danh sách thuộc tài khoản hoặc nhập tên hợp lệ để tạo danh sách mới, điều chỉnh khẩu phần từ 1–50 và xác nhận,
+    - *Then* hệ thống thêm nguyên liệu đã tính theo khẩu phần vào đúng danh sách và mở checklist; nếu tạo mới, danh sách và nguyên liệu được lưu nguyên tử; công thức đã thêm trong cùng danh sách không bị cộng trùng.
+    - Guest được yêu cầu đăng nhập; Admin không có thao tác này. Công thức không còn công khai hoặc không sở hữu danh sách đích bị từ chối.
+- **AC-53.7 (Đổi tên danh sách mua sắm):**
+  - *Given* Member đang xem một danh sách thuộc tài khoản của mình, gồm danh sách từ Lịch ăn hoặc danh sách cá nhân,
+  - *When* Member nhập tên mới không rỗng sau khi loại bỏ khoảng trắng đầu/cuối và lưu,
+  - *Then* tên mới được lưu và hiển thị trong thanh danh sách cùng trang checklist; tên danh sách từ Lịch ăn không tự đổi lại theo tuần. Tên dài hơn 200 ký tự hoặc chỉ có khoảng trắng bị từ chối; danh sách của tài khoản khác không thể bị đổi tên.
+- **AC-53.8 (Xóa danh sách mua sắm):**
+  - *Given* Member đang xem một danh sách thuộc tài khoản của mình,
+  - *When* Member xác nhận xóa danh sách,
+  - *Then* danh sách, các item và dữ liệu đóng góp Recipe Post gắn với checklist bị xóa; Lịch ăn, Recipe Post nguồn và danh sách của Member khác được giữ nguyên. Nếu danh sách vừa xóa đang được chọn, hệ thống mở một danh sách còn lại hoặc hiển thị trạng thái chưa có danh sách.
+- **AC-53.9 (Tạo danh sách đi chợ rỗng độc lập):**
+  - *Given* Member đã đăng nhập và không có hoặc đang có các Shopping List khác,
+  - *When* Member chọn tạo danh sách trống, nhập tên hợp lệ và xác nhận,
+  - *Then* hệ thống tạo checklist mới thuộc Member với tên đã chuẩn hóa, không có item và không cần Meal Plan hoặc Recipe Post; Member có thể mở danh sách và thêm mặt hàng thủ công.
 
 ---
 
@@ -3893,7 +3910,7 @@ Customer và Expert đã đăng nhập có thể theo dõi/bỏ theo dõi qua h�
 ---
 
 <a id="fr-62"></a>
-### FR-62 — Chọn nguyên liệu và tìm công thức
+### FR-62 — Xem chi tiết nguyên liệu và tìm công thức
 
 - **Mã yêu cầu:** FR-62
 - **Module:** M01, M04
@@ -3901,17 +3918,23 @@ Customer và Expert đã đăng nhập có thể theo dõi/bỏ theo dõi qua h�
 
 #### Mục đích và phạm vi
 
-Hệ thống cung cấp trang công khai hiển thị toàn bộ nguyên liệu đang hoạt động trong danh mục chuẩn FR-18 dưới dạng các nhãn có thể chọn. Guest và Member có thể tìm trong danh sách, chọn một hoặc nhiều nguyên liệu và chuyển tới trang Khám phá với các bộ lọc đã chọn. API công thức giữ nguyên quy tắc FR-08 hiện tại: kết quả phải có đủ tất cả nguyên liệu được chọn.
+Hệ thống cung cấp trang công khai hiển thị toàn bộ nguyên liệu đang hoạt động trong danh mục chuẩn FR-18. Guest và Member có thể tìm nguyên liệu, mở trang chi tiết, xem ảnh minh họa và các chỉ tiêu dinh dưỡng có sẵn trên mỗi 100 g. Từ danh mục, người dùng chọn một hoặc nhiều nguyên liệu và chuyển tới trang Khám phá với các bộ lọc đã chọn; từ chi tiết, người dùng có thể tìm công thức theo riêng nguyên liệu đang xem. API công thức giữ nguyên quy tắc FR-08 hiện tại: kết quả phải có đủ tất cả nguyên liệu được chọn.
 
-Trang này là cách chọn trực tiếp từ điển nguyên liệu hiện có; không phân nhóm nhãn trong giao diện và không tạo taxonomy nhóm món ăn hoặc danh mục động mới. API công khai không trả trường nguồn quản trị, URL nguồn, dữ liệu dinh dưỡng hoặc trạng thái nội bộ ngoài các trường cần hiển thị.
+Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện có; không tạo taxonomy nhóm món ăn hoặc danh mục động mới. API công khai chỉ trả thông tin danh mục cần cho giao diện: ID, tên, nhóm, ảnh minh họa và các chỉ tiêu dinh dưỡng trên mỗi 100 g ở trang chi tiết. API không trả tên/URL nguồn tham chiếu, ngày tham khảo, trạng thái danh mục, cờ hỗ trợ tính dinh dưỡng hay trường quản trị khác. Chỉ nguyên liệu đang hoạt động mới có thể được liệt kê và xem chi tiết.
 
 #### Acceptance Criteria
 
-- **AC-62.1 — Toàn bộ nguyên liệu đang hoạt động:** Given catalog có nguyên liệu ở trạng thái `ACTIVE` và `INACTIVE`, When Guest mở trang danh mục, Then tất cả và chỉ các nguyên liệu `ACTIVE` được tải để hiển thị thành các nhãn.
-- **AC-62.2 — Tìm và chọn nhiều nhãn:** Given danh mục nguyên liệu đã tải, When người dùng tìm theo tên và chọn hoặc bỏ chọn nhãn, Then giao diện thể hiện đúng trạng thái đã chọn và hỗ trợ chọn nhiều nguyên liệu bằng chuột hoặc bàn phím.
+- **AC-62.1 — Toàn bộ nguyên liệu đang hoạt động:** Given catalog có nguyên liệu ở trạng thái `ACTIVE` và `INACTIVE`, When Guest mở trang danh mục, Then tất cả và chỉ các nguyên liệu `ACTIVE` được tải để hiển thị thành thẻ nguyên liệu.
+- **AC-62.2 — Tìm và chọn nhiều nguyên liệu:** Given danh mục nguyên liệu đã tải, When người dùng tìm theo tên và chọn hoặc bỏ chọn nguyên liệu từ thẻ, Then giao diện thể hiện đúng trạng thái đã chọn và hỗ trợ chọn nhiều nguyên liệu bằng chuột hoặc bàn phím.
 - **AC-62.3 — Tìm công thức theo nhiều nguyên liệu:** Given người dùng chọn một hoặc nhiều nguyên liệu đang hoạt động, When chọn Tìm công thức, Then trang Khám phá mở với đúng các ingredient ID đã chọn; công thức phải thỏa tất cả nguyên liệu theo semantics AND của FR-08.
-- **AC-62.4 — Không phân nhóm nhãn:** Given danh mục nguyên liệu được hiển thị, Then các nguyên liệu xuất hiện trong một danh sách nhãn thống nhất, không yêu cầu người dùng duyệt `ingredient_group` hoặc taxonomy món ăn.
-- **AC-62.5 — Hạn chế dữ liệu API công khai:** Given danh sách nhóm/nguyên liệu được trả về, Then chỉ có group name/count hoặc ingredient ID/name/group; không tiết lộ trường quản trị, nguồn tham chiếu hoặc dữ liệu dinh dưỡng.
+- **AC-62.4 — Duyệt danh sách nguyên liệu:** Given danh mục nguyên liệu được hiển thị, Then giao diện có thể cho biết nhóm của từng nguyên liệu nhưng không yêu cầu người dùng duyệt taxonomy nhóm món ăn để tìm hoặc chọn.
+- **AC-62.5 — Hạn chế dữ liệu API công khai:** Given danh sách nhóm/nguyên liệu hoặc chi tiết nguyên liệu được trả về, Then API chỉ có group name/count hoặc ingredient ID/name/group/image URL và các chỉ tiêu dinh dưỡng trên mỗi 100 g ở chi tiết; không tiết lộ nguồn tham chiếu, ngày tham khảo, trạng thái nội bộ, cờ hỗ trợ tính dinh dưỡng hoặc trường quản trị khác.
 - **AC-62.6 — Trạng thái giao diện:** Given danh mục đang tải, lỗi, rỗng hoặc có dữ liệu, Then UI hiển thị trạng thái tương ứng, có thể thử lại khi lỗi và các nhóm/nguyên liệu có thể thao tác bằng keyboard.
+- **AC-62.7 — Xem chi tiết nguyên liệu hoạt động:** Given nguyên liệu đang `ACTIVE`, When Guest hoặc Member mở chi tiết từ danh mục, Then trang hiển thị tên, nhóm, ảnh minh họa nếu có và bảng dinh dưỡng trên mỗi 100 g; ảnh trống/tải lỗi được nhận biết là chưa có ảnh; nguyên liệu `INACTIVE` hoặc ID không tồn tại trả cùng phản hồi không tìm thấy.
+- **AC-62.8 — Chỉ tiêu dinh dưỡng công khai:** Given chi tiết nguyên liệu được mở, Then bảng có thể hiển thị năng lượng, protein, carbohydrate, chất béo, chất xơ, canxi, sắt, vitamin B12 và kẽm; mỗi giá trị giữ đơn vị theo định nghĩa chỉ tiêu.
+- **AC-62.9 — Dữ liệu thiếu không phải số không:** Given một hoặc nhiều chỉ tiêu dinh dưỡng là `NULL`, When bảng dinh dưỡng được hiển thị, Then từng chỉ tiêu thiếu được ghi là chưa có dữ liệu, không chuyển thành `0`; nếu tất cả đều thiếu, UI hiển thị trạng thái chưa có dữ liệu dinh dưỡng.
+- **AC-62.10 — Tiếp tục tìm công thức:** Given người dùng đang xem chi tiết nguyên liệu, When chọn Tìm công thức, Then trang Khám phá mở với đúng ID nguyên liệu đó làm bộ lọc.
+- **AC-62.11 — Bài công thức có nguyên liệu:** Given người dùng mở chi tiết nguyên liệu, Then trang tải và hiển thị ngay các bài công thức công khai có liên kết đúng ingredient ID đó, hỗ trợ Xem thêm, sắp xếp mới nhất/được yêu thích và mở từng bài; lỗi trang tiếp theo giữ các bài đã tải và cho thử lại đúng trang bị lỗi.
+- **AC-62.12 — Nhãn lọc loại món:** Given trang chi tiết hiển thị bài công thức liên quan, Then các nhãn loại ăn chay lấy từ lựa chọn chuẩn của hệ thống và lọc đồng thời với ingredient ID; nhãn mô tả loại của công thức, không tự suy ra nguyên liệu phù hợp hoặc vi phạm một chế độ ăn khi catalog chưa có dữ liệu phân loại đó.
 
 ---

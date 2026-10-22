@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -19,12 +20,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import tech.mamxanh.admin.dto.IngredientImageResponse;
 import tech.mamxanh.admin.dto.IngredientRecipeReferenceResponse;
 import tech.mamxanh.admin.dto.IngredientCatalogOptionsResponse;
 import tech.mamxanh.admin.dto.AdminIngredientResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import tech.mamxanh.admin.service.AdminCatalogService;
+import tech.mamxanh.admin.service.IngredientImageService;
 import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.common.response.ApiResponse;
 import tech.mamxanh.common.response.PageResponse;
@@ -45,8 +49,12 @@ import tech.mamxanh.nutrition.dto.response.UnitResponse;
 @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
 public class AdminCatalogController {
     private final AdminCatalogService service;
+    private final IngredientImageService ingredientImageService;
 
-    public AdminCatalogController(AdminCatalogService service) { this.service = service; }
+    public AdminCatalogController(AdminCatalogService service, IngredientImageService ingredientImageService) {
+        this.service = service;
+        this.ingredientImageService = ingredientImageService;
+    }
 
     /** Backwards-compatible list operation used by the current admin client. */
     @ApiResponses({
@@ -136,6 +144,19 @@ public class AdminCatalogController {
     public ApiResponse<IngredientResponse> updateIngredient(@PathVariable @Min(1) long ingredientId,
             @Valid @RequestBody IngredientSaveRequest request) {
         return ApiResponse.success("Cập nhật nguyên liệu thành công.", service.updateIngredient(ingredientId, request));
+    }
+
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "The uploaded ingredient image URL."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "VALIDATION_FAILED or UNSUPPORTED_IMAGE_TYPE."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "INGREDIENT_NOT_FOUND."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "413", description = "FILE_TOO_LARGE: image exceeds 2 MB.")
+    })
+    @PostMapping(value = "/ingredients/{ingredientId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<IngredientImageResponse> uploadIngredientImage(
+            @PathVariable @Min(1) long ingredientId, @RequestParam("file") MultipartFile file) {
+        return ApiResponse.success("Đã lưu ảnh minh họa nguyên liệu.",
+                ingredientImageService.upload(ingredientId, file));
     }
 
     @ApiResponses({

@@ -5,17 +5,17 @@ import { PageContainer } from '../components/Layout';
 import { Button, Card, EmptyState } from '../components/ui';
 import { MemberAvatar } from '../components/MemberAvatar';
 import { MemberFollowPanel } from '../components/MemberFollowPanel';
-import { RecipeDefaultArtwork, type VegetarianCode } from '../components/RecipeDefaultArtwork';
+import { PublicRecipeCard } from '../components/PublicRecipeCard';
 import { joinedMonthLabel, membersApi, type MemberProfile, type MemberRecipeStatistics } from '../api/members';
-import type { RecipeSearchResult } from '../api/recipes';
+import { recipesApi, type RecipeFormOptions, type RecipeSearchResult } from '../api/recipes';
 import { asApiError } from '../lib/apiClient';
 import { useAuth } from '../components/AuthContext';
 
 /**
  * UC-23.2 public member profile (`/thanh-vien/:userId`): name, avatar, bio, join month and the
  * member's published Recipe Posts, plus follow counts, the follow button and lists (FR-59). No
- * email, role label or private data (AC-23.2, BR-18). Recipe tiles show the API's per-post views
- * and likes in a social-profile grid.
+ * email, role label or private data (AC-23.2, BR-18). Published recipes use the same cards
+ * as recipe discovery, including metadata and save/meal-plan actions.
  */
 export function MemberProfilePage() {
   const { account } = useAuth();
@@ -29,6 +29,16 @@ export function MemberProfilePage() {
   const [error, setError] = useState('');
   const [notFound, setNotFound] = useState(!validId);
   const [retry, setRetry] = useState(0);
+  const [options, setOptions] = useState<RecipeFormOptions | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    recipesApi.getFormOptions()
+      .then((data) => { if (alive) setOptions(data); })
+      // Cards retain their API codes if display labels are temporarily unavailable.
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     if (!validId) return;
@@ -88,21 +98,9 @@ export function MemberProfilePage() {
       {recipes.items.length === 0
         ? <p className="mt-4 rounded-2xl border border-brand-100 bg-paper p-6 text-sm text-ink-muted">Chưa có công thức công khai nào.</p>
         : <>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 xl:grid-cols-4">{recipes.items.map((recipe) => {
-            const cover = recipe.media.find((media) => media.cover) ?? recipe.media[0];
-            return <article key={recipe.id} className="min-w-0">
-              <Link to={`/cong-thuc/id/${recipe.id}`} className="group block rounded-xl focus-visible:outline-offset-4">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-raised">
-                  {cover ? <img src={cover.url} alt={recipe.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.03]" /> : <RecipeDefaultArtwork vegetarianType={recipe.vegetarianType as VegetarianCode} compact />}
-                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-3 pb-3 pt-9 text-xs font-semibold text-white">
-                    <span className="inline-flex items-center gap-1.5" aria-label={`${recipe.viewCount.toLocaleString('vi-VN')} lượt xem`}><Eye className="h-4 w-4" aria-hidden="true" />{recipe.viewCount.toLocaleString('vi-VN')}</span>
-                    <span className="inline-flex items-center gap-1.5" aria-label={`${recipe.likes.toLocaleString('vi-VN')} lượt thích`}><Heart className="h-4 w-4" aria-hidden="true" />{recipe.likes.toLocaleString('vi-VN')}</span>
-                  </div>
-                </div>
-                <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-5 text-ink transition-colors group-hover:text-brand-600">{recipe.title}</h3>
-              </Link>
-            </article>;
-          })}</div>
+          <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {recipes.items.map((recipe) => <PublicRecipeCard key={recipe.id} recipe={recipe} options={options} />)}
+          </div>
           {recipes.totalPages > 1 && <div className="mt-8 flex items-center justify-center gap-4"><Button variant="outline" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>Trang trước</Button><span className="text-sm text-ink-muted">Trang {page + 1}/{recipes.totalPages}</span><Button variant="outline" disabled={page + 1 >= recipes.totalPages} onClick={() => setPage((current) => current + 1)}>Trang sau</Button></div>}
         </>}
     </section>
