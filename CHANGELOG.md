@@ -1,13 +1,32 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.99.0
+> **Version:** v2.100.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-23
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-23 — Fix AI Weekly Menu Submission Without Ingredient Filters (FR-34)
+
+**Status:** Committed — `764e121`.
+
+**Scope:** Ensure the weekly-menu preview action works when Members leave optional ingredient filters empty.
+
+### Added
+
+- None.
+
+### Changed
+
+- Synchronize the generated OpenAPI snapshot with the Backend contract produced by CI for the PR commit.
+
+### Fixed
+
+- Allow weekly-menu preview requests with no selected ingredients while keeping ingredient selection required for single-recipe recommendations.
+- Wait for the weekly-menu API request in the E2E scenario before asserting its preview.
 
 ## 2026-10-22 — Allow AI Weekly Menus Without Ingredient Filters (FR-34)
 
