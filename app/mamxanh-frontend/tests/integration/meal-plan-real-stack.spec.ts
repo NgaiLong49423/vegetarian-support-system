@@ -111,7 +111,7 @@ test("FR-09/FR-33 move and mutations persist in Compose SQL and preserve private
         AND nutrition_supported = 1 AND energy_kcal_100g > 0 ORDER BY ingredient_id),
         (SELECT unit_id FROM [UNIT] WHERE code = N'g'), 100);`)
     sql(
-      `INSERT INTO [SAVED_RECIPE] (user_id, recipe_id) VALUES (${ownerId}, ${firstId}), (${ownerId}, ${secondId});`,
+      `INSERT INTO [SAVED_RECIPE] (user_id, recipe_id) VALUES (${ownerId}, ${secondId});`,
     )
 
     await page.goto("/dang-nhap")
@@ -157,6 +157,8 @@ test("FR-09/FR-33 move and mutations persist in Compose SQL and preserve private
 
     await selectedDay.getByRole("button", { name: /^Thêm món Bữa trưa/ }).click()
     const dialog = page.getByRole("dialog")
+    // #154: firstId is public but has never been saved by this Member.
+    await dialog.getByRole("button", { name: "Tìm công thức", exact: true }).click()
     await dialog.getByLabel("Tìm món cho lịch ăn").fill(fixture)
     await dialog.getByRole("button", { name: "Tìm", exact: true }).click()
     const add = page.waitForResponse(
@@ -170,6 +172,8 @@ test("FR-09/FR-33 move and mutations persist in Compose SQL and preserve private
     const item = await addResponse.json()
     expect(item.plannedServings).toBe(1)
     expect(item.mealDate).toBe(selectedWeek)
+    expect(Number(sql(`SELECT COUNT(*) FROM [SAVED_RECIPE] WHERE user_id = ${ownerId} AND recipe_id = ${firstId}`))).toBe(0)
+    expect(Number(sql(`SELECT COUNT(*) FROM [SAVED_RECIPE] WHERE user_id = ${ownerId}`))).toBe(1)
     const entryId = item.entryId as number
     const entryUrl = `${backend}/meal-plans/${selectedWeek}/entries/${entryId}`
     expect(
@@ -365,7 +369,8 @@ test("FR-09/FR-33 move and mutations persist in Compose SQL and preserve private
           `SELECT COUNT(*) FROM [SAVED_RECIPE] WHERE user_id = ${ownerId} AND recipe_id = ${firstId}`,
         ),
       ),
-    ).toBe(1)
+    ).toBe(0)
+    expect(Number(sql(`SELECT COUNT(*) FROM [SAVED_RECIPE] WHERE user_id = ${ownerId} AND recipe_id = ${secondId}`))).toBe(1)
     expect(
       Number(
         sql(
