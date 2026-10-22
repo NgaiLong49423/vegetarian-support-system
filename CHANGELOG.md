@@ -1,13 +1,33 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.94.0
+> **Version:** v2.95.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-22
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-22 — AI Feature Entitlement and Guest Chat Access
+
+**Status:** Committed — `0908c73`.
+
+**Scope:** Save the FR-10 implementation checkpoint for Issue #16 while preserving existing role, subscription, recipe and nutrition boundaries. Chatbot timeout, history-length and diagnostic logging defects remain recorded as BUG-055 through BUG-057; no complete FR-10 acceptance, main acceptance or deployment is claimed.
+
+### Added
+
+- Enable Guest access to the existing chatbot with bounded rolling cookie/IP rate limits, registration guidance and token-only usage events without an account identity.
+- Add entitlement, validity-boundary, HTTP authorization, concurrent rate-limit and browser checks.
+
+### Changed
+
+- Extend AI subscription errors with the minimum paid tier and a relative upgrade link; retain the existing error code and successful response contracts.
+- Document the Guest prerequisite shared with FR-02 and clear chat state when account or recipe context changes.
+
+### Fixed
+
+- Explain Pro requirements accurately and provide upgrade navigation from AI recipe assistance and meal-plan screens without blocking manual recipe editing or ordinary nutrition calculations.
 
 ## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
