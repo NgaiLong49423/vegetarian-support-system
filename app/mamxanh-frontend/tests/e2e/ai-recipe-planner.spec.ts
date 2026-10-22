@@ -78,6 +78,7 @@ test('AI menu stays a preview until explicit apply and applies all 21 slots', as
   await page.getByRole('tab', { name: 'Thực đơn tuần' }).click();
   await expect(page.getByText(/Có thể bỏ trống để AI chọn/)).toBeVisible();
   await page.getByRole('button', { name: 'Tạo thực đơn tuần' }).click();
+  await expect.poll(() => menuBodies.length).toBe(1);
   await expect(page.getByRole('heading', { name: 'Thực đơn tuần dành cho bạn' })).toBeVisible();
   expect(menuBodies[0]).toEqual({});
   expect(applyCalls).toBe(0);

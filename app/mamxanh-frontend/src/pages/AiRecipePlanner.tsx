@@ -96,7 +96,7 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
   };
 
   const runRecommendation = async (action: 'recommend' | 'weekly') => {
-    if (!selected.length) return;
+    if (action === 'recommend' && !selected.length) return;
     setBusy(action);
     setError(null);
     setApplied(false);
