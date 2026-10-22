@@ -168,16 +168,27 @@ function IngredientTableRow({
 
       {/* 3. Trạng thái */}
       <td className="py-3 px-3 text-center align-middle whitespace-nowrap">
-        <span
-          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-            item.active
-              ? 'border-leaf-300/80 bg-leaf-50 text-leaf-800'
-              : 'border-brand-200/80 bg-paper text-ink-muted'
-          }`}
-        >
-          {item.active && <span className="size-1.5 rounded-full bg-leaf-500" />}
-          {item.active ? 'Đang dùng' : 'Ngừng dùng'}
-        </span>
+        <div className="flex flex-col items-center gap-1">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+              item.active
+                ? 'border-leaf-300/80 bg-leaf-50 text-leaf-800'
+                : 'border-brand-200/80 bg-paper text-ink-muted'
+            }`}
+          >
+            {item.active && <span className="size-1.5 rounded-full bg-leaf-500" />}
+            {item.active ? 'Đang dùng' : 'Ngừng dùng'}
+          </span>
+          <span
+            className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${
+              item.nutritionSupported
+                ? 'border-leaf-300/80 bg-leaf-50/95 text-leaf-800'
+                : 'border-brand-200/80 bg-paper/95 text-ink-muted'
+            }`}
+          >
+            {item.nutritionSupported ? 'Có dữ liệu tính toán' : 'Chưa hỗ trợ tính'}
+          </span>
+        </div>
       </td>
 
       {/* 4. Công thức đang dùng */}

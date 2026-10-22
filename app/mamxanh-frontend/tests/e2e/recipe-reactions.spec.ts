@@ -64,7 +64,8 @@ test('Member thêm, đổi, hủy; tải lại giữ lựa chọn và card nhậ
   await expect(dislike).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '90');
   await like.click();
-  await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '91');
+  await page.getByRole('link', { name: 'Khám phá', exact: true }).last().click();
+  await expect(page.getByLabel('Tỷ lệ Like: 91%')).toBeVisible();
   expect(mutations).toEqual(['PUT', 'PUT', 'DELETE', 'PUT']);
 });
 
@@ -159,12 +160,24 @@ test('Bố cục 360/768/1440px và bình chọn bằng bàn phím', async ({ pa
   await expect(like).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('Card trang chủ và Khám phá không đặt huy hiệu like/dislike đại diện, chỉ hiển thị phụ trong chi tiết', async ({ page }) => {
+test('Card trang chủ và Khám phá đặt Mới ở góc trên trái ảnh', async ({ page }) => {
   await api(page, 0, 0);
   for (const path of ['/trang-chu', '/kham-pha']) {
     await page.goto(path);
-    const badges = page.locator('article .absolute.left-2.top-2');
-    await expect(badges).toHaveCount(0);
+    const badges = page.getByLabel('Chưa có bình chọn');
+    await expect(badges).toHaveCount(path === '/trang-chu' ? 2 : 1);
+    const badge = badges.first();
+    await expect(badge).toHaveText('Mới');
+    const offset = await badge.evaluate((element) => {
+      // Read both rectangles in one frame so card entrance motion cannot skew the offset.
+      const bounds = element.getBoundingClientRect();
+      const image = element.parentElement!.parentElement!.getBoundingClientRect();
+      return { x: bounds.x - image.x, y: bounds.y - image.y };
+    });
+    expect(offset.x).toBeGreaterThanOrEqual(0);
+    expect(offset.y).toBeGreaterThanOrEqual(0);
+    expect(offset.x).toBeLessThan(20);
+    expect(offset.y).toBeLessThan(20);
   }
 });
 
