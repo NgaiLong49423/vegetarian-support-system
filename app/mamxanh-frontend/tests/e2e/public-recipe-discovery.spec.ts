@@ -197,7 +197,7 @@ test('FR-08 Explore applies API-backed options, ingredient AND filters, sorting 
   }).toBe('VEGAN|SOUP|30|101|202');
 
   await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_LIKED');
-  await expect(page.getByText('Mới', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: matchingRecipe.title })).toBeVisible();
   await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_VIEWED');
   await page.getByRole('combobox', { name: 'Khung thời gian lượt xem' }).selectOption('LAST_7_DAYS');
   await expect.poll(() => new URL(searchUrls.at(-1)!).searchParams.get('viewPeriod')).toBe('LAST_7_DAYS');

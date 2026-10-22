@@ -286,7 +286,7 @@ export function Explore() {
               : result && result.items.length > 0 ? <>
                 {shopping.toolbar}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 xl:grid-cols-4">
-                  {result.items.map((recipe: RecipePost) => <div key={recipe.id} className="min-w-0"><PublicRecipeCard recipe={recipe} options={options} />{shopping.checkbox(recipe.id, recipe.title)}</div>)}
+                  {result.items.map((recipe: RecipePost) => <div key={recipe.id} className="min-w-0 flex flex-col h-full"><PublicRecipeCard recipe={recipe} options={options} /><div className="mt-auto">{shopping.checkbox(recipe.id, recipe.title)}</div></div>)}
                 </div>
                 {(page > 0 || result.hasNext) && <nav aria-label="Phân trang công thức" className="mt-7 flex flex-wrap items-center justify-center gap-3">
                   <Button variant="outline" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>Trang trước</Button>

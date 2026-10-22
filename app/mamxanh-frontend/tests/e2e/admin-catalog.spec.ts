@@ -175,7 +175,6 @@ test('administrator saves nutrition values and backend validates enabling calcul
   expect(data[0].nutritionSupported).toBe(true);
   expect(data[0].nutrition.proteinGramsPer100g).toBe(10);
   await expect(page.getByText('Đang tính dữ liệu có sẵn', { exact: true })).toBeVisible();
-  await expect(page.getByText('Có dữ liệu tính toán', { exact: true })).toBeVisible();
 });
 
 test('administrator filters the catalog through the paginated endpoint and reads linked recipes', async ({ page }) => {

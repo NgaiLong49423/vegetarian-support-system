@@ -4,7 +4,6 @@ import { AddToMealPlanButton } from "./AddToMealPlanButton"
 import { RecipeDefaultArtwork, type VegetarianCode } from "./RecipeDefaultArtwork"
 import { SaveRecipeButton } from "./SaveRecipeButton"
 import { RecipeViewCount } from "./RecipeViewCount"
-import { RecipeReactionBadge } from "./RecipeReactionBadge"
 
 export function PublicRecipeCard({
   recipe,
@@ -21,10 +20,10 @@ export function PublicRecipeCard({
     options?.vegetarianTypes.find((item) => item.code === recipe.vegetarianType)
       ?.label ?? recipe.vegetarianType
   return (
-    <article className="relative min-w-0 transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
+    <article className="relative flex h-full min-w-0 flex-col transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
       <Link
         to={`/cong-thuc/id/${recipe.id}`}
-        className="group block rounded-xl focus-visible:outline-offset-4"
+        className="group flex flex-1 flex-col rounded-xl focus-visible:outline-offset-4"
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-raised">
           {cover ? (
@@ -41,9 +40,6 @@ export function PublicRecipeCard({
               compact
             />
           )}
-          <div className="absolute left-2 top-2">
-            <RecipeReactionBadge percentage={recipe.likePercentage} />
-          </div>
           <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-black/60 px-2.5 py-2 text-[11px] text-white">
             {recipe.authorAvatarUrl ? (
               <img
@@ -62,7 +58,7 @@ export function PublicRecipeCard({
             <span className="truncate">{recipe.authorName}</span>
           </div>
         </div>
-        <h2 className="mt-2.5 line-clamp-2 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
+        <h2 className="mt-2.5 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
           {recipe.title}
         </h2>
         <p className="mt-1 text-xs text-ink-muted">

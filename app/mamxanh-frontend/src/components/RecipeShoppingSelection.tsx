@@ -48,14 +48,15 @@ export function useRecipeShoppingSelection() {
     }
   }
   return {
-    checkbox: (id: number, title: string) =>
+    checkbox: (id: number, title: string, className = "") =>
       member ? (
-        <label className="mt-2 flex min-h-10 items-center gap-2 text-xs text-ink-soft">
+        <label className={`mt-auto flex min-h-10 items-center gap-2 text-xs text-ink-soft select-none cursor-pointer hover:text-ink ${className}`}>
           <input
             type="checkbox"
             aria-label={`Chọn ${title} để đi chợ`}
             checked={selected.includes(id)}
             disabled={busy || (!selected.includes(id) && selected.length >= 50)}
+            className="h-4 w-4 rounded border-brand-300 text-brand-600 accent-brand-600 focus:ring-brand-500 cursor-pointer"
             onChange={(event) => {
               const checked = event.target.checked
               setSelected((ids) =>
@@ -63,7 +64,7 @@ export function useRecipeShoppingSelection() {
               )
             }}
           />
-          Chọn đi chợ
+          <span>Chọn đi chợ</span>
         </label>
       ) : null,
     toolbar:
