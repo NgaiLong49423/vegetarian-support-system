@@ -9,6 +9,16 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-22 — Allow AI Weekly Menus Without Ingredient Filters (FR-34)
+
+**Scope:** Let eligible Pro Members preview an AI-generated weekly menu from the safe public recipe catalog without first selecting ingredients, while preserving optional ingredient filtering.
+
+### Changed
+
+- Make the weekly-menu preview ingredient filter optional; keep ingredient selection required for single-recipe recommendations.
+- Allow weekly-menu candidates from the full profile-safe public catalog when no ingredients are selected.
+- Update the API guide and weekly-menu planner flow for the optional filter.
+
 ## 2026-10-22 — Create and Manage Shopping Lists (FR-53) ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
 
 **Status:** Committed — `47dc13a`.
