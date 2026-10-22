@@ -3,6 +3,7 @@ package tech.mamxanh.integration.ai;
 import java.util.List;
 
 public interface AiClient {
+    int MAX_CHAT_ANSWER_LENGTH = 8_000;
     String generateRecipeText(String prompt, List<Long> allowedIngredientIds);
 
     RecommendationResult recommendRecipes(String prompt, List<Long> allowedRecipeIds, int limit);

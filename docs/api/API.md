@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.36.0
+> **Version:** v0.37.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-22
 > **Status:** Active
@@ -366,7 +366,7 @@ Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint d
 
 ## 16. Chatbot hỏi đáp theo ngữ cảnh — FR-51
 
-`POST /api/v1/recipes/ai/chat` phục vụ cả Guest và Member đang hoạt động trên cùng một chatbot. Member gửi Bearer token; Guest gửi thêm `anonymousViewerId` dạng UUID lấy từ session cookie cùng origin Frontend (`mamxanh.recipe-viewer`, dùng chung định danh ẩn danh hiện có của FR-58). Không dùng cookie xác thực hoặc bật credentials xuyên origin. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` hoặc `ASSISTANT`, mỗi nội dung tối đa 1.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
+`POST /api/v1/recipes/ai/chat` phục vụ cả Guest và Member đang hoạt động trên cùng một chatbot. Member gửi Bearer token; Guest gửi thêm `anonymousViewerId` dạng UUID lấy từ session cookie cùng origin Frontend (`mamxanh.recipe-viewer`, dùng chung định danh ẩn danh hiện có của FR-58). Không dùng cookie xác thực hoặc bật credentials xuyên origin. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` tối đa 1.000 ký tự, `ASSISTANT` tối đa 8.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. Câu trả lời được Backend kiểm tra tối đa 8.000 ký tự trước khi trả thành công, để Frontend gửi lại đầy đủ ở lượt tiếp theo mà không cắt mất nội dung. Giới hạn này do Backend thực thi, không phụ thuộc provider có tuân thủ length constraint của schema hay không. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
 
 Ví dụ body cho ngữ cảnh công thức:
 
@@ -410,9 +410,13 @@ Lỗi request trả `400`; bài không tồn tại hoặc không còn công khai
 
 Phần Guest là prerequisite được tích hợp trong FR-10/Issue #16 để đáp ứng AC-10.1; không tự xác nhận Issue FR-02 đã được nghiệm thu. Khi tiếp tục FR-02, tái sử dụng endpoint và bộ đếm này, không tạo chatbot hoặc daily quota riêng.
 
+SDK Gemini dùng một attempt cho mỗi thao tác, timeout HTTP và deadline bao trùm chuẩn bị request/HTTP/đọc response là 9 giây để dành thời gian xử lý lỗi trong ngân sách NFR-18; không tự retry/backoff sau timeout. Provider lỗi/timeout trả `503 AI_PROVIDER_UNAVAILABLE`; Chatbot nhận phản hồi thiếu, bị cắt hoặc không hợp lệ trả `502 AI_RESPONSE_INVALID`. Nếu provider trả HTTP 429, Chatbot vẫn dùng 503 với hướng dẫn dịch vụ đang tạm giới hạn yêu cầu; không trả lỗi 429 dành cho bộ đếm Guest và không gợi ý đăng ký để vượt quota Google. Quota của project Google tách biệt với entitlement Free/Plus/Pro, không phải daily quota do ứng dụng áp dụng. Chỉ phản hồi đã qua validation mới phát usage event thành công. Log SDK chỉ chứa operation, model, nhóm lỗi, mã HTTP provider (nếu có) và thời gian; không ghi message/stack trace của SDK, raw prompt, câu trả lời hoặc API key. Cấu hình timeout không phải bằng chứng đạt thời gian trả lời thành công của NFR-03; hiệu năng provider cần kiểm tra riêng.
+
 ### Quy ước lỗi entitlement — FR-10
 
 Các guard hiện có vẫn dùng `403 AI_SUBSCRIPTION_REQUIRED`. ProblemDetail bổ sung `requiredTier` (`PLUS` hoặc `PRO`) và `upgradeUrl` (`/goi-ai`); `detail` hướng dẫn đúng gói tối thiểu. Plus/Pro cho FR-21 vẫn đồng thời yêu cầu vai trò Expert; Pro cho FR-36 vẫn yêu cầu eligibility và hồ sơ hợp lệ. Frontend hiển thị thông báo và liên kết nâng cấp nhưng Backend quyết định quyền từ Subscription đang hiệu lực, không từ thông tin gói do client khai. Preview và apply menu tuần kiểm tra lại Pro ở từng bước; lỗi không đổi Subscription hoặc gọi Gemini. Nội dung tính toán dinh dưỡng/gợi ý thông thường không bị đưa vào paywall bởi thay đổi này.
+
+`GET /api/v1/subscriptions/my-subscription` hiển thị quyền trả phí theo cùng cửa sổ `starts_at <= now < ends_at` với guard AI. Gói bắt đầu trong tương lai chưa mở tính năng: response dùng Free hiện tại và giữ nguyên bản ghi gói tương lai; không tự hủy hoặc đánh dấu gói tương lai là hết hạn.
 
 ## 17. Theo dõi thành viên — FR-59
 

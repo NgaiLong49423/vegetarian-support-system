@@ -181,6 +181,9 @@ public class SubscriptionService {
             return MySubscriptionResponse.free();
         }
 
+        // Match the AI guard's starts_at <= now < ends_at window without cancelling a future period.
+        if (!sub.isActiveAt(now)) return MySubscriptionResponse.free();
+
         // AC-13.7: Display paid plan and expiration date
         List<String> unlockedFeatures = (sub.getTier() == SubscriptionTier.PRO)
                 ? List.of(

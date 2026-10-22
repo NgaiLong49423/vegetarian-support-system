@@ -45,6 +45,18 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     const denied = await request.post(`${backend}/recipes/ai-assistance`, { headers, data: assistance });
     expect(denied.status()).toBe(403);
     expect(await denied.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS', upgradeUrl: '/goi-ai' });
+    // A future paid period must agree between the account API and the paid-feature guard.
+    sql(`INSERT INTO [SUBSCRIPTION] (user_id,tier,status,starts_at,ends_at)
+      VALUES (${member},'PRO','ACTIVE',DATEADD(day,1,SYSUTCDATETIME()),DATEADD(day,31,SYSUTCDATETIME()))`);
+    const futurePlan = await request.get(`${backend}/subscriptions/my-subscription`, { headers });
+    expect(futurePlan.status()).toBe(200);
+    expect(await futurePlan.json()).toMatchObject({ tier: 'FREE' });
+    const futureWeekly = await request.post(`${backend}/recipes/ai/weekly-menu`, { headers,
+      data: { ingredientIds: [ingredients[0].ingredientId] } });
+    expect(futureWeekly.status()).toBe(403);
+    expect(await futureWeekly.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
+    expect(sql(`SELECT COUNT(*) FROM [SUBSCRIPTION] WHERE user_id=${member} AND tier='PRO' AND status='ACTIVE'`)).toBe('1');
+    sql(`DELETE FROM [SUBSCRIPTION] WHERE user_id=${member} AND tier='PRO'`);
     sql(`INSERT INTO [SUBSCRIPTION] (user_id,tier,status,starts_at,ends_at)
       VALUES (${member},'PLUS','ACTIVE',DATEADD(day,-1,SYSUTCDATETIME()),DATEADD(day,1,SYSUTCDATETIME()))`);
     const weekly = await request.post(`${backend}/recipes/ai/weekly-menu`, { headers,

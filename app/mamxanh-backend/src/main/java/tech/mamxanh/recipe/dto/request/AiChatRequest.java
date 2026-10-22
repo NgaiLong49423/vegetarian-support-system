@@ -1,7 +1,9 @@
 package tech.mamxanh.recipe.dto.request;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.AssertTrue;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import tech.mamxanh.integration.ai.AiClient;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,5 +29,16 @@ public record AiChatRequest(
     public enum ContextType { GENERAL, RECIPE }
     public enum Speaker { USER, ASSISTANT }
 
-    public record Turn(@NotNull Speaker speaker, @NotBlank @Size(max = 1000) @Schema(maxLength = 1000) String content) { }
+    public record Turn(@NotNull Speaker speaker,
+            @NotBlank @Size(max = AiClient.MAX_CHAT_ANSWER_LENGTH)
+            @Schema(maxLength = AiClient.MAX_CHAT_ANSWER_LENGTH,
+                    description = "USER content is limited to 1000 characters; ASSISTANT content may contain a complete answer up to 8000 characters.")
+            String content) {
+        @AssertTrue(message = "Nội dung người dùng trong lịch sử tối đa 1.000 ký tự.")
+        @JsonIgnore
+        @Schema(hidden = true)
+        public boolean isContentLengthValid() {
+            return speaker != Speaker.USER || content == null || content.length() <= 1000;
+        }
+    }
 }

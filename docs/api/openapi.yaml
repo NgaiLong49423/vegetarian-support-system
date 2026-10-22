@@ -6517,7 +6517,9 @@ components:
           - ASSISTANT
         content:
           type: string
-          maxLength: 1000
+          description: USER content is limited to 1000 characters; ASSISTANT content
+            may contain a complete answer up to 8000 characters.
+          maxLength: 8000
           minLength: 0
       required:
       - content
@@ -6538,6 +6540,7 @@ components:
           type: string
           description: AI answer or explicitly requested draft. Treat as reference
             information.
+          maxLength: 8000
         recommendations:
           type: array
           description: Real public RecipePosts selected from the Backend catalog;

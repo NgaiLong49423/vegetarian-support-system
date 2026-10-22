@@ -2,7 +2,7 @@ schema_version: 1
 last_updated: 2026-10-22
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-next_id: 58
+next_id: 60
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -10,9 +10,27 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-058
+    title: API hiển thị gói chưa tới ngày hiệu lực là đang hoạt động
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Subscription và Frontend/Gói AI
+    file: .agents/outputs/bugs/BUG-058.md
+    created: 2026-10-22
+    updated: 2026-10-22
+    related_issue: 16
+  - id: BUG-059
+    title: Phản hồi Chatbot bị cắt trả sai mã lỗi so với hợp đồng API
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI và Recipe chat API
+    file: .agents/outputs/bugs/BUG-059.md
+    created: 2026-10-22
+    updated: 2026-10-22
+    related_issue: 16
   - id: BUG-055
     title: Retry Gemini kéo dài quá timeout và khiến Chatbot thường xuyên báo lỗi
-    status: RECORDED
+    status: RESOLVED
     severity: High
     area: Backend/AI SDK và Frontend/Chatbot
     file: .agents/outputs/bugs/BUG-055.md
@@ -21,7 +39,7 @@ bugs:
     related_issue: 16
   - id: BUG-056
     title: Câu trả lời dài làm câu hỏi tiếp theo của Chatbot bị từ chối
-    status: RECORDED
+    status: RESOLVED
     severity: Medium
     area: Backend/Recipe chat DTO và Frontend/Chatbot
     file: .agents/outputs/bugs/BUG-056.md
@@ -30,7 +48,7 @@ bugs:
     related_issue: 16
   - id: BUG-057
     title: Log lỗi Chatbot làm mất nguyên nhân lỗi Gemini
-    status: RECORDED
+    status: RESOLVED
     severity: Medium
     area: Backend/AI observability
     file: .agents/outputs/bugs/BUG-057.md

@@ -34,6 +34,40 @@ test('Guest uses the same chatbot with a stable session-cookie ID and can regist
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
+test('complete long AI answers remain in history for the next question', async ({ page }) => {
+  const answer = 'Nấu nhỏ lửa để giữ hương vị. '.repeat(70);
+  const requests: Array<{ history: AiChatHistoryTurn[] }> = [];
+  type AiChatHistoryTurn = { speaker: string; content: string };
+  await page.route('**/api/v1/recipes/ai/chat', async (route) => {
+    requests.push(route.request().postDataJSON());
+    await route.fulfill({ json: { contextType: 'GENERAL', recipeId: null,
+      answer: requests.length === 1 ? answer : 'Bạn có thể thêm rau.', recommendations: [] } });
+  });
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Cách nấu canh?');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page.getByText(answer, { exact: true })).toBeVisible();
+  await page.getByLabel('Câu hỏi của bạn').fill('Thêm gì?');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  await expect(page.getByText('Bạn có thể thêm rau.', { exact: true })).toBeVisible();
+  expect(requests[1].history).toContainEqual({ speaker: 'ASSISTANT', content: answer });
+});
+
+test('provider throttling shows the server guidance without suggesting Guest registration', async ({ page }) => {
+  const detail = 'Dịch vụ AI đang tạm giới hạn yêu cầu. Vui lòng thử lại sau.';
+  await page.route('**/api/v1/recipes/ai/chat', (route) => route.fulfill({ status: 503,
+    json: { status: 503, code: 'AI_PROVIDER_UNAVAILABLE', detail } }));
+  await page.goto('/trang-chu');
+  await page.getByRole('button', { name: 'Mở khung chat hỗ trợ AI' }).click();
+  await page.getByLabel('Câu hỏi của bạn').fill('Cách nấu canh?');
+  await page.getByRole('button', { name: 'Gửi câu hỏi' }).click();
+  const alert = page.getByRole('dialog').getByRole('alert');
+  await expect(alert).toContainText(detail);
+  await expect(alert.getByRole('button', { name: 'Thử lại' })).toBeVisible();
+  await expect(alert.getByRole('link', { name: 'Đăng ký', exact: true })).toHaveCount(0);
+});
+
 test('general chat keeps session history in the page and labels the answer as AI', async ({ page }) => {
   await signInAsMember(page);
   const requests: Array<Record<string, unknown>> = [];

@@ -137,7 +137,7 @@ export function AiChatPage() {
       const apiError = asApiError(cause);
       setError(apiError.status === 429
         ? 'Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Hãy thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục.'
-        : apiError.code === 'AI_PROVIDER_UNAVAILABLE' || apiError.status === 0
+        : apiError.status === 0
           ? 'Dịch vụ trả lời đang gặp sự cố. Vui lòng thử lại sau.'
           : apiError.message);
     } finally {
