@@ -9,9 +9,9 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-22 — Create and Manage Shopping Lists (FR-53)
+## 2026-10-22 — Create and Manage Shopping Lists (FR-53) ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `47dc13a`.
 
 **Scope:** Let Members create and manage shopping lists, then add one recipe at a time to a selected or newly created list.
 
@@ -53,9 +53,9 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - None.
 
 
-## 2026-10-22 — Enrich Demo Recipe Ingredients and Illustrations
+## 2026-10-22 — Enrich Demo Recipe Ingredients and Illustrations ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `47dc13a`.
 
 **Scope:** Improve local Flyway demo recipe data and ingredient illustrations.
 
@@ -75,9 +75,9 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Persist the existing zinc estimates for 85 demo ingredients instead of leaving their zinc columns null (BUG-054).
 - Include stored demo spice estimates in nutrition calculations under the current BR-52 policy while retaining unverified AI provenance (BUG-055).
 
-## 2026-10-22 — Align Public Profile Recipe Cards with Discovery
+## 2026-10-22 — Align Public Profile Recipe Cards with Discovery ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `47dc13a`.
 
 **Scope:** Unify published recipe cards on public member and expert profiles with recipe discovery.
 
@@ -94,9 +94,9 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
-## 2026-10-21 — Add Public Ingredient Details
+## 2026-10-21 — Add Public Ingredient Details ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `25b113f`.
 
 **Scope:** Let users inspect active ingredient details and available nutrition data.
 
@@ -116,9 +116,9 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
-## 2026-10-21 — Add Ingredient Reference Images
+## 2026-10-21 — Add Ingredient Reference Images ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `25b113f`.
 
 **Scope:** Let administrators attach and manage an illustrative image for each ingredient in the catalog.
 
