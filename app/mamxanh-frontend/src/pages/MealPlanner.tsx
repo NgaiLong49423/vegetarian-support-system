@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Calendar,
   ChevronLeft,
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { BinButton } from '../components/BinButton';
-import { AiButton, Badge, Button } from '../components/ui';
+import { AiButton, Badge, Button, EmptyState } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { weekPlan as initialPlan, recipes } from '../data/mockData';
 import type { DayPlan, MealSlot } from '../types';
@@ -32,6 +32,7 @@ const allSlots: MealSlot[] = ['Sáng', 'Trưa', 'Tối'];
 
 export function MealPlanner() {
   const { account } = useAuth();
+  const [params] = useSearchParams();
   const [week, setWeek] = useState<DayPlan[]>(() => initialPlan.map((d) => ({ ...d, meals: [...d.meals] })));
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [picker, setPicker] = useState<{ dayIdx: number; slot: MealSlot } | null>(null);
@@ -64,6 +65,26 @@ export function MealPlanner() {
 
   if (account && account.role !== 'ADMIN') return <MealPlanWeekEditor key={account.id} />;
   if (account?.role === 'ADMIN') return <PageContainer className="py-12"><div role="alert" className="mx-auto max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">Tài khoản Quản trị viên không có quyền xem Lịch ăn của thành viên.</div></PageContainer>;
+
+  if (!account && !params.get('demo')) {
+    return (
+      <PageContainer className="py-10">
+        <EmptyState
+          icon="📅"
+          title="Kế hoạch bữa ăn của bạn"
+          description="Đăng nhập để lập thực đơn 7 ngày, theo dõi dinh dưỡng và tùy biến bữa ăn cho gia đình."
+          action={
+            <Link
+              to="/dang-nhap"
+              className="rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-on-brand"
+            >
+              Đăng nhập
+            </Link>
+          }
+        />
+      </PageContainer>
+    );
+  }
 
   const setMeal = (dayIdx: number, slot: MealSlot, recipeId: string) => {
     setWeek((prev) =>

@@ -1,100 +1,113 @@
 package tech.mamxanh.integration.payos;
 
+import java.net.URI;
+import java.util.Map;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.payos.dto.CreatePaymentLinkRequest;
 import tech.mamxanh.integration.payos.dto.CreatePaymentLinkResponse;
 import tech.mamxanh.integration.payos.dto.PayOsPaymentData;
+import tech.mamxanh.integration.payos.dto.PayOsPaymentInfo;
 import tech.mamxanh.integration.payos.dto.PayOsWebhookPayload;
+import tools.jackson.databind.json.JsonMapper;
 
-/**
- * Default implementation of {@link PayOsClient} using Spring {@link RestClient}.
- */
+/** Real payOS adapter. Missing credentials fail closed; test doubles belong in tests. */
 public class DefaultPayOsClient implements PayOsClient {
-
-    private static final Logger log = LoggerFactory.getLogger(DefaultPayOsClient.class);
-    private static final int MAX_DESC_LENGTH = 25;
-
     private final PayOsProperties properties;
     private final RestClient restClient;
+    private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
     public DefaultPayOsClient(PayOsProperties properties, RestClient restClient) {
-        this.properties = Objects.requireNonNull(properties, "properties must not be null");
-        this.restClient = Objects.requireNonNull(restClient, "restClient must not be null");
+        this.properties = Objects.requireNonNull(properties);
+        this.restClient = Objects.requireNonNull(restClient);
     }
 
     @Override
     public CreatePaymentLinkResponse createPaymentLink(long orderCode, int amount, String description) {
-        String sanitizedDesc = sanitizeDescription(description);
-
-        if (!properties.isConfigured()) {
-            log.warn("payOS credentials not configured (mamxanh.payos.*); generating local fallback checkout URL for order {}", orderCode);
-            String fallbackCheckoutUrl = properties.returnUrl() + "?orderCode=" + orderCode + "&mock=true";
-            PayOsPaymentData mockData = new PayOsPaymentData(
-                    orderCode,
-                    amount,
-                    sanitizedDesc,
-                    fallbackCheckoutUrl,
-                    "mock_qr_code_" + orderCode,
-                    "mock_link_" + orderCode,
-                    "PENDING"
-            );
-            return new CreatePaymentLinkResponse("00", "success", mockData, "mock_signature");
+        requireConfigured();
+        String desc = description == null || description.isBlank() ? "Thanh toan goi AI" : description;
+        desc = desc.substring(0, Math.min(desc.length(), 25));
+        String signature = PayOsSignatureUtil.createPaymentRequestSignature(orderCode, amount, desc,
+                properties.cancelUrl(), properties.returnUrl(), properties.checksumKey());
+        try {
+            PayOsWebhookPayload response = restClient.post().uri(properties.endpoint() + "/v2/payment-requests")
+                    .header("x-client-id", properties.clientId()).header("x-api-key", properties.apiKey())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new CreatePaymentLinkRequest(orderCode, amount, desc, properties.cancelUrl(), properties.returnUrl(), signature))
+                    .retrieve().body(PayOsWebhookPayload.class);
+            Map<String, Object> data = verifiedData(response);
+            PayOsPaymentData link = MAPPER.convertValue(data, PayOsPaymentData.class);
+            if (exactNumber(data.get("orderCode")).longValueExact() != orderCode
+                    || exactNumber(data.get("amount")).intValueExact() != amount
+                    || link.orderCode() != orderCode || link.amount() != amount || !"VND".equals(data.get("currency"))
+                    || !"PENDING".equals(link.status()) || !safeCheckoutUrl(link.checkoutUrl())
+                    || link.paymentLinkId() == null || link.paymentLinkId().isBlank()
+                    || link.qrCode() == null || link.qrCode().isBlank()) {
+                throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
+            }
+            return new CreatePaymentLinkResponse("00", "success", link, response.signature());
+        } catch (RestClientException ex) {
+            throw new AppException(ErrorCode.PAYMENT_UNAVAILABLE);
+        } catch (IllegalArgumentException | ArithmeticException | tools.jackson.core.JacksonException ex) {
+            throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
         }
+    }
 
-        String signature = PayOsSignatureUtil.createPaymentRequestSignature(
-                orderCode,
-                amount,
-                sanitizedDesc,
-                properties.cancelUrl(),
-                properties.returnUrl(),
-                properties.checksumKey()
-        );
+    @Override
+    public PayOsPaymentInfo getPaymentInfo(long orderCode) {
+        requireConfigured();
+        try {
+            PayOsWebhookPayload response = restClient.get().uri(properties.endpoint() + "/v2/payment-requests/{id}", orderCode)
+                    .header("x-client-id", properties.clientId()).header("x-api-key", properties.apiKey())
+                    .retrieve().body(PayOsWebhookPayload.class);
+            Map<String, Object> data = verifiedData(response);
+            long returnedOrder = exactNumber(data.get("orderCode")).longValueExact();
+            int amount = exactNumber(data.get("amount")).intValueExact();
+            int amountPaid = exactNumber(data.get("amountPaid")).intValueExact();
+            String status = String.valueOf(data.get("status"));
+            if (returnedOrder != orderCode || amount <= 0 || amountPaid < 0
+                    || !java.util.Set.of("PENDING", "PROCESSING", "PAID", "CANCELLED", "EXPIRED").contains(status)) {
+                throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
+            }
+            return new PayOsPaymentInfo(returnedOrder, amount, amountPaid, status);
+        } catch (RestClientException ex) {
+            throw new AppException(ErrorCode.PAYMENT_UNAVAILABLE);
+        } catch (IllegalArgumentException | ArithmeticException ex) {
+            throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
+        }
+    }
 
-        CreatePaymentLinkRequest requestBody = new CreatePaymentLinkRequest(
-                orderCode,
-                amount,
-                sanitizedDesc,
-                properties.cancelUrl(),
-                properties.returnUrl(),
-                signature
-        );
+    private java.math.BigDecimal exactNumber(Object value) {
+        if (value == null) throw new IllegalArgumentException("Missing number");
+        return new java.math.BigDecimal(String.valueOf(value));
+    }
 
-        return restClient.post()
-                .uri(properties.endpoint() + "/v2/payment-requests")
-                .header("x-client-id", properties.clientId())
-                .header("x-api-key", properties.apiKey())
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(requestBody)
-                .retrieve()
-                .body(CreatePaymentLinkResponse.class);
+    private Map<String, Object> verifiedData(PayOsWebhookPayload response) {
+        if (response == null || !"00".equals(response.code()) || !verifyWebhook(response)) {
+            throw new AppException(ErrorCode.PAYMENT_RESPONSE_INVALID);
+        }
+        return response.data();
+    }
+
+    private void requireConfigured() {
+        if (!properties.isConfigured()) throw new AppException(ErrorCode.PAYMENT_UNAVAILABLE);
+    }
+
+    public static boolean safeCheckoutUrl(String url) {
+        try {
+            URI uri = URI.create(url);
+            return "https".equalsIgnoreCase(uri.getScheme()) && "pay.payos.vn".equalsIgnoreCase(uri.getHost())
+                    && uri.getUserInfo() == null && (uri.getPort() == -1 || uri.getPort() == 443);
+        } catch (IllegalArgumentException | NullPointerException ex) { return false; }
     }
 
     @Override
     public boolean verifyWebhook(PayOsWebhookPayload payload) {
-        if (payload == null || payload.data() == null || payload.signature() == null) {
-            log.warn("payOS webhook verification failed: payload, data, or signature is null");
-            return false;
-        }
-
-        if (!properties.isConfigured()) {
-            log.warn("payOS checksumKey not configured; checking test signature compatibility");
-            return "mock_signature".equals(payload.signature()) || "test_valid_signature".equals(payload.signature());
-        }
-
-        return PayOsSignatureUtil.verifyWebhookSignature(payload.data(), payload.signature(), properties.checksumKey());
-    }
-
-    private String sanitizeDescription(String desc) {
-        if (desc == null || desc.isBlank()) {
-            return "Thanh toan goi AI";
-        }
-        if (desc.length() > MAX_DESC_LENGTH) {
-            return desc.substring(0, MAX_DESC_LENGTH);
-        }
-        return desc;
+        return properties.isConfigured() && payload != null
+                && PayOsSignatureUtil.verifyWebhookSignature(payload.data(), payload.signature(), properties.checksumKey());
     }
 }

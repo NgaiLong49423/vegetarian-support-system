@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M02
 > **File:** `docs/requirements/use-cases/identity-and-access.md`
-> **Version:** v2.5.0
+> **Version:** v2.6.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-20
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -301,15 +301,6 @@ Detailed interaction flows for current-baseline requirements. Stable UC IDs are 
 - **Alternative / Security:** Entry không tồn tại/không thuộc owner bị từ chối an toàn.
 - **Postconditions:** Slot không còn entry đó; Recipe Post nguồn không đổi.
 - **Traceability / Acceptance Coverage:** FR-33; [AC-33.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-33).
-
-<a id="uc-33-4"></a>
-### UC-33.4 — Xuất Lịch ăn tuần
-- **Goal / Primary Actor:** Member tải Meal Plan tuần dạng PDF/TXT.
-- **Trigger / Preconditions:** Member sở hữu plan và chọn Export.
-- **Main Flow:** Hệ thống dựng 7 ngày/3 bữa và trả file.
-- **Alternative / Security:** Bài nguồn không khả dụng hiển thị Tombstone; không lộ plan người khác.
-- **Postconditions:** File được tải, plan không thay đổi.
-- **Traceability / Acceptance Coverage:** FR-33; [AC-33.6, AC-33.7](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-33).
 
 <a id="uc-44-1"></a>
 ### UC-44.1 — Chỉnh sửa Recipe Post đã công khai
@@ -921,7 +912,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-33).
 
 #### 4. Tiền điều kiện (Preconditions) & Điều kiện kích hoạt (Trigger)
 - **Preconditions:** Bài công thức đang ở trạng thái công khai (`PUBLISHED`) hoặc trong danh sách đã lưu của Member. Member đã đăng nhập với tài khoản hoạt động (`ACTIVE`).
-- **Trigger:** Member nhấn nút "Thêm món vào bữa" trên Lịch ăn, nhấn nút "Thêm vào lịch ăn" trên trang chi tiết bài công thức, hoặc nhấn nút "Xuất lịch ăn tuần".
+- **Trigger:** Member nhấn nút "Thêm món vào bữa" trên Lịch ăn hoặc nhấn nút "Thêm vào lịch ăn" trên trang chi tiết bài công thức.
 
 #### 5. Luồng sự kiện (Flow of Events)
 
@@ -957,13 +948,6 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-33).
    - Mục món ăn trong Lịch ăn được giữ nguyên vị trí nhưng chuyển sang trạng thái "Không còn khả dụng" (tombstone pattern theo BR-33).
    - Thẻ hiển thị nhãn: "Món ăn đã bị gỡ bỏ hoặc ẩn vi phạm" kèm nút "Thay thế món khác" hoặc "Xóa khỏi bữa".
    - Món ăn này không còn tham gia vào tính toán dinh dưỡng (FR-37) hay danh sách mua sắm (FR-53).
-
-##### E. Luồng Xuất bản Lịch ăn tuần sang PDF / TXT (UC-33.4)
-1. **Main Flow:**
-   - Bước 1: Member nhấn nút "Xuất lịch ăn tuần" trên thanh công cụ Lịch ăn.
-   - Bước 2: Member chọn định dạng xuất: PDF hoặc TXT.
-   - Bước 3: Hệ thống tổng hợp toàn bộ các món ăn theo từng ngày (Thứ Hai đến Chủ Nhật) và từng bữa (Sáng, Trưa, Tối), kèm thông tin khẩu phần và năng lượng ước tính.
-   - Bước 4: Trình duyệt tải xuống tệp tin hoàn chỉnh để in ấn (bố cục bảng A4 đối với PDF) hoặc lưu trữ ngoại tuyến.
 
 #### 6. Hậu điều kiện (Postconditions)
 - Cấu trúc các món ăn trong từng bữa được cập nhật chính xác.

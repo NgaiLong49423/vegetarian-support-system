@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.10.0
+> **Version:** v2.11.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-15
+> **Last Updated:** 2026-10-20
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -360,10 +360,10 @@ This document contains only requirements included in Requirements / Implementati
 ---
 
 <a id="br-46"></a>
-### BR-46 — Nguồn tính toán dinh dưỡng chính thức của công thức
+### BR-46 — Tính dinh dưỡng từ các chỉ tiêu hiện có trong catalog
 
 - **Mã quy tắc:** BR-46
-- **Nội dung:** Dinh dưỡng công thức phải được suy ra từ danh mục nguyên liệu dinh dưỡng nội bộ và định lượng đã khai báo. Bảng tổng do tác giả tự nhập hoặc con số do AI sinh ra không được coi là dữ liệu dinh dưỡng đã xác minh.
+- **Nội dung:** Dinh dưỡng công thức được tính từ từng giá trị đã lưu trong danh mục nội bộ và định lượng đã khai báo. Chỉ tiêu `NULL` bị bỏ khỏi phép tính, không được thay bằng `0`; khi thiếu dữ liệu, kết quả phải được gắn trạng thái chưa đầy đủ. Số liệu do AI tạo có thể được Administrator lưu và tính như ước tính chưa xác minh, không được trình bày như số liệu đã kiểm chứng.
 
 ---
 
@@ -382,15 +382,15 @@ This document contains only requirements included in Requirements / Implementati
 - **Nội dung:**
   - Dinh dưỡng món ăn được tính từ lượng khối lượng (gam) của từng nguyên liệu nhân với bảng giá trị dinh dưỡng trên 100g.
   - **Ràng buộc quy đổi đơn vị (Publish Gate):** Đơn vị đo lường của nguyên liệu bắt buộc phải quy đổi được ra gam. Nếu đơn vị nguyên liệu chưa có tỷ lệ quy đổi ra gam trong `INGREDIENT_UNIT_CONVERSION` (và không phải là đơn vị khối lượng `MASS` g/kg), hệ thống **BẮT BUỘC CHẶN CÔNG KHAI BÀI VIẾT (Validation Error)** theo BR-19 và BR-73, tuyệt đối không cho phép công khai khi thiếu tỷ lệ quy đổi.
-  - **Dữ liệu dinh dưỡng trong catalog:** Trường hợp nguyên liệu đã có định lượng và quy đổi gam hợp lệ, nhưng bản thân nguyên liệu đó chưa được định nghĩa trong danh mục 9 chỉ tiêu dinh dưỡng của hệ thống: hệ thống vẫn cho phép công khai bài viết (BR-50), nhưng bài viết sẽ được gắn cờ hiển thị "Chưa đủ dữ liệu dinh dưỡng", không được AI đưa vào thực đơn dinh dưỡng chuẩn (BR-40) và tuyệt đối không được tự động gán các chỉ tiêu dinh dưỡng bằng 0.
+  - **Dữ liệu dinh dưỡng trong catalog:** Trường hợp nguyên liệu đã có định lượng và quy đổi gam hợp lệ nhưng chưa có hồ sơ hoặc còn chỉ tiêu `NULL`, hệ thống vẫn cho phép công khai bài viết (BR-50), gắn cờ "Chưa đủ dữ liệu dinh dưỡng", không đưa bài vào thực đơn AI theo mục tiêu dinh dưỡng (BR-40), và không gán dữ liệu thiếu bằng 0.
 
 ---
 
 <a id="br-49"></a>
-### BR-49 — Không gọi API dinh dưỡng ngoài realtime và nguồn tham khảo
+### BR-49 — Không gọi API dinh dưỡng ngoài khi chạy ứng dụng
 
 - **Mã quy tắc:** BR-49
-- **Nội dung:** MVP không gọi API dinh dưỡng hoặc dùng AI để tự đối chiếu/tạo số liệu khi người dùng thao tác. Dữ liệu nội bộ phải giữ nguồn tham khảo; USDA FoodData Central là nguồn tham khảo chính cho bộ dữ liệu ban đầu.
+- **Nội dung:** MVP không gọi API dinh dưỡng bên ngoài hoặc tự gọi AI để tìm/tạo số liệu trong lúc người dùng thao tác. Administrator có thể nhập nguồn hoặc cách ước tính tự do, kể cả AI-generated; USDA/NIH và URL tham khảo là tùy chọn. Số liệu AI phải được ghi nhãn chưa xác minh.
 
 ---
 
@@ -406,15 +406,15 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-51 — Thẩm quyền quản lý danh mục nguyên liệu dinh dưỡng
 
 - **Mã quy tắc:** BR-51
-- **Nội dung:** Chỉ Administrator được quản lý dữ liệu trong danh mục nguyên liệu dinh dưỡng. Tác giả công thức và AI không được trực tiếp tạo hoặc thay đổi các giá trị dinh dưỡng dùng làm dữ liệu tính toán chính thức.
+- **Nội dung:** Chỉ Administrator được quản lý dữ liệu trong danh mục nguyên liệu dinh dưỡng. Administrator có thể lưu dữ liệu AI-generated và quyết định bật tính; tác giả công thức và AI không được trực tiếp ghi hoặc thay đổi catalog. Nguồn AI phải được nhận diện là ước tính chưa xác minh.
 
 ---
 
 <a id="br-52"></a>
-### BR-52 — Yêu cầu đầy đủ 9 chỉ tiêu và nguồn trước khi kích hoạt
+### BR-52 — Cho phép tính các chỉ tiêu có dữ liệu và cảnh báo phần còn thiếu
 
 - **Mã quy tắc:** BR-52
-- **Nội dung:** Ingredient có thể được lưu khi `nutrition_supported = 0` dù một hoặc nhiều chỉ tiêu dinh dưỡng chưa có dữ liệu; `NULL` biểu thị chưa biết và không được thay bằng `0`. Chỉ được bật `nutrition_supported = 1` để tính toán chính thức khi đủ cả chín giá trị trên 100 g và đầy đủ metadata nguồn tham chiếu (`source_name`, `source_url`, `reference_date`). Các ràng buộc lưu trữ hiện hành của database vẫn áp dụng.
+- **Nội dung:** Ingredient có thể lưu bất kỳ tập con nào trong chín chỉ tiêu; `NULL` biểu thị chưa biết và không được thay bằng `0`. `nutrition_supported = 1` khi có ít nhất một chỉ tiêu để phép tính cộng phần có dữ liệu và đánh dấu kết quả chưa đầy đủ cho phần còn thiếu. Khi cả chín chỉ tiêu đều `NULL`, không được bật hỗ trợ. `source_name` là văn bản tự do; nguồn USDA/NIH, `source_url` và ngày tham khảo không bắt buộc cho phép tính. Giá trị AI-generated được chấp nhận nhưng phải giữ nhãn ước tính chưa xác minh.
 
 ---
 

@@ -62,7 +62,7 @@ function cleanup() {
     DELETE FROM [USER] WHERE email IN (${literal(ownerEmail)}, ${literal(otherEmail)});`)
 }
 
-test("FR-09/FR-33 move, export and mutations persist in Compose SQL and preserve private recipe references", async ({
+test("FR-09/FR-33 move and mutations persist in Compose SQL and preserve private recipe references", async ({
   page,
   request,
 }) => {
@@ -279,16 +279,6 @@ test("FR-09/FR-33 move, export and mutations persist in Compose SQL and preserve
       data: { mealDate: selectedWeek, mealType: "BREAKFAST" },
     })
     expect(foreignMove.status()).toBe(403)
-    const publicDetail = await request.get(`${backend}/recipes/${firstId}`)
-    expect(publicDetail.status()).toBe(200)
-    const nutrition = (await publicDetail.json()).nutrition
-    expect(nutrition.complete).toBe(true)
-    expect(nutrition.perServing.ENERGY_KCAL).toBeGreaterThan(0)
-    const currentExport = await request.get(`${backend}/meal-plans/${selectedWeek}/export`, { headers })
-    expect(currentExport.status()).toBe(200)
-    const exportedEntry = (await currentExport.json()).entries[0]
-    expect(exportedEntry.title).toBe(firstTitle)
-    expect(exportedEntry.energyKcal).toBeCloseTo(nutrition.perServing.ENERGY_KCAL * 2.5, 4)
     const outside = new Date(`${selectedWeek}T12:00:00`)
     outside.setDate(outside.getDate() + 7)
     const outsideDate = `${outside.getFullYear()}-${String(outside.getMonth() + 1).padStart(2, "0")}-${String(outside.getDate()).padStart(2, "0")}`
@@ -323,44 +313,6 @@ test("FR-09/FR-33 move, export and mutations persist in Compose SQL and preserve
     await expect(
       page.getByRole("article", { name: "Công thức không còn khả dụng" }),
     ).toBeVisible()
-    const hiddenExport = await request.get(
-      `${backend}/meal-plans/${selectedWeek}/export`,
-      { headers },
-    )
-    expect(hiddenExport.status()).toBe(200)
-    expect(hiddenExport.headers()["cache-control"]).toBe("no-store")
-    const snapshot = await hiddenExport.json()
-    expect(snapshot.entries[0]).toMatchObject({
-      title: "Công thức không còn khả dụng",
-      available: false,
-      plannedServings: null,
-      energyKcal: null,
-    })
-    expect(JSON.stringify(snapshot)).not.toContain(firstTitle)
-    const otherExport = await request.get(
-      `${backend}/meal-plans/${selectedWeek}/export`,
-      { headers: { Authorization: `Bearer ${otherToken}` } },
-    )
-    expect((await otherExport.json()).entries).toEqual([])
-    await page
-      .getByRole("button", { name: "Xuất lịch ăn", exact: true })
-      .click()
-    const textDownload = page.waitForEvent("download")
-    await page.getByRole("button", { name: "Tải TXT", exact: true }).click()
-    const text = await readFile((await (await textDownload).path())!, "utf8")
-    expect(text).toContain("Công thức không còn khả dụng")
-    expect(text).not.toContain(firstTitle)
-    expect(text.split("Bữa sáng")).toHaveLength(8)
-    await page
-      .getByRole("button", { name: "Xuất lịch ăn", exact: true })
-      .click()
-    const pdfDownload = page.waitForEvent("download")
-    await page.getByRole("button", { name: "Tải PDF A4", exact: true }).click()
-    expect(
-      (await readFile((await (await pdfDownload).path())!))
-        .subarray(0, 5)
-        .toString(),
-    ).toBe("%PDF-")
     await expect(
       page.locator(`a[href^="/cong-thuc/id/${firstId}"]`),
     ).toHaveCount(0)

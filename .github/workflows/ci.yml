@@ -78,7 +78,7 @@ jobs:
           path: app/mamxanh-frontend/coverage/
           if-no-files-found: warn
 
-      - name: Upload recipe view UI evidence
+      - name: Upload Frontend UI evidence
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -87,6 +87,9 @@ jobs:
             app/mamxanh-frontend/test-results/**/detail-*.png
             app/mamxanh-frontend/test-results/**/explore-*.png
             app/mamxanh-frontend/test-results/**/home-*.png
+            app/mamxanh-frontend/test-results/**/landing-*.png
+            app/mamxanh-frontend/test-results/**/registration-scroll.png
+            app/mamxanh-frontend/test-results/**/animated-calendar.png
           if-no-files-found: warn
 
       - name: Upload weekly meal planner UI evidence
@@ -227,6 +230,17 @@ jobs:
             --output "$RUNNER_TEMP/scalar-route.html"
           grep --fixed-strings 'API Reference' "$RUNNER_TEMP/scalar-route.html"
           grep --fixed-strings '@scalar/api-reference@1.72.3' "$RUNNER_TEMP/scalar-route.html"
+
+      - name: Upload Docker integration failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-integration-failure-${{ github.event.pull_request.number || github.run_id }}-${{ github.run_attempt }}
+          path: |
+            app/mamxanh-frontend/test-results/**/error-context.md
+            app/mamxanh-frontend/test-results/**/test-failed-*.png
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Upload generated runtime OpenAPI
         uses: actions/upload-artifact@v4

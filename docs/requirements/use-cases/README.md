@@ -1,8 +1,8 @@
 > **Document:** Use Case Specification Index
 > **File:** `docs/requirements/use-cases/README.md`
-> **Version:** v2.3.0
+> **Version:** v2.4.1
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-18
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -53,6 +53,8 @@ Keep existing FR-level anchors such as `<a id="fr-13"></a>` unchanged so current
 | [FR-58](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-58) | [Ghi nhận lượt xem (Recipe Views) và thống kê tương tác đa chiều](discovery-and-public-content.md#fr-58) |
 | [FR-59](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-59) | [Theo dõi, bỏ theo dõi và xem quan hệ theo dõi giữa các Member](discovery-and-public-content.md#fr-59) |
 | [FR-60](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-60) | [So sánh hai Recipe Post công khai theo nguyên liệu và dinh dưỡng](discovery-and-public-content.md#fr-60) |
+| [FR-61](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-61) | [Khám phá và theo dõi Chuyên gia ẩm thực chay](discovery-and-public-content.md#fr-61) |
+| [FR-62](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-62) | [Chọn nguyên liệu và tìm công thức](discovery-and-public-content.md#fr-62) |
 | [FR-03](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-03) | [Đăng ký, đăng nhập và quản lý tài khoản cơ bản](identity-and-access.md#fr-03) |
 | [FR-04](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-04) | [Chuyên gia tạo và công khai trực tiếp Recipe Post](identity-and-access.md#fr-04) |
 | [FR-05](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-05) | [Cơ chế nộp đơn đăng ký Chuyên gia theo format và Administrator phê duyệt cấp quyền](identity-and-access.md#fr-05) |

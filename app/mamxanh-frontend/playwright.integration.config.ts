@@ -3,6 +3,9 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/integration',
   testMatch: '**/*.spec.ts',
+  // These tests share one Compose SQL catalog. A detail visit in another test can
+  // change view counts or select a fixture that its owner is about to remove.
+  workers: 1,
   retries: 0,
   // Specs share one Compose database; browsing another spec's newest recipe changes its view count.
   workers: 1,

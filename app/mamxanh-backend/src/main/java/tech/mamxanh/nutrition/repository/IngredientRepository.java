@@ -21,9 +21,18 @@ public interface IngredientRepository extends JpaRepository<IngredientEntity, Lo
     List<String> findDistinctIngredientGroups();
 
     @Query("""
+            select ingredient.ingredientGroup as groupName, count(ingredient) as ingredientCount
+            from IngredientEntity ingredient
+            where ingredient.status = tech.mamxanh.nutrition.entity.CatalogStatus.ACTIVE
+            group by ingredient.ingredientGroup
+            order by ingredient.ingredientGroup
+            """)
+    List<ActiveIngredientGroupView> findActiveIngredientGroups();
+
+    @Query("""
             select ingredient from IngredientEntity ingredient
-            where (:query is null or lower(ingredient.name) like lower(concat('%', :query, '%'))
-                or lower(ingredient.ingredientGroup) like lower(concat('%', :query, '%')))
+            where (:query is null or lower(ingredient.name) like lower(:query)
+                or lower(ingredient.ingredientGroup) like lower(:query))
               and (:ingredientGroup is null or lower(ingredient.ingredientGroup) = lower(:ingredientGroup))
               and (:status is null or ingredient.status = :status)
               and (:nutritionSupported is null or ingredient.nutritionSupported = :nutritionSupported)
@@ -33,4 +42,9 @@ public interface IngredientRepository extends JpaRepository<IngredientEntity, Lo
             @Param("status") CatalogStatus status,
             @Param("nutritionSupported") Boolean nutritionSupported,
             Pageable pageable);
+
+    interface ActiveIngredientGroupView {
+        String getGroupName();
+        Long getIngredientCount();
+    }
 }

@@ -11,6 +11,7 @@ import { PageContainer } from "../components/Layout"
 import { Button, Card } from "../components/ui"
 import { Modal } from "../components/Modal"
 import SpringCheck from "../components/SpringCheck"
+import { ShoppingListExport } from "../components/ShoppingListExport"
 import { useAuth } from "../components/AuthContext"
 import {
   shoppingApi,
@@ -20,7 +21,6 @@ import {
   type ShoppingSummary,
   type ShoppingUnit,
 } from "../api/shopping"
-import { ShoppingListExport } from "../components/ShoppingListExport"
 import { asApiError } from "../lib/apiClient"
 
 type Tab = "all" | "todo" | "done"
@@ -91,6 +91,10 @@ function ShoppingWorkspace() {
   const selectedId = useRef(id)
   selectedId.current = id
   const dialogTrigger = useRef<HTMLElement | null>(null)
+  const removalActions = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (removal) removalActions.current?.querySelector("button")?.focus()
+  }, [removal])
   useEffect(() => {
     alive.current = true
     return () => {
@@ -360,13 +364,6 @@ function ShoppingWorkspace() {
                     {counts.todo} cần mua · {counts.done} đã mua
                   </p>
                 </div>
-                <ShoppingListExport
-                  key={list.id}
-                  items={items}
-                  listName={list.name}
-                  disabled={busy || list.id !== id}
-                  onNotice={setNotice}
-                />
               </header>
               {diagnostics && diagnostics.warnings.length > 0 && (
                 <section
@@ -419,14 +416,23 @@ function ShoppingWorkspace() {
                     </button>
                   ))}
                 </nav>
-                <Button
-                  size="sm"
-                  disabled={busy || units.length === 0}
-                  onClick={() => openDialog(() => setEditor("new"))}
-                >
-                  <Plus className="h-4 w-4" />
-                  Thêm mặt hàng
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ShoppingListExport
+                    key={list.id}
+                    items={list.items}
+                    listName={list.name}
+                    disabled={busy}
+                    onNotice={setNotice}
+                  />
+                  <Button
+                    size="sm"
+                    disabled={busy || units.length === 0}
+                    onClick={() => openDialog(() => setEditor("new"))}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Thêm mặt hàng
+                  </Button>
+                </div>
               </div>
               {Object.entries(grouped).length ? (
                 <div className="space-y-6">
@@ -616,9 +622,8 @@ function ShoppingWorkspace() {
             {error}
           </p>
         )}
-        <div className="mt-5 flex justify-end gap-2">
+        <div ref={removalActions} className="mt-5 flex justify-end gap-2">
           <Button
-            autoFocus
             variant="outline"
             disabled={busy}
             onClick={closeDialog}
@@ -668,6 +673,12 @@ function ItemForm({
   const [name, setName] = useState(item?.name ?? "")
   const [quantity, setQuantity] = useState(String(item?.quantity ?? 1))
   const [unit, setUnit] = useState(String(item?.unitId ?? units[0]?.id ?? ""))
+  const nameInput = useRef<HTMLInputElement>(null)
+  const quantityInput = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const input = item === null ? nameInput.current : quantityInput.current
+    input?.focus()
+  }, [item])
   return (
     <form
       onSubmit={(event) => {
@@ -685,7 +696,7 @@ function ItemForm({
         <label className="block text-sm text-ink">
           Tên mặt hàng
           <input
-            autoFocus={item === null}
+            ref={nameInput}
             className={`${field} mt-2 w-full`}
             required
             maxLength={200}
@@ -698,7 +709,7 @@ function ItemForm({
           <label className="text-sm text-ink">
             Số lượng
             <input
-              autoFocus={item !== null}
+              ref={quantityInput}
               className={`${field} mt-2 w-full`}
               type="number"
               required

@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises"
-
 import type { Page } from "@playwright/test"
 
 import { expect, test } from "./baseFixtures"
@@ -332,7 +330,7 @@ test("shopping selected days validates selection, shows creation failure, retrie
   })
 })
 
-test("shopping manual item quantity, edit, bought/unbought, filtering, deletion and TXT use saved values", async ({
+test("shopping manual item quantity, edit, bought/unbought, filtering and deletion use saved values", async ({
   page,
 }) => {
   const state = await setup(page)
@@ -343,6 +341,7 @@ test("shopping manual item quantity, edit, bought/unbought, filtering, deletion 
 
   await page.getByRole("button", { name: "Thêm mặt hàng", exact: true }).click()
 
+  await expect(page.getByLabel("Tên mặt hàng")).toBeFocused()
   await page.getByLabel("Tên mặt hàng").fill("Khăn giấy lau bếp")
 
   await page.getByLabel("Số lượng", { exact: true }).fill("2")
@@ -359,6 +358,7 @@ test("shopping manual item quantity, edit, bought/unbought, filtering, deletion 
     .getByRole("button", { name: "Sửa Khăn giấy lau bếp cuộn", exact: true })
     .click()
 
+  await expect(page.getByLabel("Số lượng", { exact: true })).toBeFocused()
   await page.getByLabel("Số lượng", { exact: true }).fill("3.5")
 
   await page.getByRole("button", { name: "Lưu mặt hàng" }).click()
@@ -379,15 +379,6 @@ test("shopping manual item quantity, edit, bought/unbought, filtering, deletion 
   await page.getByRole("button", { name: /Đã mua \(/ }).click()
   await expect(item).toBeVisible()
 
-  const downloadPromise = page.waitForEvent("download")
-  await page.getByRole("button", { name: "TXT", exact: true }).click()
-
-  const download = await downloadPromise
-
-  expect(await readFile((await download.path())!, "utf8")).toContain(
-    "[x] Khăn giấy lau bếp: 3,5 cuộn",
-  )
-
   await check.click()
   await page.getByRole("button", { name: /Tất cả \(/ }).click()
 
@@ -395,6 +386,7 @@ test("shopping manual item quantity, edit, bought/unbought, filtering, deletion 
     .getByRole("button", { name: "Xoá Khăn giấy lau bếp cuộn", exact: true })
     .click()
 
+  await expect(page.getByRole("button", { name: "Hủy", exact: true })).toBeFocused()
   await page.getByRole("button", { name: "Hủy", exact: true }).click()
   await expect(item).toBeVisible()
 
@@ -503,9 +495,9 @@ test("shopping empty list, invalid ID, foreign list and read retry are explicit"
   await expect(page.getByTestId("shopping-item-1")).toHaveCount(0)
 })
 
-test("shopping pagination and small viewport preserve usable checklist and copy fallback", async ({
+test("shopping pagination and small viewport preserve usable checklist", async ({
   page,
-}) => {
+}, testInfo) => {
   const state = await setup(page)
   state.pages = 2
 
@@ -523,17 +515,6 @@ test("shopping pagination and small viewport preserve usable checklist and copy 
 
   await expect(page.getByText("1/2", { exact: true })).toBeVisible()
 
-  await page.evaluate(() =>
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText: () => Promise.reject(new Error("denied")) },
-    }),
-  )
-
-  await page.getByRole("button", { name: "Sao chép", exact: true }).click()
-
-  await expect(page.getByRole("dialog", { name: "Sao chép danh sách đi chợ" })).toBeVisible()
-
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -541,7 +522,7 @@ test("shopping pagination and small viewport preserve usable checklist and copy 
   ).toBe(true)
 
   await page.screenshot({
-    path: "../../.agents/outputs/fr53-ui/mobile.png",
+    path: testInfo.outputPath("detail-shopping-mobile.png"),
     fullPage: true,
   })
 
@@ -555,7 +536,7 @@ test("shopping pagination and small viewport preserve usable checklist and copy 
   await page.setViewportSize({ width: 1440, height: 1000 })
 
   await page.screenshot({
-    path: "../../.agents/outputs/fr53-ui/desktop.png",
+    path: testInfo.outputPath("detail-shopping-desktop.png"),
     fullPage: true,
   })
 })

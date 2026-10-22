@@ -45,16 +45,16 @@ test('Administrator manages ingredient nutrition through the real Frontend, Back
     const ingredientGroupOption = await availableGroupOption.getAttribute('value');
     expect(ingredientGroupOption).toBeTruthy();
     await ingredientGroup.selectOption(ingredientGroupOption!);
-    const ingredientSource = page.getByRole('combobox', { name: 'Tên nguồn dữ liệu' });
-    const availableSourceOption = ingredientSource.locator('option:not([disabled])').first();
-    await expect(availableSourceOption).toBeAttached();
-    const ingredientSourceOption = await availableSourceOption.getAttribute('value');
-    expect(ingredientSourceOption).toBeTruthy();
-    await ingredientSource.selectOption(ingredientSourceOption!);
+    const ingredientSource = page.getByRole('combobox', { name: 'Nguồn dữ liệu hoặc cách ước tính' });
+    await ingredientSource.fill('USDA FoodData Central');
     await page.getByLabel('Đường dẫn nguồn (không bắt buộc)').fill('https://fdc.nal.usda.gov/');
     const createResponse = page.waitForResponse((response) => response.request().method() === 'POST' && response.url().endsWith('/admin/ingredients'));
     await page.getByRole('button', { name: 'Thêm nguyên liệu', exact: true }).click();
-    expect((await createResponse).status()).toBe(201);
+    const created = await createResponse;
+    expect(created.status()).toBe(201);
+    const createdBody = await created.json();
+    expect(createdBody.success).toBe(true);
+    expect(createdBody.data.sourceName).toBe('USDA FoodData Central');
 
     // The catalog is paginated and sorted by name; filter to the new row before editing it.
     await page.getByPlaceholder('Tìm tên nguyên liệu').fill(ingredientName);
@@ -79,7 +79,7 @@ test('Administrator manages ingredient nutrition through the real Frontend, Back
     const supportResponse = page.waitForResponse((response) => response.request().method() === 'PATCH' && response.url().endsWith('/nutrition-support'));
     await page.getByRole('button', { name: 'Bật hỗ trợ tính' }).click();
     expect((await supportResponse).status()).toBe(200);
-    await expect(page.getByText('Đang hỗ trợ tính', { exact: true })).toBeVisible();
+    await expect(page.getByText('Đang tính dữ liệu có sẵn', { exact: true })).toBeVisible();
 
     await page.reload();
     await page.getByPlaceholder('Tìm tên nguyên liệu').fill(ingredientName);

@@ -29,6 +29,8 @@ import { ProfileSettingsPage } from "../pages/ProfileSettingsPage"
 import { AiChatPage } from "../pages/AiChatPage"
 import { AdminDashboard } from "../pages/AdminDashboard"
 import { AdminPendingModule } from "../pages/AdminPendingModule"
+import { ExpertDirectoryPage } from "../pages/ExpertDirectoryPage"
+import { IngredientDirectoryPage } from "../pages/IngredientDirectoryPage"
 import { ClickSpark } from "./ClickSpark"
 
 export default function ApplicationRoutes() {
@@ -65,6 +67,8 @@ export default function ApplicationRoutes() {
               />
               <Route path="/trang-chu" element={<Home />} />
               <Route path="/kham-pha" element={<Explore />} />
+              <Route path="/chuyen-gia" element={<ExpertDirectoryPage />} />
+              <Route path="/danh-muc-nguyen-lieu" element={<IngredientDirectoryPage />} />
               <Route
                 path="/cong-thuc/:recipeId/chinh-sua"
                 element={<EditRecipe />}

@@ -173,6 +173,10 @@ test("AC-55.1/3: exports every saved item across filters with groups, exact unit
   expect(content).not.toContain("999");
   expect(state.writes).toEqual([]);
   expect(state.items).toEqual(initial);
+  await page.screenshot({
+    path: test.info().outputPath("detail-shopping-export-desktop.png"),
+    fullPage: true,
+  });
 });
 test("AC-55.2/3: UTF-8 BOM download matches clipboard, filename and saved bought state after reload", async ({
   page,
@@ -260,7 +264,7 @@ for (const failure of ["missing", "denied"] as const) {
       ),
     ).toBe((await textarea.inputValue()).length);
     await page.screenshot({
-      path: test.info().outputPath("clipboard-fallback-mobile.png"),
+      path: test.info().outputPath("detail-shopping-export-fallback-mobile.png"),
       fullPage: true,
     });
     await page.keyboard.press("Escape");

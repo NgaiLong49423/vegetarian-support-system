@@ -137,29 +137,6 @@ test('FR-53 browser creates selected-day and weekly checklists; CRUD and bought 
     await expect(page.getByText('1.400 g', { exact: true })).toBeVisible()
     expect(Number(sql(`SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=${personalId}`))).toBe(3)
     expect(sql(`SELECT CAST(quantity AS VARCHAR(20)) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=${personalId} AND recipe_id=${recipes[0]}`)).toBe('600.00')
-    // FR-55: export the reloaded, persisted checklist. Clipboard and TXT must agree;
-    // exporting must never alter quantities, bought state, or recipe provenance.
-    const beforeExport = sql(`SELECT shopping_list_item_id,quantity,unit_id,is_bought FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=${personalId} ORDER BY shopping_list_item_id`)
-    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
-    await page.getByRole('button', { name: 'Sao chép', exact: true }).click()
-    await expect(page.getByRole('status')).toHaveText('Đã sao chép danh sách vào khay nhớ tạm.')
-    const copied = (await page.evaluate(() => navigator.clipboard.readText())).replaceAll('\r\n', '\n')
-    expect(copied).toContain('Nguồn: Công thức đã chọn — không gắn ngày thực đơn')
-    expect(copied).toContain(`[x] ${ingredientName}: 1.400 g`)
-    // This recipe was changed to 900 ml before it was added to the personal list.
-    expect(copied).toContain(`[ ] ${ingredientName}: 900 ml`)
-    expect(copied).not.toContain(email)
-    expect(copied).not.toContain(marker)
-    const downloadEvent = page.waitForEvent('download')
-    await page.getByRole('button', { name: 'TXT', exact: true }).click()
-    const download = await downloadEvent
-    expect(download.suggestedFilename()).toMatch(/^Danh_sach_mua_sam_\d{8}\.txt$/)
-    const stream = await download.createReadStream(), chunks: Buffer[] = []
-    for await (const chunk of stream) chunks.push(Buffer.from(chunk))
-    const bytes = Buffer.concat(chunks)
-    expect([...bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
-    expect(bytes.subarray(3).toString('utf8')).toBe(copied)
-    expect(sql(`SELECT shopping_list_item_id,quantity,unit_id,is_bought FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=${personalId} ORDER BY shopping_list_item_id`)).toBe(beforeExport)
     const foreignPersonal = await request.get(`${backend}/shopping-lists/${personalId}`, { headers: { Authorization: `Bearer ${(await otherLogin.json()).accessToken}` } })
     expect(foreignPersonal.status()).toBe(404)
     await page.setViewportSize({ width: 375, height: 812 })

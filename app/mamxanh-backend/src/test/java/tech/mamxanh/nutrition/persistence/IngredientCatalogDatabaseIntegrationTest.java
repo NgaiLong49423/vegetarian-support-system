@@ -1,7 +1,9 @@
 package tech.mamxanh.nutrition.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -16,7 +18,6 @@ import tech.mamxanh.nutrition.entity.IngredientEntity;
 import tech.mamxanh.nutrition.entity.CatalogStatus;
 import tech.mamxanh.nutrition.entity.MeasurementDimension;
 import tech.mamxanh.nutrition.entity.UnitEntity;
-import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.nutrition.dto.request.ConversionSaveRequest;
 import tech.mamxanh.nutrition.dto.request.IngredientSaveRequest;
 import tech.mamxanh.nutrition.repository.IngredientRepository;
@@ -59,6 +60,29 @@ class IngredientCatalogDatabaseIntegrationTest extends AbstractIntegrationTest {
                 """, Integer.class)).isEqualTo(1);
     }
 
+    @Test void publicIngredientBrowseListsActiveGroupsAndOmitsAdministrativeFields() throws Exception {
+        String group = "Nhóm duyệt " + UUID.randomUUID().toString().substring(0, 8);
+        String activeName = "Nguyên liệu công khai " + UUID.randomUUID();
+        IngredientEntity active = ingredientRepository.saveAndFlush(new IngredientEntity(
+                activeName, group, "Private source", "https://private.example.test", LocalDate.now()));
+        IngredientEntity inactive = new IngredientEntity("Nguyên liệu ẩn " + UUID.randomUUID(), group,
+                "Private source", "https://private.example.test", LocalDate.now());
+        inactive.setActive(false);
+        ingredientRepository.saveAndFlush(inactive);
+
+        assertThat(catalogService.listPublicGroups()).filteredOn(item -> item.ingredientGroup().equals(group))
+                .singleElement().satisfies(item -> assertThat(item.ingredientCount()).isEqualTo(1));
+        mockMvc.perform(get("/api/v1/ingredients/groups"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/ingredients").param("group", group).param("query", activeName))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].ingredientId").value(active.getId()))
+                .andExpect(jsonPath("$.content[0].name").value(activeName))
+                .andExpect(jsonPath("$.content[0].sourceName").doesNotExist())
+                .andExpect(jsonPath("$.content[0].nutrition").doesNotExist());
+    }
+
     @Test void storesIngredientSpecificConversionAndExposesItToRecipeValidation() {
         String suffix = UUID.randomUUID().toString();
         IngredientEntity ingredient = ingredientRepository.saveAndFlush(new IngredientEntity(
@@ -84,7 +108,7 @@ class IngredientCatalogDatabaseIntegrationTest extends AbstractIntegrationTest {
         assertThat(catalogService.findActiveGramsPerUnit(ingredient.getId(), unit.getId())).isEmpty();
     }
 
-    @Test void rejectsRemovingSourceFromNutritionSupportedIngredientBeforeMutation() {
+    @Test void allowsRemovingOptionalSourceUrlWhilePreservingSupportedNutrition() {
         String name = "Nguyên liệu có nguồn " + UUID.randomUUID();
         IngredientEntity ingredient = ingredientRepository.saveAndFlush(new IngredientEntity(
                 name, "Gia vị", "Nguồn kiểm thử", "https://example.com/source", LocalDate.now()));
@@ -104,14 +128,18 @@ class IngredientCatalogDatabaseIntegrationTest extends AbstractIntegrationTest {
                 """, ingredient.getId());
         entityManager.clear();
 
-        assertThatThrownBy(() -> catalogService.updateIngredient(ingredient.getId(),
-                new IngredientSaveRequest(name, "Gia vị", "USDA FoodData Central", null, LocalDate.now())))
-                .isInstanceOfSatisfying(ApiException.class, exception -> {
-                    assertThat(exception.getStatus()).isEqualTo(org.springframework.http.HttpStatus.BAD_REQUEST);
-                    assertThat(exception.getCode()).isEqualTo("SOURCE_REQUIRED_WHEN_NUTRITION_SUPPORTED");
-                });
+        var updated = catalogService.updateIngredient(ingredient.getId(),
+                new IngredientSaveRequest(name, "Gia vị", "USDA FoodData Central", null, LocalDate.now()));
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(updated.sourceName()).isEqualTo("USDA FoodData Central");
+        assertThat(updated.nutritionSupported()).isTrue();
         assertThat(jdbcTemplate.queryForObject("SELECT source_url FROM INGREDIENT WHERE ingredient_id = ?",
-                String.class, ingredient.getId())).isEqualTo("https://example.com/source");
+                String.class, ingredient.getId())).isNull();
+        assertThat(jdbcTemplate.queryForObject("SELECT energy_kcal_100g FROM INGREDIENT WHERE ingredient_id = ?",
+                BigDecimal.class, ingredient.getId())).isEqualByComparingTo(BigDecimal.ONE);
+        assertThat(jdbcTemplate.queryForObject("SELECT nutrition_supported FROM INGREDIENT WHERE ingredient_id = ?",
+                Boolean.class, ingredient.getId())).isTrue();
     }
 
     @Test void storesTheSmallestSupportedPositiveConversionWithoutRounding() {

@@ -282,6 +282,25 @@ class MemberFollowIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void publicExpertDirectoryIncludesActiveExpertsAndViewerFollowStateOnly() throws Exception {
+        followFixture(memberA, expertC, "2026-10-06T08:00:00");
+
+        mockMvc.perform(get("/api/v1/experts").param("query", "Issue 69 c"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].userId").value(expertC))
+                .andExpect(jsonPath("$.content[0].displayName").value("Issue 69 c"))
+                .andExpect(jsonPath("$.content[0].followerCount").value(1))
+                .andExpect(jsonPath("$.content[0].following").value(false))
+                .andExpect(jsonPath("$.content[0].email").doesNotExist())
+                .andExpect(jsonPath("$.content[0].role").doesNotExist());
+
+        mockMvc.perform(get("/api/v1/experts").param("query", "Issue 69 c").with(principal(memberA)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].following").value(true));
+    }
+
+    @Test
     void generatedOpenApiMarksOnlyTheFollowSummaryAsPublic() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())

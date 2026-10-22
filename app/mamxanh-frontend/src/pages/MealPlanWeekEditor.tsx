@@ -15,7 +15,6 @@ import {
   Trash2,
   Utensils,
   ArrowRightLeft,
-  Download,
   X,
 } from "lucide-react"
 
@@ -39,7 +38,6 @@ import { savedRecipesApi } from "../services/savedRecipesApi"
 import { asApiError } from "../lib/apiClient"
 
 import { MealPlanNutrition } from "./MealPlanNutrition"
-import { mealPlanFile, downloadMealPlan } from "../lib/mealPlanExport"
 import { AiRecipePlanner } from "./AiRecipePlanner"
 import { CreateShoppingListButton } from "../components/CreateShoppingListButton"
 
@@ -298,7 +296,6 @@ function WeekContents({
   const [removal, setRemoval] = useState<Entry | null>(null)
 
   const [moving, setMoving] = useState<Entry | null>(null)
-  const [exportOpen, setExportOpen] = useState(false)
   const [nutrition, setNutrition] = useState<{
     day: string
 
@@ -364,7 +361,6 @@ function WeekContents({
     setNutrition(null)
 
     setMoving(null)
-    setExportOpen(false)
     setActionError("")
 
     restoreDialogFocus()
@@ -400,7 +396,6 @@ function WeekContents({
 
       setRemoval(null)
       setMoving(null)
-      setExportOpen(false)
 
       restoreDialogFocus()
     } catch (cause) {
@@ -474,14 +469,6 @@ function WeekContents({
       }
     }, "Đã chuyển món sang bữa được chọn.")
   }
-  function exportWeek(format: "pdf" | "txt") {
-    void mutate(async () => {
-      const snapshot = await mealPlanApi.getExport(week)
-      if (!alive.current) return
-      const file = await mealPlanFile(snapshot, format)
-      if (alive.current) downloadMealPlan(file, week, format)
-    }, `Đã tải lịch ăn ${format.toUpperCase()}.`)
-  }
   if (loading)
     return (
       <p
@@ -522,12 +509,12 @@ function WeekContents({
           {notice}
         </p>
       )}
-      {busy && !picker && !removal && !moving && !exportOpen && (
+      {busy && !picker && !removal && !moving && (
         <p role="status" className="text-sm text-ink-muted">
           Đang lưu lịch ăn…
         </p>
       )}
-      {actionError && !picker && !removal && !moving && !exportOpen && (
+      {actionError && !picker && !removal && !moving && (
         <p
           role="alert"
           className="rounded-xl bg-raised p-3 text-sm text-ink-muted"
@@ -559,19 +546,6 @@ function WeekContents({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <CreateShoppingListButton week={week} disabled={busy || plan.entries.length === 0} />
         <p className="text-sm text-ink-muted">Chọn ngày để lên lịch từng bữa</p>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={() => {
-            returnFocus.current = (document.activeElement as HTMLElement)
-            setActionError("")
-            setExportOpen(true)
-          }}
-        >
-          <Download className="h-4 w-4" />
-          Xuất lịch ăn
-        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -878,39 +852,6 @@ function WeekContents({
             onClose={closeDialog}
           />
         )}
-      </Modal>
-      <Modal open={exportOpen} onClose={closeDialog} title="Xuất lịch ăn tuần">
-        <DialogFocus>
-          <p className="text-sm text-ink-soft">
-            Tải lịch đủ bảy ngày và ba bữa mỗi ngày. Năng lượng ước tính theo
-            khẩu phần đã lưu, món thiếu dữ liệu được ghi rõ.
-          </p>
-          {actionError && (
-            <p role="alert" className="mt-3 text-sm text-ink-muted">
-              {actionError}
-            </p>
-          )}
-          {busy && (
-            <p role="status" className="mt-3 text-sm text-ink-muted">
-              Đang tạo tệp lịch ăn…
-            </p>
-          )}
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Button disabled={busy} onClick={() => exportWeek("pdf")}>
-              Tải PDF A4
-            </Button>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => exportWeek("txt")}
-            >
-              Tải TXT
-            </Button>
-            <Button variant="ghost" disabled={busy} onClick={closeDialog}>
-              Hủy
-            </Button>
-          </div>
-        </DialogFocus>
       </Modal>
       <Modal
         open={Boolean(picker)}
