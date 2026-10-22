@@ -441,90 +441,74 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
           </div>
 
           {(recipe.ingredients ?? []).length > 0 ? (
-            <div className="mt-4 max-w-full overflow-x-auto rounded-xl border border-brand-100 bg-paper">
-              <table className="w-full text-left text-sm border-collapse">
-                <thead>
-                  <tr className="border-b border-brand-100 bg-brand-50/70 text-xs font-bold uppercase tracking-wider text-brand-900">
-                    <th scope="col" className="w-14 py-3 px-3 text-center">Xong</th>
-                    <th scope="col" className="py-3 px-4">Tên nguyên liệu</th>
-                    <th scope="col" className="py-3 px-4 text-right">Định lượng</th>
-                    <th scope="col" className="py-3 px-4 text-center">Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-brand-100/70">
-                  {(recipe.ingredients ?? []).map((item, index) => {
-                    const isChecked = checkedIngredients.includes(index);
-                    const scaled = recipe.servings > 0 ? (item.quantity * servings) / recipe.servings : item.quantity;
-                    const unitStr = item.unitCode || item.unitName || '';
-                    const toggle = () => {
-                      setCheckedIngredients((current) =>
-                        isChecked ? current.filter((checked) => checked !== index) : [...current, index],
-                      );
-                    };
-                    return (
-                      <tr
-                        key={`${item.ingredientId ?? item.name}-${index}`}
-                        onClick={toggle}
-                        className={`cursor-pointer transition-colors ${
-                          isChecked ? 'bg-brand-50/25 text-ink-muted' : 'hover:bg-brand-50/40 text-ink'
-                        }`}
-                      >
-                        <td className="py-3 px-3 text-center align-middle">
-                          <button
-                            type="button"
-                            aria-label={`${isChecked ? 'Bỏ chọn' : 'Đánh dấu'} ${item.name}`}
-                            aria-pressed={isChecked}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggle();
-                            }}
-                            className={`mx-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all ${
-                              isChecked
-                                ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs'
-                                : 'border-brand-300 bg-paper hover:border-brand-500'
-                            }`}
-                          >
-                            {isChecked && <Check className="h-3.5 w-3.5 stroke-[2.5]" />}
-                          </button>
-                        </td>
-                        <td className="py-3 px-4 align-middle">
-                          <span
-                            className={`font-medium transition-all ${
-                              isChecked ? 'line-through text-ink-muted opacity-60' : 'text-ink'
-                            }`}
-                          >
-                            {item.name}
-                          </span>
-                          {item.nutritionSupported === false && (
-                            <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
-                              Chưa hỗ trợ tính dinh dưỡng
-                            </span>
-                          )}
-                        </td>
-                        <td
-                          className={`py-3 px-4 text-right font-bold align-middle whitespace-nowrap transition-all ${
-                            isChecked ? 'line-through text-ink-muted opacity-60' : 'text-ink'
-                          }`}
-                        >
-                          {formatNumber(scaled)} {unitStr}
-                        </td>
-                        <td className="py-3 px-4 text-center align-middle whitespace-nowrap">
-                          {isChecked ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-                              ✓ Đã chuẩn bị
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                              Chờ chuẩn bị
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <ul className="mt-4 divide-y divide-brand-100/80 rounded-xl border border-brand-100 bg-paper">
+              {(recipe.ingredients ?? []).map((item, index) => {
+                const isChecked = checkedIngredients.includes(index);
+                const scaled = recipe.servings > 0 ? (item.quantity * servings) / recipe.servings : item.quantity;
+                const unitStr = item.unitCode || item.unitName || '';
+                const toggle = () => {
+                  setCheckedIngredients((current) =>
+                    isChecked ? current.filter((checked) => checked !== index) : [...current, index],
+                  );
+                };
+                return (
+                  <li
+                    key={`${item.ingredientId ?? item.name}-${index}`}
+                    onClick={toggle}
+                    className={`flex items-center gap-3 py-3 px-4 cursor-pointer transition-colors ${
+                      isChecked ? 'bg-brand-50/25 text-ink-muted' : 'hover:bg-brand-50/40 text-ink'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      aria-label={`${isChecked ? 'Bỏ chọn' : 'Đánh dấu'} ${item.name}`}
+                      aria-pressed={isChecked}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggle();
+                      }}
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all ${
+                        isChecked
+                          ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs'
+                          : 'border-brand-300 bg-paper hover:border-brand-500'
+                      }`}
+                    >
+                      {isChecked && <Check className="h-3.5 w-3.5 stroke-[2.5]" />}
+                    </button>
+                    <span
+                      className={`min-w-0 flex-1 font-medium text-sm transition-all ${
+                        isChecked ? 'line-through text-ink-muted opacity-60' : 'text-ink'
+                      }`}
+                    >
+                      {item.name}
+                      {item.nutritionSupported === false && (
+                        <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
+                          Chưa hỗ trợ tính dinh dưỡng
+                        </span>
+                      )}
+                    </span>
+                    <strong
+                      className={`shrink-0 text-right font-bold text-sm whitespace-nowrap transition-all ${
+                        isChecked ? 'line-through text-ink-muted opacity-60' : 'text-ink'
+                      }`}
+                    >
+                      {formatNumber(scaled)} {unitStr}
+                    </strong>
+                    <div className="shrink-0">
+                      {isChecked ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+                          ✓ Đã chuẩn bị
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                          Chờ chuẩn bị
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           ) : (
             <p className="mt-4 text-sm text-ink-muted">Chưa có nguyên liệu cho công thức này.</p>
           )}
