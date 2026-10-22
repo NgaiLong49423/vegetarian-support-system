@@ -19,169 +19,228 @@ IF @author_id IS NULL OR @gram IS NULL
     THROW 51000, 'Demo ingredient enrichment requires the demo author and gram unit.', 1;
 
 DECLARE @recipes TABLE (title NVARCHAR(120) PRIMARY KEY, instructions NVARCHAR(MAX) NOT NULL);
-INSERT INTO @recipes (title, instructions) VALUES
-    (N'Nấm đùi gà kho tiêu', N'Cắt nấm thành lát dày. Phi tỏi trong dầu, cho nấm vào đảo săn. Thêm nước tương, đường, tiêu và nước, kho nhỏ lửa đến khi sốt bám nấm. Rắc hành lá trước khi dùng.
-
-Định lượng cho 2 phần: nấm đùi gà 250 g, dầu ăn 8 g, tỏi 5 g, nước tương 15 g, đường ăn 5 g, tiêu đen 1 g, hành lá 8 g, nước 100 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Canh nấm hương cà rốt', N'Ngâm nấm hương, bỏ nước ngâm rồi rửa sạch; cắt cà rốt và gừng. Đun lượng nước đã cân với gừng, thêm cà rốt và nấm, nấu mềm. Nêm muối, rắc hành lá và tiêu trước khi dùng.
-
-Định lượng cho 2 phần: nấm hương 30 g, cà rốt 100 g, nước 650 g, muối ăn 2 g, gừng 5 g, hành lá 8 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Khoai lang hấp', N'Rửa sạch khoai lang, cắt khúc vừa ăn. Hấp cách thủy đến khi mềm; không thêm gia vị để giữ vị ngọt tự nhiên. Nước ở đáy nồi hấp không tính vào phần ăn.
-
-Định lượng cho 2 phần: khoai lang 300 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Bông cải xanh xào nấm', N'Rửa sạch bông cải, cắt nấm và băm tỏi. Phi tỏi trong dầu, xào nấm săn rồi thêm bông cải và nước. Đảo nhanh đến khi rau vừa chín, thêm nước tương và tiêu, dùng nóng.
-
-Định lượng cho 2 phần: bông cải xanh 200 g, nấm đùi gà 100 g, dầu ăn 10 g, tỏi 6 g, nước tương 12 g, tiêu đen 0.5 g, nước 30 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Súp đậu lăng rau củ', N'Rửa đậu lăng, cắt cà rốt và hành tây. Xào hành tây cùng dầu và hạt thì là. Thêm đậu lăng, cà rốt và nước, nấu đến khi đậu mềm. Nêm muối và tiêu, khuấy đều trước khi dùng.
-
-Định lượng cho 2 phần: đậu lăng 150 g, cà rốt 80 g, nước 750 g, hành tây 40 g, dầu ăn 8 g, muối ăn 2 g, tiêu đen 0.5 g, hạt thì là 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Mì udon xào rau củ kiểu Nhật', N'Luộc mì udon rồi để ráo. Phi gừng trong dầu, xào nấm và rau củ. Hòa nước tương, đường với lượng nước đã cân, cho vào chảo cùng mì. Đảo đều trên lửa lớn, rắc hành lá.
-
-Định lượng cho 2 phần: mì udon 200 g, nấm kim châm 100 g, rau cải thìa 120 g, đậu hà lan 60 g, dầu ăn 10 g, nước tương 18 g, gừng 6 g, hành lá 10 g, đường ăn 3 g, nước 40 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Cơm chiên dứa đậu phộng', N'Nấu gạo với lượng nước đã cân, để cơm nguội và tơi. Phi hành tím trong dầu, thêm đậu Hà Lan và ngô. Cho cơm vào chiên, nêm nước tương và tiêu. Trộn dứa cùng đậu phộng rang vào cuối để giữ độ giòn.
-
-Định lượng cho 2 phần: dứa 120 g, đậu phộng 30 g, đậu hà lan 60 g, ngô hạt 60 g, gạo tẻ 140 g, nước 280 g, dầu ăn 12 g, nước tương 16 g, hành tím 15 g, tiêu đen 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Phở cuốn nấm bào ngư', N'Xé nấm, áp chảo trong dầu với gừng và một nửa nước tương. Chần cải thìa và giá đỗ, để ráo. Cuốn bánh phở cùng rau và nấm. Hòa phần nước tương còn lại với nước, đường, nước cốt chanh và ớt làm nước chấm.
-
-Định lượng cho 2 phần: bánh phở 200 g, nấm bào ngư 150 g, giá đỗ 80 g, rau cải thìa 80 g, dầu ăn 8 g, nước tương 20 g, gừng 5 g, chanh 15 g, ớt 2 g, đường ăn 6 g, nước 35 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Bánh xèo nấm và giá đỗ', N'Pha bột gạo, bột nghệ, muối với 250 g nước. Xào nấm, giá đỗ và bắp cải với một phần dầu. Tráng bột mỏng trên chảo có dầu, thêm nhân, đậy nắp đến khi bánh chín giòn rồi gập đôi. Pha nước tương, 50 g nước còn lại, đường, nước cốt chanh và ớt làm nước chấm.
-
-Định lượng cho 2 phần: bột gạo 150 g, bột nghệ 3 g, nấm mỡ 100 g, giá đỗ 80 g, nước 300 g, dầu ăn 18 g, muối ăn 1.5 g, bắp cải 80 g, nước tương 15 g, chanh 12 g, đường ăn 5 g, ớt 2 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Cháo bí đỏ đậu xanh', N'Vo gạo, rửa đậu xanh. Nấu cùng lượng nước đã cân đến khi mềm. Thêm bí đỏ và gừng, nấu nhỏ lửa cho bí chín rồi nêm muối. Rắc hành lá và tiêu khi dùng.
-
-Định lượng cho 2 phần: bí đỏ 200 g, đậu xanh 80 g, gừng 5 g, hành lá 10 g, gạo tẻ 60 g, nước 850 g, muối ăn 2 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Đậu hũ sốt nấm mỡ', N'Áp chảo đậu hũ với một nửa dầu. Phi hành tím trong dầu còn lại, xào nấm rồi thêm nước tương, đường và 130 g nước. Hòa bột năng với 20 g nước còn lại, khuấy vào sốt cho sánh. Rưới sốt lên đậu hũ, rắc tiêu.
-
-Định lượng cho 2 phần: đậu hũ 200 g, nấm mỡ 120 g, bột năng 8 g, hành tím 15 g, dầu ăn 10 g, nước tương 16 g, nước 150 g, đường ăn 3 g, tiêu đen 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Bánh mì nấm áp chảo', N'Ướp nấm và cà tím với nước tương, tiêu và dầu. Áp chảo đến khi vàng thơm. Chần cải thìa, để ráo. Làm nóng bánh mì, kẹp cùng nấm, cà tím và cải thìa, thêm nước cốt chanh rồi dùng ngay.
-
-Định lượng cho 2 phần: bánh mì nguyên cám 120 g, nấm kim châm 100 g, cà tím 100 g, chanh 10 g, dầu ăn 10 g, nước tương 12 g, tiêu đen 0.5 g, rau cải thìa 60 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Bún chả giò chay rau thơm', N'Nướng chả giò chay đến khi vỏ giòn. Chần bánh phở theo loại đang dùng, để ráo; rửa rau và giá đỗ. Hòa nước tương, nước, đường, nước cốt chanh và ớt làm nước chấm. Xếp bánh phở, rau và chả giò vào tô, rắc đậu phộng và chan nước chấm.
-
-Định lượng cho 2 phần: bánh phở 200 g, chả giò chay 150 g, rau cải thìa 80 g, đậu phộng 20 g, giá đỗ 60 g, húng quế 5 g, nước tương 18 g, chanh 15 g, đường ăn 7 g, ớt 2 g, nước 50 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Lẩu nấm cải thảo', N'Đun nước với gừng và riềng, thêm muối và nước tương. Lần lượt cho cải thảo, nấm và đậu hũ vào nấu vừa chín. Chần bánh phở riêng, chia ra hai tô và dùng cùng lẩu nóng.
-
-Định lượng cho 2 phần: nấm kim châm 100 g, nấm bào ngư 150 g, cải thảo 150 g, riềng 10 g, nước 1000 g, gừng 8 g, đậu hũ 200 g, bánh phở 150 g, muối ăn 2 g, nước tương 15 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Chả giò khoai môn đậu xanh', N'Ngâm đậu xanh và nấm, bỏ nước ngâm; nấu đậu mềm rồi để ráo. Trộn khoai môn bào, bắp cải, nấm, hành tím, muối và tiêu thành nhân. Pha bột gạo, bột mì với nước, tráng thành các lá vỏ mỏng trên chảo chống dính. Cuốn nhân vào vỏ, quét dầu và nướng hoặc áp chảo đến khi nhân chín và vỏ vàng giòn.
-
-Định lượng cho 2 phần: khoai môn 150 g, đậu xanh 60 g, bắp cải 80 g, bột gạo 30 g, nấm hương 15 g, bột mì 50 g, nước 110 g, dầu ăn 20 g, muối ăn 1.5 g, tiêu đen 0.5 g, hành tím 15 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Cơm nắm rong biển mè trắng', N'Nấu gạo với lượng nước đã cân. Luộc đậu Hà Lan rồi để ráo. Trộn cơm còn ấm với rong biển vụn, mè trắng rang, đậu Hà Lan và nước tương. Nắm thành viên nhỏ, dùng với dưa leo cắt lát.
-
-Định lượng cho 2 phần: rong biển 5 g, mè trắng 10 g, đậu hà lan 50 g, nước tương 10 g, gạo tẻ 140 g, nước 280 g, dưa leo 80 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Canh chua nấm đậu bắp', N'Đun me với 100 g nước, dầm và lọc bỏ hạt, giữ nước cốt. Cho nước cốt me và 650 g nước còn lại vào nồi, thêm cà chua và nấm. Khi sôi, cho đậu bắp vào nấu vừa chín, nêm muối và đường. Rắc ngò rí và ớt trước khi dùng.
-
-Định lượng cho 2 phần: đậu bắp 100 g, me chua 15 g, nấm mỡ 100 g, ngò rí 10 g, nước 750 g, cà chua 120 g, muối ăn 2 g, đường ăn 8 g, ớt 2 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Mì Ý sốt cà tím nấm', N'Luộc mì Ý đến khi vừa dai rồi để ráo. Phi tỏi trong dầu, áp chảo cà tím và nấm. Thêm cà chua cùng lượng nước đã cân, nấu thành sốt. Nêm nước tương và tiêu, trộn mì vào sốt, thêm húng quế trước khi dùng.
-
-Định lượng cho 2 phần: mì ý 180 g, cà tím 120 g, nấm mỡ 100 g, cà chua 150 g, dầu ăn 12 g, tỏi 6 g, nước tương 12 g, tiêu đen 0.5 g, nước 100 g, húng quế 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Pudding hạt chia xoài', N'Khuấy hạt chia vào sữa đậu nành, đậy kín và để lạnh ít nhất 3 giờ cho nở. Cắt xoài thành hạt lựu, trộn với nước cốt chanh rồi xếp lên pudding. Không thêm đường để giữ vị ngọt tự nhiên của xoài.
-
-Định lượng cho 2 phần: hạt chia 25 g, xoài 150 g, sữa đậu nành 200 g, chanh 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Rau ngót nấu nấm kim châm', N'Vò nhẹ rau ngót, cắt bỏ gốc nấm và cắt đậu hũ. Đun lượng nước đã cân, cho đậu hũ vào trước rồi thêm rau ngót và nấm. Nấu vừa chín, nêm nước tương, muối và tiêu, dùng nóng.
-
-Định lượng cho 2 phần: rau ngót 150 g, nấm kim châm 100 g, đậu hũ 100 g, nước tương 10 g, nước 650 g, tiêu đen 0.3 g, muối ăn 1 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Bí đỏ nướng mè trắng', N'Cắt bí đỏ, trộn với gừng băm, dầu, muối và tiêu. Nướng đến khi bí mềm, cạnh vàng. Rắc mè trắng rang và thêm nước cốt chanh trước khi dùng.
-
-Định lượng cho 2 phần: bí đỏ 250 g, mè trắng 10 g, gừng 5 g, chanh 10 g, dầu ăn 10 g, muối ăn 1 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Cơm gạo lứt đậu gà rau củ', N'Ngâm gạo lứt, để ráo rồi nấu với lượng nước đã cân. Ngâm đậu gà, bỏ nước ngâm rồi nấu chín và để ráo. Phi tỏi trong dầu, xào ớt chuông và bí ngòi, nêm nước tương và tiêu. Xếp cùng cơm và đậu gà, rắc hạt hướng dương rang.
-
-Định lượng cho 2 phần: gạo lứt 180 g, đậu gà 100 g, ớt chuông 80 g, bí ngòi 80 g, hạt hướng dương 10 g, nước 360 g, dầu ăn 10 g, nước tương 15 g, tỏi 5 g, tiêu đen 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Cháo yến mạch nấm mộc nhĩ', N'Ngâm nấm mộc nhĩ, bỏ nước ngâm, rửa sạch rồi thái sợi. Đun yến mạch với nước và gừng, thêm nấm cùng cà rốt. Nấu chín mềm, nêm muối và rắc hành lá, tiêu trước khi dùng.
-
-Định lượng cho 2 phần: yến mạch cán 80 g, nấm mộc nhĩ 25 g, cà rốt 60 g, nước 650 g, muối ăn 2 g, gừng 5 g, hành lá 8 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Salad quinoa bơ lựu', N'Rửa quinoa, nấu với lượng nước đã cân rồi để nguội. Cắt bơ, dưa leo, tách hạt lựu. Hòa nước cốt cam với muối và dầu, trộn nhẹ cùng quinoa, xà lách và trái cây ngay trước khi dùng.
-
-Định lượng cho 2 phần: hạt quinoa 100 g, bơ 80 g, lựu 50 g, xà lách romaine 80 g, dưa leo 50 g, cam 20 g, nước 180 g, muối ăn 1 g, dầu ăn 6 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Đậu hũ áp chảo sốt hạt điều', N'Ngâm hạt điều, bỏ nước ngâm rồi xay với lượng nước đã cân thành sốt. Áp chảo đậu hũ trong dầu đến vàng. Phi tỏi ở góc chảo, thêm sốt hạt điều, nước tương và tiêu, đun sánh. Rưới sốt lên đậu hũ, rắc hạnh nhân lát.
-
-Định lượng cho 2 phần: đậu hũ 200 g, hạt điều 35 g, hạnh nhân 10 g, nước 120 g, dầu ăn 10 g, tỏi 5 g, nước tương 12 g, tiêu đen 0.4 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Bún tempeh rau sống', N'Ướp tempeh với 10 g nước tương rồi áp chảo trong dầu. Hòa 12 g nước tương còn lại với nước, đường, nước cốt chanh và ớt làm nước chấm. Chần bánh phở rồi để ráo. Xếp cùng rau sống, tempeh và đậu phộng rang, dùng với nước chấm.
-
-Định lượng cho 2 phần: tempeh 150 g, bánh phở 150 g, dưa leo 80 g, xà lách romaine 70 g, đậu phộng 15 g, dầu ăn 10 g, nước tương 22 g, chanh 15 g, đường ăn 6 g, ớt 2 g, nước 45 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Khoai tây nướng hạt bí', N'Cắt khoai tây thành miếng, trộn với dầu, tỏi băm, muối và tiêu. Nướng đến khi mềm ruột và vàng cạnh. Rang hạt bí riêng rồi rắc lên khoai trước khi dùng.
-
-Định lượng cho 2 phần: khoai tây 250 g, hạt bí 15 g, dầu ăn 12 g, muối ăn 1.5 g, tiêu đen 0.5 g, tỏi 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Súp đậu trắng cải xoăn', N'Ngâm đậu trắng, bỏ nước ngâm rồi luộc mềm và để ráo. Phi hành tây, tỏi trong dầu, thêm cà chua và nước. Cho đậu vào nấu liu riu, thêm cải xoăn ở cuối. Nêm muối và tiêu khi rau vừa mềm.
-
-Định lượng cho 2 phần: đậu trắng 100 g, cải xoăn 80 g, cà chua 100 g, nước 750 g, hành tây 40 g, tỏi 5 g, dầu ăn 8 g, muối ăn 2 g, tiêu đen 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Bánh quinoa chuối dâu tây', N'Rửa quinoa, nấu với lượng nước đã cân rồi để nguội. Nghiền chuối, trộn quinoa, yến mạch và muối, để hỗn hợp nghỉ. Quét dầu mỏng lên chảo, áp chảo từng bánh ở lửa vừa đến chín hai mặt, dùng cùng dâu tây.
-
-Định lượng cho 2 phần: hạt quinoa 80 g, chuối 100 g, dâu tây 80 g, yến mạch cán 40 g, nước 150 g, dầu ăn 6 g, muối ăn 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Ớt chuông nhồi gạo lứt', N'Nấu gạo lứt với lượng nước đã cân. Ngâm đậu đỏ, bỏ nước ngâm rồi nấu chín và để ráo. Xào hành tây với dầu, thêm cà chua, cơm và đậu, nêm muối, tiêu. Nhồi vào ớt chuông đã bỏ hạt, nướng đến khi ớt mềm và nhân nóng đều.
-
-Định lượng cho 2 phần: ớt chuông 160 g, gạo lứt 100 g, đậu đỏ 80 g, cà chua 60 g, nước 220 g, dầu ăn 8 g, muối ăn 1.5 g, tiêu đen 0.5 g, hành tây 30 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Mì seitan xào măng tây', N'Luộc mì vừa chín rồi để ráo. Phi tỏi trong dầu, xào seitan và măng tây. Thêm mì, nước tương cùng lượng nước đã cân, đảo đều cho sốt bám mì. Rắc tiêu, dùng nóng.
-
-Định lượng cho 2 phần: seitan 120 g, măng tây 100 g, mì ý 120 g, dầu ăn 10 g, tỏi 6 g, nước tương 15 g, tiêu đen 0.5 g, nước 40 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Canh kombu đậu hũ', N'Ngâm kombu trong lượng nước đã cân rồi đun nhỏ lửa. Vớt kombu ra, thái sợi và cho lại vào canh để dùng hết phần rong biển. Thêm nấm đã ngâm rửa, đậu hũ và gừng, nấu sôi nhẹ. Nêm nước tương trước khi dùng.
-
-Định lượng cho 2 phần: tảo bẹ kombu 5 g, đậu hũ 120 g, nấm hương 20 g, nước 700 g, nước tương 12 g, gừng 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Bí ngòi cuộn hạt điều', N'Ngâm hạt điều rồi bỏ nước ngâm. Xay hạt điều với nước, tỏi, muối, tiêu và nước cốt chanh thành sốt. Thái bí ngòi thành lát mỏng, áp chảo nhanh với dầu. Phết sốt lên bí, cuộn lại và dùng với cà chua.
-
-Định lượng cho 2 phần: bí ngòi 160 g, hạt điều 30 g, cà chua 80 g, nước 60 g, dầu ăn 8 g, tỏi 4 g, muối ăn 1 g, tiêu đen 0.4 g, chanh 8 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Súp lơ trắng nghiền hạnh nhân', N'Hấp súp lơ trắng đến mềm, ngâm hạnh nhân rồi bỏ nước ngâm. Xay súp lơ với hạnh nhân, lượng nước ấm đã cân, dầu, muối và tiêu đến mịn. Rắc hạt bí rang, dùng nóng.
-
-Định lượng cho 2 phần: súp lơ trắng 200 g, hạnh nhân 20 g, hạt bí 10 g, nước 80 g, muối ăn 1.5 g, tiêu đen 0.4 g, dầu ăn 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Đậu đỏ hầm cà chua', N'Ngâm đậu đỏ, bỏ nước ngâm rồi nấu mềm và để ráo. Phi hành tây trong dầu, thêm cà chua, khoai tây, đậu đỏ và lượng nước đã cân. Hầm đến khi khoai mềm, nêm muối, tiêu và rắc hành lá.
-
-Định lượng cho 2 phần: đậu đỏ 100 g, khoai tây 100 g, cà chua 120 g, nước 500 g, dầu ăn 8 g, hành tây 30 g, muối ăn 2 g, tiêu đen 0.5 g, hành lá 8 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Yến mạch qua đêm táo', N'Trộn yến mạch với sữa đậu nành và quế, đậy kín rồi để lạnh qua đêm. Cắt táo nhỏ, rắc hạnh nhân lên trên ngay trước khi ăn. Không thêm đường vì táo đã có vị ngọt tự nhiên.
-
-Định lượng cho 2 phần: yến mạch cán 60 g, táo 100 g, hạnh nhân 10 g, sữa đậu nành 150 g, quế 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Gỏi romaine dưa leo cam', N'Rửa và xé xà lách romaine, cắt dưa leo và tách múi cam. Hòa nước cốt chanh với dầu và muối làm sốt. Trộn nhẹ rau quả với sốt, rắc hạt hướng dương rang và dùng ngay.
-
-Định lượng cho 2 phần: xà lách romaine 100 g, dưa leo 80 g, cam 80 g, hạt hướng dương 10 g, muối ăn 0.8 g, dầu ăn 5 g, chanh 8 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Đậu nành hạt sốt cà tím', N'Ngâm đậu nành hạt, bỏ nước ngâm rồi nấu chín kỹ và để ráo. Phi tỏi trong dầu, áp chảo cà tím, thêm cà chua và lượng nước đã cân. Cho đậu vào, nêm nước tương và tiêu, nấu thêm vài phút cho thấm.
-
-Định lượng cho 2 phần: đậu nành hạt 100 g, cà tím 120 g, cà chua 100 g, nước 150 g, dầu ăn 10 g, tỏi 6 g, nước tương 12 g, tiêu đen 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Bánh khoai lang hạt óc chó', N'Hấp khoai lang đến mềm rồi nghiền nhuyễn. Trộn với yến mạch, óc chó băm, muối và quế, tạo miếng dẹt. Quét dầu lên chảo, áp chảo lửa nhỏ đến khi hai mặt vàng và bánh chín đều.
-
-Định lượng cho 2 phần: khoai lang 180 g, óc chó 20 g, yến mạch cán 30 g, dầu ăn 6 g, muối ăn 0.3 g, quế 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Đậu gà nghiền bánh mì', N'Ngâm đậu gà, bỏ nước ngâm, nấu chín và để ráo. Nghiền đậu với nước cốt chanh, nước, dầu, muối và tiêu. Phết lên bánh mì, kẹp cùng xà lách, dưa leo và cà chua, dùng ngay.
-
-Định lượng cho 2 phần: đậu gà 100 g, bánh mì nguyên cám 100 g, xà lách romaine 50 g, dưa leo 50 g, cà chua 30 g, chanh 15 g, muối ăn 1 g, tiêu đen 0.4 g, dầu ăn 6 g, nước 25 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Salad trái cây hạt chia', N'Ngâm hạt chia trong lượng nước đã cân đến khi nở. Cắt chuối, táo, dâu tây và cam thành miếng vừa ăn. Trộn cùng hạt chia, rắc hạnh nhân lát và dùng lạnh. Không thêm đường hoặc muối.
-
-Định lượng cho 2 phần: chuối 60 g, táo 60 g, dâu tây 60 g, cam 60 g, hạt chia 10 g, hạnh nhân 10 g, nước 80 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Canh rau dền mướp hương nấm rơm', N'Ngâm hạt sen, bỏ nước ngâm. Phi hành tím với dầu, cho hạt sen, bí đao và lượng nước đã cân vào nấu gần mềm. Thêm mướp hương, nấm rơm rồi rau dền, nấu vừa chín. Nêm muối và tiêu, dùng nóng.
-
-Định lượng cho 2 phần: rau dền 100 g, mướp hương 120 g, nấm rơm 100 g, hạt sen 40 g, bí đao 100 g, nước 800 g, muối ăn 2 g, hành tím 12 g, dầu ăn 5 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Cơm gạo lứt đậu nành non', N'Nấu gạo lứt với lượng nước đã cân. Chần đậu nành non và cải bó xôi, để ráo. Xào hành tây trong dầu, cho đậu nành non vào đảo, nêm nước tương và tiêu. Xếp cùng cơm, cải bó xôi và dưa leo cắt lát.
-
-Định lượng cho 2 phần: gạo lứt 160 g, đậu nành non 100 g, cải bó xôi 80 g, dưa leo 60 g, hành tây 20 g, nước 320 g, dầu ăn 8 g, nước tương 12 g, tiêu đen 0.4 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Súp đậu trắng bí đỏ', N'Ngâm đậu trắng, bỏ nước ngâm rồi nấu mềm và để ráo. Phi hành tây, tỏi trong dầu, thêm bí đỏ, cà chua, đậu và nước. Nấu đến khi bí mềm, nghiền nhẹ một phần cho sánh. Nêm muối và tiêu, dùng nóng.
-
-Định lượng cho 2 phần: đậu trắng 80 g, bí đỏ 180 g, cà chua 80 g, hành tây 30 g, nước 700 g, dầu ăn 8 g, muối ăn 2 g, tiêu đen 0.4 g, tỏi 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Mì soba nấm mộc nhĩ sốt miso', N'Ngâm nấm mộc nhĩ, bỏ nước ngâm và thái sợi; luộc mì soba rồi để ráo. Xào nấm với dầu và gừng. Hòa miso cùng lượng nước nóng đã cân, cho vào chảo cùng mì, đảo nhanh ở lửa nhỏ. Rắc hành lá và mè trắng rang.
-
-Định lượng cho 2 phần: mì soba 160 g, nấm mộc nhĩ 20 g, tương miso 15 g, gừng 5 g, hành lá 10 g, dầu ăn 8 g, nước 70 g, mè trắng 6 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Đậu phụ non sốt miso nấm', N'Ngâm nấm hương rồi bỏ nước ngâm, rửa sạch. Áp chảo nhẹ đậu phụ non trong dầu. Đun nấm với gừng và lượng nước đã cân, hạ lửa rồi hòa miso vào. Rưới sốt lên đậu phụ, rắc hành lá và tiêu.
-
-Định lượng cho 2 phần: đậu phụ non 220 g, tương miso 15 g, nấm hương 40 g, gừng 5 g, dầu ăn 8 g, nước 150 g, hành lá 8 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Salad cải bó xôi bơ lựu', N'Rửa cải bó xôi, để ráo; cắt bơ và tách hạt lựu. Hòa nước cốt chanh với dầu, muối và tiêu. Trộn nhẹ cùng rau, bơ, lựu và óc chó ngay trước khi dùng.
-
-Định lượng cho 2 phần: cải bó xôi 100 g, bơ 80 g, lựu 50 g, óc chó 15 g, chanh 10 g, dầu ăn 6 g, muối ăn 0.8 g, tiêu đen 0.2 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Bánh mì kẹp seitan rau thơm', N'Cắt seitan, ướp với nước tương, tiêu và tỏi rồi áp chảo trong dầu. Làm nóng bánh mì, kẹp seitan với xà lách romaine, dưa leo, cà chua và húng quế. Dùng ngay khi bánh còn ấm.
-
-Định lượng cho 2 phần: bánh mì nguyên cám 100 g, seitan 100 g, xà lách romaine 40 g, dưa leo 40 g, cà chua 40 g, húng quế 5 g, dầu ăn 8 g, nước tương 12 g, tiêu đen 0.4 g, tỏi 4 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Khoai sọ nướng mè đen', N'Gọt khoai sọ, cắt miếng và hấp sơ. Trộn khoai với dầu, gừng băm, muối và tiêu, nướng đến khi chín mềm và vàng cạnh. Rắc mè đen rang trước khi dùng.
-
-Định lượng cho 2 phần: khoai sọ 220 g, mè đen 8 g, gừng 5 g, dầu ăn 10 g, muối ăn 1 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Bánh yến mạch trứng chuối', N'Nghiền chuối, trộn với trứng đã bỏ vỏ, bột yến mạch, muối và quế. Để hỗn hợp nghỉ vài phút. Quét dầu lên chảo, áp chảo từng bánh nhỏ ở lửa vừa đến khi trứng chín kỹ hai mặt. Dùng cùng dâu tây.
-
-Định lượng cho 2 phần: bột yến mạch 60 g, trứng gà 100 g, chuối 80 g, dâu tây 50 g, dầu ăn 6 g, muối ăn 0.3 g, quế 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Chè kê vàng chà là dừa', N'Vo kê vàng, nấu với lượng nước đã cân và lá dứa buộc gọn đến khi kê mềm. Thêm chà là, dừa nạo và muối, đun thêm vài phút. Vớt lá dứa ra trước khi dùng; phần lá chỉ tạo hương, không ăn. Không thêm đường vì chà là đã ngọt.
-
-Định lượng cho 2 phần: kê vàng 60 g, chà là 25 g, dừa nạo 20 g, nước 550 g, muối ăn 0.3 g, lá dứa 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Khổ qua nhồi đậu phụ non', N'Ngâm nấm mộc nhĩ, bỏ nước ngâm rồi băm nhỏ. Trộn đậu phụ non, nấm, cà rốt, gừng, một nửa muối và tiêu thành nhân. Nhồi vào khổ qua đã bỏ ruột. Đun lượng nước đã cân, nêm nước tương và muối còn lại, thả khổ qua vào nấu chín mềm, rắc hành lá.
-
-Định lượng cho 2 phần: khổ qua 200 g, đậu phụ non 120 g, nấm mộc nhĩ 15 g, cà rốt 40 g, gừng 5 g, nước 800 g, muối ăn 2 g, nước tương 10 g, tiêu đen 0.5 g, hành lá 8 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Đậu hũ sốt cà chua', N'Cắt đậu hũ, băm tỏi và cà chua. Phi tỏi trong dầu, cho cà chua vào xào mềm. Thêm nước, nước tương và đường, cho đậu hũ vào rim nhỏ lửa 10 phút. Rắc tiêu và hành lá, dùng nóng.
-
-Định lượng cho 2 phần: đậu hũ 300 g, cà chua 200 g, dầu ăn 10 g, tỏi 5 g, nước tương 12 g, đường ăn 4 g, tiêu đen 0.5 g, hành lá 8 g, nước 100 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.'),
-    (N'Rau muống xào tỏi', N'Nhặt rau muống và rửa sạch, để ráo. Đập dập tỏi, phi thơm trong dầu. Cho rau vào xào lửa lớn cùng nước và muối đến khi vừa chín, rắc tiêu rồi dùng ngay.
-
-Định lượng cho 2 phần: rau muống 300 g, tỏi 9 g, dầu ăn 10 g, muối ăn 1.5 g, tiêu đen 0.3 g, nước 20 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu.');
+DECLARE @recipe_json NVARCHAR(MAX) = N'[
+  {
+    "title": "Nấm đùi gà kho tiêu",
+    "instructions": "Cắt nấm thành lát dày. Phi tỏi trong dầu, cho nấm vào đảo săn. Thêm nước tương, đường, tiêu và nước, kho nhỏ lửa đến khi sốt bám nấm. Rắc hành lá trước khi dùng.\n\nĐịnh lượng cho 2 phần: nấm đùi gà 250 g, dầu ăn 8 g, tỏi 5 g, nước tương 15 g, đường ăn 5 g, tiêu đen 1 g, hành lá 8 g, nước 100 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Canh nấm hương cà rốt",
+    "instructions": "Ngâm nấm hương, bỏ nước ngâm rồi rửa sạch; cắt cà rốt và gừng. Đun lượng nước đã cân với gừng, thêm cà rốt và nấm, nấu mềm. Nêm muối, rắc hành lá và tiêu trước khi dùng.\n\nĐịnh lượng cho 2 phần: nấm hương 30 g, cà rốt 100 g, nước 650 g, muối ăn 2 g, gừng 5 g, hành lá 8 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Khoai lang hấp",
+    "instructions": "Rửa sạch khoai lang, cắt khúc vừa ăn. Hấp cách thủy đến khi mềm; không thêm gia vị để giữ vị ngọt tự nhiên. Nước ở đáy nồi hấp không tính vào phần ăn.\n\nĐịnh lượng cho 2 phần: khoai lang 300 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Bông cải xanh xào nấm",
+    "instructions": "Rửa sạch bông cải, cắt nấm và băm tỏi. Phi tỏi trong dầu, xào nấm săn rồi thêm bông cải và nước. Đảo nhanh đến khi rau vừa chín, thêm nước tương và tiêu, dùng nóng.\n\nĐịnh lượng cho 2 phần: bông cải xanh 200 g, nấm đùi gà 100 g, dầu ăn 10 g, tỏi 6 g, nước tương 12 g, tiêu đen 0.5 g, nước 30 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Súp đậu lăng rau củ",
+    "instructions": "Rửa đậu lăng, cắt cà rốt và hành tây. Xào hành tây cùng dầu và hạt thì là. Thêm đậu lăng, cà rốt và nước, nấu đến khi đậu mềm. Nêm muối và tiêu, khuấy đều trước khi dùng.\n\nĐịnh lượng cho 2 phần: đậu lăng 150 g, cà rốt 80 g, nước 750 g, hành tây 40 g, dầu ăn 8 g, muối ăn 2 g, tiêu đen 0.5 g, hạt thì là 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Mì udon xào rau củ kiểu Nhật",
+    "instructions": "Luộc mì udon rồi để ráo. Phi gừng trong dầu, xào nấm và rau củ. Hòa nước tương, đường với lượng nước đã cân, cho vào chảo cùng mì. Đảo đều trên lửa lớn, rắc hành lá.\n\nĐịnh lượng cho 2 phần: mì udon 200 g, nấm kim châm 100 g, rau cải thìa 120 g, đậu hà lan 60 g, dầu ăn 10 g, nước tương 18 g, gừng 6 g, hành lá 10 g, đường ăn 3 g, nước 40 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Cơm chiên dứa đậu phộng",
+    "instructions": "Nấu gạo với lượng nước đã cân, để cơm nguội và tơi. Phi hành tím trong dầu, thêm đậu Hà Lan và ngô. Cho cơm vào chiên, nêm nước tương và tiêu. Trộn dứa cùng đậu phộng rang vào cuối để giữ độ giòn.\n\nĐịnh lượng cho 2 phần: dứa 120 g, đậu phộng 30 g, đậu hà lan 60 g, ngô hạt 60 g, gạo tẻ 140 g, nước 280 g, dầu ăn 12 g, nước tương 16 g, hành tím 15 g, tiêu đen 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Phở cuốn nấm bào ngư",
+    "instructions": "Xé nấm, áp chảo trong dầu với gừng và một nửa nước tương. Chần cải thìa và giá đỗ, để ráo. Cuốn bánh phở cùng rau và nấm. Hòa phần nước tương còn lại với nước, đường, nước cốt chanh và ớt làm nước chấm.\n\nĐịnh lượng cho 2 phần: bánh phở 200 g, nấm bào ngư 150 g, giá đỗ 80 g, rau cải thìa 80 g, dầu ăn 8 g, nước tương 20 g, gừng 5 g, chanh 15 g, ớt 2 g, đường ăn 6 g, nước 35 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Bánh xèo nấm và giá đỗ",
+    "instructions": "Pha bột gạo, bột nghệ, muối với 250 g nước. Xào nấm, giá đỗ và bắp cải với một phần dầu. Tráng bột mỏng trên chảo có dầu, thêm nhân, đậy nắp đến khi bánh chín giòn rồi gập đôi. Pha nước tương, 50 g nước còn lại, đường, nước cốt chanh và ớt làm nước chấm.\n\nĐịnh lượng cho 2 phần: bột gạo 150 g, bột nghệ 3 g, nấm mỡ 100 g, giá đỗ 80 g, nước 300 g, dầu ăn 18 g, muối ăn 1.5 g, bắp cải 80 g, nước tương 15 g, chanh 12 g, đường ăn 5 g, ớt 2 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Cháo bí đỏ đậu xanh",
+    "instructions": "Vo gạo, rửa đậu xanh. Nấu cùng lượng nước đã cân đến khi mềm. Thêm bí đỏ và gừng, nấu nhỏ lửa cho bí chín rồi nêm muối. Rắc hành lá và tiêu khi dùng.\n\nĐịnh lượng cho 2 phần: bí đỏ 200 g, đậu xanh 80 g, gừng 5 g, hành lá 10 g, gạo tẻ 60 g, nước 850 g, muối ăn 2 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Đậu hũ sốt nấm mỡ",
+    "instructions": "Áp chảo đậu hũ với một nửa dầu. Phi hành tím trong dầu còn lại, xào nấm rồi thêm nước tương, đường và 130 g nước. Hòa bột năng với 20 g nước còn lại, khuấy vào sốt cho sánh. Rưới sốt lên đậu hũ, rắc tiêu.\n\nĐịnh lượng cho 2 phần: đậu hũ 200 g, nấm mỡ 120 g, bột năng 8 g, hành tím 15 g, dầu ăn 10 g, nước tương 16 g, nước 150 g, đường ăn 3 g, tiêu đen 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Bánh mì nấm áp chảo",
+    "instructions": "Ướp nấm và cà tím với nước tương, tiêu và dầu. Áp chảo đến khi vàng thơm. Chần cải thìa, để ráo. Làm nóng bánh mì, kẹp cùng nấm, cà tím và cải thìa, thêm nước cốt chanh rồi dùng ngay.\n\nĐịnh lượng cho 2 phần: bánh mì nguyên cám 120 g, nấm kim châm 100 g, cà tím 100 g, chanh 10 g, dầu ăn 10 g, nước tương 12 g, tiêu đen 0.5 g, rau cải thìa 60 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Bún chả giò chay rau thơm",
+    "instructions": "Nướng chả giò chay đến khi vỏ giòn. Chần bánh phở theo loại đang dùng, để ráo; rửa rau và giá đỗ. Hòa nước tương, nước, đường, nước cốt chanh và ớt làm nước chấm. Xếp bánh phở, rau và chả giò vào tô, rắc đậu phộng và chan nước chấm.\n\nĐịnh lượng cho 2 phần: bánh phở 200 g, chả giò chay 150 g, rau cải thìa 80 g, đậu phộng 20 g, giá đỗ 60 g, húng quế 5 g, nước tương 18 g, chanh 15 g, đường ăn 7 g, ớt 2 g, nước 50 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Lẩu nấm cải thảo",
+    "instructions": "Đun nước với gừng và riềng, thêm muối và nước tương. Lần lượt cho cải thảo, nấm và đậu hũ vào nấu vừa chín. Chần bánh phở riêng, chia ra hai tô và dùng cùng lẩu nóng.\n\nĐịnh lượng cho 2 phần: nấm kim châm 100 g, nấm bào ngư 150 g, cải thảo 150 g, riềng 10 g, nước 1000 g, gừng 8 g, đậu hũ 200 g, bánh phở 150 g, muối ăn 2 g, nước tương 15 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Chả giò khoai môn đậu xanh",
+    "instructions": "Ngâm đậu xanh và nấm, bỏ nước ngâm; nấu đậu mềm rồi để ráo. Trộn khoai môn bào, bắp cải, nấm, hành tím, muối và tiêu thành nhân. Pha bột gạo, bột mì với nước, tráng thành các lá vỏ mỏng trên chảo chống dính. Cuốn nhân vào vỏ, quét dầu và nướng hoặc áp chảo đến khi nhân chín và vỏ vàng giòn.\n\nĐịnh lượng cho 2 phần: khoai môn 150 g, đậu xanh 60 g, bắp cải 80 g, bột gạo 30 g, nấm hương 15 g, bột mì 50 g, nước 110 g, dầu ăn 20 g, muối ăn 1.5 g, tiêu đen 0.5 g, hành tím 15 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Cơm nắm rong biển mè trắng",
+    "instructions": "Nấu gạo với lượng nước đã cân. Luộc đậu Hà Lan rồi để ráo. Trộn cơm còn ấm với rong biển vụn, mè trắng rang, đậu Hà Lan và nước tương. Nắm thành viên nhỏ, dùng với dưa leo cắt lát.\n\nĐịnh lượng cho 2 phần: rong biển 5 g, mè trắng 10 g, đậu hà lan 50 g, nước tương 10 g, gạo tẻ 140 g, nước 280 g, dưa leo 80 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Canh chua nấm đậu bắp",
+    "instructions": "Đun me với 100 g nước, dầm và lọc bỏ hạt, giữ nước cốt. Cho nước cốt me và 650 g nước còn lại vào nồi, thêm cà chua và nấm. Khi sôi, cho đậu bắp vào nấu vừa chín, nêm muối và đường. Rắc ngò rí và ớt trước khi dùng.\n\nĐịnh lượng cho 2 phần: đậu bắp 100 g, me chua 15 g, nấm mỡ 100 g, ngò rí 10 g, nước 750 g, cà chua 120 g, muối ăn 2 g, đường ăn 8 g, ớt 2 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Mì Ý sốt cà tím nấm",
+    "instructions": "Luộc mì Ý đến khi vừa dai rồi để ráo. Phi tỏi trong dầu, áp chảo cà tím và nấm. Thêm cà chua cùng lượng nước đã cân, nấu thành sốt. Nêm nước tương và tiêu, trộn mì vào sốt, thêm húng quế trước khi dùng.\n\nĐịnh lượng cho 2 phần: mì ý 180 g, cà tím 120 g, nấm mỡ 100 g, cà chua 150 g, dầu ăn 12 g, tỏi 6 g, nước tương 12 g, tiêu đen 0.5 g, nước 100 g, húng quế 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Pudding hạt chia xoài",
+    "instructions": "Khuấy hạt chia vào sữa đậu nành, đậy kín và để lạnh ít nhất 3 giờ cho nở. Cắt xoài thành hạt lựu, trộn với nước cốt chanh rồi xếp lên pudding. Không thêm đường để giữ vị ngọt tự nhiên của xoài.\n\nĐịnh lượng cho 2 phần: hạt chia 25 g, xoài 150 g, sữa đậu nành 200 g, chanh 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Rau ngót nấu nấm kim châm",
+    "instructions": "Vò nhẹ rau ngót, cắt bỏ gốc nấm và cắt đậu hũ. Đun lượng nước đã cân, cho đậu hũ vào trước rồi thêm rau ngót và nấm. Nấu vừa chín, nêm nước tương, muối và tiêu, dùng nóng.\n\nĐịnh lượng cho 2 phần: rau ngót 150 g, nấm kim châm 100 g, đậu hũ 100 g, nước tương 10 g, nước 650 g, tiêu đen 0.3 g, muối ăn 1 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Bí đỏ nướng mè trắng",
+    "instructions": "Cắt bí đỏ, trộn với gừng băm, dầu, muối và tiêu. Nướng đến khi bí mềm, cạnh vàng. Rắc mè trắng rang và thêm nước cốt chanh trước khi dùng.\n\nĐịnh lượng cho 2 phần: bí đỏ 250 g, mè trắng 10 g, gừng 5 g, chanh 10 g, dầu ăn 10 g, muối ăn 1 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Cơm gạo lứt đậu gà rau củ",
+    "instructions": "Ngâm gạo lứt, để ráo rồi nấu với lượng nước đã cân. Ngâm đậu gà, bỏ nước ngâm rồi nấu chín và để ráo. Phi tỏi trong dầu, xào ớt chuông và bí ngòi, nêm nước tương và tiêu. Xếp cùng cơm và đậu gà, rắc hạt hướng dương rang.\n\nĐịnh lượng cho 2 phần: gạo lứt 180 g, đậu gà 100 g, ớt chuông 80 g, bí ngòi 80 g, hạt hướng dương 10 g, nước 360 g, dầu ăn 10 g, nước tương 15 g, tỏi 5 g, tiêu đen 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Cháo yến mạch nấm mộc nhĩ",
+    "instructions": "Ngâm nấm mộc nhĩ, bỏ nước ngâm, rửa sạch rồi thái sợi. Đun yến mạch với nước và gừng, thêm nấm cùng cà rốt. Nấu chín mềm, nêm muối và rắc hành lá, tiêu trước khi dùng.\n\nĐịnh lượng cho 2 phần: yến mạch cán 80 g, nấm mộc nhĩ 25 g, cà rốt 60 g, nước 650 g, muối ăn 2 g, gừng 5 g, hành lá 8 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Salad quinoa bơ lựu",
+    "instructions": "Rửa quinoa, nấu với lượng nước đã cân rồi để nguội. Cắt bơ, dưa leo, tách hạt lựu. Hòa nước cốt cam với muối và dầu, trộn nhẹ cùng quinoa, xà lách và trái cây ngay trước khi dùng.\n\nĐịnh lượng cho 2 phần: hạt quinoa 100 g, bơ 80 g, lựu 50 g, xà lách romaine 80 g, dưa leo 50 g, cam 20 g, nước 180 g, muối ăn 1 g, dầu ăn 6 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Đậu hũ áp chảo sốt hạt điều",
+    "instructions": "Ngâm hạt điều, bỏ nước ngâm rồi xay với lượng nước đã cân thành sốt. Áp chảo đậu hũ trong dầu đến vàng. Phi tỏi ở góc chảo, thêm sốt hạt điều, nước tương và tiêu, đun sánh. Rưới sốt lên đậu hũ, rắc hạnh nhân lát.\n\nĐịnh lượng cho 2 phần: đậu hũ 200 g, hạt điều 35 g, hạnh nhân 10 g, nước 120 g, dầu ăn 10 g, tỏi 5 g, nước tương 12 g, tiêu đen 0.4 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Bún tempeh rau sống",
+    "instructions": "Ướp tempeh với 10 g nước tương rồi áp chảo trong dầu. Hòa 12 g nước tương còn lại với nước, đường, nước cốt chanh và ớt làm nước chấm. Chần bánh phở rồi để ráo. Xếp cùng rau sống, tempeh và đậu phộng rang, dùng với nước chấm.\n\nĐịnh lượng cho 2 phần: tempeh 150 g, bánh phở 150 g, dưa leo 80 g, xà lách romaine 70 g, đậu phộng 15 g, dầu ăn 10 g, nước tương 22 g, chanh 15 g, đường ăn 6 g, ớt 2 g, nước 45 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Khoai tây nướng hạt bí",
+    "instructions": "Cắt khoai tây thành miếng, trộn với dầu, tỏi băm, muối và tiêu. Nướng đến khi mềm ruột và vàng cạnh. Rang hạt bí riêng rồi rắc lên khoai trước khi dùng.\n\nĐịnh lượng cho 2 phần: khoai tây 250 g, hạt bí 15 g, dầu ăn 12 g, muối ăn 1.5 g, tiêu đen 0.5 g, tỏi 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Súp đậu trắng cải xoăn",
+    "instructions": "Ngâm đậu trắng, bỏ nước ngâm rồi luộc mềm và để ráo. Phi hành tây, tỏi trong dầu, thêm cà chua và nước. Cho đậu vào nấu liu riu, thêm cải xoăn ở cuối. Nêm muối và tiêu khi rau vừa mềm.\n\nĐịnh lượng cho 2 phần: đậu trắng 100 g, cải xoăn 80 g, cà chua 100 g, nước 750 g, hành tây 40 g, tỏi 5 g, dầu ăn 8 g, muối ăn 2 g, tiêu đen 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Bánh quinoa chuối dâu tây",
+    "instructions": "Rửa quinoa, nấu với lượng nước đã cân rồi để nguội. Nghiền chuối, trộn quinoa, yến mạch và muối, để hỗn hợp nghỉ. Quét dầu mỏng lên chảo, áp chảo từng bánh ở lửa vừa đến chín hai mặt, dùng cùng dâu tây.\n\nĐịnh lượng cho 2 phần: hạt quinoa 80 g, chuối 100 g, dâu tây 80 g, yến mạch cán 40 g, nước 150 g, dầu ăn 6 g, muối ăn 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Ớt chuông nhồi gạo lứt",
+    "instructions": "Nấu gạo lứt với lượng nước đã cân. Ngâm đậu đỏ, bỏ nước ngâm rồi nấu chín và để ráo. Xào hành tây với dầu, thêm cà chua, cơm và đậu, nêm muối, tiêu. Nhồi vào ớt chuông đã bỏ hạt, nướng đến khi ớt mềm và nhân nóng đều.\n\nĐịnh lượng cho 2 phần: ớt chuông 160 g, gạo lứt 100 g, đậu đỏ 80 g, cà chua 60 g, nước 220 g, dầu ăn 8 g, muối ăn 1.5 g, tiêu đen 0.5 g, hành tây 30 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Mì seitan xào măng tây",
+    "instructions": "Luộc mì vừa chín rồi để ráo. Phi tỏi trong dầu, xào seitan và măng tây. Thêm mì, nước tương cùng lượng nước đã cân, đảo đều cho sốt bám mì. Rắc tiêu, dùng nóng.\n\nĐịnh lượng cho 2 phần: seitan 120 g, măng tây 100 g, mì ý 120 g, dầu ăn 10 g, tỏi 6 g, nước tương 15 g, tiêu đen 0.5 g, nước 40 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Canh kombu đậu hũ",
+    "instructions": "Ngâm kombu trong lượng nước đã cân rồi đun nhỏ lửa. Vớt kombu ra, thái sợi và cho lại vào canh để dùng hết phần rong biển. Thêm nấm đã ngâm rửa, đậu hũ và gừng, nấu sôi nhẹ. Nêm nước tương trước khi dùng.\n\nĐịnh lượng cho 2 phần: tảo bẹ kombu 5 g, đậu hũ 120 g, nấm hương 20 g, nước 700 g, nước tương 12 g, gừng 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Bí ngòi cuộn hạt điều",
+    "instructions": "Ngâm hạt điều rồi bỏ nước ngâm. Xay hạt điều với nước, tỏi, muối, tiêu và nước cốt chanh thành sốt. Thái bí ngòi thành lát mỏng, áp chảo nhanh với dầu. Phết sốt lên bí, cuộn lại và dùng với cà chua.\n\nĐịnh lượng cho 2 phần: bí ngòi 160 g, hạt điều 30 g, cà chua 80 g, nước 60 g, dầu ăn 8 g, tỏi 4 g, muối ăn 1 g, tiêu đen 0.4 g, chanh 8 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Súp lơ trắng nghiền hạnh nhân",
+    "instructions": "Hấp súp lơ trắng đến mềm, ngâm hạnh nhân rồi bỏ nước ngâm. Xay súp lơ với hạnh nhân, lượng nước ấm đã cân, dầu, muối và tiêu đến mịn. Rắc hạt bí rang, dùng nóng.\n\nĐịnh lượng cho 2 phần: súp lơ trắng 200 g, hạnh nhân 20 g, hạt bí 10 g, nước 80 g, muối ăn 1.5 g, tiêu đen 0.4 g, dầu ăn 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Đậu đỏ hầm cà chua",
+    "instructions": "Ngâm đậu đỏ, bỏ nước ngâm rồi nấu mềm và để ráo. Phi hành tây trong dầu, thêm cà chua, khoai tây, đậu đỏ và lượng nước đã cân. Hầm đến khi khoai mềm, nêm muối, tiêu và rắc hành lá.\n\nĐịnh lượng cho 2 phần: đậu đỏ 100 g, khoai tây 100 g, cà chua 120 g, nước 500 g, dầu ăn 8 g, hành tây 30 g, muối ăn 2 g, tiêu đen 0.5 g, hành lá 8 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Yến mạch qua đêm táo",
+    "instructions": "Trộn yến mạch với sữa đậu nành và quế, đậy kín rồi để lạnh qua đêm. Cắt táo nhỏ, rắc hạnh nhân lên trên ngay trước khi ăn. Không thêm đường vì táo đã có vị ngọt tự nhiên.\n\nĐịnh lượng cho 2 phần: yến mạch cán 60 g, táo 100 g, hạnh nhân 10 g, sữa đậu nành 150 g, quế 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Gỏi romaine dưa leo cam",
+    "instructions": "Rửa và xé xà lách romaine, cắt dưa leo và tách múi cam. Hòa nước cốt chanh với dầu và muối làm sốt. Trộn nhẹ rau quả với sốt, rắc hạt hướng dương rang và dùng ngay.\n\nĐịnh lượng cho 2 phần: xà lách romaine 100 g, dưa leo 80 g, cam 80 g, hạt hướng dương 10 g, muối ăn 0.8 g, dầu ăn 5 g, chanh 8 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Đậu nành hạt sốt cà tím",
+    "instructions": "Ngâm đậu nành hạt, bỏ nước ngâm rồi nấu chín kỹ và để ráo. Phi tỏi trong dầu, áp chảo cà tím, thêm cà chua và lượng nước đã cân. Cho đậu vào, nêm nước tương và tiêu, nấu thêm vài phút cho thấm.\n\nĐịnh lượng cho 2 phần: đậu nành hạt 100 g, cà tím 120 g, cà chua 100 g, nước 150 g, dầu ăn 10 g, tỏi 6 g, nước tương 12 g, tiêu đen 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Bánh khoai lang hạt óc chó",
+    "instructions": "Hấp khoai lang đến mềm rồi nghiền nhuyễn. Trộn với yến mạch, óc chó băm, muối và quế, tạo miếng dẹt. Quét dầu lên chảo, áp chảo lửa nhỏ đến khi hai mặt vàng và bánh chín đều.\n\nĐịnh lượng cho 2 phần: khoai lang 180 g, óc chó 20 g, yến mạch cán 30 g, dầu ăn 6 g, muối ăn 0.3 g, quế 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Đậu gà nghiền bánh mì",
+    "instructions": "Ngâm đậu gà, bỏ nước ngâm, nấu chín và để ráo. Nghiền đậu với nước cốt chanh, nước, dầu, muối và tiêu. Phết lên bánh mì, kẹp cùng xà lách, dưa leo và cà chua, dùng ngay.\n\nĐịnh lượng cho 2 phần: đậu gà 100 g, bánh mì nguyên cám 100 g, xà lách romaine 50 g, dưa leo 50 g, cà chua 30 g, chanh 15 g, muối ăn 1 g, tiêu đen 0.4 g, dầu ăn 6 g, nước 25 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Salad trái cây hạt chia",
+    "instructions": "Ngâm hạt chia trong lượng nước đã cân đến khi nở. Cắt chuối, táo, dâu tây và cam thành miếng vừa ăn. Trộn cùng hạt chia, rắc hạnh nhân lát và dùng lạnh. Không thêm đường hoặc muối.\n\nĐịnh lượng cho 2 phần: chuối 60 g, táo 60 g, dâu tây 60 g, cam 60 g, hạt chia 10 g, hạnh nhân 10 g, nước 80 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Canh rau dền mướp hương nấm rơm",
+    "instructions": "Ngâm hạt sen, bỏ nước ngâm. Phi hành tím với dầu, cho hạt sen, bí đao và lượng nước đã cân vào nấu gần mềm. Thêm mướp hương, nấm rơm rồi rau dền, nấu vừa chín. Nêm muối và tiêu, dùng nóng.\n\nĐịnh lượng cho 2 phần: rau dền 100 g, mướp hương 120 g, nấm rơm 100 g, hạt sen 40 g, bí đao 100 g, nước 800 g, muối ăn 2 g, hành tím 12 g, dầu ăn 5 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Cơm gạo lứt đậu nành non",
+    "instructions": "Nấu gạo lứt với lượng nước đã cân. Chần đậu nành non và cải bó xôi, để ráo. Xào hành tây trong dầu, cho đậu nành non vào đảo, nêm nước tương và tiêu. Xếp cùng cơm, cải bó xôi và dưa leo cắt lát.\n\nĐịnh lượng cho 2 phần: gạo lứt 160 g, đậu nành non 100 g, cải bó xôi 80 g, dưa leo 60 g, hành tây 20 g, nước 320 g, dầu ăn 8 g, nước tương 12 g, tiêu đen 0.4 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Súp đậu trắng bí đỏ",
+    "instructions": "Ngâm đậu trắng, bỏ nước ngâm rồi nấu mềm và để ráo. Phi hành tây, tỏi trong dầu, thêm bí đỏ, cà chua, đậu và nước. Nấu đến khi bí mềm, nghiền nhẹ một phần cho sánh. Nêm muối và tiêu, dùng nóng.\n\nĐịnh lượng cho 2 phần: đậu trắng 80 g, bí đỏ 180 g, cà chua 80 g, hành tây 30 g, nước 700 g, dầu ăn 8 g, muối ăn 2 g, tiêu đen 0.4 g, tỏi 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Mì soba nấm mộc nhĩ sốt miso",
+    "instructions": "Ngâm nấm mộc nhĩ, bỏ nước ngâm và thái sợi; luộc mì soba rồi để ráo. Xào nấm với dầu và gừng. Hòa miso cùng lượng nước nóng đã cân, cho vào chảo cùng mì, đảo nhanh ở lửa nhỏ. Rắc hành lá và mè trắng rang.\n\nĐịnh lượng cho 2 phần: mì soba 160 g, nấm mộc nhĩ 20 g, tương miso 15 g, gừng 5 g, hành lá 10 g, dầu ăn 8 g, nước 70 g, mè trắng 6 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Đậu phụ non sốt miso nấm",
+    "instructions": "Ngâm nấm hương rồi bỏ nước ngâm, rửa sạch. Áp chảo nhẹ đậu phụ non trong dầu. Đun nấm với gừng và lượng nước đã cân, hạ lửa rồi hòa miso vào. Rưới sốt lên đậu phụ, rắc hành lá và tiêu.\n\nĐịnh lượng cho 2 phần: đậu phụ non 220 g, tương miso 15 g, nấm hương 40 g, gừng 5 g, dầu ăn 8 g, nước 150 g, hành lá 8 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Salad cải bó xôi bơ lựu",
+    "instructions": "Rửa cải bó xôi, để ráo; cắt bơ và tách hạt lựu. Hòa nước cốt chanh với dầu, muối và tiêu. Trộn nhẹ cùng rau, bơ, lựu và óc chó ngay trước khi dùng.\n\nĐịnh lượng cho 2 phần: cải bó xôi 100 g, bơ 80 g, lựu 50 g, óc chó 15 g, chanh 10 g, dầu ăn 6 g, muối ăn 0.8 g, tiêu đen 0.2 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Bánh mì kẹp seitan rau thơm",
+    "instructions": "Cắt seitan, ướp với nước tương, tiêu và tỏi rồi áp chảo trong dầu. Làm nóng bánh mì, kẹp seitan với xà lách romaine, dưa leo, cà chua và húng quế. Dùng ngay khi bánh còn ấm.\n\nĐịnh lượng cho 2 phần: bánh mì nguyên cám 100 g, seitan 100 g, xà lách romaine 40 g, dưa leo 40 g, cà chua 40 g, húng quế 5 g, dầu ăn 8 g, nước tương 12 g, tiêu đen 0.4 g, tỏi 4 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Khoai sọ nướng mè đen",
+    "instructions": "Gọt khoai sọ, cắt miếng và hấp sơ. Trộn khoai với dầu, gừng băm, muối và tiêu, nướng đến khi chín mềm và vàng cạnh. Rắc mè đen rang trước khi dùng.\n\nĐịnh lượng cho 2 phần: khoai sọ 220 g, mè đen 8 g, gừng 5 g, dầu ăn 10 g, muối ăn 1 g, tiêu đen 0.3 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Bánh yến mạch trứng chuối",
+    "instructions": "Nghiền chuối, trộn với trứng đã bỏ vỏ, bột yến mạch, muối và quế. Để hỗn hợp nghỉ vài phút. Quét dầu lên chảo, áp chảo từng bánh nhỏ ở lửa vừa đến khi trứng chín kỹ hai mặt. Dùng cùng dâu tây.\n\nĐịnh lượng cho 2 phần: bột yến mạch 60 g, trứng gà 100 g, chuối 80 g, dâu tây 50 g, dầu ăn 6 g, muối ăn 0.3 g, quế 0.5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Chè kê vàng chà là dừa",
+    "instructions": "Vo kê vàng, nấu với lượng nước đã cân và lá dứa buộc gọn đến khi kê mềm. Thêm chà là, dừa nạo và muối, đun thêm vài phút. Vớt lá dứa ra trước khi dùng; phần lá chỉ tạo hương, không ăn. Không thêm đường vì chà là đã ngọt.\n\nĐịnh lượng cho 2 phần: kê vàng 60 g, chà là 25 g, dừa nạo 20 g, nước 550 g, muối ăn 0.3 g, lá dứa 5 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Khổ qua nhồi đậu phụ non",
+    "instructions": "Ngâm nấm mộc nhĩ, bỏ nước ngâm rồi băm nhỏ. Trộn đậu phụ non, nấm, cà rốt, gừng, một nửa muối và tiêu thành nhân. Nhồi vào khổ qua đã bỏ ruột. Đun lượng nước đã cân, nêm nước tương và muối còn lại, thả khổ qua vào nấu chín mềm, rắc hành lá.\n\nĐịnh lượng cho 2 phần: khổ qua 200 g, đậu phụ non 120 g, nấm mộc nhĩ 15 g, cà rốt 40 g, gừng 5 g, nước 800 g, muối ăn 2 g, nước tương 10 g, tiêu đen 0.5 g, hành lá 8 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Đậu hũ sốt cà chua",
+    "instructions": "Cắt đậu hũ, băm tỏi và cà chua. Phi tỏi trong dầu, cho cà chua vào xào mềm. Thêm nước, nước tương và đường, cho đậu hũ vào rim nhỏ lửa 10 phút. Rắc tiêu và hành lá, dùng nóng.\n\nĐịnh lượng cho 2 phần: đậu hũ 300 g, cà chua 200 g, dầu ăn 10 g, tỏi 5 g, nước tương 12 g, đường ăn 4 g, tiêu đen 0.5 g, hành lá 8 g, nước 100 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  },
+  {
+    "title": "Rau muống xào tỏi",
+    "instructions": "Nhặt rau muống và rửa sạch, để ráo. Đập dập tỏi, phi thơm trong dầu. Cho rau vào xào lửa lớn cùng nước và muối đến khi vừa chín, rắc tiêu rồi dùng ngay.\n\nĐịnh lượng cho 2 phần: rau muống 300 g, tỏi 9 g, dầu ăn 10 g, muối ăn 1.5 g, tiêu đen 0.3 g, nước 20 g. Các lượng nước ngâm/rửa và nước luộc bỏ đi không nằm trong danh sách nguyên liệu."
+  }
+]';
+INSERT INTO @recipes (title, instructions)
+SELECT title, instructions
+FROM OPENJSON(@recipe_json)
+WITH (title NVARCHAR(120), instructions NVARCHAR(MAX));
 
 DECLARE @ingredients TABLE (
     title NVARCHAR(120) NOT NULL, ingredient_name NVARCHAR(200) NOT NULL,
