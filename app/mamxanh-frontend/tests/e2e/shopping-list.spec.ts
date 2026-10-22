@@ -46,7 +46,7 @@ for (const name of [
     const saved = page.getByRole("navigation", { name: "Danh sách đã lưu" })
     await expect(heading).toBeVisible()
     await expect(saved.getByRole("button").first()).toContainText(name)
-    await expect(page.getByRole("img", { name: "Ảnh minh họa Nước tương" })).toBeVisible()
+    await expect(page.getByRole("img", { name: "Ảnh minh họa Nước tương" }).first()).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     await page.reload()
     await expect(heading).toBeVisible()
@@ -553,7 +553,11 @@ test("shopping pagination and small viewport preserve usable checklist", async (
 
   const checkBounds = await page.getByRole("button", { name: "Đánh dấu Nước tương g", exact: true }).boundingBox()
   const deleteBounds = await page.getByRole("button", { name: "Xoá Nước tương g", exact: true }).boundingBox()
-  expect(Math.abs(checkBounds!.y - deleteBounds!.y)).toBeLessThan(10)
+  expect(checkBounds).not.toBeNull()
+  expect(deleteBounds).not.toBeNull()
+  const checkCenter = checkBounds!.y + checkBounds!.height / 2
+  const deleteCenter = deleteBounds!.y + deleteBounds!.height / 2
+  expect(Math.abs(checkCenter - deleteCenter)).toBeLessThan(10)
   await page.setViewportSize({ width: 768, height: 1024 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await expect(page.getByTestId("shopping-item-1")).toBeVisible()

@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,6 +16,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import tech.mamxanh.AbstractIntegrationTest;
 
@@ -41,6 +43,21 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
         second = recipe();
         line(first, "300");
         line(second, "800");
+    }
+
+    @AfterEach
+    void cleanup() {
+        if (owner > 0 || other > 0) {
+            sql.update("DELETE FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id IN (SELECT shopping_list_id FROM [SHOPPING_LIST] WHERE user_id IN (?,?))", owner, other);
+            sql.update("DELETE FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id IN (SELECT shopping_list_id FROM [SHOPPING_LIST] WHERE user_id IN (?,?))", owner, other);
+            sql.update("DELETE FROM [SHOPPING_LIST] WHERE user_id IN (?,?)", owner, other);
+        }
+        if (expert > 0) {
+            sql.update("DELETE FROM [RECIPE_INGREDIENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id=?)", expert);
+            sql.update("DELETE FROM [RECIPE_POST] WHERE author_id=?", expert);
+        }
+        if (ingredient > 0) sql.update("DELETE FROM [INGREDIENT] WHERE ingredient_id=?", ingredient);
+        sql.update("DELETE FROM [USER] WHERE user_id IN (?,?,?)", owner, other, expert);
     }
 
     @Test
@@ -81,6 +98,7 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void failedCreateFromRecipeRollsBackTheNewChecklist() throws Exception {
         update("DELETE FROM [RECIPE_INGREDIENT] WHERE recipe_id=?", first);
         mockMvc.perform(post(ROOT + "/from-recipe").with(user("" + owner).roles("CUSTOMER"))
