@@ -1,13 +1,33 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.94.0
+> **Version:** v2.95.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-22
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-22 — Select Public Recipes Directly in Meal Plans (Issue #154)
+
+**Status:** Committed — `b5c8bdb`.
+
+**Scope:** Complete the FR-09 / FR-33 recipe picker flow using the existing public search and meal-plan APIs.
+
+### Added
+
+- Switch between saved recipes and public recipe search without leaving the selected meal; search and paginate both sources.
+- Cover empty saved collections, public add/replace, unavailable or duplicate choices, failure recovery, late responses and keyboard access in browser tests.
+
+### Changed
+
+- Keep saved recipes as the default source and preserve day, meal and servings when selecting a public replacement.
+- Extend the Compose integration scenario to verify adding a public recipe that is not saved, without inserting a saved-recipe row.
+
+### Fixed
+
+- Remove the requirement to leave the planner and save a recipe before selecting it for a meal; meal-plan operations do not modify the saved collection.
 
 ## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
