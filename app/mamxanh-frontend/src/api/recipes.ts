@@ -304,8 +304,8 @@ export const recipesApi = {
   recommendByIngredients: (ingredientIds: number[]) => request(
     () => apiClient.post<AiRecipeSuggestion>('/recipes/ai/recommendations', { ingredientIds }, { timeout: 60_000 }),
   ),
-  createWeeklyMenuPreview: (ingredientIds: number[]) => request(
-    () => apiClient.post<AiWeeklyMenuPreview>('/recipes/ai/weekly-menu', { ingredientIds }, { timeout: 60_000 }),
+  createWeeklyMenuPreview: (ingredientIds: number[] = []) => request(
+    () => apiClient.post<AiWeeklyMenuPreview>('/recipes/ai/weekly-menu', ingredientIds.length ? { ingredientIds } : {}, { timeout: 60_000 }),
   ),
   related: (recipeId: number) => request(
     () => apiClient.get<{ items: RecipePost[] }>(`/recipes/${recipeId}/related`),

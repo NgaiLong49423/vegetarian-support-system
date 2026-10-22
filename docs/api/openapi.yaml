@@ -2706,15 +2706,16 @@ paths:
       tags:
       - ai-recipe-controller
       summary: Generate a 7-day AI meal-plan preview
-      description: "Requires an active Pro Member and complete FR-31 profile. Returns\
-        \ 21 slots without writing the member's Meal Plan. Recipe IDs may repeat,\
-        \ but adjacent slots cannot."
+      description: "Requires an active Pro Member and complete FR-31 profile. Ingredient\
+        \ filters are optional. Returns 21 slots from the public safety-filtered catalog\
+        \ without writing the member's Meal Plan. Recipe IDs may repeat, but adjacent\
+        \ slots cannot."
       operationId: weeklyMenu
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AiRecipeRecommendationRequest"
+              $ref: "#/components/schemas/AiWeeklyMenuRequest"
         required: true
       responses:
         "200":
@@ -7436,7 +7437,7 @@ components:
         sizeBytes:
           type: integer
           format: int64
-    AiRecipeRecommendationRequest:
+    AiWeeklyMenuRequest:
       type: object
       properties:
         ingredientIds:
@@ -7446,8 +7447,6 @@ components:
             format: int64
           maxItems: 20
           minItems: 0
-      required:
-      - ingredientIds
     AiWeeklyMenuPreviewResponse:
       type: object
       properties:
@@ -7478,6 +7477,18 @@ components:
           type: string
         reason:
           type: string
+    AiRecipeRecommendationRequest:
+      type: object
+      properties:
+        ingredientIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          maxItems: 20
+          minItems: 0
+      required:
+      - ingredientIds
     AiRecipeRecommendationResponse:
       type: object
       properties:
@@ -7640,14 +7651,14 @@ components:
           type: string
         paymentLinkId:
           type: string
+        paymentSuccess:
+          type: boolean
         orderCode:
           type: integer
           format: int64
         amount:
           type: integer
           format: int32
-        paymentSuccess:
-          type: boolean
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
