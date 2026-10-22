@@ -150,7 +150,8 @@ SET energy_kcal_100g = seed.energy_kcal, protein_g_100g = seed.protein_g,
     source_url = CASE WHEN seed.source_type = 'AI_ESTIMATE' THEN NULL
         ELSE CONCAT('https://fdc.nal.usda.gov/food-details/', seed.fdc_id, '/nutrients') END,
     reference_date = '2026-10-13',
-    nutrition_supported = CASE WHEN seed.source_type = 'AI_ESTIMATE' THEN 0 ELSE 1 END,
+    -- BR-52 / V17: stored AI estimates can participate, with their source label retained.
+    nutrition_supported = 1,
     updated_at = SYSUTCDATETIME()
 FROM [INGREDIENT] i
 JOIN @demo_nutrition seed ON seed.ingredient_name = i.name
@@ -294,7 +295,8 @@ UPDATE i
 SET energy_kcal_100g = macros.energy_kcal, protein_g_100g = macros.protein_g,
     carbohydrate_g_100g = macros.carbohydrate_g, total_fat_g_100g = macros.total_fat_g,
     fiber_g_100g = macros.fiber_g, calcium_mg_100g = seed.calcium_mg,
-    iron_mg_100g = seed.iron_mg, vitamin_b12_mcg_100g = macros.vitamin_b12_mcg,
+    iron_mg_100g = seed.iron_mg, zinc_mg_100g = seed.zinc_mg,
+    vitamin_b12_mcg_100g = macros.vitamin_b12_mcg,
     source_name = N'Ước tính AI - chưa xác minh', source_url = NULL,
     reference_date = '2026-10-20', nutrition_supported = 1,
     updated_at = SYSUTCDATETIME()

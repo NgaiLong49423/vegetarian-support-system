@@ -79,7 +79,7 @@ export function PublicRecipeCard({
         <div className="mt-1 text-[11px] text-ink-muted"><RecipeViewCount count={recipe.viewCount} /></div>
       </Link>
       <div className="absolute right-2 top-2 flex items-center gap-1.5">
-        <AddToMealPlanButton recipeId={recipe.id} recipeTitle={recipe.title} />
+        <AddToMealPlanButton recipeId={recipe.id} recipeTitle={recipe.title} preview={recipe} />
         <SaveRecipeButton recipeId={recipe.id} compact />
       </div>
     </article>

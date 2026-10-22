@@ -412,11 +412,13 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                 </span>
               </div>
             </div>
-            {fromMealPlan ? <MealPlanRecipeServings key={planContextKey} recipeId={recipeId} servings={servings} onChange={setServings} /> : <div aria-label="Điều chỉnh khẩu phần" className="recipe-detail-no-print inline-flex items-center gap-1 rounded-full border border-brand-100 bg-raised/70 p-1">
-              <button type="button" aria-label="Giảm khẩu phần" disabled={servings <= 1} onClick={() => setServings((value) => Math.max(1, value - 1))} className="flex h-9 w-9 items-center justify-center rounded-full text-brand-600 transition-colors hover:bg-paper hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"><Minus className="h-4 w-4" /></button>
-              <span className="min-w-20 text-center text-sm font-bold tabular-nums text-ink">{servings} phần</span>
-              <button type="button" aria-label="Tăng khẩu phần" disabled={servings >= 50} onClick={() => setServings((value) => Math.min(50, value + 1))} className="flex h-9 w-9 items-center justify-center rounded-full text-brand-600 transition-colors hover:bg-paper hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"><Plus className="h-4 w-4" /></button>
-            </div>}
+            <div className="recipe-detail-no-print flex flex-wrap items-center gap-2">
+              {fromMealPlan ? <MealPlanRecipeServings key={planContextKey} recipeId={recipeId} servings={servings} onChange={setServings} /> : <div aria-label="Điều chỉnh khẩu phần" className="inline-flex items-center gap-1 rounded-full border border-brand-100 bg-raised/70 p-1">
+                <button type="button" aria-label="Giảm khẩu phần" disabled={servings <= 1} onClick={() => setServings((value) => Math.max(1, value - 1))} className="flex h-9 w-9 items-center justify-center rounded-full text-brand-600 transition-colors hover:bg-paper hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"><Minus className="h-4 w-4" /></button>
+                <span className="min-w-20 text-center text-sm font-bold tabular-nums text-ink">{servings} phần</span>
+                <button type="button" aria-label="Tăng khẩu phần" disabled={servings >= 50} onClick={() => setServings((value) => Math.min(50, value + 1))} className="flex h-9 w-9 items-center justify-center rounded-full text-brand-600 transition-colors hover:bg-paper hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"><Plus className="h-4 w-4" /></button>
+              </div>}
+            </div>
           </div>
           <div className="mt-4 flex items-center justify-between gap-3 border-b border-brand-100 pb-3">
             <p className="text-sm text-ink-muted">Định lượng cho {servings} phần ăn</p>

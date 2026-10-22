@@ -46,9 +46,13 @@ class ShoppingListControllerTest {
 
     @Test void allChecklistOperationsRequireAuthentication() throws Exception {
         mvc.perform(post("/api/v1/shopping-lists/from-meal-plan")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/shopping-lists/from-recipe")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/shopping-lists/1/recipes")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/shopping-lists")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/shopping-lists/options")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/shopping-lists/1")).andExpect(status().isUnauthorized());
+        mvc.perform(patch("/api/v1/shopping-lists/1")).andExpect(status().isUnauthorized());
+        mvc.perform(delete("/api/v1/shopping-lists/1")).andExpect(status().isUnauthorized());
         mvc.perform(post("/api/v1/shopping-lists/1/items")).andExpect(status().isUnauthorized());
         mvc.perform(put("/api/v1/shopping-lists/1/items/2")).andExpect(status().isUnauthorized());
         mvc.perform(patch("/api/v1/shopping-lists/1/items/2/bought")).andExpect(status().isUnauthorized());
@@ -75,6 +79,36 @@ class ShoppingListControllerTest {
                 .andExpect(status().isCreated()).andExpect(header().string("Location","/api/v1/shopping-lists/28"))
                 .andExpect(jsonPath("$.shoppingList.id").value(28)).andExpect(jsonPath("$.warnings").isEmpty())
                 .andExpect(jsonPath("$.incompatibleItemIds").isEmpty());
+    }
+
+    @Test void createFromOneRecipeReturnsCreatedLocation() throws Exception {
+        var list = new tech.mamxanh.shopping.dto.response.ShoppingListResponse(29, "Món cuối tuần", null, null, java.util.List.of());
+        when(recipeLists.createFromRecipe(any())).thenReturn(new tech.mamxanh.shopping.dto.response.ShoppingListCreationResponse(
+                list, java.util.List.of(), java.util.List.of()));
+        mvc.perform(post("/api/v1/shopping-lists/from-recipe").with(user("17").roles("CUSTOMER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Món cuối tuần\",\"recipeId\":7,\"servings\":3}"))
+                .andExpect(status().isCreated()).andExpect(header().string("Location", "/api/v1/shopping-lists/29"))
+                .andExpect(jsonPath("$.shoppingList.name").value("Món cuối tuần"));
+        verify(recipeLists).createFromRecipe(any());
+    }
+
+    @Test void addOneRecipeToSelectedListReturnsUpdatedChecklist() throws Exception {
+        var list = new tech.mamxanh.shopping.dto.response.ShoppingListResponse(4, "Đi chợ", null, null, java.util.List.of());
+        when(recipeLists.addRecipe(eq(4L), any())).thenReturn(new tech.mamxanh.shopping.dto.response.ShoppingListCreationResponse(
+                list, java.util.List.of(), java.util.List.of()));
+        mvc.perform(post("/api/v1/shopping-lists/4/recipes").with(user("17").roles("CUSTOMER"))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"recipeId\":7,\"servings\":3}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.shoppingList.id").value(4));
+        verify(recipeLists).addRecipe(eq(4L), any());
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"{}", "{\"name\":\"\",\"recipeId\":1}",
+            "{\"name\":\"Danh sách\",\"recipeId\":0}", "{\"name\":\"Danh sách\",\"recipeId\":1,\"servings\":51}"})
+    void invalidSingleRecipeRequestsAreRejectedBeforeCallingService(String body) throws Exception {
+        mvc.perform(post("/api/v1/shopping-lists/from-recipe").with(user("17").roles("CUSTOMER"))
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+        verifyNoInteractions(recipeLists);
     }
 
     @ParameterizedTest @ValueSource(strings = {
@@ -120,6 +154,26 @@ class ShoppingListControllerTest {
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
 
+    @ParameterizedTest @ValueSource(strings = {"{}", "{\"name\":\"\"}", "{\"name\":\"   \"}"})
+    void rejectsInvalidListNamesBeforeCallingService(String body) throws Exception {
+        mvc.perform(patch("/api/v1/shopping-lists/1").with(user("17").roles("CUSTOMER"))
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        verifyNoInteractions(service);
+    }
+
+
+    @Test void renamesOwnedListAndDeletesItWithExpectedStatuses() throws Exception {
+        when(service.rename(eq(1L), any())).thenReturn(new tech.mamxanh.shopping.dto.response.ShoppingListResponse.Summary(
+                1L, "Danh sách cuối tuần", null, null));
+        mvc.perform(patch("/api/v1/shopping-lists/1").with(user("17").roles("CUSTOMER"))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Danh sách cuối tuần\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Danh sách cuối tuần"));
+        mvc.perform(delete("/api/v1/shopping-lists/1").with(user("17").roles("CUSTOMER")))
+                .andExpect(status().isNoContent());
+        verify(service).deleteList(1L);
+    }
+
     @Test void cleanupRequiresExplicitTrueAndNeverDeletesEverything() throws Exception {
         mvc.perform(delete("/api/v1/shopping-lists/1/items?bought=true").with(user("17").roles("CUSTOMER")))
                 .andExpect(status().isNoContent());
@@ -134,7 +188,12 @@ class ShoppingListControllerTest {
                 .andExpect(jsonPath("$.paths['/api/v1/shopping-lists/{listId}/items'].post.security[0].bearerAuth").isArray())
                 .andExpect(jsonPath("$.paths['/api/v1/shopping-lists/{listId}/items/{itemId}/bought'].patch.responses['401']").exists())
                 .andExpect(jsonPath("$.components.schemas.ShoppingListItemResponse.properties.bought.type").value("boolean"))
-                .andExpect(jsonPath("$.paths['/api/v1/shopping-lists/from-recipes'].post.operationId").value("addRecipesToPersonalShoppingList"))
+                .andExpect(jsonPath("$.components.schemas.ShoppingListItemResponse.properties.imageUrl").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/shopping-lists/from-recipes']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/shopping-lists/from-recipe'].post.operationId").value("createShoppingListFromRecipe"))
+                .andExpect(jsonPath("$.paths['/api/v1/shopping-lists/{listId}/recipes'].post.operationId").value("addRecipeToShoppingList"))
+                .andExpect(jsonPath("$.paths['/api/v1/shopping-lists/{listId}'].patch.operationId").value("renameShoppingList"))
+                .andExpect(jsonPath("$.paths['/api/v1/shopping-lists/{listId}'].delete.responses['204']").exists())
                 .andExpect(jsonPath("$.components.schemas.ShoppingListItemResponse.properties.sources.type").value("array"));
     }
 }

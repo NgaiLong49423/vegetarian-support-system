@@ -14,7 +14,6 @@ import { PageContainer } from '../components/Layout';
 import { Button, EmptyState } from '../components/ui';
 import { PublicRecipeCard, PublicRecipeSkeleton } from '../components/PublicRecipeCard';
 import { recipesApi } from '../api/recipes';
-import { useRecipeShoppingSelection } from '../components/RecipeShoppingSelection';
 import type { Choice, IngredientOption, RecipeBrowseResult, RecipeFormOptions, RecipePost } from '../api/recipes';
 
 type SortMode = 'NEWEST' | 'MOST_LIKED' | 'MOST_VIEWED' | 'MOST_COMMENTED' | 'MOST_ACTIVE' | 'TRENDING';
@@ -52,7 +51,6 @@ const viewPeriodOptions: Array<{ code: ViewPeriod; label: string }> = [
 const controlClass = 'mt-1.5 w-full rounded-xl border border-brand-100 bg-paper px-3 py-2.5 text-sm text-ink shadow-sm outline-none transition focus-visible:border-brand-500 focus-visible:ring-4 focus-visible:ring-brand-100';
 
 export function Explore() {
-  const shopping = useRecipeShoppingSelection();
   const [params, setParams] = useSearchParams();
   const expectedSearchRef = useRef(params.toString());
   const query = params.get('q') ?? '';
@@ -284,9 +282,8 @@ export function Explore() {
           {loading ? <div role="status" aria-label="Đang tải công thức" className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4"><PublicRecipeSkeleton count={8} /></div>
             : error ? <EmptyState title="Không tải được công thức" description="Kiểm tra kết nối rồi thử tải lại danh sách công thức." action={<Button variant="secondary" onClick={() => setRetry((current) => current + 1)}>Thử lại</Button>} />
               : result && result.items.length > 0 ? <>
-                {shopping.toolbar}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 xl:grid-cols-4">
-                  {result.items.map((recipe: RecipePost) => <div key={recipe.id} className="min-w-0"><PublicRecipeCard recipe={recipe} options={options} />{shopping.checkbox(recipe.id, recipe.title)}</div>)}
+                  {result.items.map((recipe: RecipePost) => <div key={recipe.id} className="min-w-0"><PublicRecipeCard recipe={recipe} options={options} /></div>)}
                 </div>
                 {(page > 0 || result.hasNext) && <nav aria-label="Phân trang công thức" className="mt-7 flex flex-wrap items-center justify-center gap-3">
                   <Button variant="outline" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>Trang trước</Button>

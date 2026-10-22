@@ -12,6 +12,7 @@ import { Button, Card } from "../components/ui"
 import { Modal } from "../components/Modal"
 import SpringCheck from "../components/SpringCheck"
 import { ShoppingListExport } from "../components/ShoppingListExport"
+import { IngredientImage } from "../components/IngredientImage"
 import { useAuth } from "../components/AuthContext"
 import {
   shoppingApi,
@@ -72,6 +73,7 @@ function ShoppingWorkspace() {
   const [lists, setLists] = useState<ShoppingSummary[]>([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
   const [listError, setListError] = useState("")
   const [listLoading, setListLoading] = useState(true)
   const [listRetry, setListRetry] = useState(0)
@@ -86,6 +88,10 @@ function ShoppingWorkspace() {
   const [notice, setNotice] = useState("")
   const [editor, setEditor] = useState<ShoppingItem | "new" | null>(null)
   const [removal, setRemoval] = useState<ShoppingItem | "bought" | null>(null)
+  const [nameEditor, setNameEditor] = useState(false)
+  const [emptyListEditor, setEmptyListEditor] = useState(false)
+  const [nameDraft, setNameDraft] = useState("")
+  const [listRemoval, setListRemoval] = useState(false)
   const pending = useRef(false)
   const alive = useRef(true)
   const selectedId = useRef(id)
@@ -111,6 +117,7 @@ function ShoppingWorkspace() {
         if (!active) return
         setLists(value.content)
         setTotalPages(value.totalPages)
+        setTotalElements(value.totalElements)
         if (!requested && value.content.length)
           setParams({ listId: String(value.content[0].id) }, { replace: true })
       })
@@ -132,6 +139,9 @@ function ShoppingWorkspace() {
     setNotice("")
     setEditor(null)
     setRemoval(null)
+    setNameEditor(false)
+    setEmptyListEditor(false)
+    setListRemoval(false)
     setTab("all")
     if (!id) {
       setLoading(false)
@@ -186,6 +196,9 @@ function ShoppingWorkspace() {
     if (pending.current) return
     setEditor(null)
     setRemoval(null)
+    setNameEditor(false)
+    setEmptyListEditor(false)
+    setListRemoval(false)
     setError("")
     requestAnimationFrame(() => {
       if (dialogTrigger.current?.isConnected) dialogTrigger.current.focus()
@@ -224,6 +237,67 @@ function ShoppingWorkspace() {
       if (alive.current) setBusy(false)
     }
   }
+  async function removeCurrentList() {
+    if (!id || pending.current) return
+    const target = id
+    pending.current = true
+    setBusy(true)
+    setError("")
+    try {
+      await shoppingApi.removeList(target)
+      if (!alive.current || selectedId.current !== target) return
+      const nextCount = Math.max(0, totalElements - 1)
+      const remaining = lists.filter((summary) => summary.id !== target)
+      setLists(remaining)
+      setTotalElements(nextCount)
+      setTotalPages(Math.ceil(nextCount / 20))
+      setList(null)
+      setNotice("")
+      setListRemoval(false)
+      setError("")
+      pending.current = false
+      if (remaining.length) {
+        setParams({ listId: String(remaining[0].id) }, { replace: true })
+      } else {
+        setParams({}, { replace: true })
+        if (page > 0) setPage((current) => Math.max(0, current - 1))
+      }
+      requestAnimationFrame(() => {
+        if (dialogTrigger.current?.isConnected) dialogTrigger.current.focus()
+        else document.querySelector<HTMLElement>("#shopping-title")?.focus()
+      })
+    } catch (cause) {
+      if (alive.current && selectedId.current === target)
+        setError(asApiError(cause).message)
+    } finally {
+      pending.current = false
+      if (alive.current) setBusy(false)
+    }
+  }
+  async function createEmptyList(name: string) {
+    if (pending.current) return
+    pending.current = true
+    setBusy(true)
+    setError("")
+    setNotice("")
+    try {
+      const created = await shoppingApi.createEmpty(name)
+      if (!alive.current) return
+      pending.current = false
+      setEmptyListEditor(false)
+      setPage(0)
+      setParams({ listId: String(created.id) })
+      requestAnimationFrame(() => {
+        if (dialogTrigger.current?.isConnected) dialogTrigger.current.focus()
+        else document.querySelector<HTMLElement>("#shopping-title")?.focus()
+      })
+    } catch (cause) {
+      if (alive.current) setError(asApiError(cause).message)
+    } finally {
+      pending.current = false
+      if (alive.current) setBusy(false)
+    }
+  }
   return (
     <PageContainer className="py-6">
       <div className="grid items-start gap-5 md:grid-cols-[225px_minmax(0,1fr)]">
@@ -245,6 +319,18 @@ function ShoppingWorkspace() {
           >
             Tạo từ Lịch ăn →
           </Link>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() => openDialog(() => {
+              setNameDraft("")
+              setEmptyListEditor(true)
+            })}
+          >
+            <Plus className="h-4 w-4" />
+            Tạo danh sách trống
+          </Button>
           {listLoading && (
             <p role="status" className="text-xs text-ink-muted">
               Đang tải các danh sách…
@@ -342,15 +428,22 @@ function ShoppingWorkspace() {
                   Chưa có danh sách đi chợ
                 </h2>
                 <p className="mt-2 text-sm text-ink-muted">
-                  Thêm món vào Lịch ăn, rồi chọn cả tuần hoặc các ngày để tạo
-                  danh sách.
+                  Tạo danh sách riêng để tự thêm món cần mua, không cần Lịch ăn
+                  hay công thức.
                 </p>
-                <Link
-                  to="/ke-hoach"
-                  className="mt-4 inline-block font-semibold text-brand-600"
+                <Button
+                  className="mt-4"
+                  onClick={() => openDialog(() => {
+                    setNameDraft("")
+                    setEmptyListEditor(true)
+                  })}
                 >
-                  Mở Lịch ăn
-                </Link>
+                  <Plus className="h-4 w-4" />
+                  Tạo danh sách trống
+                </Button>
+                <p className="mt-3 text-sm">
+                  Hoặc <Link to="/ke-hoach" className="font-semibold text-brand-600">tạo từ Lịch ăn</Link>.
+                </p>
               </div>
             )
           ) : (
@@ -363,6 +456,30 @@ function ShoppingWorkspace() {
                   <p className="mt-1 text-xs text-ink-muted">
                     {counts.todo} cần mua · {counts.done} đã mua
                   </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => openDialog(() => {
+                      setNameDraft(list.name)
+                      setNameEditor(true)
+                    })}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Đổi tên
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-700 hover:border-red-300 hover:bg-red-50 hover:text-red-800"
+                    disabled={busy}
+                    onClick={() => openDialog(() => setListRemoval(true))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Xóa danh sách
+                  </Button>
                 </div>
               </header>
               {diagnostics && diagnostics.warnings.length > 0 && (
@@ -475,12 +592,19 @@ function ShoppingWorkspace() {
                               }
                               ariaLabel={`Đánh dấu ${item.name} ${item.unitCode}`}
                               label={
-                                <span className="break-words text-sm text-ink">
+                                <span className="flex min-w-0 items-center gap-3">
+                                  <IngredientImage
+                                    imageUrl={item.imageUrl ?? null}
+                                    name={item.name}
+                                    containerClassName="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-brand-100 bg-cream-soft"
+                                  />
+                                  <span className="break-words text-sm text-ink">
                                   {item.name}
+                                  </span>
                                 </span>
                               }
                               boxSize={22}
-                              className="min-w-0"
+                              className="min-w-0 w-full"
                             />
                             <span
                               className={`text-sm ${
@@ -569,6 +693,135 @@ function ShoppingWorkspace() {
           )}
         </Card>
       </div>
+      <Modal
+        trapFocus
+        open={nameEditor}
+        onClose={closeDialog}
+        title="Đổi tên danh sách"
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            const name = nameDraft.replace(/\u00a0/g, " ").trim()
+            if (!name) {
+              setError("Tên danh sách không được để trống.")
+              return
+            }
+            if (name.length > 200) {
+              setError("Tên danh sách tối đa 200 ký tự.")
+              return
+            }
+            void mutate(async (listId) => {
+              const saved = await shoppingApi.renameList(listId, name)
+              setLists((current) => current.map((summary) =>
+                summary.id === saved.id ? saved : summary,
+              ))
+              return (current) => ({
+                ...current,
+                name: saved.name,
+                updatedAt: saved.updatedAt,
+              })
+            }, "Đã đổi tên danh sách.")
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label htmlFor="shopping-list-name" className="mb-1 block text-sm font-semibold text-ink">
+              Tên danh sách
+            </label>
+            <input
+              id="shopping-list-name"
+              autoFocus
+              maxLength={200}
+              required
+              value={nameDraft}
+              disabled={busy}
+              onChange={(event) => setNameDraft(event.target.value)}
+              className={field + " w-full"}
+            />
+            <p className="mt-1 text-xs text-ink-muted">Tối đa 200 ký tự.</p>
+          </div>
+          {error && <p role="alert" className="text-sm text-ink">{error}</p>}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" disabled={busy} onClick={closeDialog}>Hủy</Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Đang lưu…" : "Lưu tên"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+      <Modal
+        trapFocus
+        open={emptyListEditor}
+        onClose={closeDialog}
+        title="Tạo danh sách đi chợ"
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            const name = nameDraft.replace(/\u00a0/g, " ").trim()
+            if (!name) {
+              setError("Hãy nhập tên danh sách.")
+              return
+            }
+            if (name.length > 200) {
+              setError("Tên danh sách tối đa 200 ký tự.")
+              return
+            }
+            void createEmptyList(name)
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label htmlFor="new-shopping-list-name" className="mb-1 block text-sm font-semibold text-ink">
+              Tên danh sách
+            </label>
+            <input
+              id="new-shopping-list-name"
+              autoFocus
+              maxLength={200}
+              required
+              value={nameDraft}
+              disabled={busy}
+              onChange={(event) => setNameDraft(event.target.value)}
+              placeholder="Ví dụ: Đi chợ cuối tuần"
+              className={field + " w-full"}
+            />
+            <p className="mt-1 text-xs text-ink-muted">
+              Danh sách được tạo rỗng, bạn có thể thêm mặt hàng bất cứ lúc nào.
+            </p>
+          </div>
+          {error && <p role="alert" className="text-sm text-ink">{error}</p>}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" disabled={busy} onClick={closeDialog}>Hủy</Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Đang tạo…" : "Tạo danh sách"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+      <Modal
+        trapFocus
+        open={listRemoval}
+        onClose={closeDialog}
+        title="Xóa danh sách đi chợ?"
+      >
+        <p className="text-sm leading-6 text-ink-soft">
+          Danh sách “{list?.name}” và {counts.all} mặt hàng trong checklist sẽ bị xóa.
+          Lịch ăn và công thức nguồn vẫn được giữ nguyên.
+        </p>
+        {error && <p role="alert" className="mt-3 text-sm text-ink">{error}</p>}
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="outline" disabled={busy} onClick={closeDialog}>Hủy</Button>
+          <Button
+            disabled={busy}
+            className="bg-red-700 hover:bg-red-800"
+            onClick={() => void removeCurrentList()}
+          >
+            {busy ? "Đang xóa…" : "Xóa danh sách"}
+          </Button>
+        </div>
+      </Modal>
       <Modal
         trapFocus
         open={editor !== null}

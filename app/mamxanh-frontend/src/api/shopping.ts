@@ -5,6 +5,7 @@ export interface ShoppingItem {
   ingredientId: number | null
   name: string
   ingredientGroup: string
+  imageUrl: string | null
   quantity: number
   unitId: number
   unitCode: string
@@ -55,10 +56,21 @@ interface ShoppingPage {
 type Quantity = { quantity: number; unitId: number }
 
 export const shoppingApi = {
-  fromRecipes: async (recipeIds: number[]) =>
+  createEmpty: async (name: string) =>
+    (await apiClient.post<ShoppingChecklist>("/shopping-lists", { name })).data,
+  addRecipe: async (listId: number, recipeId: number, servings: number) =>
     (
-      await apiClient.post<ShoppingCreation>("/shopping-lists/from-recipes", {
-        recipeIds,
+      await apiClient.post<ShoppingCreation>(`/shopping-lists/${listId}/recipes`, {
+        recipeId,
+        servings,
+      })
+    ).data,
+  createFromRecipe: async (name: string, recipeId: number, servings: number) =>
+    (
+      await apiClient.post<ShoppingCreation>("/shopping-lists/from-recipe", {
+        name,
+        recipeId,
+        servings,
       })
     ).data,
   list: async (page = 0) =>
@@ -69,6 +81,11 @@ export const shoppingApi = {
     ).data,
   get: async (id: number) =>
     (await apiClient.get<ShoppingChecklist>(`/shopping-lists/${id}`)).data,
+  renameList: async (id: number, name: string) =>
+    (await apiClient.patch<ShoppingSummary>(`/shopping-lists/${id}`, { name })).data,
+  removeList: async (id: number) => {
+    await apiClient.delete(`/shopping-lists/${id}`)
+  },
   options: async () =>
     (await apiClient.get<ShoppingUnit[]>("/shopping-lists/options")).data,
   create: async (weekStartDate: string, selectedDates?: string[]) =>

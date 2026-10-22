@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.24.0
+> **Version:** v2.26.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-22
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -3430,12 +3430,14 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/meal-planning-and-shopping.md#fr-53).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập tạo và quản lý Danh sách mua sắm (Shopping List) phục vụ đi chợ hoặc mua sắm nguyên liệu; nguồn dữ liệu tạo danh sách có thể được sinh tự động từ Lịch ăn tuần (Meal Plan - FR-09) hoặc từ một hay nhiều bài công thức (Recipe Post) do người dùng chọn lọc; hỗ trợ người dùng tự thêm các mặt hàng mua sắm thủ công (custom items), chỉnh sửa thông tin số lượng/đơn vị hoặc xóa bớt các mục không cần thiết; hiển thị danh sách dưới dạng checklist tương tác cho phép đánh dấu (tick) đã mua hoặc bỏ đánh dấu; lưu trữ bền vững trạng thái checklist theo tài khoản người dùng (BR-32).
+  - **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập tạo và quản lý Danh sách mua sắm (Shopping List) phục vụ đi chợ hoặc mua sắm nguyên liệu; Member có thể tạo danh sách rỗng độc lập với Lịch ăn và công thức, hoặc tạo nội dung từ Lịch ăn tuần (Meal Plan - FR-09), hoặc thêm từng bài công thức (Recipe Post) công khai vào một danh sách thuộc tài khoản hay tạo danh sách mới ngay trong thao tác; Member có thể đổi tên và xóa mọi danh sách thuộc tài khoản của mình; việc xóa loại bỏ checklist và dữ liệu đóng góp công thức của danh sách, không xóa Lịch ăn hoặc Recipe Post nguồn; hỗ trợ tự thêm các mặt hàng mua sắm thủ công (custom items), chỉnh sửa số lượng/đơn vị hoặc xóa mục; hiển thị checklist tương tác cho phép đánh dấu đã mua/chưa mua; lưu bền vững trạng thái checklist theo tài khoản (BR-32).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Member đã đăng nhập tài khoản hợp lệ (FR-03, BR-05, BR-32).
   - Nguồn tạo:
-    1. Sinh từ Lịch ăn tuần (toàn bộ tuần hoặc các ngày được tích chọn trong FR-09).
-    2. Sinh từ các bài Recipe Post cụ thể được chọn trong Khám phá (FR-17) hoặc Công thức đã lưu (FR-32).
+    1. Tạo danh sách rỗng có tên do Member nhập, độc lập với Lịch ăn và Recipe Post.
+    2. Sinh từ Lịch ăn tuần (toàn bộ tuần hoặc các ngày được tích chọn trong FR-09).
+      3. Thêm nguyên liệu từ một Recipe Post công khai tại mỗi lần thao tác từ menu hành động của thẻ công thức trong Khám phá (FR-17) hoặc Công thức đã lưu (FR-32); Member chọn danh sách sở hữu hoặc tạo danh sách có tên mới cùng thao tác.
+  - Tính năng quản lý danh sách: Member được đổi tên và xóa tất cả danh sách của chính mình, gồm danh sách `MANUAL`, danh sách tạo từ Lịch ăn và danh sách cá nhân từ Recipe Post. Tên mới của danh sách từ Lịch ăn được giữ nguyên, không tự đổi theo tuần.
   - Tính năng quản lý tương tác: Thêm item thủ công ngoài công thức, sửa/xóa item, tick checklist đánh dấu đã mua/chưa mua.
 - **Phân loại Actor:**
   - Primary Actor: `Member` (người tạo và quản lý danh sách mua sắm).
@@ -3443,11 +3445,13 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 #### Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-53.1`: Tạo mới danh sách mua sắm từ Lịch ăn tuần hoặc từ các công thức được chọn.
+  - `UC-53.1`: Tạo danh sách mua sắm rỗng, từ Lịch ăn tuần hoặc từ các công thức được chọn.
   - `UC-53.2`: Thêm mục hàng hóa mua sắm thủ công ngoài công thức, chỉnh sửa hoặc xóa mục.
   - `UC-53.3`: Đánh dấu đã mua hoặc bỏ đánh dấu các mục dạng checklist tương tác trên thiết bị.
+  - `UC-53.4`: Đổi tên danh sách mua sắm thuộc tài khoản Member.
+  - `UC-53.5`: Xóa danh sách mua sắm thuộc tài khoản Member và checklist của danh sách.
 - **User Stories:**
-  - *Là một người nội trợ*, tôi muốn tạo nhanh danh sách đi chợ từ thực đơn tuần đã lên kế hoạch, có thể tự thêm các đồ gia dụng lặt vặt và tick chọn từng món đã bỏ vào giỏ hàng ngay trên điện thoại khi đi chợ.
+  - *Là một người nội trợ*, tôi muốn tạo danh sách đi chợ rỗng theo tên mình hoặc tạo từ thực đơn tuần, tự thêm các đồ cần mua và tick chọn từng món ngay trên điện thoại.
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Dành riêng cho Member đã đăng nhập (BR-05, BR-32).
@@ -3487,10 +3491,23 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* người dùng là Guest chưa đăng nhập,
   - *When* cố gắng truy cập tính năng danh sách mua sắm,
   - *Then* hệ thống chặn truy cập và hiển thị thông báo yêu cầu đăng nhập.
-- **AC-53.6 (Tạo danh sách mua sắm từ Recipe Post được chọn):**
-  - *Given* Member đã chọn một hoặc nhiều Recipe Post công khai,
-  - *When* Member xác nhận tạo Shopping List từ các bài đã chọn,
-  - *Then* hệ thống tổng hợp nguyên liệu từ các bài đó và hiển thị danh sách mua sắm.
+  - **AC-53.6 (Thêm một Recipe Post vào danh sách mua sắm được chọn):**
+    - *Given* Member mở menu hành động của một Recipe Post công khai trong Khám phá hoặc Công thức đã lưu,
+    - *When* Member chọn một danh sách thuộc tài khoản hoặc nhập tên hợp lệ để tạo danh sách mới, điều chỉnh khẩu phần từ 1–50 và xác nhận,
+    - *Then* hệ thống thêm nguyên liệu đã tính theo khẩu phần vào đúng danh sách và mở checklist; nếu tạo mới, danh sách và nguyên liệu được lưu nguyên tử; công thức đã thêm trong cùng danh sách không bị cộng trùng.
+    - Guest được yêu cầu đăng nhập; Admin không có thao tác này. Công thức không còn công khai hoặc không sở hữu danh sách đích bị từ chối.
+- **AC-53.7 (Đổi tên danh sách mua sắm):**
+  - *Given* Member đang xem một danh sách thuộc tài khoản của mình, gồm danh sách từ Lịch ăn hoặc danh sách cá nhân,
+  - *When* Member nhập tên mới không rỗng sau khi loại bỏ khoảng trắng đầu/cuối và lưu,
+  - *Then* tên mới được lưu và hiển thị trong thanh danh sách cùng trang checklist; tên danh sách từ Lịch ăn không tự đổi lại theo tuần. Tên dài hơn 200 ký tự hoặc chỉ có khoảng trắng bị từ chối; danh sách của tài khoản khác không thể bị đổi tên.
+- **AC-53.8 (Xóa danh sách mua sắm):**
+  - *Given* Member đang xem một danh sách thuộc tài khoản của mình,
+  - *When* Member xác nhận xóa danh sách,
+  - *Then* danh sách, các item và dữ liệu đóng góp Recipe Post gắn với checklist bị xóa; Lịch ăn, Recipe Post nguồn và danh sách của Member khác được giữ nguyên. Nếu danh sách vừa xóa đang được chọn, hệ thống mở một danh sách còn lại hoặc hiển thị trạng thái chưa có danh sách.
+- **AC-53.9 (Tạo danh sách đi chợ rỗng độc lập):**
+  - *Given* Member đã đăng nhập và không có hoặc đang có các Shopping List khác,
+  - *When* Member chọn tạo danh sách trống, nhập tên hợp lệ và xác nhận,
+  - *Then* hệ thống tạo checklist mới thuộc Member với tên đã chuẩn hóa, không có item và không cần Meal Plan hoặc Recipe Post; Member có thể mở danh sách và thêm mặt hàng thủ công.
 
 ---
 

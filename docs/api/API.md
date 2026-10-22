@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.36.0
+> **Version:** v0.39.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-22
 > **Status:** Active
 
 # API Integration Guide
@@ -13,22 +13,26 @@ Các operation đã triển khai dưới `/api/v1/shopping-lists`:
 
 | Method / đường dẫn tương đối | Hành vi |
 |---|---|
+| `POST /` | `/api/v1/shopping-lists` nhận `{name}` để tạo danh sách rỗng độc lập với Lịch ăn và Recipe Post; Backend tự xác định Member sở hữu, trim tên, giới hạn 200 ký tự, gán loại `MANUAL`; trả `201`, Location và checklist rỗng. |
 | `POST /from-meal-plan` | Tạo danh sách mới từ Meal Plan của Member; `{weekStartDate, selectedDates?}`; trả `201`, Location và `ShoppingListCreationResponse`. |
-| `POST /from-recipes` | `{recipeIds: number[]}` gồm 1–50 ID công thức công khai; trả `200 ShoppingListCreationResponse` của danh sách cá nhân duy nhất của Member. |
+| `POST /from-recipe` | `{name, recipeId, servings?}` tạo danh sách `MANUAL` theo tên và thêm đúng một công thức công khai trong cùng transaction; `servings` tùy chọn (1–50); trả `201 ShoppingListCreationResponse` và Location. |
+| `POST /{listId}/recipes` | `{recipeId, servings?}` thêm đúng một công thức công khai vào danh sách bất kỳ thuộc Member; `servings` tùy chọn (1–50); trả `200 ShoppingListCreationResponse`. |
 | `GET` | Danh sách riêng của Member; `page >= 0`, `size` 1–50, mặc định 20; `PageResponse` dùng `content`; sắp xếp `updatedAt DESC, id DESC`. |
 | `GET /options` | Các đơn vị catalog đang hoạt động để thêm/sửa mục. |
 | `GET /{listId}` | Chi tiết danh sách và các mục theo ID tăng dần. |
+| `PATCH /{listId}` | Đổi tên danh sách `{name}`; trim khoảng trắng, tên không rỗng và tối đa 200 ký tự; trả `200 ShoppingListSummary`. |
+| `DELETE /{listId}` | Xóa danh sách cùng checklist và provenance công thức; trả `204`. Lịch ăn và Recipe Post nguồn được giữ nguyên. |
 | `POST /{listId}/items` | Thêm mục thủ công `{name, quantity, unitId}`; trả `201`, Location và mục đã lưu; mặc định `bought=false`. |
 | `PUT /{listId}/items/{itemId}` | Đặt số lượng/đơn vị; giữ định danh nguyên liệu và trạng thái đã mua. |
 | `PATCH /{listId}/items/{itemId}/bought` | Nhận `{bought: true/false}`; gửi lại cùng giá trị không đổi `updatedAt`. |
 | `DELETE /{listId}/items/{itemId}` | Xóa đúng một mục, trả `204`. |
 | `DELETE /{listId}/items?bought=true` | Chỉ dọn mục đã mua của danh sách đó, trả `204`; thiếu hoặc sai điều kiện không xóa hàng loạt. |
 
-Mọi operation cần Bearer token của Member hoạt động (Customer/Expert); tài khoản lấy từ principal, không nhận `userId` từ request. Service kiểm tra chủ sở hữu trước khi đọc/thay đổi mục. Danh sách không tồn tại/khác chủ sở hữu hoặc mục không thuộc danh sách đều trả `404 NOT_FOUND`. Guest/token lỗi trả `401`; Admin và tài khoản không hoạt động bị từ chối theo auth baseline (`403`).
+Mọi operation cần Bearer token của Member hoạt động (Customer/Expert); tài khoản lấy từ principal, không nhận `userId` từ request. Service kiểm tra chủ sở hữu trước khi đọc/thay đổi danh sách hoặc mục. Danh sách không tồn tại/khác chủ sở hữu hoặc mục không thuộc danh sách đều trả `404 NOT_FOUND`. Guest/token lỗi trả `401`; Admin và tài khoản không hoạt động bị từ chối theo auth baseline (`403`).
 
 Tên thủ công là văn bản thuần, không rỗng sau chuẩn hóa khoảng trắng, tối đa 200 ký tự; không chấp nhận markup hoặc ký tự điều khiển. `quantity > 0`, tối đa 8 chữ số nguyên và 2 chữ số thập phân theo schema hiện tại. Đơn vị mới phải đang hoạt động. Đơn vị cũ đã ngừng sử dụng vẫn hiển thị và có thể giữ nguyên khi sửa số lượng. Không tự đổi lượng khi Member sửa đơn vị: request biểu diễn cặp số lượng/đơn vị mới do Member xác nhận. Validation trả `400 VALIDATION_FAILED`; response lỗi theo mục 4.
 
-Checklist response giữ `ingredientId` (nullable cho mục thủ công), tên, nhóm, số lượng, đơn vị và `bought`; tham chiếu catalog hiện có được phân giải kể cả đã ngừng sử dụng. Các mutation khóa danh sách của chủ sở hữu trong transaction để tránh ghi đè giữa thao tác checklist và cleanup.
+Checklist response giữ `ingredientId` (nullable cho mục thủ công), tên, nhóm, `imageUrl` của nguyên liệu trong catalog (nullable khi chưa có ảnh), số lượng, đơn vị và `bought`; tham chiếu catalog hiện có được phân giải kể cả đã ngừng sử dụng. Frontend hiển thị ảnh ở từng dòng; mục thủ công hoặc nguyên liệu chưa có ảnh trả `imageUrl: null` và dùng trạng thái thiếu ảnh. Các mutation khóa danh sách của chủ sở hữu trong transaction để tránh ghi đè giữa thao tác checklist và cleanup. `PATCH /{listId}` chỉ thay tên và cập nhật thời gian sửa; `DELETE /{listId}` xóa provenance trước các item tham chiếu, sau đó xóa danh sách trong cùng transaction. Đổi tên không làm tên danh sách từ Lịch ăn tự đổi lại; xóa không tác động tới Meal Plan hay Recipe Post nguồn.
 
 Khi tạo từ Meal Plan, `weekStartDate` phải là thứ Hai; `selectedDates` bỏ qua hoặc `null` nghĩa là toàn tuần, còn mảng có từ 1–7 ngày không trùng trong tuần. Backend luôn đọc tuần của principal, không nhận owner hoặc entry ID từ client. Mỗi bữa đóng góp theo `plannedServings / servings`; cùng công thức ở nhiều bữa được tính nhiều lần, khác quy tắc chống thêm trùng Recipe Post cá nhân của #90. Nguồn không còn công khai không được thêm mới.
 
@@ -38,13 +42,13 @@ Frontend `/ke-hoach` cho Member chọn cả tuần hoặc ngày rồi gọi oper
 
 ### Nguồn Recipe Post được chọn — AC-53.6
 
-`POST /from-recipes` thêm lượng nguyên liệu gốc của các công thức công khai vào danh sách cá nhân (`PERSONAL`); không chia theo khẩu phần hoặc nhập/gộp với danh sách từ Lịch ăn. ID lặp trong request hoặc công thức đã thêm không tạo đóng góp trùng. Nguồn không công khai/không tồn tại trả `404`, lựa chọn rỗng/sai hoặc định lượng không lưu được trả `400`; toàn bộ request nguyên tử. Khóa tài khoản khi tạo danh sách đầu tiên và khóa danh sách khi thay đổi để tránh tạo trùng hay ghi đè checklist.
+`POST /{listId}/recipes` thêm đúng một công thức vào danh sách sở hữu đã chọn, kể cả danh sách từ Meal Plan hoặc danh sách thủ công. `POST /from-recipe` tạo danh sách mới có tên và thêm công thức trong cùng transaction; lỗi thêm công thức rollback danh sách. Bỏ `servings` để dùng lượng gốc; nếu có (1–50), Backend tính `recipe quantity × servings / recipe.servings` trước khi tổng hợp và lưu. Công thức đã thêm trong cùng danh sách không tạo đóng góp trùng. Nguồn không công khai/không tồn tại và danh sách không thuộc Member trả `404`; dữ liệu hoặc định lượng sai trả `400`. Thao tác khóa danh sách để tránh ghi đè checklist.
 
-Mỗi item trả thêm `sources`: `recipeId`, `title` hiện hành (nullable), `available`, `originalQuantity`, `originalUnitId`, `originalUnitCode`. Đây là lượng/đơn vị gốc tại thời điểm thêm, không bị thay khi Member chỉnh lượng/đơn vị của item hoặc công thức được sửa. Công thức HIDDEN/DELETED giữ tham chiếu và checklist, nhưng không trả tiêu đề/nội dung riêng tư. UI chỉ mở link nguồn khi `available=true`.
+Mỗi item trả thêm `sources`: `recipeId`, `title` hiện hành (nullable), `available`, `originalQuantity`, `originalUnitId`, `originalUnitCode`. Đây là lượng/đơn vị được đóng góp tại thời điểm thêm (sau khi scale theo `servings` nếu có), không bị thay khi Member chỉnh lượng/đơn vị của item hoặc công thức được sửa. Công thức HIDDEN/DELETED giữ tham chiếu và checklist, nhưng không trả tiêu đề/nội dung riêng tư. UI chỉ mở link nguồn khi `available=true`.
 
 Khi thêm công thức mới, FR-54 tổng hợp lượng mới với **tổng hiện đang lưu do Member chỉnh**, không tái tính từ các công thức cũ. Dòng nhận nguyên liệu mới chuyển về chưa mua; dòng không bị ảnh hưởng giữ lượng và trạng thái. Xóa/dọn item giữ dấu công thức đã thêm và lượng đóng góp, bỏ liên kết tới item bị xóa; thêm lại công thức đó không phục hồi item đã chủ động xóa. Đọc/tick hoặc sửa nguồn không tự tổng hợp lại.
 
-Khám phá và Công thức đã lưu hỗ trợ chọn nhiều công thức qua các trang, gửi ID tới API và mở `/di-cho?listId=...`; request lỗi giữ lựa chọn để thử lại. Thiết kế nguồn tương thích quyết định trong #90; triển khai local trong #53 không tự thay trạng thái/dependency hay xác nhận nghiệm thu Issue #90.
+Khám phá và Công thức đã lưu mở thao tác thêm từ menu dấu ba chấm trên từng công thức; Member chọn một danh sách đã có hoặc tạo mới, điều chỉnh khẩu phần, rồi được đưa tới `/di-cho?listId=...`. Thiết kế nguồn tương thích quyết định trong #90; triển khai local trong #53 không tự thay trạng thái/dependency hay xác nhận nghiệm thu Issue #90.
 
 Schema/status chính xác lấy từ generated OpenAPI; không chỉnh endpoint trong YAML thủ công.
 ### Thời gian đăng ký gói và giao dịch — FR-13

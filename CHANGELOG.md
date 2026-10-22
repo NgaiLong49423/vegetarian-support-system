@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.96.0
+> **Version:** v2.99.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-22
 > **Status:** Active
@@ -8,6 +8,29 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-22 — Create and Manage Shopping Lists (FR-53)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Let Members create and manage shopping lists, then add one recipe at a time to a selected or newly created list.
+
+### Added
+
+- Add owner-protected API operations to rename and delete a shopping list, with confirmation and fallback navigation in the Frontend.
+- Add a named empty-list flow at `/di-cho` and a `MANUAL` list kind that is independent from meal plans and recipe sources.
+- Add per-recipe shopping actions from recipe cards, with destination selection, serving adjustment and an atomic create-and-add API operation.
+- Show catalog ingredient illustrations in shopping checklist rows, with a clear missing-image state for items without an available illustration.
+- Remove multi-recipe selection and the `POST /from-recipes` API contract.
+- Delete list contribution records and checklist items while preserving meal plans and source recipes.
+
+### Changed
+
+- Extend FR-53 acceptance criteria and document standalone list creation, list-level management and per-recipe additions.
+
+### Fixed
+
+- None.
 
 ## 2026-10-22 — Hand Off Shopping List Clipboard and Text Export (FR-55)
 
@@ -29,6 +52,28 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
+
+## 2026-10-22 — Enrich Demo Recipe Ingredients and Illustrations
+
+**Status:** Working tree — not committed.
+
+**Scope:** Improve local Flyway demo recipe data and ingredient illustrations.
+
+### Added
+
+- Add per-recipe seasonings and synchronized cooking instructions for 54 named demo recipes, with all ingredient quantities expressed in grams for two servings.
+- Add individual AI-generated ingredient illustrations and a missing-image mapping seed that preserves existing image URLs.
+- Add a Compose-based fixture verification script for repeated execution, gram quantities, nutrition completeness, asset presence and preservation of unrelated recipes and uploaded images.
+
+### Changed
+
+- Convert legacy demo units using mass factors or ingredient-specific conversions and stop when a reliable conversion is unavailable.
+- Document dry ingredient weights and retained recipe water separately from discarded preparation water.
+
+### Fixed
+
+- Persist the existing zinc estimates for 85 demo ingredients instead of leaving their zinc columns null (BUG-054).
+- Include stored demo spice estimates in nutrition calculations under the current BR-52 policy while retaining unverified AI provenance (BUG-055).
 
 ## 2026-10-22 — Align Public Profile Recipe Cards with Discovery
 
@@ -81,7 +126,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Upload optional JPEG, PNG or WebP ingredient images up to 2 MB and persist their URLs with ingredient records.
 - Preview selected images in the admin editor and prefer saved images on ingredient cards, with existing image mappings as fallback.
-- Add the nullable `INGREDIENT.image_url` migration and synchronize the database schema snapshot.
+- Add the nullable `INGREDIENT.image_url` migration as V20 after integrating the V18/V19 checklist migrations, and synchronize the database schema snapshot.
 
 ### Changed
 
