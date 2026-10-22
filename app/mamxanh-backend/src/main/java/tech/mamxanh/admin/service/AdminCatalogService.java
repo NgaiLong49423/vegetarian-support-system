@@ -82,7 +82,7 @@ public class AdminCatalogService {
         IngredientResponse current = catalog.getIngredient(id);
         if (!request.active() && current.active() && recipes.existsPublishedRecipeUsingIngredient(id)) {
             throw new ApiException(HttpStatus.CONFLICT, "INGREDIENT_USED_BY_PUBLISHED_RECIPE",
-                    "Không thể ngừng sử dụng nguyên liệu vì đang được công thức công khai sử dụng.");
+                    "Không thể ngừng sử dụng nguyên liệu này vì nguyên liệu đang được dùng trong bài đăng công khai.");
         }
         return catalog.setIngredientStatus(id, request);
     }
