@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.95.0
+> **Version:** v2.96.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-22
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-22 — Define Ingredient Deactivation Guard (Issue #176)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Update FR-18 and UC-18.1 so an ingredient referenced by a currently published recipe cannot be deactivated.
+
+### Added
+
+- Define rejection, preserved active state, and administrator feedback while any published recipe references the ingredient.
+
+### Changed
+
+- Allow deactivation once no published recipe currently references the ingredient; preserve existing inactive records and historical links.
+- Limit the rule to ingredients; measurement units remain outside Issue #176.
+
+### Fixed
+
+- None.
 
 ## 2026-10-22 — Hand Off Shopping List Clipboard and Text Export (FR-55)
 
