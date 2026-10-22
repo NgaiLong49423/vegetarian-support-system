@@ -8,6 +8,7 @@ import { Button, Card } from '../components/ui';
 import { ApiError, asApiError } from '../lib/apiClient';
 import { recipeApi, recipesApi, type RecipeAiContentType, type RecipePost, type RecipeReferenceData, type UpdateRecipePost } from '../api/recipes';
 import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
+import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
 
 const categories = [
   ['NOODLE_SOUP', 'Món nước'], ['STIR_FRY', 'Món xào'], ['HOT_POT', 'Lẩu'], ['BRAISED', 'Món kho'],
@@ -176,7 +177,12 @@ export function EditRecipe() {
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={label}>Loại món<select className={input} value={form.dishCategory} onChange={(e) => setField('dishCategory', e.target.value)}>{categories.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
             <label className={label}>Chế độ chay<select className={input} value={form.vegetarianType} onChange={(e) => setField('vegetarianType', e.target.value)}>{diets.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
-            <label className={label}>Độ khó<select className={input} value={form.difficulty} onChange={(e) => setField('difficulty', e.target.value)}>{difficulties.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
+            <div>
+              <label className={label}>Độ khó<select className={input} value={form.difficulty} onChange={(e) => setField('difficulty', e.target.value)}>{difficulties.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
+              <p className="mt-1 text-[11px] text-ink-muted">
+                Tiêu chí: Dễ (&lt;6 nguyên liệu, ≤25p), Trung bình (6–9 nguyên liệu hoặc 26–50p), Khó (≥10 nguyên liệu hoặc &gt;50p).
+              </p>
+            </div>
             <label className={label}>Khẩu phần<input className={input} type="number" min={1} max={50} required value={form.servings} onChange={(e) => setField('servings', Number(e.target.value))} /></label>
             <label className={label}>Thời gian chuẩn bị (phút)<input className={input} type="number" min={0} max={1440} required value={form.prepTimeMin} onChange={(e) => setField('prepTimeMin', Number(e.target.value))} /></label>
             <label className={label}>Thời gian nấu (phút)<input className={input} type="number" min={0} max={1440} required value={form.cookTimeMin} onChange={(e) => setField('cookTimeMin', Number(e.target.value))} /></label>

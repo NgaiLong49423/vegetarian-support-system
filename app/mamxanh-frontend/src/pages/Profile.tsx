@@ -333,11 +333,11 @@ export function Profile() {
             ) : ownResult?.content.length ? (
               <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
                 {ownResult.content.map((item) => (
-                  <article key={item.recipeId} className="relative min-w-0 transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
+                  <article key={item.recipeId} className="relative flex h-full min-w-0 flex-col transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
                     {item.available ? (
                       <Link
                         to={`/cong-thuc/id/${item.recipeId}`}
-                        className="group block"
+                        className="group flex flex-1 flex-col"
                       >
                         <div className="aspect-[4/5] overflow-hidden rounded-xl bg-paper">
                           {item.coverUrl ? (
@@ -353,7 +353,7 @@ export function Profile() {
                             </div>
                           )}
                         </div>
-                        <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-ink transition-colors duration-200 group-hover:text-brand-600">
+                        <h3 className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
                           {item.title}
                         </h3>
                         <p className="mt-1 truncate text-xs text-ink-muted">
@@ -361,17 +361,17 @@ export function Profile() {
                         </p>
                       </Link>
                     ) : (
-                      <div>
+                      <div className="flex flex-1 flex-col">
                         <div className="flex aspect-[4/5] items-center justify-center rounded-xl border border-brand-100 bg-paper">
                           <Lock className="h-7 w-7 text-ink-muted" />
                         </div>
-                        <p className="mt-2 text-sm font-medium text-ink-muted">
+                        <p className="mt-2 min-h-10 text-sm font-medium leading-5 text-ink-muted">
                           {item.unavailableMessage ??
                             "Công thức không còn khả dụng"}
                         </p>
                       </div>
                     )}
-                    {item.available && shopping.checkbox(item.recipeId, item.title ?? "Công thức")}
+                    <div className="mt-auto">{item.available && shopping.checkbox(item.recipeId, item.title ?? "Công thức")}</div>
                     <button
                       type="button"
                       aria-label={`Bỏ lưu ${
