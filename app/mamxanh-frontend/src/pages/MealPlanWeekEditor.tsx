@@ -1050,6 +1050,7 @@ function RecipePicker({
 
   onChoose: (id: number) => void
 }) {
+  const [source, setSource] = useState<"saved" | "public">("saved")
   const [text, setText] = useState("")
 
   const [keyword, setKeyword] = useState("")
@@ -1066,6 +1067,15 @@ function RecipePicker({
 
   const [retry, setRetry] = useState(0)
 
+  function chooseSource(value: "saved" | "public") {
+    if (value === source) return
+    setSource(value)
+    setText("")
+    setKeyword("")
+    setPage(0)
+    setLoading(true)
+  }
+
   useEffect(() => {
     let active = true
 
@@ -1075,19 +1085,26 @@ function RecipePicker({
 
     setChoices([])
 
-    const request = savedRecipesApi.list(keyword, page, 12).then((result) => ({
-      choices: result.content.map((recipe) => ({
-        id: recipe.recipeId,
-
-        title: recipe.title ?? "Công thức không còn khả dụng",
-
-        image: recipe.coverUrl,
-
-        available: recipe.available,
-      })),
-
-      totalPages: result.totalPages,
-    }))
+    const request = source === "saved"
+      ? savedRecipesApi.list(keyword, page, 12).then((result) => ({
+          choices: result.content.map((recipe) => ({
+            id: recipe.recipeId,
+            title: recipe.title ?? "Công thức không còn khả dụng",
+            image: recipe.coverUrl,
+            available: recipe.available,
+          })),
+          totalPages: result.totalPages,
+        }))
+      : recipesApi.searchPublic({ keyword, page, size: 12, sort: "NEWEST", viewPeriod: "ALL_TIME" })
+          .then((result) => ({
+            choices: result.items.map((recipe) => ({
+              id: recipe.id,
+              title: recipe.title,
+              image: recipe.media.find((media) => media.cover)?.url ?? recipe.media[0]?.url ?? null,
+              available: recipe.status === "PUBLISHED",
+            })),
+            totalPages: result.totalPages,
+          }))
 
     request
 
@@ -1110,15 +1127,31 @@ function RecipePicker({
     return () => {
       active = false
     }
-  }, [keyword, page, retry])
+  }, [source, keyword, page, retry])
 
   return (
-    <DialogFocus>
+    <DialogFocus initialFocus="input">
       <p className="mb-3 text-xs text-ink-muted">
         {mealLabels[target.mealType]} ·{" "}
         {new Date(`${target.mealDate}T12:00:00`).toLocaleDateString("vi-VN")}
       </p>
-      <p className="mb-4 text-sm font-semibold text-ink">Công thức đã lưu</p>
+      <nav aria-label="Nguồn công thức" className="mb-4 flex flex-wrap gap-2">
+        {([
+          ["saved", "Đã lưu"],
+          ["public", "Tìm công thức"],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={source === value}
+            disabled={busy}
+            onClick={() => chooseSource(value)}
+            className={`rounded-lg px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-60 ${source === value ? "bg-raised font-semibold text-brand-600" : "text-ink-muted"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
       <form
         className="mb-4 flex gap-2"
         onSubmit={(event) => {
@@ -1135,7 +1168,7 @@ function RecipePicker({
           value={text}
           disabled={busy}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Tìm trong công thức đã lưu…"
+          placeholder={source === "saved" ? "Tìm trong công thức đã lưu…" : "Tìm công thức công khai…"}
           className="min-w-0 flex-1 rounded-lg border border-brand-200 bg-paper px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-600"
         />
         <Button size="sm" type="submit" disabled={busy}>
@@ -1175,16 +1208,17 @@ function RecipePicker({
           {!choices.length && (
             <div className="py-8 text-center text-sm text-ink-muted">
               <p>
-                {keyword
+                {source === "public"
+                  ? "Không tìm thấy công thức công khai phù hợp."
+                  : keyword
                   ? "Không có công thức đã lưu phù hợp với tìm kiếm."
                   : "Bạn chưa lưu công thức nào."}
               </p>
-              <Link
-                to="/kham-pha"
-                className="mt-3 inline-block font-semibold text-brand-600"
-              >
-                Khám phá và lưu công thức →
-              </Link>
+              {source === "saved" && (
+                <Button variant="ghost" size="sm" disabled={busy} onClick={() => chooseSource("public")}>
+                  Tìm công thức công khai
+                </Button>
+              )}
             </div>
           )}
           <div className="grid gap-2 sm:grid-cols-2">
@@ -1466,7 +1500,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
   )
 }
 
-function DialogFocus({ children }: { children: ReactNode }) {
+function DialogFocus({ children, initialFocus }: { children: ReactNode; initialFocus?: string }) {
   const root = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -1482,7 +1516,7 @@ function DialogFocus({ children }: { children: ReactNode }) {
       ).filter((element) => element.offsetParent !== null)
     ;(
       root.current?.querySelector<HTMLElement>(
-        "input, select, button:not(:disabled)",
+        initialFocus ?? "input, select, button:not(:disabled)",
       ) ?? focusable()[0]
     )?.focus()
 
@@ -1512,7 +1546,7 @@ function DialogFocus({ children }: { children: ReactNode }) {
     document.addEventListener("keydown", trap, true)
 
     return () => document.removeEventListener("keydown", trap, true)
-  }, [])
+  }, [initialFocus])
 
   return <div ref={root}>{children}</div>
 }
