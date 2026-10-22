@@ -9,6 +9,27 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-22 — Hand Off Shopping List Clipboard and Text Export (FR-55)
+
+**Status:** Committed — `28a4324` (original export implementation).
+
+**Scope:** Prepare Issue #55 on its own branch, inheriting the explicitly required FR-53 checklist platform from PR #171; integration and acceptance remain pending.
+
+### Added
+
+- Copy the complete selected checklist with food groups, saved quantities and units, and bought/unbought markers; offer a keyboard-accessible manual fallback when clipboard access fails.
+- Download the same content as UTF-8 TXT with a BOM and the export-date filename, keeping planned meal dates separately inside the text.
+- Cover clipboard, downloads, saved state, filters, empty lists, access denial, failure recovery and meal-date headers in browser tests.
+
+### Changed
+
+- Connect the export toolbar to the current owned checklist without changing its aggregation, persistence or source-recipe data.
+
+### Fixed
+
+- None.
+
+
 ## 2026-10-22 — Align Public Profile Recipe Cards with Discovery
 
 **Status:** Working tree — not committed.
@@ -69,6 +90,47 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+
+## 2026-10-21 — Integrate Shopping Checklist Management (FR-53) ([PR #171](https://github.com/NgaiLong49423/vegetarian-support-system/pull/171))
+
+**Status:** Committed — `daac445`. Original implementation: `83f1938`; develop synchronization: `34cf4e6`.
+
+**Scope:** Prepare the owned shopping checklist and selected Recipe Post flow for a separate Issue #53 handoff; retain the explicit dependency on the unmerged FR-54 engine.
+
+### Added
+
+- Create persisted checklists from planned meal dates or selected public recipes, with manual items, editing, bought-state updates, deletion and ownership checks.
+- Preserve original recipe contributions and unavailable source links without changing saved quantities when a recipe changes.
+
+### Changed
+
+- Move unmerged shopping migrations to V18/V19 while preserving develop's nutrition V16/V17.
+- Adapt browser checks to the current discovery, profile-statistics and partial-nutrition baseline.
+
+### Fixed
+
+- Remove the unresolved dependency on the separately committed FR-55 export component so FR-53 can build independently.
+- Use explicit calendar-value comparisons and manage shopping-dialog focus through refs while preserving keyboard access to add, edit and cancel actions.
+## 2026-10-22 — Select Public Recipes Directly in Meal Plans (Issue #154)
+
+**Status:** Committed — `b5c8bdb`.
+
+**Scope:** Complete the FR-09 / FR-33 recipe picker flow using the existing public search and meal-plan APIs.
+
+### Added
+
+- Switch between saved recipes and public recipe search without leaving the selected meal; search and paginate both sources.
+- Cover empty saved collections, public add/replace, unavailable or duplicate choices, failure recovery, late responses and keyboard access in browser tests.
+
+### Changed
+
+- Keep saved recipes as the default source and preserve day, meal and servings when selecting a public replacement.
+- Extend the Compose integration scenario to verify adding a public recipe that is not saved, without inserting a saved-recipe row.
+
+### Fixed
+
+- Remove the requirement to leave the planner and save a recipe before selecting it for a meal; meal-plan operations do not modify the saved collection.
+
 
 ## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
@@ -302,6 +364,26 @@ None.
 
 - Avoid running the total-count query for Explore recipe browsing.
 
+## 2026-10-17 — Add Safe Shopping Ingredient Aggregation ([PR #150](https://github.com/NgaiLong49423/vegetarian-support-system/pull/150), Issue #54)
+
+**Status:** Committed — `748947f` (implementation); PR #150 is closed and has not been merged or accepted.
+
+**Scope:** Implement and test the internal FR-54 aggregation engine independently of the unmerged FR-53 checklist work. Creating/persisting lists, Frontend integration and main acceptance remain outstanding.
+
+### Added
+
+- Aggregate catalog lines by ingredient identity, normalize g/kg and ml/L without early rounding, preserve count units, and use only active ingredient-specific official rules for other conversions. Keep incompatible rows separate and group results by catalog category.
+- Merge manual rows only by case-insensitive trimmed name and identical unit, keep them separate from catalog ingredients, and return source-indexed warnings for invalid rows or conflicting conversion rules.
+- Add unit coverage for AC-54.1–54.5 and edge cases, plus integration tests against real SQL Server catalog and conversion data.
+
+### Changed
+
+- Extend the nutrition service boundary with batch reference and eligible conversion lookups. Historical inactive references remain readable while inactive conversion rules, ingredients or units cannot authorize cross-unit aggregation.
+- Document the internal calculation contract and the remaining FR-53/#90 integration boundary. No HTTP API, schema relationship, migration or technology change is introduced.
+
+### Fixed
+
+- None.
 ## 2026-10-17 — Verify Paid Subscription Activation ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
 **Status:** Committed — `39ccd9d`.

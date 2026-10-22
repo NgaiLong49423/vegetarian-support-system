@@ -1,0 +1,114 @@
+package tech.mamxanh.shopping.controller;
+
+import java.net.URI;
+import java.util.List;
+import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tech.mamxanh.common.config.OpenApiConfig;
+import tech.mamxanh.common.response.PageResponse;
+import tech.mamxanh.nutrition.dto.response.UnitResponse;
+import tech.mamxanh.shopping.dto.request.*;
+import tech.mamxanh.shopping.dto.response.ShoppingListResponse;
+import tech.mamxanh.shopping.service.ShoppingListService;
+import tech.mamxanh.shopping.service.ShoppingListCreationService;
+import tech.mamxanh.shopping.dto.response.ShoppingListCreationResponse;
+
+@RestController
+@RequestMapping("/api/v1/shopping-lists")
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+@ApiResponses({
+        @ApiResponse(responseCode = "400", description = "Invalid ID, pagination or payload.", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))),
+        @ApiResponse(responseCode = "401", description = "A valid access token is required.", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))),
+        @ApiResponse(responseCode = "403", description = "An active Member account is required.", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))),
+        @ApiResponse(responseCode = "404", description = "List/item does not exist or does not belong to the current Member/list.", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+})
+public class ShoppingListController {
+    private final ShoppingListService service;
+    private final ShoppingListCreationService creation;
+    private final tech.mamxanh.shopping.service.RecipeShoppingListService recipeLists;
+    public ShoppingListController(ShoppingListService service, ShoppingListCreationService creation,
+            tech.mamxanh.shopping.service.RecipeShoppingListService recipeLists) {
+        this.service = service;
+        this.creation = creation;
+        this.recipeLists = recipeLists;
+    }
+
+    @PostMapping(value = "/from-recipes", produces = "application/json")
+    @Operation(operationId = "addRecipesToPersonalShoppingList", summary = "Add selected public recipes to the Member's personal checklist",
+            description = "One personal list per Member, independent from meal-plan lists. Repeated recipes add no duplicate contributions. Request is atomic; unavailable sources return 404. Adds original recipe quantities without portion scaling. Saved edits are retained as the base for future additions.")
+    @ApiResponse(responseCode = "200", description = "The personal checklist and creation diagnostics.", useReturnTypeSchema = true)
+    public ShoppingListCreationResponse fromRecipes(@Valid @RequestBody AddRecipeShoppingRequest request) {
+        return recipeLists.addRecipes(request);
+    }
+
+    @PostMapping("/from-meal-plan")
+    @Operation(operationId = "createShoppingListFromMealPlan", summary = "Create an owned checklist from a meal-plan week",
+            description = "Omit selectedDates for the whole week. Quantities are scaled to planned servings and aggregated by FR-54. Unavailable recipes/invalid source lines produce warnings; an empty result or a quantity that cannot be stored safely returns 400 without creating a list. Creates a new independent list; does not update the personal Recipe Post list.")
+    @ApiResponse(responseCode = "201", description = "Checklist persisted with unbought items and creation diagnostics.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ShoppingListCreationResponse.class)))
+    public ResponseEntity<ShoppingListCreationResponse> fromMealPlan(@Valid @RequestBody CreateMealPlanShoppingListRequest request) {
+        var result = creation.createFromMealPlan(request);
+        return ResponseEntity.created(URI.create("/api/v1/shopping-lists/" + result.shoppingList().id())).body(result);
+    }
+
+    @GetMapping
+    @ApiResponse(responseCode = "200", description = "The owned shopping lists page.", useReturnTypeSchema = true)
+    @Operation(operationId = "listShoppingLists", summary = "List the current Member's shopping lists", description = "page >= 0; size 1–50, default 20. Ordered by updatedAt descending, then ID descending.")
+    public PageResponse<ShoppingListResponse.Summary> list(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) { return service.list(page, size); }
+
+    @GetMapping("/options")
+    @ApiResponse(responseCode = "200", description = "Active units for manual items.", useReturnTypeSchema = true)
+    @Operation(operationId = "getShoppingOptions", summary = "Read active shopping item units")
+    public List<UnitResponse> options() { return service.options(); }
+
+    @GetMapping("/{listId}")
+    @ApiResponse(responseCode = "200", description = "The saved checklist.", useReturnTypeSchema = true)
+    @Operation(operationId = "getShoppingList", summary = "Read an owned shopping checklist", description = "Existing inactive catalog references remain readable. The account is derived from authentication.")
+    public ShoppingListResponse get(@PathVariable long listId) { return service.get(listId); }
+
+    @PostMapping("/{listId}/items")
+    @Operation(operationId = "addShoppingItem", summary = "Add a manual item to an owned list", description = "Name is plain text. Quantity is positive, with at most 8 integer and 2 fractional digits; the unit must be active. New items start unbought. This operation does not perform FR-54 aggregation.")
+    @ApiResponse(responseCode = "201", description = "The manual item was saved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ShoppingListResponse.Item.class)))
+    public ResponseEntity<ShoppingListResponse.Item> add(@PathVariable long listId,
+            @Valid @RequestBody CreateShoppingItemRequest request) {
+        var item = service.add(listId, request);
+        return ResponseEntity.created(URI.create("/api/v1/shopping-lists/" + listId + "/items/" + item.id())).body(item);
+    }
+
+    @PutMapping("/{listId}/items/{itemId}")
+    @ApiResponse(responseCode = "200", description = "The updated item.", useReturnTypeSchema = true)
+    @Operation(operationId = "updateShoppingItem", summary = "Edit a shopping item's quantity and unit", description = "Preserves ingredient identity and bought state. An existing inactive unit may be retained; a newly selected unit must be active.")
+    public ShoppingListResponse.Item update(@PathVariable long listId, @PathVariable long itemId,
+            @Valid @RequestBody UpdateShoppingItemRequest request) { return service.update(listId, itemId, request); }
+
+    @PatchMapping("/{listId}/items/{itemId}/bought")
+    @ApiResponse(responseCode = "200", description = "The saved bought state.", useReturnTypeSchema = true)
+    @Operation(operationId = "setShoppingItemBought", summary = "Set a shopping item's bought state", description = "Explicit boolean assignment, not toggle; repeating the same state has no effect on updatedAt.")
+    public ShoppingListResponse.Item setBought(@PathVariable long listId, @PathVariable long itemId,
+            @Valid @RequestBody ShoppingItemBoughtRequest request) { return service.setBought(listId, itemId, request.bought()); }
+
+    @DeleteMapping("/{listId}/items/{itemId}")
+    @Operation(operationId = "deleteShoppingItem", summary = "Delete one item from an owned shopping list")
+    @ApiResponse(responseCode = "204", description = "The item was deleted.", content = @Content)
+    public ResponseEntity<Void> delete(@PathVariable long listId, @PathVariable long itemId) {
+        service.delete(listId, itemId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping(value = "/{listId}/items", params = "bought=true")
+    @Operation(operationId = "clearBoughtShoppingItems", summary = "Remove bought items from an owned list", description = "Requires bought=true. Unbought items and other lists are preserved.")
+    @ApiResponse(responseCode = "204", description = "Bought items were removed; repeating cleanup is safe.", content = @Content)
+    public ResponseEntity<Void> clearBought(@PathVariable long listId) {
+        service.clearBought(listId);
+        return ResponseEntity.noContent().build();
+    }
+}

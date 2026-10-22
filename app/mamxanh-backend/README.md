@@ -7,6 +7,30 @@
 
 # Backend Workspace
 
+## Tổng hợp nguyên liệu — FR-54 / Issue #54
+
+`shopping/service/ShoppingAggregationService.aggregate(List<ShoppingAggregationLine>)` là biên tính toán nội bộ cho FR-53. Đầu vào gồm `ingredientId` (bắt buộc đối với dòng công thức; `null` chỉ dành cho mặt hàng thủ công), `customName`, `quantity` đã được caller tính theo khẩu phần, và `unitId`. Kết quả `ShoppingAggregationResult` chứa các nhóm danh mục, các dòng tổng hợp và cảnh báo có chỉ số dòng nguồn. Service không ghi Shopping List và không gọi AI/API ngoài.
+
+- Chỉ gộp cùng `ingredientId`; tên/nhóm lấy từ catalog. Tự quy đổi đúng hai cặp chuẩn `g/kg`, `ml/L`, trả đơn vị cơ sở khi có trong catalog. Cùng đơn vị đếm giữ nguyên đơn vị; không suy diễn rằng mọi đơn vị `COUNT` tương đương nhau.
+- Khác nhóm đơn vị chỉ gộp được qua `INGREDIENT_UNIT_CONVERSION` đúng nguyên liệu, với cả nguyên liệu, đơn vị và tỷ lệ còn hoạt động. Một tỷ lệ ml hoặc L có thể dùng qua quan hệ chuẩn 1 L = 1000 ml; các tỷ lệ đang mâu thuẫn khiến nhóm đó giữ riêng và có cảnh báo. Muỗng/thìa không tự đổi sang ml chỉ dựa vào `base_factor`.
+- Mặt hàng thủ công chỉ gộp tên giống nhau không phân biệt hoa thường sau trim và cùng `unitId`; không gộp với dòng catalog hoặc tự đổi g/kg cho mặt hàng thủ công. Dòng không tương thích được giữ riêng với `incompatibleUnits=true`; kết quả phân nhóm theo danh mục, mặt hàng thủ công thuộc `Nhóm khác`.
+- Phép cộng/nhân/chia chuẩn dùng `BigDecimal`, không làm tròn hoặc ghi về precision của SQL ở bước tổng hợp. FR-53 phải xử lý precision khi lưu để không biến lượng nhỏ thành 0. Dòng thiếu số lượng, số lượng <= 0, nguyên liệu/đơn vị không tồn tại hoặc tên thủ công không hợp lệ được bỏ qua kèm cảnh báo; đầu vào rỗng trả kết quả rỗng, thiếu toàn bộ danh sách trả `VALIDATION_FAILED`.
+- Catalog và quy đổi được đọc theo batch qua public service của module `nutrition`; tham chiếu lịch sử ngừng sử dụng vẫn có tên/đơn vị để hiển thị, nhưng không dùng tỷ lệ đã ngừng sử dụng để gộp khác dimension.
+
+**Ranh giới tích hợp:** engine thuộc FR-54 / PR #150, chưa phải baseline `develop`. Nhánh FR-53 kế thừa engine để triển khai caller bên dưới; PR #150 phải được tích hợp trước khi FR-53 sẵn sàng merge. Engine không tự xử lý đăng nhập, quyền sở hữu hoặc lưu checklist.
+
+## Checklist mua sắm — FR-53 / Issue #53
+
+- `/api/v1/shopping-lists` cung cấp danh sách theo tài khoản, đọc checklist, thêm/sửa/xóa item, đặt trạng thái đã mua và xóa các item đã mua. Backend lấy chủ sở hữu từ phiên đăng nhập; Guest/Admin/tài khoản khóa và truy cập danh sách của người khác bị chặn.
+- `POST /from-meal-plan` tạo checklist độc lập từ cả tuần hoặc các ngày đã chọn, tính lượng theo khẩu phần dự kiến, tổng hợp qua FR-54 rồi lưu transaction. Tên danh sách thể hiện ngày thực đơn, không ngụ ý ngày mua nguyên liệu.
+- `POST /from-recipes` bổ sung công thức công khai từ Khám phá/Đã lưu vào danh sách `PERSONAL` duy nhất của Member, giữ đóng góp gốc và không cộng trùng công thức. Sửa/ẩn/xóa bài không tự thay đổi lượng hoặc trạng thái checklist; nguồn được đọc theo nội dung hiện hành hoặc hiển thị unavailable, theo thiết kế đã chốt trong #90.
+- Migration shopping chưa merge được chuyển sang V18 (đơn vị `cuộn`) và V19 (loại danh sách/đóng góp Recipe Post), giữ nguyên V16/V17 dinh dưỡng của develop. Không sửa Flyway history, reset database dùng chung hoặc thay đổi diagram.
+- Clipboard/TXT thuộc FR-55, được bàn giao riêng. Scalar và generated OpenAPI mô tả hợp đồng shopping hiện hành.
+
+Kiểm thử tập trung: `.\mvnw.cmd "-Dtest=ShoppingAggregationServiceTest,ShoppingAggregationIntegrationTest,IngredientCatalogServiceTest" test`. Unit tests bao phủ AC-54.1–54.5 và trường hợp biên; integration tests dùng catalog/quy đổi SQL Server Testcontainers thật, fixture rollback. Không mô tả các test này là kiểm thử UI hoặc toàn bộ luồng tạo danh sách.
+
+Kiểm chứng ngày 2026-10-17 trên nhánh FR-54: 67/67 test tập trung đạt; toàn Backend `clean verify` đạt 881/881 test, không failure/error/skip. JaCoCo BUNDLE: Lines 94,87%, Branches 82,97%, Methods 93,42%, Instructions 94,31%; cả bốn đều vượt cổng `>80%`. Đây là bằng chứng local của bộ tổng hợp và baseline Backend, không thay thế required CI/review hoặc nghiệm thu sau merge.
+
 Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và truy cập Microsoft SQL Server qua Spring Data JPA/Hibernate theo [Technology Stack](../../docs/architecture/TECHNOLOGY-STACK.md).
 
 > [!IMPORTANT]

@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { expect, test } from './baseFixtures';
 import { seedDemoSession } from './demo-session';
 
@@ -26,36 +25,6 @@ test('guest is blocked with login prompt when visiting /di-cho and /ke-hoach', a
   await page.goto('/ke-hoach');
   await expect(page.getByRole('heading', { name: 'Kế hoạch bữa ăn của bạn' })).toBeVisible();
   await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toBeVisible();
-});
-
-test('shopping demo adds an item, filters purchased items and clears them', async ({ page }) => {
-  await page.goto('/di-cho?demo=true');
-  const input = page.getByRole('textbox', { name: 'Thêm nguyên liệu vào danh sách' });
-  await input.fill('Nấm bào ngư cho bữa tối');
-  await input.press('Enter');
-  const item = page.getByRole('button', { name: 'Đánh dấu Nấm bào ngư cho bữa tối', exact: true });
-  await expect(item).toBeVisible();
-  await expect(input).toHaveValue('');
-  await item.click();
-  await page.getByRole('button', { name: /Cần mua/ }).click();
-  await expect(item).toHaveCount(0);
-  await page.getByRole('button', { name: /Đã mua/ }).click();
-  await expect(item).toBeVisible();
-  await page.getByRole('button', { name: /Xoá .* mục đã mua/ }).click();
-  await expect(page.getByText('Không có nguyên liệu trong mục này.')).toBeVisible();
-});
-
-test('shopping export contains the newly added item', async ({ page }) => {
-  await page.goto('/di-cho?demo=true');
-  await page.getByRole('textbox', { name: 'Thêm nguyên liệu vào danh sách' }).fill('Rau cải cho ngày mai');
-  await page.getByRole('button', { name: 'Thêm', exact: true }).click();
-  const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'TXT', exact: true }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe('danh-sach-di-cho.txt');
-  const downloadedPath = await download.path();
-  expect(downloadedPath).not.toBeNull();
-  expect(await readFile(downloadedPath!, 'utf8')).toContain('[ ] Rau cải cho ngày mai — vừa đủ');
 });
 
 test('recipe form uses catalog choices and reports that real login is still required', async ({ page }) => {

@@ -310,7 +310,7 @@ test("only one day expands, and adding meals queries saved recipes with paginati
   const dialog = page.getByRole("dialog")
 
   await expect(
-    dialog.getByText("Công thức đã lưu", { exact: true }),
+    dialog.getByRole("button", { name: "Đã lưu", exact: true }),
   ).toBeVisible()
 
   await expect(dialog.getByRole("button", { name: "Canh nấm" })).toBeVisible()
@@ -322,6 +322,116 @@ test("only one day expands, and adding meals queries saved recipes with paginati
   ).toBeVisible()
 
   expect(publicSearches).toBe(0)
+})
+
+test("#154: add a public recipe with an empty saved collection, search and pagination", async ({ page }) => {
+  const state = await setup(page)
+  const savedWrites: string[] = []
+  const searches: URLSearchParams[] = []
+  page.on("request", request => {
+    if (request.url().includes("/saved-recipes") && request.method() !== "GET") savedWrites.push(request.method())
+  })
+  await page.route("**/api/v1/saved-recipes**", route => route.fulfill({ json: { content: [], totalPages: 0 } }))
+  await page.route("**/api/v1/recipes?**", route => {
+    const params = new URL(route.request().url()).searchParams
+    searches.push(params)
+    const index = params.get("keyword") || params.get("page") === "1" ? 1 : 0
+    return route.fulfill({ json: { items: [recipes[index]], totalPages: params.get("keyword") ? 1 : 2 } })
+  })
+  await page.goto("/ke-hoach")
+  await openMonday(page)
+  await lunch(page).click()
+  const dialog = page.getByRole("dialog")
+  await expect(dialog.getByText("Bạn chưa lưu công thức nào.")).toBeVisible()
+  await dialog.getByRole("button", { name: "Tìm công thức công khai", exact: true }).click()
+  await expect(dialog.getByRole("button", { name: "Canh nấm", exact: true })).toBeVisible()
+  await dialog.getByRole("button", { name: "Trang sau" }).click()
+  await expect(dialog.getByRole("button", { name: "Đậu phụ kho", exact: true })).toBeVisible()
+  await dialog.getByLabel("Tìm món cho lịch ăn").fill("Đậu")
+  await dialog.getByRole("button", { name: "Tìm", exact: true }).click()
+  await expect.poll(() => searches.at(-1)?.get("keyword")).toBe("Đậu")
+  expect(searches.at(-1)?.get("page")).toBe("0")
+  await page.screenshot({ path: test.info().outputPath("detail-meal-plan-public-picker-desktop.png"), fullPage: true })
+  await dialog.getByRole("button", { name: "Đậu phụ kho", exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+  expect(state.entries).toHaveLength(1)
+  expect(state.entries[0]).toMatchObject({ mealDate: week, mealType: "LUNCH", recipeId: 12 })
+  await page.reload()
+  await openMonday(page)
+  await expect(page.getByRole("article", { name: "Đậu phụ kho" })).toBeVisible()
+  expect(savedWrites).toEqual([])
+  expect(state.previews).toBe(0)
+})
+
+test("#154: public replacement preserves the meal and servings and rejects unavailable or duplicate choices", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  const state = await setup(page, [
+    { ...entry(8, 11, true), plannedServings: 2.5 }, entry(9, 12),
+  ])
+  const savedWrites: string[] = []
+  page.on("request", request => {
+    if (request.url().includes("/saved-recipes") && request.method() !== "GET") savedWrites.push(request.method())
+  })
+  await page.route("**/api/v1/recipes?**", route => route.fulfill({ json: {
+    items: [...recipes, { ...recipe(99, "Món đã ẩn"), status: "HIDDEN" }], totalPages: 1,
+  } }))
+  let unavailable = true
+  await page.route("**/api/v1/meal-plans/*/entries/8", route => unavailable
+    ? route.fulfill({ status: 404, json: { status: 404, code: "NOT_FOUND", detail: "Công thức không còn công khai." } })
+    : route.fallback())
+  await page.goto("/ke-hoach")
+  await openMonday(page)
+  await page.getByRole("button", { name: "Thay món Công thức không còn khả dụng" }).click()
+  const dialog = page.getByRole("dialog")
+  await dialog.getByRole("button", { name: "Tìm công thức", exact: true }).click()
+  await expect(dialog.getByRole("button", { name: /Đậu phụ kho.*Đã có trong bữa này/ })).toBeDisabled()
+  await expect(dialog.getByRole("button", { name: /Món đã ẩn/ })).toBeDisabled()
+  await page.screenshot({ path: test.info().outputPath("detail-meal-plan-public-picker-mobile.png"), fullPage: true })
+  expect(await dialog.evaluate(el => el.getBoundingClientRect().right)).toBeLessThanOrEqual(375)
+  await dialog.getByRole("button", { name: "Canh nấm", exact: true }).click()
+  await expect(dialog.getByRole("alert")).toContainText("không còn công khai")
+  expect(state.entries[0].recipeDeleted).toBe(true)
+  unavailable = false
+  await dialog.getByRole("button", { name: "Canh nấm", exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+  expect(state.entries[0]).toMatchObject({ entryId: 8, mealDate: week, mealType: "LUNCH", plannedServings: 2.5, recipeId: 11, recipeDeleted: false })
+  expect(savedWrites).toEqual([])
+})
+
+test("#154: switching sources ignores late results and supports retry, empty results and keyboard close", async ({ page }) => {
+  await setup(page)
+  let release!: () => void
+  const hold = new Promise<void>(resolve => { release = resolve })
+  let attempts = 0
+  await page.route("**/api/v1/recipes?**", async route => {
+    attempts++
+    if (attempts === 1) {
+      await hold
+      return route.fulfill({ json: { items: [recipe(77, "Kết quả cũ")], totalPages: 1 } })
+    }
+    if (attempts === 2) return route.fulfill({ status: 503, json: { status: 503, code: "SERVICE_UNAVAILABLE", detail: "Chưa tải được công thức công khai." } })
+    return route.fulfill({ json: { items: [], totalPages: 0 } })
+  })
+  await page.goto("/ke-hoach")
+  await openMonday(page)
+  await lunch(page).click()
+  const dialog = page.getByRole("dialog")
+  await expect(dialog.getByLabel("Tìm món cho lịch ăn")).toBeFocused()
+  await dialog.getByRole("button", { name: "Tìm công thức", exact: true }).click()
+  await expect.poll(() => attempts).toBe(1)
+  await dialog.getByRole("button", { name: "Đã lưu", exact: true }).click()
+  await expect(dialog.getByRole("button", { name: "Canh nấm", exact: true })).toBeVisible()
+  const late = page.waitForResponse(response => response.url().includes("/recipes?") && response.status() === 200)
+  release()
+  await late
+  await expect(dialog.getByRole("button", { name: "Kết quả cũ", exact: true })).toHaveCount(0)
+  await dialog.getByRole("button", { name: "Tìm công thức", exact: true }).click()
+  await expect(dialog.getByRole("alert")).toContainText("Chưa tải được")
+  await dialog.getByRole("button", { name: "Thử lại" }).click()
+  await expect(dialog.getByText("Không tìm thấy công thức công khai phù hợp.")).toBeVisible()
+  await page.keyboard.press("Escape")
+  await expect(dialog).not.toBeVisible()
+  await expect(lunch(page)).toBeFocused()
 })
 
 test("weekly AI preview leaves the plan unchanged until the member confirms whole-week replacement", async ({ page }) => {
@@ -644,7 +754,7 @@ test("empty saved collection and empty nutrition explain the next step", async (
   await lunch(page).click()
   const dialog = page.getByRole("dialog")
   await expect(dialog.getByText("Bạn chưa lưu công thức nào.")).toBeVisible()
-  await expect(dialog.getByRole("link", { name: "Khám phá và lưu công thức →" })).toHaveAttribute("href", "/kham-pha")
+  await expect(dialog.getByRole("button", { name: "Tìm công thức công khai", exact: true })).toBeVisible()
   await page.keyboard.press("Escape")
   await page.getByRole("button", { name: "Xem dinh dưỡng ngày" }).click()
   await expect(page.getByRole("dialog").getByText("Ngày này chưa có món để tính dinh dưỡng.")).toBeVisible()
@@ -690,7 +800,7 @@ test("saved picker prevents unavailable choices and replaces a tombstone in plac
     .getByRole("button", { name: "Thay món Công thức không còn khả dụng" })
     .click()
   const dialog = page.getByRole("dialog")
-  await expect(dialog.getByText("Công thức đã lưu", { exact: true })).toBeVisible()
+  await expect(dialog.getByRole("button", { name: "Đã lưu", exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(
     dialog.getByRole("button", { name: /Công thức không còn khả dụng/ }),
   ).toBeDisabled()

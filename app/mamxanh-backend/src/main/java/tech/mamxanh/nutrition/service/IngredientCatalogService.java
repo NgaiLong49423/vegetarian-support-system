@@ -145,6 +145,34 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<IngredientResponse> findIngredientReferences(java.util.Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return ingredientRepository.findAllById(ids).stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UnitResponse> findUnitReferences(java.util.Collection<Integer> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return unitRepository.findAllById(ids).stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ConversionResponse> findActiveConversions(java.util.Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        var activeIds = ingredientRepository.findByIdInAndStatus(ids, CatalogStatus.ACTIVE).stream()
+                .map(IngredientEntity::getId).toList();
+        if (activeIds.isEmpty()) return List.of();
+        var activeUnits = unitRepository.findByActiveTrue().stream().map(UnitEntity::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        return conversionRepository.findByIdIngredientIdInAndActiveTrue(activeIds).stream()
+                .filter(conversion -> activeUnits.contains(conversion.getId().getUnitId()))
+                .map(this::toResponse).toList();
+    }
+
     @Transactional
     public IngredientResponse createIngredient(IngredientSaveRequest request) {
         String name = request.name().trim();

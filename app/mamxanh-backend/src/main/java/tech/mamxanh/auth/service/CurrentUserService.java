@@ -39,6 +39,13 @@ public class CurrentUserService {
         return new CurrentUser(user.getId(), user.getRole());
     }
 
+    /** Caller holds a transaction; serialize first creation of per-account resources. */
+    public CurrentUser lockActiveMember() {
+        long id = requireActiveMember().id();
+        userRepository.findByIdForUpdate(id).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+        return requireActiveMember();
+    }
+
     public PublicProfile getPublicProfile(long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
         return new PublicProfile(user.getId(), user.getDisplayName(), user.getAvatarUrl());

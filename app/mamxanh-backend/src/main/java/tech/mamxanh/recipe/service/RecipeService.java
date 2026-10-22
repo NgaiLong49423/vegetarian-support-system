@@ -166,6 +166,36 @@ public class RecipeService {
     }
 
     @Transactional(readOnly = true)
+    public Map<Long, ShoppingSource> findShoppingSources(java.util.Collection<Long> recipeIds) {
+        if (recipeIds == null || recipeIds.isEmpty()) return Map.of();
+        var published = recipeRepository.findAllById(recipeIds).stream()
+                .filter(recipe -> "PUBLISHED".equals(recipe.getStatus())).toList();
+        if (published.isEmpty()) return Map.of();
+        var lines = ingredientRepository.findAllByRecipeIdInOrderByRecipeIdAscIdAsc(
+                published.stream().map(RecipePostEntity::getId).toList()).stream()
+                .collect(Collectors.groupingBy(RecipeIngredientEntity::getRecipeId));
+        return published.stream().collect(Collectors.toMap(RecipePostEntity::getId, recipe ->
+                new ShoppingSource(recipe.getId(), recipe.getServings(), lines.getOrDefault(recipe.getId(), List.of()).stream()
+                        .map(line -> new ShoppingIngredient(line.getIngredientId(), line.getQuantity(), line.getUnitId())).toList())));
+    }
+
+    /** Internal batch boundary: no nutrition calculation or provider call is needed to shop for a recipe. */
+    public record ShoppingSource(long recipeId, int servings, List<ShoppingIngredient> ingredients) {
+        public ShoppingSource { ingredients = List.copyOf(ingredients); }
+    }
+    public record ShoppingIngredient(Long ingredientId, BigDecimal quantity, Integer unitId) { }
+
+    /** Current public source labels; hidden/deleted content is never exposed through history. */
+    @Transactional(readOnly = true)
+    public Map<Long, ShoppingReference> findShoppingReferences(java.util.Collection<Long> recipeIds) {
+        if (recipeIds.isEmpty()) return Map.of();
+        return recipeRepository.findAllById(recipeIds).stream().collect(Collectors.toMap(RecipePostEntity::getId,
+                recipe -> new ShoppingReference(recipe.getId(), "PUBLISHED".equals(recipe.getStatus()) ? recipe.getTitle() : null,
+                        "PUBLISHED".equals(recipe.getStatus()))));
+    }
+    public record ShoppingReference(long recipeId, String title, boolean available) { }
+
+    @Transactional(readOnly = true)
     public RecipeDetailResponse getPublishedRecipe(Long recipeId) {
         RecipePostEntity recipe = recipeRepository.findByIdAndStatus(recipeId, "PUBLISHED")
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
