@@ -83,6 +83,27 @@ class IngredientCatalogDatabaseIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.content[0].nutrition").doesNotExist());
     }
 
+    @Test void publicIngredientDetailUsesActiveDatabaseRecordAndHidesInactiveRecords() throws Exception {
+        IngredientEntity ingredient = new IngredientEntity("Chi tiết " + UUID.randomUUID(), "Rau củ",
+                "Private source", "https://private.example.test", LocalDate.now());
+        ingredient.setImageUrl("https://example.test/ingredient.png");
+        ingredient.updateNutrition(BigDecimal.TEN, null, BigDecimal.ZERO, null, null, null, null,
+                new BigDecimal("0.0001"), null);
+        ingredientRepository.saveAndFlush(ingredient);
+        mockMvc.perform(get("/api/v1/ingredients/" + ingredient.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.imageUrl").value("https://example.test/ingredient.png"))
+                .andExpect(jsonPath("$.nutrition.vitaminB12MicrogramsPer100g").value(0.0001))
+                .andExpect(jsonPath("$.nutrition.proteinGramsPer100g").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.sourceName").doesNotExist());
+        ingredient.setActive(false);
+        ingredientRepository.saveAndFlush(ingredient);
+        for (long id : new long[]{ingredient.getId(), Long.MAX_VALUE}) {
+            mockMvc.perform(get("/api/v1/ingredients/" + id)).andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("INGREDIENT_NOT_FOUND"));
+        }
+    }
+
     @Test void storesIngredientSpecificConversionAndExposesItToRecipeValidation() {
         String suffix = UUID.randomUUID().toString();
         IngredientEntity ingredient = ingredientRepository.saveAndFlush(new IngredientEntity(

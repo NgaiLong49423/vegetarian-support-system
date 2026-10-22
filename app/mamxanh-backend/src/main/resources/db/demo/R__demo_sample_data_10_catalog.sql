@@ -20,7 +20,13 @@ INSERT INTO @showcase_ingredients (name) VALUES
  (N'Xoài'), (N'Sữa đậu nành'), (N'Chả giò chay'), (N'Khoai môn'), (N'Rau cải thìa'),
  (N'Ngò rí'), (N'Nước tương'), (N'Chanh'), (N'Bột mì'), (N'Đậu xanh'),
  (N'Bí đỏ'), (N'Cà tím'), (N'Ớt đỏ'), (N'Đậu Hà Lan'), (N'Ngô hạt'),
- (N'Mì udon'), (N'Riềng'), (N'Bột năng'), (N'Rau ngót'), (N'Cải thảo');
+ (N'Mì udon'), (N'Riềng'), (N'Bột năng'), (N'Rau ngót'), (N'Cải thảo'),
+ (N'Quế'), (N'Hoa hồi'), (N'Đinh hương'), (N'Thảo quả'),
+ (N'Ớt bột'), (N'Bột cà ri'), (N'Hạt thì là'), (N'Hạt mùi'), (N'Dầu ăn'),
+ (N'Ớt'), (N'Nước'), (N'Đường ăn'), (N'Muối ăn'), (N'Hạt nêm'),
+ (N'Phô mai mozzarella'), (N'Phô mai cheddar'), (N'Phô mai parmesan'),
+ (N'Phô mai cream cheese'), (N'Phô mai cottage'), (N'Phô mai xanh'),
+ (N'Phô mai chay đậu nành'), (N'Phô mai chay hạt điều');
 
 INSERT INTO [INGREDIENT] (name, source_name, reference_date)
 SELECT seed.name, N'Dữ liệu demo nội bộ', CONVERT(DATE, SYSUTCDATETIME())
@@ -94,6 +100,28 @@ INSERT INTO @demo_nutrition VALUES
  (N'Ớt đỏ', 40, 1.87, 8.81, 0.44, 1.5, 14, 1.03, 0, 0.26, 170106, 'SR'),
  (N'Đậu Hà Lan', 81, 5.42, 14.45, 0.4, 5.7, 25, 1.47, 0, 1.24, 170419, 'SR'),
  (N'Ngô hạt', 86, 3.27, 18.7, 1.35, 2, 2, 0.52, 0, 0.46, 169998, 'SR'),
+ (N'Quế', 247, 4.0, 80.6, 1.2, 53.1, 1002, 8.3, 0, 1.8, NULL, 'AI_ESTIMATE'),
+ (N'Hoa hồi', 337, 17.6, 50.0, 15.9, 14.6, 646, 37.0, 0, 5.3, NULL, 'AI_ESTIMATE'),
+ (N'Đinh hương', 274, 6.0, 65.5, 13.0, 33.9, 632, 11.8, 0, 2.3, NULL, 'AI_ESTIMATE'),
+ (N'Thảo quả', 311, 10.0, 68.0, 6.7, 28.0, 383, 14.0, 0, 7.5, NULL, 'AI_ESTIMATE'),
+ (N'Ớt bột', 282, 14.1, 49.7, 13.8, 34.8, 330, 17.0, 0, 4.3, NULL, 'AI_ESTIMATE'),
+ (N'Bột cà ri', 325, 14.0, 56.0, 14.0, 33.0, 478, 19.0, 0, 4.7, NULL, 'AI_ESTIMATE'),
+ (N'Hạt thì là', 375, 17.8, 44.2, 22.3, 10.5, 931, 66.4, 0, 4.8, NULL, 'AI_ESTIMATE'),
+ (N'Hạt mùi', 298, 12.4, 55.0, 17.8, 41.9, 709, 16.3, 0, 4.7, NULL, 'AI_ESTIMATE'),
+ (N'Dầu ăn', 884, 0, 0, 100, 0, 0, 0, 0, 0, NULL, 'AI_ESTIMATE'),
+ (N'Ớt', 40, 1.87, 8.81, 0.44, 1.5, 14, 1.03, 0, 0.26, NULL, 'AI_ESTIMATE'),
+ (N'Nước', 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, 'AI_ESTIMATE'),
+ (N'Đường ăn', 387, 0, 100, 0, 0, 0, 0, 0, 0, NULL, 'AI_ESTIMATE'),
+ (N'Muối ăn', 0, 0, 0, 0, 0, 24, 0.33, 0, 0.1, 173468, 'SR'),
+ (N'Hạt nêm', 300, 5, 35, 15, 0, 40, 1.5, 0, 0.6, NULL, 'AI_ESTIMATE'),
+ (N'Phô mai mozzarella', 280, 28.0, 3.1, 17.1, 0, 731, 0.4, 2.3, 3.6, NULL, 'AI_ESTIMATE'),
+ (N'Phô mai cheddar', 403, 22.9, 3.4, 33.3, 0, 710, 0.14, 1.1, 3.6, NULL, 'AI_ESTIMATE'),
+ (N'Phô mai parmesan', 431, 38.0, 4.1, 29.0, 0, 1184, 0.82, 1.2, 2.75, NULL, 'AI_ESTIMATE'),
+ (N'Phô mai cream cheese', 342, 5.9, 4.1, 34.2, 0, 98, 0.38, 0.25, 0.51, NULL, 'AI_ESTIMATE'),
+ (N'Phô mai cottage', 98, 11.1, 3.4, 4.3, 0, 83, 0.07, 0.43, 0.4, NULL, 'AI_ESTIMATE'),
+ (N'Phô mai xanh', 353, 21.4, 2.3, 28.7, 0, 528, 0.31, 0, 2.66, NULL, 'AI_ESTIMATE'),
+ (N'Phô mai chay đậu nành', 290, 20.0, 8.0, 21.0, 2.0, 350, 3.5, 0, 2.5, NULL, 'AI_ESTIMATE'),
+ (N'Phô mai chay hạt điều', 330, 10.0, 14.0, 27.0, 2.0, 60, 2.5, 0, 2.0, NULL, 'AI_ESTIMATE'),
  (N'Rau muống', 19, 2.6, 3.1, 0.2, 2.1, 77, 1.7, 0, 0.4, NULL, 'AI_ESTIMATE'),
  (N'Nấm đùi gà', 35, 3.3, 6.2, 0.4, 2.3, 3, 1.3, 0, 0.8, NULL, 'AI_ESTIMATE'),
  (N'Nấm hương', 34, 2.2, 6.8, 0.5, 2.5, 2, 0.4, 0, 1.0, NULL, 'AI_ESTIMATE'),
@@ -109,17 +137,32 @@ SET energy_kcal_100g = seed.energy_kcal, protein_g_100g = seed.protein_g,
     fiber_g_100g = seed.fiber_g, calcium_mg_100g = seed.calcium_mg,
     iron_mg_100g = seed.iron_mg, vitamin_b12_mcg_100g = seed.vitamin_b12_mcg,
     zinc_mg_100g = seed.zinc_mg,
+    ingredient_group = CASE
+        WHEN seed.ingredient_name IN
+            (N'Quế', N'Hoa hồi', N'Đinh hương', N'Thảo quả', N'Ớt bột', N'Bột cà ri', N'Hạt thì là', N'Hạt mùi', N'Dầu ăn', N'Ớt', N'Tiêu đen', N'Đường ăn', N'Muối ăn', N'Hạt nêm')
+            THEN N'Gia vị chay'
+        WHEN seed.ingredient_name = N'Phô mai chay đậu nành' THEN N'Đậu & Chế phẩm'
+        WHEN seed.ingredient_name = N'Phô mai chay hạt điều' THEN N'Các loại hạt'
+        ELSE i.ingredient_group END,
     source_name = CASE WHEN seed.source_type = 'AI_ESTIMATE' THEN N'Ước tính AI - chưa xác minh'
         WHEN seed.source_type = 'FNDDS' THEN N'USDA FoodData Central (FNDDS)'
         ELSE N'USDA FoodData Central (Standard Reference)' END,
     source_url = CASE WHEN seed.source_type = 'AI_ESTIMATE' THEN NULL
         ELSE CONCAT('https://fdc.nal.usda.gov/food-details/', seed.fdc_id, '/nutrients') END,
     reference_date = '2026-10-13',
+    -- BR-52 / V17: stored AI estimates can participate, with their source label retained.
     nutrition_supported = 1,
     updated_at = SYSUTCDATETIME()
 FROM [INGREDIENT] i
 JOIN @demo_nutrition seed ON seed.ingredient_name = i.name
 WHERE i.source_name IN (N'Dữ liệu demo nội bộ', N'Ước tính AI demo - chưa xác minh', N'Ước tính AI - chưa xác minh');
+
+-- Keep the existing pepper fixture in the matching spice group on repeatable reruns.
+UPDATE [INGREDIENT]
+SET ingredient_group = N'Gia vị chay', updated_at = SYSUTCDATETIME()
+WHERE name = N'Tiêu đen'
+  AND ingredient_group = N'Khác'
+  AND source_name = N'USDA FoodData Central (Standard Reference)';
 
 -- 21 additional recipes and 85 unique catalogue ingredients for local demos.
 DECLARE @extra_ingredients TABLE (name NVARCHAR(200) PRIMARY KEY);
@@ -252,7 +295,8 @@ UPDATE i
 SET energy_kcal_100g = macros.energy_kcal, protein_g_100g = macros.protein_g,
     carbohydrate_g_100g = macros.carbohydrate_g, total_fat_g_100g = macros.total_fat_g,
     fiber_g_100g = macros.fiber_g, calcium_mg_100g = seed.calcium_mg,
-    iron_mg_100g = seed.iron_mg, vitamin_b12_mcg_100g = macros.vitamin_b12_mcg,
+    iron_mg_100g = seed.iron_mg, zinc_mg_100g = seed.zinc_mg,
+    vitamin_b12_mcg_100g = macros.vitamin_b12_mcg,
     source_name = N'Ước tính AI - chưa xác minh', source_url = NULL,
     reference_date = '2026-10-20', nutrition_supported = 1,
     updated_at = SYSUTCDATETIME()

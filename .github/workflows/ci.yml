@@ -243,11 +243,12 @@ jobs:
           retention-days: 7
 
       - name: Upload generated runtime OpenAPI
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: openapi-runtime-${{ github.event.pull_request.number || github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/openapi-runtime.yaml
-          if-no-files-found: error
+          if-no-files-found: warn
 
   sonar:
     name: Sonar

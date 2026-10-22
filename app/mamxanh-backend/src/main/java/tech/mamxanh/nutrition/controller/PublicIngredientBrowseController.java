@@ -1,18 +1,22 @@
 package tech.mamxanh.nutrition.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.nutrition.dto.response.PublicIngredientGroupResponse;
+import tech.mamxanh.nutrition.dto.response.PublicIngredientDetailResponse;
 import tech.mamxanh.nutrition.dto.response.PublicIngredientResponse;
 import tech.mamxanh.nutrition.service.IngredientCatalogService;
 
@@ -29,6 +33,14 @@ public class PublicIngredientBrowseController {
     @Operation(summary = "List active ingredient groups")
     public List<PublicIngredientGroupResponse> groups() {
         return service.listPublicGroups();
+    }
+
+    @GetMapping("/{ingredientId}")
+    @Operation(summary = "Get public details for an active ingredient")
+    @ApiResponse(responseCode = "200", description = "Active ingredient with available per-100 g nutrition.")
+    @ApiResponse(responseCode = "404", description = "INGREDIENT_NOT_FOUND: ingredient does not exist or is inactive.")
+    public PublicIngredientDetailResponse ingredient(@PathVariable @Positive long ingredientId) {
+        return service.getPublicIngredient(ingredientId);
     }
 
     @GetMapping
