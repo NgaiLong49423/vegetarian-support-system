@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Heart, MessageCircle, Clock } from 'lucide-react';
+import { MessageCircle, Clock } from 'lucide-react';
 import type { Post } from '../types';
 import { Badge } from './ui';
 
@@ -37,9 +37,6 @@ export function PostCard({ post, horizontal = false }: { post: Post; horizontal?
           <span className="font-medium text-ink-soft">{post.author.name}</span>
           <span className="ml-auto inline-flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" /> {post.readTime}′
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Heart className="h-3.5 w-3.5" /> {post.likes}
           </span>
           <span className="inline-flex items-center gap-1">
             <MessageCircle className="h-3.5 w-3.5" /> {post.comments}
