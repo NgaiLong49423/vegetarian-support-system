@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Restore Ingredient Presets in the Shared Recipe Search (Issue #70)
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — `2e03550`.
 
 **Scope:** Restore behavior lost when PR #132 was synchronized from an older branch head: the FR-62 ingredient links from PR #163 again preset the Explore search after Explore moved into the shared `RecipeSearch` module, and the FR-60 picker stays within a phone-width page.
 
