@@ -11,6 +11,7 @@ import {
   Settings,
   SlidersHorizontal,
   Sparkles,
+  UserRound,
   X,
 } from "lucide-react"
 import { PageContainer } from "../components/Layout"
@@ -18,12 +19,13 @@ import { Button, Card, EmptyState } from "../components/ui"
 import { useAuth } from "../components/AuthContext"
 import { subscriptionApi, type MySubscriptionResponse } from "../api/subscription"
 import { useSavedRecipes } from "../components/SavedRecipesContext"
+import { AddToMealPlanButton } from "../components/AddToMealPlanButton"
 import {
   savedRecipesApi,
   type SavedRecipePage,
 } from "../services/savedRecipesApi"
 import { asApiError } from "../lib/apiClient"
-import { formatDate } from "../utils/date"
+import { formatSubscriptionDate as formatDate } from "../utils/subscriptionDate"
 
 export function Profile() {
   const { account } = useAuth()
@@ -175,13 +177,24 @@ export function Profile() {
               </Link>
             </div>
           </div>
-          <Link
-            to="/ho-so/so-thich-an-uong"
-            className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-xs text-ink-soft hover:bg-paper"
-          >
-            <Settings className="h-3.5 w-3.5" />
-            Sở thích & hồ sơ
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {account.role !== "ADMIN" && (
+              <Link
+                to={`/thanh-vien/${account.id}`}
+                className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-xs font-semibold text-ink-soft hover:bg-paper"
+              >
+                <UserRound className="h-3.5 w-3.5" />
+                Trang cá nhân
+              </Link>
+            )}
+            <Link
+              to="/ho-so/so-thich-an-uong"
+              className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-xs text-ink-soft hover:bg-paper"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              Sở thích & hồ sơ
+            </Link>
+          </div>
         </header>
         <nav
           aria-label="Nội dung hồ sơ"
@@ -217,7 +230,7 @@ export function Profile() {
                 : "border-transparent text-ink-muted hover:text-brand-500"
             }`}
           >
-            Hồ sơ của tôi
+            Sức khỏe & sở thích
           </button>
         </nav>
 
@@ -319,34 +332,34 @@ export function Profile() {
             ) : ownResult?.content.length ? (
               <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
                 {ownResult.content.map((item) => (
-                  <article key={item.recipeId} className="relative min-w-0 transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
+                  <article key={item.recipeId} className="relative flex h-full min-w-0 flex-col transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
                     {item.available ? (
                       <>
                         <Link
                           to={`/cong-thuc/id/${item.recipeId}`}
-                          className="group block"
+                          className="group flex flex-1 flex-col"
                         >
-                          <div className="aspect-[4/5] overflow-hidden rounded-xl bg-paper">
-                            {item.coverUrl ? (
-                              <img
-                                src={item.coverUrl}
-                                alt={item.title ?? ""}
-                                loading="lazy"
-                                className="h-full w-full object-cover transition-transform motion-safe:group-hover:scale-[1.03]"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center text-ink-muted">
-                                <Leaf className="h-7 w-7" />
-                              </div>
-                            )}
-                          </div>
-                          <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-ink transition-colors duration-200 group-hover:text-brand-600">
-                            {item.title}
-                          </h3>
-                          <p className="mt-1 truncate text-xs text-ink-muted">
-                            {item.authorName}
-                          </p>
-                        </Link>
+                        <div className="aspect-[4/5] overflow-hidden rounded-xl bg-paper">
+                          {item.coverUrl ? (
+                            <img
+                              src={item.coverUrl}
+                              alt={item.title ?? ""}
+                              loading="lazy"
+                              className="h-full w-full object-cover transition-transform motion-safe:group-hover:scale-[1.03]"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-ink-muted">
+                              <Leaf className="h-7 w-7" />
+                            </div>
+                          )}
+                        </div>
+                          <h3 className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
+                          {item.title}
+                        </h3>
+                        <p className="mt-1 truncate text-xs text-ink-muted">
+                          {item.authorName}
+                        </p>
+                      </Link>
                         <Link
                           to={`/so-sanh?a=${item.recipeId}`}
                           aria-label={`So sánh ${item.title}`}
@@ -357,14 +370,19 @@ export function Profile() {
                         </Link>
                       </>
                     ) : (
-                      <div>
+                      <div className="flex flex-1 flex-col">
                         <div className="flex aspect-[4/5] items-center justify-center rounded-xl border border-brand-100 bg-paper">
                           <Lock className="h-7 w-7 text-ink-muted" />
                         </div>
-                        <p className="mt-2 text-sm font-medium text-ink-muted">
+                        <p className="mt-2 min-h-10 text-sm font-medium leading-5 text-ink-muted">
                           {item.unavailableMessage ??
                             "Công thức không còn khả dụng"}
                         </p>
+                      </div>
+                    )}
+                    {item.available && item.title && account.role !== "ADMIN" && (
+                      <div className="absolute right-12 top-2 z-10">
+                        <AddToMealPlanButton recipeId={item.recipeId} recipeTitle={item.title} />
                       </div>
                     )}
                     <button

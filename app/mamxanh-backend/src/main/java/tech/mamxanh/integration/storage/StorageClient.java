@@ -14,6 +14,9 @@ public interface StorageClient {
     /** Folder for member avatars (FR-23). */
     String AVATAR_FOLDER = "avatars";
 
+    /** Folder for administrator-managed ingredient reference images. */
+    String INGREDIENT_FOLDER = "ingredients";
+
     /**
      * Upload a recipe image stream to storage (in {@link #RECIPE_FOLDER}).
      *
@@ -30,7 +33,7 @@ public interface StorageClient {
     /**
      * Upload an image stream to storage under the given folder.
      *
-     * @param folder blob folder, {@link #RECIPE_FOLDER} or {@link #AVATAR_FOLDER}
+     * @param folder blob folder, such as {@link #RECIPE_FOLDER}, {@link #AVATAR_FOLDER} or {@link #INGREDIENT_FOLDER}
      * @return publicly accessible blob URL
      */
     String uploadImage(InputStream inputStream, long size, String mimeType, String originalFilename, String folder);

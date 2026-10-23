@@ -17,13 +17,13 @@ type Props = {
 export function GoogleSignIn({ onCredential, onFailure }: Props) {
   const [scriptFailed, setScriptFailed] = useState(false);
   if (!GOOGLE_CLIENT_ID) {
-    return <p className="mt-6 rounded-xl border border-brand-100 bg-brand-50 p-3 text-center text-xs text-ink-muted">Đăng nhập Google chưa được cấu hình cho môi trường này.</p>;
+    return <p className="mt-3 rounded-xl border border-slate-700/60 bg-slate-900/50 p-2 text-center text-xs text-slate-400">Đăng nhập Google chưa được cấu hình cho môi trường này.</p>;
   }
   if (scriptFailed) {
-    return <p role="status" className="mt-6 rounded-xl border border-brand-100 bg-brand-50 p-3 text-center text-xs text-ink-muted">Không tải được đăng nhập Google. Bạn vẫn có thể đăng nhập bằng email.</p>;
+    return <p role="status" className="mt-3 rounded-xl border border-slate-700/60 bg-slate-900/50 p-2 text-center text-xs text-slate-400">Không tải được đăng nhập Google. Bạn vẫn có thể đăng nhập bằng email.</p>;
   }
   return <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID} locale="vi" onScriptLoadError={() => setScriptFailed(true)}>
-    <div className="mt-6 flex min-h-11 justify-center">
+    <div className="mt-3 flex min-h-10 justify-center">
       <GoogleLogin
         text="continue_with"
         shape="rectangular"

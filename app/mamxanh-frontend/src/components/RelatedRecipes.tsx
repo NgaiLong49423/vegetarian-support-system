@@ -33,7 +33,14 @@ export function RelatedRecipes({ recipeId }: { recipeId: number }) {
       if (!Array.isArray(data.items)) throw new Error('Chưa thể tải công thức liên quan.');
       if (active) setItems(data.items);
     }).catch((cause: unknown) => {
-      if (active) setError(asApiError(cause).message);
+      if (active) {
+        const apiError = asApiError(cause);
+        if (apiError.status === 404) {
+          setItems([]);
+        } else {
+          setError(apiError.message);
+        }
+      }
     }).finally(() => {
       if (active) setLoading(false);
     });

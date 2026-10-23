@@ -29,4 +29,10 @@ public interface RecipePostRepository extends JpaRepository<RecipePostEntity, Lo
             + "where ingredient.recipeId = recipe.id and ingredient.ingredientId = :ingredientId)")
     Page<RecipePostEntity> findAllUsingIngredient(@Param("ingredientId") long ingredientId, Pageable pageable);
 
+    @Query("select case when count(recipe) > 0 then true else false end from RecipePostEntity recipe "
+            + "where recipe.status = 'PUBLISHED' and exists "
+            + "(select ingredient.id from RecipeIngredientEntity ingredient "
+            + "where ingredient.recipeId = recipe.id and ingredient.ingredientId = :ingredientId)")
+    boolean existsPublishedUsingIngredient(@Param("ingredientId") long ingredientId);
+
 }

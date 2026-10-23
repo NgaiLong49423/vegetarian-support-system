@@ -61,6 +61,17 @@ class MemberProfileIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void guestCanReadPublicRecipeStatisticsWithoutOpeningPrivateSubscriptionApis() throws Exception {
+        mockMvc.perform(get("/api/v1/members/{userId}/recipe-statistics", authorId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recipeCount").value(2))
+                .andExpect(jsonPath("$.totalLikes").value(0))
+                .andExpect(jsonPath("$.totalViews").value(0))
+                .andExpect(jsonPath("$.email").doesNotExist());
+        mockMvc.perform(get("/api/v1/subscriptions/me")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void publicProfileShowsOnlyPublicFieldsAndTheJoinMonthInVietnamTime() throws Exception {
         mockMvc.perform(get("/api/v1/members/{userId}", authorId))
                 .andExpect(status().isOk())

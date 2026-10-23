@@ -317,10 +317,10 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between py-3">
               <div>
                 <p className="font-bold text-ink">Danh mục nguyên liệu & dinh dưỡng</p>
-                <p className="text-ink-muted">FR-42 · Chuẩn hóa 9 chỉ tiêu vi chất và quy đổi đơn vị</p>
+                <p className="text-ink-muted">Chuẩn hóa 9 chỉ tiêu vi chất và quy đổi đơn vị</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Sẵn sàng</span>
+                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Hoạt động</span>
                 <Link to="/quan-tri/danh-muc" className="font-bold text-brand-600 hover:underline">
                   Mở →
                 </Link>
@@ -331,10 +331,10 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between py-3">
               <div>
                 <p className="font-bold text-ink">Xét duyệt Chuyên gia ẩm thực</p>
-                <p className="text-ink-muted">FR-27 · Thẩm định hồ sơ, ghi nhận quyết định và lý do</p>
+                <p className="text-ink-muted">Thẩm định hồ sơ, ghi nhận quyết định và lý do</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Sẵn sàng</span>
+                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Hoạt động</span>
                 <Link to="/admin/xet-duyet-chuyen-gia" className="font-bold text-brand-600 hover:underline">
                   Mở →
                 </Link>
@@ -345,12 +345,12 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between py-3">
               <div>
                 <p className="font-bold text-ink">Hậu kiểm nội dung & Báo cáo vi phạm</p>
-                <p className="text-ink-muted">FR-06 · Hàng đợi kiểm duyệt bài viết và bình luận</p>
+                <p className="text-ink-muted">Hàng đợi kiểm duyệt bài viết và bình luận vi phạm</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 font-bold text-amber-900">Chờ API</span>
-                <Link to="/admin/bao-cao" className="font-medium text-ink-muted hover:text-ink">
-                  Chi tiết →
+                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Minh họa</span>
+                <Link to="/admin/bao-cao" className="font-bold text-brand-600 hover:underline">
+                  Mở →
                 </Link>
               </div>
             </div>
@@ -358,13 +358,13 @@ export function AdminDashboard() {
             {/* Capability 4 */}
             <div className="flex items-center justify-between py-3">
               <div>
-                <p className="font-bold text-ink">Quản lý tài khoản & Chế tài người dùng</p>
-                <p className="text-ink-muted">FR-01/02 · Tra cứu thành viên và khóa tài khoản vi phạm</p>
+                <p className="font-bold text-ink">Quản lý tài khoản & Phân quyền người dùng</p>
+                <p className="text-ink-muted">Tra cứu thành viên, phân quyền và khóa tài khoản vi phạm</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 font-bold text-amber-900">Chờ API</span>
-                <Link to="/admin/nguoi-dung" className="font-medium text-ink-muted hover:text-ink">
-                  Chi tiết →
+                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Minh họa</span>
+                <Link to="/admin/nguoi-dung" className="font-bold text-brand-600 hover:underline">
+                  Mở →
                 </Link>
               </div>
             </div>
@@ -373,12 +373,12 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between py-3">
               <div>
                 <p className="font-bold text-ink">Giám sát giao dịch gói AI hệ thống</p>
-                <p className="text-ink-muted">FR-13 · Nhật ký thanh toán PayOS/VNPay trên toàn hệ thống</p>
+                <p className="text-ink-muted">Nhật ký thanh toán PayOS trên toàn hệ thống</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 font-bold text-amber-900">Chờ API</span>
-                <Link to="/admin/giao-dich" className="font-medium text-ink-muted hover:text-ink">
-                  Chi tiết →
+                <span className="rounded-full bg-leaf-100 px-2.5 py-0.5 font-bold text-leaf-800">Minh họa</span>
+                <Link to="/admin/giao-dich" className="font-bold text-brand-600 hover:underline">
+                  Mở →
                 </Link>
               </div>
             </div>

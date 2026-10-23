@@ -10,9 +10,11 @@ import { RecipeReactionBadge } from "./RecipeReactionBadge"
 export function PublicRecipeCard({
   recipe,
   options,
+  showLikePercentage = true,
 }: {
   recipe: RecipePost
   options?: RecipeFormOptions | null
+  showLikePercentage?: boolean
 }) {
   const cover = recipe.media.find((media) => media.cover) ?? recipe.media[0]
   const category =
@@ -22,10 +24,10 @@ export function PublicRecipeCard({
     options?.vegetarianTypes.find((item) => item.code === recipe.vegetarianType)
       ?.label ?? recipe.vegetarianType
   return (
-    <article className="relative min-w-0 transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
+    <article className="relative flex h-full min-w-0 flex-col transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
       <Link
         to={`/cong-thuc/id/${recipe.id}`}
-        className="group block rounded-xl focus-visible:outline-offset-4"
+        className="group flex flex-1 flex-col rounded-xl focus-visible:outline-offset-4"
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-raised">
           {cover ? (
@@ -42,9 +44,11 @@ export function PublicRecipeCard({
               compact
             />
           )}
-          <div className="absolute left-2 top-2">
-            <RecipeReactionBadge percentage={recipe.likePercentage} />
-          </div>
+          {showLikePercentage && (
+            <div className="absolute left-2 top-2">
+              <RecipeReactionBadge percentage={recipe.likePercentage} />
+            </div>
+          )}
           <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-black/60 px-2.5 py-2 text-[11px] text-white">
             {recipe.authorAvatarUrl ? (
               <img
@@ -88,7 +92,7 @@ export function PublicRecipeCard({
         So sánh
       </Link>
       <div className="absolute right-2 top-2 flex items-center gap-1.5">
-        <AddToMealPlanButton recipeId={recipe.id} recipeTitle={recipe.title} />
+        <AddToMealPlanButton recipeId={recipe.id} recipeTitle={recipe.title} preview={recipe} />
         <SaveRecipeButton recipeId={recipe.id} compact />
       </div>
     </article>

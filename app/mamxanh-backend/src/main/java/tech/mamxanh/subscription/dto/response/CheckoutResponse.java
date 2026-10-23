@@ -7,4 +7,8 @@ public record CheckoutResponse(
         String checkoutUrl,
         String qrCode
 ) {
+    @Override
+    public String toString() {
+        return "CheckoutResponse[redacted]";
+    }
 }

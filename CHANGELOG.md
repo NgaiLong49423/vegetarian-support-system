@@ -1,13 +1,403 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.88.0
+> **Version:** v2.101.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-18
+> **Last Updated:** 2026-10-23
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-23 — Bound FR-36 Gemini Preview Latency
+
+**Status:** Committed — `af1127a`.
+
+**Scope:** Keep AI-generated nutrition-menu previews within the provider and client timeout budget.
+
+### Added
+
+- Add a regression assertion for the shared Gemini provider timeout.
+
+### Changed
+
+- Set the shared Gemini provider request timeout to seven seconds and the FR-36 preview request timeout to eight seconds.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Fix AI Weekly Menu Submission Without Ingredient Filters (FR-34)
+
+**Status:** Committed — `764e121`.
+
+**Scope:** Ensure the weekly-menu preview action works when Members leave optional ingredient filters empty.
+
+### Added
+
+- None.
+
+### Changed
+
+- Synchronize the generated OpenAPI snapshot with the Backend contract produced by CI for the PR commit.
+
+### Fixed
+
+- Allow weekly-menu preview requests with no selected ingredients while keeping ingredient selection required for single-recipe recommendations.
+- Wait for the weekly-menu API request in the E2E scenario before asserting its preview.
+
+## 2026-10-22 — Define Ingredient Deactivation Guard (Issue #176) ([PR #177](https://github.com/NgaiLong49423/vegetarian-support-system/pull/177))
+
+**Status:** Committed — `acafeacf`.
+
+**Scope:** Update FR-18 and UC-18.1 so an ingredient referenced by a currently published recipe cannot be deactivated.
+
+### Added
+
+- Define rejection, preserved active state, and administrator feedback while any published recipe references the ingredient.
+
+### Changed
+
+- Allow deactivation once no published recipe currently references the ingredient; preserve existing inactive records and historical links.
+- Limit the rule to ingredients; measurement units remain outside Issue #176.
+
+### Fixed
+
+- None.
+
+## 2026-10-22 — Allow AI Weekly Menus Without Ingredient Filters (FR-34)
+
+**Scope:** Let eligible Pro Members preview an AI-generated weekly menu from the safe public recipe catalog without first selecting ingredients, while preserving optional ingredient filtering.
+
+### Changed
+
+- Make the weekly-menu preview ingredient filter optional; keep ingredient selection required for single-recipe recommendations.
+- Allow weekly-menu candidates from the full profile-safe public catalog when no ingredients are selected.
+- Update the API guide and weekly-menu planner flow for the optional filter.
+
+## 2026-10-22 — Create and Manage Shopping Lists (FR-53) ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `47dc13a`.
+
+**Scope:** Let Members create and manage shopping lists, then add one recipe at a time to a selected or newly created list.
+
+### Added
+
+- Add owner-protected API operations to rename and delete a shopping list, with confirmation and fallback navigation in the Frontend.
+- Add a named empty-list flow at `/di-cho` and a `MANUAL` list kind that is independent from meal plans and recipe sources.
+- Add per-recipe shopping actions from recipe cards, with destination selection, serving adjustment and an atomic create-and-add API operation.
+- Show catalog ingredient illustrations in shopping checklist rows, with a clear missing-image state for items without an available illustration.
+- Remove multi-recipe selection and the `POST /from-recipes` API contract.
+- Delete list contribution records and checklist items while preserving meal plans and source recipes.
+
+### Changed
+
+- Extend FR-53 acceptance criteria and document standalone list creation, list-level management and per-recipe additions.
+
+### Fixed
+
+- None.
+
+## 2026-10-22 — Hand Off Shopping List Clipboard and Text Export (FR-55)
+
+**Status:** Committed — `28a4324` (original export implementation).
+
+**Scope:** Prepare Issue #55 on its own branch, inheriting the explicitly required FR-53 checklist platform from PR #171; integration and acceptance remain pending.
+
+### Added
+
+- Copy the complete selected checklist with food groups, saved quantities and units, and bought/unbought markers; offer a keyboard-accessible manual fallback when clipboard access fails.
+- Download the same content as UTF-8 TXT with a BOM and the export-date filename, keeping planned meal dates separately inside the text.
+- Cover clipboard, downloads, saved state, filters, empty lists, access denial, failure recovery and meal-date headers in browser tests.
+
+### Changed
+
+- Connect the export toolbar to the current owned checklist without changing its aggregation, persistence or source-recipe data.
+
+### Fixed
+
+- None.
+
+
+## 2026-10-22 — Enrich Demo Recipe Ingredients and Illustrations ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `47dc13a`.
+
+**Scope:** Improve local Flyway demo recipe data and ingredient illustrations.
+
+### Added
+
+- Add per-recipe seasonings and synchronized cooking instructions for 54 named demo recipes, with all ingredient quantities expressed in grams for two servings.
+- Add individual AI-generated ingredient illustrations and a missing-image mapping seed that preserves existing image URLs.
+- Add a Compose-based fixture verification script for repeated execution, gram quantities, nutrition completeness, asset presence and preservation of unrelated recipes and uploaded images.
+
+### Changed
+
+- Convert legacy demo units using mass factors or ingredient-specific conversions and stop when a reliable conversion is unavailable.
+- Document dry ingredient weights and retained recipe water separately from discarded preparation water.
+
+### Fixed
+
+- Persist the existing zinc estimates for 85 demo ingredients instead of leaving their zinc columns null (BUG-054).
+- Include stored demo spice estimates in nutrition calculations under the current BR-52 policy while retaining unverified AI provenance (BUG-055).
+
+## 2026-10-22 — Align Public Profile Recipe Cards with Discovery ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `47dc13a`.
+
+**Scope:** Unify published recipe cards on public member and expert profiles with recipe discovery.
+
+### Added
+
+- None.
+
+### Changed
+
+- Reuse the shared recipe card with landscape covers, author details, cooking metadata, reaction percentage, view counts and save/meal-plan actions.
+- Adapt profile recipe grids from one to four columns while preserving pagination and author interaction totals.
+
+### Fixed
+
+- None.
+
+## 2026-10-21 — Add Public Ingredient Details ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `25b113f`.
+
+**Scope:** Let users inspect active ingredient details and available nutrition data.
+
+### Added
+
+- Add a public detail endpoint and a responsive ingredient detail page with per-100 g nutrition values.
+- Display published recipe articles containing the ingredient directly on its detail page, with recipe diet labels, sorting and load-more pagination.
+- Open ingredient details from directory names/images and recipe ingredient names.
+- Show missing nutrition values as unavailable and keep recipe discovery filters from the directory and detail page.
+
+### Changed
+
+- Expand FR-62 to cover public ingredient details, images and nutrition while excluding administrative provenance and status fields.
+- Synchronize the discovery use case, component guides and public API integration conventions with the ingredient detail flow.
+
+### Fixed
+
+- None.
+
+## 2026-10-21 — Add Ingredient Reference Images ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `25b113f`.
+
+**Scope:** Let administrators attach and manage an illustrative image for each ingredient in the catalog.
+
+### Added
+
+- Upload optional JPEG, PNG or WebP ingredient images up to 2 MB and persist their URLs with ingredient records.
+- Preview selected images in the admin editor and prefer saved images on ingredient cards, with existing image mappings as fallback.
+- Add the nullable `INGREDIENT.image_url` migration as V20 after integrating the V18/V19 checklist migrations, and synchronize the database schema snapshot.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- None.
+
+## 2026-10-21 — Integrate Shopping Checklist Management (FR-53) ([PR #171](https://github.com/NgaiLong49423/vegetarian-support-system/pull/171))
+
+**Status:** Committed — `daac445`. Original implementation: `83f1938`; develop synchronization: `34cf4e6`.
+
+**Scope:** Prepare the owned shopping checklist and selected Recipe Post flow for a separate Issue #53 handoff; retain the explicit dependency on the unmerged FR-54 engine.
+
+### Added
+
+- Create persisted checklists from planned meal dates or selected public recipes, with manual items, editing, bought-state updates, deletion and ownership checks.
+- Preserve original recipe contributions and unavailable source links without changing saved quantities when a recipe changes.
+
+### Changed
+
+- Move unmerged shopping migrations to V18/V19 while preserving develop's nutrition V16/V17.
+- Adapt browser checks to the current discovery, profile-statistics and partial-nutrition baseline.
+
+### Fixed
+
+- Remove the unresolved dependency on the separately committed FR-55 export component so FR-53 can build independently.
+- Use explicit calendar-value comparisons and manage shopping-dialog focus through refs while preserving keyboard access to add, edit and cancel actions.
+## 2026-10-22 — Select Public Recipes Directly in Meal Plans (Issue #154)
+
+**Status:** Committed — `b5c8bdb`.
+
+**Scope:** Complete the FR-09 / FR-33 recipe picker flow using the existing public search and meal-plan APIs.
+
+### Added
+
+- Switch between saved recipes and public recipe search without leaving the selected meal; search and paginate both sources.
+- Cover empty saved collections, public add/replace, unavailable or duplicate choices, failure recovery, late responses and keyboard access in browser tests.
+
+### Changed
+
+- Keep saved recipes as the default source and preserve day, meal and servings when selecting a public replacement.
+- Extend the Compose integration scenario to verify adding a public recipe that is not saved, without inserting a saved-recipe row.
+
+### Fixed
+
+- Remove the requirement to leave the planner and save a recipe before selecting it for a meal; meal-plan operations do not modify the saved collection.
+
+
+## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
+
+**Status:** Committed — `51b706b`.
+
+**Scope:** Resolve integration failures exposed while validating the payment fixes against the current develop baseline.
+
+### Added
+
+- Verify that public recipe statistics remain accessible to guests while private subscription APIs require authentication.
+
+### Changed
+
+- Align browser fixtures and navigation checks with the public statistics API and Explore dropdown; wait for both ingredient selections before checking the discovery request.
+
+### Fixed
+
+- Permit guest reads of the documented public recipe-statistics endpoint.
+- Preserve Vietnamese characters when binding ingredient search patterns on SQL Server.
+
+## 2026-10-20 — Remove Standalone Meal Plan Export (Issue #152)
+
+**Status:** Committed — `5ac1614`.
+
+**Scope:** Remove the standalone weekly meal-plan export from the active requirements and implementation while preserving the FR-37 nutrition report PDF with its planned-meal list.
+
+### Added
+
+- None.
+
+### Changed
+
+- Remove the standalone meal-plan export use case and acceptance criterion from FR-33 and its linked interaction flow; remove its Frontend controls, file-generation helper, Backend endpoint, service, and response DTO.
+- Remove the standalone export dependency and obsolete UI, Backend, and SQL integration checks.
+- Remove the obsolete endpoint description from the API guide; the generated OpenAPI snapshot still requires regeneration from a running Backend.
+- Clarify that recipe exports, FR-37 nutrition report PDFs, and Shopping List text export remain in scope.
+
+### Fixed
+
+- None.
+
+## 2026-10-20 — Correct Subscription Time Display and Transaction Expiry ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
+
+**Status:** Committed — `1d81141`.
+
+**Scope:** Follow-up payment verification fixes for Issue #142 / FR-13.
+
+### Added
+
+- Show the expiry of the subscription purchased by each paid transaction in transaction history; cancelled or unlinked orders have no expiry.
+- Add timezone, midnight rollover, historical subscription mapping and API serialization regression checks.
+
+### Changed
+
+None.
+
+### Fixed
+
+- Use UTC consistently for checkout creation and payment activation, and include the UTC offset in subscription API timestamps.
+- Display subscription and payment dates in Vietnam time regardless of the browser timezone.
+
+## 2026-10-20 — Expand Local Demo Data ([PR #166](https://github.com/NgaiLong49423/vegetarian-support-system/pull/166))
+
+**Status:** Committed — `fa44e59`.
+
+**Scope:** Expand local demo coverage across ingredients, community interactions, and shopping while allowing flexible nutrition provenance and clearly labeling unverified estimates.
+
+### Added
+
+- Allow freely entered nutrition sources, including `Ước tính AI - chưa xác minh`, in the catalog.
+- Seed recipe comments and replies, saved recipes, shopping lists and checklist items, moderation reports, and reply notifications for demo accounts.
+- Add 51 local demo ingredients, including chicken egg, with all nine AI-estimated nutrition values per 100 g; keep the estimates explicitly unverified.
+- Add ten more local recipes across vegan meals and an ovo-vegetarian breakfast, using the expanded ingredient catalog.
+
+### Changed
+
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
+- Replace the seed's `DEMO` source type with `AI_ESTIMATE`, retain unverified provenance, and include saved estimates in partial nutrition calculations without treating missing fields as zero.
+- Remove the source-type and all-nine-values database restrictions for supported rows; require at least one stored nutrient and keep missing values as `NULL`.
+- Make the new community and shopping fixtures repeatable by checking their stable account, recipe, and item keys before insertion.
+
+### Fixed
+
+- Seed core recipe ingredients before applying catalog nutrition so supported entries such as sweet potato are enriched correctly.
+
+- Fill the remaining macro, fiber and B12 estimates for all AI-estimated demo ingredients so those fixtures no longer have missing nutrition metrics.
+
+## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
+
+**Status:** Committed — `3106850`.
+
+**Scope:** Add public expert discovery, ingredient-group browsing, Explore entry points and per-post engagement counts on public profiles.
+
+### Added
+
+- Add a searchable, paginated active-expert directory with public profile fields and follow actions backed by existing follow APIs.
+- Add a searchable catalog of active ingredients presented as selectable labels for recipe discovery.
+- Add four generated, locally hosted portraits for the seeded Expert demo accounts.
+- Add backend read endpoints for expert directory and public ingredient catalog data without schema changes.
+- Present public profile recipes as a social-style image grid with each post's API-backed view and like counts.
+- Show profile-wide totals for views and likes across all published recipes, independent of the current recipe page.
+
+### Changed
+
+- Expand the Explore navigation menu on desktop and mobile to include recipes, ingredient groups and experts; keep community accessible through the existing Home entry point.
+- Align the Explore dropdown trigger with the shared orange navigation hover indicator.
+- Replace ingredient group cards and per-ingredient rows with a single multi-select label list that preserves the recipe filter's all-selected-ingredients rule.
+- Add FR-61 and FR-62 to the current requirements registry and detailed specifications.
+- Add a public recipe-statistics endpoint that aggregates likes and views across every published recipe by author; no database migration is required.
+
+### Fixed
+
+- None.
+
+## 2026-10-19 — Refresh Landing Previews and Scroll Motion ([PR #157](https://github.com/NgaiLong49423/vegetarian-support-system/pull/157))
+
+**Status:** Committed — `0f1ce32`.
+
+**Scope:** Update the public Landing presentation alongside the account, calendar and application refinements retained from PR #156.
+
+### Added
+
+- Add replayable scroll reveals with reduced-motion and missing-observer fallbacks.
+- Add browser checks for illustration assets, scroll effects and responsive navigation, and upload Landing screenshots with the existing CI UI evidence.
+
+### Changed
+
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
+- Replace captured application previews with decorative HTML/CSS illustrations using existing local food images.
+- Simplify the header and retain section navigation in the footer; preserve application destinations and account-specific collection links.
+
+### Fixed
+
+- Align the Landing tests and workspace guide with the current preview and navigation design.
+
+## 2026-10-18 — Refine Account, Calendar and Admin Interfaces ([PR #156](https://github.com/NgaiLong49423/vegetarian-support-system/pull/156))
+
+**Status:** Committed — `2e6ec94`.
+
+**Scope:** Refine the Frontend presentation and reconcile it with the current develop integration baseline.
+
+### Added
+
+- Add interactive local Admin previews for account roles/locks, report moderation and transaction details, explicitly labeled as sample data without Backend writes.
+- Add browser coverage for preview interactions and calendar keyboard navigation across months.
+
+### Changed
+
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
+- Refresh account forms, shared navigation, recipe details, profile pages and the animated meal calendar while retaining reduced-motion support.
+- Require Guest sign-in for meal planning and shopping; keep explicit local previews behind `?demo=true`.
+
+### Fixed
+
+- Preserve API-backed recipe comments, reactions, views and meal-plan serving updates after synchronizing develop.
+- Keep tall registration forms scrollable, retain ingredient JSON preview/copy, and use the actual vegetarian-type label in recipe details.
 
 ## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
 
@@ -21,6 +411,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Regenerate `docs/api/openapi.yaml` from the running Backend OpenAPI endpoint.
 
 ### Fixed
@@ -39,6 +430,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Use Enter to submit a Chatbot question while preserving Shift+Enter for a newline.
 
 ### Fixed
@@ -57,6 +449,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Submit selected meal slots to their corresponding calendar weeks and retain failed selections for retry.
 
 ### Fixed
@@ -75,11 +468,56 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Use previous/next navigation in Explore without displaying total recipe or page counts.
 
 ### Fixed
 
 - Avoid running the total-count query for Explore recipe browsing.
+
+## 2026-10-17 — Add Safe Shopping Ingredient Aggregation ([PR #150](https://github.com/NgaiLong49423/vegetarian-support-system/pull/150), Issue #54)
+
+**Status:** Committed — `748947f` (implementation); PR #150 is closed and has not been merged or accepted.
+
+**Scope:** Implement and test the internal FR-54 aggregation engine independently of the unmerged FR-53 checklist work. Creating/persisting lists, Frontend integration and main acceptance remain outstanding.
+
+### Added
+
+- Aggregate catalog lines by ingredient identity, normalize g/kg and ml/L without early rounding, preserve count units, and use only active ingredient-specific official rules for other conversions. Keep incompatible rows separate and group results by catalog category.
+- Merge manual rows only by case-insensitive trimmed name and identical unit, keep them separate from catalog ingredients, and return source-indexed warnings for invalid rows or conflicting conversion rules.
+- Add unit coverage for AC-54.1–54.5 and edge cases, plus integration tests against real SQL Server catalog and conversion data.
+
+### Changed
+
+- Extend the nutrition service boundary with batch reference and eligible conversion lookups. Historical inactive references remain readable while inactive conversion rules, ingredients or units cannot authorize cross-unit aggregation.
+- Document the internal calculation contract and the remaining FR-53/#90 integration boundary. No HTTP API, schema relationship, migration or technology change is introduced.
+
+### Fixed
+
+- None.
+## 2026-10-17 — Verify Paid Subscription Activation ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
+
+**Status:** Committed — `39ccd9d`.
+
+**Scope:** FR-13 / Issue #142: replace false payment success with verified payOS checkout, order reconciliation and subscription activation.
+
+### Added
+
+- Add a private per-order result endpoint with server-side payOS reconciliation, ownership checks and non-cacheable responses.
+- Add payment settlement, signature, concurrency and browser regression tests for delayed activation, provider failures and forged success URLs.
+
+### Changed
+
+- Pass Backend payOS configuration through the canonical Compose stack and document checkout/webhook setup.
+- Generate the OpenAPI snapshot from the updated Backend runtime and align subscription types with its responses.
+- Serialize verified settlement by account and order, preserving atomic activation and idempotent webhook processing.
+- Run shared-SQL integration tests sequentially, synchronize recipe-view checks with completed search responses, and use the canonical Backend host for the OpenAPI healthcheck.
+
+### Fixed
+
+- Missing payOS credentials no longer create a fake success checkout or accept mock webhook signatures.
+- Payment result pages confirm the specific order before claiming activation, with bounded polling and retry on pending or failed verification.
+- Display subscription features and transaction tiers from Backend responses.
 
 ## 2026-10-16 — Expand Local Demo Fixtures ([PR #141](https://github.com/NgaiLong49423/vegetarian-support-system/pull/141))
 
@@ -94,6 +532,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Complete the profiles of all 20 demo Customers, including current BMI inputs and nutrition consent; convert the two former onboarding personas into full demo Customers.
 - Update Backend and Database guides with the expanded local fixture and its account roles.
 
@@ -113,6 +552,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Preserve the multi-window Most Viewed filters and record Guest/Member views without changing recipe detail or browse contracts.
 - Keep migration V15 and preserve the FR-58 bug records as BUG-033, BUG-034 and BUG-035; BUG-030–032 are already assigned on develop.
 - Regenerate the committed OpenAPI snapshot from the synchronized Backend runtime.
@@ -139,6 +579,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Document the follow API and error codes in `API.md` section 17 and the Backend/Frontend READMEs.
 
 ### Fixed
@@ -157,6 +598,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Regenerate the OpenAPI YAML from the current Backend runtime, including the recipe reaction endpoints, for the shared-stack contract comparison gate.
 
 ### Fixed
@@ -175,6 +617,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Display the FR-57 satisfaction badge through the shared PublicRecipeCard used by Home and Explore, preserving the current card layout and save controls.
 - Integrate live reaction controls into the current recipe detail layout alongside existing recipe, nutrition and export actions.
 - Preserve colliding historical bug records by remapping unmerged FR-57 BUG-017/018/019 to BUG-030/031/028 with explicit provenance.
@@ -196,6 +639,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Treat Springdoc as the API contract authority and the repository YAML as its generated, checked-in snapshot.
 - Update API documentation and agent guidance with the export and synchronization workflow.
 
@@ -216,6 +660,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Use the same meal-plan analysis and PDF endpoints in the tracker and meal-plan nutrition dialog.
 - Preserve Backend problem details returned by binary PDF requests so the interface can show the actual failure reason.
 
@@ -237,6 +682,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Filter recipe candidates by the Member's declared vegetarian type and avoided ingredients before asking Gemini to select public post IDs.
 - Synchronize the FR-51, BR-38, UC-51 and chat response documentation with the catalog-first behavior.
 
@@ -258,6 +704,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Limit Gemini request timeouts to 10 seconds to follow NFR-18.
 - Require an active Member session for chatbot requests until the FR-02 Guest rate limiter is available.
 
@@ -279,6 +726,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Allow planned servings from 0.5 to 10 in half-serving increments and calculate nutrients from the saved quantity.
 - Keep AI provider errors separate from nutrition results and require Member confirmation before applying a suggested recipe.
 - Upgrade Apache PDFBox to 3.0.8 for PDF generation.
@@ -299,6 +747,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Preserve both manual entry movement/export and the integrated AI menu controllers, DTOs, UI modes and regression tests when resolving overlapping edits.
 
 ### Fixed
@@ -320,6 +769,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Extend the existing meal planner with destination selection and downloadable exports; calculate export energy from Backend per-serving nutrition and the saved serving quantity.
 - Document the private export snapshot and movement contract in the API integration guide.
 - Exclude generated Frontend coverage artifacts from development image build contexts.
@@ -340,6 +790,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Rename the weekly goal prompt and remove the balancing and training goals from the weekly menu selector.
 - Specify excluded weekly ingredients as hard candidate filters; preferred ingredients only influence selection among recipes that pass those filters.
 - Synchronize FR-36, UC-36.1, and the API integration guide with the exclusion precedence.
@@ -360,6 +811,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Route nutrition-profile exceptions from Meal Plan endpoints through the shared ProblemDetail handler with their original status and error code.
 - Document the eligibility response and confirmation endpoint for FR-36.
 
@@ -381,6 +833,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
 - Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
 
@@ -402,7 +855,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Show the nine nutrients per serving with the original servings of each recipe and the absolute difference (first recipe − second recipe); a recipe with incomplete nutrition shows "Chưa đủ dữ liệu" and no difference.
 - Add "So sánh" entry points on recipe cards, both recipe detail routes and the Member saved recipe list.
 - Add Playwright tests for every acceptance criterion and the picker, and a real-stack test that uses the two seeded demo Expert recipes, chooses the second one on the picker page, checks the per-serving values against the Backend and checks that comparing only sends `GET` requests.
-- Record BUG-036: adding an ingredient between 00:00 and 06:59 Vietnam time is rejected because the default reference date is checked against the Backend's UTC clock; found by the admin catalog real-stack test and not fixed in this PR.
+- Record BUG-056: adding an ingredient between 00:00 and 06:59 Vietnam time is rejected because the default reference date is checked against the Backend's UTC clock; found by the admin catalog real-stack test and not fixed in this PR.
 
 ### Changed
 
@@ -430,6 +883,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Replace the session-only comment preview with the API-backed comment section on both recipe detail pages; the slug-based demo recipe pages no longer show comments.
 - Document the comment API and error codes in `API.md` section 18 and the Backend/Frontend READMEs.
 
@@ -450,6 +904,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Declare `bearerAuth` on the 31 protected operations that were missing it while keeping public operations unauthenticated.
 - Declare operation-specific errors for the affected catalog, Expert application, subscription, recipe publishing, and authentication operations.
 - Document the generated OpenAPI snapshot and its CI validation alongside the API contract rules.
@@ -472,6 +927,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Document FR-40 in `API.md` section 7 and the Backend/Frontend READMEs; type `nutritionSupported` on recipe detail ingredients in the Frontend API client.
 - Rely on the FR-36 candidate filter merged in PR #134 (`AiMenuService` keeps only published recipes whose nutrition calculation is complete) for AC-40.3 instead of adding a second candidate service.
 
@@ -493,6 +949,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Display seven collapsible day rows and three vertically stacked meals for the selected day, with a compact calendar on mobile.
 - Limit the recipe picker to the Member's saved recipes with server-side search and pagination.
 - Adapt the existing visual theme using a Google Stitch reference inspired by Samsung Food.
@@ -514,6 +971,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Add cover images to the seven existing local recipe examples so every seeded recipe has a cover.
 
 ### Fixed
@@ -534,6 +992,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Replace the Member's read-only page with a responsive seven-day, three-meal editor while preserving the existing Guest demonstration.
 - Document generated API contracts and add an optional Playwright worker limit for memory-constrained local verification without changing coverage gates.
 - Publish responsive meal-planner screenshots as a CI artifact for review.
@@ -557,6 +1016,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Move the existing application Home to `/trang-chu` and update application navigation, login destinations and affected regression tests.
 - Open the public application Home from the primary Landing start actions so Guest visitors can enter without signing in or registering.
 - Replace recreated preview controls with compressed screenshots captured from the application and its Compose demo data, including a dedicated mobile Home image.
@@ -581,6 +1041,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Define principal ingredients by the largest converted gram weight and clarify partial attribute matching and deterministic ordering in FR-47 and UC-47.
 - Document the runtime integration contract, role checks and remaining telemetry-consumer responsibility.
 
@@ -602,6 +1063,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Remove unrelated unit and conversion management screens from the Issue #46 page while retaining their existing Backend endpoints.
 - Allow an ingredient name to be reused after its previous catalog record becomes inactive.
 
@@ -623,6 +1085,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Keep catalog writes restricted to administrators and preserve existing ingredient, unit, and conversion endpoints.
 - Reject hard-delete requests and retain soft status changes for catalog records.
 
@@ -644,6 +1107,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Pass the optional `GEMINI_API_KEY` from the local environment into the Backend container at runtime and document the Docker configuration.
 
 ### Fixed
@@ -662,6 +1126,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Initialize the browser test's theme storage only once per test page session.
 
 ### Fixed
@@ -681,6 +1146,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Apply the selected semantic color palette and native form control scheme throughout the application.
 - Update the Frontend guide to describe both themes and the appearance setting.
 
@@ -700,6 +1166,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Use the browser's native modal dialog behavior for expert-application details and keep keyboard focus on recipe links instead of their scroll container.
 
 ### Fixed
@@ -718,6 +1185,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - None.
 
 ### Fixed
@@ -736,6 +1204,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - None.
 
 ### Fixed
@@ -754,6 +1223,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Keep one implementation PR per assigned Issue and prohibit using `N/A` to bypass or split an existing Issue.
 
 ### Fixed
@@ -772,6 +1242,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Show one Onboarding question at a time, save only after final completion, and allow skipping the entire questionnaire from every step without sending a partial preference profile.
 - Keep the full Settings form and explicit allergy/dislike confirmations, and document the new UI flow.
 
@@ -792,6 +1263,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Replace the oversized navigation and warm Explore layout with a compact dark header, photo cards, responsive filter rail, three-column Home, profile tabs and shopping checklist.
 - Load Home collections and filter shortcuts from Backend data, preserve existing role controls, and label prototype screens explicitly.
 - Synchronize the Frontend guide and browser regression checks with the implemented UI and API behavior.
@@ -813,6 +1285,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Expand the Frontend recipe detail API type to match the Backend response.
 ## 2026-10-11 — Verify Recipe Reactions on Docker Compose (Issue #56)
 
@@ -822,6 +1295,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Pass all 319 Backend tests, including ten SQL Server reaction integration tests, with no failures, errors or skipped tests. Pass the strict JaCoCo BUNDLE gate: Lines 93.8%, Branches 82.3%, Methods 90.5%, Instructions 94.1%.
 - Build and start the canonical root Compose stack using isolated project `mamxanh-fr57`; verify Frontend, Backend and SQL Server healthy and database initialization exit code 0. Verify HTTP 200 for Frontend, generated OpenAPI and the Scalar route, and generated GET/PUT/DELETE reaction operations. Scalar route smoke is not browser-rendering evidence.
 - Pass 13 real browser/HTTP/SQL reaction checks on Compose, covering all five FR-57 acceptance criteria, and the existing real-stack login/throttle browser test. Clean reaction fixtures and stop the stack without removing its named volumes.
@@ -839,6 +1313,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Verify 51 focused Backend tests, 45 real local HTTP/SQL checks and 13 real browser/HTTP/SQL checks after the validation fix, including all five FR-57 acceptance criteria. Clean up disposable fixtures.
 - Attempt full Backend verification: 175 of 312 tests pass, while 137 Testcontainers tests fail to initialize without Docker. Supplemental partial coverage remains below every strict Backend gate: Lines 62.9%, Branches 60.1%, Methods 59.2%, Instructions 67.0%.
 - Correct a management-page test fixture to use the public detail API shape. Record the workflow's outdated coverage guidance separately as BUG-028; preserve the current strict gates.
@@ -862,6 +1337,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Model author and statistics fields from generated OpenAPI and reuse the existing authenticated API client for reaction operations.
 - Update workspace guides and API fixtures; preserve current counts on write failure and offer retry when the current choice cannot be loaded.
 - Verify 27 browser/regression checks, followed by 14 focused checks on the final implementation, and a real local Guest discovery/detail browser smoke. Member browser writes against the real Backend, Compose integration and full coverage gates remain unverified.
@@ -882,6 +1358,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Use the same whole-number percentage in all three response paths while preserving response field types and the existing ranking algorithm.
 - Verify 44 unit/regression tests and 45 real local HTTP/SQL checks, including hidden/deleted exclusion from public rankings. Docker-backed integration and full coverage gates remain unverified.
 
@@ -903,6 +1380,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Document the reaction contract, verification limits and pending Frontend/read-statistics work in the Backend workspace guide.
 
 ### Fixed
@@ -926,6 +1404,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Remove the implemented password-reset endpoints and their schemas from the planned `openapi.yaml`, and document the flow and new error codes in `API.md`.
 - Synchronize `database/schema.sql`, the `database/queries.sql` expected counts and `database/README.md` with V11.
 
@@ -948,6 +1427,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Map the `USER` profile columns through a separate `MemberProfileEntity` in the `auth` module, keeping `User` as the identity view.
 - Let `StorageClient` upload into a named folder; recipe images still go to `recipes/`.
 - Show the member's published recipes on the profile page with the shared `PublicRecipeCard` used by Explore.
@@ -970,6 +1450,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Restrict `POST /api/v1/recipes/media/upload`, `PUT /api/v1/recipes/{recipeId}/media` and `DELETE /api/v1/recipes/{recipeId}/media` to `ROLE_EXPERT`; an Administrator now gets `403` (AC-04.7).
 - Make the image replacement and removal endpoints use the same author check as Recipe Post editing (`RecipePostService.lockOwnEditableRecipe`): another Expert gets `403 RECIPE_EDIT_NOT_ALLOWED`, a hidden post `403 RECIPE_HIDDEN` and a missing post `404 RECIPE_NOT_FOUND`.
 - Send a Guest who opens `/dang-cong-thuc` straight to `/dang-nhap` (AC-04.5); Customers and Administrators still see the access notice.
@@ -997,6 +1478,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Let a temporary password-login block not stop Google login, without resetting the failed-attempt counter.
 - Remove the implemented Google endpoint and its schemas from the planned `openapi.yaml`, and document the flow, linking rules and new error codes in `API.md`.
 
@@ -1018,6 +1500,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Update the API integration guide to describe the runtime Saved Recipes read and write operations.
 
 ### Fixed
@@ -1051,6 +1534,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Normalize unavailable Meal Plan references to the generic `Công thức không còn khả dụng` message while retaining the existing deletion indicator.
 - Return out-of-range Saved Recipes pagination as a standard validation problem and describe the bounds in OpenAPI.
 
@@ -1070,6 +1554,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Align the root SRS, FR-26/27, BR-25, database snapshot and API integration guide with the approved six report reasons and description limits for the Backend contract.
 
 ### Fixed
@@ -1089,6 +1574,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Replace Frontend role-switching/demo authentication and mock recipe listings with real session/API-backed views for connected flows.
 - Keep screens without Backend endpoints as explicitly identified UI prototypes; document the local demo accounts, seed scope and reset behavior.
 - Configure the local profile to include demo migrations and make Docker Compose wait for the Flyway-backed Backend before starting Frontend.
@@ -1111,6 +1597,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Require Frontend Lines, Statements, Functions and Branches, and Backend JaCoCo BUNDLE Lines, Branches, Methods and Instructions to each exceed 80%; exactly 80% fails.
 - Collect coverage summaries and artifacts after a gate failure when reports are available.
 
@@ -1131,6 +1618,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Publish Docker SQL Server on loopback port 1434 while keeping its internal port 1433; document the connection port for a Backend running directly on the host.
 
 ### Fixed
@@ -1156,6 +1644,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Point the "Sở thích ăn uống" menu item to the new Settings page, stub the invitation call in the existing login browser tests, record the invitation as already shown for the real-stack login test account, and document the endpoints, rules and error codes in `docs/api/API.md`, `database/schema.sql`, `database/README.md` and both app READMEs.
 
 ### Fixed
@@ -1176,6 +1665,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Remove `last_failed_login_at` from the FR-03 target design in `database/README.md`, because no Acceptance Criterion uses it.
 - Record that `database/schema.sql` matches a database built by V1–V6 with 0 differences in columns, CHECK, DEFAULT, index and FK definitions, and that `database/queries.sql` passes 78/78 assertions on both databases.
 
@@ -1196,6 +1686,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Extend the package specification and workspace guides for the implemented modules and migration.
 - Replace the FR-05 demo workflow with authenticated API submission, history, review, conflict recovery and role display.
 
@@ -1216,6 +1707,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Return to the expert profile after saving and remove a deleted recipe from that list.
 - Keep recipe management actions on the expert profile instead of the public recipe detail page.
 
@@ -1236,6 +1728,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Prototype 1–50 ingredient rows with free-text names and local-only publish feedback before the Recipe Post API was available.
 
 ### Fixed
@@ -1254,6 +1747,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Require an authorized out-of-sandbox authentication check and separate keyring, network, and credential failures before asking a user to sign in again.
 
 ### Fixed
@@ -1272,6 +1766,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Align the Docker Compose variable and contributor setup instructions with the Backend's `MAMXANH_JWT_SECRET` configuration.
 
 ### Fixed
@@ -1294,6 +1789,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Use 60-minute JWT access tokens and tab-scoped `sessionStorage`; document the accepted temporary account-enumeration risk.
 - Require the JWT signing secret in the Compose Backend and generate a disposable secret in CI.
 - Remove password login from the planned OpenAPI reference now that it is implemented at runtime.
@@ -1314,6 +1810,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Align conversion and unit numeric validation with their SQL Server decimal precision and scale.
 - Reuse the shared Frontend API client and expose Bearer-token injection for the pending login integration.
 - Move the ingredient-group migration to V5 after the email-verification V3 and nutrition-consent V4 migrations.
@@ -1336,6 +1833,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Move the account login-throttle migration to V6 after the existing V4 nutrition-consent and V5 ingredient-validation migrations.
 - Integrate real authenticated account state with the role-aware demo navigation, shared API client and nutrition requests.
 - Align the schema snapshot, verification query and API/database guides with the merged baseline.
@@ -1357,6 +1855,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Resolve the active Expert from the authenticated server principal; do not accept an author ID from the client.
 - Block authors from opening or editing a recipe hidden by an Administrator.
 
@@ -1376,6 +1875,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Enable `QUOTED_IDENTIFIER` before inserting sample data.
 
 ### Fixed
@@ -1394,6 +1894,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Pin the Scalar CLI workflow runtime to Node.js `24.21.0`, meeting the CLI's Node.js `>=24` requirement.
 
 ### Fixed
@@ -1413,6 +1914,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Use `/opt/mssql-tools18/bin/sqlcmd` consistently and pass the local SQL password through `SQLCMDPASSWORD` rather than a command-line argument.
 - Keep the `Docker Development` context and shared stack while naming its Compose project consistently for startup and cleanup.
 
@@ -1434,6 +1936,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Establish generated OpenAPI as runtime contract; retain the manual YAML as planned/reference contract during migration and update agent lookup/governance rules.
 - Pin Docker Development Node.js and Scalar CLI versions; align the documented required CI context with the existing gate.
 - Identify Scalar as the official human-facing API documentation/manual testing UI without treating it as automated regression evidence.
@@ -1454,6 +1957,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Clarify that only newly registered Members are invited after their first successful authentication; existing accounts are not prompted automatically.
 - Clarify that skipping preserves normal features and does not prevent later completion from Settings.
 
@@ -1475,6 +1979,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Define root Compose as the canonical FE/BE/SQL Server integration-test entry point; retain per-app Dockerfiles for component builds without duplicating CI gates.
 - Add `Docker Development` to the documented required validation contexts and the PR synchronization checklist, and distinguish its smoke coverage from feature/acceptance tests.
 
@@ -1495,6 +2000,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Route the Frontend API proxy to the Backend service name in Compose while retaining the localhost default for direct development.
 - Document per-machine Docker credentials, startup, persistence and reset behavior.
 
@@ -1514,6 +2020,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Hold the `USER` row lock in a test transaction while five resends start, and release it only after SQL Server reports all five requests waiting on the lock. The test now passes with the lock (1×202, 4×429, one email) and fails without it (5×202).
 
 ### Fixed
@@ -1534,6 +2041,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Keep calculated results out of profile reads and saves; return results only after a separate eligibility-confirmed calculation request.
 - Record API integration guidance for the FR-35 endpoints and the pending real JWT integration boundary.
 - Remove the feature-specific E2E runner and tests while retaining the nutrition functionality and the repository's general Playwright setup, as requested.
@@ -1556,6 +2064,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Revert the Data Dictionary edits made earlier in this pull request (the two `USER` columns, decisions Q13, Q15 and Q16, and the `google_subject` trace correction). Per the Tech Lead decision on 2026-10-01, files under `docs/diagrams/` stay a reference baseline until the final documentation phase; `database/README.md` now says so.
 
 ### Fixed
@@ -1581,6 +2090,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Lock the `USER` row during a login attempt so parallel requests cannot bypass the failure count.
 - Replace the `DemoAccount` context with `AuthContext`; the explicit demo preview remains a separate, token-free mode, and the header shows the real account name, email and a logout action for real sessions.
 - Synchronize `database/schema.sql` with V4 (200 columns, 59 CHECK and 56 DEFAULT constraints) and document the login error codes, token claims and pending token parameters in `docs/api/API.md` and `docs/api/openapi.yaml`.
@@ -1601,6 +2111,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 None.
 
 ### Fixed
@@ -1620,6 +2131,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Resolve mail settings through explicit `SPRING_MAIL_*` placeholders so values also load from the local `.env` file, and treat a blank SMTP host as email not configured.
 - Start the shared integration-test context through `MamXanhApplication.main`, combining the entry-point check from `develop` with the SQL Server Testcontainers context.
 - Use the coverage-collecting Playwright fixture in the registration and email-verification browser tests.
@@ -1643,6 +2155,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Replace baseline-derived Frontend thresholds with 60% for lines, statements, functions and branches; any metric below its threshold fails the command.
 - Run Frontend/Backend jobs independently and transfer LCOV, JaCoCo XML and Java bytecode through artifacts to a separate Sonar job that waits for its Quality Gate.
 - Align testing, contributor, tooling and agent documentation; record the distinction between repository workflow configuration and GitHub enforcement awaiting separate approval.
@@ -1665,6 +2178,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Document the normal E2E and E2E coverage commands in the Frontend testing guide.
 
 ### Fixed
@@ -1683,6 +2197,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Clarify that password-reset rate limits suppress email delivery while the request retains the same neutral `202 Accepted` response.
 - Use `login_blocked_until` as the canonical temporary login-block field name.
 
@@ -1703,6 +2218,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 None.
 
 ### Fixed
@@ -1729,6 +2245,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Run the application-context test against SQL Server through Testcontainers instead of disabling the DataSource and Flyway; `./mvnw verify` now requires a running Docker daemon.
 - Replace the demo-only registration Playwright scenario with API-stubbed registration and verification scenarios, labelled as Frontend-only evidence.
 - Document mail, CORS and frontend-link environment variables and the Docker requirement in the Backend README, the API base URL in the Frontend README, and migration V3 in the database guide.
@@ -1751,6 +2268,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Define current implementation scope by presence in the Requirements Baseline v2 registry; retain the v1 requirements baseline in the archive.
 - Align current requirements and contracts with Like/Dislike reactions, feature-based AI entitlements, and the implemented SQL Server schema/Flyway baseline.
 - Align account verification and API role documentation with the approved account-state and concrete-role models.
@@ -1773,6 +2291,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Synchronize `database/schema.sql` with the V1 plus V2 state, using `NVARCHAR(20)` and Unicode seed literals for `UNIT.code`.
 - Update the `UNIT.code` type label on the physical ERD to `NVARCHAR(20) NOT NULL`, and re-export the conceptual and physical ERD images from their updated sources.
 - Update `docs/diagrams/ERD/data-dictionary.md` to `v0.7.2`, `database/README.md` to `v0.4.2` and `docs/diagrams/ERD/README.md` to `v1.13.2` for the V2 migration, the 38-case test suite and the current data dictionary version.
@@ -1810,6 +2329,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Update `V1__baseline_schema.sql` and `database/schema.sql`:
   - Make all 9 `INGREDIENT` nutrition columns nullable (`NULL`) while preserving default `nutrition_supported = 0` (Q5).
   - Change `COMMENT.content` from `NVARCHAR(2000)` to `NVARCHAR(1000)` and add constraint `CK_COMMENT_content_len` (FR-46).
@@ -1837,6 +2357,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Confirm Vercel as the Frontend hosting platform and Azure App Service with Java 21 SE as the Backend hosting platform.
 - Retain Azure SQL Database Serverless and Azure Blob Storage as the database and media services.
 - Point the planned `.tech` custom domain to the Vercel-hosted Frontend instead of Azure Static Web Apps.
@@ -1861,6 +2382,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Configure the Frontend container for Vite development on port 5173 with file watching and no browser launch inside the container.
 - Configure the Backend container for Java 21 and Maven Wrapper development on port 8080 while keeping database credentials outside the image.
 - Keep Docker as local development tooling with no shared root Dockerfile, database container, Docker Compose setup, or production deployment change.
@@ -1883,6 +2405,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Record decisions Q5 to Q12: nullable nutrition indicators, `reviewed_by` without a conceptual connector, date of birth with the 18 to 120 age check in the service layer, technical columns with composite foreign keys for cross-row rules, paid-only subscriptions with at most one active subscription, `AVOID` and `DISLIKE` preference types, and four activity levels.
 - Specify the pending round 1 and round 2 constraints in the data dictionary with pending markers and a phase 2 handover list.
 - Flag the open conflicts between Q5 and `FR-41`/`AC-41.2`, and between Q7 and the birth-year wording of `FR-35`, until the SRS is updated.
@@ -1907,6 +2430,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Update `docs/diagrams/ERD/data-dictionary.md` to version `v0.4.0`, completing all nine physical specification columns across 22 tables (178 entity columns), documenting the resolution of SQL Server multiple cascade path Error 1785, and checking off Phase 2 delivery milestones.
 - Update `database/README.md` to version `v0.2.0` with step-by-step guidance for running the Flyway baseline migration, executing `schema.sql`, and running the automated test suite.
 - Update `docs/diagrams/ERD/README.md` to version `v1.11.0` linking the newly created Physical ERD and updating workspace status.
@@ -1928,6 +2452,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Remove `CATEGORY`, `RECIPE_CATEGORY` and `RECIPE_STEP`; add `instructions`, `dish_category` and the like, dislike and view counters to `RECIPE_POST`; replace sodium with zinc in `INGREDIENT`.
 - Record decisions Q1 (eleven fixed `dish_category` codes) and Q2 (stored interaction counters as a documented third normal form exception).
 
@@ -1948,6 +2473,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Confirm `FR-59` and `BR-75` as `ACTIVE`, making `USER_FOLLOW` a required capability that must be inherited by the Logical ERD, Physical ERD, and implementation schema.
 - Synchronize the document register, architecture baseline, C4 workspace guidance, and ERD workspace guidance with the active 22-entity conceptual model.
 - Keep the nutrition MVP at nine indicators excluding sodium, and define the daily one-page and weekly two-page nutrition PDF contents and failure behavior.
@@ -1973,6 +2499,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Move BMI, AI upgrade, and transaction-history navigation into account menus; display the current mock FREE plan beside the avatar.
 - Label recipe nutrition explicitly as sample data for one serving, with ingredient scaling independent of the static panel.
 - Require Vietnamese bug-record prose and index descriptions; translate BUG-001 through BUG-003 and retain their unresolved status.
@@ -1995,6 +2522,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Expand the repository tree and maintained-source links to reflect the current API, Backend proposal, Playwright, and application workspaces.
 - Update the current implementation summary and MVP interaction wording without claiming that draft API or package proposals are implemented.
 
@@ -2015,6 +2543,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Extend the maintained document register with the proposal and its read trigger.
 
 ### Fixed
@@ -2035,6 +2564,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Add self-contained Frontend E2E scripts, including an automatic production build before Playwright starts the preview server.
 - Align agent routing, documentation placement, Frontend guidance, and the test strategy with the real `app/mamxanh-frontend/` path and the selected Playwright boundary.
 
@@ -2055,6 +2585,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Register `docs/api/API.md` and `docs/api/openapi.yaml` as maintained API documentation, with OpenAPI as the endpoint-level Source of Truth.
 
 ### Fixed
@@ -2074,6 +2605,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Make review/approval and GitHub Actions optional for develop integration; require independent approval, current build/test checks, integration evidence, and post-merge local demo verification for main.
 - Assign main PR coordination and acceptance to the Tech Lead; plan weekly workloads using relative SP without trimming accepted scope or counting parent and child estimates twice.
 - Retain ADR-001/002 decision history while moving operational rules to CONTRIBUTING.md; align the workflow evidence register, project overview, test strategy, PR template, and existing bug form.
@@ -2105,6 +2637,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Updated `docs/requirements/PRD.md` to v1.3.0: expanded core entity baseline to 23 entities, added recipe steps (1–30), media gallery (0–5 images with 1 cover), ratings, view tracking, 6 discovery/sorting modes, and ingredient unit conversion gate.
 - Updated `docs/requirements/SRS.md` to v1.3.0:
   - Expanded conceptual baseline to 23 entities in Section 3.3.
@@ -2143,6 +2676,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Updated `docs/diagrams/ERD/README.md` to v1.2.0, clarifying the role and purpose of the Conceptual ERD in guiding physical database implementation without conjecturing internal relationship details, while synchronizing file naming conventions to `conceptual-erd-v[version]`.
 - Updated `docs/README.md` to v3.7.0 registering the maintained C4 Container documentation workspace.
 
@@ -2163,6 +2697,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Updated `docs/requirements/PRD.md` (v1.2.0) to reflect the 17 core entities baseline, single cover image per recipe, feature-based AI entitlements, and removal of all Like interactions.
 - Updated `docs/diagrams/ERD/README.md` (v1.1.0) to register the exact 17 conceptual entities and explicitly catalog removed/merged entities (`recipe_step`, `recipe_media`, `recipe_like`, `comment_like`, `moderation_action`, `user_profile`, `ai_usage_record`).
 - Updated `docs/requirements/SRS.md` (v1.2.0) across Core Entities (Section 3.3), AI and Media constraints (Sections 3.6, 3.8, 3.9, 3.12, 3.17), Question Baseline table Q01–Q26 (Section 3.20), Functional Modules M03/M06/M08 (Section 5), Functional Requirements Registry (Section 7.2), Business Rules Registry (Section 8.2), and Traceability Matrix (Section 12).
@@ -2190,6 +2725,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Updated `docs/requirements/SRS.md` to v1.1.0:
   - Redefined Recipe Post cooking instructions from 1–30 sequential steps to a single free-form context field (`instructions`, 10–5,000 characters, trimmed non-blank) in Section 3.7, Section 3.9, and Section 3.20.
   - Renamed `FR-16` to "Biểu mẫu tạo Recipe Post kết hợp thông tin món ăn có cấu trúc và trường nội dung/hướng dẫn tự do" in the requirements registry.
@@ -2231,6 +2767,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Adopted "Mâm Xanh" brand name across project documentation, including `README.md`, `docs/requirements/PRD.md`, and `docs/requirements/SRS.md`.
 - Renamed backend module from `app/vegetarian-system-backend/` to `app/mamxanh-backend/` with Maven coordinates `tech.mamxanh:mamxanh-backend`.
 - Refactored backend package structure to `tech.mamxanh`, renaming the main Spring Boot application to `tech.mamxanh.MamXanhApplication`.
@@ -2255,6 +2792,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Updated Backend Workspace Guide (`app/vegetarian-system-backend/README.md`) with scaffold status, dependency stack, and verified compilation commands.
 - Updated repository layout and document registers in `docs/README.md` and `AGENTS.md` to reference `app/vegetarian-system-backend/`.
 
@@ -2275,6 +2813,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Split HTTPS and ICMP preflight probes, require execution artifacts, and provide a preflight-only runner option that cannot start real acceptance cases.
 - Expand static executable scanning across agent scripts, evaluation code, and skill scripts while excluding generated dependencies.
 - Report A10 secret exposure separately from unobservable secret reads; make the results viewer optional.
@@ -2297,6 +2836,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Converted the current working-tree changelog entries dated 2026-09-16 to English so they comply with the new policy.
 
 ### Fixed
@@ -2316,6 +2856,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Promoted `PRD.md`, root `SRS.md`, `FUNCTIONAL-REQUIREMENTS.md`, `BUSINESS-RULES.md`, and `NON-FUNCTIONAL-REQUIREMENTS.md` to `v1.0.0` with document status `Active`.
 - Synchronized Requirements Baseline v1.0.0 status in the repository document register and project README.
 - Classified unresolved payment/email providers, token details, UI choices, nutrition reference data, and timeout/retry policies as non-blocking design or implementation work.
@@ -2337,6 +2878,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Reclassified `FR-42`, `FR-43`, `BR-55`–`BR-57`, `BR-63`, `BR-67`, and `BR-68` as `OUT_OF_SCOPE` while preserving stable IDs and historical descriptions.
 - Removed Google Maps from the current dependency, architecture, and test baselines across README, PRD, SRS, Architecture, Technology Stack, and Test Strategy.
 
@@ -2356,6 +2898,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Re-scoped `FR-02` to strictly govern Guest trial quota (5 queries/day) and authentication boundary while delegating conversational behavior to `FR-51`.
 - Normalized AI Chatbot performance authority to `NFR-03` ($\le 5$s normal response, P90 $\le 7$s under high load/concurrency); eliminated stale $\le 4$s timeouts and decoupled database query performance (`NFR-07`) from AI response time.
 - Expanded `NFR-25` to cover AI content quality and compliance, and widened its scope/threshold ($\ge 80\%$) to cover all AI-generated outputs (recommendations, related recipes, and Chatbot) for source boundaries, dietary/restriction constraints, non-fabrication, and safety rules.
@@ -2380,6 +2923,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Aligned authentication flows in `FR-03` with `TECHNOLOGY-STACK.md`: Refresh Token is issued, rotated, and expired exclusively via Secure HttpOnly SameSite Cookie inaccessible to client-side JavaScript; server manages session family revocation upon logout and reuse detection.
 - Enforced strict `Owner-only by default` authorization in `FR-23` for all personal private resources (nutrition profile, health/BMI metrics, dietary preferences, saved recipes, meal plans, shopping lists); eliminated generic `isOwner || isAdmin` bypass logic and restricted Administrator access to minimal resource-specific administrative fields (`accountId`, email, account status, moderation logs) authorized by BR/NFR.
 - Restricted cooking step reordering and editing in `FR-21` and `AC-23.10` to the recipe author per `BR-64`, keeping Administrator actions confined to independent content moderation (hide/remove).
@@ -2408,6 +2952,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Restored authoritative AI quotas across all tiers: Guest 5/day, Free Member 5/day, Plus Member 15/day, Pro Member 50/day; reset at 00:00 `Asia/Ho_Chi_Minh` (GMT+7); provider failures do not consume quota.
 - Aligned subscription and payment terms in `FR-13`: Free 0 VND, Plus 49,000 VND/month, Pro 99,000 VND/month; monthly prepaid cycle, no auto-renewal, no partial refund, verified activation, and idempotent payment processing.
 - Relocated misplaced decomposition content to authoritative owners: Comments to `FR-46`, Likes/Favorites to `FR-45`, Chatbot to `FR-51`, Recipe Card/Details to `FR-17`/`FR-20`, and Shopping List Export to `FR-55`.
@@ -2437,6 +2982,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Standardized lifecycle states for 56 FRs, 68 BRs, and 27 NFRs; moved M11 and its related FRs/BRs to `DEFERRED` while preserving `OUT_OF_SCOPE` and `RETIRED` items.
 - Synchronized Recipe Post validation, Shopping List unit conversion, tombstone/reference preservation, manual moderation, comment depth, notifications, AI quota/telemetry, nutrition, subscriptions, security, NFR performance, and curated AI evaluation.
 - Synchronized SRS/FR/BR/NFR, PRD, README, Architecture, Technology Stack, and Test Strategy without changing code, schema, API, or GitHub work items.
@@ -2462,6 +3008,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Upgraded `docs/requirements/SRS.md` to `v0.49.0` and updated the Section 9 summary table to link directly to six quality groups and all 27 detailed NFR identifiers.
 
 ### Fixed
@@ -2484,6 +3031,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Upgraded `docs/requirements/SRS.md` to `v0.48.0`; converted Sections 7 and 8 to five-column Option A indexes (`ID | Short Name | Module | Lifecycle | Detail`) acting as the Authoritative Registry for existence, identifiers, module allocation, and lifecycle, and converted Section 9 into a linked NFR summary.
 - Updated documentation and agent governance in `AGENTS.md` (v3.3.0), `docs/README.md` (v3.2.0), and `.agents/repo-contract.yml` to recognize the Modular SRS, Field-Specific Authority Model, and two-step scoped-reading procedure.
 - Synchronized the internal `markdown-documentation`, `srs-to-github-issues`, and `repo-template-doc-sync-auditor` skills for Modular SRS support, two-phase issue resolution, and bidirectional consistency audits.
@@ -2505,6 +3053,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Synchronized the out-of-scope sections in PRD Section 5 and SRS Section 3.2 to clarify the future M13/FR-56 decomposition.
 
 ### Fixed
@@ -2523,6 +3072,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Integrated Shopping List into Module M05 and renamed the module to `Saved Recipes, Meal Planning & Shopping List`.
 - Removed Shopping List from the out-of-scope lists in SRS Section 3.2 and PRD Section 5; clarified that advanced pantry, multi-user sharing, real-time synchronization, AI unit conversion, and PDF export remain outside the MVP.
 
@@ -2543,6 +3093,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Moved Module M11, FR-42, FR-43, and Google Maps Platform integration to `PENDING_REVIEW` pending lecturer guidance.
 - Updated the PRD, System Architecture, and Technology Stack to synchronize the Google Maps review state and define the Blog boundary outside the MVP.
 
@@ -2562,6 +3113,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Linked `AGENTS.md` and `CONTRIBUTING.md` to the authoritative policy without duplicating the full content.
 - Standardized Architecture, Technology Stack, Test Strategy, and workflow-evidence documentation to Vietnamese prose while preserving technical meaning and established English terms.
 
@@ -2582,6 +3134,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Migrated current product rationale, actor/onboarding context, AI boundaries and technology decisions into their authoritative destinations.
 - Updated repository navigation, agent routing and the machine-readable contract to use the new architecture, technology and testing paths.
 - Retired and deleted the four superseded migration sources after their unique current information and active references had been migrated and deletion was explicitly approved.
@@ -2603,6 +3156,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Members publish valid Recipe Posts directly; the permission-application workflow is retired and Administrator moderation is report-driven.
 - Marked persistent Recipe Post drafts and per-account AI chat history as out of scope for the current MVP.
 - Marked AI content scanning/flagging as deferred rather than an MVP acceptance requirement.
@@ -2625,6 +3179,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Converted the previous accumulating history into dated topics with Added, Changed and Fixed sections, explicit status and scope.
 - Made CONTRIBUTING.md the canonical contribution workflow; AGENTS.md now directs agents there before repository changes and retains agent-specific routing, context and authorization instructions.
 - Moved shared editing guidance out of AGENTS.md; aligned the repository contract and changelog skill with the same authority.
@@ -2647,6 +3202,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Moved product-direction and AI-plan decomposition notes from the root into requirements documentation.
 - Kept GitHub Issues/Projects as the progress source and linked PRs as review/test evidence.
 - Removed completed SRS questionnaires, the superseded SRS template and obsolete local audit reports; retained product decisions in SRS section 3.20.
@@ -2669,6 +3225,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Personalized README, PRD and frontend/backend/database workspace guides while distinguishing documentation plans from the unimplemented application.
 - Standardized maintained-document metadata and aligned app/ paths, .agents/skills/ paths and issue-number branch naming.
 
@@ -2689,6 +3246,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Consolidated Q01–Q38: Free/Plus/Pro share the same functions; real payments, comment reports/Likes, email and in-app notifications, and road-distance map results are included in the documented scope.
 - Recorded sources for Q31 while deferring formula research to implementation; treated Q35 as team-selected scope without an instructor-confirmation prerequisite.
 - Synchronized questionnaire answers, actors, product direction, AI plans and benchmark documents.
@@ -2709,6 +3267,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - SRS v0.21.0 replaced general blogs with a single Recipe Post content type and made step-by-step cooking instructions optional.
 - SRS v0.34.0 replaced per-recipe approval with publishing-permission applications: authorized Members publish valid posts directly; Administrators moderate reported content and record reasons for sanctions. AI sources became public posts that are not hidden or deleted.
 - SRS v0.35.0 required policy acknowledgement, contribution intent, responsibility and sanction awareness in applications, without professional certificates or experience.
@@ -2733,6 +3292,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - SRS v0.20.0 made onboarding skippable but required three minimum profile groups before personalized AI recipe suggestions or menu generation.
 - SRS v0.22.0 separated saved recipes from meal planning, kept personal data Member-only and excluded Queue from MVP.
 - SRS v0.23.0 fixed the meal types to breakfast, lunch and dinner, without snacks or custom meal types.
@@ -2755,6 +3315,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - SRS v0.26.0 treated BMI as a reference within the broader nutrition profile and added nutrition-based AI menus and daily status/difference checks without diagnosis.
 - SRS v0.27.0 limited nutrition-needs, AI nutrition menus and nutrition checks to Members aged 18 or over who are not pregnant, breastfeeding or requiring therapeutic diets; ordinary features remain available.
 - SRS v0.28.0 selected nine MVP nutrition metrics with per-serving presentation and personal daily references, excluding an overall balance score and Glycemic Index/Glycemic Load.
@@ -2778,6 +3339,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - SRS v0.33.0 included vegetarian-restaurant discovery around an entered address through Google Maps Platform, not GPS or Gemini, and documented Geocoding/Places dependencies, failure states and open UX/cost decisions.
 - SRS v0.37.0 made discovery independent of searched recipes and excluded restaurant-profile management.
 - SRS v0.41.0 restricted discovery to authenticated Members and rejected Guest requests before consuming external quota.
@@ -2802,6 +3364,7 @@ None.
 
 ### Changed
 
+- Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Documented develop/main delivery, 4–5-day tasks, PR review, release checklists and Story Points for workload planning.
 - Defined Target Date as technical completion and feature merge into develop; Review includes the wait for release to main without treating that wait as owner lateness.
 - Linked README and CONTRIBUTING to the five-status workflow and standardized agent, skill and output paths under .agents/.

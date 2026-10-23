@@ -97,17 +97,8 @@ export function RecipeCard({ recipe }: { recipe: Recipe }) {
         </div>
 
         <div className="flex flex-1 flex-col p-4">
-          <div className="mb-2 flex items-center gap-2 text-sm">
-            {recipe.likePercentage !== undefined ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-leaf-50 px-2 py-0.5 text-xs font-bold text-leaf-700">
-              <ThumbsUp className="h-3.5 w-3.5 text-leaf-600" /> {recipe.likePercentage}%
-            </span>
-            ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-700">
-              Mới
-            </span>
-            )}
-            <span className="ml-auto text-xs font-semibold text-brand-600">{recipe.category}</span>
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="text-xs font-semibold text-brand-600">{recipe.category}</span>
           </div>
 
           <h3 className="mb-3 line-clamp-2 font-bold leading-snug text-ink transition-colors group-hover:text-brand-700">

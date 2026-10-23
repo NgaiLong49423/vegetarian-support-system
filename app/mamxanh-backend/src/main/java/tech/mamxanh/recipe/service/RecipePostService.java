@@ -20,6 +20,7 @@ import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.recipe.dto.request.UpdateRecipePostRequest;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse;
+import tech.mamxanh.recipe.dto.response.RecipeAuthorStatisticsResponse;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse.Ingredient;
 import tech.mamxanh.recipe.dto.response.RecipePostResponse.Media;
 import tech.mamxanh.recipe.entity.RecipeIngredientEntity;
@@ -102,6 +103,15 @@ public class RecipePostService {
                 author.id(), List.of("PUBLISHED", "HIDDEN"), PageRequest.of(page, size, Sort.unsorted()));
         List<RecipePostResponse> items = result.getContent().stream().map(this::response).toList();
         return new RecipePageResponse(items, result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages());
+    }
+
+    @Transactional(readOnly = true)
+    public RecipeAuthorStatisticsResponse publishedStatisticsByAuthor(long authorId) {
+        var totals = statisticsRepository.findPublishedAuthorStatistics(authorId);
+        return new RecipeAuthorStatisticsResponse(
+                totals.getRecipeCount() == null ? 0 : totals.getRecipeCount(),
+                totals.getTotalLikes() == null ? 0 : totals.getTotalLikes(),
+                totals.getTotalViews() == null ? 0 : totals.getTotalViews());
     }
 
     @Transactional(readOnly = true)
@@ -419,6 +429,11 @@ public class RecipePostService {
                         .thenComparing(RecipePostEntity::getId))
                 .map(recipe -> new RecipeUsage(recipe.getId(), recipe.getTitle(), recipe.getStatus(), recipe.getPublishedAt()))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsPublishedRecipeUsingIngredient(long ingredientId) {
+        return repository.existsPublishedUsingIngredient(ingredientId);
     }
 
     @Transactional(readOnly = true)

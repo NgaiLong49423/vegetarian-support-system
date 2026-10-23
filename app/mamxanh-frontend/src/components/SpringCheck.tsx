@@ -187,7 +187,7 @@ export default function SpringCheck(props: SpringCheckProps) {
     <button
       ref={rowRef}
       type="button"
-      aria-checked={on}
+      aria-pressed={on}
       aria-label={ariaLabel || (typeof label === 'string' ? label : undefined)}
       disabled={disabled}
       className={`spring-check${className ? ` ${className}` : ''}`}

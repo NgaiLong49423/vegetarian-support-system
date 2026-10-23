@@ -16,7 +16,8 @@ public record PayOsWebhookPayload(
         }
         Object val = data.get("orderCode");
         if (val instanceof Number num) {
-            return num.longValue();
+            try { return new java.math.BigDecimal(num.toString()).longValueExact(); }
+            catch (ArithmeticException ex) { return null; }
         }
         try {
             return Long.parseLong(String.valueOf(val));
@@ -31,7 +32,8 @@ public record PayOsWebhookPayload(
         }
         Object val = data.get("amount");
         if (val instanceof Number num) {
-            return num.intValue();
+            try { return new java.math.BigDecimal(num.toString()).intValueExact(); }
+            catch (ArithmeticException ex) { return null; }
         }
         try {
             return Integer.parseInt(String.valueOf(val));
@@ -55,6 +57,11 @@ public record PayOsWebhookPayload(
     }
 
     public boolean isPaymentSuccess() {
-        return "00".equals(code) || ("00".equals(getCode()));
+        // Only data is signed by payOS; unsigned envelope fields cannot change settlement.
+        return data != null && "00".equals(data.get("code"));
+    }
+    @Override
+    public String toString() {
+        return "PayOsWebhookPayload[redacted]";
     }
 }

@@ -1,11 +1,36 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.30.0
+> **Version:** v0.38.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-16<br>
+> **Last Updated:** 2026-10-22
 > **Status:** Active  
 
 # Backend Workspace
+
+## Tổng hợp nguyên liệu — FR-54 / Issue #54
+
+`shopping/service/ShoppingAggregationService.aggregate(List<ShoppingAggregationLine>)` là biên tính toán nội bộ cho FR-53. Đầu vào gồm `ingredientId` (bắt buộc đối với dòng công thức; `null` chỉ dành cho mặt hàng thủ công), `customName`, `quantity` đã được caller tính theo khẩu phần, và `unitId`. Kết quả `ShoppingAggregationResult` chứa các nhóm danh mục, các dòng tổng hợp và cảnh báo có chỉ số dòng nguồn. Service không ghi Shopping List và không gọi AI/API ngoài.
+
+- Chỉ gộp cùng `ingredientId`; tên/nhóm lấy từ catalog. Tự quy đổi đúng hai cặp chuẩn `g/kg`, `ml/L`, trả đơn vị cơ sở khi có trong catalog. Cùng đơn vị đếm giữ nguyên đơn vị; không suy diễn rằng mọi đơn vị `COUNT` tương đương nhau.
+- Khác nhóm đơn vị chỉ gộp được qua `INGREDIENT_UNIT_CONVERSION` đúng nguyên liệu, với cả nguyên liệu, đơn vị và tỷ lệ còn hoạt động. Một tỷ lệ ml hoặc L có thể dùng qua quan hệ chuẩn 1 L = 1000 ml; các tỷ lệ đang mâu thuẫn khiến nhóm đó giữ riêng và có cảnh báo. Muỗng/thìa không tự đổi sang ml chỉ dựa vào `base_factor`.
+- Mặt hàng thủ công chỉ gộp tên giống nhau không phân biệt hoa thường sau trim và cùng `unitId`; không gộp với dòng catalog hoặc tự đổi g/kg cho mặt hàng thủ công. Dòng không tương thích được giữ riêng với `incompatibleUnits=true`; kết quả phân nhóm theo danh mục, mặt hàng thủ công thuộc `Nhóm khác`.
+- Phép cộng/nhân/chia chuẩn dùng `BigDecimal`, không làm tròn hoặc ghi về precision của SQL ở bước tổng hợp. FR-53 phải xử lý precision khi lưu để không biến lượng nhỏ thành 0. Dòng thiếu số lượng, số lượng <= 0, nguyên liệu/đơn vị không tồn tại hoặc tên thủ công không hợp lệ được bỏ qua kèm cảnh báo; đầu vào rỗng trả kết quả rỗng, thiếu toàn bộ danh sách trả `VALIDATION_FAILED`.
+- Catalog và quy đổi được đọc theo batch qua public service của module `nutrition`; tham chiếu lịch sử ngừng sử dụng vẫn có tên/đơn vị để hiển thị, nhưng không dùng tỷ lệ đã ngừng sử dụng để gộp khác dimension.
+
+**Ranh giới tích hợp:** engine thuộc FR-54 / PR #150, chưa phải baseline `develop`. Nhánh FR-53 kế thừa engine để triển khai caller bên dưới; PR #150 phải được tích hợp trước khi FR-53 sẵn sàng merge. Engine không tự xử lý đăng nhập, quyền sở hữu hoặc lưu checklist.
+
+## Checklist mua sắm — FR-53 / Issue #53
+
+- `/api/v1/shopping-lists` cung cấp danh sách theo tài khoản, đọc checklist, đổi tên/xóa danh sách, thêm/sửa/xóa item, đặt trạng thái đã mua và xóa các item đã mua. Backend lấy chủ sở hữu từ phiên đăng nhập; Guest/Admin/tài khoản khóa và truy cập danh sách của người khác bị chặn. Xóa danh sách xóa provenance trước item, không xóa Meal Plan hoặc Recipe Post nguồn.
+- `POST /api/v1/shopping-lists` tạo checklist rỗng loại `MANUAL` với tên Member nhập; danh sách độc lập với Meal Plan và danh sách công thức `PERSONAL`, trả `201` và mở được ngay để thêm mặt hàng thủ công. Migration V21 mở rộng constraint loại danh sách; snapshot schema được đồng bộ.
+- `POST /from-meal-plan` tạo checklist độc lập từ cả tuần hoặc các ngày đã chọn, tính lượng theo khẩu phần dự kiến, tổng hợp qua FR-54 rồi lưu transaction. Tên danh sách thể hiện ngày thực đơn, không ngụ ý ngày mua nguyên liệu.
+- `POST /{listId}/recipes` thêm một công thức công khai vào mọi danh sách thuộc Member; `POST /from-recipe` tạo danh sách `MANUAL` có tên và thêm công thức trong cùng transaction. Cả hai hỗ trợ khẩu phần 1–50, kiểm tra quyền sở hữu và không cộng trùng công thức; API nhiều công thức đã được gỡ. Sửa/ẩn/xóa bài không tự thay đổi lượng hoặc trạng thái checklist; nguồn được đọc theo nội dung hiện hành hoặc hiển thị unavailable, theo thiết kế đã chốt trong #90.
+- Migration shopping chưa merge được chuyển sang V18 (đơn vị `cuộn`) và V19 (loại danh sách/đóng góp Recipe Post), giữ nguyên V16/V17 dinh dưỡng của develop. Không sửa Flyway history, reset database dùng chung hoặc thay đổi diagram.
+- Clipboard/TXT thuộc FR-55, được bàn giao riêng. Scalar và generated OpenAPI mô tả hợp đồng shopping hiện hành.
+
+Kiểm thử tập trung: `.\mvnw.cmd "-Dtest=ShoppingAggregationServiceTest,ShoppingAggregationIntegrationTest,IngredientCatalogServiceTest" test`. Unit tests bao phủ AC-54.1–54.5 và trường hợp biên; integration tests dùng catalog/quy đổi SQL Server Testcontainers thật, fixture rollback. Không mô tả các test này là kiểm thử UI hoặc toàn bộ luồng tạo danh sách.
+
+Kiểm chứng ngày 2026-10-17 trên nhánh FR-54: 67/67 test tập trung đạt; toàn Backend `clean verify` đạt 881/881 test, không failure/error/skip. JaCoCo BUNDLE: Lines 94,87%, Branches 82,97%, Methods 93,42%, Instructions 94,31%; cả bốn đều vượt cổng `>80%`. Đây là bằng chứng local của bộ tổng hợp và baseline Backend, không thay thế required CI/review hoặc nghiệm thu sau merge.
 
 Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và truy cập Microsoft SQL Server qua Spring Data JPA/Hibernate theo [Technology Stack](../../docs/architecture/TECHNOLOGY-STACK.md).
 
@@ -48,6 +73,8 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 - Đã có FR-23 (Issue #29): `GET /api/v1/members/{userId}` và `GET /api/v1/members/{userId}/recipes` công khai; `GET`/`PUT /api/v1/me/profile` và `POST /api/v1/me/profile/avatar` cho Member sửa tên, giới thiệu ngắn và ảnh đại diện (JPEG/PNG/WebP ≤ 2 MB, kiểm chữ ký tệp, lưu qua `StorageClient` trong thư mục `avatars/`). Không có migration: `USER.bio`, `display_name`, `avatar_url` có từ V1. Quy tắc chi tiết ở [API Guide mục 11](../../docs/api/API.md). Giới hạn multipart `spring.servlet.multipart.*` là 5 MB/tệp, 6 MB/request.
 - FR-40 (Issue #45): Recipe Post dùng nguyên liệu catalog chưa có hồ sơ dinh dưỡng vẫn công khai được (BR-50); AI menu dinh dưỡng (FR-36, `AiMenuService`) chỉ lấy ứng viên `PUBLISHED` có dinh dưỡng đầy đủ, nên bài loại này không vào pool và áp dụng menu chứa bài đó bị từ chối (AC-40.3, BR-40; test `IncompleteNutritionAiMenuIntegrationTest`).
 - Đã có FR-59 (Issue #69) trong module `auth`: `GET /api/v1/members/{userId}/follow` công khai (bộ đếm và trạng thái theo dõi của người xem), `PUT`/`DELETE` cùng đường dẫn để theo dõi/bỏ theo dõi (idempotent, khóa phạm vi chống ghi trùng khi gọi song song) và `GET /api/v1/members/{userId}/followers`, `/following` có phân trang cho tài khoản đã đăng nhập. Không có migration: `USER_FOLLOW` có từ V1. Quy tắc chi tiết ở [API Guide mục 17](../../docs/api/API.md).
+- FR-61/FR-62 có `GET /api/v1/experts` (danh bạ Expert đang hoạt động, tìm kiếm/phân trang, follower count và trạng thái following) cùng `GET /api/v1/ingredients/groups`, `GET /api/v1/ingredients` và `GET /api/v1/ingredients/{ingredientId}`. Chi tiết nguyên liệu `ACTIVE` trả ảnh minh họa và chín chỉ tiêu dinh dưỡng trên 100 g; `NULL` là chưa biết, không chuyển thành 0. Nguyên liệu ngừng dùng và không tồn tại đều trả `404 INGREDIENT_NOT_FOUND`; API công khai không trả nguồn tham khảo, ngày tham khảo, trạng thái hoặc cờ hỗ trợ dinh dưỡng. Tái sử dụng catalog hiện có; xem [quy ước tích hợp FR-62](../../docs/api/API.md#20-danh-mục-và-chi-tiết-nguyên-liệu-công-khai--fr-62). OpenAPI snapshot được export từ runtime sau khi API thay đổi.
+- FR-23 bổ sung `GET /api/v1/members/{userId}/recipe-statistics`, tổng hợp số bài công khai, lượt LIKE và lượt xem của toàn bộ Recipe Post `PUBLISHED` của một Member; tái sử dụng `RECIPE_POST`, `RECIPE_REACTION` và `RECIPE_VIEW`, không thêm migration.
 - Đã có FR-46 (Issue #48) trong module `recipe`: `GET /api/v1/recipes/{recipeId}/comments` công khai (luồng gốc phân trang, reply lồng tối đa 5 cấp, tombstone), `POST` cùng đường dẫn để bình luận/trả lời, `PUT`/`DELETE /api/v1/comments/{commentId}` cho chủ bình luận. Không có migration: `COMMENT` có từ V1. Quy tắc chi tiết ở [API Guide mục 18](../../docs/api/API.md).
 
 ### Lệnh chạy và kiểm tra xác minh
@@ -132,7 +159,9 @@ Các biến môi trường cho xác thực, email và tích hợp AI (giá trị
 
 ### Tài khoản demo local
 
-Khi Flyway nạp seed trong profile `local`, Backend tạo 25 tài khoản đã xác minh email: 20 Customer (`demo-customer@mamxanh.local`, `demo-new-member@mamxanh.local`, `demo-applicant@mamxanh.local` và `demo-customer-04` đến `demo-customer-20`), 4 Expert (`demo-expert@mamxanh.local` và `demo-expert-02` đến `demo-expert-04`) cùng `demo-admin@mamxanh.local`. Tất cả Customer có hồ sơ hoàn chỉnh, BMI hiện tại từ chiều cao/cân nặng và bốn tuần lịch ăn; hai tài khoản onboarding cũ nay cũng là Customer hoàn chỉnh. Seed có thêm công thức, nguyên liệu chưa xác minh dinh dưỡng và hoạt động Like/Dislike/View/Follow để trình diễn các bảng xếp hạng. Tài khoản Expert đầu tiên quản lý bộ công thức hiện có và có gói Pro demo hiệu lực một năm tính từ lần seed thiết lập subscription. Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả 25 tài khoản.
+Danh sách 54 công thức mẫu có seed gia vị/định lượng riêng cho hai phần ăn, tất cả nguyên liệu dùng gram và hướng dẫn được đồng bộ. Seed ảnh ánh xạ 209 nguyên liệu sang WebP do Frontend phục vụ, chỉ điền URL trống để giữ ảnh Admin đã tải lên. Quy tắc định lượng và lệnh kiểm chứng chạy lại seed nằm trong [Database Workspace Guide](../../database/README.md#gia-vị-định-lượng-và-ảnh-minh-họa-demo). Chạy profile `local` hoặc Compose để cập nhật có giữ dữ liệu; không cần bật `local-reset`.
+
+Khi Flyway nạp seed trong profile `local`, Backend tạo 25 tài khoản đã xác minh email: 20 Customer (`demo-customer@mamxanh.local`, `demo-new-member@mamxanh.local`, `demo-applicant@mamxanh.local` và `demo-customer-04` đến `demo-customer-20`), 4 Expert (`demo-expert@mamxanh.local` và `demo-expert-02` đến `demo-expert-04`) cùng `demo-admin@mamxanh.local`. Bốn Expert demo có ảnh chân dung tổng hợp do Frontend host trong `public/avatars/experts/`; seed chỉ gán avatar cục bộ khi hồ sơ chưa có avatar hoặc vẫn dùng avatar demo, không ghi đè ảnh đã tải lên storage. Tất cả Customer có hồ sơ hoàn chỉnh, BMI hiện tại từ chiều cao/cân nặng và bốn tuần lịch ăn; hai tài khoản onboarding cũ nay cũng là Customer hoàn chỉnh. Seed có thêm công thức, nguyên liệu chưa xác minh dinh dưỡng và hoạt động Like/Dislike/View/Follow để trình diễn các bảng xếp hạng. Tài khoản Expert đầu tiên quản lý bộ công thức hiện có và có gói Pro demo hiệu lực một năm tính từ lần seed thiết lập subscription. Đặt `MAMXANH_DEMO_PASSWORD` trong file `.env` local; một mật khẩu được BCrypt hóa riêng khi ứng dụng khởi động và gán cho cả 25 tài khoản.
 
 Seed repeatable chỉ dùng với profile `local`. Trong IntelliJ/Maven, profile `local,local-reset` mặc định xóa và dựng lại `MamXanhDB` trước khi chạy migration; Docker Compose giữ volume/database khi `down`/`up`, và chạy lại seed an toàn. Reset SQL volume Compose sẽ dựng lại toàn bộ schema và fixture. Không dùng tài khoản hoặc mật khẩu demo ngoài máy local.
 
@@ -262,6 +291,15 @@ Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc 
 - Subscription baseline dùng FREE 0, PLUS 49,000 và PRO 99,000 VND/tháng; verified activation, end-of-period expiry, no auto-renew/no partial refund và idempotent duplicate payment processing. Cổng thanh toán đã chốt là **payOS** (REST API qua Spring `RestClient` + Webhook HMAC-SHA256).
 - Gemini, Azure, Brevo SMTP và payOS credential chỉ đến từ cấu hình môi trường/secret store (local `.env`, GitHub Secrets, Azure App Service Settings); không commit giá trị thật. Maps chỉ được cấu hình nếu M11 được kích hoạt lại bằng quyết định scope mới.
 - API được mô tả bằng OpenAPI và trả lỗi nhất quán; không để frontend suy đoán business rule.
+
+## Thanh toán xác minh — FR-13 / Issue #142
+
+- `POST /api/v1/subscriptions/checkout` chỉ trả URL HTTPS thuộc `pay.payos.vn` sau khi payOS trả dữ liệu có chữ ký hợp lệ, đúng mã đơn/số tiền, trạng thái `PENDING` và có QR/link thanh toán. Thiếu cấu hình hoặc provider không khả dụng trả `503 PAYMENT_UNAVAILABLE`; dữ liệu provider không xác minh được trả `502 PAYMENT_RESPONSE_INVALID`. Không tạo checkout giả hoặc chấp nhận chữ ký thử trong runtime.
+- `GET /api/v1/subscriptions/transactions/{orderCode}` yêu cầu Member đang hoạt động, chỉ đọc đơn của chính tài khoản; đơn không tồn tại hoặc của người khác cùng trả 404. Response `Cache-Control: no-store` gồm `orderCode` dạng chuỗi, gói đã mua, số tiền, trạng thái đơn, `paidAt`, `activated` và subscription hiện tại. Đơn `PENDING` được đối soát server-to-server với payOS; không tin trạng thái trên URL trình duyệt.
+- Webhook và đối soát dùng chung `PaymentSettlementService`: khóa tài khoản rồi khóa đơn, kiểm tra số tiền, hết hiệu lực bản ghi ACTIVE cũ trước khi thêm bản ghi mới, cập nhật `PAID`/subscription trong cùng transaction. Webhook lặp không đổi thời hạn hoặc `paidAt`; probe có chữ ký hợp lệ nhưng không thuộc đơn nội bộ được ACK mà không cấp quyền. Chỉ dữ liệu webhook được ký mới quyết định kết quả; envelope hoặc query params không cấp quyền.
+- Khi chạy Compose, điền ba credential payOS trong `app/mamxanh-backend/.env`: `MAMXANH_PAYOS_CLIENT_ID`, `MAMXANH_PAYOS_API_KEY`, `MAMXANH_PAYOS_CHECKSUM_KEY`; file Compose truyền các biến này vào Backend. Không đưa credential vào Frontend hoặc Git. Để trống vẫn khởi động ứng dụng nhưng chức năng tạo/xác minh thanh toán chưa xử lý được sẽ báo 503.
+- Cấu hình webhook trên kênh payOS bằng URL HTTPS công khai kết thúc `/api/v1/payments/webhook`. Local cần HTTPS tunnel trỏ về Backend; `localhost` không phải webhook công khai. `MAMXANH_PAYOS_RETURN_URL` và `MAMXANH_PAYOS_CANCEL_URL` trỏ tới đúng origin Frontend mà người dùng đăng nhập, không thay thế webhook. Tạo lại container Backend sau khi đổi biến môi trường bằng cùng Compose project; không cần xóa SQL volume.
+- Adapter REST có thời gian chờ hữu hạn; lỗi mạng, chữ ký sai hoặc thiếu tiền không được kích hoạt gói. Kiểm thử dùng provider có kiểm soát, không thực hiện chuyển tiền thật. `PaymentVerificationIntegrationTest` kiểm tra locking, ownership, hủy/đối soát và giữ đúng một subscription ACTIVE trên SQL Server qua Testcontainers.
 
 ## Definition of Done cho thay đổi backend
 
