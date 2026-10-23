@@ -40,13 +40,14 @@ class RecipeAiAssistanceServiceTest {
     @Mock private SubscriptionEntitlementService entitlementService;
     @Mock private IngredientCatalogLookupService ingredientCatalog;
     @Mock private AiClient aiClient;
+    @Mock private org.springframework.context.ApplicationEventPublisher events;
 
     private RecipeAiAssistanceService service;
 
     @BeforeEach
     void setUp() {
         service = new RecipeAiAssistanceService(currentUserService, entitlementService, ingredientCatalog,
-                aiClient, new JsonMapper());
+                aiClient, new JsonMapper(), events, java.time.Clock.systemUTC());
         when(currentUserService.requireActiveExpert()).thenReturn(new CurrentUser(7L, Role.EXPERT));
         lenient().when(ingredientCatalog.findActiveIngredientsByIds(List.of(1L, 2L))).thenReturn(List.of(TOFU, TOMATO));
         lenient().when(ingredientCatalog.findActiveIngredients("")).thenReturn(List.of(TOFU, TOMATO));
@@ -54,22 +55,27 @@ class RecipeAiAssistanceServiceTest {
 
     @Test
     void generatedStepsUseOnlyAllowedIdsAndResolveNamesFromCatalog() {
-        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("""
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("""
                 {"description":"Món đậu phụ cà chua thanh vị.","steps":[
                   {"text":"Đun nóng chảo rồi đảo đều đến khi mềm.","ingredientIds":[1,2]}]}
-                """);
+                """, 150, 300, 450));
 
         var result = service.generate(request(ContentType.INSTRUCTIONS));
 
         assertThat(result.content()).isEqualTo("1. Đun nóng chảo rồi đảo đều đến khi mềm. (Đậu phụ, Cà chua)");
         verify(entitlementService).requirePlusOrPro(7L);
+        org.mockito.ArgumentCaptor<tech.mamxanh.integration.ai.AiUsageEvent> telemetry =
+                org.mockito.ArgumentCaptor.forClass(tech.mamxanh.integration.ai.AiUsageEvent.class);
+        verify(events).publishEvent(telemetry.capture());
+        assertThat(telemetry.getValue().feature()).isEqualTo("FR-21");
+        assertThat(telemetry.getValue().promptTokens()).isEqualTo(150);
     }
 
     @Test
     void rejectsIngredientIdNotSuppliedByAuthor() {
-        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("""
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("""
                 {"description":"Món ngon.","steps":[{"text":"Nấu thật ngon món ăn này.","ingredientIds":[99]}]}
-                """);
+                """, 150, 300, 450));
 
         assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
                 .isInstanceOf(AppException.class)
@@ -78,9 +84,9 @@ class RecipeAiAssistanceServiceTest {
 
     @Test
     void rejectsUnselectedCatalogIngredientMentionedInGeneratedText() {
-        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("""
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("""
                 {"description":"Nấm được nấu cùng món.","steps":[{"text":"Thêm nấm và đảo đều.","ingredientIds":[1]}]}
-                """);
+                """, 150, 300, 450));
         when(ingredientCatalog.findActiveIngredients("")).thenReturn(List.of(TOFU, TOMATO, ingredient(3L, "Nấm")));
 
         assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
@@ -95,13 +101,13 @@ class RecipeAiAssistanceServiceTest {
 
         assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
                 .isInstanceOf(AppException.class);
-        verify(aiClient, never()).generateRecipeText(anyString(), anyList());
+        verify(aiClient, never()).generateRecipeContent(anyString(), anyList());
     }
 
     @Test
     void rejectsDescriptionLongerThanAcceptanceLimit() {
-        when(aiClient.generateRecipeText(anyString(), anyList()))
-                .thenReturn("{\"description\":\"" + "x".repeat(2001) + "\",\"steps\":[]}");
+        when(aiClient.generateRecipeContent(anyString(), anyList()))
+                .thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("{\"description\":\"" + "x".repeat(2001) + "\",\"steps\":[]}", 150, 300, 450));
 
         assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
                 .isInstanceOf(AppException.class)
@@ -115,12 +121,12 @@ class RecipeAiAssistanceServiceTest {
                         new RecipeAiAssistanceRequest.Ingredient(1L, 1, BigDecimal.ONE)));
 
         assertThatThrownBy(() -> service.generate(duplicate)).isInstanceOf(AppException.class);
-        verify(aiClient, never()).generateRecipeText(anyString(), anyList());
+        verify(aiClient, never()).generateRecipeContent(anyString(), anyList());
     }
 
     @Test
     void translatesProviderFailuresWithoutExposingProviderDetails() {
-        when(aiClient.generateRecipeText(anyString(), anyList())).thenThrow(new AiProviderException("provider detail"));
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenThrow(new AiProviderException("provider detail"));
 
         assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
                 .isInstanceOf(AppException.class)
@@ -129,7 +135,7 @@ class RecipeAiAssistanceServiceTest {
 
     @Test
     void translatesUnexpectedProviderRuntimeFailures() {
-        when(aiClient.generateRecipeText(anyString(), anyList())).thenThrow(new IllegalStateException("internal detail"));
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenThrow(new IllegalStateException("internal detail"));
 
         assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
                 .isInstanceOf(AppException.class)
@@ -138,7 +144,7 @@ class RecipeAiAssistanceServiceTest {
 
     @Test
     void rejectsMalformedProviderJson() {
-        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("not-json");
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("not-json", 150, 300, 450));
 
         assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
                 .isInstanceOf(AppException.class)
@@ -147,12 +153,12 @@ class RecipeAiAssistanceServiceTest {
 
     @Test
     void rejectsEmptyOrOversizedCookingInstructions() {
-        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("{\"description\":\"Ok\",\"steps\":[]}");
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("{\"description\":\"Ok\",\"steps\":[]}", 150, 300, 450));
         assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
                 .isInstanceOf(AppException.class);
 
-        when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("{\"description\":\"Ok\",\"steps\":["
-                + "{\"text\":\"" + "x".repeat(5000) + "\",\"ingredientIds\":[]}]}");
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("{\"description\":\"Ok\",\"steps\":["
+                + "{\"text\":\"" + "x".repeat(5000) + "\",\"ingredientIds\":[]}]}", 150, 300, 450));
         assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
                 .isInstanceOf(AppException.class)
                 .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
@@ -165,7 +171,7 @@ class RecipeAiAssistanceServiceTest {
         assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
                 .isInstanceOf(AppException.class)
                 .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.RECIPE_DATA_INVALID);
-        verify(aiClient, never()).generateRecipeText(anyString(), anyList());
+        verify(aiClient, never()).generateRecipeContent(anyString(), anyList());
     }
 
     private static RecipeAiAssistanceRequest request(ContentType type) {

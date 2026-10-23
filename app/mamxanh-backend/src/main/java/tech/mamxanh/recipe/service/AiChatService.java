@@ -68,9 +68,11 @@ public class AiChatService {
     }
 
     public AiChatResponse answer(AiChatRequest request) {
-        var user = users.requireActiveMember();
+        Long userId = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember().id() : null;
         validateContext(request);
-        var dietary = preferences.menuConstraints(user.id());
+        var dietary = userId == null
+                ? new DietaryPreferenceService.MenuDietaryConstraints(null, List.of(), List.of())
+                : preferences.menuConstraints(userId);
         RecipeDetailResponse recipe = request.contextType() == AiChatRequest.ContextType.RECIPE
                 ? recipes.getPublishedRecipe(request.recipeId()) : null;
         boolean catalogSearch = !explicitlyRequestsCreation(request.question())
@@ -83,8 +85,13 @@ public class AiChatService {
         try {
             result = ai.answerChat(SYSTEM_INSTRUCTION, prompt);
         } catch (AiProviderException exception) {
-            LOG.warn("Gemini chat failed ({})", exception.getClass().getSimpleName());
-            throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
+            LOG.warn("Gemini chat rejected category={} httpStatus={}", exception.kind(), exception.httpStatus());
+            if (exception.kind() == tech.mamxanh.integration.ai.GeminiAiClient.FailureKind.INVALID_RESPONSE) {
+                throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+            }
+            throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE, Integer.valueOf(429).equals(exception.httpStatus())
+                    ? "Dịch vụ AI đang tạm giới hạn yêu cầu. Vui lòng thử lại sau."
+                    : "Dịch vụ trả lời đang gặp sự cố. Vui lòng thử lại sau.");
         }
         if (result == null) {
             throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
@@ -92,9 +99,11 @@ public class AiChatService {
         ChatReply reply = parseReply(result);
         List<RecipeRecommendation> recommendations = hydrateRecommendations(reply, candidates, dietary, request);
         String answer = normalizedAnswer(reply, request, catalogSearch, recommendations);
-        if (answer.isBlank()) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
-        events.publishEvent(new AiUsageEvent(user.id(), "FR-51", clock.instant(),
-                result.promptTokens(), result.responseTokens(), result.totalTokens()));
+        if (answer.isBlank() || answer.length() > AiClient.MAX_CHAT_ANSWER_LENGTH) {
+            throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        }
+        events.publishEvent(new AiUsageEvent(userId, userId == null ? request.anonymousViewerId() : null, "FR-51", clock.instant(),
+                result.usage()));
         return new AiChatResponse(request.contextType(), request.recipeId(), answer, recommendations);
     }
 

@@ -249,6 +249,7 @@ export interface RecipeReferenceData {
 export type AiChatContext = 'GENERAL' | 'RECIPE';
 export interface AiChatTurn { speaker: 'USER' | 'ASSISTANT'; content: string }
 export interface AiChatRequest {
+  anonymousViewerId?: string;
   contextType: AiChatContext;
   recipeId?: number;
   question: string;

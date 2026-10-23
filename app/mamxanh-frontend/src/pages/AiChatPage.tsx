@@ -5,6 +5,7 @@ import { useAuth } from '../components/AuthContext';
 import { useAiChat } from '../components/AiChatContext';
 import { recipesApi, type AiChatTurn } from '../api/recipes';
 import { asApiError } from '../lib/apiClient';
+import { anonymousRecipeViewer } from '../lib/recipeViewer';
 
 interface ChatMessage extends AiChatTurn {
   id: number;
@@ -15,6 +16,7 @@ export function AiChatPage() {
   const { account, isAuthenticated } = useAuth();
   const { isOpen, recipeId, closeChat } = useAiChat();
   const hasRecipeContext = recipeId !== null;
+  const requestVersion = useRef(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
@@ -84,12 +86,14 @@ export function AiChatPage() {
   </button>;
 
   useEffect(() => {
+    requestVersion.current += 1;
+    setLoading(false);
     setMessages([]);
     setQuestion('');
     setError('');
     setRetryQuestion('');
     setSequence(0);
-  }, [recipeId]);
+  }, [recipeId, account?.id, isAuthenticated]);
 
   if (!isOpen) return null;
 
@@ -104,6 +108,7 @@ export function AiChatPage() {
   async function send(questionText: string, previous: ChatMessage[], addQuestion: boolean) {
     const normalized = questionText.trim();
     if (!normalized || loading) return;
+    const version = requestVersion.current;
     setLoading(true);
     setError('');
     setRetryQuestion(normalized);
@@ -113,10 +118,12 @@ export function AiChatPage() {
     try {
       const response = await recipesApi.chat({
         contextType,
+        ...(!isAuthenticated ? { anonymousViewerId: anonymousRecipeViewer() } : {}),
         ...(hasRecipeContext ? { recipeId } : {}),
         question: normalized,
         history: previous.slice(-8).map(({ speaker, content }) => ({ speaker, content })),
       });
+      if (version !== requestVersion.current) return;
       setMessages((current) => [...current, {
         id: currentId + 1,
         speaker: 'ASSISTANT',
@@ -126,14 +133,15 @@ export function AiChatPage() {
       setSequence(currentId + 1);
       setRetryQuestion('');
     } catch (cause) {
+      if (version !== requestVersion.current) return;
       const apiError = asApiError(cause);
       setError(apiError.status === 429
         ? 'Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Hãy thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục.'
-        : apiError.code === 'AI_PROVIDER_UNAVAILABLE' || apiError.status === 0
+        : apiError.status === 0
           ? 'Dịch vụ trả lời đang gặp sự cố. Vui lòng thử lại sau.'
           : apiError.message);
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   }
 
@@ -146,22 +154,6 @@ export function AiChatPage() {
     void send(normalized, previous, true);
   }
 
-  if (!isAuthenticated) {
-    return <div className="pointer-events-none fixed inset-2 z-50 flex items-end justify-end sm:inset-0 sm:p-5">
-      <section role="dialog" aria-modal="false" style={chatWindowStyle} className="pointer-events-auto relative flex shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-100 bg-paper shadow-2xl sm:max-h-[calc(100dvh-2.5rem)]" aria-labelledby="chat-heading">
-        {resizeHandle}
-        <header className="flex items-center justify-between border-b border-brand-100 bg-cream-soft py-3 pl-8 pr-4">
-          <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-700"><Bot className="h-5 w-5" aria-hidden="true" /></span><div><h1 id="chat-heading" className="font-extrabold text-ink">Bạn cần AI hỗ trợ gì?</h1><p className="text-xs text-ink-muted">Hỏi về món chay và cách nấu</p></div></div>
-          <button type="button" onClick={closeChat} aria-label="Đóng khung chat" className="rounded-full p-2 text-ink-muted hover:bg-paper hover:text-ink"><X className="h-4 w-4" /></button>
-        </header>
-        <div className="flex flex-1 flex-col items-center justify-center p-5 text-center">
-          <p className="text-sm leading-6 text-ink-muted">Khung chat dành cho tài khoản thành viên. Hỗ trợ khách sẽ mở sau khi giới hạn tần suất được tích hợp.</p>
-          <div className="mt-4 flex gap-2"><Link to="/dang-nhap" className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-on-brand">Đăng nhập</Link><Link to="/dang-ky" className="rounded-full border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-700">Đăng ký</Link></div>
-        </div>
-      </section>
-    </div>;
-  }
-
   return <div className="pointer-events-none fixed inset-2 z-50 flex items-end justify-end sm:inset-0 sm:p-5">
     <section role="dialog" aria-modal="false" style={chatWindowStyle} className="pointer-events-auto relative flex shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-100 bg-paper shadow-2xl sm:max-h-[calc(100dvh-2.5rem)]" aria-labelledby="chat-heading">
       {resizeHandle}
@@ -172,6 +164,7 @@ export function AiChatPage() {
         <button type="button" onClick={closeChat} aria-label="Đóng khung chat" className="rounded-full p-2 text-ink-muted hover:bg-paper hover:text-ink"><X className="h-4 w-4" /></button>
       </header>
 
+      {!isAuthenticated && <p className="border-b border-brand-100 px-4 py-2 text-xs text-ink-muted">Bạn đang trò chuyện với tư cách khách. <Link to="/dang-ky" className="font-semibold text-brand-700 underline">Đăng ký</Link> để dùng các tính năng dành cho thành viên.</p>}
       <p className="flex gap-2 border-b border-brand-100 bg-brand-50/70 px-4 py-2.5 text-[11px] leading-4 text-ink-soft"><ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-700" aria-hidden="true" />Câu trả lời do AI tạo và chỉ mang tính tham khảo. Hội thoại chỉ giữ trong phiên này.</p>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4" aria-live="polite" aria-label="Cuộc trò chuyện">

@@ -9,11 +9,18 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
+@ExtendWith(OutputCaptureExtension.class)
 class GeminiAiClientTest {
     private HttpServer server;
+    private final AtomicInteger requests = new AtomicInteger();
 
     @AfterEach
     void stopServer() {
@@ -73,6 +80,30 @@ class GeminiAiClientTest {
         var options = HttpOptions.builder().baseUrl("http://127.0.0.1:" + server.getAddress().getPort())
                 .apiVersion("v1beta").timeout(3_000).build();
         return new GeminiAiClient("test-key", options);
+    }
+
+    @Test
+    void recipeAssistancePreservesThinkingAndCachedMetadata() throws IOException {
+        startServer(200, """
+                {"candidates":[{"content":{"parts":[{"text":"{}"}],"role":"model"},"finishReason":"STOP"}],
+                 "usageMetadata":{"promptTokenCount":150,"candidatesTokenCount":300,"totalTokenCount":500,
+                   "thoughtsTokenCount":50,"cachedContentTokenCount":20}}
+                """);
+        try (var client = configuredClient()) {
+            var result = client.generateRecipeContent("Recipe assistance", List.of(1L));
+            assertThat(result.usage()).isEqualTo(new AiTokenUsage(AiTokenUsage.MODEL,"STANDARD",150,300,500,50,20,0));
+        }
+    }
+
+    @Test
+    void incompleteRecipeResponseIsNotSuccessfulEvenWhenJsonParses() throws IOException {
+        startServer(200, """
+                {"candidates":[{"content":{"parts":[{"text":"{}"}],"role":"model"},"finishReason":"MAX_TOKENS"}]}
+                """);
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.generateRecipeContent("Recipe assistance", List.of(1L)))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class);
+        }
     }
 
     @Test
@@ -175,6 +206,8 @@ class GeminiAiClientTest {
     private void startServer(int status, String body) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
+            requests.incrementAndGet();
+            exchange.getRequestBody().readAllBytes();
             byte[] response = body.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(status, response.length);
@@ -183,5 +216,68 @@ class GeminiAiClientTest {
             }
         });
         server.start();
+    }
+
+    @Test
+    void retryableProviderFailuresMakeOneAttemptAndLogOnlySafeMetadata(CapturedOutput output) throws IOException {
+        startServer(429, "{\"error\":{\"code\":429,\"message\":\"private-provider-body\",\"status\":\"RESOURCE_EXHAUSTED\"}}");
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.answerChat("private-system", "private-question"))
+                    .isInstanceOfSatisfying(GeminiAiClient.AiProviderException.class, failure -> {
+                        assertThat(failure.kind()).isEqualTo(GeminiAiClient.FailureKind.HTTP);
+                        assertThat(failure.httpStatus()).isEqualTo(429);
+                    });
+        }
+        assertThat(requests.get()).isEqualTo(1);
+        assertThat(output.getOut()).contains("operation=CHAT", "model=gemini-3.8-flash",
+                "category=HTTP", "httpStatus=429", "elapsedMs=")
+                .doesNotContain("private-system", "private-question", "private-provider-body", "test-key");
+    }
+
+    @Test
+    void timeoutReturnsWithoutSdkRetryBackoff(CapturedOutput output) throws IOException {
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            requests.incrementAndGet();
+            exchange.getRequestBody().readAllBytes();
+            try { Thread.sleep(1500); }
+            catch (InterruptedException failure) { Thread.currentThread().interrupt(); }
+            exchange.close();
+        });
+        server.start();
+        var options = HttpOptions.builder().baseUrl("http://127.0.0.1:" + server.getAddress().getPort())
+                .timeout(150).build();
+        try (var client = new GeminiAiClient("test-key", options)) {
+            long started = System.nanoTime();
+            assertThatThrownBy(() -> client.answerChat("private-system", "private-question"))
+                    .isInstanceOfSatisfying(GeminiAiClient.AiProviderException.class,
+                            failure -> assertThat(failure.kind()).isEqualTo(GeminiAiClient.FailureKind.TIMEOUT));
+            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(3));
+        }
+        assertThat(requests.get()).isEqualTo(1);
+        assertThat(output.getOut()).contains("category=TIMEOUT").doesNotContain("private-question", "test-key");
+    }
+
+    @Test
+    void oversizedCallerTimeoutCannotExceedTheApplicationDeadline() throws IOException {
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            requests.incrementAndGet();
+            exchange.getRequestBody().readAllBytes();
+            try { Thread.sleep(12_000); }
+            catch (InterruptedException failure) { Thread.currentThread().interrupt(); }
+            exchange.close();
+        });
+        server.start();
+        var options = HttpOptions.builder().baseUrl("http://127.0.0.1:" + server.getAddress().getPort())
+                .timeout(60_000).build();
+        try (var client = new GeminiAiClient("test-key", options)) {
+            long started = System.nanoTime();
+            assertThatThrownBy(() -> client.answerChat("system", "question"))
+                    .isInstanceOfSatisfying(GeminiAiClient.AiProviderException.class,
+                            failure -> assertThat(failure.kind()).isEqualTo(GeminiAiClient.FailureKind.TIMEOUT));
+            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(10));
+        }
+        assertThat(requests.get()).isEqualTo(1);
     }
 }

@@ -1,11 +1,26 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.39.0
+> **Version:** v0.40.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-23
 > **Status:** Active
 
 # API Integration Guide
+
+## Telemetry sử dụng AI — FR-11 / Issue #17
+
+Chatbot request/response/history-turn che nội dung trong `toString()` để log DEBUG của Spring không ghi câu hỏi/câu trả lời. JSON contract không bị che hoặc đổi nội dung bởi cơ chế này; kiểm chứng BUG-060 dùng dữ liệu tổng hợp, không phải dữ liệu cá nhân thật.
+
+- `GET /api/v1/admin/ai-telemetry` chỉ dành cho `ADMIN`, dùng Bearer JWT hiện có; Guest trả 401, Member trả 403. Tài khoản bị khóa bị chặn theo kiểm tra trạng thái hiện hành. Response là DTO tổng hợp trực tiếp, không có envelope và không trả định danh tài khoản/phiên.
+- Query bắt buộc `from`, `to` theo `YYYY-MM-DD`, bao gồm cả hai ngày; tùy chọn `granularity=DAY|WEEK|MONTH` (mặc định DAY), `feature=FR-21|FR-34|FR-36|FR-37|FR-47|FR-51`. Không nhận ngày tương lai, khoảng đảo ngược hoặc ngày bắt đầu trước ngày hiện tại trừ 90 ngày. Validation sai trả 400 theo ProblemDetail hiện hành.
+- Ngày báo cáo theo `Asia/Ho_Chi_Minh`, tuần bắt đầu Thứ Hai; timestamp lưu UTC. `retainedFrom` cho biết mốc giữ dữ liệu chính xác, nên ngày đầu khoảng retention có thể chỉ có một phần dữ liệu. SQL loại dữ liệu quá hạn ngay cả trước khi job xóa chạy.
+- `totals` và từng `buckets[].totals` chứa lượt thành công, prompt/response/total/thinking/cached tokens, số lượt metadata thiếu/bất thường và số lượt chưa tính được chi phí. Total giữ số provider trả về; không cộng lại thinking hoặc cached vào total. Thiếu toàn bộ usageMetadata ghi ba bộ đếm chính bằng 0 và trạng thái MISSING; thiếu một phần là PARTIAL; số liệu bất thường là INVALID, các bộ đếm không dùng được được biểu diễn bằng 0 kèm cờ kiểm toán. Không coi các lượt này là dữ liệu token đầy đủ.
+- Chi phí là USD quy đổi theo giá Gemini Standard trả phí, không phải hóa đơn hoặc phí gói Free/Plus/Pro. Lưu phiên bản giá và số tiền tại thời điểm ghi. Khi có lượt chưa tính được, `estimatedCostUsd` là null; `knownEstimatedCostUsd` chỉ là phần đã tính, `unpricedCalls` cho biết phần còn thiếu. Không hiển thị chi phí chưa biết thành 0.
+- Bảng giá text `gemini-3.8-flash` kiểm tra ngày 23/10/2026 từ [Google](https://ai.google.dev/gemini-api/docs/pricing#gemini-3.8-flash): input/output/cached lần lượt 0.75/3.75/0.075 USD trên một triệu token đến hết 2026; 1.50/7.50/0.15 từ 01/01/2027. Công thức dùng `(prompt-cached)*input + cached*cachedRate + (response+thinking)*output`, chia một triệu. Chỉ tính khi metadata đầy đủ và phù hợp phạm vi Standard text, không có tool-use prompt tokens. Không áp giá hồi tố trước 23/10/2026 theo múi giờ Việt Nam (22/10/2026 17:00 UTC); chi phí trước mốc đó chưa xác định.
+- Sự kiện được phát sau kiểm tra phản hồi hợp lệ, đưa vào executor riêng có 2 worker và queue tối đa 500 metadata; worker ghi idempotent bằng event UUID trong transaction riêng. Caller không chờ writer, tránh giữ connection đọc trong lúc chờ connection ghi. Executor thuộc listener, không thay executor email hiện có; đóng ứng dụng bình thường chờ tối đa 10 giây để ghi nốt. Báo cáo có độ trễ ghi nền, có thể dùng Làm mới để đọc lại.
+- FR-21 dùng kết quả có metadata; API trả nội dung cho Frontend giữ nguyên. Lỗi provider/timeout/đầu ra không hợp lệ không tạo sự kiện thành công. Lỗi ghi hoặc queue đầy được log an toàn, không thay câu trả lời AI bằng lỗi. SQL Server là nơi lưu bền; buffer RAM không phải outbox bền vững, nên có thể mất sự kiện chưa ghi khi process bị dừng cưỡng bức hoặc database hỏng. Không khẳng định bảo đảm ghi tuyệt đối trong các tình huống này.
+- Bảng `AI_USAGE_TELEMETRY` không chứa prompt, câu trả lời hoặc lịch sử hội thoại. Member dùng ID xác thực; Guest dùng anonymous UUID hiện có, không lưu IP. Job xóa theo lô 1.000 bản ghi khi khởi động và mỗi phút, với điều kiện `occurred_at < nowUTC - 90 ngày`. Không giữ bảng tổng hợp lịch sử vượt retention.
+- V22 là thay đổi cấu trúc thử nghiệm trên nhánh riêng theo chỉ dẫn người dùng; quyết định nhóm vẫn chờ biểu quyết, chưa phải schema đã được nhóm phê duyệt. Không chỉnh ERD. Contract chi tiết lấy từ generated OpenAPI/Scalar; xuất lại snapshot bằng script khi Backend chạy.
 
 ## Checklist mua sắm — FR-53
 
@@ -410,7 +425,7 @@ Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint d
 
 ## 16. Chatbot hỏi đáp theo ngữ cảnh — FR-51
 
-`POST /api/v1/recipes/ai/chat` yêu cầu Bearer token của Member đang hoạt động. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` hoặc `ASSISTANT`, mỗi nội dung tối đa 1.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
+`POST /api/v1/recipes/ai/chat` phục vụ cả Guest và Member đang hoạt động trên cùng một chatbot. Member gửi Bearer token; Guest gửi thêm `anonymousViewerId` dạng UUID lấy từ session cookie cùng origin Frontend (`mamxanh.recipe-viewer`, dùng chung định danh ẩn danh hiện có của FR-58). Không dùng cookie xác thực hoặc bật credentials xuyên origin. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` tối đa 1.000 ký tự, `ASSISTANT` tối đa 8.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. Câu trả lời được Backend kiểm tra tối đa 8.000 ký tự trước khi trả thành công, để Frontend gửi lại đầy đủ ở lượt tiếp theo mà không cắt mất nội dung. Giới hạn này do Backend thực thi, không phụ thuộc provider có tuân thủ length constraint của schema hay không. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
 
 Ví dụ body cho ngữ cảnh công thức:
 
@@ -450,7 +465,17 @@ Ví dụ phần response cho yêu cầu tìm món:
 
 Gemini phải phân biệt dữ kiện ghi trong RecipePost với gợi ý/ước tính của AI, không bịa thông tin còn thiếu, tôn trọng loại ăn chay và không chẩn đoán hoặc kê phác đồ điều trị. API chỉ đọc; không lưu lịch sử hội thoại hay thay đổi dữ liệu nghiệp vụ. Frontend giữ tối đa lịch sử cần gửi trong state của phiên hiện tại. Backend chỉ phát telemetry token `AiUsageEvent` sau phản hồi hợp lệ; không đưa câu hỏi, lịch sử, context công thức hoặc câu trả lời vào telemetry/log.
 
-Lỗi request trả `400`; bài không tồn tại hoặc không còn công khai trả `404`; phản hồi Gemini sai/thiếu trả `502 AI_RESPONSE_INVALID`; Gemini lỗi hoặc timeout trả `503 AI_PROVIDER_UNAVAILABLE`. Backend giới hạn thời gian chờ Gemini theo NFR-18. Guest chưa được bật trên endpoint này; chỉ mở khi giới hạn tần suất Guest thuộc FR-02 có mặt trên baseline tích hợp. Generated `/v3/api-docs` là contract chi tiết cho request, response, validation và security.
+Lỗi request trả `400`; bài không tồn tại hoặc không còn công khai trả `404`; phản hồi Gemini sai/thiếu trả `502 AI_RESPONSE_INVALID`; Gemini lỗi hoặc timeout trả `503 AI_PROVIDER_UNAVAILABLE`. Backend giới hạn thời gian chờ Gemini theo NFR-18. Guest chịu giới hạn trượt 10 request/phút độc lập theo UUID và peer IP; đổi cookie không vượt được giới hạn IP, đổi IP không vượt được giới hạn cookie. Vượt ngưỡng trả `429 AI_GUEST_RATE_LIMITED` cùng `Retry-After` trước khi gọi chatbot/provider. Bộ đếm có giới hạn bộ nhớ, hết hiệu lực sau một phút, lưu hash SHA-256 và không tin `X-Forwarded-For`. Đây là bộ đếm trong một tiến trình cho baseline Backend hiện tại; không bảo đảm giới hạn chung khi chạy nhiều replica. Member không dùng bộ đếm Guest hoặc daily quota. Bearer sai/hết hạn trả `401`, tài khoản bị khóa trả `403`; không hạ request có Bearer lỗi thành Guest. Guest không đọc hồ sơ sở thích hoặc sức khỏe tài khoản; `AiUsageEvent.userId` là null cho Guest, chỉ chứa metadata token. Generated `/v3/api-docs` là contract chi tiết cho request, response, validation và security.
+
+Phần Guest là prerequisite được tích hợp trong FR-10/Issue #16 để đáp ứng AC-10.1; không tự xác nhận Issue FR-02 đã được nghiệm thu. Khi tiếp tục FR-02, tái sử dụng endpoint và bộ đếm này, không tạo chatbot hoặc daily quota riêng.
+
+SDK Gemini dùng một attempt cho mỗi thao tác, timeout HTTP và deadline bao trùm chuẩn bị request/HTTP/đọc response là 9 giây để dành thời gian xử lý lỗi trong ngân sách NFR-18; không tự retry/backoff sau timeout. Provider lỗi/timeout trả `503 AI_PROVIDER_UNAVAILABLE`; Chatbot nhận phản hồi thiếu, bị cắt hoặc không hợp lệ trả `502 AI_RESPONSE_INVALID`. Nếu provider trả HTTP 429, Chatbot vẫn dùng 503 với hướng dẫn dịch vụ đang tạm giới hạn yêu cầu; không trả lỗi 429 dành cho bộ đếm Guest và không gợi ý đăng ký để vượt quota Google. Quota của project Google tách biệt với entitlement Free/Plus/Pro, không phải daily quota do ứng dụng áp dụng. Chỉ phản hồi đã qua validation mới phát usage event thành công. Log SDK chỉ chứa operation, model, nhóm lỗi, mã HTTP provider (nếu có) và thời gian; không ghi message/stack trace của SDK, raw prompt, câu trả lời hoặc API key. Cấu hình timeout không phải bằng chứng đạt thời gian trả lời thành công của NFR-03; hiệu năng provider cần kiểm tra riêng.
+
+### Quy ước lỗi entitlement — FR-10
+
+Các guard hiện có vẫn dùng `403 AI_SUBSCRIPTION_REQUIRED`. ProblemDetail bổ sung `requiredTier` (`PLUS` hoặc `PRO`) và `upgradeUrl` (`/goi-ai`); `detail` hướng dẫn đúng gói tối thiểu. Plus/Pro cho FR-21 vẫn đồng thời yêu cầu vai trò Expert; Pro cho FR-36 vẫn yêu cầu eligibility và hồ sơ hợp lệ. Frontend hiển thị thông báo và liên kết nâng cấp nhưng Backend quyết định quyền từ Subscription đang hiệu lực, không từ thông tin gói do client khai. Preview và apply menu tuần kiểm tra lại Pro ở từng bước; lỗi không đổi Subscription hoặc gọi Gemini. Nội dung tính toán dinh dưỡng/gợi ý thông thường không bị đưa vào paywall bởi thay đổi này.
+
+`GET /api/v1/subscriptions/my-subscription` hiển thị quyền trả phí theo cùng cửa sổ `starts_at <= now < ends_at` với guard AI. Gói bắt đầu trong tương lai chưa mở tính năng: response dùng Free hiện tại và giữ nguyên bản ghi gói tương lai; không tự hủy hoặc đánh dấu gói tương lai là hết hạn.
 
 ## 17. Theo dõi thành viên — FR-59
 

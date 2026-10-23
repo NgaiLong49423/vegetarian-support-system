@@ -151,6 +151,36 @@ class SubscriptionServiceTest {
     }
 
     @Test
+    void futureSubscriptionDoesNotUnlockFeaturesOrCancelTheFuturePeriod() {
+        mockActiveUser(1L);
+        var now = LocalDateTime.now(clock);
+        var future = new SubscriptionEntity(1L, SubscriptionTier.PRO, now.plusDays(1), now.plusDays(31));
+        when(subscriptionRepository.findByUserIdAndStatus(1L, SubscriptionStatus.ACTIVE))
+                .thenReturn(Optional.of(future));
+
+        var response = subscriptionService.getMySubscription(1L);
+
+        assertThat(response.tier()).isEqualTo("FREE");
+        assertThat(response.unlockedFeatures()).doesNotContain("AI lập thực đơn tuần 7 ngày");
+        assertThat(future.getStatus()).isEqualTo(SubscriptionStatus.ACTIVE);
+        verify(subscriptionRepository, never()).save(any());
+    }
+
+    @Test
+    void subscriptionUnlocksAtItsExactStartAndExpiresAtItsExactEnd() {
+        mockActiveUser(1L);
+        var now = LocalDateTime.now(clock);
+        var starting = new SubscriptionEntity(1L, SubscriptionTier.PRO, now, now.plusDays(30));
+        var ending = new SubscriptionEntity(1L, SubscriptionTier.PRO, now.minusDays(30), now);
+        when(subscriptionRepository.findByUserIdAndStatus(1L, SubscriptionStatus.ACTIVE))
+                .thenReturn(Optional.of(starting), Optional.of(ending));
+
+        assertThat(subscriptionService.getMySubscription(1L).tier()).isEqualTo("PRO");
+        assertThat(subscriptionService.getMySubscription(1L).tier()).isEqualTo("FREE");
+        assertThat(ending.getStatus()).isEqualTo(SubscriptionStatus.EXPIRED);
+    }
+
+    @Test
     @DisplayName("Should successfully create checkout and return payOS payment link")
     void shouldCreateCheckoutSuccessfully() {
         Long userId = 1L;

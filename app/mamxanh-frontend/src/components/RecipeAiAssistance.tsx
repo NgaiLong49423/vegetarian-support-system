@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { LoaderCircle, Sparkles } from 'lucide-react';
 import type { RecipeAiContentType } from '../api/recipes';
 
@@ -5,10 +6,11 @@ interface RecipeAiAssistanceProps {
   contentType: RecipeAiContentType;
   loading: RecipeAiContentType | null;
   error: string;
+  upgradeRequired?: boolean;
   onGenerate: (contentType: RecipeAiContentType) => void;
 }
 
-export function RecipeAiAssistance({ contentType, loading, error, onGenerate }: RecipeAiAssistanceProps) {
+export function RecipeAiAssistance({ contentType, loading, error, upgradeRequired, onGenerate }: RecipeAiAssistanceProps) {
   const isDescription = contentType === 'DESCRIPTION';
   const label = isDescription ? 'AI gợi ý viết mô tả' : 'AI gợi ý viết hướng dẫn chế biến';
   const loadingLabel = isDescription ? 'Đang viết mô tả…' : 'Đang viết hướng dẫn…';
@@ -28,7 +30,7 @@ export function RecipeAiAssistance({ contentType, loading, error, onGenerate }: 
         {isLoading ? loadingLabel : label}
       </button>
       {isLoading && <p role="status" aria-live="polite" className="text-sm text-ink-muted">Đang chuẩn bị gợi ý nội dung, có thể mất vài giây...</p>}
-      {error && <p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm leading-5 text-amber-950">{error}</p>}
+      {error && <p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm leading-5 text-amber-950">{error}{upgradeRequired && <Link to="/goi-ai" className="ml-1 font-semibold underline">Xem các gói AI</Link>}</p>}
     </div>
   );
 }

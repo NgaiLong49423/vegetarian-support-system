@@ -1,11 +1,18 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.43.0
+> **Version:** v1.44.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-23
 > **Status:** Active  
 
 # Mâm Xanh Frontend
+
+### Mức sử dụng AI — FR-11 / Issue #17
+
+- Admin mở menu **Mức sử dụng AI** hoặc `/admin/ai-telemetry`, chọn ngày, chu kỳ ngày/tuần/tháng và tính năng để xem token và chi phí quy đổi Standard trả phí (USD). Dữ liệu lấy từ Backend; không có dữ liệu thống kê giả trong trang sản phẩm.
+- Có trạng thái tải, lỗi/thử lại, dữ liệu rỗng và cảnh báo metadata/chi phí chưa đầy đủ. Báo cáo chỉ dùng dữ liệu giữ tối đa 90 ngày, không hiển thị prompt/answer hoặc thông tin tài khoản; tuần bắt đầu Thứ Hai theo múi giờ Việt Nam.
+- Guest/Member bị chặn tại giao diện và Backend. Kiểm thử Frontend: `ai-telemetry.spec.ts`; kiểm thử browser–HTTP–SQL thật: `ai-telemetry-real-stack.spec.ts` qua root Compose, dùng tài khoản và metadata tổng hợp kiểm thử, không chứng minh lời gọi Gemini live.
+- Bảng telemetry mới đang là thay đổi thử nghiệm chờ biểu quyết nhóm; chưa xác nhận FR-11 đã nghiệm thu trên main.
 
 ### Sao chép và xuất TXT đi chợ — FR-55 / Issue #55
 
@@ -22,6 +29,8 @@
 - Nguồn công thức giữ lượng/đơn vị lúc thêm, hiển thị nội dung hiện hành hoặc unavailable khi bài không còn công khai. Thêm lại công thức không cộng trùng. Hành vi theo AC-53.6 và thiết kế nguồn đã chốt trong #90.
 - Dòng nguyên liệu trong checklist dùng `imageUrl` từ danh mục nguyên liệu để hiển thị ảnh minh họa; nguyên liệu thủ công, chưa có ảnh hoặc ảnh tải lỗi hiển thị trạng thái “Chưa có ảnh”.
 - Bản dựng FR-53 không phụ thuộc component export chưa bàn giao của FR-55; clipboard/TXT sẽ được nối ở PR riêng. Backend FR-53 phụ thuộc engine FR-54 / PR #150 chưa merge.
+
+Chatbot hiện dùng chung cho Guest và Member theo FR-10: Guest gửi định danh session cookie hiện có qua body, có hướng dẫn đăng ký và xử lý lỗi 429; không đọc hồ sơ tài khoản. Đổi tài khoản hoặc ngữ cảnh xóa hội thoại trên giao diện và bỏ qua phản hồi cũ đang chờ. Các luồng AI thiếu quyền dẫn tới `/goi-ai`, hướng dẫn Plus hoặc Pro theo tính năng; việc kiểm tra quyền và thời hạn gói thuộc Backend. Chi tiết giao tiếp và giới hạn bộ đếm Guest nằm trong [API Guide](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-51). Đây là mô tả source, không phải xác nhận nghiệm thu Issue trên main.
 
 ### Danh bạ Chuyên gia và chọn nguyên liệu — FR-61 / FR-62
 

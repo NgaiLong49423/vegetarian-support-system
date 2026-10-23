@@ -42,10 +42,24 @@ class AiChatServiceTest {
         events = mock(ApplicationEventPublisher.class);
         service = new AiChatService(users, recipes, recipePosts, preferences, ai, new JsonMapper(), events, Clock.systemUTC());
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, Role.CUSTOMER));
+        when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.of(7L));
         when(preferences.menuConstraints(7)).thenReturn(new DietaryPreferenceService.MenuDietaryConstraints(
                 "VEGAN", List.of(8L), List.of("Sữa")));
         when(recipePosts.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
                 List.of(), 0, 50, 0, 0));
+    }
+
+    @Test
+    void guestUsesTheSameChatWithoutLoadingAPersonalDietaryProfile() {
+        when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.empty());
+        when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Nấu nhỏ lửa.", 1, 2, 3));
+        assertThat(service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null,
+                "Cách nấu canh?", List.of())).answer()).isEqualTo("Nấu nhỏ lửa.");
+        verifyNoInteractions(preferences);
+        verify(users, never()).requireActiveMember();
+        ArgumentCaptor<AiUsageEvent> usage = ArgumentCaptor.forClass(AiUsageEvent.class);
+        verify(events).publishEvent(usage.capture());
+        assertThat(usage.getValue().userId()).isNull();
     }
 
     @Test
@@ -65,6 +79,28 @@ class AiChatServiceTest {
         verify(events).publishEvent(usage.capture());
         assertThat(usage.getValue().feature()).isEqualTo("FR-51");
         assertThat(usage.getValue().totalTokens()).isEqualTo(20);
+    }
+
+    @Test
+    void completeLongAnswersRemainUsableInTheNextConversationTurn() {
+        String answer = "a".repeat(2500);
+        when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult(answer, 1, 2, 3));
+        var first = service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null, "Hello", List.of()));
+        assertThat(first.answer()).isEqualTo(answer);
+        when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Next answer", 1, 2, 3));
+        assertThat(service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL, null, "Next",
+                List.of(new AiChatRequest.Turn(AiChatRequest.Speaker.ASSISTANT, first.answer())))).answer())
+                .isEqualTo("Next answer");
+    }
+
+    @Test
+    void oversizedProviderAnswersAreRejectedWithoutPublishingSuccessfulUsage() {
+        when(ai.answerChat(anyString(), anyString()))
+                .thenReturn(new AiClient.ChatResult("a".repeat(AiClient.MAX_CHAT_ANSWER_LENGTH + 1), 1, 2, 3));
+        assertThatThrownBy(() -> service.answer(new AiChatRequest(AiChatRequest.ContextType.GENERAL,
+                null, "Hello", List.of()))).isInstanceOfSatisfying(AppException.class,
+                failure -> assertThat(failure.errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID));
+        verifyNoInteractions(events);
     }
 
     @Test

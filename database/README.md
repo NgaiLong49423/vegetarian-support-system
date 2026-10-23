@@ -1,11 +1,15 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.24.0<br>
+> **Version:** v0.25.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-22<br>
+> **Last Updated:** 2026-10-23<br>
 > **Status:** Active  
 
 # Database Workspace
+
+### V22 — Telemetry AI thử nghiệm (FR-11 / Issue #17)
+
+`V22__ai_usage_telemetry.sql` bổ sung bảng log kỹ thuật `AI_USAGE_TELEMETRY` và index thời gian/tính năng. Bảng không lưu prompt/answer, không có FK tài khoản hoặc cơ chế quota. `database/schema.sql` chứa cùng DDL; không chỉnh ERD. Thay đổi cấu trúc này được triển khai local theo chỉ dẫn người dùng, vẫn chờ biểu quyết nhóm trước khi đưa vào baseline chung. Retention xóa bản ghi quá 90 ngày theo UTC; xem API Guide và Backend README cho cách ghi, thống kê và giới hạn ước tính chi phí.
 
 ## Migration V18/V19 — Checklist và nguồn Recipe Post
 

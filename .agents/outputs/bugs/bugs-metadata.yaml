@@ -1,8 +1,9 @@
 schema_version: 1
-last_updated: 2026-10-22
+last_updated: 2026-10-23
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-next_id: 56
+# BUG-056–059 đã được cấp trong checkpoint FR-10 trên nhánh feature/16-ai-feature-entitlements.
+next_id: 61
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -10,6 +11,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-060
+    title: Log DEBUG của Spring có thể chứa câu hỏi và câu trả lời chatbot
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI/Privacy/Logging
+    file: .agents/outputs/bugs/BUG-060.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: 17
   - id: BUG-055
     title: Seed gia vị vẫn tắt tính dinh dưỡng theo quy tắc nguồn cũ
     status: RESOLVED

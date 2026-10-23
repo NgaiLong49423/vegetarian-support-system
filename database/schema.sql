@@ -7,7 +7,8 @@
 -- Date            : 2026-09-25
 -- Source          : Logical ERD v1.0.0 + Data Dictionary v0.7.5
 --                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
--- Synchronized with: V1__baseline_schema.sql + V2__unit_code_unicode.sql
+-- Synchronized with: V1__baseline_schema.sql
+--                   + V2__unit_code_unicode.sql
 --                   + V3__user_email_verification_token.sql
 --                   + V4__nutrition_profile_consent.sql
 --                   + V5__ingredient_group_and_unit_validation.sql
@@ -21,9 +22,14 @@
 --                   + V13__expand_nutrition_goal_options.sql
 --                   + V14__nutrition_daily_value_reference.sql
 --                   + V15__recipe_view_deduplication.sql
---                   + V16__shopping_manual_roll_unit.sql
---                   + V17__shopping_recipe_contributions.sql
---                   (Flyway state after all migrations)
+--                   + V16__allow_partial_manual_ingredient_nutrition.sql
+--                   + V17__allow_ai_estimated_nutrition.sql
+--                   + V18__shopping_manual_roll_unit.sql
+--                   + V19__shopping_recipe_contributions.sql
+--                   + V20__ingredient_reference_image.sql
+--                   + V21__shopping_manual_list_kind.sql
+--                   + V22__ai_usage_telemetry.sql
+--                   (V22 is experimental; team approval pending)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
 -- testing on clean databases, or SSMS / Azure Data Studio / sqlcmd execution.
@@ -1113,5 +1119,44 @@ CREATE TABLE [SHOPPING_RECIPE_CONTRIBUTION] (
 );
 CREATE INDEX IX_SRC_LIST_RECIPE ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_id,recipe_id);
 CREATE INDEX IX_SRC_ITEM ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_item_id);
+
+GO
+
+GO
+
+-- FR-11 experimental branch: structural approval is pending the team's vote.
+-- Technical accounting only; no prompt/response text, quota or account relationship.
+CREATE TABLE AI_USAGE_TELEMETRY (
+    event_id VARCHAR(36) NOT NULL PRIMARY KEY,
+    user_id BIGINT NULL,
+    anonymous_session_id VARCHAR(36) NULL,
+    feature VARCHAR(10) NOT NULL,
+    model VARCHAR(80) NOT NULL,
+    service_tier VARCHAR(30) NOT NULL,
+    occurred_at DATETIME2(7) NOT NULL,
+    prompt_tokens BIGINT NOT NULL,
+    response_tokens BIGINT NOT NULL,
+    total_tokens BIGINT NOT NULL,
+    thinking_tokens BIGINT NULL,
+    cached_tokens BIGINT NULL,
+    tool_use_prompt_tokens BIGINT NULL,
+    usage_status VARCHAR(20) NOT NULL,
+    pricing_version VARCHAR(40) NULL,
+    estimated_cost_usd DECIMAL(24,12) NULL,
+    CONSTRAINT CK_AI_TELEMETRY_actor CHECK (
+        (user_id IS NOT NULL AND anonymous_session_id IS NULL) OR
+        (user_id IS NULL AND anonymous_session_id IS NOT NULL)),
+    CONSTRAINT CK_AI_TELEMETRY_feature CHECK (feature IN ('FR-21','FR-34','FR-36','FR-37','FR-47','FR-51')),
+    CONSTRAINT CK_AI_TELEMETRY_usage CHECK (usage_status IN ('COMPLETE','MISSING','PARTIAL','INVALID')),
+    CONSTRAINT CK_AI_TELEMETRY_tokens CHECK (prompt_tokens >= 0 AND response_tokens >= 0 AND total_tokens >= 0
+        AND (thinking_tokens IS NULL OR thinking_tokens >= 0)
+        AND (cached_tokens IS NULL OR cached_tokens >= 0)
+        AND (tool_use_prompt_tokens IS NULL OR tool_use_prompt_tokens >= 0)),
+    CONSTRAINT CK_AI_TELEMETRY_cost CHECK (
+        (estimated_cost_usd IS NULL AND pricing_version IS NULL) OR
+        (estimated_cost_usd >= 0 AND pricing_version IS NOT NULL))
+);
+CREATE INDEX IX_AI_TELEMETRY_time ON AI_USAGE_TELEMETRY(occurred_at);
+CREATE INDEX IX_AI_TELEMETRY_feature_time ON AI_USAGE_TELEMETRY(feature, occurred_at);
 
 GO

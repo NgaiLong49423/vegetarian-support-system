@@ -1,11 +1,18 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.38.0
+> **Version:** v0.39.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-23
 > **Status:** Active  
 
 # Backend Workspace
+
+### Telemetry AI — FR-11 / Issue #17
+
+- V22 bổ sung bảng log kỹ thuật `AI_USAGE_TELEMETRY`, không có nội dung prompt/answer hoặc quan hệ/quota tài khoản mới. Đây là thay đổi thử nghiệm trên nhánh riêng theo chỉ dẫn người dùng; biểu quyết nhóm chưa hoàn tất.
+- Các tính năng FR-21/34/36/37/47/51 phát token metadata sau phản hồi hợp lệ; writer trong module `admin` dùng transaction riêng và event UUID chống trùng. Executor nền riêng (2 worker, queue tối đa 500 metadata) tránh thiếu connection khi caller giữ transaction đọc; không thay executor email. Báo cáo có độ trễ ghi nền. Lỗi ghi/queue đầy có log an toàn; buffer không bảo đảm lưu bền khi process bị dừng cưỡng bức. Không inject repository xuyên module. Job dọn telemetry quá 90 ngày khi khởi động và mỗi phút.
+- Admin đọc thống kê tại `GET /api/v1/admin/ai-telemetry`; dùng Scalar và [API Guide](../../docs/api/API.md#telemetry-sử-dụng-ai--fr-11--issue-17) cho query, retention và giới hạn ước tính chi phí. Thiếu metadata có cờ kiểm toán, chi phí chưa xác định không bị đổi thành 0 USD. Bảng giá hiện là Standard text trả phí tương đương, không phải hóa đơn Google.
+- Kiểm thử liên quan: `AiTelemetryIntegrationTest` kiểm tra SQL Server thật, event/transaction, chống trùng, retention và RBAC với Gemini được kiểm soát; `AiTelemetryServiceTest` kiểm tra dữ liệu biên và tính giá. Không dùng các test này để khẳng định provider live hoặc nghiệm thu trên main.
 
 ## Tổng hợp nguyên liệu — FR-54 / Issue #54
 

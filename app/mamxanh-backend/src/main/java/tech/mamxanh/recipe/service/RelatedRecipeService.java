@@ -77,7 +77,7 @@ public class RelatedRecipeService {
         List<RecipePostResponse> items = recipes.getPublishedCards(ids).stream()
                 .filter(recipe -> recipe.vegetarianType().equals(current.vegetarianType())).toList();
         events.publishEvent(new AiUsageEvent(user.id(), "FR-47", clock.instant(),
-                result.promptTokens(), result.responseTokens(), result.totalTokens()));
+                result.usage()));
         return new RelatedRecipesResponse(items);
     }
 

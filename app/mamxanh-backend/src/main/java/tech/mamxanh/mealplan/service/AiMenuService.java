@@ -110,7 +110,7 @@ public class AiMenuService {
             List<Long> selectedIds = parseRecipeIds(result.json());
             validateSequence(selectedIds, ids);
             events.publishEvent(new AiUsageEvent(userId, "FR-36", clock.instant(),
-                    result.promptTokens(), result.responseTokens(), result.totalTokens()));
+                    result.usage()));
             return preview(request.weekStartDate(), request.mode(), goal, selectedIds, pool, preferred);
         } catch (AiProviderException exception) {
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE,
