@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Fix Integration Regressions After Develop Synchronization ([PR #162](https://github.com/NgaiLong49423/vegetarian-support-system/pull/162))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `4968e40`.
 
 **Scope:** Restore discovery badges and safe shopping-list ingredient selection after integrating the current baseline.
 
