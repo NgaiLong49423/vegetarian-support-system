@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.102.0
+> **Version:** v2.103.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-23
 > **Status:** Active
@@ -8,6 +8,26 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-23 — Restore Ingredient Presets in the Shared Recipe Search (Issue #70)
+
+**Status:** Working tree (uncommitted changes).
+
+**Scope:** Restore behavior lost when PR #132 was synchronized from an older branch head: the FR-62 ingredient links from PR #163 again preset the Explore search after Explore moved into the shared `RecipeSearch` module, and the FR-60 picker stays within a phone-width page.
+
+### Added
+
+- Add Playwright coverage for ingredient presets on the picker and Explore, for removing them with "Xóa tất cả", and for a picker card with a long dish category label on a 360 px wide screen.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Read `ingredientId`/`ingredientName` from the URL in `useRecipeSearch`, select the matching catalog ingredients, keep the selection in the URL, and show "Không tìm thấy nguyên liệu được chọn trong danh mục hiện tại." on Explore when an ingredient is not found.
+- Remove the ingredient parameters from the URL when the filters are reset.
+- Keep picker result cards inside a phone-width page when a recipe has a long category label such as "Món tráng miệng / chè" (AC-60.8).
 
 ## 2026-10-23 — Fix AI Recipe Guidance Generation ([PR #181](https://github.com/NgaiLong49423/vegetarian-support-system/pull/181))
 
