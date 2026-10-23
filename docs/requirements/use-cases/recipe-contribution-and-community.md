@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M03
 > **File:** `docs/requirements/use-cases/recipe-contribution-and-community.md`
-> **Version:** v2.2.0
+> **Version:** v2.3.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-23
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -286,7 +286,8 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
   - Bước 4: Hệ thống gửi prompt tới Google Gemini qua API bảo mật phía server (BR-06, đáp ứng NFR-03). Prompt bắt buộc yêu cầu:
     - Chỉ được sử dụng các nguyên liệu tác giả đã cung cấp.
     - Tuyệt đối không tự ý thêm nguyên liệu mới ngoài danh sách.
-    - Định dạng kết quả trả về: Nếu gợi ý hướng dẫn chế biến, trả về văn bản hướng dẫn chi tiết mạch lạc (từ 10 đến 5.000 ký tự); nếu gợi ý giới thiệu, trả về đoạn văn bản súc tích $\le 2.000$ ký tự.
+    - Định dạng kết quả trả về: hướng dẫn chế biến là 6–10 bước tuần tự (10–5.000 ký tự) từ chuẩn bị dụng cụ/nguyên liệu, sơ chế, làm nóng nồi/chảo, thứ tự cho nguyên liệu vào, nấu và dấu hiệu chín, nêm nếm đến hoàn thiện thành phẩm; mô tả dùng nguyên liệu qua ingredientIds. Mô tả giới thiệu vẫn súc tích (tối đa 2.000 ký tự).
+    - Không bịa định lượng; nếu dữ liệu không có thời gian hoặc nhiệt độ, AI phải nói rõ đó là thông tin thiếu từ nguồn và gắn nhãn `Ước tính AI` cho số liệu ước tính.
   - Bước 5: Google Gemini phản hồi nội dung đề xuất thành công trong thời gian quy định tại NFR-03.
   - Bước 6: Hệ thống ghi nhận dữ liệu đo lường kỹ thuật (telemetry nếu có theo BR-04) và không áp dụng quota tính theo lượt.
   - Bước 7: Hệ thống đưa nội dung AI sinh trực tiếp vào ô nhập liệu tương ứng trên trình soạn thảo giao diện phía client (điền vào ô `instructions` hoặc ô `description`) dưới dạng có thể chỉnh sửa hoàn toàn.
@@ -306,6 +307,11 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
 - Cơ sở dữ liệu server không lưu trữ bất kỳ bản ghi nháp dở dang nào.
 
 ---
+
+- **AC-21.6 (Hướng dẫn AI có các bước chế biến tuần tự và đầy đủ):**
+  - *Given* tác giả đã nhập tên món, khẩu phần, trường phái ăn chay và danh sách nguyên liệu có định lượng,
+  - *When* tác giả yêu cầu AI viết hướng dẫn chế biến,
+  - *Then* kết quả có 6–10 bước tuần tự, từ chuẩn bị/sơ chế đến nấu và thành phẩm; chỉ tham chiếu nguyên liệu đã nhập; mọi thời gian/nhiệt độ ước tính được ghi rõ `Ước tính AI`; nội dung vẫn chỉnh sửa được và chưa được công khai.
 
 <a id="fr-27"></a>
 ## FR-27 — Biểu mẫu báo cáo bài công thức theo 6 nhóm lý do

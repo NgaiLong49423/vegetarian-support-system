@@ -124,11 +124,12 @@ test.describe('Issue #3 [FR-01] — Guest xem và tìm kiếm nội dung công k
     const warning = page.getByRole('note');
     await expect(warning).toHaveAttribute('aria-live', 'polite');
     await expect(warning).toContainText('Ước tính chưa đầy đủ');
-    await expect(warning).toContainText('Các giá trị chỉ gồm phần tính được từ danh mục.');
-    await expect(warning).toContainText('Nguyên liệu chưa hỗ trợ tính dinh dưỡng:');
+    await expect(warning).toContainText('Số liệu có thể gồm ước tính chưa xác minh.');
+    await expect(warning).toContainText('Chỉ tiêu còn thiếu không được tính bằng 0.');
+    await expect(warning).toContainText('Nguyên liệu còn thiếu ít nhất một chỉ tiêu:');
     await expect(warning.getByRole('listitem')).toHaveText('Đậu hũ non');
     await expect(page.getByText('120 kcal')).toBeVisible();
-    await expect(page.getByText(/Nguồn tham khảo: danh mục dinh dưỡng nội bộ/)).toBeVisible();
+    await expect(page.getByText('Nguồn và số liệu do quản trị viên nhập; có thể là USDA/NIH, nguồn khác hoặc AI estimate chưa xác minh. Các giá trị chỉ mang tính tham khảo, không thay thế tư vấn y tế.', { exact: true })).toBeVisible();
   });
 
   test('AC-01.4: Không hiển thị bài viết vi phạm hoặc không tồn tại cho Guest', async ({ page }) => {
@@ -196,7 +197,7 @@ test('FR-08 Explore applies API-backed options, ingredient AND filters, sorting 
   }).toBe('VEGAN|SOUP|30|101|202');
 
   await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_LIKED');
-  await expect(page.getByText('Mới', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: matchingRecipe.title })).toBeVisible();
   await page.getByRole('combobox', { name: 'Sắp xếp theo' }).selectOption('MOST_VIEWED');
   await page.getByRole('combobox', { name: 'Khung thời gian lượt xem' }).selectOption('LAST_7_DAYS');
   await expect.poll(() => new URL(searchUrls.at(-1)!).searchParams.get('viewPeriod')).toBe('LAST_7_DAYS');

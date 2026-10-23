@@ -2,9 +2,7 @@ package tech.mamxanh.recipe.service;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +23,6 @@ import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 @Service
 public class RecipeAiAssistanceService {
     private static final Logger log = LoggerFactory.getLogger(RecipeAiAssistanceService.class);
-    private static final String WORD_BOUNDARY_PATTERN = "(?<![\\p{L}\\p{N}])%s(?![\\p{L}\\p{N}])";
 
     private final CurrentUserService currentUserService;
     private final SubscriptionEntitlementService entitlementService;
@@ -83,8 +80,13 @@ public class RecipeAiAssistanceService {
             return "- id=%d, tên=%s, số lượng=%s, unitId=%d".formatted(item.id(), item.name(), entry.quantity(), entry.unitId());
         }).collect(java.util.stream.Collectors.joining("\n"));
         return "Hỗ trợ tác giả viết nội dung công thức bằng tiếng Việt. Không được thêm, suy diễn hoặc nhắc đến nguyên liệu ngoài danh sách cho phép. "
+                + "Không tự thêm cả nước, dầu, gia vị hay món ăn kèm nếu không có trong danh sách. Nước dùng để rửa rồi bỏ đi chỉ là thao tác sơ chế; không thêm vào phần món ăn. "
+                + (request.contentType() == ContentType.INSTRUCTIONS
+                        ? "Với hướng dẫn, tạo 6 đến 10 bước tuần tự: chuẩn bị dụng cụ và nguyên liệu, sơ chế, làm nóng nồi/chảo, thứ tự cho nguyên liệu vào, thao tác nấu và dấu hiệu chín, nêm nếm, hoàn thiện thành phẩm. Mỗi bước mô tả thao tác cụ thể; không bịa định lượng. Thời gian/nhiệt độ thiếu trong dữ liệu phải ghi là Ước tính AI. "
+                        : "Với mô tả, viết một đoạn ngắn gọn. ")
                 + "Với hướng dẫn, chỉ đưa tên nguyên liệu qua ingredientIds; phần text mô tả thao tác nấu. "
                 + "Trả JSON theo schema: description là phần giới thiệu; steps là các bước {text, ingredientIds}. "
+                + "Mô tả tối đa 2.000 ký tự; tổng hướng dẫn sau khi ghép tên nguyên liệu tối đa 5.000 ký tự. "
                 + "Không tạo bản nháp hoặc nội dung đăng tự động.\n"
                 + "Loại nội dung: " + request.contentType() + "\nTên món: " + request.title()
                 + "\nLoại ăn chay: " + request.vegetarianType() + "\nDanh mục: " + request.dishCategory()
@@ -94,22 +96,24 @@ public class RecipeAiAssistanceService {
     private GeneratedContent parse(String raw) {
         try {
             GeneratedContent content = objectMapper.readValue(raw, GeneratedContent.class);
-            if (content == null) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+            if (content == null) throw invalid("missing JSON object");
             return content;
         } catch (JacksonException exception) {
-            throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+            throw invalid("JSON decoding failed: " + exception.getClass().getSimpleName());
         }
     }
 
     private String validateDescription(String description) {
         String content = description == null ? "" : description.strip();
-        if (content.isBlank() || content.length() > 2000) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        if (content.isBlank() || content.length() > 2000) throw invalid("description length=" + content.length());
         return content;
     }
 
     private String validateInstructions(List<GeneratedStep> steps, List<Long> allowedIds,
             List<IngredientResponse> ingredients) {
-        if (steps == null || steps.isEmpty()) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        if (steps == null || steps.size() < 6 || steps.size() > 10) {
+            throw invalid("step count=" + (steps == null ? "null" : steps.size()));
+        }
         Set<Long> allowed = Set.copyOf(allowedIds);
         var names = ingredients.stream().collect(java.util.stream.Collectors.toMap(IngredientResponse::id,
                 IngredientResponse::name));
@@ -117,13 +121,13 @@ public class RecipeAiAssistanceService {
             GeneratedStep step = steps.get(index);
             if (step == null || step.text() == null || step.text().isBlank() || step.ingredientIds() == null
                     || step.ingredientIds().stream().anyMatch(id -> id == null || !allowed.contains(id))) {
-                throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+                throw invalid("invalid step text or ingredient references");
             }
             String used = step.ingredientIds().stream().distinct().map(names::get)
                     .filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.joining(", "));
             return (index + 1) + ". " + step.text().strip() + (used.isBlank() ? "" : " (" + used + ")");
         }).collect(java.util.stream.Collectors.joining("\n"));
-        if (content.length() < 10 || content.length() > 5000) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+        if (content.length() < 10 || content.length() > 5000) throw invalid("instructions length=" + content.length());
         return content;
     }
 
@@ -132,7 +136,7 @@ public class RecipeAiAssistanceService {
         Set<Long> allowed = Set.copyOf(allowedIds);
         if (steps.stream().anyMatch(step -> step == null || step.ingredientIds() == null
                 || step.ingredientIds().stream().anyMatch(id -> id == null || !allowed.contains(id)))) {
-            throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+            throw invalid("ingredient references outside the selected list");
         }
     }
 
@@ -140,15 +144,13 @@ public class RecipeAiAssistanceService {
             List<IngredientResponse> selectedIngredients) {
         Set<Long> selected = Set.copyOf(selectedIds);
         Set<String> selectedNames = selectedIngredients.stream().map(IngredientResponse::name)
-                .map(name -> name.toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.toSet());
-        String normalized = content.toLowerCase(Locale.ROOT);
-        ingredientCatalog.findActiveIngredients("").stream()
-                .filter(item -> !selected.contains(item.id()))
-                .map(IngredientResponse::name)
-                .filter(name -> !selectedNames.contains(name.toLowerCase(Locale.ROOT)))
-                .filter(name -> Pattern.compile(WORD_BOUNDARY_PATTERN.formatted(Pattern.quote(name.toLowerCase(Locale.ROOT))))
-                        .matcher(normalized).find())
-                .findAny().ifPresent(ignored -> { throw new AppException(ErrorCode.AI_RESPONSE_INVALID); });
+                .collect(java.util.stream.Collectors.toSet());
+        AiIngredientMentionGuard.validate(content, selected, selectedNames, ingredientCatalog.findActiveIngredients(""));
+    }
+
+    private AppException invalid(String reason) {
+        log.warn("Recipe AI response rejected: {}", reason);
+        return new AppException(ErrorCode.AI_RESPONSE_INVALID);
     }
 
     private record GeneratedContent(String description, List<GeneratedStep> steps) { }

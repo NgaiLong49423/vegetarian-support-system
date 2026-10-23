@@ -15,15 +15,25 @@ public interface IngredientRepository extends JpaRepository<IngredientEntity, Lo
     boolean existsByNameIgnoreCaseAndStatusAndIdNot(String name, CatalogStatus status, Long id);
     List<IngredientEntity> findByStatus(CatalogStatus status);
     List<IngredientEntity> findByIdInAndStatus(Collection<Long> ids, CatalogStatus status);
+    java.util.Optional<IngredientEntity> findByIdAndStatus(Long id, CatalogStatus status);
     List<IngredientEntity> findByNameContainingIgnoreCaseOrIngredientGroupContainingIgnoreCase(String name, String group);
 
     @Query("select distinct ingredient.ingredientGroup from IngredientEntity ingredient order by ingredient.ingredientGroup")
     List<String> findDistinctIngredientGroups();
 
     @Query("""
+            select ingredient.ingredientGroup as groupName, count(ingredient) as ingredientCount
+            from IngredientEntity ingredient
+            where ingredient.status = tech.mamxanh.nutrition.entity.CatalogStatus.ACTIVE
+            group by ingredient.ingredientGroup
+            order by ingredient.ingredientGroup
+            """)
+    List<ActiveIngredientGroupView> findActiveIngredientGroups();
+
+    @Query("""
             select ingredient from IngredientEntity ingredient
-            where (:query is null or lower(ingredient.name) like lower(concat('%', :query, '%'))
-                or lower(ingredient.ingredientGroup) like lower(concat('%', :query, '%')))
+            where (:query is null or lower(ingredient.name) like lower(:query)
+                or lower(ingredient.ingredientGroup) like lower(:query))
               and (:ingredientGroup is null or lower(ingredient.ingredientGroup) = lower(:ingredientGroup))
               and (:status is null or ingredient.status = :status)
               and (:nutritionSupported is null or ingredient.nutritionSupported = :nutritionSupported)
@@ -33,4 +43,9 @@ public interface IngredientRepository extends JpaRepository<IngredientEntity, Lo
             @Param("status") CatalogStatus status,
             @Param("nutritionSupported") Boolean nutritionSupported,
             Pageable pageable);
+
+    interface ActiveIngredientGroupView {
+        String getGroupName();
+        Long getIngredientCount();
+    }
 }

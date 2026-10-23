@@ -23,6 +23,9 @@ public class RecipeIngredientReferenceEntity {
     @Column(name = "ingredient_group", nullable = false, length = 100)
     private String ingredientGroup;
 
+    @Column(name = "image_url", length = 2048)
+    private String imageUrl;
+
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 

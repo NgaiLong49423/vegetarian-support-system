@@ -13,6 +13,7 @@ import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUp
 import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
 import type { RecipeAiContentType } from '../api/recipes';
 import { AiRecipeAssistantModal, type GeneratedRecipeData } from '../components/AiRecipeAssistantModal';
+import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
 
 type IngredientRow = {
   key: string;
@@ -109,6 +110,13 @@ function CreateRecipeForm() {
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const suggestedDifficulty = assessRecipeDifficulty({
+    ingredientCount: ingredients.filter((ing) => ing.ingredientId || ing.quantity).length,
+    prepTimeMinutes: Number(prepTimeMinutes) || 0,
+    cookTimeMinutes: Number(cookTimeMinutes) || 0,
+    instructions,
+  });
 
   const handleApplyAiRecipe = async (aiRecipe: GeneratedRecipeData) => {
     setTitle(aiRecipe.title);

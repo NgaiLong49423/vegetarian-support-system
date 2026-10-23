@@ -27,4 +27,8 @@ public record PayOsProperties(
                 && apiKey != null && !apiKey.isBlank()
                 && checksumKey != null && !checksumKey.isBlank();
     }
+    @Override
+    public String toString() {
+        return "PayOsProperties[redacted]";
+    }
 }

@@ -1,338 +1,1020 @@
-import { useMemo, useState } from "react"
-import { Link, useSearchParams } from "react-router-dom"
+import { useEffect, useRef, useState } from "react"
+import { Link, useLocation, useSearchParams } from "react-router-dom"
 import {
-  ClipboardCopy,
-  Download,
   ListChecks,
+  Pencil,
   Plus,
   ShoppingBasket,
-  X,
+  Trash2,
 } from "lucide-react"
 import { PageContainer } from "../components/Layout"
-import { BinButton } from "../components/BinButton"
+import { Button, Card } from "../components/ui"
+import { Modal } from "../components/Modal"
 import SpringCheck from "../components/SpringCheck"
-import { Button, Card, EmptyState, ProgressBar } from "../components/ui"
+import { ShoppingListExport } from "../components/ShoppingListExport"
+import { IngredientImage } from "../components/IngredientImage"
 import { useAuth } from "../components/AuthContext"
-import { shoppingList as initialList, nutritionTargets } from "../data/mockData"
-import type { ShoppingListItem } from "../types"
+import {
+  shoppingApi,
+  type ShoppingChecklist,
+  type ShoppingCreation,
+  type ShoppingItem,
+  type ShoppingSummary,
+  type ShoppingUnit,
+} from "../api/shopping"
+import { asApiError } from "../lib/apiClient"
 
 type Tab = "all" | "todo" | "done"
+const field =
+  "min-w-0 rounded-lg border border-brand-200 bg-cream-soft px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-400"
+const quantityText = (item: ShoppingItem) =>
+  `${item.quantity.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} ${item.unitCode}`
 
 export function ShoppingList() {
   const { account } = useAuth()
-  const [params] = useSearchParams()
-
-  if (!account && !params.get("demo")) {
+  if (!account)
     return (
-      <PageContainer className="py-10">
-        <EmptyState
-          icon="🛒"
-          title="Danh sách đi chợ của bạn"
-          description="Đăng nhập để tạo, quản lý và theo dõi danh sách mua sắm nguyên liệu cho các bữa ăn."
-          action={
-            <Link
-              to="/dang-nhap"
-              className="rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-on-brand"
-            >
-              Đăng nhập
-            </Link>
-          }
-        />
+      <PageContainer className="py-12">
+        <Card className="mx-auto max-w-xl p-6">
+          <h1 className="text-xl font-semibold text-ink">
+            Danh sách đi chợ của bạn
+          </h1>
+          <p className="my-4 text-sm text-ink-muted">
+            Vui lòng đăng nhập để tạo và lưu danh sách đi chợ theo tài khoản.
+          </p>
+          <Link to="/dang-nhap" className="font-semibold text-brand-600">
+            Đăng nhập
+          </Link>
+        </Card>
       </PageContainer>
     )
-  }
+  if (account.role === "ADMIN")
+    return (
+      <PageContainer className="py-12">
+        <p role="alert" className="text-sm text-ink">
+          Tài khoản Quản trị viên không có quyền quản lý danh sách đi chợ của
+          thành viên.
+        </p>
+      </PageContainer>
+    )
+  return <ShoppingWorkspace key={account.id} />
+}
 
-  const [items, setItems] = useState<ShoppingListItem[]>(initialList)
+function ShoppingWorkspace() {
+  const [params, setParams] = useSearchParams()
+  const location = useLocation()
+  const requested = params.get("listId")
+  const id =
+    requested &&
+    /^[1-9]\d*$/.test(requested) &&
+    Number.isSafeInteger(Number(requested))
+      ? Number(requested)
+      : null
+  const [lists, setLists] = useState<ShoppingSummary[]>([])
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
+  const [listError, setListError] = useState("")
+  const [listLoading, setListLoading] = useState(true)
+  const [listRetry, setListRetry] = useState(0)
+  const [list, setList] = useState<ShoppingChecklist | null>(null)
+  const [units, setUnits] = useState<ShoppingUnit[]>([])
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState("")
+  const [retry, setRetry] = useState(0)
   const [tab, setTab] = useState<Tab>("all")
-  const [adding, setAdding] = useState("")
-  const [toast, setToast] = useState("")
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
+  const [editor, setEditor] = useState<ShoppingItem | "new" | null>(null)
+  const [removal, setRemoval] = useState<ShoppingItem | "bought" | null>(null)
+  const [nameEditor, setNameEditor] = useState(false)
+  const [emptyListEditor, setEmptyListEditor] = useState(false)
+  const [nameDraft, setNameDraft] = useState("")
+  const [listRemoval, setListRemoval] = useState(false)
+  const pending = useRef(false)
+  const alive = useRef(true)
+  const selectedId = useRef(id)
+  selectedId.current = id
+  const dialogTrigger = useRef<HTMLElement | null>(null)
+  const removalActions = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (removal) removalActions.current?.querySelector("button")?.focus()
+  }, [removal])
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
+    }
+  }, [])
+  useEffect(() => {
+    let active = true
+    setListLoading(true)
+    setListError("")
+    shoppingApi
+      .list(page)
+      .then((value) => {
+        if (!active) return
+        setLists(value.content)
+        setTotalPages(value.totalPages)
+        setTotalElements(value.totalElements)
+        if (!requested && value.content.length)
+          setParams({ listId: String(value.content[0].id) }, { replace: true })
+      })
+      .catch((cause) => {
+        if (active) setListError(asApiError(cause).message)
+      })
+      .finally(() => {
+        if (active) setListLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [page, listRetry, requested, setParams])
+  useEffect(() => {
+    let active = true
+    setList(null)
+    setLoadError("")
+    setError("")
+    setNotice("")
+    setEditor(null)
+    setRemoval(null)
+    setNameEditor(false)
+    setEmptyListEditor(false)
+    setListRemoval(false)
+    setTab("all")
+    if (!id) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    Promise.all([shoppingApi.get(id), shoppingApi.options()])
+      .then(([checklist, options]) => {
+        if (active) {
+          setList(checklist)
+          setUnits(options)
+        }
+      })
+      .catch((cause) => {
+        if (active) setLoadError(asApiError(cause).message)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [id, retry])
+  const items = list?.items ?? []
   const counts = {
     all: items.length,
-    todo: items.filter((item) => !item.checked).length,
-    done: items.filter((item) => item.checked).length,
+    todo: items.filter((item) => !item.bought).length,
+    done: items.filter((item) => item.bought).length,
   }
-  const visible = items.filter((item) =>
-    tab === "todo" ? !item.checked : tab === "done" ? item.checked : true,
-  )
-  const grouped = useMemo(
-    () =>
-      visible.reduce<Record<string, ShoppingListItem[]>>((groups, item) => {
-        ;(groups[item.group] ??= []).push(item)
-        return groups
-      }, {}),
-    [visible],
-  )
-  const flash = (message: string) => {
-    setToast(message)
-  }
-  const toggle = (id: string) =>
-    setItems((current) =>
-      current.map((item) =>
-        item.id === id ? { ...item, checked: !item.checked } : item,
-      ),
+  const grouped = items
+    .filter(
+      (item) => tab === "all" || (tab === "done" ? item.bought : !item.bought),
     )
-  const remove = (id: string) =>
-    setItems((current) => current.filter((item) => item.id !== id))
-  const addItem = () => {
-    if (!adding.trim()) return
-    setItems((current) => [
-      ...current,
-      {
-        id: `n${Date.now()}`,
-        group: "Nhóm khác",
-        name: adding.trim(),
-        quantity: "vừa đủ",
-        checked: false,
-      },
-    ])
-    setAdding("")
-  }
-  const exportTxt = () => {
-    const text = items
-      .map(
-        (item) =>
-          `${item.checked ? "[x]" : "[ ]"} ${item.name} — ${item.quantity}`,
-      )
-      .join("\n")
-    const href = URL.createObjectURL(
-      new Blob([`\uFEFFDANH SÁCH ĐI CHỢ — MÂM XANH\n\n${text}`], {
-        type: "text/plain;charset=utf-8",
-      }),
+    .reduce<Record<string, ShoppingItem[]>>((groups, item) => {
+      ;(groups[item.ingredientGroup] ??= []).push(item)
+      return groups
+    }, {})
+  const creation = (location.state as {
+    shoppingCreation?: ShoppingCreation
+  } | null)?.shoppingCreation
+  const diagnostics = creation?.shoppingList.id === list?.id ? creation : null
+  // Saved rows stay separate on reload; this hint never performs a conversion.
+  const separate = (item: ShoppingItem) =>
+    item.ingredientId !== null &&
+    items.some(
+      (other) =>
+        other.id !== item.id &&
+        other.ingredientId === item.ingredientId &&
+        other.unitId !== item.unitId,
     )
-    const anchor = document.createElement("a")
-    anchor.href = href
-    anchor.download = "danh-sach-di-cho.txt"
-    anchor.click()
-    window.setTimeout(() => URL.revokeObjectURL(href), 1000)
-    flash("Đã xuất danh sách giao diện ra TXT.")
+  function closeDialog() {
+    if (pending.current) return
+    setEditor(null)
+    setRemoval(null)
+    setNameEditor(false)
+    setEmptyListEditor(false)
+    setListRemoval(false)
+    setError("")
+    requestAnimationFrame(() => {
+      if (dialogTrigger.current?.isConnected) dialogTrigger.current.focus()
+      else document.querySelector<HTMLElement>("#shopping-title")?.focus()
+    })
   }
-  const copy = async () => {
+  function openDialog(action: () => void) {
+    dialogTrigger.current = (document.activeElement as HTMLElement)
+    setError("")
+    action()
+  }
+  async function mutate(
+    action: (
+      listId: number,
+    ) => Promise<(current: ShoppingChecklist) => ShoppingChecklist>,
+    message: string,
+  ) {
+    if (!id || pending.current) return
+    const target = id
+    pending.current = true
+    setBusy(true)
+    setError("")
+    setNotice("")
     try {
-      if (!navigator.clipboard) throw new Error("Clipboard unavailable.")
-      await navigator.clipboard.writeText(
-        items.map((item) => `- ${item.name}: ${item.quantity}`).join("\n"),
-      )
-      flash("Đã sao chép danh sách.")
-    } catch {
-      flash("Không thể sao chép. Bạn có thể tải tệp TXT.")
+      const update = await action(target)
+      if (!alive.current || selectedId.current !== target) return
+      setList((current) => (current?.id === target ? update(current) : current))
+      setNotice(message)
+      pending.current = false
+      closeDialog()
+    } catch (cause) {
+      if (alive.current && selectedId.current === target)
+        setError(asApiError(cause).message)
+    } finally {
+      pending.current = false
+      if (alive.current) setBusy(false)
     }
   }
-
+  async function removeCurrentList() {
+    if (!id || pending.current) return
+    const target = id
+    pending.current = true
+    setBusy(true)
+    setError("")
+    try {
+      await shoppingApi.removeList(target)
+      if (!alive.current || selectedId.current !== target) return
+      const nextCount = Math.max(0, totalElements - 1)
+      const remaining = lists.filter((summary) => summary.id !== target)
+      setLists(remaining)
+      setTotalElements(nextCount)
+      setTotalPages(Math.ceil(nextCount / 20))
+      setList(null)
+      setNotice("")
+      setListRemoval(false)
+      setError("")
+      pending.current = false
+      if (remaining.length) {
+        setParams({ listId: String(remaining[0].id) }, { replace: true })
+      } else {
+        setParams({}, { replace: true })
+        if (page > 0) setPage((current) => Math.max(0, current - 1))
+      }
+      requestAnimationFrame(() => {
+        if (dialogTrigger.current?.isConnected) dialogTrigger.current.focus()
+        else document.querySelector<HTMLElement>("#shopping-title")?.focus()
+      })
+    } catch (cause) {
+      if (alive.current && selectedId.current === target)
+        setError(asApiError(cause).message)
+    } finally {
+      pending.current = false
+      if (alive.current) setBusy(false)
+    }
+  }
+  async function createEmptyList(name: string) {
+    if (pending.current) return
+    pending.current = true
+    setBusy(true)
+    setError("")
+    setNotice("")
+    try {
+      const created = await shoppingApi.createEmpty(name)
+      if (!alive.current) return
+      pending.current = false
+      setEmptyListEditor(false)
+      setPage(0)
+      setParams({ listId: String(created.id) })
+      requestAnimationFrame(() => {
+        if (dialogTrigger.current?.isConnected) dialogTrigger.current.focus()
+        else document.querySelector<HTMLElement>("#shopping-title")?.focus()
+      })
+    } catch (cause) {
+      if (alive.current) setError(asApiError(cause).message)
+    } finally {
+      pending.current = false
+      if (alive.current) setBusy(false)
+    }
+  }
   return (
     <PageContainer className="py-6">
-      <div className="grid items-start gap-5 md:grid-cols-[190px_minmax(0,1fr)] xl:grid-cols-[190px_minmax(0,1fr)_240px]">
-        <aside className="md:sticky md:top-20">
-          <h1 className="flex items-center gap-2 text-lg font-semibold text-ink">
+      <div className="grid items-start gap-5 md:grid-cols-[225px_minmax(0,1fr)]">
+        <aside className="space-y-4 md:sticky md:top-20">
+          <h1
+            id="shopping-title"
+            tabIndex={-1}
+            className="flex items-center gap-2 text-lg font-semibold text-ink"
+          >
             <ShoppingBasket className="h-5 w-5 text-brand-600" />
             Đi chợ
           </h1>
-          <p className="mt-1 text-xs text-ink-muted">
-            Danh sách của phiên xem thử
+          <p className="text-xs leading-5 text-ink-muted">
+            Danh sách được lưu riêng trong tài khoản của bạn.
           </p>
-          <nav
-            aria-label="Lọc danh sách đi chợ"
-            className="mt-5 flex flex-wrap gap-2 md:flex-col"
+          <Link
+            to="/ke-hoach"
+            className="block text-sm font-semibold text-brand-600"
           >
-            {([
-              ["all", "Tất cả"],
-              ["todo", "Cần mua"],
-              ["done", "Đã mua"],
-            ] as const).map(([value, label]) => (
+            Tạo từ Lịch ăn →
+          </Link>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() => openDialog(() => {
+              setNameDraft("")
+              setEmptyListEditor(true)
+            })}
+          >
+            <Plus className="h-4 w-4" />
+            Tạo danh sách trống
+          </Button>
+          {listLoading && (
+            <p role="status" className="text-xs text-ink-muted">
+              Đang tải các danh sách…
+            </p>
+          )}
+          {listError && (
+            <div role="alert" className="text-sm text-ink">
+              <p>{listError}</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setListRetry((value) => value + 1)}
+              >
+                Thử tải danh sách
+              </Button>
+            </div>
+          )}
+          <nav aria-label="Danh sách đã lưu" className="flex flex-col gap-2">
+            {lists.map((summary) => (
               <button
+                key={summary.id}
                 type="button"
-                key={value}
-                aria-pressed={tab === value}
-                onClick={() => setTab(value)}
-                className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-xs ${
-                  tab === value
+                disabled={busy}
+                aria-current={summary.id === id ? "page" : undefined}
+                onClick={() => setParams({ listId: String(summary.id) })}
+                className={`rounded-lg px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-brand-400 ${
+                  summary.id === id
                     ? "bg-paper font-semibold text-brand-600"
                     : "text-ink-muted hover:bg-paper"
                 }`}
               >
-                {label}
-                <span>{counts[value]}</span>
+                <span className="block break-words">{summary.name}</span>
+                <span className="mt-1 block text-xs text-ink-muted">
+                  Mã {summary.id}
+                </span>
               </button>
             ))}
           </nav>
-          <div className="mt-5 hidden rounded-xl border border-brand-100 p-3 text-xs leading-5 text-ink-muted md:block">
-            <ListChecks className="mb-2 h-5 w-5 text-brand-600" />
-            Đánh dấu những nguyên liệu đã mua để theo dõi phần còn lại.
-          </div>
-        </aside>
-
-        <Card className="min-w-0 p-4 sm:p-5">
-          <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-ink">
-                Danh sách đi chợ
-              </h2>
-              <p className="mt-1 text-xs text-ink-muted">
-                {counts.todo} cần mua · {counts.done} đã mua
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={copy}>
-                <ClipboardCopy className="h-3.5 w-3.5" />
-                Sao chép
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy || listLoading || page === 0}
+                onClick={() => setPage((value) => value - 1)}
+              >
+                Trước
               </Button>
-              <Button variant="outline" size="sm" onClick={exportTxt}>
-                <Download className="h-3.5 w-3.5" />
-                TXT
+              <span className="text-xs text-ink-muted">
+                {page + 1}/{totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy || listLoading || page + 1 >= totalPages}
+                onClick={() => setPage((value) => value + 1)}
+              >
+                Sau
               </Button>
             </div>
-          </header>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              addItem()
-            }}
-            className="mb-6 flex items-center gap-2 rounded-full border border-brand-200 bg-cream-soft pl-3 pr-1"
-          >
-            <Plus className="h-4 w-4 text-brand-600" />
-            <input
-              aria-label="Thêm nguyên liệu vào danh sách"
-              value={adding}
-              onChange={(event) => setAdding(event.target.value)}
-              placeholder="Thêm nguyên liệu..."
-              className="min-w-0 flex-1 bg-transparent py-3 text-xs text-ink outline-none"
-            />
-            <Button type="submit" size="sm" disabled={!adding.trim()}>
-              Thêm
-            </Button>
-          </form>
-          {Object.entries(grouped).length ? (
-            <div className="space-y-6">
-              {Object.entries(grouped).map(([group, list]) => (
-                <section key={group}>
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-xs font-semibold text-ink">{group}</h3>
-                    <span className="text-[11px] text-ink-muted">
-                      {list.filter((item) => item.checked).length} /{" "}
-                      {list.length}
-                    </span>
-                  </div>
-                  <div className="divide-y divide-brand-100">
-                    {list.map((item) => (
-                      <div
-                        key={item.id}
-                        className={`flex items-center gap-3 rounded-lg px-2 py-2.5 ${
-                          item.checked
-                            ? "bg-cream-soft/50"
-                            : "hover:bg-raised/50"
-                        }`}
-                      >
-                        <SpringCheck
-                          checked={item.checked}
-                          onChange={() => toggle(item.id)}
-                          ariaLabel={`Đánh dấu ${item.name}`}
-                          label={
-                            <span className="min-w-0 flex-1">
-                              <span className="text-xs font-medium text-ink">
-                                {item.name}
-                              </span>
-                              {item.note && (
-                                <span className="ml-1.5 text-[11px] font-normal text-ink-muted">
-                                  · {item.note}
-                                </span>
-                              )}
-                            </span>
-                          }
-                          strike="left"
-                          boxSize={20}
-                          boxRadius={6}
-                          fontSize={13}
-                          color="#ea580c"
-                          fillColor="#ea580c"
-                          checkColor="#ffffff"
-                          textColor="var(--color-ink)"
-                          className="min-w-0 flex-1"
-                        />
-                        <span
-                          className={`text-xs ${
-                            item.checked
-                              ? "text-ink-muted line-through"
-                              : "text-ink-soft"
-                          }`}
-                        >
-                          {item.quantity}
-                        </span>
-                        <BinButton
-                          size={28}
-                          onClick={() => remove(item.id)}
-                          title={`Xoá ${item.name}`}
-                          aria-label={`Xoá ${item.name}`}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          ) : (
-            <p className="py-12 text-center text-sm text-ink-muted">
-              Không có nguyên liệu trong mục này.
-            </p>
           )}
-          {counts.done > 0 && (
-            <div className="mt-5 flex justify-end border-t border-brand-100 pt-4">
-              <BinButton
-                size={38}
-                label={`Xoá ${counts.done} mục đã mua`}
-                onClick={() =>
-                  setItems((current) => current.filter((item) => !item.checked))
-                }
-                title="Xoá tất cả mục đã mua"
-              />
+          <p className="hidden text-xs leading-5 text-ink-muted md:block">
+            <ListChecks className="mb-2 h-5 w-5 text-brand-600" />
+            Chạm để đánh dấu món đã mua. Lượng nguyên liệu đã lưu giữ nguyên khi
+            công thức thay đổi.
+          </p>
+        </aside>
+        <Card className="min-w-0 p-4 sm:p-6">
+          {requested && !id ? (
+            <p role="alert" className="text-sm text-ink">
+              Mã danh sách không hợp lệ. Hãy chọn một danh sách đã lưu.
+            </p>
+          ) : loading ? (
+            <p
+              role="status"
+              className="py-12 text-center text-sm text-ink-muted"
+            >
+              Đang tải nguyên liệu…
+            </p>
+          ) : loadError ? (
+            <div role="alert" className="text-sm text-ink">
+              <p>{loadError}</p>
+              <Button
+                variant="ghost"
+                onClick={() => setRetry((value) => value + 1)}
+              >
+                Thử lại
+              </Button>
+            </div>
+          ) : !list ? (
+            !listLoading &&
+            !listError && (
+              <div className="py-12 text-center">
+                <h2 className="text-lg font-semibold text-ink">
+                  Chưa có danh sách đi chợ
+                </h2>
+                <p className="mt-2 text-sm text-ink-muted">
+                  Tạo danh sách riêng để tự thêm món cần mua, không cần Lịch ăn
+                  hay công thức.
+                </p>
+                <Button
+                  className="mt-4"
+                  onClick={() => openDialog(() => {
+                    setNameDraft("")
+                    setEmptyListEditor(true)
+                  })}
+                >
+                  <Plus className="h-4 w-4" />
+                  Tạo danh sách trống
+                </Button>
+                <p className="mt-3 text-sm">
+                  Hoặc <Link to="/ke-hoach" className="font-semibold text-brand-600">tạo từ Lịch ăn</Link>.
+                </p>
+              </div>
+            )
+          ) : (
+            <div aria-busy={busy}>
+              <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="break-words text-lg font-semibold text-ink">
+                    {list.name}
+                  </h2>
+                  <p className="mt-1 text-xs text-ink-muted">
+                    {counts.todo} cần mua · {counts.done} đã mua
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => openDialog(() => {
+                      setNameDraft(list.name)
+                      setNameEditor(true)
+                    })}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Đổi tên
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-700 hover:border-red-300 hover:bg-red-50 hover:text-red-800"
+                    disabled={busy}
+                    onClick={() => openDialog(() => setListRemoval(true))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Xóa danh sách
+                  </Button>
+                </div>
+              </header>
+              {diagnostics && diagnostics.warnings.length > 0 && (
+                <section
+                  aria-label="Lưu ý khi tạo danh sách"
+                  className="mb-5 rounded-xl border border-brand-200 bg-cream-soft p-4 text-sm text-ink-soft"
+                >
+                  <h3 className="font-semibold">Lưu ý khi tạo danh sách</h3>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {diagnostics.warnings.map((warning, index) => (
+                      <li key={index}>{warning.message}</li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {notice && (
+                <p role="status" className="mb-4 text-sm text-brand-700">
+                  {notice}
+                </p>
+              )}
+              {busy && !editor && !removal && (
+                <p role="status" className="mb-4 text-sm text-ink-muted">Đang lưu danh sách…</p>
+              )}
+              {error && !editor && !removal && (
+                <p role="alert" className="mb-4 text-sm text-ink">
+                  {error}
+                </p>
+              )}
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <nav
+                  aria-label="Lọc danh sách đi chợ"
+                  className="flex flex-wrap gap-2"
+                >
+                  {([
+                    ["all", "Tất cả"],
+                    ["todo", "Cần mua"],
+                    ["done", "Đã mua"],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={tab === value}
+                      onClick={() => setTab(value)}
+                      className={`rounded-lg px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-brand-400 ${
+                        tab === value
+                          ? "bg-raised font-semibold text-brand-600"
+                          : "text-ink-muted"
+                      }`}
+                    >
+                      {label} ({counts[value]})
+                    </button>
+                  ))}
+                </nav>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ShoppingListExport
+                    key={list.id}
+                    items={list.items}
+                    listName={list.name}
+                    disabled={busy}
+                    onNotice={setNotice}
+                  />
+                  <Button
+                    size="sm"
+                    disabled={busy || units.length === 0}
+                    onClick={() => openDialog(() => setEditor("new"))}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Thêm mặt hàng
+                  </Button>
+                </div>
+              </div>
+              {Object.entries(grouped).length ? (
+                <div className="space-y-6">
+                  {Object.entries(grouped).map(([group, entries]) => (
+                    <section key={group}>
+                      <h3 className="mb-2 text-sm font-semibold text-ink">
+                        {group}
+                      </h3>
+                      <div className="divide-y divide-brand-100">
+                        {entries.map((item) => (
+                          <div
+                            key={item.id}
+                            data-testid={`shopping-item-${item.id}`}
+                            className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-1 rounded-lg px-1 py-3 sm:gap-3 ${
+                              item.bought ? "bg-cream-soft/50" : ""
+                            }`}
+                          >
+                            <SpringCheck
+                              checked={item.bought}
+                              disabled={busy}
+                              onChange={(bought) =>
+                                void mutate(
+                                  async (listId) => {
+                                    const saved = await shoppingApi.bought(
+                                      listId,
+                                      item.id,
+                                      bought,
+                                    )
+                                    return (current) => ({
+                                      ...current,
+                                      items: current.items.map((row) =>
+                                        row.id === saved.id ? saved : row,
+                                      ),
+                                    })
+                                  },
+                                  bought
+                                    ? "Đã đánh dấu đã mua."
+                                    : "Đã đánh dấu cần mua.",
+                                )
+                              }
+                              ariaLabel={`Đánh dấu ${item.name} ${item.unitCode}`}
+                              label={
+                                <span className="flex min-w-0 items-center gap-3">
+                                  <IngredientImage
+                                    imageUrl={item.imageUrl ?? null}
+                                    name={item.name}
+                                    containerClassName="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-brand-100 bg-cream-soft"
+                                  />
+                                  <span className="break-words text-sm text-ink">
+                                  {item.name}
+                                  </span>
+                                </span>
+                              }
+                              boxSize={22}
+                              className="min-w-0 w-full"
+                            />
+                            <span
+                              className={`text-sm ${
+                                item.bought
+                                  ? "text-ink-muted line-through"
+                                  : "text-ink-soft"
+                              }`}
+                            >
+                              {quantityText(item)}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              aria-label={`Sửa ${item.name} ${item.unitCode}`}
+                              disabled={busy}
+                              onClick={() => openDialog(() => setEditor(item))}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              aria-label={`Xoá ${item.name} ${item.unitCode}`}
+                              disabled={busy}
+                              onClick={() => openDialog(() => setRemoval(item))}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            {separate(item) && (
+                              <p className="col-span-4 pl-8 text-xs text-ink-muted">
+                                Giữ dòng riêng theo đơn vị {item.unitCode};
+                                không tự cộng với đơn vị khác.
+                              </p>
+                            )}
+                            {!!item.sources?.length && (
+                              <div
+                                className="col-span-4 min-w-0 space-y-1 break-words pl-8 text-xs text-ink-muted"
+                                aria-label={`Nguồn của ${item.name}`}
+                              >
+                                {item.sources.map((source, index) => (
+                                  <p key={`${source.recipeId}-${index}`}>
+                                    {source.available ? (
+                                      <Link
+                                        className="text-brand-700 underline"
+                                        to={`/cong-thuc/id/${source.recipeId}`}
+                                      >
+                                        {source.title}
+                                      </Link>
+                                    ) : (
+                                      <span>Công thức không còn khả dụng</span>
+                                    )}
+                                    {" · "}
+                                    {source.originalQuantity.toLocaleString(
+                                      "vi-VN",
+                                    )}{" "}
+                                    {source.originalUnitCode} lúc thêm
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-12 text-center text-sm text-ink-muted">
+                  Không có nguyên liệu trong mục này.
+                </p>
+              )}
+              {counts.done > 0 && (
+                <div className="mt-5 flex justify-end border-t border-brand-100 pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => openDialog(() => setRemoval("bought"))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Xoá {counts.done} mục đã mua
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </Card>
-
-        <aside className="hidden xl:block">
-          <Card className="p-4">
-            <h2 className="text-sm font-semibold text-ink">
-              Dinh dưỡng minh họa
-            </h2>
-            <p className="mt-2 text-xs leading-5 text-ink-muted">
-              Số liệu mẫu để xem trước bảng kiểm tra vi chất, chưa tính từ danh
-              sách bên cạnh.
-            </p>
-            <div className="mt-5 space-y-4">
-              {nutritionTargets.map((nutrient) => (
-                <div key={nutrient.key}>
-                  <div className="mb-1.5 flex justify-between text-[11px]">
-                    <span className="text-ink-muted">{nutrient.key}</span>
-                    <span className="text-ink">{nutrient.actual}</span>
-                  </div>
-                  <ProgressBar
-                    pct={nutrient.pct}
-                    tone={
-                      nutrient.status === "missing" || nutrient.status === "low"
-                        ? "amber"
-                        : "leaf"
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </Card>
-        </aside>
       </div>
-      {toast && (
-        <div
-          role="status"
-          className="fixed bottom-5 left-1/2 z-40 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-xl border border-brand-200 bg-raised px-4 py-3 text-xs text-ink shadow-xl"
+      <Modal
+        trapFocus
+        open={nameEditor}
+        onClose={closeDialog}
+        title="Đổi tên danh sách"
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            const name = nameDraft.replace(/\u00a0/g, " ").trim()
+            if (!name) {
+              setError("Tên danh sách không được để trống.")
+              return
+            }
+            if (name.length > 200) {
+              setError("Tên danh sách tối đa 200 ký tự.")
+              return
+            }
+            void mutate(async (listId) => {
+              const saved = await shoppingApi.renameList(listId, name)
+              setLists((current) => current.map((summary) =>
+                summary.id === saved.id ? saved : summary,
+              ))
+              return (current) => ({
+                ...current,
+                name: saved.name,
+                updatedAt: saved.updatedAt,
+              })
+            }, "Đã đổi tên danh sách.")
+          }}
+          className="space-y-4"
         >
-          <span>{toast}</span>
-          <button
-            type="button"
-            aria-label="Đóng thông báo"
-            onClick={() => setToast("")}
-            className="rounded p-1 text-ink-muted"
+          <div>
+            <label htmlFor="shopping-list-name" className="mb-1 block text-sm font-semibold text-ink">
+              Tên danh sách
+            </label>
+            <input
+              id="shopping-list-name"
+              autoFocus
+              maxLength={200}
+              required
+              value={nameDraft}
+              disabled={busy}
+              onChange={(event) => setNameDraft(event.target.value)}
+              className={field + " w-full"}
+            />
+            <p className="mt-1 text-xs text-ink-muted">Tối đa 200 ký tự.</p>
+          </div>
+          {error && <p role="alert" className="text-sm text-ink">{error}</p>}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" disabled={busy} onClick={closeDialog}>Hủy</Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Đang lưu…" : "Lưu tên"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+      <Modal
+        trapFocus
+        open={emptyListEditor}
+        onClose={closeDialog}
+        title="Tạo danh sách đi chợ"
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            const name = nameDraft.replace(/\u00a0/g, " ").trim()
+            if (!name) {
+              setError("Hãy nhập tên danh sách.")
+              return
+            }
+            if (name.length > 200) {
+              setError("Tên danh sách tối đa 200 ký tự.")
+              return
+            }
+            void createEmptyList(name)
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label htmlFor="new-shopping-list-name" className="mb-1 block text-sm font-semibold text-ink">
+              Tên danh sách
+            </label>
+            <input
+              id="new-shopping-list-name"
+              autoFocus
+              maxLength={200}
+              required
+              value={nameDraft}
+              disabled={busy}
+              onChange={(event) => setNameDraft(event.target.value)}
+              placeholder="Ví dụ: Đi chợ cuối tuần"
+              className={field + " w-full"}
+            />
+            <p className="mt-1 text-xs text-ink-muted">
+              Danh sách được tạo rỗng, bạn có thể thêm mặt hàng bất cứ lúc nào.
+            </p>
+          </div>
+          {error && <p role="alert" className="text-sm text-ink">{error}</p>}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" disabled={busy} onClick={closeDialog}>Hủy</Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Đang tạo…" : "Tạo danh sách"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+      <Modal
+        trapFocus
+        open={listRemoval}
+        onClose={closeDialog}
+        title="Xóa danh sách đi chợ?"
+      >
+        <p className="text-sm leading-6 text-ink-soft">
+          Danh sách “{list?.name}” và {counts.all} mặt hàng trong checklist sẽ bị xóa.
+          Lịch ăn và công thức nguồn vẫn được giữ nguyên.
+        </p>
+        {error && <p role="alert" className="mt-3 text-sm text-ink">{error}</p>}
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="outline" disabled={busy} onClick={closeDialog}>Hủy</Button>
+          <Button
+            disabled={busy}
+            className="bg-red-700 hover:bg-red-800"
+            onClick={() => void removeCurrentList()}
           >
-            <X className="h-4 w-4" />
-          </button>
+            {busy ? "Đang xóa…" : "Xóa danh sách"}
+          </Button>
         </div>
-      )}
+      </Modal>
+      <Modal
+        trapFocus
+        open={editor !== null}
+        onClose={closeDialog}
+        title={editor === "new" ? "Thêm mặt hàng" : "Sửa số lượng và đơn vị"}
+      >
+        {editor && (
+          <ItemForm
+            key={editor === "new" ? "new" : editor.id}
+            item={editor === "new" ? null : editor}
+            units={units}
+            busy={busy}
+            error={error}
+            onCancel={closeDialog}
+            onSave={(payload) =>
+              void mutate(
+                async (listId) => {
+                  const saved =
+                    editor === "new"
+                      ? await shoppingApi.add(listId, payload)
+                      : await shoppingApi.update(listId, editor.id, {
+                          quantity: payload.quantity,
+                          unitId: payload.unitId,
+                        })
+                  return (current) => ({
+                    ...current,
+                    items:
+                      editor === "new"
+                        ? [...current.items, saved]
+                        : current.items.map((row) =>
+                            row.id === saved.id ? saved : row,
+                          ),
+                  })
+                },
+                editor === "new"
+                  ? "Đã thêm mặt hàng."
+                  : "Đã lưu số lượng và đơn vị.",
+              )
+            }
+          />
+        )}
+      </Modal>
+      <Modal open={removal !== null} onClose={closeDialog} title="Xác nhận xoá">
+        <p className="text-sm text-ink-soft">
+          {removal === "bought"
+            ? `Xoá ${counts.done} mục đã mua? Các mục cần mua được giữ lại.`
+            : `Xoá ${removal?.name ?? ""} khỏi danh sách?`}
+        </p>
+        {error && (
+          <p role="alert" className="mt-3 text-sm text-ink">
+            {error}
+          </p>
+        )}
+        <div ref={removalActions} className="mt-5 flex justify-end gap-2">
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={closeDialog}
+          >
+            Hủy
+          </Button>
+          <Button
+            disabled={busy}
+            onClick={() => {
+              const target = removal
+              if (!target) return
+              void mutate(async (listId) => {
+                if (target === "bought") await shoppingApi.clearBought(listId)
+                else await shoppingApi.remove(listId, target.id)
+                return (current) => ({
+                  ...current,
+                  items: current.items.filter((item) =>
+                    target === "bought" ? !item.bought : item.id !== target.id,
+                  ),
+                })
+              }, "Đã xoá mục khỏi danh sách.")
+            }}
+          >
+            {busy ? "Đang xoá…" : "Xoá"}
+          </Button>
+        </div>
+      </Modal>
     </PageContainer>
+  )
+}
+
+function ItemForm({
+  item,
+  units,
+  busy,
+  error,
+  onSave,
+  onCancel,
+}: {
+  item: ShoppingItem | null
+  units: ShoppingUnit[]
+  busy: boolean
+  error: string
+  onSave: (value: { name: string; quantity: number; unitId: number }) => void
+  onCancel: () => void
+}) {
+  const [name, setName] = useState(item?.name ?? "")
+  const [quantity, setQuantity] = useState(String(item?.quantity ?? 1))
+  const [unit, setUnit] = useState(String(item?.unitId ?? units[0]?.id ?? ""))
+  const nameInput = useRef<HTMLInputElement>(null)
+  const quantityInput = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const input = item === null ? nameInput.current : quantityInput.current
+    input?.focus()
+  }, [item])
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSave({
+          name: name.trim(),
+          quantity: Number(quantity),
+          unitId: Number(unit),
+        })
+      }}
+      className="space-y-4"
+      aria-busy={busy}
+    >
+      <fieldset disabled={busy} className="space-y-4">
+        <label className="block text-sm text-ink">
+          Tên mặt hàng
+          <input
+            ref={nameInput}
+            className={`${field} mt-2 w-full`}
+            required
+            maxLength={200}
+            disabled={item !== null}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-sm text-ink">
+            Số lượng
+            <input
+              ref={quantityInput}
+              className={`${field} mt-2 w-full`}
+              type="number"
+              required
+              min="0.01"
+              max="99999999.99"
+              step="0.01"
+              value={quantity}
+              onChange={(event) => setQuantity(event.target.value)}
+            />
+          </label>
+          <label className="text-sm text-ink">
+            Đơn vị
+            <select
+              aria-label="Đơn vị"
+              className={`${field} mt-2 w-full`}
+              required
+              value={unit}
+              onChange={(event) => setUnit(event.target.value)}
+            >
+              {item && !units.some((option) => option.id === item.unitId) && (
+                <option value={item.unitId}>
+                  {item.unitCode} (đã ngừng dùng)
+                </option>
+              )}
+              {units.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.code} — {option.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </fieldset>
+      <p className="text-xs text-ink-muted">Chọn đơn vị rồi nhập số lượng tương ứng.</p>
+      {error && (
+        <p role="alert" className="text-sm text-ink">
+          {error}
+        </p>
+      )}
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy}
+          onClick={onCancel}
+        >
+          Hủy
+        </Button>
+        <Button type="submit" disabled={busy || !name.trim() || !unit}>
+          {busy ? "Đang lưu…" : "Lưu mặt hàng"}
+        </Button>
+      </div>
+    </form>
   )
 }

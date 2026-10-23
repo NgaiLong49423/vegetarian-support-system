@@ -40,18 +40,15 @@ import tech.mamxanh.mealplan.dto.response.MealPlanNutritionResponse;
 import tech.mamxanh.mealplan.dto.response.MealPlanNutritionResponse.Day;
 import tech.mamxanh.mealplan.dto.response.MealPlanNutritionResponse.Target;
 import tech.mamxanh.mealplan.dto.response.MealPlanNutritionResponse.Entry;
-import tech.mamxanh.mealplan.service.MealPlanExportService;
-import tech.mamxanh.mealplan.dto.response.MealPlanExportResponse;
 import tech.mamxanh.mealplan.dto.request.MoveMealPlanEntryRequest;
 
-@WebMvcTest({MealPlanController.class, MealPlanReadController.class, MealPlanExportController.class, AiMenuController.class})
+@WebMvcTest({MealPlanController.class, MealPlanReadController.class, AiMenuController.class})
 @ActiveProfiles("test")
 @EnableConfigurationProperties(SpringDocConfigProperties.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class, OpenApiConfig.class,
         SpringDocConfiguration.class, SpringDocSpecPropertiesConfiguration.class, SpringDocWebMvcConfiguration.class})
 class MealPlanControllerTest {
     @Autowired private MockMvc mvc;
-    @MockitoBean private MealPlanExportService exports;
     @MockitoBean private MealPlanService service;
     @MockitoBean private MealPlanReadService reads;
     @MockitoBean private MealPlanNutritionService nutrition;
@@ -282,8 +279,7 @@ class MealPlanControllerTest {
         mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/position'].patch.responses['409']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/entries/{entryId}/position'].patch.security[0].bearerAuth").isArray())
-                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/export'].get.responses['403']").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/export'].get.security[0].bearerAuth").isArray());
+                .andExpect(jsonPath("$.paths['/api/v1/meal-plans/{weekStartDate}/export']").doesNotExist());
         mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans'].put.parameters[0].name").value("weekStartDate"))
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans'].put.requestBody").doesNotExist())
@@ -394,21 +390,11 @@ class MealPlanControllerTest {
     }
 
     @Test
-    void exportsPrivateSnapshotWithoutCaching() throws Exception {
-        var week = LocalDate.of(2026, 10, 12);
-        when(exports.getExport(week)).thenReturn(new MealPlanExportResponse(week, List.of()));
-        mvc.perform(get("/api/v1/meal-plans/2026-10-12/export").with(user("17")))
-                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.entries").isEmpty());
-    }
-
-    @Test
-    void guestCannotMoveOrExport() throws Exception {
+    void guestCannotMove() throws Exception {
         mvc.perform(patch("/api/v1/meal-plans/2026-10-12/entries/31/position")
                 .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/v1/meal-plans/2026-10-12/export")).andExpect(status().isUnauthorized());
-        verifyNoInteractions(service, exports);
+        verifyNoInteractions(service);
     }
 
     @Test

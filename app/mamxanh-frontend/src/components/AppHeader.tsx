@@ -18,7 +18,6 @@ import {
   Sun,
   Moon,
   UserRound,
-  Users,
   X,
 } from "lucide-react"
 import { useAuth } from "./AuthContext"
@@ -32,7 +31,12 @@ const navigation = [
   { to: "/ho-so", label: "Đã lưu", icon: Bookmark },
   { to: "/ke-hoach", label: "Lịch ăn", icon: CalendarDays },
   { to: "/di-cho", label: "Đi chợ", icon: ShoppingBasket },
-  { to: "/cong-dong", label: "Cộng đồng", icon: Users },
+]
+
+const exploreLinks = [
+  { to: "/kham-pha", label: "Công thức", icon: Search },
+  { to: "/danh-muc-nguyen-lieu", label: "Danh mục nguyên liệu", icon: LayoutGrid },
+  { to: "/chuyen-gia", label: "Chuyên gia", icon: Award },
 ]
 
 export function AppHeader() {
@@ -43,10 +47,17 @@ export function AppHeader() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [exploreMenuOpen, setExploreMenuOpen] = useState(false)
+  const [exploreMobileOpen, setExploreMobileOpen] = useState(() =>
+    ["/kham-pha", "/danh-muc-nguyen-lieu", "/chuyen-gia"].includes(location.pathname),
+  )
   const [query, setQuery] = useState("")
   const drawer = useRef<HTMLDialogElement>(null)
   const accountMenu = useRef<HTMLDivElement>(null)
   const accountTrigger = useRef<HTMLButtonElement>(null)
+  const exploreMenu = useRef<HTMLDivElement>(null)
+  const exploreTrigger = useRef<HTMLButtonElement>(null)
+  const navigationGroup = useRef<HTMLElement>(null)
   const role = account?.role
   const personalLinks = [
     ...(role === "ADMIN"
@@ -110,6 +121,8 @@ export function AppHeader() {
   useEffect(() => {
     setDrawerOpen(false)
     setMenuOpen(false)
+    setExploreMenuOpen(false)
+    setExploreMobileOpen(["/kham-pha", "/danh-muc-nguyen-lieu", "/chuyen-gia"].includes(location.pathname))
   }, [location.pathname, location.search])
 
   useEffect(() => {
@@ -145,8 +158,27 @@ export function AppHeader() {
     }
   }, [menuOpen])
 
+  useEffect(() => {
+    if (!exploreMenuOpen) return
+    const dismiss = (event: PointerEvent) => {
+      if (!exploreMenu.current?.contains(event.target as Node)) setExploreMenuOpen(false)
+    }
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setExploreMenuOpen(false)
+        exploreTrigger.current?.focus()
+      }
+    }
+    document.addEventListener("pointerdown", dismiss)
+    document.addEventListener("keydown", escape)
+    return () => {
+      document.removeEventListener("pointerdown", dismiss)
+      document.removeEventListener("keydown", escape)
+    }
+  }, [exploreMenuOpen])
+
   const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null)
-  const tabRefs = useRef<(HTMLAnchorElement | null)[]>([])
+  const tabRefs = useRef<(HTMLElement | null)[]>([])
   const [gliderStyle, setGliderStyle] = useState<{
     left: number
     width: number
@@ -157,12 +189,12 @@ export function AppHeader() {
     opacity: 0,
   })
 
-  const activeNavIndex = navigation.findIndex((item) =>
-    item.to === "/trang-chu"
-      ? location.pathname === "/trang-chu"
-      : location.pathname === item.to ||
-        location.pathname.startsWith(`${item.to}/`),
-  )
+  const isExploreRoute = exploreLinks.some(({ to }) => location.pathname === to || location.pathname.startsWith(`${to}/`))
+  const activeNavIndex = navigation.findIndex((item) => item.to === "/kham-pha"
+    ? isExploreRoute
+    : item.to === "/trang-chu"
+      ? location.pathname === item.to
+      : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))
   const targetNavIndex =
     hoveredNavIndex !== null ? hoveredNavIndex : activeNavIndex
 
@@ -171,9 +203,14 @@ export function AppHeader() {
       if (targetNavIndex >= 0 && tabRefs.current[targetNavIndex]) {
         const el = tabRefs.current[targetNavIndex]
         if (el) {
+          const group = navigationGroup.current
+          const itemBounds = el.getBoundingClientRect()
+          const groupBounds = group?.getBoundingClientRect()
           setGliderStyle({
-            left: el.offsetLeft,
-            width: el.offsetWidth,
+            left: groupBounds
+              ? itemBounds.left - groupBounds.left - (group?.clientLeft ?? 0)
+              : el.offsetLeft,
+            width: itemBounds.width,
             opacity: 1,
           })
         }
@@ -237,8 +274,9 @@ export function AppHeader() {
           <Logo to="/trang-chu" />
           <div className="hidden flex-1 items-center justify-center px-2 xl:flex">
             <nav
+              ref={navigationGroup}
               aria-label="Điều hướng chính"
-              onMouseLeave={() => setHoveredNavIndex(null)}
+              onMouseLeave={() => { setHoveredNavIndex(null); setExploreMenuOpen(false) }}
               className="glass-nav-group flex items-center"
             >
               <div
@@ -252,8 +290,27 @@ export function AppHeader() {
               />
               {navigation.map((item, idx) => {
                 const isCurrent = targetNavIndex === idx
+                if (item.to === "/kham-pha") {
+                  return <div key={item.to} ref={exploreMenu} className="relative" onMouseEnter={() => setExploreMenuOpen(true)}>
+                    <button
+                      ref={(el) => { tabRefs.current[idx] = el; exploreTrigger.current = el }}
+                      type="button"
+                      aria-expanded={exploreMenuOpen}
+                      aria-controls="explore-navigation"
+                      aria-current={isExploreRoute ? "page" : undefined}
+                      onClick={() => setExploreMenuOpen((open) => !open)}
+                      onMouseEnter={() => setHoveredNavIndex(idx)}
+                      className={`glass-nav-link inline-flex items-center gap-1 border-0 bg-transparent ${isCurrent ? "is-active" : ""}`}
+                    >{item.label}<ChevronDown className={`h-3.5 w-3.5 transition-transform ${exploreMenuOpen ? "rotate-180" : ""}`} /></button>
+                    {exploreMenuOpen && <nav id="explore-navigation" aria-label="Khám phá" className="absolute left-0 top-full z-40 mt-1 w-60 rounded-xl border border-brand-100 bg-paper p-2 shadow-xl">
+                      {exploreLinks.map((link) => <NavLink key={link.to} to={link.to} end className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${isActive ? "bg-brand-50 text-brand-800" : "text-ink-soft hover:bg-raised hover:text-brand-700"}`}>
+                        <link.icon className="h-4 w-4 text-brand-700" />{link.label}
+                      </NavLink>)}
+                    </nav>}
+                  </div>
+                }
                 return (
-                  <NavLink
+              <NavLink
                     key={item.to}
                     to={item.to}
                     ref={(el) => {
@@ -267,7 +324,7 @@ export function AppHeader() {
                     className={`glass-nav-link ${isCurrent ? "is-active" : ""}`}
                   >
                     {item.label}
-                  </NavLink>
+              </NavLink>
                 )
               })}
             </nav>
@@ -431,26 +488,23 @@ export function AppHeader() {
             aria-label="Menu chính"
             className="drawer-nav-menu flex-1 space-y-1 overflow-y-auto p-3"
           >
-            {navigation.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                aria-label={
-                  item.to === "/kham-pha" ? "Khám phá món chay" : item.label
-                }
-                end={item.to === "/trang-chu"}
-                className={({ isActive }) =>
-                  `drawer-nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-                    isActive
-                      ? "is-active bg-brand-600 font-bold text-on-brand shadow-md shadow-brand-600/20"
-                      : "text-ink-soft hover:bg-paper hover:text-brand-600"
-                  }`
-                }
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                <span className="flex-1">{item.label}</span>
-              </NavLink>
-            ))}
+            {navigation.map((item) => item.to === "/kham-pha" ? (
+              <div key={item.to}>
+                <button type="button" aria-expanded={exploreMobileOpen} aria-controls="mobile-explore-navigation" onClick={() => setExploreMobileOpen((open) => !open)} className={`drawer-nav-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${isExploreRoute ? "is-active bg-brand-600 font-bold text-on-brand shadow-md shadow-brand-600/20" : "text-ink-soft hover:bg-paper hover:text-brand-600"}`}>
+                  <item.icon className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">Khám phá</span><ChevronDown className={`h-4 w-4 transition-transform ${exploreMobileOpen ? "rotate-180" : ""}`} />
+                </button>
+                {exploreMobileOpen && <div id="mobile-explore-navigation" className="ml-5 mt-1 space-y-1 border-l border-brand-200 pl-3">
+                  {exploreLinks.map((link) => <NavLink key={link.to} to={link.to} end onClick={() => setDrawerOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm ${isActive ? "bg-brand-50 font-semibold text-brand-800" : "text-ink-soft hover:bg-paper hover:text-brand-600"}`}><link.icon className="h-4 w-4" />{link.label}</NavLink>)}
+                </div>}
+              </div>
+            ) : <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === "/trang-chu"}
+              className={({ isActive }) => `drawer-nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${isActive ? "is-active bg-brand-600 font-bold text-on-brand shadow-md shadow-brand-600/20" : "text-ink-soft hover:bg-paper hover:text-brand-600"}`}
+            >
+              <item.icon className="h-4 w-4 shrink-0" /><span className="flex-1">{item.label}</span>
+            </NavLink>)}
             <div className="my-3 border-t border-brand-100" />
             <p className="px-4 pb-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
               {account?.displayName ?? "Tài khoản & công cụ"}

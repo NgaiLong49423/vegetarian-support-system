@@ -81,7 +81,17 @@ public final class PayOsSignatureUtil {
             if (!sb.isEmpty()) {
                 sb.append("&");
             }
-            String valueStr = entry.getValue() != null ? String.valueOf(entry.getValue()) : "";
+            Object value = entry.getValue();
+            String valueStr;
+            if (value == null || "null".equals(value) || "undefined".equals(value)) {
+                valueStr = "";
+            } else if (value instanceof java.util.Collection<?> || value instanceof Map<?, ?>) {
+                valueStr = tools.jackson.databind.json.JsonMapper.builder()
+                        .enable(tools.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+                        .build().writeValueAsString(value);
+            } else {
+                valueStr = String.valueOf(value);
+            }
             sb.append(entry.getKey()).append("=").append(valueStr);
         }
         return sb.toString();

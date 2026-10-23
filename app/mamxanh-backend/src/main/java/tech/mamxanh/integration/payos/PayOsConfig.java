@@ -19,6 +19,10 @@ public class PayOsConfig {
     @Bean
     @ConditionalOnMissingBean(PayOsClient.class)
     public PayOsClient payOsClient(PayOsProperties properties, RestClient.Builder restClientBuilder) {
-        return new DefaultPayOsClient(properties, restClientBuilder.build());
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory =
+                new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(java.time.Duration.ofSeconds(3));
+        factory.setReadTimeout(java.time.Duration.ofSeconds(8));
+        return new DefaultPayOsClient(properties, restClientBuilder.clone().requestFactory(factory).build());
     }
 }

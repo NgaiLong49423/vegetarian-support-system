@@ -23,6 +23,9 @@ import tech.mamxanh.nutrition.dto.request.UnitSaveRequest;
 import tech.mamxanh.nutrition.dto.response.ConversionResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientNutritionResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
+import tech.mamxanh.nutrition.dto.response.PublicIngredientGroupResponse;
+import tech.mamxanh.nutrition.dto.response.PublicIngredientDetailResponse;
+import tech.mamxanh.nutrition.dto.response.PublicIngredientResponse;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
 import tech.mamxanh.nutrition.entity.IngredientUnitConversionEntity;
@@ -63,11 +66,45 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     public PageResponse<IngredientResponse> searchIngredients(String query, String ingredientGroup,
             Boolean active, Boolean nutritionSupported, int page, int size) {
         CatalogStatus status = active == null ? null : active ? CatalogStatus.ACTIVE : CatalogStatus.INACTIVE;
-        var results = ingredientRepository.search(normalizeFilter(query), normalizeFilter(ingredientGroup),
+        String normalizedQuery = normalizeFilter(query);
+        // Bind the entire pattern: SQL Server CONCAT casts can lose Vietnamese characters.
+        String pattern = normalizedQuery == null ? null : "%" + normalizedQuery + "%";
+        var results = ingredientRepository.search(pattern, normalizeFilter(ingredientGroup),
                 status, nutritionSupported,
                 PageRequest.of(page, size, Sort.by(Sort.Order.asc("name"), Sort.Order.asc("id"))));
         return PageResponse.of(results.getContent().stream().map(this::toResponse).toList(),
                 results.getNumber(), results.getSize(), results.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicIngredientGroupResponse> listPublicGroups() {
+        return ingredientRepository.findActiveIngredientGroups().stream()
+                .map(group -> new PublicIngredientGroupResponse(group.getGroupName(), group.getIngredientCount()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<PublicIngredientResponse> searchPublicIngredients(String query, String ingredientGroup,
+            int page, int size) {
+        PageResponse<IngredientResponse> results = searchIngredients(query, ingredientGroup, true, null, page, size);
+        List<PublicIngredientResponse> items = results.content().stream()
+                .map(ingredient -> new PublicIngredientResponse(ingredient.id(), ingredient.name(),
+                        ingredient.ingredientGroup(), ingredient.imageUrl()))
+                .toList();
+        return PageResponse.of(items, results.page(), results.size(), results.totalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public PublicIngredientDetailResponse getPublicIngredient(long id) {
+        IngredientEntity ingredient = ingredientRepository.findByIdAndStatus(id, CatalogStatus.ACTIVE)
+                .orElseThrow(() -> notFound("INGREDIENT_NOT_FOUND", "Không tìm thấy nguyên liệu."));
+        IngredientNutritionResponse nutrition = new IngredientNutritionResponse(ingredient.getEnergyKcalPer100g(),
+                ingredient.getProteinGramsPer100g(), ingredient.getCarbohydrateGramsPer100g(),
+                ingredient.getTotalFatGramsPer100g(), ingredient.getFiberGramsPer100g(),
+                ingredient.getCalciumMgPer100g(), ingredient.getIronMgPer100g(),
+                ingredient.getVitaminB12MicrogramsPer100g(), ingredient.getZincMgPer100g());
+        return new PublicIngredientDetailResponse(ingredient.getId(), ingredient.getName(),
+                ingredient.getIngredientGroup(), ingredient.getImageUrl(), nutrition);
     }
 
     @Transactional(readOnly = true)
@@ -161,13 +198,9 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         }
         validateGroup(request.ingredientGroup());
         validateSource(request.sourceName());
-        if (ingredient.isNutritionSupported() && (request.sourceUrl() == null || request.sourceUrl().isBlank())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "SOURCE_REQUIRED_WHEN_NUTRITION_SUPPORTED",
-                    "Cần cung cấp nguồn tham khảo cho nguyên liệu đang hỗ trợ dinh dưỡng.");
-        }
-        if (ingredient.isNutritionSupported() && request.nutrition() != null && !isComplete(request.nutrition())) {
-            throw new ApiException(HttpStatus.CONFLICT, "NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED",
-                    "Hãy tắt hỗ trợ tính dinh dưỡng trước khi xóa hoặc để trống chỉ tiêu.");
+        if (ingredient.isNutritionSupported() && request.nutrition() != null
+                && !hasAnyNutritionValue(request.nutrition())) {
+            throw noNutritionValuesAllowed();
         }
         ingredient.update(name, request.ingredientGroup().trim(), request.sourceName().trim(),
                 normalizeFilter(request.sourceUrl()), request.referenceDate());
@@ -178,9 +211,8 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     @Transactional
     public IngredientResponse updateNutrition(long id, IngredientNutritionRequest request) {
         IngredientEntity ingredient = requireIngredient(id);
-        if (ingredient.isNutritionSupported() && !isComplete(request)) {
-            throw new ApiException(HttpStatus.CONFLICT, "NUTRITION_DATA_REQUIRED_WHILE_SUPPORTED",
-                    "Hãy tắt hỗ trợ tính dinh dưỡng trước khi xóa hoặc để trống chỉ tiêu.");
+        if (ingredient.isNutritionSupported() && !hasAnyNutritionValue(request)) {
+            throw noNutritionValuesAllowed();
         }
         applyNutrition(ingredient, request);
         return toResponse(ingredient);
@@ -190,26 +222,10 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
     public IngredientResponse setNutritionSupport(long id, NutritionSupportUpdateRequest request) {
         IngredientEntity ingredient = requireIngredient(id);
         if (request.enabled()) {
-            List<String> missingNutrition = missingNutritionFields(ingredient);
-            if (!missingNutrition.isEmpty()) {
-                throw new ApiException(HttpStatus.CONFLICT, "NUTRITION_VALUES_INCOMPLETE",
-                        "Còn thiếu chỉ tiêu dinh dưỡng: " + String.join(", ", missingNutrition) + ".");
+            if (missingNutritionFields(ingredient).size() == 9) {
+                throw new ApiException(HttpStatus.CONFLICT, "NUTRITION_VALUES_EMPTY",
+                        "Cần nhập ít nhất một chỉ tiêu dinh dưỡng trước khi bật hỗ trợ tính.");
             }
-            List<String> missingSource = new ArrayList<>();
-            if (ingredient.getSourceName() == null || ingredient.getSourceName().isBlank()) {
-                missingSource.add("sourceName");
-            }
-            if (ingredient.getSourceUrl() == null || ingredient.getSourceUrl().isBlank()) {
-                missingSource.add("sourceUrl");
-            }
-            if (ingredient.getReferenceDate() == null) {
-                missingSource.add("referenceDate");
-            }
-            if (!missingSource.isEmpty()) {
-                throw new ApiException(HttpStatus.CONFLICT, "NUTRITION_SOURCE_INCOMPLETE",
-                        "Còn thiếu thông tin nguồn: " + String.join(", ", missingSource) + ".");
-            }
-            validateSource(ingredient.getSourceName());
         }
         ingredient.setNutritionSupported(request.enabled());
         return toResponse(ingredient);
@@ -341,7 +357,7 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
                 entity.getTotalFatGramsPer100g(), entity.getFiberGramsPer100g(), entity.getCalciumMgPer100g(),
                 entity.getIronMgPer100g(), entity.getVitaminB12MicrogramsPer100g(), entity.getZincMgPer100g());
         return new IngredientResponse(entity.getId(), entity.getName(), entity.getIngredientGroup(),
-                entity.getSourceName(), entity.getSourceUrl(), entity.getReferenceDate(),
+                entity.getSourceName(), entity.getImageUrl(), entity.getSourceUrl(), entity.getReferenceDate(),
                 entity.isNutritionSupported(), entity.getStatus() == CatalogStatus.ACTIVE, nutrition);
     }
 
@@ -350,14 +366,6 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
                 nutrition.carbohydrateGramsPer100g(), nutrition.totalFatGramsPer100g(),
                 nutrition.fiberGramsPer100g(), nutrition.calciumMgPer100g(), nutrition.ironMgPer100g(),
                 nutrition.vitaminB12MicrogramsPer100g(), nutrition.zincMgPer100g());
-    }
-
-    private boolean isComplete(IngredientNutritionRequest nutrition) {
-        return nutrition.energyKcalPer100g() != null && nutrition.proteinGramsPer100g() != null
-                && nutrition.carbohydrateGramsPer100g() != null && nutrition.totalFatGramsPer100g() != null
-                && nutrition.fiberGramsPer100g() != null && nutrition.calciumMgPer100g() != null
-                && nutrition.ironMgPer100g() != null && nutrition.vitaminB12MicrogramsPer100g() != null
-                && nutrition.zincMgPer100g() != null;
     }
 
     private List<String> missingNutritionFields(IngredientEntity ingredient) {
@@ -376,12 +384,23 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
 
     private void validateSource(String sourceName) {
         String candidate = sourceName == null ? "" : sourceName.trim();
-        boolean allowed = properties.allowedSources().stream().filter(java.util.Objects::nonNull)
-                .map(String::trim).anyMatch(source -> source.equalsIgnoreCase(candidate));
-        if (!allowed) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "UNSUPPORTED_NUTRITION_SOURCE",
-                    "Nguồn dữ liệu phải thuộc danh sách nguồn dinh dưỡng được hỗ trợ.");
+        if (candidate.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "NUTRITION_SOURCE_REQUIRED",
+                    "Cần nhập tên nguồn hoặc ghi rõ dữ liệu do quản trị viên cung cấp.");
         }
+    }
+
+    private boolean hasAnyNutritionValue(IngredientNutritionRequest nutrition) {
+        return nutrition.energyKcalPer100g() != null || nutrition.proteinGramsPer100g() != null
+                || nutrition.carbohydrateGramsPer100g() != null || nutrition.totalFatGramsPer100g() != null
+                || nutrition.fiberGramsPer100g() != null || nutrition.calciumMgPer100g() != null
+                || nutrition.ironMgPer100g() != null || nutrition.vitaminB12MicrogramsPer100g() != null
+                || nutrition.zincMgPer100g() != null;
+    }
+
+    private ApiException noNutritionValuesAllowed() {
+        return new ApiException(HttpStatus.CONFLICT, "NUTRITION_VALUES_EMPTY",
+                "Cần giữ lại ít nhất một chỉ tiêu có dữ liệu khi bật hỗ trợ tính dinh dưỡng.");
     }
 
     private void validateGroup(String ingredientGroup) {

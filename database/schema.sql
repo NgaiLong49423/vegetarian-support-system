@@ -21,6 +21,8 @@
 --                   + V13__expand_nutrition_goal_options.sql
 --                   + V14__nutrition_daily_value_reference.sql
 --                   + V15__recipe_view_deduplication.sql
+--                   + V16__shopping_manual_roll_unit.sql
+--                   + V17__shopping_recipe_contributions.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -79,12 +81,13 @@ GO
 -- 1.2 INGREDIENT — Standard ingredient dictionary with 9 nutrition indicators
 -- Source: Data Dictionary 4.18, FR-39/41, BR-44/49/51/52/53
 -- Nutrition indicators are NULLable: NULL = no data yet; 0 = true measured zero.
--- nutrition_supported = 1 requires all 9 indicators and source_url NOT NULL (Q5, BR-52).
+-- nutrition_supported = 1 requires at least one nutrient; sources are descriptive and unrestricted (BR-52).
 CREATE TABLE [INGREDIENT] (
     ingredient_id         BIGINT         IDENTITY(1,1)  NOT NULL,
     name                  NVARCHAR(200)  NOT NULL,
     ingredient_group      NVARCHAR(100)  NOT NULL
         CONSTRAINT DF_INGREDIENT_ingredient_group DEFAULT N'Khác',
+    image_url             NVARCHAR(2048) NULL,
     energy_kcal_100g      DECIMAL(10,2)  NULL,
     protein_g_100g        DECIMAL(10,2)  NULL,
     carbohydrate_g_100g   DECIMAL(10,2)  NULL,
@@ -111,15 +114,14 @@ CREATE TABLE [INGREDIENT] (
     CONSTRAINT CK_INGREDIENT_nutrition_supported CHECK (
         nutrition_supported = 0 OR (
             energy_kcal_100g IS NOT NULL
-            AND protein_g_100g IS NOT NULL
-            AND carbohydrate_g_100g IS NOT NULL
-            AND total_fat_g_100g IS NOT NULL
-            AND fiber_g_100g IS NOT NULL
-            AND calcium_mg_100g IS NOT NULL
-            AND iron_mg_100g IS NOT NULL
-            AND vitamin_b12_mcg_100g IS NOT NULL
-            AND zinc_mg_100g IS NOT NULL
-            AND source_url IS NOT NULL
+            OR protein_g_100g IS NOT NULL
+            OR carbohydrate_g_100g IS NOT NULL
+            OR total_fat_g_100g IS NOT NULL
+            OR fiber_g_100g IS NOT NULL
+            OR calcium_mg_100g IS NOT NULL
+            OR iron_mg_100g IS NOT NULL
+            OR vitamin_b12_mcg_100g IS NOT NULL
+            OR zinc_mg_100g IS NOT NULL
         )
     )
 );
@@ -1030,6 +1032,12 @@ INSERT INTO [UNIT] (code, name, dimension, base_factor) VALUES
     (N'bó',     N'bó',              'COUNT',   1.0);
 GO
 
+-- V16 / FR-53 AC-53.2: manual shopping items measured in rolls.
+IF NOT EXISTS (SELECT 1 FROM [UNIT] WHERE code = N'cuộn')
+    INSERT INTO [UNIT] (code, name, dimension, base_factor, is_active)
+    VALUES (N'cuộn', N'cuộn', 'COUNT', 1.0, 1);
+GO
+
 
 -- ============================================================================
 -- FR-37 shared FDA reference values; maintained by Flyway V14.
@@ -1079,3 +1087,31 @@ GO
 --   SET NULL : RECIPE_VIEW.user_id
 --   NO ACTION: all other 33 foreign keys
 -- ============================================================================
+
+GO
+
+-- Personal Recipe Post lists and immutable original ingredient contributions (FR-53 / approved #90 design).
+ALTER TABLE [SHOPPING_LIST] ADD list_kind VARCHAR(20) NOT NULL
+    CONSTRAINT DF_SHOPPING_LIST_kind DEFAULT 'MEAL_PLAN';
+GO
+ALTER TABLE [SHOPPING_LIST] ADD CONSTRAINT CK_SHOPPING_LIST_kind CHECK (list_kind IN ('MEAL_PLAN','PERSONAL','MANUAL'));
+CREATE UNIQUE INDEX UX_SHOPPING_LIST_personal_owner ON [SHOPPING_LIST](user_id) WHERE list_kind = 'PERSONAL';
+
+CREATE TABLE [SHOPPING_RECIPE_CONTRIBUTION] (
+    contribution_id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    shopping_list_id BIGINT NOT NULL,
+    recipe_id BIGINT NOT NULL,
+    ingredient_id BIGINT NOT NULL,
+    unit_id INT NOT NULL,
+    quantity DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
+    shopping_list_item_id BIGINT NULL,
+    CONSTRAINT FK_SRC_LIST FOREIGN KEY (shopping_list_id) REFERENCES [SHOPPING_LIST](shopping_list_id) ON DELETE CASCADE,
+    CONSTRAINT FK_SRC_RECIPE FOREIGN KEY (recipe_id) REFERENCES [RECIPE_POST](recipe_id),
+    CONSTRAINT FK_SRC_INGREDIENT FOREIGN KEY (ingredient_id) REFERENCES [INGREDIENT](ingredient_id),
+    CONSTRAINT FK_SRC_UNIT FOREIGN KEY (unit_id) REFERENCES [UNIT](unit_id),
+    CONSTRAINT FK_SRC_ITEM FOREIGN KEY (shopping_list_item_id) REFERENCES [SHOPPING_LIST_ITEM](shopping_list_item_id)
+);
+CREATE INDEX IX_SRC_LIST_RECIPE ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_id,recipe_id);
+CREATE INDEX IX_SRC_ITEM ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_item_id);
+
+GO

@@ -28,7 +28,7 @@ public record RecipeDetailResponse(
         Statistics statistics,
         List<Media> media) {
 
-    public record Ingredient(Long ingredientId, String name, String ingredientGroup,
+    public record Ingredient(Long ingredientId, String name, String ingredientGroup, String imageUrl,
             BigDecimal quantity, Integer unitId, String unitCode, String unitName,
             boolean nutritionSupported, IngredientNutrition nutrition) {}
 
