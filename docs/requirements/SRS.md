@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.10.0
+> **Version:** v2.11.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-23
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -303,7 +303,8 @@ Khi bài công thức bị ẩn/xóa/không khả dụng, Saved Recipe và Meal 
 
 - AI gợi ý món và lập menu chỉ được chọn từ các bài công thức đang công khai, không bị ẩn/xóa trong hệ thống.
 - Gợi ý có thể dựa trên loại ăn chay, nguyên liệu cần tránh, món/nguyên liệu không thích, sở thích đã khai báo và nguyên liệu người dùng cho biết đang có.
-- AI được tìm, xếp hạng, giải thích lý do phù hợp, sắp công thức vào menu và đề xuất công thức thay thế; AI không tạo món, công thức, danh sách nguyên liệu hoặc hướng dẫn nấu mới cho người dùng.
+- AI được tìm, xếp hạng, giải thích lý do phù hợp, sắp công thức vào menu, đề xuất công thức thay thế và tạo hướng dẫn chế biến chi tiết chỉ từ Recipe Post công khai có sẵn. Hướng dẫn AI cho Member chỉ mở rộng thao tác từ nội dung và nguyên liệu của một bài nguồn; không tạo món hoặc danh sách nguyên liệu mới, không thêm nguyên liệu, không sửa/lưu bài nguồn.
+- Khi công thức nguồn thiếu thời gian hoặc nhiệt độ, AI phải nêu rõ nguồn không cung cấp và đánh dấu mọi ước tính bổ trợ; mỗi hướng dẫn phải dẫn tới bài công thức nguồn để người dùng kiểm tra.
 - Mỗi kết quả phải dẫn tới bài công thức tương ứng để người dùng kiểm tra trước khi lưu hoặc thêm vào lịch ăn.
 - Khi không có công thức phù hợp, hệ thống thông báo không tìm thấy hoặc chỉ trả danh sách chưa đầy đủ kèm lý do; không bịa công thức để lấp kết quả.
 - Bản menu AI chỉ là đề xuất. Người dùng chọn từng món hoặc xác nhận menu trước khi lịch ăn thay đổi.

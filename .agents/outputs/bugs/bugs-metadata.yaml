@@ -2,7 +2,7 @@ schema_version: 1
 last_updated: 2026-10-23
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-next_id: 57
+next_id: 60
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -10,15 +10,42 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
-  - id: BUG-056
+  - id: BUG-059
     title: Thêm nguyên liệu từ 0 giờ đến 7 giờ sáng (giờ Việt Nam) bị từ chối vì ngày tham khảo mặc định "ở tương lai"
     status: RECORDED
     severity: Medium
     area: Frontend/Backend Quản trị danh mục nguyên liệu
-    file: .agents/outputs/bugs/BUG-056.md
+    file: .agents/outputs/bugs/BUG-059.md
     created: 2026-10-16
     updated: 2026-10-16
     related_issue: 46
+  - id: BUG-058
+    title: Kiểm tra mã lỗi API không tương thích với kiểu TypeScript tùy chọn
+    status: RESOLVED
+    severity: Medium
+    area: Frontend/AI recipe planner
+    file: .agents/outputs/bugs/BUG-058.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-057
+    title: AI bị từ chối do nhận nhầm tên nguyên liệu trong thao tác nấu
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Recipe/AI validation
+    file: .agents/outputs/bugs/BUG-057.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-056
+    title: Gemini cắt JSON hướng dẫn khi hết ngân sách token
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI/Gemini
+    file: .agents/outputs/bugs/BUG-056.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
   - id: BUG-055
     title: Seed gia vị vẫn tắt tính dinh dưỡng theo quy tắc nguồn cũ
     status: RESOLVED

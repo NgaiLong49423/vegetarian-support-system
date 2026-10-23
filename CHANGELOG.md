@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.101.0
+> **Version:** v2.102.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-23
 > **Status:** Active
@@ -8,6 +8,44 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-23 — Fix AI Recipe Guidance Generation ([PR #181](https://github.com/NgaiLong49423/vegetarian-support-system/pull/181))
+
+**Status:** Committed — `3926690`.
+
+**Scope:** Prevent incomplete or falsely rejected AI-generated recipe descriptions and cooking instructions.
+
+### Added
+
+- Add regression coverage for Gemini output truncation and ingredient-name validation in cooking instructions.
+
+### Changed
+
+- Reserve an 8,192-token response budget for recipe text generation while keeping Gemini's default reasoning and a 60-second provider timeout.
+- Share Vietnamese-aware ingredient mention validation between Expert recipe authoring and Member cooking guidance.
+
+### Fixed
+
+- Reject truncated Gemini recipe output explicitly and allow selected compound ingredients, rinsing water, sauce, and dicing instructions without mistaking them for added ingredients.
+
+## 2026-10-23 — Detailed AI Cooking Guides ([PR #181](https://github.com/NgaiLong49423/vegetarian-support-system/pull/181))
+
+**Status:** Committed — `adfbcd9`.
+
+**Scope:** Extend AI cooking guidance for recipe authors and Members following suggested recipes.
+
+### Added
+
+- Add a source-linked cooking guide for Members with 6–10 ordered preparation, cooking, and plating steps.
+
+### Changed
+
+- Expand the Expert recipe-writing assistant to produce detailed, editable cooking steps and label estimated time or temperature.
+- Update FR-34 requirements, use cases, and API documentation for the new guide.
+
+### Fixed
+
+- None.
 
 ## 2026-10-23 — Bound FR-36 Gemini Preview Latency
 
@@ -855,7 +893,7 @@ None.
 - Show the nine nutrients per serving with the original servings of each recipe and the absolute difference (first recipe − second recipe); a recipe with incomplete nutrition shows "Chưa đủ dữ liệu" and no difference.
 - Add "So sánh" entry points on recipe cards, both recipe detail routes and the Member saved recipe list.
 - Add Playwright tests for every acceptance criterion and the picker, and a real-stack test that uses the two seeded demo Expert recipes, chooses the second one on the picker page, checks the per-serving values against the Backend and checks that comparing only sends `GET` requests.
-- Record BUG-056: adding an ingredient between 00:00 and 06:59 Vietnam time is rejected because the default reference date is checked against the Backend's UTC clock; found by the admin catalog real-stack test and not fixed in this PR.
+- Record BUG-059: adding an ingredient between 00:00 and 06:59 Vietnam time is rejected because the default reference date is checked against the Backend's UTC clock; found by the admin catalog real-stack test and not fixed in this PR.
 
 ### Changed
 
