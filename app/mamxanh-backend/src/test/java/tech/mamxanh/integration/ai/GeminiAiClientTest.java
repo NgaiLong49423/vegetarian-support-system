@@ -21,6 +21,11 @@ class GeminiAiClientTest {
     }
 
     @Test
+    void sharedGeminiClientUsesSevenSecondProviderTimeout() {
+        assertThat(GeminiAiClient.DEFAULT_TIMEOUT_MILLIS).isEqualTo(7_000);
+    }
+
+    @Test
     void reportsMissingConfigurationWithoutMakingAProviderRequest() {
         try (var client = new GeminiAiClient("  ")) {
             assertThatThrownBy(() -> client.generateRecipeText("prompt", List.of(1L)))

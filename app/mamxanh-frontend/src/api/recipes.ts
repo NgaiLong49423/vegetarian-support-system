@@ -403,7 +403,7 @@ export const mealPlanApi = {
   createAiMenuPreview: async (payload: {
     weekStartDate: string; mode: AiMenuMode; goal?: AiMenuGoal | null;
     preferredIngredientIds?: number[]; avoidedIngredientIds?: number[];
-  }) => (await apiClient.post<AiMenuPreview>('/meal-plans/ai-menu/previews', payload, { timeout: 60_000 })).data,
+  }) => (await apiClient.post<AiMenuPreview>('/meal-plans/ai-menu/previews', payload, { timeout: 8_000 })).data,
   applyAiMenu: async (payload: {
     weekStartDate: string; mode: AiMenuMode; goal?: AiMenuGoal | null;
     avoidedIngredientIds?: number[]; meals: Array<Pick<AiMenuMeal, 'mealDate' | 'mealType' | 'recipeId'>>;

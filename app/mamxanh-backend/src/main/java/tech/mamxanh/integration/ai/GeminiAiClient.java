@@ -18,11 +18,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class GeminiAiClient implements AiClient, AutoCloseable {
     private static final String MODEL = "gemini-3.8-flash";
+    static final int DEFAULT_TIMEOUT_MILLIS = 7_000;
     private final Client client;
 
     @Autowired
     public GeminiAiClient(@Value("${GEMINI_API_KEY:}") String apiKey) {
-        this(apiKey, HttpOptions.builder().timeout(10_000).build());
+        this(apiKey, HttpOptions.builder().timeout(DEFAULT_TIMEOUT_MILLIS).build());
     }
 
     GeminiAiClient(String apiKey, HttpOptions httpOptions) {
