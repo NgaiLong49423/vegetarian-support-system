@@ -80,6 +80,7 @@ async function setup(
     writes: [] as unknown[],
     createPayload: null as unknown,
     creates: 0,
+    emptyCreates: 0,
   }
 
   await page.route("**/api/v1/meal-plans?**", (route) =>
@@ -150,6 +151,18 @@ async function setup(
       })
     }
 
+    if (suffix === "" && method === "POST") {
+      state.emptyCreates++
+      state.list = {
+        ...state.list,
+        id: 43,
+        name: request.postDataJSON().name,
+        items: [],
+      }
+      state.empty = false
+      return route.fulfill({ status: 201, json: state.list })
+    }
+
     if (suffix === "/options")
       return route.fulfill({
         json: [
@@ -162,7 +175,7 @@ async function setup(
     if (suffix === "")
       return route.fulfill({
         json: {
-          content: state.empty ? [] : [{ ...summary, name: state.list.name }],
+          content: state.empty ? [] : [{ ...summary, id: state.list.id, name: state.list.name }],
           page: Number(url.searchParams.get("page") ?? 0),
           size: 20,
           totalElements: state.empty ? 0 : 21,
@@ -170,7 +183,7 @@ async function setup(
         },
       })
 
-    if (suffix === "/42" && method === "GET")
+    if ((suffix === "/42" || suffix === "/43") && method === "GET")
       return route.fulfill({ json: state.list })
 
     if (suffix === "/42" && method === "PATCH") {
@@ -518,6 +531,38 @@ test("shopping empty list, invalid ID, foreign list and read retry are explicit"
   await expect(page.getByRole("alert")).toContainText("Không tìm thấy")
 
   await expect(page.getByTestId("shopping-item-1")).toHaveCount(0)
+})
+
+test("shopping creates an empty list from the empty state and sidebar with validation and retry", async ({ page }) => {
+  const state = await setup(page)
+  state.empty = true
+  await page.goto("/di-cho")
+  await page.getByRole("button", { name: "Tạo danh sách trống", exact: true }).last().click()
+
+  const dialog = page.getByRole("dialog", { name: "Tạo danh sách đi chợ" })
+  await dialog.getByLabel("Tên danh sách").fill("   ")
+  await dialog.getByRole("button", { name: "Tạo danh sách", exact: true }).click()
+  await expect(dialog.getByRole("alert")).toContainText("Hãy nhập tên danh sách")
+
+  state.fail = "Tên danh sách đã tồn tại."
+  await dialog.getByLabel("Tên danh sách").fill("Mua cuối tuần")
+  await dialog.getByRole("button", { name: "Tạo danh sách", exact: true }).click()
+  await expect(dialog.getByRole("alert")).toContainText(state.fail)
+
+  state.fail = ""
+  await dialog.getByRole("button", { name: "Tạo danh sách", exact: true }).click()
+  await expect(page).toHaveURL(/di-cho\?listId=43/)
+  await expect(page.getByRole("heading", { name: "Mua cuối tuần", exact: true })).toBeVisible()
+  expect(state.emptyCreates).toBe(1)
+  expect(state.writes).toContainEqual({
+    method: "POST",
+    suffix: "",
+    body: { name: "Mua cuối tuần" },
+  })
+
+  await page.getByRole("button", { name: "Tạo danh sách trống", exact: true }).click()
+  await expect(page.getByRole("dialog", { name: "Tạo danh sách đi chợ" })).toBeVisible()
+  await page.getByRole("button", { name: "Hủy", exact: true }).click()
 })
 
 test("shopping pagination and small viewport preserve usable checklist", async ({

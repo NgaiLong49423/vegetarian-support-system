@@ -96,7 +96,7 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
   };
 
   const runRecommendation = async (action: 'recommend' | 'weekly') => {
-    if (!selected.length) return;
+    if (action === 'recommend' && !selected.length) return;
     setBusy(action);
     setError(null);
     setApplied(false);
@@ -168,13 +168,15 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
       </div>
       <div className="mt-3 flex min-h-8 flex-wrap gap-2">
         {selected.map((ingredient) => <button key={ingredient.ingredientId} type="button" onClick={() => { setSelected((items) => items.filter((item) => item.ingredientId !== ingredient.ingredientId)); setSuggestions(null); setPreview(null); setApplied(false); }} className="rounded-full bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-800 hover:bg-brand-100" aria-label={`Bỏ ${ingredient.name}`}>{ingredient.name} <span aria-hidden="true">×</span></button>)}
-        {!selected.length && <p className="text-sm text-ink-muted">Chọn ít nhất một nguyên liệu.</p>}
+        {!selected.length && <p className="text-sm text-ink-muted">{plannerMode === 'weekly'
+          ? 'Có thể bỏ trống để AI chọn từ toàn bộ công thức công khai phù hợp; chọn nguyên liệu để giới hạn món theo nguyên liệu đó.'
+          : 'Chọn ít nhất một nguyên liệu.'}</p>}
       </div>
       <div className="mt-5 flex flex-wrap gap-3">
         {plannerMode === 'ingredients' && <Button type="button" disabled={!profileReady || selected.length === 0 || busy !== null} onClick={() => runRecommendation('recommend')}>
           {busy === 'recommend' ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Tìm món phù hợp
         </Button>}
-        {plannerMode === 'weekly' && <Button type="button" variant="secondary" disabled={!profileReady || selected.length === 0 || busy !== null} onClick={() => runRecommendation('weekly')}>
+        {plannerMode === 'weekly' && <Button type="button" variant="secondary" disabled={!profileReady || busy !== null} onClick={() => runRecommendation('weekly')}>
           {busy === 'weekly' ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CalendarDays className="h-4 w-4" />} Tạo thực đơn tuần
         </Button>}
       </div>

@@ -56,12 +56,16 @@ test('ingredient recommendations are available as a separate mode inside Meal Pl
 test('AI menu stays a preview until explicit apply and applies all 21 slots', async ({ page }) => {
   await seedDemoSession(page);
   let applyCalls = 0;
+  const menuBodies: unknown[] = [];
   let appliedBody: { slots: unknown[] } | null = null;
   await page.route('**/api/v1/nutrition/dietary-preferences', (route) => route.fulfill({ json: profile }));
   await page.route('**/api/v1/recipes/ingredient-options**', (route) => route.fulfill({ json: [
     { ingredientId: 11, name: 'Nấm' },
   ] }));
-  await page.route('**/api/v1/recipes/ai/weekly-menu', (route) => route.fulfill({ json: { slots } }));
+  await page.route('**/api/v1/recipes/ai/weekly-menu', async (route) => {
+    menuBodies.push(route.request().postDataJSON());
+    return route.fulfill({ json: { slots } });
+  });
   await page.route('**/api/v1/meal-plans/*/ai-menu', async (route) => {
     applyCalls++;
     appliedBody = route.request().postDataJSON();
@@ -72,9 +76,19 @@ test('AI menu stays a preview until explicit apply and applies all 21 slots', as
   await expect(page.getByRole('tab', { name: 'Dành cho bạn' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('link', { name: 'Gợi ý AI' })).toHaveCount(0);
   await page.getByRole('tab', { name: 'Thực đơn tuần' }).click();
+  await expect(page.getByText(/Có thể bỏ trống để AI chọn/)).toBeVisible();
+  await page.getByRole('button', { name: 'Tạo thực đơn tuần' }).click();
+  await expect.poll(() => menuBodies.length).toBe(1);
+  await expect(page.getByRole('heading', { name: 'Thực đơn tuần dành cho bạn' })).toBeVisible();
+  expect(menuBodies[0]).toEqual({});
+  expect(applyCalls).toBe(0);
+
+  await page.getByRole('button', { name: 'Bỏ preview' }).click();
   await page.getByLabel('Tìm nguyên liệu').fill('Nấm');
   await page.getByRole('option', { name: 'Nấm' }).click();
   await page.getByRole('button', { name: 'Tạo thực đơn tuần' }).click();
+  await expect.poll(() => menuBodies.length).toBe(2);
+  expect(menuBodies[1]).toEqual({ ingredientIds: [11] });
   await expect(page.getByRole('heading', { name: 'Thực đơn tuần dành cho bạn' })).toBeVisible();
   await expect(page.getByText('Canh nấm rau củ').first()).toBeVisible();
   expect(applyCalls).toBe(0);
