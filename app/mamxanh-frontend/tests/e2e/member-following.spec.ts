@@ -30,6 +30,8 @@ class FollowServer {
   }
 
   async install(page: Page, target = profile) {
+    await page.route(`**/api/v1/members/${target.userId}/recipe-statistics`, (route) =>
+      route.fulfill({ json: { recipeCount: 0, totalLikes: 0, totalViews: 0 } }));
     await page.route(`**/api/v1/members/${target.userId}`, (route) => route.fulfill({ json: target }));
     await page.route(`**/api/v1/members/${target.userId}/recipes**`, (route) =>
       route.fulfill({ json: { items: [], page: 0, size: 12, totalElements: 0, totalPages: 0 } }));

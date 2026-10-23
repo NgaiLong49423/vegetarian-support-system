@@ -1,15 +1,16 @@
 package tech.mamxanh.nutrition.dto.response;
 
 import java.math.BigDecimal;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record IngredientNutritionResponse(
-        BigDecimal energyKcalPer100g,
-        BigDecimal proteinGramsPer100g,
-        BigDecimal carbohydrateGramsPer100g,
-        BigDecimal totalFatGramsPer100g,
-        BigDecimal fiberGramsPer100g,
-        BigDecimal calciumMgPer100g,
-        BigDecimal ironMgPer100g,
-        BigDecimal vitaminB12MicrogramsPer100g,
-        BigDecimal zincMgPer100g) {
+        @Schema(nullable = true, description = "Energy in kcal per 100 g; null means unknown.") BigDecimal energyKcalPer100g,
+        @Schema(nullable = true, description = "Protein in g per 100 g; null means unknown.") BigDecimal proteinGramsPer100g,
+        @Schema(nullable = true, description = "Carbohydrate in g per 100 g; null means unknown.") BigDecimal carbohydrateGramsPer100g,
+        @Schema(nullable = true, description = "Total fat in g per 100 g; null means unknown.") BigDecimal totalFatGramsPer100g,
+        @Schema(nullable = true, description = "Fiber in g per 100 g; null means unknown.") BigDecimal fiberGramsPer100g,
+        @Schema(nullable = true, description = "Calcium in mg per 100 g; null means unknown.") BigDecimal calciumMgPer100g,
+        @Schema(nullable = true, description = "Iron in mg per 100 g; null means unknown.") BigDecimal ironMgPer100g,
+        @Schema(nullable = true, description = "Vitamin B12 in micrograms per 100 g, up to four decimal places; null means unknown.") BigDecimal vitaminB12MicrogramsPer100g,
+        @Schema(nullable = true, description = "Zinc in mg per 100 g; null means unknown.") BigDecimal zincMgPer100g) {
 }

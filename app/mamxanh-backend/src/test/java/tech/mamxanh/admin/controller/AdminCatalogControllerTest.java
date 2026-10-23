@@ -33,6 +33,7 @@ import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.nutrition.entity.MeasurementDimension;
 import org.springframework.http.HttpStatus;
 import tech.mamxanh.admin.service.AdminCatalogService;
+import tech.mamxanh.admin.service.IngredientImageService;
 import tech.mamxanh.auth.repository.UserRepository;
 
 @WebMvcTest(AdminCatalogController.class)
@@ -40,6 +41,7 @@ import tech.mamxanh.auth.repository.UserRepository;
 class AdminCatalogControllerTest {
     @Autowired private MockMvc mockMvc;
     @MockitoBean private AdminCatalogService catalogService;
+    @MockitoBean private IngredientImageService ingredientImageService;
     @MockitoBean private UserRepository userRepository;
 
     @Test void rejectsCustomerFromAdminCatalog() throws Exception {

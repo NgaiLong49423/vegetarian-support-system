@@ -32,3 +32,19 @@ export function formatDateTime(isoString: string | null | undefined): string {
 export function formatVnd(amount: number): string {
   return new Intl.NumberFormat('vi-VN').format(amount);
 }
+
+export function localDateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+export function mondayOf(date: Date) {
+  const monday = new Date(date);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  return localDateKey(monday);
+}
+
+export function shiftWeek(weekStart: string, offset: number) {
+  const date = new Date(`${weekStart}T12:00:00`);
+  date.setDate(date.getDate() + offset * 7);
+  return localDateKey(date);
+}

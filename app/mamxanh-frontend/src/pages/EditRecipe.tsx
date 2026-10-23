@@ -8,6 +8,7 @@ import { Button, Card } from '../components/ui';
 import { ApiError, asApiError } from '../lib/apiClient';
 import { recipeApi, recipesApi, type RecipeAiContentType, type RecipePost, type RecipeReferenceData, type UpdateRecipePost } from '../api/recipes';
 import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
+import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
 
 const categories = [
   ['NOODLE_SOUP', 'Món nước'], ['STIR_FRY', 'Món xào'], ['HOT_POT', 'Lẩu'], ['BRAISED', 'Món kho'],
@@ -176,7 +177,12 @@ export function EditRecipe() {
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={label}>Loại món<select className={input} value={form.dishCategory} onChange={(e) => setField('dishCategory', e.target.value)}>{categories.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
             <label className={label}>Chế độ chay<select className={input} value={form.vegetarianType} onChange={(e) => setField('vegetarianType', e.target.value)}>{diets.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
-            <label className={label}>Độ khó<select className={input} value={form.difficulty} onChange={(e) => setField('difficulty', e.target.value)}>{difficulties.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
+            <div>
+              <label className={label}>Độ khó<select className={input} value={form.difficulty} onChange={(e) => setField('difficulty', e.target.value)}>{difficulties.map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select></label>
+              <p className="mt-1 text-[11px] text-ink-muted">
+                Tiêu chí: Dễ (&lt;6 nguyên liệu, ≤25p), Trung bình (6–9 nguyên liệu hoặc 26–50p), Khó (≥10 nguyên liệu hoặc &gt;50p).
+              </p>
+            </div>
             <label className={label}>Khẩu phần<input className={input} type="number" min={1} max={50} required value={form.servings} onChange={(e) => setField('servings', Number(e.target.value))} /></label>
             <label className={label}>Thời gian chuẩn bị (phút)<input className={input} type="number" min={0} max={1440} required value={form.prepTimeMin} onChange={(e) => setField('prepTimeMin', Number(e.target.value))} /></label>
             <label className={label}>Thời gian nấu (phút)<input className={input} type="number" min={0} max={1440} required value={form.cookTimeMin} onChange={(e) => setField('cookTimeMin', Number(e.target.value))} /></label>
@@ -189,11 +195,21 @@ export function EditRecipe() {
             const matchingOptions = references.ingredients.filter((item) => item.ingredientId === ingredient.ingredientId);
             const allowedUnits = matchingOptions.map((item) => ({ unitId: item.unitId, code: item.unitCode, name: item.unitName }));
             const currentIngredient = recipe.ingredients.find((item) => item.ingredientId === ingredient.ingredientId);
-            return <div key={`${ingredient.ingredientId}-${index}`} className="grid gap-2 rounded-xl bg-brand-50/70 p-3 sm:grid-cols-[minmax(0,1fr)_120px_120px_auto] sm:items-end">
-            <label className="text-xs font-medium text-ink-muted">Nguyên liệu<select className={input} value={ingredient.ingredientId} onChange={(e) => { const chosen = references.ingredients.find((item) => item.ingredientId === Number(e.target.value)); if (chosen) setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, ingredientId: chosen.ingredientId, unitId: chosen.unitId } : item)); }}>{!matchingOptions.length && currentIngredient && <option value={ingredient.ingredientId}>{currentIngredient.name} (hiện không hỗ trợ)</option>}{[...new Map(references.ingredients.map((item) => [item.ingredientId, item])).values()].map((item) => <option key={item.ingredientId} value={item.ingredientId}>{item.name}</option>)}</select>{!matchingOptions.length && <span className="mt-1 block text-xs text-amber-800">Nguyên liệu này hiện không được hỗ trợ.</span>}</label>
-            <label className="text-xs font-medium text-ink-muted">Số lượng<input className={input} type="number" min="0.01" step="0.01" required value={ingredient.quantity} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, quantity: Number(e.target.value) } : item))} /></label>
-            <label className="text-xs font-medium text-ink-muted">Đơn vị<select className={input} value={ingredient.unitId} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, unitId: Number(e.target.value) } : item))}>{allowedUnits.map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code})</option>)}</select></label>
-            <div className="flex pb-0.5 sm:justify-center">
+            return <div key={`${ingredient.ingredientId}-${index}`} className="grid gap-3 rounded-xl bg-brand-50/70 p-3 sm:grid-cols-[minmax(0,1fr)_120px_120px_auto] sm:items-start">
+            <div>
+              <label htmlFor={`edit-ingredient-${index}`} className="mb-1 block text-xs font-semibold text-ink-soft">Nguyên liệu</label>
+              <select id={`edit-ingredient-${index}`} aria-label="Nguyên liệu" className={input} value={ingredient.ingredientId} onChange={(e) => { const chosen = references.ingredients.find((item) => item.ingredientId === Number(e.target.value)); if (chosen) setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, ingredientId: chosen.ingredientId, unitId: chosen.unitId } : item)); }}>{!matchingOptions.length && currentIngredient && <option value={ingredient.ingredientId}>{currentIngredient.name} (hiện không hỗ trợ)</option>}{[...new Map(references.ingredients.map((item) => [item.ingredientId, item])).values()].map((item) => <option key={item.ingredientId} value={item.ingredientId}>{item.name}</option>)}</select>
+              {!matchingOptions.length && <span className="mt-1 block text-xs text-amber-800">Nguyên liệu này hiện không được hỗ trợ.</span>}
+            </div>
+            <div>
+              <label htmlFor={`edit-quantity-${index}`} className="mb-1 block text-xs font-semibold text-ink-soft">Số lượng</label>
+              <input id={`edit-quantity-${index}`} aria-label="Số lượng" className={input} type="number" min="0.01" step="0.01" required value={ingredient.quantity} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, quantity: Number(e.target.value) } : item))} />
+            </div>
+            <div>
+              <label htmlFor={`edit-unit-${index}`} className="mb-1 block text-xs font-semibold text-ink-soft">Đơn vị</label>
+              <select id={`edit-unit-${index}`} aria-label="Đơn vị" className={input} value={ingredient.unitId} onChange={(e) => setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, unitId: Number(e.target.value) } : item))}>{allowedUnits.map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code})</option>)}</select>
+            </div>
+            <div className="flex items-center pt-2 sm:pt-7 sm:justify-center">
               <BinButton size={28} disabled={form.ingredients.length === 1} aria-label="Xóa nguyên liệu" title="Xóa nguyên liệu" onClick={() => setField('ingredients', form.ingredients.filter((_, i) => i !== index))} />
             </div>
           </div>; })}</div>

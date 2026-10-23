@@ -6,6 +6,7 @@ export type CatalogIngredient = {
   name: string;
   ingredientGroup: string;
   sourceName: string;
+  imageUrl: string | null;
   sourceUrl: string | null;
   referenceDate: string;
   nutritionSupported: boolean;
@@ -75,6 +76,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       url: path,
       method: init?.method ?? 'GET',
       ...(init?.body === undefined ? {} : { data: init.body }),
+      ...(init?.body instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}),
     });
     if (response.status === 204) return undefined as T;
     return response.data.data;
@@ -117,10 +119,18 @@ export const adminCatalogApi = {
   ingredientRecipes: (id: number) => request<IngredientRecipeReference[]>('/admin/ingredients/' + id + '/recipes'),
   searchIngredientRecipes: (id: number, page: number, size: number) =>
     request<IngredientRecipePage>('/admin/ingredients/' + id + '/recipes/search?' + new URLSearchParams({ page: String(page), size: String(size) })),
-  createIngredient: (body: Omit<CatalogIngredient, 'id' | 'nutritionSupported' | 'active' | 'nutrition'>) =>
+  createIngredient: (body: Omit<CatalogIngredient, 'id' | 'imageUrl' | 'nutritionSupported' | 'active' | 'nutrition' | 'recipeUsageCount'>) =>
     request<CatalogIngredient>('/admin/ingredients', json('POST', body)),
-  updateIngredient: (id: number, body: Omit<CatalogIngredient, 'id' | 'nutritionSupported' | 'active' | 'nutrition'>) =>
+  updateIngredient: (id: number, body: Omit<CatalogIngredient, 'id' | 'imageUrl' | 'nutritionSupported' | 'active' | 'nutrition' | 'recipeUsageCount'>) =>
     request<CatalogIngredient>('/admin/ingredients/' + id, json('PUT', body)),
+  uploadIngredientImage: (id: number, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return request<{ ingredientId: number; imageUrl: string }>('/admin/ingredients/' + id + '/image', {
+      method: 'POST',
+      body: form,
+    });
+  },
   updateNutrition: (id: number, body: IngredientNutrition) =>
     request<CatalogIngredient>('/admin/ingredients/' + id + '/nutrition', json('PUT', body)),
   setNutritionSupported: (id: number, enabled: boolean) =>

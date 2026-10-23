@@ -15,7 +15,6 @@ import {
   Trash2,
   Utensils,
   ArrowRightLeft,
-  Download,
   X,
 } from "lucide-react"
 
@@ -39,8 +38,8 @@ import { savedRecipesApi } from "../services/savedRecipesApi"
 import { asApiError } from "../lib/apiClient"
 
 import { MealPlanNutrition } from "./MealPlanNutrition"
-import { mealPlanFile, downloadMealPlan } from "../lib/mealPlanExport"
 import { AiRecipePlanner } from "./AiRecipePlanner"
+import { CreateShoppingListButton } from "../components/CreateShoppingListButton"
 
 type Entry = MealPlanWeek["entries"][number]
 
@@ -297,7 +296,6 @@ function WeekContents({
   const [removal, setRemoval] = useState<Entry | null>(null)
 
   const [moving, setMoving] = useState<Entry | null>(null)
-  const [exportOpen, setExportOpen] = useState(false)
   const [nutrition, setNutrition] = useState<{
     day: string
 
@@ -363,7 +361,6 @@ function WeekContents({
     setNutrition(null)
 
     setMoving(null)
-    setExportOpen(false)
     setActionError("")
 
     restoreDialogFocus()
@@ -399,7 +396,6 @@ function WeekContents({
 
       setRemoval(null)
       setMoving(null)
-      setExportOpen(false)
 
       restoreDialogFocus()
     } catch (cause) {
@@ -473,14 +469,6 @@ function WeekContents({
       }
     }, "Đã chuyển món sang bữa được chọn.")
   }
-  function exportWeek(format: "pdf" | "txt") {
-    void mutate(async () => {
-      const snapshot = await mealPlanApi.getExport(week)
-      if (!alive.current) return
-      const file = await mealPlanFile(snapshot, format)
-      if (alive.current) downloadMealPlan(file, week, format)
-    }, `Đã tải lịch ăn ${format.toUpperCase()}.`)
-  }
   if (loading)
     return (
       <p
@@ -521,12 +509,12 @@ function WeekContents({
           {notice}
         </p>
       )}
-      {busy && !picker && !removal && !moving && !exportOpen && (
+      {busy && !picker && !removal && !moving && (
         <p role="status" className="text-sm text-ink-muted">
           Đang lưu lịch ăn…
         </p>
       )}
-      {actionError && !picker && !removal && !moving && !exportOpen && (
+      {actionError && !picker && !removal && !moving && (
         <p
           role="alert"
           className="rounded-xl bg-raised p-3 text-sm text-ink-muted"
@@ -556,20 +544,8 @@ function WeekContents({
         </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
+        <CreateShoppingListButton week={week} disabled={busy || plan.entries.length === 0} />
         <p className="text-sm text-ink-muted">Chọn ngày để lên lịch từng bữa</p>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={() => {
-            returnFocus.current = (document.activeElement as HTMLElement)
-            setActionError("")
-            setExportOpen(true)
-          }}
-        >
-          <Download className="h-4 w-4" />
-          Xuất lịch ăn
-        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -877,39 +853,6 @@ function WeekContents({
           />
         )}
       </Modal>
-      <Modal open={exportOpen} onClose={closeDialog} title="Xuất lịch ăn tuần">
-        <DialogFocus>
-          <p className="text-sm text-ink-soft">
-            Tải lịch đủ bảy ngày và ba bữa mỗi ngày. Năng lượng ước tính theo
-            khẩu phần đã lưu, món thiếu dữ liệu được ghi rõ.
-          </p>
-          {actionError && (
-            <p role="alert" className="mt-3 text-sm text-ink-muted">
-              {actionError}
-            </p>
-          )}
-          {busy && (
-            <p role="status" className="mt-3 text-sm text-ink-muted">
-              Đang tạo tệp lịch ăn…
-            </p>
-          )}
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Button disabled={busy} onClick={() => exportWeek("pdf")}>
-              Tải PDF A4
-            </Button>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => exportWeek("txt")}
-            >
-              Tải TXT
-            </Button>
-            <Button variant="ghost" disabled={busy} onClick={closeDialog}>
-              Hủy
-            </Button>
-          </div>
-        </DialogFocus>
-      </Modal>
       <Modal
         open={Boolean(picker)}
         onClose={closeDialog}
@@ -1109,6 +1052,7 @@ function RecipePicker({
 
   onChoose: (id: number) => void
 }) {
+  const [source, setSource] = useState<"saved" | "public">("saved")
   const [text, setText] = useState("")
 
   const [keyword, setKeyword] = useState("")
@@ -1125,6 +1069,15 @@ function RecipePicker({
 
   const [retry, setRetry] = useState(0)
 
+  function chooseSource(value: "saved" | "public") {
+    if (value === source) return
+    setSource(value)
+    setText("")
+    setKeyword("")
+    setPage(0)
+    setLoading(true)
+  }
+
   useEffect(() => {
     let active = true
 
@@ -1134,19 +1087,26 @@ function RecipePicker({
 
     setChoices([])
 
-    const request = savedRecipesApi.list(keyword, page, 12).then((result) => ({
-      choices: result.content.map((recipe) => ({
-        id: recipe.recipeId,
-
-        title: recipe.title ?? "Công thức không còn khả dụng",
-
-        image: recipe.coverUrl,
-
-        available: recipe.available,
-      })),
-
-      totalPages: result.totalPages,
-    }))
+    const request = source === "saved"
+      ? savedRecipesApi.list(keyword, page, 12).then((result) => ({
+          choices: result.content.map((recipe) => ({
+            id: recipe.recipeId,
+            title: recipe.title ?? "Công thức không còn khả dụng",
+            image: recipe.coverUrl,
+            available: recipe.available,
+          })),
+          totalPages: result.totalPages,
+        }))
+      : recipesApi.searchPublic({ keyword, page, size: 12, sort: "NEWEST", viewPeriod: "ALL_TIME" })
+          .then((result) => ({
+            choices: result.items.map((recipe) => ({
+              id: recipe.id,
+              title: recipe.title,
+              image: recipe.media.find((media) => media.cover)?.url ?? recipe.media[0]?.url ?? null,
+              available: recipe.status === "PUBLISHED",
+            })),
+            totalPages: result.totalPages,
+          }))
 
     request
 
@@ -1169,15 +1129,31 @@ function RecipePicker({
     return () => {
       active = false
     }
-  }, [keyword, page, retry])
+  }, [source, keyword, page, retry])
 
   return (
-    <DialogFocus>
+    <DialogFocus initialFocus="input">
       <p className="mb-3 text-xs text-ink-muted">
         {mealLabels[target.mealType]} ·{" "}
         {new Date(`${target.mealDate}T12:00:00`).toLocaleDateString("vi-VN")}
       </p>
-      <p className="mb-4 text-sm font-semibold text-ink">Công thức đã lưu</p>
+      <nav aria-label="Nguồn công thức" className="mb-4 flex flex-wrap gap-2">
+        {([
+          ["saved", "Đã lưu"],
+          ["public", "Tìm công thức"],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={source === value}
+            disabled={busy}
+            onClick={() => chooseSource(value)}
+            className={`rounded-lg px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-60 ${source === value ? "bg-raised font-semibold text-brand-600" : "text-ink-muted"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
       <form
         className="mb-4 flex gap-2"
         onSubmit={(event) => {
@@ -1194,7 +1170,7 @@ function RecipePicker({
           value={text}
           disabled={busy}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Tìm trong công thức đã lưu…"
+          placeholder={source === "saved" ? "Tìm trong công thức đã lưu…" : "Tìm công thức công khai…"}
           className="min-w-0 flex-1 rounded-lg border border-brand-200 bg-paper px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-600"
         />
         <Button size="sm" type="submit" disabled={busy}>
@@ -1234,16 +1210,17 @@ function RecipePicker({
           {!choices.length && (
             <div className="py-8 text-center text-sm text-ink-muted">
               <p>
-                {keyword
+                {source === "public"
+                  ? "Không tìm thấy công thức công khai phù hợp."
+                  : keyword
                   ? "Không có công thức đã lưu phù hợp với tìm kiếm."
                   : "Bạn chưa lưu công thức nào."}
               </p>
-              <Link
-                to="/kham-pha"
-                className="mt-3 inline-block font-semibold text-brand-600"
-              >
-                Khám phá và lưu công thức →
-              </Link>
+              {source === "saved" && (
+                <Button variant="ghost" size="sm" disabled={busy} onClick={() => chooseSource("public")}>
+                  Tìm công thức công khai
+                </Button>
+              )}
             </div>
           )}
           <div className="grid gap-2 sm:grid-cols-2">
@@ -1525,7 +1502,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
   )
 }
 
-function DialogFocus({ children }: { children: ReactNode }) {
+function DialogFocus({ children, initialFocus }: { children: ReactNode; initialFocus?: string }) {
   const root = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -1541,7 +1518,7 @@ function DialogFocus({ children }: { children: ReactNode }) {
       ).filter((element) => element.offsetParent !== null)
     ;(
       root.current?.querySelector<HTMLElement>(
-        "input, select, button:not(:disabled)",
+        initialFocus ?? "input, select, button:not(:disabled)",
       ) ?? focusable()[0]
     )?.focus()
 
@@ -1571,7 +1548,7 @@ function DialogFocus({ children }: { children: ReactNode }) {
     document.addEventListener("keydown", trap, true)
 
     return () => document.removeEventListener("keydown", trap, true)
-  }, [])
+  }, [initialFocus])
 
   return <div ref={root}>{children}</div>
 }

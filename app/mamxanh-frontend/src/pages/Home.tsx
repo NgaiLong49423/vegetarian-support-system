@@ -102,7 +102,7 @@ export function Home() {
         <PageContainer className="relative z-10 py-14 text-center sm:py-20">
           <Badge
             tone="brand"
-            className="mx-auto mb-4 border border-zinc-600/80 bg-zinc-800/90 text-brand-500 shadow-sm backdrop-blur-sm"
+            className="home-hero-badge mx-auto mb-4 shadow-sm backdrop-blur-sm"
           >
             <Leaf className="h-3.5 w-3.5" />
             Mâm Xanh · Ẩm thực thuần lành
@@ -125,7 +125,7 @@ export function Home() {
           <Pattern />
         </div>
 
-        <PageContainer className="relative z-10 space-y-7 py-8 sm:py-10">
+        <PageContainer className="relative z-10 space-y-7 py-8 sm:py-10 pb-12 sm:pb-16">
           {/* Row 1: Search + BorderGlow AI Assistant (8 cols) & User Kitchen Shortcuts (4 cols) */}
           <div className="grid items-stretch gap-6 lg:grid-cols-12">
             <div className="flex flex-col justify-between gap-6 lg:col-span-8">
@@ -330,7 +330,8 @@ export function Home() {
 
           {/* Row 3 & Row 4: Full-width Recipe Collections */}
           <RecipeCollection
-            title="Mới từ cộng đồng"
+            title="Bài đăng mới từ cộng đồng"
+            ariaLabel="Mới từ cộng đồng"
             recipes={newRecipes}
             options={options}
             loading={loading}
@@ -357,9 +358,6 @@ export function Home() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="rounded-full bg-raised px-2.5 py-1 text-xs text-ink-muted">
-                  Mẫu giao diện
-                </span>
                 <Link
                   to="/cong-dong"
                   className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-500 sm:text-sm"
@@ -383,6 +381,7 @@ export function Home() {
 
 function RecipeCollection({
   title,
+  ariaLabel,
   recipes,
   options,
   loading,
@@ -391,6 +390,7 @@ function RecipeCollection({
   popular = false,
 }: {
   title: string;
+  ariaLabel?: string;
   recipes: RecipePost[];
   options: RecipeFormOptions | null;
   loading: boolean;
@@ -430,7 +430,7 @@ function RecipeCollection({
         </div>
       ) : recipes.length ? (
         <div
-          aria-label={title}
+          aria-label={ariaLabel ?? title}
           className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
         >
           {recipes.slice(0, 4).map((recipe) => (

@@ -279,7 +279,7 @@ test.describe('Issue #48 [FR-46] — Bình luận và reply lồng nhiều cấp
       : route.fallback());
     await page.getByLabel('Viết bình luận').fill('Nội dung bị máy chủ từ chối');
     await page.getByRole('button', { name: 'Gửi bình luận' }).click();
-    await expect(page.getByRole('alert')).toHaveText('Bình luận cần từ 1 đến 1.000 ký tự.');
+    await expect(page.getByRole('region', { name: /^Bình luận/ }).getByRole('alert')).toHaveText('Bình luận cần từ 1 đến 1.000 ký tự.');
     await expect(page.getByLabel('Viết bình luận')).toHaveValue('Nội dung bị máy chủ từ chối');
   });
 
@@ -297,8 +297,9 @@ test.describe('Issue #48 [FR-46] — Bình luận và reply lồng nhiều cấp
     });
 
     await openRecipe(page);
-    await expect(page.getByRole('alert')).toContainText('Không tải được bình luận.');
-    await page.getByRole('button', { name: 'Thử lại', exact: true }).click();
+    const comments = page.getByRole('region', { name: /^Bình luận/ });
+    await expect(comments.getByRole('alert')).toContainText('Không tải được bình luận.');
+    await comments.getByRole('button', { name: 'Thử lại', exact: true }).click();
     await expect(page.getByText('Luồng số 12', { exact: true })).toBeVisible();
     await expect(page.getByText('Luồng số 2', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Xem thêm bình luận' }).click();

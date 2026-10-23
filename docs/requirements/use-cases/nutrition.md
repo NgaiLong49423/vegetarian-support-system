@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M10
 > **File:** `docs/requirements/use-cases/nutrition.md`
-> **Version:** v2.9.0
+> **Version:** v2.10.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-14
+> **Last Updated:** 2026-10-20
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -360,17 +360,17 @@ Chỉ các món được Member xác nhận mới được áp dụng; entries c
 ### UC-39.1 — Xem ước tính 9 chỉ tiêu của Recipe Post
 - **Goal / Primary Actor:** Guest/Member xem dữ liệu dinh dưỡng trên toàn công thức và một khẩu phần.
 - **Trigger / Preconditions:** Bài công khai có ingredient amount/unit; dữ liệu nội bộ khả dụng.
-- **Main Flow:** Hệ thống quy đổi gram, cộng 9 chỉ tiêu và chia theo servings.
+- **Main Flow:** Hệ thống quy đổi gram, cộng riêng các giá trị hiện có cho từng chỉ tiêu và chia theo servings; trường `NULL` không được xem là 0.
 - **Alternative / Security:** Không gọi API ngoài, không tạo điểm sức khỏe; thiếu dữ liệu chuyển sang UC-39.2.
 - **Postconditions:** Ước tính có đơn vị/giới hạn được hiển thị.
 - **Traceability / Acceptance Coverage:** FR-39; [AC-39.1, AC-39.2, AC-39.4, AC-39.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-39).
 
 <a id="uc-39-2"></a>
-### UC-39.2 — Xem cảnh báo Ingredient chưa hỗ trợ
+### UC-39.2 — Xem cảnh báo dinh dưỡng chưa đầy đủ
 - **Goal / Primary Actor:** Guest/Member biết thành phần nào làm ước tính chưa đầy đủ.
-- **Trigger / Preconditions:** Recipe Post chứa Ingredient không có đủ dữ liệu hỗ trợ.
-- **Main Flow:** Hệ thống liệt kê ingredient/chỉ tiêu thiếu và không tính phần không có căn cứ.
-- **Alternative / Security:** NULL hiển thị `Chưa đủ dữ liệu`, không thành 0.
+- **Trigger / Preconditions:** Recipe Post chứa Ingredient chưa có hồ sơ hoặc có chỉ tiêu dinh dưỡng `NULL`.
+- **Main Flow:** Hệ thống liệt kê ingredient/chỉ tiêu thiếu, cộng từng chỉ tiêu hiện có và giữ phần thiếu ở trạng thái chưa đủ dữ liệu.
+- **Alternative / Security:** NULL hiển thị `Chưa đủ dữ liệu`, không thành 0; số liệu AI được ghi rõ chưa xác minh.
 - **Postconditions:** Provenance/độ đầy đủ được trình bày minh bạch.
 - **Traceability / Acceptance Coverage:** FR-39; [AC-39.3](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-39).
 
@@ -403,19 +403,19 @@ Chỉ các món được Member xác nhận mới được áp dụng; entries c
 
 <a id="uc-41-2"></a>
 ### UC-41.2 — Thêm Ingredient dinh dưỡng
-- **Goal / Primary Actor:** Administrator tạo Ingredient có provenance, kể cả khi chưa đủ 9 chỉ tiêu.
+- **Goal / Primary Actor:** Administrator tạo Ingredient có provenance tự do, kể cả khi chưa đủ 9 chỉ tiêu.
 - **Trigger / Preconditions:** Admin cung cấp tên, `source_name`, `reference_date` và dữ liệu hiện có.
-- **Main Flow:** Backend lưu nullable nutrition fields với `nutrition_supported=0`; chỉ cho bật support khi đủ 9 chỉ tiêu và metadata nguồn theo schema.
-- **Alternative / Security:** NULL khác 0; dữ liệu thiếu không được bật support; AI không được ghi catalog.
+- **Main Flow:** Backend lưu nullable nutrition fields với `nutrition_supported=0`; Administrator có thể bật tính khi đã có ít nhất một chỉ tiêu, bất kể nguồn hoặc URL tham khảo.
+- **Alternative / Security:** NULL khác 0; thiếu chỉ tiêu được cảnh báo; AI không được tự ghi catalog.
 - **Postconditions:** Ingredient tồn tại với trạng thái hỗ trợ chính xác.
 - **Traceability / Acceptance Coverage:** FR-41; BR-52; [AC-41.1, AC-41.2, AC-41.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-41).
 
 <a id="uc-41-3"></a>
 ### UC-41.3 — Chỉnh dữ liệu và nguồn Ingredient
-- **Goal / Primary Actor:** Administrator cập nhật số liệu/provenance đáng tin cậy.
+- **Goal / Primary Actor:** Administrator cập nhật số liệu/provenance, bao gồm ước tính AI được ghi nhãn chưa xác minh.
 - **Trigger / Preconditions:** Ingredient tồn tại; actor là Admin.
-- **Main Flow:** Backend validate, lưu 9 field/source metadata và kiểm tra invariant khi support bật.
-- **Alternative / Security:** Thiếu field bắt buộc khi support=1 bị từ chối; AI không tự sửa.
+- **Main Flow:** Backend validate, lưu các field có dữ liệu và kiểm tra có ít nhất một chỉ tiêu khi support bật.
+- **Alternative / Security:** Không có chỉ tiêu nào khi support=1 bị từ chối; AI không tự sửa.
 - **Postconditions:** Dữ liệu mới áp dụng cho phép tính sau, có audit phù hợp.
 - **Traceability / Acceptance Coverage:** FR-41; BR-52; [AC-41.2, AC-41.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-41).
 
@@ -618,16 +618,16 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-39).
   - Bước 5: Hệ thống cộng tổng giá trị của từng chỉ tiêu cho tất cả các nguyên liệu đã ánh xạ thành công để ra Tổng dinh dưỡng toàn bài công thức.
   - Bước 6: Hệ thống chia tổng dinh dưỡng của toàn bộ công thức cho số khẩu phần (servings) đã khai báo để tính ra Dinh dưỡng ước tính trên 1 khẩu phần (BR-43):
     $$\text{Dinh dưỡng trên 1 khẩu phần}_i = \frac{\text{Tổng dinh dưỡng}_i}{\text{Số khẩu phần}}$$
-  - Bước 7: Nếu 100% nguyên liệu đều có dữ liệu dinh dưỡng đầy đủ, hệ thống đánh dấu trạng thái dinh dưỡng của công thức là `Đầy đủ` (Eligible cho pool AI menu theo BR-40).
+  - Bước 7: Nếu 100% nguyên liệu đều có đủ chín chỉ tiêu, hệ thống đánh dấu trạng thái dinh dưỡng của công thức là `Đầy đủ` (Eligible cho pool AI menu theo BR-40); giá trị AI được gắn nhãn chưa xác minh.
   - Bước 8: Hệ thống hiển thị bảng dinh dưỡng 9 chỉ tiêu trên trang chi tiết công thức kèm Tuyên bố từ chối trách nhiệm y tế (BR-39, BR-41).
 - **Luồng thay thế (Alternative Flows):**
-  - *AF-39.1 (Công thức chứa nguyên liệu chưa có dữ liệu dinh dưỡng):* Nếu có một hoặc nhiều nguyên liệu chưa được ánh xạ trong danh mục nội bộ:
-    - Hệ thống vẫn tính tổng của các nguyên liệu đã có số liệu.
+  - *AF-39.1 (Công thức chứa nguyên liệu hoặc chỉ tiêu còn thiếu dữ liệu):* Nếu một hay nhiều nguyên liệu chưa được ánh xạ hoặc có chỉ tiêu `NULL`:
+    - Hệ thống vẫn tính tổng riêng cho từng chỉ tiêu có số liệu.
     - Hệ thống đánh dấu trạng thái dinh dưỡng của công thức là `Chưa đầy đủ` (Incomplete).
-    - Trên bảng dinh dưỡng, hệ thống hiển thị nhãn cảnh báo màu vàng: *"Ước tính chưa đầy đủ: công thức có X nguyên liệu chưa hỗ trợ tính dinh dưỡng"* kèm danh sách tên các nguyên liệu đó (BR-48).
+    - Trên bảng dinh dưỡng, hệ thống hiển thị nhãn cảnh báo màu vàng *"Ước tính chưa đầy đủ"* kèm danh sách tên nguyên liệu và chỉ tiêu còn thiếu (BR-48).
     - Hệ thống tuyệt đối không tự gán số liệu dinh dưỡng của nguyên liệu thiếu bằng 0 trong các phép so sánh nghiêm ngặt và không cho AI tự bịa số liệu (BR-48).
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
-  - *EF-39.1 (Không có nguyên liệu nào có hồ sơ dinh dưỡng):* Nếu tất cả nguyên liệu đã chọn từ catalog chuẩn đều chưa có hồ sơ trong danh mục dinh dưỡng nội bộ, hệ thống hiển thị thông báo: *"Công thức chưa hỗ trợ tính toán dinh dưỡng do chưa có dữ liệu nguyên liệu chuẩn"* thay vì hiển thị toàn bộ số 0.
+  - *EF-39.1 (Không có chỉ tiêu nào có dữ liệu):* Nếu tất cả chỉ tiêu của các nguyên liệu đều `NULL` hoặc chưa có hồ sơ, hệ thống hiển thị `Chưa có dữ liệu` thay vì hiển thị toàn bộ số 0.
   - *SF-39.1 (Cấm gọi API ngoài realtime):* Hệ thống xử lý tính toán 100% dựa trên cơ sở dữ liệu nội bộ đã được Administrator phê duyệt (BR-49, BR-51); không thực hiện cuộc gọi API ra ngoài mạng Internet trong lúc người dùng xem bài viết nhằm bảo vệ hiệu năng và tính ổn định (NFR-02, NFR-10).
 
 #### 5. Hậu điều kiện (Postconditions)
@@ -659,7 +659,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-40).
   - Bước 7: Trên trang chi tiết công thức công khai, bên cạnh tên nguyên liệu chuẩn chưa có hồ sơ dinh dưỡng, hệ thống hiển thị biểu tượng ghi chú nhỏ: *"Chưa hỗ trợ tính dinh dưỡng"* (BR-48).
   - Bước 8: Bảng ước tính dinh dưỡng của bài viết hiển thị giá trị cộng dồn của các nguyên liệu đã biết kèm dòng ghi chú cảnh báo minh bạch (FR-39).
 - **Luồng thay thế (Alternative Flows):**
-  - *AF-40.1 (Sau này Admin bổ sung hồ sơ dinh dưỡng):* Khi Administrator bổ sung hồ sơ dinh dưỡng cho nguyên liệu đã có trong catalog chuẩn (FR-41), hệ thống tính lại dinh dưỡng của các công thức sử dụng mục đó; nếu 100% nguyên liệu đã có dữ liệu được hỗ trợ, cờ cảnh báo được gỡ bỏ và bài viết đủ điều kiện tham gia pool AI menu.
+  - *AF-40.1 (Sau này Admin bổ sung hồ sơ dinh dưỡng):* Khi Administrator bổ sung hồ sơ dinh dưỡng cho nguyên liệu đã có trong catalog chuẩn (FR-41), hệ thống tính lại dinh dưỡng của các công thức sử dụng mục đó; chỉ khi mọi nguyên liệu có đủ chín chỉ tiêu và định lượng được hỗ trợ, cảnh báo độ thiếu dữ liệu mới được gỡ bỏ và bài viết đủ điều kiện tham gia pool AI menu.
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
   - *EF-40.1 (Tác giả bỏ trống tên hoặc định lượng nguyên liệu):* Nếu nguyên liệu không có tên hoặc không có định lượng (số lượng + đơn vị đo chuẩn hoặc "vừa đủ"), hệ thống chặn đăng theo quy tắc validation bắt buộc (FR-16, FR-19), không liên quan đến việc nguyên liệu có trong danh mục dinh dưỡng hay không.
   - *SF-40.1 (Ngăn chặn AI đưa bài thiếu số liệu vào menu dinh dưỡng):* Khi module AI Menu (FR-36) truy vấn danh sách công thức để lập thực đơn theo calo/macro, truy vấn cơ sở dữ liệu bắt buộc lọc bỏ các bài viết có cờ `Chưa đầy đủ dinh dưỡng` để đảm bảo an toàn cho người dùng (BR-40).
@@ -684,15 +684,15 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-41).
 
 #### 4. Luồng xử lý chi tiết (Flows)
 - **Luồng chính (Main Flow):**
-  - Bước 1: Administrator truy cập danh sách nguyên liệu dinh dưỡng; hệ thống hiển thị danh sách dạng bảng phân trang gồm: Tên nguyên liệu, Năng lượng, Đạm, Carb, Chất béo, Nguồn tham chiếu (USDA/NIH), Ngày cập nhật, trạng thái danh mục (`status`: `ACTIVE`/`INACTIVE`), trạng thái hỗ trợ tính toán (`nutrition_supported`) và Số lượng công thức đang sử dụng.
+  - Bước 1: Administrator truy cập danh sách nguyên liệu dinh dưỡng; hệ thống hiển thị danh sách dạng bảng phân trang gồm: Tên nguyên liệu, Năng lượng, Đạm, Carb, Chất béo, nguồn/cách ước tính, Ngày cập nhật, trạng thái danh mục (`status`: `ACTIVE`/`INACTIVE`), trạng thái hỗ trợ tính toán (`nutrition_supported`) và Số lượng công thức đang sử dụng.
   - Bước 2: Administrator nhấn nút "Thêm nguyên liệu mới".
   - Bước 3: Hệ thống hiển thị biểu mẫu yêu cầu nhập liệu:
     - Tên nguyên liệu tiếng Việt (chuẩn hóa, không trùng lặp); MVP không quản lý tên tiếng Anh hoặc đa ngôn ngữ.
     - Nhóm thực phẩm (Rau củ, Đậu & Chế phẩm, Ngũ cốc, Các loại hạt, Trái cây, Gia vị chay).
-    - Giá trị của 9 chỉ tiêu cốt lõi trên 100g (Năng lượng kcal $\ge 0$, Protein g $\ge 0$, Carb g $\ge 0$, Fat g $\ge 0$, Fiber g $\ge 0$, Calcium mg $\ge 0$, Iron mg $\ge 0$, Vitamin B12 mcg $\ge 0$, Zinc mg $\ge 0$); chỉ tiêu chưa có dữ liệu có thể để trống khi Ingredient chưa được hỗ trợ tính toán (`nutrition_supported = 0`), còn `0` là giá trị thật.
-    - Tên nguồn dữ liệu (`source_name`, chọn USDA FoodData Central hoặc NIH/Viện Dinh dưỡng) và ngày đối chiếu (`reference_date`) theo ràng buộc database; URL nguồn (`source_url`) có thể chưa có khi `nutrition_supported = 0`.
+    - Có thể nhập bất kỳ tập con nào trong 9 chỉ tiêu trên 100 g; chỉ tiêu chưa có được để trống (`NULL`), không nhập `0` thay cho dữ liệu thiếu.
+    - Nguồn/cách ước tính (`source_name`) là văn bản tự do, chấp nhận AI-generated; USDA/NIH và URL nguồn là tùy chọn. Dữ liệu AI phải ghi rõ là ước tính chưa xác minh. Ngày tham khảo do biểu mẫu ghi nhận nhưng không phải điều kiện để tham gia phép tính.
   - Bước 4: Administrator nhập dữ liệu hiện có và nhấn "Lưu nguyên liệu"; các chỉ tiêu dinh dưỡng chưa biết được để trống, không nhập `0` thay thế.
-  - Bước 5: Hệ thống kiểm tra hợp lệ: không chấp nhận giá trị dinh dưỡng âm; tên không được trùng với nguyên liệu đang hoạt động; tuân thủ các ràng buộc nguồn hiện hành. Khi `nutrition_supported = 0`, thiếu chỉ tiêu không chặn lưu; khi bật `nutrition_supported = 1`, phải có đủ 9 chỉ tiêu khác `NULL` và đủ `source_name`, `source_url`, `reference_date` (BR-52).
+  - Bước 5: Hệ thống không chấp nhận giá trị dinh dưỡng âm và tên trùng nguyên liệu đang hoạt động. Nguồn nhập là văn bản tự do; USDA/NIH và URL không bắt buộc. Khi bật `nutrition_supported = 1`, cần ít nhất một chỉ tiêu; chỉ tiêu `NULL` được bỏ khỏi phép tính và khiến kết quả hiển thị chưa đầy đủ (BR-52).
   - Bước 6: Hệ thống lưu bản ghi mới với `nutrition_supported = 0` mặc định; trạng thái danh mục (`status`) được quản lý riêng và không có nghĩa rằng nguyên liệu đã đủ điều kiện tham gia tính toán.
   - Bước 7: Hệ thống cập nhật lại danh sách và thông báo thêm mới thành công.
 - **Luồng thay thế (Alternative Flows):**
@@ -700,12 +700,12 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-41).
   - *AF-41.2 (Ngừng hỗ trợ nguyên liệu trong danh mục):* Administrator chuyển `status` của nguyên liệu sang `INACTIVE`. Các công thức cũ đã sử dụng nguyên liệu này vẫn giữ nguyên tham chiếu lịch sử, nhưng nguyên liệu sẽ không xuất hiện trong gợi ý chọn nguyên liệu mới cho người dùng (BR-53).
   - *AF-41.3 (Kích hoạt lại nguyên liệu trong danh mục):* Administrator có thể chuyển `status` về `ACTIVE` cho một nguyên liệu đã ngừng hoạt động. Thay đổi `status` không tự bật `nutrition_supported`.
   - *AF-41.4 (Xem công thức đang liên kết):* Administrator nhấn vào số lượng công thức đang sử dụng để xem danh sách chi tiết các Recipe Post đang tham chiếu đến nguyên liệu này.
-  - *AF-41.5 (Bật hỗ trợ tính toán dinh dưỡng):* Với Ingredient đã lưu ở `nutrition_supported = 0`, Administrator yêu cầu bật hỗ trợ. Hệ thống chỉ đặt `nutrition_supported = 1` khi có đủ chín chỉ tiêu và `source_name`, `source_url`, `reference_date`; nếu thiếu dữ liệu, hệ thống từ chối bật và chỉ rõ phần còn thiếu (BR-52). Thao tác này tách biệt với việc lưu bản ghi và đổi `status`.
+  - *AF-41.5 (Bật tính một phần):* Với Ingredient đã lưu ở `nutrition_supported = 0`, Administrator yêu cầu bật tính. Hệ thống chỉ cần ít nhất một chỉ tiêu đã có; chỉ tính giá trị hiện có và giữ kết quả ở trạng thái chưa đầy đủ nếu còn `NULL` (BR-52). AI-generated được chấp nhận với nhãn chưa xác minh.
 - **Luồng ngoại lệ & Bảo mật (Exception & Security Flows):**
   - *EF-41.1 (Cố gắng xóa vĩnh viễn nguyên liệu đã tham chiếu):* Nếu Administrator cố gắng thực hiện hành động xóa vĩnh viễn (hard delete) một nguyên liệu đã có ít nhất một bài công thức tham chiếu, hệ thống từ chối hành động, ngăn chặn xóa và hiển thị thông báo: *"Không thể xóa vĩnh viễn nguyên liệu đã được tham chiếu trong công thức. Vui lòng sử dụng tính năng Ngừng hỗ trợ"* (BR-53).
-  - *EF-41.2 (Thiếu dữ liệu khi bật hỗ trợ dinh dưỡng):* Nếu thiếu một trong chín chỉ tiêu hoặc thiếu metadata nguồn cần thiết khi bật `nutrition_supported = 1`, hệ thống từ chối bật hỗ trợ và yêu cầu bổ sung dữ liệu (BR-52). Khi `nutrition_supported = 0`, việc thiếu chỉ tiêu được lưu dưới dạng `NULL` và không chặn lưu Ingredient.
+  - *EF-41.2 (Không có dữ liệu nào để tính):* Nếu cả chín chỉ tiêu đều `NULL`, hệ thống từ chối bật `nutrition_supported = 1`. Khi bật, chỉ tiêu còn thiếu vẫn là `NULL` và giao diện cảnh báo kết quả chưa đầy đủ (BR-52).
   - *SF-41.1 (Chặn truy cập trái phép):* Người dùng không có quyền Administrator khi cố gắng gọi thao tác CRUD danh mục dinh dưỡng sẽ bị hệ thống từ chối với mã lỗi 403 Forbidden (NFR-09).
-  - *SF-41.2 (Cấm tự động nhập hàng loạt và AI can thiệp):* Hệ thống không cung cấp API import tự động không qua kiểm duyệt và tuyệt đối không cấp quyền cho AI tự động sửa đổi hoặc chèn số liệu vào danh mục dinh dưỡng (BR-51, BR-54).
+  - *SF-41.2 (Cấm tự động nhập hàng loạt và AI ghi trực tiếp):* Hệ thống không cung cấp API import tự động không qua kiểm duyệt và không cấp quyền cho AI tự ghi catalog. Administrator được nhập số liệu AI-generated nhưng phải gắn nhãn chưa xác minh (BR-51, BR-54).
 
 #### 5. Hậu điều kiện (Postconditions)
 - Bản ghi nguyên liệu dinh dưỡng được thêm mới, cập nhật hoặc chuyển trạng thái an toàn trong danh mục nội bộ.

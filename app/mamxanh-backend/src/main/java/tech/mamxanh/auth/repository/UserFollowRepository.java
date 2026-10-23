@@ -1,5 +1,6 @@
 package tech.mamxanh.auth.repository;
 
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,27 @@ import tech.mamxanh.auth.entity.UserFollowId;
 
 /** FR-59 queries. Counts and lists include only ACTIVE counterpart accounts (AC-59.7). */
 public interface UserFollowRepository extends JpaRepository<UserFollow, UserFollowId> {
+
+    @Query("""
+            select f.id.followedUserId as userId, count(f) as followerCount
+            from UserFollow f, User follower
+            where follower.id = f.id.followerUserId
+              and follower.accountStatus = tech.mamxanh.auth.entity.AccountStatus.ACTIVE
+              and f.id.followedUserId in :followedIds
+            group by f.id.followedUserId
+            """)
+    List<ActiveFollowerCount> findActiveFollowerCounts(@Param("followedIds") List<Long> followedIds);
+
+    @Query("""
+            select f.id.followedUserId from UserFollow f
+            where f.id.followerUserId = :followerId and f.id.followedUserId in :followedIds
+            """)
+    List<Long> findFollowedIds(@Param("followerId") long followerId, @Param("followedIds") List<Long> followedIds);
+
+    interface ActiveFollowerCount {
+        Long getUserId();
+        Long getFollowerCount();
+    }
 
     /** Idempotent follow (AC-59.4); the range lock keeps parallel requests from inserting the pair twice. */
     @Modifying

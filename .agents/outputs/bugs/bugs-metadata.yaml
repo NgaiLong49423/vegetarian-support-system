@@ -1,7 +1,8 @@
 schema_version: 1
-last_updated: 2026-10-19
-# BUG-036..046 đã được dùng trong các stash/nhánh công việc khác; giữ ID khi hợp nhất.
-next_id: 48
+last_updated: 2026-10-23
+# BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
+# Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
+next_id: 62
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -9,6 +10,132 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-061
+    title: Dependency follow-redirects trong lockfile có cảnh báo bảo mật mức cao
+    status: RECORDED
+    severity: High
+    area: Frontend/Dependencies
+    file: .agents/outputs/bugs/BUG-061.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-060
+    title: Snapshot OpenAPI thiếu API hướng dẫn nấu đã có trên develop
+    status: RECORDED
+    severity: Unknown
+    area: Backend/AI/OpenAPI
+    file: .agents/outputs/bugs/BUG-060.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-059
+    title: Thêm nguyên liệu từ 0 giờ đến 7 giờ sáng (giờ Việt Nam) bị từ chối vì ngày tham khảo mặc định "ở tương lai"
+    status: RECORDED
+    severity: Medium
+    area: Frontend/Backend Quản trị danh mục nguyên liệu
+    file: .agents/outputs/bugs/BUG-059.md
+    created: 2026-10-16
+    updated: 2026-10-16
+    related_issue: 46
+  - id: BUG-058
+    title: Kiểm tra mã lỗi API không tương thích với kiểu TypeScript tùy chọn
+    status: RESOLVED
+    severity: Medium
+    area: Frontend/AI recipe planner
+    file: .agents/outputs/bugs/BUG-058.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-057
+    title: AI bị từ chối do nhận nhầm tên nguyên liệu trong thao tác nấu
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Recipe/AI validation
+    file: .agents/outputs/bugs/BUG-057.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-056
+    title: Gemini cắt JSON hướng dẫn khi hết ngân sách token
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI/Gemini
+    file: .agents/outputs/bugs/BUG-056.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-055
+    title: Seed gia vị vẫn tắt tính dinh dưỡng theo quy tắc nguồn cũ
+    status: RESOLVED
+    severity: Medium
+    area: Database/Demo/Nutrition
+    file: .agents/outputs/bugs/BUG-055.md
+    created: 2026-10-22
+    updated: 2026-10-22
+    related_issue: Unknown
+  - id: BUG-054
+    title: Seed AI bỏ sót phép gán kẽm khiến nguyên liệu demo còn NULL
+    status: RESOLVED
+    severity: Medium
+    area: Database/Demo/Flyway
+    file: .agents/outputs/bugs/BUG-054.md
+    created: 2026-10-22
+    updated: 2026-10-22
+    related_issue: Unknown
+  - id: BUG-053
+    title: Tìm nguyên liệu có dấu tiếng Việt trả rỗng dù có dữ liệu
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Nutrition/SQL Server search
+    file: .agents/outputs/bugs/BUG-053.md
+    created: 2026-10-20
+    updated: 2026-10-21
+    related_issue: Unknown
+  - id: BUG-052
+    title: Guest bị chặn khi đọc thống kê công thức công khai của tác giả
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Security/Public profile
+    file: .agents/outputs/bugs/BUG-052.md
+    created: 2026-10-20
+    updated: 2026-10-21
+    related_issue: Unknown
+  - id: BUG-051
+    title: Thời gian tạo đơn và thanh toán dùng hai múi giờ khác nhau
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Frontend/Subscription
+    file: .agents/outputs/bugs/BUG-051.md
+    created: 2026-10-20
+    updated: 2026-10-20
+    related_issue: 142
+  - id: BUG-050
+    title: Hostname của healthcheck làm lệch server URL trong OpenAPI
+    status: TRACKING
+    severity: Medium
+    area: Docker/Backend/OpenAPI
+    file: .agents/outputs/bugs/BUG-050.md
+    created: 2026-10-17
+    updated: '2026-10-20'
+    related_issue: 142
+  - id: BUG-049
+    title: Webhook chấp nhận chữ ký thử khi thiếu cấu hình payOS
+    status: TRACKING
+    severity: High
+    area: Backend/Payment/Security
+    file: .agents/outputs/bugs/BUG-049.md
+    created: 2026-10-17
+    updated: '2026-10-20'
+    related_issue: 142
+  - id: BUG-048
+    title: Thiếu cấu hình payOS vẫn dẫn tới thông báo thanh toán thành công
+    status: TRACKING
+    severity: High
+    area: Backend/Frontend/Payment
+    file: .agents/outputs/bugs/BUG-048.md
+    created: 2026-10-17
+    updated: '2026-10-20'
+    related_issue: 142
   - id: BUG-047
     title: Upload ảnh trả thành công bằng URL giả khi Azure chưa được cấu hình
     status: RESOLVED
@@ -18,6 +145,51 @@ bugs:
     created: 2026-10-19
     updated: 2026-10-19
     related_issue: 158
+  - id: BUG-040
+    title: Seed bật hỗ trợ tính dinh dưỡng cho số liệu minh họa
+    status: RECORDED
+    severity: Unknown
+    area: Backend/Database demo seed
+    file: .agents/outputs/bugs/BUG-040.md
+    created: 2026-10-20
+    updated: 2026-10-20
+    related_issue: Unknown
+  - id: BUG-039
+    title: Bình luận coi công thức không còn công khai là danh sách rỗng
+    status: RECORDED
+    severity: Unknown
+    area: Frontend/RecipeComments
+    file: .agents/outputs/bugs/BUG-039.md
+    created: 2026-10-19
+    updated: 2026-10-19
+    related_issue: Unknown
+  - id: BUG-038
+    title: Footer che thao tác gửi lại email trên biểu mẫu đăng ký
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Auth
+    file: .agents/outputs/bugs/BUG-038.md
+    created: 2026-10-18
+    updated: 2026-10-18
+    related_issue: Unknown
+  - id: BUG-037
+    title: Nhãn thực vật hiển thị cố định cho mọi loại ăn chay
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Recipe Detail
+    file: .agents/outputs/bugs/BUG-037.md
+    created: 2026-10-18
+    updated: 2026-10-18
+    related_issue: Unknown
+  - id: BUG-036
+    title: Giao diện quản trị dùng dữ liệu mẫu nhưng hiển thị như chức năng đã hoạt động
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Admin prototype
+    file: .agents/outputs/bugs/BUG-036.md
+    created: 2026-10-18
+    updated: 2026-10-18
+    related_issue: Unknown
   - id: BUG-035
     title: OpenAPI lượt xem mô tả sai schema phản hồi lỗi
     status: RESOLVED
@@ -142,7 +314,7 @@ bugs:
     area: Backend/Frontend/Subscription
     file: .agents/outputs/bugs/BUG-022.md
     created: 2026-10-11
-    updated: 2026-10-12
+    updated: 2026-10-17
     related_issue: 19
   - id: BUG-021
     title: Expert khác hoặc Administrator thay, xóa được ảnh của Recipe Post không thuộc mình

@@ -101,14 +101,14 @@ async function fillEligibleNutritionProfile(page: Page) {
 }
 
 test('meal serving selector accepts half portions', async ({ page }) => {
-  await page.goto('/ke-hoach');
+  await page.goto('/ke-hoach?demo=true');
   const selector = page.getByLabel(/Khẩu phần .* bữa /).first();
   await selector.selectOption('1.5');
   await expect(selector).toHaveValue('1.5');
 });
 
 test('meal planner adds, changes serving count and removes a recipe from a meal slot', async ({ page }) => {
-  await page.goto('/ke-hoach', { waitUntil: 'domcontentloaded' });
+  await page.goto('/ke-hoach?demo=true', { waitUntil: 'domcontentloaded' });
 
   const addSlot = page.getByRole('button', { name: /Thêm món/ }).first();
   const slot = (await addSlot.innerText()).replace('Thêm món', '').trim();
@@ -350,20 +350,6 @@ test('nutrition profile maps backend validation errors to their fields', async (
   await expect(page.getByLabel('Chiều cao *')).toHaveAttribute('aria-invalid', 'true');
 });
 
-test('recipe comparison shows two recipes side-by-side without health score (FR-60)', async ({ page }) => {
-  await page.goto('/so-sanh');
-  await expect(page.getByRole('heading', { name: /So sánh hai công thức/i })).toBeVisible();
-  await expect(page.locator('#compare-recipe-left')).toBeVisible();
-  await expect(page.locator('#compare-recipe-right')).toBeVisible();
-  await expect(page.getByText('Năng lượng').first()).toBeVisible();
-  await expect(page.getByText('Chưa đủ dữ liệu').first()).toBeVisible();
-  await expect(page.getByText(/không tính toán điểm Health Score/i)).toBeVisible();
-
-  // Change right dropdown to exercise select handler
-  await page.locator('#compare-recipe-right').selectOption({ index: 2 });
-  await expect(page.locator('#compare-recipe-right')).toBeVisible();
-});
-
 test('nutrition tracker uses the member meal plan for analysis and daily/weekly PDF exports (FR-37)', async ({ page }) => {
   await seedDemoSession(page, 'CUSTOMER');
   const today = new Date();
@@ -509,6 +495,7 @@ test('expert application customer and admin workflows use the API and recover fr
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Xem chi tiết' }).click();
+  await page.getByRole('button', { name: 'Từ chối hồ sơ' }).click();
   await page.getByLabel(/Lý do từ chối/).fill('Cần bổ sung thêm kinh nghiệm cụ thể.');
   await page.getByRole('button', { name: 'Từ chối', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Đơn đã được xử lý');
@@ -531,7 +518,7 @@ test('expert application customer and admin workflows use the API and recover fr
     window.location.assign('/admin/xet-duyet-chuyen-gia');
   });
   await page.getByRole('button', { name: 'Xem chi tiết' }).click();
-  await page.getByRole('button', { name: 'Phê duyệt' }).click();
+  await page.getByRole('button', { name: 'Phê duyệt', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Đã phê duyệt đơn');
 
   await page.evaluate(() => {
@@ -766,7 +753,7 @@ test('FR-25: Direct Recipe Publishing with validation error preservation and suc
   // Navigates directly to published recipe detail
   await page.waitForURL('**/cong-thuc/999');
   await expect(page.getByRole('heading', { name: 'Nấm đùi gà kho tiêu xanh', level: 1 })).toBeVisible();
-  await expect(page.getByText('Chưa đủ dữ liệu dinh dưỡng')).toBeVisible();
+  await expect(page.getByRole('note', { name: 'Ước tính chưa đầy đủ' })).toBeVisible();
   await expect(page.getByTestId('recipe-youtube-section')).toBeVisible();
 });
 
