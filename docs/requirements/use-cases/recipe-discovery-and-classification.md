@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M04
 > **File:** `docs/requirements/use-cases/recipe-discovery-and-classification.md`
-> **Version:** v2.7.0
+> **Version:** v2.8.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-23
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -378,7 +378,7 @@ Tỷ lệ quy đổi gắn với đúng nguyên liệu/đơn vị được lưu 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34).
 
 #### Shared Exception Flow — Hồ sơ sở thích tối thiểu chưa hoàn tất
-Trước khi gọi Gemini ở UC-34.1 hoặc UC-34.2, hệ thống kiểm tra đủ ba nhóm thông tin tối thiểu theo FR-31. Nếu thiếu, hệ thống chặn request, không gọi Gemini và hướng dẫn Member bổ sung hồ sơ (BR-31). UC-34.3 chỉ áp dụng preview đã được tạo, không gọi Gemini.
+Trước khi gọi Gemini ở UC-34.1, UC-34.2 hoặc UC-34.4, hệ thống kiểm tra đủ ba nhóm thông tin tối thiểu theo FR-31. Nếu thiếu, hệ thống chặn request, không gọi Gemini và hướng dẫn Member bổ sung hồ sơ (BR-31). UC-34.3 chỉ áp dụng preview đã được tạo, không gọi Gemini.
 
 <a id="uc-34-1"></a>
 ### UC-34.1 — Yêu cầu AI gợi ý món theo nguyên liệu sẵn có
@@ -496,6 +496,39 @@ Meal Plan được cập nhật chỉ sau hành động xác nhận chủ độn
 - [AC-34.4](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34) — Lưu thực đơn sau xác nhận chủ động.
 
 ---
+
+<a id="uc-34-4"></a>
+### UC-34.4 — Yêu cầu AI tạo hướng dẫn chế biến chi tiết
+
+#### Goal
+Giúp Member nấu món đã được gợi ý bằng các bước chi tiết, bám theo Recipe Post công khai và thể hiện rõ phần AI bổ trợ.
+
+#### Primary Actor
+`Member` (Free, Plus hoặc Pro).
+
+#### Trigger
+Member chọn “Xem hướng dẫn nấu chi tiết” trên một Recipe Post trong kết quả UC-34.1.
+
+#### Preconditions
+Member đang hoạt động, đã hoàn tất hồ sơ tối thiểu FR-31; Recipe Post nguồn vẫn công khai và phù hợp trường phái ăn chay/nguyên liệu cần tránh của Member.
+
+#### Main Flow
+1. Member chủ động yêu cầu hướng dẫn cho Recipe Post được gợi ý.
+2. Backend tải lại bài nguồn công khai, kiểm tra hồ sơ và ràng buộc ăn chay/nguyên liệu cần tránh trước khi gọi Gemini.
+3. Gemini tạo 6–10 bước theo thứ tự từ chuẩn bị dụng cụ/nguyên liệu, sơ chế, làm nóng nồi/chảo, cho nguyên liệu vào, nấu, nêm nếm đến hoàn thiện thành phẩm.
+4. Backend chỉ chấp nhận nguyên liệu và ID nằm trong bài nguồn; response gắn ID và tên Recipe Post nguồn cùng nhãn hướng dẫn AI.
+5. Giao diện hiển thị hướng dẫn tại chỗ. Nội dung chỉ tồn tại trong response, không sửa Recipe Post hoặc Meal Plan.
+
+#### Alternative and Exception Flows
+- Nếu Recipe Post không còn công khai hoặc không phù hợp hồ sơ, hệ thống không gọi Gemini và trả lỗi không khả dụng.
+- Nếu Gemini thiếu cấu hình, timeout hoặc trả hướng dẫn sai ràng buộc, giao diện báo lỗi thân thiện và cho phép thử lại.
+- Khi bài nguồn thiếu thời gian/nhiệt độ, AI nêu rõ thiếu dữ kiện và gắn nhãn `Ước tính AI` cho số liệu ước tính.
+
+#### Traceability
+- **Parent FR:** [FR-34](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34).
+- **Related FR:** [FR-10](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-10); [FR-31](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-31).
+- **Relevant BR:** [BR-31](../srs/BUSINESS-RULES.md#br-31); [BR-38](../srs/BUSINESS-RULES.md#br-38).
+- **Acceptance Coverage:** [AC-34.7–34.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-34).
 
 <a id="fr-47"></a>
 ## FR-47 — Gợi ý bài công thức liên quan thông thường và tùy chọn Gemini

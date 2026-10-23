@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.39.0
+> **Version:** v0.40.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-23
 > **Status:** Active
 
 # API Integration Guide
@@ -396,8 +396,9 @@ Các API yêu cầu Bearer token của Member đang hoạt động và hồ sơ 
 
 API gợi ý và preview trả `409 DIETARY_PROFILE_INCOMPLETE` khi hồ sơ chưa đủ; weekly preview và thao tác xác nhận trả `403 AI_SUBSCRIPTION_REQUIRED` nếu tài khoản không có Pro còn hiệu lực. Không đủ ứng viên để tạo menu trả `409 AI_MENU_UNAVAILABLE`; lỗi provider trả `503 AI_PROVIDER_UNAVAILABLE`; phản hồi AI sai hoặc chứa ID ngoài catalog trả `502 AI_RESPONSE_INVALID`. Khi xác nhận, công thức đã ẩn/xóa trả `404 RECIPE_NOT_FOUND`; nếu cùng recipe đã có trong đúng ngày/bữa thì trả `409 MEAL_PLAN_RECIPE_DUPLICATE`. Hai trường hợp đều rollback toàn bộ, không ghi một phần. Chỉ gọi API xác nhận sau khi Member chủ động bấm áp dụng.
 
-Mỗi phản hồi AI hợp lệ phát `AiUsageEvent` với `feature=FR-34` và token count thực tế do Gemini cung cấp. Issue #17 tiếp tục sở hữu consumer lưu trữ/báo cáo telemetry. Không có bảng preview mới và không tạo công thức mới.
+Gợi ý món, preview thực đơn và hướng dẫn nấu chi tiết phát `AiUsageEvent` với `feature=FR-34`. Đối với hướng dẫn nấu, interface hiện tại của Gemini không cung cấp token metadata nên các trường token được ghi `null`, không suy đoán thành `0`. Issue #17 tiếp tục sở hữu consumer lưu trữ/báo cáo telemetry. Không có bảng preview mới và không tạo công thức mới.
 
+| Tạo hướng dẫn nấu chi tiết cho công thức công khai | `POST /api/v1/recipes/ai/cooking-guide` | Bearer token Member đang hoạt động; body `{ "recipeId": 123 }`. Yêu cầu hồ sơ sở thích FR-31 đủ; Backend tải lại Recipe Post đang công khai và kiểm tra loại ăn chay/nguyên liệu cần tránh trước khi gọi Gemini. Member Free/Plus/Pro được dùng như quyền gợi ý món UC-34.1. Trả `recipeId`, `recipeTitle`, 6–10 `steps` và `aiNotice`; không tạo/sửa Recipe Post hoặc Meal Plan, không lưu nội dung hướng dẫn. Công thức không khả dụng/không phù hợp trả `404`; thiếu hồ sơ trả `409`; AI trả sai ràng buộc `502 AI_RESPONSE_INVALID`; provider lỗi/timeout `503 AI_PROVIDER_UNAVAILABLE`.
 ## 15. AI lập thực đơn dinh dưỡng — FR-36
 
 Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint dưới đây. Cả hai yêu cầu Bearer token của Member đang hoạt động, gói Pro còn hiệu lực, trạng thái dinh dưỡng `ELIGIBLE` và hồ sơ nhân trắc học FR-35 hợp lệ. FR-31 onboarding không bắt buộc; ràng buộc an toàn đã khai báo vẫn được áp dụng.
