@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.100.0
+> **Version:** v2.101.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-23
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-23 — Detailed AI Cooking Guides
+
+**Status:** Committed — `adfbcd9`.
+
+**Scope:** Extend AI cooking guidance for recipe authors and Members following suggested recipes.
+
+### Added
+
+- Add a source-linked cooking guide for Members with 6–10 ordered preparation, cooking, and plating steps.
+
+### Changed
+
+- Expand the Expert recipe-writing assistant to produce detailed, editable cooking steps and label estimated time or temperature.
+- Update FR-34 requirements, use cases, and API documentation for the new guide.
+
+### Fixed
+
+- None.
 
 ## 2026-10-23 — Bound FR-36 Gemini Preview Latency
 
