@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { LoaderCircle, Plus, ShoppingBasket } from "lucide-react"
-import { shoppingApi, type ShoppingSummary } from "../api/shopping"
+import { LoaderCircle, Plus, ShoppingBasket, Trash2 } from "lucide-react"
+import { shoppingApi, type ShoppingCreation, type ShoppingSummary, type ShoppingUnit } from "../api/shopping"
 import { recipesApi, type RecipeDetail, type RecipePost } from "../api/recipes"
 import { asApiError } from "../lib/apiClient"
 import { useAuth } from "./AuthContext"
@@ -19,18 +19,22 @@ function number(value: number) {
   return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }).format(value)
 }
 
+type ManualItemDraft = { key: number; name: string; quantity: string; unitId: number }
+
 export function AddRecipeShoppingDialog({
   open,
   onClose,
   recipeId,
   recipeTitle,
   preview,
+  onAdded,
 }: {
   open: boolean
   onClose: () => void
   recipeId: number
   recipeTitle: string
   preview?: Pick<RecipePost, "id" | "title" | "servings" | "ingredients">
+  onAdded?: (result: ShoppingCreation) => void
 }) {
   const { account } = useAuth()
   const navigate = useNavigate()
@@ -46,11 +50,19 @@ export function AddRecipeShoppingDialog({
   const [error, setError] = useState("")
   const [recipe, setRecipe] = useState<ShoppingRecipePreview | null>(preview ?? null)
   const [recipeLoading, setRecipeLoading] = useState(false)
+  const [selectedIngredientIds, setSelectedIngredientIds] = useState<number[]>(preview?.ingredients.map((item) => item.ingredientId) ?? [])
+  const [units, setUnits] = useState<ShoppingUnit[]>([])
+  const [unitsLoading, setUnitsLoading] = useState(false)
+  const [manualItems, setManualItems] = useState<ManualItemDraft[]>([])
+  const [nextManualItemKey, setNextManualItemKey] = useState(1)
 
   useEffect(() => {
     if (!open || !account || account.role === "ADMIN") return
     let active = true
     setRecipe(preview ?? null)
+    setSelectedIngredientIds(preview?.ingredients.map((item) => item.ingredientId) ?? [])
+    setManualItems([])
+    setNextManualItemKey(1)
     setLists([])
     setPage(0)
     setHasMore(false)
@@ -65,6 +77,7 @@ export function AddRecipeShoppingDialog({
       recipesApi.getPublished(recipeId).then((detail: RecipeDetail) => {
         if (active) {
           setRecipe({ id: detail.recipeId, title: detail.title, servings: detail.servings, ingredients: detail.ingredients })
+          setSelectedIngredientIds(detail.ingredients.map((item) => item.ingredientId))
           setServings(Math.min(50, Math.max(1, detail.servings || 1)))
         }
       }).catch((cause) => {
@@ -81,6 +94,14 @@ export function AddRecipeShoppingDialog({
       if (active) setError(asApiError(cause).message)
     }).finally(() => {
       if (active) setLoading(false)
+    })
+    setUnitsLoading(true)
+    shoppingApi.options().then((result) => {
+      if (active) setUnits(result.filter((unit) => unit.active))
+    }).catch((cause) => {
+      if (active) setError(asApiError(cause).message)
+    }).finally(() => {
+      if (active) setUnitsLoading(false)
     })
     return () => { active = false }
   }, [open, account, recipeId, recipeTitle, preview])
@@ -103,7 +124,7 @@ export function AddRecipeShoppingDialog({
   }
 
   async function submit() {
-    if (!account || account.role === "ADMIN" || busy || !recipe?.ingredients.length) return
+    if (!account || account.role === "ADMIN" || busy || !recipe) return
     if (createMode && (!name.trim() || name.trim().length > 200)) {
       setError("Tên danh sách phải có từ 1 đến 200 ký tự.")
       return
@@ -112,16 +133,26 @@ export function AddRecipeShoppingDialog({
       setError("Hãy chọn danh sách đi chợ muốn thêm công thức.")
       return
     }
+    const normalizedManualItems = manualItems.map((item) => ({ name: item.name.trim(), quantity: Number(item.quantity), unitId: item.unitId }))
+    if (normalizedManualItems.some((item) => !item.name || item.name.length > 200 || !Number.isFinite(item.quantity) || item.quantity <= 0 || !item.unitId)) {
+      setError("Kiểm tra tên, số lượng và đơn vị của nguyên liệu bạn tự thêm.")
+      return
+    }
+    if (selectedIngredientIds.length === 0 && normalizedManualItems.length === 0) {
+      setError("Hãy chọn ít nhất một nguyên liệu hoặc thêm mặt hàng thủ công.")
+      return
+    }
     setBusy(true)
     setError("")
     try {
       const result = createMode
-        ? await shoppingApi.createFromRecipe(name.trim(), recipeId, servings)
-        : await shoppingApi.addRecipe(selectedListId!, recipeId, servings)
+        ? await shoppingApi.createFromRecipe(name.trim(), recipeId, servings, { selectedIngredientIds, manualItems: normalizedManualItems })
+        : await shoppingApi.addRecipe(selectedListId!, recipeId, servings, { selectedIngredientIds, manualItems: normalizedManualItems })
       onClose()
-      navigate(`/di-cho?listId=${result.shoppingList.id}`, {
-        state: { shoppingCreation: result },
-      })
+      if (onAdded) onAdded(result)
+      else navigate(`/di-cho?listId=${result.shoppingList.id}`, {
+          state: { shoppingCreation: result },
+        })
     } catch (cause) {
       setError(asApiError(cause).message)
     } finally {
@@ -152,17 +183,41 @@ export function AddRecipeShoppingDialog({
           <div>
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <h4 className="font-semibold text-ink">Nguyên liệu sẽ thêm</h4>
-              <span className="text-xs text-ink-muted">Tính từ khẩu phần gốc {recipe?.servings ?? 1} phần</span>
+              <div className="flex items-center gap-3 text-xs text-ink-muted">
+                <span>{selectedIngredientIds.length}/{new Set(recipe?.ingredients.map((item) => item.ingredientId) ?? []).size} nguyên liệu · gốc {recipe?.servings ?? 1} phần</span>
+                {recipe?.ingredients.length ? <button type="button" className="font-semibold text-brand-700 underline" onClick={() => setSelectedIngredientIds(selectedIngredientIds.length === new Set(recipe.ingredients.map((item) => item.ingredientId)).size ? [] : [...new Set(recipe.ingredients.map((item) => item.ingredientId))])}>{selectedIngredientIds.length === new Set(recipe.ingredients.map((item) => item.ingredientId)).size ? "Bỏ chọn tất cả" : "Chọn tất cả"}</button> : null}
+              </div>
             </div>
-            {recipeLoading ? <p role="status" className="flex items-center gap-2 py-5 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải công thức…</p> : !recipe?.ingredients.length ? <p className="rounded-xl bg-raised/50 p-3 text-sm text-ink-muted">{error ? "Không tải được nguyên liệu công thức." : "Công thức chưa có nguyên liệu hợp lệ để thêm."}</p> : <ul className="max-h-40 divide-y divide-brand-100 overflow-y-auto rounded-xl border border-brand-100 px-3">
+            {recipeLoading ? <p role="status" className="flex items-center gap-2 py-5 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" />Đang tải công thức…</p> : !recipe?.ingredients.length ? <p className="rounded-xl bg-raised/50 p-3 text-sm text-ink-muted">Công thức chưa có nguyên liệu. Bạn vẫn có thể tự thêm mặt hàng bên dưới.</p> : <ul className="max-h-52 divide-y divide-brand-100 overflow-y-auto rounded-xl border border-brand-100 px-3">
               {recipe.ingredients.map((item, index) => (
-                <li key={`${item.ingredientId}-${index}`} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                  <span className="min-w-0 break-words font-medium text-ink">{item.name}</span>
+                <li key={`${item.ingredientId}-${index}`} className="flex items-center gap-3 py-2.5 text-sm">
+                  <input type="checkbox" aria-label={`Thêm ${item.name}`} checked={selectedIngredientIds.includes(item.ingredientId)} disabled={busy} onChange={(event) => setSelectedIngredientIds((current) => event.target.checked ? [...new Set([...current, item.ingredientId])] : current.filter((id) => id !== item.ingredientId))} className="h-4 w-4 shrink-0 accent-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600" />
+                  <span className="min-w-0 flex-1 break-words font-medium text-ink">{item.name}</span>
                   <strong className="shrink-0 tabular-nums text-ink">{number(recipe.servings > 0 ? item.quantity * servings / recipe.servings : item.quantity)} {item.unitCode || item.unitName}</strong>
                 </li>
               ))}
             </ul>}
           </div>
+
+          <section aria-label="Thêm nguyên liệu thủ công">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h4 className="font-semibold text-ink">Thêm nguyên liệu khác</h4>
+              <Button type="button" variant="outline" size="sm" disabled={busy || unitsLoading || units.length === 0 || manualItems.length >= 50} onClick={() => {
+                const key = nextManualItemKey
+                setNextManualItemKey((value) => value + 1)
+                setManualItems((current) => [...current, { key, name: "", quantity: "1", unitId: units[0].id }])
+              }}><Plus className="h-4 w-4" />Thêm mặt hàng</Button>
+            </div>
+            {unitsLoading ? <p className="mb-2 text-xs text-ink-muted">Đang tải đơn vị…</p> : units.length === 0 && <p className="mb-2 text-xs text-amber-800">Không tải được đơn vị đang hoạt động, nên chưa thể thêm mặt hàng thủ công.</p>}
+            {manualItems.length === 0 ? <p className="text-xs text-ink-muted">Mặt hàng tự thêm sẽ được lưu cùng danh sách và không cần có trong danh mục nguyên liệu.</p> : <div className="space-y-2">
+              {manualItems.map((item) => <div key={item.key} className="grid grid-cols-1 items-end gap-2 rounded-xl border border-brand-100 p-3 sm:grid-cols-[minmax(0,1fr)_6rem_8rem_auto]">
+                <label className="text-xs font-medium text-ink-muted">Tên nguyên liệu<input value={item.name} maxLength={200} onChange={(event) => setManualItems((current) => current.map((row) => row.key === item.key ? { ...row, name: event.target.value } : row))} className="mt-1 block w-full rounded-lg border border-brand-100 bg-paper px-3 py-2 text-sm text-ink" /></label>
+                <label className="text-xs font-medium text-ink-muted">Số lượng<input type="number" min="0.01" step="0.01" value={item.quantity} onChange={(event) => setManualItems((current) => current.map((row) => row.key === item.key ? { ...row, quantity: event.target.value } : row))} className="mt-1 block w-full rounded-lg border border-brand-100 bg-paper px-2 py-2 text-sm text-ink" /></label>
+                <label className="text-xs font-medium text-ink-muted">Đơn vị<select value={item.unitId} onChange={(event) => setManualItems((current) => current.map((row) => row.key === item.key ? { ...row, unitId: Number(event.target.value) } : row))} className="mt-1 block w-full rounded-lg border border-brand-100 bg-paper px-2 py-2 text-sm text-ink">{units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name} ({unit.code})</option>)}</select></label>
+                <Button type="button" variant="ghost" size="sm" aria-label={`Xóa ${item.name || "mặt hàng"}`} disabled={busy} onClick={() => setManualItems((current) => current.filter((row) => row.key !== item.key))}><Trash2 className="h-4 w-4" /></Button>
+              </div>)}
+            </div>}
+          </section>
 
           <section aria-label="Chọn danh sách đi chợ">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -196,7 +251,7 @@ export function AddRecipeShoppingDialog({
           {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>Hủy</Button>
-            <Button type="submit" disabled={busy || loading || recipeLoading || !recipe?.ingredients.length || (!createMode && selectedListId === null)}>
+            <Button type="submit" disabled={busy || loading || recipeLoading || !recipe || (!createMode && selectedListId === null)}>
               {busy ? <><LoaderCircle className="h-4 w-4 animate-spin" />Đang thêm…</> : <><ShoppingBasket className="h-4 w-4" />{createMode ? "Tạo danh sách và thêm" : "Thêm vào danh sách"}</>}
             </Button>
           </div>

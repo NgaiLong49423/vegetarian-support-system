@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import {
   Activity,
   AlertCircle,
-  Apple,
   Award,
   Check,
   CirclePlus,
@@ -12,20 +11,18 @@ import {
   Filter,
   Layers,
   LoaderCircle,
-  Nut,
   Pencil,
   RefreshCw,
-  Salad,
   Search,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
-  Wheat,
   X,
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Button, Card, EmptyState } from '../components/ui';
-import { getIngredientImageUrl, getIngredientGroupVisual } from '../utils/ingredientImage';
+import { IngredientImage } from '../components/IngredientImage';
+import { getIngredientGroupVisual } from '../utils/ingredientImage';
 import {
   normalizeIngredientGroup,
   normalizeSourceName,
@@ -47,6 +44,8 @@ const today = () => {
   const day = String(date.getDate()).padStart(2, '0');
   return date.getFullYear() + '-' + month + '-' + day;
 };
+const MAX_INGREDIENT_IMAGE_BYTES = 2 * 1024 * 1024;
+const INGREDIENT_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const fieldClass =
   'mt-1.5 w-full rounded-xl border border-brand-200/80 bg-paper px-3.5 py-2.5 text-sm font-sans text-ink outline-none transition-all placeholder:text-ink-muted/50 focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 const labelClass = 'block text-sm font-semibold text-ink';
@@ -101,10 +100,7 @@ function IngredientTableRow({
   onEditInfo,
   onToggleActive,
 }: IngredientCardProps) {
-  const [imageError, setImageError] = useState(false);
-  const rawImageUrl = getIngredientImageUrl(item.name);
   const groupVisual = getIngredientGroupVisual(item.ingredientGroup);
-  const showImage = Boolean(rawImageUrl && !imageError);
 
   return (
     <tr
@@ -116,26 +112,11 @@ function IngredientTableRow({
       {/* 1. Nguyên liệu (Ảnh thumbnail + Tên + Nguồn tham khảo) */}
       <td className="py-3 px-4 align-middle">
         <div className="flex items-center gap-3">
-          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-brand-200/80 bg-brand-50 shadow-2xs">
-            {showImage ? (
-              <img
-                src={rawImageUrl!}
-                alt={item.name}
-                loading="lazy"
-                onError={() => setImageError(true)}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-brand-100/50 text-brand-600">
-                {groupVisual.icon === 'apple' && <Apple className="h-4 w-4" />}
-                {groupVisual.icon === 'wheat' && <Wheat className="h-4 w-4" />}
-                {groupVisual.icon === 'nut' && <Nut className="h-4 w-4" />}
-                {groupVisual.icon === 'layers' && <Layers className="h-4 w-4" />}
-                {groupVisual.icon === 'sparkles' && <Sparkles className="h-4 w-4" />}
-                {groupVisual.icon === 'salad' && <Salad className="h-4 w-4" />}
-              </div>
-            )}
-          </div>
+          <IngredientImage
+            imageUrl={item.imageUrl}
+            name={item.name}
+            containerClassName="h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-brand-200/80 bg-brand-50 shadow-2xs"
+          />
           <div className="min-w-0">
             <p className="font-bold text-ink leading-tight line-clamp-1" title={item.name}>
               {item.name}
@@ -284,6 +265,11 @@ export function AdminCatalogPage() {
     sourceUrl: '',
     referenceDate: today(),
   });
+  const [ingredientImageUrl, setIngredientImageUrl] = useState<string | null>(null);
+  const [ingredientImageFile, setIngredientImageFile] = useState<File | null>(null);
+  const [ingredientImagePreviewUrl, setIngredientImagePreviewUrl] = useState<string | null>(null);
+  const [ingredientImageError, setIngredientImageError] = useState('');
+  const ingredientImageInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -332,22 +318,32 @@ export function AdminCatalogPage() {
     void refresh();
   }, []);
 
+  useEffect(() => {
+    if (!ingredientImagePreviewUrl) return;
+    return () => URL.revokeObjectURL(ingredientImagePreviewUrl);
+  }, [ingredientImagePreviewUrl]);
+
   const closeActiveModal = () => {
+    if (saving) return;
     setNutritionTarget(null);
     setReferencesTarget(null);
     setIngredientEditorOpen(false);
     setIngredientId(null);
+    setIngredientImageUrl(null);
+    setIngredientImageFile(null);
+    setIngredientImagePreviewUrl(null);
+    setIngredientImageError('');
   };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !saving) {
         closeActiveModal();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [saving]);
 
   const perform = async (
     action: () => Promise<unknown>,
@@ -371,8 +367,9 @@ export function AdminCatalogPage() {
     }
   };
 
-  const submitIngredient = (event: FormEvent) => {
+  const submitIngredient = async (event: FormEvent) => {
     event.preventDefault();
+    if (ingredientImageError) return;
     const body = {
       ...ingredientForm,
       name: ingredientForm.name.trim(),
@@ -380,26 +377,51 @@ export function AdminCatalogPage() {
       sourceName: normalizeSourceName(ingredientForm.sourceName).trim(),
       sourceUrl: ingredientForm.sourceUrl.trim() || null,
     };
-    void perform(
-      () =>
-        ingredientId === null
-          ? adminCatalogApi.createIngredient(body)
-          : adminCatalogApi.updateIngredient(ingredientId, body),
-      ingredientId === null
-        ? 'Đã thêm nguyên liệu.'
-        : 'Đã cập nhật nguyên liệu.',
-      () => {
-        setIngredientEditorOpen(false);
-        setIngredientId(null);
-        setIngredientForm({
-          name: '',
-          ingredientGroup: '',
-          sourceName: '',
-          sourceUrl: '',
-          referenceDate: today(),
-        });
-      },
-    );
+    setSaving(true);
+    setError('');
+    setNotice('');
+    let savedIngredient: CatalogIngredient | null = null;
+    try {
+      savedIngredient = ingredientId === null
+        ? await adminCatalogApi.createIngredient(body)
+        : await adminCatalogApi.updateIngredient(ingredientId, body);
+
+      if (ingredientImageFile) {
+        const uploaded = await adminCatalogApi.uploadIngredientImage(savedIngredient.id, ingredientImageFile);
+        savedIngredient = { ...savedIngredient, imageUrl: uploaded.imageUrl };
+      }
+
+      setIngredientEditorOpen(false);
+      setIngredientId(null);
+      setIngredientForm({
+        name: '',
+        ingredientGroup: '',
+        sourceName: '',
+        sourceUrl: '',
+        referenceDate: today(),
+      });
+      setIngredientImageUrl(null);
+      setIngredientImageFile(null);
+      setIngredientImagePreviewUrl(null);
+      setIngredientImageError('');
+      setNotice(ingredientImageFile
+        ? 'Đã lưu nguyên liệu và ảnh minh họa.'
+        : ingredientId === null ? 'Đã thêm nguyên liệu.' : 'Đã cập nhật nguyên liệu.');
+      await refresh();
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : 'Không lưu được thay đổi.';
+      if (savedIngredient && ingredientImageFile) {
+        await refresh();
+        setIngredientId(savedIngredient.id);
+        setIngredientImageUrl(savedIngredient.imageUrl);
+        setNotice('Thông tin nguyên liệu đã lưu; ảnh chưa tải lên thành công. Bạn có thể thử lưu lại để tải ảnh.');
+        setError(`Không tải được ảnh minh họa: ${message}`);
+      } else {
+        setError(message);
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const editIngredient = (ingredient: CatalogIngredient) => {
@@ -414,6 +436,10 @@ export function AdminCatalogPage() {
       sourceUrl: ingredient.sourceUrl ?? '',
       referenceDate: ingredient.referenceDate,
     });
+    setIngredientImageUrl(ingredient.imageUrl);
+    setIngredientImageFile(null);
+    setIngredientImagePreviewUrl(null);
+    setIngredientImageError('');
     setError('');
     setNotice('');
   };
@@ -550,9 +576,34 @@ export function AdminCatalogPage() {
       sourceUrl: '',
       referenceDate: today(),
     });
+    setIngredientImageUrl(null);
+    setIngredientImageFile(null);
+    setIngredientImagePreviewUrl(null);
+    setIngredientImageError('');
     setError('');
     setNotice('');
     setIngredientEditorOpen(true);
+  };
+
+  const selectIngredientImage = (file: File | undefined, input: HTMLInputElement) => {
+    setIngredientImageError('');
+    if (!file) return;
+    if (!INGREDIENT_IMAGE_TYPES.has(file.type)) {
+      setIngredientImageFile(null);
+      setIngredientImagePreviewUrl(null);
+      setIngredientImageError('Ảnh phải có định dạng JPEG, PNG hoặc WebP.');
+      input.value = '';
+      return;
+    }
+    if (file.size === 0 || file.size > MAX_INGREDIENT_IMAGE_BYTES) {
+      setIngredientImageFile(null);
+      setIngredientImagePreviewUrl(null);
+      setIngredientImageError('Ảnh phải có dung lượng lớn hơn 0 và tối đa 2 MB.');
+      input.value = '';
+      return;
+    }
+    setIngredientImageFile(file);
+    setIngredientImagePreviewUrl(URL.createObjectURL(file));
   };
 
   const activeCountOnPage = ingredients.filter((item) => item.active).length;
@@ -1065,6 +1116,7 @@ export function AdminCatalogPage() {
                     </span>
                     <button
                       type="button"
+                      disabled={saving}
                       onClick={closeActiveModal}
                       className="rounded-full p-1.5 text-ink-muted hover:bg-brand-100 hover:text-ink transition-colors"
                       aria-label="Tắt"
@@ -1110,6 +1162,54 @@ export function AdminCatalogPage() {
                       ))}
                     </select>
                   </Field>
+                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                    <Field label="Ảnh minh họa">
+                      <input
+                        ref={ingredientImageInputRef}
+                        className={fieldClass}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(event) => selectIngredientImage(event.currentTarget.files?.[0], event.currentTarget)}
+                        aria-describedby="ingredient-image-help"
+                      />
+                    </Field>
+                    <IngredientImage
+                      imageUrl={ingredientImagePreviewUrl ?? ingredientImageUrl}
+                      name={ingredientForm.name || 'nguyên liệu'}
+                      containerClassName="h-20 w-20 overflow-hidden rounded-xl border border-brand-200/80 bg-brand-50 shadow-2xs"
+                      placeholderSize="large"
+                    />
+                  </div>
+                  <p id="ingredient-image-help" className="-mt-2 text-xs leading-5 text-ink-muted">
+                    Chọn ảnh JPEG, PNG hoặc WebP, tối đa 2 MB. Ảnh sẽ được tải lên và lưu khi bạn bấm lưu nguyên liệu.
+                    {ingredientImageUrl && ' Ảnh mới sẽ thay thế ảnh hiện tại.'}
+                  </p>
+                  {ingredientImageFile && (
+                    <div className="-mt-2 flex flex-wrap items-center gap-2 text-xs text-ink-soft">
+                      <span className="max-w-full truncate" title={ingredientImageFile.name}>{ingredientImageFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIngredientImageFile(null);
+                          setIngredientImagePreviewUrl(null);
+                          setIngredientImageError('');
+                          if (ingredientImageInputRef.current) ingredientImageInputRef.current.value = '';
+                        }}
+                        className="font-semibold text-brand-700 underline hover:text-brand-900"
+                      >
+                        Bỏ ảnh mới chọn
+                      </button>
+                    </div>
+                  )}
+                  {ingredientImageError && (
+                    <p role="alert" className="-mt-2 text-xs font-medium text-red-700">{ingredientImageError}</p>
+                  )}
+                  {error && (
+                    <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+                  )}
+                  {notice && (
+                    <p role="status" className="rounded-xl border border-leaf-200 bg-leaf-50 px-3 py-2 text-sm text-leaf-800">{notice}</p>
+                  )}
                   <Field label="Nguồn dữ liệu hoặc cách ước tính">
                     <input
                       className={fieldClass}
@@ -1179,6 +1279,7 @@ export function AdminCatalogPage() {
                     <Button
                       type="button"
                       variant="ghost"
+                      disabled={saving}
                       onClick={closeActiveModal}
                     >
                       Hủy

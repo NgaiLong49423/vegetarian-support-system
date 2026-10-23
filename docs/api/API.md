@@ -15,8 +15,8 @@ Các operation đã triển khai dưới `/api/v1/shopping-lists`:
 |---|---|
 | `POST /` | `/api/v1/shopping-lists` nhận `{name}` để tạo danh sách rỗng độc lập với Lịch ăn và Recipe Post; Backend tự xác định Member sở hữu, trim tên, giới hạn 200 ký tự, gán loại `MANUAL`; trả `201`, Location và checklist rỗng. |
 | `POST /from-meal-plan` | Tạo danh sách mới từ Meal Plan của Member; `{weekStartDate, selectedDates?}`; trả `201`, Location và `ShoppingListCreationResponse`. |
-| `POST /from-recipe` | `{name, recipeId, servings?}` tạo danh sách `MANUAL` theo tên và thêm đúng một công thức công khai trong cùng transaction; `servings` tùy chọn (1–50); trả `201 ShoppingListCreationResponse` và Location. |
-| `POST /{listId}/recipes` | `{recipeId, servings?}` thêm đúng một công thức công khai vào danh sách bất kỳ thuộc Member; `servings` tùy chọn (1–50); trả `200 ShoppingListCreationResponse`. |
+| `POST /from-recipe` | `{name, recipeId, servings?, selectedIngredientIds?, manualItems?}` tạo danh sách `MANUAL` và lưu các nguyên liệu được chọn/mặt hàng thủ công trong cùng transaction; bỏ `selectedIngredientIds` để chọn tất cả, mảng rỗng chỉ hợp lệ khi có `manualItems`; trả `201 ShoppingListCreationResponse` và Location. |
+| `POST /{listId}/recipes` | `{recipeId, servings?, selectedIngredientIds?, manualItems?}` thêm các nguyên liệu được chọn và mặt hàng thủ công vào danh sách thuộc Member; bỏ `selectedIngredientIds` để chọn tất cả, mảng rỗng chỉ hợp lệ khi có `manualItems`; trả `200 ShoppingListCreationResponse`. |
 | `GET` | Danh sách riêng của Member; `page >= 0`, `size` 1–50, mặc định 20; `PageResponse` dùng `content`; sắp xếp `updatedAt DESC, id DESC`. |
 | `GET /options` | Các đơn vị catalog đang hoạt động để thêm/sửa mục. |
 | `GET /{listId}` | Chi tiết danh sách và các mục theo ID tăng dần. |
@@ -42,7 +42,7 @@ Frontend `/ke-hoach` cho Member chọn cả tuần hoặc ngày rồi gọi oper
 
 ### Nguồn Recipe Post được chọn — AC-53.6
 
-`POST /{listId}/recipes` thêm đúng một công thức vào danh sách sở hữu đã chọn, kể cả danh sách từ Meal Plan hoặc danh sách thủ công. `POST /from-recipe` tạo danh sách mới có tên và thêm công thức trong cùng transaction; lỗi thêm công thức rollback danh sách. Bỏ `servings` để dùng lượng gốc; nếu có (1–50), Backend tính `recipe quantity × servings / recipe.servings` trước khi tổng hợp và lưu. Công thức đã thêm trong cùng danh sách không tạo đóng góp trùng. Nguồn không công khai/không tồn tại và danh sách không thuộc Member trả `404`; dữ liệu hoặc định lượng sai trả `400`. Thao tác khóa danh sách để tránh ghi đè checklist.
+`POST /{listId}/recipes` và `POST /from-recipe` nhận `selectedIngredientIds` để chỉ thêm nguyên liệu được chọn; bỏ trường này để giữ tương thích và thêm toàn bộ nguyên liệu. Có thể bỏ chọn tất cả nếu gửi ít nhất một `manualItems` dạng `{name, quantity, unitId}`; mặt hàng thủ công và phần công thức được lưu trong cùng transaction. Bỏ `servings` để dùng lượng gốc; nếu có (1–50), Backend tính `recipe quantity × servings / recipe.servings` cho các dòng đã chọn trước khi tổng hợp và lưu. Gửi lại công thức trong cùng danh sách không tạo đóng góp công thức trùng; mặt hàng thủ công vẫn được thêm như các thao tác POST thông thường. Nguồn không công khai/không tồn tại và danh sách không thuộc Member trả `404`; dữ liệu hoặc định lượng sai trả `400`. Thao tác khóa danh sách để tránh ghi đè checklist.
 
 Mỗi item trả thêm `sources`: `recipeId`, `title` hiện hành (nullable), `available`, `originalQuantity`, `originalUnitId`, `originalUnitCode`. Đây là lượng/đơn vị được đóng góp tại thời điểm thêm (sau khi scale theo `servings` nếu có), không bị thay khi Member chỉnh lượng/đơn vị của item hoặc công thức được sửa. Công thức HIDDEN/DELETED giữ tham chiếu và checklist, nhưng không trả tiêu đề/nội dung riêng tư. UI chỉ mở link nguồn khi `available=true`.
 
