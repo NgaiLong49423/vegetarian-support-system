@@ -138,9 +138,9 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
     } catch (cause) {
       const message = cause instanceof ApiError && cause.code === 'DIETARY_PROFILE_INCOMPLETE'
         ? 'Hoàn tất hồ sơ sở thích ăn uống để nhận hướng dẫn phù hợp.'
-        : cause instanceof ApiError && ['RECIPE_NOT_FOUND', 'NOT_FOUND'].includes(cause.code)
+        : cause instanceof ApiError && (cause.code === 'RECIPE_NOT_FOUND' || cause.code === 'NOT_FOUND')
           ? 'Công thức không còn khả dụng hoặc không phù hợp với giới hạn ăn uống của bạn.'
-          : cause instanceof ApiError && ['AI_PROVIDER_UNAVAILABLE', 'AI_RESPONSE_INVALID'].includes(cause.code)
+          : cause instanceof ApiError && (cause.code === 'AI_PROVIDER_UNAVAILABLE' || cause.code === 'AI_RESPONSE_INVALID')
             ? 'Chưa thể tạo hướng dẫn nấu lúc này. Bạn có thể thử lại.'
             : cause instanceof ApiError ? cause.message : 'Không kết nối được máy chủ. Vui lòng thử lại.';
       setGuideErrors((current) => ({ ...current, [recipeId]: message }));
