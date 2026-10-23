@@ -215,7 +215,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       <Link to={backTarget} className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-900"><ArrowLeft className="h-4 w-4" />{fromMealPlan ? 'Về lịch ăn' : 'Khám phá'}</Link>
       <div className="flex flex-wrap items-center gap-2">
         <SaveRecipeButton recipeId={recipe.recipeId} />
-        <Link to={`/so-sanh?left=${recipe.recipeId}`} className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 px-3 py-2 text-xs font-semibold text-ink-soft hover:bg-brand-50"><ArrowLeftRight className="h-4 w-4 text-brand-600" />So sánh</Link>
+        <Link to={`/so-sanh?a=${recipe.recipeId}`} aria-label="So sánh với công thức khác" className="rounded-full"><Button as="span" variant="outline" size="sm"><ArrowLeftRight className="h-4 w-4" />So sánh</Button></Link>
         <button type="button" onClick={() => openChat(recipe.recipeId)} className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-50"><MessageCircle className="h-4 w-4" aria-hidden="true" />Hỏi AI về công thức này</button>
         <Button variant="outline" size="sm" onClick={shareRecipe}><Share2 className="h-4 w-4" />Chia sẻ</Button>
         <div className="relative">

@@ -59,6 +59,7 @@ export function RecipeDetail() {
   return <MockRecipeDetail />;
 }
 
+
 function MockRecipeDetail() {
   const { slug } = useParams();
   const { isAuthenticated } = useAuth();
@@ -251,7 +252,7 @@ function MockRecipeDetail() {
 
           <div className="flex flex-wrap items-center gap-2">
             <Link
-                to={`/so-sanh?left=${recipe.slug}`}
+                to="/so-sanh"
                 className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-paper px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-300"
                 title="So sánh với công thức khác"
             >
