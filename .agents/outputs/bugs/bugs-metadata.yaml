@@ -2,7 +2,7 @@ schema_version: 1
 last_updated: 2026-10-23
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-next_id: 62
+next_id: 65
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -10,6 +10,33 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-064
+    title: Khám phá bỏ qua nguyên liệu được chuyển từ danh mục hoặc trang chi tiết
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Ingredient discovery
+    file: .agents/outputs/bugs/BUG-064.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-063
+    title: Thêm công thức vào đi chợ trả 400 khi một nguyên liệu có nhiều đơn vị
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Shopping recipe selection
+    file: .agents/outputs/bugs/BUG-063.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-062
+    title: Khám phá ẩn huy hiệu tỷ lệ Like và nhãn Mới trên thẻ công thức
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Explore/Recipe card
+    file: .agents/outputs/bugs/BUG-062.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
   - id: BUG-061
     title: Dependency follow-redirects trong lockfile có cảnh báo bảo mật mức cao
     status: RECORDED

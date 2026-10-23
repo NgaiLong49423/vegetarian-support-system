@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.103.0
+> **Version:** v2.104.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-23
 > **Status:** Active
@@ -8,6 +8,27 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-23 — Fix Integration Regressions After Develop Synchronization ([PR #162](https://github.com/NgaiLong49423/vegetarian-support-system/pull/162))
+
+**Status:** Working tree — not committed.
+
+**Scope:** Restore discovery badges and safe shopping-list ingredient selection after integrating the current baseline.
+
+### Added
+
+- Cover ingredient subsets, manual-only shopping items, duplicate ingredient selections, serving scaling, and atomic rollback through HTTP and SQL integration tests.
+- Add browser regressions for selecting one ingredient represented by multiple units from discovery and saved recipes.
+
+### Changed
+
+- Align shopping browser assertions with the current ingredient-selection and manual-item request contract.
+
+### Fixed
+
+- Restore the Like percentage or New badge on discovery cards required by FR-17.
+- Deduplicate initially selected ingredient IDs so recipes using multiple units do not produce rejected shopping-list requests.
+- Preserve ingredient filters when navigating from the ingredient directory or detail page into discovery.
 
 ## 2026-10-23 — Improve Ingredient and Shopping Workflows
 
