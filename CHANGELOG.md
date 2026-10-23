@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Remove Recipe Card Status Badges
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c0c1aff`.
 
 **Scope:** Remove the “Mới” and Like percentage badges from recipe imagery and rating headings.
 
@@ -30,7 +30,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Center Ingredient Directory Content
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c0c1aff`.
 
 **Scope:** Align the ingredient directory header and catalog within one centered content column.
 
@@ -48,7 +48,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Show All Core Nutrients in Daily Summary
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c0c1aff`.
 
 **Scope:** Show all nine core metrics in a clearer hierarchy on the nutrition tracker.
 
@@ -67,7 +67,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Distinguish Meal Labels in Nutrition Tracker
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c0c1aff`.
 
 **Scope:** Improve the visual distinction between meal labels and energy distribution on the nutrition tracker.
 
@@ -85,7 +85,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Restore Recipe Images in Nutrition Tracker
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c0c1aff`.
 
 **Scope:** Show scheduled recipe cover images on the daily meal cards in nutrition tracking.
 
@@ -103,7 +103,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Move Recipe Comparison into Card Menu
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c0c1aff`.
 
 **Scope:** Keep recipe-card actions compact by placing comparison in the existing overflow menu.
 
@@ -121,7 +121,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Apply Ingredient Filters from Catalog
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c0c1aff`.
 
 **Scope:** Carry selected ingredient filters from the public ingredient catalog and detail page into recipe discovery.
 
@@ -139,7 +139,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Fix Recipe Ingredient Editing
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c0c1aff`.
 
 **Scope:** Ensure recipe editing can resolve existing ingredients beyond the initial reference-data result limit.
 
@@ -157,7 +157,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Correct Demo Ingredient Groups
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c0c1aff`.
 
 **Scope:** Replace the default or inconsistent groups on seeded demo ingredients with food-appropriate categories.
 
