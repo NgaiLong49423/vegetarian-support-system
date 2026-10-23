@@ -9,7 +9,7 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-23 — Fix AI Recipe Guidance Generation
+## 2026-10-23 — Fix AI Recipe Guidance Generation ([PR #181](https://github.com/NgaiLong49423/vegetarian-support-system/pull/181))
 
 **Status:** Committed — `3926690`.
 
@@ -28,7 +28,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Reject truncated Gemini recipe output explicitly and allow selected compound ingredients, rinsing water, sauce, and dicing instructions without mistaking them for added ingredients.
 
-## 2026-10-23 — Detailed AI Cooking Guides
+## 2026-10-23 — Detailed AI Cooking Guides ([PR #181](https://github.com/NgaiLong49423/vegetarian-support-system/pull/181))
 
 **Status:** Committed — `adfbcd9`.
 
