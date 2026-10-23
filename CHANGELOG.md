@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Fix AI Recipe Guidance Generation
 
-**Status:** Committed — `7d543cf`.
+**Status:** Committed — `3926690`.
 
 **Scope:** Prevent incomplete or falsely rejected AI-generated recipe descriptions and cooking instructions.
 
