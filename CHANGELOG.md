@@ -1,13 +1,37 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.99.0
+> **Version:** v2.100.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-23
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-23 — AI Usage Telemetry and Administrator Reporting
+
+**Status:** Committed — `7939434`.
+
+**Scope:** Implement FR-11 on an isolated branch based on develop, carrying the unmerged FR-10 source dependency. The new technical telemetry table is locally authorized for experimentation; team structural approval and main acceptance remain pending.
+
+### Added
+
+- Add V22 technical token telemetry storage, idempotent event recording, retention cleanup and Administrator-only daily, weekly and monthly reporting.
+- Add an Administrator usage page with feature/date filters, loading, retry, empty states and incomplete-accounting disclosure.
+- Add SQL Server, API/security, provider-adapter and browser regression checks.
+
+### Changed
+
+- Preserve thinking and cached token metadata, connect recipe-authoring assistance to telemetry, and retain existing AI feature events.
+- Record metadata on a bounded background executor so nested read transactions do not starve the SQL connection pool; preserve the existing email executor and disclose the non-durable buffer window.
+- Estimate Standard paid-equivalent USD costs using dated pricing versions; expose unpriced calls explicitly instead of reporting unknown costs as zero.
+
+### Fixed
+
+- Isolate technical telemetry writes from caller read-only transactions and avoid storing prompts, generated text or conversation history.
+- Redact chatbot DTO diagnostic representations so Spring MVC DEBUG logs do not expose questions or answers while preserving the JSON contract (BUG-060).
+- Bind telemetry timestamps explicitly in UTC so the JVM timezone cannot shift stored times, calendar buckets or retention cutoffs.
 
 ## 2026-10-22 — Create and Manage Shopping Lists (FR-53) ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
 
