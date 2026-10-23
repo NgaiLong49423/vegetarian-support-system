@@ -9,6 +9,24 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-23 — Bound FR-36 Gemini Preview Latency
+
+**Status:** Committed — `af1127a`.
+
+**Scope:** Keep AI-generated nutrition-menu previews within the provider and client timeout budget.
+
+### Added
+
+- Add a regression assertion for the shared Gemini provider timeout.
+
+### Changed
+
+- Set the shared Gemini provider request timeout to seven seconds and the FR-36 preview request timeout to eight seconds.
+
+### Fixed
+
+- None.
+
 ## 2026-10-23 — Fix AI Weekly Menu Submission Without Ingredient Filters (FR-34)
 
 **Status:** Committed — `764e121`.
