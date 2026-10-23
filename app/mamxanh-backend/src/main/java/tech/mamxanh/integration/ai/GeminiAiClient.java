@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class GeminiAiClient implements AiClient, AutoCloseable {
     private static final String MODEL = "gemini-3.8-flash";
-    static final int DEFAULT_TIMEOUT_MILLIS = 7_000;
+    static final int DEFAULT_TIMEOUT_MILLIS = 60_000;
     private final Client client;
 
     @Autowired
@@ -52,11 +52,16 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .responseMimeType("application/json")
                 .responseSchema(schema)
                 .candidateCount(1)
-                .maxOutputTokens(2048)
+                .maxOutputTokens(8192)
                 .build();
         try {
             var response = client.models.generateContent(MODEL,
                     prompt + "\nAllowed ingredient IDs: " + allowedIngredientIds, config);
+            String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
+                    .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
+            if (!"STOP".equals(finishReason)) {
+                throw new AiProviderException("Gemini recipe output is incomplete: " + finishReason);
+            }
             String text = response.text();
             if (text == null || text.isBlank()) throw new AiProviderException("Gemini returned an empty response");
             return text;

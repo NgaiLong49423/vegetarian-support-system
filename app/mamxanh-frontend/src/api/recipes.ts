@@ -182,6 +182,12 @@ export interface AiRecipeSuggestion {
   items: Array<{ recipe: RecipePost; reason: string }>;
 }
 
+export interface AiCookingGuide {
+  recipeId: number;
+  recipeTitle: string;
+  steps: string[];
+  aiNotice: string;
+}
 export interface AiWeeklyMenuPreview {
   slots: Array<{
     dayOffset: number;
@@ -303,6 +309,9 @@ export const recipesApi = {
   ),
   recommendByIngredients: (ingredientIds: number[]) => request(
     () => apiClient.post<AiRecipeSuggestion>('/recipes/ai/recommendations', { ingredientIds }, { timeout: 60_000 }),
+  ),
+  createAiCookingGuide: (recipeId: number) => request(
+    () => apiClient.post<AiCookingGuide>('/recipes/ai/cooking-guide', { recipeId }, { timeout: 60_000 }),
   ),
   createWeeklyMenuPreview: (ingredientIds: number[] = []) => request(
     () => apiClient.post<AiWeeklyMenuPreview>('/recipes/ai/weekly-menu', ingredientIds.length ? { ingredientIds } : {}, { timeout: 60_000 }),

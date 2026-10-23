@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.26.0
+> **Version:** v2.27.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-23
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -2312,7 +2312,7 @@ Cung cấp công cụ thao tác linh hoạt, chi tiết và trực quan để th
 
 - **Mã yêu cầu:** FR-34
 - **Module:** M04 (Recipe Catalog & Search), M05 (Meal Planning & Shopping List), M06 (AI Assistant & Personalization)
-- **Tóm tắt yêu cầu:** AI gợi ý món, lập menu và đề xuất thay thế chỉ từ Recipe Post đang công khai (`PUBLISHED`), không hidden/deleted/unavailable, dựa trên hồ sơ sở thích (FR-31) và nguyên liệu người dùng cung cấp; AI không bịa công thức, mọi kết quả dẫn tới bài nguồn và chỉ được lưu sau khi người dùng xác nhận (SRS 3.17, BR-31, BR-38).
+- **Tóm tắt yêu cầu:** AI gợi ý món, lập menu và đề xuất thay thế chỉ từ Recipe Post đang công khai (`PUBLISHED`), không hidden/deleted/unavailable, dựa trên hồ sơ sở thích (FR-31) và nguyên liệu người dùng cung cấp; mọi kết quả dẫn tới bài nguồn và chỉ được lưu sau khi người dùng xác nhận (SRS 3.17, BR-31, BR-38). Member có thể chủ động yêu cầu AI tạo hướng dẫn chế biến 6–10 bước dựa trên chính Recipe Post công khai; hướng dẫn không thêm nguyên liệu, không tạo món khác và không sửa/lưu bài nguồn.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-discovery-and-classification.md#fr-34).
 
@@ -2320,7 +2320,8 @@ Cung cấp công cụ thao tác linh hoạt, chi tiết và trực quan để th
 Tận dụng năng lực phân tích thông minh của AI để giải quyết bài toán gợi ý món ăn phù hợp với nguyên liệu thực tế và sở thích riêng của từng gia đình; bảo đảm 100% các món ăn được gợi ý đều là các công thức thực tế, có thể nấu được ngay từ kho công thức cộng đồng mà không bị ảo giác sinh ra công thức giả mạo.
 
 #### Ranh giới an toàn của tính năng AI gợi ý món (SRS 3.17, BR-38)
-- **Nguyên tắc "Không bịa công thức" (No Hallucination):** AI tuyệt đối không tự sinh ra tên món ăn hay cách nấu không có trong cơ sở dữ liệu. Mọi món ăn do AI đề xuất bắt buộc phải là một Recipe Post đang tồn tại hợp lệ ở trạng thái `PUBLISHED`.
+- **Nguyên tắc "Không bịa công thức" (No Hallucination):** AI không tự sinh món hoặc danh sách nguyên liệu mới. Món được gợi ý phải là Recipe Post hợp lệ đang `PUBLISHED`; hướng dẫn cho Member chỉ được diễn giải và mở rộng thao tác dựa trên Recipe Post đó, không thêm nguyên liệu hoặc đổi món.
+- **Minh bạch dữ kiện:** Mỗi hướng dẫn dẫn tới bài nguồn. Khi bài không nêu thời gian/nhiệt độ, AI phải nói rõ và đánh dấu các con số ước tính là `Ước tính AI`; không trình bày ước tính như dữ kiện của tác giả. Hướng dẫn chỉ hiển thị trong phiên và không sửa hoặc lưu Recipe Post.
 - **Nguyên tắc dẫn nguồn bài viết:** Mỗi món ăn được gợi ý phải đi kèm đường dẫn xem chi tiết công thức gốc của tác giả trong hệ thống.
 - **Nguyên tắc xác nhận trước khi lưu:** Kết quả gợi ý thực đơn tuần của AI chỉ mang tính đề xuất; hệ thống TUYỆT ĐỐI KHÔNG tự động ghi đè vào Lịch ăn của Member nếu người dùng chưa bấm nút "Xác nhận áp dụng vào Lịch ăn".
 
@@ -2329,13 +2330,15 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - `UC-34.1`: Yêu cầu AI gợi ý món ăn theo nguyên liệu sẵn có (Request AI recipe suggestions by ingredients).
   - `UC-34.2`: Yêu cầu AI lập thực đơn tuần từ kho công thức (Request AI weekly meal plan generation).
   - `UC-34.3`: Xác nhận lưu thực đơn AI đề xuất vào Lịch ăn (Confirm and apply AI meal plan).
+  - `UC-34.4`: Yêu cầu AI tạo hướng dẫn chế biến chi tiết cho Recipe Post công khai (Request a source-based detailed cooking guide).
 - **User Stories:**
   - `US-34.1`: Là một thành viên đang có sẵn nấm và đậu phụ, tôi muốn nhờ AI tìm giúp các món ngon nấu được từ hai nguyên liệu này từ kho bài viết của cộng đồng.
   - `US-34.2`: Là một thành viên bận rộn, tôi muốn AI lên giúp tôi thực đơn 7 ngày hợp khẩu vị, tôi xem qua thấy hài lòng rồi mới bấm lưu vào Lịch ăn của mình.
+  - `US-34.3`: Là một Member muốn tự tin nấu món được AI gợi ý, tôi muốn xem hướng dẫn theo từng bước từ sơ chế đến thành phẩm dựa trên bài công thức nguồn, để làm theo mà không nhầm phần AI bổ sung với nội dung tác giả.
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Guest không được phép sử dụng AI cá nhân hóa gợi ý món (BR-05).
-- Theo FR-10, Member Free được dùng gợi ý theo nguyên liệu ở UC-34.1; các UC-34.2 và UC-34.3 về preview và áp dụng thực đơn tuần thông thường yêu cầu gói Pro. Phạm vi này khác FR-36, vốn tạo thực đơn tuần theo dữ liệu dinh dưỡng tin cậy.
+- Theo FR-10, Member Free được dùng gợi ý theo nguyên liệu ở UC-34.1 và hướng dẫn chế biến từ công thức công khai ở UC-34.4; các UC-34.2 và UC-34.3 về preview và áp dụng thực đơn tuần thông thường yêu cầu gói Pro. Phạm vi này khác FR-36, vốn tạo thực đơn tuần theo dữ liệu dinh dưỡng tin cậy.
 - Ràng buộc chặt chẽ trong System Prompt và kiểm tra chéo ở Backend: chỉ chấp nhận ID bài viết hợp lệ đang ở trạng thái `PUBLISHED` từ cơ sở dữ liệu, loại bỏ bất kỳ món ăn nào không có trong hệ thống (NFR-08, NFR-10).
 
 #### Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
@@ -2384,6 +2387,18 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 
 ---
 
+- **AC-34.7 — Hướng dẫn chi tiết theo đúng trình tự chế biến:**
+  - **Given:** Member đã nhận gợi ý một Recipe Post công khai phù hợp và chủ động yêu cầu hướng dẫn nấu.
+  - **When:** AI tạo hướng dẫn.
+  - **Then:** Hướng dẫn có 6–10 bước theo thứ tự, bao gồm chuẩn bị, sơ chế, làm nóng nồi/chảo, thứ tự cho nguyên liệu vào, thao tác nấu/dấu hiệu chín, nêm nếm và hoàn thiện thành phẩm.
+- **AC-34.8 — Hướng dẫn chỉ dựa trên công thức nguồn và không ghi dữ liệu nghiệp vụ:**
+  - **Given:** Member yêu cầu hướng dẫn cho Recipe Post công khai.
+  - **When:** Backend xử lý và trả hướng dẫn.
+  - **Then:** Response dẫn đúng Recipe Post; hướng dẫn chỉ sử dụng nguyên liệu của bài nguồn, áp dụng hồ sơ ăn chay và nguyên liệu cần tránh của Member, không tạo hoặc sửa Recipe Post và không ghi Meal Plan.
+- **AC-34.9 — Phân biệt ước tính AI với nội dung nguồn:**
+  - **Given:** Bài nguồn không nêu thời gian hoặc nhiệt độ ở một công đoạn.
+  - **When:** AI bổ sung gợi ý thao tác.
+  - **Then:** AI nêu rõ bài nguồn không cung cấp dữ kiện đó và gắn nhãn `Ước tính AI` cho mọi con số ước tính.
 <a id="fr-35"></a>
 ### FR-35 — Khai báo hồ sơ dinh dưỡng và xem chỉ số tham khảo cá nhân
 
