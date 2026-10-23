@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Bound FR-36 Gemini Preview Latency
 
-**Status:** Working tree (uncommitted changes).
+**Status:** Committed — `af1127a`.
 
 **Scope:** Keep AI-generated nutrition-menu previews within the provider and client timeout budget.
 
