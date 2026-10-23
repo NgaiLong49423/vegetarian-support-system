@@ -1291,9 +1291,13 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *When* Administrator lưu thay đổi,
   - *Then* danh mục hiển thị thông tin đã cập nhật.
 - **AC-18.7 (Ngừng sử dụng nguyên liệu nhưng giữ liên kết lịch sử):**
-  - *Given* nguyên liệu chuẩn đang được sử dụng trong Recipe Post,
-  - *When* Administrator ngừng sử dụng nguyên liệu đó,
-  - *Then* nguyên liệu không còn được chọn cho liên kết mới và các liên kết lịch sử vẫn được bảo toàn.
+  - *Given* nguyên liệu chuẩn đang được ít nhất một Recipe Post ở trạng thái `PUBLISHED` tham chiếu,
+  - *When* Administrator yêu cầu chuyển nguyên liệu từ `ACTIVE` sang `INACTIVE`,
+  - *Then* hệ thống từ chối thao tác, giữ nguyên trạng thái `ACTIVE` và thông báo rằng nguyên liệu đang được công thức công khai sử dụng.
+  - *Given* không còn Recipe Post ở trạng thái `PUBLISHED` nào tham chiếu nguyên liệu chuẩn,
+  - *When* Administrator yêu cầu chuyển nguyên liệu từ `ACTIVE` sang `INACTIVE`,
+  - *Then* hệ thống cho phép ngừng sử dụng; nguyên liệu không còn được chọn cho liên kết mới và các liên kết lịch sử vẫn được bảo toàn.
+  - Việc kiểm tra dựa trên trạng thái hiện tại của Recipe Post tại thời điểm yêu cầu; quy tắc này chỉ áp dụng cho nguyên liệu, không áp dụng cho đơn vị đo lường. Nguyên liệu đã `INACTIVE` trước khi quy tắc có hiệu lực được giữ nguyên hiện trạng.
 - **AC-18.8 (Hiển thị danh mục đơn vị đo lường):**
   - *Given* Administrator mở danh mục `UNIT`,
   - *When* danh mục được hiển thị,

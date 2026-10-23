@@ -46,6 +46,25 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Allow weekly-menu preview requests with no selected ingredients while keeping ingredient selection required for single-recipe recommendations.
 - Wait for the weekly-menu API request in the E2E scenario before asserting its preview.
 
+## 2026-10-22 — Define Ingredient Deactivation Guard (Issue #176) ([PR #177](https://github.com/NgaiLong49423/vegetarian-support-system/pull/177))
+
+**Status:** Committed — `acafeacf`.
+
+**Scope:** Update FR-18 and UC-18.1 so an ingredient referenced by a currently published recipe cannot be deactivated.
+
+### Added
+
+- Define rejection, preserved active state, and administrator feedback while any published recipe references the ingredient.
+
+### Changed
+
+- Allow deactivation once no published recipe currently references the ingredient; preserve existing inactive records and historical links.
+- Limit the rule to ingredients; measurement units remain outside Issue #176.
+
+### Fixed
+
+- None.
+
 ## 2026-10-22 — Allow AI Weekly Menus Without Ingredient Filters (FR-34)
 
 **Scope:** Let eligible Pro Members preview an AI-generated weekly menu from the safe public recipe catalog without first selecting ingredients, while preserving optional ingredient filtering.

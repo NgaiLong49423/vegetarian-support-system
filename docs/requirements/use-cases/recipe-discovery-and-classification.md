@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M04
 > **File:** `docs/requirements/use-cases/recipe-discovery-and-classification.md`
-> **Version:** v2.6.0
+> **Version:** v2.7.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-12
+> **Last Updated:** 2026-10-22
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -252,7 +252,7 @@ Chỉ Administrator được truy cập và thay đổi danh mục nguyên liệ
 
 #### Shared Alternative Flows
 - **AF-18.1 — Chỉnh sửa mục hiện có:** Administrator sửa tên hoặc mô tả nguyên liệu/đơn vị; hệ thống phản ánh tên mới trên giao diện liên quan.
-- **AF-18.2 — Ngừng sử dụng nguyên liệu hoặc đơn vị:** Administrator chuyển mục sang trạng thái ngừng dùng; mục không còn được chọn cho bài mới nhưng các Recipe Post cũ giữ liên kết lịch sử.
+- **AF-18.2 — Ngừng sử dụng nguyên liệu hoặc đơn vị:** Với nguyên liệu, hệ thống từ chối chuyển `ACTIVE` sang `INACTIVE` nếu còn ít nhất một Recipe Post `PUBLISHED` tham chiếu; nếu không còn bài `PUBLISHED` nào tham chiếu, hệ thống cho phép chuyển trạng thái và giữ các liên kết lịch sử. Việc kiểm tra dựa trên trạng thái bài tại thời điểm yêu cầu. Quy tắc chặn này không áp dụng cho đơn vị đo lường.
 
 #### Shared Exception Flow — EF-18.1 (Không xóa cứng dữ liệu đang được tham chiếu)
 Khi Admin cố gắng hard-delete nguyên liệu, đơn vị hoặc tỷ lệ quy đổi đang được bài công thức tham chiếu, hệ thống từ chối thao tác; sử dụng ngừng hoạt động theo phạm vi được phép thay cho xóa dữ liệu lịch sử.
@@ -275,7 +275,10 @@ Administrator đã đăng nhập với quyền quản trị.
 #### Main Flow
 1. Hệ thống hiển thị danh sách nguyên liệu chuẩn và hỗ trợ tìm kiếm.
 2. Administrator tạo mới hoặc chỉnh sửa tên nguyên liệu tiếng Việt và nhóm nguyên liệu; MVP không quản lý tên tiếng Anh hoặc đa ngôn ngữ.
-3. Administrator có thể ngừng sử dụng nguyên liệu; nguyên liệu ngừng sử dụng không được chọn cho liên kết mới nhưng giữ nguyên liên kết lịch sử.
+3. Khi Administrator yêu cầu ngừng sử dụng nguyên liệu, hệ thống kiểm tra các Recipe Post đang ở trạng thái `PUBLISHED` và tham chiếu nguyên liệu đó.
+   - Nếu còn ít nhất một bài như vậy, hệ thống từ chối thao tác, giữ nguyên trạng thái `ACTIVE` và thông báo rằng nguyên liệu đang được công thức công khai sử dụng.
+   - Nếu không còn bài `PUBLISHED` nào tham chiếu, hệ thống cho phép chuyển nguyên liệu sang `INACTIVE`; nguyên liệu không còn được chọn cho liên kết mới và các liên kết lịch sử vẫn được bảo toàn.
+   - Nguyên liệu đã `INACTIVE` trước khi quy tắc có hiệu lực được giữ nguyên hiện trạng.
 
 #### Postconditions
 Danh mục nguyên liệu được cập nhật để dùng trong các lựa chọn Recipe Post; dữ liệu đang được tham chiếu không bị xóa cứng.
