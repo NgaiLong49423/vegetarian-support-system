@@ -5,7 +5,6 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,7 +18,6 @@ import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.integration.ai.AiUsageEvent;
 import tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException;
 import tech.mamxanh.nutrition.dto.response.DietaryPreferencesResponse;
-import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.service.DietaryPreferenceService;
 import tech.mamxanh.nutrition.service.IngredientCatalogLookupService;
 import tech.mamxanh.recipe.dto.response.AiCookingGuideResponse;
@@ -28,7 +26,6 @@ import tech.mamxanh.recipe.dto.response.RecipeDetailResponse;
 @Service
 public class AiCookingGuideService {
     private static final Logger LOG = LoggerFactory.getLogger(AiCookingGuideService.class);
-    private static final String WORD_BOUNDARY = "(?<![\\p{L}\\p{N}])%s(?![\\p{L}\\p{N}])";
     private static final int MIN_STEPS = 6;
     private static final int MAX_STEPS = 10;
     private static final int MAX_GUIDE_LENGTH = 8000;
@@ -148,13 +145,9 @@ public class AiCookingGuideService {
         Set<Long> selectedIds = recipe.ingredients().stream().map(RecipeDetailResponse.Ingredient::ingredientId)
                 .filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
         Set<String> selectedNames = recipe.ingredients().stream().map(RecipeDetailResponse.Ingredient::name)
-                .map(AiCookingGuideService::normalize).collect(java.util.stream.Collectors.toSet());
-        String generated = normalize(String.join(" ", steps));
-        ingredientCatalog.findActiveIngredients("").stream().filter(item -> !selectedIds.contains(item.id()))
-                .map(IngredientResponse::name).filter(name -> !selectedNames.contains(normalize(name)))
-                .filter(name -> Pattern.compile(WORD_BOUNDARY.formatted(Pattern.quote(normalize(name))))
-                        .matcher(generated).find())
-                .findAny().ifPresent(ignored -> { throw new AppException(ErrorCode.AI_RESPONSE_INVALID); });
+                .collect(java.util.stream.Collectors.toSet());
+        AiIngredientMentionGuard.validate(String.join(" ", steps), selectedIds, selectedNames,
+                ingredientCatalog.findActiveIngredients(""));
     }
 
     private boolean containsAvoided(RecipeDetailResponse recipe, DietaryPreferencesResponse profile) {

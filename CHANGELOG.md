@@ -9,6 +9,25 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-23 — Fix AI Recipe Guidance Generation
+
+**Status:** Committed — `7d543cf`.
+
+**Scope:** Prevent incomplete or falsely rejected AI-generated recipe descriptions and cooking instructions.
+
+### Added
+
+- Add regression coverage for Gemini output truncation and ingredient-name validation in cooking instructions.
+
+### Changed
+
+- Reserve an 8,192-token response budget for recipe text generation while keeping Gemini's default reasoning and a 60-second provider timeout.
+- Share Vietnamese-aware ingredient mention validation between Expert recipe authoring and Member cooking guidance.
+
+### Fixed
+
+- Reject truncated Gemini recipe output explicitly and allow selected compound ingredients, rinsing water, sauce, and dicing instructions without mistaking them for added ingredients.
+
 ## 2026-10-23 — Detailed AI Cooking Guides
 
 **Status:** Committed — `adfbcd9`.
