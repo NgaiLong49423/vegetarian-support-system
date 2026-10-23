@@ -9,6 +9,25 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-23 — Improve Ingredient and Shopping Workflows
+
+**Status:** Committed — `f58b0e1`.
+
+**Scope:** Let Members inspect ingredients and add selected recipe items to shopping lists without leaving recipe details, while enabling administrators to manage ingredient images.
+
+### Added
+
+- Add ingredient image upload in the Admin catalog and link ingredient names from recipe details to ingredient detail pages.
+- Add a shopping-list action to recipe detail pages and allow Members to select recipe ingredients or add manual items before submitting.
+
+### Changed
+
+- Extend shopping-list API requests to carry selected recipe ingredients and manual items, and update the API and requirement documentation.
+
+### Fixed
+
+- None.
+
 ## 2026-10-23 — Restore Ingredient Presets in the Shared Recipe Search (Issue #70)
 
 **Status:** Committed — `2e03550`.
