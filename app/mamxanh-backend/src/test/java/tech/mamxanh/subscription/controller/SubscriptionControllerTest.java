@@ -35,6 +35,8 @@ class SubscriptionControllerTest {
     @Mock
     private SubscriptionService subscriptionService;
 
+    @Mock private tech.mamxanh.subscription.service.PaymentResultService paymentResults;
+
     @InjectMocks
     private SubscriptionController subscriptionController;
 

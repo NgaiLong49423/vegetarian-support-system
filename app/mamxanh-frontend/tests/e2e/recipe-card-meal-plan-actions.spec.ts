@@ -1,6 +1,6 @@
 import { expect, test } from "./baseFixtures"
 import { seedDemoSession } from "./demo-session"
-import { localDateKey, mondayOf } from "../../src/components/WeekCalendar"
+import { localDateKey, mondayOf } from "../../src/utils/date"
 
 const formOptions = {
   vegetarianTypes: [

@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +19,11 @@ class GeminiAiClientTest {
     @AfterEach
     void stopServer() {
         if (server != null) server.stop(0);
+    }
+
+    @Test
+    void sharedGeminiClientUsesSixtySecondProviderTimeout() {
+        assertThat(GeminiAiClient.DEFAULT_TIMEOUT_MILLIS).isEqualTo(60_000);
     }
 
     @Test
@@ -44,6 +50,33 @@ class GeminiAiClientTest {
         try (var client = configuredClient()) {
             String result = client.generateRecipeText("Mô tả món", List.of(2L, 9L));
             assertThat(result).isEqualTo("{\"description\":\"Món ngon\",\"steps\":[]}");
+        }
+    }
+
+    @Test
+    void recipeGenerationReservesEnoughOutputAndKeepsProviderDefaultThinking() throws IOException {
+        startServer(200, "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"{\\\"description\\\":\\\"Món ngon\\\",\\\"steps\\\":[]}\"}],\"role\":\"model\"},\"finishReason\":\"STOP\"}]}");
+
+        try (var client = configuredClient()) {
+            client.generateRecipeText("Viết hướng dẫn chi tiết cho 8 nguyên liệu", List.of(1L, 2L));
+        }
+
+        var request = tools.jackson.databind.json.JsonMapper.builder().build().readTree(lastRequest.get());
+        assertThat(request.path("generationConfig").path("maxOutputTokens").asInt()).isGreaterThanOrEqualTo(8192);
+        assertThat(request.path("generationConfig").has("thinkingConfig")).isFalse();
+    }
+
+    @Test
+    void rejectsTruncatedRecipeJsonBeforePassingItToTheRecipeService() throws IOException {
+        startServer(200, """
+                {"candidates":[{"content":{"parts":[{"text":"{\\"description\\":\\"Món ngon\\",\\"steps\\":["}],"role":"model"},
+                  "finishReason":"MAX_TOKENS"}]}
+                """);
+
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.generateRecipeText("Hướng dẫn chi tiết", List.of(1L)))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class)
+                    .hasMessage("Gemini recipe output is incomplete: MAX_TOKENS");
         }
     }
 
@@ -172,9 +205,12 @@ class GeminiAiClientTest {
         }
     }
 
+    private final AtomicReference<String> lastRequest = new AtomicReference<>();
+
     private void startServer(int status, String body) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
+            lastRequest.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             byte[] response = body.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(status, response.length);

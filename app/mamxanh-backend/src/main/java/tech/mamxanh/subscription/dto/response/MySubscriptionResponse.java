@@ -10,8 +10,10 @@ public record MySubscriptionResponse(
         String tier,
         String status,
         boolean active,
-        LocalDateTime startsAt,
-        LocalDateTime endsAt,
+        @io.swagger.v3.oas.annotations.media.Schema(types = {"string", "null"}, format = "date-time")
+        @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'") LocalDateTime startsAt,
+        @io.swagger.v3.oas.annotations.media.Schema(types = {"string", "null"}, format = "date-time")
+        @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'") LocalDateTime endsAt,
         List<String> unlockedFeatures
 ) {
     public static MySubscriptionResponse free() {

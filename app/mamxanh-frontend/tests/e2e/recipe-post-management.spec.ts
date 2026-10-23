@@ -211,7 +211,7 @@ test('delete is separate on profile, asks confirmation, then removes recipe from
   await page.getByRole('button', { name: 'Xác nhận xóa' }).click();
 
   await expect(page.getByRole('heading', { name: 'Nấm kho tiêu' })).toHaveCount(0);
-  await expect(page.getByText('Bạn chưa có công thức nào.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bạn chưa có bài blog công thức nào' })).toBeVisible();
   await expect(page.getByRole('status')).toContainText('Đã xóa công thức');
   expect(deleteRequested).toBe(true);
   expect(deleteAttempts).toBe(2);
@@ -264,4 +264,17 @@ test('server validation errors stay visible and preserve edited form values', as
 
   await expect(page.getByRole('alert').filter({ hasText: 'Số lượng phải lớn hơn 0.' })).toBeVisible();
   await expect(page.getByLabel('Tên món *')).toHaveValue('Tên vẫn được giữ sau lỗi');
+});
+
+test('expert sees unsupported ingredient warning when recipe references obsolete catalog items', async ({ page }) => {
+  const unsupportedRecipe = {
+    ...existingRecipe,
+    id: 49,
+    title: 'Rau muống xào',
+    ingredients: [{ ingredientId: 99, name: 'Rau muống', customName: null, unitId: 1, unitCode: 'g', unitName: 'gram', quantity: 300 }],
+  };
+  await mockEditorApi(page, unsupportedRecipe);
+  await page.goto('/cong-thuc/49/chinh-sua');
+  await expect(page.getByText('Nguyên liệu này hiện không được hỗ trợ.')).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Nguyên liệu' })).toHaveValue('99');
 });

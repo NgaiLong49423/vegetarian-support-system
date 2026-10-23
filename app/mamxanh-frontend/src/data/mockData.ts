@@ -203,6 +203,7 @@ export const recipes: Recipe[] = [
       'Pha sốt tương đậu với chút đậu phộng rang.',
     ],
     author: recipeAuthors.a4,
+    youtubeUrl: 'https://www.youtube.com/watch?v=kXYiU_JCYtU',
     ...recipeEngagement.r4,
   },
   {

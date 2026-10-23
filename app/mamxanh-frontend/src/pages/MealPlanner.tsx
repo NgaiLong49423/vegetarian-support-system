@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Calendar,
   ChevronLeft,
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { BinButton } from '../components/BinButton';
-import { AiButton, Badge, Button } from '../components/ui';
+import { AiButton, Badge, Button, EmptyState } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { weekPlan as initialPlan, recipes } from '../data/mockData';
 import type { DayPlan, MealSlot } from '../types';
@@ -32,6 +32,7 @@ const allSlots: MealSlot[] = ['Sáng', 'Trưa', 'Tối'];
 
 export function MealPlanner() {
   const { account } = useAuth();
+  const [params] = useSearchParams();
   const [week, setWeek] = useState<DayPlan[]>(() => initialPlan.map((d) => ({ ...d, meals: [...d.meals] })));
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [picker, setPicker] = useState<{ dayIdx: number; slot: MealSlot } | null>(null);
@@ -64,6 +65,26 @@ export function MealPlanner() {
 
   if (account && account.role !== 'ADMIN') return <MealPlanWeekEditor key={account.id} />;
   if (account?.role === 'ADMIN') return <PageContainer className="py-12"><div role="alert" className="mx-auto max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">Tài khoản Quản trị viên không có quyền xem Lịch ăn của thành viên.</div></PageContainer>;
+
+  if (!account && !params.get('demo')) {
+    return (
+      <PageContainer className="py-10">
+        <EmptyState
+          icon="📅"
+          title="Kế hoạch bữa ăn của bạn"
+          description="Đăng nhập để lập thực đơn 7 ngày, theo dõi dinh dưỡng và tùy biến bữa ăn cho gia đình."
+          action={
+            <Link
+              to="/dang-nhap"
+              className="rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-on-brand"
+            >
+              Đăng nhập
+            </Link>
+          }
+        />
+      </PageContainer>
+    );
+  }
 
   const setMeal = (dayIdx: number, slot: MealSlot, recipeId: string) => {
     setWeek((prev) =>
@@ -186,10 +207,10 @@ export function MealPlanner() {
       </div>
 
       <div className="mt-6 flex flex-col items-center justify-between gap-4 rounded-2xl border border-brand-100 bg-brand-50/50 p-5 sm:flex-row">
-        <p className="text-sm text-ink-soft">Tiếp tục thử màn danh sách đi chợ mẫu để chuẩn bị nguyên liệu cho bữa ăn.</p>
+        <p className="text-sm text-ink-soft">Đăng nhập để tạo và lưu danh sách đi chợ từ Lịch ăn của bạn.</p>
         <Button as="span">
-          <Link to="/di-cho" className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4" /> Tạo danh sách đi chợ
+          <Link to="/dang-nhap" className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" /> Đăng nhập để tạo danh sách
           </Link>
         </Button>
       </div>

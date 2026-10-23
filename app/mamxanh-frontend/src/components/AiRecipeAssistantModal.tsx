@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import {
   Sparkles,
-  Copy,
-  Check,
   ArrowDownToLine,
   Flame,
   Users,
@@ -10,8 +8,6 @@ import {
   BookOpen,
   Info,
   Clock,
-  ChevronDown,
-  ChevronUp,
   CheckCircle2,
   AlertTriangle,
   Lightbulb,
@@ -19,6 +15,7 @@ import {
 import { Modal } from './Modal';
 import { Button } from './ui';
 import type { RecipeFormOptions } from '../api/recipes';
+import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
 
 export interface GeneratedRecipeData {
   title: string;
@@ -315,8 +312,6 @@ export function AiRecipeAssistantModal({
   const [cookingMethod, setCookingMethod] = useState('STIR_FRY');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<GeneratedRecipeData | null>(null);
-  const [copiedJson, setCopiedJson] = useState(false);
-  const [jsonViewOpen, setJsonViewOpen] = useState(false);
 
   // Khi chọn buổi ăn, tự động đề xuất mức calo khuyến nghị tương ứng
   const handleSelectMeal = (session: MealSession) => {
@@ -338,7 +333,6 @@ export function AiRecipeAssistantModal({
   // Thuật toán AI phân giải nguyên liệu & tối ưu hóa calo chuẩn xác cao
   const generateRecipe = () => {
     setIsGenerating(true);
-    setCopiedJson(false);
 
     setTimeout(() => {
       // 1. Phân tách danh sách nguyên liệu đầu vào
@@ -575,7 +569,12 @@ export function AiRecipeAssistantModal({
         instructions: naturalInstructions,
         dishCategory: calculatedCategory,
         vegetarianType: detectedVegType,
-        difficulty: 'EASY',
+        difficulty: assessRecipeDifficulty({
+          ingredientCount: finalIngredients.length,
+          prepTimeMinutes: 10,
+          cookTimeMinutes: 15,
+          instructions: naturalInstructions,
+        }).code,
         servings,
         prepTimeMinutes: 10,
         cookTimeMinutes: 15,
@@ -662,13 +661,6 @@ export function AiRecipeAssistantModal({
         })),
       }
     : null;
-
-  const handleCopyJson = () => {
-    if (!jsonExportData) return;
-    void navigator.clipboard.writeText(JSON.stringify(jsonExportData, null, 2));
-    setCopiedJson(true);
-    setTimeout(() => setCopiedJson(false), 2500);
-  };
 
   const handleApply = () => {
     if (generatedResult) {
@@ -969,56 +961,16 @@ export function AiRecipeAssistantModal({
               </div>
             </div>
 
-            {/* Các tùy chọn: Xem/Sao chép JSON & Nạp 1-click vào biểu mẫu */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-100 pt-3">
-              <button
+            {/* Nạp 1-click vào biểu mẫu */}
+            <div className="flex items-center justify-end border-t border-brand-100 pt-3">
+              <Button
                 type="button"
-                onClick={() => setJsonViewOpen(!jsonViewOpen)}
-                className="text-xs font-bold text-brand-700 hover:text-brand-800 underline flex items-center gap-1"
+                onClick={handleApply}
+                className="flex items-center gap-1.5 bg-brand-700 hover:bg-brand-800 text-white font-bold shadow-sm"
               >
-                {jsonViewOpen ? (
-                  <>Ẩn mã JSON nguyên liệu <ChevronUp className="h-3.5 w-3.5" /></>
-                ) : (
-                  <>Xem cấu trúc JSON nguyên liệu <ChevronDown className="h-3.5 w-3.5" /></>
-                )}
-              </button>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopyJson}
-                  className="flex items-center gap-1.5 text-xs"
-                >
-                  {copiedJson ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 text-emerald-600" /> Đã sao chép JSON
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" /> Sao chép JSON
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleApply}
-                  className="flex items-center gap-1.5 bg-brand-700 hover:bg-brand-800 text-white font-bold shadow-sm"
-                >
-                  <ArrowDownToLine className="h-3.5 w-3.5" /> Nạp vào biểu mẫu công thức
-                </Button>
-              </div>
+                <ArrowDownToLine className="h-4 w-4" /> Nạp vào biểu mẫu công thức
+              </Button>
             </div>
-
-            {/* Hộp xem cấu trúc JSON */}
-            {jsonViewOpen && jsonExportData && (
-              <div className="relative mt-2 rounded-xl bg-slate-900 p-3.5 text-xs text-slate-100 font-mono overflow-x-auto max-h-60 border border-slate-800">
-                <pre>{JSON.stringify(jsonExportData, null, 2)}</pre>
-              </div>
-            )}
           </div>
         )}
 

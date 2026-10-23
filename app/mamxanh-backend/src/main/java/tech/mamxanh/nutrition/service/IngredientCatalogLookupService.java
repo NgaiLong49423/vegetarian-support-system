@@ -15,4 +15,9 @@ public interface IngredientCatalogLookupService {
     List<IngredientResponse> findActiveIngredientsByIds(Collection<Long> ids);
 
     List<UnitResponse> findActiveUnits();
+
+    /** Resolve existing references, including catalog entries subsequently deactivated. */
+    List<IngredientResponse> findIngredientReferences(Collection<Long> ids);
+
+    List<UnitResponse> findUnitReferences(Collection<Integer> ids);
 }

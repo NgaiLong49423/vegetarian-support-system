@@ -82,7 +82,8 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     await page.getByRole('textbox', { name: 'Nguyên liệu (kết quả phải có đủ nguyên liệu đã chọn)' }).fill(ingredientBName);
     const filteredRequestPromise = page.waitForRequest((request) => {
       const url = new URL(request.url());
-      return request.method() === 'GET' && url.pathname === '/api/v1/recipes/discovery';
+      return request.method() === 'GET' && url.pathname === '/api/v1/recipes/discovery'
+        && new Set(url.searchParams.getAll('ingredientIds')).size === 2;
     });
     await page.getByRole('checkbox', { name: ingredientBName }).check();
     const filteredRequest = await filteredRequestPromise;
@@ -99,7 +100,7 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     expect(payload.hasNext).toBe(false);
     expect(payload.items).toHaveLength(1);
     expect(payload.items[0]).toMatchObject({ id: recipeBothId, title: recipeBoth });
-    await expect(page.getByRole('link', { name: new RegExp(recipeBoth) })).toBeVisible();
+    await expect(page.getByRole('link').filter({ has: page.getByRole('heading', { name: recipeBoth, exact: true }) })).toBeVisible();
     await expect(page.getByRole('link', { name: new RegExp(recipeAOnly) })).toHaveCount(0);
     await expect(page.getByRole('link', { name: new RegExp(recipeBOnly) })).toHaveCount(0);
 
@@ -143,7 +144,7 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     expect(emptyResponse.ok()).toBeTruthy();
     await expect(page.getByText('Không tìm thấy công thức phù hợp', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Đặt lại bộ lọc' }).last().click();
-    await expect(page.getByRole('link', { name: new RegExp(recipeBoth) })).toBeVisible();
+    await expect(page.getByRole('link').filter({ has: page.getByRole('heading', { name: recipeBoth, exact: true }) })).toBeVisible();
   } finally {
     cleanupFixture();
   }

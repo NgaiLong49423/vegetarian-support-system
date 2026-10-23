@@ -1,173 +1,107 @@
 package tech.mamxanh.integration.payos;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
-
-import java.util.Map;
-import org.junit.jupiter.api.DisplayName;
+import static org.assertj.core.api.Assertions.*;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
+import java.util.*;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
-import tech.mamxanh.integration.payos.dto.CreatePaymentLinkResponse;
-import tech.mamxanh.integration.payos.dto.PayOsWebhookPayload;
+import tech.mamxanh.common.exception.*;
+import tech.mamxanh.integration.payos.dto.*;
+import tools.jackson.databind.json.JsonMapper;
 
 class DefaultPayOsClientTest {
+    private static final String KEY = "test-only-payos-checksum";
+    private static final PayOsProperties CONFIGURED = new PayOsProperties("test-client", "test-key", KEY,
+            "https://api-merchant.payos.vn", "http://localhost:5173/payment/success", "http://localhost:5173/payment/cancel");
+    private final RestClient.Builder builder = RestClient.builder();
+    private final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    private final DefaultPayOsClient client = new DefaultPayOsClient(CONFIGURED, builder.build());
+    private final JsonMapper mapper = JsonMapper.builder().build();
 
-    @Test
-    @DisplayName("Should return fallback mock checkout URL when payOS is unconfigured")
-    void shouldReturnFallbackMockWhenUnconfigured() {
-        PayOsProperties unconfiguredProps = new PayOsProperties(
-                "", "", "", "https://api-merchant.payos.vn",
-                "http://localhost:5173/payment/success",
-                "http://localhost:5173/payment/cancel"
-        );
-
-        DefaultPayOsClient client = new DefaultPayOsClient(unconfiguredProps, RestClient.builder().build());
-
-        CreatePaymentLinkResponse response = client.createPaymentLink(123456L, 49000, "Goi PLUS");
-
-        assertThat(response).isNotNull();
-        assertThat(response.isSuccess()).isTrue();
-        assertThat(response.data()).isNotNull();
-        assertThat(response.data().orderCode()).isEqualTo(123456L);
-        assertThat(response.data().amount()).isEqualTo(49000);
-        assertThat(response.data().checkoutUrl()).contains("123456");
+    String signed(Map<String, Object> data) {
+        return mapper.writeValueAsString(Map.of("code", "00", "desc", "ok", "data", data,
+                "signature", PayOsSignatureUtil.hmacSha256(PayOsSignatureUtil.convertObjToQueryStr(data), KEY)));
+    }
+    Map<String, Object> linkData() {
+        return new HashMap<>(Map.of("orderCode", 123L, "amount", 99000, "currency", "VND", "status", "PENDING",
+                "description", "Nang cap PRO", "paymentLinkId", "test-link", "checkoutUrl", "https://pay.payos.vn/web/test-link", "qrCode", "test-qr"));
+    }
+    void response(String body) {
+        server.expect(requestTo("https://api-merchant.payos.vn/v2/payment-requests"))
+                .andExpect(method(HttpMethod.POST)).andExpect(header("x-client-id", "test-client"))
+                .andExpect(header("x-api-key", "test-key"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+    }
+    @Test void diagnosticsRedactCredentialsAndPaymentPayload() {
+        assertThat(CONFIGURED.toString()).doesNotContain(KEY, "test-key", "test-client");
+        var payload = new PayOsWebhookPayload("00", "ok", Map.of("accountNumber", "fixture-bank-account"), "fixture-signature");
+        assertThat(payload.toString()).doesNotContain("fixture-bank-account", "fixture-signature");
     }
 
-    @Test
-    @DisplayName("Should call payOS API endpoint when credentials are configured")
-    void shouldCallPayOsApiWhenConfigured() {
-        PayOsProperties configuredProps = new PayOsProperties(
-                "client_1", "api_key_1", "checksum_key_1",
-                "https://api-merchant.payos.vn",
-                "http://localhost:5173/payment/success",
-                "http://localhost:5173/payment/cancel"
-        );
+    @Test void signedInnerSuccessCannotBeOverriddenByUnsignedEnvelope() {
+        assertThat(new PayOsWebhookPayload("01", "error", Map.of("code", "00"), "signed").isPaymentSuccess()).isTrue();
+    }
 
-        RestClient.Builder builder = RestClient.builder();
-        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-
-        server.expect(requestTo("https://api-merchant.payos.vn/v2/payment-requests"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(header("x-client-id", "client_1"))
-                .andExpect(header("x-api-key", "api_key_1"))
-                .andRespond(withSuccess(
-                        """
-                        {"code":"00","desc":"success","data":{"orderCode":123456,"amount":49000,"description":"Thanh toan goi AI","checkoutUrl":"https://pay.payos.vn/web/123","qrCode":"qr123","paymentLinkId":"link123","status":"PENDING"},"signature":"sig"}
-                        """,
-                        MediaType.APPLICATION_JSON
-                ));
-
-        DefaultPayOsClient client = new DefaultPayOsClient(configuredProps, builder.build());
-        CreatePaymentLinkResponse response = client.createPaymentLink(123456L, 49000, "Thanh toan goi AI rat dai vuot qua hai muoi lam ky tu");
-
-        assertThat(response).isNotNull();
-        assertThat(response.isSuccess()).isTrue();
-        assertThat(response.data().orderCode()).isEqualTo(123456L);
+    @Test void missingCredentialsFailClosedAndRejectMockSignatures() {
+        var unconfigured = new DefaultPayOsClient(new PayOsProperties("", "", "", CONFIGURED.endpoint(), CONFIGURED.returnUrl(), CONFIGURED.cancelUrl()), RestClient.builder().build());
+        assertThatThrownBy(() -> unconfigured.createPaymentLink(123, 99000, "PRO"))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.PAYMENT_UNAVAILABLE);
+        assertThatThrownBy(() -> unconfigured.getPaymentInfo(123)).isInstanceOf(AppException.class);
+        for (String signature : List.of("mock_signature", "test_valid_signature", "forged")) {
+            assertThat(unconfigured.verifyWebhook(new PayOsWebhookPayload("00", "ok", linkData(), signature))).isFalse();
+        }
         server.verify();
     }
-
-    @Test
-    @DisplayName("Should sanitize null or blank description to default")
-    void shouldSanitizeNullOrBlankDescription() {
-        PayOsProperties unconfiguredProps = new PayOsProperties(
-                "", "", "", "https://api-merchant.payos.vn",
-                "http://localhost:5173/payment/success",
-                "http://localhost:5173/payment/cancel"
-        );
-
-        DefaultPayOsClient client = new DefaultPayOsClient(unconfiguredProps, RestClient.builder().build());
-
-        CreatePaymentLinkResponse responseNull = client.createPaymentLink(101L, 49000, null);
-        assertThat(responseNull.data().description()).isEqualTo("Thanh toan goi AI");
-
-        CreatePaymentLinkResponse responseBlank = client.createPaymentLink(102L, 49000, "   ");
-        assertThat(responseBlank.data().description()).isEqualTo("Thanh toan goi AI");
+    @Test void createsRealCheckoutFromSignedMatchingData() {
+        response(signed(linkData()));
+        var result = client.createPaymentLink(123, 99000, "Nang cap PRO");
+        assertThat(result.data().checkoutUrl()).isEqualTo("https://pay.payos.vn/web/test-link");
+        assertThat(result.data().qrCode()).isEqualTo("test-qr"); server.verify();
     }
-
-    @Test
-    @DisplayName("Should delegate webhook verification to signature utility")
-    void shouldDelegateWebhookVerification() {
-        String checksumKey = "key_secret_abc123";
-        PayOsProperties configuredProps = new PayOsProperties(
-                "client_1", "api_key_1", checksumKey,
-                "https://api-merchant.payos.vn",
-                "http://localhost:5173/payment/success",
-                "http://localhost:5173/payment/cancel"
-        );
-
-        DefaultPayOsClient client = new DefaultPayOsClient(configuredProps, RestClient.builder().build());
-
-        Map<String, Object> data = Map.of("orderCode", 9999L, "amount", 99000);
-        String queryStr = PayOsSignatureUtil.convertObjToQueryStr(data);
-        String validSig = PayOsSignatureUtil.hmacSha256(queryStr, checksumKey);
-
-        PayOsWebhookPayload payload = new PayOsWebhookPayload("00", "success", data, validSig);
-
+    @Test void rejectsForgedCheckoutResponse() {
+        response(mapper.writeValueAsString(Map.of("code", "00", "data", linkData(), "signature", "forged")));
+        assertThatThrownBy(() -> client.createPaymentLink(123, 99000, "PRO"))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.PAYMENT_RESPONSE_INVALID);
+    }
+    @Test void rejectsSignedWrongAmountAndSameOriginFakeCheckout() {
+        var wrongAmount = linkData(); wrongAmount.put("amount", 49000);
+        response(signed(wrongAmount));
+        assertThatThrownBy(() -> client.createPaymentLink(123, 99000, "PRO")).isInstanceOf(AppException.class);
+    }
+    @Test void rejectsSignedReturnUrlInsteadOfHostedCheckout() {
+        var fake = linkData(); fake.put("checkoutUrl", CONFIGURED.returnUrl()+"?mock=true"); response(signed(fake));
+        assertThatThrownBy(() -> client.createPaymentLink(123, 99000, "PRO")).isInstanceOf(AppException.class);
+    }
+    @Test void providerFailureIsUnavailableWithoutLeakingCredentialsOrBody() {
+        server.expect(requestTo("https://api-merchant.payos.vn/v2/payment-requests")).andRespond(withServerError());
+        assertThatThrownBy(() -> client.createPaymentLink(123, 99000, "PRO"))
+                .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.PAYMENT_UNAVAILABLE);
+    }
+    @Test void readsAndVerifiesProviderOrderInfoWithNestedTransactions() {
+        var data = Map.<String,Object>of("orderCode", 123, "amount", 99000, "amountPaid", 99000,
+                "status", "PAID", "transactions", List.of(Map.of("amount", 99000, "reference", "test-reference")));
+        server.expect(requestTo("https://api-merchant.payos.vn/v2/payment-requests/123"))
+                .andExpect(method(HttpMethod.GET)).andExpect(header("x-api-key", "test-key"))
+                .andRespond(withSuccess(signed(data), MediaType.APPLICATION_JSON));
+        assertThat(client.getPaymentInfo(123)).isEqualTo(new PayOsPaymentInfo(123, 99000, 99000, "PAID")); server.verify();
+    }
+    @Test void rejectsIncorrectProviderOrderIdentity() {
+        server.expect(requestTo("https://api-merchant.payos.vn/v2/payment-requests/123"))
+                .andRespond(withSuccess(signed(Map.of("orderCode", 999, "amount", 99000, "amountPaid", 99000, "status", "PAID")), MediaType.APPLICATION_JSON));
+        assertThatThrownBy(() -> client.getPaymentInfo(123)).isInstanceOf(AppException.class);
+    }
+    @Test void webhookRequiresSignatureAndSignedInnerSuccessCode() {
+        var data = Map.<String,Object>of("orderCode", 123, "amount", 99000, "code", "01");
+        var payload = new PayOsWebhookPayload("00", "ok", data, PayOsSignatureUtil.hmacSha256(PayOsSignatureUtil.convertObjToQueryStr(data), KEY));
         assertThat(client.verifyWebhook(payload)).isTrue();
-
-        PayOsWebhookPayload forgedPayload = new PayOsWebhookPayload("00", "success", data, "invalid_sig");
-        assertThat(client.verifyWebhook(forgedPayload)).isFalse();
-
-        // Null checks
+        assertThat(payload.isPaymentSuccess()).isFalse();
         assertThat(client.verifyWebhook(null)).isFalse();
-        assertThat(client.verifyWebhook(new PayOsWebhookPayload("00", "desc", null, validSig))).isFalse();
-        assertThat(client.verifyWebhook(new PayOsWebhookPayload("00", "desc", data, null))).isFalse();
-    }
-
-    @Test
-    @DisplayName("Should support mock signatures when unconfigured")
-    void shouldSupportMockSignaturesWhenUnconfigured() {
-        PayOsProperties unconfiguredProps = new PayOsProperties(
-                "", "", "", "https://api-merchant.payos.vn",
-                "http://localhost:5173/payment/success",
-                "http://localhost:5173/payment/cancel"
-        );
-
-        DefaultPayOsClient client = new DefaultPayOsClient(unconfiguredProps, RestClient.builder().build());
-        Map<String, Object> data = Map.of("orderCode", 1L);
-
-        assertThat(client.verifyWebhook(new PayOsWebhookPayload("00", "desc", data, "mock_signature"))).isTrue();
-        assertThat(client.verifyWebhook(new PayOsWebhookPayload("00", "desc", data, "test_valid_signature"))).isTrue();
-        assertThat(client.verifyWebhook(new PayOsWebhookPayload("00", "desc", data, "other_signature"))).isFalse();
-    }
-
-    @Test
-    @DisplayName("Should extract fields correctly from PayOsWebhookPayload")
-    void shouldExtractPayloadFieldsCorrectly() {
-        // String format and null cases
-        PayOsWebhookPayload payloadString = new PayOsWebhookPayload(
-                "00", "success",
-                Map.of("orderCode", "987654", "amount", "49000", "paymentLinkId", "pl_abc", "code", "00"),
-                "sig"
-        );
-        assertThat(payloadString.getOrderCode()).isEqualTo(987654L);
-        assertThat(payloadString.getAmount()).isEqualTo(49000);
-        assertThat(payloadString.getPaymentLinkId()).isEqualTo("pl_abc");
-        assertThat(payloadString.getCode()).isEqualTo("00");
-        assertThat(payloadString.isPaymentSuccess()).isTrue();
-
-        // Invalid numbers
-        PayOsWebhookPayload invalidPayload = new PayOsWebhookPayload(
-                "01", "fail",
-                Map.of("orderCode", "not_a_number", "amount", "invalid"),
-                "sig"
-        );
-        assertThat(invalidPayload.getOrderCode()).isNull();
-        assertThat(invalidPayload.getAmount()).isNull();
-        assertThat(invalidPayload.getPaymentLinkId()).isNull();
-        assertThat(invalidPayload.isPaymentSuccess()).isFalse();
-
-        // Null data
-        PayOsWebhookPayload nullData = new PayOsWebhookPayload("00", "desc", null, "sig");
-        assertThat(nullData.getOrderCode()).isNull();
-        assertThat(nullData.getAmount()).isNull();
-        assertThat(nullData.getPaymentLinkId()).isNull();
-        assertThat(nullData.getCode()).isEqualTo("00");
+        assertThat(client.verifyWebhook(new PayOsWebhookPayload("00", "ok", null, "bad"))).isFalse();
+        assertThat(new PayOsWebhookPayload("00", "ok", null, "bad").isPaymentSuccess()).isFalse();
+        assertThat(new PayOsWebhookPayload("00", "ok", Map.of("orderCode", 1.5, "amount", 99000.5), "bad").getAmount()).isNull();
+        assertThat(new PayOsWebhookPayload("00", "ok", Map.of("orderCode", 1.5), "bad").getOrderCode()).isNull();
     }
 }
