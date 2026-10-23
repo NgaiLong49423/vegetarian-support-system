@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Improve Ingredient and Shopping Workflows
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f58b0e1`.
 
 **Scope:** Let Members inspect ingredients and add selected recipe items to shopping lists without leaving recipe details, while enabling administrators to manage ingredient images.
 
