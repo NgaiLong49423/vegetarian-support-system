@@ -4414,7 +4414,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
           description: "INGREDIENT_NAME_EXISTS: reactivating would duplicate an active\
-            \ name."
+            \ name; INGREDIENT_USED_BY_PUBLISHED_RECIPE: deactivation is blocked while\
+            \ a published recipe references the ingredient."
           content:
             application/problem+json:
               schema:
