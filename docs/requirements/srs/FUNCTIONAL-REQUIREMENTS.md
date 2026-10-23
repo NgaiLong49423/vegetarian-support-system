@@ -3455,7 +3455,7 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - Nguồn tạo:
     1. Tạo danh sách rỗng có tên do Member nhập, độc lập với Lịch ăn và Recipe Post.
     2. Sinh từ Lịch ăn tuần (toàn bộ tuần hoặc các ngày được tích chọn trong FR-09).
-      3. Thêm nguyên liệu từ một Recipe Post công khai tại mỗi lần thao tác từ menu hành động của thẻ công thức trong Khám phá (FR-17) hoặc Công thức đã lưu (FR-32); Member chọn danh sách sở hữu hoặc tạo danh sách có tên mới cùng thao tác.
+      3. Thêm nguyên liệu từ một Recipe Post công khai tại mỗi lần thao tác từ menu hành động của thẻ công thức trong Khám phá (FR-17)/Công thức đã lưu (FR-32) hoặc nút trên trang chi tiết; Member chọn danh sách sở hữu hoặc tạo danh sách có tên mới cùng thao tác.
   - Tính năng quản lý danh sách: Member được đổi tên và xóa tất cả danh sách của chính mình, gồm danh sách `MANUAL`, danh sách tạo từ Lịch ăn và danh sách cá nhân từ Recipe Post. Tên mới của danh sách từ Lịch ăn được giữ nguyên, không tự đổi theo tuần.
   - Tính năng quản lý tương tác: Thêm item thủ công ngoài công thức, sửa/xóa item, tick checklist đánh dấu đã mua/chưa mua.
 - **Phân loại Actor:**
@@ -3511,9 +3511,9 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *When* cố gắng truy cập tính năng danh sách mua sắm,
   - *Then* hệ thống chặn truy cập và hiển thị thông báo yêu cầu đăng nhập.
   - **AC-53.6 (Thêm một Recipe Post vào danh sách mua sắm được chọn):**
-    - *Given* Member mở menu hành động của một Recipe Post công khai trong Khám phá hoặc Công thức đã lưu,
-    - *When* Member chọn một danh sách thuộc tài khoản hoặc nhập tên hợp lệ để tạo danh sách mới, điều chỉnh khẩu phần từ 1–50 và xác nhận,
-    - *Then* hệ thống thêm nguyên liệu đã tính theo khẩu phần vào đúng danh sách và mở checklist; nếu tạo mới, danh sách và nguyên liệu được lưu nguyên tử; công thức đã thêm trong cùng danh sách không bị cộng trùng.
+    - *Given* Member mở menu hành động của một Recipe Post công khai trong Khám phá/Công thức đã lưu hoặc đang xem trang chi tiết công thức,
+    - *When* Member chọn một danh sách thuộc tài khoản hoặc nhập tên hợp lệ để tạo danh sách mới, điều chỉnh khẩu phần từ 1–50, chọn các nguyên liệu muốn thêm, có thể nhập thêm mặt hàng thủ công với số lượng và đơn vị hợp lệ, rồi xác nhận,
+    - *Then* chỉ các nguyên liệu được chọn được tính theo khẩu phần và các mặt hàng thủ công được thêm vào đúng danh sách; Member có thể bỏ chọn toàn bộ nguyên liệu công thức nếu đã nhập ít nhất một mặt hàng thủ công. Nếu tạo mới, danh sách và toàn bộ mặt hàng được lưu nguyên tử; thêm lại cùng công thức trong cùng danh sách không cộng trùng đóng góp nguyên liệu của công thức.
     - Guest được yêu cầu đăng nhập; Admin không có thao tác này. Công thức không còn công khai hoặc không sở hữu danh sách đích bị từ chối.
 - **AC-53.7 (Đổi tên danh sách mua sắm):**
   - *Given* Member đang xem một danh sách thuộc tài khoản của mình, gồm danh sách từ Lịch ăn hoặc danh sách cá nhân,
