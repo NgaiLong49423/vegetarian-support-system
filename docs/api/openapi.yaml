@@ -1951,10 +1951,12 @@ paths:
       tags:
       - shopping-list-controller
       summary: Add one public recipe to an owned checklist
-      description: Adds one public recipe to any checklist owned by the Member. Repeated
-        additions to the same list do not duplicate its contributions. Optional servings
-        scales quantities from the published serving count (1–50); omit it to use
-        published quantities. Saved edits are retained as the base for aggregation.
+      description: Adds selected ingredients from one public recipe and optional manual
+        items to any checklist owned by the Member. Omit selectedIngredientIds to
+        include all recipe ingredients; provide an empty array only when manualItems
+        contains at least one item. Repeated additions do not duplicate recipe contributions.
+        Optional servings scales selected quantities from the published serving count
+        (1–50). Saved edits are retained as the base for aggregation.
       operationId: addRecipeToShoppingList
       parameters:
       - name: listId
@@ -2107,10 +2109,11 @@ paths:
       tags:
       - shopping-list-controller
       summary: Create a named checklist from one public recipe
-      description: Creates a MANUAL checklist and adds one public recipe in one transaction.
-        Optional servings scales quantities from the published serving count (1–50);
-        omit it to use published quantities. A failed recipe addition rolls back the
-        new list.
+      description: Creates a MANUAL checklist and adds the selected ingredients from
+        one public recipe plus optional manual items in one transaction. Omit selectedIngredientIds
+        to include all recipe ingredients; provide an empty array only when manualItems
+        contains at least one item. Optional servings scales selected quantities from
+        the published serving count (1–50). A failed addition rolls back the new list.
       operationId: createShoppingListFromRecipe
       requestBody:
         content:
@@ -7219,8 +7222,44 @@ components:
           description: Optional serving count; omit to use the published recipe quantities.
           maximum: 50
           minimum: 1
+        selectedIngredientIds:
+          type: array
+          description: Ingredient IDs to include. Omit to include all recipe ingredients;
+            an empty list is allowed only when manualItems are provided.
+          items:
+            type: integer
+            format: int64
+            minimum: 0
+          maxItems: 200
+          minItems: 0
+        manualItems:
+          type: array
+          description: Optional manual items to add atomically with the selected recipe
+            ingredients.
+          items:
+            $ref: "#/components/schemas/CreateShoppingItemRequest"
+          maxItems: 50
+          minItems: 0
       required:
       - recipeId
+    CreateShoppingItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 0
+        quantity:
+          type: number
+          minimum: 0
+        unitId:
+          type: integer
+          format: int32
+          minimum: 0
+      required:
+      - name
+      - quantity
+      - unitId
     ShoppingListCreationResponse:
       type: object
       properties:
@@ -7254,24 +7293,6 @@ components:
           - integer
           - "null"
           format: int64
-    CreateShoppingItemRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          maxLength: 200
-          minLength: 0
-        quantity:
-          type: number
-          minimum: 0
-        unitId:
-          type: integer
-          format: int32
-          minimum: 0
-      required:
-      - name
-      - quantity
-      - unitId
     CreateShoppingListFromRecipeRequest:
       type: object
       properties:
@@ -7289,6 +7310,24 @@ components:
           description: Optional serving count; omit to use the published recipe quantities.
           maximum: 50
           minimum: 1
+        selectedIngredientIds:
+          type: array
+          description: Ingredient IDs to include. Omit to include all recipe ingredients;
+            an empty list is allowed only when manualItems are provided.
+          items:
+            type: integer
+            format: int64
+            minimum: 0
+          maxItems: 200
+          minItems: 0
+        manualItems:
+          type: array
+          description: Optional manual items to add atomically with the selected recipe
+            ingredients.
+          items:
+            $ref: "#/components/schemas/CreateShoppingItemRequest"
+          maxItems: 50
+          minItems: 0
       required:
       - name
       - recipeId

@@ -54,23 +54,30 @@ interface ShoppingPage {
   totalPages: number
 }
 type Quantity = { quantity: number; unitId: number }
+export type ShoppingManualItemInput = Quantity & { name: string }
+export interface AddRecipeShoppingOptions {
+  selectedIngredientIds?: number[]
+  manualItems?: ShoppingManualItemInput[]
+}
 
 export const shoppingApi = {
   createEmpty: async (name: string) =>
     (await apiClient.post<ShoppingChecklist>("/shopping-lists", { name })).data,
-  addRecipe: async (listId: number, recipeId: number, servings: number) =>
+  addRecipe: async (listId: number, recipeId: number, servings: number, options: AddRecipeShoppingOptions = {}) =>
     (
       await apiClient.post<ShoppingCreation>(`/shopping-lists/${listId}/recipes`, {
         recipeId,
         servings,
+        ...options,
       })
     ).data,
-  createFromRecipe: async (name: string, recipeId: number, servings: number) =>
+  createFromRecipe: async (name: string, recipeId: number, servings: number, options: AddRecipeShoppingOptions = {}) =>
     (
       await apiClient.post<ShoppingCreation>("/shopping-lists/from-recipe", {
         name,
         recipeId,
         servings,
+        ...options,
       })
     ).data,
   list: async (page = 0) =>

@@ -53,7 +53,7 @@ public class ShoppingListController {
 
     @PostMapping(value = "/from-recipe", consumes = "application/json", produces = "application/json")
     @Operation(operationId = "createShoppingListFromRecipe", summary = "Create a named checklist from one public recipe",
-            description = "Creates a MANUAL checklist and adds one public recipe in one transaction. Optional servings scales quantities from the published serving count (1–50); omit it to use published quantities. A failed recipe addition rolls back the new list.")
+            description = "Creates a MANUAL checklist and adds the selected ingredients from one public recipe plus optional manual items in one transaction. Omit selectedIngredientIds to include all recipe ingredients; provide an empty array only when manualItems contains at least one item. Optional servings scales selected quantities from the published serving count (1–50). A failed addition rolls back the new list.")
     @ApiResponse(responseCode = "201", description = "The new checklist and recipe ingredients.", useReturnTypeSchema = true)
     public ResponseEntity<ShoppingListCreationResponse> fromRecipe(
             @Valid @RequestBody CreateShoppingListFromRecipeRequest request) {
@@ -63,7 +63,7 @@ public class ShoppingListController {
 
     @PostMapping(value = "/{listId}/recipes", consumes = "application/json", produces = "application/json")
     @Operation(operationId = "addRecipeToShoppingList", summary = "Add one public recipe to an owned checklist",
-            description = "Adds one public recipe to any checklist owned by the Member. Repeated additions to the same list do not duplicate its contributions. Optional servings scales quantities from the published serving count (1–50); omit it to use published quantities. Saved edits are retained as the base for aggregation.")
+            description = "Adds selected ingredients from one public recipe and optional manual items to any checklist owned by the Member. Omit selectedIngredientIds to include all recipe ingredients; provide an empty array only when manualItems contains at least one item. Repeated additions do not duplicate recipe contributions. Optional servings scales selected quantities from the published serving count (1–50). Saved edits are retained as the base for aggregation.")
     @ApiResponse(responseCode = "200", description = "The updated checklist and recipe diagnostics.", useReturnTypeSchema = true)
     public ShoppingListCreationResponse addRecipe(@PathVariable long listId,
             @Valid @RequestBody AddRecipeToShoppingListRequest request) {
