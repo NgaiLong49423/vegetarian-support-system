@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.102.0
+> **Version:** v2.104.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-23
 > **Status:** Active
@@ -8,6 +8,27 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-23 — Fix Integration Regressions After Develop Synchronization ([PR #162](https://github.com/NgaiLong49423/vegetarian-support-system/pull/162))
+
+**Status:** Committed — `4968e40`.
+
+**Scope:** Restore discovery badges and safe shopping-list ingredient selection after integrating the current baseline.
+
+### Added
+
+- Cover ingredient subsets, manual-only shopping items, duplicate ingredient selections, serving scaling, and atomic rollback through HTTP and SQL integration tests.
+- Add browser regressions for selecting one ingredient represented by multiple units from discovery and saved recipes.
+
+### Changed
+
+- Align shopping browser assertions with the current ingredient-selection and manual-item request contract.
+
+### Fixed
+
+- Restore the Like percentage or New badge on discovery cards required by FR-17.
+- Deduplicate initially selected ingredient IDs so recipes using multiple units do not produce rejected shopping-list requests.
+- Preserve ingredient filters when navigating from the ingredient directory or detail page into discovery.
 
 ## 2026-10-23 — Improve Ingredient and Shopping Workflows
 
@@ -385,6 +406,26 @@ None.
 - Seed core recipe ingredients before applying catalog nutrition so supported entries such as sweet potato are enriched correctly.
 
 - Fill the remaining macro, fiber and B12 estimates for all AI-estimated demo ingredients so those fixtures no longer have missing nutrition metrics.
+
+## 2026-10-19 — Store Recipe Images in Azure (Issue #158) ([PR #162](https://github.com/NgaiLong49423/vegetarian-support-system/pull/162))
+
+**Status:** Committed — `c3a5155`.
+
+**Scope:** Fix misleading upload success when Azure storage is missing or unavailable ([Issue #158](https://github.com/NgaiLong49423/vegetarian-support-system/issues/158)).
+
+### Added
+
+- Add unavailable-storage tests, browser upload-state regression checks, and an opt-in Azure/Compose integration test.
+
+### Changed
+
+- Forward Backend Azure configuration through the root Compose stack and document the image storage setup.
+- Regenerate OpenAPI to describe upload success as HTTP 201 and storage failure as HTTP 503.
+
+### Fixed
+
+- Reject uploads with `MEDIA_STORAGE_UNAVAILABLE` instead of returning fabricated storage URLs; sanitize storage failure diagnostics.
+- Label failed previews, count only successful uploads, and block publication while uploads are pending or failed.
 
 ## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
 

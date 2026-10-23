@@ -50,7 +50,7 @@ export function AddRecipeShoppingDialog({
   const [error, setError] = useState("")
   const [recipe, setRecipe] = useState<ShoppingRecipePreview | null>(preview ?? null)
   const [recipeLoading, setRecipeLoading] = useState(false)
-  const [selectedIngredientIds, setSelectedIngredientIds] = useState<number[]>(preview?.ingredients.map((item) => item.ingredientId) ?? [])
+  const [selectedIngredientIds, setSelectedIngredientIds] = useState<number[]>([...new Set(preview?.ingredients.map((item) => item.ingredientId) ?? [])])
   const [units, setUnits] = useState<ShoppingUnit[]>([])
   const [unitsLoading, setUnitsLoading] = useState(false)
   const [manualItems, setManualItems] = useState<ManualItemDraft[]>([])
@@ -60,7 +60,7 @@ export function AddRecipeShoppingDialog({
     if (!open || !account || account.role === "ADMIN") return
     let active = true
     setRecipe(preview ?? null)
-    setSelectedIngredientIds(preview?.ingredients.map((item) => item.ingredientId) ?? [])
+    setSelectedIngredientIds([...new Set(preview?.ingredients.map((item) => item.ingredientId) ?? [])])
     setManualItems([])
     setNextManualItemKey(1)
     setLists([])
@@ -77,7 +77,7 @@ export function AddRecipeShoppingDialog({
       recipesApi.getPublished(recipeId).then((detail: RecipeDetail) => {
         if (active) {
           setRecipe({ id: detail.recipeId, title: detail.title, servings: detail.servings, ingredients: detail.ingredients })
-          setSelectedIngredientIds(detail.ingredients.map((item) => item.ingredientId))
+          setSelectedIngredientIds([...new Set(detail.ingredients.map((item) => item.ingredientId))])
           setServings(Math.min(50, Math.max(1, detail.servings || 1)))
         }
       }).catch((cause) => {
