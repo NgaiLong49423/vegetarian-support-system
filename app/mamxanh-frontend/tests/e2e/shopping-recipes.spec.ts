@@ -183,6 +183,23 @@ test("AC-53.6 keeps the dialog open after a failed add and allows retry", async 
   await expect(page).toHaveURL(/di-cho\?listId=77/)
 })
 
+test("AC-53.6 submits each ingredient ID once when a recipe repeats it across units", async ({ page }) => {
+  const state = await setup(page)
+  await page.route("**/api/v1/recipes/discovery?**", (route) => route.fulfill({ json: {
+    items: [{ ...recipe(1), ingredients: [
+      { ingredientId: 1, name: "Đậu phụ", quantity: 300, unitId: 1, unitCode: "g", unitName: "gram" },
+      { ingredientId: 1, name: "Đậu phụ", quantity: 100, unitId: 2, unitCode: "ml", unitName: "ml" },
+    ] }], page: 0, size: 12, hasNext: false,
+  } }))
+  await page.goto("/kham-pha")
+  await openShoppingDialog(page)
+  await expect(page.getByLabel("Thêm Đậu phụ")).toHaveCount(2)
+  await page.getByRole("radio", { name: "Danh sách tuần" }).check()
+  await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
+  await expect(page).toHaveURL(/di-cho\?listId=77/)
+  expect(state.adds).toEqual([{ recipeId: 1, servings: 2, selectedIngredientIds: [1], manualItems: [] }])
+})
+
 test("AC-53.6 saved recipe menu loads full recipe details before adding", async ({ page }) => {
   const state = await setup(page)
   await page.route("**/api/v1/saved-recipes?**", (r) => r.fulfill({
