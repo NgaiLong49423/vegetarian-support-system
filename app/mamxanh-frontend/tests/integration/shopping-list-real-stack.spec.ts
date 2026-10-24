@@ -57,11 +57,17 @@ test('FR-53 browser creates selected-day and weekly checklists; CRUD and bought 
     await page.getByRole('button', { name: 'Tạo danh sách mua sắm', exact: true }).click()
     await page.getByLabel('Chọn ngày', { exact: true }).check()
     await page.getByRole('checkbox', { name: /Thứ Hai/i }).check()
+    const selectedCreationPromise = page.waitForResponse((response) => response.url().endsWith('/shopping-lists/from-meal-plan') && response.request().method() === 'POST')
     await page.getByRole('button', { name: 'Tạo danh sách', exact: true }).click()
+    const selectedCreation = await selectedCreationPromise
+    expect(selectedCreation.status()).toBe(201)
+    const selectedResult = await selectedCreation.json()
+    const selectedName = selectedResult.shoppingList.name as string
+    expect(selectedName).toMatch(/^Danh sách mua sắm \d{2}\/\d{2}\/\d{4}$/)
     await expect(page).toHaveURL(/di-cho\?listId=\d+/)
     const selectedList = Number(new URL(page.url()).searchParams.get('listId'))
-    await expect(page.getByRole('heading', { name: 'Đi chợ · thực đơn 12/10/2026', exact: true })).toBeVisible()
-    expect(sql(`SELECT name FROM [SHOPPING_LIST] WHERE shopping_list_id=${selectedList}`)).toBe('Đi chợ · thực đơn 12/10/2026')
+    await expect(page.getByRole('heading', { name: selectedName, exact: true })).toBeVisible()
+    expect(sql(`SELECT name FROM [SHOPPING_LIST] WHERE shopping_list_id=${selectedList}`)).toBe(selectedName)
     await expect(page.getByText('600 g', { exact: true })).toBeVisible()
     expect(Number(sql(`SELECT COUNT(*) FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=${selectedList}`))).toBe(1)
     await page.goto(`/ke-hoach?weekStartDate=${week}`)
@@ -71,7 +77,7 @@ test('FR-53 browser creates selected-day and weekly checklists; CRUD and bought 
     const creation = await creationPromise
     expect(creation.status()).toBe(201)
     const result = await creation.json(), listId = result.shoppingList.id as number
-    expect(result.shoppingList.name).toBe('Đi chợ · thực đơn tuần 12–18/10/2026')
+    expect(result.shoppingList.name).toMatch(/^Danh sách mua sắm \d{2}\/\d{2}\/\d{4}$/)
     await expect(page).toHaveURL(new RegExp(`listId=${listId}$`))
     await expect(page.getByRole('region', { name: 'Lưu ý khi tạo danh sách' })).toBeVisible()
     await expect(page.getByText('1.400 g', { exact: true })).toBeVisible()

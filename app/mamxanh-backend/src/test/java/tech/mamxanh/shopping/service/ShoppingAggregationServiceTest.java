@@ -133,6 +133,38 @@ class ShoppingAggregationServiceTest {
                 .singleElement().satisfies(i -> assertThat(i.quantity()).isEqualByComparingTo("6"));
     }
 
+    @Test void manualNamesRejectBlankOverlongAndControlCharacterValues() {
+        var result = service.aggregate(List.of(manual("   ",1,"1"), manual("x".repeat(201),1,"1"),
+                manual("Tên\u0001không hợp lệ",1,"1"), new ShoppingAggregationLine(null,null,BigDecimal.ONE,1)));
+        assertThat(items(result)).isEmpty();
+        assertThat(result.warnings()).extracting(ShoppingAggregationResult.Warning::code)
+                .containsExactly("INVALID_MANUAL_NAME","INVALID_MANUAL_NAME","INVALID_MANUAL_NAME","INVALID_MANUAL_NAME");
+    }
+
+    @Test void equivalentVolumeRatesMergeAndInvalidOfficialRatesAreIgnored() {
+        rates.add(new ConversionResponse(2L,3,new BigDecimal("9000"),false,true));
+        rates.add(new ConversionResponse(2L,3,null,false,true));
+        rates.add(rate(2,3,"0",true));
+        rates.add(rate(2,3,"1.25",true));
+        rates.add(rate(2,4,"1250",true));
+        var result = service.aggregate(List.of(line(2,1,"300"),line(2,3,"200"),line(2,4,"0.2")));
+        assertThat(items(result)).singleElement().satisfies(item -> {
+            assertThat(item.quantity()).isEqualByComparingTo("800");
+            assertThat(item.unitCode()).isEqualTo("g");
+            assertThat(item.incompatibleUnits()).isFalse();
+        });
+        assertThat(result.warnings()).isEmpty();
+    }
+
+    @Test void keepsConvertibleBucketsSeparateWhenNoMassTargetUnitExists() {
+        when(catalog.findActiveUnits()).thenReturn(List.of());
+        rates.add(rate(2,3,"1.25",true));
+        rates.add(rate(2,7,"15",true));
+        var output = items(service.aggregate(List.of(line(2,3,"100"),line(2,7,"2"))));
+        assertThat(output).hasSize(2).allSatisfy(item -> assertThat(item.incompatibleUnits()).isTrue());
+        assertThat(output).extracting(Item::unitCode).containsExactlyInAnyOrder("ml","tbsp");
+    }
+
     @Test void rejectsInvalidRowsWithSourceIndexedWarningsAndKeepsValidRows() {
         var result = service.aggregate(Arrays.asList(null,line(1,1,"0"),line(1,1,"-2"),
                 new ShoppingAggregationLine(1L,null,null,1),line(1,999,"2"),line(999,1,"2"),manual("<script>",1,"2"),line(1,1,"3")));
