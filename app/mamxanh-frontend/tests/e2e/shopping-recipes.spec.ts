@@ -80,7 +80,7 @@ async function setup(page: Page, role: "CUSTOMER" | "EXPERT" | "ADMIN" | null = 
 
 async function openShoppingDialog(page: Page, title = "Món đi chợ 1") {
   await page.getByRole("button", { name: `Tùy chọn cho công thức ${title}` }).click()
-  await page.getByRole("menuitem", { name: "Thêm vào danh sách đi chợ" }).click()
+  await page.getByRole("menuitem", { name: "Thêm vào danh sách mua sắm" }).click()
 }
 
 test("AC-53.6 adds one recipe to a selected list and scales the servings", async ({ page }) => {
@@ -144,7 +144,7 @@ test("AC-53.6 Guest can sign in and Admin has no shopping action", async ({ page
   await setup(page, null)
   await page.goto("/kham-pha")
   await openShoppingDialog(page)
-  await expect(page.getByRole("dialog", { name: "Thêm vào danh sách đi chợ" }).getByRole("link", { name: "Đăng nhập", exact: true })).toHaveAttribute("href", "/dang-nhap")
+  await expect(page.getByRole("dialog", { name: "Thêm vào danh sách mua sắm" }).getByRole("link", { name: "Đăng nhập", exact: true })).toHaveAttribute("href", "/dang-nhap")
 
   await seedDemoSession(page, "ADMIN")
   await page.reload()

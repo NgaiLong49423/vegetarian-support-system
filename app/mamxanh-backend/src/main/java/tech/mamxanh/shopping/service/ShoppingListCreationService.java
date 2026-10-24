@@ -53,7 +53,7 @@ public class ShoppingListCreationService {
         this.items = items;
         this.checklists = checklists;
         this.entityManager = entityManager;
-        this.clock = clock.withZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        this.clock = clock;
     }
 
     @Transactional
@@ -112,7 +112,8 @@ public class ShoppingListCreationService {
         }
         var list = new ShoppingListEntity();
         list.setUserId(owner);
-        list.setName("Danh sách mua sắm " + LocalDate.now(clock).format(FULL_DATE));
+        list.setName("Danh sách mua sắm " + clock.instant()
+                .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate().format(FULL_DATE));
         lists.saveAndFlush(list);
         entityManager.refresh(list); // read database-generated timestamps, rather than fabricate response values
         rows.forEach(row -> row.setShoppingListId(list.getId()));

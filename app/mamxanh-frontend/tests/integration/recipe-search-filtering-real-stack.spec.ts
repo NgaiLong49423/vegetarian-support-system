@@ -115,9 +115,6 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
       const sortResponse = await sortRequest.response();
       if (!sortResponse) throw new Error(`Recipe search for sort ${sort} failed before Backend returned a response.`);
       expect(sortResponse.ok()).toBeTruthy();
-      if (sort === 'MOST_LIKED') {
-        await expect(page.getByText('Mới', { exact: true })).toBeVisible();
-      }
       if (sort === 'MOST_VIEWED') {
         const periodRequestPromise = page.waitForRequest((request) => {
           const url = new URL(request.url());

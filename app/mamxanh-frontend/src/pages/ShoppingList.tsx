@@ -673,15 +673,10 @@ function ShoppingWorkspace() {
                 </div>
               </div>
               {Object.entries(grouped).length ? (
-                <div>
-                  <div className="space-y-5 lg:hidden">
-                    {groupedEntries.map(renderGroup)}
-                  </div>
-                  <div className="hidden gap-x-6 lg:grid lg:grid-cols-2">
-                    {groupColumns.map((column, index) => (
-                      <div key={index} className="space-y-5">{column.map(renderGroup)}</div>
-                    ))}
-                  </div>
+                <div className="grid gap-x-6 lg:grid-cols-2">
+                  {groupColumns.map((column, index) => (
+                    <div key={index} className="space-y-5">{column.map(renderGroup)}</div>
+                  ))}
                 </div>
               ) : (
                 <p className="py-12 text-center text-sm text-ink-muted">

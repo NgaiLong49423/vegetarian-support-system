@@ -261,7 +261,7 @@ test("shopping blocks Guest and Admin without reading private lists", async ({
 
   await expect(
     page.getByText(
-      "Vui lòng đăng nhập để tạo và lưu danh sách đi chợ theo tài khoản.",
+      "Vui lòng đăng nhập để tạo và lưu danh sách mua sắm theo tài khoản.",
     ),
   ).toBeVisible()
 
@@ -283,7 +283,7 @@ test("shopping creates whole week, displays warning and keeps incompatible rows 
   await page.goto(`/ke-hoach?weekStartDate=${week}`)
 
   await page
-    .getByRole("button", { name: "Tạo danh sách đi chợ", exact: true })
+    .getByRole("button", { name: "Tạo danh sách mua sắm", exact: true })
     .click()
 
   await expect(page.getByLabel("Cả tuần", { exact: true })).toBeFocused()
@@ -325,7 +325,7 @@ test("shopping selected days validates selection, shows creation failure, retrie
   await page.goto(`/ke-hoach?weekStartDate=${week}`)
 
   const trigger = page.getByRole("button", {
-    name: "Tạo danh sách đi chợ",
+    name: "Tạo danh sách mua sắm",
     exact: true,
   })
 
@@ -504,7 +504,7 @@ test("shopping empty list, invalid ID, foreign list and read retry are explicit"
 
   await page.goto("/di-cho")
   await expect(
-    page.getByText("Chưa có danh sách đi chợ", { exact: true }),
+    page.getByText("Chưa có danh sách mua sắm", { exact: true }),
   ).toBeVisible()
 
   await page.goto("/di-cho?listId=bad")
@@ -539,7 +539,7 @@ test("shopping creates an empty list from the empty state and sidebar with valid
   await page.goto("/di-cho")
   await page.getByRole("button", { name: "Tạo danh sách trống", exact: true }).last().click()
 
-  const dialog = page.getByRole("dialog", { name: "Tạo danh sách đi chợ" })
+  const dialog = page.getByRole("dialog", { name: "Tạo danh sách mua sắm" })
   await dialog.getByLabel("Tên danh sách").fill("   ")
   await dialog.getByRole("button", { name: "Tạo danh sách", exact: true }).click()
   await expect(dialog.getByRole("alert")).toContainText("Hãy nhập tên danh sách")
@@ -561,7 +561,7 @@ test("shopping creates an empty list from the empty state and sidebar with valid
   })
 
   await page.getByRole("button", { name: "Tạo danh sách trống", exact: true }).click()
-  await expect(page.getByRole("dialog", { name: "Tạo danh sách đi chợ" })).toBeVisible()
+  await expect(page.getByRole("dialog", { name: "Tạo danh sách mua sắm" })).toBeVisible()
   await page.getByRole("button", { name: "Hủy", exact: true }).click()
 })
 
@@ -619,6 +619,7 @@ test("shopping list can be renamed and keeps its name after reload", async ({ pa
   const state = await setup(page)
   await page.goto("/di-cho?listId=42")
 
+  await page.locator("nav[aria-label='Danh sách đã lưu']").getByRole("button", { name: "Thao tác với Đi chợ tuần 12/10" }).click()
   await page.getByRole("button", { name: "Đổi tên", exact: true }).click()
   const dialog = page.getByRole("dialog", { name: "Đổi tên danh sách" })
   await dialog.getByLabel("Tên danh sách").fill("  Đi chợ cuối tuần  ")
@@ -640,8 +641,9 @@ test("shopping list deletion confirms scope and keeps the empty state usable aft
   const state = await setup(page)
   await page.goto("/di-cho?listId=42")
 
+  await page.locator("nav[aria-label='Danh sách đã lưu']").getByRole("button", { name: "Thao tác với Đi chợ tuần 12/10" }).click()
   await page.getByRole("button", { name: "Xóa danh sách", exact: true }).click()
-  const dialog = page.getByRole("dialog", { name: "Xóa danh sách đi chợ?" })
+  const dialog = page.getByRole("dialog", { name: "Xóa danh sách mua sắm?" })
   await expect(dialog).toContainText("Lịch ăn và công thức nguồn vẫn được giữ nguyên")
   state.fail = "Chưa xóa được danh sách."
   await dialog.getByRole("button", { name: "Xóa danh sách", exact: true }).click()
@@ -651,6 +653,6 @@ test("shopping list deletion confirms scope and keeps the empty state usable aft
   state.fail = ""
   await dialog.getByRole("button", { name: "Xóa danh sách", exact: true }).click()
   await expect(page).toHaveURL(/\/di-cho$/)
-  await expect(page.getByText("Chưa có danh sách đi chợ", { exact: true })).toBeVisible()
+  await expect(page.getByText("Chưa có danh sách mua sắm", { exact: true })).toBeVisible()
   expect(state.writes.filter((write) => (write as { method: string }).method === "DELETE")).toHaveLength(2)
 })
