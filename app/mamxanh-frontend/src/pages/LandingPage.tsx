@@ -21,7 +21,7 @@ import "./LandingPage.css"
 const sections = [
   { id: "cong-thuc", label: "Công thức" },
   { id: "lich-an", label: "Lịch ăn" },
-  { id: "di-cho", label: "Đi chợ" },
+  { id: "di-cho", label: "Danh sách mua sắm" },
   { id: "dinh-duong", label: "Dinh dưỡng" },
   { id: "tro-ly-ai", label: "AI" },
 ]
@@ -513,13 +513,13 @@ export function LandingPage() {
                 ))}
               </div>
             </div>
-            <figcaption>Danh sách đi chợ · Mâm Xanh</figcaption>
+            <figcaption>Danh sách mua sắm · Mâm Xanh</figcaption>
           </figure>
 
           <div className="landing-section-heading" data-reveal="right">
             <p className="landing-eyebrow">TỪ CĂN BẾP ĐẾN GIỎ HÀNG</p>
             <h2 id="shopping-title">
-              Đi chợ với
+              Mua sắm nguyên liệu cùng
               <br />
               một danh sách rõ ràng.
             </h2>

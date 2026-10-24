@@ -2,7 +2,8 @@ schema_version: 1
 last_updated: 2026-10-23
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-next_id: 61
+# BUG-060–064 đã được cấp trong PR #162 (nhánh fix/158); bản ghi của PR #161 dùng BUG-065.
+next_id: 66
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -10,12 +11,12 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
-  - id: BUG-060
+  - id: BUG-065
     title: Chuyển món trong Lịch ăn đôi khi làm mất focus thay vì trả về tiêu đề "Lịch ăn của bạn"
     status: RECORDED
     severity: Low
     area: Frontend/Lịch ăn
-    file: .agents/outputs/bugs/BUG-060.md
+    file: .agents/outputs/bugs/BUG-065.md
     created: 2026-10-19
     updated: 2026-10-19
     related_issue: 38

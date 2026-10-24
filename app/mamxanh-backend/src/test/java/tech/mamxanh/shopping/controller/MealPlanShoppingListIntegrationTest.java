@@ -6,6 +6,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +45,7 @@ class MealPlanShoppingListIntegrationTest extends AbstractIntegrationTest {
         assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=? AND is_bought=0",Integer.class,list)).isEqualTo(1);
         mockMvc.perform(get("/api/v1/shopping-lists/"+list).with(user(Long.toString(owner)).roles("CUSTOMER")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.createdAt").isNotEmpty())
-                .andExpect(jsonPath("$.name").value("Đi chợ · thực đơn tuần 19–25/10/2026"))
+                .andExpect(jsonPath("$.name").value(autoName()))
                 .andExpect(jsonPath("$.items[0].ingredientGroup").value("Đậu")).andExpect(jsonPath("$.items[0].quantity").value(1700));
         mockMvc.perform(get("/api/v1/shopping-lists/"+list).with(user(Long.toString(other)).roles("CUSTOMER")))
                 .andExpect(status().isNotFound());
@@ -144,10 +147,10 @@ class MealPlanShoppingListIntegrationTest extends AbstractIntegrationTest {
         assertThat(countLists(owner)).isZero();
     }
 
-    @Test void selectedMealDatesSurviveSavingAndAppearInBothListAndDetailResponses() throws Exception {
+    @Test void generatedListNameUsesCreationDateRegardlessOfSelectedMealDates() throws Exception {
         String[] requests = { selectedMonday(),
                 "{\"weekStartDate\":\"2026-10-19\",\"selectedDates\":[\"2026-10-21\",\"2026-10-19\"]}" };
-        String[] names = { "Đi chợ · thực đơn 19/10/2026", "Đi chợ · thực đơn 19, 21/10/2026" };
+        String[] names = { autoName(), autoName() };
         for (int i = 0; i < requests.length; i++) {
             long list = create(requests[i], owner);
             assertThat(sql.queryForObject("SELECT name FROM [SHOPPING_LIST] WHERE shopping_list_id=?", String.class, list))
@@ -157,6 +160,11 @@ class MealPlanShoppingListIntegrationTest extends AbstractIntegrationTest {
         }
         mockMvc.perform(get("/api/v1/shopping-lists").with(user(Long.toString(owner)).roles("CUSTOMER")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.content[*].name", org.hamcrest.Matchers.containsInAnyOrder(names)));
+    }
+
+    String autoName() {
+        return "Danh sách mua sắm " + clock.instant().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate()
+                .format(DateTimeFormatter.ofPattern("dd/MM/uuuu"));
     }
 
     long create(String body,long member) throws Exception {
