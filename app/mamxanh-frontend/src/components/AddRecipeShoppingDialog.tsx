@@ -23,6 +23,10 @@ function normalizeItemName(name: string) {
   return name.replace(/\u00a0/g, " ").trim().replace(/\s+/g, " ").toLocaleLowerCase("vi")
 }
 
+function ingredientSelection(ids: number[] | undefined, ingredients: Array<{ ingredientId: number }> | undefined) {
+  return [...new Set(ids ?? ingredients?.map((item) => item.ingredientId) ?? [])]
+}
+
 function defaultShoppingListName() {
   return `Danh sách mua sắm ${new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date())}`
 }
@@ -78,7 +82,7 @@ export function AddRecipeShoppingDialog({
   const [error, setError] = useState("")
   const [recipe, setRecipe] = useState<ShoppingRecipePreview | null>(preview ?? null)
   const [recipeLoading, setRecipeLoading] = useState(false)
-  const [selectedIngredientIds, setSelectedIngredientIds] = useState<number[]>(initialSelectedIngredientIds ?? preview?.ingredients.map((item) => item.ingredientId) ?? [])
+  const [selectedIngredientIds, setSelectedIngredientIds] = useState<number[]>(() => ingredientSelection(initialSelectedIngredientIds, preview?.ingredients))
   const [units, setUnits] = useState<ShoppingUnit[]>([])
   const [unitsLoading, setUnitsLoading] = useState(false)
   const [manualItems, setManualItems] = useState<ManualItemDraft[]>([])
@@ -88,7 +92,7 @@ export function AddRecipeShoppingDialog({
     if (!open || !account || account.role === "ADMIN") return
     let active = true
     setRecipe(preview ?? null)
-    setSelectedIngredientIds(initialSelectedIngredientIds ?? preview?.ingredients.map((item) => item.ingredientId) ?? [])
+    setSelectedIngredientIds(ingredientSelection(initialSelectedIngredientIds, preview?.ingredients))
     setManualItems([])
     setNextManualItemKey(1)
     setLists([])
@@ -105,7 +109,7 @@ export function AddRecipeShoppingDialog({
       recipesApi.getPublished(recipeId).then((detail: RecipeDetail) => {
         if (active) {
           setRecipe({ id: detail.recipeId, title: detail.title, servings: detail.servings, ingredients: detail.ingredients })
-          setSelectedIngredientIds(initialSelectedIngredientIds ?? detail.ingredients.map((item) => item.ingredientId))
+          setSelectedIngredientIds(ingredientSelection(initialSelectedIngredientIds, detail.ingredients))
           setServings(Math.min(50, Math.max(1, detail.servings || 1)))
         }
       }).catch((cause) => {

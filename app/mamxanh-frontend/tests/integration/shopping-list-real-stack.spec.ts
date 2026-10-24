@@ -137,6 +137,7 @@ test('FR-53 browser creates selected-day and weekly checklists; CRUD and bought 
     const recipeOneTitle = `FR53 ${marker} 1`
     await page.getByRole('button', { name: `Tùy chọn cho công thức ${recipeOneTitle}` }).click()
     await page.getByRole('menuitem', { name: 'Thêm vào danh sách mua sắm' }).click()
+    await expect(page.getByText('1/1 nguyên liệu', { exact: true })).toBeVisible()
     await page.getByRole('radio', { name: `FR53 danh sách ${marker}` }).check()
     const addSecondResponse = page.waitForResponse(response => response.url().endsWith(`/shopping-lists/${personalId}/recipes`) && response.request().method() === 'POST')
     await page.getByRole('button', { name: 'Thêm vào danh sách', exact: true }).click()
