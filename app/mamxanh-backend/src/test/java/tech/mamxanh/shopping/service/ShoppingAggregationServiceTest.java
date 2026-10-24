@@ -125,12 +125,12 @@ class ShoppingAggregationServiceTest {
     }
 
     @Test void manualNamesIgnoreCaseButRequireTheSameUnitAndStaySeparateFromCatalog() {
-        var rows = List.of(manual("  KHĂN GIẤY  ",1,"1"),manual("khăn giấy",1,"2"),manual("Khăn giấy",2,"1"),
+        var rows = List.of(manual("  KHĂN GIẤY  ",1,"1"),manual("khăn giấy",1,"2"),manual("Khăn  giấy",1,"3"),manual("Khăn giấy",2,"1"),
                 manual("Đậu phụ",1,"50"),line(1,1,"100"));
         var output = items(service.aggregate(rows));
         assertThat(output).hasSize(4);
         assertThat(output).filteredOn(i -> i.ingredientId()==null && i.unitId()==1 && i.name().contains("KHĂN"))
-                .singleElement().satisfies(i -> assertThat(i.quantity()).isEqualByComparingTo("3"));
+                .singleElement().satisfies(i -> assertThat(i.quantity()).isEqualByComparingTo("6"));
     }
 
     @Test void rejectsInvalidRowsWithSourceIndexedWarningsAndKeepsValidRows() {

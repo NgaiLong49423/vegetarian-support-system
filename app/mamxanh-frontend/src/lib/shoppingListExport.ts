@@ -21,7 +21,7 @@ function mealDateHeader(listName: string): string {
   if (listName === "Danh sách cá nhân từ công thức")
     return "Nguồn: Công thức đã chọn — không gắn ngày thực đơn";
   const unknown = "Ngày thực đơn: Chưa có thông tin ngày trong danh sách này.";
-  const prefix = "Đi chợ · thực đơn ";
+  const prefix = "Danh sách mua sắm · thực đơn ";
   if (!listName.startsWith(prefix)) return unknown;
   const scope = listName.slice(prefix.length).replace(/^tuần /, "");
   const last = scope.match(/(\d{2})\/(\d{2})\/(\d{4})$/);

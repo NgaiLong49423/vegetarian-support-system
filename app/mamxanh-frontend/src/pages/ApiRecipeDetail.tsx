@@ -221,7 +221,6 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
     <div className="recipe-detail-no-print mb-5 flex flex-wrap items-center justify-between gap-3">
       <Link to={backTarget} className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-900"><ArrowLeft className="h-4 w-4" />{fromMealPlan ? 'Về lịch ăn' : 'Khám phá'}</Link>
       <div className="flex flex-wrap items-center gap-2">
-        {account?.role !== 'ADMIN' && <Button variant="outline" size="sm" onClick={() => { setShoppingSuccess(null); setShoppingOpen(true); }}><ShoppingBasket className="h-4 w-4" />Thêm vào danh sách đi chợ</Button>}
         <SaveRecipeButton recipeId={recipe.recipeId} />
         <Link to={`/so-sanh?a=${recipe.recipeId}`} aria-label="So sánh với công thức khác" className="rounded-full"><Button as="span" variant="outline" size="sm"><ArrowLeftRight className="h-4 w-4" />So sánh</Button></Link>
         <button type="button" onClick={() => openChat(recipe.recipeId)} className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-50"><MessageCircle className="h-4 w-4" aria-hidden="true" />Hỏi AI về công thức này</button>
@@ -236,12 +235,14 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       </div>
     </div>
     {shareMessage && <p role="status" className="recipe-detail-no-print mb-4 text-right text-sm text-leaf-700">{shareMessage}</p>}
-    {shoppingSuccess && <p role="status" className="recipe-detail-no-print mb-4 text-right text-sm text-leaf-700">Đã thêm vào “{shoppingSuccess.name}”. <Link to={`/di-cho?listId=${shoppingSuccess.id}`} className="font-semibold underline">Mở danh sách đi chợ</Link></p>}
+    {shoppingSuccess && <p role="status" className="recipe-detail-no-print mb-4 text-right text-sm text-leaf-700">Đã thêm vào “{shoppingSuccess.name}”. <Link to={`/di-cho?listId=${shoppingSuccess.id}`} className="font-semibold underline">Mở danh sách mua sắm</Link></p>}
     <AddRecipeShoppingDialog
       open={shoppingOpen}
       onClose={() => setShoppingOpen(false)}
       recipeId={recipe.recipeId}
       recipeTitle={recipe.title}
+      selectedIngredientIds={recipe.ingredients.filter((_, index) => checkedIngredients.includes(index)).map((item) => item.ingredientId)}
+      hideIngredientPicker
       preview={{
         id: recipe.recipeId,
         title: recipe.title,
@@ -438,7 +439,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
             {(recipe.ingredients ?? []).length > 0 && (
               <div className="recipe-detail-no-print flex items-center gap-2">
                 <span className="font-medium text-ink-soft">
-                  Đã chuẩn bị: <strong className="text-emerald-700">{checkedIngredients.length}/{(recipe.ingredients ?? []).length}</strong>
+                  Đã chọn: <strong className="text-emerald-700">{checkedIngredients.length}/{(recipe.ingredients ?? []).length}</strong>
                 </span>
                 <span className="text-brand-200">·</span>
                 {checkedIngredients.length < (recipe.ingredients ?? []).length ? (
@@ -447,7 +448,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                     onClick={() => setCheckedIngredients((recipe.ingredients ?? []).map((_, i) => i))}
                     className="font-semibold text-brand-700 hover:text-brand-900 underline"
                   >
-                    Đánh dấu tất cả đã xong
+                    Chọn tất cả
                   </button>
                 ) : (
                   <button
@@ -455,7 +456,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                     onClick={() => setCheckedIngredients([])}
                     className="font-semibold text-ink-muted hover:text-ink underline"
                   >
-                    Bỏ đánh dấu tất cả
+                    Bỏ chọn tất cả
                   </button>
                 )}
               </div>
@@ -532,11 +533,11 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                     <div className="col-start-4 row-start-2 justify-self-end sm:col-start-5 sm:row-start-1">
                       {isChecked ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-                          ✓ Đã chuẩn bị
+                          ✓ Đã chọn
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                          Chờ chuẩn bị
+                          Chưa chọn
                         </span>
                       )}
                     </div>
@@ -546,6 +547,14 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
             </ul>
           ) : (
             <p className="mt-4 text-sm text-ink-muted">Chưa có nguyên liệu cho công thức này.</p>
+          )}
+          {account?.role !== 'ADMIN' && (recipe.ingredients ?? []).length > 0 && (
+            <div className="recipe-detail-no-print mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-brand-100 pt-4">
+              <p className="text-sm text-ink-muted">Đã chọn {checkedIngredients.length} nguyên liệu để thêm.</p>
+              <Button onClick={() => { setShoppingSuccess(null); setShoppingOpen(true); }}>
+                <ShoppingBasket className="h-4 w-4" /> Thêm mục đã chọn vào danh sách
+              </Button>
+            </div>
           )}
         </Card>
 
