@@ -355,12 +355,18 @@ test('FR-62 ingredient links preset the shared search from the URL, and resettin
   const active = page.getByLabel('Bộ lọc đang áp dụng');
   await expect(active.getByRole('button', { name: 'Nấm rơm' })).toBeVisible();
 
+  // Removing a preset ingredient must stick when another filter later changes the URL.
+  await active.getByRole('button', { name: 'Nấm rơm' }).click();
+  await page.getByRole('combobox', { name: 'Thể loại món' }).selectOption('SOUP');
+  await expect.poll(() => lastSearch()?.get('dishCategory')).toBe('SOUP');
+  expect(lastSearch()?.getAll('ingredientIds')).toEqual([]);
+  await expect(page).not.toHaveURL(/ingredientId=/);
+
+  await page.goto(`/so-sanh/chon-mon?a=701&ingredientId=11&ingredientName=${encodeURIComponent('Nấm rơm')}`);
+  await expect.poll(() => lastSearch()?.getAll('ingredientIds')).toEqual(['11']);
   await active.getByRole('button', { name: 'Xóa tất cả' }).click();
   await expect.poll(() => lastSearch()?.getAll('ingredientIds')).toEqual([]);
   await expect(page).toHaveURL(/\/so-sanh\/chon-mon\?a=701$/);
-
-  await page.goto(`/kham-pha?ingredientId=99&ingredientName=${encodeURIComponent('Nấm rơm')}`);
-  await expect(page.getByRole('status').filter({ hasText: 'Không tìm thấy nguyên liệu được chọn trong danh mục hiện tại.' })).toBeVisible();
 });
 
 test('AC-60.2: the first recipe cannot be chosen again and, when nothing else matches, the user can go back to explore', async ({ page }) => {

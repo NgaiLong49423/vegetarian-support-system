@@ -1,13 +1,33 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.103.0
+> **Version:** v2.104.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-24
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-24 — Refine Shopping List Workflow ([PR #185](https://github.com/NgaiLong49423/vegetarian-support-system/pull/185))
+
+**Status:** Committed — `c4822f9`.
+
+**Scope:** Make shopping-list creation, item management and review more consistent across recipe, meal-plan and shopping-list screens.
+
+### Added
+
+- Allow selecting recipe ingredients and adding manual items in the shopping-list dialog, with duplicate-name checks and numbered names for same-day lists.
+- Add shopping-list export actions and a compact menu for list-level actions.
+
+### Changed
+
+- Use the creation date for meal-plan shopping lists, order lists newest first and remove internal list codes from the interface.
+- Refine shopping-list layout, colors, controls and spacing across the page; use icon-only edit and delete actions for items.
+
+### Fixed
+
+- Normalize whitespace when aggregating manual item names so equivalent names are combined consistently.
 
 ## 2026-10-23 — Improve Ingredient and Shopping Workflows
 
@@ -28,15 +48,15 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
-## 2026-10-23 — Restore Ingredient Presets in the Shared Recipe Search (Issue #70)
+## 2026-10-23 — Keep Recipe Search Ingredients in Sync with the URL (Issue #70)
 
 **Status:** Committed — `2e03550`.
 
-**Scope:** Restore behavior lost when PR #132 was synchronized from an older branch head: the FR-62 ingredient links from PR #163 again preset the Explore search after Explore moved into the shared `RecipeSearch` module, and the FR-60 picker stays within a phone-width page.
+**Scope:** Finish the FR-62 ingredient links in the shared `RecipeSearch` module used by Explore and the FR-60 picker: PR #185 reads `ingredientId`/`ingredientName` from the URL, but removed or reset ingredients stayed in the URL and came back on the next URL change or reload. Also keep the FR-60 picker within a phone-width page.
 
 ### Added
 
-- Add Playwright coverage for ingredient presets on the picker and Explore, for removing them with "Xóa tất cả", and for a picker card with a long dish category label on a 360 px wide screen.
+- Add Playwright coverage for an ingredient preset on the picker, removing it before another filter changes, resetting all filters, and a picker card with a long dish category label on a 360 px wide screen.
 
 ### Changed
 
@@ -44,9 +64,9 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Fixed
 
-- Read `ingredientId`/`ingredientName` from the URL in `useRecipeSearch`, select the matching catalog ingredients, keep the selection in the URL, and show "Không tìm thấy nguyên liệu được chọn trong danh mục hiện tại." on Explore when an ingredient is not found.
-- Remove the ingredient parameters from the URL when the filters are reset.
-- Keep picker result cards inside a phone-width page when a recipe has a long category label such as "Món tráng miệng / chè" (AC-60.8).
+- Write the selected ingredients back to the URL when one is added or removed, so a removed preset no longer returns after another filter change.
+- Remove `ingredientId`/`ingredientName` from the URL when the filters are reset.
+- Keep picker result cards inside a phone-width page when a recipe has a long category label such as "Món tráng miệng / chè": the result grid uses one shrinkable column below the `sm` breakpoint (AC-60.8).
 
 ## 2026-10-23 — Fix AI Recipe Guidance Generation ([PR #181](https://github.com/NgaiLong49423/vegetarian-support-system/pull/181))
 
