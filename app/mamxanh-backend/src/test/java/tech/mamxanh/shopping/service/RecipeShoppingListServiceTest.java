@@ -23,6 +23,7 @@ import tech.mamxanh.common.exception.AppException;
 import tech.mamxanh.recipe.service.RecipeService;
 import tech.mamxanh.shopping.dto.request.AddRecipeToShoppingListRequest;
 import tech.mamxanh.shopping.dto.request.CreateShoppingItemRequest;
+import tech.mamxanh.shopping.dto.response.ShoppingAggregationResult;
 import tech.mamxanh.shopping.entity.ShoppingListEntity;
 import tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity;
 import tech.mamxanh.shopping.repository.ShoppingListItemRepository;
@@ -127,6 +128,11 @@ class RecipeShoppingListServiceTest {
                 .isInstanceOf(AppException.class);
 
         source(11, List.of(new RecipeService.ShoppingIngredient(3L, new BigDecimal("100000000"), 1)));
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of());
+        when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of());
+        when(aggregation.aggregate(org.mockito.ArgumentMatchers.anyList())).thenReturn(new ShoppingAggregationResult(
+                List.of(new ShoppingAggregationResult.Group("Đậu", List.of(new ShoppingAggregationResult.Item(
+                        3L, "Đậu", new BigDecimal("100000000"), 1, "g", "gram", false, List.of(0))))), List.of()));
         assertThatThrownBy(() -> service.addRecipe(7, request(11L, null, null, null)))
                 .isInstanceOf(AppException.class);
     }
