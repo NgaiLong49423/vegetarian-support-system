@@ -133,12 +133,12 @@ async function openOtherActions(page: Page) {
 }
 
 for (const [name, expected] of [
-  ["Đi chợ · thực đơn 23/10/2026", "Ngày thực đơn: 23/10/2026"],
-  ["Đi chợ · thực đơn tuần 19–25/10/2026", "Ngày thực đơn: 19/10/2026–25/10/2026"],
-  ["Đi chợ · thực đơn 20, 23, 25/10/2026", "Ngày thực đơn: 20/10/2026, 23/10/2026, 25/10/2026"],
-  ["Đi chợ · thực đơn 28/10–03/11/2026", "Ngày thực đơn: 28/10/2026–03/11/2026"],
-  ["Đi chợ · thực đơn 28/12/2026–03/01/2027", "Ngày thực đơn: 28/12/2026–03/01/2027"],
-  ["Đi chợ · thực đơn 28/12/2026, 01/01/2027", "Ngày thực đơn: 28/12/2026, 01/01/2027"],
+  ["Danh sách mua sắm · thực đơn 23/10/2026", "Ngày thực đơn: 23/10/2026"],
+  ["Danh sách mua sắm · thực đơn tuần 19–25/10/2026", "Ngày thực đơn: 19/10/2026–25/10/2026"],
+  ["Danh sách mua sắm · thực đơn 20, 23, 25/10/2026", "Ngày thực đơn: 20/10/2026, 23/10/2026, 25/10/2026"],
+  ["Danh sách mua sắm · thực đơn 28/10–03/11/2026", "Ngày thực đơn: 28/10/2026–03/11/2026"],
+  ["Danh sách mua sắm · thực đơn 28/12/2026–03/01/2027", "Ngày thực đơn: 28/12/2026–03/01/2027"],
+  ["Danh sách mua sắm · thực đơn 28/12/2026, 01/01/2027", "Ngày thực đơn: 28/12/2026, 01/01/2027"],
   ["Danh sách cá nhân từ công thức", "Nguồn: Công thức đã chọn — không gắn ngày thực đơn"],
   ["Đi chợ tuần 2026-10-19", "Ngày thực đơn: Chưa có thông tin ngày trong danh sách này."],
 ]) {

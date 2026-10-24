@@ -160,25 +160,26 @@ test('Bố cục 360/768/1440px và bình chọn bằng bàn phím', async ({ pa
   await expect(like).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('Card trang chủ và Khám phá đặt Mới ở góc trên trái ảnh', async ({ page }) => {
+test('Card trang chủ đặt Mới ở góc trên trái ảnh; Khám phá ẩn badge bình chọn', async ({ page }) => {
   await api(page, 0, 0);
-  for (const path of ['/trang-chu', '/kham-pha']) {
-    await page.goto(path);
-    const badges = page.getByLabel('Chưa có bình chọn');
-    await expect(badges).toHaveCount(path === '/trang-chu' ? 2 : 1);
-    const badge = badges.first();
-    await expect(badge).toHaveText('Mới');
-    const offset = await badge.evaluate((element) => {
-      // Read both rectangles in one frame so card entrance motion cannot skew the offset.
-      const bounds = element.getBoundingClientRect();
-      const image = element.parentElement!.parentElement!.getBoundingClientRect();
-      return { x: bounds.x - image.x, y: bounds.y - image.y };
-    });
-    expect(offset.x).toBeGreaterThanOrEqual(0);
-    expect(offset.y).toBeGreaterThanOrEqual(0);
-    expect(offset.x).toBeLessThan(20);
-    expect(offset.y).toBeLessThan(20);
-  }
+  await page.goto('/trang-chu');
+  const badges = page.getByLabel('Chưa có bình chọn');
+  await expect(badges).toHaveCount(2);
+  const badge = badges.first();
+  await expect(badge).toHaveText('Mới');
+  const offset = await badge.evaluate((element) => {
+    // Read both rectangles in one frame so card entrance motion cannot skew the offset.
+    const bounds = element.getBoundingClientRect();
+    const image = element.parentElement!.parentElement!.getBoundingClientRect();
+    return { x: bounds.x - image.x, y: bounds.y - image.y };
+  });
+  expect(offset.x).toBeGreaterThanOrEqual(0);
+  expect(offset.y).toBeGreaterThanOrEqual(0);
+  expect(offset.x).toBeLessThan(20);
+  expect(offset.y).toBeLessThan(20);
+
+  await page.goto('/kham-pha');
+  await expect(page.getByLabel('Chưa có bình chọn')).toHaveCount(0);
 });
 
 test('Bài bị ẩn trong lúc bình chọn không cập nhật số và chặn thao tác tiếp', async ({ page }) => {

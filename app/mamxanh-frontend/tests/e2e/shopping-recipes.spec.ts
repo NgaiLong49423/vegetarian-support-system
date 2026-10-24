@@ -94,7 +94,7 @@ test("AC-53.6 adds one recipe to a selected list and scales the servings", async
   await page.getByRole("radio", { name: "Danh sách tuần" }).check()
   await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
   await expect(page).toHaveURL(/di-cho\?listId=77/)
-  expect(state.adds).toEqual([{ recipeId: 1, servings: 3 }])
+  expect(state.adds).toEqual([{ recipeId: 1, servings: 3, selectedIngredientIds: [1], manualItems: [] }])
   expect(state.creates).toHaveLength(0)
 })
 
@@ -108,7 +108,7 @@ test("AC-53.6 can load another page and create a named list with the recipe", as
   await page.getByLabel("Tên danh sách").fill("Mua cuối tuần")
   await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
   await expect(page).toHaveURL(/di-cho\?listId=77/)
-  expect(state.creates).toEqual([{ name: "Mua cuối tuần", recipeId: 1, servings: 2 }])
+  expect(state.creates).toEqual([{ name: "Mua cuối tuần", recipeId: 1, servings: 2, selectedIngredientIds: [1], manualItems: [] }])
   expect(state.adds).toHaveLength(0)
 })
 
@@ -137,7 +137,7 @@ test("AC-53.6 saved recipe menu loads full recipe details before adding", async 
   await page.getByRole("radio", { name: "Danh sách tuần" }).check()
   await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
   await expect(page).toHaveURL(/di-cho\?listId=77/)
-  expect(state.adds).toEqual([{ recipeId: 1, servings: 2 }])
+  expect(state.adds).toEqual([{ recipeId: 1, servings: 2, selectedIngredientIds: [1], manualItems: [] }])
 })
 
 test("AC-53.6 Guest can sign in and Admin has no shopping action", async ({ page }) => {

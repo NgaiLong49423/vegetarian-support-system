@@ -479,7 +479,7 @@ test("shopping failed mutations preserve data and form, cleanup preserves unboug
   await check.click()
 
   await page
-    .getByRole("button", { name: "Xoá 1 mục đã mua", exact: true })
+    .getByRole("button", { name: "Xóa 1 mục đã mua", exact: true })
     .click()
 
   state.fail = "Chưa xoá được."
