@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-24 — Deduplicate Recipe Ingredient Selections
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `95a05ee`.
 
 **Scope:** Keep recipe-to-shopping-list additions valid when one ingredient appears in multiple recipe lines with different units.
 
