@@ -165,6 +165,22 @@ class ShoppingAggregationServiceTest {
         assertThat(output).extracting(Item::unitCode).containsExactlyInAnyOrder("ml","tbsp");
     }
 
+    @Test void retainsAConvertibleBucketWhenAnotherBucketHasNoOfficialRate() {
+        var result = service.aggregate(List.of(line(2,1,"100"),line(2,3,"200")));
+        assertThat(items(result)).hasSize(2).allSatisfy(item -> assertThat(item.incompatibleUnits()).isTrue());
+        assertThat(result.warnings()).isEmpty();
+    }
+
+    @Test void nullManualNamesAreRejectedAndNonBreakingSpacesNormalizeForMatching() {
+        var result = service.aggregate(List.of(manual(null,1,"1"),manual("Đậu\u00a0hũ",1,"2"),manual("đậu hũ",1,"3")));
+        assertThat(items(result)).singleElement().satisfies(item -> {
+            assertThat(item.name()).isEqualTo("Đậu hũ");
+            assertThat(item.quantity()).isEqualByComparingTo("5");
+        });
+        assertThat(result.warnings()).extracting(ShoppingAggregationResult.Warning::code)
+                .containsExactly("INVALID_MANUAL_NAME");
+    }
+
     @Test void rejectsInvalidRowsWithSourceIndexedWarningsAndKeepsValidRows() {
         var result = service.aggregate(Arrays.asList(null,line(1,1,"0"),line(1,1,"-2"),
                 new ShoppingAggregationLine(1L,null,null,1),line(1,999,"2"),line(999,1,"2"),manual("<script>",1,"2"),line(1,1,"3")));
