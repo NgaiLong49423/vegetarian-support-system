@@ -64,7 +64,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ### Fixed
 
-- Write the selected ingredients back to the URL when one is added or removed, so a removed preset no longer returns after another filter change.
+- Write the selected ingredients back to the URL when one is added or removed, so a removed preset no longer comes back when the page is reloaded or reopened from the browser history.
 - Remove `ingredientId`/`ingredientName` from the URL when the filters are reset.
 - Keep picker result cards inside a phone-width page when a recipe has a long category label such as "Món tráng miệng / chè": the result grid uses one shrinkable column below the `sm` breakpoint (AC-60.8).
 
