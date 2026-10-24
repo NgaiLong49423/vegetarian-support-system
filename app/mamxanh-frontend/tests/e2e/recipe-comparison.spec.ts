@@ -459,7 +459,8 @@ test('UC-60.1: comparison starts from a Recipe Card and from both recipe detail 
   } }));
 
   await page.goto('/kham-pha');
-  await page.getByRole('link', { name: 'So sánh Đậu hũ sốt cà chua' }).click();
+  await page.getByRole('button', { name: 'Tùy chọn cho công thức Đậu hũ sốt cà chua' }).click();
+  await page.getByRole('menuitem', { name: 'So sánh công thức' }).click();
   await expect(page).toHaveURL(/\/so-sanh\?a=701$/);
   await expect(firstSlot(page)).toContainText('Đậu hũ sốt cà chua');
 

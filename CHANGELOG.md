@@ -2,12 +2,30 @@
 > **File:** `CHANGELOG.md`
 > **Version:** v2.102.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-24
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-24 — Deduplicate Recipe Ingredient Selections
+
+**Status:** Working tree — not committed.
+
+**Scope:** Keep recipe-to-shopping-list additions valid when one ingredient appears in multiple recipe lines with different units.
+
+### Added
+
+- Add Frontend and Backend regression coverage for repeated ingredient IDs, selected ingredients, and manual-only additions.
+
+### Changed
+
+- Submit each selected ingredient ID once while preserving every matching recipe line and unit in the shopping list.
+
+### Fixed
+
+- Prevent duplicate selected IDs from causing a validation error when adding a recipe to a shopping list.
 
 ## 2026-10-23 — Remove Recipe Card Status Badges
 
