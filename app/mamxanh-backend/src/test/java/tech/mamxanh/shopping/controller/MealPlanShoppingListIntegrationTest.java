@@ -163,7 +163,7 @@ class MealPlanShoppingListIntegrationTest extends AbstractIntegrationTest {
     }
 
     String autoName() {
-        return "Danh sách mua sắm " + LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"))
+        return "Danh sách mua sắm " + clock.instant().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate()
                 .format(DateTimeFormatter.ofPattern("dd/MM/uuuu"));
     }
 
