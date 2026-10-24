@@ -64,7 +64,7 @@ test('Member thêm, đổi, hủy; tải lại giữ lựa chọn và card nhậ
   await expect(dislike).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '90');
   await like.click();
-  await page.getByRole('link', { name: 'Khám phá', exact: true }).last().click();
+  await page.goto('/trang-chu');
   await expect(page.getByLabel('Tỷ lệ Like: 91%')).toBeVisible();
   expect(mutations).toEqual(['PUT', 'PUT', 'DELETE', 'PUT']);
 });

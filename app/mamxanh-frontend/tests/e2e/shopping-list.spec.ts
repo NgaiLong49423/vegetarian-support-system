@@ -478,6 +478,7 @@ test("shopping failed mutations preserve data and form, cleanup preserves unboug
 
   await check.click()
 
+  await page.locator('summary[aria-label="Thao tác khác"]').click()
   await page
     .getByRole("button", { name: "Xóa 1 mục đã mua", exact: true })
     .click()
