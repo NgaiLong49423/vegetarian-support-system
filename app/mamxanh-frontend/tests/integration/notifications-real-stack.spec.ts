@@ -59,8 +59,11 @@ test('FR-49: a reply notifies the comment author in the bell and the notificatio
     await page.goto('/dang-nhap');
     await page.getByLabel('Email').fill(memberA);
     await page.getByRole('textbox', { name: 'Mật khẩu' }).fill(demoPassword!);
+    // Wait for the login response itself: under a full parallel run BCrypt can take longer than the default 5 s.
+    const login = page.waitForResponse((response) => response.request().method() === 'POST' && response.url().endsWith('/auth/login'));
     await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
-    await expect(page).toHaveURL(/\/trang-chu$/);
+    expect((await login).status()).toBe(200);
+    await expect(page).toHaveURL(/\/trang-chu$/, { timeout: 30_000 });
     await expect(page.getByRole('link', { name: /^Thông báo, \d+ chưa đọc$/ })).toBeVisible();
 
     await page.getByRole('link', { name: /^Thông báo/ }).click();
