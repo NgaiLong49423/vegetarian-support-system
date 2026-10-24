@@ -50,7 +50,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "400", description = "Page or size is outside its supported range."),
             @ApiResponse(responseCode = "401", description = "Authentication is required.")
     })
-    public PageResponse<NotificationResponse> list(
+    public PageResponse<NotificationResponse> listNotifications(
             @Parameter(description = "Zero-based page index.") @RequestParam(defaultValue = "0") @Min(0) int page,
             @Parameter(description = "Page size, from 1 through 50.") @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size,
             @Parameter(description = "Only unread notifications.") @RequestParam(defaultValue = "false") boolean unreadOnly) {
@@ -63,7 +63,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "200", description = "Unread notification count."),
             @ApiResponse(responseCode = "401", description = "Authentication is required.")
     })
-    public UnreadNotificationCountResponse unreadCount() {
+    public UnreadNotificationCountResponse unreadNotificationCount() {
         return new UnreadNotificationCountResponse(service.unreadCount(currentUserService.requireAuthenticatedUserId()));
     }
 
@@ -74,7 +74,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "401", description = "Authentication is required."),
             @ApiResponse(responseCode = "404", description = "NOTIFICATION_NOT_FOUND: no notification of the caller has this id.")
     })
-    public NotificationResponse markRead(@PathVariable @Min(1) long notificationId) {
+    public NotificationResponse markNotificationRead(@PathVariable @Min(1) long notificationId) {
         return service.markRead(currentUserService.requireAuthenticatedUserId(), notificationId);
     }
 
@@ -84,7 +84,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "204", description = "Every notification of the caller is read."),
             @ApiResponse(responseCode = "401", description = "Authentication is required.")
     })
-    public ResponseEntity<Void> markAllRead() {
+    public ResponseEntity<Void> markAllNotificationsRead() {
         service.markAllRead(currentUserService.requireAuthenticatedUserId());
         return ResponseEntity.noContent().build();
     }
@@ -95,7 +95,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "200", description = "Email preference."),
             @ApiResponse(responseCode = "401", description = "Authentication is required.")
     })
-    public NotificationPreferencesResponse preferences() {
+    public NotificationPreferencesResponse notificationPreferences() {
         return service.preferences(currentUserService.requireAuthenticatedUserId());
     }
 
@@ -107,7 +107,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: replyEmailEnabled is required."),
             @ApiResponse(responseCode = "401", description = "Authentication is required.")
     })
-    public NotificationPreferencesResponse updatePreferences(@Valid @RequestBody NotificationPreferencesRequest request) {
+    public NotificationPreferencesResponse updateNotificationPreferences(@Valid @RequestBody NotificationPreferencesRequest request) {
         return service.updatePreferences(currentUserService.requireAuthenticatedUserId(), request.replyEmailEnabled());
     }
 }
