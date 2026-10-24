@@ -101,7 +101,8 @@ public class ShoppingAggregationService {
             warnings.add(new Warning(index, "INVALID_MANUAL_NAME", "Bỏ qua mặt hàng thủ công có tên không hợp lệ."));
             return null;
         }
-        return new Row(new Identity(null, name.toLowerCase(Locale.ROOT)), name, "Nhóm khác", unit, source.quantity(), index);
+        String normalizedName = name.replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+        return new Row(new Identity(null, normalizedName), name, "Nhóm khác", unit, source.quantity(), index);
     }
 
     private List<Item> combine(List<Row> rows, Collection<UnitResponse> units, Map<RateKey, BigDecimal> rates, List<Warning> warnings) {

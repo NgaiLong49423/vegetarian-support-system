@@ -415,8 +415,8 @@ function MockRecipeDetail() {
                   className="w-20 rounded-xl border border-brand-200 bg-paper px-3 py-2 text-center outline-none focus:border-brand-500"
               />
             </label>
-            <Button onClick={() => showToast('Đã thêm nguyên liệu vào Danh sách đi chợ!')}>
-              <ShoppingBasket className="h-4 w-4" /> Thêm tất cả vào Danh sách đi chợ
+            <Button onClick={() => showToast('Đã thêm nguyên liệu vào Danh sách mua sắm!')}>
+              <ShoppingBasket className="h-4 w-4" /> Thêm tất cả vào Danh sách mua sắm
             </Button>
           </div>
           <div className="grid gap-x-8 gap-y-2 sm:grid-cols-2">

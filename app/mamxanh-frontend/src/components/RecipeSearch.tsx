@@ -64,7 +64,7 @@ export function useRecipeSearch(pageSize: number) {
   const expectedSearchRef = useRef(params.toString());
   const query = params.get('q') ?? '';
   const [page, setPage] = useState(0);
-  const [filters, setFilters] = useState<RecipeFilters>(() => ({ ...initialFilters, vegetarianType: params.get('vegetarianType') ?? '', dishCategory: params.get('dishCategory') ?? '', ingredientIds: ingredientsFrom(params), sort: sortFrom(params) }));
+  const [filters, setFilters] = useState<RecipeFilters>(() => ({ ...initialFilters, vegetarianType: params.get('vegetarianType') ?? '', dishCategory: params.get('dishCategory') ?? '', sort: sortFrom(params), ingredientIds: ingredientsFrom(params) }));
   const [options, setOptions] = useState<RecipeFormOptions | null>(null);
   const [optionsError, setOptionsError] = useState(false);
   const [ingredientQuery, setIngredientQuery] = useState('');
@@ -84,9 +84,13 @@ export function useRecipeSearch(pageSize: number) {
     const dishCategory = params.get('dishCategory') ?? '';
     const ingredientIds = ingredientsFrom(params);
     const sort = sortFrom(params);
-    setFilters((current) => current.vegetarianType === vegetarianType && current.dishCategory === dishCategory
-      && current.sort === sort && current.ingredientIds.map((item) => item.ingredientId).join(',') === ingredientIds.map((item) => item.ingredientId).join(',')
-      ? current : { ...current, vegetarianType, dishCategory, ingredientIds, sort });
+    setFilters((current) => current.vegetarianType === vegetarianType
+      && current.dishCategory === dishCategory
+      && current.sort === sort
+      && current.ingredientIds.length === ingredientIds.length
+      && current.ingredientIds.every((item, index) => item.ingredientId === ingredientIds[index].ingredientId && item.name === ingredientIds[index].name)
+      ? current
+      : { ...current, vegetarianType, dishCategory, sort, ingredientIds });
     setPage(0);
   }, [params]);
 

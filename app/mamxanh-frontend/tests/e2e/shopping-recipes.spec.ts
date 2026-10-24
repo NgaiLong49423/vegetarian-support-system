@@ -80,7 +80,7 @@ async function setup(page: Page, role: "CUSTOMER" | "EXPERT" | "ADMIN" | null = 
 
 async function openShoppingDialog(page: Page, title = "Món đi chợ 1") {
   await page.getByRole("button", { name: `Tùy chọn cho công thức ${title}` }).click()
-  await page.getByRole("menuitem", { name: "Thêm vào danh sách đi chợ" }).click()
+  await page.getByRole("menuitem", { name: "Thêm vào danh sách mua sắm" }).click()
 }
 
 test("AC-53.6 adds one recipe to a selected list and scales the servings", async ({ page }) => {
@@ -110,6 +110,63 @@ test("AC-53.6 can load another page and create a named list with the recipe", as
   await expect(page).toHaveURL(/di-cho\?listId=77/)
   expect(state.creates).toEqual([{ name: "Mua cuối tuần", recipeId: 1, servings: 2, selectedIngredientIds: [1], manualItems: [] }])
   expect(state.adds).toHaveLength(0)
+})
+
+test("AC-53.6 validates and creates a list with manually added ingredients", async ({ page }) => {
+  const state = await setup(page)
+  await page.goto("/kham-pha")
+  await openShoppingDialog(page)
+  await page.getByRole("button", { name: "Tạo danh sách mới" }).click()
+  const listName = page.getByLabel("Tên danh sách")
+  await listName.fill("")
+  await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
+  await expect(page.getByRole("alert")).toHaveText("Tên danh sách phải có từ 1 đến 200 ký tự.")
+
+  await listName.fill("Mua rau")
+  await page.getByLabel("Thêm Đậu phụ").uncheck()
+  await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
+  await expect(page.getByRole("alert")).toHaveText("Hãy chọn ít nhất một nguyên liệu hoặc thêm mặt hàng thủ công.")
+
+  await page.getByRole("button", { name: "Thêm mặt hàng" }).click()
+  await page.getByRole("button", { name: "Thêm mặt hàng" }).click()
+  const ingredientNames = page.getByLabel("Tên nguyên liệu")
+  await ingredientNames.nth(0).fill("Hành lá")
+  await ingredientNames.nth(1).fill(" hành   lá ")
+  await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
+  await expect(page.getByRole("alert")).toHaveText("Hành lá bị trùng tên trong các mặt hàng đang thêm.")
+
+  await page.getByRole("button", { name: /Xóa/ }).last().click()
+  await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
+  await expect(page).toHaveURL(/di-cho\?listId=77/)
+  expect(state.creates).toEqual([{
+    name: "Mua rau",
+    recipeId: 1,
+    servings: 2,
+    selectedIngredientIds: [],
+    manualItems: [{ name: "Hành lá", quantity: 1, unitId: 1 }],
+  }])
+})
+
+test("AC-53.6 prevents an existing manual ingredient from being duplicated", async ({ page }) => {
+  const state = await setup(page)
+  await page.goto("/kham-pha")
+  await openShoppingDialog(page)
+  await page.getByRole("button", { name: "Thêm mặt hàng" }).click()
+  await page.getByLabel("Tên nguyên liệu").fill(" đậu   phụ ")
+  await page.getByRole("radio", { name: "Danh sách tuần" }).check()
+  await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
+  await expect(page.getByRole("alert")).toHaveText(/đậu\s+phụ đã có trong danh sách \(450 g\)\./)
+  await expect(page.getByRole("dialog")).toBeVisible()
+
+  await page.getByLabel("Tên nguyên liệu").fill("Cà chua")
+  await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
+  await expect(page).toHaveURL(/di-cho\?listId=77/)
+  expect(state.adds).toEqual([{
+    recipeId: 1,
+    servings: 2,
+    selectedIngredientIds: [1],
+    manualItems: [{ name: "Cà chua", quantity: 1, unitId: 1 }],
+  }])
 })
 
 test("AC-53.6 keeps the dialog open after a failed add and allows retry", async ({ page }) => {
@@ -161,7 +218,7 @@ test("AC-53.6 Guest can sign in and Admin has no shopping action", async ({ page
   await setup(page, null)
   await page.goto("/kham-pha")
   await openShoppingDialog(page)
-  await expect(page.getByRole("dialog", { name: "Thêm vào danh sách đi chợ" }).getByRole("link", { name: "Đăng nhập", exact: true })).toHaveAttribute("href", "/dang-nhap")
+  await expect(page.getByRole("dialog", { name: "Thêm vào danh sách mua sắm" }).getByRole("link", { name: "Đăng nhập", exact: true })).toHaveAttribute("href", "/dang-nhap")
 
   await seedDemoSession(page, "ADMIN")
   await page.reload()

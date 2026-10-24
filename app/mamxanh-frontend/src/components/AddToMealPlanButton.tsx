@@ -220,7 +220,7 @@ export function AddToMealPlanButton({
             onClick={() => { setMenuOpen(false); setShoppingOpen(true) }}
             className="w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-raised focus-visible:bg-raised focus-visible:outline-none"
           >
-            Thêm vào danh sách đi chợ
+            Thêm vào danh sách mua sắm
           </button>
         </div>
       )}
