@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.Clock;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,8 +32,6 @@ import tech.mamxanh.shopping.repository.ShoppingListRepository;
 public class ShoppingListCreationService {
     private static final BigDecimal MAX_QUANTITY = new BigDecimal("99999999.99");
     private static final DateTimeFormatter FULL_DATE = DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ROOT);
-    private static final DateTimeFormatter DAY_MONTH = DateTimeFormatter.ofPattern("dd/MM", Locale.ROOT);
-    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd", Locale.ROOT);
     private final CurrentUserService users;
     private final MealPlanReadService mealPlans;
     private final RecipeService recipes;
@@ -41,10 +40,11 @@ public class ShoppingListCreationService {
     private final ShoppingListItemRepository items;
     private final ShoppingListService checklists;
     private final EntityManager entityManager;
+    private final Clock clock;
 
     public ShoppingListCreationService(CurrentUserService users, MealPlanReadService mealPlans,
             RecipeService recipes, ShoppingAggregationService aggregation, ShoppingListRepository lists,
-            ShoppingListItemRepository items, ShoppingListService checklists, EntityManager entityManager) {
+            ShoppingListItemRepository items, ShoppingListService checklists, EntityManager entityManager, Clock clock) {
         this.users = users;
         this.mealPlans = mealPlans;
         this.recipes = recipes;
@@ -53,6 +53,7 @@ public class ShoppingListCreationService {
         this.items = items;
         this.checklists = checklists;
         this.entityManager = entityManager;
+        this.clock = clock;
     }
 
     @Transactional
@@ -111,7 +112,8 @@ public class ShoppingListCreationService {
         }
         var list = new ShoppingListEntity();
         list.setUserId(owner);
-        list.setName(mealPlanListName(request));
+        list.setName("Danh sách mua sắm " + clock.instant()
+                .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate().format(FULL_DATE));
         lists.saveAndFlush(list);
         entityManager.refresh(list); // read database-generated timestamps, rather than fabricate response values
         rows.forEach(row -> row.setShoppingListId(list.getId()));
@@ -121,32 +123,6 @@ public class ShoppingListCreationService {
             if (aggregated.get(i).incompatibleUnits()) incompatible.add(rows.get(i).getId());
         }
         return new ShoppingListCreationResponse(checklists.get(list.getId()), warnings, incompatible);
-    }
-
-    private String mealPlanListName(CreateMealPlanShoppingListRequest request) {
-        if (request.selectedDates() == null) {
-            return "Đi chợ · thực đơn tuần " + dateRange(request.weekStartDate(), request.weekStartDate().plusDays(6));
-        }
-        var dates = request.selectedDates().stream().sorted().toList();
-        LocalDate first = dates.getFirst();
-        LocalDate last = dates.getLast();
-        if (dates.size() == 1) return "Đi chợ · thực đơn " + first.format(FULL_DATE);
-        if (last.equals(first.plusDays(dates.size() - 1L))) {
-            return "Đi chợ · thực đơn " + dateRange(first, last);
-        }
-        // Compact dates only within the same month/year; never hide a month or year boundary.
-        boolean sameMonth = first.getYear() == last.getYear() && first.getMonthValue() == last.getMonthValue();
-        var labels = new ArrayList<String>();
-        for (int i = 0; i < dates.size(); i++) {
-            labels.add(dates.get(i).format(sameMonth && i < dates.size() - 1 ? DAY : FULL_DATE));
-        }
-        return "Đi chợ · thực đơn " + String.join(", ", labels);
-    }
-
-    private String dateRange(LocalDate first, LocalDate last) {
-        DateTimeFormatter startFormat = first.getYear() != last.getYear() ? FULL_DATE
-                : first.getMonthValue() != last.getMonthValue() ? DAY_MONTH : DAY;
-        return first.format(startFormat) + "–" + last.format(FULL_DATE);
     }
 
     private void validateDates(CreateMealPlanShoppingListRequest request) {
