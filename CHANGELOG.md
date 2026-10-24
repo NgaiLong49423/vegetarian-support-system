@@ -476,6 +476,27 @@ None.
 - Preserve API-backed recipe comments, reactions, views and meal-plan serving updates after synchronizing develop.
 - Keep tall registration forms scrollable, retain ingredient JSON preview/copy, and use the actual vegetarian-type label in recipe details.
 
+## 2026-10-19 — Point Duplicate Recipe Reports to the Open Report and Require New Details After Resolution (Issue #35)
+
+**Status:** Committed — `03ae27a`.
+
+**Scope:** Deliver the FR-30 rules that do not depend on the open supplement-storage and report-form decisions (Q67, Q68): a duplicate report now tells the client which open report to continue, and a report filed after an earlier one was resolved must describe the new problem (SRS 3.14, AC-30.2, AC-30.3).
+
+### Added
+
+- Add `reportId` of the reporter's open report to the `409 REPORT_ALREADY_OPEN` problem body of `POST /api/v1/recipes/{recipeId}/reports`.
+- Add SQL Server integration tests for duplicate reports, four concurrent submissions by the same member (one `201`, three `409` with the created `reportId`), re-reporting after `RESOLVED`, and a first report with a non-`OTHER` reason and no description.
+- Record BUG-060: moving a meal-plan entry sometimes leaves keyboard focus on the page body instead of the "Lịch ăn của bạn" heading (FR-33, AC-33.4; 6 of 28 isolated runs of `meal-plan-management.spec.ts:120` failed on `develop` `0e98048`).
+
+### Changed
+
+- Require a 10–500 character description for every reason when the member's previous report on the same recipe is `RESOLVED`; otherwise return `400 VALIDATION_FAILED` with `field = description`.
+- Document report submission, the duplicate rule and the re-report rule in `docs/api/API.md` section 21 and the Backend README.
+
+### Fixed
+
+- None.
+
 ## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
 
 **Status:** Committed — `a74f7c2`.
