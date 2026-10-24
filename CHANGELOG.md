@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-24 — Notify Members of Replies In-App and by Email (Issue #51)
 
-**Status:** Committed — `a0157f9`.
+**Status:** Committed — `a0157f9`, `1386e6e`, `1338052`.
 
 **Scope:** Deliver the FR-49 parts that do not depend on the report-handling workflow (Issue #33): reply notifications (AC-49.1), best-effort reply emails (AC-49.2, AC-49.3), the notification center and read state (UC-49.1, UC-49.2) and the reply email preference (UC-49.4). Moderation-outcome notifications (AC-49.4) wait for Issue #33.
 
