@@ -105,6 +105,7 @@ test('FR-53 browser creates selected-day and weekly checklists; CRUD and bought 
     await page.locator('summary[aria-label="Thao tác khác"]').click()
     await page.getByRole('button', { name: 'Xóa 1 mục đã mua', exact: true }).click()
     await page.getByRole('button', { name: 'Xoá', exact: true }).click()
+    await page.locator('summary[aria-label="Thao tác khác"]').click()
     await expect(page.getByText('1.400 g', { exact: true })).toHaveCount(0)
     expect(Number(sql(`SELECT COUNT(*) FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=${listId}`))).toBe(2)
     await page.getByRole('button', { name: 'Xoá Khăn giấy lau bếp cuộn', exact: true }).click()
