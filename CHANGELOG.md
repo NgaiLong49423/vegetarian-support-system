@@ -50,7 +50,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-23 — Keep Recipe Search Ingredients in Sync with the URL (Issue #70)
 
-**Status:** Committed — `2e03550`.
+**Status:** Committed — `2e03550`, `e42b65f`.
 
 **Scope:** Finish the FR-62 ingredient links in the shared `RecipeSearch` module used by Explore and the FR-60 picker: PR #185 reads `ingredientId`/`ingredientName` from the URL, but removed or reset ingredients stayed in the URL and came back on the next URL change or reload. Also keep the FR-60 picker within a phone-width page.
 
