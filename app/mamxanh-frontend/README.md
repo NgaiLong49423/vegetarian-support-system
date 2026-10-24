@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.44.0
+> **Version:** v1.45.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-24
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -102,6 +102,7 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - **Nguyên liệu chưa có dữ liệu dinh dưỡng (Issue #45):** trang chi tiết công thức gắn nhãn "Chưa hỗ trợ tính dinh dưỡng" cạnh từng nguyên liệu Backend trả `nutritionSupported = false`, cùng thông báo dinh dưỡng chưa đầy đủ đã có.
 - **Theo dõi thành viên đã gọi Backend thật (Issue #69):** trang `/thanh-vien/:userId` hiện số người theo dõi và số tài khoản đang theo dõi; Member bấm "Theo dõi"/"Đang theo dõi" để theo dõi hoặc bỏ theo dõi, bộ đếm lấy từ phản hồi của Backend. Guest được dẫn tới đăng nhập; hồ sơ của chính mình và tài khoản Administrator không có nút. Bấm vào bộ đếm để xem danh sách (cần đăng nhập, "Xem thêm" theo trang). Lỗi như theo dõi tài khoản đang bị khóa hiện nguyên văn thông báo của Backend.
 - **Bình luận đã gọi Backend thật (Issue #48):** trang chi tiết `/cong-thuc/id/:recipeId` (và `/cong-thuc/:id`) hiện các luồng bình luận lồng tối đa 5 cấp, "Xem thêm bình luận" theo trang. Member viết, trả lời, sửa, xóa bình luận của mình (xác nhận trước khi xóa); trả lời bình luận cấp 5 tự chèn `@Tên`. Bình luận đã xóa còn reply hiện "Bình luận này đã bị xóa bởi người dùng". Guest được mời đăng nhập; Administrator chỉ xem. Nội dung hiển thị như văn bản, không render HTML.
+- **Thông báo reply (Issue #51, FR-49):** khi đăng nhập, header có chuông `Thông báo` với số chưa đọc (`GET /api/v1/me/notifications/unread-count`, tải lại khi đổi trang, khi quay lại tab, mỗi 60 giây và sau mỗi thao tác đọc). `/thong-bao` liệt kê thông báo mới nhất trước, lọc "Chưa đọc", phân trang 20 mục, "Đánh dấu tất cả đã đọc"; bấm một thông báo thì đánh dấu đã đọc rồi mở `targetPath`. Trang chi tiết công thức nhận `#comment-{id}`, tự tải thêm trang bình luận tới khi thấy bình luận đó rồi đưa focus tới. `/ho-so/cai-dat#email-thong-bao` có công tắc nhận email khi có người trả lời bình luận.
 - **Đăng xuất** chỉ xóa token và trạng thái đăng nhập trên thiết bị, không gọi Backend (AC-03.13).
 - **Quên và đặt lại mật khẩu đã gọi Backend thật (Issue #9):** `/quen-mat-khau` gửi `POST /auth/password-resets` và hiển thị nguyên văn thông báo trung tính của Backend. Liên kết trong email mở `/dat-lai-mat-khau?token=...`; Frontend giữ token trong bộ nhớ, xóa nó khỏi thanh địa chỉ, kiểm tra quy tắc mật khẩu rồi gửi `POST /auth/password-resets/confirm`. Liên kết hỏng, đã dùng hoặc hết hạn (`PASSWORD_RESET_TOKEN_INVALID`) ẩn biểu mẫu và dẫn tới yêu cầu liên kết mới; mật khẩu trùng mật khẩu hiện tại (`NEW_PASSWORD_SAME_AS_CURRENT`) báo ngay dưới ô mật khẩu.
 - Không còn chế độ đổi vai trò/tài khoản giả trên Frontend. Dùng tài khoản local do Backend seed tạo sẵn; danh sách email và cách đặt chung mật khẩu nằm trong [Backend Workspace Guide](../mamxanh-backend/README.md#tài-khoản-demo-local). Mỗi vai trò phải đăng nhập bằng tài khoản riêng; quyền được Backend xác thực.

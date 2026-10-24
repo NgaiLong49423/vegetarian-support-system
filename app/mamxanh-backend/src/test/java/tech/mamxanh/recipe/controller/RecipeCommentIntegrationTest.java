@@ -54,6 +54,9 @@ class RecipeCommentIntegrationTest extends AbstractIntegrationTest {
     /** PasswordLoginIntegrationTest deletes every USER row, so no COMMENT row may outlive a test. */
     @AfterEach
     void removeFixtures() {
+        // Replies create FR-49 notifications that reference the comment (FK_NOTIFICATION_COMMENT).
+        jdbcTemplate.update("DELETE FROM [NOTIFICATION] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)",
+                EMAIL_PREFIX + "%");
         jdbcTemplate.update("""
                 DELETE FROM [COMMENT] WHERE recipe_id IN (
                     SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))

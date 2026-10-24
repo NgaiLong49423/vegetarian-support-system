@@ -53,6 +53,7 @@ public enum ErrorCode {
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "Comment not found", "Không tìm thấy bình luận hoặc bình luận đã bị xóa."),
     COMMENT_EDIT_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Comment edit not allowed",
             "Bạn chỉ có thể sửa hoặc xóa bình luận của chính mình."),
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "Notification not found", "Không tìm thấy thông báo."),
     RECIPE_DATA_INVALID(HttpStatus.BAD_REQUEST, "Recipe data invalid", "Thông tin công thức không hợp lệ."),
     AI_SUBSCRIPTION_REQUIRED(HttpStatus.FORBIDDEN, "AI subscription required", "Tính năng hỗ trợ AI yêu cầu gói Plus hoặc Pro còn hiệu lực."),
     AI_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI provider unavailable", "Dịch vụ AI hiện không khả dụng. Bạn có thể tiếp tục tự soạn nội dung."),

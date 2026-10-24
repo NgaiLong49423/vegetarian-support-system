@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react"
 import { useAuth } from "./AuthContext"
+import { NotificationBell } from "./NotificationBell"
 import { Logo } from "./Logo"
 import { useTheme } from "./ThemeContext"
 import { useAiChat } from "./AiChatContext"
@@ -369,7 +370,7 @@ export function AppHeader() {
               aria-label={theme === "light" ? "Chuyển sang chế độ tối" : "Chuyển sang chế độ sáng"}
               title={theme === "light" ? "Chuyển sang chế độ tối" : "Chuyển sang chế độ sáng"}
               onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-paper hover:text-brand-600 transition-colors"
+              className="hidden h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-paper hover:text-brand-600 transition-colors sm:flex"
             >
               {theme === "light" ? (
                 <Moon className="h-4 w-4" aria-hidden="true" />
@@ -386,6 +387,7 @@ export function AppHeader() {
                 Đăng công thức
               </Link>
             )}
+            {isAuthenticated && <NotificationBell />}
             {isAuthenticated ? (
               <div ref={accountMenu} className="relative">
                 <button

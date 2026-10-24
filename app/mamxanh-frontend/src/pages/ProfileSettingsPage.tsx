@@ -7,12 +7,13 @@ import { MemberAvatar } from '../components/MemberAvatar';
 import { useAuth } from '../components/AuthContext';
 import { avatarFileError, AVATAR_TYPES, membersApi, type MemberProfile } from '../api/members';
 import { asApiError } from '../lib/apiClient';
+import { notificationsApi } from '../api/notifications';
 
 const inputClass = 'w-full rounded-xl border border-brand-200 bg-paper px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 const errorClass = 'mt-1 text-xs font-medium text-red-700';
 const BIO_MAX = 500;
 
-/** UC-23.3 own profile settings (`/ho-so/cai-dat`): name, short bio and avatar (AC-23.4–AC-23.7). */
+/** UC-23.3 own profile settings (`/ho-so/cai-dat`): name, short bio and avatar (AC-23.4–AC-23.7), plus the FR-49 email preference. */
 export function ProfileSettingsPage() {
   const { isAuthenticated, account } = useAuth();
   if (!isAuthenticated) return <Navigate to="/dang-nhap" replace />;
@@ -151,6 +152,69 @@ function ProfileSettingsForm() {
           <Button type="submit" disabled={saving}>{saving ? 'Đang lưu...' : 'Lưu thay đổi'}</Button>
         </form>
       </Card>
+
+      <EmailNotificationSettings />
     </div>
   </PageContainer>;
+}
+
+/** UC-49.4: the email channel can be turned off; in-app notifications are always kept. */
+function EmailNotificationSettings() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [loadError, setLoadError] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [saved, setSaved] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    setLoadError('');
+    notificationsApi.preferences()
+      .then((preferences) => { if (alive) setEnabled(preferences.replyEmailEnabled); })
+      .catch((cause: unknown) => { if (alive) setLoadError(asApiError(cause).message); });
+    return () => { alive = false; };
+  }, [retry]);
+
+  // The notification center links here with #email-thong-bao; scroll once the section has content.
+  useEffect(() => {
+    if (enabled !== null && window.location.hash === '#email-thong-bao') {
+      document.getElementById('email-thong-bao')?.scrollIntoView({ block: 'start' });
+    }
+  }, [enabled]);
+
+  const change = async (next: boolean) => {
+    const previous = enabled;
+    setSaveError('');
+    setSaved('');
+    setEnabled(next);
+    setSaving(true);
+    try {
+      const result = await notificationsApi.updatePreferences(next);
+      setEnabled(result.replyEmailEnabled);
+      setSaved(result.replyEmailEnabled ? 'Đã bật email thông báo.' : 'Đã tắt email thông báo.');
+    } catch (cause) {
+      setEnabled(previous);
+      setSaveError(asApiError(cause).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return <Card id="email-thong-bao" className="mt-5 scroll-mt-24 p-5 sm:p-6">
+    <h2 className="text-lg font-bold text-ink">Email thông báo</h2>
+    <p className="mt-1 text-sm text-ink-muted">Thông báo trong ứng dụng luôn được giữ; bạn chỉ chọn có nhận thêm email hay không.</p>
+    {loadError ? <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+      <p>{loadError}</p>
+      <button type="button" onClick={() => setRetry((current) => current + 1)} className="mt-1 font-bold underline">Thử tải lại</button>
+    </div>
+      : enabled === null ? <p role="status" className="mt-4 text-sm text-ink-muted">Đang tải tùy chọn...</p>
+        : <label className="mt-4 flex cursor-pointer items-start gap-3">
+          <input type="checkbox" checked={enabled} disabled={saving} onChange={(event) => void change(event.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-500" />
+          <span className="text-sm text-ink">Gửi email cho tôi khi có người trả lời bình luận của tôi</span>
+        </label>}
+    {saved && <p role="status" className="mt-3 text-sm text-leaf-800">{saved}</p>}
+    {saveError && <p role="alert" className={errorClass}>{saveError}</p>}
+  </Card>;
 }
