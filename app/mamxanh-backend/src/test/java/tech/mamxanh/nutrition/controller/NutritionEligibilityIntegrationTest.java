@@ -68,7 +68,8 @@ class NutritionEligibilityIntegrationTest extends AbstractIntegrationTest {
         assertThat(row.get("nutrition_eligibility_confirmed_at")).isNotNull();
         assertThat(row.get("health_data_consent")).isEqualTo(true);
         assertThat(row.get("health_data_consent_at")).isNotNull();
-        assertThat(row.get("nutrition_bmi")).isEqualTo(new java.math.BigDecimal("22.491349481000"));
+        assertThat(profileData("eligible@fr38.test").get("nutrition_bmi"))
+                .isEqualTo(new java.math.BigDecimal("22.491349481000"));
 
         mockMvc.perform(get(BASE).header(HttpHeaders.AUTHORIZATION, bearer(token)))
                 .andExpect(status().isOk())
