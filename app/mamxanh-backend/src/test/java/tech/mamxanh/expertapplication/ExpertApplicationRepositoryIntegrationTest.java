@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import tech.mamxanh.AbstractIntegrationTest;
 import tech.mamxanh.common.exception.ApiException;
@@ -88,7 +89,7 @@ class ExpertApplicationRepositoryIntegrationTest extends AbstractIntegrationTest
         assertThat(response.applicationAvatarAvailable()).isTrue();
 
         assertThatThrownBy(() -> repository.attachment(id, "other"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(InvalidDataAccessApiUsageException.class);
         assertThatThrownBy(() -> repository.attachment(Long.MAX_VALUE, "certificate"))
                 .isInstanceOf(ApiException.class);
     }
