@@ -106,6 +106,9 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
         assertResponses("post", "/api/v1/expert-applications", "409");
         assertResponses("get", "/api/v1/admin/expert-applications/{id}", "404");
         assertResponses("post", "/api/v1/admin/expert-applications/{id}/approve", "409");
+        assertResponses("get", "/api/v1/admin/reports/{reportId}", "404");
+        assertResponses("post", "/api/v1/admin/reports/{reportId}/claim", "404", "409");
+        assertResponses("post", "/api/v1/admin/reports/{reportId}/resolve", "404", "409");
         assertResponses("post", "/api/v1/subscriptions/checkout", "201");
         assertResponses("post", "/api/v1/auth/register", "201", "409");
         assertResponses("post", "/api/v1/auth/login", "401", "403", "429");
