@@ -27,6 +27,7 @@ public class IngredientEntity {
     @Column(name = "vitamin_b12_mcg_100g", precision = 10, scale = 4) private BigDecimal vitaminB12MicrogramsPer100g;
     @Column(name = "zinc_mg_100g", precision = 10, scale = 2) private BigDecimal zincMgPer100g;
     @Column(name = "ingredient_group", nullable = false, length = 100) private String ingredientGroup;
+    @Column(name = "image_url", length = 2048) private String imageUrl;
     @Column(name = "source_name", nullable = false, length = 200) private String sourceName;
     @Column(name = "source_url", length = 2048) private String sourceUrl;
     @Column(name = "reference_date", nullable = false) private LocalDate referenceDate;
@@ -56,6 +57,7 @@ public class IngredientEntity {
     public BigDecimal getVitaminB12MicrogramsPer100g() { return vitaminB12MicrogramsPer100g; }
     public BigDecimal getZincMgPer100g() { return zincMgPer100g; }
     public String getIngredientGroup() { return ingredientGroup; }
+    public String getImageUrl() { return imageUrl; }
     public String getSourceName() { return sourceName; }
     public String getSourceUrl() { return sourceUrl; }
     public LocalDate getReferenceDate() { return referenceDate; }
@@ -65,6 +67,7 @@ public class IngredientEntity {
         this.name = name; this.ingredientGroup = group; this.sourceName = sourceName;
         this.sourceUrl = sourceUrl; this.referenceDate = referenceDate;
     }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void updateNutrition(BigDecimal energyKcalPer100g, BigDecimal proteinGramsPer100g,
             BigDecimal carbohydrateGramsPer100g, BigDecimal totalFatGramsPer100g,
             BigDecimal fiberGramsPer100g, BigDecimal calciumMgPer100g, BigDecimal ironMgPer100g,

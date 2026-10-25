@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.38.0
+> **Version:** v1.44.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-23
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -16,19 +16,24 @@
 
 ### Checklist đi chợ — FR-53 / Issue #53
 
-- `/di-cho` đọc và lưu checklist thật theo tài khoản; Guest cần đăng nhập, Administrator không có thao tác cá nhân. Thêm mặt hàng thủ công, sửa lượng/đơn vị, tick/bỏ tick, xóa từng mục hoặc xóa mục đã mua đều dùng API; lỗi giữ dữ liệu để thử lại.
-- Từ Lịch ăn có thể tạo theo cả tuần hoặc các ngày chọn; nhãn danh sách thể hiện ngày thực đơn. Từ Khám phá/Đã lưu có thể chọn nhiều Recipe Post qua các trang và thêm nguyên liệu vào danh sách cá nhân, tách khỏi danh sách từ lịch ăn.
+- `/di-cho` đọc và lưu checklist thật theo tài khoản; Guest cần đăng nhập, Administrator không có thao tác cá nhân. Member có thể đổi tên hoặc xóa mọi danh sách của mình; xóa danh sách yêu cầu xác nhận, xóa checklist cùng nguồn đóng góp nhưng giữ Lịch ăn và công thức nguồn. Thêm mặt hàng thủ công, sửa lượng/đơn vị, tick/bỏ tick, xóa từng mục hoặc xóa mục đã mua đều dùng API; lỗi giữ dữ liệu để thử lại.
+- Member có thể tạo danh sách rỗng bằng tên tự chọn ngay tại `/di-cho`, không cần Lịch ăn hoặc công thức; checklist mở sẵn để thêm mặt hàng thủ công. Loại `MANUAL` được phân biệt với danh sách Meal Plan và danh sách công thức `PERSONAL`.
+- Từ Lịch ăn có thể tạo theo cả tuần hoặc các ngày chọn; nhãn danh sách thể hiện ngày thực đơn. Từ menu dấu ba chấm trên từng thẻ ở Khám phá/Đã lưu hoặc nút trên trang chi tiết công thức, Member chọn một danh sách của mình (kể cả danh sách từ Lịch ăn) hoặc tạo danh sách có tên mới ngay trong hộp thoại; có thể chọn/bỏ chọn từng nguyên liệu, thêm mặt hàng thủ công và chỉnh khẩu phần 1–50. Thêm thành công ngay trên trang chi tiết giữ Member ở lại bài viết và cho liên kết mở danh sách; từ menu thẻ, hộp thoại vẫn mở trang danh sách sau khi thêm. Guest được yêu cầu đăng nhập, Admin không có thao tác.
 - Nguồn công thức giữ lượng/đơn vị lúc thêm, hiển thị nội dung hiện hành hoặc unavailable khi bài không còn công khai. Thêm lại công thức không cộng trùng. Hành vi theo AC-53.6 và thiết kế nguồn đã chốt trong #90.
+- Dòng nguyên liệu trong checklist dùng `imageUrl` từ danh mục nguyên liệu để hiển thị ảnh minh họa; nguyên liệu thủ công, chưa có ảnh hoặc ảnh tải lỗi hiển thị trạng thái “Chưa có ảnh”.
 - Bản dựng FR-53 không phụ thuộc component export chưa bàn giao của FR-55; clipboard/TXT sẽ được nối ở PR riêng. Backend FR-53 phụ thuộc engine FR-54 / PR #150 chưa merge.
 
 ### Danh bạ Chuyên gia và chọn nguyên liệu — FR-61 / FR-62
 
 - Menu Khám phá mở các route Công thức, Danh mục nguyên liệu và Chuyên gia trên desktop/mobile. Cộng đồng vẫn được mở từ nút “Xem cộng đồng” trên Trang chủ; route và deep links hiện có được giữ nguyên.
 - `/chuyen-gia` đọc danh sách Expert đang hoạt động từ `GET /api/v1/experts`, hỗ trợ tìm/phân trang, mở hồ sơ hiện có và follow/unfollow qua API FR-59. Guest được chuyển tới đăng nhập; Admin chỉ duyệt.
-- `/danh-muc-nguyen-lieu` tải toàn bộ nguyên liệu đang hoạt động theo trang từ `GET /api/v1/ingredients`, hiển thị thành nhãn chọn nhiều và mở Khám phá với tất cả các ingredient ID đã chọn.
+- `/danh-muc-nguyen-lieu` tải nguyên liệu đang hoạt động từ `GET /api/v1/ingredients`, hiển thị ảnh/nhãn thiếu ảnh, cho xem chi tiết tại `/nguyen-lieu/:ingredientId` qua `GET /api/v1/ingredients/{ingredientId}` và giữ luồng chọn nhiều để mở Khám phá. Chi tiết hiện giá trị dinh dưỡng có sẵn trên 100 g; giá trị `null` hiện là chưa có dữ liệu.
+- Chi tiết phân biệt nguyên liệu không tồn tại (`404`, có đường về danh mục) với lỗi kết nối/dịch vụ (có Thử lại), có trạng thái thiếu toàn bộ dinh dưỡng và giữ tối đa bốn chữ số thập phân cho B12. Ảnh trống hoặc tải lỗi hiện nhãn chưa có ảnh. Các kiểm tra UI dùng API intercept nằm trong `ingredient-directory.spec.ts` và `ingredient-detail.spec.ts`; chúng không xác nhận SQL Server runtime.
+- Trang chi tiết có lưới bài công thức chứa đúng nguyên liệu từ API discovery: nhãn lọc loại ăn chay chuẩn, sắp xếp mới nhất/được yêu thích, Xem thêm và mở từng bài. Tên/ảnh nguyên liệu trong danh mục và tên nguyên liệu ở chi tiết công thức đều mở trang nguyên liệu. Nhãn là bộ lọc loại công thức, chưa phải phân loại độ phù hợp chế độ ăn riêng của nguyên liệu.
 - Bốn Expert demo trong profile `local` dùng ảnh chân dung tổng hợp được host trong `public/avatars/experts/`; avatar người dùng tải lên được giữ nguyên.
+- Danh mục demo có 209 ảnh nguyên liệu AI riêng trong `public/ingredients/`, được ánh xạ qua `INGREDIENT.image_url` khi URL còn trống. Asset WebP dùng chung cho danh mục, chi tiết nguyên liệu và danh sách nguyên liệu trong bài công thức; ảnh Admin tải lên được ưu tiên giữ nguyên. Bộ 54 món demo bổ sung gia vị theo món và định lượng gram cho hai phần ăn.
 - Màn hình dùng dữ liệu Backend, có trạng thái loading/error/empty; không dùng mock directory hay count tĩnh.
-- Hồ sơ công khai `/thanh-vien/:userId` trình bày công thức thành lưới bài viết; từng ảnh hiển thị số lượt xem và lượt thích. Phần đầu hồ sơ hiển thị tổng lượt xem/lượt thích của tất cả bài công khai qua `GET /api/v1/members/{userId}/recipe-statistics`, không chỉ trang đang xem.
+- Hồ sơ công khai `/thanh-vien/:userId` dùng chung `PublicRecipeCard` với trang Công thức: ảnh ngang 4:3, tác giả, tỷ lệ thích, số nguyên liệu, thời gian nấu, khẩu phần, loại ăn chay/thể loại, lượt xem và thao tác lưu/thêm lịch ăn. Lưới thích ứng từ một đến bốn cột và giữ phân trang. Phần đầu hồ sơ hiển thị tổng lượt xem/lượt thích của tất cả bài công khai qua `GET /api/v1/members/{userId}/recipe-statistics`, không chỉ trang đang xem.
 
 Thư mục mã nguồn giao diện ứng dụng Mâm Xanh được xây dựng bằng **React 19**, **TypeScript**, **Vite 8**, **Tailwind CSS v4** và xuất phát từ thiết kế Figma Make.
 
@@ -101,6 +106,7 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - **Quên và đặt lại mật khẩu đã gọi Backend thật (Issue #9):** `/quen-mat-khau` gửi `POST /auth/password-resets` và hiển thị nguyên văn thông báo trung tính của Backend. Liên kết trong email mở `/dat-lai-mat-khau?token=...`; Frontend giữ token trong bộ nhớ, xóa nó khỏi thanh địa chỉ, kiểm tra quy tắc mật khẩu rồi gửi `POST /auth/password-resets/confirm`. Liên kết hỏng, đã dùng hoặc hết hạn (`PASSWORD_RESET_TOKEN_INVALID`) ẩn biểu mẫu và dẫn tới yêu cầu liên kết mới; mật khẩu trùng mật khẩu hiện tại (`NEW_PASSWORD_SAME_AS_CURRENT`) báo ngay dưới ô mật khẩu.
 - Không còn chế độ đổi vai trò/tài khoản giả trên Frontend. Dùng tài khoản local do Backend seed tạo sẵn; danh sách email và cách đặt chung mật khẩu nằm trong [Backend Workspace Guide](../mamxanh-backend/README.md#tài-khoản-demo-local). Mỗi vai trò phải đăng nhập bằng tài khoản riêng; quyền được Backend xác thực.
 - Các luồng Backend hiện hiển thị từ API/SQL thật: khám phá và chi tiết công thức; tạo/sửa/quản lý công thức; lịch ăn tuần; hồ sơ dinh dưỡng; sở thích/onboarding; nộp và duyệt đơn Chuyên gia; quản lý danh mục Ingredient dinh dưỡng Admin gồm tìm/lọc, xem chi tiết, thêm/sửa nguồn và chỉ tiêu, đổi trạng thái, xem Recipe Post tham chiếu. Trang khám phá gửi từ khóa, bộ lọc loại ăn chay/thể loại/nguyên liệu/tổng thời gian, phân trang và chế độ sắp xếp tới API công khai; tùy chọn chuẩn và nguyên liệu được tải từ Backend, mọi điều kiện lọc kết hợp bằng AND.
+- **So sánh hai công thức (Issue #70):** `/so-sanh?a={recipeId}&b={recipeId}` đối chiếu hai công thức công khai khác nhau: thông tin tổng quan, nguyên liệu (chỉ đặt cùng hàng khi cùng nguyên liệu trong danh mục, giữ nguyên số lượng và đơn vị) và chín chỉ tiêu dinh dưỡng trên một khẩu phần kèm chênh lệch (công thức đầu tiên − công thức thứ hai). Bắt đầu từ nút "So sánh" trên thẻ công thức, trang chi tiết hoặc danh sách đã lưu; nút "Chọn công thức thứ hai" (hoặc "Đổi công thức") mở trang chọn riêng `/so-sanh/chon-mon` dùng chung ô tìm kiếm, bộ lọc, sắp xếp và phân trang với trang Khám phá (`src/components/RecipeSearch.tsx`), loại món đang ở bên còn lại và chọn xong quay về `/so-sanh?a=&b=`. Dữ liệu đọc từ `GET /recipes/{recipeId}` và `GET /recipes/discovery`; công thức thiếu dữ liệu dinh dưỡng hiện "Chưa đủ dữ liệu", không tính chênh lệch. Trang không ghi dữ liệu, không lưu lịch sử và không xuất PDF.
 - Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
 
 ### Các chức năng demo khác
@@ -113,7 +119,7 @@ Guest mở `/ke-hoach` hoặc `/di-cho` được mời đăng nhập; bản xem 
 |---|---|---|
 | Trang chủ và thanh điều hướng | Nền tối, header gọn, hai nhóm công thức API và menu responsive | Preview cộng đồng vẫn được ghi nhãn mẫu; không có API nhóm hoặc theo dõi tác giả |
 | Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Guest đọc công khai; Customer/Expert đăng nhập mới được thao tác; Backend lưu bình luận và trả lời |
-| Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu | Làm tròn tối đa 2 chữ số thập phân; lượng không đọc được thành số giữ nguyên; chưa đồng bộ Shopping List |
+| Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu; từ trang công thức mở hộp thoại thêm nguyên liệu vào Shopping List và điều chỉnh riêng khẩu phần cần mua | Khi xác nhận, Backend scale nguyên liệu theo khẩu phần đã chọn rồi tổng hợp vào Shopping List cá nhân; công thức đã được thêm không bị cộng trùng |
 | Kế hoạch bữa ăn Guest | Đăng nhập để lưu lịch; `?demo=true` mở bản mẫu với 0,5–10 phần cho từng món, bước 0,5 | Bản mẫu chỉ cập nhật UI; Member dùng API lịch tuần, thêm món với khẩu phần mặc định 1 |
 | Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |
 | Dinh dưỡng công thức prototype tại `/cong-thuc/:slug` | Đọc số liệu minh họa cho **1 khẩu phần** | 8 chỉ tiêu tĩnh, xem BUG-002; trang thật `/cong-thuc/id/:id` dùng 9 chỉ tiêu và trạng thái dữ liệu từ Backend |

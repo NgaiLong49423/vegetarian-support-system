@@ -38,7 +38,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   const isGuestBlockedRoute = !account && ['/di-cho', '/ke-hoach'].includes(pathname);
   const prototype = !isGuestBlockedRoute && (
-    ['/cong-dong', '/dinh-duong', '/goi-ai', '/giao-dich', '/so-sanh'].includes(pathname)
+    ['/cong-dong', '/dinh-duong', '/goi-ai', '/giao-dich'].includes(pathname)
     || pathname.startsWith('/bai-viet/')
   );
 

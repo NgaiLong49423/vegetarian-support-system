@@ -5,7 +5,7 @@ import { PageContainer } from '../components/Layout';
 import { Button } from '../components/ui';
 import { ApiError } from '../lib/apiClient';
 import { getDietaryPreferences, type DietaryPreferences } from '../services/dietaryPreferencesApi';
-import { mealPlanApi, recipesApi, type AiRecipeSuggestion, type AiWeeklyMenuPreview, type IngredientOption } from '../api/recipes';
+import { mealPlanApi, recipesApi, type AiCookingGuide, type AiRecipeSuggestion, type AiWeeklyMenuPreview, type IngredientOption } from '../api/recipes';
 import { useAuth } from '../components/AuthContext';
 
 const mealLabels = { BREAKFAST: 'Sáng', LUNCH: 'Trưa', DINNER: 'Tối' } as const;
@@ -54,6 +54,10 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
   const [selected, setSelected] = useState<IngredientOption[]>([]);
   const [searching, setSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<AiRecipeSuggestion | null>(null);
+  const [guideLoadingId, setGuideLoadingId] = useState<number | null>(null);
+  const [guides, setGuides] = useState<Record<number, AiCookingGuide>>({});
+  const [guideErrors, setGuideErrors] = useState<Record<number, string>>({});
+  const [expandedGuideId, setExpandedGuideId] = useState<number | null>(null);
   const [preview, setPreview] = useState<AiWeeklyMenuPreview | null>(null);
   const weekStart = weekStartDate ?? mondayOf(new Date());
   const [busy, setBusy] = useState<'recommend' | 'weekly' | 'apply' | null>(null);
@@ -111,7 +115,7 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
   };
 
   const runRecommendation = async (action: 'recommend' | 'weekly') => {
-    if (!selected.length) return;
+    if (action === 'recommend' && !selected.length) return;
     setBusy(action);
     setError(null);
     setApplied(false);
@@ -131,6 +135,34 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
     }
   };
 
+  const toggleCookingGuide = async (recipeId: number) => {
+    if (expandedGuideId === recipeId) {
+      setExpandedGuideId(null);
+      return;
+    }
+    if (guides[recipeId]) {
+      setExpandedGuideId(recipeId);
+      return;
+    }
+    setGuideLoadingId(recipeId);
+    setGuideErrors((current) => ({ ...current, [recipeId]: '' }));
+    try {
+      const guide = await recipesApi.createAiCookingGuide(recipeId);
+      setGuides((current) => ({ ...current, [recipeId]: guide }));
+      setExpandedGuideId(recipeId);
+    } catch (cause) {
+      const message = cause instanceof ApiError && cause.code === 'DIETARY_PROFILE_INCOMPLETE'
+        ? 'Hoàn tất hồ sơ sở thích ăn uống để nhận hướng dẫn phù hợp.'
+        : cause instanceof ApiError && (cause.code === 'RECIPE_NOT_FOUND' || cause.code === 'NOT_FOUND')
+          ? 'Công thức không còn khả dụng hoặc không phù hợp với giới hạn ăn uống của bạn.'
+          : cause instanceof ApiError && (cause.code === 'AI_PROVIDER_UNAVAILABLE' || cause.code === 'AI_RESPONSE_INVALID')
+            ? 'Chưa thể tạo hướng dẫn nấu lúc này. Bạn có thể thử lại.'
+            : cause instanceof ApiError ? cause.message : 'Không kết nối được máy chủ. Vui lòng thử lại.';
+      setGuideErrors((current) => ({ ...current, [recipeId]: message }));
+    } finally {
+      setGuideLoadingId(null);
+    }
+  };
   const applyPreview = async () => {
     if (!preview || preview.slots.length !== 21) return;
     setBusy('apply');
@@ -183,13 +215,15 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
       </div>
       <div className="mt-3 flex min-h-8 flex-wrap gap-2">
         {selected.map((ingredient) => <button key={ingredient.ingredientId} type="button" onClick={() => { setSelected((items) => items.filter((item) => item.ingredientId !== ingredient.ingredientId)); setSuggestions(null); setPreview(null); setApplied(false); }} className="rounded-full bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-800 hover:bg-brand-100" aria-label={`Bỏ ${ingredient.name}`}>{ingredient.name} <span aria-hidden="true">×</span></button>)}
-        {!selected.length && <p className="text-sm text-ink-muted">Chọn ít nhất một nguyên liệu.</p>}
+        {!selected.length && <p className="text-sm text-ink-muted">{plannerMode === 'weekly'
+          ? 'Có thể bỏ trống để AI chọn từ toàn bộ công thức công khai phù hợp; chọn nguyên liệu để giới hạn món theo nguyên liệu đó.'
+          : 'Chọn ít nhất một nguyên liệu.'}</p>}
       </div>
       <div className="mt-5 flex flex-wrap gap-3">
         {plannerMode === 'ingredients' && <Button type="button" disabled={!profileReady || selected.length === 0 || busy !== null} onClick={() => runRecommendation('recommend')}>
           {busy === 'recommend' ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Tìm món phù hợp
         </Button>}
-        {plannerMode === 'weekly' && <Button type="button" variant="secondary" disabled={!profileReady || selected.length === 0 || busy !== null} onClick={() => runRecommendation('weekly')}>
+        {plannerMode === 'weekly' && <Button type="button" variant="secondary" disabled={!profileReady || busy !== null} onClick={() => runRecommendation('weekly')}>
           {busy === 'weekly' ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CalendarDays className="h-4 w-4" />} Tạo thực đơn tuần
         </Button>}
       </div>
@@ -202,17 +236,32 @@ export function AiRecipePlanner({ weekStartDate, embedded = false, plannerMode =
       {suggestions.items.length === 0 ? <p className="rounded-2xl border border-brand-100 bg-paper p-5 text-sm text-ink-muted">Chưa tìm thấy công thức phù hợp với nguyên liệu và hồ sơ hiện tại.</p> : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {suggestions.items.map(({ recipe, reason }) => {
           const coverUrl = recipe.media.find((media) => media.cover)?.url ?? recipe.media[0]?.url;
+          const guide = guides[recipe.id];
           return <article key={recipe.id} className="overflow-hidden rounded-2xl border border-brand-100 bg-paper shadow-sm">
             <Link to={`/cong-thuc/id/${recipe.id}`} className="block">
               {coverUrl ? <img src={coverUrl} alt={recipe.title} className="h-44 w-full object-cover" />
                 : <div aria-hidden="true" className="flex h-44 items-center justify-center bg-brand-50 text-brand-600"><ChefHat className="h-10 w-10" /></div>}
               <div className="p-4"><h3 className="font-semibold text-ink">{recipe.title}</h3><p className="mt-2 text-sm text-ink-muted">{reason}</p></div>
             </Link>
+            <div className="px-4 pb-4">
+              <Button type="button" variant="secondary" disabled={guideLoadingId !== null} onClick={() => toggleCookingGuide(recipe.id)} aria-expanded={expandedGuideId === recipe.id}>
+                {guideLoadingId === recipe.id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ChefHat className="h-4 w-4" />}
+                {guideLoadingId === recipe.id ? 'Đang soạn từng bước…' : expandedGuideId === recipe.id ? 'Thu gọn hướng dẫn' : 'Xem hướng dẫn nấu chi tiết'}
+              </Button>
+              {guideLoadingId === recipe.id && <p role="status" className="mt-2 text-sm text-ink-muted">AI đang dựa trên công thức nguồn để chuẩn bị các bước nấu.</p>}
+              {guideErrors[recipe.id] && <p role="alert" className="mt-2 text-sm text-red-700">{guideErrors[recipe.id]}</p>}
+              {expandedGuideId === recipe.id && guide && <div className="mt-4 border-t border-brand-100 pt-4">
+                <h4 className="font-semibold text-ink">Cách chế biến</h4>
+                <ol className="mt-3 list-decimal space-y-3 pl-5 text-sm leading-6 text-ink-soft">
+                  {guide.steps.map((step, index) => <li key={`${recipe.id}-${index}`}>{step}</li>)}
+                </ol>
+                <p className="mt-4 text-xs leading-5 text-ink-muted">{guide.aiNotice}</p>
+              </div>}
+            </div>
           </article>;
         })}
       </div>}
     </section>}
-
     {plannerMode === 'weekly' && preview && <section className="mt-8" aria-labelledby="preview-title">
       <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-brand-100 bg-paper p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

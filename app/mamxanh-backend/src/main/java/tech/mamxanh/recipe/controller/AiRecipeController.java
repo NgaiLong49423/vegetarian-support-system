@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.recipe.dto.request.AiRecipeRecommendationRequest;
+import tech.mamxanh.recipe.dto.request.AiWeeklyMenuRequest;
 import tech.mamxanh.recipe.dto.response.AiRecipeRecommendationResponse;
 import tech.mamxanh.recipe.dto.response.AiWeeklyMenuPreviewResponse;
 import tech.mamxanh.recipe.service.AiRecipeRecommendationService;
@@ -42,8 +43,9 @@ public class AiRecipeController {
     }
 
     @Operation(summary = "Generate a 7-day AI meal-plan preview",
-            description = "Requires an active Pro Member and complete FR-31 profile. Returns 21 slots without "
-                    + "writing the member's Meal Plan. Recipe IDs may repeat, but adjacent slots cannot.")
+            description = "Requires an active Pro Member and complete FR-31 profile. Ingredient filters are optional. "
+                    + "Returns 21 slots from the public safety-filtered catalog without writing the member's Meal Plan. "
+                    + "Recipe IDs may repeat, but adjacent slots cannot.")
     @ApiResponse(responseCode = "200", description = "The generated 21-slot preview.",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = AiWeeklyMenuPreviewResponse.class)))
     @ApiResponse(responseCode = "403", description = "An active Pro subscription is required.",
@@ -53,7 +55,7 @@ public class AiRecipeController {
     @ApiResponse(responseCode = "503", description = "Gemini is unavailable.",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @PostMapping("/weekly-menu")
-    public AiWeeklyMenuPreviewResponse weeklyMenu(@Valid @RequestBody AiRecipeRecommendationRequest request) {
+    public AiWeeklyMenuPreviewResponse weeklyMenu(@Valid @RequestBody AiWeeklyMenuRequest request) {
         return service.weeklyMenu(request.ingredientIds());
     }
 }

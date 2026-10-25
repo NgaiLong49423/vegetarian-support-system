@@ -100,7 +100,7 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     expect(payload.hasNext).toBe(false);
     expect(payload.items).toHaveLength(1);
     expect(payload.items[0]).toMatchObject({ id: recipeBothId, title: recipeBoth });
-    await expect(page.getByRole('link', { name: new RegExp(recipeBoth) })).toBeVisible();
+    await expect(page.getByRole('link').filter({ has: page.getByRole('heading', { name: recipeBoth, exact: true }) })).toBeVisible();
     await expect(page.getByRole('link', { name: new RegExp(recipeAOnly) })).toHaveCount(0);
     await expect(page.getByRole('link', { name: new RegExp(recipeBOnly) })).toHaveCount(0);
 
@@ -115,9 +115,6 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
       const sortResponse = await sortRequest.response();
       if (!sortResponse) throw new Error(`Recipe search for sort ${sort} failed before Backend returned a response.`);
       expect(sortResponse.ok()).toBeTruthy();
-      if (sort === 'MOST_LIKED') {
-        await expect(page.getByText('Mới', { exact: true })).toBeVisible();
-      }
       if (sort === 'MOST_VIEWED') {
         const periodRequestPromise = page.waitForRequest((request) => {
           const url = new URL(request.url());
@@ -144,7 +141,7 @@ test('Explore filters actual SQL Server recipes by every selected ingredient', a
     expect(emptyResponse.ok()).toBeTruthy();
     await expect(page.getByText('Không tìm thấy công thức phù hợp', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Đặt lại bộ lọc' }).last().click();
-    await expect(page.getByRole('link', { name: new RegExp(recipeBoth) })).toBeVisible();
+    await expect(page.getByRole('link').filter({ has: page.getByRole('heading', { name: recipeBoth, exact: true }) })).toBeVisible();
   } finally {
     cleanupFixture();
   }

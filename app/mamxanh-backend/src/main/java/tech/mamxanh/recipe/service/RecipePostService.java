@@ -432,6 +432,11 @@ public class RecipePostService {
     }
 
     @Transactional(readOnly = true)
+    public boolean existsPublishedRecipeUsingIngredient(long ingredientId) {
+        return repository.existsPublishedUsingIngredient(ingredientId);
+    }
+
+    @Transactional(readOnly = true)
     public tech.mamxanh.common.response.PageResponse<RecipeUsage> searchRecipesUsingIngredient(
             long ingredientId, int page, int size) {
         Page<RecipePostEntity> result = repository.findAllUsingIngredient(ingredientId,

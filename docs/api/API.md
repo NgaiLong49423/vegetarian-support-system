@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.35.0
+> **Version:** v0.41.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-23
 > **Status:** Active
 
 # API Integration Guide
@@ -13,22 +13,26 @@ Các operation đã triển khai dưới `/api/v1/shopping-lists`:
 
 | Method / đường dẫn tương đối | Hành vi |
 |---|---|
+| `POST /` | `/api/v1/shopping-lists` nhận `{name}` để tạo danh sách rỗng độc lập với Lịch ăn và Recipe Post; Backend tự xác định Member sở hữu, trim tên, giới hạn 200 ký tự, gán loại `MANUAL`; trả `201`, Location và checklist rỗng. |
 | `POST /from-meal-plan` | Tạo danh sách mới từ Meal Plan của Member; `{weekStartDate, selectedDates?}`; trả `201`, Location và `ShoppingListCreationResponse`. |
-| `POST /from-recipes` | `{recipeIds: number[]}` gồm 1–50 ID công thức công khai; trả `200 ShoppingListCreationResponse` của danh sách cá nhân duy nhất của Member. |
+| `POST /from-recipe` | `{name, recipeId, servings?, selectedIngredientIds?, manualItems?}` tạo danh sách `MANUAL` và lưu các nguyên liệu được chọn/mặt hàng thủ công trong cùng transaction; bỏ `selectedIngredientIds` để chọn tất cả, mảng rỗng chỉ hợp lệ khi có `manualItems`; trả `201 ShoppingListCreationResponse` và Location. |
+| `POST /{listId}/recipes` | `{recipeId, servings?, selectedIngredientIds?, manualItems?}` thêm các nguyên liệu được chọn và mặt hàng thủ công vào danh sách thuộc Member; bỏ `selectedIngredientIds` để chọn tất cả, mảng rỗng chỉ hợp lệ khi có `manualItems`; trả `200 ShoppingListCreationResponse`. |
 | `GET` | Danh sách riêng của Member; `page >= 0`, `size` 1–50, mặc định 20; `PageResponse` dùng `content`; sắp xếp `updatedAt DESC, id DESC`. |
 | `GET /options` | Các đơn vị catalog đang hoạt động để thêm/sửa mục. |
 | `GET /{listId}` | Chi tiết danh sách và các mục theo ID tăng dần. |
+| `PATCH /{listId}` | Đổi tên danh sách `{name}`; trim khoảng trắng, tên không rỗng và tối đa 200 ký tự; trả `200 ShoppingListSummary`. |
+| `DELETE /{listId}` | Xóa danh sách cùng checklist và provenance công thức; trả `204`. Lịch ăn và Recipe Post nguồn được giữ nguyên. |
 | `POST /{listId}/items` | Thêm mục thủ công `{name, quantity, unitId}`; trả `201`, Location và mục đã lưu; mặc định `bought=false`. |
 | `PUT /{listId}/items/{itemId}` | Đặt số lượng/đơn vị; giữ định danh nguyên liệu và trạng thái đã mua. |
 | `PATCH /{listId}/items/{itemId}/bought` | Nhận `{bought: true/false}`; gửi lại cùng giá trị không đổi `updatedAt`. |
 | `DELETE /{listId}/items/{itemId}` | Xóa đúng một mục, trả `204`. |
 | `DELETE /{listId}/items?bought=true` | Chỉ dọn mục đã mua của danh sách đó, trả `204`; thiếu hoặc sai điều kiện không xóa hàng loạt. |
 
-Mọi operation cần Bearer token của Member hoạt động (Customer/Expert); tài khoản lấy từ principal, không nhận `userId` từ request. Service kiểm tra chủ sở hữu trước khi đọc/thay đổi mục. Danh sách không tồn tại/khác chủ sở hữu hoặc mục không thuộc danh sách đều trả `404 NOT_FOUND`. Guest/token lỗi trả `401`; Admin và tài khoản không hoạt động bị từ chối theo auth baseline (`403`).
+Mọi operation cần Bearer token của Member hoạt động (Customer/Expert); tài khoản lấy từ principal, không nhận `userId` từ request. Service kiểm tra chủ sở hữu trước khi đọc/thay đổi danh sách hoặc mục. Danh sách không tồn tại/khác chủ sở hữu hoặc mục không thuộc danh sách đều trả `404 NOT_FOUND`. Guest/token lỗi trả `401`; Admin và tài khoản không hoạt động bị từ chối theo auth baseline (`403`).
 
 Tên thủ công là văn bản thuần, không rỗng sau chuẩn hóa khoảng trắng, tối đa 200 ký tự; không chấp nhận markup hoặc ký tự điều khiển. `quantity > 0`, tối đa 8 chữ số nguyên và 2 chữ số thập phân theo schema hiện tại. Đơn vị mới phải đang hoạt động. Đơn vị cũ đã ngừng sử dụng vẫn hiển thị và có thể giữ nguyên khi sửa số lượng. Không tự đổi lượng khi Member sửa đơn vị: request biểu diễn cặp số lượng/đơn vị mới do Member xác nhận. Validation trả `400 VALIDATION_FAILED`; response lỗi theo mục 4.
 
-Checklist response giữ `ingredientId` (nullable cho mục thủ công), tên, nhóm, số lượng, đơn vị và `bought`; tham chiếu catalog hiện có được phân giải kể cả đã ngừng sử dụng. Các mutation khóa danh sách của chủ sở hữu trong transaction để tránh ghi đè giữa thao tác checklist và cleanup.
+Checklist response giữ `ingredientId` (nullable cho mục thủ công), tên, nhóm, `imageUrl` của nguyên liệu trong catalog (nullable khi chưa có ảnh), số lượng, đơn vị và `bought`; tham chiếu catalog hiện có được phân giải kể cả đã ngừng sử dụng. Frontend hiển thị ảnh ở từng dòng; mục thủ công hoặc nguyên liệu chưa có ảnh trả `imageUrl: null` và dùng trạng thái thiếu ảnh. Các mutation khóa danh sách của chủ sở hữu trong transaction để tránh ghi đè giữa thao tác checklist và cleanup. `PATCH /{listId}` chỉ thay tên và cập nhật thời gian sửa; `DELETE /{listId}` xóa provenance trước các item tham chiếu, sau đó xóa danh sách trong cùng transaction. Đổi tên không làm tên danh sách từ Lịch ăn tự đổi lại; xóa không tác động tới Meal Plan hay Recipe Post nguồn.
 
 Khi tạo từ Meal Plan, `weekStartDate` phải là thứ Hai; `selectedDates` bỏ qua hoặc `null` nghĩa là toàn tuần, còn mảng có từ 1–7 ngày không trùng trong tuần. Backend luôn đọc tuần của principal, không nhận owner hoặc entry ID từ client. Mỗi bữa đóng góp theo `plannedServings / servings`; cùng công thức ở nhiều bữa được tính nhiều lần, khác quy tắc chống thêm trùng Recipe Post cá nhân của #90. Nguồn không còn công khai không được thêm mới.
 
@@ -38,13 +42,13 @@ Frontend `/ke-hoach` cho Member chọn cả tuần hoặc ngày rồi gọi oper
 
 ### Nguồn Recipe Post được chọn — AC-53.6
 
-`POST /from-recipes` thêm lượng nguyên liệu gốc của các công thức công khai vào danh sách cá nhân (`PERSONAL`); không chia theo khẩu phần hoặc nhập/gộp với danh sách từ Lịch ăn. ID lặp trong request hoặc công thức đã thêm không tạo đóng góp trùng. Nguồn không công khai/không tồn tại trả `404`, lựa chọn rỗng/sai hoặc định lượng không lưu được trả `400`; toàn bộ request nguyên tử. Khóa tài khoản khi tạo danh sách đầu tiên và khóa danh sách khi thay đổi để tránh tạo trùng hay ghi đè checklist.
+`POST /{listId}/recipes` và `POST /from-recipe` nhận `selectedIngredientIds` để chỉ thêm nguyên liệu được chọn; bỏ trường này để giữ tương thích và thêm toàn bộ nguyên liệu. Có thể bỏ chọn tất cả nếu gửi ít nhất một `manualItems` dạng `{name, quantity, unitId}`; mặt hàng thủ công và phần công thức được lưu trong cùng transaction. Bỏ `servings` để dùng lượng gốc; nếu có (1–50), Backend tính `recipe quantity × servings / recipe.servings` cho các dòng đã chọn trước khi tổng hợp và lưu. Gửi lại công thức trong cùng danh sách không tạo đóng góp công thức trùng; mặt hàng thủ công vẫn được thêm như các thao tác POST thông thường. Nguồn không công khai/không tồn tại và danh sách không thuộc Member trả `404`; dữ liệu hoặc định lượng sai trả `400`. Thao tác khóa danh sách để tránh ghi đè checklist.
 
-Mỗi item trả thêm `sources`: `recipeId`, `title` hiện hành (nullable), `available`, `originalQuantity`, `originalUnitId`, `originalUnitCode`. Đây là lượng/đơn vị gốc tại thời điểm thêm, không bị thay khi Member chỉnh lượng/đơn vị của item hoặc công thức được sửa. Công thức HIDDEN/DELETED giữ tham chiếu và checklist, nhưng không trả tiêu đề/nội dung riêng tư. UI chỉ mở link nguồn khi `available=true`.
+Mỗi item trả thêm `sources`: `recipeId`, `title` hiện hành (nullable), `available`, `originalQuantity`, `originalUnitId`, `originalUnitCode`. Đây là lượng/đơn vị được đóng góp tại thời điểm thêm (sau khi scale theo `servings` nếu có), không bị thay khi Member chỉnh lượng/đơn vị của item hoặc công thức được sửa. Công thức HIDDEN/DELETED giữ tham chiếu và checklist, nhưng không trả tiêu đề/nội dung riêng tư. UI chỉ mở link nguồn khi `available=true`.
 
 Khi thêm công thức mới, FR-54 tổng hợp lượng mới với **tổng hiện đang lưu do Member chỉnh**, không tái tính từ các công thức cũ. Dòng nhận nguyên liệu mới chuyển về chưa mua; dòng không bị ảnh hưởng giữ lượng và trạng thái. Xóa/dọn item giữ dấu công thức đã thêm và lượng đóng góp, bỏ liên kết tới item bị xóa; thêm lại công thức đó không phục hồi item đã chủ động xóa. Đọc/tick hoặc sửa nguồn không tự tổng hợp lại.
 
-Khám phá và Công thức đã lưu hỗ trợ chọn nhiều công thức qua các trang, gửi ID tới API và mở `/di-cho?listId=...`; request lỗi giữ lựa chọn để thử lại. Thiết kế nguồn tương thích quyết định trong #90; triển khai local trong #53 không tự thay trạng thái/dependency hay xác nhận nghiệm thu Issue #90.
+Khám phá và Công thức đã lưu mở thao tác thêm từ menu dấu ba chấm trên từng công thức; Member chọn một danh sách đã có hoặc tạo mới, điều chỉnh khẩu phần, rồi được đưa tới `/di-cho?listId=...`. Thiết kế nguồn tương thích quyết định trong #90; triển khai local trong #53 không tự thay trạng thái/dependency hay xác nhận nghiệm thu Issue #90.
 
 Schema/status chính xác lấy từ generated OpenAPI; không chỉnh endpoint trong YAML thủ công.
 ### Thời gian đăng ký gói và giao dịch — FR-13
@@ -269,6 +273,8 @@ Các key trong `nutrition.total` và `nutrition.perServing` lần lượt là `E
 
 Nutrition chỉ dùng danh mục nội bộ và quy đổi gram hiện có. `nutrition.complete=false` cùng `ingredientsMissingData` chỉ rõ nguyên liệu tùy chỉnh/thiếu dữ liệu hoặc thiếu quy đổi; không ngầm coi dữ liệu chưa biết là giá trị đo bằng không. Đây là số liệu tham khảo, không phải tư vấn y tế. Không gọi dịch vụ dinh dưỡng ngoài.
 
+So sánh hai công thức (FR-60) không có API riêng: trang `/so-sanh?a={recipeId}&b={recipeId}` đọc `GET /api/v1/recipes/{recipeId}` cho từng bài; trang chọn món `/so-sanh/chon-mon` dùng `GET /api/v1/recipes/discovery` (cùng endpoint với trang Khám phá, trả `hasNext` thay vì tổng số) với cùng tham số tìm kiếm và lọc của trang Khám phá (`keyword`, `vegetarianType`, `dishCategory`, `ingredientIds`, `maxTotalTimeMinutes`, `sort`, `viewPeriod`, `page`, `size`) và loại bài đang ở bên còn lại ở phía Frontend. Bài trả `404` được gỡ khỏi so sánh và người dùng chọn bài khác. Bảng dinh dưỡng chỉ dùng `nutrition.perServing` khi `nutrition.complete=true`; nếu không, cả chín chỉ tiêu của bên đó hiển thị `Chưa đủ dữ liệu` và không tính chênh lệch. Trang chỉ gửi request `GET`, không lưu lịch sử so sánh (BR-76).
+
 ### 7.1. Tạo hoặc mở lịch tuần — FR-09
 
 - `GET /api/v1/meal-plans?weekStartDate=YYYY-MM-DD` chỉ đọc lịch của Member hiện tại. Khi chưa có lịch, trả tuần với `entries=[]` và không tạo bản ghi.
@@ -387,13 +393,14 @@ Các API yêu cầu Bearer token của Member đang hoạt động và hồ sơ 
 | Thao tác | API | Quyền và kết quả |
 |---|---|---|
 | Gợi ý 3–5 món theo nguyên liệu | `POST /api/v1/recipes/ai/recommendations` | Body `{ "ingredientIds": [12, 29] }`; nguyên liệu được lấy từ `GET /api/v1/recipes/ingredient-options?query=...`. Trả `{ "items": [{ "recipe": RecipePostResponse, "reason": "..." }] }`. Công thức khớp nhiều nguyên liệu đã chọn được ưu tiên. Free Member được gọi theo FR-10. |
-| Tạo menu tuần xem trước | `POST /api/v1/recipes/ai/weekly-menu` | Cùng body `ingredientIds`; yêu cầu Pro còn hiệu lực. Trả 21 `slots`, theo thứ tự ngày 0–6 và sáng/trưa/tối; mỗi mục gồm `dayOffset`, `mealType`, `recipeId`, thông tin thẻ món và lý do. Có thể lặp công thức nếu catalog ít, nhưng hai vị trí liên tiếp không dùng cùng ID. API chỉ tạo preview trong response, không lưu Meal Plan. |
+| Tạo menu tuần xem trước | `POST /api/v1/recipes/ai/weekly-menu` | `ingredientIds` tùy chọn (tối đa 20 ID). Bỏ field hoặc gửi mảng rỗng để AI chọn trên catalog công khai an toàn theo hồ sơ; khi có ID, candidate recipes phải chứa ít nhất một nguyên liệu đã chọn. Yêu cầu Pro còn hiệu lực. Trả 21 `slots`, theo thứ tự ngày 0–6 và sáng/trưa/tối; có thể lặp công thức nếu catalog ít nhưng hai vị trí liên tiếp không trùng ID. Chỉ tạo preview, không lưu Meal Plan. |
 | Xác nhận thêm menu vào Lịch ăn | `POST /api/v1/meal-plans/{weekStartDate}/ai-menu` | Yêu cầu Pro còn hiệu lực, Bearer token và ngày Thứ Hai. Body gồm đúng 21 mục `slots`, mỗi mục `{ "dayOffset": 0, "mealType": "BREAKFAST", "recipeId": 123 }`. Backend giữ các mục hiện có và thêm menu trong một transaction. Trả tuần đã cập nhật. |
 
 API gợi ý và preview trả `409 DIETARY_PROFILE_INCOMPLETE` khi hồ sơ chưa đủ; weekly preview và thao tác xác nhận trả `403 AI_SUBSCRIPTION_REQUIRED` nếu tài khoản không có Pro còn hiệu lực. Không đủ ứng viên để tạo menu trả `409 AI_MENU_UNAVAILABLE`; lỗi provider trả `503 AI_PROVIDER_UNAVAILABLE`; phản hồi AI sai hoặc chứa ID ngoài catalog trả `502 AI_RESPONSE_INVALID`. Khi xác nhận, công thức đã ẩn/xóa trả `404 RECIPE_NOT_FOUND`; nếu cùng recipe đã có trong đúng ngày/bữa thì trả `409 MEAL_PLAN_RECIPE_DUPLICATE`. Hai trường hợp đều rollback toàn bộ, không ghi một phần. Chỉ gọi API xác nhận sau khi Member chủ động bấm áp dụng.
 
-Mỗi phản hồi AI hợp lệ phát `AiUsageEvent` với `feature=FR-34` và token count thực tế do Gemini cung cấp. Issue #17 tiếp tục sở hữu consumer lưu trữ/báo cáo telemetry. Không có bảng preview mới và không tạo công thức mới.
+Gợi ý món, preview thực đơn và hướng dẫn nấu chi tiết phát `AiUsageEvent` với `feature=FR-34`. Đối với hướng dẫn nấu, interface hiện tại của Gemini không cung cấp token metadata nên các trường token được ghi `null`, không suy đoán thành `0`. Issue #17 tiếp tục sở hữu consumer lưu trữ/báo cáo telemetry. Không có bảng preview mới và không tạo công thức mới.
 
+| Tạo hướng dẫn nấu chi tiết cho công thức công khai | `POST /api/v1/recipes/ai/cooking-guide` | Bearer token Member đang hoạt động; body `{ "recipeId": 123 }`. Yêu cầu hồ sơ sở thích FR-31 đủ; Backend tải lại Recipe Post đang công khai và kiểm tra loại ăn chay/nguyên liệu cần tránh trước khi gọi Gemini. Member Free/Plus/Pro được dùng như quyền gợi ý món UC-34.1. Trả `recipeId`, `recipeTitle`, 6–10 `steps` và `aiNotice`; không tạo/sửa Recipe Post hoặc Meal Plan, không lưu nội dung hướng dẫn. Công thức không khả dụng/không phù hợp trả `404`; thiếu hồ sơ trả `409`; AI trả sai ràng buộc `502 AI_RESPONSE_INVALID`; provider lỗi/timeout `503 AI_PROVIDER_UNAVAILABLE`.
 ## 15. AI lập thực đơn dinh dưỡng — FR-36
 
 Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint dưới đây. Cả hai yêu cầu Bearer token của Member đang hoạt động, gói Pro còn hiệu lực, trạng thái dinh dưỡng `ELIGIBLE` và hồ sơ nhân trắc học FR-35 hợp lệ. FR-31 onboarding không bắt buộc; ràng buộc an toàn đã khai báo vẫn được áp dụng.
@@ -485,3 +492,30 @@ Response kết quả đơn gồm `orderCode` (string), `tier`, `amountVnd`, `sta
 - Trang kết quả phải hỏi Backend, không suy luận thành công từ URL quay về. Frontend chờ có giới hạn và cho kiểm tra lại; tài khoản giữ quyền hiện tại khi đơn còn chờ hoặc bị hủy. Không chấp nhận mock checkout/chữ ký giả ở runtime.
 
 Nguồn kỹ thuật payOS: [Payment API](https://payos.vn/docs/api/), [xác minh chữ ký](https://payos.vn/docs/tich-hop-webhook/kiem-tra-du-lieu-voi-signature/), [Return URL](https://payos.vn/docs/du-lieu-tra-ve/return-url/).
+
+## 20. Danh mục và chi tiết nguyên liệu công khai — FR-62
+
+Generated OpenAPI là contract chi tiết. Guest và Member có thể đọc danh mục và chi tiết mà không cần đăng nhập; request đã mang Bearer token vẫn tuân theo kiểm tra token hiện hành.
+
+| Endpoint | Cách tích hợp |
+| --- | --- |
+| `GET /api/v1/ingredients` | Danh sách phân trang chỉ gồm catalog `ACTIVE`, có tìm kiếm và lọc nhóm; mỗi mục trả `ingredientId`, `name`, `ingredientGroup`, `imageUrl`. FE tải các trang để duyệt/tìm/chọn nhiều nguyên liệu. |
+| `GET /api/v1/ingredients/groups` | Tên và số nguyên liệu đang hoạt động trong từng nhóm. |
+| `GET /api/v1/ingredients/{ingredientId}` | Chi tiết nguyên liệu đang hoạt động, bổ sung `nutrition` với giá trị trên 100 g. ID không tồn tại và nguyên liệu `INACTIVE` đều trả `404 INGREDIENT_NOT_FOUND`; ID không hợp lệ trả `400 VALIDATION_FAILED`. |
+
+`nutrition` giữ các chỉ tiêu và đơn vị sau; không nhân theo khẩu phần món hoặc tự suy diễn tỷ lệ quy đổi:
+
+| Trường | Đơn vị trên 100 g |
+| --- | --- |
+| `energyKcalPer100g` | kcal |
+| `proteinGramsPer100g`, `carbohydrateGramsPer100g`, `totalFatGramsPer100g`, `fiberGramsPer100g` | g |
+| `calciumMgPer100g`, `ironMgPer100g`, `zincMgPer100g` | mg |
+| `vitaminB12MicrogramsPer100g` | µg, giữ tối đa bốn chữ số thập phân |
+
+- Từng chỉ tiêu có thể là `null`, nghĩa là chưa biết. FE ghi rõ chưa có dữ liệu; số `0` là giá trị đã có và phải hiển thị 0. Khi tất cả chỉ tiêu là `null`, hiển thị trạng thái chưa có dinh dưỡng.
+- `imageUrl` lấy từ catalog. URL trống hoặc tải lỗi dùng trạng thái chưa có ảnh minh họa, không gán ảnh nguyên liệu khác.
+- Response công khai không có tên/URL nguồn, ngày tham khảo, trạng thái catalog hoặc cờ hỗ trợ tính dinh dưỡng. Các trường đó tiếp tục thuộc API quản trị.
+- Trang `/nguyen-lieu/:ingredientId` dùng API chi tiết; từ trang này mở `/kham-pha` với một ingredient ID. Danh mục vẫn chọn nhiều ID và tìm công thức theo semantics AND của FR-08.
+- Lỗi dịch vụ/kết nối cho phép thử lại; `404` cho biết nguyên liệu không còn khả dụng và cung cấp đường về danh mục.
+- Lưới bài viết trên chi tiết gọi `GET /api/v1/recipes/discovery` với `ingredientIds` bằng đúng ID đang xem, `size=9`, `page` tăng từ 0 và `sort=MOST_LIKED` hoặc `NEWEST`; Xem thêm theo `hasNext`, không tự hiển thị tổng số bài khi response không cung cấp tổng.
+- Các nhãn loại ăn chay dùng `vegetarianTypes` của `GET /api/v1/recipes/form-options`; chọn nhãn gửi thêm `vegetarianType` nhưng vẫn giữ `ingredientIds`. Đây là nhãn của công thức; API không khai báo độ phù hợp chế độ ăn của riêng nguyên liệu.

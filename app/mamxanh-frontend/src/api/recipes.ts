@@ -75,6 +75,8 @@ export interface RecipeDetail {
   ingredients: Array<{
     ingredientId: number;
     name: string;
+    /** Reference image from the ingredient catalog; null means render an empty image slot. */
+    imageUrl: string | null;
     quantity: number;
     unitId: number;
     unitCode: string;
@@ -180,6 +182,12 @@ export interface AiRecipeSuggestion {
   items: Array<{ recipe: RecipePost; reason: string }>;
 }
 
+export interface AiCookingGuide {
+  recipeId: number;
+  recipeTitle: string;
+  steps: string[];
+  aiNotice: string;
+}
 export interface AiWeeklyMenuPreview {
   slots: Array<{
     dayOffset: number;
@@ -302,8 +310,11 @@ export const recipesApi = {
   recommendByIngredients: (ingredientIds: number[]) => request(
     () => apiClient.post<AiRecipeSuggestion>('/recipes/ai/recommendations', { ingredientIds }, { timeout: 60_000 }),
   ),
-  createWeeklyMenuPreview: (ingredientIds: number[]) => request(
-    () => apiClient.post<AiWeeklyMenuPreview>('/recipes/ai/weekly-menu', { ingredientIds }, { timeout: 60_000 }),
+  createAiCookingGuide: (recipeId: number) => request(
+    () => apiClient.post<AiCookingGuide>('/recipes/ai/cooking-guide', { recipeId }, { timeout: 60_000 }),
+  ),
+  createWeeklyMenuPreview: (ingredientIds: number[] = []) => request(
+    () => apiClient.post<AiWeeklyMenuPreview>('/recipes/ai/weekly-menu', ingredientIds.length ? { ingredientIds } : {}, { timeout: 60_000 }),
   ),
   related: (recipeId: number) => request(
     () => apiClient.get<{ items: RecipePost[] }>(`/recipes/${recipeId}/related`),
@@ -401,7 +412,7 @@ export const mealPlanApi = {
   createAiMenuPreview: async (payload: {
     weekStartDate: string; mode: AiMenuMode; goal?: AiMenuGoal | null;
     preferredIngredientIds?: number[]; avoidedIngredientIds?: number[];
-  }) => (await apiClient.post<AiMenuPreview>('/meal-plans/ai-menu/previews', payload, { timeout: 60_000 })).data,
+  }) => (await apiClient.post<AiMenuPreview>('/meal-plans/ai-menu/previews', payload, { timeout: 8_000 })).data,
   applyAiMenu: async (payload: {
     weekStartDate: string; mode: AiMenuMode; goal?: AiMenuGoal | null;
     avoidedIngredientIds?: number[]; meals: Array<Pick<AiMenuMeal, 'mealDate' | 'mealType' | 'recipeId'>>;

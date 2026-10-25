@@ -1,13 +1,179 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.95.0
+> **Version:** v2.103.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-24
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-24 — Refine Shopping List Workflow ([PR #185](https://github.com/NgaiLong49423/vegetarian-support-system/pull/185))
+
+**Status:** Committed — `c4822f9`.
+
+**Scope:** Make shopping-list creation, item management and review more consistent across recipe, meal-plan and shopping-list screens.
+
+### Added
+
+- Allow selecting recipe ingredients and adding manual items in the shopping-list dialog, with duplicate-name checks and numbered names for same-day lists.
+- Add shopping-list export actions and a compact menu for list-level actions.
+
+### Changed
+
+- Use the creation date for meal-plan shopping lists, order lists newest first and remove internal list codes from the interface.
+- Refine shopping-list layout, colors, controls and spacing across the page; use icon-only edit and delete actions for items.
+
+### Fixed
+
+- Normalize whitespace when aggregating manual item names so equivalent names are combined consistently.
+
+## 2026-10-23 — Improve Ingredient and Shopping Workflows
+
+**Status:** Committed — `f58b0e1`.
+
+**Scope:** Let Members inspect ingredients and add selected recipe items to shopping lists without leaving recipe details, while enabling administrators to manage ingredient images.
+
+### Added
+
+- Add ingredient image upload in the Admin catalog and link ingredient names from recipe details to ingredient detail pages.
+- Add a shopping-list action to recipe detail pages and allow Members to select recipe ingredients or add manual items before submitting.
+
+### Changed
+
+- Extend shopping-list API requests to carry selected recipe ingredients and manual items, and update the API and requirement documentation.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Fix AI Recipe Guidance Generation ([PR #181](https://github.com/NgaiLong49423/vegetarian-support-system/pull/181))
+
+**Status:** Committed — `3926690`.
+
+**Scope:** Prevent incomplete or falsely rejected AI-generated recipe descriptions and cooking instructions.
+
+### Added
+
+- Add regression coverage for Gemini output truncation and ingredient-name validation in cooking instructions.
+
+### Changed
+
+- Reserve an 8,192-token response budget for recipe text generation while keeping Gemini's default reasoning and a 60-second provider timeout.
+- Share Vietnamese-aware ingredient mention validation between Expert recipe authoring and Member cooking guidance.
+
+### Fixed
+
+- Reject truncated Gemini recipe output explicitly and allow selected compound ingredients, rinsing water, sauce, and dicing instructions without mistaking them for added ingredients.
+
+## 2026-10-23 — Detailed AI Cooking Guides ([PR #181](https://github.com/NgaiLong49423/vegetarian-support-system/pull/181))
+
+**Status:** Committed — `adfbcd9`.
+
+**Scope:** Extend AI cooking guidance for recipe authors and Members following suggested recipes.
+
+### Added
+
+- Add a source-linked cooking guide for Members with 6–10 ordered preparation, cooking, and plating steps.
+
+### Changed
+
+- Expand the Expert recipe-writing assistant to produce detailed, editable cooking steps and label estimated time or temperature.
+- Update FR-34 requirements, use cases, and API documentation for the new guide.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Bound FR-36 Gemini Preview Latency
+
+**Status:** Committed — `af1127a`.
+
+**Scope:** Keep AI-generated nutrition-menu previews within the provider and client timeout budget.
+
+### Added
+
+- Add a regression assertion for the shared Gemini provider timeout.
+
+### Changed
+
+- Set the shared Gemini provider request timeout to seven seconds and the FR-36 preview request timeout to eight seconds.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Fix AI Weekly Menu Submission Without Ingredient Filters (FR-34)
+
+**Status:** Committed — `764e121`.
+
+**Scope:** Ensure the weekly-menu preview action works when Members leave optional ingredient filters empty.
+
+### Added
+
+- None.
+
+### Changed
+
+- Synchronize the generated OpenAPI snapshot with the Backend contract produced by CI for the PR commit.
+
+### Fixed
+
+- Allow weekly-menu preview requests with no selected ingredients while keeping ingredient selection required for single-recipe recommendations.
+- Wait for the weekly-menu API request in the E2E scenario before asserting its preview.
+
+## 2026-10-22 — Define Ingredient Deactivation Guard (Issue #176) ([PR #177](https://github.com/NgaiLong49423/vegetarian-support-system/pull/177))
+
+**Status:** Committed — `acafeacf`.
+
+**Scope:** Update FR-18 and UC-18.1 so an ingredient referenced by a currently published recipe cannot be deactivated.
+
+### Added
+
+- Define rejection, preserved active state, and administrator feedback while any published recipe references the ingredient.
+
+### Changed
+
+- Allow deactivation once no published recipe currently references the ingredient; preserve existing inactive records and historical links.
+- Limit the rule to ingredients; measurement units remain outside Issue #176.
+
+### Fixed
+
+- None.
+
+## 2026-10-22 — Allow AI Weekly Menus Without Ingredient Filters (FR-34)
+
+**Scope:** Let eligible Pro Members preview an AI-generated weekly menu from the safe public recipe catalog without first selecting ingredients, while preserving optional ingredient filtering.
+
+### Changed
+
+- Make the weekly-menu preview ingredient filter optional; keep ingredient selection required for single-recipe recommendations.
+- Allow weekly-menu candidates from the full profile-safe public catalog when no ingredients are selected.
+- Update the API guide and weekly-menu planner flow for the optional filter.
+
+## 2026-10-22 — Create and Manage Shopping Lists (FR-53) ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `47dc13a`.
+
+**Scope:** Let Members create and manage shopping lists, then add one recipe at a time to a selected or newly created list.
+
+### Added
+
+- Add owner-protected API operations to rename and delete a shopping list, with confirmation and fallback navigation in the Frontend.
+- Add a named empty-list flow at `/di-cho` and a `MANUAL` list kind that is independent from meal plans and recipe sources.
+- Add per-recipe shopping actions from recipe cards, with destination selection, serving adjustment and an atomic create-and-add API operation.
+- Show catalog ingredient illustrations in shopping checklist rows, with a clear missing-image state for items without an available illustration.
+- Remove multi-recipe selection and the `POST /from-recipes` API contract.
+- Delete list contribution records and checklist items while preserving meal plans and source recipes.
+
+### Changed
+
+- Extend FR-53 acceptance criteria and document standalone list creation, list-level management and per-recipe additions.
+
+### Fixed
+
+- None.
 
 ## 2026-10-22 — Hand Off Shopping List Clipboard and Text Export (FR-55)
 
@@ -24,6 +190,90 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Connect the export toolbar to the current owned checklist without changing its aggregation, persistence or source-recipe data.
+
+### Fixed
+
+- None.
+
+
+## 2026-10-22 — Enrich Demo Recipe Ingredients and Illustrations ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `47dc13a`.
+
+**Scope:** Improve local Flyway demo recipe data and ingredient illustrations.
+
+### Added
+
+- Add per-recipe seasonings and synchronized cooking instructions for 54 named demo recipes, with all ingredient quantities expressed in grams for two servings.
+- Add individual AI-generated ingredient illustrations and a missing-image mapping seed that preserves existing image URLs.
+- Add a Compose-based fixture verification script for repeated execution, gram quantities, nutrition completeness, asset presence and preservation of unrelated recipes and uploaded images.
+
+### Changed
+
+- Convert legacy demo units using mass factors or ingredient-specific conversions and stop when a reliable conversion is unavailable.
+- Document dry ingredient weights and retained recipe water separately from discarded preparation water.
+
+### Fixed
+
+- Persist the existing zinc estimates for 85 demo ingredients instead of leaving their zinc columns null (BUG-054).
+- Include stored demo spice estimates in nutrition calculations under the current BR-52 policy while retaining unverified AI provenance (BUG-055).
+
+## 2026-10-22 — Align Public Profile Recipe Cards with Discovery ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `47dc13a`.
+
+**Scope:** Unify published recipe cards on public member and expert profiles with recipe discovery.
+
+### Added
+
+- None.
+
+### Changed
+
+- Reuse the shared recipe card with landscape covers, author details, cooking metadata, reaction percentage, view counts and save/meal-plan actions.
+- Adapt profile recipe grids from one to four columns while preserving pagination and author interaction totals.
+
+### Fixed
+
+- None.
+
+## 2026-10-21 — Add Public Ingredient Details ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `25b113f`.
+
+**Scope:** Let users inspect active ingredient details and available nutrition data.
+
+### Added
+
+- Add a public detail endpoint and a responsive ingredient detail page with per-100 g nutrition values.
+- Display published recipe articles containing the ingredient directly on its detail page, with recipe diet labels, sorting and load-more pagination.
+- Open ingredient details from directory names/images and recipe ingredient names.
+- Show missing nutrition values as unavailable and keep recipe discovery filters from the directory and detail page.
+
+### Changed
+
+- Expand FR-62 to cover public ingredient details, images and nutrition while excluding administrative provenance and status fields.
+- Synchronize the discovery use case, component guides and public API integration conventions with the ingredient detail flow.
+
+### Fixed
+
+- None.
+
+## 2026-10-21 — Add Ingredient Reference Images ([PR #175](https://github.com/NgaiLong49423/vegetarian-support-system/pull/175))
+
+**Status:** Committed — `25b113f`.
+
+**Scope:** Let administrators attach and manage an illustrative image for each ingredient in the catalog.
+
+### Added
+
+- Upload optional JPEG, PNG or WebP ingredient images up to 2 MB and persist their URLs with ingredient records.
+- Preview selected images in the admin editor and prefer saved images on ingredient cards, with existing image mappings as fallback.
+- Add the nullable `INGREDIENT.image_url` migration as V20 after integrating the V18/V19 checklist migrations, and synchronize the database schema snapshot.
+
+### Changed
+
+- None.
 
 ### Fixed
 
@@ -68,6 +318,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - Remove the requirement to leave the planner and save a recipe before selecting it for a meal; meal-plan operations do not modify the saved collection.
+
 
 ## 2026-10-21 — Restore CI Compatibility with Public Discovery ([PR #149](https://github.com/NgaiLong49423/vegetarian-support-system/pull/149))
 
@@ -662,6 +913,34 @@ None.
 - Split the local-only demo repeatable into ordered catalog, recipe, member-activity, community-moderation, and shopping-list files.
 - Integrate the three AI planning modes into the Meal Plan's “Dành cho bạn” area while keeping manual meal planning available separately.
 - Document the combined API contracts and clarify nutrition-menu replacement and rollback behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-13 — Compare Two Public Recipes ([PR #132](https://github.com/NgaiLong49423/vegetarian-support-system/pull/132))
+
+**Status:** Committed — `5749ba8`, `c11e882`, `8dc7f2f`, `ffb3eae`, `a2b410b`, `c666280`.
+
+**Scope:** Complete FR-60 (AC-60.1–AC-60.8, BR-76) in the Frontend: compare two different published recipes by overview, ingredients and the nine nutrients per serving, using the existing public recipe detail and search APIs only.
+
+### Added
+
+- Add the real `/so-sanh?a={recipeId}&b={recipeId}` comparison page showing the first and second recipe side by side, replacement of either recipe, removal of recipes that are no longer public, and retry on load errors.
+- Add the separate `/so-sanh/chon-mon` picker page: "Chọn công thức thứ hai" (or "Chọn công thức đầu tiên") opens it with the Explore keyword search, filters, sort and paging, leaves out the recipe already chosen on the other side, lets each candidate open its recipe detail in a new tab ("Xem chi tiết", PR #132 review) so the picker keeps its search, and returns to the comparison with both recipes.
+- Line up ingredients only by `ingredient_id`, keep each recipe's original quantity and unit, and flag rows whose units differ instead of converting them.
+- Show the nine nutrients per serving with the original servings of each recipe and the absolute difference (first recipe − second recipe); a recipe with incomplete nutrition shows "Chưa đủ dữ liệu" and no difference.
+- Add "So sánh" entry points on recipe cards, both recipe detail routes and the Member saved recipe list.
+- Add Playwright tests for every acceptance criterion and the picker, and a real-stack test that uses the two seeded demo Expert recipes, chooses the second one on the picker page, checks the per-serving values against the Backend and checks that comparing only sends `GET` requests.
+- Record BUG-059: adding an ingredient between 00:00 and 06:59 Vietnam time is rejected because the default reference date is checked against the Backend's UTC clock; found by the admin catalog real-stack test and not fixed in this PR.
+
+### Changed
+
+- Remove the prototype banner, mock data and prototype Playwright test of `/so-sanh`; the prototype detail page links to the empty comparison page.
+- Move the Explore search and filter state, filter panel, sort, active filter chips and paging into a shared `RecipeSearch` module so the picker reuses them; Explore behaves as before.
+- Name the two sides "Công thức đầu tiên" and "Công thức thứ hai" instead of positions A and B, as requested in the PR #132 review.
+- Target recipe card links by their heading in the member profile Playwright test and the Explore real-stack test, since each card now also has a "So sánh" link with the recipe title.
+- Document FR-60 in `API.md` section 7 and the Frontend README.
 
 ### Fixed
 

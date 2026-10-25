@@ -97,9 +97,9 @@ export function CreateShoppingListButton({
         className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-brand-400 focus-visible:outline-2 focus-visible:outline-brand-400 disabled:opacity-50"
       >
         <ShoppingBasket className="h-4 w-4" />
-        Tạo danh sách đi chợ
+        Tạo danh sách mua sắm
       </button>
-      <Modal trapFocus open={open} onClose={close} title="Tạo danh sách đi chợ">
+      <Modal trapFocus open={open} onClose={close} title="Tạo danh sách mua sắm">
         <form
           onSubmit={(event) => {
             event.preventDefault()

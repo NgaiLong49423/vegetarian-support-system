@@ -15,222 +15,195 @@ const recipe = (id: number) => ({
   prepTimeMin: 10,
   cookTimeMin: 20,
   media: [],
-  ingredients: [{ ingredientId: 1, quantity: 300, unitId: 1 }],
+  ingredients: [{ ingredientId: 1, name: "Đậu phụ", quantity: 300, unitId: 1, unitCode: "g", unitName: "gram", customName: null }],
   likes: 0,
   dislikes: 0,
   likePercentage: null,
   viewCount: 0,
 })
+
+const detail = (id: number) => ({
+  recipeId: id,
+  title: `Món đi chợ ${id}`,
+  servings: 2,
+  ingredients: [{ ingredientId: 1, name: "Đậu phụ", quantity: 300, unitId: 1, unitCode: "g", unitName: "gram", nutritionSupported: true }],
+})
+
 const list = {
   id: 77,
-  name: "Danh sách cá nhân từ công thức",
+  name: "Danh sách tuần",
   createdAt: "",
   updatedAt: "",
-  items: [
-    {
-      id: 1,
-      ingredientId: 1,
-      name: "Đậu phụ",
-      ingredientGroup: "Đậu",
-      quantity: 1100,
-      unitId: 1,
-      unitCode: "g",
-      unitName: "gram",
-      bought: false,
-      sources: [
-        {
-          recipeId: 1,
-          title: "Món đi chợ 1",
-          available: true,
-          originalQuantity: 300,
-          originalUnitId: 1,
-          originalUnitCode: "g",
-        },
-        {
-          recipeId: 2,
-          title: null,
-          available: false,
-          originalQuantity: 800,
-          originalUnitId: 1,
-          originalUnitCode: "g",
-        },
-      ],
-    },
-  ],
+  items: [{
+    id: 1,
+    ingredientId: 1,
+    name: "Đậu phụ",
+    ingredientGroup: "Đậu",
+    quantity: 450,
+    unitId: 1,
+    unitCode: "g",
+    unitName: "gram",
+    bought: false,
+    sources: [{ recipeId: 1, title: "Món đi chợ 1", available: true, originalQuantity: 450, originalUnitId: 1, originalUnitCode: "g" }],
+  }],
 }
-async function setup(
-  page: Page,
-  role: "CUSTOMER" | "EXPERT" | "ADMIN" | null = "CUSTOMER",
-) {
+
+async function setup(page: Page, role: "CUSTOMER" | "EXPERT" | "ADMIN" | null = "CUSTOMER") {
   if (role) await seedDemoSession(page, role)
-  const state = { fail: false, payloads: [] as { recipeIds: number[] }[] }
-  await page.route("**/api/v1/recipes/form-options", (r) =>
-    r.fulfill({
-      json: {
-        dishCategories: [],
-        vegetarianTypes: [],
-        difficulties: [],
-        units: [],
-      },
-    }),
-  )
+  const state = { adds: [] as unknown[], creates: [] as unknown[], fail: false }
+  await page.route("**/api/v1/recipes/form-options", (r) => r.fulfill({ json: { dishCategories: [], vegetarianTypes: [], difficulties: [], units: [] } }))
   await page.route("**/api/v1/recipes/discovery?**", (r) => {
-    const current = Number(
-      new URL(r.request().url()).searchParams.get("page") ?? 0,
-    )
-    return r.fulfill({
-      json: {
-        items: [recipe(current + 1)],
-        page: current,
-        size: 12,
-        hasNext: current === 0,
-      },
-    })
+    const pageNumber = Number(new URL(r.request().url()).searchParams.get("page") ?? 0)
+    return r.fulfill({ json: { items: [recipe(pageNumber + 1)], page: pageNumber, size: 12, hasNext: pageNumber === 0 } })
   })
-  await page.route("**/api/v1/shopping-lists/from-recipes", (r) => {
-    state.payloads.push(r.request().postDataJSON())
+  await page.route("**/api/v1/recipes/1", (r) => r.fulfill({ json: detail(1) }))
+  await page.route("**/api/v1/shopping-lists?**", (r) => {
+    const pageNumber = Number(new URL(r.request().url()).searchParams.get("page") ?? 0)
+    return r.fulfill({ json: { content: pageNumber === 0 ? [list] : [{ ...list, id: 78, name: "Danh sách khác" }], page: pageNumber, size: 20, totalElements: 21, totalPages: 2 } })
+  })
+  await page.route("**/api/v1/shopping-lists/from-recipe", (r) => {
+    state.creates.push(r.request().postDataJSON())
     return state.fail
-      ? r.fulfill({
-          status: 404,
-          json: { code: "NOT_FOUND", detail: "Công thức đã ẩn. Hãy tải lại." },
-        })
-      : r.fulfill({
-          json: { shoppingList: list, warnings: [], incompatibleItemIds: [] },
-        })
+      ? r.fulfill({ status: 404, json: { code: "NOT_FOUND", detail: "Công thức đã ẩn. Hãy tải lại." } })
+      : r.fulfill({ json: { shoppingList: { ...list, name: r.request().postDataJSON().name }, warnings: [], incompatibleItemIds: [] } })
   })
-  await page.route("**/api/v1/shopping-lists?**", (r) =>
-    r.fulfill({
-      json: {
-        content: [list],
-        page: 0,
-        size: 20,
-        totalElements: 1,
-        totalPages: 1,
-      },
-    }),
-  )
-  await page.route("**/api/v1/shopping-lists/77", (r) =>
-    r.fulfill({ json: list }),
-  )
-  await page.route("**/api/v1/shopping-lists/options", (r) =>
-    r.fulfill({ json: [{ id: 1, code: "g", name: "gram", active: true }] }),
-  )
+  await page.route("**/api/v1/shopping-lists/*/recipes", (r) => {
+    state.adds.push(r.request().postDataJSON())
+    return state.fail
+      ? r.fulfill({ status: 404, json: { code: "NOT_FOUND", detail: "Công thức đã ẩn. Hãy tải lại." } })
+      : r.fulfill({ json: { shoppingList: list, warnings: [], incompatibleItemIds: [] } })
+  })
+  await page.route("**/api/v1/shopping-lists/77", (r) => r.fulfill({ json: list }))
+  await page.route("**/api/v1/shopping-lists/options", (r) => r.fulfill({ json: [{ id: 1, code: "g", name: "gram", active: true }] }))
   return state
 }
 
-test("AC-53.6 selects recipes across Explore pages and opens a persisted personal checklist with sources", async ({
-  page,
-}) => {
+async function openShoppingDialog(page: Page, title = "Món đi chợ 1") {
+  await page.getByRole("button", { name: `Tùy chọn cho công thức ${title}` }).click()
+  await page.getByRole("menuitem", { name: "Thêm vào danh sách mua sắm" }).click()
+}
+
+test("AC-53.6 adds one recipe to a selected list and scales the servings", async ({ page }) => {
   const state = await setup(page, "EXPERT")
   await page.goto("/kham-pha")
-  await page.getByLabel("Chọn Món đi chợ 1 để đi chợ").check()
-  await page.getByRole("button", { name: "Trang sau", exact: true }).click()
-  await page.getByLabel("Chọn Món đi chợ 2 để đi chợ").check()
-  await page
-    .getByRole("button", { name: "Thêm 2 công thức vào danh sách đi chợ" })
-    .click()
+  await expect(page.getByRole("heading", { name: "Món đi chợ 1", exact: true })).toBeVisible()
+  await openShoppingDialog(page)
+  await expect(page.getByRole("radio", { name: "Danh sách tuần" })).toBeVisible()
+  await page.getByLabel("Tăng khẩu phần cần mua").click()
+  await expect(page.getByText("450 g", { exact: true })).toBeVisible()
+  await page.getByRole("radio", { name: "Danh sách tuần" }).check()
+  await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
   await expect(page).toHaveURL(/di-cho\?listId=77/)
-  expect(state.payloads).toEqual([{ recipeIds: [1, 2] }])
-  await expect(page.getByTestId("shopping-item-1")).toContainText("1.100 g")
-  await expect(
-    page.getByRole("link", { name: "Món đi chợ 1", exact: true }),
-  ).toHaveAttribute("href", "/cong-thuc/id/1")
-  await expect(
-    page.getByText("Công thức không còn khả dụng", { exact: true }),
-  ).toBeVisible()
-  await page.reload()
-  await expect(page.getByLabel("Nguồn của Đậu phụ")).toContainText(
-    "300 g lúc thêm",
-  )
-  expect(state.payloads).toHaveLength(1)
+  expect(state.adds).toEqual([{ recipeId: 1, servings: 3, selectedIngredientIds: [1], manualItems: [] }])
+  expect(state.creates).toHaveLength(0)
 })
 
-test("AC-53.6 failed additions retain selection and can be retried or cleared", async ({
-  page,
-}) => {
+test("AC-53.6 can load another page and create a named list with the recipe", async ({ page }) => {
+  const state = await setup(page)
+  await page.goto("/kham-pha")
+  await openShoppingDialog(page)
+  await page.getByRole("button", { name: "Tải thêm danh sách" }).click()
+  await expect(page.getByRole("radio", { name: "Danh sách khác" })).toBeVisible()
+  await page.getByRole("button", { name: "Tạo danh sách mới" }).click()
+  await page.getByLabel("Tên danh sách").fill("Mua cuối tuần")
+  await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
+  await expect(page).toHaveURL(/di-cho\?listId=77/)
+  expect(state.creates).toEqual([{ name: "Mua cuối tuần", recipeId: 1, servings: 2, selectedIngredientIds: [1], manualItems: [] }])
+  expect(state.adds).toHaveLength(0)
+})
+
+test("AC-53.6 validates and creates a list with manually added ingredients", async ({ page }) => {
+  const state = await setup(page)
+  await page.goto("/kham-pha")
+  await openShoppingDialog(page)
+  await page.getByRole("button", { name: "Tạo danh sách mới" }).click()
+  const listName = page.getByLabel("Tên danh sách")
+  await listName.fill("")
+  await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
+  await expect(page.getByRole("alert")).toHaveText("Tên danh sách phải có từ 1 đến 200 ký tự.")
+
+  await listName.fill("Mua rau")
+  await page.getByLabel("Thêm Đậu phụ").uncheck()
+  await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
+  await expect(page.getByRole("alert")).toHaveText("Hãy chọn ít nhất một nguyên liệu hoặc thêm mặt hàng thủ công.")
+
+  await page.getByRole("button", { name: "Thêm mặt hàng" }).click()
+  await page.getByRole("button", { name: "Thêm mặt hàng" }).click()
+  const ingredientNames = page.getByLabel("Tên nguyên liệu")
+  await ingredientNames.nth(0).fill("Hành lá")
+  await ingredientNames.nth(1).fill(" hành   lá ")
+  await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
+  await expect(page.getByRole("alert")).toHaveText("Hành lá bị trùng tên trong các mặt hàng đang thêm.")
+
+  await page.getByRole("button", { name: /Xóa/ }).last().click()
+  await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
+  await expect(page).toHaveURL(/di-cho\?listId=77/)
+  expect(state.creates).toEqual([{
+    name: "Mua rau",
+    recipeId: 1,
+    servings: 2,
+    selectedIngredientIds: [],
+    manualItems: [{ name: "Hành lá", quantity: 1, unitId: 1 }],
+  }])
+})
+
+test("AC-53.6 prevents an existing manual ingredient from being duplicated", async ({ page }) => {
+  const state = await setup(page)
+  await page.goto("/kham-pha")
+  await openShoppingDialog(page)
+  await page.getByRole("button", { name: "Thêm mặt hàng" }).click()
+  await page.getByLabel("Tên nguyên liệu").fill(" đậu   phụ ")
+  await page.getByRole("radio", { name: "Danh sách tuần" }).check()
+  await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
+  await expect(page.getByRole("alert")).toHaveText(/đậu\s+phụ đã có trong danh sách \(450 g\)\./)
+  await expect(page.getByRole("dialog")).toBeVisible()
+
+  await page.getByLabel("Tên nguyên liệu").fill("Cà chua")
+  await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
+  await expect(page).toHaveURL(/di-cho\?listId=77/)
+  expect(state.adds).toEqual([{
+    recipeId: 1,
+    servings: 2,
+    selectedIngredientIds: [1],
+    manualItems: [{ name: "Cà chua", quantity: 1, unitId: 1 }],
+  }])
+})
+
+test("AC-53.6 keeps the dialog open after a failed add and allows retry", async ({ page }) => {
   const state = await setup(page)
   state.fail = true
   await page.goto("/kham-pha")
-  await expect(
-    page.getByRole("button", { name: "Thêm 0 công thức vào danh sách đi chợ" }),
-  ).toBeDisabled()
-  await page.getByLabel("Chọn Món đi chợ 1 để đi chợ").check()
-  await page
-    .getByRole("button", { name: "Thêm 1 công thức vào danh sách đi chợ" })
-    .click()
+  await openShoppingDialog(page)
+  await page.getByRole("radio", { name: "Danh sách tuần" }).check()
+  await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
   await expect(page.getByRole("alert")).toContainText("Công thức đã ẩn")
-  await expect(page.getByLabel("Chọn Món đi chợ 1 để đi chợ")).toBeChecked()
-  await page.getByRole("button", { name: "Bỏ chọn tất cả" }).click()
-  await expect(page.getByLabel("Chọn Món đi chợ 1 để đi chợ")).not.toBeChecked()
-  await page.getByLabel("Chọn Món đi chợ 1 để đi chợ").check()
+  await expect(page.getByRole("dialog")).toBeVisible()
   state.fail = false
-  await page
-    .getByRole("button", { name: "Thêm 1 công thức vào danh sách đi chợ" })
-    .click()
+  await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
   await expect(page).toHaveURL(/di-cho\?listId=77/)
 })
 
-test("AC-53.6 saved recipes allow selection of available sources only", async ({
-  page,
-}) => {
+test("AC-53.6 saved recipe menu loads full recipe details before adding", async ({ page }) => {
   const state = await setup(page)
-  await page.route("**/api/v1/saved-recipes?**", (r) =>
-    r.fulfill({
-      json: {
-        content: [
-          {
-            recipeId: 1,
-            title: "Món đã lưu",
-            available: true,
-            authorName: "Tác giả",
-            coverUrl: null,
-          },
-          {
-            recipeId: 2,
-            title: null,
-            available: false,
-            unavailableMessage: "Công thức không còn khả dụng",
-          },
-        ],
-        page: 0,
-        size: 20,
-        totalElements: 2,
-        totalPages: 1,
-      },
-    }),
-  )
+  await page.route("**/api/v1/saved-recipes?**", (r) => r.fulfill({
+    json: { content: [{ recipeId: 1, title: "Món đi chợ 1", available: true, authorName: "Tác giả", coverUrl: null }], page: 0, size: 20, totalElements: 1, totalPages: 1 },
+  }))
   await page.goto("/ho-so")
-  await page.getByLabel("Chọn Món đã lưu để đi chợ").check()
-  await expect(page.getByRole("checkbox")).toHaveCount(1)
-  await page
-    .getByRole("button", { name: "Thêm 1 công thức vào danh sách đi chợ" })
-    .click()
+  await openShoppingDialog(page)
+  await expect(page.getByText("Đậu phụ", { exact: true })).toBeVisible()
+  await page.getByRole("radio", { name: "Danh sách tuần" }).check()
+  await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
   await expect(page).toHaveURL(/di-cho\?listId=77/)
-  expect(state.payloads).toEqual([{ recipeIds: [1] }])
+  expect(state.adds).toEqual([{ recipeId: 1, servings: 2, selectedIngredientIds: [1], manualItems: [] }])
 })
 
-test("AC-53.6 Guest sees sign-in and Admin cannot select or submit recipes", async ({
-  page,
-}) => {
-  const state = await setup(page, null)
+test("AC-53.6 Guest can sign in and Admin has no shopping action", async ({ page }) => {
+  await setup(page, null)
   await page.goto("/kham-pha")
-  await expect(
-    page.getByRole("link", {
-      name: "Đăng nhập để tạo danh sách đi chợ từ công thức",
-    }),
-  ).toHaveAttribute("href", "/dang-nhap")
-  await expect(page.getByRole("checkbox", { name: /để đi chợ/ })).toHaveCount(0)
-  expect(state.payloads).toHaveLength(0)
-})
+  await openShoppingDialog(page)
+  await expect(page.getByRole("dialog", { name: "Thêm vào danh sách mua sắm" }).getByRole("link", { name: "Đăng nhập", exact: true })).toHaveAttribute("href", "/dang-nhap")
 
-test("AC-53.6 Admin has no shopping selection", async ({ page }) => {
-  const state = await setup(page, "ADMIN")
-  await page.goto("/kham-pha")
-  await expect(
-    page.getByRole("heading", { name: "Món đi chợ 1", exact: true }),
-  ).toBeVisible()
-  await expect(
-    page.getByRole("region", { name: "Tạo danh sách từ công thức" }),
-  ).toHaveCount(0)
-  expect(state.payloads).toHaveLength(0)
+  await seedDemoSession(page, "ADMIN")
+  await page.reload()
+  await expect(page.getByRole("button", { name: /Tùy chọn cho công thức/ })).toHaveCount(0)
 })

@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.9.0
+> **Version:** v2.11.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-23
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -44,7 +44,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - So sánh công thức (`FR-60`): Guest và Member có thể chọn đúng hai Recipe Post công khai khác nhau để đối chiếu thông tin tổng quan, nguyên liệu và chín chỉ tiêu dinh dưỡng trên một khẩu phần; hệ thống không lưu lịch sử, không xuất PDF và không kết luận món nào tốt hơn hoặc lành mạnh hơn.
 - Quan hệ xã hội (`FR-59`, `BR-75`): Customer và Chuyên gia đã đăng nhập có thể theo dõi hoặc bỏ theo dõi một Member khác; quan hệ có hướng được lưu bằng `USER_FOLLOW`. Chức năng này chưa bao gồm news feed cá nhân hóa, tài khoản riêng tư hay thông báo follow.
 - Khám phá đa tiêu chí: Trang khám phá hỗ trợ 6 chế độ độc lập gồm Newest (Mới nhất), Most Liked (Được yêu thích nhất theo tỷ lệ % Like), Most Viewed (Xem nhiều nhất theo 24h/7d/30d/all-time), Most Commented (Nhiều bình luận nhất), Most Active (Hoạt động sôi nổi nhất theo tương tác 7 ngày), và Trending (Thịnh hành theo tương tác gần đây + hệ số tươi mới freshness decay).
-- Khám phá thêm danh bạ Chuyên gia đang hoạt động có tìm kiếm, hồ sơ công khai và follow theo FR-59; danh mục nguyên liệu hiển thị tất cả nguyên liệu hoạt động dưới dạng nhãn chọn nhiều và mở công thức đã lọc (`FR-61`, `FR-62`).
+- Khám phá thêm danh bạ Chuyên gia đang hoạt động có tìm kiếm, hồ sơ công khai và follow theo FR-59; danh mục nguyên liệu cho xem chi tiết và dinh dưỡng theo FR-62, đồng thời chọn nhiều nguyên liệu để mở công thức đã lọc (`FR-61`, `FR-62`).
 - Hồ sơ công khai hiển thị tổng lượt thích và lượt xem của tất cả Recipe Post đang công khai của tác giả; thống kê không phụ thuộc trang phân trang đang xem (`FR-23`).
 - Kiểm duyệt sau đăng: người dùng báo cáo nội dung có vấn đề và Administrator xử lý báo cáo. Baseline hiện tại không cung cấp AI quét hoặc gắn cờ nội dung.
 - Người dùng: tìm kiếm/lọc, xem nội dung, tương tác cộng đồng, lưu công thức (`Saved Recipe`), lập thực đơn ngày/tuần (`Meal Plan`), so sánh thống kê dinh dưỡng tuần, và **xuất file công thức (.txt/.pdf) / báo cáo dinh dưỡng ngày hoặc tuần (.pdf, gồm thực đơn dự kiến) / danh sách mua sắm (.txt)**.
@@ -303,7 +303,8 @@ Khi bài công thức bị ẩn/xóa/không khả dụng, Saved Recipe và Meal 
 
 - AI gợi ý món và lập menu chỉ được chọn từ các bài công thức đang công khai, không bị ẩn/xóa trong hệ thống.
 - Gợi ý có thể dựa trên loại ăn chay, nguyên liệu cần tránh, món/nguyên liệu không thích, sở thích đã khai báo và nguyên liệu người dùng cho biết đang có.
-- AI được tìm, xếp hạng, giải thích lý do phù hợp, sắp công thức vào menu và đề xuất công thức thay thế; AI không tạo món, công thức, danh sách nguyên liệu hoặc hướng dẫn nấu mới cho người dùng.
+- AI được tìm, xếp hạng, giải thích lý do phù hợp, sắp công thức vào menu, đề xuất công thức thay thế và tạo hướng dẫn chế biến chi tiết chỉ từ Recipe Post công khai có sẵn. Hướng dẫn AI cho Member chỉ mở rộng thao tác từ nội dung và nguyên liệu của một bài nguồn; không tạo món hoặc danh sách nguyên liệu mới, không thêm nguyên liệu, không sửa/lưu bài nguồn.
+- Khi công thức nguồn thiếu thời gian hoặc nhiệt độ, AI phải nêu rõ nguồn không cung cấp và đánh dấu mọi ước tính bổ trợ; mỗi hướng dẫn phải dẫn tới bài công thức nguồn để người dùng kiểm tra.
 - Mỗi kết quả phải dẫn tới bài công thức tương ứng để người dùng kiểm tra trước khi lưu hoặc thêm vào lịch ăn.
 - Khi không có công thức phù hợp, hệ thống thông báo không tìm thấy hoặc chỉ trả danh sách chưa đầy đủ kèm lý do; không bịa công thức để lấp kết quả.
 - Bản menu AI chỉ là đề xuất. Người dùng chọn từng món hoặc xác nhận menu trước khi lịch ăn thay đổi.
@@ -483,7 +484,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | FR-59 | Theo dõi, bỏ theo dõi và xem quan hệ theo dõi giữa các Member (`USER_FOLLOW`) | M01, M02, M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-59) |
 | FR-60 | So sánh hai Recipe Post công khai theo nguyên liệu và chín chỉ tiêu dinh dưỡng | M01, M04, M10 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-60) |
 | FR-61 | Khám phá và theo dõi Chuyên gia ẩm thực chay | M01, M02 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-61) |
-| FR-62 | Chọn nguyên liệu và tìm công thức | M01, M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-62) |
+| FR-62 | Xem chi tiết nguyên liệu và tìm công thức | M01, M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-62) |
 
 ## 8. Business Rules hiện hành
 

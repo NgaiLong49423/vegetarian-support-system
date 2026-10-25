@@ -31,7 +31,7 @@ const shortcuts = [
   { to: '/kham-pha', label: 'Khám phá công thức', icon: ChefHat },
   { to: '/ho-so', label: 'Công thức đã lưu', icon: Bookmark },
   { to: '/ke-hoach', label: 'Lịch ăn trong tuần', icon: CalendarDays },
-  { to: '/di-cho', label: 'Danh sách đi chợ', icon: ShoppingBasket },
+  { to: '/di-cho', label: 'Danh sách mua sắm', icon: ShoppingBasket },
 ];
 
 export function Home() {

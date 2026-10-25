@@ -6,6 +6,8 @@ import { Modal } from "./Modal"
 import { localDateKey, mondayOf } from "./WeekCalendar"
 import { mealPlanApi, type MealPlanWeek } from "../api/recipes"
 import { asApiError } from "../lib/apiClient"
+import { AddRecipeShoppingDialog } from "./AddRecipeShoppingDialog"
+import type { RecipePost } from "../api/recipes"
 
 type MealType = MealPlanWeek["entries"][number]["mealType"]
 
@@ -40,13 +42,16 @@ function dateAtOffset(weekStartDate: string, offset: number) {
 export function AddToMealPlanButton({
   recipeId,
   recipeTitle,
+  preview,
 }: {
   recipeId: number
   recipeTitle: string
+  preview?: RecipePost
 }) {
   const { account } = useAuth()
   const [loginOpen, setLoginOpen] = useState(false)
   const [planOpen, setPlanOpen] = useState(false)
+  const [shoppingOpen, setShoppingOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -200,6 +205,14 @@ export function AddToMealPlanButton({
           >
             Thêm vào lịch ăn
           </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => { setMenuOpen(false); setShoppingOpen(true) }}
+            className="w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-raised focus-visible:bg-raised focus-visible:outline-none"
+          >
+            Thêm vào danh sách mua sắm
+          </button>
         </div>
       )}
       {notice && (
@@ -314,6 +327,13 @@ export function AddToMealPlanButton({
           {busy ? <LoaderCircle className="h-5 w-5 animate-spin" /> : `Hoàn tất${selectedSlots.size > 0 ? ` · ${selectedSlots.size}` : ""}`}
         </button>
       </Modal>
+      <AddRecipeShoppingDialog
+        open={shoppingOpen}
+        onClose={() => setShoppingOpen(false)}
+        recipeId={recipeId}
+        recipeTitle={recipeTitle}
+        preview={preview}
+      />
     </div>
   )
 }
