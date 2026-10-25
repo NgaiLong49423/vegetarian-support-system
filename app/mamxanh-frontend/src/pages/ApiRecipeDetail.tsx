@@ -253,7 +253,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
     />
 
     {/* Header: Tiêu đề, Mô tả và Thông tin tác giả */}
-    <div className="mb-6">
+    <Card className="mb-6 p-5 sm:p-7 shadow-xs">
       <div className="mb-3 flex flex-wrap gap-2">
         <Badge tone="leaf">{recipe.vegetarianTypeLabel}</Badge>
         <Badge>{recipe.dishCategoryLabel}</Badge>
@@ -261,7 +261,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       </div>
       <h1 className="max-w-4xl text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">{recipe.title}</h1>
       {recipe.description && <p className="mt-3 max-w-3xl leading-7 text-ink-muted">{recipe.description}</p>}
-      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-ink-muted">
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-brand-100/70 pt-4 text-sm text-ink-muted">
         <div className="flex items-center gap-3">
           <MemberAvatar name={author.displayName} url={author.avatarUrl} />
           <div>
@@ -279,7 +279,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4 text-brand-600" />{recipe.servings} khẩu phần gốc</span>
         {recipe.publishedAt && <time dateTime={recipe.publishedAt}>Đăng ngày {publishedDate(recipe.publishedAt)}</time>}
       </div>
-    </div>
+    </Card>
 
     {/* Hàng 1: Tổng quan (Ảnh món ăn & Thông tin nhanh) - Luôn cân bằng chiều cao 1:1 tuyệt đối */}
     <div className="mb-8 grid gap-6 lg:grid-cols-12 lg:items-stretch">
