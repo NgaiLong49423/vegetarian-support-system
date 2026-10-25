@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.42.0
+> **Version:** v0.43.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-24
 > **Status:** Active
@@ -146,6 +146,12 @@ Hai endpoint công khai, không cần Bearer token (UC-03.6, UC-03.7, AC-03.14, 
 - Hệ thống không có session máy chủ nên không có phiên nào cần thu hồi; access token đã phát trước đó vẫn hợp lệ đến khi hết hạn (tối đa 60 phút, Q30).
 
 Frontend: `/quen-mat-khau` gửi email và hiển thị nguyên văn `message` trung tính; `/dat-lai-mat-khau` đọc `token` từ URL, giữ trong bộ nhớ và xóa khỏi thanh địa chỉ trước khi người dùng nhập mật khẩu mới.
+
+### Upload ảnh công thức — FR-14 / fix #158
+
+`POST /api/v1/recipes/media/upload` nhận multipart trường `file`, yêu cầu Expert và trả `201` với envelope `data.blobUrl`, `data.mimeType`, `data.sizeBytes` sau khi lưu Azure thành công. Thiếu cấu hình, khởi tạo storage thất bại hoặc upload Azure lỗi trả `503 MEDIA_STORAGE_UNAVAILABLE` dưới dạng `application/problem+json`; không trả URL mock. Các tính năng không dùng storage vẫn khởi động. Storage dùng chung cho avatar cũng từ chối upload khi Azure không khả dụng.
+
+Root Compose truyền `AZURE_STORAGE_CONNECTION_STRING` và `AZURE_STORAGE_CONTAINER_NAME` từ env file Backend. Container lưu ảnh công khai cần cho phép đọc Blob để trình duyệt mở URL ảnh; connection string chỉ nằm ở Backend. Ảnh cũ chỉ có URL mock cần tải lại vì chưa có nội dung tệp trên Azure.
 
 ### 3.6 Định danh lượt xem công thức — FR-58
 

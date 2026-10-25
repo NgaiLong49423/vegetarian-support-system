@@ -1,6 +1,10 @@
 package tech.mamxanh.recipe.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.http.ProblemDetail;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,6 +49,10 @@ public class RecipeMediaController {
     @PostMapping(value = "/media/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('EXPERT')")
     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @Operation(summary = "Upload a recipe image to Azure Blob Storage")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Image stored successfully; data contains the blob URL.", useReturnTypeSchema = true)
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "503", description = "MEDIA_STORAGE_UNAVAILABLE: storage is unconfigured or unavailable; no successful upload URL is returned.",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<ApiResponse<UploadImageResponse>> uploadImage(
             @RequestParam("file") MultipartFile file) {
         UploadImageResponse response = recipeMediaService.uploadImage(file);

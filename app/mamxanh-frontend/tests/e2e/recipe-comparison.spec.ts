@@ -87,8 +87,20 @@ const mushroom = detail(703, {
   }, false, ['Nấm tràm Phú Quốc']),
 });
 
+// Long category label like the demo data, so the picker card metadata line is wider than a phone column.
+const dessert = detail(704, {
+  title: 'Chè kê vàng chà là dừa',
+  dishCategory: 'DESSERT',
+  dishCategoryLabel: 'Món tráng miệng / chè',
+  servings: 2,
+  prepTimeMinutes: 15,
+  cookTimeMinutes: 20,
+  ingredients: [],
+  nutrition: nutrition({}, false),
+});
+
 type Detail = ReturnType<typeof detail>;
-const details: Record<number, Detail> = { 701: tofu, 702: soup, 703: mushroom };
+const details: Record<number, Detail> = { 701: tofu, 702: soup, 703: mushroom, 704: dessert };
 
 const card = (recipe: Detail) => ({
   id: recipe.recipeId,
@@ -116,7 +128,7 @@ const card = (recipe: Detail) => ({
 });
 
 const formOptions = {
-  dishCategories: [{ code: 'MAIN', label: 'Món chính' }, { code: 'SOUP', label: 'Món canh' }],
+  dishCategories: [{ code: 'MAIN', label: 'Món chính' }, { code: 'SOUP', label: 'Món canh' }, { code: 'DESSERT', label: 'Món tráng miệng / chè' }],
   vegetarianTypes: [{ code: 'VEGAN', label: 'Thuần chay' }, { code: 'LACTO_OVO', label: 'Chay trứng sữa' }],
   difficulties: [],
   units: [],
@@ -331,6 +343,32 @@ test('FR-08 on the picker: keyword, filters, ingredients and sort are sent as GE
   await expect(page).toHaveURL(/\/so-sanh\?a=701&b=703$/);
 });
 
+test('FR-62 ingredient links preset the shared search from the URL, and resetting removes them', async ({ page }) => {
+  const searches: URLSearchParams[] = [];
+  await publicApi(page, (params) => {
+    searches.push(params);
+    return [soup, mushroom];
+  });
+  const lastSearch = () => searches.at(-1);
+  await page.goto(`/so-sanh/chon-mon?a=701&ingredientId=11&ingredientName=${encodeURIComponent('Nấm rơm')}`);
+  await expect.poll(() => lastSearch()?.getAll('ingredientIds')).toEqual(['11']);
+  const active = page.getByLabel('Bộ lọc đang áp dụng');
+  await expect(active.getByRole('button', { name: 'Nấm rơm' })).toBeVisible();
+
+  // Removing a preset ingredient must stick when another filter later changes the URL.
+  await active.getByRole('button', { name: 'Nấm rơm' }).click();
+  await page.getByRole('combobox', { name: 'Thể loại món' }).selectOption('SOUP');
+  await expect.poll(() => lastSearch()?.get('dishCategory')).toBe('SOUP');
+  expect(lastSearch()?.getAll('ingredientIds')).toEqual([]);
+  await expect(page).not.toHaveURL(/ingredientId=/);
+
+  await page.goto(`/so-sanh/chon-mon?a=701&ingredientId=11&ingredientName=${encodeURIComponent('Nấm rơm')}`);
+  await expect.poll(() => lastSearch()?.getAll('ingredientIds')).toEqual(['11']);
+  await active.getByRole('button', { name: 'Xóa tất cả' }).click();
+  await expect.poll(() => lastSearch()?.getAll('ingredientIds')).toEqual([]);
+  await expect(page).toHaveURL(/\/so-sanh\/chon-mon\?a=701$/);
+});
+
 test('AC-60.2: the first recipe cannot be chosen again and, when nothing else matches, the user can go back to explore', async ({ page }) => {
   await publicApi(page, () => [tofu]);
   await page.goto('/so-sanh?a=701&b=701');
@@ -433,7 +471,7 @@ test('AC-60.7: comparing and picking only read public data, keep no history and 
 
 test('AC-60.8: on a phone the comparison and the picker are grouped without horizontal page scroll', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
-  await publicApi(page);
+  await publicApi(page, () => [tofu, soup, dessert]);
   await page.goto('/so-sanh?a=701&b=702');
 
   const energy = nutritionTable(page).getByRole('row', { name: /Năng lượng/ });
@@ -445,7 +483,9 @@ test('AC-60.8: on a phone the comparison and the picker are grouped without hori
   expect(await overflow()).toBeLessThanOrEqual(0);
 
   await page.goto('/so-sanh/chon-mon?a=701');
-  await expect(choices(page).getByRole('listitem')).toHaveCount(1);
+  await expect(choices(page).getByRole('listitem')).toHaveCount(2);
+  await expect(choices(page)).toContainText('Món tráng miệng / chè');
+  expect(await overflow()).toBeLessThanOrEqual(0);
   await expect(page.getByRole('combobox', { name: 'Thể loại món' })).toBeHidden();
   await page.getByText('Bộ lọc', { exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Thể loại món' })).toBeVisible();
