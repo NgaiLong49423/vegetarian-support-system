@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
  * Small reusable design-system primitives shared across pages.
  * ------------------------------------------------------------------------ */
 
-type Tone = 'brand' | 'leaf' | 'neutral';
+type Tone = 'brand' | 'leaf' | 'amber' | 'neutral';
 
 export function Badge({
   children,
@@ -21,11 +21,13 @@ export function Badge({
     ? {
         brand: 'bg-brand-100 text-brand-700 border-brand-200',
         leaf: 'bg-leaf-100 text-leaf-700 border-leaf-100',
+        amber: 'bg-amber-100 text-amber-800 border-amber-200',
         neutral: 'bg-brand-50 text-ink-soft border-brand-100',
       }
     : {
         brand: 'bg-brand-600 text-on-brand border-brand-600',
         leaf: 'bg-leaf-600 text-white border-leaf-600',
+        amber: 'bg-amber-500 text-white border-amber-500',
         neutral: 'bg-raised text-ink border-brand-200',
       };
   return (

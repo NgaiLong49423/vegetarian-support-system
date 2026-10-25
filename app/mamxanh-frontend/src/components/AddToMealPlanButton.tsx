@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { ChevronLeft, ChevronRight, Ellipsis, LoaderCircle } from "lucide-react"
+import { ArrowLeftRight, ChevronLeft, ChevronRight, Ellipsis, LoaderCircle } from "lucide-react"
 import { useAuth } from "./AuthContext"
 import { Modal } from "./Modal"
 import { localDateKey, mondayOf } from "./WeekCalendar"
@@ -55,7 +55,7 @@ export function AddToMealPlanButton({
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const menuItemRef = useRef<HTMLButtonElement>(null)
+  const menuItemRef = useRef<HTMLAnchorElement>(null)
   const [weekStartDate, setWeekStartDate] = useState(() => mondayOf(new Date()))
   const [selectedSlots, setSelectedSlots] = useState<Set<string>>(() => new Set())
   const [busy, setBusy] = useState(false)
@@ -196,8 +196,17 @@ export function AddToMealPlanButton({
           aria-label={`Hành động cho ${recipeTitle}`}
           className="absolute right-0 top-full z-30 mt-1 min-w-52 overflow-hidden rounded-lg border border-brand-100 bg-paper py-1 text-ink shadow-lg"
         >
-          <button
+          <Link
             ref={menuItemRef}
+            to={`/so-sanh?a=${recipeId}`}
+            role="menuitem"
+            onClick={() => setMenuOpen(false)}
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-raised focus-visible:bg-raised focus-visible:outline-none"
+          >
+            <ArrowLeftRight aria-hidden="true" className="h-4 w-4" />
+            So sánh công thức
+          </Link>
+          <button
             type="button"
             role="menuitem"
             onClick={openAction}

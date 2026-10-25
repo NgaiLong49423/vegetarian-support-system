@@ -51,9 +51,26 @@ export function EditRecipe() {
       if (!alive) return;
       setRecipe(data);
       if (data.status === 'HIDDEN') return;
+      const currentIngredients = data.ingredients;
       const refData = await recipeApi.getReferenceData();
+      const missingIngredients = [...new Map(currentIngredients
+        .filter(({ ingredientId }) => !refData.ingredients.some((option) => option.ingredientId === ingredientId))
+        .map(({ ingredientId, name }) => [ingredientId, name] as const)).entries()];
+      const searchedReferences = await Promise.all(missingIngredients.map(async ([, name]) => {
+        try {
+          return await recipeApi.getReferenceData(name);
+        } catch {
+          // Keep the editor usable; the unavailable-item state below explains when lookup cannot restore it.
+          return null;
+        }
+      }));
+      const allOptions = [...refData.ingredients, ...searchedReferences.flatMap((result) => result?.ingredients ?? [])];
+      const mergedRefData = {
+        ...refData,
+        ingredients: [...new Map(allOptions.map((option) => [`${option.ingredientId}:${option.unitId}`, option])).values()],
+      };
       if (!alive) return;
-      setReferences(refData);
+      setReferences(mergedRefData);
       setForm({
         title: data.title,
         description: data.description ?? '',
@@ -198,8 +215,8 @@ export function EditRecipe() {
             return <div key={`${ingredient.ingredientId}-${index}`} className="grid gap-3 rounded-xl bg-brand-50/70 p-3 sm:grid-cols-[minmax(0,1fr)_120px_120px_auto] sm:items-start">
             <div>
               <label htmlFor={`edit-ingredient-${index}`} className="mb-1 block text-xs font-semibold text-ink-soft">Nguyên liệu</label>
-              <select id={`edit-ingredient-${index}`} aria-label="Nguyên liệu" className={input} value={ingredient.ingredientId} onChange={(e) => { const chosen = references.ingredients.find((item) => item.ingredientId === Number(e.target.value)); if (chosen) setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, ingredientId: chosen.ingredientId, unitId: chosen.unitId } : item)); }}>{!matchingOptions.length && currentIngredient && <option value={ingredient.ingredientId}>{currentIngredient.name} (hiện không hỗ trợ)</option>}{[...new Map(references.ingredients.map((item) => [item.ingredientId, item])).values()].map((item) => <option key={item.ingredientId} value={item.ingredientId}>{item.name}</option>)}</select>
-              {!matchingOptions.length && <span className="mt-1 block text-xs text-amber-800">Nguyên liệu này hiện không được hỗ trợ.</span>}
+              <select id={`edit-ingredient-${index}`} aria-label="Nguyên liệu" className={input} value={ingredient.ingredientId} onChange={(e) => { const chosen = references.ingredients.find((item) => item.ingredientId === Number(e.target.value)); if (chosen) setField('ingredients', form.ingredients.map((item, i) => i === index ? { ...item, ingredientId: chosen.ingredientId, unitId: chosen.unitId } : item)); }}>{!matchingOptions.length && currentIngredient && <option value={ingredient.ingredientId}>{currentIngredient.name} (không còn khả dụng)</option>}{[...new Map(references.ingredients.map((item) => [item.ingredientId, item])).values()].map((item) => <option key={item.ingredientId} value={item.ingredientId}>{item.name}</option>)}</select>
+              {!matchingOptions.length && <span className="mt-1 block text-xs text-amber-800">Nguyên liệu này không còn khả dụng trong danh mục. Hãy chọn nguyên liệu khác trước khi lưu.</span>}
             </div>
             <div>
               <label htmlFor={`edit-quantity-${index}`} className="mb-1 block text-xs font-semibold text-ink-soft">Số lượng</label>
