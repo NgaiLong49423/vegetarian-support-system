@@ -6,6 +6,8 @@ import com.azure.storage.blob.models.BlobHttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
+import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ErrorCode;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -31,15 +33,17 @@ public class AzureBlobStorageClient implements StorageClient {
         String extension = resolveExtension(mimeType, originalFilename);
         String blobName = folder + "/" + UUID.randomUUID() + extension;
 
-        BlobClient blobClient = containerClient.getBlobClient(blobName);
-        blobClient.upload(inputStream, size, true);
-
-        BlobHttpHeaders headers = new BlobHttpHeaders().setContentType(mimeType);
-        blobClient.setHttpHeaders(headers);
-
-        String blobUrl = blobClient.getBlobUrl();
-        log.info("Uploaded image to Azure Blob Storage: {}", blobUrl);
-        return blobUrl;
+        try {
+            BlobClient blobClient = containerClient.getBlobClient(blobName);
+            blobClient.upload(inputStream, size, true);
+            BlobHttpHeaders headers = new BlobHttpHeaders().setContentType(mimeType);
+            blobClient.setHttpHeaders(headers);
+            return blobClient.getBlobUrl();
+        } catch (RuntimeException exception) {
+            // SDK messages can contain request details; keep credentials and URLs out of logs/errors.
+            log.warn("Azure image upload failed ({}).", exception.getClass().getSimpleName());
+            throw new AppException(ErrorCode.MEDIA_STORAGE_UNAVAILABLE);
+        }
     }
 
     @Override
@@ -59,7 +63,7 @@ public class AzureBlobStorageClient implements StorageClient {
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to delete blob at URL {}: {}", blobUrl, e.getMessage(), e);
+            log.warn("Azure image deletion failed ({}).", e.getClass().getSimpleName());
         }
     }
 
@@ -80,7 +84,7 @@ public class AzureBlobStorageClient implements StorageClient {
             // fallback: return everything after leading slash
             return path.startsWith("/") ? path.substring(1) : path;
         } catch (Exception e) {
-            log.warn("Could not parse blob name from URL: {}", blobUrl);
+            log.warn("Could not parse image URL for deletion.");
             return null;
         }
     }
