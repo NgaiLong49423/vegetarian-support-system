@@ -580,7 +580,7 @@ function WeekContents({
             <Sparkles className="h-7 w-7" />
           </div>
           <h3 className="text-base font-bold text-ink">
-            7 ngày này chưa có công thức trong Lịch ăn
+            Tuần này chưa có công thức trong Lịch ăn.
           </h3>
           <p className="mx-auto mt-1 max-w-md text-xs sm:text-sm text-ink-muted leading-relaxed">
             Lên lịch từng bữa để cân đối dinh dưỡng và tạo danh sách đi chợ nhanh chóng.
@@ -1056,7 +1056,7 @@ function WeekContents({
                                       <Plus className="h-3.5 w-3.5" />
                                     </div>
                                     <span className="text-xs font-medium text-ink-muted group-hover:text-ink transition-colors">
-                                      Chưa chọn món cho bữa này
+                                      Chưa chọn món cho bữa này.
                                     </span>
                                     <span className="text-[10px] text-brand-600/80 dark:text-brand-400/80">
                                       Bấm để thêm món
