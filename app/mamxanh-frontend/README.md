@@ -1,13 +1,15 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.38.0
+> **Version:** v1.38.1
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-25
 > **Status:** Active  
 
 # Mâm Xanh Frontend
 
 Chatbot hiện dùng chung cho Guest và Member theo FR-10: Guest gửi định danh session cookie hiện có qua body, có hướng dẫn đăng ký và xử lý lỗi 429; không đọc hồ sơ tài khoản. Đổi tài khoản hoặc ngữ cảnh xóa hội thoại trên giao diện và bỏ qua phản hồi cũ đang chờ. Các luồng AI thiếu quyền dẫn tới `/goi-ai`, hướng dẫn Plus hoặc Pro theo tính năng; việc kiểm tra quyền và thời hạn gói thuộc Backend. Chi tiết giao tiếp và giới hạn bộ đếm Guest nằm trong [API Guide](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-51). Đây là mô tả source, không phải xác nhận nghiệm thu Issue trên main.
+
+Modal “Soạn với Trợ lý AI” trên trang tạo công thức dùng cùng API FR-21 với các nút viết mô tả/hướng dẫn trong form. Tác giả nhập thông tin món và chọn nguyên liệu trước; Backend kiểm tra gói Plus/Pro. Kết quả điền vào ô có thể chỉnh sửa, giữ nguyên nguyên liệu/định lượng và chỉ được đăng khi tác giả xuất bản. Modal không sinh công thức hoặc tính calo bằng dữ liệu mẫu tại trình duyệt.
 
 ### Danh bạ Chuyên gia và chọn nguyên liệu — FR-61 / FR-62
 

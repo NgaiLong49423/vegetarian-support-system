@@ -92,6 +92,18 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/ai-assistance'].post.security[0].bearerAuth").isArray());
     }
 
+    @Test
+    void incompleteProviderOutputIs502AndDoesNotSaveARecipe() throws Exception {
+        when(aiClient.generateRecipeText(anyString(), anyList())).thenThrow(
+                tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException.invalidResponse("private incomplete output"));
+        mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(plusExpertId))
+                        .contentType(MediaType.APPLICATION_JSON).content(request()))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.code").value("AI_RESPONSE_INVALID"));
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM [RECIPE_POST] WHERE author_id = ?", Integer.class, plusExpertId)).isZero();
+    }
+
     private long insertUser(String suffix, String role) {
         String email = PREFIX + suffix + "@test.local";
         jdbcTemplate.update("INSERT INTO [USER] (email, display_name, role, account_status, email_verified) VALUES (?, ?, ?, 'ACTIVE', 1)",

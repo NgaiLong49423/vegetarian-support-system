@@ -18,6 +18,7 @@ function sql(query: string) {
 }
 
 test('FR-10: real JWT and SQL subscription changes select the correct upgrade and preserve the account', async ({ page, request }, testInfo) => {
+  test.setTimeout(180_000);
   const email = `fr10-${randomUUID()}@example.invalid`;
   const password = `Aa1!${randomUUID()}z`;
   let member = 0;
@@ -74,6 +75,30 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     await expect(section.getByRole('alert')).toContainText('gói Plus và Pro');
     await expect(section.getByRole('link', { name: 'Xem các gói' })).toHaveAttribute('href', '/goi-ai');
     await page.screenshot({ path: testInfo.outputPath('fr10-upgrade.png') });
+    // The modal must reach the same server guard after paid entitlement expires.
+    await page.goto('/dang-cong-thuc');
+    await page.getByLabel('Tên món *').waitFor({ state: 'visible', timeout: 30_000 });
+    await page.getByLabel('Tên món *').fill(source.title);
+    await page.getByLabel('Thể loại món').selectOption(source.dishCategory);
+    await page.getByLabel('Loại ăn chay').selectOption(source.vegetarianType);
+    await page.getByLabel('Khẩu phần').fill(String(source.servings));
+    await page.getByLabel('Chọn nguyên liệu 1').fill(ingredients[0].name);
+    await page.getByRole('button', { name: ingredients[0].name, exact: true }).click();
+    await page.getByLabel('Số lượng nguyên liệu 1').fill(String(ingredients[0].quantity));
+    await page.getByLabel('Đơn vị nguyên liệu 1').selectOption(String(ingredients[0].unitId));
+    await page.getByRole('button', { name: 'Soạn với Trợ lý AI' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Trợ lý AI hỗ trợ soạn nội dung' });
+    const rejectedAssistance = page.waitForResponse(response => response.url().endsWith('/recipes/ai-assistance')
+      && response.request().method() === 'POST');
+    await dialog.getByRole('button', { name: 'AI gợi ý viết mô tả' }).click();
+    const rejection = await rejectedAssistance;
+    expect(rejection.status()).toBe(403);
+    expect(await rejection.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS' });
+    await expect(dialog.getByRole('link', { name: 'Xem các gói AI' })).toHaveAttribute('href', '/goi-ai');
+    await page.screenshot({ path: testInfo.outputPath('fr10-modal-upgrade.png'), animations: 'disabled' });
+    await dialog.getByRole('button', { name: 'Trở lại biểu mẫu' }).click();
+    await expect(page.getByRole('textbox', { name: 'Mô tả' })).toHaveValue('');
+    await expect(page.getByLabel('Số lượng nguyên liệu 1')).toHaveValue(String(ingredients[0].quantity));
     expect(sql(`SELECT COUNT(*) FROM [SUBSCRIPTION] WHERE user_id=${member} AND tier='PLUS'`)).toBe('1');
     expect(sql(`SELECT COUNT(*) FROM [RECIPE_POST] WHERE author_id=${member}`)).toBe('0');
   } finally {

@@ -26,6 +26,9 @@ public record AiChatRequest(
         this(contextType, recipeId, question, history, null);
     }
 
+    @Override
+    public String toString() { return "AiChatRequest[redacted]"; }
+
     public enum ContextType { GENERAL, RECIPE }
     public enum Speaker { USER, ASSISTANT }
 
@@ -34,6 +37,9 @@ public record AiChatRequest(
             @Schema(maxLength = AiClient.MAX_CHAT_ANSWER_LENGTH,
                     description = "USER content is limited to 1000 characters; ASSISTANT content may contain a complete answer up to 8000 characters.")
             String content) {
+        @Override
+        public String toString() { return "Turn[redacted]"; }
+
         @AssertTrue(message = "Nội dung người dùng trong lịch sử tối đa 1.000 ký tự.")
         @JsonIgnore
         @Schema(hidden = true)

@@ -137,6 +137,15 @@ class RecipeAiAssistanceServiceTest {
     }
 
     @Test
+    void incompleteProviderOutputRemainsAnInvalidResponseInsteadOfAnOutage() {
+        when(aiClient.generateRecipeText(anyString(), anyList()))
+                .thenThrow(AiProviderException.invalidResponse("private incomplete output"));
+        assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
+                .isInstanceOf(AppException.class)
+                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+    }
+
+    @Test
     void rejectsMalformedProviderJson() {
         when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("not-json");
 

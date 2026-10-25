@@ -62,6 +62,9 @@ public class RecipeAiAssistanceService {
             raw = aiClient.generateRecipeText(prompt, ingredientIds);
         } catch (AiProviderException exception) {
             log.warn("Recipe AI provider is unavailable: {}", exception.getClass().getSimpleName());
+            if (exception.kind() == tech.mamxanh.integration.ai.GeminiAiClient.FailureKind.INVALID_RESPONSE) {
+                throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
+            }
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
         } catch (RuntimeException exception) {
             log.warn("Recipe AI provider failed: {}", exception.getClass().getSimpleName());

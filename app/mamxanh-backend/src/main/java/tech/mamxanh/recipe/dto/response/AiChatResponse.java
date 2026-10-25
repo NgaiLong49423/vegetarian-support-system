@@ -12,6 +12,9 @@ public record AiChatResponse(ContextType contextType,
         @Schema(description = "Real public RecipePosts selected from the Backend catalog; empty when the user did not ask to find recipes.")
         List<RecipeRecommendation> recommendations) {
 
+    @Override
+    public String toString() { return "AiChatResponse[redacted]"; }
+
     public record RecipeRecommendation(long id, String title, String description, String coverUrl,
             int totalTimeMinutes, String difficulty, String reason) { }
 }

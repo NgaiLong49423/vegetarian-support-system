@@ -10,6 +10,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -43,6 +46,27 @@ class AiChatFailureContractTest {
     @MockitoBean RecipePostService posts;
     @MockitoBean DietaryPreferenceService preferences;
     @MockitoBean AiClient ai;
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void mvcDebugLoggingHidesPrivatePayloadsButHttpStillReturnsThem(CapturedOutput output) throws Exception {
+        when(users.findAuthenticatedUserId()).thenReturn(Optional.empty());
+        when(ai.answerChat(anyString(), anyString()))
+                .thenReturn(new AiClient.ChatResult("FR10_SYNTHETIC_PRIVATE_ANSWER", 1, 1, 2));
+        var json = new JsonMapper().writeValueAsString(Map.of("contextType", "GENERAL",
+                "question", "FR10_SYNTHETIC_PRIVATE_QUESTION", "anonymousViewerId", UUID.randomUUID().toString(),
+                "history", List.of(Map.of("speaker", "USER", "content", "FR10_SYNTHETIC_PRIVATE_HISTORY"))));
+        mvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answer").value("FR10_SYNTHETIC_PRIVATE_ANSWER"));
+        assertThatSafeLog(output.getAll());
+    }
+
+    private static void assertThatSafeLog(String log) {
+        org.assertj.core.api.Assertions.assertThat(log)
+                .contains("AiChatRequest[redacted]", "AiChatResponse[redacted]")
+                .doesNotContain("FR10_SYNTHETIC_PRIVATE_QUESTION", "FR10_SYNTHETIC_PRIVATE_ANSWER", "FR10_SYNTHETIC_PRIVATE_HISTORY");
+    }
 
     @Test
     void incompleteProviderResponseIs502WhileTransportFailureIs503() throws Exception {

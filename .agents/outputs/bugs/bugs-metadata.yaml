@@ -1,8 +1,9 @@
 schema_version: 1
-last_updated: 2026-10-22
+last_updated: 2026-10-25
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-next_id: 60
+# BUG-060–065 đã được cấp trên các nhánh FR-11, fix/158 và FR-02; có xung đột ID giữa các nhánh cần hòa giải khi tích hợp.
+next_id: 68
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -10,6 +11,33 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-060
+    title: Log DEBUG của Spring có thể chứa câu hỏi và câu trả lời chatbot
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI/Privacy/Logging
+    file: .agents/outputs/bugs/BUG-060.md
+    created: 2026-10-23
+    updated: 2026-10-25
+    related_issue: 16, 17
+  - id: BUG-066
+    title: Modal soạn công thức gắn nhãn AI sinh nội dung tại trình duyệt mà không kiểm tra gói
+    status: RESOLVED
+    severity: High
+    area: Frontend/Recipe/AI entitlement
+    file: .agents/outputs/bugs/BUG-066.md
+    created: 2026-10-25
+    updated: 2026-10-25
+    related_issue: 16
+  - id: BUG-067
+    title: Adapter AI soạn bài chấp nhận phản hồi chưa hoàn tất của provider
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI/Recipe assistance
+    file: .agents/outputs/bugs/BUG-067.md
+    created: 2026-10-25
+    updated: 2026-10-25
+    related_issue: 16
   - id: BUG-058
     title: API hiển thị gói chưa tới ngày hiệu lực là đang hoạt động
     status: RESOLVED

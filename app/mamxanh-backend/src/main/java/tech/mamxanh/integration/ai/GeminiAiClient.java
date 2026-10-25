@@ -72,6 +72,9 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
         return request("RECIPE_TEXT", "Gemini request failed", () -> {
             var response = client.models.generateContent(MODEL,
                     prompt + "\nAllowed ingredient IDs: " + allowedIngredientIds, config);
+            String finishReason = response.candidates().orElse(List.of()).stream().findFirst()
+                    .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
+            if (!"STOP".equals(finishReason)) throw AiProviderException.invalidResponse("Gemini recipe output is incomplete");
             String text = response.text();
             if (text == null || text.isBlank()) throw AiProviderException.invalidResponse("Gemini returned an empty response");
             return text;

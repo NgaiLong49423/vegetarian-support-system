@@ -82,6 +82,19 @@ class GeminiAiClientTest {
         return new GeminiAiClient("test-key", options);
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"MAX_TOKENS", "SAFETY", "RECITATION"})
+    void rejectsUnfinishedRecipeOutputEvenWhenTextIsValidJson(String finishReason) throws IOException {
+        startServer(200, "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"{\\\"description\\\":\\\"Synthetic text\\\",\\\"steps\\\":[]}\"}],\"role\":\"model\"},\"finishReason\":\""
+                + finishReason + "\"}]}");
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.generateRecipeText("synthetic prompt", List.of(1L)))
+                    .isInstanceOfSatisfying(GeminiAiClient.AiProviderException.class,
+                            failure -> assertThat(failure.kind()).isEqualTo(GeminiAiClient.FailureKind.INVALID_RESPONSE));
+        }
+        assertThat(requests).hasValue(1);
+    }
+
     @Test
     void recommendationSchemaReturnsProviderTokenMetadata() throws IOException {
         startServer(200, """
