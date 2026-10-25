@@ -2,7 +2,7 @@
 > **File:** `database/README.md`  
 > **Version:** v0.26.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-25<br>
+> **Last Updated:** 2026-10-26<br>
 > **Status:** Active  
 
 # Database Workspace
@@ -34,6 +34,8 @@ Repeatable `R__demo_sample_data_65_report_moderation.sql` (chỉ profile `local`
 `V23__report_supplement.sql` (Issue #35, FR-30) tạo `REPORT_SUPPLEMENT` (`supplement_id`, `report_id` FK `NO ACTION` tới `REPORT`, `content NVARCHAR(500)`, `created_at`) cùng index `IX_REPORT_SUPPLEMENT_report` theo báo cáo và thời gian. Mỗi lần người gửi bổ sung vào báo cáo `OPEN`/`IN_REVIEW` là một dòng mới (AC-30.1), ứng dụng không sửa hay xóa dòng nào, `REPORT.description` giữ mô tả gốc. Giới hạn 5 lần và 10–500 ký tự do Backend kiểm (SRS 3.14 để lại cho thiết kế triển khai). Bảng mới đã nêu trong câu hỏi Q67 gửi Tech Lead. Snapshot chứa cùng bảng và index.
 
 Repeatable `R__demo_sample_data_66_report_supplements.sql` (chỉ profile `local`) thêm 2 lần bổ sung cho báo cáo `OPEN` của `demo-customer-08@mamxanh.local` ở seed 60, để người gửi thấy các lần bổ sung trên trang công thức. Seed chỉ thêm khi báo cáo còn `OPEN`/`IN_REVIEW`, giữ nguyên mô tả gốc và kiểm tra tồn tại trước khi thêm nên chạy lại không nhân bản dữ liệu.
+
+Repeatable `R__demo_sample_data_67_report_groups.sql` (chỉ profile `local`, AC-30.4) thêm báo cáo của `demo-customer-15@mamxanh.local` (`OPEN`) và `demo-customer-16@mamxanh.local` (`IN_REVIEW`, do `demo-admin@mamxanh.local` tiếp nhận) cho cùng bài "Bánh xèo nấm và giá đỗ" của seed 60, để trang `/admin/bao-cao` có một nhóm 3 báo cáo từ 3 tài khoản. Mỗi tài khoản chỉ được thêm khi chưa có báo cáo nào trên bài, nên chạy lại không tạo dòng mới và không vi phạm quy tắc một báo cáo đang mở.
 
 ## Quyền sở hữu dữ liệu
 

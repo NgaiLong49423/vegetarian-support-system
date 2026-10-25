@@ -2,12 +2,34 @@
 > **File:** `CHANGELOG.md`
 > **Version:** v2.106.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-25
+> **Last Updated:** 2026-10-26
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-26 — Group Recipe Reports by Post for Administrators (Issue #35)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Deliver AC-30.4 of FR-30 on the FR-28 queue of Issue #33: Administrators see the reports on one Recipe Post as one group with its report count, then open each report with its reporter, status, decision and supplements (SRS 3.14).
+
+### Added
+
+- Add `GET /api/v1/admin/reports/groups` with one group per reported Recipe Post: the report count for the status filter, the count in each status, the newest matching report time and the author. Pages count posts, and the post with the newest matching report comes first.
+- Add the optional `recipeId` filter to `GET /api/v1/admin/reports` and `supplements` (oldest first) to `AdminReportResponse`, loaded in one query per page.
+- Open `/admin/bao-cao` grouped by post with one "Xem N báo cáo" button per post, keep the single-report queue under "Từng báo cáo" (`?xem=bao-cao`), and list the supplements in the report detail dialog.
+- Add the local-only demo seed `R__demo_sample_data_67_report_groups.sql` with two more reports on the post of seed 60, so the board shows a group of three reports from three accounts.
+- Add SQL Server integration tests for groups, the status filter, paging, the recipe filter, supplements and access, and Playwright tests for the grouped board and the supplements in the detail dialog.
+
+### Changed
+
+- Open the FR-28 Playwright and real-stack specs on the single-report view, and document the endpoints in `docs/api/API.md` sections 21 and 22, the seed in `database/README.md` and the board in the Backend and Frontend READMEs.
+
+### Fixed
+
+- Point the FR-30 line of the Backend README to `docs/api/API.md` section 22, which the develop sync in `d34c59b` left at section 21.
 
 ## 2026-10-25 — Let Reporters Add Information to an Open Recipe Report (Issue #35)
 

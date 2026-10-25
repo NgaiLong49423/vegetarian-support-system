@@ -2,7 +2,7 @@
 > **File:** `docs/api/API.md`
 > **Version:** v0.44.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-25
+> **Last Updated:** 2026-10-26
 > **Status:** Active
 
 # API Integration Guide
@@ -538,15 +538,17 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 
 | Endpoint | Cách tích hợp |
 | --- | --- |
-| `GET /api/v1/admin/reports?status=&page=&size=` | `PageResponse<AdminReportResponse>`, mới nhất trước. `status` là `OPEN`, `IN_REVIEW`, `RESOLVED` hoặc bỏ trống. `page` từ 0, `size` 1–100 (mặc định 20). |
+| `GET /api/v1/admin/reports?status=&recipeId=&page=&size=` | `PageResponse<AdminReportResponse>`, mới nhất trước. `status` là `OPEN`, `IN_REVIEW`, `RESOLVED` hoặc bỏ trống. `recipeId` (từ 1, tùy chọn) chỉ lấy báo cáo của một bài để xem từng phản ánh trong nhóm (AC-30.4). `page` từ 0, `size` 1–100 (mặc định 20). |
+| `GET /api/v1/admin/reports/groups?status=&page=&size=` | `PageResponse<AdminReportGroupResponse>`: mỗi bài có báo cáo là một nhóm (AC-30.4), bài có báo cáo khớp bộ lọc mới nhất đứng trước. Có cùng `status`, `page`, `size` như danh sách; phân trang đếm theo bài, không theo báo cáo. |
 | `GET /api/v1/admin/reports/status-counts` | Số báo cáo ở từng trạng thái: `open`, `inReview`, `resolved`. |
 | `GET /api/v1/admin/reports/{reportId}` | Chi tiết một báo cáo, `404 REPORT_NOT_FOUND` khi không có. |
 | `POST /api/v1/admin/reports/{reportId}/claim` | Không có body. Chuyển `OPEN` sang `IN_REVIEW` và ghi người gọi vào `handledBy` (AC-28.1). Báo cáo đã có người tiếp nhận hoặc đã giải quyết trả `409 REPORT_STATUS_CONFLICT`. Hai Administrator tiếp nhận cùng lúc thì đúng một người thành công vì Backend khóa dòng `REPORT`. |
 | `POST /api/v1/admin/reports/{reportId}/resolve` | Body `{ "decision", "reason" }`. Chỉ Administrator đang giữ báo cáo `IN_REVIEW` được gọi; trả báo cáo `RESOLVED`. |
 
-`AdminReportResponse` gồm `id`, `status`, `reasonCode`, `description`, `createdAt`, `updatedAt`, `recipe` (`id`, `title`, `status`), `reporter` và `author` (`id`, `displayName`, `email`, `role`, `accountStatus`), `handledBy` (`id`, `displayName`, `null` khi chưa ai tiếp nhận), `decision`, `decisionReason`, `handledAt`. Response này chỉ dành cho Administrator vì có danh tính người báo cáo (FR-29, BR-28). Thời gian là UTC không kèm múi giờ, Frontend hiển thị theo giờ Việt Nam.
+`AdminReportResponse` gồm `id`, `status`, `reasonCode`, `description`, `createdAt`, `updatedAt`, `recipe` (`id`, `title`, `status`), `reporter` và `author` (`id`, `displayName`, `email`, `role`, `accountStatus`), `handledBy` (`id`, `displayName`, `null` khi chưa ai tiếp nhận), `decision`, `decisionReason`, `handledAt`, `supplements` (các lần người gửi bổ sung, cũ trước: `supplementId`, `content`, `createdAt`, mảng rỗng khi chưa có, FR-30). Response này chỉ dành cho Administrator vì có danh tính người báo cáo (FR-29, BR-28). Thời gian là UTC không kèm múi giờ, Frontend hiển thị theo giờ Việt Nam.
 
 - `decision` là một trong `NO_VIOLATION` (bài giữ nguyên), `WARN_AUTHOR` (bài giữ nguyên, tác giả nhận cảnh báo), `HIDE_RECIPE` (bài chuyển `HIDDEN`, không còn ở API công khai, tìm kiếm và gợi ý) hoặc `LOCK_AUTHOR` (tài khoản tác giả chuyển `LOCKED`, mọi Bearer token đã cấp nhận `403 ACCOUNT_LOCKED` ngay ở request kế tiếp).
+- `AdminReportGroupResponse` gồm `recipe` (`id`, `title`, `status`), `author`, `reportCount` (số báo cáo khớp `status`, hoặc mọi báo cáo khi bỏ trống), `statusCounts` (`open`, `inReview`, `resolved` của mọi báo cáo trên bài) và `latestReportAt` (báo cáo khớp bộ lọc mới nhất). Nhóm không thay báo cáo: mỗi báo cáo vẫn giữ người gửi, trạng thái và kết luận riêng (SRS 3.14), xem qua `recipeId` hoặc `GET /api/v1/admin/reports/{reportId}`.
 - `reason` bỏ khoảng trắng đầu cuối, bắt buộc 10–500 ký tự với mọi kết luận (AC-28.5, BR-26). Sai `decision` hoặc `reason` trả `400 VALIDATION_FAILED` với `errors[].field` là `decision` hoặc `reason`, báo cáo giữ `IN_REVIEW`.
 - Báo cáo `RESOLVED` không đổi được nữa: không có endpoint sửa, `claim` và `resolve` đều trả `409`. Bản ghi báo cáo (`decision`, `decision_reason`, `handled_by`, `handled_at`) là audit của quyết định (SRS 3.12, NFR-08). Báo cáo `IN_REVIEW` cũ chưa có `handledBy` (đổi từ `PROCESSING` ở V9) vẫn tiếp nhận được.
 - Số lượng báo cáo không tự tạo chế tài; mỗi báo cáo cần một quyết định riêng (BR-26, BR-58). Kết luận của một báo cáo không tự đổi các báo cáo khác trên cùng bài.
@@ -561,4 +563,4 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 - Báo cáo lại sau khi báo cáo trước của chính tài khoản trên bài đó đã `RESOLVED` bắt buộc có `description` 10–500 ký tự với mọi `reasonCode` (AC-30.3, SRS 3.14); thiếu hoặc quá ngắn thì `400 VALIDATION_FAILED` với `field = description` và không tạo báo cáo.
 - `GET /api/v1/me/reports/{reportId}` (cần Bearer token) trả `MyReportResponse` cho chính người gửi: `reportId`, `status`, `reasonCode`, `description`, `createdAt`, `recipe` (`id`, `title`), `supplements` (cũ trước) và `supplementLimit` (5). Không có danh tính người gửi hay ghi chú xử lý. Tài khoản khác nhận `403 ACCESS_DENIED` (NFR-09), ID không phải báo cáo Recipe Post nhận `404 REPORT_NOT_FOUND`. Frontend gọi endpoint này với `reportId` trong body `409 REPORT_ALREADY_OPEN` để mở báo cáo hiện có (AC-30.2).
 - `POST /api/v1/me/reports/{reportId}/supplements` body `{ "content" }` trả `201` `ReportSupplementResponse` (`supplementId`, `content`, `createdAt`) (AC-30.1). `content` bỏ khoảng trắng đầu cuối, 10–500 ký tự, sai thì `400 VALIDATION_FAILED` với `errors[].field = content`. Chỉ người gửi (`403 ACCESS_DENIED` với tài khoản khác), chỉ khi báo cáo còn `OPEN`/`IN_REVIEW` (`409 REPORT_NOT_OPEN`), tối đa 5 lần mỗi báo cáo (`409 REPORT_SUPPLEMENT_LIMIT`). Request đồng thời được tuần tự hóa bằng khóa dòng `REPORT` nên không vượt giới hạn. Phần bổ sung lưu trong `REPORT_SUPPLEMENT` (V22), chỉ thêm, không sửa hay xóa, `REPORT.description` giữ nguyên.
-- Danh sách báo cáo nhóm theo bài cho Administrator (AC-30.4) và việc Administrator xem phần bổ sung chưa có API: phần này dùng hàng đợi Administrator của FR-28 (Issue #33) nên làm sau khi #33 được merge.
+- Administrator xem báo cáo gom theo bài qua `GET /api/v1/admin/reports/groups` và từng phản ánh của một bài qua `GET /api/v1/admin/reports?recipeId=` (AC-30.4); `AdminReportResponse.supplements` cho Administrator thấy các lần bổ sung. Xem mục 21.
