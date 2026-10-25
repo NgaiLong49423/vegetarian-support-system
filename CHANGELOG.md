@@ -2,12 +2,34 @@
 > **File:** `CHANGELOG.md`
 > **Version:** v2.105.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-24
+> **Last Updated:** 2026-10-25
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-25 — Let Reporters Add Information to an Open Recipe Report (Issue #35)
+
+**Status:** Working tree — not committed.
+
+**Scope:** Complete the Member side of FR-30 with the proposals of questions Q67 and Q68: reporters keep adding information to the report that is still open instead of filing another one, and the real recipe page can now send reports (AC-30.1, AC-30.2, SRS 3.14). The Administrator view of supplements and of reports grouped by recipe (AC-30.4) builds on the FR-28 queue of Issue #33 and is not part of this entry.
+
+### Added
+
+- Add `GET /api/v1/me/reports/{reportId}` so the reporter reads their own report with its supplements, and `POST /api/v1/me/reports/{reportId}/supplements` to add 10–500 characters while the report is `OPEN` or `IN_REVIEW`, at most five times; other accounts get `403 ACCESS_DENIED`.
+- Add migration `V22__report_supplement.sql` with the append-only `REPORT_SUPPLEMENT` table and the matching `database/schema.sql` snapshot.
+- Add the local-only demo seed `R__demo_sample_data_66_report_supplements.sql` with two supplements on the open demo report from seed 60, so its reporter sees them on the recipe page.
+- Add the "Báo cáo công thức" action and dialog to the real recipe page: six reasons, description rules, a sign-in prompt for Guests, and on `409 REPORT_ALREADY_OPEN` the open report with its supplements and a form to add more.
+- Add SQL Server integration tests for supplements, ownership, the limit under concurrent requests and the resolved state, Playwright tests for the dialog and a real-stack test from a duplicate report to a stored supplement.
+
+### Changed
+
+- Document the endpoints and error codes in `docs/api/API.md` section 21, the migration in `database/README.md` and the flow in the Backend and Frontend READMEs.
+
+### Fixed
+
+- None.
 
 ## 2026-10-24 — Refine Shopping List Workflow ([PR #185](https://github.com/NgaiLong49423/vegetarian-support-system/pull/185))
 

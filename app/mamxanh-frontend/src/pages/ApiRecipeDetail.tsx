@@ -1,5 +1,6 @@
 import { RecipeDefaultArtwork } from '../components/RecipeDefaultArtwork';
 import { RecipeReactions } from '../components/RecipeReactions';
+import { RecipeReportButton } from '../components/RecipeReportButton';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -643,6 +644,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
             <RecipeViews key={recipeId} recipe={recipe} renderCount={(count) => <StatTile icon={<Eye className="h-4 w-4 text-brand-600" />} label="Lượt xem" value={<>{formatNumber(count, 0)}<span className="sr-only"> lượt xem</span></>} />} />
           </div>
           <RecipeReactions recipeId={recipe.recipeId} authorId={author.userId} statistics={statistics} />
+          <RecipeReportButton recipeId={recipe.recipeId} authorId={author.userId} />
         </Card>
       </div>
 

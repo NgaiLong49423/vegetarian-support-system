@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.45.0
+> **Version:** v1.46.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-25
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -112,6 +112,7 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - Không còn chế độ đổi vai trò/tài khoản giả trên Frontend. Dùng tài khoản local do Backend seed tạo sẵn; danh sách email và cách đặt chung mật khẩu nằm trong [Backend Workspace Guide](../mamxanh-backend/README.md#tài-khoản-demo-local). Mỗi vai trò phải đăng nhập bằng tài khoản riêng; quyền được Backend xác thực.
 - Các luồng Backend hiện hiển thị từ API/SQL thật: khám phá và chi tiết công thức; tạo/sửa/quản lý công thức; lịch ăn tuần; hồ sơ dinh dưỡng; sở thích/onboarding; nộp và duyệt đơn Chuyên gia; quản lý danh mục Ingredient dinh dưỡng Admin gồm tìm/lọc, xem chi tiết, thêm/sửa nguồn và chỉ tiêu, đổi trạng thái, xem Recipe Post tham chiếu. Trang khám phá gửi từ khóa, bộ lọc loại ăn chay/thể loại/nguyên liệu/tổng thời gian, phân trang và chế độ sắp xếp tới API công khai; tùy chọn chuẩn và nguyên liệu được tải từ Backend, mọi điều kiện lọc kết hợp bằng AND.
 - **So sánh hai công thức (Issue #70):** `/so-sanh?a={recipeId}&b={recipeId}` đối chiếu hai công thức công khai khác nhau: thông tin tổng quan, nguyên liệu (chỉ đặt cùng hàng khi cùng nguyên liệu trong danh mục, giữ nguyên số lượng và đơn vị) và chín chỉ tiêu dinh dưỡng trên một khẩu phần kèm chênh lệch (công thức đầu tiên − công thức thứ hai). Bắt đầu từ nút "So sánh" trên thẻ công thức, trang chi tiết hoặc danh sách đã lưu; nút "Chọn công thức thứ hai" (hoặc "Đổi công thức") mở trang chọn riêng `/so-sanh/chon-mon` dùng chung ô tìm kiếm, bộ lọc, sắp xếp và phân trang với trang Khám phá (`src/components/RecipeSearch.tsx`), loại món đang ở bên còn lại và chọn xong quay về `/so-sanh?a=&b=`. Dữ liệu đọc từ `GET /recipes/{recipeId}` và `GET /recipes/discovery`; công thức thiếu dữ liệu dinh dưỡng hiện "Chưa đủ dữ liệu", không tính chênh lệch. Trang không ghi dữ liệu, không lưu lịch sử và không xuất PDF.
+- **Báo cáo công thức (Issue #35):** trang chi tiết thật `/cong-thuc/id/:id` có nút "Báo cáo công thức" trong phần Cảm nhận cộng đồng cho Member không phải tác giả. Hộp thoại gửi một trong sáu lý do và mô tả (bắt buộc 10–500 ký tự với lý do Khác) tới `POST /recipes/{recipeId}/reports`. Khi đã có báo cáo đang mở (`409 REPORT_ALREADY_OPEN`), hộp thoại đọc `GET /me/reports/{reportId}`, hiện lý do, mô tả gốc, các lần bổ sung theo giờ Việt Nam và cho thêm thông tin qua `POST /me/reports/{reportId}/supplements`. Báo cáo lại sau khi đã giải quyết hiện yêu cầu mô tả điểm mới ngay dưới ô mô tả. Guest được mời đăng nhập, Administrator và tác giả không thấy nút.
 - Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
 
 ### Các chức năng demo khác
@@ -126,7 +127,7 @@ Guest mở `/ke-hoach` hoặc `/di-cho` được mời đăng nhập; bản xem 
 | Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Guest đọc công khai; Customer/Expert đăng nhập mới được thao tác; Backend lưu bình luận và trả lời |
 | Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu; từ trang công thức mở hộp thoại thêm nguyên liệu vào Shopping List và điều chỉnh riêng khẩu phần cần mua | Khi xác nhận, Backend scale nguyên liệu theo khẩu phần đã chọn rồi tổng hợp vào Shopping List cá nhân; công thức đã được thêm không bị cộng trùng |
 | Kế hoạch bữa ăn Guest | Đăng nhập để lưu lịch; `?demo=true` mở bản mẫu với 0,5–10 phần cho từng món, bước 0,5 | Bản mẫu chỉ cập nhật UI; Member dùng API lịch tuần, thêm món với khẩu phần mặc định 1 |
-| Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |
+| Báo cáo công thức (trang mẫu `/cong-thuc/:slug`) | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Chỉ kiểm tra biểu mẫu trên dữ liệu mẫu; trang chi tiết thật `/cong-thuc/id/:id` gửi báo cáo cho quản trị viên |
 | Dinh dưỡng công thức prototype tại `/cong-thuc/:slug` | Đọc số liệu minh họa cho **1 khẩu phần** | 8 chỉ tiêu tĩnh, xem BUG-002; trang thật `/cong-thuc/id/:id` dùng 9 chỉ tiêu và trạng thái dữ liệu từ Backend |
 | Theo dõi dinh dưỡng (`/dinh-duong`) | Đọc lịch ăn Member qua `GET /meal-plans/{weekStartDate}/nutrition`; đổi ngày/tuần cập nhật số liệu; xuất báo cáo PDF theo đúng phạm vi qua `/nutrition/report` | Cần đăng nhập Member và xác nhận phạm vi hỗ trợ dinh dưỡng; số liệu là khẩu phần dự kiến. Danh sách mua sắm, cộng đồng/bình luận/báo cáo, gói AI và giao dịch vẫn là các màn hình minh họa nếu không được liệt kê riêng là đã nối API |
 

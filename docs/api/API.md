@@ -2,7 +2,7 @@
 > **File:** `docs/api/API.md`
 > **Version:** v0.43.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-25
 > **Status:** Active
 
 # API Integration Guide
@@ -226,6 +226,9 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
 | `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |
 | `DIETARY_PROFILE_INCOMPLETE` | 409 | Cổng AI cá nhân hóa (BR-31) chặn yêu cầu vì hồ sơ thiếu nhóm thông tin tối thiểu; body có thêm `missing` (`VEGETARIAN_TYPE`, `AVOID_INGREDIENTS`, `DISLIKED_INGREDIENTS`). |
 | `REPORT_ALREADY_OPEN` | 409 | `POST /recipes/{recipeId}/reports` khi tài khoản đã có báo cáo `OPEN` hoặc `IN_REVIEW` trên bài đó, kể cả khi gửi đồng thời (SRS 3.14); body có thêm `reportId` của báo cáo đang mở (AC-30.2). Xem mục 21. |
+| `REPORT_NOT_FOUND` | 404 | `/me/reports/{reportId}` với ID không phải báo cáo Recipe Post. Xem mục 21. |
+| `REPORT_NOT_OPEN` | 409 | `POST /me/reports/{reportId}/supplements` khi báo cáo đã `RESOLVED`. Xem mục 21. |
+| `REPORT_SUPPLEMENT_LIMIT` | 409 | `POST /me/reports/{reportId}/supplements` khi báo cáo đã có 5 phần bổ sung. Xem mục 21. |
 | `UNAUTHENTICATED` | 401 | Gọi endpoint cần đăng nhập mà không có Bearer token, hoặc token sai chữ ký, sai issuer, hết hạn hay thuộc tài khoản không còn tồn tại. |
 | `ACCESS_DENIED` | 403 | Đã xác thực nhưng không đủ quyền. |
 | `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE` | 404, 405, 415 | Lỗi định tuyến/định dạng do framework phát hiện. |
@@ -534,4 +537,6 @@ Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dù
 - `POST /api/v1/recipes/{recipeId}/reports` (cần Bearer token) body `{ "reasonCode", "description"? }`, trả `201` `RecipeReportResponse` (`reportId`, `status = OPEN`, `message`). Chỉ bài `PUBLISHED`, khác thì `404 RECIPE_NOT_FOUND`. `reasonCode` là một trong `RECIPE_INFO_OR_DIET_LABEL`, `FOOD_SAFETY_HAZARD`, `SPAM_ADVERTISING`, `INAPPROPRIATE_CONTENT`, `COPYRIGHT_VIOLATION`, `OTHER`. `description` bỏ khoảng trắng đầu cuối, tối đa 500 ký tự; với `OTHER` bắt buộc 10–500 ký tự.
 - Tài khoản đã có báo cáo `OPEN`/`IN_REVIEW` trên bài thì nhận `409 REPORT_ALREADY_OPEN`, body có `reportId` của báo cáo đó để Frontend dẫn người gửi tới báo cáo hiện có (AC-30.2). Request đồng thời của cùng tài khoản trên cùng bài được tuần tự hóa bằng khóa dòng `RECIPE_POST`: đúng một request tạo báo cáo, các request còn lại nhận `409` kèm `reportId` (SRS 3.14).
 - Báo cáo lại sau khi báo cáo trước của chính tài khoản trên bài đó đã `RESOLVED` bắt buộc có `description` 10–500 ký tự với mọi `reasonCode` (AC-30.3, SRS 3.14); thiếu hoặc quá ngắn thì `400 VALIDATION_FAILED` với `field = description` và không tạo báo cáo.
-- Bổ sung mô tả vào báo cáo đang mở (AC-30.1) và danh sách báo cáo nhóm theo bài cho Administrator (AC-30.4) chưa có API.
+- `GET /api/v1/me/reports/{reportId}` (cần Bearer token) trả `MyReportResponse` cho chính người gửi: `reportId`, `status`, `reasonCode`, `description`, `createdAt`, `recipe` (`id`, `title`), `supplements` (cũ trước) và `supplementLimit` (5). Không có danh tính người gửi hay ghi chú xử lý. Tài khoản khác nhận `403 ACCESS_DENIED` (NFR-09), ID không phải báo cáo Recipe Post nhận `404 REPORT_NOT_FOUND`. Frontend gọi endpoint này với `reportId` trong body `409 REPORT_ALREADY_OPEN` để mở báo cáo hiện có (AC-30.2).
+- `POST /api/v1/me/reports/{reportId}/supplements` body `{ "content" }` trả `201` `ReportSupplementResponse` (`supplementId`, `content`, `createdAt`) (AC-30.1). `content` bỏ khoảng trắng đầu cuối, 10–500 ký tự, sai thì `400 VALIDATION_FAILED` với `errors[].field = content`. Chỉ người gửi (`403 ACCESS_DENIED` với tài khoản khác), chỉ khi báo cáo còn `OPEN`/`IN_REVIEW` (`409 REPORT_NOT_OPEN`), tối đa 5 lần mỗi báo cáo (`409 REPORT_SUPPLEMENT_LIMIT`). Request đồng thời được tuần tự hóa bằng khóa dòng `REPORT` nên không vượt giới hạn. Phần bổ sung lưu trong `REPORT_SUPPLEMENT` (V22), chỉ thêm, không sửa hay xóa, `REPORT.description` giữ nguyên.
+- Danh sách báo cáo nhóm theo bài cho Administrator (AC-30.4) và việc Administrator xem phần bổ sung chưa có API: phần này dùng hàng đợi Administrator của FR-28 (Issue #33) nên làm sau khi #33 được merge.
