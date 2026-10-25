@@ -1,13 +1,36 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.102.0
+> **Version:** v2.103.1
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-25
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+
+## 2026-10-24 — Guest Chatbot Access and Technical Rate Limiting
+
+**Status:** Working tree — not committed.
+
+**Scope:** Implementation checkpoint for Issue #10 / FR-02 on the existing contextual chatbot without daily quotas or Guest accounts. Focused validation passed (47 Backend tests including SQL Server integration, 10 browser tests, TypeScript, build, and OpenAPI validation). Live Gemini inference remains unresolved; full repository coverage and CI/Sonar gates are not verified. This checkpoint does not establish Issue acceptance or merge readiness.
+
+### Added
+
+- Guest access in general and public-recipe contexts, cookie-backed anonymous identity, independent sliding identity/IP limits, and HTTP 429 with Retry-After.
+- Registration guidance after Guest answers or errors, retry countdowns, and cookie availability guidance.
+- Focused limiter, HTTP/security/CORS, database integration, and browser tests for Guest behavior.
+
+### Changed
+
+- Allow optional Bearer authentication on the existing chat endpoint while preserving Member checks and protected AI workflows.
+- Represent Guest token telemetry without an account identifier; document process-local rate-limit and proxy boundaries.
+
+### Fixed
+
+- Limit chatbot Gemini calls to a separate ten-second provider timeout without changing other AI workflows.
+- Discard pending chat responses after an account or recipe context changes.
 
 ## 2026-10-23 — Improve Ingredient and Shopping Workflows
 

@@ -1,11 +1,18 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.38.0
+> **Version:** v0.39.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-24
 > **Status:** Active  
 
 # Backend Workspace
+
+## Guest Chatbot — FR-02
+
+Guest dùng chung `POST /api/v1/recipes/ai/chat` với Member, ở ngữ cảnh chung hoặc Recipe Post công khai. Backend kiểm tra cửa sổ trượt 10 request/phút/định danh và 60 request/phút/peer IP, trả `429` cùng `Retry-After` trước Gemini khi vượt ngưỡng. Không có quota ngày hoặc bảng Guest; không đọc hồ sơ cá nhân cho Guest. Token telemetry Guest dùng user ID null, không lưu raw prompt. Chat có timeout Gemini riêng 10 giây, không đổi timeout các workflow AI khác.
+
+Định danh từ cookie first-party của Frontend đi qua header `X-Guest-Chat-Id`; CORS allowlist chỉ mở header này cho endpoint chat. Bộ đếm trong bộ nhớ có giới hạn và thời hạn, thuộc một process; restart xóa bộ đếm, nhiều instance chưa chia sẻ cửa sổ. Xem [API Guide, mục 16](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-02-và-fr-51) để biết fallback IP, proxy và contract lỗi.
+
 
 ## Tổng hợp nguyên liệu — FR-54 / Issue #54
 

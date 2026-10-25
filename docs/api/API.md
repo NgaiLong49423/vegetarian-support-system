@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.41.0
+> **Version:** v0.42.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-24
 > **Status:** Active
 
 # API Integration Guide
@@ -62,7 +62,7 @@ Schema/status chính xác lấy từ generated OpenAPI; không chỉnh endpoint 
 
 Tài liệu này hướng dẫn Frontend, Backend và tester tích hợp với API Mâm Xanh. Generated OpenAPI từ Spring Boot là runtime contract. File [`openapi.yaml`](openapi.yaml) là bản xuất được commit từ Springdoc để tiện tra cứu và phải khớp với runtime; không sửa contract endpoint thủ công trong file này.
 
-Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), AI gợi ý và menu tuần công thức (FR-34), AI preview/thay tuần Meal Plan theo dinh dưỡng (FR-36), chatbot Member theo ngữ cảnh chung hoặc RecipePost công khai (FR-51), danh sách RecipePost đã lưu (FR-20/FR-32), nộp báo cáo Recipe Post (FR-26/27), bình chọn (FR-57), lượt xem và thống kê (FR-58), theo dõi thành viên (FR-59), và bình luận lồng nhiều cấp (FR-46). Runtime spec là nguồn contract; YAML trong repo được sinh từ cùng runtime endpoint.
+Backend source trong branch gồm đăng ký, xác minh email, đăng nhập bằng mật khẩu và Google, đặt lại mật khẩu (FR-03), tìm kiếm/lọc RecipePost công khai (FR-08), danh mục quản trị nguyên liệu/đơn vị/quy đổi (FR-18), xác nhận eligibility dinh dưỡng (FR-38) và hồ sơ dinh dưỡng tham khảo (FR-35), đọc chi tiết RecipePost và Meal Plan (FR-20), AI gợi ý và menu tuần công thức (FR-34), AI preview/thay tuần Meal Plan theo dinh dưỡng (FR-36), chatbot Guest/Member theo ngữ cảnh chung hoặc RecipePost công khai (FR-02/FR-51), danh sách RecipePost đã lưu (FR-20/FR-32), nộp báo cáo Recipe Post (FR-26/27), bình chọn (FR-57), lượt xem và thống kê (FR-58), theo dõi thành viên (FR-59), và bình luận lồng nhiều cấp (FR-46). Runtime spec là nguồn contract; YAML trong repo được sinh từ cùng runtime endpoint.
 
 Nhóm đã chấp nhận baseline API hiện có để phân rã và chuẩn bị triển khai FR-03. Các thông số còn mở ở mục 8 phải được owner đề xuất và Tech Lead duyệt trước khi triển khai phần phụ thuộc vào chúng. Trạng thái tài liệu `Active` không phải bằng chứng endpoint đã được triển khai hoặc chạy thành công.
 
@@ -411,9 +411,17 @@ Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint d
 - Mục tiêu chỉ điều hướng lựa chọn món, không làm thay đổi mục tiêu số FR-35, không tự suy ra thâm hụt/thặng dư năng lượng và không đảm bảo kết quả sức khỏe. Dữ liệu câu trả lời tuần không được lưu/tái sử dụng. Không gửi số đo nhân trắc học hoặc mục tiêu cá nhân chi tiết vào telemetry; không ghi prompt hay câu trả lời cá nhân vào log.
 - Nếu chưa xác nhận trạng thái dinh dưỡng, API trả `403 NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED`; nếu người dùng đã xác nhận không đủ điều kiện, trả `403 NUTRITION_ELIGIBILITY_INELIGIBLE`. Hồ sơ nhân trắc học chưa lưu trả `409 NUTRITION_PROFILE_REQUIRED`.
 
-## 16. Chatbot hỏi đáp theo ngữ cảnh — FR-51
+## 16. Chatbot hỏi đáp theo ngữ cảnh — FR-02 và FR-51
 
-`POST /api/v1/recipes/ai/chat` yêu cầu Bearer token của Member đang hoạt động. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` hoặc `ASSISTANT`, mỗi nội dung tối đa 1.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
+`POST /api/v1/recipes/ai/chat` cho phép Guest không cần đăng nhập và Member đang hoạt động dùng Bearer token. Token sai/hết hạn vẫn trả `401`; tài khoản khóa hoặc vai trò không được phép vẫn bị chặn, không chuyển thành Guest. Endpoint nhận `contextType` (`GENERAL` hoặc `RECIPE`), `question` (tối đa 1.000 ký tự), tối đa 8 lượt `history` gần nhất (`speaker`: `USER` hoặc `ASSISTANT`, mỗi nội dung tối đa 1.000 ký tự), và `recipeId` khi dùng ngữ cảnh `RECIPE`. `GENERAL` không nhận `recipeId`; `RECIPE` bắt buộc có ID dương.
+
+Frontend giữ UUID ngẫu nhiên trong session cookie first-party `mamxanh.guest-chat` (`Path=/`, `SameSite=Lax`, thêm `Secure` trên HTTPS), rồi gửi bằng header `X-Guest-Chat-Id` khi không có token. Cookie không chứa tài khoản, IP hay thông tin xác thực. CORS chỉ cho phép header này ở endpoint chat với origin trong allowlist, không bật cross-site credentials. Browser chặn cookie được hướng dẫn cho phép cookie; API client không gửi header dùng chung cửa sổ dự phòng theo IP. UUID sai định dạng trả `400`.
+
+Backend áp dụng cửa sổ trượt 60 giây: tối đa 10 request hợp lệ về cấu trúc/context mỗi định danh Guest và 60 request mỗi peer IP cho mọi định danh cộng lại. Hai ngưỡng độc lập; đổi cookie vẫn chịu bảo vệ IP. Chỉ dùng peer address do servlet cung cấp, không tự tin header forwarding của client. Sau proxy, giới hạn IP có thể dùng chung cho các Guest qua proxy; cần xác minh cấu hình trusted proxy trước khi triển khai nhiều tầng. Các lần lỗi lookup/provider vẫn là lần thử kỹ thuật; không có quota ngày, reset 00:00 hay quyền bị trừ theo lần AI thành công.
+
+Vượt ngưỡng trả `429 GUEST_CHAT_RATE_LIMITED` cùng `Retry-After` (số giây chờ, được expose qua CORS), trước khi gọi Gemini. UI hiển thị chờ/thử lại và liên kết `/dang-ky`; liên kết cũng xuất hiện sau phản hồi thành công. Backend giữ tối đa 10.000 khóa băm có salt ngẫu nhiên theo process, dọn khóa hết hạn khi nhận request và từ chối an toàn nếu bộ nhớ khóa đầy. Bộ đếm thuộc một Backend process, mất khi restart và không chia sẻ giữa nhiều instance; không tạo bảng Guest hoặc đưa Redis vào baseline.
+
+Guest không truy vấn hồ sơ cá nhân, không có lịch sử theo tài khoản và không được cấp quyền các endpoint AI nâng cao. Token telemetry dùng `userId=null` cho Guest, không dùng ID tài khoản giả và không chứa raw prompt. Response thành công dùng `Cache-Control: no-store`. Lời gọi Gemini cho chat có timeout riêng 10 giây và một attempt, giữ timeout của các luồng AI khác. Lỗi provider trả `503`, phản hồi AI không hợp lệ trả `502`; UI kết thúc loading và cho phép thử lại. Giới hạn 10 giây không thay thế yêu cầu đo hiệu năng NFR-03 (≤5 giây thông thường, P90 ≤7 giây khi tải cao).
 
 Ví dụ body cho ngữ cảnh công thức:
 

@@ -97,6 +97,8 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .required(List.of("action", "answer", "recommendations")).build();
         GenerateContentConfig config = GenerateContentConfig.builder()
                 .systemInstruction(Content.fromParts(Part.fromText(systemInstruction)))
+                .httpOptions(HttpOptions.builder().timeout(10_000)
+                        .retryOptions(com.google.genai.types.HttpRetryOptions.builder().attempts(1).build()).build())
                 .responseMimeType("application/json")
                 .responseSchema(schema)
                 .candidateCount(1)
@@ -191,5 +193,17 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     public static final class AiProviderException extends RuntimeException {
         public AiProviderException(String message) { super(message); }
         public AiProviderException(String message, Throwable cause) { super(message, cause); }
+        /** Safe diagnostic: never log provider messages, request payloads, URLs or credentials. */
+        public String diagnostic() {
+            if (getCause() instanceof com.google.genai.errors.ApiException api) return "HTTP " + api.code();
+            if (getCause() == null) return "invalid-response-or-configuration";
+            Throwable cause = getCause();
+            StringBuilder names = new StringBuilder(cause.getClass().getSimpleName());
+            for (int i = 0; i < 5 && cause.getCause() != null && cause.getCause() != cause; i++) {
+                cause = cause.getCause();
+                names.append('/').append(cause.getClass().getSimpleName());
+            }
+            return names.toString();
+        }
     }
 }

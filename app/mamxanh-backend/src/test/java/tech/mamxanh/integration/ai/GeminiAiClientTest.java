@@ -22,6 +22,18 @@ class GeminiAiClientTest {
     }
 
     @Test
+    void diagnosticsContainOnlyErrorTypesOrStatusAndNeverProviderMessages() {
+        assertThat(new GeminiAiClient.AiProviderException("private prompt").diagnostic())
+                .isEqualTo("invalid-response-or-configuration");
+        assertThat(new GeminiAiClient.AiProviderException("private prompt",
+                new com.google.genai.errors.ApiException(503, "private status", "private message")).diagnostic())
+                .isEqualTo("HTTP 503");
+        assertThat(new GeminiAiClient.AiProviderException("private prompt",
+                new RuntimeException("private message", new java.net.SocketTimeoutException("private URL"))).diagnostic())
+                .isEqualTo("RuntimeException/SocketTimeoutException");
+    }
+
+    @Test
     void sharedGeminiClientUsesSixtySecondProviderTimeout() {
         assertThat(GeminiAiClient.DEFAULT_TIMEOUT_MILLIS).isEqualTo(60_000);
     }
@@ -206,6 +218,29 @@ class GeminiAiClientTest {
     }
 
     private final AtomicReference<String> lastRequest = new AtomicReference<>();
+
+    @Test
+    void chatDeadlineStopsASlowProviderWithoutWaitingForTheSharedSixtySecondTimeout() throws Exception {
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
+        server.createContext("/", exchange -> {
+            calls.incrementAndGet();
+            try { Thread.sleep(20_000); }
+            catch (InterruptedException exception) { Thread.currentThread().interrupt(); }
+            finally { exchange.close(); }
+        });
+        server.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor());
+        server.start();
+        var options = HttpOptions.builder().baseUrl("http://127.0.0.1:" + server.getAddress().getPort())
+                .apiVersion("v1beta").timeout(60_000).build();
+        try (var client = new GeminiAiClient("test-key", options)) {
+            long start = System.nanoTime();
+            assertThatThrownBy(() -> client.answerChat("system", "question"))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class);
+            assertThat(java.time.Duration.ofNanos(System.nanoTime() - start)).isLessThan(java.time.Duration.ofSeconds(12));
+        }
+        assertThat(calls.get()).isEqualTo(1);
+    }
 
     private void startServer(int status, String body) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);

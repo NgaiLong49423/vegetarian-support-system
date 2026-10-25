@@ -1,4 +1,5 @@
-import { apiClient, asApiError } from '../lib/apiClient';
+import { apiClient, asApiError, hasAccessToken } from '../lib/apiClient';
+import { guestChatIdentity } from '../lib/guestChat';
 
 export type Choice = { code: string; label: string };
 export type RecipeUnitOption = { unitId: number; code: string; name: string; dimension: string };
@@ -305,7 +306,10 @@ export const recipeReactionApi = {
 
 export const recipesApi = {
   chat: (payload: AiChatRequest) => request(
-    () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, { timeout: 12_000 }),
+    () => apiClient.post<AiChatResponse>('/recipes/ai/chat', payload, {
+      timeout: 12_000,
+      headers: hasAccessToken() ? {} : { 'X-Guest-Chat-Id': guestChatIdentity() },
+    }),
   ),
   recommendByIngredients: (ingredientIds: number[]) => request(
     () => apiClient.post<AiRecipeSuggestion>('/recipes/ai/recommendations', { ingredientIds }, { timeout: 60_000 }),

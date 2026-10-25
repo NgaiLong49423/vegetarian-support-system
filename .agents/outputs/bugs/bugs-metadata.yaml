@@ -1,8 +1,9 @@
 schema_version: 1
-last_updated: 2026-10-23
+last_updated: 2026-10-24
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-next_id: 60
+# BUG-060–064 đã được cấp trên nhánh fix/158-recipe-image-storage; không cấp trùng ID.
+next_id: 66
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -10,6 +11,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-065
+    title: Chatbot dùng timeout Gemini chung 60 giây vượt giới hạn 10 giây
+    status: RESOLVED
+    severity: Unknown
+    area: Backend/AI/Chatbot
+    file: .agents/outputs/bugs/BUG-065.md
+    created: 2026-10-24
+    updated: 2026-10-24
+    related_issue: 10
   - id: BUG-059
     title: Thêm nguyên liệu từ 0 giờ đến 7 giờ sáng (giờ Việt Nam) bị từ chối vì ngày tham khảo mặc định "ở tương lai"
     status: RECORDED

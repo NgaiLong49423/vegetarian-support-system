@@ -1,11 +1,18 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.44.0
+> **Version:** v1.45.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-24
 > **Status:** Active  
 
 # Mâm Xanh Frontend
+
+## Guest Chatbot — FR-02
+
+Guest mở nút hỗ trợ AI từ ứng dụng hoặc “Hỏi AI về công thức này” trên bài công khai mà không cần đăng nhập. UI dùng chatbot FR-51 hiện có, giữ UUID trong session cookie `mamxanh.guest-chat` và gửi header `X-Guest-Chat-Id`; không dùng cross-site cookie API. Chat chỉ giữ hội thoại trong bộ nhớ giao diện, xóa khi đổi tài khoản/ngữ cảnh và thông báo câu hỏi được chuyển tới Gemini.
+
+Sau câu trả lời hoặc thông báo giới hạn, Guest thấy liên kết đăng ký để lưu công thức/quản lý thực đơn. `429` hiển thị số giây từ `Retry-After`, khóa gửi/thử lại trong thời gian chờ; lỗi provider kết thúc loading và cho thử lại. Chặn cookie hiển thị hướng dẫn cho phép cookie. Các luồng Member và ranh giới Admin vẫn được giữ. Xem [API Guide, mục 16](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-02-và-fr-51).
+
 
 ### Sao chép và xuất TXT đi chợ — FR-55 / Issue #55
 

@@ -40,12 +40,48 @@ class AiChatServiceTest {
         preferences = mock(DietaryPreferenceService.class);
         ai = mock(AiClient.class);
         events = mock(ApplicationEventPublisher.class);
-        service = new AiChatService(users, recipes, recipePosts, preferences, ai, new JsonMapper(), events, Clock.systemUTC());
+        service = new AiChatService(users, recipes, recipePosts, preferences, ai, new JsonMapper(), events, Clock.systemUTC(),
+                new GuestChatRateLimiter(Clock.systemUTC()));
+        when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.of(7L));
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, Role.CUSTOMER));
         when(preferences.menuConstraints(7)).thenReturn(new DietaryPreferenceService.MenuDietaryConstraints(
                 "VEGAN", List.of(8L), List.of("Sữa")));
         when(recipePosts.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
                 List.of(), 0, 50, 0, 0));
+    }
+
+    @Test
+    void guestUsesNoAccountProfileAndPublishesAnonymousTokenMetadata() {
+        when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.empty());
+        when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Nấu nhỏ lửa.", 1, 2, 3));
+        var response = service.answer(chat("Cách nấu đậu?"), java.util.UUID.randomUUID().toString(), "peer");
+        assertThat(response.answer()).isEqualTo("Nấu nhỏ lửa.");
+        verify(users, never()).requireActiveMember();
+        verifyNoInteractions(preferences);
+        var event = ArgumentCaptor.forClass(AiUsageEvent.class);
+        verify(events).publishEvent(event.capture());
+        assertThat(event.getValue().userId()).isNull();
+        assertThat(event.getValue().totalTokens()).isEqualTo(3);
+    }
+
+    @Test
+    void authenticatedRejectionNeverFallsBackToGuestOrCallsProvider() {
+        when(users.requireActiveMember()).thenThrow(new AppException(ErrorCode.ACCESS_DENIED));
+        assertThatThrownBy(() -> service.answer(chat("Cách nấu đậu?"))).isInstanceOf(AppException.class);
+        verifyNoInteractions(ai, preferences, events);
+    }
+
+    @Test
+    void guestRateLimitStopsProviderAndProfileAccess() {
+        when(users.findAuthenticatedUserId()).thenReturn(java.util.Optional.empty());
+        when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Câu trả lời.", 1, 2, 3));
+        String guestId = java.util.UUID.randomUUID().toString();
+        for (int i = 0; i < 10; i++) service.answer(chat("Cách nấu đậu?"), guestId, "peer");
+        assertThatThrownBy(() -> service.answer(chat("Cách nấu đậu?"), guestId, "peer"))
+                .isInstanceOfSatisfying(AppException.class,
+                        error -> assertThat(error.errorCode()).isEqualTo(ErrorCode.GUEST_CHAT_RATE_LIMITED));
+        verify(ai, times(10)).answerChat(anyString(), anyString());
+        verifyNoInteractions(preferences);
     }
 
     @Test

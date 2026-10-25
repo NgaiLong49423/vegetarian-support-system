@@ -53,10 +53,11 @@ public class AiChatService {
     private final ObjectMapper mapper;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final GuestChatRateLimiter guestRateLimiter;
 
     public AiChatService(CurrentUserService users, RecipeService recipes,
             RecipePostService recipePosts, DietaryPreferenceService preferences, AiClient ai, ObjectMapper mapper,
-            ApplicationEventPublisher events, Clock clock) {
+            ApplicationEventPublisher events, Clock clock, GuestChatRateLimiter guestRateLimiter) {
         this.users = users;
         this.recipes = recipes;
         this.recipePosts = recipePosts;
@@ -65,12 +66,20 @@ public class AiChatService {
         this.mapper = mapper;
         this.events = events;
         this.clock = clock;
+        this.guestRateLimiter = guestRateLimiter;
     }
 
     public AiChatResponse answer(AiChatRequest request) {
-        var user = users.requireActiveMember();
+        return answer(request, null, "unknown");
+    }
+
+    public AiChatResponse answer(AiChatRequest request, String anonymousId, String remoteAddress) {
+        var user = users.findAuthenticatedUserId().isPresent() ? users.requireActiveMember() : null;
         validateContext(request);
-        var dietary = preferences.menuConstraints(user.id());
+        if (user == null) guestRateLimiter.acquire(anonymousId, remoteAddress);
+        var dietary = user == null
+                ? new DietaryPreferenceService.MenuDietaryConstraints(null, List.of(), List.of())
+                : preferences.menuConstraints(user.id());
         RecipeDetailResponse recipe = request.contextType() == AiChatRequest.ContextType.RECIPE
                 ? recipes.getPublishedRecipe(request.recipeId()) : null;
         boolean catalogSearch = !explicitlyRequestsCreation(request.question())
@@ -83,7 +92,7 @@ public class AiChatService {
         try {
             result = ai.answerChat(SYSTEM_INSTRUCTION, prompt);
         } catch (AiProviderException exception) {
-            LOG.warn("Gemini chat failed ({})", exception.getClass().getSimpleName());
+            LOG.warn("Gemini chat failed ({})", exception.diagnostic());
             throw new AppException(ErrorCode.AI_PROVIDER_UNAVAILABLE);
         }
         if (result == null) {
@@ -93,7 +102,7 @@ public class AiChatService {
         List<RecipeRecommendation> recommendations = hydrateRecommendations(reply, candidates, dietary, request);
         String answer = normalizedAnswer(reply, request, catalogSearch, recommendations);
         if (answer.isBlank()) throw new AppException(ErrorCode.AI_RESPONSE_INVALID);
-        events.publishEvent(new AiUsageEvent(user.id(), "FR-51", clock.instant(),
+        events.publishEvent(new AiUsageEvent(user == null ? null : user.id(), "FR-51", clock.instant(),
                 result.promptTokens(), result.responseTokens(), result.totalTokens()));
         return new AiChatResponse(request.contextType(), request.recipeId(), answer, recommendations);
     }

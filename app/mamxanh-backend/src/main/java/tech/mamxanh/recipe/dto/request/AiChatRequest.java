@@ -14,7 +14,7 @@ public record AiChatRequest(
         @Min(1) @Schema(description = "Required for RECIPE context and omitted for GENERAL context.") Long recipeId,
         @NotBlank @Size(max = 1000) @Schema(maxLength = 1000) String question,
         @Size(max = 8) @Schema(description = "Most recent conversation turns, up to eight items, kept only for this request.")
-        List<@Valid Turn> history) {
+        List<@NotNull @Valid Turn> history) {
 
     public enum ContextType { GENERAL, RECIPE }
     public enum Speaker { USER, ASSISTANT }
