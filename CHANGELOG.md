@@ -12,7 +12,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-24 — Guest Chatbot Access and Technical Rate Limiting
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `699f19b` (implementation checkpoint; live Gemini inference and full quality gates remain unverified).
 
 **Scope:** Implementation checkpoint for Issue #10 / FR-02 on the existing contextual chatbot without daily quotas or Guest accounts. Focused validation passed (47 Backend tests including SQL Server integration, 10 browser tests, TypeScript, build, and OpenAPI validation). Live Gemini inference remains unresolved; full repository coverage and CI/Sonar gates are not verified. This checkpoint does not establish Issue acceptance or merge readiness.
 
