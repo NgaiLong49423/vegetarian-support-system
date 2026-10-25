@@ -3368,6 +3368,66 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/me/reports/{reportId}/supplements:
+    post:
+      tags:
+      - report-supplement-controller
+      operationId: addReportSupplement
+      parameters:
+      - name: reportId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportSupplementRequest"
+        required: true
+      responses:
+        "201":
+          description: The stored supplement with its time.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ReportSupplementResponse"
+        "403":
+          description: "ACCESS_DENIED: the report belongs to another account."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "REPORT_NOT_FOUND: no Recipe Post report has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "REPORT_NOT_OPEN: the report is RESOLVED. REPORT_SUPPLEMENT_LIMIT:\
+            \ the report already has 5 supplements."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/me/profile/avatar:
     post:
       tags:
@@ -5551,6 +5611,53 @@ paths:
           description: PDF report.
           content:
             application/pdf: {}
+      security:
+      - bearerAuth: []
+  /api/v1/me/reports/{reportId}:
+    get:
+      tags:
+      - report-supplement-controller
+      operationId: getMyReport
+      parameters:
+      - name: reportId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: "The caller's report with its supplements, oldest first."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MyReportResponse"
+        "403":
+          description: "ACCESS_DENIED: the report belongs to another account."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "REPORT_NOT_FOUND: no Recipe Post report has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
   /api/v1/ingredients:
@@ -7943,6 +8050,28 @@ components:
             type: number
         reason:
           type: string
+    ReportSupplementRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          description: "Thông tin bổ sung, từ 10 đến 500 ký tự sau khi bỏ khoảng trắ\
+            ng đầu và cuối."
+          maxLength: 500
+          minLength: 10
+      required:
+      - content
+    ReportSupplementResponse:
+      type: object
+      properties:
+        supplementId:
+          type: integer
+          format: int64
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
     ExpertApplicationRequest:
       type: object
       properties:
@@ -8752,6 +8881,38 @@ components:
           type: array
           items:
             type: string
+    MyReportRecipe:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+    MyReportResponse:
+      type: object
+      properties:
+        reportId:
+          type: integer
+          format: int64
+        status:
+          type: string
+        reasonCode:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        recipe:
+          $ref: "#/components/schemas/MyReportRecipe"
+        supplements:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportSupplementResponse"
+        supplementLimit:
+          type: integer
+          format: int32
     PageResponsePublicIngredientResponse:
       type: object
       properties:
