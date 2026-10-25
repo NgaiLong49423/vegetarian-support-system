@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-26 — Persist Nutrition Profile BMI
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `d28503ca`.
 
 **Scope:** Keep each Member's saved BMI available when reopening their private nutrition profile.
 
