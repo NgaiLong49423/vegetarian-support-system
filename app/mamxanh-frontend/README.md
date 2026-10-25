@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.44.0
+> **Version:** v1.46.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-25
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -38,6 +38,11 @@
 Thư mục mã nguồn giao diện ứng dụng Mâm Xanh được xây dựng bằng **React 19**, **TypeScript**, **Vite 8**, **Tailwind CSS v4** và xuất phát từ thiết kế Figma Make.
 
 Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy và gỡ lỗi trực tiếp trên **IntelliJ IDEA** (hoặc WebStorm/VS Code).
+
+### Ảnh công thức — FR-14 / fix #158
+
+- Chỉ tính ảnh đã nhận URL HTTPS từ upload thành công vào số ảnh đã tải. Khi lỗi, ảnh xem trước có nhãn **Chưa tải lên**, thông báo lỗi và hướng dẫn xóa/chọn lại. Form chặn xuất bản khi còn ảnh lỗi hoặc đang upload.
+- Kiểm thử UI có mock: `npx playwright test tests/e2e/recipe-media.spec.ts`. Kiểm thử Azure thật là opt-in: trên stack root Compose đã cấu hình Azure, đặt `MAMXANH_E2E_LIVE_AZURE=1` và `MAMXANX_E2E_COMPOSE_PROJECT` đúng project rồi chạy `npm run test:e2e:integration -- tests/integration/recipe-media-real-stack.spec.ts --workers=1`. Test dùng tài khoản/nguyên liệu fixture, tắt trace để không lưu phiên đăng nhập; xóa ảnh Azure và công thức test trong cleanup.
 
 ### Thẻ công thức và thao tác lịch ăn — FR-17 / Issue #23
 
@@ -107,13 +112,14 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - Không còn chế độ đổi vai trò/tài khoản giả trên Frontend. Dùng tài khoản local do Backend seed tạo sẵn; danh sách email và cách đặt chung mật khẩu nằm trong [Backend Workspace Guide](../mamxanh-backend/README.md#tài-khoản-demo-local). Mỗi vai trò phải đăng nhập bằng tài khoản riêng; quyền được Backend xác thực.
 - Các luồng Backend hiện hiển thị từ API/SQL thật: khám phá và chi tiết công thức; tạo/sửa/quản lý công thức; lịch ăn tuần; hồ sơ dinh dưỡng; sở thích/onboarding; nộp và duyệt đơn Chuyên gia; quản lý danh mục Ingredient dinh dưỡng Admin gồm tìm/lọc, xem chi tiết, thêm/sửa nguồn và chỉ tiêu, đổi trạng thái, xem Recipe Post tham chiếu. Trang khám phá gửi từ khóa, bộ lọc loại ăn chay/thể loại/nguyên liệu/tổng thời gian, phân trang và chế độ sắp xếp tới API công khai; tùy chọn chuẩn và nguyên liệu được tải từ Backend, mọi điều kiện lọc kết hợp bằng AND.
 - **So sánh hai công thức (Issue #70):** `/so-sanh?a={recipeId}&b={recipeId}` đối chiếu hai công thức công khai khác nhau: thông tin tổng quan, nguyên liệu (chỉ đặt cùng hàng khi cùng nguyên liệu trong danh mục, giữ nguyên số lượng và đơn vị) và chín chỉ tiêu dinh dưỡng trên một khẩu phần kèm chênh lệch (công thức đầu tiên − công thức thứ hai). Bắt đầu từ nút "So sánh" trên thẻ công thức, trang chi tiết hoặc danh sách đã lưu; nút "Chọn công thức thứ hai" (hoặc "Đổi công thức") mở trang chọn riêng `/so-sanh/chon-mon` dùng chung ô tìm kiếm, bộ lọc, sắp xếp và phân trang với trang Khám phá (`src/components/RecipeSearch.tsx`), loại món đang ở bên còn lại và chọn xong quay về `/so-sanh?a=&b=`. Dữ liệu đọc từ `GET /recipes/{recipeId}` và `GET /recipes/discovery`; công thức thiếu dữ liệu dinh dưỡng hiện "Chưa đủ dữ liệu", không tính chênh lệch. Trang không ghi dữ liệu, không lưu lịch sử và không xuất PDF.
+- **Xử lý báo cáo vi phạm (Issue #33):** `/admin/bao-cao` đọc hàng đợi báo cáo Recipe Post từ `GET /admin/reports` và số lượng từ `GET /admin/reports/status-counts`, lọc theo Chờ xử lý, Đang xem xét, Đã giải quyết. Administrator bấm "Tiếp nhận xem xét" (`POST /admin/reports/{id}/claim`), xem người báo cáo, tác giả và nội dung báo cáo, rồi chọn một trong bốn kết luận (không vi phạm, cảnh cáo tác giả, ẩn bài viết, khóa tài khoản tác giả) với lý do 10–500 ký tự trước khi "Hoàn tất xử lý" (`POST /admin/reports/{id}/resolve`). Thiếu kết luận hoặc lý do thì không gửi request. Báo cáo do Administrator khác giữ hoặc đã giải quyết chỉ xem được. Thời gian hiển thị theo giờ Việt Nam.
 - Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
 
 ### Các chức năng demo khác
 
 Giao diện tài khoản dùng đèn tương tác và vùng biểu mẫu cuộn được khi nội dung cao hơn màn hình. Lịch ăn có hiệu ứng chuyển tháng, điều hướng bằng phím mũi tên và hỗ trợ thiết lập giảm chuyển động của hệ điều hành. Các trang chi tiết công thức vẫn dùng API lượt xem, bình chọn và bình luận sau khi đổi bố cục.
 
-Guest mở `/ke-hoach` hoặc `/di-cho` được mời đăng nhập; bản xem thử local chỉ mở bằng `?demo=true`. Ba module Admin tài khoản/phân quyền, báo cáo và giao dịch có nhãn “Giao diện minh họa”: tìm/lọc, xem chi tiết và thay đổi dữ liệu mẫu chỉ tồn tại trong bộ nhớ, tải lại trang sẽ khôi phục. Các thao tác này chưa ghi Backend và không chứng minh các FR quản trị đã hoàn thành.
+Guest mở `/ke-hoach` hoặc `/di-cho` được mời đăng nhập; bản xem thử local chỉ mở bằng `?demo=true`. Hai module Admin tài khoản/phân quyền và giao dịch có nhãn “Giao diện minh họa”: tìm/lọc, xem chi tiết và thay đổi dữ liệu mẫu chỉ tồn tại trong bộ nhớ, tải lại trang sẽ khôi phục. Các thao tác này chưa ghi Backend và không chứng minh các FR quản trị đã hoàn thành.
 
 | Khu vực | Người dùng có thể thử | Giới hạn hiện tại |
 |---|---|---|

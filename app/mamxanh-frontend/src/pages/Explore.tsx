@@ -14,7 +14,7 @@ import type { RecipePost } from '../api/recipes';
 
 export function Explore() {
   const search = useRecipeSearch(12);
-  const { query, updateQuery, filters, options, result, loading, error, retry, resetFilters, activeFilterCount, filterPanelProps } = search;
+  const { query, updateQuery, filters, options, result, loading, error, retry, resetFilters, activeFilterCount, presetIngredientError, filterPanelProps } = search;
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   return (
@@ -23,6 +23,7 @@ export function Explore() {
         <p className="text-xs text-ink-muted">Mâm Xanh / Công thức</p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink">Khám phá công thức chay</h1>
         <p className="mt-1 text-xs leading-5 text-ink-muted">Tìm món phù hợp với nguyên liệu và thời gian bạn có.</p>
+        {presetIngredientError && <p role="status" className="mt-2 text-sm text-amber-800">Không tìm thấy nguyên liệu được chọn trong danh mục hiện tại.</p>}
 
         <div className="mt-4 flex max-w-3xl items-center gap-2 rounded-full border border-brand-200 bg-paper px-4 py-1 transition-all duration-200 focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-500/20">
           <Search aria-hidden="true" className="h-5 w-5 shrink-0 text-brand-600" />

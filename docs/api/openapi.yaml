@@ -2663,6 +2663,7 @@ paths:
     post:
       tags:
       - recipe-media-controller
+      summary: Upload a recipe image to Azure Blob Storage
       operationId: uploadImage
       requestBody:
         content:
@@ -2676,12 +2677,19 @@ paths:
               required:
               - file
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Image stored successfully; data contains the blob URL.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseUploadImageResponse"
+        "503":
+          description: "MEDIA_STORAGE_UNAVAILABLE: storage is unconfigured or unavailable;\
+            \ no successful upload URL is returned."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "400":
           description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
             \ its rules; details in `errors`."
@@ -3378,11 +3386,18 @@ paths:
               - file
       responses:
         "200":
-          description: OK
+          description: Avatar stored and profile updated.
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MemberProfileResponse"
+        "503":
+          description: "MEDIA_STORAGE_UNAVAILABLE: storage is unconfigured or unavailable;\
+            \ the previous avatar is preserved."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "400":
           description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
             \ its rules; details in `errors`."
@@ -3725,6 +3740,122 @@ paths:
                 $ref: "#/components/schemas/ApiResponseUnitResponse"
         "409":
           description: "UNIT_CODE_EXISTS: the unit code is already used."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/reports/{reportId}/resolve:
+    post:
+      tags:
+      - admin-report-controller
+      operationId: resolveReport
+      parameters:
+      - name: reportId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveReportRequest"
+        required: true
+      responses:
+        "200":
+          description: The RESOLVED report with its decision; the sanction is applied.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminReportResponse"
+        "404":
+          description: "REPORT_NOT_FOUND: no Recipe Post report has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "REPORT_STATUS_CONFLICT: the report is not IN_REVIEW under\
+            \ the caller. REPORT_DECISION_NOT_APPLICABLE: the post was deleted (hide)\
+            \ or the author is an Administrator (lock)."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/reports/{reportId}/claim:
+    post:
+      tags:
+      - admin-report-controller
+      operationId: claimReport
+      parameters:
+      - name: reportId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: "The report, now IN_REVIEW and held by the caller."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminReportResponse"
+        "404":
+          description: "REPORT_NOT_FOUND: no Recipe Post report has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "REPORT_STATUS_CONFLICT: the report is no longer OPEN."
           content:
             application/problem+json:
               schema:
@@ -5725,6 +5856,140 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/reports:
+    get:
+      tags:
+      - admin-report-controller
+      operationId: listReports
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: OPEN|IN_REVIEW|RESOLVED
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          maximum: 1000000
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 100
+          minimum: 1
+      responses:
+        "200":
+          description: "A page of Recipe Post reports, newest first."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageResponseAdminReportResponse"
+        "400":
+          description: "VALIDATION_FAILED: unknown status, or page/size outside its\
+            \ range."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/reports/{reportId}:
+    get:
+      tags:
+      - admin-report-controller
+      operationId: getReport
+      parameters:
+      - name: reportId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        "200":
+          description: "Report detail with reporter, author and handling Administrator."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminReportResponse"
+        "404":
+          description: "REPORT_NOT_FOUND: no Recipe Post report has this id."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/reports/status-counts:
+    get:
+      tags:
+      - admin-report-controller
+      operationId: countReportsByStatus
+      responses:
+        "200":
+          description: Number of Recipe Post reports in each status.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminReportStatusCountsResponse"
         "401":
           description: "UNAUTHENTICATED: missing, invalid or expired access token."
           content:
@@ -7782,14 +8047,14 @@ components:
           type: string
         paymentLinkId:
           type: string
-        paymentSuccess:
-          type: boolean
         orderCode:
           type: integer
           format: int64
         amount:
           type: integer
           format: int32
+        paymentSuccess:
+          type: boolean
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -8114,6 +8379,92 @@ components:
           minLength: 0
       required:
       - token
+    ResolveReportRequest:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum:
+          - NO_VIOLATION
+          - WARN_AUTHOR
+          - HIDE_RECIPE
+          - LOCK_AUTHOR
+          minLength: 1
+          pattern: NO_VIOLATION|WARN_AUTHOR|HIDE_RECIPE|LOCK_AUTHOR
+        reason:
+          type: string
+          description: "Lý do kết luận, từ 10 đến 500 ký tự sau khi bỏ khoảng trắ\
+            ng đầu và cuối."
+          maxLength: 500
+          minLength: 10
+      required:
+      - decision
+      - reason
+    AdminReportResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        status:
+          type: string
+        reasonCode:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        recipe:
+          $ref: "#/components/schemas/ReportedRecipe"
+        reporter:
+          $ref: "#/components/schemas/ReportAccount"
+        author:
+          $ref: "#/components/schemas/ReportAccount"
+        handledBy:
+          $ref: "#/components/schemas/ReportHandler"
+        decision:
+          type: string
+        decisionReason:
+          type: string
+        handledAt:
+          type: string
+          format: date-time
+    ReportAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        accountStatus:
+          type: string
+    ReportHandler:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+    ReportedRecipe:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        status:
+          type: string
     ApiResponseIngredientImageResponse:
       type: object
       properties:
@@ -8867,6 +9218,37 @@ components:
         timestamp:
           type: string
           format: date-time
+    PageResponseAdminReportResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminReportResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    AdminReportStatusCountsResponse:
+      type: object
+      properties:
+        open:
+          type: integer
+          format: int64
+        inReview:
+          type: integer
+          format: int64
+        resolved:
+          type: integer
+          format: int64
     ApiResponseListIngredientResponse:
       type: object
       properties:

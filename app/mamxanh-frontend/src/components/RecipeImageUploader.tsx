@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -10,6 +10,7 @@ import {
   UploadCloud,
 } from 'lucide-react';
 import { recipeMediaApi, validateImageFile } from '../services/recipeMediaApi';
+import { asApiError } from '../lib/apiClient';
 
 export interface ImageItem {
   id: string;
@@ -18,23 +19,40 @@ export interface ImageItem {
   displayOrder: number;
   isCover: boolean;
   uploading?: boolean;
+  uploadError?: string;
 }
 
 interface RecipeImageUploaderProps {
   images: ImageItem[];
   onChange: (images: ImageItem[]) => void;
   maxImages?: number;
+  onUploadingChange?: (uploading: boolean) => void;
 }
 
 export function RecipeImageUploader({
   images,
   onChange,
   maxImages = 5,
+  onUploadingChange,
 }: RecipeImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  const busyRef = useRef(false);
+  const mountedRef = useRef(true);
+  const previewUrls = useRef(new Set<string>());
+  const uploadedCount = images.filter(
+    (image) => !image.uploadError && !image.url.startsWith('blob:'),
+  ).length;
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+      previewUrls.current.clear();
+    };
+  }, []);
 
   const recomputeOrdersAndCover = (list: ImageItem[]): ImageItem[] => {
     if (list.length === 0) return [];
@@ -47,18 +65,22 @@ export function RecipeImageUploader({
   };
 
   const handleFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || busyRef.current) return;
     setErrorMessage(null);
 
     const availableSlots = maxImages - images.length;
     if (availableSlots <= 0) {
-      setErrorMessage(`Bạn chỉ có thể tải lên tối đa ${maxImages} hình ảnh cho bài công thức.`);
+      setErrorMessage(
+        `Bạn chỉ có thể tải lên tối đa ${maxImages} hình ảnh cho bài công thức.`,
+      );
       return;
     }
 
     const filesToUpload = Array.from(files).slice(0, availableSlots);
     if (files.length > availableSlots) {
-      setErrorMessage(`Chỉ tải lên tối đa ${availableSlots} ảnh còn lại để không vượt quá giới hạn ${maxImages} ảnh.`);
+      setErrorMessage(
+        `Chỉ tải lên tối đa ${availableSlots} ảnh còn lại để không vượt quá giới hạn ${maxImages} ảnh.`,
+      );
     }
 
     // Validate all selected files first
@@ -71,39 +93,53 @@ export function RecipeImageUploader({
     }
 
     setIsUploading(true);
+    busyRef.current = true;
+    onUploadingChange?.(true);
 
     const newItems: ImageItem[] = [];
-
-    for (const file of filesToUpload) {
-      const tempId = `temp-${crypto.randomUUID()}`;
-      try {
-        const uploadResult = await recipeMediaApi.uploadImage(file);
-        newItems.push({
-          id: tempId,
-          url: uploadResult.blobUrl,
-          mimeType: uploadResult.mimeType,
-          displayOrder: images.length + newItems.length + 1,
-          isCover: images.length === 0 && newItems.length === 0, // default first to cover
-        });
-      } catch (err: unknown) {
-        // Fallback for offline/demo/mock: create local Object URL so user is never blocked
-        const previewUrl = URL.createObjectURL(file);
-        newItems.push({
-          id: tempId,
-          url: previewUrl,
-          mimeType: file.type,
-          displayOrder: images.length + newItems.length + 1,
-          isCover: images.length === 0 && newItems.length === 0,
-        });
+    try {
+      for (const file of filesToUpload) {
+        const tempId = `temp-${crypto.randomUUID()}`;
+        try {
+          const uploadResult = await recipeMediaApi.uploadImage(file);
+          if (!mountedRef.current) return;
+          newItems.push({
+            id: tempId,
+            url: uploadResult.blobUrl,
+            mimeType: uploadResult.mimeType,
+            displayOrder: images.length + newItems.length + 1,
+            isCover: images.length === 0 && newItems.length === 0, // default first to cover
+          });
+        } catch (err: unknown) {
+          if (!mountedRef.current) return;
+          const message = asApiError(err).message;
+          setErrorMessage(
+            `${message} Ảnh lỗi chỉ là xem trước. Xóa ảnh lỗi và chọn lại để thử lại.`,
+          );
+          const previewUrl = URL.createObjectURL(file);
+          previewUrls.current.add(previewUrl);
+          newItems.push({
+            id: tempId,
+            url: previewUrl,
+            mimeType: file.type,
+            displayOrder: images.length + newItems.length + 1,
+            isCover: images.length === 0 && newItems.length === 0,
+            uploadError: message,
+          });
+        }
       }
-    }
+      const updated = recomputeOrdersAndCover([...images, ...newItems]);
+      onChange(updated);
 
-    setIsUploading(false);
-    const updated = recomputeOrdersAndCover([...images, ...newItems]);
-    onChange(updated);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } finally {
+      busyRef.current = false;
+      if (mountedRef.current) {
+        setIsUploading(false);
+        onUploadingChange?.(false);
+      }
     }
   };
 
@@ -122,9 +158,15 @@ export function RecipeImageUploader({
   };
 
   const handleRemove = (index: number) => {
+    const removed = images[index];
+    if (previewUrls.current.delete(removed.url))
+      URL.revokeObjectURL(removed.url);
     const remaining = images.filter((_, i) => i !== index);
     const updated = recomputeOrdersAndCover(remaining);
     onChange(updated);
+    setErrorMessage(
+      remaining.find((image) => image.uploadError)?.uploadError ?? null,
+    );
   };
 
   const handleMove = (index: number, direction: 'left' | 'right') => {
@@ -157,7 +199,10 @@ export function RecipeImageUploader({
         {images.length < maxImages ? (
           <label
             htmlFor="recipe-media-upload-input"
-            onDragOver={(event) => { event.preventDefault(); setIsDragActive(true); }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDragActive(true);
+            }}
             onDragLeave={() => setIsDragActive(false)}
             onDrop={handleDrop}
             className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
@@ -165,7 +210,7 @@ export function RecipeImageUploader({
                 ? 'border-brand-300 bg-brand-50/50 cursor-wait'
                 : isDragActive
                   ? 'border-brand-500 bg-brand-50'
-                : 'border-brand-200 bg-brand-50/30 hover:border-brand-400 hover:bg-brand-50'
+                  : 'border-brand-200 bg-brand-50/30 hover:border-brand-400 hover:bg-brand-50'
             }`}
           >
             {isUploading ? (
@@ -175,11 +220,12 @@ export function RecipeImageUploader({
             )}
             <p className="text-sm font-semibold text-brand-700">
               {isUploading
-                ? 'Đang tải ảnh lên Azure Blob Storage...'
+                ? 'Đang tải ảnh lên...'
                 : 'Kéo thả hoặc nhấp để chọn ảnh món ăn'}
             </p>
             <p className="mt-1 text-xs text-ink-muted">
-              Định dạng JPEG, PNG, WebP • Tối đa 5 MB/ảnh • Tối đa {maxImages} ảnh
+              Định dạng JPEG, PNG, WebP • Tối đa 5 MB/ảnh • Tối đa {maxImages}{' '}
+              ảnh
             </p>
           </label>
         ) : (
@@ -189,7 +235,10 @@ export function RecipeImageUploader({
         )}
 
         {errorMessage && (
-          <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-xs text-red-700">
+          <div
+            role="alert"
+            className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-xs text-red-700"
+          >
             <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
             <span>{errorMessage}</span>
           </div>
@@ -201,7 +250,8 @@ export function RecipeImageUploader({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-ink-muted">
             <span>
-              Đã tải {images.length}/{maxImages} ảnh • Bắt buộc chọn đúng 1 ảnh bìa
+              Đã tải {uploadedCount}/{maxImages} ảnh • Bắt buộc chọn đúng 1 ảnh
+              bìa
             </span>
             <span className="text-[11px] text-brand-600 font-medium">
               ★ = Ảnh bìa đại diện
@@ -237,10 +287,16 @@ export function RecipeImageUploader({
                   <span className="absolute bottom-2 left-2 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-[10px] font-bold text-white">
                     {item.displayOrder}
                   </span>
+                  {item.uploadError && (
+                    <span className="absolute bottom-2 right-2 rounded bg-red-700 px-2 py-1 text-[10px] text-white">
+                      Chưa tải lên
+                    </span>
+                  )}
 
                   {/* Delete button */}
                   <button
                     type="button"
+                    disabled={isUploading}
                     onClick={() => handleRemove(index)}
                     title="Xóa ảnh này"
                     className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-lg bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-red-600"
@@ -253,6 +309,7 @@ export function RecipeImageUploader({
                 <div className="flex items-center justify-between border-t border-brand-100 p-1.5 text-xs">
                   <button
                     type="button"
+                    disabled={isUploading}
                     onClick={() => handleSetCover(index)}
                     title={item.isCover ? 'Đang là ảnh bìa' : 'Đặt làm ảnh bìa'}
                     className={`flex items-center gap-1 rounded px-1.5 py-1 text-[11px] font-medium transition-colors ${
@@ -262,7 +319,9 @@ export function RecipeImageUploader({
                     }`}
                   >
                     <Star
-                      className={`h-3 w-3 ${item.isCover ? 'fill-brand-600 text-brand-600' : ''}`}
+                      className={`h-3 w-3 ${
+                        item.isCover ? 'fill-brand-600 text-brand-600' : ''
+                      }`}
                     />
                     {item.isCover ? 'Ảnh bìa' : 'Chọn bìa'}
                   </button>
@@ -270,7 +329,7 @@ export function RecipeImageUploader({
                   <div className="flex items-center gap-0.5">
                     <button
                       type="button"
-                      disabled={index === 0}
+                      disabled={isUploading || index === 0}
                       onClick={() => handleMove(index, 'left')}
                       title="Di chuyển sang trái"
                       className="rounded p-1 text-ink-muted hover:bg-brand-100 disabled:opacity-30 disabled:hover:bg-transparent"
@@ -279,7 +338,7 @@ export function RecipeImageUploader({
                     </button>
                     <button
                       type="button"
-                      disabled={index === images.length - 1}
+                      disabled={isUploading || index === images.length - 1}
                       onClick={() => handleMove(index, 'right')}
                       title="Di chuyển sang phải"
                       className="rounded p-1 text-ink-muted hover:bg-brand-100 disabled:opacity-30 disabled:hover:bg-transparent"

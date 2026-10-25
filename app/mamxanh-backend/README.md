@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.38.0
+> **Version:** v0.40.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-25
 > **Status:** Active  
 
 # Backend Workspace
@@ -37,6 +37,12 @@ Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và
 > [!IMPORTANT]
 > **Quy chuẩn kiến trúc bắt buộc:** Mọi thành viên và AI agent khi triển khai mã nguồn Backend **bắt buộc phải tuân thủ nghiêm ngặt** cấu trúc package Modular Monolith, phân tầng MVC và ranh giới liên module được quy định tại [Backend Package Structure Specification](../../docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md). Cấm inject chéo Repository giữa các module và không trả JPA Entity trực tiếp ra REST API.
 
+### Cấu hình ảnh Azure — FR-14 / fix #158
+
+- Điền `AZURE_STORAGE_CONNECTION_STRING` và `AZURE_STORAGE_CONTAINER_NAME` trong `.env` Backend đã được Git ignore. Root Compose truyền hai biến vào container; sau khi thay `.env`, chạy lại `docker compose -p <project> --env-file app/mamxanh-backend/.env up --build -d --wait` tại root với đúng tên project đang dùng. Không đưa connection string vào Frontend.
+- Ảnh công khai cần container cho phép đọc Blob. Khi thiếu cấu hình hoặc Azure không khả dụng, Backend vẫn phục vụ tính năng khác nhưng upload ảnh trả `503 MEDIA_STORAGE_UNAVAILABLE`, không tạo URL giả. URL mock của ảnh cũ không có dữ liệu để khôi phục; người dùng cần tải lại ảnh.
+- Chạy test storage/media theo lệnh Maven bên dưới; kiểm tra Azure thật qua test opt-in được mô tả trong [Frontend README](../mamxanh-frontend/README.md). Storage dùng chung cho avatar nên avatar cũng cần Azure được cấu hình đúng.
+
 ### Backend bình chọn công thức — FR-57 / Issue #56
 
 - Module `recipe` bổ sung `GET`, `PUT`, `DELETE /api/v1/recipes/{recipeId}/reaction`, yêu cầu Bearer token của Customer/Expert đang hoạt động. Response trả `recipeId`, `currentReaction`, `likes`, `dislikes`, `reactionCount`, `likePercentage` và header `Cache-Control: no-store`; generated OpenAPI tại `/v3/api-docs` là contract chi tiết.
@@ -70,6 +76,7 @@ Backend đã được scaffold thành công với Java 21 và Spring Boot:
 - FR-05 (Issue #68) triển khai luồng nộp/xem lịch sử đơn Chuyên gia và Admin xét duyệt qua Backend API; phê duyệt đổi `CUSTOMER` thành `EXPERT` và ghi notification trong cùng transaction. Migration `V8__expert_application_notifications.sql` bổ sung internal target path cùng index truy vấn. Chi tiết API được tạo từ runtime OpenAPI.
 - Đã có FR-31 (Issue #36) trong module `nutrition`: `GET`/`PUT /api/v1/nutrition/dietary-preferences`, `POST /api/v1/nutrition/dietary-preferences/onboarding/skip`, `POST /api/v1/nutrition/dietary-preferences/onboarding/invitation` (lời mời Onboarding chỉ hiện một lần, AC-31.10) và `GET /api/v1/nutrition/dietary-preferences/ingredient-suggestions`; entity riêng ánh xạ các cột sở thích của `USER` (quyết định Q18) và bảng `USER_INGREDIENT_PREFERENCE`; migration `V7__user_onboarding_invitation.sql` thêm cột `USER.onboarding_invited_at`. Generated OpenAPI khai báo security scheme `bearerAuth` (`common/config/OpenApiConfig`); controller cần đăng nhập gắn `@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)`. Endpoint AI cá nhân hóa sau này phải gọi `DietaryPreferenceService.requirePersonalizedAiEligible(userId)` trước khi gọi Gemini (BR-31).
 - FR-26/27 thêm `POST /api/v1/recipes/{recipeId}/reports` cho Member gửi báo cáo bài công khai; báo cáo lưu `OPEN`, xác thực và chống trùng ở Backend, migration V9 đồng bộ trạng thái/mã lý do với SRS. Luồng bổ sung thông tin thuộc FR-30 chưa có trong Issue này.
+- FR-28 (Issue #33) thêm hàng đợi Administrator dưới `/api/v1/admin/reports`: danh sách theo trạng thái, số lượng từng trạng thái, chi tiết, tiếp nhận (`OPEN` → `IN_REVIEW`) và giải quyết với kết luận `NO_VIOLATION`, `WARN_AUTHOR`, `HIDE_RECIPE` hoặc `LOCK_AUTHOR` kèm lý do bắt buộc. Chỉ Administrator đang giữ báo cáo được ghi kết luận, báo cáo `RESOLVED` không sửa được. Ẩn bài đi qua `RecipeModerationService` (module `recipe`), khóa tài khoản qua `AccountModerationService` (module `auth`), thông báo trong app cho người báo cáo và tác giả qua `ModerationNotificationService` (module `notification`) và không chứa danh tính người báo cáo. Migration `V22__report_handling_by_admin.sql` thêm `REPORT.handled_by` và CHECK cho `decision`. Quy tắc chi tiết ở [API Guide mục 21](../../docs/api/API.md).
 - Đã có FR-23 (Issue #29): `GET /api/v1/members/{userId}` và `GET /api/v1/members/{userId}/recipes` công khai; `GET`/`PUT /api/v1/me/profile` và `POST /api/v1/me/profile/avatar` cho Member sửa tên, giới thiệu ngắn và ảnh đại diện (JPEG/PNG/WebP ≤ 2 MB, kiểm chữ ký tệp, lưu qua `StorageClient` trong thư mục `avatars/`). Không có migration: `USER.bio`, `display_name`, `avatar_url` có từ V1. Quy tắc chi tiết ở [API Guide mục 11](../../docs/api/API.md). Giới hạn multipart `spring.servlet.multipart.*` là 5 MB/tệp, 6 MB/request.
 - FR-40 (Issue #45): Recipe Post dùng nguyên liệu catalog chưa có hồ sơ dinh dưỡng vẫn công khai được (BR-50); AI menu dinh dưỡng (FR-36, `AiMenuService`) chỉ lấy ứng viên `PUBLISHED` có dinh dưỡng đầy đủ, nên bài loại này không vào pool và áp dụng menu chứa bài đó bị từ chối (AC-40.3, BR-40; test `IncompleteNutritionAiMenuIntegrationTest`).
 - Đã có FR-59 (Issue #69) trong module `auth`: `GET /api/v1/members/{userId}/follow` công khai (bộ đếm và trạng thái theo dõi của người xem), `PUT`/`DELETE` cùng đường dẫn để theo dõi/bỏ theo dõi (idempotent, khóa phạm vi chống ghi trùng khi gọi song song) và `GET /api/v1/members/{userId}/followers`, `/following` có phân trang cho tài khoản đã đăng nhập. Không có migration: `USER_FOLLOW` có từ V1. Quy tắc chi tiết ở [API Guide mục 17](../../docs/api/API.md).

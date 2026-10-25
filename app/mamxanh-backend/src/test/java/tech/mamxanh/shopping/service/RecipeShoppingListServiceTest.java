@@ -62,7 +62,6 @@ class RecipeShoppingListServiceTest {
         list.setId(7L);
         list.setUserId(17L);
         when(users.lockActiveMember()).thenReturn(new CurrentUserService.CurrentUser(17, Role.CUSTOMER));
-        when(checklists.get(7L)).thenReturn(new ShoppingListResponse(7L, "Đi chợ", null, null, List.of()));
     }
 
     @Test
@@ -119,6 +118,7 @@ class RecipeShoppingListServiceTest {
         var existing = new ShoppingRecipeContributionEntity();
         existing.setRecipeId(11L);
         when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(existing));
+        when(checklists.get(7L)).thenReturn(new ShoppingListResponse(7L, "Đi chợ", null, null, List.of()));
         var result = service.addRecipe(7, request(11L, null, null, null));
         assertThat(result).isNotNull();
         verify(checklists).get(7L);
@@ -143,10 +143,12 @@ class RecipeShoppingListServiceTest {
 
     @Test
     void addsOnlySelectedRecipeIngredientsAtRequestedServingsAndPersistsContribution() {
+        ownedList();
         source(8, List.of(new RecipeService.ShoppingIngredient(4L, BigDecimal.ONE, 1),
                 new RecipeService.ShoppingIngredient(5L, BigDecimal.TEN, 1)));
         when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of());
         when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of());
+        when(checklists.get(7L)).thenReturn(new ShoppingListResponse(7L, "Đi chợ", null, null, List.of()));
         when(aggregation.aggregate(anyList())).thenReturn(result(2, List.of(0)));
         when(items.save(any())).thenAnswer(call -> {
             ShoppingListItemEntity saved = call.getArgument(0);
@@ -178,11 +180,13 @@ class RecipeShoppingListServiceTest {
 
     @Test
     void duplicateRecipeCanStillAddManualItemsWithoutDuplicatingItsIngredients() {
+        ownedList();
         source(8, List.of(new RecipeService.ShoppingIngredient(4L, BigDecimal.ONE, 1)));
         var existing = new ShoppingRecipeContributionEntity();
         existing.setRecipeId(8L);
         when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(existing));
         when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of());
+        when(checklists.get(7L)).thenReturn(new ShoppingListResponse(7L, "Đi chợ", null, null, List.of()));
         when(aggregation.aggregate(List.of())).thenReturn(new ShoppingAggregationResult(List.of(), List.of()));
         var manual = new CreateShoppingItemRequest("Táo", BigDecimal.ONE, 2);
 
