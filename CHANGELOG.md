@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-25 — Temporary Gemini Flash-Lite Trial for FR-10
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b941ed5`.
 
 **Scope:** Use the user-authorized `gemini-3.1-flash-lite` trial on the isolated FR-10 branch after direct generation probes timed out with the confirmed model. The confirmed `gemini-3.8-flash` baseline and integration acceptance remain unchanged.
 
