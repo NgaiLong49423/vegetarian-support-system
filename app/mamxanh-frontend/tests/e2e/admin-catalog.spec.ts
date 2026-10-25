@@ -80,9 +80,13 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
   await page.goto('/quan-tri/danh-muc');
   await expect(page.getByText('Chuối tây', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Mở biểu mẫu thêm nguyên liệu' }).click();
+  await expect(page.getByRole('heading', { name: 'Thêm nguyên liệu' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('heading', { name: 'Thêm nguyên liệu' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Mở biểu mẫu thêm nguyên liệu' }).click();
   await page.getByLabel('Tên chuẩn tiếng Việt').fill('Nấm đùi gà');
   await page.getByRole('combobox', { name: 'Nhóm nguyên liệu' }).last().selectOption('Đậu & Chế phẩm');
-  await page.getByRole('combobox', { name: 'Tên nguồn dữ liệu' }).selectOption('USDA FoodData Central');
+  await page.getByRole('combobox', { name: 'Nguồn dữ liệu hoặc cách ước tính' }).fill('USDA FoodData Central');
   await page.getByRole('button', { name: 'Thêm nguyên liệu', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Đã thêm nguyên liệu');
 
@@ -96,8 +100,11 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
   await expect(page.getByText('Chuối tây', { exact: true })).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Sửa Nấm đùi gà' }).click();
+  await page.getByRole('button', { name: 'Hủy' }).click();
+  await expect(page.getByRole('heading', { name: 'Sửa nguyên liệu' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Sửa Nấm đùi gà' }).click();
   await page.getByLabel('Tên chuẩn tiếng Việt').fill('Nấm đùi gà tươi');
-  await page.getByLabel('Tên nguồn dữ liệu').selectOption('NIH/Viện Dinh dưỡng');
+  await page.getByLabel('Nguồn dữ liệu hoặc cách ước tính').fill('NIH/Viện Dinh dưỡng');
   await page.getByLabel('Đường dẫn nguồn (không bắt buộc)').fill('https://example.org/ingredient');
   await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
   await expect(page.getByText('Nấm đùi gà tươi', { exact: true })).toBeVisible();
@@ -127,9 +134,9 @@ test('administrator saves nutrition values and backend validates enabling calcul
     }
     if (/\/ingredients\/7\/nutrition-support$/.test(url.pathname) && method === 'PATCH') {
       const { enabled } = request.postDataJSON();
-      if (enabled && Object.values(data[0].nutrition).some((value) => value === null)) {
+      if (enabled && Object.values(data[0].nutrition).every((value) => value === null)) {
         return route.fulfill({ status: 409, contentType: 'application/problem+json', json: {
-          title: 'Conflict', status: 409, code: 'NUTRITION_VALUES_INCOMPLETE', detail: 'Còn thiếu chỉ tiêu dinh dưỡng: proteinGramsPer100g.',
+          title: 'Conflict', status: 409, code: 'NUTRITION_VALUES_EMPTY', detail: 'Cần nhập ít nhất một chỉ tiêu dinh dưỡng trước khi bật hỗ trợ tính.',
         } });
       }
       data[0].nutritionSupported = enabled;
@@ -141,16 +148,23 @@ test('administrator saves nutrition values and backend validates enabling calcul
   await page.goto('/quan-tri/danh-muc');
   await page.getByRole('button', { name: 'Sửa dinh dưỡng Chuối tây' }).click();
   await expect(page.getByLabel('Năng lượng trên 100 g')).toHaveValue('');
+  await page.getByRole('button', { name: 'Bật hỗ trợ tính' }).click();
+  await expect(page.getByRole('alert')).toContainText('Cần nhập ít nhất một chỉ tiêu dinh dưỡng');
+  expect(data[0].nutritionSupported).toBe(false);
   await page.getByLabel('Năng lượng trên 100 g').fill('100');
   const saveResponse = page.waitForResponse((response) => response.request().method() === 'PUT' && response.url().endsWith('/admin/ingredients/7/nutrition'));
   await page.getByRole('button', { name: 'Lưu chỉ tiêu' }).click();
   expect((await saveResponse).ok()).toBeTruthy();
   expect(data[0].nutrition.energyKcalPer100g).toBe(100);
   expect(data[0].nutrition.proteinGramsPer100g).toBeNull();
-  await expect(page.getByRole('status')).toContainText('Đã lưu chỉ tiêu dinh dưỡng');
+  await expect(page.getByRole('status')).toContainText('Đã lưu số liệu dinh dưỡng; chỉ tiêu để trống sẽ không được tính.');
 
+  const partialEnable = page.waitForResponse((response) => response.request().method() === 'PATCH' && response.url().endsWith('/admin/ingredients/7/nutrition-support'));
   await page.getByRole('button', { name: 'Bật hỗ trợ tính' }).click();
-  await expect(page.getByRole('alert')).toContainText('Còn thiếu chỉ tiêu dinh dưỡng');
+  expect((await partialEnable).status()).toBe(200);
+  expect(data[0].nutritionSupported).toBe(true);
+  expect(data[0].nutrition.proteinGramsPer100g).toBeNull();
+  await expect(page.getByText('Đang tính dữ liệu có sẵn', { exact: true })).toBeVisible();
 
   const values: Record<string, string> = {
     'Chất đạm trên 100 g': '10',
@@ -164,12 +178,10 @@ test('administrator saves nutrition values and backend validates enabling calcul
   };
   for (const [label, value] of Object.entries(values)) await page.getByLabel(label).fill(value);
   await page.getByRole('button', { name: 'Lưu chỉ tiêu' }).click();
-  await expect(page.getByRole('status')).toContainText('Đã lưu chỉ tiêu dinh dưỡng');
-  const enableResponse = page.waitForResponse((response) => response.request().method() === 'PATCH' && response.url().endsWith('/admin/ingredients/7/nutrition-support'));
-  await page.getByRole('button', { name: 'Bật hỗ trợ tính' }).click();
-  expect((await enableResponse).ok()).toBeTruthy();
-  await expect(page.getByText('Đang hỗ trợ tính', { exact: true })).toBeVisible();
-  await expect(page.getByText('Có dữ liệu tính toán', { exact: true })).toBeVisible();
+  await expect(page.getByRole('status')).toContainText('Đã lưu số liệu dinh dưỡng; chỉ tiêu để trống sẽ không được tính.');
+  expect(data[0].nutritionSupported).toBe(true);
+  expect(data[0].nutrition.proteinGramsPer100g).toBe(10);
+  await expect(page.getByText('Đang tính dữ liệu có sẵn', { exact: true })).toBeVisible();
 });
 
 test('administrator filters the catalog through the paginated endpoint and reads linked recipes', async ({ page }) => {
@@ -220,9 +232,15 @@ test('administrator filters the catalog through the paginated endpoint and reads
   await page.getByRole('button', { name: 'Xem chi tiết Nấm bào ngư' }).click();
   await expect(page.getByRole('heading', { name: 'Chi tiết · Nấm bào ngư' })).toBeVisible();
   await expect(page.getByText('Ngày đối chiếu:')).toBeVisible();
+  await page.getByRole('button', { name: 'Tắt' }).click();
+  await expect(page.getByRole('heading', { name: 'Chi tiết · Nấm bào ngư' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Xem chi tiết Nấm bào ngư' }).click();
   await page.getByRole('button', { name: 'Đóng' }).click();
+  await expect(page.getByRole('heading', { name: 'Chi tiết · Nấm bào ngư' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Xem công thức dùng Nấm bào ngư' }).click();
   await expect(page.getByText('Canh nấm rau củ', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Tắt' }).click();
+  await expect(page.getByText('Canh nấm rau củ', { exact: true })).toHaveCount(0);
 });
 
 test('ingredient image and group resolver handles all vegetarian groups and fallbacks', async ({ page }) => {

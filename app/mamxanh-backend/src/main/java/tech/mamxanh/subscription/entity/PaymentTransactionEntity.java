@@ -56,6 +56,6 @@ public class PaymentTransactionEntity {
         this.orderCode = orderCode;
         this.amountVnd = amountVnd;
         this.status = PaymentStatus.PENDING;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(java.time.Clock.systemUTC());
     }
 }

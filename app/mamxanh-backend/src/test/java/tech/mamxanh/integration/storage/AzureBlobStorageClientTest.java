@@ -9,11 +9,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ErrorCode;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -23,6 +26,16 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AzureBlobStorageClientTest {
+
+    @Test void uploadFailureReturnsASanitizedUnavailableErrorInsteadOfASuccessfulUrl() {
+        when(containerClient.getBlobClient(anyString())).thenThrow(new IllegalStateException("sensitive-provider-details"));
+        var client = new AzureBlobStorageClient(containerClient);
+        assertThatThrownBy(() -> client.uploadImage(new ByteArrayInputStream(new byte[]{1}), 1, "image/png", "file.png"))
+                .isInstanceOf(AppException.class).satisfies(error -> {
+                    assertThat(((AppException) error).errorCode()).isEqualTo(ErrorCode.MEDIA_STORAGE_UNAVAILABLE);
+                    assertThat(error.getMessage()).doesNotContain("sensitive-provider-details");
+                });
+    }
 
     @Mock
     private BlobContainerClient containerClient;

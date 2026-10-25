@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M05
 > **File:** `docs/requirements/use-cases/meal-planning-and-shopping.md`
-> **Version:** v2.4.0
+> **Version:** v2.5.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-05
+> **Last Updated:** 2026-10-22
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -140,10 +140,10 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53).
 Chỉ Member sở hữu danh sách mới được xem hoặc thay đổi danh sách đó. Hệ thống áp dụng kiểm tra quyền sở hữu cho mọi thao tác thuộc UC-53.1–UC-53.3 (NFR-09).
 
 <a id="uc-53-1"></a>
-### UC-53.1 — Tạo Shopping List từ Lịch ăn hoặc công thức đã chọn
+  ### UC-53.1 — Tạo Shopping List rỗng, từ Lịch ăn hoặc thêm một công thức
 
 #### Goal
-Giúp Member tạo checklist mua sắm từ một tuần/toàn bộ hoặc một phần lịch ăn, hoặc từ Recipe Post được chọn.
+  Giúp Member tạo checklist rỗng độc lập, tạo từ một tuần/toàn bộ hay một phần lịch ăn, hoặc thêm từng Recipe Post công khai vào danh sách đã sở hữu hay danh sách mới.
 
 #### Primary Actor
 `Member`.
@@ -152,22 +152,22 @@ Giúp Member tạo checklist mua sắm từ một tuần/toàn bộ hoặc một
 Hệ thống quản lý Shopping List; hệ thống tổng hợp nguyên liệu theo [FR-54](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-54).
 
 #### Trigger
-Member chọn “Tạo danh sách mua sắm” từ Lịch ăn tuần hoặc “Thêm vào danh sách mua sắm” từ các Recipe Post đã chọn.
+  Member chọn tạo danh sách trống tại trang Đi chợ, tạo từ Lịch ăn tuần, chọn “Thêm vào danh sách đi chợ” trong menu của thẻ Recipe Post ở Khám phá/Công thức đã lưu, hoặc bấm nút cùng tên trên trang chi tiết công thức.
 
 #### Preconditions
-Member đã đăng nhập; Member đã chọn ít nhất một nguồn tạo danh sách.
+Member đã đăng nhập. Với Meal Plan, có ít nhất một món hợp lệ được chọn; với công thức, Member đang thao tác trên đúng một Recipe Post công khai và sở hữu danh sách đích nếu chọn danh sách có sẵn. Tạo danh sách trống không cần nguồn.
 
 #### Main Flow
-1. Member chọn toàn bộ tuần/các ngày trong Meal Plan hoặc chọn một hay nhiều Recipe Post.
-2. Member xác nhận tạo danh sách mua sắm.
-3. Hệ thống trích xuất nguyên liệu theo số khẩu phần đã thiết lập và chuyển các dòng nguồn tới quy trình tổng hợp của FR-54.
-4. Hệ thống tạo Shopping List và hiển thị checklist gồm tên nguyên liệu, định lượng, đơn vị, trạng thái checkbox và danh mục thực phẩm.
+1. Member chọn một cách tạo: danh sách trống và nhập tên; chọn toàn bộ tuần/các ngày trong Meal Plan; hoặc chọn một Recipe Post từ thẻ/menu hay trang chi tiết rồi chọn danh sách thuộc tài khoản hoặc nhập tên danh sách mới.
+2. Member xác nhận thao tác.
+3. Với danh sách trống, hệ thống tạo checklist không có item, độc lập với Meal Plan và Recipe Post. Với công thức, Member chọn khẩu phần 1–50, mặc định các nguyên liệu công thức đều được chọn nhưng có thể bỏ chọn từng nguyên liệu hoặc tất cả; có thể thêm mặt hàng thủ công kèm số lượng và đơn vị. Hệ thống chỉ chuyển nguyên liệu đã chọn theo số khẩu phần tới quy trình tổng hợp FR-54 và lưu mặt hàng thủ công trong cùng giao dịch. Có thể xác nhận khi còn ít nhất một nguyên liệu được chọn hoặc có ít nhất một mặt hàng thủ công. Tạo danh sách mới và mọi mặt hàng phải nằm trong cùng giao dịch.
+4. Hệ thống lưu Shopping List theo tài khoản Member và mở checklist để tiếp tục thêm hoặc quản lý mặt hàng. Thêm lại cùng công thức vào cùng danh sách không cộng trùng.
 
 #### Alternative Flows
-- **EF-53.1 — Meal Plan không có món:** Hệ thống thông báo chưa có món để tạo danh sách và hướng dẫn Member thêm món vào lịch trước.
+- **EF-53.1 — Meal Plan không có món:** Hệ thống thông báo chưa có món để tạo danh sách từ lịch; Member vẫn có thể tạo danh sách rỗng độc lập.
 
 #### Postconditions
-Shopping List mới được lưu theo tài khoản Member; các mục đã tổng hợp sẵn sàng cho quản lý checklist và xuất dữ liệu.
+Shopping List được lưu theo tài khoản Member; nếu thao tác tạo mới thì checklist chứa nguyên liệu công thức đã thêm, còn danh sách rỗng độc lập sẵn sàng cho Member thêm thủ công.
 
 #### Traceability
 - **Parent FR:** [FR-53](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53).
@@ -178,7 +178,8 @@ Shopping List mới được lưu theo tài khoản Member; các mục đã tổ
 #### Acceptance Coverage
 - [AC-53.1](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Tạo Shopping List từ Meal Plan.
 - [AC-53.5](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Yêu cầu đăng nhập (áp dụng xuyên các thao tác Shopping List).
-- [AC-53.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Tạo danh sách từ một hoặc nhiều Recipe Post được chọn.
+- [AC-53.6](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Thêm một Recipe Post vào danh sách đã chọn hoặc danh sách mới.
+- [AC-53.9](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-53) — Tạo checklist rỗng độc lập với nguồn.
 
 ---
 

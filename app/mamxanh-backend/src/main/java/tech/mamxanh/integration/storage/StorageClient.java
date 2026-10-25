@@ -15,6 +15,9 @@ public interface StorageClient {
     String AVATAR_FOLDER = "avatars";
     String EXPERT_APPLICATION_FOLDER = "expert-applications";
 
+    /** Folder for administrator-managed ingredient reference images. */
+    String INGREDIENT_FOLDER = "ingredients";
+
     /**
      * Upload a recipe image stream to storage (in {@link #RECIPE_FOLDER}).
      *
@@ -31,7 +34,7 @@ public interface StorageClient {
     /**
      * Upload an image stream to storage under the given folder.
      *
-     * @param folder blob folder, {@link #RECIPE_FOLDER} or {@link #AVATAR_FOLDER}
+     * @param folder blob folder, such as {@link #RECIPE_FOLDER}, {@link #AVATAR_FOLDER} or {@link #INGREDIENT_FOLDER}
      * @return publicly accessible blob URL
      */
     String uploadImage(InputStream inputStream, long size, String mimeType, String originalFilename, String folder);
@@ -61,7 +64,7 @@ public interface StorageClient {
     /**
      * Check if storage client is backed by real cloud storage.
      *
-     * @return true if cloud storage is configured, false if running in local mock fallback
+     * @return true if cloud storage is configured, false if uploads are unavailable
      */
     boolean isCloudStorageConfigured();
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import {
   Activity,
+  ArrowLeftRight,
   Bookmark,
   Leaf,
   LoaderCircle,
@@ -18,12 +19,13 @@ import { Button, Card, EmptyState } from "../components/ui"
 import { useAuth } from "../components/AuthContext"
 import { subscriptionApi, type MySubscriptionResponse } from "../api/subscription"
 import { useSavedRecipes } from "../components/SavedRecipesContext"
+import { AddToMealPlanButton } from "../components/AddToMealPlanButton"
 import {
   savedRecipesApi,
   type SavedRecipePage,
 } from "../services/savedRecipesApi"
 import { asApiError } from "../lib/apiClient"
-import { formatDate } from "../utils/date"
+import { formatSubscriptionDate as formatDate } from "../utils/subscriptionDate"
 
 export function Profile() {
   const { account } = useAuth()
@@ -330,12 +332,13 @@ export function Profile() {
             ) : ownResult?.content.length ? (
               <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
                 {ownResult.content.map((item) => (
-                  <article key={item.recipeId} className="relative min-w-0 transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
+                  <article key={item.recipeId} className="relative flex h-full min-w-0 flex-col transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
                     {item.available ? (
-                      <Link
-                        to={`/cong-thuc/id/${item.recipeId}`}
-                        className="group block"
-                      >
+                      <>
+                        <Link
+                          to={`/cong-thuc/id/${item.recipeId}`}
+                          className="group flex flex-1 flex-col"
+                        >
                         <div className="aspect-[4/5] overflow-hidden rounded-xl bg-paper">
                           {item.coverUrl ? (
                             <img
@@ -350,22 +353,36 @@ export function Profile() {
                             </div>
                           )}
                         </div>
-                        <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-ink transition-colors duration-200 group-hover:text-brand-600">
+                          <h3 className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
                           {item.title}
                         </h3>
                         <p className="mt-1 truncate text-xs text-ink-muted">
                           {item.authorName}
                         </p>
                       </Link>
+                        <Link
+                          to={`/so-sanh?a=${item.recipeId}`}
+                          aria-label={`So sánh ${item.title}`}
+                          className="mt-1 inline-flex items-center gap-1 rounded text-xs font-semibold text-brand-600 hover:text-brand-700"
+                        >
+                          <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
+                          So sánh
+                        </Link>
+                      </>
                     ) : (
-                      <div>
+                      <div className="flex flex-1 flex-col">
                         <div className="flex aspect-[4/5] items-center justify-center rounded-xl border border-brand-100 bg-paper">
                           <Lock className="h-7 w-7 text-ink-muted" />
                         </div>
-                        <p className="mt-2 text-sm font-medium text-ink-muted">
+                        <p className="mt-2 min-h-10 text-sm font-medium leading-5 text-ink-muted">
                           {item.unavailableMessage ??
                             "Công thức không còn khả dụng"}
                         </p>
+                      </div>
+                    )}
+                    {item.available && item.title && account.role !== "ADMIN" && (
+                      <div className="absolute right-12 top-2 z-10">
+                        <AddToMealPlanButton recipeId={item.recipeId} recipeTitle={item.title} />
                       </div>
                     )}
                     <button

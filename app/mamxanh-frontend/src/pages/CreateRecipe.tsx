@@ -13,6 +13,7 @@ import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUp
 import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
 import type { RecipeAiContentType } from '../api/recipes';
 import { AiRecipeAssistantModal, type GeneratedRecipeData } from '../components/AiRecipeAssistantModal';
+import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
 
 type IngredientRow = {
   key: string;
@@ -100,6 +101,7 @@ function CreateRecipeForm() {
   };
   const [ingredients, setIngredients] = useState<IngredientRow[]>(() => [emptyIngredient()]);
   const [mediaList, setMediaList] = useState<ImageItem[]>([]);
+  const [mediaUploading, setMediaUploading] = useState(false);
   const [mediaError, setMediaError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
@@ -109,6 +111,13 @@ function CreateRecipeForm() {
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const suggestedDifficulty = assessRecipeDifficulty({
+    ingredientCount: ingredients.filter((ing) => ing.ingredientId || ing.quantity).length,
+    prepTimeMinutes: Number(prepTimeMinutes) || 0,
+    cookTimeMinutes: Number(cookTimeMinutes) || 0,
+    instructions,
+  });
 
   const handleApplyAiRecipe = async (aiRecipe: GeneratedRecipeData) => {
     setTitle(aiRecipe.title);
@@ -247,6 +256,10 @@ function CreateRecipeForm() {
 
   const handlePublish = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (mediaUploading) {
+      setMediaError('Vui lòng chờ ảnh tải lên hoàn tất trước khi xuất bản.');
+      return;
+    }
     setSubmitError('');
     setFieldErrors({});
     if (!validateMediaSelection()) return;
@@ -443,7 +456,8 @@ function CreateRecipeForm() {
             <SectionHead number="4" title="Hình ảnh bài công thức" />
             <RecipeImageUploader
               images={mediaList}
-              onChange={setMediaList}
+              onChange={(images) => { setMediaList(images); setMediaError(''); }}
+              onUploadingChange={setMediaUploading}
               maxImages={5}
             />
             {mediaError && <p role="alert" className={errorClass}>{mediaError}</p>}
@@ -483,8 +497,8 @@ function CreateRecipeForm() {
 
           {submitError && <div role="alert" className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{submitError}</div>}
           <div className="flex justify-end">
-            <Button type="submit" size="lg" disabled={submitting || loadingOptions || Boolean(optionsError) || !options}>
-              {submitting ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Đang gửi…</> : 'Xuất bản công thức'}
+            <Button type="submit" size="lg" disabled={submitting || mediaUploading || loadingOptions || Boolean(optionsError) || !options}>
+              {mediaUploading ? 'Đang tải ảnh…' : submitting ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Đang gửi…</> : 'Xuất bản công thức'}
             </Button>
           </div>
         </div>

@@ -75,6 +75,8 @@ export interface RecipeDetail {
   ingredients: Array<{
     ingredientId: number;
     name: string;
+    /** Reference image from the ingredient catalog; null means render an empty image slot. */
+    imageUrl: string | null;
     quantity: number;
     unitId: number;
     unitCode: string;
@@ -99,6 +101,25 @@ export interface RecipeViewResponse {
   recipeId: number;
   counted: boolean;
   viewCount: number;
+}
+
+export type RecipeReportReasonCode =
+  | 'RECIPE_INFO_OR_DIET_LABEL'
+  | 'FOOD_SAFETY_HAZARD'
+  | 'SPAM_ADVERTISING'
+  | 'INAPPROPRIATE_CONTENT'
+  | 'COPYRIGHT_VIOLATION'
+  | 'OTHER';
+
+export interface RecipeReportRequest {
+  reasonCode: RecipeReportReasonCode;
+  description?: string;
+}
+
+export interface RecipeReportResponse {
+  reportId: number;
+  status: string;
+  message: string;
 }
 
 export interface RecipeMedia {
@@ -176,22 +197,16 @@ export interface MealPlanWeek {
   }>;
 }
 
-export interface MealPlanExport {
-  weekStartDate: string;
-  entries: Array<{
-    mealDate: string;
-    mealType: MealPlanWeek['entries'][number]['mealType'];
-    title: string;
-    plannedServings: number | null;
-    energyKcal: number | null;
-    available: boolean;
-  }>;
-}
-
 export interface AiRecipeSuggestion {
   items: Array<{ recipe: RecipePost; reason: string }>;
 }
 
+export interface AiCookingGuide {
+  recipeId: number;
+  recipeTitle: string;
+  steps: string[];
+  aiNotice: string;
+}
 export interface AiWeeklyMenuPreview {
   slots: Array<{
     dayOffset: number;
@@ -314,8 +329,11 @@ export const recipesApi = {
   recommendByIngredients: (ingredientIds: number[]) => request(
     () => apiClient.post<AiRecipeSuggestion>('/recipes/ai/recommendations', { ingredientIds }, { timeout: 60_000 }),
   ),
-  createWeeklyMenuPreview: (ingredientIds: number[]) => request(
-    () => apiClient.post<AiWeeklyMenuPreview>('/recipes/ai/weekly-menu', { ingredientIds }, { timeout: 60_000 }),
+  createAiCookingGuide: (recipeId: number) => request(
+    () => apiClient.post<AiCookingGuide>('/recipes/ai/cooking-guide', { recipeId }, { timeout: 60_000 }),
+  ),
+  createWeeklyMenuPreview: (ingredientIds: number[] = []) => request(
+    () => apiClient.post<AiWeeklyMenuPreview>('/recipes/ai/weekly-menu', ingredientIds.length ? { ingredientIds } : {}, { timeout: 60_000 }),
   ),
   related: (recipeId: number) => request(
     () => apiClient.get<{ items: RecipePost[] }>(`/recipes/${recipeId}/related`),
@@ -339,6 +357,9 @@ export const recipesApi = {
   ),
   recordView: (recipeId: number, anonymousViewerId?: string) => request(
     () => apiClient.post<RecipeViewResponse>(`/recipes/${recipeId}/views`, anonymousViewerId ? { anonymousViewerId } : {}),
+  ),
+  submitReport: (recipeId: number, payload: RecipeReportRequest) => request(
+    () => apiClient.post<RecipeReportResponse>(`/recipes/${recipeId}/reports`, payload),
   ),
   searchPublic: (filters: RecipeSearchParams) => request(
     () => apiClient.get<RecipeSearchResult>('/recipes', { params: recipeSearchParams(filters) }),
@@ -369,15 +390,15 @@ export const recipeApi = {
       '/recipes/mine', { params: { page, size } },
     )).data,
   getForAuthor: async (recipeId: number) => (await apiClient.get<RecipePost>(`/recipes/${recipeId}/manage`)).data,
-  getReferenceData: async () => (await apiClient.get<RecipeReferenceData>('/recipes/reference-data')).data,
+  getReferenceData: async (keyword?: string) => (await apiClient.get<RecipeReferenceData>('/recipes/reference-data', {
+    params: keyword ? { keyword } : undefined,
+  })).data,
   update: async (recipeId: number, payload: UpdateRecipePost) =>
     (await apiClient.put<RecipePost>(`/recipes/${recipeId}`, payload)).data,
   delete: (recipeId: number) => apiClient.delete<void>(`/recipes/${recipeId}`),
 };
 
 export const mealPlanApi = {
-  getExport: async (weekStartDate: string) =>
-    (await apiClient.get<MealPlanExport>(`/meal-plans/${weekStartDate}/export`)).data,
   moveEntry: async (weekStartDate: string, entryId: number, payload: {
     mealDate: string; mealType: MealPlanWeek['entries'][number]['mealType'];
   }) => (await apiClient.patch<MealPlanWeek['entries'][number]>(
@@ -415,7 +436,7 @@ export const mealPlanApi = {
   createAiMenuPreview: async (payload: {
     weekStartDate: string; mode: AiMenuMode; goal?: AiMenuGoal | null;
     preferredIngredientIds?: number[]; avoidedIngredientIds?: number[];
-  }) => (await apiClient.post<AiMenuPreview>('/meal-plans/ai-menu/previews', payload, { timeout: 60_000 })).data,
+  }) => (await apiClient.post<AiMenuPreview>('/meal-plans/ai-menu/previews', payload, { timeout: 8_000 })).data,
   applyAiMenu: async (payload: {
     weekStartDate: string; mode: AiMenuMode; goal?: AiMenuGoal | null;
     avoidedIngredientIds?: number[]; meals: Array<Pick<AiMenuMeal, 'mealDate' | 'mealType' | 'recipeId'>>;

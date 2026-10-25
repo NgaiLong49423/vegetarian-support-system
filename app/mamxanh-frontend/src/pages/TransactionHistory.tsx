@@ -5,7 +5,8 @@ import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card, EmptyState } from '../components/ui';
 import { useAuth } from '../components/AuthContext';
 import { subscriptionApi, type TransactionHistoryResponse, type PaymentStatus } from '../api/subscription';
-import { formatDateTime, formatVnd } from '../utils/date';
+import { formatVnd } from '../utils/date';
+import { formatSubscriptionDateTime as formatDateTime } from '../utils/subscriptionDate';
 
 function renderStatusBadge(status: PaymentStatus) {
   switch (status) {
@@ -145,44 +146,51 @@ export function TransactionHistory() {
           </Link>
         </Card>
       ) : (
-        <div className="mt-8 overflow-hidden rounded-2xl border border-brand-100 bg-paper shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-brand-100 bg-brand-50/70 text-xs font-bold text-ink-muted uppercase">
-                <tr>
-                  <th scope="col" className="px-6 py-4">Mã đơn hàng</th>
-                  <th scope="col" className="px-6 py-4">Gói dịch vụ</th>
-                  <th scope="col" className="px-6 py-4">Số tiền</th>
-                  <th scope="col" className="px-6 py-4">Trạng thái</th>
-                  <th scope="col" className="px-6 py-4">Thời gian tạo</th>
-                  <th scope="col" className="px-6 py-4">Thời gian thanh toán</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-brand-50">
-                {transactions.map((tx) => (
-                  <tr key={tx.orderCode} className="hover:bg-brand-50/40 transition-colors">
-                    <td className="px-6 py-4 font-mono font-semibold text-brand-700">
-                      #{tx.orderCode}
-                    </td>
-                    <td className="px-6 py-4 font-bold text-ink">
-                      Gói {tx.tier}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-ink">
-                      {formatVnd(tx.amountVnd)} đ
-                    </td>
-                    <td className="px-6 py-4">
-                      {renderStatusBadge(tx.status)}
-                    </td>
-                    <td className="px-6 py-4 text-xs text-ink-muted">
-                      {formatDateTime(tx.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 text-xs text-ink-muted">
-                      {tx.paidAt ? formatDateTime(tx.paidAt) : '—'}
-                    </td>
+        <div className="mt-8">
+          <p className="mb-3 text-xs text-ink-muted">Thời gian hiển thị theo giờ Việt Nam (UTC+7).</p>
+          <div className="overflow-hidden rounded-2xl border border-brand-100 bg-paper shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-brand-100 bg-brand-50/70 text-xs font-bold text-ink-muted uppercase">
+                  <tr>
+                    <th scope="col" className="px-6 py-4">Mã đơn hàng</th>
+                    <th scope="col" className="px-6 py-4">Gói dịch vụ</th>
+                    <th scope="col" className="px-6 py-4">Số tiền</th>
+                    <th scope="col" className="px-6 py-4">Trạng thái</th>
+                    <th scope="col" className="px-6 py-4">Thời gian tạo</th>
+                    <th scope="col" className="px-6 py-4">Thời gian thanh toán</th>
+                    <th scope="col" className="px-6 py-4">Thời gian hết hạn</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-brand-50">
+                  {transactions.map((tx) => (
+                    <tr key={tx.orderCode} className="hover:bg-brand-50/40 transition-colors">
+                      <td className="px-6 py-4 font-mono font-semibold text-brand-700">
+                        #{tx.orderCode}
+                      </td>
+                      <td className="px-6 py-4 font-bold text-ink">
+                        {tx.tier ? `Gói ${tx.tier}` : "Không xác định"}
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-ink">
+                        {formatVnd(tx.amountVnd)} đ
+                      </td>
+                      <td className="px-6 py-4">
+                        {renderStatusBadge(tx.status)}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-ink-muted">
+                        {formatDateTime(tx.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-ink-muted">
+                        {tx.paidAt ? formatDateTime(tx.paidAt) : '—'}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-ink-muted">
+                        {tx.status === 'PAID' && tx.endsAt ? formatDateTime(tx.endsAt) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

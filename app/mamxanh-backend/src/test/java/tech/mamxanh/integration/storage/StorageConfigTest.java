@@ -98,19 +98,19 @@ class StorageConfigTest {
     }
 
     @Test
-    @DisplayName("storageClient returns MockStorageClient when connection string is missing or invalid")
-    void storageClient_mockFallback() {
+    @DisplayName("storageClient rejects uploads when connection string is missing or invalid")
+    void rejectsUploadsWhenConfigurationIsMissingOrInvalid() {
         StorageConfig config = new StorageConfig();
 
         // Empty connection string
         StorageProperties emptyProps = new StorageProperties("", "mamxanh-recipes");
         StorageClient client1 = config.storageClient(emptyProps);
-        assertThat(client1).isInstanceOf(MockStorageClient.class);
+        assertThat(client1).isInstanceOf(UnavailableStorageClient.class);
 
         // Invalid connection string (triggers catch block)
         StorageProperties invalidProps = new StorageProperties("invalid-connection-string", "mamxanh-recipes");
         StorageClient client2 = config.storageClient(invalidProps);
-        assertThat(client2).isInstanceOf(MockStorageClient.class);
+        assertThat(client2).isInstanceOf(UnavailableStorageClient.class);
     }
 
     @Test

@@ -15,6 +15,7 @@ import {
 import { Modal } from './Modal';
 import { Button } from './ui';
 import type { RecipeFormOptions } from '../api/recipes';
+import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
 
 export interface GeneratedRecipeData {
   title: string;
@@ -568,7 +569,12 @@ export function AiRecipeAssistantModal({
         instructions: naturalInstructions,
         dishCategory: calculatedCategory,
         vegetarianType: detectedVegType,
-        difficulty: 'EASY',
+        difficulty: assessRecipeDifficulty({
+          ingredientCount: finalIngredients.length,
+          prepTimeMinutes: 10,
+          cookTimeMinutes: 15,
+          instructions: naturalInstructions,
+        }).code,
         servings,
         prepTimeMinutes: 10,
         cookTimeMinutes: 15,

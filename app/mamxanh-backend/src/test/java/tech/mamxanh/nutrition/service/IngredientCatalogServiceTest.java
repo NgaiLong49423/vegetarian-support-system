@@ -42,6 +42,41 @@ import tech.mamxanh.nutrition.repository.UnitRepository;
 
 @ExtendWith(MockitoExtension.class)
 class IngredientCatalogServiceTest {
+    @Test void batchReferencesKeepInactiveHistoryAndHandleEmptyInput() {
+        var ingredient = new IngredientEntity("Nấm", "Nấm", "Nguồn", null, LocalDate.of(2026,10,17));
+        org.springframework.test.util.ReflectionTestUtils.setField(ingredient,"id",81L);
+        ingredient.setActive(false);
+        var unit = new UnitEntity("old","Đơn vị cũ",MeasurementDimension.COUNT,BigDecimal.ONE);
+        org.springframework.test.util.ReflectionTestUtils.setField(unit,"id",91); unit.setActive(false);
+        when(ingredientRepository.findAllById(List.of(81L))).thenReturn(List.of(ingredient));
+        when(unitRepository.findAllById(List.of(91))).thenReturn(List.of(unit));
+        assertThat(service.findIngredientReferences(List.of(81L))).singleElement().satisfies(i -> assertThat(i.active()).isFalse());
+        assertThat(service.findUnitReferences(List.of(91))).singleElement().satisfies(u -> assertThat(u.active()).isFalse());
+        assertThat(service.findIngredientReferences(null)).isEmpty();
+        assertThat(service.findUnitReferences(List.of())).isEmpty();
+    }
+
+    @Test void batchConversionLookupRequiresActiveIngredientAndUnitAsWellAsActiveRate() {
+        var ingredient = new IngredientEntity("Nấm", "Nấm", "Nguồn", null, LocalDate.of(2026,10,17));
+        org.springframework.test.util.ReflectionTestUtils.setField(ingredient,"id",1L);
+        var unit = new UnitEntity("piece","Miếng",MeasurementDimension.COUNT,BigDecimal.ONE);
+        org.springframework.test.util.ReflectionTestUtils.setField(unit,"id",2);
+        var valid = new IngredientUnitConversionEntity(new IngredientUnitConversionId(1L,2),new BigDecimal("120"),false);
+        var unavailableUnit = new IngredientUnitConversionEntity(new IngredientUnitConversionId(1L,99),new BigDecimal("200"),false);
+        when(ingredientRepository.findByIdInAndStatus(List.of(1L),CatalogStatus.ACTIVE)).thenReturn(List.of(ingredient));
+        when(unitRepository.findByActiveTrue()).thenReturn(List.of(unit));
+        when(conversionRepository.findByIdIngredientIdInAndActiveTrue(List.of(1L))).thenReturn(List.of(valid,unavailableUnit));
+        assertThat(service.findActiveConversions(List.of(1L))).singleElement().satisfies(r -> {
+            assertThat(r.unitId()).isEqualTo(2); assertThat(r.gramsPerUnit()).isEqualByComparingTo("120");
+        });
+    }
+
+    @Test void batchConversionLookupReturnsNoRatesForEmptyOrInactiveIngredients() {
+        assertThat(service.findActiveConversions(List.of())).isEmpty();
+        when(ingredientRepository.findByIdInAndStatus(List.of(1L),CatalogStatus.ACTIVE)).thenReturn(List.of());
+        assertThat(service.findActiveConversions(List.of(1L))).isEmpty();
+        org.mockito.Mockito.verifyNoInteractions(unitRepository,conversionRepository);
+    }
     @Mock private IngredientRepository ingredientRepository;
     @Mock private UnitRepository unitRepository;
     @Mock private IngredientUnitConversionRepository conversionRepository;
@@ -81,7 +116,7 @@ class IngredientCatalogServiceTest {
         when(ingredient.getId()).thenReturn(12L);
         when(ingredient.getName()).thenReturn("Cải thìa");
         when(ingredient.getIngredientGroup()).thenReturn("Rau củ");
-        when(ingredientRepository.search(eq("cải"), eq("Rau củ"), eq(CatalogStatus.ACTIVE), isNull(), any(Pageable.class)))
+        when(ingredientRepository.search(eq("%cải%"), eq("Rau củ"), eq(CatalogStatus.ACTIVE), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(ingredient), Pageable.ofSize(20), 1));
 
         var result = service.searchPublicIngredients("cải", "Rau củ", 0, 20);
@@ -91,6 +126,33 @@ class IngredientCatalogServiceTest {
             assertThat(item.ingredientGroup()).isEqualTo("Rau củ");
             assertThat(item.ingredientId()).isEqualTo(12L);
         });
+    }
+
+    @Test void publicDetailPreservesKnownZeroUnknownAndSmallMicronutrients() {
+        IngredientEntity ingredient = new IngredientEntity("Phô mai", "Sữa", "Private source", null, LocalDate.now());
+        org.springframework.test.util.ReflectionTestUtils.setField(ingredient, "id", 42L);
+        ingredient.setImageUrl("https://example.test/cheese.png");
+        ingredient.updateNutrition(new BigDecimal("333"), BigDecimal.TEN, BigDecimal.ZERO,
+                null, null, new BigDecimal("200"), null, new BigDecimal("0.0001"), null);
+        when(ingredientRepository.findByIdAndStatus(42L, CatalogStatus.ACTIVE)).thenReturn(Optional.of(ingredient));
+
+        var response = service.getPublicIngredient(42L);
+
+        assertThat(response.ingredientId()).isEqualTo(42L);
+        assertThat(response.imageUrl()).isEqualTo("https://example.test/cheese.png");
+        assertThat(response.nutrition().carbohydrateGramsPer100g()).isEqualByComparingTo("0");
+        assertThat(response.nutrition().totalFatGramsPer100g()).isNull();
+        assertThat(response.nutrition().vitaminB12MicrogramsPer100g()).isEqualByComparingTo("0.0001");
+    }
+
+    @Test void publicDetailDoesNotFallBackToInactiveOrUnfilteredRecords() {
+        when(ingredientRepository.findByIdAndStatus(42L, CatalogStatus.ACTIVE)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getPublicIngredient(42L)).isInstanceOfSatisfying(ApiException.class, error -> {
+            assertThat(error.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(error.getCode()).isEqualTo("INGREDIENT_NOT_FOUND");
+        });
+        org.mockito.Mockito.verify(ingredientRepository, org.mockito.Mockito.never()).findById(any());
     }
 
     @Test void rejectsDuplicateIngredientName() {
@@ -202,7 +264,7 @@ class IngredientCatalogServiceTest {
         assertThat(service.setNutritionSupport(7L, new NutritionSupportUpdateRequest(true)).nutritionSupported()).isTrue();
     }
 
-    @Test void doesNotAllowClearingNutritionWhileOfficialCalculationIsEnabled() {
+    @Test void rejectsClearingAllNutritionWhileSupportIsEnabled() {
         IngredientEntity ingredient = new IngredientEntity("Đậu đỏ", "Đậu hạt", "USDA FoodData Central",
                 "https://fdc.nal.usda.gov/", LocalDate.now());
         ingredient.updateNutrition(BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
@@ -211,11 +273,11 @@ class IngredientCatalogServiceTest {
         when(ingredientRepository.findById(5L)).thenReturn(Optional.of(ingredient));
 
         assertThatThrownBy(() -> service.updateNutrition(5L, new IngredientNutritionRequest(
-                null, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
-                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE)))
+                null, null, null, null, null, null, null, null, null)))
                 .isInstanceOfSatisfying(ApiException.class, error ->
                     assertThat(error.getCode()).isEqualTo("NUTRITION_VALUES_EMPTY"));
         assertThat(ingredient.getEnergyKcalPer100g()).isEqualByComparingTo(BigDecimal.ONE);
+        assertThat(ingredient.isNutritionSupported()).isTrue();
     }
 
     @Test void allowsPartialNutritionThroughIngredientUpdateWhileSupportIsEnabled() {

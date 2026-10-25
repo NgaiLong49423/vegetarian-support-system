@@ -273,25 +273,6 @@ class MealPlanWeekIntegrationTest extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM [MEAL_PLAN_ENTRY] WHERE recipe_id = ?", Integer.class, recipe)).isEqualTo(2);
     }
 
-    @Test
-    void ac337ExportIsOwnerOnlyAndOmitsHiddenContentAndEnergy() throws Exception {
-        long recipe = recipe("PUBLISHED");
-        add(owner, recipe, "LUNCH", 201);
-        jdbc.update("UPDATE [RECIPE_POST] SET status = 'HIDDEN', title = N'Private hidden title' WHERE recipe_id = ?", recipe);
-        mockMvc.perform(get("/api/v1/meal-plans/" + MONDAY + "/export").with(user(Long.toString(owner))))
-                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.entries[0].title").value("Công thức không còn khả dụng"))
-                .andExpect(jsonPath("$.entries[0].energyKcal").value(org.hamcrest.Matchers.nullValue()))
-                .andExpect(jsonPath("$.entries[0].plannedServings").value(org.hamcrest.Matchers.nullValue()))
-                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Private hidden title"))));
-        mockMvc.perform(get("/api/v1/meal-plans/" + MONDAY + "/export").with(user(Long.toString(other))))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.entries").isEmpty());
-        for (long member : List.of(admin, locked)) {
-            mockMvc.perform(get("/api/v1/meal-plans/" + MONDAY + "/export").with(user(Long.toString(member))))
-                    .andExpect(status().isForbidden());
-        }
-    }
-
     private String entryPath(long entry) {
         return "/api/v1/meal-plans/" + MONDAY + "/entries/" + entry;
     }
