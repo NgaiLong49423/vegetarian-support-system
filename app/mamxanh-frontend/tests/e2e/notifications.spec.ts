@@ -191,7 +191,8 @@ test('UC-49.4: a Member turns reply emails off and back on from profile settings
   expect(server.replyEmailEnabled).toBe(false);
 
   server.failPreferenceSave = true;
-  await toggle.check();
+  // A failed save reverts the switch at once, so check() could not observe the change; click and assert the revert.
+  await toggle.click();
   const section = page.locator('#email-thong-bao');
   await expect(section.getByRole('alert')).toBeVisible();
   await expect(toggle).not.toBeChecked();
