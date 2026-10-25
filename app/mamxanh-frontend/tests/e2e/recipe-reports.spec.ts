@@ -173,8 +173,9 @@ test('Trong khi gửi, gửi lặp bị khóa', async ({ page }) => {
   await dialog.getByRole('radio', { name: reasons[0] }).check();
   const send = dialog.getByRole('button', { name: 'Gửi báo cáo' });
   await send.click();
-  await expect(send).toBeDisabled();
-  await expect(send).toHaveText('Đang gửi…');
+  const sending = dialog.getByRole('button', { name: 'Đang gửi…' });
+  await expect(sending).toBeDisabled();
+  await expect(sending).toHaveText('Đang gửi…');
   await expect(dialog).toHaveCount(0);
   expect(submissions).toBe(1);
 });
