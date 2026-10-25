@@ -131,6 +131,63 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void selectedIngredientIdsIncludeEveryRecipeLineForThatIngredientAcrossUnits() throws Exception {
+        int milliliters = unit("ml");
+        line(first, "100", milliliters);
+        long list = createList(owner, "Danh sách chọn nguyên liệu", "MANUAL");
+
+        selectedAdd(owner, list, first,
+                "\"selectedIngredientIds\":[" + ingredient + "],\"manualItems\":[]")
+                .andExpect(status().isOk());
+
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+                Integer.class, list)).isEqualTo(2);
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=?",
+                Integer.class, list)).isEqualTo(2);
+    }
+
+    @Test
+    void canAddOnlyManualItemsAfterDeselectingEveryRecipeIngredient() throws Exception {
+        long list = createList(owner, "Danh sách thủ công", "MANUAL");
+
+        selectedAdd(owner, list, first,
+                "\"selectedIngredientIds\":[],\"manualItems\":[{\"name\":\"Rau thơm\",\"quantity\":1,\"unitId\":" + grams + "}]")
+                .andExpect(status().isOk());
+
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+                Integer.class, list)).isZero();
+        assertThat(sql.queryForObject("SELECT custom_ingredient_name FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=?",
+                String.class, list)).isEqualTo("Rau thơm");
+    }
+
+    @Test
+    void selectedIngredientIdsMustBeUniqueAndBelongToTheRecipe() throws Exception {
+        long list = createList(owner, "Danh sách chọn nguyên liệu", "MANUAL");
+
+        selectedAdd(owner, list, first,
+                "\"selectedIngredientIds\":[" + ingredient + "," + ingredient + "],\"manualItems\":[]")
+                .andExpect(status().isBadRequest());
+        selectedAdd(owner, list, first,
+                "\"selectedIngredientIds\":[9223372036854775807],\"manualItems\":[]")
+                .andExpect(status().isBadRequest());
+
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+                Integer.class, list)).isZero();
+    }
+
+    @Test
+    void rejectsAnEmptyIngredientSelectionWithoutManualItems() throws Exception {
+        long list = createList(owner, "Danh sách chọn nguyên liệu", "MANUAL");
+
+        selectedAdd(owner, list, first,
+                "\"selectedIngredientIds\":[],\"manualItems\":[]")
+                .andExpect(status().isBadRequest());
+
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+                Integer.class, list)).isZero();
+    }
+
+    @Test
     void foreignListIsNotRevealedOrModified() throws Exception {
         long list = createList(owner, "Danh sách của chủ", "MANUAL");
         add(other, list, first, null).andExpect(status().isNotFound());
@@ -264,6 +321,13 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content(recipeBody(recipe, servings)));
     }
 
+    private org.springframework.test.web.servlet.ResultActions selectedAdd(long member, long list, long recipe,
+            String selectionJson) throws Exception {
+        return mockMvc.perform(post(ROOT + "/" + list + "/recipes").with(user("" + member).roles("CUSTOMER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"recipeId\":" + recipe + "," + selectionJson + "}"));
+    }
+
     private String recipeBody(long recipe, Integer servings) {
         return "{\"recipeId\":" + recipe + (servings == null ? "" : ",\"servings\":" + servings) + "}";
     }
@@ -293,8 +357,12 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
     }
 
     private void line(long recipe, String quantity) {
+        line(recipe, quantity, grams);
+    }
+
+    private void line(long recipe, String quantity, int unit) {
         update("INSERT INTO [RECIPE_INGREDIENT](recipe_id,ingredient_id,unit_id,quantity) VALUES(?,?,?,?)",
-                recipe, ingredient, grams, new BigDecimal(quantity));
+                recipe, ingredient, unit, new BigDecimal(quantity));
     }
 
     private long item(long list) {

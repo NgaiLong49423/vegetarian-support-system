@@ -1,20 +1,16 @@
 import { Link } from "react-router-dom"
-import { ArrowLeftRight } from "lucide-react"
 import type { RecipeFormOptions, RecipePost } from "../api/recipes"
 import { AddToMealPlanButton } from "./AddToMealPlanButton"
 import { RecipeDefaultArtwork, type VegetarianCode } from "./RecipeDefaultArtwork"
 import { SaveRecipeButton } from "./SaveRecipeButton"
 import { RecipeViewCount } from "./RecipeViewCount"
-import { RecipeReactionBadge } from "./RecipeReactionBadge"
 
 export function PublicRecipeCard({
   recipe,
   options,
-  showLikePercentage = true,
 }: {
   recipe: RecipePost
   options?: RecipeFormOptions | null
-  showLikePercentage?: boolean
 }) {
   const cover = recipe.media.find((media) => media.cover) ?? recipe.media[0]
   const category =
@@ -44,11 +40,6 @@ export function PublicRecipeCard({
               compact
             />
           )}
-          {showLikePercentage && (
-            <div className="absolute left-2 top-2">
-              <RecipeReactionBadge percentage={recipe.likePercentage} />
-            </div>
-          )}
           <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-black/60 px-2.5 py-2 text-[11px] text-white">
             {recipe.authorAvatarUrl ? (
               <img
@@ -67,7 +58,7 @@ export function PublicRecipeCard({
             <span className="truncate">{recipe.authorName}</span>
           </div>
         </div>
-        <div className="flex flex-1 flex-col p-3.5 pb-2 sm:p-4 sm:pb-2">
+        <div className="flex flex-1 flex-col p-3.5 pb-3 sm:p-4 sm:pb-3.5">
           <h2 className="line-clamp-2 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover/link:text-brand-600">
             {recipe.title}
           </h2>
@@ -87,16 +78,6 @@ export function PublicRecipeCard({
           </div>
         </div>
       </Link>
-      <div className="flex items-center justify-between px-3.5 pb-3 pt-0.5 sm:px-4 sm:pb-3.5">
-        <Link
-          to={`/so-sanh?a=${recipe.id}`}
-          aria-label={`So sánh ${recipe.title}`}
-          className="inline-flex items-center gap-1 rounded text-[11px] font-semibold text-brand-600 hover:text-brand-700"
-        >
-          <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
-          So sánh
-        </Link>
-      </div>
       <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5">
         <AddToMealPlanButton recipeId={recipe.id} recipeTitle={recipe.title} preview={recipe} />
         <SaveRecipeButton recipeId={recipe.id} compact />

@@ -390,7 +390,9 @@ export const recipeApi = {
       '/recipes/mine', { params: { page, size } },
     )).data,
   getForAuthor: async (recipeId: number) => (await apiClient.get<RecipePost>(`/recipes/${recipeId}/manage`)).data,
-  getReferenceData: async () => (await apiClient.get<RecipeReferenceData>('/recipes/reference-data')).data,
+  getReferenceData: async (keyword?: string) => (await apiClient.get<RecipeReferenceData>('/recipes/reference-data', {
+    params: keyword ? { keyword } : undefined,
+  })).data,
   update: async (recipeId: number, payload: UpdateRecipePost) =>
     (await apiClient.put<RecipePost>(`/recipes/${recipeId}`, payload)).data,
   delete: (recipeId: number) => apiClient.delete<void>(`/recipes/${recipeId}`),
