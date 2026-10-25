@@ -24,18 +24,18 @@ export function PublicRecipeCard({
     options?.vegetarianTypes.find((item) => item.code === recipe.vegetarianType)
       ?.label ?? recipe.vegetarianType
   return (
-    <article className="relative flex h-full min-w-0 flex-col transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
+    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-brand-100/90 bg-paper shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md dark:border-brand-800/70 dark:bg-surface">
       <Link
         to={`/cong-thuc/id/${recipe.id}`}
-        className="group flex flex-1 flex-col rounded-xl focus-visible:outline-offset-4"
+        className="group/link flex flex-1 flex-col focus-visible:outline-offset-4"
       >
-        <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-raised">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-raised">
           {cover ? (
             <img
               src={cover.url}
               alt={recipe.title}
               loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.03]"
+              className="h-full w-full object-cover transition-transform duration-200 motion-safe:group-hover/link:scale-[1.03]"
             />
           ) : (
             <RecipeDefaultArtwork
@@ -67,31 +67,37 @@ export function PublicRecipeCard({
             <span className="truncate">{recipe.authorName}</span>
           </div>
         </div>
-        <h2 className="mt-2.5 line-clamp-2 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
-          {recipe.title}
-        </h2>
-        <p className="mt-1 text-xs text-ink-muted">
-          {recipe.ingredients.length} nguyên liệu ·{" "}
-          {recipe.prepTimeMin + recipe.cookTimeMin} phút · {recipe.servings}{" "}
-          phần
-        </p>
-        <p
-          className="mt-1 truncate text-xs text-leaf-700"
-          title={`${vegetarian} · ${category}`}
+        <div className="flex flex-1 flex-col p-3.5 pb-2 sm:p-4 sm:pb-2">
+          <h2 className="line-clamp-2 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover/link:text-brand-600">
+            {recipe.title}
+          </h2>
+          <p className="mt-1 text-xs text-ink-muted">
+            {recipe.ingredients.length} nguyên liệu ·{" "}
+            {recipe.prepTimeMin + recipe.cookTimeMin} phút · {recipe.servings}{" "}
+            phần
+          </p>
+          <p
+            className="mt-1 truncate text-xs font-medium text-leaf-700"
+            title={`${vegetarian} · ${category}`}
+          >
+            {vegetarian} · {category}
+          </p>
+          <div className="mt-1.5 text-[11px] text-ink-muted">
+            <RecipeViewCount count={recipe.viewCount} />
+          </div>
+        </div>
+      </Link>
+      <div className="flex items-center justify-between px-3.5 pb-3 pt-0.5 sm:px-4 sm:pb-3.5">
+        <Link
+          to={`/so-sanh?a=${recipe.id}`}
+          aria-label={`So sánh ${recipe.title}`}
+          className="inline-flex items-center gap-1 rounded text-[11px] font-semibold text-brand-600 hover:text-brand-700"
         >
-          {vegetarian} · {category}
-        </p>
-        <div className="mt-1 text-[11px] text-ink-muted"><RecipeViewCount count={recipe.viewCount} /></div>
-      </Link>
-      <Link
-        to={`/so-sanh?a=${recipe.id}`}
-        aria-label={`So sánh ${recipe.title}`}
-        className="mt-1.5 inline-flex items-center gap-1 rounded text-[11px] font-semibold text-brand-600 hover:text-brand-700"
-      >
-        <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
-        So sánh
-      </Link>
-      <div className="absolute right-2 top-2 flex items-center gap-1.5">
+          <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
+          So sánh
+        </Link>
+      </div>
+      <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5">
         <AddToMealPlanButton recipeId={recipe.id} recipeTitle={recipe.title} preview={recipe} />
         <SaveRecipeButton recipeId={recipe.id} compact />
       </div>
@@ -103,10 +109,17 @@ export function PublicRecipeSkeleton({ count = 4 }: { count?: number }) {
   return (
     <>
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} aria-hidden="true" className="min-w-0">
-          <div className="aspect-[4/3] rounded-xl bg-raised motion-safe:animate-pulse" />
-          <div className="mt-3 h-3 w-4/5 rounded bg-raised motion-safe:animate-pulse" />
-          <div className="mt-2 h-3 w-3/5 rounded bg-raised motion-safe:animate-pulse" />
+        <div
+          key={index}
+          aria-hidden="true"
+          className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-brand-100/90 bg-paper shadow-xs dark:border-brand-800/70 dark:bg-surface"
+        >
+          <div className="aspect-[4/3] w-full bg-raised motion-safe:animate-pulse" />
+          <div className="p-3.5 sm:p-4">
+            <div className="h-4 w-4/5 rounded bg-raised motion-safe:animate-pulse" />
+            <div className="mt-2.5 h-3 w-3/5 rounded bg-raised motion-safe:animate-pulse" />
+            <div className="mt-2 h-3 w-2/5 rounded bg-raised motion-safe:animate-pulse" />
+          </div>
         </div>
       ))}
     </>

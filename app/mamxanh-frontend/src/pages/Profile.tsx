@@ -334,52 +334,61 @@ export function Profile() {
             ) : ownResult?.content.length ? (
               <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
                 {ownResult.content.map((item) => (
-                  <article key={item.recipeId} className="relative flex h-full min-w-0 flex-col transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
+                  <article
+                    key={item.recipeId}
+                    className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-brand-100/90 bg-paper shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md dark:border-brand-800/70 dark:bg-surface"
+                  >
                     {item.available ? (
                       <>
                         <Link
                           to={`/cong-thuc/id/${item.recipeId}`}
-                          className="group flex flex-1 flex-col"
+                          className="group/link flex flex-1 flex-col focus-visible:outline-offset-4"
                         >
-                        <div className="aspect-[4/5] overflow-hidden rounded-xl bg-paper">
-                          {item.coverUrl ? (
-                            <img
-                              src={item.coverUrl}
-                              alt={item.title ?? ""}
-                              loading="lazy"
-                              className="h-full w-full object-cover transition-transform motion-safe:group-hover:scale-[1.03]"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-ink-muted">
-                              <Leaf className="h-7 w-7" />
-                            </div>
-                          )}
-                        </div>
-                          <h3 className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
-                          {item.title}
-                        </h3>
-                        <p className="mt-1 truncate text-xs text-ink-muted">
-                          {item.authorName}
-                        </p>
-                      </Link>
-                        <Link
-                          to={`/so-sanh?a=${item.recipeId}`}
-                          aria-label={`So sánh ${item.title}`}
-                          className="mt-1 inline-flex items-center gap-1 rounded text-xs font-semibold text-brand-600 hover:text-brand-700"
-                        >
-                          <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
-                          So sánh
+                          <div className="relative aspect-[4/3] w-full overflow-hidden bg-raised">
+                            {item.coverUrl ? (
+                              <img
+                                src={item.coverUrl}
+                                alt={item.title ?? ""}
+                                loading="lazy"
+                                className="h-full w-full object-cover transition-transform duration-200 motion-safe:group-hover/link:scale-[1.03]"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-ink-muted">
+                                <Leaf className="h-7 w-7" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-1 flex-col p-3.5 pb-2 sm:p-4 sm:pb-2">
+                            <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover/link:text-brand-600">
+                              {item.title}
+                            </h3>
+                            <p className="mt-1 truncate text-xs text-ink-muted">
+                              {item.authorName}
+                            </p>
+                          </div>
                         </Link>
+                        <div className="flex items-center justify-between px-3.5 pb-3 pt-0.5 sm:px-4 sm:pb-3.5">
+                          <Link
+                            to={`/so-sanh?a=${item.recipeId}`}
+                            aria-label={`So sánh ${item.title}`}
+                            className="inline-flex items-center gap-1 rounded text-xs font-semibold text-brand-600 hover:text-brand-700"
+                          >
+                            <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
+                            So sánh
+                          </Link>
+                        </div>
                       </>
                     ) : (
                       <div className="flex flex-1 flex-col">
-                        <div className="flex aspect-[4/5] items-center justify-center rounded-xl border border-brand-100 bg-paper">
+                        <div className="flex aspect-[4/3] w-full items-center justify-center bg-raised">
                           <Lock className="h-7 w-7 text-ink-muted" />
                         </div>
-                        <p className="mt-2 min-h-10 text-sm font-medium leading-5 text-ink-muted">
-                          {item.unavailableMessage ??
-                            "Công thức không còn khả dụng"}
-                        </p>
+                        <div className="flex flex-1 flex-col p-3.5 pb-3 sm:p-4 sm:pb-3.5">
+                          <p className="min-h-10 text-sm font-medium leading-5 text-ink-muted">
+                            {item.unavailableMessage ??
+                              "Công thức không còn khả dụng"}
+                          </p>
+                        </div>
                       </div>
                     )}
                     {item.available && item.title && account.role !== "ADMIN" && (
