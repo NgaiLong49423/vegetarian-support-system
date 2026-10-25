@@ -1,9 +1,9 @@
 schema_version: 1
-last_updated: 2026-10-23
+last_updated: 2026-10-25
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-# BUG-060–064 đã được cấp trong PR #162 (nhánh fix/158); bản ghi của PR #161 dùng BUG-065.
-next_id: 66
+# BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
+next_id: 67
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -12,11 +12,20 @@ status_definitions:
 
 bugs:
   - id: BUG-065
+    title: OpenAPI báo sai mã thành công khi gửi báo cáo công thức
+    status: RECORDED
+    severity: Unknown
+    area: Backend/Recipe Report/OpenAPI
+    file: .agents/outputs/bugs/BUG-065.md
+    created: 2026-10-25
+    updated: 2026-10-25
+    related_issue: 187
+  - id: BUG-066
     title: Chuyển món trong Lịch ăn đôi khi làm mất focus thay vì trả về tiêu đề "Lịch ăn của bạn"
     status: RECORDED
     severity: Low
     area: Frontend/Lịch ăn
-    file: .agents/outputs/bugs/BUG-065.md
+    file: .agents/outputs/bugs/BUG-066.md
     created: 2026-10-19
     updated: 2026-10-19
     related_issue: 38
