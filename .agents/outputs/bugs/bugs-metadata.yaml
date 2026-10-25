@@ -20,6 +20,51 @@ bugs:
     created: 2026-10-19
     updated: 2026-10-19
     related_issue: 38
+  - id: BUG-064
+    title: Khám phá bỏ qua nguyên liệu được chuyển từ danh mục hoặc trang chi tiết
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Ingredient discovery
+    file: .agents/outputs/bugs/BUG-064.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-063
+    title: Thêm công thức vào đi chợ trả 400 khi một nguyên liệu có nhiều đơn vị
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Shopping recipe selection
+    file: .agents/outputs/bugs/BUG-063.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-062
+    title: Khám phá ẩn huy hiệu tỷ lệ Like và nhãn Mới trên thẻ công thức
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Explore/Recipe card
+    file: .agents/outputs/bugs/BUG-062.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-061
+    title: Dependency follow-redirects trong lockfile có cảnh báo bảo mật mức cao
+    status: RECORDED
+    severity: High
+    area: Frontend/Dependencies
+    file: .agents/outputs/bugs/BUG-061.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-060
+    title: Snapshot OpenAPI thiếu API hướng dẫn nấu đã có trên develop
+    status: RECORDED
+    severity: Unknown
+    area: Backend/AI/OpenAPI
+    file: .agents/outputs/bugs/BUG-060.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
   - id: BUG-059
     title: Thêm nguyên liệu từ 0 giờ đến 7 giờ sáng (giờ Việt Nam) bị từ chối vì ngày tham khảo mặc định "ở tương lai"
     status: RECORDED
@@ -128,6 +173,15 @@ bugs:
     created: 2026-10-17
     updated: '2026-10-20'
     related_issue: 142
+  - id: BUG-047
+    title: Upload ảnh trả thành công bằng URL giả khi Azure chưa được cấu hình
+    status: RESOLVED
+    severity: Unknown
+    area: Backend/Frontend/Docker/Azure Storage
+    file: .agents/outputs/bugs/BUG-047.md
+    created: 2026-10-19
+    updated: 2026-10-19
+    related_issue: 158
   - id: BUG-040
     title: Seed bật hỗ trợ tính dinh dưỡng cho số liệu minh họa
     status: RECORDED

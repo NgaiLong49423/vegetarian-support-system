@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { apiClient } from '../lib/apiClient';
+import { apiClient, ApiError } from '../lib/apiClient';
 
 export interface UploadedImage {
   blobUrl: string;
@@ -63,8 +62,18 @@ export const recipeMediaApi = {
         },
       },
     );
-
-    return response.data.data;
+    const uploaded = response.data.data;
+    if (
+      !uploaded ||
+      typeof uploaded.blobUrl !== 'string' ||
+      !uploaded.blobUrl.startsWith('https://')
+    ) {
+      throw new ApiError(
+        'Phản hồi tải ảnh không hợp lệ. Vui lòng thử lại.',
+        502,
+      );
+    }
+    return uploaded;
   },
 
   async getRecipeMedia(recipeId: number): Promise<RecipeMediaItem[]> {

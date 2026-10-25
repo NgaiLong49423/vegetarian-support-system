@@ -1,6 +1,6 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.44.0
+> **Version:** v1.45.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-10-23
 > **Status:** Active  
@@ -38,6 +38,11 @@
 Thư mục mã nguồn giao diện ứng dụng Mâm Xanh được xây dựng bằng **React 19**, **TypeScript**, **Vite 8**, **Tailwind CSS v4** và xuất phát từ thiết kế Figma Make.
 
 Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy và gỡ lỗi trực tiếp trên **IntelliJ IDEA** (hoặc WebStorm/VS Code).
+
+### Ảnh công thức — FR-14 / fix #158
+
+- Chỉ tính ảnh đã nhận URL HTTPS từ upload thành công vào số ảnh đã tải. Khi lỗi, ảnh xem trước có nhãn **Chưa tải lên**, thông báo lỗi và hướng dẫn xóa/chọn lại. Form chặn xuất bản khi còn ảnh lỗi hoặc đang upload.
+- Kiểm thử UI có mock: `npx playwright test tests/e2e/recipe-media.spec.ts`. Kiểm thử Azure thật là opt-in: trên stack root Compose đã cấu hình Azure, đặt `MAMXANH_E2E_LIVE_AZURE=1` và `MAMXANX_E2E_COMPOSE_PROJECT` đúng project rồi chạy `npm run test:e2e:integration -- tests/integration/recipe-media-real-stack.spec.ts --workers=1`. Test dùng tài khoản/nguyên liệu fixture, tắt trace để không lưu phiên đăng nhập; xóa ảnh Azure và công thức test trong cleanup.
 
 ### Thẻ công thức và thao tác lịch ăn — FR-17 / Issue #23
 

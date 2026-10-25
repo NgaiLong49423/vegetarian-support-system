@@ -10,8 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Fallback / mock storage client for local development and offline automated testing (FR-14).
- * Generates deterministic pseudo-blob URLs and keeps track of uploads in memory without cloud dependencies.
+ * Explicit mock for offline automated tests (FR-14); never registered by runtime StorageConfig.
+ * Generates pseudo-blob URLs and tracks metadata in memory; it does not store image bytes.
  */
 public class MockStorageClient implements StorageClient {
 

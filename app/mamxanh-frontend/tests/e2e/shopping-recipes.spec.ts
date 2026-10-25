@@ -48,15 +48,21 @@ const list = {
   }],
 }
 
-async function setup(page: Page, role: "CUSTOMER" | "EXPERT" | "ADMIN" | null = "CUSTOMER") {
+async function setup(page: Page, role: "CUSTOMER" | "EXPERT" | "ADMIN" | null = "CUSTOMER", multipleUnits = false) {
   if (role) await seedDemoSession(page, role)
   const state = { adds: [] as unknown[], creates: [] as unknown[], fail: false }
   await page.route("**/api/v1/recipes/form-options", (r) => r.fulfill({ json: { dishCategories: [], vegetarianTypes: [], difficulties: [], units: [] } }))
   await page.route("**/api/v1/recipes/discovery?**", (r) => {
     const pageNumber = Number(new URL(r.request().url()).searchParams.get("page") ?? 0)
-    return r.fulfill({ json: { items: [recipe(pageNumber + 1)], page: pageNumber, size: 12, hasNext: pageNumber === 0 } })
+    const item = recipe(pageNumber + 1)
+    if (multipleUnits) item.ingredients.push({ ...item.ingredients[0], quantity: 100, unitId: 2, unitCode: "ml", unitName: "mililit" })
+    return r.fulfill({ json: { items: [item], page: pageNumber, size: 12, hasNext: pageNumber === 0 } })
   })
-  await page.route("**/api/v1/recipes/1", (r) => r.fulfill({ json: detail(1) }))
+  await page.route("**/api/v1/recipes/1", (r) => {
+    const item = detail(1)
+    if (multipleUnits) item.ingredients.push({ ...item.ingredients[0], quantity: 100, unitId: 2, unitCode: "ml", unitName: "mililit" })
+    return r.fulfill({ json: item })
+  })
   await page.route("**/api/v1/shopping-lists?**", (r) => {
     const pageNumber = Number(new URL(r.request().url()).searchParams.get("page") ?? 0)
     return r.fulfill({ json: { content: pageNumber === 0 ? [list] : [{ ...list, id: 78, name: "Danh sách khác" }], page: pageNumber, size: 20, totalElements: 21, totalPages: 2 } })
@@ -195,6 +201,46 @@ test("AC-53.6 saved recipe menu loads full recipe details before adding", async 
   await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
   await expect(page).toHaveURL(/di-cho\?listId=77/)
   expect(state.adds).toEqual([{ recipeId: 1, servings: 2, selectedIngredientIds: [1], manualItems: [] }])
+})
+
+for (const source of ["explore", "saved"] as const) {
+  test(`AC-53.6 deduplicates ingredient IDs across units from ${source}`, async ({ page }) => {
+    const state = await setup(page, "CUSTOMER", true)
+    if (source === "saved") {
+      await page.route("**/api/v1/saved-recipes?**", (r) => r.fulfill({
+        json: { content: [{ recipeId: 1, title: "Món đi chợ 1", available: true, authorName: "Tác giả", coverUrl: null }], page: 0, size: 20, totalElements: 1, totalPages: 1 },
+      }))
+    }
+    await page.goto(source === "saved" ? "/ho-so" : "/kham-pha")
+    await openShoppingDialog(page)
+    const choices = page.getByRole("checkbox", { name: "Thêm Đậu phụ", exact: true })
+    await expect(choices).toHaveCount(2)
+    await expect(page.getByText("1/1 nguyên liệu · gốc 2 phần", { exact: true })).toBeVisible()
+    await expect(choices.nth(0)).toBeChecked()
+    await expect(choices.nth(1)).toBeChecked()
+    await page.getByRole("radio", { name: "Danh sách tuần" }).check()
+    await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
+    await expect(page).toHaveURL(/di-cho\?listId=77/)
+    expect(state.adds).toEqual([{ recipeId: 1, servings: 2, selectedIngredientIds: [1], manualItems: [] }])
+  })
+}
+
+test("AC-53.6 allows manual-only items and validates their names before submitting", async ({ page }) => {
+  const state = await setup(page)
+  await page.goto("/kham-pha")
+  await openShoppingDialog(page)
+  await page.getByRole("radio", { name: "Danh sách tuần" }).check()
+  await page.getByRole("button", { name: "Bỏ chọn tất cả", exact: true }).click()
+  await expect(page.getByRole("checkbox", { name: "Thêm Đậu phụ", exact: true })).not.toBeChecked()
+  await page.getByRole("button", { name: "Thêm mặt hàng", exact: true }).click()
+  await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
+  await expect(page.getByRole("alert")).toContainText("Kiểm tra tên, số lượng và đơn vị")
+  expect(state.adds).toHaveLength(0)
+  await page.getByLabel("Tên nguyên liệu", { exact: true }).fill(" Khăn giấy ")
+  await page.getByLabel("Số lượng", { exact: true }).fill("2")
+  await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
+  await expect(page).toHaveURL(/di-cho\?listId=77/)
+  expect(state.adds).toEqual([{ recipeId: 1, servings: 2, selectedIngredientIds: [], manualItems: [{ name: "Khăn giấy", quantity: 2, unitId: 1 }] }])
 })
 
 test("AC-53.6 Guest can sign in and Admin has no shopping action", async ({ page }) => {
