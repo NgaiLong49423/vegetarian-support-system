@@ -111,10 +111,14 @@ function ReportForm({
         } catch (inner) {
           setError(asApiError(inner).message);
         }
+      } else if (api.code === 'REPORT_ALREADY_OPEN') {
+        setError('Bạn đã có báo cáo đang được xem xét cho công thức này.');
       } else if (api.code === 'VALIDATION_FAILED' && (body?.field === 'description' || api.errors[0]?.field === 'description')) {
         setServerDescriptionError(api.errors[0]?.message ?? api.message);
       } else if (api.status === 404) {
         setError('Công thức không còn công khai nên không thể báo cáo.');
+      } else if (api.status >= 500) {
+        setError('Dịch vụ đang gặp sự cố. Vui lòng thử gửi lại sau.');
       } else {
         setError(api.message);
       }
