@@ -203,7 +203,7 @@ function EmailNotificationSettings() {
 
   return <Card id="email-thong-bao" className="mt-5 scroll-mt-24 p-5 sm:p-6">
     <h2 className="text-lg font-bold text-ink">Email thông báo</h2>
-    <p className="mt-1 text-sm text-ink-muted">Thông báo trong ứng dụng luôn được giữ; bạn chỉ chọn có nhận thêm email hay không.</p>
+    <p className="mt-1 text-sm text-ink-muted">Thông báo trong ứng dụng luôn được giữ. Bạn chỉ chọn có nhận thêm email hay không.</p>
     {loadError ? <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
       <p>{loadError}</p>
       <button type="button" onClick={() => setRetry((current) => current + 1)} className="mt-1 font-bold underline">Thử tải lại</button>
