@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.37.0
+> **Version:** v0.37.1
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-25
 > **Status:** Active
 
 # API Integration Guide
@@ -410,7 +410,7 @@ Lỗi request trả `400`; bài không tồn tại hoặc không còn công khai
 
 Phần Guest là prerequisite được tích hợp trong FR-10/Issue #16 để đáp ứng AC-10.1; không tự xác nhận Issue FR-02 đã được nghiệm thu. Khi tiếp tục FR-02, tái sử dụng endpoint và bộ đếm này, không tạo chatbot hoặc daily quota riêng.
 
-SDK Gemini dùng một attempt cho mỗi thao tác, timeout HTTP và deadline bao trùm chuẩn bị request/HTTP/đọc response là 9 giây để dành thời gian xử lý lỗi trong ngân sách NFR-18; không tự retry/backoff sau timeout. Provider lỗi/timeout trả `503 AI_PROVIDER_UNAVAILABLE`; Chatbot nhận phản hồi thiếu, bị cắt hoặc không hợp lệ trả `502 AI_RESPONSE_INVALID`. Nếu provider trả HTTP 429, Chatbot vẫn dùng 503 với hướng dẫn dịch vụ đang tạm giới hạn yêu cầu; không trả lỗi 429 dành cho bộ đếm Guest và không gợi ý đăng ký để vượt quota Google. Quota của project Google tách biệt với entitlement Free/Plus/Pro, không phải daily quota do ứng dụng áp dụng. Chỉ phản hồi đã qua validation mới phát usage event thành công. Log SDK chỉ chứa operation, model, nhóm lỗi, mã HTTP provider (nếu có) và thời gian; không ghi message/stack trace của SDK, raw prompt, câu trả lời hoặc API key. Cấu hình timeout không phải bằng chứng đạt thời gian trả lời thành công của NFR-03; hiệu năng provider cần kiểm tra riêng.
+SDK Gemini tắt retry nội bộ (một attempt mỗi lần gọi HTTP). Toàn thao tác dùng chung deadline 9 giây, bao gồm backoff và tối đa hai lần gọi HTTP. Chỉ thử lại một lần khi provider trả sớm HTTP 502/503/504, sau khoảng nghỉ 1–1,25 giây và khi còn ít nhất 2 giây cho lần gọi tiếp; không retry HTTP 429, lỗi validation/quyền, phản hồi không hợp lệ hoặc timeout. Đây là retry kỹ thuật có giới hạn thời gian, không thay quota hoặc entitlement. Trên nhánh FR-10, người dùng cho phép thử tạm `gemini-3.1-flash-lite`; baseline công nghệ Confirmed vẫn là `gemini-3.8-flash`. Provider lỗi/timeout trả `503 AI_PROVIDER_UNAVAILABLE`; Chatbot nhận phản hồi thiếu, bị cắt hoặc không hợp lệ trả `502 AI_RESPONSE_INVALID`. Nếu provider trả HTTP 429, Chatbot vẫn dùng 503 với hướng dẫn dịch vụ đang tạm giới hạn yêu cầu; không trả lỗi 429 dành cho bộ đếm Guest và không gợi ý đăng ký để vượt quota Google. Quota của project Google tách biệt với entitlement Free/Plus/Pro, không phải daily quota do ứng dụng áp dụng. Chỉ phản hồi đã qua validation mới phát usage event thành công. Log SDK chỉ chứa operation, model, nhóm lỗi, mã HTTP provider (nếu có) và thời gian; không ghi message/stack trace của SDK, raw prompt, câu trả lời hoặc API key. Cấu hình timeout không phải bằng chứng đạt thời gian trả lời thành công của NFR-03; hiệu năng provider cần kiểm tra riêng.
 
 ### Quy ước lỗi entitlement — FR-10
 

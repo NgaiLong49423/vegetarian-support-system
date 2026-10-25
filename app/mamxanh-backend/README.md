@@ -1,13 +1,15 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.34.0
+> **Version:** v0.34.1
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-25
 > **Status:** Active  
 
 # Backend Workspace
 
 Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và truy cập Microsoft SQL Server qua Spring Data JPA/Hibernate theo [Technology Stack](../../docs/architecture/TECHNOLOGY-STACK.md).
+
+Trên nhánh `feature/16-ai-feature-entitlements`, người dùng cho phép thử tạm `gemini-3.1-flash-lite` ngày 25/10/2026 sau khi các phép thử sinh nội dung với `gemini-3.8-flash` timeout, còn Flash-Lite trả được JSON hợp lệ. Đây là ngoại lệ thử nghiệm trên nhánh riêng; model Confirmed trong Technology Stack vẫn là `gemini-3.8-flash`, chưa có quyết định thay baseline. Giữ cùng model cho mọi gói tài khoản, kiểm tra entitlement tại Backend và deadline provider 9 giây cho toàn thao tác. SDK tắt retry nội bộ; ứng dụng chỉ thử lại một lần với HTTP 502/503/504 trả sớm, backoff 1–1,25 giây và giữ ít nhất 2 giây ngân sách cho lần gọi tiếp. Không retry quota HTTP 429 hoặc lỗi dữ liệu/quyền. Không tự chuyển model khi lỗi hoặc sửa cấu hình billing.
 
 > [!IMPORTANT]
 > **Quy chuẩn kiến trúc bắt buộc:** Mọi thành viên và AI agent khi triển khai mã nguồn Backend **bắt buộc phải tuân thủ nghiêm ngặt** cấu trúc package Modular Monolith, phân tầng MVC và ranh giới liên module được quy định tại [Backend Package Structure Specification](../../docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md). Cấm inject chéo Repository giữa các module và không trả JPA Entity trực tiếp ra REST API.

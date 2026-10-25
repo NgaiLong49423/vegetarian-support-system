@@ -3,7 +3,7 @@ last_updated: 2026-10-25
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
 # BUG-060–065 đã được cấp trên các nhánh FR-11, fix/158 và FR-02; có xung đột ID giữa các nhánh cần hòa giải khi tích hợp.
-next_id: 68
+next_id: 69
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -11,6 +11,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-068
+    title: Chatbot bỏ sót yêu cầu tìm món ở câu hỏi tiếp và suy diễn sai khi thiếu danh mục
+    status: RECORDED
+    severity: Medium
+    area: Backend/Recipe/AI chat và ngữ cảnh hội thoại
+    file: .agents/outputs/bugs/BUG-068.md
+    created: 2026-10-25
+    updated: 2026-10-25
+    related_issue: 16
   - id: BUG-060
     title: Log DEBUG của Spring có thể chứa câu hỏi và câu trả lời chatbot
     status: RESOLVED

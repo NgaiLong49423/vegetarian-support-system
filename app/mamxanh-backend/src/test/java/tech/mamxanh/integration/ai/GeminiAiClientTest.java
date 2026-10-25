@@ -21,6 +21,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 class GeminiAiClientTest {
     private HttpServer server;
     private final AtomicInteger requests = new AtomicInteger();
+    private final java.util.concurrent.atomic.AtomicReference<String> requestedPath = new java.util.concurrent.atomic.AtomicReference<>();
 
     @AfterEach
     void stopServer() {
@@ -51,6 +52,7 @@ class GeminiAiClientTest {
         try (var client = configuredClient()) {
             String result = client.generateRecipeText("Mô tả món", List.of(2L, 9L));
             assertThat(result).isEqualTo("{\"description\":\"Món ngon\",\"steps\":[]}");
+            assertThat(requestedPath.get()).endsWith("/models/gemini-3.1-flash-lite:generateContent");
         }
     }
 
@@ -196,6 +198,7 @@ class GeminiAiClientTest {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
             requests.incrementAndGet();
+            requestedPath.set(exchange.getRequestURI().getPath());
             exchange.getRequestBody().readAllBytes();
             byte[] response = body.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
@@ -208,7 +211,7 @@ class GeminiAiClientTest {
     }
 
     @Test
-    void retryableProviderFailuresMakeOneAttemptAndLogOnlySafeMetadata(CapturedOutput output) throws IOException {
+    void providerQuotaFailureMakesOneAttemptAndLogsOnlySafeMetadata(CapturedOutput output) throws IOException {
         startServer(429, "{\"error\":{\"code\":429,\"message\":\"private-provider-body\",\"status\":\"RESOURCE_EXHAUSTED\"}}");
         try (var client = configuredClient()) {
             assertThatThrownBy(() -> client.answerChat("private-system", "private-question"))
@@ -218,7 +221,7 @@ class GeminiAiClientTest {
                     });
         }
         assertThat(requests.get()).isEqualTo(1);
-        assertThat(output.getOut()).contains("operation=CHAT", "model=gemini-3.8-flash",
+        assertThat(output.getOut()).contains("operation=CHAT", "model=gemini-3.1-flash-lite",
                 "category=HTTP", "httpStatus=429", "elapsedMs=")
                 .doesNotContain("private-system", "private-question", "private-provider-body", "test-key");
     }
@@ -268,5 +271,85 @@ class GeminiAiClientTest {
             assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(10));
         }
         assertThat(requests.get()).isEqualTo(1);
+    }
+
+    @Test
+    void earlyUnavailableResponseCanRecoverOnOneRetryWithoutLoggingPrivateContent(CapturedOutput output) throws IOException {
+        startSequenceServer(503, 0, false);
+        try (var client = configuredClient()) {
+            assertThat(client.answerChat("private-system", "private-question").structuredJson()).contains("Recovered");
+        }
+        assertThat(requests).hasValue(2);
+        assertThat(output.getOut()).contains("attempt=2", "httpStatus=503")
+                .doesNotContain("private-system", "private-question", "private-provider-body", "test-key");
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {502, 503, 504})
+    void persistentTransientFailureStopsAfterTwoHttpAttempts(int code) throws IOException {
+        startServer(code, "{\"error\":{\"code\":" + code + ",\"message\":\"private-provider-body\",\"status\":\"UNAVAILABLE\"}}");
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.answerChat("system", "question"))
+                    .isInstanceOfSatisfying(GeminiAiClient.AiProviderException.class,
+                            failure -> assertThat(failure.httpStatus()).isEqualTo(code));
+        }
+        assertThat(requests).hasValue(2);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {400, 403, 404})
+    void clientFailuresAreNotRetried(int code) throws IOException {
+        startServer(code, "{\"error\":{\"code\":" + code + ",\"message\":\"invalid\",\"status\":\"INVALID_ARGUMENT\"}}");
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.answerChat("system", "question"))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class);
+        }
+        assertThat(requests).hasValue(1);
+    }
+
+    @Test
+    void lateUnavailableResponseDoesNotStartARetryWithoutEnoughBudget() throws IOException {
+        startSequenceServer(503, 6_500, false);
+        try (var client = longTransportTimeoutClient()) {
+            assertThatThrownBy(() -> client.answerChat("system", "question"))
+                    .isInstanceOfSatisfying(GeminiAiClient.AiProviderException.class,
+                            failure -> assertThat(failure.httpStatus()).isEqualTo(503));
+        }
+        assertThat(requests).hasValue(1);
+    }
+
+    @Test
+    void retryAndBackoffCannotExtendTheOverallDeadline() throws IOException {
+        startSequenceServer(503, 0, true);
+        try (var client = longTransportTimeoutClient()) {
+            long started = System.nanoTime();
+            assertThatThrownBy(() -> client.answerChat("system", "question"))
+                    .isInstanceOfSatisfying(GeminiAiClient.AiProviderException.class,
+                            failure -> assertThat(failure.kind()).isEqualTo(GeminiAiClient.FailureKind.TIMEOUT));
+            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(10));
+        }
+        assertThat(requests).hasValue(2);
+    }
+
+    private GeminiAiClient longTransportTimeoutClient() {
+        return new GeminiAiClient("test-key", HttpOptions.builder()
+                .baseUrl("http://127.0.0.1:" + server.getAddress().getPort()).timeout(60_000).build());
+    }
+
+    private void startSequenceServer(int firstStatus, long firstDelayMillis, boolean slowSecond) throws IOException {
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            int count = requests.incrementAndGet();
+            exchange.getRequestBody().readAllBytes();
+            try { Thread.sleep(count == 1 ? firstDelayMillis : slowSecond ? 12_000 : 0); }
+            catch (InterruptedException failure) { Thread.currentThread().interrupt(); }
+            String body = count == 1 ? "{\"error\":{\"code\":" + firstStatus + ",\"message\":\"private-provider-body\",\"status\":\"UNAVAILABLE\"}}"
+                    : "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"{\\\"action\\\":\\\"ANSWER\\\",\\\"answer\\\":\\\"Recovered\\\",\\\"recommendations\\\":[]}\"}],\"role\":\"model\"},\"finishReason\":\"STOP\"}]}";
+            byte[] response = body.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(count == 1 ? firstStatus : 200, response.length);
+            try (var stream = exchange.getResponseBody()) { stream.write(response); }
+        });
+        server.start();
     }
 }

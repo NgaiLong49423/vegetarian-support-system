@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.97.0
+> **Version:** v2.98.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-25
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-25 — Temporary Gemini Flash-Lite Trial for FR-10
+
+**Status:** Working tree — not committed.
+
+**Scope:** Use the user-authorized `gemini-3.1-flash-lite` trial on the isolated FR-10 branch after direct generation probes timed out with the confirmed model. The confirmed `gemini-3.8-flash` baseline and integration acceptance remain unchanged.
+
+### Added
+
+- Verify the selected trial model's provider request path in the adapter regression suite.
+
+### Changed
+
+- Select `gemini-3.1-flash-lite` for the shared AI adapter while preserving entitlement checks, structured output validation, safe logging and the nine-second deadline.
+- Retry early HTTP 502/503/504 failures at most once after bounded backoff within the same overall deadline; keep SDK retries disabled and leave quota, validation and timeout failures without retries.
+
+### Fixed
+
+- None.
 
 ## 2026-10-25 — Guarded Recipe Assistance and Private AI Diagnostics
 
