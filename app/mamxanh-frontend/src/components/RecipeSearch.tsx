@@ -6,6 +6,7 @@ import { recipesApi } from '../api/recipes';
 import type { Choice, IngredientOption, RecipeBrowseResult, RecipeFormOptions, RecipeSearchParams } from '../api/recipes';
 
 // FR-08 public recipe search and filters, shared by the Explore page and the FR-60 comparison picker.
+// Search state is initialized from URL parameters so ingredient-directory links open with active filters.
 // The keyword, diet, dish category, sort and selected ingredients (FR-62 links preset ingredientId/ingredientName)
 // live in the URL; other query parameters are left untouched.
 
@@ -24,17 +25,6 @@ const initialFilters: RecipeFilters = {
   vegetarianType: '', dishCategory: '', ingredientIds: [], maxTotalTimeMinutes: '',
   sort: 'NEWEST', viewPeriod: 'ALL_TIME',
 };
-
-function ingredientsFrom(params: URLSearchParams): IngredientOption[] {
-  const ids = params.getAll('ingredientId');
-  const names = params.getAll('ingredientName');
-  return ids.flatMap((rawId, index) => {
-    const ingredientId = Number(rawId);
-    return Number.isSafeInteger(ingredientId) && ingredientId > 0
-      ? [{ ingredientId, name: names[index] || `Nguyên liệu ${ingredientId}` }]
-      : [];
-  });
-}
 
 const URL_KEYS = ['q', 'vegetarianType', 'dishCategory', 'sort', 'ingredientId', 'ingredientName'];
 
@@ -58,6 +48,17 @@ const controlClass = 'mt-1.5 w-full rounded-xl border border-brand-100 bg-paper 
 
 function sortFrom(params: URLSearchParams): SortMode {
   return sortOptions.some((item) => item.code === params.get('sort')) ? params.get('sort') as SortMode : 'NEWEST';
+}
+
+function ingredientsFrom(params: URLSearchParams): IngredientOption[] {
+  const names = params.getAll('ingredientName');
+  const seen = new Set<number>();
+  return params.getAll('ingredientId').flatMap((value, index) => {
+    const ingredientId = Number(value);
+    if (!Number.isSafeInteger(ingredientId) || ingredientId < 1 || seen.has(ingredientId)) return [];
+    seen.add(ingredientId);
+    return [{ ingredientId, name: names[index]?.trim() || `Nguyên liệu ${ingredientId}` }];
+  });
 }
 
 export function useRecipeSearch(pageSize: number) {
@@ -112,13 +113,13 @@ export function useRecipeSearch(pageSize: number) {
     expectedSearchRef.current = currentSearch;
     const vegetarianType = params.get('vegetarianType') ?? '';
     const dishCategory = params.get('dishCategory') ?? '';
-    const sort = sortFrom(params);
     const ingredientIds = ingredientsFrom(params);
+    const sort = sortFrom(params);
     setFilters((current) => current.vegetarianType === vegetarianType
       && current.dishCategory === dishCategory
       && current.sort === sort
       && current.ingredientIds.length === ingredientIds.length
-      && current.ingredientIds.every((item, index) => item.ingredientId === ingredientIds[index].ingredientId)
+      && current.ingredientIds.every((item, index) => item.ingredientId === ingredientIds[index].ingredientId && item.name === ingredientIds[index].name)
       ? current
       : { ...current, vegetarianType, dishCategory, sort, ingredientIds });
     setPage(0);
@@ -178,9 +179,16 @@ export function useRecipeSearch(pageSize: number) {
   const updateFilter = <K extends keyof RecipeFilters>(key: K, value: RecipeFilters[K]) => {
     setFilters((current) => ({ ...current, [key]: value }));
     setPage(0);
-    if (key === 'vegetarianType' || key === 'dishCategory' || key === 'sort') {
+    if (key === 'vegetarianType' || key === 'dishCategory' || key === 'sort' || key === 'ingredientIds') {
       const next = new URLSearchParams(params);
-      if (value) next.set(key, String(value)); else next.delete(key);
+      if (key === 'ingredientIds') {
+        next.delete('ingredientId');
+        next.delete('ingredientName');
+        (value as IngredientOption[]).forEach((ingredient) => {
+          next.append('ingredientId', String(ingredient.ingredientId));
+          next.append('ingredientName', ingredient.name);
+        });
+      } else if (value) next.set(key, String(value)); else next.delete(key);
       expectedSearchRef.current = next.toString();
       setParams(next, { replace: true });
     }
@@ -191,16 +199,6 @@ export function useRecipeSearch(pageSize: number) {
       ? [...filters.ingredientIds, ingredient]
       : filters.ingredientIds.filter((item) => item.ingredientId !== ingredient.ingredientId);
     updateFilter('ingredientIds', next);
-    // Keep the selection in the URL; otherwise the next URL change re-reads removed ingredients from it.
-    const nextParams = new URLSearchParams(params);
-    nextParams.delete('ingredientId');
-    nextParams.delete('ingredientName');
-    next.forEach((item) => {
-      nextParams.append('ingredientId', String(item.ingredientId));
-      nextParams.append('ingredientName', item.name);
-    });
-    expectedSearchRef.current = nextParams.toString();
-    setParams(nextParams, { replace: true });
   };
 
   const resetFilters = () => {

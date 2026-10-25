@@ -49,6 +49,7 @@ export function IngredientDirectoryPage() {
   };
 
   return <PageContainer className="py-8 sm:py-10">
+    <div className="mx-auto w-full max-w-5xl">
     <header className="mb-7">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Mâm Xanh / Khám phá</p>
       <div className="mt-2 flex items-center gap-3">
@@ -58,7 +59,7 @@ export function IngredientDirectoryPage() {
       <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-muted">Chọn một hoặc nhiều nguyên liệu để tìm các công thức có đủ những nguyên liệu bạn cần.</p>
     </header>
 
-    <section aria-labelledby="ingredient-list-title" className="max-w-5xl">
+    <section aria-labelledby="ingredient-list-title">
       <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h2 id="ingredient-list-title" className="text-lg font-bold text-ink">Tất cả nguyên liệu</h2>
@@ -106,5 +107,6 @@ export function IngredientDirectoryPage() {
         <span className="text-sm text-ink-muted">Công thức sẽ cần có đủ các nguyên liệu đã chọn.</span>
       </div>}
     </section>
+    </div>
   </PageContainer>;
 }

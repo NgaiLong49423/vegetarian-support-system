@@ -266,7 +266,7 @@ test('server validation errors stay visible and preserve edited form values', as
   await expect(page.getByLabel('Tên món *')).toHaveValue('Tên vẫn được giữ sau lỗi');
 });
 
-test('expert sees unsupported ingredient warning when recipe references obsolete catalog items', async ({ page }) => {
+test('expert sees unavailable ingredient warning when recipe references obsolete catalog items', async ({ page }) => {
   const unsupportedRecipe = {
     ...existingRecipe,
     id: 49,
@@ -275,6 +275,6 @@ test('expert sees unsupported ingredient warning when recipe references obsolete
   };
   await mockEditorApi(page, unsupportedRecipe);
   await page.goto('/cong-thuc/49/chinh-sua');
-  await expect(page.getByText('Nguyên liệu này hiện không được hỗ trợ.')).toBeVisible();
+  await expect(page.getByText('Nguyên liệu này không còn khả dụng trong danh mục. Hãy chọn nguyên liệu khác trước khi lưu.')).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Nguyên liệu' })).toHaveValue('99');
 });
