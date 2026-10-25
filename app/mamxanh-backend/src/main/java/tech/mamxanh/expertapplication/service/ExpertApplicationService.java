@@ -235,5 +235,19 @@ public class ExpertApplicationService {
     }
 
     private enum AttachmentKind { CERTIFICATE, AVATAR }
-    private record ValidatedAttachment(byte[] content, String contentType, String extension) { }
+    private static final class ValidatedAttachment {
+        private final byte[] content;
+        private final String contentType;
+        private final String extension;
+
+        private ValidatedAttachment(byte[] content, String contentType, String extension) {
+            this.content = content;
+            this.contentType = contentType;
+            this.extension = extension;
+        }
+
+        private byte[] content() { return content; }
+        private String contentType() { return contentType; }
+        private String extension() { return extension; }
+    }
 }

@@ -26,10 +26,14 @@ import tech.mamxanh.auth.service.ExpertPromotionService;
 import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.expertapplication.dto.ExpertApplicationRequest;
 import tech.mamxanh.expertapplication.dto.ExpertApplicationResponse;
+import tech.mamxanh.expertapplication.dto.ExpertApplicationAttachment;
+import tech.mamxanh.expertapplication.dto.ApplicationAttachmentContent;
 import tech.mamxanh.expertapplication.repository.ExpertApplicationRepository;
 import tech.mamxanh.expertapplication.service.ExpertApplicationService;
 import tech.mamxanh.notification.service.NotificationService;
 import tech.mamxanh.integration.storage.StorageClient;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class ExpertApplicationServiceTest {
@@ -114,6 +118,91 @@ class ExpertApplicationServiceTest {
     }
 
     @Test
+    void rejectsEmptyAndOversizedAttachmentsBeforeUpload() {
+        var request = request();
+        var empty = new MockMultipartFile("certificate", "empty.pdf", "application/pdf", new byte[0]);
+        var tooLarge = new MockMultipartFile("avatar", "large.png", "image/png",
+                new byte[2 * 1024 * 1024 + 1]);
+
+        assertThatThrownBy(() -> service.submitWithAttachments(request, empty, null))
+                .isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> service.submitWithAttachments(request, null, tooLarge))
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getStatus())
+                        .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE));
+        verify(storage, org.mockito.Mockito.never()).uploadPrivateApplicationFile(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void rejectsCertificateMimeMismatchAndUnsupportedAvatarContent() {
+        var request = request();
+        var mismatchedCertificate = new MockMultipartFile("certificate", "credential.pdf", "image/png",
+                "%PDF-1.7".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        var unsupportedAvatar = new MockMultipartFile("avatar", "credential.pdf", "application/pdf",
+                "%PDF-1.7".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+
+        assertThatThrownBy(() -> service.submitWithAttachments(request, mismatchedCertificate, null))
+                .isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> service.submitWithAttachments(request, null, unsupportedAvatar))
+                .isInstanceOf(ApiException.class);
+    }
+
+    @Test
+    void downloadAttachmentValidatesKindAndStoredContentType() {
+        assertThatThrownBy(() -> service.downloadAttachment(9L, "other"))
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+
+        when(applications.attachment(9L, "certificate"))
+                .thenReturn(new ExpertApplicationAttachment("private/key", "text/plain"));
+        assertThatThrownBy(() -> service.downloadAttachment(9L, "certificate"))
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getStatus())
+                        .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
+    @Test
+    void downloadAttachmentReturnsPrivateBytesWithSafeFilename() {
+        byte[] content = {1, 2, 3};
+        when(applications.attachment(9L, "avatar"))
+                .thenReturn(new ExpertApplicationAttachment("private/key", "image/webp"));
+        when(storage.downloadPrivateApplicationFile("private/key")).thenReturn(content);
+
+        ApplicationAttachmentContent downloaded = service.downloadAttachment(9L, "avatar");
+
+        assertThat(downloaded.content()).containsExactly(1, 2, 3);
+        assertThat(downloaded.contentType()).isEqualTo("image/webp");
+        assertThat(downloaded.filename()).isEqualTo("avatar.webp");
+    }
+
+    @Test
+    void rollbackSynchronizationDeletesUploadedFilesAfterDatabaseRollback() {
+        var request = request();
+        byte[] pdf = "%PDF-1.7".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        var certificate = new MockMultipartFile("certificate", "credential.pdf", "application/pdf", pdf);
+        when(storage.uploadPrivateApplicationFile(pdf, "application/pdf", ".pdf"))
+                .thenReturn("expert-applications/certificate.pdf");
+        when(applications.insert(42, request, "expert-applications/certificate.pdf", "application/pdf",
+                null, null, NOW)).thenReturn(9L);
+        when(applications.findById(9L)).thenThrow(new IllegalStateException("database read failed"));
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            assertThatThrownBy(() -> service.submitWithAttachments(request, certificate, null))
+                    .isInstanceOf(IllegalStateException.class);
+            for (TransactionSynchronization synchronization : TransactionSynchronizationManager.getSynchronizations()) {
+                synchronization.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
+            }
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+
+        verify(storage).deletePrivateApplicationFile("expert-applications/certificate.pdf");
+    }
+
+    @Test
     void failedApplicationInsertDeletesPreviouslyUploadedAttachment() {
         var request = new ExpertApplicationRequest("More than twenty chars experience", "VEGAN",
                 "A sample recipe summary with enough details.", null);
@@ -195,5 +284,10 @@ class ExpertApplicationServiceTest {
     private static ExpertApplicationResponse response(String status, String note) {
         return new ExpertApplicationResponse(9, 17, "Applicant", "applicant@example.org", "Experience text",
                 "VEGAN", "Sample recipe summary", null, false, false, status, note, NOW, null);
+    }
+
+    private static ExpertApplicationRequest request() {
+        return new ExpertApplicationRequest("More than twenty chars experience", "VEGAN",
+                "A sample recipe summary with enough details.", null);
     }
 }
