@@ -1,8 +1,8 @@
 schema_version: 1
-last_updated: 2026-10-23
+last_updated: 2026-10-25
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-next_id: 65
+next_id: 66
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
@@ -10,6 +10,15 @@ status_definitions:
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
 bugs:
+  - id: BUG-065
+    title: OpenAPI báo sai mã thành công khi gửi báo cáo công thức
+    status: RECORDED
+    severity: Unknown
+    area: Backend/Recipe Report/OpenAPI
+    file: .agents/outputs/bugs/BUG-065.md
+    created: 2026-10-25
+    updated: 2026-10-25
+    related_issue: 187
   - id: BUG-064
     title: Khám phá bỏ qua nguyên liệu được chuyển từ danh mục hoặc trang chi tiết
     status: RESOLVED
