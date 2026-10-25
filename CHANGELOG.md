@@ -69,6 +69,26 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
+## 2026-10-23 — Keep Recipe Search Ingredients in Sync with the URL (Issue #70)
+
+**Status:** Committed — `2e03550`, `e42b65f`.
+
+**Scope:** Finish the FR-62 ingredient links in the shared `RecipeSearch` module used by Explore and the FR-60 picker: PR #185 reads `ingredientId`/`ingredientName` from the URL, but removed or reset ingredients stayed in the URL and came back on the next URL change or reload. Also keep the FR-60 picker within a phone-width page.
+
+### Added
+
+- Add Playwright coverage for an ingredient preset on the picker, removing it before another filter changes, resetting all filters, and a picker card with a long dish category label on a 360 px wide screen.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Write the selected ingredients back to the URL when one is added or removed, so a removed preset no longer comes back when the page is reloaded or reopened from the browser history.
+- Remove `ingredientId`/`ingredientName` from the URL when the filters are reset.
+- Keep picker result cards inside a phone-width page when a recipe has a long category label such as "Món tráng miệng / chè": the result grid uses one shrinkable column below the `sm` breakpoint (AC-60.8).
+
 ## 2026-10-23 — Fix AI Recipe Guidance Generation ([PR #181](https://github.com/NgaiLong49423/vegetarian-support-system/pull/181))
 
 **Status:** Committed — `3926690`.

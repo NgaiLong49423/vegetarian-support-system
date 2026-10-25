@@ -6,7 +6,8 @@ import { recipesApi } from '../api/recipes';
 import type { Choice, IngredientOption, RecipeBrowseResult, RecipeFormOptions, RecipeSearchParams } from '../api/recipes';
 
 // FR-08 public recipe search and filters, shared by the Explore page and the FR-60 comparison picker.
-// The keyword, diet, dish category and sort live in the URL; other query parameters are left untouched.
+// The keyword, diet, dish category, sort and selected ingredients (FR-62 links preset ingredientId/ingredientName)
+// live in the URL; other query parameters are left untouched.
 
 type SortMode = RecipeSearchParams['sort'];
 type ViewPeriod = RecipeSearchParams['viewPeriod'];
@@ -35,7 +36,7 @@ function ingredientsFrom(params: URLSearchParams): IngredientOption[] {
   });
 }
 
-const URL_KEYS = ['q', 'vegetarianType', 'dishCategory', 'sort'];
+const URL_KEYS = ['q', 'vegetarianType', 'dishCategory', 'sort', 'ingredientId', 'ingredientName'];
 
 const sortOptions: Array<{ code: SortMode; label: string }> = [
   { code: 'NEWEST', label: 'Mới nhất' },
@@ -190,6 +191,16 @@ export function useRecipeSearch(pageSize: number) {
       ? [...filters.ingredientIds, ingredient]
       : filters.ingredientIds.filter((item) => item.ingredientId !== ingredient.ingredientId);
     updateFilter('ingredientIds', next);
+    // Keep the selection in the URL; otherwise the next URL change re-reads removed ingredients from it.
+    const nextParams = new URLSearchParams(params);
+    nextParams.delete('ingredientId');
+    nextParams.delete('ingredientName');
+    next.forEach((item) => {
+      nextParams.append('ingredientId', String(item.ingredientId));
+      nextParams.append('ingredientName', item.name);
+    });
+    expectedSearchRef.current = nextParams.toString();
+    setParams(nextParams, { replace: true });
   };
 
   const resetFilters = () => {
