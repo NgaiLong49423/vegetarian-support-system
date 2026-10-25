@@ -1521,43 +1521,34 @@ button:not(:disabled), a { cursor: pointer; }
 }
 
 
-/* Today glow effects for Meal Plan */
+/* Today clean elevation & luminous highlight for Meal Plan */
 .day-chip-today-glow {
-  box-shadow: 0 0 16px rgba(242, 106, 27, 0.55), 0 0 4px rgba(242, 106, 27, 0.8);
-  animation: day-today-glow 2.5s ease-in-out infinite alternate;
+  box-shadow:
+    0 4px 14px -2px rgba(242, 106, 27, 0.32),
+    0 2px 6px -1px rgba(242, 106, 27, 0.18),
+    0 0 0 1px rgba(242, 106, 27, 0.15);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 :root[data-theme="dark"] .day-chip-today-glow {
-  box-shadow: 0 0 20px rgba(255, 155, 48, 0.65), 0 0 5px rgba(255, 173, 77, 0.9);
-  animation: day-today-glow-dark 2.5s ease-in-out infinite alternate;
-}
-
-@keyframes day-today-glow {
-  0% {
-    box-shadow: 0 0 12px rgba(242, 106, 27, 0.4), 0 0 2px rgba(242, 106, 27, 0.7);
-  }
-  100% {
-    box-shadow: 0 0 24px rgba(242, 106, 27, 0.75), 0 0 6px rgba(242, 106, 27, 1);
-  }
-}
-
-@keyframes day-today-glow-dark {
-  0% {
-    box-shadow: 0 0 14px rgba(255, 155, 48, 0.45), 0 0 3px rgba(255, 173, 77, 0.75);
-  }
-  100% {
-    box-shadow: 0 0 28px rgba(255, 155, 48, 0.85), 0 0 8px rgba(255, 173, 77, 1);
-  }
+  box-shadow:
+    0 4px 18px -2px rgba(255, 138, 38, 0.38),
+    0 2px 6px -1px rgba(255, 138, 38, 0.22),
+    0 0 0 1px rgba(255, 138, 38, 0.25);
 }
 
 .day-card-today-glow {
-  box-shadow: 0 0 18px rgba(242, 106, 27, 0.16);
+  box-shadow: 0 4px 20px -2px rgba(242, 106, 27, 0.12), 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 :root[data-theme="dark"] .day-card-today-glow {
-  box-shadow: 0 0 24px rgba(255, 155, 48, 0.22);
+  box-shadow: 0 4px 24px -2px rgba(255, 138, 38, 0.18), 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .day-badge-today-glow {
-  box-shadow: 0 0 14px rgba(242, 106, 27, 0.6);
+  box-shadow: 0 2px 10px -1px rgba(242, 106, 27, 0.35);
+}
+
+:root[data-theme="dark"] .day-badge-today-glow {
+  box-shadow: 0 2px 12px -1px rgba(255, 155, 48, 0.45);
 }
