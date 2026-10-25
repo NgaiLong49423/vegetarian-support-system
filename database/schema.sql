@@ -616,6 +616,7 @@ CREATE TABLE [REPORT] (
     updated_at       DATETIME2(7)    NOT NULL
         CONSTRAINT DF_REPORT_updated_at DEFAULT SYSUTCDATETIME(),
     handled_at       DATETIME2(7)    NULL,
+    handled_by       BIGINT          NULL,
 
     CONSTRAINT PK_REPORT PRIMARY KEY (report_id),
     CONSTRAINT FK_REPORT_USER FOREIGN KEY (reporter_id)
@@ -624,6 +625,8 @@ CREATE TABLE [REPORT] (
         REFERENCES [RECIPE_POST](recipe_id) ON DELETE NO ACTION,
     CONSTRAINT FK_REPORT_COMMENT FOREIGN KEY (comment_id)
         REFERENCES [COMMENT](comment_id) ON DELETE NO ACTION,
+    CONSTRAINT FK_REPORT_HANDLED_BY FOREIGN KEY (handled_by)
+        REFERENCES [USER](user_id) ON DELETE NO ACTION,
     CONSTRAINT CK_REPORT_target_xor CHECK (
         (recipe_id IS NOT NULL AND comment_id IS NULL)
         OR (recipe_id IS NULL AND comment_id IS NOT NULL)
@@ -635,12 +638,16 @@ CREATE TABLE [REPORT] (
     ),
     CONSTRAINT CK_REPORT_status CHECK (
         status IN ('OPEN', 'IN_REVIEW', 'RESOLVED')
+    ),
+    CONSTRAINT CK_REPORT_decision CHECK (
+        decision IS NULL
+        OR decision IN ('NO_VIOLATION', 'WARN_AUTHOR', 'HIDE_RECIPE', 'LOCK_AUTHOR')
     )
 );
 GO
 
 -- 6.1a REPORT_SUPPLEMENT — Append-only information added to an open report
--- Source: V22__report_supplement.sql, FR-30 AC-30.1
+-- Source: V23__report_supplement.sql, FR-30 AC-30.1
 CREATE TABLE [REPORT_SUPPLEMENT] (
     supplement_id  BIGINT          IDENTITY(1,1)  NOT NULL,
     report_id      BIGINT          NOT NULL,

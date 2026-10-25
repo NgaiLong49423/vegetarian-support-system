@@ -64,15 +64,15 @@ test('Member thêm, đổi, hủy; tải lại giữ lựa chọn và card nhậ
   await expect(dislike).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '90');
   await like.click();
-  await page.goto('/trang-chu');
-  await expect(page.getByLabel('Tỷ lệ Like: 91%').first()).toBeVisible();
+  await page.getByRole('link', { name: 'Khám phá', exact: true }).last().click();
+  await expect(page.getByLabel('Tỷ lệ Like: 91%')).toHaveCount(0);
   expect(mutations).toEqual(['PUT', 'PUT', 'DELETE', 'PUT']);
 });
 
-test('Guest xem Mới, mở đăng nhập và không gửi bình chọn', async ({ page }) => {
+test('Guest mở đăng nhập và không gửi bình chọn; không hiển thị badge trạng thái', async ({ page }) => {
   const { mutations } = await api(page, 0, 0);
   await page.goto('/cong-thuc/id/901');
-  await expect(page.getByLabel('Chưa có bình chọn')).toHaveText('Mới');
+  await expect(page.getByLabel('Chưa có bình chọn')).toHaveCount(0);
   await page.getByRole('button', { name: 'Thích', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Yêu cầu đăng nhập' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Đăng nhập', exact: true }).last()).toHaveAttribute('href', '/dang-nhap');
@@ -118,7 +118,7 @@ test('Lỗi đọc lựa chọn có tải lại; lỗi ghi giữ nguyên dữ li
   await expect(like).toBeDisabled();
 });
 
-test('Đang ghi khóa hai nút; hủy phiếu cuối trở về Mới, 0% vẫn hiển thị', async ({ page }) => {
+test('Đang ghi khóa hai nút; hủy phiếu cuối ẩn thanh tỷ lệ trống', async ({ page }) => {
   await session(page);
   await api(page, 0, 0);
   let release!: () => void;
@@ -138,7 +138,7 @@ test('Đang ghi khóa hai nút; hủy phiếu cuối trở về Mới, 0% vẫn 
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
   await expect(dislike).toBeEnabled();
   await dislike.click();
-  await expect(page.getByLabel('Chưa có bình chọn')).toHaveText('Mới');
+  await expect(page.getByLabel('Chưa có bình chọn')).toHaveCount(0);
   await expect(page.getByRole('progressbar')).toHaveCount(0);
   expect(writes).toBe(2);
 });
@@ -160,26 +160,12 @@ test('Bố cục 360/768/1440px và bình chọn bằng bàn phím', async ({ pa
   await expect(like).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('Card trang chủ đặt Mới ở góc trên trái ảnh; Khám phá ẩn badge bình chọn', async ({ page }) => {
+test('Card trang chủ và Khám phá không hiển thị nhãn trạng thái bình chọn', async ({ page }) => {
   await api(page, 0, 0);
-  await page.goto('/trang-chu');
-  const badges = page.getByLabel('Chưa có bình chọn');
-  await expect(badges).toHaveCount(2);
-  const badge = badges.first();
-  await expect(badge).toHaveText('Mới');
-  const offset = await badge.evaluate((element) => {
-    // Read both rectangles in one frame so card entrance motion cannot skew the offset.
-    const bounds = element.getBoundingClientRect();
-    const image = element.parentElement!.parentElement!.getBoundingClientRect();
-    return { x: bounds.x - image.x, y: bounds.y - image.y };
-  });
-  expect(offset.x).toBeGreaterThanOrEqual(0);
-  expect(offset.y).toBeGreaterThanOrEqual(0);
-  expect(offset.x).toBeLessThan(20);
-  expect(offset.y).toBeLessThan(20);
-
-  await page.goto('/kham-pha');
-  await expect(page.getByLabel('Chưa có bình chọn')).toHaveCount(0);
+  for (const path of ['/trang-chu', '/kham-pha']) {
+    await page.goto(path);
+    await expect(page.getByLabel('Chưa có bình chọn')).toHaveCount(0);
+  }
 });
 
 test('Bài bị ẩn trong lúc bình chọn không cập nhật số và chặn thao tác tiếp', async ({ page }) => {

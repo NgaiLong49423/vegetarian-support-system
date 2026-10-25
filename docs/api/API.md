@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.43.0
+> **Version:** v0.44.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-25
 > **Status:** Active
@@ -225,12 +225,14 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
 | `UNSUPPORTED_IMAGE_TYPE` | 400 | Tệp ảnh không phải JPEG, PNG hoặc WebP; với ảnh đại diện, nội dung tệp (chữ ký đầu tệp) phải khớp `Content-Type`. |
 | `INGREDIENT_PREFERENCE_CONFLICT` | 400 | `PUT /nutrition/dietary-preferences` có cùng một tên (không phân biệt hoa/thường) ở cả danh sách cần tránh và danh sách không thích. |
 | `DIETARY_PROFILE_INCOMPLETE` | 409 | Cổng AI cá nhân hóa (BR-31) chặn yêu cầu vì hồ sơ thiếu nhóm thông tin tối thiểu; body có thêm `missing` (`VEGETARIAN_TYPE`, `AVOID_INGREDIENTS`, `DISLIKED_INGREDIENTS`). |
-| `REPORT_ALREADY_OPEN` | 409 | `POST /recipes/{recipeId}/reports` khi tài khoản đã có báo cáo `OPEN` hoặc `IN_REVIEW` trên bài đó, kể cả khi gửi đồng thời (SRS 3.14); body có thêm `reportId` của báo cáo đang mở (AC-30.2). Xem mục 21. |
-| `REPORT_NOT_FOUND` | 404 | `/me/reports/{reportId}` với ID không phải báo cáo Recipe Post. Xem mục 21. |
-| `REPORT_NOT_OPEN` | 409 | `POST /me/reports/{reportId}/supplements` khi báo cáo đã `RESOLVED`. Xem mục 21. |
-| `REPORT_SUPPLEMENT_LIMIT` | 409 | `POST /me/reports/{reportId}/supplements` khi báo cáo đã có 5 phần bổ sung. Xem mục 21. |
+| `REPORT_ALREADY_OPEN` | 409 | `POST /recipes/{recipeId}/reports` khi tài khoản đã có báo cáo `OPEN` hoặc `IN_REVIEW` trên bài đó, kể cả khi gửi đồng thời (SRS 3.14); body có thêm `reportId` của báo cáo đang mở (AC-30.2). Xem mục 22. |
+| `REPORT_NOT_OPEN` | 409 | `POST /me/reports/{reportId}/supplements` khi báo cáo đã `RESOLVED`. Xem mục 22. |
+| `REPORT_SUPPLEMENT_LIMIT` | 409 | `POST /me/reports/{reportId}/supplements` khi báo cáo đã có 5 phần bổ sung. Xem mục 22. |
 | `UNAUTHENTICATED` | 401 | Gọi endpoint cần đăng nhập mà không có Bearer token, hoặc token sai chữ ký, sai issuer, hết hạn hay thuộc tài khoản không còn tồn tại. |
 | `ACCESS_DENIED` | 403 | Đã xác thực nhưng không đủ quyền. |
+| `REPORT_NOT_FOUND` | 404 | `/me/reports/{reportId}` (mục 22) hoặc `/admin/reports/{reportId}` (mục 21) với ID không phải báo cáo Recipe Post. |
+| `REPORT_STATUS_CONFLICT` | 409 | Tiếp nhận báo cáo không còn `OPEN`, hoặc ghi kết luận khi báo cáo chưa được chính Administrator đó tiếp nhận hay đã `RESOLVED`. Xem mục 21. |
+| `REPORT_DECISION_NOT_APPLICABLE` | 409 | Kết luận `HIDE_RECIPE` cho bài tác giả đã xóa, hoặc `LOCK_AUTHOR` khi tác giả là Administrator. Báo cáo giữ `IN_REVIEW`. Xem mục 21. |
 | `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE` | 404, 405, 415 | Lỗi định tuyến/định dạng do framework phát hiện. |
 | `INTERNAL_ERROR` | 500 | Lỗi không mong đợi; `detail` không chứa thông tin nội bộ. |
 
@@ -530,7 +532,27 @@ Generated OpenAPI là contract chi tiết. Guest và Member có thể đọc dan
 - Lưới bài viết trên chi tiết gọi `GET /api/v1/recipes/discovery` với `ingredientIds` bằng đúng ID đang xem, `size=9`, `page` tăng từ 0 và `sort=MOST_LIKED` hoặc `NEWEST`; Xem thêm theo `hasNext`, không tự hiển thị tổng số bài khi response không cung cấp tổng.
 - Các nhãn loại ăn chay dùng `vegetarianTypes` của `GET /api/v1/recipes/form-options`; chọn nhãn gửi thêm `vegetarianType` nhưng vẫn giữ `ingredientIds`. Đây là nhãn của công thức; API không khai báo độ phù hợp chế độ ăn của riêng nguyên liệu.
 
-## 21. Báo cáo công thức — FR-26/27, FR-30
+## 21. Xử lý báo cáo của Administrator — FR-28
+
+Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Mọi endpoint dưới `/api/v1/admin/reports` cần Bearer token của Administrator; Guest nhận `401`, Customer/Expert nhận `403 ACCESS_DENIED` (NFR-09). Chỉ báo cáo Recipe Post (`REPORT.recipe_id`) nằm trong hàng đợi này; báo cáo bình luận thuộc FR-48.
+
+| Endpoint | Cách tích hợp |
+| --- | --- |
+| `GET /api/v1/admin/reports?status=&page=&size=` | `PageResponse<AdminReportResponse>`, mới nhất trước. `status` là `OPEN`, `IN_REVIEW`, `RESOLVED` hoặc bỏ trống. `page` từ 0, `size` 1–100 (mặc định 20). |
+| `GET /api/v1/admin/reports/status-counts` | Số báo cáo ở từng trạng thái: `open`, `inReview`, `resolved`. |
+| `GET /api/v1/admin/reports/{reportId}` | Chi tiết một báo cáo, `404 REPORT_NOT_FOUND` khi không có. |
+| `POST /api/v1/admin/reports/{reportId}/claim` | Không có body. Chuyển `OPEN` sang `IN_REVIEW` và ghi người gọi vào `handledBy` (AC-28.1). Báo cáo đã có người tiếp nhận hoặc đã giải quyết trả `409 REPORT_STATUS_CONFLICT`. Hai Administrator tiếp nhận cùng lúc thì đúng một người thành công vì Backend khóa dòng `REPORT`. |
+| `POST /api/v1/admin/reports/{reportId}/resolve` | Body `{ "decision", "reason" }`. Chỉ Administrator đang giữ báo cáo `IN_REVIEW` được gọi; trả báo cáo `RESOLVED`. |
+
+`AdminReportResponse` gồm `id`, `status`, `reasonCode`, `description`, `createdAt`, `updatedAt`, `recipe` (`id`, `title`, `status`), `reporter` và `author` (`id`, `displayName`, `email`, `role`, `accountStatus`), `handledBy` (`id`, `displayName`, `null` khi chưa ai tiếp nhận), `decision`, `decisionReason`, `handledAt`. Response này chỉ dành cho Administrator vì có danh tính người báo cáo (FR-29, BR-28). Thời gian là UTC không kèm múi giờ, Frontend hiển thị theo giờ Việt Nam.
+
+- `decision` là một trong `NO_VIOLATION` (bài giữ nguyên), `WARN_AUTHOR` (bài giữ nguyên, tác giả nhận cảnh báo), `HIDE_RECIPE` (bài chuyển `HIDDEN`, không còn ở API công khai, tìm kiếm và gợi ý) hoặc `LOCK_AUTHOR` (tài khoản tác giả chuyển `LOCKED`, mọi Bearer token đã cấp nhận `403 ACCOUNT_LOCKED` ngay ở request kế tiếp).
+- `reason` bỏ khoảng trắng đầu cuối, bắt buộc 10–500 ký tự với mọi kết luận (AC-28.5, BR-26). Sai `decision` hoặc `reason` trả `400 VALIDATION_FAILED` với `errors[].field` là `decision` hoặc `reason`, báo cáo giữ `IN_REVIEW`.
+- Báo cáo `RESOLVED` không đổi được nữa: không có endpoint sửa, `claim` và `resolve` đều trả `409`. Bản ghi báo cáo (`decision`, `decision_reason`, `handled_by`, `handled_at`) là audit của quyết định (SRS 3.12, NFR-08). Báo cáo `IN_REVIEW` cũ chưa có `handledBy` (đổi từ `PROCESSING` ở V9) vẫn tiếp nhận được.
+- Số lượng báo cáo không tự tạo chế tài; mỗi báo cáo cần một quyết định riêng (BR-26, BR-58). Kết luận của một báo cáo không tự đổi các báo cáo khác trên cùng bài.
+- Khi giải quyết, Backend ghi `NOTIFICATION` trong cùng transaction: người báo cáo nhận `REPORT_RESULT` (kết quả chung, không nêu chế tài cụ thể), tác giả nhận `MODERATION_DECISION` với lý do của Administrator khi kết luận là cảnh báo, ẩn bài hoặc khóa tài khoản. Nội dung thông báo không chứa tên, email hay mô tả của người báo cáo (AC-49.4). Email kết quả kiểm duyệt chưa gửi trong bản này.
+
+## 22. Báo cáo công thức — FR-26/27, FR-30
 
 Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Báo cáo lưu trong `REPORT` (V1, V9); filtered unique index `UQ_REPORT_open_recipe` giữ tối đa một báo cáo `OPEN`/`IN_REVIEW` cho mỗi cặp người gửi – bài.
 

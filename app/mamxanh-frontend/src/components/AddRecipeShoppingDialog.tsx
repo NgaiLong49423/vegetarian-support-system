@@ -49,6 +49,7 @@ function nextDailyShoppingListName(baseName: string, summaries: ShoppingSummary[
 
 type ManualItemDraft = { key: number; name: string; quantity: string; unitId: number }
 
+
 export function AddRecipeShoppingDialog({
   open,
   onClose,

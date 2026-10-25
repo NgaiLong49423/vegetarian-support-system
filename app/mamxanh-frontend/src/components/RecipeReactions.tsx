@@ -6,7 +6,6 @@ import { asApiError } from '../lib/apiClient';
 import { useAuth } from './AuthContext';
 import { Modal } from './Modal';
 import { Button } from './ui';
-import { RecipeReactionBadge } from './RecipeReactionBadge';
 
 export function RecipeReactions(props: { recipeId: number; authorId: number; statistics: RecipeStatistics }) {
   const { account } = useAuth();
@@ -67,10 +66,7 @@ function ReactionControls({ recipeId, authorId, statistics }: { recipeId: number
 
   const disabled = Boolean(account) && (!eligible || !ready || busy || blocked);
   return <section aria-label="Bình chọn công thức" className="mt-6 border-t border-brand-100 pt-5">
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <h2 className="font-bold text-ink">Bạn thấy công thức này thế nào?</h2>
-      <RecipeReactionBadge percentage={counts.likePercentage} />
-    </div>
+    <h2 className="font-bold text-ink">Bạn thấy công thức này thế nào?</h2>
     {counts.likePercentage != null && <div role="progressbar" aria-label="Tỷ lệ Like" aria-valuemin={0} aria-valuemax={100} aria-valuenow={counts.likePercentage} className="mt-3 h-2 overflow-hidden rounded-full bg-brand-100">
       <div className="h-full bg-brand-600" style={{ width: `${counts.likePercentage}%` }} />
     </div>}

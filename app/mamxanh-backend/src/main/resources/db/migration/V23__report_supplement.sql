@@ -1,5 +1,5 @@
 -- ============================================================================
--- Flyway Migration: V22__report_supplement.sql
+-- Flyway Migration: V23__report_supplement.sql
 -- Database Engine : Microsoft SQL Server
 -- Project         : Mâm Xanh — Vegetarian Support System (SWP391)
 -- Issue           : Refs #35 — FR-30 supplements to an open report

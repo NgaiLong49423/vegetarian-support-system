@@ -30,6 +30,7 @@ import { ProfileSettingsPage } from "../pages/ProfileSettingsPage"
 import { AiChatPage } from "../pages/AiChatPage"
 import { AdminDashboard } from "../pages/AdminDashboard"
 import { AdminPendingModule } from "../pages/AdminPendingModule"
+import { AdminReportsPage } from "../pages/AdminReportsPage"
 import { ExpertDirectoryPage } from "../pages/ExpertDirectoryPage"
 import { IngredientDirectoryPage } from "../pages/IngredientDirectoryPage"
 import { IngredientDetailPage } from "../pages/IngredientDetailPage"
@@ -119,7 +120,7 @@ export default function ApplicationRoutes() {
               <Route path="/admin/tong-quan" element={<AdminDashboard />} />
               <Route
                 path="/admin/bao-cao"
-                element={<AdminPendingModule module="reports" />}
+                element={<AdminReportsPage />}
               />
               <Route
                 path="/admin/nguoi-dung"
