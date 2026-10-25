@@ -24,20 +24,24 @@ export function CreateShoppingListButton({
   const alive = useRef(true)
   const trigger = useRef<HTMLButtonElement>(null)
   const firstChoice = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     alive.current = true
     return () => {
       alive.current = false
     }
   }, [])
+
   useEffect(() => {
     if (open) firstChoice.current?.focus()
   }, [open])
+
   function close() {
     if (pending.current) return
     setOpen(false)
     requestAnimationFrame(() => trigger.current?.focus())
   }
+
   async function create() {
     if (pending.current) return
     pending.current = true
@@ -59,6 +63,25 @@ export function CreateShoppingListButton({
       if (alive.current) setBusy(false)
     }
   }
+
+  const previewTitle = wholeWeek
+    ? (() => {
+        const start = new Date(`${week}T12:00:00`)
+        const end = new Date(`${week}T12:00:00`)
+        end.setDate(end.getDate() + 6)
+        return `Danh sách đi chợ tuần ${start.toLocaleDateString("vi-VN", { day: "numeric", month: "numeric" })} – ${end.toLocaleDateString("vi-VN", { day: "numeric", month: "numeric" })}`
+      })()
+    : dates.length === 0
+      ? "Chưa chọn ngày nào"
+      : `Danh sách đi chợ ngày ${dates
+          .map((d) =>
+            new Date(`${d}T12:00:00`).toLocaleDateString("vi-VN", {
+              day: "numeric",
+              month: "numeric",
+            }),
+          )
+          .join(", ")}`
+
   return (
     <>
       <button
@@ -92,6 +115,18 @@ export function CreateShoppingListButton({
             {" "}Ngày được chọn là ngày của thực đơn cần chuẩn bị nguyên liệu,
             không phải ngày đi mua.
           </p>
+
+          {/* Clear preview of the shopping list name */}
+          <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-3.5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-brand-800">
+              Tên danh sách dự kiến tạo:
+            </p>
+            <p className="mt-1 text-sm font-bold text-ink">{previewTitle}</p>
+            <p className="mt-0.5 text-xs text-ink-muted">
+              Tên danh sách thể hiện rõ ngày thực đơn để bạn dễ dàng quản lý khi đi chợ.
+            </p>
+          </div>
+
           <fieldset disabled={busy} className="space-y-3 text-sm text-ink">
             <legend className="mb-2 font-semibold">
               Phạm vi lấy nguyên liệu

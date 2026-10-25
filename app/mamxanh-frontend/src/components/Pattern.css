@@ -1,72 +1,93 @@
 /* ---- Pattern.css ----
- * Ambient aurora background in the Mâm Xanh palette.
- *
- * Performance notes:
- * - No `filter: blur()` on huge layers: softness comes from radial-gradient
- *   falloff, so each blob is rasterized once and never repainted.
- * - Only `transform` is animated, which runs on the compositor thread.
- * - Animations pause when the section is off-screen (see Pattern.tsx).
+ * Textured parchment and geometric pattern background for Mâm Xanh.
  */
 .pattern-wrapper {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  contain: paint;
-  background: var(--color-cream);
-  mask-image: linear-gradient(to bottom, black calc(100% - 160px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 160px), transparent 100%);
-}
-
-.pattern-blob {
-  position: absolute;
-  width: clamp(420px, 55vw, 900px);
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(circle at center, var(--blob-color) 0%, transparent 68%);
-  opacity: var(--blob-opacity, 0.14);
-  will-change: transform;
-  backface-visibility: hidden;
-  animation: var(--blob-anim) var(--blob-duration, 40s) ease-in-out infinite alternate;
+  user-select: none;
 }
 
-:root[data-theme="light"] .pattern-blob {
-  opacity: 0.07;
+.pattern-wrapper .pattern-container {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100%;
+  background: radial-gradient(circle, #777777 2px, transparent 2px),
+    radial-gradient(circle, #eaeaea 10px, transparent 32px),
+    linear-gradient(
+      -45deg,
+      #eaeaea 0%,
+      transparent 49%,
+      transparent 50%,
+      transparent 51%,
+      #eaeaea 100%
+    ),
+    linear-gradient(
+      45deg,
+      #eaeaea 0%,
+      transparent 49%,
+      #777777 50%,
+      transparent 51%,
+      #eaeaea 100%
+    ),
+    linear-gradient(-45deg, transparent 49%, #777777 50%, transparent 51%);
+  background-size: 8rem 8rem;
+  background-repeat: repeat;
+  opacity: 0.35;
 }
 
-.pattern-blob--1 { --blob-color: #22c55e; --blob-anim: pattern-drift-a; --blob-duration: 38s; top: -12%; left: -12%; --blob-opacity: 0.14; }
-.pattern-blob--2 { --blob-color: #f59e0b; --blob-anim: pattern-drift-b; --blob-duration: 46s; top: 8%;  right: -16%; --blob-opacity: 0.12; }
-.pattern-blob--3 { --blob-color: #ea580c; --blob-anim: pattern-drift-c; --blob-duration: 52s; top: 38%; left: 18%; --blob-opacity: 0.12; }
-.pattern-blob--4 { --blob-color: #10b981; --blob-anim: pattern-drift-b; --blob-duration: 44s; top: 58%; right: -8%; --blob-opacity: 0.12; }
-.pattern-blob--5 { --blob-color: #f97316; --blob-anim: pattern-drift-a; --blob-duration: 42s; bottom: -14%; left: -14%; --blob-opacity: 0.14; }
-
-/* Slow, gentle drifting (compositor-only transforms) */
-@keyframes pattern-drift-a {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  50%  { transform: translate3d(10vw, 6vh, 0) scale(1.12); }
-  100% { transform: translate3d(-4vw, 12vh, 0) scale(0.95); }
+.pattern-wrapper .pattern-paper {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100%;
+  filter: url(#void-texture);
+  background: linear-gradient(
+    to bottom,
+    rgba(194, 167, 87, 0.241) 0%,
+    rgba(162, 125, 55, 0.255) 100%
+  );
+  background-size: cover;
+  opacity: 0.65;
 }
 
-@keyframes pattern-drift-b {
-  0%   { transform: translate3d(0, 0, 0) scale(1.05); }
-  50%  { transform: translate3d(-12vw, 8vh, 0) scale(0.92); }
-  100% { transform: translate3d(-4vw, -6vh, 0) scale(1.1); }
+.pattern-wrapper .orbit-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 30%, transparent 30%, rgba(0, 0, 0, 0.04) 100%);
 }
 
-@keyframes pattern-drift-c {
-  0%   { transform: translate3d(0, 0, 0) scale(0.95); }
-  50%  { transform: translate3d(14vw, -8vh, 0) scale(1.15); }
-  100% { transform: translate3d(-10vw, 6vh, 0) scale(1); }
+.pattern-wrapper .texture-filter {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
 }
 
-/* Paused while off-screen to free the GPU */
-.pattern-wrapper.is-paused .pattern-blob {
-  animation-play-state: paused;
+:root[data-theme="dark"] .pattern-wrapper .pattern-container {
+  opacity: 0.12;
+}
+
+:root[data-theme="dark"] .pattern-wrapper .pattern-paper {
+  opacity: 0.3;
+}
+
+:root[data-theme="dark"] .pattern-wrapper .orbit-overlay {
+  background: radial-gradient(circle at 50% 30%, transparent 20%, rgba(0, 0, 0, 0.35) 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pattern-blob {
-    animation: none;
+  .pattern-wrapper * {
+    animation: none !important;
   }
 }

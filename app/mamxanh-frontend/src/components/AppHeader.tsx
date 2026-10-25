@@ -30,7 +30,7 @@ const navigation = [
   { to: "/kham-pha", label: "Khám phá", icon: Search },
   { to: "/ho-so", label: "Đã lưu", icon: Bookmark },
   { to: "/ke-hoach", label: "Lịch ăn", icon: CalendarDays },
-  { to: "/di-cho", label: "Đi chợ", icon: ShoppingBasket },
+  { to: "/di-cho", label: "Mua sắm", icon: ShoppingBasket },
 ]
 
 const exploreLinks = [

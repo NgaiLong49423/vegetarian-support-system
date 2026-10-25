@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Link, useLocation, useSearchParams } from "react-router-dom"
 import {
   ListChecks,
+  Minus,
   Pencil,
   Plus,
   ShoppingBasket,
@@ -28,6 +29,38 @@ const field =
   "min-w-0 rounded-lg border border-brand-200 bg-cream-soft px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-400"
 const quantityText = (item: ShoppingItem) =>
   `${item.quantity.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} ${item.unitCode}`
+
+function isSpiceItem(item: ShoppingItem): boolean {
+  const group = (item.ingredientGroup || "").toLowerCase()
+  if (group.includes("gia vị")) return true
+  const name = (item.name || "").toLowerCase()
+  const spiceKeywords = [
+    "muối",
+    "đường",
+    "tiêu",
+    "hạt nêm",
+    "nước mắm",
+    "nước tương",
+    "dầu ăn",
+    "dầu mè",
+    "dầu hào",
+    "tương",
+    "giấm",
+    "ớt bột",
+    "ngũ vị hương",
+    "bột cà ri",
+    "bột nghệ",
+    "bột năng",
+    "bột bắp",
+    "bột quế",
+    "thảo quả",
+    "hoa hồi",
+    "sa tế",
+    "chao",
+    "mắm ruốc chay",
+  ]
+  return spiceKeywords.some((keyword) => name.includes(keyword))
+}
 
 export function ShoppingList() {
   const { account } = useAuth()
@@ -92,15 +125,18 @@ function ShoppingWorkspace() {
   selectedId.current = id
   const dialogTrigger = useRef<HTMLElement | null>(null)
   const removalActions = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     if (removal) removalActions.current?.querySelector("button")?.focus()
   }, [removal])
+
   useEffect(() => {
     alive.current = true
     return () => {
       alive.current = false
     }
   }, [])
+
   useEffect(() => {
     let active = true
     setListLoading(true)
@@ -124,6 +160,7 @@ function ShoppingWorkspace() {
       active = false
     }
   }, [page, listRetry, requested, setParams])
+
   useEffect(() => {
     let active = true
     setList(null)
@@ -155,24 +192,19 @@ function ShoppingWorkspace() {
       active = false
     }
   }, [id, retry])
+
   const items = list?.items ?? []
   const counts = {
     all: items.length,
     todo: items.filter((item) => !item.bought).length,
     done: items.filter((item) => item.bought).length,
   }
-  const grouped = items
-    .filter(
-      (item) => tab === "all" || (tab === "done" ? item.bought : !item.bought),
-    )
-    .reduce<Record<string, ShoppingItem[]>>((groups, item) => {
-      ;(groups[item.ingredientGroup] ??= []).push(item)
-      return groups
-    }, {})
+
   const creation = (location.state as {
     shoppingCreation?: ShoppingCreation
   } | null)?.shoppingCreation
   const diagnostics = creation?.shoppingList.id === list?.id ? creation : null
+
   // Saved rows stay separate on reload; this hint never performs a conversion.
   const separate = (item: ShoppingItem) =>
     item.ingredientId !== null &&
@@ -182,6 +214,7 @@ function ShoppingWorkspace() {
         other.ingredientId === item.ingredientId &&
         other.unitId !== item.unitId,
     )
+
   function closeDialog() {
     if (pending.current) return
     setEditor(null)
@@ -192,11 +225,13 @@ function ShoppingWorkspace() {
       else document.querySelector<HTMLElement>("#shopping-title")?.focus()
     })
   }
+
   function openDialog(action: () => void) {
-    dialogTrigger.current = (document.activeElement as HTMLElement)
+    dialogTrigger.current = document.activeElement as HTMLElement
     setError("")
     action()
   }
+
   async function mutate(
     action: (
       listId: number,
@@ -224,6 +259,164 @@ function ShoppingWorkspace() {
       if (alive.current) setBusy(false)
     }
   }
+
+  async function handleStepQuantity(item: ShoppingItem, delta: number) {
+    const currentQuantity = Number(item.quantity)
+    const nextQuantity = Math.max(0.1, Number((currentQuantity + delta).toFixed(2)))
+    if (nextQuantity === currentQuantity) return
+    await mutate(
+      async (listId) => {
+        const saved = await shoppingApi.update(listId, item.id, {
+          quantity: nextQuantity,
+          unitId: item.unitId,
+        })
+        return (current) => ({
+          ...current,
+          items: current.items.map((row) => (row.id === saved.id ? saved : row)),
+        })
+      },
+      delta > 0
+        ? `Đã tăng số lượng ${item.name} lên ${nextQuantity} ${item.unitCode}.`
+        : `Đã giảm số lượng ${item.name} xuống ${nextQuantity} ${item.unitCode}.`,
+    )
+  }
+
+  // Filter and sort items: unbought items come first, bought items move to bottom!
+  const filteredItems = items.filter(
+    (item) => tab === "all" || (tab === "done" ? item.bought : !item.bought),
+  )
+  const sortItems = (arr: ShoppingItem[]) =>
+    [...arr].sort((a, b) => Number(a.bought) - Number(b.bought))
+
+  const mainIngredients = sortItems(filteredItems.filter((item) => !isSpiceItem(item)))
+  const spiceIngredients = sortItems(filteredItems.filter((item) => isSpiceItem(item)))
+
+  const renderItemRow = (item: ShoppingItem) => (
+    <div
+      key={item.id}
+      data-testid={`shopping-item-${item.id}`}
+      className={`grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-xl p-2.5 transition-all sm:gap-3 ${
+        item.bought
+          ? "bg-cream-soft/40 opacity-75"
+          : "bg-paper hover:bg-cream-soft/30"
+      }`}
+    >
+      <SpringCheck
+        checked={item.bought}
+        disabled={busy}
+        onChange={(bought) =>
+          void mutate(
+            async (listId) => {
+              const saved = await shoppingApi.bought(listId, item.id, bought)
+              return (current) => ({
+                ...current,
+                items: current.items.map((row) =>
+                  row.id === saved.id ? saved : row,
+                ),
+              })
+            },
+            bought ? "Đã đánh dấu đã mua." : "Đã đánh dấu cần mua.",
+          )
+        }
+        ariaLabel={`Đánh dấu ${item.name} ${item.unitCode}`}
+        label={
+          <span
+            className={`break-words text-sm font-medium ${
+              item.bought ? "text-ink-muted line-through" : "text-ink"
+            }`}
+          >
+            {item.name}
+          </span>
+        }
+        boxSize={22}
+        className="min-w-0"
+      />
+
+      {/* Inline Stepper Controls */}
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          aria-label={`Giảm số lượng ${item.name}`}
+          disabled={busy || item.bought || item.quantity <= 1}
+          onClick={() => void handleStepQuantity(item, -1)}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-200 bg-paper text-ink-muted transition hover:border-brand-400 hover:text-ink hover:bg-brand-50 disabled:opacity-30 disabled:pointer-events-none"
+        >
+          <Minus className="h-3 w-3" />
+        </button>
+        <span
+          className={`min-w-14 px-1 text-center text-xs font-semibold sm:text-sm ${
+            item.bought ? "text-ink-muted line-through" : "text-ink-soft"
+          }`}
+        >
+          {quantityText(item)}
+        </span>
+        <button
+          type="button"
+          aria-label={`Tăng số lượng ${item.name}`}
+          disabled={busy || item.bought}
+          onClick={() => void handleStepQuantity(item, 1)}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-200 bg-paper text-ink-muted transition hover:border-brand-400 hover:text-ink hover:bg-brand-50 disabled:opacity-30 disabled:pointer-events-none"
+        >
+          <Plus className="h-3 w-3" />
+        </button>
+      </div>
+
+      {/* Row Actions: Sửa & Xoá */}
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={`Sửa ${item.name} ${item.unitCode}`}
+          disabled={busy}
+          onClick={() => openDialog(() => setEditor(item))}
+          className="h-8 w-8 p-0 text-ink-muted hover:text-brand-700 hover:bg-brand-50"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={`Xoá ${item.name} ${item.unitCode}`}
+          disabled={busy}
+          onClick={() => openDialog(() => setRemoval(item))}
+          className="h-8 w-8 p-0 text-ink-muted hover:text-red-700 hover:bg-red-50"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      {separate(item) && (
+        <p className="col-span-3 pl-8 text-xs text-ink-muted">
+          Giữ dòng riêng theo đơn vị {item.unitCode}; không tự cộng với đơn vị khác.
+        </p>
+      )}
+      {!!item.sources?.length && (
+        <div
+          className="col-span-3 min-w-0 space-y-1 break-words pl-8 text-xs text-ink-muted"
+          aria-label={`Nguồn của ${item.name}`}
+        >
+          {item.sources.map((source, index) => (
+            <p key={`${source.recipeId}-${index}`}>
+              {source.available ? (
+                <Link
+                  className="text-brand-700 underline"
+                  to={`/cong-thuc/id/${source.recipeId}`}
+                >
+                  {source.title}
+                </Link>
+              ) : (
+                <span>Công thức không còn khả dụng</span>
+              )}
+              {" · "}
+              {source.originalQuantity.toLocaleString("vi-VN")}{" "}
+              {source.originalUnitCode} lúc thêm
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <PageContainer className="py-6">
       <div className="grid items-start gap-5 md:grid-cols-[225px_minmax(0,1fr)]">
@@ -234,14 +427,14 @@ function ShoppingWorkspace() {
             className="flex items-center gap-2 text-lg font-semibold text-ink"
           >
             <ShoppingBasket className="h-5 w-5 text-brand-600" />
-            Đi chợ
+            Danh sách mua sắm
           </h1>
           <p className="text-xs leading-5 text-ink-muted">
-            Danh sách được lưu riêng trong tài khoản của bạn.
+            Mua sắm & Chuẩn bị nguyên liệu riêng theo tài khoản của bạn.
           </p>
           <Link
             to="/ke-hoach"
-            className="block text-sm font-semibold text-brand-600"
+            className="block text-sm font-semibold text-brand-600 hover:underline"
           >
             Tạo từ Lịch ăn →
           </Link>
@@ -270,10 +463,10 @@ function ShoppingWorkspace() {
                 disabled={busy}
                 aria-current={summary.id === id ? "page" : undefined}
                 onClick={() => setParams({ listId: String(summary.id) })}
-                className={`rounded-lg px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-brand-400 ${
+                className={`rounded-xl px-3 py-2 text-left text-sm transition-all focus-visible:outline-2 focus-visible:outline-brand-400 ${
                   summary.id === id
-                    ? "bg-paper font-semibold text-brand-600"
-                    : "text-ink-muted hover:bg-paper"
+                    ? "bg-paper font-semibold text-brand-700 shadow-xs border border-brand-200"
+                    : "text-ink-muted hover:bg-paper hover:text-ink"
                 }`}
               >
                 <span className="block break-words">{summary.name}</span>
@@ -312,6 +505,7 @@ function ShoppingWorkspace() {
             công thức thay đổi.
           </p>
         </aside>
+
         <Card className="min-w-0 p-4 sm:p-6">
           {requested && !id ? (
             <p role="alert" className="text-sm text-ink">
@@ -365,6 +559,7 @@ function ShoppingWorkspace() {
                   </p>
                 </div>
               </header>
+
               {diagnostics && diagnostics.warnings.length > 0 && (
                 <section
                   aria-label="Lưu ý khi tạo danh sách"
@@ -378,44 +573,53 @@ function ShoppingWorkspace() {
                   </ul>
                 </section>
               )}
+
               {notice && (
                 <p role="status" className="mb-4 text-sm text-brand-700">
                   {notice}
                 </p>
               )}
+
               {busy && !editor && !removal && (
-                <p role="status" className="mb-4 text-sm text-ink-muted">Đang lưu danh sách…</p>
+                <p role="status" className="mb-4 text-sm text-ink-muted">
+                  Đang lưu danh sách…
+                </p>
               )}
+
               {error && !editor && !removal && (
                 <p role="alert" className="mb-4 text-sm text-ink">
                   {error}
                 </p>
               )}
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <nav
                   aria-label="Lọc danh sách đi chợ"
-                  className="flex flex-wrap gap-2"
+                  className="flex flex-wrap gap-1.5 rounded-xl bg-raised/70 p-1"
                 >
-                  {([
-                    ["all", "Tất cả"],
-                    ["todo", "Cần mua"],
-                    ["done", "Đã mua"],
-                  ] as const).map(([value, label]) => (
+                  {(
+                    [
+                      ["all", "Tất cả"],
+                      ["todo", "Cần mua"],
+                      ["done", "Đã mua"],
+                    ] as const
+                  ).map(([value, label]) => (
                     <button
                       key={value}
                       type="button"
                       aria-pressed={tab === value}
                       onClick={() => setTab(value)}
-                      className={`rounded-lg px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-brand-400 ${
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-2 focus-visible:outline-brand-400 sm:text-sm ${
                         tab === value
-                          ? "bg-raised font-semibold text-brand-600"
-                          : "text-ink-muted"
+                          ? "bg-paper font-bold text-brand-700 shadow-xs"
+                          : "text-ink-muted hover:text-ink"
                       }`}
                     >
                       {label} ({counts[value]})
                     </button>
                   ))}
                 </nav>
+
                 <div className="flex flex-wrap items-center gap-2">
                   <ShoppingListExport
                     key={list.id}
@@ -425,6 +629,7 @@ function ShoppingWorkspace() {
                     onNotice={setNotice}
                   />
                   <Button
+                    variant="primary"
                     size="sm"
                     disabled={busy || units.length === 0}
                     onClick={() => openDialog(() => setEditor("new"))}
@@ -434,124 +639,69 @@ function ShoppingWorkspace() {
                   </Button>
                 </div>
               </div>
-              {Object.entries(grouped).length ? (
-                <div className="space-y-6">
-                  {Object.entries(grouped).map(([group, entries]) => (
-                    <section key={group}>
-                      <h3 className="mb-2 text-sm font-semibold text-ink">
-                        {group}
-                      </h3>
-                      <div className="divide-y divide-brand-100">
-                        {entries.map((item) => (
-                          <div
-                            key={item.id}
-                            data-testid={`shopping-item-${item.id}`}
-                            className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-1 rounded-lg px-1 py-3 sm:gap-3 ${
-                              item.bought ? "bg-cream-soft/50" : ""
-                            }`}
-                          >
-                            <SpringCheck
-                              checked={item.bought}
-                              disabled={busy}
-                              onChange={(bought) =>
-                                void mutate(
-                                  async (listId) => {
-                                    const saved = await shoppingApi.bought(
-                                      listId,
-                                      item.id,
-                                      bought,
-                                    )
-                                    return (current) => ({
-                                      ...current,
-                                      items: current.items.map((row) =>
-                                        row.id === saved.id ? saved : row,
-                                      ),
-                                    })
-                                  },
-                                  bought
-                                    ? "Đã đánh dấu đã mua."
-                                    : "Đã đánh dấu cần mua.",
-                                )
-                              }
-                              ariaLabel={`Đánh dấu ${item.name} ${item.unitCode}`}
-                              label={
-                                <span className="break-words text-sm text-ink">
-                                  {item.name}
-                                </span>
-                              }
-                              boxSize={22}
-                              className="min-w-0"
-                            />
-                            <span
-                              className={`text-sm ${
-                                item.bought
-                                  ? "text-ink-muted line-through"
-                                  : "text-ink-soft"
-                              }`}
-                            >
-                              {quantityText(item)}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              aria-label={`Sửa ${item.name} ${item.unitCode}`}
-                              disabled={busy}
-                              onClick={() => openDialog(() => setEditor(item))}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              aria-label={`Xoá ${item.name} ${item.unitCode}`}
-                              disabled={busy}
-                              onClick={() => openDialog(() => setRemoval(item))}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                            {separate(item) && (
-                              <p className="col-span-4 pl-8 text-xs text-ink-muted">
-                                Giữ dòng riêng theo đơn vị {item.unitCode};
-                                không tự cộng với đơn vị khác.
-                              </p>
-                            )}
-                            {!!item.sources?.length && (
-                              <div
-                                className="col-span-4 min-w-0 space-y-1 break-words pl-8 text-xs text-ink-muted"
-                                aria-label={`Nguồn của ${item.name}`}
-                              >
-                                {item.sources.map((source, index) => (
-                                  <p key={`${source.recipeId}-${index}`}>
-                                    {source.available ? (
-                                      <Link
-                                        className="text-brand-700 underline"
-                                        to={`/cong-thuc/id/${source.recipeId}`}
-                                      >
-                                        {source.title}
-                                      </Link>
-                                    ) : (
-                                      <span>Công thức không còn khả dụng</span>
-                                    )}
-                                    {" · "}
-                                    {source.originalQuantity.toLocaleString(
-                                      "vi-VN",
-                                    )}{" "}
-                                    {source.originalUnitCode} lúc thêm
-                                  </p>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
+
+              {filteredItems.length > 0 ? (
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                  {/* Cột 1: Nguyên liệu chính */}
+                  <section className="rounded-2xl border border-brand-100 bg-paper/80 p-4 shadow-xs">
+                    <div className="mb-3.5 flex items-center justify-between border-b border-brand-100 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="flex h-2.5 w-2.5 rounded-full bg-brand-500"
+                          aria-hidden="true"
+                        />
+                        <h3 className="text-sm font-bold text-ink">
+                          Nguyên liệu chính
+                        </h3>
                       </div>
-                    </section>
-                  ))}
+                      <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
+                        {mainIngredients.length} món
+                      </span>
+                    </div>
+                    {mainIngredients.length > 0 ? (
+                      <div className="space-y-2">
+                        {mainIngredients.map((item) => renderItemRow(item))}
+                      </div>
+                    ) : (
+                      <p className="py-8 text-center text-xs text-ink-muted">
+                        Không có nguyên liệu chính trong mục này.
+                      </p>
+                    )}
+                  </section>
+
+                  {/* Cột 2: Gia vị & Phụ liệu */}
+                  <section className="rounded-2xl border border-amber-100 bg-paper/80 p-4 shadow-xs">
+                    <div className="mb-3.5 flex items-center justify-between border-b border-amber-100 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="flex h-2.5 w-2.5 rounded-full bg-amber-500"
+                          aria-hidden="true"
+                        />
+                        <h3 className="text-sm font-bold text-ink">
+                          Gia vị & Phụ liệu
+                        </h3>
+                      </div>
+                      <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                        {spiceIngredients.length} món
+                      </span>
+                    </div>
+                    {spiceIngredients.length > 0 ? (
+                      <div className="space-y-2">
+                        {spiceIngredients.map((item) => renderItemRow(item))}
+                      </div>
+                    ) : (
+                      <p className="py-8 text-center text-xs text-ink-muted">
+                        Không có gia vị nào trong mục này.
+                      </p>
+                    )}
+                  </section>
                 </div>
               ) : (
                 <p className="py-12 text-center text-sm text-ink-muted">
                   Không có nguyên liệu trong mục này.
                 </p>
               )}
+
               {counts.done > 0 && (
                 <div className="mt-5 flex justify-end border-t border-brand-100 pt-4">
                   <Button
@@ -559,6 +709,7 @@ function ShoppingWorkspace() {
                     size="sm"
                     disabled={busy}
                     onClick={() => openDialog(() => setRemoval("bought"))}
+                    className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
                   >
                     <Trash2 className="h-4 w-4" />
                     Xoá {counts.done} mục đã mua
@@ -569,6 +720,7 @@ function ShoppingWorkspace() {
           )}
         </Card>
       </div>
+
       <Modal
         trapFocus
         open={editor !== null}
@@ -586,22 +738,49 @@ function ShoppingWorkspace() {
             onSave={(payload) =>
               void mutate(
                 async (listId) => {
-                  const saved =
-                    editor === "new"
-                      ? await shoppingApi.add(listId, payload)
-                      : await shoppingApi.update(listId, editor.id, {
-                          quantity: payload.quantity,
-                          unitId: payload.unitId,
-                        })
-                  return (current) => ({
-                    ...current,
-                    items:
-                      editor === "new"
-                        ? [...current.items, saved]
-                        : current.items.map((row) =>
-                            row.id === saved.id ? saved : row,
-                          ),
-                  })
+                  if (editor === "new") {
+                    const normalizedName = payload.name.trim().toLowerCase()
+                    const existing = list?.items.find(
+                      (it) =>
+                        it.name.trim().toLowerCase() === normalizedName &&
+                        it.unitId === payload.unitId,
+                    )
+                    if (existing) {
+                      const combinedQuantity = Number(
+                        (existing.quantity + payload.quantity).toFixed(2),
+                      )
+                      const saved = await shoppingApi.update(
+                        listId,
+                        existing.id,
+                        {
+                          quantity: combinedQuantity,
+                          unitId: existing.unitId,
+                        },
+                      )
+                      return (current) => ({
+                        ...current,
+                        items: current.items.map((row) =>
+                          row.id === saved.id ? saved : row,
+                        ),
+                      })
+                    }
+                    const saved = await shoppingApi.add(listId, payload)
+                    return (current) => ({
+                      ...current,
+                      items: [...current.items, saved],
+                    })
+                  } else {
+                    const saved = await shoppingApi.update(listId, editor.id, {
+                      quantity: payload.quantity,
+                      unitId: payload.unitId,
+                    })
+                    return (current) => ({
+                      ...current,
+                      items: current.items.map((row) =>
+                        row.id === saved.id ? saved : row,
+                      ),
+                    })
+                  }
                 },
                 editor === "new"
                   ? "Đã thêm mặt hàng."
@@ -611,6 +790,7 @@ function ShoppingWorkspace() {
           />
         )}
       </Modal>
+
       <Modal open={removal !== null} onClose={closeDialog} title="Xác nhận xoá">
         <p className="text-sm text-ink-soft">
           {removal === "bought"
@@ -675,10 +855,12 @@ function ItemForm({
   const [unit, setUnit] = useState(String(item?.unitId ?? units[0]?.id ?? ""))
   const nameInput = useRef<HTMLInputElement>(null)
   const quantityInput = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     const input = item === null ? nameInput.current : quantityInput.current
     input?.focus()
   }, [item])
+
   return (
     <form
       onSubmit={(event) => {
@@ -743,7 +925,11 @@ function ItemForm({
           </label>
         </div>
       </fieldset>
-      <p className="text-xs text-ink-muted">Chọn đơn vị rồi nhập số lượng tương ứng.</p>
+      <p className="text-xs text-ink-muted">
+        {item === null
+          ? "Nếu trùng tên và đơn vị với mặt hàng đã có, số lượng sẽ được tự động cộng dồn."
+          : "Chọn đơn vị rồi nhập số lượng tương ứng."}
+      </p>
       {error && (
         <p role="alert" className="text-sm text-ink">
           {error}

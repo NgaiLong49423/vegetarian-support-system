@@ -603,7 +603,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       </div>
 
       {/* Cột phải (5 cột): Dinh dưỡng đi cùng cao độ với Nguyên liệu */}
-      <aside className="flex flex-col gap-6 lg:col-span-5 lg:sticky lg:top-24">
+      <aside className="flex flex-col gap-6 lg:col-span-5 lg:sticky lg:top-24 self-start">
         <Card className="p-5 sm:p-6">
           <div>
             <div className="flex items-start justify-between gap-3">

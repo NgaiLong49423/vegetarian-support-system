@@ -50,7 +50,8 @@ export function useRecipeShoppingSelection() {
   return {
     checkbox: (id: number, title: string, className = "") =>
       member ? (
-        <label className={`mt-auto flex min-h-10 items-center gap-2 text-xs text-ink-soft select-none cursor-pointer hover:text-ink ${className}`}>
+        <label className={`mt-auto flex min-h-9 items-center justify-between gap-2 rounded-xl border border-brand-100 bg-brand-50/40 px-3 py-1.5 text-xs font-medium text-ink-soft select-none cursor-pointer hover:border-brand-300 hover:bg-brand-50 hover:text-ink transition-all ${className}`}>
+          <span className="truncate">Chọn đi chợ</span>
           <input
             type="checkbox"
             aria-label={`Chọn ${title} để đi chợ`}
@@ -64,40 +65,46 @@ export function useRecipeShoppingSelection() {
               )
             }}
           />
-          <span>Chọn đi chợ</span>
         </label>
       ) : null,
     toolbar:
       account?.role === "ADMIN" ? null : (
         <section
           aria-label="Tạo danh sách từ công thức"
-          className="mb-4 rounded-xl border border-brand-100 bg-paper p-3"
+          className="sticky bottom-4 z-20 mt-6 rounded-2xl border border-brand-200 bg-paper/95 p-3.5 shadow-xl backdrop-blur-md transition-all sm:p-4"
         >
           {member ? (
             <>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  variant="secondary"
-                  disabled={!selected.length || busy}
-                  onClick={() => void add()}
-                >
-                  {busy
-                    ? "Đang thêm…"
-                    : `Thêm ${selected.length} công thức vào danh sách đi chợ`}
-                </Button>
-                <Button
-                  variant="ghost"
-                  disabled={!selected.length || busy}
-                  onClick={() => setSelected([])}
-                >
-                  Bỏ chọn tất cả
-                </Button>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-ink">
+                    {selected.length > 0
+                      ? `Đã chọn ${selected.length} công thức để đi chợ`
+                      : "Chưa chọn công thức nào"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-ink-muted">
+                    Chọn tối đa 50 công thức. Nguyên liệu sẽ được cộng vào danh sách cá nhân.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <Button
+                    variant="primary"
+                    disabled={!selected.length || busy}
+                    onClick={() => void add()}
+                  >
+                    {busy
+                      ? "Đang thêm…"
+                      : `Thêm ${selected.length} công thức vào danh sách đi chợ`}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={!selected.length || busy}
+                    onClick={() => setSelected([])}
+                  >
+                    Bỏ chọn tất cả
+                  </Button>
+                </div>
               </div>
-              <p className="mt-2 text-xs text-ink-muted">
-                Chọn tối đa 50 công thức, kể cả ở các trang khác. Nguyên liệu
-                theo khẩu phần gốc được thêm vào danh sách cá nhân; công thức đã
-                thêm không bị cộng trùng.
-              </p>
               {error && (
                 <p role="alert" className="mt-2 text-sm text-red-700">
                   {error}
@@ -107,7 +114,7 @@ export function useRecipeShoppingSelection() {
           ) : (
             <Link
               to="/dang-nhap"
-              className="text-sm font-semibold text-brand-600"
+              className="text-sm font-semibold text-brand-600 hover:underline"
             >
               Đăng nhập để tạo danh sách đi chợ từ công thức
             </Link>

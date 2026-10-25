@@ -48,3 +48,21 @@ export function shiftWeek(weekStart: string, offset: number) {
   date.setDate(date.getDate() + offset * 7);
   return localDateKey(date);
 }
+
+export function shiftDays(dateKey: string, days: number): string {
+  const date = new Date(`${dateKey}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return localDateKey(date);
+}
+
+export function getWindowDays(startDateKey: string, count = 7): string[] {
+  return Array.from({ length: count }, (_, i) => shiftDays(startDateKey, i));
+}
+
+export function isToday(dateKey: string): boolean {
+  return dateKey === localDateKey(new Date());
+}
+
+export function isPastDate(dateKey: string): boolean {
+  return dateKey < localDateKey(new Date());
+}
