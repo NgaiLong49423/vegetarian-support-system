@@ -71,6 +71,36 @@ class ExpertApplicationRepositoryIntegrationTest extends AbstractIntegrationTest
         assertThatThrownBy(() -> repository.findById(Long.MAX_VALUE)).isInstanceOf(ApiException.class);
     }
 
+    @Test
+    void storesAndReadsPrivateAttachmentKeysWithoutExposingThemInApplicationResponse() {
+        var now = LocalDateTime.of(2026, 10, 4, 12, 0);
+        long id = repository.insert(applicant, request(null), "expert-applications/certificate.pdf",
+                "application/pdf", "expert-applications/avatar.webp", "image/webp", now);
+
+        assertThat(repository.attachment(id, "certificate"))
+                .isEqualTo(new tech.mamxanh.expertapplication.dto.ExpertApplicationAttachment(
+                        "expert-applications/certificate.pdf", "application/pdf"));
+        assertThat(repository.attachment(id, "avatar"))
+                .isEqualTo(new tech.mamxanh.expertapplication.dto.ExpertApplicationAttachment(
+                        "expert-applications/avatar.webp", "image/webp"));
+        var response = repository.findById(id);
+        assertThat(response.certificateAvailable()).isTrue();
+        assertThat(response.applicationAvatarAvailable()).isTrue();
+
+        assertThatThrownBy(() -> repository.attachment(id, "other"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> repository.attachment(Long.MAX_VALUE, "certificate"))
+                .isInstanceOf(ApiException.class);
+    }
+
+    @Test
+    void missingAttachmentKeyReturnsNotFound() {
+        long id = repository.insert(applicant, request(null), LocalDateTime.of(2026, 10, 4, 12, 0));
+
+        assertThatThrownBy(() -> repository.attachment(id, "certificate"))
+                .isInstanceOf(ApiException.class);
+    }
+
     private long user(String email, String role) {
         return jdbc.queryForObject("INSERT INTO [USER](email,display_name,role,account_status,email_verified,created_at,updated_at) OUTPUT INSERTED.user_id VALUES(?,?,?,'ACTIVE',1,SYSUTCDATETIME(),SYSUTCDATETIME())",
                 Long.class, email, "Issue 68 Repository Test", role);

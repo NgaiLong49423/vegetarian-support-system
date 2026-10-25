@@ -70,6 +70,18 @@ class ExpertApplicationServiceTest {
     }
 
     @Test
+    void legacySubmissionConstructorKeepsTextOnlyApplicationsAvailable() {
+        var request = request();
+        var expected = response("PENDING", null);
+        var legacyService = new ExpertApplicationService(applications, promotion, notifications,
+                Clock.fixed(Instant.parse("2026-10-04T12:00:00Z"), ZoneOffset.UTC));
+        when(applications.insert(42, request, NOW)).thenReturn(9L);
+        when(applications.findById(9L)).thenReturn(expected);
+
+        assertThat(legacyService.submit(request)).isSameAs(expected);
+    }
+
+    @Test
     void duplicatePendingApplicationBecomesConflict() {
         var request = new ExpertApplicationRequest("  More than twenty chars experience  ", "VEGAN",
                 "  A sample recipe summary with enough details.  ", null);
@@ -104,6 +116,36 @@ class ExpertApplicationServiceTest {
     }
 
     @Test
+    void submitWithAttachmentsAllowsBothOptionalFilesToBeAbsent() {
+        var request = request();
+        var expected = response("PENDING", null);
+        when(applications.insert(42, request, null, null, null, null, NOW)).thenReturn(9L);
+        when(applications.findById(9L)).thenReturn(expected);
+
+        assertThat(service.submitWithAttachments(request, null, null)).isSameAs(expected);
+        verify(applications).insert(42, request, null, null, null, null, NOW);
+    }
+
+    @Test
+    void acceptsJpegCertificatesAndWebpApplicationAvatars() {
+        var request = request();
+        byte[] jpeg = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
+        byte[] webp = {'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B', 'P'};
+        var certificate = new MockMultipartFile("certificate", "credential.jpg", "image/jpeg", jpeg);
+        var avatar = new MockMultipartFile("avatar", "portrait.webp", "image/webp", webp);
+        var expected = response("PENDING", null);
+        when(storage.uploadPrivateApplicationFile(jpeg, "image/jpeg", ".jpg"))
+                .thenReturn("expert-applications/certificate.jpg");
+        when(storage.uploadPrivateApplicationFile(webp, "image/webp", ".webp"))
+                .thenReturn("expert-applications/avatar.webp");
+        when(applications.insert(42, request, "expert-applications/certificate.jpg", "image/jpeg",
+                "expert-applications/avatar.webp", "image/webp", NOW)).thenReturn(9L);
+        when(applications.findById(9L)).thenReturn(expected);
+
+        assertThat(service.submitWithAttachments(request, certificate, avatar)).isSameAs(expected);
+    }
+
+    @Test
     void invalidDeclaredMimeDoesNotUploadOrCreateApplication() {
         var request = new ExpertApplicationRequest("More than twenty chars experience", "VEGAN",
                 "A sample recipe summary with enough details.", null);
@@ -121,12 +163,18 @@ class ExpertApplicationServiceTest {
     void rejectsEmptyAndOversizedAttachmentsBeforeUpload() {
         var request = request();
         var empty = new MockMultipartFile("certificate", "empty.pdf", "application/pdf", new byte[0]);
+        var oversizedCertificate = new MockMultipartFile("certificate", "large.pdf", "application/pdf",
+                new byte[5 * 1024 * 1024 + 1]);
         var tooLarge = new MockMultipartFile("avatar", "large.png", "image/png",
                 new byte[2 * 1024 * 1024 + 1]);
 
         assertThatThrownBy(() -> service.submitWithAttachments(request, empty, null))
                 .isInstanceOf(ApiException.class);
         assertThatThrownBy(() -> service.submitWithAttachments(request, null, tooLarge))
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getStatus())
+                        .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE));
+        assertThatThrownBy(() -> service.submitWithAttachments(request, oversizedCertificate, null))
                 .isInstanceOf(ApiException.class)
                 .satisfies(error -> assertThat(((ApiException) error).getStatus())
                         .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE));
@@ -142,10 +190,13 @@ class ExpertApplicationServiceTest {
                 "%PDF-1.7".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
         var unsupportedAvatar = new MockMultipartFile("avatar", "credential.pdf", "application/pdf",
                 "%PDF-1.7".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        var shortSignature = new MockMultipartFile("avatar", "portrait.png", "image/png", new byte[]{1});
 
         assertThatThrownBy(() -> service.submitWithAttachments(request, mismatchedCertificate, null))
                 .isInstanceOf(ApiException.class);
         assertThatThrownBy(() -> service.submitWithAttachments(request, null, unsupportedAvatar))
+                .isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> service.submitWithAttachments(request, null, shortSignature))
                 .isInstanceOf(ApiException.class);
     }
 
@@ -178,6 +229,23 @@ class ExpertApplicationServiceTest {
     }
 
     @Test
+    void downloadAttachmentUsesSafeExtensionsForSupportedTypes() {
+        var supportedTypes = List.of(
+                new String[]{"certificate", "application/pdf", "certificate.pdf"},
+                new String[]{"avatar", "image/jpeg", "avatar.jpg"},
+                new String[]{"avatar", "image/png", "avatar.png"},
+                new String[]{"avatar", "image/webp", "avatar.webp"});
+        long id = 20L;
+        for (String[] type : supportedTypes) {
+            when(applications.attachment(id, type[0]))
+                    .thenReturn(new ExpertApplicationAttachment("private/key", type[1]));
+            when(storage.downloadPrivateApplicationFile("private/key")).thenReturn(new byte[]{1});
+
+            assertThat(service.downloadAttachment(id++, type[0]).filename()).isEqualTo(type[2]);
+        }
+    }
+
+    @Test
     void rollbackSynchronizationDeletesUploadedFilesAfterDatabaseRollback() {
         var request = request();
         byte[] pdf = "%PDF-1.7".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
@@ -203,6 +271,32 @@ class ExpertApplicationServiceTest {
     }
 
     @Test
+    void rollbackSynchronizationKeepsUploadedFilesAfterCommit() {
+        var request = request();
+        byte[] pdf = "%PDF-1.7".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        var certificate = new MockMultipartFile("certificate", "credential.pdf", "application/pdf", pdf);
+        var expected = response("PENDING", null);
+        when(storage.uploadPrivateApplicationFile(pdf, "application/pdf", ".pdf"))
+                .thenReturn("expert-applications/certificate.pdf");
+        when(applications.insert(42, request, "expert-applications/certificate.pdf", "application/pdf",
+                null, null, NOW)).thenReturn(9L);
+        when(applications.findById(9L)).thenReturn(expected);
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            assertThat(service.submitWithAttachments(request, certificate, null)).isSameAs(expected);
+            for (TransactionSynchronization synchronization : TransactionSynchronizationManager.getSynchronizations()) {
+                synchronization.afterCompletion(TransactionSynchronization.STATUS_COMMITTED);
+            }
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+
+        org.mockito.Mockito.verify(storage, org.mockito.Mockito.never())
+                .deletePrivateApplicationFile("expert-applications/certificate.pdf");
+    }
+
+    @Test
     void failedApplicationInsertDeletesPreviouslyUploadedAttachment() {
         var request = new ExpertApplicationRequest("More than twenty chars experience", "VEGAN",
                 "A sample recipe summary with enough details.", null);
@@ -216,6 +310,24 @@ class ExpertApplicationServiceTest {
         assertThatThrownBy(() -> service.submitWithAttachments(request, certificate, null))
                 .isInstanceOf(ApiException.class)
                 .satisfies(error -> assertThat(((ApiException) error).getStatus()).isEqualTo(HttpStatus.CONFLICT));
+
+        verify(storage).deletePrivateApplicationFile("expert-applications/certificate.pdf");
+    }
+
+    @Test
+    void unexpectedApplicationFailureCleansUpUploadedAttachmentEvenWhenDeleteFails() {
+        var request = request();
+        byte[] pdf = "%PDF-1.7".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        var certificate = new MockMultipartFile("certificate", "credential.pdf", "application/pdf", pdf);
+        when(storage.uploadPrivateApplicationFile(pdf, "application/pdf", ".pdf"))
+                .thenReturn("expert-applications/certificate.pdf");
+        when(applications.insert(42, request, "expert-applications/certificate.pdf", "application/pdf",
+                null, null, NOW)).thenThrow(new IllegalStateException("database unavailable"));
+        org.mockito.Mockito.doThrow(new IllegalStateException("storage unavailable"))
+                .when(storage).deletePrivateApplicationFile("expert-applications/certificate.pdf");
+
+        assertThatThrownBy(() -> service.submitWithAttachments(request, certificate, null))
+                .isInstanceOf(IllegalStateException.class).hasMessage("database unavailable");
 
         verify(storage).deletePrivateApplicationFile("expert-applications/certificate.pdf");
     }

@@ -18,4 +18,14 @@ class UnavailableStorageClientTest {
         assertThatCode(() -> { client.deleteImage(null); client.deleteImage(""); client.deleteImage("https://example.test/image.png"); })
                 .doesNotThrowAnyException();
     }
+
+    @Test void privateApplicationFileOperationsFailWhenStorageIsUnavailable() {
+        StorageClient client = new UnavailableStorageClient();
+        assertThatThrownBy(() -> client.uploadPrivateApplicationFile(new byte[]{1}, "image/png", ".png"))
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> client.downloadPrivateApplicationFile("expert-applications/file.png"))
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> client.deletePrivateApplicationFile("expert-applications/file.png"))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
 }

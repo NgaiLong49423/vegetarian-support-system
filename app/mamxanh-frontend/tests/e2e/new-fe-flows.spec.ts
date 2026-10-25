@@ -443,14 +443,28 @@ test('expert application customer and admin workflows use the API and recover fr
   let status: 'PENDING' | 'REJECTED' | 'APPROVED' | null = null;
   let adminNote = '';
   let conflictOnce = true;
+  let certificateAvailable = false;
+  let failAvatarPreview = true;
+  let failCertificateDownload = true;
   let posted: Record<string, unknown> | null = null;
   await page.route('**/api/v1/**expert-applications**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
-    const application = { id: 501, userId: 41, displayName: 'Nguyễn An', email: 'an@example.org', experience: 'Hơn 5 năm kinh nghiệm nấu ăn thuần chay thực dưỡng.', vegetarianType: 'VEGAN', sampleRecipeSummary: 'Đậu hũ sốt nấm hương tiêu xanh hấp dẫn và thơm lừng.', portfolioUrl: null, certificateAvailable: false, applicationAvatarAvailable: true, status, adminNote, submittedAt: new Date().toISOString(), reviewedAt: status && status !== 'PENDING' ? new Date().toISOString() : null };
     if (request.method() === 'GET' && path.endsWith('/attachments/avatar')) {
+      if (failAvatarPreview) {
+        failAvatarPreview = false;
+        return route.fulfill({ status: 404, contentType: 'application/problem+json', body: JSON.stringify({ status: 404, detail: 'Không tìm thấy ảnh đính kèm.' }) });
+      }
       return route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pN8AAAAASUVORK5CYII=', 'base64') });
     }
+    if (request.method() === 'GET' && path.endsWith('/attachments/certificate')) {
+      if (failCertificateDownload) {
+        failCertificateDownload = false;
+        return route.fulfill({ status: 404, contentType: 'application/problem+json', body: JSON.stringify({ status: 404, detail: 'Không tìm thấy chứng chỉ.' }) });
+      }
+      return route.fulfill({ status: 200, contentType: 'application/pdf', body: Buffer.from('%PDF-1.7') });
+    }
+    const application = { id: 501, userId: 41, displayName: 'Nguyễn An', email: 'an@example.org', experience: 'Hơn 5 năm kinh nghiệm nấu ăn thuần chay thực dưỡng.', vegetarianType: 'VEGAN', sampleRecipeSummary: 'Đậu hũ sốt nấm hương tiêu xanh hấp dẫn và thơm lừng.', portfolioUrl: 'https://example.org/portfolio', certificateAvailable, applicationAvatarAvailable: true, status, adminNote, submittedAt: new Date().toISOString(), reviewedAt: status && status !== 'PENDING' ? new Date().toISOString() : null };
     if (path.endsWith('/admin/expert-applications') && request.method() === 'GET') {
       return route.fulfill({ json: { content: status ? [application] : [], page: 0, size: 20, totalElements: Number(!!status), totalPages: Number(!!status) } });
     }
@@ -475,8 +489,10 @@ test('expert application customer and admin workflows use the API and recover fr
         contentType: request.headers()['content-type'],
         hasApplicationPart: body.includes('name="application"'),
         hasCertificatePart: body.includes('name="certificate"'),
+        hasAvatarPart: body.includes('name="avatar"'),
         hasVegetarianType: body.includes('VEGAN'),
       };
+      certificateAvailable = true;
       status = 'PENDING';
       adminNote = '';
       return route.fulfill({ status: 201, json: { ...application, status, adminNote: null } });
@@ -489,13 +505,23 @@ test('expert application customer and admin workflows use the API and recover fr
   await page.reload();
   await page.getByLabel(/Kinh nghiệm ẩm thực chay/).fill('Hơn 5 năm kinh nghiệm nấu ăn thuần chay thực dưỡng.');
   await page.getByLabel(/Tóm tắt công thức sở trường/).fill('Đậu hũ sốt nấm hương tiêu xanh hấp dẫn và thơm lừng.');
-  await page.locator('input[type="file"]').nth(0).setInputFiles({
+  await page.getByLabel(/Đường dẫn portfolio/).fill('https://example.org/portfolio');
+  const certificateInput = page.getByLabel(/Chứng chỉ hoặc văn bằng chuyên môn/);
+  const avatarInput = page.getByLabel(/Ảnh thẻ 3×4 cho hồ sơ/);
+  await certificateInput.setInputFiles({ name: 'oversized.pdf', mimeType: 'application/pdf', buffer: Buffer.alloc(5 * 1024 * 1024 + 1) });
+  await expect(page.getByRole('alert')).toContainText('chứng chỉ tối đa 5 MB');
+  await avatarInput.setInputFiles({ name: 'oversized.png', mimeType: 'image/png', buffer: Buffer.alloc(2 * 1024 * 1024 + 1) });
+  await expect(page.getByRole('alert')).toContainText('Ảnh thẻ đính kèm đơn tối đa 2 MB');
+  await certificateInput.setInputFiles({
     name: 'certificate.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7'),
+  });
+  await avatarInput.setInputFiles({
+    name: 'portrait.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pN8AAAAASUVORK5CYII=', 'base64'),
   });
   await page.getByLabel(/Tôi cam kết/).check();
   await page.getByRole('button', { name: 'Gửi đơn đăng ký' }).click();
   await expect(page.getByRole('status')).toContainText('Đơn đã được gửi');
-  expect(posted).toMatchObject({ hasApplicationPart: true, hasCertificatePart: true, hasVegetarianType: true });
+  expect(posted).toMatchObject({ hasApplicationPart: true, hasCertificatePart: true, hasAvatarPart: true, hasVegetarianType: true });
   expect(posted?.contentType).toContain('multipart/form-data');
 
   await page.evaluate(() => {
@@ -505,6 +531,16 @@ test('expert application customer and admin workflows use the API and recover fr
   await expect(page.getByRole('heading', { name: 'Xét duyệt Chuyên gia' })).toBeVisible();
   await page.getByRole('button', { name: 'Xem chi tiết' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Không thể kết nối dịch vụ.');
+  failAvatarPreview = false;
+  await page.getByRole('button', { name: 'Đóng chi tiết hồ sơ' }).click();
+  await page.getByRole('button', { name: 'Xem chi tiết' }).click();
+  const certificateDownloadFailure = page.getByRole('button', { name: 'Tải tài liệu chứng chỉ' }).click();
+  await certificateDownloadFailure;
+  await expect(page.getByRole('alert')).toContainText('Không thể kết nối dịch vụ.');
+  const certificateDownloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Tải tài liệu chứng chỉ' }).click();
+  expect((await certificateDownloadPromise).suggestedFilename()).toBe('expert-application-501-certificate.pdf');
   const photoDownloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Tải ảnh thẻ 3×4' }).click();
   expect((await photoDownloadPromise).suggestedFilename()).toBe('expert-application-501-photo-3x4.png');
@@ -533,7 +569,9 @@ test('expert application customer and admin workflows use the API and recover fr
     const session = JSON.parse(sessionStorage.getItem('mamxanh.auth')!); session.account.role = 'ADMIN'; sessionStorage.setItem('mamxanh.auth', JSON.stringify(session));
     window.location.assign('/admin/xet-duyet-chuyen-gia');
   });
+  await expect(page.getByRole('heading', { name: 'Xét duyệt Chuyên gia' })).toBeVisible();
   await page.getByRole('button', { name: 'Xem chi tiết' }).click();
+  await expect(page.getByRole('link', { name: /Portfolio tham khảo/ })).toHaveAttribute('href', 'https://example.org/portfolio');
   await page.getByRole('button', { name: 'Phê duyệt', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Đã phê duyệt đơn');
 
