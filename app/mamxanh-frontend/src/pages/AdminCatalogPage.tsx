@@ -257,6 +257,7 @@ export function AdminCatalogPage() {
   const [ingredientEditorOpen, setIngredientEditorOpen] = useState(false);
   const [nutritionTarget, setNutritionTarget] = useState<CatalogIngredient | null>(null);
   const [nutritionEnabled, setNutritionEnabled] = useState(false);
+  const [nutritionDetailsLoading, setNutritionDetailsLoading] = useState(false);
   const [nutritionForm, setNutritionForm] = useState<NutritionDraft>(emptyNutritionDraft);
   const [ingredientForm, setIngredientForm] = useState({
     name: '',
@@ -276,6 +277,11 @@ export function AdminCatalogPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const searchTimer = useRef<number | undefined>(undefined);
+  const nutritionLoadId = useRef(0);
+  const cancelNutritionDetailsLoad = () => {
+    nutritionLoadId.current += 1;
+    setNutritionDetailsLoading(false);
+  };
 
   const refresh = async (filters = ingredientFilters) => {
     setLoading(true);
@@ -325,6 +331,7 @@ export function AdminCatalogPage() {
 
   const closeActiveModal = () => {
     if (saving) return;
+    cancelNutritionDetailsLoad();
     setNutritionTarget(null);
     setReferencesTarget(null);
     setIngredientEditorOpen(false);
@@ -425,6 +432,7 @@ export function AdminCatalogPage() {
   };
 
   const editIngredient = (ingredient: CatalogIngredient) => {
+    cancelNutritionDetailsLoad();
     setNutritionTarget(null);
     setReferencesTarget(null);
     setIngredientEditorOpen(true);
@@ -445,25 +453,31 @@ export function AdminCatalogPage() {
   };
 
   const openNutritionDetails = async (ingredient: CatalogIngredient) => {
+    const loadId = ++nutritionLoadId.current;
     setReferencesTarget(null);
     setIngredientEditorOpen(false);
     setIngredientId(null);
     setNutritionTarget(ingredient);
     setNutritionEnabled(ingredient.nutritionSupported);
     setNutritionForm(toNutritionDraft(ingredient.nutrition));
+    setNutritionDetailsLoading(true);
     setError('');
     setNotice('');
     try {
       const full = await adminCatalogApi.ingredient(ingredient.id);
+      if (loadId !== nutritionLoadId.current) return;
       setNutritionTarget(full);
       setNutritionEnabled(full.nutritionSupported);
       setNutritionForm(toNutritionDraft(full.nutrition));
     } catch {
       // Keep loaded row data if remote detail fetch is skipped
+    } finally {
+      if (loadId === nutritionLoadId.current) setNutritionDetailsLoading(false);
     }
   };
 
   const showRecipeReferences = async (ingredient: CatalogIngredient) => {
+    cancelNutritionDetailsLoad();
     setNutritionTarget(null);
     setIngredientEditorOpen(false);
     setReferencesTarget(ingredient);
@@ -566,6 +580,7 @@ export function AdminCatalogPage() {
   };
 
   const openNewIngredient = () => {
+    cancelNutritionDetailsLoad();
     setReferencesTarget(null);
     setNutritionTarget(null);
     setIngredientId(null);
@@ -968,6 +983,9 @@ export function AdminCatalogPage() {
 
                 {/* Nutrition editing form with 9 inputs */}
                 <form onSubmit={submitNutrition} className="mt-5 space-y-4">
+                  {nutritionDetailsLoading && (
+                    <p role="status" className="text-sm text-ink-muted">Đang tải số liệu dinh dưỡng…</p>
+                  )}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-brand-700">Số liệu dinh dưỡng (trên 100 g)</h3>
@@ -991,6 +1009,7 @@ export function AdminCatalogPage() {
                             inputMode="decimal"
                             aria-label={`${label} trên 100 g`}
                             value={nutritionForm[key]}
+                            disabled={nutritionDetailsLoading || saving}
                             onChange={(event) => setNutritionForm({ ...nutritionForm, [key]: event.target.value })}
                           />
                         </Field>
@@ -1000,10 +1019,10 @@ export function AdminCatalogPage() {
 
                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-brand-100 pt-4">
                     <div className="flex flex-wrap gap-2">
-                      <Button type="submit" disabled={saving}>
+                      <Button type="submit" disabled={saving || nutritionDetailsLoading}>
                         {saving ? 'Đang lưu…' : 'Lưu chỉ tiêu'}
                       </Button>
-                      <Button type="button" variant="outline" disabled={saving} onClick={toggleNutritionSupport}>
+                      <Button type="button" variant="outline" disabled={saving || nutritionDetailsLoading} onClick={toggleNutritionSupport}>
                         {nutritionEnabled ? 'Ngừng hỗ trợ tính' : 'Bật hỗ trợ tính'}
                       </Button>
                     </div>
