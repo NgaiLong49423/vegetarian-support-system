@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-25 — Let Reporters Add Information to an Open Recipe Report (Issue #35)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `785f81f`, `87fffea`.
 
 **Scope:** Complete the Member side of FR-30 with the proposals of questions Q67 and Q68: reporters keep adding information to the report that is still open instead of filing another one, and the real recipe page can now send reports (AC-30.1, AC-30.2, SRS 3.14). The Administrator view of supplements and of reports grouped by recipe (AC-30.4) builds on the FR-28 queue of Issue #33 and is not part of this entry.
 
