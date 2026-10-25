@@ -9,6 +9,26 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-26 — Persist Nutrition Profile BMI
+
+**Status:** Working tree — not committed.
+
+**Scope:** Keep each Member's saved BMI available when reopening their private nutrition profile.
+
+### Added
+
+- Add Flyway migration `V24__persist_nutrition_bmi.sql` and update the SQL Server schema snapshot to store BMI with the existing `USER` nutrition profile.
+- Backfill BMI once for existing profiles that consented to health-data storage.
+
+### Changed
+
+- Calculate and store BMI when a Member first saves or changes height/weight; return the saved BMI with current reference values when the profile is reopened.
+- Update FR-35 acceptance criteria and UC-35.2 to specify reading saved BMI and refreshing it only after height or weight changes.
+
+### Fixed
+
+- Keep the BMI panel populated after refreshing or revisiting the nutrition profile.
+
 ## 2026-10-25 — Let Administrators Handle Recipe Post Reports (Issue #33)
 
 **Status:** Committed — `5c53627`, `fab3605`.

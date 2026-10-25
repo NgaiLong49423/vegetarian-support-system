@@ -29,6 +29,7 @@
 --                   + V21__shopping_manual_list_kind.sql
 --                   + V22__report_handling_by_admin.sql
 --                   + V23__expert_application_private_attachments.sql
+--                   + V24__persist_nutrition_bmi.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -166,6 +167,7 @@ CREATE TABLE [USER] (
     biological_sex             VARCHAR(10)    NULL,
     height_cm                  DECIMAL(5,1)   NULL,
     weight_kg                  DECIMAL(5,1)   NULL,
+    nutrition_bmi              DECIMAL(18,12) NULL,
     activity_level             VARCHAR(30)    NULL,
     pregnant                   BIT            NOT NULL
         CONSTRAINT DF_USER_pregnant DEFAULT 0,

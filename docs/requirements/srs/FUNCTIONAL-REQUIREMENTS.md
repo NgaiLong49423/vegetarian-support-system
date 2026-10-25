@@ -2470,9 +2470,9 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - *When* Member nhấn nút lưu hồ sơ,
   - *Then* hệ thống ngăn chặn việc lưu và hiển thị thông báo lỗi cụ thể tại từng ô nhập liệu tương ứng.
 - **AC-35.4 (Tính toán BMI tham khảo chính xác):**
-  - *Given* Member nhập chiều cao 170 cm và cân nặng 65 kg hợp lệ,
-  - *When* hệ thống xử lý tính toán,
-  - *Then* chỉ số BMI được hiển thị chính xác là 22.5 kèm phân loại thể trạng "Bình thường" và ghi chú đây là chỉ số sàng lọc tham khảo.
+  - *Given* Member lưu chiều cao 170 cm và cân nặng 65 kg hợp lệ,
+  - *When* hệ thống lưu hồ sơ và sau đó Member mở lại hồ sơ,
+  - *Then* hệ thống lưu BMI chính xác (22.4913494810 trước khi định dạng hiển thị), đọc lại BMI đã lưu mà không tính lại khi mở trang, hiển thị 22.5 cùng phân loại "Bình thường" và ghi chú đây là chỉ số sàng lọc tham khảo. Khi chiều cao hoặc cân nặng được cập nhật, hệ thống tính và lưu BMI mới cùng hồ sơ.
 - **AC-35.5 (Tính toán bảng 9 chỉ tiêu tham khảo):**
   - *Given* Member có thông số nhân trắc học và mức độ vận động hợp lệ đã được lưu,
   - *When* hệ thống hiển thị hồ sơ dinh dưỡng,
