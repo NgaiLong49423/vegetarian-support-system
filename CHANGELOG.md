@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-25 — Let Administrators Handle Recipe Post Reports (Issue #33)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `5c53627`, `fab3605`.
 
 **Scope:** Deliver FR-28 for Recipe Post reports: Administrators take a report into review, record one decision with a mandatory reason and apply the chosen sanction, while the report row keeps who decided what and when (SRS 3.12, BR-26, NFR-08). Comment reports (FR-48), account unlock and the moderation-outcome email stay out of this change.
 
