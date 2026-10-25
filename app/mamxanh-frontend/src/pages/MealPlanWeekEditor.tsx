@@ -89,7 +89,7 @@ export function MealPlanWeekEditor() {
 
     return /^\d{4}-\d{2}-\d{2}$/.test(requested)
       ? requested
-      : localDateKey(new Date())
+      : mondayOf(new Date())
   })
 
   const [view, setView] = useState<"plan" | "for-you">(() =>
@@ -105,7 +105,7 @@ export function MealPlanWeekEditor() {
     if (/^\d{4}-\d{2}-\d{2}$/.test(requested))
       return requested
 
-    return windowStart
+    return windowStart === mondayOf(new Date()) ? localDateKey(new Date()) : windowStart
   })
 
   useEffect(() => {
@@ -127,11 +127,11 @@ export function MealPlanWeekEditor() {
 
   function changeWindow(value: string) {
     setWindowStart(value)
-    setSelectedDay(value)
+    setSelectedDay(value === mondayOf(new Date()) ? localDateKey(new Date()) : value)
   }
 
   const windowEnd = shiftDays(windowStart, 6)
-  const isAtToday = isToday(windowStart)
+  const isAtToday = windowStart === mondayOf(new Date())
 
   return (
     <PageContainer className="py-6">
@@ -200,7 +200,7 @@ export function MealPlanWeekEditor() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    aria-label="7 ngày trước"
+                    aria-label="Tuần trước"
                     onClick={() => changeWindow(shiftDays(windowStart, -7))}
                     className="h-7 w-7 rounded-full p-0 text-ink-muted hover:text-ink hover:bg-paper"
                   >
@@ -213,7 +213,7 @@ export function MealPlanWeekEditor() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    aria-label="7 ngày sau"
+                    aria-label="Tuần sau"
                     onClick={() => changeWindow(shiftDays(windowStart, 7))}
                     className="h-7 w-7 rounded-full p-0 text-ink-muted hover:text-ink hover:bg-paper"
                   >
@@ -225,7 +225,7 @@ export function MealPlanWeekEditor() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => changeWindow(localDateKey(new Date()))}
+                    onClick={() => changeWindow(mondayOf(new Date()))}
                     className="h-8 rounded-full border border-brand-200 bg-brand-50/80 px-3 text-xs font-semibold text-brand-700 hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-950/60 dark:text-brand-300 transition-all shadow-2xs"
                   >
                     Về hôm nay
@@ -610,11 +610,11 @@ function WeekContents({
                       })
                     }
                   }
-                }, "Đã lưu lịch 7 ngày. Bạn có thể thêm món cho từng bữa.")
+                }, "Đã lưu lịch tuần. Bạn có thể thêm món cho từng bữa.")
               }
               className="rounded-full shadow-2xs"
             >
-              Lưu lịch 7 ngày trống
+              Lưu lịch tuần trống
             </Button>
             <Link
               to="/kham-pha"
@@ -660,7 +660,7 @@ function WeekContents({
           variant="outline"
           size="sm"
           disabled={windowEntries.length === 0}
-          title={windowEntries.length === 0 ? "Thêm món để xem dinh dưỡng" : "Xem dinh dưỡng 7 ngày"}
+          title={windowEntries.length === 0 ? "Thêm món để xem dinh dưỡng" : "Xem dinh dưỡng cả tuần"}
           onClick={() => {
             returnFocus.current = (document.activeElement as HTMLElement)
             setNutrition({ day: selectedDay ?? windowStart, scope: "week" })
@@ -668,7 +668,7 @@ function WeekContents({
           className="rounded-full shadow-2xs hover:border-brand-400"
         >
           <Utensils className="h-4 w-4" />
-          Dinh dưỡng 7 ngày
+          Dinh dưỡng cả tuần
         </Button>
       </div>
       <div className="space-y-4">
@@ -1650,12 +1650,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
         avoidedIngredientIds: criteria.mode === "THIS_WEEK" ? criteria.avoided : [],
       })
       setPreview(result); setPreviewCriteria(criteria);
-      const isCurrentWeek = week === mondayOf(new Date())
-      const todayKey = localDateKey(new Date())
-      const initialSelected = result.meals
-        .map((meal, index) => (!isCurrentWeek || meal.mealDate >= todayKey ? index : -1))
-        .filter((idx) => idx !== -1)
-      setSelected(initialSelected.length > 0 ? initialSelected : result.meals.map((_, index) => index))
+      setSelected(result.meals.map((_, index) => index))
       if (criteria.mode === "THIS_WEEK") { setGoal(""); setPreferred([]); setAvoided([]) }
     } catch (cause) {
       const apiError = asApiError(cause)

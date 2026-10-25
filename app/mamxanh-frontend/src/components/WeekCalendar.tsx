@@ -57,15 +57,12 @@ export function WeekCalendar({
     setMonth(nextMonth)
   }
 
-  const today = localDateKey(new Date())
-  const isAtToday = weekStart === today
-
-  const handleToday = () => {
-    const todayKey = localDateKey(new Date())
-    onChange(todayKey)
-    onSelectDay?.(todayKey)
-
+  const handleThisWeek = () => {
     const now = new Date()
+    const thisMonday = mondayOf(now)
+    onChange(thisMonday)
+    onSelectDay?.(localDateKey(now))
+
     const targetMonth = new Date(now.getFullYear(), now.getMonth(), 1, 12)
     if (
       targetMonth.getFullYear() !== month.getFullYear() ||
@@ -76,6 +73,8 @@ export function WeekCalendar({
       setMonth(targetMonth)
     }
   }
+
+  const today = localDateKey(new Date())
 
   const selectedStart = new Date(`${weekStart}T12:00:00`)
   const selectedEnd = new Date(selectedStart)
@@ -111,7 +110,7 @@ export function WeekCalendar({
       moveMonth(dir)
     }
 
-    onChange(targetKey)
+    onChange(mondayOf(targetDate))
     onSelectDay?.(targetKey)
 
     requestAnimationFrame(() => {
@@ -189,7 +188,7 @@ export function WeekCalendar({
                 aria-pressed={onSelectDay ? isSelectedDay : selected}
                 aria-current={isToday ? "date" : undefined}
                 onClick={() => {
-                  onChange(key)
+                  onChange(mondayOf(date))
                   onSelectDay?.(key)
                 }}
                 onKeyDown={(e) => handleKeyDown(e, date)}
@@ -299,15 +298,10 @@ export function WeekCalendar({
 
       <button
         type="button"
-        disabled={isAtToday}
-        onClick={handleToday}
-        className={`u030-today-btn mt-3 w-full rounded-full border py-2 text-xs font-semibold transition-all ${
-          isAtToday
-            ? "border-brand-100/60 text-ink-muted/50 opacity-40 cursor-not-allowed"
-            : "border-brand-200 bg-brand-50/60 text-brand-700 hover:bg-brand-100 hover:border-brand-400 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-300 cursor-pointer shadow-2xs"
-        }`}
+        onClick={handleThisWeek}
+        className="u030-today-btn mt-3 w-full rounded-full border border-brand-200 bg-brand-50/60 text-brand-700 hover:bg-brand-100 hover:border-brand-400 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-300 py-2 text-xs font-semibold cursor-pointer shadow-2xs"
       >
-        Hôm nay
+        Tuần này
       </button>
     </section>
   )
