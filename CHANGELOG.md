@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-26 — Group Recipe Reports by Post for Administrators (Issue #35)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `fdcbf11`, `9972d22`.
 
 **Scope:** Deliver AC-30.4 of FR-30 on the FR-28 queue of Issue #33: Administrators see the reports on one Recipe Post as one group with its report count, then open each report with its reporter, status, decision and supplements (SRS 3.14).
 
