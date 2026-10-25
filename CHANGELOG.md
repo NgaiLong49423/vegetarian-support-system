@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-25 — Let Reporters Add Information to an Open Recipe Report (Issue #35)
 
-**Status:** Committed — `785f81f`, `87fffea`.
+**Status:** Committed — `785f81f`, `87fffea`, `86a06ad`.
 
 **Scope:** Complete the Member side of FR-30 with the proposals of questions Q67 and Q68: reporters keep adding information to the report that is still open instead of filing another one, and the real recipe page can now send reports (AC-30.1, AC-30.2, SRS 3.14). The Administrator view of supplements and of reports grouped by recipe (AC-30.4) builds on the FR-28 queue of Issue #33 and is not part of this entry.
 
@@ -26,6 +26,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Document the endpoints and error codes in `docs/api/API.md` section 22, the migration in `database/README.md` and the flow in the Backend and Frontend READMEs.
+- Keep one report form on the recipe page after syncing PR #189: `RecipeReportButton` and `reportsApi` stay, the unused `recipesApi.submitReport` is removed, and the PR #189 Playwright spec checks the shared dialog.
 
 ### Fixed
 
