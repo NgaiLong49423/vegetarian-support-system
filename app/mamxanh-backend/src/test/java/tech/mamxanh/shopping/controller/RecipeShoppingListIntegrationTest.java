@@ -27,7 +27,7 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
     @Autowired JdbcTemplate sql;
     @Autowired jakarta.persistence.EntityManager em;
 
-    long owner, other, expert, first, second, ingredient;
+    long owner, other, expert, first, second, ingredient, excludedIngredient;
     int grams;
 
     @BeforeEach
@@ -57,6 +57,7 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
             sql.update("DELETE FROM [RECIPE_POST] WHERE author_id=?", expert);
         }
         if (ingredient > 0) sql.update("DELETE FROM [INGREDIENT] WHERE ingredient_id=?", ingredient);
+        if (excludedIngredient > 0) sql.update("DELETE FROM [INGREDIENT] WHERE ingredient_id=?", excludedIngredient);
         sql.update("DELETE FROM [USER] WHERE user_id IN (?,?,?)", owner, other, expert);
     }
 
@@ -168,6 +169,93 @@ class RecipeShoppingListIntegrationTest extends AbstractIntegrationTest {
         update("UPDATE [USER] SET account_status='LOCKED' WHERE user_id=?", owner);
         mockMvc.perform(post(ROOT + "/" + list + "/recipes").with(user("" + owner).roles("CUSTOMER"))
                 .contentType(MediaType.APPLICATION_JSON).content(recipeBody(first, null))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void selectedIngredientsAndManualItemsAreStoredTogetherWithServingScaling() throws Exception {
+        excludedIngredient = sql.queryForObject(
+                "INSERT INTO [INGREDIENT] (name,ingredient_group,source_name,reference_date) OUTPUT INSERTED.ingredient_id VALUES (?,N'Đậu',N'Kiểm thử AC536','2026-10-18')",
+                Long.class, "Excluded " + UUID.randomUUID());
+        long excluded = excludedIngredient;
+        update("INSERT INTO [RECIPE_INGREDIENT](recipe_id,ingredient_id,unit_id,quantity) VALUES(?,?,?,?)",
+                first, excluded, grams, new BigDecimal("50"));
+
+        var response = mockMvc.perform(post(ROOT + "/from-recipe").with(user("" + owner).roles("CUSTOMER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Selected and manual\",\"recipeId\":" + first
+                        + ",\"servings\":4,\"selectedIngredientIds\":[" + ingredient
+                        + "],\"manualItems\":[" + manualItemBody(grams) + "]}"))
+                .andExpect(status().isCreated()).andReturn();
+        long list = new tools.jackson.databind.json.JsonMapper().readTree(response.getResponse().getContentAsString())
+                .path("shoppingList").path("id").asLong();
+        assertThat(sql.queryForObject("SELECT quantity FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=? AND ingredient_id=?",
+                BigDecimal.class, list, ingredient)).isEqualByComparingTo("600");
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=? AND ingredient_id=?",
+                Integer.class, list, excluded)).isZero();
+        assertThat(sql.queryForObject("SELECT quantity FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=? AND custom_ingredient_name='Napkins'",
+                BigDecimal.class, list)).isEqualByComparingTo("2");
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+                Integer.class, list)).isEqualTo(1);
+    }
+
+    @Test
+    void manualOnlySelectionOmitsAllRecipeContributions() throws Exception {
+        long list = createList(owner, "Manual only", "MANUAL");
+        addSelection(list, "[]", "[" + manualItemBody(grams) + "]").andExpect(status().isOk());
+        assertThat(quantity(list)).isEqualByComparingTo("2");
+        assertThat(sql.queryForObject("SELECT custom_ingredient_name FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=?",
+                String.class, list)).isEqualTo("Napkins");
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+                Integer.class, list)).isZero();
+    }
+
+    @Test
+    void addingManualItemsToAnAlreadyAddedRecipePreservesItsOriginalContribution() throws Exception {
+        long list = createList(owner, "Existing source", "MANUAL");
+        add(owner, list, first, null).andExpect(status().isOk());
+        addSelection(list, "[" + ingredient + "]", "[" + manualItemBody(grams) + "]").andExpect(status().isOk());
+        assertThat(sql.queryForObject("SELECT quantity FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=? AND ingredient_id=?",
+                BigDecimal.class, list, ingredient)).isEqualByComparingTo("300");
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+                Integer.class, list)).isEqualTo(1);
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=? AND custom_ingredient_name='Napkins'",
+                Integer.class, list)).isEqualTo(1);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"[]", "[%1$d,%1$d]", "[9223372036854775807]"})
+    void invalidIngredientSelectionsDoNotModifyTheChecklist(String selection) throws Exception {
+        long list = createList(owner, "Unchanged", "MANUAL");
+        addSelection(list, selection.formatted(ingredient), "[]").andExpect(status().isBadRequest());
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=?",
+                Integer.class, list)).isZero();
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=?",
+                Integer.class, list)).isZero();
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void invalidManualItemRollsBackBothNewChecklistAndRecipeContributions() throws Exception {
+        mockMvc.perform(post(ROOT + "/from-recipe").with(user("" + owner).roles("CUSTOMER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Atomic failure\",\"recipeId\":" + first
+                        + ",\"selectedIngredientIds\":[" + ingredient + "],\"manualItems\":["
+                        + manualItemBody(Integer.MAX_VALUE) + "]}"))
+                .andExpect(status().isBadRequest());
+        assertThat(countLists(owner)).isZero();
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE recipe_id=?",
+                Integer.class, first)).isZero();
+    }
+
+    private org.springframework.test.web.servlet.ResultActions addSelection(long list, String selection, String manual)
+            throws Exception {
+        return mockMvc.perform(post(ROOT + "/" + list + "/recipes").with(user("" + owner).roles("CUSTOMER"))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"recipeId\":" + first
+                        + ",\"selectedIngredientIds\":" + selection + ",\"manualItems\":" + manual + "}"));
+    }
+
+    private String manualItemBody(int unitId) {
+        return "{\"name\":\"Napkins\",\"quantity\":2,\"unitId\":" + unitId + "}";
     }
 
     private org.springframework.test.web.servlet.ResultActions add(long member, long list, long recipe, Integer servings)

@@ -63,6 +63,10 @@ export function useRecipeSearch(pageSize: number) {
   const [params, setParams] = useSearchParams();
   const expectedSearchRef = useRef(params.toString());
   const query = params.get('q') ?? '';
+  const presetIngredientsKey = JSON.stringify(params.getAll('ingredientId').map((rawId, index) => ({
+    ingredientId: Number(rawId),
+    name: params.getAll('ingredientName')[index] ?? '',
+  })));
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<RecipeFilters>(() => ({ ...initialFilters, vegetarianType: params.get('vegetarianType') ?? '', dishCategory: params.get('dishCategory') ?? '', sort: sortFrom(params), ingredientIds: ingredientsFrom(params) }));
   const [options, setOptions] = useState<RecipeFormOptions | null>(null);
@@ -74,6 +78,31 @@ export function useRecipeSearch(pageSize: number) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [presetIngredientError, setPresetIngredientError] = useState(false);
+
+  useEffect(() => {
+    const requested = (JSON.parse(presetIngredientsKey) as Array<{ ingredientId: number; name: string }>)
+      .filter((item) => Number.isSafeInteger(item.ingredientId) && item.ingredientId > 0 && item.name.trim());
+    if (requested.length === 0) {
+      setPresetIngredientError(false);
+      return;
+    }
+    let active = true;
+    Promise.all(requested.map(({ ingredientId, name }) => recipesApi.searchIngredients(name.trim())
+      .then((items) => items.find((item) => item.ingredientId === ingredientId) ?? null)))
+      .then((matches) => {
+        if (!active) return;
+        const resolved = matches.filter((item): item is IngredientOption => item !== null);
+        setFilters((current) => {
+          const byId = new Map(current.ingredientIds.map((item) => [item.ingredientId, item]));
+          resolved.forEach((item) => byId.set(item.ingredientId, item));
+          return { ...current, ingredientIds: [...byId.values()] };
+        });
+        setPresetIngredientError(resolved.length !== requested.length);
+      })
+      .catch(() => { if (active) setPresetIngredientError(true); });
+    return () => { active = false; };
+  }, [presetIngredientsKey]);
 
   useEffect(() => {
     const currentSearch = params.toString();
@@ -197,7 +226,7 @@ export function useRecipeSearch(pageSize: number) {
 
   return {
     query, updateQuery, page, setPage, filters, updateFilter, toggleIngredient, resetFilters, retry,
-    activeFilterCount, options, result, loading, error, filterPanelProps,
+    activeFilterCount, options, result, loading, error, presetIngredientError, filterPanelProps,
   };
 }
 
