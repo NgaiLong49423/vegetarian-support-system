@@ -48,7 +48,7 @@ public interface StorageClient {
     /**
      * Check if storage client is backed by real cloud storage.
      *
-     * @return true if cloud storage is configured, false if running in local mock fallback
+     * @return true if cloud storage is configured, false if uploads are unavailable
      */
     boolean isCloudStorageConfigured();
 }

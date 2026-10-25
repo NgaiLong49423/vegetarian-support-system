@@ -107,9 +107,11 @@ class RecipeMediaAuthorizationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void theExpertAuthorCanUploadReplaceAndDeleteTheirRecipeImages() throws Exception {
+    void unconfiguredStorageRejectsExpertUploadsWhileExistingMediaCanStillBeManaged() throws Exception {
         mockMvc.perform(multipart("/api/v1/recipes/media/upload").file(jpeg()).with(principal(ownerId, "ROLE_EXPERT")))
-                .andExpect(status().isCreated());
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("MEDIA_STORAGE_UNAVAILABLE"))
+                .andExpect(jsonPath("$.data").doesNotExist());
 
         mockMvc.perform(put("/api/v1/recipes/{recipeId}/media", recipeId).with(principal(ownerId, "ROLE_EXPERT"))
                         .contentType(MediaType.APPLICATION_JSON).content(REPLACE_BODY))

@@ -96,6 +96,8 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void repairedOperationsDeclareTheErrorsTheirServicesReturn() {
+        assertResponses("post", "/api/v1/recipes/media/upload", "201", "503");
+        assertResponses("post", "/api/v1/me/profile/avatar", "200", "503");
         assertResponses("get", "/api/v1/admin/ingredients/{ingredientId}", "404");
         assertResponses("post", "/api/v1/admin/ingredients", "409");
         assertResponses("post", "/api/v1/admin/units", "409");

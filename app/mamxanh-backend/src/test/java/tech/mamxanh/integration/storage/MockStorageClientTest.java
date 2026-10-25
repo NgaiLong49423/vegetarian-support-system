@@ -53,12 +53,12 @@ class MockStorageClientTest {
     }
 
     @Test
-    @DisplayName("StorageConfig returns MockStorageClient when connection string is blank")
+    @DisplayName("StorageConfig never registers the test mock when connection string is blank")
     void storageConfigFallback() {
         StorageConfig config = new StorageConfig();
         StorageProperties properties = new StorageProperties("", "mamxanh-recipes");
 
         StorageClient client = config.storageClient(properties);
-        assertThat(client).isInstanceOf(MockStorageClient.class);
+        assertThat(client).isInstanceOf(UnavailableStorageClient.class);
     }
 }

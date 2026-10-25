@@ -77,7 +77,7 @@ export function RecipeComparePickerPage() {
           ) : error ? (
             <EmptyState title="Không tải được công thức" description="Kiểm tra kết nối rồi thử tải lại danh sách công thức." action={<Button variant="secondary" onClick={retry}>Thử lại</Button>} />
           ) : choices.length > 0 ? (
-            <ul aria-label="Công thức có thể chọn" className="grid gap-3 sm:grid-cols-2">
+            <ul aria-label="Công thức có thể chọn" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {choices.map((recipe) => (
                 <li key={recipe.id}><ChoiceCard recipe={recipe} options={options} onPick={() => pick(recipe.id)} /></li>
               ))}

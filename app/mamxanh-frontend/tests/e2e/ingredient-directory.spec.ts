@@ -50,6 +50,15 @@ test('public ingredient directory loads every page and transfers all selected ID
   expect(requestedPages).toEqual([0, 1]);
 });
 
+test('discovery explains when a linked ingredient no longer exists in the catalog', async ({ page }) => {
+  await page.route('**/api/v1/recipes/ingredient-options**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/recipes/discovery?**', (route) => route.fulfill({ json: {
+    items: [], page: 0, size: 12, hasNext: false,
+  } }));
+  await page.goto('/kham-pha?ingredientId=42&ingredientName=Missing');
+  await expect(page.getByRole('status').filter({ hasText: 'Không tìm thấy nguyên liệu được chọn trong danh mục hiện tại.' })).toBeVisible();
+});
+
 test('public ingredient directory retries a failed request and explains an empty catalog', async ({ page }) => {
   let attempts = 0;
   await page.route('**/api/v1/ingredients?**', (route) => {
