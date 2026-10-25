@@ -5990,6 +5990,13 @@ paths:
         schema:
           type: string
           pattern: OPEN|IN_REVIEW|RESOLVED
+      - name: recipeId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
       - name: page
         in: query
         required: false
@@ -6010,14 +6017,15 @@ paths:
           minimum: 1
       responses:
         "200":
-          description: "A page of Recipe Post reports, newest first."
+          description: "A page of Recipe Post reports with their supplements, newest\
+            \ first; recipeId keeps the reports of one post (AC-30.4)."
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageResponseAdminReportResponse"
         "400":
-          description: "VALIDATION_FAILED: unknown status, or page/size outside its\
-            \ range."
+          description: "VALIDATION_FAILED: unknown status, recipeId below 1, or page/size\
+            \ outside its range."
           content:
             application/problem+json:
               schema:
@@ -6097,6 +6105,66 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AdminReportStatusCountsResponse"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/reports/groups:
+    get:
+      tags:
+      - admin-report-controller
+      operationId: listReportGroups
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: OPEN|IN_REVIEW|RESOLVED
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          maximum: 1000000
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+          maximum: 100
+          minimum: 1
+      responses:
+        "200":
+          description: "One group per reported Recipe Post with its report count,\
+            \ the post with the newest matching report first (AC-30.4)."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageResponseAdminReportGroupResponse"
+        "400":
+          description: "VALIDATION_FAILED: unknown status, or page/size outside its\
+            \ range."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "401":
           description: "UNAUTHENTICATED: missing, invalid or expired access token."
           content:
@@ -8562,6 +8630,21 @@ components:
         handledAt:
           type: string
           format: date-time
+        supplements:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminReportSupplement"
+    AdminReportSupplement:
+      type: object
+      properties:
+        supplementId:
+          type: integer
+          format: int64
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
     ReportAccount:
       type: object
       properties:
@@ -9410,6 +9493,40 @@ components:
         resolved:
           type: integer
           format: int64
+    AdminReportGroupResponse:
+      type: object
+      properties:
+        recipe:
+          $ref: "#/components/schemas/ReportedRecipe"
+        author:
+          $ref: "#/components/schemas/ReportAccount"
+        reportCount:
+          type: integer
+          format: int64
+        statusCounts:
+          $ref: "#/components/schemas/AdminReportStatusCountsResponse"
+        latestReportAt:
+          type: string
+          format: date-time
+    PageResponseAdminReportGroupResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminReportGroupResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
     ApiResponseListIngredientResponse:
       type: object
       properties:
