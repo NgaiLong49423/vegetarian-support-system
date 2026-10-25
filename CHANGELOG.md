@@ -1,13 +1,34 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.96.0
+> **Version:** v2.97.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-22
+> **Last Updated:** 2026-10-25
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-25 — Guarded Recipe Assistance and Private AI Diagnostics
+
+**Status:** Committed — `a10d9fe`.
+
+**Scope:** Correct the remaining FR-10 audit findings on its feature branch; preserve the approved FR-21 authoring scope and existing API contract. Integration and main acceptance remain pending.
+
+### Added
+
+- Add regression checks for modal entitlement failures, provider retries, unchanged ingredient quantities, manual publication, incomplete recipe output and private chat diagnostics.
+
+### Changed
+
+- Route the recipe assistant modal through the existing Backend-protected description and instruction actions using the author's selected form ingredients.
+- Remove client-generated whole recipes, automatic ingredient additions and hard-coded calorie estimates from the AI authoring modal.
+
+### Fixed
+
+- Prevent the assistant modal from presenting locally generated content as paid AI assistance without a Backend entitlement check (BUG-066).
+- Reject unfinished recipe provider responses and preserve the documented 502 invalid-response mapping (BUG-067).
+- Redact chat request, history-turn and response diagnostic representations while preserving their JSON payloads; port the privacy correction recorded as BUG-060 on the FR-11 branch.
 
 ## 2026-10-22 — AI Chat Reliability and Subscription Validity Corrections
 
