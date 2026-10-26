@@ -66,12 +66,12 @@ bugs:
     related_issue: Unknown
   - id: BUG-059
     title: Thêm nguyên liệu từ 0 giờ đến 7 giờ sáng (giờ Việt Nam) bị từ chối vì ngày tham khảo mặc định "ở tương lai"
-    status: RECORDED
+    status: RESOLVED
     severity: Medium
     area: Frontend/Backend Quản trị danh mục nguyên liệu
     file: .agents/outputs/bugs/BUG-059.md
     created: 2026-10-16
-    updated: 2026-10-16
+    updated: 2026-10-26
     related_issue: 46
   - id: BUG-058
     title: Kiểm tra mã lỗi API không tương thích với kiểu TypeScript tùy chọn
