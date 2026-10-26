@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-26 — Accept Today's Vietnam Date as an Ingredient Reference Date (Issue #159)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `ed9cd29`.
 
 **Scope:** Fix BUG-059 in the FR-41 ingredient catalog: from 0:00 to 6:59 in Vietnam, adding an ingredient with the default reference date failed with `400` because the browser counted the day in Vietnam time while the Backend in a UTC container was still on the previous day.
 
