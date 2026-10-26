@@ -1,13 +1,301 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.102.0
+> **Version:** v2.105.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-25
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-25 — Let Administrators Handle Recipe Post Reports (Issue #33)
+
+**Status:** Committed — `5c53627`, `fab3605`.
+
+**Scope:** Deliver FR-28 for Recipe Post reports: Administrators take a report into review, record one decision with a mandatory reason and apply the chosen sanction, while the report row keeps who decided what and when (SRS 3.12, BR-26, NFR-08). Comment reports (FR-48), account unlock and the moderation-outcome email stay out of this change.
+
+### Added
+
+- Add `GET /api/v1/admin/reports`, `GET /api/v1/admin/reports/status-counts`, `GET /api/v1/admin/reports/{reportId}`, `POST /api/v1/admin/reports/{reportId}/claim` and `POST /api/v1/admin/reports/{reportId}/resolve` for Administrators only, returning reporter and author accounts for review (AC-29.3).
+- Move an `OPEN` report to `IN_REVIEW` under the claiming Administrator with a row lock, so concurrent claims give one `200` and one `409 REPORT_STATUS_CONFLICT` (AC-28.1).
+- Resolve only a report held by the caller with `NO_VIOLATION`, `WARN_AUTHOR`, `HIDE_RECIPE` or `LOCK_AUTHOR` and a 10–500 character reason; hiding sets the post to `HIDDEN` and removes it from public reads and search, locking sets the author to `LOCKED` so existing tokens get `403 ACCOUNT_LOCKED` (AC-28.2–AC-28.5).
+- Write in-app notifications on resolution: a general result for the reporter and, for a sanction, the Administrator reason for the author, never containing the reporter name, email or report text (AC-49.4, BR-28).
+- Add migration `V22__report_handling_by_admin.sql` with `REPORT.handled_by` (FK to `USER`) and `CK_REPORT_decision`, and the matching `database/schema.sql` snapshot.
+- Add the local-only demo seed `R__demo_sample_data_65_report_moderation.sql`: one `OPEN` report, one `IN_REVIEW` report held by the demo Administrator and three `RESOLVED` reports (`NO_VIOLATION`, `WARN_AUTHOR`, and `HIDE_RECIPE` on a dedicated post) with the matching in-app notifications, without locking any demo account.
+- Replace the `/admin/bao-cao` preview with a page backed by these endpoints: status filters with counts, claim, detail, decision form with client-side checks before sending, and view-only display for reports held by another Administrator or already resolved.
+- Add SQL Server integration tests for each Acceptance Criterion, permissions, concurrent claims and immutable resolved reports, Playwright tests for the page and a real-stack test from a submitted report to the hidden post.
+
+### Changed
+
+- Remove the report module and its tests from the Admin preview, which now covers accounts and transactions only.
+- Document the endpoints and error codes in `docs/api/API.md` section 21, the migration in `database/README.md` and the flow in the Backend and Frontend READMEs.
+
+### Fixed
+
+- None.
+
+## 2026-10-24 — Refine Shopping List Workflow ([PR #185](https://github.com/NgaiLong49423/vegetarian-support-system/pull/185))
+
+**Status:** Committed — `c4822f9`.
+
+**Scope:** Make shopping-list creation, item management and review more consistent across recipe, meal-plan and shopping-list screens.
+
+### Added
+
+- Allow selecting recipe ingredients and adding manual items in the shopping-list dialog, with duplicate-name checks and numbered names for same-day lists.
+- Add shopping-list export actions and a compact menu for list-level actions.
+
+### Changed
+
+- Use the creation date for meal-plan shopping lists, order lists newest first and remove internal list codes from the interface.
+- Refine shopping-list layout, colors, controls and spacing across the page; use icon-only edit and delete actions for items.
+
+### Fixed
+
+- Normalize whitespace when aggregating manual item names so equivalent names are combined consistently.
+
+## 2026-10-24 — Deduplicate Recipe Ingredient Selections
+
+**Status:** Committed — `95a05ee`.
+
+**Scope:** Keep recipe-to-shopping-list additions valid when one ingredient appears in multiple recipe lines with different units.
+
+### Added
+
+- Add Frontend and Backend regression coverage for repeated ingredient IDs, selected ingredients, and manual-only additions.
+
+### Changed
+
+- Submit each selected ingredient ID once while preserving every matching recipe line and unit in the shopping list.
+
+### Fixed
+
+- Prevent duplicate selected IDs from causing a validation error when adding a recipe to a shopping list.
+
+## 2026-10-23 — Remove Recipe Card Status Badges
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Remove the “Mới” and Like percentage badges from recipe imagery and rating headings.
+
+### Added
+
+- None.
+
+### Changed
+
+- Remove the recipe status and Like percentage badge from public recipe cards and the detail-page reaction heading.
+- Keep recipe voting controls, accessible Like ratio progress, and reaction counts.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Center Ingredient Directory Content
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Align the ingredient directory header and catalog within one centered content column.
+
+### Added
+
+- None.
+
+### Changed
+
+- Center the directory content wrapper so the heading, search controls and ingredient grid share the same alignment.
+
+### Fixed
+
+- Correct the left-heavy layout caused by a narrow catalog section aligned to the page container edge.
+
+## 2026-10-23 — Show All Core Nutrients in Daily Summary
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Show all nine core metrics in a clearer hierarchy on the nutrition tracker.
+
+### Added
+
+- Show fiber, calcium, iron, vitamin B12 and zinc alongside energy, protein, carbohydrate and fat.
+
+### Changed
+
+- Keep energy, protein, carbohydrate and fat as primary cards; group fiber and four micronutrients in a compact section.
+- Align primary metric values, reference amounts and progress bars in a consistent card layout.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Distinguish Meal Labels in Nutrition Tracker
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Improve the visual distinction between meal labels and energy distribution on the nutrition tracker.
+
+### Added
+
+- Add an amber badge tone for meal labels.
+
+### Changed
+
+- Use matching amber, green and brand-orange colors for breakfast, lunch and dinner labels, energy-bar segments and legend dots.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Restore Recipe Images in Nutrition Tracker
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Show scheduled recipe cover images on the daily meal cards in nutrition tracking.
+
+### Added
+
+- Load cover URLs from the existing weekly meal-plan response and match them to nutrition entries.
+
+### Changed
+
+- Render each available recipe cover above its nutrition summary while keeping the utensil placeholder for missing or failed images.
+
+### Fixed
+
+- Replace the permanent image placeholder on scheduled recipe cards when a cover image is available.
+
+## 2026-10-23 — Move Recipe Comparison into Card Menu
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Keep recipe-card actions compact by placing comparison in the existing overflow menu.
+
+### Added
+
+- Add a comparison action to the recipe-card three-dot menu.
+
+### Changed
+
+- Remove the standalone comparison link below public recipe cards.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Apply Ingredient Filters from Catalog
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Carry selected ingredient filters from the public ingredient catalog and detail page into recipe discovery.
+
+### Added
+
+- Initialize recipe discovery with ingredient IDs and names passed in the URL.
+
+### Changed
+
+- Keep ingredient selection in the URL as filters are changed and clear those parameters when resetting the search.
+
+### Fixed
+
+- Apply the selected ingredient IDs to recipe discovery requests after navigating from ingredient pages.
+
+## 2026-10-23 — Fix Recipe Ingredient Editing
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Ensure recipe editing can resolve existing ingredients beyond the initial reference-data result limit.
+
+### Added
+
+- None.
+
+### Changed
+
+- Search the existing ingredient reference-data endpoint for recipe ingredients missing from the initial options and merge the valid units into the editor.
+
+### Fixed
+
+- Stop presenting ingredients omitted by the initial result cap as unsupported; clarify the warning for ingredients that remain unavailable after lookup.
+
+## 2026-10-23 — Correct Demo Ingredient Groups
+
+**Status:** Committed — `c0c1aff`.
+
+**Scope:** Replace the default or inconsistent groups on seeded demo ingredients with food-appropriate categories.
+
+### Added
+
+- Add an idempotent local demo seed that assigns consistent groups to all 209 illustrated ingredients.
+
+### Changed
+
+- Document the ingredient-group fixture and its limited effect on demo catalog group labels.
+
+### Fixed
+
+- Categorize vegetables, mushrooms, fruit, grains, legumes, nuts and seeds, seasonings, dairy and eggs, seaweed, plant protein, and prepared vegetarian foods under appropriate groups.
+
+## 2026-10-23 — Fix Integration Regressions After Develop Synchronization ([PR #162](https://github.com/NgaiLong49423/vegetarian-support-system/pull/162))
+
+**Status:** Committed — `4968e40`.
+
+**Scope:** Restore discovery badges and safe shopping-list ingredient selection after integrating the current baseline.
+
+### Added
+
+- Cover ingredient subsets, manual-only shopping items, duplicate ingredient selections, serving scaling, and atomic rollback through HTTP and SQL integration tests.
+- Add browser regressions for selecting one ingredient represented by multiple units from discovery and saved recipes.
+
+### Changed
+
+- Align shopping browser assertions with the current ingredient-selection and manual-item request contract.
+
+### Fixed
+
+- Restore the Like percentage or New badge on discovery cards required by FR-17.
+- Deduplicate initially selected ingredient IDs so recipes using multiple units do not produce rejected shopping-list requests.
+- Preserve ingredient filters when navigating from the ingredient directory or detail page into discovery.
+
+## 2026-10-23 — Improve Ingredient and Shopping Workflows
+
+**Status:** Committed — `f58b0e1`.
+
+**Scope:** Let Members inspect ingredients and add selected recipe items to shopping lists without leaving recipe details, while enabling administrators to manage ingredient images.
+
+### Added
+
+- Add ingredient image upload in the Admin catalog and link ingredient names from recipe details to ingredient detail pages.
+- Add a shopping-list action to recipe detail pages and allow Members to select recipe ingredients or add manual items before submitting.
+
+### Changed
+
+- Extend shopping-list API requests to carry selected recipe ingredients and manual items, and update the API and requirement documentation.
+
+### Fixed
+
+- None.
+
+## 2026-10-23 — Keep Recipe Search Ingredients in Sync with the URL (Issue #70)
+
+**Status:** Committed — `2e03550`, `e42b65f`.
+
+**Scope:** Finish the FR-62 ingredient links in the shared `RecipeSearch` module used by Explore and the FR-60 picker: PR #185 reads `ingredientId`/`ingredientName` from the URL, but removed or reset ingredients stayed in the URL and came back on the next URL change or reload. Also keep the FR-60 picker within a phone-width page.
+
+### Added
+
+- Add Playwright coverage for an ingredient preset on the picker, removing it before another filter changes, resetting all filters, and a picker card with a long dish category label on a 360 px wide screen.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Write the selected ingredients back to the URL when one is added or removed, so a removed preset no longer comes back when the page is reloaded or reopened from the browser history.
+- Remove `ingredientId`/`ingredientName` from the URL when the filters are reset.
+- Keep picker result cards inside a phone-width page when a recipe has a long category label such as "Món tráng miệng / chè": the result grid uses one shrinkable column below the `sm` breakpoint (AC-60.8).
 
 ## 2026-10-23 — Fix AI Recipe Guidance Generation ([PR #181](https://github.com/NgaiLong49423/vegetarian-support-system/pull/181))
 
@@ -366,6 +654,26 @@ None.
 - Seed core recipe ingredients before applying catalog nutrition so supported entries such as sweet potato are enriched correctly.
 
 - Fill the remaining macro, fiber and B12 estimates for all AI-estimated demo ingredients so those fixtures no longer have missing nutrition metrics.
+
+## 2026-10-19 — Store Recipe Images in Azure (Issue #158) ([PR #162](https://github.com/NgaiLong49423/vegetarian-support-system/pull/162))
+
+**Status:** Committed — `c3a5155`.
+
+**Scope:** Fix misleading upload success when Azure storage is missing or unavailable ([Issue #158](https://github.com/NgaiLong49423/vegetarian-support-system/issues/158)).
+
+### Added
+
+- Add unavailable-storage tests, browser upload-state regression checks, and an opt-in Azure/Compose integration test.
+
+### Changed
+
+- Forward Backend Azure configuration through the root Compose stack and document the image storage setup.
+- Regenerate OpenAPI to describe upload success as HTTP 201 and storage failure as HTTP 503.
+
+### Fixed
+
+- Reject uploads with `MEDIA_STORAGE_UNAVAILABLE` instead of returning fabricated storage URLs; sanitize storage failure diagnostics.
+- Label failed previews, count only successful uploads, and block publication while uploads are pending or failed.
 
 ## 2026-10-19 — Expert and Ingredient Discovery (FR-61/FR-62) and Social Recipe Profiles ([PR #163](https://github.com/NgaiLong49423/vegetarian-support-system/pull/163))
 

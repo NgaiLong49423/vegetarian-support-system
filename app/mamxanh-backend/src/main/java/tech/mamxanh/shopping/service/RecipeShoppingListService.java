@@ -17,6 +17,7 @@ import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.recipe.service.RecipeService;
 import tech.mamxanh.shopping.dto.request.AddRecipeToShoppingListRequest;
 import tech.mamxanh.shopping.dto.request.CreateEmptyShoppingListRequest;
+import tech.mamxanh.shopping.dto.request.CreateShoppingItemRequest;
 import tech.mamxanh.shopping.dto.request.CreateShoppingListFromRecipeRequest;
 import tech.mamxanh.shopping.dto.request.ShoppingAggregationLine;
 import tech.mamxanh.shopping.dto.response.ShoppingListCreationResponse;
@@ -63,7 +64,8 @@ public class RecipeShoppingListService {
         long owner = users.lockActiveMember().id();
         validateRecipeRequest(request == null ? null : request.recipeId(), request == null ? null : request.servings());
         var list = ownedList(listId, owner);
-        return addRecipeToList(list, request.recipeId(), request.servings());
+        return addRecipeToList(list, request.recipeId(), request.servings(),
+                request.selectedIngredientIds(), request.manualItems());
     }
 
     @Transactional
@@ -75,27 +77,48 @@ public class RecipeShoppingListService {
         // The checklist service joins this transaction, so a failed recipe add rolls back the new list.
         var created = checklists.createEmpty(new CreateEmptyShoppingListRequest(request.name()));
         var list = ownedList(created.id(), owner);
-        return addRecipeToList(list, request.recipeId(), request.servings());
+        return addRecipeToList(list, request.recipeId(), request.servings(),
+                request.selectedIngredientIds(), request.manualItems());
     }
 
     private ShoppingListCreationResponse addRecipeToList(ShoppingListEntity list,
-            long recipeId, Integer servings) {
+            long recipeId, Integer servings, List<Long> selectedIngredientIds,
+            List<CreateShoppingItemRequest> manualItems) {
         var sources = recipes.findShoppingSources(List.of(recipeId));
         var source = sources.get(recipeId);
         if (source == null) {
             throw new AppException(ErrorCode.NOT_FOUND,
                     "Công thức không còn công khai hoặc không tồn tại. Hãy tải lại danh sách.");
         }
-        if (source.ingredients().isEmpty()) throw invalid("Công thức không có nguyên liệu để thêm vào danh sách.");
         if (source.servings() < 1) throw invalid("Khẩu phần gốc của công thức không hợp lệ.");
 
+        var manual = manualItems == null ? List.<CreateShoppingItemRequest>of() : manualItems;
+        var requestedIds = selectedIngredientIds == null ? null : new HashSet<>(selectedIngredientIds);
+        if (requestedIds != null && requestedIds.size() != selectedIngredientIds.size()) {
+            throw invalid("Nguyên liệu được chọn không được lặp lại.");
+        }
+        var availableIds = new HashSet<Long>();
+        source.ingredients().forEach(line -> availableIds.add(line.ingredientId()));
+        if (requestedIds != null && !availableIds.containsAll(requestedIds)) {
+            throw invalid("Có nguyên liệu được chọn không thuộc công thức này.");
+        }
+        if (requestedIds != null && requestedIds.isEmpty() && manual.isEmpty()) {
+            throw invalid("Hãy chọn ít nhất một nguyên liệu hoặc thêm mặt hàng thủ công.");
+        }
+        if (source.ingredients().isEmpty() && manual.isEmpty()) {
+            throw invalid("Công thức không có nguyên liệu để thêm vào danh sách.");
+        }
+
         var saved = new ArrayList<>(contributions.findByShoppingListIdOrderByIdAsc(list.getId()));
-        if (saved.stream().anyMatch(row -> row.getRecipeId().equals(recipeId))) {
+        boolean alreadyAdded = saved.stream().anyMatch(row -> row.getRecipeId().equals(recipeId));
+        if (alreadyAdded && manual.isEmpty()) {
             return new ShoppingListCreationResponse(checklists.get(list.getId()), List.of(), List.of());
         }
 
         var added = new ArrayList<ShoppingRecipeContributionEntity>();
         for (var line : source.ingredients()) {
+            if (requestedIds != null && !requestedIds.contains(line.ingredientId())) continue;
+            if (alreadyAdded) continue;
             if (line.ingredientId() == null || line.unitId() == null
                     || line.quantity() == null || line.quantity().signum() <= 0) {
                 throw invalid("Công thức có nguyên liệu hoặc định lượng không hợp lệ.");
@@ -168,10 +191,13 @@ public class RecipeShoppingListService {
         }
 
         added.forEach(row -> row.setShoppingListId(list.getId()));
-        contributions.saveAllAndFlush(saved);
-        contributions.saveAllAndFlush(added);
+        if (!added.isEmpty()) {
+            contributions.saveAllAndFlush(saved);
+            contributions.saveAllAndFlush(added);
+        }
         items.deleteAll(previous.stream().filter(row -> !retained.contains(row.getId())).toList());
-        list.setUpdatedAt(LocalDateTime.now(clock));
+        if (!added.isEmpty()) list.setUpdatedAt(LocalDateTime.now(clock));
+        for (var item : manual) checklists.add(list.getId(), item);
         em.flush();
         return new ShoppingListCreationResponse(checklists.get(list.getId()), warnings, incompatible);
     }

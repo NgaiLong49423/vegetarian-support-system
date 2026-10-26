@@ -1,20 +1,16 @@
 import { Link } from "react-router-dom"
-import { ArrowLeftRight } from "lucide-react"
 import type { RecipeFormOptions, RecipePost } from "../api/recipes"
 import { AddToMealPlanButton } from "./AddToMealPlanButton"
 import { RecipeDefaultArtwork, type VegetarianCode } from "./RecipeDefaultArtwork"
 import { SaveRecipeButton } from "./SaveRecipeButton"
 import { RecipeViewCount } from "./RecipeViewCount"
-import { RecipeReactionBadge } from "./RecipeReactionBadge"
 
 export function PublicRecipeCard({
   recipe,
   options,
-  showLikePercentage = true,
 }: {
   recipe: RecipePost
   options?: RecipeFormOptions | null
-  showLikePercentage?: boolean
 }) {
   const cover = recipe.media.find((media) => media.cover) ?? recipe.media[0]
   const category =
@@ -43,11 +39,6 @@ export function PublicRecipeCard({
               label={vegetarian}
               compact
             />
-          )}
-          {showLikePercentage && (
-            <div className="absolute left-2 top-2">
-              <RecipeReactionBadge percentage={recipe.likePercentage} />
-            </div>
           )}
           <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-black/60 px-2.5 py-2 text-[11px] text-white">
             {recipe.authorAvatarUrl ? (
@@ -82,14 +73,6 @@ export function PublicRecipeCard({
           {vegetarian} · {category}
         </p>
         <div className="mt-1 text-[11px] text-ink-muted"><RecipeViewCount count={recipe.viewCount} /></div>
-      </Link>
-      <Link
-        to={`/so-sanh?a=${recipe.id}`}
-        aria-label={`So sánh ${recipe.title}`}
-        className="mt-1.5 inline-flex items-center gap-1 rounded text-[11px] font-semibold text-brand-600 hover:text-brand-700"
-      >
-        <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
-        So sánh
       </Link>
       <div className="absolute right-2 top-2 flex items-center gap-1.5">
         <AddToMealPlanButton recipeId={recipe.id} recipeTitle={recipe.title} preview={recipe} />

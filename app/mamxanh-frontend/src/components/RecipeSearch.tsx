@@ -6,7 +6,9 @@ import { recipesApi } from '../api/recipes';
 import type { Choice, IngredientOption, RecipeBrowseResult, RecipeFormOptions, RecipeSearchParams } from '../api/recipes';
 
 // FR-08 public recipe search and filters, shared by the Explore page and the FR-60 comparison picker.
-// The keyword, diet, dish category and sort live in the URL; other query parameters are left untouched.
+// Search state is initialized from URL parameters so ingredient-directory links open with active filters.
+// The keyword, diet, dish category, sort and selected ingredients (FR-62 links preset ingredientId/ingredientName)
+// live in the URL; other query parameters are left untouched.
 
 type SortMode = RecipeSearchParams['sort'];
 type ViewPeriod = RecipeSearchParams['viewPeriod'];
@@ -24,7 +26,7 @@ const initialFilters: RecipeFilters = {
   sort: 'NEWEST', viewPeriod: 'ALL_TIME',
 };
 
-const URL_KEYS = ['q', 'vegetarianType', 'dishCategory', 'sort'];
+const URL_KEYS = ['q', 'vegetarianType', 'dishCategory', 'sort', 'ingredientId', 'ingredientName'];
 
 const sortOptions: Array<{ code: SortMode; label: string }> = [
   { code: 'NEWEST', label: 'Mới nhất' },
@@ -48,12 +50,27 @@ function sortFrom(params: URLSearchParams): SortMode {
   return sortOptions.some((item) => item.code === params.get('sort')) ? params.get('sort') as SortMode : 'NEWEST';
 }
 
+function ingredientsFrom(params: URLSearchParams): IngredientOption[] {
+  const names = params.getAll('ingredientName');
+  const seen = new Set<number>();
+  return params.getAll('ingredientId').flatMap((value, index) => {
+    const ingredientId = Number(value);
+    if (!Number.isSafeInteger(ingredientId) || ingredientId < 1 || seen.has(ingredientId)) return [];
+    seen.add(ingredientId);
+    return [{ ingredientId, name: names[index]?.trim() || `Nguyên liệu ${ingredientId}` }];
+  });
+}
+
 export function useRecipeSearch(pageSize: number) {
   const [params, setParams] = useSearchParams();
   const expectedSearchRef = useRef(params.toString());
   const query = params.get('q') ?? '';
+  const presetIngredientsKey = JSON.stringify(params.getAll('ingredientId').map((rawId, index) => ({
+    ingredientId: Number(rawId),
+    name: params.getAll('ingredientName')[index] ?? '',
+  })));
   const [page, setPage] = useState(0);
-  const [filters, setFilters] = useState<RecipeFilters>(() => ({ ...initialFilters, vegetarianType: params.get('vegetarianType') ?? '', dishCategory: params.get('dishCategory') ?? '', sort: sortFrom(params) }));
+  const [filters, setFilters] = useState<RecipeFilters>(() => ({ ...initialFilters, vegetarianType: params.get('vegetarianType') ?? '', dishCategory: params.get('dishCategory') ?? '', sort: sortFrom(params), ingredientIds: ingredientsFrom(params) }));
   const [options, setOptions] = useState<RecipeFormOptions | null>(null);
   const [optionsError, setOptionsError] = useState(false);
   const [ingredientQuery, setIngredientQuery] = useState('');
@@ -63,6 +80,31 @@ export function useRecipeSearch(pageSize: number) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [presetIngredientError, setPresetIngredientError] = useState(false);
+
+  useEffect(() => {
+    const requested = (JSON.parse(presetIngredientsKey) as Array<{ ingredientId: number; name: string }>)
+      .filter((item) => Number.isSafeInteger(item.ingredientId) && item.ingredientId > 0 && item.name.trim());
+    if (requested.length === 0) {
+      setPresetIngredientError(false);
+      return;
+    }
+    let active = true;
+    Promise.all(requested.map(({ ingredientId, name }) => recipesApi.searchIngredients(name.trim())
+      .then((items) => items.find((item) => item.ingredientId === ingredientId) ?? null)))
+      .then((matches) => {
+        if (!active) return;
+        const resolved = matches.filter((item): item is IngredientOption => item !== null);
+        setFilters((current) => {
+          const byId = new Map(current.ingredientIds.map((item) => [item.ingredientId, item]));
+          resolved.forEach((item) => byId.set(item.ingredientId, item));
+          return { ...current, ingredientIds: [...byId.values()] };
+        });
+        setPresetIngredientError(resolved.length !== requested.length);
+      })
+      .catch(() => { if (active) setPresetIngredientError(true); });
+    return () => { active = false; };
+  }, [presetIngredientsKey]);
 
   useEffect(() => {
     const currentSearch = params.toString();
@@ -71,8 +113,15 @@ export function useRecipeSearch(pageSize: number) {
     expectedSearchRef.current = currentSearch;
     const vegetarianType = params.get('vegetarianType') ?? '';
     const dishCategory = params.get('dishCategory') ?? '';
+    const ingredientIds = ingredientsFrom(params);
     const sort = sortFrom(params);
-    setFilters((current) => current.vegetarianType === vegetarianType && current.dishCategory === dishCategory && current.sort === sort ? current : { ...current, vegetarianType, dishCategory, sort });
+    setFilters((current) => current.vegetarianType === vegetarianType
+      && current.dishCategory === dishCategory
+      && current.sort === sort
+      && current.ingredientIds.length === ingredientIds.length
+      && current.ingredientIds.every((item, index) => item.ingredientId === ingredientIds[index].ingredientId && item.name === ingredientIds[index].name)
+      ? current
+      : { ...current, vegetarianType, dishCategory, sort, ingredientIds });
     setPage(0);
   }, [params]);
 
@@ -130,9 +179,16 @@ export function useRecipeSearch(pageSize: number) {
   const updateFilter = <K extends keyof RecipeFilters>(key: K, value: RecipeFilters[K]) => {
     setFilters((current) => ({ ...current, [key]: value }));
     setPage(0);
-    if (key === 'vegetarianType' || key === 'dishCategory' || key === 'sort') {
+    if (key === 'vegetarianType' || key === 'dishCategory' || key === 'sort' || key === 'ingredientIds') {
       const next = new URLSearchParams(params);
-      if (value) next.set(key, String(value)); else next.delete(key);
+      if (key === 'ingredientIds') {
+        next.delete('ingredientId');
+        next.delete('ingredientName');
+        (value as IngredientOption[]).forEach((ingredient) => {
+          next.append('ingredientId', String(ingredient.ingredientId));
+          next.append('ingredientName', ingredient.name);
+        });
+      } else if (value) next.set(key, String(value)); else next.delete(key);
       expectedSearchRef.current = next.toString();
       setParams(next, { replace: true });
     }
@@ -179,7 +235,7 @@ export function useRecipeSearch(pageSize: number) {
 
   return {
     query, updateQuery, page, setPage, filters, updateFilter, toggleIngredient, resetFilters, retry,
-    activeFilterCount, options, result, loading, error, filterPanelProps,
+    activeFilterCount, options, result, loading, error, presetIngredientError, filterPanelProps,
   };
 }
 

@@ -1,6 +1,6 @@
 import { RecipeDefaultArtwork } from '../components/RecipeDefaultArtwork';
 import { RecipeReactions } from '../components/RecipeReactions';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
   Clock3,
   Download,
   Eye,
+  Flag,
   Leaf,
   LoaderCircle,
   MessageCircle,
@@ -18,6 +19,7 @@ import {
   Plus,
   Printer,
   Share2,
+  ShoppingBasket,
   Sparkles,
   Users,
   Utensils,
@@ -25,8 +27,10 @@ import {
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card } from '../components/ui';
-import { asApiError } from '../lib/apiClient';
-import { recipesApi, type RecipeDetail } from '../api/recipes';
+import { Modal } from '../components/Modal';
+import { IngredientImage } from '../components/IngredientImage';
+import { asApiError, type ApiError } from '../lib/apiClient';
+import { recipesApi, type RecipeDetail, type RecipeReportReasonCode } from '../api/recipes';
 import { SaveRecipeButton } from '../components/SaveRecipeButton';
 import { RecipeViews } from '../components/RecipeViews';
 import { MemberAvatar } from '../components/MemberAvatar';
@@ -34,6 +38,8 @@ import { RelatedRecipes } from '../components/RelatedRecipes';
 import { RecipeComments } from '../components/RecipeComments';
 import { MealPlanRecipeServings } from './MealPlanRecipeServings';
 import { useAiChat } from '../components/AiChatContext';
+import { AddRecipeShoppingDialog } from '../components/AddRecipeShoppingDialog';
+import { useAuth } from '../components/AuthContext';
 
 const NUTRIENTS = [
   { key: 'ENERGY_KCAL', label: 'Năng lượng', unit: 'kcal' },
@@ -46,6 +52,15 @@ const NUTRIENTS = [
   { key: 'VITAMIN_B12_MCG', label: 'Vitamin B12', unit: 'mcg' },
   { key: 'ZINC_MG', label: 'Kẽm', unit: 'mg' },
 ] as const;
+
+const REPORT_REASONS: Array<{ code: RecipeReportReasonCode; label: string }> = [
+  { code: 'RECIPE_INFO_OR_DIET_LABEL', label: 'Sai thông tin công thức hoặc nhãn ăn chay' },
+  { code: 'FOOD_SAFETY_HAZARD', label: 'Nguy cơ an toàn thực phẩm' },
+  { code: 'SPAM_ADVERTISING', label: 'Spam / Quảng cáo không phù hợp' },
+  { code: 'INAPPROPRIATE_CONTENT', label: 'Nội dung xúc phạm / Không phù hợp' },
+  { code: 'COPYRIGHT_VIOLATION', label: 'Sao chép / Nghi vi phạm bản quyền' },
+  { code: 'OTHER', label: 'Khác' },
+];
 
 /** `publishedAt` is UTC without an offset; show the date in Vietnam time (FR-23). */
 function publishedDate(value: string) {
@@ -110,6 +125,7 @@ export function ApiRecipeDetail() {
 
 function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
   const { openChat } = useAiChat();
+  const { account } = useAuth();
   const [searchParams] = useSearchParams();
   const fromMealPlan = searchParams.has('mealPlanWeek') || searchParams.has('mealPlanEntryId');
   const planContextKey = `${recipeId}:${searchParams.get('mealPlanWeek')}:${searchParams.get('mealPlanEntryId')}`;
@@ -121,6 +137,16 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
   const [checkedIngredients, setCheckedIngredients] = useState<number[]>([]);
   const [exportOpen, setExportOpen] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
+  const [shoppingOpen, setShoppingOpen] = useState(false);
+  const [shoppingSuccess, setShoppingSuccess] = useState<{ id: number; name: string } | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportLoginOpen, setReportLoginOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<RecipeReportReasonCode | ''>('');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportError, setReportError] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportFeedback, setReportFeedback] = useState('');
+  const reportPending = useRef(false);
 
   useEffect(() => {
     let alive = true;
@@ -210,11 +236,62 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
   const missingNutrition = recipe.nutrition?.ingredientsMissingData ?? recipe.ingredientsWithoutNutrition ?? [];
   const printRecipe = () => window.print();
 
+  const canReport = !account || account.role === 'CUSTOMER' || account.role === 'EXPERT';
+  const openReportForm = () => {
+    if (!account) {
+      setReportLoginOpen(true);
+      return;
+    }
+    setReportError('');
+    setReportFeedback('');
+    setReportOpen(true);
+  };
+  const closeReportForm = () => {
+    if (reportPending.current) return;
+    setReportOpen(false);
+  };
+  const submitReport = async () => {
+    if (reportPending.current) return;
+    const description = reportDescription.trim();
+    if (!reportReason) {
+      setReportError('Vui lòng chọn một lý do báo cáo.');
+      return;
+    }
+    if (description.length > 500 || (reportReason === 'OTHER' && (description.length < 10 || description.length > 500))) {
+      setReportError(reportReason === 'OTHER'
+        ? 'Vui lòng nhập mô tả từ 10 đến 500 ký tự khi chọn lý do Khác.'
+        : 'Mô tả bổ sung không được vượt quá 500 ký tự.');
+      return;
+    }
+
+    reportPending.current = true;
+    setReportSubmitting(true);
+    setReportError('');
+    setReportFeedback('');
+    try {
+      await recipesApi.submitReport(recipeId, {
+        reasonCode: reportReason,
+        ...(description ? { description } : {}),
+      });
+      setReportOpen(false);
+      setReportReason('');
+      setReportDescription('');
+      setReportFeedback('Báo cáo đã được tiếp nhận.');
+    } catch (cause: unknown) {
+      const failure = asApiError(cause);
+      setReportError(reportFailureMessage(failure));
+    } finally {
+      reportPending.current = false;
+      setReportSubmitting(false);
+    }
+  };
+
   return <PageContainer className="recipe-detail-page py-6 sm:py-8">
     <div className="recipe-detail-no-print mb-5 flex flex-wrap items-center justify-between gap-3">
       <Link to={backTarget} className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-900"><ArrowLeft className="h-4 w-4" />{fromMealPlan ? 'Về lịch ăn' : 'Khám phá'}</Link>
       <div className="flex flex-wrap items-center gap-2">
         <SaveRecipeButton recipeId={recipe.recipeId} />
+        {canReport && <Button variant="outline" size="sm" onClick={openReportForm} aria-label="Báo cáo công thức"><Flag aria-hidden="true" className="h-4 w-4" />Báo cáo</Button>}
         <Link to={`/so-sanh?a=${recipe.recipeId}`} aria-label="So sánh với công thức khác" className="rounded-full"><Button as="span" variant="outline" size="sm"><ArrowLeftRight className="h-4 w-4" />So sánh</Button></Link>
         <button type="button" onClick={() => openChat(recipe.recipeId)} className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-50"><MessageCircle className="h-4 w-4" aria-hidden="true" />Hỏi AI về công thức này</button>
         <Button variant="outline" size="sm" onClick={shareRecipe}><Share2 className="h-4 w-4" />Chia sẻ</Button>
@@ -228,6 +305,23 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       </div>
     </div>
     {shareMessage && <p role="status" className="recipe-detail-no-print mb-4 text-right text-sm text-leaf-700">{shareMessage}</p>}
+    {reportFeedback && <p role="status" className="recipe-detail-no-print mb-4 text-right text-sm font-medium text-leaf-700">{reportFeedback}</p>}
+    {shoppingSuccess && <p role="status" className="recipe-detail-no-print mb-4 text-right text-sm text-leaf-700">Đã thêm vào “{shoppingSuccess.name}”. <Link to={`/di-cho?listId=${shoppingSuccess.id}`} className="font-semibold underline">Mở danh sách mua sắm</Link></p>}
+    <AddRecipeShoppingDialog
+      open={shoppingOpen}
+      onClose={() => setShoppingOpen(false)}
+      recipeId={recipe.recipeId}
+      recipeTitle={recipe.title}
+      selectedIngredientIds={recipe.ingredients.filter((_, index) => checkedIngredients.includes(index)).map((item) => item.ingredientId)}
+      hideIngredientPicker
+      preview={{
+        id: recipe.recipeId,
+        title: recipe.title,
+        servings: recipe.servings,
+        ingredients: recipe.ingredients.map(({ ingredientId, name, quantity, unitId, unitCode, unitName }) => ({ ingredientId, name, customName: null, quantity, unitId, unitCode, unitName })),
+      }}
+      onAdded={(result) => setShoppingSuccess({ id: result.shoppingList.id, name: result.shoppingList.name })}
+    />
 
     {/* Header: Tiêu đề, Mô tả và Thông tin tác giả */}
     <div className="mb-6">
@@ -416,7 +510,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
             {(recipe.ingredients ?? []).length > 0 && (
               <div className="recipe-detail-no-print flex items-center gap-2">
                 <span className="font-medium text-ink-soft">
-                  Đã chuẩn bị: <strong className="text-emerald-700">{checkedIngredients.length}/{(recipe.ingredients ?? []).length}</strong>
+                  Đã chọn: <strong className="text-emerald-700">{checkedIngredients.length}/{(recipe.ingredients ?? []).length}</strong>
                 </span>
                 <span className="text-brand-200">·</span>
                 {checkedIngredients.length < (recipe.ingredients ?? []).length ? (
@@ -425,7 +519,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                     onClick={() => setCheckedIngredients((recipe.ingredients ?? []).map((_, i) => i))}
                     className="font-semibold text-brand-700 hover:text-brand-900 underline"
                   >
-                    Đánh dấu tất cả đã xong
+                    Chọn tất cả
                   </button>
                 ) : (
                   <button
@@ -433,7 +527,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                     onClick={() => setCheckedIngredients([])}
                     className="font-semibold text-ink-muted hover:text-ink underline"
                   >
-                    Bỏ đánh dấu tất cả
+                    Bỏ chọn tất cả
                   </button>
                 )}
               </div>
@@ -455,7 +549,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                   <li
                     key={`${item.ingredientId ?? item.name}-${index}`}
                     onClick={toggle}
-                    className={`flex items-center gap-3 py-3 px-4 cursor-pointer transition-colors ${
+                    className={`grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 cursor-pointer transition-colors sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] sm:px-4 sm:py-2 ${
                       isChecked ? 'bg-brand-50/25 text-ink-muted' : 'hover:bg-brand-50/40 text-ink'
                     }`}
                   >
@@ -467,7 +561,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                         e.stopPropagation();
                         toggle();
                       }}
-                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all ${
+                      className={`row-span-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all sm:row-span-1 ${
                         isChecked
                           ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs'
                           : 'border-brand-300 bg-paper hover:border-brand-500'
@@ -475,12 +569,25 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                     >
                       {isChecked && <Check className="h-3.5 w-3.5 stroke-[2.5]" />}
                     </button>
+                    <IngredientImage
+                      imageUrl={item.imageUrl}
+                      name={item.name}
+                      containerClassName="row-span-2 h-10 w-10 overflow-hidden rounded-lg border border-brand-100 bg-brand-50 sm:row-span-1"
+                    />
                     <span
-                      className={`min-w-0 flex-1 font-medium text-sm transition-all ${
+                      className={`col-start-3 row-start-1 min-w-0 font-medium text-sm transition-all ${
                         isChecked ? 'line-through text-ink-muted opacity-60' : 'text-ink'
                       }`}
                     >
-                      {item.name}
+                      {item.ingredientId != null ? (
+                        <Link
+                          to={`/nguyen-lieu/${item.ingredientId}`}
+                          onClick={(event) => event.stopPropagation()}
+                          className="rounded-sm hover:text-brand-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                        >
+                          {item.name}
+                        </Link>
+                      ) : item.name}
                       {item.nutritionSupported === false && (
                         <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
                           Chưa hỗ trợ tính dinh dưỡng
@@ -488,20 +595,20 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
                       )}
                     </span>
                     <strong
-                      className={`shrink-0 text-right font-bold text-sm whitespace-nowrap transition-all ${
+                      className={`col-start-3 row-start-2 text-left font-bold text-sm whitespace-nowrap transition-all sm:col-start-4 sm:row-start-1 sm:text-right ${
                         isChecked ? 'line-through text-ink-muted opacity-60' : 'text-ink'
                       }`}
                     >
                       {formatNumber(scaled)} {unitStr}
                     </strong>
-                    <div className="shrink-0">
+                    <div className="col-start-4 row-start-2 justify-self-end sm:col-start-5 sm:row-start-1">
                       {isChecked ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-                          ✓ Đã chuẩn bị
+                          ✓ Đã chọn
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                          Chờ chuẩn bị
+                          Chưa chọn
                         </span>
                       )}
                     </div>
@@ -511,6 +618,14 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
             </ul>
           ) : (
             <p className="mt-4 text-sm text-ink-muted">Chưa có nguyên liệu cho công thức này.</p>
+          )}
+          {account?.role !== 'ADMIN' && (recipe.ingredients ?? []).length > 0 && (
+            <div className="recipe-detail-no-print mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-brand-100 pt-4">
+              <p className="text-sm text-ink-muted">Đã chọn {checkedIngredients.length} nguyên liệu để thêm.</p>
+              <Button onClick={() => { setShoppingSuccess(null); setShoppingOpen(true); }}>
+                <ShoppingBasket className="h-4 w-4" /> Thêm mục đã chọn vào danh sách
+              </Button>
+            </div>
           )}
         </Card>
 
@@ -709,7 +824,70 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
 
     <RelatedRecipes key={recipeId} recipeId={recipeId} />
     <div className="recipe-detail-no-print mt-8"><Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeft className="h-4 w-4" />Trở lại khám phá</Link></div>
+
+    <Modal open={reportLoginOpen} onClose={() => setReportLoginOpen(false)} title="Yêu cầu đăng nhập">
+      <p className="text-sm text-ink-muted">Vui lòng đăng nhập để gửi báo cáo công thức.</p>
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <Link to="/dang-nhap" className="rounded-xl bg-brand-600 px-4 py-2 font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">Đăng nhập</Link>
+        <Button variant="outline" onClick={() => setReportLoginOpen(false)}>Để sau</Button>
+      </div>
+    </Modal>
+
+    <Modal open={reportOpen} onClose={closeReportForm} title="Báo cáo công thức" trapFocus>
+      <p className="mb-4 text-sm leading-6 text-ink-muted">Chọn lý do báo cáo “{recipe.title}”. Báo cáo sẽ được quản trị viên xem xét.</p>
+      <fieldset disabled={reportSubmitting}>
+        <legend className="mb-2 text-sm font-semibold text-ink">Lý do báo cáo</legend>
+        <div className="max-h-52 space-y-2 overflow-y-auto">
+          {REPORT_REASONS.map(({ code, label }) => (
+            <label key={code} className="flex cursor-pointer items-start gap-2 rounded-lg p-2 text-sm text-ink-soft hover:bg-brand-50">
+              <input
+                type="radio"
+                name="api-recipe-report-reason"
+                value={code}
+                checked={reportReason === code}
+                onChange={() => { setReportReason(code); setReportError(''); }}
+                className="mt-0.5 accent-brand-600"
+              />
+              <span>{label}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <label htmlFor="api-recipe-report-description" className="mt-4 block text-sm font-semibold text-ink">
+        Mô tả bổ sung {reportReason === 'OTHER' ? '(bắt buộc, 10–500 ký tự)' : '(tùy chọn)'}
+      </label>
+      <textarea
+        id="api-recipe-report-description"
+        value={reportDescription}
+        onChange={(event) => { setReportDescription(event.target.value); setReportError(''); }}
+        maxLength={500}
+        rows={4}
+        disabled={reportSubmitting}
+        aria-describedby="api-recipe-report-description-count"
+        className="mt-2 w-full resize-y rounded-xl border border-brand-200 bg-paper p-3 text-sm text-ink outline-none focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-400/50 disabled:bg-brand-50"
+      />
+      <p id="api-recipe-report-description-count" className="mt-1 text-right text-xs text-ink-muted">{reportDescription.length}/500 ký tự</p>
+      {reportError && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{reportError}</p>}
+      <div className="mt-5 flex flex-wrap justify-end gap-2">
+        <Button variant="outline" onClick={closeReportForm} disabled={reportSubmitting}>Hủy</Button>
+        <Button onClick={() => void submitReport()} disabled={reportSubmitting} aria-busy={reportSubmitting}>
+          {reportSubmitting ? 'Đang gửi…' : 'Gửi báo cáo'}
+        </Button>
+      </div>
+    </Modal>
   </PageContainer>;
+}
+
+function reportFailureMessage(error: ApiError) {
+  if (error.code === 'REPORT_ALREADY_OPEN') {
+    return 'Bạn đã có báo cáo đang được xem xét cho công thức này.';
+  }
+  if (error.status === 401) return 'Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại rồi thử lại.';
+  if (error.status === 403) return error.message || 'Tài khoản hiện không thể gửi báo cáo.';
+  if (error.status === 404) return 'Công thức không còn công khai hoặc đã bị gỡ.';
+  if (error.status >= 500) return 'Dịch vụ đang gặp sự cố. Vui lòng thử gửi lại sau.';
+  if (error.status === 0) return 'Không thể kết nối dịch vụ. Kiểm tra kết nối mạng rồi thử lại.';
+  return error.message || 'Chưa gửi được báo cáo. Vui lòng kiểm tra thông tin và thử lại.';
 }
 
 function StatTile({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {

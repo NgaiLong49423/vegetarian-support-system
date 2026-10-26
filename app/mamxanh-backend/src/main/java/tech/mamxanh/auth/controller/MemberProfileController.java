@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.http.ProblemDetail;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import tech.mamxanh.auth.dto.request.UpdateProfileRequest;
@@ -51,6 +55,9 @@ public class MemberProfileController {
 
     @PostMapping(value = "/me/profile/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponse(responseCode = "200", description = "Avatar stored and profile updated.", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "503", description = "MEDIA_STORAGE_UNAVAILABLE: storage is unconfigured or unavailable; the previous avatar is preserved.",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     public MemberProfileResponse uploadAvatar(@RequestParam("file") MultipartFile file) {
         return service.uploadAvatar(file);
     }

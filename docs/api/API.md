@@ -1,8 +1,8 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.41.0
+> **Version:** v0.43.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-25
 > **Status:** Active
 
 # API Integration Guide
@@ -15,8 +15,8 @@ Các operation đã triển khai dưới `/api/v1/shopping-lists`:
 |---|---|
 | `POST /` | `/api/v1/shopping-lists` nhận `{name}` để tạo danh sách rỗng độc lập với Lịch ăn và Recipe Post; Backend tự xác định Member sở hữu, trim tên, giới hạn 200 ký tự, gán loại `MANUAL`; trả `201`, Location và checklist rỗng. |
 | `POST /from-meal-plan` | Tạo danh sách mới từ Meal Plan của Member; `{weekStartDate, selectedDates?}`; trả `201`, Location và `ShoppingListCreationResponse`. |
-| `POST /from-recipe` | `{name, recipeId, servings?}` tạo danh sách `MANUAL` theo tên và thêm đúng một công thức công khai trong cùng transaction; `servings` tùy chọn (1–50); trả `201 ShoppingListCreationResponse` và Location. |
-| `POST /{listId}/recipes` | `{recipeId, servings?}` thêm đúng một công thức công khai vào danh sách bất kỳ thuộc Member; `servings` tùy chọn (1–50); trả `200 ShoppingListCreationResponse`. |
+| `POST /from-recipe` | `{name, recipeId, servings?, selectedIngredientIds?, manualItems?}` tạo danh sách `MANUAL` và lưu các nguyên liệu được chọn/mặt hàng thủ công trong cùng transaction; bỏ `selectedIngredientIds` để chọn tất cả, mảng rỗng chỉ hợp lệ khi có `manualItems`; trả `201 ShoppingListCreationResponse` và Location. |
+| `POST /{listId}/recipes` | `{recipeId, servings?, selectedIngredientIds?, manualItems?}` thêm các nguyên liệu được chọn và mặt hàng thủ công vào danh sách thuộc Member; bỏ `selectedIngredientIds` để chọn tất cả, mảng rỗng chỉ hợp lệ khi có `manualItems`; trả `200 ShoppingListCreationResponse`. |
 | `GET` | Danh sách riêng của Member; `page >= 0`, `size` 1–50, mặc định 20; `PageResponse` dùng `content`; sắp xếp `updatedAt DESC, id DESC`. |
 | `GET /options` | Các đơn vị catalog đang hoạt động để thêm/sửa mục. |
 | `GET /{listId}` | Chi tiết danh sách và các mục theo ID tăng dần. |
@@ -42,7 +42,7 @@ Frontend `/ke-hoach` cho Member chọn cả tuần hoặc ngày rồi gọi oper
 
 ### Nguồn Recipe Post được chọn — AC-53.6
 
-`POST /{listId}/recipes` thêm đúng một công thức vào danh sách sở hữu đã chọn, kể cả danh sách từ Meal Plan hoặc danh sách thủ công. `POST /from-recipe` tạo danh sách mới có tên và thêm công thức trong cùng transaction; lỗi thêm công thức rollback danh sách. Bỏ `servings` để dùng lượng gốc; nếu có (1–50), Backend tính `recipe quantity × servings / recipe.servings` trước khi tổng hợp và lưu. Công thức đã thêm trong cùng danh sách không tạo đóng góp trùng. Nguồn không công khai/không tồn tại và danh sách không thuộc Member trả `404`; dữ liệu hoặc định lượng sai trả `400`. Thao tác khóa danh sách để tránh ghi đè checklist.
+`POST /{listId}/recipes` và `POST /from-recipe` nhận `selectedIngredientIds` để chỉ thêm nguyên liệu được chọn; bỏ trường này để giữ tương thích và thêm toàn bộ nguyên liệu. Có thể bỏ chọn tất cả nếu gửi ít nhất một `manualItems` dạng `{name, quantity, unitId}`; mặt hàng thủ công và phần công thức được lưu trong cùng transaction. Bỏ `servings` để dùng lượng gốc; nếu có (1–50), Backend tính `recipe quantity × servings / recipe.servings` cho các dòng đã chọn trước khi tổng hợp và lưu. Gửi lại công thức trong cùng danh sách không tạo đóng góp công thức trùng; mặt hàng thủ công vẫn được thêm như các thao tác POST thông thường. Nguồn không công khai/không tồn tại và danh sách không thuộc Member trả `404`; dữ liệu hoặc định lượng sai trả `400`. Thao tác khóa danh sách để tránh ghi đè checklist.
 
 Mỗi item trả thêm `sources`: `recipeId`, `title` hiện hành (nullable), `available`, `originalQuantity`, `originalUnitId`, `originalUnitCode`. Đây là lượng/đơn vị được đóng góp tại thời điểm thêm (sau khi scale theo `servings` nếu có), không bị thay khi Member chỉnh lượng/đơn vị của item hoặc công thức được sửa. Công thức HIDDEN/DELETED giữ tham chiếu và checklist, nhưng không trả tiêu đề/nội dung riêng tư. UI chỉ mở link nguồn khi `available=true`.
 
@@ -147,6 +147,12 @@ Hai endpoint công khai, không cần Bearer token (UC-03.6, UC-03.7, AC-03.14, 
 
 Frontend: `/quen-mat-khau` gửi email và hiển thị nguyên văn `message` trung tính; `/dat-lai-mat-khau` đọc `token` từ URL, giữ trong bộ nhớ và xóa khỏi thanh địa chỉ trước khi người dùng nhập mật khẩu mới.
 
+### Upload ảnh công thức — FR-14 / fix #158
+
+`POST /api/v1/recipes/media/upload` nhận multipart trường `file`, yêu cầu Expert và trả `201` với envelope `data.blobUrl`, `data.mimeType`, `data.sizeBytes` sau khi lưu Azure thành công. Thiếu cấu hình, khởi tạo storage thất bại hoặc upload Azure lỗi trả `503 MEDIA_STORAGE_UNAVAILABLE` dưới dạng `application/problem+json`; không trả URL mock. Các tính năng không dùng storage vẫn khởi động. Storage dùng chung cho avatar cũng từ chối upload khi Azure không khả dụng.
+
+Root Compose truyền `AZURE_STORAGE_CONNECTION_STRING` và `AZURE_STORAGE_CONTAINER_NAME` từ env file Backend. Container lưu ảnh công khai cần cho phép đọc Blob để trình duyệt mở URL ảnh; connection string chỉ nằm ở Backend. Ảnh cũ chỉ có URL mock cần tải lại vì chưa có nội dung tệp trên Azure.
+
 ### 3.6 Định danh lượt xem công thức — FR-58
 
 Luồng FR-58 dùng `POST /api/v1/recipes/{recipeId}/views`. Gửi sự kiện sau khi nội dung chi tiết công thức công khai tải thành công; GET chi tiết và GET danh sách không tự tạo sự kiện. Schema/status chi tiết lấy từ generated OpenAPI. Transaction/Flyway và persistence phải được kiểm chứng bằng test SQL Server/Compose; kiểm thử với mock không thay bằng chứng này.
@@ -221,6 +227,9 @@ Mã `code` đã triển khai (Issue #5, #6, #8, #9, #29, #36).
 | `DIETARY_PROFILE_INCOMPLETE` | 409 | Cổng AI cá nhân hóa (BR-31) chặn yêu cầu vì hồ sơ thiếu nhóm thông tin tối thiểu; body có thêm `missing` (`VEGETARIAN_TYPE`, `AVOID_INGREDIENTS`, `DISLIKED_INGREDIENTS`). |
 | `UNAUTHENTICATED` | 401 | Gọi endpoint cần đăng nhập mà không có Bearer token, hoặc token sai chữ ký, sai issuer, hết hạn hay thuộc tài khoản không còn tồn tại. |
 | `ACCESS_DENIED` | 403 | Đã xác thực nhưng không đủ quyền. |
+| `REPORT_NOT_FOUND` | 404 | Endpoint `/admin/reports/{reportId}` với ID không phải báo cáo Recipe Post. Xem mục 21. |
+| `REPORT_STATUS_CONFLICT` | 409 | Tiếp nhận báo cáo không còn `OPEN`, hoặc ghi kết luận khi báo cáo chưa được chính Administrator đó tiếp nhận hay đã `RESOLVED`. Xem mục 21. |
+| `REPORT_DECISION_NOT_APPLICABLE` | 409 | Kết luận `HIDE_RECIPE` cho bài tác giả đã xóa, hoặc `LOCK_AUTHOR` khi tác giả là Administrator. Báo cáo giữ `IN_REVIEW`. Xem mục 21. |
 | `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE` | 404, 405, 415 | Lỗi định tuyến/định dạng do framework phát hiện. |
 | `INTERNAL_ERROR` | 500 | Lỗi không mong đợi; `detail` không chứa thông tin nội bộ. |
 
@@ -519,3 +528,23 @@ Generated OpenAPI là contract chi tiết. Guest và Member có thể đọc dan
 - Lỗi dịch vụ/kết nối cho phép thử lại; `404` cho biết nguyên liệu không còn khả dụng và cung cấp đường về danh mục.
 - Lưới bài viết trên chi tiết gọi `GET /api/v1/recipes/discovery` với `ingredientIds` bằng đúng ID đang xem, `size=9`, `page` tăng từ 0 và `sort=MOST_LIKED` hoặc `NEWEST`; Xem thêm theo `hasNext`, không tự hiển thị tổng số bài khi response không cung cấp tổng.
 - Các nhãn loại ăn chay dùng `vegetarianTypes` của `GET /api/v1/recipes/form-options`; chọn nhãn gửi thêm `vegetarianType` nhưng vẫn giữ `ingredientIds`. Đây là nhãn của công thức; API không khai báo độ phù hợp chế độ ăn của riêng nguyên liệu.
+
+## 21. Xử lý báo cáo của Administrator — FR-28
+
+Generated OpenAPI runtime là contract chi tiết; mục này ghi quy ước dùng chung. Mọi endpoint dưới `/api/v1/admin/reports` cần Bearer token của Administrator; Guest nhận `401`, Customer/Expert nhận `403 ACCESS_DENIED` (NFR-09). Chỉ báo cáo Recipe Post (`REPORT.recipe_id`) nằm trong hàng đợi này; báo cáo bình luận thuộc FR-48.
+
+| Endpoint | Cách tích hợp |
+| --- | --- |
+| `GET /api/v1/admin/reports?status=&page=&size=` | `PageResponse<AdminReportResponse>`, mới nhất trước. `status` là `OPEN`, `IN_REVIEW`, `RESOLVED` hoặc bỏ trống. `page` từ 0, `size` 1–100 (mặc định 20). |
+| `GET /api/v1/admin/reports/status-counts` | Số báo cáo ở từng trạng thái: `open`, `inReview`, `resolved`. |
+| `GET /api/v1/admin/reports/{reportId}` | Chi tiết một báo cáo, `404 REPORT_NOT_FOUND` khi không có. |
+| `POST /api/v1/admin/reports/{reportId}/claim` | Không có body. Chuyển `OPEN` sang `IN_REVIEW` và ghi người gọi vào `handledBy` (AC-28.1). Báo cáo đã có người tiếp nhận hoặc đã giải quyết trả `409 REPORT_STATUS_CONFLICT`. Hai Administrator tiếp nhận cùng lúc thì đúng một người thành công vì Backend khóa dòng `REPORT`. |
+| `POST /api/v1/admin/reports/{reportId}/resolve` | Body `{ "decision", "reason" }`. Chỉ Administrator đang giữ báo cáo `IN_REVIEW` được gọi; trả báo cáo `RESOLVED`. |
+
+`AdminReportResponse` gồm `id`, `status`, `reasonCode`, `description`, `createdAt`, `updatedAt`, `recipe` (`id`, `title`, `status`), `reporter` và `author` (`id`, `displayName`, `email`, `role`, `accountStatus`), `handledBy` (`id`, `displayName`, `null` khi chưa ai tiếp nhận), `decision`, `decisionReason`, `handledAt`. Response này chỉ dành cho Administrator vì có danh tính người báo cáo (FR-29, BR-28). Thời gian là UTC không kèm múi giờ, Frontend hiển thị theo giờ Việt Nam.
+
+- `decision` là một trong `NO_VIOLATION` (bài giữ nguyên), `WARN_AUTHOR` (bài giữ nguyên, tác giả nhận cảnh báo), `HIDE_RECIPE` (bài chuyển `HIDDEN`, không còn ở API công khai, tìm kiếm và gợi ý) hoặc `LOCK_AUTHOR` (tài khoản tác giả chuyển `LOCKED`, mọi Bearer token đã cấp nhận `403 ACCOUNT_LOCKED` ngay ở request kế tiếp).
+- `reason` bỏ khoảng trắng đầu cuối, bắt buộc 10–500 ký tự với mọi kết luận (AC-28.5, BR-26). Sai `decision` hoặc `reason` trả `400 VALIDATION_FAILED` với `errors[].field` là `decision` hoặc `reason`, báo cáo giữ `IN_REVIEW`.
+- Báo cáo `RESOLVED` không đổi được nữa: không có endpoint sửa, `claim` và `resolve` đều trả `409`. Bản ghi báo cáo (`decision`, `decision_reason`, `handled_by`, `handled_at`) là audit của quyết định (SRS 3.12, NFR-08). Báo cáo `IN_REVIEW` cũ chưa có `handledBy` (đổi từ `PROCESSING` ở V9) vẫn tiếp nhận được.
+- Số lượng báo cáo không tự tạo chế tài; mỗi báo cáo cần một quyết định riêng (BR-26, BR-58). Kết luận của một báo cáo không tự đổi các báo cáo khác trên cùng bài.
+- Khi giải quyết, Backend ghi `NOTIFICATION` trong cùng transaction: người báo cáo nhận `REPORT_RESULT` (kết quả chung, không nêu chế tài cụ thể), tác giả nhận `MODERATION_DECISION` với lý do của Administrator khi kết luận là cảnh báo, ẩn bài hoặc khóa tài khoản. Nội dung thông báo không chứa tên, email hay mô tả của người báo cáo (AC-49.4). Email kết quả kiểm duyệt chưa gửi trong bản này.

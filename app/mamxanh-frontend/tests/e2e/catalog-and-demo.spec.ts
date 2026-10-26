@@ -19,7 +19,7 @@ test('recipe exploration uses only API search and reports an empty result honest
 
 test('guest is blocked with login prompt when visiting /di-cho and /ke-hoach', async ({ page }) => {
   await page.goto('/di-cho');
-  await expect(page.getByRole('heading', { name: 'Danh sách đi chợ của bạn' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Danh sách mua sắm của bạn' })).toBeVisible();
   await expect(page.getByRole('main').getByRole('link', { name: 'Đăng nhập' })).toBeVisible();
 
   await page.goto('/ke-hoach');

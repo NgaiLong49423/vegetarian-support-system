@@ -103,6 +103,25 @@ export interface RecipeViewResponse {
   viewCount: number;
 }
 
+export type RecipeReportReasonCode =
+  | 'RECIPE_INFO_OR_DIET_LABEL'
+  | 'FOOD_SAFETY_HAZARD'
+  | 'SPAM_ADVERTISING'
+  | 'INAPPROPRIATE_CONTENT'
+  | 'COPYRIGHT_VIOLATION'
+  | 'OTHER';
+
+export interface RecipeReportRequest {
+  reasonCode: RecipeReportReasonCode;
+  description?: string;
+}
+
+export interface RecipeReportResponse {
+  reportId: number;
+  status: string;
+  message: string;
+}
+
 export interface RecipeMedia {
   url: string;
   mimeType: string;
@@ -339,6 +358,9 @@ export const recipesApi = {
   recordView: (recipeId: number, anonymousViewerId?: string) => request(
     () => apiClient.post<RecipeViewResponse>(`/recipes/${recipeId}/views`, anonymousViewerId ? { anonymousViewerId } : {}),
   ),
+  submitReport: (recipeId: number, payload: RecipeReportRequest) => request(
+    () => apiClient.post<RecipeReportResponse>(`/recipes/${recipeId}/reports`, payload),
+  ),
   searchPublic: (filters: RecipeSearchParams) => request(
     () => apiClient.get<RecipeSearchResult>('/recipes', { params: recipeSearchParams(filters) }),
   ),
@@ -368,7 +390,9 @@ export const recipeApi = {
       '/recipes/mine', { params: { page, size } },
     )).data,
   getForAuthor: async (recipeId: number) => (await apiClient.get<RecipePost>(`/recipes/${recipeId}/manage`)).data,
-  getReferenceData: async () => (await apiClient.get<RecipeReferenceData>('/recipes/reference-data')).data,
+  getReferenceData: async (keyword?: string) => (await apiClient.get<RecipeReferenceData>('/recipes/reference-data', {
+    params: keyword ? { keyword } : undefined,
+  })).data,
   update: async (recipeId: number, payload: UpdateRecipePost) =>
     (await apiClient.put<RecipePost>(`/recipes/${recipeId}`, payload)).data,
   delete: (recipeId: number) => apiClient.delete<void>(`/recipes/${recipeId}`),
