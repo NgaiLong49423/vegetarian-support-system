@@ -6132,6 +6132,20 @@ paths:
         schema:
           type: string
           pattern: OPEN|IN_REVIEW|RESOLVED
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+          minLength: 0
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          default: NEWEST
+          pattern: NEWEST|MOST_REPORTED
       - name: page
         in: query
         required: false
@@ -6152,15 +6166,18 @@ paths:
           minimum: 1
       responses:
         "200":
-          description: "One group per reported Recipe Post with its report count,\
-            \ the post with the newest matching report first (AC-30.4)."
+          description: "One group per reported Recipe Post with its report count and\
+            \ most common reason (AC-30.4, UC-06.1). query keeps the posts whose title\
+            \ or author name or email contains it; sort NEWEST puts the post with\
+            \ the newest matching report first, MOST_REPORTED the post with the most\
+            \ matching reports."
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageResponseAdminReportGroupResponse"
         "400":
-          description: "VALIDATION_FAILED: unknown status, or page/size outside its\
-            \ range."
+          description: "VALIDATION_FAILED: unknown status or sort, query over 200\
+            \ characters, or page/size outside its range."
           content:
             application/problem+json:
               schema:
@@ -9508,6 +9525,11 @@ components:
         latestReportAt:
           type: string
           format: date-time
+        topReasonCode:
+          type: string
+        topReasonCount:
+          type: integer
+          format: int64
     PageResponseAdminReportGroupResponse:
       type: object
       properties:
