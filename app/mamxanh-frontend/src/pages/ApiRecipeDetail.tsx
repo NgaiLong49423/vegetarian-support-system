@@ -1,6 +1,7 @@
 import { RecipeDefaultArtwork } from '../components/RecipeDefaultArtwork';
 import { RecipeReactions } from '../components/RecipeReactions';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { RecipeReportButton } from '../components/RecipeReportButton';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -11,7 +12,6 @@ import {
   Clock3,
   Download,
   Eye,
-  Flag,
   Leaf,
   LoaderCircle,
   MessageCircle,
@@ -27,10 +27,9 @@ import {
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
 import { Badge, Button, Card } from '../components/ui';
-import { Modal } from '../components/Modal';
 import { IngredientImage } from '../components/IngredientImage';
-import { asApiError, type ApiError } from '../lib/apiClient';
-import { recipesApi, type RecipeDetail, type RecipeReportReasonCode } from '../api/recipes';
+import { asApiError } from '../lib/apiClient';
+import { recipesApi, type RecipeDetail } from '../api/recipes';
 import { SaveRecipeButton } from '../components/SaveRecipeButton';
 import { RecipeViews } from '../components/RecipeViews';
 import { MemberAvatar } from '../components/MemberAvatar';
@@ -52,15 +51,6 @@ const NUTRIENTS = [
   { key: 'VITAMIN_B12_MCG', label: 'Vitamin B12', unit: 'mcg' },
   { key: 'ZINC_MG', label: 'Kẽm', unit: 'mg' },
 ] as const;
-
-const REPORT_REASONS: Array<{ code: RecipeReportReasonCode; label: string }> = [
-  { code: 'RECIPE_INFO_OR_DIET_LABEL', label: 'Sai thông tin công thức hoặc nhãn ăn chay' },
-  { code: 'FOOD_SAFETY_HAZARD', label: 'Nguy cơ an toàn thực phẩm' },
-  { code: 'SPAM_ADVERTISING', label: 'Spam / Quảng cáo không phù hợp' },
-  { code: 'INAPPROPRIATE_CONTENT', label: 'Nội dung xúc phạm / Không phù hợp' },
-  { code: 'COPYRIGHT_VIOLATION', label: 'Sao chép / Nghi vi phạm bản quyền' },
-  { code: 'OTHER', label: 'Khác' },
-];
 
 /** `publishedAt` is UTC without an offset; show the date in Vietnam time (FR-23). */
 function publishedDate(value: string) {
@@ -139,14 +129,6 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
   const [shareMessage, setShareMessage] = useState('');
   const [shoppingOpen, setShoppingOpen] = useState(false);
   const [shoppingSuccess, setShoppingSuccess] = useState<{ id: number; name: string } | null>(null);
-  const [reportOpen, setReportOpen] = useState(false);
-  const [reportLoginOpen, setReportLoginOpen] = useState(false);
-  const [reportReason, setReportReason] = useState<RecipeReportReasonCode | ''>('');
-  const [reportDescription, setReportDescription] = useState('');
-  const [reportError, setReportError] = useState('');
-  const [reportSubmitting, setReportSubmitting] = useState(false);
-  const [reportFeedback, setReportFeedback] = useState('');
-  const reportPending = useRef(false);
 
   useEffect(() => {
     let alive = true;
@@ -236,56 +218,6 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
   const missingNutrition = recipe.nutrition?.ingredientsMissingData ?? recipe.ingredientsWithoutNutrition ?? [];
   const printRecipe = () => window.print();
 
-  const canReport = !account || account.role === 'CUSTOMER' || account.role === 'EXPERT';
-  const openReportForm = () => {
-    if (!account) {
-      setReportLoginOpen(true);
-      return;
-    }
-    setReportError('');
-    setReportFeedback('');
-    setReportOpen(true);
-  };
-  const closeReportForm = () => {
-    if (reportPending.current) return;
-    setReportOpen(false);
-  };
-  const submitReport = async () => {
-    if (reportPending.current) return;
-    const description = reportDescription.trim();
-    if (!reportReason) {
-      setReportError('Vui lòng chọn một lý do báo cáo.');
-      return;
-    }
-    if (description.length > 500 || (reportReason === 'OTHER' && (description.length < 10 || description.length > 500))) {
-      setReportError(reportReason === 'OTHER'
-        ? 'Vui lòng nhập mô tả từ 10 đến 500 ký tự khi chọn lý do Khác.'
-        : 'Mô tả bổ sung không được vượt quá 500 ký tự.');
-      return;
-    }
-
-    reportPending.current = true;
-    setReportSubmitting(true);
-    setReportError('');
-    setReportFeedback('');
-    try {
-      await recipesApi.submitReport(recipeId, {
-        reasonCode: reportReason,
-        ...(description ? { description } : {}),
-      });
-      setReportOpen(false);
-      setReportReason('');
-      setReportDescription('');
-      setReportFeedback('Báo cáo đã được tiếp nhận.');
-    } catch (cause: unknown) {
-      const failure = asApiError(cause);
-      setReportError(reportFailureMessage(failure));
-    } finally {
-      reportPending.current = false;
-      setReportSubmitting(false);
-    }
-  };
-
   return <PageContainer className="recipe-detail-page py-6 sm:py-8">
     <div className="recipe-detail-no-print mb-5 flex flex-wrap items-center justify-between gap-3">
       <Link
@@ -297,17 +229,6 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       </Link>
       <div className="flex flex-wrap items-center gap-2">
         <SaveRecipeButton recipeId={recipe.recipeId} size="sm" />
-        {canReport && (
-          <button
-            type="button"
-            onClick={openReportForm}
-            aria-label="Báo cáo công thức"
-            className="inline-flex items-center justify-center rounded-full font-semibold transition-all border border-brand-300/40 bg-paper text-ink shadow-xs hover:border-brand-500 hover:text-brand-700 hover:shadow-sm px-3.5 py-1.5 text-sm gap-2 dark:border-brand-800 dark:bg-surface"
-          >
-            <Flag aria-hidden="true" className="h-4 w-4 text-brand-600 shrink-0" />
-            Báo cáo
-          </button>
-        )}
         <Link to={`/so-sanh?a=${recipe.recipeId}`} aria-label="So sánh với công thức khác" className="rounded-full">
           <span className="inline-flex items-center justify-center rounded-full font-semibold transition-all border border-brand-300/40 bg-paper text-ink shadow-xs hover:border-brand-500 hover:text-brand-700 hover:shadow-sm px-3.5 py-1.5 text-sm gap-2 dark:border-brand-800 dark:bg-surface">
             <ArrowLeftRight className="h-4 w-4 text-brand-600 shrink-0" />
@@ -349,7 +270,6 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       </div>
     </div>
     {shareMessage && <p role="status" className="recipe-detail-no-print mb-4 text-right text-sm text-leaf-700">{shareMessage}</p>}
-    {reportFeedback && <p role="status" className="recipe-detail-no-print mb-4 text-right text-sm font-medium text-leaf-700">{reportFeedback}</p>}
     {shoppingSuccess && <p role="status" className="recipe-detail-no-print mb-4 text-right text-sm text-leaf-700">Đã thêm vào “{shoppingSuccess.name}”. <Link to={`/di-cho?listId=${shoppingSuccess.id}`} className="font-semibold underline">Mở danh sách mua sắm</Link></p>}
     <AddRecipeShoppingDialog
       open={shoppingOpen}
@@ -758,6 +678,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
             <RecipeViews key={recipeId} recipe={recipe} renderCount={(count) => <StatTile icon={<Eye className="h-4 w-4 text-brand-600" />} label="Lượt xem" value={<>{formatNumber(count, 0)}<span className="sr-only"> lượt xem</span></>} />} />
           </div>
           <RecipeReactions recipeId={recipe.recipeId} authorId={author.userId} statistics={statistics} />
+          <RecipeReportButton recipeId={recipe.recipeId} authorId={author.userId} />
         </Card>
       </div>
 
@@ -868,70 +789,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
 
     <RelatedRecipes key={recipeId} recipeId={recipeId} />
     <div className="recipe-detail-no-print mt-8"><Link to="/kham-pha" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"><ArrowLeft className="h-4 w-4" />Trở lại khám phá</Link></div>
-
-    <Modal open={reportLoginOpen} onClose={() => setReportLoginOpen(false)} title="Yêu cầu đăng nhập">
-      <p className="text-sm text-ink-muted">Vui lòng đăng nhập để gửi báo cáo công thức.</p>
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <Link to="/dang-nhap" className="rounded-xl bg-brand-600 px-4 py-2 font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">Đăng nhập</Link>
-        <Button variant="outline" onClick={() => setReportLoginOpen(false)}>Để sau</Button>
-      </div>
-    </Modal>
-
-    <Modal open={reportOpen} onClose={closeReportForm} title="Báo cáo công thức" trapFocus>
-      <p className="mb-4 text-sm leading-6 text-ink-muted">Chọn lý do báo cáo “{recipe.title}”. Báo cáo sẽ được quản trị viên xem xét.</p>
-      <fieldset disabled={reportSubmitting}>
-        <legend className="mb-2 text-sm font-semibold text-ink">Lý do báo cáo</legend>
-        <div className="max-h-52 space-y-2 overflow-y-auto">
-          {REPORT_REASONS.map(({ code, label }) => (
-            <label key={code} className="flex cursor-pointer items-start gap-2 rounded-lg p-2 text-sm text-ink-soft hover:bg-brand-50">
-              <input
-                type="radio"
-                name="api-recipe-report-reason"
-                value={code}
-                checked={reportReason === code}
-                onChange={() => { setReportReason(code); setReportError(''); }}
-                className="mt-0.5 accent-brand-600"
-              />
-              <span>{label}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <label htmlFor="api-recipe-report-description" className="mt-4 block text-sm font-semibold text-ink">
-        Mô tả bổ sung {reportReason === 'OTHER' ? '(bắt buộc, 10–500 ký tự)' : '(tùy chọn)'}
-      </label>
-      <textarea
-        id="api-recipe-report-description"
-        value={reportDescription}
-        onChange={(event) => { setReportDescription(event.target.value); setReportError(''); }}
-        maxLength={500}
-        rows={4}
-        disabled={reportSubmitting}
-        aria-describedby="api-recipe-report-description-count"
-        className="mt-2 w-full resize-y rounded-xl border border-brand-200 bg-paper p-3 text-sm text-ink outline-none focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-400/50 disabled:bg-brand-50"
-      />
-      <p id="api-recipe-report-description-count" className="mt-1 text-right text-xs text-ink-muted">{reportDescription.length}/500 ký tự</p>
-      {reportError && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{reportError}</p>}
-      <div className="mt-5 flex flex-wrap justify-end gap-2">
-        <Button variant="outline" onClick={closeReportForm} disabled={reportSubmitting}>Hủy</Button>
-        <Button onClick={() => void submitReport()} disabled={reportSubmitting} aria-busy={reportSubmitting}>
-          {reportSubmitting ? 'Đang gửi…' : 'Gửi báo cáo'}
-        </Button>
-      </div>
-    </Modal>
   </PageContainer>;
-}
-
-function reportFailureMessage(error: ApiError) {
-  if (error.code === 'REPORT_ALREADY_OPEN') {
-    return 'Bạn đã có báo cáo đang được xem xét cho công thức này.';
-  }
-  if (error.status === 401) return 'Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại rồi thử lại.';
-  if (error.status === 403) return error.message || 'Tài khoản hiện không thể gửi báo cáo.';
-  if (error.status === 404) return 'Công thức không còn công khai hoặc đã bị gỡ.';
-  if (error.status >= 500) return 'Dịch vụ đang gặp sự cố. Vui lòng thử gửi lại sau.';
-  if (error.status === 0) return 'Không thể kết nối dịch vụ. Kiểm tra kết nối mạng rồi thử lại.';
-  return error.message || 'Chưa gửi được báo cáo. Vui lòng kiểm tra thông tin và thử lại.';
 }
 
 function StatTile({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {

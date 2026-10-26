@@ -18,6 +18,7 @@ import tech.mamxanh.recipe.service.RecipePostService;
 @Service
 public class RecipeReportService {
     private static final List<String> ACTIVE_STATUSES = List.of("OPEN", "IN_REVIEW");
+    private static final String RESOLVED_STATUS = "RESOLVED";
     private final RecipeReportRepository reportRepository;
     private final CurrentUserService currentUserService;
     private final RecipePostService recipePostService;
@@ -37,7 +38,7 @@ public class RecipeReportService {
         recipePostService.requirePublishedForReport(recipeId);
         reportRepository.findFirstByReporterIdAndRecipeIdAndStatusInOrderByIdAsc(
                 member.id(), recipeId, ACTIVE_STATUSES).ifPresent(existing -> {
-                    throw new AppException(ErrorCode.REPORT_ALREADY_OPEN);
+                    throw new AppException(ErrorCode.REPORT_ALREADY_OPEN).withProperty("reportId", existing.getId());
                 });
 
         RecipeReportReason reason;
@@ -52,6 +53,12 @@ public class RecipeReportService {
         if (reason == RecipeReportReason.OTHER && (description == null || description.length() < 10)) {
             throw new AppException(ErrorCode.VALIDATION_FAILED,
                     "Mô tả cho lý do Khác phải có từ 10 đến 500 ký tự.").withProperty("field", "description");
+        }
+        if ((description == null || description.length() < 10)
+                && reportRepository.existsByReporterIdAndRecipeIdAndStatus(member.id(), recipeId, RESOLVED_STATUS)) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED,
+                    "Bạn đã báo cáo công thức này trước đây. Hãy mô tả vấn đề mới từ 10 đến 500 ký tự.")
+                    .withProperty("field", "description");
         }
 
         RecipeReportEntity report = reportRepository.saveAndFlush(new RecipeReportEntity(

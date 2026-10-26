@@ -18,6 +18,7 @@ type Report = {
   decision: string | null;
   decisionReason: string | null;
   handledAt: string | null;
+  supplements: Array<{ supplementId: number; content: string; createdAt: string }>;
 };
 
 const ME = { id: 901, displayName: 'Demo ADMIN' };
@@ -27,7 +28,7 @@ const account = (id: number, displayName: string, role = 'CUSTOMER') => ({
 
 function fixtures(): Report[] {
   const base = {
-    updatedAt: '2026-10-25T02:00:00', decision: null, decisionReason: null, handledAt: null, handledBy: null,
+    updatedAt: '2026-10-25T02:00:00', decision: null, decisionReason: null, handledAt: null, handledBy: null, supplements: [],
     author: account(30, 'Chuyên gia Bình', 'EXPERT'),
   };
   return [
@@ -98,7 +99,7 @@ test.beforeEach(async ({ page }) => {
 
 test('queue lists open Recipe Post reports with reporter, author and status counts, and filters by status', async ({ page }) => {
   await mockApi(page);
-  await page.goto('/admin/bao-cao');
+  await page.goto('/admin/bao-cao?xem=bao-cao');
 
   await expect(page.getByRole('heading', { name: 'Xử lý báo cáo vi phạm' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Chờ xử lý (2)' })).toHaveAttribute('aria-pressed', 'true');
@@ -134,7 +135,7 @@ test('a long report description shows two whole lines on the queue card without 
   const api = await mockApi(page);
   api.reports[0].description = 'Cuối phần hướng dẫn có lời mời mua bộ sốt qua trang bán hàng, không liên quan đến cách làm món. '.repeat(3).trim();
   await page.setViewportSize({ width: 375, height: 740 });
-  await page.goto('/admin/bao-cao');
+  await page.goto('/admin/bao-cao?xem=bao-cao');
 
   const text = card(page, 'Canh nấm hạt sen').getByText('Cuối phần hướng dẫn có lời mời');
   await expect(text).toBeVisible();
@@ -147,7 +148,7 @@ test('a long report description shows two whole lines on the queue card without 
 
 test('taking an open report records the handling administrator and opens the decision form', async ({ page }) => {
   await mockApi(page);
-  await page.goto('/admin/bao-cao');
+  await page.goto('/admin/bao-cao?xem=bao-cao');
 
   await card(page, 'Canh nấm hạt sen').getByRole('button', { name: 'Tiếp nhận xem xét' }).click();
 
@@ -165,7 +166,7 @@ test('taking an open report records the handling administrator and opens the dec
 
 test('an empty or missing conclusion is refused before anything is saved', async ({ page }) => {
   const api = await mockApi(page);
-  await page.goto('/admin/bao-cao');
+  await page.goto('/admin/bao-cao?xem=bao-cao');
   await page.getByRole('button', { name: /^Đang xem xét/ }).click();
   await card(page, 'Đậu hũ sốt cà').getByRole('button', { name: 'Ghi kết luận' }).click();
   const dialog = page.getByRole('dialog', { name: 'Báo cáo #14' });
@@ -185,7 +186,7 @@ test('an empty or missing conclusion is refused before anything is saved', async
 
 test('hiding the post saves the trimmed reason and moves the report to resolved', async ({ page }) => {
   const api = await mockApi(page);
-  await page.goto('/admin/bao-cao');
+  await page.goto('/admin/bao-cao?xem=bao-cao');
   await page.getByRole('button', { name: /^Đang xem xét/ }).click();
   await card(page, 'Đậu hũ sốt cà').getByRole('button', { name: 'Ghi kết luận' }).click();
   const dialog = page.getByRole('dialog', { name: 'Báo cáo #14' });
@@ -206,7 +207,7 @@ test('hiding the post saves the trimmed reason and moves the report to resolved'
 test('locking the author warns first and shows the server validation message', async ({ page }) => {
   const api = await mockApi(page);
   api.resolveProblem = { code: 'VALIDATION_FAILED', detail: 'Dữ liệu không hợp lệ.', errors: [{ field: 'reason', message: 'Nhập lý do kết luận từ 10 đến 500 ký tự.' }] };
-  await page.goto('/admin/bao-cao');
+  await page.goto('/admin/bao-cao?xem=bao-cao');
   await page.getByRole('button', { name: /^Đang xem xét/ }).click();
   await card(page, 'Đậu hũ sốt cà').getByRole('button', { name: 'Ghi kết luận' }).click();
   const dialog = page.getByRole('dialog', { name: 'Báo cáo #14' });
@@ -223,7 +224,7 @@ test('locking the author warns first and shows the server validation message', a
 
 test('a report held by another administrator can only be viewed', async ({ page }) => {
   await mockApi(page);
-  await page.goto('/admin/bao-cao');
+  await page.goto('/admin/bao-cao?xem=bao-cao');
   await page.getByRole('button', { name: /^Đang xem xét/ }).click();
   const held = card(page, 'Lẩu nấm rừng');
   await expect(held).toContainText('Người xử lý: Quản trị viên Lan');
@@ -239,7 +240,7 @@ test('a report held by another administrator can only be viewed', async ({ page 
 test('a claim that loses the race explains why and reloads the queue', async ({ page }) => {
   const api = await mockApi(page);
   api.claimConflict = true;
-  await page.goto('/admin/bao-cao');
+  await page.goto('/admin/bao-cao?xem=bao-cao');
 
   await card(page, 'Gỏi cuốn rau củ').getByRole('button', { name: 'Tiếp nhận xem xét' }).click();
 
@@ -251,7 +252,7 @@ test('a claim that loses the race explains why and reloads the queue', async ({ 
 
 test('queue failure is reported instead of an empty queue', async ({ page }) => {
   await page.route('**/api/v1/admin/reports**', (route) => route.fulfill({ status: 503, body: '' }));
-  await page.goto('/admin/bao-cao');
+  await page.goto('/admin/bao-cao?xem=bao-cao');
 
   await expect(page.getByRole('alert')).toHaveText('Không thể kết nối dịch vụ. Vui lòng thử lại.');
   await expect(page.getByText('Chưa tải được danh sách báo cáo. Bấm Làm mới để thử lại.')).toBeVisible();

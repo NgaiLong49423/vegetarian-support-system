@@ -5,14 +5,18 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import tech.mamxanh.admin.dto.AdminReportGroupResponse;
 import tech.mamxanh.admin.dto.AdminReportResponse;
 import tech.mamxanh.admin.dto.AdminReportStatusCountsResponse;
 
-/** Read side of the FR-28 Administrator queue: Recipe Post reports joined with their accounts. */
+/** Read side of the FR-28 Administrator queue: Recipe Post reports joined with their accounts, grouped by post for FR-30. */
 @Repository
 public class AdminReportQueryRepository {
     private static final String SELECT = """
@@ -36,24 +40,82 @@ public class AdminReportQueryRepository {
         this.jdbc = jdbc;
     }
 
-    public List<AdminReportResponse> page(String status, int page, int size) {
-        StringBuilder sql = new StringBuilder(SELECT);
+    public List<AdminReportResponse> page(String status, Long recipeId, int page, int size) {
+        StringBuilder sql = new StringBuilder(SELECT).append("WHERE 1 = 1 ");
         List<Object> args = new ArrayList<>();
         if (status != null) {
-            sql.append("WHERE r.status = ? ");
+            sql.append("AND r.status = ? ");
             args.add(status);
+        }
+        if (recipeId != null) {
+            sql.append("AND r.recipe_id = ? ");
+            args.add(recipeId);
         }
         sql.append("ORDER BY r.created_at DESC, r.report_id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
         args.add((long) page * size);
         args.add(size);
-        return jdbc.query(sql.toString(), (rs, row) -> map(rs), args.toArray());
+        return withSupplements(jdbc.query(sql.toString(), (rs, row) -> map(rs), args.toArray()));
     }
 
-    public long count(String status) {
-        if (status == null) {
-            return jdbc.queryForObject("SELECT COUNT(*) FROM [REPORT] WHERE recipe_id IS NOT NULL", Long.class);
+    public long count(String status, Long recipeId) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM [REPORT] WHERE recipe_id IS NOT NULL ");
+        List<Object> args = new ArrayList<>();
+        if (status != null) {
+            sql.append("AND status = ? ");
+            args.add(status);
         }
-        return jdbc.queryForObject("SELECT COUNT(*) FROM [REPORT] WHERE recipe_id IS NOT NULL AND status = ?",
+        if (recipeId != null) {
+            sql.append("AND recipe_id = ? ");
+            args.add(recipeId);
+        }
+        return jdbc.queryForObject(sql.toString(), Long.class, args.toArray());
+    }
+
+    /** AC-30.4: one row per reported Recipe Post, the post with the newest matching report first. */
+    public List<AdminReportGroupResponse> groups(String status, int page, int size) {
+        String matching = status == null ? "1 = 1" : "r.status = ?";
+        String sql = """
+                SELECT g.recipe_id, g.report_count, g.latest_report_at, g.open_count, g.in_review_count, g.resolved_count,
+                       p.title, p.status AS recipe_status,
+                       au.user_id AS author_id, au.display_name AS author_name, au.email AS author_email,
+                       au.role AS author_role, au.account_status AS author_status
+                FROM (
+                    SELECT r.recipe_id,
+                           SUM(CASE WHEN %1$s THEN 1 ELSE 0 END) AS report_count,
+                           MAX(CASE WHEN %1$s THEN r.created_at END) AS latest_report_at,
+                           SUM(CASE WHEN r.status = 'OPEN' THEN 1 ELSE 0 END) AS open_count,
+                           SUM(CASE WHEN r.status = 'IN_REVIEW' THEN 1 ELSE 0 END) AS in_review_count,
+                           SUM(CASE WHEN r.status = 'RESOLVED' THEN 1 ELSE 0 END) AS resolved_count
+                    FROM [REPORT] r
+                    WHERE r.recipe_id IS NOT NULL
+                    GROUP BY r.recipe_id
+                    HAVING SUM(CASE WHEN %1$s THEN 1 ELSE 0 END) > 0
+                ) g
+                JOIN [RECIPE_POST] p ON p.recipe_id = g.recipe_id
+                JOIN [USER] au ON au.user_id = p.author_id
+                ORDER BY g.latest_report_at DESC, g.recipe_id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+                """.formatted(matching);
+        List<Object> args = new ArrayList<>();
+        if (status != null) {
+            args.add(status);
+            args.add(status);
+            args.add(status);
+        }
+        args.add((long) page * size);
+        args.add(size);
+        return jdbc.query(sql, (rs, row) -> new AdminReportGroupResponse(
+                new AdminReportResponse.ReportedRecipe(rs.getLong("recipe_id"), rs.getString("title"), rs.getString("recipe_status")),
+                account(rs, "author"), rs.getLong("report_count"),
+                new AdminReportStatusCountsResponse(rs.getLong("open_count"), rs.getLong("in_review_count"),
+                        rs.getLong("resolved_count")),
+                time(rs.getTimestamp("latest_report_at"))), args.toArray());
+    }
+
+    public long countGroups(String status) {
+        if (status == null) {
+            return jdbc.queryForObject("SELECT COUNT(DISTINCT recipe_id) FROM [REPORT] WHERE recipe_id IS NOT NULL", Long.class);
+        }
+        return jdbc.queryForObject("SELECT COUNT(DISTINCT recipe_id) FROM [REPORT] WHERE recipe_id IS NOT NULL AND status = ?",
                 Long.class, status);
     }
 
@@ -71,7 +133,23 @@ public class AdminReportQueryRepository {
     }
 
     public Optional<AdminReportResponse> findById(long reportId) {
-        return jdbc.query(SELECT + "WHERE r.report_id = ?", (rs, row) -> map(rs), reportId).stream().findFirst();
+        return withSupplements(jdbc.query(SELECT + "WHERE r.report_id = ?", (rs, row) -> map(rs), reportId)).stream().findFirst();
+    }
+
+    /** Loads the supplements of every listed report in one query, oldest first within each report. */
+    private List<AdminReportResponse> withSupplements(List<AdminReportResponse> reports) {
+        if (reports.isEmpty()) {
+            return reports;
+        }
+        Map<Long, List<AdminReportResponse.AdminReportSupplement>> byReport = new HashMap<>();
+        String ids = String.join(",", Collections.nCopies(reports.size(), "?"));
+        jdbc.query("SELECT supplement_id, report_id, content, created_at FROM [REPORT_SUPPLEMENT] WHERE report_id IN ("
+                + ids + ") ORDER BY created_at, supplement_id", rs -> {
+                    byReport.computeIfAbsent(rs.getLong("report_id"), key -> new ArrayList<>())
+                            .add(new AdminReportResponse.AdminReportSupplement(rs.getLong("supplement_id"),
+                                    rs.getString("content"), time(rs.getTimestamp("created_at"))));
+                }, reports.stream().map(AdminReportResponse::id).toArray());
+        return reports.stream().map(report -> report.withSupplements(byReport.getOrDefault(report.id(), List.of()))).toList();
     }
 
     private static AdminReportResponse map(ResultSet rs) throws SQLException {
@@ -82,7 +160,7 @@ public class AdminReportQueryRepository {
                 rs.getString("description"), time(rs.getTimestamp("created_at")), time(rs.getTimestamp("updated_at")),
                 new AdminReportResponse.ReportedRecipe(rs.getLong("recipe_id"), rs.getString("title"), rs.getString("recipe_status")),
                 account(rs, "reporter"), account(rs, "author"), handler, rs.getString("decision"),
-                rs.getString("decision_reason"), time(rs.getTimestamp("handled_at")));
+                rs.getString("decision_reason"), time(rs.getTimestamp("handled_at")), List.of());
     }
 
     private static AdminReportResponse.ReportAccount account(ResultSet rs, String prefix) throws SQLException {

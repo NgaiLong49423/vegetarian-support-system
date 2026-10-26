@@ -26,14 +26,16 @@ const detail = {
   statistics: { likes: 0, dislikes: 0, reactionCount: 0, likePercentage: null, viewCount: 0 },
 };
 
+// Report form labels agreed on 12/09/2026 (SRS.md section 3.11).
 const reasons = [
   'Sai thông tin công thức hoặc nhãn ăn chay',
   'Nguy cơ an toàn thực phẩm',
-  'Spam / Quảng cáo không phù hợp',
-  'Nội dung xúc phạm / Không phù hợp',
-  'Sao chép / Nghi vi phạm bản quyền',
+  'Spam hoặc quảng cáo không phù hợp',
+  'Nội dung xúc phạm hoặc không phù hợp',
+  'Sao chép hoặc nghi vi phạm bản quyền',
   'Khác',
 ];
+const sentMessage = 'Đã gửi báo cáo. Quản trị viên sẽ xem xét nội dung này.';
 
 async function memberSession(page: Page) {
   await page.addInitScript(() => sessionStorage.setItem('mamxanh.auth', JSON.stringify({
@@ -66,8 +68,7 @@ test('Guest được yêu cầu đăng nhập và không mở form hoặc gọi 
   await page.goto(`/cong-thuc/id/${recipeId}`);
   await page.getByRole('button', { name: 'Báo cáo công thức' }).click();
 
-  await expect(page.getByRole('dialog', { name: 'Yêu cầu đăng nhập' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Đăng nhập', exact: true }).last()).toHaveAttribute('href', '/dang-nhap');
+  await expect(page.getByRole('link', { name: 'Đăng nhập để báo cáo' })).toHaveAttribute('href', '/dang-nhap');
   await expect(page.getByRole('dialog', { name: 'Báo cáo công thức' })).toHaveCount(0);
   expect(submissions).toBe(0);
 });
@@ -88,12 +89,13 @@ test('Member gửi báo cáo với taxonomy hiện hành, thành công và giữ
     for (const visibleReason of reasons) await expect(dialog.getByText(visibleReason, { exact: true })).toBeVisible();
     await dialog.getByRole('radio', { name: reason }).check();
     if (index === reasons.length - 1) {
-      await dialog.getByLabel('Mô tả bổ sung (bắt buộc, 10–500 ký tự)').fill('x'.repeat(500));
-      await expect(dialog.getByLabel('Mô tả bổ sung (bắt buộc, 10–500 ký tự)')).toHaveValue('x'.repeat(500));
+      await dialog.getByLabel('Mô tả thêm').fill('x'.repeat(500));
+      await expect(dialog.getByLabel('Mô tả thêm')).toHaveValue('x'.repeat(500));
     }
     await dialog.getByRole('button', { name: 'Gửi báo cáo' }).click();
+    await expect(dialog.getByRole('status')).toHaveText(sentMessage);
+    await dialog.getByRole('button', { name: 'Đóng', exact: true }).click();
     await expect(dialog).toHaveCount(0);
-    await expect(page.getByRole('status').filter({ hasText: 'Báo cáo đã được tiếp nhận' })).toBeVisible();
   }
   await expect(page.getByRole('heading', { name: detail.title })).toBeVisible();
   expect(submittedBodies).toEqual([
@@ -117,14 +119,15 @@ test('OTHER yêu cầu 10 ký tự sau trim và cho gửi đúng 10 ký tự', a
 
   await page.goto(`/cong-thuc/id/${recipeId}`);
   const dialog = await openReport(page);
+  const description = dialog.getByLabel('Mô tả thêm');
   await dialog.getByRole('radio', { name: 'Khác' }).check();
   await dialog.getByRole('button', { name: 'Gửi báo cáo' }).click();
-  await expect(dialog.getByRole('alert')).toContainText('10 đến 500 ký tự');
+  await expect(description).toHaveAccessibleDescription(/10 đến 500 ký tự/);
   expect(submissions).toBe(0);
 
-  await dialog.getByLabel('Mô tả bổ sung (bắt buộc, 10–500 ký tự)').fill('  1234567890  ');
+  await description.fill('  1234567890  ');
   await dialog.getByRole('button', { name: 'Gửi báo cáo' }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Báo cáo đã được tiếp nhận' })).toBeVisible();
+  await expect(dialog.getByRole('status')).toHaveText(sentMessage);
   expect(submissions).toBe(1);
 });
 
@@ -146,7 +149,7 @@ test('REPORT_ALREADY_OPEN, lỗi dịch vụ và mất mạng hiện lỗi, khô
   };
   await send();
   await expect(dialog.getByRole('alert')).toContainText('đang được xem xét');
-  await expect(page.getByText('Báo cáo đã được tiếp nhận.')).toHaveCount(0);
+  await expect(page.getByText(sentMessage)).toHaveCount(0);
 
   response = 'server';
   await send();
@@ -176,6 +179,7 @@ test('Trong khi gửi, gửi lặp bị khóa', async ({ page }) => {
   const sending = dialog.getByRole('button', { name: 'Đang gửi…' });
   await expect(sending).toBeDisabled();
   await expect(sending).toHaveText('Đang gửi…');
-  await expect(dialog).toHaveCount(0);
+  await expect(dialog.getByRole('status')).toHaveText(sentMessage);
+  await expect(dialog.getByRole('button', { name: /Gửi báo cáo|Đang gửi…/ })).toHaveCount(0);
   expect(submissions).toBe(1);
 });
