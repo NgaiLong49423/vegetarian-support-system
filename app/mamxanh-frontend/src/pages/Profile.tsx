@@ -336,21 +336,21 @@ export function Profile() {
                 {ownResult.content.map((item) => (
                   <article
                     key={item.recipeId}
-                    className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-brand-100/90 bg-paper shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md dark:border-brand-800/70 dark:bg-surface"
+                    className="relative flex h-full min-w-0 flex-col transition-transform duration-200 motion-safe:hover:-translate-y-0.5"
                   >
                     {item.available ? (
                       <>
                         <Link
                           to={`/cong-thuc/id/${item.recipeId}`}
-                          className="group/link flex flex-1 flex-col focus-visible:outline-offset-4"
+                          className="group flex flex-1 flex-col rounded-xl focus-visible:outline-offset-4"
                         >
-                          <div className="relative aspect-[4/3] w-full overflow-hidden bg-raised">
+                          <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-raised">
                             {item.coverUrl ? (
                               <img
                                 src={item.coverUrl}
                                 alt={item.title ?? ""}
                                 loading="lazy"
-                                className="h-full w-full object-cover transition-transform duration-200 motion-safe:group-hover/link:scale-[1.03]"
+                                className="h-full w-full object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.03]"
                               />
                             ) : (
                               <div className="flex h-full items-center justify-center text-ink-muted">
@@ -358,61 +358,56 @@ export function Profile() {
                               </div>
                             )}
                           </div>
-                          <div className="flex flex-1 flex-col p-3.5 pb-2 sm:p-4 sm:pb-2">
-                            <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover/link:text-brand-600">
-                              {item.title}
-                            </h3>
-                            <p className="mt-1 truncate text-xs text-ink-muted">
-                              {item.authorName}
-                            </p>
-                          </div>
+                          <h3 className="mt-2.5 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
+                            {item.title}
+                          </h3>
+                          <p className="mt-1 truncate text-xs text-ink-muted">
+                            {item.authorName}
+                          </p>
                         </Link>
-                        <div className="flex items-center justify-between px-3.5 pb-3 pt-0.5 sm:px-4 sm:pb-3.5">
+                        <div className="mt-1">
                           <Link
                             to={`/so-sanh?a=${item.recipeId}`}
                             aria-label={`So sánh ${item.title}`}
-                            className="inline-flex items-center gap-1 rounded text-xs font-semibold text-brand-600 hover:text-brand-700"
+                            className="text-xs font-semibold text-brand-600 hover:text-brand-700"
                           >
-                            <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
-                            So sánh
+                            So sánh →
                           </Link>
                         </div>
                       </>
                     ) : (
                       <div className="flex flex-1 flex-col">
-                        <div className="flex aspect-[4/3] w-full items-center justify-center bg-raised">
+                        <div className="flex aspect-[4/3] items-center justify-center rounded-xl bg-raised">
                           <Lock className="h-7 w-7 text-ink-muted" />
                         </div>
-                        <div className="flex flex-1 flex-col p-3.5 pb-3 sm:p-4 sm:pb-3.5">
-                          <p className="min-h-10 text-sm font-medium leading-5 text-ink-muted">
-                            {item.unavailableMessage ??
-                              "Công thức không còn khả dụng"}
-                          </p>
-                        </div>
+                        <p className="mt-2 min-h-10 text-sm font-medium leading-5 text-ink-muted">
+                          {item.unavailableMessage ??
+                            "Công thức không còn khả dụng"}
+                        </p>
                       </div>
                     )}
-                    <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        aria-label={`Bỏ lưu ${
-                          item.available
-                            ? item.title
-                            : "công thức không còn khả dụng"
-                        }`}
-                        disabled={pending.has(item.recipeId)}
-                        onClick={() => remove(item.recipeId)}
-                        className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-on-brand transition-transform duration-150 hover:scale-105 active:scale-95 disabled:opacity-50"
-                      >
-                        {pending.has(item.recipeId) ? (
-                          <LoaderCircle className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Bookmark className="h-4 w-4 fill-current" />
-                        )}
-                      </button>
-                      {item.available && item.title && account.role !== "ADMIN" && (
+                    {item.available && item.title && account.role !== "ADMIN" && (
+                      <div className="absolute right-12 top-2 z-10">
                         <AddToMealPlanButton recipeId={item.recipeId} recipeTitle={item.title} />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={`Bỏ lưu ${
+                        item.available
+                          ? item.title
+                          : "công thức không còn khả dụng"
+                      }`}
+                      disabled={pending.has(item.recipeId)}
+                      onClick={() => remove(item.recipeId)}
+                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-on-brand transition-transform duration-150 hover:scale-105 active:scale-95 disabled:opacity-50"
+                    >
+                      {pending.has(item.recipeId) ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Bookmark className="h-4 w-4 fill-current" />
                       )}
-                    </div>
+                    </button>
                   </article>
                 ))}
               </div>
