@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { ArrowLeftRight, ChevronLeft, ChevronRight, Ellipsis, LoaderCircle } from "lucide-react"
+import { ArrowLeftRight, CalendarPlus, ChevronLeft, ChevronRight, Ellipsis, LoaderCircle, ShoppingCart } from "lucide-react"
 import { useAuth } from "./AuthContext"
 import { Modal } from "./Modal"
 import { localDateKey, mondayOf } from "./WeekCalendar"
@@ -194,33 +194,35 @@ export function AddToMealPlanButton({
         <div
           role="menu"
           aria-label={`Hành động cho ${recipeTitle}`}
-          className="absolute right-0 top-full z-30 mt-1 min-w-52 overflow-hidden rounded-lg border border-brand-100 bg-paper py-1 text-ink shadow-lg"
+          className="absolute right-0 top-full z-30 mt-1.5 w-56 overflow-hidden rounded-xl border border-neutral-200/90 bg-white py-1.5 text-ink shadow-xl ring-1 ring-black/5 dark:border-neutral-700 dark:bg-surface dark:ring-white/10"
         >
           <Link
             ref={menuItemRef}
             to={`/so-sanh?a=${recipeId}`}
             role="menuitem"
             onClick={() => setMenuOpen(false)}
-            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-raised focus-visible:bg-raised focus-visible:outline-none"
+            className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium transition-colors hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-raised dark:hover:text-ink focus-visible:bg-brand-50 focus-visible:outline-none"
           >
-            <ArrowLeftRight aria-hidden="true" className="h-4 w-4" />
-            So sánh công thức
+            <ArrowLeftRight aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
+            <span>So sánh công thức</span>
           </Link>
           <button
             type="button"
             role="menuitem"
             onClick={openAction}
-            className="w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-raised focus-visible:bg-raised focus-visible:outline-none"
+            className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium transition-colors hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-raised dark:hover:text-ink focus-visible:bg-brand-50 focus-visible:outline-none"
           >
-            Thêm vào lịch ăn
+            <CalendarPlus aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
+            <span>Thêm vào lịch ăn</span>
           </button>
           <button
             type="button"
             role="menuitem"
             onClick={() => { setMenuOpen(false); setShoppingOpen(true) }}
-            className="w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-raised focus-visible:bg-raised focus-visible:outline-none"
+            className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium transition-colors hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-raised dark:hover:text-ink focus-visible:bg-brand-50 focus-visible:outline-none"
           >
-            Thêm vào danh sách mua sắm
+            <ShoppingCart aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
+            <span>Thêm vào danh sách mua sắm</span>
           </button>
         </div>
       )}

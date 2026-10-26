@@ -391,28 +391,28 @@ export function Profile() {
                         </div>
                       </div>
                     )}
-                    {item.available && item.title && account.role !== "ADMIN" && (
-                      <div className="absolute right-12 top-2 z-10">
+                    <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        aria-label={`Bỏ lưu ${
+                          item.available
+                            ? item.title
+                            : "công thức không còn khả dụng"
+                        }`}
+                        disabled={pending.has(item.recipeId)}
+                        onClick={() => remove(item.recipeId)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-on-brand transition-transform duration-150 hover:scale-105 active:scale-95 disabled:opacity-50"
+                      >
+                        {pending.has(item.recipeId) ? (
+                          <LoaderCircle className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Bookmark className="h-4 w-4 fill-current" />
+                        )}
+                      </button>
+                      {item.available && item.title && account.role !== "ADMIN" && (
                         <AddToMealPlanButton recipeId={item.recipeId} recipeTitle={item.title} />
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      aria-label={`Bỏ lưu ${
-                        item.available
-                          ? item.title
-                          : "công thức không còn khả dụng"
-                      }`}
-                      disabled={pending.has(item.recipeId)}
-                      onClick={() => remove(item.recipeId)}
-                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-on-brand transition-transform duration-150 hover:scale-105 active:scale-95 disabled:opacity-50"
-                    >
-                      {pending.has(item.recipeId) ? (
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Bookmark className="h-4 w-4 fill-current" />
                       )}
-                    </button>
+                    </div>
                   </article>
                 ))}
               </div>

@@ -79,8 +79,8 @@ export function PublicRecipeCard({
         </div>
       </Link>
       <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5">
-        <AddToMealPlanButton recipeId={recipe.id} recipeTitle={recipe.title} preview={recipe} />
         <SaveRecipeButton recipeId={recipe.id} compact />
+        <AddToMealPlanButton recipeId={recipe.id} recipeTitle={recipe.title} preview={recipe} />
       </div>
     </article>
   )
