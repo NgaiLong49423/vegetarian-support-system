@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-26 — Rank and Search Reported Posts on the Moderation Page (Issue #12)
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c24ae67`, `f15680e`.
 
 **Scope:** Deliver the Recipe Post side of FR-06 on the grouped report board of Issue #35: Administrators rank reported posts by report count, see the most common reason of each post and find a post by its title or author (UC-06.1, US-06.1). Hiding a post and locking its author stay the FR-28 decisions already on `/admin/bao-cao` (AC-06.2, AC-06.3). Comment reports wait for FR-48, as proposed in question Q71 on Issue #12.
 
