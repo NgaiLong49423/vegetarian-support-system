@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import tech.mamxanh.admin.dto.AdminReportGroupResponse;
 import tech.mamxanh.admin.dto.AdminReportResponse;
 import tech.mamxanh.admin.dto.AdminReportStatusCountsResponse;
 import tech.mamxanh.admin.dto.ResolveReportRequest;
@@ -37,15 +38,30 @@ public class AdminReportController {
     }
 
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "A page of Recipe Post reports, newest first."),
-            @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: unknown status, or page/size outside its range.")
+            @ApiResponse(responseCode = "200", description = "A page of Recipe Post reports with their supplements, newest first; "
+                    + "recipeId keeps the reports of one post (AC-30.4)."),
+            @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: unknown status, recipeId below 1, or page/size outside its range.")
     })
     @GetMapping
     public PageResponse<AdminReportResponse> listReports(
             @RequestParam(required = false) @Pattern(regexp = "OPEN|IN_REVIEW|RESOLVED") String status,
+            @RequestParam(required = false) @Min(1) Long recipeId,
             @RequestParam(defaultValue = "0") @Min(0) @Max(1_000_000) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-        return service.list(status, page, size);
+        return service.list(status, recipeId, page, size);
+    }
+
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "One group per reported Recipe Post with its report count, "
+                    + "the post with the newest matching report first (AC-30.4)."),
+            @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: unknown status, or page/size outside its range.")
+    })
+    @GetMapping("/groups")
+    public PageResponse<AdminReportGroupResponse> listReportGroups(
+            @RequestParam(required = false) @Pattern(regexp = "OPEN|IN_REVIEW|RESOLVED") String status,
+            @RequestParam(defaultValue = "0") @Min(0) @Max(1_000_000) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        return service.listGroups(status, page, size);
     }
 
     @ApiResponses({

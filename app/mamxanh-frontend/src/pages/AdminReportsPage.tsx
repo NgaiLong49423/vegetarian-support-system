@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Clock, ExternalLink, RefreshCw, ShieldAlert } from 'lucide-react';
 import { Button, Card } from '../components/ui';
 import { Modal } from '../components/Modal';
@@ -9,6 +9,7 @@ import { formatSubscriptionDateTime as formatDateTime } from '../utils/subscript
 import {
   adminReportsApi,
   type AdminReport,
+  type AdminReportGroup,
   type ReportDecision,
   type ReportStatus,
   type ReportStatusCounts,
@@ -55,6 +56,18 @@ const filters: Array<{ value: ReportStatus | ''; label: string; count: (counts: 
 const decisionLabel = (decision: ReportDecision | null) =>
   decisions.find((item) => item.value === decision)?.label ?? 'Chưa có kết luận';
 
+const groupTotal = (counts: ReportStatusCounts) => counts.open + counts.inReview + counts.resolved;
+
+/** The most urgent status of a group sets its accent: open reports first, then reports in review. */
+const groupStatus = (counts: ReportStatusCounts): ReportStatus =>
+  counts.open > 0 ? 'OPEN' : counts.inReview > 0 ? 'IN_REVIEW' : 'RESOLVED';
+
+const groupBreakdown = (counts: ReportStatusCounts) => [
+  counts.open > 0 && `${counts.open} chờ xử lý`,
+  counts.inReview > 0 && `${counts.inReview} đang xem xét`,
+  counts.resolved > 0 && `${counts.resolved} đã giải quyết`,
+].filter(Boolean).join(' · ');
+
 function StatusBadge({ status }: { status: ReportStatus }) {
   return (
     <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusStyles[status].badge}`}>
@@ -65,8 +78,13 @@ function StatusBadge({ status }: { status: ReportStatus }) {
 
 export function AdminReportsPage() {
   const { account } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // AC-30.4: the board opens grouped by recipe; ?xem=bao-cao keeps the FR-28 queue of single reports.
+  const view = searchParams.get('xem') === 'bao-cao' ? 'REPORTS' : 'GROUPS';
+  const [recipe, setRecipe] = useState<{ id: number; title: string } | null>(null);
   const [filter, setFilter] = useState<ReportStatus | ''>('OPEN');
   const [page, setPage] = useState(0);
+  const [groups, setGroups] = useState<AdminReportGroup[]>([]);
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [totalPages, setTotalPages] = useState(0);
   const [counts, setCounts] = useState<ReportStatusCounts | null>(null);
@@ -77,12 +95,15 @@ export function AdminReportsPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
+  const recipeId = view === 'REPORTS' ? recipe?.id : undefined;
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [pageData, countData] = await Promise.all([adminReportsApi.list(filter, page), adminReportsApi.counts()]);
-      setReports(pageData.content);
-      setTotalPages(pageData.totalPages);
+      const listing = view === 'GROUPS'
+        ? adminReportsApi.groups(filter, page).then((data) => { setGroups(data.content); return data.totalPages; })
+        : adminReportsApi.list(filter, page, recipeId).then((data) => { setReports(data.content); return data.totalPages; });
+      const [pages, countData] = await Promise.all([listing, adminReportsApi.counts()]);
+      setTotalPages(pages);
       setCounts(countData);
       setLoadFailed(false);
     } catch (cause) {
@@ -91,7 +112,7 @@ export function AdminReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filter, page]);
+  }, [view, filter, page, recipeId]);
 
   useEffect(() => {
     void load();
@@ -132,6 +153,14 @@ export function AdminReportsPage() {
     }
   }
 
+  function showView(next: 'GROUPS' | 'REPORTS', group: { id: number; title: string } | null = null) {
+    setError('');
+    setPage(0);
+    setRecipe(group);
+    if (group) setFilter('');
+    setSearchParams(next === 'REPORTS' ? { xem: 'bao-cao' } : {});
+  }
+
   function resolved(updated: AdminReport) {
     setSelected(null);
     setError('');
@@ -166,7 +195,7 @@ export function AdminReportsPage() {
         </div>
       )}
 
-      <Card className="p-3.5 sm:px-5">
+      <Card className="flex flex-col gap-3 p-3.5 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Lọc theo trạng thái">
           {filters.map((item) => (
             <button
@@ -189,10 +218,54 @@ export function AdminReportsPage() {
             </button>
           ))}
         </div>
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Cách xem báo cáo">
+          {([['GROUPS', 'Theo bài viết'], ['REPORTS', 'Từng báo cáo']] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={view === value}
+              onClick={() => showView(value)}
+              className={`rounded-xl border px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70 ${
+                view === value
+                  ? 'border-brand-500 bg-brand-50 text-brand-700'
+                  : 'border-brand-200 bg-paper text-ink-soft hover:border-brand-300 hover:text-brand-600'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </Card>
 
+      {view === 'REPORTS' && recipe && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-brand-50/40 px-4 py-3">
+          <p className="min-w-0 break-words text-sm font-semibold text-ink">Báo cáo của bài “{recipe.title}”</p>
+          <Button variant="outline" size="sm" onClick={() => showView('GROUPS')}>Xem tất cả bài viết</Button>
+        </div>
+      )}
+
       <div className="grid gap-3.5" aria-busy={loading}>
-        {loading && reports.length === 0 ? (
+        {view === 'GROUPS' ? (
+          loading && groups.length === 0 ? (
+            <Card className="p-10 text-center text-sm text-ink-muted">Đang tải danh sách báo cáo…</Card>
+          ) : loadFailed && groups.length === 0 ? (
+            <Card className="border-dashed border-rose-200 p-10 text-center text-sm text-ink-muted">
+              Chưa tải được danh sách báo cáo. Bấm Làm mới để thử lại.
+            </Card>
+          ) : groups.length === 0 ? (
+            <Card className="border-dashed border-brand-200 p-10 text-center text-sm text-ink-muted">
+              Không có bài viết nào có báo cáo ở trạng thái này.
+            </Card>
+          ) : (
+            groups.map((group) => (
+              <ReportGroupCard
+                key={group.recipe.id}
+                group={group}
+                onOpen={() => showView('REPORTS', { id: group.recipe.id, title: group.recipe.title })}
+              />
+            ))
+          )
+        ) : loading && reports.length === 0 ? (
           <Card className="p-10 text-center text-sm text-ink-muted">Đang tải danh sách báo cáo…</Card>
         ) : loadFailed && reports.length === 0 ? (
           <Card className="border-dashed border-rose-200 p-10 text-center text-sm text-ink-muted">
@@ -212,6 +285,7 @@ export function AdminReportsPage() {
                     <Clock className="h-3.5 w-3.5 text-brand-600" aria-hidden="true" />
                     #{report.id} · Gửi lúc {formatDateTime(report.createdAt)}
                   </span>
+                  {report.supplements.length > 0 && <span>{report.supplements.length} lần bổ sung</span>}
                 </div>
                 <h2 className="mt-2 break-words text-base font-bold text-ink">{report.recipe.title}</h2>
                 <p className="mt-1 text-sm font-semibold text-ink-soft">{reasonLabels[report.reasonCode] ?? report.reasonCode}</p>
@@ -292,6 +366,43 @@ export function AdminReportsPage() {
   );
 }
 
+function ReportGroupCard({ group, onOpen }: { group: AdminReportGroup; onOpen: () => void }) {
+  const total = groupTotal(group.statusCounts);
+  return (
+    <article>
+      <Card className={`flex flex-col gap-4 border-l-4 ${statusStyles[groupStatus(group.statusCounts)].border} p-5 sm:flex-row sm:items-start`}>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+            <span className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 font-bold text-brand-700">
+              {total} báo cáo
+            </span>
+            {group.latestReportAt && (
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5 text-brand-600" aria-hidden="true" />
+                Báo cáo mới nhất lúc {formatDateTime(group.latestReportAt)}
+              </span>
+            )}
+          </div>
+          <h2 className="mt-2 break-words text-base font-bold text-ink">{group.recipe.title}</h2>
+          {group.recipe.status !== 'PUBLISHED' && (
+            <p className="mt-1 text-sm font-semibold text-ink-muted">
+              {group.recipe.status === 'HIDDEN' ? 'Bài đang bị ẩn khỏi trang công khai.' : 'Tác giả đã xóa bài này.'}
+            </p>
+          )}
+          <p className="mt-1 text-sm text-ink-soft">{groupBreakdown(group.statusCounts)}</p>
+          <dl className="mt-3 text-xs text-ink-muted">
+            <dt className="inline font-semibold">Tác giả: </dt>
+            <dd className="inline">{group.author.displayName}</dd>
+          </dl>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2 sm:w-44 sm:flex-col">
+          <Button variant="outline" size="sm" onClick={onOpen}>Xem {total} báo cáo</Button>
+        </div>
+      </Card>
+    </article>
+  );
+}
+
 function ReportDetail({
   report,
   heldByMe,
@@ -334,6 +445,20 @@ function ReportDetail({
         <p className="mt-1 whitespace-pre-line text-ink-soft">{report.description || 'Người báo cáo không ghi thêm mô tả.'}</p>
         <p className="mt-1 text-xs text-ink-muted">Gửi lúc {formatDateTime(report.createdAt)}</p>
       </section>
+
+      {report.supplements.length > 0 && (
+        <section>
+          <h3 id="report-supplements-heading" className="text-xs font-bold uppercase tracking-wider text-ink-muted">Thông tin bổ sung</h3>
+          <ul aria-labelledby="report-supplements-heading" className="mt-1 space-y-2">
+            {report.supplements.map((item) => (
+              <li key={item.supplementId} className="rounded-lg bg-cream-soft/60 px-3 py-2">
+                <p className="whitespace-pre-line text-ink-soft">{item.content}</p>
+                <p className="mt-0.5 text-xs text-ink-muted">{formatDateTime(item.createdAt)}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <section className="rounded-xl border border-brand-100 p-3">

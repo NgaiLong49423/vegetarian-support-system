@@ -646,6 +646,25 @@ CREATE TABLE [REPORT] (
 );
 GO
 
+-- 6.1a REPORT_SUPPLEMENT — Append-only information added to an open report
+-- Source: V23__report_supplement.sql, FR-30 AC-30.1
+CREATE TABLE [REPORT_SUPPLEMENT] (
+    supplement_id  BIGINT          IDENTITY(1,1)  NOT NULL,
+    report_id      BIGINT          NOT NULL,
+    content        NVARCHAR(500)   NOT NULL,
+    created_at     DATETIME2(7)    NOT NULL
+        CONSTRAINT DF_REPORT_SUPPLEMENT_created_at DEFAULT SYSUTCDATETIME(),
+
+    CONSTRAINT PK_REPORT_SUPPLEMENT PRIMARY KEY (supplement_id),
+    CONSTRAINT FK_REPORT_SUPPLEMENT_REPORT FOREIGN KEY (report_id)
+        REFERENCES [REPORT](report_id) ON DELETE NO ACTION
+);
+GO
+
+CREATE NONCLUSTERED INDEX IX_REPORT_SUPPLEMENT_report
+    ON [REPORT_SUPPLEMENT](report_id, created_at, supplement_id);
+GO
+
 -- 6.2 NOTIFICATION — In-app notification to user
 -- Source: Data Dictionary 4.12, FR-49
 CREATE TABLE [NOTIFICATION] (
