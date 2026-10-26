@@ -889,7 +889,7 @@ None.
 
 ## 2026-10-17 — Add Safe Shopping Ingredient Aggregation ([PR #150](https://github.com/NgaiLong49423/vegetarian-support-system/pull/150), Issue #54)
 
-**Status:** Committed — `748947f` (implementation); PR #150 is closed and has not been merged or accepted.
+**Status:** Committed — `748947f` (implementation); PR #150 is open and has not been merged or accepted.
 
 **Scope:** Implement and test the internal FR-54 aggregation engine independently of the unmerged FR-53 checklist work. Creating/persisting lists, Frontend integration and main acceptance remain outstanding.
 
