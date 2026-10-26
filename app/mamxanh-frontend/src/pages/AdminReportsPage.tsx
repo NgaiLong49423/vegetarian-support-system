@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, Clock, ExternalLink, RefreshCw, ShieldAlert } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, ExternalLink, RefreshCw, Search, ShieldAlert } from 'lucide-react';
 import { Button, Card } from '../components/ui';
 import { Modal } from '../components/Modal';
 import { useAuth } from '../components/AuthContext';
@@ -11,12 +11,17 @@ import {
   type AdminReport,
   type AdminReportGroup,
   type ReportDecision,
+  type ReportGroupSort,
   type ReportStatus,
   type ReportStatusCounts,
 } from '../api/adminReports';
 
 const REASON_MIN = 10;
 const REASON_MAX = 500;
+const QUERY_MAX = 200;
+
+const fieldClass =
+  'w-full rounded-xl border border-brand-200/80 bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition-all placeholder:text-ink-muted/60 focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 
 const reasonLabels: Record<string, string> = {
   RECIPE_INFO_OR_DIET_LABEL: 'Sai thông tin công thức hoặc nhãn ăn chay',
@@ -53,6 +58,9 @@ const filters: Array<{ value: ReportStatus | ''; label: string; count: (counts: 
   { value: '', label: 'Tất cả', count: (counts) => counts.open + counts.inReview + counts.resolved },
 ];
 
+// Group cards print "Lý do: …", so OTHER reads "Khác" there instead of "Lý do khác".
+const reasonLabel = (code: string) => (code === 'OTHER' ? 'Khác' : reasonLabels[code] ?? code);
+
 const decisionLabel = (decision: ReportDecision | null) =>
   decisions.find((item) => item.value === decision)?.label ?? 'Chưa có kết luận';
 
@@ -83,6 +91,10 @@ export function AdminReportsPage() {
   const view = searchParams.get('xem') === 'bao-cao' ? 'REPORTS' : 'GROUPS';
   const [recipe, setRecipe] = useState<{ id: number; title: string } | null>(null);
   const [filter, setFilter] = useState<ReportStatus | ''>('OPEN');
+  // UC-06.1: the grouped view can be searched by post title or author and ranked by report count.
+  const [draft, setDraft] = useState('');
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<ReportGroupSort>('NEWEST');
   const [page, setPage] = useState(0);
   const [groups, setGroups] = useState<AdminReportGroup[]>([]);
   const [reports, setReports] = useState<AdminReport[]>([]);
@@ -100,7 +112,7 @@ export function AdminReportsPage() {
     setLoading(true);
     try {
       const listing = view === 'GROUPS'
-        ? adminReportsApi.groups(filter, page).then((data) => { setGroups(data.content); return data.totalPages; })
+        ? adminReportsApi.groups(filter, page, query, sort).then((data) => { setGroups(data.content); return data.totalPages; })
         : adminReportsApi.list(filter, page, recipeId).then((data) => { setReports(data.content); return data.totalPages; });
       const [pages, countData] = await Promise.all([listing, adminReportsApi.counts()]);
       setTotalPages(pages);
@@ -112,7 +124,7 @@ export function AdminReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [view, filter, page, recipeId]);
+  }, [view, filter, page, recipeId, query, sort]);
 
   useEffect(() => {
     void load();
@@ -161,6 +173,13 @@ export function AdminReportsPage() {
     setSearchParams(next === 'REPORTS' ? { xem: 'bao-cao' } : {});
   }
 
+  function search(event: FormEvent) {
+    event.preventDefault();
+    setError('');
+    setPage(0);
+    setQuery(draft.trim());
+  }
+
   function resolved(updated: AdminReport) {
     setSelected(null);
     setError('');
@@ -172,9 +191,9 @@ export function AdminReportsPage() {
     <div className="space-y-5 py-2">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Xử lý báo cáo vi phạm</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Hậu kiểm nội dung</h1>
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-            Tiếp nhận báo cáo về bài công thức, xem lại nội dung rồi ghi kết luận kèm lý do. Mỗi báo cáo chỉ do một quản trị viên xử lý.
+            Xem các bài công thức bị báo cáo, tiếp nhận từng báo cáo rồi ghi kết luận kèm lý do. Mỗi báo cáo chỉ do một quản trị viên xử lý.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => { setError(''); void load(); }} disabled={loading}>
@@ -237,6 +256,43 @@ export function AdminReportsPage() {
         </div>
       </Card>
 
+      {view === 'GROUPS' && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <form role="search" aria-label="Tìm bài bị báo cáo" onSubmit={search} className="flex min-w-0 flex-1 items-end gap-2">
+            <label className="min-w-0 flex-1 text-xs font-semibold text-ink-soft">
+              Tìm theo tên bài hoặc tác giả
+              <span className="relative mt-1.5 block">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+                <input
+                  type="search"
+                  value={draft}
+                  maxLength={QUERY_MAX}
+                  onChange={(event) => setDraft(event.target.value)}
+                  placeholder="Tên bài, tên hoặc email tác giả"
+                  className={`${fieldClass} pl-10`}
+                />
+              </span>
+            </label>
+            <Button type="submit" variant="outline" className="h-[42px] shrink-0 px-4">Tìm</Button>
+          </form>
+          <label className="text-xs font-semibold text-ink-soft sm:w-52">
+            Sắp xếp
+            <select
+              value={sort}
+              onChange={(event) => {
+                setError('');
+                setPage(0);
+                setSort(event.target.value as ReportGroupSort);
+              }}
+              className={`${fieldClass} mt-1.5`}
+            >
+              <option value="NEWEST">Báo cáo mới nhất</option>
+              <option value="MOST_REPORTED">Nhiều báo cáo nhất</option>
+            </select>
+          </label>
+        </div>
+      )}
+
       {view === 'REPORTS' && recipe && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-brand-50/40 px-4 py-3">
           <p className="min-w-0 break-words text-sm font-semibold text-ink">Báo cáo của bài “{recipe.title}”</p>
@@ -254,7 +310,7 @@ export function AdminReportsPage() {
             </Card>
           ) : groups.length === 0 ? (
             <Card className="border-dashed border-brand-200 p-10 text-center text-sm text-ink-muted">
-              Không có bài viết nào có báo cáo ở trạng thái này.
+              {query ? `Không tìm thấy bài viết nào khớp “${query}”.` : 'Không có bài viết nào có báo cáo ở trạng thái này.'}
             </Card>
           ) : (
             groups.map((group) => (
@@ -384,6 +440,11 @@ function ReportGroupCard({ group, onOpen }: { group: AdminReportGroup; onOpen: (
             )}
           </div>
           <h2 className="mt-2 break-words text-base font-bold text-ink">{group.recipe.title}</h2>
+          <p className="mt-1 text-sm font-semibold text-ink-soft">
+            {group.reportCount > 1
+              ? `Lý do nhiều nhất: ${reasonLabel(group.topReasonCode)} (${group.topReasonCount}/${group.reportCount} báo cáo)`
+              : `Lý do: ${reasonLabel(group.topReasonCode)}`}
+          </p>
           {group.recipe.status !== 'PUBLISHED' && (
             <p className="mt-1 text-sm font-semibold text-ink-muted">
               {group.recipe.status === 'HIDDEN' ? 'Bài đang bị ẩn khỏi trang công khai.' : 'Tác giả đã xóa bài này.'}

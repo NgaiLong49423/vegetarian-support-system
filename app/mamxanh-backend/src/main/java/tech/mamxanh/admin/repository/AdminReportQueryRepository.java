@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -71,14 +72,21 @@ public class AdminReportQueryRepository {
         return jdbc.queryForObject(sql.toString(), Long.class, args.toArray());
     }
 
-    /** AC-30.4: one row per reported Recipe Post, the post with the newest matching report first. */
-    public List<AdminReportGroupResponse> groups(String status, int page, int size) {
+    /**
+     * AC-30.4 and UC-06.1: one row per reported Recipe Post with its most common matching reason, the post with the
+     * newest matching report first, or with the most matching reports first. {@code search} keeps the posts whose
+     * title or author name or email contains it.
+     */
+    public List<AdminReportGroupResponse> groups(String status, String search, boolean mostReported, int page, int size) {
         String matching = status == null ? "1 = 1" : "r.status = ?";
+        String order = mostReported ? "g.report_count DESC, g.latest_report_at DESC, g.recipe_id DESC"
+                : "g.latest_report_at DESC, g.recipe_id DESC";
         String sql = """
                 SELECT g.recipe_id, g.report_count, g.latest_report_at, g.open_count, g.in_review_count, g.resolved_count,
                        p.title, p.status AS recipe_status,
                        au.user_id AS author_id, au.display_name AS author_name, au.email AS author_email,
-                       au.role AS author_role, au.account_status AS author_status
+                       au.role AS author_role, au.account_status AS author_status,
+                       top_reason.reason_code AS top_reason_code, top_reason.reason_count AS top_reason_count
                 FROM (
                     SELECT r.recipe_id,
                            SUM(CASE WHEN %1$s THEN 1 ELSE 0 END) AS report_count,
@@ -93,14 +101,24 @@ public class AdminReportQueryRepository {
                 ) g
                 JOIN [RECIPE_POST] p ON p.recipe_id = g.recipe_id
                 JOIN [USER] au ON au.user_id = p.author_id
-                ORDER BY g.latest_report_at DESC, g.recipe_id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-                """.formatted(matching);
+                CROSS APPLY (
+                    SELECT TOP 1 r.reason_code, COUNT(*) AS reason_count
+                    FROM [REPORT] r
+                    WHERE r.recipe_id = g.recipe_id AND %1$s
+                    GROUP BY r.reason_code
+                    ORDER BY COUNT(*) DESC, MAX(r.created_at) DESC, MAX(r.report_id) DESC
+                ) top_reason
+                WHERE %2$s
+                ORDER BY %3$s OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+                """.formatted(matching, searchClause(search), order);
         List<Object> args = new ArrayList<>();
         if (status != null) {
             args.add(status);
             args.add(status);
             args.add(status);
+            args.add(status);
         }
+        addSearchArgs(args, search);
         args.add((long) page * size);
         args.add(size);
         return jdbc.query(sql, (rs, row) -> new AdminReportGroupResponse(
@@ -108,15 +126,41 @@ public class AdminReportQueryRepository {
                 account(rs, "author"), rs.getLong("report_count"),
                 new AdminReportStatusCountsResponse(rs.getLong("open_count"), rs.getLong("in_review_count"),
                         rs.getLong("resolved_count")),
-                time(rs.getTimestamp("latest_report_at"))), args.toArray());
+                time(rs.getTimestamp("latest_report_at")), rs.getString("top_reason_code"), rs.getLong("top_reason_count")),
+                args.toArray());
     }
 
-    public long countGroups(String status) {
-        if (status == null) {
-            return jdbc.queryForObject("SELECT COUNT(DISTINCT recipe_id) FROM [REPORT] WHERE recipe_id IS NOT NULL", Long.class);
+    public long countGroups(String status, String search) {
+        String sql = """
+                SELECT COUNT(*)
+                FROM (SELECT DISTINCT r.recipe_id FROM [REPORT] r WHERE r.recipe_id IS NOT NULL AND %1$s) g
+                JOIN [RECIPE_POST] p ON p.recipe_id = g.recipe_id
+                JOIN [USER] au ON au.user_id = p.author_id
+                WHERE %2$s
+                """.formatted(status == null ? "1 = 1" : "r.status = ?", searchClause(search));
+        List<Object> args = new ArrayList<>();
+        if (status != null) {
+            args.add(status);
         }
-        return jdbc.queryForObject("SELECT COUNT(DISTINCT recipe_id) FROM [REPORT] WHERE recipe_id IS NOT NULL AND status = ?",
-                Long.class, status);
+        addSearchArgs(args, search);
+        return jdbc.queryForObject(sql, Long.class, args.toArray());
+    }
+
+    private static String searchClause(String search) {
+        return search == null ? "1 = 1"
+                : "(LOWER(p.title) LIKE ? ESCAPE '\\' OR LOWER(au.display_name) LIKE ? ESCAPE '\\' OR LOWER(au.email) LIKE ? ESCAPE '\\')";
+    }
+
+    /** The search text is matched literally: LIKE wildcards typed by the Administrator are escaped. */
+    private static void addSearchArgs(List<Object> args, String search) {
+        if (search == null) {
+            return;
+        }
+        String pattern = "%" + search.toLowerCase(Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%")
+                .replace("_", "\\_").replace("[", "\\[") + "%";
+        args.add(pattern);
+        args.add(pattern);
+        args.add(pattern);
     }
 
     public AdminReportStatusCountsResponse countByStatus() {
