@@ -1,13 +1,58 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.106.0
+> **Version:** v2.107.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-25
+> **Last Updated:** 2026-10-26
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-26 — Group Recipe Reports by Post for Administrators (Issue #35)
+
+**Status:** Committed — `fdcbf11`, `9972d22`.
+
+**Scope:** Deliver AC-30.4 of FR-30 on the FR-28 queue of Issue #33: Administrators see the reports on one Recipe Post as one group with its report count, then open each report with its reporter, status, decision and supplements (SRS 3.14).
+
+### Added
+
+- Add `GET /api/v1/admin/reports/groups` with one group per reported Recipe Post: the report count for the status filter, the count in each status, the newest matching report time and the author. Pages count posts, and the post with the newest matching report comes first.
+- Add the optional `recipeId` filter to `GET /api/v1/admin/reports` and `supplements` (oldest first) to `AdminReportResponse`, loaded in one query per page.
+- Open `/admin/bao-cao` grouped by post with one "Xem N báo cáo" button per post, keep the single-report queue under "Từng báo cáo" (`?xem=bao-cao`), and list the supplements in the report detail dialog.
+- Add the local-only demo seed `R__demo_sample_data_67_report_groups.sql` with two more reports on the post of seed 60, so the board shows a group of three reports from three accounts.
+- Add SQL Server integration tests for groups, the status filter, paging, the recipe filter, supplements and access, and Playwright tests for the grouped board and the supplements in the detail dialog.
+
+### Changed
+
+- Open the FR-28 Playwright and real-stack specs on the single-report view, and document the endpoints in `docs/api/API.md` sections 21 and 22, the seed in `database/README.md` and the board in the Backend and Frontend READMEs.
+
+### Fixed
+
+- Point the FR-30 line of the Backend README to `docs/api/API.md` section 22, which the develop sync in `d34c59b` left at section 21.
+
+## 2026-10-25 — Let Reporters Add Information to an Open Recipe Report (Issue #35)
+
+**Status:** Committed — `785f81f`, `87fffea`, `86a06ad`.
+
+**Scope:** Complete the Member side of FR-30 with the proposals of questions Q67 and Q68: reporters keep adding information to the report that is still open instead of filing another one, and the real recipe page can now send reports (AC-30.1, AC-30.2, SRS 3.14). The Administrator view of supplements and of reports grouped by recipe (AC-30.4) builds on the FR-28 queue of Issue #33 and is not part of this entry.
+
+### Added
+
+- Add `GET /api/v1/me/reports/{reportId}` so the reporter reads their own report with its supplements, and `POST /api/v1/me/reports/{reportId}/supplements` to add 10–500 characters while the report is `OPEN` or `IN_REVIEW`, at most five times; other accounts get `403 ACCESS_DENIED`.
+- Add migration `V23__report_supplement.sql` with the append-only `REPORT_SUPPLEMENT` table and the matching `database/schema.sql` snapshot.
+- Add the local-only demo seed `R__demo_sample_data_66_report_supplements.sql` with two supplements on the open demo report from seed 60, so its reporter sees them on the recipe page.
+- Add the "Báo cáo công thức" action and dialog to the real recipe page: six reasons, description rules, a sign-in prompt for Guests, and on `409 REPORT_ALREADY_OPEN` the open report with its supplements and a form to add more.
+- Add SQL Server integration tests for supplements, ownership, the limit under concurrent requests and the resolved state, Playwright tests for the dialog and a real-stack test from a duplicate report to a stored supplement.
+
+### Changed
+
+- Document the endpoints and error codes in `docs/api/API.md` section 22, the migration in `database/README.md` and the flow in the Backend and Frontend READMEs.
+- Keep one report form on the recipe page after syncing PR #189: `RecipeReportButton` and `reportsApi` stay, the unused `recipesApi.submitReport` is removed, and the PR #189 Playwright spec checks the shared dialog.
+
+### Fixed
+
+- None.
 
 ## 2026-10-25 — Let Administrators Handle Recipe Post Reports (Issue #33)
 
@@ -52,7 +97,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Changed
 
 - Give each recipe comment a `comment-{id}` anchor; a notification link loads further comment pages until the reply is shown and focuses it.
-- Document the endpoints in `docs/api/API.md` section 22 and the Backend and Frontend READMEs; no migration is needed because `USER.reply_email_enabled` exists since V1.
+- Document the endpoints in `docs/api/API.md` section 23 and the Backend and Frontend READMEs; no migration is needed because `USER.reply_email_enabled` exists since V1.
 - Split the email notification note in profile settings into two sentences instead of joining them with a semicolon.
 
 ### Fixed
@@ -769,6 +814,27 @@ None.
 - Preserve API-backed recipe comments, reactions, views and meal-plan serving updates after synchronizing develop.
 - Keep tall registration forms scrollable, retain ingredient JSON preview/copy, and use the actual vegetarian-type label in recipe details.
 
+## 2026-10-19 — Point Duplicate Recipe Reports to the Open Report and Require New Details After Resolution (Issue #35)
+
+**Status:** Committed — `03ae27a`.
+
+**Scope:** Deliver the FR-30 rules that do not depend on the open supplement-storage and report-form decisions (Q67, Q68): a duplicate report now tells the client which open report to continue, and a report filed after an earlier one was resolved must describe the new problem (SRS 3.14, AC-30.2, AC-30.3).
+
+### Added
+
+- Add `reportId` of the reporter's open report to the `409 REPORT_ALREADY_OPEN` problem body of `POST /api/v1/recipes/{recipeId}/reports`.
+- Add SQL Server integration tests for duplicate reports, four concurrent submissions by the same member (one `201`, three `409` with the created `reportId`), re-reporting after `RESOLVED`, and a first report with a non-`OTHER` reason and no description.
+- Record BUG-065: moving a meal-plan entry sometimes leaves keyboard focus on the page body instead of the "Lịch ăn của bạn" heading (FR-33, AC-33.4; 6 of 28 isolated runs of `meal-plan-management.spec.ts:120` failed on `develop` `0e98048`).
+
+### Changed
+
+- Require a 10–500 character description for every reason when the member's previous report on the same recipe is `RESOLVED`; otherwise return `400 VALIDATION_FAILED` with `field = description`.
+- Document report submission, the duplicate rule and the re-report rule in `docs/api/API.md` section 22 and the Backend README.
+
+### Fixed
+
+- None.
+
 ## 2026-10-18 — Repair CI Contract and Recipe-Card Checks ([PR #148](https://github.com/NgaiLong49423/vegetarian-support-system/pull/148))
 
 **Status:** Committed — `a74f7c2`.
@@ -847,7 +913,7 @@ None.
 
 ## 2026-10-17 — Add Safe Shopping Ingredient Aggregation ([PR #150](https://github.com/NgaiLong49423/vegetarian-support-system/pull/150), Issue #54)
 
-**Status:** Committed — `748947f` (implementation); PR #150 is closed and has not been merged or accepted.
+**Status:** Committed — `748947f` (implementation); PR #150 is open and has not been merged or accepted.
 
 **Scope:** Implement and test the internal FR-54 aggregation engine independently of the unmerged FR-53 checklist work. Creating/persisting lists, Frontend integration and main acceptance remain outstanding.
 

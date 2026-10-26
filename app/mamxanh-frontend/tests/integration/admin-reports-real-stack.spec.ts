@@ -53,7 +53,7 @@ test('FR-28 administrator takes a real report, hides the post and the author is 
     await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click()
     expect((await login).status()).toBe(200)
     await page.waitForURL((url) => !url.pathname.startsWith('/dang-nhap'), { timeout: 15000 })
-    await page.goto('/admin/bao-cao')
+    await page.goto('/admin/bao-cao?xem=bao-cao')
     const card = page.locator('div.border-l-4').filter({ hasText: title })
     await expect(card).toContainText(`Người báo cáo: ${names.reporter}`, { timeout: 20000 })
     await expect(card).toContainText(`Tác giả: ${names.author}`)
