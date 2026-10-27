@@ -28,8 +28,9 @@
 --                   + V20__ingredient_reference_image.sql
 --                   + V21__shopping_manual_list_kind.sql
 --                   + V22__report_handling_by_admin.sql
---                   + V23__expert_application_private_attachments.sql
---                   + V24__persist_nutrition_bmi.sql
+--                   + V23__report_supplement.sql
+--                   + V24__expert_application_private_attachments.sql
+--                   + V25__persist_nutrition_bmi.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -666,6 +667,25 @@ CREATE TABLE [REPORT] (
         OR decision IN ('NO_VIOLATION', 'WARN_AUTHOR', 'HIDE_RECIPE', 'LOCK_AUTHOR')
     )
 );
+GO
+
+-- 6.1a REPORT_SUPPLEMENT — Append-only information added to an open report
+-- Source: V23__report_supplement.sql, FR-30 AC-30.1
+CREATE TABLE [REPORT_SUPPLEMENT] (
+    supplement_id  BIGINT          IDENTITY(1,1)  NOT NULL,
+    report_id      BIGINT          NOT NULL,
+    content        NVARCHAR(500)   NOT NULL,
+    created_at     DATETIME2(7)    NOT NULL
+        CONSTRAINT DF_REPORT_SUPPLEMENT_created_at DEFAULT SYSUTCDATETIME(),
+
+    CONSTRAINT PK_REPORT_SUPPLEMENT PRIMARY KEY (supplement_id),
+    CONSTRAINT FK_REPORT_SUPPLEMENT_REPORT FOREIGN KEY (report_id)
+        REFERENCES [REPORT](report_id) ON DELETE NO ACTION
+);
+GO
+
+CREATE NONCLUSTERED INDEX IX_REPORT_SUPPLEMENT_report
+    ON [REPORT_SUPPLEMENT](report_id, created_at, supplement_id);
 GO
 
 -- 6.2 NOTIFICATION — In-app notification to user

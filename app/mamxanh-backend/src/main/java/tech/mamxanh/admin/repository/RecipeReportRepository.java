@@ -17,4 +17,6 @@ public interface RecipeReportRepository extends JpaRepository<RecipeReportEntity
 
     Optional<RecipeReportEntity> findFirstByReporterIdAndRecipeIdAndStatusInOrderByIdAsc(
             long reporterId, long recipeId, List<String> statuses);
+
+    boolean existsByReporterIdAndRecipeIdAndStatus(long reporterId, long recipeId, String status);
 }
