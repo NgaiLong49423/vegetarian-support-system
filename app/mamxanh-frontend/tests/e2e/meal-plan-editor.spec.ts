@@ -294,6 +294,7 @@ test("only one day expands, and adding meals queries saved recipes with paginati
   await page.goto("/ke-hoach")
 
   await expect(page.getByRole("button", { name: /^Xem ngày/ })).toHaveCount(7)
+  await expect(page.getByRole("button", { name: /^Xem ngày/ }).first()).toContainText("Hôm nay")
 
   await expect(
     page.locator('button[aria-expanded="true"][aria-controls^="meals-"]'),
@@ -782,9 +783,11 @@ test("adds two different recipes to the same meal and retains them after reload"
     .getByRole("button", { name: "Đậu phụ kho" })
     .click()
   expect(state.entries).toHaveLength(2)
+  await expect(page.getByRole("article").first()).toHaveAttribute("aria-label", "Đậu phụ kho")
   await page.reload()
   await openMonday(page)
   await expect(page.getByRole("article")).toHaveCount(2)
+  await expect(page.getByRole("article").first()).toHaveAttribute("aria-label", "Đậu phụ kho")
 })
 
 test("saved picker prevents unavailable choices and replaces a tombstone in place", async ({

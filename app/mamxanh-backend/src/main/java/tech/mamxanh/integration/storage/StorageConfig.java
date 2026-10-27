@@ -34,7 +34,19 @@ public class StorageConfig {
                     containerClient.create();
                     log.info("Created Azure Blob Storage container: {}", properties.containerName());
                 }
-                return new AzureBlobStorageClient(containerClient);
+                BlobContainerClient privateApplicationContainer = serviceClient
+                        .getBlobContainerClient(properties.expertApplicationContainerName());
+                if (!privateApplicationContainer.exists()) {
+                    privateApplicationContainer.create();
+                    log.info("Created private expert application storage container: {}",
+                            properties.expertApplicationContainerName());
+                }
+                if (privateApplicationContainer.getAccessPolicy().getBlobAccessType() != null) {
+                    throw new PrivateContainerPublicAccessException();
+                }
+                return new AzureBlobStorageClient(containerClient, privateApplicationContainer);
+            } catch (PrivateContainerPublicAccessException e) {
+                throw e;
             } catch (Exception e) {
                 log.warn("Azure Blob Storage initialization failed ({}); uploads will be rejected.", e.getClass().getSimpleName());
                 return new UnavailableStorageClient();
@@ -43,5 +55,11 @@ public class StorageConfig {
 
         log.info("AZURE_STORAGE_CONNECTION_STRING is not set; image uploads will be rejected.");
         return new UnavailableStorageClient();
+    }
+
+    static final class PrivateContainerPublicAccessException extends IllegalStateException {
+        PrivateContainerPublicAccessException() {
+            super("Expert application storage container must not allow public access");
+        }
     }
 }

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { localDateKey, mondayOf } from "../utils/date"
 
-export { localDateKey, mondayOf, shiftWeek } from "../utils/date"
+export { localDateKey, mondayOf, shiftWeek, shiftDays, getWindowDays, isToday, isPastDate } from "../utils/date"
 
 import "./WeekCalendar.css"
 
@@ -74,15 +74,15 @@ export function WeekCalendar({
     }
   }
 
+  const today = localDateKey(new Date())
+
   const selectedStart = new Date(`${weekStart}T12:00:00`)
   const selectedEnd = new Date(selectedStart)
   selectedEnd.setDate(selectedEnd.getDate() + 7)
 
-  const endSunday = new Date(selectedStart)
-  endSunday.setDate(endSunday.getDate() + 6)
-  const endSundayKey = localDateKey(endSunday)
-
-  const today = localDateKey(new Date())
+  const endWindow = new Date(selectedStart)
+  endWindow.setDate(endWindow.getDate() + 6)
+  const endWindowKey = localDateKey(endWindow)
 
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLButtonElement>,
@@ -167,7 +167,7 @@ export function WeekCalendar({
         {days.map(({ date, key }) => {
           const selected = date >= selectedStart && date < selectedEnd
           const isStart = key === weekStart
-          const isEnd = key === endSundayKey
+          const isEnd = key === endWindowKey
           const isSelectedDay = selectedDay === key
           const isToday = key === today
           const isCurrentMonth = date.getMonth() === gridMonth.getMonth()
@@ -299,7 +299,7 @@ export function WeekCalendar({
       <button
         type="button"
         onClick={handleThisWeek}
-        className="u030-today-btn mt-3 w-full rounded-full border border-brand-200 py-2 text-xs font-medium text-ink-soft hover:border-brand-600 hover:text-ink"
+        className="u030-today-btn mt-3 w-full rounded-full border border-brand-200 bg-brand-50/60 text-brand-700 hover:bg-brand-100 hover:border-brand-400 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-300 py-2 text-xs font-semibold cursor-pointer shadow-2xs"
       >
         Tuần này
       </button>

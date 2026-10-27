@@ -3527,6 +3527,68 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/expert-applications/attachments:
+    post:
+      tags:
+      - expert-application-controller
+      operationId: submitWithAttachments
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                application:
+                  $ref: "#/components/schemas/ExpertApplicationRequest"
+                certificate:
+                  type: string
+                  format: binary
+                avatar:
+                  type: string
+                  format: binary
+              required:
+              - application
+      responses:
+        "201":
+          description: The submitted application with optional private attachments.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ExpertApplicationResponse"
+        "400":
+          description: Invalid application data or attachment format.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "EXPERT_APPLICATION_PENDING_EXISTS: the customer already has\
+            \ a pending application."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "413":
+          description: An attachment exceeds its size limit.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/auth/register:
     post:
       tags:
@@ -6561,6 +6623,58 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/admin/expert-applications/{id}/attachments/{kind}:
+    get:
+      tags:
+      - expert-application-controller
+      operationId: attachment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: kind
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Private application attachment content.
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+        "403":
+          description: Administrator role required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Application or attachment not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
 components:
   schemas:
     UpdateShoppingItemRequest:
@@ -8239,14 +8353,14 @@ components:
           type: string
         paymentLinkId:
           type: string
+        paymentSuccess:
+          type: boolean
         orderCode:
           type: integer
           format: int64
         amount:
           type: integer
           format: int32
-        paymentSuccess:
-          type: boolean
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -8452,6 +8566,10 @@ components:
           type: string
         portfolioUrl:
           type: string
+        certificateAvailable:
+          type: boolean
+        applicationAvatarAvailable:
+          type: boolean
         status:
           type: string
         adminNote:

@@ -220,14 +220,48 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
 
   return <PageContainer className="recipe-detail-page py-6 sm:py-8">
     <div className="recipe-detail-no-print mb-5 flex flex-wrap items-center justify-between gap-3">
-      <Link to={backTarget} className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-900"><ArrowLeft className="h-4 w-4" />{fromMealPlan ? 'Về lịch ăn' : 'Khám phá'}</Link>
+      <Link
+        to={backTarget}
+        className="inline-flex items-center gap-2 rounded-full border border-brand-300/40 bg-paper px-3.5 py-1.5 text-sm font-semibold text-ink shadow-xs transition-all hover:border-brand-500 hover:text-brand-700 hover:shadow-sm dark:border-brand-800 dark:bg-surface"
+      >
+        <ArrowLeft className="h-4 w-4 text-brand-600 shrink-0" />
+        {fromMealPlan ? 'Về lịch ăn' : 'Khám phá'}
+      </Link>
       <div className="flex flex-wrap items-center gap-2">
-        <SaveRecipeButton recipeId={recipe.recipeId} />
-        <Link to={`/so-sanh?a=${recipe.recipeId}`} aria-label="So sánh với công thức khác" className="rounded-full"><Button as="span" variant="outline" size="sm"><ArrowLeftRight className="h-4 w-4" />So sánh</Button></Link>
-        <button type="button" onClick={() => openChat(recipe.recipeId)} className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-3 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-50"><MessageCircle className="h-4 w-4" aria-hidden="true" />Hỏi AI về công thức này</button>
-        <Button variant="outline" size="sm" onClick={shareRecipe}><Share2 className="h-4 w-4" />Chia sẻ</Button>
+        <SaveRecipeButton recipeId={recipe.recipeId} size="sm" />
+        <Link to={`/so-sanh?a=${recipe.recipeId}`} aria-label="So sánh với công thức khác" className="rounded-full">
+          <span className="inline-flex items-center justify-center rounded-full font-semibold transition-all border border-brand-300/40 bg-paper text-ink shadow-xs hover:border-brand-500 hover:text-brand-700 hover:shadow-sm px-3.5 py-1.5 text-sm gap-2 dark:border-brand-800 dark:bg-surface">
+            <ArrowLeftRight className="h-4 w-4 text-brand-600 shrink-0" />
+            So sánh
+          </span>
+        </Link>
+        <button
+          type="button"
+          onClick={() => openChat(recipe.recipeId)}
+          className="inline-flex items-center justify-center rounded-full font-semibold transition-all border border-brand-300/40 bg-paper text-ink shadow-xs hover:border-brand-500 hover:text-brand-700 hover:shadow-sm px-3.5 py-1.5 text-sm gap-2 dark:border-brand-800 dark:bg-surface"
+        >
+          <MessageCircle className="h-4 w-4 text-brand-600 shrink-0" aria-hidden="true" />
+          <span>Hỏi AI<span className="hidden sm:inline"> về công thức này</span></span>
+        </button>
+        <button
+          type="button"
+          onClick={shareRecipe}
+          className="inline-flex items-center justify-center rounded-full font-semibold transition-all border border-brand-300/40 bg-paper text-ink shadow-xs hover:border-brand-500 hover:text-brand-700 hover:shadow-sm px-3.5 py-1.5 text-sm gap-2 dark:border-brand-800 dark:bg-surface"
+        >
+          <Share2 className="h-4 w-4 text-brand-600 shrink-0" />
+          Chia sẻ
+        </button>
         <div className="relative">
-          <Button variant="primary" size="sm" aria-expanded={exportOpen} onClick={() => setExportOpen((open) => !open)}><Download className="h-4 w-4" />Xuất công thức<ChevronDown className="h-4 w-4" /></Button>
+          <button
+            type="button"
+            aria-expanded={exportOpen}
+            onClick={() => setExportOpen((open) => !open)}
+            className="inline-flex items-center justify-center rounded-full font-semibold transition-all bg-brand-600 text-on-brand shadow-xs shadow-brand-600/30 hover:bg-brand-700 hover:shadow-sm active:scale-[.98] px-4 py-1.5 text-sm gap-2"
+          >
+            <Download className="h-4 w-4 shrink-0" />
+            Xuất công thức
+            <ChevronDown className="h-4 w-4 shrink-0" />
+          </button>
           {exportOpen && <div className="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-brand-100 bg-paper p-1.5 shadow-lg">
             <button type="button" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-brand-50" onClick={() => { downloadText(recipe); setExportOpen(false); }}><Download className="h-4 w-4 text-brand-600" />Tải tệp TXT</button>
             <button type="button" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-brand-50" onClick={() => { setExportOpen(false); printRecipe(); }}><Printer className="h-4 w-4 text-brand-600" />In / lưu PDF A4</button>
@@ -254,7 +288,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
     />
 
     {/* Header: Tiêu đề, Mô tả và Thông tin tác giả */}
-    <div className="mb-6">
+    <Card className="mb-6 p-5 sm:p-7 shadow-xs">
       <div className="mb-3 flex flex-wrap gap-2">
         <Badge tone="leaf">{recipe.vegetarianTypeLabel}</Badge>
         <Badge>{recipe.dishCategoryLabel}</Badge>
@@ -262,7 +296,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       </div>
       <h1 className="max-w-4xl text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">{recipe.title}</h1>
       {recipe.description && <p className="mt-3 max-w-3xl leading-7 text-ink-muted">{recipe.description}</p>}
-      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-ink-muted">
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-brand-100/70 pt-4 text-sm text-ink-muted">
         <div className="flex items-center gap-3">
           <MemberAvatar name={author.displayName} url={author.avatarUrl} />
           <div>
@@ -280,7 +314,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4 text-brand-600" />{recipe.servings} khẩu phần gốc</span>
         {recipe.publishedAt && <time dateTime={recipe.publishedAt}>Đăng ngày {publishedDate(recipe.publishedAt)}</time>}
       </div>
-    </div>
+    </Card>
 
     {/* Hàng 1: Tổng quan (Ảnh món ăn & Thông tin nhanh) - Luôn cân bằng chiều cao 1:1 tuyệt đối */}
     <div className="mb-8 grid gap-6 lg:grid-cols-12 lg:items-stretch">
@@ -649,7 +683,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
       </div>
 
       {/* Cột phải (5 cột): Dinh dưỡng đi cùng cao độ với Nguyên liệu */}
-      <aside className="flex flex-col gap-6 lg:col-span-5 lg:sticky lg:top-24">
+      <aside className="flex flex-col gap-6 lg:col-span-5 lg:sticky lg:top-24 self-start">
         <Card className="p-5 sm:p-6">
           <div>
             <div className="flex items-start justify-between gap-3">

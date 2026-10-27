@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
-import { AiButton, Badge, BorderGlow, Button, Card, Pattern, RippleDistortion } from '../components/ui';
+import { AiButton, Badge, BorderGlow, Button, Card, RippleDistortion } from '../components/ui';
 import {
   PublicRecipeCard,
   PublicRecipeSkeleton,
@@ -119,11 +119,8 @@ export function Home() {
         </PageContainer>
       </section>
 
-      {/* Main dashboard with dark Pattern aurora background & spacious balanced layout */}
-      <div className="relative overflow-hidden bg-cream">
-        <div className="pointer-events-none absolute inset-0 z-0">
-          <Pattern />
-        </div>
+      {/* Main dashboard with ambient background & spacious balanced layout */}
+      <div className="relative overflow-hidden">
 
         <PageContainer className="relative z-10 space-y-7 py-8 sm:py-10 pb-12 sm:pb-16">
           {/* Row 1: Search + BorderGlow AI Assistant (8 cols) & User Kitchen Shortcuts (4 cols) */}
