@@ -2,7 +2,7 @@
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
 > **Version:** v2.13.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -307,7 +307,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-39 — Vai trò tham khảo của chỉ số BMI
 
 - **Mã quy tắc:** BR-39
-- **Nội dung:** BMI hoặc mục tiêu cân nặng không được dùng một mình để tự kê calorie/macro target hay đánh giá sức khỏe; BMI chỉ là chỉ số tham khảo trong hồ sơ rộng hơn. FR-36 được phép dùng mục tiêu hồ sơ hoặc mục tiêu riêng cho tuần hiện tại để ưu tiên lựa chọn món trong pool công thức tin cậy. Mục tiêu đó không tự thay đổi các mức năng lượng/dưỡng chất FR-35, không được Gemini tự chuyển thành thâm hụt/thặng dư calorie, và không phải chỉ định hay cam kết kết quả cân nặng.
+- **Nội dung:** BMI/phân loại BMI là thông tin tham khảo trong hồ sơ cá nhân và được FR-36 sử dụng cùng hồ sơ nhân trắc học, các mức tham khảo chín chỉ tiêu FR-35 và ràng buộc ăn uống để cá nhân hóa lựa chọn, phối hợp công thức và khẩu phần. BMI hoặc mục tiêu cân nặng không được dùng riêng để đánh giá sức khỏe, tự kê hoặc thay đổi mục tiêu calorie/dưỡng chất. Mục tiêu hồ sơ hoặc mục tiêu riêng của tuần chỉ hướng dẫn lựa chọn món; Gemini không được tự suy ra thâm hụt/thặng dư calorie. Kết quả không phải chỉ định hay cam kết thay đổi cân nặng.
 
 ---
 

@@ -2,13 +2,32 @@
 > **File:** `CHANGELOG.md`
 > **Version:** v2.107.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-26
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-27 — Limit Nutrition AI Menus to the Current Week ([PR #193](https://github.com/NgaiLong49423/vegetarian-support-system/pull/193))
+
+**Status:** Committed — `cc719355`.
+
+**Scope:** Keep FR-36 proposals relevant to the remaining days of the current week and preserve entries for days that have passed.
+
+### Added
+
+- Compose multiple trusted, one-serving recipes per meal to pursue the member's daily energy shares and nutrition targets.
+- Mark past days in the preview and show daily nutrient totals with each meal's kcal share.
+
+### Changed
+
+- Generate suggestions from today through Sunday only; reject applying meals outside that range and preserve past meal-plan entries.
+- Show nutrition totals without classifying nutrients as deficient or excessive.
+
+### Fixed
+
+- None.
 ## 2026-10-26 — Accept Today's Vietnam Date as an Ingredient Reference Date (Issue #159)
 
 **Status:** Committed — `ed9cd29`.

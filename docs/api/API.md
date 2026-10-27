@@ -2,7 +2,7 @@
 > **File:** `docs/api/API.md`
 > **Version:** v0.45.0
 > **Created:** 2026-09-20
-> **Last Updated:** 2026-10-26
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 
 # API Integration Guide
@@ -417,9 +417,10 @@ Gợi ý món, preview thực đơn và hướng dẫn nấu chi tiết phát `A
 
 Generated `/v3/api-docs` là hợp đồng runtime chi tiết cho hai endpoint dưới đây. Cả hai yêu cầu Bearer token của Member đang hoạt động, gói Pro còn hiệu lực, trạng thái dinh dưỡng `ELIGIBLE` và hồ sơ nhân trắc học FR-35 hợp lệ. FR-31 onboarding không bắt buộc; ràng buộc an toàn đã khai báo vẫn được áp dụng.
 
-- `POST /api/v1/meal-plans/ai-menu/previews` nhận `weekStartDate` (Thứ Hai), `mode` (`PROFILE` hoặc `THIS_WEEK`), `goal` tùy chọn, `preferredIngredientIds` và `avoidedIngredientIds` tùy chọn. PROFILE dùng mục tiêu FR-35 đã lưu; THIS_WEEK dùng câu trả lời chỉ trong request hiện tại. Response có 21 món theo thứ tự ngày/bữa, cover, 9 giá trị dinh dưỡng mỗi khẩu phần và lý do chọn. Preview không được lưu và không sửa Meal Plan.
+- `POST /api/v1/meal-plans/ai-menu/previews` nhận `weekStartDate` (Thứ Hai), `mode` (`PROFILE` hoặc `THIS_WEEK`), `goal` tùy chọn, `preferredIngredientIds` và `avoidedIngredientIds` tùy chọn. PROFILE dùng mục tiêu FR-35 đã lưu; THIS_WEEK dùng câu trả lời chỉ trong request hiện tại. Response chỉ có các ngày từ hôm nay đến Chủ nhật của tuần hiện tại; mỗi bữa có thể chứa nhiều công thức, mỗi công thức một khẩu phần, cùng cover, 9 giá trị dinh dưỡng mỗi khẩu phần và lý do chọn. Ngày đã qua không có món và UI ghi rõ AI không đề xuất; tuần trước hoặc tuần tương lai không sinh món. Preview không được lưu và không sửa Meal Plan.
 - Backend chỉ chọn tối đa 50 công thức `PUBLISHED`, có mọi nguyên liệu ánh xạ gram và đủ 9 chỉ tiêu dinh dưỡng. Dị ứng/nguyên liệu cần tránh từ FR-31 và `avoidedIngredientIds` của tuần này là điều kiện loại trừ cứng trước khi gọi Gemini; mọi công thức chứa một trong các nguyên liệu đó không thuộc pool. `preferredIngredientIds` chỉ là ưu tiên mềm trong số công thức còn hợp lệ và không thể ghi đè điều kiện tránh. Gemini chỉ trả ID; Backend xác minh ID, tính lại dinh dưỡng và từ chối kết quả sai, ngoài pool hoặc lặp cùng món ở hai bữa liền kề. Pool có thể lặp công thức khác vị trí liền kề nếu không đủ 21 món khác nhau.
-- `PUT /api/v1/meal-plans/ai-menu` nhận `weekStartDate`, mode và các giá trị tuần cần để tái xác minh, cùng danh sách 1–21 ô được chọn (`mealDate`, `mealType`, `recipeId`). Khi gọi API, Backend tái kiểm tra Pro, eligibility, hồ sơ, công thức công khai, pool dinh dưỡng và ràng buộc an toàn; trong một transaction, thay toàn bộ entries của tuần bằng các ô đã chọn. Bất kỳ lỗi nào rollback và giữ nguyên tuần cũ. FE phải cảnh báo rõ rằng tuần cũ sẽ bị thay trước khi gửi PUT.
+- `PUT /api/v1/meal-plans/ai-menu` nhận `weekStartDate`, mode và các giá trị tuần cần để tái xác minh, cùng danh sách món được chọn (`mealDate`, `mealType`, `recipeId`) trong khoảng hôm nay đến Chủ nhật hiện tại. Khi gọi API, Backend tái kiểm tra Pro, eligibility, hồ sơ, công thức công khai, pool dinh dưỡng, ràng buộc an toàn và giới hạn ngày; trong một transaction, chỉ thay các entries từ hôm nay đến hết tuần hiện tại, giữ nguyên entries của ngày đã qua. Bất kỳ lỗi nào rollback và giữ nguyên lịch cũ. FE phải cảnh báo rõ phạm vi cập nhật trước khi gửi PUT.
+- Backend không gọi bước xếp hạng Gemini và trả preview rỗng nếu khoảng tuần đang yêu cầu không giao với hôm nay đến Chủ nhật hiện tại; thao tác áp dụng các món ngoài khoảng ngày này bị từ chối.
 - Mục tiêu chỉ điều hướng lựa chọn món, không làm thay đổi mục tiêu số FR-35, không tự suy ra thâm hụt/thặng dư năng lượng và không đảm bảo kết quả sức khỏe. Dữ liệu câu trả lời tuần không được lưu/tái sử dụng. Không gửi số đo nhân trắc học hoặc mục tiêu cá nhân chi tiết vào telemetry; không ghi prompt hay câu trả lời cá nhân vào log.
 - Nếu chưa xác nhận trạng thái dinh dưỡng, API trả `403 NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED`; nếu người dùng đã xác nhận không đủ điều kiện, trả `403 NUTRITION_ELIGIBILITY_INELIGIBLE`. Hồ sơ nhân trắc học chưa lưu trả `409 NUTRITION_PROFILE_REQUIRED`.
 

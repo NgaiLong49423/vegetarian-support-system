@@ -30,7 +30,7 @@ public class AiMenuController {
     @Operation(summary = "Generate a nutrition-aware weekly meal-plan preview",
             description = "Requires an active Member, Pro entitlement, FR-38 eligibility and a valid FR-35 profile. "
                     + "PROFILE uses the saved goal; THIS_WEEK uses optional request-only preferences. Does not write Meal Plan entries.")
-    @ApiResponse(responseCode = "200", description = "A 21-slot weekly preview with trusted recipe nutrition.",
+    @ApiResponse(responseCode = "200", description = "A 7-day preview with multiple trusted recipes per meal and calculated nutrition.",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = AiMenuPreviewResponse.class)))
     @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @ApiResponse(responseCode = "403", description = "Pro entitlement is required; nutrition eligibility must be confirmed (NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED) and the account must be eligible (NUTRITION_ELIGIBILITY_INELIGIBLE).", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
