@@ -55,8 +55,11 @@ public class AdminReportService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<AdminReportGroupResponse> listGroups(String status, int page, int size) {
-        return PageResponse.of(queries.groups(status, page, size), page, size, queries.countGroups(status));
+    public PageResponse<AdminReportGroupResponse> listGroups(String status, String query, String sort, int page, int size) {
+        String search = query == null || query.isBlank() ? null : query.strip();
+        boolean mostReported = "MOST_REPORTED".equals(sort);
+        return PageResponse.of(queries.groups(status, search, mostReported, page, size), page, size,
+                queries.countGroups(status, search));
     }
 
     @Transactional(readOnly = true)

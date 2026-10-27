@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.106.0
+> **Version:** v2.107.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-26
 > **Status:** Active
@@ -9,6 +9,21 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-26 — Rank and Search Reported Posts on the Moderation Page (Issue #12)
+
+**Status:** Committed — `c24ae67`, `f15680e`.
+
+**Scope:** Deliver the Recipe Post side of FR-06 on the grouped report board of Issue #35: Administrators rank reported posts by report count, see the most common reason of each post and find a post by its title or author (UC-06.1, US-06.1). Hiding a post and locking its author stay the FR-28 decisions already on `/admin/bao-cao` (AC-06.2, AC-06.3). Comment reports wait for FR-48, as proposed in question Q71 on Issue #12.
+
+### Added
+
+- Add `query` (title, author name or author email, at most 200 characters, LIKE wildcards matched literally) and `sort` (`NEWEST` or `MOST_REPORTED`) to `GET /api/v1/admin/reports/groups`, and `topReasonCode`/`topReasonCount` to `AdminReportGroupResponse`; a tie goes to the reason reported most recently.
+- Add a search box and a sort select to the "Theo bài viết" view of `/admin/bao-cao`, and the most common reason with its count to each post card.
+- Add SQL Server integration tests for the ranking, the most common reason, the search and its validation, and for a new post that publishes at once while other reports are open or in review (AC-06.4), plus Playwright tests for the search, the sort and the reason line.
+
+### Changed
+
+- Rename the page and its admin menu entry to "Hậu kiểm nội dung", and document the new parameters in `docs/api/API.md` section 21 and the Backend and Frontend READMEs.
 ## 2026-10-26 — Persist Nutrition Profile BMI
 
 **Status:** Committed — `d28503ca`.

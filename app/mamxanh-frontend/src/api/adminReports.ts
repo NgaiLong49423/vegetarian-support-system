@@ -33,16 +33,19 @@ export type AdminReportGroup = {
   reportCount: number;
   statusCounts: ReportStatusCounts;
   latestReportAt: string | null;
+  topReasonCode: string;
+  topReasonCount: number;
 };
+export type ReportGroupSort = 'NEWEST' | 'MOST_REPORTED';
 
 export const adminReportsApi = {
   list: async (status: ReportStatus | '', page: number, recipeId?: number) =>
     (await apiClient.get<PageResponse<AdminReport>>('/admin/reports', {
       params: { status: status || undefined, recipeId, page, size: 20 },
     })).data,
-  groups: async (status: ReportStatus | '', page: number) =>
+  groups: async (status: ReportStatus | '', page: number, query = '', sort: ReportGroupSort = 'NEWEST') =>
     (await apiClient.get<PageResponse<AdminReportGroup>>('/admin/reports/groups', {
-      params: { status: status || undefined, page, size: 20 },
+      params: { status: status || undefined, query: query || undefined, sort, page, size: 20 },
     })).data,
   counts: async () => (await apiClient.get<ReportStatusCounts>('/admin/reports/status-counts')).data,
   detail: async (id: number) => (await apiClient.get<AdminReport>(`/admin/reports/${id}`)).data,
