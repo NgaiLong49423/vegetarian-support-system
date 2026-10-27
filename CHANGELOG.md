@@ -9,6 +9,26 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-26 — Persist Nutrition Profile BMI
+
+**Status:** Committed — `d28503ca`.
+
+**Scope:** Keep each Member's saved BMI available when reopening their private nutrition profile.
+
+### Added
+
+- Add Flyway migration `V25__persist_nutrition_bmi.sql` and update the SQL Server schema snapshot to store BMI with the existing `USER` nutrition profile.
+- Backfill BMI once for existing profiles that consented to health-data storage.
+
+### Changed
+
+- Calculate and store BMI when a Member first saves or changes height/weight; return the saved BMI with current reference values when the profile is reopened.
+- Update FR-35 acceptance criteria and UC-35.2 to specify reading saved BMI and refreshing it only after height or weight changes.
+
+### Fixed
+
+- Keep the BMI panel populated after refreshing or revisiting the nutrition profile.
+
 ## 2026-10-26 — Group Recipe Reports by Post for Administrators (Issue #35)
 
 **Status:** Committed — `fdcbf11`, `9972d22`.
@@ -632,6 +652,28 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Permit guest reads of the documented public recipe-statistics endpoint.
 - Preserve Vietnamese characters when binding ingredient search patterns on SQL Server.
+
+## 2026-10-21 — Expert Application Attachments
+
+**Status:** Committed — `fbaf8e4`.
+
+**Scope:** Extend FR-05 so applicants can attach a certificate and an application-only 3:4 portrait, with private storage and Admin-only retrieval.
+
+### Added
+
+- Add optional certificate and application-only 3:4 portrait uploads with server-side type, signature, and size validation; store attachment metadata through Flyway V24 after develop used V23 for report supplements.
+- Add an Admin-only attachment download endpoint backed by a private Azure Blob Storage container.
+
+### Changed
+
+- Update FR-05, BR-74, NFR-10, architecture, database guidance, and the application form to describe the approved attachment behavior.
+- Focus the first-time application view on the submission form and group optional uploads into a compact section.
+- Identify the application portrait as a 3:4 photo, add an explicit Admin download action, and improve the review dialog's hierarchy, attachment cards, status, and responsive scrolling.
+- Keep the existing JSON submission endpoint and public account avatar flow unchanged.
+
+### Fixed
+
+- Bind Azure storage configuration through its canonical constructor so the Backend can start with the new private-container property.
 
 ## 2026-10-20 — Remove Standalone Meal Plan Export (Issue #152)
 

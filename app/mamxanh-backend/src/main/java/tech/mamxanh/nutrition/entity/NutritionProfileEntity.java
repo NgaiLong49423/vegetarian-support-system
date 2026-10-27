@@ -39,6 +39,9 @@ public class NutritionProfileEntity {
     @Column(name = "weight_kg", precision = 5, scale = 1)
     private BigDecimal weightKg;
 
+    @Column(name = "nutrition_bmi", precision = 18, scale = 12)
+    private BigDecimal nutritionBmi;
+
     @Column(name = "activity_level")
     private String activityLevel;
 
