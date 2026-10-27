@@ -38,7 +38,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - Nội dung cộng đồng MVP: bài công thức (`Recipe Post`), bình luận. Phân loại bài viết theo thể loại món ăn chuẩn hóa (`dish_category`) và loại ăn chay (`vegetarian_type`). Không có Blog độc lập nhúng thẻ công thức trong baseline hiện tại.
 - Mỗi bài công thức kết hợp dữ liệu món ăn có cấu trúc với trường hướng dẫn chuẩn bị/chế biến (`instructions`, 10–5.000 ký tự) linh hoạt, trực quan; hệ thống không ép buộc phân rã thành các bước độc lập hay quản lý theo chế độ step-to-step (Phương án B); bãi bỏ bảng `RECIPE_STEP`.
 - Media Phase 1: Thư viện ảnh tối đa 5 ảnh trên mỗi bài công thức (`RECIPE_MEDIA`) được upload lên Azure Blob Storage; trong đó có đúng 1 ảnh được chọn làm ảnh bìa (cover); bài công thức có thể chứa link YouTube và phát bằng embedded player trong app.
-- **Quy trình thẩm định Chuyên gia (`FR-05`):** Customer có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản (`EXPERT_APPLICATION`: kinh nghiệm ẩm thực chay, trường phái chay, tóm tắt công thức sở trường, link tham khảo); Administrator thẩm định nội dung và phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; tài khoản được thăng cấp `Role = EXPERT` ngay khi duyệt.
+- **Quy trình thẩm định Chuyên gia (`FR-05`):** Customer nộp đơn theo format văn bản (`EXPERT_APPLICATION`) với kinh nghiệm, trường phái chay, tóm tắt công thức, portfolio và có thể đính kèm một tài liệu chứng chỉ/văn bằng chuyên môn cùng một ảnh thẻ chân dung khung 3:4 riêng của đơn; Administrator thẩm định nội dung, xem hoặc tải tệp và phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; tài khoản được thăng cấp `Role = EXPERT` ngay khi duyệt. Tệp được lưu riêng tư và ảnh thẻ không trở thành avatar hồ sơ công khai.
 - **Đăng bài công thức độc quyền cho Chuyên gia (`FR-04`):** Chỉ tài khoản có vai trò `Chuyên gia` đã được Administrator phê duyệt mới được tạo, chỉnh sửa, xóa và công khai Recipe Post trực tiếp; Customer và Administrator không có quyền đăng bài.
 - Đánh giá chất lượng và lượt xem: Customer và Chuyên gia được đánh giá chất lượng bài công thức bằng bình chọn Like / Dislike và tính tỷ lệ % hài lòng (`RECIPE_REACTION`); Guest chỉ có quyền xem tỷ lệ % và tổng số lượt đánh giá; hệ thống hiển thị huy hiệu `👍 {like_percentage}%` nổi bật trên thẻ bài viết Recipe Card (tương tự Samsung Food); hệ thống lưu vết chi tiết từng lượt xem (`RECIPE_VIEW`) với cơ chế khử trùng lặp (view deduplication).
 - So sánh công thức (`FR-60`): Guest và Member có thể chọn đúng hai Recipe Post công khai khác nhau để đối chiếu thông tin tổng quan, nguyên liệu và chín chỉ tiêu dinh dưỡng trên một khẩu phần; hệ thống không lưu lịch sử, không xuất PDF và không kết luận món nào tốt hơn hoặc lành mạnh hơn.
@@ -54,7 +54,6 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 
 ### 3.2 Ngoài phạm vi hiện tại
 
-- Quản lý tệp chứng chỉ, văn bằng hoặc bằng cấp vật lý trong quy trình xét duyệt Chuyên gia (ứng dụng chỉ thẩm định dựa trên format văn bản có cấu trúc do người dùng khai báo).
 - Người dùng thông thường (Customer) tự do đăng tải bài công thức (chỉ dành riêng cho Chuyên gia đã được phê duyệt).
 - Chẩn đoán, điều trị, tư vấn sức khỏe chuyên nghiệp hoặc thay thế bác sĩ.
 - Lưu nháp Recipe Post trên server và lịch sử hội thoại AI theo tài khoản.
@@ -155,7 +154,7 @@ Luồng cấp cao: Chuyên gia đã được phê duyệt (`Role = EXPERT`) → 
 - Hệ thống gắn tác giả với tài khoản đăng bài (bắt buộc `Role = EXPERT`), không dùng ô nhập tên tác giả tùy ý và không cho người đăng chọn tài khoản khác để đứng tên.
 - Hồ sơ tác giả công khai (được quản lý trực tiếp trong thực thể `User`) không hiển thị email, thông tin đăng nhập hoặc dữ liệu hồ sơ dinh dưỡng/ăn uống riêng tư. Trang thông tin tác giả hiển thị tên hiển thị, avatar, giới thiệu chuyên môn ngắn, ngày tham gia và danh sách các bài công thức đã công khai.
 - Administrator xử lý báo cáo không trở thành tác giả. AI hỗ trợ viết không thay thế tác giả; Chuyên gia vẫn rà soát và chịu trách nhiệm khi công khai bài.
-- Gắn bài với tài khoản Chuyên gia nhằm định danh người chịu trách nhiệm nội dung. Quyền Chuyên gia được cấp sau khi Administrator thẩm định đơn đăng ký theo format (`FR-05`); hệ thống không quản lý văn bằng/chứng chỉ vật lý.
+- Gắn bài với tài khoản Chuyên gia nhằm định danh người chịu trách nhiệm nội dung. Quyền Chuyên gia được cấp sau khi Administrator thẩm định đơn đăng ký theo format (`FR-05`); tài liệu chứng chỉ do Customer tự nguyện cung cấp chỉ là tài liệu tham khảo trong đơn, không xác minh danh tính hoặc tính xác thực ngoài hệ thống.
 
 ### 3.8.1 Theo dõi người dùng
 
@@ -394,7 +393,7 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 
 | Dịch vụ ngoài | Trách nhiệm được dùng trong phạm vi hiện tại | Ranh giới |
 | --- | --- | --- |
-| Azure Blob Storage | Lưu và phục vụ ảnh Recipe Post theo tham chiếu do ứng dụng quản lý | Không lưu video upload trong Phase 1; không tự quyết định quyền truy cập ứng dụng. |
+| Azure Blob Storage | Lưu ảnh Recipe Post và tệp đính kèm riêng tư của đơn Chuyên gia theo tham chiếu do ứng dụng quản lý | Tệp đơn Chuyên gia không được công khai; quyền xem do Backend kiểm tra. Không lưu video upload trong Phase 1. |
 | YouTube | Phát video nhúng từ link/video ID hợp lệ | Ứng dụng không upload, sao chép hoặc bảo đảm mọi video luôn cho phép nhúng. |
 | Google Maps Platform | Không được sử dụng trong các capability hiện hành | Không phải dependency của baseline; ứng dụng không quản lý hoặc xác minh dữ liệu nhà hàng bên ngoài. |
 | Google authentication và dịch vụ email | Hỗ trợ Google Login, xác minh email, đặt lại mật khẩu và thông báo đã xác nhận | Nhà cung cấp và chi tiết luồng triển khai chưa được SRS này tự suy diễn. |
@@ -411,7 +410,7 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 | M05 | Saved Recipes, Meal Planning & Shopping List | Lưu công thức để xem lại, xếp món vào lịch ăn ngày/tuần ba bữa cố định, so sánh thống kê dinh dưỡng tuần, xuất file công thức và báo cáo PDF dinh dưỡng, tạo/quản lý và xuất danh sách mua sắm nguyên liệu cơ bản | M02, M04 | Đã chốt ranh giới Saved/Planner/Shopping List; quy tắc gom an toàn và xuất file đã xác nhận. |
 | M06 | Gemini AI Access & Usage | Guest/Free/Plus/Pro gọi AI theo gói tính năng (Feature Entitlement), rate limit kỹ thuật cho Guest và telemetry chi phí | M02 một phần, Gemini backend | Entitlement, safety, telemetry và actor-goal Use Case được quy định tại FR/BR/NFR liên quan. |
 | M08 | Subscription Administration | Hiển thị/đổi gói và phân quyền tính năng AI (Feature-based Entitlement) | M02, M06 | FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; payment provider đã chọn là payOS. |
-| M09 | Administration | Xét duyệt đơn đăng ký Chuyên gia (`FR-05`), xử lý báo cáo vi phạm, quản lý user/bài công thức/bình luận và danh mục nguyên liệu dinh dưỡng | M02–M07, M10 | Quy trình xét duyệt chuyên gia theo format; quyết định hậu kiểm thủ công có lý do, giữ audit/history. Không quản lý bảng danh mục động. |
+| M09 | Administration | Xét duyệt đơn đăng ký Chuyên gia và tệp đính kèm riêng tư (`FR-05`), xử lý báo cáo vi phạm, quản lý user/bài công thức/bình luận và danh mục nguyên liệu dinh dưỡng | M02–M07, M10 | Quy trình xét duyệt chuyên gia theo format; tệp đơn chỉ Admin được tải/xem qua Backend; quyết định hậu kiểm thủ công có lý do, giữ audit/history. Không quản lý bảng danh mục động. |
 | M10 | Nutrition Profile & Daily Menu Check | Với Member đủ điều kiện, tính chín chỉ tiêu từ danh mục nguyên liệu dinh dưỡng nội bộ, quy đổi theo khẩu phần và đối chiếu tổng ba bữa với hồ sơ | M02, M04, M05 | Đã chốt đối tượng, chỉ tiêu, nguồn dữ liệu cấp MVP và cách cộng menu; còn dữ liệu khởi tạo, quy đổi và khoảng tham khảo chi tiết khi triển khai. |
 
 ## 6. Thứ tự sử dụng baseline cho thiết kế và kiểm thử

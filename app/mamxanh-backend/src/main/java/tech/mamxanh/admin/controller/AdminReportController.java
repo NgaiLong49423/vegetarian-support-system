@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,16 +53,21 @@ public class AdminReportController {
     }
 
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "One group per reported Recipe Post with its report count, "
-                    + "the post with the newest matching report first (AC-30.4)."),
-            @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: unknown status, or page/size outside its range.")
+            @ApiResponse(responseCode = "200", description = "One group per reported Recipe Post with its report count and "
+                    + "most common reason (AC-30.4, UC-06.1). query keeps the posts whose title or author name or email "
+                    + "contains it; sort NEWEST puts the post with the newest matching report first, MOST_REPORTED the post "
+                    + "with the most matching reports."),
+            @ApiResponse(responseCode = "400", description = "VALIDATION_FAILED: unknown status or sort, query over 200 characters, "
+                    + "or page/size outside its range.")
     })
     @GetMapping("/groups")
     public PageResponse<AdminReportGroupResponse> listReportGroups(
             @RequestParam(required = false) @Pattern(regexp = "OPEN|IN_REVIEW|RESOLVED") String status,
+            @RequestParam(required = false) @Size(max = 200) String query,
+            @RequestParam(defaultValue = "NEWEST") @Pattern(regexp = "NEWEST|MOST_REPORTED") String sort,
             @RequestParam(defaultValue = "0") @Min(0) @Max(1_000_000) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-        return service.listGroups(status, page, size);
+        return service.listGroups(status, query, sort, page, size);
     }
 
     @ApiResponses({

@@ -210,7 +210,7 @@ function MockRecipeDetail() {
         </nav>
 
         {/* header */}
-        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <Card className="mb-6 flex flex-col gap-4 p-5 sm:p-7 shadow-xs lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <Badge tone="leaf" soft={false}>
@@ -287,7 +287,7 @@ function MockRecipeDetail() {
               <CalendarPlus className="h-4 w-4" /> Thêm vào kế hoạch
             </Button>
           </div>
-        </div>
+        </Card>
 
         {/* stat row */}
         <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-5">

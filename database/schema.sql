@@ -21,8 +21,16 @@
 --                   + V13__expand_nutrition_goal_options.sql
 --                   + V14__nutrition_daily_value_reference.sql
 --                   + V15__recipe_view_deduplication.sql
---                   + V16__shopping_manual_roll_unit.sql
---                   + V17__shopping_recipe_contributions.sql
+--                   + V16__allow_partial_manual_ingredient_nutrition.sql
+--                   + V17__allow_ai_estimated_nutrition.sql
+--                   + V18__shopping_manual_roll_unit.sql
+--                   + V19__shopping_recipe_contributions.sql
+--                   + V20__ingredient_reference_image.sql
+--                   + V21__shopping_manual_list_kind.sql
+--                   + V22__report_handling_by_admin.sql
+--                   + V23__report_supplement.sql
+--                   + V24__expert_application_private_attachments.sql
+--                   + V25__persist_nutrition_bmi.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -160,6 +168,7 @@ CREATE TABLE [USER] (
     biological_sex             VARCHAR(10)    NULL,
     height_cm                  DECIMAL(5,1)   NULL,
     weight_kg                  DECIMAL(5,1)   NULL,
+    nutrition_bmi              DECIMAL(18,12) NULL,
     activity_level             VARCHAR(30)    NULL,
     pregnant                   BIT            NOT NULL
         CONSTRAINT DF_USER_pregnant DEFAULT 0,
@@ -343,6 +352,10 @@ CREATE TABLE [EXPERT_APPLICATION] (
     vegetarian_type        VARCHAR(30)     NOT NULL,
     sample_recipe_summary  NVARCHAR(MAX)   NOT NULL,
     portfolio_url          VARCHAR(2048)   NULL,
+    certificate_blob_key   VARCHAR(512)    NULL,
+    certificate_content_type VARCHAR(100)  NULL,
+    application_avatar_blob_key VARCHAR(512) NULL,
+    application_avatar_content_type VARCHAR(100) NULL,
     status                 VARCHAR(20)     NOT NULL
         CONSTRAINT DF_EXPERT_APP_status DEFAULT 'PENDING',
     admin_note             NVARCHAR(1000)  NULL,
@@ -363,6 +376,16 @@ CREATE TABLE [EXPERT_APPLICATION] (
     ),
     CONSTRAINT CK_EXPERT_APP_vegetarian_type CHECK (
         vegetarian_type IN ('VEGAN', 'LACTO', 'OVO', 'LACTO_OVO', 'MACROBIOTIC')
+    ),
+    CONSTRAINT CK_EXPERT_APP_certificate_attachment_pair CHECK (
+        (certificate_blob_key IS NULL AND certificate_content_type IS NULL)
+        OR (certificate_blob_key IS NOT NULL
+            AND certificate_content_type IN ('application/pdf', 'image/jpeg', 'image/png'))
+    ),
+    CONSTRAINT CK_EXPERT_APP_avatar_attachment_pair CHECK (
+        (application_avatar_blob_key IS NULL AND application_avatar_content_type IS NULL)
+        OR (application_avatar_blob_key IS NOT NULL
+            AND application_avatar_content_type IN ('image/jpeg', 'image/png', 'image/webp'))
     )
 );
 GO

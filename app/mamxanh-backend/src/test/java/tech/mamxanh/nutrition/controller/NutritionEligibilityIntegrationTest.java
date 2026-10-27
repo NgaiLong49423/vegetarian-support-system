@@ -68,11 +68,15 @@ class NutritionEligibilityIntegrationTest extends AbstractIntegrationTest {
         assertThat(row.get("nutrition_eligibility_confirmed_at")).isNotNull();
         assertThat(row.get("health_data_consent")).isEqualTo(true);
         assertThat(row.get("health_data_consent_at")).isNotNull();
+        assertThat(profileData("eligible@fr38.test").get("nutrition_bmi"))
+                .isEqualTo(new java.math.BigDecimal("22.491349481000"));
 
         mockMvc.perform(get(BASE).header(HttpHeaders.AUTHORIZATION, bearer(token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile.dateOfBirth").value("1990-01-01"))
-                .andExpect(jsonPath("$.results").doesNotExist());
+                .andExpect(jsonPath("$.eligible").value(true))
+                .andExpect(jsonPath("$.results.bmi").value(22.491349481))
+                .andExpect(jsonPath("$.results.bmiCategory").value("Bình thường"));
     }
 
     @Test
@@ -99,7 +103,7 @@ class NutritionEligibilityIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get(BASE).header(HttpHeaders.AUTHORIZATION, bearer(token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile.dateOfBirth").value("1990-01-01"))
-                .andExpect(jsonPath("$.results").doesNotExist());
+                .andExpect(jsonPath("$.results.bmi").value(22.491349481));
         assertThat(profileData("changed@fr38.test")).isEqualTo(before);
     }
 
@@ -174,7 +178,7 @@ class NutritionEligibilityIntegrationTest extends AbstractIntegrationTest {
     private Map<String, Object> profileData(String email) {
         return jdbcTemplate.queryForMap("""
                 SELECT date_of_birth, biological_sex, height_cm, weight_kg, activity_level, nutrition_goal,
-                       health_data_consent, health_data_consent_at
+                       nutrition_bmi, health_data_consent, health_data_consent_at
                 FROM [USER] WHERE email = ?
                 """, email);
     }

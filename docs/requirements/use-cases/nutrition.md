@@ -63,7 +63,7 @@ Hồ sơ hợp lệ được lưu với `date_of_birth`; tuổi không được 
 ### UC-35.2 — Xem BMI và phân loại thể trạng tham khảo
 
 #### Goal
-Cho Member xem BMI tham khảo được tính từ hồ sơ đã lưu, không coi đó là chẩn đoán y tế.
+Cho Member xem BMI tham khảo đã lưu cùng hồ sơ, không coi đó là chẩn đoán y tế.
 
 #### Primary Actor
 `Member` đã đăng nhập.
@@ -80,11 +80,11 @@ Member đã xác nhận đủ điều kiện; hồ sơ có chiều cao và cân 
 #### Main Flow
 1. Member mở hồ sơ dinh dưỡng.
 2. Hệ thống hiển thị tuyên bố từ chối trách nhiệm y tế.
-3. Hệ thống tính BMI từ cân nặng và chiều cao, làm tròn một chữ số thập phân.
-4. Hệ thống hiển thị BMI cùng phân loại thể trạng tham khảo và cảnh báo đây không phải chẩn đoán.
+3. Hệ thống đọc BMI đã lưu cùng hồ sơ và hiển thị với phân loại thể trạng tham khảo; khi Member lưu hoặc cập nhật chiều cao/cân nặng, hệ thống tính và lưu BMI mới.
+4. Hệ thống cảnh báo BMI không phải chẩn đoán y tế.
 
 #### Postconditions
-BMI và phân loại tham khảo được hiển thị riêng tư cho Member; dữ liệu hồ sơ không bị thay đổi.
+BMI đã lưu và phân loại tham khảo được hiển thị riêng tư cho Member; việc xem không tính lại hoặc thay đổi BMI đã lưu.
 
 #### Traceability
 - **Parent FR:** [FR-35](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-35).

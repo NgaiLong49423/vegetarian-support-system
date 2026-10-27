@@ -160,7 +160,11 @@ export function NutritionProfile() {
         setEligibility(response.status);
         if (response.status === 'ELIGIBLE') {
           const profile = await nutritionApi.getProfile();
-          if (active) { setSavedResponse(profile); setForm(applyResponse(profile)); }
+          if (active) {
+            setSavedResponse(profile);
+            setCalculationResponse(profile.eligible ? profile : null);
+            setForm(applyResponse(profile));
+          }
         }
       })
       .catch((error: unknown) => { if (active) setLoadError(loadErrorMessage(error)); })
@@ -230,6 +234,7 @@ export function NutritionProfile() {
       if (response.status === 'ELIGIBLE') {
         const profile = await nutritionApi.getProfile();
         setSavedResponse(profile);
+        setCalculationResponse(profile.eligible ? profile : null);
         setForm(applyResponse(profile));
       } else {
         setForm(emptyForm);
