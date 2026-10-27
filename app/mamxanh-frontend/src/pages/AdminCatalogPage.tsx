@@ -38,12 +38,10 @@ import {
   type IngredientNutrition,
 } from '../services/adminCatalogApi';
 
-const today = () => {
-  const date = new Date();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return date.getFullYear() + '-' + month + '-' + day;
-};
+// Today in Vietnam time, the calendar the Backend checks referenceDate against, whatever the browser zone (BUG-059).
+const today = () => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
+}).format(new Date());
 const MAX_INGREDIENT_IMAGE_BYTES = 2 * 1024 * 1024;
 const INGREDIENT_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const fieldClass =
