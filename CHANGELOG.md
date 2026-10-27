@@ -99,6 +99,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 - Give each recipe comment a `comment-{id}` anchor; a notification link loads further comment pages until the reply is shown and focuses it.
 - Document the endpoints in `docs/api/API.md` section 23 and the Backend and Frontend READMEs; no migration is needed because `USER.reply_email_enabled` exists since V1.
 - Split the email notification note in profile settings into two sentences instead of joining them with a semicolon.
+- Split the closing sentence of the reply email in two instead of joining them with a semicolon, and check the email text in the reply email test.
 
 ### Fixed
 

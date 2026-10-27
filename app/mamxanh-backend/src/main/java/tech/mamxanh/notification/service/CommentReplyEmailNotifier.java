@@ -41,7 +41,7 @@ public class CommentReplyEmailNotifier {
 
                 %s
 
-                Bạn có thể tắt email này trong Cài đặt hồ sơ trên Mâm Xanh; thông báo trong ứng dụng vẫn được giữ.
+                Bạn có thể tắt email này trong Cài đặt hồ sơ trên Mâm Xanh. Thông báo trong ứng dụng vẫn được giữ.
 
                 Mâm Xanh
                 """.formatted(event.displayName(), event.replierName(), event.recipeTitle(), link);

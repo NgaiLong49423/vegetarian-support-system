@@ -2,7 +2,6 @@ package tech.mamxanh.notification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doThrow;
@@ -20,6 +19,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -207,8 +207,10 @@ class CommentReplyNotificationIntegrationTest extends AbstractIntegrationTest {
 
         long reply = reply(memberB, root, "Khoảng 20 phút nhé.");
 
-        verify(emailSender, timeout(5000)).sendPlainText(eq(EMAIL_PREFIX + "a@test.local"), eq(REPLY_SUBJECT),
-                contains("/cong-thuc/id/" + recipe + "#comment-" + reply));
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        verify(emailSender, timeout(5000)).sendPlainText(eq(EMAIL_PREFIX + "a@test.local"), eq(REPLY_SUBJECT), body.capture());
+        // Text shown to Members does not use ";" (lecturer feedback).
+        assertThat(body.getValue()).contains("/cong-thuc/id/" + recipe + "#comment-" + reply).doesNotContain(";");
     }
 
     @Test
