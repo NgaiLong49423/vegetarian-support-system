@@ -193,8 +193,8 @@ public class ShoppingListService {
     }
 
     private void validateQuantity(BigDecimal quantity) {
-        if (quantity == null || quantity.signum() <= 0 || quantity.stripTrailingZeros().scale() > 2
-                || quantity.compareTo(new BigDecimal("99999999.99")) > 0) {
+        if (quantity == null || quantity.signum() <= 0 || quantity.stripTrailingZeros().scale() > 6
+                || quantity.compareTo(new BigDecimal("999999999999.999999")) > 0) {
             throw invalid("Số lượng phải > 0, tối đa 99999999,99 và không quá 2 chữ số thập phân.");
         }
     }

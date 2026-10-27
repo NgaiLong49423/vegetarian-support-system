@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.109.0
+> **Version:** v2.111.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-27
 > **Status:** Active
@@ -8,6 +8,42 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-27 — Add Ingredient Unit Conversion to Public Detail
+
+**Status:** Working tree — not committed.
+
+**Scope:** Let Guests and Members convert between units supported by the ingredient they are viewing.
+
+### Added
+
+- Add a two-way ingredient unit converter using per-ingredient gram factors, with retry and estimated-value guidance.
+
+### Changed
+
+- Extend FR-62 and its API integration guidance with the public unit conversion behavior.
+
+### Fixed
+
+- None.
+
+## 2026-10-27 — Standardize Ingredient Recipe Units
+
+**Status:** Working tree — not committed.
+
+**Scope:** Add per-ingredient support for standardized recipe units and precise shopping aggregation.
+
+### Added
+
+- Add the `mg` unit, per-ingredient unit options, and grouped volume conversion management.
+
+### Changed
+
+- Limit new recipe unit choices to supported standard units, let administrators enter ingredient conversion factors directly without source metadata, and preserve sub-gram shopping quantities to six decimal places.
+
+### Fixed
+
+- Prevent legacy units and unsupported conversions from being selected for new recipe ingredients.
 
 ## 2026-10-27 — Fix AI Chat Questions About the Current Recipe
 

@@ -36,6 +36,7 @@ import {
   type IngredientRecipeReference,
   type IngredientSearch,
   type IngredientNutrition,
+  type CatalogUnit, type IngredientConversion, type ConversionDraft,
 } from '../services/adminCatalogApi';
 
 // Today in Vietnam time, the calendar the Backend checks referenceDate against, whatever the browser zone (BUG-059).
@@ -80,23 +81,32 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     </label>
   );
 }
-
 interface IngredientCardProps {
   item: CatalogIngredient;
+  supportedUnits: Array<{ code: string; approximate: boolean }>;
+  unitSupportLoading: boolean;
+  unitSupportError: string;
+  onRetryUnitSupport: () => void;
   saving: boolean;
   onOpenNutritionDetails: (item: CatalogIngredient) => void;
   onShowRecipes: (item: CatalogIngredient) => void;
   onEditInfo: (item: CatalogIngredient) => void;
   onToggleActive: (item: CatalogIngredient) => void;
+  onManageUnits: (item: CatalogIngredient) => void;
 }
 
 function IngredientTableRow({
   item,
+  supportedUnits,
+  unitSupportLoading,
+  unitSupportError,
+  onRetryUnitSupport,
   saving,
   onOpenNutritionDetails,
   onShowRecipes,
   onEditInfo,
   onToggleActive,
+  onManageUnits,
 }: IngredientCardProps) {
   const groupVisual = getIngredientGroupVisual(item.ingredientGroup);
 
@@ -131,6 +141,28 @@ function IngredientTableRow({
                 >
                   <ExternalLink className="h-3 w-3 inline" />
                 </a>
+              )}
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-1" aria-label={`Đơn vị được hỗ trợ cho ${item.name}`}>
+              <span className="mr-0.5 text-[10px] font-semibold text-ink-muted">Đơn vị:</span>
+              {unitSupportLoading ? (
+                <span className="text-[10px] text-ink-muted">Đang tải…</span>
+              ) : unitSupportError ? (
+                <button type="button" className="text-[10px] font-semibold text-red-700 underline" onClick={onRetryUnitSupport}>
+                  Tải lại danh sách
+                </button>
+              ) : (
+                <>
+                  {supportedUnits.map(({ code, approximate }) => (
+                    <span key={code} title={approximate ? 'Hệ số quy đổi ước tính' : 'Đơn vị được hỗ trợ'}
+                      className="rounded-md border border-leaf-200 bg-leaf-50 px-1.5 py-0.5 text-[10px] font-semibold text-leaf-800">
+                      {code}{approximate ? ' ≈' : ''}
+                    </span>
+                  ))}
+                  {supportedUnits.length === 3 && (
+                    <span className="text-[10px] text-ink-muted">Chỉ hỗ trợ khối lượng</span>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -192,6 +224,7 @@ function IngredientTableRow({
       {/* 6. Thao tác quản trị */}
       <td className="py-3 px-4 text-center align-middle whitespace-nowrap">
         <div className="flex items-center justify-center gap-1.5">
+          <Button size="sm" variant="outline" onClick={() => onManageUnits(item)} className="h-8 py-1 px-2.5 text-xs font-semibold">Đơn vị</Button>
           <Button
             size="sm"
             variant="outline"
@@ -232,6 +265,9 @@ function IngredientTableRow({
 
 export function AdminCatalogPage() {
   const [ingredients, setIngredients] = useState<CatalogIngredient[]>([]);
+  const [supportedUnitsByIngredient, setSupportedUnitsByIngredient] = useState<Record<number, Array<{ code: string; approximate: boolean }>>>({});
+  const [unitSupportLoading, setUnitSupportLoading] = useState(false);
+  const [unitSupportError, setUnitSupportError] = useState('');
   const [query, setQuery] = useState('');
   const [groupFilter, setGroupFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
@@ -254,6 +290,7 @@ export function AdminCatalogPage() {
   const [ingredientId, setIngredientId] = useState<number | null>(null);
   const [ingredientEditorOpen, setIngredientEditorOpen] = useState(false);
   const [nutritionTarget, setNutritionTarget] = useState<CatalogIngredient | null>(null);
+  const [unitManagerTarget, setUnitManagerTarget] = useState<CatalogIngredient | null>(null);
   const [nutritionEnabled, setNutritionEnabled] = useState(false);
   const [nutritionDetailsLoading, setNutritionDetailsLoading] = useState(false);
   const [nutritionForm, setNutritionForm] = useState<NutritionDraft>(emptyNutritionDraft);
@@ -274,8 +311,37 @@ export function AdminCatalogPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const searchTimer = useRef<number | undefined>(undefined);
   const nutritionLoadId = useRef(0);
+  const unitSupportLoadId = useRef(0);
+  const loadUnitSupport = async (ingredientRows = ingredients) => {
+    const requestId = ++unitSupportLoadId.current;
+    setUnitSupportLoading(true);
+    setUnitSupportError('');
+    try {
+      const [units, conversions] = await Promise.all([adminCatalogApi.units(), adminCatalogApi.conversions()]);
+      if (requestId !== unitSupportLoadId.current) return;
+      const activeCodes = new Set(units.filter((unit) => unit.active).map((unit) => unit.code));
+      const unitCodeById = new Map(units.map((unit) => [unit.id, unit.code]));
+      const next: typeof supportedUnitsByIngredient = {};
+      for (const ingredient of ingredientRows) {
+        const entries = conversions
+          .filter((conversion) => conversion.ingredientId === ingredient.id && conversion.active)
+          .map((conversion) => ({ code: unitCodeById.get(conversion.unitId), approximate: conversion.approximate }))
+          .filter((entry): entry is { code: string; approximate: boolean } => Boolean(entry.code && activeCodes.has(entry.code)));
+        const byCode = new Map(entries.map((entry) => [entry.code, entry]));
+        next[ingredient.id] = [
+          ...['mg', 'g', 'kg'].map((code) => ({ code, approximate: false })),
+          ...['ml', 'L', 'tsp', 'tbsp', 'cup', 'quả', 'củ', 'miếng']
+            .flatMap((code) => byCode.has(code) ? [byCode.get(code)!] : []),
+        ];
+      }
+      setSupportedUnitsByIngredient(next);
+    } catch (cause) {
+      if (requestId === unitSupportLoadId.current) setUnitSupportError(cause instanceof Error ? cause.message : 'Không tải được danh sách đơn vị.');
+    } finally {
+      if (requestId === unitSupportLoadId.current) setUnitSupportLoading(false);
+    }
+  };
   const cancelNutritionDetailsLoad = () => {
     nutritionLoadId.current += 1;
     setNutritionDetailsLoading(false);
@@ -293,6 +359,7 @@ export function AdminCatalogPage() {
       setIngredients(ingredientPage.content);
       setTotalElements(ingredientPage.totalElements);
       setTotalPages(ingredientPage.totalPages);
+      void loadUnitSupport(ingredientPage.content);
 
       const rawGroups = options?.groups && options.groups.length > 0
         ? options.groups
@@ -549,7 +616,6 @@ export function AdminCatalogPage() {
 
   const searchIngredients = (event: FormEvent) => {
     event.preventDefault();
-    window.clearTimeout(searchTimer.current);
     const filters: IngredientSearch = {
       query: query.trim(),
       ingredientGroup: groupFilter.trim(),
@@ -562,13 +628,17 @@ export function AdminCatalogPage() {
     void refresh(filters);
   };
 
-  const scheduleIngredientSearch = (value: string) => {
-    window.clearTimeout(searchTimer.current);
-    searchTimer.current = window.setTimeout(() => {
-      const filters = { ...ingredientFilters, query: value.trim(), page: 0 };
-      setIngredientFilters(filters);
-      void refresh(filters);
-    }, 300);
+  const clearIngredientFilters = () => {
+    const filters: IngredientSearch = {
+      query: '', ingredientGroup: '', active: null, nutritionSupported: null,
+      page: 0, size: ingredientFilters.size,
+    };
+    setQuery('');
+    setGroupFilter('');
+    setActiveFilter('');
+    setNutritionFilter('');
+    setIngredientFilters(filters);
+    void refresh(filters);
   };
 
   const changeIngredientPage = (page: number) => {
@@ -789,10 +859,7 @@ export function AdminCatalogPage() {
                     <input
                       className={`${fieldClass} mt-0 pl-10 pr-4`}
                       value={query}
-                      onChange={(event) => {
-                        setQuery(event.target.value);
-                        scheduleIngredientSearch(event.target.value);
-                      }}
+                      onChange={(event) => setQuery(event.target.value)}
                       placeholder="Tìm tên nguyên liệu"
                     />
                   </div>
@@ -824,9 +891,18 @@ export function AdminCatalogPage() {
                     <option value="false">Chưa hỗ trợ</option>
                   </select>
                 </label>
-                <Button type="submit" variant="outline" className="h-[42px] px-4">
-                  Tìm và lọc
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button type="submit" variant="outline" className="h-[42px] px-4">
+                    Tìm và lọc
+                  </Button>
+                  {(query || groupFilter || activeFilter || nutritionFilter
+                    || ingredientFilters.query || ingredientFilters.ingredientGroup
+                    || ingredientFilters.active !== null || ingredientFilters.nutritionSupported !== null) && (
+                    <Button type="button" variant="ghost" className="h-[42px] px-3" onClick={clearIngredientFilters}>
+                      Xóa bộ lọc
+                    </Button>
+                  )}
+                </div>
               </form>
               <p className="mt-3.5 flex items-start gap-2 rounded-xl bg-brand-50/50 px-3.5 py-2.5 text-xs leading-5 text-ink-muted">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
@@ -862,11 +938,16 @@ export function AdminCatalogPage() {
                           <IngredientTableRow
                             key={item.id}
                             item={item}
+                            supportedUnits={supportedUnitsByIngredient[item.id] ?? []}
+                            unitSupportLoading={unitSupportLoading}
+                            unitSupportError={unitSupportError}
+                            onRetryUnitSupport={() => void loadUnitSupport()}
                             saving={saving}
                             onOpenNutritionDetails={(target) => void openNutritionDetails(target)}
                             onShowRecipes={(target) => void showRecipeReferences(target)}
                             onEditInfo={editIngredient}
                             onToggleActive={toggleIngredient}
+                            onManageUnits={setUnitManagerTarget}
                           />
                         ))}
                       </tbody>
@@ -1032,6 +1113,7 @@ export function AdminCatalogPage() {
               </div>
             </div>
           )}
+          {unitManagerTarget && <IngredientUnitsManager ingredient={unitManagerTarget} onClose={() => setUnitManagerTarget(null)} onSaved={() => { setNotice('Đã cập nhật quy đổi đơn vị. Công thức cũ giữ nguyên định lượng; đơn vị bị ngừng sẽ không dùng được cho bài mới.'); void loadUnitSupport(); }} />}
 
           {/* Floating Modal (Bảng nổi) - Công thức tham chiếu */}
           {referencesTarget && (
@@ -1310,4 +1392,83 @@ export function AdminCatalogPage() {
       )}
     </PageContainer>
   );
+}
+
+function IngredientUnitsManager({ ingredient, onClose, onSaved }: { ingredient: CatalogIngredient; onClose: () => void; onSaved: () => void }) {
+  const [units, setUnits] = useState<CatalogUnit[]>([]);
+  const [conversions, setConversions] = useState<IngredientConversion[]>([]);
+  const [unitId, setUnitId] = useState<number | null>(null);
+  const [gramsPerUnit, setGramsPerUnit] = useState('');
+  const [gramsPerMl, setGramsPerMl] = useState('');
+  const [approximate, setApproximate] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const reload = async () => {
+    const [unitRows, conversionRows] = await Promise.all([adminCatalogApi.units(), adminCatalogApi.conversions(ingredient.id)]);
+    setUnits(unitRows); setConversions(conversionRows);
+    const ml = unitRows.find((unit) => unit.code === 'ml');
+    const mlConversion = conversionRows.find((item) => item.unitId === ml?.id);
+    if (mlConversion) setGramsPerMl(String(mlConversion.gramsPerUnit));
+  };
+  useEffect(() => { void reload().catch((cause: unknown) => setError(cause instanceof Error ? cause.message : 'Không tải được quy đổi.')); }, [ingredient.id]);
+  const selectConversion = (id: number) => {
+    setUnitId(id);
+    const found = conversions.find((item) => item.unitId === id);
+    setGramsPerUnit(found ? String(found.gramsPerUnit) : '');
+    setApproximate(found?.approximate ?? true);
+  };
+  const conversionSettings = () => ({ approximate });
+  const saveCount = async (event: FormEvent) => {
+    event.preventDefault(); if (!unitId) return;
+    setBusy(true); setError('');
+    try {
+      const existing = conversions.some((row) => row.unitId === unitId);
+      const body: ConversionDraft = { ...conversionSettings(), gramsPerUnit: Number(gramsPerUnit) };
+      if (existing) await adminCatalogApi.updateConversion(ingredient.id, unitId, body);
+      else await adminCatalogApi.createConversion(ingredient.id, unitId, body);
+      await reload(); onSaved();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không lưu được quy đổi.'); }
+    finally { setBusy(false); }
+  };
+  const saveVolume = async (event: FormEvent) => {
+    event.preventDefault(); setBusy(true); setError('');
+    try { await adminCatalogApi.saveVolumeConversions(ingredient.id, { ...conversionSettings(), gramsPerMl: Number(gramsPerMl) }); await reload(); onSaved(); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Không lưu được quy đổi thể tích.'); }
+    finally { setBusy(false); }
+  };
+  const toggle = async (unit: CatalogUnit) => {
+    const conversion = conversions.find((row) => row.unitId === unit.id); if (!conversion) return;
+    const disabling = conversion.active;
+    if (disabling && ingredient.recipeUsageCount && ingredient.recipeUsageCount > 0
+      && !window.confirm(`Đơn vị này đang được hỗ trợ cho ${ingredient.recipeUsageCount} công thức. Ngừng hỗ trợ sẽ chặn dùng cho bài mới và bỏ quy đổi khi tính/tổng hợp. Tiếp tục?`)) return;
+    setBusy(true); setError('');
+    try {
+      if (unit.dimension === 'VOLUME') await adminCatalogApi.setVolumeConversionsActive(ingredient.id, !conversion.active);
+      else await adminCatalogApi.setConversionActive(ingredient.id, unit.id, !conversion.active);
+      await reload();
+    }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Không cập nhật được trạng thái.'); }
+    finally { setBusy(false); }
+  };
+  const countUnits = units.filter((unit) => unit.dimension === 'COUNT' && ['quả', 'củ', 'miếng'].includes(unit.code));
+  const volumeUnits = units.filter((unit) => unit.dimension === 'VOLUME' && ['ml', 'L', 'tsp', 'tbsp', 'cup'].includes(unit.code));
+  return <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="ingredient-units-title">
+    <div className="my-auto w-full max-w-3xl rounded-2xl bg-paper p-5 shadow-xl sm:p-7">
+      <div className="flex items-start justify-between gap-4"><div><h2 id="ingredient-units-title" className="text-xl font-extrabold text-ink">Quản lý đơn vị · {ingredient.name}</h2><p className="mt-1 text-sm text-ink-muted">Quy đổi bị ngừng sẽ không xuất hiện ở công thức mới; bài đã lưu giữ nguyên lượng cũ.</p></div><Button type="button" variant="ghost" onClick={onClose} aria-label="Đóng">Đóng</Button></div>
+      {error && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      <section className="mt-5 rounded-xl border border-brand-100 p-4"><h3 className="font-bold">Khối lượng cố định</h3><p className="mt-1 text-sm text-ink-muted">mg · g · kg — hệ số chuẩn, không chỉnh theo nguyên liệu.</p></section>
+      <form onSubmit={saveVolume} className="mt-4 space-y-3 rounded-xl border border-brand-100 p-4"><h3 className="font-bold">Thể tích</h3><label className={labelClass}>1 ml tương đương bao nhiêu gram<input className={fieldClass} type="number" min="0.000000001" step="any" required value={gramsPerMl} onChange={(e) => setGramsPerMl(e.target.value)} /></label>
+        <p className="text-xs text-ink-muted">Tính tự động: L ×1000 · tsp ×5 · tbsp ×15 · cup ×240 ml.</p>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={approximate} onChange={(e) => setApproximate(e.target.checked)} /> Hệ số xấp xỉ</label>
+        <Button type="submit" disabled={busy || !gramsPerMl}>Lưu và đồng bộ 5 đơn vị thể tích</Button>
+        <div className="flex flex-wrap gap-2 text-xs">{volumeUnits.map((unit) => { const factor = Number(gramsPerMl || 0) * unit.baseFactor; return <span key={unit.id} className="rounded bg-brand-50 px-2 py-1">{unit.code}: {factor.toPrecision(5)} g</span>; })}</div>
+      </form>
+      <form onSubmit={saveCount} className="mt-4 space-y-3 rounded-xl border border-brand-100 p-4"><h3 className="font-bold">Số đếm theo nguyên liệu</h3><div className="grid gap-3 sm:grid-cols-2"><label className={labelClass}>Đơn vị<select className={fieldClass} required value={unitId ?? ''} onChange={(e) => selectConversion(Number(e.target.value))}><option value="">Chọn quả, củ hoặc miếng</option>{countUnits.map((unit) => <option key={unit.id} value={unit.id}>{unit.code}</option>)}</select></label><label className={labelClass}>Số gram trên đơn vị<input className={fieldClass} type="number" min="0.000000001" step="any" required value={gramsPerUnit} onChange={(e) => setGramsPerUnit(e.target.value)} /></label></div>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={approximate} onChange={(e) => setApproximate(e.target.checked)} /> Hệ số xấp xỉ</label>
+        <Button type="submit" disabled={busy || !unitId}>Lưu quy đổi đếm</Button>
+      </form>
+      <div className="mt-4 space-y-2">{conversions.filter((row) => countUnits.some((unit) => unit.id === row.unitId) || volumeUnits.some((unit) => unit.id === row.unitId)).map((row) => { const unit = units.find((item) => item.id === row.unitId); return <div key={row.unitId} className="flex items-center justify-between rounded-lg bg-brand-50 px-3 py-2 text-sm"><span>{unit?.code}: {row.gramsPerUnit} g{row.approximate ? ' · xấp xỉ' : ''}</span><Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => void toggle(unit!)}>{row.active ? 'Ngừng sử dụng' : 'Khôi phục'}</Button></div>; })}</div>
+      <p className="mt-4 text-xs text-ink-muted">Hệ số do Admin nhập; đánh dấu xấp xỉ nếu đây là giá trị ước lượng. Việc cập nhật quy đổi không thay đổi số lượng đã lưu trong công thức.</p>
+    </div>
+  </div>;
 }

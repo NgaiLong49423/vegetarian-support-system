@@ -1,8 +1,8 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.48.0
+> **Version:** v1.49.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-26
+> **Last Updated:** 2026-10-27
 > **Status:** Active  
 
 # Mâm Xanh Frontend
@@ -28,6 +28,7 @@
 - Menu Khám phá mở các route Công thức, Danh mục nguyên liệu và Chuyên gia trên desktop/mobile. Cộng đồng vẫn được mở từ nút “Xem cộng đồng” trên Trang chủ; route và deep links hiện có được giữ nguyên.
 - `/chuyen-gia` đọc danh sách Expert đang hoạt động từ `GET /api/v1/experts`, hỗ trợ tìm/phân trang, mở hồ sơ hiện có và follow/unfollow qua API FR-59. Guest được chuyển tới đăng nhập; Admin chỉ duyệt.
 - `/danh-muc-nguyen-lieu` tải nguyên liệu đang hoạt động từ `GET /api/v1/ingredients`, hiển thị ảnh/nhãn thiếu ảnh, cho xem chi tiết tại `/nguyen-lieu/:ingredientId` qua `GET /api/v1/ingredients/{ingredientId}` và giữ luồng chọn nhiều để mở Khám phá. Chi tiết hiện giá trị dinh dưỡng có sẵn trên 100 g; giá trị `null` hiện là chưa có dữ liệu.
+- Trang chi tiết có bộ quy đổi hai chiều dựa trên `GET /api/v1/ingredients/{ingredientId}/units`; hai phía chỉ chọn được đơn vị nguyên liệu đang hỗ trợ, thay đổi số lượng/đơn vị cập nhật kết quả theo gram trên đơn vị, và dữ liệu ước tính được ghi chú.
 - Chi tiết phân biệt nguyên liệu không tồn tại (`404`, có đường về danh mục) với lỗi kết nối/dịch vụ (có Thử lại), có trạng thái thiếu toàn bộ dinh dưỡng và giữ tối đa bốn chữ số thập phân cho B12. Ảnh trống hoặc tải lỗi hiện nhãn chưa có ảnh. Các kiểm tra UI dùng API intercept nằm trong `ingredient-directory.spec.ts` và `ingredient-detail.spec.ts`; chúng không xác nhận SQL Server runtime.
 - Trang chi tiết có lưới bài công thức chứa đúng nguyên liệu từ API discovery: nhãn lọc loại ăn chay chuẩn, sắp xếp mới nhất/được yêu thích, Xem thêm và mở từng bài. Tên/ảnh nguyên liệu trong danh mục và tên nguyên liệu ở chi tiết công thức đều mở trang nguyên liệu. Nhãn là bộ lọc loại công thức, chưa phải phân loại độ phù hợp chế độ ăn riêng của nguyên liệu.
 - Bốn Expert demo trong profile `local` dùng ảnh chân dung tổng hợp được host trong `public/avatars/experts/`; avatar người dùng tải lên được giữ nguyên.

@@ -34,6 +34,7 @@ import tech.mamxanh.common.response.ApiResponse;
 import tech.mamxanh.common.response.PageResponse;
 import tech.mamxanh.nutrition.dto.request.CatalogStatusUpdateRequest;
 import tech.mamxanh.nutrition.dto.request.ConversionSaveRequest;
+import tech.mamxanh.nutrition.dto.request.VolumeConversionSaveRequest;
 import tech.mamxanh.nutrition.dto.request.IngredientNutritionRequest;
 import tech.mamxanh.nutrition.dto.request.IngredientSaveRequest;
 import tech.mamxanh.nutrition.dto.request.NutritionSupportUpdateRequest;
@@ -251,6 +252,18 @@ public class AdminCatalogController {
     @GetMapping("/ingredient-unit-conversions")
     public ApiResponse<List<ConversionResponse>> listConversions(@RequestParam(required = false) Long ingredientId) {
         return ApiResponse.success("Lấy bảng quy đổi thành công.", service.listConversions(ingredientId));
+    }
+
+    @PutMapping("/ingredients/{ingredientId}/volume-conversion")
+    public ApiResponse<List<ConversionResponse>> saveVolumeConversions(@PathVariable @Min(1) long ingredientId,
+            @Valid @RequestBody VolumeConversionSaveRequest request) {
+        return ApiResponse.success("Đã đồng bộ quy đổi thể tích cho nguyên liệu.", service.saveVolumeConversions(ingredientId, request));
+    }
+
+    @PatchMapping("/ingredients/{ingredientId}/volume-conversion/status")
+    public ApiResponse<List<ConversionResponse>> setVolumeConversionStatus(@PathVariable @Min(1) long ingredientId,
+            @Valid @RequestBody CatalogStatusUpdateRequest request) {
+        return ApiResponse.success("Đã cập nhật trạng thái nhóm quy đổi thể tích.", service.setVolumeConversionStatus(ingredientId, request));
     }
 
     @ApiResponses({

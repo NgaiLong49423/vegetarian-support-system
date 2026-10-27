@@ -412,21 +412,21 @@ class IngredientCatalogServiceTest {
         assertThat(service.findActiveUnits()).extracting(response -> response.code()).containsExactly("g");
     }
 
-    @Test void updatesAndDeactivatesUnitWithoutDeletingIt() {
-        UnitEntity unit = new UnitEntity("ml", "mililit", MeasurementDimension.VOLUME, BigDecimal.ONE);
+    @Test void updatesAndDeactivatesLegacyUnitWithoutDeletingIt() {
+        UnitEntity unit = new UnitEntity("bìa", "bìa", MeasurementDimension.COUNT, BigDecimal.ONE);
         when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
 
-        var updated = service.updateUnit(2, new UnitSaveRequest("l", "lít", MeasurementDimension.MASS, new BigDecimal("1000")));
+        var updated = service.updateUnit(2, new UnitSaveRequest("hộp", "hộp", MeasurementDimension.COUNT, BigDecimal.ONE));
         var deactivated = service.setUnitStatus(2, new CatalogStatusUpdateRequest(false));
 
-        assertThat(updated.code()).isEqualTo("l");
-        assertThat(updated.baseFactor()).isEqualByComparingTo("1000");
-        assertThat(updated.dimension()).isEqualTo(MeasurementDimension.MASS);
+        assertThat(updated.code()).isEqualTo("hộp");
+        assertThat(updated.baseFactor()).isEqualByComparingTo("1");
+        assertThat(updated.dimension()).isEqualTo(MeasurementDimension.COUNT);
         assertThat(deactivated.active()).isFalse();
     }
 
     @Test void rejectsChangingUnitDimensionWhenConversionsExist() {
-        UnitEntity unit = new UnitEntity("ml", "Mililit", MeasurementDimension.VOLUME, BigDecimal.ONE);
+        UnitEntity unit = new UnitEntity("oz", "Ounce", MeasurementDimension.VOLUME, BigDecimal.ONE);
         when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
         when(conversionRepository.existsByIdUnitId(2)).thenReturn(true);
 
@@ -440,15 +440,15 @@ class IngredientCatalogServiceTest {
     }
 
     @Test void updatesUnitWithSameCodeAndRejectsAnotherUnitsCode() {
-        UnitEntity unit = new UnitEntity("g", "gam", MeasurementDimension.MASS, BigDecimal.ONE);
+        UnitEntity unit = new UnitEntity("custom", "đơn vị tùy chỉnh", MeasurementDimension.MASS, BigDecimal.ONE);
         when(unitRepository.findById(2)).thenReturn(Optional.of(unit));
 
-        var updated = service.updateUnit(2, new UnitSaveRequest("g", "gam mới", MeasurementDimension.MASS, BigDecimal.ONE));
-        assertThat(updated.name()).isEqualTo("gam mới");
+        var updated = service.updateUnit(2, new UnitSaveRequest("custom", "đơn vị mới", MeasurementDimension.MASS, BigDecimal.ONE));
+        assertThat(updated.name()).isEqualTo("đơn vị mới");
 
-        when(unitRepository.existsByCodeIgnoreCase("ml")).thenReturn(true);
+        when(unitRepository.existsByCodeIgnoreCase("other")).thenReturn(true);
         assertThatThrownBy(() -> service.updateUnit(2,
-                new UnitSaveRequest("ml", "mililit", MeasurementDimension.VOLUME, BigDecimal.ONE)))
+                new UnitSaveRequest("other", "đơn vị khác", MeasurementDimension.MASS, BigDecimal.ONE)))
                 .isInstanceOf(ApiException.class).hasMessage("Ký hiệu đơn vị đã tồn tại.");
     }
 
@@ -528,7 +528,7 @@ class IngredientCatalogServiceTest {
         assertThat(conversion.getGramsPerUnit()).isEqualByComparingTo("120");
     }
 
-    @Test void rejectsReactivatingMassUnitConversionButAllowsDeactivation() {
+    @Test void rejectsReactivatingOrDeactivatingMassUnitConversion() {
         var id = new IngredientUnitConversionId(1L, 2);
         var conversion = new IngredientUnitConversionEntity(id, new BigDecimal("120"), false);
         conversion.setActive(false);
@@ -544,8 +544,12 @@ class IngredientCatalogServiceTest {
         assertThat(conversion.isActive()).isFalse();
 
         conversion.setActive(true);
-        service.setConversionStatus(1L, 2, new CatalogStatusUpdateRequest(false));
-        assertThat(conversion.isActive()).isFalse();
+        assertThatThrownBy(() -> service.setConversionStatus(1L, 2, new CatalogStatusUpdateRequest(false)))
+                .isInstanceOfSatisfying(ApiException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(exception.getCode()).isEqualTo("MASS_CONVERSION_NOT_ALLOWED");
+                });
+        assertThat(conversion.isActive()).isTrue();
     }
 
     @Test void mapsConcurrentDuplicateInsertToConflictAndRethrowsOtherDatabaseErrors() {

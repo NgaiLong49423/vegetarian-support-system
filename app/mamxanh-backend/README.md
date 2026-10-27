@@ -1,8 +1,8 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.42.0
+> **Version:** v0.43.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-26
+> **Last Updated:** 2026-10-27
 > **Status:** Active  
 
 # Backend Workspace
@@ -11,10 +11,10 @@
 
 `shopping/service/ShoppingAggregationService.aggregate(List<ShoppingAggregationLine>)` là biên tính toán nội bộ cho FR-53. Đầu vào gồm `ingredientId` (bắt buộc đối với dòng công thức; `null` chỉ dành cho mặt hàng thủ công), `customName`, `quantity` đã được caller tính theo khẩu phần, và `unitId`. Kết quả `ShoppingAggregationResult` chứa các nhóm danh mục, các dòng tổng hợp và cảnh báo có chỉ số dòng nguồn. Service không ghi Shopping List và không gọi AI/API ngoài.
 
-- Chỉ gộp cùng `ingredientId`; tên/nhóm lấy từ catalog. Tự quy đổi đúng hai cặp chuẩn `g/kg`, `ml/L`, trả đơn vị cơ sở khi có trong catalog. Cùng đơn vị đếm giữ nguyên đơn vị; không suy diễn rằng mọi đơn vị `COUNT` tương đương nhau.
-- Khác nhóm đơn vị chỉ gộp được qua `INGREDIENT_UNIT_CONVERSION` đúng nguyên liệu, với cả nguyên liệu, đơn vị và tỷ lệ còn hoạt động. Một tỷ lệ ml hoặc L có thể dùng qua quan hệ chuẩn 1 L = 1000 ml; các tỷ lệ đang mâu thuẫn khiến nhóm đó giữ riêng và có cảnh báo. Muỗng/thìa không tự đổi sang ml chỉ dựa vào `base_factor`.
-- Mặt hàng thủ công chỉ gộp tên giống nhau không phân biệt hoa thường sau trim và cùng `unitId`; không gộp với dòng catalog hoặc tự đổi g/kg cho mặt hàng thủ công. Dòng không tương thích được giữ riêng với `incompatibleUnits=true`; kết quả phân nhóm theo danh mục, mặt hàng thủ công thuộc `Nhóm khác`.
-- Phép cộng/nhân/chia chuẩn dùng `BigDecimal`, không làm tròn hoặc ghi về precision của SQL ở bước tổng hợp. FR-53 phải xử lý precision khi lưu để không biến lượng nhỏ thành 0. Dòng thiếu số lượng, số lượng <= 0, nguyên liệu/đơn vị không tồn tại hoặc tên thủ công không hợp lệ được bỏ qua kèm cảnh báo; đầu vào rỗng trả kết quả rỗng, thiếu toàn bộ danh sách trả `VALIDATION_FAILED`.
+- Chỉ gộp cùng `ingredientId`; tên/nhóm lấy từ catalog. Chuẩn hóa nội bộ `mg/g/kg` và `ml/L/tsp/tbsp/cup` theo `UNIT.base_factor`, đưa khối lượng về `g`, thể tích về `ml`. Đếm chỉ gộp khi trùng đúng đơn vị.
+- Khác nhóm đơn vị chỉ gộp qua `INGREDIENT_UNIT_CONVERSION` active cho đúng nguyên liệu và đơn vị; nhóm thể tích có thể quy về gram trên ml chỉ khi các tỷ lệ đang active không mâu thuẫn. Admin nhập hệ số trực tiếp; bản ghi chỉ giữ cờ xấp xỉ, không yêu cầu provenance.
+- Mặt hàng thủ công chỉ gộp tên giống nhau sau trim và cùng `unitId`; không gộp với dòng catalog. Dòng không tương thích giữ riêng với `incompatibleUnits=true`.
+- Phép tính trung gian dùng `BigDecimal`. FR-53 lưu quantity đến 6 chữ số thập phân để lượng như 1 mg (0.001 g) không bị làm tròn thành 0. Dòng không hợp lệ được bỏ qua kèm cảnh báo; đầu vào rỗng trả kết quả rỗng.
 - Catalog và quy đổi được đọc theo batch qua public service của module `nutrition`; tham chiếu lịch sử ngừng sử dụng vẫn có tên/đơn vị để hiển thị, nhưng không dùng tỷ lệ đã ngừng sử dụng để gộp khác dimension.
 
 **Ranh giới tích hợp:** engine thuộc FR-54 / PR #150, chưa phải baseline `develop`. Nhánh FR-53 kế thừa engine để triển khai caller bên dưới; PR #150 phải được tích hợp trước khi FR-53 sẵn sàng merge. Engine không tự xử lý đăng nhập, quyền sở hữu hoặc lưu checklist.

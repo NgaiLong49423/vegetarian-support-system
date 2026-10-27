@@ -96,7 +96,7 @@ public class ShoppingListCreationService {
         var rows = new ArrayList<ShoppingListItemEntity>();
         for (var item : aggregated) {
             // Only round after all source contributions have been summed. Never persist zero or overflow.
-            BigDecimal quantity = item.quantity().setScale(2, RoundingMode.HALF_UP);
+            BigDecimal quantity = item.quantity().setScale(6, RoundingMode.HALF_UP);
             if (quantity.signum() <= 0 || quantity.compareTo(MAX_QUANTITY) > 0) {
                 throw invalid("Định lượng sau tổng hợp vượt giới hạn lưu trữ hoặc quá nhỏ: " + item.name());
             }

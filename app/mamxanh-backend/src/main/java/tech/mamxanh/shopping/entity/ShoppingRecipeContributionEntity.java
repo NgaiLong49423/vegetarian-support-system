@@ -16,6 +16,6 @@ public class ShoppingRecipeContributionEntity {
     @Column(name = "recipe_id", nullable = false) private Long recipeId;
     @Column(name = "ingredient_id", nullable = false) private Long ingredientId;
     @Column(name = "unit_id", nullable = false) private Integer unitId;
-    @Column(nullable = false, precision = 10, scale = 2) private BigDecimal quantity;
+    @Column(nullable = false, precision = 18, scale = 6) private BigDecimal quantity;
     @Column(name = "shopping_list_item_id") private Long shoppingListItemId;
 }

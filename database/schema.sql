@@ -802,7 +802,7 @@ CREATE TABLE [SHOPPING_LIST_ITEM] (
     ingredient_id          BIGINT         NULL,
     unit_id                INT            NOT NULL,
     custom_ingredient_name NVARCHAR(200)  NULL,
-    quantity               DECIMAL(10,2)  NOT NULL,
+    quantity               DECIMAL(18,6)  NOT NULL,
     is_bought              BIT            NOT NULL
         CONSTRAINT DF_SLI_is_bought DEFAULT 0,
 
@@ -835,12 +835,11 @@ GO
 CREATE TABLE [INGREDIENT_UNIT_CONVERSION] (
     ingredient_id   BIGINT         NOT NULL,
     unit_id         INT            NOT NULL,
-    grams_per_unit  DECIMAL(10,2)  NOT NULL,
+    grams_per_unit  DECIMAL(18,9)  NOT NULL,
     is_approximate  BIT            NOT NULL
         CONSTRAINT DF_IUC_is_approximate DEFAULT 0,
     is_active       BIT            NOT NULL
         CONSTRAINT DF_IUC_is_active DEFAULT 1,
-
     CONSTRAINT PK_INGREDIENT_UNIT_CONVERSION PRIMARY KEY (ingredient_id, unit_id),
     CONSTRAINT FK_IUC_INGREDIENT FOREIGN KEY (ingredient_id)
         REFERENCES [INGREDIENT](ingredient_id) ON DELETE NO ACTION,
@@ -1064,6 +1063,7 @@ GO
 -- ============================================================================
 
 INSERT INTO [UNIT] (code, name, dimension, base_factor) VALUES
+    (N'mg',     N'miligram',        'MASS',    0.001),
     (N'g',      N'gram',            'MASS',    1.0),
     (N'kg',     N'kilogram',        'MASS',    1000.0),
     (N'ml',     N'mililít',         'VOLUME',  1.0),
@@ -1152,7 +1152,7 @@ CREATE TABLE [SHOPPING_RECIPE_CONTRIBUTION] (
     recipe_id BIGINT NOT NULL,
     ingredient_id BIGINT NOT NULL,
     unit_id INT NOT NULL,
-    quantity DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
+    quantity DECIMAL(18,6) NOT NULL CHECK (quantity > 0),
     shopping_list_item_id BIGINT NULL,
     CONSTRAINT FK_SRC_LIST FOREIGN KEY (shopping_list_id) REFERENCES [SHOPPING_LIST](shopping_list_id) ON DELETE CASCADE,
     CONSTRAINT FK_SRC_RECIPE FOREIGN KEY (recipe_id) REFERENCES [RECIPE_POST](recipe_id),

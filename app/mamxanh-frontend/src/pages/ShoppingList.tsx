@@ -86,7 +86,7 @@ function ShoppingWorkspace() {
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState("")
   const [retry, setRetry] = useState(0)
-  const [tab, setTab] = useState<Tab>("all")
+  const [tab, setTab] = useState<Tab>("todo")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
@@ -162,7 +162,7 @@ function ShoppingWorkspace() {
     setNameEditor(false)
     setEmptyListEditor(false)
     setListRemoval(false)
-    setTab("all")
+    setTab("todo")
     if (!id) {
       setLoading(false)
       return
@@ -630,9 +630,9 @@ function ShoppingWorkspace() {
                   className="flex flex-wrap gap-2"
                 >
                   {([
-                    ["all", "Tất cả"],
                     ["todo", "Cần mua"],
                     ["done", "Đã mua"],
+                    ["all", "Tất cả"],
                   ] as const).map(([value, label]) => (
                     <button
                       key={value}

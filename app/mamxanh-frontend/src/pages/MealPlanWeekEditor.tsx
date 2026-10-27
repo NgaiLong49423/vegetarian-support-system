@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react"
 
 import { Link, useSearchParams } from "react-router-dom"
 
@@ -602,7 +602,7 @@ function WeekContents({
               ? [...rawDays.slice(todayIndex), ...rawDays.slice(0, todayIndex)]
               : rawDays
 
-          return days.map((day) => {
+          return days.map((day, index) => {
             const date = new Date(`${day}T12:00:00`)
 
             const label = date.toLocaleDateString("vi-VN", {
@@ -618,13 +618,24 @@ function WeekContents({
             const expanded = selectedDay === day
 
             const today = day === todayKey
+            const pastDaysStart = day < todayKey && (index === 0 || days[index - 1] >= todayKey)
 
           return (
-            <section
-              key={day}
-              aria-label={date.toLocaleDateString("vi-VN")}
-              className="py-3"
-            >
+            <Fragment key={day}>
+              {pastDaysStart && (
+                <div role="separator" aria-label="Các ngày đã qua" className="flex items-center gap-3 py-5">
+                  <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-transparent via-brand-200 to-brand-300" />
+                  <span className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-brand-800 shadow-xs">
+                    <Clock3 aria-hidden="true" className="size-3.5" />
+                    NGÀY ĐÃ QUA
+                  </span>
+                  <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-l from-transparent via-brand-200 to-brand-300" />
+                </div>
+              )}
+              <section
+                aria-label={date.toLocaleDateString("vi-VN")}
+                className="py-3"
+              >
               <div className="flex items-center gap-2">
                 <h2 className="min-w-0 flex-1">
                   <button
@@ -874,7 +885,8 @@ function WeekContents({
                     </div>
                 </div>
               )}
-            </section>
+              </section>
+            </Fragment>
           )
         })
       })()}

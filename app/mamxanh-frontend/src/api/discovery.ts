@@ -45,6 +45,15 @@ export interface PublicIngredientDetail extends PublicIngredient {
   nutrition: PublicIngredientNutrition;
 }
 
+export interface PublicIngredientUnit {
+  id: number;
+  code: string;
+  name: string;
+  dimension: string;
+  gramsPerUnit: number;
+  approximate: boolean;
+}
+
 async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
   try {
     return (await operation()).data;
@@ -82,5 +91,8 @@ export const discoveryApi = {
   ),
   getIngredient: (ingredientId: number) => request(
     () => apiClient.get<PublicIngredientDetail>(`/ingredients/${ingredientId}`),
+  ),
+  getIngredientUnits: (ingredientId: number) => request(
+    () => apiClient.get<PublicIngredientUnit[]>(`/ingredients/${ingredientId}/units`),
   ),
 };

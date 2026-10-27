@@ -1,11 +1,15 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.26.0<br>
+> **Version:** v0.27.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-26<br>
+> **Last Updated:** 2026-10-27<br>
 > **Status:** Active  
 
 # Database Workspace
+
+## Migration V26 — Chuẩn hóa đơn vị công thức và quy đổi
+
+`V26__standard_recipe_units.sql` thêm `mg` (0.001 g), chốt hệ số thể tích chuẩn, tăng `INGREDIENT_UNIT_CONVERSION.grams_per_unit` lên `DECIMAL(18,9)`. Admin nhập trực tiếp hệ số theo nguyên liệu; `is_approximate` chỉ đánh dấu hệ số ước tính, không yêu cầu khai báo nguồn. Tỷ lệ Admin không bị seed ghi đè. Nhóm thể tích cũ có hệ số mâu thuẫn được soft-disable để Admin rà soát rồi cấu hình đồng bộ; mã legacy vẫn còn để đọc lịch sử. Backend chỉ trả 11 mã chuẩn cho lựa chọn công thức mới. `SHOPPING_LIST_ITEM.quantity` và `SHOPPING_RECIPE_CONTRIBUTION.quantity` tăng lên `DECIMAL(18,6)` để giữ lượng nhỏ. Migration chưa được xác nhận trên SQL Server.
 
 ## Migration V18/V19 — Checklist và nguồn Recipe Post
 
@@ -46,7 +50,7 @@ Repeatable `R__demo_sample_data_67_report_groups.sql` (chỉ profile `local`, AC
 
 ## Quyền sở hữu dữ liệu
 
-- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Baseline hiện gồm V1–V25; V13 mở rộng `nutrition_goal`, V14 tạo `NUTRITION_DAILY_VALUE`, V16 cho phép hỗ trợ từng phần, V17 chấp nhận nguồn AI trong tính toán một phần, V18 thêm đơn vị `cuộn`, V19 lưu loại danh sách và đóng góp Recipe Post, V20 thêm URL ảnh minh họa tùy chọn cho nguyên liệu, V21 cho phép loại danh sách `MANUAL`, V22 thêm người xử lý báo cáo, V23 tạo `REPORT_SUPPLEMENT`, V24 thêm tham chiếu attachment riêng tư vào đơn đăng ký Chuyên gia và V25 lưu BMI hồ sơ dinh dưỡng. `database/schema.sql` phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng.
+- Flyway migration trong backend (`app/mamxanh-backend/src/main/resources/db/migration/`) là lịch sử schema có thẩm quyền và append-only sau khi chia sẻ. Baseline hiện gồm V1–V26; V13 mở rộng `nutrition_goal`, V14 tạo `NUTRITION_DAILY_VALUE`, V16 cho phép hỗ trợ từng phần, V17 chấp nhận nguồn AI trong tính toán một phần, V18 thêm đơn vị `cuộn`, V19 lưu loại danh sách và đóng góp Recipe Post, V20 thêm URL ảnh minh họa tùy chọn cho nguyên liệu, V21 cho phép loại danh sách `MANUAL`, V22 thêm người xử lý báo cáo, V23 tạo `REPORT_SUPPLEMENT`, V24 thêm tham chiếu attachment riêng tư vào đơn đăng ký Chuyên gia, V25 lưu BMI và V26 chuẩn hóa đơn vị công thức. `database/schema.sql` phản ánh trạng thái sau toàn bộ migration; Physical ERD do người phụ trách sơ đồ cập nhật riêng. V26 chưa được xác minh trên SQL Server.
 - `database/schema.sql` là snapshot/manual bootstrap độc lập, được đồng bộ có chủ đích với trạng thái sau khi chạy toàn bộ Flyway migration; dùng cho khởi tạo nhanh trên SSMS, Azure Data Studio hoặc `sqlcmd`.
 - Flyway repeatable migrations trong `app/mamxanh-backend/src/main/resources/db/demo/` nạp fixture demo khi profile `local` chạy (IntelliJ hoặc Docker Compose), gồm tài khoản, lịch ăn, công thức, nguyên liệu, tương tác cộng đồng và danh sách mua sắm. `MAMXANH_DEMO_PASSWORD` được lấy từ `.env` local và BCrypt hóa lúc Backend khởi động; không lưu password/hash trong SQL migration hoặc Git.
 - Profile `local` dùng thêm location `classpath:db/demo`; `test` và production chỉ chạy migration schema. Repeatable demo chạy theo thứ tự catalog, ước tính AI, recipe và hoạt động mẫu. Fixture AI estimate điền đủ chín chỉ tiêu trên 100 g bằng giá trị minh họa chưa xác minh để công thức demo không còn thiếu chỉ tiêu; số 0 cũng là ước tính (ví dụ B12 trong thực phẩm thực vật), không phải xác nhận xét nghiệm. Dữ liệu nhập khác vẫn có thể thiếu trường; khi đó giá trị `NULL` được bỏ khỏi phép tính và giao diện cảnh báo kết quả chưa đầy đủ. Seed kiểm tra tồn tại trước khi thêm nên chạy lại không nhân bản fixture.

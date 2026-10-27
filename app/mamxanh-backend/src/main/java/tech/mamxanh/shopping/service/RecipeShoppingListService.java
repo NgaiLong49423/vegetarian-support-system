@@ -215,7 +215,7 @@ public class RecipeShoppingListService {
     }
 
     private BigDecimal storedQuantity(BigDecimal value) {
-        BigDecimal quantity = value.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal quantity = value.setScale(6, RoundingMode.HALF_UP);
         if (quantity.signum() <= 0 || quantity.compareTo(MAX_QUANTITY) > 0) {
             throw invalid("Định lượng sau tổng hợp vượt giới hạn lưu trữ hoặc quá nhỏ.");
         }
