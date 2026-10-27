@@ -101,7 +101,7 @@ test('queue lists open Recipe Post reports with reporter, author and status coun
   await mockApi(page);
   await page.goto('/admin/bao-cao?xem=bao-cao');
 
-  await expect(page.getByRole('heading', { name: 'Xử lý báo cáo vi phạm' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hậu kiểm nội dung', level: 1 })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Chờ xử lý (2)' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('button', { name: 'Đang xem xét (2)' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Đã giải quyết (1)' })).toBeVisible();

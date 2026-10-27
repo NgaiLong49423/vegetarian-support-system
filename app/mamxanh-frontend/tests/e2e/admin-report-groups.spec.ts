@@ -3,7 +3,9 @@ import { expect, test } from './baseFixtures';
 import { seedDemoSession } from './demo-session';
 
 // FR-30 AC-30.4: the Administrator board groups reports by recipe and shows each report with its supplements.
-// Grouping, counts and ordering on SQL Server are proven by AdminReportGroupIntegrationTest.
+// FR-06 UC-06.1: the groups can be ranked by report count, show their most common reason and be searched.
+// Grouping, counts, ordering and search on SQL Server are proven by AdminReportGroupIntegrationTest and
+// ModerationDashboardIntegrationTest.
 type Status = 'OPEN' | 'IN_REVIEW' | 'RESOLVED';
 const account = (id: number, displayName: string, role = 'CUSTOMER') => ({
   id, displayName, email: `user-${id}@mamxanh.local`, role, accountStatus: 'ACTIVE',
@@ -33,7 +35,7 @@ function fixtures() {
   return [
     report(24, 'OPEN', springRoll, account(41, 'Người báo cáo An'), '2026-10-25T06:00:00'),
     report(23, 'RESOLVED', hotPot, account(43, 'Người báo cáo Chi'), '2026-10-25T04:00:00'),
-    report(22, 'IN_REVIEW', hotPot, account(42, 'Người báo cáo Bảo'), '2026-10-25T03:00:00'),
+    { ...report(22, 'IN_REVIEW', hotPot, account(42, 'Người báo cáo Bảo'), '2026-10-25T03:00:00'), reasonCode: 'SPAM_ADVERTISING' },
     open,
   ];
 }
@@ -52,18 +54,25 @@ async function mockApi(page: Page) {
       return route.fulfill({ json: { open: count(reports, 'OPEN'), inReview: count(reports, 'IN_REVIEW'), resolved: count(reports, 'RESOLVED') } });
     }
     if (path === '/groups') {
+      const query = (url.searchParams.get('query') ?? '').toLowerCase();
       const content = [hotPot, springRoll]
+        .filter((recipe) => `${recipe.title} ${author.displayName}`.toLowerCase().includes(query))
         .map((recipe) => {
           const all = reports.filter((item) => item.recipe.id === recipe.id);
           const matching = all.filter(matches);
+          const reasons = matching.map((item) => item.reasonCode);
+          const topReasonCode = [...reasons].sort((a, b) => reasons.filter((r) => r === b).length - reasons.filter((r) => r === a).length)[0] ?? null;
           return {
             recipe, author, reportCount: matching.length,
             statusCounts: { open: count(all, 'OPEN'), inReview: count(all, 'IN_REVIEW'), resolved: count(all, 'RESOLVED') },
             latestReportAt: matching.map((item) => item.createdAt).sort().at(-1) ?? null,
+            topReasonCode, topReasonCount: matching.filter((item) => item.reasonCode === topReasonCode).length,
           };
         })
         .filter((group) => group.reportCount > 0)
-        .sort((a, b) => String(b.latestReportAt).localeCompare(String(a.latestReportAt)));
+        .sort((a, b) => url.searchParams.get('sort') === 'MOST_REPORTED' && b.reportCount !== a.reportCount
+          ? b.reportCount - a.reportCount
+          : String(b.latestReportAt).localeCompare(String(a.latestReportAt)));
       return route.fulfill({ json: { content, page: 0, size: 20, totalElements: content.length, totalPages: content.length ? 1 : 0 } });
     }
     if (path === '') {
@@ -162,4 +171,60 @@ test('a filter without any report shows an empty group list, and the board fits 
   }));
   await page.getByRole('button', { name: /^Đang xem xét/ }).click();
   await expect(page.getByText('Không có bài viết nào có báo cáo ở trạng thái này.')).toBeVisible();
+});
+
+test('FR-06: the moderation page is named Hậu kiểm nội dung in its heading and the admin menu', async ({ page }) => {
+  await mockApi(page);
+  await page.goto('/admin/bao-cao');
+
+  await expect(page.getByRole('heading', { name: 'Hậu kiểm nội dung', level: 1 })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Điều hướng quản trị' }).getByRole('link', { name: 'Hậu kiểm nội dung' }))
+    .toHaveAttribute('href', '/admin/bao-cao');
+});
+
+test('UC-06.1: each group shows its most common reason, and the most reported post can come first', async ({ page }) => {
+  const api = await mockApi(page);
+  await page.goto('/admin/bao-cao');
+  await page.getByRole('button', { name: /^Tất cả/ }).click();
+
+  const hotPotGroup = groupCard(page, 'Lẩu nấm ba báo cáo');
+  await expect(hotPotGroup).toContainText('Lý do nhiều nhất: Nguy cơ an toàn thực phẩm (2/3 báo cáo)');
+  await expect(groupCard(page, 'Gỏi cuốn một báo cáo')).toContainText('Lý do: Nguy cơ an toàn thực phẩm');
+  await expect(groupCard(page, 'Gỏi cuốn một báo cáo')).not.toContainText('Lý do nhiều nhất');
+  await expect(page.getByRole('article').first()).toContainText('Gỏi cuốn một báo cáo');
+
+  await page.getByLabel('Sắp xếp').selectOption('MOST_REPORTED');
+  await expect(page.getByRole('article').first()).toContainText('Lẩu nấm ba báo cáo');
+  const grouped = api.requests.filter((request) => request.startsWith('/groups?')).map((request) => new URLSearchParams(request.slice(8)));
+  expect(grouped.at(-1)?.get('sort')).toBe('MOST_REPORTED');
+  expect(grouped[0].get('sort')).toBe('NEWEST');
+});
+
+test('UC-06.1: the Administrator finds a reported post by its title or author, and sees when nothing matches', async ({ page }) => {
+  const api = await mockApi(page);
+  await page.goto('/admin/bao-cao');
+  await page.getByRole('button', { name: /^Tất cả/ }).click();
+  await expect(page.getByRole('article')).toHaveCount(2);
+
+  const search = page.getByRole('search');
+  await search.getByRole('searchbox', { name: 'Tìm theo tên bài hoặc tác giả' }).fill('  lẩu nấm ');
+  await search.getByRole('searchbox').press('Enter');
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await expect(page.getByRole('article')).toContainText('Lẩu nấm ba báo cáo');
+  const lastGroups = () => new URLSearchParams(api.requests.filter((request) => request.startsWith('/groups?')).at(-1)?.slice(8));
+  expect(lastGroups().get('query')).toBe('lẩu nấm');
+  expect(lastGroups().get('page')).toBe('0');
+
+  await search.getByRole('searchbox').fill('Món không có');
+  await search.getByRole('button', { name: 'Tìm' }).click();
+  await expect(page.getByText('Không tìm thấy bài viết nào khớp “Món không có”.')).toBeVisible();
+
+  await search.getByRole('searchbox').fill('');
+  await search.getByRole('button', { name: 'Tìm' }).click();
+  await expect(page.getByRole('article')).toHaveCount(2);
+  expect(lastGroups().get('query')).toBeNull();
+
+  await page.getByRole('button', { name: 'Từng báo cáo' }).click();
+  await expect(page.getByRole('search')).toHaveCount(0);
+  await expect(page.getByLabel('Sắp xếp')).toHaveCount(0);
 });

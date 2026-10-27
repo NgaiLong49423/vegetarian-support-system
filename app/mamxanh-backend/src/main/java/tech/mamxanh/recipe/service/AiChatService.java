@@ -43,6 +43,12 @@ public class AiChatService {
     private static final Pattern RECIPE_DISCOVERY = Pattern.compile(
             "gợi ý|đề xuất|tìm (?:món|món ăn|công thức|bài)|món (?:chay )?(?:nào|gì|dễ|nhanh)|món ăn (?:nào|gì|dễ|nhanh)|công thức|bài công thức|bài viết|blog|dễ nấu|nấu món gì|recipe|recipes|find dishes|recommend|suggest dishes|easy to cook|biến tấu|cải biến",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+    private static final Pattern CURRENT_RECIPE_REFERENCE = Pattern.compile(
+            "\\b(?:công thức|món ăn|món|bài viết|bài)\\s+(?:này|đang xem|hiện tại)\\b|\\b(?:trong|ở)\\s+(?:công thức|bài viết|bài)\\b",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+    private static final Pattern EXPLICIT_RECIPE_SEARCH = Pattern.compile(
+            "\\b(?:tìm|gợi ý|đề xuất|find|recommend|suggest)\\s+(?:(?:cho|giúp)\\s+(?:tôi|mình)\\s+)?(?:(?:một|vài|các|những)\\s+)?(?:món|món ăn|công thức|bài(?: viết)?|recipe|dish)\\b",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
     private static final int MAX_RECIPE_CANDIDATES = 50;
     private static final int MAX_RECOMMENDATIONS = 4;
     private final CurrentUserService users;
@@ -73,8 +79,12 @@ public class AiChatService {
         var dietary = preferences.menuConstraints(user.id());
         RecipeDetailResponse recipe = request.contextType() == AiChatRequest.ContextType.RECIPE
                 ? recipes.getPublishedRecipe(request.recipeId()) : null;
+        boolean currentRecipeQuestion = request.contextType() == AiChatRequest.ContextType.RECIPE
+                && CURRENT_RECIPE_REFERENCE.matcher(request.question()).find()
+                && !EXPLICIT_RECIPE_SEARCH.matcher(request.question()).find();
         boolean catalogSearch = !explicitlyRequestsCreation(request.question())
-                && RECIPE_DISCOVERY.matcher(request.question()).find();
+                && RECIPE_DISCOVERY.matcher(request.question()).find()
+                && !currentRecipeQuestion;
         List<RecipePostResponse> candidates = catalogSearch
                 ? eligibleCandidates(recipePosts.searchPublished("", 0, MAX_RECIPE_CANDIDATES).items(), dietary)
                 : List.of();

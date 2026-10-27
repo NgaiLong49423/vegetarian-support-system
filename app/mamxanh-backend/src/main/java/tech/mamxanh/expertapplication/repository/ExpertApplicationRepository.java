@@ -10,17 +10,25 @@ import org.springframework.stereotype.Repository;
 import tech.mamxanh.common.exception.ApiException;
 import tech.mamxanh.expertapplication.dto.ExpertApplicationRequest;
 import tech.mamxanh.expertapplication.dto.ExpertApplicationResponse;
+import tech.mamxanh.expertapplication.dto.ExpertApplicationAttachment;
 
 @Repository
 public class ExpertApplicationRepository {
-    private static final String SELECT = "SELECT a.application_id,a.user_id,u.display_name,u.email,a.bio_experience,a.vegetarian_type,a.sample_recipe_summary,a.portfolio_url,a.status,a.admin_note,a.created_at,a.reviewed_at FROM [EXPERT_APPLICATION] a JOIN [USER] u ON u.user_id=a.user_id ";
+    private static final String SELECT = "SELECT a.application_id,a.user_id,u.display_name,u.email,a.bio_experience,a.vegetarian_type,a.sample_recipe_summary,a.portfolio_url,a.certificate_blob_key,a.application_avatar_blob_key,a.status,a.admin_note,a.created_at,a.reviewed_at FROM [EXPERT_APPLICATION] a JOIN [USER] u ON u.user_id=a.user_id ";
     private final JdbcTemplate jdbc;
 
     public ExpertApplicationRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     public long insert(long userId, ExpertApplicationRequest request, LocalDateTime now) {
-        return jdbc.queryForObject("INSERT INTO [EXPERT_APPLICATION](user_id,bio_experience,vegetarian_type,sample_recipe_summary,portfolio_url,status,created_at,updated_at) OUTPUT INSERTED.application_id VALUES(?,?,?,?,?,'PENDING',?,?)",
-                Long.class, userId, request.experience().trim(), request.vegetarianType(), request.sampleRecipeSummary().trim(), blankToNull(request.portfolioUrl()), now, now);
+        return insert(userId, request, null, null, null, null, now);
+    }
+
+    public long insert(long userId, ExpertApplicationRequest request, String certificateBlobKey,
+            String certificateContentType, String avatarBlobKey, String avatarContentType, LocalDateTime now) {
+        return jdbc.queryForObject("INSERT INTO [EXPERT_APPLICATION](user_id,bio_experience,vegetarian_type,sample_recipe_summary,portfolio_url,certificate_blob_key,certificate_content_type,application_avatar_blob_key,application_avatar_content_type,status,created_at,updated_at) OUTPUT INSERTED.application_id VALUES(?,?,?,?,?,?,?,?,?,'PENDING',?,?)",
+                Long.class, userId, request.experience().trim(), request.vegetarianType(),
+                request.sampleRecipeSummary().trim(), blankToNull(request.portfolioUrl()), certificateBlobKey,
+                certificateContentType, avatarBlobKey, avatarContentType, now, now);
     }
 
     public List<ExpertApplicationResponse> page(Long userId, String status, int page, int size) {
@@ -54,9 +62,24 @@ public class ExpertApplicationRepository {
 
     public long applicantId(long id) { return jdbc.queryForObject("SELECT user_id FROM [EXPERT_APPLICATION] WHERE application_id=?", Long.class, id); }
 
+    public ExpertApplicationAttachment attachment(long id, String kind) {
+        String columns = switch (kind) {
+            case "certificate" -> "certificate_blob_key,certificate_content_type";
+            case "avatar" -> "application_avatar_blob_key,application_avatar_content_type";
+            default -> throw new IllegalArgumentException("Unsupported expert application attachment type");
+        };
+        var results = jdbc.query("SELECT " + columns + " FROM [EXPERT_APPLICATION] WHERE application_id=?",
+                (rs, row) -> new ExpertApplicationAttachment(rs.getString(1), rs.getString(2)), id);
+        if (results.isEmpty() || results.get(0).blobKey() == null) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Không tìm thấy tệp đính kèm của đơn.");
+        }
+        return results.get(0);
+    }
+
     private static ExpertApplicationResponse map(ResultSet rs) throws SQLException {
         return new ExpertApplicationResponse(rs.getLong("application_id"), rs.getLong("user_id"), rs.getString("display_name"), rs.getString("email"),
                 rs.getString("bio_experience"), rs.getString("vegetarian_type"), rs.getString("sample_recipe_summary"), rs.getString("portfolio_url"),
+                rs.getString("certificate_blob_key") != null, rs.getString("application_avatar_blob_key") != null,
                 rs.getString("status"), rs.getString("admin_note"), rs.getTimestamp("created_at").toLocalDateTime(),
                 rs.getTimestamp("reviewed_at") == null ? null : rs.getTimestamp("reviewed_at").toLocalDateTime());
     }

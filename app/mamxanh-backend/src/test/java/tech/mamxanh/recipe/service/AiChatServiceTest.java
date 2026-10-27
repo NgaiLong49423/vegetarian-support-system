@@ -83,6 +83,30 @@ class AiChatServiceTest {
     }
 
     @Test
+    void questionAboutCurrentRecipeDoesNotBecomeRecipeDiscovery() {
+        when(recipes.getPublishedRecipe(19L)).thenReturn(new tech.mamxanh.recipe.dto.response.RecipeDetailResponse(
+                19L, "Canh rau", "Mô tả", "Nấu trong 10 phút", "SOUP", "Món canh", "VEGAN", "Thuần chay",
+                "EASY", "Dễ", 2, 5, 10, null, null, null, List.of(), true, List.of(), null, null, List.of()));
+        when(ai.answerChat(anyString(), anyString())).thenReturn(structured(
+                "{\"action\":\"ANSWER\",\"answer\":\"Bài viết chưa ghi danh sách nguyên liệu.\",\"recommendations\":[]}"));
+
+        var response = service.answer(new AiChatRequest(AiChatRequest.ContextType.RECIPE, 19L,
+                "Công thức này gồm những nguyên liệu nào?", List.of()));
+
+        assertThat(response.answer()).isEqualTo("Bài viết chưa ghi danh sách nguyên liệu.");
+        verify(recipePosts, never()).searchPublished(anyString(), anyInt(), anyInt());
+        verify(ai).answerChat(anyString(), contains("Canh rau"));
+
+        when(ai.answerChat(anyString(), anyString())).thenReturn(structured(
+                "{\"action\":\"FIND_RECIPES\",\"answer\":\"\",\"recommendations\":[]}"));
+        var discovery = service.answer(new AiChatRequest(AiChatRequest.ContextType.RECIPE, 19L,
+                "Gợi ý món khác giống công thức này", List.of()));
+
+        assertThat(discovery.answer()).contains("chưa tìm thấy");
+        verify(recipePosts).searchPublished("", 0, 50);
+    }
+
+    @Test
     void invalidContextNeverCallsGemini() {
         assertThatThrownBy(() -> service.answer(new AiChatRequest(AiChatRequest.ContextType.RECIPE, null,
                 "Câu hỏi", List.of())))

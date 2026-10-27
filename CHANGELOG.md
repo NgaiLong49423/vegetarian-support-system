@@ -1,13 +1,121 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.107.0
+> **Version:** v2.110.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-26
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-27 — Fix AI Chat Questions About the Current Recipe
+
+**Status:** Working tree — not committed.
+
+**Scope:** Let members ask ordinary questions about the recipe currently open without entering recipe discovery mode.
+
+### Added
+
+- Add regression tests for current-recipe questions and explicit requests to find another recipe.
+
+### Changed
+
+- Exclude questions that refer to the current recipe from catalog discovery unless the member explicitly requests another recipe or dish.
+
+### Fixed
+
+- Return direct answers to current-recipe questions instead of the generic invalid AI response error.
+
+## 2026-10-27 — Add Recipe Context to AI Chat
+
+**Status:** Committed — `dac525d5`.
+
+**Scope:** Help members start a focused conversation about the recipe they are viewing.
+
+### Added
+
+- Show the recipe title, a contextual welcome message and recipe-specific question suggestions when opening AI chat from a recipe detail page.
+- Embed the current recipe article in the chat with its cover image, author, description, servings, preparation details, full ingredient list and instructions.
+
+### Changed
+
+- Pass the recipe article preview through the frontend chat context while keeping the existing recipe ID request contract authoritative for AI responses.
+
+### Fixed
+
+- Replace the empty, generic recipe-chat state with a useful opening prompt.
+
+## 2026-10-27 — Limit Nutrition AI Menus to the Current Week ([PR #193](https://github.com/NgaiLong49423/vegetarian-support-system/pull/193))
+
+**Status:** Committed — `cc719355`.
+
+**Scope:** Keep FR-36 proposals relevant to the remaining days of the current week and preserve entries for days that have passed.
+
+### Added
+
+- Compose multiple trusted, one-serving recipes per meal to pursue the member's daily energy shares and nutrition targets.
+- Mark past days in the preview and show daily nutrient totals with each meal's kcal share.
+
+### Changed
+
+- Generate suggestions from today through Sunday only; reject applying meals outside that range and preserve past meal-plan entries.
+- Show nutrition totals without classifying nutrients as deficient or excessive.
+
+### Fixed
+
+- None.
+## 2026-10-26 — Accept Today's Vietnam Date as an Ingredient Reference Date (Issue #159)
+
+**Status:** Committed — `ed9cd29`.
+
+**Scope:** Fix BUG-059 in the FR-41 ingredient catalog: from 0:00 to 6:59 in Vietnam, adding an ingredient with the default reference date failed with `400` because the browser counted the day in Vietnam time while the Backend in a UTC container was still on the previous day.
+
+### Added
+
+- Add SQL Server integration tests that move the application clock to 00:30 in Vietnam, including a check that the validation clock follows the application clock, and Playwright tests that open the add form in UTC, America/Los_Angeles and Asia/Ho_Chi_Minh with a fixed clock.
+
+### Changed
+
+- Judge Bean Validation date rules such as `@PastOrPresent` by the application `Clock` in Vietnam time instead of the server clock; this covers the ingredient `referenceDate` and the nutrition profile `dateOfBirth`.
+
+### Fixed
+
+- Accept today's Vietnam date as the ingredient `referenceDate` at any hour, default the add form to the Vietnam date in every browser time zone, and explain a future date in Vietnamese.
+## 2026-10-26 — Rank and Search Reported Posts on the Moderation Page (Issue #12)
+
+**Status:** Committed — `c24ae67`, `f15680e`.
+
+**Scope:** Deliver the Recipe Post side of FR-06 on the grouped report board of Issue #35: Administrators rank reported posts by report count, see the most common reason of each post and find a post by its title or author (UC-06.1, US-06.1). Hiding a post and locking its author stay the FR-28 decisions already on `/admin/bao-cao` (AC-06.2, AC-06.3). Comment reports wait for FR-48, as proposed in question Q71 on Issue #12.
+
+### Added
+
+- Add `query` (title, author name or author email, at most 200 characters, LIKE wildcards matched literally) and `sort` (`NEWEST` or `MOST_REPORTED`) to `GET /api/v1/admin/reports/groups`, and `topReasonCode`/`topReasonCount` to `AdminReportGroupResponse`; a tie goes to the reason reported most recently.
+- Add a search box and a sort select to the "Theo bài viết" view of `/admin/bao-cao`, and the most common reason with its count to each post card.
+- Add SQL Server integration tests for the ranking, the most common reason, the search and its validation, and for a new post that publishes at once while other reports are open or in review (AC-06.4), plus Playwright tests for the search, the sort and the reason line.
+
+### Changed
+
+- Rename the page and its admin menu entry to "Hậu kiểm nội dung", and document the new parameters in `docs/api/API.md` section 21 and the Backend and Frontend READMEs.
+## 2026-10-26 — Persist Nutrition Profile BMI
+
+**Status:** Committed — `d28503ca`.
+
+**Scope:** Keep each Member's saved BMI available when reopening their private nutrition profile.
+
+### Added
+
+- Add Flyway migration `V25__persist_nutrition_bmi.sql` and update the SQL Server schema snapshot to store BMI with the existing `USER` nutrition profile.
+- Backfill BMI once for existing profiles that consented to health-data storage.
+
+### Changed
+
+- Calculate and store BMI when a Member first saves or changes height/weight; return the saved BMI with current reference values when the profile is reopened.
+- Update FR-35 acceptance criteria and UC-35.2 to specify reading saved BMI and refreshing it only after height or weight changes.
+
+### Fixed
+
+- Keep the BMI panel populated after refreshing or revisiting the nutrition profile.
 
 ## 2026-10-26 — Group Recipe Reports by Post for Administrators (Issue #35)
 
@@ -657,6 +765,28 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Permit guest reads of the documented public recipe-statistics endpoint.
 - Preserve Vietnamese characters when binding ingredient search patterns on SQL Server.
+
+## 2026-10-21 — Expert Application Attachments
+
+**Status:** Committed — `fbaf8e4`.
+
+**Scope:** Extend FR-05 so applicants can attach a certificate and an application-only 3:4 portrait, with private storage and Admin-only retrieval.
+
+### Added
+
+- Add optional certificate and application-only 3:4 portrait uploads with server-side type, signature, and size validation; store attachment metadata through Flyway V24 after develop used V23 for report supplements.
+- Add an Admin-only attachment download endpoint backed by a private Azure Blob Storage container.
+
+### Changed
+
+- Update FR-05, BR-74, NFR-10, architecture, database guidance, and the application form to describe the approved attachment behavior.
+- Focus the first-time application view on the submission form and group optional uploads into a compact section.
+- Identify the application portrait as a 3:4 photo, add an explicit Admin download action, and improve the review dialog's hierarchy, attachment cards, status, and responsive scrolling.
+- Keep the existing JSON submission endpoint and public account avatar flow unchanged.
+
+### Fixed
+
+- Bind Azure storage configuration through its canonical constructor so the Backend can start with the new private-container property.
 
 ## 2026-10-20 — Remove Standalone Meal Plan Export (Issue #152)
 

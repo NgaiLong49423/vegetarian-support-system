@@ -3472,7 +3472,8 @@ paths:
         required: true
       responses:
         "200":
-          description: A 21-slot weekly preview with trusted recipe nutrition.
+          description: A 7-day preview with multiple trusted recipes per meal and
+            calculated nutrition.
           content:
             application/json:
               schema:
@@ -3652,6 +3653,68 @@ paths:
         "400":
           description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
             \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/expert-applications/attachments:
+    post:
+      tags:
+      - expert-application-controller
+      operationId: submitWithAttachments
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                application:
+                  $ref: "#/components/schemas/ExpertApplicationRequest"
+                certificate:
+                  type: string
+                  format: binary
+                avatar:
+                  type: string
+                  format: binary
+              required:
+              - application
+      responses:
+        "201":
+          description: The submitted application with optional private attachments.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ExpertApplicationResponse"
+        "400":
+          description: Invalid application data or attachment format.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: "EXPERT_APPLICATION_PENDING_EXISTS: the customer already has\
+            \ a pending application."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "413":
+          description: An attachment exceeds its size limit.
           content:
             application/problem+json:
               schema:
@@ -6367,6 +6430,20 @@ paths:
         schema:
           type: string
           pattern: OPEN|IN_REVIEW|RESOLVED
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+          minLength: 0
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          default: NEWEST
+          pattern: NEWEST|MOST_REPORTED
       - name: page
         in: query
         required: false
@@ -6387,15 +6464,18 @@ paths:
           minimum: 1
       responses:
         "200":
-          description: "One group per reported Recipe Post with its report count,\
-            \ the post with the newest matching report first (AC-30.4)."
+          description: "One group per reported Recipe Post with its report count and\
+            \ most common reason (AC-30.4, UC-06.1). query keeps the posts whose title\
+            \ or author name or email contains it; sort NEWEST puts the post with\
+            \ the newest matching report first, MOST_REPORTED the post with the most\
+            \ matching reports."
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageResponseAdminReportGroupResponse"
         "400":
-          description: "VALIDATION_FAILED: unknown status, or page/size outside its\
-            \ range."
+          description: "VALIDATION_FAILED: unknown status or sort, query over 200\
+            \ characters, or page/size outside its range."
           content:
             application/problem+json:
               schema:
@@ -6773,6 +6853,58 @@ paths:
         "403":
           description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
             \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/expert-applications/{id}/attachments/{kind}:
+    get:
+      tags:
+      - expert-application-controller
+      operationId: attachment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: kind
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Private application attachment content.
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+        "403":
+          description: Administrator role required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Application or attachment not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
           content:
             application/problem+json:
               schema:
@@ -7470,7 +7602,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SelectedMeal"
-          maxItems: 21
+          maxItems: 1050
           minItems: 0
       required:
       - meals
@@ -8491,14 +8623,14 @@ components:
           type: string
         paymentLinkId:
           type: string
+        paymentSuccess:
+          type: boolean
         orderCode:
           type: integer
           format: int64
         amount:
           type: integer
           format: int32
-        paymentSuccess:
-          type: boolean
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -8610,6 +8742,16 @@ components:
           type: string
         goal:
           type: string
+        energyTargetKcal:
+          type: number
+        bmi:
+          type: number
+        bmiCategory:
+          type: string
+        dailyTargets:
+          type: array
+          items:
+            $ref: "#/components/schemas/NutritionTarget"
         meals:
           type: array
           items:
@@ -8631,11 +8773,28 @@ components:
           type: string
         coverUrl:
           type: string
+        plannedServings:
+          type: number
         nutritionPerServing:
           type: object
           additionalProperties:
             type: number
         reason:
+          type: string
+    NutritionTarget:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        minimum:
+          type: number
+        maximum:
+          type: number
+        unit:
+          type: string
+        referenceType:
           type: string
     ReportSupplementRequest:
       type: object
@@ -8704,6 +8863,10 @@ components:
           type: string
         portfolioUrl:
           type: string
+        certificateAvailable:
+          type: boolean
+        applicationAvatarAvailable:
+          type: boolean
         status:
           type: string
         adminNote:
@@ -9802,6 +9965,11 @@ components:
         latestReportAt:
           type: string
           format: date-time
+        topReasonCode:
+          type: string
+        topReasonCount:
+          type: integer
+          format: int64
     PageResponseAdminReportGroupResponse:
       type: object
       properties:

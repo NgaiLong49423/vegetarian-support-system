@@ -4,6 +4,11 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,6 +22,8 @@ import tech.mamxanh.expertapplication.dto.ExpertApplicationResponse;
 import tech.mamxanh.expertapplication.dto.ApproveRequest;
 import tech.mamxanh.expertapplication.dto.ReviewRequest;
 import tech.mamxanh.expertapplication.service.ExpertApplicationService;
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @Validated
@@ -33,6 +40,22 @@ public class ExpertApplicationController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('CUSTOMER')")
     public ExpertApplicationResponse submit(@Valid @RequestBody ExpertApplicationRequest request) { return service.submit(request); }
+
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "The submitted application with optional private attachments."),
+            @ApiResponse(responseCode = "400", description = "Invalid application data or attachment format."),
+            @ApiResponse(responseCode = "409", description = "EXPERT_APPLICATION_PENDING_EXISTS: the customer already has a pending application."),
+            @ApiResponse(responseCode = "413", description = "An attachment exceeds its size limit.")
+    })
+    @PostMapping(path = "/api/v1/expert-applications/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ExpertApplicationResponse submitWithAttachments(
+            @RequestPart("application") @Valid ExpertApplicationRequest request,
+            @RequestPart(value = "certificate", required = false) MultipartFile certificate,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatar) {
+        return service.submitWithAttachments(request, certificate, avatar);
+    }
 
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "The caller's applications, newest first.")
@@ -60,6 +83,24 @@ public class ExpertApplicationController {
     })
     @GetMapping("/api/v1/admin/expert-applications/{id}") @PreAuthorize("hasRole('ADMIN')")
     public ExpertApplicationResponse detail(@PathVariable long id) { return service.adminDetail(id); }
+
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Private application attachment content."),
+            @ApiResponse(responseCode = "403", description = "Administrator role required."),
+            @ApiResponse(responseCode = "404", description = "Application or attachment not found.")
+    })
+    @GetMapping("/api/v1/admin/expert-applications/{id}/attachments/{kind}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> attachment(@PathVariable long id, @PathVariable String kind) {
+        var attachment = service.downloadAttachment(id, kind);
+        var disposition = ContentDisposition.inline().filename(attachment.filename(), StandardCharsets.UTF_8).build();
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(MediaType.parseMediaType(attachment.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .body(attachment.content());
+    }
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "The approved application; the account becomes EXPERT."),
             @ApiResponse(responseCode = "409", description = "EXPERT_APPLICATION_STALE: the application is no longer pending, or the account is not an active customer.")
