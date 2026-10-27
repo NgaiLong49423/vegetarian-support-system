@@ -9,7 +9,7 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-27 — Limit Nutrition AI Menus to the Current Week
+## 2026-10-27 — Limit Nutrition AI Menus to the Current Week ([PR #193](https://github.com/NgaiLong49423/vegetarian-support-system/pull/193))
 
 **Status:** Committed — `cc719355`.
 
