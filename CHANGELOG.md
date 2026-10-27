@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-27 — Restore the Confirmed Gemini Model for AI Handoff
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `0b9a552b`.
 
 **Scope:** End the temporary Flash-Lite trial at the user's request and restore `gemini-3.8-flash` for the team lead's AI testing.
 
@@ -30,7 +30,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-27 — Chat Workflow Entitlements and Grounded Follow-up Discovery
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `0b9a552b`.
 
 **Scope:** Correct the FR-10/FR-51 boundaries for explicit advanced workflow requests and conversational recipe discovery; the model restoration is recorded separately above.
 
