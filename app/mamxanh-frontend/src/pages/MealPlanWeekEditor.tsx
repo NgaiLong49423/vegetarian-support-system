@@ -461,11 +461,10 @@ function WeekContents({
                 ...current,
 
                 entries: [
+                  entry,
                   ...current.entries.filter(
                     (item) => item.entryId !== entry.entryId,
                   ),
-
-                  entry,
                 ],
               },
           )
@@ -590,26 +589,35 @@ function WeekContents({
         </Button>
       </div>
       <div className="divide-y divide-brand-100">
-        {Array.from({ length: 7 }, (_, offset) => {
-          const date = new Date(`${week}T12:00:00`)
-
-          date.setDate(date.getDate() + offset)
-
-          const day = localDateKey(date)
-
-          const label = date.toLocaleDateString("vi-VN", {
-            weekday: "long",
-
-            day: "numeric",
-
-            month: "long",
+        {(() => {
+          const rawDays = Array.from({ length: 7 }, (_, offset) => {
+            const d = new Date(`${week}T12:00:00`)
+            d.setDate(d.getDate() + offset)
+            return localDateKey(d)
           })
+          const todayKey = localDateKey(new Date())
+          const todayIndex = rawDays.indexOf(todayKey)
+          const days =
+            todayIndex > 0
+              ? [...rawDays.slice(todayIndex), ...rawDays.slice(0, todayIndex)]
+              : rawDays
 
-          const entries = plan.entries.filter((entry) => entry.mealDate === day)
+          return days.map((day) => {
+            const date = new Date(`${day}T12:00:00`)
 
-          const expanded = selectedDay === day
+            const label = date.toLocaleDateString("vi-VN", {
+              weekday: "long",
 
-          const today = day === localDateKey(new Date())
+              day: "numeric",
+
+              month: "long",
+            })
+
+            const entries = plan.entries.filter((entry) => entry.mealDate === day)
+
+            const expanded = selectedDay === day
+
+            const today = day === todayKey
 
           return (
             <section
@@ -704,7 +712,10 @@ function WeekContents({
                   </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-stretch">
                       {meals.map((meal) => {
-                        const mealEntries = entries.filter((entry) => entry.mealType === meal);
+                        const mealEntries = entries
+                          .filter((entry) => entry.mealType === meal)
+                          .slice()
+                          .sort((a, b) => (b.entryId ?? 0) - (a.entryId ?? 0));
                         const theme = mealTheme[meal];
                         const MealIcon = theme.icon;
 
@@ -865,7 +876,8 @@ function WeekContents({
               )}
             </section>
           )
-        })}
+        })
+      })()}
       </div>
       <Modal
         open={Boolean(nutrition)}
@@ -881,7 +893,7 @@ function WeekContents({
               initialScope={nutrition.scope}
               onEntryReplaced={(entry) => setPlan((current) => current && ({
                 ...current,
-                entries: [...current.entries.filter((item) => item.entryId !== entry.entryId), entry],
+                entries: [entry, ...current.entries.filter((item) => item.entryId !== entry.entryId)],
               }))}
             />
           </DialogFocus>
