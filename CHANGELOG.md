@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.107.0
+> **Version:** v2.108.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-27
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-27 — Add Recipe Context to AI Chat
+
+**Status:** Working tree — not committed.
+
+**Scope:** Help members start a focused conversation about the recipe they are viewing.
+
+### Added
+
+- Show the recipe title, a contextual welcome message and recipe-specific question suggestions when opening AI chat from a recipe detail page.
+- Embed the current recipe article in the chat with its cover image, author, description, servings, preparation details, full ingredient list and instructions.
+
+### Changed
+
+- Pass the recipe article preview through the frontend chat context while keeping the existing recipe ID request contract authoritative for AI responses.
+
+### Fixed
+
+- Replace the empty, generic recipe-chat state with a useful opening prompt.
 
 ## 2026-10-27 — Limit Nutrition AI Menus to the Current Week ([PR #193](https://github.com/NgaiLong49423/vegetarian-support-system/pull/193))
 

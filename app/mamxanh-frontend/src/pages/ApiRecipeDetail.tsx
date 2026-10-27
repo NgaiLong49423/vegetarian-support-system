@@ -237,7 +237,22 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
         </Link>
         <button
           type="button"
-          onClick={() => openChat(recipe.recipeId)}
+          onClick={() => openChat({
+            recipeId: recipe.recipeId,
+            title: recipe.title,
+            description: recipe.description,
+            coverUrl: activeMedia?.blobUrl ?? null,
+            authorName: author.displayName,
+            authorAvatarUrl: author.avatarUrl,
+            dishCategoryLabel: recipe.dishCategoryLabel,
+            vegetarianTypeLabel: recipe.vegetarianTypeLabel,
+            difficultyLabel: recipe.difficultyLabel,
+            servings: recipe.servings,
+            prepTimeMinutes: recipe.prepTimeMinutes,
+            cookTimeMinutes: recipe.cookTimeMinutes,
+            ingredients: recipe.ingredients.map(({ name, quantity, unitName }) => ({ name, quantity, unitName })),
+            instructions: recipe.instructions,
+          })}
           className="inline-flex items-center justify-center rounded-full font-semibold transition-all border border-brand-300/40 bg-paper text-ink shadow-xs hover:border-brand-500 hover:text-brand-700 hover:shadow-sm px-3.5 py-1.5 text-sm gap-2 dark:border-brand-800 dark:bg-surface"
         >
           <MessageCircle className="h-4 w-4 text-brand-600 shrink-0" aria-hidden="true" />
