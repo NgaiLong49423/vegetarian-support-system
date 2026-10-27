@@ -209,13 +209,26 @@ export interface AiMenuMeal {
   recipeId: number;
   recipeTitle: string;
   coverUrl: string | null;
+  plannedServings: number;
   nutritionPerServing: Record<string, number>;
   reason: string;
+}
+export interface AiMenuNutritionTarget {
+  key: string;
+  label: string;
+  minimum: number | null;
+  maximum: number | null;
+  unit: string;
+  referenceType: string;
 }
 export interface AiMenuPreview {
   weekStartDate: string;
   mode: AiMenuMode;
   goal: AiMenuGoal | null;
+  energyTargetKcal: number;
+  bmi: number;
+  bmiCategory: string;
+  dailyTargets: AiMenuNutritionTarget[];
   meals: AiMenuMeal[];
   nutritionDisclaimer: string;
 }

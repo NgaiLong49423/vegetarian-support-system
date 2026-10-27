@@ -8,7 +8,18 @@ function monday() {
   date.setDate(date.getDate() - ((date.getDay() + 6) % 7))
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 }
+function dateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+}
 const week = monday()
+const today = dateKey(new Date())
+const suggestedDates = Array.from({ length: 7 }, (_, offset) => {
+  const date = new Date(`${week}T12:00:00`)
+  date.setDate(date.getDate() + offset)
+  return dateKey(date)
+}).filter((date) => date >= today)
+const suggestedMealCount = suggestedDates.length * 6
+const passedDayCount = 7 - suggestedDates.length
 const recipe = (id: number, title: string) => ({
   id,
   title,
@@ -162,27 +173,28 @@ async function setup(page: Page, initial: ReturnType<typeof entry>[] = []) {
     if (url.pathname.endsWith("/ai-menu/previews")) {
       state.previews++
       state.previewRequests.push(request.postDataJSON())
-      const meals = Array.from({ length: 21 }, (_, index) => ({
-        mealDate: (() => { const date = new Date(`${week}T12:00:00`); date.setDate(date.getDate() + Math.floor(index / 3)); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` })(),
-        mealType: (["BREAKFAST", "LUNCH", "DINNER"] as const)[index % 3],
-        recipeId: index % 2 ? 12 : 11,
-        recipeTitle: index % 2 ? "Đậu phụ kho" : "Canh nấm",
-        coverUrl: null,
-        nutritionPerServing: { ENERGY_KCAL: 100, PROTEIN_G: 5 },
-        reason: "Có dữ liệu dinh dưỡng.",
-      }))
-      return route.fulfill({ json: { weekStartDate: week, mode: "PROFILE", goal: null, meals, nutritionDisclaimer: "Dinh dưỡng tham khảo." } })
+      const meals = suggestedDates.flatMap((mealDate) => Array.from({ length: 6 }, (_, index) => ({
+          mealDate,
+          mealType: (["BREAKFAST", "LUNCH", "DINNER"] as const)[Math.floor(index / 2)],
+          recipeId: index % 2 ? 12 : 11,
+          recipeTitle: index % 2 ? "Đậu phụ kho" : "Canh nấm",
+          coverUrl: null,
+          plannedServings: 1,
+          nutritionPerServing: { ENERGY_KCAL: 100, PROTEIN_G: 5 },
+          reason: "Có dữ liệu dinh dưỡng.",
+        })))
+      return route.fulfill({ json: { weekStartDate: week, mode: "PROFILE", goal: null, energyTargetKcal: 2000, bmi: 23.5, bmiCategory: "Bình thường", dailyTargets: [{ key: "PROTEIN_G", label: "Chất đạm", minimum: 50, maximum: 100, unit: "g", referenceType: "AMDR" }], meals, nutritionDisclaimer: "Dinh dưỡng tham khảo." } })
     }
     if (url.pathname.endsWith("/ai-menu")) {
       state.aiApplies++
       const payload = request.postDataJSON()
-      state.entries = payload.meals.map((meal: { mealDate: string; mealType: string; recipeId: number }, index: number) => ({
+      state.entries = [...state.entries.filter((item) => item.mealDate < today), ...payload.meals.map((meal: { mealDate: string; mealType: string; recipeId: number }, index: number) => ({
         entryId: index + 1, mealDate: meal.mealDate, mealType: meal.mealType,
         plannedServings: 1, recipeId: meal.recipeId,
         recipeTitle: meal.recipeId === 11 ? "Canh nấm" : "Đậu phụ kho",
         recipeCoverUrl: null, dishCategory: "SOUP", totalTimeMinutes: 25,
         recipeDeleted: false, unavailableMessage: null,
-      })) as unknown as typeof state.entries
+      }))] as unknown as typeof state.entries
       return route.fulfill({ json: { weekStartDate: week, entries: state.entries } })
     }
     state.writes++
@@ -435,28 +447,34 @@ test("#154: switching sources ignores late results and supports retry, empty res
   await expect(lunch(page)).toBeFocused()
 })
 
-test("weekly AI preview leaves the plan unchanged until the member confirms whole-week replacement", async ({ page }) => {
+test("weekly AI preview supports multiple recipes per meal and applies selected recipes only after confirmation", async ({ page }) => {
   const existing = entry(7, 11)
   const state = await setup(page, [existing])
   await page.goto("/ke-hoach?view=for-you")
   await page.getByRole("tab", { name: "Theo nhu cầu dinh dưỡng" }).click()
   await expect(page.getByRole("heading", { name: "Dành cho bạn" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Dựa trên hồ sơ" })).toBeVisible()
+  if (week < today) await expect(page.getByText("đã qua, AI không đề xuất món.").first()).toBeVisible()
   expect(state.entries).toEqual([existing])
 
   await page.getByRole("button", { name: "Tạo thực đơn tuần" }).click()
-  await expect(page.getByText("Bản xem trước · 21 món được chọn")).toBeVisible()
-  await expect(page.getByText("Khi xác nhận, toàn bộ món đã có trong lịch của tuần này sẽ bị thay bằng các món đang được chọn.")).toBeVisible()
+  await expect(page.getByText(`Bản xem trước · ${suggestedMealCount} món được chọn`)).toBeVisible()
+  await expect(page.getByText("Ngày này đã qua — AI không đề xuất món.")).toHaveCount(passedDayCount)
+  await expect(page.getByText("≈ 200 kcal · 10.0% mục tiêu ngày").first()).toBeVisible()
+  await page.getByRole("checkbox", { name: "Đưa Canh nấm vào lịch" }).first().uncheck()
+  await expect(page.getByText("≈ 100 kcal · 5.0% mục tiêu ngày").first()).toBeVisible()
+  await expect(page.getByText("Khi xác nhận, lịch từ hôm nay đến hết tuần sẽ được thay bằng các món đang chọn. Các ngày đã qua được giữ nguyên.")).toBeVisible()
   expect(state.previews).toBe(1)
   expect(state.aiApplies).toBe(0)
   expect(state.entries).toEqual([existing])
 
   await page.getByRole("button", { name: "Áp dụng vào Lịch ăn" }).click()
-  await expect(page.getByRole("button", { name: "Xác nhận thay toàn bộ lịch" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Xác nhận áp dụng lịch" })).toBeVisible()
   expect(state.aiApplies).toBe(0)
-  await page.getByRole("button", { name: "Xác nhận thay toàn bộ lịch" }).click()
+  await page.getByRole("button", { name: "Xác nhận áp dụng lịch" }).click()
   await expect.poll(() => state.aiApplies).toBe(1)
-  expect(state.entries).toHaveLength(21)
+  expect(state.entries).toHaveLength(suggestedMealCount - 1 + (week < today ? 1 : 0))
+  expect(state.entries.some((item) => item.mealDate === week)).toBe(true)
 })
 
 test("weekly AI request can use one-time goals and ingredient preferences without persisting them", async ({ page }) => {
@@ -470,7 +488,7 @@ test("weekly AI request can use one-time goals and ingredient preferences withou
   await page.getByLabel("Bạn muốn lịch ăn không có nguyên liệu nào", { exact: true }).fill("Đậu")
   await page.getByRole("button", { name: "+ Đậu phụ", exact: true }).click()
   await page.getByRole("button", { name: "Tạo thực đơn tuần" }).click()
-  await expect(page.getByText("Bản xem trước · 21 món được chọn")).toBeVisible()
+  await expect(page.getByText(`Bản xem trước · ${suggestedMealCount} món được chọn`)).toBeVisible()
 
   expect(state.previewRequests).toEqual([{
     weekStartDate: week,

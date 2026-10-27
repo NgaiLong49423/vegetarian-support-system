@@ -185,12 +185,15 @@ public class NutritionProfileService {
             throw new NutritionProfileException(HttpStatus.UNPROCESSABLE_ENTITY, "NUTRITION_PROFILE_OUT_OF_SCOPE",
                     "Hồ sơ hiện nằm ngoài phạm vi hỗ trợ dinh dưỡng.");
         }
+        var results = response(user, age).results();
         return new MenuNutritionContext(user.getNutritionGoal(), user.getBiologicalSex(), user.getHeightCm(),
-                user.getWeightKg(), user.getActivityLevel(), age);
+                user.getWeightKg(), user.getActivityLevel(), age, results.bmi(), results.bmiCategory(),
+                results.energyKcal(), results.dailyTargets());
     }
 
     public record MenuNutritionContext(String nutritionGoal, String biologicalSex, java.math.BigDecimal heightCm,
-            java.math.BigDecimal weightKg, String activityLevel, int age) { }
+            java.math.BigDecimal weightKg, String activityLevel, int age, java.math.BigDecimal bmi,
+            String bmiCategory, java.math.BigDecimal energyKcal, List<NutritionProfileResponse.Target> dailyTargets) { }
 
     private void requireEligible(NutritionProfileEntity user) {
         if (user.getNutritionEligibilityStatus() == NutritionEligibilityStatus.ELIGIBLE) return;

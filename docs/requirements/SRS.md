@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.11.0
+> **Version:** v2.13.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -27,7 +27,7 @@ Luồng lõi: Chuyên gia chia sẻ công thức chuẩn → Người dùng khai
 
 Gợi ý món phải tham chiếu bài công thức đang công khai và không bị ẩn trong hệ thống. Hệ thống kiểm tra ràng buộc bắt buộc và kết quả AI; khi không đủ món phù hợp phải thông báo rõ. Người dùng quyết định lưu/thay món. Các trường dữ liệu để kiểm tra nguyên liệu và sở thích sẽ được phân rã riêng; việc bài được công khai không phải cam kết an toàn dị ứng hoặc xác nhận chuyên môn.
 
-Onboarding Questionnaire sau đăng ký thu thập sở thích ăn uống phục vụ chọn món. Người dùng được bỏ qua Onboarding, nhưng phải hoàn thành ba nhóm thông tin tối thiểu trước khi dùng AI cá nhân hóa theo mục 3.15. Các actor, ranh giới quyền và chi tiết Onboarding được duy trì trực tiếp trong SRS này. BMI thuộc Hồ sơ nhu cầu dinh dưỡng tại mục 3.18 và chỉ là chỉ số tham khảo, không tự quyết định nhu cầu calorie/dưỡng chất hoặc món phù hợp.
+Onboarding Questionnaire sau đăng ký thu thập sở thích ăn uống phục vụ chọn món. Người dùng được bỏ qua Onboarding, nhưng phải hoàn thành ba nhóm thông tin tối thiểu trước khi dùng AI cá nhân hóa theo mục 3.15. Các actor, ranh giới quyền và chi tiết Onboarding được duy trì trực tiếp trong SRS này. BMI thuộc hồ sơ nhu cầu dinh dưỡng tại mục 3.18; AI menu dinh dưỡng dùng BMI cùng hồ sơ và mục tiêu tham khảo để cá nhân hóa lựa chọn, nhưng BMI không tự quyết định riêng nhu cầu calorie/dưỡng chất hoặc thay thế các mức tham khảo đã tính.
 
 AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công thức theo mẫu cho Chuyên gia và có thể hỗ trợ moderation. AI không phải chuyên gia dinh dưỡng, không tự quyết định duyệt/xóa nội dung và không đưa chẩn đoán hoặc điều trị sức khỏe.
 
@@ -318,9 +318,9 @@ Nguyên liệu “đang có” được nhập theo từng request; MVP không c
 - Phạm vi MVP của chức năng dinh dưỡng chỉ dành cho Member từ đủ 18 tuổi, không mang thai/cho con bú và không cần chế độ ăn điều trị bệnh.
 - Trước khi sử dụng, người dùng phải xác nhận mình thuộc phạm vi hỗ trợ. Nếu không thuộc phạm vi, hệ thống giải thích giới hạn và không cung cấp mức nhu cầu, AI menu dinh dưỡng hoặc kiểm tra menu ngày; không đưa ra hướng dẫn điều trị thay thế.
 - Việc không đủ điều kiện dùng chức năng dinh dưỡng không khóa các chức năng thông thường: xem/tìm công thức, Đã lưu, Lịch ăn thủ công và AI không-dinh-dưỡng theo quyền gói.
-- Hệ thống cho người dùng xem BMI như một chỉ số tham khảo từ chiều cao và cân nặng; BMI không phải chẩn đoán và không được dùng một mình để quyết định nhu cầu calorie, dưỡng chất hoặc cấm/chọn món.
+- Hệ thống tính và cho người dùng xem BMI như một chỉ số tham khảo từ chiều cao và cân nặng. AI menu dinh dưỡng được dùng BMI/phân loại BMI cùng hồ sơ nhân trắc học, mức tham khảo chín chỉ tiêu và ràng buộc ăn uống để cá nhân hóa việc phối hợp món; BMI không phải chẩn đoán, không tự thay đổi các mức tham khảo và không được dùng một mình để cấm/chọn món hoặc áp đặt mục tiêu sức khỏe.
 - Hệ thống cung cấp mức calorie và dưỡng chất tham khảo hằng ngày dựa trên hồ sơ cá nhân rộng hơn BMI, gồm các yếu tố cần thiết như tuổi, giới tính, chiều cao, cân nặng và mức vận động. Đối tượng theo giới hạn trên; nguồn tham khảo và lịch nghiên cứu công thức theo Q31 tại 3.20.
-- AI sử dụng các mức tham khảo do hệ thống cung cấp để đề xuất và giải thích; AI không tự đặt ra mục tiêu calorie/dưỡng chất không có căn cứ.
+- AI sử dụng các mức tham khảo chín chỉ tiêu do hệ thống cung cấp và BMI trong hồ sơ để đề xuất, phối hợp món cho từng bữa và giải thích mức đáp ứng. Tổng năng lượng từng bữa hướng tới 25%/37,5%/37,5% mục tiêu kcal ngày cho sáng/trưa/tối, với dung sai ±5 điểm phần trăm; AI không tự đặt ra hoặc thay đổi mục tiêu calorie/dưỡng chất.
 - Kết quả phải ghi rõ đây là mức ước tính/tham khảo cho việc lập kế hoạch, không thay thế đánh giá của chuyên gia y tế hoặc dinh dưỡng.
 
 **Chỉ tiêu dinh dưỡng MVP:**
@@ -344,7 +344,8 @@ Nguyên liệu “đang có” được nhập theo từng request; MVP không c
 
 - AI vẫn tuân theo mục 3.17: chỉ chọn bài công thức đang công khai, không bị ẩn/xóa và không tạo công thức mới.
 - Chỉ những bài có kết quả dinh dưỡng được tính đầy đủ từ nguyên liệu thuộc danh mục được hỗ trợ, định lượng hợp lệ và số khẩu phần hợp lệ mới được dùng trong menu có mục tiêu dinh dưỡng. Bài có nguyên liệu chưa hỗ trợ vẫn được công khai nhưng không đủ điều kiện cho chức năng này.
-- Ràng buộc loại ăn chay và nguyên liệu cần tránh được ưu tiên trước việc tối ưu calorie/dưỡng chất. AI không được chọn món vi phạm ràng buộc chỉ để đạt con số mục tiêu.
+- Ràng buộc loại ăn chay và nguyên liệu cần tránh được ưu tiên trước việc tối ưu chín chỉ tiêu. BMI và hồ sơ dinh dưỡng cá nhân hóa lựa chọn món; AI không được chọn món vi phạm ràng buộc chỉ để đạt con số mục tiêu.
+- Mỗi ngày giữ ba bữa cố định; mỗi bữa có thể gồm một hoặc nhiều công thức công khai. Trong tổng mục tiêu năng lượng ngày FR-35, bữa sáng hướng tới 25%, bữa trưa 37,5% và bữa tối 37,5%; mỗi bữa được xem là phù hợp khi nằm trong ±5 điểm phần trăm quanh tỷ lệ tương ứng (20–30%, 32,5–42,5%, 32,5–42,5%). Không bắt buộc đạt đúng tỷ lệ trung tâm nếu tổng năng lượng nằm trong biên độ. AI phối hợp món và khẩu phần để đạt phân bổ năng lượng này đồng thời tối ưu các chỉ tiêu còn lại trong chín chỉ tiêu: protein, carbohydrate, chất béo, chất xơ, canxi, sắt, vitamin B12 và kẽm. Nếu dữ liệu công thức hoặc pool món không cho phép đáp ứng tỷ lệ hay một số mức tham khảo, hệ thống nêu rõ phần chênh lệch thay vì khẳng định thực đơn đã cân bằng.
 - Người dùng xem, thay món và xác nhận trước khi menu được lưu vào lịch ăn.
 
 **Kiểm tra một ngày trong lịch ăn:**
