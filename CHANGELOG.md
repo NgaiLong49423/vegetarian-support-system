@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-27 — Add Ingredient Unit Conversion to Public Detail
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c4794dba98b0a3d9e0a150ee08e8c7611ece3a67`.
 
 **Scope:** Let Guests and Members convert between units supported by the ingredient they are viewing.
 
@@ -29,7 +29,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-27 — Standardize Ingredient Recipe Units
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `c4794dba98b0a3d9e0a150ee08e8c7611ece3a67`.
 
 **Scope:** Add per-ingredient support for standardized recipe units and precise shopping aggregation.
 
@@ -47,7 +47,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-27 — Fix AI Chat Questions About the Current Recipe
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `b294a28ebc1b2a8e1fce65f00b5dec3561b43325`.
 
 **Scope:** Let members ask ordinary questions about the recipe currently open without entering recipe discovery mode.
 
