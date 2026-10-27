@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.108.0
+> **Version:** v2.109.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-27
 > **Status:** Active
@@ -9,9 +9,27 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-27 — Add Recipe Context to AI Chat
+## 2026-10-27 — Fix AI Chat Questions About the Current Recipe
 
 **Status:** Working tree — not committed.
+
+**Scope:** Let members ask ordinary questions about the recipe currently open without entering recipe discovery mode.
+
+### Added
+
+- Add regression tests for current-recipe questions and explicit requests to find another recipe.
+
+### Changed
+
+- Exclude questions that refer to the current recipe from catalog discovery unless the member explicitly requests another recipe or dish.
+
+### Fixed
+
+- Return direct answers to current-recipe questions instead of the generic invalid AI response error.
+
+## 2026-10-27 — Add Recipe Context to AI Chat
+
+**Status:** Committed — `dac525d5`.
 
 **Scope:** Help members start a focused conversation about the recipe they are viewing.
 
