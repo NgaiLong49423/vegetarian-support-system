@@ -12,7 +12,7 @@ public record IngredientSaveRequest(
         @NotBlank @Size(max = 100) String ingredientGroup,
         @NotBlank @Size(max = 200) String sourceName,
         @Size(max = 2048) String sourceUrl,
-        @NotNull @PastOrPresent LocalDate referenceDate,
+        @NotNull @PastOrPresent(message = "Ngày tham khảo không được sau hôm nay (giờ Việt Nam).") LocalDate referenceDate,
         @Valid IngredientNutritionRequest nutrition) {
     public IngredientSaveRequest(String name, String ingredientGroup, String sourceName,
             String sourceUrl, LocalDate referenceDate) {

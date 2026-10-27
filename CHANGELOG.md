@@ -28,6 +28,23 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+## 2026-10-26 — Accept Today's Vietnam Date as an Ingredient Reference Date (Issue #159)
+
+**Status:** Committed — `ed9cd29`.
+
+**Scope:** Fix BUG-059 in the FR-41 ingredient catalog: from 0:00 to 6:59 in Vietnam, adding an ingredient with the default reference date failed with `400` because the browser counted the day in Vietnam time while the Backend in a UTC container was still on the previous day.
+
+### Added
+
+- Add SQL Server integration tests that move the application clock to 00:30 in Vietnam, including a check that the validation clock follows the application clock, and Playwright tests that open the add form in UTC, America/Los_Angeles and Asia/Ho_Chi_Minh with a fixed clock.
+
+### Changed
+
+- Judge Bean Validation date rules such as `@PastOrPresent` by the application `Clock` in Vietnam time instead of the server clock; this covers the ingredient `referenceDate` and the nutrition profile `dateOfBirth`.
+
+### Fixed
+
+- Accept today's Vietnam date as the ingredient `referenceDate` at any hour, default the add form to the Vietnam date in every browser time zone, and explain a future date in Vietnamese.
 ## 2026-10-26 — Rank and Search Reported Posts on the Moderation Page (Issue #12)
 
 **Status:** Committed — `c24ae67`, `f15680e`.
