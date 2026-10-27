@@ -2353,7 +2353,10 @@ paths:
         context or the latest public RecipePost is loaded server-side. Recipe discovery
         selects only current public RecipePosts from the Backend catalog; explicitly
         requested recipe drafts remain chat text only. Conversation history is request-scoped
-        and is not persisted. Guest has no account dietary context.
+        and is not persisted. Guest has no account dietary context. Explicit weekly-menu
+        and recipe-authoring requests are checked for entitlement and routed to their
+        dedicated workflow without calling Gemini. Follow-up recipe searches use current
+        public data; assistant recipe IDs are untrusted exclusion hints only.
       operationId: answer
       requestBody:
         content:
@@ -2376,15 +2379,16 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: A supplied Bearer token is invalid or expired; it is not downgraded
-            to Guest.
+          description: "Bearer token invalid/expired, or a Guest requests a Member-only\
+            \ workflow; no provider call."
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
-          description: The account is locked or the authenticated role may not use
-            chat.
+          description: "Account/role denied, or workflow requires a higher subscription.\
+            \ AI_SUBSCRIPTION_REQUIRED includes requiredTier and upgradeUrl; no provider\
+            \ call."
           content:
             application/problem+json:
               schema:
@@ -6521,6 +6525,17 @@ components:
             may contain a complete answer up to 8000 characters.
           maxLength: 8000
           minLength: 0
+        recommendedRecipeIds:
+          type: array
+          description: IDs of up to four recipe cards shown in this ASSISTANT turn.
+            Untrusted hints used only to avoid repeats; never authorization or recipe
+            data.
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+          maxItems: 4
+          minItems: 0
       required:
       - content
       - speaker
@@ -6547,6 +6562,10 @@ components:
             empty when the user did not ask to find recipes.
           items:
             $ref: "#/components/schemas/RecipeRecommendation"
+        workflowUrl:
+          type: string
+          description: Optional local workflow link. Routing guidance is returned
+            without a Gemini call; currently /ke-hoach?view=for-you or /dang-cong-thuc.
     RecipeRecommendation:
       type: object
       properties:

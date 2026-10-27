@@ -1,13 +1,52 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.98.0
+> **Version:** v2.99.1
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-25
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-27 — Restore the Confirmed Gemini Model for AI Handoff
+
+**Status:** Working tree — not committed.
+
+**Scope:** End the temporary Flash-Lite trial at the user's request and restore `gemini-3.8-flash` for the team lead's AI testing.
+
+### Added
+
+- None.
+
+### Changed
+
+- Restore the shared adapter model and provider-path/logging regression assertions to `gemini-3.8-flash`; preserve entitlement checks, structured output validation and the bounded retry deadline.
+- Update current integration guidance to distinguish controlled adapter tests from live generation with a valid provider key.
+
+### Fixed
+
+- None.
+
+## 2026-10-27 — Chat Workflow Entitlements and Grounded Follow-up Discovery
+
+**Status:** Working tree — not committed.
+
+**Scope:** Correct the FR-10/FR-51 boundaries for explicit advanced workflow requests and conversational recipe discovery; the model restoration is recorded separately above.
+
+### Added
+
+- Add optional assistant recipe-card IDs to request history and a local workflow link to chat responses; preserve existing request fields and keep conversation context in the current session.
+- Add regression coverage for entitlement checks before provider calls, safe workflow links, bounded card metadata and follow-up recipe searches.
+
+### Changed
+
+- Route explicit weekly-menu and Recipe Post authoring requests through the existing subscription and role checks, then direct eligible accounts to the dedicated workflow without generating content or emitting successful AI usage.
+
+### Fixed
+
+- Prevent explicit paid workflow requests from reaching the general chatbot provider without entitlement checks (BUG-069).
+- Retrieve current public recipe candidates for follow-up requests, preserve dish categories, exclude previously shown card IDs when asking for alternatives, and keep absence claims limited to the catalog actually checked (BUG-068).
 
 ## 2026-10-25 — Temporary Gemini Flash-Lite Trial for FR-10
 

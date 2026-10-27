@@ -1,11 +1,13 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.38.1
+> **Version:** v1.39.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-25
+> **Last Updated:** 2026-10-27
 > **Status:** Active  
 
 # Mâm Xanh Frontend
+
+Chatbot gửi thêm ID của tối đa bốn thẻ công thức trong mỗi lượt ASSISTANT thuộc tám lượt lịch sử gần nhất để Backend xử lý “món khác”; dữ liệu chỉ ở phiên giao diện, không lưu lịch sử tài khoản. Khi Backend từ chối chức năng nâng cao, chat hiển thị đường dẫn đăng nhập hoặc xem gói và không mời retry nguyên yêu cầu thiếu quyền. Khi đủ quyền, liên kết workflow chỉ được hiển thị cho hai đường dẫn nội bộ đã biết: `/ke-hoach?view=for-you` và `/dang-cong-thuc`.
 
 Chatbot hiện dùng chung cho Guest và Member theo FR-10: Guest gửi định danh session cookie hiện có qua body, có hướng dẫn đăng ký và xử lý lỗi 429; không đọc hồ sơ tài khoản. Đổi tài khoản hoặc ngữ cảnh xóa hội thoại trên giao diện và bỏ qua phản hồi cũ đang chờ. Các luồng AI thiếu quyền dẫn tới `/goi-ai`, hướng dẫn Plus hoặc Pro theo tính năng; việc kiểm tra quyền và thời hạn gói thuộc Backend. Chi tiết giao tiếp và giới hạn bộ đếm Guest nằm trong [API Guide](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-51). Đây là mô tả source, không phải xác nhận nghiệm thu Issue trên main.
 

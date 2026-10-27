@@ -52,7 +52,7 @@ class GeminiAiClientTest {
         try (var client = configuredClient()) {
             String result = client.generateRecipeText("Mô tả món", List.of(2L, 9L));
             assertThat(result).isEqualTo("{\"description\":\"Món ngon\",\"steps\":[]}");
-            assertThat(requestedPath.get()).endsWith("/models/gemini-3.1-flash-lite:generateContent");
+            assertThat(requestedPath.get()).endsWith("/models/gemini-3.8-flash:generateContent");
         }
     }
 
@@ -221,7 +221,7 @@ class GeminiAiClientTest {
                     });
         }
         assertThat(requests.get()).isEqualTo(1);
-        assertThat(output.getOut()).contains("operation=CHAT", "model=gemini-3.1-flash-lite",
+        assertThat(output.getOut()).contains("operation=CHAT", "model=gemini-3.8-flash",
                 "category=HTTP", "httpStatus=429", "elapsedMs=")
                 .doesNotContain("private-system", "private-question", "private-provider-body", "test-key");
     }

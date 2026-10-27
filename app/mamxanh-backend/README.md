@@ -1,15 +1,19 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.34.1
+> **Version:** v0.35.1
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-25
+> **Last Updated:** 2026-10-27
 > **Status:** Active  
 
 # Backend Workspace
 
+Chatbot phân luồng yêu cầu rõ ràng về thực đơn tuần và hỗ trợ soạn Recipe Post trước provider: yêu cầu tuần kiểm tra Pro; soạn bài kiểm tra Expert và Plus/Pro. Guest nhận yêu cầu đăng nhập; Member thiếu gói nhận 403 kèm `requiredTier`/`upgradeUrl`. Tài khoản đủ quyền nhận liên kết workflow, không sinh thực đơn hoặc ghi bài từ chat và không phát usage event Gemini cho việc điều hướng. Hỏi đáp dinh dưỡng tổng quát và bản nháp công thức được yêu cầu rõ vẫn thuộc FR-51.
+
+Tìm món tiếp dùng câu hỏi và ngữ cảnh phiên, có thể lọc thể loại trước phân trang. Chỉ kiểm tra tối đa bốn trang, mỗi trang 50 bài và đưa tối đa 50 ứng viên hợp lệ cho AI. `history[].recommendedRecipeIds` chỉ dùng để tránh lặp khi hỏi món khác; Backend vẫn kiểm tra công khai, điều kiện ăn uống và dữ liệu thẻ hiện tại. Không suy ra toàn bộ database trống từ phạm vi tìm kiếm có giới hạn.
+
 Thư mục này dành cho REST API Java 21 + Spring Boot, build bằng Maven và truy cập Microsoft SQL Server qua Spring Data JPA/Hibernate theo [Technology Stack](../../docs/architecture/TECHNOLOGY-STACK.md).
 
-Trên nhánh `feature/16-ai-feature-entitlements`, người dùng cho phép thử tạm `gemini-3.1-flash-lite` ngày 25/10/2026 sau khi các phép thử sinh nội dung với `gemini-3.8-flash` timeout, còn Flash-Lite trả được JSON hợp lệ. Đây là ngoại lệ thử nghiệm trên nhánh riêng; model Confirmed trong Technology Stack vẫn là `gemini-3.8-flash`, chưa có quyết định thay baseline. Giữ cùng model cho mọi gói tài khoản, kiểm tra entitlement tại Backend và deadline provider 9 giây cho toàn thao tác. SDK tắt retry nội bộ; ứng dụng chỉ thử lại một lần với HTTP 502/503/504 trả sớm, backoff 1–1,25 giây và giữ ít nhất 2 giây ngân sách cho lần gọi tiếp. Không retry quota HTTP 429 hoặc lỗi dữ liệu/quyền. Không tự chuyển model khi lỗi hoặc sửa cấu hình billing.
+Model hiện tại là `gemini-3.8-flash` theo Technology Stack. Ngày 27/10/2026, người dùng yêu cầu kết thúc thử nghiệm Flash-Lite và khôi phục model Confirmed để bàn giao trưởng nhóm kiểm thử AI. Giữ cùng model cho mọi gói tài khoản, kiểm tra entitlement tại Backend và deadline provider 9 giây cho toàn thao tác. SDK tắt retry nội bộ; ứng dụng chỉ thử lại một lần với HTTP 502/503/504 trả sớm, backoff 1–1,25 giây và giữ ít nhất 2 giây ngân sách cho lần gọi tiếp. Không retry quota HTTP 429 hoặc lỗi dữ liệu/quyền. Không tự chuyển model khi lỗi hoặc sửa cấu hình billing. Kiểm thử adapter với provider kiểm soát không thay thế kiểm thử sinh nội dung bằng API key hợp lệ của trưởng nhóm.
 
 > [!IMPORTANT]
 > **Quy chuẩn kiến trúc bắt buộc:** Mọi thành viên và AI agent khi triển khai mã nguồn Backend **bắt buộc phải tuân thủ nghiêm ngặt** cấu trúc package Modular Monolith, phân tầng MVC và ranh giới liên module được quy định tại [Backend Package Structure Specification](../../docs/architecture/BACKEND-PACKAGE-STRUCTURE-PROPOSAL.md). Cấm inject chéo Repository giữa các module và không trả JPA Entity trực tiếp ra REST API.

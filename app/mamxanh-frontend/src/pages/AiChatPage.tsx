@@ -10,6 +10,7 @@ import { anonymousRecipeViewer } from '../lib/recipeViewer';
 interface ChatMessage extends AiChatTurn {
   id: number;
   recommendations?: Awaited<ReturnType<typeof recipesApi.chat>>['recommendations'];
+  workflowUrl?: string | null;
 }
 
 export function AiChatPage() {
@@ -21,6 +22,7 @@ export function AiChatPage() {
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorAction, setErrorAction] = useState<'plans' | 'login' | null>(null);
   const [retryQuestion, setRetryQuestion] = useState('');
   const [sequence, setSequence] = useState(0);
   const [windowSize, setWindowSize] = useState({ width: 420, height: 620 });
@@ -91,6 +93,7 @@ export function AiChatPage() {
     setMessages([]);
     setQuestion('');
     setError('');
+    setErrorAction(null);
     setRetryQuestion('');
     setSequence(0);
   }, [recipeId, account?.id, isAuthenticated]);
@@ -111,6 +114,7 @@ export function AiChatPage() {
     const version = requestVersion.current;
     setLoading(true);
     setError('');
+    setErrorAction(null);
     setRetryQuestion(normalized);
     const currentId = sequence + 1;
     setSequence(currentId);
@@ -121,7 +125,10 @@ export function AiChatPage() {
         ...(!isAuthenticated ? { anonymousViewerId: anonymousRecipeViewer() } : {}),
         ...(hasRecipeContext ? { recipeId } : {}),
         question: normalized,
-        history: previous.slice(-8).map(({ speaker, content }) => ({ speaker, content })),
+        history: previous.slice(-8).map(({ speaker, content, recommendations }) => ({ speaker, content,
+          ...(speaker === 'ASSISTANT' && recommendations?.length
+            ? { recommendedRecipeIds: recommendations.slice(0, 4).map((recipe) => recipe.id) } : {}),
+        })),
       });
       if (version !== requestVersion.current) return;
       setMessages((current) => [...current, {
@@ -129,12 +136,15 @@ export function AiChatPage() {
         speaker: 'ASSISTANT',
         content: response.answer,
         recommendations: response.recommendations ?? [],
+        workflowUrl: response.workflowUrl,
       }]);
       setSequence(currentId + 1);
       setRetryQuestion('');
     } catch (cause) {
       if (version !== requestVersion.current) return;
       const apiError = asApiError(cause);
+      setErrorAction(apiError.code === 'AI_SUBSCRIPTION_REQUIRED' ? 'plans' : apiError.status === 401 ? 'login' : null);
+      if (apiError.status === 401 || apiError.status === 403) setRetryQuestion('');
       setError(apiError.status === 429
         ? 'Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Hãy thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục.'
         : apiError.status === 0
@@ -189,11 +199,18 @@ export function AiChatPage() {
                 </span>
               </Link>)}
             </div>}
+            {message.workflowUrl && ['/ke-hoach?view=for-you', '/dang-cong-thuc'].includes(message.workflowUrl)
+              && <Link to={message.workflowUrl} onClick={closeChat} className="mt-3 inline-flex font-semibold text-brand-700 underline">
+                {message.workflowUrl === '/dang-cong-thuc' ? 'Mở biểu mẫu soạn công thức' : 'Mở chức năng lập thực đơn'}
+              </Link>}
           </div>
           {message.speaker === 'USER' && <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-100 text-ink-muted"><UserRound className="h-4 w-4" aria-hidden="true" /></span>}
         </div>)}
         {loading && <p role="status" className="flex items-center gap-2 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" />Đang trả lời…</p>}
-        {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">{error}{retryQuestion && <button type="button" onClick={() => void send(retryQuestion, messages.slice(0, -1), false)} disabled={loading} className="ml-2 font-bold underline">Thử lại</button>}{error.includes('đăng ký') && <Link to="/dang-ky" className="ml-2 font-bold underline">Đăng ký</Link>}</div>}
+        {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">{error}{retryQuestion && <button type="button" onClick={() => void send(retryQuestion, messages.slice(0, -1), false)} disabled={loading} className="ml-2 font-bold underline">Thử lại</button>}{error.includes('đăng ký') && <Link to="/dang-ky" className="ml-2 font-bold underline">Đăng ký</Link>}
+          {errorAction === 'plans' && <Link to="/goi-ai" onClick={closeChat} className="ml-2 font-bold underline">Xem các gói AI</Link>}
+          {errorAction === 'login' && <Link to="/dang-nhap" onClick={closeChat} className="ml-2 font-bold underline">Đăng nhập</Link>}
+        </div>}
       </div>
 
       <form onSubmit={submit} className="border-t border-brand-100 bg-paper p-3 sm:p-4">

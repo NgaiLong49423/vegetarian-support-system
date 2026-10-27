@@ -33,8 +33,8 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     // Reserve application overhead within the NFR-18 ten-second provider budget.
     private static final int REQUEST_TIMEOUT_MS = 9_000;
     private static final int MIN_RETRY_BUDGET_MS = 2_000;
-    // User-authorized FR-10 branch trial; the confirmed technology baseline remains 3.8 Flash.
-    private static final String MODEL = "gemini-3.1-flash-lite";
+    // Confirmed model in TECHNOLOGY-STACK.md; shared by all account tiers.
+    private static final String MODEL = "gemini-3.8-flash";
     private final Client client;
     private final ExecutorService requests = Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("gemini-request-", 0).factory());

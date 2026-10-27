@@ -46,6 +46,11 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     const denied = await request.post(`${backend}/recipes/ai-assistance`, { headers, data: assistance });
     expect(denied.status()).toBe(403);
     expect(await denied.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PLUS', upgradeUrl: '/goi-ai' });
+    const chatMenu = () => request.post(`${backend}/recipes/ai/chat`, { headers,
+      data: { contextType: 'GENERAL', question: 'Lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân', history: [] } });
+    const freeChat = await chatMenu();
+    expect(freeChat.status()).toBe(403);
+    expect(await freeChat.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO', upgradeUrl: '/goi-ai' });
     // A future paid period must agree between the account API and the paid-feature guard.
     sql(`INSERT INTO [SUBSCRIPTION] (user_id,tier,status,starts_at,ends_at)
       VALUES (${member},'PRO','ACTIVE',DATEADD(day,1,SYSUTCDATETIME()),DATEADD(day,31,SYSUTCDATETIME()))`);
@@ -64,12 +69,23 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
       data: { ingredientIds: [ingredients[0].ingredientId] } });
     expect(weekly.status()).toBe(403);
     expect(await weekly.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
+    const plusChat = await chatMenu();
+    expect(plusChat.status()).toBe(403);
+    expect(await plusChat.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
+    sql(`UPDATE [SUBSCRIPTION] SET tier='PRO' WHERE user_id=${member}`);
+    const proChat = await chatMenu();
+    expect(proChat.status()).toBe(200);
+    expect(await proChat.json()).toMatchObject({ workflowUrl: '/ke-hoach?view=for-you', recommendations: [] });
+    sql(`UPDATE [SUBSCRIPTION] SET tier='PLUS' WHERE user_id=${member}`);
     await page.addInitScript((value) => sessionStorage.setItem('mamxanh.auth', JSON.stringify({
       accessToken: value.accessToken, expiresAt: Date.now() + value.expiresInSeconds * 1000, account: value.account,
     })), session);
     await page.goto(`/cong-thuc/id/${recipe}`);
     // Revoke the paid period while the real JWT remains valid; the next request must recheck SQL.
     sql(`UPDATE [SUBSCRIPTION] SET ends_at=SYSUTCDATETIME() WHERE user_id=${member}`);
+    const expiredChat = await chatMenu();
+    expect(expiredChat.status()).toBe(403);
+    expect(await expiredChat.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });
     const section = page.getByRole('region', { name: 'Công thức liên quan' });
     await section.getByRole('button', { name: 'AI gợi ý món ăn kèm hoặc biến tấu' }).click();
     await expect(section.getByRole('alert')).toContainText('gói Plus và Pro');
