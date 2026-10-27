@@ -9,7 +9,7 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
-## 2026-10-27 — Restore the Confirmed Gemini Model for AI Handoff
+## 2026-10-27 — Restore the Confirmed Gemini Model for AI Handoff ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
 
 **Status:** Committed — `0b9a552b`.
 
@@ -28,7 +28,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - None.
 
-## 2026-10-27 — Chat Workflow Entitlements and Grounded Follow-up Discovery
+## 2026-10-27 — Chat Workflow Entitlements and Grounded Follow-up Discovery ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
 
 **Status:** Committed — `0b9a552b`.
 
