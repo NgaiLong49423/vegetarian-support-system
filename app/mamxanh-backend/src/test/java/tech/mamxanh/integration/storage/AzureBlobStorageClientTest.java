@@ -3,6 +3,7 @@ package tech.mamxanh.integration.storage;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobHttpHeaders;
+import com.azure.storage.blob.specialized.BlobInputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,10 +23,18 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AzureBlobStorageClientTest {
+
+    @Mock
+    private BlobContainerClient privateContainerClient;
 
     @Test void uploadFailureReturnsASanitizedUnavailableErrorInsteadOfASuccessfulUrl() {
         when(containerClient.getBlobClient(anyString())).thenThrow(new IllegalStateException("sensitive-provider-details"));
@@ -124,5 +133,59 @@ class AzureBlobStorageClientTest {
         AzureBlobStorageClient client = new AzureBlobStorageClient(containerClient);
         client.deleteImage(null);
         client.deleteImage("");
+    }
+
+    @Test
+    void uploadsDownloadsAndDeletesPrivateApplicationFile() throws java.io.IOException {
+        byte[] content = {1, 2, 3};
+        when(privateContainerClient.getBlobClient(anyString())).thenReturn(blobClient);
+        BlobInputStream input = mock(BlobInputStream.class);
+        when(blobClient.openInputStream()).thenReturn(input);
+        var client = new AzureBlobStorageClient(containerClient, privateContainerClient);
+
+        String blobKey = client.uploadPrivateApplicationFile(content, "application/pdf", ".pdf");
+        assertThat(blobKey).startsWith("expert-applications/").endsWith(".pdf");
+        ArgumentCaptor<BlobHttpHeaders> headers = ArgumentCaptor.forClass(BlobHttpHeaders.class);
+        verify(blobClient).upload(any(InputStream.class), anyLong(), anyBoolean());
+        verify(blobClient).setHttpHeaders(headers.capture());
+        assertThat(headers.getValue().getContentType()).isEqualTo("application/pdf");
+
+        assertThat(client.downloadPrivateApplicationFile("expert-applications/file.pdf")).isEmpty();
+        verify(blobClient).openInputStream();
+        client.deletePrivateApplicationFile("expert-applications/file.pdf");
+        verify(privateContainerClient, times(2)).getBlobClient("expert-applications/file.pdf");
+        verify(blobClient).deleteIfExists();
+    }
+
+    @Test
+    void rejectsPrivateFileOperationsWithoutContainerOrWithUnsafeKeys() {
+        var unconfigured = new AzureBlobStorageClient(containerClient);
+        assertThatThrownBy(() -> unconfigured.uploadPrivateApplicationFile(new byte[]{1}, "image/png", ".png"))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> unconfigured.downloadPrivateApplicationFile("expert-applications/a.png"))
+                .isInstanceOf(NullPointerException.class);
+
+        var client = new AzureBlobStorageClient(containerClient, privateContainerClient);
+        for (String unsafeKey : new String[]{"recipes/file.jpg", "expert-applications/../secret", "expert-applications\\secret"}) {
+            assertThatThrownBy(() -> client.downloadPrivateApplicationFile(unsafeKey))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> client.deletePrivateApplicationFile(unsafeKey))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+        client.deletePrivateApplicationFile(null);
+        client.deletePrivateApplicationFile(" ");
+        verifyNoInteractions(privateContainerClient);
+    }
+
+    @Test
+    void failedPrivateUploadAttemptsCleanupAndPreservesOriginalFailure() {
+        when(privateContainerClient.getBlobClient(anyString())).thenReturn(blobClient);
+        doThrow(new IllegalStateException("upload metadata failure")).when(blobClient).setHttpHeaders(any());
+        when(blobClient.deleteIfExists()).thenThrow(new IllegalStateException("cleanup failure"));
+        var client = new AzureBlobStorageClient(containerClient, privateContainerClient);
+
+        assertThatThrownBy(() -> client.uploadPrivateApplicationFile(new byte[]{1}, "image/png", ".png"))
+                .isInstanceOf(IllegalStateException.class).hasMessage("upload metadata failure");
+        verify(blobClient).deleteIfExists();
     }
 }

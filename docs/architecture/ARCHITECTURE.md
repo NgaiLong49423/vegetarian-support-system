@@ -1,8 +1,8 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.12.0
+> **Version:** v1.13.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-09-30
+> **Last Updated:** 2026-10-21
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/C4 Container Diagram/README.md`, `docs/diagrams/ERD/README.md`
 
@@ -51,7 +51,7 @@ Frontend được host trên **Vercel**. Backend và data services được tri�
 | Browser client | React, TypeScript, Vite (Vercel) | Hiển thị giao diện responsive, nhận input người dùng, xử lý trạng thái loading/error, nhúng YouTube player và nút Google Login | Không phải ranh giới tin cậy cho authorization, validation hoặc lưu secret |
 | Spring Boot Backend | Java 21, Spring Boot (Azure App Service) | Xác thực request (Stateless JWT Bearer Token, Spring Security OAuth2 Resource Server), kiểm tra role/ownership, validate input, kiểm tra quyền tính năng AI (Feature Entitlement), áp dụng technical rate limit, điều phối nghiệp vụ và gọi external services | Quy tắc nghiệp vụ bắt buộc thực thi ở server-side kể cả khi UI đã ẩn thao tác |
 | SQL Server | Microsoft SQL Server (Azure SQL Database Serverless) | Relational Source of Truth chính cho tài khoản, công thức, thực đơn, giao dịch thanh toán và tham chiếu media | Tự động pause khi không có request; cần kích hoạt trước các buổi demo |
-| Media Storage | Azure Blob Storage | Lưu trữ tệp ảnh minh họa Recipe Post (0–5 ảnh qua thực thể `RECIPE_MEDIA`, JPEG/PNG/WebP $\le 5$ MB, đúng 1 ảnh bìa cover); SQL Server giữ URL tham chiếu, thứ tự hiển thị và cờ ảnh bìa | Phase 1 upload qua Backend kiểm duyệt; không upload file video |
+| Media Storage | Azure Blob Storage | Lưu ảnh Recipe Post (0–5 ảnh qua `RECIPE_MEDIA`) và tệp đính kèm đơn Chuyên gia trong container riêng tư; SQL Server giữ tham chiếu blob | Recipe images có thể được phục vụ công khai; attachment phải đi qua Backend có RBAC, không trả URL Blob công khai; không upload file video |
 | External integrations | Google Gemini, GIS, Brevo, payOS, YouTube | Cung cấp AI gợi ý, xác thực Google, gửi email kích hoạt/reset, thanh toán VietQR và phát video | Lỗi provider phải được xử lý minh bạch; không tính phí người dùng khi AI/email gặp sự cố |
 
 ### 3.1 Kiến trúc Backend

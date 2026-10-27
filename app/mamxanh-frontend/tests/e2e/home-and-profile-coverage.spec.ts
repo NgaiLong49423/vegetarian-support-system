@@ -156,7 +156,7 @@ test('administrator can view admin dashboard and pending modules', async ({ page
   await page.getByRole('button', { name: 'Đóng menu' }).click();
 
   await page.goto('/admin/bao-cao');
-  await expect(page.getByRole('heading', { name: 'Xử lý báo cáo vi phạm' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hậu kiểm nội dung', level: 1 })).toBeVisible();
 
   await page.goto('/admin/nguoi-dung');
   await expect(page.getByRole('heading', { name: 'Quản lý tài khoản & Phân quyền', exact: true })).toBeVisible();

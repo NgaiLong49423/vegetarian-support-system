@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-27 — Limit Nutrition AI Menus to the Current Week
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `cc719355`.
 
 **Scope:** Keep FR-36 proposals relevant to the remaining days of the current week and preserve entries for days that have passed.
 
@@ -28,6 +28,40 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 ### Fixed
 
 - None.
+## 2026-10-26 — Rank and Search Reported Posts on the Moderation Page (Issue #12)
+
+**Status:** Committed — `c24ae67`, `f15680e`.
+
+**Scope:** Deliver the Recipe Post side of FR-06 on the grouped report board of Issue #35: Administrators rank reported posts by report count, see the most common reason of each post and find a post by its title or author (UC-06.1, US-06.1). Hiding a post and locking its author stay the FR-28 decisions already on `/admin/bao-cao` (AC-06.2, AC-06.3). Comment reports wait for FR-48, as proposed in question Q71 on Issue #12.
+
+### Added
+
+- Add `query` (title, author name or author email, at most 200 characters, LIKE wildcards matched literally) and `sort` (`NEWEST` or `MOST_REPORTED`) to `GET /api/v1/admin/reports/groups`, and `topReasonCode`/`topReasonCount` to `AdminReportGroupResponse`; a tie goes to the reason reported most recently.
+- Add a search box and a sort select to the "Theo bài viết" view of `/admin/bao-cao`, and the most common reason with its count to each post card.
+- Add SQL Server integration tests for the ranking, the most common reason, the search and its validation, and for a new post that publishes at once while other reports are open or in review (AC-06.4), plus Playwright tests for the search, the sort and the reason line.
+
+### Changed
+
+- Rename the page and its admin menu entry to "Hậu kiểm nội dung", and document the new parameters in `docs/api/API.md` section 21 and the Backend and Frontend READMEs.
+## 2026-10-26 — Persist Nutrition Profile BMI
+
+**Status:** Committed — `d28503ca`.
+
+**Scope:** Keep each Member's saved BMI available when reopening their private nutrition profile.
+
+### Added
+
+- Add Flyway migration `V25__persist_nutrition_bmi.sql` and update the SQL Server schema snapshot to store BMI with the existing `USER` nutrition profile.
+- Backfill BMI once for existing profiles that consented to health-data storage.
+
+### Changed
+
+- Calculate and store BMI when a Member first saves or changes height/weight; return the saved BMI with current reference values when the profile is reopened.
+- Update FR-35 acceptance criteria and UC-35.2 to specify reading saved BMI and refreshing it only after height or weight changes.
+
+### Fixed
+
+- Keep the BMI panel populated after refreshing or revisiting the nutrition profile.
 
 ## 2026-10-26 — Group Recipe Reports by Post for Administrators (Issue #35)
 
@@ -652,6 +686,28 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 - Permit guest reads of the documented public recipe-statistics endpoint.
 - Preserve Vietnamese characters when binding ingredient search patterns on SQL Server.
+
+## 2026-10-21 — Expert Application Attachments
+
+**Status:** Committed — `fbaf8e4`.
+
+**Scope:** Extend FR-05 so applicants can attach a certificate and an application-only 3:4 portrait, with private storage and Admin-only retrieval.
+
+### Added
+
+- Add optional certificate and application-only 3:4 portrait uploads with server-side type, signature, and size validation; store attachment metadata through Flyway V24 after develop used V23 for report supplements.
+- Add an Admin-only attachment download endpoint backed by a private Azure Blob Storage container.
+
+### Changed
+
+- Update FR-05, BR-74, NFR-10, architecture, database guidance, and the application form to describe the approved attachment behavior.
+- Focus the first-time application view on the submission form and group optional uploads into a compact section.
+- Identify the application portrait as a 3:4 photo, add an explicit Admin download action, and improve the review dialog's hierarchy, attachment cards, status, and responsive scrolling.
+- Keep the existing JSON submission endpoint and public account avatar flow unchanged.
+
+### Fixed
+
+- Bind Azure storage configuration through its canonical constructor so the Backend can start with the new private-container property.
 
 ## 2026-10-20 — Remove Standalone Meal Plan Export (Issue #152)
 
