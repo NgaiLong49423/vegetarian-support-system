@@ -5,12 +5,21 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import tech.mamxanh.AbstractIntegrationTest;
 
@@ -106,14 +115,72 @@ class RecipeReportIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void rejectsDuplicateOpenReport() throws Exception {
-        insertReport("OPEN");
-        assertDuplicateBlocked();
+        assertDuplicateBlocked(insertReport("OPEN"));
     }
 
     @Test
     void rejectsDuplicateInReviewReport() throws Exception {
-        insertReport("IN_REVIEW");
-        assertDuplicateBlocked();
+        assertDuplicateBlocked(insertReport("IN_REVIEW"));
+    }
+
+    @Test
+    void concurrentDuplicateSubmissionsCreateOneReportAndPointOthersToIt() throws Exception {
+        int requests = 4;
+        CyclicBarrier start = new CyclicBarrier(requests);
+        ExecutorService executor = Executors.newFixedThreadPool(requests);
+        try {
+            List<Future<MockHttpServletResponse>> futures = new ArrayList<>();
+            for (int i = 0; i < requests; i++) {
+                futures.add(executor.submit(() -> {
+                    start.await(10, TimeUnit.SECONDS);
+                    return submit("{\"reasonCode\":\"SPAM_ADVERTISING\"}").andReturn().getResponse();
+                }));
+            }
+            List<MockHttpServletResponse> responses = new ArrayList<>();
+            for (Future<MockHttpServletResponse> future : futures) {
+                responses.add(future.get(60, TimeUnit.SECONDS));
+            }
+
+            long createdId = jdbcTemplate.queryForObject(
+                    "SELECT report_id FROM [REPORT] WHERE reporter_id = ? AND recipe_id = ?", Long.class, memberId, recipeId);
+            org.assertj.core.api.Assertions.assertThat(responses).extracting(MockHttpServletResponse::getStatus)
+                    .containsExactlyInAnyOrder(201, 409, 409, 409);
+            for (MockHttpServletResponse response : responses) {
+                if (response.getStatus() == 409) {
+                    org.assertj.core.api.Assertions.assertThat(response.getContentAsString(StandardCharsets.UTF_8))
+                            .contains("\"code\":\"REPORT_ALREADY_OPEN\"")
+                            .contains("\"reportId\":" + createdId);
+                }
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void reReportAfterResolvedRequiresNewDescriptionForAnyReason() throws Exception {
+        insertReport("RESOLVED");
+
+        submit("{\"reasonCode\":\"SPAM_ADVERTISING\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.field").value("description"));
+        submit("{\"reasonCode\":\"SPAM_ADVERTISING\",\"description\":\"  ngắn  \"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.field").value("description"));
+        assertOpenReportCount(0);
+
+        submit("{\"reasonCode\":\"SPAM_ADVERTISING\",\"description\":\"Bài lại chèn liên kết quảng cáo mới\"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("OPEN"));
+        assertOpenReportCount(1);
+    }
+
+    @Test
+    void firstReportWithNonOtherReasonStillAllowsEmptyDescription() throws Exception {
+        submit("{\"reasonCode\":\"SPAM_ADVERTISING\"}")
+                .andExpect(status().isCreated());
+        assertOpenReportCount(1);
     }
 
     private org.springframework.test.web.servlet.ResultActions submit(String body) throws Exception {
@@ -122,18 +189,27 @@ class RecipeReportIntegrationTest extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content(body));
     }
 
-    private void assertDuplicateBlocked() throws Exception {
+    private void assertDuplicateBlocked(long existingReportId) throws Exception {
         submit("{\"reasonCode\":\"OTHER\",\"description\":\"Mô tả hợp lệ tối thiểu\"}")
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("REPORT_ALREADY_OPEN"));
+                .andExpect(jsonPath("$.code").value("REPORT_ALREADY_OPEN"))
+                .andExpect(jsonPath("$.reportId").value(existingReportId));
         org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM [REPORT] WHERE reporter_id = ? AND recipe_id = ?", Integer.class, memberId, recipeId))
                 .isEqualTo(1);
     }
 
-    private void insertReport(String status) {
-        jdbcTemplate.update("INSERT INTO [REPORT] (reporter_id, recipe_id, reason_code, description, status) VALUES (?, ?, ?, ?, ?)",
-                memberId, recipeId, "OTHER", "Mô tả báo cáo hiện có", status);
+    private long insertReport(String status) {
+        return jdbcTemplate.queryForObject("""
+                INSERT INTO [REPORT] (reporter_id, recipe_id, reason_code, description, status)
+                OUTPUT INSERTED.report_id VALUES (?, ?, ?, ?, ?)
+                """, Long.class, memberId, recipeId, "OTHER", "Mô tả báo cáo hiện có", status);
+    }
+
+    private void assertOpenReportCount(int expected) {
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM [REPORT] WHERE reporter_id = ? AND recipe_id = ? AND status = 'OPEN'",
+                Integer.class, memberId, recipeId)).isEqualTo(expected);
     }
 
     private void assertNoReport() {

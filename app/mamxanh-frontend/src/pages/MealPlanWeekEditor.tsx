@@ -9,9 +9,12 @@ import {
   ChevronRight,
   Clock3,
   LoaderCircle,
+  Moon,
   Plus,
   RefreshCw,
   Sparkles,
+  Sun,
+  Sunrise,
   Trash2,
   Utensils,
   ArrowRightLeft,
@@ -67,10 +70,37 @@ const meals: MealType[] = ["BREAKFAST", "LUNCH", "DINNER"]
 
 const mealLabels: Record<MealType, string> = {
   BREAKFAST: "Bữa sáng",
-
   LUNCH: "Bữa trưa",
-
   DINNER: "Bữa tối",
+}
+
+const mealTheme: Record<
+  MealType,
+  {
+    icon: typeof Sunrise
+    iconClass: string
+    badgeClass: string
+    borderClass: string
+  }
+> = {
+  BREAKFAST: {
+    icon: Sunrise,
+    iconClass: "text-amber-600 dark:text-amber-400",
+    badgeClass: "bg-amber-100/90 dark:bg-amber-950/60 border-amber-200/80 dark:border-amber-800/60",
+    borderClass: "border-amber-200/80 bg-amber-50/20 hover:border-amber-300",
+  },
+  LUNCH: {
+    icon: Sun,
+    iconClass: "text-brand-600 dark:text-brand-400",
+    badgeClass: "bg-brand-100/90 dark:bg-brand-950/60 border-brand-200/80 dark:border-brand-800/60",
+    borderClass: "border-brand-200/80 bg-brand-50/20 hover:border-brand-300",
+  },
+  DINNER: {
+    icon: Moon,
+    iconClass: "text-indigo-600 dark:text-indigo-400",
+    badgeClass: "bg-indigo-100/90 dark:bg-indigo-950/60 border-indigo-200/80 dark:border-indigo-800/60",
+    borderClass: "border-indigo-200/80 bg-indigo-50/20 hover:border-indigo-300",
+  },
 }
 
 export function MealPlanWeekEditor() {
@@ -431,11 +461,10 @@ function WeekContents({
                 ...current,
 
                 entries: [
+                  entry,
                   ...current.entries.filter(
                     (item) => item.entryId !== entry.entryId,
                   ),
-
-                  entry,
                 ],
               },
           )
@@ -560,26 +589,35 @@ function WeekContents({
         </Button>
       </div>
       <div className="divide-y divide-brand-100">
-        {Array.from({ length: 7 }, (_, offset) => {
-          const date = new Date(`${week}T12:00:00`)
-
-          date.setDate(date.getDate() + offset)
-
-          const day = localDateKey(date)
-
-          const label = date.toLocaleDateString("vi-VN", {
-            weekday: "long",
-
-            day: "numeric",
-
-            month: "long",
+        {(() => {
+          const rawDays = Array.from({ length: 7 }, (_, offset) => {
+            const d = new Date(`${week}T12:00:00`)
+            d.setDate(d.getDate() + offset)
+            return localDateKey(d)
           })
+          const todayKey = localDateKey(new Date())
+          const todayIndex = rawDays.indexOf(todayKey)
+          const days =
+            todayIndex > 0
+              ? [...rawDays.slice(todayIndex), ...rawDays.slice(0, todayIndex)]
+              : rawDays
 
-          const entries = plan.entries.filter((entry) => entry.mealDate === day)
+          return days.map((day) => {
+            const date = new Date(`${day}T12:00:00`)
 
-          const expanded = selectedDay === day
+            const label = date.toLocaleDateString("vi-VN", {
+              weekday: "long",
 
-          const today = day === localDateKey(new Date())
+              day: "numeric",
+
+              month: "long",
+            })
+
+            const entries = plan.entries.filter((entry) => entry.mealDate === day)
+
+            const expanded = selectedDay === day
+
+            const today = day === todayKey
 
           return (
             <section
@@ -610,10 +648,34 @@ function WeekContents({
                       >
                         {today ? `Hôm nay · ${label}` : label}
                       </span>
-                      <span className="mt-1 block text-xs font-normal text-ink-muted">
-                        {entries.length
-                          ? `${entries.length} món đã lên lịch`
-                          : "Chưa lên lịch · thêm món khi bạn sẵn sàng"}
+                      <span className="mt-1 flex flex-wrap items-center gap-2 text-xs font-normal text-ink-muted">
+                        <span>
+                          {entries.length
+                            ? `${entries.length} món đã lên lịch`
+                            : "Chưa lên lịch · thêm món khi bạn sẵn sàng"}
+                        </span>
+                        {entries.length > 0 && (
+                          <span className="inline-flex items-center gap-1.5 text-[11px]">
+                            {entries.some((e) => e.mealType === "BREAKFAST") && (
+                              <span className="inline-flex items-center gap-0.5 font-medium text-amber-600 dark:text-amber-400">
+                                <Sunrise className="h-3 w-3" aria-hidden="true" />
+                                <span>{entries.filter((e) => e.mealType === "BREAKFAST").length}</span>
+                              </span>
+                            )}
+                            {entries.some((e) => e.mealType === "LUNCH") && (
+                              <span className="inline-flex items-center gap-0.5 font-medium text-brand-600 dark:text-brand-400">
+                                <Sun className="h-3 w-3" aria-hidden="true" />
+                                <span>{entries.filter((e) => e.mealType === "LUNCH").length}</span>
+                              </span>
+                            )}
+                            {entries.some((e) => e.mealType === "DINNER") && (
+                              <span className="inline-flex items-center gap-0.5 font-medium text-indigo-600 dark:text-indigo-400">
+                                <Moon className="h-3 w-3" aria-hidden="true" />
+                                <span>{entries.filter((e) => e.mealType === "DINNER").length}</span>
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </span>
                     </span>
                   </button>
@@ -650,26 +712,27 @@ function WeekContents({
                   </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-stretch">
                       {meals.map((meal) => {
-                        const mealEntries = entries.filter((entry) => entry.mealType === meal);
-                        const isBreakfast = meal === 'BREAKFAST';
-                        const isLunch = meal === 'LUNCH';
-                        const mealIcon = isBreakfast ? '🌅' : isLunch ? '☀️' : '🌙';
+                        const mealEntries = entries
+                          .filter((entry) => entry.mealType === meal)
+                          .slice()
+                          .sort((a, b) => (b.entryId ?? 0) - (a.entryId ?? 0));
+                        const theme = mealTheme[meal];
+                        const MealIcon = theme.icon;
 
                         return (
                           <section
                             key={meal}
                             aria-label={`${mealLabels[meal]} ${label}`}
-                            className={`min-w-0 flex flex-col rounded-2xl border p-3.5 transition-all ${
-                              isBreakfast
-                                ? 'border-amber-200/80 bg-amber-50/15 hover:border-amber-300'
-                                : isLunch
-                                  ? 'border-brand-200/80 bg-brand-50/15 hover:border-brand-300'
-                                  : 'border-indigo-200/80 bg-indigo-50/15 hover:border-indigo-300'
-                            }`}
+                            className={`min-w-0 flex flex-col rounded-2xl border p-3.5 transition-all ${theme.borderClass}`}
                           >
                             <div className="mb-2.5 flex items-center justify-between gap-2 border-b border-brand-100/70 pb-2">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="text-sm select-none">{mealIcon}</span>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border shadow-2xs ${theme.badgeClass}`}
+                                  aria-hidden="true"
+                                >
+                                  <MealIcon className={`h-3.5 w-3.5 ${theme.iconClass}`} />
+                                </span>
                                 <h3 className="text-sm font-bold text-ink truncate">
                                   {mealLabels[meal]}
                                 </h3>
@@ -813,7 +876,8 @@ function WeekContents({
               )}
             </section>
           )
-        })}
+        })
+      })()}
       </div>
       <Modal
         open={Boolean(nutrition)}
@@ -829,7 +893,7 @@ function WeekContents({
               initialScope={nutrition.scope}
               onEntryReplaced={(entry) => setPlan((current) => current && ({
                 ...current,
-                entries: [...current.entries.filter((item) => item.entryId !== entry.entryId), entry],
+                entries: [entry, ...current.entries.filter((item) => item.entryId !== entry.entryId)],
               }))}
             />
           </DialogFocus>
@@ -1474,11 +1538,18 @@ function AiWeeklyMenu({ week }: { week: string }) {
         <div className="rounded-xl bg-raised p-3"><p className="mb-2 text-xs font-semibold text-ink">Tổng dinh dưỡng dự kiến theo các món đã chọn trong tuần</p><div className="grid grid-cols-2 gap-2 text-xs text-ink-muted sm:grid-cols-3 lg:grid-cols-5">{Object.entries(nutritionLabels).map(([key, label]) => <span key={key}>{label}: ≈ {Number(totals?.[key] ?? 0).toFixed(1)}</span>)}</div></div>
         <div className="space-y-3">{Object.entries(grouped ?? {}).map(([day, dayMeals]) => <section key={day} className="rounded-xl bg-raised p-3"><h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3><div className="mt-2 grid gap-2 sm:grid-cols-3">{dayMeals.map((meal) => {
           const index = preview.meals.findIndex((item) => item.mealDate === meal.mealDate && item.mealType === meal.mealType)
-          const label = meal.mealType === "BREAKFAST" ? "Sáng" : meal.mealType === "LUNCH" ? "Trưa" : "Tối"
+          const isBreakfast = meal.mealType === "BREAKFAST"
+          const isLunch = meal.mealType === "LUNCH"
+          const label = isBreakfast ? "Sáng" : isLunch ? "Trưa" : "Tối"
+          const MealPreviewIcon = isBreakfast ? Sunrise : isLunch ? Sun : Moon
+          const iconColor = isBreakfast ? "text-amber-600 dark:text-amber-400" : isLunch ? "text-brand-600 dark:text-brand-400" : "text-indigo-600 dark:text-indigo-400"
           const isSelected = selected.includes(index)
           return <article key={`${meal.mealDate}-${meal.mealType}`} className={`min-w-0 overflow-hidden rounded-lg border bg-surface text-sm ${isSelected ? "border-brand-200" : "border-brand-100 opacity-70"}`}>
             <div className="flex items-center justify-between gap-2 border-b border-brand-100 px-3 py-2">
-              <span className="text-xs font-medium text-ink-muted">Bữa {label.toLowerCase()}</span>
+              <span className="flex items-center gap-1.5 text-xs font-medium text-ink-muted">
+                <MealPreviewIcon className={`h-3.5 w-3.5 ${iconColor}`} aria-hidden="true" />
+                Bữa {label.toLowerCase()}
+              </span>
               <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
                 <input type="checkbox" checked={isSelected} aria-label={`Đưa ${meal.recipeTitle} vào lịch`} onChange={() => { setSelected(isSelected ? selected.filter((value) => value !== index) : [...selected, index]); setConfirmArmed(false) }} />
                 {isSelected ? "Đưa vào lịch" : "Bỏ qua món này"}

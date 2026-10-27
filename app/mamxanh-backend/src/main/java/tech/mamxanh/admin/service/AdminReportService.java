@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tech.mamxanh.admin.dto.AdminReportGroupResponse;
 import tech.mamxanh.admin.dto.AdminReportResponse;
 import tech.mamxanh.admin.dto.AdminReportStatusCountsResponse;
 import tech.mamxanh.admin.dto.ResolveReportRequest;
@@ -49,8 +50,13 @@ public class AdminReportService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<AdminReportResponse> list(String status, int page, int size) {
-        return PageResponse.of(queries.page(status, page, size), page, size, queries.count(status));
+    public PageResponse<AdminReportResponse> list(String status, Long recipeId, int page, int size) {
+        return PageResponse.of(queries.page(status, recipeId, page, size), page, size, queries.count(status, recipeId));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<AdminReportGroupResponse> listGroups(String status, int page, int size) {
+        return PageResponse.of(queries.groups(status, page, size), page, size, queries.countGroups(status));
     }
 
     @Transactional(readOnly = true)
