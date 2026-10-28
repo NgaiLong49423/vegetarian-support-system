@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,6 +58,17 @@ class RelatedRecipeIntegrationTest extends AbstractIntegrationTest {
         best = recipe("best", "BRAISED", "VEGAN", "PUBLISHED");
         line(best, tofu, grams, 300);
         line(best, tomato, grams, 100);
+    }
+
+    @AfterEach
+    void cleanUp() {
+        jdbc.update("DELETE FROM [RECIPE_INGREDIENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = 'fr47@test.local'))");
+        jdbc.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = 'fr47@test.local')");
+        jdbc.update("DELETE FROM [SUBSCRIPTION] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email = 'fr47@test.local')");
+        jdbc.update("DELETE FROM [USER] WHERE email = 'fr47@test.local'");
+        jdbc.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name LIKE 'FR47 %')");
+        jdbc.update("DELETE FROM [INGREDIENT] WHERE name LIKE 'FR47 %'");
+        jdbc.update("DELETE FROM [UNIT] WHERE code = 'fr47-count'");
     }
 
     @Test
