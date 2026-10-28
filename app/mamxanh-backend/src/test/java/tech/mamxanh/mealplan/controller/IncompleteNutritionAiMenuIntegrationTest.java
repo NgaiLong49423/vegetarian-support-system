@@ -6,8 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDateTime;
 import java.time.Duration;
+import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,6 +82,7 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = ?)", EXPERT);
         jdbc.update("DELETE FROM [INGREDIENT] WHERE name IN (?, ?)", SUPPORTED, UNSUPPORTED);
         jdbc.update("DELETE FROM [USER] WHERE email IN (?, ?)", MEMBER, EXPERT);
+        clock.reset();
     }
 
     @Test
