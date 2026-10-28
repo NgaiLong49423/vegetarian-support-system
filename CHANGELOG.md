@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.110.0
+> **Version:** v2.110.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-28
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-27 — Integrate FR-10 with the Current Develop Baseline ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `33a05672`.
 
 **Scope:** Integrate develop `b294a28e` into FR-10 while retaining the confirmed Gemini model, paid workflow guards and the newer recipe, shopping and reporting features.
 
