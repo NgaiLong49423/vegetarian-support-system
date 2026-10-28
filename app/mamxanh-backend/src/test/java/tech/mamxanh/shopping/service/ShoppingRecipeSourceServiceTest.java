@@ -124,6 +124,16 @@ class ShoppingRecipeSourceServiceTest {
     }
 
     @Test
+    void updateServingsRejectsWhenSourceRowsDisappearBeforeReaggregation() {
+        UUID sourceId = UUID.randomUUID();
+        var recipe = source(sourceId, 3L, "10", "2");
+        owned();
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(recipe), List.of());
+        when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(item(3L, "10")));
+        assertThatThrownBy(() -> service.updateServings(7, sourceId, request("3"))).isInstanceOf(AppException.class);
+    }
+
+    @Test
     void updateRecipeServingsDistributesAcrossOccurrencesAndRejectsIncompleteOrInvalidRequests() {
         owned();
         assertThatThrownBy(() -> service.updateRecipeServings(7, 0, request("2"))).isInstanceOf(AppException.class);
@@ -200,6 +210,15 @@ class ShoppingRecipeSourceServiceTest {
     }
 
     @Test
+    void updateRecipeServingsIgnoresManualRowsAndDifferentRecipeIds() {
+        owned();
+        var manual = source(UUID.randomUUID(), 3L, "10", "2"); manual.setSourceKind("MANUAL");
+        var otherRecipe = source(UUID.randomUUID(), 4L, "10", "2"); otherRecipe.setRecipeId(10L);
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(manual, otherRecipe));
+        assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("3"))).isInstanceOf(AppException.class);
+    }
+
+    @Test
     void removeRecipeDeletesOrReaggregatesAffectedItemsAndRejectsBrokenSources() {
         owned();
         assertThatThrownBy(() -> service.removeRecipe(7, 0)).isInstanceOf(AppException.class);
@@ -267,6 +286,20 @@ class ShoppingRecipeSourceServiceTest {
                 new ShoppingAggregationResult.Item(4L, "A", BigDecimal.ONE, 1, "g", "gram", true)))), List.of());
         when(aggregation.aggregate(anyList())).thenReturn(incompatible);
         assertThatThrownBy(() -> service.removeRecipe(7, 9)).isInstanceOf(AppException.class);
+    }
+
+    @Test
+    void removeRecipeLeavesManualRowsOutOfTheRecipeRemovalSet() {
+        owned();
+        UUID sourceId = UUID.randomUUID();
+        var recipe = source(sourceId, 3L, "10", "2"); recipe.setExpectedIngredientCount(1);
+        var manual = source(UUID.randomUUID(), 4L, "5", "1"); manual.setSourceKind("MANUAL");
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(recipe, manual), List.of());
+        when(items.findByIdAndShoppingListId(3L, 7L)).thenReturn(Optional.of(item(3L, "10")));
+        when(checklists.get(7L)).thenReturn(emptyResponse());
+        service.removeRecipe(7, 9);
+        verify(contributions).deleteAll(List.of(recipe));
+        verify(items).delete(any(ShoppingListItemEntity.class));
     }
 
     @Test
