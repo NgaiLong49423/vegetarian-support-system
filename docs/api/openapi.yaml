@@ -6,6 +6,236 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 paths:
+  /api/v1/shopping-lists/{listId}/recipes/{recipeId}/servings:
+    put:
+      tags:
+      - shopping-list-controller
+      summary: Change grouped servings of a recipe in one shopping list
+      description: "Changes the combined servings for all occurrences of one recipe\
+        \ in this checklist, recalculates only their linked ingredients, and leaves\
+        \ the meal plan and recipe post unchanged."
+      operationId: updateShoppingRecipeServings
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateShoppingRecipeSourceServingsRequest"
+        required: true
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: Updated shopping list
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ShoppingListResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/shopping-lists/{listId}/recipe-sources/{sourceId}/servings:
+    put:
+      tags:
+      - shopping-list-controller
+      summary: Change recipe servings in one shopping list
+      description: Changes only the selected shopping-list recipe source and recalculates
+        linked quantities; the meal plan and recipe post are not changed.
+      operationId: updateShoppingRecipeSourceServings
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: sourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateShoppingRecipeSourceServingsRequest"
+        required: true
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: Updated shopping list
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ShoppingListResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/shopping-lists/{listId}/manual-sources/{sourceId}:
+    put:
+      tags:
+      - shopping-list-controller
+      summary: Edit a manually added amount in a shopping list
+      operationId: updateManualShoppingSource
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: sourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateShoppingItemRequest"
+        required: true
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: The recalculated item.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ShoppingListItemResponse"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - shopping-list-controller
+      summary: Remove one manually added amount from a merged item
+      operationId: deleteManualShoppingSource
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: sourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "204":
+          description: The manual addition was removed.
+      security:
+      - bearerAuth: []
   /api/v1/shopping-lists/{listId}/items/{itemId}:
     put:
       tags:
@@ -1565,6 +1795,54 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
+  /api/v1/admin/ingredients/{ingredientId}/volume-conversion:
+    put:
+      tags:
+      - admin-catalog-controller
+      operationId: saveVolumeConversions
+      parameters:
+      - name: ingredientId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VolumeConversionSaveRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListConversionResponse"
         "400":
           description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
             \ its rules; details in `errors`."
@@ -4641,6 +4919,54 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/admin/ingredients/{ingredientId}/volume-conversion/status:
+    patch:
+      tags:
+      - admin-catalog-controller
+      operationId: setVolumeConversionStatus
+      parameters:
+      - name: ingredientId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CatalogStatusUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListConversionResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "UNAUTHENTICATED: missing, invalid or expired access token."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "ACCOUNT_LOCKED for a locked account, or the role may not use\
+            \ this operation."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/admin/ingredients/{ingredientId}/unit-conversions/{unitId}/status:
     patch:
       tags:
@@ -5926,6 +6252,36 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /api/v1/ingredients/{ingredientId}/units:
+    get:
+      tags:
+      - public-ingredient-browse-controller
+      summary: List recipe units supported by an active ingredient
+      operationId: units
+      parameters:
+      - name: ingredientId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          exclusiveMinimum: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IngredientUnitOptionResponse"
+        "400":
+          description: "VALIDATION_FAILED: malformed body or a field/parameter outside\
+            \ its rules; details in `errors`."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/ingredients/groups:
     get:
       tags:
@@ -6676,21 +7032,73 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/shopping-lists/{listId}/recipes/{recipeId}:
+    delete:
+      tags:
+      - shopping-list-controller
+      summary: Remove a recipe and its contributions from one shopping list
+      description: Removes all complete occurrences of the recipe from the owned checklist.
+        Recipe posts and meal-plan entries are unchanged; ingredient items are recalculated
+        from their remaining sources and removed when no sources remain.
+      operationId: removeShoppingRecipe
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: recipeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: "Invalid ID, pagination or payload."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: A valid access token is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: An active Member account is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: List/item does not exist or does not belong to the current
+            Member/list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: The updated checklist.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ShoppingListResponse"
+      security:
+      - bearerAuth: []
 components:
   schemas:
-    UpdateShoppingItemRequest:
+    UpdateShoppingRecipeSourceServingsRequest:
       type: object
       properties:
-        quantity:
+        servings:
           type: number
-          minimum: 0
-        unitId:
-          type: integer
-          format: int32
-          minimum: 0
+          maximum: 500.0
+          minimum: 0.5
       required:
-      - quantity
-      - unitId
+      - servings
     ProblemDetail:
       type: object
       description: "RFC 9457 problem detail; clients branch on `status` and `code`,\
@@ -6750,15 +7158,98 @@ components:
           type: string
         bought:
           type: boolean
+        requiredQuantity:
+          type:
+          - number
+          - "null"
+          description: "Minimum amount required by recipe sources, expressed in the\
+            \ item's display unit."
+        requiredUnitCode:
+          type:
+          - string
+          - "null"
+        manualQuantity:
+          type:
+          - number
+          - "null"
+          description: "User-added amount, expressed in the item's display unit when\
+            \ safely convertible."
+        manualUnitCode:
+          type:
+          - string
+          - "null"
         sources:
           type: array
           items:
             $ref: "#/components/schemas/ShoppingRecipeSource"
+    ShoppingListRecipeSource:
+      type: object
+      properties:
+        sourceId:
+          type: string
+          format: uuid
+        recipeId:
+          type: integer
+          format: int64
+        title:
+          type:
+          - string
+          - "null"
+        available:
+          type: boolean
+        coverUrl:
+          type:
+          - string
+          - "null"
+        servings:
+          type: number
+        occurrenceCount:
+          type: integer
+          format: int32
+        mealDate:
+          type: string
+          format: date
+        mealType:
+          type: string
+    ShoppingListResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingListItemResponse"
+        recipeSources:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingListRecipeSource"
     ShoppingRecipeSource:
       type: object
       properties:
+        sourceKind:
+          type: string
+        sourceId:
+          type: string
+          format: uuid
         recipeId:
-          type: integer
+          type:
+          - integer
+          - "null"
+          format: int64
+        ingredientId:
+          type:
+          - integer
+          - "null"
           format: int64
         title:
           type:
@@ -6773,6 +7264,25 @@ components:
           format: int32
         originalUnitCode:
           type: string
+        servings:
+          type:
+          - number
+          - "null"
+          description: Servings assigned to this occurrence; null when legacy data
+            has no serving count.
+    UpdateShoppingItemRequest:
+      type: object
+      properties:
+        quantity:
+          type: number
+          minimum: 0
+        unitId:
+          type: integer
+          format: int32
+          minimum: 0
+      required:
+      - quantity
+      - unitId
     Ingredient:
       type: object
       properties:
@@ -7677,17 +8187,17 @@ components:
           type: boolean
         nutrition:
           $ref: "#/components/schemas/IngredientNutritionResponse"
-    ConversionSaveRequest:
+    VolumeConversionSaveRequest:
       type: object
       properties:
-        gramsPerUnit:
+        gramsPerMl:
           type: number
-          minimum: 0.01
+          minimum: 0.000000001
         approximate:
           type: boolean
       required:
-      - gramsPerUnit
-    ApiResponseConversionResponse:
+      - gramsPerMl
+    ApiResponseListConversionResponse:
       type: object
       properties:
         success:
@@ -7695,7 +8205,9 @@ components:
         message:
           type: string
         data:
-          $ref: "#/components/schemas/ConversionResponse"
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversionResponse"
         timestamp:
           type: string
           format: date-time
@@ -7714,6 +8226,28 @@ components:
           type: boolean
         active:
           type: boolean
+    ConversionSaveRequest:
+      type: object
+      properties:
+        gramsPerUnit:
+          type: number
+          minimum: 0.000000001
+        approximate:
+          type: boolean
+      required:
+      - gramsPerUnit
+    ApiResponseConversionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/ConversionResponse"
+        timestamp:
+          type: string
+          format: date-time
     CheckoutRequest:
       type: object
       properties:
@@ -7748,24 +8282,6 @@ components:
           minLength: 0
       required:
       - name
-    ShoppingListResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        name:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/ShoppingListItemResponse"
     AddRecipeToShoppingListRequest:
       type: object
       properties:
@@ -7812,6 +8328,10 @@ components:
         unitId:
           type: integer
           format: int32
+          minimum: 0
+        ingredientId:
+          type: integer
+          format: int64
           minimum: 0
       required:
       - name
@@ -8354,14 +8874,14 @@ components:
           type: string
         paymentLinkId:
           type: string
+        paymentSuccess:
+          type: boolean
         orderCode:
           type: integer
           format: int64
         amount:
           type: integer
           format: int32
-        paymentSuccess:
-          type: boolean
     ConfirmNutritionEligibilityRequest:
       type: object
       properties:
@@ -9548,6 +10068,26 @@ components:
           $ref: "#/components/schemas/IngredientNutritionResponse"
           description: Nutrition per 100 g. Null means unknown; zero is a known zero
             value.
+    IngredientUnitOptionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        code:
+          type: string
+        name:
+          type: string
+        dimension:
+          type: string
+          enum:
+          - MASS
+          - VOLUME
+          - COUNT
+        gramsPerUnit:
+          type: number
+        approximate:
+          type: boolean
     PublicIngredientGroupResponse:
       type: object
       properties:
@@ -9861,20 +10401,6 @@ components:
           type: array
           items:
             type: string
-    ApiResponseListConversionResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        data:
-          type: array
-          items:
-            $ref: "#/components/schemas/ConversionResponse"
-        timestamp:
-          type: string
-          format: date-time
     ApiResponseVoid:
       type: object
       properties:
