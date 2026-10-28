@@ -105,7 +105,7 @@ test('FR-53 browser creates selected-day and weekly checklists; CRUD and bought 
     await page.getByRole('button', { name: 'Tiếp tục', exact: true }).click()
     await page.getByRole('button', { name: 'Xác nhận thay đổi', exact: true }).click()
     await expect(page.getByText('3 cuộn', { exact: true })).toBeVisible()
-    expect(sql(`SELECT CAST(quantity AS VARCHAR(20)) FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=${listId} AND custom_ingredient_name=N'Khăn giấy lau bếp'`)).toBe('3.00')
+    expect(sql(`SELECT CAST(quantity AS VARCHAR(20)) FROM [SHOPPING_LIST_ITEM] WHERE shopping_list_id=${listId} AND custom_ingredient_name=N'Khăn giấy lau bếp'`)).toBe('3.000000')
     await check.click(); await expect(check).toHaveAttribute('aria-pressed', 'false')
     await page.getByRole('button', { name: `Đánh dấu ${ingredientName} g`, exact: true }).click()
     await page.locator('summary[aria-label="Thao tác khác"]').click()

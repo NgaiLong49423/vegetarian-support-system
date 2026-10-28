@@ -180,6 +180,37 @@ class ShoppingListServiceTest {
         assertThat(item.getUnitId()).isEqualTo(7); assertThat(list.getUpdatedAt()).isNull();
     }
 
+    @Test void editingTotalKeepsRecipeMinimumAndReducesUnknownBucketBeforeManualAmount() {
+        mutation();
+        item.setIngredientId(8L); item.setUnitId(1); item.setQuantity(new BigDecimal("70")); item.setBought(true);
+        when(items.findByIdAndShoppingListId(3L, 10L)).thenReturn(Optional.of(item));
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(
+                new IngredientUnitOptionResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, false)));
+        var required = contribution("RECIPE", 3L, "40"); required.setRecipeId(9L);
+        var unknownA = contribution("UNKNOWN", 3L, "10"); unknownA.setRecipeId(9L);
+        var unknownB = contribution("UNKNOWN", 3L, "10"); unknownB.setRecipeId(9L);
+        var manual = contribution("MANUAL", 3L, "10");
+        var rows = new ArrayList<>(List.of(required, unknownA, unknownB, manual));
+        when(contributions.findByShoppingListIdOrderByIdAsc(10L)).thenAnswer(call -> rows);
+        doAnswer(call -> { rows.removeAll(call.getArgument(0)); return null; }).when(contributions).deleteAll(anyList());
+        when(recipes.findShoppingReferences(List.of(9L))).thenReturn(Map.of(9L,
+                new tech.mamxanh.recipe.service.RecipeService.ShoppingReference(9L, "Món đậu", true, null)));
+        when(catalog.findIngredientReferences(List.of(8L))).thenReturn(List.of(
+                new IngredientResponse(8L, "Đậu phụ", "Đậu", null, null, null, false, true)));
+        when(catalog.findUnitReferences(List.of(1))).thenReturn(List.of(
+                new UnitResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, true)));
+        when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregate(call.getArgument(0)));
+
+        var result = service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("45"), 1));
+
+        assertThat(item.getQuantity()).isEqualByComparingTo("45");
+        assertThat(rows).containsExactly(required, manual);
+        assertThat(manual.getQuantity()).isEqualByComparingTo("5");
+        assertThat(result.requiredQuantity()).isEqualByComparingTo("40");
+        assertThat(result.manualQuantity()).isEqualByComparingTo("5");
+        assertThat(item.isBought()).isTrue();
+    }
+
     @Test void explicitBoughtAssignmentIsIdempotentAndDoesNotOverwriteQuantity() {
         mutation(); existingItem(); references();
         service.setBought(10, 3, true);
@@ -213,5 +244,24 @@ class ShoppingListServiceTest {
         assertThatThrownBy(() -> service.get(0)).isInstanceOf(AppException.class);
         mutation(); assertThatThrownBy(() -> service.delete(10, -1)).isInstanceOf(AppException.class);
         verifyNoInteractions(items);
+    }
+
+    private static ShoppingRecipeContributionEntity contribution(String kind, long itemId, String quantity) {
+        var row = new ShoppingRecipeContributionEntity();
+        row.setShoppingListId(10L); row.setShoppingListItemId(itemId); row.setSourceKind(kind);
+        row.setSourceId(UUID.randomUUID()); row.setIngredientId(8L); row.setUnitId(1);
+        row.setQuantity(new BigDecimal(quantity)); row.setExpectedIngredientCount(1);
+        if ("RECIPE".equals(kind) || "UNKNOWN".equals(kind)) row.setRecipeId(9L);
+        return row;
+    }
+
+    private static tech.mamxanh.shopping.dto.response.ShoppingAggregationResult aggregate(
+            List<ShoppingAggregationLine> lines) {
+        BigDecimal quantity = lines.stream().map(ShoppingAggregationLine::quantity).reduce(BigDecimal.ZERO, BigDecimal::add);
+        var indices = java.util.stream.IntStream.range(0, lines.size()).boxed().toList();
+        return new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult(List.of(
+                new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Group("Đậu", List.of(
+                        new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Item(
+                                8L, "Đậu phụ", quantity, 1, "g", "gram", false, indices)))), List.of());
     }
 }
