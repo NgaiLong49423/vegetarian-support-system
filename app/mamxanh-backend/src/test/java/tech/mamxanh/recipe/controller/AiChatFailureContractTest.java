@@ -33,7 +33,8 @@ import tech.mamxanh.recipe.service.*;
 import tools.jackson.databind.json.JsonMapper;
 
 /** Real DTO validation and chat orchestration through HTTP; provider responses are controlled. */
-@WebMvcTest(AiChatController.class)
+@WebMvcTest(value = AiChatController.class, properties = "logging.level.org.springframework.web=DEBUG")
+@ExtendWith(OutputCaptureExtension.class)
 @ActiveProfiles("test")
 @Import({SecurityConfig.class, ClockConfig.class, GuestChatRateLimiter.class,
         GlobalExceptionHandler.class, AiChatService.class})
@@ -49,7 +50,6 @@ class AiChatFailureContractTest {
     @MockitoBean tech.mamxanh.subscription.service.SubscriptionEntitlementService entitlements;
 
     @Test
-    @ExtendWith(OutputCaptureExtension.class)
     void mvcDebugLoggingHidesPrivatePayloadsButHttpStillReturnsThem(CapturedOutput output) throws Exception {
         when(users.findAuthenticatedUserId()).thenReturn(Optional.empty());
         when(ai.answerChat(anyString(), anyString()))

@@ -29,7 +29,8 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
     private static final String EXPERT = "issue45-expert@test.local";
     private static final String SUPPORTED = "Issue45 đậu hũ có dinh dưỡng";
     private static final String UNSUPPORTED = "Issue45 nấm tràm chưa có dinh dưỡng";
-    private static final String WEEK = "2026-10-19";
+    // Same current week as MutableClock.DEFAULT_START, including Vietnam-local scheduling rules.
+    private static final String WEEK = "2026-09-28";
 
     @Autowired private JdbcTemplate jdbc;
 
@@ -43,9 +44,9 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("""
                 INSERT INTO [USER] (email, display_name, role, account_status, email_verified, date_of_birth,
                     biological_sex, height_cm, weight_kg, activity_level, health_data_consent, health_data_consent_at,
-                    nutrition_eligibility_status, nutrition_eligibility_confirmed_at)
+                    nutrition_eligibility_status, nutrition_eligibility_confirmed_at, nutrition_bmi)
                 VALUES (?, N'Issue 45 Member', 'CUSTOMER', 'ACTIVE', 1, '1995-05-05', 'FEMALE', 160.0, 55.0,
-                    'LIGHTLY_ACTIVE', 1, SYSUTCDATETIME(), 'ELIGIBLE', SYSUTCDATETIME())
+                    'LIGHTLY_ACTIVE', 1, SYSUTCDATETIME(), 'ELIGIBLE', SYSUTCDATETIME(), 21.484375)
                 """, MEMBER);
         memberId = jdbc.queryForObject("SELECT user_id FROM [USER] WHERE email = ?", Long.class, MEMBER);
         LocalDateTime now = LocalDateTime.now(clock);

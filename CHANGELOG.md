@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.110.1
+> **Version:** v2.111.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-28
 > **Status:** Active
@@ -8,6 +8,27 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-28 — Make FR-10 Integration Tests Independent of Local Setup ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
+
+**Status:** Working tree — not committed.
+
+**Scope:** Correct integration-test setup and teardown exposed by the first full CI run after synchronizing FR-10 with develop. Production behavior and coverage thresholds are unchanged.
+
+### Added
+
+- None.
+
+### Changed
+
+- Explicitly enable Spring MVC DEBUG logging and class-scoped output capture for the chat payload-redaction test, so its assertions run without local logging settings.
+- Populate the persisted BMI introduced by develop when creating the complete nutrition fixture for AI menu integration tests.
+- Support live zoned views in the deterministic test clock and align the nutrition-menu fixture with its current week so Vietnam-local scheduling rules can execute in integration tests.
+
+### Fixed
+
+- Allow the real-stack AI entitlement test to use CI-provided environment variables when the ignored Backend `.env` file is absent, matching the existing Compose integration convention.
+- Run scoped cleanup both before and after recipe creation, media authorization, management, viewing, discovery and saved-recipe integration tests so their final fixtures cannot break later Auth tests through foreign keys.
 
 ## 2026-10-27 — Integrate FR-10 with the Current Develop Baseline ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
 

@@ -33,6 +33,12 @@ public class MutableClock extends Clock {
 
     @Override
     public Clock withZone(ZoneId zone) {
-        throw new UnsupportedOperationException("MutableClock is fixed to UTC");
+        java.util.Objects.requireNonNull(zone, "zone");
+        if (getZone().equals(zone)) return this;
+        return new Clock() {
+            @Override public Instant instant() { return MutableClock.this.instant(); }
+            @Override public ZoneId getZone() { return zone; }
+            @Override public Clock withZone(ZoneId other) { return MutableClock.this.withZone(other); }
+        };
     }
 }

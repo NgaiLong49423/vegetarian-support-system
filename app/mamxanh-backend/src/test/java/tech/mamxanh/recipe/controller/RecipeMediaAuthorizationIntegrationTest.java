@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,8 +42,7 @@ class RecipeMediaAuthorizationIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void prepareDatabaseFixtures() {
-        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue11-%@test.local')");
-        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue11-%@test.local'");
+        removeFixtures();
 
         ownerId = insertUser("issue11-owner@test.local", "EXPERT");
         otherExpertId = insertUser("issue11-other@test.local", "EXPERT");
@@ -53,6 +53,12 @@ class RecipeMediaAuthorizationIntegrationTest extends AbstractIntegrationTest {
                 recipeId, ORIGINAL_COVER);
         jdbcTemplate.update("INSERT INTO [RECIPE_MEDIA] (recipe_id, blob_url, mime_type, display_order, is_cover) VALUES (?, ?, 'image/jpeg', 1, 1)",
                 hiddenRecipeId, ORIGINAL_COVER);
+    }
+
+    @AfterEach
+    void removeFixtures() {
+        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue11-%@test.local')");
+        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue11-%@test.local'");
     }
 
     @Test

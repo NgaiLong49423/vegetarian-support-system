@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
@@ -11,7 +12,8 @@ const quote = (value: string) => `N'${value.replaceAll("'", "''")}'`;
 test.use({ trace: 'off' }); // Real session tokens must never be persisted in a trace.
 
 function sql(query: string) {
-  return execFileSync('docker', ['compose', '-p', project, '--env-file', path.join(root, 'app/mamxanh-backend/.env'),
+  const envFile = path.join(root, 'app/mamxanh-backend/.env');
+  return execFileSync('docker', ['compose', '-p', project, ...(existsSync(envFile) ? ['--env-file', envFile] : []),
     '-f', path.join(root, 'docker-compose.yml'), 'exec', '-T', 'sqlserver', '/opt/mssql-tools18/bin/sqlcmd',
     '-S', 'sqlserver', '-U', 'sa', '-C', '-d', 'MamXanhDB', '-h', '-1', '-W', '-b', '-Q',
     `SET QUOTED_IDENTIFIER ON; SET NOCOUNT ON; ${query}`], { cwd: root, encoding: 'utf8', timeout: 30_000 }).trim();
