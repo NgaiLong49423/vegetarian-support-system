@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,8 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void prepareFixtures() {
         removeFixtures();
+        clock.reset();
+        clock.advance(Duration.ofDays(21));
         jdbc.update("""
                 INSERT INTO [USER] (email, display_name, role, account_status, email_verified, date_of_birth,
                     biological_sex, height_cm, weight_kg, activity_level, health_data_consent, health_data_consent_at,
