@@ -39,7 +39,7 @@ for (const timezoneId of ['UTC', 'America/Los_Angeles', 'Asia/Ho_Chi_Minh']) {
       await page.getByRole('combobox', { name: 'Nhóm nguyên liệu' }).last().selectOption('Trái cây');
       await page.getByRole('combobox', { name: 'Nguồn dữ liệu hoặc cách ước tính' }).fill('USDA FoodData Central');
       await page.getByRole('button', { name: 'Thêm nguyên liệu', exact: true }).click();
-      await expect(page.getByRole('status')).toContainText('Đã thêm nguyên liệu');
+      await expect(page.getByRole('status').filter({ hasText: 'Đã thêm nguyên liệu' })).toBeVisible();
       expect(created.map((body) => body.referenceDate)).toEqual(['2026-10-26']);
     });
   });

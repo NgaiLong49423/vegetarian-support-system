@@ -358,15 +358,17 @@ class IngredientCatalogServiceTest {
         assertThat(results).singleElement().extracting(response -> response.name()).isEqualTo("Đậu phụ");
     }
 
-    @Test void listsAllIngredientsForNullOrBlankQueryAndSortsByName() {
+    @Test void listsAllIngredientsForNullOrBlankQueryAndSortsByCreationTimeDescending() {
         IngredientEntity banana = new IngredientEntity("Chuối", "Trái cây", "USDA", null, LocalDate.now());
         IngredientEntity tofu = new IngredientEntity("Đậu phụ", "Đậu hạt", "USDA", null, LocalDate.now());
+        org.springframework.test.util.ReflectionTestUtils.setField(banana, "createdAt", LocalDate.now().atStartOfDay());
+        org.springframework.test.util.ReflectionTestUtils.setField(tofu, "createdAt", LocalDate.now().atTime(12, 0));
         when(ingredientRepository.findAll()).thenReturn(List.of(banana, tofu));
 
         assertThat(service.listIngredients(null)).extracting(response -> response.name())
-                .containsExactly("Chuối", "Đậu phụ");
+                .containsExactly("Đậu phụ", "Chuối");
         assertThat(service.listIngredients("  ")).extracting(response -> response.name())
-                .containsExactly("Chuối", "Đậu phụ");
+                .containsExactly("Đậu phụ", "Chuối");
     }
 
     @Test void searchesActiveIngredientsByGroupAndHandlesEmptyAndMissingQueries() {
@@ -585,7 +587,7 @@ class IngredientCatalogServiceTest {
     @Test void rejectsHardDeleteAndComparesConversionIdsByBothKeys() {
         assertThatThrownBy(() -> service.rejectHardDelete("nguyên liệu"))
                 .isInstanceOf(ApiException.class)
-                .hasMessage("Không hỗ trợ xóa vĩnh viễn nguyên liệu; hãy chuyển sang trạng thái ngừng sử dụng.");
+                .hasMessage("Không hỗ trợ xóa vĩnh viễn nguyên liệu. Hãy chuyển sang trạng thái ngừng sử dụng.");
 
         IngredientUnitConversionId id = new IngredientUnitConversionId(1L, 2);
         assertThat(id).isEqualTo(new IngredientUnitConversionId(1L, 2))

@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.AfterEach;
@@ -27,6 +28,8 @@ import tech.mamxanh.AbstractIntegrationTest;
 class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
     private static final String MEMBER = "issue45-member@test.local";
     private static final String EXPERT = "issue45-expert@test.local";
+    private static final String COMPLETE_RECIPE = "Issue45 đậu hũ hấp";
+    private static final String INCOMPLETE_RECIPE = "Issue45 nấm tràm xào";
     private static final String SUPPORTED = "Issue45 đậu hũ có dinh dưỡng";
     private static final String UNSUPPORTED = "Issue45 nấm tràm chưa có dinh dưỡng";
     private static final String WEEK = "2026-10-19";
@@ -40,12 +43,14 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void prepareFixtures() {
         removeFixtures();
+        clock.reset();
+        clock.advance(Duration.ofDays(21));
         jdbc.update("""
                 INSERT INTO [USER] (email, display_name, role, account_status, email_verified, date_of_birth,
                     biological_sex, height_cm, weight_kg, activity_level, health_data_consent, health_data_consent_at,
-                    nutrition_eligibility_status, nutrition_eligibility_confirmed_at)
+                    nutrition_bmi, nutrition_eligibility_status, nutrition_eligibility_confirmed_at)
                 VALUES (?, N'Issue 45 Member', 'CUSTOMER', 'ACTIVE', 1, '1995-05-05', 'FEMALE', 160.0, 55.0,
-                    'LIGHTLY_ACTIVE', 1, SYSUTCDATETIME(), 'ELIGIBLE', SYSUTCDATETIME())
+                    'LIGHTLY_ACTIVE', 1, SYSUTCDATETIME(), 21.484375, 'ELIGIBLE', SYSUTCDATETIME())
                 """, MEMBER);
         memberId = jdbc.queryForObject("SELECT user_id FROM [USER] WHERE email = ?", Long.class, MEMBER);
         LocalDateTime now = LocalDateTime.now(clock);
@@ -66,8 +71,8 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
                 """, supportedId);
         long unsupportedId = insertIngredient(UNSUPPORTED);
         jdbc.update("UPDATE [INGREDIENT] SET nutrition_supported = 0 WHERE ingredient_id = ?", unsupportedId);
-        completeRecipe = insertRecipe(expertId, "Issue45 đậu hũ hấp", gramUnitId, supportedId);
-        incompleteRecipe = insertRecipe(expertId, "Issue45 nấm tràm xào", gramUnitId, supportedId, unsupportedId);
+        completeRecipe = insertRecipe(expertId, COMPLETE_RECIPE, gramUnitId, supportedId);
+        incompleteRecipe = insertRecipe(expertId, INCOMPLETE_RECIPE, gramUnitId, supportedId, unsupportedId);
     }
 
     @AfterEach
@@ -76,9 +81,13 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("DELETE FROM [MEAL_PLAN] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email = ?)", MEMBER);
         jdbc.update("DELETE FROM [SUBSCRIPTION] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email = ?)", MEMBER);
         jdbc.update("DELETE FROM [RECIPE_INGREDIENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = ?))", EXPERT);
+        jdbc.update("DELETE FROM [RECIPE_INGREDIENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE title IN (?, ?))",
+                COMPLETE_RECIPE, INCOMPLETE_RECIPE);
         jdbc.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = ?)", EXPERT);
+        jdbc.update("DELETE FROM [RECIPE_POST] WHERE title IN (?, ?)", COMPLETE_RECIPE, INCOMPLETE_RECIPE);
         jdbc.update("DELETE FROM [INGREDIENT] WHERE name IN (?, ?)", SUPPORTED, UNSUPPORTED);
         jdbc.update("DELETE FROM [USER] WHERE email IN (?, ?)", MEMBER, EXPERT);
+        clock.reset();
     }
 
     @Test
