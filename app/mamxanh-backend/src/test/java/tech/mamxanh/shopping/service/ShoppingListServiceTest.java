@@ -137,6 +137,34 @@ class ShoppingListServiceTest {
         verify(items).saveAndFlush(argThat(i -> i.getShoppingListId() == 10 && i.getIngredientId() == null));
     }
 
+    @Test void addsExactCatalogIngredientByMergingIntoItsExistingChecklistItem() {
+        mutation(); references();
+        var ingredient = new IngredientResponse(8L, "Đậu phụ", "Đậu", null, null, null, false, true);
+        when(catalog.findActiveIngredientsByIds(List.of(8L))).thenReturn(List.of(ingredient));
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(new IngredientUnitOptionResponse(
+                7, "cuộn", "cuộn", MeasurementDimension.COUNT, BigDecimal.ONE, false)));
+        item.setIngredientId(8L);
+        when(items.findByShoppingListIdOrderByIdAsc(10L)).thenReturn(List.of(item));
+        var sourceRows = new ArrayList<ShoppingRecipeContributionEntity>();
+        when(contributions.findByShoppingListIdOrderByIdAsc(10L)).thenAnswer(call -> sourceRows);
+        doAnswer(call -> { sourceRows.add(call.getArgument(0)); return call.getArgument(0); })
+                .when(contributions).saveAndFlush(any());
+        when(catalog.findIngredientReferences(List.of(8L))).thenReturn(List.of(ingredient));
+        when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregate(call.getArgument(0)));
+
+        var result = service.add(10, new CreateShoppingItemRequest("Đậu phụ", new BigDecimal("3"), 7, 8L));
+
+        assertThat(result.id()).isEqualTo(3L);
+        assertThat(result.quantity()).isEqualByComparingTo("5");
+        assertThat(result.ingredientId()).isEqualTo(8L);
+        verify(items).save(item);
+        assertThat(sourceRows).singleElement().satisfies(source -> {
+            assertThat(source.getSourceKind()).isEqualTo("MANUAL");
+            assertThat(source.getShoppingListItemId()).isEqualTo(3L);
+            assertThat(source.getQuantity()).isEqualByComparingTo("3");
+        });
+    }
+
     @ParameterizedTest @ValueSource(strings = {"", "   ", "\u00a0\u00a0", "<script>alert(1)</script>", "Tên\nẩn"})
     void rejectsBlankOrMarkupAndControlCharacters(String name) {
         mutation();
@@ -209,6 +237,27 @@ class ShoppingListServiceTest {
         assertThat(result.requiredQuantity()).isEqualByComparingTo("40");
         assertThat(result.manualQuantity()).isEqualByComparingTo("5");
         assertThat(item.isBought()).isTrue();
+    }
+
+    @Test void editingAndRemovingStandaloneManualSourceRecalculatesOrDeletesItsChecklistRow() {
+        mutation(); references();
+        var customItem = new ShoppingListItemEntity(); customItem.setId(3L); customItem.setShoppingListId(10L);
+        customItem.setCustomIngredientName("Khăn giấy"); customItem.setUnitId(7); customItem.setQuantity(new BigDecimal("2"));
+        var manual = contribution("MANUAL", 3L, "2"); manual.setUnitId(7); manual.setIngredientId(null);
+        var rows = new ArrayList<>(List.of(manual));
+        when(contributions.findByShoppingListIdOrderByIdAsc(10L)).thenAnswer(call -> rows);
+        when(items.findByIdAndShoppingListId(3L, 10L)).thenReturn(Optional.of(customItem));
+        doAnswer(call -> { rows.remove(call.getArgument(0)); return null; }).when(contributions).delete(manual);
+
+        var updated = service.updateManualSource(10, manual.getSourceId(),
+                new UpdateShoppingItemRequest(new BigDecimal("3"), 7));
+        assertThat(updated.quantity()).isEqualByComparingTo("3");
+        assertThat(customItem.getQuantity()).isEqualByComparingTo("3");
+        assertThat(customItem.isBought()).isFalse();
+
+        service.deleteManualSource(10, manual.getSourceId());
+        verify(items).deleteById(3L);
+        assertThat(list.getUpdatedAt()).isEqualTo(LocalDateTime.now(clock));
     }
 
     @Test void explicitBoughtAssignmentIsIdempotentAndDoesNotOverwriteQuantity() {

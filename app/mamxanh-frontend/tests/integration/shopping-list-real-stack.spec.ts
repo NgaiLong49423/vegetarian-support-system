@@ -137,7 +137,9 @@ test('FR-53 browser creates selected-day and weekly checklists; CRUD and bought 
     const personalId = (await personal.json()).shoppingList.id as number
     expect(personalId).not.toBe(listId)
     await expect(page).toHaveURL(new RegExp(`listId=${personalId}$`))
-    await expect(page.getByLabel(`Nguồn của ${ingredientName}`).first()).toContainText('600 g lúc thêm')
+    await page.getByRole('button', { name: `Xem món đã dùng ${ingredientName}` }).click()
+    await expect(page.getByRole('dialog', { name: `Chi tiết ${ingredientName}` })).toContainText('600 g lúc thêm')
+    await page.getByRole('button', { name: 'Đóng' }).click()
     expect(sql(`SELECT name FROM [SHOPPING_LIST] WHERE shopping_list_id=${personalId}`)).toBe(`FR53 danh sách ${marker}`)
     await page.goto(`/kham-pha?q=${encodeURIComponent(marker)}`)
     const recipeOneTitle = `FR53 ${marker} 1`

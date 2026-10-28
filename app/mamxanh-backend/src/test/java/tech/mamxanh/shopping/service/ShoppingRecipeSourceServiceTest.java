@@ -92,6 +92,22 @@ class ShoppingRecipeSourceServiceTest {
     }
 
     @Test
+    void updateServingsNoOpReturnsCurrentListAndRejectsUnsafeUnitChanges() {
+        UUID sourceId = UUID.randomUUID();
+        var recipe = source(sourceId, 3L, "10", "2");
+        owned();
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(recipe));
+        when(checklists.get(7L)).thenReturn(emptyResponse());
+        assertThat(service.updateServings(7, sourceId, request("2.0"))).isNotNull();
+        verify(contributions, never()).saveAll(anyList());
+
+        var item = item(3L, "10");
+        when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(item));
+        when(aggregation.aggregate(anyList())).thenReturn(aggregate(1, "10"), aggregate(2, "10"));
+        assertThatThrownBy(() -> service.updateServings(7, sourceId, request("3"))).isInstanceOf(AppException.class);
+    }
+
+    @Test
     void updateRecipeServingsDistributesAcrossOccurrencesAndRejectsIncompleteOrInvalidRequests() {
         owned();
         assertThatThrownBy(() -> service.updateRecipeServings(7, 0, request("2"))).isInstanceOf(AppException.class);
@@ -113,6 +129,42 @@ class ShoppingRecipeSourceServiceTest {
         service.updateRecipeServings(7, 9, request("4.2"));
         assertThat(a.getServings().add(b.getServings())).isEqualByComparingTo("4.2");
         assertThat(a.getServings()).isGreaterThanOrEqualTo(new BigDecimal("0.5"));
+    }
+
+    @Test
+    void updateRecipeServingsKeepsEveryOccurrenceAtHalfServingWhenProportionalShareWouldBeSmaller() {
+        owned();
+        UUID first = UUID.randomUUID(), second = UUID.randomUUID();
+        var small = source(first, 3L, "5", "0.5");
+        var large = source(second, 4L, "95", "9.5");
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(small, large));
+        when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(item(3L, "5"), item(4L, "95")));
+        when(aggregation.aggregate(anyList())).thenReturn(aggregate(1,"5"), aggregate(1,"95"),
+                aggregate(1,"5"), aggregate(1,"6"));
+        when(checklists.get(7L)).thenReturn(emptyResponse());
+
+        service.updateRecipeServings(7, 9, request("1.1"));
+
+        assertThat(small.getServings()).isEqualByComparingTo("0.5");
+        assertThat(large.getServings()).isEqualByComparingTo("0.6");
+    }
+
+    @Test
+    void updateRecipeServingsRejectsInconsistentIngredientSnapshots() {
+        owned();
+        UUID sourceId = UUID.randomUUID();
+        var missingExpected = source(sourceId, 3L, "10", "2"); missingExpected.setExpectedIngredientCount(null);
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(missingExpected));
+        assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("3"))).isInstanceOf(AppException.class);
+
+        var missingItem = source(sourceId, 3L, "10", "2"); missingItem.setExpectedIngredientCount(1);
+        missingItem.setShoppingListItemId(null);
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(missingItem));
+        assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("3"))).isInstanceOf(AppException.class);
+
+        var invalidServings = source(sourceId, 3L, "10", "0");
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(invalidServings));
+        assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("3"))).isInstanceOf(AppException.class);
     }
 
     @Test
@@ -162,6 +214,26 @@ class ShoppingRecipeSourceServiceTest {
         when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(recipe), List.of(manual));
         when(items.findByIdAndShoppingListId(3L,7L)).thenReturn(Optional.of(item(3L,"11")));
         when(aggregation.aggregate(anyList())).thenReturn(new ShoppingAggregationResult(List.of(), List.of()));
+        assertThatThrownBy(() -> service.removeRecipe(7, 9)).isInstanceOf(AppException.class);
+    }
+
+    @Test
+    void removeRecipeRejectsMissingItemAndIncompatibleRemainingAmounts() {
+        owned();
+        UUID sourceId = UUID.randomUUID();
+        var recipe = source(sourceId, 3L, "10", "2"); recipe.setExpectedIngredientCount(1);
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(recipe), List.of());
+        when(items.findByIdAndShoppingListId(3L, 7L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.removeRecipe(7, 9)).isInstanceOf(AppException.class);
+
+        var recipe2 = source(sourceId, 3L, "10", "2"); recipe2.setExpectedIngredientCount(1);
+        var leftover = new ShoppingRecipeContributionEntity(); leftover.setShoppingListItemId(3L);
+        leftover.setIngredientId(4L); leftover.setUnitId(1); leftover.setQuantity(BigDecimal.ONE);
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(recipe2), List.of(leftover));
+        when(items.findByIdAndShoppingListId(3L, 7L)).thenReturn(Optional.of(item(3L, "11")));
+        var incompatible = new ShoppingAggregationResult(List.of(new ShoppingAggregationResult.Group("A", List.of(
+                new ShoppingAggregationResult.Item(4L, "A", BigDecimal.ONE, 1, "g", "gram", true)))), List.of());
+        when(aggregation.aggregate(anyList())).thenReturn(incompatible);
         assertThatThrownBy(() -> service.removeRecipe(7, 9)).isInstanceOf(AppException.class);
     }
 
