@@ -208,7 +208,7 @@ test('administrator filters the catalog through the paginated endpoint and reads
   });
 
   await page.goto('/quan-tri/danh-muc');
-  await page.getByLabel('Nhóm nguyên liệu').selectOption('Rau củ');
+  await page.getByLabel('Phân loại').selectOption('Rau củ');
   await page.getByLabel('Trạng thái danh mục').selectOption('true');
   await page.getByLabel('Hỗ trợ tính dinh dưỡng').selectOption('false');
   const filterResponse = page.waitForResponse((response) => {
@@ -237,10 +237,52 @@ test('administrator filters the catalog through the paginated endpoint and reads
   await page.getByRole('button', { name: 'Xem chi tiết Nấm bào ngư' }).click();
   await page.getByRole('button', { name: 'Đóng' }).click();
   await expect(page.getByRole('heading', { name: 'Chi tiết · Nấm bào ngư' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Xem công thức dùng Nấm bào ngư' }).click();
+  await page.getByRole('button', { name: 'Xem công thức có dùng Nấm bào ngư' }).click();
   await expect(page.getByText('Canh nấm rau củ', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Tắt' }).click();
-  await expect(page.getByText('Canh nấm rau củ', { exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Canh nấm rau củ' }).click();
+  await expect(page).toHaveURL('/cong-thuc/id/30');
+});
+
+test('automatic ingredient search keeps focus while a slow response loads', async ({ page }) => {
+  let releaseSearch!: () => void;
+  const searchGate = new Promise<void>((resolve) => { releaseSearch = resolve; });
+  const searchQueries: string[] = [];
+
+  await page.route('**/api/v1/admin/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.pathname.endsWith('/ingredients/options')) {
+      return route.fulfill({ json: { success: true, data: { groups: ['Rau củ'], sources: ['Nguồn kiểm thử'] } } });
+    }
+    if (url.pathname.endsWith('/ingredients/search') && request.method() === 'GET') {
+      const query = url.searchParams.get('query') ?? '';
+      searchQueries.push(query);
+      if (query) await searchGate;
+      const result = query ? { ...banana, id: 9, name: 'Bắp cải' } : banana;
+      return route.fulfill({ json: { success: true, data: {
+        content: [result], page: 0, size: 24, totalElements: 1, totalPages: 1,
+      } } });
+    }
+    if (url.pathname.endsWith('/ingredients') && request.method() === 'GET') {
+      return route.fulfill({ json: { success: true, data: [banana] } });
+    }
+    return route.fulfill({ status: 404, json: { detail: 'Not found' } });
+  });
+
+  await page.goto('/quan-tri/danh-muc');
+  const search = page.getByPlaceholder('Tìm tên nguyên liệu');
+  await search.focus();
+  await search.pressSequentially('bắp', { delay: 120 });
+  await expect.poll(() => searchQueries).toContain('bắp');
+  await expect(page.getByRole('status')).toContainText('Đang tải danh mục');
+  await expect(search).toBeFocused();
+
+  releaseSearch();
+  await expect(page.getByText('Bắp cải', { exact: true })).toBeVisible();
+  await expect(search).toBeFocused();
+  await search.pressSequentially(' cải', { delay: 80 });
+  await expect(search).toHaveValue('bắp cải');
+  await expect.poll(() => searchQueries.at(-1)).toBe('bắp cải');
 });
 
 test('ingredient image and group resolver handles all vegetarian groups and fallbacks', async ({ page }) => {

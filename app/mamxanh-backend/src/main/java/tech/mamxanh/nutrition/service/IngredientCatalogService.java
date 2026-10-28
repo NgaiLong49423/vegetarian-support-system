@@ -59,7 +59,9 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         List<IngredientEntity> ingredients = (query == null || query.isBlank())
                 ? ingredientRepository.findAll()
                 : ingredientRepository.findByNameContainingIgnoreCaseOrIngredientGroupContainingIgnoreCase(query.trim(), query.trim());
-        return ingredients.stream().sorted(Comparator.comparing(IngredientEntity::getName)).map(this::toResponse).toList();
+        return ingredients.stream()
+                .sorted(Comparator.comparing(IngredientEntity::getCreatedAt).reversed())
+                .map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -71,7 +73,7 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         String pattern = normalizedQuery == null ? null : "%" + normalizedQuery + "%";
         var results = ingredientRepository.search(pattern, normalizeFilter(ingredientGroup),
                 status, nutritionSupported,
-                PageRequest.of(page, size, Sort.by(Sort.Order.asc("name"), Sort.Order.asc("id"))));
+                PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"))));
         return PageResponse.of(results.getContent().stream().map(this::toResponse).toList(),
                 results.getNumber(), results.getSize(), results.getTotalElements());
     }
@@ -318,7 +320,7 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         return toResponse(conversion);
     }
 
-    public void rejectHardDelete(String resource) { throw conflict("HARD_DELETE_NOT_SUPPORTED", "Không hỗ trợ xóa vĩnh viễn " + resource + "; hãy chuyển sang trạng thái ngừng sử dụng."); }
+    public void rejectHardDelete(String resource) { throw conflict("HARD_DELETE_NOT_SUPPORTED", "Không hỗ trợ xóa vĩnh viễn " + resource + ". Hãy chuyển sang trạng thái ngừng sử dụng."); }
 
     @Override @Transactional(readOnly = true)
     public Optional<BigDecimal> findActiveGramsPerUnit(long ingredientId, int unitId) {
