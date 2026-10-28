@@ -836,7 +836,6 @@ export function AppHeader() {
             type="button"
             onClick={() => openChat()}
             aria-label="Mở khung chat hỗ trợ AI"
-            title="Trợ lý AI - Bạn cần AI hỗ trợ gì?"
             className="brutalist-button brutalist-ai"
           >
             <div className="deepseek-logo">
