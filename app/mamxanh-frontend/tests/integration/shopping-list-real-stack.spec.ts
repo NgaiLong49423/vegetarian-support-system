@@ -101,7 +101,7 @@ test('FR-53 browser creates selected-day and weekly checklists; CRUD and bought 
     await page.getByRole('button', { name: /^Tất cả \(/ }).click()
     await expect(check).toHaveAttribute('aria-pressed', 'true')
     await page.getByRole('button', { name: 'Sửa Khăn giấy lau bếp cuộn', exact: true }).click()
-    await page.getByLabel('Số lượng', { exact: true }).fill('3')
+    await page.getByLabel('Tổng số lượng mới', { exact: true }).fill('3')
     await page.getByRole('button', { name: 'Tiếp tục', exact: true }).click()
     await page.getByRole('button', { name: 'Xác nhận thay đổi', exact: true }).click()
     await expect(page.getByText('3 cuộn', { exact: true })).toBeVisible()
