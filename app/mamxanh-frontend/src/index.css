@@ -23,6 +23,12 @@
   --color-ink-muted: #b0b0b0;
   --color-on-brand: #171717;
 
+  /* Header & Footer navigation frame */
+  --color-header: #181818;
+  --color-header-border: #2e2e2e;
+  --color-footer: #141414;
+  --color-footer-border: #2a2a2a;
+
   /* Orange accent (primary) */
   --color-brand-50: #242424;
   --color-brand-100: #363636;
@@ -70,6 +76,11 @@ html {
   --color-ink-soft: #454a40;
   --color-ink-muted: #73786f;
   --color-on-brand: #ffffff;
+
+  --color-header: #eae4d8;
+  --color-header-border: #dcd4c5;
+  --color-footer: #e4ddd0;
+  --color-footer-border: #d8cfbf;
 
   --color-brand-50: #fff3e8;
   --color-brand-100: #ffe4ce;
@@ -1520,3 +1531,169 @@ button:not(:disabled), a { cursor: pointer; }
   animation: modal-panel-rise 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* ==========================================================================
+   Brutalist AI Floating Chatbot Button (Theme Cam Đậm)
+   ========================================================================== */
+.brutalist-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid #ffffff;
+  border-radius: 14px;
+  padding: 0;
+  text-decoration: none;
+  color: #000000;
+  font-weight: bold;
+  position: relative;
+  box-shadow: 3px 3px 0px #7c2d12;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  height: 76px;
+  width: 76px;
+  cursor: pointer;
+}
+
+.brutalist-button.deepseek,
+.brutalist-button.brutalist-ai {
+  background: linear-gradient(135deg, #7c2d12, #9a3412, #c2410c, #ea580c, #fed7aa);
+  background-size: 300% 300%;
+  animation: gradientShift 6s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.brutalist-button::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -150%;
+  width: 300%;
+  height: 300%;
+  border-radius: 50%;
+  transform: translateX(-50%) scale(0);
+  transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+  z-index: 1;
+}
+
+.brutalist-button.deepseek::before,
+.brutalist-button.brutalist-ai::before {
+  background: linear-gradient(135deg, #7c2d12, #9a3412, #c2410c, #ea580c, #fed7aa);
+  background-size: 300% 300%;
+  animation: gradientShift 6s ease infinite;
+}
+
+.brutalist-button:hover::before {
+  transform: translateX(-50%) scale(1);
+}
+
+.brutalist-button:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 6px 6px 0px #7c2d12;
+}
+
+.brutalist-button:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1.5px 1.5px 0px #7c2d12;
+}
+
+/* Shared circular logo style */
+.deepseek-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #ffffff, #ffedd5, #ea580c, #7c2d12);
+  background-size: 200% 200%;
+  animation: gradientShift 6s ease infinite;
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Chatbot icon style */
+.deepseek-icon {
+  width: 26px;
+  height: 26px;
+  color: #7c2d12;
+  transition: all 0.5s ease-in-out;
+}
+
+/* Hover animations */
+@keyframes spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.brutalist-button:hover .deepseek-logo {
+  animation: spin 5s linear infinite;
+  width: 28px;
+  height: 28px;
+  top: 27%;
+}
+
+.brutalist-button:hover .deepseek-icon {
+  width: 15px;
+  height: 15px;
+  color: #7c2d12;
+}
+
+/* Button text */
+.button-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(14px);
+  z-index: 2;
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.button-text span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.brutalist-button:hover .button-text {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brutalist-button.deepseek,
+  .brutalist-button.brutalist-ai,
+  .deepseek-logo,
+  .brutalist-button:hover .deepseek-logo {
+    animation: none;
+  }
+}

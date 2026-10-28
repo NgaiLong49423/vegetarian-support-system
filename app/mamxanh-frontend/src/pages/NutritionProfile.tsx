@@ -364,7 +364,7 @@ export function NutritionProfile() {
         </div>
 
         {loading ? <div className="flex items-center gap-2 py-16 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" /> Đang tải hồ sơ…</div> : <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-          {!authenticated && <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-5 text-amber-950">Đăng nhập tài khoản thật để khai báo và lưu hồ sơ. <Link to="/dang-nhap" className="font-bold underline underline-offset-2">Đăng nhập</Link>. Chế độ tài khoản demo không được dùng để gửi dữ liệu dinh dưỡng.</p>}
+          {!authenticated && <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-5 text-amber-950">Đăng nhập tài khoản để khai báo và lưu hồ sơ dinh dưỡng của bạn. <Link to="/dang-nhap" className="font-bold underline underline-offset-2">Đăng nhập</Link>.</p>}
           <fieldset disabled={!authenticated} className="m-0 min-w-0 space-y-5 border-0 p-0 disabled:opacity-60">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={`${miniLabelClass} sm:col-span-2`} htmlFor="nutrition-dob">Ngày sinh *
