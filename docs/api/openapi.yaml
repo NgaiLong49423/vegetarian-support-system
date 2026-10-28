@@ -3328,8 +3328,7 @@ paths:
         required: true
       responses:
         "200":
-          description: A 7-day preview with multiple trusted recipes per meal and
-            calculated nutrition.
+          description: A 21-slot weekly preview with trusted recipe nutrition.
           content:
             application/json:
               schema:
@@ -7367,7 +7366,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SelectedMeal"
-          maxItems: 1050
+          maxItems: 21
           minItems: 0
       required:
       - meals
@@ -8473,16 +8472,6 @@ components:
           type: string
         goal:
           type: string
-        energyTargetKcal:
-          type: number
-        bmi:
-          type: number
-        bmiCategory:
-          type: string
-        dailyTargets:
-          type: array
-          items:
-            $ref: "#/components/schemas/NutritionTarget"
         meals:
           type: array
           items:
@@ -8504,28 +8493,11 @@ components:
           type: string
         coverUrl:
           type: string
-        plannedServings:
-          type: number
         nutritionPerServing:
           type: object
           additionalProperties:
             type: number
         reason:
-          type: string
-    NutritionTarget:
-      type: object
-      properties:
-        key:
-          type: string
-        label:
-          type: string
-        minimum:
-          type: number
-        maximum:
-          type: number
-        unit:
-          type: string
-        referenceType:
           type: string
     ReportSupplementRequest:
       type: object

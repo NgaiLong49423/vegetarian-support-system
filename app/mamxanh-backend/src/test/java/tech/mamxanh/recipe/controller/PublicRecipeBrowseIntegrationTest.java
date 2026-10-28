@@ -7,7 +7,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.hasItems;
 
 import java.time.LocalDateTime;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,20 +60,6 @@ class PublicRecipeBrowseIntegrationTest extends AbstractIntegrationTest {
         middleId = insertRecipe("Issue3-browse-token Món giữa", "Món đăng năm ngày trước", "PUBLISHED", now.minusDays(5));
         oldId = insertRecipe("Issue3-browse-token Canh chua cũ", "Công thức lâu năm", "PUBLISHED", now.minusDays(10));
         insertRecipe("Issue3-browse-token Canh chua ẩn", "Không được tìm thấy", "HIDDEN", now);
-    }
-
-    @AfterEach
-    void cleanUp() {
-        jdbcTemplate.update("DELETE FROM [RECIPE_INGREDIENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", EMAIL_PREFIX);
-        jdbcTemplate.update("DELETE FROM [RECIPE_REACTION] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", EMAIL_PREFIX);
-        jdbcTemplate.update("DELETE FROM [RECIPE_VIEW] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", EMAIL_PREFIX);
-        jdbcTemplate.update("DELETE FROM [COMMENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", EMAIL_PREFIX);
-        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)", EMAIL_PREFIX);
-        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE ?", EMAIL_PREFIX);
-        jdbcTemplate.update("DELETE FROM [RECIPE_INGREDIENT] WHERE recipe_id IN (SELECT recipe_id FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = ?))", FILTER_EMAIL);
-        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email = ?)", FILTER_EMAIL);
-        jdbcTemplate.update("DELETE FROM [USER] WHERE email = ?", FILTER_EMAIL);
-        jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name IN (?, ?)", FILTER_INGREDIENT_A, FILTER_INGREDIENT_B);
     }
 
     @Test

@@ -233,7 +233,7 @@ public class NutritionProfileService {
     }
 
     private NutritionProfileResponse response(NutritionProfileEntity user, int age) {
-        var bmi = user.getNutritionBmi() != null ? user.getNutritionBmi() : (user.getWeightKg() != null && user.getHeightCm() != null ? calculations.bmi(user.getWeightKg(), user.getHeightCm()) : null);
+        var bmi = user.getNutritionBmi();
         var energy = calculations.energyKcal(age, user.getBiologicalSex(), user.getHeightCm(), user.getWeightKg(), user.getActivityLevel());
         var profile = new Profile(user.getDateOfBirth(), user.getBiologicalSex(), user.getHeightCm(), user.getWeightKg(), user.getActivityLevel(), user.getNutritionGoal());
         var results = new Results(bmi, calculations.bmiCategory(bmi), energy,

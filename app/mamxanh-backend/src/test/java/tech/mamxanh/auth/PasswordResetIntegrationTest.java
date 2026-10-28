@@ -72,26 +72,6 @@ class PasswordResetIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void deleteUsers() {
-        jdbcTemplate.update("DELETE FROM [SHOPPING_RECIPE_CONTRIBUTION]");
-        jdbcTemplate.update("DELETE FROM [SHOPPING_LIST_ITEM]");
-        jdbcTemplate.update("DELETE FROM [SHOPPING_LIST]");
-        jdbcTemplate.update("DELETE FROM [MEAL_PLAN_ENTRY]");
-        jdbcTemplate.update("DELETE FROM [MEAL_PLAN]");
-        jdbcTemplate.update("DELETE FROM [COMMENT]");
-        jdbcTemplate.update("DELETE FROM [RECIPE_REACTION]");
-        jdbcTemplate.update("DELETE FROM [RECIPE_VIEW]");
-        jdbcTemplate.update("DELETE FROM [SAVED_RECIPE]");
-        jdbcTemplate.update("DELETE FROM [REPORT_SUPPLEMENT]");
-        jdbcTemplate.update("DELETE FROM [REPORT]");
-        jdbcTemplate.update("DELETE FROM [RECIPE_INGREDIENT]");
-        jdbcTemplate.update("DELETE FROM [RECIPE_MEDIA]");
-        jdbcTemplate.update("DELETE FROM [RECIPE_POST]");
-        jdbcTemplate.update("DELETE FROM [NOTIFICATION]");
-        jdbcTemplate.update("DELETE FROM [PAYMENT_TRANSACTION]");
-        jdbcTemplate.update("DELETE FROM [SUBSCRIPTION]");
-        jdbcTemplate.update("DELETE FROM [USER_FOLLOW]");
-        jdbcTemplate.update("DELETE FROM [USER_INGREDIENT_PREFERENCE]");
-        jdbcTemplate.update("DELETE FROM [EXPERT_APPLICATION]");
         userRepository.deleteAll();
     }
 
