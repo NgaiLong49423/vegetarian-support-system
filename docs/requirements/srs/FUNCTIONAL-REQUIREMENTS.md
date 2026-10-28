@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.23.0
+> **Version:** v2.30.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -366,7 +366,7 @@ Thiết lập Mâm Xanh thành sân chơi ẩm thực chay chuyên nghiệp, nơ
 
 - **Mã yêu cầu:** FR-05
 - **Module:** M02 (Identity & Access), M03 (Community Recipes & Social), M09 (Administration & Moderation)
-- **Tóm tắt yêu cầu:** Hệ thống cho phép người dùng thông thường (`Customer`) có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản có cấu trúc (`EXPERT_APPLICATION`); đây là quy trình xét duyệt **tư cách Chuyên gia và quyền đăng bài**, không phải xác minh danh tính/KYC. Hệ thống không yêu cầu hoặc quản lý giấy tờ tùy thân, tệp chứng chỉ hay văn bằng vật lý. Administrator xem xét đơn trong trung tâm quản trị, ghi nhận xét thẩm định và quyết định phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; khi được phê duyệt, tài khoản được thăng cấp tức thời lên vai trò `EXPERT` để có quyền tạo và công khai bài viết; nếu bị từ chối, người dùng có thể nộp lại đơn mới sau khi bổ sung thông tin.
+- **Tóm tắt yêu cầu:** Hệ thống cho phép người dùng thông thường (`Customer`) có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản có cấu trúc (`EXPERT_APPLICATION`) và tùy chọn đính kèm tối đa một tài liệu chứng chỉ/văn bằng chuyên môn cùng một ảnh thẻ chân dung khung 3:4 riêng của đơn; đây là quy trình xét duyệt **tư cách Chuyên gia và quyền đăng bài**, không phải xác minh danh tính/KYC. Hệ thống không yêu cầu giấy tờ tùy thân. Tệp đính kèm được lưu riêng tư và chỉ Administrator có quyền tải/xem khi thẩm định; ảnh không cập nhật avatar hồ sơ công khai. Administrator ghi nhận xét thẩm định và quyết định phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; khi được phê duyệt, tài khoản được thăng cấp tức thời lên vai trò `EXPERT`; nếu bị từ chối, người dùng có thể nộp lại đơn mới.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-05).
 
@@ -390,7 +390,8 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
 - Guest không được nộp đơn; hệ thống yêu cầu đăng nhập trước khi tiếp cận biểu mẫu (BR-05).
 - Customer chỉ được xem trạng thái và nội dung đơn đăng ký của chính mình (NFR-09).
 - Chỉ Administrator có quyền xem toàn bộ danh sách đơn và thực hiện phê duyệt/từ chối (NFR-09).
-- Tuyệt đối không yêu cầu người dùng tải lên tệp tin ảnh chụp văn bằng, chứng chỉ hoặc giấy tờ tùy thân nhạy cảm; việc thẩm định hoàn toàn dựa trên thông tin format văn bản có cấu trúc do người dùng tự khai báo.
+- Không yêu cầu tải lên giấy tờ tùy thân. Customer có thể tự nguyện gửi tối đa một tài liệu chứng chỉ/văn bằng chuyên môn (PDF/JPEG/PNG, tối đa 5 MB) và một ảnh thẻ chân dung khung 3:4 riêng của đơn (JPEG/PNG/WebP, tối đa 2 MB). Backend xác minh định dạng thực tế và dung lượng; từ chối tệp không hợp lệ và không tạo đơn dở dang.
+- Tệp được lưu trong vùng Azure Blob riêng tư; không phát URL công khai. Chỉ Administrator được phép xem hoặc tải nội dung tệp qua Backend trong phạm vi thẩm định. Ảnh thẻ 3:4 đính kèm thuộc đơn và không thay đổi `USER.avatar_url` hoặc hồ sơ công khai FR-23.
 - Quy trình không được mô tả là xác minh danh tính/KYC hoặc xác thực bằng cấp của Customer.
 
 #### Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
@@ -400,7 +401,7 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
   - [BR-74](BUSINESS-RULES.md#br-74): Quy trình xét duyệt đơn đăng ký Chuyên gia và chuyển đổi vai trò.
 - **Yêu cầu phi chức năng liên quan:**
   - [NFR-09](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-09): Phân quyền truy cập RBAC và bảo vệ endpoint quản trị.
-  - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Validation dữ liệu văn bản đầu vào chặt chẽ ở tầng Backend.
+  - [NFR-10](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-10): Validation dữ liệu văn bản và tệp đính kèm chặt chẽ ở tầng Backend.
   - [NFR-13](NON-FUNCTIONAL-REQUIREMENTS.md#nfr-13): Giao diện Responsive tiếng Việt.
 
 #### Tiêu chí nghiệm thu chi tiết (Acceptance Criteria)
@@ -444,6 +445,19 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
   - **Given:** Đơn còn `PENDING` nhưng tài khoản nộp đã không còn `ACTIVE` hoặc không còn vai trò `CUSTOMER`.
   - **When:** Administrator cố phê duyệt đơn.
   - **Then:** Hệ thống trả `HTTP 409 Conflict`, rollback quyết định, không cấp role `EXPERT` hoặc ghi notification, và yêu cầu Administrator tải lại trạng thái hiện hành.
+
+- **AC-05.9 — Customer gửi tệp đính kèm riêng cho đơn:**
+  - **Given:** Customer đủ điều kiện nộp đơn; tài liệu và ảnh đính kèm là tùy chọn.
+- **When:** Customer gửi tối đa một tài liệu chứng chỉ/văn bằng chuyên môn dạng PDF/JPEG/PNG không quá 5 MB và một ảnh thẻ chân dung khung 3:4 dạng JPEG/PNG/WebP không quá 2 MB.
+- **Then:** Hệ thống xác minh chữ ký nội dung khớp với định dạng khai báo, lưu tệp riêng tư gắn với đúng đơn; ảnh thẻ dùng khung chân dung 3:4 và không cập nhật avatar tài khoản. Tệp thiếu, rỗng, sai định dạng hoặc quá giới hạn bị từ chối với lỗi dễ hiểu và không tạo đơn hoặc tệp mồ côi.
+
+- **AC-05.10 — Chỉ Administrator truy cập tệp của đơn để thẩm định:**
+  - **Given:** Đơn có tệp đính kèm.
+  - **When:** Administrator đã xác thực mở chi tiết đơn hoặc yêu cầu tải tệp; Customer, Expert, Guest hoặc người dùng khác thử truy cập cùng tài nguyên.
+- **Then:** Administrator có thể xem/tải tài liệu chứng chỉ và ảnh thẻ 3:4 qua endpoint có xác thực; các role khác bị chặn ở Backend. API không trả URL Blob công khai và tệp không hiển thị trong hồ sơ/avatar công khai.
+
+- **AC-05.11 — Nhãn và hướng dẫn Portfolio URL:**
+  - **Then:** Form hiển thị nhãn “Đường dẫn portfolio”; hướng dẫn “Không bắt buộc. Chấp nhận HTTP/HTTPS, tối đa 500 ký tự.” nằm riêng bên dưới, không có dấu ngoặc.
 
 ---
 
@@ -1291,9 +1305,13 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *When* Administrator lưu thay đổi,
   - *Then* danh mục hiển thị thông tin đã cập nhật.
 - **AC-18.7 (Ngừng sử dụng nguyên liệu nhưng giữ liên kết lịch sử):**
-  - *Given* nguyên liệu chuẩn đang được sử dụng trong Recipe Post,
-  - *When* Administrator ngừng sử dụng nguyên liệu đó,
-  - *Then* nguyên liệu không còn được chọn cho liên kết mới và các liên kết lịch sử vẫn được bảo toàn.
+  - *Given* nguyên liệu chuẩn đang được ít nhất một Recipe Post ở trạng thái `PUBLISHED` tham chiếu,
+  - *When* Administrator yêu cầu chuyển nguyên liệu từ `ACTIVE` sang `INACTIVE`,
+  - *Then* hệ thống từ chối thao tác, giữ nguyên trạng thái `ACTIVE` và thông báo rằng nguyên liệu đang được công thức công khai sử dụng.
+  - *Given* không còn Recipe Post ở trạng thái `PUBLISHED` nào tham chiếu nguyên liệu chuẩn,
+  - *When* Administrator yêu cầu chuyển nguyên liệu từ `ACTIVE` sang `INACTIVE`,
+  - *Then* hệ thống cho phép ngừng sử dụng; nguyên liệu không còn được chọn cho liên kết mới và các liên kết lịch sử vẫn được bảo toàn.
+  - Việc kiểm tra dựa trên trạng thái hiện tại của Recipe Post tại thời điểm yêu cầu; quy tắc này chỉ áp dụng cho nguyên liệu, không áp dụng cho đơn vị đo lường. Nguyên liệu đã `INACTIVE` trước khi quy tắc có hiệu lực được giữ nguyên hiện trạng.
 - **AC-18.8 (Hiển thị danh mục đơn vị đo lường):**
   - *Given* Administrator mở danh mục `UNIT`,
   - *When* danh mục được hiển thị,
@@ -2308,7 +2326,7 @@ Cung cấp công cụ thao tác linh hoạt, chi tiết và trực quan để th
 
 - **Mã yêu cầu:** FR-34
 - **Module:** M04 (Recipe Catalog & Search), M05 (Meal Planning & Shopping List), M06 (AI Assistant & Personalization)
-- **Tóm tắt yêu cầu:** AI gợi ý món, lập menu và đề xuất thay thế chỉ từ Recipe Post đang công khai (`PUBLISHED`), không hidden/deleted/unavailable, dựa trên hồ sơ sở thích (FR-31) và nguyên liệu người dùng cung cấp; AI không bịa công thức, mọi kết quả dẫn tới bài nguồn và chỉ được lưu sau khi người dùng xác nhận (SRS 3.17, BR-31, BR-38).
+- **Tóm tắt yêu cầu:** AI gợi ý món, lập menu và đề xuất thay thế chỉ từ Recipe Post đang công khai (`PUBLISHED`), không hidden/deleted/unavailable, dựa trên hồ sơ sở thích (FR-31) và nguyên liệu người dùng cung cấp; mọi kết quả dẫn tới bài nguồn và chỉ được lưu sau khi người dùng xác nhận (SRS 3.17, BR-31, BR-38). Member có thể chủ động yêu cầu AI tạo hướng dẫn chế biến 6–10 bước dựa trên chính Recipe Post công khai; hướng dẫn không thêm nguyên liệu, không tạo món khác và không sửa/lưu bài nguồn.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-discovery-and-classification.md#fr-34).
 
@@ -2316,7 +2334,8 @@ Cung cấp công cụ thao tác linh hoạt, chi tiết và trực quan để th
 Tận dụng năng lực phân tích thông minh của AI để giải quyết bài toán gợi ý món ăn phù hợp với nguyên liệu thực tế và sở thích riêng của từng gia đình; bảo đảm 100% các món ăn được gợi ý đều là các công thức thực tế, có thể nấu được ngay từ kho công thức cộng đồng mà không bị ảo giác sinh ra công thức giả mạo.
 
 #### Ranh giới an toàn của tính năng AI gợi ý món (SRS 3.17, BR-38)
-- **Nguyên tắc "Không bịa công thức" (No Hallucination):** AI tuyệt đối không tự sinh ra tên món ăn hay cách nấu không có trong cơ sở dữ liệu. Mọi món ăn do AI đề xuất bắt buộc phải là một Recipe Post đang tồn tại hợp lệ ở trạng thái `PUBLISHED`.
+- **Nguyên tắc "Không bịa công thức" (No Hallucination):** AI không tự sinh món hoặc danh sách nguyên liệu mới. Món được gợi ý phải là Recipe Post hợp lệ đang `PUBLISHED`; hướng dẫn cho Member chỉ được diễn giải và mở rộng thao tác dựa trên Recipe Post đó, không thêm nguyên liệu hoặc đổi món.
+- **Minh bạch dữ kiện:** Mỗi hướng dẫn dẫn tới bài nguồn. Khi bài không nêu thời gian/nhiệt độ, AI phải nói rõ và đánh dấu các con số ước tính là `Ước tính AI`; không trình bày ước tính như dữ kiện của tác giả. Hướng dẫn chỉ hiển thị trong phiên và không sửa hoặc lưu Recipe Post.
 - **Nguyên tắc dẫn nguồn bài viết:** Mỗi món ăn được gợi ý phải đi kèm đường dẫn xem chi tiết công thức gốc của tác giả trong hệ thống.
 - **Nguyên tắc xác nhận trước khi lưu:** Kết quả gợi ý thực đơn tuần của AI chỉ mang tính đề xuất; hệ thống TUYỆT ĐỐI KHÔNG tự động ghi đè vào Lịch ăn của Member nếu người dùng chưa bấm nút "Xác nhận áp dụng vào Lịch ăn".
 
@@ -2325,13 +2344,15 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - `UC-34.1`: Yêu cầu AI gợi ý món ăn theo nguyên liệu sẵn có (Request AI recipe suggestions by ingredients).
   - `UC-34.2`: Yêu cầu AI lập thực đơn tuần từ kho công thức (Request AI weekly meal plan generation).
   - `UC-34.3`: Xác nhận lưu thực đơn AI đề xuất vào Lịch ăn (Confirm and apply AI meal plan).
+  - `UC-34.4`: Yêu cầu AI tạo hướng dẫn chế biến chi tiết cho Recipe Post công khai (Request a source-based detailed cooking guide).
 - **User Stories:**
   - `US-34.1`: Là một thành viên đang có sẵn nấm và đậu phụ, tôi muốn nhờ AI tìm giúp các món ngon nấu được từ hai nguyên liệu này từ kho bài viết của cộng đồng.
   - `US-34.2`: Là một thành viên bận rộn, tôi muốn AI lên giúp tôi thực đơn 7 ngày hợp khẩu vị, tôi xem qua thấy hài lòng rồi mới bấm lưu vào Lịch ăn của mình.
+  - `US-34.3`: Là một Member muốn tự tin nấu món được AI gợi ý, tôi muốn xem hướng dẫn theo từng bước từ sơ chế đến thành phẩm dựa trên bài công thức nguồn, để làm theo mà không nhầm phần AI bổ sung với nội dung tác giả.
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Guest không được phép sử dụng AI cá nhân hóa gợi ý món (BR-05).
-- Theo FR-10, Member Free được dùng gợi ý theo nguyên liệu ở UC-34.1; các UC-34.2 và UC-34.3 về preview và áp dụng thực đơn tuần thông thường yêu cầu gói Pro. Phạm vi này khác FR-36, vốn tạo thực đơn tuần theo dữ liệu dinh dưỡng tin cậy.
+- Theo FR-10, Member Free được dùng gợi ý theo nguyên liệu ở UC-34.1 và hướng dẫn chế biến từ công thức công khai ở UC-34.4; các UC-34.2 và UC-34.3 về preview và áp dụng thực đơn tuần thông thường yêu cầu gói Pro. Phạm vi này khác FR-36, vốn tạo thực đơn tuần theo dữ liệu dinh dưỡng tin cậy.
 - Ràng buộc chặt chẽ trong System Prompt và kiểm tra chéo ở Backend: chỉ chấp nhận ID bài viết hợp lệ đang ở trạng thái `PUBLISHED` từ cơ sở dữ liệu, loại bỏ bất kỳ món ăn nào không có trong hệ thống (NFR-08, NFR-10).
 
 #### Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
@@ -2380,6 +2401,18 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 
 ---
 
+- **AC-34.7 — Hướng dẫn chi tiết theo đúng trình tự chế biến:**
+  - **Given:** Member đã nhận gợi ý một Recipe Post công khai phù hợp và chủ động yêu cầu hướng dẫn nấu.
+  - **When:** AI tạo hướng dẫn.
+  - **Then:** Hướng dẫn có 6–10 bước theo thứ tự, bao gồm chuẩn bị, sơ chế, làm nóng nồi/chảo, thứ tự cho nguyên liệu vào, thao tác nấu/dấu hiệu chín, nêm nếm và hoàn thiện thành phẩm.
+- **AC-34.8 — Hướng dẫn chỉ dựa trên công thức nguồn và không ghi dữ liệu nghiệp vụ:**
+  - **Given:** Member yêu cầu hướng dẫn cho Recipe Post công khai.
+  - **When:** Backend xử lý và trả hướng dẫn.
+  - **Then:** Response dẫn đúng Recipe Post; hướng dẫn chỉ sử dụng nguyên liệu của bài nguồn, áp dụng hồ sơ ăn chay và nguyên liệu cần tránh của Member, không tạo hoặc sửa Recipe Post và không ghi Meal Plan.
+- **AC-34.9 — Phân biệt ước tính AI với nội dung nguồn:**
+  - **Given:** Bài nguồn không nêu thời gian hoặc nhiệt độ ở một công đoạn.
+  - **When:** AI bổ sung gợi ý thao tác.
+  - **Then:** AI nêu rõ bài nguồn không cung cấp dữ kiện đó và gắn nhãn `Ước tính AI` cho mọi con số ước tính.
 <a id="fr-35"></a>
 ### FR-35 — Khai báo hồ sơ dinh dưỡng và xem chỉ số tham khảo cá nhân
 
@@ -2437,9 +2470,9 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - *When* Member nhấn nút lưu hồ sơ,
   - *Then* hệ thống ngăn chặn việc lưu và hiển thị thông báo lỗi cụ thể tại từng ô nhập liệu tương ứng.
 - **AC-35.4 (Tính toán BMI tham khảo chính xác):**
-  - *Given* Member nhập chiều cao 170 cm và cân nặng 65 kg hợp lệ,
-  - *When* hệ thống xử lý tính toán,
-  - *Then* chỉ số BMI được hiển thị chính xác là 22.5 kèm phân loại thể trạng "Bình thường" và ghi chú đây là chỉ số sàng lọc tham khảo.
+  - *Given* Member lưu chiều cao 170 cm và cân nặng 65 kg hợp lệ,
+  - *When* hệ thống lưu hồ sơ và sau đó Member mở lại hồ sơ,
+  - *Then* hệ thống lưu BMI chính xác (22.4913494810 trước khi định dạng hiển thị), đọc lại BMI đã lưu mà không tính lại khi mở trang, hiển thị 22.5 cùng phân loại "Bình thường" và ghi chú đây là chỉ số sàng lọc tham khảo. Khi chiều cao hoặc cân nặng được cập nhật, hệ thống tính và lưu BMI mới cùng hồ sơ.
 - **AC-35.5 (Tính toán bảng 9 chỉ tiêu tham khảo):**
   - *Given* Member có thông số nhân trắc học và mức độ vận động hợp lệ đã được lưu,
   - *When* hệ thống hiển thị hồ sơ dinh dưỡng,
@@ -2462,9 +2495,9 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **Use Case detail:** [Open interaction flows](../use-cases/nutrition.md#fr-36).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp trong trang Lịch ăn hai chế độ tạo thực đơn tuần tham khảo bằng AI. Chế độ “Dựa trên hồ sơ” đọc mục tiêu chung đã lưu trong FR-35 cùng dữ liệu nhân trắc học/dinh dưỡng và các ràng buộc ăn uống đã khai báo; nếu mục tiêu hoặc câu trả lời sở thích chưa có, giữ là `null`, không bắt hoàn tất onboarding và không suy đoán mục tiêu cân nặng. Chế độ “Theo mong muốn tuần này” nhận mục tiêu riêng cho lần tạo lịch hiện tại cùng nguyên liệu muốn có/cần tránh; mọi câu trả lời đều tùy chọn, chỉ có hiệu lực cho lần tạo tuần đó, không lưu vào hồ sơ và không tự động áp dụng cho tuần sau. Nguyên liệu muốn có chỉ là ưu tiên mềm trong tập công thức hợp lệ; mọi công thức chứa nguyên liệu người dùng chọn tránh bị loại khỏi tập ứng viên và không thể được ưu tiên hoặc chọn, kể cả khi có nguyên liệu người dùng muốn có. Với cả hai chế độ, AI chỉ được lựa chọn từ các Recipe Post đang công khai trong hệ thống có dữ liệu định lượng dinh dưỡng tin cậy (100% nguyên liệu ánh xạ gram và có số liệu đầy đủ); AI không được tự tạo món ngoài cơ sở dữ liệu; Member phải xem trước và xác nhận trước khi áp dụng vào Lịch ăn tuần. Mục tiêu tăng/giảm cân trong yêu cầu menu là ưu tiên lựa chọn món, không phải cam kết thay đổi cân nặng hay mục tiêu y tế; các mốc số FR-35 vẫn được trình bày như mức tham khảo hiện hành, không tự suy ra mức thâm hụt/thặng dư calorie.
+- **Tóm tắt yêu cầu:** Cung cấp trong trang Lịch ăn hai chế độ tạo thực đơn tham khảo bằng AI cho các ngày từ hôm nay đến hết tuần hiện tại. Ngày trước hôm nay được hiển thị là đã qua và không có đề xuất; ngày thuộc tuần khác không nằm trong phạm vi AI đề xuất. Chế độ “Dựa trên hồ sơ” đọc mục tiêu chung đã lưu trong FR-35 cùng BMI, dữ liệu nhân trắc học/dinh dưỡng và các ràng buộc ăn uống đã khai báo; nếu mục tiêu hoặc câu trả lời sở thích chưa có, giữ là `null`, không bắt hoàn tất onboarding và không suy đoán mục tiêu cân nặng. Chế độ “Theo mong muốn tuần này” nhận mục tiêu riêng cho lần tạo lịch hiện tại cùng nguyên liệu muốn có/cần tránh; mọi câu trả lời đều tùy chọn, chỉ có hiệu lực cho lần tạo lịch này, không lưu vào hồ sơ và không tự động áp dụng về sau. Nguyên liệu muốn có chỉ là ưu tiên mềm trong tập công thức hợp lệ; mọi công thức chứa nguyên liệu người dùng chọn tránh bị loại khỏi tập ứng viên và không thể được ưu tiên hoặc chọn, kể cả khi có nguyên liệu người dùng muốn có. Với cả hai chế độ, AI chỉ được lựa chọn từ các Recipe Post đang công khai trong hệ thống có dữ liệu định lượng dinh dưỡng tin cậy (100% nguyên liệu ánh xạ gram và có số liệu đầy đủ); AI không được tự tạo món ngoài cơ sở dữ liệu. Mỗi ngày trong phạm vi đề xuất có ba bữa cố định; mỗi bữa có thể gồm nhiều công thức, mỗi công thức một khẩu phần. Tổng kcal hướng tới phân bổ 25% cho sáng, 37,5% cho trưa và 37,5% cho tối theo tổng mục tiêu năng lượng ngày FR-35; mỗi tỷ lệ có dung sai ±5 điểm phần trăm, không cần trùng chính xác tỷ lệ trung tâm. Hệ thống phối hợp công thức để hướng tới phân bổ này và tối ưu các chỉ tiêu còn lại trong bộ chín chỉ tiêu cá nhân. BMI góp phần cá nhân hóa lựa chọn nhưng không tự thay đổi mục tiêu số FR-35. Member phải xem trước và xác nhận trước khi áp dụng; các bữa trước hôm nay được giữ nguyên. Preview chỉ trình bày tổng dinh dưỡng dự kiến, không phân loại thiếu/thừa. Mục tiêu tăng/giảm cân trong yêu cầu menu là ưu tiên lựa chọn món, không phải cam kết thay đổi cân nặng hay mục tiêu y tế; không tự suy ra mức thâm hụt/thặng dư calorie.
 - **Phạm vi nghiệp vụ:**
-  - Áp dụng cho: Member đã đăng nhập, có hồ sơ nhân trắc học hợp lệ và xác nhận đủ điều kiện (FR-35/FR-38), và có gói Pro hợp lệ cho AI lập thực đơn dinh dưỡng (FR-10). Onboarding sở thích FR-31 và mục tiêu chung là tùy chọn cho FR-36; câu trả lời chưa khai báo là `null`, không đồng nghĩa xác nhận “không có”. Nếu đã khai báo trường phái ăn chay hoặc nguyên liệu dị ứng/cần tránh, các dữ liệu đó là ràng buộc an toàn bắt buộc. Câu trả lời của “Theo mong muốn tuần này” chỉ có trong request hiện tại.
+  - Áp dụng cho: Member đã đăng nhập, có hồ sơ nhân trắc học hợp lệ và xác nhận đủ điều kiện (FR-35/FR-38), và có gói Pro hợp lệ cho AI lập thực đơn dinh dưỡng (FR-10). Onboarding sở thích FR-31 và mục tiêu chung là tùy chọn cho FR-36; câu trả lời chưa khai báo là `null`, không đồng nghĩa xác nhận “không có”. Nếu đã khai báo trường phái ăn chay hoặc nguyên liệu dị ứng/cần tránh, các dữ liệu đó là ràng buộc an toàn bắt buộc. BMI được dùng cùng dữ liệu hồ sơ để cá nhân hóa lựa chọn, không tự đặt hoặc thay đổi mục tiêu tham khảo. Câu trả lời của “Theo mong muốn tuần này” chỉ có trong request hiện tại.
   - Giới hạn: Quá trình tạo thực đơn chỉ mang tính tham khảo và hỗ trợ lên kế hoạch ăn uống; việc tối ưu hóa vi chất chuyên sâu theo bệnh lý nằm ngoài phạm vi MVP.
 - **Phân loại Actor:**
   - Primary Actor: `Member` (đã đăng nhập và đủ điều kiện).
@@ -2476,7 +2509,7 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - `UC-36.2`: Xem danh sách món được đề xuất kèm giải trình dinh dưỡng và cảnh báo tham khảo.
   - `UC-36.3`: Xác nhận áp dụng thực đơn gợi ý vào các bữa ăn trong Lịch ăn tuần.
 - **User Stories:**
-  - *Là một Member bận rộn*, tôi muốn nhờ AI đề xuất thực đơn các món chay cho tuần tới dựa trên nhu cầu dinh dưỡng của tôi và chỉ chọn từ những công thức đã có sẵn công thức nấu chuẩn, giúp tôi tiết kiệm thời gian lên thực đơn mà vẫn đảm bảo bữa ăn phong phú.
+  - *Là một Member bận rộn*, tôi muốn nhờ AI đề xuất thực đơn các món chay từ hôm nay đến hết tuần hiện tại dựa trên nhu cầu dinh dưỡng của tôi và chỉ chọn từ những công thức đã có sẵn công thức nấu chuẩn, giúp tôi lên lịch cho các ngày còn lại trong tuần.
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Member đã đăng nhập có gói Pro còn hiệu lực mới có quyền yêu cầu AI lập thực đơn dinh dưỡng. Guest, Free và Plus không có quyền này (FR-10, BR-02, BR-03).
@@ -2519,10 +2552,10 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
   - *Given* hồ sơ Member có khai báo trường phái Lacto-ovo vegetarian và dị ứng đậu phộng,
   - *When* AI tạo thực đơn tuần,
   - *Then* 100% các món được gợi ý phải tuân thủ chuẩn Lacto-ovo và hoàn toàn không chứa thành phần đậu phộng.
-- **AC-36.4 (Xác nhận của Member trước khi ghi đè/lưu Lịch ăn):**
+- **AC-36.4 (Xác nhận của Member trước khi cập nhật Lịch ăn):**
   - *Given* AI đã sinh bản xem trước thực đơn thành công,
   - *When* Member chưa nhấn nút "Lưu vào Lịch ăn",
-  - *Then* hệ thống không tự động thay đổi bất kỳ mục nào trong Lịch ăn tuần hiện tại của Member; khi Member xác nhận, hệ thống thay toàn bộ các mục của tuần đích bằng các ô được chọn trong preview trong một giao dịch nguyên tử. Nếu bất kỳ món nào không còn hợp lệ, toàn bộ thao tác rollback và lịch cũ được giữ nguyên.
+  - *Then* hệ thống không tự động thay đổi bất kỳ mục nào trong Lịch ăn tuần hiện tại của Member; khi Member xác nhận, hệ thống chỉ thay các mục từ hôm nay đến hết Chủ nhật bằng các món được chọn trong preview trong một giao dịch nguyên tử, giữ nguyên mọi mục trước hôm nay. Nếu bất kỳ món nào không còn hợp lệ, toàn bộ thao tác rollback và lịch cũ được giữ nguyên.
 - **AC-36.5 (Kiểm tra quyền gói Pro trước khi gọi AI):**
   - *Given* Member chỉ có gói Free hoặc Plus,
   - *When* gửi yêu cầu tạo thực đơn dinh dưỡng bằng AI,
@@ -2536,7 +2569,11 @@ Tận dụng năng lực phân tích thông minh của AI để giải quyết b
 - **AC-36.9 (Câu trả lời tuần này chỉ có hiệu lực một lần):** Chế độ tuần này dùng mục tiêu cùng nguyên liệu muốn có/cần tránh chỉ cho request hiện tại; không ghi vào hồ sơ hoặc áp dụng sang tuần sau nếu Member không chọn lại. Ràng buộc an toàn đã khai báo từ FR-31 vẫn luôn được áp dụng. Mọi công thức có chứa nguyên liệu trong danh sách cần tránh của tuần bị loại khỏi candidate pool; quy tắc này luôn thắng nguyên liệu muốn có. Nguyên liệu muốn có chỉ xếp ưu tiên mềm trong các công thức còn lại.
 - **AC-36.10 (Không suy diễn mục tiêu định lượng hoặc hứa kết quả):** Mục tiêu giảm/tăng cân hoặc tăng cơ chỉ điều hướng lựa chọn công thức; năng lượng và 9 chỉ tiêu vẫn là dữ liệu tính được từ hồ sơ/RecipePost có nguồn, không tự thêm thâm hụt/thặng dư calorie hay cam kết cân nặng.
 - **AC-36.11 (Không ép hoàn tất hồ sơ sở thích):** Member đủ điều kiện FR-35/FR-38 và Pro nhưng chưa hoàn tất một hoặc nhiều câu hỏi FR-31 vẫn có thể tạo menu; dữ liệu chưa khai báo là `null`, mọi ràng buộc đã biết được áp dụng và UI giải thích rằng mức cá nhân hóa phụ thuộc thông tin đã cung cấp.
-- **AC-36.12 (Đủ 21 vị trí và lặp món có kiểm soát):** Preview thành công có 7 ngày × 3 bữa; nếu pool tin cậy không đủ 21 công thức khác nhau, hệ thống được lặp công thức nhưng không xếp cùng một công thức ở hai bữa liên tiếp. Member có thể bỏ chọn một số vị trí trước khi xác nhận; chỉ các vị trí được chọn được ghi vào lịch sau khi toàn bộ tuần cũ bị thay.
+- **AC-36.12 (Ba bữa trong các ngày còn lại và lặp món có kiểm soát):** Preview thành công bao gồm từng ngày từ hôm nay đến hết Chủ nhật với ba bữa cố định; các ngày trước hôm nay được ghi rõ là đã qua và AI không đề xuất món. Ngày thuộc tuần khác không có đề xuất. Mỗi bữa có thể có một hoặc nhiều công thức. Hệ thống được lặp công thức giữa các ngày/bữa khi pool không đủ đa dạng nhưng không lặp cùng công thức trong một bữa; ưu tiên tránh lặp ở các bữa liền kề. Member có thể bỏ chọn từng món trước khi xác nhận; các mục trước hôm nay được giữ nguyên khi áp dụng.
+- **AC-36.13 (Phối hợp nhiều món, mỗi món một khẩu phần):** Given Member yêu cầu AI tạo menu tuần, When xem preview hoặc áp dụng menu, Then mỗi ngày trong phạm vi có ba bữa cố định và mỗi bữa có thể chứa nhiều công thức công khai; mỗi công thức được đề xuất ở một khẩu phần. Hệ thống phối hợp nhiều công thức để hướng tới phân bổ kcal và tối ưu chín chỉ tiêu. Một công thức không bị lặp trong cùng một bữa.
+- **AC-36.14 (Tối ưu và trình bày tổng dinh dưỡng theo ngày):** Given hồ sơ có BMI và chín mức tham khảo cá nhân từ FR-35, When AI tạo menu, Then hệ thống tổng hợp dinh dưỡng dự kiến của toàn bộ công thức trong từng ngày, ưu tiên đạt mục tiêu kcal ngày và phân bổ ba bữa theo AC-36.15; trong các phương án có mức đáp ứng phân bổ năng lượng tương đương, tối đa hóa số trong tám chỉ tiêu dinh dưỡng còn lại đạt mức tham khảo, rồi ưu tiên phương án có tổng chênh lệch tương đối nhỏ hơn. BMI được dùng cùng hồ sơ để cá nhân hóa lựa chọn, không tự thay đổi các mức tham khảo. Preview chỉ hiển thị tổng dinh dưỡng ngày, không phân loại hoặc mô tả chỉ tiêu là thiếu hay thừa.
+- **AC-36.15 (Phân bổ năng lượng giữa ba bữa):** Given mục tiêu năng lượng tham khảo ngày FR-35 là `E` kcal, When AI lập menu, Then tổng kcal dự kiến của bữa sáng hướng tới `25% × E`, bữa trưa `37,5% × E`, bữa tối `37,5% × E`; mỗi bữa đạt yêu cầu khi tỷ lệ nằm trong khoảng ±5 điểm phần trăm quanh tỷ lệ mục tiêu tương ứng. Hệ thống tính từ toàn bộ món và khẩu phần dự kiến của bữa, hiển thị kcal/tỷ lệ từng bữa và không yêu cầu khớp đúng tỷ lệ trung tâm. Nếu pool công thức tin cậy không đáp ứng được các khoảng này, preview nêu rõ chênh lệch.
+- **AC-36.16 (Giới hạn đề xuất trong tuần hiện tại):** Given Member mở Lịch ăn trong một ngày bất kỳ, When yêu cầu AI tạo thực đơn, Then chỉ các ngày từ ngày hiện tại đến hết Chủ nhật của tuần đó được đề xuất. Các ngày trước hôm nay phải hiển thị rõ là đã qua và AI không đề xuất; các ngày sau Chủ nhật hiện tại không được đề xuất. Nếu tuần đang xem không giao với khoảng này, preview không có món và không gọi bước xếp hạng AI. Khi áp dụng menu, hệ thống chỉ xóa/thay các mục từ hôm nay đến hết tuần hiện tại, giữ nguyên các mục của ngày đã qua.
 
 ---
 
@@ -3430,12 +3467,14 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 - **Use Case detail:** [Open interaction flows](../use-cases/meal-planning-and-shopping.md#fr-53).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập tạo và quản lý Danh sách mua sắm (Shopping List) phục vụ đi chợ hoặc mua sắm nguyên liệu; nguồn dữ liệu tạo danh sách có thể được sinh tự động từ Lịch ăn tuần (Meal Plan - FR-09) hoặc từ một hay nhiều bài công thức (Recipe Post) do người dùng chọn lọc; hỗ trợ người dùng tự thêm các mặt hàng mua sắm thủ công (custom items), chỉnh sửa thông tin số lượng/đơn vị hoặc xóa bớt các mục không cần thiết; hiển thị danh sách dưới dạng checklist tương tác cho phép đánh dấu (tick) đã mua hoặc bỏ đánh dấu; lưu trữ bền vững trạng thái checklist theo tài khoản người dùng (BR-32).
+  - **Tóm tắt yêu cầu:** Hệ thống cho phép Member đã đăng nhập tạo và quản lý Danh sách mua sắm (Shopping List) phục vụ đi chợ hoặc mua sắm nguyên liệu; Member có thể tạo danh sách rỗng độc lập với Lịch ăn và công thức, hoặc tạo nội dung từ Lịch ăn tuần (Meal Plan - FR-09), hoặc thêm từng bài công thức (Recipe Post) công khai vào một danh sách thuộc tài khoản hay tạo danh sách mới ngay trong thao tác; Member có thể đổi tên và xóa mọi danh sách thuộc tài khoản của mình; việc xóa loại bỏ checklist và dữ liệu đóng góp công thức của danh sách, không xóa Lịch ăn hoặc Recipe Post nguồn; hỗ trợ tự thêm các mặt hàng mua sắm thủ công (custom items), chỉnh sửa số lượng/đơn vị hoặc xóa mục; hiển thị checklist tương tác cho phép đánh dấu đã mua/chưa mua; lưu bền vững trạng thái checklist theo tài khoản (BR-32).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Member đã đăng nhập tài khoản hợp lệ (FR-03, BR-05, BR-32).
   - Nguồn tạo:
-    1. Sinh từ Lịch ăn tuần (toàn bộ tuần hoặc các ngày được tích chọn trong FR-09).
-    2. Sinh từ các bài Recipe Post cụ thể được chọn trong Khám phá (FR-17) hoặc Công thức đã lưu (FR-32).
+    1. Tạo danh sách rỗng có tên do Member nhập, độc lập với Lịch ăn và Recipe Post.
+    2. Sinh từ Lịch ăn tuần (toàn bộ tuần hoặc các ngày được tích chọn trong FR-09).
+      3. Thêm nguyên liệu từ một Recipe Post công khai tại mỗi lần thao tác từ menu hành động của thẻ công thức trong Khám phá (FR-17)/Công thức đã lưu (FR-32) hoặc nút trên trang chi tiết; Member chọn danh sách sở hữu hoặc tạo danh sách có tên mới cùng thao tác.
+  - Tính năng quản lý danh sách: Member được đổi tên và xóa tất cả danh sách của chính mình, gồm danh sách `MANUAL`, danh sách tạo từ Lịch ăn và danh sách cá nhân từ Recipe Post. Tên mới của danh sách từ Lịch ăn được giữ nguyên, không tự đổi theo tuần.
   - Tính năng quản lý tương tác: Thêm item thủ công ngoài công thức, sửa/xóa item, tick checklist đánh dấu đã mua/chưa mua.
 - **Phân loại Actor:**
   - Primary Actor: `Member` (người tạo và quản lý danh sách mua sắm).
@@ -3443,11 +3482,13 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
 
 #### Use Cases & User Stories
 - **Danh sách Use Cases:**
-  - `UC-53.1`: Tạo mới danh sách mua sắm từ Lịch ăn tuần hoặc từ các công thức được chọn.
+  - `UC-53.1`: Tạo danh sách mua sắm rỗng, từ Lịch ăn tuần hoặc từ các công thức được chọn.
   - `UC-53.2`: Thêm mục hàng hóa mua sắm thủ công ngoài công thức, chỉnh sửa hoặc xóa mục.
   - `UC-53.3`: Đánh dấu đã mua hoặc bỏ đánh dấu các mục dạng checklist tương tác trên thiết bị.
+  - `UC-53.4`: Đổi tên danh sách mua sắm thuộc tài khoản Member.
+  - `UC-53.5`: Xóa danh sách mua sắm thuộc tài khoản Member và checklist của danh sách.
 - **User Stories:**
-  - *Là một người nội trợ*, tôi muốn tạo nhanh danh sách đi chợ từ thực đơn tuần đã lên kế hoạch, có thể tự thêm các đồ gia dụng lặt vặt và tick chọn từng món đã bỏ vào giỏ hàng ngay trên điện thoại khi đi chợ.
+  - *Là một người nội trợ*, tôi muốn tạo danh sách đi chợ rỗng theo tên mình hoặc tạo từ thực đơn tuần, tự thêm các đồ cần mua và tick chọn từng món ngay trên điện thoại.
 
 #### Phân quyền & Ràng buộc phê duyệt
 - **Quyền hạn:** Dành riêng cho Member đã đăng nhập (BR-05, BR-32).
@@ -3487,10 +3528,23 @@ Theo quy định an toàn tại [BR-42](BUSINESS-RULES.md#br-42), chức năng d
   - *Given* người dùng là Guest chưa đăng nhập,
   - *When* cố gắng truy cập tính năng danh sách mua sắm,
   - *Then* hệ thống chặn truy cập và hiển thị thông báo yêu cầu đăng nhập.
-- **AC-53.6 (Tạo danh sách mua sắm từ Recipe Post được chọn):**
-  - *Given* Member đã chọn một hoặc nhiều Recipe Post công khai,
-  - *When* Member xác nhận tạo Shopping List từ các bài đã chọn,
-  - *Then* hệ thống tổng hợp nguyên liệu từ các bài đó và hiển thị danh sách mua sắm.
+  - **AC-53.6 (Thêm một Recipe Post vào danh sách mua sắm được chọn):**
+    - *Given* Member mở menu hành động của một Recipe Post công khai trong Khám phá/Công thức đã lưu hoặc đang xem trang chi tiết công thức,
+    - *When* Member chọn một danh sách thuộc tài khoản hoặc nhập tên hợp lệ để tạo danh sách mới, điều chỉnh khẩu phần từ 1–50, chọn các nguyên liệu muốn thêm, có thể nhập thêm mặt hàng thủ công với số lượng và đơn vị hợp lệ, rồi xác nhận,
+    - *Then* chỉ các nguyên liệu được chọn được tính theo khẩu phần và các mặt hàng thủ công được thêm vào đúng danh sách; Member có thể bỏ chọn toàn bộ nguyên liệu công thức nếu đã nhập ít nhất một mặt hàng thủ công. Nếu tạo mới, danh sách và toàn bộ mặt hàng được lưu nguyên tử; thêm lại cùng công thức trong cùng danh sách không cộng trùng đóng góp nguyên liệu của công thức.
+    - Guest được yêu cầu đăng nhập; Admin không có thao tác này. Công thức không còn công khai hoặc không sở hữu danh sách đích bị từ chối.
+- **AC-53.7 (Đổi tên danh sách mua sắm):**
+  - *Given* Member đang xem một danh sách thuộc tài khoản của mình, gồm danh sách từ Lịch ăn hoặc danh sách cá nhân,
+  - *When* Member nhập tên mới không rỗng sau khi loại bỏ khoảng trắng đầu/cuối và lưu,
+  - *Then* tên mới được lưu và hiển thị trong thanh danh sách cùng trang checklist; tên danh sách từ Lịch ăn không tự đổi lại theo tuần. Tên dài hơn 200 ký tự hoặc chỉ có khoảng trắng bị từ chối; danh sách của tài khoản khác không thể bị đổi tên.
+- **AC-53.8 (Xóa danh sách mua sắm):**
+  - *Given* Member đang xem một danh sách thuộc tài khoản của mình,
+  - *When* Member xác nhận xóa danh sách,
+  - *Then* danh sách, các item và dữ liệu đóng góp Recipe Post gắn với checklist bị xóa; Lịch ăn, Recipe Post nguồn và danh sách của Member khác được giữ nguyên. Nếu danh sách vừa xóa đang được chọn, hệ thống mở một danh sách còn lại hoặc hiển thị trạng thái chưa có danh sách.
+- **AC-53.9 (Tạo danh sách đi chợ rỗng độc lập):**
+  - *Given* Member đã đăng nhập và không có hoặc đang có các Shopping List khác,
+  - *When* Member chọn tạo danh sách trống, nhập tên hợp lệ và xác nhận,
+  - *Then* hệ thống tạo checklist mới thuộc Member với tên đã chuẩn hóa, không có item và không cần Meal Plan hoặc Recipe Post; Member có thể mở danh sách và thêm mặt hàng thủ công.
 
 ---
 
@@ -3889,7 +3943,7 @@ Customer và Expert đã đăng nhập có thể theo dõi/bỏ theo dõi qua h�
 ---
 
 <a id="fr-62"></a>
-### FR-62 — Chọn nguyên liệu và tìm công thức
+### FR-62 — Xem chi tiết nguyên liệu và tìm công thức
 
 - **Mã yêu cầu:** FR-62
 - **Module:** M01, M04
@@ -3897,17 +3951,23 @@ Customer và Expert đã đăng nhập có thể theo dõi/bỏ theo dõi qua h�
 
 #### Mục đích và phạm vi
 
-Hệ thống cung cấp trang công khai hiển thị toàn bộ nguyên liệu đang hoạt động trong danh mục chuẩn FR-18 dưới dạng các nhãn có thể chọn. Guest và Member có thể tìm trong danh sách, chọn một hoặc nhiều nguyên liệu và chuyển tới trang Khám phá với các bộ lọc đã chọn. API công thức giữ nguyên quy tắc FR-08 hiện tại: kết quả phải có đủ tất cả nguyên liệu được chọn.
+Hệ thống cung cấp trang công khai hiển thị toàn bộ nguyên liệu đang hoạt động trong danh mục chuẩn FR-18. Guest và Member có thể tìm nguyên liệu, mở trang chi tiết, xem ảnh minh họa và các chỉ tiêu dinh dưỡng có sẵn trên mỗi 100 g. Từ danh mục, người dùng chọn một hoặc nhiều nguyên liệu và chuyển tới trang Khám phá với các bộ lọc đã chọn; từ chi tiết, người dùng có thể tìm công thức theo riêng nguyên liệu đang xem. API công thức giữ nguyên quy tắc FR-08 hiện tại: kết quả phải có đủ tất cả nguyên liệu được chọn.
 
-Trang này là cách chọn trực tiếp từ điển nguyên liệu hiện có; không phân nhóm nhãn trong giao diện và không tạo taxonomy nhóm món ăn hoặc danh mục động mới. API công khai không trả trường nguồn quản trị, URL nguồn, dữ liệu dinh dưỡng hoặc trạng thái nội bộ ngoài các trường cần hiển thị.
+Trang này là cách duyệt trực tiếp từ điển nguyên liệu hiện có; không tạo taxonomy nhóm món ăn hoặc danh mục động mới. API công khai chỉ trả thông tin danh mục cần cho giao diện: ID, tên, nhóm, ảnh minh họa và các chỉ tiêu dinh dưỡng trên mỗi 100 g ở trang chi tiết. API không trả tên/URL nguồn tham chiếu, ngày tham khảo, trạng thái danh mục, cờ hỗ trợ tính dinh dưỡng hay trường quản trị khác. Chỉ nguyên liệu đang hoạt động mới có thể được liệt kê và xem chi tiết.
 
 #### Acceptance Criteria
 
-- **AC-62.1 — Toàn bộ nguyên liệu đang hoạt động:** Given catalog có nguyên liệu ở trạng thái `ACTIVE` và `INACTIVE`, When Guest mở trang danh mục, Then tất cả và chỉ các nguyên liệu `ACTIVE` được tải để hiển thị thành các nhãn.
-- **AC-62.2 — Tìm và chọn nhiều nhãn:** Given danh mục nguyên liệu đã tải, When người dùng tìm theo tên và chọn hoặc bỏ chọn nhãn, Then giao diện thể hiện đúng trạng thái đã chọn và hỗ trợ chọn nhiều nguyên liệu bằng chuột hoặc bàn phím.
+- **AC-62.1 — Toàn bộ nguyên liệu đang hoạt động:** Given catalog có nguyên liệu ở trạng thái `ACTIVE` và `INACTIVE`, When Guest mở trang danh mục, Then tất cả và chỉ các nguyên liệu `ACTIVE` được tải để hiển thị thành thẻ nguyên liệu.
+- **AC-62.2 — Tìm và chọn nhiều nguyên liệu:** Given danh mục nguyên liệu đã tải, When người dùng tìm theo tên và chọn hoặc bỏ chọn nguyên liệu từ thẻ, Then giao diện thể hiện đúng trạng thái đã chọn và hỗ trợ chọn nhiều nguyên liệu bằng chuột hoặc bàn phím.
 - **AC-62.3 — Tìm công thức theo nhiều nguyên liệu:** Given người dùng chọn một hoặc nhiều nguyên liệu đang hoạt động, When chọn Tìm công thức, Then trang Khám phá mở với đúng các ingredient ID đã chọn; công thức phải thỏa tất cả nguyên liệu theo semantics AND của FR-08.
-- **AC-62.4 — Không phân nhóm nhãn:** Given danh mục nguyên liệu được hiển thị, Then các nguyên liệu xuất hiện trong một danh sách nhãn thống nhất, không yêu cầu người dùng duyệt `ingredient_group` hoặc taxonomy món ăn.
-- **AC-62.5 — Hạn chế dữ liệu API công khai:** Given danh sách nhóm/nguyên liệu được trả về, Then chỉ có group name/count hoặc ingredient ID/name/group; không tiết lộ trường quản trị, nguồn tham chiếu hoặc dữ liệu dinh dưỡng.
+- **AC-62.4 — Duyệt danh sách nguyên liệu:** Given danh mục nguyên liệu được hiển thị, Then giao diện có thể cho biết nhóm của từng nguyên liệu nhưng không yêu cầu người dùng duyệt taxonomy nhóm món ăn để tìm hoặc chọn.
+- **AC-62.5 — Hạn chế dữ liệu API công khai:** Given danh sách nhóm/nguyên liệu hoặc chi tiết nguyên liệu được trả về, Then API chỉ có group name/count hoặc ingredient ID/name/group/image URL và các chỉ tiêu dinh dưỡng trên mỗi 100 g ở chi tiết; không tiết lộ nguồn tham chiếu, ngày tham khảo, trạng thái nội bộ, cờ hỗ trợ tính dinh dưỡng hoặc trường quản trị khác.
 - **AC-62.6 — Trạng thái giao diện:** Given danh mục đang tải, lỗi, rỗng hoặc có dữ liệu, Then UI hiển thị trạng thái tương ứng, có thể thử lại khi lỗi và các nhóm/nguyên liệu có thể thao tác bằng keyboard.
+- **AC-62.7 — Xem chi tiết nguyên liệu hoạt động:** Given nguyên liệu đang `ACTIVE`, When Guest hoặc Member mở chi tiết từ danh mục, Then trang hiển thị tên, nhóm, ảnh minh họa nếu có và bảng dinh dưỡng trên mỗi 100 g; ảnh trống/tải lỗi được nhận biết là chưa có ảnh; nguyên liệu `INACTIVE` hoặc ID không tồn tại trả cùng phản hồi không tìm thấy.
+- **AC-62.8 — Chỉ tiêu dinh dưỡng công khai:** Given chi tiết nguyên liệu được mở, Then bảng có thể hiển thị năng lượng, protein, carbohydrate, chất béo, chất xơ, canxi, sắt, vitamin B12 và kẽm; mỗi giá trị giữ đơn vị theo định nghĩa chỉ tiêu.
+- **AC-62.9 — Dữ liệu thiếu không phải số không:** Given một hoặc nhiều chỉ tiêu dinh dưỡng là `NULL`, When bảng dinh dưỡng được hiển thị, Then từng chỉ tiêu thiếu được ghi là chưa có dữ liệu, không chuyển thành `0`; nếu tất cả đều thiếu, UI hiển thị trạng thái chưa có dữ liệu dinh dưỡng.
+- **AC-62.10 — Tiếp tục tìm công thức:** Given người dùng đang xem chi tiết nguyên liệu, When chọn Tìm công thức, Then trang Khám phá mở với đúng ID nguyên liệu đó làm bộ lọc.
+- **AC-62.11 — Bài công thức có nguyên liệu:** Given người dùng mở chi tiết nguyên liệu, Then trang tải và hiển thị ngay các bài công thức công khai có liên kết đúng ingredient ID đó, hỗ trợ Xem thêm, sắp xếp mới nhất/được yêu thích và mở từng bài; lỗi trang tiếp theo giữ các bài đã tải và cho thử lại đúng trang bị lỗi.
+- **AC-62.12 — Nhãn lọc loại món:** Given trang chi tiết hiển thị bài công thức liên quan, Then các nhãn loại ăn chay lấy từ lựa chọn chuẩn của hệ thống và lọc đồng thời với ingredient ID; nhãn mô tả loại của công thức, không tự suy ra nguyên liệu phù hợp hoặc vi phạm một chế độ ăn khi catalog chưa có dữ liệu phân loại đó.
 
 ---

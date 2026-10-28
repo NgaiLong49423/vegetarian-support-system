@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.time.Clock;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
@@ -24,7 +25,9 @@ import tech.mamxanh.common.exception.ErrorCode;
 import tech.mamxanh.integration.ai.AiClient;
 import tech.mamxanh.mealplan.dto.request.ApplyAiMenuRequest;
 import tech.mamxanh.mealplan.dto.request.CreateAiMenuPreviewRequest;
+import tech.mamxanh.mealplan.entity.MealPlanEntryEntity;
 import tech.mamxanh.mealplan.entity.MealPlanEntity;
+import tech.mamxanh.mealplan.dto.response.AiMenuPreviewResponse;
 import tech.mamxanh.mealplan.repository.MealPlanEntryRepository;
 import tech.mamxanh.mealplan.repository.MealPlanRepository;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
@@ -39,7 +42,8 @@ import tech.mamxanh.recipe.service.RecipePostService;
 import tech.mamxanh.subscription.service.SubscriptionEntitlementService;
 
 class AiMenuServiceTest {
-    private static final LocalDate MONDAY = LocalDate.of(2026, 10, 12);
+    private static final LocalDate MONDAY = LocalDate.of(2026, 10, 26);
+    private static final LocalDate TODAY = MONDAY.plusDays(1);
     private final CurrentUserService users = mock(CurrentUserService.class);
     private final SubscriptionEntitlementService entitlements = mock(SubscriptionEntitlementService.class);
     private final NutritionProfileService profiles = mock(NutritionProfileService.class);
@@ -53,8 +57,7 @@ class AiMenuServiceTest {
     private final MealPlanRepository plans = mock(MealPlanRepository.class);
     private final MealPlanEntryRepository entries = mock(MealPlanEntryRepository.class);
     private final MealPlanReadService reads = mock(MealPlanReadService.class);
-    private final AiMenuService service = new AiMenuService(users, entitlements, profiles, dietary, recipes,
-            nutrition, ingredients, conversions, ai, events, Clock.systemUTC(), new JsonMapper(), plans, entries, reads);
+    private final AiMenuService service = serviceAt(Clock.fixed(MONDAY.atTime(12, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC));
 
     @BeforeEach
     void member() {
@@ -79,17 +82,19 @@ class AiMenuServiceTest {
     }
 
     @Test
-    void profileGoalMayBeNullAndPreviewRequiresTwentyOneTrustedNonAdjacentSlots() {
+    void profileGoalMayBeNullAndPreviewUsesRankedRecipesForTwentyOneMealSlots() {
         prepareCandidates();
-        when(ai.recommendRecipes(any(), anyList(), eq(21))).thenReturn(
-                new AiClient.RecommendationResult("{\"recipeIds\":" + alternatingIds() + "}", 1, 1, 2));
+        when(ai.recommendRecipes(any(), anyList(), eq(2))).thenReturn(
+                new AiClient.RecommendationResult("{\"recipeIds\":[11,12]}", 1, 1, 2));
         var result = service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null));
         assertThat(result.goal()).isNull();
         assertThat(result.meals()).hasSize(21);
+        assertThat(result.energyTargetKcal()).isEqualByComparingTo("2374");
+        assertThat(result.bmi()).isEqualByComparingTo("21.48");
         for (int index = 1; index < result.meals().size(); index++) {
             assertThat(result.meals().get(index).recipeId()).isNotEqualTo(result.meals().get(index - 1).recipeId());
         }
-        verify(ai).recommendRecipes(any(), anyList(), eq(21));
+        verify(ai).recommendRecipes(any(), anyList(), eq(2));
         ArgumentCaptor<Object> event = ArgumentCaptor.forClass(Object.class);
         verify(events).publishEvent(event.capture());
         assertThat(event.getValue()).isInstanceOfSatisfying(tech.mamxanh.integration.ai.AiUsageEvent.class,
@@ -97,10 +102,57 @@ class AiMenuServiceTest {
     }
 
     @Test
+    void previewStartsAtTodayAndDoesNotAskAiForAWeekThatHasAlreadyPassed() {
+        prepareCandidates();
+        Clock tuesday = Clock.fixed(TODAY.atTime(12, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
+        when(ai.recommendRecipes(any(), anyList(), eq(2))).thenReturn(
+                new AiClient.RecommendationResult("{\"recipeIds\":[11,12]}", 1, 1, 2));
+        var todayPreview = serviceAt(tuesday).createPreview(
+                new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null));
+        assertThat(todayPreview.meals()).hasSize(18)
+                .allSatisfy(meal -> assertThat(meal.mealDate()).isAfterOrEqualTo(TODAY));
+
+        reset(ai, events, recipes, ingredients, conversions, nutrition);
+        var pastWeek = serviceAt(Clock.fixed(TODAY.plusDays(7).atTime(12, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC))
+                .createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null));
+        assertThat(pastWeek.meals()).isEmpty();
+        verifyNoInteractions(ai, events, recipes, ingredients, conversions, nutrition);
+
+        var nextWeek = serviceAt(Clock.fixed(TODAY.atTime(12, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC))
+                .createPreview(new CreateAiMenuPreviewRequest(MONDAY.plusDays(7), "PROFILE", null, null, null));
+        assertThat(nextWeek.meals()).isEmpty();
+    }
+
+    @Test
+    void applyingMenuPreservesPastDatesAndRejectsPastSelections() {
+        prepareCandidates();
+        LocalDate firstActiveDate = TODAY;
+        Clock tuesday = Clock.fixed(firstActiveDate.atTime(12, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
+        MealPlanEntity week = new MealPlanEntity();
+        week.setId(31L);
+        when(plans.lockWeek(17L, MONDAY)).thenReturn(java.util.Optional.of(week));
+
+        serviceAt(tuesday).apply(new ApplyAiMenuRequest(MONDAY, "PROFILE", null, null, List.of(
+                new ApplyAiMenuRequest.SelectedMeal(firstActiveDate, "BREAKFAST", 11L))));
+
+        verify(entries).deleteAllByMealPlanIdAndMealDateGreaterThanEqual(31L, firstActiveDate);
+        clearInvocations(plans, entries);
+        var pastSelection = new ApplyAiMenuRequest(MONDAY, "PROFILE", null, null, List.of(
+                new ApplyAiMenuRequest.SelectedMeal(TODAY.minusDays(1), "BREAKFAST", 11L)));
+        assertThatThrownBy(() -> serviceAt(tuesday).apply(pastSelection)).isInstanceOf(AppException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RECIPE_NOT_FOUND);
+        var nextWeekSelection = new ApplyAiMenuRequest(MONDAY.plusDays(7), "PROFILE", null, null, List.of(
+                new ApplyAiMenuRequest.SelectedMeal(MONDAY.plusDays(7), "BREAKFAST", 11L)));
+        assertThatThrownBy(() -> serviceAt(tuesday).apply(nextWeekSelection)).isInstanceOf(AppException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RECIPE_NOT_FOUND);
+        verifyNoInteractions(plans, entries);
+    }
+
+    @Test
     void thisWeekPreferencesArePassedOnlyAsRequestContext() {
         prepareCandidates();
-        when(ai.recommendRecipes(any(), anyList(), eq(21))).thenReturn(
-                new AiClient.RecommendationResult("{\"recipeIds\":" + alternatingIds() + "}", 1, 1, 2));
+        when(ai.recommendRecipes(any(), anyList(), eq(2))).thenReturn(
+                new AiClient.RecommendationResult("{\"recipeIds\":[11,12]}", 1, 1, 2));
         var request = new CreateAiMenuPreviewRequest(MONDAY, "THIS_WEEK", "LOSE_WEIGHT", List.of(2L), List.of(3L));
 
         var result = service.createPreview(request);
@@ -108,11 +160,23 @@ class AiMenuServiceTest {
         assertThat(result.mode()).isEqualTo("THIS_WEEK");
         assertThat(result.goal()).isEqualTo("LOSE_WEIGHT");
         ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
-        verify(ai).recommendRecipes(prompt.capture(), anyList(), eq(21));
+        verify(ai).recommendRecipes(prompt.capture(), anyList(), eq(2));
         assertThat(prompt.getValue()).contains("Goal preference=LOSE_WEIGHT")
+                .contains("BMI=21.48")
                 .contains("preferred ingredient IDs=[2]")
                 .contains("forbidden ingredient IDs=[3]");
         verify(events).publishEvent(any(tech.mamxanh.integration.ai.AiUsageEvent.class));
+    }
+
+    @Test
+    void keepsTrustedRecipesAvailableWhenAiReturnsOnlyPartialRanking() {
+        prepareCandidates();
+        when(ai.recommendRecipes(any(), anyList(), eq(2))).thenReturn(
+                new AiClient.RecommendationResult("{\"recipeIds\":[11]}", 1, 1, 2));
+
+        var result = service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null));
+
+        assertThat(result.meals()).extracting(AiMenuPreviewResponse.Meal::recipeId).contains(12L);
     }
 
     @Test
@@ -144,11 +208,32 @@ class AiMenuServiceTest {
         inOrder.verify(recipes).requirePublishedMealPlanRecipe(12L);
         inOrder.verify(plans).createWeekIfAbsent(17L, MONDAY);
         inOrder.verify(plans).lockWeek(17L, MONDAY);
-        inOrder.verify(entries).deleteAllByMealPlanId(31L);
+        inOrder.verify(entries).deleteAllByMealPlanIdAndMealDateGreaterThanEqual(31L, MONDAY);
         inOrder.verify(entries).flush();
         inOrder.verify(entries, times(2)).save(any());
         inOrder.verify(plans).touchWeek(31L);
         inOrder.verify(reads).getWeek(MONDAY);
+    }
+
+    @Test
+    void appliesMultipleDistinctRecipesInTheSameMealAtOneServingEach() {
+        prepareCandidates();
+        MealPlanEntity week = new MealPlanEntity();
+        week.setId(31L);
+        when(plans.lockWeek(17L, MONDAY)).thenReturn(java.util.Optional.of(week));
+        var request = new ApplyAiMenuRequest(MONDAY, "PROFILE", null, null, List.of(
+                new ApplyAiMenuRequest.SelectedMeal(MONDAY, "BREAKFAST", 11L),
+                new ApplyAiMenuRequest.SelectedMeal(MONDAY, "BREAKFAST", 12L)));
+
+        service.apply(request);
+
+        ArgumentCaptor<MealPlanEntryEntity> saved = ArgumentCaptor.forClass(MealPlanEntryEntity.class);
+        verify(entries, times(2)).save(saved.capture());
+        assertThat(saved.getAllValues()).allSatisfy(entry -> {
+            assertThat(entry.getMealDate()).isEqualTo(MONDAY);
+            assertThat(entry.getMealType()).isEqualTo("BREAKFAST");
+            assertThat(entry.getPlannedServings()).isEqualByComparingTo(BigDecimal.ONE);
+        }).extracting(MealPlanEntryEntity::getRecipeId).containsExactly(11L, 12L);
     }
 
     @Test
@@ -162,7 +247,7 @@ class AiMenuServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_FOUND);
 
         verify(recipes).requirePublishedMealPlanRecipe(11L);
-        verify(entries, never()).deleteAllByMealPlanId(anyLong());
+        verify(entries, never()).deleteAllByMealPlanIdAndMealDateGreaterThanEqual(anyLong(), any());
         verify(entries, never()).save(any());
         verifyNoInteractions(reads);
     }
@@ -170,14 +255,14 @@ class AiMenuServiceTest {
     @Test
     void rejectsProviderFailureAndMalformedAiOutputWithoutPublishingUsage() {
         prepareCandidates();
-        when(ai.recommendRecipes(any(), anyList(), eq(21)))
+        when(ai.recommendRecipes(any(), anyList(), eq(2)))
                 .thenThrow(new tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException("unavailable"));
         assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_PROVIDER_UNAVAILABLE);
         verifyNoInteractions(events);
 
         reset(ai);
-        when(ai.recommendRecipes(any(), anyList(), eq(21)))
+        when(ai.recommendRecipes(any(), anyList(), eq(2)))
                 .thenReturn(new AiClient.RecommendationResult("not-json", 1, 1, 2));
         assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
@@ -196,20 +281,17 @@ class AiMenuServiceTest {
     }
 
     @Test
-    void rejectsOutOfCatalogAndAdjacentRecipesReturnedByAi() {
+    void rejectsOutOfCatalogAndDuplicateRecipesReturnedByAi() {
         prepareCandidates();
-        String unknown = java.util.stream.IntStream.range(0, 21).mapToObj(index -> index == 4 ? "999" : "11")
-                .collect(java.util.stream.Collectors.joining(",", "[", "]"));
-        when(ai.recommendRecipes(any(), anyList(), eq(21)))
-                .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":" + unknown + "}", 1, 1, 2));
+        when(ai.recommendRecipes(any(), anyList(), eq(2)))
+                .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":[11,999]}", 1, 1, 2));
         assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
         verifyNoInteractions(events);
 
         reset(ai);
-        String adjacent = "[" + "11,".repeat(20) + "11]";
-        when(ai.recommendRecipes(any(), anyList(), eq(21)))
-                .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":" + adjacent + "}", 1, 1, 2));
+        when(ai.recommendRecipes(any(), anyList(), eq(2)))
+                .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":[11,11]}", 1, 1, 2));
         assertThatThrownBy(() -> service.createPreview(new CreateAiMenuPreviewRequest(MONDAY, "PROFILE", null, null, null)))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.AI_RESPONSE_INVALID);
     }
@@ -232,7 +314,7 @@ class AiMenuServiceTest {
     }
 
     @Test
-    void rejectsApplySelectionsOutsideTheWeekAndDuplicateMealPositions() {
+    void rejectsApplySelectionsOutsideTheWeekAndDuplicateRecipesInOneMeal() {
         prepareCandidates();
         var outsideWeek = new ApplyAiMenuRequest(MONDAY, "PROFILE", null, null,
                 List.of(new ApplyAiMenuRequest.SelectedMeal(MONDAY.plusDays(7), "BREAKFAST", 11L)));
@@ -241,7 +323,7 @@ class AiMenuServiceTest {
 
         var duplicatePosition = new ApplyAiMenuRequest(MONDAY, "PROFILE", null, null, List.of(
                 new ApplyAiMenuRequest.SelectedMeal(MONDAY, "BREAKFAST", 11L),
-                new ApplyAiMenuRequest.SelectedMeal(MONDAY, "BREAKFAST", 12L)));
+                new ApplyAiMenuRequest.SelectedMeal(MONDAY, "BREAKFAST", 11L)));
         assertThatThrownBy(() -> service.apply(duplicatePosition)).isInstanceOf(AppException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_FAILED);
         verifyNoInteractions(plans, entries, reads);
@@ -250,13 +332,19 @@ class AiMenuServiceTest {
 
     private void prepareCandidates() {
         when(profiles.requireMenuNutritionContext(17L)).thenReturn(
-                new NutritionProfileService.MenuNutritionContext(null, "FEMALE", BigDecimal.valueOf(160), BigDecimal.valueOf(55), "LIGHTLY_ACTIVE", 25));
+                new NutritionProfileService.MenuNutritionContext(null, "FEMALE", BigDecimal.valueOf(160), BigDecimal.valueOf(55),
+                        "LIGHTLY_ACTIVE", 25, new BigDecimal("21.48"), "Bình thường", new BigDecimal("2374"), List.of()));
         when(dietary.menuConstraints(17L)).thenReturn(new DietaryPreferenceService.MenuDietaryConstraints(null, List.of(), List.of()));
         when(ingredients.findActiveUnits()).thenReturn(List.of(new UnitResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, true)));
         when(recipes.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
                 List.of(recipe(11, "Canh nấm", 1), recipe(12, "Đậu phụ kho", 2)), 0, 50, 2, 1));
         when(nutrition.calculate(anyList(), eq(2))).thenReturn(new RecipeNutritionService.NutritionSummary(true, List.of(),
                 Map.of(), Map.of("ENERGY_KCAL", BigDecimal.valueOf(100), "PROTEIN_G", BigDecimal.valueOf(5))));
+    }
+
+    private AiMenuService serviceAt(Clock clock) {
+        return new AiMenuService(users, entitlements, profiles, dietary, recipes, nutrition, ingredients,
+                conversions, ai, events, clock, new JsonMapper(), plans, entries, reads);
     }
 
     private static RecipePostResponse recipe(long id, String title, long ingredientId) {
@@ -271,8 +359,4 @@ class AiMenuServiceTest {
                 "EASY", 2, 10, 10, null, "PUBLISHED", List.of(), List.of(ingredient), 0, 0, null, 0);
     }
 
-    private static String alternatingIds() {
-        return java.util.stream.IntStream.range(0, 21).mapToObj(index -> index % 2 == 0 ? "11" : "12")
-                .collect(java.util.stream.Collectors.joining(",", "[", "]"));
-    }
 }

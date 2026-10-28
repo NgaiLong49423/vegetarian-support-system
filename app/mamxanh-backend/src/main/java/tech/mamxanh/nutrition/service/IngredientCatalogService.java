@@ -24,6 +24,7 @@ import tech.mamxanh.nutrition.dto.response.ConversionResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientNutritionResponse;
 import tech.mamxanh.nutrition.dto.response.IngredientResponse;
 import tech.mamxanh.nutrition.dto.response.PublicIngredientGroupResponse;
+import tech.mamxanh.nutrition.dto.response.PublicIngredientDetailResponse;
 import tech.mamxanh.nutrition.dto.response.PublicIngredientResponse;
 import tech.mamxanh.nutrition.dto.response.UnitResponse;
 import tech.mamxanh.nutrition.entity.IngredientEntity;
@@ -88,9 +89,22 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
         PageResponse<IngredientResponse> results = searchIngredients(query, ingredientGroup, true, null, page, size);
         List<PublicIngredientResponse> items = results.content().stream()
                 .map(ingredient -> new PublicIngredientResponse(ingredient.id(), ingredient.name(),
-                        ingredient.ingredientGroup()))
+                        ingredient.ingredientGroup(), ingredient.imageUrl()))
                 .toList();
         return PageResponse.of(items, results.page(), results.size(), results.totalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public PublicIngredientDetailResponse getPublicIngredient(long id) {
+        IngredientEntity ingredient = ingredientRepository.findByIdAndStatus(id, CatalogStatus.ACTIVE)
+                .orElseThrow(() -> notFound("INGREDIENT_NOT_FOUND", "Không tìm thấy nguyên liệu."));
+        IngredientNutritionResponse nutrition = new IngredientNutritionResponse(ingredient.getEnergyKcalPer100g(),
+                ingredient.getProteinGramsPer100g(), ingredient.getCarbohydrateGramsPer100g(),
+                ingredient.getTotalFatGramsPer100g(), ingredient.getFiberGramsPer100g(),
+                ingredient.getCalciumMgPer100g(), ingredient.getIronMgPer100g(),
+                ingredient.getVitaminB12MicrogramsPer100g(), ingredient.getZincMgPer100g());
+        return new PublicIngredientDetailResponse(ingredient.getId(), ingredient.getName(),
+                ingredient.getIngredientGroup(), ingredient.getImageUrl(), nutrition);
     }
 
     @Transactional(readOnly = true)
@@ -129,6 +143,34 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
                 .sorted(Comparator.comparing(IngredientEntity::getName))
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IngredientResponse> findIngredientReferences(java.util.Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return ingredientRepository.findAllById(ids).stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UnitResponse> findUnitReferences(java.util.Collection<Integer> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return unitRepository.findAllById(ids).stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ConversionResponse> findActiveConversions(java.util.Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        var activeIds = ingredientRepository.findByIdInAndStatus(ids, CatalogStatus.ACTIVE).stream()
+                .map(IngredientEntity::getId).toList();
+        if (activeIds.isEmpty()) return List.of();
+        var activeUnits = unitRepository.findByActiveTrue().stream().map(UnitEntity::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        return conversionRepository.findByIdIngredientIdInAndActiveTrue(activeIds).stream()
+                .filter(conversion -> activeUnits.contains(conversion.getId().getUnitId()))
+                .map(this::toResponse).toList();
     }
 
     @Transactional
@@ -315,7 +357,7 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
                 entity.getTotalFatGramsPer100g(), entity.getFiberGramsPer100g(), entity.getCalciumMgPer100g(),
                 entity.getIronMgPer100g(), entity.getVitaminB12MicrogramsPer100g(), entity.getZincMgPer100g());
         return new IngredientResponse(entity.getId(), entity.getName(), entity.getIngredientGroup(),
-                entity.getSourceName(), entity.getSourceUrl(), entity.getReferenceDate(),
+                entity.getSourceName(), entity.getImageUrl(), entity.getSourceUrl(), entity.getReferenceDate(),
                 entity.isNutritionSupported(), entity.getStatus() == CatalogStatus.ACTIVE, nutrition);
     }
 

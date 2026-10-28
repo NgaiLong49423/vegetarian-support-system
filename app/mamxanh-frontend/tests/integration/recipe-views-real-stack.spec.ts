@@ -90,6 +90,7 @@ test('FR-58: Guest detail, reload and Explore share a real persisted view count'
       expect(result).not.toHaveProperty('totalElements');
       expect(result).not.toHaveProperty('totalPages');
       expect(result.items.map((item: { id: number; viewCount: number }) => [item.id, item.viewCount])).toEqual([[recipeId, 1]]);
+      await expect(page.getByRole('status', { name: 'Đang tải công thức' })).toHaveCount(0);
       await expect(card.getByText('1 lượt xem', { exact: true })).toBeVisible();
     }
   } finally {

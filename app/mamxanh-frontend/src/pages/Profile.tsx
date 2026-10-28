@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import {
   Activity,
+  ArrowLeftRight,
   Bookmark,
   Leaf,
   LoaderCircle,
@@ -18,6 +19,7 @@ import { Button, Card, EmptyState } from "../components/ui"
 import { useAuth } from "../components/AuthContext"
 import { subscriptionApi, type MySubscriptionResponse } from "../api/subscription"
 import { useSavedRecipes } from "../components/SavedRecipesContext"
+import { AddToMealPlanButton } from "../components/AddToMealPlanButton"
 import {
   savedRecipesApi,
   type SavedRecipePage,
@@ -124,79 +126,81 @@ export function Profile() {
   return (
     <PageContainer className="py-7">
       <div className="mx-auto max-w-4xl">
-        <header className="flex flex-wrap items-center gap-4 py-3 sm:gap-5">
-          {account.avatarUrl ? (
-            <img
-              src={account.avatarUrl}
-              alt=""
-              className="h-20 w-20 rounded-full object-cover"
-            />
-          ) : (
-            <span
-              aria-hidden="true"
-              className="flex h-20 w-20 items-center justify-center rounded-full bg-paper text-2xl font-semibold text-brand-600"
-            >
-              {account.displayName.charAt(0).toUpperCase()}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-semibold text-ink">
-              {account.displayName}
-            </h1>
-            <p className="mt-1 truncate text-xs text-ink-muted">
-              {account.email}
-            </p>
-            <p className="mt-2 text-xs text-leaf-700">
-              {account.role === "EXPERT"
-                ? "Chuyên gia ẩm thực"
-                : account.role === "ADMIN"
-                  ? "Quản trị viên"
-                  : "Thành viên Mâm Xanh"}
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
-              <span className="inline-flex items-center gap-1.5 text-ink-muted">
-                <Sparkles className="h-3.5 w-3.5" />
-                {isFree ? "Gói AI: Miễn phí" : `Gói AI: ${activeTier}`}
-                {!isFree && subscription?.endsAt
-                  ? ` · Hết hạn ${formatDate(subscription.endsAt)}`
-                  : ""}
+        <Card className="mb-6 p-5 sm:p-7 shadow-xs">
+          <header className="flex flex-wrap items-center gap-4 sm:gap-6 py-0">
+            {account.avatarUrl ? (
+              <img
+                src={account.avatarUrl}
+                alt=""
+                className="h-20 w-20 rounded-full object-cover ring-2 ring-brand-100"
+              />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-50 text-2xl font-bold text-brand-600 ring-2 ring-brand-100"
+              >
+                {account.displayName.charAt(0).toUpperCase()}
               </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl font-extrabold text-ink sm:text-3xl">
+                {account.displayName}
+              </h1>
+              <p className="mt-1 truncate text-xs text-ink-muted">
+                {account.email}
+              </p>
+              <p className="mt-2 text-xs font-semibold text-leaf-700">
+                {account.role === "EXPERT"
+                  ? "Chuyên gia ẩm thực"
+                  : account.role === "ADMIN"
+                    ? "Quản trị viên"
+                    : "Thành viên Mâm Xanh"}
+              </p>
+              <div className="mt-2.5 flex flex-wrap items-center gap-2.5 text-xs">
+                <span className="inline-flex items-center gap-1.5 text-ink-muted">
+                  <Sparkles className="h-3.5 w-3.5 text-brand-600" />
+                  {isFree ? "Gói AI: Miễn phí" : `Gói AI: ${activeTier}`}
+                  {!isFree && subscription?.endsAt
+                    ? ` · Hết hạn ${formatDate(subscription.endsAt)}`
+                    : ""}
+                </span>
+                <Link
+                  to="/goi-ai"
+                  className="inline-flex items-center rounded-full border border-brand-200/80 bg-brand-50 px-2.5 py-0.5 font-semibold text-brand-700 transition-colors hover:bg-brand-100 hover:border-brand-300 dark:border-brand-800 dark:bg-brand-900/30 dark:text-brand-400"
+                >
+                  {isFree ? "Nâng cấp gói" : "Đổi gói"}
+                </Link>
+                <Link
+                  to="/giao-dich"
+                  className="inline-flex items-center rounded-full border border-brand-200/60 bg-paper px-2.5 py-0.5 font-medium text-ink-soft transition-colors hover:border-brand-300 hover:text-brand-700 dark:border-brand-800 dark:bg-surface"
+                >
+                  Lịch sử giao dịch
+                </Link>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {account.role !== "ADMIN" && (
+                <Link
+                  to={`/thanh-vien/${account.id}`}
+                  className="inline-flex items-center gap-2 rounded-full border border-brand-300/40 bg-paper px-3.5 py-1.5 text-sm font-semibold text-ink shadow-xs transition-all hover:border-brand-500 hover:text-brand-700 hover:shadow-sm dark:border-brand-800 dark:bg-surface"
+                >
+                  <UserRound className="h-4 w-4 text-brand-600 shrink-0" />
+                  Trang cá nhân
+                </Link>
+              )}
               <Link
-                to="/goi-ai"
-                className="font-semibold text-brand-600 underline hover:text-brand-700"
+                to="/ho-so/so-thich-an-uong"
+                className="inline-flex items-center gap-2 rounded-full border border-brand-300/40 bg-paper px-3.5 py-1.5 text-sm font-semibold text-ink shadow-xs transition-all hover:border-brand-500 hover:text-brand-700 hover:shadow-sm dark:border-brand-800 dark:bg-surface"
               >
-                {isFree ? "Nâng cấp gói" : "Đổi gói"}
-              </Link>
-              <Link
-                to="/giao-dich"
-                className="text-ink-muted hover:text-ink-soft"
-              >
-                Lịch sử giao dịch
+                <Settings className="h-4 w-4 text-brand-600 shrink-0" />
+                Sở thích & hồ sơ
               </Link>
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {account.role !== "ADMIN" && (
-              <Link
-                to={`/thanh-vien/${account.id}`}
-                className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-xs font-semibold text-ink-soft hover:bg-paper"
-              >
-                <UserRound className="h-3.5 w-3.5" />
-                Trang cá nhân
-              </Link>
-            )}
-            <Link
-              to="/ho-so/so-thich-an-uong"
-              className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-xs text-ink-soft hover:bg-paper"
-            >
-              <Settings className="h-3.5 w-3.5" />
-              Sở thích & hồ sơ
-            </Link>
-          </div>
-        </header>
+          </header>
+        </Card>
         <nav
           aria-label="Nội dung hồ sơ"
-          className="mb-6 mt-5 flex gap-6 border-b border-brand-100"
+          className="mb-6 mt-5 flex gap-6 border-b border-brand-100/80 dark:border-brand-900/40"
         >
           <button
             type="button"
@@ -205,7 +209,7 @@ export function Profile() {
             className={`border-b-2 pb-3 text-sm font-semibold transition-colors duration-200 ${
               tab === "saved"
                 ? "border-brand-600 text-brand-600"
-                : "border-transparent text-ink-muted hover:text-brand-500"
+                : "border-transparent text-ink-soft hover:text-brand-600"
             }`}
           >
             Công thức đã lưu
@@ -213,7 +217,7 @@ export function Profile() {
           {account.role === "EXPERT" && (
             <Link
               to="/ho-so/chuyen-gia"
-              className="pb-3 text-sm font-medium text-ink-muted transition-colors duration-200 hover:text-brand-600"
+              className="pb-3 text-sm font-semibold text-ink-soft transition-colors duration-200 hover:text-brand-600"
             >
               Đã tạo
             </Link>
@@ -225,7 +229,7 @@ export function Profile() {
             className={`border-b-2 pb-3 text-sm font-semibold transition-colors duration-200 ${
               tab === "profile"
                 ? "border-brand-600 text-brand-600"
-                : "border-transparent text-ink-muted hover:text-brand-500"
+                : "border-transparent text-ink-soft hover:text-brand-600"
             }`}
           >
             Sức khỏe & sở thích
@@ -330,42 +334,61 @@ export function Profile() {
             ) : ownResult?.content.length ? (
               <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
                 {ownResult.content.map((item) => (
-                  <article key={item.recipeId} className="relative min-w-0 transition-transform duration-200 motion-safe:hover:-translate-y-0.5">
+                  <article
+                    key={item.recipeId}
+                    className="relative flex h-full min-w-0 flex-col transition-transform duration-200 motion-safe:hover:-translate-y-0.5"
+                  >
                     {item.available ? (
-                      <Link
-                        to={`/cong-thuc/id/${item.recipeId}`}
-                        className="group block"
-                      >
-                        <div className="aspect-[4/5] overflow-hidden rounded-xl bg-paper">
-                          {item.coverUrl ? (
-                            <img
-                              src={item.coverUrl}
-                              alt={item.title ?? ""}
-                              loading="lazy"
-                              className="h-full w-full object-cover transition-transform motion-safe:group-hover:scale-[1.03]"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-ink-muted">
-                              <Leaf className="h-7 w-7" />
-                            </div>
-                          )}
+                      <>
+                        <Link
+                          to={`/cong-thuc/id/${item.recipeId}`}
+                          className="group flex flex-1 flex-col rounded-xl focus-visible:outline-offset-4"
+                        >
+                          <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-raised">
+                            {item.coverUrl ? (
+                              <img
+                                src={item.coverUrl}
+                                alt={item.title ?? ""}
+                                loading="lazy"
+                                className="h-full w-full object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.03]"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-ink-muted">
+                                <Leaf className="h-7 w-7" />
+                              </div>
+                            )}
+                          </div>
+                          <h3 className="mt-2.5 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-ink transition-colors duration-200 group-hover:text-brand-600">
+                            {item.title}
+                          </h3>
+                          <p className="mt-1 truncate text-xs text-ink-muted">
+                            {item.authorName}
+                          </p>
+                        </Link>
+                        <div className="mt-1">
+                          <Link
+                            to={`/so-sanh?a=${item.recipeId}`}
+                            aria-label={`So sánh ${item.title}`}
+                            className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+                          >
+                            So sánh →
+                          </Link>
                         </div>
-                        <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-ink transition-colors duration-200 group-hover:text-brand-600">
-                          {item.title}
-                        </h3>
-                        <p className="mt-1 truncate text-xs text-ink-muted">
-                          {item.authorName}
-                        </p>
-                      </Link>
+                      </>
                     ) : (
-                      <div>
-                        <div className="flex aspect-[4/5] items-center justify-center rounded-xl border border-brand-100 bg-paper">
+                      <div className="flex flex-1 flex-col">
+                        <div className="flex aspect-[4/3] items-center justify-center rounded-xl bg-raised">
                           <Lock className="h-7 w-7 text-ink-muted" />
                         </div>
-                        <p className="mt-2 text-sm font-medium text-ink-muted">
+                        <p className="mt-2 min-h-10 text-sm font-medium leading-5 text-ink-muted">
                           {item.unavailableMessage ??
                             "Công thức không còn khả dụng"}
                         </p>
+                      </div>
+                    )}
+                    {item.available && item.title && account.role !== "ADMIN" && (
+                      <div className="absolute right-12 top-2 z-10">
+                        <AddToMealPlanButton recipeId={item.recipeId} recipeTitle={item.title} />
                       </div>
                     )}
                     <button

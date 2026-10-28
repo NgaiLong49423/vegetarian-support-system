@@ -26,6 +26,23 @@ export interface PublicIngredient {
   ingredientId: number;
   name: string;
   ingredientGroup: string;
+  imageUrl: string | null;
+}
+
+export interface PublicIngredientNutrition {
+  energyKcalPer100g: number | null;
+  proteinGramsPer100g: number | null;
+  carbohydrateGramsPer100g: number | null;
+  totalFatGramsPer100g: number | null;
+  fiberGramsPer100g: number | null;
+  calciumMgPer100g: number | null;
+  ironMgPer100g: number | null;
+  vitaminB12MicrogramsPer100g: number | null;
+  zincMgPer100g: number | null;
+}
+
+export interface PublicIngredientDetail extends PublicIngredient {
+  nutrition: PublicIngredientNutrition;
 }
 
 async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
@@ -62,5 +79,8 @@ export const discoveryApi = {
   getAllIngredients,
   searchIngredients: (group: string | undefined, query: string, page: number, size = 20) => request(
     () => apiClient.get<PageResponse<PublicIngredient>>('/ingredients', { params: { group, query, page, size } }),
+  ),
+  getIngredient: (ingredientId: number) => request(
+    () => apiClient.get<PublicIngredientDetail>(`/ingredients/${ingredientId}`),
   ),
 };

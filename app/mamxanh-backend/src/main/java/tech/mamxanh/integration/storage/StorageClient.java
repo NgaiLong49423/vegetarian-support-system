@@ -3,7 +3,7 @@ package tech.mamxanh.integration.storage;
 import java.io.InputStream;
 
 /**
- * Storage client abstraction for recipe media uploads and management (FR-14).
+ * Storage client abstraction for recipe media and private expert application attachments.
  * Decouples recipe business logic from the underlying storage mechanism.
  */
 public interface StorageClient {
@@ -13,6 +13,10 @@ public interface StorageClient {
 
     /** Folder for member avatars (FR-23). */
     String AVATAR_FOLDER = "avatars";
+    String EXPERT_APPLICATION_FOLDER = "expert-applications";
+
+    /** Folder for administrator-managed ingredient reference images. */
+    String INGREDIENT_FOLDER = "ingredients";
 
     /**
      * Upload a recipe image stream to storage (in {@link #RECIPE_FOLDER}).
@@ -30,7 +34,7 @@ public interface StorageClient {
     /**
      * Upload an image stream to storage under the given folder.
      *
-     * @param folder blob folder, {@link #RECIPE_FOLDER} or {@link #AVATAR_FOLDER}
+     * @param folder blob folder, such as {@link #RECIPE_FOLDER}, {@link #AVATAR_FOLDER} or {@link #INGREDIENT_FOLDER}
      * @return publicly accessible blob URL
      */
     String uploadImage(InputStream inputStream, long size, String mimeType, String originalFilename, String folder);
@@ -42,10 +46,25 @@ public interface StorageClient {
      */
     void deleteImage(String blobUrl);
 
+    /** Uploads application-only data to a private container and returns its internal blob key. */
+    default String uploadPrivateApplicationFile(byte[] content, String mimeType, String extension) {
+        throw new UnsupportedOperationException("Private application file storage is unavailable");
+    }
+
+    /** Reads a private application file by its server-generated blob key. */
+    default byte[] downloadPrivateApplicationFile(String blobKey) {
+        throw new UnsupportedOperationException("Private application file storage is unavailable");
+    }
+
+    /** Deletes a private application file by its server-generated blob key. */
+    default void deletePrivateApplicationFile(String blobKey) {
+        throw new UnsupportedOperationException("Private application file storage is unavailable");
+    }
+
     /**
      * Check if storage client is backed by real cloud storage.
      *
-     * @return true if cloud storage is configured, false if running in local mock fallback
+     * @return true if cloud storage is configured, false if uploads are unavailable
      */
     boolean isCloudStorageConfigured();
 }

@@ -1,8 +1,8 @@
 import { expect, test } from './baseFixtures';
 
 const ingredients = [
-  { ingredientId: 11, name: 'Bánh phở', ingredientGroup: 'Khác' },
-  { ingredientId: 12, name: 'Bắp cải', ingredientGroup: 'Rau' },
+  { ingredientId: 11, name: 'Bánh phở', ingredientGroup: 'Khác', imageUrl: null },
+  { ingredientId: 12, name: 'Bắp cải', ingredientGroup: 'Rau', imageUrl: null },
 ];
 
 test('public ingredient directory loads every page and transfers all selected IDs to recipe discovery', async ({ page }) => {
@@ -21,7 +21,7 @@ test('public ingredient directory loads every page and transfers all selected ID
   await page.goto('/danh-muc-nguyen-lieu');
   const find = page.getByRole('button', { name: 'Tìm công thức', exact: true });
   await expect(find).toBeDisabled();
-  const labels = page.getByRole('button', { name: 'Bánh phở', exact: true });
+  const labels = page.getByRole('button', { name: 'Chọn Bánh phở', exact: true });
   await labels.press('Enter');
   await expect(labels).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Bỏ chọn Bánh phở', exact: true }).click();
@@ -29,16 +29,16 @@ test('public ingredient directory loads every page and transfers all selected ID
   const search = page.getByRole('textbox', { name: 'Tìm nguyên liệu trong danh mục' });
   await search.fill('BÁNH PHỞ');
   await expect(labels).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Bắp cải', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Chọn Bắp cải', exact: true })).toHaveCount(0);
   await labels.click();
   await search.fill('không tồn tại');
   await expect(page.getByRole('heading', { name: 'Không tìm thấy nguyên liệu' })).toBeVisible();
   await search.clear();
-  await page.getByRole('button', { name: 'Bắp cải', exact: true }).click();
+  await page.getByRole('button', { name: 'Chọn Bắp cải', exact: true }).click();
   await page.getByRole('button', { name: 'Bỏ chọn tất cả' }).click();
   await expect(find).toBeDisabled();
   await labels.click();
-  await page.getByRole('button', { name: 'Bắp cải', exact: true }).click();
+  await page.getByRole('button', { name: 'Chọn Bắp cải', exact: true }).click();
   const request = page.waitForRequest((request) => {
     const url = new URL(request.url());
     return url.pathname === '/api/v1/recipes/discovery'
@@ -48,6 +48,15 @@ test('public ingredient directory loads every page and transfers all selected ID
   expect(new Set(new URL((await request).url()).searchParams.getAll('ingredientIds'))).toEqual(new Set(['11', '12']));
   await expect(page).toHaveURL(/\/kham-pha\?/);
   expect(requestedPages).toEqual([0, 1]);
+});
+
+test('discovery explains when a linked ingredient no longer exists in the catalog', async ({ page }) => {
+  await page.route('**/api/v1/recipes/ingredient-options**', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/recipes/discovery?**', (route) => route.fulfill({ json: {
+    items: [], page: 0, size: 12, hasNext: false,
+  } }));
+  await page.goto('/kham-pha?ingredientId=42&ingredientName=Missing');
+  await expect(page.getByRole('status').filter({ hasText: 'Không tìm thấy nguyên liệu được chọn trong danh mục hiện tại.' })).toBeVisible();
 });
 
 test('public ingredient directory retries a failed request and explains an empty catalog', async ({ page }) => {

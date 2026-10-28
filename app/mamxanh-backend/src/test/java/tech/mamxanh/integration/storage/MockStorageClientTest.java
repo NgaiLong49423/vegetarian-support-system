@@ -53,12 +53,34 @@ class MockStorageClientTest {
     }
 
     @Test
-    @DisplayName("StorageConfig returns MockStorageClient when connection string is blank")
+    @DisplayName("StorageConfig never registers the test mock when connection string is blank")
     void storageConfigFallback() {
         StorageConfig config = new StorageConfig();
         StorageProperties properties = new StorageProperties("", "mamxanh-recipes");
 
         StorageClient client = config.storageClient(properties);
-        assertThat(client).isInstanceOf(MockStorageClient.class);
+        assertThat(client).isInstanceOf(UnavailableStorageClient.class);
+    }
+
+    @Test
+    @DisplayName("MockStorageClient stores private files defensively and supports deletion")
+    void privateApplicationFilesAreCopiedAndDeleted() {
+        MockStorageClient client = new MockStorageClient(null);
+        byte[] input = {1, 2, 3};
+        String key = client.uploadPrivateApplicationFile(input, "image/png", ".png");
+        input[0] = 9;
+
+        assertThat(key).startsWith("expert-applications/").endsWith(".png");
+        assertThat(client.containsPrivateApplicationFile(key)).isTrue();
+        byte[] downloaded = client.downloadPrivateApplicationFile(key);
+        assertThat(downloaded).containsExactly(1, 2, 3);
+        downloaded[1] = 9;
+        assertThat(client.downloadPrivateApplicationFile(key)).containsExactly(1, 2, 3);
+
+        client.deletePrivateApplicationFile(key);
+        client.deletePrivateApplicationFile(null);
+        assertThat(client.containsPrivateApplicationFile(key)).isFalse();
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> client.downloadPrivateApplicationFile(key))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

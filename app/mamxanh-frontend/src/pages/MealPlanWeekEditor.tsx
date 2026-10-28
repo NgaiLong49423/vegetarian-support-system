@@ -9,9 +9,12 @@ import {
   ChevronRight,
   Clock3,
   LoaderCircle,
+  Moon,
   Plus,
   RefreshCw,
   Sparkles,
+  Sun,
+  Sunrise,
   Trash2,
   Utensils,
   ArrowRightLeft,
@@ -39,6 +42,7 @@ import { asApiError } from "../lib/apiClient"
 
 import { MealPlanNutrition } from "./MealPlanNutrition"
 import { AiRecipePlanner } from "./AiRecipePlanner"
+import { CreateShoppingListButton } from "../components/CreateShoppingListButton"
 
 type Entry = MealPlanWeek["entries"][number]
 
@@ -66,10 +70,37 @@ const meals: MealType[] = ["BREAKFAST", "LUNCH", "DINNER"]
 
 const mealLabels: Record<MealType, string> = {
   BREAKFAST: "Bữa sáng",
-
   LUNCH: "Bữa trưa",
-
   DINNER: "Bữa tối",
+}
+
+const mealTheme: Record<
+  MealType,
+  {
+    icon: typeof Sunrise
+    iconClass: string
+    badgeClass: string
+    borderClass: string
+  }
+> = {
+  BREAKFAST: {
+    icon: Sunrise,
+    iconClass: "text-amber-600 dark:text-amber-400",
+    badgeClass: "bg-amber-100/90 dark:bg-amber-950/60 border-amber-200/80 dark:border-amber-800/60",
+    borderClass: "border-amber-200/80 bg-amber-50/20 hover:border-amber-300",
+  },
+  LUNCH: {
+    icon: Sun,
+    iconClass: "text-brand-600 dark:text-brand-400",
+    badgeClass: "bg-brand-100/90 dark:bg-brand-950/60 border-brand-200/80 dark:border-brand-800/60",
+    borderClass: "border-brand-200/80 bg-brand-50/20 hover:border-brand-300",
+  },
+  DINNER: {
+    icon: Moon,
+    iconClass: "text-indigo-600 dark:text-indigo-400",
+    badgeClass: "bg-indigo-100/90 dark:bg-indigo-950/60 border-indigo-200/80 dark:border-indigo-800/60",
+    borderClass: "border-indigo-200/80 bg-indigo-50/20 hover:border-indigo-300",
+  },
 }
 
 export function MealPlanWeekEditor() {
@@ -430,11 +461,10 @@ function WeekContents({
                 ...current,
 
                 entries: [
+                  entry,
                   ...current.entries.filter(
                     (item) => item.entryId !== entry.entryId,
                   ),
-
-                  entry,
                 ],
               },
           )
@@ -543,6 +573,7 @@ function WeekContents({
         </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
+        <CreateShoppingListButton week={week} disabled={busy || plan.entries.length === 0} />
         <p className="text-sm text-ink-muted">Chọn ngày để lên lịch từng bữa</p>
         <Button
           variant="outline"
@@ -558,26 +589,35 @@ function WeekContents({
         </Button>
       </div>
       <div className="divide-y divide-brand-100">
-        {Array.from({ length: 7 }, (_, offset) => {
-          const date = new Date(`${week}T12:00:00`)
-
-          date.setDate(date.getDate() + offset)
-
-          const day = localDateKey(date)
-
-          const label = date.toLocaleDateString("vi-VN", {
-            weekday: "long",
-
-            day: "numeric",
-
-            month: "long",
+        {(() => {
+          const rawDays = Array.from({ length: 7 }, (_, offset) => {
+            const d = new Date(`${week}T12:00:00`)
+            d.setDate(d.getDate() + offset)
+            return localDateKey(d)
           })
+          const todayKey = localDateKey(new Date())
+          const todayIndex = rawDays.indexOf(todayKey)
+          const days =
+            todayIndex > 0
+              ? [...rawDays.slice(todayIndex), ...rawDays.slice(0, todayIndex)]
+              : rawDays
 
-          const entries = plan.entries.filter((entry) => entry.mealDate === day)
+          return days.map((day) => {
+            const date = new Date(`${day}T12:00:00`)
 
-          const expanded = selectedDay === day
+            const label = date.toLocaleDateString("vi-VN", {
+              weekday: "long",
 
-          const today = day === localDateKey(new Date())
+              day: "numeric",
+
+              month: "long",
+            })
+
+            const entries = plan.entries.filter((entry) => entry.mealDate === day)
+
+            const expanded = selectedDay === day
+
+            const today = day === todayKey
 
           return (
             <section
@@ -608,10 +648,34 @@ function WeekContents({
                       >
                         {today ? `Hôm nay · ${label}` : label}
                       </span>
-                      <span className="mt-1 block text-xs font-normal text-ink-muted">
-                        {entries.length
-                          ? `${entries.length} món đã lên lịch`
-                          : "Chưa lên lịch · thêm món khi bạn sẵn sàng"}
+                      <span className="mt-1 flex flex-wrap items-center gap-2 text-xs font-normal text-ink-muted">
+                        <span>
+                          {entries.length
+                            ? `${entries.length} món đã lên lịch`
+                            : "Chưa lên lịch · thêm món khi bạn sẵn sàng"}
+                        </span>
+                        {entries.length > 0 && (
+                          <span className="inline-flex items-center gap-1.5 text-[11px]">
+                            {entries.some((e) => e.mealType === "BREAKFAST") && (
+                              <span className="inline-flex items-center gap-0.5 font-medium text-amber-600 dark:text-amber-400">
+                                <Sunrise className="h-3 w-3" aria-hidden="true" />
+                                <span>{entries.filter((e) => e.mealType === "BREAKFAST").length}</span>
+                              </span>
+                            )}
+                            {entries.some((e) => e.mealType === "LUNCH") && (
+                              <span className="inline-flex items-center gap-0.5 font-medium text-brand-600 dark:text-brand-400">
+                                <Sun className="h-3 w-3" aria-hidden="true" />
+                                <span>{entries.filter((e) => e.mealType === "LUNCH").length}</span>
+                              </span>
+                            )}
+                            {entries.some((e) => e.mealType === "DINNER") && (
+                              <span className="inline-flex items-center gap-0.5 font-medium text-indigo-600 dark:text-indigo-400">
+                                <Moon className="h-3 w-3" aria-hidden="true" />
+                                <span>{entries.filter((e) => e.mealType === "DINNER").length}</span>
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </span>
                     </span>
                   </button>
@@ -648,26 +712,27 @@ function WeekContents({
                   </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-stretch">
                       {meals.map((meal) => {
-                        const mealEntries = entries.filter((entry) => entry.mealType === meal);
-                        const isBreakfast = meal === 'BREAKFAST';
-                        const isLunch = meal === 'LUNCH';
-                        const mealIcon = isBreakfast ? '🌅' : isLunch ? '☀️' : '🌙';
+                        const mealEntries = entries
+                          .filter((entry) => entry.mealType === meal)
+                          .slice()
+                          .sort((a, b) => (b.entryId ?? 0) - (a.entryId ?? 0));
+                        const theme = mealTheme[meal];
+                        const MealIcon = theme.icon;
 
                         return (
                           <section
                             key={meal}
                             aria-label={`${mealLabels[meal]} ${label}`}
-                            className={`min-w-0 flex flex-col rounded-2xl border p-3.5 transition-all ${
-                              isBreakfast
-                                ? 'border-amber-200/80 bg-amber-50/15 hover:border-amber-300'
-                                : isLunch
-                                  ? 'border-brand-200/80 bg-brand-50/15 hover:border-brand-300'
-                                  : 'border-indigo-200/80 bg-indigo-50/15 hover:border-indigo-300'
-                            }`}
+                            className={`min-w-0 flex flex-col rounded-2xl border p-3.5 transition-all ${theme.borderClass}`}
                           >
                             <div className="mb-2.5 flex items-center justify-between gap-2 border-b border-brand-100/70 pb-2">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="text-sm select-none">{mealIcon}</span>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border shadow-2xs ${theme.badgeClass}`}
+                                  aria-hidden="true"
+                                >
+                                  <MealIcon className={`h-3.5 w-3.5 ${theme.iconClass}`} />
+                                </span>
                                 <h3 className="text-sm font-bold text-ink truncate">
                                   {mealLabels[meal]}
                                 </h3>
@@ -811,7 +876,8 @@ function WeekContents({
               )}
             </section>
           )
-        })}
+        })
+      })()}
       </div>
       <Modal
         open={Boolean(nutrition)}
@@ -827,7 +893,7 @@ function WeekContents({
               initialScope={nutrition.scope}
               onEntryReplaced={(entry) => setPlan((current) => current && ({
                 ...current,
-                entries: [...current.entries.filter((item) => item.entryId !== entry.entryId), entry],
+                entries: [entry, ...current.entries.filter((item) => item.entryId !== entry.entryId)],
               }))}
             />
           </DialogFocus>
@@ -1050,6 +1116,7 @@ function RecipePicker({
 
   onChoose: (id: number) => void
 }) {
+  const [source, setSource] = useState<"saved" | "public">("saved")
   const [text, setText] = useState("")
 
   const [keyword, setKeyword] = useState("")
@@ -1066,6 +1133,15 @@ function RecipePicker({
 
   const [retry, setRetry] = useState(0)
 
+  function chooseSource(value: "saved" | "public") {
+    if (value === source) return
+    setSource(value)
+    setText("")
+    setKeyword("")
+    setPage(0)
+    setLoading(true)
+  }
+
   useEffect(() => {
     let active = true
 
@@ -1075,19 +1151,26 @@ function RecipePicker({
 
     setChoices([])
 
-    const request = savedRecipesApi.list(keyword, page, 12).then((result) => ({
-      choices: result.content.map((recipe) => ({
-        id: recipe.recipeId,
-
-        title: recipe.title ?? "Công thức không còn khả dụng",
-
-        image: recipe.coverUrl,
-
-        available: recipe.available,
-      })),
-
-      totalPages: result.totalPages,
-    }))
+    const request = source === "saved"
+      ? savedRecipesApi.list(keyword, page, 12).then((result) => ({
+          choices: result.content.map((recipe) => ({
+            id: recipe.recipeId,
+            title: recipe.title ?? "Công thức không còn khả dụng",
+            image: recipe.coverUrl,
+            available: recipe.available,
+          })),
+          totalPages: result.totalPages,
+        }))
+      : recipesApi.searchPublic({ keyword, page, size: 12, sort: "NEWEST", viewPeriod: "ALL_TIME" })
+          .then((result) => ({
+            choices: result.items.map((recipe) => ({
+              id: recipe.id,
+              title: recipe.title,
+              image: recipe.media.find((media) => media.cover)?.url ?? recipe.media[0]?.url ?? null,
+              available: recipe.status === "PUBLISHED",
+            })),
+            totalPages: result.totalPages,
+          }))
 
     request
 
@@ -1110,15 +1193,31 @@ function RecipePicker({
     return () => {
       active = false
     }
-  }, [keyword, page, retry])
+  }, [source, keyword, page, retry])
 
   return (
-    <DialogFocus>
+    <DialogFocus initialFocus="input">
       <p className="mb-3 text-xs text-ink-muted">
         {mealLabels[target.mealType]} ·{" "}
         {new Date(`${target.mealDate}T12:00:00`).toLocaleDateString("vi-VN")}
       </p>
-      <p className="mb-4 text-sm font-semibold text-ink">Công thức đã lưu</p>
+      <nav aria-label="Nguồn công thức" className="mb-4 flex flex-wrap gap-2">
+        {([
+          ["saved", "Đã lưu"],
+          ["public", "Tìm công thức"],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={source === value}
+            disabled={busy}
+            onClick={() => chooseSource(value)}
+            className={`rounded-lg px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-60 ${source === value ? "bg-raised font-semibold text-brand-600" : "text-ink-muted"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
       <form
         className="mb-4 flex gap-2"
         onSubmit={(event) => {
@@ -1135,7 +1234,7 @@ function RecipePicker({
           value={text}
           disabled={busy}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Tìm trong công thức đã lưu…"
+          placeholder={source === "saved" ? "Tìm trong công thức đã lưu…" : "Tìm công thức công khai…"}
           className="min-w-0 flex-1 rounded-lg border border-brand-200 bg-paper px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-600"
         />
         <Button size="sm" type="submit" disabled={busy}>
@@ -1175,16 +1274,17 @@ function RecipePicker({
           {!choices.length && (
             <div className="py-8 text-center text-sm text-ink-muted">
               <p>
-                {keyword
+                {source === "public"
+                  ? "Không tìm thấy công thức công khai phù hợp."
+                  : keyword
                   ? "Không có công thức đã lưu phù hợp với tìm kiếm."
                   : "Bạn chưa lưu công thức nào."}
               </p>
-              <Link
-                to="/kham-pha"
-                className="mt-3 inline-block font-semibold text-brand-600"
-              >
-                Khám phá và lưu công thức →
-              </Link>
+              {source === "saved" && (
+                <Button variant="ghost" size="sm" disabled={busy} onClick={() => chooseSource("public")}>
+                  Tìm công thức công khai
+                </Button>
+              )}
             </div>
           )}
           <div className="grid gap-2 sm:grid-cols-2">
@@ -1267,6 +1367,14 @@ const nutritionLabels: Record<string, string> = {
   CARBOHYDRATE_G: "Carbohydrate (g)", TOTAL_FAT_G: "Chất béo (g)",
   FIBER_G: "Chất xơ (g)", CALCIUM_MG: "Canxi (mg)", IRON_MG: "Sắt (mg)",
   VITAMIN_B12_MCG: "Vitamin B12 (mcg)", ZINC_MG: "Kẽm (mg)",
+}
+
+function datesInWeek(weekStart: string) {
+  return Array.from({ length: 7 }, (_, offset) => {
+    const date = new Date(`${weekStart}T12:00:00`)
+    date.setDate(date.getDate() + offset)
+    return localDateKey(date)
+  })
 }
 
 function AiWeeklyMenu({ week }: { week: string }) {
@@ -1366,7 +1474,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
         avoidedIngredientIds: criteria.mode === "THIS_WEEK" ? criteria.avoided : [],
         meals: selected.map((index) => preview.meals[index]).filter(Boolean),
       })
-      setSuccessMessage("Đã thay toàn bộ lịch ăn của tuần này bằng các món đã chọn.")
+      setSuccessMessage("Đã cập nhật lịch từ hôm nay đến hết tuần. Các ngày đã qua được giữ nguyên.")
       setPreview(null); setPreviewCriteria(null); setSelected([]); setConfirmArmed(false)
     } catch (cause) {
       const apiError = asApiError(cause)
@@ -1379,10 +1487,23 @@ function AiWeeklyMenu({ week }: { week: string }) {
     (acc[meal.mealDate] ??= []).push(meal)
     return acc
   }, {})
-  const totals = preview?.meals.reduce<Record<string, number>>((acc, meal, index) => {
-    if (selected.includes(index)) Object.entries(meal.nutritionPerServing).forEach(([key, value]) => { acc[key] = (acc[key] ?? 0) + value })
+  const selectedMeals = preview?.meals.filter((_, index) => selected.includes(index)) ?? []
+  const dailyTotals = selectedMeals.reduce<Record<string, Record<string, number>>>((acc, meal) => {
+    const day = acc[meal.mealDate] ??= {}
+    Object.entries(meal.nutritionPerServing).forEach(([key, value]) => { day[key] = (day[key] ?? 0) + value * meal.plannedServings })
     return acc
   }, {})
+  const mealTotals = selectedMeals.reduce<Record<string, number>>((acc, meal) => {
+    const key = `${meal.mealDate}:${meal.mealType}`
+    acc[key] = (acc[key] ?? 0) + Number(meal.nutritionPerServing.ENERGY_KCAL ?? 0) * meal.plannedServings
+    return acc
+  }, {})
+  const today = localDateKey(new Date())
+  const weekDates = datesInWeek(week)
+  const currentWeekEnd = datesInWeek(mondayOf(new Date()))[6]
+  const hasActionableDates = weekDates.some((day) => day >= today && day <= currentWeekEnd)
+  const passedDays = weekDates.filter((day) => day < today)
+  const outOfRangeDays = weekDates.filter((day) => day > currentWeekEnd)
 
   function ingredientPicker(title: string, queryValue: string, setQueryValue: (value: string) => void,
     options: Array<{ ingredientId: number; name: string }>, selectedIds: number[],
@@ -1410,7 +1531,7 @@ function AiWeeklyMenu({ week }: { week: string }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="ai-menu-title" className="flex items-center gap-2 text-base font-semibold text-ink"><Sparkles className="h-4 w-4 text-brand-600" /> Dành cho bạn</h2>
-          <p className="mt-1 text-sm text-ink-muted">Tạo thực đơn cho tuần đang xem rồi chọn món trước khi thay lịch.</p>
+          <p className="mt-1 text-sm text-ink-muted">Lập thực đơn từ hôm nay đến hết tuần hiện tại rồi chọn món trước khi cập nhật lịch.</p>
         </div>
         <div className="flex gap-2" role="group" aria-label="Cách tạo thực đơn">
           <Button variant={mode === "PROFILE" ? "primary" : "outline"} size="sm" onClick={() => { setMode("PROFILE"); clearPreview() }}>Dựa trên hồ sơ</Button>
@@ -1428,45 +1549,84 @@ function AiWeeklyMenu({ week }: { week: string }) {
         <p className="text-xs text-ink-muted md:col-span-2">Nguyên liệu cần tránh là điều kiện bắt buộc: món có chứa bất kỳ nguyên liệu nào trong danh sách này sẽ bị loại, kể cả khi có nguyên liệu bạn muốn ưu tiên. Thông tin chỉ dùng cho lần tạo lịch này.</p>
       </div>}
       {mode === "PROFILE" && <p className="mt-3 text-sm text-ink-muted">Dùng mục tiêu và ràng buộc đã lưu. Nếu chưa đặt mục tiêu, thực đơn được tạo theo hướng cân bằng. Hồ sơ sở thích chưa khai báo không bắt buộc phải bổ sung.</p>}
+      {!preview && passedDays.length > 0 && <ul className="mt-2 space-y-1 text-xs text-ink-muted">{passedDays.map((day) => <li key={day}>{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}: đã qua, AI không đề xuất món.</li>)}</ul>}
+      {!hasActionableDates && outOfRangeDays.length > 0 && <p className="mt-3 rounded-lg bg-raised p-3 text-sm text-ink-muted">AI chỉ đề xuất từ hôm nay đến hết tuần hiện tại. Những ngày đang xem nằm ngoài khoảng này.</p>}
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button disabled={loading || applying} onClick={() => void generate()}>{loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{preview ? "Tạo thực đơn khác" : "Tạo thực đơn tuần"}</Button>
+        <Button disabled={loading || applying || !hasActionableDates} onClick={() => void generate()}>{loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{preview ? "Tạo thực đơn khác" : "Tạo thực đơn tuần"}</Button>
       </div>
       {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800"><p>{error.message}</p>{error.code === "AI_SUBSCRIPTION_REQUIRED" && <Link to="/goi-ai" className="mt-1 inline-block font-semibold underline">Nâng cấp gói Pro</Link>}{error.code === "NUTRITION_ELIGIBILITY_CONFIRMATION_REQUIRED" && <p className="mt-1">Để tiếp tục, hãy <Link to="/ho-so/dinh-duong" className="font-semibold underline underline-offset-2">xác nhận phạm vi hỗ trợ trong Hồ sơ dinh dưỡng</Link>.</p>}</div>}
       {successMessage && <p role="status" className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">{successMessage}</p>}
       {preview && <div className="mt-5 space-y-4 border-t border-brand-100 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold text-ink">Bản xem trước · {selected.length} món được chọn</p><Button variant="ghost" size="sm" onClick={() => { setSelected(selected.length === preview.meals.length ? [] : preview.meals.map((_, i) => i)); setConfirmArmed(false) }}>{selected.length === preview.meals.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}</Button></div>
-        <div className="rounded-xl bg-raised p-3"><p className="mb-2 text-xs font-semibold text-ink">Tổng dinh dưỡng dự kiến theo các món đã chọn trong tuần</p><div className="grid grid-cols-2 gap-2 text-xs text-ink-muted sm:grid-cols-3 lg:grid-cols-5">{Object.entries(nutritionLabels).map(([key, label]) => <span key={key}>{label}: ≈ {Number(totals?.[key] ?? 0).toFixed(1)}</span>)}</div></div>
-        <div className="space-y-3">{Object.entries(grouped ?? {}).map(([day, dayMeals]) => <section key={day} className="rounded-xl bg-raised p-3"><h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3><div className="mt-2 grid gap-2 sm:grid-cols-3">{dayMeals.map((meal) => {
-          const index = preview.meals.findIndex((item) => item.mealDate === meal.mealDate && item.mealType === meal.mealType)
-          const label = meal.mealType === "BREAKFAST" ? "Sáng" : meal.mealType === "LUNCH" ? "Trưa" : "Tối"
-          const isSelected = selected.includes(index)
-          return <article key={`${meal.mealDate}-${meal.mealType}`} className={`min-w-0 overflow-hidden rounded-lg border bg-surface text-sm ${isSelected ? "border-brand-200" : "border-brand-100 opacity-70"}`}>
-            <div className="flex items-center justify-between gap-2 border-b border-brand-100 px-3 py-2">
-              <span className="text-xs font-medium text-ink-muted">Bữa {label.toLowerCase()}</span>
-              <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
-                <input type="checkbox" checked={isSelected} aria-label={`Đưa ${meal.recipeTitle} vào lịch`} onChange={() => { setSelected(isSelected ? selected.filter((value) => value !== index) : [...selected, index]); setConfirmArmed(false) }} />
-                {isSelected ? "Đưa vào lịch" : "Bỏ qua món này"}
-              </label>
+        <div className="space-y-3">{weekDates.map((day) => {
+          const dayMeals = grouped?.[day] ?? []
+          const isPast = day < today
+          if (isPast) return <section key={day} className="rounded-xl bg-raised p-3">
+            <h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3>
+            <p className="mt-2 rounded-lg border border-brand-100 bg-surface p-3 text-sm text-ink-muted">Ngày này đã qua — AI không đề xuất món.</p>
+          </section>
+          if (day > currentWeekEnd) return <section key={day} className="rounded-xl bg-raised p-3">
+            <h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3>
+            <p className="mt-2 rounded-lg border border-brand-100 bg-surface p-3 text-sm text-ink-muted">Ngoài khoảng AI đề xuất của tuần này.</p>
+          </section>
+          const totals = dailyTotals[day] ?? {}
+          const dayEnergy = totals.ENERGY_KCAL ?? 0
+          return <section key={day} className="space-y-3 rounded-xl bg-raised p-3">
+            <h3 className="text-sm font-semibold capitalize text-ink">{new Date(`${day}T12:00:00`).toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}</h3>
+            <div className="rounded-lg border border-brand-100 bg-surface p-3">
+              <p className="text-xs font-semibold text-ink">Tổng dinh dưỡng dự kiến trong ngày</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 lg:grid-cols-5">
+                <span className="text-ink-muted"><span className="block font-medium text-ink">Năng lượng: ≈ {dayEnergy.toFixed(1)} kcal</span></span>
+                {preview.dailyTargets.map((target) => {
+                  const value = totals[target.key] ?? 0
+                  return <span key={target.key} className="text-ink-muted">
+                    <span className="block font-medium text-ink">{(nutritionLabels[target.key] ?? target.label).replace(/\s*\([^)]*\)$/, "")}: ≈ {value.toFixed(1)} {target.unit}</span>
+                  </span>
+                })}
+              </div>
             </div>
-            <Link to={`/cong-thuc/id/${meal.recipeId}`} aria-label={`Xem công thức ${meal.recipeTitle}`} className="group flex min-w-0 items-center gap-3 p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600">
-              {meal.coverUrl ? <img src={meal.coverUrl} alt="" loading="lazy" className="h-16 w-16 shrink-0 rounded-lg object-cover" /> : <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-raised text-ink-muted"><Utensils className="h-5 w-5" /></span>}
-              <span className="min-w-0">
-                <span className="block break-words font-semibold text-ink group-hover:text-brand-600">{meal.recipeTitle}</span>
-                <span className="mt-1 block text-xs text-ink-muted">{meal.nutritionPerServing.ENERGY_KCAL != null ? `≈ ${meal.nutritionPerServing.ENERGY_KCAL}` : "—"} kcal · {meal.nutritionPerServing.PROTEIN_G != null ? `≈ ${meal.nutritionPerServing.PROTEIN_G}` : "—"} g đạm</span>
-                <span className="mt-1 block text-xs font-medium text-brand-700">Xem công thức</span>
-              </span>
-            </Link>
-          </article>
-        })}</div></section>)}</div>
-        <p className="text-xs text-ink-muted">{preview.nutritionDisclaimer} Món có thể được lặp nếu nguồn phù hợp chưa đủ đa dạng, cùng món không xuất hiện ở hai bữa liền nhau.</p>
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Khi xác nhận, toàn bộ món đã có trong lịch của tuần này sẽ bị thay bằng các món đang được chọn.</div>
-        <div className="flex flex-wrap gap-2"><Button disabled={applying || selected.length === 0} onClick={() => void apply()}>{applying ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}{confirmArmed ? "Xác nhận thay toàn bộ lịch" : "Áp dụng vào Lịch ăn"}</Button>{confirmArmed && <Button variant="outline" onClick={() => setConfirmArmed(false)}>Quay lại</Button>}</div>
+            <div className="grid gap-3 md:grid-cols-3">{meals.map((mealType) => {
+              const slotMeals = dayMeals.filter((meal) => meal.mealType === mealType)
+              const kcal = mealTotals[`${day}:${mealType}`] ?? 0
+              const share = preview.energyTargetKcal > 0 ? kcal / preview.energyTargetKcal * 100 : 0
+              const targetShare = mealType === "BREAKFAST" ? 25 : 37.5
+              const MealPreviewIcon = mealType === "BREAKFAST" ? Sunrise : mealType === "LUNCH" ? Sun : Moon
+              const iconColor = mealType === "BREAKFAST" ? "text-amber-600 dark:text-amber-400" : mealType === "LUNCH" ? "text-brand-600 dark:text-brand-400" : "text-indigo-600 dark:text-indigo-400"
+              return <section key={`${day}-${mealType}`} className="min-w-0 rounded-lg border border-brand-100 bg-surface text-sm">
+                <div className="border-b border-brand-100 px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-ink-muted"><MealPreviewIcon className={`h-3.5 w-3.5 ${iconColor}`} aria-hidden="true" />{mealLabels[mealType]} · {slotMeals.length} món</span>
+                  <p className="mt-1 text-xs font-semibold text-ink">≈ {kcal.toFixed(0)} kcal · {share.toFixed(1)}% mục tiêu ngày</p>
+                  <p className="text-xs text-ink-muted">Tỷ lệ tham khảo {targetShare}%</p>
+                </div>
+                <div className="divide-y divide-brand-100">{slotMeals.map((meal) => {
+                  const index = preview.meals.indexOf(meal)
+                  const isSelected = selected.includes(index)
+                  return <article key={`${meal.mealDate}-${meal.mealType}-${meal.recipeId}`} className={`p-2 ${isSelected ? "" : "opacity-65"}`}>
+                    <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
+                      <input type="checkbox" checked={isSelected} aria-label={`Đưa ${meal.recipeTitle} vào lịch`} onChange={() => { setSelected(isSelected ? selected.filter((value) => value !== index) : [...selected, index]); setConfirmArmed(false) }} />
+                      {isSelected ? "Đưa vào lịch" : "Bỏ qua món này"} · 1 khẩu phần
+                    </label>
+                    <Link to={`/cong-thuc/id/${meal.recipeId}`} aria-label={`Xem công thức ${meal.recipeTitle}`} className="group mt-2 flex min-w-0 items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600">
+                      {meal.coverUrl ? <img src={meal.coverUrl} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-lg object-cover" /> : <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-raised text-ink-muted"><Utensils className="h-5 w-5" /></span>}
+                      <span className="min-w-0"><span className="block break-words font-semibold text-ink group-hover:text-brand-600">{meal.recipeTitle}</span>
+                        <span className="mt-1 block text-xs text-ink-muted">≈ {meal.nutritionPerServing.ENERGY_KCAL != null ? `${meal.nutritionPerServing.ENERGY_KCAL} kcal` : "Chưa đủ dữ liệu kcal"} · {meal.nutritionPerServing.PROTEIN_G != null ? `≈ ${meal.nutritionPerServing.PROTEIN_G} g đạm` : "—"}</span>
+                        <span className="mt-1 block text-xs font-medium text-brand-700">Xem công thức</span></span>
+                    </Link>
+                  </article>
+                })}</div>
+              </section>
+            })}</div>
+          </section>
+        })}</div>
+        <p className="text-xs text-ink-muted">BMI {preview.bmi.toFixed(1)} ({preview.bmiCategory}) được dùng để cá nhân hóa lựa chọn, không thay đổi mục tiêu dinh dưỡng. {preview.nutritionDisclaimer}</p>
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Khi xác nhận, lịch từ hôm nay đến hết tuần sẽ được thay bằng các món đang chọn. Các ngày đã qua được giữ nguyên.</div>
+        <div className="flex flex-wrap gap-2"><Button disabled={applying || selected.length === 0} onClick={() => void apply()}>{applying ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}{confirmArmed ? "Xác nhận áp dụng lịch" : "Áp dụng vào Lịch ăn"}</Button>{confirmArmed && <Button variant="outline" onClick={() => setConfirmArmed(false)}>Quay lại</Button>}</div>
       </div>}
     </section>
   )
 }
 
-function DialogFocus({ children }: { children: ReactNode }) {
+function DialogFocus({ children, initialFocus }: { children: ReactNode; initialFocus?: string }) {
   const root = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -1482,7 +1642,7 @@ function DialogFocus({ children }: { children: ReactNode }) {
       ).filter((element) => element.offsetParent !== null)
     ;(
       root.current?.querySelector<HTMLElement>(
-        "input, select, button:not(:disabled)",
+        initialFocus ?? "input, select, button:not(:disabled)",
       ) ?? focusable()[0]
     )?.focus()
 
@@ -1512,7 +1672,7 @@ function DialogFocus({ children }: { children: ReactNode }) {
     document.addEventListener("keydown", trap, true)
 
     return () => document.removeEventListener("keydown", trap, true)
-  }, [])
+  }, [initialFocus])
 
   return <div ref={root}>{children}</div>
 }

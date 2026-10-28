@@ -35,13 +35,14 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     private static final int MIN_RETRY_BUDGET_MS = 2_000;
     // Confirmed model in TECHNOLOGY-STACK.md; shared by all account tiers.
     private static final String MODEL = "gemini-3.8-flash";
+    static final int DEFAULT_TIMEOUT_MILLIS = REQUEST_TIMEOUT_MS;
     private final Client client;
     private final ExecutorService requests = Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("gemini-request-", 0).factory());
 
     @Autowired
     public GeminiAiClient(@Value("${GEMINI_API_KEY:}") String apiKey) {
-        this(apiKey, HttpOptions.builder().build());
+        this(apiKey, HttpOptions.builder().timeout(DEFAULT_TIMEOUT_MILLIS).build());
     }
 
     GeminiAiClient(String apiKey, HttpOptions httpOptions) {
@@ -70,7 +71,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .responseMimeType("application/json")
                 .responseSchema(schema)
                 .candidateCount(1)
-                .maxOutputTokens(2048)
+                .maxOutputTokens(8192)
                 .build();
         return request("RECIPE_TEXT", "Gemini request failed", () -> {
             var response = client.models.generateContent(MODEL,

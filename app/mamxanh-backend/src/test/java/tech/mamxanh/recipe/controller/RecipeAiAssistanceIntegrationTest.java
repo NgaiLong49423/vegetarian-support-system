@@ -47,7 +47,13 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
         jdbcTemplate.update("INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at) VALUES (?, 'PLUS', 'ACTIVE', ?, ?)",
                 plusExpertId, LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0));
         when(aiClient.generateRecipeText(anyString(), anyList())).thenReturn("""
-                {"description":"Mô tả công thức thử nghiệm.","steps":[{"text":"Đảo đều nguyên liệu trên chảo nóng.","ingredientIds":[%d]}]}
+                {"description":"Mô tả công thức thử nghiệm.","steps":[
+                  {"text":"Chuẩn bị dụng cụ và nguyên liệu.","ingredientIds":[%1$d]},
+                  {"text":"Rửa sạch rồi cắt thành miếng vừa ăn.","ingredientIds":[%1$d]},
+                  {"text":"Làm nóng chảo trên bếp.","ingredientIds":[]},
+                  {"text":"Cho vào chảo và đảo nhẹ tay.","ingredientIds":[%1$d]},
+                  {"text":"Nấu đến khi chín đều.","ingredientIds":[%1$d]},
+                  {"text":"Tắt bếp rồi bày ra đĩa.","ingredientIds":[%1$d]}]}
                 """.formatted(ingredientId));
     }
 

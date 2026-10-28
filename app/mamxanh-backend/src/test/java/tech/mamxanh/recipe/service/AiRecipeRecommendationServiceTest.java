@@ -103,6 +103,22 @@ class AiRecipeRecommendationServiceTest {
     }
 
     @Test
+    void weeklyPreviewUsesAllSafePublicRecipesWhenIngredientFilterIsOmitted() {
+        when(recipes.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
+                List.of(recipe(1, "VEGAN", 1L), recipe(2, "VEGAN", 2L), recipe(3, "LACTO", 1L),
+                        recipe(4, "VEGAN", 99L)), 0, 50, 4, 1));
+        String ids = java.util.stream.IntStream.range(0, 21)
+                .mapToObj(index -> index % 2 == 0 ? "1" : "2").collect(java.util.stream.Collectors.joining(","));
+        when(ai.recommendRecipeSequence(anyString(), anyList(), eq(21)))
+                .thenReturn(new AiClient.RecommendationResult("{\"recipeIds\":[" + ids + "]}", 60, 15, 75));
+
+        var preview = service.weeklyMenu(null);
+
+        assertThat(preview.slots()).hasSize(21);
+        verify(ai).recommendRecipeSequence(contains("selectedIngredientIds"), eq(List.of(1L, 2L)), eq(21));
+    }
+
+    @Test
     void weeklyPreviewRejectsConsecutiveRepeatsAndDoesNotEmitUsage() {
         when(recipes.searchPublished("", 0, 50)).thenReturn(new RecipePostService.RecipePageResponse(
                 List.of(recipe(1, "VEGAN", 1L), recipe(2, "VEGAN", 1L)), 0, 50, 2, 1));

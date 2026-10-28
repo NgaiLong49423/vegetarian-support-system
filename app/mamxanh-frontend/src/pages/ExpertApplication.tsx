@@ -7,12 +7,14 @@ import {
   Clock,
   Database,
   ExternalLink,
+  Download,
   FileText,
   Filter,
   Leaf,
   RefreshCw,
   ShieldCheck,
   UserCheck,
+  X,
   XCircle,
 } from 'lucide-react';
 import { PageContainer } from '../components/Layout';
@@ -46,6 +48,11 @@ export function ExpertApplicationPage() {
   const [vegetarianType, setVegetarianType] = useState('VEGAN');
   const [summary, setSummary] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
+  const [applicationAvatarFile, setApplicationAvatarFile] = useState<File | null>(null);
+  const [applicationAvatarPreviewUrl, setApplicationAvatarPreviewUrl] = useState<string | null>(null);
+  const certificateInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [reason, setReason] = useState('');
   const [approvalNote, setApprovalNote] = useState('');
   const [reviewDecision, setReviewDecision] = useState<'approve' | 'reject'>('approve');
@@ -75,14 +82,50 @@ export function ExpertApplicationPage() {
 
   useEffect(() => { if (account) void load(); }, [account, load]);
   useEffect(() => { if (selected && !dialogRef.current?.open) dialogRef.current?.showModal(); }, [selected]);
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    setApplicationAvatarPreviewUrl(null);
+    if (selected?.applicationAvatarAvailable) {
+      void expertApplicationsApi.attachment(selected.id, 'avatar').then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        if (cancelled) URL.revokeObjectURL(objectUrl);
+        else setApplicationAvatarPreviewUrl(objectUrl);
+      }).catch((cause) => {
+        if (!cancelled) setError(errorText(cause));
+      });
+    }
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [selected?.id, selected?.applicationAvatarAvailable]);
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(''); setNotice('');
     try {
-      await expertApplicationsApi.submit({ experience: experience.trim(), vegetarianType, sampleRecipeSummary: summary.trim(), portfolioUrl: portfolioUrl.trim() || undefined });
-      setNotice('Đơn đã được gửi. Bạn có thể theo dõi trạng thái tại đây.'); setExperience(''); setSummary(''); setPortfolioUrl(''); await load();
+      await expertApplicationsApi.submitWithAttachments({ experience: experience.trim(), vegetarianType, sampleRecipeSummary: summary.trim(), portfolioUrl: portfolioUrl.trim() || undefined }, certificateFile ?? undefined, applicationAvatarFile ?? undefined);
+      setNotice('Đơn đã được gửi. Bạn có thể theo dõi trạng thái tại đây.'); setExperience(''); setSummary(''); setPortfolioUrl(''); setCertificateFile(null); setApplicationAvatarFile(null);
+      if (certificateInputRef.current) certificateInputRef.current.value = '';
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+      await load();
     } catch (cause) { setError(errorText(cause)); }
     finally { setBusy(false); }
+  }
+
+  async function downloadAttachment(kind: 'certificate' | 'avatar', applicationId: number) {
+    try {
+      const blob = await expertApplicationsApi.attachment(applicationId, kind);
+      const extension = blob.type === 'image/jpeg' ? 'jpg' : blob.type.split('/')[1] || (kind === 'certificate' ? 'pdf' : 'png');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `expert-application-${applicationId}-${kind === 'avatar' ? 'photo-3x4' : 'certificate'}.${extension}`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (cause) {
+      setError(errorText(cause));
+    }
   }
 
   async function review(action: 'approve' | 'reject') {
@@ -304,42 +347,52 @@ export function ExpertApplicationPage() {
         <dialog
           ref={dialogRef}
           aria-labelledby="application-title"
-          className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-y-auto border-0 bg-transparent p-4 backdrop:bg-black/65 backdrop:backdrop-blur-xs"
+          className="fixed inset-0 m-0 grid h-dvh max-h-none w-screen max-w-none place-items-start overflow-y-auto border-0 bg-transparent p-3 backdrop:bg-black/65 backdrop:backdrop-blur-xs sm:place-items-center sm:p-5"
           onClose={() => setSelected(null)}
           onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}
         >
-          <div className="mx-auto my-8 max-w-2xl">
-            <Card className="modal-panel-enter space-y-5 border-brand-200 bg-paper p-6 shadow-2xl sm:p-8">
-              <div className="flex items-start justify-between gap-4 border-b border-brand-100 pb-4">
-                <div className="flex items-center gap-3">
+          <div className="my-1 w-full max-w-3xl sm:my-4">
+            <Card className="modal-panel-enter max-h-[calc(100dvh-1.5rem)] space-y-5 overflow-y-auto border-brand-200 bg-paper p-4 shadow-2xl sm:max-h-[calc(100dvh-2.5rem)] sm:p-7">
+              <div className="flex items-start justify-between gap-4 border-b border-brand-100 pb-5">
+                <div className="flex min-w-0 items-start gap-3">
                   <span
                     aria-hidden="true"
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-base font-extrabold text-brand-700"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-base font-extrabold text-brand-700"
                   >
                     {selected.displayName.trim().charAt(0).toUpperCase()}
                   </span>
-                  <div>
-                    <h2 id="application-title" className="text-xl font-extrabold text-ink">
-                      Hồ sơ #{selected.id} · {selected.displayName}
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-600">Đơn đăng ký Chuyên gia</p>
+                    <h2 id="application-title" className="mt-1 break-words text-xl font-extrabold leading-tight text-ink sm:text-2xl">
+                      {selected.displayName}
                     </h2>
-                    <p className="mt-0.5 text-sm text-ink-muted">{selected.email} · {selected.status}</p>
+                    <p className="mt-1 break-all text-sm text-ink-muted">{selected.email}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="rounded-md bg-brand-50 px-2 py-1 text-xs font-semibold text-ink-muted">Mã hồ sơ #{selected.id}</span>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${selected.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : selected.status === 'APPROVED' ? 'bg-leaf-100 text-leaf-800' : 'bg-rose-100 text-rose-800'}`}>
+                        {selected.status === 'PENDING' ? 'Chờ duyệt' : selected.status === 'APPROVED' ? 'Đã phê duyệt' : 'Đã từ chối'}
+                      </span>
+                    </div>
                   </div>
                 </div>
+                <button type="button" onClick={() => dialogRef.current?.close()} aria-label="Đóng chi tiết hồ sơ" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition hover:bg-brand-50 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
 
               <div className="grid gap-3.5 sm:grid-cols-2">
-                <div className="rounded-2xl border border-brand-100/80 bg-cream-soft/70 p-4 sm:col-span-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">Kinh nghiệm</h3>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-6 text-ink">{selected.experience}</p>
+                <div className="rounded-2xl border border-brand-100 bg-cream-soft/70 p-4 sm:col-span-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">Kinh nghiệm ẩm thực</h3>
+                  <p className="mt-1.5 break-words whitespace-pre-wrap text-sm leading-6 text-ink">{selected.experience}</p>
                 </div>
-                <div className="rounded-2xl border border-brand-100/80 bg-cream-soft/70 p-4">
+                <div className="rounded-2xl border border-brand-100 bg-cream-soft/70 p-4">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">Trường phái</h3>
                   <p className="mt-1.5 font-semibold text-ink">
                     {types.find(([key]) => key === selected.vegetarianType)?.[1] ?? selected.vegetarianType}
                   </p>
                 </div>
                 {selected.portfolioUrl && (
-                  <div className="rounded-2xl border border-brand-100/80 bg-cream-soft/70 p-4">
+                  <div className="rounded-2xl border border-brand-100 bg-cream-soft/70 p-4">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">Liên kết hồ sơ</h3>
                     <p className="mt-1.5">
                       <a className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 underline hover:text-brand-500" href={selected.portfolioUrl} target="_blank" rel="noreferrer">
@@ -348,9 +401,43 @@ export function ExpertApplicationPage() {
                     </p>
                   </div>
                 )}
-                <div className="rounded-2xl border border-brand-100/80 bg-cream-soft/70 p-4 sm:col-span-2">
+                {(selected.certificateAvailable || selected.applicationAvatarAvailable) && (
+                  <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-4 sm:col-span-2">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <h3 className="text-sm font-bold text-ink">Tài liệu thẩm định</h3>
+                        <p className="mt-0.5 text-xs text-ink-muted">Tệp riêng tư chỉ dành cho Administrator.</p>
+                      </div>
+                      <ShieldCheck className="h-4 w-4 text-brand-600" aria-hidden="true" />
+                    </div>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {selected.certificateAvailable && (
+                        <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-brand-100 bg-paper p-3">
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600"><FileText className="h-4 w-4" /></span>
+                            <span className="min-w-0"><span className="block text-sm font-semibold text-ink">Chứng chỉ / văn bằng</span><span className="block text-xs text-ink-muted">Tài liệu đính kèm</span></span>
+                          </div>
+                          <Button variant="outline" size="sm" aria-label="Tải tài liệu chứng chỉ" onClick={() => void downloadAttachment('certificate', selected.id)}><Download className="h-4 w-4" /><span className="hidden sm:inline">Tải xuống</span></Button>
+                        </div>
+                      )}
+                      {selected.applicationAvatarAvailable && (
+                        <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-brand-100 bg-paper p-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            {applicationAvatarPreviewUrl
+                              ? <img src={applicationAvatarPreviewUrl} alt={`Ảnh thẻ 3×4 đính kèm đơn của ${selected.displayName}`} className="aspect-[3/4] w-14 shrink-0 rounded-lg border border-brand-200 bg-brand-50 object-contain" />
+                              : <span className="flex aspect-[3/4] w-14 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-[10px] text-ink-muted">Đang tải</span>}
+                            <span className="min-w-0"><span className="block text-sm font-semibold text-ink">Ảnh thẻ 3×4</span><span className="block text-xs text-ink-muted">Ảnh riêng của đơn</span></span>
+                          </div>
+                          <Button variant="outline" size="sm" aria-label="Tải ảnh thẻ 3×4" onClick={() => void downloadAttachment('avatar', selected.id)}><Download className="h-4 w-4" /><span className="hidden sm:inline">Tải ảnh</span></Button>
+                        </div>
+                      )}
+                    </div>
+                    <p className="mt-3 text-xs leading-5 text-ink-muted">Tệp chỉ dùng để thẩm định đơn; ảnh thẻ không hiển thị hoặc cập nhật ảnh đại diện hồ sơ công khai.</p>
+                  </div>
+                )}
+                <div className="rounded-2xl border border-brand-100 bg-cream-soft/70 p-4 sm:col-span-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">Tóm tắt công thức</h3>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-6 text-ink">{selected.sampleRecipeSummary}</p>
+                  <p className="mt-1.5 break-words whitespace-pre-wrap text-sm leading-6 text-ink">{selected.sampleRecipeSummary}</p>
                 </div>
               </div>
 
@@ -361,11 +448,10 @@ export function ExpertApplicationPage() {
               )}
 
               {selected.status === 'PENDING' && (
-                <div className="space-y-4 border-t border-brand-100 pt-4">
+                <div className="space-y-4 rounded-2xl border border-brand-100 bg-brand-50/50 p-4 sm:p-5">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-ink-muted mb-2">
-                      Quyết định thẩm định hồ sơ
-                    </p>
+                    <h3 className="text-base font-bold text-ink">Quyết định thẩm định</h3>
+                    <p className="mt-1 text-sm text-ink-muted">Chọn kết quả xử lý cho hồ sơ này.</p>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
@@ -472,21 +558,28 @@ export function ExpertApplicationPage() {
           </div>
         </dialog>
       )}
-    </section> : <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <Card className="p-5 sm:p-7"><h2 className="text-xl font-bold">Hồ sơ của bạn</h2>
+    </section> : <section className={`mx-auto grid w-full gap-6 ${history.length > 0 ? 'max-w-5xl lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' : 'max-w-3xl'}`}>
+      {(history.length > 0 || account.role !== 'CUSTOMER') && <Card className="p-5 sm:p-7"><h2 className="text-xl font-bold">Hồ sơ của bạn</h2>
         {account.role === 'EXPERT' && <p className="mt-3 rounded-xl bg-leaf-50 p-3 text-sm text-leaf-800">Tài khoản đã được phê duyệt Chuyên gia.</p>}
         <div className="mt-4 space-y-3">{loading ? <p className="text-sm text-ink-muted">Đang tải lịch sử…</p> : history.map((app) => <article key={app.id} className="rounded-xl border border-brand-100 p-3">
           <p className="font-semibold">#{app.id} · {app.status}</p><p className="text-xs text-ink-muted">Gửi lúc {new Date(app.submittedAt).toLocaleString('vi-VN')}</p>
           {app.status === 'REJECTED' && app.adminNote && <p className="mt-2 rounded-lg bg-rose-50 p-2 text-sm text-rose-800"><strong>Lý do:</strong> {app.adminNote}</p>}
         </article>)}{!loading && history.length === 0 && <p className="text-sm text-ink-muted">Bạn chưa có hồ sơ nào.</p>}</div>
         {!loading && totalPages > 1 && <div className="mt-4 flex items-center justify-center gap-3"><Button variant="outline" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>Trang trước</Button><span className="text-sm">Trang {page + 1}/{totalPages}</span><Button variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage((value) => value + 1)}>Trang sau</Button></div>}
-      </Card>
+      </Card>}
       {account.role === 'CUSTOMER' && (!history.some((app) => app.status === 'PENDING') || history[0]?.status === 'REJECTED') && <Card className="p-5 sm:p-7"><h2 className="text-xl font-bold">{history.length ? 'Nộp lại hồ sơ' : 'Gửi hồ sơ'}</h2>
         <form className="mt-4 space-y-4" onSubmit={submit}>
           <label className="block text-sm font-semibold">Kinh nghiệm ẩm thực chay (20–2.000 ký tự)<textarea required minLength={20} maxLength={2000} value={experience} onChange={(e) => setExperience(e.target.value)} rows={4} className="mt-1 w-full rounded-xl border border-brand-200 p-3" /></label>
           <label className="block text-sm font-semibold">Trường phái<select value={vegetarianType} onChange={(e) => setVegetarianType(e.target.value)} className="mt-1 w-full rounded-xl border border-brand-200 p-3">{types.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
           <label className="block text-sm font-semibold">Tóm tắt công thức sở trường (30–2.000 ký tự)<textarea required minLength={30} maxLength={2000} value={summary} onChange={(e) => setSummary(e.target.value)} rows={4} className="mt-1 w-full rounded-xl border border-brand-200 p-3" /></label>
-          <label className="block text-sm font-semibold">Portfolio URL (không bắt buộc, HTTP/HTTPS, tối đa 500 ký tự)<input type="url" maxLength={500} value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} className="mt-1 w-full rounded-xl border border-brand-200 p-3" /></label>
+          <label className="block text-sm font-semibold">Đường dẫn portfolio<input type="url" maxLength={500} value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} className="mt-1 w-full rounded-xl border border-brand-200 p-3" /><span className="mt-1 block text-xs font-normal text-ink-muted">Không bắt buộc. Chấp nhận HTTP/HTTPS, tối đa 500 ký tự.</span></label>
+          <div className="space-y-4 rounded-2xl border border-brand-100 bg-cream-soft/50 p-4">
+            <div><h3 className="text-sm font-bold text-ink">Tài liệu bổ trợ <span className="font-normal text-ink-muted">(không bắt buộc)</span></h3><p className="mt-1 text-xs text-ink-muted">Chỉ Admin dùng để thẩm định; không hiển thị trên hồ sơ công khai.</p></div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block min-w-0 text-sm font-semibold">Chứng chỉ hoặc văn bằng chuyên môn<input ref={certificateInputRef} type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => { const file = event.target.files?.[0] ?? null; if (file && file.size > 5 * 1024 * 1024) { setError('Tài liệu chứng chỉ tối đa 5 MB.'); event.target.value = ''; setCertificateFile(null); return; } setCertificateFile(file); setError(''); }} className="mt-1 block w-full rounded-xl border border-brand-200 bg-paper p-2 text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:font-semibold file:text-brand-700" /><span className="mt-1 block text-xs font-normal text-ink-muted">PDF, JPEG hoặc PNG · tối đa 5 MB. Không tải giấy tờ tùy thân.</span></label>
+              <label className="block min-w-0 text-sm font-semibold">Ảnh thẻ 3×4 cho hồ sơ<input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; if (file && file.size > 2 * 1024 * 1024) { setError('Ảnh thẻ đính kèm đơn tối đa 2 MB.'); event.target.value = ''; setApplicationAvatarFile(null); return; } setApplicationAvatarFile(file); setError(''); }} className="mt-1 block w-full rounded-xl border border-brand-200 bg-paper p-2 text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:font-semibold file:text-brand-700" /><span className="mt-1 block text-xs font-normal text-ink-muted">Ảnh chân dung theo khung 3:4 · JPEG, PNG hoặc WebP · tối đa 2 MB. Chỉ gắn với đơn, không đổi ảnh đại diện hồ sơ.</span></label>
+            </div>
+          </div>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" required checked={commitment} onChange={(e) => setCommitment(e.target.checked)} /><span>Tôi cam kết thông tin và nội dung công thức gửi lên là trung thực.</span></label>
           <Button type="submit" disabled={busy || !commitment || experience.trim().length < 20 || summary.trim().length < 30}>{busy ? 'Đang gửi…' : 'Gửi đơn đăng ký'}</Button>
         </form>

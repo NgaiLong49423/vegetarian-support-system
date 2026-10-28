@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,11 @@ class GeminiAiClientTest {
     @AfterEach
     void stopServer() {
         if (server != null) server.stop(0);
+    }
+
+    @Test
+    void sharedGeminiClientUsesTheNfrBoundedProviderTimeout() {
+        assertThat(GeminiAiClient.DEFAULT_TIMEOUT_MILLIS).isEqualTo(9_000);
     }
 
     @Test
@@ -53,6 +59,36 @@ class GeminiAiClientTest {
             String result = client.generateRecipeText("Mô tả món", List.of(2L, 9L));
             assertThat(result).isEqualTo("{\"description\":\"Món ngon\",\"steps\":[]}");
             assertThat(requestedPath.get()).endsWith("/models/gemini-3.8-flash:generateContent");
+        }
+    }
+
+    @Test
+    void recipeGenerationReservesEnoughOutputAndKeepsProviderDefaultThinking() throws IOException {
+        startServer(200, "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"{\\\"description\\\":\\\"Món ngon\\\",\\\"steps\\\":[]}\"}],\"role\":\"model\"},\"finishReason\":\"STOP\"}]}");
+
+        try (var client = configuredClient()) {
+            client.generateRecipeText("Viết hướng dẫn chi tiết cho 8 nguyên liệu", List.of(1L, 2L));
+        }
+
+        var request = tools.jackson.databind.json.JsonMapper.builder().build().readTree(lastRequest.get());
+        assertThat(request.path("generationConfig").path("maxOutputTokens").asInt()).isGreaterThanOrEqualTo(8192);
+        assertThat(request.path("generationConfig").has("thinkingConfig")).isFalse();
+    }
+
+    @Test
+    void rejectsTruncatedRecipeJsonBeforePassingItToTheRecipeService() throws IOException {
+        startServer(200, """
+                {"candidates":[{"content":{"parts":[{"text":"{\\"description\\":\\"Món ngon\\",\\"steps\\":["}],"role":"model"},
+                  "finishReason":"MAX_TOKENS"}]}
+                """);
+
+        try (var client = configuredClient()) {
+            assertThatThrownBy(() -> client.generateRecipeText("Hướng dẫn chi tiết", List.of(1L)))
+                    .isInstanceOf(GeminiAiClient.AiProviderException.class)
+                    .hasMessage("Gemini recipe output is incomplete")
+                    .extracting(error -> ((GeminiAiClient.AiProviderException) error).kind())
+                    .isEqualTo(GeminiAiClient.FailureKind.INVALID_RESPONSE);
+            assertThat(requests.get()).isEqualTo(1);
         }
     }
 
@@ -194,12 +230,14 @@ class GeminiAiClientTest {
         }
     }
 
+    private final AtomicReference<String> lastRequest = new AtomicReference<>();
+
     private void startServer(int status, String body) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
             requests.incrementAndGet();
             requestedPath.set(exchange.getRequestURI().getPath());
-            exchange.getRequestBody().readAllBytes();
+            lastRequest.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             byte[] response = body.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(status, response.length);

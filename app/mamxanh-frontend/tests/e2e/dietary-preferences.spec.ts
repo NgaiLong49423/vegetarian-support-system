@@ -282,8 +282,14 @@ test('leaving the questionnaire unanswered is not invited again but stays open f
 
   await signInAs(page);
   await expect(page).toHaveURL(/\/khoi-tao-so-thich$/);
-  await page.getByRole('button', { name: 'Khám phá', exact: true }).press('Enter');
-  await page.getByRole('navigation', { name: 'Khám phá', exact: true }).getByRole('link', { name: 'Công thức', exact: true }).click();
+  const exploreTrigger = page.getByRole('button', { name: 'Khám phá', exact: true });
+  await page.mouse.move(0, 0);
+  await exploreTrigger.focus();
+  await exploreTrigger.press('Enter');
+  await expect(exploreTrigger).toHaveAttribute('aria-expanded', 'true');
+  const exploreNavigation = page.getByRole('navigation', { name: 'Khám phá', exact: true });
+  await expect(exploreNavigation).toBeVisible();
+  await exploreNavigation.getByRole('link', { name: 'Công thức', exact: true }).click();
   await expect(page).toHaveURL(/\/kham-pha$/);
 
   await signOut(page);

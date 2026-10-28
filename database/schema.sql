@@ -21,6 +21,16 @@
 --                   + V13__expand_nutrition_goal_options.sql
 --                   + V14__nutrition_daily_value_reference.sql
 --                   + V15__recipe_view_deduplication.sql
+--                   + V16__allow_partial_manual_ingredient_nutrition.sql
+--                   + V17__allow_ai_estimated_nutrition.sql
+--                   + V18__shopping_manual_roll_unit.sql
+--                   + V19__shopping_recipe_contributions.sql
+--                   + V20__ingredient_reference_image.sql
+--                   + V21__shopping_manual_list_kind.sql
+--                   + V22__report_handling_by_admin.sql
+--                   + V23__report_supplement.sql
+--                   + V24__expert_application_private_attachments.sql
+--                   + V25__persist_nutrition_bmi.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -85,6 +95,7 @@ CREATE TABLE [INGREDIENT] (
     name                  NVARCHAR(200)  NOT NULL,
     ingredient_group      NVARCHAR(100)  NOT NULL
         CONSTRAINT DF_INGREDIENT_ingredient_group DEFAULT N'Khác',
+    image_url             NVARCHAR(2048) NULL,
     energy_kcal_100g      DECIMAL(10,2)  NULL,
     protein_g_100g        DECIMAL(10,2)  NULL,
     carbohydrate_g_100g   DECIMAL(10,2)  NULL,
@@ -157,6 +168,7 @@ CREATE TABLE [USER] (
     biological_sex             VARCHAR(10)    NULL,
     height_cm                  DECIMAL(5,1)   NULL,
     weight_kg                  DECIMAL(5,1)   NULL,
+    nutrition_bmi              DECIMAL(18,12) NULL,
     activity_level             VARCHAR(30)    NULL,
     pregnant                   BIT            NOT NULL
         CONSTRAINT DF_USER_pregnant DEFAULT 0,
@@ -340,6 +352,10 @@ CREATE TABLE [EXPERT_APPLICATION] (
     vegetarian_type        VARCHAR(30)     NOT NULL,
     sample_recipe_summary  NVARCHAR(MAX)   NOT NULL,
     portfolio_url          VARCHAR(2048)   NULL,
+    certificate_blob_key   VARCHAR(512)    NULL,
+    certificate_content_type VARCHAR(100)  NULL,
+    application_avatar_blob_key VARCHAR(512) NULL,
+    application_avatar_content_type VARCHAR(100) NULL,
     status                 VARCHAR(20)     NOT NULL
         CONSTRAINT DF_EXPERT_APP_status DEFAULT 'PENDING',
     admin_note             NVARCHAR(1000)  NULL,
@@ -360,6 +376,16 @@ CREATE TABLE [EXPERT_APPLICATION] (
     ),
     CONSTRAINT CK_EXPERT_APP_vegetarian_type CHECK (
         vegetarian_type IN ('VEGAN', 'LACTO', 'OVO', 'LACTO_OVO', 'MACROBIOTIC')
+    ),
+    CONSTRAINT CK_EXPERT_APP_certificate_attachment_pair CHECK (
+        (certificate_blob_key IS NULL AND certificate_content_type IS NULL)
+        OR (certificate_blob_key IS NOT NULL
+            AND certificate_content_type IN ('application/pdf', 'image/jpeg', 'image/png'))
+    ),
+    CONSTRAINT CK_EXPERT_APP_avatar_attachment_pair CHECK (
+        (application_avatar_blob_key IS NULL AND application_avatar_content_type IS NULL)
+        OR (application_avatar_blob_key IS NOT NULL
+            AND application_avatar_content_type IN ('image/jpeg', 'image/png', 'image/webp'))
     )
 );
 GO
@@ -613,6 +639,7 @@ CREATE TABLE [REPORT] (
     updated_at       DATETIME2(7)    NOT NULL
         CONSTRAINT DF_REPORT_updated_at DEFAULT SYSUTCDATETIME(),
     handled_at       DATETIME2(7)    NULL,
+    handled_by       BIGINT          NULL,
 
     CONSTRAINT PK_REPORT PRIMARY KEY (report_id),
     CONSTRAINT FK_REPORT_USER FOREIGN KEY (reporter_id)
@@ -621,6 +648,8 @@ CREATE TABLE [REPORT] (
         REFERENCES [RECIPE_POST](recipe_id) ON DELETE NO ACTION,
     CONSTRAINT FK_REPORT_COMMENT FOREIGN KEY (comment_id)
         REFERENCES [COMMENT](comment_id) ON DELETE NO ACTION,
+    CONSTRAINT FK_REPORT_HANDLED_BY FOREIGN KEY (handled_by)
+        REFERENCES [USER](user_id) ON DELETE NO ACTION,
     CONSTRAINT CK_REPORT_target_xor CHECK (
         (recipe_id IS NOT NULL AND comment_id IS NULL)
         OR (recipe_id IS NULL AND comment_id IS NOT NULL)
@@ -632,8 +661,31 @@ CREATE TABLE [REPORT] (
     ),
     CONSTRAINT CK_REPORT_status CHECK (
         status IN ('OPEN', 'IN_REVIEW', 'RESOLVED')
+    ),
+    CONSTRAINT CK_REPORT_decision CHECK (
+        decision IS NULL
+        OR decision IN ('NO_VIOLATION', 'WARN_AUTHOR', 'HIDE_RECIPE', 'LOCK_AUTHOR')
     )
 );
+GO
+
+-- 6.1a REPORT_SUPPLEMENT — Append-only information added to an open report
+-- Source: V23__report_supplement.sql, FR-30 AC-30.1
+CREATE TABLE [REPORT_SUPPLEMENT] (
+    supplement_id  BIGINT          IDENTITY(1,1)  NOT NULL,
+    report_id      BIGINT          NOT NULL,
+    content        NVARCHAR(500)   NOT NULL,
+    created_at     DATETIME2(7)    NOT NULL
+        CONSTRAINT DF_REPORT_SUPPLEMENT_created_at DEFAULT SYSUTCDATETIME(),
+
+    CONSTRAINT PK_REPORT_SUPPLEMENT PRIMARY KEY (supplement_id),
+    CONSTRAINT FK_REPORT_SUPPLEMENT_REPORT FOREIGN KEY (report_id)
+        REFERENCES [REPORT](report_id) ON DELETE NO ACTION
+);
+GO
+
+CREATE NONCLUSTERED INDEX IX_REPORT_SUPPLEMENT_report
+    ON [REPORT_SUPPLEMENT](report_id, created_at, supplement_id);
 GO
 
 -- 6.2 NOTIFICATION — In-app notification to user
@@ -1029,6 +1081,12 @@ INSERT INTO [UNIT] (code, name, dimension, base_factor) VALUES
     (N'bó',     N'bó',              'COUNT',   1.0);
 GO
 
+-- V16 / FR-53 AC-53.2: manual shopping items measured in rolls.
+IF NOT EXISTS (SELECT 1 FROM [UNIT] WHERE code = N'cuộn')
+    INSERT INTO [UNIT] (code, name, dimension, base_factor, is_active)
+    VALUES (N'cuộn', N'cuộn', 'COUNT', 1.0, 1);
+GO
+
 
 -- ============================================================================
 -- FR-37 shared FDA reference values; maintained by Flyway V14.
@@ -1078,3 +1136,31 @@ GO
 --   SET NULL : RECIPE_VIEW.user_id
 --   NO ACTION: all other 33 foreign keys
 -- ============================================================================
+
+GO
+
+-- Personal Recipe Post lists and immutable original ingredient contributions (FR-53 / approved #90 design).
+ALTER TABLE [SHOPPING_LIST] ADD list_kind VARCHAR(20) NOT NULL
+    CONSTRAINT DF_SHOPPING_LIST_kind DEFAULT 'MEAL_PLAN';
+GO
+ALTER TABLE [SHOPPING_LIST] ADD CONSTRAINT CK_SHOPPING_LIST_kind CHECK (list_kind IN ('MEAL_PLAN','PERSONAL','MANUAL'));
+CREATE UNIQUE INDEX UX_SHOPPING_LIST_personal_owner ON [SHOPPING_LIST](user_id) WHERE list_kind = 'PERSONAL';
+
+CREATE TABLE [SHOPPING_RECIPE_CONTRIBUTION] (
+    contribution_id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    shopping_list_id BIGINT NOT NULL,
+    recipe_id BIGINT NOT NULL,
+    ingredient_id BIGINT NOT NULL,
+    unit_id INT NOT NULL,
+    quantity DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
+    shopping_list_item_id BIGINT NULL,
+    CONSTRAINT FK_SRC_LIST FOREIGN KEY (shopping_list_id) REFERENCES [SHOPPING_LIST](shopping_list_id) ON DELETE CASCADE,
+    CONSTRAINT FK_SRC_RECIPE FOREIGN KEY (recipe_id) REFERENCES [RECIPE_POST](recipe_id),
+    CONSTRAINT FK_SRC_INGREDIENT FOREIGN KEY (ingredient_id) REFERENCES [INGREDIENT](ingredient_id),
+    CONSTRAINT FK_SRC_UNIT FOREIGN KEY (unit_id) REFERENCES [UNIT](unit_id),
+    CONSTRAINT FK_SRC_ITEM FOREIGN KEY (shopping_list_item_id) REFERENCES [SHOPPING_LIST_ITEM](shopping_list_item_id)
+);
+CREATE INDEX IX_SRC_LIST_RECIPE ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_id,recipe_id);
+CREATE INDEX IX_SRC_ITEM ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_item_id);
+
+GO

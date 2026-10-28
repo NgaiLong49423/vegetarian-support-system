@@ -1,8 +1,8 @@
 > **Document:** Use Case Specifications — M01
 > **File:** `docs/requirements/use-cases/discovery-and-public-content.md`
-> **Version:** v2.5.0
+> **Version:** v2.6.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-19
+> **Last Updated:** 2026-10-21
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -717,22 +717,33 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-61).
 ---
 
 <a id="fr-62"></a>
-## FR-62 — Chọn nguyên liệu và tìm công thức
+## FR-62 — Xem chi tiết nguyên liệu và tìm công thức
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-62).
 
 #### 1. Tác nhân và mục tiêu
 
-Guest hoặc Member duyệt tất cả nguyên liệu đang hoạt động dưới dạng nhãn, chọn một hoặc nhiều nguyên liệu rồi mở Khám phá với các bộ lọc tương ứng.
+Guest hoặc Member duyệt nguyên liệu đang hoạt động, mở chi tiết để xem ảnh và dinh dưỡng trên 100 g, đồng thời chọn nguyên liệu để tìm công thức phù hợp.
 
 #### 2. Luồng chính
 
-1. Người dùng mở `Khám phá > Danh mục nguyên liệu`; hệ thống tải toàn bộ nguyên liệu đang `ACTIVE` và hiển thị mỗi nguyên liệu thành nhãn chọn được.
-2. Người dùng có thể tìm theo tên và chọn hoặc bỏ chọn một hay nhiều nhãn; số lượng và trạng thái lựa chọn được thể hiện trên trang.
+1. Người dùng mở `Khám phá > Danh mục nguyên liệu`; hệ thống tải nguyên liệu đang `ACTIVE` và hiển thị thành thẻ có tên, nhóm, ảnh hoặc trạng thái chưa có ảnh.
+2. Người dùng tìm theo tên và chọn hoặc bỏ chọn một hay nhiều nguyên liệu; số lượng và trạng thái lựa chọn được thể hiện trên trang.
 3. Chọn `Tìm công thức` mở `/kham-pha` với từng ingredient ID và tên tương ứng; trang Khám phá khôi phục các lựa chọn rồi gửi bộ lọc hiện hành.
+4. Để xem thông tin, người dùng chọn `Xem chi tiết` trên thẻ; trang `/nguyen-lieu/:ingredientId` đọc chi tiết công khai và hiển thị tên, nhóm, ảnh cùng bảng dinh dưỡng trên 100 g.
+5. Người dùng xem năng lượng, chất đạm, carbohydrate, chất béo, chất xơ, canxi, sắt, vitamin B12 và kẽm với đơn vị tương ứng. Giá trị chưa có được ghi rõ là chưa có dữ liệu.
+6. Từ chi tiết, chọn `Tìm công thức` mở Khám phá với riêng nguyên liệu đang xem; liên kết về danh mục cho phép tiếp tục duyệt.
+7. Trang chi tiết đồng thời hiển thị lưới bài công thức công khai có ingredient ID đang xem; người dùng mở từng bài, chọn Xem thêm hoặc đổi sắp xếp mới nhất/được yêu thích.
+8. Người dùng bấm nhãn loại ăn chay của công thức để lọc lưới; mỗi request vẫn giữ ingredient ID. Đổi nhãn/sắp xếp bắt đầu lại từ trang đầu.
 
 #### 3. Luồng thay thế và dữ liệu
 
 - Catalog rỗng, lỗi hoặc đang tải được thể hiện tách biệt; khi có dữ liệu, tất cả nguyên liệu `ACTIVE` xuất hiện cùng nhau mà không cần chọn nhóm.
-- Public ingredient API chỉ trả ID, tên và group; không mở rộng API quản trị catalog.
+- Danh sách công khai trả ID, tên, nhóm và URL ảnh. Chi tiết bổ sung chín chỉ tiêu dinh dưỡng trên 100 g; không trả tên/URL nguồn, ngày tham khảo, trạng thái catalog hoặc cờ hỗ trợ tính dinh dưỡng.
+- ID không tồn tại và nguyên liệu đã `INACTIVE` đều nhận `404 INGREDIENT_NOT_FOUND`; trang giải thích không tìm thấy và có đường về danh mục.
+- Lỗi kết nối/dịch vụ có thông báo tải thất bại và nút thử lại; không diễn giải lỗi kết nối thành nguyên liệu không tồn tại.
+- Ảnh trống hoặc tải lỗi có biểu tượng và nhãn chưa có ảnh; không thay bằng ảnh nguyên liệu khác.
+- `NULL` là dữ liệu chưa biết; số `0` vẫn hiển thị đúng 0. Nếu tất cả chỉ tiêu thiếu, trang hiển thị trạng thái chưa có dữ liệu dinh dưỡng. Vitamin B12 giữ tối đa bốn chữ số thập phân để không làm mất giá trị nhỏ.
 - API Khám phá giữ nguyên quy tắc hiện hành: khi nhiều nguyên liệu được chọn, công thức phải thỏa tất cả ID.
+- Lưới tái sử dụng API discovery của FR-08. Lỗi tải thêm giữ các thẻ hiện có và thử lại cùng trang. Không có bài tương ứng có thông báo rỗng riêng với lỗi kết nối.
+- Nhãn loại món lấy từ `vegetarianTypes` trong form options. Chúng dùng để lọc công thức; catalog hiện chưa xác lập nhãn phù hợp/không phù hợp chế độ ăn riêng cho từng nguyên liệu.

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
@@ -10,6 +10,7 @@ export function Modal({
   children,
   size = 'md',
   tone = 'default',
+  trapFocus = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -17,17 +18,30 @@ export function Modal({
   children: ReactNode;
   size?: 'md' | 'lg';
   tone?: 'default' | 'dark';
+  trapFocus?: boolean;
 }) {
+  const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key !== 'Tab' || !trapFocus || !panel.current) return;
+      const controls = Array.from(panel.current.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]',
+      )).filter((element) => element.getClientRects().length > 0);
+      const first = controls[0], last = controls[controls.length - 1];
+      if (!first) { e.preventDefault(); panel.current.focus(); return; }
+      if (!panel.current.contains(document.activeElement) || (e.shiftKey && document.activeElement === first)) {
+        e.preventDefault(); (e.shiftKey ? last : first).focus();
+      } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     window.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
     };
-  }, [open, onClose]);
+  }, [open, onClose, trapFocus]);
 
   if (!open) return null;
 
@@ -40,6 +54,8 @@ export function Modal({
         onClick={onClose}
       />
       <div
+        ref={panel}
+        tabIndex={-1}
         className={`modal-panel-enter relative w-full ${size === 'lg' ? 'max-w-2xl' : 'max-w-md'} max-h-[90vh] overflow-y-auto rounded-2xl border p-6 shadow-2xl ${tone === 'dark' ? 'border-white/10 bg-[#191919] text-white' : 'border-brand-100 bg-paper'}`}
         role="dialog"
         aria-modal="true"
