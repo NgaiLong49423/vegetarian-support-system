@@ -170,7 +170,7 @@ test('FR-53 browser creates selected-day and weekly checklists; CRUD and bought 
     await page.getByRole('button', { name: /^Tất cả \(/ }).click()
     await expect(page.getByText('1.400 g', { exact: true })).toBeVisible()
     expect(Number(sql(`SELECT COUNT(*) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=${personalId}`))).toBe(3)
-    expect(sql(`SELECT CAST(quantity AS VARCHAR(20)) FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=${personalId} AND recipe_id=${recipes[0]}`)).toBe('600.00')
+    expect(Number(sql(`SELECT quantity FROM [SHOPPING_RECIPE_CONTRIBUTION] WHERE shopping_list_id=${personalId} AND recipe_id=${recipes[0]}`))).toBe(600)
     const foreignPersonal = await request.get(`${backend}/shopping-lists/${personalId}`, { headers: { Authorization: `Bearer ${(await otherLogin.json()).accessToken}` } })
     expect(foreignPersonal.status()).toBe(404)
     await page.setViewportSize({ width: 375, height: 812 })
