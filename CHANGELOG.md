@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-28 — Remove Semicolons from the Recipe Comparison Text
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `f7abbe11`.
 
 **Scope:** Apply the lecturer's feedback that text shown on the website does not use semicolons to the FR-60 recipe comparison page.
 
