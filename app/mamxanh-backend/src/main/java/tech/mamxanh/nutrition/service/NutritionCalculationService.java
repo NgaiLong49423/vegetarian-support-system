@@ -28,6 +28,7 @@ public class NutritionCalculationService {
     }
 
     public String bmiCategory(BigDecimal bmi) {
+        if (bmi == null) return null;
         if (bmi.compareTo(new BigDecimal("18.5")) < 0) return "Thiếu cân";
         if (bmi.compareTo(new BigDecimal("25")) < 0) return "Bình thường";
         if (bmi.compareTo(new BigDecimal("30")) < 0) return "Thừa cân";

@@ -400,9 +400,6 @@ export function Home() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-ink">Góc chia sẻ</h2>
-                <p className="mt-1 text-xs leading-5 text-ink-muted sm:text-sm">
-                  Những chia sẻ và cảm nhận ẩm thực chay từ cộng đồng.
-                </p>
               </div>
               <div className="flex items-center gap-3">
                 <Link

@@ -332,7 +332,7 @@ export function NutritionTracker() {
               <div>
                 <strong>Một phần dữ liệu dinh dưỡng còn thiếu.</strong>
                 <p className="mt-1 text-xs leading-relaxed text-amber-800">
-                  Các số liệu tính được vẫn được hiển thị và đưa vào báo cáo; xem danh sách món thiếu dữ liệu trong phần phân tích.
+                  Các số liệu tính được vẫn được hiển thị và đưa vào báo cáo, xem danh sách món thiếu dữ liệu trong phần phân tích.
                 </p>
               </div>
             </div>
@@ -494,7 +494,7 @@ export function NutritionTracker() {
                       </Link>
                     </div>
                     {!meal.complete && (
-                      <p className="mt-2 text-xs text-amber-800">Một số chỉ tiêu còn thiếu; số liệu hiện có vẫn được dùng.</p>
+                      <p className="mt-2 text-xs text-amber-800">Một số chỉ tiêu còn thiếu, số liệu hiện có vẫn được dùng.</p>
                     )}
                   </div>
                 </Card>
