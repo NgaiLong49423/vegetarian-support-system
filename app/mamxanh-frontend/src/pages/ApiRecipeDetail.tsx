@@ -750,7 +750,7 @@ function PublishedApiRecipeDetail({ recipeId }: { recipeId: number }) {
             )}
           </div>
           <p className="mt-4 border-t border-brand-100 pt-3 text-xs leading-5 text-ink-muted">
-            Nguồn và số liệu do quản trị viên nhập, có thể là USDA/NIH, nguồn khác hoặc AI estimate chưa xác minh. Các giá trị chỉ mang tính tham khảo, không thay thế tư vấn y tế.
+            Nguồn và số liệu do quản trị viên nhập; có thể là USDA/NIH, nguồn khác hoặc AI estimate chưa xác minh. Các giá trị chỉ mang tính tham khảo, không thay thế tư vấn y tế.
           </p>
         </Card>
 
