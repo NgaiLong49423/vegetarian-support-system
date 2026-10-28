@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-28 — Track Recipe Sources and Item Provenance in Shopping Lists
 
-**Status:** In progress — local verification and PR preparation.
+**Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
 
 **Scope:** Show recipes contributing to each shopping list and let Members adjust combined servings without changing Meal Plan entries.
 
@@ -36,7 +36,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-28 — Improve AI Meal-Planning Preview Readability
 
-**Status:** In progress — local verification and PR preparation.
+**Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
 
 **Scope:** Put the current and upcoming dates before past dates in the nutrition-based AI menu preview.
 
@@ -51,7 +51,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-28 — Seed the Demo Expert Nutrition Profile
 
-**Status:** In progress — local verification and PR preparation.
+**Status:** Committed — `2d04630c3cef07fb79e1a5fda3d2c0575c60a8f1`.
 
 **Scope:** Populate profile fields for `demo-expert@mamxanh.local` in the local demonstration database.
 
