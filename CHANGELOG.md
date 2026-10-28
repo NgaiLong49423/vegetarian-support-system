@@ -1,13 +1,31 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.109.0
+> **Version:** v2.110.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-27
+> **Last Updated:** 2026-10-28
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-28 — Remove Semicolons from the Recipe Comparison Text
+
+**Status:** Working tree — not committed.
+
+**Scope:** Apply the lecturer's feedback that text shown on the website does not use semicolons to the FR-60 recipe comparison page.
+
+### Added
+
+- Add a Playwright check that the text on the comparison page contains no semicolon.
+
+### Changed
+
+- Split the three comparison notes joined by a semicolon (ingredient alignment, nutrition difference and estimate disclaimer) into separate sentences without changing their meaning.
+
+### Fixed
+
+- None.
 
 ## 2026-10-27 — Fix AI Chat Questions About the Current Recipe
 

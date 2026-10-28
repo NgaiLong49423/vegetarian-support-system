@@ -207,7 +207,7 @@ test('AC-60.1, AC-60.3: Guest compares two published recipes per serving with di
   await expect(b12.nth(2)).toHaveText(/^[-−]0,4 mcg$/);
   await expect(page.getByText('Mỗi cột tính trên một khẩu phần của công thức đó: Đậu hũ sốt cà chua có 2 khẩu phần gốc, Canh cà chua nấm rơm có 4 khẩu phần gốc.')).toBeVisible();
   await expect(page.getByText(/Chênh lệch = công thức đầu tiên − công thức thứ hai/)).toBeVisible();
-  await expect(page.getByText(/khẩu phần của hai món có thể không có cùng khối lượng thành phẩm/)).toBeVisible();
+  await expect(page.getByText(/Khẩu phần của hai món có thể không có cùng khối lượng thành phẩm/)).toBeVisible();
   await expect(page.getByRole('main')).not.toContainText(POSITION_WORDING);
   expect(authHeaders.every((header) => header === undefined)).toBeTruthy();
 });
@@ -254,6 +254,15 @@ test('AC-60.6: the comparison has no sodium, health score, percentage difference
 
   await expect(page.getByRole('main')).not.toContainText(/Natri|muối|Health Score|điểm sức khỏe|tốt hơn|lành mạnh hơn/i);
   await expect(nutritionTable(page)).not.toContainText('%');
+});
+
+test('lecturer feedback: the comparison page text uses no semicolons', async ({ page }) => {
+  await publicApi(page);
+  await page.goto('/so-sanh?a=701&b=702');
+  await expect(nutritionTable(page)).toBeVisible();
+  await expect(ingredientTable(page)).toBeVisible();
+
+  await expect(page.getByRole('main')).not.toContainText(';');
 });
 
 test('PR #132 review: the second recipe is chosen on a separate picker page and both recipes then show side by side', async ({ page }) => {
