@@ -35,13 +35,14 @@ public class ShoppingListController {
     private final ShoppingListService service;
     private final ShoppingListCreationService creation;
     private final tech.mamxanh.shopping.service.RecipeShoppingListService recipeLists;
-    @org.springframework.beans.factory.annotation.Autowired
-    private tech.mamxanh.shopping.service.ShoppingRecipeSourceService recipeSources;
+    private final tech.mamxanh.shopping.service.ShoppingRecipeSourceService recipeSources;
     public ShoppingListController(ShoppingListService service, ShoppingListCreationService creation,
-            tech.mamxanh.shopping.service.RecipeShoppingListService recipeLists) {
+            tech.mamxanh.shopping.service.RecipeShoppingListService recipeLists,
+            tech.mamxanh.shopping.service.ShoppingRecipeSourceService recipeSources) {
         this.service = service;
         this.creation = creation;
         this.recipeLists = recipeLists;
+        this.recipeSources = recipeSources;
     }
 
     @PostMapping(consumes = "application/json", produces = "application/json")

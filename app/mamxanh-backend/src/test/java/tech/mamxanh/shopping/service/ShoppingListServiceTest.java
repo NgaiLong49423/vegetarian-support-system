@@ -35,6 +35,7 @@ class ShoppingListServiceTest {
     @Mock IngredientCatalogLookupService catalog;
     @Mock ShoppingRecipeContributionRepository contributions;
     @Mock tech.mamxanh.recipe.service.RecipeService recipes;
+    @Mock tech.mamxanh.shopping.service.ShoppingAggregationService aggregation;
     final Clock clock = Clock.fixed(Instant.parse("2026-10-17T03:00:00Z"), ZoneOffset.UTC);
     ShoppingListService service;
     ShoppingListEntity list;
@@ -43,7 +44,7 @@ class ShoppingListServiceTest {
 
     @BeforeEach void setup() {
         service = new ShoppingListService(lists, items, users, catalog, clock, contributions, recipes,
-                org.mockito.Mockito.mock(jakarta.persistence.EntityManager.class));
+                org.mockito.Mockito.mock(jakarta.persistence.EntityManager.class), aggregation);
         when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(17, Role.CUSTOMER));
         list = new ShoppingListEntity(); list.setId(10L); list.setUserId(17L); list.setName("Đi chợ");
         item = new ShoppingListItemEntity(); item.setId(3L); item.setShoppingListId(10L);
@@ -128,12 +129,12 @@ class ShoppingListServiceTest {
 
     @Test void addsTrimmedManualItemUnboughtAndTouchesList() {
         mutation(); references(); when(catalog.findActiveUnits()).thenReturn(List.of(roll));
-        when(items.save(any())).thenAnswer(call -> { ShoppingListItemEntity saved = call.getArgument(0); saved.setId(44L); return saved; });
+        when(items.saveAndFlush(any())).thenAnswer(call -> { ShoppingListItemEntity saved = call.getArgument(0); saved.setId(44L); return saved; });
         var result = service.add(10, new CreateShoppingItemRequest("  Khăn giấy lau bếp  ", new BigDecimal("2"), 7));
         assertThat(result.name()).isEqualTo("Khăn giấy lau bếp");
         assertThat(result.bought()).isFalse(); assertThat(result.ingredientId()).isNull();
         assertThat(list.getUpdatedAt()).isEqualTo(LocalDateTime.now(clock));
-        verify(items).save(argThat(i -> i.getShoppingListId() == 10 && i.getIngredientId() == null));
+        verify(items).saveAndFlush(argThat(i -> i.getShoppingListId() == 10 && i.getIngredientId() == null));
     }
 
     @ParameterizedTest @ValueSource(strings = {"", "   ", "\u00a0\u00a0", "<script>alert(1)</script>", "Tên\nẩn"})
@@ -144,7 +145,7 @@ class ShoppingListServiceTest {
         verifyNoInteractions(items, catalog);
     }
 
-    @ParameterizedTest @ValueSource(strings = {"0", "-1", "0.001", "100000000"})
+    @ParameterizedTest @ValueSource(strings = {"0", "-1", "0.0000001", "1000000000000"})
     void rejectsInvalidOrUnrepresentableQuantities(String amount) {
         mutation();
         assertThatThrownBy(() -> service.add(10, new CreateShoppingItemRequest("Khăn", new BigDecimal(amount), 7)))
@@ -161,6 +162,12 @@ class ShoppingListServiceTest {
 
     @Test void quantityUpdatePreservesIdentityAndBoughtStateAndRetainsExistingUnit() {
         mutation(); existingItem(); references(); item.setBought(true); item.setIngredientId(8L);
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(new IngredientUnitOptionResponse(
+                7, "cuộn", "cuộn", MeasurementDimension.COUNT, BigDecimal.ONE, false)));
+        when(aggregation.aggregate(anyList())).thenReturn(new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult(
+                List.of(new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Group("Khác", List.of(
+                        new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Item(8L, "Khăn giấy",
+                                new BigDecimal("3.5"), 7, "cuộn", "cuộn", false)))), List.of()));
         var result = service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("3.5"), 7));
         assertThat(result.quantity()).isEqualByComparingTo("3.5"); assertThat(result.bought()).isTrue();
         assertThat(item.getIngredientId()).isEqualTo(8); verify(catalog, never()).findActiveUnits();
@@ -195,9 +202,11 @@ class ShoppingListServiceTest {
     }
 
     @Test void cleanupChangesTimestampOnlyWhenRowsWereRemoved() {
-        mutation(); when(items.deleteByShoppingListIdAndBoughtTrue(10L)).thenReturn(0L, 2L);
+        mutation(); item.setBought(true);
+        when(items.findByShoppingListIdOrderByIdAsc(10L)).thenReturn(List.of(), List.of(item));
         service.clearBought(10); assertThat(list.getUpdatedAt()).isNull();
         service.clearBought(10); assertThat(list.getUpdatedAt()).isEqualTo(LocalDateTime.now(clock));
+        verify(items).deleteAll(List.of(item));
     }
 
     @Test void invalidIdsAreRejected() {

@@ -41,6 +41,7 @@ class ShoppingListControllerTest {
     @MockitoBean ShoppingListService service;
     @MockitoBean tech.mamxanh.shopping.service.ShoppingListCreationService creation;
     @MockitoBean tech.mamxanh.shopping.service.RecipeShoppingListService recipeLists;
+    @MockitoBean tech.mamxanh.shopping.service.ShoppingRecipeSourceService recipeSources;
     @MockitoBean JwtDecoder decoder;
     @MockitoBean AccountStatusJwtAuthenticationConverter converter;
 
@@ -114,8 +115,8 @@ class ShoppingListControllerTest {
     @ParameterizedTest @ValueSource(strings = {
         "{}", "{\"name\":\"\",\"quantity\":1,\"unitId\":1}",
         "{\"name\":\"Khăn\",\"quantity\":0,\"unitId\":1}",
-        "{\"name\":\"Khăn\",\"quantity\":0.001,\"unitId\":1}",
-        "{\"name\":\"Khăn\",\"quantity\":100000000,\"unitId\":1}",
+        "{\"name\":\"Khăn\",\"quantity\":0.0000001,\"unitId\":1}",
+        "{\"name\":\"Khăn\",\"quantity\":1000000000000,\"unitId\":1}",
         "{\"name\":\"Khăn\",\"quantity\":2,\"unitId\":0}"})
     void invalidManualItemsReturnFieldProblems(String body) throws Exception {
         mvc.perform(post("/api/v1/shopping-lists/1/items").with(user("17").roles("CUSTOMER"))

@@ -44,13 +44,13 @@ public class ShoppingListService {
     private final tech.mamxanh.shopping.repository.ShoppingRecipeContributionRepository contributions;
     private final tech.mamxanh.recipe.service.RecipeService recipes;
     private final EntityManager entityManager;
-    @org.springframework.beans.factory.annotation.Autowired
-    private ShoppingAggregationService aggregation;
+    private final ShoppingAggregationService aggregation;
 
     public ShoppingListService(ShoppingListRepository lists, ShoppingListItemRepository items,
             CurrentUserService users, IngredientCatalogLookupService catalog, Clock clock,
             tech.mamxanh.shopping.repository.ShoppingRecipeContributionRepository contributions,
-            tech.mamxanh.recipe.service.RecipeService recipes, EntityManager entityManager) {
+            tech.mamxanh.recipe.service.RecipeService recipes, EntityManager entityManager,
+            ShoppingAggregationService aggregation) {
         this.lists = lists;
         this.items = items;
         this.users = users;
@@ -59,6 +59,7 @@ public class ShoppingListService {
         this.contributions = contributions;
         this.recipes = recipes;
         this.entityManager = entityManager;
+        this.aggregation = aggregation;
     }
 
     @Transactional
@@ -234,7 +235,6 @@ public class ShoppingListService {
             item.setQuantity(request.quantity());
             item.setUnitId(request.unitId());
         }
-        item.setBought(false);
         touch(list);
         return resolve(List.of(item)).getFirst();
     }
