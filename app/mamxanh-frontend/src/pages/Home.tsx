@@ -31,7 +31,6 @@ import {
   PublicRecipeSkeleton,
 } from "../components/PublicRecipeCard"
 
-import { PostCard } from "../components/PostCard"
 
 import { useAuth } from "../components/AuthContext"
 
@@ -41,7 +40,6 @@ import {
   type RecipePost,
 } from "../api/recipes"
 
-import { posts } from "../data/mockData"
 
 const shortcuts = [
   { to: "/kham-pha", label: "Khám phá công thức", icon: ChefHat },
@@ -394,29 +392,6 @@ export function Home() {
             onRetry={() => setRetry((value) => value + 1)}
             popular
           />
-
-          {/* Row 5: Full-width 2-Column Community Posts */}
-          <Card className="p-6 sm:p-7">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-bold text-ink">Góc chia sẻ</h2>
-              </div>
-              <div className="flex items-center gap-3">
-                <Link
-                  to="/cong-dong"
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-500 sm:text-sm"
-                >
-                  Xem cộng đồng
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </div>
-            <div className="grid gap-6 md:grid-cols-2">
-              {posts.slice(0, 2).map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-            </div>
-          </Card>
         </PageContainer>
       </div>
     </>
