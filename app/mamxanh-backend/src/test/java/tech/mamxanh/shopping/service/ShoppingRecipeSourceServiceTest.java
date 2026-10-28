@@ -58,6 +58,8 @@ class ShoppingRecipeSourceServiceTest {
         assertThatThrownBy(() -> service.updateServings(7, UUID.randomUUID(), request("2"))).isInstanceOf(AppException.class);
         when(lists.lockOwned(7L, 17L)).thenReturn(Optional.of(list));
         assertThatThrownBy(() -> service.updateServings(7, null, request("2"))).isInstanceOf(AppException.class);
+        assertThatThrownBy(() -> service.updateServings(7, UUID.randomUUID(),
+                new UpdateShoppingRecipeSourceServingsRequest(null))).isInstanceOf(AppException.class);
         assertThatThrownBy(() -> service.updateServings(7, UUID.randomUUID(), request("0.55"))).isInstanceOf(AppException.class);
         assertThatThrownBy(() -> service.updateServings(7, UUID.randomUUID(), request("51"))).isInstanceOf(AppException.class);
         UUID sourceId = UUID.randomUUID();
@@ -66,6 +68,8 @@ class ShoppingRecipeSourceServiceTest {
         var row = source(sourceId, 3L, "10", "2");
         when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(row));
         row.setServings(null);
+        assertThatThrownBy(() -> service.updateServings(7, sourceId, request("3"))).isInstanceOf(AppException.class);
+        row.setServings(BigDecimal.ZERO);
         assertThatThrownBy(() -> service.updateServings(7, sourceId, request("3"))).isInstanceOf(AppException.class);
     }
 
@@ -105,6 +109,18 @@ class ShoppingRecipeSourceServiceTest {
         when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(item));
         when(aggregation.aggregate(anyList())).thenReturn(aggregate(1, "10"), aggregate(2, "10"));
         assertThatThrownBy(() -> service.updateServings(7, sourceId, request("3"))).isInstanceOf(AppException.class);
+    }
+
+    @Test
+    void updateServingsRejectsStoredTotalThatWouldFallBelowZero() {
+        UUID sourceId = UUID.randomUUID();
+        var recipe = source(sourceId, 3L, "10", "2");
+        var item = item(3L, "3");
+        owned();
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(recipe));
+        when(items.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(item));
+        when(aggregation.aggregate(anyList())).thenReturn(aggregate(1, "10"), aggregate(1, "5"));
+        assertThatThrownBy(() -> service.updateServings(7, sourceId, request("1"))).isInstanceOf(AppException.class);
     }
 
     @Test
@@ -152,6 +168,8 @@ class ShoppingRecipeSourceServiceTest {
     @Test
     void updateRecipeServingsRejectsInconsistentIngredientSnapshots() {
         owned();
+        assertThatThrownBy(() -> service.updateRecipeServings(7, 9,
+                new UpdateShoppingRecipeSourceServingsRequest(null))).isInstanceOf(AppException.class);
         UUID sourceId = UUID.randomUUID();
         var missingExpected = source(sourceId, 3L, "10", "2"); missingExpected.setExpectedIngredientCount(null);
         when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(missingExpected));
@@ -165,6 +183,20 @@ class ShoppingRecipeSourceServiceTest {
         var invalidServings = source(sourceId, 3L, "10", "0");
         when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(invalidServings));
         assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("3"))).isInstanceOf(AppException.class);
+
+        var wrongCount = source(sourceId, 3L, "10", "2"); wrongCount.setExpectedIngredientCount(2);
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(wrongCount));
+        assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("3"))).isInstanceOf(AppException.class);
+
+        var first = source(sourceId, 3L, "10", "2"); first.setExpectedIngredientCount(2);
+        var second = source(sourceId, 4L, "10", "3"); second.setExpectedIngredientCount(2);
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(first, second));
+        assertThatThrownBy(() -> service.updateRecipeServings(7, 9, request("4"))).isInstanceOf(AppException.class);
+
+        var noOp = source(sourceId, 3L, "10", "2");
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(noOp));
+        when(checklists.get(7L)).thenReturn(emptyResponse());
+        assertThat(service.updateRecipeServings(7, 9, request("2.0"))).isNotNull();
     }
 
     @Test
@@ -234,6 +266,19 @@ class ShoppingRecipeSourceServiceTest {
         var incompatible = new ShoppingAggregationResult(List.of(new ShoppingAggregationResult.Group("A", List.of(
                 new ShoppingAggregationResult.Item(4L, "A", BigDecimal.ONE, 1, "g", "gram", true)))), List.of());
         when(aggregation.aggregate(anyList())).thenReturn(incompatible);
+        assertThatThrownBy(() -> service.removeRecipe(7, 9)).isInstanceOf(AppException.class);
+    }
+
+    @Test
+    void removeRecipeRejectsNonPositiveRemainingAggregate() {
+        owned();
+        UUID sourceId = UUID.randomUUID();
+        var recipe = source(sourceId, 3L, "10", "2"); recipe.setExpectedIngredientCount(1);
+        var leftover = new ShoppingRecipeContributionEntity(); leftover.setShoppingListItemId(3L);
+        leftover.setIngredientId(4L); leftover.setUnitId(1); leftover.setQuantity(BigDecimal.ONE);
+        when(contributions.findByShoppingListIdOrderByIdAsc(7L)).thenReturn(List.of(recipe), List.of(leftover));
+        when(items.findByIdAndShoppingListId(3L, 7L)).thenReturn(Optional.of(item(3L, "11")));
+        when(aggregation.aggregate(anyList())).thenReturn(aggregate(1, "0"));
         assertThatThrownBy(() -> service.removeRecipe(7, 9)).isInstanceOf(AppException.class);
     }
 
