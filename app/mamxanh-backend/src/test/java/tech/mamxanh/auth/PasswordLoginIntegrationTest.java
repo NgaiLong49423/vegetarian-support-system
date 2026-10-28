@@ -76,7 +76,9 @@ class PasswordLoginIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void deleteUsers() {
-        userRepository.deleteAll();
+        for (String email : List.of(EMAIL, "binh@example.com")) {
+            userRepository.findByEmail(email).ifPresent(userRepository::delete);
+        }
     }
 
     // ---------------------------------------------------------------- AC-03.6
@@ -341,7 +343,7 @@ class PasswordLoginIntegrationTest extends AbstractIntegrationTest {
         expectUnauthenticated(signedWith("another-secret-that-is-at-least-32-bytes-long", "mamxanh", user.getId()));
         expectUnauthenticated(signedWith("integration-test-only-signing-secret-0123456789", "someone-else", user.getId()));
 
-        userRepository.deleteAll();
+        userRepository.delete(user);
         expectUnauthenticated(token);
     }
 

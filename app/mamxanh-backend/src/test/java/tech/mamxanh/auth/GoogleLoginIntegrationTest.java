@@ -70,7 +70,9 @@ class GoogleLoginIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void deleteUsers() {
-        userRepository.deleteAll();
+        for (String email : List.of(EMAIL, "an.new.address@gmail.com")) {
+            userRepository.findByEmail(email).ifPresent(userRepository::delete);
+        }
     }
 
     // ---------------------------------------------------------------- Q26: new account, AC-03.10

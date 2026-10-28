@@ -132,8 +132,8 @@ class MealPlanShoppingListIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test void underflowCannotLeaveAnEmptyOrPartialChecklist() throws Exception {
-        sql.update("UPDATE [RECIPE_POST] SET servings=50 WHERE recipe_id=?",first);
-        sql.update("UPDATE [RECIPE_INGREDIENT] SET quantity=0.000001 WHERE recipe_id=?",first);
+        sql.update("UPDATE [RECIPE_POST] SET servings=50000 WHERE recipe_id=?",first);
+        sql.update("UPDATE [RECIPE_INGREDIENT] SET quantity=0.01 WHERE recipe_id=?",first);
         sql.update("UPDATE [MEAL_PLAN_ENTRY] SET planned_servings=0.1 WHERE meal_plan_id=?",plan);
         failure(selectedMonday(),owner);
         assertThat(countLists(owner)).isZero();

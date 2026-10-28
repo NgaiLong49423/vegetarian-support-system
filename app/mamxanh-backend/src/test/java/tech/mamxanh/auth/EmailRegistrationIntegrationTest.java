@@ -87,7 +87,9 @@ class EmailRegistrationIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void deleteUsers() {
-        userRepository.deleteAll();
+        for (String email : List.of("an@example.com", "an.nguyen@example.com", "verified@example.com", "an@ví-dụ.vn")) {
+            userRepository.findByEmail(email).ifPresent(userRepository::delete);
+        }
     }
 
     // ---------------------------------------------------------------- AC-03.1
