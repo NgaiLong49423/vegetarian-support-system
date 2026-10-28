@@ -43,9 +43,9 @@ class IncompleteNutritionAiMenuIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("""
                 INSERT INTO [USER] (email, display_name, role, account_status, email_verified, date_of_birth,
                     biological_sex, height_cm, weight_kg, activity_level, health_data_consent, health_data_consent_at,
-                    nutrition_eligibility_status, nutrition_eligibility_confirmed_at)
+                    nutrition_bmi, nutrition_eligibility_status, nutrition_eligibility_confirmed_at)
                 VALUES (?, N'Issue 45 Member', 'CUSTOMER', 'ACTIVE', 1, '1995-05-05', 'FEMALE', 160.0, 55.0,
-                    'LIGHTLY_ACTIVE', 1, SYSUTCDATETIME(), 'ELIGIBLE', SYSUTCDATETIME())
+                    'LIGHTLY_ACTIVE', 1, SYSUTCDATETIME(), 21.484375, 'ELIGIBLE', SYSUTCDATETIME())
                 """, MEMBER);
         memberId = jdbc.queryForObject("SELECT user_id FROM [USER] WHERE email = ?", Long.class, MEMBER);
         LocalDateTime now = LocalDateTime.now(clock);

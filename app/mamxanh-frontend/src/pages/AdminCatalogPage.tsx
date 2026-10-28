@@ -740,6 +740,12 @@ export function AdminCatalogPage() {
           <p className="mt-2 max-w-md text-sm leading-relaxed text-ink-muted">
             Khu vực này chỉ dành riêng cho Quản trị viên hệ thống Mâm Xanh. Vui lòng đăng nhập bằng tài khoản có thẩm quyền để quản lý danh mục.
           </p>
+          {error && (
+            <div role="alert" className="mt-5 flex w-full max-w-md items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-left text-sm text-red-800">
+              <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
+              <span className="font-medium">{error}</span>
+            </div>
+          )}
         </Card>
       )}
 

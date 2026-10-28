@@ -60,7 +60,8 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
                 ? ingredientRepository.findAll()
                 : ingredientRepository.findByNameContainingIgnoreCaseOrIngredientGroupContainingIgnoreCase(query.trim(), query.trim());
         return ingredients.stream()
-                .sorted(Comparator.comparing(IngredientEntity::getCreatedAt).reversed())
+                .sorted(Comparator.comparing(IngredientEntity::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::toResponse).toList();
     }
 

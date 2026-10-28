@@ -107,7 +107,7 @@ test('recipe detail opens the same chat with recipe title and ID context', async
   await expect(page.getByText('Bạn muốn hỏi về công thức “Đậu hũ kho tiêu” phải không?')).toBeVisible();
   const embeddedRecipe = page.getByRole('article', { name: 'Bài công thức: Đậu hũ kho tiêu' });
   await expect(embeddedRecipe).toBeVisible();
-  await expect(embeddedRecipe.getByText('Nguyên liệu')).toBeVisible();
+  await expect(embeddedRecipe.getByRole('heading', { name: 'Nguyên liệu', exact: true })).toBeVisible();
   await expect(embeddedRecipe.getByText('Cách chế biến')).toBeVisible();
   await expect(embeddedRecipe.getByText('Kho đậu hũ.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Công thức này gồm những nguyên liệu nào?' })).toBeVisible();
