@@ -1,13 +1,67 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.111.0
+> **Version:** v2.123.0
 > **Created:** 2026-06-14
-> **Last Updated:** 2026-10-27
+> **Last Updated:** 2026-10-28
 > **Status:** Active
 
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-28 — Track Recipe Sources and Item Provenance in Shopping Lists
+
+**Status:** In progress — local verification and PR preparation.
+
+**Scope:** Show recipes contributing to each shopping list and let Members adjust combined servings without changing Meal Plan entries.
+
+### Added
+
+- Store per-occurrence recipe source, serving count, and optional meal date/type; show a horizontal recipe carousel with one image, title, and combined serving total per recipe. Open the recipe detail from a card, adjust the combined servings alongside its ingredients, and return to the refreshed shopping list after saving.
+- Record each manually added contribution separately and require a selected catalog result before assigning a supported ingredient identity. Incomplete recipes are omitted from the recipe carousel; removing an aggregated ingredient removes all its list contributions while preserving recipe history as incomplete.
+
+### Changed
+
+- Group repeated recipe appearances into one card without displaying meal dates/types; distribute adjusted total servings proportionally across saved occurrences and recalculate their ingredient contributions. The recipe detail supports shopping-list context without changing Meal Plan behavior. Replace always-visible per-item source lines with a circular details control and a grouped recipe-contribution dialog showing the combined recipe servings.
+- Require Members to confirm a shopping-list item addition or quantity change before saving, with a confirmation that names the item and describes the quantity increase or decrease when conversion is safe; manual contribution edits also confirm the named item and the amount change. Let Members edit the total amount of a recipe-linked ingredient while preserving a recipe-required minimum; show an immediate inline warning and disable saving below that minimum without displaying a routine amount breakdown. The Backend also rejects totals below the minimum. Keep the recipe unit fixed while editing that total; manual-only items remain editable. Deleting a whole item removes both recipe and manual amounts. Add catalog search and limit supported items to units returned for the selected ingredient; free-text items remain custom and have no catalog image.
+- Classify surviving sibling contributions from an incomplete recipe occurrence as `UNKNOWN`. Keep them in the list total and item detail, but exclude them from the recipe carousel and required minimum. When reducing a total, consume `UNKNOWN` before Member-added amounts; increases remain Member-added. Deleting the item itself removes its own contributions. Extend FR-53 and add Flyway V29 for this lifecycle.
+- Consolidate all `UNKNOWN` contributions for one ingredient into a single total row in its detail dialog. Refresh the full shopping checklist after deleting an item so recipe cards update immediately without a page reload.
+- Add a three-dot menu to each shopping-list recipe card for quick serving changes and removing all occurrences of that recipe from the current list. Confirmations preview affected ingredient amounts; removal recalculates shared rows and deletes rows that no longer have any source, without changing the blog post or meal plan.
+- Extend FR-53 and FR-54 acceptance criteria for recipe provenance and quantity recalculation. Existing lists without recoverable source data remain unchanged.
+- Remove the duplicate serving-count input from the meal-plan recipe panel so the serving control appears only once.
+
+### Fixed
+
+- None.
+
+## 2026-10-28 — Improve AI Meal-Planning Preview Readability
+
+**Status:** In progress — local verification and PR preparation.
+
+**Scope:** Put the current and upcoming dates before past dates in the nutrition-based AI menu preview.
+
+### Changed
+
+- Order the preview with today and future dates first, then show one “NGÀY ĐÃ QUA” divider before past dates. Applying the preview still uses each meal's original date and selection.
+- Improve contrast for the AI recipe assistant's labels and controls in dark mode.
+
+### Fixed
+
+- None.
+
+## 2026-10-28 — Seed the Demo Expert Nutrition Profile
+
+**Status:** In progress — local verification and PR preparation.
+
+**Scope:** Populate profile fields for `demo-expert@mamxanh.local` in the local demonstration database.
+
+### Added
+
+- Add an idempotent local demo-profile fixture that fills the demo Expert's missing nutrition-profile fields without overwriting an already completed profile; the fixture does not describe a real person.
+
+### Fixed
+
+- None.
 
 ## 2026-10-27 — Add Ingredient Unit Conversion to Public Detail
 

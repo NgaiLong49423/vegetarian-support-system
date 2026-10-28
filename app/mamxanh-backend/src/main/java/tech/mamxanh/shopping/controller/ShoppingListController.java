@@ -2,6 +2,7 @@ package tech.mamxanh.shopping.controller;
 
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,6 +35,8 @@ public class ShoppingListController {
     private final ShoppingListService service;
     private final ShoppingListCreationService creation;
     private final tech.mamxanh.shopping.service.RecipeShoppingListService recipeLists;
+    @org.springframework.beans.factory.annotation.Autowired
+    private tech.mamxanh.shopping.service.ShoppingRecipeSourceService recipeSources;
     public ShoppingListController(ShoppingListService service, ShoppingListCreationService creation,
             tech.mamxanh.shopping.service.RecipeShoppingListService recipeLists) {
         this.service = service;
@@ -68,6 +71,48 @@ public class ShoppingListController {
     public ShoppingListCreationResponse addRecipe(@PathVariable long listId,
             @Valid @RequestBody AddRecipeToShoppingListRequest request) {
         return recipeLists.addRecipe(listId, request);
+    }
+
+    @PutMapping("/{listId}/recipe-sources/{sourceId}/servings")
+    @Operation(operationId = "updateShoppingRecipeSourceServings", summary = "Change recipe servings in one shopping list",
+            description = "Changes only the selected shopping-list recipe source and recalculates linked quantities; the meal plan and recipe post are not changed.")
+    @ApiResponse(responseCode = "200", description = "Updated shopping list", useReturnTypeSchema = true)
+    public ShoppingListResponse updateRecipeSourceServings(@PathVariable long listId, @PathVariable UUID sourceId,
+            @Valid @RequestBody UpdateShoppingRecipeSourceServingsRequest request) {
+        return recipeSources.updateServings(listId, sourceId, request);
+    }
+
+    @PutMapping("/{listId}/recipes/{recipeId}/servings")
+    @Operation(operationId = "updateShoppingRecipeServings", summary = "Change grouped servings of a recipe in one shopping list",
+            description = "Changes the combined servings for all occurrences of one recipe in this checklist, recalculates only their linked ingredients, and leaves the meal plan and recipe post unchanged.")
+    @ApiResponse(responseCode = "200", description = "Updated shopping list", useReturnTypeSchema = true)
+    public ShoppingListResponse updateRecipeServings(@PathVariable long listId, @PathVariable long recipeId,
+            @Valid @RequestBody UpdateShoppingRecipeSourceServingsRequest request) {
+        return recipeSources.updateRecipeServings(listId, recipeId, request);
+    }
+
+    @DeleteMapping("/{listId}/recipes/{recipeId}")
+    @Operation(operationId = "removeShoppingRecipe", summary = "Remove a recipe and its contributions from one shopping list",
+            description = "Removes all complete occurrences of the recipe from the owned checklist. Recipe posts and meal-plan entries are unchanged; ingredient items are recalculated from their remaining sources and removed when no sources remain.")
+    @ApiResponse(responseCode = "200", description = "The updated checklist.", useReturnTypeSchema = true)
+    public ShoppingListResponse removeRecipe(@PathVariable long listId, @PathVariable long recipeId) {
+        return recipeSources.removeRecipe(listId, recipeId);
+    }
+
+    @PutMapping("/{listId}/manual-sources/{sourceId}")
+    @Operation(operationId = "updateManualShoppingSource", summary = "Edit a manually added amount in a shopping list")
+    @ApiResponse(responseCode = "200", description = "The recalculated item.", useReturnTypeSchema = true)
+    public ShoppingListResponse.Item updateManualSource(@PathVariable long listId, @PathVariable UUID sourceId,
+            @Valid @RequestBody UpdateShoppingItemRequest request) {
+        return service.updateManualSource(listId, sourceId, request);
+    }
+
+    @DeleteMapping("/{listId}/manual-sources/{sourceId}")
+    @Operation(operationId = "deleteManualShoppingSource", summary = "Remove one manually added amount from a merged item")
+    @ApiResponse(responseCode = "204", description = "The manual addition was removed.", content = @Content)
+    public ResponseEntity<Void> deleteManualSource(@PathVariable long listId, @PathVariable UUID sourceId) {
+        service.deleteManualSource(listId, sourceId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/from-meal-plan")

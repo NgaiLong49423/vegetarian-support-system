@@ -314,6 +314,12 @@ public class IngredientCatalogService implements IngredientCatalogLookupService,
                 }).toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<IngredientUnitOptionResponse> findActiveIngredientUnits(long ingredientId) {
+        return listRecipeUnits(ingredientId);
+    }
+
     private int recipeUnitOrder(String code) {
         return List.of("mg", "g", "kg", "ml", "L", "tsp", "tbsp", "cup", "quả", "củ", "miếng").indexOf(code);
     }

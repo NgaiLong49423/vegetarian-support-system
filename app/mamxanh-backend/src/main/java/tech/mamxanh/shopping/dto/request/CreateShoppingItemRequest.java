@@ -6,4 +6,9 @@ import jakarta.validation.constraints.*;
 public record CreateShoppingItemRequest(
         @NotBlank @Size(max = 200) String name,
         @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 12, fraction = 6) BigDecimal quantity,
-        @NotNull @Positive Integer unitId) { }
+        @NotNull @Positive Integer unitId,
+        @Positive Long ingredientId) {
+    public CreateShoppingItemRequest(String name, BigDecimal quantity, Integer unitId) {
+        this(name, quantity, unitId, null);
+    }
+}

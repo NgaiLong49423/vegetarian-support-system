@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -110,12 +111,14 @@ public class RecipeShoppingListService {
         }
 
         var saved = new ArrayList<>(contributions.findByShoppingListIdOrderByIdAsc(list.getId()));
-        boolean alreadyAdded = saved.stream().anyMatch(row -> row.getRecipeId().equals(recipeId));
+        boolean alreadyAdded = saved.stream().anyMatch(row -> "RECIPE".equals(row.getSourceKind())
+                && java.util.Objects.equals(row.getRecipeId(), recipeId));
         if (alreadyAdded && manual.isEmpty()) {
             return new ShoppingListCreationResponse(checklists.get(list.getId()), List.of(), List.of());
         }
 
         var added = new ArrayList<ShoppingRecipeContributionEntity>();
+        UUID sourceId = UUID.randomUUID();
         for (var line : source.ingredients()) {
             if (requestedIds != null && !requestedIds.contains(line.ingredientId())) continue;
             if (alreadyAdded) continue;
@@ -131,9 +134,13 @@ public class RecipeShoppingListService {
             }
             var row = new ShoppingRecipeContributionEntity();
             row.setRecipeId(recipeId);
+            row.setSourceKind("RECIPE");
+            row.setExpectedIngredientCount(source.ingredients().size());
             row.setIngredientId(line.ingredientId());
             row.setUnitId(line.unitId());
             row.setQuantity(quantity);
+            row.setSourceId(sourceId);
+            row.setServings(BigDecimal.valueOf(servings == null ? source.servings() : servings));
             added.add(row);
         }
 

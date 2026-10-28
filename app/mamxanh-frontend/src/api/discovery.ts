@@ -95,4 +95,7 @@ export const discoveryApi = {
   getIngredientUnits: (ingredientId: number) => request(
     () => apiClient.get<PublicIngredientUnit[]>(`/ingredients/${ingredientId}/units`),
   ),
+  searchShoppingIngredients: (query: string) => request(
+    () => apiClient.get<PageResponse<PublicIngredient>>('/ingredients', { params: { query, page: 0, size: 8 } }),
+  ),
 };

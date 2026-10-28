@@ -191,11 +191,15 @@ public class RecipeService {
     @Transactional(readOnly = true)
     public Map<Long, ShoppingReference> findShoppingReferences(java.util.Collection<Long> recipeIds) {
         if (recipeIds.isEmpty()) return Map.of();
+        Map<Long, String> covers = mediaRepository.findAllByRecipeIdInOrderByRecipeIdAscDisplayOrderAsc(recipeIds)
+                .stream().filter(tech.mamxanh.recipe.entity.RecipeMediaEntity::isCover)
+                .collect(Collectors.toMap(tech.mamxanh.recipe.entity.RecipeMediaEntity::getRecipeId,
+                        tech.mamxanh.recipe.entity.RecipeMediaEntity::getBlobUrl, (first, ignored) -> first));
         return recipeRepository.findAllById(recipeIds).stream().collect(Collectors.toMap(RecipePostEntity::getId,
                 recipe -> new ShoppingReference(recipe.getId(), "PUBLISHED".equals(recipe.getStatus()) ? recipe.getTitle() : null,
-                        "PUBLISHED".equals(recipe.getStatus()))));
+                        "PUBLISHED".equals(recipe.getStatus()), "PUBLISHED".equals(recipe.getStatus()) ? covers.get(recipe.getId()) : null)));
     }
-    public record ShoppingReference(long recipeId, String title, boolean available) { }
+    public record ShoppingReference(long recipeId, String title, boolean available, String coverUrl) { }
 
     @Transactional(readOnly = true)
     public RecipeDetailResponse getPublishedRecipe(Long recipeId) {

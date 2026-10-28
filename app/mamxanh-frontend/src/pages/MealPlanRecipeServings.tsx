@@ -177,25 +177,6 @@ export function MealPlanRecipeServings({
           Thay đổi chỉ áp dụng cho món trong bữa này.
         </p>
       )}
-      {entry && (
-        <label className="flex max-w-56 flex-col gap-1 text-xs text-ink-muted">
-          Số khẩu phần cần nấu
-          <input
-            type="number"
-            min={0.5}
-            max={10}
-            step={0.5}
-            value={servings}
-            onChange={(event) => {
-              const value = Number(event.target.value)
-              if (Number.isFinite(value)) onChange(value)
-              setNotice("")
-            }}
-            disabled={loading || saving}
-            className="rounded-lg border border-brand-200 bg-paper px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand-600"
-          />
-        </label>
-      )}
       {notice && (
         <p role="status" className="text-sm text-leaf-700">
           {notice}

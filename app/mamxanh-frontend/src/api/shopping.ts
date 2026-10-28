@@ -11,13 +11,21 @@ export interface ShoppingItem {
   unitCode: string
   unitName: string
   bought: boolean
+  requiredQuantity: number | null
+  requiredUnitCode: string | null
+  manualQuantity: number | null
+  manualUnitCode: string | null
   sources?: Array<{
-    recipeId: number
+    sourceId: string
+    sourceKind: "RECIPE" | "MANUAL" | "UNKNOWN"
+    recipeId: number | null
+    ingredientId: number | null
     title: string | null
     available: boolean
     originalQuantity: number
     originalUnitId: number
     originalUnitCode: string | null
+    servings: number | null
   }>
 }
 export interface ShoppingSummary {
@@ -28,6 +36,18 @@ export interface ShoppingSummary {
 }
 export interface ShoppingChecklist extends ShoppingSummary {
   items: ShoppingItem[]
+  recipeSources?: ShoppingRecipeSource[]
+}
+export interface ShoppingRecipeSource {
+  sourceId: string
+  recipeId: number
+  occurrenceCount: number
+  title: string | null
+  available: boolean
+  coverUrl: string | null
+  servings: number | null
+  mealDate: string | null
+  mealType: string | null
 }
 export interface ShoppingWarning {
   code: string
@@ -54,7 +74,7 @@ interface ShoppingPage {
   totalPages: number
 }
 type Quantity = { quantity: number; unitId: number }
-export type ShoppingManualItemInput = Quantity & { name: string }
+export type ShoppingManualItemInput = Quantity & { name: string; ingredientId?: number }
 export interface AddRecipeShoppingOptions {
   selectedIngredientIds?: number[]
   manualItems?: ShoppingManualItemInput[]
@@ -71,6 +91,10 @@ export const shoppingApi = {
         ...options,
       })
     ).data,
+  updateRecipeServings: async (listId: number, recipeId: number, servings: number) =>
+    (await apiClient.put<ShoppingChecklist>(`/shopping-lists/${listId}/recipes/${recipeId}/servings`, { servings })).data,
+  removeRecipe: async (listId: number, recipeId: number) =>
+    (await apiClient.delete<ShoppingChecklist>(`/shopping-lists/${listId}/recipes/${recipeId}`)).data,
   createFromRecipe: async (name: string, recipeId: number, servings: number, options: AddRecipeShoppingOptions = {}) =>
     (
       await apiClient.post<ShoppingCreation>("/shopping-lists/from-recipe", {
@@ -102,7 +126,7 @@ export const shoppingApi = {
         ...(selectedDates ? { selectedDates } : {}),
       })
     ).data,
-  add: async (id: number, item: Quantity & { name: string }) =>
+  add: async (id: number, item: Quantity & { name: string; ingredientId?: number }) =>
     (await apiClient.post<ShoppingItem>(`/shopping-lists/${id}/items`, item))
       .data,
   update: async (id: number, itemId: number, item: Quantity) =>
@@ -121,6 +145,11 @@ export const shoppingApi = {
     ).data,
   remove: async (id: number, itemId: number) => {
     await apiClient.delete(`/shopping-lists/${id}/items/${itemId}`)
+  },
+  updateManualSource: async (id: number, sourceId: string, quantity: number, unitId: number) =>
+    (await apiClient.put<ShoppingItem>(`/shopping-lists/${id}/manual-sources/${sourceId}`, { quantity, unitId })).data,
+  removeManualSource: async (id: number, sourceId: string) => {
+    await apiClient.delete(`/shopping-lists/${id}/manual-sources/${sourceId}`)
   },
   clearBought: async (id: number) => {
     await apiClient.delete(`/shopping-lists/${id}/items`, {
