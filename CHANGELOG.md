@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.111.0
+> **Version:** v2.111.1
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-28
 > **Status:** Active
@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-28 — Make FR-10 Integration Tests Independent of Local Setup ([PR #194](https://github.com/NgaiLong49423/vegetarian-support-system/pull/194))
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `8bd1cd33`.
 
 **Scope:** Correct integration-test setup and teardown exposed by the first full CI run after synchronizing FR-10 with develop. Production behavior and coverage thresholds are unchanged.
 
