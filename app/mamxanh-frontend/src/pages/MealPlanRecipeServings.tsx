@@ -117,6 +117,16 @@ export function MealPlanRecipeServings({
   }
 
   const validServings = Number.isFinite(servings) && servings >= 0.5 && servings <= 10 && Number.isInteger(servings * 2)
+  const decreaseServings = () => {
+    const next = validServings ? servings - 0.5 : Math.floor(servings * 2) / 2
+    onChange(Math.max(0.5, next))
+    setNotice("")
+  }
+  const increaseServings = () => {
+    const next = validServings ? servings + 0.5 : Math.ceil(servings * 2) / 2
+    onChange(Math.min(10, next))
+    setNotice("")
+  }
 
   return (
     <div
@@ -130,10 +140,7 @@ export function MealPlanRecipeServings({
             type="button"
             aria-label="Giảm khẩu phần"
             disabled={!entry || loading || saving || servings <= 0.5}
-            onClick={() => {
-              onChange(Math.max(0.5, servings - 0.5))
-              setNotice("")
-            }}
+            onClick={decreaseServings}
             className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"
           >
             <Minus className="h-4 w-4" />
@@ -145,10 +152,7 @@ export function MealPlanRecipeServings({
             type="button"
             aria-label="Tăng khẩu phần"
             disabled={!entry || loading || saving || servings >= 10}
-            onClick={() => {
-              onChange(Math.min(10, servings + 0.5))
-              setNotice("")
-            }}
+            onClick={increaseServings}
             className="rounded-lg p-2 text-brand-700 hover:bg-paper disabled:opacity-40"
           >
             <Plus className="h-4 w-4" />

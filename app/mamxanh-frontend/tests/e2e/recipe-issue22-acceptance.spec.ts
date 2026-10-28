@@ -246,7 +246,7 @@ test('Issue 22: tìm nguyên liệu có sẵn, từ chối tên ngoài danh mụ
   await installApi(page, () => ({ status: 201, body: { recipeId: 2201, title: 'Đậu hũ kho cà chua', status: 'PUBLISHED', publishedAt: '2026-10-04T08:00:00' } }));
   await openForm(page);
   await action(page, 'Tìm một tên không có trong danh mục', () => page.getByLabel('Chọn nguyên liệu 1').fill('nguyên liệu lạ'));
-  await expect(page.getByText('Nguyên liệu này hiện chưa được hỗ trợ.')).toBeVisible();
+  await expect(page.getByText('Không có nguyên liệu phù hợp trong danh mục.')).toBeVisible();
   await expect(page.getByRole('button', { name: /tạo nguyên liệu mới|thêm nguyên liệu mới/i })).toHaveCount(0);
   await action(page, 'Thay bằng từ khóa nguyên liệu có sẵn', () => page.getByLabel('Chọn nguyên liệu 1').fill('Đậu'));
   await expect(page.getByRole('button', { name: 'Đậu hũ', exact: true })).toBeVisible();
@@ -305,8 +305,10 @@ test('Issue 22: biên số khẩu phần, thời gian, lượng nguyên liệu v
   const quantity = page.getByLabel('Số lượng nguyên liệu 1');
   await action(page, 'Nhập định lượng bằng 0', () => quantity.fill('0'));
   expect(await quantity.evaluate((input: HTMLInputElement) => input.validity.rangeUnderflow)).toBe(true);
-  await action(page, 'Nhập định lượng có hơn hai chữ số thập phân', () => quantity.fill('0.001'));
-  expect(await quantity.evaluate((input: HTMLInputElement) => input.validity.stepMismatch)).toBe(true);
+  await action(page, 'Nhập định lượng nhỏ hơn mức tối thiểu', () => quantity.fill('0.0005'));
+  expect(await quantity.evaluate((input: HTMLInputElement) => input.validity.rangeUnderflow)).toBe(true);
+  await action(page, 'Nhập định lượng tối thiểu hợp lệ', () => quantity.fill('0.001'));
+  expect(await quantity.evaluate((input: HTMLInputElement) => input.validity.valid)).toBe(true);
 
   for (let row = 2; row <= 50; row++) {
     await action(page, `Thêm dòng nguyên liệu ${row}/50`, () => page.getByRole('button', { name: 'Thêm nguyên liệu' }).click());
@@ -333,23 +335,16 @@ test('Issue 22: chấp nhận định lượng dương không theo bước 100g 
   expect(publishCount).toBe(1);
 });
 
-test('Issue 22: g/kg đi trực tiếp; đơn vị đếm chỉ qua khi API xác nhận conversion có sẵn', async ({ page }) => {
-  await installApi(page, (body) => {
-    const usesCountUnit = body.ingredients?.some((item: Record<string, number>) => item.unitId === 3);
-    if (usesCountUnit) {
-      return {
-        status: 400,
-        body: { status: 400, code: 'VALIDATION_FAILED', title: 'Validation failed', detail: 'Dữ liệu công thức chưa hợp lệ.', errors: [{ field: 'ingredients[0].unitId', message: 'Chưa có conversion cho nguyên liệu và đơn vị này.' }] },
-      };
-    }
-    return { status: 201, body: { recipeId: 2202, title: body.title, status: 'PUBLISHED', publishedAt: '2026-10-04T08:00:00' } };
-  });
+test('Issue 22: chỉ liệt kê đơn vị được API hỗ trợ cho nguyên liệu đang chọn', async ({ page }) => {
+  await installApi(page, (body) => ({ status: 201, body: { recipeId: 2202, title: body.title, status: 'PUBLISHED', publishedAt: '2026-10-04T08:00:00' } }));
+  await page.route('**/api/v1/ingredients/11/units', (route) => route.fulfill({ json: [
+    { id: 1, code: 'g', name: 'gram', dimension: 'MASS', gramsPerUnit: 1, approximate: false },
+    { id: 2, code: 'kg', name: 'kilogram', dimension: 'MASS', gramsPerUnit: 1000, approximate: false },
+  ] }));
   await openForm(page);
-  await fillValidRecipe(page, 'quả');
-  await action(page, 'Gửi đơn vị quả khi chưa có conversion', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
-  await expect(page.getByText('Chưa có conversion cho nguyên liệu và đơn vị này.')).toBeVisible();
-  await action(page, 'Đổi sang gram', () => page.getByLabel('Đơn vị nguyên liệu 1').selectOption({ label: 'gram (g)' }));
-  await action(page, 'Gửi lại với đơn vị khối lượng', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
+  await fillValidRecipe(page, 'g');
+  await expect(page.getByLabel('Đơn vị nguyên liệu 1').locator('option', { hasText: 'quả' })).toHaveCount(0);
+  await action(page, 'Gửi công thức với đơn vị được nguyên liệu hỗ trợ', () => page.getByRole('button', { name: 'Xuất bản công thức' }).click());
   await expect(page).toHaveURL(/\/cong-thuc\/2202$/);
 });
 

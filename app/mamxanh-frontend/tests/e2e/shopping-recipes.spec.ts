@@ -29,6 +29,12 @@ const detail = (id: number) => ({
   ingredients: [{ ingredientId: 1, name: "Đậu phụ", quantity: 300, unitId: 1, unitCode: "g", unitName: "gram", nutritionSupported: true }],
 })
 
+const catalogIngredients = [
+  { ingredientId: 1, name: "Đậu phụ" },
+  { ingredientId: 2, name: "Hành lá" },
+  { ingredientId: 3, name: "Cà chua" },
+]
+
 const list = {
   id: 77,
   name: "Danh sách tuần",
@@ -57,6 +63,10 @@ async function setup(page: Page, role: "CUSTOMER" | "EXPERT" | "ADMIN" | null = 
     const item = recipe(pageNumber + 1)
     if (multipleUnits) item.ingredients.push({ ...item.ingredients[0], quantity: 100, unitId: 2, unitCode: "ml", unitName: "mililit" })
     return r.fulfill({ json: { items: [item], page: pageNumber, size: 12, hasNext: pageNumber === 0 } })
+  })
+  await page.route("**/api/v1/recipes/ingredient-options**", (r) => {
+    const query = new URL(r.request().url()).searchParams.get("query")?.trim().toLocaleLowerCase("vi") ?? ""
+    return r.fulfill({ json: catalogIngredients.filter((item) => item.name.toLocaleLowerCase("vi").includes(query)) })
   })
   await page.route("**/api/v1/recipes/1", (r) => {
     const item = detail(1)
@@ -118,7 +128,7 @@ test("AC-53.6 can load another page and create a named list with the recipe", as
   expect(state.adds).toHaveLength(0)
 })
 
-test("AC-53.6 validates and creates a list with manually added ingredients", async ({ page }) => {
+test("AC-53.6 validates and creates a list with catalog ingredients added from the dialog", async ({ page }) => {
   const state = await setup(page)
   await page.goto("/kham-pha")
   await openShoppingDialog(page)
@@ -131,17 +141,19 @@ test("AC-53.6 validates and creates a list with manually added ingredients", asy
   await listName.fill("Mua rau")
   await page.getByLabel("Thêm Đậu phụ").uncheck()
   await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
-  await expect(page.getByRole("alert")).toHaveText("Hãy chọn ít nhất một nguyên liệu hoặc thêm mặt hàng thủ công.")
+  await expect(page.getByRole("alert")).toHaveText("Hãy chọn ít nhất một nguyên liệu hoặc thêm nguyên liệu từ danh mục.")
 
-  await page.getByRole("button", { name: "Thêm mặt hàng" }).click()
-  await page.getByRole("button", { name: "Thêm mặt hàng" }).click()
-  const ingredientNames = page.getByLabel("Tên nguyên liệu")
-  await ingredientNames.nth(0).fill("Hành lá")
-  await ingredientNames.nth(1).fill(" hành   lá ")
+  await page.getByRole("button", { name: "Thêm nguyên liệu", exact: true }).click()
+  await page.getByRole("button", { name: "Thêm nguyên liệu", exact: true }).click()
+  const ingredientSearch = page.getByLabel("Tìm nguyên liệu trong danh mục")
+  await ingredientSearch.nth(0).fill("Hành lá")
+  await page.getByRole("option", { name: "Hành lá" }).click()
+  await ingredientSearch.nth(1).fill("hành lá")
+  await page.getByRole("option", { name: "Hành lá" }).click()
   await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
   await expect(page.getByRole("alert")).toHaveText("Hành lá bị trùng tên trong các mặt hàng đang thêm.")
 
-  await page.getByRole("button", { name: /Xóa/ }).last().click()
+  await page.getByRole("button", { name: "Xóa Hành lá" }).last().click()
   await page.getByRole("button", { name: "Tạo danh sách và thêm" }).click()
   await expect(page).toHaveURL(/di-cho\?listId=77/)
   expect(state.creates).toEqual([{
@@ -153,18 +165,20 @@ test("AC-53.6 validates and creates a list with manually added ingredients", asy
   }])
 })
 
-test("AC-53.6 prevents an existing manual ingredient from being duplicated", async ({ page }) => {
+test("AC-53.6 prevents an existing catalog ingredient from being duplicated", async ({ page }) => {
   const state = await setup(page)
   await page.goto("/kham-pha")
   await openShoppingDialog(page)
-  await page.getByRole("button", { name: "Thêm mặt hàng" }).click()
-  await page.getByLabel("Tên nguyên liệu").fill(" đậu   phụ ")
+  await page.getByRole("button", { name: "Thêm nguyên liệu", exact: true }).click()
+  await page.getByLabel("Tìm nguyên liệu trong danh mục").fill("đậu phụ")
+  await page.getByRole("option", { name: "Đậu phụ" }).click()
   await page.getByRole("radio", { name: "Danh sách tuần" }).check()
   await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
-  await expect(page.getByRole("alert")).toHaveText(/đậu\s+phụ đã có trong danh sách \(450 g\)\./)
+  await expect(page.getByRole("alert")).toHaveText(/đậu\s+phụ đã có trong danh sách \(450 g\)\./i)
   await expect(page.getByRole("dialog")).toBeVisible()
 
-  await page.getByLabel("Tên nguyên liệu").fill("Cà chua")
+  await page.getByLabel("Tìm nguyên liệu trong danh mục").fill("Cà chua")
+  await page.getByRole("option", { name: "Cà chua" }).click()
   await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
   await expect(page).toHaveURL(/di-cho\?listId=77/)
   expect(state.adds).toEqual([{
@@ -249,15 +263,16 @@ test("AC-53.6 allows manual-only items and validates their names before submitti
   await page.getByRole("radio", { name: "Danh sách tuần" }).check()
   await page.getByRole("button", { name: "Bỏ chọn tất cả", exact: true }).click()
   await expect(page.getByRole("checkbox", { name: "Thêm Đậu phụ", exact: true })).not.toBeChecked()
-  await page.getByRole("button", { name: "Thêm mặt hàng", exact: true }).click()
+  await page.getByRole("button", { name: "Thêm nguyên liệu", exact: true }).click()
   await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
-  await expect(page.getByRole("alert")).toContainText("Kiểm tra tên, số lượng và đơn vị")
+  await expect(page.getByRole("alert")).toContainText("Hãy chọn nguyên liệu trong danh mục và đơn vị được hỗ trợ.")
   expect(state.adds).toHaveLength(0)
-  await page.getByLabel("Tên nguyên liệu", { exact: true }).fill(" Khăn giấy ")
+  await page.getByLabel("Tìm nguyên liệu trong danh mục").fill("Cà chua")
+  await page.getByRole("option", { name: "Cà chua" }).click()
   await page.getByLabel("Số lượng", { exact: true }).fill("2")
   await page.getByRole("button", { name: "Thêm vào danh sách", exact: true }).click()
   await expect(page).toHaveURL(/di-cho\?listId=77/)
-  expect(state.adds).toEqual([{ recipeId: 1, servings: 2, selectedIngredientIds: [], manualItems: [{ name: "Khăn giấy", quantity: 2, unitId: 1 }] }])
+  expect(state.adds).toEqual([{ recipeId: 1, servings: 2, selectedIngredientIds: [], manualItems: [{ name: "Cà chua", quantity: 2, unitId: 1 }] }])
 })
 
 test("AC-53.6 Guest can sign in and Admin has no shopping action", async ({ page }) => {

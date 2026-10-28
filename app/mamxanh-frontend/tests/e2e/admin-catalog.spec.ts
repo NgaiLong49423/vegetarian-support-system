@@ -95,6 +95,7 @@ test('administrator can add, search, edit and deactivate a Vietnamese ingredient
     return url.pathname.endsWith('/admin/ingredients/search') && url.searchParams.get('query') === 'Nấm';
   });
   await page.getByPlaceholder('Tìm tên nguyên liệu').fill('Nấm');
+  await page.getByRole('button', { name: 'Tìm và lọc' }).click();
   await nameSearch;
   await expect(page.getByText('Nấm đùi gà', { exact: true })).toBeVisible();
   await expect(page.getByText('Chuối tây', { exact: true })).toHaveCount(0);
@@ -243,7 +244,7 @@ test('administrator filters the catalog through the paginated endpoint and reads
   await expect(page).toHaveURL('/cong-thuc/id/30');
 });
 
-test('automatic ingredient search keeps focus while a slow response loads', async ({ page }) => {
+test('ingredient filters wait for submit and preserve the selected query while results load', async ({ page }) => {
   let releaseSearch!: () => void;
   const searchGate = new Promise<void>((resolve) => { releaseSearch = resolve; });
   const searchQueries: string[] = [];
@@ -271,17 +272,18 @@ test('automatic ingredient search keeps focus while a slow response loads', asyn
 
   await page.goto('/quan-tri/danh-muc');
   const search = page.getByPlaceholder('Tìm tên nguyên liệu');
-  await search.focus();
   await search.pressSequentially('bắp', { delay: 120 });
+  await expect(search).toHaveValue('bắp');
+  await expect.poll(() => searchQueries).not.toContain('bắp');
+  await page.getByRole('button', { name: 'Tìm và lọc' }).click();
   await expect.poll(() => searchQueries).toContain('bắp');
   await expect(page.getByRole('status')).toContainText('Đang tải danh mục');
-  await expect(search).toBeFocused();
 
   releaseSearch();
   await expect(page.getByText('Bắp cải', { exact: true })).toBeVisible();
-  await expect(search).toBeFocused();
-  await search.pressSequentially(' cải', { delay: 80 });
+  await search.fill('bắp cải');
   await expect(search).toHaveValue('bắp cải');
+  await page.getByRole('button', { name: 'Tìm và lọc' }).click();
   await expect.poll(() => searchQueries.at(-1)).toBe('bắp cải');
 });
 
