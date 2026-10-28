@@ -109,15 +109,15 @@ class ShoppingListCreationServiceTest {
         @SuppressWarnings("unchecked") ArgumentCaptor<List<ShoppingListItemEntity>> rows=ArgumentCaptor.forClass(List.class);
         verify(items).saveAllAndFlush(rows.capture());
         assertThat(rows.getValue()).singleElement().satisfies(row -> {
-            assertThat(row.getQuantity()).isEqualByComparingTo("0.67");assertThat(row.isBought()).isFalse();
+            assertThat(row.getQuantity()).isEqualByComparingTo("0.673333");assertThat(row.isBought()).isFalse();
             assertThat(row.getShoppingListId()).isEqualTo(20);
         });
     }
 
     @Test void rejectsUnderflowAndOverflowBeforeWritingAnyList() {
-        prepareOutput("0.00001");
+        prepareOutput("0.0000001");
         assertThatThrownBy(() -> service.createFromMealPlan(new CreateMealPlanShoppingListRequest(monday,null))).isInstanceOf(AppException.class);
-        when(aggregation.aggregate(anyList())).thenReturn(output("100000000",false,List.of()));
+        when(aggregation.aggregate(anyList())).thenReturn(output("1000000000000",false,List.of()));
         assertThatThrownBy(() -> service.createFromMealPlan(new CreateMealPlanShoppingListRequest(monday,null))).isInstanceOf(AppException.class);
         verifyNoInteractions(lists,items,entityManager);
     }

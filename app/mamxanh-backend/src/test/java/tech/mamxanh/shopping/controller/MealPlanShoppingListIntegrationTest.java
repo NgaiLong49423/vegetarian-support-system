@@ -126,14 +126,14 @@ class MealPlanShoppingListIntegrationTest extends AbstractIntegrationTest {
         sql.update("UPDATE [MEAL_PLAN_ENTRY] SET planned_servings=1 WHERE meal_plan_id=?",plan);
         mockMvc.perform(post(route).with(user(Long.toString(owner)).roles("CUSTOMER"))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"weekStartDate\":\"2026-10-19\",\"selectedDates\":[\"2026-10-19\",\"2026-10-20\"]}"))
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.shoppingList.items[0].quantity").value(0.67))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.shoppingList.items[0].quantity").value(0.673333))
                 .andExpect(jsonPath("$.warnings[0].code").value("QUANTITY_ROUNDED"));
         assertThat(countLists(owner)).isEqualTo(1);
     }
 
     @Test void underflowCannotLeaveAnEmptyOrPartialChecklist() throws Exception {
         sql.update("UPDATE [RECIPE_POST] SET servings=50 WHERE recipe_id=?",first);
-        sql.update("UPDATE [RECIPE_INGREDIENT] SET quantity=0.01 WHERE recipe_id=?",first);
+        sql.update("UPDATE [RECIPE_INGREDIENT] SET quantity=0.000001 WHERE recipe_id=?",first);
         sql.update("UPDATE [MEAL_PLAN_ENTRY] SET planned_servings=0.1 WHERE meal_plan_id=?",plan);
         failure(selectedMonday(),owner);
         assertThat(countLists(owner)).isZero();

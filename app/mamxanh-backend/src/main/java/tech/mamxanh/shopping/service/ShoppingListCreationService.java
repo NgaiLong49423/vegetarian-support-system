@@ -32,7 +32,7 @@ import tech.mamxanh.shopping.repository.ShoppingListRepository;
 /** FR-53 AC-53.1: create a new, independent checklist from the current Member's meal plan. */
 @Service
 public class ShoppingListCreationService {
-    private static final BigDecimal MAX_QUANTITY = new BigDecimal("99999999.99");
+    private static final BigDecimal MAX_QUANTITY = new BigDecimal("999999999999.999999");
     private static final DateTimeFormatter FULL_DATE = DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ROOT);
     private final CurrentUserService users;
     private final MealPlanReadService mealPlans;
@@ -118,7 +118,7 @@ public class ShoppingListCreationService {
                 throw invalid("Định lượng sau tổng hợp vượt giới hạn lưu trữ hoặc quá nhỏ: " + item.name());
             }
             if (quantity.compareTo(item.quantity()) != 0) {
-                warnings.add(new Warning("QUANTITY_ROUNDED", "Lượng " + item.name() + " được làm tròn đến hai chữ số thập phân khi lưu.", null, null));
+                warnings.add(new Warning("QUANTITY_ROUNDED", "Lượng " + item.name() + " được làm tròn đến sáu chữ số thập phân khi lưu.", null, null));
             }
             var row = new ShoppingListItemEntity();
             row.setIngredientId(item.ingredientId());

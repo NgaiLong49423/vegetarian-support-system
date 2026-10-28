@@ -33,7 +33,7 @@ import tech.mamxanh.shopping.repository.ShoppingRecipeContributionRepository;
 /** FR-53 AC-53.6: add one public Recipe Post to a selected owned checklist. */
 @Service
 public class RecipeShoppingListService {
-    private static final BigDecimal MAX_QUANTITY = new BigDecimal("99999999.99");
+    private static final BigDecimal MAX_QUANTITY = new BigDecimal("999999999999.999999");
 
     private final CurrentUserService users;
     private final RecipeService recipes;
