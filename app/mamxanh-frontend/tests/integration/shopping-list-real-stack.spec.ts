@@ -157,7 +157,7 @@ test('FR-53 browser creates selected-day and weekly checklists; CRUD and bought 
     await page.reload()
     await page.getByRole('button', { name: /^Tất cả \(/ }).click()
     await expect(page.getByText('1.400 g', { exact: true })).toBeVisible()
-    await expect(page.getByText('Công thức không còn khả dụng', { exact: true })).toBeVisible()
+    await expect(page.getByText('Công thức không còn công khai', { exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: `Đánh dấu ${ingredientName} g`, exact: true })).toHaveAttribute('aria-pressed', 'true')
     await page.goto(`/kham-pha?q=${encodeURIComponent(marker)}`)
     await page.getByRole('button', { name: `Tùy chọn cho công thức ${recipeOneTitle}` }).click()
