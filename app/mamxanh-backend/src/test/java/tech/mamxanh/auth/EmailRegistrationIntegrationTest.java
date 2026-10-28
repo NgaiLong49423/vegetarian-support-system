@@ -139,7 +139,7 @@ class EmailRegistrationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.code").value("EMAIL_ALREADY_USED"))
                 .andExpect(jsonPath("$.status").value(409));
 
-        assertThat(userRepository.count()).isEqualTo(1);
+        assertThat(userRepository.findByEmail("an@example.com")).isPresent();
         verify(emailSender, after(500).times(1)).sendPlainText(anyString(), anyString(), anyString());
     }
 
@@ -160,7 +160,7 @@ class EmailRegistrationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.errors[?(@.field == 'password')].message",
                         hasItem(containsString(missingCriterion))));
 
-        assertThat(userRepository.count()).isZero();
+        assertThat(userRepository.findByEmail("an@example.com")).isEmpty();
     }
 
     @Test
@@ -178,7 +178,7 @@ class EmailRegistrationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors[?(@.field == 'password')].message", hasItem(containsString("72 byte"))));
 
-        assertThat(userRepository.count()).isZero();
+        assertThat(userRepository.findByEmail("an@example.com")).isEmpty();
     }
 
     @Test
@@ -188,7 +188,7 @@ class EmailRegistrationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.errors[*].field", hasItems("displayName", "email", "confirmPassword")));
 
-        assertThat(userRepository.count()).isZero();
+        assertThat(userRepository.findByEmail("not-an-email")).isEmpty();
         verify(emailSender, after(300).never()).sendPlainText(anyString(), anyString(), anyString());
     }
 

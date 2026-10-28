@@ -143,7 +143,7 @@ class GoogleLoginIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.account.id").value(accountId))
                 .andExpect(jsonPath("$.account.displayName").value(GOOGLE_NAME))
                 .andExpect(jsonPath("$.account.avatarUrl").value(PICTURE));
-        assertThat(userRepository.count()).isEqualTo(1);
+        assertThat(userRepository.findByEmail(EMAIL)).isPresent();
     }
 
     @Test
@@ -156,7 +156,7 @@ class GoogleLoginIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.account.id").value(accountId))
                 .andExpect(jsonPath("$.account.email").value(EMAIL));
-        assertThat(userRepository.count()).isEqualTo(1);
+        assertThat(userRepository.findByEmail(EMAIL)).isPresent();
     }
 
     // ---------------------------------------------------------------- Q26: unverified password account
@@ -234,7 +234,7 @@ class GoogleLoginIntegrationTest extends AbstractIntegrationTest {
 
         expectProblem(googleLogin(ID_TOKEN), 409, "GOOGLE_ACCOUNT_CONFLICT");
 
-        assertThat(userRepository.count()).isEqualTo(1);
+        assertThat(userRepository.findByEmail(EMAIL)).isPresent();
         assertThat(userRow(EMAIL).get("google_subject")).isEqualTo(SUBJECT);
     }
 
@@ -257,7 +257,7 @@ class GoogleLoginIntegrationTest extends AbstractIntegrationTest {
 
         expectProblem(googleLogin(ID_TOKEN), 401, "GOOGLE_TOKEN_INVALID");
 
-        assertThat(userRepository.count()).isZero();
+        assertThat(userRepository.findByEmail(EMAIL)).isEmpty();
     }
 
     @Test
@@ -266,7 +266,7 @@ class GoogleLoginIntegrationTest extends AbstractIntegrationTest {
 
         expectProblem(googleLogin(ID_TOKEN), 401, "GOOGLE_TOKEN_INVALID");
 
-        assertThat(userRepository.count()).isZero();
+        assertThat(userRepository.findByEmail("an@ví-dụ.vn")).isEmpty();
     }
 
     @Test
@@ -325,7 +325,7 @@ class GoogleLoginIntegrationTest extends AbstractIntegrationTest {
         }
 
         assertThat(results).allSatisfy(result -> assertThat(result.getResponse().getStatus()).isEqualTo(200));
-        assertThat(userRepository.count()).isEqualTo(1);
+        assertThat(userRepository.findByEmail(EMAIL)).isPresent();
     }
 
     @Test

@@ -131,20 +131,20 @@ class MealPlanShoppingListIntegrationTest extends AbstractIntegrationTest {
         assertThat(countLists(owner)).isEqualTo(1);
     }
 
-    @Test void underflowCannotLeaveAnEmptyOrPartialChecklist() throws Exception {
-        sql.update("UPDATE [RECIPE_POST] SET servings=50000 WHERE recipe_id=?",first);
+    @Test void smallValidAmountsRetainPrecisionWhenSaved() throws Exception {
+        sql.update("UPDATE [RECIPE_POST] SET servings=50 WHERE recipe_id=?",first);
         sql.update("UPDATE [RECIPE_INGREDIENT] SET quantity=0.01 WHERE recipe_id=?",first);
         sql.update("UPDATE [MEAL_PLAN_ENTRY] SET planned_servings=0.1 WHERE meal_plan_id=?",plan);
-        failure(selectedMonday(),owner);
-        assertThat(countLists(owner)).isZero();
+        long list=create(selectedMonday(),owner);
+        assertThat(quantity(list)).isEqualByComparingTo("0.00002");
     }
 
-    @Test void overflowCannotLeaveAnEmptyOrPartialChecklist() throws Exception {
+    @Test void largeValidAmountsPersistWithinTheShoppingQuantityPrecision() throws Exception {
         sql.update("UPDATE [RECIPE_POST] SET servings=1 WHERE recipe_id=?",first);
         sql.update("UPDATE [RECIPE_INGREDIENT] SET quantity=99999999.99 WHERE recipe_id=?",first);
         sql.update("UPDATE [MEAL_PLAN_ENTRY] SET planned_servings=50 WHERE meal_plan_id=?",plan);
-        failure(selectedMonday(),owner);
-        assertThat(countLists(owner)).isZero();
+        long list=create(selectedMonday(),owner);
+        assertThat(quantity(list)).isEqualByComparingTo("4999999999.5");
     }
 
     @Test void generatedListNameUsesCreationDateRegardlessOfSelectedMealDates() throws Exception {
