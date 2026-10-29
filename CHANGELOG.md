@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-30 — Align CI Checks for Admin Account Management
 
-**Status:** Working tree — uncommitted changes.
+**Status:** Committed — `3ec1ed3c`.
 
 **Scope:** Keep the generated API contract and Frontend coverage test aligned with the Admin account-management page.
 
