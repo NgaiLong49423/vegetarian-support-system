@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.126.0
+> **Version:** v2.127.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -8,6 +8,25 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-29 — Restore Meal Planner Focus After React Commits
+
+**Status:** Working tree — not committed.
+
+**Scope:** Correct the intermittent meal-move focus failure observed in Frontend job `123463299035` of CI run `40878464669`, matching existing BUG-066.
+
+### Added
+
+- Check that cancelling the move dialog returns keyboard focus to its opener at mobile, tablet and desktop widths.
+
+### Changed
+
+- Restore focus in a layout effect after dialogs close and mutation controls become enabled. Use the surviving opener when focusable, otherwise fall back to the page heading.
+- Verify TypeScript, the production build, 36 related Chromium cases and 20 repeated runs of the previously failing move-focus case. Browser checks use controlled API responses; the full CI suite is not rerun locally.
+
+### Fixed
+
+- Remove the animation-frame race that could focus a disabled or soon-to-be-removed meal control and leave focus on the document body. Preserve the existing focus assertion, meal mutations, AI entitlements and strict coverage thresholds.
 
 ## 2026-10-29 — Align AI Integration Fixtures with Pro Entitlements
 

@@ -160,12 +160,12 @@ bugs:
     related_issue: Unknown
   - id: BUG-066
     title: Chuyển món trong Lịch ăn đôi khi làm mất focus thay vì trả về tiêu đề "Lịch ăn của bạn"
-    status: RECORDED
+    status: RESOLVED
     severity: Low
     area: Frontend/Lịch ăn
     file: .agents/outputs/bugs/BUG-066.md
     created: 2026-10-19
-    updated: 2026-10-19
+    updated: 2026-10-29
     related_issue: 38
   - id: BUG-065
     title: OpenAPI báo sai mã thành công khi gửi báo cáo công thức

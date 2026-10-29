@@ -140,6 +140,9 @@ for (const width of [360, 768, 1440])
     await expect(page.getByLabel("Ngày đích")).toBeFocused()
     await page.keyboard.press("Escape")
     await expect(page.getByRole("dialog")).not.toBeVisible()
+    await expect(
+      page.getByRole("button", { name: "Chuyển món Đậu phụ kho sả", exact: true }),
+    ).toBeFocused()
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
