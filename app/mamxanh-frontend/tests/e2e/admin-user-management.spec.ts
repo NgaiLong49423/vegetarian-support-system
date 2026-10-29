@@ -12,24 +12,34 @@ const user = {
   publishedRecipeCount: 3,
 };
 
-async function mockAccountApi(page: Page) {
+async function mockAccountApi(page: Page, options: { failFirstList?: boolean; failFirstHistory?: boolean } = {}) {
   const current = { ...user };
   const administrator = { ...user, id: 7, displayName: 'Quản trị viên', email: 'admin@example.test', role: 'ADMIN', publishedRecipeCount: 0 };
   const listRequests: URL[] = [];
   const writes: Array<{ method: string; path: string; body: unknown }> = [];
+  let listFailed = false;
+  let historyFailed = false;
   await page.route('**/api/v1/admin/users**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname.replace(/^.*\/api\/v1\/admin\/users/, '');
+    if (request.method() === 'GET' && path === '') listRequests.push(url);
+    if (request.method() === 'GET' && path === '' && options.failFirstList && !listFailed) {
+      listFailed = true;
+      return route.fulfill({ status: 503, json: { status: 503, code: 'SERVICE_UNAVAILABLE', detail: 'Dịch vụ quản lý người dùng đang tạm thời gián đoạn.' } });
+    }
     if (request.method() === 'GET' && path === '/summary') {
       return route.fulfill({ json: { totalUsers: 8, activeUsers: 6, expertUsers: 2, lockedUsers: 2 } });
     }
     if (request.method() === 'GET' && path === '/42/history') {
+      if (options.failFirstHistory && !historyFailed) {
+        historyFailed = true;
+        return route.fulfill({ status: 503, json: { status: 503, code: 'SERVICE_UNAVAILABLE', detail: 'Chưa tải được lịch sử tài khoản.' } });
+      }
       return route.fulfill({ json: { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 } });
     }
     if (request.method() === 'GET' && path === '/42') return route.fulfill({ json: current });
     if (request.method() === 'GET' && path === '') {
-      listRequests.push(url);
       const accounts = [current, administrator].filter((account) => (!url.searchParams.get('role') || url.searchParams.get('role') === account.role)
         && (!url.searchParams.get('status') || url.searchParams.get('status') === account.accountStatus)
         && (!url.searchParams.get('query') || `${account.displayName} ${account.email} ${account.id}`.toLowerCase().includes(url.searchParams.get('query')!.toLowerCase())));
@@ -91,4 +101,27 @@ test('locking requires a reason, while administrator accounts remain view-only',
   const adminRow = page.getByRole('row').filter({ hasText: 'Quản trị viên' });
   await expect(adminRow.getByRole('button', { name: 'Khóa tài khoản' })).toHaveCount(0);
   await expect(adminRow.getByRole('button', { name: 'Đổi vai trò' })).toHaveCount(0);
+});
+
+test('shows an API error and retries loading accounts', async ({ page }) => {
+  const { listRequests } = await mockAccountApi(page, { failFirstList: true });
+  await page.goto('/admin/nguoi-dung');
+
+  await expect(page.getByRole('alert')).toContainText('Dịch vụ quản lý người dùng đang tạm thời gián đoạn.');
+  await page.getByRole('button', { name: 'Thử lại' }).click();
+  await expect(page.getByText('Nguyễn An', { exact: true })).toBeVisible();
+  expect(listRequests).toHaveLength(2);
+});
+
+test('shows and retries account history without losing the selected account', async ({ page }) => {
+  await mockAccountApi(page, { failFirstHistory: true });
+  await page.goto('/admin/nguoi-dung');
+  const row = page.getByRole('row').filter({ hasText: 'Nguyễn An' });
+  await row.getByRole('button', { name: 'Xem chi tiết và lịch sử' }).click();
+
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Chưa tải được lịch sử tài khoản.');
+  await page.getByRole('button', { name: 'Thử lại' }).click();
+  await expect(page.getByText('Chưa có lịch sử thay đổi.')).toBeVisible();
+  await expect(page.getByText('Mã tài khoản')).toBeVisible();
 });
