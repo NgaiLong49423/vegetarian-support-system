@@ -30,7 +30,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Add Nguyen Hoang Phuc Dessert Demo Collection
 
-**Status:** Working tree — uncommitted changes.
+**Status:** Committed — `a430530b0a8e91ca40e3cdd525fea1734f3221f6`.
 
 **Scope:** Expand the local Expert demo with a detailed vegetarian collection of desserts, drinks and baked sweets.
 
