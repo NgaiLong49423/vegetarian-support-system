@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Avoid Duplicate Related Recipe Cards
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `df7e2ac79a34a1f6579cb487d121504cf3db2ae5`.
 
 **Scope:** Deduplicate the ordinary and AI recommendation groups by recipe ID on the recipe detail page.
 
@@ -29,7 +29,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Restore the Develop Recipe Assistant Without Functional Changes
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `df7e2ac79a34a1f6579cb487d121504cf3db2ae5`.
 
 **Scope:** Restore the original recipe assistant owned by another contributor at the user's explicit request. Preserve the remaining FR-10 tier changes and the inline Gemini text-assistance authorization.
 
