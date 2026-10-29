@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Let Recipe AI Suggest Additional Ingredients
 
-**Status:** Committed — `aae27490a990d7d045cec0fe7a0ab807d2af610e`.
+**Status:** Committed — `540998c5d2ca8c8b7765d1efc328ed629ae81dcd`.
 
 **Scope:** Align FR-21, the API guide and recipe drafting with author-reviewed AI suggestions instead of rejecting generated text that mentions an ingredient outside the form's selected list.
 
