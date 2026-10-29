@@ -141,8 +141,9 @@ class ShoppingListServiceTest {
         mutation(); references();
         var ingredient = new IngredientResponse(8L, "Đậu phụ", "Đậu", null, null, null, false, true);
         when(catalog.findActiveIngredientsByIds(List.of(8L))).thenReturn(List.of(ingredient));
-        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(new IngredientUnitOptionResponse(
-                7, "cuộn", "cuộn", MeasurementDimension.COUNT, BigDecimal.ONE, false)));
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(
+                new IngredientUnitOptionResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, false),
+                new IngredientUnitOptionResponse(7, "cuộn", "cuộn", MeasurementDimension.COUNT, BigDecimal.ONE, false)));
         item.setIngredientId(8L);
         when(items.findByShoppingListIdOrderByIdAsc(10L)).thenReturn(List.of(item));
         var sourceRows = new ArrayList<ShoppingRecipeContributionEntity>();
@@ -237,6 +238,72 @@ class ShoppingListServiceTest {
         assertThat(result.requiredQuantity()).isEqualByComparingTo("40");
         assertThat(result.manualQuantity()).isEqualByComparingTo("5");
         assertThat(item.isBought()).isTrue();
+    }
+
+    @Test void editingCatalogItemAcrossUnitsConvertsRecipeAndUnknownAmountsToSelectedUnit() {
+        var rows = prepareRecipeBackedIngredientSources();
+        var grams = new IngredientUnitOptionResponse(1, "g", "gram", MeasurementDimension.MASS,
+                BigDecimal.ONE, false);
+        var kilograms = new IngredientUnitOptionResponse(2, "kg", "kilogram", MeasurementDimension.MASS,
+                new BigDecimal("1000"), false);
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(grams, kilograms));
+        var gramUnit = new UnitResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, true);
+        var kilogramUnit = new UnitResponse(2, "kg", "kilogram", MeasurementDimension.MASS,
+                new BigDecimal("1000"), true);
+        when(catalog.findUnitReferences(anyCollection())).thenAnswer(call ->
+                ((Collection<Integer>) call.getArgument(0)).stream().map(id -> id == 2 ? kilogramUnit : gramUnit).toList());
+        when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregateWithUnits(call.getArgument(0)));
+
+        var result = service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("0.06"), 2));
+
+        assertThat(item.getQuantity()).isEqualByComparingTo("0.06");
+        assertThat(item.getUnitId()).isEqualTo(2);
+        assertThat(rows).filteredOn(source -> "UNKNOWN".equals(source.getSourceKind()))
+                .extracting(ShoppingRecipeContributionEntity::getQuantity)
+                .containsExactly(new BigDecimal("5.000000"), new BigDecimal("5.000000"));
+        assertThat(rows).filteredOn(source -> "MANUAL".equals(source.getSourceKind())).singleElement()
+                .satisfies(source -> {
+                    assertThat(source.getQuantity()).isEqualByComparingTo("0.01");
+                    assertThat(source.getUnitId()).isEqualTo(2);
+                });
+        assertThat(result.requiredQuantity()).isEqualByComparingTo("0.04");
+        assertThat(result.unitCode()).isEqualTo("kg");
+    }
+
+    @Test void changingUnitBelowConvertedRecipeMinimumIsRejected() {
+        mutation();
+        item.setIngredientId(8L); item.setUnitId(1); item.setQuantity(new BigDecimal("70"));
+        when(items.findByIdAndShoppingListId(3L, 10L)).thenReturn(Optional.of(item));
+        var required = contribution("RECIPE", 3L, "40");
+        when(contributions.findByShoppingListIdOrderByIdAsc(10L)).thenReturn(List.of(required));
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(
+                new IngredientUnitOptionResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, false),
+                new IngredientUnitOptionResponse(2, "kg", "kilogram", MeasurementDimension.MASS,
+                        new BigDecimal("1000"), false)));
+        when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregateWithUnits(call.getArgument(0)));
+
+        assertThatThrownBy(() -> service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("0.03"), 2)))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("0.04");
+        assertThat(item.getUnitId()).isEqualTo(1);
+        assertThat(list.getUpdatedAt()).isNull();
+    }
+
+    @Test void changingUnitWithoutCatalogConversionFactorIsRejected() {
+        mutation();
+        item.setIngredientId(8L); item.setUnitId(1); item.setQuantity(new BigDecimal("70"));
+        when(items.findByIdAndShoppingListId(3L, 10L)).thenReturn(Optional.of(item));
+        when(contributions.findByShoppingListIdOrderByIdAsc(10L)).thenReturn(List.of(contribution("RECIPE", 3L, "40")));
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(
+                new IngredientUnitOptionResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, false),
+                new IngredientUnitOptionResponse(2, "kg", "kilogram", MeasurementDimension.MASS, null, false)));
+        when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregateWithUnits(call.getArgument(0)));
+
+        assertThatThrownBy(() -> service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("0.06"), 2)))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Không thể quy đổi đơn vị an toàn");
+        assertThat(item.getUnitId()).isEqualTo(1);
+        assertThat(list.getUpdatedAt()).isNull();
     }
 
     @Test void increasingTotalDoesNotIncreaseTheUnresolvedContributionBucket() {
@@ -346,7 +413,7 @@ class ShoppingListServiceTest {
                 new tech.mamxanh.recipe.service.RecipeService.ShoppingReference(9L, "Món đậu", true, null)));
         when(catalog.findIngredientReferences(List.of(8L))).thenReturn(List.of(
                 new IngredientResponse(8L, "Đậu phụ", "Đậu", null, null, null, false, true)));
-        when(catalog.findUnitReferences(List.of(1))).thenReturn(List.of(
+        lenient().when(catalog.findUnitReferences(List.of(1))).thenReturn(List.of(
                 new UnitResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, true)));
         when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregate(call.getArgument(0)));
         return rows;
@@ -360,5 +427,18 @@ class ShoppingListServiceTest {
                 new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Group("Đậu", List.of(
                         new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Item(
                                 8L, "Đậu phụ", quantity, 1, "g", "gram", false, indices)))), List.of());
+    }
+
+    private static tech.mamxanh.shopping.dto.response.ShoppingAggregationResult aggregateWithUnits(
+            List<ShoppingAggregationLine> lines) {
+        int unitId = lines.getFirst().unitId();
+        String unitCode = unitId == 2 ? "kg" : "g";
+        String unitName = unitId == 2 ? "kilogram" : "gram";
+        BigDecimal quantity = lines.stream().map(ShoppingAggregationLine::quantity).reduce(BigDecimal.ZERO, BigDecimal::add);
+        var indices = java.util.stream.IntStream.range(0, lines.size()).boxed().toList();
+        return new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult(List.of(
+                new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Group("Đậu", List.of(
+                        new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Item(
+                                8L, "Đậu phụ", quantity, unitId, unitCode, unitName, false, indices)))), List.of());
     }
 }
