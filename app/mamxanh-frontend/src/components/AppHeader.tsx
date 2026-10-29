@@ -831,25 +831,14 @@ export function AppHeader() {
         </div>
       </dialog>
       {isAuthenticated && role !== "ADMIN" && !isOpen && (
-        <div className="fixed bottom-5 right-5 z-40">
-          <button
-            type="button"
-            onClick={() => openChat()}
-            aria-label="Mở khung chat hỗ trợ AI"
-            className="brutalist-button brutalist-ai"
-          >
-            <div className="deepseek-logo">
-              <MessageCircle
-                className="deepseek-icon"
-                aria-hidden="true"
-                strokeWidth={2.2}
-              />
-            </div>
-            <div className="button-text">
-              <span>Trợ lý AI</span>
-            </div>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => openChat()}
+          aria-label="Mở khung chat hỗ trợ AI"
+          className="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-on-brand shadow-lg shadow-brand-900/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-500 hover:shadow-xl hover:scale-105 active:translate-y-0 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+        >
+          <MessageCircle className="h-6 w-6" aria-hidden="true" strokeWidth={2.2} />
+        </button>
       )}
     </>
   )
