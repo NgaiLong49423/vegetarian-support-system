@@ -238,7 +238,8 @@ async function fillValidRecipe(page: Page, unit = 'g') {
   await action(page, 'Tìm nguyên liệu có sẵn', () => page.getByLabel('Chọn nguyên liệu 1').fill('Đậu'));
   await action(page, 'Chọn nguyên liệu từ danh mục gợi ý', () => page.getByRole('button', { name: 'Đậu hũ', exact: true }).click());
   await action(page, 'Nhập số lượng nguyên liệu', () => page.getByLabel('Số lượng nguyên liệu 1').fill('200'));
-  await action(page, `Chọn đơn vị ${unit}`, () => page.getByLabel('Đơn vị nguyên liệu 1').selectOption({ label: unit === 'g' ? 'gram (g)' : unit === 'kg' ? 'kilogram (kg)' : 'quả (quả)' }));
+  const unitId = unit === 'g' ? '1' : unit === 'kg' ? '2' : '3';
+  await action(page, `Chọn đơn vị ${unit}`, () => page.getByLabel('Đơn vị nguyên liệu 1').selectOption(unitId));
   await action(page, 'Nhập hướng dẫn chế biến', () => page.getByLabel('Hướng dẫn * (10–5.000 ký tự)').fill('Cắt đậu hũ, rim với cà chua đến khi thấm vị.'));
 }
 

@@ -185,7 +185,7 @@ test('administrator manages count and volume conversions for one ingredient', as
   await page.getByRole('button', { name: 'Lưu quy đổi đếm' }).click();
   await expect(page.getByText('quả: 120 g · xấp xỉ')).toBeVisible();
   await page.getByLabel('1 ml tương đương bao nhiêu gram').fill('0.91');
-  await expect(page.getByText('cup: 218.4 g')).toBeVisible();
+  await expect(page.getByText('cup: 218.40 g')).toBeVisible();
   await page.getByRole('button', { name: 'Lưu và đồng bộ 5 đơn vị thể tích' }).click();
   await expect(page.getByText('ml: 0.91 g · xấp xỉ')).toBeVisible();
   await page.getByRole('button', { name: 'Ngừng sử dụng', exact: true }).first().click();
