@@ -239,6 +239,31 @@ class ShoppingListServiceTest {
         assertThat(item.isBought()).isTrue();
     }
 
+    @Test void increasingTotalDoesNotIncreaseTheUnresolvedContributionBucket() {
+        var rows = prepareRecipeBackedIngredientSources();
+
+        var result = service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("80"), 1));
+
+        assertThat(item.getQuantity()).isEqualByComparingTo("80");
+        assertThat(rows).filteredOn(source -> "UNKNOWN".equals(source.getSourceKind()))
+                .extracting(ShoppingRecipeContributionEntity::getQuantity).containsExactly(new BigDecimal("10"), new BigDecimal("10"));
+        assertThat(rows).filteredOn(source -> "MANUAL".equals(source.getSourceKind())).singleElement()
+                .satisfies(source -> assertThat(source.getQuantity()).isEqualByComparingTo("20"));
+        assertThat(result.requiredQuantity()).isEqualByComparingTo("40");
+        assertThat(result.manualQuantity()).isEqualByComparingTo("20");
+    }
+
+    @Test void reducingTotalToRecipeMinimumRemovesUnknownAndManualContributions() {
+        var rows = prepareRecipeBackedIngredientSources();
+
+        var result = service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("40"), 1));
+
+        assertThat(item.getQuantity()).isEqualByComparingTo("40");
+        assertThat(rows).extracting(ShoppingRecipeContributionEntity::getSourceKind).containsExactly("RECIPE");
+        assertThat(result.requiredQuantity()).isEqualByComparingTo("40");
+        assertThat(result.manualQuantity()).isEqualByComparingTo("0");
+    }
+
     @Test void editingAndRemovingStandaloneManualSourceRecalculatesOrDeletesItsChecklistRow() {
         mutation(); references();
         var customItem = new ShoppingListItemEntity(); customItem.setId(3L); customItem.setShoppingListId(10L);
@@ -302,6 +327,29 @@ class ShoppingListServiceTest {
         row.setQuantity(new BigDecimal(quantity)); row.setExpectedIngredientCount(1);
         if ("RECIPE".equals(kind) || "UNKNOWN".equals(kind)) row.setRecipeId(9L);
         return row;
+    }
+
+    private List<ShoppingRecipeContributionEntity> prepareRecipeBackedIngredientSources() {
+        mutation();
+        item.setIngredientId(8L); item.setUnitId(1); item.setQuantity(new BigDecimal("70"));
+        when(items.findByIdAndShoppingListId(3L, 10L)).thenReturn(Optional.of(item));
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(new IngredientUnitOptionResponse(
+                1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, false)));
+        var required = contribution("RECIPE", 3L, "40");
+        var unknownA = contribution("UNKNOWN", 3L, "10");
+        var unknownB = contribution("UNKNOWN", 3L, "10");
+        var manual = contribution("MANUAL", 3L, "10");
+        var rows = new ArrayList<>(List.of(required, unknownA, unknownB, manual));
+        when(contributions.findByShoppingListIdOrderByIdAsc(10L)).thenAnswer(call -> rows);
+        doAnswer(call -> { rows.removeAll(call.getArgument(0)); return null; }).when(contributions).deleteAll(anyList());
+        when(recipes.findShoppingReferences(List.of(9L))).thenReturn(Map.of(9L,
+                new tech.mamxanh.recipe.service.RecipeService.ShoppingReference(9L, "Món đậu", true, null)));
+        when(catalog.findIngredientReferences(List.of(8L))).thenReturn(List.of(
+                new IngredientResponse(8L, "Đậu phụ", "Đậu", null, null, null, false, true)));
+        when(catalog.findUnitReferences(List.of(1))).thenReturn(List.of(
+                new UnitResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, true)));
+        when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregate(call.getArgument(0)));
+        return rows;
     }
 
     private static tech.mamxanh.shopping.dto.response.ShoppingAggregationResult aggregate(
