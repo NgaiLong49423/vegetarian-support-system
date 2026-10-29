@@ -180,7 +180,7 @@ test('administrator manages count and volume conversions for one ingredient', as
   await page.getByRole('button', { name: 'Đơn vị' }).click();
   await expect(page.getByRole('heading', { name: 'Quản lý đơn vị · Chuối tây' })).toBeVisible();
   await expect(page.getByText('cup: 0.0000 g')).toBeVisible();
-  await page.getByLabel('Đơn vị').selectOption('9');
+  await page.getByRole('dialog').getByLabel('Đơn vị', { exact: true }).selectOption('9');
   await page.getByLabel('Số gram trên đơn vị').fill('120');
   await page.getByRole('button', { name: 'Lưu quy đổi đếm' }).click();
   await expect(page.getByText('quả: 120 g · xấp xỉ')).toBeVisible();
