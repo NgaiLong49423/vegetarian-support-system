@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Restore Meal Planner Focus After React Commits
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `ce2ab6b6f4baca2fc5803aaaefaa98dbbb65588b`.
 
 **Scope:** Correct the intermittent meal-move focus failure observed in Frontend job `123463299035` of CI run `40878464669`, matching existing BUG-066.
 
