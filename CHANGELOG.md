@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Generate Full Recipe Previews with Gemini
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `40cd3421badd2124c854919b7aea0844b04ed83b`.
 
 **Scope:** Implement the explicitly authorized full assistant workflow on FR-10 while preserving the develop form layout and the confirmed Gemini model. No tables, migrations, paid-period changes or automatic publication are introduced.
 
