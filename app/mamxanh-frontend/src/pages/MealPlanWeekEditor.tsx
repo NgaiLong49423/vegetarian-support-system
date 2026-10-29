@@ -378,8 +378,15 @@ function WeekContents({
     requestAnimationFrame(() => {
       if (!alive.current) return
 
-      if (returnFocus.current?.isConnected) returnFocus.current.focus()
-      else document.querySelector<HTMLElement>("h1")?.focus()
+      const target = returnFocus.current
+
+      if (target?.isConnected && target.getClientRects().length > 0) {
+        target.focus()
+
+        if (document.activeElement === target) return
+      }
+
+      document.querySelector<HTMLElement>("h1")?.focus()
     })
   }
 

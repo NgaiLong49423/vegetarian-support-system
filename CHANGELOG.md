@@ -9,6 +9,24 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-30 — Restore Meal Plan Focus After Moving an Entry
+
+**Status:** Working tree — uncommitted changes.
+
+**Scope:** Keep keyboard focus in a usable location when a meal-plan dialog closes after its trigger becomes hidden.
+
+### Added
+
+- None.
+
+### Changed
+
+- None.
+
+### Fixed
+
+- Return focus to the meal-plan heading when the dialog's original trigger is still in the DOM but no longer visible.
+
 ## 2026-10-30 — Align CI Checks for Admin Account Management
 
 **Status:** Committed — `3ec1ed3c`.
