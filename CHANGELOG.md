@@ -9,6 +9,25 @@
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
 
+## 2026-10-30 — Align CI Checks for Admin Account Management
+
+**Status:** Working tree — uncommitted changes.
+
+**Scope:** Keep the generated API contract and Frontend coverage test aligned with the Admin account-management page.
+
+### Added
+
+- None.
+
+### Changed
+
+- Refresh the OpenAPI snapshot from the runtime contract generated for the pull request commit.
+- Update the Admin page coverage assertion to match the current heading.
+
+### Fixed
+
+- None.
+
 ## 2026-10-30 — Implement Backend-Backed Admin Account Management
 
 **Status:** Committed — `8632da92`.
