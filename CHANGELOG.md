@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Name the Minimum Required AI Upgrade Plan
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `cfd25f49fcd1984483fd052239e337513217c5a3`.
 
 **Scope:** Explain the minimum PLUS or PRO tier consistently at feature-specific upgrade prompts without changing entitlements or prices.
 
