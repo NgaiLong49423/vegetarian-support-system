@@ -1,8 +1,8 @@
 > **Document:** Use Case Specification Index
 > **File:** `docs/requirements/use-cases/README.md`
-> **Version:** v2.5.0
+> **Version:** v2.6.0
 > **Created:** 2026-09-26
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-18
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -70,7 +70,7 @@ Keep existing FR-level anchors such as `<a id="fr-13"></a>` unchanged so current
 | [FR-14](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-14) | [Lưu trữ thư viện ảnh bài công thức (tối đa 5 ảnh, đúng 1 ảnh bìa) trên Azure Blob Storage](recipe-contribution-and-community.md#fr-14) |
 | [FR-16](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-16) | [Cấu trúc dữ liệu bài công thức, hướng dẫn chế biến và validation profile](recipe-contribution-and-community.md#fr-16) |
 | [FR-19](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-19) | [Chọn nguyên liệu từ danh mục chuẩn và khai báo định lượng](recipe-contribution-and-community.md#fr-19) |
-| [FR-21](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21) | [AI hỗ trợ nội dung và xem trước công thức có định lượng, không lưu nháp server](recipe-contribution-and-community.md#fr-21) |
+| [FR-21](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21) | [AI hỗ trợ tạo giới thiệu hoặc hướng dẫn chế biến không lưu nháp server](recipe-contribution-and-community.md#fr-21) |
 | [FR-27](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-27) | [Biểu mẫu báo cáo bài công thức theo 6 nhóm lý do](recipe-contribution-and-community.md#fr-27) |
 | [FR-30](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-30) | [Bổ sung thông tin và ngăn trùng lặp báo cáo mở](recipe-contribution-and-community.md#fr-30) |
 | [FR-48](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-48) | [Báo cáo bình luận, reply và Administrator hậu kiểm](recipe-contribution-and-community.md#fr-48) |

@@ -1,6 +1,6 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.45.0
+> **Version:** v0.46.0
 > **Created:** 2026-06-14  
 > **Last Updated:** 2026-10-29
 > **Status:** Active  
@@ -307,8 +307,6 @@ Dừng bằng `Ctrl+C`. Container tự xóa vì dùng `--rm`. Khi source hoặc 
 - API được mô tả bằng OpenAPI và trả lỗi nhất quán; không để frontend suy đoán business rule.
 
 Ma trận quyền AI hiện hành: PLUS mở lập thực đơn tuần thông thường (UC-34.2/UC-34.3) và theo dinh dưỡng (FR-36). PRO kế thừa PLUS, thêm AI soạn bài cho Chuyên gia (FR-21), AI gợi ý món liên quan/biến tấu (FR-47) và AI đề xuất điều chỉnh dinh dưỡng (FR-37). FREE giữ Chatbot, gợi ý nguyên liệu và hướng dẫn chế biến. Giá và thời hạn đã mua không đổi.
-
-Trợ lý công thức đầy đủ FR-21 bổ sung `POST /api/v1/recipes/ai/draft` cho Expert/PRO. Gemini đề xuất số gam cho đúng ID nguyên liệu do Backend xác định. Calo được tính lại từ năng lượng/100 g và có nguồn danh mục, không lấy số do AI tự khai. API chỉ trả preview, không ghi nháp/công thức. Các API soạn mô tả/hướng dẫn hiện có giữ nguyên hành vi.
 
 ## Thanh toán xác minh — FR-13 / Issue #142
 

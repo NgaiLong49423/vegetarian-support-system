@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { AlertCircle, Info, LoaderCircle, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { AlertCircle, Check, Info, LoaderCircle, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
 import { ApiError, asApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
@@ -13,6 +13,7 @@ import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUp
 import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
 import type { RecipeAiContentType } from '../api/recipes';
 import { AiRecipeAssistantModal, type GeneratedRecipeData } from '../components/AiRecipeAssistantModal';
+import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
 
 type IngredientRow = {
   key: string;
@@ -108,7 +109,83 @@ function CreateRecipeForm() {
   const [aiLoading, setAiLoading] = useState<RecipeAiContentType | null>(null);
   const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string; upgradeRequired?: boolean } | null>(null);
   const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const suggestedDifficulty = assessRecipeDifficulty({
+    ingredientCount: ingredients.filter((ing) => ing.ingredientId || ing.quantity).length,
+    prepTimeMinutes: Number(prepTimeMinutes) || 0,
+    cookTimeMinutes: Number(cookTimeMinutes) || 0,
+    instructions,
+  });
+
+  const handleApplyAiRecipe = async (aiRecipe: GeneratedRecipeData) => {
+    setTitle(aiRecipe.title);
+    setDescription(aiRecipe.description);
+    setInstructions(aiRecipe.instructions);
+    if (aiRecipe.dishCategory) setDishCategory(aiRecipe.dishCategory);
+    if (aiRecipe.vegetarianType) setVegetarianType(aiRecipe.vegetarianType);
+    if (aiRecipe.difficulty) setDifficulty(aiRecipe.difficulty);
+    setServings(String(aiRecipe.servings));
+    setPrepTimeMinutes(String(aiRecipe.prepTimeMinutes));
+    setCookTimeMinutes(String(aiRecipe.cookTimeMinutes));
+
+    if (aiRecipe.ingredients && aiRecipe.ingredients.length > 0) {
+      const mappedRows: IngredientRow[] = await Promise.all(
+        aiRecipe.ingredients.map(async (item, idx) => {
+          const matchedUnit = options?.units.find((u) => {
+            const uCode = u.code.toLowerCase();
+            const uName = u.name.toLowerCase();
+            const itemCode = item.unitCode.toLowerCase();
+            const itemName = item.unitName.toLowerCase();
+            return (
+              uCode === itemCode ||
+              uName === itemName ||
+              uCode.includes(itemCode) ||
+              itemCode.includes(uCode) ||
+              (itemCode === 'qua' && (uCode === 'quả' || uCode === 'qua' || uCode === 'trái')) ||
+              (itemCode === 'g' && (uCode === 'g' || uCode === 'gram')) ||
+              (itemCode === 'ml' && (uCode === 'ml' || uCode === 'mililit'))
+            );
+          });
+
+          let foundIngredientId: number | null = null;
+          let foundName = item.name;
+          try {
+            const searchResults = await recipesApi.searchIngredients(item.name);
+            if (searchResults && searchResults.length > 0) {
+              const exact = searchResults.find(
+                (r) => r.name.toLowerCase() === item.name.toLowerCase(),
+              );
+              if (exact) {
+                foundIngredientId = exact.ingredientId;
+                foundName = exact.name;
+              } else {
+                foundIngredientId = searchResults[0].ingredientId;
+                foundName = searchResults[0].name;
+              }
+            }
+          } catch {
+            // bỏ qua lỗi nếu search catalog tạm thời không khả dụng
+          }
+
+          return {
+            key: `ingredient-${Date.now()}-${idx}`,
+            ingredientId: foundIngredientId,
+            ingredientName: foundName,
+            search: foundName,
+            quantity: String(item.quantity),
+            unitId: matchedUnit?.unitId ?? (options?.units[0]?.unitId ?? null),
+          };
+        }),
+      );
+      setIngredients(mappedRows);
+    }
+
+    setAiNotice(
+      `Đã nạp thành công thông tin món "${aiRecipe.title}" kèm định lượng nguyên liệu vào biểu mẫu!`,
+    );
+  };
 
   useEffect(() => {
     let active = true;
@@ -253,60 +330,6 @@ function CreateRecipeForm() {
 
   const errorFor = (field: string) => fieldErrors[field];
 
-  const renderIngredientFields = (idPrefix: string) => (<>
-            {ingredients.map((row, index) => (
-              <div key={row.key} className="rounded-xl border border-brand-100 p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wide text-brand-700">Nguyên liệu {index + 1}</span>
-                  {ingredients.length > 1 && <button type="button" onClick={() => setIngredients((current) => current.filter((item) => item.key !== row.key))} className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-red-700" aria-label={`Xóa nguyên liệu ${index + 1}`}><Trash2 className="h-4 w-4" /></button>}
-                </div>
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px_180px]">
-                  <IngredientPicker
-                    value={row.search || row.ingredientName}
-                    selectedId={row.ingredientId}
-                    onTextChange={(search) => updateIngredient(row.key, { search, ingredientId: null, ingredientName: '' })}
-                    onSelect={(ingredient) => updateIngredient(row.key, { ingredientId: ingredient.ingredientId, ingredientName: ingredient.name, search: ingredient.name })}
-                    error={errorFor(`ingredients[${index}].ingredientId`)}
-                    rowNumber={index + 1}
-                    inputId={`${idPrefix}ingredient-${row.key}`}
-                  />
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`quantity-${idPrefix}${row.key}`}>Số lượng *</label>
-                    <input id={`quantity-${idPrefix}${row.key}`} type="number" min="0.01" step={['g', 'kg'].includes(options?.units.find((unit) => unit.unitId === row.unitId)?.code ?? '') ? 'any' : '0.01'} value={row.quantity} onChange={(event) => updateIngredient(row.key, { quantity: event.target.value })} placeholder={options?.units.find((unit) => unit.unitId === row.unitId)?.code === 'g' ? '100' : '0'} className={inputClass} aria-label={`Số lượng nguyên liệu ${index + 1}`} />
-                    {errorFor(`ingredients[${index}].quantity`) && <p className={errorClass}>{errorFor(`ingredients[${index}].quantity`)}</p>}
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`unit-${idPrefix}${row.key}`}>Đơn vị *</label>
-                    <select id={`unit-${idPrefix}${row.key}`} value={row.unitId ?? ''} onChange={(event) => updateIngredient(row.key, { unitId: event.target.value ? Number(event.target.value) : null })} className={inputClass} aria-label={`Đơn vị nguyên liệu ${index + 1}`}>
-                      <option value="">Chọn đơn vị</option>
-                      {(options?.units ?? []).map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code})</option>)}
-                    </select>
-                    {errorFor(`ingredients[${index}].unitId`) && <p className={errorClass}>{errorFor(`ingredients[${index}].unitId`)}</p>}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {errorFor('ingredients') && <p className={errorClass}>{errorFor('ingredients')}</p>}
-            <Button type="button" variant="outline" size="sm" onClick={() => setIngredients((current) => [...current, emptyIngredient()])} disabled={ingredients.length >= 50}>
-              <Plus className="h-4 w-4" /> Thêm nguyên liệu
-            </Button>
-  </>);
-
-  const applyAiDraft = (draft: GeneratedRecipeData) => {
-    setTitle(draft.title);
-    setDescription(draft.description);
-    setInstructions(draft.instructions);
-    setDishCategory(draft.dishCategory);
-    setVegetarianType(draft.vegetarianType);
-    setDifficulty(draft.difficulty);
-    setServings(String(draft.servings));
-    setPrepTimeMinutes(String(draft.prepTimeMinutes));
-    setCookTimeMinutes(String(draft.cookTimeMinutes));
-    setIngredients(draft.ingredients.map((item) => ({ key: emptyIngredient().key, ingredientId: item.ingredientId,
-      ingredientName: item.name, search: item.name, quantity: String(item.quantity), unitId: item.unitId })));
-    setAiError(null);
-  };
-
   return (
     <PageContainer className="py-8">
       <nav className="mb-4 text-sm text-ink-muted" aria-label="Breadcrumb">
@@ -326,6 +349,18 @@ function CreateRecipeForm() {
           <Sparkles className="h-4 w-4" /> Soạn với Trợ lý AI
         </Button>
       </div>
+
+      {aiNotice && (
+        <div role="status" className="mb-5 flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-900 shadow-sm animate-fade-in">
+          <Check className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+          <div className="flex-1">
+            <p className="font-semibold">{aiNotice}</p>
+          </div>
+          <button type="button" onClick={() => setAiNotice(null)} className="text-green-700 hover:text-green-900 text-xs font-bold">
+            Đóng
+          </button>
+        </div>
+      )}
 
       <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <Info className="mt-0.5 h-5 w-5 shrink-0" />
@@ -371,7 +406,41 @@ function CreateRecipeForm() {
           <Card className="space-y-4 p-5 sm:p-6">
             <SectionHead number="2" title="Nguyên liệu và định lượng" />
             <p className="text-sm text-ink-muted">Chọn nguyên liệu trong danh mục và nhập số lượng lớn hơn 0. Đơn vị khác g/kg cần có tỷ lệ quy đổi sẵn.</p>
-            {renderIngredientFields('form-')}
+            {ingredients.map((row, index) => (
+              <div key={row.key} className="rounded-xl border border-brand-100 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wide text-brand-700">Nguyên liệu {index + 1}</span>
+                  {ingredients.length > 1 && <button type="button" onClick={() => setIngredients((current) => current.filter((item) => item.key !== row.key))} className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-red-700" aria-label={`Xóa nguyên liệu ${index + 1}`}><Trash2 className="h-4 w-4" /></button>}
+                </div>
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px_180px]">
+                  <IngredientPicker
+                    value={row.search || row.ingredientName}
+                    selectedId={row.ingredientId}
+                    onTextChange={(search) => updateIngredient(row.key, { search, ingredientId: null, ingredientName: '' })}
+                    onSelect={(ingredient) => updateIngredient(row.key, { ingredientId: ingredient.ingredientId, ingredientName: ingredient.name, search: ingredient.name })}
+                    error={errorFor(`ingredients[${index}].ingredientId`)}
+                    rowNumber={index + 1}
+                  />
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`quantity-${row.key}`}>Số lượng *</label>
+                    <input id={`quantity-${row.key}`} type="number" min="0.01" step={['g', 'kg'].includes(options?.units.find((unit) => unit.unitId === row.unitId)?.code ?? '') ? 'any' : '0.01'} value={row.quantity} onChange={(event) => updateIngredient(row.key, { quantity: event.target.value })} placeholder={options?.units.find((unit) => unit.unitId === row.unitId)?.code === 'g' ? '100' : '0'} className={inputClass} aria-label={`Số lượng nguyên liệu ${index + 1}`} />
+                    {errorFor(`ingredients[${index}].quantity`) && <p className={errorClass}>{errorFor(`ingredients[${index}].quantity`)}</p>}
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`unit-${row.key}`}>Đơn vị *</label>
+                    <select id={`unit-${row.key}`} value={row.unitId ?? ''} onChange={(event) => updateIngredient(row.key, { unitId: event.target.value ? Number(event.target.value) : null })} className={inputClass} aria-label={`Đơn vị nguyên liệu ${index + 1}`}>
+                      <option value="">Chọn đơn vị</option>
+                      {(options?.units ?? []).map((unit) => <option key={unit.unitId} value={unit.unitId}>{unit.name} ({unit.code})</option>)}
+                    </select>
+                    {errorFor(`ingredients[${index}].unitId`) && <p className={errorClass}>{errorFor(`ingredients[${index}].unitId`)}</p>}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {errorFor('ingredients') && <p className={errorClass}>{errorFor('ingredients')}</p>}
+            <Button type="button" variant="outline" size="sm" onClick={() => setIngredients((current) => [...current, emptyIngredient()])} disabled={ingredients.length >= 50}>
+              <Plus className="h-4 w-4" /> Thêm nguyên liệu
+            </Button>
           </Card>
 
           <Card className="space-y-4 p-5 sm:p-6">
@@ -456,23 +525,19 @@ function CreateRecipeForm() {
         open={aiModalOpen}
         onClose={() => setAiModalOpen(false)}
         options={options}
-        initialTitle={title}
-        initialIngredients={ingredients.map(item => item.ingredientName).filter(Boolean).join(', ')}
-        initialServings={Number(servings) || 2}
-        onApplyRecipe={applyAiDraft}
+        onApplyRecipe={handleApplyAiRecipe}
       />
     </PageContainer>
   );
 }
 
-function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, rowNumber, inputId }: {
+function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, rowNumber }: {
   value: string;
   selectedId: number | null;
   onTextChange: (value: string) => void;
   onSelect: (item: IngredientOption) => void;
   error?: string;
   rowNumber: number;
-  inputId: string;
 }) {
   const [suggestions, setSuggestions] = useState<IngredientOption[]>([]);
   const [open, setOpen] = useState(false);
@@ -493,8 +558,8 @@ function IngredientPicker({ value, selectedId, onTextChange, onSelect, error, ro
 
   return (
     <div className="relative">
-      <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={inputId}>Nguyên liệu *</label>
-      <input id={inputId} value={value} onFocus={() => setOpen(true)} onChange={(event) => onTextChange(event.target.value)} onBlur={() => window.setTimeout(() => setOpen(false), 120)} placeholder="Tìm nguyên liệu có sẵn" autoComplete="off" className={inputClass} aria-label={`Chọn nguyên liệu ${rowNumber}`} aria-expanded={open} />
+      <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`ingredient-${rowNumber}`}>Nguyên liệu *</label>
+      <input id={`ingredient-${rowNumber}`} value={value} onFocus={() => setOpen(true)} onChange={(event) => onTextChange(event.target.value)} onBlur={() => window.setTimeout(() => setOpen(false), 120)} placeholder="Tìm nguyên liệu có sẵn" autoComplete="off" className={inputClass} aria-label={`Chọn nguyên liệu ${rowNumber}`} aria-expanded={open} />
       {open && <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-brand-200 bg-paper p-1 shadow-lg">
         {searchError && <p className="px-3 py-2 text-xs text-red-700">{searchError}</p>}
         {!searchError && suggestions.length === 0 && <p className="px-3 py-2 text-xs text-ink-muted">Nguyên liệu này hiện chưa được hỗ trợ.</p>}

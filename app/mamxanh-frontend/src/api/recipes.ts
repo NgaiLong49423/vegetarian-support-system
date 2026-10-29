@@ -248,32 +248,6 @@ export interface UpdateRecipePost {
 }
 
 export type RecipeAiContentType = 'DESCRIPTION' | 'INSTRUCTIONS';
-export interface RecipeAiDraftRequest {
-  title: string;
-  rawIngredients: string;
-  mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK' | 'CUSTOM';
-  targetCaloriesPerServing: number;
-  servings: number;
-  cookingMethod: 'STIR_FRY' | 'SOUP' | 'BRAISED' | 'BOILED' | 'SALAD';
-}
-export interface RecipeAiDraftResponse {
-  title: string;
-  description: string;
-  instructions: string;
-  dishCategory: string;
-  vegetarianType: string;
-  difficulty: string;
-  servings: number;
-  prepTimeMinutes: number;
-  cookTimeMinutes: number;
-  mealType: string;
-  targetCaloriesPerServing: number;
-  totalCalories: number;
-  caloriesPerServing: number;
-  ingredients: Array<{ ingredientId: number; unitId: number; name: string; quantity: number;
-    unitCode: string; unitName: string; calories: number; energyKcalPer100g: number; sourceName: string }>;
-}
-
 export interface RecipeAiAssistanceRequest {
   contentType: RecipeAiContentType;
   title: string;
@@ -370,11 +344,8 @@ export const recipesApi = {
   publish: (payload: CreateRecipeRequest) => request(
     () => apiClient.post<CreateRecipeResponse>('/recipes', payload),
   ),
-  generateDraft: (payload: RecipeAiDraftRequest) => request(
-    () => apiClient.post<RecipeAiDraftResponse>('/recipes/ai/draft', payload, { timeout: 60_000 }),
-  ),
   suggestText: (payload: RecipeAiAssistanceRequest) => request(
-    // Keep transport headroom around the Backend's bounded provider request.
+    // Gemini may take up to 45 seconds; allow time for the Backend request and response too.
     () => apiClient.post<RecipeAiAssistanceResponse>('/recipes/ai-assistance', payload, { timeout: 60_000 }),
   ),
   getPublished: (recipeId: number) => request(

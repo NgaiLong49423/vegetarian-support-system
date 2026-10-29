@@ -69,7 +69,7 @@ test('interactive UI components: ClickSpark, BorderGlow, RippleDistortion, Inter
   }
 });
 
-test('AI Recipe Assistant modal opens guarded authoring actions and returns to manual editing', async ({ page }) => {
+test('AI Recipe Assistant modal generates, previews JSON, copies and applies recipe', async ({ page }) => {
   await seedDemoSession(page, 'EXPERT');
   await page.route('**/api/v1/recipes/form-options', (route) => route.fulfill({
     json: {
@@ -85,14 +85,15 @@ test('AI Recipe Assistant modal opens guarded authoring actions and returns to m
   await page.goto('/dang-cong-thuc');
   await page.getByRole('button', { name: 'Soạn với Trợ lý AI' }).click();
 
-  const dialog = page.getByRole('dialog', { name: 'Trợ lý AI đồng hành cùng Chuyên gia ẩm thực' });
-  await expect(dialog.getByRole('button', { name: 'Phân tích nguyên liệu & gợi ý định lượng' })).toBeVisible();
-  await expect(dialog.getByLabel('Phương pháp chế biến chính')).toBeVisible();
-  await expect(dialog.getByLabel(/Tên món ăn hoặc ý tưởng chế biến/)).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
-  await page.getByLabel('Tên món *').fill('Canh chay tự soạn');
-  await expect(page.getByLabel('Tên món *')).toHaveValue('Canh chay tự soạn');
+  const textarea = page.getByPlaceholder('VD: cà chua, trứng gà, hành lá, dầu thực vật, gia vị...');
+  await expect(textarea).toBeVisible();
+  await textarea.fill('đậu hũ, nấm rơm, cà rốt, dầu ăn');
+  await page.getByRole('button', { name: 'Phân tích nguyên liệu & gợi ý định lượng' }).click();
+
+  await expect(page.getByText('Công thức đề xuất')).toBeVisible();
+  await page.getByRole('button', { name: 'Nạp vào biểu mẫu công thức' }).click();
+
+  await expect(page.getByText(/Đã nạp thành công thông tin món/)).toBeVisible();
 });
 
 test('interactive voting on recipe detail', async ({ page }) => {

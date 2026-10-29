@@ -86,38 +86,6 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     }
 
     @Override
-    public RecommendationResult generateRecipeDraft(String prompt, List<Long> allowedIngredientIds) {
-        Schema text = Schema.builder().type(Type.Known.STRING).build();
-        Schema integer = Schema.builder().type(Type.Known.INTEGER).build();
-        Schema step = Schema.builder().type(Type.Known.OBJECT)
-                .properties(Map.of("text", text, "ingredientIds", Schema.builder().type(Type.Known.ARRAY).items(integer).build()))
-                .required(List.of("text", "ingredientIds")).build();
-        Schema amount = Schema.builder().type(Type.Known.OBJECT)
-                .properties(Map.of("ingredientId", integer, "quantityGrams", Schema.builder().type(Type.Known.NUMBER).build()))
-                .required(List.of("ingredientId", "quantityGrams")).build();
-        Schema schema = Schema.builder().type(Type.Known.OBJECT).properties(Map.of(
-                "description", text, "steps", Schema.builder().type(Type.Known.ARRAY).minItems(6L).maxItems(10L).items(step).build(),
-                "dishCategory", text, "vegetarianType", text, "difficulty", text,
-                "prepTimeMinutes", integer, "cookTimeMinutes", integer,
-                "ingredients", Schema.builder().type(Type.Known.ARRAY).minItems((long) allowedIngredientIds.size()).maxItems((long) allowedIngredientIds.size()).items(amount).build()))
-                .required(List.of("description", "steps", "dishCategory", "vegetarianType", "difficulty", "prepTimeMinutes", "cookTimeMinutes", "ingredients")).build();
-        GenerateContentConfig config = GenerateContentConfig.builder().responseMimeType("application/json").responseSchema(schema)
-                .candidateCount(1).maxOutputTokens(8192)
-                .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build()).build();
-        return request("RECIPE_DRAFT", "Gemini recipe draft request failed", () -> {
-            var response = client.models.generateContent(MODEL, prompt + "\nAllowed ingredient IDs: " + allowedIngredientIds, config);
-            String reason = response.candidates().orElse(List.of()).stream().findFirst()
-                    .flatMap(candidate -> candidate.finishReason()).map(Object::toString).orElse("STOP");
-            if (!"STOP".equals(reason)) throw AiProviderException.invalidResponse("Incomplete recipe draft output");
-            String output = response.text();
-            if (output == null || output.isBlank()) throw AiProviderException.invalidResponse("Empty recipe draft output");
-            var usage = response.usageMetadata();
-            return new RecommendationResult(output, usage.flatMap(value -> value.promptTokenCount()).orElse(null),
-                    usage.flatMap(value -> value.candidatesTokenCount()).orElse(null), usage.flatMap(value -> value.totalTokenCount()).orElse(null));
-        });
-    }
-
-    @Override
     public void close() {
         requests.shutdownNow();
         if (client != null) client.close();

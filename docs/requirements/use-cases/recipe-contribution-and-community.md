@@ -1,6 +1,6 @@
 > **Document:** Use Case Specifications — M03
 > **File:** `docs/requirements/use-cases/recipe-contribution-and-community.md`
-> **Version:** v2.5.0
+> **Version:** v2.6.0
 > **Created:** 2026-09-26
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -266,9 +266,7 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-19).
 ---
 
 <a id="fr-21"></a>
-## FR-21 — AI hỗ trợ nội dung và xem trước công thức có định lượng, không lưu nháp server
-
-Các mục luồng văn bản dưới đây áp dụng UC-21.1/UC-21.2. Luồng bổ sung UC-21.3 được mô tả riêng ở cuối phần FR-21.
+## FR-21 — AI hỗ trợ tạo giới thiệu hoặc hướng dẫn chế biến không lưu nháp server
 
 Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
 
@@ -314,16 +312,6 @@ Source: [Functional Requirements](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21).
   - *Given* tác giả đã nhập tên món, khẩu phần, trường phái ăn chay và danh sách nguyên liệu có định lượng,
   - *When* tác giả yêu cầu AI viết hướng dẫn chế biến,
   - *Then* kết quả có 6–10 bước tuần tự, từ chuẩn bị/sơ chế đến nấu và thành phẩm; chỉ tham chiếu nguyên liệu đã nhập; mọi thời gian/nhiệt độ ước tính được ghi rõ `Ước tính AI`; nội dung vẫn chỉnh sửa được và chưa được công khai.
-
-<a id="uc-21-3"></a>
-### UC-21.3 — Trợ lý công thức có đề xuất định lượng
-
-- **Actor/điều kiện:** Expert đang hoạt động, PRO còn hiệu lực. Đây là luồng bổ sung ngày 29/10/2026, tách khỏi hai luồng soạn văn bản giữ nguyên định lượng ở trên.
-- **Đầu vào:** Ý tưởng món 3–120 ký tự, danh sách tên 1–50 nguyên liệu (tối đa 2.000 ký tự), buổi ăn, mục tiêu 100–1.500 kcal/phần, 1–50 khẩu phần và phương pháp chế biến.
-- **Luồng chính:** Chọn gợi ý nhanh hoặc nhập thông tin → Backend xác thực quyền và xác định ID nguyên liệu/đơn vị gam/năng lượng trong danh mục → Gemini đề xuất nội dung và định lượng → Backend kiểm tra đủ/đúng ID, số liệu, giới hạn nội dung và tính lại calo từ danh mục → Chuyên gia xem nguồn, sửa số gam và so sánh mục tiêu → chủ động nạp vào form → tự kiểm tra và xuất bản theo luồng sẵn có.
-- **Ngoại lệ:** Nguyên liệu không rõ/thiếu năng lượng trả 400 trước provider. Thiếu quyền trả 401/403, phản hồi AI sai trả 502, provider lỗi/quota/timeout trả 503. Không sinh kết quả mẫu dự phòng, không thay dữ liệu form khi lỗi hoặc đóng. Phản hồi cũ sau đóng bị bỏ qua. Mục tiêu calo không phải chỉ định y tế hoặc cam kết đạt chính xác.
-- **Hậu điều kiện:** API chỉ trả preview, không tạo Recipe Post, quan hệ hoặc nháp server. ID và đơn vị đã xác định được giữ nguyên khi nạp, không dò gần đúng tại Frontend. Sự kiện usage FR-21 chỉ chứa metadata kỹ thuật.
-- **Trace:** [FR-21 và AC-21.7–AC-21.11](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-21), FR-10, BR-02/03/04/15/16/19/73.
 
 <a id="fr-27"></a>
 ## FR-27 — Biểu mẫu báo cáo bài công thức theo 6 nhóm lý do

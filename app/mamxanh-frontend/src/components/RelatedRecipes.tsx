@@ -70,6 +70,10 @@ export function RelatedRecipes({ recipeId }: { recipeId: number }) {
     }
   }
 
+  const aiRecipeIds = new Set(aiItems?.map((item) => item.id));
+  const regularItems = items.filter((item) => !aiRecipeIds.has(item.id));
+  const showRegular = loading || Boolean(error) || regularItems.length > 0 || !aiItems?.length;
+
   return <section aria-label="Công thức liên quan" className="recipe-detail-no-print mt-10 border-t border-brand-200 pt-8">
     <div className="flex flex-wrap items-center justify-between gap-4">
       <h2 className="text-xl font-extrabold text-ink">Công thức liên quan</h2>
@@ -90,8 +94,8 @@ export function RelatedRecipes({ recipeId }: { recipeId: number }) {
       {aiItems.length === 0 ? <p className="text-sm text-ink-muted">AI chưa tìm được món phù hợp trong các công thức hiện có.</p>
         : <RecipeGrid items={aiItems} options={options} />}
     </div>}
-    <div className="mt-5"><RegularRecommendations loading={loading} error={error} items={items}
-      options={options} onRetry={() => setRetry((value) => value + 1)} /></div>
+    {showRegular && <div className="mt-5"><RegularRecommendations loading={loading} error={error} items={regularItems}
+      options={options} onRetry={() => setRetry((value) => value + 1)} /></div>}
   </section>;
 }
 

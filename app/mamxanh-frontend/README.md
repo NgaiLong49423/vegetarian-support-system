@@ -1,6 +1,6 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.52.0
+> **Version:** v1.53.0
 > **Created:** 2026-09-18  
 > **Last Updated:** 2026-10-29
 > **Status:** Active  
@@ -11,7 +11,7 @@ Chatbot gửi thêm ID của tối đa bốn thẻ công thức trong mỗi lư�
 
 Chatbot hiện dùng chung cho Guest và Member theo FR-10: Guest gửi định danh session cookie hiện có qua body, có hướng dẫn đăng ký và xử lý lỗi 429; không đọc hồ sơ tài khoản. Đổi tài khoản hoặc ngữ cảnh xóa hội thoại trên giao diện và bỏ qua phản hồi cũ đang chờ. Các luồng AI thiếu quyền dẫn tới `/goi-ai`, hướng dẫn Plus hoặc Pro theo tính năng; việc kiểm tra quyền và thời hạn gói thuộc Backend. Chi tiết giao tiếp và giới hạn bộ đếm Guest nằm trong [API Guide](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-51). Đây là mô tả source, không phải xác nhận nghiệm thu Issue trên main.
 
-Modal “Soạn với Trợ lý AI” giữ đầy đủ bố cục develop: gợi ý nhanh, buổi ăn, tên món, nguyên liệu tự nhập, calo mục tiêu, khẩu phần và cách chế biến. Luồng mới gọi `POST /recipes/ai/draft`, yêu cầu Expert/PRO. Gemini đề xuất định lượng và nội dung, Backend xác minh ID rồi tính lại calo từ danh mục. Tác giả sửa số gam và chủ động nạp bản xem trước vào form, không xuất bản tự động. Hai nút mô tả/hướng dẫn nội tuyến vẫn dùng API FR-21 cũ. Không sinh công thức hoặc năng lượng bằng bảng dữ liệu mẫu tại trình duyệt. Tên gợi ý nguyên liệu dùng tên danh mục thực tế, không tự quy đổi một tên mơ hồ thành thực phẩm khác.
+Modal “Soạn với Trợ lý AI” được giữ nguyên giao diện và logic từ develop theo yêu cầu người dùng ngày 29/10/2026. Luồng này sinh gợi ý tại trình duyệt bằng bảng dữ liệu và mẫu nội dung có sẵn, cho phép sửa định lượng và nạp vào biểu mẫu, không gọi Gemini. Hai nút gợi ý mô tả/hướng dẫn riêng trong biểu mẫu vẫn gọi API FR-21 và được Backend kiểm tra quyền Expert/PRO. API tạo bản xem trước công thức `/recipes/ai/draft` bổ sung trên nhánh FR-10 đã được gỡ.
 ### Sao chép và xuất TXT đi chợ — FR-55 / Issue #55
 
 - Toolbar `/di-cho` sao chép hoặc tải toàn bộ danh sách đang chọn, kể cả những mục bị ẩn bởi bộ lọc; giữ nhóm, số lượng, đơn vị và ký hiệu `[ ]`/`[x]` đã lưu. Không đưa thông tin tài khoản hoặc provenance công thức vào nội dung xuất.

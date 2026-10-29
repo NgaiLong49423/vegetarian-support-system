@@ -369,19 +369,6 @@ class GeminiAiClientTest {
         assertThat(requests).hasValue(2);
     }
 
-    @Test
-    void draftUsesStructuredGeminiGenerationAndCarriesProviderUsage() throws IOException {
-        startServer(200, "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"{}\"}],\"role\":\"model\"},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":20,\"totalTokenCount\":30}}");
-        try (var client = configuredClient()) {
-            var result = client.generateRecipeDraft("request-sentinel", List.of(11L));
-            assertThat(result.json()).isEqualTo("{}");
-            assertThat(result.promptTokens()).isEqualTo(10);
-            assertThat(result.responseTokens()).isEqualTo(20);
-            assertThat(result.totalTokens()).isEqualTo(30);
-            assertThat(requestedPath.get()).endsWith("/models/gemini-3.8-flash:generateContent");
-        }
-    }
-
     private GeminiAiClient longTransportTimeoutClient() {
         return new GeminiAiClient("test-key", HttpOptions.builder()
                 .baseUrl("http://127.0.0.1:" + server.getAddress().getPort()).timeout(60_000).build());

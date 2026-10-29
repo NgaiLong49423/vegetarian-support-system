@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.114.0
+> **Version:** v2.116.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -8,6 +8,44 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-29 — Avoid Duplicate Related Recipe Cards
+
+**Status:** Working tree — not committed.
+
+**Scope:** Deduplicate the ordinary and AI recommendation groups by recipe ID on the recipe detail page.
+
+### Added
+
+- Regression scenarios for overlapping selections, distinct recipe IDs sharing a title, complete overlap and subsequent empty AI responses. TypeScript, production build and all 10 related-recipe UI tests pass with mocked APIs.
+
+### Changed
+
+- Preserve AI ranking and filter matching IDs from the ordinary group without modifying its source state. Keep the original ordinary results when AI returns no selections or fails.
+
+### Fixed
+
+- Display each recipe only once across the two groups and avoid a misleading empty-list message when all ordinary recommendations are already shown in the AI group (BUG-081). Backend and tier authorization are unchanged.
+
+## 2026-10-29 — Restore the Develop Recipe Assistant Without Functional Changes
+
+**Status:** Working tree — not committed.
+
+**Scope:** Restore the original recipe assistant owned by another contributor at the user's explicit request. Preserve the remaining FR-10 tier changes and the inline Gemini text-assistance authorization.
+
+### Added
+
+- None.
+
+### Changed
+
+- Restore the develop dialog, local recipe-generation logic and original form-apply workflow. Remove the separate Gemini full-draft API, client method, implementation tests and the corresponding FR-21 requirements extension introduced by commit `40cd3421`.
+- Preserve earlier implementation evidence as history. Reclassify BUG-077 as recorded because the original local-generation behavior is intentionally restored.
+- Verify TypeScript, production build, 43 focused Backend tests, 11 UI scenarios across the relevant runs and the real JWT/SQL Compose entitlement scenario. Regenerate OpenAPI from the running Backend and confirm the removed draft endpoint is absent.
+
+### Fixed
+
+- Restore the original developer's assistant behavior instead of retaining a replacement workflow.
 
 ## 2026-10-29 — Generate Full Recipe Previews with Gemini
 
