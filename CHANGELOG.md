@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-30 — Restore Meal Plan Focus After Moving an Entry
 
-**Status:** Working tree — uncommitted changes.
+**Status:** Committed — `4b143d74`.
 
 **Scope:** Keep keyboard focus in a usable location when a meal-plan dialog closes after its trigger becomes hidden.
 
