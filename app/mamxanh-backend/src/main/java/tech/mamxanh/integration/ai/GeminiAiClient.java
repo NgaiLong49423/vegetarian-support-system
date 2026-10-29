@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,14 +32,17 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(GeminiAiClient.class);
     // Reserve application overhead within the NFR-18 ten-second provider budget.
     private static final int REQUEST_TIMEOUT_MS = 9_000;
+    private static final int MIN_RETRY_BUDGET_MS = 2_000;
+    // Confirmed model in TECHNOLOGY-STACK.md; shared by all account tiers.
     private static final String MODEL = "gemini-3.8-flash";
+    static final int DEFAULT_TIMEOUT_MILLIS = REQUEST_TIMEOUT_MS;
     private final Client client;
     private final ExecutorService requests = Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("gemini-request-", 0).factory());
 
     @Autowired
     public GeminiAiClient(@Value("${GEMINI_API_KEY:}") String apiKey) {
-        this(apiKey, HttpOptions.builder().build());
+        this(apiKey, HttpOptions.builder().timeout(DEFAULT_TIMEOUT_MILLIS).build());
     }
 
     GeminiAiClient(String apiKey, HttpOptions httpOptions) {
@@ -46,7 +50,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .apiKey(apiKey.strip())
                 .httpOptions(httpOptions.toBuilder()
                         .timeout(Math.min(httpOptions.timeout().orElse(REQUEST_TIMEOUT_MS), REQUEST_TIMEOUT_MS))
-                        // Retries can back off after cancellation; one attempt bounds the whole call.
+                        // The outer application deadline owns retries; disable independent SDK backoff.
                         .retryOptions(HttpRetryOptions.builder().attempts(1).build()).build())
                 .build();
     }
@@ -72,7 +76,7 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
                 .responseMimeType("application/json")
                 .responseSchema(schema)
                 .candidateCount(1)
-                .maxOutputTokens(2048)
+                .maxOutputTokens(8192)
                 .build();
         return request("RECIPE_TEXT", "Gemini request failed", () -> {
             var response = client.models.generateContent(MODEL,
@@ -195,10 +199,11 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
         try {
             if (client == null) throw new AiProviderException("Gemini is not configured", null,
                     FailureKind.CONFIGURATION, null);
-            // Bound SDK preparation, HTTP and response processing together, including cold calls.
-            var pending = requests.submit(action::get);
+            // Both attempts and their backoff share one deadline; SDK retries remain disabled.
+            long deadline = started + TimeUnit.MILLISECONDS.toNanos(REQUEST_TIMEOUT_MS);
+            var pending = requests.submit(() -> attemptWithBoundedRetry(operation, action, deadline));
             try {
-                return pending.get(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                return pending.get(Math.max(1, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
             } catch (TimeoutException failure) {
                 pending.cancel(true);
                 throw new AiProviderException(failureMessage, null, FailureKind.TIMEOUT, null);
@@ -218,6 +223,35 @@ public class GeminiAiClient implements AiClient, AutoCloseable {
             LOG.warn("Gemini request failed operation={} model={} category={} httpStatus={} elapsedMs={}",
                     operation, MODEL, mapped.kind(), mapped.httpStatus(), (System.nanoTime() - started) / 1_000_000);
             throw mapped;
+        }
+    }
+
+    private <T> T attemptWithBoundedRetry(String operation, Supplier<T> action, long deadline) {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return action.get();
+            } catch (RuntimeException failure) {
+                Integer status = httpStatus(failure);
+                long delayMillis = 1_000 + ThreadLocalRandom.current().nextLong(251);
+                boolean retryable = status != null && (status == 502 || status == 503 || status == 504);
+                // Leave at least two seconds for a useful second attempt. Never retry quota/validation errors.
+                if (attempt >= 2 || !retryable || Thread.currentThread().isInterrupted()
+                        || deadline - System.nanoTime() <= TimeUnit.MILLISECONDS.toNanos(delayMillis + MIN_RETRY_BUDGET_MS)) {
+                    throw failure;
+                }
+                LOG.info("Gemini transient failure; retrying operation={} model={} httpStatus={} attempt=2",
+                        operation, MODEL, status);
+                try {
+                    Thread.sleep(delayMillis);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new AiProviderException("Gemini retry interrupted", null, FailureKind.TRANSPORT, null);
+                }
+                if (Thread.currentThread().isInterrupted()
+                        || deadline - System.nanoTime() < TimeUnit.MILLISECONDS.toNanos(MIN_RETRY_BUDGET_MS)) {
+                    throw failure;
+                }
+            }
         }
     }
 

@@ -62,6 +62,7 @@ class SubscriptionServiceTest {
     private PayOsClient payOsClient;
 
     @Mock private PaymentSettlementService settlement;
+    @Mock private PaymentOrderService orders;
 
     private Clock clock;
     private SubscriptionService subscriptionService;
@@ -76,7 +77,7 @@ class SubscriptionServiceTest {
                 paymentTransactionRepository,
                 userRepository,
                 payOsClient,
-                clock, settlement
+                clock, settlement, orders
         );
     }
 
@@ -198,7 +199,7 @@ class SubscriptionServiceTest {
         assertThat(response.tier()).isEqualTo("PLUS");
         assertThat(response.checkoutUrl()).isEqualTo("https://pay.payos.vn/123");
         var captured = ArgumentCaptor.forClass(PaymentTransactionEntity.class);
-        verify(paymentTransactionRepository).save(captured.capture());
+        verify(orders).create(captured.capture());
         assertThat(captured.getValue().getCreatedAt()).isEqualTo(LocalDateTime.ofInstant(FIXED_INSTANT, ZoneOffset.UTC));
     }
 
@@ -224,7 +225,8 @@ class SubscriptionServiceTest {
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Không thể khởi tạo liên kết thanh toán payOS");
 
-        verify(paymentTransactionRepository, org.mockito.Mockito.atLeastOnce()).save(any(PaymentTransactionEntity.class));
+        verify(orders).create(any(PaymentTransactionEntity.class));
+        verify(orders).markFailed(anyString());
     }
 
     @Test

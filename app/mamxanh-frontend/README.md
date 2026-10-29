@@ -1,19 +1,34 @@
 > **Document:** Frontend Workspace Guide (Mâm Xanh)  
 > **File:** `app/mamxanh-frontend/README.md`  
-> **Version:** v1.44.0
+> **Version:** v1.51.0
 > **Created:** 2026-09-18  
-> **Last Updated:** 2026-10-23
+> **Last Updated:** 2026-10-29
 > **Status:** Active  
 
 # Mâm Xanh Frontend
+
+### Giám sát giao dịch gói tài khoản
+
+- `/admin/giao-dich` đọc giao dịch thật từ Backend cho Admin, thay phần minh họa cũ. Tìm theo mã `TX-<id>`, mã đơn payOS, tên/email; kết hợp gói, trạng thái và ngày tạo; hỗ trợ phân trang, làm mới, trạng thái tải/lỗi/thử lại/rỗng và chi tiết bằng hộp thoại hỗ trợ bàn phím.
+- Các thẻ thống kê tính trên toàn bộ kết quả theo bộ lọc đã áp dụng, không chỉ trang đang xem. Chỉ PAID được tính doanh thu; giữ riêng PENDING, FAILED và CANCELLED. Thời gian hiển thị theo Việt Nam. Không hiển thị trạng thái cổng payOS hoặc tỷ lệ thành công cố định.
+- Xuất CSV lấy cùng bộ lọc đã áp dụng, tối đa 10.000 dòng; bộ lọc đang nhập chưa áp dụng không ảnh hưởng file. Đây là dữ liệu local phục vụ đối soát, không phải hóa đơn hoặc xác nhận từ payOS. Chi tiết hiển thị chu kỳ của lần mua, không suy ra quyền hiện tại; gói lịch sử không xác định được hiện rõ thay vì gán Plus.
+- Test UI có mock trong `admin-transactions.spec.ts`; test stack thật trong `admin-transactions-real-stack.spec.ts`. Phần quản lý người dùng tại `/admin/nguoi-dung` vẫn là bản minh họa riêng.
 
 ### Mức sử dụng AI — FR-11 / Issue #17
 
 - Admin mở menu **Mức sử dụng AI** hoặc `/admin/ai-telemetry`, chọn ngày, chu kỳ ngày/tuần/tháng và tính năng để xem token và chi phí quy đổi Standard trả phí (USD). Dữ liệu lấy từ Backend; không có dữ liệu thống kê giả trong trang sản phẩm.
 - Có trạng thái tải, lỗi/thử lại, dữ liệu rỗng và cảnh báo metadata/chi phí chưa đầy đủ. Báo cáo chỉ dùng dữ liệu giữ tối đa 90 ngày, không hiển thị prompt/answer hoặc thông tin tài khoản; tuần bắt đầu Thứ Hai theo múi giờ Việt Nam.
-- Guest/Member bị chặn tại giao diện và Backend. Kiểm thử Frontend: `ai-telemetry.spec.ts`; kiểm thử browser–HTTP–SQL thật: `ai-telemetry-real-stack.spec.ts` qua root Compose, dùng tài khoản và metadata tổng hợp kiểm thử, không chứng minh lời gọi Gemini live.
+- Guest/Member bị chặn tại giao diện và Backend. Kiểm thử Frontend: `ai-telemetry.spec.ts`; kiểm thử browser–HTTP–SQL thật: `ai-telemetry-real-stack.spec.ts` qua root Compose. Ca mặc định dùng metadata tổng hợp; ca opt-in `MAMXANH_E2E_LIVE_GEMINI=1` gọi Gemini thật và cố ý dừng SQL/kill Backend để kiểm tra recovery, chỉ chạy trên stack local và tắt trace JWT.
 - Bảng telemetry mới đang là thay đổi thử nghiệm chờ biểu quyết nhóm; chưa xác nhận FR-11 đã nghiệm thu trên main.
 
+
+### Chatbot và phân quyền AI — FR-10 / FR-51
+
+Chatbot gửi thêm ID của tối đa bốn thẻ công thức trong mỗi lượt ASSISTANT thuộc tám lượt lịch sử gần nhất để Backend xử lý “món khác”; dữ liệu chỉ ở phiên giao diện, không lưu lịch sử tài khoản. Khi Backend từ chối chức năng nâng cao, chat hiển thị đường dẫn đăng nhập hoặc xem gói và không mời retry nguyên yêu cầu thiếu quyền. Khi đủ quyền, liên kết workflow chỉ được hiển thị cho hai đường dẫn nội bộ đã biết: `/ke-hoach?view=for-you` và `/dang-cong-thuc`.
+
+Chatbot hiện dùng chung cho Guest và Member theo FR-10: Guest gửi định danh session cookie hiện có qua body, có hướng dẫn đăng ký và xử lý lỗi 429; không đọc hồ sơ tài khoản. Đổi tài khoản hoặc ngữ cảnh xóa hội thoại trên giao diện và bỏ qua phản hồi cũ đang chờ. Các luồng AI thiếu quyền dẫn tới `/goi-ai`, hướng dẫn Plus hoặc Pro theo tính năng; việc kiểm tra quyền và thời hạn gói thuộc Backend. Chi tiết giao tiếp và giới hạn bộ đếm Guest nằm trong [API Guide](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-51). Đây là mô tả source, không phải xác nhận nghiệm thu Issue trên main.
+
+Modal “Soạn với Trợ lý AI” trên trang tạo công thức dùng cùng API FR-21 với các nút viết mô tả/hướng dẫn trong form. Tác giả nhập thông tin món và chọn nguyên liệu trước; Backend kiểm tra gói Plus/Pro. Kết quả điền vào ô có thể chỉnh sửa, giữ nguyên nguyên liệu/định lượng và chỉ được đăng khi tác giả xuất bản. Modal không sinh công thức hoặc tính calo bằng dữ liệu mẫu tại trình duyệt.
 ### Sao chép và xuất TXT đi chợ — FR-55 / Issue #55
 
 - Toolbar `/di-cho` sao chép hoặc tải toàn bộ danh sách đang chọn, kể cả những mục bị ẩn bởi bộ lọc; giữ nhóm, số lượng, đơn vị và ký hiệu `[ ]`/`[x]` đã lưu. Không đưa thông tin tài khoản hoặc provenance công thức vào nội dung xuất.
@@ -25,12 +40,10 @@
 
 - `/di-cho` đọc và lưu checklist thật theo tài khoản; Guest cần đăng nhập, Administrator không có thao tác cá nhân. Member có thể đổi tên hoặc xóa mọi danh sách của mình; xóa danh sách yêu cầu xác nhận, xóa checklist cùng nguồn đóng góp nhưng giữ Lịch ăn và công thức nguồn. Thêm mặt hàng thủ công, sửa lượng/đơn vị, tick/bỏ tick, xóa từng mục hoặc xóa mục đã mua đều dùng API; lỗi giữ dữ liệu để thử lại.
 - Member có thể tạo danh sách rỗng bằng tên tự chọn ngay tại `/di-cho`, không cần Lịch ăn hoặc công thức; checklist mở sẵn để thêm mặt hàng thủ công. Loại `MANUAL` được phân biệt với danh sách Meal Plan và danh sách công thức `PERSONAL`.
-- Từ Lịch ăn có thể tạo theo cả tuần hoặc các ngày chọn; nhãn danh sách thể hiện ngày thực đơn. Từ menu dấu ba chấm trên từng thẻ ở Khám phá/Đã lưu, Member chọn một danh sách của mình (kể cả danh sách từ Lịch ăn) hoặc tạo danh sách có tên mới ngay trong hộp thoại; có thể chỉnh khẩu phần 1–50. Guest được yêu cầu đăng nhập, Admin không có thao tác. Trang chi tiết không có luồng thêm đi chợ riêng.
+- Từ Lịch ăn có thể tạo theo cả tuần hoặc các ngày chọn; nhãn danh sách thể hiện ngày thực đơn. Từ menu dấu ba chấm trên từng thẻ ở Khám phá/Đã lưu hoặc nút trên trang chi tiết công thức, Member chọn một danh sách của mình (kể cả danh sách từ Lịch ăn) hoặc tạo danh sách có tên mới ngay trong hộp thoại; có thể chọn/bỏ chọn từng nguyên liệu, thêm mặt hàng thủ công và chỉnh khẩu phần 1–50. Thêm thành công ngay trên trang chi tiết giữ Member ở lại bài viết và cho liên kết mở danh sách; từ menu thẻ, hộp thoại vẫn mở trang danh sách sau khi thêm. Guest được yêu cầu đăng nhập, Admin không có thao tác.
 - Nguồn công thức giữ lượng/đơn vị lúc thêm, hiển thị nội dung hiện hành hoặc unavailable khi bài không còn công khai. Thêm lại công thức không cộng trùng. Hành vi theo AC-53.6 và thiết kế nguồn đã chốt trong #90.
 - Dòng nguyên liệu trong checklist dùng `imageUrl` từ danh mục nguyên liệu để hiển thị ảnh minh họa; nguyên liệu thủ công, chưa có ảnh hoặc ảnh tải lỗi hiển thị trạng thái “Chưa có ảnh”.
 - Bản dựng FR-53 không phụ thuộc component export chưa bàn giao của FR-55; clipboard/TXT sẽ được nối ở PR riêng. Backend FR-53 phụ thuộc engine FR-54 / PR #150 chưa merge.
-
-Chatbot hiện dùng chung cho Guest và Member theo FR-10: Guest gửi định danh session cookie hiện có qua body, có hướng dẫn đăng ký và xử lý lỗi 429; không đọc hồ sơ tài khoản. Đổi tài khoản hoặc ngữ cảnh xóa hội thoại trên giao diện và bỏ qua phản hồi cũ đang chờ. Các luồng AI thiếu quyền dẫn tới `/goi-ai`, hướng dẫn Plus hoặc Pro theo tính năng; việc kiểm tra quyền và thời hạn gói thuộc Backend. Chi tiết giao tiếp và giới hạn bộ đếm Guest nằm trong [API Guide](../../docs/api/API.md#16-chatbot-hỏi-đáp-theo-ngữ-cảnh--fr-51). Đây là mô tả source, không phải xác nhận nghiệm thu Issue trên main.
 
 ### Danh bạ Chuyên gia và chọn nguyên liệu — FR-61 / FR-62
 
@@ -48,6 +61,11 @@ Thư mục mã nguồn giao diện ứng dụng Mâm Xanh được xây dựng b
 
 Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy và gỡ lỗi trực tiếp trên **IntelliJ IDEA** (hoặc WebStorm/VS Code).
 
+### Ảnh công thức — FR-14 / fix #158
+
+- Chỉ tính ảnh đã nhận URL HTTPS từ upload thành công vào số ảnh đã tải. Khi lỗi, ảnh xem trước có nhãn **Chưa tải lên**, thông báo lỗi và hướng dẫn xóa/chọn lại. Form chặn xuất bản khi còn ảnh lỗi hoặc đang upload.
+- Kiểm thử UI có mock: `npx playwright test tests/e2e/recipe-media.spec.ts`. Kiểm thử Azure thật là opt-in: trên stack root Compose đã cấu hình Azure, đặt `MAMXANH_E2E_LIVE_AZURE=1` và `MAMXANX_E2E_COMPOSE_PROJECT` đúng project rồi chạy `npm run test:e2e:integration -- tests/integration/recipe-media-real-stack.spec.ts --workers=1`. Test dùng tài khoản/nguyên liệu fixture, tắt trace để không lưu phiên đăng nhập; xóa ảnh Azure và công thức test trong cleanup.
+
 ### Thẻ công thức và thao tác lịch ăn — FR-17 / Issue #23
 
 - Thẻ công thức công khai hiển thị ảnh bìa hoặc ảnh mặc định theo loại ăn chay, thông tin tác giả, tỷ lệ Like, thời gian và lượt xem. Nút ba chấm mở thao tác thêm công thức vào lịch; nút lưu nhanh vẫn hoạt động độc lập.
@@ -59,7 +77,7 @@ Dự án đã được cấu hình tối ưu để mở, chỉnh sửa, chạy v
 
 - Trang chi tiết API `/cong-thuc/id/:recipeId` gọi API phản hồi cá nhân để tải lựa chọn hiện tại; dùng PUT để thêm/đổi Like hoặc Dislike và DELETE khi bấm lại nút đã chọn. Số lượt, thanh tỷ lệ và phần trăm được cập nhật từ response thành công của Backend. Lỗi ghi giữ nguyên dữ liệu, quá trình tải/ghi khóa thao tác để tránh gửi trùng.
 - Guest xem thống kê công khai và được yêu cầu đăng nhập khi bình chọn; tác giả và Admin không được thao tác. Backend vẫn quyết định quyền cuối cùng. Lỗi đọc lựa chọn có nút tải lại; bài không còn công khai hoặc Backend từ chối quyền sẽ chặn thao tác tiếp.
-- Thẻ công thức API trên Trang chủ và Khám phá hiển thị huy hiệu ở góc trên trái ảnh: `Mới` khi tỷ lệ là `null`, `0%` khi toàn Dislike, số nguyên do Backend trả khi có bình chọn. Quay lại Khám phá hoặc tải lại trang sẽ lấy thống kê mới.
+- Thẻ công thức API trên Trang chủ và Khám phá không phủ nhãn trạng thái hoặc tỷ lệ Like lên ảnh. Trang chi tiết vẫn giữ thanh tỷ lệ có nhãn truy cập và số lượt Like/Dislike; luồng bình chọn không đổi.
 - Kiểm thử Playwright của tính năng sử dụng API mô phỏng để xác minh hành vi trình duyệt; chưa thay thế bằng chứng tích hợp Frontend–Backend–SQL Server trong Compose. Các route công thức demo dùng slug vẫn là luồng minh họa riêng.
 - Xác minh giai đoạn 4 (11/10/2026): TypeScript và production build pass; 27 kiểm thử trình duyệt/hồi quy pass và lượt xác nhận cuối 14 kiểm thử pass (9 bình chọn, 5 khám phá công khai). Đã mở luồng Guest với Backend/SQL local thật, kiểm tra yêu cầu đăng nhập không ghi bình chọn và xem ảnh desktop/mobile. Chưa xác minh thao tác ghi của Member qua trình duyệt với Backend thật, Compose hoặc toàn bộ coverage gate.
 - Xác minh giai đoạn 5 (11/10/2026): 13 kiểm tra trình duyệt–HTTP–SQL local thật pass, gồm Member thêm/đổi/hủy, lưu lựa chọn qua tải lại, huy hiệu 91% và 0%, Guest không ghi dữ liệu, tác giả/Admin bị chặn, 401 và hết phiên client, bài bị ẩn/xóa. Các context dùng token do Backend cấp thật; fixture riêng đã được dọn. Bằng chứng này bổ sung cho UI mock, không thay cổng tích hợp Compose khi Docker chưa khả dụng.
@@ -115,13 +133,17 @@ Bản demo Vercel hiện tại: [Mâm Xanh trên Vercel](https://mamxanh-fronten
 - **Quên và đặt lại mật khẩu đã gọi Backend thật (Issue #9):** `/quen-mat-khau` gửi `POST /auth/password-resets` và hiển thị nguyên văn thông báo trung tính của Backend. Liên kết trong email mở `/dat-lai-mat-khau?token=...`; Frontend giữ token trong bộ nhớ, xóa nó khỏi thanh địa chỉ, kiểm tra quy tắc mật khẩu rồi gửi `POST /auth/password-resets/confirm`. Liên kết hỏng, đã dùng hoặc hết hạn (`PASSWORD_RESET_TOKEN_INVALID`) ẩn biểu mẫu và dẫn tới yêu cầu liên kết mới; mật khẩu trùng mật khẩu hiện tại (`NEW_PASSWORD_SAME_AS_CURRENT`) báo ngay dưới ô mật khẩu.
 - Không còn chế độ đổi vai trò/tài khoản giả trên Frontend. Dùng tài khoản local do Backend seed tạo sẵn; danh sách email và cách đặt chung mật khẩu nằm trong [Backend Workspace Guide](../mamxanh-backend/README.md#tài-khoản-demo-local). Mỗi vai trò phải đăng nhập bằng tài khoản riêng; quyền được Backend xác thực.
 - Các luồng Backend hiện hiển thị từ API/SQL thật: khám phá và chi tiết công thức; tạo/sửa/quản lý công thức; lịch ăn tuần; hồ sơ dinh dưỡng; sở thích/onboarding; nộp và duyệt đơn Chuyên gia; quản lý danh mục Ingredient dinh dưỡng Admin gồm tìm/lọc, xem chi tiết, thêm/sửa nguồn và chỉ tiêu, đổi trạng thái, xem Recipe Post tham chiếu. Trang khám phá gửi từ khóa, bộ lọc loại ăn chay/thể loại/nguyên liệu/tổng thời gian, phân trang và chế độ sắp xếp tới API công khai; tùy chọn chuẩn và nguyên liệu được tải từ Backend, mọi điều kiện lọc kết hợp bằng AND.
+- **So sánh hai công thức (Issue #70):** `/so-sanh?a={recipeId}&b={recipeId}` đối chiếu hai công thức công khai khác nhau: thông tin tổng quan, nguyên liệu (chỉ đặt cùng hàng khi cùng nguyên liệu trong danh mục, giữ nguyên số lượng và đơn vị) và chín chỉ tiêu dinh dưỡng trên một khẩu phần kèm chênh lệch (công thức đầu tiên − công thức thứ hai). Bắt đầu từ nút "So sánh" trên thẻ công thức, trang chi tiết hoặc danh sách đã lưu; nút "Chọn công thức thứ hai" (hoặc "Đổi công thức") mở trang chọn riêng `/so-sanh/chon-mon` dùng chung ô tìm kiếm, bộ lọc, sắp xếp và phân trang với trang Khám phá (`src/components/RecipeSearch.tsx`), loại món đang ở bên còn lại và chọn xong quay về `/so-sanh?a=&b=`. Dữ liệu đọc từ `GET /recipes/{recipeId}` và `GET /recipes/discovery`; công thức thiếu dữ liệu dinh dưỡng hiện "Chưa đủ dữ liệu", không tính chênh lệch. Trang không ghi dữ liệu, không lưu lịch sử và không xuất PDF.
+- **Xử lý báo cáo vi phạm (Issue #33):** `/admin/bao-cao` đọc hàng đợi báo cáo Recipe Post từ `GET /admin/reports` và số lượng từ `GET /admin/reports/status-counts`, lọc theo Chờ xử lý, Đang xem xét, Đã giải quyết. Administrator bấm "Tiếp nhận xem xét" (`POST /admin/reports/{id}/claim`), xem người báo cáo, tác giả và nội dung báo cáo, rồi chọn một trong bốn kết luận (không vi phạm, cảnh cáo tác giả, ẩn bài viết, khóa tài khoản tác giả) với lý do 10–500 ký tự trước khi "Hoàn tất xử lý" (`POST /admin/reports/{id}/resolve`). Thiếu kết luận hoặc lý do thì không gửi request. Báo cáo do Administrator khác giữ hoặc đã giải quyết chỉ xem được. Thời gian hiển thị theo giờ Việt Nam.
+- **Báo cáo công thức (Issue #35):** trang chi tiết thật `/cong-thuc/id/:id` có nút "Báo cáo công thức" trong phần Cảm nhận cộng đồng cho Member không phải tác giả. Hộp thoại gửi một trong sáu lý do và mô tả (bắt buộc 10–500 ký tự với lý do Khác) tới `POST /recipes/{recipeId}/reports`. Khi đã có báo cáo đang mở (`409 REPORT_ALREADY_OPEN`), hộp thoại đọc `GET /me/reports/{reportId}`, hiện lý do, mô tả gốc, các lần bổ sung theo giờ Việt Nam và cho thêm thông tin qua `POST /me/reports/{reportId}/supplements`. Báo cáo lại sau khi đã giải quyết hiện yêu cầu mô tả điểm mới ngay dưới ô mô tả. Guest được mời đăng nhập, Administrator và tác giả không thấy nút. Trang `/admin/bao-cao` mở ở chế độ "Theo bài viết" (`GET /admin/reports/groups`): mỗi bài một thẻ với số báo cáo theo trạng thái và nút "Xem N báo cáo" để xem từng phản ánh (`GET /admin/reports?recipeId=`); chế độ "Từng báo cáo" (`/admin/bao-cao?xem=bao-cao`) giữ hàng đợi FR-28. Hộp thoại chi tiết hiện các lần bổ sung của người gửi theo giờ Việt Nam (AC-30.4).
+- **Hậu kiểm nội dung (Issue #12):** trang `/admin/bao-cao` (menu "Hậu kiểm nội dung") ở chế độ "Theo bài viết" có ô tìm theo tên bài hoặc tác giả và ô sắp xếp "Báo cáo mới nhất"/"Nhiều báo cáo nhất" (`query`, `sort` của `GET /admin/reports/groups`). Mỗi thẻ bài hiện lý do được báo cáo nhiều nhất kèm số báo cáo có lý do đó (UC-06.1).
 - Lỗi từ API được đọc theo HTTP status và `code` của ProblemDetail ([API Guide](../../docs/api/API.md) mục 4), không phân tích câu chữ trong `detail`.
 
 ### Các chức năng demo khác
 
 Giao diện tài khoản dùng đèn tương tác và vùng biểu mẫu cuộn được khi nội dung cao hơn màn hình. Lịch ăn có hiệu ứng chuyển tháng, điều hướng bằng phím mũi tên và hỗ trợ thiết lập giảm chuyển động của hệ điều hành. Các trang chi tiết công thức vẫn dùng API lượt xem, bình chọn và bình luận sau khi đổi bố cục.
 
-Guest mở `/ke-hoach` hoặc `/di-cho` được mời đăng nhập; bản xem thử local chỉ mở bằng `?demo=true`. Ba module Admin tài khoản/phân quyền, báo cáo và giao dịch có nhãn “Giao diện minh họa”: tìm/lọc, xem chi tiết và thay đổi dữ liệu mẫu chỉ tồn tại trong bộ nhớ, tải lại trang sẽ khôi phục. Các thao tác này chưa ghi Backend và không chứng minh các FR quản trị đã hoàn thành.
+Guest mở `/ke-hoach` hoặc `/di-cho` được mời đăng nhập; bản xem thử local chỉ mở bằng `?demo=true`. Hai module Admin tài khoản/phân quyền và giao dịch có nhãn “Giao diện minh họa”: tìm/lọc, xem chi tiết và thay đổi dữ liệu mẫu chỉ tồn tại trong bộ nhớ, tải lại trang sẽ khôi phục. Các thao tác này chưa ghi Backend và không chứng minh các FR quản trị đã hoàn thành.
 
 | Khu vực | Người dùng có thể thử | Giới hạn hiện tại |
 |---|---|---|
@@ -129,7 +151,7 @@ Guest mở `/ke-hoach` hoặc `/di-cho` được mời đăng nhập; bản xem 
 | Bình luận công thức | Viết, trả lời, sửa và xóa bình luận; tối đa 5 cấp; xóa bình luận cha vẫn giữ trả lời | Guest đọc công khai; Customer/Expert đăng nhập mới được thao tác; Backend lưu bình luận và trả lời |
 | Khẩu phần tại công thức | Chọn 1–50 phần; nguyên liệu = lượng gốc / số phần gốc × số phần muốn nấu; từ trang công thức mở hộp thoại thêm nguyên liệu vào Shopping List và điều chỉnh riêng khẩu phần cần mua | Khi xác nhận, Backend scale nguyên liệu theo khẩu phần đã chọn rồi tổng hợp vào Shopping List cá nhân; công thức đã được thêm không bị cộng trùng |
 | Kế hoạch bữa ăn Guest | Đăng nhập để lưu lịch; `?demo=true` mở bản mẫu với 0,5–10 phần cho từng món, bước 0,5 | Bản mẫu chỉ cập nhật UI; Member dùng API lịch tuần, thêm món với khẩu phần mặc định 1 |
-| Báo cáo công thức | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Nút chỉ kiểm tra biểu mẫu, chưa gửi cho quản trị viên |
+| Báo cáo công thức (trang mẫu `/cong-thuc/:slug`) | Mở nút Báo cáo, chọn 1 trong 6 lý do; lý do Khác cần mô tả 10–500 ký tự | Chỉ kiểm tra biểu mẫu trên dữ liệu mẫu; trang chi tiết thật `/cong-thuc/id/:id` gửi báo cáo cho quản trị viên |
 | Dinh dưỡng công thức prototype tại `/cong-thuc/:slug` | Đọc số liệu minh họa cho **1 khẩu phần** | 8 chỉ tiêu tĩnh, xem BUG-002; trang thật `/cong-thuc/id/:id` dùng 9 chỉ tiêu và trạng thái dữ liệu từ Backend |
 | Theo dõi dinh dưỡng (`/dinh-duong`) | Đọc lịch ăn Member qua `GET /meal-plans/{weekStartDate}/nutrition`; đổi ngày/tuần cập nhật số liệu; xuất báo cáo PDF theo đúng phạm vi qua `/nutrition/report` | Cần đăng nhập Member và xác nhận phạm vi hỗ trợ dinh dưỡng; số liệu là khẩu phần dự kiến. Danh sách mua sắm, cộng đồng/bình luận/báo cáo, gói AI và giao dịch vẫn là các màn hình minh họa nếu không được liệt kê riêng là đã nối API |
 

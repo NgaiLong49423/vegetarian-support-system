@@ -59,6 +59,7 @@ export function RecipeDetail() {
   return <MockRecipeDetail />;
 }
 
+
 function MockRecipeDetail() {
   const { slug } = useParams();
   const { isAuthenticated } = useAuth();
@@ -209,7 +210,7 @@ function MockRecipeDetail() {
         </nav>
 
         {/* header */}
-        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <Card className="mb-6 flex flex-col gap-4 p-5 sm:p-7 shadow-xs lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <Badge tone="leaf" soft={false}>
@@ -251,7 +252,7 @@ function MockRecipeDetail() {
 
           <div className="flex flex-wrap items-center gap-2">
             <Link
-                to={`/so-sanh?left=${recipe.slug}`}
+                to="/so-sanh"
                 className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-paper px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-300"
                 title="So sánh với công thức khác"
             >
@@ -286,7 +287,7 @@ function MockRecipeDetail() {
               <CalendarPlus className="h-4 w-4" /> Thêm vào kế hoạch
             </Button>
           </div>
-        </div>
+        </Card>
 
         {/* stat row */}
         <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -414,8 +415,8 @@ function MockRecipeDetail() {
                   className="w-20 rounded-xl border border-brand-200 bg-paper px-3 py-2 text-center outline-none focus:border-brand-500"
               />
             </label>
-            <Button onClick={() => showToast('Đã thêm nguyên liệu vào Danh sách đi chợ!')}>
-              <ShoppingBasket className="h-4 w-4" /> Thêm tất cả vào Danh sách đi chợ
+            <Button onClick={() => showToast('Đã thêm nguyên liệu vào Danh sách mua sắm!')}>
+              <ShoppingBasket className="h-4 w-4" /> Thêm tất cả vào Danh sách mua sắm
             </Button>
           </div>
           <div className="grid gap-x-8 gap-y-2 sm:grid-cols-2">

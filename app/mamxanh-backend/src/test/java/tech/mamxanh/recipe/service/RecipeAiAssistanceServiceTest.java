@@ -55,20 +55,40 @@ class RecipeAiAssistanceServiceTest {
 
     @Test
     void generatedStepsUseOnlyAllowedIdsAndResolveNamesFromCatalog() {
-        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("""
-                {"description":"Món đậu phụ cà chua thanh vị.","steps":[
-                  {"text":"Đun nóng chảo rồi đảo đều đến khi mềm.","ingredientIds":[1,2]}]}
-                """, 150, 300, 450));
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(generatedInstructions(
+                "Đun nóng chảo rồi đảo đều đến khi mềm.", List.of(1L, 2L)), 150, 300, 450));
 
         var result = service.generate(request(ContentType.INSTRUCTIONS));
 
-        assertThat(result.content()).isEqualTo("1. Đun nóng chảo rồi đảo đều đến khi mềm. (Đậu phụ, Cà chua)");
+        assertThat(result.content()).startsWith("1. Đun nóng chảo rồi đảo đều đến khi mềm. (Đậu phụ, Cà chua)\n");
+        assertThat(result.content().lines()).hasSize(6);
         verify(entitlementService).requirePlusOrPro(7L);
         org.mockito.ArgumentCaptor<tech.mamxanh.integration.ai.AiUsageEvent> telemetry =
                 org.mockito.ArgumentCaptor.forClass(tech.mamxanh.integration.ai.AiUsageEvent.class);
         verify(events).publishEvent(telemetry.capture());
         assertThat(telemetry.getValue().feature()).isEqualTo("FR-21");
         assertThat(telemetry.getValue().promptTokens()).isEqualTo(150);
+    }
+
+    @Test
+    void instructionsWithSelectedSoySauceDoNotIntroduceUnselectedWater() {
+        var soySauce = ingredient(3L, "Nước tương");
+        when(ingredientCatalog.findActiveIngredientsByIds(List.of(1L, 2L, 3L)))
+                .thenReturn(List.of(TOFU, TOMATO, soySauce));
+        when(ingredientCatalog.findActiveIngredients(""))
+                .thenReturn(List.of(TOFU, TOMATO, soySauce, ingredient(4L, "Nước")));
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(generatedInstructions(
+                "Cho nước tương vào nồi, kho đến khi nước sốt sánh lại.", List.of(1L, 2L, 3L)), 150, 300, 450));
+        var withSoySauce = new RecipeAiAssistanceRequest(ContentType.INSTRUCTIONS, "Đậu phụ kho cà chua",
+                "BRAISED", "VEGAN", 2, List.of(
+                        new RecipeAiAssistanceRequest.Ingredient(1L, 1, new BigDecimal("300")),
+                        new RecipeAiAssistanceRequest.Ingredient(2L, 1, new BigDecimal("200")),
+                        new RecipeAiAssistanceRequest.Ingredient(3L, 1, new BigDecimal("15"))));
+
+        var result = service.generate(withSoySauce);
+
+        assertThat(result.content()).contains("nước sốt sánh lại.", "Nước tương");
+        assertThat(result.content().lines()).hasSize(6);
     }
 
     @Test
@@ -84,9 +104,8 @@ class RecipeAiAssistanceServiceTest {
 
     @Test
     void rejectsUnselectedCatalogIngredientMentionedInGeneratedText() {
-        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("""
-                {"description":"Nấm được nấu cùng món.","steps":[{"text":"Thêm nấm và đảo đều.","ingredientIds":[1]}]}
-                """, 150, 300, 450));
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult(generatedInstructions(
+                "Thêm nấm và đảo đều.", List.of(1L)), 150, 300, 450));
         when(ingredientCatalog.findActiveIngredients("")).thenReturn(List.of(TOFU, TOMATO, ingredient(3L, "Nấm")));
 
         assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
@@ -143,6 +162,15 @@ class RecipeAiAssistanceServiceTest {
     }
 
     @Test
+    void incompleteProviderOutputRemainsAnInvalidResponseInsteadOfAnOutage() {
+        when(aiClient.generateRecipeContent(anyString(), anyList()))
+                .thenThrow(AiProviderException.invalidResponse("private incomplete output"));
+        assertThatThrownBy(() -> service.generate(request(ContentType.DESCRIPTION)))
+                .isInstanceOf(AppException.class)
+                .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+    }
+
+    @Test
     void rejectsMalformedProviderJson() {
         when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("not-json", 150, 300, 450));
 
@@ -157,8 +185,8 @@ class RecipeAiAssistanceServiceTest {
         assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
                 .isInstanceOf(AppException.class);
 
-        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("{\"description\":\"Ok\",\"steps\":["
-                + "{\"text\":\"" + "x".repeat(5000) + "\",\"ingredientIds\":[]}]}", 150, 300, 450));
+        when(aiClient.generateRecipeContent(anyString(), anyList()))
+                .thenReturn(new AiClient.RecommendationResult(generatedInstructions("x".repeat(5000), List.of()), 150, 300, 450));
         assertThatThrownBy(() -> service.generate(request(ContentType.INSTRUCTIONS)))
                 .isInstanceOf(AppException.class)
                 .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
@@ -172,6 +200,15 @@ class RecipeAiAssistanceServiceTest {
                 .isInstanceOf(AppException.class)
                 .extracting(error -> ((AppException) error).errorCode()).isEqualTo(ErrorCode.RECIPE_DATA_INVALID);
         verify(aiClient, never()).generateRecipeContent(anyString(), anyList());
+    }
+
+    private static String generatedInstructions(String firstStep, List<Long> ids) {
+        List<String> stages = List.of(firstStep, "Rửa sạch rồi cắt thành miếng vừa ăn.",
+                "Làm nóng nồi trên bếp.", "Cho vào nồi và đảo nhẹ tay.",
+                "Nấu đến khi mềm và phần sốt sánh lại.", "Tắt bếp rồi bày ra đĩa.");
+        return new JsonMapper().writeValueAsString(java.util.Map.of(
+                "description", "Món đậu phụ cà chua thanh vị.",
+                "steps", stages.stream().map(text -> java.util.Map.of("text", text, "ingredientIds", ids)).toList()));
     }
 
     private static RecipeAiAssistanceRequest request(ContentType type) {

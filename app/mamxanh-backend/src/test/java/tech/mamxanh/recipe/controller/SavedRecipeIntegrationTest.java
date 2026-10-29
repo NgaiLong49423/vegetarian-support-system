@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,11 +33,7 @@ class SavedRecipeIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void prepareFixtures() {
-        jdbcTemplate.update("DELETE FROM [SAVED_RECIPE] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)",
-                EMAIL_PREFIX + "%@test.local");
-        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)",
-                EMAIL_PREFIX + "%@test.local");
-        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE ?", EMAIL_PREFIX + "%@test.local");
+        removeFixtures();
 
         authorId = insertUser("author", "EXPERT", "ACTIVE");
         memberId = insertUser("member", "CUSTOMER", "ACTIVE");
@@ -48,6 +45,15 @@ class SavedRecipeIntegrationTest extends AbstractIntegrationTest {
         unrelatedId = insertRecipe("Rau xào", "Rau theo mùa xào ngon", "PUBLISHED");
         hiddenId = insertRecipe("Canh chua đang ẩn", "Không còn công khai", "HIDDEN");
         deletedId = insertRecipe("Canh chua đã gỡ", "Bài đã xóa", "DELETED");
+    }
+
+    @AfterEach
+    void removeFixtures() {
+        jdbcTemplate.update("DELETE FROM [SAVED_RECIPE] WHERE user_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)",
+                EMAIL_PREFIX + "%@test.local");
+        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)",
+                EMAIL_PREFIX + "%@test.local");
+        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE ?", EMAIL_PREFIX + "%@test.local");
     }
 
     @Test

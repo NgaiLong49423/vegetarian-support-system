@@ -1,25 +1,243 @@
 schema_version: 1
-last_updated: 2026-10-23
+last_updated: 2026-10-29
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
-# BUG-056–059 đã được cấp trong checkpoint FR-10 trên nhánh feature/16-ai-feature-entitlements.
-next_id: 61
+# BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
+next_id: 81
 
 status_definitions:
   RECORDED: Đã ghi nhận lỗi có bằng chứng; chưa ghi nhận điều tra đang diễn ra hoặc kết quả sửa đã xác minh.
   TRACKING: Đang theo dõi hoặc điều tra; chưa xác minh lỗi đã được sửa.
   RESOLVED: Đã ghi cách xử lý và bằng chứng kiểm chứng trong file lỗi.
 
+# Đồng bộ PR #194: mã gốc FR-10 → mã sau tích hợp: BUG-054 → BUG-070, BUG-055 → BUG-071, BUG-056 → BUG-072, BUG-057 → BUG-073, BUG-058 → BUG-074, BUG-059 → BUG-075, BUG-060 → BUG-076, BUG-066 → BUG-077.
+# Bản ghi BUG-060 của FR-11 tại 79394340 trùng lỗi privacy đã hợp nhất dưới BUG-076; giữ BUG-060 của develop.
 bugs:
-  - id: BUG-060
+  - id: BUG-080
+    title: Tạo đơn payOS chưa commit khiến mất dấu giao dịch khi lỗi hoặc webhook đến sớm
+    status: RESOLVED
+    severity: High
+    area: Backend/Subscription/payOS
+    file: .agents/outputs/bugs/BUG-080.md
+    created: 2026-10-29
+    updated: 2026-10-29
+    related_issue: Unknown
+  - id: BUG-078
+    title: Hàng đợi RAM làm mất telemetry khi ghi SQL lỗi hoặc queue đầy
+    status: RESOLVED
+    severity: High
+    area: Backend/AI telemetry
+    file: .agents/outputs/bugs/BUG-078.md
+    created: 2026-10-28
+    updated: 2026-10-28
+    related_issue: 17
+  - id: BUG-079
+    title: Hướng dẫn nấu AI phát sự kiện thiếu token metadata
+    status: RESOLVED
+    severity: High
+    area: Backend/FR-34 và FR-11
+    file: .agents/outputs/bugs/BUG-079.md
+    created: 2026-10-28
+    updated: 2026-10-28
+    related_issue: 17
+  - id: BUG-070
+    title: Tính năng AI yêu cầu Pro hướng dẫn nâng cấp sai gói
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Subscription và Frontend/AI
+    file: .agents/outputs/bugs/BUG-070.md
+    created: 2026-10-22
+    updated: 2026-10-27
+    related_issue: 16
+  - id: BUG-071
+    title: Retry Gemini kéo dài quá timeout và khiến Chatbot thường xuyên báo lỗi
+    status: RESOLVED
+    severity: High
+    area: Backend/AI SDK và Frontend/Chatbot
+    file: .agents/outputs/bugs/BUG-071.md
+    created: 2026-10-22
+    updated: 2026-10-27
+    related_issue: 16
+  - id: BUG-072
+    title: Câu trả lời dài làm câu hỏi tiếp theo của Chatbot bị từ chối
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Recipe chat DTO và Frontend/Chatbot
+    file: .agents/outputs/bugs/BUG-072.md
+    created: 2026-10-22
+    updated: 2026-10-27
+    related_issue: 16
+  - id: BUG-073
+    title: Log lỗi Chatbot làm mất nguyên nhân lỗi Gemini
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI observability
+    file: .agents/outputs/bugs/BUG-073.md
+    created: 2026-10-22
+    updated: 2026-10-27
+    related_issue: 16
+  - id: BUG-074
+    title: API hiển thị gói chưa tới ngày hiệu lực là đang hoạt động
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Subscription và Frontend/Gói AI
+    file: .agents/outputs/bugs/BUG-074.md
+    created: 2026-10-22
+    updated: 2026-10-27
+    related_issue: 16
+  - id: BUG-075
+    title: Phản hồi Chatbot bị cắt trả sai mã lỗi so với hợp đồng API
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI và Recipe chat API
+    file: .agents/outputs/bugs/BUG-075.md
+    created: 2026-10-22
+    updated: 2026-10-27
+    related_issue: 16
+  - id: BUG-076
     title: Log DEBUG của Spring có thể chứa câu hỏi và câu trả lời chatbot
     status: RESOLVED
     severity: Medium
     area: Backend/AI/Privacy/Logging
+    file: .agents/outputs/bugs/BUG-076.md
+    created: 2026-10-23
+    updated: 2026-10-28
+    related_issue: 16, 17
+  - id: BUG-077
+    title: Modal soạn công thức gắn nhãn AI sinh nội dung tại trình duyệt mà không kiểm tra gói
+    status: RESOLVED
+    severity: High
+    area: Frontend/Recipe/AI entitlement
+    file: .agents/outputs/bugs/BUG-077.md
+    created: 2026-10-25
+    updated: 2026-10-27
+    related_issue: 16
+  - id: BUG-069
+    title: Chatbot chuyển yêu cầu lập thực đơn tuần tới AI mà chưa kiểm tra quyền gói
+    status: RESOLVED
+    severity: High
+    area: Backend/AI/Feature Entitlement và ranh giới Chatbot
+    file: .agents/outputs/bugs/BUG-069.md
+    created: 2026-10-27
+    updated: 2026-10-27
+    related_issue: 16
+  - id: BUG-068
+    title: Chatbot bỏ sót yêu cầu tìm món ở câu hỏi tiếp và suy diễn sai khi thiếu danh mục
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Recipe/AI chat và ngữ cảnh hội thoại
+    file: .agents/outputs/bugs/BUG-068.md
+    created: 2026-10-25
+    updated: 2026-10-27
+    related_issue: 16
+  - id: BUG-067
+    title: Adapter AI soạn bài chấp nhận phản hồi chưa hoàn tất của provider
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI/Recipe assistance
+    file: .agents/outputs/bugs/BUG-067.md
+    created: 2026-10-25
+    updated: 2026-10-25
+    related_issue: 16
+  - id: BUG-065
+    title: OpenAPI báo sai mã thành công khi gửi báo cáo công thức
+    status: RECORDED
+    severity: Unknown
+    area: Backend/Recipe Report/OpenAPI
+    file: .agents/outputs/bugs/BUG-065.md
+    created: 2026-10-25
+    updated: 2026-10-25
+    related_issue: 187
+  - id: BUG-066
+    title: Chuyển món trong Lịch ăn đôi khi làm mất focus thay vì trả về tiêu đề "Lịch ăn của bạn"
+    status: RECORDED
+    severity: Low
+    area: Frontend/Lịch ăn
+    file: .agents/outputs/bugs/BUG-066.md
+    created: 2026-10-19
+    updated: 2026-10-19
+    related_issue: 38
+  - id: BUG-064
+    title: Khám phá bỏ qua nguyên liệu được chuyển từ danh mục hoặc trang chi tiết
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Ingredient discovery
+    file: .agents/outputs/bugs/BUG-064.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-063
+    title: Thêm công thức vào đi chợ trả 400 khi một nguyên liệu có nhiều đơn vị
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Shopping recipe selection
+    file: .agents/outputs/bugs/BUG-063.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-062
+    title: Khám phá ẩn huy hiệu tỷ lệ Like và nhãn Mới trên thẻ công thức
+    status: RESOLVED
+    severity: Unknown
+    area: Frontend/Explore/Recipe card
+    file: .agents/outputs/bugs/BUG-062.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-061
+    title: Dependency follow-redirects trong lockfile có cảnh báo bảo mật mức cao
+    status: RECORDED
+    severity: High
+    area: Frontend/Dependencies
+    file: .agents/outputs/bugs/BUG-061.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-060
+    title: Snapshot OpenAPI thiếu API hướng dẫn nấu đã có trên develop
+    status: RECORDED
+    severity: Unknown
+    area: Backend/AI/OpenAPI
     file: .agents/outputs/bugs/BUG-060.md
     created: 2026-10-23
     updated: 2026-10-23
-    related_issue: 17
+    related_issue: Unknown
+  - id: BUG-059
+    title: Thêm nguyên liệu từ 0 giờ đến 7 giờ sáng (giờ Việt Nam) bị từ chối vì ngày tham khảo mặc định "ở tương lai"
+    status: RESOLVED
+    severity: Medium
+    area: Frontend/Backend Quản trị danh mục nguyên liệu
+    file: .agents/outputs/bugs/BUG-059.md
+    created: 2026-10-16
+    updated: 2026-10-26
+    related_issue: 46
+  - id: BUG-058
+    title: Kiểm tra mã lỗi API không tương thích với kiểu TypeScript tùy chọn
+    status: RESOLVED
+    severity: Medium
+    area: Frontend/AI recipe planner
+    file: .agents/outputs/bugs/BUG-058.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-057
+    title: AI bị từ chối do nhận nhầm tên nguyên liệu trong thao tác nấu
+    status: RESOLVED
+    severity: Medium
+    area: Backend/Recipe/AI validation
+    file: .agents/outputs/bugs/BUG-057.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
+  - id: BUG-056
+    title: Gemini cắt JSON hướng dẫn khi hết ngân sách token
+    status: RESOLVED
+    severity: Medium
+    area: Backend/AI/Gemini
+    file: .agents/outputs/bugs/BUG-056.md
+    created: 2026-10-23
+    updated: 2026-10-23
+    related_issue: Unknown
   - id: BUG-055
     title: Seed gia vị vẫn tắt tính dinh dưỡng theo quy tắc nguồn cũ
     status: RESOLVED
@@ -92,6 +310,15 @@ bugs:
     created: 2026-10-17
     updated: '2026-10-20'
     related_issue: 142
+  - id: BUG-047
+    title: Upload ảnh trả thành công bằng URL giả khi Azure chưa được cấu hình
+    status: RESOLVED
+    severity: Unknown
+    area: Backend/Frontend/Docker/Azure Storage
+    file: .agents/outputs/bugs/BUG-047.md
+    created: 2026-10-19
+    updated: 2026-10-19
+    related_issue: 158
   - id: BUG-040
     title: Seed bật hỗ trợ tính dinh dưỡng cho số liệu minh họa
     status: RECORDED

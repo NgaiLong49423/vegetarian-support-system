@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,12 +51,7 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void prepareCatalogAndAccounts() {
-        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue22-%@test.local')");
-        jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_NAME);
-        jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_WITHOUT_NUTRITION_NAME);
-        jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", INGREDIENT_NAME);
-        jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", INGREDIENT_WITHOUT_NUTRITION_NAME);
-        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue22-%@test.local'");
+        removeFixtures();
 
         expertId = insertUser(EXPERT_EMAIL, "EXPERT", "ACTIVE");
         customerId = insertUser(CUSTOMER_EMAIL, "CUSTOMER", "ACTIVE");
@@ -76,6 +72,16 @@ class RecipeCreationIntegrationTest extends AbstractIntegrationTest {
         kilogramUnitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'kg'", Integer.class);
         countUnitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'quả'", Integer.class);
         blockUnitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'bìa'", Integer.class);
+    }
+
+    @AfterEach
+    void removeFixtures() {
+        jdbcTemplate.update("DELETE FROM [RECIPE_POST] WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE 'issue22-%@test.local')");
+        jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_NAME);
+        jdbcTemplate.update("DELETE FROM [INGREDIENT_UNIT_CONVERSION] WHERE ingredient_id IN (SELECT ingredient_id FROM [INGREDIENT] WHERE name = ?)", INGREDIENT_WITHOUT_NUTRITION_NAME);
+        jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", INGREDIENT_NAME);
+        jdbcTemplate.update("DELETE FROM [INGREDIENT] WHERE name = ?", INGREDIENT_WITHOUT_NUTRITION_NAME);
+        jdbcTemplate.update("DELETE FROM [USER] WHERE email LIKE 'issue22-%@test.local'");
     }
 
     @Test

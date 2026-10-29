@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { AlertCircle, Check, Info, LoaderCircle, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { AlertCircle, Info, LoaderCircle, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { recipesApi, type Choice, type CreateRecipeRequest, type IngredientOption, type RecipeFormOptions } from '../api/recipes';
 import { ApiError, asApiError } from '../lib/apiClient';
 import { PageContainer } from '../components/Layout';
@@ -12,8 +12,7 @@ import type { UserRole } from '../types';
 import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
 import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
 import type { RecipeAiContentType } from '../api/recipes';
-import { AiRecipeAssistantModal, type GeneratedRecipeData } from '../components/AiRecipeAssistantModal';
-import { assessRecipeDifficulty } from '../utils/difficultyCalculator';
+import { AiRecipeAssistantModal } from '../components/AiRecipeAssistantModal';
 
 type IngredientRow = {
   key: string;
@@ -101,6 +100,7 @@ function CreateRecipeForm() {
   };
   const [ingredients, setIngredients] = useState<IngredientRow[]>(() => [emptyIngredient()]);
   const [mediaList, setMediaList] = useState<ImageItem[]>([]);
+  const [mediaUploading, setMediaUploading] = useState(false);
   const [mediaError, setMediaError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
@@ -108,83 +108,7 @@ function CreateRecipeForm() {
   const [aiLoading, setAiLoading] = useState<RecipeAiContentType | null>(null);
   const [aiError, setAiError] = useState<{ contentType: RecipeAiContentType; message: string; upgradeRequired?: boolean } | null>(null);
   const [aiModalOpen, setAiModalOpen] = useState(false);
-  const [aiNotice, setAiNotice] = useState<string | null>(null);
   const navigate = useNavigate();
-
-  const suggestedDifficulty = assessRecipeDifficulty({
-    ingredientCount: ingredients.filter((ing) => ing.ingredientId || ing.quantity).length,
-    prepTimeMinutes: Number(prepTimeMinutes) || 0,
-    cookTimeMinutes: Number(cookTimeMinutes) || 0,
-    instructions,
-  });
-
-  const handleApplyAiRecipe = async (aiRecipe: GeneratedRecipeData) => {
-    setTitle(aiRecipe.title);
-    setDescription(aiRecipe.description);
-    setInstructions(aiRecipe.instructions);
-    if (aiRecipe.dishCategory) setDishCategory(aiRecipe.dishCategory);
-    if (aiRecipe.vegetarianType) setVegetarianType(aiRecipe.vegetarianType);
-    if (aiRecipe.difficulty) setDifficulty(aiRecipe.difficulty);
-    setServings(String(aiRecipe.servings));
-    setPrepTimeMinutes(String(aiRecipe.prepTimeMinutes));
-    setCookTimeMinutes(String(aiRecipe.cookTimeMinutes));
-
-    if (aiRecipe.ingredients && aiRecipe.ingredients.length > 0) {
-      const mappedRows: IngredientRow[] = await Promise.all(
-        aiRecipe.ingredients.map(async (item, idx) => {
-          const matchedUnit = options?.units.find((u) => {
-            const uCode = u.code.toLowerCase();
-            const uName = u.name.toLowerCase();
-            const itemCode = item.unitCode.toLowerCase();
-            const itemName = item.unitName.toLowerCase();
-            return (
-              uCode === itemCode ||
-              uName === itemName ||
-              uCode.includes(itemCode) ||
-              itemCode.includes(uCode) ||
-              (itemCode === 'qua' && (uCode === 'quả' || uCode === 'qua' || uCode === 'trái')) ||
-              (itemCode === 'g' && (uCode === 'g' || uCode === 'gram')) ||
-              (itemCode === 'ml' && (uCode === 'ml' || uCode === 'mililit'))
-            );
-          });
-
-          let foundIngredientId: number | null = null;
-          let foundName = item.name;
-          try {
-            const searchResults = await recipesApi.searchIngredients(item.name);
-            if (searchResults && searchResults.length > 0) {
-              const exact = searchResults.find(
-                (r) => r.name.toLowerCase() === item.name.toLowerCase(),
-              );
-              if (exact) {
-                foundIngredientId = exact.ingredientId;
-                foundName = exact.name;
-              } else {
-                foundIngredientId = searchResults[0].ingredientId;
-                foundName = searchResults[0].name;
-              }
-            }
-          } catch {
-            // bỏ qua lỗi nếu search catalog tạm thời không khả dụng
-          }
-
-          return {
-            key: `ingredient-${Date.now()}-${idx}`,
-            ingredientId: foundIngredientId,
-            ingredientName: foundName,
-            search: foundName,
-            quantity: String(item.quantity),
-            unitId: matchedUnit?.unitId ?? (options?.units[0]?.unitId ?? null),
-          };
-        }),
-      );
-      setIngredients(mappedRows);
-    }
-
-    setAiNotice(
-      `Đã nạp thành công thông tin món "${aiRecipe.title}" kèm định lượng nguyên liệu vào biểu mẫu!`,
-    );
-  };
 
   useEffect(() => {
     let active = true;
@@ -255,6 +179,10 @@ function CreateRecipeForm() {
 
   const handlePublish = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (mediaUploading) {
+      setMediaError('Vui lòng chờ ảnh tải lên hoàn tất trước khi xuất bản.');
+      return;
+    }
     setSubmitError('');
     setFieldErrors({});
     if (!validateMediaSelection()) return;
@@ -344,18 +272,6 @@ function CreateRecipeForm() {
           <Sparkles className="h-4 w-4" /> Soạn với Trợ lý AI
         </Button>
       </div>
-
-      {aiNotice && (
-        <div role="status" className="mb-5 flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-900 shadow-sm animate-fade-in">
-          <Check className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
-          <div className="flex-1">
-            <p className="font-semibold">{aiNotice}</p>
-          </div>
-          <button type="button" onClick={() => setAiNotice(null)} className="text-green-700 hover:text-green-900 text-xs font-bold">
-            Đóng
-          </button>
-        </div>
-      )}
 
       <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <Info className="mt-0.5 h-5 w-5 shrink-0" />
@@ -451,7 +367,8 @@ function CreateRecipeForm() {
             <SectionHead number="4" title="Hình ảnh bài công thức" />
             <RecipeImageUploader
               images={mediaList}
-              onChange={setMediaList}
+              onChange={(images) => { setMediaList(images); setMediaError(''); }}
+              onUploadingChange={setMediaUploading}
               maxImages={5}
             />
             {mediaError && <p role="alert" className={errorClass}>{mediaError}</p>}
@@ -491,8 +408,8 @@ function CreateRecipeForm() {
 
           {submitError && <div role="alert" className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{submitError}</div>}
           <div className="flex justify-end">
-            <Button type="submit" size="lg" disabled={submitting || loadingOptions || Boolean(optionsError) || !options}>
-              {submitting ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Đang gửi…</> : 'Xuất bản công thức'}
+            <Button type="submit" size="lg" disabled={submitting || mediaUploading || loadingOptions || Boolean(optionsError) || !options}>
+              {mediaUploading ? 'Đang tải ảnh…' : submitting ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Đang gửi…</> : 'Xuất bản công thức'}
             </Button>
           </div>
         </div>
@@ -518,8 +435,12 @@ function CreateRecipeForm() {
       <AiRecipeAssistantModal
         open={aiModalOpen}
         onClose={() => setAiModalOpen(false)}
-        options={options}
-        onApplyRecipe={handleApplyAiRecipe}
+        title={title}
+        description={description}
+        instructions={instructions}
+        loading={aiLoading}
+        error={aiError}
+        onGenerate={(contentType) => void generateWithAi(contentType)}
       />
     </PageContainer>
   );

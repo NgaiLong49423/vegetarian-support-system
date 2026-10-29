@@ -7,8 +7,7 @@
 -- Date            : 2026-09-25
 -- Source          : Logical ERD v1.0.0 + Data Dictionary v0.7.5
 --                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
--- Synchronized with: V1__baseline_schema.sql
---                   + V2__unit_code_unicode.sql
+-- Synchronized with: V1__baseline_schema.sql + V2__unit_code_unicode.sql
 --                   + V3__user_email_verification_token.sql
 --                   + V4__nutrition_profile_consent.sql
 --                   + V5__ingredient_group_and_unit_validation.sql
@@ -28,8 +27,12 @@
 --                   + V19__shopping_recipe_contributions.sql
 --                   + V20__ingredient_reference_image.sql
 --                   + V21__shopping_manual_list_kind.sql
---                   + V22__ai_usage_telemetry.sql
---                   (V22 is experimental; team approval pending)
+--                   + V22__report_handling_by_admin.sql
+--                   + V23__report_supplement.sql
+--                   + V24__expert_application_private_attachments.sql
+--                   + V25__persist_nutrition_bmi.sql
+--                   + V26__ai_usage_telemetry.sql
+--                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
 -- testing on clean databases, or SSMS / Azure Data Studio / sqlcmd execution.
@@ -166,6 +169,7 @@ CREATE TABLE [USER] (
     biological_sex             VARCHAR(10)    NULL,
     height_cm                  DECIMAL(5,1)   NULL,
     weight_kg                  DECIMAL(5,1)   NULL,
+    nutrition_bmi              DECIMAL(18,12) NULL,
     activity_level             VARCHAR(30)    NULL,
     pregnant                   BIT            NOT NULL
         CONSTRAINT DF_USER_pregnant DEFAULT 0,
@@ -349,6 +353,10 @@ CREATE TABLE [EXPERT_APPLICATION] (
     vegetarian_type        VARCHAR(30)     NOT NULL,
     sample_recipe_summary  NVARCHAR(MAX)   NOT NULL,
     portfolio_url          VARCHAR(2048)   NULL,
+    certificate_blob_key   VARCHAR(512)    NULL,
+    certificate_content_type VARCHAR(100)  NULL,
+    application_avatar_blob_key VARCHAR(512) NULL,
+    application_avatar_content_type VARCHAR(100) NULL,
     status                 VARCHAR(20)     NOT NULL
         CONSTRAINT DF_EXPERT_APP_status DEFAULT 'PENDING',
     admin_note             NVARCHAR(1000)  NULL,
@@ -369,6 +377,16 @@ CREATE TABLE [EXPERT_APPLICATION] (
     ),
     CONSTRAINT CK_EXPERT_APP_vegetarian_type CHECK (
         vegetarian_type IN ('VEGAN', 'LACTO', 'OVO', 'LACTO_OVO', 'MACROBIOTIC')
+    ),
+    CONSTRAINT CK_EXPERT_APP_certificate_attachment_pair CHECK (
+        (certificate_blob_key IS NULL AND certificate_content_type IS NULL)
+        OR (certificate_blob_key IS NOT NULL
+            AND certificate_content_type IN ('application/pdf', 'image/jpeg', 'image/png'))
+    ),
+    CONSTRAINT CK_EXPERT_APP_avatar_attachment_pair CHECK (
+        (application_avatar_blob_key IS NULL AND application_avatar_content_type IS NULL)
+        OR (application_avatar_blob_key IS NOT NULL
+            AND application_avatar_content_type IN ('image/jpeg', 'image/png', 'image/webp'))
     )
 );
 GO
@@ -622,6 +640,7 @@ CREATE TABLE [REPORT] (
     updated_at       DATETIME2(7)    NOT NULL
         CONSTRAINT DF_REPORT_updated_at DEFAULT SYSUTCDATETIME(),
     handled_at       DATETIME2(7)    NULL,
+    handled_by       BIGINT          NULL,
 
     CONSTRAINT PK_REPORT PRIMARY KEY (report_id),
     CONSTRAINT FK_REPORT_USER FOREIGN KEY (reporter_id)
@@ -630,6 +649,8 @@ CREATE TABLE [REPORT] (
         REFERENCES [RECIPE_POST](recipe_id) ON DELETE NO ACTION,
     CONSTRAINT FK_REPORT_COMMENT FOREIGN KEY (comment_id)
         REFERENCES [COMMENT](comment_id) ON DELETE NO ACTION,
+    CONSTRAINT FK_REPORT_HANDLED_BY FOREIGN KEY (handled_by)
+        REFERENCES [USER](user_id) ON DELETE NO ACTION,
     CONSTRAINT CK_REPORT_target_xor CHECK (
         (recipe_id IS NOT NULL AND comment_id IS NULL)
         OR (recipe_id IS NULL AND comment_id IS NOT NULL)
@@ -641,8 +662,31 @@ CREATE TABLE [REPORT] (
     ),
     CONSTRAINT CK_REPORT_status CHECK (
         status IN ('OPEN', 'IN_REVIEW', 'RESOLVED')
+    ),
+    CONSTRAINT CK_REPORT_decision CHECK (
+        decision IS NULL
+        OR decision IN ('NO_VIOLATION', 'WARN_AUTHOR', 'HIDE_RECIPE', 'LOCK_AUTHOR')
     )
 );
+GO
+
+-- 6.1a REPORT_SUPPLEMENT — Append-only information added to an open report
+-- Source: V23__report_supplement.sql, FR-30 AC-30.1
+CREATE TABLE [REPORT_SUPPLEMENT] (
+    supplement_id  BIGINT          IDENTITY(1,1)  NOT NULL,
+    report_id      BIGINT          NOT NULL,
+    content        NVARCHAR(500)   NOT NULL,
+    created_at     DATETIME2(7)    NOT NULL
+        CONSTRAINT DF_REPORT_SUPPLEMENT_created_at DEFAULT SYSUTCDATETIME(),
+
+    CONSTRAINT PK_REPORT_SUPPLEMENT PRIMARY KEY (supplement_id),
+    CONSTRAINT FK_REPORT_SUPPLEMENT_REPORT FOREIGN KEY (report_id)
+        REFERENCES [REPORT](report_id) ON DELETE NO ACTION
+);
+GO
+
+CREATE NONCLUSTERED INDEX IX_REPORT_SUPPLEMENT_report
+    ON [REPORT_SUPPLEMENT](report_id, created_at, supplement_id);
 GO
 
 -- 6.2 NOTIFICATION — In-app notification to user
@@ -1122,8 +1166,7 @@ CREATE INDEX IX_SRC_ITEM ON [SHOPPING_RECIPE_CONTRIBUTION](shopping_list_item_id
 
 GO
 
-GO
-
+-- FR-11: technical telemetry, no prompt or account relationship.
 -- FR-11 experimental branch: structural approval is pending the team's vote.
 -- Technical accounting only; no prompt/response text, quota or account relationship.
 CREATE TABLE AI_USAGE_TELEMETRY (

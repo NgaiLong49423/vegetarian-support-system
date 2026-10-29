@@ -35,6 +35,9 @@ class AiTelemetryServiceTest {
         assertThat(pricing.estimate(usage(1,2,3,0,0,0),now,"PARTIAL")).isNull();
     }
     @Test void pricingIncludesThinkingAndCachedInputAndUsesHistoricalVersion() {
+        // Metadata returned by the synthetic live Gemini 3.8 check on 2026-10-28.
+        assertThat(pricing.estimate(usage(13,1,129,115,0,0),now,"COMPLETE").usd())
+                .isEqualByComparingTo("0.00044475");
         var value = usage(150,300,500,50,20,0);
         assertThat(pricing.estimate(value,now,"COMPLETE").usd()).isEqualByComparingTo("0.0014115");
         var next = pricing.estimate(value,Instant.parse("2027-01-01T00:00:00Z"),"COMPLETE");
@@ -72,7 +75,9 @@ class AiTelemetryServiceTest {
         verify(repository).insert(eq(event),eq(usage(0,2,3,null,null,null)),eq("INVALID"),isNull());
         var failing = mock(AiTelemetryWriter.class);
         doThrow(new IllegalStateException("private payload must not be logged")).when(failing).record(event);
-        var listener = new AiTelemetryListener(failing);
+        var spool = mock(AiTelemetrySpool.class);
+        when(spool.isPending(event.eventId())).thenReturn(true);
+        var listener = new AiTelemetryListener(failing, spool);
         try { assertThatCode(() -> listener.onUsage(event)).doesNotThrowAnyException(); }
         finally { listener.close(); }
         verify(failing).record(event);

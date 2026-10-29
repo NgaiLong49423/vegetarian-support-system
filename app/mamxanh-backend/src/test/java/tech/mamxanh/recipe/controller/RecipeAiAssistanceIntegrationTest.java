@@ -46,8 +46,14 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
         unitId = jdbcTemplate.queryForObject("SELECT unit_id FROM [UNIT] WHERE code = N'g'", Integer.class);
         jdbcTemplate.update("INSERT INTO [SUBSCRIPTION] (user_id, tier, status, starts_at, ends_at) VALUES (?, 'PLUS', 'ACTIVE', ?, ?)",
                 plusExpertId, LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0));
-        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new tech.mamxanh.integration.ai.AiClient.RecommendationResult("""
-                {"description":"Mô tả công thức thử nghiệm.","steps":[{"text":"Đảo đều nguyên liệu trên chảo nóng.","ingredientIds":[%d]}]}
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenReturn(new AiClient.RecommendationResult("""
+                {"description":"Mô tả công thức thử nghiệm.","steps":[
+                  {"text":"Chuẩn bị dụng cụ và nguyên liệu.","ingredientIds":[%1$d]},
+                  {"text":"Rửa sạch rồi cắt thành miếng vừa ăn.","ingredientIds":[%1$d]},
+                  {"text":"Làm nóng chảo trên bếp.","ingredientIds":[]},
+                  {"text":"Cho vào chảo và đảo nhẹ tay.","ingredientIds":[%1$d]},
+                  {"text":"Nấu đến khi chín đều.","ingredientIds":[%1$d]},
+                  {"text":"Tắt bếp rồi bày ra đĩa.","ingredientIds":[%1$d]}]}
                 """.formatted(ingredientId), 150, 300, 450));
     }
 
@@ -90,6 +96,18 @@ class RecipeAiAssistanceIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/ai-assistance'].post").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/ai-assistance'].post.security[0].bearerAuth").isArray());
+    }
+
+    @Test
+    void incompleteProviderOutputIs502AndDoesNotSaveARecipe() throws Exception {
+        when(aiClient.generateRecipeContent(anyString(), anyList())).thenThrow(
+                tech.mamxanh.integration.ai.GeminiAiClient.AiProviderException.invalidResponse("private incomplete output"));
+        mockMvc.perform(post("/api/v1/recipes/ai-assistance").with(principal(plusExpertId))
+                        .contentType(MediaType.APPLICATION_JSON).content(request()))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.code").value("AI_RESPONSE_INVALID"));
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM [RECIPE_POST] WHERE author_id = ?", Integer.class, plusExpertId)).isZero();
     }
 
     private long insertUser(String suffix, String role) {

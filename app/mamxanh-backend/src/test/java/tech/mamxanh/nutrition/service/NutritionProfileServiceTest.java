@@ -65,7 +65,39 @@ class NutritionProfileServiceTest {
         assertEquals(null, response.results());
         assertTrue(response.hasProfile());
         assertTrue(member.isHealthDataConsent());
+        assertEquals(0, new BigDecimal("22.4913494810").compareTo(member.getNutritionBmi()));
         assertEquals(localDateTimeUtc("2026-01-01T12:00:00"), member.getHealthDataConsentAt());
+    }
+
+    @Test
+    void keepsStoredBmiWhenAnthropometricValuesAreUnchanged() {
+        NutritionProfileEntity member = completeMember();
+        member.setNutritionBmi(new BigDecimal("25.75000000"));
+        when(repository.findById(42L)).thenReturn(Optional.of(member));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.saveOwnProfile(new SaveNutritionProfileRequest(
+                LocalDate.of(2000, 7, 1), "FEMALE", new BigDecimal("170.00"), new BigDecimal("65.00"),
+                "VERY_ACTIVE", "GAIN_WEIGHT", false, false, false, true));
+
+        assertEquals(0, new BigDecimal("25.75000000").compareTo(member.getNutritionBmi()));
+    }
+
+    @Test
+    void recalculatesStoredBmiWhenHeightOrWeightChanges() {
+        NutritionProfileEntity member = completeMember();
+        when(repository.findById(42L)).thenReturn(Optional.of(member));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.saveOwnProfile(new SaveNutritionProfileRequest(
+                LocalDate.of(2000, 7, 1), "FEMALE", new BigDecimal("180.0"), new BigDecimal("65.0"),
+                "SEDENTARY", "MAINTAIN_WEIGHT", false, false, false, true));
+        assertEquals(0, new BigDecimal("20.0617283951").compareTo(member.getNutritionBmi()));
+
+        service.saveOwnProfile(new SaveNutritionProfileRequest(
+                LocalDate.of(2000, 7, 1), "FEMALE", new BigDecimal("180.0"), new BigDecimal("70.0"),
+                "SEDENTARY", "MAINTAIN_WEIGHT", false, false, false, true));
+        assertEquals(0, new BigDecimal("21.6049382716").compareTo(member.getNutritionBmi()));
     }
 
     @Test
@@ -78,17 +110,19 @@ class NutritionProfileServiceTest {
         member.setActivityLevel("SEDENTARY");
         member.setNutritionGoal("MAINTAIN_WEIGHT");
         member.setHealthDataConsent(true);
+        member.setNutritionBmi(new BigDecimal("22.491349481"));
         when(repository.findById(42L)).thenReturn(Optional.of(member));
 
         var response = service.calculateOwnResults(new tech.mamxanh.nutrition.dto.request.ConfirmNutritionEligibilityRequest(false, false, false));
 
         assertTrue(response.eligible());
+        assertEquals(0, new BigDecimal("22.491349481").compareTo(response.results().bmi()));
         assertEquals("Bình thường", response.results().bmiCategory());
         assertEquals(8, response.results().dailyTargets().size()); // Eight nutrient targets plus energy = nine total.
     }
 
     @Test
-    void profileReadReturnsSavedDataWithoutResultsOrCrossFeatureEligibilityFlags() {
+    void profileReadReturnsStoredBmiAndResultsWithoutRecalculatingIt() {
         NutritionProfileEntity member = eligibleMember();
         member.setDateOfBirth(LocalDate.of(2000, 7, 1));
         member.setBiologicalSex("FEMALE");
@@ -97,14 +131,17 @@ class NutritionProfileServiceTest {
         member.setActivityLevel("SEDENTARY");
         member.setNutritionGoal("MAINTAIN_WEIGHT");
         member.setHealthDataConsent(true);
+        member.setNutritionBmi(new BigDecimal("25.75000000"));
         member.setPregnant(true); // Another feature's stored flag does not control this FR's fresh declaration.
         when(repository.findById(42L)).thenReturn(Optional.of(member));
 
         var response = service.getOwnProfile();
 
         assertTrue(response.hasProfile());
-        assertFalse(response.eligible());
-        assertEquals(null, response.results());
+        assertTrue(response.eligible());
+        assertEquals(0, new BigDecimal("25.75000000").compareTo(response.results().bmi()));
+        assertEquals("Thừa cân", response.results().bmiCategory());
+        assertEquals(8, response.results().dailyTargets().size());
         assertTrue(response.profile() != null);
     }
 
@@ -374,6 +411,7 @@ class NutritionProfileServiceTest {
         member.setActivityLevel("SEDENTARY");
         member.setNutritionGoal("MAINTAIN_WEIGHT");
         member.setHealthDataConsent(true);
+        member.setNutritionBmi(new BigDecimal("22.491349481"));
         return member;
     }
 

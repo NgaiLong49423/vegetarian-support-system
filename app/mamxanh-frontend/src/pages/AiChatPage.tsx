@@ -10,17 +10,20 @@ import { anonymousRecipeViewer } from '../lib/recipeViewer';
 interface ChatMessage extends AiChatTurn {
   id: number;
   recommendations?: Awaited<ReturnType<typeof recipesApi.chat>>['recommendations'];
+  workflowUrl?: string | null;
 }
 
 export function AiChatPage() {
   const { account, isAuthenticated } = useAuth();
-  const { isOpen, recipeId, closeChat } = useAiChat();
+  const { isOpen, recipeId, recipeTitle, recipeArticle, closeChat } = useAiChat();
   const hasRecipeContext = recipeId !== null;
   const requestVersion = useRef(0);
+  const activeRecipeTitle = recipeTitle?.trim() || (recipeId === null ? '' : `công thức #${recipeId}`);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorAction, setErrorAction] = useState<'plans' | 'login' | null>(null);
   const [retryQuestion, setRetryQuestion] = useState('');
   const [sequence, setSequence] = useState(0);
   const [windowSize, setWindowSize] = useState({ width: 420, height: 620 });
@@ -91,6 +94,7 @@ export function AiChatPage() {
     setMessages([]);
     setQuestion('');
     setError('');
+    setErrorAction(null);
     setRetryQuestion('');
     setSequence(0);
   }, [recipeId, account?.id, isAuthenticated]);
@@ -111,6 +115,7 @@ export function AiChatPage() {
     const version = requestVersion.current;
     setLoading(true);
     setError('');
+    setErrorAction(null);
     setRetryQuestion(normalized);
     const currentId = sequence + 1;
     setSequence(currentId);
@@ -121,7 +126,10 @@ export function AiChatPage() {
         ...(!isAuthenticated ? { anonymousViewerId: anonymousRecipeViewer() } : {}),
         ...(hasRecipeContext ? { recipeId } : {}),
         question: normalized,
-        history: previous.slice(-8).map(({ speaker, content }) => ({ speaker, content })),
+        history: previous.slice(-8).map(({ speaker, content, recommendations }) => ({ speaker, content,
+          ...(speaker === 'ASSISTANT' && recommendations?.length
+            ? { recommendedRecipeIds: recommendations.slice(0, 4).map((recipe) => recipe.id) } : {}),
+        })),
       });
       if (version !== requestVersion.current) return;
       setMessages((current) => [...current, {
@@ -129,12 +137,15 @@ export function AiChatPage() {
         speaker: 'ASSISTANT',
         content: response.answer,
         recommendations: response.recommendations ?? [],
+        workflowUrl: response.workflowUrl,
       }]);
       setSequence(currentId + 1);
       setRetryQuestion('');
     } catch (cause) {
       if (version !== requestVersion.current) return;
       const apiError = asApiError(cause);
+      setErrorAction(apiError.code === 'AI_SUBSCRIPTION_REQUIRED' ? 'plans' : apiError.status === 401 ? 'login' : null);
+      if (apiError.status === 401 || apiError.status === 403) setRetryQuestion('');
       setError(apiError.status === 429
         ? 'Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Hãy thử lại sau; bạn cũng có thể đăng ký tài khoản để tiếp tục.'
         : apiError.status === 0
@@ -159,7 +170,7 @@ export function AiChatPage() {
       {resizeHandle}
       <header className="flex items-center justify-between border-b border-brand-100 bg-cream-soft py-3 pl-8 pr-4">
         <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-700"><Bot className="h-5 w-5" aria-hidden="true" /></span>
-          <div><h1 id="chat-heading" className="font-extrabold text-ink">Bạn cần AI hỗ trợ gì?</h1><p className="text-xs text-ink-muted">{hasRecipeContext ? `Đang hỗ trợ theo công thức #${recipeId}` : 'Trợ lý ẩm thực Mâm Xanh'}</p></div>
+          <div><h1 id="chat-heading" className="font-extrabold text-ink">Bạn cần AI hỗ trợ gì?</h1><p className="max-w-64 truncate text-xs text-ink-muted" title={hasRecipeContext ? activeRecipeTitle : undefined}>{hasRecipeContext ? `Đang hỏi về: ${activeRecipeTitle}` : 'Trợ lý ẩm thực Mâm Xanh'}</p></div>
         </div>
         <button type="button" onClick={closeChat} aria-label="Đóng khung chat" className="rounded-full p-2 text-ink-muted hover:bg-paper hover:text-ink"><X className="h-4 w-4" /></button>
       </header>
@@ -168,7 +179,57 @@ export function AiChatPage() {
       <p className="flex gap-2 border-b border-brand-100 bg-brand-50/70 px-4 py-2.5 text-[11px] leading-4 text-ink-soft"><ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-700" aria-hidden="true" />Câu trả lời do AI tạo và chỉ mang tính tham khảo. Hội thoại chỉ giữ trong phiên này.</p>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4" aria-live="polite" aria-label="Cuộc trò chuyện">
-        {messages.length === 0 && <div className="flex min-h-full flex-col items-center justify-center py-8 text-center"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-700"><Bot className="h-6 w-6" aria-hidden="true" /></span><p className="mt-3 font-semibold text-ink">Bạn cần AI hỗ trợ gì?</p><p className="mt-1 max-w-xs text-sm text-ink-muted">{hasRecipeContext ? 'Hỏi về nguyên liệu, cách chế biến hoặc món thay thế trong công thức này.' : 'Hỏi về nguyên liệu, cách nấu hoặc lựa chọn món chay.'}</p><div className="mt-5 flex max-w-sm flex-wrap justify-center gap-2">{(hasRecipeContext ? ['Có thể thay nguyên liệu nào?', 'Món này nấu trong bao lâu?'] : ['Gợi ý món chay dễ nấu', 'Thay thế nguyên liệu', 'Cách bảo quản món ăn']).map((suggestion) => <button key={suggestion} type="button" onClick={() => setQuestion(suggestion)} className="rounded-full border border-brand-200 bg-paper px-3 py-2 text-xs font-medium text-brand-700 hover:bg-brand-50">{suggestion}</button>)}</div></div>}
+        {messages.length === 0 && (hasRecipeContext ? <div className="flex min-h-full flex-col justify-center py-8">
+          <div className="flex items-start gap-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700"><Bot className="h-4 w-4" aria-hidden="true" /></span>
+            <div className="max-w-[88%] rounded-2xl bg-raised px-4 py-3 text-sm leading-6 text-ink">
+              <p className="mb-1 text-[11px] font-bold opacity-75">Trợ lý Mâm Xanh</p>
+              <p>Bạn muốn hỏi về công thức “{activeRecipeTitle}” phải không?</p>
+              <p className="mt-2 text-ink-muted">Bạn có thể chọn một câu hỏi gợi ý hoặc nhập câu hỏi bên dưới.</p>
+            </div>
+          </div>
+          {recipeArticle && <article aria-label={`Bài công thức: ${recipeArticle.title}`} className="mt-4 overflow-hidden rounded-xl border border-brand-200 bg-paper text-ink shadow-xs">
+            <div className="flex gap-3 border-b border-brand-100 p-3">
+              {recipeArticle.coverUrl
+                ? <img src={recipeArticle.coverUrl} alt={`Ảnh ${recipeArticle.title}`} className="h-20 w-20 shrink-0 rounded-lg object-cover" />
+                : <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700"><Bot className="h-7 w-7" aria-hidden="true" /></span>}
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-brand-700">Bài công thức đang xem</p>
+                <h2 className="mt-0.5 font-bold leading-5">{recipeArticle.title}</h2>
+                {recipeArticle.description && <p className="mt-1 line-clamp-2 text-xs leading-4 text-ink-muted">{recipeArticle.description}</p>}
+                <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-ink-muted">
+                  {recipeArticle.authorAvatarUrl
+                    ? <img src={recipeArticle.authorAvatarUrl} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />
+                    : <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
+                  <span className="truncate">{recipeArticle.authorName}</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3 p-3 text-xs leading-5">
+              <div className="flex flex-wrap gap-1.5">
+                {[recipeArticle.vegetarianTypeLabel, recipeArticle.dishCategoryLabel, recipeArticle.difficultyLabel].filter(Boolean).map((label) => <span key={label} className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">{label}</span>)}
+                <span className="inline-flex items-center gap-1 rounded-full bg-cream-soft px-2 py-0.5 text-[10px] text-ink-muted"><Clock3 className="h-3 w-3" aria-hidden="true" />{recipeArticle.prepTimeMinutes + recipeArticle.cookTimeMinutes} phút</span>
+                <span className="rounded-full bg-cream-soft px-2 py-0.5 text-[10px] text-ink-muted">{recipeArticle.servings} khẩu phần</span>
+              </div>
+              <section>
+                <h3 className="font-bold text-ink">Nguyên liệu</h3>
+                {recipeArticle.ingredients.length
+                  ? <ul className="mt-1 list-inside list-disc space-y-0.5 text-ink-muted">{recipeArticle.ingredients.map((ingredient, index) => <li key={`${ingredient.name}-${index}`}>{ingredient.name} — {ingredient.quantity} {ingredient.unitName}</li>)}</ul>
+                  : <p className="text-ink-muted">Bài viết chưa ghi nguyên liệu.</p>}
+              </section>
+              <section>
+                <h3 className="font-bold text-ink">Cách chế biến</h3>
+                <p className="mt-1 whitespace-pre-wrap text-ink-muted">{recipeArticle.instructions || 'Bài viết chưa ghi cách chế biến.'}</p>
+              </section>
+            </div>
+          </article>}
+          <div className="mt-5 flex flex-wrap justify-center gap-2">{[
+            'Công thức này gồm những nguyên liệu nào?',
+            'Hướng dẫn mình từng bước chế biến món này.',
+            'Có thể thay nguyên liệu nào?',
+            'Công thức này nấu trong bao lâu?',
+          ].map((suggestion) => <button key={suggestion} type="button" onClick={() => setQuestion(suggestion)} className="rounded-full border border-brand-200 bg-paper px-3 py-2 text-xs font-medium text-brand-700 hover:bg-brand-50">{suggestion}</button>)}</div>
+        </div> : <div className="flex min-h-full flex-col items-center justify-center py-8 text-center"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-700"><Bot className="h-6 w-6" aria-hidden="true" /></span><p className="mt-3 font-semibold text-ink">Bạn cần AI hỗ trợ gì?</p><p className="mt-1 max-w-xs text-sm text-ink-muted">Hỏi về nguyên liệu, cách nấu hoặc lựa chọn món chay.</p><div className="mt-5 flex max-w-sm flex-wrap justify-center gap-2">{['Gợi ý món chay dễ nấu', 'Thay thế nguyên liệu', 'Cách bảo quản món ăn'].map((suggestion) => <button key={suggestion} type="button" onClick={() => setQuestion(suggestion)} className="rounded-full border border-brand-200 bg-paper px-3 py-2 text-xs font-medium text-brand-700 hover:bg-brand-50">{suggestion}</button>)}</div></div>)}
         {messages.map((message) => <div key={message.id} className={`flex gap-3 ${message.speaker === 'USER' ? 'justify-end' : 'justify-start'}`}>
           {message.speaker === 'ASSISTANT' && <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700"><Bot className="h-4 w-4" aria-hidden="true" /></span>}
           <div className={`max-w-[88%] min-w-0 rounded-2xl px-4 py-3 text-sm leading-6 ${message.speaker === 'USER' ? 'bg-brand-600 text-on-brand' : 'bg-raised text-ink'}`}>
@@ -189,11 +250,18 @@ export function AiChatPage() {
                 </span>
               </Link>)}
             </div>}
+            {message.workflowUrl && ['/ke-hoach?view=for-you', '/dang-cong-thuc'].includes(message.workflowUrl)
+              && <Link to={message.workflowUrl} onClick={closeChat} className="mt-3 inline-flex font-semibold text-brand-700 underline">
+                {message.workflowUrl === '/dang-cong-thuc' ? 'Mở biểu mẫu soạn công thức' : 'Mở chức năng lập thực đơn'}
+              </Link>}
           </div>
           {message.speaker === 'USER' && <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-100 text-ink-muted"><UserRound className="h-4 w-4" aria-hidden="true" /></span>}
         </div>)}
         {loading && <p role="status" className="flex items-center gap-2 text-sm text-ink-muted"><LoaderCircle className="h-4 w-4 animate-spin" />Đang trả lời…</p>}
-        {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">{error}{retryQuestion && <button type="button" onClick={() => void send(retryQuestion, messages.slice(0, -1), false)} disabled={loading} className="ml-2 font-bold underline">Thử lại</button>}{error.includes('đăng ký') && <Link to="/dang-ky" className="ml-2 font-bold underline">Đăng ký</Link>}</div>}
+        {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">{error}{retryQuestion && <button type="button" onClick={() => void send(retryQuestion, messages.slice(0, -1), false)} disabled={loading} className="ml-2 font-bold underline">Thử lại</button>}{error.includes('đăng ký') && <Link to="/dang-ky" className="ml-2 font-bold underline">Đăng ký</Link>}
+          {errorAction === 'plans' && <Link to="/goi-ai" onClick={closeChat} className="ml-2 font-bold underline">Xem các gói AI</Link>}
+          {errorAction === 'login' && <Link to="/dang-nhap" onClick={closeChat} className="ml-2 font-bold underline">Đăng nhập</Link>}
+        </div>}
       </div>
 
       <form onSubmit={submit} className="border-t border-brand-100 bg-paper p-3 sm:p-4">

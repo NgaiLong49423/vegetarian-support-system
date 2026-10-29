@@ -86,16 +86,15 @@ public class AiRecipeRecommendationService {
         var user = users.requireActiveMember();
         entitlements.requirePro(user.id());
         preferences.requirePersonalizedAiEligible(user.id());
-        Set<Long> selected = normalizeIds(ingredientIds);
-        if (selected.isEmpty()) throw new AppException(ErrorCode.VALIDATION_FAILED);
+        Set<Long> selected = normalizeIds(ingredientIds == null ? List.of() : ingredientIds);
         DietaryPreferencesResponse profile = preferences.getOwnPreferences();
         List<RecipePostResponse> candidates = candidateRecipes(selected, profile);
         if (candidates.size() < 2) throw new AppException(ErrorCode.AI_MENU_UNAVAILABLE);
         List<Long> allowed = candidates.stream().map(RecipePostResponse::id).toList();
+        String instruction = "Return exactly 21 recipe IDs in day-major order: breakfast, lunch, dinner for each of 7 days. "
+                + "IDs may repeat when the catalog is small, but adjacent slots must never use the same ID.";
         AiClient.RecommendationResult result = request(() -> ai.recommendRecipeSequence(
-                prompt("Return exactly 21 recipe IDs in day-major order: breakfast, lunch, dinner for each of 7 days. "
-                        + "IDs may repeat when the catalog is small, but adjacent slots must never use the same ID.",
-                        candidates, selected),
+                prompt(instruction, candidates, selected),
                 allowed, 21));
         List<Long> ids = parseIds(result, allowed, 21, 21, true);
         for (int i = 1; i < ids.size(); i++) {
@@ -131,7 +130,7 @@ public class AiRecipeRecommendationService {
         return recipes.searchPublished("", 0, CANDIDATE_LIMIT).items().stream()
                 .filter(recipe -> eligibleType(recipe.vegetarianType(), profile.vegetarianType().name()))
                 .filter(recipe -> !containsAvoided(recipe, profile))
-                .filter(recipe -> matchCount(recipe, selected) > 0)
+                .filter(recipe -> selected.isEmpty() || matchCount(recipe, selected) > 0)
                 .sorted(Comparator.<RecipePostResponse>comparingLong(recipe -> matchCount(recipe, selected)).reversed()
                         .thenComparing(RecipePostResponse::id))
                 .toList();

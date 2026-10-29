@@ -129,6 +129,11 @@ test('administrator can view admin dashboard and pending modules', async ({ page
   await page.route('**/api/v1/admin/expert-applications**', (route) => route.fulfill({
     json: { content: [], totalElements: 0, totalPages: 0, page: 0, size: 20 },
   }));
+  await page.route('**/api/v1/admin/reports**', (route) => route.fulfill({
+    json: route.request().url().includes('/status-counts')
+      ? { open: 0, inReview: 0, resolved: 0 }
+      : { content: [], totalElements: 0, totalPages: 0, page: 0, size: 20 },
+  }));
   await page.route('**/api/v1/admin/ingredients/options', (route) => route.fulfill({
     json: { success: true, data: { groups: ['Rau củ'], sources: ['USDA'] } },
   }));
@@ -151,13 +156,13 @@ test('administrator can view admin dashboard and pending modules', async ({ page
   await page.getByRole('button', { name: 'Đóng menu' }).click();
 
   await page.goto('/admin/bao-cao');
-  await expect(page.getByRole('heading', { name: 'Hậu kiểm nội dung & Xử lý vi phạm' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Hậu kiểm nội dung', level: 1 })).toBeVisible();
 
   await page.goto('/admin/nguoi-dung');
   await expect(page.getByRole('heading', { name: 'Quản lý tài khoản & Phân quyền', exact: true })).toBeVisible();
 
   await page.goto('/admin/giao-dich');
-  await expect(page.getByRole('heading', { name: 'Giám sát giao dịch gói AI hệ thống' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Giám sát giao dịch gói AI', exact: true })).toBeVisible();
 });
 
 test('non-admin member accessing admin route is denied access', async ({ page }) => {

@@ -10,6 +10,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,9 +36,7 @@ class RecipeViewIntegrationTest extends AbstractIntegrationTest {
     private String guest;
 
     @BeforeEach void prepare() {
-        jdbc.update("DELETE FROM RECIPE_VIEW WHERE recipe_id IN (SELECT recipe_id FROM RECIPE_POST WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", PREFIX);
-        jdbc.update("DELETE FROM RECIPE_POST WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)", PREFIX);
-        jdbc.update("DELETE FROM [USER] WHERE email LIKE ?", PREFIX);
+        removeFixtures();
         author = user("author", "EXPERT");
         member = user("member", "CUSTOMER");
         recipe = jdbc.queryForObject("""
@@ -47,6 +46,13 @@ class RecipeViewIntegrationTest extends AbstractIntegrationTest {
                     'SOUP','VEGAN','EASY',2,10,15,'PUBLISHED',?)
                 """, Long.class, author, java.time.LocalDateTime.now(clock).minusDays(60));
         guest = UUID.randomUUID().toString();
+    }
+
+    @AfterEach
+    void removeFixtures() {
+        jdbc.update("DELETE FROM RECIPE_VIEW WHERE recipe_id IN (SELECT recipe_id FROM RECIPE_POST WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?))", PREFIX);
+        jdbc.update("DELETE FROM RECIPE_POST WHERE author_id IN (SELECT user_id FROM [USER] WHERE email LIKE ?)", PREFIX);
+        jdbc.update("DELETE FROM [USER] WHERE email LIKE ?", PREFIX);
     }
 
     @Test void guestReloadsDoNotExtendWindowAndReturnPersistsToReadApis() throws Exception {

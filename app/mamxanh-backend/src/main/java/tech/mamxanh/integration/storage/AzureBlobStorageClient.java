@@ -6,9 +6,15 @@ import com.azure.storage.blob.models.BlobHttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
+import tech.mamxanh.common.exception.AppException;
+import tech.mamxanh.common.exception.ErrorCode;
 
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URI;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -20,9 +26,16 @@ public class AzureBlobStorageClient implements StorageClient {
     private static final Logger log = LoggerFactory.getLogger(AzureBlobStorageClient.class);
 
     private final BlobContainerClient containerClient;
+    private final BlobContainerClient privateApplicationContainerClient;
 
     public AzureBlobStorageClient(BlobContainerClient containerClient) {
+        this(containerClient, null);
+    }
+
+    public AzureBlobStorageClient(BlobContainerClient containerClient,
+            BlobContainerClient privateApplicationContainerClient) {
         this.containerClient = containerClient;
+        this.privateApplicationContainerClient = privateApplicationContainerClient;
     }
 
     @Override
@@ -31,15 +44,17 @@ public class AzureBlobStorageClient implements StorageClient {
         String extension = resolveExtension(mimeType, originalFilename);
         String blobName = folder + "/" + UUID.randomUUID() + extension;
 
-        BlobClient blobClient = containerClient.getBlobClient(blobName);
-        blobClient.upload(inputStream, size, true);
-
-        BlobHttpHeaders headers = new BlobHttpHeaders().setContentType(mimeType);
-        blobClient.setHttpHeaders(headers);
-
-        String blobUrl = blobClient.getBlobUrl();
-        log.info("Uploaded image to Azure Blob Storage: {}", blobUrl);
-        return blobUrl;
+        try {
+            BlobClient blobClient = containerClient.getBlobClient(blobName);
+            blobClient.upload(inputStream, size, true);
+            BlobHttpHeaders headers = new BlobHttpHeaders().setContentType(mimeType);
+            blobClient.setHttpHeaders(headers);
+            return blobClient.getBlobUrl();
+        } catch (RuntimeException exception) {
+            // SDK messages can contain request details; keep credentials and URLs out of logs/errors.
+            log.warn("Azure image upload failed ({}).", exception.getClass().getSimpleName());
+            throw new AppException(ErrorCode.MEDIA_STORAGE_UNAVAILABLE);
+        }
     }
 
     @Override
@@ -59,8 +74,56 @@ public class AzureBlobStorageClient implements StorageClient {
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to delete blob at URL {}: {}", blobUrl, e.getMessage(), e);
+            log.warn("Azure image deletion failed ({}).", e.getClass().getSimpleName());
         }
+    }
+
+    @Override
+    public String uploadPrivateApplicationFile(byte[] content, String mimeType, String extension) {
+        BlobContainerClient privateContainer = requirePrivateApplicationContainer();
+        String blobKey = EXPERT_APPLICATION_FOLDER + "/" + UUID.randomUUID() + extension;
+        BlobClient blobClient = privateContainer.getBlobClient(blobKey);
+        try {
+            blobClient.upload(new ByteArrayInputStream(content), content.length, true);
+            blobClient.setHttpHeaders(new BlobHttpHeaders().setContentType(mimeType));
+            return blobKey;
+        } catch (RuntimeException exception) {
+            try { blobClient.deleteIfExists(); }
+            catch (RuntimeException cleanupException) {
+                log.warn("Could not clean up private expert application blob after upload failure");
+            }
+            throw exception;
+        }
+    }
+
+    @Override
+    public byte[] downloadPrivateApplicationFile(String blobKey) {
+        BlobClient blobClient = requirePrivateApplicationContainer().getBlobClient(requireApplicationBlobKey(blobKey));
+        try (InputStream input = blobClient.openInputStream(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            input.transferTo(output);
+            return output.toByteArray();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not read private application attachment", exception);
+        }
+    }
+
+    @Override
+    public void deletePrivateApplicationFile(String blobKey) {
+        if (blobKey == null || blobKey.isBlank()) return;
+        requirePrivateApplicationContainer().getBlobClient(requireApplicationBlobKey(blobKey)).deleteIfExists();
+    }
+
+    private BlobContainerClient requirePrivateApplicationContainer() {
+        return Objects.requireNonNull(privateApplicationContainerClient,
+                "Private application attachment storage is not configured");
+    }
+
+    private static String requireApplicationBlobKey(String blobKey) {
+        if (blobKey == null || !blobKey.startsWith(EXPERT_APPLICATION_FOLDER + "/")
+                || blobKey.contains("..") || blobKey.contains("\\")) {
+            throw new IllegalArgumentException("Invalid private application blob key");
+        }
+        return blobKey;
     }
 
     @Override
@@ -80,7 +143,7 @@ public class AzureBlobStorageClient implements StorageClient {
             // fallback: return everything after leading slash
             return path.startsWith("/") ? path.substring(1) : path;
         } catch (Exception e) {
-            log.warn("Could not parse blob name from URL: {}", blobUrl);
+            log.warn("Could not parse image URL for deletion.");
             return null;
         }
     }

@@ -47,6 +47,7 @@ class DefaultPayOsClientTest {
 
     @Test void missingCredentialsFailClosedAndRejectMockSignatures() {
         var unconfigured = new DefaultPayOsClient(new PayOsProperties("", "", "", CONFIGURED.endpoint(), CONFIGURED.returnUrl(), CONFIGURED.cancelUrl()), RestClient.builder().build());
+        assertThatThrownBy(unconfigured::validateCheckoutConfiguration).isInstanceOf(AppException.class);
         assertThatThrownBy(() -> unconfigured.createPaymentLink(123, 99000, "PRO"))
                 .isInstanceOf(AppException.class).hasFieldOrPropertyWithValue("errorCode", ErrorCode.PAYMENT_UNAVAILABLE);
         assertThatThrownBy(() -> unconfigured.getPaymentInfo(123)).isInstanceOf(AppException.class);

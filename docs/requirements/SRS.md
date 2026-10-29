@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.10.0
+> **Version:** v2.13.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -27,7 +27,7 @@ Luồng lõi: Chuyên gia chia sẻ công thức chuẩn → Người dùng khai
 
 Gợi ý món phải tham chiếu bài công thức đang công khai và không bị ẩn trong hệ thống. Hệ thống kiểm tra ràng buộc bắt buộc và kết quả AI; khi không đủ món phù hợp phải thông báo rõ. Người dùng quyết định lưu/thay món. Các trường dữ liệu để kiểm tra nguyên liệu và sở thích sẽ được phân rã riêng; việc bài được công khai không phải cam kết an toàn dị ứng hoặc xác nhận chuyên môn.
 
-Onboarding Questionnaire sau đăng ký thu thập sở thích ăn uống phục vụ chọn món. Người dùng được bỏ qua Onboarding, nhưng phải hoàn thành ba nhóm thông tin tối thiểu trước khi dùng AI cá nhân hóa theo mục 3.15. Các actor, ranh giới quyền và chi tiết Onboarding được duy trì trực tiếp trong SRS này. BMI thuộc Hồ sơ nhu cầu dinh dưỡng tại mục 3.18 và chỉ là chỉ số tham khảo, không tự quyết định nhu cầu calorie/dưỡng chất hoặc món phù hợp.
+Onboarding Questionnaire sau đăng ký thu thập sở thích ăn uống phục vụ chọn món. Người dùng được bỏ qua Onboarding, nhưng phải hoàn thành ba nhóm thông tin tối thiểu trước khi dùng AI cá nhân hóa theo mục 3.15. Các actor, ranh giới quyền và chi tiết Onboarding được duy trì trực tiếp trong SRS này. BMI thuộc hồ sơ nhu cầu dinh dưỡng tại mục 3.18; AI menu dinh dưỡng dùng BMI cùng hồ sơ và mục tiêu tham khảo để cá nhân hóa lựa chọn, nhưng BMI không tự quyết định riêng nhu cầu calorie/dưỡng chất hoặc thay thế các mức tham khảo đã tính.
 
 AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công thức theo mẫu cho Chuyên gia và có thể hỗ trợ moderation. AI không phải chuyên gia dinh dưỡng, không tự quyết định duyệt/xóa nội dung và không đưa chẩn đoán hoặc điều trị sức khỏe.
 
@@ -38,7 +38,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - Nội dung cộng đồng MVP: bài công thức (`Recipe Post`), bình luận. Phân loại bài viết theo thể loại món ăn chuẩn hóa (`dish_category`) và loại ăn chay (`vegetarian_type`). Không có Blog độc lập nhúng thẻ công thức trong baseline hiện tại.
 - Mỗi bài công thức kết hợp dữ liệu món ăn có cấu trúc với trường hướng dẫn chuẩn bị/chế biến (`instructions`, 10–5.000 ký tự) linh hoạt, trực quan; hệ thống không ép buộc phân rã thành các bước độc lập hay quản lý theo chế độ step-to-step (Phương án B); bãi bỏ bảng `RECIPE_STEP`.
 - Media Phase 1: Thư viện ảnh tối đa 5 ảnh trên mỗi bài công thức (`RECIPE_MEDIA`) được upload lên Azure Blob Storage; trong đó có đúng 1 ảnh được chọn làm ảnh bìa (cover); bài công thức có thể chứa link YouTube và phát bằng embedded player trong app.
-- **Quy trình thẩm định Chuyên gia (`FR-05`):** Customer có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản (`EXPERT_APPLICATION`: kinh nghiệm ẩm thực chay, trường phái chay, tóm tắt công thức sở trường, link tham khảo); Administrator thẩm định nội dung và phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; tài khoản được thăng cấp `Role = EXPERT` ngay khi duyệt.
+- **Quy trình thẩm định Chuyên gia (`FR-05`):** Customer nộp đơn theo format văn bản (`EXPERT_APPLICATION`) với kinh nghiệm, trường phái chay, tóm tắt công thức, portfolio và có thể đính kèm một tài liệu chứng chỉ/văn bằng chuyên môn cùng một ảnh thẻ chân dung khung 3:4 riêng của đơn; Administrator thẩm định nội dung, xem hoặc tải tệp và phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; tài khoản được thăng cấp `Role = EXPERT` ngay khi duyệt. Tệp được lưu riêng tư và ảnh thẻ không trở thành avatar hồ sơ công khai.
 - **Đăng bài công thức độc quyền cho Chuyên gia (`FR-04`):** Chỉ tài khoản có vai trò `Chuyên gia` đã được Administrator phê duyệt mới được tạo, chỉnh sửa, xóa và công khai Recipe Post trực tiếp; Customer và Administrator không có quyền đăng bài.
 - Đánh giá chất lượng và lượt xem: Customer và Chuyên gia được đánh giá chất lượng bài công thức bằng bình chọn Like / Dislike và tính tỷ lệ % hài lòng (`RECIPE_REACTION`); Guest chỉ có quyền xem tỷ lệ % và tổng số lượt đánh giá; hệ thống hiển thị huy hiệu `👍 {like_percentage}%` nổi bật trên thẻ bài viết Recipe Card (tương tự Samsung Food); hệ thống lưu vết chi tiết từng lượt xem (`RECIPE_VIEW`) với cơ chế khử trùng lặp (view deduplication).
 - So sánh công thức (`FR-60`): Guest và Member có thể chọn đúng hai Recipe Post công khai khác nhau để đối chiếu thông tin tổng quan, nguyên liệu và chín chỉ tiêu dinh dưỡng trên một khẩu phần; hệ thống không lưu lịch sử, không xuất PDF và không kết luận món nào tốt hơn hoặc lành mạnh hơn.
@@ -54,7 +54,6 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 
 ### 3.2 Ngoài phạm vi hiện tại
 
-- Quản lý tệp chứng chỉ, văn bằng hoặc bằng cấp vật lý trong quy trình xét duyệt Chuyên gia (ứng dụng chỉ thẩm định dựa trên format văn bản có cấu trúc do người dùng khai báo).
 - Người dùng thông thường (Customer) tự do đăng tải bài công thức (chỉ dành riêng cho Chuyên gia đã được phê duyệt).
 - Chẩn đoán, điều trị, tư vấn sức khỏe chuyên nghiệp hoặc thay thế bác sĩ.
 - Lưu nháp Recipe Post trên server và lịch sử hội thoại AI theo tài khoản.
@@ -155,7 +154,7 @@ Luồng cấp cao: Chuyên gia đã được phê duyệt (`Role = EXPERT`) → 
 - Hệ thống gắn tác giả với tài khoản đăng bài (bắt buộc `Role = EXPERT`), không dùng ô nhập tên tác giả tùy ý và không cho người đăng chọn tài khoản khác để đứng tên.
 - Hồ sơ tác giả công khai (được quản lý trực tiếp trong thực thể `User`) không hiển thị email, thông tin đăng nhập hoặc dữ liệu hồ sơ dinh dưỡng/ăn uống riêng tư. Trang thông tin tác giả hiển thị tên hiển thị, avatar, giới thiệu chuyên môn ngắn, ngày tham gia và danh sách các bài công thức đã công khai.
 - Administrator xử lý báo cáo không trở thành tác giả. AI hỗ trợ viết không thay thế tác giả; Chuyên gia vẫn rà soát và chịu trách nhiệm khi công khai bài.
-- Gắn bài với tài khoản Chuyên gia nhằm định danh người chịu trách nhiệm nội dung. Quyền Chuyên gia được cấp sau khi Administrator thẩm định đơn đăng ký theo format (`FR-05`); hệ thống không quản lý văn bằng/chứng chỉ vật lý.
+- Gắn bài với tài khoản Chuyên gia nhằm định danh người chịu trách nhiệm nội dung. Quyền Chuyên gia được cấp sau khi Administrator thẩm định đơn đăng ký theo format (`FR-05`); tài liệu chứng chỉ do Customer tự nguyện cung cấp chỉ là tài liệu tham khảo trong đơn, không xác minh danh tính hoặc tính xác thực ngoài hệ thống.
 
 ### 3.8.1 Theo dõi người dùng
 
@@ -303,7 +302,8 @@ Khi bài công thức bị ẩn/xóa/không khả dụng, Saved Recipe và Meal 
 
 - AI gợi ý món và lập menu chỉ được chọn từ các bài công thức đang công khai, không bị ẩn/xóa trong hệ thống.
 - Gợi ý có thể dựa trên loại ăn chay, nguyên liệu cần tránh, món/nguyên liệu không thích, sở thích đã khai báo và nguyên liệu người dùng cho biết đang có.
-- AI được tìm, xếp hạng, giải thích lý do phù hợp, sắp công thức vào menu và đề xuất công thức thay thế; AI không tạo món, công thức, danh sách nguyên liệu hoặc hướng dẫn nấu mới cho người dùng.
+- AI được tìm, xếp hạng, giải thích lý do phù hợp, sắp công thức vào menu, đề xuất công thức thay thế và tạo hướng dẫn chế biến chi tiết chỉ từ Recipe Post công khai có sẵn. Hướng dẫn AI cho Member chỉ mở rộng thao tác từ nội dung và nguyên liệu của một bài nguồn; không tạo món hoặc danh sách nguyên liệu mới, không thêm nguyên liệu, không sửa/lưu bài nguồn.
+- Khi công thức nguồn thiếu thời gian hoặc nhiệt độ, AI phải nêu rõ nguồn không cung cấp và đánh dấu mọi ước tính bổ trợ; mỗi hướng dẫn phải dẫn tới bài công thức nguồn để người dùng kiểm tra.
 - Mỗi kết quả phải dẫn tới bài công thức tương ứng để người dùng kiểm tra trước khi lưu hoặc thêm vào lịch ăn.
 - Khi không có công thức phù hợp, hệ thống thông báo không tìm thấy hoặc chỉ trả danh sách chưa đầy đủ kèm lý do; không bịa công thức để lấp kết quả.
 - Bản menu AI chỉ là đề xuất. Người dùng chọn từng món hoặc xác nhận menu trước khi lịch ăn thay đổi.
@@ -317,9 +317,9 @@ Nguyên liệu “đang có” được nhập theo từng request; MVP không c
 - Phạm vi MVP của chức năng dinh dưỡng chỉ dành cho Member từ đủ 18 tuổi, không mang thai/cho con bú và không cần chế độ ăn điều trị bệnh.
 - Trước khi sử dụng, người dùng phải xác nhận mình thuộc phạm vi hỗ trợ. Nếu không thuộc phạm vi, hệ thống giải thích giới hạn và không cung cấp mức nhu cầu, AI menu dinh dưỡng hoặc kiểm tra menu ngày; không đưa ra hướng dẫn điều trị thay thế.
 - Việc không đủ điều kiện dùng chức năng dinh dưỡng không khóa các chức năng thông thường: xem/tìm công thức, Đã lưu, Lịch ăn thủ công và AI không-dinh-dưỡng theo quyền gói.
-- Hệ thống cho người dùng xem BMI như một chỉ số tham khảo từ chiều cao và cân nặng; BMI không phải chẩn đoán và không được dùng một mình để quyết định nhu cầu calorie, dưỡng chất hoặc cấm/chọn món.
+- Hệ thống tính và cho người dùng xem BMI như một chỉ số tham khảo từ chiều cao và cân nặng. AI menu dinh dưỡng được dùng BMI/phân loại BMI cùng hồ sơ nhân trắc học, mức tham khảo chín chỉ tiêu và ràng buộc ăn uống để cá nhân hóa việc phối hợp món; BMI không phải chẩn đoán, không tự thay đổi các mức tham khảo và không được dùng một mình để cấm/chọn món hoặc áp đặt mục tiêu sức khỏe.
 - Hệ thống cung cấp mức calorie và dưỡng chất tham khảo hằng ngày dựa trên hồ sơ cá nhân rộng hơn BMI, gồm các yếu tố cần thiết như tuổi, giới tính, chiều cao, cân nặng và mức vận động. Đối tượng theo giới hạn trên; nguồn tham khảo và lịch nghiên cứu công thức theo Q31 tại 3.20.
-- AI sử dụng các mức tham khảo do hệ thống cung cấp để đề xuất và giải thích; AI không tự đặt ra mục tiêu calorie/dưỡng chất không có căn cứ.
+- AI sử dụng các mức tham khảo chín chỉ tiêu do hệ thống cung cấp và BMI trong hồ sơ để đề xuất, phối hợp món cho từng bữa và giải thích mức đáp ứng. Tổng năng lượng từng bữa hướng tới 25%/37,5%/37,5% mục tiêu kcal ngày cho sáng/trưa/tối, với dung sai ±5 điểm phần trăm; AI không tự đặt ra hoặc thay đổi mục tiêu calorie/dưỡng chất.
 - Kết quả phải ghi rõ đây là mức ước tính/tham khảo cho việc lập kế hoạch, không thay thế đánh giá của chuyên gia y tế hoặc dinh dưỡng.
 
 **Chỉ tiêu dinh dưỡng MVP:**
@@ -343,7 +343,8 @@ Nguyên liệu “đang có” được nhập theo từng request; MVP không c
 
 - AI vẫn tuân theo mục 3.17: chỉ chọn bài công thức đang công khai, không bị ẩn/xóa và không tạo công thức mới.
 - Chỉ những bài có kết quả dinh dưỡng được tính đầy đủ từ nguyên liệu thuộc danh mục được hỗ trợ, định lượng hợp lệ và số khẩu phần hợp lệ mới được dùng trong menu có mục tiêu dinh dưỡng. Bài có nguyên liệu chưa hỗ trợ vẫn được công khai nhưng không đủ điều kiện cho chức năng này.
-- Ràng buộc loại ăn chay và nguyên liệu cần tránh được ưu tiên trước việc tối ưu calorie/dưỡng chất. AI không được chọn món vi phạm ràng buộc chỉ để đạt con số mục tiêu.
+- Ràng buộc loại ăn chay và nguyên liệu cần tránh được ưu tiên trước việc tối ưu chín chỉ tiêu. BMI và hồ sơ dinh dưỡng cá nhân hóa lựa chọn món; AI không được chọn món vi phạm ràng buộc chỉ để đạt con số mục tiêu.
+- Mỗi ngày giữ ba bữa cố định; mỗi bữa có thể gồm một hoặc nhiều công thức công khai. Trong tổng mục tiêu năng lượng ngày FR-35, bữa sáng hướng tới 25%, bữa trưa 37,5% và bữa tối 37,5%; mỗi bữa được xem là phù hợp khi nằm trong ±5 điểm phần trăm quanh tỷ lệ tương ứng (20–30%, 32,5–42,5%, 32,5–42,5%). Không bắt buộc đạt đúng tỷ lệ trung tâm nếu tổng năng lượng nằm trong biên độ. AI phối hợp món và khẩu phần để đạt phân bổ năng lượng này đồng thời tối ưu các chỉ tiêu còn lại trong chín chỉ tiêu: protein, carbohydrate, chất béo, chất xơ, canxi, sắt, vitamin B12 và kẽm. Nếu dữ liệu công thức hoặc pool món không cho phép đáp ứng tỷ lệ hay một số mức tham khảo, hệ thống nêu rõ phần chênh lệch thay vì khẳng định thực đơn đã cân bằng.
 - Người dùng xem, thay món và xác nhận trước khi menu được lưu vào lịch ăn.
 
 **Kiểm tra một ngày trong lịch ăn:**
@@ -393,7 +394,7 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 
 | Dịch vụ ngoài | Trách nhiệm được dùng trong phạm vi hiện tại | Ranh giới |
 | --- | --- | --- |
-| Azure Blob Storage | Lưu và phục vụ ảnh Recipe Post theo tham chiếu do ứng dụng quản lý | Không lưu video upload trong Phase 1; không tự quyết định quyền truy cập ứng dụng. |
+| Azure Blob Storage | Lưu ảnh Recipe Post và tệp đính kèm riêng tư của đơn Chuyên gia theo tham chiếu do ứng dụng quản lý | Tệp đơn Chuyên gia không được công khai; quyền xem do Backend kiểm tra. Không lưu video upload trong Phase 1. |
 | YouTube | Phát video nhúng từ link/video ID hợp lệ | Ứng dụng không upload, sao chép hoặc bảo đảm mọi video luôn cho phép nhúng. |
 | Google Maps Platform | Không được sử dụng trong các capability hiện hành | Không phải dependency của baseline; ứng dụng không quản lý hoặc xác minh dữ liệu nhà hàng bên ngoài. |
 | Google authentication và dịch vụ email | Hỗ trợ Google Login, xác minh email, đặt lại mật khẩu và thông báo đã xác nhận | Nhà cung cấp và chi tiết luồng triển khai chưa được SRS này tự suy diễn. |
@@ -410,7 +411,7 @@ Các external/supporting actor dưới đây không phải tài khoản đăng n
 | M05 | Saved Recipes, Meal Planning & Shopping List | Lưu công thức để xem lại, xếp món vào lịch ăn ngày/tuần ba bữa cố định, so sánh thống kê dinh dưỡng tuần, xuất file công thức và báo cáo PDF dinh dưỡng, tạo/quản lý và xuất danh sách mua sắm nguyên liệu cơ bản | M02, M04 | Đã chốt ranh giới Saved/Planner/Shopping List; quy tắc gom an toàn và xuất file đã xác nhận. |
 | M06 | Gemini AI Access & Usage | Guest/Free/Plus/Pro gọi AI theo gói tính năng (Feature Entitlement), rate limit kỹ thuật cho Guest và telemetry chi phí | M02 một phần, Gemini backend | Entitlement, safety, telemetry và actor-goal Use Case được quy định tại FR/BR/NFR liên quan. |
 | M08 | Subscription Administration | Hiển thị/đổi gói và phân quyền tính năng AI (Feature-based Entitlement) | M02, M06 | FREE 0, PLUS 49,000, PRO 99,000 VND/tháng; payment provider đã chọn là payOS. |
-| M09 | Administration | Xét duyệt đơn đăng ký Chuyên gia (`FR-05`), xử lý báo cáo vi phạm, quản lý user/bài công thức/bình luận và danh mục nguyên liệu dinh dưỡng | M02–M07, M10 | Quy trình xét duyệt chuyên gia theo format; quyết định hậu kiểm thủ công có lý do, giữ audit/history. Không quản lý bảng danh mục động. |
+| M09 | Administration | Xét duyệt đơn đăng ký Chuyên gia và tệp đính kèm riêng tư (`FR-05`), xử lý báo cáo vi phạm, quản lý user/bài công thức/bình luận và danh mục nguyên liệu dinh dưỡng | M02–M07, M10 | Quy trình xét duyệt chuyên gia theo format; tệp đơn chỉ Admin được tải/xem qua Backend; quyết định hậu kiểm thủ công có lý do, giữ audit/history. Không quản lý bảng danh mục động. |
 | M10 | Nutrition Profile & Daily Menu Check | Với Member đủ điều kiện, tính chín chỉ tiêu từ danh mục nguyên liệu dinh dưỡng nội bộ, quy đổi theo khẩu phần và đối chiếu tổng ba bữa với hồ sơ | M02, M04, M05 | Đã chốt đối tượng, chỉ tiêu, nguồn dữ liệu cấp MVP và cách cộng menu; còn dữ liệu khởi tạo, quy đổi và khoảng tham khảo chi tiết khi triển khai. |
 
 ## 6. Thứ tự sử dụng baseline cho thiết kế và kiểm thử

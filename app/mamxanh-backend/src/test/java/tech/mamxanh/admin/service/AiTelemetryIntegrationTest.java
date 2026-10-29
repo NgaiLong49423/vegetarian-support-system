@@ -37,6 +37,7 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
     @Autowired AiTelemetryRepository repository;
     @Autowired AiTelemetryRetention retention;
     @Autowired AiTelemetryListener listener;
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean AiTelemetrySpool spool;
     @Autowired ApplicationEventPublisher events;
     @Autowired PlatformTransactionManager transactions;
     @MockitoBean AiClient ai;
@@ -54,8 +55,13 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
         var executor = (org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor)
                 org.springframework.test.util.ReflectionTestUtils.getField(listener,"executor");
         long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
-        while ((executor.getActiveCount() > 0 || !executor.getThreadPoolExecutor().getQueue().isEmpty())
-                && System.nanoTime() < deadline) Thread.sleep(10);
+        while (System.nanoTime() < deadline && (executor.getActiveCount() > 0
+                || !executor.getThreadPoolExecutor().getQueue().isEmpty()
+                || spool.pending(500).stream().anyMatch(event -> java.util.Objects.equals(event.userId(), member)
+                        || guest.equals(event.anonymousSessionId())))) {
+            listener.replay();
+            Thread.sleep(10);
+        }
         jdbc.update("DELETE FROM AI_USAGE_TELEMETRY WHERE user_id=? OR anonymous_session_id=?", member, guest);
         jdbc.update("DELETE FROM [USER] WHERE user_id=?", member);
     }
@@ -66,6 +72,31 @@ class AiTelemetryIntegrationTest extends AbstractIntegrationTest {
         long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
         while (count() != expected && System.nanoTime() < deadline) Thread.sleep(10);
         assertThat(count()).isEqualTo(expected);
+    }
+
+    @Test void durableMetadataReplaysIntoRealSqlAndAcknowledgesOnlyAfterCommit() throws Exception {
+        var event = event("FR-51", clock.instant());
+        spool.store(event);
+        assertThat(count()).isZero();
+        listener.replay();
+        awaitCount(1);
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+        while (spool.pending(500).contains(event) && System.nanoTime() < deadline) Thread.sleep(10);
+        assertThat(spool.pending(500)).doesNotContain(event);
+        spool.store(event); // SQL commit may succeed before a process can remove its durable file.
+        listener.replay();
+        awaitCount(1);
+    }
+
+    @Test void unavailableDurableStorageReturns503InsteadOfAnUnaccountedSuccessfulAnswer() throws Exception {
+        when(ai.answerChat(anyString(), anyString())).thenReturn(new AiClient.ChatResult("Synthetic answer", 150, 300, 450));
+        doThrow(new tech.mamxanh.common.exception.AppException(tech.mamxanh.common.exception.ErrorCode.AI_TELEMETRY_UNAVAILABLE))
+                .when(spool).store(any());
+        mockMvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"contextType\":\"GENERAL\",\"question\":\"Synthetic question\",\"anonymousViewerId\":\"" + guest + "\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("AI_TELEMETRY_UNAVAILABLE"));
+        assertThat(count()).isZero();
     }
 
     @Test void exactMetadataAndCostArePersistedOnceWithoutPromptColumns() throws Exception {

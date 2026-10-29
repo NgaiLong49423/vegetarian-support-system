@@ -49,6 +49,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in app/mamxanh-backend/.env}
       MAMXANH_JWT_SECRET: ${MAMXANH_JWT_SECRET:?Set MAMXANH_JWT_SECRET in app/mamxanh-backend/.env}
       MAMXANH_DEMO_PASSWORD: ${MAMXANH_DEMO_PASSWORD:?Set MAMXANH_DEMO_PASSWORD in app/mamxanh-backend/.env}
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING:-}
+      AZURE_STORAGE_CONTAINER_NAME: ${AZURE_STORAGE_CONTAINER_NAME:-mamxanh-recipes}
       MAMXANH_PAYOS_CLIENT_ID: ${MAMXANH_PAYOS_CLIENT_ID:-}
       MAMXANH_PAYOS_API_KEY: ${MAMXANH_PAYOS_API_KEY:-}
       MAMXANH_PAYOS_CHECKSUM_KEY: ${MAMXANH_PAYOS_CHECKSUM_KEY:-}
@@ -56,6 +58,7 @@ services:
       MAMXANH_PAYOS_RETURN_URL: ${MAMXANH_PAYOS_RETURN_URL:-http://localhost:5173/payment/success}
       MAMXANH_PAYOS_CANCEL_URL: ${MAMXANH_PAYOS_CANCEL_URL:-http://localhost:5173/payment/cancel}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      MAMXANH_AI_TELEMETRY_SPOOL_DIRECTORY: /var/lib/mamxanh/ai-telemetry
       MAMXANH_GOOGLE_CLIENT_ID: ${MAMXANH_GOOGLE_CLIENT_ID:-}
       MAMXANH_FRONTEND_BASE_URL: http://localhost:5173
       MAMXANH_CORS_ALLOWED_ORIGINS: http://localhost:5173
@@ -66,6 +69,8 @@ services:
       MAMXANH_MAIL_FROM: ${MAMXANH_MAIL_FROM:-}
     ports:
       - "127.0.0.1:8080:8080"
+    volumes:
+      - backend-telemetry-data:/var/lib/mamxanh/ai-telemetry
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/v3/api-docs"]
       interval: 10s
@@ -98,5 +103,6 @@ services:
       start_period: 20s
 
 volumes:
+  backend-telemetry-data:
   frontend-node-modules:
   sqlserver-data:

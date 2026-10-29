@@ -9,9 +9,13 @@ import { asApiError } from "../lib/apiClient"
 export function SaveRecipeButton({
   recipeId,
   compact = false,
+  size = 'md',
+  className = '',
 }: {
   recipeId: number
   compact?: boolean
+  size?: 'sm' | 'md'
+  className?: string
 }) {
   const { account } = useAuth()
   const { ids, loading, error, pending, reload, setSaved } = useSavedRecipes()
@@ -62,18 +66,20 @@ export function SaveRecipeButton({
                 saved
                   ? "bg-brand-600 text-on-brand"
                   : "bg-black/65 text-white hover:bg-black/85"
-              }`
-            : `inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium disabled:opacity-60 ${
+              } ${className}`
+            : `inline-flex items-center justify-center rounded-full border font-semibold shadow-xs transition-all duration-150 disabled:opacity-60 ${
+                size === 'sm' ? 'px-3.5 py-1.5 text-sm gap-2' : 'px-4 py-2 text-sm gap-2'
+              } ${
                 saved
-                  ? "border-brand-600 bg-brand-600 text-on-brand"
-                  : "border-brand-200 text-ink hover:border-brand-600"
-              }`
+                  ? "border-brand-600 bg-brand-600 text-on-brand hover:bg-brand-700"
+                  : "border-brand-300/40 bg-paper text-ink hover:border-brand-500 hover:text-brand-700 hover:shadow-sm dark:border-brand-800 dark:bg-surface"
+              } ${className}`
         }
       >
         {busy ? (
           <LoaderCircle className="h-4 w-4 animate-spin" />
         ) : (
-          <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
+          <Bookmark className={`h-4 w-4 shrink-0 ${saved ? "fill-current" : "text-brand-600"}`} />
         )}
         {!compact && (saved ? "Đã lưu" : "Lưu bài viết")}
       </button>

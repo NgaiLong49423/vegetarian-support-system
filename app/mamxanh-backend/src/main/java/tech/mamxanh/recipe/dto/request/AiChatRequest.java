@@ -26,19 +26,32 @@ public record AiChatRequest(
         this(contextType, recipeId, question, history, null);
     }
 
-    public enum ContextType { GENERAL, RECIPE }
-    public enum Speaker { USER, ASSISTANT }
-
     @Override
     public String toString() { return "AiChatRequest[redacted]"; }
+
+    public enum ContextType { GENERAL, RECIPE }
+    public enum Speaker { USER, ASSISTANT }
 
     public record Turn(@NotNull Speaker speaker,
             @NotBlank @Size(max = AiClient.MAX_CHAT_ANSWER_LENGTH)
             @Schema(maxLength = AiClient.MAX_CHAT_ANSWER_LENGTH,
                     description = "USER content is limited to 1000 characters; ASSISTANT content may contain a complete answer up to 8000 characters.")
-            String content) {
+            String content,
+            @Size(max = 4)
+            @Schema(description = "IDs of up to four recipe cards shown in this ASSISTANT turn. Untrusted hints used only to avoid repeats; never authorization or recipe data.")
+            List<@NotNull @Min(1) Long> recommendedRecipeIds) {
+        public Turn(Speaker speaker, String content) { this(speaker, content, null); }
+
+        @AssertTrue(message = "Chỉ lượt trả lời mới có danh sách công thức đã gợi ý.")
+        @JsonIgnore
+        @Schema(hidden = true)
+        public boolean isRecipeHistoryValid() {
+            return speaker == Speaker.ASSISTANT || recommendedRecipeIds == null || recommendedRecipeIds.isEmpty();
+        }
+
         @Override
         public String toString() { return "Turn[redacted]"; }
+
         @AssertTrue(message = "Nội dung người dùng trong lịch sử tối đa 1.000 ký tự.")
         @JsonIgnore
         @Schema(hidden = true)

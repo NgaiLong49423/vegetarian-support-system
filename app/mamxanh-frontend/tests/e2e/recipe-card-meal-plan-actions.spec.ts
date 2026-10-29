@@ -155,7 +155,7 @@ test.describe("Issue #23 [FR-17] — Hiển thị thẻ món và liên kết l�
     await expect(card.getByText("Chuyên gia Minh An")).toBeVisible()
     await expect(card.getByText("Thuần chay · Món kho")).toBeVisible()
     await expect(card.getByText("1 nguyên liệu · 30 phút · 3 phần")).toBeVisible()
-    await expect(card.getByText("95%")).toBeVisible()
+    await expect(card.getByText("95%", { exact: true })).toHaveCount(0)
     await expect(card.getByText("128 lượt xem")).toBeVisible()
 
     // AC-17.5: Click vào thân thẻ món điều hướng chính xác tới trang chi tiết

@@ -72,6 +72,19 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void transactionAuditDocumentsSuccessfulJsonAndCsvAlongsideItsErrors() {
+        for (String path : List.of("/api/v1/admin/transactions", "/api/v1/admin/transactions/{id}",
+                "/api/v1/admin/transactions/export")) {
+            assertResponses("get", path, "200", "400", "401", "403");
+        }
+        assertThat(paths.path("/api/v1/admin/transactions").path("get").path("responses").path("200")
+                .path("content").path("application/json").path("schema").path("$ref").asString())
+                .endsWith("/AdminTransactionReport");
+        assertThat(paths.path("/api/v1/admin/transactions/export").path("get").path("responses").path("200")
+                .path("content").path("text/csv").path("schema").path("format").asString()).isEqualTo("binary");
+    }
+
+    @Test
     void everyProtectedOperationDeclaresUnauthenticatedAndForbiddenAsProblemDetails() {
         List<String> missing = new ArrayList<>();
         forEachOperation((label, operation) -> {
@@ -96,6 +109,8 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void repairedOperationsDeclareTheErrorsTheirServicesReturn() {
+        assertResponses("post", "/api/v1/recipes/media/upload", "201", "503");
+        assertResponses("post", "/api/v1/me/profile/avatar", "200", "503");
         assertResponses("get", "/api/v1/admin/ingredients/{ingredientId}", "404");
         assertResponses("post", "/api/v1/admin/ingredients", "409");
         assertResponses("post", "/api/v1/admin/units", "409");
@@ -104,6 +119,9 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
         assertResponses("post", "/api/v1/expert-applications", "409");
         assertResponses("get", "/api/v1/admin/expert-applications/{id}", "404");
         assertResponses("post", "/api/v1/admin/expert-applications/{id}/approve", "409");
+        assertResponses("get", "/api/v1/admin/reports/{reportId}", "404");
+        assertResponses("post", "/api/v1/admin/reports/{reportId}/claim", "404", "409");
+        assertResponses("post", "/api/v1/admin/reports/{reportId}/resolve", "404", "409");
         assertResponses("post", "/api/v1/subscriptions/checkout", "201");
         assertResponses("post", "/api/v1/auth/register", "201", "409");
         assertResponses("post", "/api/v1/auth/login", "401", "403", "429");

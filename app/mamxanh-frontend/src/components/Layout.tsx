@@ -4,7 +4,7 @@ import { AppHeader } from './AppHeader';
 import { AppFooter } from './AppFooter';
 import { useAuth } from './AuthContext';
 import { Info } from 'lucide-react';
-import { AiChatContext, type AiChatContextValue } from './AiChatContext';
+import { AiChatContext, type AiChatContextValue, type RecipeArticleContext } from './AiChatContext';
 import { AiChatPage } from '../pages/AiChatPage';
 
 import { AdminLayout } from './AdminLayout';
@@ -14,17 +14,23 @@ export function Layout({ children }: { children: ReactNode }) {
   const { account } = useAuth();
   const [chatOpen, setChatOpen] = useState(false);
   const [chatRecipeId, setChatRecipeId] = useState<number | null>(null);
-  const openChat = useCallback((recipeId?: number) => {
-    setChatRecipeId(recipeId ?? null);
+  const [chatRecipeTitle, setChatRecipeTitle] = useState<string | null>(null);
+  const [chatRecipeArticle, setChatRecipeArticle] = useState<RecipeArticleContext | null>(null);
+  const openChat = useCallback((recipe?: RecipeArticleContext) => {
+    setChatRecipeId(recipe?.recipeId ?? null);
+    setChatRecipeTitle(recipe?.title.trim() || null);
+    setChatRecipeArticle(recipe ?? null);
     setChatOpen(true);
   }, []);
   const closeChat = useCallback(() => setChatOpen(false), []);
   const chatContext = useMemo<AiChatContextValue>(() => ({
     isOpen: chatOpen,
     recipeId: chatRecipeId,
+    recipeTitle: chatRecipeTitle,
+    recipeArticle: chatRecipeArticle,
     openChat,
     closeChat,
-  }), [chatOpen, chatRecipeId, openChat, closeChat]);
+  }), [chatOpen, chatRecipeId, chatRecipeTitle, chatRecipeArticle, openChat, closeChat]);
 
   if (['/dang-nhap', '/dang-ky', '/quen-mat-khau', '/xac-minh-email', '/dat-lai-mat-khau'].includes(pathname)) {
     return <>{children}</>;
@@ -37,7 +43,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   const isGuestBlockedRoute = !account && ['/di-cho', '/ke-hoach'].includes(pathname);
   const prototype = !isGuestBlockedRoute && (
-    ['/cong-dong', '/dinh-duong', '/goi-ai', '/giao-dich', '/so-sanh'].includes(pathname)
+    ['/cong-dong', '/dinh-duong', '/goi-ai', '/giao-dich'].includes(pathname)
     || pathname.startsWith('/bai-viet/')
   );
 

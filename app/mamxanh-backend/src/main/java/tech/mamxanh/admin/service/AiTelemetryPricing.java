@@ -8,7 +8,7 @@ import tech.mamxanh.admin.dto.AiCostEstimate;
 import tech.mamxanh.integration.ai.AiTokenUsage;
 
 /** Versioned Standard text-token equivalent; not a Google invoice or application-plan charge.
- * Source: https://ai.google.dev/gemini-api/docs/pricing#gemini-3.8-flash (2026-10-23).
+ * Source: https://ai.google.dev/gemini-api/docs/pricing#gemini-3.8-flash (verified 2026-10-28).
  */
 @Service
 public class AiTelemetryPricing {

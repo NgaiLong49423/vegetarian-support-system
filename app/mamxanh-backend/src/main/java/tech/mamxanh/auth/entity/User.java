@@ -251,6 +251,12 @@ public class User {
         }
     }
 
+    /** BR-26: an Administrator decision locks the account; every later request with its tokens is refused. */
+    public void lockByAdministrator(LocalDateTime now) {
+        this.accountStatus = AccountStatus.LOCKED;
+        this.updatedAt = now;
+    }
+
     public void promoteToExpert(LocalDateTime now) {
         this.role = Role.EXPERT;
         this.updatedAt = now;

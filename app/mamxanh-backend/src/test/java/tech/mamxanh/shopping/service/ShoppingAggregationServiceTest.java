@@ -125,12 +125,60 @@ class ShoppingAggregationServiceTest {
     }
 
     @Test void manualNamesIgnoreCaseButRequireTheSameUnitAndStaySeparateFromCatalog() {
-        var rows = List.of(manual("  KHĂN GIẤY  ",1,"1"),manual("khăn giấy",1,"2"),manual("Khăn giấy",2,"1"),
+        var rows = List.of(manual("  KHĂN GIẤY  ",1,"1"),manual("khăn giấy",1,"2"),manual("Khăn  giấy",1,"3"),manual("Khăn giấy",2,"1"),
                 manual("Đậu phụ",1,"50"),line(1,1,"100"));
         var output = items(service.aggregate(rows));
         assertThat(output).hasSize(4);
         assertThat(output).filteredOn(i -> i.ingredientId()==null && i.unitId()==1 && i.name().contains("KHĂN"))
-                .singleElement().satisfies(i -> assertThat(i.quantity()).isEqualByComparingTo("3"));
+                .singleElement().satisfies(i -> assertThat(i.quantity()).isEqualByComparingTo("6"));
+    }
+
+    @Test void manualNamesRejectBlankOverlongAndControlCharacterValues() {
+        var result = service.aggregate(List.of(manual("   ",1,"1"), manual("x".repeat(201),1,"1"),
+                manual("Tên\u0001không hợp lệ",1,"1"), new ShoppingAggregationLine(null,null,BigDecimal.ONE,1)));
+        assertThat(items(result)).isEmpty();
+        assertThat(result.warnings()).extracting(ShoppingAggregationResult.Warning::code)
+                .containsExactly("INVALID_MANUAL_NAME","INVALID_MANUAL_NAME","INVALID_MANUAL_NAME","INVALID_MANUAL_NAME");
+    }
+
+    @Test void equivalentVolumeRatesMergeAndInvalidOfficialRatesAreIgnored() {
+        rates.add(new ConversionResponse(2L,3,new BigDecimal("9000"),false,true));
+        rates.add(new ConversionResponse(2L,3,null,false,true));
+        rates.add(rate(2,3,"0",true));
+        rates.add(rate(2,3,"1.25",true));
+        rates.add(rate(2,4,"1250",true));
+        var result = service.aggregate(List.of(line(2,1,"300"),line(2,3,"200"),line(2,4,"0.2")));
+        assertThat(items(result)).singleElement().satisfies(item -> {
+            assertThat(item.quantity()).isEqualByComparingTo("800");
+            assertThat(item.unitCode()).isEqualTo("g");
+            assertThat(item.incompatibleUnits()).isFalse();
+        });
+        assertThat(result.warnings()).isEmpty();
+    }
+
+    @Test void keepsConvertibleBucketsSeparateWhenNoMassTargetUnitExists() {
+        when(catalog.findActiveUnits()).thenReturn(List.of());
+        rates.add(rate(2,3,"1.25",true));
+        rates.add(rate(2,7,"15",true));
+        var output = items(service.aggregate(List.of(line(2,3,"100"),line(2,7,"2"))));
+        assertThat(output).hasSize(2).allSatisfy(item -> assertThat(item.incompatibleUnits()).isTrue());
+        assertThat(output).extracting(Item::unitCode).containsExactlyInAnyOrder("ml","tbsp");
+    }
+
+    @Test void retainsAConvertibleBucketWhenAnotherBucketHasNoOfficialRate() {
+        var result = service.aggregate(List.of(line(2,1,"100"),line(2,3,"200")));
+        assertThat(items(result)).hasSize(2).allSatisfy(item -> assertThat(item.incompatibleUnits()).isTrue());
+        assertThat(result.warnings()).isEmpty();
+    }
+
+    @Test void nullManualNamesAreRejectedAndNonBreakingSpacesNormalizeForMatching() {
+        var result = service.aggregate(List.of(manual(null,1,"1"),manual("Đậu\u00a0hũ",1,"2"),manual("đậu hũ",1,"3")));
+        assertThat(items(result)).singleElement().satisfies(item -> {
+            assertThat(item.name()).isEqualTo("Đậu hũ");
+            assertThat(item.quantity()).isEqualByComparingTo("5");
+        });
+        assertThat(result.warnings()).extracting(ShoppingAggregationResult.Warning::code)
+                .containsExactly("INVALID_MANUAL_NAME");
     }
 
     @Test void rejectsInvalidRowsWithSourceIndexedWarningsAndKeepsValidRows() {

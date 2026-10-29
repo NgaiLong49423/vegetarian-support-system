@@ -50,7 +50,7 @@ const adminNavigationGroups: { title: string; items: AdminNavItem[] }[] = [
   {
     title: 'Quản trị hệ thống',
     items: [
-      { to: '/admin/bao-cao', label: 'Hậu kiểm báo cáo', icon: ShieldAlert },
+      { to: '/admin/bao-cao', label: 'Hậu kiểm nội dung', icon: ShieldAlert },
       { to: '/admin/nguoi-dung', label: 'Quản lý người dùng', icon: Users },
       { to: '/admin/giao-dich', label: 'Giám sát giao dịch', icon: CreditCard },
       { to: '/admin/ai-telemetry', label: 'Mức sử dụng AI', icon: Activity },
@@ -70,7 +70,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     if (pathname.startsWith('/admin/ai-telemetry')) return 'Mức sử dụng AI';
     if (pathname.startsWith('/quan-tri/danh-muc')) return 'Danh mục nguyên liệu dinh dưỡng';
     if (pathname.startsWith('/admin/xet-duyet-chuyen-gia')) return 'Xét duyệt Chuyên gia';
-    if (pathname.startsWith('/admin/bao-cao')) return 'Hậu kiểm báo cáo vi phạm';
+    if (pathname.startsWith('/admin/bao-cao')) return 'Hậu kiểm nội dung';
     if (pathname.startsWith('/admin/nguoi-dung')) return 'Quản lý người dùng';
     if (pathname.startsWith('/admin/giao-dich')) return 'Giám sát giao dịch hệ thống';
     return 'Khu vực quản trị';

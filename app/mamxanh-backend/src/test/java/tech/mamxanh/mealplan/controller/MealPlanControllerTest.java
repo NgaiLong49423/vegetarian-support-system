@@ -244,7 +244,10 @@ class MealPlanControllerTest {
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/ai-menu/previews'].post.responses['200']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/meal-plans/ai-menu'].put.security[0].bearerAuth").isArray())
                 .andExpect(jsonPath("$.components.schemas.AiMenuPreviewResponse.properties.meals").exists())
-                .andExpect(jsonPath("$.components.schemas.ApplyAiMenuRequest.properties.meals.maxItems").value(21));
+                .andExpect(jsonPath("$.components.schemas.ApplyAiMenuRequest.properties.meals.maxItems").value(1050))
+                .andExpect(jsonPath("$.components.schemas.AiMenuPreviewResponse.properties.dailyTargets").exists())
+                .andExpect(jsonPath("$.components.schemas.AiMenuPreviewResponse.properties.energyTargetKcal").exists())
+                .andExpect(jsonPath("$.components.schemas.AiMenuPreviewResponse.properties.bmi").exists());
     }
 
     @ParameterizedTest

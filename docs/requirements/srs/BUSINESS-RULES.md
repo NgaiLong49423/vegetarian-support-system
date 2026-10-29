@@ -1,8 +1,8 @@
 > **Document:** Business Rules Specification
 > **File:** `docs/requirements/srs/BUSINESS-RULES.md`
-> **Version:** v2.11.0
+> **Version:** v2.13.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-20
+> **Last Updated:** 2026-10-27
 > **Status:** Active
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`
 
@@ -307,7 +307,7 @@ This document contains only requirements included in Requirements / Implementati
 ### BR-39 — Vai trò tham khảo của chỉ số BMI
 
 - **Mã quy tắc:** BR-39
-- **Nội dung:** BMI hoặc mục tiêu cân nặng không được dùng một mình để tự kê calorie/macro target hay đánh giá sức khỏe; BMI chỉ là chỉ số tham khảo trong hồ sơ rộng hơn. FR-36 được phép dùng mục tiêu hồ sơ hoặc mục tiêu riêng cho tuần hiện tại để ưu tiên lựa chọn món trong pool công thức tin cậy. Mục tiêu đó không tự thay đổi các mức năng lượng/dưỡng chất FR-35, không được Gemini tự chuyển thành thâm hụt/thặng dư calorie, và không phải chỉ định hay cam kết kết quả cân nặng.
+- **Nội dung:** BMI/phân loại BMI là thông tin tham khảo trong hồ sơ cá nhân và được FR-36 sử dụng cùng hồ sơ nhân trắc học, các mức tham khảo chín chỉ tiêu FR-35 và ràng buộc ăn uống để cá nhân hóa lựa chọn, phối hợp công thức và khẩu phần. BMI hoặc mục tiêu cân nặng không được dùng riêng để đánh giá sức khỏe, tự kê hoặc thay đổi mục tiêu calorie/dưỡng chất. Mục tiêu hồ sơ hoặc mục tiêu riêng của tuần chỉ hướng dẫn lựa chọn món; Gemini không được tự suy ra thâm hụt/thặng dư calorie. Kết quả không phải chỉ định hay cam kết thay đổi cân nặng.
 
 ---
 
@@ -565,7 +565,7 @@ This document contains only requirements included in Requirements / Implementati
 - **Mã quy tắc:** BR-74
 - **Nội dung:**
   - Người dùng có vai trò `CUSTOMER` được phép nộp đơn đăng ký Chuyên gia (`EXPERT_APPLICATION`) thông qua biểu mẫu format văn bản có cấu trúc (kinh nghiệm ẩm thực $\ge 20$ ký tự, trường phái chay, tóm tắt công thức sở trường $\ge 30$ ký tự, đúng một link HTTP/HTTPS tham khảo tùy chọn).
-  - Đây là quy trình xét duyệt tư cách Chuyên gia và quyền đăng bài dựa trên thông tin tự khai, không phải xác minh danh tính/KYC hoặc xác thực bằng cấp. Hệ thống tuyệt đối không yêu cầu hoặc lưu trữ giấy tờ tùy thân, tệp chứng chỉ hay bằng cấp vật lý.
+  - Đây là quy trình xét duyệt tư cách Chuyên gia và quyền đăng bài, không phải xác minh danh tính/KYC hoặc xác thực tính xác thực ngoài hệ thống. Customer có thể tự nguyện đính kèm một tài liệu chứng chỉ/văn bằng chuyên môn (PDF/JPEG/PNG, tối đa 5 MB) và một ảnh thẻ chân dung khung 3:4 riêng của đơn (JPEG/PNG/WebP, tối đa 2 MB); không nhận giấy tờ tùy thân. Backend xác minh chữ ký nội dung và dung lượng, lưu trong Azure Blob riêng tư; chỉ Administrator truy cập/tải tệp qua Backend để thẩm định. Ảnh không thay đổi avatar hồ sơ công khai.
   - **Quy tắc chặn nộp trùng (Single Open Application Rule):** Mỗi tài khoản Customer chỉ được phép sở hữu tối đa một bản ghi đơn đăng ký ở trạng thái chờ duyệt (`PENDING`). Nếu gửi thêm đơn trong khi đơn cũ chưa được xử lý, Backend từ chối với mã lỗi `HTTP 409 Conflict`.
   - Customer được xem lịch sử các đơn của chính mình theo thứ tự mới nhất trước nhưng không được rút/hủy đơn `PENDING` trong MVP; không được xem đơn của tài khoản khác.
   - **Quy tắc phê duyệt và chuyển đổi vai trò (Instant Role Promotion):** Chỉ khi đơn vẫn `PENDING` và tài khoản nộp vẫn `ACTIVE` với vai trò `CUSTOMER`, Administrator mới được phê duyệt. Hệ thống cập nhật trạng thái đơn thành `APPROVED`, đồng thời cập nhật vai trò người dùng trong `USER` thành `EXPERT`, làm mới trạng thái phân quyền để mở khóa quyền tạo bài viết tại `FR-04` và gửi thông báo in-app.

@@ -37,11 +37,13 @@ public class AiChatController {
                     + "a rolling limit of 10 requests per minute applies independently to cookie and peer IP. No daily quota. "
                     + "General context or the latest public RecipePost is loaded server-side. "
                     + "Recipe discovery selects only current public RecipePosts from the Backend catalog; explicitly requested recipe drafts remain chat text only. "
-                    + "Conversation history is request-scoped and is not persisted. Guest has no account dietary context.")
+                    + "Conversation history is request-scoped and is not persisted. Guest has no account dietary context. "
+                    + "Explicit weekly-menu and recipe-authoring requests are checked for entitlement and routed to their dedicated workflow without calling Gemini. "
+                    + "Follow-up recipe searches use current public data; assistant recipe IDs are untrusted exclusion hints only.")
     @ApiResponse(responseCode = "200", description = "AI answer and, when relevant, selected public recipe cards generated.")
     @ApiResponse(responseCode = "400", description = "Invalid question, history, or context fields.")
-    @ApiResponse(responseCode = "401", description = "A supplied Bearer token is invalid or expired; it is not downgraded to Guest.")
-    @ApiResponse(responseCode = "403", description = "The account is locked or the authenticated role may not use chat.")
+    @ApiResponse(responseCode = "401", description = "Bearer token invalid/expired, or a Guest requests a Member-only workflow; no provider call.")
+    @ApiResponse(responseCode = "403", description = "Account/role denied, or workflow requires a higher subscription. AI_SUBSCRIPTION_REQUIRED includes requiredTier and upgradeUrl; no provider call.")
     @ApiResponse(responseCode = "429", description = "Guest exceeded the cookie or peer-IP limit; Retry-After gives the wait in seconds.",
             headers = @Header(name = "Retry-After", description = "Seconds until Guest can try again.",
                     schema = @Schema(types = {"integer"}, minimum = "1")))

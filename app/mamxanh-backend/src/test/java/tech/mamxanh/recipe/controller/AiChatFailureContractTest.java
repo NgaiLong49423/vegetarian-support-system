@@ -10,6 +10,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -30,7 +33,8 @@ import tech.mamxanh.recipe.service.*;
 import tools.jackson.databind.json.JsonMapper;
 
 /** Real DTO validation and chat orchestration through HTTP; provider responses are controlled. */
-@WebMvcTest(AiChatController.class)
+@WebMvcTest(value = AiChatController.class, properties = "logging.level.org.springframework.web=DEBUG")
+@ExtendWith(OutputCaptureExtension.class)
 @ActiveProfiles("test")
 @Import({SecurityConfig.class, ClockConfig.class, GuestChatRateLimiter.class,
         GlobalExceptionHandler.class, AiChatService.class})
@@ -43,6 +47,27 @@ class AiChatFailureContractTest {
     @MockitoBean RecipePostService posts;
     @MockitoBean DietaryPreferenceService preferences;
     @MockitoBean AiClient ai;
+    @MockitoBean tech.mamxanh.subscription.service.SubscriptionEntitlementService entitlements;
+
+    @Test
+    void mvcDebugLoggingHidesPrivatePayloadsButHttpStillReturnsThem(CapturedOutput output) throws Exception {
+        when(users.findAuthenticatedUserId()).thenReturn(Optional.empty());
+        when(ai.answerChat(anyString(), anyString()))
+                .thenReturn(new AiClient.ChatResult("FR10_SYNTHETIC_PRIVATE_ANSWER", 1, 1, 2));
+        var json = new JsonMapper().writeValueAsString(Map.of("contextType", "GENERAL",
+                "question", "FR10_SYNTHETIC_PRIVATE_QUESTION", "anonymousViewerId", UUID.randomUUID().toString(),
+                "history", List.of(Map.of("speaker", "USER", "content", "FR10_SYNTHETIC_PRIVATE_HISTORY"))));
+        mvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answer").value("FR10_SYNTHETIC_PRIVATE_ANSWER"));
+        assertThatSafeLog(output.getAll());
+    }
+
+    private static void assertThatSafeLog(String log) {
+        org.assertj.core.api.Assertions.assertThat(log)
+                .contains("AiChatRequest[redacted]", "AiChatResponse[redacted]")
+                .doesNotContain("FR10_SYNTHETIC_PRIVATE_QUESTION", "FR10_SYNTHETIC_PRIVATE_ANSWER", "FR10_SYNTHETIC_PRIVATE_HISTORY");
+    }
 
     @Test
     void incompleteProviderResponseIs502WhileTransportFailureIs503() throws Exception {
@@ -81,5 +106,48 @@ class AiChatFailureContractTest {
     private String body(List<Map<String, String>> history) {
         return new JsonMapper().writeValueAsString(Map.of("contextType", "GENERAL", "question", "Hello",
                 "history", history, "anonymousViewerId", UUID.randomUUID().toString()));
+    }
+
+    @Test
+    void advancedChatRequestUsesHttpUpgradeContractAndNeverInvokesProvider() throws Exception {
+        when(users.findAuthenticatedUserId()).thenReturn(Optional.of(7L));
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, tech.mamxanh.auth.entity.Role.CUSTOMER));
+            doThrow(new tech.mamxanh.common.exception.AppException(tech.mamxanh.common.exception.ErrorCode.AI_SUBSCRIPTION_REQUIRED,
+                    "Hãy nâng cấp lên Pro để lập thực đơn tuần.").withProperty("requiredTier", "PRO").withProperty("upgradeUrl", "/goi-ai"))
+                    .when(entitlements).requirePro(7L);
+            mvc.perform(post("/api/v1/recipes/ai/chat")
+                            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("7").roles("CUSTOMER"))
+                            .contentType(MediaType.APPLICATION_JSON).content(new JsonMapper().writeValueAsString(Map.of(
+                                    "contextType", "GENERAL", "question", "Lập thực đơn tuần 7 ngày", "history", List.of()))))
+                    .andExpect(status().isForbidden()).andExpect(jsonPath("$.requiredTier").value("PRO"))
+                    .andExpect(jsonPath("$.upgradeUrl").value("/goi-ai"));
+        verifyNoInteractions(ai, preferences, posts, recipes);
+    }
+
+    @Test
+    void allowedWorkflowResponseHasALocalLinkAndNoSuccessfulProviderUsage() throws Exception {
+        when(users.findAuthenticatedUserId()).thenReturn(Optional.of(7L));
+        when(users.requireActiveMember()).thenReturn(new CurrentUserService.CurrentUser(7, tech.mamxanh.auth.entity.Role.CUSTOMER));
+        mvc.perform(post("/api/v1/recipes/ai/chat")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("7").roles("CUSTOMER"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"contextType\":\"GENERAL\",\"question\":\"Lên menu cho tuần này\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.workflowUrl").value("/ke-hoach?view=for-you"))
+                .andExpect(jsonPath("$.recommendations").isEmpty());
+        verify(entitlements).requirePro(7L);
+        verifyNoInteractions(ai, preferences);
+    }
+
+    @Test
+    void recipeCardHistoryIsOptionalBoundedAndCannotBeAttachedToUserTurns() throws Exception {
+        for (String turn : List.of(
+                "{\"speaker\":\"ASSISTANT\",\"content\":\"Món\",\"recommendedRecipeIds\":[0]}",
+                "{\"speaker\":\"ASSISTANT\",\"content\":\"Món\",\"recommendedRecipeIds\":[null]}",
+                "{\"speaker\":\"ASSISTANT\",\"content\":\"Món\",\"recommendedRecipeIds\":[1,2,3,4,5]}",
+                "{\"speaker\":\"USER\",\"content\":\"Món\",\"recommendedRecipeIds\":[1]}")) {
+            mvc.perform(post("/api/v1/recipes/ai/chat").contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"contextType\":\"GENERAL\",\"question\":\"Hello\",\"history\":[" + turn + "]}"))
+                    .andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(ai);
     }
 }

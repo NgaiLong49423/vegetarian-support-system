@@ -1,6 +1,7 @@
 package tech.mamxanh.recipe.controller;
 
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -28,6 +29,7 @@ import tech.mamxanh.common.config.OpenApiConfig;
 import tech.mamxanh.common.config.SecurityConfig;
 import tech.mamxanh.common.exception.GlobalExceptionHandler;
 import tech.mamxanh.recipe.dto.response.AiRecipeRecommendationResponse;
+import tech.mamxanh.recipe.dto.response.AiWeeklyMenuPreviewResponse;
 import tech.mamxanh.recipe.service.AiRecipeRecommendationService;
 
 @WebMvcTest(AiRecipeController.class)
@@ -53,6 +55,17 @@ class AiRecipeControllerTest {
     }
 
     @Test
+    void weeklyMenuAcceptsAnOmittedIngredientFilter() throws Exception {
+        when(service.weeklyMenu(null)).thenReturn(new AiWeeklyMenuPreviewResponse(List.of()));
+
+        mvc.perform(post("/api/v1/recipes/ai/weekly-menu").with(user("17").roles("CUSTOMER"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.slots").isArray());
+
+        verify(service).weeklyMenu(null);
+    }
+
+    @Test
     void generatedOpenApiContainsAuthenticatedAiContracts() throws Exception {
         when(service.recommend(List.of(1L))).thenReturn(new AiRecipeRecommendationResponse(List.of()));
         mvc.perform(post("/api/v1/recipes/ai/recommendations").with(user("17").roles("CUSTOMER"))
@@ -62,6 +75,8 @@ class AiRecipeControllerTest {
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/ai/recommendations'].post.security[0].bearerAuth").isArray())
                 .andExpect(jsonPath("$.paths['/api/v1/recipes/ai/weekly-menu'].post.responses['200']").exists())
                 .andExpect(jsonPath("$.components.schemas.AiRecipeRecommendationRequest.properties.ingredientIds.maxItems").value(20))
+                .andExpect(jsonPath("$.components.schemas.AiWeeklyMenuRequest.properties.ingredientIds.maxItems").value(20))
+                .andExpect(jsonPath("$.components.schemas.AiWeeklyMenuRequest.required").doesNotExist())
                 .andExpect(jsonPath("$.components.schemas.AiWeeklyMenuPreviewResponse.properties.slots").exists());
     }
 }

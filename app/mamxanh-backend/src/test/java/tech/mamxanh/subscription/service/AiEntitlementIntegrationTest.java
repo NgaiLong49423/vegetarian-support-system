@@ -74,6 +74,23 @@ class AiEntitlementIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.requiredTier").value(tier)).andExpect(jsonPath("$.upgradeUrl").value("/goi-ai"));
     }
 
+    @Test void chatRoutesWeeklyMenuUsingTheRealSubscriptionInsteadOfTheProvider() throws Exception {
+        String path = "/api/v1/recipes/ai/chat";
+        String body = "{\"contextType\":\"GENERAL\",\"question\":\"Lập thực đơn tuần 7 ngày theo dinh dưỡng cá nhân\"}";
+        forbidden(path, body, "PRO");
+        subscribe("PLUS", "ACTIVE", -1, 1);
+        forbidden(path, body, "PRO");
+        jdbc.update("DELETE FROM [SUBSCRIPTION] WHERE user_id=?", member);
+        subscribe("PRO", "ACTIVE", -1, 1);
+        mockMvc.perform(post(path).with(user(Long.toString(member)).roles("EXPERT"))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.workflowUrl").value("/ke-hoach?view=for-you"))
+                .andExpect(jsonPath("$.recommendations").isEmpty());
+        jdbc.update("UPDATE [SUBSCRIPTION] SET ends_at=? WHERE user_id=?", LocalDateTime.now(clock), member);
+        forbidden(path, body, "PRO");
+        verifyNoInteractions(aiClient);
+    }
+
     private void subscribe(String tier, String status, int starts, int ends) {
         var now = LocalDateTime.now(clock);
         jdbc.update("INSERT INTO [SUBSCRIPTION] (user_id,tier,status,starts_at,ends_at) VALUES (?,?,?,?,?)",

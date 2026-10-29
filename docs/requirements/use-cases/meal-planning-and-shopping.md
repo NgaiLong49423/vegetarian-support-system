@@ -152,15 +152,15 @@ Chỉ Member sở hữu danh sách mới được xem hoặc thay đổi danh s�
 Hệ thống quản lý Shopping List; hệ thống tổng hợp nguyên liệu theo [FR-54](../srs/FUNCTIONAL-REQUIREMENTS.md#fr-54).
 
 #### Trigger
-  Member chọn tạo danh sách trống tại trang Đi chợ, tạo từ Lịch ăn tuần hoặc chọn “Thêm vào danh sách đi chợ” trong menu của một thẻ Recipe Post ở Khám phá/Công thức đã lưu.
+  Member chọn tạo danh sách trống tại trang Đi chợ, tạo từ Lịch ăn tuần, chọn “Thêm vào danh sách đi chợ” trong menu của thẻ Recipe Post ở Khám phá/Công thức đã lưu, hoặc bấm nút cùng tên trên trang chi tiết công thức.
 
 #### Preconditions
 Member đã đăng nhập. Với Meal Plan, có ít nhất một món hợp lệ được chọn; với công thức, Member đang thao tác trên đúng một Recipe Post công khai và sở hữu danh sách đích nếu chọn danh sách có sẵn. Tạo danh sách trống không cần nguồn.
 
 #### Main Flow
-1. Member chọn một cách tạo: danh sách trống và nhập tên; chọn toàn bộ tuần/các ngày trong Meal Plan; hoặc chọn một Recipe Post rồi chọn danh sách thuộc tài khoản hay nhập tên danh sách mới.
+1. Member chọn một cách tạo: danh sách trống và nhập tên; chọn toàn bộ tuần/các ngày trong Meal Plan; hoặc chọn một Recipe Post từ thẻ/menu hay trang chi tiết rồi chọn danh sách thuộc tài khoản hoặc nhập tên danh sách mới.
 2. Member xác nhận thao tác.
-3. Với danh sách trống, hệ thống tạo checklist không có item, độc lập với Meal Plan và Recipe Post. Với công thức, Member có thể chọn khẩu phần 1–50; hệ thống trích xuất nguyên liệu theo số khẩu phần và chuyển các dòng tới quy trình tổng hợp FR-54. Tạo danh sách mới và thêm nguyên liệu phải nằm trong cùng giao dịch.
+3. Với danh sách trống, hệ thống tạo checklist không có item, độc lập với Meal Plan và Recipe Post. Với công thức, Member chọn khẩu phần 1–50, mặc định các nguyên liệu công thức đều được chọn nhưng có thể bỏ chọn từng nguyên liệu hoặc tất cả; có thể thêm mặt hàng thủ công kèm số lượng và đơn vị. Hệ thống chỉ chuyển nguyên liệu đã chọn theo số khẩu phần tới quy trình tổng hợp FR-54 và lưu mặt hàng thủ công trong cùng giao dịch. Có thể xác nhận khi còn ít nhất một nguyên liệu được chọn hoặc có ít nhất một mặt hàng thủ công. Tạo danh sách mới và mọi mặt hàng phải nằm trong cùng giao dịch.
 4. Hệ thống lưu Shopping List theo tài khoản Member và mở checklist để tiếp tục thêm hoặc quản lý mặt hàng. Thêm lại cùng công thức vào cùng danh sách không cộng trùng.
 
 #### Alternative Flows
