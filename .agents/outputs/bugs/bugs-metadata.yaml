@@ -1,5 +1,5 @@
 schema_version: 1
-last_updated: 2026-10-25
+last_updated: 2026-10-29
 # BUG-040–046 đã được cấp trong workspace FR-53/#55; BUG-047 thuộc nhánh fix/158.
 # Bản ghi thanh toán trùng BUG-037–039 được cấp mã BUG-048–050, có liên kết lịch sử trong từng file.
 # BUG-066 được cấp khi đồng bộ PR #161 ngày 2026-10-25 vì BUG-065 đã được dùng cho lỗi OpenAPI.
@@ -427,12 +427,12 @@ bugs:
     related_issue: 31
   - id: BUG-014
     title: Integration test gửi báo cáo để sót Recipe Post trong SQL Server
-    status: RESOLVED
+    status: TRACKING
     severity: Medium
     area: Backend/Test cleanup
     file: .agents/outputs/bugs/BUG-014.md
     created: 2026-10-06
-    updated: 2026-10-06
+    updated: 2026-10-29
     related_issue: 31
   - id: BUG-013
     title: Backend chấp nhận link YouTube thiếu mã video
