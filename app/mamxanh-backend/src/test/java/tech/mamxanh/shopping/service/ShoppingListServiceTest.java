@@ -247,8 +247,11 @@ class ShoppingListServiceTest {
         var kilograms = new IngredientUnitOptionResponse(2, "kg", "kilogram", MeasurementDimension.MASS,
                 new BigDecimal("1000"), false);
         when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(grams, kilograms));
-        when(catalog.findUnitReferences(List.of(2))).thenReturn(List.of(
-                new UnitResponse(2, "kg", "kilogram", MeasurementDimension.MASS, new BigDecimal("1000"), true)));
+        var gramUnit = new UnitResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, true);
+        var kilogramUnit = new UnitResponse(2, "kg", "kilogram", MeasurementDimension.MASS,
+                new BigDecimal("1000"), true);
+        when(catalog.findUnitReferences(anyCollection())).thenAnswer(call ->
+                ((Collection<Integer>) call.getArgument(0)).stream().map(id -> id == 2 ? kilogramUnit : gramUnit).toList());
         when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregateWithUnits(call.getArgument(0)));
 
         var result = service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("0.06"), 2));
@@ -268,7 +271,11 @@ class ShoppingListServiceTest {
     }
 
     @Test void changingUnitBelowConvertedRecipeMinimumIsRejected() {
-        prepareRecipeBackedIngredientSources();
+        mutation();
+        item.setIngredientId(8L); item.setUnitId(1); item.setQuantity(new BigDecimal("70"));
+        when(items.findByIdAndShoppingListId(3L, 10L)).thenReturn(Optional.of(item));
+        var required = contribution("RECIPE", 3L, "40");
+        when(contributions.findByShoppingListIdOrderByIdAsc(10L)).thenReturn(List.of(required));
         when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(
                 new IngredientUnitOptionResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, false),
                 new IngredientUnitOptionResponse(2, "kg", "kilogram", MeasurementDimension.MASS,
@@ -389,7 +396,7 @@ class ShoppingListServiceTest {
                 new tech.mamxanh.recipe.service.RecipeService.ShoppingReference(9L, "Món đậu", true, null)));
         when(catalog.findIngredientReferences(List.of(8L))).thenReturn(List.of(
                 new IngredientResponse(8L, "Đậu phụ", "Đậu", null, null, null, false, true)));
-        when(catalog.findUnitReferences(List.of(1))).thenReturn(List.of(
+        lenient().when(catalog.findUnitReferences(List.of(1))).thenReturn(List.of(
                 new UnitResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, true)));
         when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregate(call.getArgument(0)));
         return rows;
