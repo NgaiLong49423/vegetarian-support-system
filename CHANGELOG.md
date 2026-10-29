@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Align AI Integration Fixtures with Pro Entitlements
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `e182495e099ab0979647628cc496c34266a001e4`.
 
 **Scope:** Correct the five Backend CI failures caused by integration fixtures still granting PLUS access to features moved to PRO in the approved tier matrix.
 
