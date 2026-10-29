@@ -402,7 +402,7 @@ export function AdminTransactionsPage() {
       )}
       {summary && report && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {[
               [
                 "Doanh thu ghi nhận",
@@ -437,11 +437,19 @@ export function AdminTransactionsPage() {
               ],
 
               [
-                "Đã hủy / Thất bại",
+                "Đã hủy",
 
-                `${summary.cancelled} / ${summary.failed}`,
+                summary.cancelled.toLocaleString("vi-VN"),
 
-                `${summary.total.toLocaleString("vi-VN")} giao dịch phù hợp bộ lọc`,
+                "Đã hủy trước khi thanh toán",
+              ],
+
+              [
+                "Thất bại",
+
+                summary.failed.toLocaleString("vi-VN"),
+
+                "Thanh toán không thành công",
               ],
             ].map(([label, value, hint]) => (
               <Card key={label} className="p-5">

@@ -354,9 +354,7 @@ export function AiTelemetryPage() {
             </Card>
           )}
           <p className="text-xs leading-5 text-ink-muted">
-            Báo cáo chỉ chứa số liệu tổng hợp, không chứa câu hỏi, câu trả lời
-            hoặc thông tin tài khoản. Thinking đã nằm trong tổng token. Cached
-            là phần của input, không cộng lại vào tổng.
+            Số liệu phục vụ theo dõi chi phí ước tính, không thu thập nội dung prompt hay dữ liệu nhạy cảm.
           </p>
         </>
       )}

@@ -103,7 +103,7 @@ test("Administrator views real payment rows, filtered totals, details, CSV and M
     await page.goto("/admin/giao-dich")
     await page.getByRole("textbox", { name: "Tìm giao dịch" }).fill(marker)
     await page.getByRole("button", { name: "Áp dụng bộ lọc" }).click()
-    await expect(page.getByText("2 giao dịch phù hợp bộ lọc")).toBeVisible()
+    await expect(page.getByText("2 giao dịch · Trang 1/1")).toBeVisible()
     await expect(page.getByRole("row").filter({ hasText: marker })).toHaveCount(
       2,
     )
