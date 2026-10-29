@@ -11,7 +11,7 @@ Notable project changes, grouped by date and topic. Writing rules are maintained
 
 ## 2026-10-29 — Synchronize FR-10 with the Current Develop Baseline
 
-**Status:** Working tree — not committed.
+**Status:** Committed — `2cc0aed002c7f5a1edbbe57674bdbb8e05f97846`.
 
 **Scope:** Resolve integration conflicts against develop `910f0da5` so PR #194 can run its required CI workflows.
 
