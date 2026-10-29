@@ -1,6 +1,6 @@
 > **Document:** API Integration Guide
 > **File:** `docs/api/API.md`
-> **Version:** v0.47.0
+> **Version:** v0.48.0
 > **Created:** 2026-09-20
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -374,6 +374,14 @@ Request chọn `contentType` là `DESCRIPTION` hoặc `INSTRUCTIONS`, gửi tiê
 Response trả `contentType` và `content` để Frontend điền trực tiếp vào trường có thể chỉnh sửa. API không tạo RecipePost hoặc bản nháp; chỉ thao tác đăng/lưu hiện có mới ghi công thức sau khi tác giả chủ động xác nhận. Free, Plus, hết hạn hoặc thiếu subscription nhận `403 AI_SUBSCRIPTION_REQUIRED` trước khi provider được gọi. Gemini thiếu cấu hình/lỗi nhận `503 AI_PROVIDER_UNAVAILABLE`; kết quả sai định dạng/giới hạn nhận `502 AI_RESPONSE_INVALID`. Các lỗi không ngăn tác giả tự nhập và đăng theo validation hiện hành.
 
 Backend gọi model cố định `gemini-3.8-flash` qua Google Gen AI Java SDK; khóa chỉ được đọc từ `GEMINI_API_KEY` ở Backend. Không gửi API key xuống Frontend. Không ghi prompt thô vào log.
+
+### Bản xem trước công thức có định lượng — bổ sung FR-21
+
+`POST /api/v1/recipes/ai/draft` yêu cầu Expert đang hoạt động và PRO còn hiệu lực. Body gồm `title`, `rawIngredients`, `mealType` (`BREAKFAST/LUNCH/DINNER/SNACK/CUSTOM`), `targetCaloriesPerServing` (100–1.500), `servings` (1–50) và `cookingMethod` (`STIR_FRY/SOUP/BRAISED/BOILED/SALAD`). API viết mô tả/hướng dẫn phía trên giữ nguyên hợp đồng cũ.
+
+Backend xác định tên nguyên liệu trong danh mục đang hoạt động, không tự chọn khi không rõ hoặc có nhiều kết quả. Kết quả trả ID nguyên liệu, ID đơn vị gam, số gam do Gemini đề xuất, năng lượng/100 g cùng nguồn, calo đã tính lại, mô tả/hướng dẫn và thông tin món. Chỉ số calo do model tự khai không được dùng. Response dùng `Cache-Control: no-store`. Không ghi Recipe Post hoặc nháp server. Chỉ thao tác nạp của tác giả mới thay form.
+
+Lỗi 400 `RECIPE_DATA_INVALID` áp dụng cho tên nguyên liệu không rõ/trùng/thiếu năng lượng hoặc danh mục đổi. Các lỗi xác thực/quyền 401/403, AI sai 502 `AI_RESPONSE_INVALID` và provider/quota/timeout 503 `AI_PROVIDER_UNAVAILABLE` giữ quy ước hiện có. Không dùng kết quả mẫu khi provider lỗi. Prompt và nội dung preview được che trong `toString()` dùng cho diagnostic logging. Generated OpenAPI là hợp đồng chi tiết.
 
 ## 12. Hồ sơ thành viên — FR-23
 

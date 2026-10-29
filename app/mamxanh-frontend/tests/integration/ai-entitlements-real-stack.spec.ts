@@ -105,9 +105,9 @@ test('FR-10: real JWT and SQL subscription changes select the correct upgrade an
     await page.getByLabel('Đơn vị nguyên liệu 1').selectOption(String(ingredients[0].unitId));
     await page.getByRole('button', { name: 'Soạn với Trợ lý AI' }).click();
     const dialog = page.getByRole('dialog', { name: 'Trợ lý AI đồng hành cùng Chuyên gia ẩm thực' });
-    const rejectedAssistance = page.waitForResponse(response => response.url().endsWith('/recipes/ai-assistance')
+    const rejectedAssistance = page.waitForResponse(response => response.url().endsWith('/recipes/ai/draft')
       && response.request().method() === 'POST');
-    await dialog.getByRole('button', { name: 'AI gợi ý viết mô tả' }).click();
+    await dialog.getByRole('button', { name: 'Phân tích nguyên liệu & gợi ý định lượng' }).click();
     const rejection = await rejectedAssistance;
     expect(rejection.status()).toBe(403);
     expect(await rejection.json()).toMatchObject({ code: 'AI_SUBSCRIPTION_REQUIRED', requiredTier: 'PRO' });

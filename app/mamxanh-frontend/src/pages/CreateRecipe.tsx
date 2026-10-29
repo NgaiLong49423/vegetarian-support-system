@@ -12,7 +12,7 @@ import type { UserRole } from '../types';
 import { RecipeImageUploader, type ImageItem } from '../components/RecipeImageUploader';
 import { RecipeAiAssistance } from '../components/RecipeAiAssistance';
 import type { RecipeAiContentType } from '../api/recipes';
-import { AiRecipeAssistantModal } from '../components/AiRecipeAssistantModal';
+import { AiRecipeAssistantModal, type GeneratedRecipeData } from '../components/AiRecipeAssistantModal';
 
 type IngredientRow = {
   key: string;
@@ -292,6 +292,21 @@ function CreateRecipeForm() {
             </Button>
   </>);
 
+  const applyAiDraft = (draft: GeneratedRecipeData) => {
+    setTitle(draft.title);
+    setDescription(draft.description);
+    setInstructions(draft.instructions);
+    setDishCategory(draft.dishCategory);
+    setVegetarianType(draft.vegetarianType);
+    setDifficulty(draft.difficulty);
+    setServings(String(draft.servings));
+    setPrepTimeMinutes(String(draft.prepTimeMinutes));
+    setCookTimeMinutes(String(draft.cookTimeMinutes));
+    setIngredients(draft.ingredients.map((item) => ({ key: emptyIngredient().key, ingredientId: item.ingredientId,
+      ingredientName: item.name, search: item.name, quantity: String(item.quantity), unitId: item.unitId })));
+    setAiError(null);
+  };
+
   return (
     <PageContainer className="py-8">
       <nav className="mb-4 text-sm text-ink-muted" aria-label="Breadcrumb">
@@ -440,20 +455,11 @@ function CreateRecipeForm() {
       <AiRecipeAssistantModal
         open={aiModalOpen}
         onClose={() => setAiModalOpen(false)}
-        context={{ title, dishCategory, vegetarianType, servings }}
-        onContextChange={(patch) => {
-          if (patch.title !== undefined) setTitle(patch.title);
-          if (patch.dishCategory !== undefined) setDishCategory(patch.dishCategory);
-          if (patch.vegetarianType !== undefined) setVegetarianType(patch.vegetarianType);
-          if (patch.servings !== undefined) setServings(patch.servings);
-        }}
         options={options}
-        ingredientFields={renderIngredientFields('assistant-')}
-        description={description}
-        instructions={instructions}
-        loading={aiLoading}
-        error={aiError}
-        onGenerate={(contentType) => void generateWithAi(contentType)}
+        initialTitle={title}
+        initialIngredients={ingredients.map(item => item.ingredientName).filter(Boolean).join(', ')}
+        initialServings={Number(servings) || 2}
+        onApplyRecipe={applyAiDraft}
       />
     </PageContainer>
   );

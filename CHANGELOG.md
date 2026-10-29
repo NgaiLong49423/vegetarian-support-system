@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.113.1
+> **Version:** v2.114.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -8,6 +8,28 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-29 — Generate Full Recipe Previews with Gemini
+
+**Status:** Working tree — not committed.
+
+**Scope:** Implement the explicitly authorized full assistant workflow on FR-10 while preserving the develop form layout and the confirmed Gemini model. No tables, migrations, paid-period changes or automatic publication are introduced.
+
+### Added
+
+- A Pro-only Expert API for Gemini-generated recipe previews with proposed gram quantities, actual catalog IDs, sources and server-calculated calories. Resolve entered names unambiguously and reject missing nutrition before provider use.
+- Support quick presets, five meal sessions, calorie targets, serving counts and cooking methods in the restored dialog. Apply verified IDs only after the author explicitly confirms.
+- Verify 72 focused Backend tests across the relevant suites, 17 UI tests, the root Compose entitlement scenario and generated OpenAPI validation. A live Gemini 3.8 request returned HTTP 200 with catalog-calculated 349.75 kcal per serving against a 350 kcal target and no persisted recipe.
+- Extend current FR-21 requirements and use cases for the authorized workflow while preserving the existing text-assistance API and stable requirement IDs.
+
+### Changed
+
+- Replace the develop modal's local recipe/nutrition simulation with structured Gemini generation. Retain author editing, catalog-based calorie recalculation and manual publication. Match the latest develop dialog frame, advisory copy and light/dark styling.
+- Reconcile live Issue tracking only after separate authorization; the new FR-21 workflow needs follow-up tracking without rewriting completed Issue history.
+
+### Fixed
+
+- None.
 
 ## 2026-10-29 — Restore the Recipe Assistant Form Layout
 

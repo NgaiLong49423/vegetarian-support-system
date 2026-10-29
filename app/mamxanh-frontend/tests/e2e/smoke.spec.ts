@@ -86,10 +86,9 @@ test('AI Recipe Assistant modal opens guarded authoring actions and returns to m
   await page.getByRole('button', { name: 'Soạn với Trợ lý AI' }).click();
 
   const dialog = page.getByRole('dialog', { name: 'Trợ lý AI đồng hành cùng Chuyên gia ẩm thực' });
-  await expect(dialog.getByRole('button', { name: 'AI gợi ý viết mô tả' })).toBeVisible();
-  await expect(dialog.getByRole('radio', { name: 'Hướng dẫn chế biến', exact: true })).toBeVisible();
-  await expect(dialog.getByLabel('Tên món hoặc ý tưởng chế biến *', { exact: true })).toBeVisible();
-  await expect(dialog.getByText('Chưa nhập tên món', { exact: false })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Phân tích nguyên liệu & gợi ý định lượng' })).toBeVisible();
+  await expect(dialog.getByLabel('Phương pháp chế biến chính')).toBeVisible();
+  await expect(dialog.getByLabel(/Tên món ăn hoặc ý tưởng chế biến/)).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await page.getByLabel('Tên món *').fill('Canh chay tự soạn');

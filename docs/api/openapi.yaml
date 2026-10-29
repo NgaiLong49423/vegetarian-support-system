@@ -2826,6 +2826,64 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
       security:
       - bearerAuth: []
+  /api/v1/recipes/ai/draft:
+    post:
+      tags:
+      - recipe-ai-draft-controller
+      summary: Preview an AI recipe with proposed ingredient quantities
+      description: "Requires an active Expert with Pro. Resolves entered ingredient\
+        \ names against the active catalog, asks Gemini for gram quantities and text,\
+        \ and recalculates calories using catalog energy values. Target calories are\
+        \ a reference, not a guaranteed medical target. Does not save or publish recipes."
+      operationId: draft
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecipeAiDraftRequest"
+        required: true
+      responses:
+        "200":
+          description: "Editable recipe preview with catalog IDs, gram units, actual\
+            \ calculated calories and sources."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeAiDraftResponse"
+        "400":
+          description: "Invalid input, unknown/ambiguous/duplicate ingredient names,\
+            \ missing energy data, or a catalog entry changed."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Active Expert role and Pro entitlement are required.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "502":
+          description: "AI_RESPONSE_INVALID: incomplete or invalid provider output."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "503":
+          description: "AI_PROVIDER_UNAVAILABLE: provider configuration, quota or\
+            \ timeout failure."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security:
+      - bearerAuth: []
   /api/v1/recipes/ai/cooking-guide:
     post:
       tags:
@@ -8216,6 +8274,114 @@ components:
           $ref: "#/components/schemas/RecipePostResponse"
         reason:
           type: string
+    RecipeAiDraftCookingMethod:
+      type: string
+      enum:
+      - STIR_FRY
+      - SOUP
+      - BRAISED
+      - BOILED
+      - SALAD
+    RecipeAiDraftMealType:
+      type: string
+      enum:
+      - BREAKFAST
+      - LUNCH
+      - DINNER
+      - SNACK
+      - CUSTOM
+    RecipeAiDraftRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 120
+          minLength: 3
+        rawIngredients:
+          type: string
+          maxLength: 2000
+          minLength: 0
+        mealType:
+          $ref: "#/components/schemas/RecipeAiDraftMealType"
+        targetCaloriesPerServing:
+          type: integer
+          format: int32
+          maximum: 1500
+          minimum: 100
+        servings:
+          type: integer
+          format: int32
+          maximum: 50
+          minimum: 1
+        cookingMethod:
+          $ref: "#/components/schemas/RecipeAiDraftCookingMethod"
+      required:
+      - cookingMethod
+      - mealType
+      - rawIngredients
+      - servings
+      - targetCaloriesPerServing
+      - title
+    RecipeAiDraftIngredient:
+      type: object
+      properties:
+        ingredientId:
+          type: integer
+          format: int64
+        unitId:
+          type: integer
+          format: int32
+        name:
+          type: string
+        quantity:
+          type: number
+        unitCode:
+          type: string
+        unitName:
+          type: string
+        calories:
+          type: number
+        energyKcalPer100g:
+          type: number
+        sourceName:
+          type: string
+    RecipeAiDraftResponse:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        instructions:
+          type: string
+        dishCategory:
+          type: string
+        vegetarianType:
+          type: string
+        difficulty:
+          type: string
+        servings:
+          type: integer
+          format: int32
+        prepTimeMinutes:
+          type: integer
+          format: int32
+        cookTimeMinutes:
+          type: integer
+          format: int32
+        mealType:
+          type: string
+        targetCaloriesPerServing:
+          type: integer
+          format: int32
+        totalCalories:
+          type: number
+        caloriesPerServing:
+          type: number
+        ingredients:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecipeAiDraftIngredient"
     AiCookingGuideRequest:
       type: object
       properties:

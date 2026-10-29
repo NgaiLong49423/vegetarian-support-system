@@ -1,6 +1,6 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.31.0
+> **Version:** v2.32.0
 > **Created:** 2026-09-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -1490,7 +1490,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 ---
 
 <a id="fr-21"></a>
-### FR-21 — AI hỗ trợ tạo giới thiệu hoặc hướng dẫn chế biến không lưu nháp server
+### FR-21 — AI hỗ trợ nội dung và xem trước công thức có định lượng, không lưu nháp server
 
 - **Mã yêu cầu:** FR-21
 - **Module:** M03, M06
@@ -1498,12 +1498,15 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 - **Use Case detail:** [Open interaction flows](../use-cases/recipe-contribution-and-community.md#fr-21).
 
 #### Mục đích & Phạm vi
-- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Chuyên gia trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn (Description $\le 2.000$ ký tự) hoặc đề xuất nội dung hướng dẫn chế biến (văn bản từ 10 đến 5.000 ký tự theo FR-16, BR-19) dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, thể loại món `dish_category`, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập; kết quả do AI sinh ra được đưa trực tiếp vào các ô nhập liệu của biểu mẫu ở phía client (ô mô tả `description` hoặc ô hướng dẫn chế biến `instructions`) ở dạng có thể chỉnh sửa tự do và chỉ được công khai khi người dùng chủ động xem xét, xác nhận (BR-15); hệ thống không tự động công khai hoặc lưu persistent server-side Recipe Post draft trong baseline hiện tại; tính năng thuộc gói Pro (FR-10, BR-02); nếu AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói Pro, tác giả vẫn có toàn quyền tiếp tục tự viết hướng dẫn chế biến và xuất bản bài viết bình thường (BR-16).
+- **Tóm tắt yêu cầu:** Cung cấp tính năng trợ lý AI tương tác thông minh hỗ trợ Chuyên gia trong quá trình tạo hoặc chỉnh sửa bài công thức nấu ăn: AI hỗ trợ gợi ý đoạn văn bản giới thiệu món ăn hấp dẫn (Description $\le 2.000$ ký tự) hoặc đề xuất nội dung hướng dẫn chế biến (văn bản từ 10 đến 5.000 ký tự theo FR-16, BR-19) dựa trên thông tin tác giả đã cung cấp (tên món, loại ăn chay, thể loại món `dish_category`, danh sách nguyên liệu và khẩu phần); AI tuyệt đối không tự ý thêm bất kỳ nguyên liệu mới nào ngoài danh sách tác giả đã nhập; ở hai luồng soạn văn bản, kết quả do AI sinh ra được đưa trực tiếp vào các ô nhập liệu của biểu mẫu ở phía client (ô mô tả `description` hoặc ô hướng dẫn chế biến `instructions`) ở dạng có thể chỉnh sửa tự do và chỉ được công khai khi người dùng chủ động xem xét, xác nhận (BR-15); hệ thống không tự động công khai hoặc lưu persistent server-side Recipe Post draft trong baseline hiện tại; tính năng thuộc gói Pro (FR-10, BR-02); nếu AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói Pro, tác giả vẫn có toàn quyền tiếp tục tự viết hướng dẫn chế biến và xuất bản bài viết bình thường (BR-16).
 - **Phạm vi nghiệp vụ:**
   - Áp dụng cho: Chuyên gia đã đăng nhập và đang đăng ký gói Pro còn hiệu lực (FR-03, FR-10, BR-02).
   - Khả năng hỗ trợ:
     1. Gợi ý đoạn giới thiệu món ăn (Description $\le 2.000$ ký tự).
     2. Đề xuất nội dung hướng dẫn chế biến linh hoạt (`instructions`, từ 10 đến 5.000 ký tự).
+  - **Trợ lý công thức đầy đủ (quyết định bổ sung ngày 29/10/2026):** Chuyên gia nhập ý tưởng món, danh sách tên nguyên liệu, buổi ăn (sáng/trưa/tối/phụ/tự do), mục tiêu 100–1.500 kcal/phần, 1–50 khẩu phần và cách chế biến. Gemini đề xuất mô tả, 6–10 bước, phân loại món/loại chay/độ khó, thời gian và số gam cho đúng các nguyên liệu đã nhập. Đây là luồng mới, không thay hành vi giữ nguyên định lượng của hai nút soạn văn bản hiện có.
+  - Backend xác định nguyên liệu trong danh mục đang hoạt động. Tên không rõ, nhiều kết quả, trùng ID hoặc thiếu năng lượng thì báo lỗi trước khi gọi Gemini. Chỉ chấp nhận đúng các ID đã xác định, số gam dương tối đa hai chữ số thập phân và không tự thêm dầu/gia vị. Mỗi nguyên liệu tối đa 50.000 g cho toàn công thức để chặn dữ liệu bất thường.
+  - Calo thực tế của bản xem trước được tính lại từ số gam và năng lượng/100 g trong danh mục, có nguồn dữ liệu. Mục tiêu kcal là tham khảo, không cam kết kết quả khớp tuyệt đối hoặc hiệu quả sức khỏe. Dữ liệu thiếu không được thay bằng 0 hay hằng số mẫu. Chuyên gia xem, sửa số gam và chủ động nhấn “Nạp vào biểu mẫu công thức”. Chỉ bước xuất bản thủ công hiện có mới ghi Recipe Post. Không lưu bản xem trước ở database hoặc coi kết quả AI là nội dung đã xác minh.
   - Không hỗ trợ: AI không tự thêm nguyên liệu, không tự động công khai và không lưu persistent server-side Recipe Post draft trong baseline hiện tại.
 - **Phân loại Actor:**
   - Primary Actor: `Chuyên gia (Role = EXPERT)` (tác giả bài viết).
@@ -1512,6 +1515,7 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
 #### Use Cases & User Stories
 - **Danh sách Use Cases:**
   - `UC-21.1`: Yêu cầu AI gợi ý đoạn văn bản giới thiệu món ăn dựa trên nguyên liệu và tên món đã nhập.
+  - `UC-21.3`: Nhận và chỉnh sửa bản xem trước công thức có đề xuất định lượng từ Gemini rồi chủ động nạp vào biểu mẫu.
   - `UC-21.2`: Yêu cầu AI đề xuất nội dung hướng dẫn chế biến linh hoạt (10–5.000 ký tự) dựa trên danh sách nguyên liệu.
 - **User Stories:**
   - *Là một Chuyên gia ẩm thực*, tôi muốn nhờ AI gợi ý giúp một đoạn mô tả món ăn hấp dẫn và hướng dẫn chế biến rõ ràng từ những nguyên liệu tôi đã chọn, để tôi có thể chỉnh sửa lại cho đúng bí quyết của mình và chủ động xác nhận đăng bài nhanh chóng hơn.
@@ -1561,6 +1565,12 @@ Giúp người dùng nhanh chóng tìm thấy các bài công thức chay phù h
   - *Then* hệ thống xác thực quyền tính năng thành công và chuyển ngữ cảnh yêu cầu tới dịch vụ Google Gemini; đối với tài khoản gói Free, hệ thống chặn gọi AI và hướng dẫn nâng cấp gói (FR-10, BR-02, BR-03).
 
 ---
+
+- **AC-21.7 (Bản xem trước công thức từ Gemini thật):** Expert có PRO hiệu lực nhập đầy đủ các ràng buộc và chủ động yêu cầu. Backend xác định danh mục, gọi Gemini và trả bản xem trước có định lượng gam, nội dung hợp lệ và ID/đơn vị thật. Không tạo nội dung bằng mẫu JavaScript.
+- **AC-21.8 (Chặn dữ liệu nguyên liệu không xác định):** Tên không rõ/nhiều kết quả, trùng ID, quá 50 nguyên liệu hoặc thiếu năng lượng thì trả lỗi giải thích được và không gọi provider. Không đoán một nguyên liệu thay thế.
+- **AC-21.9 (Tính calo có căn cứ):** Backend tính năng lượng từ danh mục và số gam, trả tổng và trung bình mỗi phần cùng nguồn. Không sử dụng calo do model tự khai. Khi sửa số gam, UI tính lại theo năng lượng/100 g đã trả, hiển thị chênh lệch so với mục tiêu.
+- **AC-21.10 (Xác nhận nạp và bảo toàn bản soạn):** Bản xem trước không tự thay form. Chỉ “Nạp vào biểu mẫu công thức” mới chép nội dung, ID, số gam, đơn vị và thông tin món sang form. Không xuất bản tự động. Đóng modal/lỗi provider giữ nguyên form, phản hồi muộn sau khi đóng không được nạp.
+- **AC-21.11 (Phân quyền, lỗi và dữ liệu đo lường):** Guest nhận 401, tài khoản không phải Expert hoặc không có PRO hiệu lực nhận 403 trước Gemini. Kết quả thiếu/ID ngoài danh mục/sai số liệu trả 502, lỗi/quota/timeout provider trả 503. Chỉ kết quả đã kiểm tra mới phát sự kiện usage FR-21, không chứa prompt hay nội dung sinh ra. Không áp quota lượt/ngày.
 
 ---
 

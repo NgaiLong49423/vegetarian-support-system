@@ -1,6 +1,6 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.14.0
+> **Version:** v2.15.0
 > **Created:** 2026-09-11
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -451,7 +451,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | FR-18 | Admin quản lý danh mục nguyên liệu, đơn vị đo lường và bảng quy đổi | M04, M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-18) |
 | FR-19 | Chọn nguyên liệu từ danh mục chuẩn và khai báo định lượng | M03, M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-19) |
 | FR-20 | Thống nhất nguồn hiển thị thẻ món, chi tiết và thực đơn | M01, M04, M05 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-20) |
-| FR-21 | AI hỗ trợ tạo giới thiệu hoặc hướng dẫn chuẩn bị/chế biến không lưu nháp server | M03, M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-21) |
+| FR-21 | AI hỗ trợ nội dung và xem trước công thức có định lượng, không lưu nháp server | M03, M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-21) |
 | FR-23 | Hiển thị thông tin tác giả gắn liền với tài khoản | M01, M02, M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-23) |
 | FR-25 | Công khai Recipe Post ngay sau khi validation đạt | M02, M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-25) |
 | FR-26 | Gửi báo cáo bài công thức có vấn đề | M02, M03, M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-26) |
