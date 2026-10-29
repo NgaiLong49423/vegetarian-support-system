@@ -1,11 +1,15 @@
 > **Document:** Backend Workspace Guide  
 > **File:** `app/mamxanh-backend/README.md`  
-> **Version:** v0.51.0
+> **Version:** v0.52.0
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-30
 > **Status:** Active  
 
 # Backend Workspace
+
+## Admin account management — FR-06
+
+`/api/v1/admin/users` is restricted to the `ADMIN` role and provides bounded, paginated account search, global summary counts, minimal details and combined account history. Status and `CUSTOMER`/`EXPERT` role changes require a 10–500 character reason and write an audit row in the same transaction. Administrator accounts are view-only. Directly granting `EXPERT` cancels a pending expert application and sends an in-app notification. Flyway V30 owns the audit table and `CANCELLED` application status.
 
 ## Tổng hợp nguyên liệu — FR-54 / Issue #54
 

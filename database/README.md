@@ -1,11 +1,15 @@
 > **Document:** Database Workspace Guide  
 > **File:** `database/README.md`  
-> **Version:** v0.32.0<br>
+> **Version:** v0.33.0<br>
 > **Created:** 2026-06-14  
-> **Last Updated:** 2026-10-29<br>
+> **Last Updated:** 2026-10-30<br>
 > **Status:** Active  
 
 # Database Workspace
+
+## Migration V30 — Quản trị tài khoản
+
+`V30__admin_user_management_audit.sql` tạo nhật ký append-only cho thay đổi vai trò/trạng thái và mở rộng trạng thái đơn chuyên gia để hủy đơn đang chờ khi Admin cấp vai trò `EXPERT` trực tiếp. Chưa chạy hoặc xác minh migration trên SQL Server local vì dịch vụ không sẵn sàng.
 
 ## Migration V29 — Lượng Shopping List mất xác định
 

@@ -1,8 +1,8 @@
 > **Document:** System Architecture  
 > **File:** `docs/architecture/ARCHITECTURE.md`  
-> **Version:** v1.13.0
+> **Version:** v1.14.0
 > **Created:** 2026-09-13  
-> **Last Updated:** 2026-10-21
+> **Last Updated:** 2026-10-29
 > **Status:** Active  
 > **Related Docs:** `docs/requirements/SRS.md`, `docs/architecture/TECHNOLOGY-STACK.md`, `docs/diagrams/C4 Container Diagram/README.md`, `docs/diagrams/ERD/README.md`
 
@@ -183,7 +183,7 @@ Backend phát hành Stateless JWT Access Token
 
 - **Mô hình 3 Vai trò (Three-Role RBAC):**
   - `ROLE_CUSTOMER`: Người dùng thông thường đã đăng ký tài khoản. Có quyền duyệt, tìm kiếm, lưu công thức (`SAVED_RECIPE`), bình chọn Like/Dislike bài công thức (`RECIPE_REACTION`, trừ bài do chính mình sáng tác), bình luận (`COMMENT`), lập kế hoạch bữa ăn (`MEAL_PLAN`), tạo danh sách đi chợ (`SHOPPING_LIST`), xuất file PDF công thức/thực đơn và báo cáo phân tích dinh dưỡng tuần kèm so sánh DRI cá nhân (FR-20, FR-33, FR-44), và nộp đơn đăng ký Chuyên gia (`EXPERT_APPLICATION`).
-  - `ROLE_EXPERT`: Chuyên gia ẩm thực chay đã được Quản trị viên phê duyệt đơn. Kế thừa toàn bộ quyền của Customer, đồng thời sở hữu độc quyền quyền tạo, chỉnh sửa, xóa và tải ảnh cho các bài viết công thức (`RECIPE_POST`).
+  - `ROLE_EXPERT`: Chuyên gia ẩm thực chay được Quản trị viên cấp qua duyệt đơn FR-05 hoặc thay đổi role trực tiếp theo FR-06. Kế thừa toàn bộ quyền của Customer, đồng thời sở hữu độc quyền quyền tạo, chỉnh sửa, xóa và tải ảnh cho các bài viết công thức (`RECIPE_POST`).
   - `ROLE_ADMIN`: Quản trị viên hệ thống. Quản lý tài khoản, danh mục nguyên liệu/đơn vị đo/bảng quy đổi chuẩn (FR-18), kiểm duyệt nội dung/báo cáo, và xét duyệt các đơn đăng ký Chuyên gia.
 
 - **Bảo vệ Endpoint Sáng tạo Công thức (Recipe Post Creation/Mutation Enforcement):**
@@ -202,7 +202,7 @@ Backend phát hành Stateless JWT Access Token
     - `PUT /api/v1/admin/expert-applications/{id}/approve`
     - `PUT /api/v1/admin/expert-applications/{id}/reject`
   - **Quy tắc bảo vệ:** Bắt buộc áp dụng `@PreAuthorize("hasRole('ADMIN')")`.
-  - **Nguyên tử hóa giao dịch (Transactional Role Upgrade):** Khi Admin chấp thuận đơn (`approve`), Backend thực hiện cập nhật trạng thái đơn thành `APPROVED` và nâng cấp vai trò của người dùng từ `ROLE_CUSTOMER` lên `ROLE_EXPERT` trong cùng một Database Transaction duy nhất (`@Transactional`).
+  - **Nguyên tử hóa giao dịch (Transactional Role Upgrade):** Khi Admin chấp thuận đơn (`approve`), Backend cập nhật đơn `APPROVED` và role `ROLE_CUSTOMER` thành `ROLE_EXPERT` trong cùng transaction. Khi Admin cấp Expert trực tiếp, Backend cập nhật role, hủy đơn PENDING nếu có và gửi notification trong cùng transaction; hai luồng khóa tài khoản trước rồi mới thao tác trên đơn để tuần tự hóa xung đột.
 
 ## 6. Ràng buộc kiến trúc
 

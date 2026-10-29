@@ -4,7 +4,7 @@
 -- Project         : Mâm Xanh — Vegetarian Support System (SWP391)
 -- Issue           : Refs #63 — Pha 2 Physical ERD & Schema
 -- Author          : Trương Văn Khải
--- Date            : 2026-09-25
+-- Date            : 2026-10-30
 -- Source          : Logical ERD v1.0.0 + Data Dictionary v0.7.5
 --                   (Nguyễn Hải Dương — Pha 1, commit 827353e)
 -- Synchronized with: V1__baseline_schema.sql + V2__unit_code_unicode.sql
@@ -31,6 +31,11 @@
 --                   + V23__report_supplement.sql
 --                   + V24__expert_application_private_attachments.sql
 --                   + V25__persist_nutrition_bmi.sql
+--                   + V26__standard_recipe_units.sql
+--                   + V27__shopping_list_recipe_sources.sql
+--                   + V28__shopping_list_item_sources.sql
+--                   + V29__shopping_unknown_contributions.sql
+--                   + V30__admin_user_management_audit.sql
 --                   (Flyway state after all migrations)
 -- ============================================================================
 -- This file is the manual bootstrap / schema snapshot for local development,
@@ -372,7 +377,7 @@ CREATE TABLE [EXPERT_APPLICATION] (
     CONSTRAINT FK_EXPERT_APP_REVIEWER FOREIGN KEY (reviewed_by)
         REFERENCES [USER](user_id) ON DELETE NO ACTION,
     CONSTRAINT CK_EXPERT_APP_status CHECK (
-        status IN ('PENDING', 'APPROVED', 'REJECTED')
+        status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED')
     ),
     CONSTRAINT CK_EXPERT_APP_vegetarian_type CHECK (
         vegetarian_type IN ('VEGAN', 'LACTO', 'OVO', 'LACTO_OVO', 'MACROBIOTIC')
@@ -667,6 +672,40 @@ CREATE TABLE [REPORT] (
         OR decision IN ('NO_VIOLATION', 'WARN_AUTHOR', 'HIDE_RECIPE', 'LOCK_AUTHOR')
     )
 );
+GO
+
+-- 6.1b USER_ACCOUNT_AUDIT — Administrator account status and role changes
+CREATE TABLE [USER_ACCOUNT_AUDIT] (
+    user_account_audit_id BIGINT IDENTITY(1,1) NOT NULL,
+    target_user_id BIGINT NOT NULL,
+    administrator_id BIGINT NOT NULL,
+    action VARCHAR(20) NOT NULL,
+    old_role VARCHAR(20) NULL,
+    new_role VARCHAR(20) NULL,
+    old_account_status VARCHAR(20) NULL,
+    new_account_status VARCHAR(20) NULL,
+    reason NVARCHAR(500) NOT NULL,
+    expert_application_id BIGINT NULL,
+    created_at DATETIME2(7) NOT NULL,
+    CONSTRAINT PK_USER_ACCOUNT_AUDIT PRIMARY KEY (user_account_audit_id),
+    CONSTRAINT FK_USER_ACCOUNT_AUDIT_TARGET FOREIGN KEY (target_user_id) REFERENCES [USER](user_id),
+    CONSTRAINT FK_USER_ACCOUNT_AUDIT_ADMIN FOREIGN KEY (administrator_id) REFERENCES [USER](user_id),
+    CONSTRAINT FK_USER_ACCOUNT_AUDIT_APPLICATION FOREIGN KEY (expert_application_id) REFERENCES [EXPERT_APPLICATION](application_id),
+    CONSTRAINT CK_USER_ACCOUNT_AUDIT_ACTION CHECK (action IN ('STATUS_CHANGED','ROLE_CHANGED')),
+    CONSTRAINT CK_USER_ACCOUNT_AUDIT_REASON CHECK (LEN(LTRIM(RTRIM(reason))) BETWEEN 10 AND 500),
+    CONSTRAINT CK_USER_ACCOUNT_AUDIT_VALUES CHECK (
+        (action='STATUS_CHANGED' AND old_account_status IS NOT NULL
+            AND old_account_status IN ('ACTIVE','LOCKED') AND new_account_status IS NOT NULL
+            AND new_account_status IN ('ACTIVE','LOCKED')
+            AND old_role IS NULL AND new_role IS NULL AND expert_application_id IS NULL)
+        OR
+        (action='ROLE_CHANGED' AND old_role IS NOT NULL AND old_role IN ('CUSTOMER','EXPERT')
+            AND new_role IS NOT NULL AND new_role IN ('CUSTOMER','EXPERT')
+            AND old_account_status IS NULL AND new_account_status IS NULL)
+    )
+);
+CREATE INDEX IX_USER_ACCOUNT_AUDIT_TARGET_CREATED
+    ON [USER_ACCOUNT_AUDIT](target_user_id, created_at DESC, user_account_audit_id DESC);
 GO
 
 -- 6.1a REPORT_SUPPLEMENT — Append-only information added to an open report

@@ -1,8 +1,8 @@
 > **Document:** Functional Requirements
 > **File:** `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`
-> **Version:** v2.45.0
+> **Version:** v2.46.0
 > **Created:** 2026-09-14
-> **Last Updated:** 2026-10-29
+> **Last Updated:** 2026-10-30
 > **Status:** Active
 > **Baseline:** Requirements / Implementation Baseline v2.0.0
 
@@ -279,7 +279,7 @@ Cung cấp giải pháp định danh, xác thực an toàn và quản lý vòng 
 
 - **Mã yêu cầu:** FR-04
 - **Module:** M02 (Identity & Access), M03 (Community Recipes & Social)
-- **Tóm tắt yêu cầu:** Hệ thống cho phép tài khoản có vai trò Chuyên gia (`Role = EXPERT`) đã được phê duyệt tạo, xem, chỉnh sửa, xóa và công khai trực tiếp Recipe Post của chính mình khi đạt các tiêu chuẩn kiểm tra tính hợp lệ; người đăng **không bắt buộc phải viết từng bước nấu ăn** vào bài viết mà có thể nhập hướng dẫn chế biến dạng văn bản tổng thể (10–5.000 ký tự) hoặc phân đoạn tùy ý; upload tối đa 5 ảnh minh họa (`RECIPE_MEDIA`, $\le 5$ MB/ảnh) kèm đúng 1 ảnh bìa, và gắn tối đa 1 link YouTube; hệ thống bắt buộc các nguyên liệu phải có định lượng số học và tỷ lệ quy đổi hợp lệ sang gam (BR-73); `Customer`, `Guest` và `Administrator` không có quyền tạo/đăng hoặc sửa nội dung bài công thức.
+- **Tóm tắt yêu cầu:** Hệ thống cho phép tài khoản có vai trò Chuyên gia (`Role = EXPERT`) được Administrator cấp qua FR-05 hoặc FR-06 tạo, xem, chỉnh sửa, xóa và công khai trực tiếp Recipe Post của chính mình khi đạt các tiêu chuẩn kiểm tra tính hợp lệ; người đăng **không bắt buộc phải viết từng bước nấu ăn** vào bài viết mà có thể nhập hướng dẫn chế biến dạng văn bản tổng thể (10–5.000 ký tự) hoặc phân đoạn tùy ý; upload tối đa 5 ảnh minh họa (`RECIPE_MEDIA`, $\le 5$ MB/ảnh) kèm đúng 1 ảnh bìa, và gắn tối đa 1 link YouTube; hệ thống bắt buộc các nguyên liệu phải có định lượng số học và tỷ lệ quy đổi hợp lệ sang gam (BR-73); `Customer`, `Guest` và `Administrator` không có quyền tạo/đăng hoặc sửa nội dung bài công thức.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-04).
 
@@ -366,7 +366,7 @@ Thiết lập Mâm Xanh thành sân chơi ẩm thực chay chuyên nghiệp, nơ
 
 - **Mã yêu cầu:** FR-05
 - **Module:** M02 (Identity & Access), M03 (Community Recipes & Social), M09 (Administration & Moderation)
-- **Tóm tắt yêu cầu:** Hệ thống cho phép người dùng thông thường (`Customer`) có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản có cấu trúc (`EXPERT_APPLICATION`) và tùy chọn đính kèm tối đa một tài liệu chứng chỉ/văn bằng chuyên môn cùng một ảnh thẻ chân dung khung 3:4 riêng của đơn; đây là quy trình xét duyệt **tư cách Chuyên gia và quyền đăng bài**, không phải xác minh danh tính/KYC. Hệ thống không yêu cầu giấy tờ tùy thân. Tệp đính kèm được lưu riêng tư và chỉ Administrator có quyền tải/xem khi thẩm định; ảnh không cập nhật avatar hồ sơ công khai. Administrator ghi nhận xét thẩm định và quyết định phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; khi được phê duyệt, tài khoản được thăng cấp tức thời lên vai trò `EXPERT`; nếu bị từ chối, người dùng có thể nộp lại đơn mới.
+- **Tóm tắt yêu cầu:** Hệ thống cho phép người dùng thông thường (`Customer`) có nguyện vọng chia sẻ công thức nộp đơn đăng ký Chuyên gia theo format văn bản có cấu trúc (`EXPERT_APPLICATION`) và tùy chọn đính kèm tối đa một tài liệu chứng chỉ/văn bằng chuyên môn cùng một ảnh thẻ chân dung khung 3:4 riêng của đơn; đây là quy trình xét duyệt **tư cách Chuyên gia và quyền đăng bài**, không phải xác minh danh tính/KYC. Hệ thống không yêu cầu giấy tờ tùy thân. Tệp đính kèm được lưu riêng tư và chỉ Administrator có quyền tải/xem khi thẩm định; ảnh không cập nhật avatar hồ sơ công khai. Administrator ghi nhận xét thẩm định và quyết định phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; phê duyệt đơn sẽ thăng cấp tài khoản tức thời lên `EXPERT`. Việc cấp vai trò `EXPERT` trực tiếp qua quản lý người dùng FR-06 không cần đơn đã duyệt; nếu có đơn `PENDING`, đơn được chuyển `CANCELLED`, ghi người xử lý/lý do và gửi thông báo. Nếu bị từ chối, người dùng có thể nộp lại đơn mới.
 
 - **Use Case detail:** [Open interaction flows](../use-cases/identity-and-access.md#fr-05).
 
@@ -459,6 +459,16 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
 - **AC-05.11 — Nhãn và hướng dẫn Portfolio URL:**
   - **Then:** Form hiển thị nhãn “Đường dẫn portfolio”; hướng dẫn “Không bắt buộc. Chấp nhận HTTP/HTTPS, tối đa 500 ký tự.” nằm riêng bên dưới, không có dấu ngoặc.
 
+- **AC-05.12 — Kết thúc đơn PENDING khi Admin cấp Expert trực tiếp:**
+  - **Given:** Administrator đổi vai trò tài khoản CUSTOMER sang EXPERT tại quản lý người dùng FR-06 và tài khoản đang có đơn `PENDING`.
+  - **When:** Thao tác đổi vai trò hoàn tất.
+  - **Then:** Cùng transaction, hệ thống đổi role, chuyển đơn sang `CANCELLED` với người xử lý/thời điểm/lý do, ghi audit thay đổi tài khoản và tạo thông báo in-app cho người dùng. Nếu bất kỳ bước nào lỗi, toàn bộ thay đổi được rollback; yêu cầu duyệt đồng thời chỉ có một kết quả thắng.
+
+- **AC-05.13 — Cấp Expert trực tiếp không phụ thuộc đơn đã duyệt:**
+  - **Given:** Administrator đổi CUSTOMER sang EXPERT với lý do hợp lệ qua FR-06.
+  - **When:** Tài khoản không có đơn PENDING hoặc có đơn PENDING được đóng thành công.
+  - **Then:** Tài khoản được cấp quyền Expert ngay và có thể dùng chức năng FR-04; không yêu cầu tạo đơn mới hoặc giả lập trạng thái `APPROVED`.
+
 ---
 
 ---
@@ -468,7 +478,7 @@ Thiết lập quy trình thẩm định tư cách Chuyên gia minh bạch, chặ
 
 - **Mã yêu cầu:** FR-06
 - **Module:** M09 (Administration & Moderation)
-- **Tóm tắt yêu cầu:** Hệ thống cho phép Administrator tiếp nhận, quản lý và xử lý báo cáo vi phạm đối với thành viên, Recipe Post, bình luận và danh mục; Administrator không duyệt quyền đăng hoặc duyệt từng Recipe Post trước khi công khai; toàn bộ việc kiểm soát nội dung tuân thủ cơ chế hậu kiểm (post-moderation) dựa trên phản ánh của cộng đồng.
+- **Tóm tắt yêu cầu:** Hệ thống cho phép Administrator quản lý tài khoản người dùng thật và tiếp nhận, quản lý, xử lý báo cáo vi phạm đối với thành viên, Recipe Post, bình luận và danh mục. Quản lý tài khoản gồm tìm kiếm/lọc/phân trang, thống kê, xem chi tiết/lịch sử, khóa/mở khóa và đổi role giữa `CUSTOMER` với `EXPERT`; mọi thay đổi cần lý do 10–500 ký tự và được audit. Tài khoản `ADMIN` chỉ xem, không phải đối tượng khóa hoặc đổi role. Administrator không duyệt từng Recipe Post trước khi công khai; kiểm soát nội dung vẫn theo cơ chế hậu kiểm (post-moderation).
 
 - **Use Case detail:** [Open interaction flows](../use-cases/administration.md#fr-06).
 
@@ -479,12 +489,16 @@ Cung cấp trung tâm điều hành hậu kiểm nội dung toàn diện cho Qu�
 - **Các Use Case con:**
   - `UC-06.1`: Quản lý danh sách nội dung bị báo cáo hậu kiểm (Manage reported content dashboard).
   - `UC-06.2`: Thực hiện hành động hậu kiểm đối với nội dung hoặc tài khoản vi phạm (Execute moderation actions on content or user).
+  - `UC-06.3`: Tra cứu và quản lý trạng thái/vai trò tài khoản thành viên (Manage member accounts and roles).
 - **User Stories:**
   - `US-06.1`: Là một Administrator, tôi muốn có bảng tổng hợp trực quan các bài viết và bình luận bị báo cáo nhiều nhất để ưu tiên xử lý nhanh các trường hợp vi phạm nghiêm trọng.
   - `US-06.2`: Là một Administrator, tôi muốn áp dụng chế tài ẩn bài hoặc khóa tài khoản kèm lý do rõ ràng để bảo đảm tính minh bạch và công bằng.
+  - `US-06.3`: Là một Administrator, tôi muốn quản lý tài khoản bằng dữ liệu thật, xem lịch sử và ghi lý do cho mọi lần khóa/mở khóa hoặc đổi vai trò.
 
 #### Quy tắc phân quyền và bảo mật (Permissions & Security)
 - Chỉ tài khoản có vai trò Administrator mới có quyền truy cập trung tâm hậu kiểm và áp dụng chế tài (NFR-09).
+- API quản lý tài khoản chỉ dành cho role `ADMIN` ở Backend; response không được trả dữ liệu sức khỏe hoặc hồ sơ riêng tư. Tài khoản `ADMIN` có thể được tra cứu nhưng không thể là mục tiêu thao tác khóa/mở khóa/đổi role.
+- Role được đổi trực tiếp chỉ giữa `CUSTOMER` và `EXPERT`; mọi thay đổi role hoặc trạng thái yêu cầu lý do đã trim dài 10–500 ký tự và ghi audit actor, thời gian, hành động, giá trị trước/sau, lý do. Không ghi audit khi trạng thái/role không đổi.
 - Tuyệt đối không áp dụng cơ chế phê duyệt trước (pre-moderation) từng bài viết trước khi đăng (BR-07).
 
 #### Truy vết quy tắc nghiệp vụ và phi chức năng (Traceability)
@@ -517,6 +531,26 @@ Cung cấp trung tâm điều hành hậu kiểm nội dung toàn diện cho Qu�
   - **Given:** Quá trình hậu kiểm đang diễn ra song song trên hệ thống.
   - **When:** Các thành viên khác tạo và công khai bài công thức hợp lệ mới.
   - **Then:** Các bài viết mới vẫn được công khai ngay lập tức mà không bị nghẽn hay chờ duyệt trước (BR-07).
+
+- **AC-06.5 — Danh sách người dùng từ Backend:**
+  - **Given:** Administrator mở trang Quản lý người dùng.
+  - **When:** Tìm kiếm theo tên/email/mã, lọc theo role/trạng thái hoặc chuyển trang.
+  - **Then:** Bảng trả dữ liệu SQL Server có phân trang giới hạn; số liệu tổng quan tính trên toàn hệ thống, độc lập với bộ lọc; số công thức chỉ đếm bài `PUBLISHED`.
+
+- **AC-06.6 — Bảo vệ API và dữ liệu tối thiểu:**
+  - **Given:** Request không phải Administrator hoặc yêu cầu quá giới hạn.
+  - **When:** Gọi API danh sách, chi tiết, lịch sử hoặc thay đổi tài khoản.
+  - **Then:** Backend từ chối request trái quyền/validation; chỉ trả dữ liệu tài khoản cần thiết và không trả trường sức khỏe/hồ sơ riêng tư.
+
+- **AC-06.7 — Lý do, audit và không tác động tài khoản Admin:**
+  - **Given:** Administrator thực hiện đổi trạng thái hoặc role.
+  - **When:** Lý do thiếu hoặc ngoài 10–500 ký tự, mục tiêu là ADMIN, hoặc cập nhật cạnh tranh đã làm thay đổi trạng thái.
+  - **Then:** Request không tạo audit/thay đổi trái phép; thao tác hợp lệ ghi trước/sau, actor, thời điểm và lý do trong cùng transaction. Yêu cầu lặp không đổi dữ liệu thì không thêm audit.
+
+- **AC-06.8 — Role trực tiếp và đơn Chuyên gia đang chờ:**
+  - **Given:** Admin chuyển CUSTOMER sang EXPERT, có thể có hoặc không có đơn `PENDING`.
+  - **When:** Thay đổi được xác nhận.
+  - **Then:** Không cần đơn `APPROVED`; nếu đơn `PENDING` tồn tại, đơn chuyển `CANCELLED`, lưu người xử lý/lý do và gửi notification cùng transaction. Luồng duyệt FR-05 vẫn chỉ chuyển đơn còn `PENDING` của CUSTOMER đang `ACTIVE`.
 
 ---
 

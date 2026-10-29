@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification — Mâm Xanh
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v2.14.0
+> **Version:** v2.15.0
 > **Created:** 2026-09-11
-> **Last Updated:** 2026-10-27
+> **Last Updated:** 2026-10-29
 > **Status:** Active
 > **Related Docs:** `docs/requirements/PRD.md`, `docs/requirements/srs/FUNCTIONAL-REQUIREMENTS.md`, `docs/requirements/srs/BUSINESS-RULES.md`, `docs/requirements/srs/NON-FUNCTIONAL-REQUIREMENTS.md`, `docs/architecture/ARCHITECTURE.md`, `docs/testing/TEST-STRATEGY.md`
 
@@ -38,8 +38,8 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 - Nội dung cộng đồng MVP: bài công thức (`Recipe Post`), bình luận. Phân loại bài viết theo thể loại món ăn chuẩn hóa (`dish_category`) và loại ăn chay (`vegetarian_type`). Không có Blog độc lập nhúng thẻ công thức trong baseline hiện tại.
 - Mỗi bài công thức kết hợp dữ liệu món ăn có cấu trúc với trường hướng dẫn chuẩn bị/chế biến (`instructions`, 10–5.000 ký tự) linh hoạt, trực quan; hệ thống không ép buộc phân rã thành các bước độc lập hay quản lý theo chế độ step-to-step (Phương án B); bãi bỏ bảng `RECIPE_STEP`.
 - Media Phase 1: Thư viện ảnh tối đa 5 ảnh trên mỗi bài công thức (`RECIPE_MEDIA`) được upload lên Azure Blob Storage; trong đó có đúng 1 ảnh được chọn làm ảnh bìa (cover); bài công thức có thể chứa link YouTube và phát bằng embedded player trong app.
-- **Quy trình thẩm định Chuyên gia (`FR-05`):** Customer nộp đơn theo format văn bản (`EXPERT_APPLICATION`) với kinh nghiệm, trường phái chay, tóm tắt công thức, portfolio và có thể đính kèm một tài liệu chứng chỉ/văn bằng chuyên môn cùng một ảnh thẻ chân dung khung 3:4 riêng của đơn; Administrator thẩm định nội dung, xem hoặc tải tệp và phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; tài khoản được thăng cấp `Role = EXPERT` ngay khi duyệt. Tệp được lưu riêng tư và ảnh thẻ không trở thành avatar hồ sơ công khai.
-- **Đăng bài công thức độc quyền cho Chuyên gia (`FR-04`):** Chỉ tài khoản có vai trò `Chuyên gia` đã được Administrator phê duyệt mới được tạo, chỉnh sửa, xóa và công khai Recipe Post trực tiếp; Customer và Administrator không có quyền đăng bài.
+- **Quy trình thẩm định Chuyên gia (`FR-05`):** Customer nộp đơn theo format văn bản (`EXPERT_APPLICATION`) với kinh nghiệm, trường phái chay, tóm tắt công thức, portfolio và có thể đính kèm một tài liệu chứng chỉ/văn bằng chuyên môn cùng một ảnh thẻ chân dung khung 3:4 riêng của đơn; Administrator thẩm định nội dung, xem hoặc tải tệp và phê duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) kèm lý do; phê duyệt đơn sẽ thăng cấp `Role = EXPERT`. Admin cũng có thể cấp role Expert trực tiếp qua quản lý tài khoản FR-06; đơn `PENDING` (nếu có) bị hủy thành `CANCELLED`, có lý do và thông báo. Tệp được lưu riêng tư và ảnh thẻ không trở thành avatar hồ sơ công khai.
+- **Đăng bài công thức độc quyền cho Chuyên gia (`FR-04`):** Chỉ tài khoản có vai trò `EXPERT` do Admin cấp qua FR-05 hoặc quản lý trực tiếp theo FR-06 mới được tạo, chỉnh sửa, xóa và công khai Recipe Post; Customer và Administrator không có quyền đăng bài.
 - Đánh giá chất lượng và lượt xem: Customer và Chuyên gia được đánh giá chất lượng bài công thức bằng bình chọn Like / Dislike và tính tỷ lệ % hài lòng (`RECIPE_REACTION`); Guest chỉ có quyền xem tỷ lệ % và tổng số lượt đánh giá; hệ thống hiển thị huy hiệu `👍 {like_percentage}%` nổi bật trên thẻ bài viết Recipe Card (tương tự Samsung Food); hệ thống lưu vết chi tiết từng lượt xem (`RECIPE_VIEW`) với cơ chế khử trùng lặp (view deduplication).
 - So sánh công thức (`FR-60`): Guest và Member có thể chọn đúng hai Recipe Post công khai khác nhau để đối chiếu thông tin tổng quan, nguyên liệu và chín chỉ tiêu dinh dưỡng trên một khẩu phần; hệ thống không lưu lịch sử, không xuất PDF và không kết luận món nào tốt hơn hoặc lành mạnh hơn.
 - Quan hệ xã hội (`FR-59`, `BR-75`): Customer và Chuyên gia đã đăng nhập có thể theo dõi hoặc bỏ theo dõi một Member khác; quan hệ có hướng được lưu bằng `USER_FOLLOW`. Chức năng này chưa bao gồm news feed cá nhân hóa, tài khoản riêng tư hay thông báo follow.
@@ -54,7 +54,7 @@ AI hỗ trợ hỏi đáp, tìm kiếm/gợi ý, soạn bản nháp bài công t
 
 ### 3.2 Ngoài phạm vi hiện tại
 
-- Người dùng thông thường (Customer) tự do đăng tải bài công thức (chỉ dành riêng cho Chuyên gia đã được phê duyệt).
+- Customer không có quyền tự đăng bài công thức; tài khoản phải được cấp role `EXPERT` qua xét duyệt FR-05 hoặc quản lý người dùng FR-06.
 - Chẩn đoán, điều trị, tư vấn sức khỏe chuyên nghiệp hoặc thay thế bác sĩ.
 - Lưu nháp Recipe Post trên server và lịch sử hội thoại AI theo tài khoản.
 - Tính nhu cầu dinh dưỡng, AI menu dinh dưỡng hoặc đánh giá menu cho người dưới 18 tuổi, người mang thai/cho con bú hay người cần chế độ ăn điều trị bệnh.
@@ -136,7 +136,7 @@ Quyết định này thay thế phạm vi nhập tên nguyên liệu tự do đ�
 - Khi tác giả bấm công khai, hệ thống kiểm tra đăng nhập, vai trò Chuyên gia, cấu trúc, các trường bắt buộc và tính khả toán của đơn vị nguyên liệu. Bài hợp lệ được công khai trực tiếp. AI không tự công khai bài. Đúng format không đồng nghĩa công thức đúng hoặc an toàn.
 - Khi AI gặp sự cố kỹ thuật hoặc tài khoản không thuộc gói có quyền sử dụng AI hỗ trợ soạn bài (FR-21), Chuyên gia vẫn toàn quyền tiếp tục tự viết/chỉnh sửa và công khai bài bình thường nếu thỏa mãn điều kiện validation. Quyền gọi AI soạn bài được phân quyền theo mô hình Feature-based Entitlement (thuộc gói Plus và Pro).
 
-Luồng cấp cao: Chuyên gia đã được phê duyệt (`Role = EXPERT`) → tác giả nhập thông tin → tự viết hoặc yêu cầu AI hỗ trợ → tác giả rà soát/chỉnh sửa → hệ thống kiểm tra vai trò/format/conversion → công khai thẻ món và trang chi tiết từ cùng Recipe Post.
+Luồng cấp cao: Tài khoản có role `EXPERT` do Admin cấp qua FR-05 hoặc FR-06 → tác giả nhập thông tin → tự viết hoặc yêu cầu AI hỗ trợ → tác giả rà soát/chỉnh sửa → hệ thống kiểm tra vai trò/format/conversion → công khai thẻ món và trang chi tiết từ cùng Recipe Post.
 
 ### 3.7 Hướng dẫn chuẩn bị và chế biến — cập nhật 22/09/2026
 
@@ -154,7 +154,7 @@ Luồng cấp cao: Chuyên gia đã được phê duyệt (`Role = EXPERT`) → 
 - Hệ thống gắn tác giả với tài khoản đăng bài (bắt buộc `Role = EXPERT`), không dùng ô nhập tên tác giả tùy ý và không cho người đăng chọn tài khoản khác để đứng tên.
 - Hồ sơ tác giả công khai (được quản lý trực tiếp trong thực thể `User`) không hiển thị email, thông tin đăng nhập hoặc dữ liệu hồ sơ dinh dưỡng/ăn uống riêng tư. Trang thông tin tác giả hiển thị tên hiển thị, avatar, giới thiệu chuyên môn ngắn, ngày tham gia và danh sách các bài công thức đã công khai.
 - Administrator xử lý báo cáo không trở thành tác giả. AI hỗ trợ viết không thay thế tác giả; Chuyên gia vẫn rà soát và chịu trách nhiệm khi công khai bài.
-- Gắn bài với tài khoản Chuyên gia nhằm định danh người chịu trách nhiệm nội dung. Quyền Chuyên gia được cấp sau khi Administrator thẩm định đơn đăng ký theo format (`FR-05`); tài liệu chứng chỉ do Customer tự nguyện cung cấp chỉ là tài liệu tham khảo trong đơn, không xác minh danh tính hoặc tính xác thực ngoài hệ thống.
+- Gắn bài với tài khoản Chuyên gia nhằm định danh người chịu trách nhiệm nội dung. Quyền Chuyên gia được cấp sau khi Administrator thẩm định đơn theo format (`FR-05`) hoặc cấp role trực tiếp trong quản lý tài khoản (`FR-06`); tài liệu chứng chỉ do Customer tự nguyện cung cấp chỉ là tài liệu tham khảo trong đơn, không xác minh danh tính hoặc tính xác thực ngoài hệ thống.
 
 ### 3.8.1 Theo dõi người dùng
 
@@ -175,7 +175,7 @@ Luồng cấp cao: Chuyên gia đã được phê duyệt (`Role = EXPERT`) → 
 | Loại ăn chay | Có | Chọn một trong bốn loại đã chốt tại 3.20. |
 | Thời gian chuẩn bị/nấu | Có | Mỗi giá trị từ 0 đến 1.440 phút; tổng thời gian chuẩn bị và nấu phải lớn hơn 0 (`cookTime = 0` hợp lệ nếu `prepTime > 0`). |
 | Hướng dẫn chuẩn bị/chế biến (`instructions`) | Có | Văn bản hướng dẫn từ 10 đến 5.000 ký tự sau khi trim; không bắt buộc phân bước hay quản lý theo bước (BR-19). |
-| Tác giả | Có | Bắt buộc tài khoản có vai trò `Chuyên gia` (`Role = EXPERT`) đã được phê duyệt. |
+| Tác giả | Có | Bắt buộc tài khoản có vai trò `Chuyên gia` (`Role = EXPERT`) được Admin cấp qua FR-05 hoặc FR-06. |
 | Thư viện ảnh (`RECIPE_MEDIA`) | Không | Từ 0 đến 5 ảnh JPEG/PNG/WebP dung lượng $\le 5$ MB/ảnh; có thứ tự hiển thị; có đúng 1 ảnh được chọn làm cover; nếu 0 ảnh thì áp dụng ảnh mặc định theo loại ăn chay. |
 | Mô tả và link YouTube | Không | Mô tả tối đa 2.000 ký tự; tối đa một link YouTube hợp lệ. |
 
@@ -187,7 +187,7 @@ Luồng cấp cao: Chuyên gia đã được phê duyệt (`Role = EXPERT`) → 
 
 ### 3.10 Đăng bài của Chuyên gia và hậu kiểm Recipe Post — cập nhật 22/09/2026
 
-- Chuyên gia công khai Recipe Post trực tiếp khi bài hợp lệ; quản trị viên kiểm soát tư cách chuyên môn thông qua quy trình xét duyệt đơn đăng ký Chuyên gia (`FR-05`) trước khi cấp quyền đăng bài, chứ không phê duyệt trước từng bài công thức.
+- Chuyên gia công khai Recipe Post trực tiếp khi bài hợp lệ; quản trị viên kiểm soát tư cách chuyên môn qua xét duyệt đơn (`FR-05`) hoặc cấp role trực tiếp khi quản lý tài khoản (`FR-06`), chứ không phê duyệt trước từng bài công thức.
 - Administrator không can thiệp sửa bài trước khi đăng. Vai trò của Administrator đối với bài viết là xem xét báo cáo vi phạm từ người dùng, ghi kết luận/lý do và áp dụng biện pháp hậu kiểm theo chính sách.
 - Báo cáo từ người dùng là tín hiệu để xem xét, không tự động kết luận bài vi phạm hay tự ẩn/xóa bài.
 - Baseline hiện tại không cung cấp AI quét/gắn cờ nội dung.
@@ -438,7 +438,7 @@ Tài liệu này là **Authoritative Registry** cho sự tồn tại của requi
 | FR-03 | Đăng ký, đăng nhập và quản lý tài khoản cơ bản | M02 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-03) |
 | FR-04 | Chuyên gia tạo và công khai trực tiếp Recipe Post | M02, M03 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-04) |
 | FR-05 | Nộp đơn đăng ký Chuyên gia theo format và Administrator phê duyệt | M02, M03, M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-05) |
-| FR-06 | Administrator xử lý báo cáo và quản lý hậu kiểm | M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) |
+| FR-06 | Administrator quản lý tài khoản, xử lý báo cáo và quản lý hậu kiểm | M09 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-06) |
 | FR-08 | Tìm kiếm và lọc bài công thức đa tiêu chí | M04 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-08) |
 | FR-09 | Authorized User tạo và chỉnh lịch ăn tuần | M05 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-09) |
 | FR-10 | Phân quyền tính năng AI theo gói tài khoản (Feature-based AI Entitlement) | M06 | [Chi tiết](srs/FUNCTIONAL-REQUIREMENTS.md#fr-10) |
