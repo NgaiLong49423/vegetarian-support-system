@@ -1,6 +1,6 @@
 > **Document:** Changelog
 > **File:** `CHANGELOG.md`
-> **Version:** v2.128.0
+> **Version:** v2.129.0
 > **Created:** 2026-06-14
 > **Last Updated:** 2026-10-29
 > **Status:** Active
@@ -8,6 +8,27 @@
 # Changelog
 
 Notable project changes, grouped by date and topic. Writing rules are maintained in [CONTRIBUTING.md](CONTRIBUTING.md#changelog-format). Documentation decisions below describe scope, not implemented or deployed features.
+
+## 2026-10-29 — Separate Transaction Status Cards and Refine Telemetry Demo Data
+
+**Status:** Committed — `e57d462112d3fe370b5ee6f5a33c1f4e15ba4c81`.
+
+**Scope:** Refactor admin transaction status metrics into distinct cancelled and failed buckets with 5-column layout, record verified demo transactions matching tier subscriptions, populate 38 database-persisted AI telemetry calls across all 6 features, and polish the telemetry privacy disclaimer.
+
+### Added
+
+- Add `R__demo_sample_data_80_payment_transactions.sql` providing 8 sample payment transactions (3 PAID, 1 PENDING, 2 CANCELLED, 2 FAILED) aligned with PLUS and PRO subscription entitlements.
+- Add `R__demo_sample_data_85_ai_telemetry.sql` recording 38 valid AI telemetry calls (54,115 total tokens, $0.104515 USD estimated cost) across FR-21, FR-34, FR-36, FR-37, FR-47, and FR-51 directly into `AI_USAGE_TELEMETRY`.
+
+### Changed
+
+- Split cancelled and failed payment transactions into two dedicated cards on `AdminTransactionsPage.tsx` using a balanced 5-column grid (`sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5`).
+- Update transaction filter pagination counter label to `2 giao dịch · Trang 1/1` and synchronize `admin-transactions-real-stack.spec.ts`.
+- Replace technical disclaimer on `AiTelemetryPage.tsx` with a concise privacy-focused notice.
+
+### Fixed
+
+- None.
 
 ## 2026-10-29 — Synchronize FR-11 with Develop and Latest FR-10 Entitlements
 
