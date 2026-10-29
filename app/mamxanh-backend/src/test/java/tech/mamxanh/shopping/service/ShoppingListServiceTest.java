@@ -255,13 +255,14 @@ class ShoppingListServiceTest {
 
     @Test void reducingTotalToRecipeMinimumRemovesUnknownAndManualContributions() {
         var rows = prepareRecipeBackedIngredientSources();
+        doAnswer(call -> { rows.removeAll(call.getArgument(0)); return null; }).when(contributions).deleteAll(anyList());
 
         var result = service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("40"), 1));
 
         assertThat(item.getQuantity()).isEqualByComparingTo("40");
         assertThat(rows).extracting(ShoppingRecipeContributionEntity::getSourceKind).containsExactly("RECIPE");
         assertThat(result.requiredQuantity()).isEqualByComparingTo("40");
-        assertThat(result.manualQuantity()).isEqualByComparingTo("0");
+        assertThat(result.manualQuantity()).isNull();
     }
 
     @Test void editingAndRemovingStandaloneManualSourceRecalculatesOrDeletesItsChecklistRow() {
@@ -341,7 +342,6 @@ class ShoppingListServiceTest {
         var manual = contribution("MANUAL", 3L, "10");
         var rows = new ArrayList<>(List.of(required, unknownA, unknownB, manual));
         when(contributions.findByShoppingListIdOrderByIdAsc(10L)).thenAnswer(call -> rows);
-        doAnswer(call -> { rows.removeAll(call.getArgument(0)); return null; }).when(contributions).deleteAll(anyList());
         when(recipes.findShoppingReferences(List.of(9L))).thenReturn(Map.of(9L,
                 new tech.mamxanh.recipe.service.RecipeService.ShoppingReference(9L, "Món đậu", true, null)));
         when(catalog.findIngredientReferences(List.of(8L))).thenReturn(List.of(
