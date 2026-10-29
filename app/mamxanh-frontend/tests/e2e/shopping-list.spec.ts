@@ -514,6 +514,25 @@ test("shopping catalog item unit selection converts the displayed total", async 
   await expect(page.getByTestId("shopping-item-1")).toContainText("150 ml")
 })
 
+test("shopping edit normalizes a supported cup quantity to milliliters", async ({ page }) => {
+  const state = await setup(page)
+  state.list.items[0] = row(1, { quantity: 2, unitId: 3, unitCode: "cup", unitName: "cup" })
+  await page.route("**/api/v1/ingredients/5/units", (route) =>
+    route.fulfill({
+      json: [
+        { id: 1, code: "g", name: "gram", dimension: "MASS", gramsPerUnit: 1, approximate: false },
+        { id: 2, code: "ml", name: "mililít", dimension: "VOLUME", gramsPerUnit: 1, approximate: false },
+        { id: 3, code: "cup", name: "cup", dimension: "VOLUME", gramsPerUnit: 240, approximate: true },
+      ],
+    }),
+  )
+
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Sửa Nước tương cup", exact: true }).click()
+  await expect(page.getByLabel("Đơn vị", { exact: true })).toHaveValue("2")
+  await expect(page.getByLabel("Tổng số lượng mới", { exact: true })).toHaveValue("480")
+})
+
 test("shopping failed mutations preserve data and form, cleanup preserves unbought rows", async ({
   page,
 }) => {

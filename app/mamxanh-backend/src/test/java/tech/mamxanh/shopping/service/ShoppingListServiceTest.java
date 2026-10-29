@@ -289,6 +289,23 @@ class ShoppingListServiceTest {
         assertThat(list.getUpdatedAt()).isNull();
     }
 
+    @Test void changingUnitWithoutCatalogConversionFactorIsRejected() {
+        mutation();
+        item.setIngredientId(8L); item.setUnitId(1); item.setQuantity(new BigDecimal("70"));
+        when(items.findByIdAndShoppingListId(3L, 10L)).thenReturn(Optional.of(item));
+        when(contributions.findByShoppingListIdOrderByIdAsc(10L)).thenReturn(List.of(contribution("RECIPE", 3L, "40")));
+        when(catalog.findActiveIngredientUnits(8L)).thenReturn(List.of(
+                new IngredientUnitOptionResponse(1, "g", "gram", MeasurementDimension.MASS, BigDecimal.ONE, false),
+                new IngredientUnitOptionResponse(2, "kg", "kilogram", MeasurementDimension.MASS, null, false)));
+        when(aggregation.aggregate(anyList())).thenAnswer(call -> aggregateWithUnits(call.getArgument(0)));
+
+        assertThatThrownBy(() -> service.update(10, 3, new UpdateShoppingItemRequest(new BigDecimal("0.06"), 2)))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Không thể quy đổi đơn vị an toàn");
+        assertThat(item.getUnitId()).isEqualTo(1);
+        assertThat(list.getUpdatedAt()).isNull();
+    }
+
     @Test void increasingTotalDoesNotIncreaseTheUnresolvedContributionBucket() {
         var rows = prepareRecipeBackedIngredientSources();
 
