@@ -454,12 +454,12 @@ bugs:
     related_issue: 31
   - id: BUG-014
     title: Integration test gửi báo cáo để sót Recipe Post trong SQL Server
-    status: RESOLVED
+    status: TRACKING
     severity: Medium
     area: Backend/Test cleanup
     file: .agents/outputs/bugs/BUG-014.md
     created: 2026-10-06
-    updated: 2026-10-06
+    updated: 2026-10-29
     related_issue: 31
   - id: BUG-013
     title: Backend chấp nhận link YouTube thiếu mã video

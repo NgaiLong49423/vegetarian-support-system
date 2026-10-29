@@ -527,7 +527,8 @@ test('UC-60.1: a Member starts a comparison from the saved recipe list', async (
   } }));
 
   await page.goto('/ho-so');
-  await page.getByRole('link', { name: 'So sánh Canh cà chua nấm rơm' }).click();
+  await page.getByRole('button', { name: 'Tùy chọn cho công thức Canh cà chua nấm rơm' }).click();
+  await page.getByRole('menuitem', { name: 'So sánh công thức' }).click();
   await expect(page).toHaveURL(/\/so-sanh\?a=702$/);
   await expect(firstSlot(page)).toContainText('Canh cà chua nấm rơm');
 });

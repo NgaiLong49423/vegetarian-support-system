@@ -142,7 +142,7 @@ export function AddToMealPlanButton({
       const partialNotice = added.length > 0
         ? `Đã thêm ${added.length} bữa ăn. `
         : ""
-      setError(`${partialNotice}${failed[0].message} Còn ${failed.length} lựa chọn chưa thêm; bạn có thể thử lại.`)
+      setError(`${partialNotice}${failed[0].message} Còn ${failed.length} lựa chọn chưa thêm, bạn có thể thử lại.`)
     }
     setBusy(false)
   }
