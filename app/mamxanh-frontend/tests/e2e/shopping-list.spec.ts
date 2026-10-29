@@ -372,6 +372,41 @@ test("shopping selected days validates selection, shows creation failure, retrie
   })
 })
 
+for (const width of [375, 1440]) {
+  test(`all shopping items move individually below the bought divider at ${width}px`, async ({ page }) => {
+    const state = await setup(page)
+    state.list.items = [row(1), row(2, { name: "Muối" }), row(3, { name: "Gạo", ingredientGroup: "Ngũ cốc" })]
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto("/di-cho?listId=42")
+    await page.getByRole("button", { name: /Tất cả \(/ }).click()
+    const bought = page.getByRole("region", { name: "Đồ đã mua", exact: true })
+    await expect(bought).toHaveCount(0)
+    await page.getByRole("button", { name: "Đánh dấu Nước tương g", exact: true }).click()
+    await expect(bought.getByTestId("shopping-item-1")).toBeVisible()
+    await expect(bought.getByRole("heading", { name: "Đã mua (1)", exact: true })).toBeVisible()
+    await expect(bought.getByTestId("shopping-item-2")).toHaveCount(0)
+    await expect(page.getByRole("heading", { name: "Gia vị", exact: true })).toBeVisible()
+    const boughtTop = (await bought.boundingBox())!.y
+    for (const id of [2, 3]) {
+      const bounds = (await page.getByTestId(`shopping-item-${id}`).boundingBox())!
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(boughtTop)
+    }
+    await page.reload()
+    await page.getByRole("button", { name: /Tất cả \(/ }).click()
+    await expect(bought.getByTestId("shopping-item-1")).toBeVisible()
+    await bought.getByRole("button", { name: "Đánh dấu Nước tương g", exact: true }).click()
+    await expect(bought).toHaveCount(0)
+    await expect(page.getByTestId("shopping-item-1")).toBeVisible()
+    for (const item of state.list.items) {
+      await page.getByRole("button", { name: `Đánh dấu ${item.name} g`, exact: true }).click()
+      await expect(bought.getByTestId(`shopping-item-${item.id}`)).toBeVisible()
+    }
+    await expect(bought.getByRole("heading", { name: "Đã mua (3)", exact: true })).toBeVisible()
+    await expect(page.getByText("Không có nguyên liệu trong mục này.", { exact: true })).toHaveCount(0)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  })
+}
+
 test("shopping manual item quantity, edit, bought/unbought, filtering and deletion use saved values", async ({
   page,
 }) => {
