@@ -372,6 +372,41 @@ test("shopping selected days validates selection, shows creation failure, retrie
   })
 })
 
+for (const width of [375, 1440]) {
+  test(`all shopping items move individually below the bought divider at ${width}px`, async ({ page }) => {
+    const state = await setup(page)
+    state.list.items = [row(1), row(2, { name: "Muối" }), row(3, { name: "Gạo", ingredientGroup: "Ngũ cốc" })]
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto("/di-cho?listId=42")
+    await page.getByRole("button", { name: /Tất cả \(/ }).click()
+    const bought = page.getByRole("region", { name: "Đồ đã mua", exact: true })
+    await expect(bought).toHaveCount(0)
+    await page.getByRole("button", { name: "Đánh dấu Nước tương g", exact: true }).click()
+    await expect(bought.getByTestId("shopping-item-1")).toBeVisible()
+    await expect(bought.getByRole("heading", { name: "Đã mua (1)", exact: true })).toBeVisible()
+    await expect(bought.getByTestId("shopping-item-2")).toHaveCount(0)
+    await expect(page.getByRole("heading", { name: "Gia vị", exact: true })).toBeVisible()
+    const boughtTop = (await bought.boundingBox())!.y
+    for (const id of [2, 3]) {
+      const bounds = (await page.getByTestId(`shopping-item-${id}`).boundingBox())!
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(boughtTop)
+    }
+    await page.reload()
+    await page.getByRole("button", { name: /Tất cả \(/ }).click()
+    await expect(bought.getByTestId("shopping-item-1")).toBeVisible()
+    await bought.getByRole("button", { name: "Đánh dấu Nước tương g", exact: true }).click()
+    await expect(bought).toHaveCount(0)
+    await expect(page.getByTestId("shopping-item-1")).toBeVisible()
+    for (const item of state.list.items) {
+      await page.getByRole("button", { name: `Đánh dấu ${item.name} g`, exact: true }).click()
+      await expect(bought.getByTestId(`shopping-item-${item.id}`)).toBeVisible()
+    }
+    await expect(bought.getByRole("heading", { name: "Đã mua (3)", exact: true })).toBeVisible()
+    await expect(page.getByText("Không có nguyên liệu trong mục này.", { exact: true })).toHaveCount(0)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  })
+}
+
 test("shopping manual item quantity, edit, bought/unbought, filtering and deletion use saved values", async ({
   page,
 }) => {
@@ -447,6 +482,55 @@ test("shopping manual item quantity, edit, bought/unbought, filtering and deleti
   await expect(item).toHaveCount(0)
 
   expect(state.list.items).toHaveLength(2)
+})
+
+test("shopping catalog item unit selection converts the displayed total", async ({ page }) => {
+  const state = await setup(page)
+  await page.route("**/api/v1/ingredients/5/units", (route) =>
+    route.fulfill({
+      json: [
+        { id: 1, code: "g", name: "gram", dimension: "MASS", gramsPerUnit: 1, approximate: false },
+        { id: 2, code: "ml", name: "mililít", dimension: "VOLUME", gramsPerUnit: 2, approximate: true },
+      ],
+    }),
+  )
+
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Sửa Nước tương g", exact: true }).click()
+  const quantity = page.getByLabel("Tổng số lượng mới", { exact: true })
+  const unit = page.getByLabel("Đơn vị", { exact: true })
+  await expect(unit).toHaveValue("1")
+  await unit.selectOption("2")
+  await expect(quantity).toHaveValue("150")
+
+  await page.getByRole("button", { name: "Tiếp tục", exact: true }).click()
+  await page.getByRole("button", { name: "Xác nhận thay đổi", exact: true }).click()
+
+  expect(state.writes).toContainEqual({
+    method: "PUT",
+    suffix: "/42/items/1",
+    body: { quantity: 150, unitId: 2 },
+  })
+  await expect(page.getByTestId("shopping-item-1")).toContainText("150 ml")
+})
+
+test("shopping edit normalizes a supported cup quantity to milliliters", async ({ page }) => {
+  const state = await setup(page)
+  state.list.items[0] = row(1, { quantity: 2, unitId: 3, unitCode: "cup", unitName: "cup" })
+  await page.route("**/api/v1/ingredients/5/units", (route) =>
+    route.fulfill({
+      json: [
+        { id: 1, code: "g", name: "gram", dimension: "MASS", gramsPerUnit: 1, approximate: false },
+        { id: 2, code: "ml", name: "mililít", dimension: "VOLUME", gramsPerUnit: 1, approximate: false },
+        { id: 3, code: "cup", name: "cup", dimension: "VOLUME", gramsPerUnit: 240, approximate: true },
+      ],
+    }),
+  )
+
+  await page.goto("/di-cho?listId=42")
+  await page.getByRole("button", { name: "Sửa Nước tương cup", exact: true }).click()
+  await expect(page.getByLabel("Đơn vị", { exact: true })).toHaveValue("2")
+  await expect(page.getByLabel("Tổng số lượng mới", { exact: true })).toHaveValue("480")
 })
 
 test("shopping failed mutations preserve data and form, cleanup preserves unbought rows", async ({

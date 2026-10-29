@@ -205,26 +205,22 @@ public class ShoppingListService {
             var manualAmount = manualSources.isEmpty() ? null : aggregateSingle(manualSources.stream()
                     .map(source -> new ShoppingAggregationLine(source.getIngredientId(), null,
                             source.getQuantity(), source.getUnitId())).toList());
-            int targetUnitId = requestedAmount.unitId();
-            if ((fixedAmount != null && fixedAmount.unitId() != targetUnitId)
-                    || (unknownAmount != null && unknownAmount.unitId() != targetUnitId)
-                    || (manualAmount != null && manualAmount.unitId() != targetUnitId)) {
-                throw invalid("Không thể quy đổi đơn vị an toàn để xác định lượng tối thiểu của công thức.");
-            }
-            BigDecimal fixedQuantity = fixedAmount == null ? BigDecimal.ZERO : fixedAmount.quantity();
-            BigDecimal oldUnknownQuantity = unknownAmount == null ? BigDecimal.ZERO : unknownAmount.quantity();
-            BigDecimal oldManualQuantity = manualAmount == null ? BigDecimal.ZERO : manualAmount.quantity();
-            if (requestedAmount.quantity().compareTo(fixedQuantity) < 0) {
+            int targetUnitId = request.unitId();
+            BigDecimal requestedQuantity = convertIngredientQuantity(item.getIngredientId(), requestedAmount.quantity(), requestedAmount.unitId(), targetUnitId);
+            BigDecimal fixedQuantity = fixedAmount == null ? BigDecimal.ZERO : convertIngredientQuantity(item.getIngredientId(), fixedAmount.quantity(), fixedAmount.unitId(), targetUnitId);
+            BigDecimal oldUnknownQuantity = unknownAmount == null ? BigDecimal.ZERO : convertIngredientQuantity(item.getIngredientId(), unknownAmount.quantity(), unknownAmount.unitId(), targetUnitId);
+            BigDecimal oldManualQuantity = manualAmount == null ? BigDecimal.ZERO : convertIngredientQuantity(item.getIngredientId(), manualAmount.quantity(), manualAmount.unitId(), targetUnitId);
+            if (requestedQuantity.compareTo(fixedQuantity) < 0) {
                 throw invalid("Đây là nguyên liệu tối thiểu để hoàn thành công thức: "
                         + fixedQuantity.stripTrailingZeros().toPlainString() + " " + requestedAmount.unitCode() + ".");
             }
-            BigDecimal flexibleQuantity = requestedAmount.quantity().subtract(fixedQuantity);
+            BigDecimal flexibleQuantity = requestedQuantity.subtract(fixedQuantity);
             BigDecimal targetUnknownQuantity = flexibleQuantity.subtract(oldManualQuantity).max(BigDecimal.ZERO)
                     .min(oldUnknownQuantity);
-            item.setQuantity(requestedAmount.quantity());
+            item.setQuantity(requestedQuantity);
             item.setUnitId(targetUnitId);
             BigDecimal remainingUnknown = replaceUnknownContribution(listId, unknownSources,
-                    targetUnknownQuantity, targetUnitId);
+                    targetUnknownQuantity, targetUnitId, item.getIngredientId());
             replaceManualContribution(listId, item, manualSources,
                     flexibleQuantity.subtract(remainingUnknown), targetUnitId);
         } else if (!manualSources.isEmpty()) {
@@ -237,6 +233,18 @@ public class ShoppingListService {
         }
         touch(list);
         return resolve(List.of(item)).getFirst();
+    }
+
+    private BigDecimal convertIngredientQuantity(long ingredientId, BigDecimal quantity, int fromUnitId, int toUnitId) {
+        if (fromUnitId == toUnitId) return quantity;
+        var options = catalog.findActiveIngredientUnits(ingredientId);
+        var from = options.stream().filter(option -> option.id() == fromUnitId).findFirst().orElse(null);
+        var to = options.stream().filter(option -> option.id() == toUnitId).findFirst().orElse(null);
+        if (from == null || to == null || from.gramsPerUnit() == null || to.gramsPerUnit() == null
+                || from.gramsPerUnit().signum() <= 0 || to.gramsPerUnit().signum() <= 0) {
+            throw invalid("Không thể quy đổi đơn vị an toàn cho nguyên liệu này.");
+        }
+        return quantity.multiply(from.gramsPerUnit()).divide(to.gramsPerUnit(), 6, RoundingMode.HALF_UP);
     }
 
     private void validateItemUnit(ShoppingListItemEntity item, Integer requestedUnitId) {
@@ -294,19 +302,20 @@ public class ShoppingListService {
     /** Shrink orphaned recipe amounts proportionally; the unresolved bucket is never increased by an edit. */
     private BigDecimal replaceUnknownContribution(long listId,
             List<tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity> unknownSources,
-            BigDecimal quantity, Integer unitId) {
+            BigDecimal quantity, Integer unitId, long ingredientId) {
         if (unknownSources.isEmpty() || quantity.signum() == 0) {
             contributions.deleteAll(unknownSources);
             return BigDecimal.ZERO;
         }
         var existing = aggregateSingle(unknownSources.stream().map(source -> new ShoppingAggregationLine(
                 source.getIngredientId(), null, source.getQuantity(), source.getUnitId())).toList());
-        if (existing.unitId() != unitId || quantity.compareTo(existing.quantity()) > 0) {
+        BigDecimal existingQuantity = convertIngredientQuantity(ingredientId, existing.quantity(), existing.unitId(), unitId);
+        if (quantity.compareTo(existingQuantity) > 0) {
             throw invalid("Không thể tăng lượng mất xác định hoặc quy đổi lượng này an toàn.");
         }
-        if (quantity.compareTo(existing.quantity()) == 0) return existing.quantity();
+        if (quantity.compareTo(existingQuantity) == 0) return existingQuantity;
 
-        BigDecimal ratio = quantity.divide(existing.quantity(), 18, RoundingMode.DOWN);
+        BigDecimal ratio = quantity.divide(existingQuantity, 18, RoundingMode.DOWN);
         var retained = new java.util.ArrayList<tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity>();
         var removed = new java.util.ArrayList<tech.mamxanh.shopping.entity.ShoppingRecipeContributionEntity>();
         for (var source : unknownSources) {
@@ -322,10 +331,11 @@ public class ShoppingListService {
         if (retained.isEmpty()) return BigDecimal.ZERO;
         var remaining = aggregateSingle(retained.stream().map(source -> new ShoppingAggregationLine(
                 source.getIngredientId(), null, source.getQuantity(), source.getUnitId())).toList());
-        if (remaining.unitId() != unitId || remaining.quantity().compareTo(quantity) > 0) {
+        BigDecimal remainingQuantity = convertIngredientQuantity(ingredientId, remaining.quantity(), remaining.unitId(), unitId);
+        if (remainingQuantity.compareTo(quantity) > 0) {
             throw invalid("Không thể cập nhật lượng mất xác định với đơn vị đã chọn.");
         }
-        return remaining.quantity();
+        return remainingQuantity;
     }
 
     @Transactional
@@ -535,8 +545,14 @@ public class ShoppingListService {
         var selected = linked.stream().filter(source -> sourceKind.equals(source.getSourceKind())).toList();
         if (selected.isEmpty()) return null;
         if (item.getIngredientId() != null) {
-            return aggregateMaybe(selected.stream().map(source -> new ShoppingAggregationLine(
+            var amount = aggregateMaybe(selected.stream().map(source -> new ShoppingAggregationLine(
                     source.getIngredientId(), null, source.getQuantity(), source.getUnitId())).toList());
+            if (amount == null) return null;
+            var displayUnit = catalog.findUnitReferences(List.of(item.getUnitId())).stream().findFirst().orElse(null);
+            if (displayUnit == null) return null;
+            BigDecimal displayQuantity = convertIngredientQuantity(item.getIngredientId(), amount.quantity(), amount.unitId(), item.getUnitId());
+            return new tech.mamxanh.shopping.dto.response.ShoppingAggregationResult.Item(amount.ingredientId(), amount.name(),
+                    displayQuantity, displayUnit.id(), displayUnit.code(), displayUnit.name(), amount.incompatibleUnits(), amount.sourceIndices());
         }
         if (selected.stream().anyMatch(source -> !source.getUnitId().equals(selected.getFirst().getUnitId()))) return null;
         var unit = catalog.findUnitReferences(List.of(selected.getFirst().getUnitId())).stream().findFirst().orElse(null);

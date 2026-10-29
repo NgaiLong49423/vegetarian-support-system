@@ -155,6 +155,12 @@ function quantityDeltaInUnit(
   return null
 }
 
+function convertQuantity(quantity: number, fromUnitId: number, fromUnitCode: string, toUnitId: number, toUnitCode: string, ingredientUnits: PublicIngredientUnit[]) {
+  if (fromUnitId === toUnitId) return quantity
+  const delta = quantityDeltaInUnit(quantity, fromUnitId, fromUnitCode, 0, toUnitId, toUnitCode, ingredientUnits)
+  return delta == null ? null : -delta
+}
+
 function quantityAmountText(quantity: number, unitCode: string) {
   return `${Math.abs(quantity).toLocaleString("vi-VN", { maximumFractionDigits: 6 })} ${unitCode}`
 }
@@ -381,7 +387,7 @@ function ShoppingWorkspace() {
   }
   const grouped = items
     .filter(
-      (item) => tab === "all" || (tab === "done" ? item.bought : !item.bought),
+      (item) => tab === "done" ? item.bought : !item.bought,
     )
     .reduce<Record<string, ShoppingItem[]>>((groups, item) => {
       ;(groups[item.ingredientGroup] ??= []).push(item)
@@ -406,6 +412,9 @@ function ShoppingWorkspace() {
     groupedColumns[column].push(entry)
     groupedColumnLoads[column] += entry[1].length
   })
+  const boughtItems = tab === "all" ? items.filter((item) => item.bought) : []
+  const boughtColumnSize = Math.ceil(boughtItems.length / 2)
+  const boughtColumns = [boughtItems.slice(0, boughtColumnSize), boughtItems.slice(boughtColumnSize)]
   const creation = (location.state as {
     shoppingCreation?: ShoppingCreation
   } | null)?.shoppingCreation
@@ -546,15 +555,15 @@ function ShoppingWorkspace() {
       if (alive.current) setBusy(false)
     }
   }
-  const renderGroup = ([group, entries]: [string, ShoppingItem[]]) => (
+  const renderGroup = ([group, entries]: [string, ShoppingItem[]], showHeading = true) => (
     <section key={group}>
-      <h3 className="mb-3 text-base font-bold text-ink">{group}</h3>
+      {showHeading && <h3 className="mb-3 text-base font-bold text-ink">{group}</h3>}
       <div className="divide-y divide-brand-100">
         {[...entries].sort((a, b) => Number(b.id === lastChangedItemId) - Number(a.id === lastChangedItemId) || b.id - a.id).map((item) => (
           <div
             key={item.id}
             data-testid={`shopping-item-${item.id}`}
-            className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] items-center gap-1 rounded-lg px-1 py-5 sm:gap-3 ${item.bought ? "bg-cream-soft/50" : ""}`}
+            className={`grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] items-center gap-1 rounded-lg px-1 py-4 sm:gap-2.5 ${item.bought ? "bg-cream-soft/50" : ""}`}
           >
             <SpringCheck
               checked={item.bought}
@@ -573,21 +582,21 @@ function ShoppingWorkspace() {
               }
               ariaLabel={`Đánh dấu ${item.name} ${item.unitCode}`}
               label={
-                <span className="flex min-w-0 items-center gap-3.5">
+                <span className="flex min-w-0 items-center gap-3">
                   <IngredientImage
                     imageUrl={item.imageUrl ?? null}
                     name={item.name}
-                    containerClassName="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-brand-100 bg-cream-soft md:h-20 md:w-20"
+                    containerClassName="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-brand-100 bg-cream-soft md:h-16 md:w-16"
                   />
-                  <span className="break-words text-lg font-medium leading-6 text-ink">{item.name}</span>
+                  <span className="break-words text-base font-medium leading-6 text-ink">{item.name}</span>
                 </span>
               }
-              boxSize={28}
+              boxSize={24}
               color="#f97316"
               fillColor="#f97316"
               className="min-w-0 w-full"
             />
-            <span className={`text-lg font-medium ${item.bought ? "text-ink-muted line-through" : "text-ink-soft"}`}>
+            <span className={`text-base font-medium ${item.bought ? "text-ink-muted line-through" : "text-ink-soft"}`}>
               {quantityText(item)}
             </span>
             {item.sources?.length ? (
@@ -953,14 +962,26 @@ function ShoppingWorkspace() {
                 <div className="grid grid-cols-1 gap-y-5 lg:grid-cols-2">
                   {groupedColumns.map((column, index) => (
                     <div key={index} className={`min-w-0 space-y-5 ${index === 0 ? "lg:border-r lg:border-brand-200 lg:pr-7" : "lg:pl-7"}`}>
-                      {column.map(renderGroup)}
+                      {column.map((group) => renderGroup(group))}
                     </div>
                   ))}
                 </div>
-              ) : (
+              ) : !boughtItems.length ? (
                 <p className="py-12 text-center text-sm text-ink-muted">
                   Không có nguyên liệu trong mục này.
                 </p>
+              ) : null}
+              {boughtItems.length > 0 && (
+                <section aria-label="Đồ đã mua" className="mt-6 border-t border-brand-200 pt-5">
+                  <h3 className="mb-3 text-base font-bold text-ink-muted">Đã mua ({boughtItems.length})</h3>
+                  <div className="grid grid-cols-1 gap-y-5 lg:grid-cols-2">
+                    {boughtColumns.map((column, index) => column.length > 0 && (
+                      <div key={index} className={`min-w-0 ${index === 0 ? "lg:border-r lg:border-brand-200 lg:pr-7" : "lg:pl-7"}`}>
+                        {renderGroup(["Đã mua", column], false)}
+                      </div>
+                    ))}
+                  </div>
+                </section>
               )}
             </div>
           )}
@@ -1413,11 +1434,12 @@ function ItemForm({
   const quantityInput = useRef<HTMLInputElement>(null)
   const hasRequiredAmount = Boolean(item?.sources?.some((source) => source.sourceKind === "RECIPE"))
   const enteredQuantity = quantity.trim() === "" ? Number.NaN : Number(quantity)
-  const belowRequiredMinimum = hasRequiredAmount
-    && item?.requiredQuantity != null
-    && Number.isFinite(enteredQuantity)
-    && enteredQuantity < item.requiredQuantity
-  const requiredMinimumText = item?.requiredQuantity?.toLocaleString("vi-VN", { maximumFractionDigits: 6 })
+  const selectedUnit = ingredientUnits.find((option) => option.id === Number(unit))
+    ?? (item?.unitId === Number(unit) ? { id: item.unitId, code: item.unitCode, name: item.unitName ?? item.unitCode, dimension: "", gramsPerUnit: 1, approximate: false } : undefined)
+  const requiredMinimum = item?.requiredQuantity == null ? null : convertQuantity(item.requiredQuantity, item.unitId, item.unitCode, Number(unit), selectedUnit?.code ?? item.unitCode, ingredientUnits)
+  const belowRequiredMinimum = hasRequiredAmount && item?.requiredQuantity != null
+    && (requiredMinimum == null || !Number.isFinite(enteredQuantity) || enteredQuantity < requiredMinimum)
+  const requiredMinimumText = requiredMinimum?.toLocaleString("vi-VN", { maximumFractionDigits: 6 })
   useEffect(() => {
     const input = item === null ? nameInput.current : quantityInput.current
     input?.focus()
@@ -1461,6 +1483,18 @@ function ItemForm({
     })
     return () => { active = false }
   }, [ingredientId, unitRetry])
+  useEffect(() => {
+    if (mode !== "edit" || !item?.ingredientId || unitLoading || !ingredientUnits.length || unit !== String(item.unitId)) return
+    const normalizeTo = ["cup", "tbsp", "tsp"].includes(item.unitCode) ? "ml"
+      : ["quả", "củ", "miếng"].includes(item.unitCode) ? "g" : null
+    const target = normalizeTo && ingredientUnits.find((option) => option.code === normalizeTo && option.gramsPerUnit > 0)
+    if (!target) return
+    const converted = convertQuantity(item.quantity, item.unitId, item.unitCode, target.id, target.code, ingredientUnits)
+    if (converted != null && Number.isFinite(converted)) {
+      setUnit(String(target.id))
+      setQuantity(String(Number(converted.toFixed(6))))
+    }
+  }, [ingredientUnits, item, mode, unit, unitLoading])
   useEffect(() => {
     if (mode !== "add" || unitLoading || (ingredientId && ingredientUnits.length === 0)) return
     const supportedUnits = ingredientId ? ingredientUnits : units
@@ -1580,8 +1614,8 @@ function ItemForm({
           </label>
           <label className="text-sm text-ink">
             Đơn vị
-            {hasRequiredAmount && item ? (
-              <span className={`${field} mt-2 block w-full`}>{item.unitCode} — giữ nguyên đơn vị công thức</span>
+            {mode === "edit" && item?.ingredientId == null ? (
+              <span className={`${field} mt-2 block w-full`}>{item?.unitCode}</span>
             ) : (
               <select
                 aria-label="Đơn vị"
@@ -1589,7 +1623,18 @@ function ItemForm({
                 required
                 disabled={busy || unitLoading || Boolean(unitError)}
                 value={unit}
-                onChange={(event) => setUnit(event.target.value)}
+                onChange={(event) => {
+                  const nextId = Number(event.target.value)
+                  const current = availableUnits.find((option) => option.id === Number(unit))
+                    ?? (item?.unitId === Number(unit) ? { id: item.unitId, code: item.unitCode, name: item.unitName ?? item.unitCode, active: true } : undefined)
+                  const next = availableUnits.find((option) => option.id === nextId)
+                  if (current && next && item?.ingredientId) {
+                    const converted = convertQuantity(Number(quantity), current.id, current.code, next.id, next.code, ingredientUnits)
+                    if (converted == null) return
+                    setQuantity(String(Number(converted.toFixed(6))))
+                  }
+                  setUnit(event.target.value)
+                }}
               >
                 {item && !availableUnits.some((option) => option.id === item.unitId) && (
                   <option value={item.unitId}>
